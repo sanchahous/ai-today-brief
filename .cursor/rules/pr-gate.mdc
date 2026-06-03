@@ -1,0 +1,40 @@
+---
+description: Agent must run pre-PR checks before push / gh pr create — never skip
+alwaysApply: true
+---
+
+# Pre-PR gate (agent — mandatory)
+
+Before **`git push`** for review or **`gh pr create`**, run the checks yourself in the terminal first. Never ask the user to run them.
+
+## Required
+
+From repo root:
+
+```bash
+npm run pr:check
+```
+
+Runs `typecheck` + `lint` + `build`. *(A Vitest coverage gate joins this chain once a logic layer exists — see `00-core.mdc` → Testing.)*
+
+- `pr:check` fails → fix, re-run until green, **then** push / open the PR.
+- Can't fix within scope → report the failure and **do not** open the PR.
+
+## Branching
+
+- **Never push directly to `main`.** Work on a feature branch (`feat/…`, `chore/…`, `fix/…`) and open a PR. Direct pushes to the default branch are blocked by policy.
+
+## When it applies
+
+Any change under `src/**`, `pipeline/**`, `supabase/**`, `package.json`, `next.config.*`, `.github/workflows/**`, or build `scripts/**`. Docs-only changes (`*.md`, `docs/**`) may skip `build` but still run `lint`/`typecheck` if any code/config changed.
+
+## PR body
+
+Include a checked line in the Test plan:
+
+- [x] `npm run pr:check` passed locally before push
+
+## Do not
+
+- Open a PR with "please run tests locally" instead of running them.
+- Push code/config changes without `pr:check` green.

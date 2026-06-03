@@ -1,0 +1,85 @@
+---
+description: Code-quality guardrails from SonarCloud fixes (complexity, regex, SQL, DOM, dead code). Not CI/config/tests.
+alwaysApply: true
+---
+
+# Sonar — code quality (learned from fixes)
+
+These rules mirror real Sonar issues we fixed in app/pipeline/migration code. They do **not** cover Sonar CI wiring, coverage thresholds, or test-runner naming — see `sonar-debug.mdc`.
+
+## Cognitive complexity (S3776)
+
+Sonar flagged `rank.ts`, `router.ts`, and `verify-content-v2.ts` when one function mixed clustering, scoring, redirects, and validation.
+
+- **One job per function.** If a function has more than one “phase” (parse → redirect → assign state; cluster → score → filter → cap), extract named helpers at the same file level.
+- **No heavy inline callbacks inside `.map` / `.filter`.** Scoring a cluster, parsing a path segment, or validating a day belongs in `scoreCluster`, `parseBriefOrDatePath`, `verifyDayAgainstLegacy`, not an anonymous arrow inside a chain.
+- **Early return over deep nesting.** Prefer `if (!x) return null` and small parsers over a single 80-line `if/else` ladder (router pattern: `redirectLegacyNewsPaths` → `parseConceptPath` → `parseBriefOrDatePath`).
+- **Refactor before Sonar complains:** if you are adding a third nested loop or a fourth branch to an existing “god” function, split first.
+
+## `Array.reduce` for min/max (S6959)
+
+`pickClusterLead` used `reduce` without a safe initial value; Sonar and readability both suffer.
+
+- **Do not use bare `reduce` to pick the best element** when the comparator is non-trivial. Use an explicit loop with `let best = arr[0]` and `for (let i = 1; …)`, or pass a real initial value to `reduce`.
+- **Never assume `cluster[0]` exists** without a guard when the array can be empty.
+
+## Optional chaining (fetch / nullable handles)
+
+Pipeline `fetch.ts` used `if (!res || !res.ok)`; Sonar prefers `if (!res?.ok)`.
+
+- After a nullable reference, prefer **`?.` for property access** instead of `!x || !x.prop` when both mean “missing or failed”.
+- Keep explicit checks when you must distinguish `null` response from `ok: false` for logging — but default to `?.` for simple continue/skip paths.
+
+## Regex and ReDoS (security hotspots)
+
+Fixed in `summarize.ts` (slug sanitise) and `src/js/i18n.js` (path normalization).
+
+- **Combining marks after `normalize('NFKD')`:** use Unicode properties, not manual ranges:
+  ```ts
+  .replace(/\p{M}+/gu, '')
+  ```
+  Do not copy legacy ranges like `/[\u0300-\u036f]/` or ad-hoc combining-mark classes — Sonar flags them and they are easy to get wrong.
+- **Avoid regex for trivial string transforms** on paths or URLs: trailing slashes → `while (path.length > 1 && path.endsWith('/')) path = path.slice(0, -1)`.
+- **No nested quantifiers** on user-controlled or path strings (e.g. `/\/+$/`, `(a+)+`). If you need normalization, use loops or `URL`/`pathname` APIs.
+- **Slug pipelines:** keep the existing order: `toLowerCase` → `normalize('NFKD')` → strip `\p{M}` → replace non-alphanumerics → trim dashes → slice length.
+
+## TypeScript / DOM correctness
+
+From `pageMeta.ts` and `LeftPanel.tsx`.
+
+- **No noop ternaries** (`condition ? 'meta' : 'meta'`). Sonar S3923 — delete or implement the real branch.
+- **`document.querySelector` for `<link>`:** narrow before assigning `rel` / `href`:
+  ```ts
+  let el = document.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
+  ```
+- **Every identifier in JSX must be in scope.** Do not reference locals that were removed during a refactor (`hasDays` caused a runtime `ReferenceError` in CI). Run `npm run build` before pushing UI changes.
+
+## Dead and redundant code
+
+From `DayPhaseTabs.tsx`.
+
+- Remove **noop `style` / className branches** (`color: isActive ? undefined : undefined`).
+- Delete commented-out experiments and duplicate conditions in the same PR — Sonar and reviewers treat them as smell.
+
+## Stable string sorting (S2871)
+
+`verify-content-v2.ts` compared step ids with `.sort()` without a comparator.
+
+- **Never `.sort()` bare strings for equality checks.** Use `(a, b) => a.localeCompare(b)` (or sort a copy: `[...ids].sort(...)`).
+- Shared helper pattern when comparing id sets: `sortedStepIds(steps)` → map ids → `localeCompare` sort → `join('|')`.
+
+## SQL migrations (plsql:DeleteOrUpdateWithoutWhereCheck)
+
+Migration `20260524140000_003_weeks_embedded_days.sql` needed `WHERE EXISTS` on a broad `UPDATE`.
+
+- **Every `UPDATE` / `DELETE` in `supabase/migrations/` must have an explicit `WHERE` or `WHERE EXISTS (...)`** that limits rows. Sonar treats missing `WHERE` as a blocker even in one-off data backfills.
+- Prefer `UPDATE … FROM … WHERE EXISTS (SELECT 1 FROM child WHERE …)` over updating all rows in a table.
+
+## Before you mark code “done” (Sonar-minded)
+
+1. `npm run build` — catches undefined refs and TS DOM mistakes ESLint would have caught.
+2. Mentally scan new functions: **>3 nesting levels or >15 decision points → extract helper.**
+3. New regex on paths/slugs/user text → **property escapes or non-regex**, per sections above.
+4. New migration DML → **visible row filter** in the same statement.
+
+For CI failures and quality-gate debugging, use `sonar-debug.mdc` and `npm run sonar:report` (token in `.env`, never commit).

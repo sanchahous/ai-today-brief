@@ -1,0 +1,37 @@
+---
+description: How to read SonarCloud results and CI logs without user screenshots
+alwaysApply: false
+---
+
+# SonarCloud — agent debug playbook
+
+## CI logs (GitHub Actions)
+
+```bash
+gh run list --workflow=sonarqube.yml --limit 5
+gh run view <run-id> --log-failed
+```
+
+## Report artifact / local API
+
+Every SonarQube run uploads `sonar-report.md`:
+
+```bash
+gh run list --workflow=sonarqube.yml --limit 1
+gh run download <run-id> -n sonar-report   # read sonar-report/sonar-report.md
+```
+
+Local report needs a token (never commit): `.env` with `SONAR_TOKEN` (+ optional `SONAR_HOST_URL=https://sonarcloud.io`), then `npm run sonar:report`. Project keys come from `sonar-project.properties` (`sonar.organization=sanchahous`, `sonar.projectKey=sanchahous_ai-today-brief`).
+
+## One-time setup
+
+If the scan fails with *"CI analysis while Automatic Analysis is enabled"*: SonarCloud → Project Settings → Administration → **Analysis Method** → disable **Automatic Analysis** (keep CI-based analysis only). Without this, `sonarqube.yml` exits non-zero even when checks pass.
+
+## Free plan
+
+- Only the **Sonar way** gate (custom gates need a paid plan). **New Code** is measured vs `main` (`sonar.newCode.referenceBranch=main`).
+- `sonar.qualitygate.wait=false` → a red gate on the site does **not** fail CI. Read the report, not just the letter grade. Fix **new-code** issues, not legacy.
+
+## "Not working" checklist
+
+1. Automatic Analysis = **OFF** (required for CI). 2. GitHub Secrets `SONAR_TOKEN` + `SONAR_HOST_URL`. 3. Red gate at the start is normal. 4. Re-run: Actions → SonarQube → Run workflow (`workflow_dispatch`). 5. Local: `npm run sonar:report` (needs `.env` `SONAR_TOKEN`).
