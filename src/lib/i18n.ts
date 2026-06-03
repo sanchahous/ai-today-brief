@@ -1,0 +1,35 @@
+import type { Lang } from '@/lib/site';
+
+/** UI strings. Every user-facing label ships in both EN and UK in the same change. */
+export const STRINGS = {
+  en: {
+    eyebrow: 'Daily AI-engineering brief',
+    heroLede:
+      'Curated, human-edited signal for people who build with AI — models, frameworks, MLOps. One brief a day. No hype.',
+    nav: { news: 'News', models: 'Models', frameworks: 'Frameworks', mlops: 'MLOps' },
+    subscribe: 'Subscribe',
+    todaysBrief: 'Today’s brief',
+    allNews: 'All news',
+    sampleBadge: 'Sample — connect Supabase env to go live',
+    editedBy: 'Edited by',
+    footerTagline: 'The daily AI-engineering brief. Built in public. EN · UK.',
+    rights: 'All rights reserved.',
+  },
+  uk: {
+    eyebrow: 'Щоденний бриф з AI-інженерії',
+    heroLede:
+      'Курований, відредагований людиною сигнал для тих, хто будує з AI — моделі, фреймворки, MLOps. Один бриф на день. Без хайпу.',
+    nav: { news: 'Новини', models: 'Моделі', frameworks: 'Фреймворки', mlops: 'MLOps' },
+    subscribe: 'Підписатися',
+    todaysBrief: 'Бриф сьогодні',
+    allNews: 'Усі новини',
+    sampleBadge: 'Зразок — підключіть Supabase env для живих даних',
+    editedBy: 'Редактор —',
+    footerTagline: 'Щоденний бриф з AI-інженерії. Build in public. EN · UK.',
+    rights: 'Усі права захищені.',
+  },
+} as const;
+
+export function getStrings(lang: Lang) {
+  return STRINGS[lang];
+}
