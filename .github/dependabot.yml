@@ -19,6 +19,10 @@ updates:
       npm-major:
         update-types:
           - "major"
+    ignore:
+      # eslint-config-next 16 is not yet compatible with ESLint 10 (eslint-plugin-react crash).
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "github-actions"
     directory: "/"

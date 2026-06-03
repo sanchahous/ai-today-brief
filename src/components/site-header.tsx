@@ -21,6 +21,9 @@ export function SiteHeader({ lang }: { lang: Lang }) {
           <Link className="hover:text-text" href={`/${lang}/news`}>
             {t.nav.news}
           </Link>
+          <Link className="hover:text-text" href={`/${lang}/concepts`}>
+            {t.nav.concepts}
+          </Link>
           <Link className="hover:text-text" href={`/${lang}/models`}>
             {t.nav.models}
           </Link>
