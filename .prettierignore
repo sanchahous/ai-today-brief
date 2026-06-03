@@ -1,0 +1,14 @@
+node_modules
+dist
+.next
+out
+coverage
+.claude
+.cursor
+.agents
+docs
+public
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+**/*.min.js

@@ -1,0 +1,111 @@
+---
+description: Unified conventions for AI Today Brief — Next.js 16 App Router / React 19 / TypeScript strict / Tailwind v4 / Supabase. Dev/AI-engineering brief with topical-authority + AEO architecture.
+alwaysApply: true
+---
+
+# AI Today Brief — Engineering Rules
+
+A standalone **Next.js 16 (App Router)** product on **Vercel**: a daily curated **AI/engineering brief** (EN primary, UK secondary) plus evergreen technical concept hubs. Strategy = **brief-led product, authority-built architecture**: the daily brief is the hook; every page also builds **topical authority** + **AEO** (being cited by AI engines) in a defensible dev niche. Data and the `fetch→rank→summarize→publish` pipeline live on **Supabase**. Payments via **LemonSqueezy** (Stripe is blocked in UA). Context: `docs/07 — MVP Dev Handoff`, `docs/08 — Prototype to Production Plan`.
+
+## Stack facts (hard — verify before assuming)
+
+- **Next.js 16 App Router**, React 19, **TypeScript strict**, **Tailwind v4** (CSS-first `@theme`, no `tailwind.config.js`), Supabase (`@supabase/supabase-js`), **npm** (`package-lock.json` authoritative).
+- **`@/*` alias IS used** (→ `src/*`) — Next idiom. (Intentionally reverses the old portfolio "relative-only" rule.)
+- **Server Components by default.** `'use client'` only for real interactivity (state, effects, browser APIs). Never ship a secret / service key into a client component.
+- **No other routing library** (react-router, tanstack) — App Router file routing only.
+- Next 16 has breaking changes vs older training knowledge — when unsure of an API, check `node_modules/next/dist/docs/` (see `AGENTS.md`).
+
+## Engineering mindset
+
+- Think before coding: state assumptions, edge cases, failure modes. Ambiguous? Ask one focused question.
+- Smallest change that solves it. No abstraction before it's needed twice.
+- Errors are part of the API: every async path / parse / external call has a handled failure mode. Never swallow with an empty catch.
+- Read neighboring patterns first; match them over personal preference.
+- Comments explain *why*, not *what*.
+
+## TypeScript
+
+- `strict: true` non-negotiable. No `any` (warn-gated). No `as` casts without a one-line reason.
+- `unknown` at boundaries; narrow with guards (`isX(v: unknown): v is X`). Any JSONB column is `unknown` until guarded.
+- `type` for unions/mapped/conditional; `interface` only for extendable object shapes.
+- **No enums** — `as const` objects + derived literal unions. Exhaustive switches end with `default: const _x: never = v`.
+- `import type { … }` for type-only. Named exports (default only where a tool demands: route files, `*.config.*`).
+
+## React 19 / Next 16 App Router
+
+- Function components, named exports, PascalCase. Hooks at top, never conditional.
+- **Derive, don't sync.** `useEffect` only for real side effects — never to mirror props/state.
+- Prefer Server Components + streaming `<Suspense>`. Fetch in server components; **never fetch SEO-critical content client-side**.
+- Metadata via `generateMetadata`; static params via `generateStaticParams`; freshness via ISR + `revalidateTag`/`revalidatePath` on publish.
+- Mutations via **Server Actions** or route handlers (server) — never write to Supabase from the client.
+- Keys are stable IDs, never indices. Accessibility is a feature: semantic HTML, keyboard-reachable, visible focus.
+
+## Styling — Tailwind v4
+
+- Utility-first, **CSS-first config**: design tokens in `src/app/globals.css` via `@theme` (port the prototype token set — Fraunces display + Inter body, category colors, surfaces). No `tailwind.config.js`.
+- **No CSS-in-JS, no `clsx`/`tailwind-merge`.** Compose conditional classes with template strings / ternaries.
+- Mobile-first; tokens via CSS variables over hardcoded hex.
+
+## Supabase
+
+- Two clients: **server** (route handlers / server actions / pipeline — may use `service_role`, NEVER imported by client code) and **browser** (anon key, read-only public data).
+- Generated types via `generate_typescript_types` → `src/lib/database.types.ts`, kept in sync on every schema change.
+- Always destructure `{ data, error }` and handle `error` first. `select()` explicit columns (no `select('*')` in prod paths). Filter server-side. Keyset pagination, not `OFFSET`.
+- **RLS is the source of truth.** Anon reads **published content only**; raw `articles` are never anon-readable; all writes (subscribe/sponsor/social/sends) go **only** through Edge Functions / server with `service_role`.
+- Migrations in `supabase/migrations/` (timestamped). Every `UPDATE`/`DELETE` has an explicit `WHERE`. Re-run `get_advisors` after DDL.
+
+## Routing & i18n
+
+- `/[lang]/…`, `lang ∈ {en, uk}`, **EN primary / UK secondary** (UK = low-competition wedge). Validate lang at the boundary; pass a typed `Lang`.
+- Canonical shapes: `/[lang]`, `/[lang]/news`, `/[lang]/[brief]/[item]`, `/[lang]/concepts/[slug]`, dev silos `/[lang]/models|frameworks|mlops|…`, `/[lang]/subscribe|about|advertise`, `/privacy|/terms|/ai-disclosure`.
+- Every user-facing string ships in **both** languages in the same change. `Intl.*` with an explicit locale; never hardcode month names.
+
+## SEO / AEO (core to the product)
+
+- `generateMetadata` per route: title, description, canonical, OG, `hreflang` en/uk/x-default.
+- JSON-LD: **`TechArticle`** for evergreen/technical pages, **`NewsArticle`** for brief items, plus `FAQPage`/`HowTo`/`BreadcrumbList`/`Organization`+`WebSite`.
+- **AEO/GEO is first-class** (the dev audience lives in Perplexity/ChatGPT): structure for extraction — definition block in the first ~300 words, comparison tables, FAQ blocks, attributed stats. See `.agents/skills/geo-content-optimizer`, `schema-markup-generator`, `technical-seo-checker`.
+- `robots.txt` allows AI bots (GPTBot/PerplexityBot/ClaudeBot/Google-Extended). `sitemap.xml` + Google News sitemap + RSS via Next route handlers. Consistent editor byline (Discover + E-E-A-T).
+- Never block first paint on Supabase for indexed content (prerender / ISR).
+
+## Content discipline (survival rule)
+
+- Editorial gate: `briefs.status: draft→published` by a human (curation moat + AI Act human-oversight + Google scaled-content-abuse survival). Publish **selected, human-edited** items — never auto-generate dozens of thin pages/day.
+
+## Pipeline (Node, `pipeline/**`)
+
+- Single entry `run-daily.ts`: **fetch → rank → summarize → publish**, each stage its own file; typed structs between stages, no module-level mutable state.
+- Partial failure is the default (per-source try/catch, log, continue). Hard-fail only when the result would be invalid. Every external call has a timeout + bounded retry. **Idempotent** re-runs (no duplicate `brief_items`).
+- `rank.ts` favors technical depth / source-authority / cross-source / recency / dedup (topical-authority tuned, not audience-of-one). Gemini structured JSON output; validate parsed result as `unknown`.
+- Holds the `service_role` key — never `NEXT_PUBLIC_`, never imported under `src/`. Structured logs; never log secrets or full prompts.
+
+## Testing — Vitest (wire when logic lands)
+
+- Co-locate tests. Test behavior, not implementation (query by role first). Mock Supabase at the module boundary. Pipeline: fixtures + SDK mocked. *(No runner configured yet — add `vitest` + config in the same change that introduces the first logic unit; until then `npm run build` is the integrity check.)*
+
+## Structure & conventions
+
+- `kebab-case.ts` modules, `PascalCase.tsx` components, `useCamelCase.ts` hooks. One responsibility per file. Named exports. Barrels only for genuine public surfaces.
+- `@/` for cross-cutting imports; relative within a feature folder.
+
+## Performance & bundle
+
+- CWV budgets: LCP ≤ 2.0s · INP ≤ 200ms · CLS ≤ 0.05. `next/image` with explicit dimensions. Dynamic `import()` for heavy one-screen deps. Tree-shakeable named imports (esp. `lucide-react`).
+
+## Forbidden without explicit discussion
+
+- Other frameworks / routers (we are Next App Router); other meta-frameworks.
+- State libraries (Zustand/Redux/Jotai/MobX) — use RSC + server state + URL state + small custom hooks.
+- Heavy ORMs (Prisma/Drizzle/Kysely) — use `@supabase/supabase-js` directly.
+- CSS-in-JS; `clsx` / `tailwind-merge`.
+- A separate backend (Express/Fastify/Nest) — logic lives in Next route handlers / Server Actions / Supabase Edge Functions / the pipeline.
+- **Stripe** — UA-blocked; use **LemonSqueezy** (Merchant of Record).
+- New dependencies without justification.
+
+## What "Done" looks like
+
+1. `npm run pr:check` green (`typecheck` + `lint` + `build`).
+2. New user-facing strings exist in **both** EN and UK.
+3. Indexed routes render real HTML (ISR / prerender), not an empty shell.
+4. No client write to Supabase; no `service_role` in the client bundle.
+5. No `console.log` left (warn/error only). Comments say *why*.

@@ -1,0 +1,411 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   ai-news-scrapper — UI/UX prototype stylesheet
+
+   Design tokens mirror the production app (src/index.css). Everything that
+   is structural (layout, motion, focus, skeletons) lives here as classes so
+   the React components stay readable; component-specific colour/spacing is
+   inline so the prototype is easy to fork.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+
+  --color-bg: #0f0f0f;
+  --color-bg-soft: #141414;
+  --color-surface: #1a1a1a;
+  --color-surface-2: #202020;
+  --color-border: #2a2a2a;
+  --color-border-soft: #232323;
+  --color-text: #e8e8e8;
+  --color-muted: #969696;
+  --color-faint: #6a6a6a;
+  --color-accent: #f0c040;
+
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --maxw: 1160px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.theme-light {
+  --color-bg: #faf9f7;
+  --color-bg-soft: #f4f2ee;
+  --color-surface: #ffffff;
+  --color-surface-2: #f0ede8;
+  --color-border: #e2ddd4;
+  --color-border-soft: #efe9df;
+  --color-text: #1a1a1a;
+  --color-muted: #595959;
+  --color-faint: #8a8a8a;
+  --color-accent: #b8860b;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+a {
+  color: inherit;
+}
+
+/* ── accessibility: visible focus + skip link ─────────────────────────────── */
+:where(a, button, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -100px;
+  z-index: 200;
+  background: var(--color-accent);
+  color: #111;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: top 0.2s var(--ease);
+}
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* ── layout helpers ───────────────────────────────────────────────────────── */
+.shell {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ── motion: scroll-reveal ────────────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.6s var(--ease),
+    transform 0.6s var(--ease);
+  will-change: opacity, transform;
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── skeleton shimmer ─────────────────────────────────────────────────────── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.06) 50%,
+    transparent 100%
+  );
+  animation: shimmer 1.5s infinite;
+}
+.theme-light .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.04), transparent);
+}
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ── interactive surfaces ─────────────────────────────────────────────────── */
+.card-hover {
+  transition:
+    transform 0.25s var(--ease),
+    border-color 0.25s var(--ease),
+    box-shadow 0.25s var(--ease);
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-pop);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 0.7rem 1.2rem;
+  border-radius: 999px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    transform 0.18s var(--ease),
+    background 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    color 0.18s var(--ease);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn-primary {
+  background: var(--color-accent);
+  color: #141414;
+}
+.btn-primary:hover {
+  filter: brightness(1.07);
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+.btn-ghost:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* gentle pulse for the "video coming soon" badge */
+@keyframes softpulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+.pulse {
+  animation: softpulse 2.4s ease-in-out infinite;
+}
+
+/* ── reduced motion ───────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── responsive grids (mobile-first) ──────────────────────────────────────── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.1rem;
+}
+.week-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+.news-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+.post-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.1rem;
+}
+.hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.75rem;
+}
+
+@media (min-width: 640px) {
+  .cat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .post-grid {
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: start;
+  }
+}
+@media (min-width: 900px) {
+  .week-grid {
+    grid-template-columns: 1.15fr 1fr;
+  }
+  .news-layout {
+    grid-template-columns: 264px minmax(0, 1fr);
+    align-items: start;
+  }
+  .desktop-only {
+    display: block;
+  }
+  .mobile-only {
+    display: none !important;
+  }
+}
+@media (min-width: 1000px) {
+  .cat-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 899px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* ── header: search slot + nav (mobile-first) ─────────────────────────────── */
+.hdr-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.hdr-search-desktop {
+  display: none;
+}
+.hdr-nav-desktop {
+  display: none;
+}
+.hdr-actions-mobile {
+  display: flex;
+  margin-left: auto;
+}
+@media (min-width: 768px) {
+  .hdr-search-desktop {
+    display: flex;
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+    padding: 0 1rem;
+  }
+  .hdr-nav-desktop {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+  }
+  .hdr-actions-mobile {
+    display: none;
+  }
+}
+
+/* ── trending / topic chips — obviously clickable ─────────────────────────── */
+.topic-chip {
+  transition:
+    transform 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    background 0.18s var(--ease),
+    box-shadow 0.18s var(--ease);
+}
+.topic-chip:hover {
+  border-color: var(--color-accent);
+  background: var(--color-surface-2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+.topic-chip .chip-arrow {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.18s var(--ease),
+    transform 0.18s var(--ease);
+}
+.topic-chip:hover .chip-arrow,
+.topic-chip:focus-visible .chip-arrow {
+  opacity: 1;
+  transform: none;
+}
+
+/* search preview rows */
+.search-row:hover,
+.search-row:focus-visible {
+  background: var(--color-surface) !important;
+}
+
+/* Hero decorative orbs are expensive (large blur + infinite animation) —
+   render them on larger screens only so mobile stays fast (Core Web Vitals). */
+@media (max-width: 767px) {
+  .hero-orbs {
+    display: none !important;
+  }
+}
+
+/* ── footer columns (mobile-first) ────────────────────────────────────────── */
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+@media (min-width: 560px) {
+  .footer-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (min-width: 900px) {
+  .footer-grid {
+    grid-template-columns: 1.6fr 1fr 1fr 1fr;
+    gap: 2.5rem;
+  }
+}
+
+/* utility */
+.eyebrow {
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+.muted {
+  color: var(--color-muted);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
