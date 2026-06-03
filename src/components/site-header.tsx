@@ -24,14 +24,14 @@ export function SiteHeader({ lang }: { lang: Lang }) {
           <Link className="hover:text-text" href={`/${lang}/concepts`}>
             {t.nav.concepts}
           </Link>
-          <Link className="hover:text-text" href={`/${lang}/models`}>
-            {t.nav.models}
+          <Link className="hover:text-text" href={`/${lang}/category/agents-and-mcp`}>
+            {t.nav.agents}
           </Link>
-          <Link className="hover:text-text" href={`/${lang}/frameworks`}>
-            {t.nav.frameworks}
+          <Link className="hover:text-text" href={`/${lang}/category/vibe-coding`}>
+            {t.nav.vibeCoding}
           </Link>
-          <Link className="hover:text-text" href={`/${lang}/mlops`}>
-            {t.nav.mlops}
+          <Link className="hover:text-text" href={`/${lang}/category/tools-and-releases`}>
+            {t.nav.tools}
           </Link>
         </nav>
         <div className="text-faint ml-auto flex items-center gap-1 text-xs md:ml-4">
