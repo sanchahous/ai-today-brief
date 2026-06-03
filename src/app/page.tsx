@@ -1,65 +1,131 @@
-import Image from 'next/image';
+import {
+  SITE_NAME,
+  SITE_TAGLINE,
+  DEFAULT_LANG,
+  EDITOR_NAME,
+  EDITOR_ROLE,
+  MARK_COLOR,
+} from '@/lib/site';
+
+const lang = DEFAULT_LANG;
+
+// Placeholder until live briefs load from Supabase (P1). Dev-first editorial slant.
+const SAMPLE_BRIEF = [
+  {
+    category: 'Models & Releases',
+    title: 'A new open-weight model lands — and the benchmarks are close',
+    why: 'Open weights at near-frontier quality reshape what you can self-host and fine-tune.',
+  },
+  {
+    category: 'Frameworks',
+    title: 'The agent framework everyone forked ships tool-calling v2',
+    why: 'Less glue-code, more deterministic tool orchestration in production.',
+  },
+  {
+    category: 'MLOps',
+    title: 'Inference got cheaper: a quantization trick with no quality cliff',
+    why: 'Lower cost-per-token changes the math on shipping LLM features at scale.',
+  },
+];
+
+function todayLabel(): string {
+  return new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date());
+}
 
 export default function Home() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between bg-white px-16 py-32 sm:items-start dark:bg-black">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl leading-10 font-semibold tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <>
+      <header className="border-border-soft border-b">
+        <div className="mx-auto flex max-w-[1160px] items-center gap-4 px-6 py-4">
+          <a href={`/${lang}`} className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className="rounded-pill grid h-8 w-8 place-items-center font-serif text-sm font-bold text-black"
+              style={{ background: MARK_COLOR }}
+            >
+              AT
+            </span>
+            <span className="font-serif text-lg font-semibold">{SITE_NAME}</span>
+          </a>
+          <nav className="text-muted ml-auto hidden items-center gap-6 text-sm md:flex">
+            <a className="hover:text-text" href={`/${lang}/news`}>
+              News
+            </a>
+            <a className="hover:text-text" href={`/${lang}/models`}>
+              Models
+            </a>
+            <a className="hover:text-text" href={`/${lang}/frameworks`}>
+              Frameworks
+            </a>
+            <a className="hover:text-text" href={`/${lang}/mlops`}>
+              MLOps
+            </a>
+          </nav>
+          <a
+            href={`/${lang}/subscribe`}
+            className="rounded-pill bg-accent ml-auto px-4 py-2 text-sm font-semibold text-black md:ml-0"
+          >
+            Subscribe
+          </a>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-[1160px] flex-1 px-6">
+        <section className="border-border-soft border-b py-14">
+          <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
+            Daily AI-engineering brief
+          </p>
+          <h1 className="mt-4 max-w-3xl text-4xl leading-tight sm:text-5xl">
+            {SITE_TAGLINE[lang]}
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{' '}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{' '}
-            or the{' '}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{' '}
-            center.
+          <p className="text-muted mt-5 max-w-2xl text-lg">
+            Curated, human-edited signal for people who build with AI — models, frameworks, MLOps.
+            One brief a day. No hype.
+          </p>
+          <p className="text-faint mt-6 text-sm">
+            {todayLabel()} · Edited by {EDITOR_NAME}, {EDITOR_ROLE[lang]}
+          </p>
+        </section>
+
+        <section className="py-12">
+          <div className="mb-6 flex items-baseline justify-between gap-4">
+            <h2 className="text-2xl">Today’s brief</h2>
+            <span className="border-border-soft text-faint rounded-pill border px-3 py-1 text-xs">
+              Sample — live briefs load from Supabase (P1)
+            </span>
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {SAMPLE_BRIEF.map((item) => (
+              <article
+                key={item.title}
+                className="rounded-card border-border bg-surface hover:border-accent border p-5 transition-colors"
+              >
+                <span className="text-accent text-xs font-bold tracking-wider uppercase">
+                  {item.category}
+                </span>
+                <h3 className="mt-3 text-lg leading-snug">{item.title}</h3>
+                <p className="text-muted mt-3 text-sm">{item.why}</p>
+                <span className="text-accent mt-4 inline-block text-sm font-semibold">Read →</span>
+              </article>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-border-soft border-t">
+        <div className="text-faint mx-auto max-w-[1160px] px-6 py-10 text-sm">
+          <p className="text-text font-serif text-base font-semibold">{SITE_NAME}</p>
+          <p className="mt-2 max-w-md">The daily AI-engineering brief. Built in public. EN · UK.</p>
+          <p className="mt-6">
+            © {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="bg-foreground text-background flex h-12 w-full items-center justify-center gap-2 rounded-full px-5 transition-colors hover:bg-[#383838] md:w-[158px] dark:hover:bg-[#ccc]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] md:w-[158px] dark:border-white/[.145] dark:hover:bg-[#1a1a1a]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      </footer>
+    </>
   );
 }
