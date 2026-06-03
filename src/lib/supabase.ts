@@ -1,8 +1,17 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Accept several env-var names so it works whichever you set: NEXT_PUBLIC_SUPABASE_*
+// (canonical), VITE_SCRAPPER_* (ported from the old Vite app), or SCRAPPER_BASE_*
+// (the pipeline / GitHub-secret names). All are read server-side here.
+const url =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??
+  process.env.VITE_SCRAPPER_URL ??
+  process.env.SCRAPPER_BASE_URL;
+const anonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  process.env.VITE_SCRAPPER_ANON_KEY ??
+  process.env.SCRAPPER_BASE_ANON_KEY;
 
 let cached: SupabaseClient<Database> | null | undefined;
 
