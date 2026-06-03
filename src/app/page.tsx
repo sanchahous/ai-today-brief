@@ -6,10 +6,15 @@ import {
   EDITOR_ROLE,
   MARK_COLOR,
 } from '@/lib/site';
+import { getLatestBrief } from '@/lib/briefs';
 
 const lang = DEFAULT_LANG;
 
-// Placeholder until live briefs load from Supabase (P1). Dev-first editorial slant.
+// ISR: refresh the homepage every 30 min without a per-request DB hit.
+// (On-publish revalidation gets wired in P4 once the pipeline lands.)
+export const revalidate = 1800;
+
+// Fallback shown only when Supabase is unreachable (e.g. no env on a local build).
 const SAMPLE_BRIEF = [
   {
     category: 'Models & Releases',
@@ -28,16 +33,38 @@ const SAMPLE_BRIEF = [
   },
 ];
 
-function todayLabel(): string {
+function prettyCategory(slug: string | null): string {
+  if (!slug) return 'AI';
+  return slug.replace(/-/g, ' ').replace(/\band\b/g, '&');
+}
+
+function dateLabel(value: string): string {
+  const date = value.length === 10 ? new Date(`${value}T00:00:00`) : new Date(value);
   return new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-  }).format(new Date());
+  }).format(date);
 }
 
-export default function Home() {
+export default async function Home() {
+  const brief = await getLatestBrief();
+  const items = brief?.items ?? [];
+  const live = items.length > 0;
+
+  const cards = live
+    ? items.map((it) => ({
+        key: it.id,
+        category: prettyCategory(it.category_slug),
+        title: it.title_en ?? it.summary_en,
+        why: it.why_matters_en ?? it.summary_en,
+        href: brief?.slug && it.slug ? `/${lang}/${brief.slug}/${it.slug}` : `/${lang}/news`,
+      }))
+    : SAMPLE_BRIEF.map((s, i) => ({ key: `sample-${i}`, ...s, href: `/${lang}/news` }));
+
+  const briefDate = brief?.date ? dateLabel(brief.date) : dateLabel(new Date().toISOString());
+
   return (
     <>
       <header className="border-border-soft border-b">
@@ -88,31 +115,40 @@ export default function Home() {
             One brief a day. No hype.
           </p>
           <p className="text-faint mt-6 text-sm">
-            {todayLabel()} · Edited by {EDITOR_NAME}, {EDITOR_ROLE[lang]}
+            {briefDate} · Edited by {EDITOR_NAME}, {EDITOR_ROLE[lang]}
           </p>
         </section>
 
         <section className="py-12">
           <div className="mb-6 flex items-baseline justify-between gap-4">
             <h2 className="text-2xl">Today’s brief</h2>
-            <span className="border-border-soft text-faint rounded-pill border px-3 py-1 text-xs">
-              Sample — live briefs load from Supabase (P1)
-            </span>
+            {!live && (
+              <span className="border-border-soft text-faint rounded-pill border px-3 py-1 text-xs">
+                Sample — connect Supabase env to go live
+              </span>
+            )}
           </div>
+          {brief?.intro_en && <p className="text-muted mb-6 max-w-2xl">{brief.intro_en}</p>}
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {SAMPLE_BRIEF.map((item) => (
-              <article
-                key={item.title}
-                className="rounded-card border-border bg-surface hover:border-accent border p-5 transition-colors"
+            {cards.map((card) => (
+              <a
+                key={card.key}
+                href={card.href}
+                className="rounded-card border-border bg-surface hover:border-accent block border p-5 transition-colors"
               >
                 <span className="text-accent text-xs font-bold tracking-wider uppercase">
-                  {item.category}
+                  {card.category}
                 </span>
-                <h3 className="mt-3 text-lg leading-snug">{item.title}</h3>
-                <p className="text-muted mt-3 text-sm">{item.why}</p>
+                <h3 className="mt-3 text-lg leading-snug">{card.title}</h3>
+                <p className="text-muted mt-3 line-clamp-3 text-sm">{card.why}</p>
                 <span className="text-accent mt-4 inline-block text-sm font-semibold">Read →</span>
-              </article>
+              </a>
             ))}
+          </div>
+          <div className="mt-8">
+            <a href={`/${lang}/news`} className="text-accent text-sm font-semibold">
+              All news →
+            </a>
           </div>
         </section>
       </main>
