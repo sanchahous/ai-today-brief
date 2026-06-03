@@ -88,8 +88,8 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
       />
 
       <nav className="text-faint mb-8 text-sm">
-        <Link className="hover:text-text" href={`/${lang}`}>
-          ← {t.home}
+        <Link className="hover:text-text" href={`/${lang}/${brief}`}>
+          ← {dateStr}
         </Link>
       </nav>
 
