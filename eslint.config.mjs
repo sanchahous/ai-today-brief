@@ -44,6 +44,7 @@ const eslintConfig = defineConfig([
     'next-env.d.ts',
     'docs/**',
     '.agents/**',
+    '.claude/**',
   ]),
 ]);
 

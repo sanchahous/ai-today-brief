@@ -5,6 +5,8 @@ alwaysApply: false
 
 # SonarCloud — agent debug playbook
 
+> Status: `sonarqube.yml` + `sonar-project.properties` are in the repo, but Sonar goes live only after the SonarCloud project + `SONAR_TOKEN`/`SONAR_HOST_URL` secrets are set. The `sonar:report` / `sonar-fetch-report.ts` convenience tooling and the `sonar-report` artifact are ported when that tooling is wired — until then read the SonarCloud dashboard + CI logs.
+
 ## CI logs (GitHub Actions)
 
 ```bash
