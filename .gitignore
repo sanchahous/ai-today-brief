@@ -20,6 +20,10 @@
 # production
 /build
 
+# local clones / reports
+.tmp-portfolio/
+sonar-report.md
+
 # misc
 .DS_Store
 *.pem

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import {
   CONSENT_STORAGE_KEY,
   parseConsentJson,
@@ -73,8 +73,12 @@ export function CookieConsent({ lang }: { lang: Lang }) {
   const strings = getStrings(lang);
   const c = strings.cookie;
   const region = lang === 'uk' ? 'UA' : 'EU';
-  const [open, setOpen] = useState(() => loadStoredConsent() === null);
-  const [manage, setManage] = useState(false);
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const [prefsOpen, setPrefsOpen] = useState(false);
   const [analytics, setAnalytics] = useState(true);
   const [ads, setAds] = useState(false);
 
@@ -84,8 +88,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
       updatedAt: new Date().toISOString(),
     };
     persistConsent(next);
-    setOpen(false);
-    setManage(false);
+    setPrefsOpen(false);
   }, []);
 
   useEffect(() => {
@@ -94,15 +97,13 @@ export function CookieConsent({ lang }: { lang: Lang }) {
   }, []);
 
   useEffect(() => {
-    const onOpen = () => {
-      setManage(true);
-      setOpen(true);
-    };
+    const onOpen = () => setPrefsOpen(true);
     window.addEventListener(OPEN_CONSENT_EVENT, onOpen);
     return () => window.removeEventListener(OPEN_CONSENT_EVENT, onOpen);
   }, []);
 
-  if (!open) return null;
+  if (!isClient) return null;
+  if (loadStoredConsent() !== null && !prefsOpen) return null;
 
   const categories = [
     { key: 'essential', on: true, locked: true as const },
@@ -125,7 +126,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
     <div
       role="region"
       aria-label={c.cookieTitle}
-      className="border-border bg-bg fixed bottom-4 left-4 z-[152] w-[min(440px,calc(100vw-2rem))] rounded-[var(--radius)] border p-5 shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
+      className="border-border bg-bg pointer-events-auto fixed bottom-4 left-4 z-[200] w-[min(440px,calc(100vw-2rem))] rounded-[var(--radius)] border p-5 shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
     >
       <div className="mb-2 flex items-center gap-2">
         <h2 className="text-base font-semibold">{c.cookieTitle}</h2>
@@ -144,7 +145,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
         </Link>
       </p>
 
-      {manage ? (
+      {prefsOpen ? (
         <div className="mb-4 grid gap-2">
           {categories.map((cat) => (
             <div
@@ -167,7 +168,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
       ) : null}
 
       <div className="flex flex-wrap gap-2">
-        {manage ? (
+        {prefsOpen ? (
           <>
             <button
               type="button"
@@ -178,7 +179,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
             </button>
             <button
               type="button"
-              onClick={() => setManage(false)}
+              onClick={() => setPrefsOpen(false)}
               className="rounded-pill border-border text-muted border px-4 py-2.5 text-sm font-semibold"
             >
               {strings.news.prev}
@@ -202,7 +203,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
             </button>
             <button
               type="button"
-              onClick={() => setManage(true)}
+              onClick={() => setPrefsOpen(true)}
               className="text-muted px-2 py-2 text-sm font-semibold"
             >
               {c.cookieManage}

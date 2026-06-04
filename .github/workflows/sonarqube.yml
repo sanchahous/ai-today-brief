@@ -29,11 +29,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Unit tests + coverage (≥70% logic scope)
+        run: npm run verify:coverage
+
       - name: Build (integrity check)
         run: npm run build
 
-      # Coverage (Vitest lcov) + sonar-report artifact join this workflow once a
-      # logic layer is wired — see 00-core.mdc (Testing) and sonar-debug.mdc.
+      - name: Sonar report (for agents)
+        if: env.SONAR_TOKEN != ''
+        run: npm run sonar:report -- --out sonar-report.md
+        continue-on-error: true
+
+      - name: Upload Sonar report artifact
+        if: env.SONAR_TOKEN != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: sonar-report
+          path: sonar-report.md
+          if-no-files-found: ignore
+
       - name: SonarQube Scan
         if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@v8

@@ -8,8 +8,8 @@ import type { NewsCategoryFilter } from '@/lib/news';
 import type { Lang } from '@/lib/site';
 import { CategoryGlyph, CloseIcon, SparkleIcon } from '@/components/icons';
 
-export type SortMode = 'newest' | 'oldest' | 'relevance' | 'discussed';
-export type DatePreset = 'today' | 'week' | 'month' | 'all';
+export type { SortMode, DatePreset } from '@/lib/news-filters';
+import type { SortMode, DatePreset } from '@/lib/news-filters';
 
 export interface NewsFilters {
   q: string;

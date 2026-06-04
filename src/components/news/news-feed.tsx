@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import type { HomeItem } from '@/lib/home';
 import type { NewsCategoryFilter } from '@/lib/news';
@@ -18,41 +19,9 @@ import {
   type NewsFilters,
   type SortMode,
 } from '@/components/news/news-sidebar';
+import { matchesQuery, sortItems, withinPreset } from '@/lib/news-filters';
 
 const PAGE_SIZE = 6;
-
-function daysAgo(n: number): number {
-  return Date.now() - n * 86_400_000;
-}
-
-function withinPreset(iso: string, preset: DatePreset): boolean {
-  if (preset === 'all') return true;
-  const ts = new Date(`${iso}T00:00:00`).getTime();
-  const span = preset === 'today' ? 1 : preset === 'week' ? 7 : 31;
-  return ts >= daysAgo(span);
-}
-
-function matchesQuery(item: HomeItem, q: string): boolean {
-  const needle = q.trim().toLowerCase();
-  if (!needle) return true;
-  const hay = `${item.title} ${item.summary} ${item.why} ${item.categoryName ?? ''} ${item.sourceName ?? ''}`.toLowerCase();
-  return hay.includes(needle);
-}
-
-function sortItems(rows: HomeItem[], sort: SortMode): HomeItem[] {
-  const copy = [...rows];
-  switch (sort) {
-    case 'newest':
-      return copy.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.rank - b.rank));
-    case 'oldest':
-      return copy.sort((a, b) => (a.date > b.date ? 1 : a.date < b.date ? -1 : a.rank - b.rank));
-    case 'discussed':
-      return copy.sort((a, b) => b.rank - a.rank);
-    case 'relevance':
-    default:
-      return copy.sort((a, b) => a.rank - b.rank);
-  }
-}
 
 export function NewsFeed({
   lang,
@@ -70,6 +39,8 @@ export function NewsFeed({
   initialCategory?: string;
 }) {
   const t = getStrings(lang).news;
+  const router = useRouter();
+  const serverSearchActive = initialQuery.trim().length > 0;
 
   const [filters, setFilters] = useState<NewsFilters>(() => ({
     q: initialQuery,
@@ -86,21 +57,21 @@ export function NewsFeed({
         (filters.categories.length === 0 ||
           (p.categorySlug && filters.categories.includes(p.categorySlug))) &&
         withinPreset(p.date, filters.date) &&
-        matchesQuery(p, filters.q),
+        (serverSearchActive || matchesQuery(p, filters.q)),
     );
     return sortItems(rows, filters.sort);
-  }, [items, filters]);
+  }, [items, filters, serverSearchActive]);
 
   const facets = useMemo(() => {
     const m = new Map<string, number>();
     for (const p of items) {
       if (!p.categorySlug) continue;
       if (!withinPreset(p.date, filters.date)) continue;
-      if (!matchesQuery(p, filters.q)) continue;
+      if (!serverSearchActive && !matchesQuery(p, filters.q)) continue;
       m.set(p.categorySlug, (m.get(p.categorySlug) ?? 0) + 1);
     }
     return m;
-  }, [items, filters.date, filters.q]);
+  }, [items, filters.date, filters.q, serverSearchActive]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
@@ -123,6 +94,7 @@ export function NewsFeed({
   const reset = () => {
     setFilters({ q: '', categories: [], date: 'all', sort: 'newest' });
     setPage(1);
+    if (serverSearchActive) router.push(`/${lang}/news`);
   };
 
   const dateChipLabel = (d: DatePreset) => {
@@ -200,6 +172,7 @@ export function NewsFeed({
                 onClick={() => {
                   setFilters((f) => ({ ...f, q: '' }));
                   setPage(1);
+                  if (serverSearchActive) router.push(`/${lang}/news`);
                 }}
                 className="rounded-pill border-accent/45 bg-accent/15 text-accent inline-flex items-center gap-1.5 border px-2.5 py-1 text-[0.78rem]"
               >

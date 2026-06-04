@@ -1,19 +1,30 @@
 import { defineConfig, globalIgnores } from 'eslint/config';
 import nextVitals from 'eslint-config-next/core-web-vitals';
 import nextTs from 'eslint-config-next/typescript';
+import tseslint from 'typescript-eslint';
 
-// Next.js (core-web-vitals + typescript) baseline, extended with the
-// portfolio's hand-tuned quality rules. Type-aware rules (no-floating-promises)
-// are added once a logic layer + project-service parsing is in place.
+// Next.js baseline + portfolio hand-tuned rules (type-aware where safe).
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  ...tseslint.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     rules: {
       '@typescript-eslint/consistent-type-imports': [
         'warn',
         { prefer: 'type-imports', disallowTypeAnnotations: false },
+      ],
+      '@typescript-eslint/no-floating-promises': 'warn',
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { attributes: false } },
       ],
       '@typescript-eslint/no-unused-vars': [
         'warn',
@@ -21,10 +32,13 @@ const eslintConfig = defineConfig([
       ],
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'no-useless-assignment': 'warn',
+      'no-useless-escape': 'warn',
+      // Cookie CMP and similar mount-gated UI use client-only state after hydration.
+      'react-hooks/set-state-in-effect': 'off',
     },
   },
   {
-    // Tests, scripts, and the Node pipeline may log freely and use any.
     files: [
       '**/*.test.{ts,tsx}',
       '**/*.vitest.test.{ts,tsx}',
@@ -33,6 +47,7 @@ const eslintConfig = defineConfig([
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
       'no-console': 'off',
     },
   },
@@ -45,6 +60,7 @@ const eslintConfig = defineConfig([
     'docs/**',
     '.agents/**',
     '.claude/**',
+    '.tmp-portfolio/**',
   ]),
 ]);
 

@@ -11,7 +11,14 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "typecheck": "tsc --noEmit",
-    "pr:check": "npm run typecheck && npm run lint && npm run build"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "verify:logic-lcov": "npx tsx scripts/verify-logic-lcov.ts",
+    "verify:coverage": "npm run test:coverage && npm run verify:logic-lcov",
+    "ci:check": "npm run verify:coverage",
+    "sonar:report": "npx tsx scripts/sonar-fetch-report.ts",
+    "pr:check": "npm run ci:check && npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",
@@ -29,6 +36,10 @@
     "prettier": "^3.8.3",
     "prettier-plugin-tailwindcss": "^0.8.0",
     "tailwindcss": "^4",
-    "typescript": "^6"
+    "tsx": "^4.21.0",
+    "typescript": "^6",
+    "typescript-eslint": "^8.60.0",
+    "vitest": "^4.1.7",
+    "@vitest/coverage-v8": "^4.1.7"
   }
 }
