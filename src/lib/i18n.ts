@@ -6,6 +6,12 @@ export const STRINGS = {
     eyebrow: 'Daily AI-engineering brief',
     heroLede:
       'Curated, human-edited signal for people who build with AI — models, frameworks, MLOps. One brief a day. No hype.',
+    navHome: 'Home',
+    navAbout: 'About',
+    navCategories: 'Categories',
+    skipToContent: 'Skip to content',
+    menu: 'Menu',
+    closeMenu: 'Close menu',
     nav: {
       news: 'News',
       concepts: 'Concepts',
@@ -151,6 +157,12 @@ export const STRINGS = {
     eyebrow: 'Щоденний бриф з AI-інженерії',
     heroLede:
       'Курований, відредагований людиною сигнал для тих, хто будує з AI — моделі, фреймворки, MLOps. Один бриф на день. Без хайпу.',
+    navHome: 'Головна',
+    navAbout: 'Про нас',
+    navCategories: 'Категорії',
+    skipToContent: 'Перейти до вмісту',
+    menu: 'Меню',
+    closeMenu: 'Закрити меню',
     nav: {
       news: 'Новини',
       concepts: 'Концепти',
