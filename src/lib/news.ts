@@ -243,14 +243,57 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
   };
 }
 
-/** Full-text search for the news page (pre-filled from hero / trending). */
-export async function searchNewsItems(lang: Lang, query: string, limit = 80): Promise<HomeItem[]> {
+function mapSearchRow(
+  lang: Lang,
+  r: {
+    id: string;
+    rank: number;
+    category_slug: string | null;
+    brief_slug: string | null;
+    slug: string | null;
+    title_en: string | null;
+    title_uk: string | null;
+    summary_en: string;
+    summary_uk: string;
+    brief_date: string;
+    source_name: string | null;
+  },
+  catBySlug: Map<string, { name: string; color: string | null }>,
+): HomeItem {
+  const summary = pick(lang, r.summary_en, r.summary_uk);
+  const cat = r.category_slug ? catBySlug.get(r.category_slug) : undefined;
+  return {
+    id: r.id,
+    rank: r.rank,
+    categorySlug: r.category_slug,
+    categoryName: cat?.name ?? null,
+    categoryColor: cat?.color ?? null,
+    href: r.brief_slug && r.slug ? `/${lang}/${r.brief_slug}/${r.slug}` : `/${lang}/news`,
+    title: pick(lang, r.title_en, r.title_uk) || summary,
+    summary,
+    why: summary,
+    date: r.brief_date,
+    hasVideo: false,
+    tools: [],
+    sourceName: r.source_name ?? null,
+    readMinutes: Math.max(2, Math.round(wordCount(summary) / 45)),
+  };
+}
+
+export type SearchNewsResult = { items: HomeItem[]; total: number };
+
+/** Full-text search with total count (RPC `total_count` on each row). */
+export async function searchNewsWithMeta(
+  lang: Lang,
+  query: string,
+  limit = 80,
+): Promise<SearchNewsResult> {
   const supabase = getSupabase();
   const q = query.trim();
-  if (!supabase || q.length === 0) return [];
+  if (!supabase || q.length === 0) return { items: [], total: 0 };
 
   const allCats = await getCategories(lang);
-  const catBySlug = new Map(allCats.map((c) => [c.slug, c]));
+  const catBySlug = new Map(allCats.map((c) => [c.slug, { name: c.name, color: c.color }]));
 
   const { data, error } = await supabase.rpc('search_brief_items', {
     p_query: q,
@@ -259,28 +302,17 @@ export async function searchNewsItems(lang: Lang, query: string, limit = 80): Pr
     p_offset: 0,
     p_sort: 'relevance',
   });
-  if (error || !data) return [];
+  if (error || !data?.length) return { items: [], total: 0 };
 
-  return data.map((r) => {
-    const summary = pick(lang, r.summary_en, r.summary_uk);
-    const cat = r.category_slug ? catBySlug.get(r.category_slug) : undefined;
-    return {
-      id: r.id,
-      rank: r.rank,
-      categorySlug: r.category_slug,
-      categoryName: cat?.name ?? null,
-      categoryColor: cat?.color ?? null,
-      href: r.brief_slug && r.slug ? `/${lang}/${r.brief_slug}/${r.slug}` : `/${lang}/news`,
-      title: pick(lang, r.title_en, r.title_uk) || summary,
-      summary,
-      why: summary,
-      date: r.brief_date,
-      hasVideo: false,
-      tools: [],
-      sourceName: r.source_name ?? null,
-      readMinutes: Math.max(2, Math.round(wordCount(summary) / 45)),
-    };
-  });
+  const total = Number(data[0]?.total_count ?? data.length);
+  const items = data.map((r) => mapSearchRow(lang, r, catBySlug));
+  return { items, total };
+}
+
+/** Full-text search for the news page (pre-filled from hero / trending). */
+export async function searchNewsItems(lang: Lang, query: string, limit = 80): Promise<HomeItem[]> {
+  const { items } = await searchNewsWithMeta(lang, query, limit);
+  return items;
 }
 
 /** @deprecated Prefer getNewsPageData / searchNewsItems. */

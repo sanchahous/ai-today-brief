@@ -158,7 +158,11 @@ export function SiteHeaderChrome({
             className="border-border border-t py-3 lg:hidden"
           >
             <div className="mb-3 md:hidden">
-              <HeaderSearchField lang={lang} placeholder={t.landing.searchPlaceholder} />
+              <HeaderSearchField
+                lang={lang}
+                placeholder={t.landing.searchPlaceholder}
+                variant="mobile"
+              />
             </div>
             <div className="grid gap-1">
               <MobileNavLink href={`/${lang}`} label={t.navHome} onNavigate={() => setMenuOpen(false)} />
