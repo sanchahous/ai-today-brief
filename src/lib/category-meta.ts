@@ -11,12 +11,15 @@ import type { IconKey } from '@/components/icons';
 export interface CategoryMeta {
   icon: IconKey;
   tagline: Record<Lang, string>;
+  /** Curated facet chips → pre-filled news search (prototype subtopics). */
+  subtopics?: string[];
 }
 
 const META: Record<string, CategoryMeta> = {
   'tools-and-releases': {
     icon: 'tools',
     tagline: { en: 'Fresh features in agentic IDEs', uk: 'Свіжі фічі та оновлення agentic IDE' },
+    subtopics: ['Claude Code', 'Cursor', 'Copilot', 'Gemini'],
   },
   'tutorials-and-guides': {
     icon: 'tutorials',
@@ -24,18 +27,22 @@ const META: Record<string, CategoryMeta> = {
       en: 'Step-by-step playbooks for AI workflows',
       uk: 'Покрокові плейбуки для AI-воркфлоу',
     },
+    subtopics: ['Prompt recipes', 'Cheatsheets', 'RAG', 'Fine-tuning'],
   },
   optimization: {
     icon: 'optimization',
     tagline: { en: 'A smaller LLM bill, same quality', uk: 'Менший LLM-рахунок без втрати якості' },
+    subtopics: ['Prompt caching', 'Context window', 'Batching', 'Token budgets'],
   },
   'agents-and-mcp': {
     icon: 'agents',
     tagline: { en: 'Orchestrating & connecting agents', uk: 'Оркестрація та підключення агентів' },
+    subtopics: ['MCP', 'Agent SDK', 'LangChain', 'Multi-agent'],
   },
   'vibe-coding': {
     icon: 'vibe',
     tagline: { en: 'Skills, hooks & slash commands', uk: 'Skills, hooks і slash-команди' },
+    subtopics: ['Skills', 'Hooks', 'Sub-agents', 'Slash commands'],
   },
   'creative-ai': {
     icon: 'creative',
@@ -52,6 +59,7 @@ const META: Record<string, CategoryMeta> = {
   'models-and-research': {
     icon: 'models',
     tagline: { en: 'Releases, benchmarks & research', uk: 'Релізи, бенчмарки та research' },
+    subtopics: ['Benchmarks', 'Open models', 'Gemini', 'Long context'],
   },
 };
 

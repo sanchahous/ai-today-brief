@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase';
+import { getCategories } from '@/lib/categories';
 import { LANGS, type Lang } from '@/lib/site';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
@@ -10,6 +11,8 @@ export interface BriefItemCard {
   id: string;
   rank: number;
   categorySlug: string | null;
+  categoryName: string | null;
+  categoryColor: string | null;
   slug: string | null;
   title: string;
   summary: string;
@@ -32,12 +35,19 @@ interface ItemRow {
 const ITEM_COLUMNS =
   'id, rank, category_slug, slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk';
 
-function toCard(lang: Lang, it: ItemRow): BriefItemCard {
+function toCard(
+  lang: Lang,
+  it: ItemRow,
+  catBySlug: Map<string, { name: string; color: string | null }>,
+): BriefItemCard {
   const summary = pick(lang, it.summary_en, it.summary_uk);
+  const cat = it.category_slug ? catBySlug.get(it.category_slug) : undefined;
   return {
     id: it.id,
     rank: it.rank,
     categorySlug: it.category_slug,
+    categoryName: cat?.name ?? null,
+    categoryColor: cat?.color ?? null,
     slug: it.slug,
     title: pick(lang, it.title_en, it.title_uk) || summary,
     summary,
@@ -75,13 +85,16 @@ export async function getLatestBrief(lang: Lang, limit = 6): Promise<BriefSummar
     .order('rank', { ascending: true })
     .limit(limit);
 
+  const cats = await getCategories(lang);
+  const catBySlug = new Map(cats.map((c) => [c.slug, c]));
+
   return {
     id: brief.id,
     date: brief.date,
     slug: brief.slug,
     title: pick(lang, brief.title_en, brief.title_uk),
     intro: pick(lang, brief.intro_en, brief.intro_uk) || null,
-    items: (items ?? []).map((it) => toCard(lang, it)),
+    items: (items ?? []).map((it) => toCard(lang, it, catBySlug)),
   };
 }
 
@@ -104,13 +117,16 @@ export async function getBriefBySlug(slug: string, lang: Lang): Promise<BriefSum
     .eq('brief_id', brief.id)
     .order('rank', { ascending: true });
 
+  const cats = await getCategories(lang);
+  const catBySlug = new Map(cats.map((c) => [c.slug, c]));
+
   return {
     id: brief.id,
     date: brief.date,
     slug: brief.slug,
     title: pick(lang, brief.title_en, brief.title_uk),
     intro: pick(lang, brief.intro_en, brief.intro_uk) || null,
-    items: (items ?? []).map((it) => toCard(lang, it)),
+    items: (items ?? []).map((it) => toCard(lang, it, catBySlug)),
   };
 }
 

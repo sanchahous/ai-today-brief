@@ -193,3 +193,65 @@ export function SparkleIcon({ size = 18, strokeWidth = 1.6, style, className }: 
     </svg>
   );
 }
+export function Bookmark({
+  size = 18,
+  strokeWidth = 1.7,
+  style,
+  className,
+  filled,
+}: IconProps & { filled?: boolean }) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)} fill={filled ? 'currentColor' : 'none'}>
+      <path d="M6 4h12v16l-6-4-6 4V4Z" />
+    </svg>
+  );
+}
+export function ShareIcon({ size = 18, strokeWidth = 1.7, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <circle cx="6" cy="12" r="2.4" />
+      <circle cx="18" cy="6" r="2.4" />
+      <circle cx="18" cy="18" r="2.4" />
+      <path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6" />
+    </svg>
+  );
+}
+export function CommentIcon({ size = 18, strokeWidth = 1.7, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M4 5h16v11H9l-4 3v-3H4V5Z" />
+    </svg>
+  );
+}
+export function SlidersIcon({ size = 18, strokeWidth = 1.8, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M4 6h10M18 6h2M4 12h2M10 12h10M4 18h7M15 18h5" />
+      <circle cx="16" cy="6" r="2" fill="currentColor" stroke="none" />
+      <circle cx="8" cy="12" r="2" fill="currentColor" stroke="none" />
+      <circle cx="13" cy="18" r="2" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+export function CloseIcon({ size = 20, strokeWidth = 1.8, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="m6 6 12 12M18 6 6 18" />
+    </svg>
+  );
+}
+export function MenuIcon({ size = 20, strokeWidth = 1.8, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  );
+}
+export function ExternalLinkIcon({ size = 15, strokeWidth = 1.7, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M14 4h6v6M20 4l-9 9" />
+      <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" />
+    </svg>
+  );
+}

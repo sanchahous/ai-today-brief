@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { SITE_NAME, type Lang } from '@/lib/site';
+import { SITE_NAME, SOCIALS, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 
 export function SiteFooter({ lang }: { lang: Lang }) {
@@ -7,12 +7,31 @@ export function SiteFooter({ lang }: { lang: Lang }) {
   return (
     <footer className="border-border-soft border-t">
       <div className="mx-auto max-w-[1160px] px-6 py-10">
-        <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="text-faint text-sm">
+        <div className="flex flex-wrap items-start justify-between gap-8">
+          <div className="text-faint min-w-0 text-sm">
             <p className="text-text font-serif text-base font-semibold">{SITE_NAME}</p>
-            <p className="mt-2 max-w-md">{t.footerTagline}</p>
+            <p className="mt-2 max-w-md leading-relaxed">{t.footerTagline}</p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {SOCIALS.map((s) => (
+                <a
+                  key={s.key}
+                  href={s.url}
+                  target={s.key === 'rss' ? undefined : '_blank'}
+                  rel={s.key === 'rss' ? undefined : 'noopener noreferrer'}
+                  className="text-muted hover:text-accent text-sm font-medium"
+                >
+                  {s.label}
+                </a>
+              ))}
+            </div>
           </div>
           <nav className="text-muted flex flex-col gap-2 text-sm">
+            <Link className="hover:text-text" href={`/${lang}/news`}>
+              {t.nav.news}
+            </Link>
+            <Link className="hover:text-text" href={`/${lang}/concepts`}>
+              {t.nav.concepts}
+            </Link>
             <Link className="hover:text-text" href={`/${lang}/about`}>
               {t.about}
             </Link>
@@ -25,9 +44,6 @@ export function SiteFooter({ lang }: { lang: Lang }) {
             <Link className="hover:text-text" href={`/${lang}/terms`}>
               {t.terms}
             </Link>
-            <a className="hover:text-text" href="/rss.xml">
-              RSS
-            </a>
           </nav>
         </div>
         <p className="text-faint mt-8 text-sm">
