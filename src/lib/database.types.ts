@@ -310,6 +310,355 @@ export type Database = {
         };
         Relationships: [];
       };
+      comments: {
+        Row: {
+          author_name: string | null;
+          body: string;
+          brief_item_id: string;
+          created_at: string;
+          id: string;
+          status: string;
+          user_id: string | null;
+        };
+        Insert: {
+          author_name?: string | null;
+          body: string;
+          brief_item_id: string;
+          created_at?: string;
+          id?: string;
+          status?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          author_name?: string | null;
+          body?: string;
+          brief_item_id?: string;
+          created_at?: string;
+          id?: string;
+          status?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'comments_brief_item_id_fkey';
+            columns: ['brief_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'brief_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      newsletter_sends: {
+        Row: {
+          beehiiv_post_id: string | null;
+          brief_id: string | null;
+          clicks: number | null;
+          created_at: string;
+          id: string;
+          opens: number | null;
+          recipients: number | null;
+          segment: string;
+          sent_at: string | null;
+          status: string;
+        };
+        Insert: {
+          beehiiv_post_id?: string | null;
+          brief_id?: string | null;
+          clicks?: number | null;
+          created_at?: string;
+          id?: string;
+          opens?: number | null;
+          recipients?: number | null;
+          segment?: string;
+          sent_at?: string | null;
+          status?: string;
+        };
+        Update: {
+          beehiiv_post_id?: string | null;
+          brief_id?: string | null;
+          clicks?: number | null;
+          created_at?: string;
+          id?: string;
+          opens?: number | null;
+          recipients?: number | null;
+          segment?: string;
+          sent_at?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'newsletter_sends_brief_id_fkey';
+            columns: ['brief_id'];
+            isOneToOne: false;
+            referencedRelation: 'briefs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      profiles: {
+        Row: {
+          created_at: string;
+          display_name: string | null;
+          id: string;
+          lang_pref: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          display_name?: string | null;
+          id: string;
+          lang_pref?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          display_name?: string | null;
+          id?: string;
+          lang_pref?: string | null;
+        };
+        Relationships: [];
+      };
+      saved_items: {
+        Row: {
+          brief_item_id: string;
+          created_at: string;
+          user_id: string;
+        };
+        Insert: {
+          brief_item_id: string;
+          created_at?: string;
+          user_id: string;
+        };
+        Update: {
+          brief_item_id?: string;
+          created_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'saved_items_brief_item_id_fkey';
+            columns: ['brief_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'brief_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      social_posts: {
+        Row: {
+          brief_id: string | null;
+          brief_item_id: string | null;
+          channel: string;
+          created_at: string;
+          external_id: string | null;
+          id: string;
+          meta: Json | null;
+          posted_at: string | null;
+          status: string;
+          url: string | null;
+        };
+        Insert: {
+          brief_id?: string | null;
+          brief_item_id?: string | null;
+          channel: string;
+          created_at?: string;
+          external_id?: string | null;
+          id?: string;
+          meta?: Json | null;
+          posted_at?: string | null;
+          status?: string;
+          url?: string | null;
+        };
+        Update: {
+          brief_id?: string | null;
+          brief_item_id?: string | null;
+          channel?: string;
+          created_at?: string;
+          external_id?: string | null;
+          id?: string;
+          meta?: Json | null;
+          posted_at?: string | null;
+          status?: string;
+          url?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'social_posts_brief_id_fkey';
+            columns: ['brief_id'];
+            isOneToOne: false;
+            referencedRelation: 'briefs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'social_posts_brief_item_id_fkey';
+            columns: ['brief_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'brief_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      sponsor_placements: {
+        Row: {
+          active: boolean;
+          body_en: string | null;
+          body_uk: string | null;
+          clicks: number;
+          created_at: string;
+          cta_en: string | null;
+          cta_uk: string | null;
+          ends_on: string;
+          headline_en: string | null;
+          headline_uk: string | null;
+          id: string;
+          impressions: number;
+          lang: string;
+          slot: string;
+          sponsor_id: string;
+          starts_on: string;
+          updated_at: string;
+          url: string;
+        };
+        Insert: {
+          active?: boolean;
+          body_en?: string | null;
+          body_uk?: string | null;
+          clicks?: number;
+          created_at?: string;
+          cta_en?: string | null;
+          cta_uk?: string | null;
+          ends_on: string;
+          headline_en?: string | null;
+          headline_uk?: string | null;
+          id?: string;
+          impressions?: number;
+          lang?: string;
+          slot: string;
+          sponsor_id: string;
+          starts_on: string;
+          updated_at?: string;
+          url: string;
+        };
+        Update: {
+          active?: boolean;
+          body_en?: string | null;
+          body_uk?: string | null;
+          clicks?: number;
+          created_at?: string;
+          cta_en?: string | null;
+          cta_uk?: string | null;
+          ends_on?: string;
+          headline_en?: string | null;
+          headline_uk?: string | null;
+          id?: string;
+          impressions?: number;
+          lang?: string;
+          slot?: string;
+          sponsor_id?: string;
+          starts_on?: string;
+          updated_at?: string;
+          url?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'sponsor_placements_sponsor_id_fkey';
+            columns: ['sponsor_id'];
+            isOneToOne: false;
+            referencedRelation: 'sponsors';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      sponsors: {
+        Row: {
+          brand: string;
+          color: string | null;
+          contact_email: string | null;
+          created_at: string;
+          id: string;
+          logo_url: string | null;
+          notes: string | null;
+        };
+        Insert: {
+          brand: string;
+          color?: string | null;
+          contact_email?: string | null;
+          created_at?: string;
+          id?: string;
+          logo_url?: string | null;
+          notes?: string | null;
+        };
+        Update: {
+          brand?: string;
+          color?: string | null;
+          contact_email?: string | null;
+          created_at?: string;
+          id?: string;
+          logo_url?: string | null;
+          notes?: string | null;
+        };
+        Relationships: [];
+      };
+      subscribers: {
+        Row: {
+          beehiiv_id: string | null;
+          confirmed_at: string | null;
+          created_at: string;
+          email: string;
+          id: string;
+          ip_country: string | null;
+          lang: string;
+          placement: string | null;
+          referral_code: string | null;
+          referred_by: string | null;
+          segment: string;
+          source: string | null;
+          status: string;
+          unsubscribed_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          beehiiv_id?: string | null;
+          confirmed_at?: string | null;
+          created_at?: string;
+          email: string;
+          id?: string;
+          ip_country?: string | null;
+          lang?: string;
+          placement?: string | null;
+          referral_code?: string | null;
+          referred_by?: string | null;
+          segment?: string;
+          source?: string | null;
+          status?: string;
+          unsubscribed_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          beehiiv_id?: string | null;
+          confirmed_at?: string | null;
+          created_at?: string;
+          email?: string;
+          id?: string;
+          ip_country?: string | null;
+          lang?: string;
+          placement?: string | null;
+          referral_code?: string | null;
+          referred_by?: string | null;
+          segment?: string;
+          source?: string | null;
+          status?: string;
+          unsubscribed_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'subscribers_referred_by_fkey';
+            columns: ['referred_by'];
+            isOneToOne: false;
+            referencedRelation: 'subscribers';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -355,6 +704,8 @@ export type Database = {
           count: number;
         }[];
       };
+      show_limit: { Args: Record<PropertyKey, never>; Returns: number };
+      show_trgm: { Args: { '': string }; Returns: string[] };
     };
     Enums: {
       [_ in never]: never;

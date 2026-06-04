@@ -37,7 +37,7 @@ Last updated: after **015/016** applied on Supabase + GSC sitemap check.
 | 3 | **news-pipeline** *(skipped for now)* | [github.com/sanchahous/news-pipeline](https://github.com/sanchahous/news-pipeline) |
 | 4 | **Editorial:** `briefs.status = published` only | Supabase Table Editor until admin UI exists |
 | 5 | **Legal sign-off** | Deferred — template OK for soft launch |
-| 6 | ~~**Supabase 015 + RLS**~~ | ✅ Applied on `mdiqfatpqczwqghwttpm` (015 business layer, 016 no anon on `articles`) |
+| 6 | ~~**Supabase 015 + RLS**~~ | ✅ Live + `src/lib/database.types.ts` synced (015 tables) |
 | 7 | **Search Console** | `sitemap.xml` ✅ (248 URLs); **re-submit** `news-sitemap.xml` after deploy |
 | 8 | **Go-live check** | Same brief: site + Beehiiv send + Telegram channel |
 
