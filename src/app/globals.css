@@ -73,6 +73,84 @@
     outline-offset: 2px;
     border-radius: 4px;
   }
+
+  /* Smooth-scroll the hero's "Top of the week" jump link. */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ── scroll-reveal: toggled by the <Reveal> client wrapper ────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── hero orbs: slow organic drift behind the first screen (decorative) ───── */
+.orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.orb-a {
+  animation: orb-a 13s ease-in-out infinite;
+}
+.orb-b {
+  animation: orb-b 17s ease-in-out infinite;
+}
+.orb-c {
+  animation: orb-c 15s ease-in-out infinite;
+}
+@keyframes orb-a {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(26px, -20px);
+  }
+}
+@keyframes orb-b {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(-22px, 18px);
+  }
+}
+@keyframes orb-c {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(16px, 22px);
+  }
+}
+
+/* ── gentle pulse for the "coming soon" video badge ───────────────────────── */
+.pulse {
+  animation: soft-pulse 2.4s ease-in-out infinite;
+}
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -82,5 +160,13 @@
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+  }
+  /* Never trap content behind an un-played reveal transition. */
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+  html {
+    scroll-behavior: auto;
   }
 }

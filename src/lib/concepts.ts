@@ -57,6 +57,25 @@ export async function getConcept(slug: string, lang: Lang): Promise<ConceptDetai
   };
 }
 
+/**
+ * Lower-cased concept name + alias → slug, for resolving a tool mention
+ * (from `brief_items.tools_mentioned`) to its concept hub. Empty without env.
+ */
+export async function getConceptNameIndex(): Promise<Map<string, string>> {
+  const supabase = getSupabase();
+  if (!supabase) return new Map();
+  const { data } = await supabase.from('concepts').select('slug, name_en, name_uk, aliases');
+  const index = new Map<string, string>();
+  for (const c of data ?? []) {
+    index.set(c.name_en.trim().toLowerCase(), c.slug);
+    index.set(c.name_uk.trim().toLowerCase(), c.slug);
+    if (Array.isArray(c.aliases)) {
+      for (const alias of c.aliases) index.set(alias.trim().toLowerCase(), c.slug);
+    }
+  }
+  return index;
+}
+
 export async function getConceptPaths(): Promise<{ lang: string; slug: string }[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
