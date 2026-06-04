@@ -8,10 +8,11 @@ import { NewsletterForm } from '@/components/home/newsletter-form';
  * purpose — there is no real list yet, and a fabricated count would undercut the
  * product's trust positioning. It returns once the Beehiiv list is live (P5).
  */
-export function NewsletterBand({ lang }: { lang: Lang }) {
+export function NewsletterBand({ lang, embedded = false }: { lang: Lang; embedded?: boolean }) {
   const t = getStrings(lang).landing;
+  const outer = embedded ? 'w-full' : 'mx-auto w-full max-w-[1160px] px-6 py-6';
   return (
-    <section className="mx-auto w-full max-w-[1160px] px-6 py-6">
+    <section className={outer}>
       <Reveal>
         <div
           className="rounded-card border-border relative overflow-hidden border p-6 sm:p-10"

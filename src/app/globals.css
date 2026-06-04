@@ -153,6 +153,64 @@
   }
 }
 
+/* ── news archive layout (ported from prototype) ─────────────────────────── */
+.card-hover {
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+.news-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+.post-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.1rem;
+}
+.mobile-only {
+  display: inline-flex;
+}
+.desktop-only {
+  display: none;
+}
+@media (min-width: 640px) {
+  .post-grid {
+    grid-template-columns: 92px minmax(0, 1fr);
+    align-items: start;
+  }
+}
+@media (min-width: 900px) {
+  .news-layout {
+    grid-template-columns: 264px minmax(0, 1fr);
+    align-items: start;
+  }
+  .desktop-only {
+    display: block;
+  }
+  .mobile-only {
+    display: none !important;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
