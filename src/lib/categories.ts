@@ -29,6 +29,29 @@ export async function getCategory(slug: string, lang: Lang): Promise<CategoryInf
   };
 }
 
+export interface CategoryListItem {
+  slug: string;
+  name: string;
+  description: string;
+  color: string | null;
+}
+
+/** All seeded categories, ordered by display position. Empty without env. */
+export async function getCategories(lang: Lang): Promise<CategoryListItem[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from('categories')
+    .select('slug, name_en, name_uk, description_en, description_uk, color, position')
+    .order('position', { ascending: true });
+  return (data ?? []).map((c) => ({
+    slug: c.slug,
+    name: pick(lang, c.name_en, c.name_uk),
+    description: pick(lang, c.description_en, c.description_uk),
+    color: c.color,
+  }));
+}
+
 export async function getCategoryItems(slug: string, lang: Lang, limit = 60): Promise<NewsCard[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
