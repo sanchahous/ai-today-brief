@@ -1,6 +1,6 @@
 # Launch status — AI Today Brief
 
-Last updated: after **PR #20** merged to `main` (launch prep: SEO, CMP, GA4, Beehiiv subscribe, revalidate hook).
+Last updated: after **015/016** applied on Supabase + GSC sitemap check.
 
 ## Done (product + code)
 
@@ -21,7 +21,7 @@ Last updated: after **PR #20** merged to `main` (launch prep: SEO, CMP, GA4, Bee
 | Beehiiv | ✅ API + V1 + V2 IDs | ✅ | ✅ (for CI if needed) | **No** Beehiiv custom domain on root |
 | Telegram | ✅ | ✅ | ✅ | Used by **news-pipeline**, not Next |
 | Pipeline LLM/DB | ✅ | partial | ✅ | Full set in **news-pipeline** repo secrets |
-| `REVALIDATE_SECRET` | ❌ | ❌ | ❌ | Add when pipeline publishes |
+| `REVALIDATE_SECRET` | ✅ | ✅ | optional | Pipeline → `POST /api/revalidate` |
 | Resend | ⬜ empty | ❌ | ❌ | Optional |
 | LemonSqueezy | ⬜ empty | ❌ | ❌ | Defer until monetization |
 
@@ -34,12 +34,11 @@ Last updated: after **PR #20** merged to `main` (launch prep: SEO, CMP, GA4, Bee
 | # | Task | Why |
 |---|------|-----|
 | 1 | **Redeploy + test Beehiiv** on production | Confirm subscriber in Beehiiv dashboard |
-| 2 | **`REVALIDATE_SECRET`** in Vercel | Pipeline → `POST /api/revalidate` after publish |
-| 3 | **news-pipeline** run + first `published` brief | [github.com/sanchahous/news-pipeline](https://github.com/sanchahous/news-pipeline) — Telegram secrets there too |
+| 3 | **news-pipeline** *(skipped for now)* | [github.com/sanchahous/news-pipeline](https://github.com/sanchahous/news-pipeline) |
 | 4 | **Editorial:** `briefs.status = published` only | Supabase Table Editor until admin UI exists |
-| 5 | **Legal sign-off** | Lawyer → `src/lib/legal.ts`, remove `legalDraft` |
-| 6 | **Supabase** migration `015` + RLS audit §5 | Security gate |
-| 7 | **Search Console** | Submit `sitemap.xml` + `news-sitemap.xml` |
+| 5 | **Legal sign-off** | Deferred — template OK for soft launch |
+| 6 | ~~**Supabase 015 + RLS**~~ | ✅ Applied on `mdiqfatpqczwqghwttpm` (015 business layer, 016 no anon on `articles`) |
+| 7 | **Search Console** | `sitemap.xml` ✅ (248 URLs); **re-submit** `news-sitemap.xml` after deploy |
 | 8 | **Go-live check** | Same brief: site + Beehiiv send + Telegram channel |
 
 ### Deferred (not blocking MVP)

@@ -203,8 +203,18 @@ export interface NewsSitemapEntry {
   brief: string;
   item: string;
   title: string;
-  /** ISO 8601 — brief `published_at` or `date` at 09:00 UTC. */
+  /** W3C datetime for Google News (UTC, no offset). */
   publicationDate: string;
+}
+
+/** Google News sitemap: only the last 48 hours (per Google News sitemap guidelines). */
+const NEWS_SITEMAP_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+
+function toNewsPublicationDate(publishedAt: string | null, briefDate: string): string {
+  const raw = publishedAt ?? `${briefDate}T09:00:00.000Z`;
+  const d = new Date(raw.includes('T') ? raw : `${briefDate}T09:00:00.000Z`);
+  if (Number.isNaN(d.getTime())) return `${briefDate}T09:00:00Z`;
+  return d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
 /** Published items with titles and dates for Google News sitemap. */
@@ -227,12 +237,13 @@ export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry
       briefs.map((b) => b.id),
     );
 
+  const cutoff = Date.now() - NEWS_SITEMAP_MAX_AGE_MS;
   const entries: NewsSitemapEntry[] = [];
   for (const row of rows ?? []) {
     const brief = briefById.get(row.brief_id);
     if (!brief?.slug || !row.slug) continue;
-    const isoBase = brief.published_at ?? `${brief.date}T09:00:00.000Z`;
-    const publicationDate = isoBase.includes('T') ? isoBase : `${brief.date}T09:00:00.000Z`;
+    const publicationDate = toNewsPublicationDate(brief.published_at, brief.date);
+    if (new Date(publicationDate).getTime() < cutoff) continue;
     for (const lang of LANGS) {
       entries.push({
         lang,
