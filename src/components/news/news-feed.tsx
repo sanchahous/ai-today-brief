@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import type { HomeItem } from '@/lib/home';
 import type { NewsCategoryFilter } from '@/lib/news';
@@ -70,6 +71,8 @@ export function NewsFeed({
   initialCategory?: string;
 }) {
   const t = getStrings(lang).news;
+  const router = useRouter();
+  const serverSearchActive = initialQuery.trim().length > 0;
 
   const [filters, setFilters] = useState<NewsFilters>(() => ({
     q: initialQuery,
@@ -86,21 +89,21 @@ export function NewsFeed({
         (filters.categories.length === 0 ||
           (p.categorySlug && filters.categories.includes(p.categorySlug))) &&
         withinPreset(p.date, filters.date) &&
-        matchesQuery(p, filters.q),
+        (serverSearchActive || matchesQuery(p, filters.q)),
     );
     return sortItems(rows, filters.sort);
-  }, [items, filters]);
+  }, [items, filters, serverSearchActive]);
 
   const facets = useMemo(() => {
     const m = new Map<string, number>();
     for (const p of items) {
       if (!p.categorySlug) continue;
       if (!withinPreset(p.date, filters.date)) continue;
-      if (!matchesQuery(p, filters.q)) continue;
+      if (!serverSearchActive && !matchesQuery(p, filters.q)) continue;
       m.set(p.categorySlug, (m.get(p.categorySlug) ?? 0) + 1);
     }
     return m;
-  }, [items, filters.date, filters.q]);
+  }, [items, filters.date, filters.q, serverSearchActive]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
@@ -123,6 +126,7 @@ export function NewsFeed({
   const reset = () => {
     setFilters({ q: '', categories: [], date: 'all', sort: 'newest' });
     setPage(1);
+    if (serverSearchActive) router.push(`/${lang}/news`);
   };
 
   const dateChipLabel = (d: DatePreset) => {
@@ -200,6 +204,7 @@ export function NewsFeed({
                 onClick={() => {
                   setFilters((f) => ({ ...f, q: '' }));
                   setPage(1);
+                  if (serverSearchActive) router.push(`/${lang}/news`);
                 }}
                 className="rounded-pill border-accent/45 bg-accent/15 text-accent inline-flex items-center gap-1.5 border px-2.5 py-1 text-[0.78rem]"
               >
