@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
+import { CookieConsent } from '@/components/cookie-consent';
+import { AnalyticsProvider } from '@/components/analytics-provider';
 import { getStrings } from '@/lib/i18n';
 import { LANGS, isLang, SITE_NAME, SITE_TAGLINE, SITE_URL, type Lang } from '@/lib/site';
 
@@ -49,6 +51,8 @@ export default async function LangLayout({
       <SiteHeader lang={lang} />
       <div id="main-content">{children}</div>
       <SiteFooter lang={lang} />
+      <AnalyticsProvider lang={lang} />
+      <CookieConsent lang={lang} />
     </>
   );
 }
