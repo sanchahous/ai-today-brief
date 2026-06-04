@@ -3,11 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { analyticsConfigured } from '@/lib/analytics-config';
-import {
-  applyConsentToGtag,
-  ensureGtagScript,
-  trackPageView,
-} from '@/lib/analytics-client';
+import { applyConsentToGtag, trackPageView } from '@/lib/analytics-client';
 import { parseConsentJson, CONSENT_STORAGE_KEY } from '@/lib/consent';
 import type { Lang } from '@/lib/site';
 
@@ -20,10 +16,7 @@ export function AnalyticsProvider({ lang }: { lang: Lang }) {
     try {
       const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
       const stored = raw ? parseConsentJson(raw) : null;
-      if (stored) {
-        ensureGtagScript();
-        applyConsentToGtag(stored);
-      }
+      if (stored) applyConsentToGtag(stored);
     } catch {
       /* ignore */
     }

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Fraunces, Inter } from 'next/font/google';
 import './globals.css';
+import { GoogleAnalytics } from '@/components/google-analytics';
 import { SITE_NAME, SITE_URL, SITE_TAGLINE, DEFAULT_LANG } from '@/lib/site';
 
 const fraunces = Fraunces({
@@ -36,7 +37,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang={DEFAULT_LANG} className={`${fraunces.variable} ${inter.variable} h-full`}>
-      <body className="flex min-h-full flex-col font-sans antialiased">{children}</body>
+      <body className="flex min-h-full flex-col font-sans antialiased">
+        <GoogleAnalytics />
+        {children}
+      </body>
     </html>
   );
 }

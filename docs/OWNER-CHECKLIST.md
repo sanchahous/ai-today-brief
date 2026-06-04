@@ -8,7 +8,7 @@ Items the codebase cannot complete without you. Engineering prep lives on branch
 |---------|----------|--------|
 | **Beehiiv** | `BEEHIIV_API_KEY`, `BEEHIIV_PUBLICATION_ID` | Create publication; enable double opt-in; paste keys → `/api/subscribe` goes live |
 | **Resend** | `RESEND_API_KEY` | Optional transactional confirm (Phase 3 in doc 08) |
-| **GA4** | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Create property; add ID → analytics + CMP start recording after consent |
+| **GA4** | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | e.g. `G-5R89X6Q5D4` in Vercel + local `.env.local`; events fire after cookie consent |
 | **Revalidate hook** | `REVALIDATE_SECRET` | Generate secret; give to pipeline: `POST /api/revalidate` with `Authorization: Bearer …` |
 | **Telegram** | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHANNEL_ID` | Bot + channel for daily brief autopost |
 | **LemonSqueezy** | `LEMONSQUEEZY_API_KEY`, `LEMONSQUEEZY_WEBHOOK_SECRET` | MoR account (premium off at launch is OK) |
