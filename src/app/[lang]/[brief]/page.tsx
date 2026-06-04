@@ -4,6 +4,11 @@ import type { Metadata } from 'next';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { getBriefBySlug, getBriefPaths } from '@/lib/briefs';
+import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
+import { AiDisclosureNote } from '@/components/ai-disclosure-note';
+import { BriefItemsList } from '@/components/brief-items-list';
+import { NewsletterBand } from '@/components/home/newsletter-band';
+import { ArrowRight } from '@/components/icons';
 
 export const revalidate = 1800;
 
@@ -33,11 +38,6 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   };
 }
 
-function prettyCategory(slug: string | null): string {
-  if (!slug) return 'AI';
-  return slug.replace(/-/g, ' ').replace(/\band\b/g, '&');
-}
-
 function dateLabel(value: string, lang: Lang): string {
   const date = value.length === 10 ? new Date(`${value}T00:00:00`) : new Date(value);
   return new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
@@ -54,61 +54,77 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
   const lang: Lang = raw;
 
   const b = await getBriefBySlug(slug, lang);
-  if (!b) notFound();
+  if (!b?.slug) notFound();
   const t = getStrings(lang);
   const dateStr = dateLabel(b.date, lang);
 
+  const crumbs = [
+    { label: t.news.breadcrumbHome, href: `/${lang}` },
+    { label: t.nav.news, href: `/${lang}/news` },
+    { label: b.title || t.todaysBrief },
+  ];
+
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'CollectionPage',
-    name: b.title || dateStr,
-    inLanguage: lang,
-    isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
-    mainEntity: {
-      '@type': 'ItemList',
-      itemListElement: b.items.map((it, i) => ({
-        '@type': 'ListItem',
-        position: i + 1,
-        url: it.slug ? `${SITE_URL}/${lang}/${b.slug}/${it.slug}` : undefined,
-        name: it.title,
-      })),
-    },
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        name: b.title || dateStr,
+        description: b.intro ?? undefined,
+        url: `${SITE_URL}/${lang}/${b.slug}`,
+        datePublished: b.date,
+        inLanguage: lang,
+        isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
+        mainEntity: {
+          '@type': 'ItemList',
+          numberOfItems: b.items.length,
+          itemListElement: b.items.map((it, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            name: it.title,
+            ...(it.slug ? { url: `${SITE_URL}/${lang}/${b.slug}/${it.slug}` } : {}),
+          })),
+        },
+      },
+      breadcrumbJsonLd(crumbs, SITE_URL),
+    ],
   };
 
   return (
-    <main className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-12">
+    <main className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <nav className="text-faint mb-8 text-sm">
-        <Link className="hover:text-text" href={`/${lang}/news`}>
-          ← {t.nav.news}
-        </Link>
-      </nav>
+      <Breadcrumbs items={crumbs} />
 
-      <header className="border-border-soft border-b pb-8">
-        <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">{dateStr}</p>
-        <h1 className="mt-3 text-3xl leading-tight sm:text-4xl">{b.title || t.todaysBrief}</h1>
-        {b.intro && <p className="text-muted mt-4 max-w-2xl text-lg">{b.intro}</p>}
+      <header className="mb-8 max-w-[760px]">
+        <p className="text-accent m-0 mb-2 text-xs font-bold tracking-[0.14em] uppercase">{dateStr}</p>
+        <h1 className="mb-3 text-[clamp(1.9rem,4.5vw,2.8rem)] leading-[1.12]">
+          {b.title || t.todaysBrief}
+        </h1>
+        {b.intro && (
+          <p className="text-muted m-0 mb-4 text-[1.05rem] leading-relaxed">{b.intro}</p>
+        )}
+        <AiDisclosureNote lang={lang} />
       </header>
 
-      <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {b.items.map((card) => (
-          <Link
-            key={card.id}
-            href={card.slug ? `/${lang}/${b.slug}/${card.slug}` : `/${lang}/news`}
-            className="rounded-card border-border bg-surface hover:border-accent block border p-5 transition-colors"
-          >
-            <span className="text-accent text-xs font-bold tracking-wider uppercase">
-              {prettyCategory(card.categorySlug)}
-            </span>
-            <h2 className="mt-3 text-lg leading-snug">{card.title}</h2>
-            <p className="text-muted mt-2 line-clamp-3 text-sm">{card.why}</p>
-          </Link>
-        ))}
+      <BriefItemsList lang={lang} brief={b} />
+
+      <div className="mt-8 max-w-[760px]">
+        <Link
+          href={`/${lang}/news`}
+          className="rounded-pill border-border text-text hover:border-accent inline-flex items-center gap-2 border px-4 py-2.5 text-sm font-semibold no-underline transition"
+        >
+          {t.landing.weekCta}
+          <ArrowRight size={16} />
+        </Link>
       </div>
+
+      <section className="mt-12 max-w-[760px]">
+        <NewsletterBand lang={lang} embedded />
+      </section>
     </main>
   );
 }
