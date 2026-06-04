@@ -5,35 +5,62 @@ alwaysApply: false
 
 # SonarCloud — agent debug playbook
 
-> Status: `sonarqube.yml` + `sonar-project.properties` are in the repo, but Sonar goes live only after the SonarCloud project + `SONAR_TOKEN`/`SONAR_HOST_URL` secrets are set. The `sonar:report` / `sonar-fetch-report.ts` convenience tooling and the `sonar-report` artifact are ported when that tooling is wired — until then read the SonarCloud dashboard + CI logs.
-
-## CI logs (GitHub Actions)
+## CI workflow logs (GitHub Actions)
 
 ```bash
 gh run list --workflow=sonarqube.yml --limit 5
 gh run view <run-id> --log-failed
 ```
 
-## Report artifact / local API
+## Sonar report artifact (preferred after scan)
 
-Every SonarQube run uploads `sonar-report.md`:
+Every SonarQube workflow run may upload `sonar-report.md`:
 
 ```bash
 gh run list --workflow=sonarqube.yml --limit 1
-gh run download <run-id> -n sonar-report   # read sonar-report/sonar-report.md
+gh run download <run-id> -n sonar-report
 ```
 
-Local report needs a token (never commit): `.env` with `SONAR_TOKEN` (+ optional `SONAR_HOST_URL=https://sonarcloud.io`), then `npm run sonar:report`. Project keys come from `sonar-project.properties` (`sonar.organization=sanchahous`, `sonar.projectKey=sanchahous_ai-today-brief`).
+## Local API report (needs token, never commit)
+
+`.env.local` or `.env` with `SONAR_TOKEN`, optional `SONAR_HOST_URL=https://sonarcloud.io`
+
+```bash
+npm run sonar:report
+npm run sonar:report -- --out sonar-report.md
+```
+
+Project keys: `sonar-project.properties` (`sonar.organization=sanchahous`, `sonar.projectKey=sanchahous_ai-today-brief`).
+
+## Dashboard
+
+https://sonarcloud.io — project `sanchahous_ai-today-brief`
 
 ## One-time setup
 
-If the scan fails with *"CI analysis while Automatic Analysis is enabled"*: SonarCloud → Project Settings → Administration → **Analysis Method** → disable **Automatic Analysis** (keep CI-based analysis only). Without this, `sonarqube.yml` exits non-zero even when checks pass.
+If scan fails with *"CI analysis while Automatic Analysis is enabled"*:
 
-## Free plan
+1. SonarCloud → Project Settings → Administration → Analysis Method
+2. Disable **Automatic Analysis** (CI via GitHub Actions only)
 
-- Only the **Sonar way** gate (custom gates need a paid plan). **New Code** is measured vs `main` (`sonar.newCode.referenceBranch=main`).
-- `sonar.qualitygate.wait=false` → a red gate on the site does **not** fail CI. Read the report, not just the letter grade. Fix **new-code** issues, not legacy.
+## Coverage: 70% (repo) vs 80% (Sonar) — not the same gate
 
-## "Not working" checklist
+| Перевірка | Поріг | Де задано | Що міряє |
+|-----------|-------|-----------|----------|
+| **Vitest** (`npm run test:coverage`, `npm run ci:check`) | **≥ 70%** | `vitest.config.ts` → `coverage.thresholds` | Вузький scope: `src/lib` logic modules (див. `include` / `exclude`) |
+| **Sonar Quality Gate «Sonar way»** | **≥ 80% on New Code** | SonarCloud free plan (вбудовано) | Лише **нові/змінені** рядки vs `main`, серед файлів **не** в `sonar.coverage.exclusions` |
+| **Рекомендація в `00-core.mdc`** | ~80% target | Cursor rules | Запас над 70% для Vitest; **не** окремий CI-fail |
 
-1. Automatic Analysis = **OFF** (required for CI). 2. GitHub Secrets `SONAR_TOKEN` + `SONAR_HOST_URL`. 3. Red gate at the start is normal. 4. Re-run: Actions → SonarQube → Run workflow (`workflow_dispatch`). 5. Local: `npm run sonar:report` (needs `.env` `SONAR_TOKEN`).
+**Чому на PR бачиш 80%:** це Sonar, не Vitest. Знизити Sonar gate до 70% на free plan **не можна** (custom gate = paid).
+
+**Перед PR:** `npm run ci:check` (70% Vitest + logic files у `lcov.info`). Sonar на PR може лишатися червоним по coverage, якщо new code &lt; 80% — це окремо від правила 70%.
+
+**Новий `src/lib/*.ts` у coverage scope:** додай `*.test.ts` і рядок у `scripts/verify-logic-lcov.ts` + `vitest.config.ts` include.
+
+## «Не виходить» — чеклист
+
+1. **Automatic Analysis = OFF**
+2. **GitHub Secrets:** `SONAR_TOKEN`, `SONAR_HOST_URL=https://sonarcloud.io`
+3. **Червоний gate на сайті** — CI не падає (`sonar.qualitygate.wait=false`); читай звіт
+4. **Перезапуск:** Actions → SonarQube → Run workflow
+5. Локально: `npm run sonar:report`

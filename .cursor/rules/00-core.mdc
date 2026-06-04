@@ -79,9 +79,11 @@ A standalone **Next.js 16 (App Router)** product on **Vercel**: a daily curated 
 - `rank.ts` favors technical depth / source-authority / cross-source / recency / dedup (topical-authority tuned, not audience-of-one). Gemini structured JSON output; validate parsed result as `unknown`.
 - Holds the `service_role` key — never `NEXT_PUBLIC_`, never imported under `src/`. Structured logs; never log secrets or full prompts.
 
-## Testing — Vitest (wire when logic lands)
+## Testing — Vitest (logic scope, ≥70% gate)
 
-- Co-locate tests. Test behavior, not implementation (query by role first). Mock Supabase at the module boundary. Pipeline: fixtures + SDK mocked. *(No runner configured yet — add `vitest` + config in the same change that introduces the first logic unit; until then `npm run build` is the integrity check.)*
+- **Runner:** `vitest.config.ts` — coverage ≥**70%** on logic-only `src/lib/*` modules (see `include` / `exclude`). Target **~80%** on new logic so Sonar **new code** (80% on free plan) stays green.
+- Co-locate `*.test.ts` next to modules. Mock Supabase at the module boundary; pipeline: fixtures + SDK mocked.
+- Before push: `npm run pr:check` (= `ci:check` + typecheck + lint + build). `ci:check` = `test:coverage` + `verify:logic-lcov`.
 
 ## Structure & conventions
 
@@ -104,7 +106,7 @@ A standalone **Next.js 16 (App Router)** product on **Vercel**: a daily curated 
 
 ## What "Done" looks like
 
-1. `npm run pr:check` green (`typecheck` + `lint` + `build`).
+1. `npm run pr:check` green (`ci:check` + `typecheck` + `lint` + `build`).
 2. New user-facing strings exist in **both** EN and UK.
 3. Indexed routes render real HTML (ISR / prerender), not an empty shell.
 4. No client write to Supabase; no `service_role` in the client bundle.

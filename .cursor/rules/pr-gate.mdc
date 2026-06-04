@@ -15,18 +15,20 @@ From repo root:
 npm run pr:check
 ```
 
-Runs `typecheck` + `lint` + `build`. *(A Vitest coverage gate joins this chain once a logic layer exists — see `00-core.mdc` → Testing.)*
+Runs **`ci:check`** (Vitest coverage ≥70% on logic scope + `verify:logic-lcov`) + `typecheck` + `lint` + `build`.
 
 - `pr:check` fails → fix, re-run until green, **then** push / open the PR.
 - Can't fix within scope → report the failure and **do not** open the PR.
 
 ## Branching
 
-- **Never push directly to `main`.** Work on a feature branch (`feat/…`, `chore/…`, `fix/…`) and open a PR. Direct pushes to the default branch are blocked by policy.
+- **Never push directly to `main`.** Work on a feature branch (`feat/…`, `chore/…`, `fix/…`) and open a PR.
 
 ## When it applies
 
-Any change under `src/**`, `pipeline/**`, `supabase/**`, `package.json`, `next.config.*`, `.github/workflows/**`, or build `scripts/**`. Docs-only changes (`*.md`, `docs/**`) may skip `build` but still run `lint`/`typecheck` if any code/config changed.
+Any change under `src/**`, `pipeline/**`, `supabase/**`, `package.json`, `next.config.*`, `.github/workflows/**`, `vitest.config.ts`, or `scripts/**` that affect build or tests.
+
+Docs-only changes (`*.md`, `docs/**`) may skip `build` but still run `lint`/`typecheck` if any code/config changed.
 
 ## PR body
 
@@ -38,3 +40,6 @@ Include a checked line in the Test plan:
 
 - Open a PR with "please run tests locally" instead of running them.
 - Push code/config changes without `pr:check` green.
+- Assume Sonar on GitHub replaces local `pr:check` — Sonar runs after push; local gate catches 70% / lcov issues first.
+
+See `sonar-debug.mdc` for Vitest **70%** vs Sonar **80% on new code** (different gates).
