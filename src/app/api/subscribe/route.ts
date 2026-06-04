@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getBeehiivCredentials } from '@/lib/beehiiv-config';
 import { LANGS, type Lang } from '@/lib/site';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -35,11 +36,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'invalid_email' }, { status: 400 });
   }
 
-  const apiKey = process.env.BEEHIIV_API_KEY?.trim();
-  const publicationId = process.env.BEEHIIV_PUBLICATION_ID?.trim();
-  if (!apiKey || !publicationId) {
+  const beehiiv = getBeehiivCredentials();
+  if (!beehiiv) {
     return NextResponse.json({ error: 'not_configured' }, { status: 503 });
   }
+  const { apiKey, publicationId } = beehiiv;
 
   const res = await fetch(
     `https://api.beehiiv.com/v2/publications/${publicationId}/subscriptions`,

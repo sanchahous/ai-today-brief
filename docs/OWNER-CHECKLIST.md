@@ -6,7 +6,7 @@ Items the codebase cannot complete without you. Engineering prep lives on branch
 
 | Service | Env vars | Action |
 |---------|----------|--------|
-| **Beehiiv** | `BEEHIIV_API_KEY`, `BEEHIIV_PUBLICATION_ID` | Create publication; enable double opt-in; paste keys → `/api/subscribe` goes live |
+| **Beehiiv** | `BEEHIIV_API_KEY` + `BEEHIIV_PUBLICATION_ID` **or** `BEEHIIV_PUBLICATION_ID_API_V2` (`pub_…`) | API only — **do not** point root domain to Beehiiv; enable double opt-in in publication settings |
 | **Resend** | `RESEND_API_KEY` | Optional transactional confirm (Phase 3 in doc 08) |
 | **GA4** | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | e.g. `G-5R89X6Q5D4` in Vercel + local `.env.local`; events fire after cookie consent |
 | **Revalidate hook** | `REVALIDATE_SECRET` | Generate secret; give to pipeline: `POST /api/revalidate` with `Authorization: Bearer …` |
