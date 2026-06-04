@@ -228,6 +228,92 @@
   border: 0;
 }
 
+.not-found-page {
+  background: radial-gradient(80% 120% at 50% -20%, rgba(240, 192, 64, 0.08), transparent 55%);
+}
+
+.not-found-scene .nf-card {
+  transform-origin: center;
+  animation: nf-float 5s ease-in-out infinite;
+}
+.not-found-scene .nf-card-b {
+  animation-delay: -1.4s;
+}
+.not-found-scene .nf-card-c {
+  animation-delay: -2.8s;
+}
+.not-found-scene .nf-pipeline {
+  stroke-dashoffset: 0;
+  animation: nf-dash 12s linear infinite;
+}
+.not-found-scene .nf-node {
+  animation: nf-pulse 2.4s ease-in-out infinite;
+}
+.not-found-scene .nf-radar {
+  animation: nf-radar 6s ease-in-out infinite;
+}
+.not-found-scene .nf-radar-arm {
+  transform-origin: 0 0;
+  animation: nf-sweep 3s ease-in-out infinite;
+}
+.not-found-scene .nf-broken-link {
+  animation: nf-wiggle 4s ease-in-out infinite;
+}
+
+@keyframes nf-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+@keyframes nf-dash {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+@keyframes nf-pulse {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes nf-radar {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+@keyframes nf-sweep {
+  0%,
+  100% {
+    transform: rotate(-18deg);
+  }
+  50% {
+    transform: rotate(22deg);
+  }
+}
+@keyframes nf-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  33% {
+    transform: rotate(-4deg);
+  }
+  66% {
+    transform: rotate(4deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

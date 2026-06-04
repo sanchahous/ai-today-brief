@@ -18,6 +18,7 @@ const LOGIC_FILES = [
   'src/lib/news-filters.ts',
   'src/lib/sitemap-dates.ts',
   'src/lib/analytics-config.ts',
+  'src/lib/preferred-lang.ts',
 ] as const;
 
 function lcovSourceFiles(lcov: string): Set<string> {

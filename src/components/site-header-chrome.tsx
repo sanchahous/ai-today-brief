@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { alternateLangHref } from '@/lib/preferred-lang';
 import { SITE_NAME, MARK_COLOR, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { TOP_CATEGORY_SLUGS } from '@/lib/category-meta';
@@ -47,6 +48,8 @@ export function SiteHeaderChrome({
   const topCats = TOP_CATEGORY_SLUGS.map((slug) => categories.find((c) => c.slug === slug)).filter(
     (c): c is NavCategory => Boolean(c),
   );
+
+  const langToggleHref = alternateLangHref(pathname, lang);
 
   return (
     <header className="border-border-soft sticky top-0 z-50 border-b bg-[color-mix(in_srgb,var(--bg)_88%,transparent)] backdrop-blur-[10px]">
@@ -126,7 +129,7 @@ export function SiteHeaderChrome({
               {t.subscribe}
             </Link>
             <Link
-              href={lang === 'uk' ? '/en' : '/uk'}
+              href={langToggleHref}
               className="text-accent text-[0.85rem] font-semibold no-underline"
             >
               {lang === 'uk' ? 'EN' : 'UK'}
@@ -196,7 +199,7 @@ export function SiteHeaderChrome({
             </div>
             <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
               <Link
-                href={lang === 'uk' ? '/en' : '/uk'}
+                href={langToggleHref}
                 className="text-accent font-semibold no-underline"
                 onClick={() => setMenuOpen(false)}
               >

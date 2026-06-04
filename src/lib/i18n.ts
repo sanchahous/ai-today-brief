@@ -91,6 +91,11 @@ export const STRINGS = {
     searchLoading: 'Searching…',
     searchSeeAll: 'See all {n} results',
     searchOpenArchive: 'Open full archive',
+    notFoundMetaTitle: 'Page not found',
+    notFoundTitle: "This URL didn't make the brief",
+    notFoundBody:
+      'Our fetch→rank→summarize pipeline ran on this path and returned zero clusters. The link might be from an old issue, or someone corrupted the slug in transit.',
+    notFoundSearchHint: 'Search the archive',
     noResults: 'Nothing found.',
     conceptsLede: 'Evergreen explainers for the building blocks of AI engineering.',
     relatedCoverage: 'Related coverage',
@@ -295,6 +300,11 @@ export const STRINGS = {
     searchLoading: 'Шукаємо…',
     searchSeeAll: 'Усі {n} результатів',
     searchOpenArchive: 'Відкрити повний архів',
+    notFoundMetaTitle: 'Сторінку не знайдено',
+    notFoundTitle: 'Цей URL не потрапив у бриф',
+    notFoundBody:
+      'Пайплайн fetch→rank→summarize пройшовся по цьому шляху — кластерів нуль. Можливо, посилання зі старого випуску, або хтось пошкодив slug під час передачі.',
+    notFoundSearchHint: 'Спробуйте архів',
     noResults: 'Нічого не знайдено.',
     conceptsLede: 'Evergreen-пояснення про будівельні блоки AI-інженерії.',
     relatedCoverage: 'Пов’язані матеріали',
