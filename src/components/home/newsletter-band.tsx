@@ -37,7 +37,15 @@ export function NewsletterBand({
               <p className="text-muted mt-2 mb-5 max-w-xl text-sm leading-relaxed">{t.subBody}</p>
             </>
           ) : null}
-          <NewsletterForm placeholder={t.subPlaceholder} button={t.subButton} done={t.subDone} />
+          <NewsletterForm
+            lang={lang}
+            placeholder={t.subPlaceholder}
+            button={t.subButton}
+            done={t.subDone}
+            notConfigured={getStrings(lang).subscribeForm.notConfigured}
+            failed={getStrings(lang).subscribeForm.failed}
+            placement={embedded ? 'subscribe-page' : 'home-band'}
+          />
           <p className={`text-faint text-xs ${showHeader ? 'mt-4' : 'mt-3'}`}>{t.subPrivacy}</p>
         </div>
       </Reveal>

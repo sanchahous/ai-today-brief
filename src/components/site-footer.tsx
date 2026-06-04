@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { SITE_NAME, SOCIALS, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
+import { CookieSettingsButton } from '@/components/cookie-consent';
 
 export function SiteFooter({ lang }: { lang: Lang }) {
   const t = getStrings(lang);
@@ -32,6 +33,12 @@ export function SiteFooter({ lang }: { lang: Lang }) {
             <Link className="hover:text-text" href={`/${lang}/concepts`}>
               {t.nav.concepts}
             </Link>
+            <Link className="hover:text-text" href={`/${lang}/subscribe`}>
+              {t.footerSubscribe}
+            </Link>
+            <Link className="hover:text-text" href={`/${lang}/advertise`}>
+              {t.footerAdvertise}
+            </Link>
             <Link className="hover:text-text" href={`/${lang}/about`}>
               {t.about}
             </Link>
@@ -44,6 +51,7 @@ export function SiteFooter({ lang }: { lang: Lang }) {
             <Link className="hover:text-text" href={`/${lang}/terms`}>
               {t.terms}
             </Link>
+            <CookieSettingsButton lang={lang} />
           </nav>
         </div>
         <p className="text-faint mt-8 text-sm">

@@ -198,6 +198,54 @@ export async function getRelatedStories(
   }));
 }
 
+export interface NewsSitemapEntry {
+  lang: Lang;
+  brief: string;
+  item: string;
+  title: string;
+  /** ISO 8601 — brief `published_at` or `date` at 09:00 UTC. */
+  publicationDate: string;
+}
+
+/** Published items with titles and dates for Google News sitemap. */
+export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+
+  const { data: briefs } = await supabase
+    .from('briefs')
+    .select('id, slug, date, published_at')
+    .eq('status', 'published');
+  if (!briefs?.length) return [];
+
+  const briefById = new Map(briefs.map((b) => [b.id, b]));
+  const { data: rows } = await supabase
+    .from('brief_items')
+    .select('slug, brief_id, title_en, title_uk')
+    .in(
+      'brief_id',
+      briefs.map((b) => b.id),
+    );
+
+  const entries: NewsSitemapEntry[] = [];
+  for (const row of rows ?? []) {
+    const brief = briefById.get(row.brief_id);
+    if (!brief?.slug || !row.slug) continue;
+    const isoBase = brief.published_at ?? `${brief.date}T09:00:00.000Z`;
+    const publicationDate = isoBase.includes('T') ? isoBase : `${brief.date}T09:00:00.000Z`;
+    for (const lang of LANGS) {
+      entries.push({
+        lang,
+        brief: brief.slug,
+        item: row.slug,
+        title: pick(lang, row.title_en, row.title_uk) || row.slug,
+        publicationDate,
+      });
+    }
+  }
+  return entries;
+}
+
 /** All published (lang, brief, item) slug paths — for build-time SSG. Empty without env. */
 export async function getPublishedItemPaths(): Promise<
   { lang: string; brief: string; item: string }[]
