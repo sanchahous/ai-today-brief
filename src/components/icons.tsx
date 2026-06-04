@@ -240,3 +240,11 @@ export function CloseIcon({ size = 20, strokeWidth = 1.8, style, className }: Ic
     </svg>
   );
 }
+export function ExternalLinkIcon({ size = 15, strokeWidth = 1.7, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M14 4h6v6M20 4l-9 9" />
+      <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" />
+    </svg>
+  );
+}

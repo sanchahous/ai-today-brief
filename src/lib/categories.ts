@@ -11,6 +11,7 @@ export interface CategoryInfo {
   slug: string;
   name: string;
   description: string;
+  color: string | null;
 }
 
 export async function getCategory(slug: string, lang: Lang): Promise<CategoryInfo | null> {
@@ -18,7 +19,7 @@ export async function getCategory(slug: string, lang: Lang): Promise<CategoryInf
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('categories')
-    .select('slug, name_en, name_uk, description_en, description_uk')
+    .select('slug, name_en, name_uk, description_en, description_uk, color')
     .eq('slug', slug)
     .maybeSingle();
   if (error || !data) return null;
@@ -26,6 +27,7 @@ export async function getCategory(slug: string, lang: Lang): Promise<CategoryInf
     slug: data.slug,
     name: pick(lang, data.name_en, data.name_uk),
     description: pick(lang, data.description_en, data.description_uk),
+    color: data.color,
   };
 }
 
