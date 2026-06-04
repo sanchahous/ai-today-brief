@@ -34,7 +34,7 @@ export function SponsorCard({ lang }: { lang: Lang }) {
           <div className="bg-bg border-border rounded-card absolute top-full right-0 z-20 mt-2 w-64 max-w-[80vw] border p-3 text-left shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
             <strong className="text-text mb-1 block text-sm">{t.sponsorWhyTitle}</strong>
             <p className="text-muted mb-2 text-xs leading-relaxed">{t.sponsorWhyBody}</p>
-            <Link href={`/${lang}/about`} className="text-accent text-xs font-semibold">
+            <Link href={`/${lang}/advertise`} className="text-accent text-xs font-semibold">
               {t.sponsorWhyCta} →
             </Link>
           </div>

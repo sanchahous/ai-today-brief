@@ -177,6 +177,13 @@ export function ClockIcon({ size = 16, strokeWidth = 1.7, style, className }: Ic
     </svg>
   );
 }
+export function CheckIcon({ size = 16, strokeWidth = 2, style, className }: IconProps) {
+  return (
+    <svg {...base(size, strokeWidth, style, className)}>
+      <path d="M5 12.5 9.5 17 19 7" />
+    </svg>
+  );
+}
 export function MailIcon({ size = 18, strokeWidth = 1.7, style, className }: IconProps) {
   return (
     <svg {...base(size, strokeWidth, style, className)}>
