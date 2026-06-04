@@ -1,5 +1,9 @@
+import { conceptIcon } from '@/lib/concept-meta';
+import { searchNewsItems } from '@/lib/news';
+import type { HomeItem } from '@/lib/home';
 import { getSupabase } from '@/lib/supabase';
 import { LANGS, type Lang } from '@/lib/site';
+import type { IconKey } from '@/components/icons';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -74,6 +78,37 @@ export async function getConceptNameIndex(): Promise<Map<string, string>> {
     }
   }
   return index;
+}
+
+export interface ConceptHubView {
+  concept: ConceptDetail;
+  icon: IconKey;
+  stories: HomeItem[];
+  others: ConceptSummary[];
+}
+
+/** Concept hub page: detail, matching stories (FTS), and sibling concept chips. */
+export async function getConceptHub(
+  slug: string,
+  lang: Lang,
+  storyLimit = 80,
+): Promise<ConceptHubView | null> {
+  const concept = await getConcept(slug, lang);
+  if (!concept) return null;
+
+  const queryParts = [concept.name, ...concept.aliases.slice(0, 3)];
+  const query = queryParts.join(' ');
+  const stories = await searchNewsItems(lang, query, storyLimit);
+
+  const all = await getConcepts(lang);
+  const others = all.filter((c) => c.slug !== slug).slice(0, 12);
+
+  return {
+    concept,
+    icon: conceptIcon(slug, concept.type),
+    stories,
+    others,
+  };
 }
 
 export async function getConceptPaths(): Promise<{ lang: string; slug: string }[]> {
