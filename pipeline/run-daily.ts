@@ -144,15 +144,15 @@ async function main(): Promise<void> {
   await logStage(db, config.dryRun, {
     date,
     stage: 'publish',
-    status: result.itemCount > 0 ? 'ok' : 'skipped',
+    status: result.skipped || result.itemCount === 0 ? 'skipped' : 'ok',
     durationMs: Date.now() - t,
-    meta: { brief_id: result.briefId, items: result.itemCount },
+    meta: { brief_id: result.briefId, items: result.itemCount, skipped: result.skipped ?? false },
   });
   logEvent('info', 'publish', 'Daily pipeline complete', {
     date,
     brief_id: result.briefId,
     items: result.itemCount,
-    status: 'draft',
+    status: result.skipped ? 'left_published' : 'draft',
   });
 }
 

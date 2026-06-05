@@ -7,6 +7,7 @@
  */
 
 import {
+  getBriefByDate,
   replaceBriefItems,
   upsertArticles,
   upsertBriefDraft,
@@ -19,6 +20,17 @@ import { logEvent } from './log';
 export interface PublishResult {
   briefId: string;
   itemCount: number;
+  /** True when the write was skipped because the date's brief is already published. */
+  skipped?: boolean;
+}
+
+/**
+ * Safety guard: never let a re-run overwrite a brief a human already published.
+ * A still-`draft` brief for the same date is the idempotent-refresh case and is
+ * NOT a conflict.
+ */
+export function isPublishedConflict(existing: { status: string } | null | undefined): boolean {
+  return existing?.status === 'published';
 }
 
 export async function publish(
@@ -28,6 +40,15 @@ export async function publish(
   brief: DraftBrief,
   generatedBy: string,
 ): Promise<PublishResult> {
+  const existing = await getBriefByDate(db, date);
+  if (isPublishedConflict(existing)) {
+    logEvent('warn', 'publish', 'Brief already published for this date — skipping to avoid overwrite', {
+      date,
+      brief_id: existing!.id,
+    });
+    return { briefId: existing!.id, itemCount: 0, skipped: true };
+  }
+
   const articleIdByUrl = await upsertArticles(db, fetched);
   const briefId = await upsertBriefDraft(db, date, brief, generatedBy);
   const itemCount = await replaceBriefItems(db, briefId, brief.items, articleIdByUrl);

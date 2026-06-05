@@ -49,6 +49,20 @@ export async function upsertArticles(
   return new Map((data ?? []).map((r) => [r.url, r.id]));
 }
 
+/** The brief on a given date, if any — used to guard against clobbering it. */
+export async function getBriefByDate(
+  db: PipelineDb,
+  date: string,
+): Promise<{ id: string; status: string } | null> {
+  const { data, error } = await db
+    .from('briefs')
+    .select('id, status')
+    .eq('date', date)
+    .maybeSingle();
+  if (error) throw new Error(`[db] getBriefByDate failed: ${error.message}`);
+  return data ?? null;
+}
+
 /**
  * Ensure a brief slug is globally unique (the `briefs_slug_uniq` partial index).
  * Reuses the slug if it's free or already belongs to this date; otherwise

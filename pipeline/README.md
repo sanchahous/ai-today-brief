@@ -156,7 +156,7 @@ JSON). Re-running for the same date refreshes the draft.
 
 Honest list of where this is thin — good places to pressure-test:
 
-1. **Publish clobbers any same-date brief.** `upsertBriefDraft` upserts on `date` and sets `status='draft'`, and `replaceBriefItems` wipes existing items. If a brief for today is already **published** (or a human edited the draft), a re-run silently overwrites it / un-publishes it. No "refuse to overwrite published" guard.
+1. ~~**Publish clobbers any same-date brief.**~~ **Fixed** — `publish()` now calls `getBriefByDate` and refuses to overwrite a brief that is already `published` for the same date (`isPublishedConflict`), returning `{ skipped: true }`. A still-`draft` brief is still refreshed (the idempotent-refresh case). *Residual:* a human editing the **draft's** items will still be overwritten by a same-day re-run — only `published` is protected.
 2. **Cross-day dedup is title-only.** The editor sees recent published *titles*; there's no semantic/vector check. The same event reworded across days can slip through. (pgvector `brief_item_embeddings` is the planned fix — P2 in `docs/07`.)
 3. **No cross-run signal accumulation.** Cross-source / mentions are computed **within a single run** only. The testbed accumulated mentions in the store over time; here a story that builds over several days doesn't compound — each day starts fresh.
 4. **Engagement signal is HN+Reddit only.** InBrief and RSS items have `velocity = 0`; a high-importance first-party post (e.g. an Anthropic blog) leans entirely on authority + recency + inbrief and can underrank against a noisy HN thread.
@@ -172,5 +172,5 @@ Honest list of where this is thin — good places to pressure-test:
 
 - pgvector cross-day semantic dedup (`brief_item_embeddings`).
 - Scheduled trigger (GitHub Actions 06:00 / `pg_cron`) + on-publish `revalidateTag`.
-- "Refuse to overwrite a published brief" safety guard (weak spot #1).
+- Admin-only draft review page with a publish-to-prod button (server action + `revalidateTag`).
 - Telegram / newsletter publish (EPIC D) writing to `social_posts` / `newsletter_sends`.
