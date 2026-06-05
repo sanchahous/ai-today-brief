@@ -34,6 +34,7 @@ export default defineConfig({
         'pipeline/run-daily.ts',
         'pipeline/publish.ts',
         'pipeline/summarize.ts',
+        'pipeline/db.ts',
         'pipeline/log.ts',
         'pipeline/sources/**',
       ],

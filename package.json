@@ -18,9 +18,12 @@
     "verify:coverage": "npm run test:coverage && npm run verify:logic-lcov",
     "ci:check": "npm run verify:coverage",
     "sonar:report": "npx tsx scripts/sonar-fetch-report.ts",
+    "pipeline": "tsx pipeline/run-daily.ts",
+    "pipeline:dry": "tsx pipeline/run-daily.ts --dry-run",
     "pr:check": "npm run ci:check && npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.106.2",
     "next": "16.2.7",
     "react": "19.2.7",
@@ -31,6 +34,7 @@
     "@types/node": "^25",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^4.1.7",
     "eslint": "^9",
     "eslint-config-next": "16.2.7",
     "prettier": "^3.8.3",
@@ -39,7 +43,6 @@
     "tsx": "^4.21.0",
     "typescript": "^6",
     "typescript-eslint": "^8.60.0",
-    "vitest": "^4.1.7",
-    "@vitest/coverage-v8": "^4.1.7"
+    "vitest": "^4.1.7"
   }
 }
