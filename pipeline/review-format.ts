@@ -11,7 +11,9 @@ export interface ReviewItem {
   title_en: string | null;
   title_uk: string | null;
   summary_en: string;
+  summary_uk: string | null;
   why_matters_en: string | null;
+  why_matters_uk: string | null;
   source_name: string | null;
   url: string | null;
 }
@@ -57,20 +59,25 @@ export function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
-/** One review card (Telegram HTML parse mode). `position`/`total` are 1-based. */
+/**
+ * One review card (Telegram HTML parse mode). `position`/`total` are 1-based.
+ * Ukrainian is primary (the reviewer reads UK); the EN title sits below in
+ * small italics for reference (useful when source links are in EN).
+ */
 export function formatItemMessage(item: ReviewItem, position: number, total: number): string {
   const titleEn = escapeHtml(item.title_en ?? '(untitled)');
   const titleUk = escapeHtml(item.title_uk ?? titleEn);
   const category = escapeHtml(item.category_slug ?? 'uncategorized');
-  const summary = escapeHtml(item.summary_en);
+  const summary = escapeHtml(item.summary_uk ?? item.summary_en);
   const lines = [
     `<b>[${position}/${total}] · ${category}</b>`,
-    `🇬🇧 ${titleEn}`,
-    `🇺🇦 ${titleUk}`,
+    `<b>${titleUk}</b>`,
+    `<i>${titleEn}</i>`,
     '',
     summary,
   ];
-  if (item.why_matters_en) lines.push('', `<i>Why it matters:</i> ${escapeHtml(item.why_matters_en)}`);
+  const whyUk = item.why_matters_uk ?? item.why_matters_en;
+  if (whyUk) lines.push('', `💡 ${escapeHtml(whyUk)}`);
   if (item.url) {
     const src = escapeHtml(item.source_name ?? 'source');
     lines.push('', `🔗 <a href="${escapeHtml(item.url)}">${src}</a>`);

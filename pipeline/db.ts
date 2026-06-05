@@ -182,7 +182,7 @@ export async function getPendingReviewItems(
 ): Promise<ReviewItem[]> {
   const { data, error } = await db
     .from('brief_items')
-    .select('id, rank, category_slug, title_en, title_uk, summary_en, why_matters_en, articles(url, source_name)')
+    .select('id, rank, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, articles(url, source_name)')
     .eq('brief_id', briefId)
     .eq('review_status', 'pending')
     .is('review_msg_id', null)
@@ -197,7 +197,9 @@ export async function getPendingReviewItems(
       title_en: r.title_en,
       title_uk: r.title_uk,
       summary_en: r.summary_en,
+      summary_uk: r.summary_uk,
       why_matters_en: r.why_matters_en,
+      why_matters_uk: r.why_matters_uk,
       url: article?.url ?? null,
       source_name: article?.source_name ?? null,
     };

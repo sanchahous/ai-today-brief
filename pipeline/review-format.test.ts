@@ -16,7 +16,9 @@ const item: ReviewItem = {
   title_en: 'New MCP server for Postgres',
   title_uk: 'Новий MCP-сервер для Postgres',
   summary_en: 'A server that connects agents to a database.',
+  summary_uk: 'Сервер, що підключає агентів до бази даних.',
   why_matters_en: 'Wire your agent to prod data.',
+  why_matters_uk: 'Підключи агента до продакшн-бази.',
   source_name: 'Hacker News',
   url: 'https://ex.com/mcp',
 };
@@ -56,22 +58,29 @@ describe('escapeHtml', () => {
 });
 
 describe('formatItemMessage', () => {
-  it('includes position, category, both titles, summary, why and link', () => {
+  it('shows Ukrainian content as primary: UK title bold, EN title italic', () => {
     const msg = formatItemMessage(item, 3, 6);
     expect(msg).toContain('[3/6] · agents-and-mcp');
-    expect(msg).toContain('New MCP server for Postgres');
-    expect(msg).toContain('Новий MCP-сервер для Postgres');
-    expect(msg).toContain('A server that connects agents to a database.');
-    expect(msg).toContain('Why it matters:');
+    expect(msg).toContain('<b>Новий MCP-сервер для Postgres</b>');
+    expect(msg).toContain('<i>New MCP server for Postgres</i>');
+    expect(msg).toContain('Сервер, що підключає агентів до бази даних.');
+    expect(msg).toContain('💡 Підключи агента до продакшн-бази.');
     expect(msg).toContain('<a href="https://ex.com/mcp">Hacker News</a>');
   });
-  it('omits the why/link lines when those fields are absent', () => {
+  it('falls back to EN content when UK fields are absent', () => {
     const msg = formatItemMessage(
-      { ...item, why_matters_en: null, url: null },
-      1,
-      1,
+      { ...item, summary_uk: null, why_matters_uk: null },
+      1, 1,
     );
-    expect(msg).not.toContain('Why it matters:');
+    expect(msg).toContain('A server that connects agents to a database.');
+    expect(msg).toContain('💡 Wire your agent to prod data.');
+  });
+  it('omits why/link lines when those fields are absent', () => {
+    const msg = formatItemMessage(
+      { ...item, why_matters_en: null, why_matters_uk: null, url: null },
+      1, 1,
+    );
+    expect(msg).not.toContain('💡');
     expect(msg).not.toContain('🔗');
   });
 });
