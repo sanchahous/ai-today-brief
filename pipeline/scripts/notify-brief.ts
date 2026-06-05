@@ -23,7 +23,7 @@ async function main(): Promise<void> {
   const db = createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
   logEvent('info', 'notify', 'Re-sending review cards', { brief_id: briefId });
   const result = await notifyReview(db, config.telegramBotToken, config.telegramReviewChatId, briefId);
-  logEvent('info', 'notify', 'Done', result);
+  logEvent('info', 'notify', 'Done', { ...result });
 }
 
 main().catch((e) => { logError('notify', 'Failed', e); process.exit(1); });
