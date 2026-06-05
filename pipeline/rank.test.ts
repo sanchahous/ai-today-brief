@@ -1,0 +1,145 @@
+import { describe, expect, it } from 'vitest';
+import {
+  clickbaitDemotion,
+  compositeScore,
+  rankCandidates,
+  scoreComponents,
+  sourceTrust,
+  WEIGHTS,
+  type Candidate,
+} from './rank';
+
+const NOW = Date.parse('2026-06-05T12:00:00Z');
+
+function candidate(over: Partial<Candidate> = {}): Candidate {
+  return {
+    id: over.url ?? over.id ?? 'https://example.com/a',
+    title: 'A generic AI story',
+    url: over.url ?? 'https://example.com/a',
+    source_name: 'Hacker News',
+    published_at: new Date(NOW - 3 * 3_600_000).toISOString(), // 3h old
+    hn_score: 100,
+    hn_comments: 20,
+    reddit_score: null,
+    reddit_comments: null,
+    inbrief_score: null,
+    mentions_count: 1,
+    ...over,
+  };
+}
+
+describe('sourceTrust', () => {
+  it('rates first-party labs highest and unknown at the neutral midpoint', () => {
+    expect(sourceTrust('Anthropic')).toBe(1);
+    expect(sourceTrust('Hacker News')).toBe(0.9);
+    expect(sourceTrust('Reddit · r/cursor')).toBe(0.7);
+    expect(sourceTrust('Some Random Blog')).toBe(0.6);
+  });
+});
+
+describe('clickbaitDemotion', () => {
+  it('demotes punditry and clickbait, leaves real news alone', () => {
+    expect(clickbaitDemotion('Sam Altman says AGI is near')).toBeGreaterThan(0);
+    expect(clickbaitDemotion('You won’t believe this AI trick')).toBe(0.5);
+    expect(clickbaitDemotion('Cursor 2.0 ships agent mode')).toBe(0);
+  });
+});
+
+describe('scoreComponents', () => {
+  it('every component lands in [0,1]', () => {
+    const c = scoreComponents([candidate({ inbrief_score: 80 })], NOW);
+    for (const v of Object.values(c)) {
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
+    }
+  });
+  it('recency decays with age (12h half-life)', () => {
+    const fresh = scoreComponents([candidate({ published_at: new Date(NOW).toISOString() })], NOW);
+    const old = scoreComponents(
+      [candidate({ published_at: new Date(NOW - 12 * 3_600_000).toISOString() })],
+      NOW,
+    );
+    expect(fresh.recency).toBeGreaterThan(old.recency);
+    expect(old.recency).toBeCloseTo(0.5, 1);
+  });
+  it('cross-source and breadth grow with cluster size and distinct sources', () => {
+    const solo = scoreComponents([candidate()], NOW);
+    const cluster = scoreComponents(
+      [
+        candidate({ id: 'a', url: 'a', source_name: 'Hacker News' }),
+        candidate({ id: 'b', url: 'b', source_name: 'Reddit · r/cursor' }),
+        candidate({ id: 'c', url: 'c', source_name: 'InBrief' }),
+      ],
+      NOW,
+    );
+    expect(cluster.crossSource).toBeGreaterThan(solo.crossSource);
+    expect(cluster.breadth).toBeGreaterThan(solo.breadth);
+    expect(solo.crossSource).toBe(0);
+  });
+  it('inbrief is clamped to 1', () => {
+    expect(scoreComponents([candidate({ inbrief_score: 250 })], NOW).inbrief).toBe(1);
+  });
+});
+
+describe('compositeScore', () => {
+  it('weights sum to 1 and an all-1 vector scores 1', () => {
+    expect(Object.values(WEIGHTS).reduce((a, b) => a + b, 0)).toBeCloseTo(1);
+    expect(
+      compositeScore({
+        velocity: 1,
+        crossSource: 1,
+        authority: 1,
+        recency: 1,
+        inbrief: 1,
+        breadth: 1,
+      }),
+    ).toBeCloseTo(1);
+  });
+});
+
+describe('rankCandidates', () => {
+  it('clusters same-event coverage and sums its mentions', () => {
+    const items = [
+      candidate({ id: '1', url: '1', title: 'Claude Opus 4.8 released by Anthropic' }),
+      candidate({
+        id: '2',
+        url: '2',
+        source_name: 'Reddit · r/ClaudeAI',
+        title: 'Anthropic releases Claude Opus 4.8',
+      }),
+    ];
+    const { ranked, clusters } = rankCandidates(items, 0, NOW);
+    expect(clusters).toBe(1);
+    expect(ranked).toHaveLength(1);
+    expect(ranked[0]!.mentions).toBe(2);
+    expect(ranked[0]!.breadth).toBe(2);
+  });
+
+  it('sorts by score descending', () => {
+    const hot = candidate({ id: 'hot', url: 'hot', title: 'Hot story', hn_score: 500 });
+    const cold = candidate({ id: 'cold', url: 'cold', title: 'Cold story', hn_score: 1 });
+    const { ranked } = rankCandidates([cold, hot], 0, NOW);
+    expect(ranked[0]!.lead.id).toBe('hot');
+  });
+
+  it('caps items per source at three', () => {
+    const items = Array.from({ length: 6 }, (_, i) =>
+      candidate({ id: `s${i}`, url: `s${i}`, title: `Distinct story number ${i}` }),
+    );
+    const { ranked } = rankCandidates(items, 0, NOW);
+    expect(ranked.length).toBeLessThanOrEqual(3);
+  });
+
+  it('drops clusters below minScore', () => {
+    const weak = candidate({
+      id: 'w',
+      url: 'w',
+      hn_score: 0,
+      hn_comments: 0,
+      source_name: 'Some Random Blog',
+      published_at: new Date(NOW - 23 * 3_600_000).toISOString(),
+    });
+    const { ranked } = rankCandidates([weak], 0.9, NOW);
+    expect(ranked).toHaveLength(0);
+  });
+});
