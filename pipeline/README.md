@@ -1,0 +1,176 @@
+# `pipeline/` — the daily brief pipeline
+
+End-to-end, step-by-step logic of how a day's brief is produced. Single entry
+point: [`run-daily.ts`](./run-daily.ts). Four stages share typed structs and no
+module-level mutable state:
+
+```
+                         pipeline/run-daily.ts (orchestrator + --dry-run)
+                                        │
+   ┌──────────────┬───────────────┬────┴───────────┬────────────────┐
+   ▼              ▼               ▼                 ▼                ▼
+ FETCH    ──►    RANK     ──►   SELECT    ──►    SUMMARIZE   ──►   PUBLISH
+ sources/**      rank.ts        select.ts        summarize.ts      publish.ts
+ fetch.ts        topics.ts      topics.ts        (Gemini)          db.ts
+   │                                                                 │
+   └──────── in-memory FetchedArticle[] ──────────────────►  Supabase (draft)
+                                                              articles · briefs
+                                                              brief_items · pipeline_runs
+```
+
+The store is the single source of truth. A brief is written as **`draft`**; a
+human flips `briefs.status → published` (the editorial gate). The pipeline holds
+the Supabase **service_role** key and is **never imported under `src/`**.
+
+---
+
+## File map
+
+| File | Role | In coverage gate |
+|---|---|---|
+| `run-daily.ts` | Orchestration, `--dry-run`, per-stage `pipeline_runs` logging | excluded (IO) |
+| `config.ts` | Env validation + tunables | ✅ |
+| `fetch.ts` | Source orchestration + pure mappers (`prepareArticles`, `toCandidate`, window filter) | ✅ (network part `v8 ignore`) |
+| `sources/http.ts` | `fetchWithRetry`, `FetchedArticle` type | excluded |
+| `sources/feeds.ts` | HN queries, Reddit subs, RSS feeds, InBrief endpoint | excluded |
+| `sources/{hacker-news,reddit,rss,inbrief}.ts` | Per-source fetchers | excluded |
+| `rss-parse.ts` | Dependency-free RSS/Atom parser | ✅ |
+| `rolling-window.ts` | 24h freshness cutoff helpers | ✅ |
+| `rank.ts` | Clustering + the composite score | ✅ |
+| `topics.ts` | `detectTopic` (diversity tag) + `categoryForTitle` (9 product categories) | ✅ |
+| `text.ts` | Title similarity (Jaro/Jaccard) + `slugify`/`dedupeSlugs` | ✅ |
+| `select.ts` | Quality floor + per-topic cap + pool size | ✅ |
+| `summarize.ts` | Gemini structured-JSON editor → bilingual brief | excluded (LLM IO) |
+| `publish.ts` | Idempotent draft write composition | excluded (IO) |
+| `db.ts` | Service-role client + queries | excluded (IO) |
+| `log.ts` | Structured JSON logs | excluded |
+
+---
+
+## Step-by-step (what actually happens on `npm run pipeline`)
+
+### 0. Config — `config.ts`
+`loadPipelineConfig()` reads env (throws listing every missing var) and applies
+tunables. `date` = today in UTC (`YYYY-MM-DD`) — this is the brief's unique key.
+
+| Tunable (env) | Default | Range | Meaning |
+|---|---|---|---|
+| `MAX_ITEMS` | 8 | 1–10 | Max items the editor may keep (schema caps `rank` at 10) |
+| `POOL_SIZE` | 16 | 4–40 | Candidates handed to the LLM after filters |
+| `PER_TOPIC_CAP` | 2 | 1–5 | Max pooled items sharing one fine-grained topic |
+| `MIN_SCORE` | 0.15 | 0–1 | Composite-score floor to enter the pool |
+| `RECENT_TITLES` | 60 | 0–200 | Recently-published titles shown to the editor for dedup |
+| `--dry-run` / `DRY_RUN=1` | off | — | Assemble + print, **no DB writes** |
+
+Required env (first non-empty wins): `SCRAPPER_BASE_URL` ▸ `NEXT_PUBLIC_SUPABASE_URL` ▸ `SUPABASE_URL`;
+`SCRAPPER_SERVICE_KEY` ▸ `SUPABASE_SERVICE_ROLE_KEY` ▸ `SUPABASE_SERVICE_KEY`; `GEMINI_API_KEY`.
+Optional: `GEMINI_MODEL` (default `gemini-2.5-flash`), `GEMINI_MODEL_FALLBACK`.
+
+### 1. Fetch — `fetch.ts` + `sources/**`
+Pulls candidates concurrently (`Promise.allSettled`, so one dead source never
+fails the run):
+- **InBrief** — curated AI feed via its public Supabase RPC `get_archive_articles` (today + yesterday); carries an editorial `importance_score`.
+- **Hacker News** — Algolia search over 11 AI/dev queries; carries points + comments (the engagement signal).
+- **Reddit** — 7 dev/AI subreddits' top-of-day; carries score + comments; self-posts skipped.
+- **RSS fallback** — only if the primary sources return `< 10` items combined (`THIN_PRIMARY_THRESHOLD`); 11 first-party + press feeds, parsed by the dependency-free `rss-parse.ts`.
+
+Every source maps onto one `FetchedArticle`. Then:
+`prepareArticles` (drop non-http / empty-title, **de-dup by exact URL**) →
+`filterToRollingWindow` (keep `published_at` within the last 24h). Output: an
+in-memory `FetchedArticle[]`. **No DB yet.** If empty → run stops.
+
+### 2. Rank — `rank.ts`
+Each `FetchedArticle` → `Candidate` (`toCandidate`, one row = one "mention").
+
+1. **Cluster same-event coverage** — `clusterByTitleSimilarity` groups candidates whose titles are similar (`titlesSimilar`: normalized **Jaro ≥ 0.82 OR** token **Jaccard ≥ 0.6**). The cluster lead is the highest-engagement member.
+2. **Score each cluster** into `[0,1]` from six signals squashed individually (so the weights are truly proportional):
+
+   | Signal | Weight | How it's computed |
+   |---|---|---|
+   | velocity | **0.30** | total engagement ÷ age-hours, saturating (15 pts/h ⇒ 0.5) |
+   | cross-source | **0.22** | summed mentions, saturating (1.5 extra ⇒ 0.5) |
+   | authority | **0.18** | max source-trust in the cluster (labs = 1.0 … unknown = 0.6) |
+   | recency | **0.15** | `0.5 ^ (ageHours / 12)` — 12h half-life |
+   | inbrief | **0.10** | `min(1, importance_score / 100)` |
+   | breadth | **0.05** | count of **distinct** sources, saturating (1.5 extra ⇒ 0.5) |
+
+3. **Demote clickbait/punditry** — multiplicative penalty up to ×0.5 for "X says…", "you won't believe…", "hot take", etc.
+4. **Filter + sort + cap** — drop below `minScore` (0 at this stage; the floor is applied in select), sort desc, then **max 3 per source** (`capPerSource`).
+
+Each surviving entry also gets `detectTopic(lead.title)` (for the diversity cap)
+and `categoryForTitle(lead.title)` (the deterministic `category_slug` default).
+
+### 3. Select — `select.ts`
+Deterministic pool before the paid LLM call: drop `score < MIN_SCORE`, cap items
+per fine-grained topic (`PER_TOPIC_CAP`), keep the top `POOL_SIZE`. Output:
+`PoolItem[]` with a 1-based `ref` the editor selects by. If empty → run stops.
+
+### 4. Summarize — `summarize.ts` (one Gemini call)
+The editor-in-chief, EN-primary / UK-secondary, with a forced response schema:
+- Input: the pool + up to `RECENT_TITLES` recently-**published** item titles (cross-day dedup context) + `MAX_ITEMS`.
+- The prompt instructs: drop same-event repeats of published stories, collapse same-story candidates, avoid topic spam, drop punditry/clickbait, keep **at most `MAX_ITEMS`** (fewer/zero is valid), and write **both languages** plus a brief shell (title/intro).
+- Per item the model returns: `category_slug` (constrained to the 9), `title/summary/why_matters/deep_dive` ×(en,uk), `takeaways` ×(en,uk), `tools_mentioned`.
+- `parseBrief` resolves each item back to its candidate **by `ref`** (position is unreliable — the model reorders/drops); **skips hallucinated refs** and items with no English summary; validates `category_slug` (falls back to the deterministic one); derives each `slug` from the English title and **de-dupes within the brief**. An empty item list is a valid editorial outcome → run stops.
+
+Bounded retry with optional fallback model; transient errors (429/5xx/network)
+retry with backoff, fatal errors throw.
+
+### 5. Publish — `publish.ts` + `db.ts` (idempotent)
+Skipped entirely in `--dry-run` (which prints the assembled brief instead).
+1. **`upsertArticles`** — upsert every fetched article as the raw audit trail (`onConflict: url`), return a `url → id` map for FK wiring.
+2. **`upsertBriefDraft`** — `resolveBriefSlug` makes the brief slug globally unique (suffixes `-<date>` on collision), then upsert on the unique `date` with `status: 'draft'`, `generated_by: pipeline:<model>`.
+3. **`replaceBriefItems`** — delete all `brief_items` for this brief, then insert the kept items with `rank` 1..N (items whose lead URL isn't in the article map are skipped). Wholesale replace ⇒ re-runs never duplicate.
+4. **`pipeline_runs`** — each stage logs `{date, stage, status, duration_ms, meta}` (best-effort; a logging failure is non-fatal).
+
+### 6. Editorial gate (out of this pipeline)
+A human reviews the draft and sets `briefs.status = 'published'`. Only then does
+RLS expose it to anon reads, and an on-publish `revalidateTag` should refresh ISR
+(see `docs/07`, EPIC A — not wired yet).
+
+---
+
+## Data model touched
+
+- **`articles`** — raw ingest + FK target. `url` unique; `hn_*`/`reddit_*`/`inbrief_score`, `raw` jsonb.
+- **`briefs`** — one per `date` (unique), `slug` (globally unique), `title/intro_en/uk`, `status` `draft|published`, `generated_by`.
+- **`brief_items`** — `unique(brief_id, rank)` and `unique(brief_id, article_id)`; `category_slug` → `categories`; bilingual text columns; `takeaways_*`/`tools_mentioned` jsonb; `search_tsv_*` are generated (never written).
+- **`pipeline_runs`** — observability per stage.
+
+## Run it
+
+```bash
+npm run pipeline:dry     # fetch + rank + summarize + print, NO writes
+npm run pipeline         # also writes the day's DRAFT brief
+# local env: the scripts expect env; for a local run use
+#   npx tsx --env-file=.env.local pipeline/run-daily.ts [--dry-run]
+# in CI the env comes from GitHub Actions secrets.
+```
+
+Failure semantics: partial source failures are absorbed (log + continue); the run
+hard-fails only when a stage's result would be invalid (e.g. malformed editor
+JSON). Re-running for the same date refreshes the draft.
+
+---
+
+## Known weak spots (brainstorm seeds)
+
+Honest list of where this is thin — good places to pressure-test:
+
+1. **Publish clobbers any same-date brief.** `upsertBriefDraft` upserts on `date` and sets `status='draft'`, and `replaceBriefItems` wipes existing items. If a brief for today is already **published** (or a human edited the draft), a re-run silently overwrites it / un-publishes it. No "refuse to overwrite published" guard.
+2. **Cross-day dedup is title-only.** The editor sees recent published *titles*; there's no semantic/vector check. The same event reworded across days can slip through. (pgvector `brief_item_embeddings` is the planned fix — P2 in `docs/07`.)
+3. **No cross-run signal accumulation.** Cross-source / mentions are computed **within a single run** only. The testbed accumulated mentions in the store over time; here a story that builds over several days doesn't compound — each day starts fresh.
+4. **Engagement signal is HN+Reddit only.** InBrief and RSS items have `velocity = 0`; a high-importance first-party post (e.g. an Anthropic blog) leans entirely on authority + recency + inbrief and can underrank against a noisy HN thread.
+5. **`recentPublishedTitles` ordering.** It takes the 20 most recent published briefs, then their items ordered by **rank** (not date), limited to `RECENT_TITLES`. Skews toward rank-1 items; a not-yet-published draft from yesterday contributes nothing to dedup; with nothing published yet, dedup context is empty.
+6. **Clustering is title-only + O(n²).** Fine at ~127 items, but very differently-worded coverage of one event may **under-merge** (duplicates survive), and same-topic-different-story may **over-merge**.
+7. **Topic/category detection is brittle regex.** English-only keyword patterns; `category_slug` derived from the English title; the LLM can override but the deterministic fallback can misfile.
+8. **UK quality is unverified.** If the model returns an empty `*_uk` field, the parser copies the English text — so a brief could silently ship English in Ukrainian fields. No language/length validation.
+9. **One LLM call, all-or-nothing.** The whole brief is one Gemini response; if `JSON.parse` fails despite the schema, the entire run throws — no per-item salvage. No overall wall-clock/cost budget (a real call took ~48s, ~20k chars).
+10. **Source set is hard-coded and AI/dev-skewed.** New sources need code edits; X/Twitter only enters via what HN/Reddit surface; a silent InBrief outage just thins the pool. No source-health metric.
+11. **Idempotency vs. human edits.** Because items are replaced wholesale per date, re-running after a human curates the draft wipes those manual edits.
+
+## Follow-ups (roadmap)
+
+- pgvector cross-day semantic dedup (`brief_item_embeddings`).
+- Scheduled trigger (GitHub Actions 06:00 / `pg_cron`) + on-publish `revalidateTag`.
+- "Refuse to overwrite a published brief" safety guard (weak spot #1).
+- Telegram / newsletter publish (EPIC D) writing to `social_posts` / `newsletter_sends`.
