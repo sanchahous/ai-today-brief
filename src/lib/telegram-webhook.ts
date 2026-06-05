@@ -54,11 +54,11 @@ export function extractItemIdFromPrompt(text: string): string | null {
 // ─── Edited card decorators ───────────────────────────────────────────────────
 
 export function approvedBanner(): string {
-  return '✅ <b>СХВАЛЕНО</b>';
+  return '✅ ▔▔▔▔▔ <b>СХВАЛЕНО</b> ▔▔▔▔▔';
 }
 
 export function rejectedBanner(comment: string): string {
-  return `❌ <b>ВІДХИЛЕНО</b>\n💬 ${escHtml(comment)}`;
+  return `❌ ▔▔▔▔▔ <b>ВІДХИЛЕНО</b> ▔▔▔▔▔\n💬 ${escHtml(comment)}`;
 }
 
 function escHtml(s: string): string {
@@ -79,9 +79,12 @@ export interface BriefSummary {
 
 export function formatBriefSummary(s: BriefSummary): string {
   return (
-    `📋 <b>Рев'ю завершено: «${escHtml(s.title)}»</b>\n\n` +
-    `✅ Схвалено: ${s.approved}\n` +
-    `❌ Відхилено: ${s.rejected}\n\n` +
+    '━━━━━━━━━━━━━━━━━\n' +
+    `📋 <b>Рев'ю завершено</b>\n` +
+    `🗞 «${escHtml(s.title)}»\n` +
+    '━━━━━━━━━━━━━━━━━\n\n' +
+    `✅ Схвалено: <b>${s.approved}</b>\n` +
+    `❌ Відхилено: <b>${s.rejected}</b>\n\n` +
     (s.approved > 0
       ? 'Натисни 🚀 щоб опублікувати схвалені матеріали.'
       : '⚠️ Жодного схваленого матеріалу — брифінг не публікується.')

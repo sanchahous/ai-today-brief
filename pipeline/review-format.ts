@@ -42,8 +42,8 @@ export function reviewKeyboard(itemId: string): InlineKeyboard {
   return {
     inline_keyboard: [
       [
-        { text: '✅ Approve', callback_data: callbackData('approve', itemId) },
-        { text: '❌ Reject', callback_data: callbackData('reject', itemId) },
+        { text: '✅ Схвалити', callback_data: callbackData('approve', itemId) },
+        { text: '❌ Відхилити', callback_data: callbackData('reject', itemId) },
       ],
     ],
   };
@@ -60,9 +60,50 @@ export function escapeHtml(s: string): string {
 }
 
 /**
+ * A strong, full-width visual divider that breaks the chat stream so each card
+ * reads as a distinct "block" rather than blurring into the previous message.
+ * The N/M counter is baked into the divider so the eye lands on it first.
+ */
+export function cardDivider(position: number, total: number): string {
+  return `🟡 ▔▔▔▔▔ <b>${position}/${total}</b> ▔▔▔▔▔`;
+}
+
+/**
+ * The batch header sent ONCE before a run's review cards. Announces the brief,
+ * the date, and how many cards are coming — so the reviewer knows a new review
+ * stream is starting (and where it ends).
+ */
+export function formatBatchHeader(opts: { date: string; total: number; title?: string | null }): string {
+  const lines = [
+    '━━━━━━━━━━━━━━━━━',
+    "📋 <b>РЕВ'Ю БРИФУ</b>",
+    `📅 ${escapeHtml(opts.date)}`,
+  ];
+  if (opts.title) lines.push(`🗞 <i>${escapeHtml(opts.title)}</i>`);
+  lines.push(
+    `🗂 ${opts.total} ${pluralCards(opts.total)} до перегляду`,
+    '━━━━━━━━━━━━━━━━━',
+    'Натискай ✅/❌ на кожній картці.',
+    'Наприкінці зʼявиться кнопка 🚀 для публікації.',
+  );
+  return lines.join('\n');
+}
+
+function pluralCards(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'картка';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'картки';
+  return 'карток';
+}
+
+/**
  * One review card (Telegram HTML parse mode). `position`/`total` are 1-based.
  * Ukrainian is primary (the reviewer reads UK); the EN title sits below in
  * small italics for reference (useful when source links are in EN).
+ *
+ * Starts with a bold divider (see `cardDivider`) so cards never blur together
+ * in the chat stream.
  */
 export function formatItemMessage(item: ReviewItem, position: number, total: number): string {
   const titleEn = escapeHtml(item.title_en ?? '(untitled)');
@@ -70,14 +111,16 @@ export function formatItemMessage(item: ReviewItem, position: number, total: num
   const category = escapeHtml(item.category_slug ?? 'uncategorized');
   const summary = escapeHtml(item.summary_uk ?? item.summary_en);
   const lines = [
-    `<b>[${position}/${total}] · ${category}</b>`,
-    `<b>${titleUk}</b>`,
+    cardDivider(position, total),
+    `🗂 <b>${category}</b>`,
+    '',
+    `📰 <b>${titleUk}</b>`,
     `<i>${titleEn}</i>`,
     '',
     summary,
   ];
   const whyUk = item.why_matters_uk ?? item.why_matters_en;
-  if (whyUk) lines.push('', `💡 ${escapeHtml(whyUk)}`);
+  if (whyUk) lines.push('', `💡 <b>Навіщо:</b> ${escapeHtml(whyUk)}`);
   if (item.url) {
     const src = escapeHtml(item.source_name ?? 'source');
     lines.push('', `🔗 <a href="${escapeHtml(item.url)}">${src}</a>`);

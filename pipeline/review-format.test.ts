@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   callbackData,
+  cardDivider,
   decoratedAfterDecision,
   escapeHtml,
+  formatBatchHeader,
   formatItemMessage,
   parseCallbackData,
   reviewKeyboard,
@@ -60,12 +62,19 @@ describe('escapeHtml', () => {
 describe('formatItemMessage', () => {
   it('shows Ukrainian content as primary: UK title bold, EN title italic', () => {
     const msg = formatItemMessage(item, 3, 6);
-    expect(msg).toContain('[3/6] · agents-and-mcp');
-    expect(msg).toContain('<b>Новий MCP-сервер для Postgres</b>');
+    // strong card-start divider with N/M counter
+    expect(msg).toContain('🟡');
+    expect(msg).toContain('<b>3/6</b>');
+    expect(msg).toContain('🗂 <b>agents-and-mcp</b>');
+    expect(msg).toContain('📰 <b>Новий MCP-сервер для Postgres</b>');
     expect(msg).toContain('<i>New MCP server for Postgres</i>');
     expect(msg).toContain('Сервер, що підключає агентів до бази даних.');
-    expect(msg).toContain('💡 Підключи агента до продакшн-бази.');
+    expect(msg).toContain('💡 <b>Навіщо:</b> Підключи агента до продакшн-бази.');
     expect(msg).toContain('<a href="https://ex.com/mcp">Hacker News</a>');
+  });
+  it('starts with the divider line so cards never blur together', () => {
+    const msg = formatItemMessage(item, 1, 7);
+    expect(msg.startsWith('🟡')).toBe(true);
   });
   it('falls back to EN content when UK fields are absent', () => {
     const msg = formatItemMessage(
@@ -73,7 +82,7 @@ describe('formatItemMessage', () => {
       1, 1,
     );
     expect(msg).toContain('A server that connects agents to a database.');
-    expect(msg).toContain('💡 Wire your agent to prod data.');
+    expect(msg).toContain('💡 <b>Навіщо:</b> Wire your agent to prod data.');
   });
   it('omits why/link lines when those fields are absent', () => {
     const msg = formatItemMessage(
@@ -82,6 +91,32 @@ describe('formatItemMessage', () => {
     );
     expect(msg).not.toContain('💡');
     expect(msg).not.toContain('🔗');
+  });
+});
+
+describe('cardDivider', () => {
+  it('embeds the position/total counter', () => {
+    expect(cardDivider(2, 7)).toContain('<b>2/7</b>');
+    expect(cardDivider(2, 7)).toContain('🟡');
+  });
+});
+
+describe('formatBatchHeader', () => {
+  it('announces the brief with date, title and card count', () => {
+    const h = formatBatchHeader({ date: '2026-06-05', total: 7, title: 'AI Today' });
+    expect(h).toContain("РЕВ'Ю БРИФУ");
+    expect(h).toContain('2026-06-05');
+    expect(h).toContain('AI Today');
+    expect(h).toContain('7 карток');
+  });
+  it('uses correct Ukrainian plural for 1 / 2 / 5 cards', () => {
+    expect(formatBatchHeader({ date: 'd', total: 1 })).toContain('1 картка');
+    expect(formatBatchHeader({ date: 'd', total: 3 })).toContain('3 картки');
+    expect(formatBatchHeader({ date: 'd', total: 5 })).toContain('5 карток');
+  });
+  it('omits the title line when no title is given', () => {
+    const h = formatBatchHeader({ date: 'd', total: 2 });
+    expect(h).not.toContain('🗞');
   });
 });
 

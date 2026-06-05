@@ -11,6 +11,10 @@
  *
  * Idempotent: Telegram may re-deliver updates — item and brief status updates
  * use explicit `where review_status = 'pending'` / `where status = 'draft'` guards.
+ *
+ * Perf note: answerCallbackQuery is ALWAYS called first (before any DB or Telegram
+ * API calls). This dismisses Telegram's loading spinner immediately. Side-effects
+ * (card edit, summary send) run after — slower, but the user already has feedback.
  */
 
 import { revalidatePath } from 'next/cache';
@@ -32,16 +36,23 @@ import {
 
 const TG = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}`;
 
-async function tg(method: string, body: Record<string, unknown>): Promise<unknown> {
-  const res = await fetch(`${TG}/${method}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(8_000),
-  });
-  return res.json();
+/** Calls Telegram Bot API. Never throws — returns { ok: false } on any error. */
+async function tg(method: string, body: Record<string, unknown>): Promise<Record<string, unknown>> {
+  try {
+    const res = await fetch(`${TG}/${method}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(12_000),
+    });
+    return (await res.json()) as Record<string, unknown>;
+  } catch (err) {
+    console.error(`[tg/${method}] network error:`, err instanceof Error ? err.message : String(err));
+    return { ok: false };
+  }
 }
 
+/** Acknowledges a callback query — call THIS FIRST to dismiss the loading spinner. */
 async function answerCallback(callbackQueryId: string, text?: string): Promise<void> {
   await tg('answerCallbackQuery', {
     callback_query_id: callbackQueryId,
@@ -49,13 +60,14 @@ async function answerCallback(callbackQueryId: string, text?: string): Promise<v
   });
 }
 
+/** Edit an existing message text + keyboard. Logs on Telegram error, never throws. */
 async function editText(
   chatId: string,
   messageId: number,
   html: string,
   replyMarkup?: object,
 ): Promise<void> {
-  await tg('editMessageText', {
+  const r = await tg('editMessageText', {
     chat_id: chatId,
     message_id: messageId,
     text: html,
@@ -63,21 +75,29 @@ async function editText(
     link_preview_options: { is_disabled: true },
     ...(replyMarkup ? { reply_markup: replyMarkup } : { reply_markup: { inline_keyboard: [] } }),
   });
+  if (!r.ok) {
+    console.error(`[editText] msg=${messageId} error:`, r.description ?? r.error_code ?? 'unknown');
+  }
 }
 
+/** Send a new message. Returns the Telegram message_id or null on failure. */
 async function sendMsg(
   chatId: string,
   html: string,
   extra: Record<string, unknown> = {},
 ): Promise<number | null> {
-  const r = (await tg('sendMessage', {
+  const r = await tg('sendMessage', {
     chat_id: chatId,
     text: html,
     parse_mode: 'HTML',
     link_preview_options: { is_disabled: true },
     ...extra,
-  })) as { ok?: boolean; result?: { message_id?: number } };
-  return r?.result?.message_id ?? null;
+  });
+  if (!r.ok) {
+    console.error('[sendMsg] error:', r.description ?? r.error_code ?? 'unknown');
+    return null;
+  }
+  return (r.result as Record<string, unknown> | undefined)?.message_id as number ?? null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -135,7 +155,7 @@ async function handleApprove(
   itemId: string,
   reviewerStr: string,
   chatId: string,
-): Promise<string> {
+): Promise<void> {
   // 1. Update item state (idempotent guard: only if still pending)
   const { data: item, error } = await db
     .from('brief_items')
@@ -145,7 +165,10 @@ async function handleApprove(
     .select('brief_id, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, review_msg_id, category_slug')
     .single();
 
-  if (error || !item) return 'Вже опрацьовано або не знайдено.';
+  if (error || !item) {
+    console.log('[approve] already processed or not found:', itemId);
+    return;
+  }
 
   // 2. Log to item_reviews dataset
   await db.from('item_reviews').insert({
@@ -164,16 +187,15 @@ async function handleApprove(
     await editText(chatId, item.review_msg_id, decorateCard(original, approvedBanner()));
   }
 
-  // 4. Check if all items reviewed
+  // 4. Check if all items reviewed → send summary
   await maybeSendSummary(db, item.brief_id, chatId);
-  return '✅ Схвалено';
 }
 
+/** Send force-reply prompt asking for rejection reason. */
 async function handleRejectInit(
   db: ReturnType<typeof getSupabaseAdmin>,
   itemId: string,
   chatId: string,
-  callbackQueryId: string,
 ): Promise<void> {
   const { data: item } = await db
     .from('brief_items')
@@ -183,8 +205,8 @@ async function handleRejectInit(
 
   const title = item?.title_uk ?? item?.title_en ?? 'item';
   const promptText = buildRejectPrompt(title, itemId);
-  await sendMsg(chatId, promptText, { reply_markup: { force_reply: true, selective: true } });
-  await answerCallback(callbackQueryId, 'Напиши причину відхилення 👇');
+  // force_reply opens the reply bar automatically in the Telegram app
+  await sendMsg(chatId, promptText, { reply_markup: { force_reply: true } });
 }
 
 async function handleRejectReason(
@@ -220,7 +242,7 @@ async function handleRejectReason(
     summary_en: item.summary_en,
   });
 
-  // Edit original card
+  // Edit original card with ❌ banner
   if (item.review_msg_id) {
     const { data: full } = await db
       .from('brief_items')
@@ -240,7 +262,7 @@ async function handlePublish(
   briefId: string,
   chatId: string,
   msgId: number,
-): Promise<string> {
+): Promise<void> {
   const { data: brief, error } = await db
     .from('briefs')
     .update({ status: 'published', published_at: new Date().toISOString() })
@@ -249,7 +271,10 @@ async function handlePublish(
     .select('title_en, title_uk')
     .single();
 
-  if (error || !brief) return 'Брифінг вже опублікований або не знайдено.';
+  if (error || !brief) {
+    console.log('[publish] already published or not found:', briefId);
+    return;
+  }
 
   const { count: approved } = await db
     .from('brief_items')
@@ -260,7 +285,6 @@ async function handlePublish(
   const title = brief.title_uk ?? brief.title_en ?? '–';
   await editText(chatId, msgId, publishedBanner(title, approved ?? 0));
   await revalidateSite();
-  return '🚀 Опубліковано!';
 }
 
 // ─── Card text builder (must match pipeline/review-format.ts output shape) ────
@@ -283,8 +307,8 @@ function buildCardText(item: {
   const summary  = escHtml(item.summary_uk ?? item.summary_en);
   const why      = item.why_matters_uk ?? item.why_matters_en;
   const cat      = escHtml(item.category_slug ?? 'uncategorized');
-  const lines = [`<b>${cat}</b>`, `<b>${titleUk}</b>`, `<i>${titleEn}</i>`, '', summary];
-  if (why) lines.push('', `💡 ${escHtml(why)}`);
+  const lines = [`🗂 <b>${cat}</b>`, '', `📰 <b>${titleUk}</b>`, `<i>${titleEn}</i>`, '', summary];
+  if (why) lines.push('', `💡 <b>Навіщо:</b> ${escHtml(why)}`);
   return lines.join('\n');
 }
 
@@ -317,32 +341,33 @@ export async function POST(request: NextRequest): Promise<Response> {
     // ── callback_query (button press) ────────────────────────────────────────
     const cq = update.callback_query as Record<string, unknown> | undefined;
     if (cq) {
-      const from = cq.from as Record<string, unknown> | undefined;
+      const from   = cq.from as Record<string, unknown> | undefined;
       const userId = String(from?.id ?? '');
+
       if (adminUserId && userId !== adminUserId) {
         await answerCallback(String(cq.id), '⛔ Not authorised');
         return NextResponse.json({ ok: true });
       }
 
-      const data    = String(cq.data ?? '');
-      const msgId   = (cq.message as Record<string, unknown> | undefined)?.message_id as number | undefined;
-      const parsed  = parseCallbackData(data);
+      const data     = String(cq.data ?? '');
+      const msgId    = (cq.message as Record<string, unknown> | undefined)?.message_id as number | undefined;
+      const parsed   = parseCallbackData(data);
       const reviewer = `tg:${userId}`;
 
-      if (!parsed) {
-        await answerCallback(String(cq.id));
-        return NextResponse.json({ ok: true });
-      }
+      // ★ Answer IMMEDIATELY — dismisses the Telegram loading spinner right away.
+      //   Side-effects (DB writes, card edits) run after this line.
+      await answerCallback(String(cq.id));
+
+      if (!parsed) return NextResponse.json({ ok: true });
 
       if (parsed.action === 'approve') {
-        const msg = await handleApprove(db, parsed.id, reviewer, chatId);
-        await answerCallback(String(cq.id), msg);
+        await handleApprove(db, parsed.id, reviewer, chatId);
       } else if (parsed.action === 'reject') {
-        await handleRejectInit(db, parsed.id, chatId, String(cq.id));
+        await handleRejectInit(db, parsed.id, chatId);
       } else if (parsed.action === 'publish' && msgId) {
-        const msg = await handlePublish(db, parsed.id, chatId, msgId);
-        await answerCallback(String(cq.id), msg);
+        await handlePublish(db, parsed.id, chatId, msgId);
       }
+
       return NextResponse.json({ ok: true });
     }
 
@@ -360,14 +385,14 @@ export async function POST(request: NextRequest): Promise<Response> {
       const itemId     = extractItemIdFromPrompt(promptText);
       if (!itemId) return NextResponse.json({ ok: true });
 
-      const reason   = String((msg.text as string | undefined) ?? '').trim();
+      const reason = String((msg.text as string | undefined) ?? '').trim();
       if (!reason) return NextResponse.json({ ok: true });
-      const reviewer = `tg:${userId}`;
-      await handleRejectReason(db, itemId, reason, reviewer, chatId);
+
+      await handleRejectReason(db, itemId, reason, `tg:${userId}`, chatId);
     }
   } catch (err) {
-    // Log but always return 200 so Telegram doesn't retry indefinitely
-    console.error('[telegram/webhook]', err instanceof Error ? err.message : String(err));
+    // Always return 200 so Telegram doesn't retry indefinitely
+    console.error('[telegram/webhook] unhandled error:', err instanceof Error ? err.message : String(err));
   }
 
   return NextResponse.json({ ok: true });

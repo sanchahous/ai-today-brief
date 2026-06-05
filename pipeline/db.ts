@@ -175,6 +175,21 @@ export async function recentPublishedTitles(db: PipelineDb, limit: number): Prom
     .filter((t): t is string => typeof t === 'string' && t.length > 0);
 }
 
+/** Brief date + title — used for the Telegram review batch header. */
+export async function getBriefMeta(
+  db: PipelineDb,
+  briefId: string,
+): Promise<{ date: string; title: string | null } | null> {
+  const { data, error } = await db
+    .from('briefs')
+    .select('date, title_uk, title_en')
+    .eq('id', briefId)
+    .maybeSingle();
+  if (error) throw new Error(`[db] getBriefMeta failed: ${error.message}`);
+  if (!data) return null;
+  return { date: data.date, title: data.title_uk ?? data.title_en ?? null };
+}
+
 /** Pending items of a brief that haven't been pushed to Telegram yet. */
 export async function getPendingReviewItems(
   db: PipelineDb,

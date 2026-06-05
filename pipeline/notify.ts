@@ -9,9 +9,9 @@
  * `review-format.ts` are unit-tested.
  */
 
-import { getPendingReviewItems, setReviewMsgId, type PipelineDb } from './db';
+import { getBriefMeta, getPendingReviewItems, setReviewMsgId, type PipelineDb } from './db';
 import { sendMessage } from './telegram';
-import { formatItemMessage, reviewKeyboard } from './review-format';
+import { formatBatchHeader, formatItemMessage, reviewKeyboard } from './review-format';
 import { logEvent } from './log';
 
 export interface NotifyResult {
@@ -29,6 +29,17 @@ export async function notifyReview(
   if (items.length === 0) {
     logEvent('info', 'notify', 'No pending items to push for review', { brief_id: briefId });
     return { sent: 0, failed: 0 };
+  }
+
+  // Batch header: a single announce message so the reviewer sees a NEW review
+  // stream is starting (and how many cards to expect) — breaks the chat clutter.
+  const meta = await getBriefMeta(db, briefId);
+  if (meta) {
+    await sendMessage(
+      token,
+      chatId,
+      formatBatchHeader({ date: meta.date, total: items.length, title: meta.title }),
+    );
   }
 
   let sent = 0;
