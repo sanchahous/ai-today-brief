@@ -69,6 +69,11 @@ export type Database = {
           deep_dive_uk: string | null;
           id: string;
           rank: number;
+          review_comment: string | null;
+          review_msg_id: number | null;
+          review_status: string;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
           search_tsv_en: unknown;
           search_tsv_uk: unknown;
           slug: string | null;
@@ -95,6 +100,11 @@ export type Database = {
           deep_dive_uk?: string | null;
           id?: string;
           rank: number;
+          review_comment?: string | null;
+          review_msg_id?: number | null;
+          review_status?: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
           search_tsv_en?: unknown;
           search_tsv_uk?: unknown;
           slug?: string | null;
@@ -121,6 +131,11 @@ export type Database = {
           deep_dive_uk?: string | null;
           id?: string;
           rank?: number;
+          review_comment?: string | null;
+          review_msg_id?: number | null;
+          review_status?: string;
+          reviewed_at?: string | null;
+          reviewed_by?: string | null;
           search_tsv_en?: unknown;
           search_tsv_uk?: unknown;
           slug?: string | null;
@@ -276,6 +291,59 @@ export type Database = {
           type?: string;
         };
         Relationships: [];
+      };
+      item_reviews: {
+        Row: {
+          action: string;
+          article_url: string | null;
+          brief_id: string | null;
+          brief_item_id: string | null;
+          category_slug: string | null;
+          comment: string | null;
+          created_at: string;
+          id: string;
+          model_output: Json | null;
+          reviewer: string | null;
+          summary_en: string | null;
+          title_en: string | null;
+        };
+        Insert: {
+          action: string;
+          article_url?: string | null;
+          brief_id?: string | null;
+          brief_item_id?: string | null;
+          category_slug?: string | null;
+          comment?: string | null;
+          created_at?: string;
+          id?: string;
+          model_output?: Json | null;
+          reviewer?: string | null;
+          summary_en?: string | null;
+          title_en?: string | null;
+        };
+        Update: {
+          action?: string;
+          article_url?: string | null;
+          brief_id?: string | null;
+          brief_item_id?: string | null;
+          category_slug?: string | null;
+          comment?: string | null;
+          created_at?: string;
+          id?: string;
+          model_output?: Json | null;
+          reviewer?: string | null;
+          summary_en?: string | null;
+          title_en?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'item_reviews_brief_item_id_fkey';
+            columns: ['brief_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'brief_items';
+            referencedColumns: ['id'];
+          },
+        ];
       };
       pipeline_runs: {
         Row: {

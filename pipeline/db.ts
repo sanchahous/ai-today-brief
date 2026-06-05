@@ -13,6 +13,7 @@ import type { Database } from '@/lib/database.types';
 import type { FetchedArticle } from './sources/http';
 import type { DraftBrief, DraftItem } from './summarize';
 import type { PipelineStage } from './log';
+import type { ReviewItem } from './review-format';
 
 export type PipelineDb = SupabaseClient<Database>;
 
@@ -172,6 +173,65 @@ export async function recentPublishedTitles(db: PipelineDb, limit: number): Prom
   return (items ?? [])
     .map((r) => r.title_en)
     .filter((t): t is string => typeof t === 'string' && t.length > 0);
+}
+
+/** Brief date + title — used for the Telegram review batch header. */
+export async function getBriefMeta(
+  db: PipelineDb,
+  briefId: string,
+): Promise<{ date: string; title: string | null } | null> {
+  const { data, error } = await db
+    .from('briefs')
+    .select('date, title_uk, title_en')
+    .eq('id', briefId)
+    .maybeSingle();
+  if (error) throw new Error(`[db] getBriefMeta failed: ${error.message}`);
+  if (!data) return null;
+  return { date: data.date, title: data.title_uk ?? data.title_en ?? null };
+}
+
+/** Pending items of a brief that haven't been pushed to Telegram yet. */
+export async function getPendingReviewItems(
+  db: PipelineDb,
+  briefId: string,
+): Promise<ReviewItem[]> {
+  const { data, error } = await db
+    .from('brief_items')
+    .select('id, rank, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, articles(url, source_name)')
+    .eq('brief_id', briefId)
+    .eq('review_status', 'pending')
+    .is('review_msg_id', null)
+    .order('rank', { ascending: true });
+  if (error) throw new Error(`[db] getPendingReviewItems failed: ${error.message}`);
+  return (data ?? []).map((r) => {
+    const article = r.articles as { url: string | null; source_name: string | null } | null;
+    return {
+      id: r.id,
+      rank: r.rank,
+      category_slug: r.category_slug,
+      title_en: r.title_en,
+      title_uk: r.title_uk,
+      summary_en: r.summary_en,
+      summary_uk: r.summary_uk,
+      why_matters_en: r.why_matters_en,
+      why_matters_uk: r.why_matters_uk,
+      url: article?.url ?? null,
+      source_name: article?.source_name ?? null,
+    };
+  });
+}
+
+/** Record the Telegram message id so a re-run won't re-send, and the webhook can edit it. */
+export async function setReviewMsgId(
+  db: PipelineDb,
+  itemId: string,
+  msgId: number,
+): Promise<void> {
+  const { error } = await db
+    .from('brief_items')
+    .update({ review_msg_id: msgId })
+    .eq('id', itemId);
+  if (error) throw new Error(`[db] setReviewMsgId failed: ${error.message}`);
 }
 
 export interface PipelineRunLog {

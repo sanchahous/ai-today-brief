@@ -47,3 +47,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local-only pipeline ops/debug helpers (underscore-prefixed, not for CI)
+pipeline/scripts/_*

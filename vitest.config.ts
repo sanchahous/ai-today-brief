@@ -36,6 +36,8 @@ export default defineConfig({
         'pipeline/summarize.ts',
         'pipeline/db.ts',
         'pipeline/log.ts',
+        'pipeline/notify.ts',
+        'pipeline/telegram.ts',
         'pipeline/sources/**',
       ],
       thresholds: {

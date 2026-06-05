@@ -21,6 +21,10 @@ export interface PipelineConfig {
   minScore: number;
   /** How many recently-published item titles to show the editor for dedup. */
   recentTitles: number;
+  /** Bot token for pushing review cards (optional — notify is skipped if unset). */
+  telegramBotToken?: string;
+  /** Private chat id that receives the per-item review cards (optional). */
+  telegramReviewChatId?: string;
   /** Stop before any Supabase write — assemble + print only. */
   dryRun: boolean;
 }
@@ -80,6 +84,8 @@ export function loadPipelineConfig(
     perTopicCap: intIn(env.PER_TOPIC_CAP, 2, 1, 5),
     minScore: floatIn(env.MIN_SCORE, 0.15, 0, 1),
     recentTitles: intIn(env.RECENT_TITLES, 60, 0, 200),
+    telegramBotToken: env.TELEGRAM_BOT_TOKEN?.trim() || undefined,
+    telegramReviewChatId: env.TELEGRAM_REVIEW_CHAT_ID?.trim() || undefined,
     dryRun: argv.includes('--dry-run') || env.DRY_RUN === '1',
   };
 }
