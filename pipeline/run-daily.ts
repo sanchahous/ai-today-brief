@@ -15,6 +15,7 @@ import { rankCandidates } from './rank';
 import { selectPool } from './select';
 import { summarize, resolveGeminiModel, type DraftBrief } from './summarize';
 import { publish } from './publish';
+import { notifyReview } from './notify';
 import {
   createServiceClient,
   logPipelineRun,
@@ -154,6 +155,12 @@ async function main(): Promise<void> {
     items: result.itemCount,
     status: result.skipped ? 'left_published' : 'draft',
   });
+
+  // ── Notify for review (optional) ─────────────────────────────────────────────
+  // Push each pending item to the private Telegram chat with ✅/❌ buttons.
+  if (!result.skipped && config.telegramBotToken && config.telegramReviewChatId) {
+    await notifyReview(db, config.telegramBotToken, config.telegramReviewChatId, result.briefId);
+  }
 }
 
 main().catch((error) => {
