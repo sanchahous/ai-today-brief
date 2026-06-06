@@ -78,6 +78,8 @@ export function CookieConsent({ lang }: { lang: Lang }) {
     () => true,
     () => false,
   );
+  /** null = not yet read from storage (SSR/hydration). */
+  const [hasStoredConsent, setHasStoredConsent] = useState<boolean | null>(null);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [analytics, setAnalytics] = useState(true);
   const [ads, setAds] = useState(false);
@@ -88,12 +90,18 @@ export function CookieConsent({ lang }: { lang: Lang }) {
       updatedAt: new Date().toISOString(),
     };
     persistConsent(next);
+    setHasStoredConsent(true);
     setPrefsOpen(false);
   }, []);
 
   useEffect(() => {
     const stored = loadStoredConsent();
-    if (stored) applyConsentToGtag(stored);
+    setHasStoredConsent(stored !== null);
+    if (stored) {
+      setAnalytics(stored.analytics);
+      setAds(stored.ads);
+      applyConsentToGtag(stored);
+    }
   }, []);
 
   useEffect(() => {
@@ -102,8 +110,8 @@ export function CookieConsent({ lang }: { lang: Lang }) {
     return () => window.removeEventListener(OPEN_CONSENT_EVENT, onOpen);
   }, []);
 
-  if (!isClient) return null;
-  if (loadStoredConsent() !== null && !prefsOpen) return null;
+  if (!isClient || hasStoredConsent === null) return null;
+  if (hasStoredConsent && !prefsOpen) return null;
 
   const categories = [
     { key: 'essential', on: true, locked: true as const },
