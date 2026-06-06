@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildPrompt,
+  buildReaderProfileBlock,
   generateWithRetry,
   isRetryableGeminiError,
   parseBrief,
@@ -28,6 +29,16 @@ const pool: PoolItem[] = [
   },
 ];
 
+describe('buildReaderProfileBlock', () => {
+  it('mentions key reader interests', () => {
+    const block = buildReaderProfileBlock();
+    expect(block).toContain('READER PROFILE');
+    expect(block).toContain('Claude Code');
+    expect(block).toContain('MCP');
+    expect(block).toContain('Does NOT want');
+  });
+});
+
 describe('buildPrompt', () => {
   it('lists candidates, recent titles and the category vocabulary', () => {
     const p = buildPrompt(pool, ['Older published story'], 6);
@@ -39,6 +50,15 @@ describe('buildPrompt', () => {
   });
   it('notes when nothing has been published yet', () => {
     expect(buildPrompt(pool, [], 6)).toContain('(nothing published yet)');
+  });
+  it('embeds reader profile block', () => {
+    const p = buildPrompt(pool, [], 6);
+    expect(p).toContain('READER PROFILE');
+    expect(p).toContain('Does NOT want');
+  });
+  it('references reader profile in the filtering instructions', () => {
+    const p = buildPrompt(pool, [], 6);
+    expect(p).toContain('READER PROFILE above');
   });
 });
 

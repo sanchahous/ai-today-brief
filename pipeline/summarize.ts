@@ -219,6 +219,27 @@ export async function generateWithRetry(
 
 // ─── Prompt ──────────────────────────────────────────────────────────────────
 
+/**
+ * A fixed description of the reader this brief is written for.
+ * Injected into the prompt so the model can apply content-relevance judgement
+ * consistently — not just a style guide but a filter for *what matters*.
+ */
+export function buildReaderProfileBlock(): string {
+  return `READER PROFILE
+A working developer and vibe coder. Daily tools: Claude Code, Cursor, Codex,
+Gemini and similar agentic IDEs. Wants concrete, actionable intelligence on:
+  • LLM token-cost / prompt-caching / context-window optimisation
+  • Claude / Cursor / Codex / Gemini cheatsheets, hidden features,
+    slash commands, hooks, skills, MCP servers
+  • Vibe-coding workflow: testing, design, content generation
+  • Building & orchestrating AI agents (Claude Agent SDK, MCP)
+  • Realistic monetisation for AI-native devs
+  • Free certifications, internships, fellowships, hands-on tutorials
+
+Does NOT want: geopolitics, generic CEO quotes, raw academic research,
+big-iron datacenter news, philosophical AI-doom takes.`;
+}
+
 export function buildPrompt(
   candidates: PoolItem[],
   recentlyPublished: string[],
@@ -239,6 +260,8 @@ a few genuinely valuable, NEW items per day — each with a clear "why it matter
 link to the primary source. English is primary; Ukrainian is a full, natural translation
 (not transliteration), with correct IT terminology.
 
+${buildReaderProfileBlock()}
+
 CANDIDATES (already ranked by velocity + cross-source coverage + authority + recency):
 ${list}
 
@@ -251,7 +274,9 @@ YOUR JOB — a strict editor, QUALITY over quantity:
 3. Avoid topic spam: don't take multiple items about the same product/technology unless
    they are clearly distinct stories. Prefer breadth across the niche.
 4. Drop low value: pure punditry ("X says…"), clickbait, thin listicles, opinion without facts.
-5. From what remains, keep AT MOST ${maxItems}, most important first. Returning FEWER
+5. Use the READER PROFILE above to filter for relevance — skip stories the reader
+   explicitly does not want, even if they are technically about AI.
+6. From what remains, keep AT MOST ${maxItems}, most important first. Returning FEWER
    (even 0) is correct when there isn't enough that is genuinely new, valuable and distinct.
    Never pad to hit a number.
 
