@@ -1,21 +1,24 @@
 # `pipeline/` — the daily brief pipeline
 
 End-to-end, step-by-step logic of how a day's brief is produced. Single entry
-point: [`run-daily.ts`](./run-daily.ts). Four stages share typed structs and no
+point: [`run-daily.ts`](./run-daily.ts). Five stages share typed structs and no
 module-level mutable state:
 
 ```
                          pipeline/run-daily.ts (orchestrator + --dry-run)
                                         │
-   ┌──────────────┬───────────────┬────┴───────────┬────────────────┐
-   ▼              ▼               ▼                 ▼                ▼
- FETCH    ──►    RANK     ──►   SELECT    ──►    SUMMARIZE   ──►   PUBLISH
- sources/**      rank.ts        select.ts        summarize.ts      publish.ts
- fetch.ts        topics.ts      topics.ts        (Gemini)          db.ts
-   │                                                                 │
-   └──────── in-memory FetchedArticle[] ──────────────────►  Supabase (draft)
-                                                              articles · briefs
-                                                              brief_items · pipeline_runs
+   ┌────────┬──────────┬─────────┬──────┴──────────┬─────────────┐
+   ▼        ▼          ▼         ▼                  ▼             ▼
+ FETCH ──► RANK ──►  SELECT ──► DEDUP  ──►     SUMMARIZE ──►  PUBLISH
+ src/**   rank.ts  select.ts  embeddings.ts   summarize.ts   publish.ts
+ fetch.ts topics.ts topics.ts  db.ts           (Gemini)       db.ts
+   │                              │                              │
+   └─ in-memory FetchedArticle[] ─┘                             │
+                                                         Supabase (draft)
+                                                         articles · briefs
+                                                         brief_items
+                                                         brief_item_embeddings
+                                                         pipeline_runs
 ```
 
 The store is the single source of truth. A brief is written as **`draft`**; a
@@ -40,9 +43,10 @@ the Supabase **service_role** key and is **never imported under `src/`**.
 | `topics.ts` | `detectTopic` (diversity tag) + `categoryForTitle` (9 product categories) | ✅ |
 | `text.ts` | Title similarity (Jaro/Jaccard) + `slugify`/`dedupeSlugs` | ✅ |
 | `select.ts` | Quality floor + per-topic cap + pool size | ✅ |
+| `embeddings.ts` | `gemini-embedding-001` @ 768 dims, batched, 429-backoff | ✅ (`embedInput`; SDK call `v8 ignore`) |
 | `summarize.ts` | Gemini structured-JSON editor → bilingual brief | excluded (LLM IO) |
 | `publish.ts` | Idempotent draft write composition | excluded (IO) |
-| `db.ts` | Service-role client + queries | excluded (IO) |
+| `db.ts` | Service-role client + queries (incl. `matchPublishedItem`, `storeItemEmbeddings`) | excluded (IO) |
 | `log.ts` | Structured JSON logs | excluded |
 
 ---
@@ -60,7 +64,9 @@ tunables. `date` = today in UTC (`YYYY-MM-DD`) — this is the brief's unique ke
 | `PER_TOPIC_CAP` | 2 | 1–5 | Max pooled items sharing one fine-grained topic |
 | `MIN_SCORE` | 0.15 | 0–1 | Composite-score floor to enter the pool |
 | `RECENT_TITLES` | 60 | 0–200 | Recently-published titles shown to the editor for dedup |
-| `--dry-run` / `DRY_RUN=1` | off | — | Assemble + print, **no DB writes** |
+| `EMBED_LIMIT` | 20 | 1–50 | Max pool candidates to embed per run (quota guard) |
+| `MAX_EMBED_DISTANCE` | 0.20 | 0.05–1 | Cosine distance ceiling for semantic dedup (lower = stricter) |
+| `--dry-run` / `DRY_RUN=1` | off | — | Assemble + print, **no DB writes** (skips semantic dedup) |
 
 Required env (first non-empty wins): `SCRAPPER_BASE_URL` ▸ `NEXT_PUBLIC_SUPABASE_URL` ▸ `SUPABASE_URL`;
 `SCRAPPER_SERVICE_KEY` ▸ `SUPABASE_SERVICE_ROLE_KEY` ▸ `SUPABASE_SERVICE_KEY`; `GEMINI_API_KEY`.
@@ -104,6 +110,31 @@ and `categoryForTitle(lead.title)` (the deterministic `category_slug` default).
 Deterministic pool before the paid LLM call: drop `score < MIN_SCORE`, cap items
 per fine-grained topic (`PER_TOPIC_CAP`), keep the top `POOL_SIZE`. Output:
 `PoolItem[]` with a 1-based `ref` the editor selects by. If empty → run stops.
+
+### 3.5. Semantic dedup — `embeddings.ts` + `db.ts` (`matchPublishedItem`)
+Hard cross-day dedup before the LLM call — the counterpart to the title-based
+dedup inside the LLM prompt, but deterministic and model-independent.
+
+1. Embed up to `EMBED_LIMIT` pool candidate titles via `gemini-embedding-001`
+   (768 dims, `SEMANTIC_SIMILARITY` task, batched ≤ 96, exponential 429-backoff).
+2. For each embedding, call `match_published_item(embedding, MAX_EMBED_DISTANCE)` —
+   a pgvector nearest-neighbour query against `brief_item_embeddings` restricted
+   to `briefs.status = 'published'`.
+3. Drop any candidate whose nearest published item is within `MAX_EMBED_DISTANCE`
+   cosine distance (default 0.20). Catches the same story re-worded across days
+   even when the titles share no tokens.
+4. Re-number `ref`s so the LLM sees a contiguous 1..N. Candidates beyond
+   `EMBED_LIMIT` (already below the pool cap in practice) pass through unchanged.
+5. Logs `{ pool_in, pool_out, dropped }` to `pipeline_runs` as stage `'dedup'`.
+
+**Skipped in `--dry-run`** (db is null). **Safe when `brief_item_embeddings` is
+empty** — `matchPublishedItem` returns `null`, all candidates pass, the pipeline
+accumulates semantic memory gradually as briefs are published.
+
+After a successful publish, `storeItemEmbeddings` embeds the published items'
+English titles and upserts into `brief_item_embeddings` (idempotent on
+`brief_item_id`) so tomorrow's run can dedup against today's. Best-effort:
+a failure here is logged but does not abort the run.
 
 ### 4. Summarize — `summarize.ts` (one Gemini call)
 The editor-in-chief, EN-primary / UK-secondary, with a forced response schema:
@@ -157,10 +188,10 @@ JSON). Re-running for the same date refreshes the draft.
 Honest list of where this is thin — good places to pressure-test:
 
 1. ~~**Publish clobbers any same-date brief.**~~ **Fixed** — `publish()` now calls `getBriefByDate` and refuses to overwrite a brief that is already `published` for the same date (`isPublishedConflict`), returning `{ skipped: true }`. A still-`draft` brief is still refreshed (the idempotent-refresh case). *Residual:* a human editing the **draft's** items will still be overwritten by a same-day re-run — only `published` is protected.
-2. **Cross-day dedup is title-only.** The editor sees recent published *titles*; there's no semantic/vector check. The same event reworded across days can slip through. (pgvector `brief_item_embeddings` is the planned fix — P2 in `docs/07`.)
-3. **No cross-run signal accumulation.** Cross-source / mentions are computed **within a single run** only. The testbed accumulated mentions in the store over time; here a story that builds over several days doesn't compound — each day starts fresh.
+2. ~~**Cross-day dedup is title-only.**~~ **Fixed** — step 3.5 embeds every pool candidate with `gemini-embedding-001` (768 dims) and drops any candidate whose cosine distance to a previously-published `brief_item_embeddings` row is ≤ `MAX_EMBED_DISTANCE` (default 0.20). The same event re-worded across days now lands close in vector space and is removed before the LLM call. *Residual:* the store is empty until at least one brief has been published; dedup strengthens over the first few days of use.
+3. ~~**No cross-run signal accumulation.**~~ **Partially fixed** — after each successful publish, `storeItemEmbeddings` persists the published items' embeddings in `brief_item_embeddings`. Future runs check against them, so a story that keeps resurfacing stays blocked. Mention-count aggregation across days (the full testbed behaviour) is still per-run only.
 4. **Engagement signal is HN+Reddit only.** InBrief and RSS items have `velocity = 0`; a high-importance first-party post (e.g. an Anthropic blog) leans entirely on authority + recency + inbrief and can underrank against a noisy HN thread.
-5. **`recentPublishedTitles` ordering.** It takes the 20 most recent published briefs, then their items ordered by **rank** (not date), limited to `RECENT_TITLES`. Skews toward rank-1 items; a not-yet-published draft from yesterday contributes nothing to dedup; with nothing published yet, dedup context is empty.
+5. **`recentPublishedTitles` ordering.** It takes the 20 most recent published briefs, then their items ordered by **rank** (not date), limited to `RECENT_TITLES`. Skews toward rank-1 items; a not-yet-published draft from yesterday contributes nothing to dedup; with nothing published yet, dedup context is empty. *Note:* the title list is now a second, soft dedup layer — the primary hard block is the vector store (step 3.5).
 6. **Clustering is title-only + O(n²).** Fine at ~127 items, but very differently-worded coverage of one event may **under-merge** (duplicates survive), and same-topic-different-story may **over-merge**.
 7. **Topic/category detection is brittle regex.** English-only keyword patterns; `category_slug` derived from the English title; the LLM can override but the deterministic fallback can misfile.
 8. **UK quality is unverified.** If the model returns an empty `*_uk` field, the parser copies the English text — so a brief could silently ship English in Ukrainian fields. No language/length validation.
@@ -170,7 +201,8 @@ Honest list of where this is thin — good places to pressure-test:
 
 ## Follow-ups (roadmap)
 
-- pgvector cross-day semantic dedup (`brief_item_embeddings`).
+- ~~pgvector cross-day semantic dedup (`brief_item_embeddings`).~~ ✅ Done (migration 020).
 - Scheduled trigger (GitHub Actions 06:00 / `pg_cron`) + on-publish `revalidateTag`.
 - Admin-only draft review page with a publish-to-prod button (server action + `revalidateTag`).
 - Telegram / newsletter publish (EPIC D) writing to `social_posts` / `newsletter_sends`.
+- Per-run mention accumulation across days (carry forward cluster sizes from DB).

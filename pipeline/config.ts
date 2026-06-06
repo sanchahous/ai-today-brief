@@ -21,6 +21,10 @@ export interface PipelineConfig {
   minScore: number;
   /** How many recently-published item titles to show the editor for dedup. */
   recentTitles: number;
+  /** Max pool candidates to embed per run (keeps us under the Gemini quota). */
+  embedLimit: number;
+  /** Cosine distance ceiling: candidates closer than this to a published item are dropped. */
+  maxEmbedDistance: number;
   /** Bot token for pushing review cards (optional — notify is skipped if unset). */
   telegramBotToken?: string;
   /** Private chat id that receives the per-item review cards (optional). */
@@ -84,6 +88,8 @@ export function loadPipelineConfig(
     perTopicCap: intIn(env.PER_TOPIC_CAP, 2, 1, 5),
     minScore: floatIn(env.MIN_SCORE, 0.15, 0, 1),
     recentTitles: intIn(env.RECENT_TITLES, 60, 0, 200),
+    embedLimit: intIn(env.EMBED_LIMIT, 20, 1, 50),
+    maxEmbedDistance: floatIn(env.MAX_EMBED_DISTANCE, 0.20, 0.05, 1),
     telegramBotToken: env.TELEGRAM_BOT_TOKEN?.trim() || undefined,
     telegramReviewChatId: env.TELEGRAM_REVIEW_CHAT_ID?.trim() || undefined,
     dryRun: argv.includes('--dry-run') || env.DRY_RUN === '1',

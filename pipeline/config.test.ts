@@ -32,6 +32,8 @@ describe('loadPipelineConfig', () => {
     expect(cfg.poolSize).toBe(16);
     expect(cfg.perTopicCap).toBe(2);
     expect(cfg.minScore).toBeCloseTo(0.15);
+    expect(cfg.embedLimit).toBe(20);
+    expect(cfg.maxEmbedDistance).toBeCloseTo(0.20);
     expect(cfg.dryRun).toBe(false);
   });
 
@@ -45,6 +47,16 @@ describe('loadPipelineConfig', () => {
     const cfg = loadPipelineConfig({ ...base, MAX_ITEMS: '5', POOL_SIZE: '20' }, []);
     expect(cfg.maxItems).toBe(5);
     expect(cfg.poolSize).toBe(20);
+  });
+
+  it('accepts embedLimit and maxEmbedDistance overrides and clamps out-of-range', () => {
+    const cfg = loadPipelineConfig({ ...base, EMBED_LIMIT: '30', MAX_EMBED_DISTANCE: '0.3' }, []);
+    expect(cfg.embedLimit).toBe(30);
+    expect(cfg.maxEmbedDistance).toBeCloseTo(0.3);
+
+    const clamped = loadPipelineConfig({ ...base, EMBED_LIMIT: '0', MAX_EMBED_DISTANCE: '2' }, []);
+    expect(clamped.embedLimit).toBe(20);
+    expect(clamped.maxEmbedDistance).toBeCloseTo(0.20);
   });
 
   it('detects --dry-run from argv and DRY_RUN from env', () => {

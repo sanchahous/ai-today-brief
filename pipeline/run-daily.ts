@@ -16,10 +16,13 @@ import { selectPool } from './select';
 import { summarize, resolveGeminiModel, type DraftBrief } from './summarize';
 import { publish } from './publish';
 import { notifyReview } from './notify';
+import { createEmbedder, type EmbedFn } from './embeddings';
 import {
   createServiceClient,
   logPipelineRun,
+  matchPublishedItem,
   recentPublishedTitles,
+  storeItemEmbeddings,
   type PipelineDb,
   type PipelineRunLog,
 } from './db';
@@ -118,10 +121,64 @@ async function main(): Promise<void> {
     return;
   }
 
+  // ── Semantic dedup ────────────────────────────────────────────────────────────
+  // Embed each pool candidate's title and drop any that are within maxEmbedDistance
+  // (cosine) of a previously published brief_item. This is the hard, deterministic
+  // cross-day dedup that catches the same story re-worded differently.
+  // Skipped in dry-run (no db) and when the embedding store is still empty.
+  let embed: EmbedFn | null = null;
+  let dedupedPool = pool;
+  if (db) {
+    t = Date.now();
+    embed = createEmbedder(config.geminiApiKey);
+    const embedBatch = pool.slice(0, config.embedLimit);
+    const vectors = await embed(embedBatch.map((c) => c.title));
+    const kept = [];
+    let dropped = 0;
+    for (let i = 0; i < embedBatch.length; i++) {
+      const vec = vectors[i];
+      if (!vec || vec.length === 0) {
+        kept.push(embedBatch[i]!);
+        continue;
+      }
+      const match = await matchPublishedItem(db, vec, config.maxEmbedDistance).catch(() => null);
+      if (match) {
+        dropped++;
+        logEvent('info', 'dedup', 'Candidate dropped (semantic duplicate)', {
+          title: embedBatch[i]!.title,
+          distance: match.distance,
+        });
+        continue;
+      }
+      kept.push(embedBatch[i]!);
+    }
+    // Items beyond embedLimit (below the score cap) pass through unchanged.
+    for (let i = embedBatch.length; i < pool.length; i++) kept.push(pool[i]!);
+    // Re-number refs so the LLM sees contiguous 1..N.
+    dedupedPool = kept.map((item, idx) => ({ ...item, ref: idx + 1 }));
+    await logStage(db, config.dryRun, {
+      date,
+      stage: 'dedup',
+      status: 'ok',
+      durationMs: Date.now() - t,
+      meta: { pool_in: pool.length, pool_out: dedupedPool.length, dropped },
+    });
+    logEvent('info', 'dedup', 'Semantic dedup complete', {
+      pool_in: pool.length,
+      pool_out: dedupedPool.length,
+      dropped,
+      max_distance: config.maxEmbedDistance,
+    });
+    if (dedupedPool.length === 0) {
+      logEvent('info', 'dedup', 'All candidates are semantic duplicates — skipping');
+      return;
+    }
+  }
+
   // ── Summarize ────────────────────────────────────────────────────────────────
   t = Date.now();
   const recent = db ? await recentPublishedTitles(db, config.recentTitles).catch(() => []) : [];
-  const brief = await summarize(pool, recent, config.maxItems, config.geminiApiKey);
+  const brief = await summarize(dedupedPool, recent, config.maxItems, config.geminiApiKey);
   await logStage(db, config.dryRun, {
     date,
     stage: 'summarize',
@@ -155,6 +212,22 @@ async function main(): Promise<void> {
     items: result.itemCount,
     status: result.skipped ? 'left_published' : 'draft',
   });
+
+  // ── Store embeddings for future dedup ────────────────────────────────────────
+  // Embed the published items' English titles and upsert into brief_item_embeddings
+  // so tomorrow's pipeline can do semantic cross-day dedup against them.
+  // Best-effort: a failure here does not abort the run — the brief is already written.
+  if (!result.skipped && embed) {
+    try {
+      const stored = await storeItemEmbeddings(db, result.briefId, embed);
+      logEvent('info', 'publish', 'Brief item embeddings stored', {
+        brief_id: result.briefId,
+        stored,
+      });
+    } catch (e) {
+      logError('publish', 'storeItemEmbeddings failed (non-fatal)', e);
+    }
+  }
 
   // ── Notify for review (optional) ─────────────────────────────────────────────
   // Push each pending item to the private Telegram chat with ✅/❌ buttons.
