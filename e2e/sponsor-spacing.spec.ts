@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
+import { gotoNewsPage, NEWS_DESKTOP_VIEWPORT } from './helpers/news-page';
 
 test.describe('Sponsor card spacing', () => {
   test('sponsor card has gap from preceding post card', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/uk/news');
-    await page.waitForLoadState('networkidle');
+    await page.setViewportSize(NEWS_DESKTOP_VIEWPORT);
+    await gotoNewsPage(page);
 
     const sponsor = page.getByTestId('sponsor-card');
     const sponsorCount = await sponsor.count();

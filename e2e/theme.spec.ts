@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
+import { gotoNewsPage, NEWS_DESKTOP_VIEWPORT } from './helpers/news-page';
 
 test.describe('Theme toggle', () => {
   test.beforeEach(async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/uk/news');
-    await page.waitForLoadState('networkidle');
+    await page.setViewportSize(NEWS_DESKTOP_VIEWPORT);
+    await gotoNewsPage(page);
   });
 
   function themeToggle(page: Page) {

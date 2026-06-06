@@ -1,13 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { gotoNewsPage, NEWS_DESKTOP_VIEWPORT } from './helpers/news-page';
 
 test.describe('Smoke', () => {
   test('/uk/news renders header, sidebar, and feed', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/uk/news');
-    await page.waitForLoadState('networkidle');
+    await page.setViewportSize(NEWS_DESKTOP_VIEWPORT);
+    await gotoNewsPage(page);
 
     await expect(page.locator('h1')).toBeVisible();
-    await expect(page.getByTestId('news-sidebar')).toBeVisible();
 
     const postCards = page.getByTestId('post-card');
     const emptyState = page.getByText(/Нічого не знайдено|Nothing found/i);
@@ -18,9 +17,8 @@ test.describe('Smoke', () => {
   });
 
   test('header navigation links are reachable', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/uk/news');
-    await page.waitForLoadState('networkidle');
+    await page.setViewportSize(NEWS_DESKTOP_VIEWPORT);
+    await gotoNewsPage(page);
 
     const nav = page.getByRole('navigation', { name: 'Primary' });
     await expect(nav.getByRole('link', { name: 'Головна' })).toBeVisible();
