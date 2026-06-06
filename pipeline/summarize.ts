@@ -40,6 +40,9 @@ export interface DraftItem {
   takeaways_en: string[];
   takeaways_uk: string[];
   tools_mentioned: string[];
+  /** Punchy 200-220 char hook for X / LinkedIn. Generated alongside the deep_dive. */
+  social_hook_en: string;
+  social_hook_uk: string;
 }
 
 export interface DraftBrief {
@@ -124,6 +127,8 @@ const GEMINI_SCHEMA: NonNullable<
           takeaways_en: STRING_ARRAY,
           takeaways_uk: STRING_ARRAY,
           tools_mentioned: STRING_ARRAY,
+          social_hook_en: STRING,
+          social_hook_uk: STRING,
         },
         required: [
           'ref',
@@ -139,6 +144,8 @@ const GEMINI_SCHEMA: NonNullable<
           'takeaways_en',
           'takeaways_uk',
           'tools_mentioned',
+          'social_hook_en',
+          'social_hook_uk',
         ],
       },
     },
@@ -258,6 +265,9 @@ For EACH kept item, write BOTH languages (natural Ukrainian, not word-for-word):
   deep_dive_en/uk  — 2 short paragraphs (~120 words) of substance: context, specifics, caveats
   takeaways_en/uk  — 2–4 short bullet strings, the practical points
   tools_mentioned  — array of product/tool names referenced (e.g. ["Claude Code","Cursor"]); [] if none
+  social_hook_en/uk— 200-220 char attention hook for X/Twitter & LinkedIn; opens with a verb or number;
+                     no hashtags; punchy, concrete, no hype. Example:
+                     "DeepSeek releases v3.1 — beats GPT-4o on math benchmarks at 1/10 the inference cost."
 
 Also write the brief shell:
   title_en/uk      — ≤ 8 words naming the day's through-line (becomes the URL); topical, not a date
@@ -291,6 +301,8 @@ interface ModelItem {
   takeaways_en?: unknown;
   takeaways_uk?: unknown;
   tools_mentioned?: unknown;
+  social_hook_en?: unknown;
+  social_hook_uk?: unknown;
 }
 
 /**
@@ -331,6 +343,8 @@ export function parseBrief(text: string, candidates: PoolItem[]): DraftBrief {
       takeaways_en: asStringArray(m.takeaways_en),
       takeaways_uk: asStringArray(m.takeaways_uk),
       tools_mentioned: asStringArray(m.tools_mentioned),
+      social_hook_en: asString(m.social_hook_en),
+      social_hook_uk: asString(m.social_hook_uk) || asString(m.social_hook_en),
     });
   }
 

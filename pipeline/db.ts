@@ -140,6 +140,8 @@ export async function replaceBriefItems(
         takeaways_en: item.takeaways_en,
         takeaways_uk: item.takeaways_uk,
         tools_mentioned: item.tools_mentioned,
+        social_hook_en: item.social_hook_en || null,
+        social_hook_uk: item.social_hook_uk || null,
       };
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);
