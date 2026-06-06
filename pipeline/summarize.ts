@@ -54,7 +54,7 @@ export interface DraftBrief {
   items: DraftItem[];
 }
 
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
 
 export function resolveGeminiModel(
   env: Record<string, string | undefined> = process.env,
@@ -70,17 +70,36 @@ export function resolveGeminiModelFallback(
   return explicit && explicit.length > 0 ? explicit : null;
 }
 
-export function isRetryableGeminiError(error: unknown): boolean {
+/**
+ * True when the Gemini error is a hard rate-limit / quota exhaustion.
+ * These are NOT retried — the quota won't recover within a single run,
+ * so we escalate to OpenRouter immediately instead of burning retry budget.
+ */
+export function isGeminiRateLimitError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   const m = error.message.toLowerCase();
   return (
     m.includes('429') ||
+    m.includes('rate limit') ||
+    m.includes('resource exhausted') ||
+    m.includes('quota')
+  );
+}
+
+/**
+ * True for transient infrastructure failures that are worth retrying
+ * (5xx, network resets). Rate-limit errors are excluded — those escalate
+ * to OpenRouter without wasting retries.
+ */
+export function isRetryableGeminiError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  if (isGeminiRateLimitError(error)) return false; // escalate immediately
+  const m = error.message.toLowerCase();
+  return (
     m.includes('500') ||
     m.includes('502') ||
     m.includes('503') ||
     m.includes('504') ||
-    m.includes('rate limit') ||
-    m.includes('resource exhausted') ||
     m.includes('temporarily unavailable') ||
     m.includes('fetch failed') ||
     m.includes('econnreset') ||
@@ -194,6 +213,15 @@ export async function generateWithRetry(
       return await call(prompt);
     } catch (error) {
       lastError = error;
+      if (isGeminiRateLimitError(error)) {
+        // Quota / rate-limit: retrying won't help — escalate to OpenRouter immediately.
+        logError('summarize', 'Gemini rate limit — escalating to fallback', error, {
+          model: modelId,
+          attempt,
+          ...serializeErrorDetails(error),
+        });
+        throw error;
+      }
       const canRetry = isRetryableGeminiError(error);
       if (!canRetry || attempt === maxAttempts) {
         logError('summarize', 'Gemini summarize failed — no more attempts', error, {

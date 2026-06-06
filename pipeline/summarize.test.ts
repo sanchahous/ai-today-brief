@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   buildPrompt,
   buildReaderProfileBlock,
+  DEFAULT_GEMINI_MODEL,
   generateWithRetry,
+  isGeminiRateLimitError,
   isRetryableGeminiError,
   parseBrief,
   resolveGeminiModel,
@@ -164,22 +166,37 @@ describe('parseBrief', () => {
 });
 
 describe('model resolution + retry', () => {
-  it('resolves model + fallback from env', () => {
-    expect(resolveGeminiModel({})).toBe('gemini-2.5-flash');
-    expect(resolveGeminiModel({ GEMINI_MODEL: 'gemini-3-flash' })).toBe('gemini-3-flash');
+  it('default model is gemini-3.5-flash', () => {
+    expect(DEFAULT_GEMINI_MODEL).toBe('gemini-3.5-flash');
+    expect(resolveGeminiModel({})).toBe('gemini-3.5-flash');
+    expect(resolveGeminiModel({ GEMINI_MODEL: 'gemini-2.5-pro' })).toBe('gemini-2.5-pro');
     expect(resolveGeminiModelFallback({})).toBeNull();
-    expect(resolveGeminiModelFallback({ GEMINI_MODEL_FALLBACK: 'gemini-2.0-flash' })).toBe(
-      'gemini-2.0-flash',
+    expect(resolveGeminiModelFallback({ GEMINI_MODEL_FALLBACK: 'gemini-2.5-flash' })).toBe(
+      'gemini-2.5-flash',
     );
   });
 
-  it('classifies retryable vs fatal errors', () => {
-    expect(isRetryableGeminiError(new Error('got a 429 rate limit'))).toBe(true);
+  it('isGeminiRateLimitError detects quota/429 errors', () => {
+    expect(isGeminiRateLimitError(new Error('429 Too Many Requests'))).toBe(true);
+    expect(isGeminiRateLimitError(new Error('rate limit exceeded'))).toBe(true);
+    expect(isGeminiRateLimitError(new Error('RESOURCE_EXHAUSTED: quota exceeded'))).toBe(true);
+    expect(isGeminiRateLimitError(new Error('503 temporarily unavailable'))).toBe(false);
+    expect(isGeminiRateLimitError('not an Error')).toBe(false);
+  });
+
+  it('isRetryableGeminiError: 429/rate-limit is NOT retryable (escalates to OpenRouter)', () => {
+    expect(isRetryableGeminiError(new Error('429 rate limit'))).toBe(false);
+    expect(isRetryableGeminiError(new Error('RESOURCE_EXHAUSTED: quota'))).toBe(false);
+    // transient errors ARE retryable
+    expect(isRetryableGeminiError(new Error('503 temporarily unavailable'))).toBe(true);
+    expect(isRetryableGeminiError(new Error('500 internal server error'))).toBe(true);
+    expect(isRetryableGeminiError(new Error('network error'))).toBe(true);
+    // non-retryable
     expect(isRetryableGeminiError(new Error('400 invalid argument'))).toBe(false);
     expect(isRetryableGeminiError('nope')).toBe(false);
   });
 
-  it('retries a transient failure then succeeds, without real sleeping', async () => {
+  it('retries a transient 503 failure then succeeds, without real sleeping', async () => {
     const gen = vi
       .fn<(p: string) => Promise<string>>()
       .mockRejectedValueOnce(new Error('503 temporarily unavailable'))
@@ -187,6 +204,15 @@ describe('model resolution + retry', () => {
     const out = await generateWithRetry('prompt', 'key', 3, gen, async () => {});
     expect(out).toBe('{"ok":true}');
     expect(gen).toHaveBeenCalledTimes(2);
+  });
+
+  it('escalates a 429 rate-limit immediately without retrying', async () => {
+    const gen = vi
+      .fn<(p: string) => Promise<string>>()
+      .mockRejectedValue(new Error('429 rate limit exceeded'));
+    await expect(generateWithRetry('p', 'key', 3, gen, async () => {})).rejects.toThrow(/429/);
+    // must NOT retry — only 1 call
+    expect(gen).toHaveBeenCalledTimes(1);
   });
 
   it('rethrows a non-retryable error immediately', async () => {
