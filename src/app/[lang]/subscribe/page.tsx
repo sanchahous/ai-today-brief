@@ -79,7 +79,7 @@ export default async function SubscribePage({ params }: { params: Promise<Params
             </p>
           </Reveal>
           <div className="mt-8 text-left">
-            <NewsletterBand lang={lang} embedded showHeader={false} />
+            <NewsletterBand lang={lang} embedded showHeader={false} placement="subscribe-page" />
           </div>
         </section>
 

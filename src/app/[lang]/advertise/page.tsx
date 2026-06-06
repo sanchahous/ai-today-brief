@@ -9,7 +9,8 @@ import {
   AUDIENCE_STATS,
 } from '@/lib/marketing-content';
 import { TrustPageShell } from '@/components/trust-page-shell';
-import { CheckIcon, MailIcon } from '@/components/icons';
+import { AdvertiseInquiryCta } from '@/components/advertise-inquiry-cta';
+import { CheckIcon } from '@/components/icons';
 import { breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { Reveal } from '@/components/reveal';
 
@@ -121,13 +122,7 @@ export default async function AdvertisePage({ params }: { params: Promise<Params
             }}
           >
             <p className="text-muted max-w-[520px] text-base leading-relaxed">{p.contactBody}</p>
-            <a
-              href={`mailto:${ADVERTISE_EMAIL}`}
-              className="rounded-pill bg-accent mt-5 inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-on-accent no-underline"
-            >
-              <MailIcon size={16} />
-              {p.contactCta}
-            </a>
+            <AdvertiseInquiryCta email={ADVERTISE_EMAIL} label={p.contactCta} />
           </div>
         </Reveal>
       </TrustPageShell>

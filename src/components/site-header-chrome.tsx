@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { alternateLangHref } from '@/lib/preferred-lang';
 import { SITE_NAME, MARK_COLOR, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
+import { trackEvent } from '@/lib/analytics-client';
 import { HeaderSearchField } from '@/components/header-search-field';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { CategoryGlyph, CloseIcon, MenuIcon, ArrowRight } from '@/components/icons';
@@ -63,6 +64,11 @@ export function SiteHeaderChrome({
   );
 
   const langToggleHref = alternateLangHref(pathname, lang);
+  const targetLang: Lang = lang === 'uk' ? 'en' : 'uk';
+
+  function trackLangSwitch() {
+    trackEvent('lang_switch', { to_lang: targetLang });
+  }
 
   return (
     <header className="border-border-soft sticky top-0 z-50 border-b bg-[color-mix(in_srgb,var(--bg)_88%,transparent)] backdrop-blur-[10px]">
@@ -148,6 +154,7 @@ export function SiteHeaderChrome({
             <Link
               href={langToggleHref}
               aria-label={t.langSwitch}
+              onClick={trackLangSwitch}
               className="text-accent text-[0.85rem] font-semibold no-underline transition-opacity duration-200 hover:opacity-80"
             >
               {lang === 'uk' ? 'EN' : 'UK'}
@@ -224,7 +231,10 @@ export function SiteHeaderChrome({
                 href={langToggleHref}
                 aria-label={t.langSwitch}
                 className="text-accent font-semibold no-underline"
-                onClick={() => setMenuOpen(false)}
+                onClick={() => {
+                  trackLangSwitch();
+                  setMenuOpen(false);
+                }}
               >
                 {lang === 'uk' ? 'EN' : 'UK'}
               </Link>

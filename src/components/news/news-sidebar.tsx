@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { getStrings } from '@/lib/i18n';
+import { trackEvent } from '@/lib/analytics-client';
 import type { TrendingTopic } from '@/lib/home';
 import type { NewsCategoryFilter } from '@/lib/news';
 import type { Lang } from '@/lib/site';
@@ -176,6 +177,12 @@ function SidebarControls({
               <li key={topic.name}>
                 <Link
                   href={topic.href}
+                  onClick={() =>
+                    trackEvent('trending_topic_click', {
+                      topic: topic.name,
+                      placement: 'news_sidebar',
+                    })
+                  }
                   className="text-muted hover:text-accent flex items-center gap-1.5 text-[0.84rem] no-underline transition"
                 >
                   <SparkleIcon size={14} />

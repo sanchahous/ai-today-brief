@@ -50,12 +50,12 @@ export function PostFeed({
             </Reveal>
             {weaveSponsor && i === 2 && (
               <Reveal delayMs={i * 45 + 20}>
-                <SponsorCard lang={lang} />
+                <SponsorCard lang={lang} placement="category-hub" />
               </Reveal>
             )}
           </Fragment>
         ))}
-        {showNewsletter && <NewsletterBand lang={lang} embedded />}
+        {showNewsletter && <NewsletterBand lang={lang} embedded placement="category-hub" />}
       </div>
       {pageCount > 1 && (
         <Pagination

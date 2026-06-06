@@ -11,6 +11,7 @@ const LOGIC_INCLUDE = [
   'src/lib/news-filters.ts',
   'src/lib/sitemap-dates.ts',
   'src/lib/analytics-config.ts',
+  'src/lib/analytics-client.ts',
   'src/lib/preferred-lang.ts',
   'pipeline/**/*.ts',
 ];

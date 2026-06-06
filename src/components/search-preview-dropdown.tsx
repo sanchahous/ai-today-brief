@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import { CategoryBadge } from '@/components/home/category-badge';
 import { SearchPreviewSkeleton } from '@/components/ui/skeleton';
 import { useSearchPreview, type SearchPreviewItem } from '@/hooks/use-search-preview';
+import { trackEvent, trackSearch } from '@/lib/analytics-client';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 
@@ -18,7 +20,6 @@ function panelClassFor(variant: 'desktop' | 'mobile' | 'hero'): string {
     return `${shell} mt-2 max-h-[55vh] w-full`;
   }
 
-  // Wider than the input: grows from the field edge, scales with viewport.
   const anchoredDesktop = 'absolute top-[calc(100%+8px)] left-0 min-w-full';
   const anchoredHero = 'absolute top-[calc(100%+8px)] left-1/2 min-w-full -translate-x-1/2';
 
@@ -39,17 +40,28 @@ function formatShort(iso: string, lang: Lang): string {
 function PreviewRow({
   item,
   lang,
+  query,
+  position,
   onPick,
 }: {
   item: SearchPreviewItem;
   lang: Lang;
+  query: string;
+  position: number;
   onPick: () => void;
 }) {
   return (
     <Link
       href={item.href}
       role="option"
-      onClick={onPick}
+      onClick={() => {
+        trackEvent('select_search_result', {
+          query,
+          position,
+          post_id: item.id,
+        });
+        onPick();
+      }}
       className="hover:bg-surface block w-full rounded-lg px-3 py-2.5 no-underline transition-colors duration-200 md:px-4 md:py-3"
     >
       <span className="mb-1 flex flex-wrap items-center gap-2">
@@ -85,12 +97,26 @@ export function SearchPreviewDropdown({
   const router = useRouter();
   const { rows, total, loading } = useSearchPreview(lang, query, PREVIEW_LIMIT);
   const trimmed = query.trim();
+  const noResultsTracked = useRef('');
+
+  useEffect(() => {
+    if (!open || !trimmed || loading) return;
+    if (rows.length > 0) {
+      noResultsTracked.current = '';
+      return;
+    }
+    if (noResultsTracked.current === trimmed) return;
+    noResultsTracked.current = trimmed;
+    trackEvent('search_no_results', { query: trimmed });
+  }, [open, trimmed, loading, rows.length]);
 
   if (!open || !trimmed) return null;
 
   const panelClass = panelClassFor(variant);
+  const seeAllSource = `${variant}_see_all`;
 
   function seeAll() {
+    trackSearch(trimmed, seeAllSource, lang, total);
     router.push(`/${lang}/news?q=${encodeURIComponent(trimmed)}`);
     onNavigate();
   }
@@ -103,8 +129,15 @@ export function SearchPreviewDropdown({
       {!loading && rows.length === 0 ? (
         <p className="text-muted m-0 px-3 py-3 text-sm">{t.searchNoResults}</p>
       ) : (
-        rows.map((item) => (
-          <PreviewRow key={item.id} item={item} lang={lang} onPick={onNavigate} />
+        rows.map((item, index) => (
+          <PreviewRow
+            key={item.id}
+            item={item}
+            lang={lang}
+            query={trimmed}
+            position={index + 1}
+            onPick={onNavigate}
+          />
         ))
       )}
       {total > PREVIEW_LIMIT ? (

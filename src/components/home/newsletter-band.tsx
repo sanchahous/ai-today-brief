@@ -12,11 +12,14 @@ export function NewsletterBand({
   lang,
   embedded = false,
   showHeader = true,
+  placement,
 }: {
   lang: Lang;
   embedded?: boolean;
   /** When false, only the form card (subscribe landing hero already has H1). */
   showHeader?: boolean;
+  /** GA4 newsletter_subscribe placement — overrides embedded default. */
+  placement?: string;
 }) {
   const t = getStrings(lang).landing;
   const outer = embedded ? 'w-full' : 'mx-auto w-full max-w-[1160px] px-6 py-6';
@@ -44,7 +47,7 @@ export function NewsletterBand({
             done={t.subDone}
             notConfigured={getStrings(lang).subscribeForm.notConfigured}
             failed={getStrings(lang).subscribeForm.failed}
-            placement={embedded ? 'subscribe-page' : 'home-band'}
+            placement={placement ?? (embedded ? 'subscribe-page' : 'home-band')}
           />
           <p className={`text-faint text-xs ${showHeader ? 'mt-4' : 'mt-3'}`}>{t.subPrivacy}</p>
         </div>
