@@ -68,6 +68,12 @@ export const STRINGS = {
       sponsorWhyBody:
         'This is a native, clearly disclosed sponsorship. It helps keep AI Today Brief free.',
       sponsorWhyCta: 'About advertising',
+      adSlotLabel: 'Open slot',
+      adSlotTitle: 'One sponsor per issue — this slot’s open',
+      adSlotBody:
+        'A single native, clearly labelled placement in front of engineers who build with AI, with honest numbers. Yours to claim.',
+      adSlotCta: 'Claim the slot',
+      adSlotNote: 'From us, not a paid ad — this spot is open.',
       videoEyebrow: 'Coming soon',
       videoTitle: 'Weekly video reviews',
       videoSubtitle:
@@ -278,6 +284,12 @@ export const STRINGS = {
       sponsorWhyBody:
         'Це нативне партнерське розміщення, чесно позначене. Воно допомагає тримати AI Today Brief безкоштовним.',
       sponsorWhyCta: 'Про рекламу',
+      adSlotLabel: 'Вільне місце',
+      adSlotTitle: 'Один спонсор на випуск — місце вільне',
+      adSlotBody:
+        'Одне нативне, чесно позначене розміщення перед інженерами, які будують з AI, із прозорою статистикою. Можна зайняти.',
+      adSlotCta: 'Зайняти місце',
+      adSlotNote: 'Від редакції, не реклама — місце вільне.',
       videoEyebrow: 'Скоро',
       videoTitle: 'Відеоогляди тижня',
       videoSubtitle:
