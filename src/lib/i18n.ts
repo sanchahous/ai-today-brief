@@ -103,7 +103,6 @@ export const STRINGS = {
     relatedCoverage: 'Related coverage',
     officialSite: 'Official site',
     lastUpdated: 'Last updated',
-    legalDraft: 'Draft — pending legal review. Honest first-draft wording, not legal advice.',
     about: 'About',
     aiDisclosure: 'AI disclosure',
     aiNoteLabel: 'AI draft · editor-reviewed',
@@ -314,8 +313,6 @@ export const STRINGS = {
     relatedCoverage: 'Пов’язані матеріали',
     officialSite: 'Офіційний сайт',
     lastUpdated: 'Оновлено',
-    legalDraft:
-      'Чернетка — очікує юридичного рев’ю. Чесне формулювання-чернетка, не юридична консультація.',
     about: 'Про нас',
     aiDisclosure: 'AI-розкриття',
     aiNoteLabel: 'AI-чернетка · перевірено редактором',
