@@ -95,7 +95,7 @@ export const ADVERTISE_BENEFITS: Bi[] = [
     en: 'Native, clearly disclosed placements that don’t break the reading experience.',
   },
   {
-    uk: 'Прозора звітність: реальні impressions і CTR із власної аналітики.',
+    uk: 'Прозора звітність: реальні покази і CTR із власної аналітики.',
     en: 'Transparent reporting: real impressions and CTR from our own analytics.',
   },
 ];

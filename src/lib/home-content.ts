@@ -65,7 +65,7 @@ export const SPONSOR: Sponsor = {
   color: '#5BC9F0',
   tagline: { en: 'Postgres, built for AI', uk: 'Postgres, готовий до AI' },
   body: {
-    en: 'Vector search, elastic scaling and a free tier for side-projects. Spin up a database for your RAG in 60 seconds.',
+    en: 'Vector search, elastic scaling and a free tier for side projects. Spin up a database for your RAG in 60 seconds.',
     uk: 'Векторний пошук, гнучке масштабування й безкоштовний tier для пет-проєктів. Розгорніть базу для свого RAG за 60 секунд.',
   },
   cta: { en: 'Try it free', uk: 'Спробувати безкоштовно' },
