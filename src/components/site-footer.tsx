@@ -26,7 +26,7 @@ export function SiteFooter({ lang }: { lang: Lang }) {
               ))}
             </div>
           </div>
-          <nav className="text-muted flex flex-col gap-2 text-sm">
+          <nav aria-label="Footer" className="text-muted flex flex-col gap-2 text-sm">
             <Link className="hover:text-text" href={`/${lang}/news`}>
               {t.nav.news}
             </Link>

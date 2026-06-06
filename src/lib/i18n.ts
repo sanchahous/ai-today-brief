@@ -12,6 +12,8 @@ export const STRINGS = {
     skipToContent: 'Skip to content',
     menu: 'Menu',
     closeMenu: 'Close menu',
+    themeToggle: 'Toggle theme',
+    langSwitch: 'Switch to Ukrainian',
     nav: {
       news: 'News',
       concepts: 'Concepts',
@@ -221,6 +223,8 @@ export const STRINGS = {
     skipToContent: 'Перейти до вмісту',
     menu: 'Меню',
     closeMenu: 'Закрити меню',
+    themeToggle: 'Змінити тему',
+    langSwitch: 'Перемкнути на англійську',
     nav: {
       news: 'Новини',
       concepts: 'Концепти',

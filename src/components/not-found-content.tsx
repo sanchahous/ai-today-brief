@@ -10,7 +10,7 @@ export function NotFoundContent({ lang }: { lang: Lang }) {
   const t = getStrings(lang);
 
   return (
-    <main className="not-found-page border-border-soft relative flex-1 overflow-hidden border-b">
+    <div className="not-found-page border-border-soft relative flex-1 overflow-hidden border-b">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 hidden overflow-hidden md:block"
@@ -72,6 +72,6 @@ export function NotFoundContent({ lang }: { lang: Lang }) {
           </Link>
         </nav>
       </div>
-    </main>
+    </div>
   );
 }

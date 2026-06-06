@@ -92,7 +92,7 @@ export default async function NewsPage({
   const updated = pageData.updatedAt ?? items[0]?.date ?? '2026-01-01';
 
   return (
-    <main className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
+    <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
@@ -136,6 +136,6 @@ export default async function NewsPage({
         initialQuery={query}
         initialCategory={categorySlug}
       />
-    </main>
+    </div>
   );
 }

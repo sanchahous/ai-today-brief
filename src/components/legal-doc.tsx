@@ -12,7 +12,7 @@ export function LegalDocView({ docKey, lang }: { docKey: LegalKey; lang: Lang })
   }).format(new Date(`${doc.updated}T00:00:00`));
 
   return (
-    <main className="mx-auto w-full max-w-[760px] flex-1 px-6 py-12">
+    <div className="mx-auto w-full max-w-[760px] flex-1 px-6 py-12">
       <h1 className="text-3xl sm:text-4xl">{doc.title[lang]}</h1>
       <p className="text-faint mt-2 text-sm">
         {t.lastUpdated}: {updated}
@@ -35,6 +35,6 @@ export function LegalDocView({ docKey, lang }: { docKey: LegalKey; lang: Lang })
           </section>
         ))}
       </div>
-    </main>
+    </div>
   );
 }

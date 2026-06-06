@@ -75,7 +75,7 @@ export function HomeHero({ lang, categoryCount }: { lang: Lang; categoryCount: n
         <dl className="mt-10 flex flex-wrap gap-8">
           {stats.map((s) => (
             <div key={s.label}>
-              <dt className="text-accent font-serif text-3xl leading-none font-bold">{s.n}</dt>
+              <dt className="text-accent font-serif text-3xl leading-tight font-semibold">{s.n}</dt>
               <dd className="text-muted mt-1 text-sm">{s.label}</dd>
             </div>
           ))}

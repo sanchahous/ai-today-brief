@@ -49,7 +49,9 @@ export default async function LangLayout({
         {t.skipToContent}
       </a>
       <SiteHeader lang={lang} />
-      <div id="main-content">{children}</div>
+      <main id="main-content" className="flex-1">
+        {children}
+      </main>
       <SiteFooter lang={lang} />
       <AnalyticsProvider lang={lang} />
       <CookieConsent lang={lang} />

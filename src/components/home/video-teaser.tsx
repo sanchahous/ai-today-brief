@@ -7,7 +7,7 @@ import { Reveal } from '@/components/reveal';
 export function VideoTeaser({ lang }: { lang: Lang }) {
   const t = getStrings(lang).landing;
   return (
-    <section className="mx-auto w-full max-w-[1160px] px-6 py-6">
+    <section aria-labelledby="video-title" className="mx-auto w-full max-w-[1160px] px-6 py-6">
       <Reveal>
         <div
           className="rounded-card border-border relative flex flex-wrap items-center gap-6 overflow-hidden border p-6 sm:p-10"
@@ -31,12 +31,13 @@ export function VideoTeaser({ lang }: { lang: Lang }) {
             <p className="text-accent pulse text-xs font-bold tracking-[0.14em] uppercase">
               {t.videoEyebrow}
             </p>
-            <h2 className="mt-2 text-2xl sm:text-3xl">{t.videoTitle}</h2>
+            <h2 id="video-title" className="mt-2 text-2xl sm:text-3xl">{t.videoTitle}</h2>
             <p className="text-muted mt-2 max-w-xl text-sm leading-relaxed">{t.videoSubtitle}</p>
           </div>
           <button
             type="button"
             disabled
+            aria-disabled="true"
             className="rounded-pill bg-accent cursor-not-allowed px-5 py-3 text-sm font-semibold text-black opacity-80"
           >
             {t.videoCta}

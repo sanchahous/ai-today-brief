@@ -15,9 +15,9 @@ export async function NotFoundShell({ lang }: { lang: Lang }) {
         {t.skipToContent}
       </a>
       <SiteHeader lang={lang} />
-      <div id="main-content">
+      <main id="main-content" className="flex-1">
         <NotFoundContent lang={lang} />
-      </div>
+      </main>
       <SiteFooter lang={lang} />
       <AnalyticsProvider lang={lang} />
       <CookieConsent lang={lang} />

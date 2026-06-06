@@ -76,7 +76,7 @@ export default async function AboutPage({ params }: { params: Promise<Params> })
   };
 
   return (
-    <main className="mx-auto w-full max-w-[760px] flex-1 px-6 py-12">
+    <div className="mx-auto w-full max-w-[760px] flex-1 px-6 py-12">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -112,6 +112,6 @@ export default async function AboutPage({ params }: { params: Promise<Params> })
           </a>
         </p>
       </section>
-    </main>
+    </div>
   );
 }
