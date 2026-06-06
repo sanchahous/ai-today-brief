@@ -17,9 +17,6 @@ export function LegalDocView({ docKey, lang }: { docKey: LegalKey; lang: Lang })
       <p className="text-faint mt-2 text-sm">
         {t.lastUpdated}: {updated}
       </p>
-      <p className="border-accent bg-surface text-muted rounded-card mt-6 border-l-2 p-4 text-sm">
-        {t.legalDraft}
-      </p>
       <p className="mt-6 leading-relaxed">{doc.intro[lang]}</p>
       <div className="mt-8 space-y-8">
         {doc.sections.map((s) => (

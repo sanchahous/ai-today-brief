@@ -18,24 +18,24 @@ type Params = { lang: string };
 
 const COPY = {
   en: {
-    lede: `${SITE_NAME} is a daily, human-edited brief for people who build with AI — engineers, founders and technical leads. One focused read a day across models, frameworks and MLOps, in English and Ukrainian.`,
+    lede: `${SITE_NAME} is a daily, human-edited briefing for people who build with AI — engineers, founders and technical leads. One focused read a day on the models, frameworks and MLOps that actually move your work forward — in English and Ukrainian.`,
     methodologyH: 'How we work',
     methodology:
-      'Each day we process 80+ stories from official AI labs, research, GitHub, Hacker News, Reddit and tier-1 tech press, rank them, and publish only the few that matter — each with a plain-language summary, a “why it matters”, and a link to the primary source. We publish selected, human-edited items, never dozens of thin auto-generated pages.',
+      'Every day we scan 80+ stories from official AI labs, research papers, GitHub, Hacker News, Reddit and tier-1 tech press. We rank them and publish only the handful that matter — each with a plain-language summary, a clear “why it matters”, and a link to the primary source. You get a curated, human-edited selection, not dozens of thin, auto-generated pages.',
     aiH: 'AI, with a human in the loop',
-    ai: 'We use language models to read sources and draft summaries and translations. A human editor reviews every brief before it ships — fact-checks, tone, de-duplication. The editorial team, not the model, decides what is published and is responsible for it. More in our',
+    ai: 'We use language models to read sources and draft summaries and translations. A human editor reviews every brief before it ships — checking facts, refining tone, and removing duplicates. The editorial team, not the model, decides what gets published and stands behind it. Read more in our',
     editorH: 'Who edits this',
-    editor: `Curated and edited by ${EDITOR_NAME}, ${EDITOR_ROLE.en.toLowerCase()}. Questions, corrections or tips:`,
+    editor: `Curated and edited by ${EDITOR_NAME}, ${EDITOR_ROLE.en.toLowerCase()}. Questions, corrections or tips — reach us at:`,
   },
   uk: {
-    lede: `${SITE_NAME} — щоденний, відредагований людиною бриф для тих, хто будує з AI: інженерів, фаундерів і техлідів. Один сфокусований випуск на день про моделі, фреймворки та MLOps — англійською та українською.`,
+    lede: `${SITE_NAME} — щоденний бриф, який редагує людина, для тих, хто будує з AI: інженерів, фаундерів і техлідів. Один сфокусований випуск на день про моделі, фреймворки та MLOps, що справді рухають вашу роботу, — англійською та українською.`,
     methodologyH: 'Як ми працюємо',
     methodology:
-      'Щодня ми обробляємо 80+ матеріалів з офіційних AI-лабораторій, досліджень, GitHub, Hacker News, Reddit і tier-1 техмедіа, ранжуємо їх і публікуємо лише ті кілька, що справді важливі — кожен із простим резюме, блоком «чому це важливо» та посиланням на першоджерело. Ми публікуємо вибрані, відредаговані людиною матеріали, а не десятки тонких авто-сторінок.',
+      'Щодня ми переглядаємо 80+ матеріалів з офіційних AI-лабораторій, наукових публікацій, GitHub, Hacker News, Reddit і tier-1 техмедіа. Ми ранжуємо їх і публікуємо лише ті кілька, що справді важливі, — кожен із простим резюме, чітким блоком «чому це важливо» та посиланням на першоджерело. Ви отримуєте курований відбір, відредагований людиною, а не десятки поверхових авто-сторінок.',
     aiH: 'AI — під наглядом людини',
-    ai: 'Ми використовуємо мовні моделі, щоб читати джерела й готувати чернетки резюме та перекладів. Редактор-людина переглядає кожен бриф перед публікацією — факти, тон, відсів дублів. Що публікувати — вирішує редакція, а не модель, і вона ж несе відповідальність. Докладніше — в нашому',
+    ai: 'Ми використовуємо мовні моделі, щоб читати джерела та готувати чернетки резюме й перекладів. Редактор-людина переглядає кожен випуск перед публікацією: перевіряє факти, вивіряє тон і прибирає дублі. Що публікувати — вирішує редакція, а не модель, і саме вона відповідає за результат. Докладніше — у нашому',
     editorH: 'Хто це редагує',
-    editor: `Курує й редагує ${EDITOR_NAME}, ${EDITOR_ROLE.uk.toLowerCase()}. Питання, виправлення чи новини:`,
+    editor: `Курує й редагує ${EDITOR_NAME}, ${EDITOR_ROLE.uk.toLowerCase()}. Запитання, виправлення чи новини — пишіть на:`,
   },
 } as const;
 

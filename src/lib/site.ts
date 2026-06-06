@@ -26,8 +26,8 @@ export const EDITOR_ROLE = { en: 'Editor', uk: 'Редактор' } as const;
 /** Accent for the brand monogram mark. */
 export const MARK_COLOR = '#47E4D3';
 
-export const CONTACT_EMAIL = 'hello@aitodaybrief.com';
-export const ADVERTISE_EMAIL = 'sponsors@aitodaybrief.com';
+export const CONTACT_EMAIL = 'hello@sashakuzmenko.com';
+export const ADVERTISE_EMAIL = 'hello@sashakuzmenko.com';
 export const RSS_URL = `${SITE_URL}/rss.xml`;
 
 export type SocialKey = 'x' | 'telegram' | 'linkedin' | 'youtube' | 'rss';
