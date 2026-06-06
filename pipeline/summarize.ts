@@ -40,6 +40,9 @@ export interface DraftItem {
   takeaways_en: string[];
   takeaways_uk: string[];
   tools_mentioned: string[];
+  /** Punchy 200-220 char hook for X / LinkedIn. Generated alongside the deep_dive. */
+  social_hook_en: string;
+  social_hook_uk: string;
 }
 
 export interface DraftBrief {
@@ -124,6 +127,8 @@ const GEMINI_SCHEMA: NonNullable<
           takeaways_en: STRING_ARRAY,
           takeaways_uk: STRING_ARRAY,
           tools_mentioned: STRING_ARRAY,
+          social_hook_en: STRING,
+          social_hook_uk: STRING,
         },
         required: [
           'ref',
@@ -139,6 +144,8 @@ const GEMINI_SCHEMA: NonNullable<
           'takeaways_en',
           'takeaways_uk',
           'tools_mentioned',
+          'social_hook_en',
+          'social_hook_uk',
         ],
       },
     },
@@ -212,6 +219,27 @@ export async function generateWithRetry(
 
 // ─── Prompt ──────────────────────────────────────────────────────────────────
 
+/**
+ * A fixed description of the reader this brief is written for.
+ * Injected into the prompt so the model can apply content-relevance judgement
+ * consistently — not just a style guide but a filter for *what matters*.
+ */
+export function buildReaderProfileBlock(): string {
+  return `READER PROFILE
+A working developer and vibe coder. Daily tools: Claude Code, Cursor, Codex,
+Gemini and similar agentic IDEs. Wants concrete, actionable intelligence on:
+  • LLM token-cost / prompt-caching / context-window optimisation
+  • Claude / Cursor / Codex / Gemini cheatsheets, hidden features,
+    slash commands, hooks, skills, MCP servers
+  • Vibe-coding workflow: testing, design, content generation
+  • Building & orchestrating AI agents (Claude Agent SDK, MCP)
+  • Realistic monetisation for AI-native devs
+  • Free certifications, internships, fellowships, hands-on tutorials
+
+Does NOT want: geopolitics, generic CEO quotes, raw academic research,
+big-iron datacenter news, philosophical AI-doom takes.`;
+}
+
 export function buildPrompt(
   candidates: PoolItem[],
   recentlyPublished: string[],
@@ -232,6 +260,8 @@ a few genuinely valuable, NEW items per day — each with a clear "why it matter
 link to the primary source. English is primary; Ukrainian is a full, natural translation
 (not transliteration), with correct IT terminology.
 
+${buildReaderProfileBlock()}
+
 CANDIDATES (already ranked by velocity + cross-source coverage + authority + recency):
 ${list}
 
@@ -244,7 +274,9 @@ YOUR JOB — a strict editor, QUALITY over quantity:
 3. Avoid topic spam: don't take multiple items about the same product/technology unless
    they are clearly distinct stories. Prefer breadth across the niche.
 4. Drop low value: pure punditry ("X says…"), clickbait, thin listicles, opinion without facts.
-5. From what remains, keep AT MOST ${maxItems}, most important first. Returning FEWER
+5. Use the READER PROFILE above to filter for relevance — skip stories the reader
+   explicitly does not want, even if they are technically about AI.
+6. From what remains, keep AT MOST ${maxItems}, most important first. Returning FEWER
    (even 0) is correct when there isn't enough that is genuinely new, valuable and distinct.
    Never pad to hit a number.
 
@@ -258,6 +290,9 @@ For EACH kept item, write BOTH languages (natural Ukrainian, not word-for-word):
   deep_dive_en/uk  — 2 short paragraphs (~120 words) of substance: context, specifics, caveats
   takeaways_en/uk  — 2–4 short bullet strings, the practical points
   tools_mentioned  — array of product/tool names referenced (e.g. ["Claude Code","Cursor"]); [] if none
+  social_hook_en/uk— 200-220 char attention hook for X/Twitter & LinkedIn; opens with a verb or number;
+                     no hashtags; punchy, concrete, no hype. Example:
+                     "DeepSeek releases v3.1 — beats GPT-4o on math benchmarks at 1/10 the inference cost."
 
 Also write the brief shell:
   title_en/uk      — ≤ 8 words naming the day's through-line (becomes the URL); topical, not a date
@@ -291,6 +326,8 @@ interface ModelItem {
   takeaways_en?: unknown;
   takeaways_uk?: unknown;
   tools_mentioned?: unknown;
+  social_hook_en?: unknown;
+  social_hook_uk?: unknown;
 }
 
 /**
@@ -331,6 +368,8 @@ export function parseBrief(text: string, candidates: PoolItem[]): DraftBrief {
       takeaways_en: asStringArray(m.takeaways_en),
       takeaways_uk: asStringArray(m.takeaways_uk),
       tools_mentioned: asStringArray(m.tools_mentioned),
+      social_hook_en: asString(m.social_hook_en),
+      social_hook_uk: asString(m.social_hook_uk) || asString(m.social_hook_en),
     });
   }
 
@@ -354,18 +393,46 @@ export async function summarize(
   recentlyPublished: string[],
   maxItems: number,
   apiKey: string,
+  openRouterApiKey?: string,
+  geminiMaxAttempts = 3,
 ): Promise<DraftBrief> {
   logEvent('info', 'summarize', 'Curate & summarize started', {
     candidates: candidates.length,
     recent_context: recentlyPublished.length,
     max_items: maxItems,
     model: resolveGeminiModel(),
+    gemini_max_attempts: geminiMaxAttempts,
+    openrouter_fallback: Boolean(openRouterApiKey),
   });
   const start = Date.now();
-  const text = await generateWithRetry(buildPrompt(candidates, recentlyPublished, maxItems), apiKey);
+  const prompt = buildPrompt(candidates, recentlyPublished, maxItems);
+
+  let text: string;
+  let provider = 'gemini';
+  let providerModel = resolveGeminiModel();
+
+  try {
+    text = await generateWithRetry(prompt, apiKey, geminiMaxAttempts);
+  } catch (geminiError) {
+    if (!openRouterApiKey) {
+      throw geminiError;
+    }
+    logEvent('warn', 'summarize', 'Gemini failed — trying OpenRouter fallback', {
+      gemini_model: resolveGeminiModel(),
+      ...serializeErrorDetails(geminiError),
+    });
+    const { generateWithOpenRouterChain } = await import('./openrouter-summarize');
+    const orResult = await generateWithOpenRouterChain(prompt, { apiKey: openRouterApiKey });
+    text = orResult.text;
+    provider = 'openrouter';
+    providerModel = orResult.model;
+  }
+
   const brief = parseBrief(text, candidates);
   logEvent('info', 'summarize', 'Curate & summarize complete', {
     selected: brief.items.length,
+    provider,
+    provider_model: providerModel,
     duration_ms: Date.now() - start,
   });
   return brief;

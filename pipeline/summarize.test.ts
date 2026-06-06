@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   buildPrompt,
+  buildReaderProfileBlock,
   generateWithRetry,
   isRetryableGeminiError,
   parseBrief,
@@ -28,6 +29,16 @@ const pool: PoolItem[] = [
   },
 ];
 
+describe('buildReaderProfileBlock', () => {
+  it('mentions key reader interests', () => {
+    const block = buildReaderProfileBlock();
+    expect(block).toContain('READER PROFILE');
+    expect(block).toContain('Claude Code');
+    expect(block).toContain('MCP');
+    expect(block).toContain('Does NOT want');
+  });
+});
+
 describe('buildPrompt', () => {
   it('lists candidates, recent titles and the category vocabulary', () => {
     const p = buildPrompt(pool, ['Older published story'], 6);
@@ -39,6 +50,15 @@ describe('buildPrompt', () => {
   });
   it('notes when nothing has been published yet', () => {
     expect(buildPrompt(pool, [], 6)).toContain('(nothing published yet)');
+  });
+  it('embeds reader profile block', () => {
+    const p = buildPrompt(pool, [], 6);
+    expect(p).toContain('READER PROFILE');
+    expect(p).toContain('Does NOT want');
+  });
+  it('references reader profile in the filtering instructions', () => {
+    const p = buildPrompt(pool, [], 6);
+    expect(p).toContain('READER PROFILE above');
   });
 });
 
@@ -64,6 +84,8 @@ describe('parseBrief', () => {
           takeaways_en: ['Point A', ''],
           takeaways_uk: ['Пункт А'],
           tools_mentioned: ['Postgres', 'MCP'],
+          social_hook_en: 'New MCP server bridges Postgres and AI agents — open source, one command to run.',
+          social_hook_uk: 'Новий MCP-сервер поєднує Postgres з AI-агентами — відкритий код, одна команда.',
         },
         {
           ref: 1,
@@ -79,6 +101,8 @@ describe('parseBrief', () => {
           takeaways_en: [],
           takeaways_uk: [],
           tools_mentioned: [],
+          social_hook_en: 'Anthropic ships Claude Opus 4.8 with major code and reasoning upgrades.',
+          social_hook_uk: '',
         },
       ],
     });
@@ -93,9 +117,33 @@ describe('parseBrief', () => {
     expect(first!.url).toBe('https://ex.com/mcp');
     expect(first!.slug).toBe('mcp-server-for-postgres-lands');
     expect(first!.takeaways_en).toEqual(['Point A']); // empty bullet dropped
+    expect(first!.social_hook_en).toBe('New MCP server bridges Postgres and AI agents — open source, one command to run.');
+    expect(first!.social_hook_uk).toBe('Новий MCP-сервер поєднує Postgres з AI-агентами — відкритий код, одна команда.');
 
     // invalid category falls back to the candidate's deterministic category
     expect(second!.category_slug).toBe('tools-and-releases');
+    // social_hook_uk falls back to _en when uk is empty
+    expect(second!.social_hook_uk).toBe('Anthropic ships Claude Opus 4.8 with major code and reasoning upgrades.');
+  });
+
+  it('parses social_hook_en/uk and falls back uk→en when uk is missing', () => {
+    const json = JSON.stringify({
+      title_en: 'Brief', title_uk: 'Бриф', intro_en: '', intro_uk: '',
+      items: [{
+        ref: 1, category_slug: 'tools-and-releases',
+        title_en: 'Claude released', title_uk: 'Вийшов Claude',
+        summary_en: 'New model.', summary_uk: 'Нова модель.',
+        why_matters_en: '', why_matters_uk: '',
+        deep_dive_en: '', deep_dive_uk: '',
+        takeaways_en: [], takeaways_uk: [], tools_mentioned: [],
+        social_hook_en: 'Claude 5 drops with 2M context.',
+        // social_hook_uk intentionally missing → should fall back to en
+      }],
+    });
+    const brief = parseBrief(json, pool);
+    const item = brief.items[0]!;
+    expect(item.social_hook_en).toBe('Claude 5 drops with 2M context.');
+    expect(item.social_hook_uk).toBe('Claude 5 drops with 2M context.'); // fallback
   });
 
   it('skips hallucinated refs and items with no summary; empty list is valid', () => {

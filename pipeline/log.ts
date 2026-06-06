@@ -8,7 +8,7 @@
 
 export type LogLevel = 'info' | 'warn' | 'error';
 
-export type PipelineStage = 'fetch' | 'rank' | 'summarize' | 'publish';
+export type PipelineStage = 'fetch' | 'rank' | 'summarize' | 'publish' | 'dedup';
 
 const ERROR_STACK_MAX_CHARS = 1200;
 

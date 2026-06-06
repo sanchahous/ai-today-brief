@@ -32,6 +32,8 @@ describe('loadPipelineConfig', () => {
     expect(cfg.poolSize).toBe(16);
     expect(cfg.perTopicCap).toBe(2);
     expect(cfg.minScore).toBeCloseTo(0.15);
+    expect(cfg.embedLimit).toBe(20);
+    expect(cfg.maxEmbedDistance).toBeCloseTo(0.20);
     expect(cfg.dryRun).toBe(false);
   });
 
@@ -47,8 +49,36 @@ describe('loadPipelineConfig', () => {
     expect(cfg.poolSize).toBe(20);
   });
 
+  it('accepts embedLimit and maxEmbedDistance overrides and clamps out-of-range', () => {
+    const cfg = loadPipelineConfig({ ...base, EMBED_LIMIT: '30', MAX_EMBED_DISTANCE: '0.3' }, []);
+    expect(cfg.embedLimit).toBe(30);
+    expect(cfg.maxEmbedDistance).toBeCloseTo(0.3);
+
+    const clamped = loadPipelineConfig({ ...base, EMBED_LIMIT: '0', MAX_EMBED_DISTANCE: '2' }, []);
+    expect(clamped.embedLimit).toBe(20);
+    expect(clamped.maxEmbedDistance).toBeCloseTo(0.20);
+  });
+
   it('detects --dry-run from argv and DRY_RUN from env', () => {
     expect(loadPipelineConfig(base, ['node', 'x', '--dry-run']).dryRun).toBe(true);
     expect(loadPipelineConfig({ ...base, DRY_RUN: '1' }, []).dryRun).toBe(true);
+  });
+
+  it('resolves openRouterApiKey from OPEN_ROUTER_API_KEY or OPENROUTER_API_KEY', () => {
+    const withPrimary = loadPipelineConfig({ ...base, OPEN_ROUTER_API_KEY: 'sk-or-1' }, []);
+    expect(withPrimary.openRouterApiKey).toBe('sk-or-1');
+
+    const withFallback = loadPipelineConfig({ ...base, OPENROUTER_API_KEY: 'sk-or-2' }, []);
+    expect(withFallback.openRouterApiKey).toBe('sk-or-2');
+
+    // primary wins when both set
+    const withBoth = loadPipelineConfig(
+      { ...base, OPEN_ROUTER_API_KEY: 'sk-primary', OPENROUTER_API_KEY: 'sk-secondary' },
+      [],
+    );
+    expect(withBoth.openRouterApiKey).toBe('sk-primary');
+
+    const withNeither = loadPipelineConfig(base, []);
+    expect(withNeither.openRouterApiKey).toBeUndefined();
   });
 });

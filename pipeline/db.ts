@@ -140,6 +140,8 @@ export async function replaceBriefItems(
         takeaways_en: item.takeaways_en,
         takeaways_uk: item.takeaways_uk,
         tools_mentioned: item.tools_mentioned,
+        social_hook_en: item.social_hook_en || null,
+        social_hook_uk: item.social_hook_uk || null,
       };
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);
@@ -253,4 +255,71 @@ export async function logPipelineRun(db: PipelineDb, run: PipelineRunLog): Promi
     meta: (run.meta ?? null) as Database['public']['Tables']['pipeline_runs']['Insert']['meta'],
   });
   if (error) throw new Error(`[db] logPipelineRun failed: ${error.message}`);
+}
+
+// ─── Semantic dedup (pgvector) ────────────────────────────────────────────────
+
+/** pgvector expects its input as a `[a,b,c]` string literal. */
+export function toVectorLiteral(vec: number[]): string {
+  return `[${vec.join(',')}]`;
+}
+
+/**
+ * Nearest published brief_item to an embedding within `maxDistance` cosine
+ * distance. Returns null when nothing is close enough — the candidate is novel.
+ */
+export async function matchPublishedItem(
+  db: PipelineDb,
+  embedding: number[],
+  maxDistance: number,
+): Promise<{ brief_item_id: string; distance: number } | null> {
+  // Cast needed: match_published_item is a new RPC not yet in the generated Database type.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await (db as any).rpc('match_published_item', {
+    query_embedding: toVectorLiteral(embedding),
+    max_distance: maxDistance,
+  });
+  if (error) throw new Error(`[db] match_published_item failed: ${(error as { message: string }).message}`);
+  const row = ((data ?? [])[0]) as unknown as { brief_item_id: string; distance: number } | undefined;
+  return row ?? null;
+}
+
+/**
+ * Embed the English titles of a brief's items and upsert them into
+ * `brief_item_embeddings` so future runs can do cross-day semantic dedup.
+ * Idempotent: upserts on `brief_item_id` (re-run after partial failure is safe).
+ */
+export async function storeItemEmbeddings(
+  db: PipelineDb,
+  briefId: string,
+  embed: (texts: string[]) => Promise<number[][]>,
+): Promise<number> {
+  const { data, error } = await db
+    .from('brief_items')
+    .select('id, title_en')
+    .eq('brief_id', briefId);
+  if (error) throw new Error(`[db] storeItemEmbeddings fetch failed: ${error.message}`);
+
+  const items = (data ?? []) as { id: string; title_en: string | null }[];
+  const eligible = items.filter((it) => it.title_en && it.title_en.trim().length > 0);
+  if (eligible.length === 0) return 0;
+
+  const vectors = await embed(eligible.map((it) => it.title_en!.trim()));
+  const rows = eligible
+    .map((item, i) => {
+      const vec = vectors[i];
+      if (!vec || vec.length === 0) return null;
+      return { brief_item_id: item.id, embedding: toVectorLiteral(vec) };
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+
+  if (rows.length === 0) return 0;
+
+  // `brief_item_embeddings` is not in the generated Database type yet.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: upsertErr } = await (db as any)
+    .from('brief_item_embeddings')
+    .upsert(rows, { onConflict: 'brief_item_id' });
+  if (upsertErr) throw new Error(`[db] storeItemEmbeddings upsert failed: ${upsertErr.message}`);
+  return rows.length;
 }
