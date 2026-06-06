@@ -70,7 +70,10 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
     'inline-flex items-center gap-1.5 rounded-pill border border-border px-2.5 py-1.5 text-[0.8rem] font-medium text-muted transition hover:border-accent hover:text-text';
 
   return (
-    <article className="card-hover elevation-card rounded-card border-border bg-surface border p-4">
+    <article
+      data-testid="post-card"
+      className="card-hover elevation-card rounded-card border-border bg-surface border p-4"
+    >
       <div className="post-grid">
         <button
           type="button"

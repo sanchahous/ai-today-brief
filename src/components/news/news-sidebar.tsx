@@ -31,9 +31,17 @@ interface SidebarControlsProps {
   hasActive: boolean;
 }
 
-function FilterGroup({ label, children }: { label: string; children: ReactNode }) {
+function FilterGroup({
+  label,
+  children,
+  testId,
+}: {
+  label: string;
+  children: ReactNode;
+  testId?: string;
+}) {
   return (
-    <section className="mb-6">
+    <section className="mb-6" data-testid={testId}>
       <h3 className="text-accent m-0 mb-3 text-[0.72rem] font-bold tracking-[0.1em] uppercase">
         {label}
       </h3>
@@ -72,17 +80,17 @@ function SidebarControls({
     return t.dateAll;
   };
 
+  const rowClass = (active: boolean) =>
+    `filter-row flex cursor-pointer items-center gap-2 py-1 text-[0.86rem] ${active ? 'text-text' : 'text-muted'}`;
+
   return (
     <>
       <FilterGroup label={t.sortLabel}>
-        <div className="grid gap-1.5">
+        <div className="grid gap-1">
           {sorts.map((s) => {
             const active = filters.sort === s;
             return (
-              <label
-                key={s}
-                className={`filter-row flex min-h-11 cursor-pointer items-center gap-2 text-[0.86rem] ${active ? 'text-text' : 'text-muted'}`}
-              >
+              <label key={s} className={rowClass(active)}>
                 <input
                   type="radio"
                   name="news-sort"
@@ -105,9 +113,7 @@ function SidebarControls({
             const color = c.color ?? '#888888';
             return (
               <li key={c.slug}>
-                <label
-                  className={`filter-row flex min-h-11 cursor-pointer items-center gap-2 text-[0.86rem] ${checked ? 'text-text' : 'text-muted'}`}
-                >
+                <label className={rowClass(checked)}>
                   <input
                     type="checkbox"
                     checked={checked}
@@ -164,7 +170,7 @@ function SidebarControls({
       )}
 
       {trending.length > 0 && (
-        <FilterGroup label={t.trendingSidebar}>
+        <FilterGroup label={t.trendingSidebar} testId="news-trending-section">
           <ul className="m-0 grid list-none gap-1.5 p-0">
             {trending.slice(0, 8).map((topic) => (
               <li key={topic.name}>
@@ -206,7 +212,11 @@ export function NewsSidebar({
 
   return (
     <>
-      <aside className="desktop-only sticky top-[76px] self-start" aria-label={t.filters}>
+      <aside
+        data-testid="news-sidebar"
+        className="sidebar-scroll desktop-only sticky top-[var(--header-h)] max-h-[calc(100dvh-var(--header-h)-1rem)] self-start overflow-y-auto overscroll-y-contain pr-1"
+        aria-label={t.filters}
+      >
         <SidebarControls {...controls} />
       </aside>
 
@@ -221,7 +231,7 @@ export function NewsSidebar({
             role="dialog"
             aria-modal="true"
             aria-label={t.filters}
-            className="border-border bg-bg h-full w-[min(340px,88vw)] overflow-y-auto border-l p-5"
+            className="sidebar-drawer-touch border-border bg-bg h-full w-[min(340px,88vw)] overflow-y-auto border-l p-5"
           >
             <div className="mb-5 flex items-center justify-between">
               <h2 className="m-0 text-lg">{t.filters}</h2>

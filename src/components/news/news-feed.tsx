@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { Fragment, useMemo, useState, type CSSProperties } from 'react';
 import type { HomeItem } from '@/lib/home';
 import type { NewsCategoryFilter } from '@/lib/news';
 import type { TrendingTopic } from '@/lib/home';
@@ -231,14 +231,16 @@ export function NewsFeed({
         ) : (
           <div className="grid gap-4">
             {pageRows.map((p, i) => (
-              <Reveal key={p.id} delayMs={i * 45}>
-                <PostCard lang={lang} item={p} />
+              <Fragment key={p.id}>
+                <Reveal delayMs={i * 45}>
+                  <PostCard lang={lang} item={p} />
+                </Reveal>
                 {i === 2 && (
-                  <Reveal>
+                  <Reveal delayMs={i * 45 + 20}>
                     <SponsorCard lang={lang} />
                   </Reveal>
                 )}
-              </Reveal>
+              </Fragment>
             ))}
             <Reveal>
               <NewsletterBand lang={lang} embedded />
