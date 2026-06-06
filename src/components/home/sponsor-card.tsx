@@ -20,14 +20,13 @@ export function SponsorCard({ lang }: { lang: Lang }) {
       className="cat-header rounded-card relative border p-5"
       style={style}
     >
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <div className="mb-3">
         <span
           className="cat-badge rounded-pill px-2 py-0.5 text-[0.62rem] font-bold tracking-[0.1em] uppercase"
           style={style}
         >
           {t.adSlotLabel}
         </span>
-        <span className="text-faint text-[0.68rem] leading-tight">{t.adSlotNote}</span>
       </div>
 
       <h3 className="text-base leading-snug sm:text-lg">{t.adSlotTitle}</h3>
