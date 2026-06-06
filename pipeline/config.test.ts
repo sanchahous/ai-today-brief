@@ -63,4 +63,22 @@ describe('loadPipelineConfig', () => {
     expect(loadPipelineConfig(base, ['node', 'x', '--dry-run']).dryRun).toBe(true);
     expect(loadPipelineConfig({ ...base, DRY_RUN: '1' }, []).dryRun).toBe(true);
   });
+
+  it('resolves openRouterApiKey from OPEN_ROUTER_API_KEY or OPENROUTER_API_KEY', () => {
+    const withPrimary = loadPipelineConfig({ ...base, OPEN_ROUTER_API_KEY: 'sk-or-1' }, []);
+    expect(withPrimary.openRouterApiKey).toBe('sk-or-1');
+
+    const withFallback = loadPipelineConfig({ ...base, OPENROUTER_API_KEY: 'sk-or-2' }, []);
+    expect(withFallback.openRouterApiKey).toBe('sk-or-2');
+
+    // primary wins when both set
+    const withBoth = loadPipelineConfig(
+      { ...base, OPEN_ROUTER_API_KEY: 'sk-primary', OPENROUTER_API_KEY: 'sk-secondary' },
+      [],
+    );
+    expect(withBoth.openRouterApiKey).toBe('sk-primary');
+
+    const withNeither = loadPipelineConfig(base, []);
+    expect(withNeither.openRouterApiKey).toBeUndefined();
+  });
 });

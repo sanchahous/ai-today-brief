@@ -25,6 +25,11 @@ export interface PipelineConfig {
   embedLimit: number;
   /** Cosine distance ceiling: candidates closer than this to a published item are dropped. */
   maxEmbedDistance: number;
+  /**
+   * OpenRouter API key (optional — OpenRouter fallback is skipped when unset).
+   * Reads OPEN_ROUTER_API_KEY or OPENROUTER_API_KEY from env.
+   */
+  openRouterApiKey?: string;
   /** Bot token for pushing review cards (optional — notify is skipped if unset). */
   telegramBotToken?: string;
   /** Private chat id that receives the per-item review cards (optional). */
@@ -90,6 +95,7 @@ export function loadPipelineConfig(
     recentTitles: intIn(env.RECENT_TITLES, 60, 0, 200),
     embedLimit: intIn(env.EMBED_LIMIT, 20, 1, 50),
     maxEmbedDistance: floatIn(env.MAX_EMBED_DISTANCE, 0.20, 0.05, 1),
+    openRouterApiKey: firstNonEmpty(env.OPEN_ROUTER_API_KEY, env.OPENROUTER_API_KEY),
     telegramBotToken: env.TELEGRAM_BOT_TOKEN?.trim() || undefined,
     telegramReviewChatId: env.TELEGRAM_REVIEW_CHAT_ID?.trim() || undefined,
     dryRun: argv.includes('--dry-run') || env.DRY_RUN === '1',

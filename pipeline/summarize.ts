@@ -354,18 +354,44 @@ export async function summarize(
   recentlyPublished: string[],
   maxItems: number,
   apiKey: string,
+  openRouterApiKey?: string,
 ): Promise<DraftBrief> {
   logEvent('info', 'summarize', 'Curate & summarize started', {
     candidates: candidates.length,
     recent_context: recentlyPublished.length,
     max_items: maxItems,
     model: resolveGeminiModel(),
+    openrouter_fallback: Boolean(openRouterApiKey),
   });
   const start = Date.now();
-  const text = await generateWithRetry(buildPrompt(candidates, recentlyPublished, maxItems), apiKey);
+  const prompt = buildPrompt(candidates, recentlyPublished, maxItems);
+
+  let text: string;
+  let provider = 'gemini';
+  let providerModel = resolveGeminiModel();
+
+  try {
+    text = await generateWithRetry(prompt, apiKey);
+  } catch (geminiError) {
+    if (!openRouterApiKey) {
+      throw geminiError;
+    }
+    logEvent('warn', 'summarize', 'Gemini failed — trying OpenRouter fallback', {
+      gemini_model: resolveGeminiModel(),
+      ...serializeErrorDetails(geminiError),
+    });
+    const { generateWithOpenRouterChain } = await import('./openrouter-summarize');
+    const orResult = await generateWithOpenRouterChain(prompt, { apiKey: openRouterApiKey });
+    text = orResult.text;
+    provider = 'openrouter';
+    providerModel = orResult.model;
+  }
+
   const brief = parseBrief(text, candidates);
   logEvent('info', 'summarize', 'Curate & summarize complete', {
     selected: brief.items.length,
+    provider,
+    provider_model: providerModel,
     duration_ms: Date.now() - start,
   });
   return brief;

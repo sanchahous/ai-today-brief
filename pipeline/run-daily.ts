@@ -178,7 +178,7 @@ async function main(): Promise<void> {
   // ── Summarize ────────────────────────────────────────────────────────────────
   t = Date.now();
   const recent = db ? await recentPublishedTitles(db, config.recentTitles).catch(() => []) : [];
-  const brief = await summarize(dedupedPool, recent, config.maxItems, config.geminiApiKey);
+  const brief = await summarize(dedupedPool, recent, config.maxItems, config.geminiApiKey, config.openRouterApiKey);
   await logStage(db, config.dryRun, {
     date,
     stage: 'summarize',
