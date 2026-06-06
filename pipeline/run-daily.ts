@@ -26,11 +26,14 @@ import {
   type PipelineDb,
   type PipelineRunLog,
 } from './db';
+import {
+  countSummarizeFailuresForDate,
+  geminiMaxAttemptsForSlot,
+  getPipelineDateKyiv,
+  resolveScheduleAttempt,
+  shouldUseOpenRouter,
+} from './schedule';
 import { logError, logEvent } from './log';
-
-function todayUtc(nowMs = Date.now()): string {
-  return new Date(nowMs).toISOString().slice(0, 10);
-}
 
 function printDryRun(brief: DraftBrief): void {
   const lines: string[] = [
@@ -71,14 +74,33 @@ async function logStage(
 
 async function main(): Promise<void> {
   const config = loadPipelineConfig();
-  const date = todayUtc();
+  const date = getPipelineDateKyiv();
+
+  const db = config.dryRun ? null : createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
+
+  // ── Schedule awareness ────────────────────────────────────────────────────────
+  // Determine which attempt we're on so early slots stay lightweight (Gemini only,
+  // fewer retries) and the final slot exhausts every fallback (OpenRouter chain).
+  const failuresToday = db
+    ? await countSummarizeFailuresForDate(db, date).catch(() => 0)
+    : 0;
+  const scheduleAttempt = resolveScheduleAttempt({
+    argv: process.argv,
+    env: process.env as Record<string, string | undefined>,
+    now: new Date(),
+    summarizeFailuresToday: failuresToday,
+  });
+  const openRouterKey = shouldUseOpenRouter(scheduleAttempt) ? config.openRouterApiKey : undefined;
+  const geminiAttempts = geminiMaxAttemptsForSlot(scheduleAttempt);
+
   logEvent('info', 'fetch', 'Daily pipeline started', {
     date,
     dry_run: config.dryRun,
     model: resolveGeminiModel(),
+    schedule_attempt: scheduleAttempt,
+    gemini_attempts: geminiAttempts,
+    openrouter_enabled: Boolean(openRouterKey),
   });
-
-  const db = config.dryRun ? null : createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   let t = Date.now();
@@ -178,7 +200,7 @@ async function main(): Promise<void> {
   // ── Summarize ────────────────────────────────────────────────────────────────
   t = Date.now();
   const recent = db ? await recentPublishedTitles(db, config.recentTitles).catch(() => []) : [];
-  const brief = await summarize(dedupedPool, recent, config.maxItems, config.geminiApiKey, config.openRouterApiKey);
+  const brief = await summarize(dedupedPool, recent, config.maxItems, config.geminiApiKey, openRouterKey, geminiAttempts);
   await logStage(db, config.dryRun, {
     date,
     stage: 'summarize',

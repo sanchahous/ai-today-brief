@@ -394,12 +394,14 @@ export async function summarize(
   maxItems: number,
   apiKey: string,
   openRouterApiKey?: string,
+  geminiMaxAttempts = 3,
 ): Promise<DraftBrief> {
   logEvent('info', 'summarize', 'Curate & summarize started', {
     candidates: candidates.length,
     recent_context: recentlyPublished.length,
     max_items: maxItems,
     model: resolveGeminiModel(),
+    gemini_max_attempts: geminiMaxAttempts,
     openrouter_fallback: Boolean(openRouterApiKey),
   });
   const start = Date.now();
@@ -410,7 +412,7 @@ export async function summarize(
   let providerModel = resolveGeminiModel();
 
   try {
-    text = await generateWithRetry(prompt, apiKey);
+    text = await generateWithRetry(prompt, apiKey, geminiMaxAttempts);
   } catch (geminiError) {
     if (!openRouterApiKey) {
       throw geminiError;
