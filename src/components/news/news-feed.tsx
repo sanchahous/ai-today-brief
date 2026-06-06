@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import type { HomeItem } from '@/lib/home';
 import type { NewsCategoryFilter } from '@/lib/news';
 import type { TrendingTopic } from '@/lib/home';
@@ -187,12 +187,8 @@ export function NewsFeed({
                   key={slug}
                   type="button"
                   onClick={() => toggleCategory(slug)}
-                  className="rounded-pill inline-flex items-center gap-1.5 border px-2.5 py-1 text-[0.78rem]"
-                  style={{
-                    color,
-                    background: `${color}1f`,
-                    borderColor: `${color}55`,
-                  }}
+                  className="cat-chip rounded-pill inline-flex items-center gap-1.5 px-2.5 py-1 text-[0.78rem]"
+                  style={{ '--cat-color': color } as CSSProperties}
                 >
                   {c?.name ?? slug} <CloseIcon size={13} />
                 </button>

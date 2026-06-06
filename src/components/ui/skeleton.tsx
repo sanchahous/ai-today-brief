@@ -13,10 +13,10 @@ export function Skeleton({
 
 export function SearchPreviewSkeleton() {
   return (
-    <div className="px-1 py-1" aria-hidden>
+    <div className="px-1 py-1 md:px-2" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="rounded-lg px-2.5 py-2">
-          <Skeleton className="mb-2 h-4 w-24 rounded-md" />
+        <div key={i} className="rounded-lg px-3 py-2.5 md:px-4 md:py-3">
+          <Skeleton className="mb-2 h-4 w-28 rounded-md md:w-32" />
           <Skeleton className="mb-1.5 h-4 w-full rounded-md" />
           <Skeleton className="h-4 w-[85%] rounded-md" />
         </div>

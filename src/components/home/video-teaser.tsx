@@ -38,7 +38,7 @@ export function VideoTeaser({ lang }: { lang: Lang }) {
             type="button"
             disabled
             aria-disabled="true"
-            className="rounded-pill bg-accent cursor-not-allowed px-5 py-3 text-sm font-semibold text-black opacity-80"
+            className="rounded-pill bg-accent cursor-not-allowed px-5 py-3 text-sm font-semibold text-on-accent opacity-80"
           >
             {t.videoCta}
           </button>

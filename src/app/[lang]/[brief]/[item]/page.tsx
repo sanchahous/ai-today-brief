@@ -152,7 +152,10 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
           {detail.hasVideo && (
             <>
               <span aria-hidden>·</span>
-              <span className="inline-flex items-center gap-1 font-semibold" style={{ color }}>
+              <span
+                className="cat-fg inline-flex items-center gap-1 font-semibold"
+                style={{ '--cat-color': color } as React.CSSProperties}
+              >
                 <PlayIcon size={13} /> {t.landing.watchVideo}
               </span>
             </>

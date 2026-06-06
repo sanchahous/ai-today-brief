@@ -92,7 +92,7 @@ export function NewsletterForm({
       <button
         type="submit"
         disabled={status === 'loading'}
-        className="rounded-pill bg-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-black disabled:opacity-70"
+        className="rounded-pill bg-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-on-accent disabled:opacity-70"
       >
         {button}
         <ArrowRight size={16} />
