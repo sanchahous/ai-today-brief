@@ -5,7 +5,7 @@ import { GoogleAnalytics } from '@/components/google-analytics';
 import { SITE_NAME, SITE_URL, SITE_TAGLINE, DEFAULT_LANG } from '@/lib/site';
 
 const fraunces = Fraunces({
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
   variable: '--font-fraunces',
   weight: ['400', '600', '700'],
   style: ['normal', 'italic'],
@@ -13,11 +13,14 @@ const fraunces = Fraunces({
 });
 
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext', 'cyrillic'],
   variable: '--font-inter',
   weight: ['400', '500', '600', '700'],
   display: 'swap',
 });
+
+/** Runs before paint — theme class + document lang from URL (no flicker). */
+const CHROME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('theme');var light=t==='light'||(!t&&window.matchMedia('(prefers-color-scheme: light)').matches);if(light)document.documentElement.classList.add('theme-light');}catch(e){}var m=location.pathname.match(/^\\/(en|uk)(\\/|$)/);if(m)document.documentElement.lang=m[1];})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -36,7 +39,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang={DEFAULT_LANG} className={`${fraunces.variable} ${inter.variable} h-full`}>
+    <html lang={DEFAULT_LANG} suppressHydrationWarning className={`${fraunces.variable} ${inter.variable} h-full`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: CHROME_INIT_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col font-sans antialiased">
         <GoogleAnalytics />
         {children}

@@ -18,12 +18,12 @@ export function TrendingTopics({ lang, topics }: { lang: Lang; topics: TrendingT
   const sizeRem = (n: number) => 0.82 + ((n - min) / (max - min || 1)) * 0.5;
 
   return (
-    <section aria-label={t.trendingTitle} className="mx-auto w-full max-w-[1160px] px-6 py-12">
+    <section aria-labelledby="trending-title" className="mx-auto w-full max-w-[1160px] px-6 py-12">
       <Reveal>
         <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
           {t.trendingEyebrow}
         </p>
-        <h2 className="mt-2 text-2xl sm:text-3xl">{t.trendingTitle}</h2>
+        <h2 id="trending-title" className="mt-2 text-2xl sm:text-3xl">{t.trendingTitle}</h2>
         <p className="text-muted mt-1 mb-6 max-w-xl text-sm">{t.trendingSubtitle}</p>
         <div className="flex flex-wrap gap-2.5">
           {topics.map((topic) => (

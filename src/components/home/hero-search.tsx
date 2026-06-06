@@ -62,10 +62,14 @@ export function HeroSearch({
     <div ref={rootRef}>
       <form role="search" onSubmit={submit} className="flex max-w-xl gap-2">
         <div className="relative min-w-0 flex-1">
+          <label htmlFor="hero-search" className="sr-only">
+            {placeholder}
+          </label>
           <span className="text-muted pointer-events-none absolute top-1/2 left-4 flex -translate-y-1/2">
             <SearchIcon />
           </span>
           <input
+            id="hero-search"
             type="search"
             value={query}
             onChange={(e) => {

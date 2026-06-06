@@ -21,7 +21,7 @@ export function NewsletterBand({
   const t = getStrings(lang).landing;
   const outer = embedded ? 'w-full' : 'mx-auto w-full max-w-[1160px] px-6 py-6';
   return (
-    <section className={outer}>
+    <section aria-labelledby={showHeader ? 'newsletter-title' : undefined} className={outer}>
       <Reveal>
         <div
           className="rounded-card border-border relative overflow-hidden border p-6 sm:p-10"
@@ -33,7 +33,7 @@ export function NewsletterBand({
           {showHeader ? (
             <>
               <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">{t.subEyebrow}</p>
-              <h2 className="mt-2 text-2xl sm:text-3xl">{t.subTitle}</h2>
+              <h2 id="newsletter-title" className="mt-2 text-2xl sm:text-3xl">{t.subTitle}</h2>
               <p className="text-muted mt-2 mb-5 max-w-xl text-sm leading-relaxed">{t.subBody}</p>
             </>
           ) : null}

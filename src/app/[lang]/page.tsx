@@ -53,7 +53,7 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
   };
 
   return (
-    <main className="flex-1">
+    <div className="flex-1">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
@@ -65,6 +65,6 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
       <NewsletterBand lang={lang} />
       <VideoTeaser lang={lang} />
       <FaqSection lang={lang} />
-    </main>
+    </div>
   );
 }

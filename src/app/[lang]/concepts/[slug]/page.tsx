@@ -85,7 +85,7 @@ export default async function ConceptHubPage({ params }: { params: Promise<Param
   };
 
   return (
-    <main className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
+    <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -100,6 +100,6 @@ export default async function ConceptHubPage({ params }: { params: Promise<Param
       />
       <PostFeed key={slug} lang={lang} items={hub.stories} showNewsletter={false} />
       <ConceptOtherChips lang={lang} concepts={hub.others} />
-    </main>
+    </div>
   );
 }

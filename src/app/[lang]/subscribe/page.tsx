@@ -67,7 +67,7 @@ export default async function SubscribePage({ params }: { params: Promise<Params
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <main className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10 pb-4">
+      <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10 pb-4">
         <Breadcrumbs items={crumbs} />
 
         <section className="mx-auto max-w-[720px] text-center">
@@ -85,7 +85,7 @@ export default async function SubscribePage({ params }: { params: Promise<Params
 
         <SubscribeBenefitsGrid lang={lang} title={p.whatTitle} />
         <SubscribeSampleList title={p.sampleTitle} lead={p.sampleLead} items={sample} />
-      </main>
+      </div>
 
       <FaqSection lang={lang} />
     </>

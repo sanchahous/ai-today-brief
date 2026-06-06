@@ -122,7 +122,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
   const color = detail.categoryColor ?? '#888888';
 
   return (
-    <main className="mx-auto w-full max-w-[760px] flex-1 px-6 py-10">
+    <div className="mx-auto w-full max-w-[760px] flex-1 px-6 py-10">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -223,6 +223,6 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
       <section className="mt-12">
         <NewsletterBand lang={lang} embedded />
       </section>
-    </main>
+    </div>
   );
 }

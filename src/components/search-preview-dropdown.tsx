@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { CategoryBadge } from '@/components/home/category-badge';
+import { SearchPreviewSkeleton } from '@/components/ui/skeleton';
 import { useSearchPreview, type SearchPreviewItem } from '@/hooks/use-search-preview';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
@@ -79,7 +80,7 @@ export function SearchPreviewDropdown({
   return (
     <div role="listbox" aria-label={t.searchAria} className={panelClass}>
       {loading && rows.length === 0 ? (
-        <p className="text-muted m-0 px-3 py-3 text-sm">{t.searchLoading}</p>
+        <SearchPreviewSkeleton />
       ) : null}
       {!loading && rows.length === 0 ? (
         <p className="text-muted m-0 px-3 py-3 text-sm">{t.searchNoResults}</p>
