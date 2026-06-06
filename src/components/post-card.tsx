@@ -8,6 +8,7 @@ import { getStrings } from '@/lib/i18n';
 import { SITE_URL, type Lang } from '@/lib/site';
 import { CategoryBadge } from '@/components/home/category-badge';
 import { CategoryThumb } from '@/components/category-thumb';
+import { trackEvent } from '@/lib/analytics-client';
 import {
   ArrowRight,
   Bookmark,
@@ -55,12 +56,28 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
 
   const toggleSaved = useCallback(() => {
     const ids = readSaved();
-    const next = ids.includes(item.id) ? ids.filter((id) => id !== item.id) : [...ids, item.id];
+    const nextSaved = !ids.includes(item.id);
+    const next = nextSaved ? [...ids, item.id] : ids.filter((id) => id !== item.id);
     localStorage.setItem(SAVED_KEY, JSON.stringify(next));
-    setSaved(next.includes(item.id));
+    setSaved(nextSaved);
+    trackEvent('save_toggle', { post_id: item.id, saved: nextSaved });
   }, [item.id]);
 
+  function toggleExpanded() {
+    setExpanded((was) => {
+      if (!was) {
+        trackEvent('post_expand', { post_id: item.id, category: item.categorySlug ?? '' });
+      }
+      return !was;
+    });
+  }
+
+  function trackShare(method: 'x' | 'linkedin' | 'copy_link') {
+    trackEvent('share', { post_id: item.id, method });
+  }
+
   function copyLink() {
+    trackShare('copy_link');
     void navigator.clipboard?.writeText(pageUrl).catch(() => {});
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
@@ -77,7 +94,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
       <div className="post-grid">
         <button
           type="button"
-          onClick={() => setExpanded((e) => !e)}
+          onClick={toggleExpanded}
           aria-expanded={expanded}
           aria-controls={bodyId}
           aria-label={item.title}
@@ -126,7 +143,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
           <div className="relative flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => setExpanded((e) => !e)}
+              onClick={toggleExpanded}
               aria-expanded={expanded}
               aria-controls={bodyId}
               className={`${iconBtn} text-text`}
@@ -175,7 +192,10 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-text block rounded-md px-2.5 py-2 text-[0.85rem] no-underline hover:bg-surface-2"
-                    onClick={() => setShareOpen(false)}
+                    onClick={() => {
+                      trackShare('x');
+                      setShareOpen(false);
+                    }}
                   >
                     {t.shareOnX}
                   </a>
@@ -185,7 +205,10 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-text block rounded-md px-2.5 py-2 text-[0.85rem] no-underline hover:bg-surface-2"
-                    onClick={() => setShareOpen(false)}
+                    onClick={() => {
+                      trackShare('linkedin');
+                      setShareOpen(false);
+                    }}
                   >
                     {t.shareOnLinkedin}
                   </a>

@@ -1,19 +1,27 @@
+'use client';
+
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
+import { trackEvent } from '@/lib/analytics-client';
 import { ArrowRight } from '@/components/icons';
 
 /**
  * "Open ad slot" house unit. Until the `sponsors` table carries a real paid
  * placement, this woven-in feed card honestly offers the slot to advertisers
- * and links to /advertise. It is clearly disclosed as our own note — never a
- * fake product or a stealth ad — so it reads cleanly to readers while giving
- * potential sponsors a concrete hook to claim the spot.
+ * and links to /advertise.
  */
-export function SponsorCard({ lang }: { lang: Lang }) {
+export function SponsorCard({
+  lang,
+  placement = 'home-week',
+}: {
+  lang: Lang;
+  placement?: string;
+}) {
   const t = getStrings(lang).landing;
   const style = { '--cat-color': 'var(--accent)' } as CSSProperties;
+
   return (
     <article
       data-testid="sponsor-card"
@@ -34,6 +42,7 @@ export function SponsorCard({ lang }: { lang: Lang }) {
 
       <Link
         href={`/${lang}/advertise`}
+        onClick={() => trackEvent('ad_slot_click', { placement })}
         className="cat-chip rounded-pill inline-flex items-center gap-1.5 border px-4 py-2 text-sm font-semibold no-underline transition-colors"
         style={style}
       >

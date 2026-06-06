@@ -196,7 +196,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
           </a>
         )}
 
-        <ItemShareBar lang={lang} pageUrl={pagePath} title={detail.title} />
+        <ItemShareBar lang={lang} pageUrl={pagePath} title={detail.title} postId={item} />
       </article>
 
       {related.length > 0 && (
@@ -224,7 +224,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
       )}
 
       <section className="mt-12">
-        <NewsletterBand lang={lang} embedded />
+        <NewsletterBand lang={lang} embedded placement="item-page" />
       </section>
     </div>
   );

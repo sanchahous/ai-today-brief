@@ -1,9 +1,8 @@
-import Link from 'next/link';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import type { TrendingTopic } from '@/lib/home';
-import { ArrowRight, SparkleIcon } from '@/components/icons';
 import { Reveal } from '@/components/reveal';
+import { TrendingTopicLink } from '@/components/home/trending-topic-link';
 
 /**
  * Weighted tag cloud of the most-mentioned tools/concepts across recent briefs
@@ -27,24 +26,13 @@ export function TrendingTopics({ lang, topics }: { lang: Lang; topics: TrendingT
         <p className="text-muted mt-1 mb-6 max-w-xl text-sm">{t.trendingSubtitle}</p>
         <div className="flex flex-wrap gap-2.5">
           {topics.map((topic) => (
-            <Link
+            <TrendingTopicLink
               key={topic.name}
-              href={topic.href}
-              title={`${topic.mentions} ${t.mentions}`}
-              className="group border-border bg-surface text-text rounded-pill hover:border-accent hover:bg-surface-2 inline-flex items-center gap-1.5 border px-3.5 py-2 font-semibold transition hover:-translate-y-0.5"
-              style={{ fontSize: `${sizeRem(topic.mentions)}rem` }}
-            >
-              <span aria-hidden className="text-accent inline-flex">
-                <SparkleIcon size={15} />
-              </span>
-              {topic.name}
-              <span
-                aria-hidden
-                className="text-accent inline-flex -translate-x-1 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100"
-              >
-                <ArrowRight size={14} />
-              </span>
-            </Link>
+              topic={topic}
+              placement="home"
+              sizeRem={sizeRem(topic.mentions)}
+              mentionsLabel={t.mentions}
+            />
           ))}
         </div>
       </Reveal>

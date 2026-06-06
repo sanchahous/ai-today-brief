@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { SearchPreviewDropdown } from '@/components/search-preview-dropdown';
 import { SearchIcon } from '@/components/icons';
+import { trackSearch } from '@/lib/analytics-client';
 import type { Lang } from '@/lib/site';
 
 /** Header search with live preview dropdown (prototype parity). */
@@ -42,6 +43,7 @@ export function HeaderSearchField({
   function submit(e: FormEvent) {
     e.preventDefault();
     const trimmed = query.trim();
+    trackSearch(trimmed, variant, lang);
     router.push(trimmed ? `/${lang}/news?q=${encodeURIComponent(trimmed)}` : `/${lang}/news`);
     setQuery('');
     setOpen(false);

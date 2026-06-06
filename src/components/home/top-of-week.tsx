@@ -64,7 +64,7 @@ export function TopOfWeek({
             </Reveal>
           ))}
           <Reveal delayMs={secondary.length * 70}>
-            <SponsorCard lang={lang} />
+            <SponsorCard lang={lang} placement="home-week" />
           </Reveal>
         </div>
       </div>

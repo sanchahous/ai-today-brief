@@ -2,9 +2,9 @@ import Script from 'next/script';
 import { GA_MEASUREMENT_ID, analyticsConfigured } from '@/lib/analytics-config';
 
 /**
- * GA4 bootstrap — matches Google's gtag snippet but defers network work until
- * after the page is interactive (better CWV than sync tags in <head>).
- * Consent Mode v2 defaults stay denied until the CMP updates (GDPR-safe).
+ * GA4 bootstrap — defers network work until after interactive (CWV).
+ * Consent Mode v2: storage denied by default; events still send as cookieless
+ * pings until the CMP grants analytics_storage (advanced / modeling mode).
  * `send_page_view: false` — App Router sends page_view on route change.
  */
 export function GoogleAnalytics() {
@@ -21,6 +21,8 @@ gtag('consent','default',{
   ad_personalization:'denied',
   wait_for_update:500
 });
+gtag('set','ads_data_redaction',true);
+gtag('set','url_passthrough',true);
 gtag('js',new Date());
 gtag('config','${GA_MEASUREMENT_ID}',{send_page_view:false});
 `;

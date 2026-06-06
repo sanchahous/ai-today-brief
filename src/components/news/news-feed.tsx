@@ -1,12 +1,13 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Fragment, useMemo, useState, type CSSProperties } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { HomeItem } from '@/lib/home';
 import type { NewsCategoryFilter } from '@/lib/news';
 import type { TrendingTopic } from '@/lib/home';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
+import { trackEvent } from '@/lib/analytics-client';
 import { Reveal } from '@/components/reveal';
 import { PostCard } from '@/components/post-card';
 import { Pagination } from '@/components/pagination';
@@ -50,6 +51,7 @@ export function NewsFeed({
   }));
   const [page, setPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const noResultsTracked = useRef('');
 
   const filtered = useMemo(() => {
     const rows = items.filter(
@@ -80,21 +82,49 @@ export function NewsFeed({
   const hasActive =
     filters.q.trim().length > 0 || filters.categories.length > 0 || filters.date !== 'all';
 
+  useEffect(() => {
+    const q = filters.q.trim() || initialQuery.trim();
+    if (filtered.length > 0 || !q) {
+      noResultsTracked.current = '';
+      return;
+    }
+    if (noResultsTracked.current === q) return;
+    noResultsTracked.current = q;
+    trackEvent('search_no_results', { query: q });
+  }, [filtered.length, filters.q, initialQuery]);
+
   const toggleCategory = (slug: string) => {
-    setFilters((f) => {
-      const on = !f.categories.includes(slug);
-      return {
-        ...f,
-        categories: on ? [...f.categories, slug] : f.categories.filter((c) => c !== slug),
-      };
-    });
+    const on = !filters.categories.includes(slug);
+    trackEvent('filter_category', { category: slug, enabled: on });
+    setFilters((f) => ({
+      ...f,
+      categories: on ? [...f.categories, slug] : f.categories.filter((c) => c !== slug),
+    }));
     setPage(1);
   };
 
   const reset = () => {
+    trackEvent('filters_reset', {});
     setFilters({ q: '', categories: [], date: 'all', sort: 'newest' });
     setPage(1);
     if (serverSearchActive) router.push(`/${lang}/news`);
+  };
+
+  const setDateFilter = (d: DatePreset) => {
+    trackEvent('filter_date', { range: d });
+    setFilters((f) => ({ ...f, date: d }));
+    setPage(1);
+  };
+
+  const setSortFilter = (s: SortMode) => {
+    trackEvent('sort_change', { sort: s });
+    setFilters((f) => ({ ...f, sort: s }));
+    setPage(1);
+  };
+
+  const goToPage = (p: number) => {
+    setPage(p);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const dateChipLabel = (d: DatePreset) => {
@@ -113,14 +143,8 @@ export function NewsFeed({
         categories={categories}
         trending={trending}
         onToggleCategory={toggleCategory}
-        onDate={(d) => {
-          setFilters((f) => ({ ...f, date: d }));
-          setPage(1);
-        }}
-        onSort={(s) => {
-          setFilters((f) => ({ ...f, sort: s }));
-          setPage(1);
-        }}
+        onDate={setDateFilter}
+        onSort={setSortFilter}
         onReset={reset}
         hasActive={hasActive}
         drawerOpen={drawerOpen}
@@ -139,10 +163,7 @@ export function NewsFeed({
             <select
               id="news-sort-top"
               value={filters.sort}
-              onChange={(e) => {
-                setFilters((f) => ({ ...f, sort: e.target.value as SortMode }));
-                setPage(1);
-              }}
+              onChange={(e) => setSortFilter(e.target.value as SortMode)}
               className="border-border bg-surface text-text rounded-lg border px-2 py-2 text-[0.85rem]"
             >
               <option value="newest">{t.sortNewest}</option>
@@ -237,13 +258,13 @@ export function NewsFeed({
                 </Reveal>
                 {i === 2 && (
                   <Reveal delayMs={i * 45 + 20}>
-                    <SponsorCard lang={lang} />
+                    <SponsorCard lang={lang} placement="news-feed" />
                   </Reveal>
                 )}
               </Fragment>
             ))}
             <Reveal>
-              <NewsletterBand lang={lang} embedded />
+              <NewsletterBand lang={lang} embedded placement="news-feed" />
             </Reveal>
           </div>
         )}
@@ -253,10 +274,7 @@ export function NewsFeed({
             lang={lang}
             page={safePage}
             pageCount={pageCount}
-            onChange={(p) => {
-              setPage(p);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
+            onChange={goToPage}
           />
         )}
       </section>

@@ -123,7 +123,7 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
       </div>
 
       <section className="mt-12 max-w-[760px]">
-        <NewsletterBand lang={lang} embedded />
+        <NewsletterBand lang={lang} embedded placement="brief-page" />
       </section>
     </div>
   );

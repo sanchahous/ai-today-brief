@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowRight, SearchIcon } from '@/components/icons';
 import { SearchPreviewDropdown } from '@/components/search-preview-dropdown';
+import { trackSearch } from '@/lib/analytics-client';
 import type { Lang } from '@/lib/site';
 
 /** Popular queries — language-neutral product names, lightly localized. */
@@ -46,8 +47,9 @@ export function HeroSearch({
     };
   }, []);
 
-  function go(value: string) {
+  function go(value: string, source: 'hero' | 'popular') {
     const trimmed = value.trim();
+    trackSearch(trimmed, source, lang);
     router.push(trimmed ? `/${lang}/news?q=${encodeURIComponent(trimmed)}` : `/${lang}/news`);
     setQuery('');
     setOpen(false);
@@ -55,7 +57,7 @@ export function HeroSearch({
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    go(query);
+    go(query, 'hero');
   }
 
   return (
@@ -107,7 +109,7 @@ export function HeroSearch({
           <button
             key={q}
             type="button"
-            onClick={() => go(q)}
+            onClick={() => go(q, 'popular')}
             className="border-border bg-surface text-muted rounded-pill hover:border-accent hover:text-text border px-3 py-1 text-sm transition-colors"
           >
             {q}

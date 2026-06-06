@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { MoonIcon, SunIcon } from '@/components/icons';
+import { setUserProperties, trackEvent } from '@/lib/analytics-client';
 
 type Theme = 'dark' | 'light';
 
@@ -35,6 +36,8 @@ export function ThemeToggle({ label }: { label: string }) {
     const next: Theme = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
     applyTheme(next);
+    trackEvent('theme_toggle', { to_theme: next });
+    setUserProperties({ theme: next });
     try {
       localStorage.setItem('theme', next);
     } catch {
