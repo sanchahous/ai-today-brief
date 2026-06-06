@@ -19,23 +19,45 @@ export type OpenRouterModelRecord = {
 
 type ModelsResponse = { data?: OpenRouterModelRecord[] };
 
-/** Substring priority when pattern scores tie (lower index = tried earlier). */
+/**
+ * Substring priority list — lower index = tried earlier within the same tier.
+ * Used as a scoring overlay on top of the tier + pattern rank; override via
+ * OPENROUTER_MODEL_PRIORITY env var (comma-separated substrings).
+ *
+ * Tier order (always applied first):
+ *   1. deepseek_pro  — DeepSeek flagship (v4-pro, v3.x, r1)
+ *   2. deepseek_chat — DeepSeek lite/chat variants
+ *   3. qwen          — Qwen family
+ *   4. other         — Claude, GPT, Gemini, Llama, Mistral, …
+ *
+ * Within "other", this list orders the frontier models by capability.
+ * `:free` tier models on OpenRouter are excluded entirely — their rate limits
+ * are too aggressive for production use (unrelated to Google AI Studio free tier).
+ */
 export const DEFAULT_MODEL_PRIORITY = [
+  // ── DeepSeek — cost-effective powerhouses (handled by deepseek_pro/chat tiers) ──
   'deepseek-v4-pro',
+  'deepseek-v4',      // catches v4-flash and future v4.x variants
   'deepseek-v3.2',
   'deepseek-v3.1',
   'deepseek-v3',
   'deepseek-r1',
   'deepseek-pro',
   'deepseek-chat',
+  // ── Qwen (handled by qwen tier) ──
   'qwen-max',
   'qwen-plus',
   'qwen3',
   'qwen',
+  // ── Frontier (all land in "other" tier; ordered by capability) ──
+  'claude-opus-4',    // Anthropic flagship
+  'claude-sonnet-4',  // matches sonnet-4, sonnet-4.x, sonnet-4-5, sonnet-4-6 …
+  'gpt-5',
   'gpt-4.1',
   'gpt-4o',
-  'claude-sonnet-4',
-  'gemini-2.5-pro',
+  'gemini-3.5',       // matches gemini-3.5-flash, gemini-3.5-pro, …
+  'gemini-3',         // matches gemini-3-flash, gemini-3-pro, gemini-3.1-…, …
+  'gemini-2.5-pro',   // explicit fallback for older Gemini Pro
   'llama-3.3-70b',
   'mistral-large',
 ] as const;
@@ -191,6 +213,9 @@ function compositeRankScore(
 
 function isEligibleModel(model: OpenRouterModelRecord): boolean {
   const id = model.id.toLowerCase();
+  // Exclude OpenRouter's `:free` routing tier — it has severe per-minute rate limits
+  // that make it unreliable as a production fallback. This is distinct from the free
+  // quota on the Google AI Studio / Gemini API which we use as primary.
   if (id.includes(':free')) return false;
   if (id.includes('vision') || id.includes('image')) return false;
   if (isUnstableOpenRouterModelId(model.id)) return false;
