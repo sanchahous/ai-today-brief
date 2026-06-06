@@ -1,0 +1,68 @@
+name: Daily Pipeline
+
+on:
+  schedule:
+    # Europe/Kyiv (EEST = UTC+3, summer). 6 slots every 30 min, 06:00–08:30.
+    # Slot 1–5: Gemini only (2 retries). Slot 6: Gemini + OpenRouter fallback.
+    - cron: '0 3 * * *'   # slot 1 — 06:00 Kyiv
+    - cron: '30 3 * * *'  # slot 2 — 06:30 Kyiv
+    - cron: '0 4 * * *'   # slot 3 — 07:00 Kyiv
+    - cron: '30 4 * * *'  # slot 4 — 07:30 Kyiv
+    - cron: '0 5 * * *'   # slot 5 — 08:00 Kyiv
+    - cron: '30 5 * * *'  # slot 6 — 08:30 Kyiv
+  workflow_dispatch:
+    inputs:
+      attempt:
+        description: 'Schedule attempt 1–6 (leave blank for auto)'
+        required: false
+        default: '1'
+      dry_run:
+        description: 'Dry run — print only, no DB writes'
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  run:
+    name: Run daily pipeline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Resolve attempt number from schedule
+        id: slot
+        run: |
+          case "${{ github.event.schedule }}" in
+            "0 3 * * *")   echo "attempt=1" >> "$GITHUB_OUTPUT" ;;
+            "30 3 * * *")  echo "attempt=2" >> "$GITHUB_OUTPUT" ;;
+            "0 4 * * *")   echo "attempt=3" >> "$GITHUB_OUTPUT" ;;
+            "30 4 * * *")  echo "attempt=4" >> "$GITHUB_OUTPUT" ;;
+            "0 5 * * *")   echo "attempt=5" >> "$GITHUB_OUTPUT" ;;
+            "30 5 * * *")  echo "attempt=6" >> "$GITHUB_OUTPUT" ;;
+            *)             echo "attempt=${{ inputs.attempt || '1' }}" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Run pipeline (attempt ${{ steps.slot.outputs.attempt }})
+        env:
+          SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+          SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_REVIEW_CHAT_ID: ${{ secrets.TELEGRAM_REVIEW_CHAT_ID }}
+        run: |
+          ARGS="--attempt ${{ steps.slot.outputs.attempt }}"
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          npx tsx pipeline/run-daily.ts $ARGS
