@@ -123,7 +123,7 @@ export default async function AdvertisePage({ params }: { params: Promise<Params
             <p className="text-muted max-w-[520px] text-base leading-relaxed">{p.contactBody}</p>
             <a
               href={`mailto:${ADVERTISE_EMAIL}`}
-              className="rounded-pill bg-accent mt-5 inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-black no-underline"
+              className="rounded-pill bg-accent mt-5 inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-on-accent no-underline"
             >
               <MailIcon size={16} />
               {p.contactCta}

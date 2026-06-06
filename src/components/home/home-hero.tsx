@@ -50,7 +50,7 @@ export function HomeHero({ lang, categoryCount }: { lang: Lang; categoryCount: n
         <div className="mt-7 flex flex-wrap gap-3">
           <Link
             href={`/${lang}/news`}
-            className="rounded-pill bg-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-black"
+            className="rounded-pill bg-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-on-accent"
           >
             {t.ctaPrimary}
             <ArrowRight size={16} />

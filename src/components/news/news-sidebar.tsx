@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, type CSSProperties, type ReactNode } from 'react';
 import { getStrings } from '@/lib/i18n';
 import type { TrendingTopic } from '@/lib/home';
 import type { NewsCategoryFilter } from '@/lib/news';
@@ -81,14 +81,14 @@ function SidebarControls({
             return (
               <label
                 key={s}
-                className={`flex cursor-pointer items-center gap-2 text-[0.86rem] ${active ? 'text-text' : 'text-muted'}`}
+                className={`filter-row flex min-h-11 cursor-pointer items-center gap-2 text-[0.86rem] ${active ? 'text-text' : 'text-muted'}`}
               >
                 <input
                   type="radio"
                   name="news-sort"
                   checked={active}
                   onChange={() => onSort(s)}
-                  className="accent-accent"
+                  className="accent-accent size-4 shrink-0"
                 />
                 {sortLabel(s)}
               </label>
@@ -106,15 +106,19 @@ function SidebarControls({
             return (
               <li key={c.slug}>
                 <label
-                  className={`flex cursor-pointer items-center gap-2 text-[0.86rem] ${checked ? 'text-text' : 'text-muted'}`}
+                  className={`filter-row flex min-h-11 cursor-pointer items-center gap-2 text-[0.86rem] ${checked ? 'text-text' : 'text-muted'}`}
                 >
                   <input
                     type="checkbox"
                     checked={checked}
                     onChange={() => onToggleCategory(c.slug)}
-                    className="accent-accent"
+                    className="accent-accent size-4 shrink-0"
+                    style={{ accentColor: color } as CSSProperties}
                   />
-                  <span className="inline-flex" style={{ color }}>
+                  <span
+                    className="cat-fg inline-flex shrink-0"
+                    style={{ '--cat-color': color } as CSSProperties}
+                  >
                     <CategoryGlyph icon={c.icon} size={16} strokeWidth={1.6} />
                   </span>
                   <span className="flex-1">{c.name}</span>
@@ -138,7 +142,7 @@ function SidebarControls({
                 aria-pressed={active}
                 className={`rounded-lg border px-2 py-2 text-[0.8rem] transition ${
                   active
-                    ? 'border-accent bg-accent font-semibold text-black'
+                    ? 'border-accent bg-accent font-semibold text-on-accent'
                     : 'border-border text-text hover:border-accent'
                 }`}
               >
@@ -234,7 +238,7 @@ export function NewsSidebar({
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
-              className="rounded-pill bg-accent mt-2 flex w-full items-center justify-center px-4 py-2.5 text-sm font-semibold text-black"
+              className="rounded-pill bg-accent mt-2 flex w-full items-center justify-center px-4 py-2.5 text-sm font-semibold text-on-accent"
             >
               {t.applyFilters}
             </button>

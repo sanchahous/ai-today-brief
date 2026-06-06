@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import type { HomeItem } from '@/lib/home';
@@ -77,23 +78,17 @@ function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
   return (
     <Link
       href={item.href}
-      className="rounded-card border-border bg-surface block h-full overflow-hidden border transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
+      className="card-hover rounded-card border-border bg-surface block h-full overflow-hidden border"
     >
-      <div
-        className="flex flex-wrap items-center gap-2 px-5 py-4"
-        style={{
-          background: `linear-gradient(135deg, ${color}26, ${color}0a)`,
-          borderBottom: `1px solid ${color}33`,
-        }}
-      >
-        <span className="bg-accent rounded-pill px-2 py-0.5 text-[0.66rem] font-bold tracking-[0.08em] text-black uppercase">
+      <div className="cat-band flex flex-wrap items-center gap-2 px-5 py-4" style={{ '--cat-color': color } as CSSProperties}>
+        <span className="bg-accent text-on-accent rounded-pill px-2 py-0.5 text-[0.66rem] font-bold tracking-[0.08em] uppercase">
           {t.featured}
         </span>
         <CategoryBadge name={item.categoryName} color={item.categoryColor} />
         {item.hasVideo && (
           <span
-            className="ml-auto inline-flex items-center gap-1 text-xs font-semibold"
-            style={{ color }}
+            className="cat-fg ml-auto inline-flex items-center gap-1 text-xs font-semibold"
+            style={{ '--cat-color': color } as CSSProperties}
           >
             <PlayIcon size={15} />
             {t.watchVideo}
@@ -127,7 +122,7 @@ function SecondaryRow({ lang, item, rank }: { lang: Lang; item: HomeItem; rank: 
   return (
     <Link
       href={item.href}
-      className="rounded-card border-border bg-surface flex items-start gap-3 border p-4 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
+      className="card-hover rounded-card border-border bg-surface flex items-start gap-3 border p-4"
     >
       <span aria-hidden className="text-faint min-w-7 font-serif text-2xl leading-none font-bold">
         {rank}
@@ -136,7 +131,7 @@ function SecondaryRow({ lang, item, rank }: { lang: Lang; item: HomeItem; rank: 
         <div className="mb-1.5 flex flex-wrap items-center gap-2">
           <CategoryBadge name={item.categoryName} color={item.categoryColor} />
           {item.hasVideo && (
-            <span className="inline-flex" style={{ color }}>
+            <span className="cat-fg inline-flex" style={{ '--cat-color': color } as CSSProperties}>
               <PlayIcon size={14} />
             </span>
           )}

@@ -10,6 +10,25 @@ import type { Lang } from '@/lib/site';
 
 const PREVIEW_LIMIT = 5;
 
+function panelClassFor(variant: 'desktop' | 'mobile' | 'hero'): string {
+  const shell =
+    'border-border bg-bg shadow-pop z-[80] overflow-y-auto rounded-xl border p-1.5';
+
+  if (variant === 'mobile') {
+    return `${shell} mt-2 max-h-[55vh] w-full`;
+  }
+
+  // Wider than the input: grows from the field edge, scales with viewport.
+  const anchoredDesktop = 'absolute top-[calc(100%+8px)] left-0 min-w-full';
+  const anchoredHero = 'absolute top-[calc(100%+8px)] left-1/2 min-w-full -translate-x-1/2';
+
+  if (variant === 'desktop') {
+    return `${shell} ${anchoredDesktop} w-[min(calc(100vw-2.5rem),34rem)] max-h-[min(65vh,480px)] sm:w-[min(calc(100vw-3rem),38rem)] md:w-[min(calc(100vw-4rem),42rem)] lg:w-[min(44rem,calc(100vw-6rem))]`;
+  }
+
+  return `${shell} ${anchoredHero} w-[min(calc(100vw-2.5rem),36rem)] max-h-[min(70vh,520px)] sm:w-[min(calc(100vw-3rem),40rem)] md:w-[min(calc(100vw-4rem),44rem)] lg:w-[min(48rem,calc(100vw-10rem))]`;
+}
+
 function formatShort(iso: string, lang: Lang): string {
   return new Date(`${iso}T00:00:00`).toLocaleDateString(lang === 'uk' ? 'uk-UA' : 'en-US', {
     day: 'numeric',
@@ -31,7 +50,7 @@ function PreviewRow({
       href={item.href}
       role="option"
       onClick={onPick}
-      className="hover:bg-surface block w-full rounded-lg px-2.5 py-2 no-underline"
+      className="hover:bg-surface block w-full rounded-lg px-3 py-2.5 no-underline transition-colors duration-200 md:px-4 md:py-3"
     >
       <span className="mb-1 flex flex-wrap items-center gap-2">
         {item.categoryName ? (
@@ -41,7 +60,9 @@ function PreviewRow({
           {item.sourceName ?? '—'} · {formatShort(item.date, lang)}
         </span>
       </span>
-      <span className="text-text line-clamp-2 text-[0.88rem] leading-snug">{item.title}</span>
+      <span className="text-text line-clamp-2 text-[0.88rem] leading-snug md:text-[0.95rem] md:leading-normal">
+        {item.title}
+      </span>
     </Link>
   );
 }
@@ -67,10 +88,7 @@ export function SearchPreviewDropdown({
 
   if (!open || !trimmed) return null;
 
-  const panelClass =
-    variant === 'desktop' || variant === 'hero'
-      ? 'border-border bg-bg absolute top-[calc(100%+6px)] right-0 left-0 z-[80] max-h-[min(60vh,420px)] overflow-y-auto rounded-xl border p-1 shadow-[0_16px_40px_rgba(0,0,0,0.5)]'
-      : 'border-border mt-2 max-h-[50vh] overflow-y-auto rounded-xl border p-1';
+  const panelClass = panelClassFor(variant);
 
   function seeAll() {
     router.push(`/${lang}/news?q=${encodeURIComponent(trimmed)}`);
@@ -93,7 +111,7 @@ export function SearchPreviewDropdown({
         <button
           type="button"
           onClick={seeAll}
-          className="text-accent bg-surface hover:bg-surface-2 mt-0.5 w-full rounded-lg border-0 px-3 py-2.5 text-left text-sm font-semibold"
+          className="text-accent bg-surface hover:bg-surface-2 mt-1 w-full rounded-lg border-0 px-4 py-3 text-left text-sm font-semibold md:text-[0.95rem]"
         >
           {t.searchSeeAll.replace('{n}', String(total))} →
         </button>
@@ -102,7 +120,7 @@ export function SearchPreviewDropdown({
         <button
           type="button"
           onClick={seeAll}
-          className="text-muted hover:text-text mt-0.5 w-full rounded-lg border-0 bg-transparent px-3 py-2 text-left text-sm"
+          className="text-muted hover:text-text mt-1 w-full rounded-lg border-0 bg-transparent px-4 py-2.5 text-left text-sm md:text-[0.95rem]"
         >
           {t.searchOpenArchive} →
         </button>

@@ -1,7 +1,8 @@
+import type { CSSProperties } from 'react';
+
 /**
  * Category name as a coloured pill. The colour comes from the DB row (dynamic),
- * so it lives in an inline style — the only thing Tailwind utilities can't
- * express here. Renders nothing without a name (legacy items).
+ * exposed via `--cat-color` so `.theme-light` can darken neon tints for readability.
  */
 export function CategoryBadge({
   name,
@@ -17,8 +18,8 @@ export function CategoryBadge({
   const sizeClasses = size === 'md' ? 'px-2.5 py-1 text-xs' : 'px-2 py-0.5 text-[0.68rem]';
   return (
     <span
-      className={`rounded-pill inline-flex items-center font-semibold tracking-wide whitespace-nowrap uppercase ${sizeClasses}`}
-      style={{ color: c, background: `${c}1f`, border: `1px solid ${c}55` }}
+      className={`cat-badge rounded-pill inline-flex items-center font-semibold tracking-wide whitespace-nowrap uppercase ${sizeClasses}`}
+      style={{ '--cat-color': c } as CSSProperties}
     >
       {name}
     </span>

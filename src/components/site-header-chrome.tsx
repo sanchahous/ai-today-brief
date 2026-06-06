@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { alternateLangHref } from '@/lib/preferred-lang';
 import { SITE_NAME, MARK_COLOR, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
@@ -71,8 +71,8 @@ export function SiteHeaderChrome({
           <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2 no-underline">
             <span
               aria-hidden
-              className="grid h-8 w-8 place-items-center rounded-[9px] border border-white/10 font-mono text-xs font-bold"
-              style={{ color: MARK_COLOR, background: 'rgba(255,255,255,0.06)' }}
+              className="border-border bg-surface-2 grid h-8 w-8 place-items-center rounded-[9px] border font-mono text-xs font-bold"
+              style={{ color: MARK_COLOR }}
             >
               AT
             </span>
@@ -83,7 +83,7 @@ export function SiteHeaderChrome({
             <HeaderSearchField
               lang={lang}
               placeholder={t.landing.searchPlaceholder}
-              className="max-w-md"
+              className="max-w-md md:max-w-lg lg:max-w-xl"
             />
           </div>
 
@@ -113,7 +113,7 @@ export function SiteHeaderChrome({
                   <ul
                     role="listbox"
                     aria-label={t.navCategories}
-                    className="border-border bg-bg grid w-[300px] max-w-[90vw] grid-cols-2 gap-0.5 rounded-[10px] border p-1 shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
+                    className="border-border bg-bg shadow-pop grid w-[300px] max-w-[90vw] grid-cols-2 gap-0.5 rounded-[10px] border p-1"
                   >
                     {categories.map((c) => (
                       <li key={c.slug} role="none">
@@ -123,7 +123,10 @@ export function SiteHeaderChrome({
                           onClick={() => setCatsOpen(false)}
                           className="text-text hover:bg-surface flex items-center gap-2 rounded-md px-2 py-2 text-[0.82rem] no-underline transition-colors duration-200"
                         >
-                          <span className="inline-flex shrink-0" style={{ color: c.color ?? '#888' }}>
+                          <span
+                            className="cat-fg inline-flex shrink-0"
+                            style={{ '--cat-color': c.color ?? '#888' } as React.CSSProperties}
+                          >
                             <CategoryGlyph icon={c.icon} size={16} strokeWidth={1.7} />
                           </span>
                           <span className="truncate">{c.name}</span>
@@ -138,7 +141,7 @@ export function SiteHeaderChrome({
             <span aria-hidden className="bg-border h-[18px] w-px" />
             <Link
               href={`/${lang}/subscribe`}
-              className="rounded-pill bg-accent px-3.5 py-1.5 text-[0.85rem] font-semibold text-black no-underline transition-opacity duration-200 hover:opacity-90"
+              className="rounded-pill bg-accent px-3.5 py-1.5 text-[0.85rem] font-semibold text-on-accent no-underline transition-opacity duration-200 hover:opacity-90"
             >
               {t.subscribe}
             </Link>
@@ -156,7 +159,7 @@ export function SiteHeaderChrome({
             <ThemeToggle label={t.themeToggle} />
             <Link
               href={`/${lang}/subscribe`}
-              className="rounded-pill bg-accent hidden px-3 py-1.5 text-xs font-semibold text-black no-underline sm:inline-flex"
+              className="rounded-pill bg-accent hidden px-3 py-1.5 text-xs font-semibold text-on-accent no-underline sm:inline-flex"
             >
               {t.subscribe}
             </Link>
@@ -204,7 +207,10 @@ export function SiteHeaderChrome({
                       onClick={() => setMenuOpen(false)}
                       className="text-text hover:bg-surface flex items-center gap-2 rounded-md px-2 py-2 text-sm no-underline transition-colors duration-200"
                     >
-                      <span className="inline-flex shrink-0" style={{ color: c.color ?? '#888' }}>
+                      <span
+                        className="cat-fg inline-flex shrink-0"
+                        style={{ '--cat-color': c.color ?? '#888' } as CSSProperties}
+                      >
                         <CategoryGlyph icon={c.icon} size={16} strokeWidth={1.7} />
                       </span>
                       {c.name}
@@ -224,7 +230,7 @@ export function SiteHeaderChrome({
               </Link>
               <Link
                 href={`/${lang}/subscribe`}
-                className="rounded-pill bg-accent inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold text-black no-underline"
+                className="rounded-pill bg-accent inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold text-on-accent no-underline"
                 onClick={() => setMenuOpen(false)}
               >
                 {t.subscribe}

@@ -126,7 +126,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
     <div
       role="region"
       aria-label={c.cookieTitle}
-      className="border-border bg-bg pointer-events-auto fixed bottom-4 left-4 z-[200] w-[min(440px,calc(100vw-2rem))] rounded-[var(--radius)] border p-5 shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
+      className="border-border bg-bg shadow-pop pointer-events-auto fixed bottom-4 left-4 z-[200] w-[min(440px,calc(100vw-2rem))] rounded-[var(--radius)] border p-5"
     >
       <div className="mb-2 flex items-center gap-2">
         <h2 className="text-base font-semibold">{c.cookieTitle}</h2>
@@ -173,7 +173,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
             <button
               type="button"
               onClick={() => apply({ analytics, ads })}
-              className="rounded-pill bg-accent flex-1 px-4 py-2.5 text-sm font-semibold text-black"
+              className="rounded-pill bg-accent text-on-accent flex-1 px-4 py-2.5 text-sm font-semibold"
             >
               {c.cookieSave}
             </button>
@@ -190,7 +190,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
             <button
               type="button"
               onClick={() => apply({ analytics: true, ads: true })}
-              className="rounded-pill bg-accent flex-1 px-4 py-2.5 text-sm font-semibold text-black"
+              className="rounded-pill bg-accent text-on-accent flex-1 px-4 py-2.5 text-sm font-semibold"
             >
               {c.cookieAccept}
             </button>

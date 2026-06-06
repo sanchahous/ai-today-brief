@@ -13,7 +13,7 @@ export function Byline({ lang, updated }: { lang: Lang; updated: string }) {
     <div className="text-muted flex flex-wrap items-center gap-2 text-[0.82rem]">
       <span
         aria-hidden
-        className="grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold text-black"
+        className="grid h-7 w-7 place-items-center rounded-full text-[11px] font-bold text-on-accent"
         style={{ background: MARK_COLOR }}
       >
         OK

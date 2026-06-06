@@ -120,7 +120,7 @@ export default async function NewsPage({
           {t.weekSummary.map((para, i) => (
             <p
               key={i}
-              className={`text-[0.95rem] leading-relaxed ${i === 0 ? 'mb-3' : 'm-0'}`}
+              className={`text-muted text-[0.95rem] leading-relaxed ${i === 0 ? 'mb-3' : 'm-0'}`}
             >
               {para}
             </p>

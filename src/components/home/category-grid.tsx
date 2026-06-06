@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
 import type { HomeCategory } from '@/lib/home';
@@ -50,25 +51,20 @@ function CategoryCard({
   articlesLabel: string;
 }) {
   const color = category.color ?? '#888888';
+  const catStyle = { '--cat-color': color } as CSSProperties;
   return (
-    <article className="rounded-card border-border bg-surface flex h-full flex-col overflow-hidden border transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(0,0,0,0.5)]">
-      <div
-        className="flex items-center gap-3 p-4"
-        style={{
-          background: `linear-gradient(135deg, ${color}26, ${color}0a)`,
-          borderBottom: `1px solid ${color}33`,
-        }}
-      >
+    <article className="card-hover rounded-card border-border bg-surface flex h-full flex-col overflow-hidden border">
+      <div className="cat-band flex items-center gap-3 p-4" style={catStyle}>
         <span
           aria-hidden
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-[12px]"
-          style={{ color, background: `${color}1f`, border: `1px solid ${color}55` }}
+          className="cat-icon-box grid h-11 w-11 shrink-0 place-items-center rounded-[12px]"
+          style={catStyle}
         >
           <CategoryGlyph icon={category.icon} size={24} strokeWidth={1.5} />
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="text-lg leading-tight">{category.name}</h3>
-          <p className="mt-1 text-sm font-medium" style={{ color }}>
+          <p className="cat-fg mt-1 text-sm font-medium" style={catStyle}>
             {category.tagline}
           </p>
         </div>
@@ -84,8 +80,8 @@ function CategoryCard({
               <li key={it.id} className="flex gap-2">
                 <span
                   aria-hidden
-                  className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{ background: color }}
+                  className="cat-dot mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full"
+                  style={catStyle}
                 />
                 <Link
                   href={it.href}

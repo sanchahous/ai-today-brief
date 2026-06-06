@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useId, useState } from 'react';
+import { useCallback, useId, useState, type CSSProperties } from 'react';
 import type { HomeItem } from '@/lib/home';
 import { categoryMeta } from '@/lib/category-meta';
 import { getStrings } from '@/lib/i18n';
@@ -70,7 +70,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
     'inline-flex items-center gap-1.5 rounded-pill border border-border px-2.5 py-1.5 text-[0.8rem] font-medium text-muted transition hover:border-accent hover:text-text';
 
   return (
-    <article className="card-hover rounded-card border-border bg-surface border p-4 shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
+    <article className="card-hover elevation-card rounded-card border-border bg-surface border p-4">
       <div className="post-grid">
         <button
           type="button"
@@ -103,7 +103,10 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
               <ClockIcon size={13} /> {item.readMinutes} {t.readMin}
             </span>
             {item.hasVideo && (
-              <span className="inline-flex items-center gap-1 text-[0.72rem] font-semibold" style={{ color }}>
+              <span
+                className="cat-fg inline-flex items-center gap-1 text-[0.72rem] font-semibold"
+                style={{ '--cat-color': color } as CSSProperties}
+              >
                 <PlayIcon size={14} /> {getStrings(lang).landing.watchVideo}
               </span>
             )}
@@ -161,7 +164,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
               {shareOpen && (
                 <div
                   role="menu"
-                  className="border-border bg-bg absolute bottom-full left-0 z-30 mb-2 min-w-[190px] rounded-[10px] border p-1 shadow-[0_16px_40px_rgba(0,0,0,0.5)]"
+                  className="border-border bg-bg shadow-pop absolute bottom-full left-0 z-30 mb-2 min-w-[190px] rounded-[10px] border p-1"
                 >
                   <a
                     role="menuitem"

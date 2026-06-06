@@ -53,7 +53,7 @@ export function NotFoundContent({ lang }: { lang: Lang }) {
         >
           <Link
             href={`/${lang}`}
-            className="rounded-pill bg-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-black no-underline"
+            className="rounded-pill bg-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-on-accent no-underline"
           >
             {t.navHome}
             <ArrowRight size={16} />
