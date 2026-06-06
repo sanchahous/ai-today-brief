@@ -20,7 +20,10 @@
     "sonar:report": "npx tsx scripts/sonar-fetch-report.ts",
     "pipeline": "tsx pipeline/run-daily.ts",
     "pipeline:dry": "tsx pipeline/run-daily.ts --dry-run",
-    "pr:check": "npm run ci:check && npm run typecheck && npm run lint && npm run build"
+    "pr:check": "npm run ci:check && npm run typecheck && npm run lint && npm run build",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
+    "e2e:install": "playwright install chromium --with-deps"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -30,6 +33,7 @@
     "react-dom": "19.2.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^25",
     "@types/react": "^19",

@@ -16,6 +16,7 @@ export function SponsorCard({ lang }: { lang: Lang }) {
   const catStyle = { '--cat-color': s.color } as CSSProperties;
   return (
     <article
+      data-testid="sponsor-card"
       className="cat-header rounded-card relative border p-4"
       style={catStyle}
     >

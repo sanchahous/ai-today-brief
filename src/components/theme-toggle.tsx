@@ -45,6 +45,7 @@ export function ThemeToggle({ label }: { label: string }) {
   return (
     <button
       type="button"
+      data-testid="theme-toggle"
       onClick={toggle}
       aria-label={label}
       disabled={!ready}

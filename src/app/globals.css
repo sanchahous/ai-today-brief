@@ -28,6 +28,7 @@
 
 /* dark-first (brand default) */
 :root {
+  --header-h: 76px;
   --bg: #0f0f0f;
   --bg-soft: #141414;
   --surface: #1a1a1a;
@@ -356,12 +357,33 @@
 
 .filter-row {
   border-radius: 8px;
-  padding: 0.35rem 0.4rem;
+  padding: 0.2rem 0.4rem;
   margin: 0 -0.4rem;
   transition: background-color 0.2s ease;
 }
 .filter-row:hover {
   background: var(--surface-2);
+}
+
+.sidebar-drawer-touch .filter-row {
+  min-height: 2.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .theme-light .card-hover:hover {

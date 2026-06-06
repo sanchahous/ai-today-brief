@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { HomeItem } from '@/lib/home';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
@@ -44,10 +44,16 @@ export function PostFeed({
     <>
       <div className="grid gap-4">
         {rows.map((item, i) => (
-          <Reveal key={item.id} delayMs={i * 45}>
-            <PostCard lang={lang} item={item} />
-            {weaveSponsor && i === 2 && <SponsorCard lang={lang} />}
-          </Reveal>
+          <Fragment key={item.id}>
+            <Reveal delayMs={i * 45}>
+              <PostCard lang={lang} item={item} />
+            </Reveal>
+            {weaveSponsor && i === 2 && (
+              <Reveal delayMs={i * 45 + 20}>
+                <SponsorCard lang={lang} />
+              </Reveal>
+            )}
+          </Fragment>
         ))}
         {showNewsletter && <NewsletterBand lang={lang} embedded />}
       </div>
