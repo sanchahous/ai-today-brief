@@ -44,9 +44,28 @@ describe('analytics-client', () => {
     expect(mod.hasAnalyticsConsent()).toBe(true);
   });
 
-  it('hasAnalyticsConsent is false without stored consent', async () => {
+  it('hasAnalyticsConsent is true without stored consent (opt-out default)', async () => {
+    const mod = await import('@/lib/analytics-client');
+    expect(mod.hasAnalyticsConsent()).toBe(true);
+  });
+
+  it('hasAnalyticsConsent is false after explicit analytics opt-out', async () => {
+    storage.set(
+      CONSENT_STORAGE_KEY,
+      JSON.stringify({ analytics: false, ads: false, updatedAt: '2026-01-01T00:00:00.000Z' }),
+    );
     const mod = await import('@/lib/analytics-client');
     expect(mod.hasAnalyticsConsent()).toBe(false);
+  });
+
+  it('does not call gtag after explicit analytics opt-out', async () => {
+    storage.set(
+      CONSENT_STORAGE_KEY,
+      JSON.stringify({ analytics: false, ads: false, updatedAt: '2026-01-01T00:00:00.000Z' }),
+    );
+    const mod = await import('@/lib/analytics-client');
+    mod.trackEvent('test_event', { foo: 'bar' });
+    expect(gtag).not.toHaveBeenCalled();
   });
 
   it('merges global params into trackEvent without stored consent', async () => {

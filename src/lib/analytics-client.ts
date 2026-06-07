@@ -1,6 +1,6 @@
 'use client';
 
-import { analyticsConfigured } from '@/lib/analytics-config';
+import { analyticsConfigured, tagsConfigured } from '@/lib/analytics-config';
 import { CONSENT_STORAGE_KEY, parseConsentJson, type ConsentState } from '@/lib/consent';
 
 export type ParamValue = string | number | boolean | null | undefined;
@@ -17,18 +17,26 @@ const globalParams: Params = {};
 const DEBUG = process.env.NODE_ENV === 'development';
 
 function gtagReady(): boolean {
-  return analyticsConfigured && typeof window.gtag === 'function';
+  return typeof window.gtag === 'function';
 }
 
-/** Whether the user granted analytics cookies (localStorage CMP state). */
+function analyticsReady(): boolean {
+  return analyticsConfigured && gtagReady();
+}
+
+/**
+ * Opt-out model: analytics on until the user explicitly disables it in the CMP.
+ * No stored choice → full analytics; stored with analytics: false → blocked.
+ */
 export function hasAnalyticsConsent(): boolean {
   if (typeof window === 'undefined') return false;
   try {
     const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
     const stored = raw ? parseConsentJson(raw) : null;
-    return stored?.analytics === true;
+    if (!stored) return true;
+    return stored.analytics;
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -37,14 +45,14 @@ export function setGlobalParams(p: Params): void {
   Object.assign(globalParams, p);
 }
 
-/** GA4 user properties — stable dimensions (lang, theme). Consent Mode limits persistence when denied. */
+/** GA4 user properties — stable dimensions (lang, theme). */
 export function setUserProperties(props: Record<string, ParamValue>): void {
-  if (!gtagReady()) return;
+  if (!analyticsReady() || !hasAnalyticsConsent()) return;
   window.gtag?.('set', 'user_properties', props);
 }
 
 export function applyConsentToGtag(consent: Pick<ConsentState, 'analytics' | 'ads'>): void {
-  if (!gtagReady()) return;
+  if (!tagsConfigured || !gtagReady()) return;
   window.gtag?.('consent', 'update', {
     analytics_storage: consent.analytics ? 'granted' : 'denied',
     ad_storage: consent.ads ? 'granted' : 'denied',
@@ -53,10 +61,7 @@ export function applyConsentToGtag(consent: Pick<ConsentState, 'analytics' | 'ad
   });
 }
 
-/**
- * Send a GA4 event. With Consent Mode v2 defaults (denied), gtag emits cookieless
- * pings until the CMP grants analytics_storage — no app-level consent gate needed.
- */
+/** Send a GA4 event. Blocked only after explicit analytics opt-out in the CMP. */
 export function trackEvent(event: string, params: Params = {}): void {
   const merged = { ...globalParams, ...params };
 
@@ -65,7 +70,8 @@ export function trackEvent(event: string, params: Params = {}): void {
     return;
   }
 
-  if (!gtagReady()) return;
+  if (!hasAnalyticsConsent()) return;
+  if (!analyticsReady()) return;
 
   window.gtag?.('event', event, merged);
 }
