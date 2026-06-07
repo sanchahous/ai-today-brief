@@ -3,8 +3,7 @@ import { GA_MEASUREMENT_ID, analyticsConfigured } from '@/lib/analytics-config';
 
 /**
  * GA4 bootstrap — defers network work until after interactive (CWV).
- * Consent Mode v2: storage denied by default; events still send as cookieless
- * pings until the CMP grants analytics_storage (advanced / modeling mode).
+ * Consent Mode: analytics granted by default; CMP opt-out sets denied.
  * `send_page_view: false` — App Router sends page_view on route change.
  */
 export function GoogleAnalytics() {
