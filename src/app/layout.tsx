@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import { Fraunces, Inter } from 'next/font/google';
 import './globals.css';
 import { GoogleAnalytics } from '@/components/google-analytics';
+import { GoogleTagManager } from '@/components/google-tag-manager';
+import { tagsConfigured } from '@/lib/analytics-config';
+import { CONSENT_MODE_DEFAULTS_SCRIPT } from '@/lib/consent-mode-snippet';
 import { SITE_NAME, SITE_URL, SITE_TAGLINE, DEFAULT_LANG } from '@/lib/site';
 
 const fraunces = Fraunces({
@@ -42,8 +45,12 @@ export default function RootLayout({
     <html lang={DEFAULT_LANG} suppressHydrationWarning className={`${fraunces.variable} ${inter.variable} h-full`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: CHROME_INIT_SCRIPT }} />
+        {tagsConfigured ? (
+          <script dangerouslySetInnerHTML={{ __html: CONSENT_MODE_DEFAULTS_SCRIPT }} />
+        ) : null}
       </head>
       <body className="flex min-h-full flex-col font-sans antialiased">
+        <GoogleTagManager />
         <GoogleAnalytics />
         {children}
       </body>
