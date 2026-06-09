@@ -107,6 +107,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         datePublished: detail.publishedAt ?? detail.briefDate,
         dateModified: detail.publishedAt ?? detail.briefDate,
         inLanguage: lang,
+        isAccessibleForFree: true,
         url: `${SITE_URL}${pagePath}`,
         author: { '@type': 'Person', name: EDITOR_NAME },
         publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },

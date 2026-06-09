@@ -1,5 +1,6 @@
 import { conceptIcon } from '@/lib/concept-meta';
 import { searchNewsItems } from '@/lib/news';
+import { getCategories } from '@/lib/categories';
 import type { HomeItem } from '@/lib/home';
 import { getSupabase } from '@/lib/supabase';
 import { LANGS, type Lang } from '@/lib/site';
@@ -8,6 +9,25 @@ import type { IconKey } from '@/components/icons';
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
   return (primary ?? en ?? uk ?? '').trim();
+}
+
+function wordCount(text: string): number {
+  const trimmed = text.trim();
+  return trimmed ? trimmed.split(/\s+/).length : 0;
+}
+
+function extractToolNames(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const names: string[] = [];
+  for (const entry of value) {
+    if (entry && typeof entry === 'object' && 'name' in entry) {
+      const name = (entry as { name: unknown }).name;
+      if (typeof name === 'string' && name.trim()) names.push(name.trim());
+    } else if (typeof entry === 'string' && entry.trim()) {
+      names.push(entry.trim());
+    }
+  }
+  return names;
 }
 
 export interface ConceptSummary {
@@ -87,7 +107,7 @@ export interface ConceptHubView {
   others: ConceptSummary[];
 }
 
-/** Concept hub page: detail, matching stories (FTS), and sibling concept chips. */
+/** Concept hub page: items via junction table (primary) with FTS fallback. */
 export async function getConceptHub(
   slug: string,
   lang: Lang,
@@ -96,9 +116,13 @@ export async function getConceptHub(
   const concept = await getConcept(slug, lang);
   if (!concept) return null;
 
-  const queryParts = [concept.name, ...concept.aliases.slice(0, 3)];
-  const query = queryParts.join(' ');
-  const stories = await searchNewsItems(lang, query, storyLimit);
+  let stories = await getConceptItemsViaJunction(slug, lang, storyLimit);
+
+  if (stories.length === 0) {
+    const queryParts = [concept.name, ...concept.aliases.slice(0, 3)];
+    const query = queryParts.join(' ');
+    stories = await searchNewsItems(lang, query, storyLimit);
+  }
 
   const all = await getConcepts(lang);
   const others = all.filter((c) => c.slug !== slug).slice(0, 12);
@@ -109,6 +133,50 @@ export async function getConceptHub(
     stories,
     others,
   };
+}
+
+async function getConceptItemsViaJunction(
+  conceptSlug: string,
+  lang: Lang,
+  limit: number,
+): Promise<HomeItem[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase.rpc('get_concept_items', {
+    p_concept_slug: conceptSlug,
+    p_lang: lang,
+    p_limit: limit,
+  });
+
+  if (error || !data?.length) return [];
+
+  const allCats = await getCategories(lang);
+  const catBySlug = new Map(allCats.map((c) => [c.slug, { name: c.name, color: c.color }]));
+
+  return (data as Record<string, unknown>[]).map((r) => {
+    const catSlug = (r.category_slug as string) ?? null;
+    const cat = catSlug ? catBySlug.get(catSlug) : undefined;
+    const title = pick(lang, r.title_en as string | null, r.title_uk as string | null);
+    const summary = pick(lang, r.summary_en as string | null, r.summary_uk as string | null);
+
+    return {
+      id: r.id as string,
+      rank: (r.rank as number) ?? 99,
+      categorySlug: catSlug,
+      categoryName: cat?.name ?? null,
+      categoryColor: cat?.color ?? null,
+      href: `/${lang}/${r.brief_slug}/${r.slug}`,
+      title: title || summary.slice(0, 80),
+      summary,
+      why: pick(lang, r.why_en as string | null, r.why_uk as string | null),
+      date: r.brief_date as string,
+      hasVideo: (r.has_video as boolean) ?? false,
+      tools: extractToolNames(r.tools_mentioned),
+      sourceName: (r.source_name as string) ?? null,
+      readMinutes: Math.max(2, Math.round(wordCount(summary) / 45)),
+    };
+  });
 }
 
 export async function getConceptPaths(): Promise<{ lang: string; slug: string }[]> {
