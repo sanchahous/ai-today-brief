@@ -41,9 +41,21 @@ export interface DraftItem {
   takeaways_en: string[];
   takeaways_uk: string[];
   tools_mentioned: string[];
+  /** 2–4 imperative steps the reader can take today (checklist). */
+  action_items_en: string[];
+  action_items_uk: string[];
+  /** Editorial impact estimate for engineers. */
+  impact_level: ImpactLevel | null;
   /** Punchy 200-220 char hook for X / LinkedIn. Generated alongside the deep_dive. */
   social_hook_en: string;
   social_hook_uk: string;
+}
+
+export type ImpactLevel = 'low' | 'medium' | 'high';
+
+export function parseImpactLevel(value: unknown): ImpactLevel | null {
+  if (value === 'low' || value === 'medium' || value === 'high') return value;
+  return null;
 }
 
 export interface DraftBrief {
@@ -137,6 +149,9 @@ const GEMINI_SCHEMA: NonNullable<
           takeaways_en: STRING_ARRAY,
           takeaways_uk: STRING_ARRAY,
           tools_mentioned: STRING_ARRAY,
+          action_items_en: STRING_ARRAY,
+          action_items_uk: STRING_ARRAY,
+          impact_level: { type: SchemaType.STRING, format: 'enum', enum: ['low', 'medium', 'high'] },
           social_hook_en: STRING,
           social_hook_uk: STRING,
         },
@@ -316,6 +331,8 @@ For EACH kept item, write BOTH languages (natural Ukrainian, not word-for-word):
   why_matters_en/uk— one sentence: what the reader can do with this today
   deep_dive_en/uk  — 2 short paragraphs (~120 words) of substance: context, specifics, caveats
   takeaways_en/uk  — 2–4 short bullet strings, the practical points
+  action_items_en/uk — 2–4 imperative checklist steps ("Run npm audit", "Pin MCP server version"); [] if none
+  impact_level     — one of low | medium | high: how much this changes a typical engineer's week
   tools_mentioned  — array of product/tool names referenced (e.g. ["Claude Code","Cursor"]); [] if none
   social_hook_en/uk— 200-220 char attention hook for X/Twitter & LinkedIn; opens with a verb or number;
                      no hashtags; punchy, concrete, no hype. Example:
@@ -353,6 +370,9 @@ interface ModelItem {
   takeaways_en?: unknown;
   takeaways_uk?: unknown;
   tools_mentioned?: unknown;
+  action_items_en?: unknown;
+  action_items_uk?: unknown;
+  impact_level?: unknown;
   social_hook_en?: unknown;
   social_hook_uk?: unknown;
 }
@@ -395,6 +415,9 @@ export function parseBrief(text: string, candidates: PoolItem[]): DraftBrief {
       takeaways_en: asStringArray(m.takeaways_en),
       takeaways_uk: asStringArray(m.takeaways_uk),
       tools_mentioned: asStringArray(m.tools_mentioned),
+      action_items_en: asStringArray(m.action_items_en),
+      action_items_uk: asStringArray(m.action_items_uk),
+      impact_level: parseImpactLevel(m.impact_level),
       social_hook_en: asString(m.social_hook_en),
       social_hook_uk: asString(m.social_hook_uk) || asString(m.social_hook_en),
     });

@@ -6,6 +6,7 @@ import {
   isGeminiRateLimitError,
   isRetryableGeminiError,
   parseBrief,
+  parseImpactLevel,
 } from './summarize';
 import type { PoolItem } from './select';
 
@@ -27,6 +28,13 @@ const pool: PoolItem[] = [
     category: 'agents-and-mcp',
   },
 ];
+
+describe('parseImpactLevel', () => {
+  it('accepts low, medium, high only', () => {
+    expect(parseImpactLevel('high')).toBe('high');
+    expect(parseImpactLevel('critical')).toBeNull();
+  });
+});
 
 describe('buildReaderProfileBlock', () => {
   it('mentions key reader interests', () => {

@@ -38,9 +38,30 @@ export interface ConceptSummary {
   category: string | null;
 }
 
+export interface ConceptFaqItem {
+  q: string;
+  a: string;
+}
+
 export interface ConceptDetail extends ConceptSummary {
   officialUrl: string | null;
   aliases: string[];
+  body: string;
+  faq: ConceptFaqItem[];
+}
+
+function parseFaq(value: unknown): ConceptFaqItem[] {
+  if (!Array.isArray(value)) return [];
+  const items: ConceptFaqItem[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== 'object' || !('q' in entry) || !('a' in entry)) continue;
+    const q = (entry as { q: unknown }).q;
+    const a = (entry as { a: unknown }).a;
+    if (typeof q === 'string' && typeof a === 'string' && q.trim() && a.trim()) {
+      items.push({ q: q.trim(), a: a.trim() });
+    }
+  }
+  return items;
 }
 
 export async function getConcepts(lang: Lang): Promise<ConceptSummary[]> {
@@ -65,7 +86,7 @@ export async function getConcept(slug: string, lang: Lang): Promise<ConceptDetai
   const { data: c, error } = await supabase
     .from('concepts')
     .select(
-      'slug, name_en, name_uk, description_en, description_uk, type, category, official_url, aliases',
+      'slug, name_en, name_uk, description_en, description_uk, type, category, official_url, aliases, body_en, body_uk, faq_en, faq_uk',
     )
     .eq('slug', slug)
     .maybeSingle();
@@ -78,6 +99,8 @@ export async function getConcept(slug: string, lang: Lang): Promise<ConceptDetai
     category: c.category,
     officialUrl: c.official_url,
     aliases: Array.isArray(c.aliases) ? c.aliases : [],
+    body: pick(lang, c.body_en, c.body_uk),
+    faq: parseFaq(lang === 'uk' ? c.faq_uk : c.faq_en),
   };
 }
 
