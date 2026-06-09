@@ -284,6 +284,30 @@ export async function getCategoryItems(slug: string, lang: Lang, limit = 60): Pr
   });
 }
 
+/** Published item counts per category — single source of truth for homepage + hubs. */
+export async function getPublishedCategoryCounts(): Promise<Map<string, number>> {
+  const supabase = getSupabase();
+  if (!supabase) return new Map();
+
+  const { data: briefs } = await supabase.from('briefs').select('id').eq('status', 'published');
+  if (!briefs?.length) return new Map();
+
+  const { data: rows } = await supabase
+    .from('brief_items')
+    .select('category_slug')
+    .in(
+      'brief_id',
+      briefs.map((b) => b.id),
+    );
+
+  const counts = new Map<string, number>();
+  for (const row of rows ?? []) {
+    if (!row.category_slug) continue;
+    counts.set(row.category_slug, (counts.get(row.category_slug) ?? 0) + 1);
+  }
+  return counts;
+}
+
 export async function getCategoryPaths(): Promise<{ lang: string; slug: string }[]> {
   const supabase = getSupabase();
   if (!supabase) return [];

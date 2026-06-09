@@ -42,6 +42,9 @@ export function SiteFooter({ lang }: { lang: Lang }) {
             <Link className="hover:text-text" href={`/${lang}/about`}>
               {t.about}
             </Link>
+            <Link className="hover:text-text" href={`/${lang}/editorial-policy`}>
+              {t.editorialPolicy}
+            </Link>
             <Link className="hover:text-text" href={`/${lang}/ai-disclosure`}>
               {t.aiDisclosure}
             </Link>

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import {
+  EDITOR_PROFILE,
   isLang,
   SITE_NAME,
   SITE_URL,
@@ -25,7 +26,10 @@ const COPY = {
     aiH: 'AI, with a human in the loop',
     ai: 'We use language models to read sources and draft summaries and translations. A human editor reviews every brief before it ships — checking facts, refining tone, and removing duplicates. The editorial team, not the model, decides what gets published and stands behind it. Read more in our',
     editorH: 'Who edits this',
-    editor: `Curated and edited by ${EDITOR_NAME}, ${EDITOR_ROLE.en.toLowerCase()}. Questions, corrections or tips — reach us at:`,
+    editor: `Curated and edited by ${EDITOR_NAME}, ${EDITOR_ROLE.en.toLowerCase()}.`,
+    expertiseH: 'Areas of focus',
+    contactH: 'Questions, corrections or tips',
+    policyLink: 'Read our editorial policy',
   },
   uk: {
     lede: `${SITE_NAME} — щоденний бриф, який редагує людина, для тих, хто будує з AI: інженерів, фаундерів і техлідів. Один сфокусований випуск на день про моделі, фреймворки та MLOps, що справді рухають вашу роботу, — англійською та українською.`,
@@ -35,7 +39,10 @@ const COPY = {
     aiH: 'AI — під наглядом людини',
     ai: 'Ми використовуємо мовні моделі, щоб читати джерела та готувати чернетки резюме й перекладів. Редактор-людина переглядає кожен випуск перед публікацією: перевіряє факти, вивіряє тон і прибирає дублі. Що публікувати — вирішує редакція, а не модель, і саме вона відповідає за результат. Докладніше — у нашому',
     editorH: 'Хто це редагує',
-    editor: `Курує й редагує ${EDITOR_NAME}, ${EDITOR_ROLE.uk.toLowerCase()}. Запитання, виправлення чи новини — пишіть на:`,
+    editor: `Курує й редагує ${EDITOR_NAME}, ${EDITOR_ROLE.uk.toLowerCase()}.`,
+    expertiseH: 'Теми експертизи',
+    contactH: 'Запитання, виправлення чи новини',
+    policyLink: 'Редакційна політика',
   },
 } as const;
 
@@ -71,7 +78,12 @@ export default async function AboutPage({ params }: { params: Promise<Params> })
       '@type': 'Organization',
       name: SITE_NAME,
       url: SITE_URL,
-      founder: { '@type': 'Person', name: EDITOR_NAME },
+      founder: {
+        '@type': 'Person',
+        name: EDITOR_NAME,
+        jobTitle: EDITOR_ROLE[lang],
+        sameAs: EDITOR_PROFILE.links.map((l) => l.url),
+      },
     },
   };
 
@@ -105,11 +117,34 @@ export default async function AboutPage({ params }: { params: Promise<Params> })
 
       <section className="mt-8">
         <h2 className="text-xl">{c.editorH}</h2>
-        <p className="text-muted mt-3 leading-relaxed">
-          {c.editor}{' '}
+        <p className="text-muted mt-3 leading-relaxed">{c.editor}</p>
+        <p className="text-muted mt-3 text-sm leading-relaxed">
+          <span className="text-text font-medium">{c.expertiseH}: </span>
+          {EDITOR_PROFILE.expertise[lang].join(' · ')}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          {EDITOR_PROFILE.links.map((link) => (
+            <a
+              key={link.url}
+              className="text-accent text-sm font-medium hover:underline"
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+        <p className="text-muted mt-4 leading-relaxed">
+          <span className="text-text font-medium">{c.contactH}: </span>
           <a className="text-accent" href={`mailto:${CONTACT_EMAIL}`}>
             {CONTACT_EMAIL}
           </a>
+        </p>
+        <p className="mt-3">
+          <Link className="text-accent text-sm font-medium hover:underline" href={`/${lang}/editorial-policy`}>
+            {c.policyLink}
+          </Link>
         </p>
       </section>
     </div>
