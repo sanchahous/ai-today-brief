@@ -2,13 +2,10 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   buildPrompt,
   buildReaderProfileBlock,
-  DEFAULT_GEMINI_MODEL,
-  generateWithRetry,
+  generateWithModelQueue,
   isGeminiRateLimitError,
   isRetryableGeminiError,
   parseBrief,
-  resolveGeminiModel,
-  resolveGeminiModelFallback,
 } from './summarize';
 import type { PoolItem } from './select';
 
@@ -165,17 +162,7 @@ describe('parseBrief', () => {
   });
 });
 
-describe('model resolution + retry', () => {
-  it('default model is gemini-3.5-flash', () => {
-    expect(DEFAULT_GEMINI_MODEL).toBe('gemini-3.5-flash');
-    expect(resolveGeminiModel({})).toBe('gemini-3.5-flash');
-    expect(resolveGeminiModel({ GEMINI_MODEL: 'gemini-2.5-pro' })).toBe('gemini-2.5-pro');
-    expect(resolveGeminiModelFallback({})).toBeNull();
-    expect(resolveGeminiModelFallback({ GEMINI_MODEL_FALLBACK: 'gemini-2.5-flash' })).toBe(
-      'gemini-2.5-flash',
-    );
-  });
-
+describe('generateWithModelQueue + Gemini errors', () => {
   it('isGeminiRateLimitError detects quota/429 errors', () => {
     expect(isGeminiRateLimitError(new Error('429 Too Many Requests'))).toBe(true);
     expect(isGeminiRateLimitError(new Error('rate limit exceeded'))).toBe(true);
@@ -196,30 +183,43 @@ describe('model resolution + retry', () => {
     expect(isRetryableGeminiError('nope')).toBe(false);
   });
 
-  it('retries a transient 503 failure then succeeds, without real sleeping', async () => {
+  it('retries a transient 503 on the same model then succeeds', async () => {
     const gen = vi
-      .fn<(p: string) => Promise<string>>()
+      .fn<(modelId: string, p: string) => Promise<string>>()
       .mockRejectedValueOnce(new Error('503 temporarily unavailable'))
       .mockResolvedValueOnce('{"ok":true}');
-    const out = await generateWithRetry('prompt', 'key', 3, gen, async () => {});
-    expect(out).toBe('{"ok":true}');
+    const out = await generateWithModelQueue('prompt', 'key', ['gemini-3.5-flash'], 3, gen, async () => {});
+    expect(out.text).toBe('{"ok":true}');
+    expect(out.model).toBe('gemini-3.5-flash');
     expect(gen).toHaveBeenCalledTimes(2);
   });
 
-  it('escalates a 429 rate-limit immediately without retrying', async () => {
+  it('advances to the next model after rate-limit on the first', async () => {
     const gen = vi
-      .fn<(p: string) => Promise<string>>()
-      .mockRejectedValue(new Error('429 rate limit exceeded'));
-    await expect(generateWithRetry('p', 'key', 3, gen, async () => {})).rejects.toThrow(/429/);
-    // must NOT retry — only 1 call
-    expect(gen).toHaveBeenCalledTimes(1);
+      .fn<(modelId: string, p: string) => Promise<string>>()
+      .mockImplementation(async (modelId) => {
+        if (modelId === 'gemini-3.5-flash') throw new Error('429 rate limit exceeded');
+        return '{"ok":true}';
+      });
+    const out = await generateWithModelQueue(
+      'p',
+      'key',
+      ['gemini-3.5-flash', 'gemini-2.5-flash'],
+      2,
+      gen,
+      async () => {},
+    );
+    expect(out.model).toBe('gemini-2.5-flash');
+    expect(gen).toHaveBeenCalledTimes(2);
   });
 
-  it('rethrows a non-retryable error immediately', async () => {
+  it('rethrows when every model in the queue fails', async () => {
     const gen = vi
-      .fn<(p: string) => Promise<string>>()
+      .fn<(modelId: string, p: string) => Promise<string>>()
       .mockRejectedValue(new Error('400 bad request'));
-    await expect(generateWithRetry('p', 'key', 3, gen, async () => {})).rejects.toThrow(/400/);
-    expect(gen).toHaveBeenCalledTimes(1);
+    await expect(
+      generateWithModelQueue('p', 'key', ['gemini-3.5-flash', 'gemini-2.5-flash'], 1, gen, async () => {}),
+    ).rejects.toThrow(/400/);
+    expect(gen).toHaveBeenCalledTimes(2);
   });
 });

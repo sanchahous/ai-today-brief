@@ -18,6 +18,7 @@
  */
 
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { resolveGeminiModelQueue } from './gemini-models';
 import { logError, logEvent, serializeErrorDetails } from './log';
 import type { PoolItem } from './select';
 import { slugify, dedupeSlugs } from './text';
@@ -54,20 +55,10 @@ export interface DraftBrief {
   items: DraftItem[];
 }
 
-export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
-
-export function resolveGeminiModel(
-  env: Record<string, string | undefined> = process.env,
-): string {
-  const fromEnv = env.GEMINI_MODEL?.trim();
-  return fromEnv && fromEnv.length > 0 ? fromEnv : DEFAULT_GEMINI_MODEL;
-}
-
-export function resolveGeminiModelFallback(
-  env: Record<string, string | undefined> = process.env,
-): string | null {
-  const explicit = env.GEMINI_MODEL_FALLBACK?.trim();
-  return explicit && explicit.length > 0 ? explicit : null;
+export interface SummarizeResult {
+  brief: DraftBrief;
+  provider: 'gemini' | 'openrouter';
+  providerModel: string;
 }
 
 /**
@@ -194,55 +185,63 @@ function createGenerateContent(modelId: string, apiKey: string): (prompt: string
 }
 /* v8 ignore end */
 
-export async function generateWithRetry(
+/**
+ * Walk the dynamically resolved model queue: retry transient errors on the same
+ * model, then advance to the next catalog entry (newer → older flash/pro).
+ */
+export async function generateWithModelQueue(
   prompt: string,
   apiKey: string,
-  maxAttempts = 3,
-  generateContent?: (input: string) => Promise<string>,
+  modelQueue: string[],
+  perModelMaxAttempts = 2,
+  generateContent?: (modelId: string, input: string) => Promise<string>,
   sleepFn: (ms: number) => Promise<void> = sleep,
-): Promise<string> {
-  const primaryModel = resolveGeminiModel();
-  const fallbackModel = resolveGeminiModelFallback();
+): Promise<{ text: string; model: string }> {
   let lastError: unknown;
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const useFallback = Boolean(fallbackModel && attempt === maxAttempts);
-    const modelId = useFallback ? fallbackModel! : primaryModel;
-    const call = generateContent ?? createGenerateContent(modelId, apiKey);
-    try {
-      return await call(prompt);
-    } catch (error) {
-      lastError = error;
-      if (isGeminiRateLimitError(error)) {
-        // Quota / rate-limit: retrying won't help — escalate to OpenRouter immediately.
-        logError('summarize', 'Gemini rate limit — escalating to fallback', error, {
+  for (const modelId of modelQueue) {
+    for (let attempt = 1; attempt <= perModelMaxAttempts; attempt++) {
+      const call =
+        generateContent ??
+        ((id: string, input: string) => createGenerateContent(id, apiKey)(input));
+      try {
+        const text = await call(modelId, prompt);
+        return { text, model: modelId };
+      } catch (error) {
+        lastError = error;
+        if (isGeminiRateLimitError(error)) {
+          logError('summarize', 'Gemini rate limit — trying next model', error, {
+            model: modelId,
+            attempt,
+            ...serializeErrorDetails(error),
+          });
+          break;
+        }
+        const canRetry = isRetryableGeminiError(error);
+        if (!canRetry || attempt === perModelMaxAttempts) {
+          logError('summarize', 'Gemini model failed — trying next', error, {
+            model: modelId,
+            attempt,
+            retryable: canRetry,
+            ...serializeErrorDetails(error),
+          });
+          break;
+        }
+        const backoffMs = 1000 * 2 ** (attempt - 1);
+        logError('summarize', 'Gemini transient error, retrying', error, {
           model: modelId,
           attempt,
-          ...serializeErrorDetails(error),
+          backoff_ms: backoffMs,
         });
-        throw error;
+        await sleepFn(backoffMs);
       }
-      const canRetry = isRetryableGeminiError(error);
-      if (!canRetry || attempt === maxAttempts) {
-        logError('summarize', 'Gemini summarize failed — no more attempts', error, {
-          primary_model: primaryModel,
-          fallback_model: fallbackModel,
-          attempt,
-          retryable: canRetry,
-          ...serializeErrorDetails(error),
-        });
-        throw error;
-      }
-      const backoffMs = 1000 * 2 ** (attempt - 1);
-      logError('summarize', 'Gemini transient error, retrying', error, {
-        model: modelId,
-        attempt,
-        backoff_ms: backoffMs,
-      });
-      await sleepFn(backoffMs);
     }
   }
-  throw lastError instanceof Error ? lastError : new Error('[summarize] Gemini call failed');
+
+  logError('summarize', 'Gemini model queue exhausted', lastError, {
+    models_tried: modelQueue,
+  });
+  throw lastError instanceof Error ? lastError : new Error('[summarize] Gemini model queue failed');
 }
 
 // ─── Prompt ──────────────────────────────────────────────────────────────────
@@ -423,30 +422,38 @@ export async function summarize(
   apiKey: string,
   openRouterApiKey?: string,
   geminiMaxAttempts = 3,
-): Promise<DraftBrief> {
+): Promise<SummarizeResult> {
+  const modelQueue = await resolveGeminiModelQueue(apiKey);
   logEvent('info', 'summarize', 'Curate & summarize started', {
     candidates: candidates.length,
     recent_context: recentlyPublished.length,
     max_items: maxItems,
-    model: resolveGeminiModel(),
-    gemini_max_attempts: geminiMaxAttempts,
+    gemini_model_queue: modelQueue.slice(0, 5),
+    gemini_per_model_attempts: geminiMaxAttempts,
     openrouter_fallback: Boolean(openRouterApiKey),
   });
   const start = Date.now();
   const prompt = buildPrompt(candidates, recentlyPublished, maxItems);
 
   let text: string;
-  let provider = 'gemini';
-  let providerModel = resolveGeminiModel();
+  let provider: SummarizeResult['provider'] = 'gemini';
+  let providerModel: string;
 
   try {
-    text = await generateWithRetry(prompt, apiKey, geminiMaxAttempts);
+    const geminiResult = await generateWithModelQueue(
+      prompt,
+      apiKey,
+      modelQueue,
+      geminiMaxAttempts,
+    );
+    text = geminiResult.text;
+    providerModel = geminiResult.model;
   } catch (geminiError) {
     if (!openRouterApiKey) {
       throw geminiError;
     }
-    logEvent('warn', 'summarize', 'Gemini failed — trying OpenRouter fallback', {
-      gemini_model: resolveGeminiModel(),
+    logEvent('warn', 'summarize', 'Gemini queue failed — trying OpenRouter fallback', {
+      gemini_models_tried: modelQueue,
       ...serializeErrorDetails(geminiError),
     });
     const { generateWithOpenRouterChain } = await import('./openrouter-summarize');
@@ -463,6 +470,6 @@ export async function summarize(
     provider_model: providerModel,
     duration_ms: Date.now() - start,
   });
-  return brief;
+  return { brief, provider, providerModel };
 }
 /* v8 ignore end */
