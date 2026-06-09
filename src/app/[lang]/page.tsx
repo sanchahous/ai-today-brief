@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import { EDITOR_NAME, SITE_NAME, SITE_URL, isLang, type Lang } from '@/lib/site';
 import { getHomeData } from '@/lib/home';
 import { HomeHero } from '@/components/home/home-hero';
@@ -12,7 +13,31 @@ import { FaqSection } from '@/components/home/faq-section';
 // ISR: refresh every 30 min. (On-publish revalidation gets wired in P4.)
 export const revalidate = 1800;
 
-export default async function Home({ params }: { params: Promise<{ lang: string }> }) {
+type Params = { lang: string };
+
+const HOME_DESCRIPTION = {
+  en: 'Daily AI-engineering brief for developers, founders and tech leads. We read 120+ sources and publish only what matters — tool releases, agents, research and practical guides. In English and Ukrainian.',
+  uk: 'Щоденний бриф з AI-інженерії для розробників, фаундерів і техлідів. Читаємо 120+ джерел і публікуємо лише те, що важливо — релізи інструментів, агенти, дослідження та практичні гайди. Англійською та українською.',
+} as const;
+
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
+  const { lang } = await params;
+  const l: Lang = isLang(lang) ? lang : 'en';
+  return {
+    title: `${SITE_NAME} — ${l === 'uk' ? 'AI-новини для розробників за 5 хвилин на день' : 'AI news for developers in 5 minutes a day'}`,
+    description: HOME_DESCRIPTION[l],
+    alternates: {
+      canonical: `${SITE_URL}/${l}`,
+      languages: {
+        en: `${SITE_URL}/en`,
+        uk: `${SITE_URL}/uk`,
+        'x-default': `${SITE_URL}/en`,
+      },
+    },
+  };
+}
+
+export default async function Home({ params }: { params: Promise<Params> }) {
   const { lang: raw } = await params;
   if (!isLang(raw)) notFound();
   const lang: Lang = raw;
@@ -35,6 +60,14 @@ export default async function Home({ params }: { params: Promise<{ lang: string 
         name: SITE_NAME,
         url: `${SITE_URL}/${lang}`,
         inLanguage: ['en', 'uk'],
+        potentialAction: {
+          '@type': 'SearchAction',
+          target: {
+            '@type': 'EntryPoint',
+            urlTemplate: `${SITE_URL}/${lang}/news?q={search_term_string}`,
+          },
+          'query-input': 'required name=search_term_string',
+        },
       },
       ...(data.featured
         ? [

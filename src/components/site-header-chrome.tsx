@@ -157,7 +157,7 @@ export function SiteHeaderChrome({
               onClick={trackLangSwitch}
               className="text-accent text-[0.85rem] font-semibold no-underline transition-opacity duration-200 hover:opacity-80"
             >
-              {lang === 'uk' ? 'EN' : 'UK'}
+              {lang === 'uk' ? 'EN' : 'UA'}
             </Link>
             <ThemeToggle label={t.themeToggle} />
           </nav>
@@ -236,7 +236,7 @@ export function SiteHeaderChrome({
                   setMenuOpen(false);
                 }}
               >
-                {lang === 'uk' ? 'EN' : 'UK'}
+                {lang === 'uk' ? 'EN' : 'UA'}
               </Link>
               <Link
                 href={`/${lang}/subscribe`}

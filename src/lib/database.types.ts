@@ -774,6 +774,30 @@ export type Database = {
       };
       show_limit: { Args: Record<PropertyKey, never>; Returns: number };
       show_trgm: { Args: { '': string }; Returns: string[] };
+      get_concept_items: {
+        Args: {
+          p_concept_slug: string;
+          p_lang?: string;
+          p_limit?: number;
+        };
+        Returns: {
+          id: string;
+          rank: number;
+          slug: string;
+          category_slug: string;
+          title_en: string;
+          title_uk: string;
+          summary_en: string;
+          summary_uk: string;
+          why_en: string;
+          why_uk: string;
+          has_video: boolean;
+          tools_mentioned: Json;
+          brief_slug: string;
+          brief_date: string;
+          source_name: string;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
