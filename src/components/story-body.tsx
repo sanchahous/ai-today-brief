@@ -1,10 +1,17 @@
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { getStrings } from '@/lib/i18n';
-import type { BriefItemDetail } from '@/lib/items';
+import type { BriefItemDetail, ItemImpactLevel } from '@/lib/items';
 import type { Lang } from '@/lib/site';
 
 export type ToolLink = { name: string; href: string | null };
+
+function impactLevelText(lang: Parameters<typeof getStrings>[0], level: ItemImpactLevel): string {
+  const t = getStrings(lang);
+  if (level === 'low') return t.impactLow;
+  if (level === 'high') return t.impactHigh;
+  return t.impactMedium;
+}
 
 function paragraphs(text: string): string[] {
   return text
@@ -30,6 +37,13 @@ export function StoryBody({
 
   return (
     <div>
+      {detail.impactLevel && (
+        <p className="text-faint mb-4 text-[0.74rem] font-semibold tracking-[0.06em] uppercase">
+          {t.impactLabel}:{' '}
+          <span className="text-accent">{impactLevelText(lang, detail.impactLevel)}</span>
+        </p>
+      )}
+
       {detail.why && (
         <div
           className="bg-surface-2 mb-5 rounded-r-lg py-3 pr-4 pl-4"
@@ -47,6 +61,24 @@ export function StoryBody({
           {para}
         </p>
       ))}
+
+      {detail.actionItems.length > 0 && (
+        <>
+          <p className="text-accent m-0 mt-5 mb-2.5 text-[0.74rem] font-bold tracking-[0.08em] uppercase">
+            {t.actionItemsToday}
+          </p>
+          <ul className="m-0 list-none p-0">
+            {detail.actionItems.map((step, i) => (
+              <li key={i} className="mb-2 flex gap-2.5">
+                <span className="text-accent font-bold" aria-hidden>
+                  →
+                </span>
+                <span className="text-[0.92rem] leading-relaxed">{step}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       {detail.takeaways.length > 0 && (
         <>

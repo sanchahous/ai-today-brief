@@ -9,6 +9,7 @@
 import {
   getBriefByDate,
   replaceBriefItems,
+  syncBriefItemConcepts,
   upsertArticles,
   upsertBriefDraft,
   type PipelineDb,
@@ -52,10 +53,12 @@ export async function publish(
   const articleIdByUrl = await upsertArticles(db, fetched);
   const briefId = await upsertBriefDraft(db, date, brief, generatedBy);
   const itemCount = await replaceBriefItems(db, briefId, brief.items, articleIdByUrl);
+  const conceptLinks = await syncBriefItemConcepts(db, briefId);
   logEvent('info', 'publish', 'Draft brief written', {
     brief_id: briefId,
     date,
     items: itemCount,
+    concept_links: conceptLinks,
     status: 'draft',
   });
   return { briefId, itemCount };
