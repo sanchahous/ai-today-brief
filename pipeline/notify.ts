@@ -18,6 +18,8 @@ export interface NotifyResult {
 export interface NotifyReviewOptions {
   /** Optional progón label for the batch header (e.g. "08:00–10:30"). */
   cycleLabel?: string;
+  /** Re-push pending cards even when review_msg_id is already set (catch-up). */
+  resend?: boolean;
 }
 
 export async function notifyReview(
@@ -27,7 +29,7 @@ export async function notifyReview(
   briefId: string,
   options: NotifyReviewOptions = {},
 ): Promise<NotifyResult> {
-  const items = await getPendingReviewItems(db, briefId);
+  const items = await getPendingReviewItems(db, briefId, { resend: options.resend });
   if (items.length === 0) {
     logEvent('info', 'notify', 'No pending items to push for review', { brief_id: briefId });
     return { sent: 0, failed: 0 };

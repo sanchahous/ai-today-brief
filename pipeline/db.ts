@@ -82,14 +82,16 @@ async function resolveBriefSlug(db: PipelineDb, slug: string, date: string): Pro
   return `${slug}-${date}`;
 }
 
-/** Upsert the day's brief as a draft (human publishes later). Returns its id. */
-export async function upsertBriefDraft(
+/** Upsert the day's brief. Keeps `published` status on re-runs (human gate stays). */
+export async function upsertBriefForDate(
   db: PipelineDb,
   date: string,
   brief: DraftBrief,
   generatedBy: string,
+  existingStatus?: string | null,
 ): Promise<string> {
   const slug = await resolveBriefSlug(db, brief.slug, date);
+  const status = existingStatus === 'published' ? 'published' : 'draft';
   const { data, error } = await db
     .from('briefs')
     .upsert(
@@ -100,16 +102,19 @@ export async function upsertBriefDraft(
         title_uk: brief.title_uk,
         intro_en: brief.intro_en,
         intro_uk: brief.intro_uk,
-        status: 'draft',
+        status,
         generated_by: generatedBy,
       },
       { onConflict: 'date' },
     )
     .select('id')
     .single();
-  if (error || !data) throw new Error(`[db] upsertBriefDraft failed: ${error?.message}`);
+  if (error || !data) throw new Error(`[db] upsertBriefForDate failed: ${error?.message}`);
   return data.id;
 }
+
+/** @deprecated Use upsertBriefForDate */
+export const upsertBriefDraft = upsertBriefForDate;
 
 type BriefItemContentRow = {
   article_id: string;
@@ -164,37 +169,122 @@ export function draftItemToRow(
   };
 }
 
+export type SyncBriefItemsResult = { synced: number; inserted: number };
+
+type ExistingItemRow = { id: string; slug: string | null; rank: number; review_status: string };
+
 /**
- * Sync draft items by `slug` so re-runs refresh content without wiping review
- * state or Telegram message ids. Ranks are bumped temporarily to satisfy the
- * unique (brief_id, rank) constraint during reorder.
+ * Sync items by `slug`. Draft briefs get a full reorder; published briefs only
+ * append new slugs (approved/rejected rows are never deleted or overwritten).
  */
 export async function syncBriefItems(
   db: PipelineDb,
   briefId: string,
   items: DraftItem[],
   articleIdByUrl: Map<string, string>,
-): Promise<number> {
+  options: { appendOnly?: boolean } = {},
+): Promise<SyncBriefItemsResult> {
   const { data: existing, error: loadErr } = await db
     .from('brief_items')
-    .select('id, slug, rank')
+    .select('id, slug, rank, review_status')
     .eq('brief_id', briefId);
   if (loadErr) throw new Error(`[db] syncBriefItems load failed: ${loadErr.message}`);
 
-  const existingBySlug = new Map<string, { id: string; slug: string; rank: number }>();
-  for (const row of existing ?? []) {
-    if (!row.slug) continue;
-    existingBySlug.set(row.slug, { id: row.id, slug: row.slug, rank: row.rank });
+  if (options.appendOnly) {
+    return syncBriefItemsAppend(db, briefId, items, articleIdByUrl, existing ?? []);
   }
-  const targetSlugs = new Set<string>();
-  let count = 0;
+  return syncBriefItemsReplace(db, briefId, items, articleIdByUrl, existing ?? []);
+}
 
-  for (const row of existing ?? []) {
-    const { error } = await db
-      .from('brief_items')
-      .update({ rank: row.rank + 100 })
-      .eq('id', row.id);
+async function syncBriefItemsAppend(
+  db: PipelineDb,
+  briefId: string,
+  items: DraftItem[],
+  articleIdByUrl: Map<string, string>,
+  existing: ExistingItemRow[],
+): Promise<SyncBriefItemsResult> {
+  const existingBySlug = new Map<string, ExistingItemRow>();
+  for (const row of existing) {
+    if (!row.slug) continue;
+    existingBySlug.set(row.slug, row);
+  }
+
+  let maxRank = 0;
+  for (const row of existing) {
+    if (row.rank > maxRank) maxRank = row.rank;
+  }
+
+  let synced = 0;
+  let inserted = 0;
+
+  for (const item of items) {
+    const articleId = articleIdByUrl.get(item.url);
+    if (!articleId) continue;
+    synced++;
+
+    const prev = existingBySlug.get(item.slug);
+    if (prev) {
+      if (prev.review_status !== 'pending') continue;
+      const payload = draftItemToRow(item, prev.rank, articleId);
+      const { error } = await db.from('brief_items').update(payload).eq('id', prev.id);
+      if (error) throw new Error(`[db] syncBriefItems update failed: ${error.message}`);
+      continue;
+    }
+
+    if (maxRank >= 10) continue;
+    maxRank++;
+    const payload = draftItemToRow(item, maxRank, articleId);
+    const { error } = await db.from('brief_items').insert({
+      brief_id: briefId,
+      ...payload,
+      review_status: 'pending',
+    });
+    if (error) throw new Error(`[db] syncBriefItems insert failed: ${error.message}`);
+    inserted++;
+  }
+
+  return { synced, inserted };
+}
+
+async function syncBriefItemsReplace(
+  db: PipelineDb,
+  briefId: string,
+  items: DraftItem[],
+  articleIdByUrl: Map<string, string>,
+  existing: ExistingItemRow[],
+): Promise<SyncBriefItemsResult> {
+  const existingBySlug = new Map<string, ExistingItemRow>();
+  for (const row of existing) {
+    if (!row.slug) continue;
+    existingBySlug.set(row.slug, row);
+  }
+
+  const incomingSlugs = new Set<string>();
+  for (const item of items) {
+    if (articleIdByUrl.get(item.url)) incomingSlugs.add(item.slug);
+  }
+  for (const [slug, prev] of existingBySlug) {
+    if (incomingSlugs.has(slug)) continue;
+    const { error } = await db.from('brief_items').delete().eq('id', prev.id);
+    if (error) throw new Error(`[db] syncBriefItems delete failed: ${error.message}`);
+    existingBySlug.delete(slug);
+  }
+
+  const targetSlugs = new Set<string>();
+  let synced = 0;
+  let inserted = 0;
+
+  const remaining = [...existingBySlug.values()];
+  const targetRanks = new Set(items.map((_, i) => i + 1));
+  let tempRank = 10;
+  for (const row of remaining) {
+    while (targetRanks.has(tempRank) && tempRank > 0) tempRank--;
+    if (tempRank < 1) {
+      throw new Error('[db] syncBriefItems rank bump failed: no temporary rank slot');
+    }
+    const { error } = await db.from('brief_items').update({ rank: tempRank }).eq('id', row.id);
     if (error) throw new Error(`[db] syncBriefItems rank bump failed: ${error.message}`);
+    tempRank--;
   }
 
   for (let i = 0; i < items.length; i++) {
@@ -216,17 +306,12 @@ export async function syncBriefItems(
         review_status: 'pending',
       });
       if (error) throw new Error(`[db] syncBriefItems insert failed: ${error.message}`);
+      inserted++;
     }
-    count++;
+    synced++;
   }
 
-  for (const [slug, prev] of existingBySlug) {
-    if (targetSlugs.has(slug)) continue;
-    const { error } = await db.from('brief_items').delete().eq('id', prev.id);
-    if (error) throw new Error(`[db] syncBriefItems delete failed: ${error.message}`);
-  }
-
-  return count;
+  return { synced, inserted };
 }
 
 /** @deprecated Use syncBriefItems — kept as alias for callers outside publish. */
@@ -307,18 +392,21 @@ export async function getBriefMeta(
   return { date: data.date, title: data.title_uk ?? data.title_en ?? null };
 }
 
-/** Pending items of a brief that haven't been pushed to Telegram yet. */
+/** Pending items of a brief for Telegram review cards. */
 export async function getPendingReviewItems(
   db: PipelineDb,
   briefId: string,
+  options: { resend?: boolean } = {},
 ): Promise<ReviewItem[]> {
-  const { data, error } = await db
+  let query = db
     .from('brief_items')
     .select('id, rank, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, articles(url, source_name)')
     .eq('brief_id', briefId)
-    .eq('review_status', 'pending')
-    .is('review_msg_id', null)
-    .order('rank', { ascending: true });
+    .eq('review_status', 'pending');
+  if (!options.resend) {
+    query = query.is('review_msg_id', null);
+  }
+  const { data, error } = await query.order('rank', { ascending: true });
   if (error) throw new Error(`[db] getPendingReviewItems failed: ${error.message}`);
   return (data ?? []).map((r) => {
     const article = r.articles as { url: string | null; source_name: string | null } | null;
