@@ -1,26 +1,10 @@
 import type { Metadata } from 'next';
-import { Fraunces, Inter } from 'next/font/google';
 import './globals.css';
 import { GoogleAnalytics } from '@/components/google-analytics';
 import { GoogleTagManager } from '@/components/google-tag-manager';
 import { tagsConfigured } from '@/lib/analytics-config';
 import { CONSENT_MODE_DEFAULTS_SCRIPT } from '@/lib/consent-mode-snippet';
 import { SITE_NAME, SITE_URL, SITE_TAGLINE, DEFAULT_LANG } from '@/lib/site';
-
-const fraunces = Fraunces({
-  subsets: ['latin', 'latin-ext'],
-  variable: '--font-fraunces',
-  weight: ['400', '600', '700'],
-  style: ['normal', 'italic'],
-  display: 'swap',
-});
-
-const inter = Inter({
-  subsets: ['latin', 'latin-ext', 'cyrillic'],
-  variable: '--font-inter',
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-});
 
 /** Runs before paint — theme class + document lang from URL (no flicker). */
 const CHROME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('theme');var light=t==='light'||(!t&&window.matchMedia('(prefers-color-scheme: light)').matches);if(light)document.documentElement.classList.add('theme-light');}catch(e){}var m=location.pathname.match(/^\\/(en|uk)(\\/|$)/);if(m)document.documentElement.lang=m[1];})();`;
@@ -42,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang={DEFAULT_LANG} suppressHydrationWarning className={`${fraunces.variable} ${inter.variable} h-full`}>
+    <html lang={DEFAULT_LANG} suppressHydrationWarning className="h-full">
       <head>
         <script dangerouslySetInnerHTML={{ __html: CHROME_INIT_SCRIPT }} />
         {tagsConfigured ? (

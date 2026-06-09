@@ -1,14 +1,20 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/inter/index.css';
+@import '@fontsource-variable/fraunces/wght.css';
+@import '@fontsource-variable/fraunces/wght-italic.css';
 
 /*
  * AI Today Brief — design tokens (ported from the prototype).
  * `@theme inline` registers brand utilities (bg-bg, bg-surface, text-accent,
  * border-border, font-serif, rounded-card, …) that resolve to the CSS variables
  * below — so a light theme can swap at runtime by toggling `.theme-light`.
+ *
+ * Fonts ship via @fontsource (not next/font/google) so CI builds never fetch
+ * fonts.gstatic.com — Sonar/GitHub Actions must not depend on outbound font CDN.
  */
 @theme inline {
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-serif: var(--font-fraunces), Georgia, serif;
+  --font-sans: 'Inter Variable', system-ui, sans-serif;
+  --font-serif: 'Fraunces Variable', Georgia, serif;
 
   --color-bg: var(--bg);
   --color-bg-soft: var(--bg-soft);
