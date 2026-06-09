@@ -118,6 +118,11 @@ describe('formatBatchHeader', () => {
     const h = formatBatchHeader({ date: 'd', total: 2 });
     expect(h).not.toContain('🗞');
   });
+
+  it('includes the progón label when provided', () => {
+    const h = formatBatchHeader({ date: '2026-06-09', total: 3, cycleLabel: '08:00–10:30' });
+    expect(h).toContain('Прогін 08:00–10:30');
+  });
 });
 
 describe('decoratedAfterDecision', () => {

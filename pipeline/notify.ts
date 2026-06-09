@@ -1,12 +1,8 @@
 /**
  * Stage 5 (optional) — Notify for review. Pushes each still-pending brief item
- * to the founder's private Telegram chat as its own card with ✅/❌ buttons, one
- * at a time (some items get approved, some rejected). Stores the Telegram
- * message id so a re-run won't double-send and the webhook can edit the card
- * after a decision. The decisions themselves are handled by the webhook (Phase 2).
- *
- * Network IO — excluded from coverage; the message/keyboard builders in
- * `review-format.ts` are unit-tested.
+ * to the founder's private Telegram chat as its own card with ✅/❌ buttons.
+ * Stores the Telegram message id so a re-run won't double-send and the webhook
+ * can edit the card after a decision.
  */
 
 import { getBriefMeta, getPendingReviewItems, setReviewMsgId, type PipelineDb } from './db';
@@ -19,11 +15,17 @@ export interface NotifyResult {
   failed: number;
 }
 
+export interface NotifyReviewOptions {
+  /** Optional progón label for the batch header (e.g. "08:00–10:30"). */
+  cycleLabel?: string;
+}
+
 export async function notifyReview(
   db: PipelineDb,
   token: string,
   chatId: string,
   briefId: string,
+  options: NotifyReviewOptions = {},
 ): Promise<NotifyResult> {
   const items = await getPendingReviewItems(db, briefId);
   if (items.length === 0) {
@@ -31,14 +33,17 @@ export async function notifyReview(
     return { sent: 0, failed: 0 };
   }
 
-  // Batch header: a single announce message so the reviewer sees a NEW review
-  // stream is starting (and how many cards to expect) — breaks the chat clutter.
   const meta = await getBriefMeta(db, briefId);
   if (meta) {
     await sendMessage(
       token,
       chatId,
-      formatBatchHeader({ date: meta.date, total: items.length, title: meta.title }),
+      formatBatchHeader({
+        date: meta.date,
+        total: items.length,
+        title: meta.title,
+        cycleLabel: options.cycleLabel,
+      }),
     );
   }
 

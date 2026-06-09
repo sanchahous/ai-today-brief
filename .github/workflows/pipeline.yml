@@ -2,18 +2,54 @@ name: Daily Pipeline
 
 on:
   schedule:
-    # Europe/Kyiv (EEST = UTC+3, summer). 6 slots every 30 min, 06:00–08:30.
-    # Slot 1–5: Gemini only (2 retries). Slot 6: Gemini + OpenRouter fallback.
-    - cron: '0 3 * * *'   # slot 1 — 06:00 Kyiv
-    - cron: '30 3 * * *'  # slot 2 — 06:30 Kyiv
-    - cron: '0 4 * * *'   # slot 3 — 07:00 Kyiv
-    - cron: '30 4 * * *'  # slot 4 — 07:30 Kyiv
-    - cron: '0 5 * * *'   # slot 5 — 08:00 Kyiv
-    - cron: '30 5 * * *'  # slot 6 — 08:30 Kyiv
+    # Europe/Kyiv (EEST = UTC+3). Six 4 h progóns/day; each progón has 6 slots every 30 min.
+    # After a successful publish + Telegram notify, remaining slots in that progón skip.
+    # Progón 1 — 00:00–02:30 Kyiv
+    - cron: '0 21 * * *'   # slot 1 — 00:00 Kyiv
+    - cron: '30 21 * * *'  # slot 2 — 00:30 Kyiv
+    - cron: '0 22 * * *'   # slot 3 — 01:00 Kyiv
+    - cron: '30 22 * * *'  # slot 4 — 01:30 Kyiv
+    - cron: '0 23 * * *'   # slot 5 — 02:00 Kyiv
+    - cron: '30 23 * * *'  # slot 6 — 02:30 Kyiv
+    # Progón 2 — 04:00–06:30 Kyiv
+    - cron: '0 1 * * *'    # slot 1 — 04:00 Kyiv
+    - cron: '30 1 * * *'  # slot 2 — 04:30 Kyiv
+    - cron: '0 2 * * *'    # slot 3 — 05:00 Kyiv
+    - cron: '30 2 * * *'  # slot 4 — 05:30 Kyiv
+    - cron: '0 3 * * *'    # slot 5 — 06:00 Kyiv
+    - cron: '30 3 * * *'  # slot 6 — 06:30 Kyiv
+    # Progón 3 — 08:00–10:30 Kyiv
+    - cron: '0 5 * * *'    # slot 1 — 08:00 Kyiv
+    - cron: '30 5 * * *'  # slot 2 — 08:30 Kyiv
+    - cron: '0 6 * * *'    # slot 3 — 09:00 Kyiv
+    - cron: '30 6 * * *'  # slot 4 — 09:30 Kyiv
+    - cron: '0 7 * * *'    # slot 5 — 10:00 Kyiv
+    - cron: '30 7 * * *'  # slot 6 — 10:30 Kyiv
+    # Progón 4 — 12:00–14:30 Kyiv
+    - cron: '0 9 * * *'    # slot 1 — 12:00 Kyiv
+    - cron: '30 9 * * *'  # slot 2 — 12:30 Kyiv
+    - cron: '0 10 * * *'   # slot 3 — 13:00 Kyiv
+    - cron: '30 10 * * *' # slot 4 — 13:30 Kyiv
+    - cron: '0 11 * * *'   # slot 5 — 14:00 Kyiv
+    - cron: '30 11 * * *' # slot 6 — 14:30 Kyiv
+    # Progón 5 — 16:00–18:30 Kyiv
+    - cron: '0 13 * * *'   # slot 1 — 16:00 Kyiv
+    - cron: '30 13 * * *' # slot 2 — 16:30 Kyiv
+    - cron: '0 14 * * *'   # slot 3 — 17:00 Kyiv
+    - cron: '30 14 * * *' # slot 4 — 17:30 Kyiv
+    - cron: '0 15 * * *'   # slot 5 — 18:00 Kyiv
+    - cron: '30 15 * * *' # slot 6 — 18:30 Kyiv
+    # Progón 6 — 20:00–22:30 Kyiv
+    - cron: '0 17 * * *'   # slot 1 — 20:00 Kyiv
+    - cron: '30 17 * * *' # slot 2 — 20:30 Kyiv
+    - cron: '0 18 * * *'   # slot 3 — 21:00 Kyiv
+    - cron: '30 18 * * *' # slot 4 — 21:30 Kyiv
+    - cron: '0 19 * * *'   # slot 5 — 22:00 Kyiv
+    - cron: '30 19 * * *' # slot 6 — 22:30 Kyiv
   workflow_dispatch:
     inputs:
       attempt:
-        description: 'Schedule attempt 1–6 (leave blank for auto)'
+        description: 'Slot 1–6 within the current progón (leave blank for auto from clock)'
         required: false
         default: '1'
       dry_run:
@@ -39,20 +75,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Resolve attempt number from schedule
-        id: slot
-        run: |
-          case "${{ github.event.schedule }}" in
-            "0 3 * * *")   echo "attempt=1" >> "$GITHUB_OUTPUT" ;;
-            "30 3 * * *")  echo "attempt=2" >> "$GITHUB_OUTPUT" ;;
-            "0 4 * * *")   echo "attempt=3" >> "$GITHUB_OUTPUT" ;;
-            "30 4 * * *")  echo "attempt=4" >> "$GITHUB_OUTPUT" ;;
-            "0 5 * * *")   echo "attempt=5" >> "$GITHUB_OUTPUT" ;;
-            "30 5 * * *")  echo "attempt=6" >> "$GITHUB_OUTPUT" ;;
-            *)             echo "attempt=${{ inputs.attempt || '1' }}" >> "$GITHUB_OUTPUT" ;;
-          esac
-
-      - name: Run pipeline (attempt ${{ steps.slot.outputs.attempt }})
+      - name: Run pipeline
         env:
           SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
           SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
@@ -61,7 +84,10 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_REVIEW_CHAT_ID: ${{ secrets.TELEGRAM_REVIEW_CHAT_ID }}
         run: |
-          ARGS="--attempt ${{ steps.slot.outputs.attempt }}"
+          ARGS=""
+          if [[ -n "${{ inputs.attempt }}" ]]; then
+            ARGS="--attempt ${{ inputs.attempt }}"
+          fi
           if [[ "${{ inputs.dry_run }}" == "true" ]]; then
             ARGS="$ARGS --dry-run"
           fi

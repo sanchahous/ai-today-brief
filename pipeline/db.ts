@@ -2,7 +2,7 @@
  * Supabase data layer for the pipeline — holds the **service role** key and
  * bypasses RLS. All writes (articles, briefs, brief_items, pipeline_runs) go
  * through here. Re-runs for the same date are idempotent: the brief upserts on
- * its unique `date` and its items are replaced wholesale.
+ * its unique `date`; draft items sync by `slug` so review state survives re-runs.
  *
  * Type-only import of the app's generated `Database` (erased at runtime, so tsx
  * needs no path-alias resolution; tsc resolves `@/` via tsconfig paths).
@@ -111,55 +111,126 @@ export async function upsertBriefDraft(
   return data.id;
 }
 
+type BriefItemContentRow = {
+  article_id: string;
+  rank: number;
+  category_slug: string;
+  slug: string;
+  title_en: string;
+  title_uk: string;
+  summary_en: string;
+  summary_uk: string;
+  why_matters_en: string;
+  why_matters_uk: string;
+  deep_dive_en: string;
+  deep_dive_uk: string;
+  takeaways_en: string[];
+  takeaways_uk: string[];
+  tools_mentioned: string[];
+  action_items_en: string[];
+  action_items_uk: string[];
+  impact_level: DraftItem['impact_level'];
+  social_hook_en: string | null;
+  social_hook_uk: string | null;
+};
+
+/** Map a draft item to a DB row (no brief_id — shared by sync + tests). */
+export function draftItemToRow(
+  item: DraftItem,
+  rank: number,
+  articleId: string,
+): BriefItemContentRow {
+  return {
+    article_id: articleId,
+    rank,
+    category_slug: item.category_slug,
+    slug: item.slug,
+    title_en: item.title_en,
+    title_uk: item.title_uk,
+    summary_en: item.summary_en,
+    summary_uk: item.summary_uk,
+    why_matters_en: item.why_matters_en,
+    why_matters_uk: item.why_matters_uk,
+    deep_dive_en: item.deep_dive_en,
+    deep_dive_uk: item.deep_dive_uk,
+    takeaways_en: item.takeaways_en,
+    takeaways_uk: item.takeaways_uk,
+    tools_mentioned: item.tools_mentioned,
+    action_items_en: item.action_items_en,
+    action_items_uk: item.action_items_uk,
+    impact_level: item.impact_level,
+    social_hook_en: item.social_hook_en || null,
+    social_hook_uk: item.social_hook_uk || null,
+  };
+}
+
 /**
- * Replace a brief's items wholesale (delete-then-insert) so re-runs never
- * duplicate. `rank` is the 1-based position; items whose lead article is missing
- * from `articleIdByUrl` are skipped (can't satisfy the FK).
+ * Sync draft items by `slug` so re-runs refresh content without wiping review
+ * state or Telegram message ids. Ranks are bumped temporarily to satisfy the
+ * unique (brief_id, rank) constraint during reorder.
  */
-export async function replaceBriefItems(
+export async function syncBriefItems(
   db: PipelineDb,
   briefId: string,
   items: DraftItem[],
   articleIdByUrl: Map<string, string>,
 ): Promise<number> {
-  const { error: delErr } = await db.from('brief_items').delete().eq('brief_id', briefId);
-  if (delErr) throw new Error(`[db] replaceBriefItems delete failed: ${delErr.message}`);
+  const { data: existing, error: loadErr } = await db
+    .from('brief_items')
+    .select('id, slug, rank')
+    .eq('brief_id', briefId);
+  if (loadErr) throw new Error(`[db] syncBriefItems load failed: ${loadErr.message}`);
 
-  const rows = items
-    .map((item, i) => {
-      const articleId = articleIdByUrl.get(item.url);
-      if (!articleId) return null;
-      return {
+  const existingBySlug = new Map<string, { id: string; slug: string; rank: number }>();
+  for (const row of existing ?? []) {
+    if (!row.slug) continue;
+    existingBySlug.set(row.slug, { id: row.id, slug: row.slug, rank: row.rank });
+  }
+  const targetSlugs = new Set<string>();
+  let count = 0;
+
+  for (const row of existing ?? []) {
+    const { error } = await db
+      .from('brief_items')
+      .update({ rank: row.rank + 100 })
+      .eq('id', row.id);
+    if (error) throw new Error(`[db] syncBriefItems rank bump failed: ${error.message}`);
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]!;
+    const articleId = articleIdByUrl.get(item.url);
+    if (!articleId) continue;
+
+    targetSlugs.add(item.slug);
+    const payload = draftItemToRow(item, i + 1, articleId);
+    const prev = existingBySlug.get(item.slug);
+
+    if (prev) {
+      const { error } = await db.from('brief_items').update(payload).eq('id', prev.id);
+      if (error) throw new Error(`[db] syncBriefItems update failed: ${error.message}`);
+    } else {
+      const { error } = await db.from('brief_items').insert({
         brief_id: briefId,
-        article_id: articleId,
-        rank: i + 1,
-        category_slug: item.category_slug,
-        slug: item.slug,
-        title_en: item.title_en,
-        title_uk: item.title_uk,
-        summary_en: item.summary_en,
-        summary_uk: item.summary_uk,
-        why_matters_en: item.why_matters_en,
-        why_matters_uk: item.why_matters_uk,
-        deep_dive_en: item.deep_dive_en,
-        deep_dive_uk: item.deep_dive_uk,
-        takeaways_en: item.takeaways_en,
-        takeaways_uk: item.takeaways_uk,
-        tools_mentioned: item.tools_mentioned,
-        action_items_en: item.action_items_en,
-        action_items_uk: item.action_items_uk,
-        impact_level: item.impact_level,
-        social_hook_en: item.social_hook_en || null,
-        social_hook_uk: item.social_hook_uk || null,
-      };
-    })
-    .filter((r): r is NonNullable<typeof r> => r !== null);
+        ...payload,
+        review_status: 'pending',
+      });
+      if (error) throw new Error(`[db] syncBriefItems insert failed: ${error.message}`);
+    }
+    count++;
+  }
 
-  if (rows.length === 0) return 0;
-  const { error: insErr } = await db.from('brief_items').insert(rows);
-  if (insErr) throw new Error(`[db] replaceBriefItems insert failed: ${insErr.message}`);
-  return rows.length;
+  for (const [slug, prev] of existingBySlug) {
+    if (targetSlugs.has(slug)) continue;
+    const { error } = await db.from('brief_items').delete().eq('id', prev.id);
+    if (error) throw new Error(`[db] syncBriefItems delete failed: ${error.message}`);
+  }
+
+  return count;
 }
+
+/** @deprecated Use syncBriefItems — kept as alias for callers outside publish. */
+export const replaceBriefItems = syncBriefItems;
 
 /** Wire brief_items.tools_mentioned → brief_item_concepts after each publish refresh. */
 export async function syncBriefItemConcepts(db: PipelineDb, briefId: string): Promise<number> {

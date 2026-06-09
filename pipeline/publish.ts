@@ -8,7 +8,7 @@
 
 import {
   getBriefByDate,
-  replaceBriefItems,
+  syncBriefItems,
   syncBriefItemConcepts,
   upsertArticles,
   upsertBriefDraft,
@@ -52,7 +52,7 @@ export async function publish(
 
   const articleIdByUrl = await upsertArticles(db, fetched);
   const briefId = await upsertBriefDraft(db, date, brief, generatedBy);
-  const itemCount = await replaceBriefItems(db, briefId, brief.items, articleIdByUrl);
+  const itemCount = await syncBriefItems(db, briefId, brief.items, articleIdByUrl);
   const conceptLinks = await syncBriefItemConcepts(db, briefId);
   logEvent('info', 'publish', 'Draft brief written', {
     brief_id: briefId,
