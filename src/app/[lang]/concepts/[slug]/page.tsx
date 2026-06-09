@@ -98,6 +98,9 @@ export default async function ConceptHubPage({ params }: { params: Promise<Param
         icon={hub.icon}
         storyCount={hub.stories.length}
       />
+      {hub.stories.length > 0 && (
+        <h2 className="mb-4 text-xl">{t.conceptLatest}</h2>
+      )}
       <PostFeed key={slug} lang={lang} items={hub.stories} showNewsletter={false} />
       <ConceptOtherChips lang={lang} concepts={hub.others} />
     </div>

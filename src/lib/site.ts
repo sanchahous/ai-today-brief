@@ -23,6 +23,19 @@ export function isLang(value: unknown): value is Lang {
 /** Editor byline — E-E-A-T + Discover consistent-author signal. */
 export const EDITOR_NAME = 'Oleksandr Kuzmenko';
 export const EDITOR_ROLE = { en: 'Editor', uk: 'Редактор' } as const;
+
+/** Editor E-E-A-T profile — about page + schema sameAs signals. */
+export const EDITOR_PROFILE = {
+  expertise: {
+    en: ['AI agents & MCP', 'developer tools', 'MLOps', 'LLM APIs'],
+    uk: ['AI-агенти й MCP', 'інструменти для розробників', 'MLOps', 'LLM API'],
+  },
+  links: [
+    { label: 'X', url: 'https://x.com/aitodaybrief' },
+    { label: 'LinkedIn', url: 'https://www.linkedin.com/company/aitodaybrief' },
+    { label: 'Telegram', url: 'https://t.me/aitodaybrief' },
+  ],
+} as const;
 /** Accent for the brand monogram mark. */
 export const MARK_COLOR = '#47E4D3';
 

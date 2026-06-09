@@ -1,7 +1,7 @@
 import { getSupabase } from '@/lib/supabase';
 import type { Lang } from '@/lib/site';
 import { categoryMeta, TOP_CATEGORY_SLUGS } from '@/lib/category-meta';
-import { getCategories } from '@/lib/categories';
+import { getCategories, getPublishedCategoryCounts } from '@/lib/categories';
 import { getConceptNameIndex } from '@/lib/concepts';
 import type { IconKey } from '@/components/icons';
 
@@ -94,7 +94,10 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
   const supabase = getSupabase();
   if (!supabase) return EMPTY;
 
-  const allCats = await getCategories(lang);
+  const [allCats, publishedCategoryCounts] = await Promise.all([
+    getCategories(lang),
+    getPublishedCategoryCounts(),
+  ]);
   const categoryCount = allCats.length;
   const catBySlug = new Map(allCats.map((c) => [c.slug, c]));
 
@@ -190,7 +193,7 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
       icon: meta.icon,
       tagline: meta.tagline[lang],
       latest: group.slice(0, 3),
-      count: group.length,
+      count: publishedCategoryCounts.get(slug) ?? group.length,
     });
   }
 
