@@ -1,18 +1,17 @@
 /**
- * Kyiv daily schedule: 6 cron slots at 06:00–08:30 (every 30 min).
+ * Kyiv schedule: 6 progóns per day, one every 4 hours (00:00, 04:00, … 20:00).
+ * Each progón has 6 retry slots every 30 min (2.5 h window). After a successful
+ * publish + Telegram notify in a progón, remaining slots in that progón skip.
  *
- * Slot 1–5: Gemini only (2 retries).
- * Slot 6  : Gemini (3 retries) then OpenRouter fallback chain.
- *
- * When running outside the Kyiv window (manual trigger, CI) the pipeline
- * resolves its own "attempt" from --attempt flag → env → failure count.
+ * Slot 1–5: lighter Gemini retries. Slot 6: full Gemini retries + OpenRouter.
  */
 
 import type { PipelineDb } from './db';
 
 export const KYIV_SCHEDULE_ATTEMPTS = 6 as const;
-const KYIV_FIRST_HOUR = 6;
-const KYIV_LAST_SLOT_MINUTES = 8 * 60 + 30; // 08:30
+export const KYIV_CYCLES_PER_DAY = 6 as const;
+export const KYIV_CYCLE_HOURS = 4;
+export const KYIV_SLOT_INTERVAL_MINUTES = 30;
 
 // ─── Time helpers ─────────────────────────────────────────────────────────────
 
@@ -39,19 +38,52 @@ export function getKyivMinutesOfDay(now: Date = new Date()): number {
   return hour * 60 + minute;
 }
 
-// ─── Slot resolution ──────────────────────────────────────────────────────────
+// ─── 4 h progón + 30 min slots ───────────────────────────────────────────────
+
+/** Progón index 0–5 (00:00, 04:00, 08:00, 12:00, 16:00, 20:00 Kyiv). */
+export function getKyivCycleIndex(now: Date = new Date()): number {
+  const minutes = getKyivMinutesOfDay(now);
+  const cycle = Math.floor(minutes / (KYIV_CYCLE_HOURS * 60));
+  return Math.min(Math.max(cycle, 0), KYIV_CYCLES_PER_DAY - 1);
+}
+
+/** Kyiv start hour for a progón (0, 4, 8, …). */
+export function kyivCycleStartHour(cycleIndex: number): number {
+  return cycleIndex * KYIV_CYCLE_HOURS;
+}
+
+/** `cycle 2, slot 3` → `09:00` Kyiv. */
+export function formatKyivSlotTime(cycleIndex: number, slot: number): string {
+  const totalMinutes = cycleIndex * KYIV_CYCLE_HOURS * 60 + (slot - 1) * KYIV_SLOT_INTERVAL_MINUTES;
+  const hour = Math.floor(totalMinutes / 60) % 24;
+  const minute = totalMinutes % 60;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+/** Human label for logging / Telegram headers. */
+export function formatKyivCycleLabel(cycleIndex: number): string {
+  const start = kyivCycleStartHour(cycleIndex);
+  const endMinutes = start * 60 + (KYIV_SCHEDULE_ATTEMPTS - 1) * KYIV_SLOT_INTERVAL_MINUTES;
+  const endH = Math.floor(endMinutes / 60) % 24;
+  const endM = endMinutes % 60;
+  const end = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}`;
+  return `${String(start).padStart(2, '0')}:00–${end}`;
+}
 
 /**
- * Scheduled slot 1–6 when run at 06:00, 06:30, … 08:30 Kyiv.
- * Returns null outside that window (manual trigger, late retry, etc.).
+ * Slot 1–6 when run on a 30 min boundary inside the current 4 h progón window.
+ * Returns null outside scheduled slot minutes (manual trigger, etc.).
  */
 export function getKyivScheduleAttemptSlot(now: Date = new Date()): number | null {
-  const total = getKyivMinutesOfDay(now);
-  const start = KYIV_FIRST_HOUR * 60;
-  if (total < start || total > KYIV_LAST_SLOT_MINUTES) return null;
-  const offset = total - start;
-  if (offset % 30 !== 0) return null;
-  const slot = offset / 30 + 1;
+  const minutes = getKyivMinutesOfDay(now);
+  const cycleIndex = getKyivCycleIndex(now);
+  const cycleStart = cycleIndex * KYIV_CYCLE_HOURS * 60;
+  const offset = minutes - cycleStart;
+  if (offset < 0 || offset > (KYIV_SCHEDULE_ATTEMPTS - 1) * KYIV_SLOT_INTERVAL_MINUTES) {
+    return null;
+  }
+  if (offset % KYIV_SLOT_INTERVAL_MINUTES !== 0) return null;
+  const slot = offset / KYIV_SLOT_INTERVAL_MINUTES + 1;
   return slot >= 1 && slot <= KYIV_SCHEDULE_ATTEMPTS ? slot : null;
 }
 
@@ -66,18 +98,18 @@ export function parseScheduleAttemptFlag(argv: string[]): number | undefined {
 }
 
 /**
- * Resolve which attempt number we're on:
+ * Resolve slot 1–6 within the current progón:
  *   1. `--attempt N` CLI flag
  *   2. `PIPELINE_SCHEDULE_ATTEMPT` env
  *   3. Kyiv-time slot (on-schedule run)
- *   4. Failure count + 1 (catch-up / manual)
+ *   4. Failure count + 1 in this progón (catch-up / manual)
  */
 export function resolveScheduleAttempt(
   options: {
     argv?: string[];
     env?: Record<string, string | undefined>;
     now?: Date;
-    summarizeFailuresToday?: number;
+    summarizeFailuresInCycle?: number;
   } = {},
 ): number {
   const argv = options.argv ?? process.argv;
@@ -96,24 +128,16 @@ export function resolveScheduleAttempt(
   const kyivSlot = getKyivScheduleAttemptSlot(now);
   if (kyivSlot !== null) return kyivSlot;
 
-  const failures = options.summarizeFailuresToday ?? 0;
+  const failures = options.summarizeFailuresInCycle ?? 0;
   return Math.min(Math.max(failures + 1, 1), KYIV_SCHEDULE_ATTEMPTS);
 }
 
 // ─── Per-slot policy ──────────────────────────────────────────────────────────
 
-/**
- * OpenRouter is only engaged on the final slot (6) — the "last chance" run.
- * Earlier slots avoid the extra latency and cost.
- */
 export function shouldUseOpenRouter(scheduleAttempt: number): boolean {
   return scheduleAttempt >= KYIV_SCHEDULE_ATTEMPTS;
 }
 
-/**
- * Lighter Gemini retry budget on early slots (less waiting before the next cron fires),
- * full budget on the final slot where we want to exhaust every avenue.
- */
 export function geminiMaxAttemptsForSlot(scheduleAttempt: number): number {
   return scheduleAttempt >= KYIV_SCHEDULE_ATTEMPTS ? 3 : 2;
 }
@@ -121,10 +145,43 @@ export function geminiMaxAttemptsForSlot(scheduleAttempt: number): number {
 // ─── DB helpers ───────────────────────────────────────────────────────────────
 
 /**
- * Count how many times today's summarize stage has already failed.
- * Used to infer the schedule attempt when running outside the Kyiv cron window.
- * Returns 0 on error (non-fatal — the attempt can still be resolved from other sources).
+ * True when this date's progón already published + notified successfully.
+ * Remaining slots in the same 4 h window should no-op.
  */
+export async function isPipelineCycleComplete(
+  db: PipelineDb,
+  date: string,
+  cycleIndex: number,
+): Promise<boolean> {
+  const { count, error } = await db
+    .from('pipeline_runs')
+    .select('id', { count: 'exact', head: true })
+    .eq('date', date)
+    .eq('stage', 'publish')
+    .eq('status', 'ok')
+    .contains('meta', { cycle: cycleIndex, cycle_notified: true });
+  if (error) throw new Error(`[schedule] cycle complete check failed: ${error.message}`);
+  return (count ?? 0) > 0;
+}
+
+/** Summarize failures in the current progón (for slot inference on manual runs). */
+export async function countSummarizeFailuresForCycle(
+  db: PipelineDb,
+  date: string,
+  cycleIndex: number,
+): Promise<number> {
+  const { count, error } = await db
+    .from('pipeline_runs')
+    .select('id', { count: 'exact', head: true })
+    .eq('date', date)
+    .eq('stage', 'summarize')
+    .eq('status', 'failed')
+    .contains('meta', { cycle: cycleIndex });
+  if (error) throw new Error(`[schedule] cycle failure count failed: ${error.message}`);
+  return count ?? 0;
+}
+
+/** @deprecated Use countSummarizeFailuresForCycle — kept for older log rows without cycle. */
 export async function countSummarizeFailuresForDate(
   db: PipelineDb,
   date: string,

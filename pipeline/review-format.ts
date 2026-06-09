@@ -73,12 +73,19 @@ export function cardDivider(position: number, total: number): string {
  * the date, and how many cards are coming — so the reviewer knows a new review
  * stream is starting (and where it ends).
  */
-export function formatBatchHeader(opts: { date: string; total: number; title?: string | null }): string {
+export function formatBatchHeader(opts: {
+  date: string;
+  total: number;
+  title?: string | null;
+  /** 4 h progón window label, e.g. "08:00–10:30". */
+  cycleLabel?: string;
+}): string {
   const lines = [
     '━━━━━━━━━━━━━━━━━',
     "📋 <b>РЕВ'Ю БРИФУ</b>",
     `📅 ${escapeHtml(opts.date)}`,
   ];
+  if (opts.cycleLabel) lines.push(`🕐 Прогін ${escapeHtml(opts.cycleLabel)} (Kyiv)`);
   if (opts.title) lines.push(`🗞 <i>${escapeHtml(opts.title)}</i>`);
   lines.push(
     `🗂 ${opts.total} ${pluralCards(opts.total)} до перегляду`,

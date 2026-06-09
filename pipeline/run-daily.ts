@@ -27,9 +27,12 @@ import {
   type PipelineRunLog,
 } from './db';
 import {
-  countSummarizeFailuresForDate,
+  countSummarizeFailuresForCycle,
+  formatKyivCycleLabel,
   geminiMaxAttemptsForSlot,
+  getKyivCycleIndex,
   getPipelineDateKyiv,
+  isPipelineCycleComplete,
   resolveScheduleAttempt,
 } from './schedule';
 import { logError, logEvent } from './log';
@@ -76,19 +79,29 @@ async function main(): Promise<void> {
   const date = getPipelineDateKyiv();
 
   const db = config.dryRun ? null : createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
+  const cycleIndex = getKyivCycleIndex();
+  const cycleLabel = formatKyivCycleLabel(cycleIndex);
+
+  if (db && !config.dryRun && (await isPipelineCycleComplete(db, date, cycleIndex).catch(() => false))) {
+    logEvent('info', 'fetch', 'Progón already completed — skipping remaining slots', {
+      date,
+      cycle: cycleIndex,
+      cycle_label: cycleLabel,
+    });
+    return;
+  }
 
   // ── Schedule awareness ────────────────────────────────────────────────────────
-  // Determine which attempt we're on so early slots stay lightweight (Gemini only,
-  // fewer retries) and the final slot exhausts every fallback (OpenRouter chain).
-  const failuresToday = db
-    ? await countSummarizeFailuresForDate(db, date).catch(() => 0)
+  const failuresInCycle = db
+    ? await countSummarizeFailuresForCycle(db, date, cycleIndex).catch(() => 0)
     : 0;
   const scheduleAttempt = resolveScheduleAttempt({
     argv: process.argv,
     env: process.env as Record<string, string | undefined>,
     now: new Date(),
-    summarizeFailuresToday: failuresToday,
+    summarizeFailuresInCycle: failuresInCycle,
   });
+  const runMeta = { cycle: cycleIndex, schedule_attempt: scheduleAttempt };
   // OpenRouter is only called after Gemini exhausts retries; enable whenever the key
   // is set so early cron slots don't hard-fail on transient 503s from gemini-3.5-flash.
   const openRouterKey = config.openRouterApiKey;
@@ -98,6 +111,8 @@ async function main(): Promise<void> {
     date,
     dry_run: config.dryRun,
     gemini_models: 'catalog',
+    cycle: cycleIndex,
+    cycle_label: cycleLabel,
     schedule_attempt: scheduleAttempt,
     gemini_attempts: geminiAttempts,
     openrouter_enabled: Boolean(openRouterKey),
@@ -111,7 +126,7 @@ async function main(): Promise<void> {
     stage: 'fetch',
     status: fetched.length > 0 ? 'ok' : 'skipped',
     durationMs: Date.now() - t,
-    meta: { count: fetched.length },
+    meta: { ...runMeta, count: fetched.length },
   });
   if (fetched.length === 0) {
     logEvent('warn', 'fetch', 'No fresh articles — nothing to do');
@@ -131,7 +146,7 @@ async function main(): Promise<void> {
     stage: 'rank',
     status: pool.length > 0 ? 'ok' : 'skipped',
     durationMs: Date.now() - t,
-    meta: { clusters: ranking.clusters, ranked: ranking.ranked.length, pool: pool.length },
+    meta: { ...runMeta, clusters: ranking.clusters, ranked: ranking.ranked.length, pool: pool.length },
   });
   logEvent('info', 'rank', 'Pool built', {
     fetched: fetched.length,
@@ -184,7 +199,7 @@ async function main(): Promise<void> {
       stage: 'dedup',
       status: 'ok',
       durationMs: Date.now() - t,
-      meta: { pool_in: pool.length, pool_out: dedupedPool.length, dropped },
+      meta: { ...runMeta, pool_in: pool.length, pool_out: dedupedPool.length, dropped },
     });
     logEvent('info', 'dedup', 'Semantic dedup complete', {
       pool_in: pool.length,
@@ -215,7 +230,7 @@ async function main(): Promise<void> {
     stage: 'summarize',
     status: brief.items.length > 0 ? 'ok' : 'skipped',
     durationMs: Date.now() - t,
-    meta: { selected: brief.items.length, pool: pool.length, model: providerModel },
+    meta: { ...runMeta, selected: brief.items.length, pool: pool.length, model: providerModel },
   });
   if (brief.items.length === 0) {
     logEvent('info', 'summarize', 'Editor kept nothing — skipping');
@@ -235,7 +250,12 @@ async function main(): Promise<void> {
     stage: 'publish',
     status: result.skipped || result.itemCount === 0 ? 'skipped' : 'ok',
     durationMs: Date.now() - t,
-    meta: { brief_id: result.briefId, items: result.itemCount, skipped: result.skipped ?? false },
+    meta: {
+      ...runMeta,
+      brief_id: result.briefId,
+      items: result.itemCount,
+      skipped: result.skipped ?? false,
+    },
   });
   logEvent('info', 'publish', 'Daily pipeline complete', {
     date,
@@ -262,8 +282,19 @@ async function main(): Promise<void> {
 
   // ── Notify for review (optional) ─────────────────────────────────────────────
   // Push each pending item to the private Telegram chat with ✅/❌ buttons.
-  if (!result.skipped && config.telegramBotToken && config.telegramReviewChatId) {
-    await notifyReview(db, config.telegramBotToken, config.telegramReviewChatId, result.briefId);
+  if (!result.skipped) {
+    if (config.telegramBotToken && config.telegramReviewChatId) {
+      await notifyReview(db, config.telegramBotToken, config.telegramReviewChatId, result.briefId, {
+        cycleLabel,
+      });
+    }
+    await logStage(db, config.dryRun, {
+      date,
+      stage: 'publish',
+      status: 'ok',
+      durationMs: 0,
+      meta: { ...runMeta, cycle_notified: true, brief_id: result.briefId },
+    });
   }
 }
 

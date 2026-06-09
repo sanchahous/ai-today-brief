@@ -22,8 +22,12 @@ module-level mutable state:
 ```
 
 The store is the single source of truth. A brief is written as **`draft`**; a
-human flips `briefs.status → published` (the editorial gate). The pipeline holds
-the Supabase **service_role** key and is **never imported under `src/`**.
+human flips `briefs.status → published` (the editorial gate). The pipeline runs
+**6 progóns per day** (every 4 h Kyiv: 00:00, 04:00, … 20:00). Each progón has
+**6 retry slots** (every 30 min). After a successful publish + Telegram notify,
+remaining slots in that progón skip. Interactive ✅/❌ cards go only to items
+without `review_msg_id`. Draft items **sync by slug** across re-runs. The pipeline
+holds the Supabase **service_role** key and is **never imported under `src/`**.
 
 ---
 
@@ -152,7 +156,7 @@ retry with backoff, fatal errors throw.
 Skipped entirely in `--dry-run` (which prints the assembled brief instead).
 1. **`upsertArticles`** — upsert every fetched article as the raw audit trail (`onConflict: url`), return a `url → id` map for FK wiring.
 2. **`upsertBriefDraft`** — `resolveBriefSlug` makes the brief slug globally unique (suffixes `-<date>` on collision), then upsert on the unique `date` with `status: 'draft'`, `generated_by: pipeline:<model>`.
-3. **`replaceBriefItems`** — delete all `brief_items` for this brief, then insert the kept items with `rank` 1..N (items whose lead URL isn't in the article map are skipped). Wholesale replace ⇒ re-runs never duplicate.
+3. **`syncBriefItems`** — upsert `brief_items` by `slug` (preserves `review_status` / `review_msg_id` across re-runs), reorder ranks safely, drop slugs removed from the draft.
 4. **`pipeline_runs`** — each stage logs `{date, stage, status, duration_ms, meta}` (best-effort; a logging failure is non-fatal).
 
 ### 6. Editorial gate (out of this pipeline)
