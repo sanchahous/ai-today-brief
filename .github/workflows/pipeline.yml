@@ -3,7 +3,8 @@ name: Daily Pipeline
 on:
   schedule:
     # Europe/Kyiv (EEST = UTC+3). Six 4 h progóns/day; each progón has 6 slots every 30 min.
-    # After a successful publish + Telegram notify, remaining slots in that progón skip.
+    # After new items are inserted + Telegram notify, remaining slots in that progón skip.
+    # GitHub "success" on skipped publish (no new items) does NOT stop the progón — see pipeline/README.
     # Progón 1 — 00:00–02:30 Kyiv
     - cron: '0 21 * * *'   # slot 1 — 00:00 Kyiv
     - cron: '30 21 * * *'  # slot 2 — 00:30 Kyiv

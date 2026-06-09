@@ -82,8 +82,9 @@ async function main(): Promise<void> {
   const cycleIndex = getKyivCycleIndex();
   const cycleLabel = formatKyivCycleLabel(cycleIndex);
 
+  // Skip remaining 30-min slots in this progón after we already pushed new items to Telegram.
   if (db && !config.dryRun && (await isPipelineCycleComplete(db, date, cycleIndex).catch(() => false))) {
-    logEvent('info', 'fetch', 'Progón already completed — skipping remaining slots', {
+    logEvent('info', 'fetch', 'Progón already delivered — skipping remaining slots', {
       date,
       cycle: cycleIndex,
       cycle_label: cycleLabel,
@@ -248,27 +249,29 @@ async function main(): Promise<void> {
   await logStage(db, config.dryRun, {
     date,
     stage: 'publish',
-    status: result.skipped || result.itemCount === 0 ? 'skipped' : 'ok',
+    status: result.itemCount === 0 ? 'skipped' : 'ok',
     durationMs: Date.now() - t,
     meta: {
       ...runMeta,
       brief_id: result.briefId,
       items: result.itemCount,
-      skipped: result.skipped ?? false,
+      inserted: result.insertedCount,
+      brief_published: result.briefWasPublished,
     },
   });
   logEvent('info', 'publish', 'Daily pipeline complete', {
     date,
     brief_id: result.briefId,
     items: result.itemCount,
-    status: result.skipped ? 'left_published' : 'draft',
+    inserted: result.insertedCount,
+    status: result.briefWasPublished ? 'published_append' : 'draft',
   });
 
   // ── Store embeddings for future dedup ────────────────────────────────────────
   // Embed the published items' English titles and upsert into brief_item_embeddings
   // so tomorrow's pipeline can do semantic cross-day dedup against them.
   // Best-effort: a failure here does not abort the run — the brief is already written.
-  if (!result.skipped && embed) {
+  if (result.itemCount > 0 && embed) {
     try {
       const stored = await storeItemEmbeddings(db, result.briefId, embed);
       logEvent('info', 'publish', 'Brief item embeddings stored', {
@@ -282,12 +285,10 @@ async function main(): Promise<void> {
 
   // ── Notify for review (optional) ─────────────────────────────────────────────
   // Push each pending item to the private Telegram chat with ✅/❌ buttons.
-  if (!result.skipped) {
-    if (config.telegramBotToken && config.telegramReviewChatId) {
-      await notifyReview(db, config.telegramBotToken, config.telegramReviewChatId, result.briefId, {
-        cycleLabel,
-      });
-    }
+  if (result.insertedCount > 0 && config.telegramBotToken && config.telegramReviewChatId) {
+    await notifyReview(db, config.telegramBotToken, config.telegramReviewChatId, result.briefId, {
+      cycleLabel,
+    });
     await logStage(db, config.dryRun, {
       date,
       stage: 'publish',

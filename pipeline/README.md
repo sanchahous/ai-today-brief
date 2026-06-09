@@ -155,8 +155,8 @@ retry with backoff, fatal errors throw.
 ### 5. Publish — `publish.ts` + `db.ts` (idempotent)
 Skipped entirely in `--dry-run` (which prints the assembled brief instead).
 1. **`upsertArticles`** — upsert every fetched article as the raw audit trail (`onConflict: url`), return a `url → id` map for FK wiring.
-2. **`upsertBriefDraft`** — `resolveBriefSlug` makes the brief slug globally unique (suffixes `-<date>` on collision), then upsert on the unique `date` with `status: 'draft'`, `generated_by: pipeline:<model>`.
-3. **`syncBriefItems`** — upsert `brief_items` by `slug` (preserves `review_status` / `review_msg_id` across re-runs), reorder ranks safely, drop slugs removed from the draft.
+2. **`upsertBriefForDate`** — upsert on unique `date`; keeps `published` status on re-runs (does not demote to draft).
+3. **`syncBriefItems`** — draft briefs: full slug sync (reorder + drop removed slugs). Published briefs: append-only (new slugs as `pending`; never delete/overwrite approved or rejected rows).
 4. **`pipeline_runs`** — each stage logs `{date, stage, status, duration_ms, meta}` (best-effort; a logging failure is non-fatal).
 
 ### 6. Editorial gate (out of this pipeline)
@@ -193,7 +193,7 @@ JSON). Re-running for the same date refreshes the draft.
 
 Honest list of where this is thin — good places to pressure-test:
 
-1. ~~**Publish clobbers any same-date brief.**~~ **Fixed** — `publish()` now calls `getBriefByDate` and refuses to overwrite a brief that is already `published` for the same date (`isPublishedConflict`), returning `{ skipped: true }`. A still-`draft` brief is still refreshed (the idempotent-refresh case). *Residual:* a human editing the **draft's** items will still be overwritten by a same-day re-run — only `published` is protected.
+1. **Published briefs append new items** — `publish()` keeps `published` status and runs `syncBriefItems` in append-only mode (new slugs → `pending` for Telegram review; approved/rejected rows untouched). Draft briefs still get a full slug sync.
 2. ~~**Cross-day dedup is title-only.**~~ **Fixed** — step 3.5 embeds every pool candidate with `gemini-embedding-001` (768 dims) and drops any candidate whose cosine distance to a previously-published `brief_item_embeddings` row is ≤ `MAX_EMBED_DISTANCE` (default 0.20). The same event re-worded across days now lands close in vector space and is removed before the LLM call. *Residual:* the store is empty until at least one brief has been published; dedup strengthens over the first few days of use.
 3. ~~**No cross-run signal accumulation.**~~ **Partially fixed** — after each successful publish, `storeItemEmbeddings` persists the published items' embeddings in `brief_item_embeddings`. Future runs check against them, so a story that keeps resurfacing stays blocked. Mention-count aggregation across days (the full testbed behaviour) is still per-run only.
 4. **Engagement signal is HN+Reddit only.** InBrief and RSS items have `velocity = 0`; a high-importance first-party post (e.g. an Anthropic blog) leans entirely on authority + recency + inbrief and can underrank against a noisy HN thread.
