@@ -62,12 +62,15 @@ export type Database = {
       };
       brief_items: {
         Row: {
+          action_items_en: Json | null;
+          action_items_uk: Json | null;
           article_id: string;
           brief_id: string;
           category_slug: string | null;
           deep_dive_en: string | null;
           deep_dive_uk: string | null;
           id: string;
+          impact_level: string | null;
           rank: number;
           review_comment: string | null;
           review_msg_id: number | null;
@@ -93,12 +96,15 @@ export type Database = {
           youtube_url: string | null;
         };
         Insert: {
+          action_items_en?: Json | null;
+          action_items_uk?: Json | null;
           article_id: string;
           brief_id: string;
           category_slug?: string | null;
           deep_dive_en?: string | null;
           deep_dive_uk?: string | null;
           id?: string;
+          impact_level?: string | null;
           rank: number;
           review_comment?: string | null;
           review_msg_id?: number | null;
@@ -124,12 +130,15 @@ export type Database = {
           youtube_url?: string | null;
         };
         Update: {
+          action_items_en?: Json | null;
+          action_items_uk?: Json | null;
           article_id?: string;
           brief_id?: string;
           category_slug?: string | null;
           deep_dive_en?: string | null;
           deep_dive_uk?: string | null;
           id?: string;
+          impact_level?: string | null;
           rank?: number;
           review_comment?: string | null;
           review_msg_id?: number | null;
@@ -256,10 +265,14 @@ export type Database = {
       concepts: {
         Row: {
           aliases: string[] | null;
+          body_en: string | null;
+          body_uk: string | null;
           category: string | null;
           created_at: string;
           description_en: string | null;
           description_uk: string | null;
+          faq_en: Json | null;
+          faq_uk: Json | null;
           name_en: string;
           name_uk: string;
           official_url: string | null;
@@ -268,10 +281,14 @@ export type Database = {
         };
         Insert: {
           aliases?: string[] | null;
+          body_en?: string | null;
+          body_uk?: string | null;
           category?: string | null;
           created_at?: string;
           description_en?: string | null;
           description_uk?: string | null;
+          faq_en?: Json | null;
+          faq_uk?: Json | null;
           name_en: string;
           name_uk: string;
           official_url?: string | null;
@@ -280,10 +297,14 @@ export type Database = {
         };
         Update: {
           aliases?: string[] | null;
+          body_en?: string | null;
+          body_uk?: string | null;
           category?: string | null;
           created_at?: string;
           description_en?: string | null;
           description_uk?: string | null;
+          faq_en?: Json | null;
+          faq_uk?: Json | null;
           name_en?: string;
           name_uk?: string;
           official_url?: string | null;
@@ -774,6 +795,30 @@ export type Database = {
       };
       show_limit: { Args: Record<PropertyKey, never>; Returns: number };
       show_trgm: { Args: { '': string }; Returns: string[] };
+      get_concept_items: {
+        Args: {
+          p_concept_slug: string;
+          p_lang?: string;
+          p_limit?: number;
+        };
+        Returns: {
+          id: string;
+          rank: number;
+          slug: string;
+          category_slug: string;
+          title_en: string;
+          title_uk: string;
+          summary_en: string;
+          summary_uk: string;
+          why_en: string;
+          why_uk: string;
+          has_video: boolean;
+          tools_mentioned: Json;
+          brief_slug: string;
+          brief_date: string;
+          source_name: string;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;

@@ -5,6 +5,7 @@ import { getStrings } from '@/lib/i18n';
 import { getConceptHub, getConceptPaths } from '@/lib/concepts';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { ConceptHeader } from '@/components/concept-header';
+import { ConceptHubBody } from '@/components/concept-hub-body';
 import { ConceptOtherChips } from '@/components/concept-other-chips';
 import { PostFeed } from '@/components/post-feed';
 
@@ -98,6 +99,10 @@ export default async function ConceptHubPage({ params }: { params: Promise<Param
         icon={hub.icon}
         storyCount={hub.stories.length}
       />
+      <ConceptHubBody lang={lang} body={hub.concept.body} faq={hub.concept.faq} />
+      {hub.stories.length > 0 && (
+        <h2 className="mb-4 text-xl">{t.conceptLatest}</h2>
+      )}
       <PostFeed key={slug} lang={lang} items={hub.stories} showNewsletter={false} />
       <ConceptOtherChips lang={lang} concepts={hub.others} />
     </div>

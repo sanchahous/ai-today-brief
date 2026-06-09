@@ -15,6 +15,8 @@ function toStringArray(value: unknown): string[] {
   return value.filter((x): x is string => typeof x === 'string' && x.trim().length > 0);
 }
 
+export type ItemImpactLevel = 'low' | 'medium' | 'high';
+
 export interface BriefItemDetail {
   id: string;
   rank: number;
@@ -30,12 +32,19 @@ export interface BriefItemDetail {
   why: string;
   deepDive: string;
   takeaways: string[];
+  actionItems: string[];
+  impactLevel: ItemImpactLevel | null;
   tools: string[];
   hasVideo: boolean;
   readMinutes: number;
   publishedAt: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
+}
+
+function parseImpactLevel(value: string | null): ItemImpactLevel | null {
+  if (value === 'low' || value === 'medium' || value === 'high') return value;
+  return null;
 }
 
 export interface RelatedStory {
@@ -92,7 +101,7 @@ export async function getBriefItem(
   const { data: it, error: itemError } = await supabase
     .from('brief_items')
     .select(
-      'id, slug, rank, article_id, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, deep_dive_en, deep_dive_uk, takeaways_en, takeaways_uk, tools_mentioned, youtube_url',
+      'id, slug, rank, article_id, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, deep_dive_en, deep_dive_uk, takeaways_en, takeaways_uk, action_items_en, action_items_uk, impact_level, tools_mentioned, youtube_url',
     )
     .eq('brief_id', brief.id)
     .eq('slug', itemSlug)
@@ -127,6 +136,8 @@ export async function getBriefItem(
     why: why || summary,
     deepDive,
     takeaways: toStringArray(lang === 'uk' ? it.takeaways_uk : it.takeaways_en),
+    actionItems: toStringArray(lang === 'uk' ? it.action_items_uk : it.action_items_en),
+    impactLevel: parseImpactLevel(it.impact_level),
     tools: toToolNames(it.tools_mentioned),
     hasVideo: Boolean(it.youtube_url),
     readMinutes: Math.max(

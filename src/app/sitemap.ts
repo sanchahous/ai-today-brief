@@ -8,6 +8,7 @@ export const revalidate = 3600;
 
 const TRUST_PATHS = [
   'about',
+  'editorial-policy',
   'subscribe',
   'advertise',
   'ai-disclosure',

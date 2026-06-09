@@ -14,6 +14,12 @@ import type { FetchedArticle } from './sources/http';
 import type { DraftBrief, DraftItem } from './summarize';
 import type { PipelineStage } from './log';
 import type { ReviewItem } from './review-format';
+import {
+  buildConceptNameIndex,
+  resolveConceptSlugs,
+  toolNamesFromJsonb,
+  type ConceptRow,
+} from './concept-link';
 
 export type PipelineDb = SupabaseClient<Database>;
 
@@ -121,6 +127,9 @@ type BriefItemContentRow = {
   takeaways_en: string[];
   takeaways_uk: string[];
   tools_mentioned: string[];
+  action_items_en: string[];
+  action_items_uk: string[];
+  impact_level: DraftItem['impact_level'];
   social_hook_en: string | null;
   social_hook_uk: string | null;
 };
@@ -147,6 +156,9 @@ export function draftItemToRow(
     takeaways_en: item.takeaways_en,
     takeaways_uk: item.takeaways_uk,
     tools_mentioned: item.tools_mentioned,
+    action_items_en: item.action_items_en,
+    action_items_uk: item.action_items_uk,
+    impact_level: item.impact_level,
     social_hook_en: item.social_hook_en || null,
     social_hook_uk: item.social_hook_uk || null,
   };
@@ -219,6 +231,41 @@ export async function syncBriefItems(
 
 /** @deprecated Use syncBriefItems — kept as alias for callers outside publish. */
 export const replaceBriefItems = syncBriefItems;
+
+/** Wire brief_items.tools_mentioned → brief_item_concepts after each publish refresh. */
+export async function syncBriefItemConcepts(db: PipelineDb, briefId: string): Promise<number> {
+  const { data: concepts, error: cErr } = await db
+    .from('concepts')
+    .select('slug, name_en, name_uk, aliases');
+  if (cErr) throw new Error(`[db] syncBriefItemConcepts concepts failed: ${cErr.message}`);
+
+  const index = buildConceptNameIndex((concepts ?? []) as ConceptRow[]);
+
+  const { data: items, error: iErr } = await db
+    .from('brief_items')
+    .select('id, tools_mentioned')
+    .eq('brief_id', briefId);
+  if (iErr) throw new Error(`[db] syncBriefItemConcepts items failed: ${iErr.message}`);
+
+  const links: { item_id: string; concept_slug: string }[] = [];
+  for (const item of items ?? []) {
+    const tools = toolNamesFromJsonb(item.tools_mentioned);
+    for (const slug of resolveConceptSlugs(tools, index)) {
+      links.push({ item_id: item.id, concept_slug: slug });
+    }
+  }
+  if (links.length === 0) return 0;
+
+  // `brief_item_concepts` not yet in generated Database type.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: upsertErr } = await (db as any)
+    .from('brief_item_concepts')
+    .upsert(links, { onConflict: 'item_id,concept_slug' });
+  if (upsertErr) {
+    throw new Error(`[db] syncBriefItemConcepts upsert failed: ${upsertErr.message}`);
+  }
+  return links.length;
+}
 
 /** Recent published item titles (English) — the editor's cross-day dedup context. */
 export async function recentPublishedTitles(db: PipelineDb, limit: number): Promise<string[]> {

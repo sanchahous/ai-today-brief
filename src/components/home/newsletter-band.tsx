@@ -37,7 +37,17 @@ export function NewsletterBand({
             <>
               <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">{t.subEyebrow}</p>
               <h2 id="newsletter-title" className="mt-2 text-2xl sm:text-3xl">{t.subTitle}</h2>
-              <p className="text-muted mt-2 mb-5 max-w-xl text-sm leading-relaxed">{t.subBody}</p>
+              <p className="text-muted mt-2 max-w-xl text-sm leading-relaxed">{t.subBody}</p>
+              <ul className="text-muted mt-4 mb-5 flex flex-wrap gap-x-4 gap-y-2 text-xs sm:text-sm">
+                {t.subProofItems.map((item) => (
+                  <li key={item} className="flex items-center gap-1.5">
+                    <span aria-hidden className="text-accent">
+                      ✓
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
             </>
           ) : null}
           <NewsletterForm
