@@ -70,7 +70,9 @@ tunables. `date` = today in UTC (`YYYY-MM-DD`) — this is the brief's unique ke
 
 Required env (first non-empty wins): `SCRAPPER_BASE_URL` ▸ `NEXT_PUBLIC_SUPABASE_URL` ▸ `SUPABASE_URL`;
 `SCRAPPER_SERVICE_KEY` ▸ `SUPABASE_SERVICE_ROLE_KEY` ▸ `SUPABASE_SERVICE_KEY`; `GEMINI_API_KEY`.
-Optional: `GEMINI_MODEL` (default `gemini-2.5-flash`), `GEMINI_MODEL_FALLBACK`.
+Optional: `GEMINI_MODEL` (pin first in queue), `GEMINI_MODEL_PRIORITY` (comma substrings),
+`GEMINI_MAX_MODEL_ATTEMPTS` (default 5). Summarize model order is fetched live from the
+Gemini `models.list` API (newest flash/pro first); OpenRouter chain is the last resort.
 
 ### 1. Fetch — `fetch.ts` + `sources/**`
 Pulls candidates concurrently (`Promise.allSettled`, so one dead source never

@@ -13,7 +13,7 @@ import { loadPipelineConfig } from './config';
 import { collectArticles, toCandidate } from './fetch';
 import { rankCandidates } from './rank';
 import { selectPool } from './select';
-import { summarize, resolveGeminiModel, type DraftBrief } from './summarize';
+import { summarize, type DraftBrief } from './summarize';
 import { publish } from './publish';
 import { notifyReview } from './notify';
 import { createEmbedder, type EmbedFn } from './embeddings';
@@ -31,7 +31,6 @@ import {
   geminiMaxAttemptsForSlot,
   getPipelineDateKyiv,
   resolveScheduleAttempt,
-  shouldUseOpenRouter,
 } from './schedule';
 import { logError, logEvent } from './log';
 
@@ -90,13 +89,15 @@ async function main(): Promise<void> {
     now: new Date(),
     summarizeFailuresToday: failuresToday,
   });
-  const openRouterKey = shouldUseOpenRouter(scheduleAttempt) ? config.openRouterApiKey : undefined;
+  // OpenRouter is only called after Gemini exhausts retries; enable whenever the key
+  // is set so early cron slots don't hard-fail on transient 503s from gemini-3.5-flash.
+  const openRouterKey = config.openRouterApiKey;
   const geminiAttempts = geminiMaxAttemptsForSlot(scheduleAttempt);
 
   logEvent('info', 'fetch', 'Daily pipeline started', {
     date,
     dry_run: config.dryRun,
-    model: resolveGeminiModel(),
+    gemini_models: 'catalog',
     schedule_attempt: scheduleAttempt,
     gemini_attempts: geminiAttempts,
     openrouter_enabled: Boolean(openRouterKey),
@@ -200,13 +201,21 @@ async function main(): Promise<void> {
   // ── Summarize ────────────────────────────────────────────────────────────────
   t = Date.now();
   const recent = db ? await recentPublishedTitles(db, config.recentTitles).catch(() => []) : [];
-  const brief = await summarize(dedupedPool, recent, config.maxItems, config.geminiApiKey, openRouterKey, geminiAttempts);
+  const summarized = await summarize(
+    dedupedPool,
+    recent,
+    config.maxItems,
+    config.geminiApiKey,
+    openRouterKey,
+    geminiAttempts,
+  );
+  const { brief, providerModel } = summarized;
   await logStage(db, config.dryRun, {
     date,
     stage: 'summarize',
     status: brief.items.length > 0 ? 'ok' : 'skipped',
     durationMs: Date.now() - t,
-    meta: { selected: brief.items.length, pool: pool.length },
+    meta: { selected: brief.items.length, pool: pool.length, model: providerModel },
   });
   if (brief.items.length === 0) {
     logEvent('info', 'summarize', 'Editor kept nothing — skipping');
@@ -220,7 +229,7 @@ async function main(): Promise<void> {
   }
 
   t = Date.now();
-  const result = await publish(db, date, fetched, brief, `pipeline:${resolveGeminiModel()}`);
+  const result = await publish(db, date, fetched, brief, `pipeline:${providerModel}`);
   await logStage(db, config.dryRun, {
     date,
     stage: 'publish',
