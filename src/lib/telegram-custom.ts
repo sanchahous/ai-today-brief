@@ -35,3 +35,30 @@ export function parseCustomCommand(text: string): ParsedCustomCommand | null {
 
   return { topic: body };
 }
+
+/** User-facing hint for Telegram when custom-news fails at config/runtime. */
+export function formatCustomNewsError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+
+  if (raw.includes('GEMINI_API_KEY')) {
+    return [
+      'На Vercel не задано <code>GEMINI_API_KEY</code>.',
+      '',
+      'Vercel → Project → Settings → Environment Variables:',
+      '• <code>GEMINI_API_KEY</code> (той самий, що в GitHub Secrets для pipeline)',
+      '• Production (+ Preview за бажанням)',
+      '',
+      'Після збереження — Redeploy, потім повтори <code>/custom</code>.',
+    ].join('\n');
+  }
+
+  if (raw.includes('SCRAPPER_BASE_URL') || raw.includes('SCRAPPER_SERVICE_KEY')) {
+    return [
+      'На Vercel не вистачає Supabase service env.',
+      'Потрібно: <code>SUPABASE_SERVICE_ROLE_KEY</code> + <code>NEXT_PUBLIC_SUPABASE_URL</code>',
+      '(або <code>SCRAPPER_*</code> як у pipeline).',
+    ].join('\n');
+  }
+
+  return raw.length > 400 ? `${raw.slice(0, 400)}…` : raw;
+}
