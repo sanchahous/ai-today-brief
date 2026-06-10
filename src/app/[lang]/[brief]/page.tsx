@@ -3,10 +3,10 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
-import { getBriefBySlug, getBriefPaths } from '@/lib/briefs';
+import { getDailyBriefBySlug, getBriefPaths } from '@/lib/briefs';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { AiDisclosureNote } from '@/components/ai-disclosure-note';
-import { BriefItemsList } from '@/components/brief-items-list';
+import { BriefDailySections } from '@/components/brief-daily-sections';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 import { ArrowRight } from '@/components/icons';
 
@@ -21,18 +21,18 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { lang, brief } = await params;
   if (!isLang(lang)) return {};
-  const b = await getBriefBySlug(brief, lang);
+  const b = await getDailyBriefBySlug(brief, lang);
   if (!b) return {};
-  const path = `/${lang}/${brief}`;
+  const path = `/${lang}/${b.canonicalSlug}`;
   return {
     title: b.title || b.date,
     description: b.intro ?? undefined,
     alternates: {
       canonical: `${SITE_URL}${path}`,
       languages: {
-        en: `${SITE_URL}/en/${brief}`,
-        uk: `${SITE_URL}/uk/${brief}`,
-        'x-default': `${SITE_URL}/en/${brief}`,
+        en: `${SITE_URL}/en/${b.canonicalSlug}`,
+        uk: `${SITE_URL}/uk/${b.canonicalSlug}`,
+        'x-default': `${SITE_URL}/en/${b.canonicalSlug}`,
       },
     },
   };
@@ -53,8 +53,8 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
   if (!isLang(raw)) notFound();
   const lang: Lang = raw;
 
-  const b = await getBriefBySlug(slug, lang);
-  if (!b?.slug) notFound();
+  const b = await getDailyBriefBySlug(slug, lang);
+  if (!b?.canonicalSlug) notFound();
   const t = getStrings(lang);
   const dateStr = dateLabel(b.date, lang);
 
@@ -71,19 +71,22 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
         '@type': 'CollectionPage',
         name: b.title || dateStr,
         description: b.intro ?? undefined,
-        url: `${SITE_URL}/${lang}/${b.slug}`,
+        url: `${SITE_URL}/${lang}/${b.canonicalSlug}`,
         datePublished: b.date,
         inLanguage: lang,
         isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: SITE_URL },
         mainEntity: {
           '@type': 'ItemList',
-          numberOfItems: b.items.length,
-          itemListElement: b.items.map((it, i) => ({
-            '@type': 'ListItem',
-            position: i + 1,
-            name: it.title,
-            ...(it.slug ? { url: `${SITE_URL}/${lang}/${b.slug}/${it.slug}` } : {}),
-          })),
+          numberOfItems: b.allItems.length,
+          itemListElement: b.allItems.map((it, i) => {
+            const pack = b.packs.find((p) => p.items.some((item) => item.id === it.id));
+            return {
+              '@type': 'ListItem',
+              position: i + 1,
+              name: it.title,
+              ...(it.slug && pack ? { url: `${SITE_URL}/${lang}/${pack.slug}/${it.slug}` } : {}),
+            };
+          }),
         },
       },
       breadcrumbJsonLd(crumbs, SITE_URL),
@@ -110,7 +113,7 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
         <AiDisclosureNote lang={lang} />
       </header>
 
-      <BriefItemsList lang={lang} brief={b} />
+      <BriefDailySections lang={lang} packs={b.packs} totalItems={b.allItems.length} />
 
       <div className="mt-8 max-w-[760px]">
         <Link

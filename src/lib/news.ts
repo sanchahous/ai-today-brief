@@ -134,10 +134,11 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
 
   const { data: briefs } = await supabase
     .from('briefs')
-    .select('id, slug, date')
+    .select('id, slug, date, edition')
     .eq('status', 'published')
     .order('date', { ascending: false })
-    .limit(24);
+    .order('edition', { ascending: true })
+    .limit(72);
   const briefList = briefs ?? [];
   if (briefList.length === 0) {
     return {
@@ -167,6 +168,7 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
     id: string;
     slug: string | null;
     rank: number;
+    edition: number;
     date: string;
     briefSlug: string | null;
     titleEn: string | null;
@@ -189,6 +191,7 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
       id: it.id,
       slug: it.slug,
       rank: it.rank,
+      edition: brief.edition,
       date: brief.date,
       briefSlug: brief.slug,
       titleEn: it.title_en,
@@ -204,7 +207,11 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
     });
   }
 
-  staged.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.rank - b.rank));
+  staged.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    if (a.edition !== b.edition) return a.edition - b.edition;
+    return a.rank - b.rank;
+  });
 
   const sources = new Map<string, string | null>();
   if (articleIds.size > 0) {

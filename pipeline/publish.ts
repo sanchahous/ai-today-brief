@@ -1,15 +1,13 @@
 /**
- * Stage 4 — Publish. Upserts articles, the day's brief, and syncs brief_items.
- * Published briefs stay published; new items append as `pending` for review.
- * Draft briefs get a full slug sync (reorder + drop removed slugs).
+ * Stage 4 — Publish. Upserts articles, resolves the day's brief pack, syncs items.
+ * Each published pack is a separate brief row; the site aggregates packs by date.
  */
 
 import {
-  getBriefByDate,
+  resolveBriefForPipeline,
   syncBriefItems,
   syncBriefItemConcepts,
   upsertArticles,
-  upsertBriefForDate,
   type PipelineDb,
 } from './db';
 import type { FetchedArticle } from './sources/http';
@@ -18,9 +16,10 @@ import { logEvent } from './log';
 
 export interface PublishResult {
   briefId: string;
+  edition: number;
   itemCount: number;
   insertedCount: number;
-  briefWasPublished: boolean;
+  isNewPack: boolean;
 }
 
 export async function publish(
@@ -30,27 +29,29 @@ export async function publish(
   brief: DraftBrief,
   generatedBy: string,
 ): Promise<PublishResult> {
-  const existing = await getBriefByDate(db, date);
-  const appendOnly = existing?.status === 'published';
-
   const articleIdByUrl = await upsertArticles(db, fetched);
-  const briefId = await upsertBriefForDate(db, date, brief, generatedBy, existing?.status);
-  const { synced, inserted } = await syncBriefItems(db, briefId, brief.items, articleIdByUrl, {
-    appendOnly,
-  });
-  const conceptLinks = await syncBriefItemConcepts(db, briefId);
-  logEvent('info', 'publish', appendOnly ? 'Published brief appended' : 'Draft brief written', {
-    brief_id: briefId,
+  const resolved = await resolveBriefForPipeline(db, date, brief, generatedBy);
+  const { synced, inserted } = await syncBriefItems(
+    db,
+    resolved.id,
+    brief.items,
+    articleIdByUrl,
+  );
+  const conceptLinks = await syncBriefItemConcepts(db, resolved.id);
+  logEvent('info', 'publish', resolved.isNewPack ? 'New brief pack written' : 'Draft pack refreshed', {
+    brief_id: resolved.id,
     date,
+    edition: resolved.edition,
     synced,
     inserted,
     concept_links: conceptLinks,
-    status: appendOnly ? 'published' : 'draft',
+    status: 'draft',
   });
   return {
-    briefId,
+    briefId: resolved.id,
+    edition: resolved.edition,
     itemCount: synced,
     insertedCount: inserted,
-    briefWasPublished: appendOnly,
+    isNewPack: resolved.isNewPack,
   };
 }

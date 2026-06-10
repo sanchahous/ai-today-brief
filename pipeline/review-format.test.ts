@@ -123,6 +123,11 @@ describe('formatBatchHeader', () => {
     const h = formatBatchHeader({ date: '2026-06-09', total: 3, cycleLabel: '08:00–10:30' });
     expect(h).toContain('Прогін 08:00–10:30');
   });
+
+  it('shows the pack number for edition 2+', () => {
+    const h = formatBatchHeader({ date: '2026-06-09', total: 2, edition: 2 });
+    expect(h).toContain('Пак <b>2</b>');
+  });
 });
 
 describe('decoratedAfterDecision', () => {

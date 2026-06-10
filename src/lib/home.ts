@@ -103,10 +103,11 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
 
   const { data: briefs } = await supabase
     .from('briefs')
-    .select('id, slug, date')
+    .select('id, slug, date, edition')
     .eq('status', 'published')
     .order('date', { ascending: false })
-    .limit(briefWindow);
+    .order('edition', { ascending: true })
+    .limit(briefWindow * 3);
   const briefList = briefs ?? [];
 
   const items: HomeItem[] = [];
@@ -124,9 +125,12 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
         briefList.map((b) => b.id),
       );
 
+    const editionByItem = new Map<string, number>();
+
     for (const it of rows ?? []) {
       const brief = briefById.get(it.brief_id);
       if (!brief) continue;
+      editionByItem.set(it.id, brief.edition);
       const summary = pick(lang, it.summary_en, it.summary_uk);
       const why = pick(lang, it.why_matters_en, it.why_matters_uk);
       const cat = it.category_slug ? catBySlug.get(it.category_slug) : undefined;
@@ -149,8 +153,14 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
       articleIdByItem.set(it.id, it.article_id);
     }
 
-    // Newest brief first, then rank — the global "top of the week" order.
-    items.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.rank - b.rank));
+    // Newest day first, then pack edition, then rank within the pack.
+    items.sort((a, b) => {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      const edA = editionByItem.get(a.id) ?? 1;
+      const edB = editionByItem.get(b.id) ?? 1;
+      if (edA !== edB) return edA - edB;
+      return a.rank - b.rank;
+    });
   }
 
   const featured = items[0] ?? null;

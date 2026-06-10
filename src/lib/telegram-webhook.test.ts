@@ -70,6 +70,19 @@ describe('formatBriefSummary', () => {
     expect(text).toContain('⚠️');
     expect(text).not.toContain('🚀');
   });
+
+  it('includes pack edition and read link when provided', () => {
+    const text = formatBriefSummary({
+      approved: 2,
+      rejected: 0,
+      title: 'Afternoon',
+      edition: 2,
+      readUrl: 'https://aitodaybrief.com/uk/lead-topic',
+    });
+    expect(text).toContain('Пак <b>2</b>');
+    expect(text).toContain('Читати бриф на сайті');
+    expect(text).toContain('lead-topic');
+  });
 });
 
 describe('publishedBanner', () => {

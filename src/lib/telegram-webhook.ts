@@ -75,19 +75,27 @@ export interface BriefSummary {
   approved: number;
   rejected: number;
   title: string;
+  edition?: number;
+  readUrl?: string;
 }
 
 export function formatBriefSummary(s: BriefSummary): string {
+  const packLine =
+    s.edition && s.edition > 1 ? `\n📦 Пак <b>${s.edition}</b>` : '';
+  const readLine = s.readUrl
+    ? `\n\n🔗 <a href="${escHtml(s.readUrl)}">Читати бриф на сайті</a>`
+    : '';
   return (
     '━━━━━━━━━━━━━━━━━\n' +
     `📋 <b>Рев'ю завершено</b>\n` +
-    `🗞 «${escHtml(s.title)}»\n` +
+    `🗞 «${escHtml(s.title)}»${packLine}\n` +
     '━━━━━━━━━━━━━━━━━\n\n' +
     `✅ Схвалено: <b>${s.approved}</b>\n` +
     `❌ Відхилено: <b>${s.rejected}</b>\n\n` +
     (s.approved > 0
       ? 'Натисни 🚀 щоб опублікувати схвалені матеріали.'
-      : '⚠️ Жодного схваленого матеріалу — брифінг не публікується.')
+      : '⚠️ Жодного схваленого матеріалу — брифінг не публікується.') +
+    readLine
   );
 }
 
