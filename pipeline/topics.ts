@@ -20,6 +20,7 @@ const TOPIC_PATTERNS: Array<[RegExp, string]> = [
   [/\b(codex)\b/i, 'codex'],
   [/\b(copilot)\b/i, 'copilot'],
   [/\b(windsurf|cline|aider|continue\.dev|zed)\b/i, 'ai-ide'],
+  [/\b(nemotron|nvidia)\b/i, 'nvidia'],
   [/\b(gemini|google deepmind|deepmind)\b/i, 'gemini'],
   [/\b(chatgpt|gpt-?[0-9]|openai|sora|o[0-9]\b)\b/i, 'openai'],
   [/\b(llama|meta ai)\b/i, 'llama'],

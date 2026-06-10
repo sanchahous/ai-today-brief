@@ -128,6 +128,28 @@ describe('formatBatchHeader', () => {
     const h = formatBatchHeader({ date: '2026-06-09', total: 2, edition: 2 });
     expect(h).toContain('Пак <b>2</b>');
   });
+
+  it('uses distinct chrome for custom editor picks', () => {
+    const h = formatBatchHeader({
+      date: '2026-06-10',
+      total: 1,
+      channel: 'custom',
+      editorTopic: 'NVIDIA Nemotron 3 Ultra',
+      title: 'Nemotron lands',
+    });
+    expect(h).toContain('ПЕРСОНАЛЬНА НОВИНА');
+    expect(h).not.toContain("РЕВ'Ю БРИФУ");
+    expect(h).toContain('NVIDIA Nemotron 3 Ultra');
+  });
+});
+
+describe('custom item cards', () => {
+  it('uses blue dividers and editor pick tag', () => {
+    const text = formatItemMessage(item, 1, 1, 'custom');
+    expect(text).toContain('🔵');
+    expect(text).toContain('EDITOR PICK');
+    expect(text).not.toContain('🟡');
+  });
 });
 
 describe('decoratedAfterDecision', () => {

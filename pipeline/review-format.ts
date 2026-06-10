@@ -24,6 +24,9 @@ export interface InlineKeyboard {
 
 export type ReviewAction = 'approve' | 'reject';
 
+/** Pipeline auto-curate vs editor hand-pick — different Telegram chrome. */
+export type ReviewChannel = 'pipeline' | 'custom';
+
 const APPROVE_PREFIX = 'ap:';
 const REJECT_PREFIX = 'rj:';
 
@@ -64,8 +67,9 @@ export function escapeHtml(s: string): string {
  * reads as a distinct "block" rather than blurring into the previous message.
  * The N/M counter is baked into the divider so the eye lands on it first.
  */
-export function cardDivider(position: number, total: number): string {
-  return `🟡 ▔▔▔▔▔ <b>${position}/${total}</b> ▔▔▔▔▔`;
+export function cardDivider(position: number, total: number, channel: ReviewChannel = 'pipeline'): string {
+  const marker = channel === 'custom' ? '🔵' : '🟡';
+  return `${marker} ▔▔▔▔▔ <b>${position}/${total}</b> ▔▔▔▔▔`;
 }
 
 /**
@@ -81,22 +85,38 @@ export function formatBatchHeader(opts: {
   edition?: number;
   /** 4 h progón window label, e.g. "08:00–10:30". */
   cycleLabel?: string;
+  channel?: ReviewChannel;
+  /** Original topic line the editor typed (custom channel only). */
+  editorTopic?: string | null;
 }): string {
-  const lines = [
-    '━━━━━━━━━━━━━━━━━',
-    "📋 <b>РЕВ'Ю БРИФУ</b>",
-    `📅 ${escapeHtml(opts.date)}`,
-  ];
-  if (opts.edition && opts.edition > 1) {
+  const channel = opts.channel ?? 'pipeline';
+  const lines =
+    channel === 'custom'
+      ? [
+          '╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍',
+          '✏️ <b>ПЕРСОНАЛЬНА НОВИНА</b>',
+          '<i>Editor pick · не з автоматичного pipeline</i>',
+          `📅 ${escapeHtml(opts.date)}`,
+        ]
+      : ['━━━━━━━━━━━━━━━━━', "📋 <b>РЕВ'Ю БРИФУ</b>", `📅 ${escapeHtml(opts.date)}`];
+
+  if (channel === 'pipeline' && opts.edition && opts.edition > 1) {
     lines.push(`📦 Пак <b>${opts.edition}</b>`);
   }
-  if (opts.cycleLabel) lines.push(`🕐 Прогін ${escapeHtml(opts.cycleLabel)} (Kyiv)`);
+  if (channel === 'pipeline' && opts.cycleLabel) {
+    lines.push(`🕐 Прогін ${escapeHtml(opts.cycleLabel)} (Kyiv)`);
+  }
+  if (opts.editorTopic) {
+    lines.push(`📌 ${escapeHtml(opts.editorTopic)}`);
+  }
   if (opts.title) lines.push(`🗞 <i>${escapeHtml(opts.title)}</i>`);
   lines.push(
     `🗂 ${opts.total} ${pluralCards(opts.total)} до перегляду`,
-    '━━━━━━━━━━━━━━━━━',
+    channel === 'custom' ? '╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍' : '━━━━━━━━━━━━━━━━━',
     'Натискай ✅/❌ на кожній картці.',
-    'Наприкінці зʼявиться кнопка 🚀 для публікації.',
+    channel === 'custom'
+      ? 'Після схвалення — 🚀 опублікує цей пак на сайті.'
+      : 'Наприкінці зʼявиться кнопка 🚀 для публікації.',
   );
   return lines.join('\n');
 }
@@ -117,13 +137,19 @@ function pluralCards(n: number): string {
  * Starts with a bold divider (see `cardDivider`) so cards never blur together
  * in the chat stream.
  */
-export function formatItemMessage(item: ReviewItem, position: number, total: number): string {
+export function formatItemMessage(
+  item: ReviewItem,
+  position: number,
+  total: number,
+  channel: ReviewChannel = 'pipeline',
+): string {
   const titleEn = escapeHtml(item.title_en ?? '(untitled)');
   const titleUk = escapeHtml(item.title_uk ?? titleEn);
   const category = escapeHtml(item.category_slug ?? 'uncategorized');
   const summary = escapeHtml(item.summary_uk ?? item.summary_en);
+  const customTag = channel === 'custom' ? '✏️ <b>EDITOR PICK</b>\n' : '';
   const lines = [
-    cardDivider(position, total),
+    customTag + cardDivider(position, total, channel),
     `🗂 <b>${category}</b>`,
     '',
     `📰 <b>${titleUk}</b>`,
