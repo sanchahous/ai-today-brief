@@ -191,6 +191,7 @@ export type Database = {
         Row: {
           created_at: string | null;
           date: string;
+          edition: number;
           generated_by: string | null;
           id: string;
           intro_en: string | null;
@@ -204,6 +205,7 @@ export type Database = {
         Insert: {
           created_at?: string | null;
           date: string;
+          edition?: number;
           generated_by?: string | null;
           id?: string;
           intro_en?: string | null;
@@ -217,6 +219,7 @@ export type Database = {
         Update: {
           created_at?: string | null;
           date?: string;
+          edition?: number;
           generated_by?: string | null;
           id?: string;
           intro_en?: string | null;

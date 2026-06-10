@@ -56,64 +56,138 @@ export async function upsertArticles(
   return new Map((data ?? []).map((r) => [r.url, r.id]));
 }
 
-/** The brief on a given date, if any — used to guard against clobbering it. */
-export async function getBriefByDate(
-  db: PipelineDb,
-  date: string,
-): Promise<{ id: string; status: string } | null> {
-  const { data, error } = await db
-    .from('briefs')
-    .select('id, status')
-    .eq('date', date)
-    .maybeSingle();
-  if (error) throw new Error(`[db] getBriefByDate failed: ${error.message}`);
-  return data ?? null;
+export interface ResolvedBrief {
+  id: string;
+  edition: number;
+  isNewPack: boolean;
+}
+
+/** Pure helper — which edition row the pipeline should write to. */
+export function computeNextBriefEdition(
+  draft: { edition: number } | null,
+  latest: { edition: number; status: string } | null,
+): { mode: 'draft'; edition: number } | { mode: 'insert'; edition: number } {
+  if (draft) return { mode: 'draft', edition: draft.edition };
+  if (!latest) return { mode: 'insert', edition: 1 };
+  if (latest.status === 'published') return { mode: 'insert', edition: latest.edition + 1 };
+  throw new Error('[db] unexpected brief state: latest is draft but no draft row returned');
 }
 
 /**
  * Ensure a brief slug is globally unique (the `briefs_slug_uniq` partial index).
- * Reuses the slug if it's free or already belongs to this date; otherwise
- * qualifies it with the date so re-runs stay deterministic.
+ * Reuses the slug when it already belongs to this date+edition; otherwise qualifies.
  */
-async function resolveBriefSlug(db: PipelineDb, slug: string, date: string): Promise<string> {
-  const { data, error } = await db.from('briefs').select('date').eq('slug', slug).maybeSingle();
+async function resolveBriefSlug(
+  db: PipelineDb,
+  slug: string,
+  date: string,
+  edition: number,
+): Promise<string> {
+  const { data, error } = await db
+    .from('briefs')
+    .select('date, edition')
+    .eq('slug', slug)
+    .maybeSingle();
   if (error) throw new Error(`[db] resolveBriefSlug failed: ${error.message}`);
-  if (!data || data.date === date) return slug;
+  if (!data) return slug;
+  if (data.date === date && data.edition === edition) return slug;
+  if (data.date === date) return `${slug}-e${edition}`;
   return `${slug}-${date}`;
 }
 
-/** Upsert the day's brief. Keeps `published` status on re-runs (human gate stays). */
-export async function upsertBriefForDate(
+/**
+ * Pick the draft to refresh, or open a new pack after the previous one was published.
+ * New calendar day always starts at edition 1.
+ */
+export async function resolveBriefForPipeline(
   db: PipelineDb,
   date: string,
   brief: DraftBrief,
   generatedBy: string,
-  existingStatus?: string | null,
-): Promise<string> {
-  const slug = await resolveBriefSlug(db, brief.slug, date);
-  const status = existingStatus === 'published' ? 'published' : 'draft';
-  const { data, error } = await db
+): Promise<ResolvedBrief> {
+  const { data: draft, error: draftErr } = await db
     .from('briefs')
-    .upsert(
-      {
-        date,
+    .select('id, edition')
+    .eq('date', date)
+    .eq('status', 'draft')
+    .order('edition', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (draftErr) throw new Error(`[db] resolveBriefForPipeline draft failed: ${draftErr.message}`);
+
+  const { data: latest, error: latestErr } = await db
+    .from('briefs')
+    .select('edition, status')
+    .eq('date', date)
+    .order('edition', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (latestErr) throw new Error(`[db] resolveBriefForPipeline latest failed: ${latestErr.message}`);
+
+  const plan = computeNextBriefEdition(draft, latest);
+  const slug = await resolveBriefSlug(db, brief.slug, date, plan.edition);
+
+  if (plan.mode === 'draft' && draft) {
+    const { error } = await db
+      .from('briefs')
+      .update({
         slug,
         title_en: brief.title_en,
         title_uk: brief.title_uk,
         intro_en: brief.intro_en,
         intro_uk: brief.intro_uk,
-        status,
         generated_by: generatedBy,
-      },
-      { onConflict: 'date' },
-    )
-    .select('id')
+      })
+      .eq('id', draft.id);
+    if (error) throw new Error(`[db] resolveBriefForPipeline update failed: ${error.message}`);
+    return { id: draft.id, edition: draft.edition, isNewPack: false };
+  }
+
+  const { data: inserted, error: insErr } = await db
+    .from('briefs')
+    .insert({
+      date,
+      edition: plan.edition,
+      slug,
+      title_en: brief.title_en,
+      title_uk: brief.title_uk,
+      intro_en: brief.intro_en,
+      intro_uk: brief.intro_uk,
+      status: 'draft',
+      generated_by: generatedBy,
+    })
+    .select('id, edition')
     .single();
-  if (error || !data) throw new Error(`[db] upsertBriefForDate failed: ${error?.message}`);
-  return data.id;
+  if (insErr || !inserted) {
+    throw new Error(`[db] resolveBriefForPipeline insert failed: ${insErr?.message}`);
+  }
+  return { id: inserted.id, edition: inserted.edition, isNewPack: true };
 }
 
-/** @deprecated Use upsertBriefForDate */
+/** Lead pack slug for a calendar day — canonical URL on the public site. */
+export async function getLeadBriefSlug(db: PipelineDb, date: string): Promise<string | null> {
+  const { data, error } = await db
+    .from('briefs')
+    .select('slug')
+    .eq('date', date)
+    .eq('edition', 1)
+    .maybeSingle();
+  if (error) throw new Error(`[db] getLeadBriefSlug failed: ${error.message}`);
+  return data?.slug ?? null;
+}
+
+/** @deprecated Use resolveBriefForPipeline */
+export async function upsertBriefForDate(
+  db: PipelineDb,
+  date: string,
+  brief: DraftBrief,
+  generatedBy: string,
+): Promise<string> {
+  const resolved = await resolveBriefForPipeline(db, date, brief, generatedBy);
+  return resolved.id;
+}
+
+/** @deprecated Use resolveBriefForPipeline */
 export const upsertBriefDraft = upsertBriefForDate;
 
 type BriefItemContentRow = {
@@ -173,16 +247,12 @@ export type SyncBriefItemsResult = { synced: number; inserted: number };
 
 type ExistingItemRow = { id: string; slug: string | null; rank: number; review_status: string };
 
-/**
- * Sync items by `slug`. Draft briefs get a full reorder; published briefs only
- * append new slugs (approved/rejected rows are never deleted or overwritten).
- */
+/** Sync items by `slug` — full replace for the current pack (draft re-runs). */
 export async function syncBriefItems(
   db: PipelineDb,
   briefId: string,
   items: DraftItem[],
   articleIdByUrl: Map<string, string>,
-  options: { appendOnly?: boolean } = {},
 ): Promise<SyncBriefItemsResult> {
   const { data: existing, error: loadErr } = await db
     .from('brief_items')
@@ -190,60 +260,7 @@ export async function syncBriefItems(
     .eq('brief_id', briefId);
   if (loadErr) throw new Error(`[db] syncBriefItems load failed: ${loadErr.message}`);
 
-  if (options.appendOnly) {
-    return syncBriefItemsAppend(db, briefId, items, articleIdByUrl, existing ?? []);
-  }
   return syncBriefItemsReplace(db, briefId, items, articleIdByUrl, existing ?? []);
-}
-
-async function syncBriefItemsAppend(
-  db: PipelineDb,
-  briefId: string,
-  items: DraftItem[],
-  articleIdByUrl: Map<string, string>,
-  existing: ExistingItemRow[],
-): Promise<SyncBriefItemsResult> {
-  const existingBySlug = new Map<string, ExistingItemRow>();
-  for (const row of existing) {
-    if (!row.slug) continue;
-    existingBySlug.set(row.slug, row);
-  }
-
-  let maxRank = 0;
-  for (const row of existing) {
-    if (row.rank > maxRank) maxRank = row.rank;
-  }
-
-  let synced = 0;
-  let inserted = 0;
-
-  for (const item of items) {
-    const articleId = articleIdByUrl.get(item.url);
-    if (!articleId) continue;
-    synced++;
-
-    const prev = existingBySlug.get(item.slug);
-    if (prev) {
-      if (prev.review_status !== 'pending') continue;
-      const payload = draftItemToRow(item, prev.rank, articleId);
-      const { error } = await db.from('brief_items').update(payload).eq('id', prev.id);
-      if (error) throw new Error(`[db] syncBriefItems update failed: ${error.message}`);
-      continue;
-    }
-
-    if (maxRank >= 10) continue;
-    maxRank++;
-    const payload = draftItemToRow(item, maxRank, articleId);
-    const { error } = await db.from('brief_items').insert({
-      brief_id: briefId,
-      ...payload,
-      review_status: 'pending',
-    });
-    if (error) throw new Error(`[db] syncBriefItems insert failed: ${error.message}`);
-    inserted++;
-  }
-
-  return { synced, inserted };
 }
 
 async function syncBriefItemsReplace(
@@ -377,19 +394,25 @@ export async function recentPublishedTitles(db: PipelineDb, limit: number): Prom
     .filter((t): t is string => typeof t === 'string' && t.length > 0);
 }
 
-/** Brief date + title — used for the Telegram review batch header. */
+/** Brief date, title, edition, lead slug — Telegram review batch header. */
 export async function getBriefMeta(
   db: PipelineDb,
   briefId: string,
-): Promise<{ date: string; title: string | null } | null> {
+): Promise<{ date: string; title: string | null; edition: number; leadSlug: string | null } | null> {
   const { data, error } = await db
     .from('briefs')
-    .select('date, title_uk, title_en')
+    .select('date, title_uk, title_en, edition')
     .eq('id', briefId)
     .maybeSingle();
   if (error) throw new Error(`[db] getBriefMeta failed: ${error.message}`);
   if (!data) return null;
-  return { date: data.date, title: data.title_uk ?? data.title_en ?? null };
+  const leadSlug = await getLeadBriefSlug(db, data.date);
+  return {
+    date: data.date,
+    title: data.title_uk ?? data.title_en ?? null,
+    edition: data.edition,
+    leadSlug,
+  };
 }
 
 /** Pending items of a brief for Telegram review cards. */

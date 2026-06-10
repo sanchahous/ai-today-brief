@@ -77,6 +77,8 @@ export function formatBatchHeader(opts: {
   date: string;
   total: number;
   title?: string | null;
+  /** Pack number within the calendar day (1 = morning lead). */
+  edition?: number;
   /** 4 h progón window label, e.g. "08:00–10:30". */
   cycleLabel?: string;
 }): string {
@@ -85,6 +87,9 @@ export function formatBatchHeader(opts: {
     "📋 <b>РЕВ'Ю БРИФУ</b>",
     `📅 ${escapeHtml(opts.date)}`,
   ];
+  if (opts.edition && opts.edition > 1) {
+    lines.push(`📦 Пак <b>${opts.edition}</b>`);
+  }
   if (opts.cycleLabel) lines.push(`🕐 Прогін ${escapeHtml(opts.cycleLabel)} (Kyiv)`);
   if (opts.title) lines.push(`🗞 <i>${escapeHtml(opts.title)}</i>`);
   lines.push(

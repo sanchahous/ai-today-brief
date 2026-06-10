@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/supabase';
 import { getCategories } from '@/lib/categories';
+import { getStrings } from '@/lib/i18n';
 import { LANGS, type Lang } from '@/lib/site';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
@@ -32,8 +33,23 @@ interface ItemRow {
   why_matters_uk: string | null;
 }
 
+interface PackRow {
+  id: string;
+  date: string;
+  slug: string | null;
+  edition: number;
+  title_en: string;
+  title_uk: string;
+  intro_en: string | null;
+  intro_uk: string | null;
+  published_at: string | null;
+}
+
 const ITEM_COLUMNS =
   'id, rank, category_slug, slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk';
+
+const PACK_COLUMNS =
+  'id, date, slug, edition, title_en, title_uk, intro_en, intro_uk, published_at';
 
 function toCard(
   lang: Lang,
@@ -55,6 +71,24 @@ function toCard(
   };
 }
 
+export interface BriefPackSection {
+  edition: number;
+  slug: string;
+  publishedAt: string | null;
+  intro: string | null;
+  items: BriefItemCard[];
+}
+
+export interface DailyBriefView {
+  id: string;
+  date: string;
+  canonicalSlug: string;
+  title: string;
+  intro: string | null;
+  packs: BriefPackSection[];
+  allItems: BriefItemCard[];
+}
+
 export interface BriefSummary {
   id: string;
   date: string;
@@ -64,77 +98,151 @@ export interface BriefSummary {
   items: BriefItemCard[];
 }
 
-/** Latest published brief + its top items, localized. `null` without env. */
+/** Eyebrow for pack 2+ sections — "Update · 6:30 PM" / "Оновлення · 18:30". */
+export function formatPackUpdateLabel(lang: Lang, publishedAt: string | null): string {
+  const t = getStrings(lang);
+  if (!publishedAt) return t.briefPackUpdate;
+  const time = new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'Europe/Kyiv',
+  }).format(new Date(publishedAt));
+  return `${t.briefPackUpdate} · ${time}`;
+}
+
+async function loadPackSections(
+  lang: Lang,
+  packs: PackRow[],
+): Promise<{ sections: BriefPackSection[]; allItems: BriefItemCard[] }> {
+  const supabase = getSupabase();
+  if (!supabase) return { sections: [], allItems: [] };
+
+  const cats = await getCategories(lang);
+  const catBySlug = new Map(cats.map((c) => [c.slug, c]));
+  const sections: BriefPackSection[] = [];
+  const allItems: BriefItemCard[] = [];
+
+  for (const pack of packs) {
+    if (!pack.slug) continue;
+    const { data: items } = await supabase
+      .from('brief_items')
+      .select(ITEM_COLUMNS)
+      .eq('brief_id', pack.id)
+      .order('rank', { ascending: true });
+
+    const cards = (items ?? []).map((it) => toCard(lang, it, catBySlug));
+    sections.push({
+      edition: pack.edition,
+      slug: pack.slug,
+      publishedAt: pack.published_at,
+      intro: pack.edition === 1 ? null : pick(lang, pack.intro_en, pack.intro_uk) || null,
+      items: cards,
+    });
+    allItems.push(...cards);
+  }
+
+  return { sections, allItems };
+}
+
+/**
+ * Aggregated daily brief: all published packs for the anchor slug's calendar day.
+ * Any pack slug resolves to the same merged view; canonical points at edition 1.
+ */
+export async function getDailyBriefBySlug(slug: string, lang: Lang): Promise<DailyBriefView | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const { data: anchor, error } = await supabase
+    .from('briefs')
+    .select(PACK_COLUMNS)
+    .eq('slug', slug)
+    .eq('status', 'published')
+    .maybeSingle();
+  if (error || !anchor?.slug) return null;
+
+  const { data: packsRaw } = await supabase
+    .from('briefs')
+    .select(PACK_COLUMNS)
+    .eq('date', anchor.date)
+    .eq('status', 'published')
+    .order('edition', { ascending: true });
+
+  const packs = (packsRaw ?? []) as PackRow[];
+  const lead = packs.find((p) => p.edition === 1) ?? packs[0];
+  if (!lead?.slug) return null;
+
+  const { sections, allItems } = await loadPackSections(lang, packs);
+
+  return {
+    id: lead.id,
+    date: lead.date,
+    canonicalSlug: lead.slug,
+    title: pick(lang, lead.title_en, lead.title_uk),
+    intro: pick(lang, lead.intro_en, lead.intro_uk) || null,
+    packs: sections,
+    allItems,
+  };
+}
+
+/** Latest published day (all packs merged) + top items. `null` without env. */
 export async function getLatestBrief(lang: Lang, limit = 6): Promise<BriefSummary | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
 
-  const { data: brief, error } = await supabase
+  const { data: latest, error } = await supabase
     .from('briefs')
-    .select('id, date, slug, title_en, title_uk, intro_en, intro_uk')
+    .select('date')
     .eq('status', 'published')
-    .order('published_at', { ascending: false, nullsFirst: false })
+    .order('date', { ascending: false })
     .limit(1)
     .maybeSingle();
-  if (error || !brief) return null;
+  if (error || !latest) return null;
 
-  const { data: items } = await supabase
-    .from('brief_items')
-    .select(ITEM_COLUMNS)
-    .eq('brief_id', brief.id)
-    .order('rank', { ascending: true })
-    .limit(limit);
-
-  const cats = await getCategories(lang);
-  const catBySlug = new Map(cats.map((c) => [c.slug, c]));
-
-  return {
-    id: brief.id,
-    date: brief.date,
-    slug: brief.slug,
-    title: pick(lang, brief.title_en, brief.title_uk),
-    intro: pick(lang, brief.intro_en, brief.intro_uk) || null,
-    items: (items ?? []).map((it) => toCard(lang, it, catBySlug)),
-  };
-}
-
-/** A specific published brief by slug + all its items, localized. `null` if missing. */
-export async function getBriefBySlug(slug: string, lang: Lang): Promise<BriefSummary | null> {
-  const supabase = getSupabase();
-  if (!supabase) return null;
-
-  const { data: brief, error } = await supabase
+  const { data: lead } = await supabase
     .from('briefs')
-    .select('id, date, slug, title_en, title_uk, intro_en, intro_uk')
-    .eq('slug', slug)
+    .select('slug')
+    .eq('date', latest.date)
+    .eq('edition', 1)
     .eq('status', 'published')
     .maybeSingle();
-  if (error || !brief?.slug) return null;
+  if (!lead?.slug) return null;
 
-  const { data: items } = await supabase
-    .from('brief_items')
-    .select(ITEM_COLUMNS)
-    .eq('brief_id', brief.id)
-    .order('rank', { ascending: true });
-
-  const cats = await getCategories(lang);
-  const catBySlug = new Map(cats.map((c) => [c.slug, c]));
+  const daily = await getDailyBriefBySlug(lead.slug, lang);
+  if (!daily) return null;
 
   return {
-    id: brief.id,
-    date: brief.date,
-    slug: brief.slug,
-    title: pick(lang, brief.title_en, brief.title_uk),
-    intro: pick(lang, brief.intro_en, brief.intro_uk) || null,
-    items: (items ?? []).map((it) => toCard(lang, it, catBySlug)),
+    id: daily.id,
+    date: daily.date,
+    slug: daily.canonicalSlug,
+    title: daily.title,
+    intro: daily.intro,
+    items: daily.allItems.slice(0, limit),
   };
 }
 
-/** All published brief slugs × langs — for build-time SSG. Empty without env. */
+/** @deprecated Use getDailyBriefBySlug — kept for narrow imports. */
+export async function getBriefBySlug(slug: string, lang: Lang): Promise<BriefSummary | null> {
+  const daily = await getDailyBriefBySlug(slug, lang);
+  if (!daily) return null;
+  return {
+    id: daily.id,
+    date: daily.date,
+    slug: daily.canonicalSlug,
+    title: daily.title,
+    intro: daily.intro,
+    items: daily.allItems,
+  };
+}
+
+/** Lead-pack slugs × langs — for build-time SSG (one page per calendar day). */
 export async function getBriefPaths(): Promise<{ lang: string; brief: string }[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
-  const { data } = await supabase.from('briefs').select('slug').eq('status', 'published');
+  const { data } = await supabase
+    .from('briefs')
+    .select('slug')
+    .eq('status', 'published')
+    .eq('edition', 1);
   if (!data) return [];
   const paths: { lang: string; brief: string }[] = [];
   for (const b of data) {

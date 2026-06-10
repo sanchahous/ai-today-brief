@@ -44,6 +44,7 @@ export async function notifyReview(
         date: meta.date,
         total: items.length,
         title: meta.title,
+        edition: meta.edition,
         cycleLabel: options.cycleLabel,
       }),
     );

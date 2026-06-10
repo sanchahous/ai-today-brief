@@ -254,17 +254,19 @@ async function main(): Promise<void> {
     meta: {
       ...runMeta,
       brief_id: result.briefId,
+      edition: result.edition,
       items: result.itemCount,
       inserted: result.insertedCount,
-      brief_published: result.briefWasPublished,
+      is_new_pack: result.isNewPack,
     },
   });
   logEvent('info', 'publish', 'Daily pipeline complete', {
     date,
     brief_id: result.briefId,
+    edition: result.edition,
     items: result.itemCount,
     inserted: result.insertedCount,
-    status: result.briefWasPublished ? 'published_append' : 'draft',
+    status: 'draft',
   });
 
   // ── Store embeddings for future dedup ────────────────────────────────────────

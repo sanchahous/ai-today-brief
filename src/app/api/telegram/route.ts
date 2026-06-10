@@ -19,6 +19,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { NextResponse, type NextRequest } from 'next/server';
+import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import {
   approvedBanner,
@@ -118,9 +119,16 @@ async function maybeSendSummary(
 
   const { data: brief } = await db
     .from('briefs')
-    .select('title_en, title_uk')
+    .select('title_en, title_uk, edition, date')
     .eq('id', briefId)
     .single();
+
+  const { data: lead } = await db
+    .from('briefs')
+    .select('slug')
+    .eq('date', brief?.date ?? '')
+    .eq('edition', 1)
+    .maybeSingle();
 
   const { count: approved } = await db
     .from('brief_items')
@@ -137,7 +145,14 @@ async function maybeSendSummary(
   const approvedN = approved ?? 0;
   const title = brief?.title_uk ?? brief?.title_en ?? '–';
 
-  const text = formatBriefSummary({ approved: approvedN, rejected: rejected ?? 0, title });
+  const readUrl = lead?.slug ? `${SITE_URL}/uk/${lead.slug}` : undefined;
+  const text = formatBriefSummary({
+    approved: approvedN,
+    rejected: rejected ?? 0,
+    title,
+    edition: brief?.edition,
+    readUrl,
+  });
   const keyboard = publishKeyboard(briefId, approvedN);
   await sendMsg(chatId, text, Object.keys(keyboard).length ? { reply_markup: keyboard } : {});
 }
@@ -268,11 +283,26 @@ async function handlePublish(
     .update({ status: 'published', published_at: new Date().toISOString() })
     .eq('id', briefId)
     .eq('status', 'draft')
-    .select('title_en, title_uk')
+    .select('title_en, title_uk, edition')
     .single();
 
   if (error || !brief) {
-    console.log('[publish] already published or not found:', briefId);
+    const { data: existing } = await db
+      .from('briefs')
+      .select('status, edition, title_uk, title_en')
+      .eq('id', briefId)
+      .maybeSingle();
+    if (existing?.status === 'published') {
+      const title = existing.title_uk ?? existing.title_en ?? '–';
+      const packNote = existing.edition > 1 ? ` (пак ${existing.edition})` : '';
+      await editText(
+        chatId,
+        msgId,
+        `ℹ️ <b>Вже опубліковано</b>${packNote}: «${escHtml(title)}»`,
+      );
+    } else {
+      console.log('[publish] not found or not draft:', briefId);
+    }
     return;
   }
 
