@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { parseCustomCommand } from './telegram-custom';
+import { formatCustomNewsError, parseCustomCommand } from './telegram-custom';
+
+describe('formatCustomNewsError', () => {
+  it('explains missing GEMINI_API_KEY for Vercel', () => {
+    const text = formatCustomNewsError(new Error('[config] Missing required env vars: GEMINI_API_KEY'));
+    expect(text).toContain('GEMINI_API_KEY');
+    expect(text).toContain('Vercel');
+  });
+});
 
 describe('parseCustomCommand', () => {
   it('parses topic-only command', () => {

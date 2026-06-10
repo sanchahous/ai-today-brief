@@ -20,7 +20,7 @@
 import { after } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { NextResponse, type NextRequest } from 'next/server';
-import { parseCustomCommand } from '@/lib/telegram-custom';
+import { formatCustomNewsError, parseCustomCommand } from '@/lib/telegram-custom';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import {
@@ -385,9 +385,8 @@ async function handleCustomCommand(text: string, chatId: string): Promise<void> 
         `✅ <b>Чернетка готова</b>\nПак ${result.edition} · ${n} джерел\nПеревір картку вище 👆`,
       );
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
       console.error('[telegram/custom]', err);
-      await sendMsg(chatId, `❌ <b>Помилка custom news</b>\n${escHtml(message)}`);
+      await sendMsg(chatId, `❌ <b>Помилка custom news</b>\n${formatCustomNewsError(err)}`);
     }
   });
 }
