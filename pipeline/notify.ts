@@ -7,7 +7,12 @@
 
 import { getBriefMeta, getPendingReviewItems, setReviewMsgId, type PipelineDb } from './db';
 import { sendMessage } from './telegram';
-import { formatBatchHeader, formatItemMessage, reviewKeyboard } from './review-format';
+import {
+  formatBatchHeader,
+  formatItemMessage,
+  reviewKeyboard,
+  type ReviewChannel,
+} from './review-format';
 import { logEvent } from './log';
 
 export interface NotifyResult {
@@ -20,6 +25,10 @@ export interface NotifyReviewOptions {
   cycleLabel?: string;
   /** Re-push pending cards even when review_msg_id is already set (catch-up). */
   resend?: boolean;
+  /** Visual + copy variant in Telegram (`custom` = hand-picked story). */
+  channel?: ReviewChannel;
+  /** Original editor topic (custom channel header). */
+  editorTopic?: string;
 }
 
 export async function notifyReview(
@@ -46,6 +55,8 @@ export async function notifyReview(
         title: meta.title,
         edition: meta.edition,
         cycleLabel: options.cycleLabel,
+        channel: options.channel,
+        editorTopic: options.editorTopic,
       }),
     );
   }
@@ -54,7 +65,7 @@ export async function notifyReview(
   let failed = 0;
   for (let i = 0; i < items.length; i++) {
     const item = items[i]!;
-    const text = formatItemMessage(item, i + 1, items.length);
+    const text = formatItemMessage(item, i + 1, items.length, options.channel);
     const msgId = await sendMessage(token, chatId, text, reviewKeyboard(item.id));
     if (msgId === null) {
       failed++;

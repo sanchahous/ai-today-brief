@@ -33,6 +33,7 @@ export default defineConfig({
         '**/*.test.ts',
         '**/__fixtures__/**',
         'pipeline/run-daily.ts',
+        'pipeline/custom-news.ts',
         'pipeline/publish.ts',
         'pipeline/summarize.ts',
         'pipeline/db.ts',
