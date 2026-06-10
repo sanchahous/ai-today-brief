@@ -3,7 +3,7 @@
  * private chat. Two update types are processed:
  *
  *   callback_query  → button press (✅ approve / ❌ reject / 🚀 publish)
- *   message         → text reply to a force-reply rejection prompt (reason)
+ *   message         → /custom editor hand-pick, or force-reply rejection reason
  *
  * Security:
  *   • X-Telegram-Bot-Api-Secret-Token header (TELEGRAM_WEBHOOK_SECRET)
@@ -17,8 +17,10 @@
  * (card edit, summary send) run after — slower, but the user already has feedback.
  */
 
+import { after } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { NextResponse, type NextRequest } from 'next/server';
+import { parseCustomCommand } from '@/lib/telegram-custom';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import {
@@ -342,6 +344,54 @@ function buildCardText(item: {
   return lines.join('\n');
 }
 
+// ─── /custom command (editor hand-pick from Telegram) ───────────────────────
+
+async function handleCustomCommand(text: string, chatId: string): Promise<void> {
+  const parsed = parseCustomCommand(text);
+  if (!parsed) {
+    await sendMsg(
+      chatId,
+      [
+        '✏️ <b>Персональна новина</b>',
+        '',
+        '<code>/custom назва новини</code>',
+        '<code>/custom https://url назва</code>',
+        '',
+        'Досліджує кілька джерел і пише оригінальний текст (~1–2 хв).',
+      ].join('\n'),
+    );
+    return;
+  }
+
+  const topicLine = escHtml(parsed.topic);
+  const urlLine = parsed.url ? `\n🔗 ${escHtml(parsed.url)}` : '';
+  await sendMsg(
+    chatId,
+    `✏️ <b>Досліджую…</b>\n${topicLine}${urlLine}\n\n<i>Кілька джерел → оригінальний текст. Картка з’явиться тут.</i>`,
+  );
+
+  after(async () => {
+    try {
+      const { loadPipelineConfig } = await import('../../../../pipeline/config');
+      const { runCustomNews } = await import('../../../../pipeline/custom-news');
+      const config = loadPipelineConfig();
+      const result = await runCustomNews(
+        { topic: parsed.topic, url: parsed.url, notify: true },
+        { config },
+      );
+      const n = result.research.sources.length;
+      await sendMsg(
+        chatId,
+        `✅ <b>Чернетка готова</b>\nПак ${result.edition} · ${n} джерел\nПеревір картку вище 👆`,
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('[telegram/custom]', err);
+      await sendMsg(chatId, `❌ <b>Помилка custom news</b>\n${escHtml(message)}`);
+    }
+  });
+}
+
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest): Promise<Response> {
@@ -401,12 +451,26 @@ export async function POST(request: NextRequest): Promise<Response> {
       return NextResponse.json({ ok: true });
     }
 
-    // ── message (force_reply reply = rejection reason) ────────────────────────
+    // ── message (/custom command or force_reply rejection reason) ───────────
     const msg = update.message as Record<string, unknown> | undefined;
     if (msg) {
       const from   = msg.from as Record<string, unknown> | undefined;
       const userId = String(from?.id ?? '');
+
+      const msgChatId = String((msg.chat as Record<string, unknown> | undefined)?.id ?? '');
+      const text = String((msg.text as string | undefined) ?? '').trim();
+
+      if (text.startsWith('/custom')) {
+        if (adminUserId && userId !== adminUserId) {
+          await sendMsg(msgChatId, '⛔ Not authorised');
+          return NextResponse.json({ ok: true });
+        }
+        await handleCustomCommand(text, msgChatId);
+        return NextResponse.json({ ok: true });
+      }
+
       if (adminUserId && userId !== adminUserId) return NextResponse.json({ ok: true });
+      if (msgChatId !== chatId) return NextResponse.json({ ok: true });
 
       const replyTo = msg.reply_to_message as Record<string, unknown> | undefined;
       if (!replyTo) return NextResponse.json({ ok: true });

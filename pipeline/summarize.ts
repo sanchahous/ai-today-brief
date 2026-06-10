@@ -345,6 +345,120 @@ Also write the brief shell:
 TONE: confident, useful, no hype, no emojis, no clickbait. Return JSON only.`;
 }
 
+export interface CustomResearchContext {
+  synthesis_notes: string;
+  sources: Array<{ title: string; url: string; source_name: string; excerpt: string }>;
+}
+
+/** Editor hand-pick: multi-source synthesis with original copy (not a single-source rewrite). */
+export function buildCustomEditorPrompt(
+  candidates: PoolItem[],
+  recentlyPublished: string[],
+  research: CustomResearchContext,
+): string {
+  const base = buildPrompt(candidates, recentlyPublished, 1);
+  const sourcesBlock = research.sources
+    .map(
+      (s, i) =>
+        `[${i + 1}] ${s.source_name}: ${s.title}\n    URL: ${s.url}\n    Research notes:\n    ${s.excerpt.replace(/\n/g, '\n    ')}`,
+    )
+    .join('\n\n');
+
+  return `${base}
+
+EDITOR HAND-PICK — MULTI-SOURCE ORIGINAL COPY (mandatory):
+This story was researched across ${research.sources.length} independent sources.
+You MUST synthesize them into YOUR OWN editorial voice for AI Today Brief.
+
+CROSS-SOURCE RESEARCH (read all before writing):
+${sourcesBlock}
+
+SYNTHESIS BRIEF:
+${research.synthesis_notes}
+
+WRITING RULES (override generic curation for this single item):
+- Keep ref 1 — do not drop this story; the editor explicitly requested it.
+- Write original prose: do NOT copy phrases or sentence structure from any source above.
+- Combine facts from at least 2 different sources; if sources disagree, note the uncertainty.
+- Prefer concrete numbers, product names, benchmarks, availability dates, license terms.
+- Candidate [1] URL is the primary attribution link; supporting facts may come from other sources.`;
+}
+
+async function runSummarizeFromPrompt(
+  prompt: string,
+  candidates: PoolItem[],
+  apiKey: string,
+  openRouterApiKey: string | undefined,
+  geminiMaxAttempts: number,
+  logLabel: string,
+): Promise<SummarizeResult> {
+  const modelQueue = await resolveGeminiModelQueue(apiKey);
+  logEvent('info', logLabel, 'Curate & summarize started', {
+    candidates: candidates.length,
+    gemini_model_queue: modelQueue.slice(0, 5),
+    openrouter_fallback: Boolean(openRouterApiKey),
+  });
+  const start = Date.now();
+
+  let text: string;
+  let provider: SummarizeResult['provider'] = 'gemini';
+  let providerModel: string;
+
+  try {
+    const geminiResult = await generateWithModelQueue(
+      prompt,
+      apiKey,
+      modelQueue,
+      geminiMaxAttempts,
+    );
+    text = geminiResult.text;
+    providerModel = geminiResult.model;
+  } catch (geminiError) {
+    if (!openRouterApiKey) {
+      throw geminiError;
+    }
+    logEvent('warn', logLabel, 'Gemini queue failed — trying OpenRouter fallback', {
+      gemini_models_tried: modelQueue,
+      ...serializeErrorDetails(geminiError),
+    });
+    const { generateWithOpenRouterChain } = await import('./openrouter-summarize');
+    const orResult = await generateWithOpenRouterChain(prompt, { apiKey: openRouterApiKey });
+    text = orResult.text;
+    provider = 'openrouter';
+    providerModel = orResult.model;
+  }
+
+  const brief = parseBrief(text, candidates);
+  logEvent('info', logLabel, 'Curate & summarize complete', {
+    selected: brief.items.length,
+    provider,
+    provider_model: providerModel,
+    duration_ms: Date.now() - start,
+  });
+  return { brief, provider, providerModel };
+}
+
+/* v8 ignore start -- integration: real Gemini call */
+export async function summarizeEditorPick(
+  candidates: PoolItem[],
+  recentlyPublished: string[],
+  research: CustomResearchContext,
+  apiKey: string,
+  openRouterApiKey?: string,
+  geminiMaxAttempts = 3,
+): Promise<SummarizeResult> {
+  const prompt = buildCustomEditorPrompt(candidates, recentlyPublished, research);
+  return runSummarizeFromPrompt(
+    prompt,
+    candidates,
+    apiKey,
+    openRouterApiKey,
+    geminiMaxAttempts,
+    'summarize-custom',
+  );
+}
+/* v8 ignore end */
+
 // ─── Parse + assemble ────────────────────────────────────────────────────────
 
 function asString(value: unknown): string {
@@ -446,53 +560,21 @@ export async function summarize(
   openRouterApiKey?: string,
   geminiMaxAttempts = 3,
 ): Promise<SummarizeResult> {
-  const modelQueue = await resolveGeminiModelQueue(apiKey);
   logEvent('info', 'summarize', 'Curate & summarize started', {
     candidates: candidates.length,
     recent_context: recentlyPublished.length,
     max_items: maxItems,
-    gemini_model_queue: modelQueue.slice(0, 5),
     gemini_per_model_attempts: geminiMaxAttempts,
     openrouter_fallback: Boolean(openRouterApiKey),
   });
-  const start = Date.now();
   const prompt = buildPrompt(candidates, recentlyPublished, maxItems);
-
-  let text: string;
-  let provider: SummarizeResult['provider'] = 'gemini';
-  let providerModel: string;
-
-  try {
-    const geminiResult = await generateWithModelQueue(
-      prompt,
-      apiKey,
-      modelQueue,
-      geminiMaxAttempts,
-    );
-    text = geminiResult.text;
-    providerModel = geminiResult.model;
-  } catch (geminiError) {
-    if (!openRouterApiKey) {
-      throw geminiError;
-    }
-    logEvent('warn', 'summarize', 'Gemini queue failed — trying OpenRouter fallback', {
-      gemini_models_tried: modelQueue,
-      ...serializeErrorDetails(geminiError),
-    });
-    const { generateWithOpenRouterChain } = await import('./openrouter-summarize');
-    const orResult = await generateWithOpenRouterChain(prompt, { apiKey: openRouterApiKey });
-    text = orResult.text;
-    provider = 'openrouter';
-    providerModel = orResult.model;
-  }
-
-  const brief = parseBrief(text, candidates);
-  logEvent('info', 'summarize', 'Curate & summarize complete', {
-    selected: brief.items.length,
-    provider,
-    provider_model: providerModel,
-    duration_ms: Date.now() - start,
-  });
-  return { brief, provider, providerModel };
+  return runSummarizeFromPrompt(
+    prompt,
+    candidates,
+    apiKey,
+    openRouterApiKey,
+    geminiMaxAttempts,
+    'summarize',
+  );
 }
 /* v8 ignore end */

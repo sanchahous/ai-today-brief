@@ -13,6 +13,7 @@ const LOGIC_INCLUDE = [
   'src/lib/analytics-config.ts',
   'src/lib/analytics-client.ts',
   'src/lib/preferred-lang.ts',
+  'src/lib/telegram-custom.ts',
   'pipeline/**/*.ts',
 ];
 
