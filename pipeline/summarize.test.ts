@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  buildCustomEditorPrompt,
   buildPrompt,
   buildReaderProfileBlock,
   generateWithModelQueue,
@@ -66,6 +67,34 @@ describe('buildPrompt', () => {
   it('references reader profile in the filtering instructions', () => {
     const p = buildPrompt(pool, [], 6);
     expect(p).toContain('READER PROFILE above');
+  });
+});
+
+describe('buildCustomEditorPrompt', () => {
+  it('requires multi-source original copy and keeps ref 1', () => {
+    const p = buildCustomEditorPrompt(pool.slice(0, 1), [], {
+      synthesis_notes: 'Cross-source facts here.',
+      sources: [
+        {
+          title: 'Official post',
+          url: 'https://ex.com/a',
+          source_name: 'Vendor',
+          excerpt: 'Shipped today.',
+        },
+        {
+          title: 'Press coverage',
+          url: 'https://ex.com/b',
+          source_name: 'Tech Press',
+          excerpt: 'Benchmark numbers.',
+        },
+      ],
+    });
+    expect(p).toContain('MULTI-SOURCE ORIGINAL COPY');
+    expect(p).toContain('Cross-source facts here.');
+    expect(p).toContain('Vendor');
+    expect(p).toContain('Tech Press');
+    expect(p).toContain('Keep ref 1');
+    expect(p).toContain('do NOT copy phrases');
   });
 });
 

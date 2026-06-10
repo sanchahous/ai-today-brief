@@ -22,7 +22,7 @@ import { logError, logEvent } from './log';
 import { notifyReview } from './notify';
 import { publish } from './publish';
 import { getPipelineDateKyiv } from './schedule';
-import { summarize } from './summarize';
+import { summarizeEditorPick } from './summarize';
 
 export interface CustomNewsOptions {
   topic: string;
@@ -41,16 +41,21 @@ export interface CustomNewsResult {
 }
 
 function printDryRun(research: CustomResearchResult): void {
+  const sourceLines = research.sources.map(
+    (s, i) => `  [${i + 1}] ${s.source_name}: ${s.url}`,
+  );
   console.log(
     [
       '',
       '──── CUSTOM NEWS · DRY RUN ────',
-      `title   ${research.title}`,
-      `url     ${research.url}`,
-      `source  ${research.source_name}`,
-      `date    ${research.published_at}`,
+      `title    ${research.title}`,
+      `primary  ${research.url}`,
+      `source   ${research.source_name}`,
+      `date     ${research.published_at}`,
+      `sources  ${research.sources.length}`,
+      ...sourceLines,
       '',
-      research.excerpt,
+      research.synthesis_notes,
       '',
     ].join('\n'),
   );
@@ -90,10 +95,10 @@ export async function runCustomNews(
   const poolItem = toPoolItem(research);
 
   const recent = await recentPublishedTitles(db, config.recentTitles);
-  const { brief, providerModel } = await summarize(
+  const { brief, providerModel } = await summarizeEditorPick(
     [poolItem],
     recent,
-    1,
+    research,
     config.geminiApiKey,
     config.openRouterApiKey,
     3,
@@ -115,6 +120,7 @@ export async function runCustomNews(
       edition: result.edition,
       items: result.itemCount,
       source_url: research.url,
+      source_count: research.sources.length,
     },
   });
 
@@ -147,6 +153,7 @@ export async function runCustomNews(
     items: result.itemCount,
     notified,
     url: research.url,
+    sources: research.sources.length,
   });
 
   return {
