@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- AI Today Brief — universal avatar (renders as a circle on every platform).
+       Monogram kept inside the central 70% so circular crops never clip it. -->
+  <rect width="1024" height="1024" fill="#0f1115"/>
+  <circle cx="512" cy="512" r="438" fill="none" stroke="#f0c040" stroke-opacity="0.28" stroke-width="10"/>
+  <text x="486" y="588" text-anchor="middle"
+        font-family="Fraunces, Georgia, 'Times New Roman', serif"
+        font-size="340" font-weight="700" letter-spacing="-8" fill="#e8e8e8">AT</text>
+  <text x="700" y="588" text-anchor="middle"
+        font-family="Fraunces, Georgia, 'Times New Roman', serif"
+        font-size="340" font-weight="700" fill="#f0c040">B</text>
+  <circle cx="512" cy="724" r="26" fill="#f0c040"/>
+</svg>

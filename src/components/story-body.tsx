@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { getStrings } from '@/lib/i18n';
+import { buildFactsVisual } from '@/lib/facts-visual';
 import type { BriefItemDetail, ItemImpactLevel } from '@/lib/items';
 import type { Lang } from '@/lib/site';
+import { FactsVisualBlock } from '@/components/facts-visual';
 import { MarkdownBody } from '@/components/markdown-body';
 
 export type ToolLink = { name: string; href: string | null };
@@ -50,6 +52,7 @@ export function StoryBody({
   const t = getStrings(lang);
   const color = detail.categoryColor ?? '#888888';
   const catStyle = { '--cat-color': color } as CSSProperties;
+  const factsVisual = buildFactsVisual(detail.facts);
 
   return (
     <div>
@@ -98,6 +101,7 @@ export function StoryBody({
           >
             {t.factsTitle}
           </p>
+          {factsVisual && <FactsVisualBlock visual={factsVisual} color={color} />}
           <dl className="m-0">
             {detail.facts.map((fact, i) => (
               <div
