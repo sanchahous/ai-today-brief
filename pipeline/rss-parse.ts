@@ -14,6 +14,16 @@ function tagText(block: string, tag: string): string {
   return m?.[1]?.trim() ?? '';
 }
 
+/**
+ * True when the document carries RSS/Atom entries at all — regardless of the
+ * rolling window. Distinguishes a QUIET feed (entries exist, none fresh) from
+ * a DEAD one (moved/replaced with HTML, no entries): only the latter should
+ * alert source health.
+ */
+export function feedHasEntries(xml: string): boolean {
+  return /<item[\s>]|<entry[\s>]/i.test(xml);
+}
+
 export function parseRssFeedXml(
   xml: string,
   sourceName: string,

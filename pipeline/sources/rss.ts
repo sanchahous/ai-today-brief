@@ -1,13 +1,13 @@
 /**
  * RSS/Atom primary source — fetch each feed, parse with the shared pure parser.
- * Reports dead feeds (HTTP failure or zero parsed entries) so a single broken
- * first-party feed surfaces in source health instead of hiding behind the
- * other ten: the whole point of this source is the lab blogs, and those are
- * exactly the feeds that die quietly when a vendor restructures their site.
+ * Reports dead feeds (HTTP failure, or a document with no entries at all) so a
+ * single broken first-party feed surfaces in source health instead of hiding
+ * behind the other ten. A feed whose entries are merely older than the rolling
+ * window is QUIET, not dead — weekly lab blogs spend most days that way.
  */
 
 import { logError, logEvent } from '../log';
-import { parseRssFeedXml } from '../rss-parse';
+import { feedHasEntries, parseRssFeedXml } from '../rss-parse';
 import { RSS_FEEDS } from './feeds';
 import { fetchWithRetry, isSuccessfulResponse, type FetchedArticle } from './http';
 
@@ -36,10 +36,12 @@ export async function fetchRSS(
       const xml = await res!.text();
       const parsed = parseRssFeedXml(xml, feed.name, feed.url);
       if (parsed.length === 0) {
-        // These feeds always carry historical entries; an empty parse means
-        // the feed moved or changed format, not a quiet news day.
-        logEvent('warn', 'fetch', 'RSS feed parsed to zero entries', { feed: feed.name });
-        deadFeeds.push(feed.name);
+        // The parser window-filters internally — zero parsed entries usually
+        // means a quiet 24h, not a broken feed. Dead = no entries at all.
+        if (!feedHasEntries(xml)) {
+          logEvent('warn', 'fetch', 'RSS feed has no entries — looks dead', { feed: feed.name });
+          deadFeeds.push(feed.name);
+        }
         continue;
       }
       articles.push(...parsed);
