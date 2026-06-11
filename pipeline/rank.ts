@@ -105,9 +105,11 @@ function saturate(value: number, half: number): number {
 const SOURCE_TRUST: Array<[RegExp, number]> = [
   [/\b(anthropic|openai|google (research|ai)|deepmind|hugging ?face|meta ai|nvidia)\b/i, 1],
   [/\b(hacker news|simon willison|github|arxiv)\b/i, 0.9],
-  [/\b(ars ?technica|the verge|mit tech(nology)?|techcrunch)\b/i, 0.75],
+  [/\b(ars ?technica|mit tech(nology)?|techcrunch)\b/i, 0.75],
   [/\b(reddit)\b/i, 0.7],
-  [/\b(venturebeat|marktechpost|youtube|x\.com|twitter|threads)\b/i, 0.55],
+  // The Verge demoted: 33 fetched / 0 published in the first month — reader
+  // profile mismatch (consumer angle), not a quality judgement.
+  [/\b(venturebeat|marktechpost|youtube|x\.com|twitter|threads|the verge)\b/i, 0.55],
 ];
 
 export function sourceTrust(sourceName: string): number {
