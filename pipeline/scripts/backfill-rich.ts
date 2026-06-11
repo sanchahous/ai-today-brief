@@ -188,7 +188,7 @@ async function main(): Promise<void> {
     const drafts: DraftItem[] = parseBrief(text, pool).items;
 
     // Fact-control identical to the live pipeline: verify → revise → re-verify.
-    await verifyClaims(drafts, enrichment, config.geminiApiKey, 2);
+    await verifyClaims(drafts, enrichment, config.geminiApiKey, 2, config.openRouterApiKey);
     const flagged = drafts.filter((d) => d.unsupported_claims.length > 0);
     if (flagged.length > 0) {
       const { revised } = await reviseFlaggedItems(
@@ -197,9 +197,10 @@ async function main(): Promise<void> {
         pool,
         config.geminiApiKey,
         2,
+        config.openRouterApiKey,
       );
       if (revised.length > 0) {
-        await verifyClaims(revised, enrichment, config.geminiApiKey, 2);
+        await verifyClaims(revised, enrichment, config.geminiApiKey, 2, config.openRouterApiKey);
       }
       const byRef = new Map(revised.map((r) => [r.ref, r]));
       for (let i = 0; i < drafts.length; i++) {

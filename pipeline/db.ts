@@ -29,25 +29,33 @@ export function createServiceClient(url: string, serviceKey: string): PipelineDb
   });
 }
 
+/** Per-URL ranking telemetry persisted onto articles (weight-tuning dataset). */
+export type ArticleScores = Map<string, { score: number; mentions: number }>;
+
 /** Upsert the raw audit-trail rows; return a url→id map for FK wiring. */
 export async function upsertArticles(
   db: PipelineDb,
   articles: FetchedArticle[],
+  scoresByUrl?: ArticleScores,
 ): Promise<Map<string, string>> {
   if (articles.length === 0) return new Map();
-  const rows = articles.map((a) => ({
-    source_name: a.source_name,
-    source_url: a.source_url,
-    title: a.title,
-    url: a.url,
-    published_at: a.published_at,
-    raw: a.raw as Database['public']['Tables']['articles']['Insert']['raw'],
-    hn_score: a.hn_score,
-    hn_comments: a.hn_comments,
-    reddit_score: a.reddit_score,
-    reddit_comments: a.reddit_comments,
-    inbrief_score: a.inbrief_score,
-  }));
+  const rows = articles.map((a) => {
+    const s = scoresByUrl?.get(a.url);
+    return {
+      source_name: a.source_name,
+      source_url: a.source_url,
+      title: a.title,
+      url: a.url,
+      published_at: a.published_at,
+      raw: a.raw as Database['public']['Tables']['articles']['Insert']['raw'],
+      hn_score: a.hn_score,
+      hn_comments: a.hn_comments,
+      reddit_score: a.reddit_score,
+      reddit_comments: a.reddit_comments,
+      inbrief_score: a.inbrief_score,
+      ...(s ? { composite_score: s.score, mentions_count: s.mentions } : {}),
+    };
+  });
   const { data, error } = await db
     .from('articles')
     .upsert(rows, { onConflict: 'url' })

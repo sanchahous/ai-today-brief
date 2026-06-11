@@ -29,6 +29,19 @@ export const REDDIT_URLS = [
 export const REDDIT_USER_AGENT = 'ai-today-brief/1.0 (daily AI/dev brief pipeline)';
 
 /**
+ * Bluesky public AppView search — live dev-community discussion (X/Threads
+ * conversations increasingly mirror here, and this API is open and free).
+ * Only posts that LINK OUT are kept (analog of skipping Reddit self-posts).
+ */
+export const BLUESKY_QUERIES = [
+  'Claude Code',
+  'MCP server',
+  'Cursor IDE',
+  'AI agent',
+  'LLM',
+] as const;
+
+/**
  * RSS feeds — first-party lab blogs + quality media, fetched as a primary
  * source. Names are the canonical publication labels (see `source-names.ts`)
  * so feed items merge with the same outlet arriving via InBrief.

@@ -15,9 +15,11 @@
 import { SchemaType } from '@google/generative-ai';
 import type { EnrichedSource } from './enrich';
 import { resolveGeminiModelQueue } from './gemini-models';
-import { logEvent } from './log';
+import { logEvent, serializeErrorDetails } from './log';
+import type { OpenRouterResponseValidator } from './openrouter-brief-json';
 import type { PoolItem } from './select';
 import {
+  estimateUsage,
   GEMINI_SCHEMA,
   generateWithModelQueue,
   parseBrief,
@@ -25,6 +27,57 @@ import {
   type GeminiResponseSchema,
   type LlmUsage,
 } from './summarize';
+
+/**
+ * Lenient validator for the OpenRouter lane: verify/revise payloads are
+ * guarded downstream (`parseVerifyResults`, `parseBrief`), so syntactic JSON
+ * is enough here — a parse failure advances the chain to the next model.
+ */
+const validateGenericJson: OpenRouterResponseValidator = (_modelId, rawText, finishReason) => {
+  if (finishReason === 'length') throw new SyntaxError('[verify] truncated completion');
+  const text = rawText.trim();
+  JSON.parse(text);
+  return text;
+};
+
+/* v8 ignore start -- thin provider plumbing; both lanes are integration-covered */
+/** Gemini queue first; on exhaustion, the OpenRouter `:free` chain. */
+async function generateJsonWithFallback(
+  prompt: string,
+  apiKey: string,
+  geminiMaxAttempts: number,
+  schema: GeminiResponseSchema,
+  openRouterApiKey?: string,
+): Promise<{ text: string; model: string | null; usage: LlmUsage | null }> {
+  const modelQueue = await resolveGeminiModelQueue(apiKey);
+  try {
+    return await generateWithModelQueue(
+      prompt,
+      apiKey,
+      modelQueue,
+      geminiMaxAttempts,
+      undefined,
+      undefined,
+      schema,
+    );
+  } catch (geminiError) {
+    if (!openRouterApiKey) throw geminiError;
+    logEvent('warn', 'verify', 'Gemini queue exhausted — OpenRouter fallback', {
+      ...serializeErrorDetails(geminiError),
+    });
+    const { generateWithOpenRouterChain } = await import('./openrouter-summarize');
+    const result = await generateWithOpenRouterChain(prompt, {
+      apiKey: openRouterApiKey,
+      validateResponse: validateGenericJson,
+    });
+    return {
+      text: result.text,
+      model: `openrouter:${result.model}`,
+      usage: estimateUsage(prompt.length, result.text.length),
+    };
+  }
+}
+/* v8 ignore end */
 
 const VERIFY_SCHEMA: GeminiResponseSchema = {
   type: SchemaType.OBJECT,
@@ -136,20 +189,18 @@ export async function verifyClaims(
   enrichment: EnrichedSource[],
   apiKey: string,
   geminiMaxAttempts: number,
+  openRouterApiKey?: string,
 ): Promise<VerifyOutcome> {
   const pairs = verifiableItems(items, enrichment);
   if (pairs.length === 0) return { checked: 0, flagged: 0, usage: null, model: null };
 
   const prompt = buildVerifyPrompt(pairs);
-  const modelQueue = await resolveGeminiModelQueue(apiKey);
-  const { text, model, usage } = await generateWithModelQueue(
+  const { text, model, usage } = await generateJsonWithFallback(
     prompt,
     apiKey,
-    modelQueue,
     geminiMaxAttempts,
-    undefined,
-    undefined,
     VERIFY_SCHEMA,
+    openRouterApiKey,
   );
 
   const byRef = parseVerifyResults(text, new Set(pairs.map((p) => p.item.ref)));
@@ -233,6 +284,7 @@ export async function reviseFlaggedItems(
   candidates: PoolItem[],
   apiKey: string,
   geminiMaxAttempts: number,
+  openRouterApiKey?: string,
 ): Promise<{ revised: DraftItem[]; usage: LlmUsage | null }> {
   const pairs = verifiableItems(flagged, enrichment).filter(
     (p) => p.item.unsupported_claims.length > 0,
@@ -240,15 +292,12 @@ export async function reviseFlaggedItems(
   if (pairs.length === 0) return { revised: [], usage: null };
 
   const prompt = buildRevisePrompt(pairs);
-  const modelQueue = await resolveGeminiModelQueue(apiKey);
-  const { text, usage } = await generateWithModelQueue(
+  const { text, usage } = await generateJsonWithFallback(
     prompt,
     apiKey,
-    modelQueue,
     geminiMaxAttempts,
-    undefined,
-    undefined,
     GEMINI_SCHEMA,
+    openRouterApiKey,
   );
 
   const flaggedRefs = new Set(pairs.map((p) => p.item.ref));
