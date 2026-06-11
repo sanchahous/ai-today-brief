@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getBeehiivCredentials } from '@/lib/beehiiv-config';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { LANGS, type Lang } from '@/lib/site';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,6 +65,25 @@ export async function POST(request: Request) {
 
   if (!res.ok) {
     return NextResponse.json({ error: 'provider_failed' }, { status: 502 });
+  }
+
+  // Mirror into our own subscribers table — growth analytics + segments live
+  // here, independent of the provider. Best-effort: a failure must not break
+  // the signup the reader just completed on Beehiiv's side.
+  try {
+    const db = getSupabaseAdmin();
+    const { error } = await db
+      .from('subscribers')
+      .upsert(
+        { email, lang, status: 'active', source: 'site', placement },
+        { onConflict: 'email' },
+      );
+    if (error) console.error('[subscribe] subscribers upsert failed:', error.message);
+  } catch (err) {
+    console.error(
+      '[subscribe] subscribers mirror failed:',
+      err instanceof Error ? err.message : String(err),
+    );
   }
 
   return NextResponse.json({ ok: true });
