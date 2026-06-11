@@ -10,10 +10,12 @@
  */
 
 import { loadPipelineConfig } from './config';
+import { enrichPool, type EnrichedSource } from './enrich';
 import { collectArticles, toCandidate } from './fetch';
 import { rankCandidates } from './rank';
 import { isColdSingleton, selectPool } from './select';
 import { summarize, type DraftBrief } from './summarize';
+import { verifyClaims } from './verify';
 import { publish } from './publish';
 import { notifyReview } from './notify';
 import { createEmbedder, type EmbedFn } from './embeddings';
@@ -277,6 +279,33 @@ async function main(): Promise<void> {
     }
   }
 
+  // ── Enrich ───────────────────────────────────────────────────────────────────
+  // Fetch the actual source pages for the top candidates so the editor model
+  // writes from full text (numbers, prices, commands) instead of headlines.
+  let enrichment: EnrichedSource[] = [];
+  if (config.enrichLimit > 0) {
+    t = Date.now();
+    const discussionUrlByUrl = new Map(
+      fetched
+        .filter((a) => a.source_url && a.source_url !== a.url)
+        .map((a) => [a.url, a.source_url]),
+    );
+    enrichment = await enrichPool(dedupedPool, discussionUrlByUrl, config.enrichLimit);
+    await logStage(db, config.dryRun, {
+      date,
+      stage: 'enrich',
+      status: enrichment.some((e) => e.text) ? 'ok' : 'skipped',
+      durationMs: Date.now() - t,
+      meta: {
+        ...runMeta,
+        targets: Math.min(config.enrichLimit, dedupedPool.length),
+        with_text: enrichment.filter((e) => e.text).length,
+        with_image: enrichment.filter((e) => e.ogImage).length,
+        with_comments: enrichment.filter((e) => e.comments.length > 0).length,
+      },
+    });
+  }
+
   // ── Summarize ────────────────────────────────────────────────────────────────
   t = Date.now();
   // "Do not repeat" context: today's packs first (intra-day), then the recent
@@ -296,6 +325,7 @@ async function main(): Promise<void> {
     config.geminiApiKey,
     openRouterKey,
     geminiAttempts,
+    enrichment,
   );
   const { brief, providerModel, usage } = summarized;
   await logStage(db, config.dryRun, {
@@ -316,6 +346,53 @@ async function main(): Promise<void> {
   if (brief.items.length === 0) {
     logEvent('info', 'summarize', 'Editor kept nothing — skipping');
     return;
+  }
+
+  // Hero images come from the source pages' og:image, never from the LLM.
+  const imageByUrl = new Map(
+    enrichment.filter((e) => e.ogImage).map((e) => [e.url, e.ogImage!]),
+  );
+  for (const item of brief.items) {
+    item.image_url = imageByUrl.get(item.url) ?? null;
+  }
+
+  // ── Verify ───────────────────────────────────────────────────────────────────
+  // Fact-check drafted claims against the fetched source texts. Non-fatal:
+  // failures mark items for the reviewer instead of blocking the run.
+  if (config.verifyClaims && enrichment.some((e) => e.text)) {
+    t = Date.now();
+    try {
+      const outcome = await verifyClaims(
+        brief.items,
+        enrichment,
+        config.geminiApiKey,
+        geminiAttempts,
+      );
+      await logStage(db, config.dryRun, {
+        date,
+        stage: 'verify',
+        status: outcome.checked > 0 ? 'ok' : 'skipped',
+        durationMs: Date.now() - t,
+        meta: {
+          ...runMeta,
+          checked: outcome.checked,
+          flagged: outcome.flagged,
+          model: outcome.model,
+          prompt_tokens: outcome.usage?.promptTokens ?? null,
+          output_tokens: outcome.usage?.outputTokens ?? null,
+        },
+      });
+    } catch (e) {
+      logError('verify', 'Claim verification failed (non-fatal)', e);
+      await logStage(db, config.dryRun, {
+        date,
+        stage: 'verify',
+        status: 'failed',
+        durationMs: Date.now() - t,
+        meta: runMeta,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
   }
 
   // ── Publish (or preview) ─────────────────────────────────────────────────────

@@ -96,6 +96,21 @@ canonical source names via `source-names.ts`) →
 `filterToRollingWindow` (keep `published_at` within the last 24h). Output: an
 in-memory `FetchedArticle[]`. **No DB yet.** If empty → run stops.
 
+### 3.7. Enrich — `enrich.ts` (Phase 1)
+For the top `ENRICH_LIMIT` (default 8) deduped pool candidates, fetch the
+actual source page: heuristic readability extraction (largest `<article>` →
+`<main>` → `<body>`, prose lines only, ≤ 8k chars), `og:image`, and the top 5
+HN comments via Algolia when the story has an HN discussion. The summarizer
+prompt gets a SOURCE MATERIAL block — items are written from full text
+(numbers, prices, commands), not headlines. Failures degrade per-candidate.
+
+### 4.5. Verify — `verify.ts` (Phase 1)
+A second Gemini pass compares each drafted item's EN claims (title, summary,
+facts, body) against its fetched source text and lists unsupported claims.
+Non-fatal: failures land in `unsupported_claims` → `review_comment`, so the
+Telegram reviewer decides with the warning in view. Skipped for items without
+source text and when `VERIFY_CLAIMS=0`.
+
 ### 2. Rank — `rank.ts`
 Each `FetchedArticle` → `Candidate` (`toCandidate`, one row = one "mention").
 

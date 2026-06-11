@@ -25,6 +25,10 @@ export interface PipelineConfig {
   recentTitles: number;
   /** Max pool candidates to embed per run (keeps us under the Gemini quota). */
   embedLimit: number;
+  /** Top pool candidates whose source pages are fetched for the summarizer (0 disables). */
+  enrichLimit: number;
+  /** Run the post-summarize fact-check pass against fetched source texts. */
+  verifyClaims: boolean;
   /** Cosine distance ceiling: candidates closer than this to a published item are dropped. */
   maxEmbedDistance: number;
   /**
@@ -97,6 +101,8 @@ export function loadPipelineConfig(
     minScore: floatIn(env.MIN_SCORE, 0.15, 0, 1),
     recentTitles: intIn(env.RECENT_TITLES, 60, 0, 200),
     embedLimit: intIn(env.EMBED_LIMIT, 20, 1, 50),
+    enrichLimit: intIn(env.ENRICH_LIMIT, 8, 0, 16),
+    verifyClaims: env.VERIFY_CLAIMS !== '0',
     maxEmbedDistance: floatIn(env.MAX_EMBED_DISTANCE, 0.20, 0.05, 1),
     openRouterApiKey: firstNonEmpty(env.OPEN_ROUTER_API_KEY, env.OPENROUTER_API_KEY),
     telegramBotToken: env.TELEGRAM_BOT_TOKEN?.trim() || undefined,

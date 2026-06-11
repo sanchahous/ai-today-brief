@@ -203,6 +203,18 @@ type BriefItemContentRow = {
   why_matters_uk: string;
   deep_dive_en: string;
   deep_dive_uk: string;
+  body_md_en: string | null;
+  body_md_uk: string | null;
+  facts_en: DraftItem['facts_en'];
+  facts_uk: DraftItem['facts_uk'];
+  code_snippet: DraftItem['code_snippet'];
+  when_to_use_en: string[];
+  when_to_use_uk: string[];
+  when_not_to_use_en: string[];
+  when_not_to_use_uk: string[];
+  community_reactions: DraftItem['community_reactions'];
+  citations: DraftItem['citations'];
+  image_url: string | null;
   takeaways_en: string[];
   takeaways_uk: string[];
   tools_mentioned: string[];
@@ -232,6 +244,18 @@ export function draftItemToRow(
     why_matters_uk: item.why_matters_uk,
     deep_dive_en: item.deep_dive_en,
     deep_dive_uk: item.deep_dive_uk,
+    body_md_en: item.body_md_en || null,
+    body_md_uk: item.body_md_uk || null,
+    facts_en: item.facts_en,
+    facts_uk: item.facts_uk,
+    code_snippet: item.code_snippet,
+    when_to_use_en: item.when_to_use_en,
+    when_to_use_uk: item.when_to_use_uk,
+    when_not_to_use_en: item.when_not_to_use_en,
+    when_not_to_use_uk: item.when_not_to_use_uk,
+    community_reactions: item.community_reactions,
+    citations: item.citations,
+    image_url: item.image_url,
     takeaways_en: item.takeaways_en,
     takeaways_uk: item.takeaways_uk,
     tools_mentioned: item.tools_mentioned,
@@ -280,9 +304,22 @@ export async function syncBriefItems(
   return syncBriefItemsUpsert(db, briefId, items, articleIdByUrl, existing ?? []);
 }
 
-/** Review-queue note for items whose Ukrainian fields failed the language check. */
-export function ukReviewComment(flags: string[]): string {
-  return `⚠️ Авто-перевірка мови: підозрілі поля — ${flags.join(', ')}`;
+/**
+ * Review-queue note combining the automated checks: Ukrainian language flags
+ * and claims the VERIFY pass could not find in the source. Null when clean.
+ */
+export function autoReviewComment(item: {
+  uk_quality_flags: string[];
+  unsupported_claims: string[];
+}): string | null {
+  const notes: string[] = [];
+  if (item.uk_quality_flags.length > 0) {
+    notes.push(`мова: ${item.uk_quality_flags.join(', ')}`);
+  }
+  if (item.unsupported_claims.length > 0) {
+    notes.push(`джерело не підтверджує: ${item.unsupported_claims.slice(0, 3).join('; ')}`);
+  }
+  return notes.length > 0 ? `⚠️ Авто-перевірка: ${notes.join(' | ')}` : null;
 }
 
 async function syncBriefItemsUpsert(
@@ -314,15 +351,12 @@ async function syncBriefItemsUpsert(
       // Same story re-titled: keep the established slug — it is unique per
       // brief and already on the reviewer's card.
       if (prev.slug && prev.slug !== item.slug) payload.slug = prev.slug;
-      // Surface a language flag on still-pending items; never touch the
+      // Surface auto-check notes on still-pending items; never touch the
       // comment after a decision (reject reasons live there).
-      const langComment =
-        prev.review_status === 'pending' && item.uk_quality_flags.length > 0
-          ? { review_comment: ukReviewComment(item.uk_quality_flags) }
-          : {};
+      const note = prev.review_status === 'pending' ? autoReviewComment(item) : null;
       const { error } = await db
         .from('brief_items')
-        .update({ ...payload, ...langComment })
+        .update({ ...payload, ...(note ? { review_comment: note } : {}) })
         .eq('id', prev.id);
       if (error) throw new Error(`[db] syncBriefItems update failed: ${error.message}`);
       synced++;
@@ -340,13 +374,12 @@ async function syncBriefItemsUpsert(
     }
 
     const payload = draftItemToRow(item, rank, articleId);
+    const insertNote = autoReviewComment(item);
     const { error } = await db.from('brief_items').insert({
       brief_id: briefId,
       ...payload,
       review_status: 'pending',
-      ...(item.uk_quality_flags.length > 0
-        ? { review_comment: ukReviewComment(item.uk_quality_flags) }
-        : {}),
+      ...(insertNote ? { review_comment: insertNote } : {}),
     });
     if (error) throw new Error(`[db] syncBriefItems insert failed: ${error.message}`);
     usedRanks.add(rank);
