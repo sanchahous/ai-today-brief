@@ -3,8 +3,10 @@ import {
   buildConceptPrompt,
   buildConceptRevisePrompt,
   buildConceptVerifyPrompt,
+  decideVerification,
   parseConceptDrafts,
   parseConceptVerify,
+  parseFaq,
   type ConceptDraft,
   type ConceptHubRow,
 } from './concept-backfill';
@@ -37,6 +39,7 @@ const draft = (over: Partial<ConceptDraft> = {}): ConceptDraft => ({
   faq_en: [{ q: 'Aider vs Cursor?', a: 'Terminal vs IDE.' }],
   faq_uk: [{ q: 'Aider чи Cursor?', a: 'Термінал проти IDE.' }],
   unsupported_claims: [],
+  definitional_claims: [],
   ...over,
 });
 
@@ -116,22 +119,61 @@ describe('buildConceptVerifyPrompt', () => {
 });
 
 describe('parseConceptVerify', () => {
-  it('maps refs to trimmed claims and drops hallucinated refs', () => {
+  it('maps refs to trimmed claim buckets and drops hallucinated refs', () => {
     const text = JSON.stringify({
       results: [
-        { ref: 1, unsupported_claims: ['  invented price  ', ''] },
-        { ref: 7, unsupported_claims: ['ghost'] },
-        { ref: 2, unsupported_claims: 'not-an-array' },
+        {
+          ref: 1,
+          specific_claims: ['  invented price  ', ''],
+          definitional_claims: ['is an AI-native IDE'],
+        },
+        { ref: 7, specific_claims: ['ghost'], definitional_claims: [] },
+        { ref: 2, specific_claims: 'not-an-array', definitional_claims: 'nope' },
       ],
     });
     const map = parseConceptVerify(text, new Set([1, 2]));
-    expect(map.get(1)).toEqual(['invented price']);
-    expect(map.get(2)).toEqual([]);
+    expect(map.get(1)).toEqual({
+      specific: ['invented price'],
+      definitional: ['is an AI-native IDE'],
+    });
+    expect(map.get(2)).toEqual({ specific: [], definitional: [] });
     expect(map.has(7)).toBe(false);
   });
 
   it('returns an empty map for a payload without results', () => {
     expect(parseConceptVerify('{}', new Set([1])).size).toBe(0);
+  });
+});
+
+describe('decideVerification', () => {
+  it('is unchecked without source text, regardless of claims', () => {
+    expect(decideVerification(false, [])).toBe('unchecked');
+    expect(decideVerification(false, ['background statement'])).toBe('unchecked');
+  });
+
+  it('splits verified vs partial on definitional claims when source was checked', () => {
+    expect(decideVerification(true, [])).toBe('verified');
+    expect(decideVerification(true, ['unconfirmed background'])).toBe('partial');
+  });
+});
+
+describe('parseFaq', () => {
+  it('keeps valid trimmed pairs, drops junk, caps at 3', () => {
+    const faq = parseFaq([
+      { q: ' Q1 ', a: ' A1 ' },
+      { q: '', a: 'no question' },
+      { q: 1, a: null },
+      'string',
+      { q: 'Q2', a: 'A2' },
+      { q: 'Q3', a: 'A3' },
+      { q: 'Q4', a: 'A4' },
+    ]);
+    expect(faq).toEqual([
+      { q: 'Q1', a: 'A1' },
+      { q: 'Q2', a: 'A2' },
+      { q: 'Q3', a: 'A3' },
+    ]);
+    expect(parseFaq(null)).toEqual([]);
   });
 });
 

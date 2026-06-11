@@ -43,11 +43,25 @@ export interface ConceptFaqItem {
   a: string;
 }
 
+/**
+ * Fact-control marker set by the concept backfill: 'verified' (all claims
+ * confirmed against the official page), 'partial'/'unchecked' (background
+ * statements could not be cross-checked → soft note), null (human-curated).
+ */
+export type ConceptVerification = 'verified' | 'partial' | 'unchecked';
+
+function parseVerification(value: unknown): ConceptVerification | null {
+  return value === 'verified' || value === 'partial' || value === 'unchecked' ? value : null;
+}
+
 export interface ConceptDetail extends ConceptSummary {
   officialUrl: string | null;
   aliases: string[];
   body: string;
   faq: ConceptFaqItem[];
+  verification: ConceptVerification | null;
+  /** ISO timestamp of the last fact-control pass (null when never checked). */
+  verifiedAt: string | null;
 }
 
 function parseFaq(value: unknown): ConceptFaqItem[] {
@@ -86,7 +100,7 @@ export async function getConcept(slug: string, lang: Lang): Promise<ConceptDetai
   const { data: c, error } = await supabase
     .from('concepts')
     .select(
-      'slug, name_en, name_uk, description_en, description_uk, type, category, official_url, aliases, body_en, body_uk, faq_en, faq_uk',
+      'slug, name_en, name_uk, description_en, description_uk, type, category, official_url, aliases, body_en, body_uk, faq_en, faq_uk, verification_status, verified_at',
     )
     .eq('slug', slug)
     .maybeSingle();
@@ -101,6 +115,8 @@ export async function getConcept(slug: string, lang: Lang): Promise<ConceptDetai
     aliases: Array.isArray(c.aliases) ? c.aliases : [],
     body: pick(lang, c.body_en, c.body_uk),
     faq: parseFaq(lang === 'uk' ? c.faq_uk : c.faq_en),
+    verification: parseVerification(c.verification_status),
+    verifiedAt: c.verified_at,
   };
 }
 

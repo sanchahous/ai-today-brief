@@ -147,6 +147,9 @@ export const STRINGS = {
     briefPackUpdate: 'Update',
     conceptStories: 'Stories on this topic',
     conceptOverview: 'Overview',
+    conceptVerifiedNote: 'Specifics cross-checked against the official documentation',
+    conceptGeneralNote:
+      'Overview based on established industry knowledge; specific figures are published only after source verification.',
     conceptLatest: 'Latest stories',
     conceptFaq: 'FAQ',
     conceptOther: 'Related concepts',
@@ -394,6 +397,9 @@ export const STRINGS = {
     briefPackUpdate: 'Оновлення',
     conceptStories: 'Матеріали по темі',
     conceptOverview: 'Огляд',
+    conceptVerifiedNote: 'Конкретні факти звірено з офіційною документацією',
+    conceptGeneralNote:
+      'Огляд на основі усталених галузевих знань; конкретні цифри публікуємо лише після звірки з джерелами.',
     conceptLatest: 'Останні матеріали',
     conceptFaq: 'Питання й відповіді',
     conceptOther: 'Пов’язані концепти',
