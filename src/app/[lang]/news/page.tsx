@@ -9,7 +9,7 @@ import { Reveal } from '@/components/reveal';
 import { NewsFeed } from '@/components/news/news-feed';
 
 type Params = { lang: string };
-type Search = { q?: string; category?: string };
+type Search = { q?: string; category?: string; page?: string };
 
 export const revalidate = 1800;
 
@@ -50,11 +50,12 @@ export default async function NewsPage({
   const { lang: raw } = await params;
   if (!isLang(raw)) notFound();
   const lang: Lang = raw;
-  const { q, category } = await searchParams;
+  const { q, category, page: pageParam } = await searchParams;
   const t = getStrings(lang).news;
 
   const query = (q ?? '').trim();
   const categorySlug = (category ?? '').trim();
+  const initialPage = Math.max(1, parseInt(pageParam ?? '1', 10) || 1);
 
   const pageData = await getNewsPageData(lang);
   const items = query ? await searchNewsItems(lang, query) : pageData.items;
@@ -135,6 +136,7 @@ export default async function NewsPage({
         trending={pageData.trending}
         initialQuery={query}
         initialCategory={categorySlug}
+        initialPage={initialPage}
       />
     </div>
   );

@@ -7,7 +7,8 @@ import { trackEvent } from '@/lib/analytics-client';
 import type { TrendingTopic } from '@/lib/home';
 import type { NewsCategoryFilter } from '@/lib/news';
 import type { Lang } from '@/lib/site';
-import { CategoryGlyph, CloseIcon, SparkleIcon } from '@/components/icons';
+import { CategoryGlyph, CloseIcon } from '@/components/icons';
+import { NewsletterBand } from '@/components/home/newsletter-band';
 
 export type { SortMode, DatePreset } from '@/lib/news-filters';
 import type { SortMode, DatePreset } from '@/lib/news-filters';
@@ -128,8 +129,10 @@ function SidebarControls({
                   >
                     <CategoryGlyph icon={c.icon} size={16} strokeWidth={1.6} />
                   </span>
-                  <span className="flex-1">{c.name}</span>
-                  <span className="text-faint text-[0.72rem] tabular-nums">{count}</span>
+                  <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                  <span className="text-faint ml-2 shrink-0 text-[0.72rem] tabular-nums">
+                    {count}
+                  </span>
                 </label>
               </li>
             );
@@ -173,7 +176,7 @@ function SidebarControls({
       {trending.length > 0 && (
         <FilterGroup label={t.trendingSidebar} testId="news-trending-section">
           <ul className="m-0 grid list-none gap-1.5 p-0">
-            {trending.slice(0, 8).map((topic) => (
+            {trending.slice(0, 8).map((topic, idx) => (
               <li key={topic.name}>
                 <Link
                   href={topic.href}
@@ -183,11 +186,15 @@ function SidebarControls({
                       placement: 'news_sidebar',
                     })
                   }
-                  className="text-muted hover:text-accent flex items-center gap-1.5 text-[0.84rem] no-underline transition"
+                  className="text-muted hover:text-accent flex items-center gap-2 text-[0.84rem] no-underline transition"
                 >
-                  <SparkleIcon size={14} />
-                  <span className="flex-1">{topic.name}</span>
-                  <span className="text-faint text-[0.72rem] tabular-nums">{topic.mentions}</span>
+                  <span className="text-faint w-4 shrink-0 text-right text-[0.7rem] tabular-nums font-medium">
+                    {idx + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{topic.name}</span>
+                  <span className="text-faint ml-2 shrink-0 text-[0.72rem] tabular-nums">
+                    {topic.mentions}
+                  </span>
                 </Link>
               </li>
             ))}
@@ -221,10 +228,18 @@ export function NewsSidebar({
     <>
       <aside
         data-testid="news-sidebar"
-        className="sidebar-scroll desktop-only sticky top-[var(--header-h)] max-h-[calc(100dvh-var(--header-h)-1rem)] self-start overflow-y-auto overscroll-y-contain pr-1"
+        className="sidebar-scroll desktop-only sticky top-[var(--header-h)] max-h-[calc(100dvh-var(--header-h)-1rem)] self-start overflow-x-hidden overflow-y-auto overscroll-y-contain pr-3"
         aria-label={t.filters}
       >
         <SidebarControls {...controls} />
+        <div className="border-border mt-2 border-t pt-5">
+          <NewsletterBand
+            lang={controls.lang}
+            embedded
+            compact
+            placement="news-sidebar"
+          />
+        </div>
       </aside>
 
       {drawerOpen && (
