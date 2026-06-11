@@ -129,7 +129,7 @@ export async function getCategoryHub(slug: string, lang: Lang, limit = 80): Prom
   const { data: rows } = await supabase
     .from('brief_items')
     .select(
-      'id, slug, brief_id, rank, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, tools_mentioned, youtube_url, article_id',
+      'id, slug, brief_id, rank, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, tools_mentioned, youtube_url, image_url, article_id',
     )
     .eq('category_slug', slug)
     .in(
@@ -151,6 +151,7 @@ export async function getCategoryHub(slug: string, lang: Lang, limit = 80): Prom
     whyEn: string | null;
     whyUk: string | null;
     youtubeUrl: string | null;
+    imageUrl: string | null;
     tools: unknown;
     articleId: string;
   }[] = [];
@@ -172,6 +173,7 @@ export async function getCategoryHub(slug: string, lang: Lang, limit = 80): Prom
       whyEn: it.why_matters_en,
       whyUk: it.why_matters_uk,
       youtubeUrl: it.youtube_url,
+      imageUrl: it.image_url,
       tools: it.tools_mentioned,
       articleId: it.article_id,
     });
@@ -206,6 +208,7 @@ export async function getCategoryHub(slug: string, lang: Lang, limit = 80): Prom
       tools: toToolNames(r.tools),
       sourceName: sources.get(r.articleId) ?? null,
       readMinutes: Math.max(2, Math.round((wordCount(summary) + wordCount(why)) / 45)),
+      imageUrl: r.imageUrl?.startsWith('http') ? r.imageUrl : null,
     };
   });
 

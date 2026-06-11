@@ -98,6 +98,7 @@ function mapRowToItem(
     whyUk: string | null;
     categorySlug: string | null;
     youtubeUrl: string | null;
+    imageUrl: string | null;
     tools: unknown;
     sourceName: string | null;
   },
@@ -121,6 +122,7 @@ function mapRowToItem(
     tools: toToolNames(row.tools),
     sourceName: row.sourceName,
     readMinutes: Math.max(2, Math.round((wordCount(summary) + wordCount(why)) / 45)),
+    imageUrl: row.imageUrl?.startsWith('http') ? row.imageUrl : null,
   };
 }
 
@@ -156,7 +158,7 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
   const { data: rows } = await supabase
     .from('brief_items')
     .select(
-      'id, slug, brief_id, rank, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, tools_mentioned, youtube_url, article_id',
+      'id, slug, brief_id, rank, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, tools_mentioned, youtube_url, image_url, article_id',
     )
     .in(
       'brief_id',
@@ -179,6 +181,7 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
     whyUk: string | null;
     categorySlug: string | null;
     youtubeUrl: string | null;
+    imageUrl: string | null;
     tools: unknown;
     articleId: string;
   }[] = [];
@@ -202,6 +205,7 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
       whyUk: it.why_matters_uk,
       categorySlug: it.category_slug,
       youtubeUrl: it.youtube_url,
+      imageUrl: it.image_url,
       tools: it.tools_mentioned,
       articleId: it.article_id,
     });
@@ -284,6 +288,7 @@ function mapSearchRow(
     tools: [],
     sourceName: r.source_name ?? null,
     readMinutes: Math.max(2, Math.round(wordCount(summary) / 45)),
+    imageUrl: null, // search RPC payload carries no image
   };
 }
 

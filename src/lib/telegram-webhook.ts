@@ -6,7 +6,7 @@
  * intentionally duplicated here (it's a string prefix, not logic).
  */
 
-export type ReviewAction = 'approve' | 'reject' | 'redo';
+export type ReviewAction = 'approve' | 'reject' | 'redo' | 'take';
 export type WebhookAction = ReviewAction | 'publish';
 
 // ─── Callback data ────────────────────────────────────────────────────────────
@@ -14,6 +14,7 @@ export type WebhookAction = ReviewAction | 'publish';
 const APPROVE_PREFIX = 'ap:';
 const REJECT_PREFIX  = 'rj:';
 const REDO_PREFIX    = 'rd:';
+const TAKE_PREFIX    = 'tk:';
 const PUBLISH_PREFIX = 'pub:';
 
 export function parseCallbackData(
@@ -22,6 +23,7 @@ export function parseCallbackData(
   if (data.startsWith(APPROVE_PREFIX)) return { action: 'approve', id: data.slice(APPROVE_PREFIX.length) };
   if (data.startsWith(REJECT_PREFIX))  return { action: 'reject',  id: data.slice(REJECT_PREFIX.length) };
   if (data.startsWith(REDO_PREFIX))    return { action: 'redo',    id: data.slice(REDO_PREFIX.length) };
+  if (data.startsWith(TAKE_PREFIX))    return { action: 'take',    id: data.slice(TAKE_PREFIX.length) };
   if (data.startsWith(PUBLISH_PREFIX)) return { action: 'publish', id: data.slice(PUBLISH_PREFIX.length) };
   return null;
 }
@@ -40,6 +42,18 @@ const ITEM_ID_MARKER = '🔑';
  */
 export function buildRejectPrompt(title: string, itemId: string): string {
   return `❌ Причина відхилення:\n«${title}»\n${ITEM_ID_MARKER} ${itemId}`;
+}
+
+/** Asks for the editor's take — rendered on the article page once saved. */
+export function buildTakePrompt(title: string, itemId: string): string {
+  return `✍️ Думка редактора (2–4 речення, піде на сайт):\n«${title}»\n${ITEM_ID_MARKER} ${itemId}`;
+}
+
+/** Which force-reply prompt a reply answers — both carry the 🔑 item id line. */
+export function replyActionFromPrompt(text: string): 'reject' | 'take' | null {
+  if (text.startsWith('❌')) return 'reject';
+  if (text.startsWith('✍️')) return 'take';
+  return null;
 }
 
 /** Extract the item id from the text of the force-reply prompt message. */

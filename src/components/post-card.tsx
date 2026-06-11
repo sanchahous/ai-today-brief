@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useId, useState, type CSSProperties } from 'react';
 import type { HomeItem } from '@/lib/home';
@@ -100,12 +101,24 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
           aria-label={item.title}
           className="block w-full cursor-pointer border-0 bg-transparent p-0 text-left"
         >
-          <CategoryThumb
-            name={item.categoryName ?? 'AI'}
-            color={color}
-            icon={meta.icon}
-            size={92}
-          />
+          {item.imageUrl ? (
+            <span className="border-border relative block h-[92px] w-[92px] overflow-hidden rounded-lg border">
+              <Image
+                src={item.imageUrl}
+                alt=""
+                fill
+                sizes="92px"
+                className="object-cover"
+              />
+            </span>
+          ) : (
+            <CategoryThumb
+              name={item.categoryName ?? 'AI'}
+              color={color}
+              icon={meta.icon}
+              size={92}
+            />
+          )}
         </button>
 
         <div className="min-w-0">

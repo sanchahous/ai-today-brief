@@ -26,6 +26,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import {
   approvedBanner,
   buildRejectPrompt,
+  buildTakePrompt,
   decorateCard,
   extractItemIdFromPrompt,
   formatBriefSummary,
@@ -34,6 +35,7 @@ import {
   publishKeyboard,
   redoneBanner,
   rejectedBanner,
+  replyActionFromPrompt,
 } from '@/lib/telegram-webhook';
 
 // ─── Telegram Bot API ─────────────────────────────────────────────────────────
@@ -225,6 +227,62 @@ async function handleRejectInit(
   const promptText = buildRejectPrompt(title, itemId);
   // force_reply opens the reply bar automatically in the Telegram app
   await sendMsg(chatId, promptText, { reply_markup: { force_reply: true } });
+}
+
+/** Send force-reply prompt asking for the editor's take. */
+async function handleTakeInit(
+  db: ReturnType<typeof getSupabaseAdmin>,
+  itemId: string,
+  chatId: string,
+): Promise<void> {
+  const { data: item } = await db
+    .from('brief_items')
+    .select('title_uk, title_en')
+    .eq('id', itemId)
+    .single();
+
+  const title = item?.title_uk ?? item?.title_en ?? 'item';
+  await sendMsg(chatId, buildTakePrompt(title, itemId), {
+    reply_markup: { force_reply: true },
+  });
+}
+
+/**
+ * Save the editor's take. Allowed at any review state — the take is the
+ * human-verdict paragraph on the article page, not a review decision — and a
+ * later reply simply replaces the previous take.
+ */
+async function handleEditorTake(
+  db: ReturnType<typeof getSupabaseAdmin>,
+  itemId: string,
+  take: string,
+  chatId: string,
+): Promise<void> {
+  const { data: item, error } = await db
+    .from('brief_items')
+    .update({ editor_take: take })
+    .eq('id', itemId)
+    .select('brief_id, slug, title_uk, title_en')
+    .single();
+
+  if (error || !item) {
+    await sendMsg(chatId, '⚠️ Матеріал не знайдено — тейк не збережено.');
+    return;
+  }
+
+  // If the brief is already live, refresh the item pages so the take shows up.
+  const { data: brief } = await db
+    .from('briefs')
+    .select('slug, status')
+    .eq('id', item.brief_id)
+    .maybeSingle();
+  if (brief?.status === 'published' && brief.slug && item.slug) {
+    revalidatePath(`/en/${brief.slug}/${item.slug}`);
+    revalidatePath(`/uk/${brief.slug}/${item.slug}`);
+  }
+
+  const title = item.title_uk ?? item.title_en ?? '–';
+  await sendMsg(chatId, `✍️ <b>Тейк збережено</b>\n«${escHtml(title)}»`);
 }
 
 async function handleRejectReason(
@@ -478,6 +536,8 @@ export async function POST(request: NextRequest): Promise<Response> {
         await handleRejectInit(db, parsed.id, chatId);
       } else if (parsed.action === 'redo') {
         await handleRedo(db, parsed.id, chatId);
+      } else if (parsed.action === 'take') {
+        await handleTakeInit(db, parsed.id, chatId);
       } else if (parsed.action === 'publish' && msgId) {
         await handlePublish(db, parsed.id, chatId, msgId);
       }
@@ -513,10 +573,15 @@ export async function POST(request: NextRequest): Promise<Response> {
       const itemId     = extractItemIdFromPrompt(promptText);
       if (!itemId) return NextResponse.json({ ok: true });
 
-      const reason = String((msg.text as string | undefined) ?? '').trim();
-      if (!reason) return NextResponse.json({ ok: true });
+      const replyText = String((msg.text as string | undefined) ?? '').trim();
+      if (!replyText) return NextResponse.json({ ok: true });
 
-      await handleRejectReason(db, itemId, reason, `tg:${userId}`, chatId);
+      const replyAction = replyActionFromPrompt(promptText);
+      if (replyAction === 'take') {
+        await handleEditorTake(db, itemId, replyText, chatId);
+      } else if (replyAction === 'reject') {
+        await handleRejectReason(db, itemId, replyText, `tg:${userId}`, chatId);
+      }
     }
   } catch (err) {
     // Always return 200 so Telegram doesn't retry indefinitely

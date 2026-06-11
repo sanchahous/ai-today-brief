@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   approvedBanner,
   buildRejectPrompt,
+  buildTakePrompt,
   decorateCard,
   extractItemIdFromPrompt,
   formatBriefSummary,
@@ -9,15 +10,17 @@ import {
   publishCallbackData,
   publishedBanner,
   rejectedBanner,
+  replyActionFromPrompt,
 } from './telegram-webhook';
 
 const UUID = '123e4567-e89b-12d3-a456-426614174000';
 
 describe('parseCallbackData', () => {
-  it('parses all four action prefixes', () => {
+  it('parses all five action prefixes', () => {
     expect(parseCallbackData(`ap:${UUID}`)).toEqual({ action: 'approve', id: UUID });
     expect(parseCallbackData(`rj:${UUID}`)).toEqual({ action: 'reject',  id: UUID });
     expect(parseCallbackData(`rd:${UUID}`)).toEqual({ action: 'redo',    id: UUID });
+    expect(parseCallbackData(`tk:${UUID}`)).toEqual({ action: 'take',    id: UUID });
     expect(parseCallbackData(`pub:${UUID}`)).toEqual({ action: 'publish', id: UUID });
   });
   it('returns null for unknown payloads', () => {
@@ -41,6 +44,18 @@ describe('buildRejectPrompt / extractItemIdFromPrompt', () => {
   });
   it('returns null when the id does not match uuid format', () => {
     expect(extractItemIdFromPrompt('🔑 not-a-uuid')).toBeNull();
+  });
+});
+
+describe('buildTakePrompt / replyActionFromPrompt', () => {
+  it('round-trips the item id and is recognized as a take prompt', () => {
+    const prompt = buildTakePrompt('Заголовок', UUID);
+    expect(extractItemIdFromPrompt(prompt)).toBe(UUID);
+    expect(replyActionFromPrompt(prompt)).toBe('take');
+  });
+  it('classifies reject prompts and ignores foreign messages', () => {
+    expect(replyActionFromPrompt(buildRejectPrompt('Т', UUID))).toBe('reject');
+    expect(replyActionFromPrompt('random message')).toBeNull();
   });
 });
 

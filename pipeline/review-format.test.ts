@@ -52,6 +52,10 @@ describe('callback data contract', () => {
       action: 'redo',
       itemId: 'abc-123',
     });
+    expect(parseCallbackData(callbackData('take', 'abc-123'))).toEqual({
+      action: 'take',
+      itemId: 'abc-123',
+    });
   });
   it('stays within Telegram’s 64-byte cap for a uuid', () => {
     expect(callbackData('reject', '123e4567-e89b-12d3-a456-426614174000').length).toBeLessThanOrEqual(64);
@@ -62,12 +66,17 @@ describe('callback data contract', () => {
 });
 
 describe('reviewKeyboard', () => {
-  it('has one row with approve + reject + redo buttons', () => {
+  it('has two rows: approve/reject and redo/take', () => {
     const kb = reviewKeyboard('abc-123');
-    expect(kb.inline_keyboard).toHaveLength(1);
-    expect(kb.inline_keyboard[0]).toHaveLength(3);
-    expect(kb.inline_keyboard[0]![0]!.callback_data).toBe('ap:abc-123');
-    expect(kb.inline_keyboard[0]![2]!.callback_data).toBe('rd:abc-123');
+    expect(kb.inline_keyboard).toHaveLength(2);
+    expect(kb.inline_keyboard[0]!.map((b) => b.callback_data)).toEqual([
+      'ap:abc-123',
+      'rj:abc-123',
+    ]);
+    expect(kb.inline_keyboard[1]!.map((b) => b.callback_data)).toEqual([
+      'rd:abc-123',
+      'tk:abc-123',
+    ]);
   });
 });
 
