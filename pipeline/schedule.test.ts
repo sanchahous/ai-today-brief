@@ -31,13 +31,13 @@ describe('getKyivCycleIndex', () => {
 describe('formatKyivSlotTime', () => {
   it('formats slot times within a progón', () => {
     expect(formatKyivSlotTime(2, 1)).toBe('08:00');
-    expect(formatKyivSlotTime(2, 6)).toBe('10:30');
+    expect(formatKyivSlotTime(2, 4)).toBe('09:30');
   });
 });
 
 describe('formatKyivCycleLabel', () => {
-  it('shows progón window', () => {
-    expect(formatKyivCycleLabel(2)).toBe('08:00–10:30');
+  it('shows the 4-slot progón window', () => {
+    expect(formatKyivCycleLabel(2)).toBe('08:00–09:30');
   });
 });
 
@@ -69,11 +69,12 @@ describe('getKyivScheduleAttemptSlot', () => {
     expect(getKyivScheduleAttemptSlot(kyiv(8, 30))).toBe(2);
   });
 
-  it('maps 10:30 → slot 6 (final)', () => {
-    expect(getKyivScheduleAttemptSlot(kyiv(10, 30))).toBe(6);
+  it('maps 09:30 → slot 4 (final)', () => {
+    expect(getKyivScheduleAttemptSlot(kyiv(9, 30))).toBe(4);
   });
 
-  it('returns null after the 2.5 h progón window', () => {
+  it('returns null after the 1.5 h progón window', () => {
+    expect(getKyivScheduleAttemptSlot(kyiv(10, 0))).toBeNull();
     expect(getKyivScheduleAttemptSlot(kyiv(11, 0))).toBeNull();
   });
 
@@ -91,7 +92,8 @@ describe('parseScheduleAttemptFlag', () => {
     expect(parseScheduleAttemptFlag(['node', 'run', '--attempt', '4'])).toBe(4);
   });
 
-  it('throws on out-of-range attempt', () => {
+  it('throws on out-of-range attempt (max is now slot 4)', () => {
+    expect(() => parseScheduleAttemptFlag(['node', 'run', '--attempt', '5'])).toThrow(/--attempt/);
     expect(() => parseScheduleAttemptFlag(['node', 'run', '--attempt', '99'])).toThrow(/--attempt/);
     expect(() => parseScheduleAttemptFlag(['node', 'run', '--attempt', '0'])).toThrow(/--attempt/);
   });
@@ -106,7 +108,7 @@ describe('resolveScheduleAttempt', () => {
 
   it('uses Kyiv slot when in-window and no flag', () => {
     expect(resolveScheduleAttempt({ argv: [], env: {}, now: kyiv(8, 0) })).toBe(1);
-    expect(resolveScheduleAttempt({ argv: [], env: {}, now: kyiv(10, 30) })).toBe(6);
+    expect(resolveScheduleAttempt({ argv: [], env: {}, now: kyiv(9, 30) })).toBe(4);
   });
 
   it('uses failure count + 1 when outside Kyiv window', () => {
@@ -122,14 +124,16 @@ describe('resolveScheduleAttempt', () => {
 });
 
 describe('shouldUseOpenRouter', () => {
-  it('returns true for slot 6 (final)', () => {
-    expect(shouldUseOpenRouter(6)).toBe(true);
+  it('returns true only for the final slot 4', () => {
+    expect(shouldUseOpenRouter(3)).toBe(false);
+    expect(shouldUseOpenRouter(4)).toBe(true);
   });
 });
 
 describe('geminiMaxAttemptsForSlot', () => {
-  it('returns 2 for early slots and 3 for final', () => {
+  it('returns 2 for early slots and 3 for the final slot', () => {
     expect(geminiMaxAttemptsForSlot(1)).toBe(2);
-    expect(geminiMaxAttemptsForSlot(6)).toBe(3);
+    expect(geminiMaxAttemptsForSlot(3)).toBe(2);
+    expect(geminiMaxAttemptsForSlot(4)).toBe(3);
   });
 });

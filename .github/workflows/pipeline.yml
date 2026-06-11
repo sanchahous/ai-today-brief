@@ -2,51 +2,41 @@ name: Daily Pipeline
 
 on:
   schedule:
-    # Europe/Kyiv (EEST = UTC+3). Six 4 h progóns/day; each progón has 6 slots every 30 min.
-    # After new items are inserted + Telegram notify, remaining slots in that progón skip.
-    # GitHub "success" on skipped publish (no new items) does NOT stop the progón — see pipeline/README.
-    # Progón 1 — 00:00–02:30 Kyiv
+    # Europe/Kyiv (EEST = UTC+3). Six 4 h progóns/day; each progón has 4 slots every 30 min
+    # (1.5 h window). After new items are inserted + Telegram notify, remaining slots in that
+    # progón skip — the cycle-guard step exits them in ~3 s, before npm ci. GitHub still
+    # creates a run per cron slot (cron cannot be cancelled conditionally); a skipped slot is
+    # a green no-op, not a re-run. See pipeline/schedule.ts + .github/scripts/cycle-guard.mjs.
+    # Progón 1 — 00:00–01:30 Kyiv
     - cron: '0 21 * * *'   # slot 1 — 00:00 Kyiv
     - cron: '30 21 * * *'  # slot 2 — 00:30 Kyiv
     - cron: '0 22 * * *'   # slot 3 — 01:00 Kyiv
     - cron: '30 22 * * *'  # slot 4 — 01:30 Kyiv
-    - cron: '0 23 * * *'   # slot 5 — 02:00 Kyiv
-    - cron: '30 23 * * *'  # slot 6 — 02:30 Kyiv
-    # Progón 2 — 04:00–06:30 Kyiv
+    # Progón 2 — 04:00–05:30 Kyiv
     - cron: '0 1 * * *'    # slot 1 — 04:00 Kyiv
-    - cron: '30 1 * * *'  # slot 2 — 04:30 Kyiv
+    - cron: '30 1 * * *'   # slot 2 — 04:30 Kyiv
     - cron: '0 2 * * *'    # slot 3 — 05:00 Kyiv
-    - cron: '30 2 * * *'  # slot 4 — 05:30 Kyiv
-    - cron: '0 3 * * *'    # slot 5 — 06:00 Kyiv
-    - cron: '30 3 * * *'  # slot 6 — 06:30 Kyiv
-    # Progón 3 — 08:00–10:30 Kyiv
+    - cron: '30 2 * * *'   # slot 4 — 05:30 Kyiv
+    # Progón 3 — 08:00–09:30 Kyiv
     - cron: '0 5 * * *'    # slot 1 — 08:00 Kyiv
-    - cron: '30 5 * * *'  # slot 2 — 08:30 Kyiv
+    - cron: '30 5 * * *'   # slot 2 — 08:30 Kyiv
     - cron: '0 6 * * *'    # slot 3 — 09:00 Kyiv
-    - cron: '30 6 * * *'  # slot 4 — 09:30 Kyiv
-    - cron: '0 7 * * *'    # slot 5 — 10:00 Kyiv
-    - cron: '30 7 * * *'  # slot 6 — 10:30 Kyiv
-    # Progón 4 — 12:00–14:30 Kyiv
+    - cron: '30 6 * * *'   # slot 4 — 09:30 Kyiv
+    # Progón 4 — 12:00–13:30 Kyiv
     - cron: '0 9 * * *'    # slot 1 — 12:00 Kyiv
-    - cron: '30 9 * * *'  # slot 2 — 12:30 Kyiv
+    - cron: '30 9 * * *'   # slot 2 — 12:30 Kyiv
     - cron: '0 10 * * *'   # slot 3 — 13:00 Kyiv
-    - cron: '30 10 * * *' # slot 4 — 13:30 Kyiv
-    - cron: '0 11 * * *'   # slot 5 — 14:00 Kyiv
-    - cron: '30 11 * * *' # slot 6 — 14:30 Kyiv
-    # Progón 5 — 16:00–18:30 Kyiv
+    - cron: '30 10 * * *'  # slot 4 — 13:30 Kyiv
+    # Progón 5 — 16:00–17:30 Kyiv
     - cron: '0 13 * * *'   # slot 1 — 16:00 Kyiv
-    - cron: '30 13 * * *' # slot 2 — 16:30 Kyiv
+    - cron: '30 13 * * *'  # slot 2 — 16:30 Kyiv
     - cron: '0 14 * * *'   # slot 3 — 17:00 Kyiv
-    - cron: '30 14 * * *' # slot 4 — 17:30 Kyiv
-    - cron: '0 15 * * *'   # slot 5 — 18:00 Kyiv
-    - cron: '30 15 * * *' # slot 6 — 18:30 Kyiv
-    # Progón 6 — 20:00–22:30 Kyiv
+    - cron: '30 14 * * *'  # slot 4 — 17:30 Kyiv
+    # Progón 6 — 20:00–21:30 Kyiv
     - cron: '0 17 * * *'   # slot 1 — 20:00 Kyiv
-    - cron: '30 17 * * *' # slot 2 — 20:30 Kyiv
+    - cron: '30 17 * * *'  # slot 2 — 20:30 Kyiv
     - cron: '0 18 * * *'   # slot 3 — 21:00 Kyiv
-    - cron: '30 18 * * *' # slot 4 — 21:30 Kyiv
-    - cron: '0 19 * * *'   # slot 5 — 22:00 Kyiv
-    - cron: '30 19 * * *' # slot 6 — 22:30 Kyiv
+    - cron: '30 18 * * *'  # slot 4 — 21:30 Kyiv
   workflow_dispatch:
     inputs:
       attempt:
@@ -73,10 +63,24 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
+      # Zero-dependency pre-flight: if this 4 h progón already published + notified,
+      # a retry slot exits here (~3 s) instead of paying ~40 s for an npm ci it won't
+      # use. Fail-open (any error → skip=false → full run). Manual/dry-run dispatches
+      # always proceed (guard runs on schedule only).
+      - name: Skip if progón already delivered
+        id: guard
+        if: github.event_name == 'schedule'
+        env:
+          SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+          SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+        run: node .github/scripts/cycle-guard.mjs
+
       - name: Install dependencies
+        if: steps.guard.outputs.skip != 'true'
         run: npm ci
 
       - name: Run pipeline
+        if: steps.guard.outputs.skip != 'true'
         env:
           SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
           SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
