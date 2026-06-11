@@ -45,6 +45,8 @@ export interface HomeItem {
   tools: string[];
   sourceName: string | null;
   readMinutes: number;
+  /** Source article og:image — card thumbnail; null → category placeholder. */
+  imageUrl: string | null;
 }
 
 export interface HomeCategory {
@@ -118,7 +120,7 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
     const { data: rows } = await supabase
       .from('brief_items')
       .select(
-        'id, slug, brief_id, rank, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, tools_mentioned, youtube_url, article_id',
+        'id, slug, brief_id, rank, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, tools_mentioned, youtube_url, image_url, article_id',
       )
       .in(
         'brief_id',
@@ -149,6 +151,7 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
         tools: toToolNames(it.tools_mentioned),
         sourceName: null,
         readMinutes: Math.max(2, Math.round((wordCount(summary) + wordCount(why)) / 45)),
+        imageUrl: it.image_url?.startsWith('http') ? it.image_url : null,
       });
       articleIdByItem.set(it.id, it.article_id);
     }

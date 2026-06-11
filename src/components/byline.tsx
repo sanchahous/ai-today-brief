@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { EDITOR_NAME, MARK_COLOR, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 
@@ -20,7 +21,13 @@ export function Byline({ lang, updated }: { lang: Lang; updated: string }) {
       </span>
       <span>
         {t.curatedBy}{' '}
-        <strong className="text-text font-semibold">{EDITOR_NAME}</strong>, {t.bylineRole}
+        <Link
+          href={`/${lang}/author`}
+          className="text-text hover:text-accent font-semibold no-underline transition-colors"
+        >
+          {EDITOR_NAME}
+        </Link>
+        , {t.bylineRole}
       </span>
       <span aria-hidden className="text-faint">
         ·

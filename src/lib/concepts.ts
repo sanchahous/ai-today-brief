@@ -198,6 +198,7 @@ async function getConceptItemsViaJunction(
       tools: extractToolNames(r.tools_mentioned),
       sourceName: (r.source_name as string) ?? null,
       readMinutes: Math.max(2, Math.round(wordCount(summary) / 45)),
+      imageUrl: null, // RPC payload carries no image; category placeholder renders
     };
   });
 }

@@ -22,7 +22,7 @@ export interface InlineKeyboard {
   inline_keyboard: Array<Array<{ text: string; callback_data: string }>>;
 }
 
-export type ReviewAction = 'approve' | 'reject' | 'redo';
+export type ReviewAction = 'approve' | 'reject' | 'redo' | 'take';
 
 /** Pipeline auto-curate vs editor hand-pick — different Telegram chrome. */
 export type ReviewChannel = 'pipeline' | 'custom';
@@ -30,11 +30,13 @@ export type ReviewChannel = 'pipeline' | 'custom';
 const APPROVE_PREFIX = 'ap:';
 const REJECT_PREFIX = 'rj:';
 const REDO_PREFIX = 'rd:';
+const TAKE_PREFIX = 'tk:';
 
 const PREFIX_BY_ACTION: Record<ReviewAction, string> = {
   approve: APPROVE_PREFIX,
   reject: REJECT_PREFIX,
   redo: REDO_PREFIX,
+  take: TAKE_PREFIX,
 };
 
 /** Telegram caps callback_data at 64 bytes; `<prefix><uuid>` is 39 — safe. */
@@ -46,6 +48,7 @@ export function parseCallbackData(data: string): { action: ReviewAction; itemId:
   if (data.startsWith(APPROVE_PREFIX)) return { action: 'approve', itemId: data.slice(APPROVE_PREFIX.length) };
   if (data.startsWith(REJECT_PREFIX)) return { action: 'reject', itemId: data.slice(REJECT_PREFIX.length) };
   if (data.startsWith(REDO_PREFIX)) return { action: 'redo', itemId: data.slice(REDO_PREFIX.length) };
+  if (data.startsWith(TAKE_PREFIX)) return { action: 'take', itemId: data.slice(TAKE_PREFIX.length) };
   return null;
 }
 
@@ -53,7 +56,8 @@ export function parseCallbackData(data: string): { action: ReviewAction; itemId:
  * 🔁 deletes the still-pending row outright (embedding cascades away), so the
  * next progón can re-propose the story with a fresh write-up. ❌ reject means
  * "kill this story for the day" — its embedding keeps suppressing the story in
- * the intra-day dedup. Two different "no" verbs on purpose.
+ * the intra-day dedup. Two different "no" verbs on purpose. ✍️ asks for the
+ * editor's take — the human verdict paragraph rendered on the article page.
  */
 export function reviewKeyboard(itemId: string): InlineKeyboard {
   return {
@@ -61,7 +65,10 @@ export function reviewKeyboard(itemId: string): InlineKeyboard {
       [
         { text: '✅ Схвалити', callback_data: callbackData('approve', itemId) },
         { text: '❌ Відхилити', callback_data: callbackData('reject', itemId) },
+      ],
+      [
         { text: '🔁 Переробити', callback_data: callbackData('redo', itemId) },
+        { text: '✍️ Тейк', callback_data: callbackData('take', itemId) },
       ],
     ],
   };

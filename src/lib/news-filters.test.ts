@@ -15,6 +15,7 @@ function item(partial: Partial<HomeItem> & Pick<HomeItem, 'id' | 'title' | 'date
     tools: [],
     sourceName: null,
     readMinutes: 3,
+    imageUrl: null,
     ...partial,
   };
 }
