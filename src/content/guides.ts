@@ -105,7 +105,92 @@ Claude Code спирається на відкриті поверхні розш
   },
 };
 
-export const GUIDES: readonly Guide[] = [CLAUDE_CODE_VS_CURSOR_VS_CODEX];
+const AOB_BENCHMARK: Guide = {
+  slug: 'atb-orchestration-bench',
+  title: {
+    en: 'ATB Orchestration Bench: our reproducible agent-delivery benchmark',
+    uk: 'ATB Orchestration Bench: наш відтворюваний бенчмарк агентної розробки',
+  },
+  description: {
+    en: 'Every notable coding-agent release gets the same end-to-end delivery epic — planning, memory, token economy, code, self-review, tests, design, tech-debt honesty. Scores and run logs live on this page.',
+    uk: 'Кожен помітний реліз кодинг-агента проходить той самий епік розробки під ключ — планування, память, токен-економіка, код, само-ревью, тести, дизайн, чесний техборг. Оцінки й логи прогонів — на цій сторінці.',
+  },
+  lastVerified: '2026-06-11',
+  body: {
+    en: `Leaderboards measure models on isolated problems. Real agentic work is different: it is **orchestrated delivery** — decomposing an epic, surviving a session restart, staying inside a token budget, reviewing your own code, shipping tests, and being honest about the debt you left behind. That is what this benchmark scores.
+
+### The fixed epic
+
+Every tool gets the same one-page spec: **"Standup Tracker"** — a complete product slice (team CRUD, daily entries, an analytics dashboard, responsive UI per a fixed design spec) built from scratch in a fixed reference repo. Web track on Next.js/TypeScript; a mobile track on Expo exists for tools that claim it.
+
+### What makes it hard — and fair
+
+- **A mid-run session restart is mandatory.** Long-term memory is scored by how much context survives without re-explaining. Configuring the tool's own memory, rules and skills is allowed — that *is* orchestration — but every configuration is published in the run log.
+- **A hard token budget** is set before the run. Closing the epic on half the budget scores 5; running out ends the run.
+- **Every human intervention is logged and costs points.** The goal is "під ключ", not pair programming.
+- Same repo commit, same spec, same budget for every tool; exact model ids and versions recorded; full run logs published.
+
+### The 10 dimensions (0–5 each, max 50)
+
+1. Planning & decomposition
+2. Long-term memory (the restart test)
+3. Token economy
+4. Code quality (typecheck/lint/idiom)
+5. Self-review & critique
+6. Tests (unit + Playwright e2e, all green)
+7. Design fidelity
+8. Tech-debt honesty
+9. Autonomy (interventions counted)
+10. Time to done
+
+We publish the **profile**, not just the total: a tool that scores 46 but fails memory is a different animal from a 46 that fails design.
+
+### Results
+
+No scored runs yet — the protocol is frozen as v1 and the first runs are scheduled. Each future run adds a row here: tool, version, date, total, dimension profile, cost, and a link to the full run log.
+
+### Why trust this
+
+The protocol, the epic spec and every run log are public and versioned. When we change anything, the protocol version bumps and old scores stop being comparable — no silent re-grading.`,
+    uk: `Лідерборди міряють моделі на ізольованих задачках. Реальна агентна робота інша: це **оркестрована розробка** — декомпозиція епіку, виживання після рестарту сесії, життя в межах токен-бюджету, ревью власного коду, тести і чесність щодо залишеного техборгу. Саме це оцінює наш бенчмарк.
+
+### Фіксований епік
+
+Кожен інструмент отримує ту саму односторінкову специфікацію: **«Standup Tracker»** — повний продуктовий зріз (CRUD команд, щоденні записи, дашборд з аналітикою, responsive UI за фіксованим дизайн-специфікаціями), збудований з нуля у фіксованому референс-репозиторії. Web-трек на Next.js/TypeScript; mobile-трек на Expo — для інструментів, що заявляють таку компетенцію.
+
+### Що робить його складним — і чесним
+
+- **Обовʼязковий рестарт сесії посеред прогону.** Довгострокова память оцінюється за тим, скільки контексту виживає без повторних пояснень. Налаштування власної памяті, правил і скілів інструмента дозволене — це і *є* оркестрація — але кожна конфігурація публікується в лозі прогону.
+- **Жорсткий токен-бюджет** фіксується до старту. Закрити епік за половину бюджету — 5 балів; вичерпати — кінець прогону.
+- **Кожне людське втручання логується і коштує балів.** Мета — «під ключ», а не парне програмування.
+- Той самий коміт репозиторію, та сама специфікація, той самий бюджет для всіх; точні id моделей і версії фіксуються; повні логи прогонів публікуються.
+
+### 10 вимірів (0–5 кожен, максимум 50)
+
+1. Планування й декомпозиція
+2. Довгострокова память (тест рестартом)
+3. Токен-економіка
+4. Якість коду (typecheck/lint/ідіоматичність)
+5. Само-ревью і критика
+6. Тести (unit + Playwright e2e, всі зелені)
+7. Відповідність дизайну
+8. Чесність техборгу
+9. Автономність (втручання рахуються)
+10. Час до готовності
+
+Ми публікуємо **профіль**, а не лише суму: інструмент із 46 балами, що провалив память, — зовсім інший звір, ніж 46 із провалом дизайну.
+
+### Результати
+
+Оцінених прогонів ще немає — протокол заморожено як v1, перші прогони заплановані. Кожен майбутній прогін додає сюди рядок: інструмент, версія, дата, сума, профіль вимірів, вартість і посилання на повний лог.
+
+### Чому цьому можна довіряти
+
+Протокол, специфікація епіку і кожен лог прогону — публічні й версіоновані. Коли ми щось змінюємо, версія протоколу підвищується, і старі оцінки перестають бути порівнюваними — жодного тихого перегрейдингу.`,
+  },
+};
+
+export const GUIDES: readonly Guide[] = [CLAUDE_CODE_VS_CURSOR_VS_CODEX, AOB_BENCHMARK];
 
 export function getGuide(slug: string): Guide | null {
   return GUIDES.find((g) => g.slug === slug) ?? null;
