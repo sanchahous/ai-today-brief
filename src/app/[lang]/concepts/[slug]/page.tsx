@@ -99,7 +99,13 @@ export default async function ConceptHubPage({ params }: { params: Promise<Param
         icon={hub.icon}
         storyCount={hub.stories.length}
       />
-      <ConceptHubBody lang={lang} body={hub.concept.body} faq={hub.concept.faq} />
+      <ConceptHubBody
+        lang={lang}
+        body={hub.concept.body}
+        faq={hub.concept.faq}
+        verification={hub.concept.verification}
+        verifiedAt={hub.concept.verifiedAt}
+      />
       {hub.stories.length > 0 && (
         <h2 className="mb-4 text-xl">{t.conceptLatest}</h2>
       )}

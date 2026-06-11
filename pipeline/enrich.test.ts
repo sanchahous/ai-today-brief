@@ -4,6 +4,7 @@ import {
   extractMainText,
   extractOgImage,
   hnStoryIdFromUrl,
+  isGenericOgImage,
   stripHtml,
 } from './enrich';
 
@@ -77,6 +78,39 @@ describe('extractOgImage', () => {
   it('rejects non-http values and missing tags', () => {
     expect(extractOgImage('<meta property="og:image" content="/relative.png">')).toBeNull();
     expect(extractOgImage('<html></html>')).toBeNull();
+  });
+});
+
+describe('isGenericOgImage', () => {
+  it('flags platform logos and auto-generated cards', () => {
+    expect(
+      isGenericOgImage('https://static.arxiv.org/icons/twitter/arxiv-logo-twitter-square.png'),
+    ).toBe(true);
+    expect(isGenericOgImage('https://arxiv.org/static/browse/0.3.4/images/arxiv-logo-fb.png')).toBe(
+      true,
+    );
+    expect(isGenericOgImage('https://opengraph.githubassets.com/abc123/owner/repo')).toBe(true);
+    expect(isGenericOgImage('https://avatars.githubusercontent.com/u/1?v=4')).toBe(true);
+    expect(isGenericOgImage('https://github.githubassets.com/images/modules/open_graph/github-logo.png')).toBe(true);
+    expect(isGenericOgImage('https://news.ycombinator.com/y18.svg')).toBe(true);
+    expect(isGenericOgImage('https://www.redditstatic.com/icon.png')).toBe(true);
+  });
+
+  it('flags default/placeholder filenames on any host', () => {
+    expect(isGenericOgImage('https://example.com/img/og-default.png')).toBe(true);
+    expect(isGenericOgImage('https://example.com/default_share.jpg')).toBe(true);
+    expect(isGenericOgImage('https://example.com/assets/placeholder.webp')).toBe(true);
+    expect(isGenericOgImage('https://example.com/favicon.ico')).toBe(true);
+  });
+
+  it('keeps real story art, including custom repo banners', () => {
+    expect(
+      isGenericOgImage('https://repository-images.githubusercontent.com/123/banner.png'),
+    ).toBe(false);
+    expect(isGenericOgImage('https://www.anthropic.com/images/claude-launch.png')).toBe(false);
+    expect(isGenericOgImage('https://pbs.twimg.com/media/abc.jpg')).toBe(false);
+    // "default"/"og" inside a path segment (not the filename) is fine
+    expect(isGenericOgImage('https://example.com/og-images/2026/story-hero.png')).toBe(false);
   });
 });
 

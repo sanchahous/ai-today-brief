@@ -320,6 +320,9 @@ export type Database = {
           official_url: string | null;
           slug: string;
           type: string;
+          unverified_claims: Json | null;
+          verification_status: string | null;
+          verified_at: string | null;
         };
         Insert: {
           aliases?: string[] | null;
@@ -336,6 +339,9 @@ export type Database = {
           official_url?: string | null;
           slug: string;
           type?: string;
+          unverified_claims?: Json | null;
+          verification_status?: string | null;
+          verified_at?: string | null;
         };
         Update: {
           aliases?: string[] | null;
@@ -352,6 +358,9 @@ export type Database = {
           official_url?: string | null;
           slug?: string;
           type?: string;
+          unverified_claims?: Json | null;
+          verification_status?: string | null;
+          verified_at?: string | null;
         };
         Relationships: [];
       };

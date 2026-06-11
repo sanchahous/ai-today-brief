@@ -122,6 +122,31 @@ export function extractMainText(html: string, maxChars = MAX_SOURCE_TEXT_CHARS):
   return text.length > maxChars ? `${text.slice(0, maxChars)}…` : text;
 }
 
+/**
+ * Generic share images that say nothing about the story: site logos and
+ * auto-generated platform cards (arXiv logo, GitHub's opengraph repo cards,
+ * avatars, YC/Reddit logos). Dropping them lets the branded OG card and the
+ * category placeholders render instead — both already in place downstream.
+ * Custom repo banners (`repository-images.githubusercontent.com`) are real
+ * images set by maintainers and intentionally NOT listed.
+ */
+const GENERIC_IMAGE_PATTERNS: RegExp[] = [
+  /^https?:\/\/static\.arxiv\.org\//i,
+  /^https?:\/\/arxiv\.org\/static\//i,
+  /^https?:\/\/opengraph\.githubassets\.com\//i,
+  /^https?:\/\/avatars\.githubusercontent\.com\//i,
+  /^https?:\/\/github\.githubassets\.com\//i,
+  /^https?:\/\/news\.ycombinator\.com\//i,
+  /^https?:\/\/(www\.)?redditstatic\.com\//i,
+  // Filename tells on itself: default/placeholder share cards and favicons.
+  /\/[^/?#]*(og[-_]default|default[-_](og|share|social)|placeholder|favicon|apple-touch-icon)[^/]*$/i,
+];
+
+/** True when the URL is a known stock/logo image rather than story art. */
+export function isGenericOgImage(url: string): boolean {
+  return GENERIC_IMAGE_PATTERNS.some((re) => re.test(url));
+}
+
 /** `og:image` (or `twitter:image` fallback) from the page head. */
 export function extractOgImage(html: string): string | null {
   const head = html.slice(0, 50_000);
@@ -160,7 +185,8 @@ async function fetchPage(
   const res = await retry(url, { headers: FETCH_HEADERS, signal: AbortSignal.timeout(12_000) }, 2);
   if (!res?.ok) return { text: null, ogImage: null };
   const html = (await res.text()).slice(0, MAX_HTML_CHARS);
-  return { text: extractMainText(html), ogImage: extractOgImage(html) };
+  const ogImage = extractOgImage(html);
+  return { text: extractMainText(html), ogImage: ogImage && !isGenericOgImage(ogImage) ? ogImage : null };
 }
 
 async function fetchTopHnComments(
