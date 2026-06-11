@@ -1,110 +1,112 @@
-# Розділ «AI Toolbox» (Useful Tools) — концепція
+# Розділ «AI Toolbox» (Useful Tools) — концепція v2
 
-**Дата:** 2026-06-11 · **Статус:** концепція на затвердження
-**Основа:** офіційний гайд [Prompting Claude Fable 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5) (повністю опрацьований), стратегія сайту «brief-led product, authority-built architecture».
+**Дата:** 2026-06-11 (v2 — після конкурентного research і adversarial-критики) · **Статус:** на затвердження
+**Основа:** офіційний гайд [Prompting Claude Fable 5](https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5), веб-research конкурентів (червень 2026), критика спеки незалежним агентом (вердикт: ship-with-fixes — виправлення внесені нижче).
 
 ---
 
 ## 1. Чому це стратегічно сильний хід
 
-Міні-тулзи — це **третя нога** контент-стратегії поруч із брифом (свіжість) і концепт-хабами (evergreen):
+Міні-тулзи — **третя нога** контент-стратегії поруч із брифом (свіжість) і концепт-хабами (evergreen):
 
-1. **SEO/AEO-магніти.** Запити «claude prompt optimizer», «llm cost calculator», «which claude model to use» — високоінтентні, а конкуренція серед *безкоштовних no-signup* тулзів слабка. Кожна тулза = окрема сторінка з `TechArticle`+`FAQPage` schema → кандидат на цитування в Perplexity/ChatGPT.
-2. **Internal linking hub-and-spoke.** Тулзи лінкують на концепт-хаби (prompt-caching, agent, MCP) і статті; статті лінкують на тулзи («порахуй вартість цього релізу в калькуляторі»).
-3. **Retention + бренд.** Тулза — причина повернутись на сайт без нової новини. «Корисний» бренд > «ще один дайджест».
-4. **Нульова собівартість.** Всі тулзи першої хвилі — client-side або статичні дані; жодних обовʼязкових LLM-витрат.
+1. **SEO/AEO-магніти** на high-intent запити. Важливо (висновок research): **захисний актив — не віджет, а evergreen-контент навколо нього** (повний каталог правил із цитатами як SSG-HTML) — це те, що цитують Perplexity/ChatGPT; сам віджет копіюється за вікенд.
+2. **Internal linking hub-and-spoke**: тулзи ↔ концепт-хаби ↔ статті.
+3. **Retention + бренд:** причина повертатись без нової новини.
+4. **Нульова собівартість:** перша хвиля — повністю client-side.
 
 ## 2. Назва і місце
 
-- **Маршрут:** `/[lang]/tools` + `/[lang]/tools/[slug]` (App Router, ISR).
-- **Назва:** рекомендую **«AI Toolbox»** (EN) / **«Інструменти»** (UK). Альтернативи: Dev Tools (конфлікт із категорією tools у брифі), Useful Tools (блідо), Lab (незрозуміло). «AI Toolbox» коротко, брендується, тримає keyword.
-- **Позиція в хедері:** після «Guides | Concepts» → «Toolbox».
+- **Маршрут:** `/[lang]/tools` + `/[lang]/tools/[slug]` (ISR).
+- **Назва:** **«AI Toolbox»** (EN) / **«Інструменти»** (UK).
+- **Хедер:** після «Guides | Concepts» → «Toolbox».
 
-## 3. Принципи розділу
+## 3. Принципи
 
-1. **No signup, no paywall, миттєво.** Друкуєш — отримуєш. Це і UX, і AEO-перевага.
-2. **Client-side first.** Поки можливо — нуль серверних витрат і нуль зловживань.
-3. **Кожна тулза відповідає на конкретний пошуковий запит** (інакше не будуємо).
-4. **Кожна тулза цитує первинні джерела** — це наш E-E-A-T-стиль (як verify-маркери на концептах).
-5. **Дані тулз = контент-активи**: цінові таблиці калькулятора — це й майбутня living page «Ціни LLM API».
+1. No signup, no paywall, миттєво.
+2. Client-side first; **counts-only телеметрія** (запуски лінта, спрацювання правил, копіювання сніпетів — ніколи текст промпта) — без неї нема сигналу для рішень по Фазі B. Privacy-обіцянка формулюється точно: **«ми не бачимо текст вашого промпта»**.
+3. Кожна тулза відповідає на конкретний запит, який реально шукають (перевірено research-ом, див. вердикти).
+4. Кожна рекомендація цитує первинне джерело (наш E-E-A-T-стиль).
+5. Правила тулз = **дані, ключовані за моделлю** (не хардкод): селектор моделі в UI + CI-джоб, що хешує docs-сторінку і фейлиться при її зміні (а не лише ручний «Last verified»).
 
-## 4. Роадмап тулзів (за value/effort)
+## 4. Роадмап після валідації ринку
 
-| # | Тулза | Що робить | Чому виграє | Effort | Cost |
-|---|---|---|---|---|---|
-| 1 | **Prompt Optimizer for Claude** ⭐ | Лінтить промпт за офіційними гайдами, рекомендує модель/effort | Деталі в §5 — флагман | 2–3 дні | $0 |
-| 2 | **LLM Token & Cost Calculator** | Текст/к-сть токенів → вартість по Claude/GPT/Gemini (input/output/cache) | «claude api cost calculator» — стабільний попит; дані = основа living page цін | 1–2 дні | $0 (static data + клієнт) |
-| 3 | **CLAUDE.md / AGENTS.md Generator** | Форма (стек, правила, заборони) → готовий файл | Ніша наша до кісток, конкуренції майже нема, лінкує на concept-хаби | 1–2 дні | $0 |
-| 4 | **Model Picker** | 5 питань → рекомендація моделі + effort + чому | AEO: «which claude model should i use»; легко цитується | 1 день | $0 (decision tree) |
-| 5 | **MCP Config Generator** | Чекбокси серверів → готовий `mcp.json` під Claude Desktop/Code/Cursor | Синергія з запланованим каталогом MCP-серверів (Фаза 3) | 2 дні | $0 |
-| 6 | **AI Crawler Checker** | URL → який AI-бот допущений/заблокований у robots.txt (GPTBot, ClaudeBot, PerplexityBot…) | Гаряча тема паблішерів; в нас уже є експертиза (свій robots) | 1 день | ~$0 (route handler) |
-| 7 | **Prompt Token Counter** | Підрахунок токенів + скільки лишиться контексту в моделі X | Доповнення до №2, спільний код | 0.5 дня | $0 |
+### Будуємо (перша хвиля)
 
-Перша хвиля: **№1 → №2 → №3.** Решта — по одній на ітерацію, кожна з власною FAQ-секцією.
+| # | Тулза | Вердикт research | Effort |
+|---|---|---|---|
+| 1 | **Prompt Optimizer for Claude (Fable 5)** ⭐ | **build** — диференціація реальна, але вікно тікає (fable5.io зʼявився за ~48 год після релізу моделі — keyword-capture на GPT-4o під капотом). Маркетувати як «for Claude Fable 5» long-tail, НЕ як generic «prompt optimizer» (та SERP насичена) | 2–3 дні |
+| 2 | **Claude Code settings.json Builder** 🆕 | **build** — нульова тулз-конкуренція при доведеному попиті (по запитах «claude code hooks/permissions» лише статті, жодного інтерактивного інструмента); ідеальний fit аудиторії; ми дογфудимо ці конфіги щодня = миттєвий E-E-A-T. Visual-білдер permission-правил + бібліотека hook-рецептів з цитатами | дні |
+| 3 | **CLAUDE.md / AGENTS.md Generator** | **build** — попит росте швидко (AGENTS.md став крос-тулзовим стандартом), конкуренція фрагментована і слабка; диференціація: подвійний вихід + encoded best practices з цитатами | 1–2 дні |
+
+### Друга хвиля
+
+| Тулза | Вердикт | Нотатка |
+|---|---|---|
+| **Claude Plan Breakeven Calculator** 🆕 (API vs Pro/Max) | build-later | «Який план Claude мені треба» — контент ранжується, інтерактиву майже нема; agent-aware математика (мульти-турн цикли, cache-hit) — наша диференціація. Дані = вхід для living page цін |
+| **Claude API Error Decoder** 🆕 | build-later | Вставив error-payload (529/429/refusal/overflow) → діагноз+фікс+цитати. Error-запити — те, що деви вставляють у Perplexity = чистий AEO-актив; зараз цю SERP фармлять блог-ферми без тулзів |
+| **OpenAI→Claude Snippet Converter** 🆕 | build-later (після трьох вище) | Інтерактивного конвертера не існує; ultra-high-intent аудиторія (ті, хто мігрує). Найважчий інженерно (week+) |
+| Model Picker | fold-in | Вбудувати в Prompt Optimizer (рекомендація моделі вже в спеці); standalone — тільки якщо вбудована версія почне збирати цитати |
+| Prompt Token Counter | fold-in | Віджет всередині Optimizer (live-оцінка токенів + context-fit бар); SERP насичена, окрема сторінка не виграє. Чесно позначати як апроксимацію (токенізатор Anthropic не публічний) |
+
+### Не будуємо (насичені ніші — підтверджено research-ом)
+
+- **LLM Token & Cost Calculator** — SERP окупована exact-match доменами (pricepertoken.com, llmpricingcalculator.com та ін.). Датасет цін лишаємо для living page «Ціни LLM API» + інлайн-віджет там.
+- **AI Crawler Checker / llms.txt-генератори** — лід-магнет кожного GEO-стартапа; персона (паблішер-маркетолог) — не наш читач. Тема варта однієї evergreen-статті, не тулзи.
+- **MCP Config Generator standalone** — ніша комодитизується one-click інсталами (`claude mcp add`, .mcpb, deeplinks). Реалізувати як **фічу каталогу MCP-серверів** (Фаза 3): copy-ready конфіг під кожен клієнт у картці сервера.
 
 ## 5. Флагман: Prompt Optimizer for Claude (Fable 5)
 
-### Позиціонування
+### Конкурентний ландшафт (перевірено, червень 2026)
 
-«Встав промпт — отримай конкретні поліпшення за **офіційним гайдом Anthropic**, рекомендацію моделі й готові перевірені сніпети». Відмінність від конкурентів:
-- Anthropic Console prompt improver — потребує консоль/API-ключ; наш — без порога входу.
-- PromptPerfect та інші — платні, generic, не знають специфіки Fable 5.
-- Ми — **model-specific, безкоштовно, з цитатами на доки** (AEO-доказовість) і вбудовано в медіа про AI-інженерію.
+- **Anthropic Console improver** — авторитет, але потребує консоль+білінг; продукує verbose CoT/XML-шаблони, що частково суперечать власному гайду Fable 5 (over-prescription) — легітимний wedge.
+- **OneClickTool** (найближчий субститут): free, no-signup, client-side, Claude-tier-aware — але без цитат доків, з бездоказовими твердженнями, рекламою, і знання моделей закінчуються до Fable 5.
+- **fable5.io** — доказ попиту на keyword і швидкості вікна: «оптимізація під Fable» на GPT-4o/Llama.
+- **DocsBot** — SERP-інкамбент по «claude prompt generator» (домен-авторитет), але таргетинг застряг на Claude 3.5.
+- **Вердикт:** позиціонування виграшне сьогодні; **моат = freshness + citations**, тому (а) шипити швидко, (б) детермінізм+цитати зробити видимою бренд-обіцянкою, (в) ритуал оновлення на кожен реліз моделі — обовʼязковий.
 
-### Архітектура: дві фази
+### Фаза A — детермінований Prompt Linter ($0, client-side)
 
-**Фаза A — детермінований Prompt Linter (запускаємо першою, $0, миттєво, client-side).**
-Чиста логіка `src/lib/prompt-lint.ts` (юніт-тести ≥80%) + сторінка. Правила з опрацьованого гайда Fable 5 + загального канону Claude:
+`src/lib/prompt-lint.ts` (чиста логіка, тести ≥80%; **тригери білінгвальні EN+UK** — половинчаста українська детекція виглядатиме зламаною для UK-аудиторії). Перед лінтом — **селектор «де запускатимеш»: API / Claude Code / claude.ai** — він гейтить effort/model-правила (для claude.ai effort нерелевантний, у Claude Code — свій дефолт).
 
-| Правило | Тригер | Рекомендація (з джерелом) |
-|---|---|---|
-| Структура | Довгий промпт без секцій/XML-тегів | Розбити на `<context>` / `<task>` / `<output_format>` |
-| Формат виводу | Нема вказівки формату | Додати очікуваний формат/схему відповіді |
-| Vague-кваліфікатори | "better", "professional", "good", "якісно" без критеріїв | Замінити вимірюваними критеріями |
-| Контекст/намір | Нема «чому/для кого» | Патерн з гайда: «I'm working on [X] for [Y]. They need [Z]. With that in mind: [request]» |
-| ⚠️ **Reasoning-echo (Fable-специфічне)** | «show your reasoning», «explain your thinking in the response», «розпиши хід думок» | На Fable 5 тригерить `reasoning_extraction` refusal → читати thinking-блоки adaptive thinking замість цього |
-| **Over-prescription (Fable-специфічне)** | Простиня з 20+ мікроінструкцій | Fable сильний в instruction following — «коротка інструкція замість енумерації»; старі over-prescriptive промпти **деградують** якість |
-| Агентний без меж | Детект агентної лексики (tools, autonomously, until done) без boundaries | Запропонувати офіційні сніпети (нижче) |
-| Effort-підказка | Оцінка складності задачі | Рутина → `medium/low`; складна довга → `high`; capability-critical → `xhigh` |
-| Гігієна | Caps lock, ввічливі філери, без абзаців | Прибрати шум |
+Правила (з виправленнями критики):
 
-**Кілер-фіча — бібліотека офіційних сніпетів** (кнопка «вставити в промпт»), прямо з гайда Fable 5:
-- *Anti-overplanning*: «When you have enough information to act, act…»
-- *Anti-overengineering*: «Don't add features, refactor, or introduce abstractions beyond what the task requires…»
-- *Brevity*: «Lead with the outcome…»
-- *Checkpoint*: «Pause for the user only when the work genuinely requires them…»
-- *Grounded progress*: «Before reporting progress, audit each claim against a tool result…»
-- *Autonomy*: «You are operating autonomously…»
-- *Boundaries*: «When the user is describing a problem… the deliverable is your assessment»
+| Правило | Тригер | Рекомендація | Severity |
+|---|---|---|---|
+| Структура | Довгий промпт без секцій/тегів | `<context>/<task>/<output_format>` | suggestion |
+| **Приклади (multishot)** 🆕 | Format-чутлива задача без жодного прикладу | 3–5 різноманітних прикладів у `<example>`-тегах — «найнадійніший спосіб керувати виводом» (docs) | issue |
+| **Long-context ordering** 🆕 | Великий вставлений блоб ПІСЛЯ інструкцій | Дані зверху, запит у кінці (до ~30% поліпшення, docs), `<document>`-теги, grounding quotes first. Найбільш детерміновано-лінтоване правило з усіх | issue |
+| **Негативні інструкції** 🆕 | Висока щільність don't/never/не роби | «Кажи що робити замість чого не робити» (docs: "Do not use markdown" → "Write in flowing prose") | suggestion |
+| **Constraint без причини** 🆕 | NEVER/ALWAYS без пояснення навіщо | Пояснена причина суттєво покращує компліанс (docs, приклад ellipses/TTS) | suggestion |
+| Формат виводу | Нема вказівки формату | Додати очікуваний формат | suggestion |
+| Vague-кваліфікатори | "better"/"professional"/«якісно» без критеріїв | Вимірювані критерії | suggestion |
+| Контекст/намір | Нема «чому/для кого» | Патерн «I'm working on [X] for [Y]…» | suggestion |
+| ⚠️ Reasoning-echo (Fable) | **Тільки** echo/transcribe/reproduce-формули («відтвори свій хід міркувань у відповіді»), НЕ легітимне «обґрунтуй оцінку для клієнта» | «**Може** тригерити reasoning_extraction-refusal (elevated fallbacks)». Ремедіація повна: thinking-блоки за замовчуванням **omitted** — треба `thinking: {type:'adaptive', display:'summarized'}` (і це summarized-only); для прогресу — send-to-user tool; для claude.ai-користувачів правило не показується | issue (API/Code) |
+| Over-prescription (Fable) | Патерни поведінкового стирінгу (списки «always X, never Y»), **НЕ** сирий підрахунок інструкцій — повна специфікація задачі апфронт офіційно заохочується | «Коротка інструкція замість енумерації поведінок» (docs) | info |
+| Аж-надто-наголоси | CRITICAL/MUST/капс-педалювання | Офіційне: агресивні наголоси спричиняють **overtriggering** на 4.6+ — нормалізувати тон (цитата, не «гігієна») | suggestion |
+| Effort-підказка | Тільки для API/Claude Code | `high` — офіційний дефолт; рівні low/medium/high/xhigh/**max**; «нижчі рівні на Fable часто перевершують xhigh попередніх моделей» (docs) | info |
 
-Вивід лінтера: список карток (севериті ✦ рекомендація ✦ цитата-лінк на доки) + «prompt health score» + кнопка copy поліпшеного скелета. **Все на клієнті — нуль витрат, нуль абʼюзу, миттєвий результат.**
+**Вивід:** severity-tiered список («2 issues, 3 suggestions») з цитатою-лінком на кожній картці + дисклеймер «евристика, не вирок». **Без єдиного "health score"** — один скріншот хибної оцінки від відомого дева вбиває довіру.
 
-**Рекомендація моделі (rule-based, частина Фази A):**
-- коротка/рутинна задача → Haiku 4.5 (дешево/швидко);
-- баланс ціна/якість, інтерактив → Sonnet 4.6;
-- складна, довга, агентна, end-to-end → **Fable 5** + підказка effort;
-- застереження: offensive-security/bio-суміжні запити на Fable можуть ловити refusal → fallback Opus 4.8 (так у доках).
+**Бібліотека офіційних сніпетів** — кожен з **міткою призначення: system prompt / user message / harness** (autonomy/checkpoint/grounded-progress — це системні інструкції для агент-білдерів, кнопка «вставити в user-промпт» для них — неправильне використання): anti-overplanning, anti-overengineering, brevity, checkpoint, grounded progress, autonomy, boundaries.
 
-**Фаза B — LLM-переписування (після валідації трафіку Фази A).**
-- **B1: BYOK** (bring your own key) — користувач вставляє свій Anthropic-ключ, виклик прямо з браузера (`anthropic-dangerous-direct-browser-access`), ключ не покидає клієнт. $0 для нас, чесний UX для девів (наша аудиторія ключі має).
-- **B2: серверний gated-режим** — route handler + Haiku 4.5, rate-limit по IP (~3/день), денний токен-бюджет з kill-switch. Вмикаємо тільки якщо B1 покаже попит. Бюджет ≈ $5–15/міс на старті.
+**Рекомендація моделі** (rule-based, gated селектором): рутина → Haiku 4.5 (⚠️ **не підтримує effort** — ніколи не емітити «Haiku + effort»); баланс → Sonnet 4.6; складна/довга/агентна → Fable 5 + effort; **Opus 4.8 — окремий tier** (дешевший потужний варіант і офіційний fallback для refusal-категорій cyber/bio).
 
-### SEO/AEO-обвʼязка сторінки
+### Фаза B — LLM-переписування (тільки після трафік-сигналу з телеметрії Фази A)
 
-- H1 «Free Prompt Optimizer for Claude (Fable 5)» + визначення в перших 300 словах.
-- FAQ-блок: «How do I prompt Claude Fable 5?», «What is effort in the Claude API?», «Why does Claude refuse to show its reasoning?» → FAQPage schema.
-- Лінки: концепти (agent, prompt-caching, claude-code), статті по тегу, доки Anthropic.
-- Кожен реліз моделей = привід оновити правила → жива сторінка з `dateModified`.
+- **B1 BYOK** — технічно фізибельно (SDK офіційно підтримує браузер через `dangerouslyAllowBrowser`), але доки фреймлять це для «internal tools, trusted users» — тон обережний. **Безпековий мінімум:** ключ тільки в памʼяті (ніколи localStorage), strict CSP `connect-src api.anthropic.com`, **нуль third-party скриптів** на сторінці, SRI, порада використовувати workspace-scoped key зі spend-капом, відкритий код сторінки + явна інструкція «перевір Network tab». Репутаційний ризик «медіа вчить вставляти ключі в чужий сайт» — закривається тільки цією прозорістю.
+- **B2 gated** — IP-ліміт сам по собі НЕ захист (IPv6 /64, CGNAT карає чесних) → Turnstile/proof-of-work + денний токен-бюджет + kill-switch. Санітизація LLM-виводу перед рендером (prompt-injection/XSS).
+- **Privacy-обіцянка стає per-mode:** «Lint — повністю локально; AI-rewrite — надсилається на наш сервер і в Anthropic». Без цього Фаза B мовчки ламає головну trust-обіцянку Фази A.
 
-### Ризики
+### SEO/AEO-обвʼязка (виправлено)
 
-- Гайд оновлюється → правила застарівають. Мітигація: блок «Last verified against docs · {дата}» (патерн уже є в guides) + перевірка при кожному релізі моделі.
-- Юзери вставляють чутливі промпти → все client-side, нічого не логуємо, явно про це пишемо (trust-фіча).
-- LLM-режим без захисту = витік грошей → тільки BYOK/gated, ніколи відкритий ендпойнт.
+- **Повний каталог правил із цитатами = SSG-HTML на сторінці** (не тільки в JS-логіці) — це і є citable-актив для «how to prompt claude fable 5»; інакше сторінка для краулерів — порожня інтерактивна оболонка.
+- Schema: **SoftwareApplication/WebApplication** (основна) + TechArticle для explainer-частини. FAQPage — лише для LLM-інгесту (rich results для звичайних сайтів Google прибрав ще 2023-го — не продавати собі це як SERP-фічу).
+- H1 «Free Prompt Optimizer for Claude (Fable 5)», визначення в перших 300 словах, лінки на концепти/доки.
+- Перед лончем: одноразова перевірка brand guidelines Anthropic (nominative use + цитування сніпетів з атрибуцією — ймовірно ок, але Anthropic у 2026 активніше захищає бренд).
 
 ## 6. Наступні кроки
 
-1. **[затвердити]** назву розділу і флагмана.
-2. Сторінка `/tools` + `/tools/prompt-optimizer` з лінтером (Фаза A) — один PR, ~2–3 дні.
-3. Анонс: стаття в брифі + соцмережі (готовий інфопривід для запуску соцпрофілів із SOCIAL-LAUNCH.md).
-4. Калькулятор вартості (№2) — другий PR, його цінові дані стають основою living page «Ціни LLM API» (Фаза 3 майстер-плану).
+1. **[затвердити]** v2: назву розділу, першу хвилю (Optimizer → settings.json Builder → CLAUDE.md Generator).
+2. PR: `/tools` + `/tools/prompt-optimizer` (Фаза A; правила-як-дані + SSG-каталог правил + телеметрія counts-only) — ~2–3 дні.
+3. Анонс-звʼязка з запуском соцмереж (SOCIAL-LAUNCH.md): тулза = ідеальний перший інфопривід.
+4. CI-джоб хешування docs-сторінки гайда (фейл при зміні → ритуал оновлення правил).
