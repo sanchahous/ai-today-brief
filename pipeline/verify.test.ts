@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { EnrichedSource } from './enrich';
 import type { DraftItem } from './summarize';
-import { buildVerifyPrompt, parseVerifyResults, verifiableItems } from './verify';
+import { buildRevisePrompt, buildVerifyPrompt, parseVerifyResults, verifiableItems } from './verify';
 
 function draftItem(over: Partial<DraftItem> = {}): DraftItem {
   return {
@@ -71,6 +71,25 @@ describe('buildVerifyPrompt', () => {
     expect(prompt).toContain('FACTS: Price = $5 / 1M tokens');
     expect(prompt).toContain('--- [3] ---');
     expect(prompt).toContain('The hooks system runs scripts.');
+  });
+});
+
+describe('buildRevisePrompt', () => {
+  it('lists the unsupported claims per item next to its source', () => {
+    const prompt = buildRevisePrompt([
+      {
+        item: draftItem({
+          ref: 2,
+          unsupported_claims: ['costs $5/1M tokens', 'blocks all biology queries'],
+        }),
+        sourceText: 'The hooks system runs scripts.',
+      },
+    ]);
+    expect(prompt).toContain('[2] TITLE_EN: Claude Code ships hooks');
+    expect(prompt).toContain('- costs $5/1M tokens');
+    expect(prompt).toContain('- blocks all biology queries');
+    expect(prompt).toContain('--- [2] ---');
+    expect(prompt).toContain('empty summary_en (that drops it)');
   });
 });
 

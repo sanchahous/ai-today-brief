@@ -16,8 +16,11 @@ import { SchemaType } from '@google/generative-ai';
 import type { EnrichedSource } from './enrich';
 import { resolveGeminiModelQueue } from './gemini-models';
 import { logEvent } from './log';
+import type { PoolItem } from './select';
 import {
+  GEMINI_SCHEMA,
   generateWithModelQueue,
+  parseBrief,
   type DraftItem,
   type GeminiResponseSchema,
   type LlmUsage,
@@ -164,5 +167,96 @@ export async function verifyClaims(
     }
   }
   return { checked: pairs.length, flagged, usage, model };
+}
+/* v8 ignore end */
+
+/**
+ * Targeted rewrite prompt for items the fact-checker flagged: keep the story,
+ * remove or correct exactly the unsupported claims, using ONLY the source.
+ */
+export function buildRevisePrompt(
+  pairs: Array<{ item: DraftItem; sourceText: string }>,
+): string {
+  const itemsBlock = pairs
+    .map(({ item }) =>
+      [
+        `[${item.ref}] TITLE_EN: ${item.title_en}`,
+        `TITLE_UK: ${item.title_uk}`,
+        `SUMMARY_EN: ${item.summary_en}`,
+        `SUMMARY_UK: ${item.summary_uk}`,
+        item.body_md_en ? `BODY_EN:\n${item.body_md_en}` : '',
+        item.body_md_uk ? `BODY_UK:\n${item.body_md_uk}` : '',
+        item.facts_en.length
+          ? `FACTS: ${item.facts_en.map((f) => `${f.label} = ${f.value}`).join('; ')}`
+          : '',
+        'UNSUPPORTED CLAIMS (the fact-checker could not find these in the source):',
+        ...item.unsupported_claims.map((c) => `  - ${c}`),
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    )
+    .join('\n\n');
+
+  const sourcesBlock = pairs
+    .map(({ item, sourceText }) => `--- [${item.ref}] ---\n${sourceText}`)
+    .join('\n\n');
+
+  return `You are the editor-in-chief fixing your own draft after a fact-check.
+
+For each ITEM below, the fact-checker listed claims that the SOURCE TEXT (same [ref])
+does not support. Rewrite the affected fields so that EVERY remaining claim is
+supported by the source: delete the unsupported claims or replace them with what the
+source actually says. Keep the story, the tone and every field that was fine — in
+BOTH languages. If an item cannot stand without its unsupported claims, return it
+with an empty summary_en (that drops it).
+
+Return the full JSON brief object (same schema as the original task) containing ONLY
+the revised items, with their ORIGINAL ref numbers. The shell title_en/uk and
+intro_en/uk are ignored — copy anything reasonable.
+
+ITEMS TO FIX:
+${itemsBlock}
+
+SOURCE TEXTS (the only allowed source of facts):
+${sourcesBlock}`;
+}
+
+/* v8 ignore start -- integration: real Gemini call; buildRevisePrompt is unit-tested */
+/**
+ * Rewrite flagged items against their sources. Returns revised DraftItems
+ * matched by ref; the caller preserves the original slug/image and re-verifies.
+ * Items the model chose to drop (empty summary) simply don't come back.
+ */
+export async function reviseFlaggedItems(
+  flagged: DraftItem[],
+  enrichment: EnrichedSource[],
+  candidates: PoolItem[],
+  apiKey: string,
+  geminiMaxAttempts: number,
+): Promise<{ revised: DraftItem[]; usage: LlmUsage | null }> {
+  const pairs = verifiableItems(flagged, enrichment).filter(
+    (p) => p.item.unsupported_claims.length > 0,
+  );
+  if (pairs.length === 0) return { revised: [], usage: null };
+
+  const prompt = buildRevisePrompt(pairs);
+  const modelQueue = await resolveGeminiModelQueue(apiKey);
+  const { text, usage } = await generateWithModelQueue(
+    prompt,
+    apiKey,
+    modelQueue,
+    geminiMaxAttempts,
+    undefined,
+    undefined,
+    GEMINI_SCHEMA,
+  );
+
+  const flaggedRefs = new Set(pairs.map((p) => p.item.ref));
+  const revised = parseBrief(text, candidates).items.filter((i) => flaggedRefs.has(i.ref));
+  logEvent('info', 'verify', 'Flagged items revised', {
+    flagged: pairs.length,
+    revised: revised.length,
+  });
+  return { revised, usage };
 }
 /* v8 ignore end */

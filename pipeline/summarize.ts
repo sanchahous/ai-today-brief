@@ -201,7 +201,8 @@ const CITATIONS_ARRAY: GeminiResponseSchema = {
   },
 };
 
-const GEMINI_SCHEMA: NonNullable<
+/** The brief output schema — also used by the revise pass in verify.ts. */
+export const GEMINI_SCHEMA: NonNullable<
   NonNullable<
     Parameters<GoogleGenerativeAI['getGenerativeModel']>[0]['generationConfig']
   >['responseSchema']
