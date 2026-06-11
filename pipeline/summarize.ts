@@ -18,12 +18,20 @@
  */
 
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import type { EnrichedSource } from './enrich';
 import { resolveGeminiModelQueue } from './gemini-models';
 import { ukQualityFlags } from './lang-check';
 import { logError, logEvent, serializeErrorDetails } from './log';
 import type { PoolItem } from './select';
 import { slugify, dedupeSlugs } from './text';
 import { CATEGORY_SLUGS, isCategorySlug, type CategorySlug } from './topics';
+
+/* Plain `type` (not interface) so the shapes satisfy Supabase's Json columns
+   via TypeScript's implicit index signature for type literals. */
+export type FactRow = { label: string; value: string };
+export type CodeSnippet = { language: string; code: string };
+export type CommunityReaction = { author: string; quote: string; url: string };
+export type Citation = { title: string; url: string };
 
 export interface DraftItem {
   ref: number;
@@ -39,6 +47,24 @@ export interface DraftItem {
   why_matters_uk: string;
   deep_dive_en: string;
   deep_dive_uk: string;
+  /** Markdown body with ### subheadings, written from fetched source text. */
+  body_md_en: string;
+  body_md_uk: string;
+  /** Facts box rows: prices, limits, dates, benchmarks — from source only. */
+  facts_en: FactRow[];
+  facts_uk: FactRow[];
+  /** Shortest way to try it (install/curl/config), when applicable. */
+  code_snippet: CodeSnippet | null;
+  when_to_use_en: string[];
+  when_to_use_uk: string[];
+  when_not_to_use_en: string[];
+  when_not_to_use_uk: string[];
+  /** Quoted HN voices (EN originals, verbatim trims with links). */
+  community_reactions: CommunityReaction[];
+  /** Primary links, restricted to URLs that appeared in the prompt. */
+  citations: Citation[];
+  /** og:image of the source article — filled from enrichment, not the LLM. */
+  image_url: string | null;
   takeaways_en: string[];
   takeaways_uk: string[];
   tools_mentioned: string[];
@@ -52,6 +78,8 @@ export interface DraftItem {
   social_hook_uk: string;
   /** `_uk` fields that failed the Ukrainian-language check (incl. EN fallbacks). */
   uk_quality_flags: string[];
+  /** Claims the VERIFY pass could not find in the source (filled post-parse). */
+  unsupported_claims: string[];
 }
 
 export type ImpactLevel = 'low' | 'medium' | 'high';
@@ -140,6 +168,39 @@ function sleep(ms: number): Promise<void> {
 const STRING = { type: SchemaType.STRING } as const;
 const STRING_ARRAY = { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } } as const;
 
+export type GeminiResponseSchema = NonNullable<
+  NonNullable<
+    Parameters<GoogleGenerativeAI['getGenerativeModel']>[0]['generationConfig']
+  >['responseSchema']
+>;
+
+const FACTS_ARRAY: GeminiResponseSchema = {
+  type: SchemaType.ARRAY,
+  items: {
+    type: SchemaType.OBJECT,
+    properties: { label: STRING, value: STRING },
+    required: ['label', 'value'],
+  },
+};
+
+const REACTIONS_ARRAY: GeminiResponseSchema = {
+  type: SchemaType.ARRAY,
+  items: {
+    type: SchemaType.OBJECT,
+    properties: { author: STRING, quote: STRING, url: STRING },
+    required: ['author', 'quote', 'url'],
+  },
+};
+
+const CITATIONS_ARRAY: GeminiResponseSchema = {
+  type: SchemaType.ARRAY,
+  items: {
+    type: SchemaType.OBJECT,
+    properties: { title: STRING, url: STRING },
+    required: ['title', 'url'],
+  },
+};
+
 const GEMINI_SCHEMA: NonNullable<
   NonNullable<
     Parameters<GoogleGenerativeAI['getGenerativeModel']>[0]['generationConfig']
@@ -166,6 +227,22 @@ const GEMINI_SCHEMA: NonNullable<
           why_matters_uk: STRING,
           deep_dive_en: STRING,
           deep_dive_uk: STRING,
+          body_md_en: STRING,
+          body_md_uk: STRING,
+          facts_en: FACTS_ARRAY,
+          facts_uk: FACTS_ARRAY,
+          code_snippet: {
+            type: SchemaType.OBJECT,
+            properties: { language: STRING, code: STRING },
+            required: ['language', 'code'],
+            nullable: true,
+          },
+          when_to_use_en: STRING_ARRAY,
+          when_to_use_uk: STRING_ARRAY,
+          when_not_to_use_en: STRING_ARRAY,
+          when_not_to_use_uk: STRING_ARRAY,
+          community_reactions: REACTIONS_ARRAY,
+          citations: CITATIONS_ARRAY,
           takeaways_en: STRING_ARRAY,
           takeaways_uk: STRING_ARRAY,
           tools_mentioned: STRING_ARRAY,
@@ -186,6 +263,8 @@ const GEMINI_SCHEMA: NonNullable<
           'why_matters_uk',
           'deep_dive_en',
           'deep_dive_uk',
+          'body_md_en',
+          'body_md_uk',
           'takeaways_en',
           'takeaways_uk',
           'tools_mentioned',
@@ -202,13 +281,14 @@ const GEMINI_SCHEMA: NonNullable<
 function createGenerateContent(
   modelId: string,
   apiKey: string,
+  schema: GeminiResponseSchema = GEMINI_SCHEMA,
 ): (prompt: string) => Promise<GenerateOutput> {
   const gemini = new GoogleGenerativeAI(apiKey);
   return async (prompt: string) => {
     const started = Date.now();
     const model = gemini.getGenerativeModel({
       model: modelId,
-      generationConfig: { responseMimeType: 'application/json', responseSchema: GEMINI_SCHEMA },
+      generationConfig: { responseMimeType: 'application/json', responseSchema: schema },
     });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
@@ -259,6 +339,7 @@ export async function generateWithModelQueue(
   perModelMaxAttempts = 2,
   generateContent?: (modelId: string, input: string) => Promise<GenerateOutput>,
   sleepFn: (ms: number) => Promise<void> = sleep,
+  schema: GeminiResponseSchema = GEMINI_SCHEMA,
 ): Promise<{ text: string; model: string; usage: LlmUsage | null }> {
   let lastError: unknown;
 
@@ -266,7 +347,7 @@ export async function generateWithModelQueue(
     for (let attempt = 1; attempt <= perModelMaxAttempts; attempt++) {
       const call =
         generateContent ??
-        ((id: string, input: string) => createGenerateContent(id, apiKey)(input));
+        ((id: string, input: string) => createGenerateContent(id, apiKey, schema)(input));
       try {
         const { text, usage } = normalizeGenerateOutput(await call(modelId, prompt));
         return { text, model: modelId, usage };
@@ -330,10 +411,36 @@ Does NOT want: geopolitics, generic CEO quotes, raw academic research,
 big-iron datacenter news, philosophical AI-doom takes.`;
 }
 
+/** SOURCE MATERIAL block: fetched article text + HN voices, keyed by ref. */
+export function buildSourceMaterialBlock(enrichment: EnrichedSource[]): string {
+  const withContent = enrichment.filter((e) => e.text || e.comments.length > 0);
+  if (withContent.length === 0) return '';
+
+  const blocks = withContent.map((e) => {
+    const parts = [`--- [${e.ref}] ${e.url} ---`];
+    if (e.text) parts.push(`TEXT:\n${e.text}`);
+    if (e.comments.length > 0) {
+      parts.push(
+        'HN COMMENTS:\n' +
+          e.comments.map((c) => `- ${c.author} (${c.url}): ${c.text}`).join('\n'),
+      );
+    }
+    return parts.join('\n');
+  });
+
+  return `
+SOURCE MATERIAL (fetched from the candidate URLs — trust this over prior knowledge;
+candidates NOT listed here have no fetched source, write those conservatively with
+no specific numbers):
+${blocks.join('\n\n')}
+`;
+}
+
 export function buildPrompt(
   candidates: PoolItem[],
   recentlyPublished: string[],
   maxItems: number,
+  enrichment: EnrichedSource[] = [],
 ): string {
   const list = candidates
     .map((c) => `[${c.ref}] (${c.source}) ${c.title}\n     ${c.url}`)
@@ -354,7 +461,7 @@ ${buildReaderProfileBlock()}
 
 CANDIDATES (already ranked by velocity + cross-source coverage + authority + recency):
 ${list}
-
+${buildSourceMaterialBlock(enrichment)}
 ALREADY PUBLISHED RECENTLY (do NOT repeat these stories, even if worded differently):
 ${recent}
 
@@ -378,6 +485,22 @@ For EACH kept item, write BOTH languages (natural Ukrainian, not word-for-word):
   summary_en/uk    — 2–3 sentences (~45 words): what happened + one concrete takeaway
   why_matters_en/uk— one sentence: what the reader can do with this today
   deep_dive_en/uk  — 2 short paragraphs (~120 words) of substance: context, specifics, caveats
+  body_md_en/uk    — 150–300 words of MARKDOWN: 2–4 sections with "### " subheadings, written
+                     from SOURCE MATERIAL — concrete numbers, prices, limits, commands; inline
+                     \`code\` for identifiers/flags. HARD RULE: every specific claim must come
+                     from the source text; for refs WITHOUT source material write one short
+                     headline-grade section and no specifics. Do not pad, do not hype.
+  facts_en/uk      — 2–6 {label, value} rows for a facts box: price per 1M tokens, context
+                     window, rate limits, dates, benchmark numbers (mark vendor numbers
+                     "self-reported"). ONLY values present in the source; [] if none.
+  code_snippet     — {language, code}: the shortest way to try it (install command, curl call,
+                     config block) taken or minimally adapted from the source; null if N/A.
+  when_to_use_en/uk / when_not_to_use_en/uk — 2–3 honest bullets each for tool/model stories
+                     ("not for X" builds trust); [] when the story is not a usable artifact.
+  community_reactions — 1–3 of the provided HN COMMENTS worth quoting: {author, quote, url};
+                     quote = verbatim trim ≤ 200 chars, keep it in English; [] if none provided.
+  citations        — 1–4 {title, url} primary links chosen ONLY from URLs that appear in this
+                     prompt (candidate URL, HN comment links, links inside source text).
   takeaways_en/uk  — 2–4 short bullet strings, the practical points
   action_items_en/uk — 2–4 imperative checklist steps ("Run npm audit", "Pin MCP server version"); [] if none
   impact_level     — one of low | medium | high: how much this changes a typical engineer's week
@@ -525,6 +648,44 @@ function asStringArray(value: unknown): string[] {
   return value.map((v) => asString(v)).filter((s) => s.length > 0);
 }
 
+function asFactArray(value: unknown): FactRow[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((v) => {
+      const o = (v ?? {}) as Record<string, unknown>;
+      return { label: asString(o.label), value: asString(o.value) };
+    })
+    .filter((f) => f.label.length > 0 && f.value.length > 0);
+}
+
+function asReactionArray(value: unknown): CommunityReaction[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((v) => {
+      const o = (v ?? {}) as Record<string, unknown>;
+      return { author: asString(o.author), quote: asString(o.quote), url: asString(o.url) };
+    })
+    .filter((r) => r.quote.length > 0 && r.url.startsWith('http'));
+}
+
+function asCitationArray(value: unknown): Citation[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((v) => {
+      const o = (v ?? {}) as Record<string, unknown>;
+      return { title: asString(o.title), url: asString(o.url) };
+    })
+    .filter((c) => c.url.startsWith('http'));
+}
+
+function asCodeSnippet(value: unknown): CodeSnippet | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const o = value as Record<string, unknown>;
+  const code = asString(o.code);
+  if (!code) return null;
+  return { language: asString(o.language) || 'bash', code };
+}
+
 interface ModelItem {
   ref?: unknown;
   category_slug?: unknown;
@@ -536,6 +697,17 @@ interface ModelItem {
   why_matters_uk?: unknown;
   deep_dive_en?: unknown;
   deep_dive_uk?: unknown;
+  body_md_en?: unknown;
+  body_md_uk?: unknown;
+  facts_en?: unknown;
+  facts_uk?: unknown;
+  code_snippet?: unknown;
+  when_to_use_en?: unknown;
+  when_to_use_uk?: unknown;
+  when_not_to_use_en?: unknown;
+  when_not_to_use_uk?: unknown;
+  community_reactions?: unknown;
+  citations?: unknown;
   takeaways_en?: unknown;
   takeaways_uk?: unknown;
   tools_mentioned?: unknown;
@@ -581,6 +753,18 @@ export function parseBrief(text: string, candidates: PoolItem[]): DraftBrief {
       why_matters_uk: asString(m.why_matters_uk),
       deep_dive_en: asString(m.deep_dive_en),
       deep_dive_uk: asString(m.deep_dive_uk),
+      body_md_en: asString(m.body_md_en),
+      body_md_uk: asString(m.body_md_uk),
+      facts_en: asFactArray(m.facts_en),
+      facts_uk: asFactArray(m.facts_uk),
+      code_snippet: asCodeSnippet(m.code_snippet),
+      when_to_use_en: asStringArray(m.when_to_use_en),
+      when_to_use_uk: asStringArray(m.when_to_use_uk),
+      when_not_to_use_en: asStringArray(m.when_not_to_use_en),
+      when_not_to_use_uk: asStringArray(m.when_not_to_use_uk),
+      community_reactions: asReactionArray(m.community_reactions),
+      citations: asCitationArray(m.citations),
+      image_url: null, // filled from enrichment by the caller, never by the LLM
       takeaways_en: asStringArray(m.takeaways_en),
       takeaways_uk: asStringArray(m.takeaways_uk),
       tools_mentioned: asStringArray(m.tools_mentioned),
@@ -589,6 +773,7 @@ export function parseBrief(text: string, candidates: PoolItem[]): DraftBrief {
       impact_level: parseImpactLevel(m.impact_level),
       social_hook_en: asString(m.social_hook_en),
       social_hook_uk: asString(m.social_hook_uk) || asString(m.social_hook_en),
+      unsupported_claims: [], // filled by the VERIFY pass downstream
     };
     // Flag _uk fields that are EN fallbacks or non-Ukrainian text so the item
     // reaches the Telegram reviewer marked instead of silently shipping English.
@@ -624,6 +809,7 @@ export async function summarize(
   apiKey: string,
   openRouterApiKey?: string,
   geminiMaxAttempts = 3,
+  enrichment: EnrichedSource[] = [],
 ): Promise<SummarizeResult> {
   logEvent('info', 'summarize', 'Curate & summarize started', {
     candidates: candidates.length,
@@ -631,8 +817,9 @@ export async function summarize(
     max_items: maxItems,
     gemini_per_model_attempts: geminiMaxAttempts,
     openrouter_fallback: Boolean(openRouterApiKey),
+    enriched_refs: enrichment.filter((e) => e.text).length,
   });
-  const prompt = buildPrompt(candidates, recentlyPublished, maxItems);
+  const prompt = buildPrompt(candidates, recentlyPublished, maxItems, enrichment);
   return runSummarizeFromPrompt(
     prompt,
     candidates,

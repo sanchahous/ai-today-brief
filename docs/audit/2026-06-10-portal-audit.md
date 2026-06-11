@@ -171,12 +171,12 @@ RELATED: як є + prev/next навігація
 - [x] Language-detect валідація `_uk`-полів (`pipeline/lang-check.ts` → `review_comment`).
 - [x] Cost-логування LLM-викликів (Gemini usageMetadata / OpenRouter estimate) у `pipeline_runs.meta`.
 
-### Фаза 1 — Rich-контент pipeline (2–3 тижні) ← НАЙВИЩИЙ ROI
-- [ ] **ENRICH-етап:** повнотекстовий fetch (readability) топ-8 кандидатів + топ-5 HN-коментарів + og:image → Supabase Storage.
-- [ ] Міграція схеми: `body_md`, `facts`, `code_snippet`, `when_to_use/when_not_to_use`, `community_reactions`, `citations`, `image_url`, `editor_take` на `brief_items`.
-- [ ] **Summarize v2:** промпт на повному тексті; markdown-body з підзаголовками; обовʼязкові конкретні цифри/ціни/команди; citations.
-- [ ] **VERIFY-прохід:** LLM-перевірка тверджень проти джерела; провали → у review_comment.
-- [ ] Telegram: кнопка «✍️ Edit» / поле editor_take (15-хвилинний людський шар на топ-новину).
+### Фаза 1 — Rich-контент pipeline ← НАЙВИЩИЙ ROI (ядро виконано 2026-06-11)
+- [x] **ENRICH-етап** (`pipeline/enrich.ts`): повнотекстовий fetch топ-8 кандидатів (readability-евристика без залежностей) + топ-5 HN-коментарів (Algolia) + og:image. *(og:image зберігається як URL; завантаження в Supabase Storage — коли фронтенд почне рендерити зображення, Фаза 2.)*
+- [x] Міграція 027: `body_md_en/uk`, `facts_en/uk`, `code_snippet`, `when_to_use/when_not_to_use (en/uk)`, `community_reactions`, `citations`, `image_url`, `editor_take` на `brief_items` (застосована в прод).
+- [x] **Summarize v2:** промпт із блоком SOURCE MATERIAL; markdown-body з `###`; жорстке правило «факти тільки з джерела»; facts box, try-it код, when/when-not, цитати спільноти, citations.
+- [x] **VERIFY-прохід** (`pipeline/verify.ts`): LLM-перевірка тверджень проти тексту джерела; непідтверджені → `unsupported_claims` → `review_comment` (⚠️ Авто-перевірка).
+- [ ] Telegram: кнопка «✍️ Edit» / поле editor_take (15-хвилинний людський шар на топ-новину) — поле в БД готове, UI у наступній ітерації.
 
 ### Фаза 2 — Шаблон статті + візуальний шар (2–3 тижні)
 - [ ] Перезібрати `story-body.tsx` за шаблоном §3.2: markdown-рендер (підзаголовки/bold/code з підсвіткою), facts-таблиця, try-it блок, when-to-use, editor's take, community, sources.

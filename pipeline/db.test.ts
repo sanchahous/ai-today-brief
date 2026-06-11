@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeNextBriefEdition, ukReviewComment } from './db';
+import { autoReviewComment, computeNextBriefEdition } from './db';
 
 describe('computeNextBriefEdition', () => {
   it('refreshes an existing draft pack', () => {
@@ -31,10 +31,26 @@ describe('computeNextBriefEdition', () => {
   });
 });
 
-describe('ukReviewComment', () => {
-  it('lists the suspect fields for the reviewer', () => {
-    expect(ukReviewComment(['title_uk', 'deep_dive_uk'])).toBe(
-      '⚠️ Авто-перевірка мови: підозрілі поля — title_uk, deep_dive_uk',
-    );
+describe('autoReviewComment', () => {
+  it('combines language flags and unsupported claims for the reviewer', () => {
+    expect(
+      autoReviewComment({
+        uk_quality_flags: ['title_uk'],
+        unsupported_claims: ['costs $5/1M tokens'],
+      }),
+    ).toBe('⚠️ Авто-перевірка: мова: title_uk | джерело не підтверджує: costs $5/1M tokens');
+  });
+
+  it('returns null when both checks are clean', () => {
+    expect(autoReviewComment({ uk_quality_flags: [], unsupported_claims: [] })).toBeNull();
+  });
+
+  it('caps unsupported claims at three', () => {
+    const comment = autoReviewComment({
+      uk_quality_flags: [],
+      unsupported_claims: ['a', 'b', 'c', 'd'],
+    })!;
+    expect(comment).toContain('a; b; c');
+    expect(comment).not.toContain('d');
   });
 });

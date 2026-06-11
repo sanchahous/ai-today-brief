@@ -199,6 +199,125 @@ describe('parseBrief', () => {
   });
 });
 
+describe('parseBrief — rich content fields (v2)', () => {
+  it('parses body, facts, code, when-to-use, reactions and citations with guards', () => {
+    const json = JSON.stringify({
+      title_en: 'Brief',
+      title_uk: 'Бриф',
+      intro_en: '',
+      intro_uk: '',
+      items: [
+        {
+          ref: 1,
+          category_slug: 'tools-and-releases',
+          title_en: 'Claude Opus 4.8 released',
+          title_uk: 'Вийшов Claude Opus 4.8',
+          summary_en: 'New model ships.',
+          summary_uk: 'Вийшла нова модель з кращим кодом.',
+          why_matters_en: '',
+          why_matters_uk: '',
+          deep_dive_en: '',
+          deep_dive_uk: '',
+          body_md_en: '### Pricing\n$5 per 1M input tokens.',
+          body_md_uk: '### Ціни\n$5 за 1M вхідних токенів.',
+          facts_en: [
+            { label: 'Input price', value: '$5 / 1M' },
+            { label: '', value: 'dropped' },
+          ],
+          facts_uk: [{ label: 'Ціна входу', value: '$5 / 1M' }],
+          code_snippet: { language: 'bash', code: 'npm i -g claude' },
+          when_to_use_en: ['Long agentic tasks'],
+          when_to_use_uk: ['Довгі агентні задачі'],
+          when_not_to_use_en: ['Bulk classification'],
+          when_not_to_use_uk: ['Масова класифікація'],
+          community_reactions: [
+            { author: 'dev1', quote: 'Huge jump on SWE-bench.', url: 'https://news.ycombinator.com/item?id=1' },
+            { author: 'bad', quote: 'no url', url: '' },
+          ],
+          citations: [
+            { title: 'Official post', url: 'https://anthropic.com/news' },
+            { title: 'no url', url: '' },
+          ],
+          takeaways_en: [],
+          takeaways_uk: [],
+          tools_mentioned: [],
+          social_hook_en: '',
+          social_hook_uk: '',
+        },
+      ],
+    });
+    const item = parseBrief(json, pool).items[0]!;
+    expect(item.body_md_en).toContain('### Pricing');
+    expect(item.facts_en).toEqual([{ label: 'Input price', value: '$5 / 1M' }]);
+    expect(item.code_snippet).toEqual({ language: 'bash', code: 'npm i -g claude' });
+    expect(item.when_not_to_use_en).toEqual(['Bulk classification']);
+    expect(item.community_reactions).toHaveLength(1);
+    expect(item.citations).toEqual([{ title: 'Official post', url: 'https://anthropic.com/news' }]);
+    expect(item.image_url).toBeNull();
+    expect(item.unsupported_claims).toEqual([]);
+  });
+
+  it('defaults rich fields when the model omits them', () => {
+    const json = JSON.stringify({
+      title_en: 'Brief',
+      title_uk: 'Бриф',
+      intro_en: '',
+      intro_uk: '',
+      items: [
+        {
+          ref: 2,
+          category_slug: 'agents-and-mcp',
+          title_en: 'New MCP server for Postgres',
+          title_uk: 'Новий MCP-сервер для Postgres',
+          summary_en: 'A server landed.',
+          summary_uk: 'Зʼявився новий сервер для агентів.',
+          why_matters_en: '',
+          why_matters_uk: '',
+          deep_dive_en: '',
+          deep_dive_uk: '',
+          takeaways_en: [],
+          takeaways_uk: [],
+          tools_mentioned: [],
+          social_hook_en: '',
+          social_hook_uk: '',
+        },
+      ],
+    });
+    const item = parseBrief(json, pool).items[0]!;
+    expect(item.body_md_en).toBe('');
+    expect(item.facts_en).toEqual([]);
+    expect(item.code_snippet).toBeNull();
+    expect(item.community_reactions).toEqual([]);
+    expect(item.citations).toEqual([]);
+  });
+});
+
+describe('buildSourceMaterialBlock + buildPrompt with enrichment', () => {
+  it('includes fetched text and HN comments keyed by ref', () => {
+    const p = buildPrompt(pool, [], 6, [
+      {
+        ref: 1,
+        url: 'https://ex.com/claude',
+        text: 'Anthropic priced the model at $5 per million input tokens.',
+        ogImage: null,
+        comments: [
+          { author: 'dev1', text: 'Tried it, solid.', url: 'https://news.ycombinator.com/item?id=7' },
+        ],
+      },
+      { ref: 2, url: 'https://ex.com/mcp', text: null, ogImage: null, comments: [] },
+    ]);
+    expect(p).toContain('SOURCE MATERIAL (fetched from');
+    expect(p).toContain('--- [1] https://ex.com/claude ---');
+    expect(p).toContain('$5 per million input tokens');
+    expect(p).toContain('dev1 (https://news.ycombinator.com/item?id=7): Tried it, solid.');
+    expect(p).not.toContain('--- [2]');
+  });
+
+  it('omits the block entirely without enrichment', () => {
+    expect(buildPrompt(pool, [], 6)).not.toContain('SOURCE MATERIAL (fetched from');
+  });
+});
+
 describe('parseBrief — Ukrainian quality flags', () => {
   it('flags items whose _uk fields are English fallbacks', () => {
     const json = JSON.stringify({

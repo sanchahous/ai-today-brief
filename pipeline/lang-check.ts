@@ -44,10 +44,13 @@ export function ukQualityFlags(item: {
   summary_uk: string;
   deep_dive_en: string;
   deep_dive_uk: string;
+  body_md_en?: string;
+  body_md_uk?: string;
 }): string[] {
   const flags: string[] = [];
   if (item.title_en && !looksUkrainian(item.title_uk, { minShare: 0 })) flags.push('title_uk');
   if (item.summary_en && !looksUkrainian(item.summary_uk)) flags.push('summary_uk');
   if (item.deep_dive_en && !looksUkrainian(item.deep_dive_uk)) flags.push('deep_dive_uk');
+  if (item.body_md_en && !looksUkrainian(item.body_md_uk ?? '')) flags.push('body_md_uk');
   return flags;
 }
