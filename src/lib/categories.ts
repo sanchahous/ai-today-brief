@@ -283,6 +283,7 @@ export async function getCategoryItems(slug: string, lang: Lang, limit = 60): Pr
       title: pick(lang, r.titleEn, r.titleUk) || summary,
       summary,
       date: r.date,
+      imageUrl: null, // lightweight query — no image column selected
     };
   });
 }

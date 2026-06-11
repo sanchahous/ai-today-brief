@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SITE_URL, LANGS } from '@/lib/site';
+import { GUIDES } from '@/content/guides';
 import { getPublishedItemPaths } from '@/lib/items';
 import { getConceptPaths } from '@/lib/concepts';
 import { getCategoryPaths } from '@/lib/categories';
@@ -24,6 +25,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push({ url: `${SITE_URL}/${lang}`, changeFrequency: 'daily', priority: 1 });
     entries.push({ url: `${SITE_URL}/${lang}/news`, changeFrequency: 'daily', priority: 0.8 });
     entries.push({ url: `${SITE_URL}/${lang}/concepts`, changeFrequency: 'weekly', priority: 0.6 });
+    entries.push({ url: `${SITE_URL}/${lang}/guides`, changeFrequency: 'weekly', priority: 0.7 });
+    for (const guide of GUIDES) {
+      entries.push({
+        url: `${SITE_URL}/${lang}/guides/${guide.slug}`,
+        lastModified: guide.lastVerified,
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      });
+    }
     for (const path of TRUST_PATHS) {
       entries.push({
         url: `${SITE_URL}/${lang}/${path}`,

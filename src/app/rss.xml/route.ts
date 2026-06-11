@@ -20,18 +20,21 @@ export async function GET() {
     .map((it) => {
       const link = `${SITE_URL}${it.href}`;
       const pubDate = new Date(`${it.date}T09:00:00Z`).toUTCString();
+      const media = it.imageUrl
+        ? `\n      <media:content url="${escapeXml(it.imageUrl)}" medium="image" />`
+        : '';
       return `    <item>
       <title>${escapeXml(it.title)}</title>
       <link>${link}</link>
       <guid isPermaLink="true">${link}</guid>
       <description>${escapeXml(it.summary)}</description>
-      <pubDate>${pubDate}</pubDate>
+      <pubDate>${pubDate}</pubDate>${media}
     </item>`;
     })
     .join('\n');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
     <title>${escapeXml(SITE_NAME)}</title>
     <link>${SITE_URL}/${lang}</link>

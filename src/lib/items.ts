@@ -25,6 +25,7 @@ export type ItemCitation = { title: string; url: string };
 export interface BriefItemDetail {
   id: string;
   rank: number;
+  briefId: string;
   briefSlug: string;
   briefDate: string;
   itemSlug: string;
@@ -198,6 +199,7 @@ export async function getBriefItem(
   return {
     id: it.id,
     rank: it.rank,
+    briefId: brief.id,
     briefSlug: brief.slug,
     briefDate: brief.date,
     itemSlug: it.slug,
@@ -237,6 +239,45 @@ export async function getBriefItem(
     sourceName: article?.source_name ?? null,
     sourceUrl: article?.url ?? article?.source_url ?? null,
   };
+}
+
+export interface AdjacentStory {
+  href: string;
+  title: string;
+}
+
+/**
+ * Previous/next story within the same brief by rank — issue-order browsing.
+ * RLS limits anon reads to approved items of published briefs, so unapproved
+ * neighbours are skipped naturally.
+ */
+export async function getAdjacentStories(
+  briefId: string,
+  briefSlug: string,
+  rank: number,
+  lang: Lang,
+): Promise<{ prev: AdjacentStory | null; next: AdjacentStory | null }> {
+  const supabase = getSupabase();
+  if (!supabase) return { prev: null, next: null };
+
+  const { data } = await supabase
+    .from('brief_items')
+    .select('slug, rank, title_en, title_uk')
+    .eq('brief_id', briefId)
+    .neq('rank', rank)
+    .order('rank', { ascending: true });
+
+  let prev: AdjacentStory | null = null;
+  let next: AdjacentStory | null = null;
+  for (const row of data ?? []) {
+    if (!row.slug) continue;
+    const title = pick(lang, row.title_en, row.title_uk);
+    if (!title) continue;
+    const story = { href: `/${lang}/${briefSlug}/${row.slug}`, title };
+    if (row.rank < rank) prev = story; // keep the closest one below
+    else if (!next) next = story; // first one above
+  }
+  return { prev, next };
 }
 
 /** Recent stories in the same category, excluding the current item. */
