@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="4200" height="700" viewBox="0 0 4200 700">
+  <!-- LinkedIn Page cover (4200x700, renders ~1128x191 on desktop).
+       Mobile crops both sides and the logo overlaps the lower-left — wordmark
+       sits in the central ~60% width, vertically centered. -->
+  <rect width="4200" height="700" fill="#0f1115"/>
+  <circle cx="3950" cy="-80" r="380" fill="#f0c040" opacity="0.07"/>
+  <circle cx="260" cy="780" r="320" fill="#b58cf7" opacity="0.05"/>
+  <text x="2100" y="320" text-anchor="middle"
+        font-family="Fraunces, Georgia, 'Times New Roman', serif"
+        font-size="150" font-weight="700" fill="#e8e8e8">AI Today <tspan fill="#f0c040">Brief</tspan></text>
+  <text x="2100" y="430" text-anchor="middle"
+        font-family="Inter, Arial, sans-serif"
+        font-size="52" fill="#9aa1ad">Daily AI &amp; engineering brief for developers — signal, not noise</text>
+  <text x="2100" y="530" text-anchor="middle"
+        font-family="Inter, Arial, sans-serif"
+        font-size="48" font-weight="600" fill="#f0c040">aitodaybrief.com</text>
+</svg>

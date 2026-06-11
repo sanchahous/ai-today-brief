@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2560" height="1440" viewBox="0 0 2560 1440">
+  <!-- YouTube channel art (2560x1440). CRITICAL: only the central 1546x423
+       strip (x 507-2053, y 508-932) is visible on every device — all text
+       lives there. The rest is brand-colored field for desktop/TV. -->
+  <rect width="2560" height="1440" fill="#0f1115"/>
+  <circle cx="2300" cy="240" r="420" fill="#f0c040" opacity="0.06"/>
+  <circle cx="300" cy="1240" r="380" fill="#5bc9f0" opacity="0.05"/>
+  <circle cx="2200" cy="1300" r="300" fill="#b58cf7" opacity="0.05"/>
+  <!-- safe area content -->
+  <text x="1280" y="690" text-anchor="middle"
+        font-family="Fraunces, Georgia, 'Times New Roman', serif"
+        font-size="120" font-weight="700" fill="#e8e8e8">AI Today <tspan fill="#f0c040">Brief</tspan></text>
+  <text x="1280" y="778" text-anchor="middle"
+        font-family="Inter, Arial, sans-serif"
+        font-size="40" fill="#9aa1ad">The 5 AI stories that matter — every day, for developers</text>
+  <text x="1280" y="860" text-anchor="middle"
+        font-family="Inter, Arial, sans-serif"
+        font-size="38" font-weight="600" fill="#f0c040">aitodaybrief.com</text>
+</svg>
