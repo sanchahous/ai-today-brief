@@ -17,6 +17,11 @@ function toStringArray(value: unknown): string[] {
 
 export type ItemImpactLevel = 'low' | 'medium' | 'high';
 
+export type ItemFact = { label: string; value: string };
+export type ItemCodeSnippet = { language: string; code: string };
+export type ItemReaction = { author: string; quote: string; url: string };
+export type ItemCitation = { title: string; url: string };
+
 export interface BriefItemDetail {
   id: string;
   rank: number;
@@ -31,15 +36,74 @@ export interface BriefItemDetail {
   summary: string;
   why: string;
   deepDive: string;
+  /** Markdown body (Phase 1 pipeline); empty for legacy items → render deepDive. */
+  bodyMd: string;
+  facts: ItemFact[];
+  codeSnippet: ItemCodeSnippet | null;
+  whenToUse: string[];
+  whenNotToUse: string[];
+  communityReactions: ItemReaction[];
+  citations: ItemCitation[];
+  imageUrl: string | null;
+  editorTake: string;
   takeaways: string[];
   actionItems: string[];
   impactLevel: ItemImpactLevel | null;
   tools: string[];
   hasVideo: boolean;
+  youtubeUrl: string | null;
   readMinutes: number;
   publishedAt: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
+}
+
+function toFacts(value: unknown): ItemFact[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((v) => {
+      const o = (v ?? {}) as Record<string, unknown>;
+      return {
+        label: typeof o.label === 'string' ? o.label.trim() : '',
+        value: typeof o.value === 'string' ? o.value.trim() : '',
+      };
+    })
+    .filter((f) => f.label && f.value);
+}
+
+function toCodeSnippet(value: unknown): ItemCodeSnippet | null {
+  if (typeof value !== 'object' || value === null) return null;
+  const o = value as Record<string, unknown>;
+  const code = typeof o.code === 'string' ? o.code.trim() : '';
+  if (!code) return null;
+  return { language: typeof o.language === 'string' && o.language ? o.language : 'bash', code };
+}
+
+function toReactions(value: unknown): ItemReaction[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((v) => {
+      const o = (v ?? {}) as Record<string, unknown>;
+      return {
+        author: typeof o.author === 'string' ? o.author.trim() : '',
+        quote: typeof o.quote === 'string' ? o.quote.trim() : '',
+        url: typeof o.url === 'string' ? o.url.trim() : '',
+      };
+    })
+    .filter((r) => r.quote && r.url.startsWith('http'));
+}
+
+function toCitations(value: unknown): ItemCitation[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((v) => {
+      const o = (v ?? {}) as Record<string, unknown>;
+      return {
+        title: typeof o.title === 'string' ? o.title.trim() : '',
+        url: typeof o.url === 'string' ? o.url.trim() : '',
+      };
+    })
+    .filter((c) => c.url.startsWith('http'));
 }
 
 function parseImpactLevel(value: string | null): ItemImpactLevel | null {
@@ -74,6 +138,15 @@ function wordCount(text: string): number {
   return trimmed ? trimmed.split(/\s+/).length : 0;
 }
 
+/** YouTube video id from watch/short/embed URLs, or null. */
+export function youtubeVideoId(url: string | null): string | null {
+  if (!url) return null;
+  const m = url.match(
+    /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/)|youtu\.be\/)([\w-]{11})/,
+  );
+  return m?.[1] ?? null;
+}
+
 function deepDiveParagraphs(text: string): string[] {
   return text
     .split(/\n{2,}/)
@@ -101,7 +174,7 @@ export async function getBriefItem(
   const { data: it, error: itemError } = await supabase
     .from('brief_items')
     .select(
-      'id, slug, rank, article_id, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, deep_dive_en, deep_dive_uk, takeaways_en, takeaways_uk, action_items_en, action_items_uk, impact_level, tools_mentioned, youtube_url',
+      'id, slug, rank, article_id, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, deep_dive_en, deep_dive_uk, body_md_en, body_md_uk, facts_en, facts_uk, code_snippet, when_to_use_en, when_to_use_uk, when_not_to_use_en, when_not_to_use_uk, community_reactions, citations, image_url, editor_take, takeaways_en, takeaways_uk, action_items_en, action_items_uk, impact_level, tools_mentioned, youtube_url',
     )
     .eq('brief_id', brief.id)
     .eq('slug', itemSlug)
@@ -119,6 +192,7 @@ export async function getBriefItem(
   const summary = pick(lang, it.summary_en, it.summary_uk);
   const why = pick(lang, it.why_matters_en, it.why_matters_uk);
   const deepDive = pick(lang, it.deep_dive_en, it.deep_dive_uk);
+  const bodyMd = pick(lang, it.body_md_en, it.body_md_uk);
   const meta = categoryMeta(it.category_slug);
 
   return {
@@ -135,15 +209,27 @@ export async function getBriefItem(
     summary,
     why: why || summary,
     deepDive,
+    bodyMd,
+    facts: toFacts(lang === 'uk' ? it.facts_uk : it.facts_en),
+    codeSnippet: toCodeSnippet(it.code_snippet),
+    whenToUse: toStringArray(lang === 'uk' ? it.when_to_use_uk : it.when_to_use_en),
+    whenNotToUse: toStringArray(lang === 'uk' ? it.when_not_to_use_uk : it.when_not_to_use_en),
+    communityReactions: toReactions(it.community_reactions),
+    citations: toCitations(it.citations),
+    imageUrl: typeof it.image_url === 'string' && it.image_url.startsWith('http') ? it.image_url : null,
+    editorTake: (it.editor_take ?? '').trim(),
     takeaways: toStringArray(lang === 'uk' ? it.takeaways_uk : it.takeaways_en),
     actionItems: toStringArray(lang === 'uk' ? it.action_items_uk : it.action_items_en),
     impactLevel: parseImpactLevel(it.impact_level),
     tools: toToolNames(it.tools_mentioned),
     hasVideo: Boolean(it.youtube_url),
+    youtubeUrl: it.youtube_url ?? null,
     readMinutes: Math.max(
       2,
       Math.round(
-        (wordCount(summary) + wordCount(why) + deepDiveParagraphs(deepDive).join(' ').split(/\s+/).length) /
+        (wordCount(summary) +
+          wordCount(why) +
+          wordCount(bodyMd || deepDiveParagraphs(deepDive).join(' '))) /
           45,
       ),
     ),

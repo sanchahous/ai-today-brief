@@ -1,10 +1,12 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { EDITOR_NAME, isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { getConceptNameIndex } from '@/lib/concepts';
-import { getBriefItem, getPublishedItemPaths, getRelatedStories } from '@/lib/items';
+import { markdownToPlainText } from '@/lib/markdown';
+import { getBriefItem, getPublishedItemPaths, getRelatedStories, youtubeVideoId } from '@/lib/items';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { Byline } from '@/components/byline';
 import { AiDisclosureNote } from '@/components/ai-disclosure-note';
@@ -47,6 +49,9 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       type: 'article',
       url: `${SITE_URL}${path}`,
       publishedTime: detail.publishedAt ?? undefined,
+      // Real source image when we have one; otherwise Next falls back to the
+      // branded card from opengraph-image.tsx in this segment.
+      ...(detail.imageUrl ? { images: [{ url: detail.imageUrl }] } : {}),
     },
   };
 }
@@ -96,6 +101,10 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
     { label: detail.title },
   ];
 
+  const articleBody = detail.bodyMd
+    ? markdownToPlainText(detail.bodyMd)
+    : detail.deepDive || detail.summary;
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -103,7 +112,8 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         '@type': 'NewsArticle',
         headline: detail.title,
         description: detail.summary,
-        articleBody: detail.deepDive || detail.summary,
+        articleBody,
+        ...(detail.imageUrl ? { image: [detail.imageUrl] } : {}),
         datePublished: detail.publishedAt ?? detail.briefDate,
         dateModified: detail.publishedAt ?? detail.briefDate,
         inLanguage: lang,
@@ -112,13 +122,24 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         author: { '@type': 'Person', name: EDITOR_NAME },
         publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
         mainEntityOfPage: `${SITE_URL}${pagePath}`,
-        ...(detail.sourceUrl
-          ? { citation: [{ '@type': 'CreativeWork', name: detail.sourceName ?? detail.sourceUrl }] }
+        ...(detail.citations.length > 0 || detail.sourceUrl
+          ? {
+              citation:
+                detail.citations.length > 0
+                  ? detail.citations.map((c) => ({
+                      '@type': 'CreativeWork',
+                      name: c.title || c.url,
+                      url: c.url,
+                    }))
+                  : [{ '@type': 'CreativeWork', name: detail.sourceName ?? detail.sourceUrl }],
+            }
           : {}),
       },
       breadcrumbJsonLd(crumbs, SITE_URL),
     ],
   };
+
+  const videoId = youtubeVideoId(detail.youtubeUrl);
 
   const color = detail.categoryColor ?? '#888888';
 
@@ -170,18 +191,44 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
 
         <Reveal>
           <div className="mb-6">
-            <CategoryBanner
-              name={detail.categoryName ?? 'AI'}
-              color={color}
-              icon={detail.categoryIcon}
-              motif={detail.rank}
-              videoBadge={detail.hasVideo}
-              videoLabel={t.landing.watchVideo}
-            />
+            {detail.imageUrl ? (
+              <figure className="border-border relative m-0 aspect-[16/9] overflow-hidden rounded-xl border">
+                <Image
+                  src={detail.imageUrl}
+                  alt={detail.title}
+                  fill
+                  priority
+                  sizes="(max-width: 760px) 100vw, 760px"
+                  className="object-cover"
+                />
+              </figure>
+            ) : (
+              <CategoryBanner
+                name={detail.categoryName ?? 'AI'}
+                color={color}
+                icon={detail.categoryIcon}
+                motif={detail.rank}
+                videoBadge={detail.hasVideo}
+                videoLabel={t.landing.watchVideo}
+              />
+            )}
           </div>
         </Reveal>
 
         <p className="mb-5 text-[1.1rem] leading-[1.7]">{detail.summary}</p>
+
+        {videoId && (
+          <div className="border-border relative mb-6 aspect-video overflow-hidden rounded-xl border">
+            <iframe
+              src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+              title={detail.title}
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 h-full w-full border-0"
+            />
+          </div>
+        )}
 
         <StoryBody lang={lang} detail={detail} toolLinks={toolLinks} />
 

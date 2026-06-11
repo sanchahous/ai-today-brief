@@ -18,6 +18,8 @@ export const metadata: Metadata = {
   description: SITE_TAGLINE[DEFAULT_LANG],
   applicationName: SITE_NAME,
   openGraph: { siteName: SITE_NAME, url: SITE_URL, type: 'website' },
+  // Google Discover eligibility requires large image previews.
+  robots: { 'max-image-preview': 'large' },
 };
 
 export default function RootLayout({
