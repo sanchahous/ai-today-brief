@@ -6,13 +6,14 @@
  * intentionally duplicated here (it's a string prefix, not logic).
  */
 
-export type ReviewAction = 'approve' | 'reject';
+export type ReviewAction = 'approve' | 'reject' | 'redo';
 export type WebhookAction = ReviewAction | 'publish';
 
 // ─── Callback data ────────────────────────────────────────────────────────────
 
 const APPROVE_PREFIX = 'ap:';
 const REJECT_PREFIX  = 'rj:';
+const REDO_PREFIX    = 'rd:';
 const PUBLISH_PREFIX = 'pub:';
 
 export function parseCallbackData(
@@ -20,6 +21,7 @@ export function parseCallbackData(
 ): { action: WebhookAction; id: string } | null {
   if (data.startsWith(APPROVE_PREFIX)) return { action: 'approve', id: data.slice(APPROVE_PREFIX.length) };
   if (data.startsWith(REJECT_PREFIX))  return { action: 'reject',  id: data.slice(REJECT_PREFIX.length) };
+  if (data.startsWith(REDO_PREFIX))    return { action: 'redo',    id: data.slice(REDO_PREFIX.length) };
   if (data.startsWith(PUBLISH_PREFIX)) return { action: 'publish', id: data.slice(PUBLISH_PREFIX.length) };
   return null;
 }
@@ -59,6 +61,11 @@ export function approvedBanner(): string {
 
 export function rejectedBanner(comment: string): string {
   return `❌ ▔▔▔▔▔ <b>ВІДХИЛЕНО</b> ▔▔▔▔▔\n💬 ${escHtml(comment)}`;
+}
+
+/** The item row is deleted, so the next progón re-proposes the story afresh. */
+export function redoneBanner(): string {
+  return '🔁 ▔▔▔▔▔ <b>НА ПЕРЕРОБКУ</b> ▔▔▔▔▔\nНаступний прогін запропонує цю історію заново.';
 }
 
 function escHtml(s: string): string {

@@ -19,6 +19,7 @@
 
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { resolveGeminiModelQueue } from './gemini-models';
+import { ukQualityFlags } from './lang-check';
 import { logError, logEvent, serializeErrorDetails } from './log';
 import type { PoolItem } from './select';
 import { slugify, dedupeSlugs } from './text';
@@ -49,6 +50,8 @@ export interface DraftItem {
   /** Punchy 200-220 char hook for X / LinkedIn. Generated alongside the deep_dive. */
   social_hook_en: string;
   social_hook_uk: string;
+  /** `_uk` fields that failed the Ukrainian-language check (incl. EN fallbacks). */
+  uk_quality_flags: string[];
 }
 
 export type ImpactLevel = 'low' | 'medium' | 'high';
@@ -67,10 +70,27 @@ export interface DraftBrief {
   items: DraftItem[];
 }
 
+export interface LlmUsage {
+  promptTokens: number | null;
+  outputTokens: number | null;
+  /** True when counts are derived from character counts, not provider metadata. */
+  estimated: boolean;
+}
+
+/** Rough chars→tokens fallback when a provider returns no usage metadata. */
+export function estimateUsage(promptChars: number, outputChars: number): LlmUsage {
+  return {
+    promptTokens: Math.round(promptChars / 4),
+    outputTokens: Math.round(outputChars / 4),
+    estimated: true,
+  };
+}
+
 export interface SummarizeResult {
   brief: DraftBrief;
   provider: 'gemini' | 'openrouter';
   providerModel: string;
+  usage: LlmUsage | null;
 }
 
 /**
@@ -179,7 +199,10 @@ const GEMINI_SCHEMA: NonNullable<
 };
 
 /* v8 ignore start -- thin wrapper over the Gemini SDK; exercised via live run */
-function createGenerateContent(modelId: string, apiKey: string): (prompt: string) => Promise<string> {
+function createGenerateContent(
+  modelId: string,
+  apiKey: string,
+): (prompt: string) => Promise<GenerateOutput> {
   const gemini = new GoogleGenerativeAI(apiKey);
   return async (prompt: string) => {
     const started = Date.now();
@@ -189,16 +212,41 @@ function createGenerateContent(modelId: string, apiKey: string): (prompt: string
     });
     const result = await model.generateContent(prompt);
     const text = result.response.text();
+    const meta = result.response.usageMetadata;
+    // total - prompt (when available) also counts thinking tokens, which are
+    // billed as output but excluded from candidatesTokenCount.
+    const usage: LlmUsage = meta
+      ? {
+          promptTokens: meta.promptTokenCount ?? null,
+          outputTokens:
+            typeof meta.totalTokenCount === 'number' && typeof meta.promptTokenCount === 'number'
+              ? meta.totalTokenCount - meta.promptTokenCount
+              : meta.candidatesTokenCount ?? null,
+          estimated: false,
+        }
+      : estimateUsage(prompt.length, text.length);
     logEvent('info', 'summarize', 'Gemini generateContent ok', {
       model: modelId,
       prompt_chars: prompt.length,
       response_chars: text.length,
+      prompt_tokens: usage.promptTokens,
+      output_tokens: usage.outputTokens,
       duration_ms: Date.now() - started,
     });
-    return text;
+    return { text, usage };
   };
 }
 /* v8 ignore end */
+
+/**
+ * Output of one model call: plain text (test doubles) or text + token usage.
+ * Normalized by `generateWithModelQueue` so injected fakes stay simple.
+ */
+export type GenerateOutput = string | { text: string; usage: LlmUsage | null };
+
+function normalizeGenerateOutput(out: GenerateOutput): { text: string; usage: LlmUsage | null } {
+  return typeof out === 'string' ? { text: out, usage: null } : out;
+}
 
 /**
  * Walk the dynamically resolved model queue: retry transient errors on the same
@@ -209,9 +257,9 @@ export async function generateWithModelQueue(
   apiKey: string,
   modelQueue: string[],
   perModelMaxAttempts = 2,
-  generateContent?: (modelId: string, input: string) => Promise<string>,
+  generateContent?: (modelId: string, input: string) => Promise<GenerateOutput>,
   sleepFn: (ms: number) => Promise<void> = sleep,
-): Promise<{ text: string; model: string }> {
+): Promise<{ text: string; model: string; usage: LlmUsage | null }> {
   let lastError: unknown;
 
   for (const modelId of modelQueue) {
@@ -220,8 +268,8 @@ export async function generateWithModelQueue(
         generateContent ??
         ((id: string, input: string) => createGenerateContent(id, apiKey)(input));
       try {
-        const text = await call(modelId, prompt);
-        return { text, model: modelId };
+        const { text, usage } = normalizeGenerateOutput(await call(modelId, prompt));
+        return { text, model: modelId, usage };
       } catch (error) {
         lastError = error;
         if (isGeminiRateLimitError(error)) {
@@ -403,6 +451,7 @@ async function runSummarizeFromPrompt(
   let text: string;
   let provider: SummarizeResult['provider'] = 'gemini';
   let providerModel: string;
+  let usage: LlmUsage | null = null;
 
   try {
     const geminiResult = await generateWithModelQueue(
@@ -413,6 +462,7 @@ async function runSummarizeFromPrompt(
     );
     text = geminiResult.text;
     providerModel = geminiResult.model;
+    usage = geminiResult.usage;
   } catch (geminiError) {
     if (!openRouterApiKey) {
       throw geminiError;
@@ -426,6 +476,8 @@ async function runSummarizeFromPrompt(
     text = orResult.text;
     provider = 'openrouter';
     providerModel = orResult.model;
+    // The streaming client doesn't surface provider usage — estimate from chars.
+    usage = estimateUsage(prompt.length, text.length);
   }
 
   const brief = parseBrief(text, candidates);
@@ -433,9 +485,12 @@ async function runSummarizeFromPrompt(
     selected: brief.items.length,
     provider,
     provider_model: providerModel,
+    prompt_tokens: usage?.promptTokens ?? null,
+    output_tokens: usage?.outputTokens ?? null,
+    usage_estimated: usage?.estimated ?? null,
     duration_ms: Date.now() - start,
   });
-  return { brief, provider, providerModel };
+  return { brief, provider, providerModel, usage };
 }
 
 /* v8 ignore start -- integration: real Gemini call */
@@ -513,7 +568,7 @@ export function parseBrief(text: string, candidates: PoolItem[]): DraftBrief {
     const summary_en = asString(m.summary_en);
     if (!summary_en) continue; // no substance — skip rather than store an empty item
     const category = isCategorySlug(m.category_slug) ? m.category_slug : source.category;
-    resolved.push({
+    const item: Omit<DraftItem, 'slug' | 'uk_quality_flags'> = {
       ref,
       url: source.url,
       source: source.source,
@@ -534,7 +589,17 @@ export function parseBrief(text: string, candidates: PoolItem[]): DraftBrief {
       impact_level: parseImpactLevel(m.impact_level),
       social_hook_en: asString(m.social_hook_en),
       social_hook_uk: asString(m.social_hook_uk) || asString(m.social_hook_en),
-    });
+    };
+    // Flag _uk fields that are EN fallbacks or non-Ukrainian text so the item
+    // reaches the Telegram reviewer marked instead of silently shipping English.
+    const ukFlags = ukQualityFlags(item);
+    if (ukFlags.length > 0) {
+      logEvent('warn', 'summarize', 'Ukrainian fields look invalid', {
+        title: item.title_en,
+        fields: ukFlags,
+      });
+    }
+    resolved.push({ ...item, uk_quality_flags: ukFlags });
   }
 
   const slugs = dedupeSlugs(resolved.map((r) => slugify(r.title_en)));

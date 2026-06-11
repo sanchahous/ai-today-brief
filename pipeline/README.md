@@ -84,10 +84,15 @@ fails the run):
 - **InBrief** — curated AI feed via its public Supabase RPC `get_archive_articles` (today + yesterday); carries an editorial `importance_score`.
 - **Hacker News** — Algolia search over 11 AI/dev queries; carries points + comments (the engagement signal).
 - **Reddit** — 7 dev/AI subreddits' top-of-day; carries score + comments; self-posts skipped.
-- **RSS fallback** — only if the primary sources return `< 10` items combined (`THIN_PRIMARY_THRESHOLD`); 11 first-party + press feeds, parsed by the dependency-free `rss-parse.ts`.
+- **RSS** — always-on 4th parallel source: 11 first-party lab + press feeds, parsed by the dependency-free `rss-parse.ts`. Promoted from thin-primary fallback so first-party announcements stop being structurally missed.
+
+`collectArticles` also returns per-source health (ok/empty/failed, plus dead
+RSS feeds) that `run-daily` logs to `pipeline_runs.meta.sources` and alerts to
+Telegram, throttled to once per progón.
 
 Every source maps onto one `FetchedArticle`. Then:
-`prepareArticles` (drop non-http / empty-title, **de-dup by exact URL**) →
+`prepareArticles` (drop non-http / empty-title, **de-dup by exact URL**,
+canonical source names via `source-names.ts`) →
 `filterToRollingWindow` (keep `published_at` within the last 24h). Output: an
 in-memory `FetchedArticle[]`. **No DB yet.** If empty → run stops.
 
@@ -193,17 +198,17 @@ JSON). Re-running for the same date refreshes the draft.
 
 Honest list of where this is thin — good places to pressure-test:
 
-1. **Published briefs append new items** — `publish()` keeps `published` status and runs `syncBriefItems` in append-only mode (new slugs → `pending` for Telegram review; approved/rejected rows untouched). Draft briefs still get a full slug sync.
+1. **All sync is non-destructive now** — `syncBriefItems` updates existing rows in place (matched by slug, or article when re-titled; rank/slug/review state survive) and appends genuinely new stories at the next free rank (cap 10). Removal is editorial only: ❌ reject suppresses the story for the day; 🔁 redo deletes the row so the next progón re-proposes it fresh.
 2. ~~**Cross-day dedup is title-only.**~~ **Fixed** — step 3.5 embeds every pool candidate with `gemini-embedding-001` (768 dims) and drops any candidate whose cosine distance to a previously-published `brief_item_embeddings` row is ≤ `MAX_EMBED_DISTANCE` (default 0.20). The same event re-worded across days now lands close in vector space and is removed before the LLM call. *Residual:* the store is empty until at least one brief has been published; dedup strengthens over the first few days of use.
 3. ~~**No cross-run signal accumulation.**~~ **Partially fixed** — after each successful publish, `storeItemEmbeddings` persists the published items' embeddings in `brief_item_embeddings`. Future runs check against them, so a story that keeps resurfacing stays blocked. Mention-count aggregation across days (the full testbed behaviour) is still per-run only.
-4. **Engagement signal is HN+Reddit only.** InBrief and RSS items have `velocity = 0`; a high-importance first-party post (e.g. an Anthropic blog) leans entirely on authority + recency + inbrief and can underrank against a noisy HN thread.
+4. ~~**Engagement signal is HN+Reddit only.**~~ **Mitigated** — top-trust first-party sources (Anthropic/OpenAI/…/NVIDIA blogs) get a velocity floor of 0.5 in `rank.ts`, so a fresh official announcement no longer loses to a noisy HN thread; recency decay still ages it out. Non-first-party RSS/InBrief items keep `velocity = 0` but are capped in the pool (`MAX_COLD_SINGLETONS`).
 5. **`recentPublishedTitles` ordering.** It takes the 20 most recent published briefs, then their items ordered by **rank** (not date), limited to `RECENT_TITLES`. Skews toward rank-1 items; a not-yet-published draft from yesterday contributes nothing to dedup; with nothing published yet, dedup context is empty. *Note:* the title list is now a second, soft dedup layer — the primary hard block is the vector store (step 3.5).
 6. **Clustering is title-only + O(n²).** Fine at ~127 items, but very differently-worded coverage of one event may **under-merge** (duplicates survive), and same-topic-different-story may **over-merge**.
 7. **Topic/category detection is brittle regex.** English-only keyword patterns; `category_slug` derived from the English title; the LLM can override but the deterministic fallback can misfile.
-8. **UK quality is unverified.** If the model returns an empty `*_uk` field, the parser copies the English text — so a brief could silently ship English in Ukrainian fields. No language/length validation.
+8. ~~**UK quality is unverified.**~~ **Mitigated** — `lang-check.ts` flags `_uk` fields that look non-Ukrainian (incl. silent EN fallbacks) into `uk_quality_flags` → `review_comment`, so the Telegram reviewer sees the warning. Heuristic only; no deep linguistic validation.
 9. **One LLM call, all-or-nothing.** The whole brief is one Gemini response; if `JSON.parse` fails despite the schema, the entire run throws — no per-item salvage. No overall wall-clock/cost budget (a real call took ~48s, ~20k chars).
-10. **Source set is hard-coded and AI/dev-skewed.** New sources need code edits; X/Twitter only enters via what HN/Reddit surface; a silent InBrief outage just thins the pool. No source-health metric.
-11. **Idempotency vs. human edits.** Because items are replaced wholesale per date, re-running after a human curates the draft wipes those manual edits.
+10. **Source set is hard-coded and AI/dev-skewed.** New sources need code edits; X/Twitter only enters via what HN/Reddit surface. (~~No source-health metric~~ — per-source health + Telegram alerting now exist; the set itself is still static.)
+11. ~~**Idempotency vs. human edits.**~~ **Fixed** — sync is non-destructive (see #1); re-runs update content fields but never delete rows or reset review state.
 
 ## Follow-ups (roadmap)
 

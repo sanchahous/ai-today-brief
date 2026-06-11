@@ -17,6 +17,8 @@ export interface PipelineConfig {
   poolSize: number;
   /** Max pooled candidates sharing one fine-grained topic. */
   perTopicCap: number;
+  /** Max zero-engagement single-source non-first-party entries in the pool. */
+  maxColdSingletons: number;
   /** Minimum composite rank score (0..1) to enter the pool. */
   minScore: number;
   /** How many recently-published item titles to show the editor for dedup. */
@@ -91,6 +93,7 @@ export function loadPipelineConfig(
     maxItems: intIn(env.MAX_ITEMS, 8, 1, 10),
     poolSize: intIn(env.POOL_SIZE, 16, 4, 40),
     perTopicCap: intIn(env.PER_TOPIC_CAP, 2, 1, 5),
+    maxColdSingletons: intIn(env.MAX_COLD_SINGLETONS, 5, 0, 40),
     minScore: floatIn(env.MIN_SCORE, 0.15, 0, 1),
     recentTitles: intIn(env.RECENT_TITLES, 60, 0, 200),
     embedLimit: intIn(env.EMBED_LIMIT, 20, 1, 50),

@@ -12,7 +12,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 import type { FetchedArticle } from './sources/http';
 import type { DraftBrief, DraftItem } from './summarize';
-import type { PipelineStage } from './log';
+import { logEvent, type PipelineStage } from './log';
 import type { ReviewItem } from './review-format';
 import {
   buildConceptNameIndex,
@@ -245,9 +245,26 @@ export function draftItemToRow(
 
 export type SyncBriefItemsResult = { synced: number; inserted: number };
 
-type ExistingItemRow = { id: string; slug: string | null; rank: number; review_status: string };
+type ExistingItemRow = {
+  id: string;
+  slug: string | null;
+  rank: number;
+  review_status: string;
+  article_id: string | null;
+};
 
-/** Sync items by `slug` — full replace for the current pack (draft re-runs). */
+/** Hard cap from the schema: `brief_items.rank` is checked between 1 and 10. */
+const MAX_ITEMS_PER_BRIEF = 10;
+
+/**
+ * Sync items into the day's pack — non-destructive. Existing rows (matched by
+ * slug, or by article when the LLM re-titled the same story) are updated in
+ * place so their rank and review state survive; genuinely new stories are
+ * appended at the next free rank. Nothing is deleted: once a card reached the
+ * Telegram reviewer, a later progón must not silently withdraw or reset it.
+ * Items the editor rejected stay rejected; intra-day semantic dedup keeps the
+ * same story from being re-proposed under a new wording.
+ */
 export async function syncBriefItems(
   db: PipelineDb,
   briefId: string,
@@ -256,75 +273,86 @@ export async function syncBriefItems(
 ): Promise<SyncBriefItemsResult> {
   const { data: existing, error: loadErr } = await db
     .from('brief_items')
-    .select('id, slug, rank, review_status')
+    .select('id, slug, rank, review_status, article_id')
     .eq('brief_id', briefId);
   if (loadErr) throw new Error(`[db] syncBriefItems load failed: ${loadErr.message}`);
 
-  return syncBriefItemsReplace(db, briefId, items, articleIdByUrl, existing ?? []);
+  return syncBriefItemsUpsert(db, briefId, items, articleIdByUrl, existing ?? []);
 }
 
-async function syncBriefItemsReplace(
+/** Review-queue note for items whose Ukrainian fields failed the language check. */
+export function ukReviewComment(flags: string[]): string {
+  return `⚠️ Авто-перевірка мови: підозрілі поля — ${flags.join(', ')}`;
+}
+
+async function syncBriefItemsUpsert(
   db: PipelineDb,
   briefId: string,
   items: DraftItem[],
   articleIdByUrl: Map<string, string>,
   existing: ExistingItemRow[],
 ): Promise<SyncBriefItemsResult> {
-  const existingBySlug = new Map<string, ExistingItemRow>();
+  const bySlug = new Map<string, ExistingItemRow>();
+  const byArticleId = new Map<string, ExistingItemRow>();
+  const usedRanks = new Set<number>();
   for (const row of existing) {
-    if (!row.slug) continue;
-    existingBySlug.set(row.slug, row);
+    if (row.slug) bySlug.set(row.slug, row);
+    if (row.article_id) byArticleId.set(row.article_id, row);
+    usedRanks.add(row.rank);
   }
 
-  const incomingSlugs = new Set<string>();
-  for (const item of items) {
-    if (articleIdByUrl.get(item.url)) incomingSlugs.add(item.slug);
-  }
-  for (const [slug, prev] of existingBySlug) {
-    if (incomingSlugs.has(slug)) continue;
-    const { error } = await db.from('brief_items').delete().eq('id', prev.id);
-    if (error) throw new Error(`[db] syncBriefItems delete failed: ${error.message}`);
-    existingBySlug.delete(slug);
-  }
-
-  const targetSlugs = new Set<string>();
   let synced = 0;
   let inserted = 0;
 
-  const remaining = [...existingBySlug.values()];
-  const targetRanks = new Set(items.map((_, i) => i + 1));
-  let tempRank = 10;
-  for (const row of remaining) {
-    while (targetRanks.has(tempRank) && tempRank > 0) tempRank--;
-    if (tempRank < 1) {
-      throw new Error('[db] syncBriefItems rank bump failed: no temporary rank slot');
-    }
-    const { error } = await db.from('brief_items').update({ rank: tempRank }).eq('id', row.id);
-    if (error) throw new Error(`[db] syncBriefItems rank bump failed: ${error.message}`);
-    tempRank--;
-  }
-
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i]!;
+  for (const item of items) {
     const articleId = articleIdByUrl.get(item.url);
     if (!articleId) continue;
 
-    targetSlugs.add(item.slug);
-    const payload = draftItemToRow(item, i + 1, articleId);
-    const prev = existingBySlug.get(item.slug);
-
+    const prev = bySlug.get(item.slug) ?? byArticleId.get(articleId);
     if (prev) {
-      const { error } = await db.from('brief_items').update(payload).eq('id', prev.id);
+      const payload = draftItemToRow(item, prev.rank, articleId);
+      // Same story re-titled: keep the established slug — it is unique per
+      // brief and already on the reviewer's card.
+      if (prev.slug && prev.slug !== item.slug) payload.slug = prev.slug;
+      // Surface a language flag on still-pending items; never touch the
+      // comment after a decision (reject reasons live there).
+      const langComment =
+        prev.review_status === 'pending' && item.uk_quality_flags.length > 0
+          ? { review_comment: ukReviewComment(item.uk_quality_flags) }
+          : {};
+      const { error } = await db
+        .from('brief_items')
+        .update({ ...payload, ...langComment })
+        .eq('id', prev.id);
       if (error) throw new Error(`[db] syncBriefItems update failed: ${error.message}`);
-    } else {
-      const { error } = await db.from('brief_items').insert({
-        brief_id: briefId,
-        ...payload,
-        review_status: 'pending',
-      });
-      if (error) throw new Error(`[db] syncBriefItems insert failed: ${error.message}`);
-      inserted++;
+      synced++;
+      continue;
     }
+
+    let rank = 1;
+    while (usedRanks.has(rank) && rank <= MAX_ITEMS_PER_BRIEF) rank++;
+    if (rank > MAX_ITEMS_PER_BRIEF) {
+      logEvent('warn', 'publish', 'Brief pack is full — item skipped', {
+        brief_id: briefId,
+        slug: item.slug,
+      });
+      continue;
+    }
+
+    const payload = draftItemToRow(item, rank, articleId);
+    const { error } = await db.from('brief_items').insert({
+      brief_id: briefId,
+      ...payload,
+      review_status: 'pending',
+      ...(item.uk_quality_flags.length > 0
+        ? { review_comment: ukReviewComment(item.uk_quality_flags) }
+        : {}),
+    });
+    if (error) throw new Error(`[db] syncBriefItems insert failed: ${error.message}`);
+    usedRanks.add(rank);
+    bySlug.set(item.slug, { id: '', slug: item.slug, rank, review_status: 'pending', article_id: articleId });
+    byArticleId.set(articleId, { id: '', slug: item.slug, rank, review_status: 'pending', article_id: articleId });
+    inserted++;
     synced++;
   }
 
@@ -367,6 +395,30 @@ export async function syncBriefItemConcepts(db: PipelineDb, briefId: string): Pr
     throw new Error(`[db] syncBriefItemConcepts upsert failed: ${upsertErr.message}`);
   }
   return links.length;
+}
+
+/**
+ * English titles of everything already in today's packs (any status, any
+ * edition) — the editor's intra-day "do not repeat" context. Rejected titles
+ * included on purpose: re-proposing a story the editor killed wastes a slot.
+ */
+export async function todaysItemTitles(db: PipelineDb, date: string): Promise<string[]> {
+  const { data: briefs, error: bErr } = await db
+    .from('briefs')
+    .select('id')
+    .eq('date', date);
+  if (bErr) throw new Error(`[db] todaysItemTitles briefs failed: ${bErr.message}`);
+  const ids = (briefs ?? []).map((b) => b.id);
+  if (ids.length === 0) return [];
+
+  const { data: items, error: iErr } = await db
+    .from('brief_items')
+    .select('title_en')
+    .in('brief_id', ids);
+  if (iErr) throw new Error(`[db] todaysItemTitles items failed: ${iErr.message}`);
+  return (items ?? [])
+    .map((r) => r.title_en)
+    .filter((t): t is string => typeof t === 'string' && t.length > 0);
 }
 
 /** Recent published item titles (English) — the editor's cross-day dedup context. */
@@ -491,21 +543,26 @@ export function toVectorLiteral(vec: number[]): string {
 }
 
 /**
- * Nearest published brief_item to an embedding within `maxDistance` cosine
- * distance. Returns null when nothing is close enough — the candidate is novel.
+ * Nearest known brief_item to an embedding within `maxDistance` cosine
+ * distance, looking at published items (any day) AND everything already in
+ * today's packs — draft, pending, even rejected. A story the editor rejected
+ * this morning must not be re-proposed by the afternoon progón. Returns null
+ * when nothing is close enough — the candidate is novel.
  */
-export async function matchPublishedItem(
+export async function matchRelevantItem(
   db: PipelineDb,
   embedding: number[],
   maxDistance: number,
+  sameDay: string,
 ): Promise<{ brief_item_id: string; distance: number } | null> {
-  // Cast needed: match_published_item is a new RPC not yet in the generated Database type.
+  // Cast needed: match_relevant_item is a new RPC not yet in the generated Database type.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (db as any).rpc('match_published_item', {
+  const { data, error } = await (db as any).rpc('match_relevant_item', {
     query_embedding: toVectorLiteral(embedding),
     max_distance: maxDistance,
+    same_day: sameDay,
   });
-  if (error) throw new Error(`[db] match_published_item failed: ${(error as { message: string }).message}`);
+  if (error) throw new Error(`[db] match_relevant_item failed: ${(error as { message: string }).message}`);
   const row = ((data ?? [])[0]) as unknown as { brief_item_id: string; distance: number } | undefined;
   return row ?? null;
 }

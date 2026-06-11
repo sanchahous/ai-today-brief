@@ -31,6 +31,9 @@ function candidate(over: Partial<Candidate> = {}): Candidate {
 describe('sourceTrust', () => {
   it('rates first-party labs highest and unknown at the neutral midpoint', () => {
     expect(sourceTrust('Anthropic')).toBe(1);
+    expect(sourceTrust('NVIDIA Blog')).toBe(1);
+    expect(sourceTrust('Hugging Face Blog')).toBe(1);
+    expect(sourceTrust('MIT Technology Review')).toBe(0.75);
     expect(sourceTrust('Hacker News')).toBe(0.9);
     expect(sourceTrust('Reddit · r/cursor')).toBe(0.7);
     expect(sourceTrust('Some Random Blog')).toBe(0.6);
@@ -75,6 +78,26 @@ describe('scoreComponents', () => {
     expect(cluster.crossSource).toBeGreaterThan(solo.crossSource);
     expect(cluster.breadth).toBeGreaterThan(solo.breadth);
     expect(solo.crossSource).toBe(0);
+  });
+  it('floors velocity for official first-party sources with zero engagement', () => {
+    const official = scoreComponents(
+      [candidate({ source_name: 'Anthropic Blog', hn_score: null, hn_comments: null })],
+      NOW,
+    );
+    expect(official.velocity).toBe(0.5);
+
+    const community = scoreComponents(
+      [candidate({ source_name: 'Hacker News', hn_score: 0, hn_comments: 0 })],
+      NOW,
+    );
+    expect(community.velocity).toBe(0);
+  });
+  it('keeps real engagement above the official floor', () => {
+    const hot = scoreComponents(
+      [candidate({ source_name: 'OpenAI Blog', hn_score: 500, hn_comments: 100 })],
+      NOW,
+    );
+    expect(hot.velocity).toBeGreaterThan(0.5);
   });
   it('inbrief is clamped to 1', () => {
     expect(scoreComponents([candidate({ inbrief_score: 250 })], NOW).inbrief).toBe(1);

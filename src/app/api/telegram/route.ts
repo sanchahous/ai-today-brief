@@ -32,6 +32,7 @@ import {
   parseCallbackData,
   publishedBanner,
   publishKeyboard,
+  redoneBanner,
   rejectedBanner,
 } from '@/lib/telegram-webhook';
 
@@ -274,6 +275,38 @@ async function handleRejectReason(
   await maybeSendSummary(db, item.brief_id, chatId);
 }
 
+/**
+ * 🔁 "redo rendition": hard-delete the still-pending row. The embedding row
+ * cascades away (020), the title leaves today's "do not repeat" context and
+ * the slug/article match disappears — so the next progón re-proposes the
+ * story as a brand-new pending card with a fresh write-up. Rejection, by
+ * contrast, keeps the row and suppresses the story for the rest of the day.
+ */
+async function handleRedo(
+  db: ReturnType<typeof getSupabaseAdmin>,
+  itemId: string,
+  chatId: string,
+): Promise<void> {
+  const { data: item, error } = await db
+    .from('brief_items')
+    .delete()
+    .eq('id', itemId)
+    .eq('review_status', 'pending')
+    .select('brief_id, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, category_slug, review_msg_id')
+    .single();
+
+  if (error || !item) {
+    console.log('[redo] already processed or not found:', itemId);
+    return;
+  }
+
+  if (item.review_msg_id) {
+    await editText(chatId, item.review_msg_id, decorateCard(buildCardText(item), redoneBanner()));
+  }
+
+  await maybeSendSummary(db, item.brief_id, chatId);
+}
+
 async function handlePublish(
   db: ReturnType<typeof getSupabaseAdmin>,
   briefId: string,
@@ -443,6 +476,8 @@ export async function POST(request: NextRequest): Promise<Response> {
         await handleApprove(db, parsed.id, reviewer, chatId);
       } else if (parsed.action === 'reject') {
         await handleRejectInit(db, parsed.id, chatId);
+      } else if (parsed.action === 'redo') {
+        await handleRedo(db, parsed.id, chatId);
       } else if (parsed.action === 'publish' && msgId) {
         await handlePublish(db, parsed.id, chatId, msgId);
       }

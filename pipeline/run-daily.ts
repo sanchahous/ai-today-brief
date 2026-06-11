@@ -12,7 +12,7 @@
 import { loadPipelineConfig } from './config';
 import { collectArticles, toCandidate } from './fetch';
 import { rankCandidates } from './rank';
-import { selectPool } from './select';
+import { isColdSingleton, selectPool } from './select';
 import { summarize, type DraftBrief } from './summarize';
 import { publish } from './publish';
 import { notifyReview } from './notify';
@@ -20,12 +20,15 @@ import { createEmbedder, type EmbedFn } from './embeddings';
 import {
   createServiceClient,
   logPipelineRun,
-  matchPublishedItem,
+  matchRelevantItem,
   recentPublishedTitles,
   storeItemEmbeddings,
+  todaysItemTitles,
   type PipelineDb,
   type PipelineRunLog,
 } from './db';
+import { sendMessage } from './telegram';
+import { formatSourceHealthAlert } from './review-format';
 import {
   countSummarizeFailuresForCycle,
   formatKyivCycleLabel,
@@ -121,14 +124,61 @@ async function main(): Promise<void> {
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   let t = Date.now();
-  const fetched = await collectArticles();
+  const { articles: fetched, health } = await collectArticles();
   await logStage(db, config.dryRun, {
     date,
     stage: 'fetch',
     status: fetched.length > 0 ? 'ok' : 'skipped',
     durationMs: Date.now() - t,
-    meta: { ...runMeta, count: fetched.length },
+    meta: { ...runMeta, count: fetched.length, sources: health },
   });
+
+  // Alert the review chat about dead sources/feeds — silent degradation is the
+  // failure mode here (the pool keeps filling from whatever is left). Throttled
+  // to once per progón: 6 half-hour retry slots would otherwise repeat the
+  // identical alert into the same chat the reviewer works in.
+  const unhealthy = health.filter(
+    (h) => h.status !== 'ok' || (h.dead_feeds?.length ?? 0) > 0,
+  );
+  if (
+    unhealthy.length > 0 &&
+    !config.dryRun &&
+    db &&
+    config.telegramBotToken &&
+    config.telegramReviewChatId
+  ) {
+    let alreadyAlerted = false;
+    try {
+      const { count } = await db
+        .from('pipeline_runs')
+        .select('id', { count: 'exact', head: true })
+        .eq('date', date)
+        .eq('stage', 'fetch')
+        .contains('meta', { cycle: cycleIndex, source_alert_sent: true });
+      alreadyAlerted = (count ?? 0) > 0;
+    } catch (e) {
+      logError('fetch', 'source alert throttle check failed (non-fatal)', e);
+    }
+    if (!alreadyAlerted) {
+      await sendMessage(
+        config.telegramBotToken,
+        config.telegramReviewChatId,
+        formatSourceHealthAlert(unhealthy),
+      );
+      await logStage(db, config.dryRun, {
+        date,
+        stage: 'fetch',
+        status: 'ok',
+        durationMs: 0,
+        meta: {
+          ...runMeta,
+          source_alert_sent: true,
+          unhealthy_sources: unhealthy.map((h) => h.source),
+        },
+      });
+    }
+  }
+
   if (fetched.length === 0) {
     logEvent('warn', 'fetch', 'No fresh articles — nothing to do');
     return;
@@ -141,13 +191,20 @@ async function main(): Promise<void> {
     minScore: config.minScore,
     perTopicCap: config.perTopicCap,
     poolSize: config.poolSize,
+    maxColdSingletons: config.maxColdSingletons,
   });
   await logStage(db, config.dryRun, {
     date,
     stage: 'rank',
     status: pool.length > 0 ? 'ok' : 'skipped',
     durationMs: Date.now() - t,
-    meta: { ...runMeta, clusters: ranking.clusters, ranked: ranking.ranked.length, pool: pool.length },
+    meta: {
+      ...runMeta,
+      clusters: ranking.clusters,
+      ranked: ranking.ranked.length,
+      pool: pool.length,
+      cold_singletons_ranked: ranking.ranked.filter(isColdSingleton).length,
+    },
   });
   logEvent('info', 'rank', 'Pool built', {
     fetched: fetched.length,
@@ -180,7 +237,7 @@ async function main(): Promise<void> {
         kept.push(embedBatch[i]!);
         continue;
       }
-      const match = await matchPublishedItem(db, vec, config.maxEmbedDistance).catch(() => null);
+      const match = await matchRelevantItem(db, vec, config.maxEmbedDistance, date).catch(() => null);
       if (match) {
         dropped++;
         logEvent('info', 'dedup', 'Candidate dropped (semantic duplicate)', {
@@ -200,7 +257,13 @@ async function main(): Promise<void> {
       stage: 'dedup',
       status: 'ok',
       durationMs: Date.now() - t,
-      meta: { ...runMeta, pool_in: pool.length, pool_out: dedupedPool.length, dropped },
+      meta: {
+        ...runMeta,
+        pool_in: pool.length,
+        pool_out: dedupedPool.length,
+        dropped,
+        embedded: embedBatch.length,
+      },
     });
     logEvent('info', 'dedup', 'Semantic dedup complete', {
       pool_in: pool.length,
@@ -216,7 +279,16 @@ async function main(): Promise<void> {
 
   // ── Summarize ────────────────────────────────────────────────────────────────
   t = Date.now();
-  const recent = db ? await recentPublishedTitles(db, config.recentTitles).catch(() => []) : [];
+  // "Do not repeat" context: today's packs first (intra-day), then the recent
+  // published archive (cross-day). Today's titles are schema-bounded (≤10 per
+  // pack) and must not eat the cross-day budget — by the evening progóns they
+  // would otherwise evict the published archive from the prompt entirely.
+  const todays = db ? await todaysItemTitles(db, date).catch(() => []) : [];
+  const published = db ? await recentPublishedTitles(db, config.recentTitles).catch(() => []) : [];
+  const recent = [...todays, ...published.filter((p) => !todays.includes(p))].slice(
+    0,
+    todays.length + config.recentTitles,
+  );
   const summarized = await summarize(
     dedupedPool,
     recent,
@@ -225,13 +297,21 @@ async function main(): Promise<void> {
     openRouterKey,
     geminiAttempts,
   );
-  const { brief, providerModel } = summarized;
+  const { brief, providerModel, usage } = summarized;
   await logStage(db, config.dryRun, {
     date,
     stage: 'summarize',
     status: brief.items.length > 0 ? 'ok' : 'skipped',
     durationMs: Date.now() - t,
-    meta: { ...runMeta, selected: brief.items.length, pool: pool.length, model: providerModel },
+    meta: {
+      ...runMeta,
+      selected: brief.items.length,
+      pool: pool.length,
+      model: providerModel,
+      prompt_tokens: usage?.promptTokens ?? null,
+      output_tokens: usage?.outputTokens ?? null,
+      usage_estimated: usage?.estimated ?? null,
+    },
   });
   if (brief.items.length === 0) {
     logEvent('info', 'summarize', 'Editor kept nothing — skipping');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeNextBriefEdition } from './db';
+import { computeNextBriefEdition, ukReviewComment } from './db';
 
 describe('computeNextBriefEdition', () => {
   it('refreshes an existing draft pack', () => {
@@ -27,6 +27,14 @@ describe('computeNextBriefEdition', () => {
   it('throws when latest is draft but no draft row was returned', () => {
     expect(() => computeNextBriefEdition(null, { edition: 1, status: 'draft' })).toThrow(
       'unexpected brief state',
+    );
+  });
+});
+
+describe('ukReviewComment', () => {
+  it('lists the suspect fields for the reviewer', () => {
+    expect(ukReviewComment(['title_uk', 'deep_dive_uk'])).toBe(
+      '⚠️ Авто-перевірка мови: підозрілі поля — title_uk, deep_dive_uk',
     );
   });
 });
