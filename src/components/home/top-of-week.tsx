@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { getStrings } from '@/lib/i18n';
@@ -80,6 +81,17 @@ function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
       href={item.href}
       className="card-hover rounded-card border-border bg-surface block h-full overflow-hidden border"
     >
+      {item.imageUrl && (
+        <div className="border-border-soft relative aspect-[16/9] w-full border-b">
+          <Image
+            src={item.imageUrl}
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 620px, 100vw"
+            className="object-cover"
+          />
+        </div>
+      )}
       <div className="cat-band flex flex-wrap items-center gap-2 px-5 py-4" style={{ '--cat-color': color } as CSSProperties}>
         <span className="bg-accent text-on-accent rounded-pill px-2 py-0.5 text-[0.66rem] font-bold tracking-[0.08em] uppercase">
           {t.featured}

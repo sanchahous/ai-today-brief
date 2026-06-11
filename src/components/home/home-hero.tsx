@@ -1,15 +1,25 @@
 import Link from 'next/link';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
+import type { HomeCategory } from '@/lib/home';
 import { ArrowRight } from '@/components/icons';
 import { HeroSearch } from '@/components/home/hero-search';
+import { CategoryMixBar } from '@/components/home/category-mix-bar';
 
 /**
  * First screen: product positioning + integrated archive search + headline
- * stats. The drifting orbs are decorative (CSS only, desktop-only, disabled
- * under reduced-motion).
+ * stats + a live coverage-by-category bar. The drifting orbs are decorative
+ * (CSS only, desktop-only, disabled under reduced-motion).
  */
-export function HomeHero({ lang, categoryCount }: { lang: Lang; categoryCount: number }) {
+export function HomeHero({
+  lang,
+  categoryCount,
+  categories,
+}: {
+  lang: Lang;
+  categoryCount: number;
+  categories: HomeCategory[];
+}) {
   const t = getStrings(lang).landing;
   const stats = [
     { n: '70+', label: t.statStories },
@@ -80,6 +90,8 @@ export function HomeHero({ lang, categoryCount }: { lang: Lang; categoryCount: n
             </div>
           ))}
         </dl>
+
+        <CategoryMixBar lang={lang} categories={categories} />
       </div>
     </section>
   );
