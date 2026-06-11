@@ -22,7 +22,7 @@ import {
 } from '@/components/news/news-sidebar';
 import { matchesQuery, sortItems, withinPreset } from '@/lib/news-filters';
 
-const PAGE_SIZE = 6;
+const PAGE_SIZE = 12;
 
 export function NewsFeed({
   lang,
@@ -31,6 +31,7 @@ export function NewsFeed({
   trending,
   initialQuery = '',
   initialCategory = '',
+  initialPage = 1,
 }: {
   lang: Lang;
   items: HomeItem[];
@@ -38,6 +39,7 @@ export function NewsFeed({
   trending: TrendingTopic[];
   initialQuery?: string;
   initialCategory?: string;
+  initialPage?: number;
 }) {
   const t = getStrings(lang).news;
   const router = useRouter();
@@ -49,7 +51,7 @@ export function NewsFeed({
     date: 'all',
     sort: initialQuery ? 'relevance' : 'newest',
   }));
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initialPage);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const noResultsTracked = useRef('');
 
@@ -93,6 +95,26 @@ export function NewsFeed({
     trackEvent('search_no_results', { query: q });
   }, [filtered.length, filters.q, initialQuery]);
 
+  function pushPage(p: number) {
+    const url = new URL(window.location.href);
+    if (p === 1) {
+      url.searchParams.delete('page');
+    } else {
+      url.searchParams.set('page', String(p));
+    }
+    router.push(url.pathname + (url.searchParams.size ? '?' + url.searchParams.toString() : ''), {
+      scroll: false,
+    });
+  }
+
+  function resetPageInUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('page');
+    router.push(url.pathname + (url.searchParams.size ? '?' + url.searchParams.toString() : ''), {
+      scroll: false,
+    });
+  }
+
   const toggleCategory = (slug: string) => {
     const on = !filters.categories.includes(slug);
     trackEvent('filter_category', { category: slug, enabled: on });
@@ -101,6 +123,7 @@ export function NewsFeed({
       categories: on ? [...f.categories, slug] : f.categories.filter((c) => c !== slug),
     }));
     setPage(1);
+    resetPageInUrl();
   };
 
   const reset = () => {
@@ -108,22 +131,26 @@ export function NewsFeed({
     setFilters({ q: '', categories: [], date: 'all', sort: 'newest' });
     setPage(1);
     if (serverSearchActive) router.push(`/${lang}/news`);
+    else resetPageInUrl();
   };
 
   const setDateFilter = (d: DatePreset) => {
     trackEvent('filter_date', { range: d });
     setFilters((f) => ({ ...f, date: d }));
     setPage(1);
+    resetPageInUrl();
   };
 
   const setSortFilter = (s: SortMode) => {
     trackEvent('sort_change', { sort: s });
     setFilters((f) => ({ ...f, sort: s }));
     setPage(1);
+    resetPageInUrl();
   };
 
   const goToPage = (p: number) => {
     setPage(p);
+    pushPage(p);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -164,7 +191,7 @@ export function NewsFeed({
               id="news-sort-top"
               value={filters.sort}
               onChange={(e) => setSortFilter(e.target.value as SortMode)}
-              className="border-border bg-surface text-text rounded-lg border px-2 py-2 text-[0.85rem]"
+              className="border-border bg-surface text-text rounded-lg border py-2 pl-3 pr-8 text-[0.85rem]"
             >
               <option value="newest">{t.sortNewest}</option>
               <option value="oldest">{t.sortOldest}</option>
@@ -256,16 +283,13 @@ export function NewsFeed({
                 <Reveal delayMs={i * 45}>
                   <PostCard lang={lang} item={p} />
                 </Reveal>
-                {i === 2 && (
+                {i === 5 && (
                   <Reveal delayMs={i * 45 + 20}>
                     <SponsorCard lang={lang} placement="news-feed" />
                   </Reveal>
                 )}
               </Fragment>
             ))}
-            <Reveal>
-              <NewsletterBand lang={lang} embedded placement="news-feed" />
-            </Reveal>
           </div>
         )}
 
@@ -277,6 +301,11 @@ export function NewsFeed({
             onChange={goToPage}
           />
         )}
+
+        {/* Newsletter band — mobile only (desktop version is in the sidebar) */}
+        <div className="mt-8 [@media(min-width:900px)]:hidden">
+          <NewsletterBand lang={lang} embedded placement="news-feed-mobile" />
+        </div>
       </section>
     </div>
   );

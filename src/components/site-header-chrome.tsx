@@ -93,9 +93,11 @@ export function SiteHeaderChrome({
             />
           </div>
 
-          <nav aria-label="Primary" className="ml-auto hidden items-center gap-5 lg:flex">
+          <nav aria-label="Primary" className="ml-auto hidden items-center gap-4 lg:flex">
             {navLink(`/${lang}`, t.navHome, pathname === `/${lang}`)}
             {navLink(`/${lang}/news`, t.nav.news, isActive(`/${lang}/news`))}
+            {navLink(`/${lang}/concepts`, t.nav.concepts, isActive(`/${lang}/concepts`))}
+            {navLink(`/${lang}/guides`, t.guidesTitle, isActive(`/${lang}/guides`))}
             <div ref={catsRef} className="relative" onMouseLeave={() => setCatsOpen(false)}>
               <button
                 type="button"
@@ -196,6 +198,16 @@ export function SiteHeaderChrome({
               <MobileNavLink
                 href={`/${lang}/news`}
                 label={t.nav.news}
+                onNavigate={() => setMenuOpen(false)}
+              />
+              <MobileNavLink
+                href={`/${lang}/concepts`}
+                label={t.nav.concepts}
+                onNavigate={() => setMenuOpen(false)}
+              />
+              <MobileNavLink
+                href={`/${lang}/guides`}
+                label={t.guidesTitle}
                 onNavigate={() => setMenuOpen(false)}
               />
               <MobileNavLink

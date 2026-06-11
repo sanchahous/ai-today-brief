@@ -12,22 +12,26 @@ export function NewsletterBand({
   lang,
   embedded = false,
   showHeader = true,
+  compact = false,
   placement,
 }: {
   lang: Lang;
   embedded?: boolean;
   /** When false, only the form card (subscribe landing hero already has H1). */
   showHeader?: boolean;
+  /** Compact padding for narrow containers like the sidebar. */
+  compact?: boolean;
   /** GA4 newsletter_subscribe placement — overrides embedded default. */
   placement?: string;
 }) {
   const t = getStrings(lang).landing;
   const outer = embedded ? 'w-full' : 'mx-auto w-full max-w-[1160px] px-6 py-6';
+  const innerPadding = compact ? 'p-4' : 'p-6 sm:p-10';
   return (
     <section aria-labelledby={showHeader ? 'newsletter-title' : undefined} className={outer}>
       <Reveal>
         <div
-          className="rounded-card border-border relative overflow-hidden border p-6 sm:p-10"
+          className={`rounded-card border-border relative overflow-hidden border ${innerPadding}`}
           style={{
             background:
               'radial-gradient(120% 160% at 0% 0%, rgba(240,192,64,0.14), transparent 55%), var(--surface)',
