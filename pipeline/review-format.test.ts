@@ -24,6 +24,7 @@ const item: ReviewItem = {
   why_matters_uk: 'Підключи агента до продакшн-бази.',
   source_name: 'Hacker News',
   url: 'https://ex.com/mcp',
+  review_comment: null,
 };
 
 describe('formatSourceHealthAlert', () => {
@@ -35,6 +36,31 @@ describe('formatSourceHealthAlert', () => {
     expect(text).toContain('ДЖЕРЕЛА НЕДОСТУПНІ');
     expect(text).toContain('<b>inbrief</b> — помилка запиту');
     expect(text).toContain('<b>rss</b> — 0 статей');
+  });
+});
+
+describe('formatItemMessage — auto-check warning', () => {
+  it('renders the review_comment as an unmissable warning line', () => {
+    const msg = formatItemMessage(
+      { ...item, review_comment: '⚠️ Авто-перевірка: джерело не підтверджує: X' },
+      1,
+      1,
+    );
+    expect(msg).toContain('🚨 <b>⚠️ Авто-перевірка: джерело не підтверджує: X</b>');
+  });
+  it('omits the warning line when the item is clean', () => {
+    expect(formatItemMessage(item, 1, 1)).not.toContain('🚨');
+  });
+});
+
+describe('formatBatchHeader — pending earlier warning', () => {
+  it('warns when older cards still await a decision', () => {
+    const header = formatBatchHeader({ date: '2026-06-11', total: 2, pendingEarlier: 2 });
+    expect(header).toContain('Ще 2 картки з попередніх прогонів чекають рішення вище');
+  });
+  it('stays silent when nothing is outstanding', () => {
+    const header = formatBatchHeader({ date: '2026-06-11', total: 2, pendingEarlier: 0 });
+    expect(header).not.toContain('попередніх прогонів');
   });
 });
 

@@ -508,7 +508,7 @@ export async function getPendingReviewItems(
 ): Promise<ReviewItem[]> {
   let query = db
     .from('brief_items')
-    .select('id, rank, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, articles(url, source_name)')
+    .select('id, rank, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, review_comment, articles(url, source_name)')
     .eq('brief_id', briefId)
     .eq('review_status', 'pending');
   if (!options.resend) {
@@ -528,10 +528,23 @@ export async function getPendingReviewItems(
       summary_uk: r.summary_uk,
       why_matters_en: r.why_matters_en,
       why_matters_uk: r.why_matters_uk,
+      review_comment: r.review_comment,
       url: article?.url ?? null,
       source_name: article?.source_name ?? null,
     };
   });
+}
+
+/** Pending cards already sent in earlier cycles — still undecided above in chat. */
+export async function countPendingWithCards(db: PipelineDb, briefId: string): Promise<number> {
+  const { count, error } = await db
+    .from('brief_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('brief_id', briefId)
+    .eq('review_status', 'pending')
+    .not('review_msg_id', 'is', null);
+  if (error) throw new Error(`[db] countPendingWithCards failed: ${error.message}`);
+  return count ?? 0;
 }
 
 /** Record the Telegram message id so a re-run won't re-send, and the webhook can edit it. */

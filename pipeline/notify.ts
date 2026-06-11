@@ -5,7 +5,13 @@
  * can edit the card after a decision.
  */
 
-import { getBriefMeta, getPendingReviewItems, setReviewMsgId, type PipelineDb } from './db';
+import {
+  countPendingWithCards,
+  getBriefMeta,
+  getPendingReviewItems,
+  setReviewMsgId,
+  type PipelineDb,
+} from './db';
 import { sendMessage } from './telegram';
 import {
   formatBatchHeader,
@@ -46,6 +52,11 @@ export async function notifyReview(
 
   const meta = await getBriefMeta(db, briefId);
   if (meta) {
+    // The 🚀 button waits for ALL pending items in the pack — warn the
+    // reviewer when older cards above are still undecided.
+    const pendingEarlier = options.resend
+      ? 0
+      : await countPendingWithCards(db, briefId).catch(() => 0);
     await sendMessage(
       token,
       chatId,
@@ -57,6 +68,7 @@ export async function notifyReview(
         cycleLabel: options.cycleLabel,
         channel: options.channel,
         editorTopic: options.editorTopic,
+        pendingEarlier,
       }),
     );
   }

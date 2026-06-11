@@ -1,9 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { parseRssFeedXml } from './rss-parse';
+import { feedHasEntries, parseRssFeedXml } from './rss-parse';
 
 const NOW = Date.parse('2026-06-05T12:00:00Z');
 const fresh = new Date(NOW - 3_600_000).toUTCString();
 const stale = new Date(NOW - 48 * 3_600_000).toUTCString();
+
+describe('feedHasEntries', () => {
+  it('distinguishes quiet feeds (stale entries) from dead documents', () => {
+    const quiet = `<rss><channel><item><title>Old</title><link>https://ex.com/1</link><pubDate>${stale}</pubDate></item></channel></rss>`;
+    expect(feedHasEntries(quiet)).toBe(true);
+    expect(feedHasEntries('<feed><entry><title>x</title></entry></feed>')).toBe(true);
+    expect(feedHasEntries('<!DOCTYPE html><html><body>404</body></html>')).toBe(false);
+    expect(feedHasEntries('')).toBe(false);
+  });
+});
 
 describe('parseRssFeedXml', () => {
   it('parses RSS <item> blocks within the window', () => {

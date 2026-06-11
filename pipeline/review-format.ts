@@ -16,6 +16,8 @@ export interface ReviewItem {
   why_matters_uk: string | null;
   source_name: string | null;
   url: string | null;
+  /** Auto-check note (lang-check + VERIFY) — must be visible on the card. */
+  review_comment: string | null;
 }
 
 export interface InlineKeyboard {
@@ -135,6 +137,8 @@ export function formatBatchHeader(opts: {
   channel?: ReviewChannel;
   /** Original topic line the editor typed (custom channel only). */
   editorTopic?: string | null;
+  /** Pending cards from EARLIER cycles still awaiting a decision (above in chat). */
+  pendingEarlier?: number;
 }): string {
   const channel = opts.channel ?? 'pipeline';
   const lines =
@@ -157,8 +161,13 @@ export function formatBatchHeader(opts: {
     lines.push(`📌 ${escapeHtml(opts.editorTopic)}`);
   }
   if (opts.title) lines.push(`🗞 <i>${escapeHtml(opts.title)}</i>`);
+  lines.push(`🗂 ${opts.total} ${pluralCards(opts.total)} до перегляду`);
+  if (opts.pendingEarlier && opts.pendingEarlier > 0) {
+    lines.push(
+      `⏳ Ще ${opts.pendingEarlier} ${pluralCards(opts.pendingEarlier)} з попередніх прогонів чекають рішення вище — 🚀 зʼявиться лише після ВСІХ.`,
+    );
+  }
   lines.push(
-    `🗂 ${opts.total} ${pluralCards(opts.total)} до перегляду`,
     channel === 'custom' ? '╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍╍' : '━━━━━━━━━━━━━━━━━',
     'Натискай ✅/❌ на кожній картці.',
     channel === 'custom'
@@ -206,6 +215,10 @@ export function formatItemMessage(
   ];
   const whyUk = item.why_matters_uk ?? item.why_matters_en;
   if (whyUk) lines.push('', `💡 <b>Навіщо:</b> ${escapeHtml(whyUk)}`);
+  // VERIFY/lang-check verdicts decide approvals — they must be impossible to miss.
+  if (item.review_comment) {
+    lines.push('', `🚨 <b>${escapeHtml(item.review_comment)}</b>`);
+  }
   if (item.url) {
     const src = escapeHtml(item.source_name ?? 'source');
     lines.push('', `🔗 <a href="${escapeHtml(item.url)}">${src}</a>`);
