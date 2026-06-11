@@ -15,7 +15,7 @@ import { collectArticles, toCandidate } from './fetch';
 import { rankCandidates } from './rank';
 import { isColdSingleton, selectPool } from './select';
 import { summarize, type DraftBrief } from './summarize';
-import { verifyClaims } from './verify';
+import { reviseFlaggedItems, verifyClaims } from './verify';
 import { publish } from './publish';
 import { notifyReview } from './notify';
 import { createEmbedder, type EmbedFn } from './embeddings';
@@ -356,9 +356,11 @@ async function main(): Promise<void> {
     item.image_url = imageByUrl.get(item.url) ?? null;
   }
 
-  // ── Verify ───────────────────────────────────────────────────────────────────
-  // Fact-check drafted claims against the fetched source texts. Non-fatal:
-  // failures mark items for the reviewer instead of blocking the run.
+  // ── Verify → revise → re-verify → auto-drop ─────────────────────────────────
+  // Fully automatic fact-control: flagged items get ONE targeted rewrite
+  // against their source; whatever still fails is dropped from the pack. The
+  // human gate stays an editorial-taste check, never a fact-checking duty.
+  // Non-fatal: a crashed checker publishes the items unchecked (flag visible).
   if (config.verifyClaims && enrichment.some((e) => e.text)) {
     t = Date.now();
     try {
@@ -368,6 +370,52 @@ async function main(): Promise<void> {
         config.geminiApiKey,
         geminiAttempts,
       );
+
+      let revisedCount = 0;
+      const dropped: string[] = [];
+      const flagged = brief.items.filter((i) => i.unsupported_claims.length > 0);
+      if (flagged.length > 0) {
+        const { revised } = await reviseFlaggedItems(
+          flagged,
+          enrichment,
+          dedupedPool,
+          config.geminiApiKey,
+          geminiAttempts,
+        );
+        if (revised.length > 0) {
+          await verifyClaims(revised, enrichment, config.geminiApiKey, geminiAttempts);
+        }
+        const revisedByRef = new Map(revised.map((r) => [r.ref, r]));
+        brief.items = brief.items.flatMap((item) => {
+          if (item.unsupported_claims.length === 0) return [item];
+          const rev = revisedByRef.get(item.ref);
+          if (rev && rev.unsupported_claims.length === 0) {
+            revisedCount++;
+            // Keep the identity fields the revise pass must not change.
+            return [{ ...rev, slug: item.slug, image_url: item.image_url }];
+          }
+          dropped.push(item.title_en);
+          logEvent('warn', 'verify', 'Item dropped by auto fact-control', {
+            ref: item.ref,
+            title: item.title_en,
+            claims: item.unsupported_claims,
+          });
+          return [];
+        });
+        if (
+          dropped.length > 0 &&
+          !config.dryRun &&
+          config.telegramBotToken &&
+          config.telegramReviewChatId
+        ) {
+          await sendMessage(
+            config.telegramBotToken,
+            config.telegramReviewChatId,
+            ['⛔ <b>АВТО-ФАКТ-ЧЕК відкинув</b> (джерело не підтверджує):', ...dropped.map((d) => `• ${d}`)].join('\n'),
+          );
+        }
+      }
+
       await logStage(db, config.dryRun, {
         date,
         stage: 'verify',
@@ -377,11 +425,17 @@ async function main(): Promise<void> {
           ...runMeta,
           checked: outcome.checked,
           flagged: outcome.flagged,
+          revised: revisedCount,
+          dropped: dropped.length,
           model: outcome.model,
           prompt_tokens: outcome.usage?.promptTokens ?? null,
           output_tokens: outcome.usage?.outputTokens ?? null,
         },
       });
+      if (brief.items.length === 0) {
+        logEvent('info', 'verify', 'Auto fact-control dropped everything — skipping');
+        return;
+      }
     } catch (e) {
       logError('verify', 'Claim verification failed (non-fatal)', e);
       await logStage(db, config.dryRun, {
