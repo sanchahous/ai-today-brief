@@ -6,6 +6,7 @@ import {
   generateWithModelQueue,
   isGeminiRateLimitError,
   isRetryableGeminiError,
+  normalizeEscapedNewlines,
   parseBrief,
   parseImpactLevel,
 } from './summarize';
@@ -196,6 +197,52 @@ describe('parseBrief', () => {
     const brief = parseBrief(json, pool);
     expect(brief.items).toHaveLength(0);
     expect(brief.slug).toBe('quiet-day');
+  });
+});
+
+describe('normalizeEscapedNewlines', () => {
+  it('converts literal \\n sequences when there are no real newlines', () => {
+    expect(normalizeEscapedNewlines('### Head\\nLine one.\\n\\n### Two\\nMore.')).toBe(
+      '### Head\nLine one.\n\n### Two\nMore.',
+    );
+  });
+  it('leaves mixed content and plain text untouched', () => {
+    expect(normalizeEscapedNewlines('Real\nnewline with literal \\n inside code')).toBe(
+      'Real\nnewline with literal \\n inside code',
+    );
+    expect(normalizeEscapedNewlines('plain text')).toBe('plain text');
+  });
+  it('applies to body/deep-dive via parseBrief (the Gemini double-escape case)', () => {
+    const json = JSON.stringify({
+      title_en: 'Brief',
+      title_uk: 'Бриф',
+      intro_en: '',
+      intro_uk: '',
+      items: [
+        {
+          ref: 1,
+          category_slug: 'tools-and-releases',
+          title_en: 'Broken newlines story',
+          title_uk: 'Історія з битими переносами',
+          summary_en: 'Summary.',
+          summary_uk: 'Резюме історії з переносами рядків.',
+          why_matters_en: '',
+          why_matters_uk: '',
+          deep_dive_en: 'First line.\\nSecond line.',
+          deep_dive_uk: 'Перший рядок тексту.\\nДругий рядок тексту.',
+          body_md_en: '### Head\\nBody line.\\n\\n### Second\\nMore.',
+          body_md_uk: '### Заголовок\\nПерший рядок тексту статті.',
+          takeaways_en: [],
+          takeaways_uk: [],
+          tools_mentioned: [],
+          social_hook_en: '',
+          social_hook_uk: '',
+        },
+      ],
+    });
+    const item = parseBrief(json, pool).items[0]!;
+    expect(item.body_md_en).toBe('### Head\nBody line.\n\n### Second\nMore.');
+    expect(item.deep_dive_uk).toBe('Перший рядок тексту.\nДругий рядок тексту.');
   });
 });
 

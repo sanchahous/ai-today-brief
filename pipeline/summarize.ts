@@ -644,6 +644,22 @@ function asString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+/**
+ * Gemini occasionally double-escapes newlines inside JSON string values, so a
+ * multiline field arrives as ONE line full of literal "\n" two-char sequences
+ * (rendered to readers as «...воронки\nНовий сервіс...»). The broken signature
+ * is unambiguous — escape sequences present, real newlines absent — so mixed
+ * content (real newlines plus a literal \n inside inline code) is untouched.
+ */
+export function normalizeEscapedNewlines(s: string): string {
+  if (!s.includes('\\n') || s.includes('\n')) return s;
+  return s.replace(/\\r\\n/g, '\n').replace(/\\n/g, '\n').replace(/\\t/g, '  ');
+}
+
+function asMultilineString(value: unknown): string {
+  return normalizeEscapedNewlines(asString(value));
+}
+
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.map((v) => asString(v)).filter((s) => s.length > 0);
@@ -752,10 +768,10 @@ export function parseBrief(text: string, candidates: PoolItem[]): DraftBrief {
       summary_uk: asString(m.summary_uk) || summary_en,
       why_matters_en: asString(m.why_matters_en),
       why_matters_uk: asString(m.why_matters_uk),
-      deep_dive_en: asString(m.deep_dive_en),
-      deep_dive_uk: asString(m.deep_dive_uk),
-      body_md_en: asString(m.body_md_en),
-      body_md_uk: asString(m.body_md_uk),
+      deep_dive_en: asMultilineString(m.deep_dive_en),
+      deep_dive_uk: asMultilineString(m.deep_dive_uk),
+      body_md_en: asMultilineString(m.body_md_en),
+      body_md_uk: asMultilineString(m.body_md_uk),
       facts_en: asFactArray(m.facts_en),
       facts_uk: asFactArray(m.facts_uk),
       code_snippet: asCodeSnippet(m.code_snippet),
