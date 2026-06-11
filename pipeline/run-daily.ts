@@ -369,6 +369,7 @@ async function main(): Promise<void> {
         enrichment,
         config.geminiApiKey,
         geminiAttempts,
+        openRouterKey,
       );
 
       let revisedCount = 0;
@@ -381,9 +382,16 @@ async function main(): Promise<void> {
           dedupedPool,
           config.geminiApiKey,
           geminiAttempts,
+          openRouterKey,
         );
         if (revised.length > 0) {
-          await verifyClaims(revised, enrichment, config.geminiApiKey, geminiAttempts);
+          await verifyClaims(
+            revised,
+            enrichment,
+            config.geminiApiKey,
+            geminiAttempts,
+            openRouterKey,
+          );
         }
         const revisedByRef = new Map(revised.map((r) => [r.ref, r]));
         brief.items = brief.items.flatMap((item) => {
@@ -456,7 +464,12 @@ async function main(): Promise<void> {
   }
 
   t = Date.now();
-  const result = await publish(db, date, fetched, brief, `pipeline:${providerModel}`);
+  // Persist ranking telemetry per article — the dataset for tuning WEIGHTS
+  // against the editor's approve/reject decisions later.
+  const scoresByUrl = new Map(
+    ranking.ranked.map((e) => [e.lead.url, { score: e.score, mentions: e.mentions }]),
+  );
+  const result = await publish(db, date, fetched, brief, `pipeline:${providerModel}`, scoresByUrl);
   await logStage(db, config.dryRun, {
     date,
     stage: 'publish',

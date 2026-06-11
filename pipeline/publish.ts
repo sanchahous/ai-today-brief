@@ -8,6 +8,7 @@ import {
   syncBriefItems,
   syncBriefItemConcepts,
   upsertArticles,
+  type ArticleScores,
   type PipelineDb,
 } from './db';
 import type { FetchedArticle } from './sources/http';
@@ -28,8 +29,9 @@ export async function publish(
   fetched: FetchedArticle[],
   brief: DraftBrief,
   generatedBy: string,
+  scoresByUrl?: ArticleScores,
 ): Promise<PublishResult> {
-  const articleIdByUrl = await upsertArticles(db, fetched);
+  const articleIdByUrl = await upsertArticles(db, fetched, scoresByUrl);
   const resolved = await resolveBriefForPipeline(db, date, brief, generatedBy);
   const { synced, inserted } = await syncBriefItems(
     db,

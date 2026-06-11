@@ -109,7 +109,7 @@ const SOURCE_TRUST: Array<[RegExp, number]> = [
   [/\b(reddit)\b/i, 0.7],
   // The Verge demoted: 33 fetched / 0 published in the first month — reader
   // profile mismatch (consumer angle), not a quality judgement.
-  [/\b(venturebeat|marktechpost|youtube|x\.com|twitter|threads|the verge)\b/i, 0.55],
+  [/\b(venturebeat|marktechpost|youtube|x\.com|twitter|threads|the verge|bluesky)\b/i, 0.55],
 ];
 
 export function sourceTrust(sourceName: string): number {

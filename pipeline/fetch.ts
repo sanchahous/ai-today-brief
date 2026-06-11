@@ -66,7 +66,7 @@ export function toCandidate(a: FetchedArticle): Candidate {
 
 // ─── Source health ───────────────────────────────────────────────────────────
 
-export type SourceBranch = 'inbrief' | 'hacker_news' | 'reddit' | 'rss';
+export type SourceBranch = 'inbrief' | 'hacker_news' | 'reddit' | 'rss' | 'bluesky';
 
 export interface SourceHealth {
   source: SourceBranch;
@@ -101,15 +101,17 @@ export async function collectArticles(): Promise<CollectResult> {
   const { fetchHackerNews } = await import('./sources/hacker-news');
   const { fetchReddit } = await import('./sources/reddit');
   const { fetchRSS } = await import('./sources/rss');
+  const { fetchBluesky } = await import('./sources/bluesky');
 
   logEvent('info', 'fetch', 'Fetch stage started');
   const start = Date.now();
 
-  const [inbrief, hn, reddit, rss] = await Promise.allSettled([
+  const [inbrief, hn, reddit, rss, bluesky] = await Promise.allSettled([
     fetchInBrief(),
     fetchHackerNews(),
     fetchReddit(),
     fetchRSS(),
+    fetchBluesky(),
   ]);
 
   const rssArticles: PromiseSettledResult<FetchedArticle[]> =
@@ -126,6 +128,7 @@ export async function collectArticles(): Promise<CollectResult> {
     sourceHealthOf('hacker_news', hn),
     sourceHealthOf('reddit', reddit),
     rssHealth,
+    sourceHealthOf('bluesky', bluesky),
   ];
 
   const merged: FetchedArticle[] = [
@@ -133,6 +136,7 @@ export async function collectArticles(): Promise<CollectResult> {
     ...(hn.status === 'fulfilled' ? hn.value : []),
     ...(reddit.status === 'fulfilled' ? reddit.value : []),
     ...(rss.status === 'fulfilled' ? rss.value.articles : []),
+    ...(bluesky.status === 'fulfilled' ? bluesky.value : []),
   ];
 
   const articles = filterToRollingWindow(prepareArticles(merged));
