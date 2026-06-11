@@ -14,9 +14,10 @@ import {
 const UUID = '123e4567-e89b-12d3-a456-426614174000';
 
 describe('parseCallbackData', () => {
-  it('parses all three action prefixes', () => {
+  it('parses all four action prefixes', () => {
     expect(parseCallbackData(`ap:${UUID}`)).toEqual({ action: 'approve', id: UUID });
     expect(parseCallbackData(`rj:${UUID}`)).toEqual({ action: 'reject',  id: UUID });
+    expect(parseCallbackData(`rd:${UUID}`)).toEqual({ action: 'redo',    id: UUID });
     expect(parseCallbackData(`pub:${UUID}`)).toEqual({ action: 'publish', id: UUID });
   });
   it('returns null for unknown payloads', () => {

@@ -199,6 +199,68 @@ describe('parseBrief', () => {
   });
 });
 
+describe('parseBrief — Ukrainian quality flags', () => {
+  it('flags items whose _uk fields are English fallbacks', () => {
+    const json = JSON.stringify({
+      title_en: 'Brief',
+      title_uk: 'Бриф',
+      intro_en: '',
+      intro_uk: '',
+      items: [
+        {
+          ref: 1,
+          category_slug: 'tools-and-releases',
+          title_en: 'Claude Opus 4.8 released',
+          // title_uk missing → falls back to EN → must be flagged
+          summary_en: 'Anthropic shipped a new model.',
+          summary_uk: 'Anthropic випустив нову модель із покращеним кодом.',
+          why_matters_en: '',
+          why_matters_uk: '',
+          deep_dive_en: 'Long analysis of the release.',
+          deep_dive_uk: 'Детальний розбір релізу та його можливостей.',
+          takeaways_en: [],
+          takeaways_uk: [],
+          tools_mentioned: [],
+          social_hook_en: '',
+          social_hook_uk: '',
+        },
+      ],
+    });
+    const brief = parseBrief(json, pool);
+    expect(brief.items[0]!.uk_quality_flags).toEqual(['title_uk']);
+  });
+
+  it('keeps flags empty for natural Ukrainian items', () => {
+    const json = JSON.stringify({
+      title_en: 'Brief',
+      title_uk: 'Бриф',
+      intro_en: '',
+      intro_uk: '',
+      items: [
+        {
+          ref: 2,
+          category_slug: 'agents-and-mcp',
+          title_en: 'New MCP server for Postgres',
+          title_uk: 'Новий MCP-сервер для Postgres',
+          summary_en: 'A new server landed.',
+          summary_uk: 'Зʼявився новий сервер для роботи агентів із базами даних.',
+          why_matters_en: '',
+          why_matters_uk: '',
+          deep_dive_en: '',
+          deep_dive_uk: '',
+          takeaways_en: [],
+          takeaways_uk: [],
+          tools_mentioned: [],
+          social_hook_en: '',
+          social_hook_uk: '',
+        },
+      ],
+    });
+    const brief = parseBrief(json, pool);
+    expect(brief.items[0]!.uk_quality_flags).toEqual([]);
+  });
+});
+
 describe('generateWithModelQueue + Gemini errors', () => {
   it('isGeminiRateLimitError detects quota/429 errors', () => {
     expect(isGeminiRateLimitError(new Error('429 Too Many Requests'))).toBe(true);
@@ -228,7 +290,17 @@ describe('generateWithModelQueue + Gemini errors', () => {
     const out = await generateWithModelQueue('prompt', 'key', ['gemini-3.5-flash'], 3, gen, async () => {});
     expect(out.text).toBe('{"ok":true}');
     expect(out.model).toBe('gemini-3.5-flash');
+    expect(out.usage).toBeNull(); // plain-string doubles carry no usage
     expect(gen).toHaveBeenCalledTimes(2);
+  });
+
+  it('threads token usage through when the model call reports it', async () => {
+    const gen = vi.fn().mockResolvedValue({
+      text: '{"ok":true}',
+      usage: { promptTokens: 1200, outputTokens: 800, estimated: false },
+    });
+    const out = await generateWithModelQueue('p', 'key', ['gemini-3.5-flash'], 1, gen, async () => {});
+    expect(out.usage).toEqual({ promptTokens: 1200, outputTokens: 800, estimated: false });
   });
 
   it('advances to the next model after rate-limit on the first', async () => {

@@ -28,7 +28,11 @@ export const REDDIT_URLS = [
 // Reddit blocks generic User-Agents — keep a real, identifiable one.
 export const REDDIT_USER_AGENT = 'ai-today-brief/1.0 (daily AI/dev brief pipeline)';
 
-/** RSS feeds — fallback when API/JSON sources come back thin. */
+/**
+ * RSS feeds — first-party lab blogs + quality media, fetched as a primary
+ * source. Names are the canonical publication labels (see `source-names.ts`)
+ * so feed items merge with the same outlet arriving via InBrief.
+ */
 export const RSS_FEEDS = [
   { name: 'Anthropic Blog', url: 'https://www.anthropic.com/rss.xml' },
   { name: 'OpenAI Blog', url: 'https://openai.com/blog/rss.xml' },
@@ -37,13 +41,13 @@ export const RSS_FEEDS = [
   { name: 'Hugging Face Blog', url: 'https://huggingface.co/blog/feed.xml' },
   { name: 'Simon Willison', url: 'https://simonwillison.net/atom/everything/' },
   {
-    name: 'The Verge AI',
+    name: 'The Verge',
     url: 'https://www.theverge.com/ai-artificial-intelligence/rss/index.xml',
   },
-  { name: 'VentureBeat AI', url: 'https://venturebeat.com/category/ai/feed/' },
-  { name: 'TechCrunch AI', url: 'https://techcrunch.com/category/artificial-intelligence/feed/' },
+  { name: 'VentureBeat', url: 'https://venturebeat.com/category/ai/feed/' },
+  { name: 'TechCrunch', url: 'https://techcrunch.com/category/artificial-intelligence/feed/' },
   {
-    name: 'MIT Tech Review AI',
+    name: 'MIT Technology Review',
     url: 'https://www.technologyreview.com/topic/artificial-intelligence/feed',
   },
   { name: 'Ars Technica', url: 'https://feeds.arstechnica.com/arstechnica/technology-lab' },

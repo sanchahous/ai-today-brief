@@ -6,6 +6,7 @@ import {
   escapeHtml,
   formatBatchHeader,
   formatItemMessage,
+  formatSourceHealthAlert,
   parseCallbackData,
   reviewKeyboard,
   type ReviewItem,
@@ -25,14 +26,30 @@ const item: ReviewItem = {
   url: 'https://ex.com/mcp',
 };
 
+describe('formatSourceHealthAlert', () => {
+  it('lists each unhealthy source with a human status', () => {
+    const text = formatSourceHealthAlert([
+      { source: 'inbrief', status: 'failed', count: 0 },
+      { source: 'rss', status: 'empty', count: 0 },
+    ]);
+    expect(text).toContain('ДЖЕРЕЛА НЕДОСТУПНІ');
+    expect(text).toContain('<b>inbrief</b> — помилка запиту');
+    expect(text).toContain('<b>rss</b> — 0 статей');
+  });
+});
+
 describe('callback data contract', () => {
-  it('round-trips approve/reject with the item id', () => {
+  it('round-trips approve/reject/redo with the item id', () => {
     expect(parseCallbackData(callbackData('approve', 'abc-123'))).toEqual({
       action: 'approve',
       itemId: 'abc-123',
     });
     expect(parseCallbackData(callbackData('reject', 'abc-123'))).toEqual({
       action: 'reject',
+      itemId: 'abc-123',
+    });
+    expect(parseCallbackData(callbackData('redo', 'abc-123'))).toEqual({
+      action: 'redo',
       itemId: 'abc-123',
     });
   });
@@ -45,11 +62,12 @@ describe('callback data contract', () => {
 });
 
 describe('reviewKeyboard', () => {
-  it('has one row with approve + reject buttons', () => {
+  it('has one row with approve + reject + redo buttons', () => {
     const kb = reviewKeyboard('abc-123');
     expect(kb.inline_keyboard).toHaveLength(1);
-    expect(kb.inline_keyboard[0]).toHaveLength(2);
+    expect(kb.inline_keyboard[0]).toHaveLength(3);
     expect(kb.inline_keyboard[0]![0]!.callback_data).toBe('ap:abc-123');
+    expect(kb.inline_keyboard[0]![2]!.callback_data).toBe('rd:abc-123');
   });
 });
 

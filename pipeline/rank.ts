@@ -85,6 +85,14 @@ const BREADTH_HALF = 1.5;
 const RECENCY_HALF_LIFE_HOURS = 12;
 /** Floor on cluster age so a just-published item can't divide by ~0. */
 const MIN_AGE_HOURS = 0.5;
+/**
+ * First-party lab/vendor blogs carry no HN/Reddit engagement, so their velocity
+ * is 0 at exactly the moment an announcement IS the news — a fresh Anthropic
+ * release post would lose to any noisy thread. Sources at the top trust tier
+ * get a velocity floor instead; recency decay still ages them out naturally.
+ */
+const OFFICIAL_TRUST = 1;
+const OFFICIAL_VELOCITY_FLOOR = 0.5;
 
 /** Saturating 0→1 curve: `value` half-saturates at `half`, never reaches 1. */
 function saturate(value: number, half: number): number {
@@ -95,9 +103,9 @@ function saturate(value: number, half: number): number {
 // ─── Source trust ────────────────────────────────────────────────────────────
 
 const SOURCE_TRUST: Array<[RegExp, number]> = [
-  [/\b(anthropic|openai|google (research|ai)|deepmind|hugging ?face|meta ai)\b/i, 1],
+  [/\b(anthropic|openai|google (research|ai)|deepmind|hugging ?face|meta ai|nvidia)\b/i, 1],
   [/\b(hacker news|simon willison|github|arxiv)\b/i, 0.9],
-  [/\b(ars ?technica|the verge|mit tech|techcrunch)\b/i, 0.75],
+  [/\b(ars ?technica|the verge|mit tech(nology)?|techcrunch)\b/i, 0.75],
   [/\b(reddit)\b/i, 0.7],
   [/\b(venturebeat|marktechpost|youtube|x\.com|twitter|threads)\b/i, 0.55],
 ];
@@ -153,11 +161,14 @@ export function scoreComponents(cluster: Candidate[], nowMs: number): ScoreCompo
   const distinctSources = new Set(cluster.map((a) => a.source_name)).size;
   const maxInbrief = cluster.reduce((mx, a) => Math.max(mx, a.inbrief_score ?? 0), 0);
   const ageHours = clusterAgeHours(cluster, nowMs);
+  const authority = cluster.reduce((mx, a) => Math.max(mx, sourceTrust(a.source_name)), 0);
+  const rawVelocity = saturate(totalEngagement / ageHours, VELOCITY_HALF);
 
   return {
-    velocity: saturate(totalEngagement / ageHours, VELOCITY_HALF),
+    velocity:
+      authority >= OFFICIAL_TRUST ? Math.max(rawVelocity, OFFICIAL_VELOCITY_FLOOR) : rawVelocity,
     crossSource: saturate(mentions - 1, CROSS_SOURCE_HALF),
-    authority: cluster.reduce((mx, a) => Math.max(mx, sourceTrust(a.source_name)), 0),
+    authority,
     recency: 0.5 ** (ageHours / RECENCY_HALF_LIFE_HOURS),
     inbrief: Math.min(1, maxInbrief / 100),
     breadth: saturate(distinctSources - 1, BREADTH_HALF),

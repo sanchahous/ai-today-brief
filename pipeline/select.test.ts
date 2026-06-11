@@ -41,7 +41,7 @@ function entry(
 }
 
 describe('selectPool', () => {
-  const opts = { minScore: 0.2, perTopicCap: 2, poolSize: 5 };
+  const opts = { minScore: 0.2, perTopicCap: 2, poolSize: 5, maxColdSingletons: 10 };
 
   it('drops entries under the score floor', () => {
     const pool = selectPool([entry(0.1, 'claude', 'a')], opts);
@@ -67,5 +67,24 @@ describe('selectPool', () => {
     expect(pool).toHaveLength(5);
     expect(pool.map((p) => p.ref)).toEqual([1, 2, 3, 4, 5]);
     expect(pool[0]!.category).toBe('tools-and-releases');
+  });
+
+  it('caps cold singletons but lets engaged and first-party entries through', () => {
+    const cold = (url: string) => entry(0.5, url, url); // velocity 0, cluster 1, authority 0
+    const engaged = (url: string) => {
+      const e = entry(0.4, url, url);
+      e.components = { ...e.components, velocity: 0.6 };
+      return e;
+    };
+    const official = (url: string) => {
+      const e = entry(0.4, url, url);
+      e.components = { ...e.components, velocity: 0.5, authority: 1 };
+      return e;
+    };
+    const pool = selectPool(
+      [cold('c1'), cold('c2'), cold('c3'), engaged('e1'), official('o1')],
+      { minScore: 0.2, perTopicCap: 2, poolSize: 10, maxColdSingletons: 2 },
+    );
+    expect(pool.map((p) => p.url)).toEqual(['c1', 'c2', 'e1', 'o1']);
   });
 });

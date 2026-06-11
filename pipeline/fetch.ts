@@ -1,20 +1,33 @@
 /**
- * Stage 1 — Fetch. Collects raw candidates from InBrief, Hacker News, Reddit,
- * with an RSS fallback when the primary sources come back thin. Returns an
- * in-memory, de-duplicated, rolling-window-filtered list — no database here.
+ * Stage 1 — Fetch. Collects raw candidates from InBrief, Hacker News, Reddit
+ * and the first-party RSS feeds in parallel, reporting per-source health so a
+ * silently dead source surfaces in `pipeline_runs` and Telegram instead of the
+ * pool quietly degrading. Returns an in-memory, de-duplicated,
+ * rolling-window-filtered list — no database here.
  *
- * The pure helpers (`prepareArticles`, `filterToRollingWindow`, `toCandidate`)
- * are unit-tested; `collectArticles` (live network) is covered by real runs.
+ * RSS used to be a thin-primary fallback only; it is a primary source now
+ * because the feeds are the first-party lab blogs (Anthropic, OpenAI, …) whose
+ * announcements the ranker was structurally missing — published items were
+ * almost entirely HN/Reddit-amplified coverage.
+ *
+ * The pure helpers (`prepareArticles`, `filterToRollingWindow`, `toCandidate`,
+ * `sourceHealthOf`) are unit-tested; `collectArticles` (live network) is
+ * covered by real runs.
  */
 
 import type { Candidate } from './rank';
 import { isPublishedWithinRollingWindow } from './rolling-window';
+import { canonicalSourceName } from './source-names';
 import { logEvent } from './log';
 import type { FetchedArticle } from './sources/http';
 
 export type { FetchedArticle } from './sources/http';
 
-/** Keep valid http(s) URLs + non-empty titles; de-duplicate within the batch by URL. */
+/**
+ * Keep valid http(s) URLs + non-empty titles; de-duplicate within the batch by
+ * URL; normalize source names so trust scoring and site facets see one label
+ * per outlet.
+ */
 export function prepareArticles(input: FetchedArticle[]): FetchedArticle[] {
   const seen = new Set<string>();
   const out: FetchedArticle[] = [];
@@ -22,7 +35,7 @@ export function prepareArticles(input: FetchedArticle[]): FetchedArticle[] {
     if (!a.url || !a.title || !a.url.startsWith('http')) continue;
     if (seen.has(a.url)) continue;
     seen.add(a.url);
-    out.push(a);
+    out.push({ ...a, source_name: canonicalSourceName(a.source_name) });
   }
   return out;
 }
@@ -51,44 +64,83 @@ export function toCandidate(a: FetchedArticle): Candidate {
   };
 }
 
-/** Below this many primary-source articles, pull the RSS fallback too. */
-export const THIN_PRIMARY_THRESHOLD = 10;
+// ─── Source health ───────────────────────────────────────────────────────────
+
+export type SourceBranch = 'inbrief' | 'hacker_news' | 'reddit' | 'rss';
+
+export interface SourceHealth {
+  source: SourceBranch;
+  status: 'ok' | 'empty' | 'failed';
+  count: number;
+  /** RSS only: individual feeds that failed even when the branch is 'ok'. */
+  dead_feeds?: string[];
+}
+
+/**
+ * Health verdict for one settled source branch. Sources absorb their own
+ * per-URL errors and resolve to [], so `empty` usually means "every request
+ * inside failed or nothing passed the window" — worth surfacing either way.
+ */
+export function sourceHealthOf(
+  source: SourceBranch,
+  settled: PromiseSettledResult<FetchedArticle[]>,
+): SourceHealth {
+  if (settled.status === 'rejected') return { source, status: 'failed', count: 0 };
+  const count = settled.value.length;
+  return { source, status: count === 0 ? 'empty' : 'ok', count };
+}
+
+export interface CollectResult {
+  articles: FetchedArticle[];
+  health: SourceHealth[];
+}
 
 /* v8 ignore start -- live network orchestration; helpers above are unit-tested */
-export async function collectArticles(): Promise<FetchedArticle[]> {
+export async function collectArticles(): Promise<CollectResult> {
   const { fetchInBrief } = await import('./sources/inbrief');
   const { fetchHackerNews } = await import('./sources/hacker-news');
   const { fetchReddit } = await import('./sources/reddit');
+  const { fetchRSS } = await import('./sources/rss');
 
   logEvent('info', 'fetch', 'Fetch stage started');
   const start = Date.now();
 
-  const [inbrief, hn, reddit] = await Promise.allSettled([
+  const [inbrief, hn, reddit, rss] = await Promise.allSettled([
     fetchInBrief(),
     fetchHackerNews(),
     fetchReddit(),
+    fetchRSS(),
   ]);
 
-  let articles: FetchedArticle[] = [
+  const rssArticles: PromiseSettledResult<FetchedArticle[]> =
+    rss.status === 'fulfilled'
+      ? { status: 'fulfilled', value: rss.value.articles }
+      : rss;
+  const rssHealth = sourceHealthOf('rss', rssArticles);
+  if (rss.status === 'fulfilled' && rss.value.deadFeeds.length > 0) {
+    rssHealth.dead_feeds = rss.value.deadFeeds;
+  }
+
+  const health: SourceHealth[] = [
+    sourceHealthOf('inbrief', inbrief),
+    sourceHealthOf('hacker_news', hn),
+    sourceHealthOf('reddit', reddit),
+    rssHealth,
+  ];
+
+  const merged: FetchedArticle[] = [
     ...(inbrief.status === 'fulfilled' ? inbrief.value : []),
     ...(hn.status === 'fulfilled' ? hn.value : []),
     ...(reddit.status === 'fulfilled' ? reddit.value : []),
+    ...(rss.status === 'fulfilled' ? rss.value.articles : []),
   ];
 
-  if (articles.length < THIN_PRIMARY_THRESHOLD) {
-    logEvent('warn', 'fetch', 'Primary sources thin, using RSS fallback', {
-      primary_count: articles.length,
-    });
-    const { fetchRSS } = await import('./sources/rss');
-    const rss = await fetchRSS();
-    articles.push(...rss);
-  }
-
-  articles = filterToRollingWindow(prepareArticles(articles));
+  const articles = filterToRollingWindow(prepareArticles(merged));
   logEvent('info', 'fetch', 'Fetch stage complete', {
     count: articles.length,
+    sources: health,
     duration_ms: Date.now() - start,
   });
-  return articles;
+  return { articles, health };
 }
 /* v8 ignore end */

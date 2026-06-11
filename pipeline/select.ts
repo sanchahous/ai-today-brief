@@ -3,8 +3,10 @@
  *
  * Clusters are already deduped + scored + source-capped by rank.ts. Here we only
  * enforce quality and topic variety: drop anything under the score floor, cap how
- * many candidates share a fine-grained topic (no wall of Claude stories), keep the
- * top `poolSize`. Input is pre-sorted by score, and that order is preserved.
+ * many candidates share a fine-grained topic (no wall of Claude stories), cap
+ * cold singletons (zero-engagement single-source media headlines — always-on RSS
+ * would otherwise fill quiet days with unvetted churn), keep the top `poolSize`.
+ * Input is pre-sorted by score, and that order is preserved.
  */
 
 import type { RankedEntry } from './rank';
@@ -25,16 +27,36 @@ export interface PoolOptions {
   minScore: number;
   perTopicCap: number;
   poolSize: number;
+  /**
+   * Max pooled entries with zero engagement, a single source and sub-official
+   * authority. First-party announcements are exempt (their velocity is floored
+   * at the official level in rank.ts, so they never read as cold).
+   */
+  maxColdSingletons: number;
+}
+
+/** Zero-engagement, single-coverage, non-first-party — RSS/media churn shape. */
+export function isColdSingleton(entry: RankedEntry): boolean {
+  return (
+    entry.components.velocity === 0 &&
+    entry.clusterSize === 1 &&
+    entry.components.authority < 1
+  );
 }
 
 export function selectPool(ranked: RankedEntry[], opts: PoolOptions): PoolItem[] {
   const topicCounts: Record<string, number> = {};
   const pooled: RankedEntry[] = [];
+  let coldSingletons = 0;
 
   for (const entry of ranked) {
     if (entry.score < opts.minScore) continue;
     const count = topicCounts[entry.topic] ?? 0;
     if (count >= opts.perTopicCap) continue;
+    if (isColdSingleton(entry)) {
+      if (coldSingletons >= opts.maxColdSingletons) continue;
+      coldSingletons++;
+    }
     topicCounts[entry.topic] = count + 1;
     pooled.push(entry);
     if (pooled.length >= opts.poolSize) break;

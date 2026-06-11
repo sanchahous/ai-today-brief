@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterToRollingWindow, prepareArticles, toCandidate } from './fetch';
+import { filterToRollingWindow, prepareArticles, sourceHealthOf, toCandidate } from './fetch';
 import type { FetchedArticle } from './sources/http';
 
 const NOW = Date.parse('2026-06-05T12:00:00Z');
@@ -31,6 +31,39 @@ describe('prepareArticles', () => {
       article({ url: 'https://example.com/c', title: 'Keep too' }),
     ]);
     expect(out.map((a) => a.url)).toEqual(['https://example.com/a', 'https://example.com/c']);
+  });
+
+  it('normalizes source names onto their canonical labels', () => {
+    const out = prepareArticles([
+      article({ url: 'https://example.com/a', source_name: 'HackerNews' }),
+      article({ url: 'https://example.com/b', source_name: 'x.com' }),
+      article({ url: 'https://example.com/c', source_name: 'Reddit · r/LocalLLaMA' }),
+    ]);
+    expect(out.map((a) => a.source_name)).toEqual([
+      'Hacker News',
+      'X (Twitter)',
+      'Reddit · r/LocalLLaMA',
+    ]);
+  });
+});
+
+describe('sourceHealthOf', () => {
+  it('reports ok / empty / failed per settled branch', () => {
+    expect(sourceHealthOf('inbrief', { status: 'fulfilled', value: [article()] })).toEqual({
+      source: 'inbrief',
+      status: 'ok',
+      count: 1,
+    });
+    expect(sourceHealthOf('rss', { status: 'fulfilled', value: [] })).toEqual({
+      source: 'rss',
+      status: 'empty',
+      count: 0,
+    });
+    expect(sourceHealthOf('reddit', { status: 'rejected', reason: new Error('boom') })).toEqual({
+      source: 'reddit',
+      status: 'failed',
+      count: 0,
+    });
   });
 });
 
