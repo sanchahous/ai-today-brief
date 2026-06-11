@@ -33,6 +33,9 @@ export function SiteFooter({ lang }: { lang: Lang }) {
             <Link className="hover:text-text" href={`/${lang}/concepts`}>
               {t.nav.concepts}
             </Link>
+            <Link className="hover:text-text" href={`/${lang}/guides`}>
+              {t.guidesTitle}
+            </Link>
             <Link className="hover:text-text" href={`/${lang}/subscribe`}>
               {t.footerSubscribe}
             </Link>

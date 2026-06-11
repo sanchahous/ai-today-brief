@@ -6,7 +6,13 @@ import { EDITOR_NAME, EDITOR_PROFILE, isLang, SITE_NAME, SITE_URL, type Lang } f
 import { getStrings } from '@/lib/i18n';
 import { getConceptNameIndex } from '@/lib/concepts';
 import { markdownToPlainText } from '@/lib/markdown';
-import { getBriefItem, getPublishedItemPaths, getRelatedStories, youtubeVideoId } from '@/lib/items';
+import {
+  getAdjacentStories,
+  getBriefItem,
+  getPublishedItemPaths,
+  getRelatedStories,
+  youtubeVideoId,
+} from '@/lib/items';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { Byline } from '@/components/byline';
 import { AiDisclosureNote } from '@/components/ai-disclosure-note';
@@ -82,10 +88,12 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
     };
   });
 
-  const related =
+  const [related, adjacent] = await Promise.all([
     detail.categorySlug != null
-      ? await getRelatedStories(lang, detail.categorySlug, detail.id)
-      : [];
+      ? getRelatedStories(lang, detail.categorySlug, detail.id)
+      : Promise.resolve([]),
+    getAdjacentStories(detail.briefId, detail.briefSlug, detail.rank, lang),
+  ]);
 
   const crumbs = [
     { label: t.news.breadcrumbHome, href: `/${lang}` },
@@ -250,6 +258,42 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         )}
 
         <ItemShareBar lang={lang} pageUrl={pagePath} title={detail.title} postId={item} />
+
+        {(adjacent.prev || adjacent.next) && (
+          <nav
+            aria-label={`${t.prevStory} / ${t.nextStory}`}
+            className="mt-8 grid gap-2.5 sm:grid-cols-2"
+          >
+            {adjacent.prev ? (
+              <Link
+                href={adjacent.prev.href}
+                className="rounded-card border-border bg-surface hover:border-accent block border p-3.5 no-underline transition"
+              >
+                <span className="text-faint mb-1 block text-[0.72rem] tracking-[0.06em] uppercase">
+                  ← {t.prevStory}
+                </span>
+                <span className="text-text text-[0.92rem] font-semibold leading-snug">
+                  {adjacent.prev.title}
+                </span>
+              </Link>
+            ) : (
+              <span aria-hidden className="hidden sm:block" />
+            )}
+            {adjacent.next && (
+              <Link
+                href={adjacent.next.href}
+                className="rounded-card border-border bg-surface hover:border-accent block border p-3.5 text-right no-underline transition"
+              >
+                <span className="text-faint mb-1 block text-[0.72rem] tracking-[0.06em] uppercase">
+                  {t.nextStory} →
+                </span>
+                <span className="text-text text-[0.92rem] font-semibold leading-snug">
+                  {adjacent.next.title}
+                </span>
+              </Link>
+            )}
+          </nav>
+        )}
       </article>
 
       {related.length > 0 && (

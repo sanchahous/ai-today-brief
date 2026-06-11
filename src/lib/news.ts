@@ -19,6 +19,7 @@ export interface NewsCard {
   title: string;
   summary: string;
   date: string;
+  imageUrl: string | null;
 }
 
 function toToolNames(value: unknown): string[] {
@@ -337,6 +338,7 @@ export async function getNewsList(lang: Lang, limit = 60): Promise<NewsCard[]> {
     title: it.title,
     summary: it.summary,
     date: it.date,
+    imageUrl: it.imageUrl,
   }));
 }
 
@@ -350,5 +352,6 @@ export async function searchNews(lang: Lang, query: string, limit = 50): Promise
     title: it.title,
     summary: it.summary,
     date: it.date,
+    imageUrl: it.imageUrl,
   }));
 }
