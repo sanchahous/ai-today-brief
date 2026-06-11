@@ -24,8 +24,9 @@ module-level mutable state:
 The store is the single source of truth. A brief is written as **`draft`**; a
 human flips `briefs.status → published` (the editorial gate). The pipeline runs
 **6 progóns per day** (every 4 h Kyiv: 00:00, 04:00, … 20:00). Each progón has
-**6 retry slots** (every 30 min). After a successful publish + Telegram notify,
-remaining slots in that progón skip. Interactive ✅/❌ cards go only to items
+**4 retry slots** (every 30 min, 1.5 h window). After a successful publish +
+Telegram notify, remaining slots in that progón skip — a pre-`npm ci` cycle-guard
+(`.github/scripts/cycle-guard.mjs`) exits them in ~3 s. Interactive ✅/❌ cards go only to items
 without `review_msg_id`. Draft items **sync by slug** across re-runs. The pipeline
 holds the Supabase **service_role** key and is **never imported under `src/`**.
 

@@ -1,14 +1,14 @@
 /**
  * Kyiv schedule: 6 progóns per day, one every 4 hours (00:00, 04:00, … 20:00).
- * Each progón has 6 retry slots every 30 min (2.5 h window). After a successful
+ * Each progón has 4 retry slots every 30 min (1.5 h window). After a successful
  * publish + Telegram notify in a progón, remaining slots in that progón skip.
  *
- * Slot 1–5: lighter Gemini retries. Slot 6: full Gemini retries + OpenRouter.
+ * Slot 1–3: lighter Gemini retries. Slot 4 (final): full Gemini retries + OpenRouter.
  */
 
 import type { PipelineDb } from './db';
 
-export const KYIV_SCHEDULE_ATTEMPTS = 6 as const;
+export const KYIV_SCHEDULE_ATTEMPTS = 4 as const;
 export const KYIV_CYCLES_PER_DAY = 6 as const;
 export const KYIV_CYCLE_HOURS = 4;
 export const KYIV_SLOT_INTERVAL_MINUTES = 30;
