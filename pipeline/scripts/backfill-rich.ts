@@ -28,7 +28,7 @@ import {
 } from '../summarize';
 import { reviseFlaggedItems, verifyClaims } from '../verify';
 
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 4; // bilingual rich fields × 5 items overflowed the output cap
 const SLEEP_BETWEEN_BATCHES_MS = 25_000;
 
 interface LegacyItem {
@@ -156,6 +156,7 @@ async function main(): Promise<void> {
 
   for (let offset = 0; offset < legacy.length; offset += BATCH_SIZE) {
     const batch = legacy.slice(offset, offset + BATCH_SIZE);
+    try {
 
     // Pseudo-pool so the regular enrich stage can be reused as-is.
     const pool: PoolItem[] = batch.map((item, i) => ({
@@ -265,6 +266,14 @@ async function main(): Promise<void> {
       updated,
       skipped,
     });
+    } catch (e) {
+      // A truncated/refused model response must not kill the run — items in
+      // this batch stay legacy and the idempotent re-run picks them up.
+      skipped += batch.length;
+      logError('enrich', 'Backfill batch failed — continuing', e, {
+        batch: Math.floor(offset / BATCH_SIZE) + 1,
+      });
+    }
     if (offset + BATCH_SIZE < legacy.length) await sleep(SLEEP_BETWEEN_BATCHES_MS);
   }
 
