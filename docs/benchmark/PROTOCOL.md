@@ -20,9 +20,13 @@ and honest tech-debt accounting, with as little human help as possible.
 - Track **M (mobile)**: same product as an Expo/React Native app. Run only
   for tools that claim mobile competence; Track W is the default.
 
-The epic spec, design spec and reference repo live in this folder
-(`epic-spec.md`, to be committed before the first run) and are **versioned**:
-any change bumps the protocol version and old scores are not comparable.
+The epic spec, design spec and reference repo are **versioned**: any change
+bumps the protocol version and old scores are not comparable.
+
+- Reference repo: <https://github.com/sanchahous/aob-reference>
+- Protocol v1 pinned commit: `624e6ef9d6d3b507b2d9ec30f1bdfa67385edc65`
+- Agent-facing brief: `EPIC.md` + `design-spec.md` inside the repo
+  (duplicated as `epic-spec.md` in this folder for the editorial record).
 
 ## Rules (reproducibility)
 
