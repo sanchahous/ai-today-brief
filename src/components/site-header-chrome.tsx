@@ -53,14 +53,14 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
     setMenuOpen(false);
   }, [pathname]);
 
-  const navLink = (href: string, label: string, active?: boolean) => (
+  const navLink = (href: string, label: string, active?: boolean, extraClass = '') => (
     <Link
       href={href}
       className={`border-b-2 pb-0.5 text-[0.9rem] font-medium transition-colors duration-200 ${
         active
           ? 'text-text border-accent font-semibold'
           : 'text-muted hover:text-text border-transparent'
-      }`}
+      } ${extraClass}`}
     >
       {label}
     </Link>
@@ -98,8 +98,10 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             />
           </div>
 
-          <nav aria-label="Primary" className="ml-auto hidden shrink-0 flex-nowrap items-center gap-3 lg:flex xl:gap-5">
-            {navLink(`/${lang}`, t.navHome, pathname === `/${lang}`)}
+          <nav aria-label="Primary" className="ml-auto hidden shrink-0 flex-nowrap items-center gap-2 lg:flex xl:gap-5">
+            {/* Home and About yield space to search in the 1024-1279 band: the logo links
+                home, and About stays reachable via footer + mobile menu. */}
+            {navLink(`/${lang}`, t.navHome, pathname === `/${lang}`, 'hidden xl:inline-block')}
             {navLink(`/${lang}/news`, t.nav.news, isActive(`/${lang}/news`))}
             {navLink(`/${lang}/concepts`, t.nav.concepts, isActive(`/${lang}/concepts`))}
             {navLink(`/${lang}/guides`, t.guidesTitle, isActive(`/${lang}/guides`))}
@@ -151,7 +153,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
                 </div>
               ) : null}
             </div>
-            {navLink(`/${lang}/about`, t.navAbout, isActive(`/${lang}/about`))}
+            {navLink(`/${lang}/about`, t.navAbout, isActive(`/${lang}/about`), 'hidden xl:inline-block')}
             <span aria-hidden className="bg-border h-[18px] w-px" />
             <Link
               href={`/${lang}/subscribe`}
