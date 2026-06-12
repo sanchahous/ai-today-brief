@@ -57,6 +57,11 @@ export interface BriefItemDetail {
   publishedAt: string | null;
   sourceName: string | null;
   sourceUrl: string | null;
+  /**
+   * `/{briefSlug}/{itemSlug}` of the earliest publication of the same story,
+   * when this item is a later re-publication — the page redirects there.
+   */
+  canonicalPath: string | null;
 }
 
 function toFacts(value: unknown): ItemFact[] {
@@ -175,12 +180,27 @@ export async function getBriefItem(
   const { data: it, error: itemError } = await supabase
     .from('brief_items')
     .select(
-      'id, slug, rank, article_id, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, deep_dive_en, deep_dive_uk, body_md_en, body_md_uk, facts_en, facts_uk, code_snippet, when_to_use_en, when_to_use_uk, when_not_to_use_en, when_not_to_use_uk, community_reactions, citations, image_url, editor_take, takeaways_en, takeaways_uk, action_items_en, action_items_uk, impact_level, tools_mentioned, youtube_url',
+      'id, slug, rank, article_id, canonical_item_id, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, deep_dive_en, deep_dive_uk, body_md_en, body_md_uk, facts_en, facts_uk, code_snippet, when_to_use_en, when_to_use_uk, when_not_to_use_en, when_not_to_use_uk, community_reactions, citations, image_url, editor_take, takeaways_en, takeaways_uk, action_items_en, action_items_uk, impact_level, tools_mentioned, youtube_url',
     )
     .eq('brief_id', brief.id)
     .eq('slug', itemSlug)
     .maybeSingle();
   if (itemError || !it?.slug) return null;
+
+  // Later re-publication of an already-covered story → the page redirects to
+  // the earliest copy instead of competing with it in the index.
+  let canonicalPath: string | null = null;
+  if (it.canonical_item_id) {
+    const { data: primary } = await supabase
+      .from('brief_items')
+      .select('slug, briefs!brief_items_brief_id_fkey(slug, status)')
+      .eq('id', it.canonical_item_id)
+      .maybeSingle();
+    const primaryBrief = primary?.briefs as { slug: string | null; status: string } | null;
+    if (primary?.slug && primaryBrief?.slug && primaryBrief.status === 'published') {
+      canonicalPath = `/${primaryBrief.slug}/${primary.slug}`;
+    }
+  }
 
   const category = it.category_slug ? await getCategory(it.category_slug, lang) : null;
 
@@ -238,6 +258,7 @@ export async function getBriefItem(
     publishedAt: brief.published_at,
     sourceName: article?.source_name ?? null,
     sourceUrl: article?.url ?? article?.source_url ?? null,
+    canonicalPath,
   };
 }
 
@@ -360,7 +381,7 @@ export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry
   const briefById = new Map(briefs.map((b) => [b.id, b]));
   const { data: rows } = await supabase
     .from('brief_items')
-    .select('slug, brief_id, title_en, title_uk')
+    .select('slug, brief_id, title_en, title_uk, canonical_item_id')
     .in(
       'brief_id',
       briefs.map((b) => b.id),
@@ -370,6 +391,7 @@ export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry
   for (const row of rows ?? []) {
     const brief = briefById.get(row.brief_id);
     if (!brief?.slug || !row.slug) continue;
+    if (row.canonical_item_id) continue; // re-publication — redirects to the original
     const publicationDate = toNewsPublicationDate(brief.published_at, brief.date);
     if (!isWithinNewsSitemapWindow(publicationDate)) continue;
     for (const lang of LANGS) {
@@ -407,7 +429,7 @@ export async function getPublishedItemSitemapEntries(): Promise<ItemSitemapEntry
   const briefById = new Map(briefs.map((b) => [b.id, b]));
   const { data: items } = await supabase
     .from('brief_items')
-    .select('slug, brief_id')
+    .select('slug, brief_id, canonical_item_id')
     .in(
       'brief_id',
       briefs.map((b) => b.id),
@@ -417,6 +439,7 @@ export async function getPublishedItemSitemapEntries(): Promise<ItemSitemapEntry
   for (const it of items ?? []) {
     const brief = briefById.get(it.brief_id);
     if (!brief?.slug || !it.slug) continue;
+    if (it.canonical_item_id) continue; // re-publication — redirects to the original
     for (const lang of LANGS) {
       entries.push({
         lang,

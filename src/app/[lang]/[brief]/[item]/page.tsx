@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { EDITOR_NAME, EDITOR_PROFILE, isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
@@ -37,6 +37,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!isLang(lang)) return {};
   const detail = await getBriefItem(brief, item, lang);
   if (!detail) return {};
+  if (detail.canonicalPath) return {}; // page redirects to the original story
   const path = `/${lang}/${brief}/${item}`;
   return {
     title: detail.title,
@@ -69,6 +70,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
 
   const detail = await getBriefItem(brief, item, lang);
   if (!detail) notFound();
+  if (detail.canonicalPath) permanentRedirect(`/${lang}${detail.canonicalPath}`);
   const t = getStrings(lang);
   const tNews = getStrings(lang).news;
   const pagePath = `/${lang}/${brief}/${item}`;
