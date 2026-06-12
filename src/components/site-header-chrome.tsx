@@ -171,57 +171,79 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             <ThemeToggle label={t.themeToggle} />
             <Link
               href={`/${lang}/subscribe`}
-              className="rounded-pill bg-accent text-on-accent hidden px-3 py-1.5 text-xs font-semibold no-underline sm:inline-flex"
+              className={`rounded-pill bg-accent text-on-accent px-3 py-1.5 text-xs font-semibold no-underline ${menuOpen ? 'hidden' : 'hidden sm:inline-flex'}`}
+              aria-hidden={menuOpen}
             >
               {t.subscribe}
             </Link>
             <button
+              ref={menuTriggerRef}
               type="button"
               aria-label={menuOpen ? t.closeMenu : t.menu}
               aria-expanded={menuOpen}
+              aria-controls={mobileMenuId}
               onClick={() => setMenuOpen((o) => !o)}
-              className="text-text inline-flex h-10 w-10 items-center justify-center border-0 bg-transparent"
+              className="text-text inline-flex h-11 w-11 items-center justify-center border-0 bg-transparent"
             >
               {menuOpen ? <CloseIcon /> : <MenuIcon />}
             </button>
           </div>
         </div>
 
-        {menuOpen ? (
-          <nav aria-label="Mobile" className="border-border border-t py-3 lg:hidden">
-            <div className="mb-3 md:hidden">
+        <OverlayDrawer
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          labelledBy={mobileMenuTitleId}
+          triggerRef={menuTriggerRef}
+          initialFocusRef={menuCloseRef}
+          placement="fullscreen"
+          panelTestId="mobile-menu-panel"
+          backdropTestId="mobile-menu-backdrop"
+          overlayClassName="bg-bg lg:hidden"
+          panelClassName="min-h-dvh bg-bg px-6 pb-8 pt-4"
+        >
+          <nav id={mobileMenuId} aria-label="Mobile" className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-[720px] flex-col">
+            <div className="border-border flex min-h-14 items-center justify-between border-b pb-3">
+              <h2 id={mobileMenuTitleId} className="font-serif text-xl font-semibold text-text">
+                {t.menu}
+              </h2>
+              <button
+                ref={menuCloseRef}
+                type="button"
+                aria-label={t.closeMenu}
+                onClick={() => setMenuOpen(false)}
+                className="text-text hover:bg-surface inline-flex h-11 w-11 items-center justify-center rounded-full border-0 bg-transparent transition-colors duration-200"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+
+            <div className="my-4 md:hidden">
               <HeaderSearchField
                 lang={lang}
                 placeholder={t.landing.searchPlaceholder}
                 variant="mobile"
               />
             </div>
+
             <div className="grid gap-1">
-              <MobileNavLink
-                href={`/${lang}`}
-                label={t.navHome}
-                onNavigate={() => setMenuOpen(false)}
-              />
-              <MobileNavLink
-                href={`/${lang}/news`}
-                label={t.nav.news}
-                onNavigate={() => setMenuOpen(false)}
-              />
-              <MobileNavLink
-                href={`/${lang}/about`}
-                label={t.navAbout}
-                onNavigate={() => setMenuOpen(false)}
-              />
+              <MobileNavLink href={`/${lang}`} label={t.navHome} onNavigate={() => setMenuOpen(false)} />
+              <MobileNavLink href={`/${lang}/news`} label={t.nav.news} onNavigate={() => setMenuOpen(false)} />
+              <MobileNavLink href={`/${lang}/about`} label={t.navAbout} onNavigate={() => setMenuOpen(false)} />
             </div>
-            <details className="border-border mt-3 border-t pt-3">
-              <summary className="text-text py-2 text-base font-medium">{t.navCategories}</summary>
-              <ul className="mt-2 grid gap-1">
+
+            <details className="border-border mt-4 border-t pt-4">
+              <summary className="text-text flex min-h-11 cursor-pointer list-none items-center justify-between rounded-md py-2 text-base font-medium marker:hidden">
+                {t.navCategories}
+                <ArrowRight size={16} className="opacity-60" />
+              </summary>
+              <ul className="mt-2 grid gap-1 sm:grid-cols-2">
                 {categories.map((c) => (
                   <li key={c.slug}>
                     <Link
                       href={`/${lang}/category/${c.slug}`}
                       onClick={() => setMenuOpen(false)}
-                      className="text-text hover:bg-surface flex items-center gap-2 rounded-md px-2 py-2 text-sm no-underline transition-colors duration-200"
+                      className="text-text hover:bg-surface flex min-h-11 items-center gap-2 rounded-md px-2 py-2 text-sm no-underline transition-colors duration-200"
                     >
                       <span
                         className="cat-fg inline-flex shrink-0"
@@ -235,11 +257,12 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
                 ))}
               </ul>
             </details>
-            <div className="border-border mt-3 flex items-center justify-between border-t pt-3">
+
+            <div className="border-border mt-auto flex items-center justify-between gap-3 border-t pt-4">
               <Link
                 href={langToggleHref}
                 aria-label={t.langSwitch}
-                className="text-accent font-semibold no-underline"
+                className="text-accent inline-flex min-h-11 items-center font-semibold no-underline"
                 onClick={() => {
                   trackLangSwitch();
                   setMenuOpen(false);
@@ -249,7 +272,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
               </Link>
               <Link
                 href={`/${lang}/subscribe`}
-                className="rounded-pill bg-accent text-on-accent inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold no-underline"
+                className="rounded-pill bg-accent text-on-accent inline-flex min-h-11 items-center gap-1 px-5 py-2 text-sm font-semibold no-underline"
                 onClick={() => setMenuOpen(false)}
               >
                 {t.subscribe}
@@ -257,7 +280,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
               </Link>
             </div>
           </nav>
-        ) : null}
+        </OverlayDrawer>
       </div>
     </header>
   );
