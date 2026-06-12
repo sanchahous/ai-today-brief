@@ -44,6 +44,16 @@ export function isColdSingleton(entry: RankedEntry): boolean {
   );
 }
 
+/**
+ * Exact cross-day guard: drop candidates whose URL already backs a recent
+ * brief item. Refs are re-numbered so the editor sees contiguous 1..N.
+ */
+export function dropKnownUrls(pool: PoolItem[], knownUrls: ReadonlySet<string>): PoolItem[] {
+  return pool
+    .filter((item) => !knownUrls.has(item.url))
+    .map((item, i) => ({ ...item, ref: i + 1 }));
+}
+
 export function selectPool(ranked: RankedEntry[], opts: PoolOptions): PoolItem[] {
   const topicCounts: Record<string, number> = {};
   const pooled: RankedEntry[] = [];

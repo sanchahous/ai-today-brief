@@ -4,6 +4,7 @@ import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import { CookieConsent } from '@/components/cookie-consent';
 import { AnalyticsProvider } from '@/components/analytics-provider';
+import { ReaderRevenue } from '@/components/reader-revenue';
 import { getStrings } from '@/lib/i18n';
 import { LANGS, isLang, SITE_NAME, SITE_TAGLINE, SITE_URL, type Lang } from '@/lib/site';
 
@@ -54,6 +55,7 @@ export default async function LangLayout({
       </main>
       <SiteFooter lang={lang} />
       <AnalyticsProvider lang={lang} />
+      <ReaderRevenue lang={lang} />
       <CookieConsent lang={lang} />
     </>
   );

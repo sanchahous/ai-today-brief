@@ -68,6 +68,7 @@ export type Database = {
           body_md_en: string | null;
           body_md_uk: string | null;
           brief_id: string;
+          canonical_item_id: string | null;
           category_slug: string | null;
           citations: Json | null;
           code_snippet: Json | null;
@@ -115,6 +116,7 @@ export type Database = {
           body_md_en?: string | null;
           body_md_uk?: string | null;
           brief_id: string;
+          canonical_item_id?: string | null;
           category_slug?: string | null;
           citations?: Json | null;
           code_snippet?: Json | null;
@@ -162,6 +164,7 @@ export type Database = {
           body_md_en?: string | null;
           body_md_uk?: string | null;
           brief_id?: string;
+          canonical_item_id?: string | null;
           category_slug?: string | null;
           citations?: Json | null;
           code_snippet?: Json | null;
@@ -208,6 +211,13 @@ export type Database = {
             columns: ['article_id'];
             isOneToOne: false;
             referencedRelation: 'articles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'brief_items_canonical_item_id_fkey';
+            columns: ['canonical_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'brief_items';
             referencedColumns: ['id'];
           },
           {

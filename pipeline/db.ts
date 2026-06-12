@@ -462,6 +462,37 @@ export async function todaysItemTitles(db: PipelineDb, date: string): Promise<st
     .filter((t): t is string => typeof t === 'string' && t.length > 0);
 }
 
+/**
+ * URLs of articles already used by any brief item of the last `days` days
+ * (any status — a drafted or rejected story must not be re-proposed either).
+ * Exact guard in front of semantic dedup: a hot story often stays in the
+ * sources for a week, and the same URL must never be published twice.
+ */
+export async function recentItemUrls(db: PipelineDb, days: number): Promise<Set<string>> {
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const { data: briefs, error: bErr } = await db
+    .from('briefs')
+    .select('id')
+    .gte('date', since);
+  if (bErr) throw new Error(`[db] recentItemUrls briefs failed: ${bErr.message}`);
+  const ids = (briefs ?? []).map((b) => b.id);
+  if (ids.length === 0) return new Set();
+
+  const { data: items, error: iErr } = await db
+    .from('brief_items')
+    .select('articles(url, source_url)')
+    .in('brief_id', ids);
+  if (iErr) throw new Error(`[db] recentItemUrls items failed: ${iErr.message}`);
+
+  const urls = new Set<string>();
+  for (const r of items ?? []) {
+    const article = r.articles as { url: string | null; source_url: string | null } | null;
+    if (article?.url) urls.add(article.url);
+    if (article?.source_url) urls.add(article.source_url);
+  }
+  return urls;
+}
+
 /** Recent published item titles (English) — the editor's cross-day dedup context. */
 export async function recentPublishedTitles(db: PipelineDb, limit: number): Promise<string[]> {
   if (limit <= 0) return [];
