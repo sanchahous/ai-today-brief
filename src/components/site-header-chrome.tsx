@@ -101,6 +101,9 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
           <nav aria-label="Primary" className="ml-auto hidden shrink-0 flex-nowrap items-center gap-3 lg:flex xl:gap-5">
             {navLink(`/${lang}`, t.navHome, pathname === `/${lang}`)}
             {navLink(`/${lang}/news`, t.nav.news, isActive(`/${lang}/news`))}
+            {navLink(`/${lang}/concepts`, t.nav.concepts, isActive(`/${lang}/concepts`))}
+            {navLink(`/${lang}/guides`, t.guidesTitle, isActive(`/${lang}/guides`))}
+            {navLink(`/${lang}/tools`, t.nav.tools, isActive(`/${lang}/tools`))}
             <div ref={catsRef} className="relative" onMouseLeave={() => setCatsOpen(false)}>
               <button
                 type="button"
@@ -227,9 +230,36 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             </div>
 
             <div className="grid gap-1">
-              <MobileNavLink href={`/${lang}`} label={t.navHome} onNavigate={() => setMenuOpen(false)} />
-              <MobileNavLink href={`/${lang}/news`} label={t.nav.news} onNavigate={() => setMenuOpen(false)} />
-              <MobileNavLink href={`/${lang}/about`} label={t.navAbout} onNavigate={() => setMenuOpen(false)} />
+              <MobileNavLink
+                href={`/${lang}`}
+                label={t.navHome}
+                onNavigate={() => setMenuOpen(false)}
+              />
+              <MobileNavLink
+                href={`/${lang}/news`}
+                label={t.nav.news}
+                onNavigate={() => setMenuOpen(false)}
+              />
+              <MobileNavLink
+                href={`/${lang}/concepts`}
+                label={t.nav.concepts}
+                onNavigate={() => setMenuOpen(false)}
+              />
+              <MobileNavLink
+                href={`/${lang}/guides`}
+                label={t.guidesTitle}
+                onNavigate={() => setMenuOpen(false)}
+              />
+              <MobileNavLink
+                href={`/${lang}/tools`}
+                label={t.nav.tools}
+                onNavigate={() => setMenuOpen(false)}
+              />
+              <MobileNavLink
+                href={`/${lang}/about`}
+                label={t.navAbout}
+                onNavigate={() => setMenuOpen(false)}
+              />
             </div>
 
             <details className="border-border mt-4 border-t pt-4">

@@ -13,7 +13,7 @@ import { loadPipelineConfig } from './config';
 import { enrichPool, type EnrichedSource } from './enrich';
 import { collectArticles, toCandidate } from './fetch';
 import { rankCandidates } from './rank';
-import { isColdSingleton, selectPool } from './select';
+import { dropKnownUrls, isColdSingleton, selectPool } from './select';
 import { summarize, type DraftBrief } from './summarize';
 import { reviseFlaggedItems, verifyClaims } from './verify';
 import { publish } from './publish';
@@ -23,6 +23,7 @@ import {
   createServiceClient,
   logPipelineRun,
   matchRelevantItem,
+  recentItemUrls,
   recentPublishedTitles,
   storeItemEmbeddings,
   todaysItemTitles,
@@ -219,17 +220,59 @@ async function main(): Promise<void> {
     return;
   }
 
+  // ── Exact dedup ───────────────────────────────────────────────────────────────
+  // Drop candidates whose URL already backs a brief item of the last 30 days —
+  // a hot story can sit in the sources for a week and must never publish twice.
+  // Deterministic and free; runs before the (paid) embedding pass. Non-fatal:
+  // if the lookup fails, the semantic pass below still stands guard.
+  let urlFiltered = pool;
+  if (db) {
+    t = Date.now();
+    try {
+      const knownUrls = await recentItemUrls(db, 30);
+      urlFiltered = dropKnownUrls(pool, knownUrls);
+      const dropped = pool.length - urlFiltered.length;
+      for (const item of pool) {
+        if (knownUrls.has(item.url)) {
+          logEvent('info', 'dedup', 'Candidate dropped (URL already used)', {
+            title: item.title,
+            url: item.url,
+          });
+        }
+      }
+      await logStage(db, config.dryRun, {
+        date,
+        stage: 'dedup',
+        status: 'ok',
+        durationMs: Date.now() - t,
+        meta: {
+          ...runMeta,
+          exact_pool_in: pool.length,
+          exact_pool_out: urlFiltered.length,
+          exact_dropped: dropped,
+          known_urls: knownUrls.size,
+        },
+      });
+    } catch (e) {
+      logError('dedup', 'recentItemUrls failed (non-fatal — exact guard skipped)', e);
+    }
+    if (urlFiltered.length === 0) {
+      logEvent('info', 'dedup', 'All candidates already used — skipping');
+      return;
+    }
+  }
+
   // ── Semantic dedup ────────────────────────────────────────────────────────────
   // Embed each pool candidate's title and drop any that are within maxEmbedDistance
   // (cosine) of a previously published brief_item. This is the hard, deterministic
   // cross-day dedup that catches the same story re-worded differently.
   // Skipped in dry-run (no db) and when the embedding store is still empty.
   let embed: EmbedFn | null = null;
-  let dedupedPool = pool;
+  let dedupedPool = urlFiltered;
   if (db) {
     t = Date.now();
     embed = createEmbedder(config.geminiApiKey);
-    const embedBatch = pool.slice(0, config.embedLimit);
+    const embedBatch = urlFiltered.slice(0, config.embedLimit);
     const vectors = await embed(embedBatch.map((c) => c.title));
     const kept = [];
     let dropped = 0;
@@ -251,7 +294,7 @@ async function main(): Promise<void> {
       kept.push(embedBatch[i]!);
     }
     // Items beyond embedLimit (below the score cap) pass through unchanged.
-    for (let i = embedBatch.length; i < pool.length; i++) kept.push(pool[i]!);
+    for (let i = embedBatch.length; i < urlFiltered.length; i++) kept.push(urlFiltered[i]!);
     // Re-number refs so the LLM sees contiguous 1..N.
     dedupedPool = kept.map((item, idx) => ({ ...item, ref: idx + 1 }));
     await logStage(db, config.dryRun, {
@@ -261,14 +304,14 @@ async function main(): Promise<void> {
       durationMs: Date.now() - t,
       meta: {
         ...runMeta,
-        pool_in: pool.length,
+        pool_in: urlFiltered.length,
         pool_out: dedupedPool.length,
         dropped,
         embedded: embedBatch.length,
       },
     });
     logEvent('info', 'dedup', 'Semantic dedup complete', {
-      pool_in: pool.length,
+      pool_in: urlFiltered.length,
       pool_out: dedupedPool.length,
       dropped,
       max_distance: config.maxEmbedDistance,
