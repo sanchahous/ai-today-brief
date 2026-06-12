@@ -15,6 +15,8 @@ const LOGIC_INCLUDE = [
   'src/lib/preferred-lang.ts',
   'src/lib/telegram-custom.ts',
   'src/lib/facts-visual.ts',
+  'src/lib/prompt-lint.ts',
+  'src/lib/prompt-lint-rules.ts',
   'pipeline/**/*.ts',
 ];
 
