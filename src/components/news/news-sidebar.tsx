@@ -149,7 +149,7 @@ function SidebarControls({
                 aria-pressed={active}
                 className={`rounded-lg border px-2 py-2 text-[0.8rem] transition ${
                   active
-                    ? 'border-accent bg-accent font-semibold text-on-accent'
+                    ? 'border-accent bg-accent text-on-accent font-semibold'
                     : 'border-border text-text hover:border-accent'
                 }`}
               >
@@ -221,7 +221,7 @@ export function NewsSidebar({
     <>
       <aside
         data-testid="news-sidebar"
-        className="sidebar-scroll desktop-only sticky top-[var(--header-h)] max-h-[calc(100dvh-var(--header-h)-1rem)] self-start overflow-y-auto overscroll-y-contain pr-1"
+        className="sidebar-scroll sidebar-viewport-height desktop-only sticky top-[var(--header-h)] self-start overflow-y-auto overscroll-y-contain pr-1"
         aria-label={t.filters}
       >
         <SidebarControls {...controls} />
@@ -255,7 +255,7 @@ export function NewsSidebar({
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
-              className="rounded-pill bg-accent mt-2 flex w-full items-center justify-center px-4 py-2.5 text-sm font-semibold text-on-accent"
+              className="rounded-pill bg-accent text-on-accent mt-2 flex w-full items-center justify-center px-4 py-2.5 text-sm font-semibold"
             >
               {t.applyFilters}
             </button>

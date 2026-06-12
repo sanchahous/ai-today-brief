@@ -19,13 +19,7 @@ export type NavCategory = {
   icon: IconKey;
 };
 
-export function SiteHeaderChrome({
-  lang,
-  categories,
-}: {
-  lang: Lang;
-  categories: NavCategory[];
-}) {
+export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories: NavCategory[] }) {
   const t = getStrings(lang);
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -71,9 +65,9 @@ export function SiteHeaderChrome({
   }
 
   return (
-    <header className="border-border-soft sticky top-0 z-50 border-b bg-[color-mix(in_srgb,var(--bg)_88%,transparent)] backdrop-blur-[10px]">
+    <header className="site-header-shell border-border-soft sticky top-0 z-50 border-b">
       <div className="mx-auto max-w-[1160px] px-6">
-        <div className="flex h-[60px] items-center gap-3">
+        <div className="flex h-[var(--header-h)] items-center gap-3">
           <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2 no-underline">
             <span
               aria-hidden
@@ -82,7 +76,9 @@ export function SiteHeaderChrome({
             >
               AT
             </span>
-            <span className="font-serif text-lg font-semibold text-[color:inherit]">{SITE_NAME}</span>
+            <span className="font-serif text-lg font-semibold text-[color:inherit]">
+              {SITE_NAME}
+            </span>
           </Link>
 
           <div className="mx-2 hidden min-w-0 flex-1 md:flex">
@@ -147,7 +143,7 @@ export function SiteHeaderChrome({
             <span aria-hidden className="bg-border h-[18px] w-px" />
             <Link
               href={`/${lang}/subscribe`}
-              className="rounded-pill bg-accent px-3.5 py-1.5 text-[0.85rem] font-semibold text-on-accent no-underline transition-opacity duration-200 hover:opacity-90"
+              className="rounded-pill bg-accent text-on-accent px-3.5 py-1.5 text-[0.85rem] font-semibold no-underline transition-opacity duration-200 hover:opacity-90"
             >
               {t.subscribe}
             </Link>
@@ -166,7 +162,7 @@ export function SiteHeaderChrome({
             <ThemeToggle label={t.themeToggle} />
             <Link
               href={`/${lang}/subscribe`}
-              className="rounded-pill bg-accent hidden px-3 py-1.5 text-xs font-semibold text-on-accent no-underline sm:inline-flex"
+              className="rounded-pill bg-accent text-on-accent hidden px-3 py-1.5 text-xs font-semibold no-underline sm:inline-flex"
             >
               {t.subscribe}
             </Link>
@@ -192,7 +188,11 @@ export function SiteHeaderChrome({
               />
             </div>
             <div className="grid gap-1">
-              <MobileNavLink href={`/${lang}`} label={t.navHome} onNavigate={() => setMenuOpen(false)} />
+              <MobileNavLink
+                href={`/${lang}`}
+                label={t.navHome}
+                onNavigate={() => setMenuOpen(false)}
+              />
               <MobileNavLink
                 href={`/${lang}/news`}
                 label={t.nav.news}
@@ -226,7 +226,7 @@ export function SiteHeaderChrome({
                 ))}
               </ul>
             </details>
-            <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
+            <div className="border-border mt-3 flex items-center justify-between border-t pt-3">
               <Link
                 href={langToggleHref}
                 aria-label={t.langSwitch}
@@ -240,7 +240,7 @@ export function SiteHeaderChrome({
               </Link>
               <Link
                 href={`/${lang}/subscribe`}
-                className="rounded-pill bg-accent inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold text-on-accent no-underline"
+                className="rounded-pill bg-accent text-on-accent inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold no-underline"
                 onClick={() => setMenuOpen(false)}
               >
                 {t.subscribe}
@@ -267,7 +267,7 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onNavigate}
-      className="text-text border-border block border-b py-3 text-base font-medium no-underline transition-colors duration-200 hover:text-accent"
+      className="text-text border-border hover:text-accent block border-b py-3 text-base font-medium no-underline transition-colors duration-200"
     >
       {label}
     </Link>
