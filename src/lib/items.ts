@@ -452,7 +452,11 @@ export async function getPublishedItemSitemapEntries(): Promise<ItemSitemapEntry
   return entries;
 }
 
-/** All published (lang, brief, item) slug paths — for build-time SSG. Empty without env. */
+/**
+ * All published (lang, brief, item) slug paths — for build-time SSG. Empty
+ * without env. Canonicalized re-publications are excluded: next.config
+ * already 308s them at the edge, so prerendering them would be wasted work.
+ */
 export async function getPublishedItemPaths(): Promise<
   { lang: string; brief: string; item: string }[]
 > {

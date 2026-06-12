@@ -1,5 +1,76 @@
 import type { NextConfig } from 'next';
 
+/**
+ * One-time repair of pre-dedup history (mirrors `brief_items.canonical_item_id`
+ * as of 2026-06-12): stories republished before the cross-day dedup went live
+ * redirect to their earliest copy. Real HTTP 308 at the edge — the page-level
+ * `permanentRedirect` fallback streams through the `[lang]` loading boundary
+ * and can only emit a meta refresh with status 200. The set is closed: the
+ * pipeline's exact-URL guard + semantic dedup prevent new duplicates.
+ */
+const CANONICAL_ITEM_REDIRECTS: ReadonlyArray<{ src: string; dst: string }> = [
+  {
+    src: '/anthropic-s-opus-4-8-and-dynamic-workflows-reshape-agentic-coding/codegraph-slash-tool-calls-for-agents',
+    dst: '/deepseek-cuts-costs-fiftyfold-while-codegraph-and-agentmemory-optimize/codegraph-slashes-agent-tool-calls',
+  },
+  {
+    src: '/anthropic-s-opus-4-8-and-dynamic-workflows-reshape-agentic-coding/terminal-coding-agent-ide-intelligence',
+    dst: '/deepseek-cuts-costs-fiftyfold-while-codegraph-and-agentmemory-optimize/oh-my-pi-terminal-ai-agent',
+  },
+  {
+    src: '/codegraph-cuts-agent-tool-calls-by-94-and-anthropic-sandboxes-claude-c/codegraph-slashes-agent-tool-calls',
+    dst: '/deepseek-cuts-costs-fiftyfold-while-codegraph-and-agentmemory-optimize/codegraph-slashes-agent-tool-calls',
+  },
+  {
+    src: '/codegraph-cuts-agent-tool-calls-by-94-and-anthropic-sandboxes-claude-c/stop-slop-remove-ai-phrases',
+    dst: '/cursor-plugins-portable-agent-harnesses-and-securing-ai-coding-workflo/stop-slop-prompt-skills',
+  },
+  {
+    src: '/codegraph-cuts-tool-calls-by-ninety-four-percent-plus-stanford-claude-/anthropic-cybersecurity-agent-skills',
+    dst: '/anthropic-s-opus-4-8-and-dynamic-workflows-reshape-agentic-coding/anthropic-cybersecurity-skills-for-ai-agents',
+  },
+  {
+    src: '/codegraph-cuts-tool-calls-by-ninety-four-percent-plus-stanford-claude-/codegraph-cuts-agent-tool-calls',
+    dst: '/deepseek-cuts-costs-fiftyfold-while-codegraph-and-agentmemory-optimize/codegraph-slashes-agent-tool-calls',
+  },
+  {
+    src: '/cursor-plugins-and-codegraph-lead-today-s-developer-ai-breakthroughs/anthropic-cybersecurity-agent-skills',
+    dst: '/anthropic-s-opus-4-8-and-dynamic-workflows-reshape-agentic-coding/anthropic-cybersecurity-skills-for-ai-agents',
+  },
+  {
+    src: '/cursor-plugins-and-codegraph-lead-today-s-developer-ai-breakthroughs/codegraph-agent-tool-call-reduction',
+    dst: '/deepseek-cuts-costs-fiftyfold-while-codegraph-and-agentmemory-optimize/codegraph-slashes-agent-tool-calls',
+  },
+  {
+    src: '/cursor-plugins-and-codegraph-lead-today-s-developer-ai-breakthroughs/cursor-official-plugins-extension-ecosystem',
+    dst: '/cursor-plugins-portable-agent-harnesses-and-securing-ai-coding-workflo/cursor-plugins-official-extensions',
+  },
+  {
+    src: '/cursor-plugins-and-codegraph-optimize-claude-code-token-usage/anthropic-cybersecurity-skills-for-agents',
+    dst: '/anthropic-s-opus-4-8-and-dynamic-workflows-reshape-agentic-coding/anthropic-cybersecurity-skills-for-ai-agents',
+  },
+  {
+    src: '/cursor-plugins-and-codegraph-optimize-claude-code-token-usage/codegraph-slashes-agent-tool-calls',
+    dst: '/deepseek-cuts-costs-fiftyfold-while-codegraph-and-agentmemory-optimize/codegraph-slashes-agent-tool-calls',
+  },
+  {
+    src: '/cursor-plugins-and-codegraph-optimize-claude-code-token-usage/cursor-plugins-official-ide-extensions',
+    dst: '/cursor-plugins-portable-agent-harnesses-and-securing-ai-coding-workflo/cursor-plugins-official-extensions',
+  },
+  {
+    src: '/optimizing-agentic-workflows-reducing-tool-costs-and-controlling-deskt/anthropic-cybersecurity-agent-skills',
+    dst: '/anthropic-s-opus-4-8-and-dynamic-workflows-reshape-agentic-coding/anthropic-cybersecurity-skills-for-ai-agents',
+  },
+  {
+    src: '/optimizing-agentic-workflows-reducing-tool-costs-and-controlling-deskt/codegraph-slashes-agent-tool-calls',
+    dst: '/deepseek-cuts-costs-fiftyfold-while-codegraph-and-agentmemory-optimize/codegraph-slashes-agent-tool-calls',
+  },
+  {
+    src: '/optimizing-agentic-workflows-reducing-tool-costs-and-controlling-deskt/oh-my-pi-terminal-agent',
+    dst: '/deepseek-cuts-costs-fiftyfold-while-codegraph-and-agentmemory-optimize/oh-my-pi-terminal-ai-agent',
+  },
+];
+
 const nextConfig: NextConfig = {
   images: {
     // Hero images are the source articles' og:image — arbitrary publisher
@@ -18,6 +89,11 @@ const nextConfig: NextConfig = {
           '/:lang/ai-agents-systems-and-apple-intelligence/openai-codex-now-supports-in-browser-ios-app-development-and-testing',
         permanent: true,
       },
+      ...CANONICAL_ITEM_REDIRECTS.map(({ src, dst }) => ({
+        source: `/:lang(en|uk)${src}`,
+        destination: `/:lang${dst}`,
+        permanent: true,
+      })),
     ];
   },
 };
