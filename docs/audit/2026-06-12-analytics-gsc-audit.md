@@ -109,6 +109,16 @@
 
 ---
 
+## 6.1. Доповнення (вечір 12.06): змішаний потік GA4
+
+Перевірка Admin → Потоки даних показала: property `540281034` має **один** web-потік — «Sasha Kuzmenko» (`sashakuzmenko.com`, `G-5R89X6Q5D4`), і aitodaybrief.com вшито цей самий measurement ID. Тобто **дані продукту й портфоліо змішані** (топ-сторінки за 7 днів — сторінки портфоліо). Усі цифри GA4 у розділі 2 читати з цією поправкою.
+
+Інші уточнення після верифікації коду:
+- Інструментація на сайті **повна** (14+ подій: `newsletter_subscribe` після успішного POST, scroll depth, search, share, `sponsor_inquiry_click`…). «0 конверсій» — лише тому, що події не позначені key events і підписок ще не було.
+- `purchase` уже є незнімною ключовою подією. Тестовий `newsletter_subscribe` (param `placement=ga-setup-test`) відправлено, щоб подія зʼявилась у хабі подій — після появи поставити зірочку.
+
+**Рекомендація:** створити окрему GA4 property «AI Today Brief» + web-потік для aitodaybrief.com, замінити `NEXT_PUBLIC_GA_MEASUREMENT_ID` у Vercel, позначити key events (`newsletter_subscribe`, `sponsor_inquiry_click`) у новій property. Зробити це зараз, поки історії майже немає.
+
 ## 7. Що зробити цього тижня
 - [ ] URL Inspection → request indexing для концепт-хабів (Anthropic API, Claude Code, MCP, context engineering).
 - [ ] Виправити 404 і 3 редиректи.
