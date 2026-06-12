@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { selectPool } from './select';
+import { dropKnownUrls, selectPool } from './select';
 import type { RankedEntry } from './rank';
 import type { CategorySlug } from './topics';
 
@@ -67,6 +67,21 @@ describe('selectPool', () => {
     expect(pool).toHaveLength(5);
     expect(pool.map((p) => p.ref)).toEqual([1, 2, 3, 4, 5]);
     expect(pool[0]!.category).toBe('tools-and-releases');
+  });
+
+  it('drops candidates whose URL was already used and re-numbers refs', () => {
+    const pool = selectPool(
+      [entry(0.9, 'claude', 'a'), entry(0.8, 'cursor', 'b'), entry(0.7, 'gemini', 'c')],
+      opts,
+    );
+    const filtered = dropKnownUrls(pool, new Set(['b']));
+    expect(filtered.map((p) => p.url)).toEqual(['a', 'c']);
+    expect(filtered.map((p) => p.ref)).toEqual([1, 2]);
+  });
+
+  it('keeps the pool untouched when no URL is known', () => {
+    const pool = selectPool([entry(0.9, 'claude', 'a'), entry(0.8, 'cursor', 'b')], opts);
+    expect(dropKnownUrls(pool, new Set())).toEqual(pool);
   });
 
   it('caps cold singletons but lets engaged and first-party entries through', () => {
