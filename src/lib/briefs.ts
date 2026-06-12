@@ -251,3 +251,27 @@ export async function getBriefPaths(): Promise<{ lang: string; brief: string }[]
   }
   return paths;
 }
+
+export interface BriefSitemapEntry {
+  slug: string;
+  /** Publish timestamp of the lead pack (falls back to the brief date). */
+  lastModified: string;
+}
+
+/** Lead-pack slugs + publish dates — sitemap entries for daily brief pages. */
+export async function getBriefSitemapEntries(): Promise<BriefSitemapEntry[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from('briefs')
+    .select('slug, date, published_at')
+    .eq('status', 'published')
+    .eq('edition', 1);
+  if (!data) return [];
+  const entries: BriefSitemapEntry[] = [];
+  for (const b of data) {
+    if (!b.slug) continue;
+    entries.push({ slug: b.slug, lastModified: b.published_at ?? b.date });
+  }
+  return entries;
+}

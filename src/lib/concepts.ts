@@ -228,3 +228,25 @@ export async function getConceptPaths(): Promise<{ lang: string; slug: string }[
   for (const c of data) for (const lang of LANGS) paths.push({ lang, slug: c.slug });
   return paths;
 }
+
+export interface ConceptSitemapEntry {
+  lang: string;
+  slug: string;
+  /** Last verification date when the concept has been verified. */
+  lastModified?: string;
+}
+
+/** Concept slugs + verification dates — sitemap entries with lastmod when available. */
+export async function getConceptSitemapEntries(): Promise<ConceptSitemapEntry[]> {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data } = await supabase.from('concepts').select('slug, verified_at');
+  if (!data) return [];
+  const entries: ConceptSitemapEntry[] = [];
+  for (const c of data) {
+    for (const lang of LANGS) {
+      entries.push({ lang, slug: c.slug, ...(c.verified_at ? { lastModified: c.verified_at } : {}) });
+    }
+  }
+  return entries;
+}

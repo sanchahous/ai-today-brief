@@ -385,20 +385,26 @@ export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry
   return entries;
 }
 
-/** All published (lang, brief, item) slug paths — for build-time SSG. Empty without env. */
-export async function getPublishedItemPaths(): Promise<
-  { lang: string; brief: string; item: string }[]
-> {
+export interface ItemSitemapEntry {
+  lang: string;
+  brief: string;
+  item: string;
+  /** Publish timestamp of the parent brief (falls back to the brief date). */
+  lastModified: string;
+}
+
+/** Published item paths + parent-brief publish dates — sitemap entries with lastmod. */
+export async function getPublishedItemSitemapEntries(): Promise<ItemSitemapEntry[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
 
   const { data: briefs } = await supabase
     .from('briefs')
-    .select('id, slug')
+    .select('id, slug, date, published_at')
     .eq('status', 'published');
   if (!briefs || briefs.length === 0) return [];
 
-  const slugById = new Map(briefs.map((b) => [b.id, b.slug]));
+  const briefById = new Map(briefs.map((b) => [b.id, b]));
   const { data: items } = await supabase
     .from('brief_items')
     .select('slug, brief_id')
@@ -407,11 +413,26 @@ export async function getPublishedItemPaths(): Promise<
       briefs.map((b) => b.id),
     );
 
-  const paths: { lang: string; brief: string; item: string }[] = [];
+  const entries: ItemSitemapEntry[] = [];
   for (const it of items ?? []) {
-    const briefSlug = slugById.get(it.brief_id);
-    if (!briefSlug || !it.slug) continue;
-    for (const lang of LANGS) paths.push({ lang, brief: briefSlug, item: it.slug });
+    const brief = briefById.get(it.brief_id);
+    if (!brief?.slug || !it.slug) continue;
+    for (const lang of LANGS) {
+      entries.push({
+        lang,
+        brief: brief.slug,
+        item: it.slug,
+        lastModified: brief.published_at ?? brief.date,
+      });
+    }
   }
-  return paths;
+  return entries;
+}
+
+/** All published (lang, brief, item) slug paths — for build-time SSG. Empty without env. */
+export async function getPublishedItemPaths(): Promise<
+  { lang: string; brief: string; item: string }[]
+> {
+  const entries = await getPublishedItemSitemapEntries();
+  return entries.map(({ lang, brief, item }) => ({ lang, brief, item }));
 }
