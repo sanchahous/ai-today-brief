@@ -9,6 +9,7 @@ import { getStrings } from '@/lib/i18n';
 import { trackEvent } from '@/lib/analytics-client';
 import { HeaderSearchField } from '@/components/header-search-field';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { OverlayDrawer } from '@/components/ui/overlay-drawer';
 import { CategoryGlyph, CloseIcon, MenuIcon, ArrowRight } from '@/components/icons';
 import type { IconKey } from '@/components/icons';
 
@@ -25,6 +26,10 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
   const [menuOpen, setMenuOpen] = useState(false);
   const [catsOpen, setCatsOpen] = useState(false);
   const catsRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuCloseRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuId = 'site-mobile-menu';
+  const mobileMenuTitleId = 'site-mobile-menu-title';
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
@@ -44,14 +49,18 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
     };
   }, [catsOpen]);
 
-  const navLink = (href: string, label: string, active?: boolean) => (
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+
+  const navLink = (href: string, label: string, active?: boolean, extraClass = '') => (
     <Link
       href={href}
       className={`border-b-2 pb-0.5 text-[0.9rem] font-medium transition-colors duration-200 ${
         active
           ? 'text-text border-accent font-semibold'
           : 'text-muted hover:text-text border-transparent'
-      }`}
+      } ${extraClass}`}
     >
       {label}
     </Link>
@@ -65,9 +74,9 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
   }
 
   return (
-    <header className="border-border-soft sticky top-0 z-50 border-b bg-[color-mix(in_srgb,var(--bg)_88%,transparent)] backdrop-blur-[10px]">
+    <header className="site-header-shell border-border-soft sticky top-0 z-50 border-b">
       <div className="mx-auto max-w-[1160px] px-6">
-        <div className="flex h-[60px] items-center gap-3">
+        <div className="flex h-[calc(var(--header-h)-1px)] items-center gap-2 lg:gap-3">
           <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2 no-underline">
             <span
               aria-hidden
@@ -81,16 +90,18 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             </span>
           </Link>
 
-          <div className="mx-2 hidden min-w-0 flex-1 md:flex">
+          <div className="mx-1 hidden min-w-0 flex-1 md:flex lg:mx-2">
             <HeaderSearchField
               lang={lang}
               placeholder={t.landing.searchPlaceholder}
-              className="max-w-md md:max-w-lg lg:max-w-xl"
+              className="max-w-[clamp(10rem,24vw,26rem)] lg:max-w-[clamp(10rem,22vw,32rem)] xl:max-w-xl"
             />
           </div>
 
-          <nav aria-label="Primary" className="ml-auto hidden items-center gap-4 lg:flex">
-            {navLink(`/${lang}`, t.navHome, pathname === `/${lang}`)}
+          <nav aria-label="Primary" className="ml-auto hidden shrink-0 flex-nowrap items-center gap-2 lg:flex xl:gap-5">
+            {/* Home and About yield space to search in the 1024-1279 band: the logo links
+                home, and About stays reachable via footer + mobile menu. */}
+            {navLink(`/${lang}`, t.navHome, pathname === `/${lang}`, 'hidden xl:inline-block')}
             {navLink(`/${lang}/news`, t.nav.news, isActive(`/${lang}/news`))}
             {navLink(`/${lang}/concepts`, t.nav.concepts, isActive(`/${lang}/concepts`))}
             {navLink(`/${lang}/guides`, t.guidesTitle, isActive(`/${lang}/guides`))}
@@ -142,7 +153,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
                 </div>
               ) : null}
             </div>
-            {navLink(`/${lang}/about`, t.navAbout, isActive(`/${lang}/about`))}
+            {navLink(`/${lang}/about`, t.navAbout, isActive(`/${lang}/about`), 'hidden xl:inline-block')}
             <span aria-hidden className="bg-border h-[18px] w-px" />
             <Link
               href={`/${lang}/subscribe`}
@@ -165,31 +176,61 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             <ThemeToggle label={t.themeToggle} />
             <Link
               href={`/${lang}/subscribe`}
-              className="rounded-pill bg-accent text-on-accent hidden px-3 py-1.5 text-xs font-semibold no-underline sm:inline-flex"
+              className={`rounded-pill bg-accent text-on-accent px-3 py-1.5 text-xs font-semibold no-underline ${menuOpen ? 'hidden' : 'hidden sm:inline-flex'}`}
+              aria-hidden={menuOpen}
             >
               {t.subscribe}
             </Link>
             <button
+              ref={menuTriggerRef}
               type="button"
               aria-label={menuOpen ? t.closeMenu : t.menu}
               aria-expanded={menuOpen}
+              aria-controls={mobileMenuId}
               onClick={() => setMenuOpen((o) => !o)}
-              className="text-text inline-flex h-10 w-10 items-center justify-center border-0 bg-transparent"
+              className="text-text inline-flex h-11 w-11 items-center justify-center border-0 bg-transparent"
             >
               {menuOpen ? <CloseIcon /> : <MenuIcon />}
             </button>
           </div>
         </div>
 
-        {menuOpen ? (
-          <nav aria-label="Mobile" className="border-border border-t py-3 lg:hidden">
-            <div className="mb-3 md:hidden">
+        <OverlayDrawer
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          labelledBy={mobileMenuTitleId}
+          triggerRef={menuTriggerRef}
+          initialFocusRef={menuCloseRef}
+          placement="fullscreen"
+          panelTestId="mobile-menu-panel"
+          backdropTestId="mobile-menu-backdrop"
+          overlayClassName="bg-bg lg:hidden"
+          panelClassName="min-h-dvh bg-bg px-6 pb-8 pt-4"
+        >
+          <nav id={mobileMenuId} aria-label="Mobile" className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-[720px] flex-col">
+            <div className="border-border flex min-h-14 items-center justify-between border-b pb-3">
+              <h2 id={mobileMenuTitleId} className="font-serif text-xl font-semibold text-text">
+                {t.menu}
+              </h2>
+              <button
+                ref={menuCloseRef}
+                type="button"
+                aria-label={t.closeMenu}
+                onClick={() => setMenuOpen(false)}
+                className="text-text hover:bg-surface inline-flex h-11 w-11 items-center justify-center rounded-full border-0 bg-transparent transition-colors duration-200"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+
+            <div className="my-4 md:hidden">
               <HeaderSearchField
                 lang={lang}
                 placeholder={t.landing.searchPlaceholder}
                 variant="mobile"
               />
             </div>
+
             <div className="grid gap-1">
               <MobileNavLink
                 href={`/${lang}`}
@@ -222,15 +263,19 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
                 onNavigate={() => setMenuOpen(false)}
               />
             </div>
-            <details className="border-border mt-3 border-t pt-3">
-              <summary className="text-text py-2 text-base font-medium">{t.navCategories}</summary>
-              <ul className="mt-2 grid gap-1">
+
+            <details className="border-border mt-4 border-t pt-4">
+              <summary className="text-text flex min-h-11 cursor-pointer list-none items-center justify-between rounded-md py-2 text-base font-medium marker:hidden">
+                {t.navCategories}
+                <ArrowRight size={16} className="opacity-60" />
+              </summary>
+              <ul className="mt-2 grid gap-1 sm:grid-cols-2">
                 {categories.map((c) => (
                   <li key={c.slug}>
                     <Link
                       href={`/${lang}/category/${c.slug}`}
                       onClick={() => setMenuOpen(false)}
-                      className="text-text hover:bg-surface flex items-center gap-2 rounded-md px-2 py-2 text-sm no-underline transition-colors duration-200"
+                      className="text-text hover:bg-surface flex min-h-11 items-center gap-2 rounded-md px-2 py-2 text-sm no-underline transition-colors duration-200"
                     >
                       <span
                         className="cat-fg inline-flex shrink-0"
@@ -244,11 +289,12 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
                 ))}
               </ul>
             </details>
-            <div className="border-border mt-3 flex items-center justify-between border-t pt-3">
+
+            <div className="border-border mt-auto flex items-center justify-between gap-3 border-t pt-4">
               <Link
                 href={langToggleHref}
                 aria-label={t.langSwitch}
-                className="text-accent font-semibold no-underline"
+                className="text-accent inline-flex min-h-11 items-center font-semibold no-underline"
                 onClick={() => {
                   trackLangSwitch();
                   setMenuOpen(false);
@@ -258,7 +304,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
               </Link>
               <Link
                 href={`/${lang}/subscribe`}
-                className="rounded-pill bg-accent text-on-accent inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold no-underline"
+                className="rounded-pill bg-accent text-on-accent inline-flex min-h-11 items-center gap-1 px-5 py-2 text-sm font-semibold no-underline"
                 onClick={() => setMenuOpen(false)}
               >
                 {t.subscribe}
@@ -266,7 +312,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
               </Link>
             </div>
           </nav>
-        ) : null}
+        </OverlayDrawer>
       </div>
     </header>
   );

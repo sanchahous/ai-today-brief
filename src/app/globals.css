@@ -34,7 +34,7 @@
 
 /* dark-first (brand default) */
 :root {
-  --header-h: 76px;
+  --header-h: 60px;
   --bg: #0f0f0f;
   --bg-soft: #141414;
   --surface: #1a1a1a;
@@ -67,6 +67,19 @@
 }
 
 @layer base {
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  @supports not (overflow-x: clip) {
+    html,
+    body {
+      overflow-x: hidden;
+    }
+  }
+
   body {
     background: var(--bg);
     color: var(--text);
@@ -118,6 +131,35 @@
   /* Smooth-scroll the hero's "Top of the week" jump link. */
   html {
     scroll-behavior: smooth;
+  }
+
+  :where(.prose, article, p, h1, h2, h3, h4, h5, h6, a, li, figcaption, blockquote) {
+    overflow-wrap: anywhere;
+  }
+
+  :where(code, pre) {
+    overflow-wrap: break-word;
+  }
+
+  :where(pre, .overflow-x-auto) {
+    overflow-wrap: normal;
+  }
+}
+
+.site-header-shell {
+  background: var(--bg);
+}
+
+@supports (background: color-mix(in srgb, black 50%, transparent)) {
+  .site-header-shell {
+    background: color-mix(in srgb, var(--bg) 96%, transparent);
+  }
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .site-header-shell {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
   }
 }
 
@@ -392,6 +434,26 @@
   background: transparent;
 }
 
+.sidebar-viewport-height {
+  max-height: calc(100vh - var(--header-h) - 1rem);
+}
+
+.overlay-panel-viewport {
+  height: 100vh;
+  max-height: 100vh;
+}
+
+@supports (height: 100dvh) {
+  .sidebar-viewport-height {
+    max-height: calc(100dvh - var(--header-h) - 1rem);
+  }
+
+  .overlay-panel-viewport {
+    height: 100dvh;
+    max-height: 100dvh;
+  }
+}
+
 .theme-light .card-hover:hover {
   border-color: color-mix(in srgb, var(--border) 70%, var(--accent));
 }
@@ -411,13 +473,15 @@
 .desktop-only {
   display: none;
 }
+
 @media (min-width: 640px) {
   .post-grid {
     grid-template-columns: 92px minmax(0, 1fr);
     align-items: start;
   }
 }
-@media (min-width: 900px) {
+/* News archive layout flips at the same breakpoint as header chrome: Tailwind lg (64rem / 1024px). */
+@variant lg {
   .news-layout {
     grid-template-columns: 264px minmax(0, 1fr);
     align-items: start;

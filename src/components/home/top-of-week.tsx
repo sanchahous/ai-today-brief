@@ -34,7 +34,7 @@ export function TopOfWeek({
     <section
       id="week"
       aria-labelledby="week-title"
-      className="mx-auto w-full max-w-[1160px] scroll-mt-20 px-6 py-12"
+      className="mx-auto w-full max-w-[1160px] scroll-mt-[var(--header-h)] px-6 py-12"
     >
       <Reveal>
         <div className="flex flex-wrap items-end justify-between gap-4">
@@ -92,7 +92,10 @@ function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
           />
         </div>
       )}
-      <div className="cat-band flex flex-wrap items-center gap-2 px-5 py-4" style={{ '--cat-color': color } as CSSProperties}>
+      <div
+        className="cat-band flex flex-wrap items-center gap-2 px-5 py-4"
+        style={{ '--cat-color': color } as CSSProperties}
+      >
         <span className="bg-accent text-on-accent rounded-pill px-2 py-0.5 text-[0.66rem] font-bold tracking-[0.08em] uppercase">
           {t.featured}
         </span>
