@@ -35,22 +35,32 @@
 
 ## 2. Стан GA4 (останні 28 днів)
 
+> **ВИПРАВЛЕНО (вечір 12.06):** перша версія цього розділу була знята з property
+> `540281034` — це аналітика **портфоліо sashakuzmenko.com** (двомовного, з тими ж
+> шляхами `/en` `/uk`, тому й сплутав). Правильна property aitodaybrief.com —
+> **«Ai brief today»** (`540206735`, акаунт `396774992`, під `hello@sashakuzmenko.com`),
+> потік «The daily AI news» (`G-5R89X6Q5D4`). Нижче — правильні цифри.
+
 | Метрика | Значення |
 |---|---|
-| Активні користувачі | **66** |
-| Перегляди | 81 |
-| Сесії | 67 |
-| Частка взаємодій | 25.4% |
-| Сер. час взаємодії | **~5 сек** |
+| Сесії | **79** |
+| Сесії із взаємодією | 33 |
+| Engagement rate | **41.8%** |
+| Сер. час взаємодії за сесію | **43 сек** |
+| Кількість подій | 981 |
 | Ключові події (конверсії) | **0** |
 | Дохід | 0 |
 
-**Мова:** `/en` 67% / `/uk` 33%.
-
 **Канали (джерело/тип):**
-- `(direct) / (none)` — **77.6%** (52 сесії) → переважно команда/прямі заходи/боти
-- `l.threads.com / referral` — **19.4%** (13 сесій) → єдиний робочий зовнішній канал = **Threads**
-- `google / organic` — **3%** (2 сесії, але 32 сек залученості — реальні читачі)
+- `(direct) / (none)` — **79.7%** (63 сесії) → команда/прямі заходи/застосунки без referrer
+- `l.threads.com / referral` — **10.1%** (8 сесій) → **Threads**
+- `m.facebook.com + facebook.com / referral` — **6.3%** (5 сесій) → **Facebook** (другий робочий канал)
+- `bing / organic` — 1 сесія; `desktop_see_all / (not set)` — 1 (зовнішній utm, не наш код)
+
+Інструментація на сайті багата і ЖИВА: click, cookie_consent, faq_open, filter_category,
+form_start, lang_switch, **newsletter_subscribe**, page_view, paginate, post_expand,
+save_toggle, scroll_depth, search, search_no_results, select_search_result… — усе тече
+в потік «The daily AI news».
 
 ---
 
@@ -109,15 +119,21 @@
 
 ---
 
-## 6.1. Доповнення (вечір 12.06): змішаний потік GA4
+## 6.1. Доповнення (вечір 12.06): архітектура GA4 розплутана й донастроєна
 
-Перевірка Admin → Потоки даних показала: property `540281034` має **один** web-потік — «Sasha Kuzmenko» (`sashakuzmenko.com`, `G-5R89X6Q5D4`), і aitodaybrief.com вшито цей самий measurement ID. Тобто **дані продукту й портфоліо змішані** (топ-сторінки за 7 днів — сторінки портфоліо). Усі цифри GA4 у розділі 2 читати з цією поправкою.
+Спершу здалося, що aitodaybrief шле дані в потік портфоліо, але фінальна перевірка
+показала: **G-5R89X6Q5D4 — це measurement ID потоку «The daily AI news»
+(aitodaybrief.com) у property «Ai brief today» (540206735) під hello@sashakuzmenko.com.**
+Архітектура коректна: прямий gtag (кастомні події, `send_page_view:false`) +
+GTM-5S6TXPG5 (page_view) — обидва в одну property. Плутанина виникла через те, що
+портфоліо-property (`540281034`, під sanchahous@gmail.com) має той самий вигляд
+шляхів `/en` `/uk` і схожий набір кастомних подій.
 
-Інші уточнення після верифікації коду:
-- Інструментація на сайті **повна** (14+ подій: `newsletter_subscribe` після успішного POST, scroll depth, search, share, `sponsor_inquiry_click`…). «0 конверсій» — лише тому, що події не позначені key events і підписок ще не було.
-- `purchase` уже є незнімною ключовою подією. Тестовий `newsletter_subscribe` (param `placement=ga-setup-test`) відправлено, щоб подія зʼявилась у хабі подій — після появи поставити зірочку.
-
-**Рекомендація:** створити окрему GA4 property «AI Today Brief» + web-потік для aitodaybrief.com, замінити `NEXT_PUBLIC_GA_MEASUREMENT_ID` у Vercel, позначити key events (`newsletter_subscribe`, `sponsor_inquiry_click`) у новій property. Зробити це зараз, поки історії майже немає.
+**Зроблено 12.06 у property «Ai brief today»:**
+- ✅ `newsletter_subscribe` позначено **key event** (конверсія підписки відтепер рахується)
+- ✅ Data retention (event data): 2 міс → **14 місяців**
+- ✅ **GSC ↔ GA4 link створено** (sc-domain:aitodaybrief.com ↔ потік «The daily AI news») — звіти Search Console зʼявляться в GA протягом ~48 год
+- `purchase` — незнімний key event за замовчуванням; `sponsor_inquiry_click` позначити зіркою, щойно подія вперше надійде (її ще не було)
 
 ## 7. Що зробити цього тижня
 - [ ] URL Inspection → request indexing для концепт-хабів (Anthropic API, Claude Code, MCP, context engineering).
