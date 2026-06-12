@@ -4,6 +4,7 @@ import { categoryMeta } from '@/lib/category-meta';
 import type { IconKey } from '@/components/icons';
 import { LANGS, type Lang } from '@/lib/site';
 import { isWithinNewsSitemapWindow, toNewsPublicationDate } from '@/lib/sitemap-dates';
+import { extractToolNames } from '@/lib/tools-mentioned';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -125,20 +126,6 @@ export interface RelatedStory {
   categoryColor: string | null;
 }
 
-function toToolNames(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const names: string[] = [];
-  for (const entry of value) {
-    if (entry && typeof entry === 'object' && 'name' in entry) {
-      const name = (entry as { name: unknown }).name;
-      if (typeof name === 'string' && name.trim()) names.push(name.trim());
-    } else if (typeof entry === 'string' && entry.trim()) {
-      names.push(entry.trim());
-    }
-  }
-  return names;
-}
-
 function wordCount(text: string): number {
   const trimmed = text.trim();
   return trimmed ? trimmed.split(/\s+/).length : 0;
@@ -243,7 +230,7 @@ export async function getBriefItem(
     takeaways: toStringArray(lang === 'uk' ? it.takeaways_uk : it.takeaways_en),
     actionItems: toStringArray(lang === 'uk' ? it.action_items_uk : it.action_items_en),
     impactLevel: parseImpactLevel(it.impact_level),
-    tools: toToolNames(it.tools_mentioned),
+    tools: extractToolNames(it.tools_mentioned),
     hasVideo: Boolean(it.youtube_url),
     youtubeUrl: it.youtube_url ?? null,
     readMinutes: Math.max(
@@ -358,6 +345,25 @@ export async function getRelatedStories(
   }));
 }
 
+/**
+ * PostgREST caps a response at 1000 rows; once brief_items grows past that,
+ * an unpaged select would silently truncate the sitemap. Pages through a
+ * range-aware query until a short page signals the end.
+ */
+async function fetchAllPages<Row>(
+  page: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: unknown }>,
+  pageSize = 1000,
+): Promise<Row[]> {
+  const rows: Row[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await page(from, from + pageSize - 1);
+    if (error || !data) break; // partial result — same degraded mode as a failed single read
+    rows.push(...data);
+    if (data.length < pageSize) break;
+  }
+  return rows;
+}
+
 export interface NewsSitemapEntry {
   lang: Lang;
   brief: string;
@@ -379,16 +385,18 @@ export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry
   if (!briefs?.length) return [];
 
   const briefById = new Map(briefs.map((b) => [b.id, b]));
-  const { data: rows } = await supabase
-    .from('brief_items')
-    .select('slug, brief_id, title_en, title_uk, canonical_item_id')
-    .in(
-      'brief_id',
-      briefs.map((b) => b.id),
-    );
+  const briefIds = briefs.map((b) => b.id);
+  const rows = await fetchAllPages((from, to) =>
+    supabase
+      .from('brief_items')
+      .select('slug, brief_id, title_en, title_uk, canonical_item_id')
+      .in('brief_id', briefIds)
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
 
   const entries: NewsSitemapEntry[] = [];
-  for (const row of rows ?? []) {
+  for (const row of rows) {
     const brief = briefById.get(row.brief_id);
     if (!brief?.slug || !row.slug) continue;
     if (row.canonical_item_id) continue; // re-publication — redirects to the original
@@ -427,16 +435,18 @@ export async function getPublishedItemSitemapEntries(): Promise<ItemSitemapEntry
   if (!briefs || briefs.length === 0) return [];
 
   const briefById = new Map(briefs.map((b) => [b.id, b]));
-  const { data: items } = await supabase
-    .from('brief_items')
-    .select('slug, brief_id, canonical_item_id')
-    .in(
-      'brief_id',
-      briefs.map((b) => b.id),
-    );
+  const briefIds = briefs.map((b) => b.id);
+  const items = await fetchAllPages((from, to) =>
+    supabase
+      .from('brief_items')
+      .select('slug, brief_id, canonical_item_id')
+      .in('brief_id', briefIds)
+      .order('id', { ascending: true })
+      .range(from, to),
+  );
 
   const entries: ItemSitemapEntry[] = [];
-  for (const it of items ?? []) {
+  for (const it of items) {
     const brief = briefById.get(it.brief_id);
     if (!brief?.slug || !it.slug) continue;
     if (it.canonical_item_id) continue; // re-publication — redirects to the original

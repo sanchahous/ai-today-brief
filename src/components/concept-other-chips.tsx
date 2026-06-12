@@ -8,17 +8,22 @@ import { ArrowRight, CategoryGlyph } from '@/components/icons';
 export function ConceptOtherChips({
   lang,
   concepts,
+  title,
+  headingId = 'other-concepts-title',
 }: {
   lang: Lang;
   concepts: ConceptSummary[];
+  /** Section heading — defaults to the "Other concepts" label. */
+  title?: string;
+  headingId?: string;
 }) {
   if (concepts.length === 0) return null;
   const t = getStrings(lang);
 
   return (
-    <section className="mt-12" aria-labelledby="other-concepts-title">
-      <h2 id="other-concepts-title" className="mb-4 text-xl">
-        {t.conceptOther}
+    <section className="mt-12" aria-labelledby={headingId}>
+      <h2 id={headingId} className="mb-4 text-xl">
+        {title ?? t.conceptOther}
       </h2>
       <div className="flex flex-wrap gap-2.5">
         {concepts.map((c) => (

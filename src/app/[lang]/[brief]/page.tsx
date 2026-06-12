@@ -4,9 +4,11 @@ import type { Metadata } from 'next';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { getDailyBriefBySlug, getBriefPaths } from '@/lib/briefs';
+import { getConceptNameIndex, getConcepts, type ConceptSummary } from '@/lib/concepts';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { AiDisclosureNote } from '@/components/ai-disclosure-note';
 import { BriefDailySections } from '@/components/brief-daily-sections';
+import { ConceptOtherChips } from '@/components/concept-other-chips';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 import { ArrowRight } from '@/components/icons';
 
@@ -57,6 +59,26 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
   if (!b?.canonicalSlug) notFound();
   const t = getStrings(lang);
   const dateStr = dateLabel(b.date, lang);
+
+  // Hub-and-spoke: surface the concept hubs this day's items mention, so
+  // every daily page links back into the evergreen layer (crawl path for
+  // pages otherwise reachable only via the sitemap).
+  const [conceptIndex, allConcepts] = await Promise.all([
+    getConceptNameIndex(),
+    getConcepts(lang),
+  ]);
+  const conceptBySlug = new Map(allConcepts.map((c) => [c.slug, c]));
+  const seenConcepts = new Set<string>();
+  const briefConcepts: ConceptSummary[] = [];
+  for (const item of b.allItems) {
+    for (const tool of item.tools) {
+      const conceptSlug = conceptIndex.get(tool.toLowerCase());
+      if (!conceptSlug || seenConcepts.has(conceptSlug)) continue;
+      seenConcepts.add(conceptSlug);
+      const concept = conceptBySlug.get(conceptSlug);
+      if (concept) briefConcepts.push(concept);
+    }
+  }
 
   const crumbs = [
     { label: t.news.breadcrumbHome, href: `/${lang}` },
@@ -114,6 +136,13 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
       </header>
 
       <BriefDailySections lang={lang} packs={b.packs} totalItems={b.allItems.length} />
+
+      <ConceptOtherChips
+        lang={lang}
+        concepts={briefConcepts.slice(0, 12)}
+        title={t.briefConceptsLabel}
+        headingId="brief-concepts-title"
+      />
 
       <div className="mt-8 max-w-[760px]">
         <Link

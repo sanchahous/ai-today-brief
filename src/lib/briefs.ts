@@ -2,6 +2,7 @@ import { getSupabase } from '@/lib/supabase';
 import { getCategories } from '@/lib/categories';
 import { getStrings } from '@/lib/i18n';
 import { LANGS, type Lang } from '@/lib/site';
+import { extractToolNames } from '@/lib/tools-mentioned';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -18,6 +19,8 @@ export interface BriefItemCard {
   title: string;
   summary: string;
   why: string;
+  /** Tool names mentioned in the item — resolve to concept hubs for linking. */
+  tools: string[];
 }
 
 interface ItemRow {
@@ -31,6 +34,7 @@ interface ItemRow {
   summary_uk: string;
   why_matters_en: string | null;
   why_matters_uk: string | null;
+  tools_mentioned: unknown;
 }
 
 interface PackRow {
@@ -46,7 +50,7 @@ interface PackRow {
 }
 
 const ITEM_COLUMNS =
-  'id, rank, category_slug, slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk';
+  'id, rank, category_slug, slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, tools_mentioned';
 
 const PACK_COLUMNS =
   'id, date, slug, edition, title_en, title_uk, intro_en, intro_uk, published_at';
@@ -68,6 +72,7 @@ function toCard(
     title: pick(lang, it.title_en, it.title_uk) || summary,
     summary,
     why: pick(lang, it.why_matters_en, it.why_matters_uk) || summary,
+    tools: extractToolNames(it.tools_mentioned),
   };
 }
 

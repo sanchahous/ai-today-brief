@@ -41,6 +41,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Newest publish time — lastmod for pages whose content changes with every brief.
   const latestPublish = briefs.map((b) => b.lastModified).sort().at(-1);
+  // Hub pages change when their newest child does.
+  const latestConcept = concepts.map((c) => c.lastModified ?? '').filter(Boolean).sort().at(-1);
+  const latestGuide = GUIDES.map((g) => g.lastVerified).sort().at(-1);
+  const latestTool = TOOLS.map((t) => t.lastVerified).sort().at(-1);
 
   const entries: MetadataRoute.Sitemap = [];
 
@@ -61,18 +65,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
     entries.push({
       url: `${SITE_URL}/${lang}/concepts`,
+      lastModified: latestConcept,
       changeFrequency: 'weekly',
       priority: 0.6,
       alternates: langAlternates('/concepts'),
     });
     entries.push({
       url: `${SITE_URL}/${lang}/guides`,
+      lastModified: latestGuide,
       changeFrequency: 'weekly',
       priority: 0.7,
       alternates: langAlternates('/guides'),
     });
     entries.push({
       url: `${SITE_URL}/${lang}/tools`,
+      lastModified: latestTool,
       changeFrequency: 'weekly',
       priority: 0.7,
       alternates: langAlternates('/tools'),

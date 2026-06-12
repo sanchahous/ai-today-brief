@@ -4,6 +4,7 @@ import { getCategories } from '@/lib/categories';
 import type { HomeItem } from '@/lib/home';
 import { getSupabase } from '@/lib/supabase';
 import { LANGS, type Lang } from '@/lib/site';
+import { extractToolNames } from '@/lib/tools-mentioned';
 import type { IconKey } from '@/components/icons';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
@@ -14,20 +15,6 @@ function pick(lang: Lang, en: string | null, uk: string | null): string {
 function wordCount(text: string): number {
   const trimmed = text.trim();
   return trimmed ? trimmed.split(/\s+/).length : 0;
-}
-
-function extractToolNames(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const names: string[] = [];
-  for (const entry of value) {
-    if (entry && typeof entry === 'object' && 'name' in entry) {
-      const name = (entry as { name: unknown }).name;
-      if (typeof name === 'string' && name.trim()) names.push(name.trim());
-    } else if (typeof entry === 'string' && entry.trim()) {
-      names.push(entry.trim());
-    }
-  }
-  return names;
 }
 
 export interface ConceptSummary {
@@ -232,20 +219,21 @@ export async function getConceptPaths(): Promise<{ lang: string; slug: string }[
 export interface ConceptSitemapEntry {
   lang: string;
   slug: string;
-  /** Last verification date when the concept has been verified. */
+  /** Last fact-control pass, falling back to the creation date. */
   lastModified?: string;
 }
 
-/** Concept slugs + verification dates — sitemap entries with lastmod when available. */
+/** Concept slugs + content dates — sitemap entries with lastmod when available. */
 export async function getConceptSitemapEntries(): Promise<ConceptSitemapEntry[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
-  const { data } = await supabase.from('concepts').select('slug, verified_at');
+  const { data } = await supabase.from('concepts').select('slug, verified_at, created_at');
   if (!data) return [];
   const entries: ConceptSitemapEntry[] = [];
   for (const c of data) {
+    const lastModified = c.verified_at ?? c.created_at;
     for (const lang of LANGS) {
-      entries.push({ lang, slug: c.slug, ...(c.verified_at ? { lastModified: c.verified_at } : {}) });
+      entries.push({ lang, slug: c.slug, ...(lastModified ? { lastModified } : {}) });
     }
   }
   return entries;
