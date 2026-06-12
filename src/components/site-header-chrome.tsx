@@ -9,6 +9,7 @@ import { getStrings } from '@/lib/i18n';
 import { trackEvent } from '@/lib/analytics-client';
 import { HeaderSearchField } from '@/components/header-search-field';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { OverlayDrawer } from '@/components/ui/overlay-drawer';
 import { CategoryGlyph, CloseIcon, MenuIcon, ArrowRight } from '@/components/icons';
 import type { IconKey } from '@/components/icons';
 
@@ -25,6 +26,10 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
   const [menuOpen, setMenuOpen] = useState(false);
   const [catsOpen, setCatsOpen] = useState(false);
   const catsRef = useRef<HTMLDivElement>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
+  const menuCloseRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuId = 'site-mobile-menu';
+  const mobileMenuTitleId = 'site-mobile-menu-title';
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
@@ -43,6 +48,10 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
       document.removeEventListener('mousedown', onDoc);
     };
   }, [catsOpen]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   const navLink = (href: string, label: string, active?: boolean) => (
     <Link
@@ -67,7 +76,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
   return (
     <header className="site-header-shell border-border-soft sticky top-0 z-50 border-b">
       <div className="mx-auto max-w-[1160px] px-6">
-        <div className="flex h-[var(--header-h)] items-center gap-3">
+        <div className="flex h-[calc(var(--header-h)-1px)] items-center gap-2 lg:gap-3">
           <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2 no-underline">
             <span
               aria-hidden
@@ -81,15 +90,15 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             </span>
           </Link>
 
-          <div className="mx-2 hidden min-w-0 flex-1 md:flex">
+          <div className="mx-1 hidden min-w-0 flex-1 md:flex lg:mx-2">
             <HeaderSearchField
               lang={lang}
               placeholder={t.landing.searchPlaceholder}
-              className="max-w-md md:max-w-lg lg:max-w-xl"
+              className="max-w-[clamp(10rem,24vw,26rem)] lg:max-w-[clamp(10rem,22vw,32rem)] xl:max-w-xl"
             />
           </div>
 
-          <nav aria-label="Primary" className="ml-auto hidden items-center gap-5 lg:flex">
+          <nav aria-label="Primary" className="ml-auto hidden shrink-0 flex-nowrap items-center gap-3 lg:flex xl:gap-5">
             {navLink(`/${lang}`, t.navHome, pathname === `/${lang}`)}
             {navLink(`/${lang}/news`, t.nav.news, isActive(`/${lang}/news`))}
             <div ref={catsRef} className="relative" onMouseLeave={() => setCatsOpen(false)}>

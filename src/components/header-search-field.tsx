@@ -23,6 +23,7 @@ export function HeaderSearchField({
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export function HeaderSearchField({
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    const trimmed = query.trim();
+    const trimmed = (inputRef.current?.value ?? query).trim();
     trackSearch(trimmed, variant, lang);
     router.push(trimmed ? `/${lang}/news?q=${encodeURIComponent(trimmed)}` : `/${lang}/news`);
     setQuery('');
@@ -56,7 +57,7 @@ export function HeaderSearchField({
 
   return (
     <div ref={rootRef} className={`relative min-w-0 flex-1 ${className}`}>
-      <form role="search" onSubmit={submit} className="flex min-w-0 items-center gap-2">
+      <form role="search" action={`/${lang}/news`} onSubmit={submit} className="flex min-w-0 items-center gap-2">
         <label className="sr-only" htmlFor={inputId}>
           {placeholder}
         </label>
@@ -64,7 +65,9 @@ export function HeaderSearchField({
           <SearchIcon size={18} />
         </span>
         <input
+          ref={inputRef}
           id={inputId}
+          name="q"
           type="search"
           value={query}
           onChange={(e) => {
