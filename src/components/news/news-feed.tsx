@@ -51,6 +51,7 @@ export function NewsFeed({
   }));
   const [page, setPage] = useState(1);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const filtersTriggerRef = useRef<HTMLButtonElement>(null);
   const noResultsTracked = useRef('');
 
   const filtered = useMemo(() => {
@@ -149,6 +150,7 @@ export function NewsFeed({
         hasActive={hasActive}
         drawerOpen={drawerOpen}
         setDrawerOpen={setDrawerOpen}
+        triggerRef={filtersTriggerRef}
       />
 
       <section aria-label={t.title} className="min-w-0">
@@ -172,6 +174,7 @@ export function NewsFeed({
               <option value="discussed">{t.sortDiscussed}</option>
             </select>
             <button
+              ref={filtersTriggerRef}
               type="button"
               onClick={() => setDrawerOpen(true)}
               className="mobile-only rounded-pill border-border text-text hover:border-accent inline-flex items-center gap-1.5 border px-3 py-2 text-sm"
