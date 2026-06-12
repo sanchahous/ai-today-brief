@@ -76,22 +76,20 @@ export function useFocusTrap({
         return;
       }
 
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const activeElement = document.activeElement;
-
+      // Fully control Tab order so focus can never leave the dialog. Boundary-only
+      // handling is not enough on some engines (notably WebKit/Safari), which do not
+      // move focus to links/buttons on native Tab — letting focus escape the modal.
+      event.preventDefault();
+      const activeElement = document.activeElement as HTMLElement | null;
+      const currentIndex = activeElement ? focusable.indexOf(activeElement) : -1;
+      let nextIndex: number;
       if (event.shiftKey) {
-        if (activeElement === first || !currentContainer.contains(activeElement)) {
-          event.preventDefault();
-          last.focus({ preventScroll: true });
-        }
-        return;
+        nextIndex = currentIndex <= 0 ? focusable.length - 1 : currentIndex - 1;
+      } else {
+        nextIndex =
+          currentIndex === -1 || currentIndex >= focusable.length - 1 ? 0 : currentIndex + 1;
       }
-
-      if (activeElement === last) {
-        event.preventDefault();
-        first.focus({ preventScroll: true });
-      }
+      focusable[nextIndex].focus({ preventScroll: true });
     }
 
     document.addEventListener('keydown', onKeyDown);
