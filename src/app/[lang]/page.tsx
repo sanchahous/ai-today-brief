@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { EDITOR_NAME, SITE_NAME, SITE_URL, isLang, type Lang } from '@/lib/site';
+import { EDITOR_NAME, SITE_NAME, SITE_URL, SOCIALS, isLang, type Lang } from '@/lib/site';
 import { getHomeData } from '@/lib/home';
 import { HomeHero } from '@/components/home/home-hero';
 import { CategoryGrid } from '@/components/home/category-grid';
@@ -24,7 +24,11 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const { lang } = await params;
   const l: Lang = isLang(lang) ? lang : 'en';
   return {
-    title: `${SITE_NAME} — ${l === 'uk' ? 'AI-новини для розробників за 5 хвилин на день' : 'AI news for developers in 5 minutes a day'}`,
+    // absolute: the layout template would append "· SITE_NAME" to a title
+    // that already starts with the brand → duplicated brand, truncated SERP.
+    title: {
+      absolute: `${SITE_NAME} — ${l === 'uk' ? 'AI-новини для розробників за 5 хвилин на день' : 'AI news for developers in 5 minutes a day'}`,
+    },
     description: HOME_DESCRIPTION[l],
     alternates: {
       canonical: `${SITE_URL}/${l}`,
@@ -52,12 +56,15 @@ export default async function Home({ params }: { params: Promise<Params> }) {
         '@id': `${SITE_URL}/#org`,
         name: SITE_NAME,
         url: `${SITE_URL}/${lang}`,
+        logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png`, width: 512, height: 512 },
+        sameAs: SOCIALS.filter((s) => s.key !== 'rss').map((s) => s.url),
         founder: { '@type': 'Person', name: EDITOR_NAME },
       },
       {
         '@type': 'WebSite',
         '@id': `${SITE_URL}/#website`,
         name: SITE_NAME,
+        description: HOME_DESCRIPTION[lang],
         url: `${SITE_URL}/${lang}`,
         inLanguage: ['en', 'uk'],
         potentialAction: {

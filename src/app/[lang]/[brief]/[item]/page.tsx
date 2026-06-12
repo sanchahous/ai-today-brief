@@ -37,7 +37,16 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   if (!isLang(lang)) return {};
   const detail = await getBriefItem(brief, item, lang);
   if (!detail) return {};
-  if (detail.canonicalPath) return {}; // page redirects to the original story
+  if (detail.canonicalPath) {
+    // The page normally 308s via next.config; this fallback covers rows
+    // canonicalized after the last config sync, where the redirect degrades
+    // to a 200 + meta refresh — keep an explicit canonical + noindex so
+    // Google still gets an unambiguous dedup signal.
+    return {
+      alternates: { canonical: `${SITE_URL}/${lang}${detail.canonicalPath}` },
+      robots: { index: false, follow: true },
+    };
+  }
   const path = `/${lang}/${brief}/${item}`;
   return {
     title: detail.title,
@@ -135,7 +144,12 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
           url: `${SITE_URL}/${lang}/author`,
           sameAs: EDITOR_PROFILE.links.map((l) => l.url),
         },
-        publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+        publisher: {
+          '@type': 'Organization',
+          name: SITE_NAME,
+          url: SITE_URL,
+          logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png`, width: 512, height: 512 },
+        },
         mainEntityOfPage: `${SITE_URL}${pagePath}`,
         ...(detail.citations.length > 0 || detail.sourceUrl
           ? {
