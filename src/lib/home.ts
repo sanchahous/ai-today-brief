@@ -3,6 +3,7 @@ import type { Lang } from '@/lib/site';
 import { categoryMeta, TOP_CATEGORY_SLUGS } from '@/lib/category-meta';
 import { getCategories, getPublishedCategoryCounts } from '@/lib/categories';
 import { getConceptNameIndex } from '@/lib/concepts';
+import { blendTrend, entityKeyForTool, getRisingByEntity } from '@/lib/trend-index';
 import type { IconKey } from '@/components/icons';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
@@ -229,16 +230,24 @@ async function buildTrending(lang: Lang, items: HomeItem[]): Promise<TrendingTop
   }
   if (counts.size === 0) return [];
 
-  const index = await getConceptNameIndex();
+  // Trend-index v0: rank by acceleration (GDELT rising signal) on top of mention
+  // frequency, not by raw mentions alone. Falls back to mentions if signals are
+  // unavailable (getRisingByEntity returns an empty map).
+  const [index, rising] = await Promise.all([getConceptNameIndex(), getRisingByEntity()]);
   return Array.from(counts.entries())
     .map(([name, mentions]) => {
       const slug = index.get(name.toLowerCase());
+      const trend = blendTrend(mentions, rising.get(entityKeyForTool(name)) ?? 0);
       return {
-        name,
-        mentions,
-        href: slug ? `/${lang}/concepts/${slug}` : `/${lang}/news?q=${encodeURIComponent(name)}`,
+        topic: {
+          name,
+          mentions,
+          href: slug ? `/${lang}/concepts/${slug}` : `/${lang}/news?q=${encodeURIComponent(name)}`,
+        },
+        trend,
       };
     })
-    .sort((a, b) => b.mentions - a.mentions)
-    .slice(0, 12);
+    .sort((a, b) => b.trend - a.trend)
+    .slice(0, 12)
+    .map((e) => e.topic);
 }
