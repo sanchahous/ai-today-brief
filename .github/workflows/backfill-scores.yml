@@ -1,0 +1,52 @@
+name: Backfill scores
+
+# Manual, one-off re-score of stored articles with the current rank.ts formula
+# (migration 032 telemetry: composite + 6 components + score_version + cluster_id
+# + scored_as_of). Run after applying 032, and again after any SCORE_VERSION bump.
+# Idempotent — overwrites the telemetry columns only, never title/raw/etc.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print coverage + score range instead of writing'
+        type: boolean
+        default: true
+      limit:
+        description: 'Max articles to process (blank = all)'
+        required: false
+        default: ''
+
+concurrency:
+  group: backfill-scores
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backfill article score telemetry
+        env:
+          SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+          SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          ARGS=""
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            ARGS="--dry-run"
+          fi
+          if [[ -n "${{ inputs.limit }}" ]]; then
+            ARGS="$ARGS --limit ${{ inputs.limit }}"
+          fi
+          npx tsx pipeline/scripts/backfill-scores.ts $ARGS
