@@ -37,6 +37,8 @@ function entry(
     topic,
     category,
     clusterSize: 1,
+    memberUrls: [url],
+    clusterId: '000000000000',
   };
 }
 
