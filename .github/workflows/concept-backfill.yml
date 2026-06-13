@@ -1,0 +1,50 @@
+name: Concept backfill
+
+on:
+  schedule:
+    # Monday 05:00 UTC — fill any new evergreen concept hubs that still lack a
+    # body. Idempotent: rows that already have body_en are skipped, so a quiet
+    # week is a cheap no-op. This is the topical-authority/AEO engine; before it
+    # had a cron, concept hubs were only ever populated by a manual run.
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Max empty concepts to fill this run'
+        required: false
+        default: '8'
+      dry_run:
+        description: 'Print the drafts instead of writing'
+        type: boolean
+        default: false
+
+concurrency:
+  group: concept-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backfill concept hubs
+        env:
+          SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+          SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          ARGS="--limit ${{ inputs.limit || '8' }}"
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          npx tsx pipeline/scripts/backfill-concepts.ts $ARGS

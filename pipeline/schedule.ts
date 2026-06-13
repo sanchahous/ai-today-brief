@@ -134,10 +134,6 @@ export function resolveScheduleAttempt(
 
 // ─── Per-slot policy ──────────────────────────────────────────────────────────
 
-export function shouldUseOpenRouter(scheduleAttempt: number): boolean {
-  return scheduleAttempt >= KYIV_SCHEDULE_ATTEMPTS;
-}
-
 export function geminiMaxAttemptsForSlot(scheduleAttempt: number): number {
   return scheduleAttempt >= KYIV_SCHEDULE_ATTEMPTS ? 3 : 2;
 }

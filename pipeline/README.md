@@ -40,8 +40,8 @@ holds the Supabase **service_role** key and is **never imported under `src/`**.
 | `config.ts` | Env validation + tunables | ✅ |
 | `fetch.ts` | Source orchestration + pure mappers (`prepareArticles`, `toCandidate`, window filter) | ✅ (network part `v8 ignore`) |
 | `sources/http.ts` | `fetchWithRetry`, `FetchedArticle` type | excluded |
-| `sources/feeds.ts` | HN queries, Reddit subs, RSS feeds, InBrief endpoint | excluded |
-| `sources/{hacker-news,reddit,rss,inbrief}.ts` | Per-source fetchers | excluded |
+| `sources/feeds.ts` | HN queries, Reddit subs, RSS feeds, Bluesky queries, InBrief endpoint | excluded |
+| `sources/{hacker-news,reddit,rss,bluesky,inbrief}.ts` | Per-source fetchers | excluded |
 | `rss-parse.ts` | Dependency-free RSS/Atom parser | ✅ |
 | `rolling-window.ts` | 24h freshness cutoff helpers | ✅ |
 | `rank.ts` | Clustering + the composite score | ✅ |
@@ -51,7 +51,7 @@ holds the Supabase **service_role** key and is **never imported under `src/`**.
 | `embeddings.ts` | `gemini-embedding-001` @ 768 dims, batched, 429-backoff | ✅ (`embedInput`; SDK call `v8 ignore`) |
 | `summarize.ts` | Gemini structured-JSON editor → bilingual brief | excluded (LLM IO) |
 | `publish.ts` | Idempotent draft write composition | excluded (IO) |
-| `db.ts` | Service-role client + queries (incl. `matchPublishedItem`, `storeItemEmbeddings`) | excluded (IO) |
+| `db.ts` | Service-role client + queries (incl. `matchRelevantItem`, `storeItemEmbeddings`) | excluded (IO) |
 | `log.ts` | Structured JSON logs | excluded |
 
 ---
@@ -85,7 +85,8 @@ fails the run):
 - **InBrief** — curated AI feed via its public Supabase RPC `get_archive_articles` (today + yesterday); carries an editorial `importance_score`.
 - **Hacker News** — Algolia search over 11 AI/dev queries; carries points + comments (the engagement signal).
 - **Reddit** — 7 dev/AI subreddits' top-of-day; carries score + comments; self-posts skipped.
-- **RSS** — always-on 4th parallel source: 11 first-party lab + press feeds, parsed by the dependency-free `rss-parse.ts`. Promoted from thin-primary fallback so first-party announcements stop being structurally missed.
+- **RSS** — always-on parallel source: 11 first-party lab + press feeds, parsed by the dependency-free `rss-parse.ts`. Promoted from thin-primary fallback so first-party announcements stop being structurally missed.
+- **Bluesky** — public AppView search over dev-community queries; only link-out posts are kept (analog of skipping Reddit self-posts).
 
 `collectArticles` also returns per-source health (ok/empty/failed, plus dead
 RSS feeds) that `run-daily` logs to `pipeline_runs.meta.sources` and alerts to
@@ -138,13 +139,13 @@ Deterministic pool before the paid LLM call: drop `score < MIN_SCORE`, cap items
 per fine-grained topic (`PER_TOPIC_CAP`), keep the top `POOL_SIZE`. Output:
 `PoolItem[]` with a 1-based `ref` the editor selects by. If empty → run stops.
 
-### 3.5. Semantic dedup — `embeddings.ts` + `db.ts` (`matchPublishedItem`)
+### 3.5. Semantic dedup — `embeddings.ts` + `db.ts` (`matchRelevantItem`)
 Hard cross-day dedup before the LLM call — the counterpart to the title-based
 dedup inside the LLM prompt, but deterministic and model-independent.
 
 1. Embed up to `EMBED_LIMIT` pool candidate titles via `gemini-embedding-001`
    (768 dims, `SEMANTIC_SIMILARITY` task, batched ≤ 96, exponential 429-backoff).
-2. For each embedding, call `match_published_item(embedding, MAX_EMBED_DISTANCE)` —
+2. For each embedding, call `match_relevant_item(embedding, MAX_EMBED_DISTANCE)` —
    a pgvector nearest-neighbour query against `brief_item_embeddings` restricted
    to `briefs.status = 'published'`.
 3. Drop any candidate whose nearest published item is within `MAX_EMBED_DISTANCE`
@@ -155,7 +156,7 @@ dedup inside the LLM prompt, but deterministic and model-independent.
 5. Logs `{ pool_in, pool_out, dropped }` to `pipeline_runs` as stage `'dedup'`.
 
 **Skipped in `--dry-run`** (db is null). **Safe when `brief_item_embeddings` is
-empty** — `matchPublishedItem` returns `null`, all candidates pass, the pipeline
+empty** — `matchRelevantItem` returns `null`, all candidates pass, the pipeline
 accumulates semantic memory gradually as briefs are published.
 
 After a successful publish, `storeItemEmbeddings` embeds the published items'
