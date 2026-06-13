@@ -29,7 +29,11 @@ import {
 } from '../trend-signals';
 
 const TIMESPAN = '3m';
-const SLEEP_BETWEEN_MS = 1500; // be polite to the free API
+// GDELT's free DOC API rate-limits aggressively (~1 req / few s). At 5s spacing a
+// real run still 429'd ~half the entities to empty; 8s + extra retries gets more
+// through per run (the append-only table also fills across daily runs).
+const SLEEP_BETWEEN_MS = 8000;
+const FETCH_ATTEMPTS = 4;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -39,7 +43,7 @@ async function captureEntity(
   dryRun: boolean,
 ): Promise<'ok' | 'empty' | 'failed'> {
   const url = buildGdeltUrl(entity.query, TIMESPAN);
-  const res = await fetchWithRetry(url, { headers: { accept: 'application/json' } });
+  const res = await fetchWithRetry(url, { headers: { accept: 'application/json' } }, FETCH_ATTEMPTS);
   if (!res) return 'failed';
   const points = parseGdeltTimeline(await res.text());
   if (points.length === 0) return 'empty';
@@ -68,7 +72,7 @@ async function captureEntity(
   const { error } = await loose.from('entity_trend_signals').insert({
     entity: entity.key,
     source: 'gdelt',
-    window: TIMESPAN,
+    window_span: TIMESPAN,
     rising_score: score,
     raw: { lifecycle: entity.lifecycle, raw_rising: raw, points: points.length },
   });

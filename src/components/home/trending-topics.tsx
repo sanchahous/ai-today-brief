@@ -37,6 +37,7 @@ export function TrendingTopics({ lang, topics }: { lang: Lang; topics: TrendingT
                 placement="home"
                 sizeRem={sizeRem(topic.mentions)}
                 mentionsLabel={t.mentions}
+                risingLabel={t.rising}
               />
             ))}
           </div>
