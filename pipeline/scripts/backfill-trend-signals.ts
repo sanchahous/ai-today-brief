@@ -68,7 +68,7 @@ async function captureEntity(
   const { error } = await loose.from('entity_trend_signals').insert({
     entity: entity.key,
     source: 'gdelt',
-    window: TIMESPAN,
+    window_span: TIMESPAN,
     rising_score: score,
     raw: { lifecycle: entity.lifecycle, raw_rising: raw, points: points.length },
   });

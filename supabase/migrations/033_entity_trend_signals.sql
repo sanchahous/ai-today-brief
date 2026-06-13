@@ -18,7 +18,7 @@ create table if not exists public.entity_trend_signals (
   entity       text not null,
   source       text not null default 'gdelt',
   captured_at  timestamptz not null default now(),
-  window       text,
+  window_span  text,
   rising_score numeric,
   raw          jsonb
 );
