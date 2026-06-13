@@ -60,14 +60,18 @@ export function CategoryCardSkeleton() {
 }
 
 export function PostCardSkeleton() {
+  // Mirror the real PostCard structure (outer bordered card -> post-grid -> 92px thumb +
+  // content) so hydration does not shift the layout.
   return (
-    <div className="post-grid gap-4" aria-hidden>
-      <Skeleton className="hidden h-[92px] w-[92px] rounded-card sm:block" />
-      <div className="rounded-card border-border bg-surface border p-4">
-        <Skeleton className="mb-3 h-5 w-28 rounded-pill" />
-        <Skeleton className="mb-2 h-5 w-full rounded-md" />
-        <Skeleton className="mb-2 h-5 w-[80%] rounded-md" />
-        <Skeleton className="h-4 w-40 rounded-md" />
+    <div className="rounded-card border-border bg-surface border p-4" aria-hidden>
+      <div className="post-grid">
+        <Skeleton className="h-[92px] w-[92px] rounded-card" />
+        <div>
+          <Skeleton className="mb-3 h-5 w-28 rounded-pill" />
+          <Skeleton className="mb-2 h-5 w-full rounded-md" />
+          <Skeleton className="mb-2 h-5 w-[80%] rounded-md" />
+          <Skeleton className="h-4 w-40 rounded-md" />
+        </div>
       </div>
     </div>
   );

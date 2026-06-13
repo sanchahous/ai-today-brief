@@ -8,7 +8,7 @@ export function SiteFooter({ lang }: { lang: Lang }) {
   return (
     <footer className="border-border-soft border-t">
       <div className="mx-auto max-w-[1160px] px-6 py-10">
-        <div className="flex flex-wrap items-start justify-between gap-8">
+        <div className="flex flex-col gap-8 lg:flex-row lg:flex-wrap lg:items-start lg:justify-between">
           <div className="text-faint min-w-0 text-sm">
             <p className="text-text font-serif text-base font-semibold">{SITE_NAME}</p>
             <p className="mt-2 max-w-md leading-relaxed">{t.footerTagline}</p>

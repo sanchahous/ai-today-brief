@@ -108,8 +108,8 @@ export function StoryBody({
                 key={i}
                 className={`flex flex-wrap gap-x-4 gap-y-0.5 px-4 py-2.5 ${i % 2 === 1 ? 'bg-surface-2' : ''}`}
               >
-                <dt className="text-muted m-0 min-w-[140px] flex-1 text-[0.84rem]">{fact.label}</dt>
-                <dd className="m-0 flex-[2] text-[0.9rem] font-semibold">{fact.value}</dd>
+                <dt className="text-muted m-0 min-w-[140px] flex-1 break-words text-[0.84rem]">{fact.label}</dt>
+                <dd className="m-0 flex-[2] break-words text-[0.9rem] font-semibold">{fact.value}</dd>
               </div>
             ))}
           </dl>

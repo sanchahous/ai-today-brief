@@ -230,7 +230,7 @@ export function CookieSettingsButton({ lang }: { lang: Lang }) {
     <button
       type="button"
       onClick={() => dispatchOpenConsent()}
-      className="hover:text-text text-left text-sm"
+      className="hover:text-text inline-flex min-h-10 items-center text-left text-sm"
     >
       {t.footerCookie}
     </button>
