@@ -11,6 +11,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 import type { FetchedArticle } from './sources/http';
+import type { ScoreComponents } from './rank';
 import type { DraftBrief, DraftItem } from './summarize';
 import { logEvent, type PipelineStage } from './log';
 import type { ReviewItem } from './review-format';
@@ -30,7 +31,39 @@ export function createServiceClient(url: string, serviceKey: string): PipelineDb
 }
 
 /** Per-URL ranking telemetry persisted onto articles (weight-tuning dataset). */
-export type ArticleScores = Map<string, { score: number; mentions: number }>;
+export type ArticleScore = {
+  score: number;
+  mentions: number;
+  components: ScoreComponents;
+  clusterId: string;
+  /** Rank-formula generation (rank.ts `SCORE_VERSION`). */
+  version: number;
+  /** ISO timestamp the score was computed as-of (run time, or fetched_at on backfill). */
+  scoredAsOf: string;
+};
+export type ArticleScores = Map<string, ArticleScore>;
+
+/**
+ * Pure: the telemetry columns written onto an `articles` row when a score exists.
+ * Kept separate from the IO so the column mapping is unit-testable. The six
+ * `score_*` columns + `score_version`/`cluster_id`/`scored_as_of` arrive with
+ * migration 032 (regenerate `database.types.ts` after applying it).
+ */
+export function articleScoreColumns(s: ArticleScore): Record<string, unknown> {
+  return {
+    composite_score: s.score,
+    mentions_count: s.mentions,
+    score_velocity: s.components.velocity,
+    score_cross_source: s.components.crossSource,
+    score_authority: s.components.authority,
+    score_recency: s.components.recency,
+    score_inbrief: s.components.inbrief,
+    score_breadth: s.components.breadth,
+    score_version: s.version,
+    cluster_id: s.clusterId,
+    scored_as_of: s.scoredAsOf,
+  };
+}
 
 /** Upsert the raw audit-trail rows; return a url→id map for FK wiring. */
 export async function upsertArticles(
@@ -53,7 +86,7 @@ export async function upsertArticles(
       reddit_score: a.reddit_score,
       reddit_comments: a.reddit_comments,
       inbrief_score: a.inbrief_score,
-      ...(s ? { composite_score: s.score, mentions_count: s.mentions } : {}),
+      ...(s ? articleScoreColumns(s) : {}),
     };
   });
   const { data, error } = await db

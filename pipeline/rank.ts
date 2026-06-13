@@ -17,6 +17,7 @@
  * are attached for the diversity cap and storage; the LLM editor curates after.
  */
 
+import { createHash } from 'node:crypto';
 import { titlesSimilar } from './text';
 import { categoryForTitle, detectTopic, type CategorySlug } from './topics';
 
@@ -56,10 +57,19 @@ export interface RankedEntry {
   topic: string;
   category: CategorySlug;
   clusterSize: number;
+  /** Every member article's url — the score telemetry is written to all of them, not just the lead. */
+  memberUrls: string[];
+  /** Stable id of the cluster (sha1 of its sorted member urls) so non-lead rows share one group key. */
+  clusterId: string;
 }
 
 export interface RankResult {
   ranked: RankedEntry[];
+  /**
+   * Every scored cluster, sorted, BEFORE the per-source cap — the full telemetry
+   * surface. `ranked` is this list with `MAX_PER_SOURCE` applied for the editor.
+   */
+  scored: RankedEntry[];
   clusters: number;
   dropped: number;
 }
@@ -74,6 +84,14 @@ export const WEIGHTS = {
   inbrief: 0.1,
   breadth: 0.05,
 } as const;
+
+/**
+ * Rank-formula generation stamped onto every persisted score. Bump on ANY change
+ * to WEIGHTS or the normalization, so a mixed-generation dataset stays separable
+ * (v1 = pre-normalization rows whose scores can exceed 1 — excluded from training;
+ * v2 = the current normalized [0,1] scale).
+ */
+export const SCORE_VERSION = 2;
 
 /** Engagement/hour that maps to a 0.5 velocity component. */
 const VELOCITY_HALF = 15;
@@ -188,11 +206,17 @@ export function compositeScore(c: ScoreComponents): number {
   );
 }
 
+/** Stable 12-hex id for a cluster, derived from its sorted member urls. */
+export function clusterIdFor(memberUrls: string[]): string {
+  return createHash('sha1').update([...memberUrls].sort().join('|')).digest('hex').slice(0, 12);
+}
+
 function scoreCluster(cluster: Candidate[], nowMs: number): RankedEntry {
   const lead = pickClusterLead(cluster);
   const components = scoreComponents(cluster, nowMs);
   const base = compositeScore(components);
   const score = base * (1 - clickbaitDemotion(lead.title));
+  const memberUrls = cluster.map((a) => a.url);
   return {
     lead,
     score,
@@ -202,6 +226,8 @@ function scoreCluster(cluster: Candidate[], nowMs: number): RankedEntry {
     topic: detectTopic(lead.title),
     category: categoryForTitle(lead.title),
     clusterSize: cluster.length,
+    memberUrls,
+    clusterId: clusterIdFor(memberUrls),
   };
 }
 
@@ -260,6 +286,7 @@ export function rankCandidates(
 
   return {
     ranked: capPerSource(scored, MAX_PER_SOURCE),
+    scored,
     clusters: clusters.length,
     dropped: clusters.length - scored.length,
   };

@@ -12,7 +12,7 @@
 import { loadPipelineConfig } from './config';
 import { enrichPool, type EnrichedSource } from './enrich';
 import { collectArticles, toCandidate } from './fetch';
-import { rankCandidates } from './rank';
+import { rankCandidates, SCORE_VERSION } from './rank';
 import { dropKnownUrls, isColdSingleton, selectPool } from './select';
 import { summarize, type DraftBrief } from './summarize';
 import { reviseFlaggedItems, verifyClaims } from './verify';
@@ -27,6 +27,8 @@ import {
   recentPublishedTitles,
   storeItemEmbeddings,
   todaysItemTitles,
+  upsertArticles,
+  type ArticleScores,
   type PipelineDb,
   type PipelineRunLog,
 } from './db';
@@ -215,6 +217,36 @@ async function main(): Promise<void> {
     ranked: ranking.ranked.length,
     pool: pool.length,
   });
+
+  // Persist ranking telemetry for EVERY ranked article (all cluster members,
+  // before the per-source cap), independent of whether we publish. The
+  // weight-tuning dataset must include runs that skip downstream (empty pool /
+  // all-dedup / editor kept nothing), so this writes here, not only in publish().
+  // Idempotent (upsert on url); publish() re-upserts the same map for FK wiring.
+  const scoredAsOf = new Date().toISOString();
+  const scoresByUrl: ArticleScores = new Map();
+  for (const e of ranking.scored) {
+    for (const url of e.memberUrls) {
+      scoresByUrl.set(url, {
+        score: e.score,
+        mentions: e.mentions,
+        components: e.components,
+        clusterId: e.clusterId,
+        version: SCORE_VERSION,
+        scoredAsOf,
+      });
+    }
+  }
+  if (db) {
+    try {
+      await upsertArticles(db, fetched, scoresByUrl);
+    } catch (err) {
+      logEvent('warn', 'rank', 'Score telemetry upsert failed (non-fatal)', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
   if (pool.length === 0) {
     logEvent('info', 'rank', 'Nothing strong enough this run — skipping');
     return;
@@ -507,11 +539,8 @@ async function main(): Promise<void> {
   }
 
   t = Date.now();
-  // Persist ranking telemetry per article — the dataset for tuning WEIGHTS
-  // against the editor's approve/reject decisions later.
-  const scoresByUrl = new Map(
-    ranking.ranked.map((e) => [e.lead.url, { score: e.score, mentions: e.mentions }]),
-  );
+  // Re-uses the complete telemetry map built after rank (all members + the 6
+  // components); publish()'s upsert is idempotent and also returns the url→id map.
   const result = await publish(db, date, fetched, brief, `pipeline:${providerModel}`, scoresByUrl);
   await logStage(db, config.dryRun, {
     date,

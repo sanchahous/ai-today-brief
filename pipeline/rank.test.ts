@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   clickbaitDemotion,
+  clusterIdFor,
   compositeScore,
   rankCandidates,
   scoreComponents,
+  SCORE_VERSION,
   sourceTrust,
   WEIGHTS,
   type Candidate,
@@ -27,6 +29,41 @@ function candidate(over: Partial<Candidate> = {}): Candidate {
     ...over,
   };
 }
+
+describe('score telemetry', () => {
+  it('SCORE_VERSION is the normalized generation', () => {
+    expect(SCORE_VERSION).toBe(2);
+  });
+
+  it('clusterIdFor is a stable 12-hex id, independent of member order', () => {
+    const a = clusterIdFor(['https://x/2', 'https://x/1']);
+    const b = clusterIdFor(['https://x/1', 'https://x/2']);
+    expect(a).toBe(b);
+    expect(a).toMatch(/^[0-9a-f]{12}$/);
+  });
+
+  it('scored keeps clusters the per-source cap drops from ranked', () => {
+    // 5 unrelated stories from ONE source → 5 clusters; MAX_PER_SOURCE=3.
+    const titles = [
+      'OpenAI ships a new reasoning model',
+      'Cursor adds an inline agent mode',
+      'Postgres improves vector index recall',
+      'Rust compiler speeds up incremental builds',
+      'Kubernetes retires a legacy ingress API',
+    ];
+    const items = titles.map((title, i) =>
+      candidate({ url: `https://news.ycombinator.com/${i}`, title }),
+    );
+    const { ranked, scored } = rankCandidates(items, 0, NOW);
+    expect(scored.length).toBe(5);
+    expect(ranked.length).toBe(3);
+    // every scored entry carries its member urls + a cluster id for the telemetry write
+    for (const e of scored) {
+      expect(e.memberUrls.length).toBeGreaterThan(0);
+      expect(e.clusterId).toMatch(/^[0-9a-f]{12}$/);
+    }
+  });
+});
 
 describe('sourceTrust', () => {
   it('rates first-party labs highest and unknown at the neutral midpoint', () => {
