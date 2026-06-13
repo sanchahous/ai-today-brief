@@ -47,18 +47,19 @@ test.describe('News sidebar (desktop)', () => {
     test.skip((await trending.count()) === 0, 'No trending topics in current data');
 
     const alreadyVisible = await trending.evaluate((el) => {
+      // The testid sits on a display:contents wrapper (0x0 rect); measure its real parent box.
+      const box = (el.parentElement ?? el) as HTMLElement;
       const host = el.closest('[data-testid="news-sidebar"]');
       if (!host) return false;
       const sRect = host.getBoundingClientRect();
-      const tRect = el.getBoundingClientRect();
+      const tRect = box.getBoundingClientRect();
       return tRect.top >= sRect.top - 1 && tRect.bottom <= sRect.bottom + 1;
     });
 
     if (!alreadyVisible) {
       await sidebar.evaluate((sidebarEl) => {
-        const trendingEl = sidebarEl.querySelector(
-          '[data-testid="news-trending-section"]',
-        ) as HTMLElement | null;
+        const found = sidebarEl.querySelector('[data-testid="news-trending-section"]');
+        const trendingEl = (found?.parentElement ?? found) as HTMLElement | null;
         if (!trendingEl) return;
         sidebarEl.scrollTop =
           trendingEl.offsetTop - sidebarEl.clientHeight + trendingEl.offsetHeight + 8;
@@ -66,10 +67,12 @@ test.describe('News sidebar (desktop)', () => {
     }
 
     const visibleInSidebar = await trending.evaluate((el) => {
+      // The testid sits on a display:contents wrapper (0x0 rect); measure its real parent box.
+      const box = (el.parentElement ?? el) as HTMLElement;
       const host = el.closest('[data-testid="news-sidebar"]');
       if (!host) return false;
       const sRect = host.getBoundingClientRect();
-      const tRect = el.getBoundingClientRect();
+      const tRect = box.getBoundingClientRect();
       return tRect.top >= sRect.top - 1 && tRect.bottom <= sRect.bottom + 1;
     });
 

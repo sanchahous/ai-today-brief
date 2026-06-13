@@ -12,9 +12,15 @@ import type { Lang } from '@/lib/site';
 
 const PREVIEW_LIMIT = 5;
 
-function panelClassFor(variant: 'desktop' | 'mobile' | 'hero'): string {
+function panelClassFor(variant: 'desktop' | 'mobile' | 'hero' | 'modal'): string {
   const shell =
     'border-border bg-bg shadow-pop z-[80] overflow-y-auto rounded-xl border p-1.5';
+
+  if (variant === 'modal') {
+    // In-flow inside the fullscreen search modal: fills the remaining column height
+    // and scrolls internally, so results can never be clipped by the viewport.
+    return 'relative mt-3 w-full flex-1 min-h-0 overflow-y-auto overscroll-y-contain [-webkit-overflow-scrolling:touch] [touch-action:pan-y] p-1';
+  }
 
   if (variant === 'mobile') {
     return `${shell} mt-2 max-h-[55vh] w-full`;
@@ -90,7 +96,7 @@ export function SearchPreviewDropdown({
   lang: Lang;
   query: string;
   open: boolean;
-  variant: 'desktop' | 'mobile' | 'hero';
+  variant: 'desktop' | 'mobile' | 'hero' | 'modal';
   onNavigate: () => void;
 }) {
   const t = getStrings(lang);
