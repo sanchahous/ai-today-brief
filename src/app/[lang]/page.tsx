@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { EDITOR_NAME, SITE_NAME, SITE_URL, SOCIALS, isLang, type Lang } from '@/lib/site';
+import { SITE_NAME, SITE_URL, SOCIALS, isLang, type Lang } from '@/lib/site';
+import { authorNode, PERSON_ID } from '@/lib/schema';
 import { getHomeData } from '@/lib/home';
 import { HomeHero } from '@/components/home/home-hero';
 import { CategoryGrid } from '@/components/home/category-grid';
@@ -58,8 +59,9 @@ export default async function Home({ params }: { params: Promise<Params> }) {
         url: `${SITE_URL}/${lang}`,
         logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png`, width: 512, height: 512 },
         sameAs: SOCIALS.filter((s) => s.key !== 'rss').map((s) => s.url),
-        founder: { '@type': 'Person', name: EDITOR_NAME },
+        founder: { '@id': PERSON_ID },
       },
+      authorNode(lang),
       {
         '@type': 'WebSite',
         '@id': `${SITE_URL}/#website`,

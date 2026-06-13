@@ -11,6 +11,7 @@ import {
   CONTACT_EMAIL,
   type Lang,
 } from '@/lib/site';
+import { authorNode, publisherNode, PERSON_ID, ORG_ID } from '@/lib/schema';
 import { getStrings } from '@/lib/i18n';
 
 export const revalidate = 86400;
@@ -72,19 +73,15 @@ export default async function AboutPage({ params }: { params: Promise<Params> })
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'AboutPage',
-    inLanguage: lang,
-    mainEntity: {
-      '@type': 'Organization',
-      name: SITE_NAME,
-      url: SITE_URL,
-      founder: {
-        '@type': 'Person',
-        name: EDITOR_NAME,
-        jobTitle: EDITOR_ROLE[lang],
-        sameAs: EDITOR_PROFILE.links.map((l) => l.url),
+    '@graph': [
+      {
+        '@type': 'AboutPage',
+        inLanguage: lang,
+        mainEntity: { '@id': ORG_ID },
       },
-    },
+      { ...publisherNode(), founder: { '@id': PERSON_ID } },
+      authorNode(lang),
+    ],
   };
 
   return (

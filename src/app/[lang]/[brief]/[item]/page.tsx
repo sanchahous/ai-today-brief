@@ -2,7 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { EDITOR_NAME, EDITOR_PROFILE, isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
+import { isLang, SITE_URL, type Lang } from '@/lib/site';
+import { authorNode, publisherNode } from '@/lib/schema';
 import { getStrings } from '@/lib/i18n';
 import { getConceptNameIndex } from '@/lib/concepts';
 import { markdownToPlainText } from '@/lib/markdown';
@@ -138,18 +139,8 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         inLanguage: lang,
         isAccessibleForFree: true,
         url: `${SITE_URL}${pagePath}`,
-        author: {
-          '@type': 'Person',
-          name: EDITOR_NAME,
-          url: `${SITE_URL}/${lang}/author`,
-          sameAs: EDITOR_PROFILE.links.map((l) => l.url),
-        },
-        publisher: {
-          '@type': 'Organization',
-          name: SITE_NAME,
-          url: SITE_URL,
-          logo: { '@type': 'ImageObject', url: `${SITE_URL}/logo.png`, width: 512, height: 512 },
-        },
+        author: authorNode(lang),
+        publisher: publisherNode(),
         mainEntityOfPage: `${SITE_URL}${pagePath}`,
         ...(detail.citations.length > 0 || detail.sourceUrl
           ? {

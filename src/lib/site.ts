@@ -20,20 +20,30 @@ export function isLang(value: unknown): value is Lang {
   return typeof value === 'string' && (LANGS as readonly string[]).includes(value);
 }
 
-/** Editor byline — E-E-A-T + Discover consistent-author signal. */
+/**
+ * Editor byline — E-E-A-T + Discover consistent-author signal. `EDITOR_NAME` is
+ * the real/formal name; `EDITOR_ALT_NAME` is the public handle the personal
+ * domain + LinkedIn slug use — schema carries both (`name`/`alternateName`) so
+ * Google reconciles the two forms into one Person entity.
+ */
 export const EDITOR_NAME = 'Oleksandr Kuzmenko';
+export const EDITOR_ALT_NAME = 'Sasha Kuzmenko';
 export const EDITOR_ROLE = { en: 'Editor', uk: 'Редактор' } as const;
 
-/** Editor E-E-A-T profile — about page + schema sameAs signals. */
+/**
+ * Editor E-E-A-T profile. `links` are the editor's REAL personal profiles —
+ * they back the Person `sameAs` (the human entity). Brand/social accounts live
+ * in `SOCIALS` and back the Organization `sameAs`; keep the two separate.
+ */
 export const EDITOR_PROFILE = {
   expertise: {
     en: ['AI agents & MCP', 'developer tools', 'MLOps', 'LLM APIs'],
     uk: ['AI-агенти й MCP', 'інструменти для розробників', 'MLOps', 'LLM API'],
   },
   links: [
-    { label: 'X', url: 'https://x.com/aitodaybrief' },
-    { label: 'LinkedIn', url: 'https://www.linkedin.com/company/aitodaybrief' },
-    { label: 'Telegram', url: 'https://t.me/aitodaybrief' },
+    { label: 'LinkedIn', url: 'https://www.linkedin.com/in/sashakuzmenko' },
+    { label: 'GitHub', url: 'https://github.com/sanchahous' },
+    { label: 'Website', url: 'https://sashakuzmenko.com' },
   ],
 } as const;
 /** Accent for the brand monogram mark. */
