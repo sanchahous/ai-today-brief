@@ -10,8 +10,10 @@ import { trackEvent } from '@/lib/analytics-client';
 import { HeaderSearchField } from '@/components/header-search-field';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { OverlayDrawer } from '@/components/ui/overlay-drawer';
-import { CategoryGlyph, CloseIcon, MenuIcon, ArrowRight } from '@/components/icons';
+import { MobileSearchModal } from '@/components/search/mobile-search-modal';
+import { CategoryGlyph, CloseIcon, MenuIcon, ArrowRight, SearchIcon } from '@/components/icons';
 import type { IconKey } from '@/components/icons';
+import { useMobileSearch } from '@/hooks/use-mobile-search';
 
 export type NavCategory = {
   slug: string;
@@ -23,6 +25,7 @@ export type NavCategory = {
 export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories: NavCategory[] }) {
   const t = getStrings(lang);
   const pathname = usePathname();
+  const { open: searchOpen, heroVisible, openSearch } = useMobileSearch();
   const [menuOpen, setMenuOpen] = useState(false);
   const [catsOpen, setCatsOpen] = useState(false);
   const catsRef = useRef<HTMLDivElement>(null);
@@ -182,6 +185,24 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
               {t.subscribe}
             </Link>
             <button
+              type="button"
+              data-testid="header-search-icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                openSearch('icon', e.currentTarget);
+              }}
+              aria-label={t.searchOpen}
+              aria-haspopup="dialog"
+              aria-expanded={searchOpen}
+              aria-hidden={heroVisible}
+              tabIndex={heroVisible ? -1 : 0}
+              className={`text-text inline-flex h-11 w-11 touch-manipulation items-center justify-center border-0 bg-transparent transition-[opacity,transform] duration-200 ease-out motion-reduce:transition-none ${
+                heroVisible ? 'pointer-events-none scale-90 opacity-0' : 'scale-100 opacity-100'
+              }`}
+            >
+              <SearchIcon size={20} />
+            </button>
+            <button
               ref={menuTriggerRef}
               type="button"
               aria-label={menuOpen ? t.closeMenu : t.menu}
@@ -313,6 +334,8 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             </div>
           </nav>
         </OverlayDrawer>
+
+        <MobileSearchModal lang={lang} />
       </div>
     </header>
   );
