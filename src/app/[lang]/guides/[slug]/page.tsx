@@ -5,7 +5,8 @@ import { getGuide, GUIDES } from '@/content/guides';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { MarkdownBody } from '@/components/markdown-body';
 import { getStrings } from '@/lib/i18n';
-import { EDITOR_NAME, EDITOR_PROFILE, isLang, LANGS, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
+import { EDITOR_NAME, isLang, LANGS, SITE_URL, type Lang } from '@/lib/site';
+import { authorNode, publisherNode } from '@/lib/schema';
 
 export const revalidate = 86400;
 
@@ -72,13 +73,8 @@ export default async function GuidePage({ params }: { params: Promise<Params> })
         inLanguage: lang,
         isAccessibleForFree: true,
         url: `${SITE_URL}/${lang}/guides/${slug}`,
-        author: {
-          '@type': 'Person',
-          name: EDITOR_NAME,
-          url: `${SITE_URL}/${lang}/author`,
-          sameAs: EDITOR_PROFILE.links.map((l) => l.url),
-        },
-        publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+        author: authorNode(lang),
+        publisher: publisherNode(),
         mainEntityOfPage: `${SITE_URL}/${lang}/guides/${slug}`,
       },
       breadcrumbJsonLd(crumbs, SITE_URL),

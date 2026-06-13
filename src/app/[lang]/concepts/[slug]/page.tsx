@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
+import { authorNode, publisherNode } from '@/lib/schema';
 import { getStrings } from '@/lib/i18n';
 import { getConceptHub, getConceptPaths } from '@/lib/concepts';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
@@ -80,7 +81,8 @@ export default async function ConceptHubPage({ params }: { params: Promise<Param
         description: hub.concept.description,
         inLanguage: lang,
         url: `${SITE_URL}/${lang}/concepts/${slug}`,
-        publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+        author: authorNode(lang),
+        publisher: publisherNode(),
       },
     ],
   };

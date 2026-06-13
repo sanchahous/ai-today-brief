@@ -12,6 +12,7 @@ import {
   SITE_URL,
   type Lang,
 } from '@/lib/site';
+import { authorNode, publisherNode, PERSON_ID } from '@/lib/schema';
 import { getStrings } from '@/lib/i18n';
 
 export const revalidate = 86400;
@@ -69,17 +70,15 @@ export default async function AuthorPage({ params }: { params: Promise<Params> }
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'ProfilePage',
-    inLanguage: lang,
-    mainEntity: {
-      '@type': 'Person',
-      name: EDITOR_NAME,
-      jobTitle: EDITOR_ROLE[lang],
-      url: `${SITE_URL}/${lang}/author`,
-      sameAs: EDITOR_PROFILE.links.map((l) => l.url),
-      knowsAbout: EDITOR_PROFILE.expertise[lang],
-      worksFor: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
-    },
+    '@graph': [
+      {
+        '@type': 'ProfilePage',
+        inLanguage: lang,
+        mainEntity: { '@id': PERSON_ID },
+      },
+      authorNode(lang),
+      publisherNode(),
+    ],
   };
 
   return (
