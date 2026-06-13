@@ -10,16 +10,18 @@ export function TrendingTopicLink({
   placement,
   sizeRem,
   mentionsLabel,
+  risingLabel,
 }: {
   topic: TrendingTopic;
   placement: string;
   sizeRem: number;
   mentionsLabel: string;
+  risingLabel: string;
 }) {
   return (
     <Link
       href={topic.href}
-      title={`${topic.mentions} ${mentionsLabel}`}
+      title={topic.rising ? `${risingLabel} · ${topic.mentions} ${mentionsLabel}` : `${topic.mentions} ${mentionsLabel}`}
       onClick={() =>
         trackEvent('trending_topic_click', {
           topic: topic.name,
@@ -33,6 +35,15 @@ export function TrendingTopicLink({
         <SparkleIcon size={15} />
       </span>
       {topic.name}
+      {topic.rising && (
+        <span
+          className="text-accent text-[0.7em] font-bold leading-none"
+          aria-label={risingLabel}
+          title={risingLabel}
+        >
+          ▲
+        </span>
+      )}
       <span
         aria-hidden
         className="text-accent inline-flex -translate-x-1 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100"

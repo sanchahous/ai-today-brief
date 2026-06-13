@@ -29,9 +29,10 @@ import {
 } from '../trend-signals';
 
 const TIMESPAN = '3m';
-// GDELT's free DOC API rate-limits aggressively (~1 req / few s). A dry run at
-// 1.5s spacing got 13/23 entities 429'd to empty; 5s + extra retries clears it.
-const SLEEP_BETWEEN_MS = 5000;
+// GDELT's free DOC API rate-limits aggressively (~1 req / few s). At 5s spacing a
+// real run still 429'd ~half the entities to empty; 8s + extra retries gets more
+// through per run (the append-only table also fills across daily runs).
+const SLEEP_BETWEEN_MS = 8000;
 const FETCH_ATTEMPTS = 4;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blendTrend, entityKeyForTool } from './trend-index';
+import { blendTrend, entityKeyForTool, isRising, RISING_THRESHOLD } from './trend-index';
 
 describe('entityKeyForTool', () => {
   it('slugifies a plain tool name onto its entity key', () => {
@@ -32,5 +32,14 @@ describe('blendTrend', () => {
 
   it('keeps a rising topic ahead of an equally-mentioned flat one', () => {
     expect(blendTrend(3, 0.8)).toBeGreaterThan(blendTrend(3, 0));
+  });
+});
+
+describe('isRising', () => {
+  it('flags scores at or above the threshold, treats missing as not rising', () => {
+    expect(isRising(0.94)).toBe(true);
+    expect(isRising(RISING_THRESHOLD)).toBe(true);
+    expect(isRising(0.42)).toBe(false);
+    expect(isRising(undefined)).toBe(false);
   });
 });
