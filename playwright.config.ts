@@ -10,13 +10,18 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  // Cap local workers: the full 3-engine matrix with heavy click-through specs can
+  // thrash a dev machine and cascade into timeouts. CI stays serial.
+  workers: process.env.CI ? 1 : 4,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: 'http://127.0.0.1:3000',
     viewport: { width: 1280, height: 720 },
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    // Pre-seed cookie consent so the bottom-fixed consent banner never intercepts
+    // clicks / covers content during tests (it otherwise breaks bottom-of-page flows).
+    storageState: './e2e/consent-state.json',
   },
   projects: [
     {
