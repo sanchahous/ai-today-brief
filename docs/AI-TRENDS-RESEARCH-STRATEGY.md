@@ -68,8 +68,9 @@
 
 - **Інструменти / сервіси:** AI-відео (Kling v3, Veo 3.1, Runway Gen-4.5, Pika,
   Seedance 2.0), newsletter-tooling, browser-automation утиліти.
-- **Моделі:** Fable 5, Opus 4.8, GPT-5.5, Gemini 3.1 Pro, Grok 4, DeepSeek V4 Pro,
-  MiniMax M3 (open-weights), Qwen3.7 Max (найдешевший топ-10).
+- **Моделі:** Fable 5, Opus 4.8, GPT-5.5, Gemini 3.1 Pro, Grok 4.3 (live-флагман
+  xAI з 30.04.2026; $1.25/$2.50, 1M ctx), DeepSeek V4 Pro, MiniMax M3 (open-weights,
+  з нативним відео/зображення-входом), Qwen3.7 Max (найдешевший топ-10).
 - **Бізнес-застосування:** AI-консалтинг/автоматизація, micro-SaaS, prompt-eng для
   enterprise, кастомні агенти під замовлення, контент-монетизація.
 - **Автоматизація:** browser automation, оркестрація воркфлоу, агентні «цифрові
