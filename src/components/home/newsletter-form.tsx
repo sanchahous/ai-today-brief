@@ -34,7 +34,7 @@ export function NewsletterForm({
 
   if (status === 'done') {
     return (
-      <p role="status" className="text-accent text-sm font-semibold">
+      <p role="status" className="text-accent flex min-h-12 items-center text-sm font-semibold">
         {done}
       </p>
     );
@@ -42,7 +42,7 @@ export function NewsletterForm({
 
   if (status === 'not_configured') {
     return (
-      <p role="status" className="text-muted text-sm leading-relaxed">
+      <p role="status" className="text-muted flex min-h-12 items-center text-sm leading-relaxed">
         {notConfigured}
       </p>
     );

@@ -27,6 +27,7 @@ export function CategoryMixBar({ lang, categories }: { lang: Lang; categories: H
         {withCount.map((c) => (
           <span
             key={c.slug}
+            className="min-w-[2px]"
             style={{
               width: `${(c.count / total) * 100}%`,
               background: c.color ?? 'var(--color-accent)',

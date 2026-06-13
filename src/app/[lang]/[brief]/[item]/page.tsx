@@ -279,7 +279,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
                 <span className="text-faint mb-1 block text-[0.72rem] tracking-[0.06em] uppercase">
                   ← {t.prevStory}
                 </span>
-                <span className="text-text text-[0.92rem] font-semibold leading-snug">
+                <span className="text-text text-[0.92rem] font-semibold leading-snug break-words">
                   {adjacent.prev.title}
                 </span>
               </Link>
@@ -294,7 +294,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
                 <span className="text-faint mb-1 block text-[0.72rem] tracking-[0.06em] uppercase">
                   {t.nextStory} →
                 </span>
-                <span className="text-text text-[0.92rem] font-semibold leading-snug">
+                <span className="text-text text-[0.92rem] font-semibold leading-snug break-words">
                   {adjacent.next.title}
                 </span>
               </Link>

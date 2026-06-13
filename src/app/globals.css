@@ -289,9 +289,11 @@
     border-color 0.25s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.card-hover:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-pop);
+@media (hover: hover) and (pointer: fine) {
+  .card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-pop);
+  }
 }
 
 .elevation-card {
@@ -454,8 +456,10 @@
   }
 }
 
-.theme-light .card-hover:hover {
-  border-color: color-mix(in srgb, var(--border) 70%, var(--accent));
+@media (hover: hover) and (pointer: fine) {
+  .theme-light .card-hover:hover {
+    border-color: color-mix(in srgb, var(--border) 70%, var(--accent));
+  }
 }
 .news-layout {
   display: grid;

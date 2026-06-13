@@ -85,7 +85,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
   }
 
   const iconBtn =
-    'inline-flex items-center gap-1.5 rounded-pill border border-border px-2.5 py-1.5 text-[0.8rem] font-medium text-muted transition hover:border-accent hover:text-text';
+    'inline-flex min-h-11 items-center gap-1.5 rounded-pill border border-border px-2.5 py-2 text-[0.8rem] font-medium text-muted transition hover:border-accent hover:text-text';
 
   return (
     <article
@@ -125,7 +125,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <CategoryBadge name={item.categoryName} color={item.categoryColor} />
             {item.sourceName && (
-              <span className="text-faint text-[0.74rem]">
+              <span className="text-faint min-w-0 break-words text-[0.74rem]">
                 {item.sourceName} · {formatDate(item.date, lang)}
               </span>
             )}
@@ -151,7 +151,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
             </Link>
           </h3>
 
-          <p className="text-muted mb-3 text-[0.92rem] leading-relaxed">{item.summary}</p>
+          <p className="text-muted mb-3 line-clamp-3 text-[0.92rem] leading-relaxed">{item.summary}</p>
 
           <div className="relative flex flex-wrap items-center gap-2">
             <button
@@ -197,7 +197,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
               {shareOpen && (
                 <div
                   role="menu"
-                  className="border-border bg-bg shadow-pop absolute bottom-full left-0 z-30 mb-2 min-w-[190px] rounded-[10px] border p-1"
+                  className="border-border bg-bg shadow-pop absolute bottom-full right-0 z-30 mb-2 min-w-[190px] max-w-[calc(100vw-2rem)] rounded-[10px] border p-1"
                 >
                   <a
                     role="menuitem"
