@@ -46,6 +46,14 @@ export function blendTrend(mentions: number, rising: number): number {
   return mentions * (1 + Math.max(0, Math.min(1, rising)));
 }
 
+/** At/above this the entity is surging or genuinely accelerating — shown as ▲. */
+export const RISING_THRESHOLD = 0.5;
+
+/** Whether a topic's rising score is high enough to flag it as rising. */
+export function isRising(score: number | undefined): boolean {
+  return (score ?? 0) >= RISING_THRESHOLD;
+}
+
 /**
  * Latest `rising_score` per entity key (the freshest append-only row each).
  * Empty map on any failure or when RLS hides the table — callers degrade to

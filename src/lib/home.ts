@@ -3,7 +3,7 @@ import type { Lang } from '@/lib/site';
 import { categoryMeta, TOP_CATEGORY_SLUGS } from '@/lib/category-meta';
 import { getCategories, getPublishedCategoryCounts } from '@/lib/categories';
 import { getConceptNameIndex } from '@/lib/concepts';
-import { blendTrend, entityKeyForTool, getRisingByEntity } from '@/lib/trend-index';
+import { blendTrend, entityKeyForTool, getRisingByEntity, isRising } from '@/lib/trend-index';
 import type { IconKey } from '@/components/icons';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
@@ -65,6 +65,8 @@ export interface TrendingTopic {
   name: string;
   mentions: number;
   href: string;
+  /** Accelerating in the news right now (GDELT rising signal) — flagged with ▲. */
+  rising?: boolean;
 }
 
 export interface HomeData {
@@ -237,14 +239,15 @@ async function buildTrending(lang: Lang, items: HomeItem[]): Promise<TrendingTop
   return Array.from(counts.entries())
     .map(([name, mentions]) => {
       const slug = index.get(name.toLowerCase());
-      const trend = blendTrend(mentions, rising.get(entityKeyForTool(name)) ?? 0);
+      const risingScore = rising.get(entityKeyForTool(name));
       return {
         topic: {
           name,
           mentions,
           href: slug ? `/${lang}/concepts/${slug}` : `/${lang}/news?q=${encodeURIComponent(name)}`,
+          rising: isRising(risingScore),
         },
-        trend,
+        trend: blendTrend(mentions, risingScore ?? 0),
       };
     })
     .sort((a, b) => b.trend - a.trend)

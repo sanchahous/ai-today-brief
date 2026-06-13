@@ -106,9 +106,11 @@ export const STRINGS = {
       readMin: 'min read',
       trendingEyebrow: 'Trending',
       trendingTitle: 'Hot topics this week',
-      trendingSubtitle: 'The most-mentioned tools and concepts. Tap one to gather every story.',
+      trendingSubtitle:
+        'Ranked by momentum — the tools and concepts accelerating in the news. Tap one to gather every story.',
       trendingChartTitle: 'Mentions in recent briefs',
       mentions: 'mentions',
+      rising: 'rising',
       subEyebrow: 'Email digest',
       subTitle: 'Get the morning AI brief',
       subBody:
@@ -417,9 +419,10 @@ export const STRINGS = {
       trendingEyebrow: 'Тренди',
       trendingTitle: 'Гарячі теми тижня',
       trendingSubtitle:
-        'Найбільш згадувані інструменти й концепти. Натисніть, щоб зібрати всі матеріали.',
+        'За моментумом — інструменти й концепти, що набирають обертів у новинах. Натисніть, щоб зібрати всі матеріали.',
       trendingChartTitle: 'Згадки в останніх брифах',
       mentions: 'згадок',
+      rising: 'росте',
       subEyebrow: 'Email-дайджест',
       subTitle: 'Отримуйте ранковий AI-бриф',
       subBody:
