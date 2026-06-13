@@ -9,7 +9,6 @@ import {
   getPipelineDateKyiv,
   parseScheduleAttemptFlag,
   resolveScheduleAttempt,
-  shouldUseOpenRouter,
 } from './schedule';
 
 // EEST = UTC+3 (Europe/Kyiv DST active during these test dates)
@@ -120,13 +119,6 @@ describe('resolveScheduleAttempt', () => {
         summarizeFailuresInCycle: 2,
       }),
     ).toBe(3);
-  });
-});
-
-describe('shouldUseOpenRouter', () => {
-  it('returns true only for the final slot 4', () => {
-    expect(shouldUseOpenRouter(3)).toBe(false);
-    expect(shouldUseOpenRouter(4)).toBe(true);
   });
 });
 
