@@ -66,7 +66,11 @@ export function StoryBody({
       {detail.why && (
         <div
           className="bg-surface-2 mb-5 rounded-r-lg py-3 pr-4 pl-4"
-          style={{ borderLeft: `3px solid color-mix(in srgb, ${color} 55%, var(--border))` }}
+          style={{
+            // Solid floor first so the accent stripe never vanishes where color-mix is unsupported.
+            borderLeft: '3px solid var(--border)',
+            borderLeftColor: `color-mix(in srgb, ${color} 55%, var(--border))`,
+          }}
         >
           <p className="cat-fg m-0 mb-1.5 text-[0.74rem] font-bold tracking-[0.08em] uppercase" style={catStyle}>
             {t.whyItMatters}
