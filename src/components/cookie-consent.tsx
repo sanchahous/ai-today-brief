@@ -134,7 +134,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
     <div
       role="region"
       aria-label={c.cookieTitle}
-      className="border-border bg-bg shadow-pop pointer-events-auto fixed bottom-4 left-4 z-[200] w-[min(440px,calc(100vw-2rem))] rounded-[var(--radius)] border p-5"
+      className="border-border bg-bg shadow-pop pointer-events-auto fixed bottom-4 left-4 z-[100] w-[min(440px,calc(100vw-2rem))] rounded-[var(--radius)] border p-5"
     >
       <div className="mb-2 flex items-center gap-2">
         <h2 className="text-base font-semibold">{c.cookieTitle}</h2>
