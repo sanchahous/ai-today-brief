@@ -47,16 +47,13 @@ export const BLUESKY_QUERIES = [
  * so feed items merge with the same outlet arriving via InBrief.
  */
 export const RSS_FEEDS = [
-  { name: 'Anthropic Blog', url: 'https://www.anthropic.com/rss.xml' },
+  { name: 'Anthropic Blog', url: 'https://www.anthropic.com/news/rss.xml' },
   { name: 'OpenAI Blog', url: 'https://openai.com/blog/rss.xml' },
   { name: 'Google AI Blog', url: 'https://blog.google/technology/ai/rss/' },
   { name: 'DeepMind Blog', url: 'https://deepmind.google/blog/rss.xml' },
   { name: 'Hugging Face Blog', url: 'https://huggingface.co/blog/feed.xml' },
   { name: 'Simon Willison', url: 'https://simonwillison.net/atom/everything/' },
-  {
-    name: 'The Verge',
-    url: 'https://www.theverge.com/ai-artificial-intelligence/rss/index.xml',
-  },
+  { name: 'The Verge', url: 'https://www.theverge.com/rss/index.xml' },
   { name: 'VentureBeat', url: 'https://venturebeat.com/category/ai/feed/' },
   { name: 'TechCrunch', url: 'https://techcrunch.com/category/artificial-intelligence/feed/' },
   {
