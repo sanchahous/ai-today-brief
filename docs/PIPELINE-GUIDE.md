@@ -222,3 +222,72 @@ sequenceDiagram
 - **Холодний одинак** — новина без engagement з одного джерела (типово медіа-RSS).
 - **Item** — одна новина на сайті (`/uk/<бриф>/<новина>`).
 - **Legacy item** — стара новина без rich-полів (факт-контроль не зміг звірити — лишилась у простому форматі; це норма).
+
+---
+
+## 10. Для розробника: точний порядок стадій і модель даних
+
+> Розділи 1–9 — погляд власника. Цей розділ звіряє діаграми з кодом
+> (`pipeline/run-daily.ts` + `pipeline/README.md`): один вхід, типізовані
+> структури, без mutable state на рівні модулів.
+
+> **Діаграма — Конвеєр стадій із прив'язкою до файлів (flowchart).** Реальний
+> порядок, як його виконує `run-daily.ts`: FETCH → RANK → SELECT → DEDUP →
+> ENRICH → SUMMARIZE → VERIFY → PUBLISH. Стадії до DEDUP працюють лише в пам'яті
+> (`FetchedArticle[]`), запис у Supabase — лише на PUBLISH (draft).
+
+```mermaid
+flowchart TD
+    RD["run-daily.ts<br/>оркестратор · --dry-run"] --> CFG["0 · config.ts<br/>валідація env + tunables"]
+    CFG --> F["1 · fetch.ts + sources/**<br/>Promise.allSettled · 24h-вікно · дедуп по URL"]
+    F --> RANK2["2 · rank.ts + topics.ts + text.ts<br/>кластеризація + композитний скор"]
+    RANK2 --> SEL["3 · select.ts<br/>поріг MIN_SCORE · cap на тему · топ POOL_SIZE"]
+    SEL --> DD["3.5 · embeddings.ts + db.ts<br/>matchPublishedItem (pgvector, лише published)"]
+    DD --> EN["3.7 · enrich.ts<br/>повний текст топ-ENRICH_LIMIT + og:image + HN-коменти"]
+    EN --> SUM2["4 · summarize.ts<br/>один виклик Gemini → двомовний бриф (по ref)"]
+    SUM2 --> VER2["4.5 · verify.ts<br/>звірка EN-тверджень із джерелом (non-fatal)"]
+    VER2 --> PUB2["5 · publish.ts + db.ts<br/>idempotent draft: upsert articles/brief/items"]
+    PUB2 --> GATE["6 · Редакційні ворота (поза pipeline)<br/>людина: briefs.status → published"]
+
+    F -. in-memory FetchedArticle[] .-> SEL
+    PUB2 -. логи кожної стадії .-> RUNS["pipeline_runs.meta"]
+```
+
+> **Діаграма — Модель даних Supabase (ER).** Чотири таблиці, яких торкається
+> pipeline. `articles` — сирий audit-trail (unique `url`); `briefs` — один на
+> `date`; `brief_items` — рядки брифа з двомовним текстом; `brief_item_embeddings`
+> — вектори опублікованих item-ів для крос-денної семантичної дедуплікації.
+
+```mermaid
+erDiagram
+    briefs ||--o{ brief_items : "має"
+    articles ||--o{ brief_items : "джерело (article_id)"
+    brief_items ||--o| brief_item_embeddings : "вектор (768d)"
+    categories ||--o{ brief_items : "category_slug"
+
+    briefs {
+        date date UK "унікальний ключ дня"
+        text slug UK "глобально унікальний"
+        text status "draft | published"
+        text title_intro_en_uk
+    }
+    articles {
+        text url UK "де-дуп по URL"
+        int hn_reddit_inbrief_score
+        jsonb raw
+    }
+    brief_items {
+        int rank "unique(brief_id, rank)"
+        int article_id "unique(brief_id, article_id)"
+        text category_slug FK
+        jsonb takeaways_tools
+    }
+    brief_item_embeddings {
+        int brief_item_id UK "idempotent upsert"
+        vector embedding "gemini-embedding-001"
+    }
+```
+
+Запуск: `npm run pipeline:dry` (fetch + rank + summarize + друк, без запису) або
+`npm run pipeline` (плюс запис денного **draft**-брифа). Store — єдине джерело
+правди; людина перемикає `briefs.status → published` (редакційні ворота).
