@@ -5,7 +5,7 @@
  * Bluesky links compete in `rank.ts` velocity like any social signal.
  */
 
-import { logError } from '../log';
+import { logError, logEvent } from '../log';
 import { isPublishedWithinRollingWindow } from '../rolling-window';
 import { BLUESKY_QUERIES } from './feeds';
 import { fetchWithRetry, isSuccessfulResponse, type FetchedArticle } from './http';
@@ -79,7 +79,12 @@ export async function fetchBluesky(
     try {
       const url = `${SEARCH_URL}?q=${encodeURIComponent(q)}&sort=top&limit=25`;
       const res = await retry(url, { signal: AbortSignal.timeout(10_000) });
-      if (!isSuccessfulResponse(res)) continue;
+      if (!isSuccessfulResponse(res)) {
+        // Was silent — log the status so a persistent 0 (e.g. the public AppView
+        // moving search behind auth) is diagnosable instead of invisible.
+        logEvent('warn', 'fetch', 'Bluesky search failed', { query: q, status: res?.status ?? null });
+        continue;
+      }
 
       const json = (await res!.json()) as { posts?: unknown[] };
       for (const post of json.posts ?? []) {

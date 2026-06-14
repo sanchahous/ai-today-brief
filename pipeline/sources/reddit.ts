@@ -17,7 +17,13 @@ import { fetchWithRetry, isSuccessfulResponse, type FetchedArticle } from './htt
 async function getOAuthToken(retry: typeof fetchWithRetry): Promise<string | null> {
   const clientId = process.env.REDDIT_CLIENT_ID?.trim();
   const clientSecret = process.env.REDDIT_CLIENT_SECRET?.trim();
-  if (!clientId || !clientSecret) return null;
+  if (!clientId || !clientSecret) {
+    // Surface the root cause: without creds the public *.json endpoints 403 from
+    // CI (datacenter IP), so reddit silently returns 0. Set REDDIT_CLIENT_ID /
+    // REDDIT_CLIENT_SECRET (a Reddit "script" app) as Actions secrets to fix it.
+    logEvent('warn', 'fetch', 'Reddit: no OAuth credentials — public API will 403 from CI');
+    return null;
+  }
 
   try {
     const res = await retry('https://www.reddit.com/api/v1/access_token', {
