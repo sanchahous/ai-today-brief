@@ -31,11 +31,7 @@ export function NewsletterBand({
     <section aria-labelledby={showHeader ? 'newsletter-title' : undefined} className={outer}>
       <Reveal>
         <div
-          className={`rounded-card border-border relative overflow-hidden border ${innerPadding}`}
-          style={{
-            background:
-              'radial-gradient(120% 160% at 0% 0%, rgba(240,192,64,0.14), transparent 55%), var(--surface)',
-          }}
+          className={`newsletter-card-bg rounded-card border-border relative overflow-hidden border ${innerPadding}`}
         >
           {showHeader ? (
             <>

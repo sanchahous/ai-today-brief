@@ -637,3 +637,13 @@
     scroll-behavior: auto;
   }
 }
+
+/* Newsletter card wash — tuned per theme so the gold accent reads on both dark and light. */
+.newsletter-card-bg {
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(240, 192, 64, 0.14), transparent 55%), var(--surface);
+}
+.theme-light .newsletter-card-bg {
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(138, 101, 8, 0.1), transparent 55%), var(--surface);
+}
