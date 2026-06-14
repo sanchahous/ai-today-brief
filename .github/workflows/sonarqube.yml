@@ -1,11 +1,24 @@
 name: SonarQube
 
 on:
+  # Sonar analyses TS/JS quality, so it only needs to run when code changes. Skip
+  # docs/markdown/SQL-migration/workflow-only PRs (no code to scan). Runs on src/**
+  # OR pipeline/** changes. Gates both the PR run and the post-merge push run.
   workflow_dispatch:
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'supabase/migrations/**'
+      - '.github/**'
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'supabase/migrations/**'
+      - '.github/**'
 
 jobs:
   sonar:
