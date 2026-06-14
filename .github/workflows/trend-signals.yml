@@ -2,9 +2,10 @@ name: Trend signals
 
 on:
   schedule:
-    # Daily 04:30 UTC — capture each tracked entity's GDELT news-volume trend into
-    # entity_trend_signals (append-only; the series accumulates our own history).
-    - cron: '30 4 * * *'
+    # Weekly (Mon 04:30 UTC) — capture each tracked entity's GDELT news-volume trend
+    # into entity_trend_signals (append-only). Was daily; trimmed to weekly to save
+    # Actions minutes — the rising signal moves slowly enough that weekly is plenty.
+    - cron: '30 4 * * 1'
   workflow_dispatch:
     inputs:
       dry_run:
