@@ -54,6 +54,18 @@ export function isRising(score: number | undefined): boolean {
   return (score ?? 0) >= RISING_THRESHOLD;
 }
 
+/** Freshness in [0,1] from days since the newest item (3-day half-life). */
+export function recencyScore(daysAgo: number): number {
+  return 0.5 ** (Math.max(0, daysAgo) / 3);
+}
+
+/** Strongest rising signal among an item's mentioned tools (0 if none tracked). */
+export function maxTrendForTools(tools: readonly string[], rising: Map<string, number>): number {
+  let max = 0;
+  for (const tool of tools) max = Math.max(max, rising.get(entityKeyForTool(tool)) ?? 0);
+  return max;
+}
+
 /**
  * Latest `rising_score` per entity key (the freshest append-only row each).
  * Empty map on any failure or when RLS hides the table — callers degrade to
