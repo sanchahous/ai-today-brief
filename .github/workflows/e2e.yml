@@ -1,10 +1,26 @@
 name: E2E (Playwright)
 
 on:
+  # Playwright tests the built website, so it only needs to run on UI-affecting
+  # changes. Skip docs/markdown/SQL/workflow-only AND pipeline-only PRs (the
+  # pipeline never renders the site). Saves Actions minutes — both the PR run and
+  # the post-merge push run are gated.
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'supabase/migrations/**'
+      - '.github/**'
+      - 'pipeline/**'
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+      - 'supabase/migrations/**'
+      - '.github/**'
+      - 'pipeline/**'
 
 jobs:
   e2e:
