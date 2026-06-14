@@ -47,7 +47,9 @@ export const BLUESKY_QUERIES = [
  * so feed items merge with the same outlet arriving via InBrief.
  */
 export const RSS_FEEDS = [
-  { name: 'Anthropic Blog', url: 'https://www.anthropic.com/news/rss.xml' },
+  // Anthropic removed: both /rss.xml and /news/rss.xml now 404 — they no longer
+  // publish a public feed. Anthropic news still enters via the HN "Anthropic"
+  // query + InBrief. Re-add here if a working feed URL surfaces.
   { name: 'OpenAI Blog', url: 'https://openai.com/blog/rss.xml' },
   { name: 'Google AI Blog', url: 'https://blog.google/technology/ai/rss/' },
   { name: 'DeepMind Blog', url: 'https://deepmind.google/blog/rss.xml' },
