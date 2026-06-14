@@ -3,7 +3,14 @@ import type { Lang } from '@/lib/site';
 import { categoryMeta, TOP_CATEGORY_SLUGS } from '@/lib/category-meta';
 import { getCategories, getPublishedCategoryCounts } from '@/lib/categories';
 import { getConceptNameIndex } from '@/lib/concepts';
-import { blendTrend, entityKeyForTool, getRisingByEntity, isRising } from '@/lib/trend-index';
+import {
+  blendTrend,
+  entityKeyForTool,
+  getRisingByEntity,
+  isRising,
+  maxTrendForTools,
+  recencyScore,
+} from '@/lib/trend-index';
 import type { IconKey } from '@/components/icons';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
@@ -169,8 +176,26 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
     });
   }
 
-  const featured = items[0] ?? null;
-  const secondary = items.slice(1, 5);
+  // Trend-index organizes the showcase by MOMENTUM, not pure recency. Items keep
+  // their recency order for the per-category "latest" lists (that label must stay
+  // honest); top-of-week + category order are re-ranked by momentum below.
+  // `momentum = recency × (1 + maxToolTrend)`: freshness stays the base (3-day
+  // half-life), a surging-topic story gets boosted up to 2×. With no rising
+  // signal this collapses to the existing recency order.
+  const rising = await getRisingByEntity();
+  const newestMs = items[0] ? Date.parse(items[0].date) : Date.now();
+  const momentumOf = (it: HomeItem): number =>
+    blendTrend(
+      recencyScore((newestMs - Date.parse(it.date)) / 86_400_000),
+      maxTrendForTools(it.tools, rising),
+    );
+
+  const byMomentum = items
+    .map((it, i) => ({ it, i, m: momentumOf(it) }))
+    .sort((a, b) => b.m - a.m || a.i - b.i) // stable: keep date→edition→rank on ties
+    .map((x) => x.it);
+  const featured = byMomentum[0] ?? null;
+  const secondary = byMomentum.slice(1, 5);
 
   // Attribute the lead story's source (separate query — we never embed the
   // articles table). Only the featured card shows a source line.
@@ -195,8 +220,23 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
     itemsByCat.set(item.categorySlug, group);
   }
 
+  // Category order by momentum: the category whose hottest story has the most
+  // momentum leads. Stable-tiebroken by the curated TOP_CATEGORY_SLUGS order, so
+  // with no signal (or ties) the curated order is preserved.
+  const categoryMomentum = new Map<string, number>();
+  for (const item of items) {
+    if (!item.categorySlug) continue;
+    const m = momentumOf(item);
+    if (m > (categoryMomentum.get(item.categorySlug) ?? 0)) {
+      categoryMomentum.set(item.categorySlug, m);
+    }
+  }
+  const orderedTopSlugs = TOP_CATEGORY_SLUGS.map((slug, i) => ({ slug, i }))
+    .sort((a, b) => (categoryMomentum.get(b.slug) ?? 0) - (categoryMomentum.get(a.slug) ?? 0) || a.i - b.i)
+    .map((x) => x.slug);
+
   const categories: HomeCategory[] = [];
-  for (const slug of TOP_CATEGORY_SLUGS) {
+  for (const slug of orderedTopSlugs) {
     const cat = catBySlug.get(slug);
     if (!cat) continue;
     const meta = categoryMeta(slug);
@@ -213,10 +253,10 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
     });
   }
 
-  const trending = await buildTrending(lang, items);
+  const trending = await buildTrending(lang, items, rising);
 
   return {
-    briefDate: featured?.date ?? briefList[0]?.date ?? null,
+    briefDate: briefList[0]?.date ?? featured?.date ?? null,
     featured,
     secondary,
     categories,
@@ -225,17 +265,21 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
   };
 }
 
-async function buildTrending(lang: Lang, items: HomeItem[]): Promise<TrendingTopic[]> {
+async function buildTrending(
+  lang: Lang,
+  items: HomeItem[],
+  rising: Map<string, number>,
+): Promise<TrendingTopic[]> {
   const counts = new Map<string, number>();
   for (const item of items) {
     for (const name of item.tools) counts.set(name, (counts.get(name) ?? 0) + 1);
   }
   if (counts.size === 0) return [];
 
-  // Trend-index v0: rank by acceleration (GDELT rising signal) on top of mention
-  // frequency, not by raw mentions alone. Falls back to mentions if signals are
-  // unavailable (getRisingByEntity returns an empty map).
-  const [index, rising] = await Promise.all([getConceptNameIndex(), getRisingByEntity()]);
+  // Trend-index: rank by acceleration (GDELT rising signal) on top of mention
+  // frequency, not by raw mentions alone. `rising` is the shared map fetched once
+  // in getHomeData; empty → falls straight back to mention frequency.
+  const index = await getConceptNameIndex();
   return Array.from(counts.entries())
     .map(([name, mentions]) => {
       const slug = index.get(name.toLowerCase());

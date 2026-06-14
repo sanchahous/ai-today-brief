@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { blendTrend, entityKeyForTool, isRising, RISING_THRESHOLD } from './trend-index';
+import {
+  blendTrend,
+  entityKeyForTool,
+  isRising,
+  maxTrendForTools,
+  recencyScore,
+  RISING_THRESHOLD,
+} from './trend-index';
 
 describe('entityKeyForTool', () => {
   it('slugifies a plain tool name onto its entity key', () => {
@@ -41,5 +48,32 @@ describe('isRising', () => {
     expect(isRising(RISING_THRESHOLD)).toBe(true);
     expect(isRising(0.42)).toBe(false);
     expect(isRising(undefined)).toBe(false);
+  });
+});
+
+describe('recencyScore', () => {
+  it('is 1 today, halves every 3 days, and never goes negative', () => {
+    expect(recencyScore(0)).toBe(1);
+    expect(recencyScore(3)).toBeCloseTo(0.5);
+    expect(recencyScore(6)).toBeCloseTo(0.25);
+    expect(recencyScore(-2)).toBe(1); // clamped
+    expect(recencyScore(9)).toBeLessThan(recencyScore(6));
+  });
+});
+
+describe('maxTrendForTools', () => {
+  const rising = new Map([
+    ['claude-code', 0.5],
+    ['kling', 0.94],
+  ]);
+
+  it('returns the strongest rising signal among the tools', () => {
+    expect(maxTrendForTools(['Claude Code', 'Kling', 'Unknown'], rising)).toBeCloseTo(0.94);
+    expect(maxTrendForTools(['Claude Code'], rising)).toBeCloseTo(0.5);
+  });
+
+  it('returns 0 when no tool is tracked or the list is empty', () => {
+    expect(maxTrendForTools(['Totally Untracked'], rising)).toBe(0);
+    expect(maxTrendForTools([], rising)).toBe(0);
   });
 });
