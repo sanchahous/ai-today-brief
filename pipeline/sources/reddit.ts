@@ -55,19 +55,21 @@ export async function fetchReddit(
 ): Promise<FetchedArticle[]> {
   const results: FetchedArticle[] = [];
   const token = await getOAuthToken(retry);
-  if (token) logEvent('info', 'fetch', 'Reddit: using OAuth API');
+  // OAuth-only by policy: we never fall back to scraping the public *.json
+  // endpoints (Reddit rate-limits them and they sit on the edge of the Data API
+  // terms). No credentials → no Reddit this run (getOAuthToken already warned).
+  if (!token) return results;
+  logEvent('info', 'fetch', 'Reddit: using OAuth API');
 
   for (const publicUrl of REDDIT_URLS) {
-    const url = token
-      ? publicUrl
-          .replace('https://www.reddit.com', 'https://oauth.reddit.com')
-          .replace('/top.json', '/top')
-      : publicUrl;
+    const url = publicUrl
+      .replace('https://www.reddit.com', 'https://oauth.reddit.com')
+      .replace('/top.json', '/top');
     try {
       const res = await retry(url, {
         headers: {
           'User-Agent': REDDIT_USER_AGENT,
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          Authorization: `Bearer ${token}`,
         },
         signal: AbortSignal.timeout(10_000),
       });
@@ -75,7 +77,7 @@ export async function fetchReddit(
         logEvent('warn', 'fetch', 'Reddit endpoint failed', {
           url: publicUrl,
           status: res?.status ?? null,
-          oauth: Boolean(token),
+          oauth: true,
         });
         continue;
       }

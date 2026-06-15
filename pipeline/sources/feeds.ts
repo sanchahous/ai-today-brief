@@ -25,8 +25,13 @@ export const REDDIT_URLS = [
   'https://www.reddit.com/r/LLMDevs/top.json?t=day&limit=15',
 ] as const;
 
-// Reddit blocks generic User-Agents — keep a real, identifiable one.
-export const REDDIT_USER_AGENT = 'ai-today-brief/1.0 (daily AI/dev brief pipeline)';
+// Reddit requires a unique, descriptive User-Agent (generic ones are blocked).
+// Format per Reddit's API rules: <platform>:<app id>:<version> (+contact). If
+// REDDIT_USERNAME is set we use the recommended `by /u/<username>` contact form.
+const REDDIT_OWNER = process.env.REDDIT_USERNAME?.trim();
+export const REDDIT_USER_AGENT = `web:ai-today-brief:1.1 (${
+  REDDIT_OWNER ? `by /u/${REDDIT_OWNER}` : '+https://aitodaybrief.com'
+})`;
 
 /**
  * Bluesky public AppView search — live dev-community discussion (X/Threads
