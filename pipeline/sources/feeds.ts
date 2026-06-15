@@ -15,26 +15,30 @@ export const HN_QUERIES = [
   'Anthropic',
 ] as const;
 
-// Dev/AI subreddits, top-of-day, up to 50 posts each — a read-only discovery
-// signal. Volume (~15 reads × 3 runs ≈ 48/day) is a tiny fraction of the free
-// OAuth limit (~100 req/MINUTE), so the list can grow without rate-limit concern.
-export const REDDIT_URLS = [
-  'https://www.reddit.com/r/MachineLearning/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/LocalLLaMA/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/ClaudeAI/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/cursor/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/ChatGPTCoding/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/AI_Agents/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/LLMDevs/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/OpenAI/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/StableDiffusion/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/comfyui/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/PromptEngineering/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/artificial/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/singularity/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/Ollama/top.json?t=day&limit=50',
-  'https://www.reddit.com/r/aivideo/top.json?t=day&limit=50',
+// Dev/AI subreddits read top-of-day (50 posts each) as a read-only discovery
+// signal. ~15 reads × 3 runs ≈ 48/day — a tiny fraction of the free OAuth limit
+// (~100 req/MINUTE), so the list can grow freely. Add a subreddit = add a name.
+export const REDDIT_SUBREDDITS = [
+  'MachineLearning',
+  'LocalLLaMA',
+  'ClaudeAI',
+  'cursor',
+  'ChatGPTCoding',
+  'AI_Agents',
+  'LLMDevs',
+  'OpenAI',
+  'StableDiffusion',
+  'comfyui',
+  'PromptEngineering',
+  'artificial',
+  'singularity',
+  'Ollama',
+  'aivideo',
 ] as const;
+
+export const REDDIT_URLS = REDDIT_SUBREDDITS.map(
+  (sub) => `https://www.reddit.com/r/${sub}/top.json?t=day&limit=50`,
+);
 
 // Reddit requires a unique, descriptive User-Agent (generic ones are blocked).
 // Format per Reddit's API rules: <platform>:<app id>:<version> (+contact). If
