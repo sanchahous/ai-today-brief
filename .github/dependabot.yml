@@ -3,7 +3,11 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "daily"
+      # Weekly (was daily) — a daily cadence opened up to 5 PRs/day, and each one
+      # fires e2e + sonar (heavy jobs), so it was the dominant CI-minute cost.
+      # Weekly batches them; grouping (below) still collapses patch/minor into one PR.
+      interval: "weekly"
+      day: "monday"
       time: "05:00"
       timezone: "Europe/Kyiv"
     open-pull-requests-limit: 5
@@ -35,3 +39,13 @@ updates:
       - "dependencies"
     commit-message:
       prefix: "chore(ci)"
+    # Mirror the npm grouping: collapse action bumps into one PR per tier so a busy
+    # week fires a single e2e+sonar pair instead of one per action.
+    groups:
+      actions-patch-minor:
+        update-types:
+          - "minor"
+          - "patch"
+      actions-major:
+        update-types:
+          - "major"

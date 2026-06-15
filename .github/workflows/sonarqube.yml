@@ -2,8 +2,10 @@ name: SonarQube
 
 on:
   # Sonar analyses TS/JS quality, so it only needs to run when code changes. Skip
-  # docs/markdown/SQL-migration/workflow-only PRs (no code to scan). Runs on src/**
-  # OR pipeline/** changes. Gates both the PR run and the post-merge push run.
+  # docs/markdown/SQL-migration/workflow-only PRs (no code to scan). PR-only: the
+  # post-merge push to main re-scanned an identical tree (duplicate spend).
+  # NOTE: once Sonar is wired with SONAR_TOKEN, add `push: [main]` back so the main
+  # branch baseline updates — until then there is nothing to scan on main.
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -12,13 +14,10 @@ on:
       - '**/*.md'
       - 'supabase/migrations/**'
       - '.github/**'
-  push:
-    branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
-      - 'supabase/migrations/**'
-      - '.github/**'
+
+concurrency:
+  group: sonar-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   sonar:
