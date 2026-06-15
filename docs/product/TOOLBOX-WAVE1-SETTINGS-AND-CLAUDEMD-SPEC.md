@@ -153,6 +153,9 @@ export type PermissionMode =
 export type SettingsScope = 'user' | 'project' | 'local' | 'managed';
 export type RuleTool =
   | 'Bash' | 'Read' | 'Edit' | 'Write' | 'WebFetch' | 'Agent' | 'MCP';
+// Curated subset of the most common Claude Code hook events for the settings-builder UI.
+// The official reference lists 30+ events (https://code.claude.com/docs/en/hooks); this tool
+// focuses on the common session / tool-use / file / notification events. Subset is intentional.
 export type HookEvent =
   | 'SessionStart' | 'SessionEnd' | 'UserPromptSubmit'
   | 'PreToolUse' | 'PostToolUse' | 'PostToolUseFailure' | 'PermissionRequest'
@@ -266,7 +269,7 @@ export function mergeSettings(
 Інваріанти, які гарантує генератор/валідатор (узгоджено з VERIFIED CORRECTIONS):
 - режим завжди йде як **`permissions.defaultMode`** (nested усередині `permissions`-обʼєкта); НІКОЛИ не як top-level `defaultMode` і НІКОЛИ не як `permissions.mode` (офіц. джерело: [permissions](https://code.claude.com/docs/en/permissions) — «Set the `defaultMode` in your settings files»).
 - `includeCoAuthoredBy` НЕ генерується — використовуємо `attribution` (object з `commit`/`pr`) як заміну deprecated-ключа (correction).
-- `effortLevel` валідатор приймає лише `'low' | 'medium' | 'high' | 'xhigh' | 'max'`.
+- `effortLevel` валідатор приймає лише `'low' | 'medium' | 'high' | 'xhigh'` — `'max'` НЕ існує в офіційній схемі (`xhigh` — найвищий рівень: [settings](https://code.claude.com/docs/en/settings)). Якщо `'max'` зʼявиться в майбутньому релізі — re-verify перед додаванням.
 - `cleanupPeriodDays` — мінімум `1` (валідатор відкидає `0`/негативні).
 - Permissions-масиви впорядковані стабільно; deny/ask/allow семантика лишається коректною незалежно від порядку UI-вводу.
 
@@ -329,7 +332,7 @@ Severity рендериться тірами (`critical`/`warning`/`info`), не
 - [ ] `buildSettings` не емітить `includeCoAuthoredBy`; для атрибуції використовує `attribution`. (test)
 - [ ] `validatePermissionRule` приймає `Bash(npm run *)`, `Read(./src/**)`, `Edit(/docs/*)`, `WebFetch(domain:*.example.com)`, `mcp__github__get_*`, `Agent(Explore)`, bare `Bash`; відхиляє синтаксично невалідні з `reasonId` (enum). (test)
 - [ ] `validateMatcher` коректно розрізняє exact-string (`Bash`, `Edit|Write`) vs regex-режим (`^Notebook`, `mcp__.*__write`), і приймає порожній matcher. (test)
-- [ ] `effortLevel`-валідатор приймає лише `low|medium|high|xhigh|max`; `cleanupPeriodDays` відхиляє `< 1`. (test)
+- [ ] `effortLevel`-валідатор приймає лише `low|medium|high|xhigh` (відхиляє `max` та інші); `cleanupPeriodDays` відхиляє `< 1`. (test)
 - [ ] `mergeSettings(existing, generated)` робить union/append із дедупом для `permissions.*`, `additionalDirectories`, `hooks[event]`, повертає `conflicts[]` для скалярних колізій, і **ніколи не клобрить** наявні значення мовчки. (test)
 - [ ] Кожен запис у `HOOK_RECIPES`, `PERMISSION_TEMPLATES`, `GRAMMAR_REFERENCE`, `SCOPE_HIERARCHY` має ≥1 `Citation` з URL на `code.claude.com/docs`, `docs.anthropic.com` або Anthropic eng blog. (test: валідація доменів цитат)
 - [ ] SSG-каталог (`settings-catalog.tsx`) рендериться як статичний HTML: усі recipe-рядки, grammar-рядки і scope-рядки присутні у server-output без JS (тест перевіряє, що рендер не залежить від `'use client'`).
@@ -668,5 +671,6 @@ Build order для Hermes. Кожен child-таск: short id · title · sugge
 - **Складено:** 2026-06-15 багатоагентним workflow (research → adversarial verify → per-tool draft → synthesize) поверх референс-архітектури вже відвантаженого Prompt Optimizer (`main`).
 - **Schema-basis:** офіційні docs `code.claude.com/docs/en/{settings,permissions,hooks,hooks-guide,memory}` (станом на 2026-06-15). Це актуальний домен docs — НЕ `docs.claude.com/en/docs/claude-code/*`.
 - **Adversarial verify знайшов і виправлено:** (1) `includeCoAuthoredBy` deprecated → `attribution {commit,pr}`; (2) **режим = `permissions.defaultMode`** (nested), а НЕ top-level `defaultMode` і НЕ `permissions.mode` — підтверджено офіц. рядком «Set the `defaultMode` in your settings files» на `/en/permissions` (верифікатор спершу помилково запропонував `permissions.mode`; виправлено вручну проти першоджерела).
-- **Свідомо не закодовано як факт (mark-unverified):** statusLine ANSI/OSC-8 деталі; точне число «blocks N repeated stops»; повний інвентар 50–100+ settings-ключів; glob-free MCP server-segment нюанси. Усі — `editable defaults, verify before use`; гейтяться freshness-ритуалом (X1) і reviewer-gate (R1).
+- **Свідомо не закодовано як факт (mark-unverified):** statusLine ANSI/OSC-8 деталі; точне число «blocks N repeated stops»; повний інвентар 50–100+ settings-ключів. Усі — `editable defaults, verify before use`; гейтяться freshness-ритуалом (X1) і reviewer-gate (R1). (Раніше тут був «glob-free MCP server-segment» — пре-mission review підтвердив його офіційно на `/en/permissions`, тож знято з невіреного.)
+- **Pre-mission review (2026-06-15):** grounded 4-вимірний review + adversarial adjudication → вердикт **ship-with-fixes**; виправлено 2 підтверджені дефекти: (1) `effortLevel` без `max` (critical, schema); (2) `HookEvent` — коментар про навмисний 14-подієвий subset (warning). Решта знахідок відхилено як non-issues/post-ship polish.
 - **Honest market verdict:** `settings-builder` = **build** (реальний wedge); `claude-md-generator` = ніша **crowded** → перепозиціоновано як lead-magnet/SEO-фідер, а не standalone-ставку.
