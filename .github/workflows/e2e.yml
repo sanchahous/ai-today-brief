@@ -3,8 +3,8 @@ name: E2E (Playwright)
 on:
   # Playwright tests the built website, so it only needs to run on UI-affecting
   # changes. Skip docs/markdown/SQL/workflow-only AND pipeline-only PRs (the
-  # pipeline never renders the site). Saves Actions minutes — both the PR run and
-  # the post-merge push run are gated.
+  # pipeline never renders the site). PR-only: the post-merge push to main re-tested
+  # an identical tree (squash merge), so it was pure duplicate spend — removed.
   pull_request:
     branches: [main]
     paths-ignore:
@@ -13,14 +13,13 @@ on:
       - 'supabase/migrations/**'
       - '.github/**'
       - 'pipeline/**'
-  push:
-    branches: [main]
-    paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
-      - 'supabase/migrations/**'
-      - '.github/**'
-      - 'pipeline/**'
+
+# A new push to a PR supersedes the previous commit — cancel its in-flight run
+# instead of paying for an e2e against a commit that no longer matters. Keyed on the
+# PR number (falls back to ref) so isolation stays per-PR if a trigger is added later.
+concurrency:
+  group: e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   e2e:
@@ -44,8 +43,34 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Cache the three browser engines (chromium/firefox/webkit) keyed on the
+      # installed Playwright version. Biggest win is repeated pushes within a PR;
+      # cross-PR reuse is partial since no run executes on main to prime a shared cache.
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+          # On a version bump the exact key misses; fall back to the latest cached
+          # browser set so the install re-fetches only the delta. (cache-hit stays
+          # false on a restore-keys match, so the full install below still runs.)
+          restore-keys: |
+            playwright-${{ runner.os }}-
+
+      # Cache miss → full install (browser binaries + OS libs). Cache hit → only the
+      # system libs (fast apt), since the cached binaries still need them at launch.
       - name: Install Playwright browsers
+        if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps
+
+      - name: Install Playwright system deps (cache hit)
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: npx playwright install-deps
 
       - name: Build
         run: npm run build
