@@ -177,9 +177,9 @@ export const PROMPT_LINT_RULES: readonly PromptLintRule[] = [
     'info',
     { en: 'Set effort on supported surfaces', uk: 'Задайте effort для підтримуваних поверхонь' },
     { en: 'Complex work on API/Claude Code can benefit from effort guidance.', uk: 'Складна робота в API/Claude Code може виграти від effort-підказки.' },
-    { en: 'Use high by default; consider max for very complex agentic work. Never set effort for Haiku.', uk: 'За замовчуванням high; для дуже складної агентної роботи — max. Ніколи не задавайте effort для Haiku.' },
-    { en: 'Effort is model/surface-specific and irrelevant in claude.ai.', uk: 'Effort залежить від моделі/поверхні й нерелевантний у claude.ai.' },
-    { appliesTo: { surfaces: ['api', 'claude-code'], models: ['sonnet-4-6', 'fable-5', 'opus-4-8'] }, citations: fableCitations, modelGuidance: allModelGuidance('No effort for Haiku; use high/max for supported complex work.', 'Без effort для Haiku; high/max для підтримуваної складної роботи.') },
+    { en: 'Use high as a floor; xhigh for hard agentic/coding work. max is API-only — Claude Code tops out at xhigh. Never set effort for Haiku.', uk: 'high — мінімум; xhigh для складної агентної/кодової роботи. max — лише в API (у Claude Code стеля — xhigh). Ніколи не задавайте effort для Haiku.' },
+    { en: 'Effort levels differ by surface: API supports low|medium|high|xhigh|max; Claude Code settings.json effortLevel caps at xhigh. Irrelevant in claude.ai.', uk: 'Рівні effort залежать від поверхні: API — low|medium|high|xhigh|max; у Claude Code settings.json effortLevel стеля — xhigh. У claude.ai нерелевантно.' },
+    { appliesTo: { surfaces: ['api', 'claude-code'], models: ['sonnet-4-6', 'fable-5', 'opus-4-8'] }, citations: fableCitations, modelGuidance: allModelGuidance('No effort for Haiku; use high/xhigh for supported complex work (max is API-only, not Claude Code).', 'Без effort для Haiku; high/xhigh для підтримуваної складної роботи (max — лише в API, не в Claude Code).') },
   ),
   rule(
     'prompt-bloat',
