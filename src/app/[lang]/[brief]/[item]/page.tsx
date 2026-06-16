@@ -25,7 +25,10 @@ import { NewsletterBand } from '@/components/home/newsletter-band';
 import { Reveal } from '@/components/reveal';
 import { ArrowRight, ClockIcon, ExternalLinkIcon, PlayIcon } from '@/components/icons';
 
-export const revalidate = 1800;
+// 24 h: item content is fixed at publish; the editor-take edit revalidates the
+// exact item path on-demand (see api/telegram handleEditorTake), so takes still
+// appear immediately. The old 30 min window mostly fed bot-driven regenerations.
+export const revalidate = 86400;
 
 type Params = { lang: string; brief: string; item: string };
 

@@ -11,8 +11,11 @@ import { NewsletterBand } from '@/components/home/newsletter-band';
 import { VideoTeaser } from '@/components/home/video-teaser';
 import { FaqSection } from '@/components/home/faq-section';
 
-// ISR: refresh every 30 min. (On-publish revalidation gets wired in P4.)
-export const revalidate = 1800;
+// ISR: 1 h timed fallback. Freshness is driven on-demand — the publish flow
+// calls revalidatePath('/', '/en', '/uk') (see api/telegram revalidateSite),
+// so the timer only backstops a missed hook. Kept short (vs the 24 h used on
+// content pages) because the home is just 2 pages and must never look stale.
+export const revalidate = 3600;
 
 type Params = { lang: string };
 

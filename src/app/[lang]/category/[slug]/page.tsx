@@ -7,7 +7,9 @@ import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { CategoryHeader } from '@/components/category-header';
 import { PostFeed } from '@/components/post-feed';
 
-export const revalidate = 3600;
+// 24 h: category hubs reshuffle only when new items publish; a day-stale order
+// is fine for SEO hubs and saves the bot-driven ISR writes a 1 h window cost.
+export const revalidate = 86400;
 
 type Params = { lang: string; slug: string };
 
