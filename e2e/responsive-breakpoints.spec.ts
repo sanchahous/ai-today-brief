@@ -27,8 +27,15 @@ test.describe('Responsive breakpoint contract', () => {
       const hamburger = page.getByRole('button', { name: /menu|меню/i });
 
       // Exactly one of {desktop nav, hamburger} is shown, matching the breakpoint.
-      expect(await nav.isVisible()).toBe(isDesktop);
-      expect(await hamburger.isVisible()).toBe(!isDesktop);
+      // Auto-retrying assertions ride out the boundary render/hydration settle on slow CI;
+      // a one-shot isVisible() snapshot here is flaky (both can read false mid-render).
+      if (isDesktop) {
+        await expect(nav).toBeVisible();
+        await expect(hamburger).toBeHidden();
+      } else {
+        await expect(nav).toBeHidden();
+        await expect(hamburger).toBeVisible();
+      }
 
       // Rendered header height equals the --header-h token (within 1px).
       const m = await page.locator('header').first().evaluate((el) => ({
@@ -45,17 +52,20 @@ test.describe('Responsive breakpoint contract', () => {
       await page.setViewportSize(size);
       await goto(page, '/en/news');
 
-      const sidebarVisible = await page.getByTestId('news-sidebar').isVisible().catch(() => false);
-      const triggerVisible = await page
-        .getByRole('button', { name: /filters|фільтри/i })
-        .isVisible()
-        .catch(() => false);
+      const sidebar = page.getByTestId('news-sidebar');
+      const trigger = page.getByRole('button', { name: /filters|фільтри/i });
 
-      // Exactly one is present (never the dead-band combo of desktop sidebar + hamburger),
-      // and it matches the unified breakpoint.
-      expect(Number(sidebarVisible) + Number(triggerVisible)).toBe(1);
-      expect(sidebarVisible).toBe(isDesktop);
-      expect(triggerVisible).toBe(!isDesktop);
+      // Exactly one is present (never the dead-band combo of desktop sidebar + mobile
+      // trigger), matching the unified breakpoint. Auto-retrying toBeVisible/toBeHidden
+      // wait out the boundary render settle — the previous one-shot isVisible() reads were
+      // flaky on CI (both could snapshot false mid-render → sum 0).
+      if (isDesktop) {
+        await expect(sidebar).toBeVisible();
+        await expect(trigger).toBeHidden();
+      } else {
+        await expect(sidebar).toBeHidden();
+        await expect(trigger).toBeVisible();
+      }
     });
   }
 
