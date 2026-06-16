@@ -10,7 +10,8 @@ import { ConceptHubBody } from '@/components/concept-hub-body';
 import { ConceptOtherChips } from '@/components/concept-other-chips';
 import { PostFeed } from '@/components/post-feed';
 
-export const revalidate = 3600;
+// 24 h: concept hubs are evergreen and change only via the backfill workflow.
+export const revalidate = 86400;
 
 type Params = { lang: string; slug: string };
 

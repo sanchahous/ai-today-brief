@@ -7,7 +7,8 @@ import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { ConceptsGrid } from '@/components/concepts-grid';
 import { Reveal } from '@/components/reveal';
 
-export const revalidate = 3600;
+// 24 h: concepts are evergreen and change only via the backfill workflow.
+export const revalidate = 86400;
 
 type Params = { lang: string };
 

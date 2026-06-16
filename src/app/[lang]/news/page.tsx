@@ -11,7 +11,8 @@ import { NewsFeed } from '@/components/news/news-feed';
 type Params = { lang: string };
 type Search = { q?: string; category?: string; page?: string };
 
-export const revalidate = 1800;
+// 1 h timed fallback; the publish flow revalidates /en/news + /uk/news on-demand.
+export const revalidate = 3600;
 
 export async function generateMetadata({
   params,

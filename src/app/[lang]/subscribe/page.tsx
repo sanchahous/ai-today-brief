@@ -10,7 +10,8 @@ import { SubscribeBenefitsGrid } from '@/components/subscribe-benefits-grid';
 import { SubscribeSampleList } from '@/components/subscribe-sample-list';
 import { Reveal } from '@/components/reveal';
 
-export const revalidate = 3600;
+// 24 h: near-static landing; only the sample-items strip changes day to day.
+export const revalidate = 86400;
 
 type Params = { lang: string };
 

@@ -12,7 +12,9 @@ import { ConceptOtherChips } from '@/components/concept-other-chips';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 import { ArrowRight } from '@/components/icons';
 
-export const revalidate = 1800;
+// 24 h: a brief's content is fixed at publish; new briefs render on first hit
+// (dynamicParams). Short windows here only burned ISR writes via bot crawls.
+export const revalidate = 86400;
 
 type Params = { lang: string; brief: string };
 
