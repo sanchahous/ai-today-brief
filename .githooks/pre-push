@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# Pre-push gate: run only the e2e specs affected by this branch's changes, chromium only.
+# The full chromium + firefox + webkit matrix runs in CI on the PR — this is the fast local canary.
+#
+# Activated via `core.hooksPath=.githooks` (set by the `prepare` npm script on install).
+# Escape hatch for a change you're confident needs no e2e (e.g. a docs-only hotfix):
+#   SKIP_E2E=1 git push
+if [ "${SKIP_E2E:-0}" = "1" ]; then
+  echo "pre-push: SKIP_E2E=1 — skipping affected e2e."
+  exit 0
+fi
+
+echo "pre-push: running affected e2e (chromium). Set SKIP_E2E=1 to skip."
+npm run e2e:affected

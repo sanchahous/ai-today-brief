@@ -24,10 +24,14 @@
     "backfill:concepts": "tsx pipeline/scripts/backfill-concepts.ts",
     "backfill:scores": "tsx pipeline/scripts/backfill-scores.ts",
     "backfill:trend-signals": "tsx pipeline/scripts/backfill-trend-signals.ts",
-    "pr:check": "npm run ci:check && npm run typecheck && npm run lint && npm run build",
+    "pr:check": "npm run ci:check && npm run typecheck && npm run lint && npm run e2e:check && npm run build",
     "e2e": "playwright test",
+    "e2e:fast": "playwright test --project=chromium",
+    "e2e:affected": "tsx scripts/e2e-affected.ts",
+    "e2e:check": "tsx scripts/e2e-affected.ts --check",
     "e2e:ui": "playwright test --ui",
-    "e2e:install": "playwright install --with-deps"
+    "e2e:install": "playwright install --with-deps",
+    "prepare": "git config core.hooksPath .githooks || exit 0"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.2.9",
