@@ -76,6 +76,39 @@ export function trackEvent(event: string, params: Params = {}): void {
   window.gtag?.('event', event, merged);
 }
 
+/** Path of the first-party per-item beacon endpoint (see src/app/api/ev/route.ts). */
+const EVENT_BEACON_PATH = '/api/ev';
+
+export type ItemTarget = { id?: string; slug?: string; lang?: string };
+
+/**
+ * Per-item interaction — fires the GA4 event (unchanged taxonomy) AND a first-party
+ * beacon to /api/ev, so we own a joinable, PII-free reward signal independent of GA4
+ * (own rows, no sampling, no 24–48h latency). Consent-gated exactly like trackEvent;
+ * never throws — telemetry must not break the page.
+ */
+export function trackItemEvent(type: string, target: ItemTarget, params: Params = {}): void {
+  const gaParams: Params = { ...params };
+  if (target.id) gaParams.post_id = target.id;
+  if (target.slug) gaParams.slug = target.slug;
+  trackEvent(type, gaParams);
+  sendItemBeacon(type, target, params);
+}
+
+function sendItemBeacon(type: string, target: ItemTarget, params: Params): void {
+  if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') return;
+  if (!hasAnalyticsConsent()) return;
+  if (!target.id && !target.slug) return;
+  const raw = params.value ?? params.percent;
+  const value = typeof raw === 'number' && Number.isFinite(raw) ? raw : undefined;
+  try {
+    const payload = JSON.stringify({ id: target.id, slug: target.slug, type, lang: target.lang, value });
+    navigator.sendBeacon(EVENT_BEACON_PATH, payload);
+  } catch {
+    /* telemetry must never break the page */
+  }
+}
+
 export function trackPageView(path: string, lang: string): void {
   trackEvent('page_view', {
     page_path: path,

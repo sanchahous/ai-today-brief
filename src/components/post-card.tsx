@@ -9,7 +9,7 @@ import { getStrings } from '@/lib/i18n';
 import { SITE_URL, type Lang } from '@/lib/site';
 import { CategoryBadge } from '@/components/home/category-badge';
 import { CategoryThumb } from '@/components/category-thumb';
-import { trackEvent } from '@/lib/analytics-client';
+import { trackItemEvent } from '@/lib/analytics-client';
 import {
   ArrowRight,
   Bookmark,
@@ -61,20 +61,20 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
     const next = nextSaved ? [...ids, item.id] : ids.filter((id) => id !== item.id);
     localStorage.setItem(SAVED_KEY, JSON.stringify(next));
     setSaved(nextSaved);
-    trackEvent('save_toggle', { post_id: item.id, saved: nextSaved });
-  }, [item.id]);
+    trackItemEvent('save_toggle', { id: item.id, lang }, { saved: nextSaved, value: nextSaved ? 1 : 0 });
+  }, [item.id, lang]);
 
   function toggleExpanded() {
     setExpanded((was) => {
       if (!was) {
-        trackEvent('post_expand', { post_id: item.id, category: item.categorySlug ?? '' });
+        trackItemEvent('post_expand', { id: item.id, lang }, { category: item.categorySlug ?? '' });
       }
       return !was;
     });
   }
 
   function trackShare(method: 'x' | 'linkedin' | 'copy_link') {
-    trackEvent('share', { post_id: item.id, method });
+    trackItemEvent('share', { id: item.id, lang }, { method });
   }
 
   function copyLink() {
