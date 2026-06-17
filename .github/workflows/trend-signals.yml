@@ -2,10 +2,12 @@ name: Trend signals
 
 on:
   schedule:
-    # Weekly (Mon 04:30 UTC) — capture each tracked entity's GDELT news-volume trend
-    # into entity_trend_signals (append-only). Was daily; trimmed to weekly to save
-    # Actions minutes — the rising signal moves slowly enough that weekly is plenty.
-    - cron: '30 4 * * 1'
+    # Daily (04:30 UTC) — capture each tracked entity's GDELT news-volume trend
+    # into entity_trend_signals (append-only). Was briefly trimmed to weekly to save
+    # Actions minutes, but weekly + no retry meant a single failed run = 7 days stale
+    # (a transient billing block on 2026-06-15 did exactly that), and GDELT 429s ~half
+    # the entities per run — so daily is needed to accumulate usable density.
+    - cron: '30 4 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
