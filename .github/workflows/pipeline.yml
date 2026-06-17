@@ -78,10 +78,15 @@ jobs:
       # Roll item_events up into item_metrics (the per-item reward signal). Reuses
       # this run's deps + DB creds — no separate cron/minutes. Best-effort: a
       # rollup failure must never fail the pipeline. Skipped on dry runs.
+      # GEMINI_API_KEY is required because the script calls loadPipelineConfig(),
+      # which mandates it even though the rollup itself never touches Gemini —
+      # without it config load throws and (continue-on-error) the step no-ops,
+      # leaving item_metrics empty. Mirrors every other pipeline-script step.
       - name: Refresh item metrics
         if: steps.guard.outputs.skip != 'true' && inputs.dry_run != 'true'
         continue-on-error: true
         env:
           SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
           SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: npx tsx pipeline/scripts/refresh-item-metrics.ts
