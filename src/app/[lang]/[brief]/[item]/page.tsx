@@ -21,6 +21,7 @@ import { CategoryBadge } from '@/components/home/category-badge';
 import { CategoryBanner } from '@/components/category-banner';
 import { StoryBody } from '@/components/story-body';
 import { ItemShareBar } from '@/components/item-share-bar';
+import { ItemEngagementTracker } from '@/components/item-engagement-tracker';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 import { Reveal } from '@/components/reveal';
 import { ArrowRight, ClockIcon, ExternalLinkIcon, PlayIcon } from '@/components/icons';
@@ -176,6 +177,8 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
       <Breadcrumbs items={crumbs} />
 
       <article>
+        <ItemEngagementTracker id={detail.id} slug={item} lang={lang} />
+
         <div className="mb-4">
           <CategoryBadge name={detail.categoryName} color={detail.categoryColor} size="md" />
         </div>
@@ -267,7 +270,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
           </a>
         )}
 
-        <ItemShareBar lang={lang} pageUrl={pagePath} title={detail.title} postId={item} />
+        <ItemShareBar lang={lang} pageUrl={pagePath} title={detail.title} postId={detail.id} />
 
         {(adjacent.prev || adjacent.next) && (
           <nav

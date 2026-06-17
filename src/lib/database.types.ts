@@ -374,6 +374,97 @@ export type Database = {
         };
         Relationships: [];
       };
+      item_events: {
+        Row: {
+          brief_item_id: string | null;
+          event_type: string;
+          id: number;
+          lang: string | null;
+          session_hash: string | null;
+          slug: string | null;
+          ts: string;
+          ua_class: string | null;
+          value: number | null;
+        };
+        Insert: {
+          brief_item_id?: string | null;
+          event_type: string;
+          id?: never;
+          lang?: string | null;
+          session_hash?: string | null;
+          slug?: string | null;
+          ts?: string;
+          ua_class?: string | null;
+          value?: number | null;
+        };
+        Update: {
+          brief_item_id?: string | null;
+          event_type?: string;
+          id?: never;
+          lang?: string | null;
+          session_hash?: string | null;
+          slug?: string | null;
+          ts?: string;
+          ua_class?: string | null;
+          value?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'item_events_brief_item_id_fkey';
+            columns: ['brief_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'brief_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      item_metrics: {
+        Row: {
+          brief_item_id: string;
+          dwell_ms_p50: number | null;
+          expands: number | null;
+          outbound: number | null;
+          saves: number | null;
+          scroll50: number | null;
+          scroll90: number | null;
+          shares: number | null;
+          updated_at: string | null;
+          views: number | null;
+        };
+        Insert: {
+          brief_item_id: string;
+          dwell_ms_p50?: number | null;
+          expands?: number | null;
+          outbound?: number | null;
+          saves?: number | null;
+          scroll50?: number | null;
+          scroll90?: number | null;
+          shares?: number | null;
+          updated_at?: string | null;
+          views?: number | null;
+        };
+        Update: {
+          brief_item_id?: string;
+          dwell_ms_p50?: number | null;
+          expands?: number | null;
+          outbound?: number | null;
+          saves?: number | null;
+          scroll50?: number | null;
+          scroll90?: number | null;
+          shares?: number | null;
+          updated_at?: string | null;
+          views?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'item_metrics_brief_item_id_fkey';
+            columns: ['brief_item_id'];
+            isOneToOne: true;
+            referencedRelation: 'brief_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       item_reviews: {
         Row: {
           action: string;

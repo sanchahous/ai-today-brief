@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { trackEvent } from '@/lib/analytics-client';
+import { trackItemEvent } from '@/lib/analytics-client';
 import { getStrings } from '@/lib/i18n';
 import { SITE_URL, type Lang } from '@/lib/site';
 import { ShareIcon } from '@/components/icons';
@@ -22,7 +22,7 @@ export function ItemShareBar({
   const absolute = pageUrl.startsWith('http') ? pageUrl : `${SITE_URL}${pageUrl}`;
 
   function trackShare(method: 'x' | 'linkedin' | 'copy_link') {
-    trackEvent('share', { post_id: postId, method });
+    trackItemEvent('share', { id: postId, lang }, { method });
   }
 
   function copyLink() {

@@ -74,3 +74,14 @@ jobs:
             ARGS="$ARGS --dry-run"
           fi
           npx tsx pipeline/run-daily.ts $ARGS
+
+      # Roll item_events up into item_metrics (the per-item reward signal). Reuses
+      # this run's deps + DB creds — no separate cron/minutes. Best-effort: a
+      # rollup failure must never fail the pipeline. Skipped on dry runs.
+      - name: Refresh item metrics
+        if: steps.guard.outputs.skip != 'true' && inputs.dry_run != 'true'
+        continue-on-error: true
+        env:
+          SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+          SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+        run: npx tsx pipeline/scripts/refresh-item-metrics.ts
