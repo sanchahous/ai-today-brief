@@ -593,6 +593,7 @@ async function main(): Promise<void> {
         cloudflareAccountId: config.cloudflareAccountId,
         cloudflareApiToken: config.cloudflareApiToken,
         geminiApiKey: config.geminiApiKey,
+        openRouterApiKey: config.openRouterApiKey,
       });
       logEvent('info', 'publish', 'Card images filled', {
         brief_id: result.briefId,

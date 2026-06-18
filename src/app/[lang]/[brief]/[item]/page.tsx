@@ -131,6 +131,9 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
 
   // Prefer the generated brand card (always present) over the raw source image.
   const heroImage = detail.cardImageUrl ?? detail.imageUrl;
+  // The full branded card (illustration + masthead + headline + wordmark),
+  // rendered by opengraph-image.tsx in this segment — used as the article cover.
+  const brandCard = `${pagePath}/opengraph-image`;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -140,7 +143,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         headline: detail.title,
         description: detail.summary,
         articleBody,
-        ...(heroImage ? { image: [heroImage] } : {}),
+        image: [`${SITE_URL}${brandCard}`],
         datePublished: detail.publishedAt ?? detail.briefDate,
         dateModified: detail.publishedAt ?? detail.briefDate,
         inLanguage: lang,
@@ -186,7 +189,9 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
           <CategoryBadge name={detail.categoryName} color={detail.categoryColor} size="md" />
         </div>
 
-        <h1 className="mb-3 text-[clamp(1.9rem,4.5vw,2.9rem)] leading-[1.12]">{detail.title}</h1>
+        {/* The branded cover card below carries the visible headline; keep a
+            real h1 for SEO + screen readers without duplicating it on screen. */}
+        <h1 className="sr-only">{detail.title}</h1>
 
         <div className="text-faint mb-4 flex flex-wrap items-center gap-2 text-[0.82rem]">
           {detail.sourceName && <span>{detail.sourceName}</span>}
@@ -221,9 +226,9 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         <Reveal>
           <div className="mb-6">
             {heroImage ? (
-              <figure className="border-border relative m-0 aspect-[16/9] overflow-hidden rounded-xl border">
+              <figure className="border-border relative m-0 aspect-[1200/630] overflow-hidden rounded-xl border">
                 <Image
-                  src={heroImage}
+                  src={brandCard}
                   alt={detail.title}
                   fill
                   priority
