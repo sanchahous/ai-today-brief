@@ -17,6 +17,7 @@ import { dropKnownUrls, isColdSingleton, selectPool } from './select';
 import { summarize, type DraftBrief } from './summarize';
 import { reviseFlaggedItems, verifyClaims } from './verify';
 import { publish } from './publish';
+import { fillCardImages } from './card-image';
 import { notifyReview } from './notify';
 import { createEmbedder, type EmbedFn } from './embeddings';
 import {
@@ -578,6 +579,28 @@ async function main(): Promise<void> {
       });
     } catch (e) {
       logError('publish', 'storeItemEmbeddings failed (non-fatal)', e);
+    }
+  }
+
+  // ── Generate per-item brand card images (best-effort, free) ──────────────────
+  // Cinematic AI hero per item → Storage → brief_items.card_image_url. Idempotent
+  // (skips items that already have one), non-fatal: a failure leaves the OG card
+  // to render its branded duotone fallback. Skipped when CF creds are unset.
+  if (result.itemCount > 0 && config.cloudflareAccountId && config.cloudflareApiToken) {
+    t = Date.now();
+    try {
+      const cardStats = await fillCardImages(db, result.briefId, {
+        cloudflareAccountId: config.cloudflareAccountId,
+        cloudflareApiToken: config.cloudflareApiToken,
+        geminiApiKey: config.geminiApiKey,
+      });
+      logEvent('info', 'publish', 'Card images filled', {
+        brief_id: result.briefId,
+        ...cardStats,
+        duration_ms: Date.now() - t,
+      });
+    } catch (e) {
+      logError('publish', 'fillCardImages failed (non-fatal)', e);
     }
   }
 

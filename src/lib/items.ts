@@ -47,6 +47,8 @@ export interface BriefItemDetail {
   communityReactions: ItemReaction[];
   citations: ItemCitation[];
   imageUrl: string | null;
+  /** Generated brand card illustration (AI hero) — background of the OG card. */
+  cardImageUrl: string | null;
   editorTake: string;
   takeaways: string[];
   actionItems: string[];
@@ -167,7 +169,7 @@ export async function getBriefItem(
   const { data: it, error: itemError } = await supabase
     .from('brief_items')
     .select(
-      'id, slug, rank, article_id, canonical_item_id, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, deep_dive_en, deep_dive_uk, body_md_en, body_md_uk, facts_en, facts_uk, code_snippet, when_to_use_en, when_to_use_uk, when_not_to_use_en, when_not_to_use_uk, community_reactions, citations, image_url, editor_take, takeaways_en, takeaways_uk, action_items_en, action_items_uk, impact_level, tools_mentioned, youtube_url',
+      'id, slug, rank, article_id, canonical_item_id, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, deep_dive_en, deep_dive_uk, body_md_en, body_md_uk, facts_en, facts_uk, code_snippet, when_to_use_en, when_to_use_uk, when_not_to_use_en, when_not_to_use_uk, community_reactions, citations, image_url, card_image_url, editor_take, takeaways_en, takeaways_uk, action_items_en, action_items_uk, impact_level, tools_mentioned, youtube_url',
     )
     .eq('brief_id', brief.id)
     .eq('slug', itemSlug)
@@ -226,6 +228,10 @@ export async function getBriefItem(
     communityReactions: toReactions(it.community_reactions),
     citations: toCitations(it.citations),
     imageUrl: typeof it.image_url === 'string' && it.image_url.startsWith('http') ? it.image_url : null,
+    cardImageUrl:
+      typeof it.card_image_url === 'string' && it.card_image_url.startsWith('http')
+        ? it.card_image_url
+        : null,
     editorTake: (it.editor_take ?? '').trim(),
     takeaways: toStringArray(lang === 'uk' ? it.takeaways_uk : it.takeaways_en),
     actionItems: toStringArray(lang === 'uk' ? it.action_items_uk : it.action_items_en),

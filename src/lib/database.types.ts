@@ -69,6 +69,7 @@ export type Database = {
           body_md_uk: string | null;
           brief_id: string;
           canonical_item_id: string | null;
+          card_image_url: string | null;
           category_slug: string | null;
           citations: Json | null;
           code_snippet: Json | null;
@@ -117,6 +118,7 @@ export type Database = {
           body_md_uk?: string | null;
           brief_id: string;
           canonical_item_id?: string | null;
+          card_image_url?: string | null;
           category_slug?: string | null;
           citations?: Json | null;
           code_snippet?: Json | null;
@@ -165,6 +167,7 @@ export type Database = {
           body_md_uk?: string | null;
           brief_id?: string;
           canonical_item_id?: string | null;
+          card_image_url?: string | null;
           category_slug?: string | null;
           citations?: Json | null;
           code_snippet?: Json | null;
