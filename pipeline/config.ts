@@ -36,6 +36,9 @@ export interface PipelineConfig {
    * Reads OPEN_ROUTER_API_KEY or OPENROUTER_API_KEY from env.
    */
   openRouterApiKey?: string;
+  /** Cloudflare account id + Workers AI token for card-image generation (optional). */
+  cloudflareAccountId?: string;
+  cloudflareApiToken?: string;
   /** Bot token for pushing review cards (optional — notify is skipped if unset). */
   telegramBotToken?: string;
   /** Private chat id that receives the per-item review cards (optional). */
@@ -105,6 +108,8 @@ export function loadPipelineConfig(
     verifyClaims: env.VERIFY_CLAIMS !== '0',
     maxEmbedDistance: floatIn(env.MAX_EMBED_DISTANCE, 0.20, 0.05, 1),
     openRouterApiKey: firstNonEmpty(env.OPEN_ROUTER_API_KEY, env.OPENROUTER_API_KEY),
+    cloudflareAccountId: env.CLOUDFLARE_ACCOUNT_ID?.trim() || undefined,
+    cloudflareApiToken: env.CLOUDFLARE_API_TOKEN?.trim() || undefined,
     telegramBotToken: env.TELEGRAM_BOT_TOKEN?.trim() || undefined,
     telegramReviewChatId: env.TELEGRAM_REVIEW_CHAT_ID?.trim() || undefined,
     dryRun: argv.includes('--dry-run') || env.DRY_RUN === '1',

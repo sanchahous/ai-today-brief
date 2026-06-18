@@ -52,3 +52,6 @@ next-env.d.ts
 
 # local-only pipeline ops/debug helpers (underscore-prefixed, not for CI)
 pipeline/scripts/_*
+
+# generated card-image samples / OG render checks (large binaries — regenerate locally)
+docs/marketing/card-samples/
