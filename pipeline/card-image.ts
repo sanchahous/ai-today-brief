@@ -12,6 +12,7 @@
  * pipeline (every 30-min slot) never regenerates or double-charges.
  */
 
+import { createHash } from 'node:crypto';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { PipelineDb } from './db';
 import { logEvent } from './log';
@@ -26,6 +27,8 @@ export interface CardImageConfig {
   geminiApiKey: string;
   /** Text model for the metaphor step (default gemini-2.5-flash). */
   geminiModel?: string;
+  /** OpenRouter key — metaphor fallback when the Gemini free tier is rate-limited. */
+  openRouterApiKey?: string;
 }
 
 export interface FillCardImagesResult {
@@ -42,6 +45,7 @@ export async function fillCardImages(
   db: PipelineDb,
   briefId: string,
   cfg: CardImageConfig,
+  opts: { force?: boolean } = {},
 ): Promise<FillCardImagesResult> {
   const { data: items, error } = await db
     .from('brief_items')
@@ -51,7 +55,7 @@ export async function fillCardImages(
 
   const all = items ?? [];
   const pending = all.filter(
-    (it) => it.slug && !it.card_image_url && it.review_status !== 'rejected',
+    (it) => it.slug && it.review_status !== 'rejected' && (opts.force || !it.card_image_url),
   );
   if (pending.length === 0) {
     return { generated: 0, skipped: all.length, failed: 0 };
@@ -116,23 +120,56 @@ export function buildPrompt(accent: string, metaphor: string): string {
   );
 }
 
-/** Turn a headline into a short visual metaphor; falls back to the title itself. */
-async function visualMetaphor(title: string, cfg: CardImageConfig): Promise<string> {
-  if (!title) return 'an abstract glowing AI concept';
+/**
+ * Turn a headline into a CONCRETE cover-illustration brief — a clear focal
+ * subject a reader instantly connects to the story, not vague abstraction.
+ * Falls back to the title itself if the model call fails.
+ */
+export async function visualMetaphor(title: string, cfg: CardImageConfig): Promise<string> {
+  if (!title) return 'a luminous crystalline AI core on a dark stage';
+  const instruction =
+    `You are the art director for a developer-focused tech news magazine. Describe ONE clear, ` +
+    `concrete cover illustration that instantly conveys THIS story — a specific focal subject, ` +
+    `setting and action representing the real topic. Lean on recognizable symbols: a company as a ` +
+    `monumental glowing tower, a person as a luminous silhouette, a move/hire as a figure crossing ` +
+    `between two structures, a launch as a rocket or opening portal, funding as flowing light or ` +
+    `coins, a model as a radiant crystalline brain, agents as cooperating robotic arms, a security ` +
+    `flaw as a cracked glowing shield, a benchmark as glowing bars. Avoid vague abstraction. ` +
+    `No text, words, letters, numbers, brand logos or recognizable real faces. ` +
+    `18-28 words, concrete nouns, one clear focal subject, not a sentence. Headline: "${title}"`;
+  const clean = (t: string) => t.replace(/\s+/g, ' ').trim().slice(0, 300);
+  const model = cfg.geminiModel || process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
+
+  // Primary: Gemini. Fallback: OpenRouter (different billing → survives Gemini
+  // free-tier rate limits, e.g. during a backfill). Last resort: the title.
   try {
-    const model = new GoogleGenerativeAI(cfg.geminiApiKey).getGenerativeModel({
-      model: cfg.geminiModel || process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash',
-    });
-    const result = await model.generateContent(
-      `Turn this AI / tech news headline into ONE short visual metaphor for an abstract, symbolic ` +
-        `illustration (no text, no real logos). 12-18 words, concrete imagery and nouns only, ` +
-        `not a sentence, no quotes. Headline: "${title}"`,
-    );
-    const text = result.response.text().replace(/\s+/g, ' ').trim();
-    return text.length >= 6 ? text.slice(0, 240) : title;
+    const r = await new GoogleGenerativeAI(cfg.geminiApiKey)
+      .getGenerativeModel({ model })
+      .generateContent(instruction);
+    const text = clean(r.response.text());
+    if (text.length >= 6) return text;
   } catch {
-    return title;
+    /* fall through to OpenRouter */
   }
+
+  if (cfg.openRouterApiKey) {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${cfg.openRouterApiKey}`, 'content-type': 'application/json' },
+        body: JSON.stringify({ model: `google/${model}`, messages: [{ role: 'user', content: instruction }] }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+        const text = clean(data.choices?.[0]?.message?.content ?? '');
+        if (text.length >= 6) return text;
+      }
+    } catch {
+      /* fall through to title */
+    }
+  }
+
+  return title;
 }
 
 async function generateImage(
@@ -193,7 +230,10 @@ async function uploadCardImage(db: PipelineDb, slug: string, png: Buffer): Promi
     logEvent('warn', 'publish', 'Card image upload failed', { slug, error: error.message });
     return null;
   }
-  return db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+  // Content-hash version query so regenerating the same path busts the
+  // image/CDN cache (the public URL is stable; the ?v changes with the bytes).
+  const version = createHash('sha1').update(png).digest('hex').slice(0, 10);
+  return `${db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl}?v=${version}`;
 }
 
 /** Map any hex accent colour to a prompt-friendly colour word via its hue. */

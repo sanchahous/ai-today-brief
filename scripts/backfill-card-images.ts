@@ -26,12 +26,14 @@ async function main() {
     cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
     cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN!,
     geminiApiKey: process.env.GEMINI_API_KEY!,
+    openRouterApiKey: process.env.OPEN_ROUTER_API_KEY || process.env.OPENROUTER_API_KEY || undefined,
   };
   if (!cfg.cloudflareAccountId || !cfg.cloudflareApiToken) {
     throw new Error('CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN missing in .env.local');
   }
 
-  const slug = process.argv[2];
+  const force = process.argv.includes('--force');
+  const slug = process.argv.slice(2).find((a) => !a.startsWith('--'));
   let query = db.from('briefs').select('id, slug, date').eq('status', 'published');
   if (slug) query = query.eq('slug', slug);
   const { data: briefs, error } = await query.order('date', { ascending: false });
@@ -41,10 +43,10 @@ async function main() {
     return;
   }
 
-  console.log(`backfilling ${briefs.length} brief(s)…`);
+  console.log(`backfilling ${briefs.length} brief(s)${force ? ' [FORCE regen]' : ''}…`);
   const total = { generated: 0, skipped: 0, failed: 0 };
   for (const b of briefs) {
-    const stats = await fillCardImages(db, b.id, cfg);
+    const stats = await fillCardImages(db, b.id, cfg, { force });
     total.generated += stats.generated;
     total.skipped += stats.skipped;
     total.failed += stats.failed;
