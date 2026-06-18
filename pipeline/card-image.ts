@@ -192,6 +192,7 @@ async function generateCloudflare(prompt: string, cfg: CardImageConfig): Promise
           'content-type': 'application/json',
         },
         body: JSON.stringify({ prompt, steps: 6 }),
+        signal: AbortSignal.timeout(25_000),
       },
     );
     if (!res.ok) {
@@ -212,7 +213,7 @@ async function generatePollinations(prompt: string, seed: number): Promise<Buffe
     const url =
       `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
       `?width=1216&height=640&model=flux&nologo=true&seed=${seed}`;
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
     if (!res.ok) return null;
     const buf = Buffer.from(await res.arrayBuffer());
     return buf.length > 1024 ? buf : null;
