@@ -129,6 +129,9 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
     ? markdownToPlainText(detail.bodyMd)
     : detail.deepDive || detail.summary;
 
+  // Prefer the generated brand card (always present) over the raw source image.
+  const heroImage = detail.cardImageUrl ?? detail.imageUrl;
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -137,7 +140,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         headline: detail.title,
         description: detail.summary,
         articleBody,
-        ...(detail.imageUrl ? { image: [detail.imageUrl] } : {}),
+        ...(heroImage ? { image: [heroImage] } : {}),
         datePublished: detail.publishedAt ?? detail.briefDate,
         dateModified: detail.publishedAt ?? detail.briefDate,
         inLanguage: lang,
@@ -217,10 +220,10 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
 
         <Reveal>
           <div className="mb-6">
-            {detail.imageUrl ? (
+            {heroImage ? (
               <figure className="border-border relative m-0 aspect-[16/9] overflow-hidden rounded-xl border">
                 <Image
-                  src={detail.imageUrl}
+                  src={heroImage}
                   alt={detail.title}
                   fill
                   priority
