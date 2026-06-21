@@ -472,7 +472,7 @@ ${buildSourceMaterialBlock(enrichment)}
 ALREADY PUBLISHED RECENTLY (do NOT repeat these stories, even if worded differently):
 ${recent}
 
-YOUR JOB — a strict editor, QUALITY over quantity:
+YOUR JOB — a strict editor: every item must earn its place, but ship the FULL set that does:
 1. Drop any candidate that is the SAME event as something already published above.
 2. If several candidates are the same story, keep only the single best one.
 3. Avoid topic spam: don't take multiple items about the same product/technology unless
@@ -487,9 +487,12 @@ YOUR JOB — a strict editor, QUALITY over quantity:
    this drama; actively correct for it and favour the usable item over the loud one.
 6. Use the READER PROFILE above to filter for relevance — skip stories the reader
    explicitly does not want, even if they are technically about AI.
-7. From what remains, keep AT MOST ${maxItems}, most important first. Returning FEWER
-   (even 0) is correct when there isn't enough that is genuinely new, valuable and distinct.
-   Never pad to hit a number.
+7. From what remains, keep EVERY item that is genuinely new, distinct, and passes the
+   PRACTICAL TEST — most important first, AT MOST ${maxItems}. A normal day has ~4–6 such
+   items; ship them all, don't stop at 1–2. Go lower ONLY when the corpus is genuinely thin
+   (a quiet day may be 1–2, and 0 is valid when nothing qualifies). The balance is strict
+   both ways: never pad with filler, but never STARVE the brief by dropping a useful,
+   distinct, actionable item just to keep the list short.
 
 For EACH kept item, write BOTH languages (natural Ukrainian, not word-for-word):
   ref              — the candidate number from the list above

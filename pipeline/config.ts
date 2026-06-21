@@ -99,11 +99,16 @@ export function loadPipelineConfig(
     geminiApiKey: geminiApiKey!,
     maxItems: intIn(env.MAX_ITEMS, 8, 1, 10),
     poolSize: intIn(env.POOL_SIZE, 16, 4, 40),
-    perTopicCap: intIn(env.PER_TOPIC_CAP, 2, 1, 5),
+    // 3 (not 2): agents/mcp/optimisation are the reader's CORE topics, and a cap
+    // of 2 starved the pool — only ~8 of ~26 ranked clusters reached the editor
+    // while 15+ genuinely practical items aged out unpublished. 3 widens the pool
+    // without letting any single product wall it.
+    perTopicCap: intIn(env.PER_TOPIC_CAP, 3, 1, 5),
     // Practical tools/optimisations from GitHub etc. ARE cold singletons (zero
-    // engagement, single source); the rank-stage genre demotion now keeps RSS
-    // business-churn out, so give the usable singletons more room in the pool.
-    maxColdSingletons: intIn(env.MAX_COLD_SINGLETONS, 8, 0, 40),
+    // engagement, single source); the rank-stage genre demotion keeps RSS
+    // business-churn out, so give the usable singletons real room — 12, because
+    // on a busy dev day there are well more than 8 distinct tools worth shipping.
+    maxColdSingletons: intIn(env.MAX_COLD_SINGLETONS, 12, 0, 40),
     minScore: floatIn(env.MIN_SCORE, 0.15, 0, 1),
     recentTitles: intIn(env.RECENT_TITLES, 60, 0, 200),
     embedLimit: intIn(env.EMBED_LIMIT, 20, 1, 50),

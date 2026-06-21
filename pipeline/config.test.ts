@@ -30,7 +30,7 @@ describe('loadPipelineConfig', () => {
     const cfg = loadPipelineConfig(base, []);
     expect(cfg.maxItems).toBe(8);
     expect(cfg.poolSize).toBe(16);
-    expect(cfg.perTopicCap).toBe(2);
+    expect(cfg.perTopicCap).toBe(3);
     expect(cfg.minScore).toBeCloseTo(0.15);
     expect(cfg.embedLimit).toBe(20);
     expect(cfg.maxEmbedDistance).toBeCloseTo(0.20);
