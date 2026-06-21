@@ -100,7 +100,10 @@ export function loadPipelineConfig(
     maxItems: intIn(env.MAX_ITEMS, 8, 1, 10),
     poolSize: intIn(env.POOL_SIZE, 16, 4, 40),
     perTopicCap: intIn(env.PER_TOPIC_CAP, 2, 1, 5),
-    maxColdSingletons: intIn(env.MAX_COLD_SINGLETONS, 5, 0, 40),
+    // Practical tools/optimisations from GitHub etc. ARE cold singletons (zero
+    // engagement, single source); the rank-stage genre demotion now keeps RSS
+    // business-churn out, so give the usable singletons more room in the pool.
+    maxColdSingletons: intIn(env.MAX_COLD_SINGLETONS, 8, 0, 40),
     minScore: floatIn(env.MIN_SCORE, 0.15, 0, 1),
     recentTitles: intIn(env.RECENT_TITLES, 60, 0, 200),
     embedLimit: intIn(env.EMBED_LIMIT, 20, 1, 50),

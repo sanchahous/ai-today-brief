@@ -3,6 +3,7 @@ import {
   clickbaitDemotion,
   clusterIdFor,
   compositeScore,
+  newsGenreDemotion,
   rankCandidates,
   scoreComponents,
   SCORE_VERSION,
@@ -82,6 +83,26 @@ describe('clickbaitDemotion', () => {
     expect(clickbaitDemotion('Sam Altman says AGI is near')).toBeGreaterThan(0);
     expect(clickbaitDemotion('You won’t believe this AI trick')).toBe(0.5);
     expect(clickbaitDemotion('Cursor 2.0 ships agent mode')).toBe(0);
+  });
+});
+
+describe('newsGenreDemotion', () => {
+  it('demotes off-niche business / personnel / legal / celebrity drama', () => {
+    expect(newsGenreDemotion('Noam Shazeer leaves Google for OpenAI')).toBe(0.5);
+    expect(newsGenreDemotion('Anthropic files confidential S-1 for IPO')).toBe(0.5);
+    expect(newsGenreDemotion('Anysphere raises $60M as Cursor clarifies plans')).toBe(0.5);
+    expect(newsGenreDemotion('OpenAI is losing billions of dollars a year')).toBe(0.5);
+    expect(newsGenreDemotion('Google sues cybercrime group over Gemini phishing')).toBe(0.5);
+    expect(newsGenreDemotion("Amazon shelves Sam Altman biopic 'Artificial'")).toBe(0.5);
+  });
+
+  it('leaves practical tools, releases and monetisation items alone', () => {
+    expect(newsGenreDemotion('Headroom compresses LLM inputs by 60–95%')).toBe(0);
+    expect(newsGenreDemotion('Moonshot AI releases Kimi Code K2.7 open-source model')).toBe(0);
+    expect(newsGenreDemotion('OpenRouter upgrades free tier to 1,000 requests/day')).toBe(0);
+    expect(newsGenreDemotion('Microsoft open-sources MarkItDown to convert Office files')).toBe(0);
+    expect(newsGenreDemotion('How I make $5k/month shipping AI side-projects')).toBe(0);
+    expect(newsGenreDemotion('TimesFM: a pretrained foundation model for time-series')).toBe(0);
   });
 });
 
