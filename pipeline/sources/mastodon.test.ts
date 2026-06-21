@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mastodonStatusToArticle, stripHtml } from './mastodon';
+import { isSocialLink, mastodonStatusToArticle, stripHtml } from './mastodon';
 
 const status = (over: Record<string, unknown> = {}) => ({
   url: 'https://fosstodon.org/@dev/123',
@@ -42,5 +42,38 @@ describe('mastodonStatusToArticle', () => {
     expect(mastodonStatusToArticle(status({ card: { url: 'not-a-url' } }))).toBeNull();
     expect(mastodonStatusToArticle(status({ created_at: 'nope' }))).toBeNull();
     expect(mastodonStatusToArticle(null)).toBeNull();
+  });
+
+  it('skips cards that just link to another tweet/toot (amplification, not an article)', () => {
+    expect(
+      mastodonStatusToArticle(
+        status({ card: { url: 'https://x.com/fly51fly/status/123', title: 'fly51fly (@fly51fly) on X' } }),
+      ),
+    ).toBeNull();
+    expect(
+      mastodonStatusToArticle(status({ card: { url: 'https://mastodon.social/@a/9', title: 'A on Mastodon' } })),
+    ).toBeNull();
+    // a real article link still passes
+    expect(mastodonStatusToArticle(status())).not.toBeNull();
+  });
+
+  it('drops posts marked non-English, keeps English and unknown', () => {
+    expect(mastodonStatusToArticle(status({ language: 'ja' }))).toBeNull();
+    expect(mastodonStatusToArticle(status({ language: 'ru' }))).toBeNull();
+    expect(mastodonStatusToArticle(status({ language: 'en' }))).not.toBeNull();
+    expect(mastodonStatusToArticle(status({ language: undefined }))).not.toBeNull();
+  });
+});
+
+describe('isSocialLink', () => {
+  it('flags social-post hosts, passes article/repo hosts', () => {
+    expect(isSocialLink('https://x.com/a/status/1')).toBe(true);
+    expect(isSocialLink('https://www.twitter.com/a')).toBe(true);
+    expect(isSocialLink('https://bsky.app/profile/x')).toBe(true);
+    expect(isSocialLink('https://fosstodon.org/@a/9')).toBe(true);
+    expect(isSocialLink('https://sigmoid.social/@a/9')).toBe(true);
+    expect(isSocialLink('https://github.com/org/repo')).toBe(false);
+    expect(isSocialLink('https://example.com/post')).toBe(false);
+    expect(isSocialLink('not-a-url')).toBe(false);
   });
 });
