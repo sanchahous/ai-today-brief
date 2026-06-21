@@ -125,11 +125,16 @@ function saturate(value: number, half: number): number {
 const SOURCE_TRUST: Array<[RegExp, number]> = [
   [/\b(anthropic|openai|google (research|ai)|deepmind|hugging ?face|meta ai|nvidia)\b/i, 1],
   [/\b(hacker news|simon willison|github|arxiv)\b/i, 0.9],
+  // Lobsters: curated, invite-only dev community — HN-cousin signal density.
+  [/\blobsters\b/i, 0.85],
   [/\b(ars ?technica|mit tech(nology)?|techcrunch)\b/i, 0.75],
-  [/\b(reddit)\b/i, 0.7],
+  // AINews (Smol AI): machine-aggregated dev-subreddit/Discord/X recap — a
+  // curated lead source, above the neutral default but below first-party media.
+  [/\b(reddit|ainews)\b/i, 0.7],
   // The Verge demoted: 33 fetched / 0 published in the first month — reader
-  // profile mismatch (consumer angle), not a quality judgement.
-  [/\b(venturebeat|marktechpost|youtube|x\.com|twitter|threads|the verge|bluesky)\b/i, 0.55],
+  // profile mismatch (consumer angle), not a quality judgement. Mastodon sits in
+  // the social tier alongside Bluesky (engagement is a hint, not authority).
+  [/\b(venturebeat|marktechpost|youtube|x\.com|twitter|threads|the verge|bluesky|mastodon)\b/i, 0.55],
 ];
 
 export function sourceTrust(sourceName: string): number {

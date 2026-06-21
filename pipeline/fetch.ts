@@ -1,9 +1,10 @@
 /**
- * Stage 1 — Fetch. Collects raw candidates from InBrief, Hacker News, Reddit
- * and the first-party RSS feeds in parallel, reporting per-source health so a
- * silently dead source surfaces in `pipeline_runs` and Telegram instead of the
- * pool quietly degrading. Returns an in-memory, de-duplicated,
- * rolling-window-filtered list — no database here.
+ * Stage 1 — Fetch. Collects raw candidates from InBrief, Hacker News (story +
+ * Show HN), Reddit, the first-party RSS feeds, Bluesky, Lobsters and Mastodon
+ * in parallel, reporting per-source health so a silently dead source surfaces
+ * in `pipeline_runs` and Telegram instead of the pool quietly degrading.
+ * Returns an in-memory, de-duplicated, rolling-window-filtered list — no
+ * database here.
  *
  * RSS used to be a thin-primary fallback only; it is a primary source now
  * because the feeds are the first-party lab blogs (Anthropic, OpenAI, …) whose
@@ -66,7 +67,14 @@ export function toCandidate(a: FetchedArticle): Candidate {
 
 // ─── Source health ───────────────────────────────────────────────────────────
 
-export type SourceBranch = 'inbrief' | 'hacker_news' | 'reddit' | 'rss' | 'bluesky';
+export type SourceBranch =
+  | 'inbrief'
+  | 'hacker_news'
+  | 'reddit'
+  | 'rss'
+  | 'bluesky'
+  | 'lobsters'
+  | 'mastodon';
 
 export interface SourceHealth {
   source: SourceBranch;
@@ -102,16 +110,20 @@ export async function collectArticles(): Promise<CollectResult> {
   const { fetchReddit } = await import('./sources/reddit');
   const { fetchRSS } = await import('./sources/rss');
   const { fetchBluesky } = await import('./sources/bluesky');
+  const { fetchLobsters } = await import('./sources/lobsters');
+  const { fetchMastodon } = await import('./sources/mastodon');
 
   logEvent('info', 'fetch', 'Fetch stage started');
   const start = Date.now();
 
-  const [inbrief, hn, reddit, rss, bluesky] = await Promise.allSettled([
+  const [inbrief, hn, reddit, rss, bluesky, lobsters, mastodon] = await Promise.allSettled([
     fetchInBrief(),
     fetchHackerNews(),
     fetchReddit(),
     fetchRSS(),
     fetchBluesky(),
+    fetchLobsters(),
+    fetchMastodon(),
   ]);
 
   const rssArticles: PromiseSettledResult<FetchedArticle[]> =
@@ -129,6 +141,8 @@ export async function collectArticles(): Promise<CollectResult> {
     sourceHealthOf('reddit', reddit),
     rssHealth,
     sourceHealthOf('bluesky', bluesky),
+    sourceHealthOf('lobsters', lobsters),
+    sourceHealthOf('mastodon', mastodon),
   ];
 
   const merged: FetchedArticle[] = [
@@ -137,6 +151,8 @@ export async function collectArticles(): Promise<CollectResult> {
     ...(reddit.status === 'fulfilled' ? reddit.value : []),
     ...(rss.status === 'fulfilled' ? rss.value.articles : []),
     ...(bluesky.status === 'fulfilled' ? bluesky.value : []),
+    ...(lobsters.status === 'fulfilled' ? lobsters.value : []),
+    ...(mastodon.status === 'fulfilled' ? mastodon.value : []),
   ];
 
   const articles = filterToRollingWindow(prepareArticles(merged));
