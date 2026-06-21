@@ -12,6 +12,33 @@ import { isPublishedWithinRollingWindow } from '../rolling-window';
 import { BUILDER_USER_AGENT, MASTODON_INSTANCES, MASTODON_TAGS, mastodonTagUrl } from './feeds';
 import { fetchWithRetry, isSuccessfulResponse, type FetchedArticle } from './http';
 
+/**
+ * Hosts whose link cards are social reposts, not articles/repos. A toot linking
+ * to a tweet gets a card titled "Name (@handle) on X" — useless as a brief item.
+ * We want what devs SHARE (articles, repos), not who reposted whom. `*.social`
+ * covers most fediverse instances; the explicit set covers the big networks.
+ */
+const SOCIAL_LINK_HOSTS = new Set<string>([
+  'x.com',
+  'twitter.com',
+  't.co',
+  'bsky.app',
+  'threads.net',
+  'nitter.net',
+  ...MASTODON_INSTANCES,
+]);
+
+/** True for link cards that point at another social post (amplification, not an article). */
+export function isSocialLink(url: string): boolean {
+  let host: string;
+  try {
+    host = new URL(url).hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return false;
+  }
+  return SOCIAL_LINK_HOSTS.has(host) || host.endsWith('.social');
+}
+
 /** Strip HTML tags, decode common entities, collapse whitespace. */
 export function stripHtml(html: string): string {
   return html
@@ -37,12 +64,18 @@ export function mastodonStatusToArticle(status: unknown): FetchedArticle | null 
 
   if (s.reblog) return null; // a boost — skip to avoid amplification noise + dupes
 
+  // EN-primary brief: broad fediverse tags pull a lot of Japanese/Russian/German
+  // gadget reposts. Drop posts the author marked non-English; keep unknown.
+  const lang = typeof s.language === 'string' ? s.language.toLowerCase() : '';
+  if (lang && lang !== 'en') return null;
+
   const card = (typeof s.card === 'object' && s.card !== null ? s.card : null) as Record<
     string,
     unknown
   > | null;
   const link = card && typeof card.url === 'string' ? card.url : '';
   if (!link.startsWith('http')) return null; // no outbound link → chatter, skip
+  if (isSocialLink(link)) return null; // links to another tweet/toot → amplification, not an article
 
   const createdAt = typeof s.created_at === 'string' ? s.created_at : '';
   const ts = Date.parse(createdAt);
