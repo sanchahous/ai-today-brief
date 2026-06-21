@@ -3,14 +3,16 @@ name: Daily Pipeline
 on:
   schedule:
     # Europe/Kyiv (EEST = UTC+3). TRIMMED from 6 progóns × 4 slots (24 jobs/day) to
-    # 3 progóns × 1 slot (3 jobs/day) to stay inside the free Actions minutes: GitHub
-    # bills every job rounded UP to a full minute, so 24 jobs/day — even mostly skips
-    # — was the dominant cost. The in-run Gemini-model queue + OpenRouter fallback
-    # already retries inside a single run, so the cron retry-slots were largely
-    # redundant. Result: fewer but fuller editions. cycle/slot derive from the clock
+    # 1 slot per progón to stay inside the free Actions minutes: GitHub bills every
+    # job rounded UP to a full minute, so 24 jobs/day — even mostly skips — was the
+    # dominant cost. The in-run Gemini-model queue + OpenRouter fallback already
+    # retries inside a single run, so the cron retry-slots were largely redundant.
+    # Result: fewer but fuller editions. cycle/slot derive from the clock
     # (pipeline/schedule.ts), so running a subset of the original windows is safe.
+    # 4 progóns/day — evenly spaced across the active day (08/12/16/20 Kyiv).
     - cron: '0 5 * * *'    # 08:00 Kyiv — morning
     - cron: '0 9 * * *'    # 12:00 Kyiv — midday
+    - cron: '0 13 * * *'   # 16:00 Kyiv — afternoon
     - cron: '0 17 * * *'   # 20:00 Kyiv — evening
   workflow_dispatch:
     inputs:

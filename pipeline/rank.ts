@@ -12,9 +12,11 @@
  *   0.05 · breadth       — how many DISTINCT sources covered it
  *
  * Each signal is squashed to [0, 1] so the weights are truly proportional and the
- * `minScore` floor downstream is interpretable. Clickbait / pure-punditry is
- * demoted (not the personal keyword profile of the testbed). Topic + category
- * are attached for the diversity cap and storage; the LLM editor curates after.
+ * `minScore` floor downstream is interpretable. Clickbait / pure-punditry AND
+ * off-niche "news genre" stories (funding, personnel, legal, celebrity) are demoted
+ * — the loudest AI stories on HN/X are business drama, which wins on velocity and
+ * crowds out the practical tools the reader actually wants. Topic + category are
+ * attached for the diversity cap and storage; the LLM editor curates after.
  */
 
 import { createHash } from 'node:crypto';
@@ -150,6 +152,35 @@ export function clickbaitDemotion(title: string): number {
   return demotion;
 }
 
+// ─── Off-niche "news genre" demotion ─────────────────────────────────────────
+// The reader wants PRACTICAL dev intel, but the loudest AI stories on HN/Reddit/X
+// are business / personnel / legal / celebrity drama — they win on velocity +
+// cross-source and bury the usable tools. Demote that genre so practical items
+// rise in the pool (the LLM editor still makes the final keep/drop call). Tuned
+// for PRECISION: tool/model RELEASES and personal-monetisation items must NOT
+// match — only the "be aware this happened" newswire shape. Patterns are anchored
+// (e.g. money must read in billions, funding needs a funding word) to avoid
+// demoting wanted content; the editor's deny-list catches whatever slips through.
+const NEWS_GENRE_PATTERNS: Array<[RegExp, number]> = [
+  // Company finance: IPO / valuation / funding round / M&A / earnings.
+  [/\b(ipo|s-1|valuation|funding round|series [a-f] (round|funding)|venture funding|acquir(es|ed|ing|ition)|\bmerger\b|quarterly (earnings|revenue)|losing billions)\b/i, 0.5],
+  // Big-money sums ($60M, $1.5bn) — company-scale, NOT personal $k monetisation.
+  [/\$\d[\d,.]*\s?(m|bn|b|million|billion|trillion)\b/i, 0.5],
+  // Executive / personnel moves.
+  [/\b(joins|leaving|leaves|departs?|stepping down|steps down|resign(s|ed)?|ousted|named (ceo|cto|president|head of))\b/i, 0.5],
+  // Legal / regulatory / policy / geopolitics.
+  [/\b(sues?|lawsuit|antitrust|subpoena|sec filing|regulators?|congress|senate|white house|export (ban|control|restrict)|sanctions?|tariffs?)\b/i, 0.5],
+  // Entertainment / celebrity PR.
+  [/\b(biopic|hollywood|box[- ]office)\b/i, 0.5],
+];
+
+/** Multiplicative penalty in [0, 0.5] for off-niche business/personnel/legal/celebrity news. */
+export function newsGenreDemotion(title: string): number {
+  let demotion = 0;
+  for (const [re, d] of NEWS_GENRE_PATTERNS) if (re.test(title)) demotion = Math.max(demotion, d);
+  return demotion;
+}
+
 // ─── Cluster scoring ─────────────────────────────────────────────────────────
 
 function articleEngagement(a: Candidate): number {
@@ -215,7 +246,8 @@ function scoreCluster(cluster: Candidate[], nowMs: number): RankedEntry {
   const lead = pickClusterLead(cluster);
   const components = scoreComponents(cluster, nowMs);
   const base = compositeScore(components);
-  const score = base * (1 - clickbaitDemotion(lead.title));
+  const demotion = Math.max(clickbaitDemotion(lead.title), newsGenreDemotion(lead.title));
+  const score = base * (1 - demotion);
   const memberUrls = cluster.map((a) => a.url);
   return {
     lead,

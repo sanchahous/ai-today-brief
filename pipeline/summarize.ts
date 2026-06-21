@@ -408,8 +408,14 @@ Gemini and similar agentic IDEs. Wants concrete, actionable intelligence on:
   • Realistic monetisation for AI-native devs
   • Free certifications, internships, fellowships, hands-on tutorials
 
-Does NOT want: geopolitics, generic CEO quotes, raw academic research,
-big-iron datacenter news, philosophical AI-doom takes.`;
+Does NOT want (these are NEWSWIRE noise, not a playbook — drop them even when viral):
+  • company business: funding rounds, IPOs, valuations, M&A, earnings, stock
+  • executive hires & departures, org-chart drama
+  • lawsuits, regulation, policy, geopolitics, export bans
+  • AI-celebrity / entertainment stories (biopics, who-said-what)
+  • generic "Company X adds AI to its product" enterprise PR
+  • generic CEO quotes, raw academic research, big-iron datacenter news,
+    philosophical AI-doom takes and scary-research curiosities.`;
 }
 
 /** SOURCE MATERIAL block: fetched article text + HN voices, keyed by ref. */
@@ -472,9 +478,16 @@ YOUR JOB — a strict editor, QUALITY over quantity:
 3. Avoid topic spam: don't take multiple items about the same product/technology unless
    they are clearly distinct stories. Prefer breadth across the niche.
 4. Drop low value: pure punditry ("X says…"), clickbait, thin listicles, opinion without facts.
-5. Use the READER PROFILE above to filter for relevance — skip stories the reader
+5. PRACTICAL TEST — this brief is a PLAYBOOK, not a newswire. Keep an item ONLY if a working
+   developer can DO something with it within a week: try a tool, run a command, adopt a
+   technique, cut token cost or spend, learn a concrete skill, or grab an opportunity
+   (free credits, a cert, a job). If the single honest takeaway is "be aware this happened"
+   — funding, hires, lawsuits, valuations, industry drama, scary-research curiosities — DROP it,
+   no matter how viral. The CANDIDATES are ranked partly by virality, which over-weights exactly
+   this drama; actively correct for it and favour the usable item over the loud one.
+6. Use the READER PROFILE above to filter for relevance — skip stories the reader
    explicitly does not want, even if they are technically about AI.
-6. From what remains, keep AT MOST ${maxItems}, most important first. Returning FEWER
+7. From what remains, keep AT MOST ${maxItems}, most important first. Returning FEWER
    (even 0) is correct when there isn't enough that is genuinely new, valuable and distinct.
    Never pad to hit a number.
 
