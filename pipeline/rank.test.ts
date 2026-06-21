@@ -73,7 +73,10 @@ describe('sourceTrust', () => {
     expect(sourceTrust('Hugging Face Blog')).toBe(1);
     expect(sourceTrust('MIT Technology Review')).toBe(0.75);
     expect(sourceTrust('Hacker News')).toBe(0.9);
+    expect(sourceTrust('Lobsters')).toBe(0.85);
     expect(sourceTrust('Reddit · r/cursor')).toBe(0.7);
+    expect(sourceTrust('AINews')).toBe(0.7);
+    expect(sourceTrust('Mastodon')).toBe(0.55);
     expect(sourceTrust('Some Random Blog')).toBe(0.6);
   });
 });
