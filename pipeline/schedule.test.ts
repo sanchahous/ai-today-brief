@@ -18,25 +18,25 @@ const kyiv = (h: number, m = 0) => {
 };
 
 describe('getKyivCycleIndex', () => {
-  it('maps hours to progón 0–5 (every 4 h)', () => {
+  it('maps hours to a 2 h cycle slot 0–11', () => {
     expect(getKyivCycleIndex(kyiv(0, 0))).toBe(0);
-    expect(getKyivCycleIndex(kyiv(3, 59))).toBe(0);
-    expect(getKyivCycleIndex(kyiv(4, 0))).toBe(1);
-    expect(getKyivCycleIndex(kyiv(8, 0))).toBe(2);
-    expect(getKyivCycleIndex(kyiv(20, 0))).toBe(5);
+    expect(getKyivCycleIndex(kyiv(1, 59))).toBe(0);
+    expect(getKyivCycleIndex(kyiv(2, 0))).toBe(1);
+    expect(getKyivCycleIndex(kyiv(8, 0))).toBe(4);
+    expect(getKyivCycleIndex(kyiv(20, 0))).toBe(10);
   });
 });
 
 describe('formatKyivSlotTime', () => {
-  it('formats slot times within a progón', () => {
-    expect(formatKyivSlotTime(2, 1)).toBe('08:00');
-    expect(formatKyivSlotTime(2, 4)).toBe('09:30');
+  it('formats slot times within a cycle (cycle 4 = 08:00)', () => {
+    expect(formatKyivSlotTime(4, 1)).toBe('08:00');
+    expect(formatKyivSlotTime(4, 4)).toBe('09:30');
   });
 });
 
 describe('formatKyivCycleLabel', () => {
-  it('shows the 4-slot progón window', () => {
-    expect(formatKyivCycleLabel(2)).toBe('08:00–09:30');
+  it('shows the 4-slot cycle window', () => {
+    expect(formatKyivCycleLabel(4)).toBe('08:00–09:30');
   });
 });
 
@@ -60,7 +60,7 @@ describe('getKyivMinutesOfDay', () => {
 });
 
 describe('getKyivScheduleAttemptSlot', () => {
-  it('maps 08:00 progón 2 → slot 1', () => {
+  it('maps 08:00 (cycle 4 start) → slot 1', () => {
     expect(getKyivScheduleAttemptSlot(kyiv(8, 0))).toBe(1);
   });
 
@@ -72,9 +72,11 @@ describe('getKyivScheduleAttemptSlot', () => {
     expect(getKyivScheduleAttemptSlot(kyiv(9, 30))).toBe(4);
   });
 
-  it('returns null after the 1.5 h progón window', () => {
-    expect(getKyivScheduleAttemptSlot(kyiv(10, 0))).toBeNull();
-    expect(getKyivScheduleAttemptSlot(kyiv(11, 0))).toBeNull();
+  it('returns null after the 1.5 h slot window (before the next 2 h cycle)', () => {
+    expect(getKyivScheduleAttemptSlot(kyiv(9, 40))).toBeNull();
+    expect(getKyivScheduleAttemptSlot(kyiv(9, 50))).toBeNull();
+    // 10:00 is the START of the next cycle → slot 1 again, not null
+    expect(getKyivScheduleAttemptSlot(kyiv(10, 0))).toBe(1);
   });
 
   it('returns null for non-slot minutes (e.g. 08:15)', () => {
@@ -115,7 +117,7 @@ describe('resolveScheduleAttempt', () => {
       resolveScheduleAttempt({
         argv: [],
         env: {},
-        now: kyiv(15, 0),
+        now: kyiv(15, 50), // past the 1.5 h slot window of cycle 7 (14:00), before cycle 8
         summarizeFailuresInCycle: 2,
       }),
     ).toBe(3);

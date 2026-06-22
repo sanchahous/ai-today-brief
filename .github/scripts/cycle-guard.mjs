@@ -18,8 +18,8 @@
 
 import { appendFileSync } from 'node:fs';
 
-const KYIV_CYCLE_HOURS = 4;
-const KYIV_CYCLES_PER_DAY = 6;
+const KYIV_CYCLE_HOURS = 2;
+const KYIV_CYCLES_PER_DAY = 12;
 
 function kyivMinutesOfDay(now) {
   const parts = new Intl.DateTimeFormat('en-GB', {

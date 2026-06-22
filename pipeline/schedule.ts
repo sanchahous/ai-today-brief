@@ -1,16 +1,22 @@
 /**
- * Kyiv schedule: 6 progóns per day, one every 4 hours (00:00, 04:00, … 20:00).
- * Each progón has 4 retry slots every 30 min (1.5 h window). After a successful
- * publish + Telegram notify in a progón, remaining slots in that progón skip.
+ * Kyiv schedule: the day is divided into 2-hour cycle slots (00:00, 02:00, …
+ * 22:00 → indices 0–11). The cron in .github/workflows/pipeline.yml fires 6 of
+ * them, ALL DAYTIME — each lands in its own cycle, so each produces a distinct
+ * edition (the cycle-guard skips a cycle that already published + notified).
+ * Each cycle has up to 4 retry slots every 30 min (1.5 h window).
  *
  * Slot 1–3: lighter Gemini retries. Slot 4 (final): full Gemini retries + OpenRouter.
+ *
+ * NOTE: .github/scripts/cycle-guard.mjs duplicates KYIV_CYCLE_HOURS /
+ * KYIV_CYCLES_PER_DAY (it runs pre-`npm ci` and can't import this module) — keep
+ * the two in sync by hand.
  */
 
 import type { PipelineDb } from './db';
 
 export const KYIV_SCHEDULE_ATTEMPTS = 4 as const;
-export const KYIV_CYCLES_PER_DAY = 6 as const;
-export const KYIV_CYCLE_HOURS = 4;
+export const KYIV_CYCLES_PER_DAY = 12 as const;
+export const KYIV_CYCLE_HOURS = 2;
 export const KYIV_SLOT_INTERVAL_MINUTES = 30;
 
 // ─── Time helpers ─────────────────────────────────────────────────────────────
@@ -40,7 +46,7 @@ export function getKyivMinutesOfDay(now: Date = new Date()): number {
 
 // ─── 4 h progón + 30 min slots ───────────────────────────────────────────────
 
-/** Progón index 0–5 (00:00, 04:00, 08:00, 12:00, 16:00, 20:00 Kyiv). */
+/** Cycle index 0–11 (00:00, 02:00, 04:00, … 22:00 Kyiv). */
 export function getKyivCycleIndex(now: Date = new Date()): number {
   const minutes = getKyivMinutesOfDay(now);
   const cycle = Math.floor(minutes / (KYIV_CYCLE_HOURS * 60));
