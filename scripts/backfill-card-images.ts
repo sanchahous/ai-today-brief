@@ -26,6 +26,8 @@ async function main() {
     cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID!,
     cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN!,
     geminiApiKey: process.env.GEMINI_API_KEY!,
+    geminiImageModel: process.env.GEMINI_IMAGE_MODEL?.trim() || undefined,
+    cloudflareImageModel: process.env.CLOUDFLARE_IMAGE_MODEL?.trim() || undefined,
     openRouterApiKey: process.env.OPEN_ROUTER_API_KEY || process.env.OPENROUTER_API_KEY || undefined,
   };
   if (!cfg.cloudflareAccountId || !cfg.cloudflareApiToken) {

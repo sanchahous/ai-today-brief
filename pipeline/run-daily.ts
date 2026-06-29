@@ -594,13 +594,17 @@ async function main(): Promise<void> {
   // Cinematic AI hero per item → Storage → brief_items.card_image_url. Idempotent
   // (skips items that already have one), non-fatal: a failure leaves the OG card
   // to render its branded duotone fallback. Skipped when CF creds are unset.
-  if (result.itemCount > 0 && config.cloudflareAccountId && config.cloudflareApiToken) {
+  const canGenCards =
+    config.geminiImageModel || (config.cloudflareAccountId && config.cloudflareApiToken);
+  if (result.itemCount > 0 && canGenCards) {
     t = Date.now();
     try {
       const cardStats = await fillCardImages(db, result.briefId, {
         cloudflareAccountId: config.cloudflareAccountId,
         cloudflareApiToken: config.cloudflareApiToken,
         geminiApiKey: config.geminiApiKey,
+        geminiImageModel: config.geminiImageModel,
+        cloudflareImageModel: config.cloudflareImageModel,
         openRouterApiKey: config.openRouterApiKey,
       });
       logEvent('info', 'publish', 'Card images filled', {

@@ -70,6 +70,8 @@ async function main(): Promise<void> {
       cloudflareAccountId: config.cloudflareAccountId,
       cloudflareApiToken: config.cloudflareApiToken,
       geminiApiKey: config.geminiApiKey,
+      geminiImageModel: config.geminiImageModel,
+      cloudflareImageModel: config.cloudflareImageModel,
       openRouterApiKey: config.openRouterApiKey,
     });
     generated += stats.generated;
