@@ -39,6 +39,14 @@ export interface PipelineConfig {
   /** Cloudflare account id + Workers AI token for card-image generation (optional). */
   cloudflareAccountId?: string;
   cloudflareApiToken?: string;
+  /**
+   * Gemini IMAGE model for card images, e.g. 'gemini-3-pro-image' (Nano Banana Pro).
+   * Unset ⇒ the premium Gemini image tier is off and generation starts at Cloudflare.
+   * Requires billing on the Gemini key; otherwise it auto-falls-back to Cloudflare.
+   */
+  geminiImageModel?: string;
+  /** Cloudflare Workers AI image model id (default '@cf/leonardo/lucid-origin'). */
+  cloudflareImageModel?: string;
   /** Bot token for pushing review cards (optional — notify is skipped if unset). */
   telegramBotToken?: string;
   /** Private chat id that receives the per-item review cards (optional). */
@@ -126,6 +134,8 @@ export function loadPipelineConfig(
     openRouterApiKey: firstNonEmpty(env.OPEN_ROUTER_API_KEY, env.OPENROUTER_API_KEY),
     cloudflareAccountId: env.CLOUDFLARE_ACCOUNT_ID?.trim() || undefined,
     cloudflareApiToken: env.CLOUDFLARE_API_TOKEN?.trim() || undefined,
+    geminiImageModel: env.GEMINI_IMAGE_MODEL?.trim() || undefined,
+    cloudflareImageModel: env.CLOUDFLARE_IMAGE_MODEL?.trim() || undefined,
     telegramBotToken: env.TELEGRAM_BOT_TOKEN?.trim() || undefined,
     telegramReviewChatId: env.TELEGRAM_REVIEW_CHAT_ID?.trim() || undefined,
     dryRun: argv.includes('--dry-run') || env.DRY_RUN === '1',

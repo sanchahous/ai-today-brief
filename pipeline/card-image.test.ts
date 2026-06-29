@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { buildPrompt, hueName, seedFromString } from './card-image';
+import {
+  buildPrompt,
+  fallbackScene,
+  hueName,
+  negativePrompt,
+  sceneBrief,
+  seedFromString,
+} from './card-image';
 
 describe('hueName', () => {
   it('maps category accent hexes to prompt-friendly colour words', () => {
@@ -7,6 +14,11 @@ describe('hueName', () => {
     expect(hueName('#f0c040')).toBe('amber orange');
     expect(hueName('#5dcaa5')).toBe('emerald green');
     expect(hueName('#5bc9f0')).toBe('teal');
+    expect(hueName('#ffd000')).toBe('golden yellow');
+    expect(hueName('#00a0ff')).toBe('cyan');
+    expect(hueName('#5000ff')).toBe('electric blue');
+    expect(hueName('#e000ff')).toBe('violet purple');
+    expect(hueName('#ff00a0')).toBe('magenta pink');
   });
 
   it('falls back to a brand-default cool tone for achromatic / invalid input', () => {
@@ -31,12 +43,49 @@ describe('seedFromString', () => {
 });
 
 describe('buildPrompt', () => {
-  it('weaves the accent + metaphor into the constant cinematic, text-free house style', () => {
-    const prompt = buildPrompt('violet purple', 'a glowing neural lattice');
+  it('makes the story scene dominant, with a light brand thread + accent', () => {
+    const prompt = buildPrompt('violet purple', 'a cracked padlock over a server rack');
     expect(prompt).toContain('violet purple');
-    expect(prompt).toContain('a glowing neural lattice');
-    expect(prompt).toContain('cinematic');
-    expect(prompt).toContain('no text');
+    expect(prompt).toContain('a cracked padlock over a server rack');
+    expect(prompt).toContain('editorial');
+    expect(prompt).toContain('No text');
     expect(prompt).toContain('16:9');
+    // The scene leads (placed after the brand thread), so it is not buried.
+    expect(prompt.indexOf('cracked padlock')).toBeGreaterThan(prompt.indexOf('editorial'));
+  });
+});
+
+describe('negativePrompt', () => {
+  it('bans the over-used AI clichés that made cards look identical', () => {
+    const neg = negativePrompt();
+    expect(neg).toContain('glowing brain');
+    expect(neg).toContain('circuit board');
+    expect(neg).toContain('text');
+  });
+});
+
+describe('fallbackScene', () => {
+  it('picks a concrete, on-topic scene for every keyword category', () => {
+    expect(fallbackScene('Critical CVE lets attackers breach the server')).toContain('padlock');
+    expect(fallbackScene('Startup raises $200 billion in funding round')).toContain('coin');
+    expect(fallbackScene('New MCP agent orchestrates multi-step workflows')).toContain('robotic');
+    expect(fallbackScene('GPT-5 model launch benchmark results')).toContain('stage');
+    expect(fallbackScene('Run Gemma 4 as a local on-device LLM offline')).toContain('laptop');
+    expect(fallbackScene('Cut token cost and latency with this optimization')).toContain('gauge');
+    expect(fallbackScene('AI medical scan and MRI vision analysis')).toContain('lightbox');
+  });
+
+  it('returns a sensible default and never the banned brain cliché', () => {
+    const generic = fallbackScene('A developer shares thoughts on keyboard layouts and coffee');
+    expect(generic.toLowerCase()).not.toContain('brain');
+    expect(generic).toContain('workstation');
+    expect(generic.length).toBeGreaterThan(10);
+  });
+});
+
+describe('sceneBrief', () => {
+  it('returns the default scene without any network call when there is no context', async () => {
+    const scene = await sceneBrief('', '', { geminiApiKey: 'unused' });
+    expect(scene).toContain('workstation');
   });
 });
