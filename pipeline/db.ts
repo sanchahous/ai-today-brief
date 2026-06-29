@@ -662,10 +662,12 @@ export function toVectorLiteral(vec: number[]): string {
 
 /**
  * Nearest known brief_item to an embedding within `maxDistance` cosine
- * distance, looking at published items (any day) AND everything already in
- * today's packs — draft, pending, even rejected. A story the editor rejected
- * this morning must not be re-proposed by the afternoon progón. Returns null
- * when nothing is close enough — the candidate is novel.
+ * distance, looking at items published in the last 30 days (migration 039's
+ * recency window — keeps the comparison set bounded so the vector space does not
+ * saturate as the archive grows) AND everything already in today's packs —
+ * draft, pending, even rejected. A story the editor rejected this morning must
+ * not be re-proposed by the afternoon progón. Returns null when nothing is close
+ * enough — the candidate is novel.
  */
 export async function matchRelevantItem(
   db: PipelineDb,

@@ -432,11 +432,15 @@ async function main(): Promise<void> {
     item.image_url = imageByUrl.get(item.url) ?? null;
   }
 
-  // ── Verify → revise → re-verify → auto-drop ─────────────────────────────────
-  // Fully automatic fact-control: flagged items get ONE targeted rewrite
-  // against their source; whatever still fails is dropped from the pack. The
-  // human gate stays an editorial-taste check, never a fact-checking duty.
-  // Non-fatal: a crashed checker publishes the items unchecked (flag visible).
+  // ── Verify → revise → re-verify → keep-with-warning ─────────────────────────
+  // Flagged items get ONE targeted rewrite against their source; the cleaned
+  // version replaces the draft. Items that STILL carry unsupported claims are no
+  // longer dropped — they ride to the human review gate as review_status='pending'
+  // (RLS hides pending items from the public) with the warning surfaced in
+  // review_comment (autoReviewComment). Auto-dropping here used to zero out a
+  // cycle's only selected item — usually because enrichment was thin, not because
+  // the item was wrong — which (with the editor selecting ~1/run) starved the
+  // brief. Non-fatal: a crashed checker publishes the items unchecked (flag visible).
   if (config.verifyClaims && enrichment.some((e) => e.text)) {
     t = Date.now();
     try {
@@ -449,7 +453,7 @@ async function main(): Promise<void> {
       );
 
       let revisedCount = 0;
-      const dropped: string[] = [];
+      const keptFlagged: string[] = [];
       const flagged = brief.items.filter((i) => i.unsupported_claims.length > 0);
       if (flagged.length > 0) {
         const { revised } = await reviseFlaggedItems(
@@ -470,24 +474,31 @@ async function main(): Promise<void> {
           );
         }
         const revisedByRef = new Map(revised.map((r) => [r.ref, r]));
-        brief.items = brief.items.flatMap((item) => {
-          if (item.unsupported_claims.length === 0) return [item];
+        brief.items = brief.items.map((item) => {
+          if (item.unsupported_claims.length === 0) return item;
           const rev = revisedByRef.get(item.ref);
+          // Keep the identity fields the revise pass must not change.
           if (rev && rev.unsupported_claims.length === 0) {
             revisedCount++;
-            // Keep the identity fields the revise pass must not change.
-            return [{ ...rev, slug: item.slug, image_url: item.image_url }];
+            return { ...rev, slug: item.slug, image_url: item.image_url };
           }
-          dropped.push(item.title_en);
-          logEvent('warn', 'verify', 'Item dropped by auto fact-control', {
+          // Still flagged after one rewrite: KEEP it (don't drop). Prefer a
+          // partial revision that at least reduced the unsupported claims; the
+          // residual warning reaches the reviewer via review_comment, and the
+          // item stays hidden from the public until ✅ in any case.
+          keptFlagged.push(item.title_en);
+          logEvent('info', 'verify', 'Item kept with unsupported-claims warning', {
             ref: item.ref,
             title: item.title_en,
             claims: item.unsupported_claims,
           });
-          return [];
+          if (rev && rev.unsupported_claims.length < item.unsupported_claims.length) {
+            return { ...rev, slug: item.slug, image_url: item.image_url };
+          }
+          return item;
         });
         if (
-          dropped.length > 0 &&
+          keptFlagged.length > 0 &&
           !config.dryRun &&
           config.telegramBotToken &&
           config.telegramReviewChatId
@@ -495,7 +506,7 @@ async function main(): Promise<void> {
           await sendMessage(
             config.telegramBotToken,
             config.telegramReviewChatId,
-            ['⛔ <b>АВТО-ФАКТ-ЧЕК відкинув</b> (джерело не підтверджує):', ...dropped.map((d) => `• ${d}`)].join('\n'),
+            ['⚠️ <b>ФАКТ-ЧЕК позначив</b> (джерело не підтверджує — на твій розсуд, НЕ відкинуто):', ...keptFlagged.map((d) => `• ${d}`)].join('\n'),
           );
         }
       }
@@ -510,16 +521,13 @@ async function main(): Promise<void> {
           checked: outcome.checked,
           flagged: outcome.flagged,
           revised: revisedCount,
-          dropped: dropped.length,
+          kept_flagged: keptFlagged.length,
+          dropped: 0,
           model: outcome.model,
           prompt_tokens: outcome.usage?.promptTokens ?? null,
           output_tokens: outcome.usage?.outputTokens ?? null,
         },
       });
-      if (brief.items.length === 0) {
-        logEvent('info', 'verify', 'Auto fact-control dropped everything — skipping');
-        return;
-      }
     } catch (e) {
       logError('verify', 'Claim verification failed (non-fatal)', e);
       await logStage(db, config.dryRun, {

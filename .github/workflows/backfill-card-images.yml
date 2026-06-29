@@ -1,0 +1,49 @@
+name: Backfill card images
+
+# Manual, one-off generation of brief_items.card_image_url for published items
+# that predate the card-image wiring (PR #129). Idempotent — skips items that
+# already have a card (or are rejected), so re-running is safe and free
+# (Cloudflare FLUX → Pollinations fallback). No-ops if the Cloudflare creds are
+# unset. Default is a dry run that only reports how many briefs need filling.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print how many briefs need filling instead of writing'
+        type: boolean
+        default: true
+
+concurrency:
+  group: backfill-card-images
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Backfill card images
+        env:
+          SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+          SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          ARGS=""
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            ARGS="--dry-run"
+          fi
+          npx tsx pipeline/scripts/backfill-card-images.ts $ARGS

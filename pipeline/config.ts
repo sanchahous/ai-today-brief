@@ -114,7 +114,15 @@ export function loadPipelineConfig(
     embedLimit: intIn(env.EMBED_LIMIT, 20, 1, 50),
     enrichLimit: intIn(env.ENRICH_LIMIT, 8, 0, 16),
     verifyClaims: env.VERIFY_CLAIMS !== '0',
-    maxEmbedDistance: floatIn(env.MAX_EMBED_DISTANCE, 0.20, 0.05, 1),
+    // 0.12 (was 0.20). A week of prod logs (498 semantic-dedup drops) showed the
+    // 0.20 ceiling discarding ~89% genuinely NEW stories (distinct tools, models,
+    // events): in this narrow AI/dev niche almost every fresh item sits within 0.20
+    // cosine of *something* already published, so 0.20 gutted throughput — the pool
+    // of 11-16 ranked candidates collapsed to 0-2 reaching the editor, and the brief
+    // shipped ~1 item/edition. 0.12 re-admits ~98% of those drops while still
+    // auto-dropping only the closest near-identical re-words; the exact-URL dedup
+    // (dropKnownUrls) and the human ✅/❌ review gate catch the residual duplicates.
+    maxEmbedDistance: floatIn(env.MAX_EMBED_DISTANCE, 0.12, 0.05, 1),
     openRouterApiKey: firstNonEmpty(env.OPEN_ROUTER_API_KEY, env.OPENROUTER_API_KEY),
     cloudflareAccountId: env.CLOUDFLARE_ACCOUNT_ID?.trim() || undefined,
     cloudflareApiToken: env.CLOUDFLARE_API_TOKEN?.trim() || undefined,
