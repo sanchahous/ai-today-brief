@@ -1,10 +1,23 @@
 import { defineConfig, devices } from '@playwright/test';
+import { realpathSync } from 'node:fs';
 
 /**
  * E2E smoke + layout regression for critical UI flows.
  * One-time setup: `npm run e2e:install`
  * Run locally: `npm run build && npm run e2e` (starts `next start` via webServer)
  */
+
+/**
+ * Canonical project dir for the web server's cwd. On a subst / dual-drive-letter
+ * dev box the process cwd can be the subst drive (e.g. `D:`) while Next bakes the
+ * app dir on the real drive (`E:`); `next start` then joins the two across drives
+ * and looks for `.next/routes-manifest.json` at a mangled, tripled path, so the
+ * server never boots and every spec fails. Starting it from the realpath'd dir
+ * keeps cwd on the same drive Next baked. No-op on CI / a normal checkout
+ * (realpath returns the same path there). `__dirname` (not `import.meta`) —
+ * Playwright loads this config as CommonJS.
+ */
+const projectDir = realpathSync(__dirname);
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -39,6 +52,8 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run start',
+    // Run from the canonical (realpath'd) dir — see projectDir above.
+    cwd: projectDir,
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
