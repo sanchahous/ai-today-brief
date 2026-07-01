@@ -20,6 +20,7 @@ const LOGIC_FILES = [
   'src/lib/analytics-config.ts',
   'src/lib/analytics-client.ts',
   'src/lib/preferred-lang.ts',
+  'src/lib/indexnow.ts',
 ] as const;
 
 function lcovSourceFiles(lcov: string): Set<string> {

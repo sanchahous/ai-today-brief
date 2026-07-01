@@ -21,7 +21,8 @@ import { after } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { NextResponse, type NextRequest } from 'next/server';
 import { formatCustomNewsError, parseCustomCommand } from '@/lib/telegram-custom';
-import { SITE_URL } from '@/lib/site';
+import { LANGS, SITE_URL } from '@/lib/site';
+import { indexNowConfigured, submitToIndexNow } from '@/lib/indexnow';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import {
   approvedBanner,
@@ -166,6 +167,50 @@ async function maybeSendSummary(
 async function revalidateSite(): Promise<void> {
   const paths = ['/', '/en', '/uk', '/en/news', '/uk/news', '/sitemap.xml', '/rss.xml', '/news-sitemap.xml'];
   for (const p of paths) revalidatePath(p);
+}
+
+/**
+ * Best-effort IndexNow ping for a freshly published brief. Submits the brief +
+ * its approved item pages (both languages) and the feeds that just changed, so
+ * Bing/Yandex — and via Bing, ChatGPT Search / Copilot (AEO) — recrawl within
+ * minutes instead of waiting for the next sitemap sweep. No-op without a key;
+ * never throws (submitToIndexNow swallows errors).
+ */
+async function pingIndexNow(
+  db: ReturnType<typeof getSupabaseAdmin>,
+  briefId: string,
+  briefSlug: string | null,
+): Promise<void> {
+  if (!indexNowConfigured || !briefSlug) return;
+
+  const { data: items } = await db
+    .from('brief_items')
+    .select('slug')
+    .eq('brief_id', briefId)
+    .eq('review_status', 'approved')
+    .is('canonical_item_id', null);
+
+  const urls = [
+    `${SITE_URL}/`,
+    `${SITE_URL}/sitemap.xml`,
+    `${SITE_URL}/news-sitemap.xml`,
+    ...LANGS.flatMap((lang) => [
+      `${SITE_URL}/${lang}`,
+      `${SITE_URL}/${lang}/news`,
+      `${SITE_URL}/${lang}/${briefSlug}`,
+    ]),
+  ];
+  for (const item of items ?? []) {
+    if (!item.slug) continue;
+    for (const lang of LANGS) urls.push(`${SITE_URL}/${lang}/${briefSlug}/${item.slug}`);
+  }
+
+  const result = await submitToIndexNow(urls);
+  if (!result.ok && !result.skipped) {
+    console.warn(
+      `[indexnow] brief=${briefId} ping not ok — status=${result.status ?? '-'}, submitted=${result.submitted}`,
+    );
+  }
 }
 
 // ─── Action handlers ──────────────────────────────────────────────────────────
@@ -376,7 +421,7 @@ async function handlePublish(
     .update({ status: 'published', published_at: new Date().toISOString() })
     .eq('id', briefId)
     .eq('status', 'draft')
-    .select('title_en, title_uk, edition')
+    .select('slug, title_en, title_uk, edition')
     .single();
 
   if (error || !brief) {
@@ -408,6 +453,8 @@ async function handlePublish(
   const title = brief.title_uk ?? brief.title_en ?? '–';
   await editText(chatId, msgId, publishedBanner(title, approved ?? 0));
   await revalidateSite();
+  // Defer the recrawl ping until after the response is flushed to Telegram.
+  after(() => pingIndexNow(db, briefId, brief.slug));
 }
 
 // ─── Card text builder (must match pipeline/review-format.ts output shape) ────

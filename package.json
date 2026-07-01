@@ -24,6 +24,7 @@
     "backfill:concepts": "tsx pipeline/scripts/backfill-concepts.ts",
     "backfill:scores": "tsx pipeline/scripts/backfill-scores.ts",
     "backfill:trend-signals": "tsx pipeline/scripts/backfill-trend-signals.ts",
+    "indexnow:backfill": "tsx pipeline/scripts/indexnow-backfill.ts",
     "pr:check": "npm run ci:check && npm run typecheck && npm run lint && npm run e2e:check && npm run build",
     "e2e": "playwright test",
     "e2e:fast": "playwright test --project=chromium",
