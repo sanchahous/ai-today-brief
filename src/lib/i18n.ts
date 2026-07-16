@@ -29,6 +29,7 @@ export const STRINGS = {
         'A local, citation-backed prompt linter for Claude Fable 5, Sonnet 4.6, Haiku 4.5, and Opus 4.8.',
       openTool: 'Open tool',
       liveStatus: 'Live',
+      comingSoonStatus: 'Coming soon',
     },
     promptOptimizer: {
       surfaceLabel: 'Where will you run this prompt?',
@@ -73,6 +74,55 @@ export const STRINGS = {
       },
       ruleCatalogTitle: 'Rules this linter checks',
       staticSnippetsTitle: 'Official snippets',
+      citations: 'Citations',
+    },
+    settingsBuilder: {
+      privacyPromise: '100% client-side; your settings choices never leave this browser.',
+      heuristicDisclaimer:
+        'This builder will output deterministic settings.json scaffolding from explicit choices, not a hidden score.',
+      schemaWarning:
+        'Schema guardrails are enforced locally: permissions.defaultMode is nested, effortLevel is low|medium|high|xhigh only, and every recommendation is citation-backed.',
+      copySettings: 'Copy settings.json',
+      copied: 'Copied',
+      buildSettings: 'Build settings.json',
+      defaultModeLabel: 'Default permission mode',
+      defaultModeHelp:
+        'Emitted as permissions.defaultMode, never top-level defaultMode and never permissions.mode.',
+      permissionModes: {
+        default: 'Default — ask on first tool use',
+        acceptEdits: 'Accept edits',
+        plan: 'Plan mode',
+        auto: 'Auto mode',
+        dontAsk: 'Do not ask — deny unapproved tools',
+        bypassPermissions: 'Bypass permissions',
+      },
+      permissionTemplatesTitle: 'Safety permission presets',
+      hookRecipesTitle: 'Hook recipes',
+      anyMatcher: 'any matcher',
+      outputTitle: 'Generated settings.json',
+      outputHelp:
+        'Preview is deterministic and safe to copy. It includes the official JSON schema URL for editor validation.',
+      catalogTitle: 'Static citation catalog',
+      catalogLede:
+        'Crawlable references for Claude Code permission grammar, hook recipes, and settings scope precedence.',
+      grammarTitle: 'Permission rule grammar',
+      scopeTitle: 'Settings scope precedence',
+      event: 'Event',
+      matcher: 'Matcher',
+      severity: 'Tier',
+      severityLabels: { critical: 'Critical', warning: 'Warning', info: 'Info' },
+      citations: 'Citations',
+    },
+    claudeMdGenerator: {
+      privacyPromise: '100% client-side; project instructions stay in this browser.',
+      heuristicDisclaimer:
+        'This generator will separate portable AGENTS.md guidance from Claude-specific CLAUDE.md wiring and lint by section, not by a single health score.',
+      comingSoonTitle: 'Generator scaffold ready',
+      comingSoonBody:
+        'The route, metadata, schema template, i18n namespace, and telemetry names are wired. The interactive generator and citation catalog will fill this slot.',
+      copyClaudeMd: 'Copy CLAUDE.md',
+      copyAgentsMd: 'Copy AGENTS.md',
+      generateDocs: 'Generate docs',
       citations: 'Citations',
     },
     subscribe: 'Subscribe',
@@ -344,6 +394,7 @@ export const STRINGS = {
         'Локальний лінтер промптів із цитатами для Claude Fable 5, Sonnet 4.6, Haiku 4.5 та Opus 4.8.',
       openTool: 'Відкрити інструмент',
       liveStatus: 'Працює',
+      comingSoonStatus: 'Скоро',
     },
     promptOptimizer: {
       surfaceLabel: 'Де ви запускатимете цей промпт?',
@@ -388,6 +439,55 @@ export const STRINGS = {
       },
       ruleCatalogTitle: 'Правила, які перевіряє лінтер',
       staticSnippetsTitle: 'Офіційні snippets',
+      citations: 'Цитати',
+    },
+    settingsBuilder: {
+      privacyPromise: '100% client-side; ваші налаштування не залишають цей браузер.',
+      heuristicDisclaimer:
+        'Цей builder видаватиме детермінований settings.json scaffold з явних виборів, а не прихований score.',
+      schemaWarning:
+        'Schema guardrails виконуються локально: permissions.defaultMode вкладений, effortLevel лише low|medium|high|xhigh, а кожна рекомендація має цитату.',
+      copySettings: 'Копіювати settings.json',
+      copied: 'Скопійовано',
+      buildSettings: 'Зібрати settings.json',
+      defaultModeLabel: 'Default permission mode',
+      defaultModeHelp:
+        'Емітиться як permissions.defaultMode, ніколи як top-level defaultMode і ніколи як permissions.mode.',
+      permissionModes: {
+        default: 'Default — питати при першому tool use',
+        acceptEdits: 'Accept edits',
+        plan: 'Plan mode',
+        auto: 'Auto mode',
+        dontAsk: 'Do not ask — deny для непідтверджених tools',
+        bypassPermissions: 'Bypass permissions',
+      },
+      permissionTemplatesTitle: 'Safety permission presets',
+      hookRecipesTitle: 'Hook recipes',
+      anyMatcher: 'будь-який matcher',
+      outputTitle: 'Згенерований settings.json',
+      outputHelp:
+        'Preview детермінований і безпечний для копіювання. Він містить official JSON schema URL для editor validation.',
+      catalogTitle: 'Статичний каталог цитат',
+      catalogLede:
+        'Crawlable references для Claude Code permission grammar, hook recipes і settings scope precedence.',
+      grammarTitle: 'Permission rule grammar',
+      scopeTitle: 'Settings scope precedence',
+      event: 'Подія',
+      matcher: 'Matcher',
+      severity: 'Tier',
+      severityLabels: { critical: 'Critical', warning: 'Warning', info: 'Info' },
+      citations: 'Цитати',
+    },
+    claudeMdGenerator: {
+      privacyPromise: '100% client-side; інструкції проєкту залишаються у цьому браузері.',
+      heuristicDisclaimer:
+        'Цей generator розділятиме портативні правила AGENTS.md і Claude-specific wiring у CLAUDE.md та лінтитиме за секціями, без єдиного health score.',
+      comingSoonTitle: 'Scaffold generator-а готовий',
+      comingSoonBody:
+        'Маршрут, metadata, schema template, i18n namespace і telemetry names підключені. Інтерактивний generator і каталог цитат заповнять цей слот.',
+      copyClaudeMd: 'Копіювати CLAUDE.md',
+      copyAgentsMd: 'Копіювати AGENTS.md',
+      generateDocs: 'Згенерувати docs',
       citations: 'Цитати',
     },
     subscribe: 'Підписатися',

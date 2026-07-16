@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { trackEvent } from '@/lib/analytics-client';
 import { getStrings } from '@/lib/i18n';
+import { TOOL_EVENTS, toolTelemetryParams } from '@/lib/tool-telemetry';
 import {
   estimatePromptTokenRange,
   lintPrompt,
@@ -36,22 +37,26 @@ export function PromptOptimizerClient({ lang }: { lang: Lang }) {
   function runLint() {
     const next = lintPrompt({ prompt, surface, model });
     setResult(next);
-    trackEvent('tool_lint_run', {
-      tool_slug: 'prompt-optimizer',
-      surface,
-      model,
-      issues: next.counts.issue,
-      suggestions: next.counts.suggestion,
-      infos: next.counts.info,
-    });
-    for (const finding of next.findings) {
-      trackEvent('tool_lint_rule_triggered', {
-        tool_slug: 'prompt-optimizer',
+    trackEvent(
+      TOOL_EVENTS.lintRun,
+      toolTelemetryParams('prompt-optimizer', {
         surface,
         model,
-        rule_id: finding.ruleId,
-        severity: finding.severity,
-      });
+        issues: next.counts.issue,
+        suggestions: next.counts.suggestion,
+        infos: next.counts.info,
+      }),
+    );
+    for (const finding of next.findings) {
+      trackEvent(
+        TOOL_EVENTS.lintRuleTriggered,
+        toolTelemetryParams('prompt-optimizer', {
+          surface,
+          model,
+          rule_id: finding.ruleId,
+          severity: finding.severity,
+        }),
+      );
     }
   }
 
@@ -63,11 +68,13 @@ export function PromptOptimizerClient({ lang }: { lang: Lang }) {
     } catch {
       setCopiedSnippet(null);
     }
-    trackEvent('tool_snippet_copy', {
-      tool_slug: 'prompt-optimizer',
-      snippet_id: snippet.id,
-      placement: snippet.placement,
-    });
+    trackEvent(
+      TOOL_EVENTS.snippetCopy,
+      toolTelemetryParams('prompt-optimizer', {
+        snippet_id: snippet.id,
+        placement: snippet.placement,
+      }),
+    );
   }
 
   const summary = result

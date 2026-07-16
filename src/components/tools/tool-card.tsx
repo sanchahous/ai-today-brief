@@ -20,7 +20,7 @@ export function ToolCard({ tool, lang }: { tool: ToolContent; lang: Lang }) {
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="m-0 text-[1.15rem] leading-snug">{tool.title[lang]}</h2>
         <span className="rounded-pill bg-surface-2 border-border text-faint border px-2 py-0.5 text-[0.72rem] tracking-[0.12em] uppercase">
-          {t.toolsPage.liveStatus}
+          {tool.status === 'live' ? t.toolsPage.liveStatus : t.toolsPage.comingSoonStatus}
         </span>
       </div>
       <p className="text-muted m-0 mt-2 text-[0.92rem] leading-relaxed">{tool.description[lang]}</p>

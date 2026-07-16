@@ -1,16 +1,41 @@
 import { describe, expect, it } from 'vitest';
 
-import { getTool, TOOLS } from './tools';
+import { getTool, TOOLS, type ToolSlug } from './tools';
+
+const WAVE_1_TOOL_SLUGS: readonly ToolSlug[] = [
+  'prompt-optimizer',
+  'settings-builder',
+  'claude-md-generator',
+];
 
 describe('TOOLS', () => {
-  it('contains a unique live prompt optimizer with locale-aware hrefs', () => {
+  it('contains unique Wave 1 slugs with locale-aware hrefs', () => {
     expect(new Set(TOOLS.map((tool) => tool.slug)).size).toBe(TOOLS.length);
+    expect(TOOLS.map((tool) => tool.slug)).toEqual(WAVE_1_TOOL_SLUGS);
 
-    const tool = getTool('prompt-optimizer');
-    expect(tool?.status).toBe('live');
-    expect(tool?.href('en')).toBe('/en/tools/prompt-optimizer');
-    expect(tool?.href('uk')).toBe('/uk/tools/prompt-optimizer');
-    expect(tool?.title.en).toContain('Prompt Optimizer');
-    expect(tool?.title.uk).toContain('оптимізатор');
+    for (const slug of WAVE_1_TOOL_SLUGS) {
+      const tool = getTool(slug);
+      expect(tool).toBeDefined();
+      expect(tool?.href('en')).toBe(`/en/tools/${slug}`);
+      expect(tool?.href('uk')).toBe(`/uk/tools/${slug}`);
+      expect(tool?.title.en).toBeTruthy();
+      expect(tool?.title.uk).toBeTruthy();
+      expect(tool?.description.en).toBeTruthy();
+      expect(tool?.description.uk).toBeTruthy();
+      expect(tool?.lede.en).toBeTruthy();
+      expect(tool?.lede.uk).toBeTruthy();
+    }
+  });
+
+  it('keeps shipped Wave 1 tools live and marks remaining scaffolds as coming soon', () => {
+    expect(getTool('prompt-optimizer')?.status).toBe('live');
+    expect(getTool('prompt-optimizer')?.title.en).toContain('Prompt Optimizer');
+    expect(getTool('prompt-optimizer')?.title.uk).toContain('оптимізатор');
+
+    expect(getTool('settings-builder')?.status).toBe('live');
+    expect(getTool('settings-builder')?.title.en).toContain('settings.json Builder');
+    expect(getTool('settings-builder')?.lastVerified).toBe('2026-06-15');
+    expect(getTool('claude-md-generator')?.status).toBe('coming-soon');
+    expect(getTool('claude-md-generator')?.lastVerified).toBe('2026-06-15');
   });
 });
