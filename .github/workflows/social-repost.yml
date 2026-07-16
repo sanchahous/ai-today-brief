@@ -11,6 +11,10 @@ on:
         description: "Print the posts instead of publishing"
         type: boolean
         default: false
+      date:
+        description: "Optional UTC edition date (YYYY-MM-DD), useful for a dry run"
+        type: string
+        required: false
 
 concurrency:
   group: social-repost
@@ -51,5 +55,8 @@ jobs:
           ARGS=""
           if [[ "${{ inputs.dry_run }}" == "true" ]]; then
             ARGS="--dry-run"
+          fi
+          if [[ -n "${{ inputs.date }}" ]]; then
+            ARGS="$ARGS --date ${{ inputs.date }}"
           fi
           npx tsx pipeline/scripts/social-repost.ts $ARGS
