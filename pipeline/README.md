@@ -84,7 +84,7 @@ Pulls candidates concurrently (`Promise.allSettled`, so one dead source never
 fails the run):
 - **InBrief** — curated AI feed via its public Supabase RPC `get_archive_articles` (today + yesterday); carries an editorial `importance_score`.
 - **Hacker News** — Algolia search over 11 AI/dev queries; carries points + comments (the engagement signal).
-- **Reddit** — 7 dev/AI subreddits' top-of-day; carries score + comments; self-posts skipped.
+- **Reddit** — 7 dev/AI subreddits' top-of-day; carries score + comments; self-posts skipped. **OAuth-gated** (returns `[]` without `REDDIT_CLIENT_ID`/`SECRET`; no public-JSON fallback). Runs as non-commercial use while the product is free; **must be Reddit-approved or disabled before monetization** — see [`docs/REDDIT-COMPLIANCE.md`](../docs/REDDIT-COMPLIANCE.md).
 - **RSS** — always-on parallel source: 11 first-party lab + press feeds, parsed by the dependency-free `rss-parse.ts`. Promoted from thin-primary fallback so first-party announcements stop being structurally missed.
 - **Bluesky** — public AppView search over dev-community queries; only link-out posts are kept (analog of skipping Reddit self-posts).
 

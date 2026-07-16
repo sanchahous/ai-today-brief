@@ -1,11 +1,12 @@
 /**
- * Reddit — dev / vibe-coder communities. Skips self-posts.
+ * Reddit — dev / vibe-coder communities. Skips self-posts; keeps link-out posts
+ * only, and stores just metadata (title/score/comments/permalink), never the post
+ * body. The summariser reads the EXTERNAL linked article, not Reddit content.
  *
- * Prefers the official OAuth API (client_credentials of a "script" app) when
- * REDDIT_CLIENT_ID / REDDIT_CLIENT_SECRET are set: the public *.json endpoints
- * rate-limit/block datacenter IPs (GitHub Actions runners read as bots), which
- * shows up as a silent "reddit — 0 статей" in source health. Falls back to the
- * public JSON when no credentials are configured (local runs).
+ * EXPLICIT-APPROVAL GATE: this source runs only after Reddit grants written approval
+ * for the business use and REDDIT_DATA_API_APPROVED=1 is set with valid OAuth
+ * credentials and a contact username. OAuth credentials alone never enable it.
+ * It never falls back to public *.json endpoints.
  */
 
 import { logError, logEvent } from '../log';
@@ -14,14 +15,15 @@ import { REDDIT_URLS, REDDIT_USER_AGENT } from './feeds';
 import { fetchWithRetry, isSuccessfulResponse, type FetchedArticle } from './http';
 
 /* v8 ignore start -- network IO; covered by live runs */
+function isRedditApproved(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.REDDIT_DATA_API_APPROVED?.trim() === '1';
+}
+
 async function getOAuthToken(retry: typeof fetchWithRetry): Promise<string | null> {
   const clientId = process.env.REDDIT_CLIENT_ID?.trim();
   const clientSecret = process.env.REDDIT_CLIENT_SECRET?.trim();
-  if (!clientId || !clientSecret) {
-    // Surface the root cause: without creds the public *.json endpoints 403 from
-    // CI (datacenter IP), so reddit silently returns 0. Set REDDIT_CLIENT_ID /
-    // REDDIT_CLIENT_SECRET (a Reddit "script" app) as Actions secrets to fix it.
-    logEvent('warn', 'fetch', 'Reddit: no OAuth credentials — public API will 403 from CI');
+  const username = process.env.REDDIT_USERNAME?.trim();
+  if (!isRedditApproved() || !clientId || !clientSecret || !username) {
     return null;
   }
 
@@ -53,14 +55,14 @@ async function getOAuthToken(retry: typeof fetchWithRetry): Promise<string | nul
 export async function fetchReddit(
   retry: typeof fetchWithRetry = fetchWithRetry,
 ): Promise<FetchedArticle[]> {
-  const results: FetchedArticle[] = [];
   const token = await getOAuthToken(retry);
-  // OAuth-only by policy: we never fall back to scraping the public *.json
-  // endpoints (Reddit rate-limits them and they sit on the edge of the Data API
-  // terms). No credentials → no Reddit this run (getOAuthToken already warned).
-  if (!token) return results;
+  if (!token) {
+    logEvent('info', 'fetch', 'Reddit: disabled (approval or OAuth configuration missing)');
+    return [];
+  }
   logEvent('info', 'fetch', 'Reddit: using OAuth API');
 
+  const results: FetchedArticle[] = [];
   for (const publicUrl of REDDIT_URLS) {
     const url = publicUrl
       .replace('https://www.reddit.com', 'https://oauth.reddit.com')
@@ -95,7 +97,16 @@ export async function fetchReddit(
           title: String(post.title ?? ''),
           url: link,
           published_at: publishedAt,
-          raw: post,
+          // Whitelisted metadata only — never persist author/selftext/awards/etc.
+          // (over-collection + Reddit content-deletion liability). See compliance doc.
+          raw: {
+            subreddit: post.subreddit,
+            permalink: post.permalink,
+            score: post.score,
+            num_comments: post.num_comments,
+            created_utc: post.created_utc,
+            title: post.title,
+          },
           hn_score: null,
           hn_comments: null,
           reddit_score: Number(post.score ?? 0),

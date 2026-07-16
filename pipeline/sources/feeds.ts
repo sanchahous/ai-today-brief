@@ -48,13 +48,10 @@ export const REDDIT_URLS = REDDIT_SUBREDDITS.map(
   (sub) => `https://www.reddit.com/r/${sub}/top.json?t=day&limit=50`,
 );
 
-// Reddit requires a unique, descriptive User-Agent (generic ones are blocked).
-// Format per Reddit's API rules: <platform>:<app id>:<version> (+contact). If
-// REDDIT_USERNAME is set we use the recommended `by /u/<username>` contact form.
-const REDDIT_OWNER = process.env.REDDIT_USERNAME?.trim();
-export const REDDIT_USER_AGENT = `web:ai-today-brief:1.1 (${
-  REDDIT_OWNER ? `by /u/${REDDIT_OWNER}` : '+https://aitodaybrief.com'
-})`;
+// Reddit requires an accurate, descriptive User-Agent with a Reddit username as
+// contact. `fetchReddit` stays disabled if the username or approval gate is absent.
+const REDDIT_OWNER = process.env.REDDIT_USERNAME?.trim().replace(/^\/?u\//i, '');
+export const REDDIT_USER_AGENT = `web:ai-today-brief:1.1 (by /u/${REDDIT_OWNER || 'unset'})`;
 
 /**
  * Bluesky public AppView search — live dev-community discussion (X/Threads
