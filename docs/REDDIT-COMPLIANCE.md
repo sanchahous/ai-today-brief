@@ -21,13 +21,10 @@ doesn't have to redo it. It is engineering due-diligence, **not legal advice**.
   permalink) as a **deterministic** ranking signal and summarise the **external
   linked article**, never Reddit post bodies or comments. This is exactly the line
   Reddit is litigating (Anthropic, Perplexity) and our design sits on the safe side.
-- **The future blocker — commercial use.** AI Today Brief *plans* to monetize
-  (LemonSqueezy), but payments are **not connected yet**. Reddit's terms require
-  written approval / a contract for *any* commercial use of the Data API — the trigger
-  is the commercial **purpose**, not request volume (it lists "Subscription services"
-  and "paywalls" as commercial). While the product is genuinely free, this is
-  non-commercial use, which the free tier permits; the restriction bites the moment
-  monetization goes live. Hence the hard gate above.
+- **Approval is the blocker.** Reddit’s guidance treats use by a business and free
+  product features used for upsell as commercial. Written approval / a contract is
+  required before this source may run; request volume and the absence of a paywall do
+  not remove that requirement. Hence the hard gate above.
 
 **Governing wording (Data API Terms §3.1):** commercial use, *or* research in excess
 of rate limits, *or* any non-permitted use ⇒ "you will need to enter into a separate
@@ -49,8 +46,8 @@ low volume will not exempt us.
   hits the public `*.json` endpoints.
   Unauthenticated scraping is both unreliable from CI (datacenter IPs get 403) and not
   a clean path for a commercial product. (`pipeline/sources/reddit.ts`)
-- **Reddit-format User-Agent.** `web:ai-today-brief:1.0 (by /u/<username>)` — the
-  contact is `REDDIT_USERNAME` when set, else the site URL. Generic UAs are
+- **Reddit-format User-Agent.** `web:ai-today-brief:1.1 (by /u/<username>)` — a
+  `REDDIT_USERNAME` is required before the source can run. Generic UAs are
   "drastically limited" by Reddit. (`pipeline/sources/feeds.ts`)
 - **Metadata-only persistence.** We store only `{subreddit, permalink, score,
   num_comments, created_utc, title}` in `articles.raw` — never `author`, `selftext`,
