@@ -4,11 +4,11 @@ on:
   schedule:
     # Daily 17:00 UTC = 20:00 Kyiv / 13:00 ET — after the evening editorial
     # pass, inside the US engagement window.
-    - cron: '0 17 * * *'
+    - cron: "0 17 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Print the posts instead of publishing'
+        description: "Print the posts instead of publishing"
         type: boolean
         default: false
 
@@ -43,6 +43,10 @@ jobs:
           X_API_SECRET: ${{ secrets.X_API_SECRET }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          # Threads remains disabled until the repository variable explicitly
+          # includes it, e.g. SOCIAL_CHANNELS=telegram,threads,x.
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          SOCIAL_CHANNELS: ${{ vars.SOCIAL_CHANNELS }}
         run: |
           ARGS=""
           if [[ "${{ inputs.dry_run }}" == "true" ]]; then

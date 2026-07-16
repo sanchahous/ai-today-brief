@@ -21,12 +21,14 @@ import { logError, logEvent } from '../log';
 import {
   buildOAuth1Header,
   formatTelegramPost,
+  formatThreadsPost,
   formatXPost,
   selectTopStory,
   type OAuth1Credentials,
   type RepostCandidate,
 } from '../social-repost';
 import { sendMessage } from '../telegram';
+import { publishThreadsText } from '../threads';
 
 const SITE_URL = 'https://aitodaybrief.com';
 const X_TWEETS_ENDPOINT = 'https://api.x.com/2/tweets';
@@ -129,7 +131,7 @@ async function postedChannelsToday(db: PipelineDb, date: string): Promise<Set<st
 
 async function recordPost(
   db: PipelineDb,
-  channel: string,
+  channel: 'telegram' | 'threads' | 'x',
   item: RepostCandidate,
   externalId: string,
   url: string | null,
@@ -161,7 +163,9 @@ async function main(): Promise<void> {
 
   const candidates = await loadDayCandidates(db, date);
   if (candidates.length === 0) {
-    logEvent('info', 'publish', 'Social repost: nothing published for the date — skipping', { date });
+    logEvent('info', 'publish', 'Social repost: nothing published for the date — skipping', {
+      date,
+    });
     return;
   }
   const top = selectTopStory(candidates);
@@ -171,18 +175,25 @@ async function main(): Promise<void> {
 
   if (dryRun) {
     console.log(`--- telegram\n${formatTelegramPost(top, SITE_URL)}\n`);
+    console.log(`--- threads\n${formatThreadsPost(top, SITE_URL)}\n`);
     const x = formatXPost(top, SITE_URL);
     console.log(`--- x\n${x.text}\n↳ ${x.reply}`);
     return;
   }
 
   // Telegram channel
-  if (!config.telegramBotToken || !channelId) {
+  if (!config.socialChannels.includes('telegram')) {
+    logEvent('info', 'publish', 'Social repost: Telegram disabled by SOCIAL_CHANNELS');
+  } else if (!config.telegramBotToken || !channelId) {
     logEvent('warn', 'publish', 'Social repost: Telegram channel not configured — skipped');
   } else if (posted.has('telegram')) {
     logEvent('info', 'publish', 'Social repost: Telegram already posted today — skipped');
   } else {
-    const msgId = await sendMessage(config.telegramBotToken, channelId, formatTelegramPost(top, SITE_URL));
+    const msgId = await sendMessage(
+      config.telegramBotToken,
+      channelId,
+      formatTelegramPost(top, SITE_URL),
+    );
     if (msgId === null) {
       logError('publish', 'Social repost: Telegram send failed', new Error('sendMessage null'));
     } else {
@@ -191,8 +202,33 @@ async function main(): Promise<void> {
     }
   }
 
+  // Threads — opt-in only. A token on its own never starts a new public channel.
+  if (!config.socialChannels.includes('threads')) {
+    logEvent('info', 'publish', 'Social repost: Threads disabled by SOCIAL_CHANNELS');
+  } else if (!config.threadsAccessToken) {
+    logEvent('warn', 'publish', 'Social repost: Threads token not configured — skipped');
+  } else if (posted.has('threads')) {
+    logEvent('info', 'publish', 'Social repost: Threads already posted today — skipped');
+  } else {
+    try {
+      const thread = await publishThreadsText({
+        accessToken: config.threadsAccessToken,
+        text: formatThreadsPost(top, SITE_URL),
+      });
+      await recordPost(db, 'threads', top, thread.id, null);
+      logEvent('info', 'publish', 'Social repost: Threads posted', {
+        item: top.itemSlug,
+        thread_id: thread.id,
+      });
+    } catch (e) {
+      logError('publish', 'Social repost: Threads post failed', e);
+    }
+  }
+
   // X
-  if (!xCreds) {
+  if (!config.socialChannels.includes('x')) {
+    logEvent('info', 'publish', 'Social repost: X disabled by SOCIAL_CHANNELS');
+  } else if (!xCreds) {
     logEvent('warn', 'publish', 'Social repost: X credentials not set — skipped');
   } else if (posted.has('x')) {
     logEvent('info', 'publish', 'Social repost: X already posted today — skipped');

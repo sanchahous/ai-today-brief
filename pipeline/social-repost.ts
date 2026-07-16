@@ -14,6 +14,8 @@
 
 import { createHmac } from 'node:crypto';
 import { escapeHtml } from './review-format';
+import { buildSocialItemUrl } from './social';
+import { THREADS_TEXT_LIMIT } from './threads';
 import { digestLineSummary } from './weekly-digest';
 
 export interface RepostCandidate {
@@ -63,13 +65,42 @@ export interface XPost {
 export function formatXPost(item: RepostCandidate, siteUrl: string): XPost {
   const hook = (item.social_hook_en ?? '').trim() || item.title_en.trim();
   const text = hook.length > X_POST_LIMIT ? `${hook.slice(0, X_POST_LIMIT - 1)}…` : hook;
-  const url = `${siteUrl}/en/${item.briefSlug}/${item.itemSlug}`;
+  const url = buildSocialItemUrl(siteUrl, {
+    lang: 'en',
+    briefSlug: item.briefSlug,
+    itemSlug: item.itemSlug,
+    channel: 'x',
+    content: 'top_story',
+  });
   return { text, reply: `Full brief → ${url}` };
+}
+
+/** Threads text post: one compact insight plus a tracked route back to the brief. */
+export function formatThreadsPost(item: RepostCandidate, siteUrl: string): string {
+  const url = buildSocialItemUrl(siteUrl, {
+    lang: 'en',
+    briefSlug: item.briefSlug,
+    itemSlug: item.itemSlug,
+    channel: 'threads',
+    content: 'top_story',
+  });
+  const suffix = `\n\nFull brief → ${url}`;
+  const hook = (item.social_hook_en ?? '').trim() || item.title_en.trim();
+  const maxHook = THREADS_TEXT_LIMIT - suffix.length;
+  const trimmed =
+    hook.length > maxHook ? `${hook.slice(0, Math.max(0, maxHook - 1)).trimEnd()}…` : hook;
+  return `${trimmed}${suffix}`;
 }
 
 /** Telegram-HTML channel post (UK-first, like the weekly digest). */
 export function formatTelegramPost(item: RepostCandidate, siteUrl: string): string {
-  const url = `${siteUrl}/uk/${item.briefSlug}/${item.itemSlug}`;
+  const url = buildSocialItemUrl(siteUrl, {
+    lang: 'uk',
+    briefSlug: item.briefSlug,
+    itemSlug: item.itemSlug,
+    channel: 'telegram',
+    content: 'top_story',
+  });
   const hook = (item.social_hook_uk ?? '').trim() || digestLineSummary(item.summary_uk);
   return [
     `🔥 <b>Новина дня</b>`,
@@ -92,7 +123,10 @@ export interface OAuth1Credentials {
 
 /** RFC 3986 strict percent-encoding (OAuth1 requires !*'() escaped too). */
 export function percentEncode(s: string): string {
-  return encodeURIComponent(s).replace(/[!*'()]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
+  return encodeURIComponent(s).replace(
+    /[!*'()]/g,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
 }
 
 /**
@@ -125,7 +159,9 @@ export function buildOAuth1Header(
     .map(([k, v]) => `${k}=${v}`)
     .join('&');
 
-  const baseString = [method.toUpperCase(), percentEncode(url), percentEncode(paramString)].join('&');
+  const baseString = [method.toUpperCase(), percentEncode(url), percentEncode(paramString)].join(
+    '&',
+  );
   const signingKey = `${percentEncode(creds.consumerSecret)}&${percentEncode(creds.accessSecret)}`;
   const signature = createHmac('sha1', signingKey).update(baseString).digest('base64');
 

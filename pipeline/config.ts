@@ -1,3 +1,5 @@
+import { parseSocialChannels, type SocialChannel } from './social';
+
 /**
  * Pipeline runtime config, read once from the environment.
  *
@@ -51,6 +53,10 @@ export interface PipelineConfig {
   telegramBotToken?: string;
   /** Private chat id that receives the per-item review cards (optional). */
   telegramReviewChatId?: string;
+  /** Explicit social delivery allowlist. Defaults preserve existing Telegram/X behaviour. */
+  socialChannels: SocialChannel[];
+  /** Long-lived Threads user token; harmless until `threads` is allowlisted. */
+  threadsAccessToken?: string;
   /** Stop before any Supabase write — assemble + print only. */
   dryRun: boolean;
 }
@@ -138,6 +144,8 @@ export function loadPipelineConfig(
     cloudflareImageModel: env.CLOUDFLARE_IMAGE_MODEL?.trim() || undefined,
     telegramBotToken: env.TELEGRAM_BOT_TOKEN?.trim() || undefined,
     telegramReviewChatId: env.TELEGRAM_REVIEW_CHAT_ID?.trim() || undefined,
+    socialChannels: parseSocialChannels(env.SOCIAL_CHANNELS),
+    threadsAccessToken: env.THREADS_ACCESS_TOKEN?.trim() || undefined,
     dryRun: argv.includes('--dry-run') || env.DRY_RUN === '1',
   };
 }

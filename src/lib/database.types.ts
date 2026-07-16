@@ -688,39 +688,60 @@ export type Database = {
       };
       social_posts: {
         Row: {
+          attempts: number;
           brief_id: string | null;
           brief_item_id: string | null;
           channel: string;
           created_at: string;
           external_id: string | null;
           id: string;
+          idempotency_key: string | null;
+          last_error: string | null;
           meta: Json | null;
           posted_at: string | null;
+          post_text: string | null;
+          provider_meta: Json;
+          scheduled_for: string | null;
           status: string;
+          utm_url: string | null;
           url: string | null;
         };
         Insert: {
+          attempts?: number;
           brief_id?: string | null;
           brief_item_id?: string | null;
           channel: string;
           created_at?: string;
           external_id?: string | null;
           id?: string;
+          idempotency_key?: string | null;
+          last_error?: string | null;
           meta?: Json | null;
           posted_at?: string | null;
+          post_text?: string | null;
+          provider_meta?: Json;
+          scheduled_for?: string | null;
           status?: string;
+          utm_url?: string | null;
           url?: string | null;
         };
         Update: {
+          attempts?: number;
           brief_id?: string | null;
           brief_item_id?: string | null;
           channel?: string;
           created_at?: string;
           external_id?: string | null;
           id?: string;
+          idempotency_key?: string | null;
+          last_error?: string | null;
           meta?: Json | null;
           posted_at?: string | null;
+          post_text?: string | null;
+          provider_meta?: Json;
+          scheduled_for?: string | null;
           status?: string;
+          utm_url?: string | null;
           url?: string | null;
         };
         Relationships: [
@@ -736,6 +757,59 @@ export type Database = {
             columns: ['brief_item_id'];
             isOneToOne: false;
             referencedRelation: 'brief_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      social_post_metrics: {
+        Row: {
+          clicks: number | null;
+          comments: number | null;
+          engagements: number | null;
+          id: number;
+          impressions: number | null;
+          likes: number | null;
+          measured_at: string;
+          raw: Json;
+          reach: number | null;
+          saves: number | null;
+          shares: number | null;
+          social_post_id: string;
+        };
+        Insert: {
+          clicks?: number | null;
+          comments?: number | null;
+          engagements?: number | null;
+          id?: never;
+          impressions?: number | null;
+          likes?: number | null;
+          measured_at?: string;
+          raw?: Json;
+          reach?: number | null;
+          saves?: number | null;
+          shares?: number | null;
+          social_post_id: string;
+        };
+        Update: {
+          clicks?: number | null;
+          comments?: number | null;
+          engagements?: number | null;
+          id?: never;
+          impressions?: number | null;
+          likes?: number | null;
+          measured_at?: string;
+          raw?: Json;
+          reach?: number | null;
+          saves?: number | null;
+          shares?: number | null;
+          social_post_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'social_post_metrics_social_post_id_fkey';
+            columns: ['social_post_id'];
+            isOneToOne: false;
+            referencedRelation: 'social_posts';
             referencedColumns: ['id'];
           },
         ];

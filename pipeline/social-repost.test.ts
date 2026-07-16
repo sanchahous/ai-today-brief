@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildOAuth1Header,
   formatTelegramPost,
+  formatThreadsPost,
   formatXPost,
   percentEncode,
   selectTopStory,
@@ -12,8 +13,10 @@ const candidate = (over: Partial<RepostCandidate> = {}): RepostCandidate => ({
   id: 'a',
   title_en: 'Claude Code 3.0 ships subagent orchestration',
   title_uk: 'Claude Code 3.0 отримав оркестрацію сабагентів',
-  social_hook_en: 'Claude Code 3.0 just shipped subagent orchestration — here is what changes for your workflow.',
-  social_hook_uk: 'Claude Code 3.0 отримав оркестрацію сабагентів — ось що зміниться у вашому workflow.',
+  social_hook_en:
+    'Claude Code 3.0 just shipped subagent orchestration — here is what changes for your workflow.',
+  social_hook_uk:
+    'Claude Code 3.0 отримав оркестрацію сабагентів — ось що зміниться у вашому workflow.',
   summary_en: 'Anthropic released Claude Code 3.0. It adds orchestration.',
   summary_uk: 'Anthropic випустила Claude Code 3.0. Додано оркестрацію.',
   impact_level: 'medium',
@@ -47,7 +50,9 @@ describe('formatXPost', () => {
     const { text, reply } = formatXPost(candidate(), 'https://aitodaybrief.com');
     expect(text).toContain('subagent orchestration');
     expect(text).not.toContain('http');
-    expect(reply).toBe('Full brief → https://aitodaybrief.com/en/brief-2026-06-11/claude-code-3');
+    expect(reply).toBe(
+      'Full brief → https://aitodaybrief.com/en/brief-2026-06-11/claude-code-3?utm_source=x&utm_medium=social&utm_campaign=daily_news&utm_content=top_story',
+    );
   });
 
   it('falls back to the title and trims to 280 chars', () => {
@@ -64,16 +69,36 @@ describe('formatTelegramPost', () => {
       candidate({ title_uk: 'Реліз <Fable> & агенти', social_hook_uk: null }),
       'https://aitodaybrief.com',
     );
-    expect(html).toContain('https://aitodaybrief.com/uk/brief-2026-06-11/claude-code-3');
+    expect(html).toContain(
+      'https://aitodaybrief.com/uk/brief-2026-06-11/claude-code-3?utm_source=telegram&amp;utm_medium=social&amp;utm_campaign=daily_news&amp;utm_content=top_story',
+    );
     expect(html).toContain('Реліз &lt;Fable&gt; &amp; агенти');
     expect(html).toContain('Anthropic випустила Claude Code 3.0.');
     expect(html).not.toContain('<Fable>');
   });
 });
 
+describe('formatThreadsPost', () => {
+  it('includes an English hook and a tracked item URL within the Threads limit', () => {
+    const text = formatThreadsPost(candidate(), 'https://aitodaybrief.com');
+    expect(text).toContain('subagent orchestration');
+    expect(text).toContain('utm_source=threads');
+    expect(text.length).toBeLessThanOrEqual(500);
+  });
+
+  it('trims an oversized hook but preserves the tracked URL', () => {
+    const text = formatThreadsPost(
+      candidate({ social_hook_en: 'x'.repeat(600) }),
+      'https://aitodaybrief.com',
+    );
+    expect(text.length).toBeLessThanOrEqual(500);
+    expect(text).toContain('utm_content=top_story');
+  });
+});
+
 describe('percentEncode', () => {
   it('applies strict RFC 3986 encoding', () => {
-    expect(percentEncode("Hello Ladies + Gentlemen, a signed OAuth request!")).toBe(
+    expect(percentEncode('Hello Ladies + Gentlemen, a signed OAuth request!')).toBe(
       'Hello%20Ladies%20%2B%20Gentlemen%2C%20a%20signed%20OAuth%20request%21',
     );
   });
@@ -118,6 +143,8 @@ describe('buildOAuth1Header', () => {
       'nonce',
       '1700000000',
     );
-    expect(header).toMatch(/^OAuth oauth_consumer_key="ck", oauth_nonce="nonce", oauth_signature="[^"]+", oauth_signature_method="HMAC-SHA1", oauth_timestamp="1700000000", oauth_token="at", oauth_version="1\.0"$/);
+    expect(header).toMatch(
+      /^OAuth oauth_consumer_key="ck", oauth_nonce="nonce", oauth_signature="[^"]+", oauth_signature_method="HMAC-SHA1", oauth_timestamp="1700000000", oauth_token="at", oauth_version="1\.0"$/,
+    );
   });
 });
