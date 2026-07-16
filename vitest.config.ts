@@ -18,6 +18,8 @@ const LOGIC_INCLUDE = [
   'src/lib/facts-visual.ts',
   'src/lib/prompt-lint.ts',
   'src/lib/prompt-lint-rules.ts',
+  'src/lib/settings-builder.ts',
+  'src/lib/settings-builder-rules.ts',
   'src/lib/tools-mentioned.ts',
   'pipeline/**/*.ts',
 ];
