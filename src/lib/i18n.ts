@@ -117,6 +117,20 @@ export const STRINGS = {
       privacyPromise: '100% client-side; project instructions stay in this browser.',
       heuristicDisclaimer:
         'This generator will separate portable AGENTS.md guidance from Claude-specific CLAUDE.md wiring and lint by section, not by a single health score.',
+      projectNameLabel: 'Project name',
+      projectNamePlaceholder: 'e.g. Acme API',
+      stackLabel: 'Project stack',
+      stackOptions: {
+        typescript: 'TypeScript / Node.js',
+        python: 'Python',
+        generic: 'Generic — I will fill in the commands',
+      },
+      includeLabel: 'Include guardrails',
+      includePlanMode: 'Ask for a plan before larger changes',
+      includeTests: 'Add a focused test verification step',
+      includeLint: 'Add a lint verification step',
+      referenceLink: 'Read the official Claude Code memory guide',
+      copied: 'Copied',
       comingSoonTitle: 'Generator scaffold ready',
       comingSoonBody:
         'The route, metadata, schema template, i18n namespace, and telemetry names are wired. The interactive generator and citation catalog will fill this slot.',
@@ -482,6 +496,20 @@ export const STRINGS = {
       privacyPromise: '100% client-side; інструкції проєкту залишаються у цьому браузері.',
       heuristicDisclaimer:
         'Цей generator розділятиме портативні правила AGENTS.md і Claude-specific wiring у CLAUDE.md та лінтитиме за секціями, без єдиного health score.',
+      projectNameLabel: 'Назва проєкту',
+      projectNamePlaceholder: 'наприклад, Acme API',
+      stackLabel: 'Стек проєкту',
+      stackOptions: {
+        typescript: 'TypeScript / Node.js',
+        python: 'Python',
+        generic: 'Загальний — команди заповню вручну',
+      },
+      includeLabel: 'Додати guardrails',
+      includePlanMode: 'Просити план перед більшими змінами',
+      includeTests: 'Додати крок перевірки тестами',
+      includeLint: 'Додати крок перевірки lint',
+      referenceLink: 'Відкрити офіційний посібник Claude Code memory',
+      copied: 'Скопійовано',
       comingSoonTitle: 'Scaffold generator-а готовий',
       comingSoonBody:
         'Маршрут, metadata, schema template, i18n namespace і telemetry names підключені. Інтерактивний generator і каталог цитат заповнять цей слот.',

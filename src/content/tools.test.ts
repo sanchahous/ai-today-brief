@@ -27,15 +27,15 @@ describe('TOOLS', () => {
     }
   });
 
-  it('keeps shipped Wave 1 tools live and marks remaining scaffolds as coming soon', () => {
+  it('keeps shipped Wave 1 tools live', () => {
     expect(getTool('prompt-optimizer')?.status).toBe('live');
     expect(getTool('prompt-optimizer')?.title.en).toContain('Prompt Optimizer');
     expect(getTool('prompt-optimizer')?.title.uk).toContain('оптимізатор');
 
     expect(getTool('settings-builder')?.status).toBe('live');
     expect(getTool('settings-builder')?.title.en).toContain('settings.json Builder');
-    expect(getTool('settings-builder')?.lastVerified).toBe('2026-06-15');
-    expect(getTool('claude-md-generator')?.status).toBe('coming-soon');
-    expect(getTool('claude-md-generator')?.lastVerified).toBe('2026-06-15');
+    expect(getTool('settings-builder')?.lastVerified).toBe('2026-07-16');
+    expect(getTool('claude-md-generator')?.status).toBe('live');
+    expect(getTool('claude-md-generator')?.lastVerified).toBe('2026-07-16');
   });
 });

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
+import { ClaudeMdGeneratorClient } from '@/components/tools/claude-md-generator-client';
 import { getTool } from '@/content/tools';
 import { getStrings } from '@/lib/i18n';
 import { isLang, LANGS, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
@@ -103,13 +104,7 @@ export default async function ClaudeMdGeneratorPage({ params }: { params: Promis
           {t.privacyPromise} {t.heuristicDisclaimer}
         </p>
 
-        <section className="rounded-card border-border bg-surface mt-8 border p-5">
-          <p className="text-faint m-0 text-[0.72rem] font-semibold tracking-[0.14em] uppercase">
-            {strings.toolsPage.comingSoonStatus}
-          </p>
-          <h2 className="mt-2">{t.comingSoonTitle}</h2>
-          <p className="text-muted leading-relaxed">{t.comingSoonBody}</p>
-        </section>
+        <ClaudeMdGeneratorClient lang={lang} />
       </article>
     </div>
   );
