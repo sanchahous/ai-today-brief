@@ -15,7 +15,7 @@ import { REDDIT_URLS, REDDIT_USER_AGENT } from './feeds';
 import { fetchWithRetry, isSuccessfulResponse, type FetchedArticle } from './http';
 
 /* v8 ignore start -- network IO; covered by live runs */
-function isRedditApproved(env: NodeJS.ProcessEnv = process.env): boolean {
+export function isRedditApproved(env: NodeJS.ProcessEnv = process.env): boolean {
   return env.REDDIT_DATA_API_APPROVED?.trim() === '1';
 }
 

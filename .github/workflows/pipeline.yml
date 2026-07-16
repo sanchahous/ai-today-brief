@@ -10,20 +10,20 @@ on:
     # minutes (the old 6 progóns × 4 slots = 24 jobs/day was the cost problem).
     # cycle/slot derive from the clock, so scheduling a subset of slots is safe.
     # In winter (EET = UTC+2) the Kyiv times shift 1 h earlier — still daytime.
-    - cron: '0 5 * * *'    # 08:00 Kyiv — morning
-    - cron: '0 7 * * *'    # 10:00 Kyiv
-    - cron: '0 9 * * *'    # 12:00 Kyiv — midday
-    - cron: '0 11 * * *'   # 14:00 Kyiv
-    - cron: '0 13 * * *'   # 16:00 Kyiv — afternoon
-    - cron: '0 17 * * *'   # 20:00 Kyiv — evening
+    - cron: "0 5 * * *" # 08:00 Kyiv — morning
+    - cron: "0 7 * * *" # 10:00 Kyiv
+    - cron: "0 9 * * *" # 12:00 Kyiv — midday
+    - cron: "0 11 * * *" # 14:00 Kyiv
+    - cron: "0 13 * * *" # 16:00 Kyiv — afternoon
+    - cron: "0 17 * * *" # 20:00 Kyiv — evening
   workflow_dispatch:
     inputs:
       attempt:
-        description: 'Slot 1–6 within the current progón (leave blank for auto from clock)'
+        description: "Slot 1–6 within the current progón (leave blank for auto from clock)"
         required: false
-        default: '1'
+        default: "1"
       dry_run:
-        description: 'Dry run — print only, no DB writes'
+        description: "Dry run — print only, no DB writes"
         type: boolean
         required: false
         default: false
@@ -39,8 +39,8 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
 
       # Zero-dependency pre-flight: if this 4 h progón already published + notified,
       # a retry slot exits here (~3 s) instead of paying ~40 s for an npm ci it won't
@@ -74,6 +74,8 @@ jobs:
           REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+          # Set to 1 only after written Reddit Data API approval for this business use.
+          REDDIT_DATA_API_APPROVED: ${{ vars.REDDIT_DATA_API_APPROVED }}
         run: |
           ARGS=""
           if [[ -n "${{ inputs.attempt }}" ]]; then

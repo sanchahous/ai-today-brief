@@ -1,13 +1,12 @@
 # Reddit Data API — compliance & status
 
-> **Status (2026-06-14): ENABLED as non-commercial use — commercial approval request in flight.**
-> AI Today Brief is currently **free** (no payments, paywall, or ads connected), so it
-> runs on the free Data API tier as a good-faith non-commercial actor. A commercial
-> approval request is being submitted in parallel to cover future monetization.
+> **Status (2026-07-16): DISABLED pending written approval.**
+> Reddit treats use by a business, a monetized product, and even free features used
+> for upsell as commercial. AI Today Brief therefore does not access Reddit’s Data
+> API until Reddit grants written permission for this use case.
 >
-> **⛔ HARD GATE:** before turning on payments / a paywall / ads, Reddit must be either
-> (a) approved by Reddit for commercial use, or (b) disabled (blank the secrets). Do
-> not let monetization ship while Reddit is on and unapproved.
+> **⛔ HARD GATE:** `REDDIT_DATA_API_APPROVED=1` may be set only after written Reddit
+> approval is recorded. OAuth credentials alone never enable the source.
 
 This note records the compliance review behind that decision so the next person
 doesn't have to redo it. It is engineering due-diligence, **not legal advice**.
@@ -35,21 +34,19 @@ of rate limits, *or* any non-permitted use ⇒ "you will need to enter into a se
 agreement with Reddit." The triggers are independent ("or") — so once we monetize,
 low volume will not exempt us.
 
-## Decision (2026-06-14)
+## Decision (2026-07-16)
 
-The product is currently free (no payments/paywall/ads), so:
-
-1. **Enable Reddit now** as non-commercial good-faith use — register an OAuth app, set
-   the secrets, run with the compliant User-Agent + metadata-only persistence.
-2. **Apply for commercial approval in parallel** (text below) so monetization is
-   already covered when it lands — it costs nothing and removes future ambiguity.
-3. **Hard gate at monetization:** before payments/paywall/ads go live, Reddit must be
-   approved or turned off (blank the secrets). Revisit this doc at that milestone.
+1. **Keep Reddit disabled now.** A free public site is not enough to treat a business
+   use as non-commercial under Reddit’s current guidance.
+2. **Request written approval** using the contact route below.
+3. **Enable only after approval:** set the three OAuth secrets plus the repository
+   variable `REDDIT_DATA_API_APPROVED=1`; otherwise the source returns no items.
 
 ## What the code does now (implemented)
 
-- **OAuth-only, no scraping fallback.** Without an OAuth token, `fetchReddit` returns
-  `[]` and logs a single `info` line — it never hits the public `*.json` endpoints.
+- **Approval + OAuth only, no scraping fallback.** Without the explicit approval
+  variable, OAuth token, and contact username, `fetchReddit` returns `[]` and never
+  hits the public `*.json` endpoints.
   Unauthenticated scraping is both unreliable from CI (datacenter IPs get 403) and not
   a clean path for a commercial product. (`pipeline/sources/reddit.ts`)
 - **Reddit-format User-Agent.** `web:ai-today-brief:1.0 (by /u/<username>)` — the
@@ -117,14 +114,16 @@ agreement we'd need? Happy to provide anything else.
 Thanks!
 ```
 
-## How to re-enable once approved
+## How to enable after written approval
 
 1. Create a **`script`** (or `web`) app at <https://www.reddit.com/prefs/apps>
    (`redirect uri` can be `http://localhost:8080`; unused for `client_credentials`).
 2. Set GitHub Actions secrets: `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET`
    (already wired in `.github/workflows/pipeline.yml`).
 3. Set `REDDIT_USERNAME` (env / secret) so the User-Agent carries `/u/<username>`.
-4. For local testing, add the same three to `.env.local`.
+4. Set GitHub repository variable `REDDIT_DATA_API_APPROVED=1`, recording the approval
+   reference in the repository issue or this document.
+5. For local testing, add the same four values to `.env.local`.
 5. Run the pipeline; confirm source health shows Reddit `ok` (not `empty`).
 
 ## Sources
