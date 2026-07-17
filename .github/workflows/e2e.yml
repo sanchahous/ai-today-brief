@@ -8,11 +8,11 @@ on:
   pull_request:
     branches: [main]
     paths-ignore:
-      - 'docs/**'
-      - '**/*.md'
-      - 'supabase/migrations/**'
-      - '.github/**'
-      - 'pipeline/**'
+      - "docs/**"
+      - "**/*.md"
+      - "supabase/migrations/**"
+      - ".github/**"
+      - "pipeline/**"
 
 # A new push to a PR supersedes the previous commit — cancel its in-flight run
 # instead of paying for an e2e against a commit that no longer matters. Keyed on the
@@ -27,8 +27,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      # Reuse the existing pipeline credentials. The URL and anon key are safe
+      # to expose to the browser; never pass SCRAPPER_SERVICE_KEY to Next.js.
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SCRAPPER_BASE_ANON_KEY }}
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
     steps:
       - name: Checkout
