@@ -27,34 +27,70 @@ export function SiteFooter({ lang }: { lang: Lang }) {
             </div>
           </div>
           <nav aria-label="Footer" className="text-muted flex flex-col text-sm">
-            <Link className="hover:text-text inline-flex min-h-10 items-center" href={`/${lang}/news`}>
+            <Link
+              className="hover:text-text inline-flex min-h-10 items-center"
+              href={`/${lang}/news`}
+            >
               {t.nav.news}
             </Link>
-            <Link className="hover:text-text inline-flex min-h-10 items-center" href={`/${lang}/concepts`}>
+            <Link
+              className="hover:text-text inline-flex min-h-10 items-center"
+              href={`/${lang}/digests`}
+            >
+              {lang === 'uk' ? 'Дайджести' : 'Digests'}
+            </Link>
+            <Link
+              className="hover:text-text inline-flex min-h-10 items-center"
+              href={`/${lang}/concepts`}
+            >
               {t.nav.concepts}
             </Link>
-            <Link className="hover:text-text inline-flex min-h-10 items-center" href={`/${lang}/guides`}>
+            <Link
+              className="hover:text-text inline-flex min-h-10 items-center"
+              href={`/${lang}/guides`}
+            >
               {t.guidesTitle}
             </Link>
-            <Link className="hover:text-text inline-flex min-h-10 items-center" href={`/${lang}/subscribe`}>
+            <Link
+              className="hover:text-text inline-flex min-h-10 items-center"
+              href={`/${lang}/subscribe`}
+            >
               {t.footerSubscribe}
             </Link>
-            <Link className="hover:text-text inline-flex min-h-10 items-center" href={`/${lang}/advertise`}>
+            <Link
+              className="hover:text-text inline-flex min-h-10 items-center"
+              href={`/${lang}/advertise`}
+            >
               {t.footerAdvertise}
             </Link>
-            <Link className="hover:text-text inline-flex min-h-10 items-center" href={`/${lang}/about`}>
+            <Link
+              className="hover:text-text inline-flex min-h-10 items-center"
+              href={`/${lang}/about`}
+            >
               {t.about}
             </Link>
-            <Link className="hover:text-text inline-flex min-h-10 items-center" href={`/${lang}/editorial-policy`}>
+            <Link
+              className="hover:text-text inline-flex min-h-10 items-center"
+              href={`/${lang}/editorial-policy`}
+            >
               {t.editorialPolicy}
             </Link>
-            <Link className="hover:text-text inline-flex min-h-10 items-center" href={`/${lang}/ai-disclosure`}>
+            <Link
+              className="hover:text-text inline-flex min-h-10 items-center"
+              href={`/${lang}/ai-disclosure`}
+            >
               {t.aiDisclosure}
             </Link>
-            <Link className="hover:text-text inline-flex min-h-10 items-center" href={`/${lang}/privacy`}>
+            <Link
+              className="hover:text-text inline-flex min-h-10 items-center"
+              href={`/${lang}/privacy`}
+            >
               {t.privacy}
             </Link>
-            <Link className="hover:text-text inline-flex min-h-10 items-center" href={`/${lang}/terms`}>
+            <Link
+              className="hover:text-text inline-flex min-h-10 items-center"
+              href={`/${lang}/terms`}
+            >
               {t.terms}
             </Link>
             <CookieSettingsButton lang={lang} />

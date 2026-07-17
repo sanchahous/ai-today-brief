@@ -101,7 +101,10 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             />
           </div>
 
-          <nav aria-label="Primary" className="ml-auto hidden shrink-0 flex-nowrap items-center gap-2 lg:flex xl:gap-5">
+          <nav
+            aria-label="Primary"
+            className="ml-auto hidden shrink-0 flex-nowrap items-center gap-2 lg:flex xl:gap-5"
+          >
             {/* Home and About yield space to search in the 1024-1279 band: the logo links
                 home, and About stays reachable via footer + mobile menu. */}
             {navLink(`/${lang}`, t.navHome, pathname === `/${lang}`, 'hidden xl:inline-block')}
@@ -156,7 +159,12 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
                 </div>
               ) : null}
             </div>
-            {navLink(`/${lang}/about`, t.navAbout, isActive(`/${lang}/about`), 'hidden xl:inline-block')}
+            {navLink(
+              `/${lang}/about`,
+              t.navAbout,
+              isActive(`/${lang}/about`),
+              'hidden xl:inline-block',
+            )}
             <span aria-hidden className="bg-border h-[18px] w-px" />
             <Link
               href={`/${lang}/subscribe`}
@@ -228,9 +236,13 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
           overlayClassName="bg-bg lg:hidden"
           panelClassName="min-h-dvh bg-bg px-6 pb-8 pt-4"
         >
-          <nav id={mobileMenuId} aria-label="Mobile" className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-[720px] flex-col">
+          <nav
+            id={mobileMenuId}
+            aria-label="Mobile"
+            className="mx-auto flex min-h-[calc(100dvh-3rem)] max-w-[720px] flex-col"
+          >
             <div className="border-border flex min-h-14 items-center justify-between border-b pb-3">
-              <h2 id={mobileMenuTitleId} className="font-serif text-xl font-semibold text-text">
+              <h2 id={mobileMenuTitleId} className="text-text font-serif text-xl font-semibold">
                 {t.menu}
               </h2>
               <button
@@ -261,6 +273,11 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
               <MobileNavLink
                 href={`/${lang}/news`}
                 label={t.nav.news}
+                onNavigate={() => setMenuOpen(false)}
+              />
+              <MobileNavLink
+                href={`/${lang}/digests`}
+                label={lang === 'uk' ? 'Дайджести' : 'Digests'}
                 onNavigate={() => setMenuOpen(false)}
               />
               <MobileNavLink

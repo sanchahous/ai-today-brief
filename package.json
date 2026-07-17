@@ -25,6 +25,7 @@
     "backfill:scores": "tsx pipeline/scripts/backfill-scores.ts",
     "backfill:trend-signals": "tsx pipeline/scripts/backfill-trend-signals.ts",
     "indexnow:backfill": "tsx pipeline/scripts/indexnow-backfill.ts",
+    "social:shadow": "tsx scripts/social-shadow.ts",
     "pr:check": "npm run ci:check && npm run typecheck && npm run lint && npm run e2e:check && npm run build",
     "e2e": "playwright test",
     "e2e:fast": "playwright test --project=chromium",
@@ -38,10 +39,12 @@
     "@fontsource-variable/fraunces": "^5.2.9",
     "@fontsource-variable/inter": "^5.2.8",
     "@google/generative-ai": "^0.24.1",
+    "@supabase/ssr": "^0.12.3",
     "@supabase/supabase-js": "^2.110.2",
     "next": "16.2.10",
     "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react-dom": "19.2.7",
+    "sharp": "0.34.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
