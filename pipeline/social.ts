@@ -1,6 +1,13 @@
 /** Shared, platform-neutral social publishing helpers. */
 
-export const SOCIAL_CHANNELS = ['telegram', 'threads', 'x', 'instagram', 'facebook'] as const;
+export const SOCIAL_CHANNELS = [
+  'telegram',
+  'threads',
+  'x',
+  'instagram',
+  'facebook',
+  'linkedin',
+] as const;
 
 export type SocialChannel = (typeof SOCIAL_CHANNELS)[number];
 

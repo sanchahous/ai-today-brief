@@ -40,6 +40,7 @@ const SMOKE = 'e2e/smoke.spec.ts';
 const LAYOUT = 'e2e/layout-regression.spec.ts';
 const HEADER = 'e2e/header-layout.spec.ts';
 const FOOTER = 'e2e/footer-newsletter.spec.ts';
+const ADMIN_MOBILE = 'e2e/admin-mobile.spec.ts';
 
 /** Cheap canaries that visit many routes — the safety net for unmapped UI changes. */
 const CORE = [SMOKE, LAYOUT];
@@ -65,6 +66,10 @@ const OVERRIDES: Array<{ match: RegExp; specs: string[] }> = [
   { match: /^src\/components\/header-search-field\.tsx$/, specs: [HEADER] },
   { match: /^src\/components\/site-footer\.tsx$/, specs: [FOOTER] },
   { match: /^src\/components\/home\/newsletter-(band|form)\.tsx$/, specs: [FOOTER] },
+  {
+    match: /^(?:src\/(?:app|components)\/admin\/|src\/app\/manifest\.ts$|public\/admin-sw\.js$)/,
+    specs: [ADMIN_MOBILE],
+  },
 ];
 
 const LOCALES = 'en|uk'; // from src/lib/i18n.ts — matches the [lang] segment in routes

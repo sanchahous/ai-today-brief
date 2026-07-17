@@ -6,6 +6,7 @@ import { getPublishedItemSitemapEntries } from '@/lib/items';
 import { getConceptSitemapEntries } from '@/lib/concepts';
 import { getCategoryPaths } from '@/lib/categories';
 import { getBriefSitemapEntries } from '@/lib/briefs';
+import { getWeeklySitemapEntries } from '@/lib/digests';
 
 export const revalidate = 3600;
 
@@ -32,19 +33,31 @@ function langAlternates(path: string) {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [items, concepts, categories, briefs] = await Promise.all([
+  const [items, concepts, categories, briefs, weeklyDigests] = await Promise.all([
     getPublishedItemSitemapEntries(),
     getConceptSitemapEntries(),
     getCategoryPaths(),
     getBriefSitemapEntries(),
+    getWeeklySitemapEntries(),
   ]);
 
   // Newest publish time — lastmod for pages whose content changes with every brief.
-  const latestPublish = briefs.map((b) => b.lastModified).sort().at(-1);
+  const latestPublish = briefs
+    .map((b) => b.lastModified)
+    .sort()
+    .at(-1);
   // Hub pages change when their newest child does.
-  const latestConcept = concepts.map((c) => c.lastModified ?? '').filter(Boolean).sort().at(-1);
-  const latestGuide = GUIDES.map((g) => g.lastVerified).sort().at(-1);
-  const latestTool = TOOLS.map((t) => t.lastVerified).sort().at(-1);
+  const latestConcept = concepts
+    .map((c) => c.lastModified ?? '')
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+  const latestGuide = GUIDES.map((g) => g.lastVerified)
+    .sort()
+    .at(-1);
+  const latestTool = TOOLS.map((t) => t.lastVerified)
+    .sort()
+    .at(-1);
 
   const entries: MetadataRoute.Sitemap = [];
 
@@ -62,6 +75,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'daily',
       priority: 0.8,
       alternates: langAlternates('/news'),
+    });
+    entries.push({
+      url: `${SITE_URL}/${lang}/digests`,
+      lastModified:
+        weeklyDigests
+          .map((digest) => digest.published_at ?? digest.week_start)
+          .sort()
+          .at(-1) ?? latestPublish,
+      changeFrequency: 'daily',
+      priority: 0.75,
+      alternates: langAlternates('/digests'),
     });
     entries.push({
       url: `${SITE_URL}/${lang}/concepts`,
@@ -109,6 +133,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly',
         priority: 0.75,
         alternates: langAlternates(`/${brief.slug}`),
+      });
+    }
+    for (const digest of weeklyDigests) {
+      entries.push({
+        url: `${SITE_URL}/${lang}/weekly/${digest.slug}`,
+        lastModified: digest.published_at ?? digest.week_start,
+        changeFrequency: 'weekly',
+        priority: 0.72,
+        alternates: langAlternates(`/weekly/${digest.slug}`),
       });
     }
     for (const path of TRUST_PATHS) {

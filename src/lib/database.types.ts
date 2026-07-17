@@ -1,5 +1,12 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
+type CmsTable<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
+  Row: Row;
+  Insert: Insert;
+  Update: Update;
+  Relationships: [];
+};
+
 export type Database = {
   __InternalSupabase: {
     PostgrestVersion: '14.5';
@@ -686,61 +693,354 @@ export type Database = {
           },
         ];
       };
+      engagement_targets: CmsTable<
+        {
+          active: boolean;
+          channel: string;
+          created_at: string;
+          handle: string;
+          id: string;
+          profile_url: string;
+          rationale: string | null;
+          updated_at: string;
+        },
+        {
+          active?: boolean;
+          channel: string;
+          created_at?: string;
+          handle: string;
+          id?: string;
+          profile_url: string;
+          rationale?: string | null;
+          updated_at?: string;
+        }
+      >;
+      engagement_tasks: CmsTable<
+        {
+          action: string;
+          channel: string;
+          completed_at: string | null;
+          created_at: string;
+          due_at: string | null;
+          id: string;
+          native_url: string;
+          rationale: string | null;
+          status: string;
+          suggested_text: string | null;
+          target_id: string | null;
+          updated_at: string;
+        },
+        {
+          action: string;
+          channel: string;
+          completed_at?: string | null;
+          created_at?: string;
+          due_at?: string | null;
+          id?: string;
+          native_url: string;
+          rationale?: string | null;
+          status?: string;
+          suggested_text?: string | null;
+          target_id?: string | null;
+          updated_at?: string;
+        }
+      >;
+      social_accounts: CmsTable<
+        {
+          capabilities: Json;
+          channel: string;
+          connection_health: string;
+          created_at: string;
+          enabled: boolean;
+          handle: string | null;
+          id: string;
+          last_alerted_at: string | null;
+          last_checked_at: string | null;
+          provider_account_id: string | null;
+          secret_reference: string | null;
+          token_expires_at: string | null;
+          updated_at: string;
+        },
+        {
+          capabilities?: Json;
+          channel: string;
+          connection_health?: string;
+          created_at?: string;
+          enabled?: boolean;
+          handle?: string | null;
+          id?: string;
+          last_alerted_at?: string | null;
+          last_checked_at?: string | null;
+          provider_account_id?: string | null;
+          secret_reference?: string | null;
+          token_expires_at?: string | null;
+          updated_at?: string;
+        }
+      >;
+      social_account_metrics: CmsTable<
+        {
+          followers_count: number | null;
+          id: number;
+          measured_at: string;
+          raw: Json;
+          social_account_id: string;
+        },
+        {
+          followers_count?: number | null;
+          id?: never;
+          measured_at?: string;
+          raw?: Json;
+          social_account_id: string;
+        }
+      >;
+      social_admins: CmsTable<
+        {
+          created_at: string;
+          enabled: boolean;
+          role: string;
+          user_id: string;
+        },
+        {
+          created_at?: string;
+          enabled?: boolean;
+          role?: string;
+          user_id: string;
+        }
+      >;
+      social_click_events: CmsTable<
+        {
+          clicked_at: string;
+          device_class: string | null;
+          id: number;
+          referrer_host: string | null;
+          social_post_id: string;
+        },
+        {
+          clicked_at?: string;
+          device_class?: string | null;
+          id?: never;
+          referrer_host?: string | null;
+          social_post_id: string;
+        }
+      >;
+      social_delivery_attempts: CmsTable<
+        {
+          attempt_number: number;
+          error_code: string | null;
+          error_message: string | null;
+          finished_at: string | null;
+          id: number;
+          idempotency_key: string | null;
+          outcome: string;
+          request_summary: Json;
+          response_summary: Json;
+          social_post_id: string;
+          started_at: string;
+        },
+        {
+          attempt_number: number;
+          error_code?: string | null;
+          error_message?: string | null;
+          finished_at?: string | null;
+          id?: never;
+          idempotency_key?: string | null;
+          outcome?: string;
+          request_summary?: Json;
+          response_summary?: Json;
+          social_post_id: string;
+          started_at?: string;
+        }
+      >;
+      social_packages: CmsTable<
+        {
+          created_at: string;
+          generated_at: string;
+          generation_version: string;
+          green_success_counted_at: string | null;
+          id: string;
+          kind: string;
+          risk_level: string;
+          source_brief_id: string | null;
+          source_brief_item_id: string | null;
+          source_item_ids: string[];
+          source_date: string | null;
+          status: string;
+          title: string;
+          updated_at: string;
+          weekly_digest_id: string | null;
+        },
+        {
+          created_at?: string;
+          generated_at?: string;
+          generation_version?: string;
+          green_success_counted_at?: string | null;
+          id?: string;
+          kind: string;
+          risk_level: string;
+          source_brief_id?: string | null;
+          source_brief_item_id?: string | null;
+          source_item_ids?: string[];
+          source_date?: string | null;
+          status?: string;
+          title: string;
+          updated_at?: string;
+          weekly_digest_id?: string | null;
+        }
+      >;
+      social_post_reviews: CmsTable<
+        {
+          action: string;
+          content_hash: string | null;
+          content_version: number;
+          created_at: string;
+          id: number;
+          note: string | null;
+          package_id: string | null;
+          reviewer_id: string | null;
+          snapshot: Json;
+          social_post_id: string;
+        },
+        {
+          action: string;
+          content_hash?: string | null;
+          content_version: number;
+          created_at?: string;
+          id?: never;
+          note?: string | null;
+          package_id?: string | null;
+          reviewer_id?: string | null;
+          snapshot: Json;
+          social_post_id: string;
+        }
+      >;
+      social_settings: CmsTable<
+        {
+          auto_publish_green: boolean;
+          cadence: Json;
+          channel_enabled: Json;
+          global_kill_switch: boolean;
+          green_success_count: number;
+          id: boolean;
+          updated_at: string;
+          updated_by: string | null;
+          x_budget_month: string;
+          x_monthly_budget_eur: number;
+          x_monthly_spend_eur: number;
+        },
+        {
+          auto_publish_green?: boolean;
+          cadence?: Json;
+          channel_enabled?: Json;
+          global_kill_switch?: boolean;
+          green_success_count?: number;
+          id?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+          x_budget_month?: string;
+          x_monthly_budget_eur?: number;
+          x_monthly_spend_eur?: number;
+        }
+      >;
       social_posts: {
         Row: {
+          alt_text: string | null;
+          approval_version: number | null;
+          approved_at: string | null;
+          approved_by: string | null;
+          asset_urls: Json;
           attempts: number;
           brief_id: string | null;
           brief_item_id: string | null;
           channel: string;
+          content_hash: string | null;
+          content_version: number;
           created_at: string;
           external_id: string | null;
+          first_comment: string | null;
+          format: string | null;
           id: string;
           idempotency_key: string | null;
           last_error: string | null;
+          locale: string | null;
           meta: Json | null;
+          package_id: string | null;
           posted_at: string | null;
           post_text: string | null;
           provider_meta: Json;
+          publishing_started_at: string | null;
+          quality_report: Json;
+          retry_after: string | null;
           scheduled_for: string | null;
           status: string;
+          tracking_token: string;
           utm_url: string | null;
           url: string | null;
         };
         Insert: {
+          alt_text?: string | null;
+          approval_version?: number | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          asset_urls?: Json;
           attempts?: number;
           brief_id?: string | null;
           brief_item_id?: string | null;
           channel: string;
+          content_hash?: string | null;
+          content_version?: number;
           created_at?: string;
           external_id?: string | null;
+          first_comment?: string | null;
+          format?: string | null;
           id?: string;
           idempotency_key?: string | null;
           last_error?: string | null;
+          locale?: string | null;
           meta?: Json | null;
+          package_id?: string | null;
           posted_at?: string | null;
           post_text?: string | null;
           provider_meta?: Json;
+          publishing_started_at?: string | null;
+          quality_report?: Json;
+          retry_after?: string | null;
           scheduled_for?: string | null;
           status?: string;
+          tracking_token?: string;
           utm_url?: string | null;
           url?: string | null;
         };
         Update: {
+          alt_text?: string | null;
+          approval_version?: number | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          asset_urls?: Json;
           attempts?: number;
           brief_id?: string | null;
           brief_item_id?: string | null;
           channel?: string;
+          content_hash?: string | null;
+          content_version?: number;
           created_at?: string;
           external_id?: string | null;
+          first_comment?: string | null;
+          format?: string | null;
           id?: string;
           idempotency_key?: string | null;
           last_error?: string | null;
+          locale?: string | null;
           meta?: Json | null;
+          package_id?: string | null;
           posted_at?: string | null;
           post_text?: string | null;
           provider_meta?: Json;
+          publishing_started_at?: string | null;
+          quality_report?: Json;
+          retry_after?: string | null;
           scheduled_for?: string | null;
           status?: string;
+          tracking_token?: string;
           utm_url?: string | null;
           url?: string | null;
         };
@@ -757,6 +1057,13 @@ export type Database = {
             columns: ['brief_item_id'];
             isOneToOne: false;
             referencedRelation: 'brief_items';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'social_posts_package_id_fkey';
+            columns: ['package_id'];
+            isOneToOne: false;
+            referencedRelation: 'social_packages';
             referencedColumns: ['id'];
           },
         ];
@@ -814,6 +1121,50 @@ export type Database = {
           },
         ];
       };
+      weekly_digest_items: CmsTable<
+        {
+          brief_item_id: string;
+          created_at: string;
+          rank: number;
+          snapshot: Json;
+          weekly_digest_id: string;
+        },
+        {
+          brief_item_id: string;
+          created_at?: string;
+          rank: number;
+          snapshot?: Json;
+          weekly_digest_id: string;
+        }
+      >;
+      weekly_digests: CmsTable<
+        {
+          created_at: string;
+          id: string;
+          intro_en: string | null;
+          intro_uk: string | null;
+          published_at: string | null;
+          slug: string;
+          status: string;
+          title_en: string;
+          title_uk: string;
+          updated_at: string;
+          week_start: string;
+        },
+        {
+          created_at?: string;
+          id?: string;
+          intro_en?: string | null;
+          intro_uk?: string | null;
+          published_at?: string | null;
+          slug: string;
+          status?: string;
+          title_en: string;
+          title_uk: string;
+          updated_at?: string;
+          week_start: string;
+        }
+      >;
       sponsor_placements: {
         Row: {
           active: boolean;
@@ -928,6 +1279,7 @@ export type Database = {
           referral_code: string | null;
           referred_by: string | null;
           segment: string;
+          social_post_id: string | null;
           source: string | null;
           status: string;
           unsubscribed_at: string | null;
@@ -945,6 +1297,7 @@ export type Database = {
           referral_code?: string | null;
           referred_by?: string | null;
           segment?: string;
+          social_post_id?: string | null;
           source?: string | null;
           status?: string;
           unsubscribed_at?: string | null;
@@ -962,6 +1315,7 @@ export type Database = {
           referral_code?: string | null;
           referred_by?: string | null;
           segment?: string;
+          social_post_id?: string | null;
           source?: string | null;
           status?: string;
           unsubscribed_at?: string | null;
@@ -982,6 +1336,68 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      approve_social_package: {
+        Args: { p_package_id: string };
+        Returns: number;
+      };
+      auto_approve_green_package: {
+        Args: { p_package_id: string };
+        Returns: boolean;
+      };
+      approve_social_post: {
+        Args: { p_social_post_id: string };
+        Returns: Database['public']['Tables']['social_posts']['Row'];
+      };
+      claim_due_social_posts: {
+        Args: { p_limit?: number };
+        Returns: Database['public']['Tables']['social_posts']['Row'][];
+      };
+      edit_social_post: {
+        Args: {
+          p_alt_text: string;
+          p_content_hash: string;
+          p_expected_version: number;
+          p_first_comment: string;
+          p_post_text: string;
+          p_quality_report: Json;
+          p_scheduled_for: string;
+          p_social_post_id: string;
+        };
+        Returns: Database['public']['Tables']['social_posts']['Row'];
+      };
+      has_social_aal2: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      is_social_admin: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
+      reconcile_stale_social_posts: {
+        Args: Record<PropertyKey, never>;
+        Returns: number;
+      };
+      reserve_x_budget: {
+        Args: { p_amount: number };
+        Returns: boolean;
+      };
+      record_green_delivery_success: {
+        Args: { p_package_id: string };
+        Returns: boolean;
+      };
+      read_social_oauth_secret: {
+        Args: { p_channel: string };
+        Returns: string | null;
+      };
+      store_social_oauth_secret: {
+        Args: {
+          p_channel: string;
+          p_expires_at: string;
+          p_provider_account_id?: string | null;
+          p_secret: string;
+        };
+        Returns: undefined;
+      };
       search_brief_items: {
         Args: {
           p_categories?: string[];

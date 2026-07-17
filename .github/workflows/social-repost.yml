@@ -22,6 +22,9 @@ concurrency:
 
 jobs:
   repost:
+    # Emergency legacy fallback only. The CMS queue is the source of truth;
+    # leaving this repository variable unset prevents duplicate live posts.
+    if: vars.ENABLE_LEGACY_SOCIAL_WORKFLOWS == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
