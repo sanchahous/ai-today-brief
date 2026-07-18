@@ -1,4 +1,4 @@
--- Mobile-first social CMS foundation, applied after the social delivery queue.
+-- Mobile-first social CMS foundation.
 -- Adds versioned approval, a lock-safe delivery queue, persisted weekly
 -- digests, account health, engagement tasks, and owner-only RLS.
 

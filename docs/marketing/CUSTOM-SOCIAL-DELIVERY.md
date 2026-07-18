@@ -29,9 +29,9 @@ native platform metrics.
 
 ## Safe Threads launch
 
-1. Apply `supabase/migrations/040_social_publishing_queue.sql` through the
+1. Apply `supabase/migrations/039_social_publishing_queue.sql` through the
    normal Supabase migration process, then apply
-   `supabase/migrations/041_social_cms.sql`.
+   `supabase/migrations/040_social_cms.sql`.
 2. In GitHub Actions, run **Social repost** manually with `dry_run=true` and
    review the printed Telegram, Threads and X previews. It makes no network
    publish call.

@@ -1,4 +1,4 @@
--- Social delivery queue is a first-party capability: Postiz is intentionally not a
+-- Social delivery is a first-party capability: Postiz is intentionally not a
 -- dependency. These fields make every post traceable from editorial approval
 -- through provider delivery and later native-platform metric collection.
 

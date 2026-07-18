@@ -1,17 +1,18 @@
 # AI Today Brief Social CMS runbook
 
-The CMS is deliberately safe on first deploy: migration `041_social_cms.sql`
+The CMS is deliberately safe on first deploy: migration `040_social_cms.sql`
 creates `global_kill_switch = true`, disables every channel, and requires an
 AAL2 owner approval before a variant can become publishable.
 
 ## 1. Deploy the foundation
 
 1. Confirm the existing `039_match_relevant_item_window.sql` is present in
-   production, then apply `040_social_publishing_queue.sql` followed by
-   `041_social_cms.sql`. Apply the follow-up
+   production, then apply `039_social_publishing_queue.sql` followed by
+   `040_social_cms.sql`. Apply the follow-up
    `20260717102343_social_scheduler_security_hardening.sql` and
-   `20260717103150_social_admin_helper_invoker.sql` afterwards. The migration
-   versions are intentionally unique; never run the CMS migration before the
+   `20260717103150_social_admin_helper_invoker.sql` afterwards. Preserve the
+   canonical filenames recorded in the target Supabase migration history; never
+   rename an already-applied migration. Never run the CMS migration before the
    delivery queue.
 2. Verify the critical objects:
 
