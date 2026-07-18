@@ -266,11 +266,12 @@ function telegramSeed(
 }
 
 async function loadCadence() {
-  const { data } = await getSupabaseAdmin()
+  const { data, error } = await getSupabaseAdmin()
     .from('social_settings')
     .select('cadence')
     .eq('id', true)
     .maybeSingle();
+  if (error) throw new Error(`[social-composer] load cadence: ${error.message}`);
   return resolveCadenceSettings(data?.cadence);
 }
 
@@ -501,6 +502,7 @@ export interface ComposeResult {
 }
 
 async function notifyPackagesReady(packageIds: string[], label: string) {
+  if (process.env.SOCIAL_SHADOW_MODE === '1') return;
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
   const chatId = process.env.TELEGRAM_REVIEW_CHAT_ID?.trim();
   if (!token || !chatId || packageIds.length === 0) return;

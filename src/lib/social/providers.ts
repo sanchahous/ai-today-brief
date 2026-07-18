@@ -65,6 +65,18 @@ function required(name: string) {
   return value;
 }
 
+function requiredFirst(names: readonly string[]) {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  throw new SocialPublishError(
+    `${names.join(' or ')} is not configured.`,
+    'permanent',
+    'not_configured',
+  );
+}
+
 type OAuthChannel = 'threads' | 'linkedin' | 'instagram' | 'facebook';
 
 interface StoredOAuthSecret {
@@ -176,8 +188,10 @@ class TelegramPublisher implements SocialPublisher {
   }
 
   async publish(post: SocialPostForDelivery): Promise<PublishReceipt> {
-    const token = required('TELEGRAM_BOT_TOKEN');
-    const chatId = required('TELEGRAM_CHANNEL_ID');
+    // The review bot remains on TELEGRAM_BOT_TOKEN. Production publishing can
+    // use an isolated bot and channel without coupling the two permissions.
+    const token = requiredFirst(['PUBLISHER_TELEGRAM_BOT_TOKEN', 'TELEGRAM_BOT_TOKEN']);
+    const chatId = requiredFirst(['PUBLISHER_TELEGRAM_CHANNEL_ID', 'TELEGRAM_CHANNEL_ID']);
     const photo = assetUrl(post);
     if (photo && post.text.length > 1024) {
       const photoResult = await providerJson(

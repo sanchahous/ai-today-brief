@@ -1,3 +1,4 @@
+import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { completeEngagementAction, createEngagementTaskAction } from '../../actions';
@@ -72,9 +73,11 @@ export default async function EngagementPage() {
               className="rounded-xl border border-white/15 bg-[#0c1014] p-3 text-sm tracking-normal text-white normal-case"
             />
           </label>
-          <button className="min-h-11 rounded-xl bg-[#47e4d3] px-4 text-sm font-bold text-[#0a2321] sm:col-span-2">
-            Add to manual queue
-          </button>
+          <ActionSubmitButton
+            idleLabel="Add to manual queue"
+            pendingLabel="Adding to queue…"
+            className="min-h-11 rounded-xl bg-[#47e4d3] px-4 text-sm font-bold text-[#0a2321] sm:col-span-2"
+          />
         </form>
       </details>
       <div className="mt-7 grid gap-4">
@@ -107,20 +110,20 @@ export default async function EngagementPage() {
               </a>
               <form action={completeEngagementAction}>
                 <input type="hidden" name="id" value={task.id} />
-                <button
+                <ActionSubmitButton
+                  idleLabel="Mark done"
+                  pendingLabel="Marking done…"
                   name="decision"
                   value="complete"
                   className="min-h-11 rounded-xl border border-emerald-400/30 px-4 text-sm font-bold text-emerald-200"
-                >
-                  Mark done
-                </button>
-                <button
+                />
+                <ActionSubmitButton
+                  idleLabel="Dismiss"
+                  pendingLabel="Dismissing…"
                   name="decision"
                   value="dismiss"
                   className="ml-2 min-h-11 rounded-xl border border-white/10 px-4 text-sm font-bold text-slate-400"
-                >
-                  Dismiss
-                </button>
+                />
               </form>
             </div>
           </article>

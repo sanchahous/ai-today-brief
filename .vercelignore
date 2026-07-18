@@ -1,0 +1,6 @@
+.agents/
+.claude/
+coverage/
+playwright-report/
+test-results/
+docs/

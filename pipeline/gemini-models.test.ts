@@ -6,6 +6,7 @@ import {
   modelIdFromGeminiName,
   parseGeminiVersionScore,
   rankGeminiModelIds,
+  retainCurrentGeminiGeneration,
   type GeminiModelRecord,
 } from './gemini-models';
 
@@ -57,22 +58,21 @@ describe('isUnstableGeminiModelId', () => {
 });
 
 describe('rankGeminiModelIds', () => {
-  it('orders newer flash models before older ones', () => {
+  it('keeps the newest generation and removes previous-generation fallbacks', () => {
     const ranked = rankGeminiModelIds([
       makeModel('gemini-2.5-flash'),
       makeModel('gemini-3.5-flash'),
+      makeModel('gemini-3.1-flash-lite'),
       makeModel('gemini-2.0-flash'),
     ]);
     expect(ranked[0]).toBe('gemini-3.5-flash');
-    expect(ranked[1]).toBe('gemini-2.5-flash');
-    expect(ranked[2]).toBe('gemini-2.0-flash');
+    expect(ranked[1]).toBe('gemini-3.1-flash-lite');
+    expect(ranked).not.toContain('gemini-2.5-flash');
+    expect(ranked).not.toContain('gemini-2.0-flash');
   });
 
   it('prefers flash over pro at similar version', () => {
-    const ranked = rankGeminiModelIds([
-      makeModel('gemini-2.5-pro'),
-      makeModel('gemini-2.5-flash'),
-    ]);
+    const ranked = rankGeminiModelIds([makeModel('gemini-2.5-pro'), makeModel('gemini-2.5-flash')]);
     expect(ranked[0]).toBe('gemini-2.5-flash');
     expect(ranked[1]).toBe('gemini-2.5-pro');
   });
@@ -91,6 +91,25 @@ describe('rankGeminiModelIds', () => {
       ['gemini-2.5-pro'],
     );
     expect(ranked[0]).toBe('gemini-2.5-pro');
+  });
+});
+
+describe('retainCurrentGeminiGeneration', () => {
+  it('retains all stable models in the newest major generation', () => {
+    const current = retainCurrentGeminiGeneration([
+      makeModel('gemini-3.5-flash'),
+      makeModel('gemini-3.1-flash-lite'),
+      makeModel('gemini-2.5-pro'),
+    ]).map((model) => modelIdFromGeminiName(model.name));
+    expect(current).toEqual(['gemini-3.5-flash', 'gemini-3.1-flash-lite']);
+  });
+
+  it('uses latest aliases only when no numbered stable models exist', () => {
+    const current = retainCurrentGeminiGeneration([
+      makeModel('gemini-flash-latest'),
+      makeModel('gemini-pro-latest'),
+    ]).map((model) => modelIdFromGeminiName(model.name));
+    expect(current).toEqual(['gemini-flash-latest', 'gemini-pro-latest']);
   });
 });
 

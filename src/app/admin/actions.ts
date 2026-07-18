@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { Json } from '@/lib/database.types';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { SITE_URL } from '@/lib/site';
@@ -11,6 +10,7 @@ import { getSupabaseServer } from '@/lib/supabase/server';
 import { composeDailySocial, composeWeeklySocial } from '@/lib/social/composer';
 import { socialContentHash } from '@/lib/social/content-hash';
 import { attachCriticReport } from '@/lib/social/critic';
+import { generateSocialJson } from '@/lib/social/llm-router';
 import { runQualityGate } from '@/lib/social/quality';
 import {
   kyivWallClockToUtc,
@@ -79,6 +79,20 @@ function jsonFacts(value: Json | null) {
   });
 }
 
+function hasCurrentCriticAudit(value: Json): boolean {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const critic = (value as Record<string, Json | undefined>).critic;
+  if (!critic || typeof critic !== 'object' || Array.isArray(critic)) return false;
+  const row = critic as Record<string, Json | undefined>;
+  return (
+    typeof row.auditedAt === 'string' &&
+    Boolean(row.auditedAt.trim()) &&
+    typeof row.provider === 'string' &&
+    typeof row.model === 'string' &&
+    typeof row.score === 'number'
+  );
+}
+
 function parseKyivSchedule(value: string) {
   const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/.exec(value);
   if (!match) throw new Error('Schedule must use YYYY-MM-DDTHH:mm.');
@@ -97,6 +111,22 @@ function isoToKyivInput(value: string) {
   }).formatToParts(new Date(value));
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
   return `${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}`;
+}
+
+function parseWriterResponse(raw: string) {
+  const json = raw.match(/\{[\s\S]*\}/)?.[0];
+  if (!json) throw new SyntaxError('Writer returned no JSON object.');
+  const parsed = JSON.parse(json) as { text?: unknown; firstComment?: unknown };
+  if (typeof parsed.text !== 'string' || !parsed.text.trim()) {
+    throw new SyntaxError('Writer returned no copy.');
+  }
+  if (parsed.firstComment !== undefined && typeof parsed.firstComment !== 'string') {
+    throw new SyntaxError('Writer returned an invalid first comment.');
+  }
+  return {
+    text: parsed.text.trim(),
+    firstComment: typeof parsed.firstComment === 'string' ? parsed.firstComment.trim() : undefined,
+  };
 }
 
 export async function generateTodayAction() {
@@ -199,8 +229,6 @@ export async function updateVariantAction(formData: FormData) {
 export async function regenerateVariantAction(formData: FormData) {
   await requireSocialAdmin({ aal2: true });
   const id = requiredString(formData, 'id');
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) throw new Error('GEMINI_API_KEY is required for regeneration.');
   const admin = getSupabaseAdmin();
   const { data: post } = await admin.from('social_posts').select('*').eq('id', id).single();
   if (
@@ -249,28 +277,11 @@ export async function regenerateVariantAction(formData: FormData) {
     facebook: 'Ukrainian top story or roundup, 120–1400 characters, one tracking URL.',
   };
   const prompt = `Create a platform-native ${post.channel} variant for AI Today Brief. Use ONLY the approved facts. Never invent a number, name, quote, or causal claim. ${channelInstruction[post.channel]} Risk level: ${socialPackage?.risk_level}. Package: ${socialPackage?.kind}. Return strict JSON only: {"text":"...","firstComment":"..."}. Tracking URL (include only when the channel rule asks): ${trackingUrl}\n\nAPPROVED FACTS:\n${facts.map((fact) => `- ${fact}`).join('\n')}\n\nCURRENT COPY TO IMPROVE:\n${post.post_text ?? ''}`;
-  const result = await new GoogleGenerativeAI(apiKey)
-    .getGenerativeModel({
-      model: process.env.SOCIAL_WRITER_MODEL?.trim() || 'gemini-2.5-flash',
-      generationConfig: { responseMimeType: 'application/json' },
-    })
-    .generateContent(prompt);
-  const raw = result.response.text();
-  const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] ?? '{}') as {
-    text?: unknown;
-    firstComment?: unknown;
-  };
-  if (typeof parsed.text !== 'string' || !parsed.text.trim())
-    throw new Error('Writer returned no copy.');
+  const { value: parsed } = await generateSocialJson('writer', prompt, parseWriterResponse);
   const next = new FormData();
   next.set('id', id);
-  next.set('post_text', parsed.text.trim());
-  next.set(
-    'first_comment',
-    typeof parsed.firstComment === 'string'
-      ? parsed.firstComment.trim()
-      : (post.first_comment ?? ''),
-  );
+  next.set('post_text', parsed.text);
+  next.set('first_comment', parsed.firstComment ?? post.first_comment ?? '');
   next.set('alt_text', post.alt_text ?? '');
   next.set(
     'scheduled_for',
@@ -282,6 +293,15 @@ export async function regenerateVariantAction(formData: FormData) {
 export async function approvePostAction(formData: FormData) {
   await requireSocialAdmin({ aal2: true });
   const id = requiredString(formData, 'id');
+  const admin = getSupabaseAdmin();
+  const { data: post } = await admin
+    .from('social_posts')
+    .select('quality_report')
+    .eq('id', id)
+    .maybeSingle();
+  if (!post || !hasCurrentCriticAudit(post.quality_report)) {
+    throw new Error('A successful current-generation critic audit is required before approval.');
+  }
   const supabase = await getSupabaseServer();
   const { error } = await supabase.rpc('approve_social_post', { p_social_post_id: id });
   if (error) throw new Error(error.message);
@@ -292,6 +312,17 @@ export async function approvePostAction(formData: FormData) {
 export async function approvePackageAction(formData: FormData) {
   await requireSocialAdmin({ aal2: true });
   const id = requiredString(formData, 'id');
+  const admin = getSupabaseAdmin();
+  const { data: posts } = await admin
+    .from('social_posts')
+    .select('quality_report')
+    .eq('package_id', id);
+  if (
+    !(posts ?? []).length ||
+    (posts ?? []).some((post) => !hasCurrentCriticAudit(post.quality_report))
+  ) {
+    throw new Error('Every variant needs a successful current-generation critic audit.');
+  }
   const supabase = await getSupabaseServer();
   const { error } = await supabase.rpc('approve_social_package', { p_package_id: id });
   if (error) throw new Error(error.message);

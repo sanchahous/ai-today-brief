@@ -1,4 +1,5 @@
 import type { Json } from '@/lib/database.types';
+import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { StatusPill } from '@/components/admin/status-pill';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
@@ -135,9 +136,11 @@ export default async function SettingsPage() {
             </span>
           </span>
         </label>
-        <button className="mt-5 min-h-11 rounded-xl bg-[#47e4d3] px-5 text-sm font-bold text-[#0a2321]">
-          Save controls · requires MFA
-        </button>
+        <ActionSubmitButton
+          idleLabel="Save controls · requires MFA"
+          pendingLabel="Saving controls…"
+          className="mt-5 min-h-11 rounded-xl bg-[#47e4d3] px-5 text-sm font-bold text-[#0a2321]"
+        />
       </form>
 
       <section className="mt-7">
@@ -196,9 +199,11 @@ export default async function SettingsPage() {
                     : 'stored outside UI / not connected'}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <button className="min-h-10 rounded-xl border border-white/15 px-4 text-sm font-bold text-slate-200">
-                    Save account
-                  </button>
+                  <ActionSubmitButton
+                    idleLabel="Save account"
+                    pendingLabel="Saving account…"
+                    className="min-h-10 rounded-xl border border-white/15 px-4 text-sm font-bold text-slate-200"
+                  />
                   {oauthProvider ? (
                     <a
                       href={`/api/oauth/${oauthProvider}/start`}
@@ -215,9 +220,11 @@ export default async function SettingsPage() {
       </section>
 
       <form action={signOutAction} className="mt-8">
-        <button className="min-h-11 rounded-xl border border-white/15 px-4 text-sm font-bold text-slate-300">
-          Sign out
-        </button>
+        <ActionSubmitButton
+          idleLabel="Sign out"
+          pendingLabel="Signing out…"
+          className="min-h-11 rounded-xl border border-white/15 px-4 text-sm font-bold text-slate-300"
+        />
       </form>
     </div>
   );

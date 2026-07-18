@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "cockpit",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "E:/domains/cockpit", "run", "dev"],
+      "port": 4317,
+      "autoPort": false
+    }
+  ]
+}

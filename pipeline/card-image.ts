@@ -23,6 +23,7 @@
 import { createHash } from 'node:crypto';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { PipelineDb } from './db';
+import { resolveGeminiModelQueue } from './gemini-models';
 import { logEvent } from './log';
 
 const BUCKET = 'card-images';
@@ -42,7 +43,7 @@ export interface CardImageConfig {
   cloudflareAccountId?: string;
   cloudflareApiToken?: string;
   geminiApiKey: string;
-  /** Text model for the scene step (default gemini-2.5-flash). */
+  /** Optional current-generation text model pin for the scene step. */
   geminiModel?: string;
   /**
    * Gemini IMAGE model (e.g. 'gemini-3-pro-image'). Empty/undefined ⇒ the Gemini
@@ -73,7 +74,9 @@ export async function fillCardImages(
 ): Promise<FillCardImagesResult> {
   const { data: items, error } = await db
     .from('brief_items')
-    .select('id, slug, title_en, title_uk, summary_en, summary_uk, category_slug, card_image_url, review_status')
+    .select(
+      'id, slug, title_en, title_uk, summary_en, summary_uk, category_slug, card_image_url, review_status',
+    )
     .eq('brief_id', briefId);
   if (error) throw new Error(`[card-image] load items failed: ${error.message}`);
 
@@ -113,7 +116,10 @@ export async function fillCardImages(
         .eq('id', it.id);
       if (updErr) {
         failed++;
-        logEvent('warn', 'publish', 'Card image url update failed', { slug: it.slug, error: updErr.message });
+        logEvent('warn', 'publish', 'Card image url update failed', {
+          slug: it.slug,
+          error: updErr.message,
+        });
         continue;
       }
       generated++;
@@ -172,7 +178,11 @@ const DEFAULT_SCENE =
  * clichés explicitly banned so cards stop looking interchangeable. Falls back to
  * a keyword-chosen concrete scene (never a brain) if the model call fails.
  */
-export async function sceneBrief(title: string, summary: string, cfg: CardImageConfig): Promise<string> {
+export async function sceneBrief(
+  title: string,
+  summary: string,
+  cfg: CardImageConfig,
+): Promise<string> {
   const ctx = [title, summary].filter(Boolean).join('. ').trim();
   if (!ctx) return DEFAULT_SCENE;
   const instruction =
@@ -190,16 +200,24 @@ export async function sceneBrief(title: string, summary: string, cfg: CardImageC
     `Answer with ONE vivid phrase, 18-32 words, concrete nouns, a single focal subject, not a full ` +
     `sentence.\n\nHeadline: "${title}"\nSummary: "${summary}"`;
   const clean = (t: string) => t.replace(/\s+/g, ' ').trim().slice(0, 320);
-  const model = cfg.geminiModel || process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-flash';
-
   // Primary: Gemini. Fallback: OpenRouter (separate billing → survives Gemini
   // free-tier rate limits, e.g. during a backfill). Last resort: a keyword scene.
   try {
-    const r = await new GoogleGenerativeAI(cfg.geminiApiKey)
-      .getGenerativeModel({ model })
-      .generateContent(instruction);
-    const text = clean(r.response.text());
-    if (text.length >= 6) return text;
+    const models = await resolveGeminiModelQueue(cfg.geminiApiKey, {
+      ...process.env,
+      GEMINI_MODEL: cfg.geminiModel ?? process.env.GEMINI_MODEL,
+      GEMINI_MAX_MODEL_ATTEMPTS: '2',
+    });
+    const client = new GoogleGenerativeAI(cfg.geminiApiKey);
+    for (const model of models) {
+      try {
+        const response = await client.getGenerativeModel({ model }).generateContent(instruction);
+        const text = clean(response.response.text());
+        if (text.length >= 6) return text;
+      } catch {
+        // Advance only within the current generation resolved from the catalog.
+      }
+    }
   } catch {
     /* fall through to OpenRouter */
   }
@@ -208,8 +226,15 @@ export async function sceneBrief(title: string, summary: string, cfg: CardImageC
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${cfg.openRouterApiKey}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ model: `google/${model}`, messages: [{ role: 'user', content: instruction }] }),
+        headers: {
+          Authorization: `Bearer ${cfg.openRouterApiKey}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          // Moving alias: never falls back to a retired numbered release.
+          model: '~openai/gpt-mini-latest',
+          messages: [{ role: 'user', content: instruction }],
+        }),
       });
       if (res.ok) {
         const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
@@ -280,7 +305,10 @@ async function generateGemini(prompt: string, cfg: CardImageConfig): Promise<Buf
         headers: { 'x-goog-api-key': cfg.geminiApiKey, 'content-type': 'application/json' },
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { responseModalities: ['TEXT', 'IMAGE'], imageConfig: { aspectRatio: '16:9' } },
+          generationConfig: {
+            responseModalities: ['TEXT', 'IMAGE'],
+            imageConfig: { aspectRatio: '16:9' },
+          },
         }),
         signal: AbortSignal.timeout(45_000),
       },
@@ -290,7 +318,9 @@ async function generateGemini(prompt: string, cfg: CardImageConfig): Promise<Buf
       return null;
     }
     const data = (await res.json()) as {
-      candidates?: { content?: { parts?: { inlineData?: { data?: string }; inline_data?: { data?: string } }[] } }[];
+      candidates?: {
+        content?: { parts?: { inlineData?: { data?: string }; inline_data?: { data?: string } }[] };
+      }[];
     };
     for (const part of data.candidates?.[0]?.content?.parts ?? []) {
       const b64 = part.inlineData?.data ?? part.inline_data?.data;

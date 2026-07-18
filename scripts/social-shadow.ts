@@ -4,7 +4,12 @@
  *
  * Usage: npm run social:shadow -- --days 20
  */
-import { composeDailySocial, composeWeeklySocial } from '../src/lib/social/composer';
+import { loadEnvConfig } from '@next/env';
+
+loadEnvConfig(process.cwd());
+// A shadow run writes review packages but must not generate a burst of
+// Telegram alerts for historical dates.
+process.env.SOCIAL_SHADOW_MODE = '1';
 
 function daysArgument() {
   const index = process.argv.indexOf('--days');
@@ -19,6 +24,7 @@ function dateAtOffset(offset: number) {
 }
 
 async function main() {
+  const { composeDailySocial, composeWeeklySocial } = await import('../src/lib/social/composer');
   const days = daysArgument();
   const results = [];
   for (let offset = days - 1; offset >= 0; offset -= 1) {

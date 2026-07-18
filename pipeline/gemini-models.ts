@@ -64,7 +64,7 @@ function priorityScore(modelId: string, priorities: string[]): number {
   return priorities.length + 100;
 }
 
-/** `gemini-3.5-flash` → 3.5; higher = newer. */
+/** `gemini-3.5-flash` → 3.05; higher = newer, including two-digit minors. */
 export function parseGeminiVersionScore(modelId: string): number | null {
   const match = /gemini-(\d+)(?:\.(\d+))?/i.exec(modelId);
   if (!match) return null;
@@ -72,6 +72,30 @@ export function parseGeminiVersionScore(modelId: string): number | null {
   const minor = match[2] ? Number.parseInt(match[2], 10) : 0;
   if (!Number.isFinite(major) || !Number.isFinite(minor)) return null;
   return major + minor / 100;
+}
+
+/**
+ * Keep only the newest numbered Gemini generation exposed by the live catalog.
+ * For example, a catalog containing 3.5, 3.1 and 2.5 keeps the 3.x models and
+ * removes the previous 2.x generation from the retry path. `*-latest` aliases
+ * are retained only when the catalog has no numbered stable model to rank.
+ */
+export function retainCurrentGeminiGeneration(models: GeminiModelRecord[]): GeminiModelRecord[] {
+  const eligible = models.filter(isEligibleGeminiSummarizeModel);
+  const numbered = eligible
+    .map((model) => ({
+      model,
+      version: parseGeminiVersionScore(modelIdFromGeminiName(model.name)),
+    }))
+    .filter(
+      (entry): entry is { model: GeminiModelRecord; version: number } => entry.version !== null,
+    );
+  if (numbered.length === 0) return eligible;
+
+  const newestMajor = Math.max(...numbered.map((entry) => Math.floor(entry.version)));
+  return numbered
+    .filter((entry) => Math.floor(entry.version) === newestMajor)
+    .map((entry) => entry.model);
 }
 
 export function isUnstableGeminiModelId(modelId: string): boolean {
@@ -112,8 +136,11 @@ export function geminiSummarizeRankScore(modelId: string, priorities: string[]):
   return score;
 }
 
-export function rankGeminiModelIds(models: GeminiModelRecord[], priorities: string[] = []): string[] {
-  const eligible = models.filter(isEligibleGeminiSummarizeModel);
+export function rankGeminiModelIds(
+  models: GeminiModelRecord[],
+  priorities: string[] = [],
+): string[] {
+  const eligible = retainCurrentGeminiGeneration(models);
   const sorted = [...eligible].sort(
     (a, b) =>
       geminiSummarizeRankScore(modelIdFromGeminiName(a.name), priorities) -
@@ -133,6 +160,9 @@ export function rankGeminiModelIds(models: GeminiModelRecord[], priorities: stri
 function prependPinnedModel(queue: string[], pinned: string | undefined): string[] {
   const pin = pinned?.trim();
   if (!pin) return queue;
+  // A pin may change ordering inside the current live generation, but it may
+  // not re-introduce a retired generation that discovery deliberately removed.
+  if (!queue.includes(pin)) return queue;
   const rest = queue.filter((id) => id !== pin);
   return [pin, ...rest];
 }
@@ -198,12 +228,21 @@ export async function resolveGeminiModelQueue(
     const models = await fetchModels(apiKey);
     ranked = rankGeminiModelIds(models, priorities);
   } catch (error) {
-    if (!pinned) throw error;
+    // When discovery is unavailable, only a moving `*-latest` alias can still
+    // satisfy the no-stale-model policy. A numbered pin cannot be verified.
+    if (!pinned?.toLowerCase().includes('latest')) throw error;
     logEvent('warn', 'gemini', 'Model catalog fetch failed — using GEMINI_MODEL pin only', {
       pinned,
       error_message: error instanceof Error ? error.message : String(error),
     });
     ranked = [pinned];
+  }
+
+  if (pinned && !ranked.includes(pinned)) {
+    logEvent('warn', 'gemini', 'Ignoring stale GEMINI_MODEL pin outside current generation', {
+      pinned,
+      current_generation: ranked,
+    });
   }
 
   const queue = prependPinnedModel(ranked, pinned).slice(0, cap);
