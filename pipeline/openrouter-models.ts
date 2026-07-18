@@ -12,9 +12,12 @@ export const OPENROUTER_MODELS_URL = 'https://openrouter.ai/api/v1/models';
 export type OpenRouterModelRecord = {
   id: string;
   name?: string;
+  created?: number;
   context_length?: number;
   pricing?: { prompt?: string; completion?: string };
   architecture?: { modality?: string; instruct_type?: string | null };
+  supported_parameters?: string[];
+  expiration_date?: string | null;
 };
 
 type ModelsResponse = { data?: OpenRouterModelRecord[] };
@@ -35,31 +38,18 @@ type ModelsResponse = { data?: OpenRouterModelRecord[] };
  * are too aggressive for production use (unrelated to Google AI Studio free tier).
  */
 export const DEFAULT_MODEL_PRIORITY = [
-  // ── DeepSeek — cost-effective powerhouses (handled by deepseek_pro/chat tiers) ──
-  'deepseek-v4-pro',
-  'deepseek-v4',      // catches v4-flash and future v4.x variants
-  'deepseek-v3.2',
-  'deepseek-v3.1',
-  'deepseek-v3',
-  'deepseek-r1',
-  'deepseek-pro',
-  'deepseek-chat',
-  // ── Qwen (handled by qwen tier) ──
-  'qwen-max',
-  'qwen-plus',
-  'qwen3',
+  // Family-level preferences only. Current releases are selected from the live
+  // catalog; no numbered retired model is baked into the default policy.
+  'deepseek',
   'qwen',
-  // ── Frontier (all land in "other" tier; ordered by capability) ──
-  'claude-opus-4',    // Anthropic flagship
-  'claude-sonnet-4',  // matches sonnet-4, sonnet-4.x, sonnet-4-5, sonnet-4-6 …
-  'gpt-5',
-  'gpt-4.1',
-  'gpt-4o',
-  'gemini-3.5',       // matches gemini-3.5-flash, gemini-3.5-pro, …
-  'gemini-3',         // matches gemini-3-flash, gemini-3-pro, gemini-3.1-…, …
-  'gemini-2.5-pro',   // explicit fallback for older Gemini Pro
-  'llama-3.3-70b',
-  'mistral-large',
+  '~openai/gpt-latest',
+  '~anthropic/claude-sonnet-latest',
+  'openai/gpt',
+  'anthropic/claude',
+  'google/gemini',
+  'x-ai/grok',
+  'meta-llama/llama',
+  'mistralai/mistral',
 ] as const;
 
 export type OpenRouterModelTier = 'deepseek_pro' | 'deepseek_chat' | 'qwen' | 'other';
@@ -120,6 +110,65 @@ const UNSTABLE_ID_FRAGMENTS = [
 ];
 
 const MIN_CONTEXT_LENGTH = 32_000;
+
+interface ModelGeneration {
+  family: string;
+  major: number | null;
+  version: number | null;
+}
+
+/** Extract a comparable generation for the major text-model families. */
+export function parseOpenRouterFamilyGeneration(modelId: string): ModelGeneration | null {
+  const id = modelId.replace(/^~/, '').toLowerCase();
+  const provider = id.split('/')[0] ?? '';
+  const patterns: Array<[string, RegExp]> = [
+    ['deepseek', /deepseek-(?:chat-)?v(\d+(?:\.\d+)?)/],
+    ['qwen', /qwen(?:-|)(\d+(?:\.\d+)?)/],
+    ['gpt', /gpt-(\d+(?:\.\d+)?)/],
+    ['gemini', /gemini-(\d+(?:\.\d+)?)/],
+    ['claude', /claude-(?:sonnet|opus|haiku|fable)-(\d+(?:\.\d+)?)/],
+    ['llama', /llama-(\d+(?:\.\d+)?)/],
+    ['grok', /grok-(\d+(?:\.\d+)?)/],
+  ];
+  for (const [family, pattern] of patterns) {
+    const match = pattern.exec(id);
+    if (!match) continue;
+    const version = Number.parseFloat(match[1]!);
+    if (!Number.isFinite(version)) return null;
+    return { family: `${provider}/${family}`, major: Math.floor(version), version };
+  }
+
+  const knownFamily = patterns.find(([family]) => id.includes(family))?.[0];
+  return knownFamily ? { family: `${provider}/${knownFamily}`, major: null, version: null } : null;
+}
+
+/**
+ * Remove previous major generations whenever the live catalog exposes a newer
+ * one in the same family. Moving `~...-latest` aliases remain eligible.
+ */
+export function retainCurrentOpenRouterGenerations(
+  models: OpenRouterModelRecord[],
+): OpenRouterModelRecord[] {
+  const newestMajor = new Map<string, number>();
+  for (const model of models) {
+    const generation = parseOpenRouterFamilyGeneration(model.id);
+    if (generation?.major === null || generation?.major === undefined) continue;
+    newestMajor.set(
+      generation.family,
+      Math.max(newestMajor.get(generation.family) ?? 0, generation.major),
+    );
+  }
+
+  return models.filter((model) => {
+    const lower = model.id.toLowerCase();
+    if (lower.startsWith('~') && lower.endsWith('-latest')) return true;
+    const generation = parseOpenRouterFamilyGeneration(model.id);
+    if (!generation) return true;
+    const newest = newestMajor.get(generation.family);
+    if (newest === undefined) return true;
+    return generation.major === newest;
+  });
+}
 
 /** Prefer ids containing -pro (e.g. deepseek-v4-pro). */
 export function hasOpenRouterProPattern(modelId: string): boolean {
@@ -185,6 +234,9 @@ export function openRouterPatternRankScore(modelId: string): number {
     score -= version * 50;
   } else if (hasOpenRouterVersionPattern(modelId)) {
     score -= 40;
+  } else {
+    const familyVersion = parseOpenRouterFamilyGeneration(modelId)?.version;
+    if (familyVersion !== null && familyVersion !== undefined) score -= familyVersion * 50;
   }
 
   if (lower.includes('deepseek') && !hasOpenRouterProPattern(modelId) && version === null) {
@@ -198,10 +250,7 @@ export function openRouterPatternRankScore(modelId: string): number {
   return score;
 }
 
-function compositeRankScore(
-  model: OpenRouterModelRecord,
-  priorities: string[],
-): number {
+function compositeRankScore(model: OpenRouterModelRecord, priorities: string[]): number {
   const tier = classifyOpenRouterModelTier(model.id);
   const tierBase = TIER_BASE_SCORE[tier];
   const pattern = openRouterPatternRankScore(model.id);
@@ -217,6 +266,7 @@ function isEligibleModel(model: OpenRouterModelRecord): boolean {
   // that make it unreliable as a production fallback. This is distinct from the free
   // quota on the Google AI Studio / Gemini API which we use as primary.
   if (id.includes(':free')) return false;
+  if (id.includes('distill')) return false;
   if (id.includes('vision') || id.includes('image')) return false;
   if (isUnstableOpenRouterModelId(model.id)) return false;
   const modality = model.architecture?.modality ?? 'text';
@@ -231,7 +281,7 @@ export function rankOpenRouterModelIds(
   models: OpenRouterModelRecord[],
   priorities: string[] = [...DEFAULT_MODEL_PRIORITY],
 ): string[] {
-  const eligible = models.filter(isEligibleModel);
+  const eligible = retainCurrentOpenRouterGenerations(models.filter(isEligibleModel));
   const sorted = [...eligible].sort(
     (a, b) => compositeRankScore(a, priorities) - compositeRankScore(b, priorities),
   );

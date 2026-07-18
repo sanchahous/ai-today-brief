@@ -25,7 +25,7 @@
     "backfill:scores": "tsx pipeline/scripts/backfill-scores.ts",
     "backfill:trend-signals": "tsx pipeline/scripts/backfill-trend-signals.ts",
     "indexnow:backfill": "tsx pipeline/scripts/indexnow-backfill.ts",
-    "social:shadow": "tsx scripts/social-shadow.ts",
+    "social:shadow": "node --conditions=react-server --import tsx scripts/social-shadow.ts",
     "pr:check": "npm run ci:check && npm run typecheck && npm run lint && npm run e2e:check && npm run build",
     "e2e": "playwright test",
     "e2e:fast": "playwright test --project=chromium",
@@ -44,6 +44,7 @@
     "next": "16.2.10",
     "react": "19.2.7",
     "react-dom": "19.2.7",
+    "server-only": "0.0.1",
     "sharp": "0.34.5"
   },
   "devDependencies": {

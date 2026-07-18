@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Json } from '@/lib/database.types';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { SITE_URL } from '@/lib/site';
+import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { StatusPill } from '@/components/admin/status-pill';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import {
@@ -23,7 +24,14 @@ interface Issue {
 function quality(value: Json): {
   blocking: Issue[];
   warnings: Issue[];
-  critic?: { score?: number; flags?: string[] };
+  critic?: {
+    score?: number;
+    flags?: string[];
+    provider?: string;
+    model?: string;
+    fallbackUsed?: boolean;
+    auditedAt?: string;
+  };
 } {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     return { blocking: [], warnings: [] };
@@ -33,7 +41,14 @@ function quality(value: Json): {
     warnings: Array.isArray(report.warnings) ? (report.warnings as Issue[]) : [],
     critic:
       report.critic && typeof report.critic === 'object' && !Array.isArray(report.critic)
-        ? (report.critic as { score?: number; flags?: string[] })
+        ? (report.critic as {
+            score?: number;
+            flags?: string[];
+            provider?: string;
+            model?: string;
+            fallbackUsed?: boolean;
+            auditedAt?: string;
+          })
         : undefined,
   };
 }
@@ -82,7 +97,8 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
     (posts ?? []).every(
       (post) =>
         ['draft', 'in_review', 'approved', 'failed'].includes(post.status) &&
-        quality(post.quality_report).blocking.length === 0,
+        quality(post.quality_report).blocking.length === 0 &&
+        Boolean(quality(post.quality_report).critic?.auditedAt),
     );
 
   return (
@@ -104,18 +120,20 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
         <div className="flex flex-wrap gap-2">
           <form action={approvePackageAction}>
             <input type="hidden" name="id" value={id} />
-            <button
+            <ActionSubmitButton
+              idleLabel="Approve package"
+              pendingLabel="Approving package…"
               disabled={!allApprovable}
               className="min-h-11 rounded-xl bg-[#47e4d3] px-4 text-sm font-bold text-[#0a2321] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Approve package
-            </button>
+            />
           </form>
           <form action={cancelPackageAction}>
             <input type="hidden" name="id" value={id} />
-            <button className="min-h-11 rounded-xl border border-red-400/30 px-4 text-sm font-bold text-red-200">
-              Cancel future posts
-            </button>
+            <ActionSubmitButton
+              idleLabel="Cancel future posts"
+              pendingLabel="Cancelling posts…"
+              className="min-h-11 rounded-xl border border-red-400/30 px-4 text-sm font-bold text-red-200"
+            />
           </form>
         </div>
       </div>
@@ -125,6 +143,7 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
           const report = quality(post.quality_report);
           const media = assets(post.asset_urls);
           const locked = ['publishing', 'posted', 'cancelled'].includes(post.status);
+          const hasCurrentAudit = Boolean(report.critic?.auditedAt);
           return (
             <article
               key={post.id}
@@ -200,15 +219,17 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
                   </label>
                   {!locked ? (
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <button className="min-h-11 rounded-xl border border-[#47e4d3]/40 px-4 text-sm font-bold text-[#8af4e9]">
-                        Save · revoke approval
-                      </button>
-                      <button
+                      <ActionSubmitButton
+                        idleLabel="Save · revoke approval"
+                        pendingLabel="Saving and auditing…"
+                        className="min-h-11 rounded-xl border border-[#47e4d3]/40 px-4 text-sm font-bold text-[#8af4e9]"
+                      />
+                      <ActionSubmitButton
+                        idleLabel="Regenerate selected"
+                        pendingLabel="Regenerating and auditing…"
                         formAction={regenerateVariantAction}
                         className="min-h-11 rounded-xl border border-violet-400/30 px-4 text-sm font-bold text-violet-200"
-                      >
-                        Regenerate selected
-                      </button>
+                      />
                     </div>
                   ) : null}
                 </form>
@@ -248,6 +269,12 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
                   </div>
 
                   <div className="mt-4 grid gap-2">
+                    {!hasCurrentAudit ? (
+                      <p className="rounded-xl border border-red-400/25 bg-red-400/8 p-3 text-sm text-red-200">
+                        Blocker: run the current-generation critic audit by saving or regenerating
+                        this variant.
+                      </p>
+                    ) : null}
                     {report.blocking.map((item, index) => (
                       <p
                         key={`${item.code}-${index}`}
@@ -268,6 +295,14 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
                       <div className="rounded-xl border border-white/10 p-3 text-sm text-slate-300">
                         Critic score:{' '}
                         <strong className="text-white">{report.critic.score ?? '—'}/100</strong>
+                        {report.critic.provider || report.critic.model ? (
+                          <span className="mt-1 block text-xs text-slate-500">
+                            {[report.critic.provider, report.critic.model]
+                              .filter(Boolean)
+                              .join(' · ')}
+                            {report.critic.fallbackUsed ? ' · fallback used' : ''}
+                          </span>
+                        ) : null}
                         {report.critic.flags?.map((flag) => (
                           <p key={flag} className="mt-1 text-amber-100">
                             • {flag}
@@ -279,12 +314,12 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
                   {!locked && post.status !== 'approved' ? (
                     <form action={approvePostAction} className="mt-4">
                       <input type="hidden" name="id" value={post.id} />
-                      <button
-                        disabled={report.blocking.length > 0}
+                      <ActionSubmitButton
+                        idleLabel="Approve this variant"
+                        pendingLabel="Approving variant…"
+                        disabled={report.blocking.length > 0 || !hasCurrentAudit}
                         className="min-h-11 w-full rounded-xl bg-white px-4 text-sm font-bold text-[#101418] disabled:opacity-40"
-                      >
-                        Approve this variant
-                      </button>
+                      />
                     </form>
                   ) : null}
                   {post.channel === 'linkedin' && post.status !== 'posted' ? (

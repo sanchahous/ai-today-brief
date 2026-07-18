@@ -6,8 +6,14 @@ AAL2 owner approval before a variant can become publishable.
 
 ## 1. Deploy the foundation
 
-1. Confirm `039_social_publishing_queue.sql` is present in production, then
-   apply `040_social_cms.sql`.
+1. Confirm the existing `039_match_relevant_item_window.sql` is present in
+   production, then apply `039_social_publishing_queue.sql` followed by
+   `040_social_cms.sql`. Apply the follow-up
+   `20260717102343_social_scheduler_security_hardening.sql` and
+   `20260717103150_social_admin_helper_invoker.sql` afterwards. Preserve the
+   canonical filenames recorded in the target Supabase migration history; never
+   rename an already-applied migration. Never run the CMS migration before the
+   delivery queue.
 2. Verify the critical objects:
 
    ```sql
@@ -45,7 +51,7 @@ select vault.create_secret(
 );
 select vault.create_secret(
   '<same value as SOCIAL_CRON_SECRET>',
-  'social_cron_bearer',
+  'social_cron_secret',
   'Authorization bearer for social internal endpoints'
 );
 ```
@@ -54,14 +60,14 @@ Enable `pg_cron` and `pg_net`, then create the jobs:
 
 ```sql
 select cron.schedule(
-  'social-publish-due-every-5m',
+  'social_publish_due',
   '*/5 * * * *',
   $$
   select net.http_post(
     url := (select decrypted_secret from vault.decrypted_secrets where name = 'social_publish_due_url'),
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'social_cron_bearer')
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'social_cron_secret')
     ),
     body := '{}'::jsonb,
     timeout_milliseconds := 55000
@@ -70,14 +76,14 @@ select cron.schedule(
 );
 
 select cron.schedule(
-  'social-compose-every-30m',
+  'social_compose_review',
   '*/30 * * * *',
   $$
   select net.http_post(
     url := (select decrypted_secret from vault.decrypted_secrets where name = 'social_compose_url'),
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'social_cron_bearer')
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'social_cron_secret')
     ),
     body := '{}'::jsonb,
     timeout_milliseconds := 55000
@@ -90,7 +96,47 @@ The composer is idempotent by date, kind, source, and generation version. A
 30-minute trigger therefore does not regenerate or spend LLM budget after the
 day's packages exist.
 
-## 3. Five-day shadow discovery
+## 3. LLM writer and critic policy
+
+Do not pin a retired numbered model as the default. The application reads the
+live Gemini and OpenRouter catalogs, filters previews, expired endpoints and
+previous Gemini generations, then records the provider and model used in the
+quality report.
+
+- Writer order: Gemini → OpenRouter → optional Ollama.
+- Critic order: latest stable standard OpenAI Terra (never Sol or Terra Pro) →
+  Claude Sonnet latest → current DeepSeek Pro → Gemini → optional Ollama. This
+  keeps the first reviewer independent from the first writer.
+- Set `SOCIAL_CRITIC_REQUIRED=true` in production. A variant without a
+  successful current-generation audit cannot be approved in the CMS.
+- A provider/model failure advances the cascade. Invalid JSON also counts as a
+  failed attempt. The CMS stores sanitized attempt metadata, never raw provider
+  errors.
+- Critic flags and a score below `SOCIAL_CRITIC_MIN_SCORE` require owner review;
+  they never approve content automatically.
+
+Vercel production needs `GEMINI_API_KEY`, `OPEN_ROUTER_API_KEY`,
+`SOCIAL_WRITER_PROVIDER_ORDER=gemini,openrouter`, and
+`SOCIAL_CRITIC_PROVIDER_ORDER=openrouter,gemini`. Vercel cannot reach a local
+Ollama instance on `127.0.0.1`.
+
+For a local/manual terminal fallback, set this only in an uncommitted local env
+file:
+
+```dotenv
+SOCIAL_OLLAMA_BASE_URL=http://127.0.0.1:11434/v1/
+```
+
+The router discovers installed text models from `/v1/models` and selects the
+newest/largest eligible model. A remote Ollama endpoint is accepted only over
+HTTPS and only with `SOCIAL_OLLAMA_API_KEY`; never expose an unauthenticated
+Ollama port publicly.
+
+After a critic outage or model change, open the package and press **Save** (no
+copy change is required) or **Regenerate selected**. The new audit timestamp,
+provider, model, score and flags appear in the package editor.
+
+## 4. 20-day shadow discovery
 
 Keep the global kill switch on. Generate recent packages locally or in a secure
 one-off job:
@@ -108,7 +154,7 @@ at least 90% of variants requiring no more than one short edit. Also confirm:
 - a save after approval moves the variant back to `in_review`;
 - two simultaneous worker calls claim a post only once.
 
-## 4. Connect and activate channels in waves
+## 5. Connect and activate channels in waves
 
 Connection and worker activation are separate controls. OAuth connection never
 enables publishing by itself.
@@ -130,7 +176,7 @@ The old GitHub `social-repost` and `weekly-digest` jobs are disabled unless the
 repository variable `ENABLE_LEGACY_SOCIAL_WORKFLOWS=true` is set. Use that only
 as an emergency fallback with the CMS kill switch on.
 
-## 5. Incident and reconciliation procedure
+## 6. Incident and reconciliation procedure
 
 - A provider timeout after the publish call becomes `needs_reconciliation`.
   The worker does not retry it.
@@ -147,7 +193,7 @@ as an emergency fallback with the CMS kill switch on.
 - The X budget reservation is atomic. Reaching the hard cap fails safely before
   another provider request.
 
-## 6. Acceptance smoke tests
+## 7. Acceptance smoke tests
 
 Before production posting, run one private/test delivery per network and verify:
 

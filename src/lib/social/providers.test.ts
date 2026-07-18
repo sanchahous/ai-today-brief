@@ -5,6 +5,8 @@ import type { SocialPostForDelivery, SocialPublishError } from './types';
 const ENV_KEYS = [
   'TELEGRAM_BOT_TOKEN',
   'TELEGRAM_CHANNEL_ID',
+  'PUBLISHER_TELEGRAM_BOT_TOKEN',
+  'PUBLISHER_TELEGRAM_CHANNEL_ID',
   'X_API_KEY',
   'X_API_SECRET',
   'X_ACCESS_TOKEN',
@@ -51,6 +53,8 @@ describe('social provider contracts', () => {
   beforeEach(() => {
     process.env.TELEGRAM_BOT_TOKEN = 'tg-token';
     process.env.TELEGRAM_CHANNEL_ID = '-1001';
+    delete process.env.PUBLISHER_TELEGRAM_BOT_TOKEN;
+    delete process.env.PUBLISHER_TELEGRAM_CHANNEL_ID;
     process.env.X_API_KEY = 'x-key';
     process.env.X_API_SECRET = 'x-secret';
     process.env.X_ACCESS_TOKEN = 'x-token';
@@ -77,6 +81,21 @@ describe('social provider contracts', () => {
     const receipt = await getSocialPublisher('telegram').publish(post('telegram'));
     expect(receipt.externalId).toBe('42');
     expect(String(fetchMock.mock.calls[0][0])).toContain('/sendMessage');
+  });
+
+  it('prefers isolated Telegram publisher credentials when configured', async () => {
+    process.env.PUBLISHER_TELEGRAM_BOT_TOKEN = 'publisher-token';
+    process.env.PUBLISHER_TELEGRAM_CHANNEL_ID = '-1002003';
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(json({ result: { message_id: 43 } }));
+
+    await getSocialPublisher('telegram').publish(post('telegram'));
+
+    expect(String(fetchMock.mock.calls[0][0])).toContain('botpublisher-token/sendMessage');
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toMatchObject({
+      chat_id: '-1002003',
+    });
   });
 
   it('publishes the X root and tracked self-reply', async () => {

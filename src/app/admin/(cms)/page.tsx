@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { StatusPill } from '@/components/admin/status-pill';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
@@ -63,9 +64,11 @@ export default async function AdminTodayPage() {
           <p className="mt-2 text-sm text-slate-400">Review the day’s package in 3–5 minutes.</p>
         </div>
         <form action={generateTodayAction}>
-          <button className="min-h-11 rounded-xl bg-[#47e4d3] px-4 text-sm font-bold text-[#0a2321] hover:bg-[#70eee1]">
-            Generate today
-          </button>
+          <ActionSubmitButton
+            idleLabel="Generate today"
+            pendingLabel="Generating today…"
+            className="min-h-11 rounded-xl bg-[#47e4d3] px-4 text-sm font-bold text-[#0a2321] hover:bg-[#70eee1]"
+          />
         </form>
       </div>
 

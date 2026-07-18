@@ -46,7 +46,16 @@ export interface QualityReport {
   critic?: {
     score: number;
     flags: string[];
+    provider?: 'gemini' | 'openrouter' | 'ollama';
     model?: string;
+    fallbackUsed?: boolean;
+    attempts?: Array<{
+      provider: 'gemini' | 'openrouter' | 'ollama';
+      status: 'success' | 'failed' | 'unconfigured';
+      model?: string;
+      reason?: 'missing_config' | 'request_failed' | 'invalid_response';
+    }>;
+    auditedAt?: string;
   };
 }
 
