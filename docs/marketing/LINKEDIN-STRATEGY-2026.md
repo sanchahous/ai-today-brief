@@ -1,8 +1,8 @@
 # LinkedIn-стратегія Sasha Kuzmenko / AI Today Brief
 
-**Версія:** 1.0  
-**Дата дослідження:** 18 липня 2026  
-**Горизонт плану:** 90 днів  
+**Версія:** 1.0<br>
+**Дата дослідження:** 18 липня 2026<br>
+**Горизонт плану:** 90 днів<br>
 **Статус:** стратегія і вимоги до CMS; без автоматичних змін у LinkedIn
 
 > Цей документ замінює LinkedIn-специфічні поради з `SOCIAL-LAUNCH.md`. Загальні правила запуску Social CMS залишаються чинними, але рішення щодо форматів, посилань, cadence й автоматизації LinkedIn слід брати звідси.
@@ -227,8 +227,8 @@ Specific hook: що сталося або що я спочатку вважав 
 
 ### Рекомендоване оформлення
 
-**Назва:** `Sasha Kuzmenko — AI Product Engineering`  
-**Tagline:** `Independent AI product engineering: LLM apps, agents and developer tools — from prototype to production.`  
+- **Назва:** `Sasha Kuzmenko — AI Product Engineering`
+- **Tagline:** `Independent AI product engineering: LLM apps, agents and developer tools — from prototype to production.`
 **CTA:** portfolio case studies або contact form, залежно від готовності до leads.
 
 Не називати practice «agency», якщо немає відповідної operating model. `Studio` або `Independent AI Product Engineering` достатньо.
@@ -255,8 +255,8 @@ English-only протягом перших 90 днів. Один сильний 
 
 ### Рекомендоване оформлення
 
-**Display name:** `AI Today Brief`  
-**Tagline:** `AI-engineering signal for builders: models, agents, MCP, dev tools and MLOps that matter — in 5 minutes.`  
+- **Display name:** `AI Today Brief`
+- **Tagline:** `AI-engineering signal for builders: models, agents, MCP, dev tools and MLOps that matter — in 5 minutes.`
 **Category phrase:** постійно використовувати `AI-engineering signal for builders`, бо назва конкурує з кількома generic AI brief brands.
 
 ### Контент-піллари
