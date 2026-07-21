@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1115; --panel:#14181f; --ink:#e8e8e8; --muted:#9aa1ad;
+    --gold:#f0c040; --violet:#b58cf7; --line:#242a33;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#000}
+  .slide{
+    position:relative; width:1080px; height:1350px; background:var(--bg);
+    color:var(--ink); overflow:hidden; page-break-after:always;
+    font-family:"Inter",Arial,sans-serif;
+    padding:120px 110px;
+    display:flex; flex-direction:column;
+  }
+  .slide:last-child{page-break-after:auto}
+  /* ambient brand glows, echoing the LinkedIn banner */
+  .glow{position:absolute;border-radius:50%;filter:blur(2px)}
+  .glow-gold{width:760px;height:760px;right:-260px;top:-300px;background:radial-gradient(circle,rgba(240,192,64,.14),transparent 62%)}
+  .glow-violet{width:640px;height:640px;left:-260px;bottom:-260px;background:radial-gradient(circle,rgba(181,140,247,.10),transparent 62%)}
+  .content{position:relative;z-index:1;display:flex;flex-direction:column;height:100%}
+
+  /* mark */
+  .mark{font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:40px;letter-spacing:-1px}
+  .mark .at{color:var(--ink)} .mark .b{color:var(--gold)} .mark .dot{color:var(--gold)}
+  .kicker{font-size:20px;letter-spacing:5px;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .brandrow{display:flex;align-items:center;gap:22px}
+  .brandrow .kicker{margin-top:4px}
+
+  .spacer{flex:1}
+
+  .eyebrow{color:var(--gold);font-size:24px;font-weight:700;letter-spacing:4px;text-transform:uppercase;margin-bottom:34px}
+  h1{font-family:"Fraunces",Georgia,serif;font-weight:700;color:var(--ink);line-height:.98;letter-spacing:-2px}
+  .h-xl{font-size:150px}
+  .h-lg{font-size:118px}
+  .accent{color:var(--gold)}
+  .sub{color:var(--muted);font-size:38px;line-height:1.35;margin-top:40px;max-width:820px;font-weight:400}
+
+  .foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:34px;margin-top:34px}
+  .foot .site{color:var(--gold);font-size:30px;font-weight:600}
+  .foot .meta{color:var(--muted);font-size:24px;letter-spacing:.5px}
+
+  /* slide 2 list */
+  .listhead{font-family:"Fraunces",Georgia,serif;font-size:74px;font-weight:700;letter-spacing:-1px;margin-bottom:20px}
+  ul{list-style:none;display:flex;flex-direction:column;gap:44px;margin-top:26px}
+  li{display:flex;gap:34px;align-items:flex-start}
+  .num{flex:0 0 auto;width:66px;height:66px;border:2px solid var(--gold);border-radius:50%;
+       display:flex;align-items:center;justify-content:center;color:var(--gold);
+       font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:34px}
+  .li-t{font-size:42px;font-weight:600;color:var(--ink);line-height:1.18}
+  .li-s{font-size:29px;color:var(--muted);margin-top:10px;line-height:1.32}
+
+  /* slide 3 cta */
+  .center{align-items:flex-start}
+  .pill{display:inline-flex;align-items:center;gap:16px;border:2px solid var(--gold);color:var(--gold);
+        font-size:34px;font-weight:700;padding:22px 46px;border-radius:999px;margin-top:46px}
+  .pill .dotg{width:16px;height:16px;border-radius:50%;background:var(--gold)}
+  .bigsite{color:var(--gold);font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:64px;margin-top:56px;letter-spacing:-1px}
+  .tags{color:var(--muted);font-size:32px;margin-top:26px;letter-spacing:.5px}
+</style>
+</head>
+<body>
+
+  <!-- SLIDE 1 — COVER -->
+  <section class="slide" id="s1">
+    <div class="glow glow-gold"></div>
+    <div class="glow glow-violet"></div>
+    <div class="content">
+      <div class="brandrow">
+        <span class="mark"><span class="at">AT</span><span class="b">B</span><span class="dot">·</span></span>
+        <span class="kicker">AI Today Brief</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="eyebrow">AI-engineering signal for builders</div>
+      <h1 class="h-xl">Signal,<br><span class="accent">not noise.</span></h1>
+      <p class="sub">A daily brief on the models, agents, MCP, dev tools and MLOps that change how you ship. Five minutes. EN + UA, every day.</p>
+      <div class="spacer"></div>
+      <div class="foot">
+        <span class="site">aitodaybrief.com</span>
+        <span class="meta">Human-edited · EN + UA</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2 — WHAT YOU GET -->
+  <section class="slide" id="s2">
+    <div class="glow glow-gold"></div>
+    <div class="content">
+      <div class="brandrow">
+        <span class="mark"><span class="at">AT</span><span class="b">B</span><span class="dot">·</span></span>
+        <span class="kicker">What you get</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="listhead">What's inside.</div>
+      <ul>
+        <li>
+          <div class="num">1</div>
+          <div>
+            <div class="li-t">A daily brief — the few things that matter</div>
+            <div class="li-s">We read 120+ sources; you read five minutes. Facts first, the editor's verdict kept separate.</div>
+          </div>
+        </li>
+        <li>
+          <div class="num">2</div>
+          <div>
+            <div class="li-t">A weekly “5 moves that changed how builders work”</div>
+            <div class="li-s">A save-worthy PDF — the week's real shifts in models, agents, MCP and dev tools.</div>
+          </div>
+        </li>
+        <li>
+          <div class="num">3</div>
+          <div>
+            <div class="li-t">Real comparisons &amp; our own benchmarks</div>
+            <div class="li-s">Tool breakdowns with actual criteria and reproducible experiments — not vibes.</div>
+          </div>
+        </li>
+      </ul>
+      <div class="spacer"></div>
+      <div class="foot">
+        <span class="site">aitodaybrief.com</span>
+        <span class="meta">Models · Agents · MCP · Dev tools · MLOps</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3 — CTA -->
+  <section class="slide center" id="s3">
+    <div class="glow glow-gold"></div>
+    <div class="glow glow-violet"></div>
+    <div class="content">
+      <div class="brandrow">
+        <span class="mark"><span class="at">AT</span><span class="b">B</span><span class="dot">·</span></span>
+        <span class="kicker">AI Today Brief</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="eyebrow">If you build with AI</div>
+      <h1 class="h-lg">Follow<br>along.</h1>
+      <div class="pill"><span class="dotg"></span>Follow AI Today Brief</div>
+      <div class="bigsite">aitodaybrief.com</div>
+      <div class="tags">Human-edited · English + Ukrainian · every day</div>
+      <div class="spacer"></div>
+      <div class="foot">
+        <span class="site">120+ sources in. Five minutes out.</span>
+        <span class="meta"></span>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>
