@@ -16,6 +16,7 @@ export const STRINGS = {
     langSwitch: 'Switch to Ukrainian',
     nav: {
       news: 'News',
+      digests: 'Digests',
       concepts: 'Concepts',
       agents: 'Agents & MCP',
       vibeCoding: 'Vibe coding',
@@ -307,6 +308,12 @@ export const STRINGS = {
     footerCookie: 'Cookie settings',
     footerSubscribe: 'Subscribe',
     footerAdvertise: 'Advertise',
+    footerNavExplore: 'Explore',
+    footerNavCompany: 'Company',
+    footerNavLegal: 'Legal',
+    footerLinkedinCtaLead: 'Follow AI Today Brief on',
+    footerLinkedinCtaRest:
+      'for daily AI-engineering updates and the weekly “5 shifts that changed how developers work” PDF.',
     cookie: {
       cookieTitle: 'We respect your privacy',
       cookieBodyEU:
@@ -395,6 +402,7 @@ export const STRINGS = {
     langSwitch: 'Перемкнути на англійську',
     nav: {
       news: 'Новини',
+      digests: 'Дайджести',
       concepts: 'Концепти',
       agents: 'Агенти й MCP',
       vibeCoding: 'Vibe coding',
@@ -681,6 +689,12 @@ export const STRINGS = {
     footerCookie: 'Налаштування cookie',
     footerSubscribe: 'Підписатися',
     footerAdvertise: 'Реклама',
+    footerNavExplore: 'Огляд',
+    footerNavCompany: 'Компанія',
+    footerNavLegal: 'Правове',
+    footerLinkedinCtaLead: 'Слідкуйте за AI Today Brief у',
+    footerLinkedinCtaRest:
+      '— щоденні оновлення з AI-інженерії та тижневий PDF «5 shifts that changed how developers work».',
     cookie: {
       cookieTitle: 'Ми поважаємо вашу приватність',
       cookieBodyEU:
