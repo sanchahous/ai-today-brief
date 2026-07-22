@@ -1,4 +1,4 @@
-name: Weekly digest
+name: Weekly digest (legacy Telegram)
 
 on:
   schedule:
@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   digest:
+    name: Legacy Telegram publisher
     # Emergency legacy fallback only after CMS cutover.
     if: vars.ENABLE_LEGACY_SOCIAL_WORKFLOWS == 'true'
     runs-on: ubuntu-latest

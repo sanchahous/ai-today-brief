@@ -48,10 +48,19 @@ export function blendTrend(mentions: number, rising: number): number {
 
 /** At/above this the entity is surging or genuinely accelerating — shown as ▲. */
 export const RISING_THRESHOLD = 0.5;
+export const TREND_SIGNAL_MAX_AGE_DAYS = 7;
 
 /** Whether a topic's rising score is high enough to flag it as rising. */
 export function isRising(score: number | undefined): boolean {
   return (score ?? 0) >= RISING_THRESHOLD;
+}
+
+/** Reject stale/future external scores so an outage cannot freeze a false trend. */
+export function isFreshTrendSignal(capturedAt: string, nowMs = Date.now()): boolean {
+  const capturedMs = Date.parse(capturedAt);
+  if (!Number.isFinite(capturedMs)) return false;
+  const ageMs = nowMs - capturedMs;
+  return ageMs >= 0 && ageMs <= TREND_SIGNAL_MAX_AGE_DAYS * 86_400_000;
 }
 
 /** Freshness in [0,1] from days since the newest item (3-day half-life). */
@@ -86,7 +95,15 @@ export async function getRisingByEntity(): Promise<Map<string, number>> {
           order: (
             col: string,
             opts: { ascending: boolean },
-          ) => Promise<{ data: { entity: string; rising_score: number | null }[] | null }>;
+          ) => Promise<{
+            data:
+              | {
+                  entity: string;
+                  rising_score: number | null;
+                  captured_at: string;
+                }[]
+              | null;
+          }>;
         };
       };
     };
@@ -99,7 +116,11 @@ export async function getRisingByEntity(): Promise<Map<string, number>> {
       .order('captured_at', { ascending: false });
     const latest = new Map<string, number>();
     for (const row of data ?? []) {
-      if (!latest.has(row.entity) && typeof row.rising_score === 'number') {
+      if (
+        !latest.has(row.entity) &&
+        typeof row.rising_score === 'number' &&
+        isFreshTrendSignal(row.captured_at)
+      ) {
         latest.set(row.entity, row.rising_score);
       }
     }

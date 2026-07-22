@@ -57,6 +57,50 @@ export const TREND_ENTITIES: readonly TrendEntity[] = [
   { key: 'llama', query: '"llama" (meta OR AI OR model)', lifecycle: 'decay' },
 ];
 
+const DAY_MS = 86_400_000;
+
+/**
+ * Pick a bounded batch, prioritising entities with no signal and then the
+ * stalest successful capture. A date-based rotation breaks ties so a temporary
+ * database read failure does not make every daily run hammer the same entities.
+ */
+export function selectStalestTrendEntities(
+  entities: readonly TrendEntity[],
+  lastCapturedAt: ReadonlyMap<string, string>,
+  anchorDate: string,
+  limit = 6,
+): TrendEntity[] {
+  if (entities.length === 0 || limit <= 0) return [];
+  const boundedLimit = Math.min(Math.floor(limit), entities.length);
+  const parsedDay = Date.parse(`${anchorDate}T00:00:00Z`);
+  const epochDay = Number.isFinite(parsedDay) ? Math.floor(parsedDay / DAY_MS) : 0;
+  const offset =
+    (((epochDay * boundedLimit) % entities.length) + entities.length) % entities.length;
+  const rotated = [...entities.slice(offset), ...entities.slice(0, offset)];
+
+  return rotated
+    .map((entity, index) => {
+      const capturedAt = lastCapturedAt.get(entity.key);
+      const parsed = capturedAt ? Date.parse(capturedAt) : Number.NaN;
+      return {
+        entity,
+        index,
+        capturedAt: Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY,
+      };
+    })
+    .sort((a, b) => a.capturedAt - b.capturedAt || a.index - b.index)
+    .slice(0, boundedLimit)
+    .map(({ entity }) => entity);
+}
+
+export type TrendCaptureHealth = 'healthy' | 'degraded' | 'failed';
+
+/** A run is failed when fewer than one third of its bounded batch succeeds. */
+export function classifyTrendCaptureHealth(attempted: number, ok: number): TrendCaptureHealth {
+  if (attempted <= 0 || ok < Math.max(1, Math.ceil(attempted / 3))) return 'failed';
+  return ok === attempted ? 'healthy' : 'degraded';
+}
+
 const GDELT_BASE = 'https://api.gdeltproject.org/api/v2/doc/doc';
 
 /** DOC 2.0 timelinevol request URL for an entity query over `timespan` (e.g. '3m'). */

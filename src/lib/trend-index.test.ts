@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   blendTrend,
   entityKeyForTool,
+  isFreshTrendSignal,
   isRising,
   maxTrendForTools,
   recencyScore,
@@ -48,6 +49,18 @@ describe('isRising', () => {
     expect(isRising(RISING_THRESHOLD)).toBe(true);
     expect(isRising(0.42)).toBe(false);
     expect(isRising(undefined)).toBe(false);
+  });
+});
+
+describe('isFreshTrendSignal', () => {
+  const now = Date.parse('2026-07-22T12:00:00Z');
+
+  it('accepts recent captures and rejects stale, invalid, or future timestamps', () => {
+    expect(isFreshTrendSignal('2026-07-20T12:00:00Z', now)).toBe(true);
+    expect(isFreshTrendSignal('2026-07-15T12:00:00Z', now)).toBe(true);
+    expect(isFreshTrendSignal('2026-07-15T11:59:59Z', now)).toBe(false);
+    expect(isFreshTrendSignal('not-a-date', now)).toBe(false);
+    expect(isFreshTrendSignal('2026-07-22T12:00:01Z', now)).toBe(false);
   });
 });
 

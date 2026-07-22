@@ -1,0 +1,56 @@
+name: Weekly digest publish health
+
+on:
+  schedule:
+    # Monday morning after the Sunday CMS composer has created the weekly package.
+    - cron: "5 7 * * 1"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Kyiv anchor date (YYYY-MM-DD); defaults to today"
+        required: false
+        type: string
+
+jobs:
+  check:
+    name: Require last completed digest to be published
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check weekly digest
+        env:
+          SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+          SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+          ANCHOR_DATE: ${{ inputs.date }}
+        run: |
+          ARGS=()
+          if [[ -n "$ANCHOR_DATE" ]]; then
+            ARGS+=("--date=$ANCHOR_DATE")
+          fi
+          npx tsx pipeline/scripts/check-weekly-digest-health.ts "${ARGS[@]}"
+
+      - name: Alert review chat
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_REVIEW_CHAT_ID: ${{ secrets.TELEGRAM_REVIEW_CHAT_ID }}
+        run: |
+          [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_REVIEW_CHAT_ID" ] && exit 0
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          curl -sS --max-time 15 -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_REVIEW_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "disable_web_page_preview=true" \
+            --data-urlencode "text=⚠️ <b>Weekly digest is not published</b> — перевірте package у Social CMS. 🔗 ${RUN_URL}" \
+            || true

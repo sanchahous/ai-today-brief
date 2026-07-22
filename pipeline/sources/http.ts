@@ -30,6 +30,24 @@ export function shouldRetryStatus(status: number): boolean {
   return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
 }
 
+const MAX_RETRY_AFTER_MS = 60_000;
+
+/** Parse Retry-After seconds/date and cap it so one source cannot stall a run. */
+export function retryAfterMs(
+  response: Pick<Response, 'headers'>,
+  nowMs = Date.now(),
+): number | null {
+  const value = response.headers.get('retry-after')?.trim();
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.min(Math.round(seconds * 1000), MAX_RETRY_AFTER_MS);
+  }
+  const dateMs = Date.parse(value);
+  if (!Number.isFinite(dateMs)) return null;
+  return Math.min(Math.max(0, dateMs - nowMs), MAX_RETRY_AFTER_MS);
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
@@ -50,7 +68,7 @@ export async function fetchWithRetry(
       const response = await fetchFn(url, options);
       if (response.ok) return response;
       if (attempt < maxAttempts && shouldRetryStatus(response.status)) {
-        const backoffMs = 500 * 2 ** (attempt - 1);
+        const backoffMs = retryAfterMs(response) ?? 500 * 2 ** (attempt - 1);
         logEvent('warn', 'fetch', 'Transient HTTP status, retrying', {
           url,
           status: response.status,
