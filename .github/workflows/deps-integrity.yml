@@ -1,0 +1,36 @@
+name: Deps integrity
+
+# A fast, ALWAYS-runs clean install from the committed lockfile.
+#
+# e2e.yml also runs `npm ci`, but it is path-ignored (docs / .github / pipeline /
+# migrations) and heavy, so it cannot serve as a universal required gate. This job
+# validates that package.json + package-lock.json install from scratch with no
+# ERESOLVE / peer-dependency conflict on EVERY change — the exact failure that took
+# down Vercel and the Daily Pipeline on 2026-07-20 (typescript 7 vs the
+# typescript-eslint peer `<6.1.0`). Cheap (~40s) and suitable to mark as a
+# required status check on `main` so a broken lockfile can never merge.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deps-integrity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clean-install:
+    name: Clean install (npm ci)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Clean install from lockfile
+        run: npm ci
