@@ -45,3 +45,21 @@ jobs:
             ARGS="--dry-run"
           fi
           npx tsx pipeline/scripts/backfill-trend-signals.ts $ARGS
+
+      # Silent scheduled cron — alert the review chat on any failure so a broken
+      # run is noticed same-day. Best-effort; never affects the job conclusion.
+      - name: Alert on failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_REVIEW_CHAT_ID: ${{ secrets.TELEGRAM_REVIEW_CHAT_ID }}
+        run: |
+          [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_REVIEW_CHAT_ID" ] && exit 0
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          curl -sS --max-time 15 -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_REVIEW_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "disable_web_page_preview=true" \
+            --data-urlencode "text=⚠️ <b>Trend signals FAILED</b> 🔗 ${RUN_URL}" \
+            || true
