@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0f1115;--ink:#e8e8e8;--muted:#9aa1ad;--gold:#f0c040;--violet:#b58cf7;--line:#242a33}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:#000}
+  .slide{position:relative;width:1080px;height:1350px;background:var(--bg);color:var(--ink);
+    overflow:hidden;page-break-after:always;font-family:"Inter",Arial,sans-serif;
+    padding:110px 104px;display:flex;flex-direction:column}
+  .slide:last-child{page-break-after:auto}
+  .glow{position:absolute;border-radius:50%}
+  .glow-gold{width:760px;height:760px;right:-260px;top:-300px;background:radial-gradient(circle,rgba(240,192,64,.14),transparent 62%)}
+  .glow-violet{width:640px;height:640px;left:-260px;bottom:-260px;background:radial-gradient(circle,rgba(181,140,247,.10),transparent 62%)}
+  .content{position:relative;z-index:1;display:flex;flex-direction:column;height:100%}
+  .spacer{flex:1}
+
+  .mark{font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:38px;letter-spacing:-1px}
+  .mark .at{color:var(--ink)}.mark .b{color:var(--gold)}.mark .dot{color:var(--gold)}
+  .brandrow{display:flex;align-items:center;gap:20px}
+  .kicker{font-size:19px;letter-spacing:5px;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:3px}
+
+  /* cover */
+  .cover-eyebrow{color:var(--gold);font-size:24px;font-weight:700;letter-spacing:5px;text-transform:uppercase;margin-bottom:30px}
+  .cover-h{font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:118px;line-height:.98;letter-spacing:-2px}
+  .cover-h .accent{color:var(--gold)}
+  .cover-date{color:var(--muted);font-size:38px;margin-top:40px;font-weight:500}
+
+  /* move slides */
+  .movehdr{display:flex;align-items:center;justify-content:space-between}
+  .movenum{color:var(--gold);font-size:22px;font-weight:700;letter-spacing:4px;text-transform:uppercase}
+  .tag{color:var(--muted);font-size:20px;font-weight:600;letter-spacing:3px;text-transform:uppercase}
+  .movetitle{font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:82px;line-height:1.0;letter-spacing:-1.5px;margin-bottom:38px}
+  .what{font-size:41px;line-height:1.32;color:var(--ink);max-width:880px}
+  .why{margin-top:44px;max-width:880px}
+  .whylabel{display:block;color:var(--gold);font-size:22px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:14px}
+  .whytext{font-size:33px;line-height:1.34;color:var(--muted)}
+
+  .foot{display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:30px;margin-top:30px}
+  .foot .site{color:var(--gold);font-size:27px;font-weight:600}
+  .foot .meta{color:var(--muted);font-size:23px;letter-spacing:.5px}
+
+  /* cta */
+  .cta-eyebrow{color:var(--gold);font-size:24px;font-weight:700;letter-spacing:4px;text-transform:uppercase;margin-bottom:34px}
+  .cta-h{font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:104px;line-height:.98;letter-spacing:-2px}
+  .pill{display:inline-flex;align-items:center;gap:16px;border:2px solid var(--gold);color:var(--gold);
+    font-size:33px;font-weight:700;padding:22px 44px;border-radius:999px;margin-top:46px}
+  .pill .dotg{width:15px;height:15px;border-radius:50%;background:var(--gold)}
+  .bigsite{color:var(--gold);font-family:"Fraunces",Georgia,serif;font-weight:700;font-size:60px;margin-top:52px;letter-spacing:-1px}
+  .tags{color:var(--muted);font-size:30px;margin-top:24px}
+</style>
+</head>
+<body>
+
+  <!-- COVER -->
+  <section class="slide" id="s1">
+    <div class="glow glow-gold"></div><div class="glow glow-violet"></div>
+    <div class="content">
+      <div class="brandrow"><span class="mark"><span class="at">AT</span><span class="b">B</span><span class="dot">·</span></span><span class="kicker">Weekly · AI Today Brief</span></div>
+      <div class="spacer"></div>
+      <div class="cover-eyebrow">The week in AI engineering</div>
+      <h1 class="cover-h">5 moves that<br>changed how<br><span class="accent">builders work.</span></h1>
+      <div class="cover-date">July 13–19, 2026</div>
+      <div class="spacer"></div>
+      <div class="foot"><span class="site">aitodaybrief.com</span><span class="meta">Human-edited · EN + UA</span></div>
+    </div>
+  </section>
+
+  <!-- MOVE 1 -->
+  <section class="slide" id="s2">
+    <div class="glow glow-gold"></div>
+    <div class="content">
+      <div class="movehdr"><span class="movenum">Move 01 / 05</span><span class="tag">Agents · Cost</span></div>
+      <div class="spacer"></div>
+      <h2 class="movetitle">Context compaction, server-side</h2>
+      <p class="what">OpenAI's API can now prune context automatically during long agent runs — statelessly, while preserving critical conversation state.</p>
+      <div class="why"><span class="whylabel">Why it matters</span><span class="whytext">Cut token cost and long-tail latency on long agentic conversations, without losing reasoning quality.</span></div>
+      <div class="spacer"></div>
+      <div class="foot"><span class="site">developers.openai.com</span><span class="meta">Source</span></div>
+    </div>
+  </section>
+
+  <!-- MOVE 2 -->
+  <section class="slide" id="s3">
+    <div class="glow glow-gold"></div>
+    <div class="content">
+      <div class="movehdr"><span class="movenum">Move 02 / 05</span><span class="tag">Local · Privacy</span></div>
+      <div class="spacer"></div>
+      <h2 class="movetitle">Autonomous agents, fully local</h2>
+      <p class="what">LM Studio shipped Bionic — a sandboxed agent workspace for open models (GLM 5.2, Kimi), with a local voice keyboard and zero-data-retention cloud fallback.</p>
+      <div class="why"><span class="whylabel">Why it matters</span><span class="whytext">Build and debug codebases or process sensitive files with full privacy — no data leaves the machine.</span></div>
+      <div class="spacer"></div>
+      <div class="foot"><span class="site">lmstudio.ai</span><span class="meta">Source</span></div>
+    </div>
+  </section>
+
+  <!-- MOVE 3 -->
+  <section class="slide" id="s4">
+    <div class="glow glow-gold"></div>
+    <div class="content">
+      <div class="movehdr"><span class="movenum">Move 03 / 05</span><span class="tag">MCP · Security</span></div>
+      <div class="spacer"></div>
+      <h2 class="movetitle">Policy-gate your MCP tools</h2>
+      <p class="what">A new architecture guide enforces access-control policy on Model Context Protocol tool calls using Open Policy Agent with Quarkus.</p>
+      <div class="why"><span class="whylabel">Why it matters</span><span class="whytext">Stop autonomous agents from running destructive commands — gate every tool call behind an explicit policy.</span></div>
+      <div class="spacer"></div>
+      <div class="foot"><span class="site">the-main-thread.com</span><span class="meta">Source</span></div>
+    </div>
+  </section>
+
+  <!-- MOVE 4 -->
+  <section class="slide" id="s5">
+    <div class="glow glow-gold"></div>
+    <div class="content">
+      <div class="movehdr"><span class="movenum">Move 04 / 05</span><span class="tag">Workflow · Design-to-code</span></div>
+      <div class="spacer"></div>
+      <h2 class="movetitle">Design-to-code, inside your agent</h2>
+      <p class="what">Google open-sourced Stitch Skills — MCP-compatible agent skills that convert frontend code to designs and generate React components.</p>
+      <div class="why"><span class="whylabel">Why it matters</span><span class="whytext">Plug design-to-code straight into Claude Code, Cursor or Codex — no separate tool to babysit.</span></div>
+      <div class="spacer"></div>
+      <div class="foot"><span class="site">github.com/google-labs-code</span><span class="meta">Source</span></div>
+    </div>
+  </section>
+
+  <!-- MOVE 5 -->
+  <section class="slide" id="s6">
+    <div class="glow glow-gold"></div>
+    <div class="content">
+      <div class="movehdr"><span class="movenum">Move 05 / 05</span><span class="tag">Models · Access</span></div>
+      <div class="spacer"></div>
+      <h2 class="movetitle">Claude Fable 5 stays in subscriptions</h2>
+      <p class="what">Anthropic reversed its plan to withdraw Fable 5, making it permanent on Max and Team Premium from July 20; Pro and Standard get usage-based access with a one-time credit.</p>
+      <div class="why"><span class="whylabel">Why it matters</span><span class="whytext">Keep high-fidelity reasoning and multi-file codegen in your subscription — no forced, costly API migration.</span></div>
+      <div class="spacer"></div>
+      <div class="foot"><span class="site">simonwillison.net</span><span class="meta">Source</span></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="slide" id="s7">
+    <div class="glow glow-gold"></div><div class="glow glow-violet"></div>
+    <div class="content">
+      <div class="brandrow"><span class="mark"><span class="at">AT</span><span class="b">B</span><span class="dot">·</span></span><span class="kicker">AI Today Brief</span></div>
+      <div class="spacer"></div>
+      <div class="cta-eyebrow">Every week, the moves that matter</div>
+      <h1 class="cta-h">Get this<br>every week.</h1>
+      <div class="pill"><span class="dotg"></span>Follow AI Today Brief</div>
+      <div class="bigsite">aitodaybrief.com</div>
+      <div class="tags">Human-edited · English + Ukrainian · every day</div>
+      <div class="spacer"></div>
+      <div class="foot"><span class="site">120+ sources in. Five minutes out.</span><span class="meta"></span></div>
+    </div>
+  </section>
+
+</body>
+</html>
