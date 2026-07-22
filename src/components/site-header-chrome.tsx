@@ -93,11 +93,11 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             </span>
           </Link>
 
-          <div className="mx-1 hidden min-w-0 flex-1 md:flex lg:mx-2">
+          <div className="mx-1 hidden min-w-[10rem] flex-1 basis-[10rem] md:flex lg:mx-2">
             <HeaderSearchField
               lang={lang}
               placeholder={t.landing.searchPlaceholder}
-              className="max-w-[clamp(10rem,24vw,26rem)] lg:max-w-[clamp(10rem,22vw,32rem)] xl:max-w-xl"
+              className="min-w-[10rem] max-w-[clamp(10rem,24vw,26rem)] lg:max-w-[clamp(10rem,22vw,32rem)] xl:max-w-xl"
             />
           </div>
 
