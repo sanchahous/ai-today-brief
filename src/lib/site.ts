@@ -64,7 +64,7 @@ export interface SocialLink {
 export const SOCIALS: readonly SocialLink[] = [
   { key: 'x', label: 'X', url: 'https://x.com/aitodaybrief' },
   { key: 'telegram', label: 'Telegram', url: 'https://t.me/aitodaybrief' },
-  { key: 'linkedin', label: 'LinkedIn', url: 'https://www.linkedin.com/company/aitodaybrief' },
+  { key: 'linkedin', label: 'LinkedIn', url: 'https://www.linkedin.com/company/133973918' },
   { key: 'youtube', label: 'YouTube', url: 'https://www.youtube.com/@aitodaybrief' },
   { key: 'rss', label: 'RSS', url: RSS_URL },
 ];
