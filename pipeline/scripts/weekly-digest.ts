@@ -11,8 +11,10 @@ import { createServiceClient } from '../db';
 import { logError, logEvent } from '../log';
 import { sendMessage } from '../telegram';
 import {
+  citationUrlsFromUnknown,
+  factCountFromUnknown,
   formatWeeklyDigest,
-  selectDigestItems,
+  selectEditorialDigestItems,
   weekLabelUk,
   type DigestCandidate,
 } from '../weekly-digest';
@@ -48,29 +50,77 @@ async function main(): Promise<void> {
 
   const { data: items, error: iErr } = await db
     .from('brief_items')
-    .select('brief_id, slug, rank, title_en, title_uk, summary_uk, impact_level, category_slug')
+    .select(
+      'id,brief_id,article_id,canonical_item_id,slug,rank,title_en,title_uk,summary_en,summary_uk,why_matters_en,why_matters_uk,impact_level,category_slug,citations,facts_en,facts_uk',
+    )
     .eq('review_status', 'approved')
     .in('brief_id', [...briefById.keys()]);
   if (iErr) throw new Error(`weekly-digest items: ${iErr.message}`);
+  const articleIds = [...new Set((items ?? []).map((item) => item.article_id))];
+  const articleById = new Map<
+    string,
+    {
+      id: string;
+      source_name: string;
+      url: string;
+      composite_score: number | null;
+      score_authority: number | null;
+      score_cross_source: number | null;
+      score_breadth: number | null;
+      score_version: number | null;
+      cluster_id: string | null;
+      mentions_count: number | null;
+    }
+  >();
+  if (articleIds.length > 0) {
+    const { data: articles, error: aErr } = await db
+      .from('articles')
+      .select(
+        'id,source_name,url,composite_score,score_authority,score_cross_source,score_breadth,score_version,cluster_id,mentions_count',
+      )
+      .in('id', articleIds);
+    if (aErr) throw new Error(`weekly-digest articles: ${aErr.message}`);
+    for (const article of articles ?? []) articleById.set(article.id, article);
+  }
 
   const candidates: DigestCandidate[] = [];
   for (const it of items ?? []) {
     const brief = briefById.get(it.brief_id);
-    if (!brief?.slug || !it.slug || !it.title_en) continue;
+    const article = articleById.get(it.article_id);
+    if (!brief?.slug || !it.slug || !it.title_en || !article) continue;
     candidates.push({
+      id: it.id,
+      articleId: it.article_id,
+      canonicalItemId: it.canonical_item_id,
       title_uk: it.title_uk ?? it.title_en,
       title_en: it.title_en,
+      summary_en: it.summary_en ?? '',
       summary_uk: it.summary_uk ?? '',
+      why_matters_en: it.why_matters_en ?? '',
+      why_matters_uk: it.why_matters_uk ?? '',
       impact_level: it.impact_level,
       category_slug: it.category_slug,
       briefSlug: brief.slug,
       itemSlug: it.slug,
       date: brief.date,
       rank: it.rank,
+      citationUrls: citationUrlsFromUnknown(it.citations),
+      factsEnCount: factCountFromUnknown(it.facts_en),
+      factsUkCount: factCountFromUnknown(it.facts_uk),
+      sourceName: article.source_name,
+      sourceUrl: article.url,
+      compositeScore: article.composite_score,
+      authorityScore: article.score_authority,
+      crossSourceScore: article.score_cross_source,
+      breadthScore: article.score_breadth,
+      scoreVersion: article.score_version,
+      clusterId: article.cluster_id,
+      mentionsCount: article.mentions_count ?? 1,
     });
   }
 
-  const selected = selectDigestItems(candidates);
+  const selection = selectEditorialDigestItems(candidates);
+  const selected = selection.selected.map(({ candidate }) => candidate);
   if (selected.length < 3) {
     logEvent('info', 'publish', 'Weekly digest: fewer than 3 items — skipping', {
       candidates: candidates.length,
@@ -84,6 +134,17 @@ async function main(): Promise<void> {
   });
 
   if (dryRun) {
+    console.log(
+      [
+        `Selection: ${selection.version}`,
+        `Eligible: ${selection.eligible.length}/${candidates.length}`,
+        ...selection.selected.map(
+          ({ candidate, score, reasons }, index) =>
+            `${index + 1}. ${score.toFixed(1)} · ${candidate.title_en} · ${reasons.join(', ') || 'passed gates'}`,
+        ),
+        '',
+      ].join('\n'),
+    );
     console.log(text);
     return;
   }
@@ -96,7 +157,14 @@ async function main(): Promise<void> {
     status: 'posted',
     external_id: String(msgId),
     posted_at: new Date().toISOString(),
-    meta: { kind: 'weekly_digest', items: selected.length, since: sinceDate },
+    meta: {
+      kind: 'weekly_digest',
+      items: selected.length,
+      since: sinceDate,
+      selection_version: selection.version,
+      eligible_candidates: selection.eligible.length,
+      rejected_candidates: selection.rejected.length,
+    },
   });
   if (spErr) logError('publish', 'weekly-digest social_posts insert failed (non-fatal)', spErr);
 

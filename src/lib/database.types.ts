@@ -16,6 +16,7 @@ export type Database = {
       articles: {
         Row: {
           composite_score: number | null;
+          cluster_id: string | null;
           fetched_at: string | null;
           hn_comments: number | null;
           hn_score: number | null;
@@ -26,6 +27,14 @@ export type Database = {
           raw: Json | null;
           reddit_comments: number | null;
           reddit_score: number | null;
+          score_authority: number | null;
+          score_breadth: number | null;
+          score_cross_source: number | null;
+          score_inbrief: number | null;
+          score_recency: number | null;
+          score_velocity: number | null;
+          score_version: number | null;
+          scored_as_of: string | null;
           source_name: string;
           source_url: string;
           title: string;
@@ -33,6 +42,7 @@ export type Database = {
         };
         Insert: {
           composite_score?: number | null;
+          cluster_id?: string | null;
           fetched_at?: string | null;
           hn_comments?: number | null;
           hn_score?: number | null;
@@ -43,6 +53,14 @@ export type Database = {
           raw?: Json | null;
           reddit_comments?: number | null;
           reddit_score?: number | null;
+          score_authority?: number | null;
+          score_breadth?: number | null;
+          score_cross_source?: number | null;
+          score_inbrief?: number | null;
+          score_recency?: number | null;
+          score_velocity?: number | null;
+          score_version?: number | null;
+          scored_as_of?: string | null;
           source_name: string;
           source_url: string;
           title: string;
@@ -50,6 +68,7 @@ export type Database = {
         };
         Update: {
           composite_score?: number | null;
+          cluster_id?: string | null;
           fetched_at?: string | null;
           hn_comments?: number | null;
           hn_score?: number | null;
@@ -60,6 +79,14 @@ export type Database = {
           raw?: Json | null;
           reddit_comments?: number | null;
           reddit_score?: number | null;
+          score_authority?: number | null;
+          score_breadth?: number | null;
+          score_cross_source?: number | null;
+          score_inbrief?: number | null;
+          score_recency?: number | null;
+          score_velocity?: number | null;
+          score_version?: number | null;
+          scored_as_of?: string | null;
           source_name?: string;
           source_url?: string;
           title?: string;

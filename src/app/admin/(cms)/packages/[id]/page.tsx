@@ -21,6 +21,52 @@ interface Issue {
   message?: string;
 }
 
+interface EditorialItem {
+  rank: number;
+  title: string;
+  version: string;
+  score: number;
+  impact: string;
+  category: string;
+  sourceName: string;
+  sourceUrl: string | null;
+  reasons: string[];
+  citationCount: number;
+}
+
+function jsonRecord(value: Json | undefined): Record<string, Json | undefined> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, Json | undefined>)
+    : null;
+}
+
+function editorialItem(rank: number, value: Json): EditorialItem | null {
+  const snapshot = jsonRecord(value);
+  const selection = jsonRecord(snapshot?.editorial_selection);
+  if (!snapshot || !selection || typeof selection.score !== 'number') return null;
+  const sourceUrl = typeof selection.source_url === 'string' ? selection.source_url : null;
+  return {
+    rank,
+    title:
+      typeof snapshot.title_en === 'string'
+        ? snapshot.title_en
+        : typeof snapshot.title_uk === 'string'
+          ? snapshot.title_uk
+          : 'Untitled story',
+    version: typeof selection.version === 'string' ? selection.version : 'unknown',
+    score: selection.score,
+    impact: typeof selection.impact_level === 'string' ? selection.impact_level : 'unknown',
+    category: typeof selection.category_slug === 'string' ? selection.category_slug : 'other',
+    sourceName:
+      typeof selection.source_name === 'string' ? selection.source_name : 'Unknown source',
+    sourceUrl: sourceUrl?.startsWith('https://') ? sourceUrl : null,
+    reasons: Array.isArray(selection.reasons)
+      ? selection.reasons.filter((reason): reason is string => typeof reason === 'string')
+      : [],
+    citationCount: Array.isArray(selection.citation_urls) ? selection.citation_urls.length : 0,
+  };
+}
+
 function quality(value: Json): {
   blocking: Issue[];
   warnings: Issue[];
@@ -92,6 +138,18 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
       .limit(20),
   ]);
   if (!socialPackage) notFound();
+  const { data: weeklyItemRows, error: weeklyItemsError } = socialPackage.weekly_digest_id
+    ? await supabase
+        .from('weekly_digest_items')
+        .select('rank,snapshot')
+        .eq('weekly_digest_id', socialPackage.weekly_digest_id)
+        .order('rank')
+    : { data: [], error: null };
+  if (weeklyItemsError) throw new Error(`Weekly shortlist: ${weeklyItemsError.message}`);
+  const editorialItems = (weeklyItemRows ?? []).flatMap((row) => {
+    const item = editorialItem(row.rank, row.snapshot);
+    return item ? [item] : [];
+  });
   const allApprovable =
     (posts ?? []).length > 0 &&
     (posts ?? []).every(
@@ -137,6 +195,71 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
           </form>
         </div>
       </div>
+
+      {editorialItems.length > 0 ? (
+        <section className="mt-8 rounded-3xl border border-[#47e4d3]/20 bg-[#10201f] p-4 sm:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <p className="text-xs font-bold tracking-[.15em] text-[#8af4e9] uppercase">
+                Editorial shortlist
+              </p>
+              <h2 className="mt-1 text-xl font-bold text-white">
+                {editorialItems.length} quality-gated stories
+              </h2>
+            </div>
+            <span className="text-xs text-slate-400">{editorialItems[0]?.version}</span>
+          </div>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
+            Scores rank candidates; they do not replace editorial judgment. Open the source and
+            verify the central claim before approving the package.
+          </p>
+          <ol className="mt-5 grid gap-3">
+            {editorialItems.map((item) => (
+              <li
+                key={`${item.rank}-${item.title}`}
+                className="rounded-2xl border border-white/10 bg-black/15 p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#47e4d3] text-sm font-black text-[#0a2321]">
+                    {item.rank}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold text-white">{item.title}</h3>
+                      <span className="rounded-full bg-white/10 px-2 py-1 text-xs font-bold text-white">
+                        {item.score.toFixed(1)}/100
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-400">
+                      {item.impact} impact · {item.category.replaceAll('-', ' ')} ·{' '}
+                      {item.citationCount} citation{item.citationCount === 1 ? '' : 's'}
+                    </p>
+                    <p className="mt-2 text-sm text-slate-300">
+                      {item.reasons.length > 0
+                        ? item.reasons.join(' · ')
+                        : 'Passed editorial gates'}
+                    </p>
+                    {item.sourceUrl ? (
+                      <a
+                        href={item.sourceUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-2 inline-block text-sm font-semibold text-[#8af4e9] underline decoration-[#47e4d3]/40 underline-offset-4"
+                      >
+                        Verify source · {item.sourceName}
+                      </a>
+                    ) : (
+                      <span className="mt-2 block text-sm text-amber-200">
+                        Source URL unavailable — do not approve yet
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
 
       <div className="mt-8 grid gap-6">
         {(posts ?? []).map((post) => {
