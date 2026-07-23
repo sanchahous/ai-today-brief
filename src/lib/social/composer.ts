@@ -4,6 +4,14 @@ import { randomUUID } from 'node:crypto';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import {
+  buildDigestSelectionContext,
+  citationUrlsFromUnknown,
+  factCountFromUnknown,
+  selectEditorialDigestItems,
+  WEEKLY_SELECTION_VERSION,
+  type DigestCandidate,
+} from '../../../pipeline/weekly-digest';
 import { renderSocialAssets } from './assets';
 import { socialContentHash } from './content-hash';
 import { attachCriticReport } from './critic';
@@ -39,6 +47,8 @@ interface SourceBrief {
 interface SourceItem {
   id: string;
   brief_id: string;
+  article_id?: string;
+  canonical_item_id?: string | null;
   rank: number;
   slug: string;
   impact_level: string | null;
@@ -53,8 +63,22 @@ interface SourceItem {
   social_hook_uk: string;
   facts_en: Json | null;
   facts_uk: Json | null;
+  citations?: Json | null;
   card_image_url: string | null;
   review_status: string;
+}
+
+interface SourceArticle {
+  id: string;
+  source_name: string;
+  url: string;
+  composite_score: number | null;
+  score_authority: number | null;
+  score_cross_source: number | null;
+  score_breadth: number | null;
+  score_version: number | null;
+  cluster_id: string | null;
+  mentions_count: number | null;
 }
 
 interface LoadedDay {
@@ -624,11 +648,13 @@ async function loadApprovedRange(startDate: string, endDate: string) {
     .order('date');
   if (briefError) throw new Error(`[social-composer] ${briefError.message}`);
   const briefs = (briefRows ?? []).filter((brief) => brief.slug) as SourceBrief[];
-  if (briefs.length === 0) return { briefs, items: [] as SourceItem[] };
+  if (briefs.length === 0) {
+    return { briefs, items: [] as SourceItem[], articles: [] as SourceArticle[] };
+  }
   const { data: itemRows, error: itemError } = await supabase
     .from('brief_items')
     .select(
-      'id,brief_id,rank,slug,impact_level,category_slug,title_en,title_uk,summary_en,summary_uk,why_matters_en,why_matters_uk,social_hook_en,social_hook_uk,facts_en,facts_uk,card_image_url,review_status',
+      'id,brief_id,article_id,canonical_item_id,rank,slug,impact_level,category_slug,title_en,title_uk,summary_en,summary_uk,why_matters_en,why_matters_uk,social_hook_en,social_hook_uk,facts_en,facts_uk,citations,card_image_url,review_status',
     )
     .in(
       'brief_id',
@@ -636,32 +662,68 @@ async function loadApprovedRange(startDate: string, endDate: string) {
     )
     .eq('review_status', 'approved');
   if (itemError) throw new Error(`[social-composer] ${itemError.message}`);
+  const items = (itemRows ?? []).filter((item) => item.slug) as SourceItem[];
+  if (items.length === 0) return { briefs, items, articles: [] as SourceArticle[] };
+  const articleIds = items.flatMap((item) => (item.article_id ? [item.article_id] : []));
+  if (articleIds.length === 0) return { briefs, items, articles: [] as SourceArticle[] };
+  const { data: articleRows, error: articleError } = await supabase
+    .from('articles')
+    .select(
+      'id,source_name,url,composite_score,score_authority,score_cross_source,score_breadth,score_version,cluster_id,mentions_count',
+    )
+    .in('id', articleIds);
+  if (articleError) throw new Error(`[social-composer] weekly articles: ${articleError.message}`);
   return {
     briefs,
-    items: (itemRows ?? []).filter((item) => item.slug) as SourceItem[],
+    items,
+    articles: (articleRows ?? []) as SourceArticle[],
   };
 }
 
-function selectWeeklyItems(items: SourceItem[], briefs: SourceBrief[]) {
+function weeklyCandidates(
+  items: SourceItem[],
+  briefs: SourceBrief[],
+  articles: SourceArticle[],
+): DigestCandidate[] {
   const dateByBrief = new Map(briefs.map((brief) => [brief.id, brief.date]));
-  const impact: Record<string, number> = { high: 3, medium: 2, low: 1 };
-  const candidates = [...items].sort((a, b) => {
-    const byImpact = (impact[b.impact_level ?? ''] ?? 0) - (impact[a.impact_level ?? ''] ?? 0);
-    if (byImpact) return byImpact;
-    const dateA = dateByBrief.get(a.brief_id) ?? '';
-    const dateB = dateByBrief.get(b.brief_id) ?? '';
-    return dateA === dateB ? a.rank - b.rank : dateA < dateB ? 1 : -1;
+  const briefById = new Map(briefs.map((brief) => [brief.id, brief]));
+  const articleById = new Map(articles.map((article) => [article.id, article]));
+  return items.flatMap((item) => {
+    const article = item.article_id ? articleById.get(item.article_id) : undefined;
+    const brief = briefById.get(item.brief_id);
+    if (!article || !brief || !item.slug || !item.article_id) return [];
+    return [
+      {
+        id: item.id,
+        articleId: item.article_id,
+        canonicalItemId: item.canonical_item_id ?? null,
+        title_en: text(item.title_en),
+        title_uk: text(item.title_uk),
+        summary_en: text(item.summary_en),
+        summary_uk: text(item.summary_uk),
+        why_matters_en: text(item.why_matters_en),
+        why_matters_uk: text(item.why_matters_uk),
+        impact_level: item.impact_level,
+        category_slug: item.category_slug,
+        briefSlug: brief.slug,
+        itemSlug: item.slug,
+        date: dateByBrief.get(item.brief_id) ?? '',
+        rank: item.rank,
+        citationUrls: citationUrlsFromUnknown(item.citations),
+        factsEnCount: factCountFromUnknown(item.facts_en),
+        factsUkCount: factCountFromUnknown(item.facts_uk),
+        sourceName: article.source_name,
+        sourceUrl: article.url,
+        compositeScore: article.composite_score,
+        authorityScore: article.score_authority,
+        crossSourceScore: article.score_cross_source,
+        breadthScore: article.score_breadth,
+        scoreVersion: article.score_version,
+        clusterId: article.cluster_id,
+        mentionsCount: article.mentions_count ?? 1,
+      },
+    ];
   });
-  const categoryCount = new Map<string, number>();
-  const selected: SourceItem[] = [];
-  for (const item of candidates) {
-    const category = item.category_slug ?? 'other';
-    if ((categoryCount.get(category) ?? 0) >= 2) continue;
-    categoryCount.set(category, (categoryCount.get(category) ?? 0) + 1);
-    selected.push(item);
-    if (selected.length === 7) break;
-  }
-  return selected;
 }
 
 function weeklyTargetUrl(locale: SocialLocale, slug: string, channel: SocialChannel) {
@@ -731,10 +793,21 @@ export async function composeWeeklySocial(
   const now = options.now ?? new Date();
   const cadence = await loadCadence();
   const startDate = shiftDate(endDate, -6);
-  const { briefs, items } = await loadApprovedRange(startDate, endDate);
-  const selected = selectWeeklyItems(items, briefs);
+  const { briefs, items, articles } = await loadApprovedRange(startDate, endDate);
+  const selection = selectEditorialDigestItems(weeklyCandidates(items, briefs, articles));
+  const selectionContext = buildDigestSelectionContext(selection);
+  const itemById = new Map(items.map((item) => [item.id, item]));
+  const selected = selection.selected.flatMap(({ candidate }) => {
+    const item = itemById.get(candidate.id);
+    return item ? [item] : [];
+  });
   if (selected.length < 3)
-    return { createdPackageIds: [], skipped: ['fewer_than_three_weekly_items'] };
+    return {
+      createdPackageIds: [],
+      skipped: [
+        `fewer_than_three_editorially_eligible_weekly_items:${selection.eligible.length}/${items.length}`,
+      ],
+    };
   if (await existingPackage('weekly_digest', endDate)) {
     return { createdPackageIds: [], skipped: ['weekly_digest_exists'] };
   }
@@ -750,8 +823,8 @@ export async function composeWeeklySocial(
         status: 'in_review',
         title_en: `The week in AI engineering · ${startDate}`,
         title_uk: `Тиждень в AI-інженерії · ${startDate}`,
-        intro_en: `${selected.length} approved stories with practical context for builders.`,
-        intro_uk: `${selected.length} погоджених новин із практичним контекстом для розробників.`,
+        intro_en: `${selected.length} evidence-backed stories selected for impact, corroboration, and practical value.`,
+        intro_uk: `${selected.length} доказових новин, відібраних за впливом, підтвердженням і практичною цінністю.`,
       },
       { onConflict: 'week_start' },
     )
@@ -759,15 +832,31 @@ export async function composeWeeklySocial(
     .single();
   if (digestError) throw new Error(`[social-composer] weekly digest: ${digestError.message}`);
 
+  const { error: selectionRunError } = await supabase.from('weekly_digest_selection_runs').insert({
+    weekly_digest_id: digest.id,
+    algorithm_version: selection.version,
+    rationale_version: selectionContext.rationale.version,
+    week_start: startDate,
+    week_end: endDate,
+    candidate_count: selectionContext.rationale.metrics.candidateCount,
+    eligible_count: selectionContext.rationale.metrics.eligibleCount,
+    rejected_count: selectionContext.rationale.metrics.rejectedCount,
+    selected_count: selectionContext.rationale.metrics.selectedCount,
+    rationale: selectionContext.rationale as unknown as Json,
+    candidate_pool: selectionContext.candidates as unknown as Json,
+  });
+  if (selectionRunError) {
+    throw new Error(`[social-composer] weekly selection run: ${selectionRunError.message}`);
+  }
+
   await supabase.from('weekly_digest_items').delete().eq('weekly_digest_id', digest.id);
   const dateByBrief = new Map(briefs.map((brief) => [brief.id, brief.date]));
   const briefById = new Map(briefs.map((brief) => [brief.id, brief]));
+  const scoreByItemId = new Map(selection.selected.map((scored) => [scored.candidate.id, scored]));
   const { error: itemError } = await supabase.from('weekly_digest_items').insert(
-    selected.map((item, index) => ({
-      weekly_digest_id: digest.id,
-      brief_item_id: item.id,
-      rank: index + 1,
-      snapshot: {
+    selected.map((item, index) => {
+      const scored = scoreByItemId.get(item.id);
+      const snapshot = {
         title_en: item.title_en,
         title_uk: item.title_uk,
         summary_en: item.summary_en,
@@ -777,8 +866,28 @@ export async function composeWeeklySocial(
         item_slug: item.slug,
         brief_slug: briefById.get(item.brief_id)?.slug ?? null,
         brief_date: dateByBrief.get(item.brief_id) ?? null,
-      },
-    })),
+        editorial_selection: scored
+          ? {
+              version: WEEKLY_SELECTION_VERSION,
+              score: scored.score,
+              breakdown: scored.breakdown,
+              reasons: scored.reasons,
+              source_name: scored.candidate.sourceName,
+              source_url: scored.candidate.sourceUrl,
+              cluster_id: scored.candidate.clusterId,
+              impact_level: scored.candidate.impact_level,
+              category_slug: scored.candidate.category_slug,
+              citation_urls: scored.candidate.citationUrls,
+            }
+          : null,
+      } as unknown as Json;
+      return {
+        weekly_digest_id: digest.id,
+        brief_item_id: item.id,
+        rank: index + 1,
+        snapshot,
+      };
+    }),
   );
   if (itemError) throw new Error(`[social-composer] weekly items: ${itemError.message}`);
 
@@ -786,7 +895,7 @@ export async function composeWeeklySocial(
   const leadBrief = briefById.get(lead.brief_id) ?? briefs[0];
   const packageId = await createPackage(
     'weekly_digest',
-    'green',
+    'yellow',
     endDate,
     `Weekly digest · ${startDate}`,
     leadBrief.id,
@@ -802,7 +911,6 @@ export async function composeWeeklySocial(
     now,
     selected,
   );
-  await supabase.rpc('auto_approve_green_package', { p_package_id: packageId });
   await notifyPackagesReady([packageId], `Weekly digest · ${startDate}`);
   return { createdPackageIds: [packageId], skipped: [] };
 }

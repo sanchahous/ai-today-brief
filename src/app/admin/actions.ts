@@ -18,6 +18,7 @@ import {
   SOCIAL_TIME_ZONE,
 } from '@/lib/social/schedule';
 import { isSocialChannel, type SocialAsset, type SocialLocale } from '@/lib/social/types';
+import { isWeeklyItemReviewAction, isWeeklyReviewReasonCode } from '@/lib/social/weekly-review';
 
 function requiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -28,6 +29,19 @@ function requiredString(formData: FormData, key: string) {
 function optionalString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function weeklyCandidateIds(value: Json): Set<string> {
+  if (!Array.isArray(value)) return new Set();
+  return new Set(
+    value.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
+      const row = entry as Record<string, Json | undefined>;
+      return row.status === 'eligible_not_selected' && typeof row.brief_item_id === 'string'
+        ? [row.brief_item_id]
+        : [];
+    }),
+  );
 }
 
 function kyivToday() {
@@ -331,6 +345,128 @@ export async function approvePackageAction(formData: FormData) {
   revalidatePath('/admin/calendar');
   revalidatePath('/en/digests');
   revalidatePath('/uk/digests');
+}
+
+export async function requestWeeklyDigestChangesAction(formData: FormData) {
+  await requireSocialAdmin({ aal2: true });
+  const id = requiredString(formData, 'id');
+  const note = requiredString(formData, 'review_note');
+  if (note.length < 10 || note.length > 2000) {
+    throw new Error('Review note must contain 10 to 2000 characters.');
+  }
+  const rawReasonCodes = formData
+    .getAll('reason_codes')
+    .filter((value): value is string => typeof value === 'string');
+  if (
+    rawReasonCodes.length === 0 ||
+    rawReasonCodes.some((value) => !isWeeklyReviewReasonCode(value))
+  ) {
+    throw new Error('Select at least one valid review reason.');
+  }
+
+  const admin = getSupabaseAdmin();
+  const { data: socialPackage } = await admin
+    .from('social_packages')
+    .select('kind,status,weekly_digest_id')
+    .eq('id', id)
+    .maybeSingle();
+  if (
+    !socialPackage ||
+    socialPackage.kind !== 'weekly_digest' ||
+    !['in_review', 'approved'].includes(socialPackage.status) ||
+    !socialPackage.weekly_digest_id
+  ) {
+    throw new Error('A reviewable weekly digest package is required.');
+  }
+
+  const [{ data: selectedRows }, { data: selectionRun }] = await Promise.all([
+    admin
+      .from('weekly_digest_items')
+      .select('brief_item_id,rank')
+      .eq('weekly_digest_id', socialPackage.weekly_digest_id)
+      .order('rank'),
+    admin
+      .from('weekly_digest_selection_runs')
+      .select('candidate_pool')
+      .eq('weekly_digest_id', socialPackage.weekly_digest_id)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const itemFeedback: Array<Record<string, Json>> = [];
+  for (const row of selectedRows ?? []) {
+    const actionValue = optionalString(formData, `item_action_${row.brief_item_id}`) || 'keep';
+    if (!isWeeklyItemReviewAction(actionValue)) {
+      throw new Error('A story contains an invalid review action.');
+    }
+    if (actionValue === 'keep') continue;
+    const itemNote = optionalString(formData, `item_note_${row.brief_item_id}`);
+    if (itemNote.length > 1000) throw new Error('Story feedback must not exceed 1000 characters.');
+    const requestedRankValue = Number.parseInt(
+      optionalString(formData, `item_rank_${row.brief_item_id}`),
+      10,
+    );
+    const requestedRank =
+      Number.isInteger(requestedRankValue) && requestedRankValue >= 1 && requestedRankValue <= 7
+        ? requestedRankValue
+        : null;
+    if (actionValue === 'reorder' && requestedRank === null) {
+      throw new Error('Choose a requested rank for every reordered story.');
+    }
+    itemFeedback.push({
+      brief_item_id: row.brief_item_id,
+      action: actionValue,
+      note: itemNote,
+      ...(requestedRank === null ? {} : { requested_rank: requestedRank }),
+    });
+  }
+
+  const availableCandidateIds = weeklyCandidateIds(selectionRun?.candidate_pool ?? []);
+  const missingItemIds = [
+    ...new Set(
+      formData
+        .getAll('missing_item_ids')
+        .filter((value): value is string => typeof value === 'string' && Boolean(value)),
+    ),
+  ];
+  if (missingItemIds.some((candidateId) => !availableCandidateIds.has(candidateId))) {
+    throw new Error('A requested story is not an eligible alternative for this digest.');
+  }
+  for (const candidateId of missingItemIds) {
+    itemFeedback.push({
+      brief_item_id: candidateId,
+      action: 'add',
+      note: 'Editor identified this eligible candidate as a missing important story.',
+    });
+  }
+
+  const supabase = await getSupabaseServer();
+  const { error } = await supabase.rpc('request_weekly_digest_changes', {
+    p_package_id: id,
+    p_reason_codes: [...new Set(rawReasonCodes)],
+    p_note: note,
+    p_item_feedback: itemFeedback as unknown as Json,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/packages/${id}`);
+  revalidatePath('/admin');
+  revalidatePath('/admin/calendar');
+}
+
+export async function addressWeeklyDigestChangesAction(formData: FormData) {
+  await requireSocialAdmin({ aal2: true });
+  const id = requiredString(formData, 'id');
+  const note = optionalString(formData, 'resolution_note');
+  if (note.length > 2000) throw new Error('Resolution note must not exceed 2000 characters.');
+  const supabase = await getSupabaseServer();
+  const { error } = await supabase.rpc('address_weekly_digest_changes', {
+    p_package_id: id,
+    p_note: note || null,
+  });
+  if (error) throw new Error(error.message);
+  revalidatePath(`/admin/packages/${id}`);
+  revalidatePath('/admin');
 }
 
 export async function cancelPackageAction(formData: FormData) {

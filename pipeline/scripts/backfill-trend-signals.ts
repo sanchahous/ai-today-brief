@@ -17,36 +17,114 @@
 /* v8 ignore start -- network IO + DB writes */
 import { loadPipelineConfig } from '../config';
 import { createServiceClient, type PipelineDb } from '../db';
-import { fetchWithRetry } from './../sources/http';
+import { fetchWithRetry, retryAfterMs } from './../sources/http';
 import { logError, logEvent } from '../log';
 import {
   applyLifecycle,
   buildGdeltUrl,
+  classifyTrendCaptureHealth,
   parseGdeltTimeline,
   risingScore,
+  selectStalestTrendEntities,
   TREND_ENTITIES,
   type TrendEntity,
 } from '../trend-signals';
 
 const TIMESPAN = '3m';
-// GDELT's free DOC API rate-limits aggressively (~1 req / few s). At 5s spacing a
-// real run still 429'd ~half the entities to empty; 8s + extra retries gets more
-// through per run (the append-only table also fills across daily runs).
-const SLEEP_BETWEEN_MS = 8000;
-const FETCH_ATTEMPTS = 4;
+// Keep the daily job well below its 10-minute Actions budget. Retrying the same
+// GDELT 429 starved later entities, so each run now samples only the stalest six
+// and lets tomorrow's run continue the queue.
+const BATCH_SIZE = 6;
+const SLEEP_BETWEEN_MS = 15_000;
+const REQUEST_TIMEOUT_MS = 12_000;
+const HISTORY_LIMIT = 500;
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+type CaptureStatus = 'ok' | 'empty' | 'failed' | 'rate_limited';
+
+type CaptureResult = {
+  status: CaptureStatus;
+  retryAfterMs?: number;
+};
+
+type TrendSignalRow = { entity: string; captured_at: string };
+type DbError = { message: string };
+type LooseTrendTable = {
+  select: (columns: string) => {
+    order: (
+      column: string,
+      options: { ascending: boolean },
+    ) => {
+      limit: (count: number) => PromiseLike<{
+        data: TrendSignalRow[] | null;
+        error: DbError | null;
+      }>;
+    };
+  };
+  insert: (value: Record<string, unknown>) => PromiseLike<{ error: DbError | null }>;
+};
+
+function trendTable(db: PipelineDb): LooseTrendTable {
+  return (db as unknown as { from: (table: string) => LooseTrendTable }).from(
+    'entity_trend_signals',
+  );
+}
+
+function kyivDate(now = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Kyiv',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}
+
+async function loadLastCapturedAt(db: PipelineDb): Promise<Map<string, string>> {
+  const { data, error } = await trendTable(db)
+    .select('entity,captured_at')
+    .order('captured_at', { ascending: false })
+    .limit(HISTORY_LIMIT);
+  if (error) {
+    logError('fetch', 'Trend signal history read failed — using date rotation', error);
+    return new Map();
+  }
+  const latest = new Map<string, string>();
+  for (const row of data ?? []) {
+    if (!latest.has(row.entity)) latest.set(row.entity, row.captured_at);
+  }
+  return latest;
+}
+
 async function captureEntity(
-  db: PipelineDb | null,
+  db: PipelineDb,
   entity: TrendEntity,
   dryRun: boolean,
-): Promise<'ok' | 'empty' | 'failed'> {
+): Promise<CaptureResult> {
   const url = buildGdeltUrl(entity.query, TIMESPAN);
-  const res = await fetchWithRetry(url, { headers: { accept: 'application/json' } }, FETCH_ATTEMPTS);
-  if (!res) return 'failed';
+  const res = await fetchWithRetry(
+    url,
+    { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) },
+    1,
+  );
+  if (!res) return { status: 'failed' };
+  if (res.status === 429) {
+    const waitMs = retryAfterMs(res) ?? SLEEP_BETWEEN_MS;
+    logEvent('warn', 'fetch', 'GDELT rate limit — deferring entity', {
+      entity: entity.key,
+      retry_after_ms: waitMs,
+    });
+    return { status: 'rate_limited', retryAfterMs: waitMs };
+  }
+  if (!res.ok) {
+    logEvent('warn', 'fetch', 'GDELT request rejected — deferring entity', {
+      entity: entity.key,
+      status: res.status,
+    });
+    return { status: 'failed' };
+  }
   const points = parseGdeltTimeline(await res.text());
-  if (points.length === 0) return 'empty';
+  if (points.length === 0) return { status: 'empty' };
 
   const raw = risingScore(points.map((p) => p.value));
   const score = applyLifecycle(raw, entity.lifecycle);
@@ -59,17 +137,10 @@ async function captureEntity(
       score: Number(score.toFixed(4)),
       lifecycle: entity.lifecycle,
     });
-    return 'ok';
+    return { status: 'ok' };
   }
 
-  // Cast through unknown: entity_trend_signals is not in the generated Database
-  // type until it is regenerated post-migration-033.
-  const loose = db as unknown as {
-    from: (table: string) => {
-      insert: (v: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
-    };
-  };
-  const { error } = await loose.from('entity_trend_signals').insert({
+  const { error } = await trendTable(db).insert({
     entity: entity.key,
     source: 'gdelt',
     window_span: TIMESPAN,
@@ -78,37 +149,55 @@ async function captureEntity(
   });
   if (error) {
     logError('fetch', 'Trend signal insert failed', error, { entity: entity.key });
-    return 'failed';
+    return { status: 'failed' };
   }
-  return 'ok';
+  return { status: 'ok' };
 }
 
 async function main(): Promise<void> {
   const dryRun = process.argv.includes('--dry-run');
   const config = loadPipelineConfig();
-  const db = dryRun ? null : createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
+  const db = createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
+  const anchorDate = kyivDate();
+  const lastCapturedAt = await loadLastCapturedAt(db);
+  const selected = selectStalestTrendEntities(
+    TREND_ENTITIES,
+    lastCapturedAt,
+    anchorDate,
+    BATCH_SIZE,
+  );
 
   let ok = 0;
   let empty = 0;
   let failed = 0;
-  for (const entity of TREND_ENTITIES) {
-    const status = await captureEntity(db, entity, dryRun).catch((e) => {
+  let rateLimited = 0;
+  for (const [index, entity] of selected.entries()) {
+    const result: CaptureResult = await captureEntity(db, entity, dryRun).catch((e) => {
       logError('fetch', 'Trend signal entity failed — continuing', e, { entity: entity.key });
-      return 'failed' as const;
+      return { status: 'failed' as const };
     });
-    if (status === 'ok') ok++;
-    else if (status === 'empty') empty++;
+    if (result.status === 'ok') ok++;
+    else if (result.status === 'empty') empty++;
+    else if (result.status === 'rate_limited') rateLimited++;
     else failed++;
-    await sleep(SLEEP_BETWEEN_MS);
+    if (index < selected.length - 1) {
+      await sleep(Math.max(SLEEP_BETWEEN_MS, result.retryAfterMs ?? 0));
+    }
   }
 
+  const health = classifyTrendCaptureHealth(selected.length, ok);
   logEvent('info', 'fetch', 'Trend signal capture complete', {
-    entities: TREND_ENTITIES.length,
+    entities_total: TREND_ENTITIES.length,
+    entities_attempted: selected.length,
+    selected_entities: selected.map((entity) => entity.key),
     ok,
     empty,
     failed,
+    rate_limited: rateLimited,
+    health,
     dry_run: dryRun,
   });
+  if (health === 'failed') process.exitCode = 1;
 }
 
 main().catch((e) => {

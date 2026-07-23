@@ -1,23 +1,46 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildDigestSelectionContext,
+  citationUrlsFromUnknown,
   digestLineSummary,
+  factCountFromUnknown,
   formatWeeklyDigest,
+  selectEditorialDigestItems,
   selectDigestItems,
   weekLabelUk,
   type DigestCandidate,
 } from './weekly-digest';
 
 function cand(over: Partial<DigestCandidate> = {}): DigestCandidate {
+  const itemSlug = over.itemSlug ?? 'item-slug';
   return {
+    id: over.id ?? itemSlug,
+    articleId: over.articleId ?? `article-${itemSlug}`,
+    canonicalItemId: null,
     title_uk: 'Заголовок',
     title_en: 'Title',
+    summary_en: 'First summary sentence.',
     summary_uk: 'Перше речення резюме. Друге речення, яке не потрібне.',
+    why_matters_en: 'This changes how engineering teams work.',
+    why_matters_uk: 'Це змінює роботу інженерних команд.',
     impact_level: 'medium',
     category_slug: 'tools-and-releases',
     briefSlug: 'brief-slug',
-    itemSlug: 'item-slug',
+    itemSlug,
     date: '2026-06-10',
     rank: 1,
+    citationUrls: ['https://example.com/source'],
+    factsEnCount: 3,
+    factsUkCount: 3,
+    sourceName: 'Official source',
+    sourceUrl: `https://example.com/${itemSlug}`,
+    compositeScore: 0.5,
+    authorityScore: 1,
+    crossSourceScore: 0,
+    breadthScore: 0,
+    scoreVersion: 2,
+    clusterId: `cluster-${itemSlug}`,
+    mentionsCount: 1,
     ...over,
   };
 }
@@ -52,6 +75,137 @@ describe('selectDigestItems', () => {
       cand({ itemSlug: `i${i}`, category_slug: `cat-${i}` }),
     );
     expect(selectDigestItems(many, 7)).toHaveLength(7);
+  });
+
+  it('blocks incomplete or stale candidates before scoring', () => {
+    const result = selectEditorialDigestItems([
+      cand({ itemSlug: 'ready' }),
+      cand({ itemSlug: 'no-citation', citationUrls: [] }),
+      cand({ itemSlug: 'no-facts', factsEnCount: 0 }),
+      cand({ itemSlug: 'duplicate', canonicalItemId: 'canonical-id' }),
+      cand({ itemSlug: 'old-score', scoreVersion: 1 }),
+    ]);
+
+    expect(result.selected.map(({ candidate }) => candidate.itemSlug)).toEqual(['ready']);
+    expect(
+      Object.fromEntries(
+        result.rejected.map(({ candidate, reasons }) => [candidate.itemSlug, reasons]),
+      ),
+    ).toMatchObject({
+      'no-citation': ['missing_citations'],
+      'no-facts': ['missing_bilingual_facts'],
+      duplicate: ['duplicate_story'],
+      'old-score': ['stale_score_telemetry'],
+    });
+  });
+
+  it('keeps editorial importance above noisy engagement', () => {
+    const result = selectEditorialDigestItems([
+      cand({
+        itemSlug: 'important-release',
+        impact_level: 'high',
+        date: '2026-06-08',
+        compositeScore: 0.42,
+        authorityScore: 1,
+      }),
+      cand({
+        itemSlug: 'viral-gadget',
+        impact_level: 'low',
+        date: '2026-06-10',
+        compositeScore: 0.95,
+        crossSourceScore: 1,
+        breadthScore: 1,
+        mentionsCount: 8,
+        category_slug: 'creative-ai',
+      }),
+    ]);
+
+    expect(result.selected[0]?.candidate.itemSlug).toBe('important-release');
+    expect(result.selected[0]?.score).toBeGreaterThan(result.selected[1]?.score ?? 0);
+  });
+
+  it('deduplicates an event and keeps no more than two stories per category', () => {
+    const result = selectEditorialDigestItems([
+      cand({ itemSlug: 'event-primary', clusterId: 'same-event', impact_level: 'high' }),
+      cand({ itemSlug: 'event-copy', clusterId: 'same-event', impact_level: 'high', rank: 2 }),
+      cand({ itemSlug: 'tools-2', impact_level: 'high', rank: 3 }),
+      cand({ itemSlug: 'tools-3', impact_level: 'high', rank: 4 }),
+      cand({ itemSlug: 'models', category_slug: 'models-and-research' }),
+    ]);
+
+    const selected = result.selected.map(({ candidate }) => candidate.itemSlug);
+    expect(selected).toContain('event-primary');
+    expect(selected).not.toContain('event-copy');
+    expect(
+      selected.filter((slug) => slug.startsWith('tools') || slug === 'event-primary'),
+    ).toHaveLength(2);
+    expect(selected).toContain('models');
+  });
+});
+
+describe('buildDigestSelectionContext', () => {
+  it('explains the whole digest with reproducible selection metrics', () => {
+    const selection = selectEditorialDigestItems([
+      cand({
+        itemSlug: 'lead',
+        impact_level: 'high',
+        category_slug: 'models-and-research',
+        crossSourceScore: 0.8,
+        mentionsCount: 3,
+      }),
+      cand({ itemSlug: 'tool', category_slug: 'tools-and-releases' }),
+      cand({ itemSlug: 'extra-tool', category_slug: 'tools-and-releases', rank: 3 }),
+      cand({ itemSlug: 'category-capped', category_slug: 'tools-and-releases', rank: 4 }),
+      cand({ itemSlug: 'blocked', citationUrls: [] }),
+    ]);
+
+    const context = buildDigestSelectionContext(selection);
+
+    expect(context.rationale.metrics).toMatchObject({
+      candidateCount: 5,
+      eligibleCount: 4,
+      rejectedCount: 1,
+      selectedCount: 3,
+      eligibleNotSelectedCount: 1,
+      categoryCount: 2,
+      highImpactCount: 1,
+      corroboratedCount: 1,
+    });
+    expect(context.rationale.summary_uk).toContain('Відібрано 3 із 5');
+    expect(context.rationale.tradeoffs_uk).toContain('придатних новин: 1');
+    expect(context.candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          brief_item_id: 'category-capped',
+          status: 'eligible_not_selected',
+          exclusion_reasons: ['category_balance'],
+        }),
+        expect.objectContaining({
+          brief_item_id: 'blocked',
+          status: 'rejected',
+          exclusion_reasons: ['missing_citations'],
+        }),
+      ]),
+    );
+  });
+});
+
+describe('editorial evidence parsing', () => {
+  it('keeps unique HTTPS citations and ignores unsafe values', () => {
+    expect(
+      citationUrlsFromUnknown([
+        { title: 'Primary', url: 'https://example.com/source' },
+        'https://example.com/source',
+        'http://example.com/insecure',
+        'not a url',
+      ]),
+    ).toEqual(['https://example.com/source']);
+  });
+
+  it('counts only substantive fact entries', () => {
+    expect(
+      factCountFromUnknown(['A real fact', '   ', { claim: 'Another fact' }, { text: '' }, null]),
+    ).toBe(2);
   });
 });
 

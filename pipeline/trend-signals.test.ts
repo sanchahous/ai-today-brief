@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   applyLifecycle,
   buildGdeltUrl,
+  classifyTrendCaptureHealth,
   parseGdeltTimeline,
   risingScore,
+  selectStalestTrendEntities,
   TREND_ENTITIES,
 } from './trend-signals';
 
@@ -83,5 +85,40 @@ describe('TREND_ENTITIES', () => {
       expect(['surge', 'flat', 'decay']).toContain(e.lifecycle);
       expect(e.query.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('selectStalestTrendEntities', () => {
+  const entities = TREND_ENTITIES.slice(0, 4);
+
+  it('prioritises missing and oldest captures within the batch limit', () => {
+    const lastCapturedAt = new Map([
+      [entities[0]!.key, '2026-07-20T00:00:00Z'],
+      [entities[1]!.key, '2026-07-18T00:00:00Z'],
+      [entities[2]!.key, '2026-07-19T00:00:00Z'],
+    ]);
+    const selected = selectStalestTrendEntities(entities, lastCapturedAt, '2026-07-22', 3);
+    expect(selected.map((entity) => entity.key)).toEqual([
+      entities[3]!.key,
+      entities[1]!.key,
+      entities[2]!.key,
+    ]);
+  });
+
+  it('rotates deterministic fallbacks when capture history is unavailable', () => {
+    const first = selectStalestTrendEntities(entities, new Map(), '2026-07-22', 2);
+    const next = selectStalestTrendEntities(entities, new Map(), '2026-07-23', 2);
+    expect(first).toHaveLength(2);
+    expect(next).toHaveLength(2);
+    expect(next.map((entity) => entity.key)).not.toEqual(first.map((entity) => entity.key));
+  });
+});
+
+describe('classifyTrendCaptureHealth', () => {
+  it('separates complete, partial, and insufficient batches', () => {
+    expect(classifyTrendCaptureHealth(6, 6)).toBe('healthy');
+    expect(classifyTrendCaptureHealth(6, 2)).toBe('degraded');
+    expect(classifyTrendCaptureHealth(6, 1)).toBe('failed');
+    expect(classifyTrendCaptureHealth(0, 0)).toBe('failed');
   });
 });
