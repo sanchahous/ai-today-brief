@@ -82,12 +82,19 @@ const nextConfig: NextConfig = {
   // PDFKit, PDF.js and Sharp resolve fonts/native canvas at runtime. Keeping
   // them external prevents the bundler from parsing binaries, while the trace
   // includes ship the Linux canvas binding with server routes.
-  serverExternalPackages: ['@napi-rs/canvas', 'dejavu-fonts-ttf', 'pdf-to-img', 'pdfjs-dist'],
+  serverExternalPackages: [
+    '@napi-rs/canvas',
+    'dejavu-fonts-ttf',
+    'pdf-to-img',
+    'pdfjs-dist',
+    'pdfkit',
+  ],
   outputFileTracingIncludes: {
     '/*': [
       'node_modules/@napi-rs/canvas/**/*',
       'node_modules/@napi-rs/canvas-linux-x64-gnu/**/*',
       'node_modules/dejavu-fonts-ttf/ttf/*.ttf',
+      'node_modules/pdfkit/js/data/**/*',
     ],
   },
   images: {

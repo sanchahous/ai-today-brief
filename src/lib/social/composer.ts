@@ -18,9 +18,9 @@ import { attachCriticReport } from './critic';
 import { findBlindCrossPosts, runQualityGate } from './quality';
 import {
   channelRunsOnDate,
-  completedWeeklyRangeForTrigger,
   nextScheduledForChannel,
   nextWeeklyScheduledForChannel,
+  rollingWeeklyRangeForDate,
   resolveCadenceSettings,
   type ChannelCadence,
 } from './schedule';
@@ -335,13 +335,17 @@ async function loadApprovedDay(sourceDate: string): Promise<LoadedDay> {
   return { briefs, items: rankItems(items) };
 }
 
-async function existingPackage(kind: PackageKind, sourceDate: string) {
+async function existingPackage(
+  kind: PackageKind,
+  sourceDate: string,
+  generationVersion = SOCIAL_GENERATION_VERSION,
+) {
   const { data } = await getSupabaseAdmin()
     .from('social_packages')
     .select('id')
     .eq('kind', kind)
     .eq('source_date', sourceDate)
-    .eq('generation_version', SOCIAL_GENERATION_VERSION)
+    .eq('generation_version', generationVersion)
     .neq('status', 'cancelled')
     .maybeSingle();
   return data?.id ?? null;
@@ -366,6 +370,7 @@ async function createPackage(
   weeklyDigestId?: string,
   sourceItemIds: string[] = sourceItemId ? [sourceItemId] : [],
   weeklyDigestRevisionId?: string,
+  generationVersion = SOCIAL_GENERATION_VERSION,
 ) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
@@ -381,7 +386,7 @@ async function createPackage(
       weekly_digest_revision_id: weeklyDigestRevisionId ?? null,
       title,
       status: 'in_review',
-      generation_version: SOCIAL_GENERATION_VERSION,
+      generation_version: generationVersion,
     })
     .select('id')
     .single();
@@ -527,6 +532,7 @@ function freshTrackingTokens() {
 export interface ComposeResult {
   createdPackageIds: string[];
   skipped: string[];
+  weeklyDigestId?: string;
 }
 
 async function notifyPackagesReady(packageIds: string[], label: string) {
@@ -930,10 +936,31 @@ async function queueInitialWeeklyArtifacts(
 
 export async function composeWeeklySocial(
   triggerDate: string,
-  options: { now?: Date } = {},
+  options: { now?: Date; testMode?: boolean } = {},
 ): Promise<ComposeResult> {
   const now = options.now ?? new Date();
-  const { weekStart: startDate, weekEnd: endDate } = completedWeeklyRangeForTrigger(triggerDate);
+  const testMode = options.testMode === true;
+  const { weekStart: startDate, weekEnd: endDate } = rollingWeeklyRangeForDate(triggerDate);
+  const generationVersion = testMode
+    ? `${SOCIAL_GENERATION_VERSION}-test`
+    : SOCIAL_GENERATION_VERSION;
+  const supabase = getSupabaseAdmin();
+  if (testMode) {
+    const { data: existingTest, error } = await supabase
+      .from('weekly_digests')
+      .select('id')
+      .eq('week_start', startDate)
+      .eq('is_test', true)
+      .maybeSingle();
+    if (error) throw new Error(`[social-composer] existing test weekly digest: ${error.message}`);
+    if (existingTest) {
+      return {
+        weeklyDigestId: existingTest.id,
+        createdPackageIds: [],
+        skipped: ['test_weekly_digest_exists'],
+      };
+    }
+  }
   const { briefs, items, articles } = await loadApprovedRange(startDate, endDate);
   const selection = selectEditorialDigestItems(weeklyCandidates(items, briefs, articles));
   const selectionContext = buildDigestSelectionContext(selection);
@@ -949,19 +976,19 @@ export async function composeWeeklySocial(
         `fewer_than_three_editorially_eligible_weekly_items:${selection.eligible.length}/${items.length}`,
       ],
     };
-  if (await existingPackage('weekly_digest', endDate)) {
+  if (await existingPackage('weekly_digest', endDate, generationVersion)) {
     return { createdPackageIds: [], skipped: ['weekly_digest_exists'] };
   }
 
-  const supabase = getSupabaseAdmin();
-  const slug = `ai-weekly-${startDate}`;
+  const slug = testMode ? `ai-weekly-test-${endDate}` : `ai-weekly-${startDate}`;
   const { data: digest, error: digestError } = await supabase
     .from('weekly_digests')
     .upsert(
       {
         week_start: startDate,
         week_end: endDate,
-        period_model: 'sun_sat',
+        period_model: 'rolling_7d',
+        is_test: testMode,
         slug,
         status: 'in_review',
         title_en: `The week in AI engineering · ${startDate}`,
@@ -969,7 +996,7 @@ export async function composeWeeklySocial(
         intro_en: `${selected.length} evidence-backed stories selected for impact, corroboration, and practical value.`,
         intro_uk: `${selected.length} доказових новин, відібраних за впливом, підтвердженням і практичною цінністю.`,
       },
-      { onConflict: 'week_start' },
+      { onConflict: 'week_start,is_test' },
     )
     .select('id')
     .single();
@@ -1051,12 +1078,13 @@ export async function composeWeeklySocial(
     'weekly_digest',
     'yellow',
     endDate,
-    `Weekly digest · ${startDate}`,
+    `${testMode ? 'Test weekly digest' : 'Weekly digest'} · ${startDate}`,
     leadBrief.id,
     lead.id,
     digest.id,
     selected.map((item) => item.id),
     revisionId,
+    generationVersion,
   );
   const urls = trackingUrls(freshTrackingTokens());
   await saveVariants(
@@ -1066,6 +1094,9 @@ export async function composeWeeklySocial(
     now,
     selected,
   );
-  await notifyPackagesReady([packageId], `Weekly digest · ${startDate}`);
-  return { createdPackageIds: [packageId], skipped: [] };
+  await notifyPackagesReady(
+    [packageId],
+    `${testMode ? 'Test Weekly Digest' : 'Weekly digest'} · ${startDate}`,
+  );
+  return { weeklyDigestId: digest.id, createdPackageIds: [packageId], skipped: [] };
 }

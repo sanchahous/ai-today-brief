@@ -1499,6 +1499,7 @@ export type Database = {
           id: string;
           intro_en: string | null;
           intro_uk: string | null;
+          is_test: boolean;
           last_error: string | null;
           period_model: string;
           preflight_at: string | null;
@@ -1527,6 +1528,7 @@ export type Database = {
           id?: string;
           intro_en?: string | null;
           intro_uk?: string | null;
+          is_test?: boolean;
           last_error?: string | null;
           period_model?: string;
           preflight_at?: string | null;

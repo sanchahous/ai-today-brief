@@ -496,6 +496,10 @@ export async function renderWeeklyDigestPdf(input: WeeklyPdfInput): Promise<Buff
     throw new Error('Weekly PDF requires 3 to 7 stories.');
   }
   const doc = new PDFDocument({
+    // PDFKit otherwise eagerly loads the built-in Helvetica AFM in the
+    // constructor. Starting with our traced DejaVu font keeps production PDFs
+    // independent of that optional package-data lookup.
+    font: INTER_FONT,
     autoFirstPage: false,
     bufferPages: true,
     compress: true,

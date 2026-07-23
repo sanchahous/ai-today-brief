@@ -2,6 +2,7 @@ import 'server-only';
 
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { createCanvas, GlobalFonts, type SKRSContext2D } from '@napi-rs/canvas';
 import sharp, { type Sharp } from 'sharp';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import type { SocialAsset, SocialChannel } from './types';
@@ -33,15 +34,6 @@ export interface SocialAssetRenderOptions {
   footer?: string;
 }
 
-function escapeXml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;');
-}
-
 function splitLines(value: string, maxChars: number, maxLines: number) {
   const words = value.trim().split(/\s+/);
   const lines: string[] = [];
@@ -62,6 +54,36 @@ function splitLines(value: string, maxChars: number, maxLines: number) {
     lines[lines.length - 1] = `${lines.at(-1)!.replace(/[.,;:!?]?$/, '')}…`;
   }
   return lines;
+}
+
+let textFontsRegistered = false;
+
+function registerTextFonts() {
+  if (textFontsRegistered) return;
+  const regular = GlobalFonts.registerFromPath(TEXT_FONT, 'AI Today Brief Sans');
+  const bold = GlobalFonts.registerFromPath(TEXT_FONT_BOLD, 'AI Today Brief Sans Bold');
+  if (!regular || !bold) throw new Error('Editorial asset fonts could not be loaded.');
+  textFontsRegistered = true;
+}
+
+function wrapCanvasText(context: SKRSContext2D, value: string, width: number) {
+  return value.split(/\r?\n/).flatMap((paragraph) => {
+    const words = paragraph.trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return [''];
+    const lines: string[] = [];
+    let line = '';
+    for (const word of words) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (line && context.measureText(candidate).width > width) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  });
 }
 
 async function loadBackground(url?: string | null): Promise<Buffer | null> {
@@ -100,21 +122,27 @@ async function textLayer(options: {
   bold?: boolean;
   spacing?: number;
 }) {
-  return sharp({
-    text: {
-      text: `<span foreground="${options.color}">${escapeXml(options.text)}</span>`,
-      font: `${options.bold ? 'DejaVu Sans Bold' : 'DejaVu Sans'} ${options.size}`,
-      fontfile: options.bold ? TEXT_FONT_BOLD : TEXT_FONT,
-      width: Math.max(1, Math.round(options.width)),
-      align: 'left',
-      dpi: 72,
-      rgba: true,
-      spacing: options.spacing,
-      wrap: 'word-char',
-    },
-  })
-    .png()
-    .toBuffer();
+  registerTextFonts();
+  const width = Math.max(1, Math.round(options.width));
+  const lineHeight = Math.max(
+    options.size,
+    Math.round(options.size * 1.2) + (options.spacing ?? 0),
+  );
+  // A one-line canvas is enough to measure wrapping before allocating the
+  // final transparent layer. This avoids sharp/libvips' optional Pango text
+  // operation, which is unavailable in the production Linux image.
+  const measurement = createCanvas(width, lineHeight).getContext('2d');
+  measurement.font = `${options.size}px "${
+    options.bold ? 'AI Today Brief Sans Bold' : 'AI Today Brief Sans'
+  }"`;
+  const lines = wrapCanvasText(measurement, options.text, width);
+  const canvas = createCanvas(width, Math.max(1, lines.length * lineHeight));
+  const context = canvas.getContext('2d');
+  context.font = measurement.font;
+  context.fillStyle = options.color;
+  context.textBaseline = 'top';
+  lines.forEach((line, index) => context.fillText(line, 0, index * lineHeight));
+  return canvas.toBuffer('image/png');
 }
 
 export async function renderSocialAssetImage(

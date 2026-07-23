@@ -2085,6 +2085,7 @@ function ReleasePanel({
   const digest = workspace.digest;
   const revision = workspace.revision;
   const paused = digest.status === 'paused';
+  const testEdition = digest.is_test;
   const finalReleaseDisabled = !canOwnRelease || !revision;
 
   return (
@@ -2106,6 +2107,16 @@ function ReleasePanel({
               approval again and reschedules it.
             </p>
           </div>
+
+          {testEdition ? (
+            <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/8 p-4 text-sm text-amber-100">
+              <p className="font-bold">Test edition — publication locked</p>
+              <p className="mt-2 leading-6 text-amber-100/80">
+                Approval, scheduling and the automatic preflight run normally. The release worker,
+                public website and social delivery are blocked in the database for this edition.
+              </p>
+            </div>
+          ) : null}
 
           {!canOwnRelease ? (
             <p className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/6 p-3 text-sm text-amber-100">
@@ -2131,7 +2142,7 @@ function ReleasePanel({
 
         <section className={PANEL} aria-labelledby="final-approval-heading">
           <h2 id="final-approval-heading" className="text-lg font-bold text-white">
-            1. Final approval
+            1. Final approval{testEdition ? ' (test)' : ''}
           </h2>
           <p className="mt-2 text-sm text-slate-400">
             Approval confirms the active revision and all currently approved artifact versions. It
@@ -2159,7 +2170,7 @@ function ReleasePanel({
             </label>
             <div>
               <ActionSubmitButton
-                idleLabel="Approve active revision"
+                idleLabel={testEdition ? 'Approve test revision' : 'Approve active revision'}
                 pendingLabel="Running approval…"
                 disabled={finalReleaseDisabled}
                 className={PRIMARY}
@@ -2170,7 +2181,7 @@ function ReleasePanel({
 
         <section className={PANEL} aria-labelledby="schedule-release-heading">
           <h2 id="schedule-release-heading" className="text-lg font-bold text-white">
-            2. Schedule
+            2. Schedule{testEdition ? ' test preflight' : ''}
           </h2>
           <p className="mt-2 text-sm text-slate-400">
             Stored in UTC; entered and displayed in Europe/Kyiv so daylight-saving transitions
@@ -2206,8 +2217,8 @@ function ReleasePanel({
             </div>
             <div>
               <ActionSubmitButton
-                idleLabel="Schedule release"
-                pendingLabel="Scheduling…"
+                idleLabel={testEdition ? 'Schedule test preflight' : 'Schedule release'}
+                pendingLabel={testEdition ? 'Scheduling test…' : 'Scheduling…'}
                 disabled={finalReleaseDisabled || digest.status !== 'approved'}
                 className={PRIMARY}
               />
@@ -2362,6 +2373,15 @@ export function WeeklyWorkspace({
 
   return (
     <>
+      {workspace.digest.is_test ? (
+        <section className="mb-6 rounded-2xl border border-amber-300/30 bg-amber-300/8 p-4 text-sm text-amber-100">
+          <p className="font-bold">Test Weekly Digest</p>
+          <p className="mt-1 leading-6 text-amber-100/80">
+            This edition uses the same seven-day selection, artifacts, review and preflight pipeline
+            as production. Public publication and social delivery are permanently disabled.
+          </p>
+        </section>
+      ) : null}
       {activeTab === 'overview' ? (
         <OverviewPanel workspace={workspace} blockers={preflight.blockers} progress={progress} />
       ) : null}

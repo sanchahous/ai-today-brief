@@ -120,6 +120,18 @@ export function completedWeeklyRangeForTrigger(triggerDate: string) {
   return { weekStart: addCalendarDays(weekEnd, -6), weekEnd };
 }
 
+/**
+ * Seven editorial days ending on the digest creation date. Source records are
+ * date-granular, so the creation date is included when a published brief is
+ * already available and otherwise contributes no candidates.
+ */
+export function rollingWeeklyRangeForDate(creationDate: string) {
+  return {
+    weekStart: addCalendarDays(creationDate, -6),
+    weekEnd: creationDate,
+  };
+}
+
 export function nextScheduledForChannel(
   channel: SocialChannel,
   sourceDate: string,

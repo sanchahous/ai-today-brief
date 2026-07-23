@@ -2,13 +2,15 @@
 
 import { createHash, randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import sharp from 'sharp';
 import type { Json } from '@/lib/database.types';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { updateVariantAction } from '@/app/admin/actions';
-import { kyivWallClockToUtc } from '@/lib/social/schedule';
+import { composeWeeklySocial } from '@/lib/social/composer';
+import { kyivWallClockToUtc, SOCIAL_TIME_ZONE } from '@/lib/social/schedule';
 import { normalizeYouTubeVideo } from '@/lib/weekly-digest/video';
 
 function requiredString(formData: FormData, key: string) {
@@ -73,6 +75,31 @@ function revalidateWeeklyAdmin(weeklyDigestId: string) {
   revalidatePath('/admin');
   revalidatePath('/admin/weekly');
   revalidatePath(`/admin/weekly/${weeklyDigestId}`);
+}
+
+function kyivDate(now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: SOCIAL_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}
+
+/**
+ * Test editions use the full editorial and generation pipeline but carry a
+ * database-enforced publication lock. One test exists per seven-day window so
+ * repeated clicks safely reopen the same evidence set.
+ */
+export async function createTestWeeklyDigestAction() {
+  await requireSocialAdmin({ roles: ['owner'] });
+  const now = new Date();
+  const result = await composeWeeklySocial(kyivDate(now), { now, testMode: true });
+  if (!result.weeklyDigestId) {
+    throw new Error('The test Weekly Digest could not be created for this seven-day window.');
+  }
+  revalidateWeeklyAdmin(result.weeklyDigestId);
+  redirect(`/admin/weekly/${result.weeklyDigestId}`);
 }
 
 async function editableWorkspace(weeklyDigestId: string, revisionId: string) {
