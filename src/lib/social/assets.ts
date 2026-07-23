@@ -1,10 +1,14 @@
 import 'server-only';
 
 import { createHash } from 'node:crypto';
-import sharp from 'sharp';
+import { join } from 'node:path';
+import sharp, { type Sharp } from 'sharp';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import type { SocialAsset, SocialChannel } from './types';
 
+const DEJAVU_DIRECTORY = join(process.cwd(), 'node_modules', 'dejavu-fonts-ttf', 'ttf');
+const TEXT_FONT = join(DEJAVU_DIRECTORY, 'DejaVuSans.ttf');
+const TEXT_FONT_BOLD = join(DEJAVU_DIRECTORY, 'DejaVuSans-Bold.ttf');
 const BUCKET = 'social-assets';
 const BRAND_DARK = '#101418';
 const BRAND_TEAL = '#47e4d3';
@@ -19,6 +23,14 @@ interface AssetSource {
   why: string;
   facts: string[];
   sourceImageUrl?: string | null;
+  sourceImageUrls?: Array<string | null | undefined>;
+}
+
+export interface SocialAssetRenderOptions {
+  titleSize?: number;
+  maxChars?: number;
+  maxLines?: number;
+  footer?: string;
 }
 
 function escapeXml(value: string) {
@@ -64,27 +76,7 @@ async function loadBackground(url?: string | null): Promise<Buffer | null> {
   }
 }
 
-function overlaySvg(
-  width: number,
-  height: number,
-  title: string,
-  eyebrow: string,
-  options: { titleSize?: number; maxChars?: number; maxLines?: number; footer?: string } = {},
-) {
-  const titleSize = options.titleSize ?? Math.round(width * 0.052);
-  const lineHeight = Math.round(titleSize * 1.12);
-  const lines = splitLines(title, options.maxChars ?? 31, options.maxLines ?? 4);
-  const startY = height - 118 - lineHeight * lines.length;
-  const tspans = lines
-    .map(
-      (line, index) =>
-        `<tspan x="${Math.round(width * 0.075)}" dy="${index === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`,
-    )
-    .join('');
-  const footer = options.footer
-    ? `<text x="${Math.round(width * 0.075)}" y="${height - 45}" fill="#b9c4ca" font-size="${Math.round(width * 0.022)}" font-family="Arial, sans-serif">${escapeXml(options.footer)}</text>`
-    : '';
-
+function overlaySvg(width: number, height: number) {
   return Buffer.from(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -96,34 +88,161 @@ function overlaySvg(
       </defs>
       <rect width="${width}" height="${height}" fill="url(#shade)"/>
       <rect x="${Math.round(width * 0.075)}" y="${Math.round(height * 0.09)}" width="${Math.round(width * 0.055)}" height="8" rx="4" fill="${BRAND_TEAL}"/>
-      <text x="${Math.round(width * 0.075)}" y="${Math.round(height * 0.16)}" fill="${BRAND_TEAL}" font-size="${Math.round(width * 0.023)}" font-weight="700" font-family="Arial, sans-serif" letter-spacing="2">${escapeXml(eyebrow.toUpperCase())}</text>
-      <text x="${Math.round(width * 0.075)}" y="${startY}" fill="${BRAND_TEXT}" font-size="${titleSize}" font-weight="700" font-family="Arial, sans-serif">${tspans}</text>
-      ${footer}
     </svg>
   `);
 }
 
-async function renderJpeg(
+async function textLayer(options: {
+  text: string;
+  width: number;
+  size: number;
+  color: string;
+  bold?: boolean;
+  spacing?: number;
+}) {
+  return sharp({
+    text: {
+      text: `<span foreground="${options.color}">${escapeXml(options.text)}</span>`,
+      font: `${options.bold ? 'DejaVu Sans Bold' : 'DejaVu Sans'} ${options.size}`,
+      fontfile: options.bold ? TEXT_FONT_BOLD : TEXT_FONT,
+      width: Math.max(1, Math.round(options.width)),
+      align: 'left',
+      dpi: 72,
+      rgba: true,
+      spacing: options.spacing,
+      wrap: 'word-char',
+    },
+  })
+    .png()
+    .toBuffer();
+}
+
+export async function renderSocialAssetImage(
   width: number,
   height: number,
   title: string,
   eyebrow: string,
-  background: Buffer | null,
-  options?: Parameters<typeof overlaySvg>[4],
+  background: Buffer | Buffer[] | null,
+  options?: SocialAssetRenderOptions,
 ) {
-  const base = background
-    ? sharp(background).resize(width, height, { fit: 'cover', position: 'attention' })
-    : sharp({
-        create: {
-          width,
-          height,
-          channels: 3,
-          background: BRAND_DARK,
-        },
-      });
+  const titleSize = options?.titleSize ?? Math.round(width * 0.052);
+  const lineHeight = Math.round(titleSize * 1.12);
+  const lines = splitLines(title, options?.maxChars ?? 31, options?.maxLines ?? 4);
+  const contentLeft = Math.round(width * 0.075);
+  const contentWidth = Math.round(width * 0.85);
+  const [eyebrowLayer, titleLayer, footerLayer] = await Promise.all([
+    textLayer({
+      text: eyebrow.toUpperCase(),
+      width: contentWidth,
+      size: Math.round(width * 0.023),
+      color: BRAND_TEAL,
+      bold: true,
+    }),
+    textLayer({
+      text: lines.join('\n'),
+      width: contentWidth,
+      size: titleSize,
+      color: BRAND_TEXT,
+      bold: true,
+      spacing: Math.max(0, lineHeight - titleSize),
+    }),
+    options?.footer
+      ? textLayer({
+          text: options.footer,
+          width: contentWidth,
+          size: Math.round(width * 0.022),
+          color: '#b9c4ca',
+        })
+      : null,
+  ]);
+  const titleMetadata = await sharp(titleLayer).metadata();
+  const footerTop = height - 67;
+  const titleTop = Math.max(
+    Math.round(height * 0.23),
+    footerTop - 26 - (titleMetadata.height ?? lineHeight * lines.length),
+  );
+  const backgrounds = Array.isArray(background)
+    ? background.slice(0, 3)
+    : background
+      ? [background]
+      : [];
+  let base: Sharp;
+  if (backgrounds.length <= 1) {
+    base = backgrounds[0]
+      ? sharp(backgrounds[0]).resize(width, height, { fit: 'cover', position: 'attention' })
+      : sharp({
+          create: {
+            width,
+            height,
+            channels: 3,
+            background: BRAND_DARK,
+          },
+        });
+  } else {
+    const portrait = height > width;
+    const regions = portrait
+      ? [
+          { left: 0, top: 0, width, height: Math.round(height * 0.62) },
+          {
+            left: 0,
+            top: Math.round(height * 0.62),
+            width: Math.floor(width / 2),
+            height: height - Math.round(height * 0.62),
+          },
+          {
+            left: Math.floor(width / 2),
+            top: Math.round(height * 0.62),
+            width: width - Math.floor(width / 2),
+            height: height - Math.round(height * 0.62),
+          },
+        ]
+      : [
+          { left: 0, top: 0, width: Math.round(width * 0.64), height },
+          {
+            left: Math.round(width * 0.64),
+            top: 0,
+            width: width - Math.round(width * 0.64),
+            height: Math.floor(height / 2),
+          },
+          {
+            left: Math.round(width * 0.64),
+            top: Math.floor(height / 2),
+            width: width - Math.round(width * 0.64),
+            height: height - Math.floor(height / 2),
+          },
+        ];
+    const panels = await Promise.all(
+      backgrounds.map((image, index) =>
+        sharp(image)
+          .resize(regions[index].width, regions[index].height, {
+            fit: 'cover',
+            position: 'attention',
+          })
+          .toBuffer(),
+      ),
+    );
+    base = sharp({
+      create: { width, height, channels: 3, background: BRAND_DARK },
+    }).composite(
+      panels.map((input, index) => ({
+        input,
+        left: regions[index].left,
+        top: regions[index].top,
+      })),
+    );
+  }
 
   return base
-    .composite([{ input: overlaySvg(width, height, title, eyebrow, options), top: 0, left: 0 }])
+    .composite([
+      { input: overlaySvg(width, height), top: 0, left: 0 },
+      {
+        input: eyebrowLayer,
+        top: Math.round(height * 0.125),
+        left: contentLeft,
+      },
+      { input: titleLayer, top: Math.max(0, titleTop), left: contentLeft },
+      ...(footerLayer ? [{ input: footerLayer, top: footerTop, left: contentLeft }] : []),
+    ])
     .jpeg({ quality: 88, progressive: true })
     .toBuffer();
 }
@@ -158,7 +277,7 @@ function versionKey(source: AssetSource) {
         summary: source.summary,
         why: source.why,
         facts: source.facts,
-        image: source.sourceImageUrl ?? null,
+        images: source.sourceImageUrls ?? [source.sourceImageUrl ?? null],
       }),
     )
     .digest('hex')
@@ -166,16 +285,28 @@ function versionKey(source: AssetSource) {
 }
 
 export async function renderSocialAssets(source: AssetSource): Promise<SocialAsset[]> {
-  const background = await loadBackground(source.sourceImageUrl);
+  const imageUrls =
+    source.sourceImageUrls?.filter((value): value is string =>
+      Boolean(value?.startsWith('http')),
+    ) ?? (source.sourceImageUrl ? [source.sourceImageUrl] : []);
+  const loadedBackgrounds = await Promise.all(imageUrls.slice(0, 3).map(loadBackground));
+  const background = loadedBackgrounds.filter((image) => image !== null);
   const version = versionKey(source);
   const prefix = `${source.packageId}/${source.channel}/${version}`;
 
   if (source.channel !== 'instagram') {
     const width = 1200;
     const height = source.channel === 'telegram' ? 675 : 630;
-    const jpeg = await renderJpeg(width, height, source.title, 'AI Today Brief', background, {
-      footer: 'aitodaybrief.com',
-    });
+    const jpeg = await renderSocialAssetImage(
+      width,
+      height,
+      source.title,
+      'AI Today Brief',
+      background,
+      {
+        footer: 'aitodaybrief.com',
+      },
+    );
     return [await uploadImmutable(`${prefix}/cover-${width}x${height}.jpg`, jpeg, width, height)];
   }
 
@@ -194,7 +325,7 @@ export async function renderSocialAssets(source: AssetSource): Promise<SocialAss
 
   const assets: SocialAsset[] = [];
   for (const [index, slide] of slides.entries()) {
-    const jpeg = await renderJpeg(
+    const jpeg = await renderSocialAssetImage(
       width,
       height,
       slide.text,

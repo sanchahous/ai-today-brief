@@ -13,7 +13,7 @@ function shiftDate(date: string, days: number): string {
   return parsed.toISOString().slice(0, 10);
 }
 
-/** The latest Sunday-ended week strictly before the supplied Kyiv calendar date. */
+/** The latest Saturday-ended Sunday–Saturday period before the Kyiv date. */
 export function completedWeekForDate(anchorDate: string): {
   weekStart: string;
   weekEnd: string;
@@ -23,8 +23,8 @@ export function completedWeekForDate(anchorDate: string): {
     throw new Error(`Invalid ISO date: ${anchorDate}`);
   }
   const day = parsed.getUTCDay();
-  const daysSinceCompletedSunday = day === 0 ? 7 : day;
-  const weekEnd = shiftDate(anchorDate, -daysSinceCompletedSunday);
+  const daysSinceCompletedSaturday = day === 6 ? 7 : day + 1;
+  const weekEnd = shiftDate(anchorDate, -daysSinceCompletedSaturday);
   return { weekStart: shiftDate(weekEnd, -6), weekEnd };
 }
 

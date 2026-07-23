@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 const LINKS = [
   { href: '/admin', label: 'Today', short: 'Today' },
+  { href: '/admin/weekly', label: 'Weekly Digest', short: 'Weekly' },
   { href: '/admin/calendar', label: 'Calendar', short: 'Plan' },
   { href: '/admin/results', label: 'Results', short: 'Results' },
   { href: '/admin/engagement', label: 'Engagement', short: 'Engage' },
@@ -29,7 +30,7 @@ export function AdminNav() {
       </aside>
       <nav
         aria-label="Admin navigation"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-white/10 bg-[#101418]/95 px-1 pt-1 pb-[max(.35rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-white/10 bg-[#101418]/95 px-1 pt-1 pb-[max(.35rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
       >
         {LINKS.map((link) => (
           <Link

@@ -62,6 +62,31 @@ export interface FillCardImagesResult {
   failed: number;
 }
 
+export interface EditorialIllustrationInput {
+  title: string;
+  summary: string;
+  accent?: string;
+  seedKey: string;
+}
+
+/**
+ * Generate a fresh, story-specific illustration without writing to `brief_items`.
+ * Weekly Digest uses this for reviewable revision artifacts while the daily
+ * pipeline continues to use {@link fillCardImages}.
+ */
+export async function generateEditorialIllustration(
+  input: EditorialIllustrationInput,
+  cfg: CardImageConfig,
+): Promise<Buffer | null> {
+  const scene = await sceneBrief(input.title, input.summary, cfg);
+  return generateImage(
+    buildPrompt(input.accent?.trim() || 'cool cyan', scene),
+    negativePrompt(),
+    cfg,
+    seedFromString(input.seedKey),
+  );
+}
+
 /**
  * Generate + store card images for every item of a brief that still lacks one.
  * Best-effort and idempotent — already-imaged and rejected items are skipped.
@@ -97,9 +122,10 @@ export async function fillCardImages(
       const title = (it.title_en || it.title_uk || '').trim();
       const summary = (it.summary_en || it.summary_uk || '').trim();
       const accent = hueName(colorBySlug.get(it.category_slug ?? '') ?? FALLBACK_ACCENT);
-      const scene = await sceneBrief(title, summary, cfg);
-      const positive = buildPrompt(accent, scene);
-      const png = await generateImage(positive, negativePrompt(), cfg, seedFromString(it.slug!));
+      const png = await generateEditorialIllustration(
+        { title, summary, accent, seedKey: it.slug! },
+        cfg,
+      );
       if (!png) {
         failed++;
         logEvent('warn', 'publish', 'Card image generation returned nothing', { slug: it.slug });

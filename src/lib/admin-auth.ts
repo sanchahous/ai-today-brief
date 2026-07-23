@@ -12,6 +12,8 @@ export interface SocialAdminSession {
   aal: 'aal1' | 'aal2';
 }
 
+export type SocialAdminRole = SocialAdminSession['role'];
+
 function allowlisted(email: string) {
   return (process.env.SOCIAL_ADMIN_EMAILS ?? '')
     .split(',')
@@ -51,9 +53,14 @@ export const getSocialAdminSession = cache(async (): Promise<SocialAdminSession 
   };
 });
 
-export async function requireSocialAdmin(options: { aal2?: boolean } = {}) {
+export async function requireSocialAdmin(
+  options: { aal2?: boolean; roles?: readonly SocialAdminRole[] } = {},
+) {
   const session = await getSocialAdminSession();
   if (!session) redirect('/admin/login');
   if (options.aal2 && session.aal !== 'aal2') redirect('/admin/mfa');
+  if (options.roles && !options.roles.includes(session.role)) {
+    redirect('/admin?error=forbidden');
+  }
   return session;
 }

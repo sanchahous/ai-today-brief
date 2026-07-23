@@ -67,6 +67,8 @@ const HASHTAG_RE = /(^|\s)#[\p{L}\p{N}_]+/gu;
 const EMOJI_RE = /\p{Extended_Pictographic}/gu;
 const CYRILLIC_RE = /[\u0400-\u04ff]/g;
 const LATIN_RE = /[a-z]/gi;
+const FORBIDDEN_CHAR_RE =
+  /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/u;
 
 function issue(code: string, message: string, field?: QualityIssue['field']): QualityIssue {
   return { code, message, ...(field ? { field } : {}) };
@@ -149,6 +151,15 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
   }
   if (emoji.length > rule.maxEmoji) {
     blocking.push(issue('emoji', `Use at most ${rule.maxEmoji} emoji.`, 'post_text'));
+  }
+  if (FORBIDDEN_CHAR_RE.test(text)) {
+    blocking.push(
+      issue(
+        'forbidden_characters',
+        'Remove control, zero-width, or bidirectional override characters.',
+        'post_text',
+      ),
+    );
   }
   if (rule.rootUrlStrategy === 'none' && urls.length > 0) {
     blocking.push(issue('root_url', 'This channel format must be link-free.', 'post_text'));

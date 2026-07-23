@@ -47,6 +47,14 @@ describe('social quality gate', () => {
     expect(report.blocking.map((issue) => issue.code)).toContain('source_not_approved');
   });
 
+  it('blocks invisible and bidirectional override characters', () => {
+    const report = runQualityGate(
+      draft({ text: `A practical AI engineering update\u202e with enough context for builders.` }),
+      new Date('2026-01-01T00:00:00Z'),
+    );
+    expect(report.blocking.map((issue) => issue.code)).toContain('forbidden_characters');
+  });
+
   it('detects blind cross-posting after URL removal', () => {
     const copy =
       'The same platform-agnostic copy has been pasted here with enough detail for the audience.';

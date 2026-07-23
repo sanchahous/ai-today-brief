@@ -11,7 +11,7 @@ test.describe('Mobile social CMS entry', () => {
       await page.goto('/admin/login');
 
       await expect(page.getByRole('heading', { name: /social cms/i })).toBeVisible();
-      await expect(page.getByRole('button', { name: /secure login link/i })).toBeVisible();
+      await expect(page.getByRole('button', { name: /secure login code/i })).toBeVisible();
       await expect(page.getByRole('textbox', { name: /owner email/i })).toBeEditable();
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),

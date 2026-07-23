@@ -895,6 +895,7 @@ export type Database = {
           title: string;
           updated_at: string;
           weekly_digest_id: string | null;
+          weekly_digest_revision_id: string | null;
         },
         {
           created_at?: string;
@@ -912,6 +913,7 @@ export type Database = {
           title: string;
           updated_at?: string;
           weekly_digest_id?: string | null;
+          weekly_digest_revision_id?: string | null;
         }
       >;
       social_post_reviews: CmsTable<
@@ -982,6 +984,9 @@ export type Database = {
           content_hash: string | null;
           content_version: number;
           created_at: string;
+          disabled_at: string | null;
+          disabled_by: string | null;
+          disabled_reason: string | null;
           external_id: string | null;
           first_comment: string | null;
           format: string | null;
@@ -994,6 +999,7 @@ export type Database = {
           posted_at: string | null;
           post_text: string | null;
           provider_meta: Json;
+          publish_enabled: boolean;
           publishing_started_at: string | null;
           quality_report: Json;
           retry_after: string | null;
@@ -1016,6 +1022,9 @@ export type Database = {
           content_hash?: string | null;
           content_version?: number;
           created_at?: string;
+          disabled_at?: string | null;
+          disabled_by?: string | null;
+          disabled_reason?: string | null;
           external_id?: string | null;
           first_comment?: string | null;
           format?: string | null;
@@ -1028,6 +1037,7 @@ export type Database = {
           posted_at?: string | null;
           post_text?: string | null;
           provider_meta?: Json;
+          publish_enabled?: boolean;
           publishing_started_at?: string | null;
           quality_report?: Json;
           retry_after?: string | null;
@@ -1050,6 +1060,9 @@ export type Database = {
           content_hash?: string | null;
           content_version?: number;
           created_at?: string;
+          disabled_at?: string | null;
+          disabled_by?: string | null;
+          disabled_reason?: string | null;
           external_id?: string | null;
           first_comment?: string | null;
           format?: string | null;
@@ -1062,6 +1075,7 @@ export type Database = {
           posted_at?: string | null;
           post_text?: string | null;
           provider_meta?: Json;
+          publish_enabled?: boolean;
           publishing_started_at?: string | null;
           quality_report?: Json;
           retry_after?: string | null;
@@ -1148,6 +1162,128 @@ export type Database = {
           },
         ];
       };
+      weekly_digest_artifact_reviews: CmsTable<
+        {
+          action: string;
+          artifact_id: string;
+          artifact_snapshot: Json;
+          created_at: string;
+          id: string;
+          note: string | null;
+          reviewer_id: string | null;
+        },
+        {
+          action: string;
+          artifact_id: string;
+          artifact_snapshot?: Json;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          reviewer_id?: string | null;
+        }
+      >;
+      weekly_digest_artifacts: CmsTable<
+        {
+          artifact_type: string;
+          byte_size: number | null;
+          content: Json;
+          created_at: string;
+          created_by: string | null;
+          duration_seconds: number | null;
+          external_url: string | null;
+          generation_status: string;
+          height: number | null;
+          id: string;
+          input_hash: string;
+          is_current: boolean;
+          locale: string;
+          metadata: Json;
+          mime_type: string | null;
+          provider: string | null;
+          provider_id: string | null;
+          published_at: string | null;
+          revision_id: string;
+          revision_item_id: string | null;
+          review_status: string;
+          slot_key: string;
+          storage_bucket: string | null;
+          storage_path: string | null;
+          updated_at: string;
+          version: number;
+          weekly_digest_id: string;
+          width: number | null;
+        },
+        {
+          artifact_type: string;
+          byte_size?: number | null;
+          content?: Json;
+          created_at?: string;
+          created_by?: string | null;
+          duration_seconds?: number | null;
+          external_url?: string | null;
+          generation_status?: string;
+          height?: number | null;
+          id?: string;
+          input_hash: string;
+          is_current?: boolean;
+          locale?: string;
+          metadata?: Json;
+          mime_type?: string | null;
+          provider?: string | null;
+          provider_id?: string | null;
+          published_at?: string | null;
+          revision_id: string;
+          revision_item_id?: string | null;
+          review_status?: string;
+          slot_key: string;
+          storage_bucket?: string | null;
+          storage_path?: string | null;
+          updated_at?: string;
+          version: number;
+          weekly_digest_id: string;
+          width?: number | null;
+        }
+      >;
+      weekly_digest_generation_jobs: CmsTable<
+        {
+          artifact_id: string | null;
+          attempts: number;
+          created_at: string;
+          created_by: string | null;
+          finished_at: string | null;
+          id: string;
+          idempotency_key: string;
+          input: Json;
+          job_type: string;
+          last_error: string | null;
+          locked_at: string | null;
+          output: Json;
+          revision_id: string;
+          started_at: string | null;
+          status: string;
+          updated_at: string;
+          weekly_digest_id: string;
+        },
+        {
+          artifact_id?: string | null;
+          attempts?: number;
+          created_at?: string;
+          created_by?: string | null;
+          finished_at?: string | null;
+          id?: string;
+          idempotency_key: string;
+          input?: Json;
+          job_type: string;
+          last_error?: string | null;
+          locked_at?: string | null;
+          output?: Json;
+          revision_id: string;
+          started_at?: string | null;
+          status?: string;
+          updated_at?: string;
+          weekly_digest_id: string;
+        }
+      >;
       weekly_digest_review_items: CmsTable<
         {
           action: string;
@@ -1185,6 +1321,7 @@ export type Database = {
           parent_review_id: string | null;
           reason_codes: string[];
           reviewer_id: string | null;
+          revision_id: string | null;
           selection_run_id: string | null;
           weekly_digest_id: string;
         },
@@ -1198,6 +1335,7 @@ export type Database = {
           parent_review_id?: string | null;
           reason_codes?: string[];
           reviewer_id?: string | null;
+          revision_id?: string | null;
           selection_run_id?: string | null;
           weekly_digest_id: string;
         }
@@ -1234,6 +1372,108 @@ export type Database = {
           weekly_digest_id: string;
         }
       >;
+      weekly_digest_release_events: CmsTable<
+        {
+          actor_id: string | null;
+          created_at: string;
+          event_type: string;
+          id: number;
+          payload: Json;
+          revision_id: string | null;
+          weekly_digest_id: string;
+        },
+        {
+          actor_id?: string | null;
+          created_at?: string;
+          event_type: string;
+          id?: never;
+          payload?: Json;
+          revision_id?: string | null;
+          weekly_digest_id: string;
+        }
+      >;
+      weekly_digest_revision_items: CmsTable<
+        {
+          body_en: string;
+          body_uk: string;
+          brief_item_id: string | null;
+          created_at: string;
+          event_date: string | null;
+          id: string;
+          practical_en: string | null;
+          practical_uk: string | null;
+          rank: number;
+          revision_id: string;
+          source_snapshot: Json;
+          sources: Json;
+          summary_en: string;
+          summary_uk: string;
+          takeaway_en: string | null;
+          takeaway_uk: string | null;
+          title_en: string;
+          title_uk: string;
+          why_en: string | null;
+          why_uk: string | null;
+        },
+        {
+          body_en: string;
+          body_uk: string;
+          brief_item_id?: string | null;
+          created_at?: string;
+          event_date?: string | null;
+          id?: string;
+          practical_en?: string | null;
+          practical_uk?: string | null;
+          rank: number;
+          revision_id: string;
+          source_snapshot?: Json;
+          sources?: Json;
+          summary_en: string;
+          summary_uk: string;
+          takeaway_en?: string | null;
+          takeaway_uk?: string | null;
+          title_en: string;
+          title_uk: string;
+          why_en?: string | null;
+          why_uk?: string | null;
+        }
+      >;
+      weekly_digest_revisions: CmsTable<
+        {
+          content_hash: string;
+          created_at: string;
+          created_by: string | null;
+          editor_note_en: string | null;
+          editor_note_uk: string | null;
+          id: string;
+          intro_en: string | null;
+          intro_uk: string | null;
+          key_takeaways_en: Json;
+          key_takeaways_uk: Json;
+          revision_number: number;
+          selection_run_id: string | null;
+          title_en: string;
+          title_uk: string;
+          weekly_digest_id: string;
+        },
+        {
+          content_hash: string;
+          created_at?: string;
+          created_by?: string | null;
+          editor_note_en?: string | null;
+          editor_note_uk?: string | null;
+          id?: string;
+          intro_en?: string | null;
+          intro_uk?: string | null;
+          key_takeaways_en?: Json;
+          key_takeaways_uk?: Json;
+          revision_number: number;
+          selection_run_id?: string | null;
+          title_en: string;
+          title_uk: string;
+          weekly_digest_id: string;
+        }
+      >;
       weekly_digest_items: CmsTable<
         {
           brief_item_id: string;
@@ -1252,29 +1492,59 @@ export type Database = {
       >;
       weekly_digests: CmsTable<
         {
+          active_revision_id: string | null;
+          approved_at: string | null;
+          approved_by: string | null;
           created_at: string;
           id: string;
           intro_en: string | null;
           intro_uk: string | null;
+          last_error: string | null;
+          period_model: string;
+          preflight_at: string | null;
+          preflight_checked_at: string | null;
+          preflight_override: Json | null;
+          preflight_override_at: string | null;
+          preflight_override_by: string | null;
           published_at: string | null;
+          published_revision_id: string | null;
+          publishing_started_at: string | null;
+          release_at: string | null;
+          scheduled_at: string | null;
           slug: string;
           status: string;
           title_en: string;
           title_uk: string;
           updated_at: string;
+          week_end: string;
           week_start: string;
         },
         {
+          active_revision_id?: string | null;
+          approved_at?: string | null;
+          approved_by?: string | null;
           created_at?: string;
           id?: string;
           intro_en?: string | null;
           intro_uk?: string | null;
+          last_error?: string | null;
+          period_model?: string;
+          preflight_at?: string | null;
+          preflight_checked_at?: string | null;
+          preflight_override?: Json | null;
+          preflight_override_at?: string | null;
+          preflight_override_by?: string | null;
           published_at?: string | null;
+          published_revision_id?: string | null;
+          publishing_started_at?: string | null;
+          release_at?: string | null;
+          scheduled_at?: string | null;
           slug: string;
           status?: string;
           title_en: string;
           title_uk: string;
           updated_at?: string;
+          week_end: string;
           week_start: string;
         }
       >;
@@ -1449,6 +1719,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      approve_weekly_digest: {
+        Args: { p_override_reason?: string | null; p_weekly_digest_id: string };
+        Returns: Database['public']['Tables']['weekly_digests']['Row'];
+      };
       approve_social_package: {
         Args: { p_package_id: string };
         Returns: number;
@@ -1465,9 +1739,44 @@ export type Database = {
         Args: { p_social_post_id: string };
         Returns: Database['public']['Tables']['social_posts']['Row'];
       };
+      claim_due_weekly_digests: {
+        Args: { p_limit?: number };
+        Returns: Database['public']['Tables']['weekly_digests']['Row'][];
+      };
       claim_due_social_posts: {
         Args: { p_limit?: number };
         Returns: Database['public']['Tables']['social_posts']['Row'][];
+      };
+      claim_weekly_digest_generation_jobs: {
+        Args: {
+          p_job_types?: string[] | null;
+          p_limit?: number;
+          p_stale_after?: string;
+        };
+        Returns: Database['public']['Tables']['weekly_digest_generation_jobs']['Row'][];
+      };
+      comment_weekly_digest_artifact: {
+        Args: { p_artifact_id: string; p_note: string };
+        Returns: string;
+      };
+      comment_weekly_social_post: {
+        Args: { p_note: string; p_social_post_id: string };
+        Returns: number;
+      };
+      create_weekly_digest_revision: {
+        Args: {
+          p_editor_note_en: string | null;
+          p_editor_note_uk: string | null;
+          p_intro_en: string | null;
+          p_intro_uk: string | null;
+          p_items: Json;
+          p_key_takeaways_en: Json;
+          p_key_takeaways_uk: Json;
+          p_title_en: string;
+          p_title_uk: string;
+          p_weekly_digest_id: string;
+        };
+        Returns: string;
       };
       edit_social_post: {
         Args: {
@@ -1486,9 +1795,50 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
       };
+      has_social_role: {
+        Args: { p_roles: string[] };
+        Returns: boolean;
+      };
+      initialize_weekly_digest_revision_from_legacy: {
+        Args: { p_weekly_digest_id: string };
+        Returns: string;
+      };
       is_social_admin: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
+      };
+      finish_weekly_digest_generation_job: {
+        Args: {
+          p_artifact_id?: string | null;
+          p_error?: string | null;
+          p_job_id: string;
+          p_output?: Json;
+          p_succeeded: boolean;
+        };
+        Returns: Database['public']['Tables']['weekly_digest_generation_jobs']['Row'];
+      };
+      finish_weekly_digest_release: {
+        Args: {
+          p_error?: string | null;
+          p_succeeded: boolean;
+          p_weekly_digest_id: string;
+        };
+        Returns: Database['public']['Tables']['weekly_digests']['Row'];
+      };
+      pause_weekly_digest: {
+        Args: { p_reason: string; p_weekly_digest_id: string };
+        Returns: Database['public']['Tables']['weekly_digests']['Row'];
+      };
+      queue_weekly_digest_generation_job: {
+        Args: {
+          p_artifact_id?: string | null;
+          p_idempotency_key: string;
+          p_input?: Json;
+          p_job_type: string;
+          p_revision_id: string;
+          p_weekly_digest_id: string;
+        };
+        Returns: Database['public']['Tables']['weekly_digest_generation_jobs']['Row'];
       };
       reconcile_stale_social_posts: {
         Args: Record<PropertyKey, never>;
@@ -1509,6 +1859,80 @@ export type Database = {
           p_package_id: string;
           p_reason_codes: string[];
         };
+        Returns: string;
+      };
+      run_due_weekly_digest_preflights: {
+        Args: { p_limit?: number };
+        Returns: Database['public']['Tables']['weekly_digests']['Row'][];
+      };
+      review_weekly_digest_artifact: {
+        Args: {
+          p_action: string;
+          p_artifact_id: string;
+          p_note?: string | null;
+        };
+        Returns: Database['public']['Tables']['weekly_digest_artifacts']['Row'];
+      };
+      save_weekly_digest_artifact: {
+        Args: {
+          p_artifact_type: string;
+          p_byte_size?: number | null;
+          p_content?: Json;
+          p_duration_seconds?: number | null;
+          p_external_url?: string | null;
+          p_generation_status?: string;
+          p_height?: number | null;
+          p_locale: string;
+          p_metadata?: Json;
+          p_mime_type?: string | null;
+          p_provider?: string | null;
+          p_provider_id?: string | null;
+          p_revision_id: string;
+          p_revision_item_id?: string | null;
+          p_review_status?: string;
+          p_slot_key: string;
+          p_storage_bucket?: string | null;
+          p_storage_path?: string | null;
+          p_weekly_digest_id: string;
+          p_width?: number | null;
+        };
+        Returns: string;
+      };
+      schedule_weekly_digest: {
+        Args: { p_release_at: string; p_weekly_digest_id: string };
+        Returns: Database['public']['Tables']['weekly_digests']['Row'];
+      };
+      set_weekly_social_publish_enabled: {
+        Args: {
+          p_enabled: boolean;
+          p_reason?: string | null;
+          p_social_post_id: string;
+        };
+        Returns: Database['public']['Tables']['social_posts']['Row'];
+      };
+      social_admin_role: {
+        Args: Record<PropertyKey, never>;
+        Returns: string | null;
+      };
+      weekly_digest_artifact_input_hash: {
+        Args: {
+          p_artifact_type: string;
+          p_locale: string;
+          p_revision_id: string;
+          p_revision_item_id?: string | null;
+        };
+        Returns: string;
+      };
+      weekly_digest_preflight: {
+        Args: { p_weekly_digest_id: string };
+        Returns: Json;
+      };
+      weekly_preflight_at_for_week_end: {
+        Args: { p_week_end: string };
+        Returns: string;
+      };
+      weekly_release_at_for_week_end: {
+        Args: { p_week_end: string };
         Returns: string;
       };
       read_social_oauth_secret: {

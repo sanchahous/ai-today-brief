@@ -153,7 +153,7 @@ export async function generateTodayAction() {
 }
 
 export async function updateVariantAction(formData: FormData) {
-  await requireSocialAdmin({ aal2: true });
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const id = requiredString(formData, 'id');
   const postText = requiredString(formData, 'post_text');
   const firstComment = optionalString(formData, 'first_comment');
@@ -174,6 +174,13 @@ export async function updateVariantAction(formData: FormData) {
     throw new Error('Social variant has invalid channel metadata.');
   }
 
+  const { data: socialPackage } = post.package_id
+    ? await admin
+        .from('social_packages')
+        .select('kind,weekly_digest_id,weekly_digest_revision_id')
+        .eq('id', post.package_id)
+        .maybeSingle()
+    : { data: null };
   const { data: item } = post.brief_item_id
     ? await admin
         .from('brief_items')
@@ -187,16 +194,49 @@ export async function updateVariantAction(formData: FormData) {
     ? await admin.from('briefs').select('status').eq('id', item.brief_id).maybeSingle()
     : { data: null };
   const locale = post.locale as SocialLocale;
-  const sourceFacts = item
-    ? [
-        locale === 'uk' ? item.title_uk : item.title_en,
-        locale === 'uk' ? item.summary_uk : item.summary_en,
-        locale === 'uk' ? item.why_matters_uk : item.why_matters_en,
-        ...jsonFacts(locale === 'uk' ? item.facts_uk : item.facts_en),
-      ]
-        .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
-        .map((value) => value.trim())
-    : [];
+  let weeklyRevisionId =
+    socialPackage?.kind === 'weekly_digest' ? socialPackage.weekly_digest_revision_id : null;
+  if (
+    !weeklyRevisionId &&
+    socialPackage?.kind === 'weekly_digest' &&
+    socialPackage.weekly_digest_id
+  ) {
+    const { data: digest } = await admin
+      .from('weekly_digests')
+      .select('active_revision_id')
+      .eq('id', socialPackage.weekly_digest_id)
+      .maybeSingle();
+    weeklyRevisionId = digest?.active_revision_id ?? null;
+  }
+  const { data: weeklyItems } = weeklyRevisionId
+    ? await admin
+        .from('weekly_digest_revision_items')
+        .select(
+          'title_en,title_uk,summary_en,summary_uk,why_en,why_uk,practical_en,practical_uk,takeaway_en,takeaway_uk',
+        )
+        .eq('revision_id', weeklyRevisionId)
+        .order('rank')
+    : { data: null };
+  const sourceFacts = weeklyItems?.length
+    ? weeklyItems.flatMap((weeklyItem) =>
+        [
+          locale === 'uk' ? weeklyItem.title_uk : weeklyItem.title_en,
+          locale === 'uk' ? weeklyItem.summary_uk : weeklyItem.summary_en,
+          locale === 'uk' ? weeklyItem.why_uk : weeklyItem.why_en,
+          locale === 'uk' ? weeklyItem.practical_uk : weeklyItem.practical_en,
+          locale === 'uk' ? weeklyItem.takeaway_uk : weeklyItem.takeaway_en,
+        ].filter((value): value is string => typeof value === 'string' && Boolean(value.trim())),
+      )
+    : item
+      ? [
+          locale === 'uk' ? item.title_uk : item.title_en,
+          locale === 'uk' ? item.summary_uk : item.summary_en,
+          locale === 'uk' ? item.why_matters_uk : item.why_matters_en,
+          ...jsonFacts(locale === 'uk' ? item.facts_uk : item.facts_en),
+        ]
+          .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+          .map((value) => value.trim())
+      : [];
   const draft = {
     channel: post.channel,
     locale,
@@ -241,7 +281,7 @@ export async function updateVariantAction(formData: FormData) {
 }
 
 export async function regenerateVariantAction(formData: FormData) {
-  await requireSocialAdmin({ aal2: true });
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const id = requiredString(formData, 'id');
   const admin = getSupabaseAdmin();
   const { data: post } = await admin.from('social_posts').select('*').eq('id', id).single();

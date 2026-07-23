@@ -16,7 +16,7 @@ export default async function CmsLayout({ children }: { children: React.ReactNod
               Social control plane
             </p>
             <p className="text-xs text-slate-500">
-              {session.email} · {session.aal.toUpperCase()}
+              {session.email} · {session.role} · {session.aal.toUpperCase()}
             </p>
           </div>
           <Link

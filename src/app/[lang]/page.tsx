@@ -3,12 +3,13 @@ import type { Metadata } from 'next';
 import { SITE_NAME, SITE_URL, SOCIALS, isLang, type Lang } from '@/lib/site';
 import { authorNode, PERSON_ID } from '@/lib/schema';
 import { getHomeData } from '@/lib/home';
+import { getLatestWeeklyDigest } from '@/lib/digests';
 import { HomeHero } from '@/components/home/home-hero';
 import { CategoryGrid } from '@/components/home/category-grid';
 import { TopOfWeek } from '@/components/home/top-of-week';
+import { WeeklyDigestBlock } from '@/components/home/weekly-digest';
 import { TrendingTopics } from '@/components/home/trending-topics';
 import { NewsletterBand } from '@/components/home/newsletter-band';
-import { VideoTeaser } from '@/components/home/video-teaser';
 import { FaqSection } from '@/components/home/faq-section';
 
 // ISR: 1 h timed fallback. Freshness is driven on-demand — the publish flow
@@ -50,7 +51,7 @@ export default async function Home({ params }: { params: Promise<Params> }) {
   if (!isLang(raw)) notFound();
   const lang: Lang = raw;
 
-  const data = await getHomeData(lang);
+  const [data, weeklyDigest] = await Promise.all([getHomeData(lang), getLatestWeeklyDigest(lang)]);
 
   const schema = {
     '@context': 'https://schema.org',
@@ -106,9 +107,9 @@ export default async function Home({ params }: { params: Promise<Params> }) {
       <HomeHero lang={lang} categoryCount={data.categoryCount} categories={data.categories} />
       <CategoryGrid lang={lang} categories={data.categories} />
       <TopOfWeek lang={lang} featured={data.featured} secondary={data.secondary} />
+      <WeeklyDigestBlock lang={lang} digest={weeklyDigest} />
       <TrendingTopics lang={lang} topics={data.trending} />
       <NewsletterBand lang={lang} />
-      <VideoTeaser lang={lang} />
       <FaqSection lang={lang} />
     </div>
   );

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { getDigestArchive } from '@/lib/digests';
 import { isLang, SITE_URL, type Lang } from '@/lib/site';
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export async function generateMetadata({
   params,
@@ -39,7 +39,7 @@ export default async function DigestsPage({ params }: { params: Promise<{ lang: 
   const entries = await getDigestArchive(lang);
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:py-16">
-      <p className="text-sm font-bold tracking-[.16em] text-cyan-600 uppercase dark:text-[#47e4d3]">
+      <p className="text-accent text-sm font-bold tracking-[.16em] uppercase">
         {lang === 'uk' ? 'Дайджести' : 'Digests'}
       </p>
       <h1 className="mt-3 max-w-3xl font-serif text-4xl font-semibold tracking-tight sm:text-5xl">
@@ -47,34 +47,42 @@ export default async function DigestsPage({ params }: { params: Promise<{ lang: 
           ? 'Щоденний контекст. Тижнева перспектива.'
           : 'Daily context. Weekly perspective.'}
       </h1>
-      <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-400">
+      <p className="text-muted mt-5 max-w-2xl text-base leading-7">
         {lang === 'uk'
           ? 'Кожен випуск складається лише з опублікованих і вручну погоджених матеріалів.'
           : 'Every edition is built only from published, human-approved reporting.'}
       </p>
-      <div className="mt-10 grid gap-4 sm:grid-cols-2">
-        {entries.map((entry) => (
-          <Link
-            key={`${entry.kind}-${entry.id}`}
-            href={entry.href}
-            className="rounded-2xl border border-slate-200 bg-white p-5 transition hover:border-cyan-400 dark:border-white/10 dark:bg-white/[.03]"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-xs font-bold tracking-wide text-cyan-700 uppercase dark:text-[#47e4d3]">
-                {entry.kind === 'weekly'
-                  ? lang === 'uk'
-                    ? 'Тижневий'
-                    : 'Weekly'
-                  : lang === 'uk'
-                    ? 'Щоденний'
-                    : 'Daily'}
-              </span>
-              <time className="text-xs text-slate-500">{entry.date}</time>
-            </div>
-            <h2 className="mt-3 text-lg leading-7 font-bold">{entry.title}</h2>
-          </Link>
-        ))}
-      </div>
+      {entries.length ? (
+        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          {entries.map((entry) => (
+            <Link
+              key={`${entry.kind}-${entry.id}`}
+              href={entry.href}
+              className="border-border bg-surface hover:border-accent rounded-card border p-5 no-underline transition-colors"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-accent text-xs font-bold tracking-wide uppercase">
+                  {entry.kind === 'weekly'
+                    ? lang === 'uk'
+                      ? 'Тижневий'
+                      : 'Weekly'
+                    : lang === 'uk'
+                      ? 'Щоденний'
+                      : 'Daily'}
+                </span>
+                <time className="text-faint text-xs">{entry.date}</time>
+              </div>
+              <h2 className="text-text mt-3 text-lg leading-7 font-bold">{entry.title}</h2>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <p className="border-border bg-surface text-muted rounded-card mt-10 border p-6">
+          {lang === 'uk'
+            ? 'Опубліковані випуски з’являться тут.'
+            : 'Published editions will appear here.'}
+        </p>
+      )}
     </div>
   );
 }

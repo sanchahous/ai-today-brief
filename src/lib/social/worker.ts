@@ -4,6 +4,7 @@ import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getSocialPublisher } from './providers';
+import { assessWeeklySocialSource } from './weekly-source-gate';
 import {
   isSocialChannel,
   SocialPublishError,
@@ -195,9 +196,28 @@ async function assertSourcesStillApproved(post: ClaimedPost) {
   const supabase = getSupabaseAdmin();
   const { data: socialPackage } = await supabase
     .from('social_packages')
-    .select('source_item_ids')
+    .select('kind,source_item_ids,weekly_digest_id,weekly_digest_revision_id')
     .eq('id', post.package_id)
     .maybeSingle();
+  const { data: digest } =
+    socialPackage?.kind === 'weekly_digest' && socialPackage.weekly_digest_id
+      ? await supabase
+          .from('weekly_digests')
+          .select('status,published_revision_id')
+          .eq('id', socialPackage.weekly_digest_id)
+          .maybeSingle()
+      : { data: null };
+  const weeklyGate = assessWeeklySocialSource(socialPackage, digest);
+  if (!weeklyGate.ready) {
+    const sourceMissing = weeklyGate.code === 'weekly_digest_source_missing';
+    throw new SocialPublishError(
+      sourceMissing
+        ? 'Weekly package has no revision-bound digest source.'
+        : 'The Weekly Digest web edition is not published yet.',
+      sourceMissing ? 'permanent' : 'retryable',
+      weeklyGate.code,
+    );
+  }
   const sourceIds = socialPackage?.source_item_ids ?? [];
   if (sourceIds.length === 0) {
     throw new SocialPublishError(

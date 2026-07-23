@@ -2,8 +2,8 @@ name: Weekly digest publish health
 
 on:
   schedule:
-    # Monday morning after the Sunday CMS composer has created the weekly package.
-    - cron: "5 7 * * 1"
+    # 14:30 UTC is after Monday 16:00 Kyiv in both standard and summer time.
+    - cron: "30 14 * * 1"
   workflow_dispatch:
     inputs:
       date:

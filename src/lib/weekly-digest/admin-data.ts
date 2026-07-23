@@ -1,0 +1,208 @@
+import 'server-only';
+
+import { cache } from 'react';
+import type { Database, Json } from '@/lib/database.types';
+import { getSupabaseAdmin } from '@/lib/supabase-admin';
+
+type Tables = Database['public']['Tables'];
+type Row<Name extends keyof Tables> = Tables[Name]['Row'];
+
+export type WeeklyDigestAdminRow = Row<'weekly_digests'>;
+export type WeeklyRevisionAdminRow = Row<'weekly_digest_revisions'>;
+export type WeeklyRevisionItemAdminRow = Row<'weekly_digest_revision_items'>;
+export type WeeklyArtifactAdminRow = Row<'weekly_digest_artifacts'>;
+export type WeeklyArtifactReviewAdminRow = Row<'weekly_digest_artifact_reviews'>;
+export type WeeklyGenerationJobAdminRow = Row<'weekly_digest_generation_jobs'>;
+export type WeeklyReleaseEventAdminRow = Row<'weekly_digest_release_events'>;
+export type WeeklySocialPackageAdminRow = Row<'social_packages'>;
+export type WeeklySocialPostAdminRow = Row<'social_posts'>;
+export type WeeklySocialPostReviewAdminRow = Row<'social_post_reviews'>;
+
+export interface WeeklyDigestWorkspace {
+  digest: WeeklyDigestAdminRow;
+  revision: WeeklyRevisionAdminRow | null;
+  revisions: WeeklyRevisionAdminRow[];
+  items: WeeklyRevisionItemAdminRow[];
+  artifacts: WeeklyArtifactAdminRow[];
+  artifactReviews: WeeklyArtifactReviewAdminRow[];
+  generationJobs: WeeklyGenerationJobAdminRow[];
+  releaseEvents: WeeklyReleaseEventAdminRow[];
+  socialPackage: WeeklySocialPackageAdminRow | null;
+  socialPosts: WeeklySocialPostAdminRow[];
+  socialPostReviews: WeeklySocialPostReviewAdminRow[];
+}
+
+function assertQuery<T>(
+  label: string,
+  result: { data: T | null; error: { message: string } | null },
+): T {
+  if (result.error) throw new Error(`[weekly-admin] ${label}: ${result.error.message}`);
+  if (result.data === null) throw new Error(`[weekly-admin] ${label}: no data`);
+  return result.data;
+}
+
+function jsonRecord(value: Json): Record<string, Json | undefined> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, Json | undefined>)
+    : {};
+}
+
+async function withPrivatePreviewUrls(artifacts: WeeklyArtifactAdminRow[]) {
+  const db = getSupabaseAdmin();
+  return Promise.all(
+    artifacts.map(async (artifact): Promise<WeeklyArtifactAdminRow> => {
+      if (!artifact.storage_bucket) return artifact;
+      const content = jsonRecord(artifact.content);
+      const previewPaths = Array.isArray(content.preview_paths)
+        ? content.preview_paths.filter(
+            (value): value is string => typeof value === 'string' && Boolean(value),
+          )
+        : [];
+      const [artifactUrlResult, ...previewResults] = await Promise.all([
+        artifact.storage_path
+          ? db.storage.from(artifact.storage_bucket).createSignedUrl(artifact.storage_path, 3600)
+          : Promise.resolve({ data: null, error: null }),
+        ...previewPaths.map((path) =>
+          db.storage.from(artifact.storage_bucket!).createSignedUrl(path, 3600),
+        ),
+      ]);
+      const previewUrls = previewResults.flatMap((result) =>
+        result.error || !result.data?.signedUrl ? [] : [result.data.signedUrl],
+      );
+      return {
+        ...artifact,
+        external_url:
+          artifact.external_url ??
+          (artifactUrlResult.error ? null : (artifactUrlResult.data?.signedUrl ?? null)),
+        content:
+          previewUrls.length > 0
+            ? ({ ...content, preview_urls: previewUrls } as Json)
+            : artifact.content,
+      };
+    }),
+  );
+}
+
+export const getWeeklyDigestAdminList = cache(async () => {
+  const db = getSupabaseAdmin();
+  const result = await db
+    .from('weekly_digests')
+    .select('*')
+    .order('week_start', { ascending: false })
+    .limit(52);
+  return assertQuery('digest list', result);
+});
+
+export const getWeeklyDigestWorkspace = cache(
+  async (weeklyDigestId: string): Promise<WeeklyDigestWorkspace | null> => {
+    const db = getSupabaseAdmin();
+    const digestResult = await db
+      .from('weekly_digests')
+      .select('*')
+      .eq('id', weeklyDigestId)
+      .maybeSingle();
+    if (digestResult.error) {
+      throw new Error(`[weekly-admin] digest: ${digestResult.error.message}`);
+    }
+    const digest = digestResult.data;
+    if (!digest) return null;
+
+    const [revisionsResult, jobsResult, eventsResult, packageResult] = await Promise.all([
+      db
+        .from('weekly_digest_revisions')
+        .select('*')
+        .eq('weekly_digest_id', digest.id)
+        .order('revision_number', { ascending: false }),
+      db
+        .from('weekly_digest_generation_jobs')
+        .select('*')
+        .eq('weekly_digest_id', digest.id)
+        .order('created_at', { ascending: false })
+        .limit(50),
+      db
+        .from('weekly_digest_release_events')
+        .select('*')
+        .eq('weekly_digest_id', digest.id)
+        .order('created_at', { ascending: false })
+        .limit(100),
+      db
+        .from('social_packages')
+        .select('*')
+        .eq('weekly_digest_id', digest.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    const revisions = assertQuery('revisions', revisionsResult);
+    const generationJobs = assertQuery('generation jobs', jobsResult);
+    const releaseEvents = assertQuery('release events', eventsResult);
+    if (packageResult.error) {
+      throw new Error(`[weekly-admin] social package: ${packageResult.error.message}`);
+    }
+    const socialPackage = packageResult.data;
+    const revision =
+      revisions.find((candidate) => candidate.id === digest.active_revision_id) ?? null;
+
+    const [itemsResult, artifactsResult, socialPostsResult] = await Promise.all([
+      revision
+        ? db
+            .from('weekly_digest_revision_items')
+            .select('*')
+            .eq('revision_id', revision.id)
+            .order('rank')
+        : Promise.resolve({ data: [] as WeeklyRevisionItemAdminRow[], error: null }),
+      revision
+        ? db
+            .from('weekly_digest_artifacts')
+            .select('*')
+            .eq('revision_id', revision.id)
+            .eq('is_current', true)
+            .order('slot_key')
+        : Promise.resolve({ data: [] as WeeklyArtifactAdminRow[], error: null }),
+      socialPackage
+        ? db
+            .from('social_posts')
+            .select('*')
+            .eq('package_id', socialPackage.id)
+            .order('scheduled_for')
+        : Promise.resolve({ data: [] as WeeklySocialPostAdminRow[], error: null }),
+    ]);
+
+    const items = assertQuery('revision items', itemsResult);
+    const artifacts = await withPrivatePreviewUrls(assertQuery('artifacts', artifactsResult));
+    const socialPosts = assertQuery('social posts', socialPostsResult);
+    const socialPostIds = socialPosts.map((post) => post.id);
+    const socialReviewsResult =
+      socialPostIds.length > 0
+        ? await db
+            .from('social_post_reviews')
+            .select('*')
+            .in('social_post_id', socialPostIds)
+            .order('created_at', { ascending: false })
+        : { data: [] as WeeklySocialPostReviewAdminRow[], error: null };
+    const artifactIds = artifacts.map((artifact) => artifact.id);
+    const reviewsResult =
+      artifactIds.length > 0
+        ? await db
+            .from('weekly_digest_artifact_reviews')
+            .select('*')
+            .in('artifact_id', artifactIds)
+            .order('created_at', { ascending: false })
+        : { data: [] as WeeklyArtifactReviewAdminRow[], error: null };
+
+    return {
+      digest,
+      revision,
+      revisions,
+      items,
+      artifacts,
+      artifactReviews: assertQuery('artifact reviews', reviewsResult),
+      generationJobs,
+      releaseEvents,
+      socialPackage,
+      socialPosts,
+      socialPostReviews: assertQuery('social post reviews', socialReviewsResult),
+    };
+  },
+);

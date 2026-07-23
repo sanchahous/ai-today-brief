@@ -12,8 +12,11 @@ AAL2 owner approval before a variant can become publishable.
    `20260717102343_social_scheduler_security_hardening.sql` and
    `20260717103150_social_admin_helper_invoker.sql` afterwards. Preserve the
    canonical filenames recorded in the target Supabase migration history; never
-   rename an already-applied migration. Never run the CMS migration before the
-   delivery queue.
+   rename an already-applied migration. Then apply
+   `20260723063548_weekly_digest_editorial_reviews.sql` followed by
+   `20260723095458_weekly_digest_v2.sql`. Never run the CMS migration before the
+   delivery queue. Before production, run `supabase test db`; the v2 test rolls
+   back its RLS, DST, grants, dependency and lease assertions.
 2. Verify the critical objects:
 
    ```sql
@@ -48,6 +51,16 @@ select vault.create_secret(
   'https://aitodaybrief.com/api/internal/social/compose',
   'social_compose_url',
   'Next social package composer endpoint'
+);
+select vault.create_secret(
+  'https://aitodaybrief.com/api/internal/weekly/generate',
+  'weekly_generate_url',
+  'Weekly Digest artifact generation worker'
+);
+select vault.create_secret(
+  'https://aitodaybrief.com/api/internal/weekly/release-due',
+  'weekly_release_due_url',
+  'Weekly Digest release worker'
 );
 select vault.create_secret(
   '<same value as SOCIAL_CRON_SECRET>',
@@ -90,11 +103,55 @@ select cron.schedule(
   );
   $$
 );
+
+select cron.schedule(
+  'weekly_digest_generate',
+  '*/5 * * * *',
+  $$
+  select net.http_post(
+    url := (select decrypted_secret from vault.decrypted_secrets where name = 'weekly_generate_url'),
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'social_cron_secret')
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 55000
+  );
+  $$
+);
+
+select cron.schedule(
+  'weekly_digest_release_due',
+  '*/5 * * * *',
+  $$
+  select net.http_post(
+    url := (select decrypted_secret from vault.decrypted_secrets where name = 'weekly_release_due_url'),
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'social_cron_secret')
+    ),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 55000
+  );
+  $$
+);
 ```
 
 The composer is idempotent by date, kind, source, and generation version. A
 30-minute trigger therefore does not regenerate or spend LLM budget after the
 day's packages exist.
+
+The weekly artifact worker claims one heavy versioned job per five-minute
+invocation, with a lease and immutable idempotency key. This keeps image/PDF
+generation inside the 55-second `pg_net` request timeout while progressively
+draining the Sunday queue. The release worker may run every five minutes:
+PostgreSQL only claims a `scheduled` edition for preflight at its stored Monday
+15:45 `Europe/Kyiv` gate and for publication after its stored 16:00 release time.
+Review and replacements remain open through Monday 15:45; after that gate the
+owner must pause, edit, approve, and schedule the edition again.
+When `TELEGRAM_BOT_TOKEN` and `TELEGRAM_REVIEW_CHAT_ID` are configured, failed
+generation, blocked preflight, and release failures send a best-effort owner
+alert linking directly to the edition workspace.
 
 ## 3. LLM writer and critic policy
 

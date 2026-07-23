@@ -110,6 +110,16 @@ function addCalendarDays(date: string, days: number) {
   return value.toISOString().slice(0, 10);
 }
 
+export function completedWeeklyRangeForTrigger(triggerDate: string) {
+  const [year, month, day] = triggerDate.split('-').map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  // Sunday–Saturday editorial window. The trigger day itself is never treated
+  // as completed, so a manual retry later in the week resolves to the same
+  // most recently completed Saturday.
+  const weekEnd = addCalendarDays(triggerDate, -(weekday + 1));
+  return { weekStart: addCalendarDays(weekEnd, -6), weekEnd };
+}
+
 export function nextScheduledForChannel(
   channel: SocialChannel,
   sourceDate: string,
@@ -132,19 +142,22 @@ export function nextScheduledForChannel(
   throw new Error(`No ${channel} slot found within two weeks of ${sourceDate}.`);
 }
 
-const WEEKLY_TIMES: Partial<Record<SocialChannel, { hour: number; minute: number }>> = {
+const WEEKLY_TIMES: Record<SocialChannel, { hour: number; minute: number }> = {
+  linkedin: { hour: 16, minute: 10 },
+  x: { hour: 16, minute: 20 },
+  threads: { hour: 16, minute: 30 },
   telegram: { hour: 18, minute: 0 },
   instagram: { hour: 19, minute: 0 },
   facebook: { hour: 19, minute: 30 },
 };
 
 export function nextWeeklyScheduledForChannel(
-  channel: 'telegram' | 'instagram' | 'facebook',
+  channel: SocialChannel,
   anchorDate: string,
   now = new Date(),
-  cadence?: ChannelCadence,
+  timeOverride?: Pick<ChannelCadence, 'hour' | 'minute'>,
 ): string {
-  const time = cadence ?? WEEKLY_TIMES[channel]!;
+  const time = timeOverride ?? WEEKLY_TIMES[channel];
   const today = new Intl.DateTimeFormat('en-CA', {
     timeZone: SOCIAL_TIME_ZONE,
     year: 'numeric',
@@ -159,7 +172,7 @@ export function nextWeeklyScheduledForChannel(
       timeZone: SOCIAL_TIME_ZONE,
       weekday: 'short',
     }).format(noon);
-    if (weekday !== 'Sun') continue;
+    if (weekday !== 'Mon') continue;
     const slot = kyivWallClockToUtc(date, time.hour, time.minute);
     if (slot.getTime() > now.getTime() + 5 * 60_000) return slot.toISOString();
   }

@@ -72,6 +72,24 @@ const CANONICAL_ITEM_REDIRECTS: ReadonlyArray<{ src: string; dst: string }> = [
 ];
 
 const nextConfig: NextConfig = {
+  experimental: {
+    // Authenticated CMS uploads are validated again in the Server Action and
+    // capped at 12 MB; multipart overhead requires a little extra headroom.
+    serverActions: {
+      bodySizeLimit: '13mb',
+    },
+  },
+  // PDFKit, PDF.js and Sharp resolve fonts/native canvas at runtime. Keeping
+  // them external prevents the bundler from parsing binaries, while the trace
+  // includes ship the Linux canvas binding with server routes.
+  serverExternalPackages: ['@napi-rs/canvas', 'dejavu-fonts-ttf', 'pdf-to-img', 'pdfjs-dist'],
+  outputFileTracingIncludes: {
+    '/*': [
+      'node_modules/@napi-rs/canvas/**/*',
+      'node_modules/@napi-rs/canvas-linux-x64-gnu/**/*',
+      'node_modules/dejavu-fonts-ttf/ttf/*.ttf',
+    ],
+  },
   images: {
     // Hero images are the source articles' og:image — arbitrary publisher
     // hosts by nature (news aggregation), so allow any https origin and let

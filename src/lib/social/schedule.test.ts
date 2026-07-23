@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   channelRunsOnDate,
+  completedWeeklyRangeForTrigger,
   kyivWallClockToUtc,
   nextScheduledForChannel,
   nextWeeklyScheduledForChannel,
@@ -25,10 +26,45 @@ describe('Kyiv social scheduling', () => {
     ).toBe('2026-07-20T07:00:00.000Z');
   });
 
-  it('uses the dedicated Sunday weekly Telegram slot', () => {
+  it('resolves Sunday and later retries to the prior Sunday–Saturday window', () => {
+    expect(completedWeeklyRangeForTrigger('2026-07-12')).toEqual({
+      weekStart: '2026-07-05',
+      weekEnd: '2026-07-11',
+    });
+    expect(completedWeeklyRangeForTrigger('2026-07-16')).toEqual({
+      weekStart: '2026-07-05',
+      weekEnd: '2026-07-11',
+    });
+  });
+
+  it('uses the six dedicated Monday weekly slots in summer', () => {
+    const now = new Date('2026-07-12T12:00:00Z');
+    const anchor = '2026-07-11';
+    expect(nextWeeklyScheduledForChannel('linkedin', anchor, now)).toBe('2026-07-13T13:10:00.000Z');
+    expect(nextWeeklyScheduledForChannel('x', anchor, now)).toBe('2026-07-13T13:20:00.000Z');
+    expect(nextWeeklyScheduledForChannel('threads', anchor, now)).toBe('2026-07-13T13:30:00.000Z');
+    expect(nextWeeklyScheduledForChannel('telegram', anchor, now)).toBe('2026-07-13T15:00:00.000Z');
+    expect(nextWeeklyScheduledForChannel('instagram', anchor, now)).toBe(
+      '2026-07-13T16:00:00.000Z',
+    );
+    expect(nextWeeklyScheduledForChannel('facebook', anchor, now)).toBe('2026-07-13T16:30:00.000Z');
+  });
+
+  it('keeps weekly Monday wall clocks stable across winter DST offset', () => {
     expect(
-      nextWeeklyScheduledForChannel('telegram', '2026-07-12', new Date('2026-07-11T12:00:00Z')),
-    ).toBe('2026-07-12T15:00:00.000Z');
+      nextWeeklyScheduledForChannel('linkedin', '2026-01-10', new Date('2026-01-11T12:00:00Z')),
+    ).toBe('2026-01-12T14:10:00.000Z');
+    expect(
+      nextWeeklyScheduledForChannel('facebook', '2026-01-10', new Date('2026-01-11T12:00:00Z')),
+    ).toBe('2026-01-12T17:30:00.000Z');
+  });
+
+  it('moves only an elapsed weekly slot to the next sensible Monday', () => {
+    const now = new Date('2026-07-13T13:11:00.000Z');
+    expect(nextWeeklyScheduledForChannel('linkedin', '2026-07-11', now)).toBe(
+      '2026-07-20T13:10:00.000Z',
+    );
+    expect(nextWeeklyScheduledForChannel('x', '2026-07-11', now)).toBe('2026-07-13T13:20:00.000Z');
   });
 
   it('validates persisted cadence and falls back per channel', () => {

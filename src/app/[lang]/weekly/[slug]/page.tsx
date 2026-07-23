@@ -1,91 +1,333 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getWeeklyDigest } from '@/lib/digests';
-import { isLang, SITE_URL, type Lang } from '@/lib/site';
+import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
+import { MarkdownBody } from '@/components/markdown-body';
+import { LiteYouTube } from '@/components/weekly/lite-youtube';
+import { WEEKLY_COPY } from '@/components/weekly/copy';
+import { WeeklyHero } from '@/components/weekly/weekly-hero';
+import { WeeklyStory } from '@/components/weekly/weekly-story';
+import { WeeklyToc } from '@/components/weekly/weekly-toc';
+import {
+  getPublishedWeeklyDigestPaths,
+  getWeeklyDigest,
+  type WeeklyDigestView,
+} from '@/lib/digests';
+import { markdownToPlainText } from '@/lib/markdown';
+import { authorNode, publisherNode } from '@/lib/schema';
+import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 
-export const revalidate = 300;
+export const revalidate = 86400;
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ lang: string; slug: string }>;
-}): Promise<Metadata> {
+type Params = { lang: string; slug: string };
+
+export async function generateStaticParams() {
+  return getPublishedWeeklyDigestPaths();
+}
+
+function descriptionFor(digest: WeeklyDigestView) {
+  return digest.intro ?? digest.items[0]?.summary ?? digest.title;
+}
+
+function absoluteUrl(url: string) {
+  return url.startsWith('http') ? url : `${SITE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+}
+
+function isoDuration(seconds: number | null) {
+  if (!seconds || seconds < 1) return undefined;
+  const minutes = Math.floor(seconds / 60);
+  const remainder = Math.round(seconds % 60);
+  return `PT${minutes ? `${minutes}M` : ''}${remainder ? `${remainder}S` : ''}`;
+}
+
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { lang, slug } = await params;
-  const locale: Lang = isLang(lang) ? lang : 'en';
-  const digest = await getWeeklyDigest(slug, locale);
+  if (!isLang(lang)) return {};
+  const digest = await getWeeklyDigest(slug, lang);
   if (!digest) return {};
+
+  const path = `/${lang}/weekly/${slug}`;
+  const description = descriptionFor(digest);
+  const image = digest.cover ? absoluteUrl(digest.cover.url) : undefined;
+
   return {
     title: digest.title,
-    description: digest.intro ?? digest.items[0]?.summary,
+    description,
     alternates: {
-      canonical: `${SITE_URL}/${locale}/weekly/${slug}`,
+      canonical: `${SITE_URL}${path}`,
       languages: {
         en: `${SITE_URL}/en/weekly/${slug}`,
         uk: `${SITE_URL}/uk/weekly/${slug}`,
         'x-default': `${SITE_URL}/en/weekly/${slug}`,
       },
     },
+    openGraph: {
+      title: digest.title,
+      description,
+      type: 'article',
+      url: `${SITE_URL}${path}`,
+      siteName: SITE_NAME,
+      locale: lang === 'uk' ? 'uk_UA' : 'en_US',
+      alternateLocale: lang === 'uk' ? ['en_US'] : ['uk_UA'],
+      publishedTime: digest.publishedAt ?? undefined,
+      modifiedTime: digest.modifiedAt,
+      images: image
+        ? [
+            {
+              url: image,
+              width: digest.cover?.width,
+              height: digest.cover?.height,
+              alt: digest.cover?.alt,
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: digest.title,
+      description,
+      images: image ? [image] : undefined,
+    },
   };
 }
 
-export default async function WeeklyDigestPage({
-  params,
-}: {
-  params: Promise<{ lang: string; slug: string }>;
-}) {
-  const { lang, slug } = await params;
-  if (!isLang(lang)) notFound();
+export default async function WeeklyDigestPage({ params }: { params: Promise<Params> }) {
+  const { lang: raw, slug } = await params;
+  if (!isLang(raw)) notFound();
+  const lang: Lang = raw;
   const digest = await getWeeklyDigest(slug, lang);
   if (!digest) notFound();
+
+  const copy = WEEKLY_COPY[lang];
+  const pagePath = `/${lang}/weekly/${slug}`;
+  const crumbs = [
+    { label: lang === 'uk' ? 'Головна' : 'Home', href: `/${lang}` },
+    { label: copy.allDigests, href: `/${lang}/digests` },
+    { label: digest.title },
+  ];
+  const images = [digest.cover, ...digest.items.map((item) => item.image)]
+    .filter((image): image is NonNullable<typeof image> => Boolean(image))
+    .map((image) => absoluteUrl(image.url));
+  const articleBody = [
+    digest.intro,
+    digest.editorNote,
+    ...digest.items.flatMap((item) => [
+      item.title,
+      item.summary,
+      item.body ? markdownToPlainText(item.body) : '',
+      item.why,
+      item.practicalExample,
+      item.takeaway,
+    ]),
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+  const citations = digest.items.flatMap((item) =>
+    item.sources.map((source) => ({
+      '@type': 'CreativeWork',
+      name: source.name ?? item.title,
+      url: source.url,
+    })),
+  );
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Article',
+        headline: digest.title,
+        description: descriptionFor(digest),
+        articleBody,
+        ...(images.length ? { image: images } : {}),
+        datePublished: digest.publishedAt ?? digest.weekEnd,
+        dateModified: digest.modifiedAt,
+        inLanguage: lang,
+        isAccessibleForFree: true,
+        url: `${SITE_URL}${pagePath}`,
+        mainEntityOfPage: `${SITE_URL}${pagePath}`,
+        author: authorNode(lang),
+        publisher: publisherNode(),
+        ...(citations.length ? { citation: citations } : {}),
+        ...(digest.video ? { video: { '@id': `${SITE_URL}${pagePath}#video` } } : {}),
+      },
+      ...(digest.video
+        ? [
+            {
+              '@type': 'VideoObject',
+              '@id': `${SITE_URL}${pagePath}#video`,
+              name: copy.videoTitle,
+              description: copy.videoDescription,
+              thumbnailUrl: [absoluteUrl(digest.video.thumbnailUrl)],
+              embedUrl: `https://www.youtube-nocookie.com/embed/${digest.video.youtubeId}`,
+              contentUrl: digest.video.youtubeUrl,
+              uploadDate: digest.video.uploadedAt ?? digest.publishedAt ?? digest.weekEnd,
+              ...(isoDuration(digest.video.durationSeconds)
+                ? { duration: isoDuration(digest.video.durationSeconds) }
+                : {}),
+              inLanguage: 'en',
+              caption: ['en', 'uk'],
+            },
+          ]
+        : []),
+      breadcrumbJsonLd(crumbs, SITE_URL),
+    ],
+  };
+
   return (
-    <article className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:py-16">
-      <Link
-        href={`/${lang}/digests`}
-        className="text-sm font-bold text-cyan-700 hover:underline dark:text-[#47e4d3]"
-      >
-        ← {lang === 'uk' ? 'Усі дайджести' : 'All digests'}
-      </Link>
-      <header className="mt-7 border-b border-slate-200 pb-8 dark:border-white/10">
-        <p className="text-sm font-bold tracking-[.16em] text-cyan-700 uppercase dark:text-[#47e4d3]">
-          {lang === 'uk' ? 'Тижневий дайджест' : 'Weekly digest'} · {digest.weekStart}
-        </p>
-        <h1 className="mt-4 font-serif text-4xl leading-tight font-semibold tracking-tight sm:text-5xl">
-          {digest.title}
-        </h1>
-        {digest.intro ? (
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600 dark:text-slate-400">
-            {digest.intro}
-          </p>
-        ) : null}
-      </header>
-      <ol className="mt-8 grid gap-6">
-        {digest.items.map((item) => (
-          <li
-            key={item.id}
-            className="grid grid-cols-[2.5rem_minmax(0,1fr)] gap-3 rounded-2xl border border-slate-200 p-5 dark:border-white/10"
-          >
-            <span className="font-serif text-3xl font-semibold text-cyan-600 dark:text-[#47e4d3]">
-              {item.rank}
-            </span>
-            <div>
-              <p className="text-xs font-semibold text-slate-500">{item.date}</p>
-              <h2 className="mt-1 text-xl leading-8 font-bold">
-                <Link href={item.href} className="hover:text-cyan-700 dark:hover:text-[#47e4d3]">
-                  {item.title}
-                </Link>
-              </h2>
-              <p className="mt-3 leading-7 text-slate-600 dark:text-slate-400">{item.summary}</p>
-              {item.why ? (
-                <p className="mt-3 text-sm leading-6">
-                  <strong>{lang === 'uk' ? 'Чому це важливо:' : 'Why it matters:'}</strong>{' '}
-                  {item.why}
-                </p>
+    <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10 lg:py-14">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      <Breadcrumbs items={crumbs} />
+
+      <article>
+        <WeeklyHero digest={digest} lang={lang} />
+
+        <div className="mt-10 grid gap-10 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-14">
+          <aside className="lg:sticky lg:top-[calc(var(--header-h)+2rem)] lg:self-start">
+            <WeeklyToc items={digest.items} lang={lang} />
+            <div className="border-border-soft mt-7 border-t pt-6">
+              {digest.hasPdf ? (
+                <a
+                  href={`/${lang}/weekly/${digest.slug}/download`}
+                  className="border-border text-text hover:border-accent hover:text-accent rounded-pill flex w-full items-center justify-center border px-4 py-2.5 text-center text-sm font-semibold no-underline transition-colors"
+                >
+                  {copy.downloadPdf}
+                </a>
               ) : null}
+              <Link
+                href={`/${lang}/subscribe`}
+                className="text-accent mt-4 block text-center text-sm font-semibold no-underline hover:underline"
+              >
+                {lang === 'uk' ? 'Отримувати нові випуски' : 'Get the next issue'}
+              </Link>
             </div>
-          </li>
-        ))}
-      </ol>
-    </article>
+          </aside>
+
+          <div id="stories" className="min-w-0 scroll-mt-[calc(var(--header-h)+2rem)]">
+            {digest.editorNote ? (
+              <section
+                aria-labelledby="editor-note-title"
+                className="border-border bg-surface rounded-card border p-6 sm:p-8"
+              >
+                <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
+                  {copy.editorNote}
+                </p>
+                <h2 id="editor-note-title" className="sr-only">
+                  {copy.editorNote}
+                </h2>
+                <div className="mt-3">
+                  <MarkdownBody markdown={digest.editorNote} />
+                </div>
+              </section>
+            ) : null}
+
+            {digest.keyTakeaways.length ? (
+              <section aria-labelledby="takeaways-title" className="mt-8">
+                <h2 id="takeaways-title" className="text-2xl">
+                  {copy.keyTakeaways}
+                </h2>
+                <ol className="mt-5 grid gap-3">
+                  {digest.keyTakeaways.map((takeaway, index) => (
+                    <li
+                      key={`${index}-${takeaway}`}
+                      className="border-border bg-surface rounded-card grid grid-cols-[2rem_minmax(0,1fr)] gap-3 border p-4"
+                    >
+                      <span
+                        aria-hidden
+                        className="bg-accent text-on-accent grid h-7 w-7 place-items-center rounded-full text-xs font-bold"
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="text-muted leading-7">{takeaway}</span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            ) : null}
+
+            <div className="mt-10 grid gap-12">
+              {digest.items.map((item) => (
+                <WeeklyStory key={item.id} item={item} lang={lang} />
+              ))}
+            </div>
+
+            {digest.video ? (
+              <section
+                aria-labelledby="weekly-video-title"
+                className="border-border-soft mt-12 border-t pt-10"
+              >
+                <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
+                  {copy.watch}
+                </p>
+                <h2 id="weekly-video-title" className="mt-2 text-2xl sm:text-3xl">
+                  {copy.videoTitle}
+                </h2>
+                <p className="text-muted mt-2 mb-5 max-w-2xl leading-7">{copy.videoDescription}</p>
+                <LiteYouTube
+                  videoId={digest.video.youtubeId}
+                  thumbnailUrl={digest.video.thumbnailUrl}
+                  title={copy.videoTitle}
+                  lang={lang}
+                />
+              </section>
+            ) : null}
+
+            <nav
+              aria-label={`${copy.previous} / ${copy.next}`}
+              className="mt-10 grid gap-3 sm:grid-cols-2"
+            >
+              {digest.previous ? (
+                <Link
+                  href={`/${lang}/weekly/${digest.previous.slug}`}
+                  className="border-border bg-surface hover:border-accent rounded-card border p-4 no-underline transition-colors"
+                >
+                  <span className="text-faint block text-xs uppercase">← {copy.previous}</span>
+                  <span className="text-text mt-2 block font-serif font-semibold">
+                    {digest.previous.title}
+                  </span>
+                </Link>
+              ) : (
+                <span aria-hidden className="hidden sm:block" />
+              )}
+              {digest.next ? (
+                <Link
+                  href={`/${lang}/weekly/${digest.next.slug}`}
+                  className="border-border bg-surface hover:border-accent rounded-card border p-4 text-right no-underline transition-colors"
+                >
+                  <span className="text-faint block text-xs uppercase">{copy.next} →</span>
+                  <span className="text-text mt-2 block font-serif font-semibold">
+                    {digest.next.title}
+                  </span>
+                </Link>
+              ) : null}
+            </nav>
+
+            <section className="border-border rounded-card mt-10 border p-6 sm:flex sm:items-center sm:justify-between sm:gap-6">
+              <div>
+                <h2 className="text-xl">
+                  {lang === 'uk'
+                    ? 'Наступний випуск — у понеділок'
+                    : 'The next issue arrives Monday'}
+                </h2>
+                <p className="text-muted mt-2 text-sm leading-6">
+                  {lang === 'uk'
+                    ? 'Підпишіться, щоб отримати повний тижневий контекст без інформаційного шуму.'
+                    : 'Subscribe for the full week in context, without the information overload.'}
+                </p>
+              </div>
+              <Link
+                href={`/${lang}/subscribe`}
+                className="bg-accent text-on-accent rounded-pill mt-5 inline-flex shrink-0 px-5 py-3 text-sm font-semibold no-underline sm:mt-0"
+              >
+                {lang === 'uk' ? 'Підписатися' : 'Subscribe'}
+              </Link>
+            </section>
+          </div>
+        </div>
+      </article>
+    </div>
   );
 }

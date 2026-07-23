@@ -69,8 +69,8 @@ export default async function SettingsPage() {
         <div className="mt-6">
           <h3 className="font-bold text-white">Publishing cadence · Europe/Kyiv</h3>
           <p className="mt-1 text-xs text-slate-500">
-            These slots drive new packages. Weekly Telegram stays Sunday at 18:00; Instagram and
-            Facebook weekly posts use the time selected here.
+            Daily packages use this default cadence. Each Weekly Digest keeps its own Monday
+            schedule after the 16:00 web release.
           </p>
           <div className="mt-3 grid gap-3 lg:grid-cols-2">
             {CHANNELS.map((channel) => (

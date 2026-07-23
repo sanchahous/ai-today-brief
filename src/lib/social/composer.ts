@@ -18,6 +18,7 @@ import { attachCriticReport } from './critic';
 import { findBlindCrossPosts, runQualityGate } from './quality';
 import {
   channelRunsOnDate,
+  completedWeeklyRangeForTrigger,
   nextScheduledForChannel,
   nextWeeklyScheduledForChannel,
   resolveCadenceSettings,
@@ -364,6 +365,7 @@ async function createPackage(
   sourceItemId?: string,
   weeklyDigestId?: string,
   sourceItemIds: string[] = sourceItemId ? [sourceItemId] : [],
+  weeklyDigestRevisionId?: string,
 ) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
@@ -376,6 +378,7 @@ async function createPackage(
       source_brief_item_id: sourceItemId ?? null,
       source_item_ids: sourceItemIds,
       weekly_digest_id: weeklyDigestId ?? null,
+      weekly_digest_revision_id: weeklyDigestRevisionId ?? null,
       title,
       status: 'in_review',
       generation_version: SOCIAL_GENERATION_VERSION,
@@ -408,6 +411,7 @@ async function saveVariants(
           why: seed.locale === 'uk' ? item.why_matters_uk : item.why_matters_en,
           facts,
           sourceImageUrl: item.card_image_url,
+          sourceImageUrls: factItems.map((sourceItem) => sourceItem.card_image_url),
         });
       } catch {
         // Missing media blocks Instagram through the rules engine; other
@@ -632,11 +636,6 @@ export async function composeDailySocial(
   return { createdPackageIds, skipped };
 }
 
-function shiftDate(date: string, days: number) {
-  const [year, month, day] = date.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
-}
-
 async function loadApprovedRange(startDate: string, endDate: string) {
   const supabase = getSupabaseAdmin();
   const { data: briefRows, error: briefError } = await supabase
@@ -734,21 +733,38 @@ function weeklyTargetUrl(locale: SocialLocale, slug: string, channel: SocialChan
   return url.toString();
 }
 
+function weeklyTitleList(
+  items: SourceItem[],
+  locale: SocialLocale,
+  options: { separator?: string; maxTitleChars?: number } = {},
+) {
+  const separator = options.separator ?? '\n';
+  const maxTitleChars = options.maxTitleChars ?? 160;
+  return items
+    .map((item, index) => {
+      const title = locale === 'uk' ? text(item.title_uk) : text(item.title_en);
+      return `${index + 1}. ${truncate(title, maxTitleChars)}`;
+    })
+    .join(separator);
+}
+
 function weeklySeeds(
   slug: string,
   items: SourceItem[],
   anchorDate: string,
   now: Date,
   urls: Record<SocialChannel, string>,
-  cadence: Record<SocialChannel, ChannelCadence>,
 ): VariantSeed[] {
-  const ukList = items
-    .map((item, index) => `${index + 1}. ${text(item.title_uk) || text(item.title_en)}`)
-    .join('\n');
-  const enList = items
-    .slice(0, 5)
-    .map((item, index) => `${index + 1}. ${text(item.title_en) || text(item.title_uk)}`)
-    .join('\n');
+  const ukList = weeklyTitleList(items, 'uk');
+  const enList = weeklyTitleList(items, 'en');
+  const xList = weeklyTitleList(items, 'en', {
+    separator: '; ',
+    maxTitleChars: Math.max(20, Math.floor(150 / items.length)),
+  });
+  const threadsList = weeklyTitleList(items, 'en', {
+    separator: '; ',
+    maxTitleChars: 24,
+  });
   return [
     {
       channel: 'telegram',
@@ -760,39 +776,164 @@ function weeklySeeds(
       scheduledFor: nextWeeklyScheduledForChannel('telegram', anchorDate, now),
     },
     {
+      channel: 'x',
+      locale: 'en',
+      format: 'weekly_digest',
+      text: truncate(
+        `This week in AI: ${xList}. ${items.length} evidence-backed developments, with the practical context in the full digest. Link in the reply.`,
+        280,
+      ),
+      firstComment: `Read the full weekly digest: ${urls.x}`,
+      trackingToken: urls.x.split('/').at(-1)!,
+      sourceUrl: weeklyTargetUrl('en', slug, 'x'),
+      scheduledFor: nextWeeklyScheduledForChannel('x', anchorDate, now),
+    },
+    {
+      channel: 'threads',
+      locale: 'en',
+      format: 'weekly_conversation',
+      text: `This week’s AI engineering shifts: ${threadsList}. We reviewed the evidence and practical implications across all ${items.length} stories. Which change will affect your work first? ${urls.threads}`,
+      trackingToken: urls.threads.split('/').at(-1)!,
+      sourceUrl: weeklyTargetUrl('en', slug, 'threads'),
+      scheduledFor: nextWeeklyScheduledForChannel('threads', anchorDate, now),
+    },
+    {
+      channel: 'linkedin',
+      locale: 'en',
+      format: 'weekly_insight',
+      text: `The week in AI engineering: ${items.length} developments worth acting on.\n\n${enList}\n\nWe selected these stories for evidence quality, industry impact, and practical value—not headline volume. The full edition explains what changed, why it matters, and what builders, technical leaders, and product teams can do next.\n\nRead the complete Weekly Digest: ${urls.linkedin}\n\n#AI #Engineering #AITools`,
+      trackingToken: urls.linkedin.split('/').at(-1)!,
+      sourceUrl: weeklyTargetUrl('en', slug, 'linkedin'),
+      scheduledFor: nextWeeklyScheduledForChannel('linkedin', anchorDate, now),
+    },
+    {
       channel: 'instagram',
       locale: 'en',
       format: 'weekly_carousel_4x5',
-      text: truncate(
-        `The week in AI engineering — ${items.length} stories worth your time.\n\n${enList}\n\nSwipe for the practical context, then save this roundup for your next planning session. Full edition via the link in bio.\n\n#AI #Engineering #AITools`,
-        1800,
-      ),
+      text: `The week in AI engineering — ${items.length} stories worth your time.\n\n${enList}\n\nSwipe for the practical context, then save this roundup for your next planning session. Full edition via the link in bio.\n\n#AI #Engineering #AITools`,
       trackingToken: urls.instagram.split('/').at(-1)!,
       sourceUrl: weeklyTargetUrl('en', slug, 'instagram'),
-      scheduledFor: nextWeeklyScheduledForChannel('instagram', anchorDate, now, cadence.instagram),
+      scheduledFor: nextWeeklyScheduledForChannel('instagram', anchorDate, now),
     },
     {
       channel: 'facebook',
       locale: 'uk',
       format: 'weekly_roundup',
-      text: truncate(
-        `Підсумки тижня в AI для розробників\n\n${ukList}\n\nМи зібрали контекст і практичні висновки в одному випуску: ${urls.facebook}`,
-        1800,
-      ),
+      text: `Підсумки тижня в AI для розробників\n\n${ukList}\n\nМи перевірили джерела та зібрали контекст, значення й практичні висновки до кожної новини в одному випуску: ${urls.facebook}`,
       trackingToken: urls.facebook.split('/').at(-1)!,
       sourceUrl: weeklyTargetUrl('uk', slug, 'facebook'),
-      scheduledFor: nextWeeklyScheduledForChannel('facebook', anchorDate, now, cadence.facebook),
+      scheduledFor: nextWeeklyScheduledForChannel('facebook', anchorDate, now),
     },
   ];
 }
 
+async function queueInitialWeeklyArtifacts(
+  weeklyDigestId: string,
+  revisionId: string,
+  items: SourceItem[],
+) {
+  const db = getSupabaseAdmin();
+  const [revisionResult, itemResult] = await Promise.all([
+    db.from('weekly_digest_revisions').select('*').eq('id', revisionId).single(),
+    db
+      .from('weekly_digest_revision_items')
+      .select('id,brief_item_id,rank,title_en,title_uk')
+      .eq('revision_id', revisionId)
+      .order('rank'),
+  ]);
+  if (revisionResult.error || !revisionResult.data) {
+    throw new Error(
+      `[social-composer] weekly artifact queue: ${
+        revisionResult.error?.message ?? 'revision missing'
+      }`,
+    );
+  }
+  const revision = revisionResult.data;
+  const revisionItems = itemResult.data;
+  if (itemResult.error || !revisionItems) {
+    throw new Error(
+      `[social-composer] weekly artifact queue: ${
+        itemResult.error?.message ?? 'revision items missing'
+      }`,
+    );
+  }
+  for (const locale of ['en', 'uk'] as const) {
+    const { error } = await db.rpc('save_weekly_digest_artifact', {
+      p_weekly_digest_id: weeklyDigestId,
+      p_revision_id: revisionId,
+      p_artifact_type: 'article',
+      p_locale: locale,
+      p_slot_key: `article:${locale}`,
+      p_generation_status: 'ready',
+      p_review_status: 'in_review',
+      p_content: {
+        title: locale === 'uk' ? revision.title_uk : revision.title_en,
+        intro: locale === 'uk' ? revision.intro_uk : revision.intro_en,
+        editor_note: locale === 'uk' ? revision.editor_note_uk : revision.editor_note_en,
+        key_takeaways: locale === 'uk' ? revision.key_takeaways_uk : revision.key_takeaways_en,
+        story_count: revisionItems.length,
+      } as Json,
+      p_metadata: { format: 'weekly-landing-v2', source: 'initial_revision' } as Json,
+    });
+    if (error) throw new Error(`[social-composer] initialize article ${locale}: ${error.message}`);
+  }
+  const sourceById = new Map(items.map((item) => [item.id, item]));
+  const jobs: Array<{
+    type: 'story_image' | 'cover' | 'pdf';
+    key: string;
+    input: Json;
+  }> = [
+    ...revisionItems.map((item) => {
+      const source = item.brief_item_id ? sourceById.get(item.brief_item_id) : null;
+      return {
+        type: 'story_image' as const,
+        key: `story-image:${item.id}`,
+        input: {
+          revision_item_id: item.id,
+          alt_text: item.title_en,
+          alt_text_uk: item.title_uk,
+          source_url: null,
+          source_card_image_url: source?.card_image_url ?? null,
+        } as Json,
+      };
+    }),
+    {
+      type: 'cover',
+      key: 'cover:neutral',
+      input: { locale: 'neutral', slot_key: 'cover:neutral' } as Json,
+    },
+    {
+      type: 'pdf',
+      key: 'pdf:en',
+      input: { locale: 'en', slot_key: 'pdf:en' } as Json,
+    },
+    {
+      type: 'pdf',
+      key: 'pdf:uk',
+      input: { locale: 'uk', slot_key: 'pdf:uk' } as Json,
+    },
+  ];
+
+  for (const job of jobs) {
+    const { error } = await db.rpc('queue_weekly_digest_generation_job', {
+      p_weekly_digest_id: weeklyDigestId,
+      p_revision_id: revisionId,
+      p_job_type: job.type,
+      p_idempotency_key: `weekly:auto:${weeklyDigestId}:${revisionId}:${job.key}`,
+      p_input: job.input,
+    });
+    if (error && !/duplicate|unique/i.test(error.message)) {
+      throw new Error(`[social-composer] queue ${job.key}: ${error.message}`);
+    }
+  }
+}
+
 export async function composeWeeklySocial(
-  endDate: string,
+  triggerDate: string,
   options: { now?: Date } = {},
 ): Promise<ComposeResult> {
   const now = options.now ?? new Date();
-  const cadence = await loadCadence();
-  const startDate = shiftDate(endDate, -6);
+  const { weekStart: startDate, weekEnd: endDate } = completedWeeklyRangeForTrigger(triggerDate);
   const { briefs, items, articles } = await loadApprovedRange(startDate, endDate);
   const selection = selectEditorialDigestItems(weeklyCandidates(items, briefs, articles));
   const selectionContext = buildDigestSelectionContext(selection);
@@ -819,6 +960,8 @@ export async function composeWeeklySocial(
     .upsert(
       {
         week_start: startDate,
+        week_end: endDate,
+        period_model: 'sun_sat',
         slug,
         status: 'in_review',
         title_en: `The week in AI engineering · ${startDate}`,
@@ -866,6 +1009,7 @@ export async function composeWeeklySocial(
         item_slug: item.slug,
         brief_slug: briefById.get(item.brief_id)?.slug ?? null,
         brief_date: dateByBrief.get(item.brief_id) ?? null,
+        card_image_url: item.card_image_url,
         editorial_selection: scored
           ? {
               version: WEEKLY_SELECTION_VERSION,
@@ -890,6 +1034,16 @@ export async function composeWeeklySocial(
     }),
   );
   if (itemError) throw new Error(`[social-composer] weekly items: ${itemError.message}`);
+  const { data: revisionId, error: revisionError } = await supabase.rpc(
+    'initialize_weekly_digest_revision_from_legacy',
+    { p_weekly_digest_id: digest.id },
+  );
+  if (revisionError || typeof revisionId !== 'string') {
+    throw new Error(
+      `[social-composer] weekly revision: ${revisionError?.message ?? 'initializer returned no revision'}`,
+    );
+  }
+  await queueInitialWeeklyArtifacts(digest.id, revisionId, selected);
 
   const lead = selected[0];
   const leadBrief = briefById.get(lead.brief_id) ?? briefs[0];
@@ -902,12 +1056,13 @@ export async function composeWeeklySocial(
     lead.id,
     digest.id,
     selected.map((item) => item.id),
+    revisionId,
   );
   const urls = trackingUrls(freshTrackingTokens());
   await saveVariants(
     packageId,
     lead,
-    weeklySeeds(slug, selected, endDate, now, urls, cadence),
+    weeklySeeds(slug, selected, endDate, now, urls),
     now,
     selected,
   );
