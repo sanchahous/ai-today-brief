@@ -41,6 +41,7 @@ export interface DigestCandidate {
 }
 
 export const WEEKLY_SELECTION_VERSION = 'weekly-editorial-v2';
+export const WEEKLY_RATIONALE_VERSION = 'weekly-rationale-v1';
 
 export type DigestRejectionReason =
   | 'duplicate_story'
@@ -80,6 +81,64 @@ export interface EditorialSelectionOptions {
   perCategoryCap?: number;
   perSourceCap?: number;
   perDayCap?: number;
+}
+
+export type DigestCandidateSelectionStatus = 'selected' | 'eligible_not_selected' | 'rejected';
+
+export type DigestCandidateExclusionReason =
+  DigestRejectionReason | 'event_cluster_covered' | 'category_balance' | 'digest_capacity';
+
+export interface DigestSelectionCandidateSnapshot {
+  brief_item_id: string;
+  title_en: string;
+  title_uk: string;
+  brief_date: string;
+  daily_rank: number;
+  impact_level: string | null;
+  category_slug: string | null;
+  source_name: string;
+  source_url: string;
+  cluster_id: string | null;
+  citation_count: number;
+  status: DigestCandidateSelectionStatus;
+  selected_rank: number | null;
+  score: number | null;
+  breakdown: DigestScoreBreakdown | null;
+  selection_reasons: string[];
+  exclusion_reasons: DigestCandidateExclusionReason[];
+}
+
+export interface DigestRationaleMetrics {
+  candidateCount: number;
+  eligibleCount: number;
+  rejectedCount: number;
+  selectedCount: number;
+  eligibleNotSelectedCount: number;
+  categoryCount: number;
+  sourceCount: number;
+  briefDayCount: number;
+  highImpactCount: number;
+  corroboratedCount: number;
+  strongEvidenceCount: number;
+  averageScore: number;
+  selectionFloor: number;
+  gateReasonCounts: Partial<Record<DigestRejectionReason, number>>;
+}
+
+export interface DigestEditorialRationale {
+  version: typeof WEEKLY_RATIONALE_VERSION;
+  summary_en: string;
+  summary_uk: string;
+  decisive_factors_en: string[];
+  decisive_factors_uk: string[];
+  tradeoffs_en: string;
+  tradeoffs_uk: string;
+  metrics: DigestRationaleMetrics;
+}
+
+export interface DigestSelectionContext {
+  rationale: DigestEditorialRationale;
+  candidates: DigestSelectionCandidateSnapshot[];
 }
 
 const CURRENT_SCORE_VERSION = 2;
@@ -177,6 +236,177 @@ function sourceKey(candidate: DigestCandidate): string {
   } catch {
     return candidate.sourceName.trim().toLowerCase() || 'unknown';
   }
+}
+
+function roundedAverage(values: number[]): number {
+  if (values.length === 0) return 0;
+  return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
+}
+
+function exclusionReasonsForEligibleCandidate(
+  scored: ScoredDigestCandidate,
+  selected: ScoredDigestCandidate[],
+): DigestCandidateExclusionReason[] {
+  const candidate = scored.candidate;
+  const cluster = candidate.clusterId ?? `article:${candidate.articleId}`;
+  if (
+    selected.some(
+      ({ candidate: selectedCandidate }) =>
+        (selectedCandidate.clusterId ?? `article:${selectedCandidate.articleId}`) === cluster,
+    )
+  ) {
+    return ['event_cluster_covered'];
+  }
+  const category = candidate.category_slug ?? 'other';
+  if (
+    selected.filter(
+      ({ candidate: selectedCandidate }) =>
+        (selectedCandidate.category_slug ?? 'other') === category,
+    ).length >= 2
+  ) {
+    return ['category_balance'];
+  }
+  return ['digest_capacity'];
+}
+
+/**
+ * Builds the compact, review-facing explanation and the reproducible candidate
+ * pool for one selection run. This is summarized rationale, not hidden model
+ * reasoning: every statement is derived from persisted inputs and scores.
+ */
+export function buildDigestSelectionContext(
+  selection: EditorialDigestSelection,
+): DigestSelectionContext {
+  const selectedRank = new Map(
+    selection.selected.map(({ candidate }, index) => [candidate.id, index + 1]),
+  );
+  const eligibleById = new Map(selection.eligible.map((scored) => [scored.candidate.id, scored]));
+  const rejectedById = new Map(
+    selection.rejected.map(({ candidate, reasons }) => [candidate.id, reasons]),
+  );
+  const allCandidates = [
+    ...selection.eligible.map(({ candidate }) => candidate),
+    ...selection.rejected.map(({ candidate }) => candidate),
+  ];
+  const candidateSnapshots = allCandidates.map((candidate) => {
+    const scored = eligibleById.get(candidate.id);
+    const gateReasons = rejectedById.get(candidate.id) ?? [];
+    const rank = selectedRank.get(candidate.id) ?? null;
+    const status: DigestCandidateSelectionStatus =
+      gateReasons.length > 0 ? 'rejected' : rank ? 'selected' : 'eligible_not_selected';
+    return {
+      brief_item_id: candidate.id,
+      title_en: candidate.title_en,
+      title_uk: candidate.title_uk,
+      brief_date: candidate.date,
+      daily_rank: candidate.rank,
+      impact_level: candidate.impact_level,
+      category_slug: candidate.category_slug,
+      source_name: candidate.sourceName,
+      source_url: candidate.sourceUrl,
+      cluster_id: candidate.clusterId,
+      citation_count: candidate.citationUrls.length,
+      status,
+      selected_rank: rank,
+      score: scored?.score ?? null,
+      breakdown: scored?.breakdown ?? null,
+      selection_reasons: scored?.reasons ?? [],
+      exclusion_reasons:
+        gateReasons.length > 0
+          ? gateReasons
+          : rank || !scored
+            ? []
+            : exclusionReasonsForEligibleCandidate(scored, selection.selected),
+    } satisfies DigestSelectionCandidateSnapshot;
+  });
+
+  const selectedCandidates = selection.selected.map(({ candidate }) => candidate);
+  const gateReasonCounts: DigestRationaleMetrics['gateReasonCounts'] = {};
+  for (const { reasons } of selection.rejected) {
+    for (const reason of reasons) gateReasonCounts[reason] = (gateReasonCounts[reason] ?? 0) + 1;
+  }
+  const metrics = {
+    candidateCount: candidateSnapshots.length,
+    eligibleCount: selection.eligible.length,
+    rejectedCount: selection.rejected.length,
+    selectedCount: selection.selected.length,
+    eligibleNotSelectedCount: Math.max(0, selection.eligible.length - selection.selected.length),
+    categoryCount: new Set(
+      selectedCandidates.map((candidate) => candidate.category_slug ?? 'other'),
+    ).size,
+    sourceCount: new Set(selectedCandidates.map(sourceKey)).size,
+    briefDayCount: new Set(selectedCandidates.map((candidate) => candidate.date)).size,
+    highImpactCount: selectedCandidates.filter((candidate) => candidate.impact_level === 'high')
+      .length,
+    corroboratedCount: selectedCandidates.filter(
+      (candidate) => (candidate.crossSourceScore ?? 0) > 0 || candidate.mentionsCount > 1,
+    ).length,
+    strongEvidenceCount: selectedCandidates.filter(
+      (candidate) =>
+        Math.min(candidate.factsEnCount, candidate.factsUkCount) >= 3 &&
+        candidate.citationUrls.length >= 1,
+    ).length,
+    averageScore: roundedAverage(selection.selected.map(({ score }) => score)),
+    selectionFloor: selection.selected.at(-1)?.score ?? 0,
+    gateReasonCounts,
+  } satisfies DigestRationaleMetrics;
+
+  const summary_en =
+    `Selected ${metrics.selectedCount} of ${metrics.candidateCount} approved stories from the week: ` +
+    `${metrics.eligibleCount} passed the evidence gates and ${metrics.rejectedCount} were excluded before scoring. ` +
+    `Editorial impact, evidence quality, independent corroboration, and practical builder value determined the final mix; diversity rules kept repeated events and categories from dominating.`;
+  const summary_uk =
+    `Відібрано ${metrics.selectedCount} із ${metrics.candidateCount} затверджених новин тижня: ` +
+    `${metrics.eligibleCount} пройшли перевірки доказовості, а ${metrics.rejectedCount} були відсіяні до оцінювання. ` +
+    `Фінальний склад визначили редакційний вплив, якість доказів, незалежне підтвердження та практична цінність; правила різноманітності не дали одній події чи темі домінувати.`;
+  const decisive_factors_en = [
+    `${metrics.highImpactCount} high-impact stories`,
+    `${metrics.strongEvidenceCount} stories with strong evidence packages`,
+    `${metrics.corroboratedCount} stories corroborated across sources or signals`,
+    `${metrics.categoryCount} categories across ${metrics.sourceCount} source domains`,
+  ];
+  const decisive_factors_uk = [
+    `${metrics.highImpactCount} новин із високим впливом`,
+    `${metrics.strongEvidenceCount} новин із сильним пакетом доказів`,
+    `${metrics.corroboratedCount} новин із підтвердженням кількома джерелами або сигналами`,
+    `${metrics.categoryCount} категорій із ${metrics.sourceCount} доменів джерел`,
+  ];
+  const tradeoffs_en =
+    `${metrics.eligibleNotSelectedCount} eligible stories remained outside the digest because of ` +
+    `the seven-story limit, event deduplication, or category balance.`;
+  const tradeoffs_uk =
+    `Поза дайджестом залишилося придатних новин: ${metrics.eligibleNotSelectedCount}. Причини: ліміт у сім позицій, ` +
+    `дедуплікацію подій або баланс категорій.`;
+
+  return {
+    rationale: {
+      version: WEEKLY_RATIONALE_VERSION,
+      summary_en,
+      summary_uk,
+      decisive_factors_en,
+      decisive_factors_uk,
+      tradeoffs_en,
+      tradeoffs_uk,
+      metrics,
+    },
+    candidates: candidateSnapshots.sort((a, b) => {
+      if (a.status !== b.status) {
+        const order: Record<DigestCandidateSelectionStatus, number> = {
+          selected: 0,
+          eligible_not_selected: 1,
+          rejected: 2,
+        };
+        return order[a.status] - order[b.status];
+      }
+      if (a.selected_rank !== null || b.selected_rank !== null) {
+        return (
+          (a.selected_rank ?? Number.POSITIVE_INFINITY) -
+          (b.selected_rank ?? Number.POSITIVE_INFINITY)
+        );
+      }
+      return (b.score ?? -1) - (a.score ?? -1);
+    }),
+  };
 }
 
 function scoreCandidate(candidate: DigestCandidate, weekEnd: string): ScoredDigestCandidate {

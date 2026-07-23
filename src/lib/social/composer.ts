@@ -5,6 +5,7 @@ import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import {
+  buildDigestSelectionContext,
   citationUrlsFromUnknown,
   factCountFromUnknown,
   selectEditorialDigestItems,
@@ -794,6 +795,7 @@ export async function composeWeeklySocial(
   const startDate = shiftDate(endDate, -6);
   const { briefs, items, articles } = await loadApprovedRange(startDate, endDate);
   const selection = selectEditorialDigestItems(weeklyCandidates(items, briefs, articles));
+  const selectionContext = buildDigestSelectionContext(selection);
   const itemById = new Map(items.map((item) => [item.id, item]));
   const selected = selection.selected.flatMap(({ candidate }) => {
     const item = itemById.get(candidate.id);
@@ -829,6 +831,23 @@ export async function composeWeeklySocial(
     .select('id')
     .single();
   if (digestError) throw new Error(`[social-composer] weekly digest: ${digestError.message}`);
+
+  const { error: selectionRunError } = await supabase.from('weekly_digest_selection_runs').insert({
+    weekly_digest_id: digest.id,
+    algorithm_version: selection.version,
+    rationale_version: selectionContext.rationale.version,
+    week_start: startDate,
+    week_end: endDate,
+    candidate_count: selectionContext.rationale.metrics.candidateCount,
+    eligible_count: selectionContext.rationale.metrics.eligibleCount,
+    rejected_count: selectionContext.rationale.metrics.rejectedCount,
+    selected_count: selectionContext.rationale.metrics.selectedCount,
+    rationale: selectionContext.rationale as unknown as Json,
+    candidate_pool: selectionContext.candidates as unknown as Json,
+  });
+  if (selectionRunError) {
+    throw new Error(`[social-composer] weekly selection run: ${selectionRunError.message}`);
+  }
 
   await supabase.from('weekly_digest_items').delete().eq('weekly_digest_id', digest.id);
   const dateByBrief = new Map(briefs.map((brief) => [brief.id, brief.date]));

@@ -7,12 +7,15 @@ import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { StatusPill } from '@/components/admin/status-pill';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import {
+  addressWeeklyDigestChangesAction,
   approvePackageAction,
   approvePostAction,
   cancelPackageAction,
   regenerateVariantAction,
+  requestWeeklyDigestChangesAction,
   updateVariantAction,
 } from '../../../actions';
+import { WEEKLY_ITEM_REVIEW_ACTIONS, WEEKLY_REVIEW_REASONS } from '@/lib/social/weekly-review';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +25,7 @@ interface Issue {
 }
 
 interface EditorialItem {
+  briefItemId: string;
   rank: number;
   title: string;
   version: string;
@@ -34,18 +38,63 @@ interface EditorialItem {
   citationCount: number;
 }
 
+interface EditorialRationale {
+  version: string;
+  summary: string;
+  factors: string[];
+  tradeoffs: string;
+  metrics: {
+    candidateCount: number;
+    eligibleCount: number;
+    rejectedCount: number;
+    selectedCount: number;
+    categoryCount: number;
+    sourceCount: number;
+    averageScore: number;
+  };
+}
+
+interface AlternativeCandidate {
+  briefItemId: string;
+  title: string;
+  score: number;
+  category: string;
+  sourceName: string;
+  exclusionReasons: string[];
+}
+
+interface WeeklyReviewItem {
+  id: string;
+  action: string;
+  note: string | null;
+  previousRank: number | null;
+  requestedRank: number | null;
+  title: string;
+}
+
 function jsonRecord(value: Json | undefined): Record<string, Json | undefined> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, Json | undefined>)
     : null;
 }
 
-function editorialItem(rank: number, value: Json): EditorialItem | null {
+function jsonStrings(value: Json | undefined): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : [];
+}
+
+function jsonNumber(record: Record<string, Json | undefined> | null, key: string): number {
+  return typeof record?.[key] === 'number' ? record[key] : 0;
+}
+
+function editorialItem(briefItemId: string, rank: number, value: Json): EditorialItem | null {
   const snapshot = jsonRecord(value);
   const selection = jsonRecord(snapshot?.editorial_selection);
   if (!snapshot || !selection || typeof selection.score !== 'number') return null;
   const sourceUrl = typeof selection.source_url === 'string' ? selection.source_url : null;
   return {
+    briefItemId,
     rank,
     title:
       typeof snapshot.title_en === 'string'
@@ -65,6 +114,72 @@ function editorialItem(rank: number, value: Json): EditorialItem | null {
       : [],
     citationCount: Array.isArray(selection.citation_urls) ? selection.citation_urls.length : 0,
   };
+}
+
+function editorialRationale(value: Json | undefined): EditorialRationale | null {
+  const rationale = jsonRecord(value);
+  const metrics = jsonRecord(rationale?.metrics);
+  if (!rationale || !metrics) return null;
+  const summary =
+    typeof rationale.summary_uk === 'string'
+      ? rationale.summary_uk
+      : typeof rationale.summary_en === 'string'
+        ? rationale.summary_en
+        : '';
+  if (!summary) return null;
+  return {
+    version: typeof rationale.version === 'string' ? rationale.version : 'unknown',
+    summary,
+    factors: jsonStrings(rationale.decisive_factors_uk).length
+      ? jsonStrings(rationale.decisive_factors_uk)
+      : jsonStrings(rationale.decisive_factors_en),
+    tradeoffs:
+      typeof rationale.tradeoffs_uk === 'string'
+        ? rationale.tradeoffs_uk
+        : typeof rationale.tradeoffs_en === 'string'
+          ? rationale.tradeoffs_en
+          : '',
+    metrics: {
+      candidateCount: jsonNumber(metrics, 'candidateCount'),
+      eligibleCount: jsonNumber(metrics, 'eligibleCount'),
+      rejectedCount: jsonNumber(metrics, 'rejectedCount'),
+      selectedCount: jsonNumber(metrics, 'selectedCount'),
+      categoryCount: jsonNumber(metrics, 'categoryCount'),
+      sourceCount: jsonNumber(metrics, 'sourceCount'),
+      averageScore: jsonNumber(metrics, 'averageScore'),
+    },
+  };
+}
+
+function alternativeCandidates(value: Json | undefined): AlternativeCandidate[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    const candidate = jsonRecord(entry);
+    if (
+      !candidate ||
+      candidate.status !== 'eligible_not_selected' ||
+      typeof candidate.brief_item_id !== 'string' ||
+      typeof candidate.score !== 'number'
+    ) {
+      return [];
+    }
+    return [
+      {
+        briefItemId: candidate.brief_item_id,
+        title:
+          typeof candidate.title_uk === 'string'
+            ? candidate.title_uk
+            : typeof candidate.title_en === 'string'
+              ? candidate.title_en
+              : 'Untitled story',
+        score: candidate.score,
+        category: typeof candidate.category_slug === 'string' ? candidate.category_slug : 'other',
+        sourceName:
+          typeof candidate.source_name === 'string' ? candidate.source_name : 'Unknown source',
+        exclusionReasons: jsonStrings(candidate.exclusion_reasons),
+      },
+    ];
+  });
 }
 
 function quality(value: Json): {
@@ -138,19 +253,92 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
       .limit(20),
   ]);
   if (!socialPackage) notFound();
-  const { data: weeklyItemRows, error: weeklyItemsError } = socialPackage.weekly_digest_id
-    ? await supabase
-        .from('weekly_digest_items')
-        .select('rank,snapshot')
-        .eq('weekly_digest_id', socialPackage.weekly_digest_id)
-        .order('rank')
-    : { data: [], error: null };
+  const [weeklyItemsResult, selectionRunResult, weeklyReviewsResult] =
+    socialPackage.weekly_digest_id
+      ? await Promise.all([
+          supabase
+            .from('weekly_digest_items')
+            .select('brief_item_id,rank,snapshot')
+            .eq('weekly_digest_id', socialPackage.weekly_digest_id)
+            .order('rank'),
+          supabase
+            .from('weekly_digest_selection_runs')
+            .select('id,algorithm_version,rationale_version,rationale,candidate_pool,created_at')
+            .eq('weekly_digest_id', socialPackage.weekly_digest_id)
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('weekly_digest_reviews')
+            .select('id,action,reason_codes,note,created_at,parent_review_id')
+            .eq('weekly_digest_id', socialPackage.weekly_digest_id)
+            .order('created_at', { ascending: false })
+            .order('id', { ascending: false })
+            .limit(20),
+        ])
+      : [
+          { data: [], error: null },
+          { data: null, error: null },
+          { data: [], error: null },
+        ];
+  const { data: weeklyItemRows, error: weeklyItemsError } = weeklyItemsResult;
   if (weeklyItemsError) throw new Error(`Weekly shortlist: ${weeklyItemsError.message}`);
+  if (selectionRunResult.error) {
+    throw new Error(`Weekly rationale: ${selectionRunResult.error.message}`);
+  }
+  if (weeklyReviewsResult.error) {
+    throw new Error(`Weekly reviews: ${weeklyReviewsResult.error.message}`);
+  }
   const editorialItems = (weeklyItemRows ?? []).flatMap((row) => {
-    const item = editorialItem(row.rank, row.snapshot);
+    const item = editorialItem(row.brief_item_id, row.rank, row.snapshot);
     return item ? [item] : [];
   });
+  const selectionRun = selectionRunResult.data;
+  const rationale = editorialRationale(selectionRun?.rationale);
+  const alternatives = alternativeCandidates(selectionRun?.candidate_pool);
+  const weeklyReviews = weeklyReviewsResult.data ?? [];
+  const weeklyReviewIds = weeklyReviews.map((review) => review.id);
+  const { data: weeklyReviewItemRows, error: weeklyReviewItemsError } =
+    weeklyReviewIds.length > 0
+      ? await supabase
+          .from('weekly_digest_review_items')
+          .select(
+            'id,review_id,brief_item_id,action,note,previous_rank,requested_rank,candidate_snapshot',
+          )
+          .in('review_id', weeklyReviewIds)
+          .order('created_at')
+      : { data: [], error: null };
+  if (weeklyReviewItemsError) {
+    throw new Error(`Weekly review items: ${weeklyReviewItemsError.message}`);
+  }
+  const selectedTitleById = new Map(editorialItems.map((item) => [item.briefItemId, item.title]));
+  const weeklyReviewItemsByReview = new Map<string, WeeklyReviewItem[]>();
+  for (const row of weeklyReviewItemRows ?? []) {
+    const snapshot = jsonRecord(row.candidate_snapshot);
+    const title =
+      (typeof snapshot?.title_uk === 'string' ? snapshot.title_uk : null) ??
+      (typeof snapshot?.title_en === 'string' ? snapshot.title_en : null) ??
+      (row.brief_item_id ? selectedTitleById.get(row.brief_item_id) : null) ??
+      'Unknown story';
+    const items = weeklyReviewItemsByReview.get(row.review_id) ?? [];
+    items.push({
+      id: row.id,
+      action: row.action,
+      note: row.note,
+      previousRank: row.previous_rank,
+      requestedRank: row.requested_rank,
+      title,
+    });
+    weeklyReviewItemsByReview.set(row.review_id, items);
+  }
+  const hasOpenChangeRequest = weeklyReviews[0]?.action === 'changes_requested';
+  const openChangeRequest = hasOpenChangeRequest ? weeklyReviews[0] : null;
+  const reviewReasonLabel = new Map<string, string>(
+    WEEKLY_REVIEW_REASONS.map((reason) => [reason.code, reason.label]),
+  );
   const allApprovable =
+    !hasOpenChangeRequest &&
     (posts ?? []).length > 0 &&
     (posts ?? []).every(
       (post) =>
@@ -195,6 +383,110 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
           </form>
         </div>
       </div>
+
+      {rationale ? (
+        <section className="mt-8 rounded-3xl border border-violet-300/20 bg-violet-400/[.06] p-4 sm:p-6">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <p className="text-xs font-bold tracking-[.15em] text-violet-200 uppercase">
+                Why this Weekly Digest
+              </p>
+              <h2 className="mt-1 text-xl font-bold text-white">Editorial rationale</h2>
+            </div>
+            <span className="text-xs text-violet-200/70">
+              {selectionRun?.algorithm_version} · {rationale.version}
+            </span>
+          </div>
+          <p className="mt-4 max-w-4xl text-sm leading-6 text-slate-200">{rationale.summary}</p>
+          <dl className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              {
+                label: 'Selected',
+                value: `${rationale.metrics.selectedCount}/${rationale.metrics.candidateCount}`,
+              },
+              {
+                label: 'Passed gates',
+                value: `${rationale.metrics.eligibleCount}`,
+              },
+              {
+                label: 'Coverage',
+                value: `${rationale.metrics.categoryCount} categories · ${rationale.metrics.sourceCount} sources`,
+              },
+              {
+                label: 'Average score',
+                value: `${rationale.metrics.averageScore.toFixed(1)}/100`,
+              },
+            ].map((metric) => (
+              <div
+                key={metric.label}
+                className="rounded-2xl border border-white/10 bg-black/15 px-4 py-3"
+              >
+                <dt className="text-xs font-bold tracking-wide text-slate-400 uppercase">
+                  {metric.label}
+                </dt>
+                <dd className="mt-1 text-base font-bold text-white">{metric.value}</dd>
+              </div>
+            ))}
+          </dl>
+          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_.8fr]">
+            <ul className="grid gap-2 text-sm text-slate-300 sm:grid-cols-2">
+              {rationale.factors.map((factor) => (
+                <li key={factor} className="rounded-xl border border-white/10 px-3 py-2">
+                  {factor}
+                </li>
+              ))}
+            </ul>
+            <p className="rounded-xl border border-amber-300/15 bg-amber-300/[.05] p-3 text-sm leading-6 text-amber-100">
+              <strong className="block text-xs tracking-wide uppercase">Trade-offs</strong>
+              {rationale.tradeoffs}
+            </p>
+          </div>
+        </section>
+      ) : socialPackage.kind === 'weekly_digest' ? (
+        <p className="mt-8 rounded-2xl border border-amber-300/20 bg-amber-300/[.06] p-4 text-sm text-amber-100">
+          Editorial rationale is unavailable for this legacy digest. Generate a new selection run
+          before approval if you need a reproducible explanation.
+        </p>
+      ) : null}
+
+      {openChangeRequest ? (
+        <section className="mt-6 rounded-2xl border border-amber-300/30 bg-amber-300/[.08] p-4 sm:p-5">
+          <p className="text-xs font-bold tracking-[.15em] text-amber-200 uppercase">
+            Changes requested · approval blocked
+          </p>
+          <p className="mt-2 text-sm leading-6 text-amber-50">{openChangeRequest.note}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {openChangeRequest.reason_codes.map((code) => (
+              <span
+                key={code}
+                className="rounded-full border border-amber-200/20 px-2.5 py-1 text-xs text-amber-100"
+              >
+                {reviewReasonLabel.get(code) ?? code.replaceAll('_', ' ')}
+              </span>
+            ))}
+          </div>
+          <form
+            action={addressWeeklyDigestChangesAction}
+            className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"
+          >
+            <input type="hidden" name="id" value={id} />
+            <label className="grid gap-1 text-sm font-semibold text-amber-100">
+              Resolution note
+              <input
+                name="resolution_note"
+                maxLength={2000}
+                placeholder="What changed, or why the current version is now acceptable"
+                className="min-h-11 rounded-xl border border-amber-200/20 bg-black/20 px-3 text-white outline-none focus:border-amber-200/60"
+              />
+            </label>
+            <ActionSubmitButton
+              idleLabel="Mark changes addressed"
+              pendingLabel="Saving resolution…"
+              className="min-h-11 self-end rounded-xl bg-amber-200 px-4 text-sm font-bold text-amber-950"
+            />
+          </form>
+        </section>
+      ) : null}
 
       {editorialItems.length > 0 ? (
         <section className="mt-8 rounded-3xl border border-[#47e4d3]/20 bg-[#10201f] p-4 sm:p-6">
@@ -258,6 +550,217 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
               </li>
             ))}
           </ol>
+        </section>
+      ) : null}
+
+      {socialPackage.kind === 'weekly_digest' && editorialItems.length > 0 ? (
+        <section className="mt-6 rounded-3xl border border-white/10 bg-[#151b20] p-4 sm:p-6">
+          <div>
+            <p className="text-xs font-bold tracking-[.15em] text-slate-400 uppercase">
+              Editorial feedback
+            </p>
+            <h2 className="mt-1 text-xl font-bold text-white">Review decision and corrections</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+              Save structured reasons and story-level changes before approval. This feedback stays
+              linked to the exact algorithm version, candidate pool, and digest snapshot.
+            </p>
+          </div>
+
+          {!hasOpenChangeRequest ? (
+            <details className="mt-5 rounded-2xl border border-white/10 bg-black/15">
+              <summary className="cursor-pointer px-4 py-4 text-sm font-bold text-white marker:text-[#47e4d3]">
+                Request changes to this Weekly Digest
+              </summary>
+              <form
+                action={requestWeeklyDigestChangesAction}
+                className="grid gap-6 border-t border-white/10 p-4 sm:p-5"
+              >
+                <input type="hidden" name="id" value={id} />
+                <fieldset>
+                  <legend className="text-sm font-bold text-white">
+                    What needs attention? Select all that apply.
+                  </legend>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {WEEKLY_REVIEW_REASONS.map((reason) => (
+                      <label
+                        key={reason.code}
+                        className="flex cursor-pointer gap-3 rounded-xl border border-white/10 p-3 text-sm text-slate-300 hover:border-white/20"
+                      >
+                        <input
+                          type="checkbox"
+                          name="reason_codes"
+                          value={reason.code}
+                          className="mt-1 size-4 accent-[#47e4d3]"
+                        />
+                        <span>
+                          <strong className="block text-white">{reason.label}</strong>
+                          <span className="mt-1 block text-xs leading-5 text-slate-500">
+                            {reason.help}
+                          </span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <label className="grid gap-2 text-sm font-bold text-white">
+                  Editorial note
+                  <textarea
+                    name="review_note"
+                    required
+                    minLength={10}
+                    maxLength={2000}
+                    rows={5}
+                    placeholder="Explain what looks wrong, which story may be missing, and what should change."
+                    className="rounded-2xl border border-white/15 bg-[#0c1014] p-4 leading-6 font-normal text-white outline-none focus:border-[#47e4d3]"
+                  />
+                </label>
+
+                <fieldset>
+                  <legend className="text-sm font-bold text-white">Selected story actions</legend>
+                  <div className="mt-3 grid gap-3">
+                    {editorialItems.map((item) => (
+                      <div
+                        key={item.briefItemId}
+                        className="grid gap-3 rounded-2xl border border-white/10 p-3 lg:grid-cols-[minmax(0,1fr)_150px_100px_minmax(180px,.7fr)] lg:items-end"
+                      >
+                        <div>
+                          <p className="text-xs font-bold text-[#8af4e9]">#{item.rank}</p>
+                          <p className="mt-1 text-sm font-semibold text-white">{item.title}</p>
+                        </div>
+                        <label className="grid gap-1 text-xs font-bold text-slate-400">
+                          Requested action
+                          <select
+                            name={`item_action_${item.briefItemId}`}
+                            defaultValue="keep"
+                            className="min-h-10 rounded-lg border border-white/15 bg-[#0c1014] px-2 text-sm text-white"
+                          >
+                            {WEEKLY_ITEM_REVIEW_ACTIONS.map((action) => (
+                              <option key={action.code} value={action.code}>
+                                {action.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="grid gap-1 text-xs font-bold text-slate-400">
+                          New rank
+                          <input
+                            type="number"
+                            name={`item_rank_${item.briefItemId}`}
+                            min={1}
+                            max={7}
+                            defaultValue={item.rank}
+                            className="min-h-10 rounded-lg border border-white/15 bg-[#0c1014] px-2 text-sm text-white"
+                          />
+                        </label>
+                        <label className="grid gap-1 text-xs font-bold text-slate-400">
+                          Story note
+                          <input
+                            name={`item_note_${item.briefItemId}`}
+                            maxLength={1000}
+                            placeholder="Optional detail"
+                            className="min-h-10 rounded-lg border border-white/15 bg-[#0c1014] px-3 text-sm font-normal text-white"
+                          />
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </fieldset>
+
+                {alternatives.length > 0 ? (
+                  <label className="grid gap-2 text-sm font-bold text-white">
+                    Add missing eligible stories
+                    <select
+                      multiple
+                      name="missing_item_ids"
+                      size={Math.min(7, Math.max(3, alternatives.length))}
+                      className="rounded-2xl border border-white/15 bg-[#0c1014] p-3 text-sm font-normal text-white"
+                    >
+                      {alternatives.map((candidate) => (
+                        <option
+                          key={candidate.briefItemId}
+                          value={candidate.briefItemId}
+                          className="py-1"
+                        >
+                          {candidate.score.toFixed(1)} · {candidate.title} ·{' '}
+                          {candidate.category.replaceAll('-', ' ')} · {candidate.sourceName}
+                          {candidate.exclusionReasons.length > 0
+                            ? ` · omitted: ${candidate.exclusionReasons.join(', ')}`
+                            : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-xs leading-5 font-normal text-slate-500">
+                      Ctrl/Cmd-click to choose more than one. Only candidates that passed all
+                      quality gates are available here.
+                    </span>
+                  </label>
+                ) : null}
+
+                <ActionSubmitButton
+                  idleLabel="Save change request"
+                  pendingLabel="Saving editorial feedback…"
+                  className="min-h-11 w-full rounded-xl bg-amber-200 px-4 text-sm font-bold text-amber-950 sm:w-fit"
+                />
+              </form>
+            </details>
+          ) : (
+            <p className="mt-5 rounded-xl border border-amber-300/20 bg-amber-300/[.04] p-3 text-sm text-amber-100">
+              Address the open change request above before starting another review round.
+            </p>
+          )}
+
+          {weeklyReviews.length > 0 ? (
+            <div className="mt-6 border-t border-white/10 pt-5">
+              <h3 className="text-sm font-bold text-white">Weekly review history</h3>
+              <ol className="mt-3 grid gap-2">
+                {weeklyReviews.map((review) => {
+                  const reviewItems = weeklyReviewItemsByReview.get(review.id) ?? [];
+                  return (
+                    <li
+                      key={review.id}
+                      className="rounded-xl border border-white/10 px-3 py-3 text-sm text-slate-300"
+                    >
+                      <div className="flex flex-wrap justify-between gap-2">
+                        <strong className="text-white capitalize">
+                          {review.action.replaceAll('_', ' ')}
+                        </strong>
+                        <time className="text-xs text-slate-500">
+                          {new Date(review.created_at).toLocaleString('uk-UA', {
+                            timeZone: 'Europe/Kyiv',
+                          })}
+                        </time>
+                      </div>
+                      {review.reason_codes.length > 0 ? (
+                        <p className="mt-1 text-xs text-slate-400">
+                          {review.reason_codes
+                            .map((code) => reviewReasonLabel.get(code) ?? code.replaceAll('_', ' '))
+                            .join(' · ')}
+                        </p>
+                      ) : null}
+                      {review.note ? <p className="mt-2 leading-6">{review.note}</p> : null}
+                      {reviewItems.length > 0 ? (
+                        <ul className="mt-3 grid gap-1.5 border-t border-white/10 pt-3">
+                          {reviewItems.map((item) => (
+                            <li key={item.id} className="text-xs leading-5 text-slate-400">
+                              <strong className="text-slate-200 capitalize">
+                                {item.action.replaceAll('_', ' ')}
+                              </strong>{' '}
+                              · {item.title}
+                              {item.requestedRank !== null
+                                ? ` · rank ${item.previousRank ?? '—'} → ${item.requestedRank}`
+                                : ''}
+                              {item.note ? ` · ${item.note}` : ''}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          ) : null}
         </section>
       ) : null}
 
@@ -470,8 +973,13 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
               key={review.id}
               className="flex flex-wrap justify-between gap-2 border-b border-white/5 py-2 last:border-0"
             >
-              <span className="capitalize">
-                {review.action.replaceAll('_', ' ')} · v{review.content_version}
+              <span>
+                <span className="capitalize">
+                  {review.action.replaceAll('_', ' ')} · v{review.content_version}
+                </span>
+                {review.note ? (
+                  <span className="mt-1 block text-xs text-slate-500">{review.note}</span>
+                ) : null}
               </span>
               <time>
                 {new Date(review.created_at).toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' })}

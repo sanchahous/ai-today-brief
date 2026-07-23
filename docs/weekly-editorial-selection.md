@@ -13,7 +13,9 @@ shortlist for an editor, not to publish an algorithmic verdict.
 5. Select up to seven stories with event, category, source, and day diversity.
 6. Persist the score, component breakdown, reasons, source, and citations in the
    weekly item snapshot.
-7. Create a yellow-risk package in `in_review`. An editor must verify the central
+7. Persist the complete candidate pool and a concise digest-level rationale in
+   `weekly_digest_selection_runs`.
+8. Create a yellow-risk package in `in_review`. An editor must verify the central
    claim and approve the package before the digest becomes public.
 
 ## Trust gates
@@ -59,13 +61,33 @@ one event or one theme to dominate.
 
 ## Editorial review
 
-The admin package page shows the shortlist, score, selection reasons, source,
-and citation count. The score is decision support only. Approval should check:
+The admin package page shows a concise `Why this Weekly Digest` rationale before
+the shortlist. It reports how many candidates were considered, how many passed
+the gates, the decisive factors, topic/source coverage, and the main trade-offs.
+The summary is deterministic and is built from the persisted selection run; it
+is not hidden model reasoning.
+
+The page also shows the shortlist, score, selection reasons, source, and citation
+count. The score is decision support only. Approval should check:
 
 1. the headline and central claim match the linked source;
 2. numbers, release status, and dates are supported;
 3. the story remains important in the context of the whole week;
 4. the seven stories form a useful mix rather than seven variations of one trend.
+
+An editor can save a structured change request with one or more reason codes,
+a required note, story-level remove/reorder/edit/replace actions, and eligible
+stories that appear to be missing. A request revokes variant approvals and
+blocks package approval until a later `changes_addressed` review event. Review
+events and their item-level labels are append-only so they can calibrate future
+versions without losing the original decision context.
+
+The stored review dataset distinguishes:
+
+- a good daily story that was not important enough for the weekly top seven;
+- a selected false positive that the editor removed;
+- an eligible false negative that the editor asked to add;
+- a ranking or writing correction that does not invalidate the underlying story.
 
 ## Calibration
 

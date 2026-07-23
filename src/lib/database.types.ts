@@ -1148,6 +1148,92 @@ export type Database = {
           },
         ];
       };
+      weekly_digest_review_items: CmsTable<
+        {
+          action: string;
+          brief_item_id: string | null;
+          candidate_snapshot: Json;
+          created_at: string;
+          id: string;
+          note: string | null;
+          previous_rank: number | null;
+          reason_codes: string[];
+          requested_rank: number | null;
+          review_id: string;
+        },
+        {
+          action: string;
+          brief_item_id?: string | null;
+          candidate_snapshot?: Json;
+          created_at?: string;
+          id?: string;
+          note?: string | null;
+          previous_rank?: number | null;
+          reason_codes?: string[];
+          requested_rank?: number | null;
+          review_id: string;
+        }
+      >;
+      weekly_digest_reviews: CmsTable<
+        {
+          action: string;
+          created_at: string;
+          digest_snapshot: Json;
+          id: string;
+          note: string | null;
+          package_id: string | null;
+          parent_review_id: string | null;
+          reason_codes: string[];
+          reviewer_id: string | null;
+          selection_run_id: string | null;
+          weekly_digest_id: string;
+        },
+        {
+          action: string;
+          created_at?: string;
+          digest_snapshot?: Json;
+          id?: string;
+          note?: string | null;
+          package_id?: string | null;
+          parent_review_id?: string | null;
+          reason_codes?: string[];
+          reviewer_id?: string | null;
+          selection_run_id?: string | null;
+          weekly_digest_id: string;
+        }
+      >;
+      weekly_digest_selection_runs: CmsTable<
+        {
+          algorithm_version: string;
+          candidate_count: number;
+          candidate_pool: Json;
+          created_at: string;
+          eligible_count: number;
+          id: string;
+          rationale: Json;
+          rationale_version: string;
+          rejected_count: number;
+          selected_count: number;
+          week_end: string;
+          week_start: string;
+          weekly_digest_id: string;
+        },
+        {
+          algorithm_version: string;
+          candidate_count: number;
+          candidate_pool: Json;
+          created_at?: string;
+          eligible_count: number;
+          id?: string;
+          rationale: Json;
+          rationale_version: string;
+          rejected_count: number;
+          selected_count: number;
+          week_end: string;
+          week_start: string;
+          weekly_digest_id: string;
+        }
+      >;
       weekly_digest_items: CmsTable<
         {
           brief_item_id: string;
@@ -1367,6 +1453,10 @@ export type Database = {
         Args: { p_package_id: string };
         Returns: number;
       };
+      address_weekly_digest_changes: {
+        Args: { p_note?: string | null; p_package_id: string };
+        Returns: string;
+      };
       auto_approve_green_package: {
         Args: { p_package_id: string };
         Returns: boolean;
@@ -1411,6 +1501,15 @@ export type Database = {
       record_green_delivery_success: {
         Args: { p_package_id: string };
         Returns: boolean;
+      };
+      request_weekly_digest_changes: {
+        Args: {
+          p_item_feedback?: Json;
+          p_note: string;
+          p_package_id: string;
+          p_reason_codes: string[];
+        };
+        Returns: string;
       };
       read_social_oauth_secret: {
         Args: { p_channel: string };

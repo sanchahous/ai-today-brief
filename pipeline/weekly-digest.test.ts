@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildDigestSelectionContext,
   citationUrlsFromUnknown,
   digestLineSummary,
   factCountFromUnknown,
@@ -139,6 +140,53 @@ describe('selectDigestItems', () => {
       selected.filter((slug) => slug.startsWith('tools') || slug === 'event-primary'),
     ).toHaveLength(2);
     expect(selected).toContain('models');
+  });
+});
+
+describe('buildDigestSelectionContext', () => {
+  it('explains the whole digest with reproducible selection metrics', () => {
+    const selection = selectEditorialDigestItems([
+      cand({
+        itemSlug: 'lead',
+        impact_level: 'high',
+        category_slug: 'models-and-research',
+        crossSourceScore: 0.8,
+        mentionsCount: 3,
+      }),
+      cand({ itemSlug: 'tool', category_slug: 'tools-and-releases' }),
+      cand({ itemSlug: 'extra-tool', category_slug: 'tools-and-releases', rank: 3 }),
+      cand({ itemSlug: 'category-capped', category_slug: 'tools-and-releases', rank: 4 }),
+      cand({ itemSlug: 'blocked', citationUrls: [] }),
+    ]);
+
+    const context = buildDigestSelectionContext(selection);
+
+    expect(context.rationale.metrics).toMatchObject({
+      candidateCount: 5,
+      eligibleCount: 4,
+      rejectedCount: 1,
+      selectedCount: 3,
+      eligibleNotSelectedCount: 1,
+      categoryCount: 2,
+      highImpactCount: 1,
+      corroboratedCount: 1,
+    });
+    expect(context.rationale.summary_uk).toContain('Відібрано 3 із 5');
+    expect(context.rationale.tradeoffs_uk).toContain('придатних новин: 1');
+    expect(context.candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          brief_item_id: 'category-capped',
+          status: 'eligible_not_selected',
+          exclusion_reasons: ['category_balance'],
+        }),
+        expect.objectContaining({
+          brief_item_id: 'blocked',
+          status: 'rejected',
+          exclusion_reasons: ['missing_citations'],
+        }),
+      ]),
+    );
   });
 });
 
