@@ -1,15 +1,16 @@
 # Video pipeline boundary
 
-Status: proposed
+Status: accepted and implemented
 
 Decision date: 2026-07-23
 
 ## Decision
 
-The Remotion project will live in a separate repository and deployment unit,
-provisionally named `ai-today-brief-video`. The `ai-today-brief` repository will
-remain responsible for editorial selection, approval, public digest pages, and
-the persisted YouTube reference.
+The Remotion project lives in a separate standalone workspace with its own local
+Git history, named `ai-today-brief-video`. A separate GitHub remote is not
+required during the prototype phase. The `ai-today-brief` repository remains
+responsible for editorial selection, approval, public digest pages, and the
+persisted YouTube reference.
 
 Remotion dependencies, compositions, renders, avatar assets, and generated video
 files must not be added to this web application.
@@ -91,19 +92,26 @@ payload contract.
 
 ## Extraction plan
 
-1. Create a sibling folder and repository, for example
-   `E:\domains\ai-today-brief-video`.
-2. Move the current untracked `remotion/` prototype into that repository.
-3. Give the video repository its own `package.json`, lockfile, ESLint rules,
-   `.gitignore`, environment example, and render scripts.
-4. Verify the existing sample renders in the new repository.
-5. Remove the provisional Remotion scripts, dependencies, ESLint plugin, and
-   output ignore from the website working tree.
-6. Add manual manifest import/export first.
-7. After one or two successful weekly digests, automate HeyGen input and YouTube
-   upload.
-8. Only then add the minimal YouTube metadata fields and public embed to the
-   website.
+Completed:
+
+1. Created `E:\domains\ai-today-brief-video`.
+2. Moved the Remotion prototype and existing render previews there.
+3. Added an independent `package.json`, lockfile, ESLint rules, TypeScript
+   config, `.gitignore`, environment example, README, and render scripts.
+4. Initialized local Git with initial commit `3a7f282`.
+5. Passed TypeScript and ESLint checks.
+6. Rendered the 1110-frame demo to `output/atb-demo-uk.mp4`.
+7. Removed all Remotion-only dependencies, scripts, config, source, and output
+   from the website working tree.
+
+Next:
+
+1. Add manual Weekly Digest manifest import.
+2. Replace the single-story Ukrainian prototype with an English weekly digest
+   composition.
+3. Add HeyGen avatar narration and story imagery.
+4. After one or two successful weekly digests, automate YouTube upload.
+5. Add the minimal YouTube metadata fields and public embed to the website.
 
 ## Media retention
 
@@ -111,4 +119,4 @@ YouTube is suitable for delivery and embedding, but it re-encodes uploads and
 should not be treated as the canonical master archive. For the MVP, keep the
 render inputs and manifest so a video can be reproduced. If preserving exact
 masters or paid HeyGen clips becomes important, store them in inexpensive
-  object storage rather than in either Git repository.
+object storage rather than in either Git repository.
