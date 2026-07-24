@@ -7,6 +7,7 @@ import sharp from 'sharp';
 import type { Json } from '@/lib/database.types';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { storageBlob } from '@/lib/storage/binary';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { updateVariantAction } from '@/app/admin/actions';
 import { composeWeeklySocial } from '@/lib/social/composer';
@@ -94,9 +95,19 @@ function kyivDate(now = new Date()) {
 export async function createTestWeeklyDigestAction() {
   await requireSocialAdmin({ roles: ['owner'] });
   const now = new Date();
-  const result = await composeWeeklySocial(kyivDate(now), { now, testMode: true });
+  let result;
+  try {
+    result = await composeWeeklySocial(kyivDate(now), { now, testMode: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown preparation error.';
+    redirect(`/admin/weekly?test_error=${encodeURIComponent(message.slice(0, 300))}`);
+  }
   if (!result.weeklyDigestId) {
-    throw new Error('The test Weekly Digest could not be created for this seven-day window.');
+    redirect(
+      `/admin/weekly?test_error=${encodeURIComponent(
+        'The test Weekly Digest could not be prepared for this seven-day window.',
+      )}`,
+    );
   }
   revalidateWeeklyAdmin(result.weeklyDigestId);
   redirect(`/admin/weekly/${result.weeklyDigestId}`);
@@ -764,17 +775,27 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
   }
 
   const sha256 = createHash('sha256').update(bytes).digest('hex');
-  const path = `digests/${weeklyDigestId}/revisions/${revisionId}/uploads/${artifactType}/${sha256}.${extension}`;
+  const path = `digests/${weeklyDigestId}/revisions/${revisionId}/uploads/binary-v2/${artifactType}/${sha256}.${extension}`;
   const admin = getSupabaseAdmin();
   const { error: uploadError } = await admin.storage
     .from('weekly-digest-private')
-    .upload(path, bytes, {
+    .upload(path, storageBlob(bytes, mimeType), {
       contentType: mimeType,
       cacheControl: '31536000, immutable',
       upsert: false,
     });
   if (uploadError && !/already exists|duplicate/i.test(uploadError.message)) {
     throw new Error(uploadError.message);
+  }
+  const { data: stored, error: verifyError } = await admin.storage
+    .from('weekly-digest-private')
+    .download(path);
+  if (verifyError || !stored) {
+    throw new Error(`Upload verification failed: ${verifyError?.message ?? 'empty file'}`);
+  }
+  const storedBytes = Buffer.from(await stored.arrayBuffer());
+  if (storedBytes.length !== bytes.length || !storedBytes.equals(bytes)) {
+    throw new Error('Upload verification failed: stored bytes do not match the selected file.');
   }
   const db = await getSupabaseServer();
   const { error } = await db.rpc('save_weekly_digest_artifact', {

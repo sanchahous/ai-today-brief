@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { createCanvas, GlobalFonts, type SKRSContext2D } from '@napi-rs/canvas';
 import sharp, { type Sharp } from 'sharp';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { storageBlob } from '@/lib/storage/binary';
 import type { SocialAsset, SocialChannel } from './types';
 
 const DEJAVU_DIRECTORY = join(process.cwd(), 'node_modules', 'dejavu-fonts-ttf', 'ttf');
@@ -14,6 +15,7 @@ const BUCKET = 'social-assets';
 const BRAND_DARK = '#101418';
 const BRAND_TEAL = '#47e4d3';
 const BRAND_TEXT = '#f7fafc';
+const STORAGE_BINARY_VERSION = 'binary-v2';
 
 interface AssetSource {
   packageId: string;
@@ -277,13 +279,23 @@ export async function renderSocialAssetImage(
 
 async function uploadImmutable(path: string, jpeg: Buffer, width: number, height: number) {
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase.storage.from(BUCKET).upload(path, jpeg, {
-    contentType: 'image/jpeg',
-    cacheControl: '31536000, immutable',
-    upsert: false,
-  });
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, storageBlob(jpeg, 'image/jpeg'), {
+      contentType: 'image/jpeg',
+      cacheControl: '31536000, immutable',
+      upsert: false,
+    });
   if (error && !/already exists|duplicate/i.test(error.message)) {
     throw new Error(`[social-assets] ${error.message}`);
+  }
+  const { data: stored, error: verifyError } = await supabase.storage.from(BUCKET).download(path);
+  if (verifyError || !stored) {
+    throw new Error(`[social-assets] upload verification: ${verifyError?.message ?? 'empty file'}`);
+  }
+  const storedBytes = Buffer.from(await stored.arrayBuffer());
+  if (storedBytes.length !== jpeg.length || !storedBytes.equals(jpeg)) {
+    throw new Error('[social-assets] upload verification: stored bytes do not match source.');
   }
   const url = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   return {
@@ -300,6 +312,7 @@ function versionKey(source: AssetSource) {
     .update(
       JSON.stringify({
         version: source.generationVersion,
+        storage: STORAGE_BINARY_VERSION,
         channel: source.channel,
         title: source.title,
         summary: source.summary,

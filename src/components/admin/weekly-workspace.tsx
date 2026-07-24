@@ -332,9 +332,13 @@ function ArtifactCard({
         <div className="relative mt-4 aspect-[16/9] overflow-hidden rounded-xl border border-white/10 bg-black">
           <Image
             src={previewUrl}
-            alt={textFrom(artifact.content, 'alt_text') || `${label} preview`}
+            alt={
+              textFrom(artifact.content, 'alt_text', 'alt', 'alt_en', 'alt_uk') ||
+              `${label} preview`
+            }
             fill
             sizes="(max-width: 768px) 100vw, 520px"
+            unoptimized
             className="object-cover"
           />
         </div>
@@ -415,6 +419,7 @@ function OverviewPanel({
   );
   const latestJobs = workspace.generationJobs.slice(0, 5);
   const latestEvents = workspace.releaseEvents.slice(0, 8);
+  const isTestEdition = workspace.digest.is_test;
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,.6fr)]">
@@ -488,13 +493,14 @@ function OverviewPanel({
             Generation jobs
           </h2>
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[36rem] text-left text-sm">
+            <table className="w-full min-w-[52rem] text-left text-sm">
               <thead className="text-xs font-bold tracking-wide text-slate-500 uppercase">
                 <tr>
                   <th className="pb-3">Job</th>
                   <th className="pb-3">Status</th>
                   <th className="pb-3">Attempts</th>
                   <th className="pb-3">Created</th>
+                  <th className="pb-3">Latest result</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/8">
@@ -506,6 +512,17 @@ function OverviewPanel({
                     </td>
                     <td className="py-3 text-slate-400">{job.attempts}</td>
                     <td className="py-3 text-slate-400">{kyivDateTime(job.created_at)}</td>
+                    <td className="max-w-sm py-3 text-xs leading-5">
+                      {job.last_error ? (
+                        <p className="whitespace-pre-wrap text-red-200">{job.last_error}</p>
+                      ) : job.finished_at ? (
+                        <span className="text-slate-500">
+                          Finished {kyivDateTime(job.finished_at)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">Waiting for worker</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -534,13 +551,16 @@ function OverviewPanel({
               <dd className="mt-1 text-white">{kyivDateTime(workspace.digest.preflight_at)}</dd>
             </div>
             <div>
-              <dt className="font-bold text-slate-500">Public release</dt>
+              <dt className="font-bold text-slate-500">
+                {isTestEdition ? 'Reference release (test locked)' : 'Public release'}
+              </dt>
               <dd className="mt-1 text-white">{kyivDateTime(workspace.digest.release_at)}</dd>
             </div>
           </dl>
           <p className="mt-5 rounded-xl border border-cyan-300/20 bg-cyan-300/6 p-3 text-sm leading-6 text-cyan-100">
-            Monday is part of the review window. Editors can revise and re-approve until the
-            automated 15:45 Kyiv preflight; publication begins at 16:00.
+            {isTestEdition
+              ? 'This test follows the same Monday review timing, but the database prevents any public publication.'
+              : 'Monday is part of the review window. Editors can revise and re-approve until the automated 15:45 Kyiv preflight; publication begins at 16:00.'}
           </p>
         </section>
 
@@ -1080,45 +1100,11 @@ function ReplacementAssetForm({
       </form>
 
       <details className="border-t border-white/8 pt-3">
-        <summary className="text-xs font-bold text-slate-400">Or import a trusted URL</summary>
-        <form action={enqueueWeeklyGenerationAction} className="mt-4 grid gap-3">
-          <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
-          <input type="hidden" name="revision_id" value={workspace.revision.id} />
-          <input type="hidden" name="job_type" value="artifact_promotion" />
-          <input type="hidden" name="artifact_type" value={artifactType} />
-          <input type="hidden" name="locale" value={locale} />
-          <input type="hidden" name="slot_key" value={slotKey} />
-          {revisionItemId ? (
-            <input type="hidden" name="revision_item_id" value={revisionItemId} />
-          ) : null}
-          <label className={LABEL}>
-            Source URL
-            <input
-              type="url"
-              name="source_url"
-              required
-              placeholder="https://…"
-              disabled={!canEdit}
-              className={FIELD}
-            />
-          </label>
-          <label className={LABEL}>
-            Alt text
-            <textarea
-              name="alt_text"
-              rows={2}
-              required={artifactType !== 'pdf'}
-              disabled={!canEdit}
-              className={TEXTAREA}
-            />
-          </label>
-          <ActionSubmitButton
-            idleLabel="Validate and stage URL"
-            pendingLabel="Staging URL…"
-            disabled={!canEdit}
-            className={SECONDARY}
-          />
-        </form>
+        <summary className="text-xs font-bold text-slate-400">Need a remote file?</summary>
+        <p className="mt-3 text-xs leading-5 text-slate-500">
+          Download the file first, then upload it here. Direct URL import is intentionally disabled
+          so the review pipeline can verify the exact bytes, MIME type, dimensions, and PDF file.
+        </p>
       </details>
     </div>
   );
@@ -1768,6 +1754,7 @@ function PdfPanel({
                           alt={`${locale.toUpperCase()} PDF page ${index + 1}`}
                           fill
                           sizes="240px"
+                          unoptimized
                           className="object-cover transition group-hover:scale-[1.02]"
                         />
                       </a>

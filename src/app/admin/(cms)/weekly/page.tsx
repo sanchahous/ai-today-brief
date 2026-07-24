@@ -31,9 +31,14 @@ function dateTimeLabel(value: string | null) {
   }).format(new Date(value));
 }
 
-export default async function WeeklyDigestListPage() {
+export default async function WeeklyDigestListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ test_error?: string | string[] }>;
+}) {
   await requireSocialAdmin();
-  const digests = await getWeeklyDigestAdminList();
+  const [digests, query] = await Promise.all([getWeeklyDigestAdminList(), searchParams]);
+  const testError = Array.isArray(query.test_error) ? query.test_error[0] : query.test_error;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -51,8 +56,8 @@ export default async function WeeklyDigestListPage() {
         <div className="flex flex-wrap items-center justify-end gap-3">
           <form action={createTestWeeklyDigestAction}>
             <ActionSubmitButton
-              idleLabel="Create test edition"
-              pendingLabel="Creating test…"
+              idleLabel="Create or resume test"
+              pendingLabel="Preparing test…"
               className="min-h-11 rounded-xl border border-amber-300/40 bg-amber-300/10 px-4 text-sm font-bold text-amber-100 transition hover:bg-amber-300/20"
             />
           </form>
@@ -64,6 +69,15 @@ export default async function WeeklyDigestListPage() {
           </div>
         </div>
       </div>
+
+      {testError ? (
+        <p
+          role="alert"
+          className="mt-5 rounded-xl border border-rose-300/35 bg-rose-300/10 px-4 py-3 text-sm text-rose-100"
+        >
+          Test edition was not prepared: {testError}
+        </p>
+      ) : null}
 
       <section aria-labelledby="editions-heading" className="mt-8">
         <div className="flex items-center justify-between gap-3">

@@ -2,6 +2,7 @@ import 'server-only';
 
 import { basename, extname } from 'node:path';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { storageBlob } from '@/lib/storage/binary';
 
 const PUBLIC_BUCKET = 'social-assets';
 const PUBLIC_IMAGE_TYPES = new Set(['cover', 'story_image', 'social_asset', 'thumbnail']);
@@ -54,17 +55,33 @@ export async function promoteWeeklyDigestPublicAssets(weeklyDigestId: string) {
       );
     }
     const bytes = Buffer.from(await source.arrayBuffer());
-    const publicPath = `weekly/${weeklyDigestId}/${digest.active_revision_id}/${artifact.input_hash}/${safeName(
+    const publicPath = `weekly/${weeklyDigestId}/${digest.active_revision_id}/${artifact.input_hash}/binary-v2/${safeName(
       artifact.storage_path,
       artifact.mime_type,
     )}`;
-    const { error: uploadError } = await db.storage.from(PUBLIC_BUCKET).upload(publicPath, bytes, {
-      contentType: artifact.mime_type ?? 'image/jpeg',
-      cacheControl: '31536000, immutable',
-      upsert: false,
-    });
+    const { error: uploadError } = await db.storage
+      .from(PUBLIC_BUCKET)
+      .upload(publicPath, storageBlob(bytes, artifact.mime_type ?? 'image/jpeg'), {
+        contentType: artifact.mime_type ?? 'image/jpeg',
+        cacheControl: '31536000, immutable',
+        upsert: false,
+      });
     if (uploadError && !/already exists|duplicate/i.test(uploadError.message)) {
       throw new Error(`[weekly-release] ${artifact.slot_key} promotion: ${uploadError.message}`);
+    }
+    const { data: stored, error: verifyError } = await db.storage
+      .from(PUBLIC_BUCKET)
+      .download(publicPath);
+    if (verifyError || !stored) {
+      throw new Error(
+        `[weekly-release] ${artifact.slot_key} promotion verification: ${verifyError?.message ?? 'empty file'}`,
+      );
+    }
+    const storedBytes = Buffer.from(await stored.arrayBuffer());
+    if (storedBytes.length !== bytes.length || !storedBytes.equals(bytes)) {
+      throw new Error(
+        `[weekly-release] ${artifact.slot_key} promotion verification: bytes mismatch.`,
+      );
     }
     const externalUrl = db.storage.from(PUBLIC_BUCKET).getPublicUrl(publicPath).data.publicUrl;
     const previousMetadata =
