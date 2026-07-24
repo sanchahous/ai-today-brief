@@ -726,6 +726,7 @@ function StoriesPanel({
                     <textarea
                       name="item_why_en"
                       rows={4}
+                      required
                       defaultValue={item.why_en ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -736,6 +737,7 @@ function StoriesPanel({
                     <textarea
                       name="item_practical_en"
                       rows={4}
+                      required
                       defaultValue={item.practical_en ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -746,6 +748,7 @@ function StoriesPanel({
                     <textarea
                       name="item_takeaway_en"
                       rows={3}
+                      required
                       defaultValue={item.takeaway_en ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -795,6 +798,7 @@ function StoriesPanel({
                     <textarea
                       name="item_why_uk"
                       rows={4}
+                      required
                       defaultValue={item.why_uk ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -805,6 +809,7 @@ function StoriesPanel({
                     <textarea
                       name="item_practical_uk"
                       rows={4}
+                      required
                       defaultValue={item.practical_uk ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -815,6 +820,7 @@ function StoriesPanel({
                     <textarea
                       name="item_takeaway_uk"
                       rows={3}
+                      required
                       defaultValue={item.takeaway_uk ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -904,6 +910,7 @@ function ArticlePanel({
               <textarea
                 name="intro_en"
                 rows={6}
+                required
                 defaultValue={revision.intro_en ?? ''}
                 disabled={!canEdit}
                 className={TEXTAREA}
@@ -914,6 +921,7 @@ function ArticlePanel({
               <textarea
                 name="editor_note_en"
                 rows={5}
+                required
                 defaultValue={revision.editor_note_en ?? ''}
                 disabled={!canEdit}
                 className={TEXTAREA}
@@ -924,6 +932,7 @@ function ArticlePanel({
               <textarea
                 name="key_takeaways_en"
                 rows={6}
+                required
                 defaultValue={
                   Array.isArray(revision.key_takeaways_en)
                     ? revision.key_takeaways_en
@@ -956,6 +965,7 @@ function ArticlePanel({
               <textarea
                 name="intro_uk"
                 rows={6}
+                required
                 defaultValue={revision.intro_uk ?? ''}
                 disabled={!canEdit}
                 className={TEXTAREA}
@@ -966,6 +976,7 @@ function ArticlePanel({
               <textarea
                 name="editor_note_uk"
                 rows={5}
+                required
                 defaultValue={revision.editor_note_uk ?? ''}
                 disabled={!canEdit}
                 className={TEXTAREA}
@@ -976,6 +987,7 @@ function ArticlePanel({
               <textarea
                 name="key_takeaways_uk"
                 rows={6}
+                required
                 defaultValue={
                   Array.isArray(revision.key_takeaways_uk)
                     ? revision.key_takeaways_uk

@@ -43,13 +43,14 @@ export default async function WeeklyDigestWorkspacePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string | string[] }>;
+  searchParams: Promise<{ tab?: string | string[]; save_error?: string | string[] }>;
 }) {
   const [{ id }, query, session] = await Promise.all([params, searchParams, requireSocialAdmin()]);
   const workspace = await getWeeklyDigestWorkspace(id);
   if (!workspace) notFound();
 
   const requestedTab = Array.isArray(query.tab) ? query.tab[0] : query.tab;
+  const saveError = Array.isArray(query.save_error) ? query.save_error[0] : query.save_error;
   const activeTab = isWorkspaceTab(requestedTab) ? requestedTab : 'overview';
   const revisionNumber = workspace.revision?.revision_number ?? null;
   const preflightAt = workspace.digest.preflight_at
@@ -134,6 +135,15 @@ export default async function WeeklyDigestWorkspacePage({
           ))}
         </div>
       </nav>
+
+      {saveError ? (
+        <p
+          role="alert"
+          className="mt-5 rounded-xl border border-rose-300/35 bg-rose-300/10 px-4 py-3 text-sm leading-6 text-rose-100"
+        >
+          {saveError}
+        </p>
+      ) : null}
 
       <main className="mt-6">
         <WeeklyWorkspace workspace={workspace} activeTab={activeTab} session={session} />

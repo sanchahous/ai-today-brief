@@ -396,6 +396,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         title: item.title_en,
         summary: item.summary_en,
         seedKey: `${job.weekly_digest_id}:${job.revision_id}:${item.id}:${job.id}`,
+        fallbackToLocal: true,
       },
       {
         geminiApiKey: process.env.GEMINI_API_KEY?.trim() ?? '',

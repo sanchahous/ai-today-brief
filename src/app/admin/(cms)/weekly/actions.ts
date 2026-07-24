@@ -13,6 +13,7 @@ import { updateVariantAction } from '@/app/admin/actions';
 import { composeWeeklySocial } from '@/lib/social/composer';
 import { kyivWallClockToUtc, SOCIAL_TIME_ZONE } from '@/lib/social/schedule';
 import { normalizeYouTubeVideo } from '@/lib/weekly-digest/video';
+import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial-validation';
 
 function requiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -76,6 +77,21 @@ function revalidateWeeklyAdmin(weeklyDigestId: string) {
   revalidatePath('/admin');
   revalidatePath('/admin/weekly');
   revalidatePath(`/admin/weekly/${weeklyDigestId}`);
+}
+
+function weeklyRevisionTab(formData: FormData) {
+  return optionalString(formData, 'edit_scope') === 'article' ? 'article' : 'stories';
+}
+
+function redirectWeeklyRevisionContentError(
+  weeklyDigestId: string,
+  formData: FormData,
+  message: string,
+): never {
+  const tab = weeklyRevisionTab(formData);
+  redirect(
+    `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=${tab}&save_error=${encodeURIComponent(message)}`,
+  );
 }
 
 function kyivDate(now = new Date()) {
@@ -217,8 +233,12 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
     throw new Error('A Weekly Digest revision must contain 3 to 7 stories.');
   }
 
-  const titleEn = optionalString(formData, 'title_en') || revision.title_en;
-  const titleUk = optionalString(formData, 'title_uk') || revision.title_uk;
+  const titleEn = formData.has('title_en')
+    ? optionalString(formData, 'title_en')
+    : revision.title_en;
+  const titleUk = formData.has('title_uk')
+    ? optionalString(formData, 'title_uk')
+    : revision.title_uk;
   const introEn = formData.has('intro_en')
     ? optionalString(formData, 'intro_en')
     : (revision.intro_en ?? '');
@@ -237,6 +257,21 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
   const takeawaysUk = formData.has('key_takeaways_uk')
     ? takeaways(optionalString(formData, 'key_takeaways_uk'))
     : revision.key_takeaways_uk;
+
+  const validationError = weeklyRevisionContentErrorMessage({
+    title_en: titleEn,
+    title_uk: titleUk,
+    intro_en: introEn,
+    intro_uk: introUk,
+    editor_note_en: editorNoteEn,
+    editor_note_uk: editorNoteUk,
+    key_takeaways_en: takeawaysEn,
+    key_takeaways_uk: takeawaysUk,
+    items: nextItems,
+  });
+  if (validationError) {
+    redirectWeeklyRevisionContentError(weeklyDigestId, formData, validationError);
+  }
 
   const db = await getSupabaseServer();
   const { data: newRevisionId, error } = await db.rpc('create_weekly_digest_revision', {

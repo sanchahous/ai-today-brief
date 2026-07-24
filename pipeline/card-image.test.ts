@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import sharp from 'sharp';
 import {
   buildPrompt,
+  fallbackIllustrationMotif,
   fallbackScene,
   hueName,
   negativePrompt,
+  renderFallbackEditorialIllustration,
   sceneBrief,
   seedFromString,
 } from './card-image';
@@ -80,6 +83,24 @@ describe('fallbackScene', () => {
     expect(generic.toLowerCase()).not.toContain('brain');
     expect(generic).toContain('workstation');
     expect(generic.length).toBeGreaterThan(10);
+  });
+});
+
+describe('renderFallbackEditorialIllustration', () => {
+  it('renders a valid, deterministic 16:9 memory visual without a remote provider', async () => {
+    const input = {
+      title: 'Google Cloud Releases Always-On Memory Agent Powered by Gemini Flash-Lite',
+      summary: 'A background agent consolidates memory into SQLite instead of a RAG database.',
+      seedKey: 'weekly-memory-agent',
+    };
+    expect(fallbackIllustrationMotif(`${input.title} ${input.summary}`)).toBe('memory');
+    const [first, second] = await Promise.all([
+      renderFallbackEditorialIllustration(input),
+      renderFallbackEditorialIllustration(input),
+    ]);
+    expect(first.equals(second)).toBe(true);
+    expect(first.subarray(1, 4).toString()).toBe('PNG');
+    await expect(sharp(first).metadata()).resolves.toMatchObject({ width: 1280, height: 720 });
   });
 });
 
