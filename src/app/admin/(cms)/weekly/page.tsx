@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { StatusPill } from '@/components/admin/status-pill';
+import { createTestWeeklyDigestAction } from '@/app/admin/(cms)/weekly/actions';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getWeeklyDigestAdminList } from '@/lib/weekly-digest/admin-data';
 
@@ -29,9 +31,14 @@ function dateTimeLabel(value: string | null) {
   }).format(new Date(value));
 }
 
-export default async function WeeklyDigestListPage() {
+export default async function WeeklyDigestListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ test_error?: string | string[] }>;
+}) {
   await requireSocialAdmin();
-  const digests = await getWeeklyDigestAdminList();
+  const [digests, query] = await Promise.all([getWeeklyDigestAdminList(), searchParams]);
+  const testError = Array.isArray(query.test_error) ? query.test_error[0] : query.test_error;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -46,11 +53,31 @@ export default async function WeeklyDigestListPage() {
             captioned YouTube video before the Monday release.
           </p>
         </div>
-        <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/6 px-4 py-3 text-right">
-          <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">Monday window</p>
-          <p className="mt-1 text-sm text-slate-300">Review and edits stay open until 15:45 Kyiv</p>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <form action={createTestWeeklyDigestAction}>
+            <ActionSubmitButton
+              idleLabel="Create or resume test"
+              pendingLabel="Preparing test…"
+              className="min-h-11 rounded-xl border border-amber-300/40 bg-amber-300/10 px-4 text-sm font-bold text-amber-100 transition hover:bg-amber-300/20"
+            />
+          </form>
+          <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/6 px-4 py-3 text-right">
+            <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">Monday window</p>
+            <p className="mt-1 text-sm text-slate-300">
+              Review and edits stay open until 15:45 Kyiv
+            </p>
+          </div>
         </div>
       </div>
+
+      {testError ? (
+        <p
+          role="alert"
+          className="mt-5 rounded-xl border border-rose-300/35 bg-rose-300/10 px-4 py-3 text-sm text-rose-100"
+        >
+          Test edition was not prepared: {testError}
+        </p>
+      ) : null}
 
       <section aria-labelledby="editions-heading" className="mt-8">
         <div className="flex items-center justify-between gap-3">
@@ -71,8 +98,17 @@ export default async function WeeklyDigestListPage() {
             >
               <div className="flex flex-wrap items-center gap-2">
                 <StatusPill value={digest.status} />
+                {digest.is_test ? (
+                  <span className="rounded-full border border-amber-300/40 bg-amber-300/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-amber-100 uppercase">
+                    Test · publication locked
+                  </span>
+                ) : null}
                 <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-slate-400 uppercase">
-                  {digest.period_model === 'legacy_mon_sun' ? 'Legacy Mon–Sun' : 'Sun–Sat'}
+                  {digest.period_model === 'legacy_mon_sun'
+                    ? 'Legacy Mon–Sun'
+                    : digest.period_model === 'rolling_7d'
+                      ? 'Rolling 7 days'
+                      : 'Sun–Sat'}
                 </span>
                 <span className="ml-auto text-xs text-slate-500">
                   {dateLabel(digest.week_start)} – {dateLabel(digest.week_end)}
@@ -114,7 +150,7 @@ export default async function WeeklyDigestListPage() {
             <div className="rounded-2xl border border-dashed border-white/15 p-10 text-center">
               <p className="font-semibold text-white">No Weekly Digest editions yet</p>
               <p className="mt-2 text-sm text-slate-400">
-                The editorial pipeline creates the next Sunday–Saturday edition.
+                Create a test edition to review the rolling seven-day workflow before Monday.
               </p>
             </div>
           ) : null}

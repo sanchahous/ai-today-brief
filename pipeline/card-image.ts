@@ -22,6 +22,7 @@
 
 import { createHash } from 'node:crypto';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import sharp from 'sharp';
 import type { PipelineDb } from './db';
 import { resolveGeminiModelQueue } from './gemini-models';
 import { logEvent } from './log';
@@ -35,6 +36,11 @@ const FALLBACK_ACCENT = '#5bc9f0';
 /** 16:9 render size; crops cleanly to the 1200×630 OG card and the 92px feed thumb. */
 const IMG_W = 1280;
 const IMG_H = 720;
+// The local SVG is authored at this larger coordinate grid, then rasterized to
+// the normal daily-card output dimensions above. Keeping the viewBox separate
+// avoids clipping complex motifs while retaining the established 16:9 output.
+const FALLBACK_VIEWBOX_W = 1600;
+const FALLBACK_VIEWBOX_H = 900;
 /** Safety cap: most a single run will spend per brief (idempotency bounds it anyway). */
 const MAX_PER_RUN = 12;
 
@@ -67,6 +73,12 @@ export interface EditorialIllustrationInput {
   summary: string;
   accent?: string;
   seedKey: string;
+  /**
+   * Weekly Digest requires a reviewable visual for every selected story even
+   * when remote providers are unavailable. Daily cards intentionally preserve
+   * their existing null-image behavior instead.
+   */
+  fallbackToLocal?: boolean;
 }
 
 /**
@@ -79,12 +91,22 @@ export async function generateEditorialIllustration(
   cfg: CardImageConfig,
 ): Promise<Buffer | null> {
   const scene = await sceneBrief(input.title, input.summary, cfg);
-  return generateImage(
+  const generated = await generateImage(
     buildPrompt(input.accent?.trim() || 'cool cyan', scene),
     negativePrompt(),
     cfg,
     seedFromString(input.seedKey),
   );
+  if (generated || !input.fallbackToLocal) return generated;
+  // A Weekly Digest must stay reviewable even when every external image provider
+  // is unavailable and the selected source has no approved image. This local
+  // fallback uses a topic-specific technical motif rather than inventing a
+  // photorealistic event or falling back to generic AI decoration.
+  try {
+    return await renderFallbackEditorialIllustration(input);
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -197,6 +219,202 @@ export function negativePrompt(): string {
 const DEFAULT_SCENE =
   'a sleek developer workstation in a dark studio, sharp focus on a mechanical keyboard and ' +
   'softly floating translucent code panels, warm key light';
+
+type FallbackIllustrationMotif =
+  | 'memory'
+  | 'security'
+  | 'funding'
+  | 'agents'
+  | 'model'
+  | 'local'
+  | 'efficiency'
+  | 'vision'
+  | 'workstation';
+
+/**
+ * Choose a concrete, story-shaped visual subject for the offline renderer.
+ * It deliberately operates on editorial text only; no external claim or brand
+ * asset is synthesized when image providers are unavailable.
+ */
+export function fallbackIllustrationMotif(value: string): FallbackIllustrationMotif {
+  const text = value.toLowerCase();
+  const has = (...terms: string[]) => terms.some((term) => text.includes(term));
+  if (has('memory', 'rag', 'retriev', 'embedding', 'sqlite', 'context')) return 'memory';
+  if (has('security', 'vulnerab', 'exploit', 'breach', 'cve', 'malware', 'attack'))
+    return 'security';
+  if (has('fund', 'raise', 'valuation', 'investment', 'revenue', 'ipo', 'billion'))
+    return 'funding';
+  if (has('agent', 'mcp', 'orchestr', 'workflow', 'autonom')) return 'agents';
+  if (has('model', 'launch', 'release', 'gpt', 'claude', 'gemini', 'llama', 'benchmark'))
+    return 'model';
+  if (has('local', 'on-device', 'offline', 'privacy', 'gemma', 'llm')) return 'local';
+  if (has('token', 'cost', 'cheap', 'efficien', 'speed', 'latency', 'optimiz')) return 'efficiency';
+  if (has('image', 'video', 'medical', 'scan', 'mri', 'vision', 'creative', 'art')) return 'vision';
+  return 'workstation';
+}
+
+function fallbackPalette(seed: number) {
+  const palettes = [
+    { accent: '#4ee3d3', secondary: '#4f8cff', glow: '#6eebdb' },
+    { accent: '#a78bfa', secondary: '#4dd4ff', glow: '#c4b5fd' },
+    { accent: '#f0c040', secondary: '#ef8354', glow: '#f8dc7b' },
+    { accent: '#54d88b', secondary: '#43b9d2', glow: '#8eeeb5' },
+  ];
+  return palettes[seed % palettes.length];
+}
+
+function fallbackMotifSvg(
+  motif: FallbackIllustrationMotif,
+  colors: ReturnType<typeof fallbackPalette>,
+  seed: number,
+) {
+  const offset = 18 + (seed % 5) * 9;
+  const card = (x: number, y: number, width: number, height: number, opacity = 0.92) =>
+    `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="18" fill="#151f2a" fill-opacity="${opacity}" stroke="${colors.accent}" stroke-opacity=".58" stroke-width="3"/>`;
+  const node = (x: number, y: number, r = 21) =>
+    `<circle cx="${x}" cy="${y}" r="${r}" fill="${colors.accent}" fill-opacity=".9"/><circle cx="${x}" cy="${y}" r="${Math.max(5, r - 10)}" fill="#f7fafc" fill-opacity=".88"/>`;
+
+  if (motif === 'memory') {
+    return `
+      <g filter="url(#soft-shadow)">
+        <ellipse cx="476" cy="588" rx="164" ry="38" fill="#0a1018" stroke="${colors.secondary}" stroke-width="5"/>
+        <rect x="312" y="420" width="328" height="168" fill="#121d28" stroke="${colors.secondary}" stroke-width="5"/>
+        <ellipse cx="476" cy="420" rx="164" ry="38" fill="#1b2c3a" stroke="${colors.secondary}" stroke-width="5"/>
+        <path d="M332 467h288M332 516h288" stroke="${colors.secondary}" stroke-opacity=".6" stroke-width="4"/>
+        ${card(850, 300 + offset, 286, 124)}
+        ${card(900, 462 + offset, 286, 124, 0.78)}
+        ${card(850, 624 + offset, 286, 124, 0.62)}
+        <path d="M642 504 C742 504 734 362 848 362 M642 504 C742 504 754 524 898 524 M642 504 C748 504 736 686 848 686" fill="none" stroke="${colors.accent}" stroke-width="7" stroke-linecap="round"/>
+        ${node(710, 504, 30)}
+      </g>`;
+  }
+  if (motif === 'security') {
+    return `
+      <g filter="url(#soft-shadow)">
+        <path d="M800 214 L1052 310 V506 C1052 675 948 758 800 812 C652 758 548 675 548 506 V310 Z" fill="#14222d" stroke="${colors.accent}" stroke-width="8"/>
+        <rect x="698" y="465" width="204" height="174" rx="30" fill="#0d151e" stroke="${colors.secondary}" stroke-width="7"/>
+        <path d="M744 465v-48c0-80 112-80 112 0v48" fill="none" stroke="${colors.secondary}" stroke-width="18" stroke-linecap="round"/>
+        <circle cx="800" cy="548" r="25" fill="${colors.accent}"/><path d="M800 570v42" stroke="${colors.accent}" stroke-width="17" stroke-linecap="round"/>
+        <path d="M350 340 L500 420 M1100 340 L950 420 M364 664 L540 594 M1236 664 L1060 594" stroke="${colors.accent}" stroke-opacity=".55" stroke-width="5"/>
+        ${node(332, 330, 15)}${node(1268, 330, 15)}${node(346, 674, 15)}${node(1254, 674, 15)}
+      </g>`;
+  }
+  if (motif === 'funding') {
+    return `
+      <g filter="url(#soft-shadow)">
+        <ellipse cx="480" cy="638" rx="142" ry="34" fill="#14222d" stroke="${colors.accent}" stroke-width="5"/>
+        <path d="M338 638v-148c0-26 284-26 284 0v148" fill="#182b32" stroke="${colors.accent}" stroke-width="5"/>
+        <ellipse cx="480" cy="490" rx="142" ry="34" fill="#233b41" stroke="${colors.accent}" stroke-width="5"/>
+        <ellipse cx="480" cy="564" rx="142" ry="34" fill="none" stroke="${colors.secondary}" stroke-opacity=".7" stroke-width="5"/>
+        <path d="M708 658 C810 564 922 510 1210 300" fill="none" stroke="${colors.secondary}" stroke-width="14" stroke-linecap="round"/>
+        <path d="M1120 300h90v90" fill="none" stroke="${colors.secondary}" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+        ${node(708, 658, 20)}${node(944, 486, 20)}${node(1210, 300, 20)}
+      </g>`;
+  }
+  if (motif === 'agents') {
+    return `
+      <g filter="url(#soft-shadow)">
+        ${card(256, 330, 270, 238)}${card(665, 200 + offset, 270, 238)}${card(1030, 510, 270, 238)}
+        <path d="M526 448 C594 438 588 364 665 350 M935 350 C1010 356 980 606 1030 628 M526 500 C738 718 864 730 1030 652" fill="none" stroke="${colors.accent}" stroke-width="8" stroke-linecap="round"/>
+        ${node(390, 449, 39)}${node(800, 319 + offset, 39)}${node(1165, 629, 39)}
+        <path d="M366 449h48M776 ${319 + offset}h48M1141 629h48" stroke="#f7fafc" stroke-width="7" stroke-linecap="round"/>
+      </g>`;
+  }
+  if (motif === 'model') {
+    return `
+      <g filter="url(#soft-shadow)">
+        <path d="M380 690 L800 448 L1220 690 L800 824 Z" fill="#14222d" stroke="${colors.secondary}" stroke-width="7"/>
+        <path d="M380 690 L380 372 L800 140 L1220 372 L1220 690" fill="#182733" stroke="${colors.accent}" stroke-width="7"/>
+        <path d="M380 372 L800 612 L1220 372 M800 140v472" fill="none" stroke="${colors.accent}" stroke-opacity=".6" stroke-width="6"/>
+        <rect x="670" y="372" width="260" height="176" rx="30" fill="#0c141d" stroke="${colors.accent}" stroke-width="8"/>
+        <path d="M720 430h160M720 488h110" stroke="${colors.secondary}" stroke-width="14" stroke-linecap="round"/>
+      </g>`;
+  }
+  if (motif === 'local') {
+    return `
+      <g filter="url(#soft-shadow)">
+        <path d="M396 612h808l-78 92H474Z" fill="#111c26" stroke="${colors.secondary}" stroke-width="7"/>
+        <rect x="490" y="226" width="620" height="394" rx="28" fill="#15242f" stroke="${colors.accent}" stroke-width="8"/>
+        <rect x="534" y="270" width="532" height="306" rx="14" fill="#0b121a"/>
+        <path d="M600 366h190M600 438h318M600 510h230" stroke="${colors.accent}" stroke-width="14" stroke-linecap="round"/>
+        <circle cx="984" cy="488" r="42" fill="${colors.secondary}" fill-opacity=".72"/>
+      </g>`;
+  }
+  if (motif === 'efficiency') {
+    return `
+      <g filter="url(#soft-shadow)">
+        <path d="M412 678 A388 388 0 0 1 1188 678" fill="none" stroke="#1e313d" stroke-width="78" stroke-linecap="round"/>
+        <path d="M412 678 A388 388 0 0 1 1044 366" fill="none" stroke="${colors.accent}" stroke-width="32" stroke-linecap="round"/>
+        <path d="M800 678 L1034 394" stroke="#f7fafc" stroke-width="14" stroke-linecap="round"/>
+        <circle cx="800" cy="678" r="41" fill="${colors.secondary}" stroke="#f7fafc" stroke-width="7"/>
+        <path d="M430 740h740" stroke="${colors.secondary}" stroke-opacity=".6" stroke-width="5"/>
+      </g>`;
+  }
+  if (motif === 'vision') {
+    return `
+      <g filter="url(#soft-shadow)">
+        <rect x="300" y="222" width="1000" height="500" rx="34" fill="#13212c" stroke="${colors.accent}" stroke-width="8"/>
+        <rect x="348" y="270" width="904" height="404" rx="20" fill="#091119"/>
+        <ellipse cx="800" cy="472" rx="250" ry="150" fill="${colors.secondary}" fill-opacity=".26" stroke="${colors.secondary}" stroke-width="7"/>
+        <circle cx="800" cy="472" r="88" fill="${colors.accent}" fill-opacity=".7"/>
+        <circle cx="800" cy="472" r="38" fill="#f7fafc"/>
+        <path d="M462 610 C590 548 612 434 704 350 M1138 610 C1010 548 988 434 896 350" fill="none" stroke="${colors.accent}" stroke-opacity=".7" stroke-width="7"/>
+      </g>`;
+  }
+  return `
+    <g filter="url(#soft-shadow)">
+      <path d="M274 680h1052l-96 92H370Z" fill="#111c26" stroke="${colors.secondary}" stroke-width="7"/>
+      <rect x="436" y="208" width="728" height="474" rx="34" fill="#15232e" stroke="${colors.accent}" stroke-width="8"/>
+      <rect x="486" y="258" width="628" height="360" rx="20" fill="#0a1119"/>
+      <path d="M560 354h208M560 426h370M560 498h268" stroke="${colors.accent}" stroke-width="15" stroke-linecap="round"/>
+      <circle cx="1002" cy="500" r="54" fill="${colors.secondary}" fill-opacity=".72"/>
+      <path d="M1002 452v96M954 500h96" stroke="#f7fafc" stroke-width="9" stroke-linecap="round"/>
+    </g>`;
+}
+
+/**
+ * A deterministic, non-generative illustration used only after every remote
+ * provider and reviewed source image is unavailable. It remains specific to the
+ * story's technical subject while making the binary generation path testable.
+ */
+export async function renderFallbackEditorialIllustration(
+  input: EditorialIllustrationInput,
+): Promise<Buffer> {
+  const seed = seedFromString(input.seedKey);
+  const motif = fallbackIllustrationMotif(`${input.title} ${input.summary}`);
+  const colors = fallbackPalette(seed);
+  const svg = Buffer.from(`
+    <svg width="${IMG_W}" height="${IMG_H}" viewBox="0 0 ${FALLBACK_VIEWBOX_W} ${FALLBACK_VIEWBOX_H}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#071019"/>
+          <stop offset=".54" stop-color="#101e2a"/>
+          <stop offset="1" stop-color="#11121c"/>
+        </linearGradient>
+        <radialGradient id="halo" cx="50%" cy="44%" r="58%">
+          <stop offset="0" stop-color="${colors.glow}" stop-opacity=".26"/>
+          <stop offset="1" stop-color="${colors.glow}" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="soft-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="24" stdDeviation="22" flood-color="#02070b" flood-opacity=".72"/>
+        </filter>
+      </defs>
+      <rect width="${FALLBACK_VIEWBOX_W}" height="${FALLBACK_VIEWBOX_H}" fill="url(#bg)"/>
+      <rect width="${FALLBACK_VIEWBOX_W}" height="${FALLBACK_VIEWBOX_H}" fill="url(#halo)"/>
+      <path d="M0 162H${FALLBACK_VIEWBOX_W}M0 324H${FALLBACK_VIEWBOX_W}M0 486H${FALLBACK_VIEWBOX_W}M0 648H${FALLBACK_VIEWBOX_W}" stroke="#d5f5f1" stroke-opacity=".055" stroke-width="2"/>
+      <path d="M200 0V${FALLBACK_VIEWBOX_H}M400 0V${FALLBACK_VIEWBOX_H}M600 0V${FALLBACK_VIEWBOX_H}M800 0V${FALLBACK_VIEWBOX_H}M1000 0V${FALLBACK_VIEWBOX_H}M1200 0V${FALLBACK_VIEWBOX_H}M1400 0V${FALLBACK_VIEWBOX_H}" stroke="#d5f5f1" stroke-opacity=".045" stroke-width="2"/>
+      ${fallbackMotifSvg(motif, colors, seed)}
+      <rect x="112" y="112" width="110" height="10" rx="5" fill="${colors.accent}"/>
+      <rect x="112" y="140" width="202" height="5" rx="2.5" fill="#e8f5f3" fill-opacity=".34"/>
+    </svg>
+  `);
+  const output = await sharp(svg).png().toBuffer();
+  const metadata = await sharp(output).metadata();
+  if (metadata.width !== IMG_W || metadata.height !== IMG_H) {
+    throw new Error('Fallback editorial illustration has invalid dimensions.');
+  }
+  return output;
+}
 
 /**
  * Turn a headline + summary into ONE concrete, on-topic cover scene — a clear

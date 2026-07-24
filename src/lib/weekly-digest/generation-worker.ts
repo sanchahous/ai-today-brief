@@ -1,7 +1,6 @@
 import 'server-only';
 
 import { createHash } from 'node:crypto';
-import { pdf as openPdf } from 'pdf-to-img';
 import sharp from 'sharp';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
@@ -9,7 +8,9 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { generateEditorialIllustration } from '../../../pipeline/card-image';
 import { alertWeeklyDigestIssue } from './alerts';
 import { renderWeeklyDigestPdf, type WeeklyPdfInput } from './pdf';
+import { openWeeklyPdfPreview } from './pdf-preview';
 import { renderWeeklyVisualSet, type WeeklyVisualInput, type WeeklyVisualLocale } from './visuals';
+import { storageBlob } from '@/lib/storage/binary';
 
 const PRIVATE_BUCKET = 'weekly-digest-private';
 const MAX_JOBS = 10;
@@ -30,6 +31,7 @@ interface ClaimedGenerationJob {
   weekly_digest_id: string;
   revision_id: string;
   job_type: string;
+  attempts: number;
   input: Json;
 }
 
@@ -59,6 +61,12 @@ function safeMessage(error: unknown) {
     .slice(0, 1800);
 }
 
+function retryableGenerationFailure(message: string) {
+  return /\b(?:429|5\d\d)\b|timed? out|timeout|fetch failed|network|econnreset|eai_again|temporar(?:y|ily)|rate limit|connection reset/i.test(
+    message,
+  );
+}
+
 async function claimGenerationJobs(limit: number): Promise<ClaimedGenerationJob[]> {
   const { data, error } = await rpcClient().rpc('claim_weekly_digest_generation_jobs', {
     p_job_types: ['pdf', 'cover', 'story_image', 'social_asset'],
@@ -73,7 +81,8 @@ async function claimGenerationJobs(limit: number): Promise<ClaimedGenerationJob[
       typeof row.id !== 'string' ||
       typeof row.weekly_digest_id !== 'string' ||
       typeof row.revision_id !== 'string' ||
-      typeof row.job_type !== 'string'
+      typeof row.job_type !== 'string' ||
+      typeof row.attempts !== 'number'
     ) {
       return [];
     }
@@ -83,6 +92,7 @@ async function claimGenerationJobs(limit: number): Promise<ClaimedGenerationJob[
         weekly_digest_id: row.weekly_digest_id,
         revision_id: row.revision_id,
         job_type: row.job_type,
+        attempts: row.attempts,
         input: (row.input ?? {}) as Json,
       },
     ];
@@ -113,13 +123,25 @@ async function uploadPrivate(
   cacheControl = '31536000, immutable',
 ) {
   const db = getSupabaseAdmin();
-  const { error } = await db.storage.from(PRIVATE_BUCKET).upload(path, bytes, {
-    contentType,
-    cacheControl,
-    upsert: false,
-  });
+  const { error } = await db.storage
+    .from(PRIVATE_BUCKET)
+    .upload(path, storageBlob(bytes, contentType), {
+      contentType,
+      cacheControl,
+      upsert: false,
+    });
   if (error && !/already exists|duplicate/i.test(error.message)) {
     throw new Error(`[weekly-generation] upload: ${error.message}`);
+  }
+  const { data: stored, error: verifyError } = await db.storage.from(PRIVATE_BUCKET).download(path);
+  if (verifyError || !stored) {
+    throw new Error(
+      `[weekly-generation] upload verification: ${verifyError?.message ?? 'empty file'}`,
+    );
+  }
+  const storedBytes = Buffer.from(await stored.arrayBuffer());
+  if (storedBytes.length !== bytes.length || !storedBytes.equals(bytes)) {
+    throw new Error('[weekly-generation] upload verification: stored bytes do not match source.');
   }
 }
 
@@ -301,10 +323,13 @@ async function generatePdf(job: ClaimedGenerationJob) {
   };
   const pdf = await renderWeeklyDigestPdf(pdfInput);
   const hash = createHash('sha256').update(pdf).digest('hex');
-  const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/pdf/${locale}/${hash}.pdf`;
+  // Do not reuse a path written by an earlier job. A previously corrupted
+  // immutable upload must never be mistaken for this job's verified output.
+  const outputKey = `${hash}-${job.id}`;
+  const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/pdf/${locale}/${outputKey}.pdf`;
   await uploadPrivate(path, pdf, 'application/pdf');
   const previewPaths: string[] = [];
-  const document = await openPdf(pdf, { scale: 1.15 });
+  const document = await openWeeklyPdfPreview(pdf, 1.15);
   try {
     if (document.length > 40) {
       throw new Error(`PDF preview safety limit exceeded (${document.length} pages).`);
@@ -314,7 +339,7 @@ async function generatePdf(job: ClaimedGenerationJob) {
       const preview = await sharp(png).webp({ quality: 82, effort: 4 }).toBuffer();
       const previewPath =
         `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/pdf/` +
-        `${locale}/previews/${hash}/page-${String(pageNumber).padStart(3, '0')}.webp`;
+        `${locale}/previews/${outputKey}/page-${String(pageNumber).padStart(3, '0')}.webp`;
       await uploadPrivate(previewPath, preview, 'image/webp');
       previewPaths.push(previewPath);
     }
@@ -371,6 +396,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         title: item.title_en,
         summary: item.summary_en,
         seedKey: `${job.weekly_digest_id}:${job.revision_id}:${item.id}:${job.id}`,
+        fallbackToLocal: true,
       },
       {
         geminiApiKey: process.env.GEMINI_API_KEY?.trim() ?? '',
@@ -410,7 +436,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     .jpeg({ quality: 90, progressive: true })
     .toBuffer();
   const hash = createHash('sha256').update(image).digest('hex');
-  const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/${hash}.jpg`;
+  const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/${hash}-${job.id}.jpg`;
   await uploadPrivate(path, image, 'image/jpeg');
   const artifactId = await saveGeneratedArtifact({
     weeklyDigestId: job.weekly_digest_id,
@@ -480,7 +506,7 @@ async function generateCover(job: ClaimedGenerationJob) {
   let primaryArtifactId: string | null = null;
   const artifactIds: string[] = [];
   for (const variant of variants) {
-    const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/visuals/${locale}/${variant.contentHash}/${variant.slot}.jpg`;
+    const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/visuals/${locale}/${variant.contentHash}-${job.id}/${variant.slot}.jpg`;
     await uploadPrivate(path, variant.bytes, variant.mimeType);
     const primary = variant.slot === 'web_hero';
     const artifactId = await saveGeneratedArtifact({
@@ -569,7 +595,7 @@ async function generateCoverDerivatives(job: ClaimedGenerationJob) {
     const hash = createHash('sha256').update(image).digest('hex');
     const path =
       `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/visuals/` +
-      `derivatives/${hash}/${variant.slot}.jpg`;
+      `derivatives/${hash}-${job.id}/${variant.slot}.jpg`;
     await uploadPrivate(path, image, 'image/jpeg');
     artifactIds.push(
       await saveGeneratedArtifact({
@@ -623,8 +649,9 @@ export async function runWeeklyDigestGenerationJobs(limit = 5) {
       results.push({ id: job.id, outcome: 'succeeded', artifactId: result.artifactId });
     } catch (error) {
       const message = safeMessage(error);
+      const retryable = retryableGenerationFailure(message);
       try {
-        await finishGenerationJob(job.id, false, {}, message, null);
+        await finishGenerationJob(job.id, false, { retryable }, message, null);
       } catch (finishError) {
         await alertWeeklyDigestIssue({
           weeklyDigestId: job.weekly_digest_id,
@@ -638,11 +665,13 @@ export async function runWeeklyDigestGenerationJobs(limit = 5) {
         });
         continue;
       }
-      await alertWeeklyDigestIssue({
-        weeklyDigestId: job.weekly_digest_id,
-        phase: 'generation',
-        message,
-      });
+      if (!retryable || job.attempts >= 5) {
+        await alertWeeklyDigestIssue({
+          weeklyDigestId: job.weekly_digest_id,
+          phase: 'generation',
+          message,
+        });
+      }
       results.push({ id: job.id, outcome: 'failed', error: message });
     }
   }

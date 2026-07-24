@@ -1,4 +1,4 @@
-import { completedWeeklyRangeForTrigger, kyivWallClockToUtc } from '@/lib/social/schedule';
+import { kyivWallClockToUtc, rollingWeeklyRangeForDate } from '@/lib/social/schedule';
 
 export const WEEKLY_DIGEST_TIME_ZONE = 'Europe/Kyiv';
 export const WEEKLY_PREFLIGHT_TIME = { hour: 15, minute: 45 } as const;
@@ -18,13 +18,19 @@ export interface WeeklyDigestPeriod {
 }
 
 /**
- * Resolves the most recently completed Sunday–Saturday editorial window.
- * A Sunday generation trigger therefore targets the previous seven days and
- * schedules its operational gates for the following Monday in Kyiv.
+ * Resolves the seven editorial days ending on the creation date. The release
+ * gates always use the following Monday in Kyiv, preserving the Monday window
+ * for scheduled editions and giving on-demand test editions the same cadence.
  */
 export function weeklyDigestPeriodForTrigger(triggerDate: string): WeeklyDigestPeriod {
-  const { weekStart, weekEnd } = completedWeeklyRangeForTrigger(triggerDate);
-  const releaseDate = addCalendarDays(weekEnd, 2);
+  const { weekStart, weekEnd } = rollingWeeklyRangeForDate(triggerDate);
+  const triggerNoon = kyivWallClockToUtc(triggerDate, 12, 0);
+  const weekday = new Intl.DateTimeFormat('en-US', {
+    timeZone: WEEKLY_DIGEST_TIME_ZONE,
+    weekday: 'short',
+  }).format(triggerNoon);
+  const isoDay = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(weekday) + 1;
+  const releaseDate = addCalendarDays(weekEnd, 8 - isoDay);
   return {
     weekStart,
     weekEnd,

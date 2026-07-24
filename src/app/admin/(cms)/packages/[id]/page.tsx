@@ -444,7 +444,7 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
         </section>
       ) : socialPackage.kind === 'weekly_digest' ? (
         <p className="mt-8 rounded-2xl border border-amber-300/20 bg-amber-300/[.06] p-4 text-sm text-amber-100">
-          Editorial rationale is unavailable for this legacy digest. Generate a new selection run
+          Editorial rationale is unavailable for this digest. Generate a new selection run
           before approval if you need a reproducible explanation.
         </p>
       ) : null}

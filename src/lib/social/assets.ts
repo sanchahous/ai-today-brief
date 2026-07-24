@@ -2,8 +2,10 @@ import 'server-only';
 
 import { createHash } from 'node:crypto';
 import { join } from 'node:path';
+import { createCanvas, GlobalFonts, type SKRSContext2D } from '@napi-rs/canvas';
 import sharp, { type Sharp } from 'sharp';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { storageBlob } from '@/lib/storage/binary';
 import type { SocialAsset, SocialChannel } from './types';
 
 const DEJAVU_DIRECTORY = join(process.cwd(), 'node_modules', 'dejavu-fonts-ttf', 'ttf');
@@ -13,6 +15,7 @@ const BUCKET = 'social-assets';
 const BRAND_DARK = '#101418';
 const BRAND_TEAL = '#47e4d3';
 const BRAND_TEXT = '#f7fafc';
+const STORAGE_BINARY_VERSION = 'binary-v2';
 
 interface AssetSource {
   packageId: string;
@@ -31,15 +34,6 @@ export interface SocialAssetRenderOptions {
   maxChars?: number;
   maxLines?: number;
   footer?: string;
-}
-
-function escapeXml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;');
 }
 
 function splitLines(value: string, maxChars: number, maxLines: number) {
@@ -62,6 +56,36 @@ function splitLines(value: string, maxChars: number, maxLines: number) {
     lines[lines.length - 1] = `${lines.at(-1)!.replace(/[.,;:!?]?$/, '')}…`;
   }
   return lines;
+}
+
+let textFontsRegistered = false;
+
+function registerTextFonts() {
+  if (textFontsRegistered) return;
+  const regular = GlobalFonts.registerFromPath(TEXT_FONT, 'AI Today Brief Sans');
+  const bold = GlobalFonts.registerFromPath(TEXT_FONT_BOLD, 'AI Today Brief Sans Bold');
+  if (!regular || !bold) throw new Error('Editorial asset fonts could not be loaded.');
+  textFontsRegistered = true;
+}
+
+function wrapCanvasText(context: SKRSContext2D, value: string, width: number) {
+  return value.split(/\r?\n/).flatMap((paragraph) => {
+    const words = paragraph.trim().split(/\s+/).filter(Boolean);
+    if (words.length === 0) return [''];
+    const lines: string[] = [];
+    let line = '';
+    for (const word of words) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (line && context.measureText(candidate).width > width) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = candidate;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  });
 }
 
 async function loadBackground(url?: string | null): Promise<Buffer | null> {
@@ -100,21 +124,27 @@ async function textLayer(options: {
   bold?: boolean;
   spacing?: number;
 }) {
-  return sharp({
-    text: {
-      text: `<span foreground="${options.color}">${escapeXml(options.text)}</span>`,
-      font: `${options.bold ? 'DejaVu Sans Bold' : 'DejaVu Sans'} ${options.size}`,
-      fontfile: options.bold ? TEXT_FONT_BOLD : TEXT_FONT,
-      width: Math.max(1, Math.round(options.width)),
-      align: 'left',
-      dpi: 72,
-      rgba: true,
-      spacing: options.spacing,
-      wrap: 'word-char',
-    },
-  })
-    .png()
-    .toBuffer();
+  registerTextFonts();
+  const width = Math.max(1, Math.round(options.width));
+  const lineHeight = Math.max(
+    options.size,
+    Math.round(options.size * 1.2) + (options.spacing ?? 0),
+  );
+  // A one-line canvas is enough to measure wrapping before allocating the
+  // final transparent layer. This avoids sharp/libvips' optional Pango text
+  // operation, which is unavailable in the production Linux image.
+  const measurement = createCanvas(width, lineHeight).getContext('2d');
+  measurement.font = `${options.size}px "${
+    options.bold ? 'AI Today Brief Sans Bold' : 'AI Today Brief Sans'
+  }"`;
+  const lines = wrapCanvasText(measurement, options.text, width);
+  const canvas = createCanvas(width, Math.max(1, lines.length * lineHeight));
+  const context = canvas.getContext('2d');
+  context.font = measurement.font;
+  context.fillStyle = options.color;
+  context.textBaseline = 'top';
+  lines.forEach((line, index) => context.fillText(line, 0, index * lineHeight));
+  return canvas.toBuffer('image/png');
 }
 
 export async function renderSocialAssetImage(
@@ -249,13 +279,23 @@ export async function renderSocialAssetImage(
 
 async function uploadImmutable(path: string, jpeg: Buffer, width: number, height: number) {
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase.storage.from(BUCKET).upload(path, jpeg, {
-    contentType: 'image/jpeg',
-    cacheControl: '31536000, immutable',
-    upsert: false,
-  });
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, storageBlob(jpeg, 'image/jpeg'), {
+      contentType: 'image/jpeg',
+      cacheControl: '31536000, immutable',
+      upsert: false,
+    });
   if (error && !/already exists|duplicate/i.test(error.message)) {
     throw new Error(`[social-assets] ${error.message}`);
+  }
+  const { data: stored, error: verifyError } = await supabase.storage.from(BUCKET).download(path);
+  if (verifyError || !stored) {
+    throw new Error(`[social-assets] upload verification: ${verifyError?.message ?? 'empty file'}`);
+  }
+  const storedBytes = Buffer.from(await stored.arrayBuffer());
+  if (storedBytes.length !== jpeg.length || !storedBytes.equals(jpeg)) {
+    throw new Error('[social-assets] upload verification: stored bytes do not match source.');
   }
   const url = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
   return {
@@ -272,6 +312,7 @@ function versionKey(source: AssetSource) {
     .update(
       JSON.stringify({
         version: source.generationVersion,
+        storage: STORAGE_BINARY_VERSION,
         channel: source.channel,
         title: source.title,
         summary: source.summary,

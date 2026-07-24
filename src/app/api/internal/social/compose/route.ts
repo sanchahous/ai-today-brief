@@ -20,6 +20,18 @@ function isSunday(date: string) {
   return new Date(Date.UTC(year, month - 1, day)).getUTCDay() === 0;
 }
 
+function isSundayMorningInKyiv(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: SOCIAL_TIME_ZONE,
+    weekday: 'short',
+    hour: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const weekday = parts.find((part) => part.type === 'weekday')?.value;
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value);
+  return weekday === 'Sun' && Number.isInteger(hour) && hour >= 9;
+}
+
 export async function POST(request: NextRequest) {
   if (!isInternalSocialRequest(request)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -33,7 +45,9 @@ export async function POST(request: NextRequest) {
   try {
     const daily = await composeDailySocial(date);
     const weekly =
-      body.includeWeekly === true || isSunday(date) ? await composeWeeklySocial(date) : null;
+      body.includeWeekly === true || (isSunday(date) && isSundayMorningInKyiv())
+        ? await composeWeeklySocial(date)
+        : null;
     return NextResponse.json({ date, daily, weekly });
   } catch (error) {
     return NextResponse.json(

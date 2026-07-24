@@ -14,9 +14,11 @@ AAL2 owner approval before a variant can become publishable.
    canonical filenames recorded in the target Supabase migration history; never
    rename an already-applied migration. Then apply
    `20260723063548_weekly_digest_editorial_reviews.sql` followed by
-   `20260723095458_weekly_digest_v2.sql`. Never run the CMS migration before the
-   delivery queue. Before production, run `supabase test db`; the v2 test rolls
-   back its RLS, DST, grants, dependency and lease assertions.
+   `20260723095458_weekly_digest_v2.sql` and
+   `20260723175658_weekly_digest_test_and_rolling_window.sql`. Never run the
+   CMS migration before the delivery queue. Before production, run `supabase
+   test db`; the Weekly tests roll back their RLS, DST, grants, dependency,
+   lease and test-publication-lock assertions.
 2. Verify the critical objects:
 
    ```sql
@@ -139,7 +141,12 @@ select cron.schedule(
 
 The composer is idempotent by date, kind, source, and generation version. A
 30-minute trigger therefore does not regenerate or spend LLM budget after the
-day's packages exist.
+day's packages exist. Production Weekly composition begins on Sunday at 09:00
+`Europe/Kyiv`: it uses the seven editorial days ending on that creation date
+and schedules the next Monday's gates. Owners can create a separate test
+edition in **Weekly Digest → Create test edition**; it exercises the same
+generation, review, approval, scheduling and preflight path, but a database
+lock prevents web publication and social delivery.
 
 The weekly artifact worker claims one heavy versioned job per five-minute
 invocation, with a lease and immutable idempotency key. This keeps image/PDF

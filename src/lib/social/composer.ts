@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { createWeeklyEditorialDraft } from '@/lib/weekly-digest/editorial-draft';
 import {
   buildDigestSelectionContext,
   citationUrlsFromUnknown,
@@ -18,9 +19,9 @@ import { attachCriticReport } from './critic';
 import { findBlindCrossPosts, runQualityGate } from './quality';
 import {
   channelRunsOnDate,
-  completedWeeklyRangeForTrigger,
   nextScheduledForChannel,
   nextWeeklyScheduledForChannel,
+  rollingWeeklyRangeForDate,
   resolveCadenceSettings,
   type ChannelCadence,
 } from './schedule';
@@ -35,6 +36,14 @@ import type {
 } from './types';
 
 export const SOCIAL_GENERATION_VERSION = 'social-v1';
+const WEEKLY_ARTIFACT_QUEUE_VERSION = 'weekly-auto-v2';
+
+interface UntypedRpcClient {
+  rpc(
+    name: string,
+    args?: Record<string, unknown>,
+  ): Promise<{ data: unknown; error: { message: string } | null }>;
+}
 
 interface SourceBrief {
   id: string;
@@ -335,13 +344,17 @@ async function loadApprovedDay(sourceDate: string): Promise<LoadedDay> {
   return { briefs, items: rankItems(items) };
 }
 
-async function existingPackage(kind: PackageKind, sourceDate: string) {
+async function existingPackage(
+  kind: PackageKind,
+  sourceDate: string,
+  generationVersion = SOCIAL_GENERATION_VERSION,
+) {
   const { data } = await getSupabaseAdmin()
     .from('social_packages')
     .select('id')
     .eq('kind', kind)
     .eq('source_date', sourceDate)
-    .eq('generation_version', SOCIAL_GENERATION_VERSION)
+    .eq('generation_version', generationVersion)
     .neq('status', 'cancelled')
     .maybeSingle();
   return data?.id ?? null;
@@ -366,6 +379,7 @@ async function createPackage(
   weeklyDigestId?: string,
   sourceItemIds: string[] = sourceItemId ? [sourceItemId] : [],
   weeklyDigestRevisionId?: string,
+  generationVersion = SOCIAL_GENERATION_VERSION,
 ) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
@@ -381,7 +395,7 @@ async function createPackage(
       weekly_digest_revision_id: weeklyDigestRevisionId ?? null,
       title,
       status: 'in_review',
-      generation_version: SOCIAL_GENERATION_VERSION,
+      generation_version: generationVersion,
     })
     .select('id')
     .single();
@@ -527,6 +541,149 @@ function freshTrackingTokens() {
 export interface ComposeResult {
   createdPackageIds: string[];
   skipped: string[];
+  weeklyDigestId?: string;
+}
+
+function blank(value: string | null | undefined) {
+  return !value?.trim();
+}
+
+function emptyTakeaways(value: Json | null | undefined) {
+  return (
+    !Array.isArray(value) || value.every((entry) => typeof entry !== 'string' || !entry.trim())
+  );
+}
+
+function weeklyEditorialDraftFor(items: SourceItem[]) {
+  return createWeeklyEditorialDraft(
+    items.map((item) => ({
+      id: item.id,
+      category_slug: item.category_slug,
+      title_en: item.title_en,
+      title_uk: item.title_uk,
+      summary_en: item.summary_en,
+      summary_uk: item.summary_uk,
+      why_matters_en: item.why_matters_en,
+      why_matters_uk: item.why_matters_uk,
+      facts_en: item.facts_en,
+      facts_uk: item.facts_uk,
+    })),
+  );
+}
+
+/**
+ * Revisions and their story rows are append-only. When legacy initialization
+ * left editorial fields blank, create a replacement immutable revision rather
+ * than mutating it. The RPC returns the current revision unchanged if its
+ * editorial payload is already complete.
+ */
+async function ensureWeeklyEditorialDraftRevision(
+  weeklyDigestId: string,
+  revisionId: string,
+  sourceItems: SourceItem[],
+) {
+  const db = getSupabaseAdmin();
+  const draft = weeklyEditorialDraftFor(sourceItems);
+  const [revisionResult, itemsResult] = await Promise.all([
+    db.from('weekly_digest_revisions').select('*').eq('id', revisionId).single(),
+    db.from('weekly_digest_revision_items').select('*').eq('revision_id', revisionId).order('rank'),
+  ]);
+  if (revisionResult.error || !revisionResult.data) {
+    throw new Error(
+      `[social-composer] editorial draft revision: ${revisionResult.error?.message ?? 'missing'}`,
+    );
+  }
+  if (itemsResult.error || !itemsResult.data) {
+    throw new Error(
+      `[social-composer] editorial draft stories: ${itemsResult.error?.message ?? 'missing'}`,
+    );
+  }
+
+  const revision = revisionResult.data;
+  const draftsBySourceId = new Map(draft.stories.map((story) => [story.id, story]));
+  const nextItems = itemsResult.data.map((item) => {
+    const story = item.brief_item_id ? draftsBySourceId.get(item.brief_item_id) : undefined;
+    if (!story) {
+      throw new Error(
+        `[social-composer] editorial draft is missing source ${item.brief_item_id ?? item.id}`,
+      );
+    }
+    return {
+      brief_item_id: item.brief_item_id,
+      rank: item.rank,
+      title_en: item.title_en,
+      title_uk: item.title_uk,
+      summary_en: item.summary_en,
+      summary_uk: item.summary_uk,
+      body_en:
+        blank(item.body_en) || item.body_en.trim() === item.summary_en.trim()
+          ? story.body_en
+          : item.body_en,
+      body_uk:
+        blank(item.body_uk) || item.body_uk.trim() === item.summary_uk.trim()
+          ? story.body_uk
+          : item.body_uk,
+      why_en: item.why_en,
+      why_uk: item.why_uk,
+      practical_en: blank(item.practical_en) ? story.practical_en : item.practical_en,
+      practical_uk: blank(item.practical_uk) ? story.practical_uk : item.practical_uk,
+      takeaway_en: blank(item.takeaway_en) ? story.takeaway_en : item.takeaway_en,
+      takeaway_uk: blank(item.takeaway_uk) ? story.takeaway_uk : item.takeaway_uk,
+      event_date: item.event_date,
+      sources: item.sources,
+      source_snapshot: item.source_snapshot,
+    };
+  });
+  const editorNoteEn = blank(revision.editor_note_en)
+    ? draft.editor_note_en
+    : revision.editor_note_en;
+  const editorNoteUk = blank(revision.editor_note_uk)
+    ? draft.editor_note_uk
+    : revision.editor_note_uk;
+  const takeawaysEn = emptyTakeaways(revision.key_takeaways_en)
+    ? draft.key_takeaways_en
+    : revision.key_takeaways_en;
+  const takeawaysUk = emptyTakeaways(revision.key_takeaways_uk)
+    ? draft.key_takeaways_uk
+    : revision.key_takeaways_uk;
+  const needsRevision =
+    editorNoteEn !== revision.editor_note_en ||
+    editorNoteUk !== revision.editor_note_uk ||
+    takeawaysEn !== revision.key_takeaways_en ||
+    takeawaysUk !== revision.key_takeaways_uk ||
+    nextItems.some((item, index) => {
+      const current = itemsResult.data[index];
+      return (
+        item.body_en !== current.body_en ||
+        item.body_uk !== current.body_uk ||
+        item.practical_en !== current.practical_en ||
+        item.practical_uk !== current.practical_uk ||
+        item.takeaway_en !== current.takeaway_en ||
+        item.takeaway_uk !== current.takeaway_uk
+      );
+    });
+  if (!needsRevision) return revisionId;
+
+  const rpc = db as unknown as UntypedRpcClient;
+  const { data, error } = await rpc.rpc('create_service_weekly_digest_revision', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_title_en: revision.title_en,
+    p_title_uk: revision.title_uk,
+    p_intro_en: revision.intro_en ?? '',
+    p_intro_uk: revision.intro_uk ?? '',
+    p_editor_note_en: editorNoteEn,
+    p_editor_note_uk: editorNoteUk,
+    p_key_takeaways_en: takeawaysEn,
+    p_key_takeaways_uk: takeawaysUk,
+    p_items: nextItems,
+    p_reason: 'composer_editorial_draft',
+  });
+  if (error || typeof data !== 'string') {
+    throw new Error(
+      `[social-composer] editorial revision: ${error?.message ?? 'replacement revision was not returned'}`,
+    );
+  }
+  return data;
 }
 
 async function notifyPackagesReady(packageIds: string[], label: string) {
@@ -833,13 +990,19 @@ async function queueInitialWeeklyArtifacts(
   items: SourceItem[],
 ) {
   const db = getSupabaseAdmin();
-  const [revisionResult, itemResult] = await Promise.all([
+  const [revisionResult, itemResult, articleResult] = await Promise.all([
     db.from('weekly_digest_revisions').select('*').eq('id', revisionId).single(),
     db
       .from('weekly_digest_revision_items')
       .select('id,brief_item_id,rank,title_en,title_uk')
       .eq('revision_id', revisionId)
       .order('rank'),
+    db
+      .from('weekly_digest_artifacts')
+      .select('slot_key')
+      .eq('revision_id', revisionId)
+      .eq('is_current', true)
+      .in('slot_key', ['article:en', 'article:uk']),
   ]);
   if (revisionResult.error || !revisionResult.data) {
     throw new Error(
@@ -857,7 +1020,14 @@ async function queueInitialWeeklyArtifacts(
       }`,
     );
   }
+  if (articleResult.error) {
+    throw new Error(`[social-composer] weekly article artifacts: ${articleResult.error.message}`);
+  }
+  const currentArticleSlots = new Set(
+    (articleResult.data ?? []).map((artifact) => artifact.slot_key),
+  );
   for (const locale of ['en', 'uk'] as const) {
+    if (currentArticleSlots.has(`article:${locale}`)) continue;
     const { error } = await db.rpc('save_weekly_digest_artifact', {
       p_weekly_digest_id: weeklyDigestId,
       p_revision_id: revisionId,
@@ -919,7 +1089,7 @@ async function queueInitialWeeklyArtifacts(
       p_weekly_digest_id: weeklyDigestId,
       p_revision_id: revisionId,
       p_job_type: job.type,
-      p_idempotency_key: `weekly:auto:${weeklyDigestId}:${revisionId}:${job.key}`,
+      p_idempotency_key: `${WEEKLY_ARTIFACT_QUEUE_VERSION}:${weeklyDigestId}:${revisionId}:${job.key}`,
       p_input: job.input,
     });
     if (error && !/duplicate|unique/i.test(error.message)) {
@@ -930,10 +1100,26 @@ async function queueInitialWeeklyArtifacts(
 
 export async function composeWeeklySocial(
   triggerDate: string,
-  options: { now?: Date } = {},
+  options: { now?: Date; testMode?: boolean } = {},
 ): Promise<ComposeResult> {
   const now = options.now ?? new Date();
-  const { weekStart: startDate, weekEnd: endDate } = completedWeeklyRangeForTrigger(triggerDate);
+  const testMode = options.testMode === true;
+  const { weekStart: startDate, weekEnd: endDate } = rollingWeeklyRangeForDate(triggerDate);
+  const generationVersion = testMode
+    ? `${SOCIAL_GENERATION_VERSION}-test`
+    : SOCIAL_GENERATION_VERSION;
+  const supabase = getSupabaseAdmin();
+  let existingTest: { id: string; slug: string; active_revision_id: string | null } | null = null;
+  if (testMode) {
+    const { data, error } = await supabase
+      .from('weekly_digests')
+      .select('id,slug,active_revision_id')
+      .eq('week_start', startDate)
+      .eq('is_test', true)
+      .maybeSingle();
+    if (error) throw new Error(`[social-composer] existing test weekly digest: ${error.message}`);
+    existingTest = data;
+  }
   const { briefs, items, articles } = await loadApprovedRange(startDate, endDate);
   const selection = selectEditorialDigestItems(weeklyCandidates(items, briefs, articles));
   const selectionContext = buildDigestSelectionContext(selection);
@@ -949,19 +1135,98 @@ export async function composeWeeklySocial(
         `fewer_than_three_editorially_eligible_weekly_items:${selection.eligible.length}/${items.length}`,
       ],
     };
-  if (await existingPackage('weekly_digest', endDate)) {
+
+  const slug =
+    existingTest?.slug ?? (testMode ? `ai-weekly-test-${endDate}` : `ai-weekly-${startDate}`);
+  if (existingTest?.active_revision_id) {
+    const { data: existingRevisionItems, error: existingItemsError } = await supabase
+      .from('weekly_digest_revision_items')
+      .select('brief_item_id')
+      .eq('revision_id', existingTest.active_revision_id)
+      .order('rank');
+    if (existingItemsError) {
+      throw new Error(`[social-composer] existing test stories: ${existingItemsError.message}`);
+    }
+    const selectedById = new Map(selected.map((item) => [item.id, item]));
+    const existingSources = (existingRevisionItems ?? []).flatMap((item) =>
+      item.brief_item_id && selectedById.get(item.brief_item_id)
+        ? [selectedById.get(item.brief_item_id)!]
+        : [],
+    );
+    if (existingSources.length !== existingRevisionItems.length) {
+      throw new Error(
+        '[social-composer] test Weekly Digest sources changed; its saved story set cannot be resumed safely.',
+      );
+    }
+    const sourceItems = existingSources;
+    const revisionId = await ensureWeeklyEditorialDraftRevision(
+      existingTest.id,
+      existingTest.active_revision_id,
+      sourceItems,
+    );
+    await queueInitialWeeklyArtifacts(existingTest.id, revisionId, sourceItems);
+
+    const { data: existingPackage, error: existingPackageError } = await supabase
+      .from('social_packages')
+      .select('id')
+      .eq('weekly_digest_id', existingTest.id)
+      .eq('weekly_digest_revision_id', revisionId)
+      .neq('status', 'cancelled')
+      .maybeSingle();
+    if (existingPackageError) {
+      throw new Error(`[social-composer] existing test package: ${existingPackageError.message}`);
+    }
+    if (existingPackage) {
+      return {
+        weeklyDigestId: existingTest.id,
+        createdPackageIds: [],
+        skipped: ['test_weekly_digest_resumed'],
+      };
+    }
+
+    const briefById = new Map(briefs.map((brief) => [brief.id, brief]));
+    const lead = sourceItems[0];
+    const leadBrief = briefById.get(lead.brief_id) ?? briefs[0];
+    const packageId = await createPackage(
+      'weekly_digest',
+      'yellow',
+      endDate,
+      `Test weekly digest · ${startDate}`,
+      leadBrief.id,
+      lead.id,
+      existingTest.id,
+      sourceItems.map((item) => item.id),
+      revisionId,
+      generationVersion,
+    );
+    const urls = trackingUrls(freshTrackingTokens());
+    await saveVariants(
+      packageId,
+      lead,
+      weeklySeeds(slug, sourceItems, endDate, now, urls),
+      now,
+      sourceItems,
+    );
+    await notifyPackagesReady([packageId], `Test Weekly Digest · ${startDate}`);
+    return {
+      weeklyDigestId: existingTest.id,
+      createdPackageIds: [packageId],
+      skipped: ['test_weekly_digest_resumed'],
+    };
+  }
+
+  if (await existingPackage('weekly_digest', endDate, generationVersion)) {
     return { createdPackageIds: [], skipped: ['weekly_digest_exists'] };
   }
 
-  const supabase = getSupabaseAdmin();
-  const slug = `ai-weekly-${startDate}`;
   const { data: digest, error: digestError } = await supabase
     .from('weekly_digests')
     .upsert(
       {
         week_start: startDate,
         week_end: endDate,
-        period_model: 'sun_sat',
+        period_model: 'rolling_7d',
+        is_test: testMode,
         slug,
         status: 'in_review',
         title_en: `The week in AI engineering · ${startDate}`,
@@ -969,7 +1234,7 @@ export async function composeWeeklySocial(
         intro_en: `${selected.length} evidence-backed stories selected for impact, corroboration, and practical value.`,
         intro_uk: `${selected.length} доказових новин, відібраних за впливом, підтвердженням і практичною цінністю.`,
       },
-      { onConflict: 'week_start' },
+      { onConflict: 'week_start,is_test' },
     )
     .select('id')
     .single();
@@ -996,9 +1261,12 @@ export async function composeWeeklySocial(
   const dateByBrief = new Map(briefs.map((brief) => [brief.id, brief.date]));
   const briefById = new Map(briefs.map((brief) => [brief.id, brief]));
   const scoreByItemId = new Map(selection.selected.map((scored) => [scored.candidate.id, scored]));
+  const editorialDraft = weeklyEditorialDraftFor(selected);
+  const storyDraftsById = new Map(editorialDraft.stories.map((story) => [story.id, story]));
   const { error: itemError } = await supabase.from('weekly_digest_items').insert(
     selected.map((item, index) => {
       const scored = scoreByItemId.get(item.id);
+      const storyDraft = storyDraftsById.get(item.id);
       const snapshot = {
         title_en: item.title_en,
         title_uk: item.title_uk,
@@ -1006,6 +1274,12 @@ export async function composeWeeklySocial(
         summary_uk: item.summary_uk,
         why_en: item.why_matters_en,
         why_uk: item.why_matters_uk,
+        body_en: storyDraft?.body_en ?? item.summary_en,
+        body_uk: storyDraft?.body_uk ?? item.summary_uk,
+        practical_en: storyDraft?.practical_en ?? null,
+        practical_uk: storyDraft?.practical_uk ?? null,
+        takeaway_en: storyDraft?.takeaway_en ?? item.why_matters_en,
+        takeaway_uk: storyDraft?.takeaway_uk ?? item.why_matters_uk,
         item_slug: item.slug,
         brief_slug: briefById.get(item.brief_id)?.slug ?? null,
         brief_date: dateByBrief.get(item.brief_id) ?? null,
@@ -1043,7 +1317,12 @@ export async function composeWeeklySocial(
       `[social-composer] weekly revision: ${revisionError?.message ?? 'initializer returned no revision'}`,
     );
   }
-  await queueInitialWeeklyArtifacts(digest.id, revisionId, selected);
+  const editorialRevisionId = await ensureWeeklyEditorialDraftRevision(
+    digest.id,
+    revisionId,
+    selected,
+  );
+  await queueInitialWeeklyArtifacts(digest.id, editorialRevisionId, selected);
 
   const lead = selected[0];
   const leadBrief = briefById.get(lead.brief_id) ?? briefs[0];
@@ -1051,12 +1330,13 @@ export async function composeWeeklySocial(
     'weekly_digest',
     'yellow',
     endDate,
-    `Weekly digest · ${startDate}`,
+    `${testMode ? 'Test weekly digest' : 'Weekly digest'} · ${startDate}`,
     leadBrief.id,
     lead.id,
     digest.id,
     selected.map((item) => item.id),
-    revisionId,
+    editorialRevisionId,
+    generationVersion,
   );
   const urls = trackingUrls(freshTrackingTokens());
   await saveVariants(
@@ -1066,6 +1346,9 @@ export async function composeWeeklySocial(
     now,
     selected,
   );
-  await notifyPackagesReady([packageId], `Weekly digest · ${startDate}`);
-  return { createdPackageIds: [packageId], skipped: [] };
+  await notifyPackagesReady(
+    [packageId],
+    `${testMode ? 'Test Weekly Digest' : 'Weekly digest'} · ${startDate}`,
+  );
+  return { weeklyDigestId: digest.id, createdPackageIds: [packageId], skipped: [] };
 }

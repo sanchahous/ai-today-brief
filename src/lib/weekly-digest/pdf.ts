@@ -12,8 +12,9 @@ const DEJAVU_DIRECTORY = join(process.cwd(), 'node_modules', 'dejavu-fonts-ttf',
 const INTER_FONT = join(DEJAVU_DIRECTORY, 'DejaVuSans.ttf');
 const INTER_BOLD_FONT = join(DEJAVU_DIRECTORY, 'DejaVuSans-Bold.ttf');
 const INTER_ITALIC_FONT = join(DEJAVU_DIRECTORY, 'DejaVuSans-Oblique.ttf');
-const FRAUNCES_FONT =
-  require.resolve('@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2');
+// PDFKit/fontkit accepts static TTF/OTF fonts, not the site's WOFF2 webfont.
+// Keep a serif face for English headings while retaining reliable Cyrillic support.
+const FRAUNCES_FONT = join(DEJAVU_DIRECTORY, 'DejaVuSerif.ttf');
 
 const PAGE = {
   width: 595.28,
@@ -496,6 +497,10 @@ export async function renderWeeklyDigestPdf(input: WeeklyPdfInput): Promise<Buff
     throw new Error('Weekly PDF requires 3 to 7 stories.');
   }
   const doc = new PDFDocument({
+    // PDFKit otherwise eagerly loads the built-in Helvetica AFM in the
+    // constructor. Starting with our traced DejaVu font keeps production PDFs
+    // independent of that optional package-data lookup.
+    font: INTER_FONT,
     autoFirstPage: false,
     bufferPages: true,
     compress: true,

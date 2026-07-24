@@ -2,14 +2,18 @@
 
 import { createHash, randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import sharp from 'sharp';
 import type { Json } from '@/lib/database.types';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { storageBlob } from '@/lib/storage/binary';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { updateVariantAction } from '@/app/admin/actions';
-import { kyivWallClockToUtc } from '@/lib/social/schedule';
+import { composeWeeklySocial } from '@/lib/social/composer';
+import { kyivWallClockToUtc, SOCIAL_TIME_ZONE } from '@/lib/social/schedule';
 import { normalizeYouTubeVideo } from '@/lib/weekly-digest/video';
+import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial-validation';
 
 function requiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -73,6 +77,56 @@ function revalidateWeeklyAdmin(weeklyDigestId: string) {
   revalidatePath('/admin');
   revalidatePath('/admin/weekly');
   revalidatePath(`/admin/weekly/${weeklyDigestId}`);
+}
+
+function weeklyRevisionTab(formData: FormData) {
+  return optionalString(formData, 'edit_scope') === 'article' ? 'article' : 'stories';
+}
+
+function redirectWeeklyRevisionContentError(
+  weeklyDigestId: string,
+  formData: FormData,
+  message: string,
+): never {
+  const tab = weeklyRevisionTab(formData);
+  redirect(
+    `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=${tab}&save_error=${encodeURIComponent(message)}`,
+  );
+}
+
+function kyivDate(now = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: SOCIAL_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}
+
+/**
+ * Test editions use the full editorial and generation pipeline but carry a
+ * database-enforced publication lock. One test exists per seven-day window so
+ * repeated clicks safely reopen the same evidence set.
+ */
+export async function createTestWeeklyDigestAction() {
+  await requireSocialAdmin({ roles: ['owner'] });
+  const now = new Date();
+  let result;
+  try {
+    result = await composeWeeklySocial(kyivDate(now), { now, testMode: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown preparation error.';
+    redirect(`/admin/weekly?test_error=${encodeURIComponent(message.slice(0, 300))}`);
+  }
+  if (!result.weeklyDigestId) {
+    redirect(
+      `/admin/weekly?test_error=${encodeURIComponent(
+        'The test Weekly Digest could not be prepared for this seven-day window.',
+      )}`,
+    );
+  }
+  revalidateWeeklyAdmin(result.weeklyDigestId);
+  redirect(`/admin/weekly/${result.weeklyDigestId}`);
 }
 
 async function editableWorkspace(weeklyDigestId: string, revisionId: string) {
@@ -179,8 +233,12 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
     throw new Error('A Weekly Digest revision must contain 3 to 7 stories.');
   }
 
-  const titleEn = optionalString(formData, 'title_en') || revision.title_en;
-  const titleUk = optionalString(formData, 'title_uk') || revision.title_uk;
+  const titleEn = formData.has('title_en')
+    ? optionalString(formData, 'title_en')
+    : revision.title_en;
+  const titleUk = formData.has('title_uk')
+    ? optionalString(formData, 'title_uk')
+    : revision.title_uk;
   const introEn = formData.has('intro_en')
     ? optionalString(formData, 'intro_en')
     : (revision.intro_en ?? '');
@@ -199,6 +257,21 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
   const takeawaysUk = formData.has('key_takeaways_uk')
     ? takeaways(optionalString(formData, 'key_takeaways_uk'))
     : revision.key_takeaways_uk;
+
+  const validationError = weeklyRevisionContentErrorMessage({
+    title_en: titleEn,
+    title_uk: titleUk,
+    intro_en: introEn,
+    intro_uk: introUk,
+    editor_note_en: editorNoteEn,
+    editor_note_uk: editorNoteUk,
+    key_takeaways_en: takeawaysEn,
+    key_takeaways_uk: takeawaysUk,
+    items: nextItems,
+  });
+  if (validationError) {
+    redirectWeeklyRevisionContentError(weeklyDigestId, formData, validationError);
+  }
 
   const db = await getSupabaseServer();
   const { data: newRevisionId, error } = await db.rpc('create_weekly_digest_revision', {
@@ -737,17 +810,27 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
   }
 
   const sha256 = createHash('sha256').update(bytes).digest('hex');
-  const path = `digests/${weeklyDigestId}/revisions/${revisionId}/uploads/${artifactType}/${sha256}.${extension}`;
+  const path = `digests/${weeklyDigestId}/revisions/${revisionId}/uploads/binary-v2/${artifactType}/${sha256}.${extension}`;
   const admin = getSupabaseAdmin();
   const { error: uploadError } = await admin.storage
     .from('weekly-digest-private')
-    .upload(path, bytes, {
+    .upload(path, storageBlob(bytes, mimeType), {
       contentType: mimeType,
       cacheControl: '31536000, immutable',
       upsert: false,
     });
   if (uploadError && !/already exists|duplicate/i.test(uploadError.message)) {
     throw new Error(uploadError.message);
+  }
+  const { data: stored, error: verifyError } = await admin.storage
+    .from('weekly-digest-private')
+    .download(path);
+  if (verifyError || !stored) {
+    throw new Error(`Upload verification failed: ${verifyError?.message ?? 'empty file'}`);
+  }
+  const storedBytes = Buffer.from(await stored.arrayBuffer());
+  if (storedBytes.length !== bytes.length || !storedBytes.equals(bytes)) {
+    throw new Error('Upload verification failed: stored bytes do not match the selected file.');
   }
   const db = await getSupabaseServer();
   const { error } = await db.rpc('save_weekly_digest_artifact', {

@@ -28,6 +28,7 @@
     "social:shadow": "node --conditions=react-server --import tsx scripts/social-shadow.ts",
     "social:asset:sample": "node --conditions=react-server --import tsx scripts/render-social-asset-sample.ts",
     "weekly:pdf:sample": "node --conditions=react-server --import tsx scripts/render-weekly-pdf-sample.ts",
+    "weekly:pdf:trace": "tsx scripts/verify-weekly-pdf-preview-trace.ts",
     "pr:check": "npm run ci:check && npm run typecheck && npm run lint && npm run e2e:check && npm run build",
     "e2e": "playwright test",
     "e2e:fast": "playwright test --project=chromium",

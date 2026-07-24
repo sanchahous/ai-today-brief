@@ -5,6 +5,7 @@ import {
   kyivWallClockToUtc,
   nextScheduledForChannel,
   nextWeeklyScheduledForChannel,
+  rollingWeeklyRangeForDate,
   resolveCadenceSettings,
 } from './schedule';
 
@@ -34,6 +35,17 @@ describe('Kyiv social scheduling', () => {
     expect(completedWeeklyRangeForTrigger('2026-07-16')).toEqual({
       weekStart: '2026-07-05',
       weekEnd: '2026-07-11',
+    });
+  });
+
+  it('uses the seven editorial days ending at Weekly creation', () => {
+    expect(rollingWeeklyRangeForDate('2026-07-12')).toEqual({
+      weekStart: '2026-07-06',
+      weekEnd: '2026-07-12',
+    });
+    expect(rollingWeeklyRangeForDate('2026-07-16')).toEqual({
+      weekStart: '2026-07-10',
+      weekEnd: '2026-07-16',
     });
   });
 

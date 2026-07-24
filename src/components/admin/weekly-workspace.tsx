@@ -332,9 +332,13 @@ function ArtifactCard({
         <div className="relative mt-4 aspect-[16/9] overflow-hidden rounded-xl border border-white/10 bg-black">
           <Image
             src={previewUrl}
-            alt={textFrom(artifact.content, 'alt_text') || `${label} preview`}
+            alt={
+              textFrom(artifact.content, 'alt_text', 'alt', 'alt_en', 'alt_uk') ||
+              `${label} preview`
+            }
             fill
             sizes="(max-width: 768px) 100vw, 520px"
+            unoptimized
             className="object-cover"
           />
         </div>
@@ -415,6 +419,7 @@ function OverviewPanel({
   );
   const latestJobs = workspace.generationJobs.slice(0, 5);
   const latestEvents = workspace.releaseEvents.slice(0, 8);
+  const isTestEdition = workspace.digest.is_test;
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,.6fr)]">
@@ -488,13 +493,14 @@ function OverviewPanel({
             Generation jobs
           </h2>
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[36rem] text-left text-sm">
+            <table className="w-full min-w-[52rem] text-left text-sm">
               <thead className="text-xs font-bold tracking-wide text-slate-500 uppercase">
                 <tr>
                   <th className="pb-3">Job</th>
                   <th className="pb-3">Status</th>
                   <th className="pb-3">Attempts</th>
                   <th className="pb-3">Created</th>
+                  <th className="pb-3">Latest result</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/8">
@@ -506,6 +512,17 @@ function OverviewPanel({
                     </td>
                     <td className="py-3 text-slate-400">{job.attempts}</td>
                     <td className="py-3 text-slate-400">{kyivDateTime(job.created_at)}</td>
+                    <td className="max-w-sm py-3 text-xs leading-5">
+                      {job.last_error ? (
+                        <p className="whitespace-pre-wrap text-red-200">{job.last_error}</p>
+                      ) : job.finished_at ? (
+                        <span className="text-slate-500">
+                          Finished {kyivDateTime(job.finished_at)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">Waiting for worker</span>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -534,13 +551,16 @@ function OverviewPanel({
               <dd className="mt-1 text-white">{kyivDateTime(workspace.digest.preflight_at)}</dd>
             </div>
             <div>
-              <dt className="font-bold text-slate-500">Public release</dt>
+              <dt className="font-bold text-slate-500">
+                {isTestEdition ? 'Reference release (test locked)' : 'Public release'}
+              </dt>
               <dd className="mt-1 text-white">{kyivDateTime(workspace.digest.release_at)}</dd>
             </div>
           </dl>
           <p className="mt-5 rounded-xl border border-cyan-300/20 bg-cyan-300/6 p-3 text-sm leading-6 text-cyan-100">
-            Monday is part of the review window. Editors can revise and re-approve until the
-            automated 15:45 Kyiv preflight; publication begins at 16:00.
+            {isTestEdition
+              ? 'This test follows the same Monday review timing, but the database prevents any public publication.'
+              : 'Monday is part of the review window. Editors can revise and re-approve until the automated 15:45 Kyiv preflight; publication begins at 16:00.'}
           </p>
         </section>
 
@@ -706,6 +726,7 @@ function StoriesPanel({
                     <textarea
                       name="item_why_en"
                       rows={4}
+                      required
                       defaultValue={item.why_en ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -716,6 +737,7 @@ function StoriesPanel({
                     <textarea
                       name="item_practical_en"
                       rows={4}
+                      required
                       defaultValue={item.practical_en ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -726,6 +748,7 @@ function StoriesPanel({
                     <textarea
                       name="item_takeaway_en"
                       rows={3}
+                      required
                       defaultValue={item.takeaway_en ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -775,6 +798,7 @@ function StoriesPanel({
                     <textarea
                       name="item_why_uk"
                       rows={4}
+                      required
                       defaultValue={item.why_uk ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -785,6 +809,7 @@ function StoriesPanel({
                     <textarea
                       name="item_practical_uk"
                       rows={4}
+                      required
                       defaultValue={item.practical_uk ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -795,6 +820,7 @@ function StoriesPanel({
                     <textarea
                       name="item_takeaway_uk"
                       rows={3}
+                      required
                       defaultValue={item.takeaway_uk ?? ''}
                       disabled={!canEdit}
                       className={TEXTAREA}
@@ -884,6 +910,7 @@ function ArticlePanel({
               <textarea
                 name="intro_en"
                 rows={6}
+                required
                 defaultValue={revision.intro_en ?? ''}
                 disabled={!canEdit}
                 className={TEXTAREA}
@@ -894,6 +921,7 @@ function ArticlePanel({
               <textarea
                 name="editor_note_en"
                 rows={5}
+                required
                 defaultValue={revision.editor_note_en ?? ''}
                 disabled={!canEdit}
                 className={TEXTAREA}
@@ -904,6 +932,7 @@ function ArticlePanel({
               <textarea
                 name="key_takeaways_en"
                 rows={6}
+                required
                 defaultValue={
                   Array.isArray(revision.key_takeaways_en)
                     ? revision.key_takeaways_en
@@ -936,6 +965,7 @@ function ArticlePanel({
               <textarea
                 name="intro_uk"
                 rows={6}
+                required
                 defaultValue={revision.intro_uk ?? ''}
                 disabled={!canEdit}
                 className={TEXTAREA}
@@ -946,6 +976,7 @@ function ArticlePanel({
               <textarea
                 name="editor_note_uk"
                 rows={5}
+                required
                 defaultValue={revision.editor_note_uk ?? ''}
                 disabled={!canEdit}
                 className={TEXTAREA}
@@ -956,6 +987,7 @@ function ArticlePanel({
               <textarea
                 name="key_takeaways_uk"
                 rows={6}
+                required
                 defaultValue={
                   Array.isArray(revision.key_takeaways_uk)
                     ? revision.key_takeaways_uk
@@ -1080,45 +1112,11 @@ function ReplacementAssetForm({
       </form>
 
       <details className="border-t border-white/8 pt-3">
-        <summary className="text-xs font-bold text-slate-400">Or import a trusted URL</summary>
-        <form action={enqueueWeeklyGenerationAction} className="mt-4 grid gap-3">
-          <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
-          <input type="hidden" name="revision_id" value={workspace.revision.id} />
-          <input type="hidden" name="job_type" value="artifact_promotion" />
-          <input type="hidden" name="artifact_type" value={artifactType} />
-          <input type="hidden" name="locale" value={locale} />
-          <input type="hidden" name="slot_key" value={slotKey} />
-          {revisionItemId ? (
-            <input type="hidden" name="revision_item_id" value={revisionItemId} />
-          ) : null}
-          <label className={LABEL}>
-            Source URL
-            <input
-              type="url"
-              name="source_url"
-              required
-              placeholder="https://…"
-              disabled={!canEdit}
-              className={FIELD}
-            />
-          </label>
-          <label className={LABEL}>
-            Alt text
-            <textarea
-              name="alt_text"
-              rows={2}
-              required={artifactType !== 'pdf'}
-              disabled={!canEdit}
-              className={TEXTAREA}
-            />
-          </label>
-          <ActionSubmitButton
-            idleLabel="Validate and stage URL"
-            pendingLabel="Staging URL…"
-            disabled={!canEdit}
-            className={SECONDARY}
-          />
-        </form>
+        <summary className="text-xs font-bold text-slate-400">Need a remote file?</summary>
+        <p className="mt-3 text-xs leading-5 text-slate-500">
+          Download the file first, then upload it here. Direct URL import is intentionally disabled
+          so the review pipeline can verify the exact bytes, MIME type, dimensions, and PDF file.
+        </p>
       </details>
     </div>
   );
@@ -1768,6 +1766,7 @@ function PdfPanel({
                           alt={`${locale.toUpperCase()} PDF page ${index + 1}`}
                           fill
                           sizes="240px"
+                          unoptimized
                           className="object-cover transition group-hover:scale-[1.02]"
                         />
                       </a>
@@ -2085,6 +2084,7 @@ function ReleasePanel({
   const digest = workspace.digest;
   const revision = workspace.revision;
   const paused = digest.status === 'paused';
+  const testEdition = digest.is_test;
   const finalReleaseDisabled = !canOwnRelease || !revision;
 
   return (
@@ -2106,6 +2106,16 @@ function ReleasePanel({
               approval again and reschedules it.
             </p>
           </div>
+
+          {testEdition ? (
+            <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-300/8 p-4 text-sm text-amber-100">
+              <p className="font-bold">Test edition — publication locked</p>
+              <p className="mt-2 leading-6 text-amber-100/80">
+                Approval, scheduling and the automatic preflight run normally. The release worker,
+                public website and social delivery are blocked in the database for this edition.
+              </p>
+            </div>
+          ) : null}
 
           {!canOwnRelease ? (
             <p className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/6 p-3 text-sm text-amber-100">
@@ -2131,7 +2141,7 @@ function ReleasePanel({
 
         <section className={PANEL} aria-labelledby="final-approval-heading">
           <h2 id="final-approval-heading" className="text-lg font-bold text-white">
-            1. Final approval
+            1. Final approval{testEdition ? ' (test)' : ''}
           </h2>
           <p className="mt-2 text-sm text-slate-400">
             Approval confirms the active revision and all currently approved artifact versions. It
@@ -2159,7 +2169,7 @@ function ReleasePanel({
             </label>
             <div>
               <ActionSubmitButton
-                idleLabel="Approve active revision"
+                idleLabel={testEdition ? 'Approve test revision' : 'Approve active revision'}
                 pendingLabel="Running approval…"
                 disabled={finalReleaseDisabled}
                 className={PRIMARY}
@@ -2170,7 +2180,7 @@ function ReleasePanel({
 
         <section className={PANEL} aria-labelledby="schedule-release-heading">
           <h2 id="schedule-release-heading" className="text-lg font-bold text-white">
-            2. Schedule
+            2. Schedule{testEdition ? ' test preflight' : ''}
           </h2>
           <p className="mt-2 text-sm text-slate-400">
             Stored in UTC; entered and displayed in Europe/Kyiv so daylight-saving transitions
@@ -2206,8 +2216,8 @@ function ReleasePanel({
             </div>
             <div>
               <ActionSubmitButton
-                idleLabel="Schedule release"
-                pendingLabel="Scheduling…"
+                idleLabel={testEdition ? 'Schedule test preflight' : 'Schedule release'}
+                pendingLabel={testEdition ? 'Scheduling test…' : 'Scheduling…'}
                 disabled={finalReleaseDisabled || digest.status !== 'approved'}
                 className={PRIMARY}
               />
@@ -2362,6 +2372,15 @@ export function WeeklyWorkspace({
 
   return (
     <>
+      {workspace.digest.is_test ? (
+        <section className="mb-6 rounded-2xl border border-amber-300/30 bg-amber-300/8 p-4 text-sm text-amber-100">
+          <p className="font-bold">Test Weekly Digest</p>
+          <p className="mt-1 leading-6 text-amber-100/80">
+            This edition uses the same seven-day selection, artifacts, review and preflight pipeline
+            as production. Public publication and social delivery are permanently disabled.
+          </p>
+        </section>
+      ) : null}
       {activeTab === 'overview' ? (
         <OverviewPanel workspace={workspace} blockers={preflight.blockers} progress={progress} />
       ) : null}

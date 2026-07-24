@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { pdf as openPdf } from 'pdf-to-img';
 import { renderWeeklyDigestPdf, type WeeklyPdfInput } from './pdf';
+import { openWeeklyPdfPreview } from './pdf-preview';
 
 function fixture(locale: 'en' | 'uk'): WeeklyPdfInput {
   const uk = locale === 'uk';
@@ -51,6 +51,15 @@ function fixture(locale: 'en' | 'uk'): WeeklyPdfInput {
 }
 
 describe('renderWeeklyDigestPdf', () => {
+  it('initializes the in-process PDF.js worker used by server previews', () => {
+    const worker = (
+      globalThis as typeof globalThis & {
+        pdfjsWorker?: { WorkerMessageHandler?: unknown };
+      }
+    ).pdfjsWorker;
+    expect(worker?.WorkerMessageHandler).toEqual(expect.any(Function));
+  });
+
   it.each(['en', 'uk'] as const)('renders a substantial %s A4 PDF', async (locale) => {
     const pdf = await renderWeeklyDigestPdf(fixture(locale));
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
@@ -65,7 +74,7 @@ describe('renderWeeklyDigestPdf', () => {
 
   it('can rasterize generated pages for the private admin preview', async () => {
     const bytes = await renderWeeklyDigestPdf(fixture('uk'));
-    const document = await openPdf(bytes, { scale: 0.4 });
+    const document = await openWeeklyPdfPreview(bytes, 0.4);
     try {
       expect(document.length).toBeGreaterThanOrEqual(7);
       const firstPage = await document.getPage(1);
