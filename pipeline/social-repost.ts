@@ -27,7 +27,7 @@ export interface RepostCandidate {
   summary_en: string;
   summary_uk: string;
   impact_level: string | null;
-  briefSlug: string;
+  categorySlug: string;
   itemSlug: string;
   /** Brief date (ISO) — newer wins inside the same impact tier. */
   date: string;
@@ -67,7 +67,7 @@ export function formatXPost(item: RepostCandidate, siteUrl: string): XPost {
   const text = hook.length > X_POST_LIMIT ? `${hook.slice(0, X_POST_LIMIT - 1)}…` : hook;
   const url = buildSocialItemUrl(siteUrl, {
     lang: 'en',
-    briefSlug: item.briefSlug,
+    categorySlug: item.categorySlug,
     itemSlug: item.itemSlug,
     channel: 'x',
     content: 'top_story',
@@ -79,7 +79,7 @@ export function formatXPost(item: RepostCandidate, siteUrl: string): XPost {
 export function formatThreadsPost(item: RepostCandidate, siteUrl: string): string {
   const url = buildSocialItemUrl(siteUrl, {
     lang: 'en',
-    briefSlug: item.briefSlug,
+    categorySlug: item.categorySlug,
     itemSlug: item.itemSlug,
     channel: 'threads',
     content: 'top_story',
@@ -96,7 +96,7 @@ export function formatThreadsPost(item: RepostCandidate, siteUrl: string): strin
 export function formatTelegramPost(item: RepostCandidate, siteUrl: string): string {
   const url = buildSocialItemUrl(siteUrl, {
     lang: 'uk',
-    briefSlug: item.briefSlug,
+    categorySlug: item.categorySlug,
     itemSlug: item.itemSlug,
     channel: 'telegram',
     content: 'top_story',

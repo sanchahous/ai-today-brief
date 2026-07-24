@@ -192,7 +192,7 @@ async function getConceptItemsViaJunction(
       categorySlug: catSlug,
       categoryName: cat?.name ?? null,
       categoryColor: cat?.color ?? null,
-      href: `/${lang}/${r.brief_slug}/${r.slug}`,
+      href: catSlug ? `/${lang}/news/${catSlug}/${r.slug}` : `/${lang}/news`,
       title: title || summary.slice(0, 80),
       summary,
       why: pick(lang, r.why_en as string | null, r.why_uk as string | null),

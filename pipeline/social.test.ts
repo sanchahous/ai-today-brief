@@ -21,13 +21,13 @@ describe('buildSocialItemUrl', () => {
     expect(
       buildSocialItemUrl('https://aitodaybrief.com', {
         lang: 'en',
-        briefSlug: 'brief-2026-07-15',
+        categorySlug: 'tools-and-releases',
         itemSlug: 'new-model',
         channel: 'threads',
         content: 'top_story',
       }),
     ).toBe(
-      'https://aitodaybrief.com/en/brief-2026-07-15/new-model?utm_source=threads&utm_medium=social&utm_campaign=daily_news&utm_content=top_story',
+      'https://aitodaybrief.com/en/news/tools-and-releases/new-model?utm_source=threads&utm_medium=social&utm_campaign=daily_news&utm_content=top_story',
     );
   });
 
@@ -35,13 +35,13 @@ describe('buildSocialItemUrl', () => {
     expect(
       buildSocialItemUrl('https://example.com/news/', {
         lang: 'uk',
-        briefSlug: 'brief one',
+        categorySlug: 'tools and releases',
         itemSlug: 'модель',
         channel: 'telegram',
         campaign: 'weekly_digest',
       }),
     ).toBe(
-      'https://example.com/news/uk/brief%20one/%D0%BC%D0%BE%D0%B4%D0%B5%D0%BB%D1%8C?utm_source=telegram&utm_medium=social&utm_campaign=weekly_digest',
+      'https://example.com/news/uk/news/tools%20and%20releases/%D0%BC%D0%BE%D0%B4%D0%B5%D0%BB%D1%8C?utm_source=telegram&utm_medium=social&utm_campaign=weekly_digest',
     );
   });
 });

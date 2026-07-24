@@ -49,7 +49,6 @@ export function BriefDailySections({
               <BriefItemRow
                 key={item.id}
                 lang={lang}
-                briefSlug={pack.slug}
                 item={item}
                 displayIndex={startIndex + itemIdx}
                 openFull={openFull}
@@ -64,18 +63,17 @@ export function BriefDailySections({
 
 function BriefItemRow({
   lang,
-  briefSlug,
   item,
   displayIndex,
   openFull,
 }: {
   lang: Lang;
-  briefSlug: string;
   item: BriefItemCard;
   displayIndex: number;
   openFull: string;
 }) {
-  const href = item.slug ? `/${lang}/${briefSlug}/${item.slug}` : `/${lang}/news`;
+  const href =
+    item.slug && item.categorySlug ? `/${lang}/news/${item.categorySlug}/${item.slug}` : `/${lang}/news`;
 
   return (
     <Reveal delayMs={displayIndex * 50}>

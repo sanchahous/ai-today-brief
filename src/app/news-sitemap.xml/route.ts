@@ -18,7 +18,7 @@ export async function GET() {
 
   const urls = entries
     .map((e) => {
-      const loc = `${SITE_URL}/${e.lang}/${e.brief}/${e.item}`;
+      const loc = `${SITE_URL}/${e.lang}/news/${e.category}/${e.item}`;
       const pub = escapeXml(e.publicationDate);
       const title = escapeXml(e.title);
       const language = e.lang === 'uk' ? 'uk' : 'en';

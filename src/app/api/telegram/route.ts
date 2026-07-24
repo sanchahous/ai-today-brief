@@ -185,7 +185,7 @@ async function pingIndexNow(
 
   const { data: items } = await db
     .from('brief_items')
-    .select('slug')
+    .select('slug, category_slug')
     .eq('brief_id', briefId)
     .eq('review_status', 'approved')
     .is('canonical_item_id', null);
@@ -201,8 +201,8 @@ async function pingIndexNow(
     ]),
   ];
   for (const item of items ?? []) {
-    if (!item.slug) continue;
-    for (const lang of LANGS) urls.push(`${SITE_URL}/${lang}/${briefSlug}/${item.slug}`);
+    if (!item.slug || !item.category_slug) continue;
+    for (const lang of LANGS) urls.push(`${SITE_URL}/${lang}/news/${item.category_slug}/${item.slug}`);
   }
 
   const result = await submitToIndexNow(urls);
@@ -307,7 +307,7 @@ async function handleEditorTake(
     .from('brief_items')
     .update({ editor_take: take })
     .eq('id', itemId)
-    .select('brief_id, slug, title_uk, title_en')
+    .select('brief_id, slug, category_slug, title_uk, title_en')
     .single();
 
   if (error || !item) {
@@ -318,12 +318,12 @@ async function handleEditorTake(
   // If the brief is already live, refresh the item pages so the take shows up.
   const { data: brief } = await db
     .from('briefs')
-    .select('slug, status')
+    .select('status')
     .eq('id', item.brief_id)
     .maybeSingle();
-  if (brief?.status === 'published' && brief.slug && item.slug) {
-    revalidatePath(`/en/${brief.slug}/${item.slug}`);
-    revalidatePath(`/uk/${brief.slug}/${item.slug}`);
+  if (brief?.status === 'published' && item.category_slug && item.slug) {
+    revalidatePath(`/en/news/${item.category_slug}/${item.slug}`);
+    revalidatePath(`/uk/news/${item.category_slug}/${item.slug}`);
   }
 
   const title = item.title_uk ?? item.title_en ?? '–';

@@ -38,7 +38,7 @@ async function main(): Promise<void> {
 
   const { data: briefs, error: bErr } = await db
     .from('briefs')
-    .select('id, slug, date')
+    .select('id, date')
     .eq('status', 'published')
     .gte('date', sinceDate);
   if (bErr) throw new Error(`weekly-digest briefs: ${bErr.message}`);
@@ -87,7 +87,7 @@ async function main(): Promise<void> {
   for (const it of items ?? []) {
     const brief = briefById.get(it.brief_id);
     const article = articleById.get(it.article_id);
-    if (!brief?.slug || !it.slug || !it.title_en || !article) continue;
+    if (!brief || !it.slug || !it.title_en || !article) continue;
     candidates.push({
       id: it.id,
       articleId: it.article_id,
@@ -100,7 +100,6 @@ async function main(): Promise<void> {
       why_matters_uk: it.why_matters_uk ?? '',
       impact_level: it.impact_level,
       category_slug: it.category_slug,
-      briefSlug: brief.slug,
       itemSlug: it.slug,
       date: brief.date,
       rank: it.rank,

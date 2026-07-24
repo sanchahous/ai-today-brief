@@ -39,7 +39,7 @@ export function parseSocialChannels(raw: string | undefined): SocialChannel[] {
 
 export interface SocialItemUrlInput {
   lang: 'en' | 'uk';
-  briefSlug: string;
+  categorySlug: string;
   itemSlug: string;
   channel: SocialChannel;
   campaign?: string;
@@ -54,7 +54,9 @@ export interface SocialItemUrlInput {
 export function buildSocialItemUrl(siteUrl: string, input: SocialItemUrlInput): string {
   const base = new URL(siteUrl);
   const prefix = base.pathname.replace(/\/$/, '');
-  const path = [input.lang, input.briefSlug, input.itemSlug].map(encodeURIComponent).join('/');
+  const path = [input.lang, 'news', input.categorySlug, input.itemSlug]
+    .map(encodeURIComponent)
+    .join('/');
   base.pathname = `${prefix}/${path}`;
   base.search = '';
   base.hash = '';

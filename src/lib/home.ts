@@ -115,7 +115,7 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
 
   const { data: briefs } = await supabase
     .from('briefs')
-    .select('id, slug, date, edition')
+    .select('id, date, edition')
     .eq('status', 'published')
     .order('date', { ascending: false })
     .order('edition', { ascending: true })
@@ -152,7 +152,7 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
         categorySlug: it.category_slug,
         categoryName: cat?.name ?? null,
         categoryColor: cat?.color ?? null,
-        href: brief.slug && it.slug ? `/${lang}/${brief.slug}/${it.slug}` : `/${lang}/news`,
+        href: it.category_slug && it.slug ? `/${lang}/news/${it.category_slug}/${it.slug}` : `/${lang}/news`,
         title: pick(lang, it.title_en, it.title_uk) || summary,
         summary,
         why: why || summary,

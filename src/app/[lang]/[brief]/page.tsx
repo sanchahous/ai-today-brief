@@ -102,15 +102,14 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
         mainEntity: {
           '@type': 'ItemList',
           numberOfItems: b.allItems.length,
-          itemListElement: b.allItems.map((it, i) => {
-            const pack = b.packs.find((p) => p.items.some((item) => item.id === it.id));
-            return {
-              '@type': 'ListItem',
-              position: i + 1,
-              name: it.title,
-              ...(it.slug && pack ? { url: `${SITE_URL}/${lang}/${pack.slug}/${it.slug}` } : {}),
-            };
-          }),
+          itemListElement: b.allItems.map((it, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            name: it.title,
+            ...(it.slug && it.categorySlug
+              ? { url: `${SITE_URL}/${lang}/news/${it.categorySlug}/${it.slug}` }
+              : {}),
+          })),
         },
       },
       breadcrumbJsonLd(crumbs, SITE_URL),

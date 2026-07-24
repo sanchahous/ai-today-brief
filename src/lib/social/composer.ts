@@ -143,13 +143,11 @@ function approvedFacts(item: SourceItem, locale: SocialLocale) {
   return [title, summary, why, ...extracted].map(text).filter(Boolean);
 }
 
-function publicStoryUrl(
-  brief: SourceBrief,
-  item: SourceItem,
-  locale: SocialLocale,
-  channel: SocialChannel,
-) {
-  const url = new URL(`/${locale}/${brief.slug}/${item.slug}`, SITE_URL);
+function publicStoryUrl(item: SourceItem, locale: SocialLocale, channel: SocialChannel) {
+  const path = item.category_slug
+    ? `/${locale}/news/${item.category_slug}/${item.slug}`
+    : `/${locale}/news`;
+  const url = new URL(path, SITE_URL);
   url.searchParams.set('utm_source', channel);
   url.searchParams.set('utm_medium', 'social');
   url.searchParams.set('utm_campaign', 'daily_news');
@@ -166,7 +164,6 @@ function dailyBriefUrl(brief: SourceBrief, channel: SocialChannel) {
 }
 
 function topStorySeeds(
-  brief: SourceBrief,
   item: SourceItem,
   sourceDate: string,
   now: Date,
@@ -189,7 +186,7 @@ function topStorySeeds(
       text: xText,
       firstComment: `Read the full brief: ${trackingUrls.x}`,
       trackingToken: trackingUrls.x.split('/').at(-1)!,
-      sourceUrl: publicStoryUrl(brief, item, 'en', 'x'),
+      sourceUrl: publicStoryUrl(item, 'en', 'x'),
       scheduledFor: nextScheduledForChannel('x', sourceDate, now, cadence.x),
     });
   }
@@ -204,7 +201,7 @@ function topStorySeeds(
         498,
       ),
       trackingToken: trackingUrls.threads.split('/').at(-1)!,
-      sourceUrl: publicStoryUrl(brief, item, 'en', 'threads'),
+      sourceUrl: publicStoryUrl(item, 'en', 'threads'),
       scheduledFor: nextScheduledForChannel('threads', sourceDate, now, cadence.threads),
     });
   }
@@ -233,7 +230,7 @@ function topStorySeeds(
       format: 'company_insight',
       text: truncate(linkedin, 1200),
       trackingToken: trackingUrls.linkedin.split('/').at(-1)!,
-      sourceUrl: publicStoryUrl(brief, item, 'en', 'linkedin'),
+      sourceUrl: publicStoryUrl(item, 'en', 'linkedin'),
       scheduledFor: nextScheduledForChannel('linkedin', sourceDate, now, cadence.linkedin),
     });
   }
@@ -248,7 +245,7 @@ function topStorySeeds(
         1500,
       ),
       trackingToken: trackingUrls.instagram.split('/').at(-1)!,
-      sourceUrl: publicStoryUrl(brief, item, 'en', 'instagram'),
+      sourceUrl: publicStoryUrl(item, 'en', 'instagram'),
       scheduledFor: nextScheduledForChannel('instagram', sourceDate, now, cadence.instagram),
     });
   }
@@ -263,7 +260,7 @@ function topStorySeeds(
         1400,
       ),
       trackingToken: trackingUrls.facebook.split('/').at(-1)!,
-      sourceUrl: publicStoryUrl(brief, item, 'uk', 'facebook'),
+      sourceUrl: publicStoryUrl(item, 'uk', 'facebook'),
       scheduledFor: nextScheduledForChannel('facebook', sourceDate, now, cadence.facebook),
     });
   }
@@ -784,7 +781,7 @@ export async function composeDailySocial(
     );
     const tokens = freshTrackingTokens();
     const urls = trackingUrls(tokens);
-    const seeds = topStorySeeds(itemBrief, topItem, sourceDate, now, urls, cadence);
+    const seeds = topStorySeeds(topItem, sourceDate, now, urls, cadence);
     if (seeds.length > 0) await saveVariants(packageId, topItem, seeds, now);
     createdPackageIds.push(packageId);
   }
@@ -861,7 +858,6 @@ function weeklyCandidates(
         why_matters_uk: text(item.why_matters_uk),
         impact_level: item.impact_level,
         category_slug: item.category_slug,
-        briefSlug: brief.slug,
         itemSlug: item.slug,
         date: dateByBrief.get(item.brief_id) ?? '',
         rank: item.rank,

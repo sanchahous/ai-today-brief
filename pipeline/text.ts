@@ -118,7 +118,10 @@ export function slugify(title: string, fallback = 'item'): string {
 
 /**
  * Make every slug in a brief unique by suffixing collisions with -2, -3, …
- * (the brief enforces `unique (brief_id, slug)`). Order is preserved.
+ * (within-batch pass only). `resolveItemSlug` in db.ts separately guards
+ * against collisions with already-published items from other packs, since
+ * `brief_items_slug_uniq` enforces uniqueness across the whole table. Order
+ * is preserved.
  */
 export function dedupeSlugs(slugs: string[]): string[] {
   const seen = new Map<string, number>();

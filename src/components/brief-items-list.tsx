@@ -23,7 +23,7 @@ export function BriefItemsList({
       </p>
       <ol className="m-0 grid list-none gap-4 p-0">
         {brief.items.map((item, i) => (
-          <BriefItemRow key={item.id} lang={lang} briefSlug={brief.slug!} item={item} index={i} openFull={openFull} />
+          <BriefItemRow key={item.id} lang={lang} item={item} index={i} openFull={openFull} />
         ))}
       </ol>
     </section>
@@ -32,18 +32,17 @@ export function BriefItemsList({
 
 function BriefItemRow({
   lang,
-  briefSlug,
   item,
   index,
   openFull,
 }: {
   lang: Lang;
-  briefSlug: string;
   item: BriefItemCard;
   index: number;
   openFull: string;
 }) {
-  const href = item.slug ? `/${lang}/${briefSlug}/${item.slug}` : `/${lang}/news`;
+  const href =
+    item.slug && item.categorySlug ? `/${lang}/news/${item.categorySlug}/${item.slug}` : `/${lang}/news`;
 
   return (
     <Reveal delayMs={index * 50}>

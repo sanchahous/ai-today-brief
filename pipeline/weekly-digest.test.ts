@@ -25,7 +25,6 @@ function cand(over: Partial<DigestCandidate> = {}): DigestCandidate {
     why_matters_uk: 'Це змінює роботу інженерних команд.',
     impact_level: 'medium',
     category_slug: 'tools-and-releases',
-    briefSlug: 'brief-slug',
     itemSlug,
     date: '2026-06-10',
     rank: 1,
@@ -224,10 +223,18 @@ describe('formatWeeklyDigest', () => {
     });
     expect(text).toContain('Тиждень в AI — найважливіше');
     expect(text).toContain('2–8 червня');
-    expect(text).toContain('href="https://aitodaybrief.com/uk/brief-slug/x"');
+    expect(text).toContain('href="https://aitodaybrief.com/uk/news/tools-and-releases/x"');
     expect(text).toContain('1. ');
     expect(text).toContain('Перше речення резюме.');
     expect(text).toContain('https://aitodaybrief.com/uk/news');
+  });
+
+  it('falls back to the news listing when an item has no category', () => {
+    const text = formatWeeklyDigest([cand({ itemSlug: 'x', category_slug: null })], {
+      siteUrl: 'https://aitodaybrief.com',
+      weekLabel: '2–8 червня',
+    });
+    expect(text).toContain('href="https://aitodaybrief.com/uk/news"');
   });
 });
 

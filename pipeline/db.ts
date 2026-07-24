@@ -205,6 +205,33 @@ export async function resolveBriefForPipeline(
   return { id: inserted.id, edition: inserted.edition, isNewPack: true };
 }
 
+/**
+ * Ensure a new item's slug is globally unique (the `brief_items_slug_uniq`
+ * partial index). Item pages resolve by slug alone across the whole table
+ * (src/lib/items.ts) — the pack that first published a story no longer
+ * namespaces its URL, so two unrelated stories can no longer share a slug just
+ * because they ran in different packs. Mirrors `resolveBriefSlug`: reuse when
+ * free, otherwise qualify with -2, -3, …
+ */
+async function itemSlugTaken(db: PipelineDb, slug: string): Promise<boolean> {
+  // `.limit(1)` over `.maybeSingle()`: a handful of pre-2026-06-12 rows (before
+  // cross-day dedup existed) still share a slug with each other, which would
+  // make `.maybeSingle()` throw on a multi-row result. Existence is all this
+  // needs — canonical_item_id is never written by the current pipeline, so a
+  // fresh insert can never legitimately collide with a re-publication anyway.
+  const { data, error } = await db.from('brief_items').select('id').eq('slug', slug).limit(1);
+  if (error) throw new Error(`[db] resolveItemSlug failed: ${error.message}`);
+  return (data?.length ?? 0) > 0;
+}
+
+async function resolveItemSlug(db: PipelineDb, slug: string): Promise<string> {
+  if (!(await itemSlugTaken(db, slug))) return slug;
+  for (let n = 2; ; n++) {
+    const candidate = `${slug}-${n}`;
+    if (!(await itemSlugTaken(db, candidate))) return candidate;
+  }
+}
+
 /** Lead pack slug for a calendar day — canonical URL on the public site. */
 export async function getLeadBriefSlug(db: PipelineDb, date: string): Promise<string | null> {
   const { data, error } = await db
@@ -414,7 +441,8 @@ async function syncBriefItemsUpsert(
       continue;
     }
 
-    const payload = draftItemToRow(item, rank, articleId);
+    const slug = await resolveItemSlug(db, item.slug);
+    const payload = draftItemToRow({ ...item, slug }, rank, articleId);
     const insertNote = autoReviewComment(item);
     const { error } = await db.from('brief_items').insert({
       brief_id: briefId,
@@ -424,8 +452,8 @@ async function syncBriefItemsUpsert(
     });
     if (error) throw new Error(`[db] syncBriefItems insert failed: ${error.message}`);
     usedRanks.add(rank);
-    bySlug.set(item.slug, { id: '', slug: item.slug, rank, review_status: 'pending', article_id: articleId });
-    byArticleId.set(articleId, { id: '', slug: item.slug, rank, review_status: 'pending', article_id: articleId });
+    bySlug.set(slug, { id: '', slug, rank, review_status: 'pending', article_id: articleId });
+    byArticleId.set(articleId, { id: '', slug, rank, review_status: 'pending', article_id: articleId });
     inserted++;
     synced++;
   }

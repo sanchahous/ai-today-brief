@@ -166,11 +166,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   for (const p of items) {
     entries.push({
-      url: `${SITE_URL}/${p.lang}/${p.brief}/${p.item}`,
+      url: `${SITE_URL}/${p.lang}/news/${p.category}/${p.item}`,
       lastModified: p.lastModified,
       changeFrequency: 'monthly',
       priority: 0.7,
-      alternates: langAlternates(`/${p.brief}/${p.item}`),
+      alternates: langAlternates(`/news/${p.category}/${p.item}`),
     });
   }
 

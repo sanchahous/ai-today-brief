@@ -20,7 +20,7 @@ const candidate = (over: Partial<RepostCandidate> = {}): RepostCandidate => ({
   summary_en: 'Anthropic released Claude Code 3.0. It adds orchestration.',
   summary_uk: 'Anthropic випустила Claude Code 3.0. Додано оркестрацію.',
   impact_level: 'medium',
-  briefSlug: 'brief-2026-06-11',
+  categorySlug: 'tools-and-releases',
   itemSlug: 'claude-code-3',
   date: '2026-06-11',
   rank: 2,
@@ -51,7 +51,7 @@ describe('formatXPost', () => {
     expect(text).toContain('subagent orchestration');
     expect(text).not.toContain('http');
     expect(reply).toBe(
-      'Full brief → https://aitodaybrief.com/en/brief-2026-06-11/claude-code-3?utm_source=x&utm_medium=social&utm_campaign=daily_news&utm_content=top_story',
+      'Full brief → https://aitodaybrief.com/en/news/tools-and-releases/claude-code-3?utm_source=x&utm_medium=social&utm_campaign=daily_news&utm_content=top_story',
     );
   });
 
@@ -70,7 +70,7 @@ describe('formatTelegramPost', () => {
       'https://aitodaybrief.com',
     );
     expect(html).toContain(
-      'https://aitodaybrief.com/uk/brief-2026-06-11/claude-code-3?utm_source=telegram&amp;utm_medium=social&amp;utm_campaign=daily_news&amp;utm_content=top_story',
+      'https://aitodaybrief.com/uk/news/tools-and-releases/claude-code-3?utm_source=telegram&amp;utm_medium=social&amp;utm_campaign=daily_news&amp;utm_content=top_story',
     );
     expect(html).toContain('Реліз &lt;Fable&gt; &amp; агенти');
     expect(html).toContain('Anthropic випустила Claude Code 3.0.');
