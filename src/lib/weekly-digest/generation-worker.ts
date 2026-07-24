@@ -1,7 +1,6 @@
 import 'server-only';
 
 import { createHash } from 'node:crypto';
-import { pdf as openPdf } from 'pdf-to-img';
 import sharp from 'sharp';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
@@ -9,6 +8,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { generateEditorialIllustration } from '../../../pipeline/card-image';
 import { alertWeeklyDigestIssue } from './alerts';
 import { renderWeeklyDigestPdf, type WeeklyPdfInput } from './pdf';
+import { openWeeklyPdfPreview } from './pdf-preview';
 import { renderWeeklyVisualSet, type WeeklyVisualInput, type WeeklyVisualLocale } from './visuals';
 import { storageBlob } from '@/lib/storage/binary';
 
@@ -329,7 +329,7 @@ async function generatePdf(job: ClaimedGenerationJob) {
   const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/pdf/${locale}/${outputKey}.pdf`;
   await uploadPrivate(path, pdf, 'application/pdf');
   const previewPaths: string[] = [];
-  const document = await openPdf(pdf, { scale: 1.15 });
+  const document = await openWeeklyPdfPreview(pdf, 1.15);
   try {
     if (document.length > 40) {
       throw new Error(`PDF preview safety limit exceeded (${document.length} pages).`);

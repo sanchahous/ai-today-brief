@@ -95,6 +95,12 @@ const nextConfig: NextConfig = {
       'node_modules/@napi-rs/canvas-linux-x64-gnu/**/*',
       'node_modules/dejavu-fonts-ttf/ttf/*.ttf',
       'node_modules/pdfkit/js/data/**/*',
+      // `pdf-to-img` delegates rendering to PDF.js. The package dynamically
+      // locates these support files at runtime, so include them explicitly
+      // when its modules are kept external in a Vercel function.
+      'node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
+      'node_modules/pdfjs-dist/cmaps/**/*',
+      'node_modules/pdfjs-dist/standard_fonts/**/*',
     ],
   },
   images: {
