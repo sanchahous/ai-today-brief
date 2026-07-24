@@ -61,8 +61,10 @@ export interface BriefItemDetail {
   sourceName: string | null;
   sourceUrl: string | null;
   /**
-   * `/{briefSlug}/{itemSlug}` of the earliest publication of the same story,
-   * when this item is a later re-publication — the page redirects there.
+   * `/news/{categorySlug}/{itemSlug}` this page should actually live at, when
+   * that differs from what was requested — either the earliest copy of a
+   * later re-publication, or the item's category drifted after publish. The
+   * page redirects there instead of rendering under a stale URL.
    */
   canonicalPath: string | null;
 }
@@ -149,46 +151,64 @@ function deepDiveParagraphs(text: string): string[] {
     .filter(Boolean);
 }
 
-/** One published brief item by brief slug + item slug, localized. `null` if missing/unpublished. */
-export async function getBriefItem(
-  briefSlug: string,
+/**
+ * One published item by its own slug (globally unique — see migration
+ * `20260724120000`) + lang. The URL's category segment is display data, not
+ * a lookup key: `canonicalPath` is set whenever it drifts from the item's
+ * real category (edited after publish) or the item is a later
+ * re-publication, so the page can redirect to the truth instead of 404ing or
+ * rendering under a stale category.
+ */
+export async function getNewsItem(
+  categorySlug: string,
   itemSlug: string,
   lang: Lang,
 ): Promise<BriefItemDetail | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
 
-  const { data: brief, error: briefError } = await supabase
-    .from('briefs')
-    .select('id, slug, date, published_at')
-    .eq('slug', briefSlug)
-    .eq('status', 'published')
-    .maybeSingle();
-  if (briefError || !brief?.slug) return null;
-
-  const { data: it, error: itemError } = await supabase
+  // A handful of pre-2026-06-12 rows (before cross-day dedup existed) share a
+  // slug with their own canonical primary — `nullsFirst` prefers that primary
+  // (canonical_item_id IS NULL) when one is among the matches; either way the
+  // row below either IS the canonical item or points at one via
+  // canonical_item_id, so a single result is always enough to resolve.
+  const { data: matches, error: itemError } = await supabase
     .from('brief_items')
     .select(
-      'id, slug, rank, article_id, canonical_item_id, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, deep_dive_en, deep_dive_uk, body_md_en, body_md_uk, facts_en, facts_uk, code_snippet, when_to_use_en, when_to_use_uk, when_not_to_use_en, when_not_to_use_uk, community_reactions, citations, image_url, card_image_url, editor_take, takeaways_en, takeaways_uk, action_items_en, action_items_uk, impact_level, tools_mentioned, youtube_url',
+      'id, slug, rank, brief_id, article_id, canonical_item_id, category_slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, deep_dive_en, deep_dive_uk, body_md_en, body_md_uk, facts_en, facts_uk, code_snippet, when_to_use_en, when_to_use_uk, when_not_to_use_en, when_not_to_use_uk, community_reactions, citations, image_url, card_image_url, editor_take, takeaways_en, takeaways_uk, action_items_en, action_items_uk, impact_level, tools_mentioned, youtube_url, briefs!brief_items_brief_id_fkey(id, slug, date, published_at, status)',
     )
-    .eq('brief_id', brief.id)
     .eq('slug', itemSlug)
-    .maybeSingle();
+    .order('canonical_item_id', { ascending: true, nullsFirst: true })
+    .limit(1);
+  const it = matches?.[0];
   if (itemError || !it?.slug) return null;
 
+  const brief = it.briefs as {
+    id: string;
+    slug: string | null;
+    date: string;
+    published_at: string | null;
+    status: string;
+  } | null;
+  if (!brief || brief.status !== 'published' || !brief.slug) return null;
+
   // Later re-publication of an already-covered story → the page redirects to
-  // the earliest copy instead of competing with it in the index.
+  // the earliest copy instead of competing with it in the index. Otherwise,
+  // a category edited after publish drifts the URL segment from the truth —
+  // redirect there instead of rendering under the stale one.
   let canonicalPath: string | null = null;
   if (it.canonical_item_id) {
     const { data: primary } = await supabase
       .from('brief_items')
-      .select('slug, briefs!brief_items_brief_id_fkey(slug, status)')
+      .select('slug, category_slug, briefs!brief_items_brief_id_fkey(status)')
       .eq('id', it.canonical_item_id)
       .maybeSingle();
-    const primaryBrief = primary?.briefs as { slug: string | null; status: string } | null;
-    if (primary?.slug && primaryBrief?.slug && primaryBrief.status === 'published') {
-      canonicalPath = `/${primaryBrief.slug}/${primary.slug}`;
+    const primaryBrief = primary?.briefs as { status: string } | null;
+    if (primary?.slug && primary.category_slug && primaryBrief?.status === 'published') {
+      canonicalPath = `/news/${primary.category_slug}/${primary.slug}`;
     }
+  } else if (it.category_slug && it.category_slug !== categorySlug) {
+    canonicalPath = `/news/${it.category_slug}/${it.slug}`;
   }
 
   const category = it.category_slug ? await getCategory(it.category_slug, lang) : null;
@@ -255,6 +275,50 @@ export async function getBriefItem(
   };
 }
 
+/**
+ * Legacy pack-scoped path (`/:briefSlug/:itemSlug`, pre-2026-07-24) → current
+ * canonical path (`/news/:categorySlug/:itemSlug`), following a cross-day
+ * republish to its primary so old links redirect in a single hop. `null`
+ * when the pack or item was never published — a dead legacy link.
+ */
+export async function resolveLegacyItemPath(
+  briefSlug: string,
+  itemSlug: string,
+): Promise<string | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+
+  const { data: brief } = await supabase
+    .from('briefs')
+    .select('id')
+    .eq('slug', briefSlug)
+    .eq('status', 'published')
+    .maybeSingle();
+  if (!brief) return null;
+
+  const { data: it } = await supabase
+    .from('brief_items')
+    .select('slug, category_slug, canonical_item_id')
+    .eq('brief_id', brief.id)
+    .eq('slug', itemSlug)
+    .maybeSingle();
+  if (!it?.slug) return null;
+
+  if (it.canonical_item_id) {
+    const { data: primary } = await supabase
+      .from('brief_items')
+      .select('slug, category_slug, briefs!brief_items_brief_id_fkey(status)')
+      .eq('id', it.canonical_item_id)
+      .maybeSingle();
+    const primaryBrief = primary?.briefs as { status: string } | null;
+    if (primary?.slug && primary.category_slug && primaryBrief?.status === 'published') {
+      return `/news/${primary.category_slug}/${primary.slug}`;
+    }
+  }
+
+  return it.category_slug ? `/news/${it.category_slug}/${it.slug}` : null;
+}
+
 export interface AdjacentStory {
   href: string;
   title: string;
@@ -267,7 +331,6 @@ export interface AdjacentStory {
  */
 export async function getAdjacentStories(
   briefId: string,
-  briefSlug: string,
   rank: number,
   lang: Lang,
 ): Promise<{ prev: AdjacentStory | null; next: AdjacentStory | null }> {
@@ -276,7 +339,7 @@ export async function getAdjacentStories(
 
   const { data } = await supabase
     .from('brief_items')
-    .select('slug, rank, title_en, title_uk')
+    .select('slug, rank, title_en, title_uk, category_slug')
     .eq('brief_id', briefId)
     .neq('rank', rank)
     .order('rank', { ascending: true });
@@ -284,10 +347,10 @@ export async function getAdjacentStories(
   let prev: AdjacentStory | null = null;
   let next: AdjacentStory | null = null;
   for (const row of data ?? []) {
-    if (!row.slug) continue;
+    if (!row.slug || !row.category_slug) continue;
     const title = pick(lang, row.title_en, row.title_uk);
     if (!title) continue;
-    const story = { href: `/${lang}/${briefSlug}/${row.slug}`, title };
+    const story = { href: `/${lang}/news/${row.category_slug}/${row.slug}`, title };
     if (row.rank < rank) prev = story; // keep the closest one below
     else if (!next) next = story; // first one above
   }
@@ -328,12 +391,12 @@ export async function getRelatedStories(
   const staged: { id: string; href: string; title: string; date: string; rank: number }[] = [];
   for (const it of rows ?? []) {
     const brief = briefById.get(it.brief_id);
-    if (!brief?.slug || !it.slug) continue;
+    if (!brief || !it.slug) continue;
     const title = pick(lang, it.title_en, it.title_uk);
     if (!title) continue;
     staged.push({
       id: it.id,
-      href: `/${lang}/${brief.slug}/${it.slug}`,
+      href: `/${lang}/news/${categorySlug}/${it.slug}`,
       title,
       date: brief.date,
       rank: it.rank,
@@ -372,7 +435,7 @@ async function fetchAllPages<Row>(
 
 export interface NewsSitemapEntry {
   lang: Lang;
-  brief: string;
+  category: string;
   item: string;
   title: string;
   /** W3C datetime for Google News (UTC, no offset). */
@@ -386,7 +449,7 @@ export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry
 
   const { data: briefs } = await supabase
     .from('briefs')
-    .select('id, slug, date, published_at')
+    .select('id, date, published_at')
     .eq('status', 'published');
   if (!briefs?.length) return [];
 
@@ -395,7 +458,7 @@ export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry
   const rows = await fetchAllPages((from, to) =>
     supabase
       .from('brief_items')
-      .select('slug, brief_id, title_en, title_uk, canonical_item_id')
+      .select('slug, brief_id, category_slug, title_en, title_uk, canonical_item_id')
       .in('brief_id', briefIds)
       .order('id', { ascending: true })
       .range(from, to),
@@ -404,14 +467,14 @@ export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry
   const entries: NewsSitemapEntry[] = [];
   for (const row of rows) {
     const brief = briefById.get(row.brief_id);
-    if (!brief?.slug || !row.slug) continue;
+    if (!brief || !row.slug || !row.category_slug) continue;
     if (row.canonical_item_id) continue; // re-publication — redirects to the original
     const publicationDate = toNewsPublicationDate(brief.published_at, brief.date);
     if (!isWithinNewsSitemapWindow(publicationDate)) continue;
     for (const lang of LANGS) {
       entries.push({
         lang,
-        brief: brief.slug,
+        category: row.category_slug,
         item: row.slug,
         title: pick(lang, row.title_en, row.title_uk) || row.slug,
         publicationDate,
@@ -423,7 +486,7 @@ export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry
 
 export interface ItemSitemapEntry {
   lang: string;
-  brief: string;
+  category: string;
   item: string;
   /** Publish timestamp of the parent brief (falls back to the brief date). */
   lastModified: string;
@@ -436,7 +499,7 @@ export async function getPublishedItemSitemapEntries(): Promise<ItemSitemapEntry
 
   const { data: briefs } = await supabase
     .from('briefs')
-    .select('id, slug, date, published_at')
+    .select('id, date, published_at')
     .eq('status', 'published');
   if (!briefs || briefs.length === 0) return [];
 
@@ -445,7 +508,7 @@ export async function getPublishedItemSitemapEntries(): Promise<ItemSitemapEntry
   const items = await fetchAllPages((from, to) =>
     supabase
       .from('brief_items')
-      .select('slug, brief_id, canonical_item_id')
+      .select('slug, brief_id, category_slug, canonical_item_id')
       .in('brief_id', briefIds)
       .order('id', { ascending: true })
       .range(from, to),
@@ -454,12 +517,12 @@ export async function getPublishedItemSitemapEntries(): Promise<ItemSitemapEntry
   const entries: ItemSitemapEntry[] = [];
   for (const it of items) {
     const brief = briefById.get(it.brief_id);
-    if (!brief?.slug || !it.slug) continue;
+    if (!brief || !it.slug || !it.category_slug) continue;
     if (it.canonical_item_id) continue; // re-publication — redirects to the original
     for (const lang of LANGS) {
       entries.push({
         lang,
-        brief: brief.slug,
+        category: it.category_slug,
         item: it.slug,
         lastModified: brief.published_at ?? brief.date,
       });
@@ -469,13 +532,13 @@ export async function getPublishedItemSitemapEntries(): Promise<ItemSitemapEntry
 }
 
 /**
- * All published (lang, brief, item) slug paths — for build-time SSG. Empty
- * without env. Canonicalized re-publications are excluded: next.config
+ * All published (lang, category, item) slug paths — for build-time SSG.
+ * Empty without env. Canonicalized re-publications are excluded: next.config
  * already 308s them at the edge, so prerendering them would be wasted work.
  */
 export async function getPublishedItemPaths(): Promise<
-  { lang: string; brief: string; item: string }[]
+  { lang: string; category: string; item: string }[]
 > {
   const entries = await getPublishedItemSitemapEntries();
-  return entries.map(({ lang, brief, item }) => ({ lang, brief, item }));
+  return entries.map(({ lang, category, item }) => ({ lang, category, item }));
 }

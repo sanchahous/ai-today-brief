@@ -75,7 +75,7 @@ async function postTweet(
 async function loadDayCandidates(db: PipelineDb, date: string): Promise<RepostCandidate[]> {
   const { data: briefs, error: bErr } = await db
     .from('briefs')
-    .select('id, slug, date')
+    .select('id, date')
     .eq('status', 'published')
     .eq('date', date);
   if (bErr) throw new Error(`social-repost briefs: ${bErr.message}`);
@@ -85,7 +85,7 @@ async function loadDayCandidates(db: PipelineDb, date: string): Promise<RepostCa
   const { data: items, error: iErr } = await db
     .from('brief_items')
     .select(
-      'id, brief_id, slug, rank, title_en, title_uk, summary_en, summary_uk, social_hook_en, social_hook_uk, impact_level',
+      'id, brief_id, slug, category_slug, rank, title_en, title_uk, summary_en, summary_uk, social_hook_en, social_hook_uk, impact_level',
     )
     .eq('review_status', 'approved')
     .in('brief_id', [...briefById.keys()]);
@@ -94,7 +94,7 @@ async function loadDayCandidates(db: PipelineDb, date: string): Promise<RepostCa
   const candidates: RepostCandidate[] = [];
   for (const it of items ?? []) {
     const brief = briefById.get(it.brief_id);
-    if (!brief?.slug || !it.slug || !it.title_en) continue;
+    if (!brief || !it.slug || !it.category_slug || !it.title_en) continue;
     candidates.push({
       id: it.id,
       title_en: it.title_en,
@@ -104,7 +104,7 @@ async function loadDayCandidates(db: PipelineDb, date: string): Promise<RepostCa
       social_hook_en: it.social_hook_en,
       social_hook_uk: it.social_hook_uk,
       impact_level: it.impact_level,
-      briefSlug: brief.slug,
+      categorySlug: it.category_slug,
       itemSlug: it.slug,
       date: brief.date,
       rank: it.rank,

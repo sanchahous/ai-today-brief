@@ -90,7 +90,6 @@ function mapRowToItem(
     slug: string | null;
     rank: number;
     date: string;
-    briefSlug: string | null;
     titleEn: string | null;
     titleUk: string | null;
     summaryEn: string;
@@ -114,7 +113,7 @@ function mapRowToItem(
     categorySlug: row.categorySlug,
     categoryName: cat?.name ?? null,
     categoryColor: cat?.color ?? null,
-    href: row.briefSlug && row.slug ? `/${lang}/${row.briefSlug}/${row.slug}` : `/${lang}/news`,
+    href: row.categorySlug && row.slug ? `/${lang}/news/${row.categorySlug}/${row.slug}` : `/${lang}/news`,
     title: pick(lang, row.titleEn, row.titleUk) || summary,
     summary,
     why: why || summary,
@@ -137,7 +136,7 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
 
   const { data: briefs } = await supabase
     .from('briefs')
-    .select('id, slug, date, edition')
+    .select('id, date, edition')
     .eq('status', 'published')
     .order('date', { ascending: false })
     .order('edition', { ascending: true })
@@ -173,7 +172,6 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
     rank: number;
     edition: number;
     date: string;
-    briefSlug: string | null;
     titleEn: string | null;
     titleUk: string | null;
     summaryEn: string;
@@ -197,7 +195,6 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
       rank: it.rank,
       edition: brief.edition,
       date: brief.date,
-      briefSlug: brief.slug,
       titleEn: it.title_en,
       titleUk: it.title_uk,
       summaryEn: it.summary_en,
@@ -280,7 +277,7 @@ function mapSearchRow(
     categorySlug: r.category_slug,
     categoryName: cat?.name ?? null,
     categoryColor: cat?.color ?? null,
-    href: r.brief_slug && r.slug ? `/${lang}/${r.brief_slug}/${r.slug}` : `/${lang}/news`,
+    href: r.category_slug && r.slug ? `/${lang}/news/${r.category_slug}/${r.slug}` : `/${lang}/news`,
     title: pick(lang, r.title_en, r.title_uk) || summary,
     summary,
     why: summary,

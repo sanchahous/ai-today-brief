@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { duotoneDataUri, paletteFromCategory } from '@/lib/card/duotone';
-import { getBriefItem } from '@/lib/items';
+import { getNewsItem } from '@/lib/items';
 import { isLang, SITE_NAME, SITE_URL } from '@/lib/site';
 
 export const size = { width: 1200, height: 630 };
@@ -21,13 +21,13 @@ const FONT = (file: string) => fetch(`${SITE_URL}/fonts/${file}`).then((r) => r.
 export default async function OgImage({
   params,
 }: {
-  params: Promise<{ lang: string; brief: string; item: string }>;
+  params: Promise<{ lang: string; category: string; item: string }>;
 }) {
-  const { lang, brief, item } = await params;
-  const detail = isLang(lang) ? await getBriefItem(brief, item, lang) : null;
+  const { lang, category, item } = await params;
+  const detail = isLang(lang) ? await getNewsItem(category, item, lang) : null;
 
   const title = detail?.title ?? SITE_NAME;
-  const category = detail?.categoryName ?? 'AI';
+  const categoryName = detail?.categoryName ?? 'AI';
   const accent = detail?.categoryColor ?? '#f0c040';
   const slug = detail?.itemSlug ?? 'card';
 
@@ -98,7 +98,7 @@ export default async function OgImage({
                   color: accent,
                 }}
               >
-                {category}
+                {categoryName}
               </div>
             </div>
             <div style={{ fontSize: 24, color: '#dcdcdc' }}>{dateLabel}</div>

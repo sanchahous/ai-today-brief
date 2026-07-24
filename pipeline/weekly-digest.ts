@@ -21,7 +21,6 @@ export interface DigestCandidate {
   why_matters_uk: string;
   impact_level: string | null;
   category_slug: string | null;
-  briefSlug: string;
   itemSlug: string;
   /** Brief date (ISO) — newer wins inside the same impact tier. */
   date: string;
@@ -559,7 +558,9 @@ export function formatWeeklyDigest(
     '',
   ];
   items.forEach((item, i) => {
-    const url = `${opts.siteUrl}/uk/${item.briefSlug}/${item.itemSlug}`;
+    const url = item.category_slug
+      ? `${opts.siteUrl}/uk/news/${item.category_slug}/${item.itemSlug}`
+      : `${opts.siteUrl}/uk/news`;
     lines.push(
       `${i + 1}. <a href="${escapeHtml(url)}"><b>${escapeHtml(item.title_uk || item.title_en)}</b></a>`,
       `   ${escapeHtml(digestLineSummary(item.summary_uk))}`,

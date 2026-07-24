@@ -109,7 +109,7 @@ export async function getCategoryHub(slug: string, lang: Lang, limit = 80): Prom
 
   const { data: briefs } = await supabase
     .from('briefs')
-    .select('id, slug, date')
+    .select('id, date')
     .eq('status', 'published')
     .order('date', { ascending: false });
   if (!briefs || briefs.length === 0) {
@@ -143,7 +143,6 @@ export async function getCategoryHub(slug: string, lang: Lang, limit = 80): Prom
     slug: string | null;
     rank: number;
     date: string;
-    briefSlug: string | null;
     titleEn: string | null;
     titleUk: string | null;
     summaryEn: string;
@@ -165,7 +164,6 @@ export async function getCategoryHub(slug: string, lang: Lang, limit = 80): Prom
       slug: it.slug,
       rank: it.rank,
       date: brief.date,
-      briefSlug: brief.slug,
       titleEn: it.title_en,
       titleUk: it.title_uk,
       summaryEn: it.summary_en,
@@ -199,7 +197,7 @@ export async function getCategoryHub(slug: string, lang: Lang, limit = 80): Prom
       categorySlug: slug,
       categoryName: category.name,
       categoryColor: category.color,
-      href: r.briefSlug && r.slug ? `/${lang}/${r.briefSlug}/${r.slug}` : `/${lang}/news`,
+      href: r.slug ? `/${lang}/news/${slug}/${r.slug}` : `/${lang}/news`,
       title: pick(lang, r.titleEn, r.titleUk) || summary,
       summary,
       why: why || summary,
@@ -230,7 +228,7 @@ export async function getCategoryItems(slug: string, lang: Lang, limit = 60): Pr
 
   const { data: briefs } = await supabase
     .from('briefs')
-    .select('id, slug, date')
+    .select('id, date')
     .eq('status', 'published')
     .order('date', { ascending: false });
   if (!briefs || briefs.length === 0) return [];
@@ -250,7 +248,6 @@ export async function getCategoryItems(slug: string, lang: Lang, limit = 60): Pr
     slug: string | null;
     rank: number;
     date: string;
-    briefSlug: string | null;
     titleEn: string | null;
     titleUk: string | null;
     summaryEn: string;
@@ -264,7 +261,6 @@ export async function getCategoryItems(slug: string, lang: Lang, limit = 60): Pr
       slug: it.slug,
       rank: it.rank,
       date: brief.date,
-      briefSlug: brief.slug,
       titleEn: it.title_en,
       titleUk: it.title_uk,
       summaryEn: it.summary_en,
@@ -278,7 +274,7 @@ export async function getCategoryItems(slug: string, lang: Lang, limit = 60): Pr
     const summary = pick(lang, r.summaryEn, r.summaryUk);
     return {
       id: r.id,
-      href: r.briefSlug && r.slug ? `/${lang}/${r.briefSlug}/${r.slug}` : `/${lang}/news`,
+      href: r.slug ? `/${lang}/news/${slug}/${r.slug}` : `/${lang}/news`,
       category: slug,
       title: pick(lang, r.titleEn, r.titleUk) || summary,
       summary,

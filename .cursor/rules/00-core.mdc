@@ -57,7 +57,8 @@ A standalone **Next.js 16 (App Router)** product on **Vercel**: a daily curated 
 ## Routing & i18n
 
 - `/[lang]/…`, `lang ∈ {en, uk}`, **EN primary / UK secondary** (UK = low-competition wedge). Validate lang at the boundary; pass a typed `Lang`.
-- Canonical shapes: `/[lang]`, `/[lang]/news`, `/[lang]/[brief]/[item]`, `/[lang]/concepts/[slug]`, dev silos `/[lang]/models|frameworks|mlops|…`, `/[lang]/subscribe|about|advertise`, `/privacy|/terms|/ai-disclosure`.
+- Canonical shapes: `/[lang]`, `/[lang]/news`, `/[lang]/news/[category]/[item]`, `/[lang]/category/[slug]`, `/[lang]/[brief]` (daily/pack digest hub), `/[lang]/concepts/[slug]`, dev silos `/[lang]/models|frameworks|mlops|…`, `/[lang]/subscribe|about|advertise`, `/privacy|/terms|/ai-disclosure`.
+- Item permalinks nest under their **category** (`/[lang]/news/[categorySlug]/[itemSlug]`), matching the breadcrumb 1:1 — never under the publish-pack slug (`[brief]`), which mixes unrelated stories from the same scan cycle and won't match any category a reader clicked through. `[lang]/[brief]/[item]` is a permanent-redirect shim for pre-2026-07-24 URLs only — do not add new links there. See the 2026-07-24 URL/breadcrumb audit for the full rationale.
 - Every user-facing string ships in **both** languages in the same change. `Intl.*` with an explicit locale; never hardcode month names.
 
 ## SEO / AEO (core to the product)
