@@ -135,7 +135,8 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
       .in(
         'brief_id',
         briefList.map((b) => b.id),
-      );
+      )
+      .is('canonical_item_id', null);
 
     const editionByItem = new Map<string, number>();
 

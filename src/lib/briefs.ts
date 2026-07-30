@@ -133,6 +133,7 @@ async function loadPackSections(
       .from('brief_items')
       .select(ITEM_COLUMNS)
       .eq('brief_id', pack.id)
+      .is('canonical_item_id', null)
       .order('rank', { ascending: true });
 
     const cards = (items ?? []).map((it) => toCard(lang, it, catBySlug));

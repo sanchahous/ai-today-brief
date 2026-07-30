@@ -388,6 +388,7 @@ async function handleRejectReason(
 async function handleRedo(
   db: ReturnType<typeof getSupabaseAdmin>,
   itemId: string,
+  reviewerStr: string,
   chatId: string,
 ): Promise<void> {
   const { data: item, error } = await db
@@ -402,6 +403,19 @@ async function handleRedo(
     console.log('[redo] already processed or not found:', itemId);
     return;
   }
+
+  // Audit trail: the row itself is gone (a fresh write-up replaces it next
+  // progón), but the decision — "this rendition was bad, not the story" — is
+  // still training signal.
+  await db.from('item_reviews').insert({
+    brief_id: item.brief_id,
+    brief_item_id: itemId,
+    action: 'redone',
+    reviewer: reviewerStr,
+    category_slug: item.category_slug,
+    title_en: item.title_en,
+    summary_en: item.summary_en,
+  });
 
   if (item.review_msg_id) {
     await editText(chatId, item.review_msg_id, decorateCard(buildCardText(item), redoneBanner()));
@@ -582,7 +596,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       } else if (parsed.action === 'reject') {
         await handleRejectInit(db, parsed.id, chatId);
       } else if (parsed.action === 'redo') {
-        await handleRedo(db, parsed.id, chatId);
+        await handleRedo(db, parsed.id, reviewer, chatId);
       } else if (parsed.action === 'take') {
         await handleTakeInit(db, parsed.id, chatId);
       } else if (parsed.action === 'publish' && msgId) {
