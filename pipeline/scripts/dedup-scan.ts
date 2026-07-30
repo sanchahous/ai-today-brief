@@ -6,6 +6,11 @@
  * See pipeline/dedup-scan.ts for the full flow. `--backfill` widens the scan
  * to every pair in the window (recent_days=0) instead of just pairs whose
  * later side published recently — use it for a one-time sweep of the archive.
+ *
+ * Merge strategy follows `--backfill`: without it (the nightly default), a
+ * confirmed later duplicate is hard-deleted (it just published, unlikely to
+ * be indexed yet). With `--backfill`, it's redirected via `canonical_item_id`
+ * instead — safer for older articles Google may already have indexed.
  */
 import { loadPipelineConfig } from '../config';
 import { createServiceClient } from '../db';
@@ -51,12 +56,15 @@ async function main(): Promise<void> {
     pairs_confirmed: result.pairsConfirmed,
     clusters: result.clusters,
     merged: result.merged,
+    merge_action: result.mergeAction,
     model: result.model,
     dry_run: options.dryRun,
   });
 
   if (options.dryRun && result.mergedIds.length > 0) {
-    console.log('Would merge (dupe → canonical):');
+    console.log(
+      result.mergeAction === 'delete' ? 'Would delete (dupe, kept canonical):' : 'Would redirect (dupe → canonical):',
+    );
     for (const [dupe, canonical] of result.mergedIds) console.log(`  ${dupe} → ${canonical}`);
   }
 }

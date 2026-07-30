@@ -7,16 +7,27 @@
  * That gate is deliberately loose (0.12, not 0.20 — see config.ts) so it
  * doesn't kill genuinely new stories, which means the same event re-told days
  * apart in different words can land in the 0.12–0.25 band and get published
- * twice. This job finds those pairs after the fact and merges the later copy
- * into the earlier one via `canonical_item_id` (031's redirect pattern — no
- * hard deletes, fully reversible by nulling the column back out).
+ * twice. This job finds those pairs after the fact.
+ *
+ * Two merge strategies, chosen by `options.backfill`:
+ *   - **Backfill** (`recent_days=0`, sweeps the whole window — old,
+ *     already-published articles Google may already have indexed): the later
+ *     copy gets `canonical_item_id` pointed at the earlier one — 031's 308
+ *     redirect pattern, no hard delete, reversible by nulling the column.
+ *     Deleting an already-indexed URL outright would just orphan it (404)
+ *     instead of consolidating its signal onto the surviving page.
+ *   - **Steady state** (`recent_days` > 0, the nightly default — catches
+ *     duplicates whose LATER copy just published, before Google has likely
+ *     crawled it): the later copy is hard-deleted instead. Keeping a
+ *     redirect for a page search engines never saw is pure downside — it's
+ *     safer to remove the duplicate outright while nothing points at it yet.
  *
  * Flow: `find_duplicate_item_pairs` RPC → same-article pairs auto-merge,
  * everything else goes through one LLM confirmation pass (chunked ≤40 pairs)
  * → confirmed pairs are clustered (union-find) so a 3-way duplicate merges
- * into a single canonical → canonical_item_id is written idempotently →
- * affected pages are revalidated → a Telegram report lists what merged
- * (skipped when nothing did).
+ * onto a single canonical → the later copies are redirected or deleted
+ * (idempotent either way) → affected pages are revalidated → a Telegram
+ * report lists what happened (skipped when nothing did).
  *
  * Fail-closed: an LLM failure means those pairs are simply not merged this
  * run (they'll surface again next run) — the job never merges on a guess.
@@ -210,7 +221,10 @@ const DEDUP_SCHEMA: GeminiResponseSchema = {
 
 // ─── Pure: Telegram report ──────────────────────────────────────────────────
 
+export type MergeAction = 'redirect' | 'delete';
+
 export interface MergeReportEntry {
+  action: MergeAction;
   laterTitle: string;
   laterDate: string;
   primaryTitle: string;
@@ -223,10 +237,14 @@ const TELEGRAM_MAX_CHARS = 4096;
 export function formatDedupReport(merges: MergeReportEntry[], opts: { dryRun: boolean }): string {
   const header = opts.dryRun
     ? '🔍 <b>Dedup-scan (dry-run)</b> — знайдені дублі, нічого не змінено'
-    : '🔁 <b>Dedup-scan</b> — злито дублі';
+    : '🔁 <b>Dedup-scan</b> — оброблено дублі';
   const lines = [header, ''];
   for (const m of merges) {
-    lines.push(`«${m.laterTitle}» (${m.laterDate}) → «${m.primaryTitle}» (${m.primaryDate})\n${m.primaryUrl}`);
+    lines.push(
+      m.action === 'delete'
+        ? `🗑 «${m.laterTitle}» (${m.laterDate}) видалено — дубль «${m.primaryTitle}» (${m.primaryDate})\n${m.primaryUrl}`
+        : `🔁 «${m.laterTitle}» (${m.laterDate}) → «${m.primaryTitle}» (${m.primaryDate})\n${m.primaryUrl}`,
+    );
   }
   let text = lines.join('\n');
   if (text.length > TELEGRAM_MAX_CHARS) {
@@ -251,6 +269,7 @@ export interface DedupScanResult {
   clusters: number;
   merged: number;
   mergedIds: Array<[string, string]>;
+  mergeAction: MergeAction;
   model: string | null;
 }
 
@@ -305,6 +324,7 @@ async function loadItemDetails(db: PipelineDb, ids: string[]): Promise<Map<strin
   return out;
 }
 
+/** Backfill: redirect an already-published later copy to its earlier canonical. */
 async function writeCanonicalMerges(db: PipelineDb, merges: Map<string, string>): Promise<Array<[string, string]>> {
   const written: Array<[string, string]> = [];
   for (const [dupeId, canonicalId] of merges) {
@@ -318,6 +338,28 @@ async function writeCanonicalMerges(db: PipelineDb, merges: Map<string, string>)
     if ((data ?? []).length > 0) written.push([dupeId, canonicalId]);
   }
   return written;
+}
+
+/**
+ * Steady state: hard-delete a later duplicate outright — it just published
+ * and is very unlikely to be crawled/indexed yet, so there is no URL worth
+ * preserving with a redirect. `brief_item_embeddings` cascades away (020);
+ * `item_reviews` rows survive with `brief_item_id` set to null (018).
+ */
+async function deleteDuplicateItems(db: PipelineDb, merges: Map<string, string>): Promise<Array<[string, string]>> {
+  const deleted: Array<[string, string]> = [];
+  for (const [dupeId, canonicalId] of merges) {
+    const { data, error } = await db
+      .from('brief_items')
+      .delete()
+      .eq('id', dupeId)
+      .eq('review_status', 'approved')
+      .is('canonical_item_id', null)
+      .select('id');
+    if (error) throw new Error(`[dedup-scan] duplicate delete failed: ${error.message}`);
+    if ((data ?? []).length > 0) deleted.push([dupeId, canonicalId]);
+  }
+  return deleted;
 }
 
 async function revalidatePaths(paths: string[]): Promise<void> {
@@ -353,6 +395,8 @@ export async function runDedupScan(
     options.maxPairs,
   );
 
+  const mergeAction: MergeAction = options.backfill ? 'redirect' : 'delete';
+
   if (pairs.length === 0) {
     await logPipelineRun(db, {
       date,
@@ -360,7 +404,7 @@ export async function runDedupScan(
       status: 'skipped',
       durationMs: Date.now() - started,
     });
-    return { pairsCandidate: 0, pairsConfirmed: 0, clusters: 0, merged: 0, mergedIds: [], model: null };
+    return { pairsCandidate: 0, pairsConfirmed: 0, clusters: 0, merged: 0, mergedIds: [], mergeAction, model: null };
   }
 
   const ids = new Set<string>();
@@ -421,7 +465,7 @@ export async function runDedupScan(
 
   let mergedIds: Array<[string, string]> = [];
   if (!options.dryRun && merges.size > 0) {
-    mergedIds = await writeCanonicalMerges(db, merges);
+    mergedIds = options.backfill ? await writeCanonicalMerges(db, merges) : await deleteDuplicateItems(db, merges);
   } else if (options.dryRun) {
     mergedIds = [...merges.entries()];
   }
@@ -440,6 +484,7 @@ export async function runDedupScan(
         const dupe = details.get(dupeId)!;
         const primary = details.get(canonicalId)!;
         return {
+          action: mergeAction,
           laterTitle: dupe.title,
           laterDate: dupe.date,
           primaryTitle: primary.title,
@@ -458,6 +503,7 @@ export async function runDedupScan(
     clusters: clusterCanonicals.size,
     merged: mergedIds.length,
     mergedIds,
+    mergeAction,
     model,
   };
 
@@ -472,6 +518,7 @@ export async function runDedupScan(
       clusters: result.clusters,
       merged: result.merged,
       merged_ids: result.mergedIds,
+      merge_action: result.mergeAction,
       model: result.model,
       dry_run: options.dryRun,
     },

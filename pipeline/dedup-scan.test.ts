@@ -177,28 +177,42 @@ describe('parseDedupVerdicts', () => {
 });
 
 describe('formatDedupReport', () => {
-  const entry: MergeReportEntry = {
+  const redirectEntry: MergeReportEntry = {
+    action: 'redirect',
     laterTitle: 'Later title',
     laterDate: '2026-07-05',
     primaryTitle: 'Primary title',
     primaryDate: '2026-07-01',
     primaryUrl: 'https://aitodaybrief.com/en/news/tools/primary-title',
   };
+  const deleteEntry: MergeReportEntry = { ...redirectEntry, action: 'delete' };
 
   it('labels a live run vs a dry-run', () => {
-    expect(formatDedupReport([entry], { dryRun: false })).toContain('злито дублі');
-    expect(formatDedupReport([entry], { dryRun: true })).toContain('dry-run');
+    expect(formatDedupReport([redirectEntry], { dryRun: false })).toContain('оброблено дублі');
+    expect(formatDedupReport([redirectEntry], { dryRun: true })).toContain('dry-run');
   });
 
   it('includes both titles and the canonical URL', () => {
-    const text = formatDedupReport([entry], { dryRun: false });
+    const text = formatDedupReport([redirectEntry], { dryRun: false });
     expect(text).toContain('Later title');
     expect(text).toContain('Primary title');
-    expect(text).toContain(entry.primaryUrl);
+    expect(text).toContain(redirectEntry.primaryUrl);
+  });
+
+  it('renders a redirect entry with the → arrow', () => {
+    const text = formatDedupReport([redirectEntry], { dryRun: false });
+    expect(text).toContain('→');
+    expect(text).not.toContain('видалено');
+  });
+
+  it('renders a delete entry as removed, not redirected', () => {
+    const text = formatDedupReport([deleteEntry], { dryRun: false });
+    expect(text).toContain('видалено');
+    expect(text).toContain('🗑');
   });
 
   it('truncates output beyond the Telegram message cap', () => {
-    const many = Array.from({ length: 200 }, () => entry);
+    const many = Array.from({ length: 200 }, () => redirectEntry);
     const text = formatDedupReport(many, { dryRun: false });
     expect(text.length).toBeLessThanOrEqual(4096);
     expect(text).toContain('обрізано');
