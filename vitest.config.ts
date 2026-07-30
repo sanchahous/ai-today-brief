@@ -44,6 +44,8 @@ export default defineConfig({
         'pipeline/run-daily.ts',
         'pipeline/custom-news.ts',
         'pipeline/scripts/indexnow-backfill.ts',
+        'pipeline/scripts/dedup-scan.ts',
+        'pipeline/scripts/auto-publish.ts',
         'pipeline/publish.ts',
         'pipeline/summarize.ts',
         'pipeline/db.ts',

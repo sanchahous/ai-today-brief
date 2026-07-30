@@ -14,70 +14,16 @@
 
 import { SchemaType } from '@google/generative-ai';
 import type { EnrichedSource } from './enrich';
-import { resolveGeminiModelQueue } from './gemini-models';
-import { logEvent, serializeErrorDetails } from './log';
-import type { OpenRouterResponseValidator } from './openrouter-brief-json';
+import { logEvent } from './log';
+import { generateJsonWithFallback } from './llm-json';
 import type { PoolItem } from './select';
 import {
-  estimateUsage,
   GEMINI_SCHEMA,
-  generateWithModelQueue,
   parseBrief,
   type DraftItem,
   type GeminiResponseSchema,
   type LlmUsage,
 } from './summarize';
-
-/**
- * Lenient validator for the OpenRouter lane: verify/revise payloads are
- * guarded downstream (`parseVerifyResults`, `parseBrief`), so syntactic JSON
- * is enough here — a parse failure advances the chain to the next model.
- */
-const validateGenericJson: OpenRouterResponseValidator = (_modelId, rawText, finishReason) => {
-  if (finishReason === 'length') throw new SyntaxError('[verify] truncated completion');
-  const text = rawText.trim();
-  JSON.parse(text);
-  return text;
-};
-
-/* v8 ignore start -- thin provider plumbing; both lanes are integration-covered */
-/** Gemini queue first; on exhaustion, the OpenRouter `:free` chain. */
-async function generateJsonWithFallback(
-  prompt: string,
-  apiKey: string,
-  geminiMaxAttempts: number,
-  schema: GeminiResponseSchema,
-  openRouterApiKey?: string,
-): Promise<{ text: string; model: string | null; usage: LlmUsage | null }> {
-  const modelQueue = await resolveGeminiModelQueue(apiKey);
-  try {
-    return await generateWithModelQueue(
-      prompt,
-      apiKey,
-      modelQueue,
-      geminiMaxAttempts,
-      undefined,
-      undefined,
-      schema,
-    );
-  } catch (geminiError) {
-    if (!openRouterApiKey) throw geminiError;
-    logEvent('warn', 'verify', 'Gemini queue exhausted — OpenRouter fallback', {
-      ...serializeErrorDetails(geminiError),
-    });
-    const { generateWithOpenRouterChain } = await import('./openrouter-summarize');
-    const result = await generateWithOpenRouterChain(prompt, {
-      apiKey: openRouterApiKey,
-      validateResponse: validateGenericJson,
-    });
-    return {
-      text: result.text,
-      model: `openrouter:${result.model}`,
-      usage: estimateUsage(prompt.length, result.text.length),
-    };
-  }
-}
-/* v8 ignore end */
 
 const VERIFY_SCHEMA: GeminiResponseSchema = {
   type: SchemaType.OBJECT,
@@ -196,6 +142,7 @@ export async function verifyClaims(
 
   const prompt = buildVerifyPrompt(pairs);
   const { text, model, usage } = await generateJsonWithFallback(
+    'verify',
     prompt,
     apiKey,
     geminiMaxAttempts,
@@ -293,6 +240,7 @@ export async function reviseFlaggedItems(
 
   const prompt = buildRevisePrompt(pairs);
   const { text, usage } = await generateJsonWithFallback(
+    'verify',
     prompt,
     apiKey,
     geminiMaxAttempts,

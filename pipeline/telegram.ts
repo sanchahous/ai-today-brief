@@ -49,3 +49,31 @@ export async function sendMessage(
     return null;
   }
 }
+
+/** Edit an existing message's HTML text + keyboard. Returns success; never throws. */
+export async function editMessageText(
+  token: string,
+  chatId: string,
+  messageId: number,
+  html: string,
+  replyMarkup?: InlineKeyboard,
+): Promise<boolean> {
+  try {
+    const json = await tgRequest(token, 'editMessageText', {
+      chat_id: chatId,
+      message_id: messageId,
+      text: html,
+      parse_mode: 'HTML',
+      link_preview_options: { is_disabled: true },
+      ...(replyMarkup ? { reply_markup: replyMarkup } : { reply_markup: { inline_keyboard: [] } }),
+    });
+    if (!json.ok) {
+      logEvent('warn', 'notify', 'Telegram editMessageText rejected', { description: json.description });
+      return false;
+    }
+    return true;
+  } catch (e) {
+    logError('notify', 'Telegram editMessageText failed', e);
+    return false;
+  }
+}

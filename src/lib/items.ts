@@ -342,6 +342,7 @@ export async function getAdjacentStories(
     .select('slug, rank, title_en, title_uk, category_slug')
     .eq('brief_id', briefId)
     .neq('rank', rank)
+    .is('canonical_item_id', null)
     .order('rank', { ascending: true });
 
   let prev: AdjacentStory | null = null;
@@ -386,7 +387,8 @@ export async function getRelatedStories(
     .in(
       'brief_id',
       briefs.map((b) => b.id),
-    );
+    )
+    .is('canonical_item_id', null);
 
   const staged: { id: string; href: string; title: string; date: string; rank: number }[] = [];
   for (const it of rows ?? []) {

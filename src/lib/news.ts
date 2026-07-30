@@ -163,7 +163,8 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
     .in(
       'brief_id',
       briefList.map((b) => b.id),
-    );
+    )
+    .is('canonical_item_id', null);
 
   const articleIds = new Set<string>();
   const staged: {
