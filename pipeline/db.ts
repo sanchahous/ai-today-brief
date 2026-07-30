@@ -715,38 +715,6 @@ export async function matchRelevantItem(
   return row ?? null;
 }
 
-export interface DuplicateItemPair {
-  earlier_id: string;
-  later_id: string;
-  distance: number;
-  same_article: boolean;
-}
-
-/**
- * Candidate near-duplicate pairs across the published+approved archive,
- * within `maxDistance` cosine distance — the retroactive counterpart to
- * `matchRelevantItem`'s live gate. `recentDays` bounds steady-state scans to
- * pairs whose later side published recently; pass `0` for a full backfill.
- */
-export async function findDuplicateItemPairs(
-  db: PipelineDb,
-  maxDistance: number,
-  windowDays: number,
-  recentDays: number,
-  maxPairs: number,
-): Promise<DuplicateItemPair[]> {
-  // Cast needed: find_duplicate_item_pairs is a new RPC not yet in the generated Database type.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await (db as any).rpc('find_duplicate_item_pairs', {
-    max_distance: maxDistance,
-    window_days: windowDays,
-    recent_days: recentDays,
-    max_pairs: maxPairs,
-  });
-  if (error) throw new Error(`[db] find_duplicate_item_pairs failed: ${(error as { message: string }).message}`);
-  return (data ?? []) as DuplicateItemPair[];
-}
-
 /**
  * Embed the English titles of a brief's items and upsert them into
  * `brief_item_embeddings` so future runs can do cross-day semantic dedup.
