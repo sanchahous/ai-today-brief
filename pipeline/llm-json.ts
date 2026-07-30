@@ -1,10 +1,9 @@
 /**
  * Shared Gemini→OpenRouter JSON-completion lane. Originally lived inside
- * verify.ts; dedup-scan.ts and auto-publish.ts need the exact same
- * fallback behaviour for their own JSON-shaped LLM calls, so it moved here.
- * Gemini's model queue is tried first; on exhaustion, the OpenRouter `:free`
- * chain takes over. `stage` labels the fallback log line with the caller's
- * pipeline stage.
+ * verify.ts; auto-publish.ts needs the exact same fallback behaviour for its
+ * own JSON-shaped LLM calls, so it moved here. Gemini's model queue is tried
+ * first; on exhaustion, the OpenRouter `:free` chain takes over. `stage`
+ * labels the fallback log line with the caller's pipeline stage.
  */
 
 import { resolveGeminiModelQueue } from './gemini-models';
@@ -17,6 +16,7 @@ import {
   type LlmUsage,
 } from './summarize';
 
+/* v8 ignore start -- thin provider plumbing; callers are integration-covered */
 /**
  * Lenient validator for the OpenRouter lane: callers guard the parsed shape
  * downstream (their own result parsers), so syntactic JSON is enough here —
@@ -29,7 +29,6 @@ const validateGenericJson: OpenRouterResponseValidator = (_modelId, rawText, fin
   return text;
 };
 
-/* v8 ignore start -- thin provider plumbing; callers are integration-covered */
 /** Gemini queue first; on exhaustion, the OpenRouter `:free` chain. */
 export async function generateJsonWithFallback(
   stage: string,

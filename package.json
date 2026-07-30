@@ -25,7 +25,6 @@
     "backfill:scores": "tsx pipeline/scripts/backfill-scores.ts",
     "backfill:trend-signals": "tsx pipeline/scripts/backfill-trend-signals.ts",
     "indexnow:backfill": "tsx pipeline/scripts/indexnow-backfill.ts",
-    "dedup:scan": "tsx pipeline/scripts/dedup-scan.ts",
     "auto:publish": "tsx pipeline/scripts/auto-publish.ts",
     "social:shadow": "node --conditions=react-server --import tsx scripts/social-shadow.ts",
     "social:asset:sample": "node --conditions=react-server --import tsx scripts/render-social-asset-sample.ts",

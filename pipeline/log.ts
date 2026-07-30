@@ -16,7 +16,6 @@ export type PipelineStage =
   | 'dedup'
   | 'enrich'
   | 'verify'
-  | 'dedup_scan'
   | 'auto_publish';
 
 const ERROR_STACK_MAX_CHARS = 1200;

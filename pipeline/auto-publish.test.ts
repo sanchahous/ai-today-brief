@@ -128,6 +128,21 @@ describe('buildJudgePrompt', () => {
     expect(prompt).toContain('Candidate');
   });
 
+  it('surfaces per-category rates and approved examples', () => {
+    const prompt = buildJudgePrompt(
+      {
+        approveRate: 0.5,
+        totalDecisions: 10,
+        categoryApproveRates: [{ category: 'tools', approved: 3, rejected: 1, rate: 0.75 }],
+        recentApproved: [{ title: 'Approved story', category: 'tools' }],
+        recentRejected: [],
+      },
+      [{ ref: 0, category: 'tools', title_en: 'Candidate', summary_en: 'summary', why_matters_en: 'why' }],
+    );
+    expect(prompt).toContain('tools: 75%');
+    expect(prompt).toContain('Approved story');
+  });
+
   it('tells the judge to use its own judgement with no history', () => {
     const prompt = buildJudgePrompt(
       { approveRate: null, totalDecisions: 0, categoryApproveRates: [], recentApproved: [], recentRejected: [] },
