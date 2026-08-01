@@ -12,10 +12,10 @@ import { getSupabaseServer } from '@/lib/supabase/server';
 import { updateVariantAction } from '@/app/admin/actions';
 import { composeWeeklySocial } from '@/lib/social/composer';
 import {
+  completedWeeklyRangeForTrigger,
   kyivWallClockToUtc,
-  rollingWeeklyRangeForDate,
   SOCIAL_TIME_ZONE,
-  weeklyDigestSundayForDate,
+  weeklyDigestTriggerDateForManualCreate,
 } from '@/lib/social/schedule';
 import { normalizeYouTubeVideo } from '@/lib/weekly-digest/video';
 import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial-validation';
@@ -142,7 +142,7 @@ export async function createTestWeeklyDigestAction() {
 export async function createWeeklyDigestAction() {
   await requireSocialAdmin({ roles: ['owner'] });
   const now = new Date();
-  const triggerDate = weeklyDigestSundayForDate(kyivDate(now));
+  const triggerDate = weeklyDigestTriggerDateForManualCreate(kyivDate(now));
   let result;
   try {
     result = await composeWeeklySocial(triggerDate, { now, manual: true });
@@ -153,7 +153,7 @@ export async function createWeeklyDigestAction() {
 
   let weeklyDigestId = result.weeklyDigestId;
   if (!weeklyDigestId) {
-    const { weekStart } = rollingWeeklyRangeForDate(triggerDate);
+    const { weekStart } = completedWeeklyRangeForTrigger(triggerDate);
     const { data, error } = await getSupabaseAdmin()
       .from('weekly_digests')
       .select('id')

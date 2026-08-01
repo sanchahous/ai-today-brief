@@ -19,9 +19,9 @@ import { attachCriticReport } from './critic';
 import { findBlindCrossPosts, runQualityGate } from './quality';
 import {
   channelRunsOnDate,
+  completedWeeklyRangeForTrigger,
   nextScheduledForChannel,
   nextWeeklyScheduledForChannel,
-  rollingWeeklyRangeForDate,
   resolveCadenceSettings,
   type ChannelCadence,
 } from './schedule';
@@ -1101,7 +1101,7 @@ export async function composeWeeklySocial(
   const now = options.now ?? new Date();
   const testMode = options.testMode === true;
   const manual = options.manual === true;
-  const { weekStart: startDate, weekEnd: endDate } = rollingWeeklyRangeForDate(triggerDate);
+  const { weekStart: startDate, weekEnd: endDate } = completedWeeklyRangeForTrigger(triggerDate);
   const generationVersion = testMode
     ? `${SOCIAL_GENERATION_VERSION}-test`
     : SOCIAL_GENERATION_VERSION;
