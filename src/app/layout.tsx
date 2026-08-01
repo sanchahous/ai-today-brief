@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   openGraph: { siteName: SITE_NAME, url: SITE_URL, type: 'website' },
   // Google Discover eligibility requires large image previews.
   robots: { 'max-image-preview': 'large' },
+  // Meta Business domain verification — required before the Page/Instagram
+  // publishing permissions can be granted to the social delivery app.
+  verification: {
+    other: { 'facebook-domain-verification': 'w17i9sshj5ihih4t4k5scomu7h6kek' },
+  },
 };
 
 export default function RootLayout({
