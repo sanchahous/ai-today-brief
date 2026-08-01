@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { StatusPill } from '@/components/admin/status-pill';
-import { createTestWeeklyDigestAction } from '@/app/admin/(cms)/weekly/actions';
+import {
+  createTestWeeklyDigestAction,
+  createWeeklyDigestAction,
+} from '@/app/admin/(cms)/weekly/actions';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getWeeklyDigestAdminList } from '@/lib/weekly-digest/admin-data';
 
@@ -34,11 +37,14 @@ function dateTimeLabel(value: string | null) {
 export default async function WeeklyDigestListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ test_error?: string | string[] }>;
+  searchParams: Promise<{ test_error?: string | string[]; create_error?: string | string[] }>;
 }) {
   await requireSocialAdmin();
   const [digests, query] = await Promise.all([getWeeklyDigestAdminList(), searchParams]);
   const testError = Array.isArray(query.test_error) ? query.test_error[0] : query.test_error;
+  const createError = Array.isArray(query.create_error)
+    ? query.create_error[0]
+    : query.create_error;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -54,6 +60,13 @@ export default async function WeeklyDigestListPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-3">
+          <form action={createWeeklyDigestAction}>
+            <ActionSubmitButton
+              idleLabel="Create this week’s edition"
+              pendingLabel="Preparing edition…"
+              className="min-h-11 rounded-xl bg-[#47e4d3] px-4 text-sm font-bold text-[#071216] transition hover:bg-[#7af0e4]"
+            />
+          </form>
           <form action={createTestWeeklyDigestAction}>
             <ActionSubmitButton
               idleLabel="Create or resume test"
@@ -76,6 +89,15 @@ export default async function WeeklyDigestListPage({
           className="mt-5 rounded-xl border border-rose-300/35 bg-rose-300/10 px-4 py-3 text-sm text-rose-100"
         >
           Test edition was not prepared: {testError}
+        </p>
+      ) : null}
+
+      {createError ? (
+        <p
+          role="alert"
+          className="mt-5 rounded-xl border border-rose-300/35 bg-rose-300/10 px-4 py-3 text-sm text-rose-100"
+        >
+          Weekly Digest was not prepared: {createError}
         </p>
       ) : null}
 
