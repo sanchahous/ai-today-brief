@@ -7,7 +7,7 @@ import {
   nextWeeklyScheduledForChannel,
   rollingWeeklyRangeForDate,
   resolveCadenceSettings,
-  weeklyDigestSundayForDate,
+  weeklyDigestTriggerDateForManualCreate,
 } from './schedule';
 
 describe('Kyiv social scheduling', () => {
@@ -50,10 +50,10 @@ describe('Kyiv social scheduling', () => {
     });
   });
 
-  it('uses the scheduled Sunday as the manual Weekly Digest trigger', () => {
-    expect(weeklyDigestSundayForDate('2026-07-13')).toBe('2026-07-19'); // Monday
-    expect(weeklyDigestSundayForDate('2026-07-16')).toBe('2026-07-19'); // Thursday
-    expect(weeklyDigestSundayForDate('2026-07-19')).toBe('2026-07-19'); // Sunday
+  it('uses the Sunday closing the latest completed week for manual Weekly creation', () => {
+    expect(weeklyDigestTriggerDateForManualCreate('2026-08-01')).toBe('2026-08-02'); // Saturday
+    expect(weeklyDigestTriggerDateForManualCreate('2026-08-02')).toBe('2026-08-02'); // Sunday
+    expect(weeklyDigestTriggerDateForManualCreate('2026-08-03')).toBe('2026-08-02'); // Monday
   });
 
   it('uses the six dedicated Monday weekly slots in summer', () => {
