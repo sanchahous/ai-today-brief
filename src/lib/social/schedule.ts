@@ -110,6 +110,18 @@ function addCalendarDays(date: string, days: number) {
   return value.toISOString().slice(0, 10);
 }
 
+/**
+ * Returns the Sunday that closes the Weekly Digest currently being prepared.
+ * Calling the manual workflow before Sunday must use this same trigger date as
+ * the scheduled Sunday job, otherwise the two paths would build overlapping
+ * but different rolling windows.
+ */
+export function weeklyDigestSundayForDate(date: string) {
+  const [year, month, day] = date.split('-').map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return addCalendarDays(date, (7 - weekday) % 7);
+}
+
 export function completedWeeklyRangeForTrigger(triggerDate: string) {
   const [year, month, day] = triggerDate.split('-').map(Number);
   const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();

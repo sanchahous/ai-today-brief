@@ -1499,6 +1499,7 @@ export type Database = {
           id: string;
           intro_en: string | null;
           intro_uk: string | null;
+          is_manually_created: boolean;
           is_test: boolean;
           last_error: string | null;
           period_model: string;
@@ -1528,6 +1529,7 @@ export type Database = {
           id?: string;
           intro_en?: string | null;
           intro_uk?: string | null;
+          is_manually_created?: boolean;
           is_test?: boolean;
           last_error?: string | null;
           period_model?: string;

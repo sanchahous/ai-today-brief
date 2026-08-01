@@ -1096,10 +1096,11 @@ async function queueInitialWeeklyArtifacts(
 
 export async function composeWeeklySocial(
   triggerDate: string,
-  options: { now?: Date; testMode?: boolean } = {},
+  options: { now?: Date; testMode?: boolean; manual?: boolean } = {},
 ): Promise<ComposeResult> {
   const now = options.now ?? new Date();
   const testMode = options.testMode === true;
+  const manual = options.manual === true;
   const { weekStart: startDate, weekEnd: endDate } = rollingWeeklyRangeForDate(triggerDate);
   const generationVersion = testMode
     ? `${SOCIAL_GENERATION_VERSION}-test`
@@ -1115,6 +1116,23 @@ export async function composeWeeklySocial(
       .maybeSingle();
     if (error) throw new Error(`[social-composer] existing test weekly digest: ${error.message}`);
     existingTest = data;
+  }
+  if (!testMode && !manual) {
+    const { data, error } = await supabase
+      .from('weekly_digests')
+      .select('id')
+      .eq('week_start', startDate)
+      .eq('is_test', false)
+      .eq('is_manually_created', true)
+      .maybeSingle();
+    if (error) throw new Error(`[social-composer] existing manual weekly digest: ${error.message}`);
+    if (data) {
+      return {
+        weeklyDigestId: data.id,
+        createdPackageIds: [],
+        skipped: ['manual_weekly_digest_exists'],
+      };
+    }
   }
   const { briefs, items, articles } = await loadApprovedRange(startDate, endDate);
   const selection = selectEditorialDigestItems(weeklyCandidates(items, briefs, articles));
@@ -1222,6 +1240,7 @@ export async function composeWeeklySocial(
         week_start: startDate,
         week_end: endDate,
         period_model: 'rolling_7d',
+        is_manually_created: manual,
         is_test: testMode,
         slug,
         status: 'in_review',

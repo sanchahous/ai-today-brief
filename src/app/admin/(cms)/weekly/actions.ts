@@ -11,7 +11,12 @@ import { storageBlob } from '@/lib/storage/binary';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { updateVariantAction } from '@/app/admin/actions';
 import { composeWeeklySocial } from '@/lib/social/composer';
-import { kyivWallClockToUtc, SOCIAL_TIME_ZONE } from '@/lib/social/schedule';
+import {
+  kyivWallClockToUtc,
+  rollingWeeklyRangeForDate,
+  SOCIAL_TIME_ZONE,
+  weeklyDigestSundayForDate,
+} from '@/lib/social/schedule';
 import { normalizeYouTubeVideo } from '@/lib/weekly-digest/video';
 import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial-validation';
 
@@ -127,6 +132,48 @@ export async function createTestWeeklyDigestAction() {
   }
   revalidateWeeklyAdmin(result.weeklyDigestId);
   redirect(`/admin/weekly/${result.weeklyDigestId}`);
+}
+
+/**
+ * Creates the production edition for the Sunday that closes the current
+ * editorial week. The scheduled Sunday job uses the identical trigger date,
+ * so composeWeeklySocial's package idempotency makes that later job a no-op.
+ */
+export async function createWeeklyDigestAction() {
+  await requireSocialAdmin({ roles: ['owner'] });
+  const now = new Date();
+  const triggerDate = weeklyDigestSundayForDate(kyivDate(now));
+  let result;
+  try {
+    result = await composeWeeklySocial(triggerDate, { now, manual: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown preparation error.';
+    redirect(`/admin/weekly?create_error=${encodeURIComponent(message.slice(0, 300))}`);
+  }
+
+  let weeklyDigestId = result.weeklyDigestId;
+  if (!weeklyDigestId) {
+    const { weekStart } = rollingWeeklyRangeForDate(triggerDate);
+    const { data, error } = await getSupabaseAdmin()
+      .from('weekly_digests')
+      .select('id')
+      .eq('week_start', weekStart)
+      .eq('is_test', false)
+      .maybeSingle();
+    if (error) {
+      redirect(`/admin/weekly?create_error=${encodeURIComponent(error.message.slice(0, 300))}`);
+    }
+    weeklyDigestId = data?.id;
+  }
+  if (!weeklyDigestId) {
+    redirect(
+      `/admin/weekly?create_error=${encodeURIComponent(
+        'The Weekly Digest could not be prepared for this editorial week.',
+      )}`,
+    );
+  }
+  revalidateWeeklyAdmin(weeklyDigestId);
+  redirect(`/admin/weekly/${weeklyDigestId}`);
 }
 
 async function editableWorkspace(weeklyDigestId: string, revisionId: string) {
