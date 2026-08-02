@@ -598,8 +598,37 @@ async function queuePostMasterJobs(
   }
 }
 
+// Target is $3/digest; $4 is the hard stop enforced below.
+const DEFAULT_WEEKLY_MASTER_MAX_SPEND_USD = 4;
+
+/** Sum of estimated_cost_usd across every artifact ever generated for a revision. */
+async function revisionSpendSoFarUsd(revisionId: string): Promise<number> {
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('weekly_digest_artifacts')
+    .select('metadata')
+    .eq('revision_id', revisionId);
+  if (error) throw new Error(`[weekly-generation] revision spend lookup: ${error.message}`);
+  return (data ?? []).reduce((sum, row) => {
+    const cost = asRecord(row.metadata).estimated_cost_usd;
+    return sum + (typeof cost === 'number' && Number.isFinite(cost) ? cost : 0);
+  }, 0);
+}
+
+async function assertWithinMasterBudget(revisionId: string) {
+  const maxSpend = Number(process.env.WEEKLY_MASTER_MAX_SPEND_USD ?? DEFAULT_WEEKLY_MASTER_MAX_SPEND_USD);
+  const cap = Number.isFinite(maxSpend) ? maxSpend : DEFAULT_WEEKLY_MASTER_MAX_SPEND_USD;
+  const spent = await revisionSpendSoFarUsd(revisionId);
+  if (spent >= cap) {
+    throw new Error(
+      `[weekly-generation] Digest revision ${revisionId} has already spent $${spent.toFixed(2)}, at or over the $${cap.toFixed(2)} cap. Refusing further master generation.`,
+    );
+  }
+}
+
 async function generateEditorialMaster(job: ClaimedGenerationJob) {
   const requestedMode = contentStudioJobMode(job);
+  await assertWithinMasterBudget(job.revision_id);
   const context = await loadGenerationContext(job);
   assertRadarSourceSanity(context.items);
   const approvedResearch = researchPacksFromContext(context);

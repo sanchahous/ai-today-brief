@@ -51,7 +51,7 @@ export function resolveOpenRouterMaxTokens(
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 32768;
 }
 
-function buildChatBody(prompt: string): Record<string, unknown> {
+function buildChatBody(prompt: string, extraBody?: Record<string, unknown>): Record<string, unknown> {
   return {
     messages: [
       { role: 'system', content: SYSTEM_JSON },
@@ -61,6 +61,7 @@ function buildChatBody(prompt: string): Record<string, unknown> {
     temperature: 0.35,
     max_tokens: resolveOpenRouterMaxTokens(),
     usage: { include: true },
+    ...extraBody,
   };
 }
 
@@ -93,9 +94,10 @@ export async function callOpenRouterJson(
   fetchFn: typeof fetch = fetch,
   validateResponse: OpenRouterResponseValidator = validateOpenRouterBriefJson,
   onUsage?: (usage: OpenRouterUsage) => void,
+  extraBody?: Record<string, unknown>,
 ): Promise<string> {
   const started = Date.now();
-  const body = { ...buildChatBody(prompt), model: modelId };
+  const body = { ...buildChatBody(prompt, extraBody), model: modelId };
 
   const res = await fetchFn(OPENROUTER_CHAT_URL, {
     method: 'POST',
@@ -152,9 +154,10 @@ export async function callOpenRouterAdaptive(
   prompt: string,
   validateResponse: OpenRouterResponseValidator = validateOpenRouterBriefJson,
   onUsage?: (usage: OpenRouterUsage) => void,
+  extraBody?: Record<string, unknown>,
 ): Promise<string> {
   const timeouts = resolveOpenRouterAdaptiveTimeouts();
-  const body = buildChatBody(prompt);
+  const body = buildChatBody(prompt, extraBody);
 
   try {
     return await streamOpenRouterCompletion(
@@ -189,6 +192,7 @@ export async function callOpenRouterAdaptive(
       fetch,
       validateResponse,
       onUsage,
+      extraBody,
     );
   }
 }
@@ -204,6 +208,8 @@ export async function generateWithOpenRouterChain(
     resolveQueue?: (key: string) => Promise<string[]>;
     callModel?: (key: string, modelId: string, p: string) => Promise<string>;
     validateResponse?: OpenRouterResponseValidator;
+    /** Per-model extra request-body fields (e.g. `{ reasoning: { effort: 'low' } }`). */
+    extraBodyForModel?: (modelId: string) => Record<string, unknown> | undefined;
   } = {},
 ): Promise<OpenRouterSummarizeResult> {
   const apiKey = options.apiKey ?? resolveOpenRouterApiKey();
@@ -221,9 +227,16 @@ export async function generateWithOpenRouterChain(
     options.callModel ??
     /* v8 ignore next */
     ((key, modelId, p) =>
-      callOpenRouterAdaptive(key, modelId, p, validateResponse, (usage) => {
-        lastUsage = usage;
-      }));
+      callOpenRouterAdaptive(
+        key,
+        modelId,
+        p,
+        validateResponse,
+        (usage) => {
+          lastUsage = usage;
+        },
+        options.extraBodyForModel?.(modelId),
+      ));
 
   const attemptErrors: Array<Record<string, unknown>> = [];
   let lastError: unknown;

@@ -6,6 +6,7 @@ import {
   fetchOpenRouterModels,
   type OpenRouterModelRecord,
 } from '../../../pipeline/openrouter-models';
+import { rankOpenRouterModelsByValue, minimalReasoningEffort } from '../../../pipeline/openrouter-value';
 import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summarize';
 import {
   WEEKLY_MASTER_SPEC_VERSION,
@@ -308,6 +309,46 @@ export function openRouterModelVendor(modelId: string) {
   return modelId.split('/', 1)[0]?.trim().toLowerCase() ?? '';
 }
 
+/**
+ * Anthropic Analysis intelligence-index floor a candidate must clear (or be
+ * from a WEEKLY_MASTER_TRUSTED_VENDORS vendor with no score yet) to write the
+ * master. Tunable rather than a fixed model list, since the cheapest model
+ * that clears this bar changes as the OpenRouter catalog and pricing shift.
+ */
+const DEFAULT_MIN_QUALITY_INDEX = 40;
+const DEFAULT_TRUSTED_VENDORS = [
+  'openai',
+  'anthropic',
+  'google',
+  'x-ai',
+  'meta-llama',
+  'mistralai',
+  'deepseek',
+  'qwen',
+];
+// Sized from observed real usage of the weekly EN/UK master write (see PR
+// history) — used only to rank candidates by projected cost, not billed.
+const MASTER_PROMPT_TOKENS_ESTIMATE = 12_000;
+const MASTER_COMPLETION_TOKENS_ESTIMATE = 20_000;
+
+function masterMinQualityIndex() {
+  const parsed = Number(process.env.WEEKLY_MASTER_MIN_QUALITY_INDEX);
+  return Number.isFinite(parsed) ? parsed : DEFAULT_MIN_QUALITY_INDEX;
+}
+
+function masterTrustedVendors() {
+  return (process.env.WEEKLY_MASTER_TRUSTED_VENDORS ?? DEFAULT_TRUSTED_VENDORS.join(','))
+    .split(',')
+    .map((vendor) => vendor.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Ranks eligible OpenRouter models by projected cost for the master's typical
+ * token profile, cheapest first, among models clearing the quality floor.
+ * No model id is hardcoded — a temporarily discounted or newly released
+ * model is picked up automatically the next time the catalog is fetched.
+ */
 export function premiumOpenRouterModels(
   models: OpenRouterModelRecord[],
   options: { configuredModels?: string[]; excludeVendors?: string[] } = {},
@@ -315,33 +356,22 @@ export function premiumOpenRouterModels(
   const configured =
     options.configuredModels ??
     (process.env.WEEKLY_MASTER_OPENROUTER_MODELS ?? '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const excludedVendors = new Set(
-    (options.excludeVendors ?? []).map((vendor) => vendor.trim().toLowerCase()).filter(Boolean),
-  );
-  const eligible = models
-    .filter((model) => {
-      const id = model.id.toLowerCase();
-      return (
-        !excludedVendors.has(openRouterModelVendor(model.id)) &&
-        !/:free$/.test(id) &&
-        !/mini|flash|lite|small|nano|coder|image|audio|embedding/.test(id) &&
-        !model.expiration_date &&
-        (model.context_length ?? 0) >= 64_000 &&
-        (model.architecture?.modality ?? 'text').includes('text')
-      );
-    })
-    .sort((left, right) => (right.created ?? 0) - (left.created ?? 0))
-    .map((model) => model.id);
-  const allowed = new Set(eligible);
-  const selected = configured.length ? configured.filter((model) => allowed.has(model)) : eligible;
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+  const ranked = rankOpenRouterModelsByValue(models, {
+    promptTokens: MASTER_PROMPT_TOKENS_ESTIMATE,
+    completionTokens: MASTER_COMPLETION_TOKENS_ESTIMATE,
+    minQualityIndex: masterMinQualityIndex(),
+    trustedVendorsWithoutBenchmark: masterTrustedVendors(),
+    excludeVendors: options.excludeVendors,
+    configuredModels: configured.length ? configured : undefined,
+  });
   // A full master response is large. Retrying another OpenRouter model inside
   // the same request can consume the entire 300-second function budget. The
   // caller still has the independent premium provider fallback, while durable
   // job retries handle transient failures across separate invocations.
-  return selected.slice(0, 1);
+  return ranked.slice(0, 1).map((candidate) => candidate.id);
 }
 
 async function generateOpenRouter<T>(
@@ -351,8 +381,11 @@ async function generateOpenRouter<T>(
 ): Promise<ProviderResult<T>> {
   const apiKey = process.env.OPEN_ROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim();
   if (!apiKey) throw new Error('UNCONFIGURED:OPEN_ROUTER_API_KEY');
-  const queue = premiumOpenRouterModels(await fetchOpenRouterModels(apiKey), options);
+  const models = await fetchOpenRouterModels(apiKey);
+  const queue = premiumOpenRouterModels(models, options);
   if (!queue.length) throw new Error('No premium OpenRouter editorial model is available.');
+  const chosenModel = models.find((model) => model.id === queue[0]);
+  const reasoningEffort = chosenModel ? minimalReasoningEffort(chosenModel) : null;
   const result = await generateWithOpenRouterChain(prompt, {
     apiKey,
     modelQueue: queue,
@@ -361,6 +394,7 @@ async function generateOpenRouter<T>(
       parse(raw);
       return raw;
     },
+    extraBodyForModel: reasoningEffort ? () => ({ reasoning: { effort: reasoningEffort } }) : undefined,
   });
   const value = parse(result.text);
   const promptTokens = result.usage?.promptTokens ?? estimateTokens(prompt.length);

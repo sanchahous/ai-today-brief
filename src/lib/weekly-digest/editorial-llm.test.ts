@@ -25,12 +25,16 @@ describe('premiumOpenRouterModels', () => {
           created: 2,
           context_length: 128_000,
           architecture: { modality: 'text' },
+          pricing: { prompt: '0.000001', completion: '0.000006' },
+          benchmarks: { artificial_analysis: { intelligence_index: 55 } },
         },
         {
           id: 'provider/older',
           created: 1,
           context_length: 128_000,
           architecture: { modality: 'text' },
+          pricing: { prompt: '0.000002', completion: '0.00001' },
+          benchmarks: { artificial_analysis: { intelligence_index: 55 } },
         },
       ]),
     ).toEqual(['provider/new']);
@@ -45,18 +49,64 @@ describe('premiumOpenRouterModels', () => {
             created: 3,
             context_length: 128_000,
             architecture: { modality: 'text' },
+            pricing: { prompt: '0.000001', completion: '0.000006' },
+            benchmarks: { artificial_analysis: { intelligence_index: 80 } },
           },
           {
             id: 'openai/gpt-current',
             created: 2,
             context_length: 128_000,
             architecture: { modality: 'text' },
+            pricing: { prompt: '0.000002', completion: '0.00001' },
+            benchmarks: { artificial_analysis: { intelligence_index: 55 } },
           },
         ],
         { configuredModels: [], excludeVendors: ['anthropic'] },
       ),
     ).toEqual(['openai/gpt-current']);
     expect(openRouterModelVendor('openai/gpt-current')).toBe('openai');
+  });
+
+  it('prefers the cheaper of two models that both clear the quality floor', () => {
+    expect(
+      premiumOpenRouterModels([
+        {
+          id: 'vendor/cheap-adequate',
+          context_length: 128_000,
+          architecture: { modality: 'text' },
+          pricing: { prompt: '0.000001', completion: '0.000006' },
+          benchmarks: { artificial_analysis: { intelligence_index: 55 } },
+        },
+        {
+          id: 'vendor/expensive-flagship',
+          context_length: 128_000,
+          architecture: { modality: 'text' },
+          pricing: { prompt: '0.000015', completion: '0.000075' },
+          benchmarks: { artificial_analysis: { intelligence_index: 85 } },
+        },
+      ]),
+    ).toEqual(['vendor/cheap-adequate']);
+  });
+
+  it('excludes models below the quality floor even when cheapest', () => {
+    expect(
+      premiumOpenRouterModels([
+        {
+          id: 'vendor/too-weak',
+          context_length: 128_000,
+          architecture: { modality: 'text' },
+          pricing: { prompt: '0.0000001', completion: '0.0000006' },
+          benchmarks: { artificial_analysis: { intelligence_index: 10 } },
+        },
+        {
+          id: 'vendor/adequate',
+          context_length: 128_000,
+          architecture: { modality: 'text' },
+          pricing: { prompt: '0.000001', completion: '0.000006' },
+          benchmarks: { artificial_analysis: { intelligence_index: 55 } },
+        },
+      ]),
+    ).toEqual(['vendor/adequate']);
   });
 });
 
