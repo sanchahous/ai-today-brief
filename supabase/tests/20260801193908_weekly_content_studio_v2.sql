@@ -2,7 +2,7 @@
 
 begin;
 
-select plan(18);
+select plan(20);
 
 select has_table('public', 'weekly_locale_map', 'weekly locale configuration exists');
 select has_table(
@@ -119,6 +119,35 @@ select ok(
       and not tgisinternal
   ),
   'shadow and incomplete v2 revisions are blocked at the release boundary'
+);
+
+select is(
+  (
+    select count(*)
+    from pg_indexes
+    where schemaname = 'public'
+      and indexname in (
+        'weekly_digest_engagement_revision_idx',
+        'weekly_digest_engagement_social_post_idx',
+        'weekly_digest_engagement_story_idx',
+        'weekly_locale_map_updated_by_idx'
+      )
+  ),
+  4::bigint,
+  'Content Studio v2 foreign keys have covering indexes'
+);
+
+select is(
+  (
+    select count(*)
+    from pg_policies
+    where schemaname = 'public'
+      and tablename = 'weekly_locale_map'
+      and 'authenticated' = any (roles)
+      and cmd in ('SELECT', 'ALL')
+  ),
+  1::bigint,
+  'locale map has one permissive authenticated SELECT path'
 );
 
 select * from finish();

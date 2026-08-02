@@ -4,6 +4,11 @@
 --
 -- Keeps every other behaviour from 011_search_prefix_match.sql identical.
 
+-- PostgreSQL cannot replace a function when its OUT row type changes.
+-- Drop the previous signature first so the full migration chain can be
+-- replayed against a fresh staging database.
+DROP FUNCTION IF EXISTS public.search_brief_items(text, text, text[], date, date, int, int);
+
 CREATE OR REPLACE FUNCTION public.search_brief_items(
   p_query        text,
   p_lang         text DEFAULT 'en',
