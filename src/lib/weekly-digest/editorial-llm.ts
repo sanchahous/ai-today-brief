@@ -95,6 +95,36 @@ function recordArray(value: unknown, key: string) {
   return value as Array<Record<string, unknown>>;
 }
 
+const WEEKLY_SOCIAL_CHANNELS = [
+  'telegram',
+  'facebook',
+  'threads',
+  'x',
+  'linkedin',
+  'instagram',
+] as const;
+
+type WeeklySocialAngle = WeeklyMasterBundle['socialAngles'][number];
+
+function canonicalSocialChannel(channel: string) {
+  const normalized = channel.trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+  if (normalized === 'twitter' || normalized === 'twitterx') return 'x';
+  if (normalized === 'linkedin') return 'linkedin';
+  return WEEKLY_SOCIAL_CHANNELS.find((candidate) => candidate === normalized);
+}
+
+export function normalizeWeeklySocialAngles(angles: WeeklySocialAngle[]) {
+  const byChannel = new Map<string, WeeklySocialAngle>();
+  for (const angle of angles) {
+    const channel = canonicalSocialChannel(angle.channel);
+    if (channel && !byChannel.has(channel)) byChannel.set(channel, { ...angle, channel });
+  }
+  if (WEEKLY_SOCIAL_CHANNELS.some((channel) => !byChannel.has(channel))) {
+    throw new SyntaxError('English master requires exactly one social angle for each channel.');
+  }
+  return WEEKLY_SOCIAL_CHANNELS.map((channel) => byChannel.get(channel)!);
+}
+
 function parseArticle(raw: string, locale: 'en' | 'uk'): WeeklyArticleMaster {
   const row = parseJsonObject(raw);
   const stories = recordArray(row.stories, 'stories').map((story) => {
@@ -174,21 +204,14 @@ function parseEnglishPackage(raw: string) {
   if (narration.scenes.some((scene) => !Number.isFinite(scene.durationSeconds))) {
     throw new SyntaxError('Every scene requires a numeric durationSeconds.');
   }
-  const socialAngles = recordArray(row.socialAngles, 'socialAngles').map((angle) => ({
-    channel: requiredString(angle, 'channel'),
-    hookAngle: requiredString(angle, 'hookAngle'),
-    thesis: requiredString(angle, 'thesis'),
-    factIds: stringArray(angle.factIds, 'angle.factIds'),
-  }));
-  const requiredChannels = ['telegram', 'facebook', 'threads', 'x', 'linkedin', 'instagram'];
-  if (
-    socialAngles.length !== requiredChannels.length ||
-    requiredChannels.some(
-      (channel) => socialAngles.filter((angle) => angle.channel === channel).length !== 1,
-    )
-  ) {
-    throw new SyntaxError('English master requires exactly one social angle for each channel.');
-  }
+  const socialAngles = normalizeWeeklySocialAngles(
+    recordArray(row.socialAngles, 'socialAngles').map((angle) => ({
+      channel: requiredString(angle, 'channel'),
+      hookAngle: requiredString(angle, 'hookAngle'),
+      thesis: requiredString(angle, 'thesis'),
+      factIds: stringArray(angle.factIds, 'angle.factIds'),
+    })),
+  );
   return { article, video: narration, socialAngles };
 }
 
@@ -415,9 +438,10 @@ CONTRACT
 - Theme-led title; the date is secondary. Total article target: 2,000–3,000 words.
 - Video: one English 6–8 minute narration plan and exactly three Ukrainian Shorts (35–50 seconds) for the Top 3.
 - Return one JSON object only.
+- socialAngles must contain exactly six objects: one for each exact lowercase channel value telegram, facebook, threads, x, linkedin and instagram. Do not combine channel names in one string.
 
 JSON SHAPE
-{"article":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":"","stories":[{"revisionItemId":"","placement":"feature|radar","headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","claimIds":[""]}]},"video":{"title":"","hook":"","narration":"","scenes":[{"id":"","purpose":"","voiceover":"","onScreenText":"","visualBrief":"","factIds":[""],"durationSeconds":1}],"shorts":[{"revisionItemId":"","hook":"","context":"","insight":"","takeaway":"","factIds":[""],"durationSeconds":40}]},"socialAngles":[{"channel":"telegram|facebook|threads|x|linkedin|instagram","hookAngle":"","thesis":"","factIds":[""]}]}
+{"article":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":"","stories":[{"revisionItemId":"","placement":"feature|radar","headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","claimIds":[""]}]},"video":{"title":"","hook":"","narration":"","scenes":[{"id":"","purpose":"","voiceover":"","onScreenText":"","visualBrief":"","factIds":[""],"durationSeconds":1}],"shorts":[{"revisionItemId":"","hook":"","context":"","insight":"","takeaway":"","factIds":[""],"durationSeconds":40}]},"socialAngles":[{"channel":"telegram","hookAngle":"","thesis":"","factIds":[""]},{"channel":"facebook","hookAngle":"","thesis":"","factIds":[""]},{"channel":"threads","hookAngle":"","thesis":"","factIds":[""]},{"channel":"x","hookAngle":"","thesis":"","factIds":[""]},{"channel":"linkedin","hookAngle":"","thesis":"","factIds":[""]},{"channel":"instagram","hookAngle":"","thesis":"","factIds":[""]}]}
 
 APPROVED STORY MATERIAL
 ${JSON.stringify(stories)}`;

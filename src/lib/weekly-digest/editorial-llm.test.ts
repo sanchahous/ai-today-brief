@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { premiumGeminiEditorialModels } from './editorial-llm';
+import { normalizeWeeklySocialAngles, premiumGeminiEditorialModels } from './editorial-llm';
+
+function socialAngle(channel: string) {
+  return { channel, hookAngle: `Hook for ${channel}`, thesis: 'Thesis', factIds: ['claim-1'] };
+}
 
 describe('premiumGeminiEditorialModels', () => {
   it('finds Pro after faster models in the live-ranked queue', () => {
@@ -20,5 +24,31 @@ describe('premiumGeminiEditorialModels', () => {
         'gemini-3-nano',
       ]),
     ).toEqual([]);
+  });
+});
+
+describe('normalizeWeeklySocialAngles', () => {
+  it('canonicalizes common channel variants and removes harmless duplicates', () => {
+    expect(
+      normalizeWeeklySocialAngles(
+        [
+          'Telegram',
+          'facebook',
+          'threads',
+          'Twitter / X',
+          'Linked-In',
+          'instagram',
+          'Instagram',
+        ].map(socialAngle),
+      ).map((angle) => angle.channel),
+    ).toEqual(['telegram', 'facebook', 'threads', 'x', 'linkedin', 'instagram']);
+  });
+
+  it('still rejects a package that omits a required channel', () => {
+    expect(() =>
+      normalizeWeeklySocialAngles(
+        ['telegram', 'facebook', 'threads', 'x', 'linkedin'].map(socialAngle),
+      ),
+    ).toThrow('exactly one social angle for each channel');
   });
 });
