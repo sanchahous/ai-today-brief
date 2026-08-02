@@ -2,7 +2,7 @@
 
 begin;
 
-select plan(20);
+select plan(22);
 
 select has_table('public', 'weekly_locale_map', 'weekly locale configuration exists');
 select has_table(
@@ -110,6 +110,27 @@ select ok(
       and pg_get_constraintdef(oid) like '%research_pack%'
   ),
   'job constraint accepts Content Studio v2 stages'
+);
+select ok(
+  pg_get_functiondef(
+    'public.queue_weekly_digest_generation_job(uuid,uuid,text,text,jsonb,uuid)'::regprocedure
+  ) like '%''research_pack''%'
+  and pg_get_functiondef(
+    'public.queue_weekly_digest_generation_job(uuid,uuid,text,text,jsonb,uuid)'::regprocedure
+  ) like '%''editorial_master''%'
+  and pg_get_functiondef(
+    'public.queue_weekly_digest_generation_job(uuid,uuid,text,text,jsonb,uuid)'::regprocedure
+  ) like '%''social_copy''%',
+  'queue RPC accepts every Content Studio v2 stage'
+);
+select ok(
+  pg_get_functiondef(
+    'public.claim_weekly_digest_generation_jobs(text[],integer,interval)'::regprocedure
+  ) not like '%job.locale%'
+  and pg_get_functiondef(
+    'public.claim_weekly_digest_generation_jobs(text[],integer,interval)'::regprocedure
+  ) like '%job.input ->> ''locale''%',
+  'claim RPC reads the PDF locale from durable job input'
 );
 select ok(
   exists (

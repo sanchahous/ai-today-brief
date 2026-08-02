@@ -35,7 +35,11 @@ import {
   type WeeklyResearchPack,
 } from './content-studio';
 import { generateWeeklyMaster, type WeeklyMasterInputStory } from './editorial-llm';
-import { buildWeeklyResearchPack, isWeeklyResearchPack } from './research';
+import {
+  buildWeeklyResearchPack,
+  isWeeklyResearchPack,
+  trustedWeeklyResearchSources,
+} from './research';
 import { adaptWeeklySocialChannel, type WeeklySocialAdaptation } from './social-adapter';
 import { renderWeeklyLinkedInDocument } from './linkedin-document';
 
@@ -283,10 +287,51 @@ async function loadGenerationContext(job: ClaimedGenerationJob) {
   if (revisionResult.error || !revisionResult.data) throw new Error('Revision was not found.');
   if (itemsResult.error || !itemsResult.data) throw new Error('Revision stories were not found.');
   if (artifactsResult.error || !artifactsResult.data) throw new Error('Artifacts were not found.');
+  const briefItemIds = itemsResult.data
+    .map((item) => item.brief_item_id)
+    .filter((briefItemId): briefItemId is string => Boolean(briefItemId));
+  const { data: briefItems, error: briefItemsError } = await db
+    .from('brief_items')
+    .select('id,article_id,citations,facts_en')
+    .in('id', briefItemIds);
+  if (briefItemsError || !briefItems) {
+    throw new Error('Approved brief-item source lineage was not found.');
+  }
+  const articleIds = briefItems
+    .map((item) => item.article_id)
+    .filter((articleId): articleId is string => Boolean(articleId));
+  const { data: articles, error: articlesError } = await db
+    .from('articles')
+    .select('id,url')
+    .in('id', articleIds);
+  if (articlesError || !articles) {
+    throw new Error('Approved article source lineage was not found.');
+  }
+  const briefItemById = new Map(briefItems.map((item) => [item.id, item]));
+  const articleById = new Map(articles.map((article) => [article.id, article]));
+  const items = itemsResult.data.map((item) => {
+    const briefItem = item.brief_item_id ? briefItemById.get(item.brief_item_id) : null;
+    const article = briefItem?.article_id ? articleById.get(briefItem.article_id) : null;
+    if (!briefItem || !article?.url) return item;
+    const sources = trustedWeeklyResearchSources({
+      articleUrl: article.url,
+      revisionSources: item.sources,
+      citations: briefItem.citations,
+    });
+    const snapshot = asRecord(item.source_snapshot);
+    return {
+      ...item,
+      sources: sources.length ? sources : item.sources,
+      source_snapshot: {
+        ...snapshot,
+        facts_en: snapshot.facts_en ?? briefItem.facts_en ?? [],
+      },
+    };
+  });
   return {
     digest: digestResult.data,
     revision: revisionResult.data,
-    items: itemsResult.data,
+    items,
     artifacts: artifactsResult.data,
   };
 }

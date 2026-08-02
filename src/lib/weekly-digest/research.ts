@@ -82,6 +82,46 @@ function sourceRows(value: Json): Array<{ name: string; url: string }> {
   return sources;
 }
 
+/**
+ * Rebuilds immutable revision sources from the approved brief-item/article
+ * lineage. Legacy weekly revisions sometimes preserved the feed label (for
+ * example Hacker News) next to the canonical article URL, or no sources at
+ * all. The article relation is the trusted primary pointer; labels are always
+ * derived from the URL so the downstream anti-spoofing check remains strict.
+ */
+export function trustedWeeklyResearchSources(input: {
+  articleUrl: string;
+  revisionSources: Json;
+  citations: Json | null;
+}) {
+  const candidates: string[] = [input.articleUrl];
+  for (const value of [input.revisionSources, input.citations]) {
+    if (!Array.isArray(value)) continue;
+    for (const entry of value) {
+      const row = asRecord(entry);
+      const rawUrl =
+        typeof entry === 'string'
+          ? entry
+          : typeof row.url === 'string'
+            ? row.url
+            : typeof row.source_url === 'string'
+              ? row.source_url
+              : null;
+      if (rawUrl) candidates.push(rawUrl);
+    }
+  }
+  const urls = candidates.flatMap((candidate) => {
+    try {
+      return [cleanUrl(candidate)];
+    } catch {
+      return [];
+    }
+  });
+  return urls
+    .filter((url, index, all) => all.indexOf(url) === index)
+    .map((url) => ({ name: canonicalSourceName(url), url }));
+}
+
 function snapshotCitationUrls(value: Json) {
   const editorial = asRecord(asRecord(value).editorial_selection);
   const citations = editorial.citation_urls;
