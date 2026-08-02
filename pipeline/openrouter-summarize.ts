@@ -56,7 +56,7 @@ function buildChatBody(prompt: string): Record<string, unknown> {
 
 type ChatCompletionResponse = {
   choices?: Array<{ message?: { content?: string } }>;
-  error?: { message?: string; code?: string };
+  error?: { message?: string; code?: unknown };
 };
 
 /* v8 ignore start -- live network: chain logic is unit-tested via injected deps */

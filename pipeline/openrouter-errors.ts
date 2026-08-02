@@ -45,11 +45,14 @@ export type ClassifiedOpenRouterFailure = {
 /** Classify HTTP body / SSE error text from OpenRouter or upstream providers. */
 export function classifyOpenRouterFailure(input: {
   httpStatus?: number;
-  message?: string;
-  code?: string;
+  message?: unknown;
+  code?: unknown;
 }): ClassifiedOpenRouterFailure {
-  const msg = (input.message ?? '').toLowerCase();
-  const code = (input.code ?? '').toLowerCase();
+  const msg = typeof input.message === 'string' ? input.message.toLowerCase() : '';
+  const code =
+    typeof input.code === 'string' || typeof input.code === 'number'
+      ? String(input.code).toLowerCase()
+      : '';
   const status = input.httpStatus;
 
   if (
@@ -102,14 +105,18 @@ export function classifyOpenRouterFailure(input: {
 
 export function toOpenRouterLimitError(
   modelId: string,
-  input: { httpStatus?: number; message?: string; code?: string },
+  input: { httpStatus?: number; message?: unknown; code?: unknown },
 ): OpenRouterLimitError | null {
   const classified = classifyOpenRouterFailure(input);
   if (!classified.isLimit || !classified.kind) return null;
-  const detail = input.message?.trim() || classified.kind;
+  const detail = typeof input.message === 'string' ? input.message.trim() : classified.kind;
+  const providerCode =
+    typeof input.code === 'string' || typeof input.code === 'number'
+      ? String(input.code)
+      : undefined;
   return new OpenRouterLimitError(classified.kind, modelId, detail, {
     httpStatus: input.httpStatus,
-    providerCode: input.code,
+    providerCode,
   });
 }
 

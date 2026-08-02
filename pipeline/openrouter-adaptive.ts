@@ -111,7 +111,7 @@ export function parseOpenRouterSseChunk(
           delta?: { content?: string };
           finish_reason?: string | null;
         }>;
-        error?: { message?: string; code?: string };
+        error?: { message?: string; code?: unknown };
       };
       if (json.error?.message) {
         chunks.push({
@@ -237,9 +237,9 @@ export async function streamOpenRouterCompletion(
   if (!res.ok) {
     const raw = await res.text();
     let apiMessage = raw.slice(0, 400);
-    let apiCode: string | undefined;
+    let apiCode: unknown;
     try {
-      const errJson = JSON.parse(raw) as { error?: { message?: string; code?: string } };
+      const errJson = JSON.parse(raw) as { error?: { message?: string; code?: unknown } };
       apiMessage = errJson.error?.message ?? apiMessage;
       apiCode = errJson.error?.code;
     } catch {
