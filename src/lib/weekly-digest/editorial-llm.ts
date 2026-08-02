@@ -289,15 +289,28 @@ function providerOrder() {
   return [...new Set(configured)];
 }
 
-export function premiumOpenRouterModels(models: OpenRouterModelRecord[]) {
-  const configured = (process.env.WEEKLY_MASTER_OPENROUTER_MODELS ?? '')
+export function openRouterModelVendor(modelId: string) {
+  return modelId.split('/', 1)[0]?.trim().toLowerCase() ?? '';
+}
+
+export function premiumOpenRouterModels(
+  models: OpenRouterModelRecord[],
+  options: { configuredModels?: string[]; excludeVendors?: string[] } = {},
+) {
+  const configured =
+    options.configuredModels ??
+    (process.env.WEEKLY_MASTER_OPENROUTER_MODELS ?? '')
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
+  const excludedVendors = new Set(
+    (options.excludeVendors ?? []).map((vendor) => vendor.trim().toLowerCase()).filter(Boolean),
+  );
   const eligible = models
     .filter((model) => {
       const id = model.id.toLowerCase();
       return (
+        !excludedVendors.has(openRouterModelVendor(model.id)) &&
         !/:free$/.test(id) &&
         !/mini|flash|lite|small|nano|coder|image|audio|embedding/.test(id) &&
         !model.expiration_date &&
@@ -319,10 +332,11 @@ export function premiumOpenRouterModels(models: OpenRouterModelRecord[]) {
 async function generateOpenRouter<T>(
   prompt: string,
   parse: (raw: string) => T,
+  options: { configuredModels?: string[]; excludeVendors?: string[] } = {},
 ): Promise<ProviderResult<T>> {
   const apiKey = process.env.OPEN_ROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim();
   if (!apiKey) throw new Error('UNCONFIGURED:OPEN_ROUTER_API_KEY');
-  const queue = premiumOpenRouterModels(await fetchOpenRouterModels(apiKey));
+  const queue = premiumOpenRouterModels(await fetchOpenRouterModels(apiKey), options);
   if (!queue.length) throw new Error('No premium OpenRouter editorial model is available.');
   const result = await generateWithOpenRouterChain(prompt, {
     apiKey,
@@ -416,6 +430,49 @@ async function generateWithProvider<T>(
     : generateGemini(prompt, parse);
 }
 
+function configuredCriticOpenRouterModels() {
+  return (process.env.WEEKLY_CRITIC_OPENROUTER_MODELS ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+async function generateIndependentCritic(
+  english: ProviderResult<ReturnType<typeof parseEnglishPackage>>,
+  prompt: string,
+) {
+  let primaryError: unknown;
+  const independentProvider = providerOrder().find(
+    (provider) => provider !== english.metadata.provider,
+  );
+  if (independentProvider) {
+    try {
+      return await generateWithProvider(independentProvider, prompt, parseCritic);
+    } catch (error) {
+      primaryError = error;
+    }
+  }
+
+  const writerVendor =
+    english.metadata.provider === 'openrouter'
+      ? openRouterModelVendor(english.metadata.model)
+      : 'google';
+  try {
+    return await generateOpenRouter(prompt, parseCritic, {
+      configuredModels: configuredCriticOpenRouterModels(),
+      excludeVendors: [writerVendor],
+    });
+  } catch (fallbackError) {
+    const primaryMessage =
+      primaryError instanceof Error ? primaryError.message : 'independent provider unavailable';
+    const fallbackMessage =
+      fallbackError instanceof Error ? fallbackError.message : 'critic fallback unavailable';
+    throw new Error(
+      `No independent premium editorial critic is available: ${primaryMessage}; ${fallbackMessage}`,
+    );
+  }
+}
+
 async function generateFirstAvailable<T>(prompt: string, parse: (raw: string) => T) {
   let lastError: unknown;
   for (const provider of providerOrder()) {
@@ -492,15 +549,7 @@ export async function generateWeeklyMaster(
     video: english.value.video,
     socialAngles: english.value.socialAngles,
   };
-  const independent = providerOrder().find((provider) => provider !== english.metadata.provider);
-  if (!independent) {
-    throw new Error('An independent premium critic provider is required before master approval.');
-  }
-  const critic = await generateWithProvider(
-    independent,
-    criticPrompt(bundle, stories),
-    parseCritic,
-  );
+  const critic = await generateIndependentCritic(english, criticPrompt(bundle, stories));
   const deterministicIssues = validateMasterBundle(
     bundle,
     researchPacks,

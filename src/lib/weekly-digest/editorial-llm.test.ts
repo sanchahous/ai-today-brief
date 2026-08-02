@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   normalizeWeeklySocialAngles,
+  openRouterModelVendor,
   premiumGeminiEditorialModels,
   premiumOpenRouterModels,
 } from './editorial-llm';
@@ -32,6 +33,29 @@ describe('premiumOpenRouterModels', () => {
         },
       ]),
     ).toEqual(['provider/new']);
+  });
+
+  it('selects an independent premium vendor for the critic', () => {
+    expect(
+      premiumOpenRouterModels(
+        [
+          {
+            id: 'anthropic/claude-opus-current',
+            created: 3,
+            context_length: 128_000,
+            architecture: { modality: 'text' },
+          },
+          {
+            id: 'openai/gpt-current',
+            created: 2,
+            context_length: 128_000,
+            architecture: { modality: 'text' },
+          },
+        ],
+        { configuredModels: [], excludeVendors: ['anthropic'] },
+      ),
+    ).toEqual(['openai/gpt-current']);
+    expect(openRouterModelVendor('openai/gpt-current')).toBe('openai');
   });
 });
 
