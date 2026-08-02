@@ -31,6 +31,35 @@ describe('social quality gate', () => {
     );
   });
 
+  it('allows the X tracking URL in the structured self-reply only', () => {
+    const root = 'One grounded thesis with a strong approved fact for AI builders and leaders.';
+    const reply = 'Read: https://aitodaybrief.com/r/s/token';
+    const report = runQualityGate(
+      draft({ channel: 'x', text: root, firstComment: reply, contentParts: [root, reply] }),
+      new Date('2026-01-01T00:00:00Z'),
+    );
+    expect(report.blocking.map((issue) => issue.code)).not.toContain('root_url');
+    expect(report.blocking.map((issue) => issue.code)).not.toContain('x_reply_url');
+  });
+
+  it('blocks artificial truncation and invalid native part counts', () => {
+    const report = runQualityGate(
+      draft({ text: 'A supposedly interesting update…', contentParts: ['One', 'Two'] }),
+      new Date('2026-01-01T00:00:00Z'),
+    );
+    expect(report.blocking.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['artificial_ellipsis', 'threads_parts']),
+    );
+  });
+
+  it('also blocks three-dot truncation', () => {
+    const report = runQualityGate(
+      draft({ text: 'A supposedly interesting update...', contentParts: ['One', 'Two', 'Three'] }),
+      new Date('2026-01-01T00:00:00Z'),
+    );
+    expect(report.blocking.map((issue) => issue.code)).toContain('artificial_ellipsis');
+  });
+
   it('blocks Instagram without a 4:5 asset and alt text', () => {
     const report = runQualityGate(
       draft({ channel: 'instagram', text: 'A useful AI engineering update. '.repeat(8) }),

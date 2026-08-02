@@ -34,7 +34,12 @@ describe('matchesQuery', () => {
 
 describe('withinPreset', () => {
   it('filters by date preset', () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const today = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-');
     expect(withinPreset(today, 'today')).toBe(true);
     expect(withinPreset('2020-01-01', 'today')).toBe(false);
     expect(withinPreset('2020-01-01', 'all')).toBe(true);

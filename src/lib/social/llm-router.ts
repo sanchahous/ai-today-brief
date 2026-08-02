@@ -28,6 +28,11 @@ export interface SocialLlmResult<T> {
   model: string;
   fallbackUsed: boolean;
   attempts: SocialLlmAttempt[];
+  usage: {
+    promptTokens: number;
+    outputTokens: number;
+    estimatedCostUsd: number;
+  };
 }
 
 interface ProviderOutput {
@@ -72,6 +77,8 @@ const GEMINI_SCHEMAS: Record<SocialLlmRole, GeminiResponseSchema> = {
     properties: {
       score: { type: SchemaType.NUMBER },
       flags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+      platformFitScore: { type: SchemaType.NUMBER },
+      platformFlags: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
     },
     required: ['score', 'flags'],
   },
@@ -367,7 +374,11 @@ export async function generateSocialJson<T>(
   role: SocialLlmRole,
   prompt: string,
   parse: (raw: string) => T,
-  options: { env?: SocialLlmEnv; deps?: SocialLlmDependencies } = {},
+  options: {
+    env?: SocialLlmEnv;
+    deps?: SocialLlmDependencies;
+    excludeProviders?: readonly SocialLlmProvider[];
+  } = {},
 ): Promise<SocialLlmResult<T>> {
   const env = options.env ?? process.env;
   const deps = options.deps ?? {};
@@ -375,7 +386,10 @@ export async function generateSocialJson<T>(
   const fetchModels = deps.fetchOpenRouterModels ?? ((key: string) => fetchOpenRouterModels(key));
   const fetchFn = deps.fetchFn ?? fetch;
 
-  for (const provider of resolveSocialProviderOrder(role, env)) {
+  const excluded = new Set(options.excludeProviders ?? []);
+  for (const provider of resolveSocialProviderOrder(role, env).filter(
+    (candidate) => !excluded.has(candidate),
+  )) {
     try {
       const injected = deps.generators?.[provider];
       const output = injected
@@ -386,6 +400,10 @@ export async function generateSocialJson<T>(
             ? await generateOpenRouter({ prompt, role, parse, env }, fetchModels)
             : await generateOllama({ prompt, role, parse, env }, fetchFn);
       const value = parse(output.text);
+      const promptTokens = Math.max(1, Math.ceil(prompt.length / 4));
+      const outputTokens = Math.max(1, Math.ceil(output.text.length / 4));
+      const inputRate = Number(env.SOCIAL_LLM_INPUT_USD_PER_MILLION ?? '0.3');
+      const outputRate = Number(env.SOCIAL_LLM_OUTPUT_USD_PER_MILLION ?? '1');
       attempts.push({ provider, status: 'success', model: output.model });
       return {
         value,
@@ -393,6 +411,13 @@ export async function generateSocialJson<T>(
         model: output.model,
         fallbackUsed: attempts.length > 1 || Boolean(output.fallbackUsed),
         attempts,
+        usage: {
+          promptTokens,
+          outputTokens,
+          estimatedCostUsd: Number(
+            ((promptTokens * inputRate + outputTokens * outputRate) / 1_000_000).toFixed(6),
+          ),
+        },
       };
     } catch (error) {
       const reason = reasonFromError(error);

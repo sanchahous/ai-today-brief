@@ -4,6 +4,66 @@ import type { Database } from '@/lib/database.types';
 import { LANG_COOKIE, LANG_COOKIE_MAX_AGE, resolvePreferredLang } from '@/lib/preferred-lang';
 import type { Lang } from '@/lib/site';
 
+type WeeklyAvailability = 'published' | 'unpublished' | 'unavailable' | 'skip';
+
+async function publishedWeeklyAvailability(slug: string): Promise<WeeklyAvailability> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return 'skip';
+
+  try {
+    const endpoint = new URL('/rest/v1/weekly_digests', url);
+    endpoint.searchParams.set('select', 'id');
+    endpoint.searchParams.set('slug', `eq.${slug}`);
+    endpoint.searchParams.set('status', 'eq.published');
+    endpoint.searchParams.set('limit', '1');
+    const result = await fetch(endpoint, {
+      headers: {
+        accept: 'application/json',
+        apikey: key,
+        authorization: `Bearer ${key}`,
+      },
+      cache: 'no-store',
+    });
+    if (!result.ok) return 'unavailable';
+    const rows: unknown = await result.json();
+    return Array.isArray(rows) && rows.length > 0 ? 'published' : 'unpublished';
+  } catch {
+    return 'unavailable';
+  }
+}
+
+function weeklyStatusPage(lang: Lang, status: 404 | 503) {
+  const isUk = lang === 'uk';
+  const unavailable = status === 503;
+  const title = unavailable
+    ? isUk
+      ? 'Дайджест тимчасово недоступний'
+      : 'Digest temporarily unavailable'
+    : isUk
+      ? 'Дайджест не знайдено'
+      : 'Digest not found';
+  const message = unavailable
+    ? isUk
+      ? 'Не вдалося безпечно перевірити статус публікації. Спробуйте ще раз за кілька хвилин.'
+      : 'We could not safely verify the publication status. Please try again in a few minutes.'
+    : isUk
+      ? 'Цей випуск ще не опублікований або такої адреси не існує.'
+      : 'This issue is not published yet, or the address does not exist.';
+  const back = isUk ? 'Переглянути опубліковані дайджести' : 'Browse published digests';
+  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${title} | AI Today Brief</title></head><body style="margin:0;background:#0b0f12;color:#f5f5f0;font-family:Arial,sans-serif"><main style="max-width:760px;margin:0 auto;padding:18vh 24px"><p style="color:#42e8d0;font-weight:700;letter-spacing:.12em">AI TODAY BRIEF</p><h1 style="font:700 clamp(36px,7vw,72px)/1.05 Georgia,serif;margin:24px 0">${title}</h1><p style="max-width:620px;color:#b9c0c5;font-size:20px;line-height:1.6">${message}</p><a href="/${lang}/digests" style="display:inline-block;margin-top:24px;color:#42e8d0;font-weight:700">${back}</a></main></body></html>`;
+  const response = new NextResponse(html, {
+    status,
+    headers: {
+      'cache-control': 'private, no-store, max-age=0',
+      'content-type': 'text/html; charset=utf-8',
+      'x-robots-tag': 'noindex, nofollow',
+    },
+  });
+  persistLangCookie(response, lang);
+  return response;
+}
+
 function persistLangCookie(response: NextResponse, lang: Lang): void {
   response.cookies.set(LANG_COOKIE, lang, {
     path: '/',
@@ -33,6 +93,13 @@ async function refreshSupabase(request: NextRequest, response: NextResponse) {
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const segment = pathname.split('/')[1];
+  const weeklyMatch = pathname.match(/^\/(en|uk)\/weekly\/([^/]+)\/?$/);
+  if (weeklyMatch) {
+    const lang = weeklyMatch[1] as Lang;
+    const availability = await publishedWeeklyAvailability(decodeURIComponent(weeklyMatch[2]));
+    if (availability === 'unpublished') return weeklyStatusPage(lang, 404);
+    if (availability === 'unavailable') return weeklyStatusPage(lang, 503);
+  }
   let response =
     pathname === '/'
       ? NextResponse.redirect(

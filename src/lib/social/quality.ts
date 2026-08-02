@@ -128,9 +128,12 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
   const warnings: QualityIssue[] = [];
   const rule = CHANNEL_RULES[draft.channel];
   const text = draft.text.trim();
-  const urls = text.match(URL_RE) ?? [];
-  const hashtags = text.match(HASHTAG_RE) ?? [];
-  const emoji = text.match(EMOJI_RE) ?? [];
+  const contentParts = (draft.contentParts ?? []).map((part) => part.trim()).filter(Boolean);
+  const distributionText = contentParts.length > 1 ? contentParts.join('\n') : text;
+  const rootUrls = text.match(URL_RE) ?? [];
+  const urls = (draft.channel === 'threads' ? distributionText : text).match(URL_RE) ?? [];
+  const hashtags = distributionText.match(HASHTAG_RE) ?? [];
+  const emoji = distributionText.match(EMOJI_RE) ?? [];
 
   if (!draft.sourceApproved) {
     blocking.push(
@@ -152,7 +155,7 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
   if (emoji.length > rule.maxEmoji) {
     blocking.push(issue('emoji', `Use at most ${rule.maxEmoji} emoji.`, 'post_text'));
   }
-  if (FORBIDDEN_CHAR_RE.test(text)) {
+  if (FORBIDDEN_CHAR_RE.test(distributionText)) {
     blocking.push(
       issue(
         'forbidden_characters',
@@ -161,11 +164,54 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
       ),
     );
   }
-  if (rule.rootUrlStrategy === 'none' && urls.length > 0) {
+  if (/…|\.{3}/.test([text, ...contentParts].join(' '))) {
+    blocking.push(
+      issue(
+        'artificial_ellipsis',
+        'Rewrite the copy instead of truncating it with an ellipsis.',
+        'content_parts',
+      ),
+    );
+  }
+  if (draft.channel === 'threads') {
+    if (contentParts.length < 3 || contentParts.length > 5) {
+      blocking.push(
+        issue('threads_parts', 'Threads requires a 3–5 part sequence.', 'content_parts'),
+      );
+    }
+    if (contentParts.some((part) => part.length > 500)) {
+      blocking.push(
+        issue(
+          'threads_part_length',
+          'Every Threads part must be at most 500 characters.',
+          'content_parts',
+        ),
+      );
+    }
+  }
+  if (draft.channel === 'x' && contentParts.length > 0) {
+    if (contentParts.length !== 2 || contentParts.some((part) => part.length > 280)) {
+      blocking.push(
+        issue(
+          'x_parts',
+          'X content parts must contain the root and one self-reply, each at most 280 characters.',
+          'content_parts',
+        ),
+      );
+    }
+  }
+  if (draft.channel === 'instagram' && contentParts.length > 0) {
+    if (contentParts.length < 7 || contentParts.length > 9) {
+      blocking.push(
+        issue('instagram_slides', 'Instagram requires 7–9 carousel slide texts.', 'content_parts'),
+      );
+    }
+  }
+  if (rule.rootUrlStrategy === 'none' && rootUrls.length > 0) {
     blocking.push(issue('root_url', 'This channel format must be link-free.', 'post_text'));
   }
-  if (rule.rootUrlStrategy === 'one' && urls.length > 1) {
-    blocking.push(issue('too_many_urls', 'Use at most one URL in the post body.', 'post_text'));
+  if (rule.rootUrlStrategy === 'one' && urls.length !== 1) {
+    blocking.push(issue('url_count', 'Use exactly one tracked URL in the post body.', 'post_text'));
   }
   if (draft.channel === 'x' && !(draft.firstComment ?? '').match(URL_RE)) {
     blocking.push(
@@ -173,8 +219,8 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
     );
   }
 
-  const cyrillic = (text.match(CYRILLIC_RE) ?? []).length;
-  const latin = (text.match(LATIN_RE) ?? []).length;
+  const cyrillic = (distributionText.match(CYRILLIC_RE) ?? []).length;
+  const latin = (distributionText.match(LATIN_RE) ?? []).length;
   if (draft.locale === 'uk' && cyrillic < 12) {
     blocking.push(
       issue('language_uk', 'Ukrainian variants need meaningful Cyrillic copy.', 'post_text'),
@@ -200,7 +246,7 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
       issue('linkedin_short', 'LinkedIn performs best with the planned 600–1200 character format.'),
     );
   }
-  if (draft.channel === 'threads' && !text.includes('?')) {
+  if (draft.channel === 'threads' && !distributionText.includes('?')) {
     warnings.push(
       issue('threads_question', 'Consider ending the Threads post with a real question.'),
     );
@@ -239,8 +285,11 @@ export function findBlindCrossPosts(drafts: SocialDraft[]): Map<SocialChannel, Q
       const left = drafts[leftIndex];
       const right = drafts[rightIndex];
       if (left.locale !== right.locale) continue;
-      const similarity = jaccard(tokenSet(left.text), tokenSet(right.text));
-      if (similarity < 0.82) continue;
+      const similarity = jaccard(
+        tokenSet([left.text, ...(left.contentParts ?? [])].join(' ')),
+        tokenSet([right.text, ...(right.contentParts ?? [])].join(' ')),
+      );
+      if (similarity <= 0.65) continue;
       for (const [current, other] of [
         [left, right],
         [right, left],

@@ -165,6 +165,14 @@ export interface WeeklyDigestView {
   weekStart: string;
   weekEnd: string;
   title: string;
+  seoTitle: string;
+  metaDescription: string;
+  ogTitle: string;
+  ogDescription: string;
+  standfirst: string | null;
+  theme: string | null;
+  entities: string[];
+  internalLinks: Array<{ anchor: string; query: string }>;
   intro: string | null;
   editorNote: string | null;
   keyTakeaways: string[];
@@ -208,6 +216,28 @@ function asRecord(value: Json | null | undefined): Record<string, Json | undefin
 
 function stringValue(value: Json | undefined): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function articleFrame(artifact: WeeklyArtifactRow | null | undefined) {
+  const content = asRecord(artifact?.content);
+  const internalLinks = Array.isArray(content.internalLinks)
+    ? content.internalLinks.flatMap((entry) => {
+        const row = asRecord(entry);
+        const anchor = stringValue(row.anchor);
+        const query = stringValue(row.query);
+        return anchor && query ? [{ anchor, query }] : [];
+      })
+    : [];
+  return {
+    seoTitle: stringValue(content.seoTitle),
+    metaDescription: stringValue(content.metaDescription),
+    ogTitle: stringValue(content.ogTitle),
+    ogDescription: stringValue(content.ogDescription),
+    standfirst: stringValue(content.standfirst),
+    theme: stringValue(content.theme),
+    entities: stringArray(content.entities),
+    internalLinks,
+  };
 }
 
 function numberValue(value: Json | undefined): number | null {
@@ -528,6 +558,14 @@ async function readLegacyDigest(
     weekStart: digest.week_start,
     weekEnd: addDays(digest.week_start, 6),
     title: pick(lang, digest.title_en, digest.title_uk),
+    seoTitle: pick(lang, digest.title_en, digest.title_uk),
+    metaDescription: pick(lang, digest.intro_en, digest.intro_uk),
+    ogTitle: pick(lang, digest.title_en, digest.title_uk),
+    ogDescription: pick(lang, digest.intro_en, digest.intro_uk),
+    standfirst: pick(lang, digest.intro_en, digest.intro_uk) || null,
+    theme: null,
+    entities: [],
+    internalLinks: [],
     intro: pick(lang, digest.intro_en, digest.intro_uk) || null,
     editorNote: null,
     keyTakeaways: [],
@@ -600,6 +638,8 @@ const getWeeklyDigestCached = cache(
     const cover = imageFromArtifact(db, localizedArtifact(artifacts, 'cover', lang), lang, title);
     const video = videoFromArtifacts(db, artifacts, lang);
     const hasPdf = Boolean(localeSpecificArtifact(artifacts, 'pdf', lang));
+    const article = articleFrame(localeSpecificArtifact(artifacts, 'article', lang));
+    const intro = pick(lang, revision.intro_en, revision.intro_uk) || null;
 
     return {
       id: digest.id,
@@ -608,7 +648,16 @@ const getWeeklyDigestCached = cache(
       weekStart: digest.week_start,
       weekEnd: digest.week_end ?? addDays(digest.week_start, 6),
       title,
-      intro: pick(lang, revision.intro_en, revision.intro_uk) || null,
+      seoTitle: article.seoTitle ?? title,
+      metaDescription: article.metaDescription ?? article.standfirst ?? intro ?? title,
+      ogTitle: article.ogTitle ?? article.seoTitle ?? title,
+      ogDescription:
+        article.ogDescription ?? article.metaDescription ?? article.standfirst ?? intro ?? title,
+      standfirst: article.standfirst ?? intro,
+      theme: article.theme,
+      entities: article.entities,
+      internalLinks: article.internalLinks,
+      intro,
       editorNote: pick(lang, revision.editor_note_en, revision.editor_note_uk) || null,
       keyTakeaways: stringArray(
         lang === 'uk' ? revision.key_takeaways_uk : revision.key_takeaways_en,

@@ -40,6 +40,12 @@ function parseAssets(value: Json): SocialAsset[] {
   });
 }
 
+function parseContentParts(value: Json): string[] {
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string' && Boolean(entry.trim()))
+    : [];
+}
+
 function asDelivery(post: ClaimedPost): SocialPostForDelivery {
   if (!isSocialChannel(post.channel)) {
     throw new SocialPublishError(
@@ -52,11 +58,13 @@ function asDelivery(post: ClaimedPost): SocialPostForDelivery {
     id: post.id,
     channel: post.channel,
     text: post.post_text?.trim() ?? '',
+    contentParts: parseContentParts(post.content_parts),
     firstComment: post.first_comment,
     assets: parseAssets(post.asset_urls),
     altText: post.alt_text,
     idempotencyKey: post.idempotency_key ?? `${post.id}:${post.content_hash ?? 'unversioned'}`,
     attempt: post.attempts,
+    providerMeta: post.provider_meta,
   };
 }
 
@@ -75,9 +83,19 @@ function safeMessage(error: unknown) {
 
 function errorDetails(error: unknown) {
   if (error instanceof SocialPublishError) {
-    return { kind: error.kind, code: error.code, message: safeMessage(error) };
+    return {
+      kind: error.kind,
+      code: error.code,
+      message: safeMessage(error),
+      providerMeta: error.providerMeta,
+    };
   }
-  return { kind: 'ambiguous' as const, code: 'unexpected_error', message: safeMessage(error) };
+  return {
+    kind: 'ambiguous' as const,
+    code: 'unexpected_error',
+    message: safeMessage(error),
+    providerMeta: undefined,
+  };
 }
 
 async function startAttempt(post: ClaimedPost) {
@@ -106,6 +124,7 @@ async function finishAttempt(
         outcome: 'retryable_error' | 'permanent_error' | 'ambiguous';
         code: string;
         message: string;
+        providerMeta?: Json;
       },
 ) {
   const supabase = getSupabaseAdmin();
@@ -128,6 +147,9 @@ async function finishAttempt(
             finished_at: finishedAt,
             error_code: result.code,
             error_message: result.message,
+            response_summary: result.providerMeta
+              ? { provider_meta: result.providerMeta }
+              : undefined,
           },
     )
     .eq('social_post_id', post.id)
@@ -159,6 +181,7 @@ async function finishAttempt(
         last_error: result.message,
         publishing_started_at: null,
         retry_after: null,
+        provider_meta: result.providerMeta ?? {},
       })
       .eq('id', post.id);
     return;
@@ -367,6 +390,7 @@ async function deliverOne(post: ClaimedPost) {
             : 'permanent_error',
       code: detail.code,
       message: detail.message,
+      providerMeta: detail.providerMeta,
     });
     if (detail.kind !== 'retryable' || post.attempts >= MAX_DELIVERY_ATTEMPTS) {
       await alertOwner(post, detail.message);

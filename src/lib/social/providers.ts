@@ -395,7 +395,10 @@ class XPublisher implements SocialPublisher {
         `X root ${rootId} posted, but the self-reply failed: ${error instanceof Error ? error.message : 'unknown error'}`,
         'ambiguous',
         'partial_x_thread',
-        { cause: error },
+        {
+          cause: error,
+          providerMeta: { partial_sequence: true, root_id: rootId, reply_pending: true },
+        },
       );
     }
     return {
@@ -434,9 +437,14 @@ class ThreadsPublisher implements SocialPublisher {
   }
 
   validate(post: SocialPostForDelivery) {
-    if (!post.text.trim() || post.text.length > 500) {
+    const parts = post.contentParts?.length ? post.contentParts : [post.text];
+    if (
+      parts.length < 1 ||
+      parts.length > 5 ||
+      parts.some((part) => !part.trim() || part.length > 500)
+    ) {
       throw new SocialPublishError(
-        'Threads text must be 1–500 characters.',
+        'Threads requires 1–5 non-empty messages of at most 500 characters each.',
         'permanent',
         'invalid_copy',
       );
@@ -445,39 +453,107 @@ class ThreadsPublisher implements SocialPublisher {
 
   async publish(post: SocialPostForDelivery): Promise<PublishReceipt> {
     const accessToken = await oauthToken('threads', 'THREADS_ACCESS_TOKEN');
-    const create = new URL('https://graph.threads.net/me/threads');
-    create.searchParams.set('media_type', assetUrl(post) ? 'IMAGE' : 'TEXT');
-    create.searchParams.set('text', post.text);
-    if (assetUrl(post)) create.searchParams.set('image_url', assetUrl(post)!);
-    if (assetUrl(post) && post.altText) create.searchParams.set('alt_text', post.altText);
-    const created = await providerJson(
-      create,
-      { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } },
-      { stage: 'prepare' },
-    );
-    const creationId = String(created.id ?? '');
-    if (!creationId)
+    const parts = post.contentParts?.length ? post.contentParts : [post.text];
+    const previous =
+      post.providerMeta &&
+      typeof post.providerMeta === 'object' &&
+      !Array.isArray(post.providerMeta)
+        ? (post.providerMeta as Record<string, unknown>)
+        : {};
+    const resumable =
+      previous.partial_sequence === true && previous.sequence_length === parts.length;
+    const creationIds =
+      resumable && Array.isArray(previous.creation_ids)
+        ? previous.creation_ids.filter((value): value is string => typeof value === 'string')
+        : [];
+    const publishedIds =
+      resumable && Array.isArray(previous.published_ids)
+        ? previous.published_ids.filter((value): value is string => typeof value === 'string')
+        : [];
+    if (publishedIds.length > parts.length) {
       throw new SocialPublishError(
-        'Threads returned no container id.',
-        'retryable',
-        'missing_container',
+        'Stored Threads reconciliation progress is incompatible with the current sequence.',
+        'permanent',
+        'invalid_reconciliation_state',
       );
+    }
 
-    const publish = new URL('https://graph.threads.net/me/threads_publish');
-    publish.searchParams.set('creation_id', creationId);
-    const published = await providerJson(
-      publish,
-      { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } },
-      { stage: 'publish' },
-    );
-    const id = String(published.id ?? '');
-    if (!id)
-      throw new SocialPublishError(
-        'Threads returned no post id.',
-        'ambiguous',
-        'missing_external_id',
+    const publishPart = async (text: string, replyToId: string | undefined, root: boolean) => {
+      const create = new URL('https://graph.threads.net/me/threads');
+      create.searchParams.set('media_type', root && assetUrl(post) ? 'IMAGE' : 'TEXT');
+      create.searchParams.set('text', text);
+      if (replyToId) create.searchParams.set('reply_to_id', replyToId);
+      if (root && assetUrl(post)) create.searchParams.set('image_url', assetUrl(post)!);
+      if (root && assetUrl(post) && post.altText) create.searchParams.set('alt_text', post.altText);
+      const created = await providerJson(
+        create,
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } },
+        { stage: 'prepare' },
       );
-    return { externalId: id, providerMeta: { creation_id: creationId } };
+      const creationId = String(created.id ?? '');
+      if (!creationId) {
+        throw new SocialPublishError(
+          'Threads returned no container id.',
+          'retryable',
+          'missing_container',
+        );
+      }
+      creationIds.push(creationId);
+
+      const publish = new URL('https://graph.threads.net/me/threads_publish');
+      publish.searchParams.set('creation_id', creationId);
+      const published = await providerJson(
+        publish,
+        { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` } },
+        { stage: 'publish' },
+      );
+      const id = String(published.id ?? '');
+      if (!id) {
+        throw new SocialPublishError(
+          'Threads returned no post id.',
+          'ambiguous',
+          'missing_external_id',
+        );
+      }
+      publishedIds.push(id);
+      return id;
+    };
+
+    try {
+      for (const [index, text] of parts.entries()) {
+        if (index < publishedIds.length) continue;
+        await publishPart(text, index === 0 ? undefined : publishedIds[index - 1], index === 0);
+      }
+    } catch (error) {
+      if (publishedIds.length > 0) {
+        throw new SocialPublishError(
+          `Threads sequence partially published (${publishedIds.length}/${parts.length}); reconciliation is required: ${error instanceof Error ? error.message : 'unknown error'}`,
+          'ambiguous',
+          'partial_threads_sequence',
+          {
+            cause: error,
+            providerMeta: {
+              partial_sequence: true,
+              creation_ids: creationIds,
+              published_ids: publishedIds,
+              sequence_length: parts.length,
+            },
+          },
+        );
+      }
+      throw error;
+    }
+
+    return {
+      externalId: publishedIds[0]!,
+      providerMeta: {
+        creation_ids: creationIds,
+        published_ids: publishedIds,
+        reply_ids: publishedIds.slice(1),
+        sequence_length: parts.length,
+        partial_sequence: false,
+      },
+    };
   }
 }
 

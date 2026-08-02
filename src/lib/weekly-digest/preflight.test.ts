@@ -25,17 +25,26 @@ function completeInput(): WeeklyPreflightInput {
       }) as WeeklyPreflightSocial,
   );
   return {
-    storyIds: ['story-1', 'story-2', 'story-3'],
+    storyIds: ['story-1', 'story-2', 'story-3', 'story-4', 'story-5', 'story-6'],
     artifacts: [
       artifact('article', { locale: 'en' }),
       artifact('article', { locale: 'uk' }),
+      artifact('content_quality_report'),
+      artifact('research_pack', { storyId: 'story-1' }),
+      artifact('research_pack', { storyId: 'story-2' }),
+      artifact('research_pack', { storyId: 'story-3' }),
       artifact('pdf', { locale: 'en' }),
       artifact('pdf', { locale: 'uk' }),
       artifact('cover'),
       artifact('story_image', { storyId: 'story-1' }),
       artifact('story_image', { storyId: 'story-2' }),
       artifact('story_image', { storyId: 'story-3' }),
+      artifact('story_image', { storyId: 'story-4' }),
+      artifact('story_image', { storyId: 'story-5' }),
+      artifact('story_image', { storyId: 'story-6' }),
       artifact('video_final', { locale: 'en' }),
+      artifact('video_script', { locale: 'en' }),
+      artifact('video_manifest', { locale: 'en' }),
       artifact('captions', { locale: 'en' }),
       artifact('captions', { locale: 'uk' }),
       artifact('thumbnail'),
@@ -82,7 +91,7 @@ describe('Weekly Digest release preflight', () => {
       'eight',
       ['story-1', 'story-2', 'story-3', 'story-4', 'story-5', 'story-6', 'story-7', 'story-8'],
     ],
-  ])('rejects %s selected stories outside the 3–7 product range', (_label, storyIds) => {
+  ])('rejects %s selected stories outside the Top 3 + Radar range', (_label, storyIds) => {
     const input = completeInput();
     input.storyIds = storyIds;
 

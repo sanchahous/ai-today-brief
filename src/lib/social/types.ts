@@ -36,7 +36,9 @@ export interface SocialAsset {
 export interface QualityIssue {
   code: string;
   message: string;
-  field?: 'post_text' | 'first_comment' | 'asset_urls' | 'alt_text' | 'source';
+  field?: 'post_text' | 'content_parts' | 'first_comment' | 'asset_urls' | 'alt_text' | 'source';
+  span?: string;
+  suggestedFix?: string;
 }
 
 export interface QualityReport {
@@ -46,6 +48,8 @@ export interface QualityReport {
   critic?: {
     score: number;
     flags: string[];
+    platformFitScore?: number;
+    platformFlags?: string[];
     provider?: 'gemini' | 'openrouter' | 'ollama';
     model?: string;
     fallbackUsed?: boolean;
@@ -56,6 +60,24 @@ export interface QualityReport {
       reason?: 'missing_config' | 'request_failed' | 'invalid_response';
     }>;
     auditedAt?: string;
+    usage?: {
+      promptTokens: number;
+      outputTokens: number;
+      estimatedCostUsd: number;
+    };
+  };
+  platformFitScore?: number;
+  hookAngle?: string;
+  hookCandidates?: string[];
+  writer?: {
+    provider: 'gemini' | 'openrouter' | 'ollama';
+    model: string;
+    fallbackUsed: boolean;
+    usage?: {
+      promptTokens: number;
+      outputTokens: number;
+      estimatedCostUsd: number;
+    };
   };
 }
 
@@ -64,6 +86,7 @@ export interface SocialDraft {
   locale: SocialLocale;
   format: string;
   text: string;
+  contentParts?: string[];
   firstComment?: string | null;
   assets: SocialAsset[];
   altText?: string | null;
@@ -78,11 +101,13 @@ export interface SocialPostForDelivery {
   id: string;
   channel: SocialChannel;
   text: string;
+  contentParts?: string[];
   firstComment: string | null;
   assets: SocialAsset[];
   altText: string | null;
   idempotencyKey: string;
   attempt: number;
+  providerMeta?: Json;
 }
 
 export interface PublishReceipt {
@@ -93,15 +118,22 @@ export interface PublishReceipt {
 
 export type PublishErrorKind = 'retryable' | 'permanent' | 'ambiguous';
 
+interface SocialPublishErrorOptions extends ErrorOptions {
+  providerMeta?: Json;
+}
+
 export class SocialPublishError extends Error {
+  readonly providerMeta?: Json;
+
   constructor(
     message: string,
     readonly kind: PublishErrorKind,
     readonly code: string,
-    options?: ErrorOptions,
+    options?: SocialPublishErrorOptions,
   ) {
     super(message, options);
     this.name = 'SocialPublishError';
+    this.providerMeta = options?.providerMeta;
   }
 }
 

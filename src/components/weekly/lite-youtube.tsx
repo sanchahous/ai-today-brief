@@ -44,6 +44,7 @@ export function LiteYouTube({
       ) : (
         <button
           type="button"
+          data-digest-event="video_play"
           onClick={() => setActive(true)}
           className="group absolute inset-0 block h-full w-full overflow-hidden text-left"
           aria-label={lang === 'uk' ? `Відтворити відео: ${title}` : `Play video: ${title}`}

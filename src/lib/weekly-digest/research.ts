@@ -1,0 +1,235 @@
+import 'server-only';
+
+import type { Json } from '@/lib/database.types';
+import { extractMainText, extractOgImage, isGenericOgImage } from '../../../pipeline/enrich';
+import { fetchWithRetry } from '../../../pipeline/sources/http';
+import {
+  canonicalSourceName,
+  placementForRank,
+  sourceNameMatchesDomain,
+  type ResearchClaim,
+  type ResearchEvidence,
+  type WeeklyResearchPack,
+} from './content-studio';
+
+const FETCH_HEADERS = {
+  'User-Agent': 'ai-today-brief/2.0 (weekly editorial research; contact: hello@aitodaybrief.com)',
+  Accept: 'text/html,application/xhtml+xml',
+};
+const MAX_HTML_CHARS = 600_000;
+const MAX_STORED_EXCERPT_CHARS = 2_400;
+
+interface ResearchItem {
+  id: string;
+  rank: number;
+  title_en: string;
+  summary_en: string;
+  why_en: string | null;
+  sources: Json;
+  source_snapshot: Json;
+}
+
+function asRecord(value: Json | null | undefined): Record<string, Json | undefined> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, Json | undefined>)
+    : {};
+}
+
+function cleanUrl(value: string) {
+  const url = new URL(value);
+  if (url.protocol !== 'https:' || url.username || url.password) {
+    throw new Error('Research sources must use a credential-free HTTPS URL.');
+  }
+  for (const key of [...url.searchParams.keys()]) {
+    if (/^utm_/i.test(key) || ['eicker.news', 'fbclid', 'gclid'].includes(key.toLowerCase())) {
+      url.searchParams.delete(key);
+    }
+  }
+  url.hash = '';
+  return url.toString();
+}
+
+function sourceRows(value: Json): Array<{ name: string; url: string }> {
+  if (!Array.isArray(value)) return [];
+  const sources: Array<{ name: string; url: string }> = [];
+  for (const entry of value) {
+    const row = asRecord(entry);
+    const rawUrl =
+      typeof row.url === 'string'
+        ? row.url
+        : typeof row.source_url === 'string'
+          ? row.source_url
+          : null;
+    if (!rawUrl) continue;
+    try {
+      const url = cleanUrl(rawUrl);
+      const suppliedName =
+        typeof row.name === 'string'
+          ? row.name.trim()
+          : typeof row.source_name === 'string'
+            ? row.source_name.trim()
+            : '';
+      if (suppliedName && !sourceNameMatchesDomain(suppliedName, url)) {
+        throw new Error(
+          `Source label "${suppliedName}" does not match ${new URL(url).hostname}. Correct the source or move this story to Radar.`,
+        );
+      }
+      sources.push({ name: canonicalSourceName(url), url });
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('Source label')) throw error;
+    }
+  }
+  return sources;
+}
+
+function snapshotCitationUrls(value: Json) {
+  const editorial = asRecord(asRecord(value).editorial_selection);
+  const citations = editorial.citation_urls;
+  if (!Array.isArray(citations)) return [];
+  return citations.flatMap((entry) => {
+    if (typeof entry !== 'string') return [];
+    try {
+      return [cleanUrl(entry)];
+    } catch {
+      return [];
+    }
+  });
+}
+
+function factStrings(value: Json | undefined): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (typeof entry === 'string') return entry.trim() ? [entry.trim()] : [];
+    const row = asRecord(entry);
+    const label = typeof row.label === 'string' ? row.label.trim() : '';
+    const factValue = typeof row.value === 'string' ? row.value.trim() : '';
+    if (label && factValue) return [`${label}: ${factValue}`];
+    for (const key of ['fact', 'text', 'claim']) {
+      if (typeof row[key] === 'string' && row[key]!.trim()) return [row[key]!.trim()];
+    }
+    return [];
+  });
+}
+
+function approvedClaimText(item: ResearchItem) {
+  const snapshot = asRecord(item.source_snapshot);
+  return [item.summary_en, item.why_en ?? '', ...factStrings(snapshot.facts_en)]
+    .map((value) => value.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .filter(
+      (value, index, all) =>
+        all.findIndex((candidate) => candidate.toLowerCase() === value.toLowerCase()) === index,
+    )
+    .slice(0, 12);
+}
+
+function claimKind(text: string): ResearchClaim['kind'] {
+  if (/\b\d[\d,.%]*\b/.test(text)) return 'number';
+  if (/\b(?:said|reported|announced|found|claims?|according to)\b/i.test(text))
+    return 'named_claim';
+  return 'fact';
+}
+
+async function fetchEvidence(url: string, primary: boolean): Promise<ResearchEvidence> {
+  const response = await fetchWithRetry(
+    url,
+    { headers: FETCH_HEADERS, signal: AbortSignal.timeout(15_000) },
+    2,
+  );
+  if (!response?.ok)
+    throw new Error(
+      `Research source returned HTTP ${response?.status ?? 'network failure'}: ${url}`,
+    );
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!/html|text\//i.test(contentType)) {
+    throw new Error(`Research source is not readable text: ${url}`);
+  }
+  const html = (await response.text()).slice(0, MAX_HTML_CHARS);
+  const extracted = extractMainText(html, MAX_STORED_EXCERPT_CHARS);
+  if (!extracted || extracted.length < 160) {
+    throw new Error(`Research source did not expose enough article text: ${url}`);
+  }
+  const candidateImage = extractOgImage(html);
+  const ogImage = candidateImage && !isGenericOgImage(candidateImage) ? candidateImage : null;
+  const parsed = new URL(url);
+  return {
+    url,
+    sourceName: canonicalSourceName(url),
+    domain: parsed.hostname.toLowerCase().replace(/^www\./, ''),
+    primary,
+    extractedText: extracted,
+    ogImage,
+  };
+}
+
+export async function buildWeeklyResearchPack(input: {
+  digestId: string;
+  revisionId: string;
+  item: ResearchItem;
+}): Promise<WeeklyResearchPack> {
+  const selectedSources = sourceRows(input.item.sources);
+  const primary = selectedSources[0];
+  if (!primary) throw new Error('Top 3 research requires a valid primary HTTPS source.');
+  const primaryEvidence = await fetchEvidence(primary.url, true);
+  const candidateUrls = [
+    ...selectedSources.slice(1).map((source) => source.url),
+    ...snapshotCitationUrls(input.item.source_snapshot),
+  ].filter((url, index, all) => all.indexOf(url) === index && url !== primary.url);
+  const primaryDomain = new URL(primary.url).hostname.replace(/^www\./, '');
+  const independent = candidateUrls.filter((url) => {
+    const hostname = new URL(url).hostname.replace(/^www\./, '');
+    return hostname !== primaryDomain && !hostname.endsWith(`.${primaryDomain}`);
+  });
+  const settled = await Promise.allSettled(
+    independent.slice(0, 4).map((url) => fetchEvidence(url, false)),
+  );
+  const corroboratingSources = settled
+    .flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []))
+    .slice(0, 2);
+  const evidenceUrls = [primaryEvidence.url, ...corroboratingSources.map((source) => source.url)];
+  const claims = approvedClaimText(input.item).map((claim, index): ResearchClaim => ({
+    id: `W${input.item.rank}-C${index + 1}`,
+    text: claim,
+    kind: claimKind(claim),
+    evidenceUrls,
+  }));
+  if (claims.length === 0)
+    throw new Error('Research pack has no approved claims to ground the story.');
+
+  const risks = [
+    ...(corroboratingSources.length === 0 ? ['no_independent_corroboration'] : []),
+    ...(claims.some((claim) => claim.kind === 'number') ? ['verify_numbers_against_primary'] : []),
+  ];
+  return {
+    schemaVersion: 'weekly-research-v2',
+    digestId: input.digestId,
+    revisionId: input.revisionId,
+    revisionItemId: input.item.id,
+    placement: placementForRank(input.item.rank),
+    primarySource: primaryEvidence,
+    corroboratingSources,
+    claims,
+    context: [input.item.title_en, input.item.summary_en].filter(Boolean),
+    contradictions: [],
+    limitations: corroboratingSources.length
+      ? [
+          'Corroborating pages provide context; claims remain anchored to the approved primary source.',
+        ]
+      : ['No independent corroborating page was available in the approved citation set.'],
+    risks,
+    researchedAt: new Date().toISOString(),
+  };
+}
+
+export function isWeeklyResearchPack(value: unknown): value is WeeklyResearchPack {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const pack = value as Partial<WeeklyResearchPack>;
+  return (
+    pack.schemaVersion === 'weekly-research-v2' &&
+    typeof pack.revisionItemId === 'string' &&
+    (pack.placement === 'feature' || pack.placement === 'radar') &&
+    Boolean(pack.primarySource?.url) &&
+    Array.isArray(pack.claims) &&
+    pack.claims.length > 0
+  );
+}

@@ -29,8 +29,10 @@ export function WeeklyHero({ digest, lang }: { digest: WeeklyDigestView; lang: L
             {copy.eyebrow}
           </p>
           <h1 className="mt-3 text-[clamp(2.25rem,6vw,4.5rem)] leading-[1.02]">{digest.title}</h1>
-          {digest.intro ? (
-            <p className="text-muted mt-5 max-w-3xl text-lg leading-8 sm:text-xl">{digest.intro}</p>
+          {digest.standfirst || digest.intro ? (
+            <p className="text-muted mt-5 max-w-3xl text-lg leading-8 sm:text-xl">
+              {digest.standfirst ?? digest.intro}
+            </p>
           ) : null}
           <p className="text-faint mt-5 text-sm">
             {copy.period}: {formatDate(digest.weekStart, lang)} — {formatDate(digest.weekEnd, lang)}
@@ -39,6 +41,7 @@ export function WeeklyHero({ digest, lang }: { digest: WeeklyDigestView; lang: L
             {digest.hasPdf ? (
               <a
                 href={`/${lang}/weekly/${digest.slug}/download`}
+                data-digest-event="pdf_download"
                 className="bg-accent text-on-accent rounded-pill px-5 py-3 text-sm font-semibold no-underline"
               >
                 {copy.downloadPdf}
