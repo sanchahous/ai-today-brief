@@ -151,9 +151,11 @@ function factStrings(value: Json | undefined): string[] {
   });
 }
 
-function approvedClaimText(item: ResearchItem) {
+export function approvedWeeklyClaimText(
+  item: Pick<ResearchItem, 'summary_en' | 'source_snapshot'>,
+) {
   const snapshot = asRecord(item.source_snapshot);
-  return [item.summary_en, item.why_en ?? '', ...factStrings(snapshot.facts_en)]
+  return [item.summary_en, ...factStrings(snapshot.facts_en)]
     .map((value) => value.replace(/\s+/g, ' ').trim())
     .filter(Boolean)
     .filter(
@@ -227,7 +229,7 @@ export async function buildWeeklyResearchPack(input: {
     .flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []))
     .slice(0, 2);
   const evidenceUrls = [primaryEvidence.url, ...corroboratingSources.map((source) => source.url)];
-  const claims = approvedClaimText(input.item).map((claim, index): ResearchClaim => ({
+  const claims = approvedWeeklyClaimText(input.item).map((claim, index): ResearchClaim => ({
     id: `W${input.item.rank}-C${index + 1}`,
     text: claim,
     kind: claimKind(claim),

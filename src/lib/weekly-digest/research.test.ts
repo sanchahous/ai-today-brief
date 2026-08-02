@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { trustedWeeklyResearchSources } from './research';
+import { approvedWeeklyClaimText, trustedWeeklyResearchSources } from './research';
 
 describe('trustedWeeklyResearchSources', () => {
   it('uses the approved article URL as primary and derives a non-spoofable label', () => {
@@ -35,5 +35,19 @@ describe('trustedWeeklyResearchSources', () => {
         citations: [{ url: 'https://user:secret@example.org/private' }],
       }),
     ).toEqual([{ name: 'OpenAI', url: 'https://openai.com/research/example' }]);
+  });
+});
+
+describe('approvedWeeklyClaimText', () => {
+  it('keeps factual summary and structured facts but excludes editorial why copy', () => {
+    expect(
+      approvedWeeklyClaimText({
+        summary_en: 'The product added a local transcription mode.',
+        source_snapshot: {
+          facts_en: [{ label: 'License', value: 'MIT' }],
+          why_en: 'This completely eliminates every security risk.',
+        },
+      }),
+    ).toEqual(['The product added a local transcription mode.', 'License: MIT']);
   });
 });
