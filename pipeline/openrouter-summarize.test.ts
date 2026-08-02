@@ -3,6 +3,7 @@ import {
   generateWithOpenRouterChain,
   resolveOpenRouterApiKey,
   resolveOpenRouterMaxTokens,
+  parseChatCompletionUsage,
 } from './openrouter-summarize';
 import { OpenRouterLimitError, OpenRouterLimitKind } from './openrouter-errors';
 import { OpenRouterStallError } from './openrouter-adaptive';
@@ -40,6 +41,28 @@ describe('resolveOpenRouterApiKey', () => {
 
   it('returns null for blank strings', () => {
     expect(resolveOpenRouterApiKey({ OPEN_ROUTER_API_KEY: '   ' })).toBeNull();
+  });
+});
+
+describe('parseChatCompletionUsage', () => {
+  it('extracts real billed cost when the provider reports it', () => {
+    expect(
+      parseChatCompletionUsage({
+        prompt_tokens: 100,
+        completion_tokens: 50,
+        total_tokens: 150,
+        cost: 0.4321,
+      }),
+    ).toEqual({ promptTokens: 100, completionTokens: 50, totalTokens: 150, costUsd: 0.4321 });
+  });
+
+  it('returns null when cost is missing (no real usage reported)', () => {
+    expect(parseChatCompletionUsage({ prompt_tokens: 100 })).toBeNull();
+  });
+
+  it('returns null for non-object input', () => {
+    expect(parseChatCompletionUsage(undefined)).toBeNull();
+    expect(parseChatCompletionUsage(null)).toBeNull();
   });
 });
 

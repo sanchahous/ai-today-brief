@@ -29,6 +29,7 @@ import {
   resolveWeeklyContentStudioMode,
   sourceNameMatchesDomain,
   WEEKLY_CONTENT_STUDIO_VERSION,
+  WEEKLY_MASTER_SPEC_VERSION,
   WEEKLY_VIDEO_MANIFEST_VERSION,
   type WeeklyContentQualityReport,
   type WeeklyMasterBundle,
@@ -36,8 +37,11 @@ import {
 } from './content-studio';
 import {
   generateWeeklyMaster,
+  type WeeklyMasterCheckpoint,
+  type WeeklyMasterEnglishResult,
   type WeeklyMasterInputStory,
   type WeeklyMasterRetryGuidance,
+  type WeeklyMasterUkrainianResult,
 } from './editorial-llm';
 import {
   buildWeeklyResearchPack,
@@ -119,18 +123,23 @@ function contentStudioJobMode(job: ClaimedGenerationJob) {
   return requestedMode;
 }
 
-async function claimGenerationJobs(limit: number): Promise<ClaimedGenerationJob[]> {
+const ALL_GENERATION_JOB_TYPES: string[] = [
+  'research_pack',
+  'editorial_master',
+  'story_image',
+  'cover',
+  'social_copy',
+  'video_manifest',
+  'pdf',
+  'social_asset',
+];
+
+async function claimGenerationJobs(
+  limit: number,
+  jobTypes: string[] = ALL_GENERATION_JOB_TYPES,
+): Promise<ClaimedGenerationJob[]> {
   const { data, error } = await rpcClient().rpc('claim_weekly_digest_generation_jobs', {
-    p_job_types: [
-      'research_pack',
-      'editorial_master',
-      'story_image',
-      'cover',
-      'social_copy',
-      'video_manifest',
-      'pdf',
-      'social_asset',
-    ],
+    p_job_types: jobTypes,
     p_limit: Math.max(1, Math.min(Math.trunc(limit), MAX_JOBS)),
   });
   if (error) throw new Error(`[weekly-generation] claim: ${error.message}`);
@@ -554,6 +563,11 @@ async function saveQualityReport(input: {
         (sum, generation) => sum + generation.estimatedCostUsd,
         0,
       ),
+      cost_source: Object.values(input.generation).every(
+        (generation) => generation.costSource === 'reported',
+      )
+        ? 'reported'
+        : 'estimated',
     },
   });
 }
@@ -593,8 +607,91 @@ async function queuePostMasterJobs(
   }
 }
 
+// Target is $3/digest; $4 is the hard stop enforced below.
+const DEFAULT_WEEKLY_MASTER_MAX_SPEND_USD = 4;
+
+/** Sum of estimated_cost_usd across every artifact ever generated for a revision. */
+async function revisionSpendSoFarUsd(revisionId: string): Promise<number> {
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('weekly_digest_artifacts')
+    .select('metadata')
+    .eq('revision_id', revisionId);
+  if (error) throw new Error(`[weekly-generation] revision spend lookup: ${error.message}`);
+  return (data ?? []).reduce((sum, row) => {
+    const cost = asRecord(row.metadata).estimated_cost_usd;
+    return sum + (typeof cost === 'number' && Number.isFinite(cost) ? cost : 0);
+  }, 0);
+}
+
+async function assertWithinMasterBudget(revisionId: string) {
+  const maxSpend = Number(process.env.WEEKLY_MASTER_MAX_SPEND_USD ?? DEFAULT_WEEKLY_MASTER_MAX_SPEND_USD);
+  const cap = Number.isFinite(maxSpend) ? maxSpend : DEFAULT_WEEKLY_MASTER_MAX_SPEND_USD;
+  const spent = await revisionSpendSoFarUsd(revisionId);
+  if (spent >= cap) {
+    throw new Error(
+      `[weekly-generation] Digest revision ${revisionId} has already spent $${spent.toFixed(2)}, at or over the $${cap.toFixed(2)} cap. Refusing further master generation.`,
+    );
+  }
+}
+
+/**
+ * Identifies whether a prior attempt's EN/UK write is still valid to reuse:
+ * changes iff the research packs or retry guidance feeding the prompts
+ * change. priorMasterRetryGuidance() only changes once a critic verdict is
+ * actually saved, so a retry after a failure that happened *before* that
+ * point (every editorial_master failure seen in production so far — a
+ * transient provider error or malformed critic JSON) hashes identically and
+ * reuses the already-paid EN/UK write instead of re-generating it.
+ */
+export function computeMasterCheckpointHash(
+  researchPacks: WeeklyResearchPack[],
+  retryGuidance: WeeklyMasterRetryGuidance[],
+): string {
+  return createHash('sha256')
+    .update(JSON.stringify({ researchPacks, retryGuidance, promptVersion: WEEKLY_MASTER_SPEC_VERSION }))
+    .digest('hex');
+}
+
+type MasterCheckpointOutput = {
+  checkpointHash?: string;
+  english?: WeeklyMasterEnglishResult;
+  ukrainian?: WeeklyMasterUkrainianResult;
+};
+
+async function loadMasterCheckpoint(
+  jobId: string,
+  expectedHash: string,
+): Promise<WeeklyMasterCheckpoint | null> {
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('weekly_digest_generation_jobs')
+    .select('output')
+    .eq('id', jobId)
+    .maybeSingle();
+  if (error) throw new Error(`[weekly-generation] checkpoint lookup: ${error.message}`);
+  const output = asRecord(data?.output as Json | undefined) as MasterCheckpointOutput;
+  if (output.checkpointHash !== expectedHash || !output.english) return null;
+  return { english: output.english, ukrainian: output.ukrainian };
+}
+
+async function saveMasterCheckpoint(
+  jobId: string,
+  checkpointHash: string,
+  checkpoint: WeeklyMasterCheckpoint,
+) {
+  const output: MasterCheckpointOutput = { checkpointHash, ...checkpoint };
+  const db = getSupabaseAdmin();
+  const { error } = await db
+    .from('weekly_digest_generation_jobs')
+    .update({ output: output as unknown as Json })
+    .eq('id', jobId);
+  if (error) throw new Error(`[weekly-generation] checkpoint save: ${error.message}`);
+}
+
 async function generateEditorialMaster(job: ClaimedGenerationJob) {
   const requestedMode = contentStudioJobMode(job);
+  await assertWithinMasterBudget(job.revision_id);
   const context = await loadGenerationContext(job);
   assertRadarSourceSanity(context.items);
   const approvedResearch = researchPacksFromContext(context);
@@ -608,11 +705,24 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
     throw new Error('Approve all three current Top 3 research packs before master generation.');
   }
   const sourceStories = masterInputStories(context, approvedResearch);
-  const result = await generateWeeklyMaster(
-    sourceStories,
-    approvedResearch.map(({ pack }) => pack),
-    priorMasterRetryGuidance(context),
-  );
+  const researchPacks = approvedResearch.map(({ pack }) => pack);
+  const retryGuidance = priorMasterRetryGuidance(context);
+  const checkpointHash = computeMasterCheckpointHash(researchPacks, retryGuidance);
+  const checkpoint = await loadMasterCheckpoint(job.id, checkpointHash);
+  // Accumulates across both onStepComplete calls so the ukrainian save doesn't
+  // clobber the english step just persisted moments earlier in this same run.
+  let runningCheckpoint = checkpoint;
+  const result = await generateWeeklyMaster(sourceStories, researchPacks, retryGuidance, {
+    checkpoint,
+    onStepComplete: async (step, stepResult) => {
+      runningCheckpoint = {
+        english: step === 'english' ? (stepResult as WeeklyMasterEnglishResult) : runningCheckpoint!.english,
+        ukrainian:
+          step === 'ukrainian' ? (stepResult as WeeklyMasterUkrainianResult) : runningCheckpoint?.ukrainian,
+      };
+      await saveMasterCheckpoint(job.id, checkpointHash, runningCheckpoint);
+    },
+  });
   const passed = editorialQualityPasses(result.quality);
   if (!passed) {
     const qualityArtifactId = await saveQualityReport({
@@ -760,6 +870,10 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
             locale === 'en'
               ? result.generation.english.estimatedCostUsd
               : result.generation.ukrainian.estimatedCostUsd,
+          cost_source:
+            locale === 'en'
+              ? result.generation.english.costSource
+              : result.generation.ukrainian.costSource,
           token_usage:
             locale === 'en'
               ? {
@@ -1720,8 +1834,8 @@ async function runGenerationJob(job: ClaimedGenerationJob) {
   throw new Error(`Unsupported generation job type: ${job.job_type}`);
 }
 
-export async function runWeeklyDigestGenerationJobs(limit = 5) {
-  const jobs = await claimGenerationJobs(limit);
+export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string[]) {
+  const jobs = await claimGenerationJobs(limit, jobTypes);
   const results: Array<{
     id: string;
     outcome: 'succeeded' | 'failed';

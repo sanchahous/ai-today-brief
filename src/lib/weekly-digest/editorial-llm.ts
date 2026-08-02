@@ -6,7 +6,9 @@ import {
   fetchOpenRouterModels,
   type OpenRouterModelRecord,
 } from '../../../pipeline/openrouter-models';
+import { rankOpenRouterModelsByValue, minimalReasoningEffort } from '../../../pipeline/openrouter-value';
 import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summarize';
+import { generateWithClaudeCli } from '../../../pipeline/claude-cli';
 import {
   WEEKLY_MASTER_SPEC_VERSION,
   validateMasterBundle,
@@ -19,7 +21,7 @@ import {
   type WeeklyResearchPack,
 } from './content-studio';
 
-type EditorialProvider = 'gemini' | 'openrouter';
+type EditorialProvider = 'gemini' | 'openrouter' | 'claude-cli';
 
 export interface WeeklyMasterInputStory {
   revisionItemId: string;
@@ -42,6 +44,15 @@ export interface EditorialGenerationMetadata {
   promptTokens: number;
   outputTokens: number;
   estimatedCostUsd: number;
+  /**
+   * 'reported' = real billed cost from the provider's own usage payload.
+   * 'estimated' = char-count-derived guess, used only when the provider
+   * didn't report real cost. Never trust 'estimated' for budget decisions.
+   * 'subscription' = ran via the Claude Code CLI under a Pro/Max login —
+   * real generation happened but it draws on session/weekly plan limits,
+   * not the OpenRouter dollar budget, so estimatedCostUsd is always 0 here.
+   */
+  costSource: 'reported' | 'estimated' | 'subscription';
   promptVersion: string;
 }
 
@@ -64,9 +75,24 @@ export interface WeeklyMasterRetryGuidance {
   field?: string;
 }
 
-interface ProviderResult<T> {
+export interface ProviderResult<T> {
   value: T;
   metadata: EditorialGenerationMetadata;
+}
+
+export type WeeklyMasterEnglishResult = ProviderResult<ReturnType<typeof parseEnglishPackage>>;
+export type WeeklyMasterUkrainianResult = ProviderResult<WeeklyArticleMaster>;
+
+/**
+ * A prior attempt's EN/UK write, reusable when the caller has already
+ * confirmed it matches the current research packs + retry guidance (see
+ * generation-worker.ts). Letting a retry skip straight to the critic avoids
+ * re-paying for a write that already succeeded and would produce the same
+ * result again.
+ */
+export interface WeeklyMasterCheckpoint {
+  english: WeeklyMasterEnglishResult;
+  ukrainian?: WeeklyMasterUkrainianResult;
 }
 
 function parseJsonObject(raw: string): Record<string, unknown> {
@@ -291,10 +317,13 @@ function estimateCost(promptTokens: number, outputTokens: number) {
 }
 
 function providerOrder() {
-  const configured = (process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? 'openrouter,gemini')
+  const configured = (process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? 'claude-cli,openrouter,gemini')
     .split(',')
     .map((value) => value.trim())
-    .filter((value): value is EditorialProvider => value === 'openrouter' || value === 'gemini');
+    .filter(
+      (value): value is EditorialProvider =>
+        value === 'claude-cli' || value === 'openrouter' || value === 'gemini',
+    );
   return [...new Set(configured)];
 }
 
@@ -302,6 +331,46 @@ export function openRouterModelVendor(modelId: string) {
   return modelId.split('/', 1)[0]?.trim().toLowerCase() ?? '';
 }
 
+/**
+ * Anthropic Analysis intelligence-index floor a candidate must clear (or be
+ * from a WEEKLY_MASTER_TRUSTED_VENDORS vendor with no score yet) to write the
+ * master. Tunable rather than a fixed model list, since the cheapest model
+ * that clears this bar changes as the OpenRouter catalog and pricing shift.
+ */
+const DEFAULT_MIN_QUALITY_INDEX = 40;
+const DEFAULT_TRUSTED_VENDORS = [
+  'openai',
+  'anthropic',
+  'google',
+  'x-ai',
+  'meta-llama',
+  'mistralai',
+  'deepseek',
+  'qwen',
+];
+// Sized from observed real usage of the weekly EN/UK master write (see PR
+// history) — used only to rank candidates by projected cost, not billed.
+const MASTER_PROMPT_TOKENS_ESTIMATE = 12_000;
+const MASTER_COMPLETION_TOKENS_ESTIMATE = 20_000;
+
+function masterMinQualityIndex() {
+  const parsed = Number(process.env.WEEKLY_MASTER_MIN_QUALITY_INDEX);
+  return Number.isFinite(parsed) ? parsed : DEFAULT_MIN_QUALITY_INDEX;
+}
+
+function masterTrustedVendors() {
+  return (process.env.WEEKLY_MASTER_TRUSTED_VENDORS ?? DEFAULT_TRUSTED_VENDORS.join(','))
+    .split(',')
+    .map((vendor) => vendor.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Ranks eligible OpenRouter models by projected cost for the master's typical
+ * token profile, cheapest first, among models clearing the quality floor.
+ * No model id is hardcoded — a temporarily discounted or newly released
+ * model is picked up automatically the next time the catalog is fetched.
+ */
 export function premiumOpenRouterModels(
   models: OpenRouterModelRecord[],
   options: { configuredModels?: string[]; excludeVendors?: string[] } = {},
@@ -309,33 +378,22 @@ export function premiumOpenRouterModels(
   const configured =
     options.configuredModels ??
     (process.env.WEEKLY_MASTER_OPENROUTER_MODELS ?? '')
-    .split(',')
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const excludedVendors = new Set(
-    (options.excludeVendors ?? []).map((vendor) => vendor.trim().toLowerCase()).filter(Boolean),
-  );
-  const eligible = models
-    .filter((model) => {
-      const id = model.id.toLowerCase();
-      return (
-        !excludedVendors.has(openRouterModelVendor(model.id)) &&
-        !/:free$/.test(id) &&
-        !/mini|flash|lite|small|nano|coder|image|audio|embedding/.test(id) &&
-        !model.expiration_date &&
-        (model.context_length ?? 0) >= 64_000 &&
-        (model.architecture?.modality ?? 'text').includes('text')
-      );
-    })
-    .sort((left, right) => (right.created ?? 0) - (left.created ?? 0))
-    .map((model) => model.id);
-  const allowed = new Set(eligible);
-  const selected = configured.length ? configured.filter((model) => allowed.has(model)) : eligible;
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+  const ranked = rankOpenRouterModelsByValue(models, {
+    promptTokens: MASTER_PROMPT_TOKENS_ESTIMATE,
+    completionTokens: MASTER_COMPLETION_TOKENS_ESTIMATE,
+    minQualityIndex: masterMinQualityIndex(),
+    trustedVendorsWithoutBenchmark: masterTrustedVendors(),
+    excludeVendors: options.excludeVendors,
+    configuredModels: configured.length ? configured : undefined,
+  });
   // A full master response is large. Retrying another OpenRouter model inside
   // the same request can consume the entire 300-second function budget. The
   // caller still has the independent premium provider fallback, while durable
   // job retries handle transient failures across separate invocations.
-  return selected.slice(0, 1);
+  return ranked.slice(0, 1).map((candidate) => candidate.id);
 }
 
 async function generateOpenRouter<T>(
@@ -345,8 +403,11 @@ async function generateOpenRouter<T>(
 ): Promise<ProviderResult<T>> {
   const apiKey = process.env.OPEN_ROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim();
   if (!apiKey) throw new Error('UNCONFIGURED:OPEN_ROUTER_API_KEY');
-  const queue = premiumOpenRouterModels(await fetchOpenRouterModels(apiKey), options);
+  const models = await fetchOpenRouterModels(apiKey);
+  const queue = premiumOpenRouterModels(models, options);
   if (!queue.length) throw new Error('No premium OpenRouter editorial model is available.');
+  const chosenModel = models.find((model) => model.id === queue[0]);
+  const reasoningEffort = chosenModel ? minimalReasoningEffort(chosenModel) : null;
   const result = await generateWithOpenRouterChain(prompt, {
     apiKey,
     modelQueue: queue,
@@ -355,10 +416,11 @@ async function generateOpenRouter<T>(
       parse(raw);
       return raw;
     },
+    extraBodyForModel: reasoningEffort ? () => ({ reasoning: { effort: reasoningEffort } }) : undefined,
   });
   const value = parse(result.text);
-  const promptTokens = estimateTokens(prompt.length);
-  const outputTokens = estimateTokens(result.text.length);
+  const promptTokens = result.usage?.promptTokens ?? estimateTokens(prompt.length);
+  const outputTokens = result.usage?.completionTokens ?? estimateTokens(result.text.length);
   return {
     value,
     metadata: {
@@ -366,7 +428,8 @@ async function generateOpenRouter<T>(
       model: result.model,
       promptTokens,
       outputTokens,
-      estimatedCostUsd: estimateCost(promptTokens, outputTokens),
+      estimatedCostUsd: result.usage?.costUsd ?? estimateCost(promptTokens, outputTokens),
+      costSource: result.usage ? 'reported' : 'estimated',
       promptVersion: WEEKLY_MASTER_SPEC_VERSION,
     },
   };
@@ -413,6 +476,7 @@ async function generateGemini<T>(
           promptTokens,
           outputTokens,
           estimatedCostUsd: estimateCost(promptTokens, outputTokens),
+          costSource: 'estimated',
           promptVersion: WEEKLY_MASTER_SPEC_VERSION,
         },
       };
@@ -429,11 +493,39 @@ export function premiumGeminiEditorialModels(models: string[]) {
   );
 }
 
+/**
+ * Runs the write through the user's own Claude subscription (Pro/Max) via
+ * the Claude Code CLI instead of a metered API key — see pipeline/claude-cli.ts.
+ * Only succeeds where the `claude` binary is installed and authenticated
+ * (a GitHub Actions runner today, never Vercel); throws UNCONFIGURED:... there
+ * so providerOrder() falls through to OpenRouter with no behavior change.
+ */
+async function generateClaudeCli<T>(
+  prompt: string,
+  parse: (raw: string) => T,
+): Promise<ProviderResult<T>> {
+  const result = await generateWithClaudeCli(prompt);
+  const value = parse(result.text);
+  return {
+    value,
+    metadata: {
+      provider: 'claude-cli',
+      model: result.model,
+      promptTokens: estimateTokens(prompt.length),
+      outputTokens: estimateTokens(result.text.length),
+      estimatedCostUsd: 0,
+      costSource: 'subscription',
+      promptVersion: WEEKLY_MASTER_SPEC_VERSION,
+    },
+  };
+}
+
 async function generateWithProvider<T>(
   provider: EditorialProvider,
   prompt: string,
   parse: (raw: string) => T,
 ) {
+  if (provider === 'claude-cli') return generateClaudeCli(prompt, parse);
   return provider === 'openrouter'
     ? generateOpenRouter(prompt, parse)
     : generateGemini(prompt, parse);
@@ -465,7 +557,9 @@ async function generateIndependentCritic(
   const writerVendor =
     english.metadata.provider === 'openrouter'
       ? openRouterModelVendor(english.metadata.model)
-      : 'google';
+      : english.metadata.provider === 'claude-cli'
+        ? 'anthropic'
+        : 'google';
   try {
     return await generateOpenRouter(prompt, parseCritic, {
       configuredModels: configuredCriticOpenRouterModels(),
@@ -558,16 +652,28 @@ export async function generateWeeklyMaster(
   stories: WeeklyMasterInputStory[],
   researchPacks: WeeklyResearchPack[],
   retryGuidance: WeeklyMasterRetryGuidance[] = [],
+  options: {
+    checkpoint?: WeeklyMasterCheckpoint | null;
+    onStepComplete?: (
+      step: 'english' | 'ukrainian',
+      result: WeeklyMasterEnglishResult | WeeklyMasterUkrainianResult,
+    ) => void | Promise<void>;
+  } = {},
 ): Promise<WeeklyMasterGenerationResult> {
-  const english = await generateFirstAvailable(
-    englishPrompt(stories, retryGuidance),
-    parseEnglishPackage,
-  );
-  const ukrainian = await generateWithProvider(
-    english.metadata.provider,
-    ukrainianPrompt(english.value.article, stories),
-    (raw) => parseArticle(raw, 'uk'),
-  );
+  let english = options.checkpoint?.english;
+  if (!english) {
+    english = await generateFirstAvailable(englishPrompt(stories, retryGuidance), parseEnglishPackage);
+    await options.onStepComplete?.('english', english);
+  }
+  let ukrainian = options.checkpoint?.ukrainian;
+  if (!ukrainian) {
+    ukrainian = await generateWithProvider(
+      english.metadata.provider,
+      ukrainianPrompt(english.value.article, stories),
+      (raw) => parseArticle(raw, 'uk'),
+    );
+    await options.onStepComplete?.('ukrainian', ukrainian);
+  }
   const bundle: WeeklyMasterBundle = {
     en: english.value.article,
     uk: ukrainian.value,

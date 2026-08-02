@@ -18,6 +18,19 @@ export type OpenRouterModelRecord = {
   architecture?: { modality?: string; instruct_type?: string | null };
   supported_parameters?: string[];
   expiration_date?: string | null;
+  benchmarks?: {
+    artificial_analysis?: {
+      intelligence_index?: number;
+      coding_index?: number;
+      agentic_index?: number;
+    };
+  };
+  reasoning?: {
+    mandatory?: boolean;
+    default_enabled?: boolean;
+    supported_efforts?: string[];
+    default_effort?: string;
+  };
 };
 
 type ModelsResponse = { data?: OpenRouterModelRecord[] };
