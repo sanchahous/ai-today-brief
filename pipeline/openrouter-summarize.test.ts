@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   generateWithOpenRouterChain,
   resolveOpenRouterApiKey,
+  resolveOpenRouterMaxTokens,
 } from './openrouter-summarize';
 import { OpenRouterLimitError, OpenRouterLimitKind } from './openrouter-errors';
 import { OpenRouterStallError } from './openrouter-adaptive';
@@ -39,6 +40,17 @@ describe('resolveOpenRouterApiKey', () => {
 
   it('returns null for blank strings', () => {
     expect(resolveOpenRouterApiKey({ OPEN_ROUTER_API_KEY: '   ' })).toBeNull();
+  });
+});
+
+describe('resolveOpenRouterMaxTokens', () => {
+  it('uses a credit-safe default that still exceeds observed master output', () => {
+    expect(resolveOpenRouterMaxTokens({})).toBe(32768);
+  });
+
+  it('accepts a positive override and rejects invalid values', () => {
+    expect(resolveOpenRouterMaxTokens({ OPENROUTER_MAX_TOKENS: '24000' })).toBe(24000);
+    expect(resolveOpenRouterMaxTokens({ OPENROUTER_MAX_TOKENS: 'invalid' })).toBe(32768);
   });
 });
 

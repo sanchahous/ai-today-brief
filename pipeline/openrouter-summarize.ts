@@ -41,8 +41,14 @@ export function resolveOpenRouterApiKey(
 const SYSTEM_JSON =
   'You are a precise JSON generator for a bilingual news brief. Reply with one valid JSON object only — no markdown fences, no commentary.';
 
+export function resolveOpenRouterMaxTokens(
+  env: { OPENROUTER_MAX_TOKENS?: string; [key: string]: string | undefined } = process.env,
+) {
+  const parsed = Number.parseInt(env.OPENROUTER_MAX_TOKENS ?? '32768', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 32768;
+}
+
 function buildChatBody(prompt: string): Record<string, unknown> {
-  const maxTokens = Number.parseInt(process.env.OPENROUTER_MAX_TOKENS ?? '65536', 10);
   return {
     messages: [
       { role: 'system', content: SYSTEM_JSON },
@@ -50,7 +56,7 @@ function buildChatBody(prompt: string): Record<string, unknown> {
     ],
     response_format: { type: 'json_object' },
     temperature: 0.35,
-    max_tokens: Number.isFinite(maxTokens) && maxTokens > 0 ? maxTokens : 65536,
+    max_tokens: resolveOpenRouterMaxTokens(),
   };
 }
 
