@@ -554,6 +554,11 @@ async function saveQualityReport(input: {
         (sum, generation) => sum + generation.estimatedCostUsd,
         0,
       ),
+      cost_source: Object.values(input.generation).every(
+        (generation) => generation.costSource === 'reported',
+      )
+        ? 'reported'
+        : 'estimated',
     },
   });
 }
@@ -760,6 +765,10 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
             locale === 'en'
               ? result.generation.english.estimatedCostUsd
               : result.generation.ukrainian.estimatedCostUsd,
+          cost_source:
+            locale === 'en'
+              ? result.generation.english.costSource
+              : result.generation.ukrainian.costSource,
           token_usage:
             locale === 'en'
               ? {

@@ -10,6 +10,7 @@ import {
   OpenRouterStallError,
   resolveOpenRouterAdaptiveTimeouts,
   streamOpenRouterCompletion,
+  type OpenRouterUsage,
 } from './openrouter-adaptive';
 import {
   isOpenRouterLimitError,
@@ -27,6 +28,8 @@ export type OpenRouterSummarizeResult = {
   text: string;
   provider: 'openrouter';
   model: string;
+  /** Real billed cost from OpenRouter, when the provider reported it. */
+  usage: OpenRouterUsage | null;
 };
 
 export const OPENROUTER_CHAT_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -57,13 +60,27 @@ function buildChatBody(prompt: string): Record<string, unknown> {
     response_format: { type: 'json_object' },
     temperature: 0.35,
     max_tokens: resolveOpenRouterMaxTokens(),
+    usage: { include: true },
   };
 }
 
 type ChatCompletionResponse = {
   choices?: Array<{ message?: { content?: string } }>;
+  usage?: unknown;
   error?: { message?: string; code?: unknown };
 };
+
+export function parseChatCompletionUsage(raw: unknown): OpenRouterUsage | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const usage = raw as Record<string, unknown>;
+  if (typeof usage.cost !== 'number') return null;
+  return {
+    promptTokens: typeof usage.prompt_tokens === 'number' ? usage.prompt_tokens : 0,
+    completionTokens: typeof usage.completion_tokens === 'number' ? usage.completion_tokens : 0,
+    totalTokens: typeof usage.total_tokens === 'number' ? usage.total_tokens : 0,
+    costUsd: usage.cost,
+  };
+}
 
 /* v8 ignore start -- live network: chain logic is unit-tested via injected deps */
 
@@ -75,6 +92,7 @@ export async function callOpenRouterJson(
   timeoutMs: number,
   fetchFn: typeof fetch = fetch,
   validateResponse: OpenRouterResponseValidator = validateOpenRouterBriefJson,
+  onUsage?: (usage: OpenRouterUsage) => void,
 ): Promise<string> {
   const started = Date.now();
   const body = { ...buildChatBody(prompt), model: modelId };
@@ -115,6 +133,9 @@ export async function callOpenRouterJson(
     throw new Error(`[openrouter] Empty completion from ${modelId}`);
   }
 
+  const usage = parseChatCompletionUsage(json.usage);
+  if (usage) onUsage?.(usage);
+
   logEvent('info', 'summarize', 'OpenRouter non-stream completion ok', {
     model: modelId,
     response_chars: text.length,
@@ -130,6 +151,7 @@ export async function callOpenRouterAdaptive(
   modelId: string,
   prompt: string,
   validateResponse: OpenRouterResponseValidator = validateOpenRouterBriefJson,
+  onUsage?: (usage: OpenRouterUsage) => void,
 ): Promise<string> {
   const timeouts = resolveOpenRouterAdaptiveTimeouts();
   const body = buildChatBody(prompt);
@@ -142,6 +164,7 @@ export async function callOpenRouterAdaptive(
       timeouts,
       fetch,
       validateResponse,
+      onUsage,
     );
   } catch (streamError) {
     if (streamError instanceof OpenRouterStallError) {
@@ -165,6 +188,7 @@ export async function callOpenRouterAdaptive(
       timeouts.absoluteCeilingMs,
       fetch,
       validateResponse,
+      onUsage,
     );
   }
 }
@@ -192,10 +216,14 @@ export async function generateWithOpenRouterChain(
     (await (options.resolveQueue ?? ((key) => resolveOpenRouterModelQueue(key)))(apiKey));
 
   const validateResponse = options.validateResponse ?? validateOpenRouterBriefJson;
+  let lastUsage: OpenRouterUsage | null;
   const callModel =
     options.callModel ??
     /* v8 ignore next */
-    ((key, modelId, p) => callOpenRouterAdaptive(key, modelId, p, validateResponse));
+    ((key, modelId, p) =>
+      callOpenRouterAdaptive(key, modelId, p, validateResponse, (usage) => {
+        lastUsage = usage;
+      }));
 
   const attemptErrors: Array<Record<string, unknown>> = [];
   let lastError: unknown;
@@ -210,8 +238,9 @@ export async function generateWithOpenRouterChain(
       prompt_chars: prompt.length,
     });
     try {
+      lastUsage = null;
       const text = await callModel(apiKey, modelId, prompt);
-      return { text, provider: 'openrouter', model: modelId };
+      return { text, provider: 'openrouter', model: modelId, usage: lastUsage };
     } catch (error) {
       lastError = error;
       const limitKind = isOpenRouterLimitError(error) ? error.kind : undefined;

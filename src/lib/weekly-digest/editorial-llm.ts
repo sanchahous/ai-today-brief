@@ -42,6 +42,12 @@ export interface EditorialGenerationMetadata {
   promptTokens: number;
   outputTokens: number;
   estimatedCostUsd: number;
+  /**
+   * 'reported' = real billed cost from the provider's own usage payload.
+   * 'estimated' = char-count-derived guess, used only when the provider
+   * didn't report real cost. Never trust 'estimated' for budget decisions.
+   */
+  costSource: 'reported' | 'estimated';
   promptVersion: string;
 }
 
@@ -357,8 +363,8 @@ async function generateOpenRouter<T>(
     },
   });
   const value = parse(result.text);
-  const promptTokens = estimateTokens(prompt.length);
-  const outputTokens = estimateTokens(result.text.length);
+  const promptTokens = result.usage?.promptTokens ?? estimateTokens(prompt.length);
+  const outputTokens = result.usage?.completionTokens ?? estimateTokens(result.text.length);
   return {
     value,
     metadata: {
@@ -366,7 +372,8 @@ async function generateOpenRouter<T>(
       model: result.model,
       promptTokens,
       outputTokens,
-      estimatedCostUsd: estimateCost(promptTokens, outputTokens),
+      estimatedCostUsd: result.usage?.costUsd ?? estimateCost(promptTokens, outputTokens),
+      costSource: result.usage ? 'reported' : 'estimated',
       promptVersion: WEEKLY_MASTER_SPEC_VERSION,
     },
   };
@@ -413,6 +420,7 @@ async function generateGemini<T>(
           promptTokens,
           outputTokens,
           estimatedCostUsd: estimateCost(promptTokens, outputTokens),
+          costSource: 'estimated',
           promptVersion: WEEKLY_MASTER_SPEC_VERSION,
         },
       };

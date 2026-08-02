@@ -88,7 +88,31 @@ export class OpenRouterStallError extends Error {
   }
 }
 
-type StreamChunk = { content?: string; finishReason?: string | null };
+type StreamChunk = { content?: string; finishReason?: string | null; usage?: OpenRouterUsage };
+
+/**
+ * Real billed cost/tokens reported by OpenRouter (requires `usage: {include: true}`
+ * in the request body). Distinct from the pipeline's own char-count cost estimate,
+ * which does not reflect actual per-model pricing.
+ */
+export type OpenRouterUsage = {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  costUsd: number;
+};
+
+function parseOpenRouterUsage(raw: unknown): OpenRouterUsage | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const usage = raw as Record<string, unknown>;
+  if (typeof usage.cost !== 'number') return undefined;
+  return {
+    promptTokens: typeof usage.prompt_tokens === 'number' ? usage.prompt_tokens : 0,
+    completionTokens: typeof usage.completion_tokens === 'number' ? usage.completion_tokens : 0,
+    totalTokens: typeof usage.total_tokens === 'number' ? usage.total_tokens : 0,
+    costUsd: usage.cost,
+  };
+}
 
 /** Append SSE `data:` lines; returns parsed text deltas from new input. */
 export function parseOpenRouterSseChunk(
@@ -111,6 +135,7 @@ export function parseOpenRouterSseChunk(
           delta?: { content?: string };
           finish_reason?: string | null;
         }>;
+        usage?: unknown;
         error?: { message?: string; code?: unknown };
       };
       if (json.error?.message) {
@@ -120,10 +145,12 @@ export function parseOpenRouterSseChunk(
         });
         continue;
       }
+      const usage = parseOpenRouterUsage(json.usage);
       const choice = json.choices?.[0];
       const content = choice?.delta?.content;
-      if (content) chunks.push({ content, finishReason: choice?.finish_reason ?? null });
-      else if (choice?.finish_reason) chunks.push({ finishReason: choice.finish_reason });
+      if (content) chunks.push({ content, finishReason: choice?.finish_reason ?? null, usage });
+      else if (choice?.finish_reason) chunks.push({ finishReason: choice.finish_reason, usage });
+      else if (usage) chunks.push({ usage });
     } catch {
       // partial JSON line — keep in buffer via remainder
     }
@@ -208,12 +235,13 @@ export async function streamOpenRouterCompletion(
   timeouts: OpenRouterAdaptiveTimeouts,
   fetchFn: FetchStreamFn = fetch,
   validateResponse: OpenRouterResponseValidator = validateOpenRouterBriefJson,
+  onUsage?: (usage: OpenRouterUsage) => void,
 ): Promise<string> {
   const started = Date.now();
   const controller = new AbortController();
   let sseBuffer = '';
   let progress = createStreamProgress(started);
-  const requestBody = { ...body, model: modelId, stream: true };
+  const requestBody = { ...body, model: modelId, stream: true, usage: { include: true } };
 
   logEvent('info', 'summarize', 'OpenRouter adaptive stream starting', {
     model: modelId,
@@ -329,6 +357,7 @@ export async function streamOpenRouterCompletion(
       }
 
       for (const chunk of parsed.chunks) {
+        if (chunk.usage) onUsage?.(chunk.usage);
         if (chunk.finishReason && !chunk.finishReason.startsWith('error:')) {
           lastFinishReason = chunk.finishReason;
         }

@@ -80,6 +80,25 @@ describe('parseOpenRouterSseChunk', () => {
     const { chunks } = parseOpenRouterSseChunk('', lines + '\n');
     expect(chunks.map((c) => c.content)).toEqual(['A', 'B']);
   });
+
+  it('parses real billed cost from the final usage chunk', () => {
+    const raw =
+      'data: {"choices":[{"delta":{},"finish_reason":"stop"}],"usage":{"prompt_tokens":10,"completion_tokens":5,"total_tokens":15,"cost":1.2345}}\n\n';
+    const { chunks } = parseOpenRouterSseChunk('', raw);
+    expect(chunks).toHaveLength(1);
+    expect(chunks[0]!.usage).toEqual({
+      promptTokens: 10,
+      completionTokens: 5,
+      totalTokens: 15,
+      costUsd: 1.2345,
+    });
+  });
+
+  it('ignores usage-less chunks (no cost field means no real usage yet)', () => {
+    const raw = 'data: {"choices":[{"delta":{"content":"x"}}]}\n\n';
+    const { chunks } = parseOpenRouterSseChunk('', raw);
+    expect(chunks[0]!.usage).toBeUndefined();
+  });
 });
 
 describe('createStreamProgress', () => {
