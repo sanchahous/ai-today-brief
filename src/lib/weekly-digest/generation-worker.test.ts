@@ -1,7 +1,25 @@
-import { describe, it, expect } from 'vitest';
-import { computeMasterCheckpointHash } from './generation-worker';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+const rpc = vi.fn(async (_fn: string, _args: Record<string, unknown>) => ({
+  data: [] as unknown[],
+  error: null as { message: string } | null,
+}));
+vi.mock('@/lib/supabase-admin', () => ({ getSupabaseAdmin: () => ({ rpc }) }));
+
+import { computeMasterCheckpointHash, runWeeklyDigestGenerationJobs } from './generation-worker';
 import type { WeeklyResearchPack } from './content-studio';
 import type { WeeklyMasterRetryGuidance } from './editorial-llm';
+
+const ALL_JOB_TYPES = [
+  'research_pack',
+  'editorial_master',
+  'story_image',
+  'cover',
+  'social_copy',
+  'video_manifest',
+  'pdf',
+  'social_asset',
+];
 
 function pack(overrides: Partial<WeeklyResearchPack> = {}): WeeklyResearchPack {
   return {
@@ -51,5 +69,27 @@ describe('computeMasterCheckpointHash', () => {
     const attempt1 = computeMasterCheckpointHash(packs, []);
     const attempt2 = computeMasterCheckpointHash(packs, []);
     expect(attempt1).toBe(attempt2);
+  });
+});
+
+describe('runWeeklyDigestGenerationJobs job type filter', () => {
+  beforeEach(() => {
+    rpc.mockClear();
+  });
+
+  it('claims the full job type list when none is given, unchanged from before', async () => {
+    await runWeeklyDigestGenerationJobs(5);
+    expect(rpc).toHaveBeenCalledWith('claim_weekly_digest_generation_jobs', {
+      p_job_types: ALL_JOB_TYPES,
+      p_limit: 5,
+    });
+  });
+
+  it('narrows the claim to the given job types', async () => {
+    await runWeeklyDigestGenerationJobs(2, ['editorial_master']);
+    expect(rpc).toHaveBeenCalledWith('claim_weekly_digest_generation_jobs', {
+      p_job_types: ['editorial_master'],
+      p_limit: 2,
+    });
   });
 });

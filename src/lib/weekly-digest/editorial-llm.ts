@@ -8,6 +8,7 @@ import {
 } from '../../../pipeline/openrouter-models';
 import { rankOpenRouterModelsByValue, minimalReasoningEffort } from '../../../pipeline/openrouter-value';
 import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summarize';
+import { generateWithClaudeCli } from '../../../pipeline/claude-cli';
 import {
   WEEKLY_MASTER_SPEC_VERSION,
   validateMasterBundle,
@@ -20,7 +21,7 @@ import {
   type WeeklyResearchPack,
 } from './content-studio';
 
-type EditorialProvider = 'gemini' | 'openrouter';
+type EditorialProvider = 'gemini' | 'openrouter' | 'claude-cli';
 
 export interface WeeklyMasterInputStory {
   revisionItemId: string;
@@ -47,8 +48,11 @@ export interface EditorialGenerationMetadata {
    * 'reported' = real billed cost from the provider's own usage payload.
    * 'estimated' = char-count-derived guess, used only when the provider
    * didn't report real cost. Never trust 'estimated' for budget decisions.
+   * 'subscription' = ran via the Claude Code CLI under a Pro/Max login —
+   * real generation happened but it draws on session/weekly plan limits,
+   * not the OpenRouter dollar budget, so estimatedCostUsd is always 0 here.
    */
-  costSource: 'reported' | 'estimated';
+  costSource: 'reported' | 'estimated' | 'subscription';
   promptVersion: string;
 }
 
@@ -313,10 +317,13 @@ function estimateCost(promptTokens: number, outputTokens: number) {
 }
 
 function providerOrder() {
-  const configured = (process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? 'openrouter,gemini')
+  const configured = (process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? 'claude-cli,openrouter,gemini')
     .split(',')
     .map((value) => value.trim())
-    .filter((value): value is EditorialProvider => value === 'openrouter' || value === 'gemini');
+    .filter(
+      (value): value is EditorialProvider =>
+        value === 'claude-cli' || value === 'openrouter' || value === 'gemini',
+    );
   return [...new Set(configured)];
 }
 
@@ -486,11 +493,39 @@ export function premiumGeminiEditorialModels(models: string[]) {
   );
 }
 
+/**
+ * Runs the write through the user's own Claude subscription (Pro/Max) via
+ * the Claude Code CLI instead of a metered API key — see pipeline/claude-cli.ts.
+ * Only succeeds where the `claude` binary is installed and authenticated
+ * (a GitHub Actions runner today, never Vercel); throws UNCONFIGURED:... there
+ * so providerOrder() falls through to OpenRouter with no behavior change.
+ */
+async function generateClaudeCli<T>(
+  prompt: string,
+  parse: (raw: string) => T,
+): Promise<ProviderResult<T>> {
+  const result = await generateWithClaudeCli(prompt);
+  const value = parse(result.text);
+  return {
+    value,
+    metadata: {
+      provider: 'claude-cli',
+      model: result.model,
+      promptTokens: estimateTokens(prompt.length),
+      outputTokens: estimateTokens(result.text.length),
+      estimatedCostUsd: 0,
+      costSource: 'subscription',
+      promptVersion: WEEKLY_MASTER_SPEC_VERSION,
+    },
+  };
+}
+
 async function generateWithProvider<T>(
   provider: EditorialProvider,
   prompt: string,
   parse: (raw: string) => T,
 ) {
+  if (provider === 'claude-cli') return generateClaudeCli(prompt, parse);
   return provider === 'openrouter'
     ? generateOpenRouter(prompt, parse)
     : generateGemini(prompt, parse);
@@ -522,7 +557,9 @@ async function generateIndependentCritic(
   const writerVendor =
     english.metadata.provider === 'openrouter'
       ? openRouterModelVendor(english.metadata.model)
-      : 'google';
+      : english.metadata.provider === 'claude-cli'
+        ? 'anthropic'
+        : 'google';
   try {
     return await generateOpenRouter(prompt, parseCritic, {
       configuredModels: configuredCriticOpenRouterModels(),

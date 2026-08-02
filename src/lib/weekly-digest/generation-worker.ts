@@ -123,18 +123,23 @@ function contentStudioJobMode(job: ClaimedGenerationJob) {
   return requestedMode;
 }
 
-async function claimGenerationJobs(limit: number): Promise<ClaimedGenerationJob[]> {
+const ALL_GENERATION_JOB_TYPES: string[] = [
+  'research_pack',
+  'editorial_master',
+  'story_image',
+  'cover',
+  'social_copy',
+  'video_manifest',
+  'pdf',
+  'social_asset',
+];
+
+async function claimGenerationJobs(
+  limit: number,
+  jobTypes: string[] = ALL_GENERATION_JOB_TYPES,
+): Promise<ClaimedGenerationJob[]> {
   const { data, error } = await rpcClient().rpc('claim_weekly_digest_generation_jobs', {
-    p_job_types: [
-      'research_pack',
-      'editorial_master',
-      'story_image',
-      'cover',
-      'social_copy',
-      'video_manifest',
-      'pdf',
-      'social_asset',
-    ],
+    p_job_types: jobTypes,
     p_limit: Math.max(1, Math.min(Math.trunc(limit), MAX_JOBS)),
   });
   if (error) throw new Error(`[weekly-generation] claim: ${error.message}`);
@@ -1829,8 +1834,8 @@ async function runGenerationJob(job: ClaimedGenerationJob) {
   throw new Error(`Unsupported generation job type: ${job.job_type}`);
 }
 
-export async function runWeeklyDigestGenerationJobs(limit = 5) {
-  const jobs = await claimGenerationJobs(limit);
+export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string[]) {
+  const jobs = await claimGenerationJobs(limit, jobTypes);
   const results: Array<{
     id: string;
     outcome: 'succeeded' | 'failed';
