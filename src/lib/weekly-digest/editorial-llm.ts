@@ -55,6 +55,15 @@ export interface WeeklyMasterGenerationResult {
   };
 }
 
+export interface WeeklyMasterRetryGuidance {
+  code: string;
+  message: string;
+  suggestedFix?: string;
+  locale?: 'en' | 'uk';
+  revisionItemId?: string;
+  field?: string;
+}
+
 interface ProviderResult<T> {
   value: T;
   metadata: EditorialGenerationMetadata;
@@ -487,7 +496,19 @@ async function generateFirstAvailable<T>(prompt: string, parse: (raw: string) =>
     : new Error('No premium editorial provider is configured.');
 }
 
-function englishPrompt(stories: WeeklyMasterInputStory[]) {
+export function masterRetryGuidancePrompt(guidance: WeeklyMasterRetryGuidance[]) {
+  if (!guidance.length) return '';
+  return `
+
+PRIOR CRITIC BLOCKERS TO FIX
+These are editorial constraints from a rejected earlier draft, not approved factual claims. Do not quote or repeat their wording unless it is independently supported by APPROVED STORY MATERIAL. Resolve every item in the new draft:
+${JSON.stringify(guidance)}`;
+}
+
+function englishPrompt(
+  stories: WeeklyMasterInputStory[],
+  retryGuidance: WeeklyMasterRetryGuidance[],
+) {
   return `You are the senior editor-practitioner at AI Today Brief. Produce an engaging, evidence-bound Weekly Digest for builders, founders, product, technology and business leaders. Explain technical complexity in plain English, show judgment, and never use clickbait or generic advice.
 
 CONTRACT
@@ -496,7 +517,7 @@ CONTRACT
 - Every feature must have a human hook, what happened, context, tension/change, evidence, audience, one concrete scenario, limitations and one decision-ready takeaway.
 - Use only supplied claims. Every factual sentence must be attributable to claimIds; never invent numbers, names, quotes or causal implications.
 - The practical field must name a concrete actor, workflow, action, constraint and observable result. Never use a reusable category template.
-- Theme-led title; the date is secondary. Total article target: 2,000–3,000 words.
+- Theme-led title; the date is secondary. All prose across the article object must total 2,000–3,000 words. Keep why, practical, limitation and takeaway concise and do not duplicate the body.
 - Video: one English 6–8 minute narration plan and exactly three Ukrainian Shorts (35–50 seconds) for the Top 3.
 - Return one JSON object only.
 - socialAngles must contain exactly six objects: one for each exact lowercase channel value telegram, facebook, threads, x, linkedin and instagram. Do not combine channel names in one string.
@@ -505,7 +526,7 @@ JSON SHAPE
 {"article":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":"","stories":[{"revisionItemId":"","placement":"feature|radar","headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","claimIds":[""]}]},"video":{"title":"","hook":"","narration":"","scenes":[{"id":"","purpose":"","voiceover":"","onScreenText":"","visualBrief":"","factIds":[""],"durationSeconds":1}],"shorts":[{"revisionItemId":"","hook":"","context":"","insight":"","takeaway":"","factIds":[""],"durationSeconds":40}]},"socialAngles":[{"channel":"telegram","hookAngle":"","thesis":"","factIds":[""]},{"channel":"facebook","hookAngle":"","thesis":"","factIds":[""]},{"channel":"threads","hookAngle":"","thesis":"","factIds":[""]},{"channel":"x","hookAngle":"","thesis":"","factIds":[""]},{"channel":"linkedin","hookAngle":"","thesis":"","factIds":[""]},{"channel":"instagram","hookAngle":"","thesis":"","factIds":[""]}]}
 
 APPROVED STORY MATERIAL
-${JSON.stringify(stories)}`;
+${JSON.stringify(stories)}${masterRetryGuidancePrompt(retryGuidance)}`;
 }
 
 function ukrainianPrompt(en: WeeklyArticleMaster, stories: WeeklyMasterInputStory[]) {
@@ -536,8 +557,12 @@ ${JSON.stringify(bundle)}`;
 export async function generateWeeklyMaster(
   stories: WeeklyMasterInputStory[],
   researchPacks: WeeklyResearchPack[],
+  retryGuidance: WeeklyMasterRetryGuidance[] = [],
 ): Promise<WeeklyMasterGenerationResult> {
-  const english = await generateFirstAvailable(englishPrompt(stories), parseEnglishPackage);
+  const english = await generateFirstAvailable(
+    englishPrompt(stories, retryGuidance),
+    parseEnglishPackage,
+  );
   const ukrainian = await generateWithProvider(
     english.metadata.provider,
     ukrainianPrompt(english.value.article, stories),

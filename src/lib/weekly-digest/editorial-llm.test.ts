@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   normalizeWeeklySocialAngles,
+  masterRetryGuidancePrompt,
   openRouterModelVendor,
   premiumGeminiEditorialModels,
   premiumOpenRouterModels,
@@ -56,6 +57,21 @@ describe('premiumOpenRouterModels', () => {
       ),
     ).toEqual(['openai/gpt-current']);
     expect(openRouterModelVendor('openai/gpt-current')).toBe('openai');
+  });
+});
+
+describe('masterRetryGuidancePrompt', () => {
+  it('labels prior critic feedback as constraints rather than factual evidence', () => {
+    const prompt = masterRetryGuidancePrompt([
+      {
+        code: 'STRENGTHENED-CLAIM',
+        message: 'The earlier draft implied unsupported causality.',
+        suggestedFix: 'State only that the reversal occurred.',
+        locale: 'en',
+      },
+    ]);
+    expect(prompt).toContain('not approved factual claims');
+    expect(prompt).toContain('State only that the reversal occurred.');
   });
 });
 

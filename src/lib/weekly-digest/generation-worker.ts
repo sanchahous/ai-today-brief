@@ -34,7 +34,11 @@ import {
   type WeeklyMasterBundle,
   type WeeklyResearchPack,
 } from './content-studio';
-import { generateWeeklyMaster, type WeeklyMasterInputStory } from './editorial-llm';
+import {
+  generateWeeklyMaster,
+  type WeeklyMasterInputStory,
+  type WeeklyMasterRetryGuidance,
+} from './editorial-llm';
 import {
   buildWeeklyResearchPack,
   isWeeklyResearchPack,
@@ -493,6 +497,38 @@ function masterInputStories(
   });
 }
 
+function priorMasterRetryGuidance(
+  context: Awaited<ReturnType<typeof loadGenerationContext>>,
+): WeeklyMasterRetryGuidance[] {
+  const report = context.artifacts.find(
+    (artifact) =>
+      artifact.artifact_type === 'content_quality_report' &&
+      artifact.slot_key === 'content-quality:master' &&
+      artifact.is_current,
+  );
+  const issues = asRecord(report?.content).issues;
+  if (!Array.isArray(issues)) return [];
+  return issues.flatMap((entry) => {
+    const row = asRecord(entry);
+    const code = text(row.code);
+    const message = text(row.message);
+    if (row.blocker !== true || !code || !message) return [];
+    const locale = text(row.locale);
+    return [
+      {
+        code,
+        message,
+        ...(text(row.suggestedFix) ? { suggestedFix: text(row.suggestedFix)! } : {}),
+        ...(locale === 'en' || locale === 'uk' ? { locale } : {}),
+        ...(text(row.revisionItemId)
+          ? { revisionItemId: text(row.revisionItemId)! }
+          : {}),
+        ...(text(row.field) ? { field: text(row.field)! } : {}),
+      },
+    ];
+  });
+}
+
 async function saveQualityReport(input: {
   weeklyDigestId: string;
   revisionId: string;
@@ -575,6 +611,7 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
   const result = await generateWeeklyMaster(
     sourceStories,
     approvedResearch.map(({ pack }) => pack),
+    priorMasterRetryGuidance(context),
   );
   const passed = editorialQualityPasses(result.quality);
   if (!passed) {
