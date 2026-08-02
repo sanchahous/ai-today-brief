@@ -331,9 +331,12 @@ async function generateGemini<T>(
   const queue = await resolveGeminiModelQueue(apiKey, {
     ...process.env,
     GEMINI_MODEL: process.env.WEEKLY_MASTER_GEMINI_MODEL,
-    GEMINI_MAX_MODEL_ATTEMPTS: '1',
+    // Discovery ranks Flash before Pro for the general pipeline. Fetch enough
+    // of the current-generation catalog before applying the editorial premium
+    // filter, otherwise a healthy Pro model can be truncated out at index 1.
+    GEMINI_MAX_MODEL_ATTEMPTS: '5',
   });
-  const premium = queue.filter((model) => !/flash|lite|mini|nano/i.test(model));
+  const premium = premiumGeminiEditorialModels(queue);
   if (!premium.length) throw new Error('No premium Gemini editorial model is available.');
   let lastError: unknown;
   for (const modelId of premium.slice(0, 2)) {
@@ -368,6 +371,12 @@ async function generateGemini<T>(
     }
   }
   throw lastError instanceof Error ? lastError : new Error('Premium Gemini generation failed.');
+}
+
+export function premiumGeminiEditorialModels(models: string[]) {
+  return models.filter(
+    (model) => !/(?:^|[-_/])(?:flash|lite|mini|nano)(?:[-_/]|$)/i.test(model),
+  );
 }
 
 async function generateWithProvider<T>(
