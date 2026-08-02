@@ -6,6 +6,7 @@ interface HashableSocialContent {
   locale: SocialLocale;
   format: string;
   text: string;
+  contentParts?: string[];
   firstComment?: string | null;
   assets?: SocialAsset[];
   altText?: string | null;
@@ -29,6 +30,7 @@ export function socialContentHash(content: HashableSocialContent): string {
     locale: content.locale,
     format: content.format,
     text: content.text.trim(),
+    contentParts: (content.contentParts ?? []).map((part) => part.trim()),
     firstComment: content.firstComment?.trim() || null,
     assets: stableAssets(content.assets),
     altText: content.altText?.trim() || null,

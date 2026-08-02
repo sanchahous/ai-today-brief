@@ -21,11 +21,13 @@ import {
   commentWeeklySocialAction,
   enqueueWeeklyGenerationAction,
   pauseWeeklyDigestAction,
+  resumeWeeklyThreadsSequenceAction,
   reviewWeeklyArtifactAction,
   saveWeeklyRevisionAction,
   saveWeeklySocialAction,
   saveWeeklyVideoAction,
   scheduleWeeklyDigestAction,
+  startWeeklyContentStudioAction,
   toggleWeeklySocialAction,
   uploadWeeklyArtifactAction,
 } from '@/app/admin/(cms)/weekly/actions';
@@ -33,6 +35,7 @@ import {
 export const WEEKLY_WORKSPACE_TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'stories', label: 'Stories' },
+  { id: 'research', label: 'Research' },
   { id: 'article', label: 'Article UK / EN' },
   { id: 'visuals', label: 'Visuals' },
   { id: 'social', label: 'Social' },
@@ -56,6 +59,8 @@ const DANGER =
   'min-h-11 rounded-xl border border-red-400/30 bg-red-400/8 px-4 text-sm font-bold text-red-200 transition hover:bg-red-400/15';
 
 const ARTIFACT_TYPES = new Set<WeeklyArtifactType>([
+  'research_pack',
+  'content_quality_report',
   'article',
   'pdf',
   'cover',
@@ -154,6 +159,21 @@ function artifactFor(
   );
 }
 
+function researchArtifactFor(
+  artifacts: WeeklyArtifactAdminRow[],
+  item: { id: string; source_snapshot: Json },
+) {
+  const direct = artifactFor(artifacts, 'research_pack', undefined, item.id);
+  if (direct) return direct;
+  const contentStudio = asRecord(asRecord(item.source_snapshot).content_studio);
+  const provenanceId = contentStudio.research_artifact_id;
+  return typeof provenanceId === 'string'
+    ? artifacts.find(
+        (artifact) => artifact.id === provenanceId && artifact.artifact_type === 'research_pack',
+      )
+    : undefined;
+}
+
 function latestReviews(reviews: WeeklyArtifactReviewAdminRow[], artifactId: string, limit = 3) {
   return reviews.filter((review) => review.artifact_id === artifactId).slice(0, limit);
 }
@@ -167,13 +187,20 @@ function qualityReport(value: Json) {
   const object = asRecord(value);
   const blocking = Array.isArray(object.blocking) ? object.blocking : [];
   const warnings = Array.isArray(object.warnings) ? object.warnings : [];
-  const messages = [...blocking, ...warnings]
-    .map((item) => {
+  const items = [...blocking, ...warnings]
+    .map((item, index) => {
       const record = asRecord(item);
-      return typeof record.message === 'string' ? record.message : null;
+      return typeof record.message === 'string'
+        ? {
+            key: `${typeof record.code === 'string' ? record.code : 'quality'}-${index}`,
+            message: record.message,
+            span: typeof record.span === 'string' ? record.span : null,
+            suggestedFix: typeof record.suggestedFix === 'string' ? record.suggestedFix : null,
+          }
+        : null;
     })
-    .filter((message): message is string => Boolean(message));
-  return { blocking: blocking.length, warnings: warnings.length, messages };
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
+  return { blocking: blocking.length, warnings: warnings.length, items };
 }
 
 function formatBytes(value: number | null) {
@@ -310,6 +337,11 @@ function ArtifactCard({
 
   const previewUrls = listFrom(artifact.content, 'preview_urls');
   const artifactWarnings = listFrom(artifact.metadata, 'warnings');
+  const artifactMetadata = asRecord(artifact.metadata);
+  const estimatedCost =
+    typeof artifactMetadata.estimated_cost_usd === 'number'
+      ? artifactMetadata.estimated_cost_usd
+      : null;
   const failedChecks = Object.entries(asRecord(asRecord(artifact.metadata).checks))
     .filter(([, passed]) => passed === false)
     .map(([check]) => check);
@@ -363,6 +395,30 @@ function ArtifactCard({
           <div>
             <dt className="font-bold tracking-wide text-slate-600 uppercase">Size</dt>
             <dd className="mt-1 text-slate-300">{formatBytes(artifact.byte_size)}</dd>
+          </div>
+        ) : null}
+        {artifact.provider ? (
+          <div>
+            <dt className="font-bold tracking-wide text-slate-600 uppercase">Provider</dt>
+            <dd className="mt-1 text-slate-300">{artifact.provider}</dd>
+          </div>
+        ) : null}
+        {artifact.provider_id ? (
+          <div>
+            <dt className="font-bold tracking-wide text-slate-600 uppercase">Model / ID</dt>
+            <dd className="mt-1 break-words text-slate-300">{artifact.provider_id}</dd>
+          </div>
+        ) : null}
+        {estimatedCost !== null ? (
+          <div>
+            <dt className="font-bold tracking-wide text-slate-600 uppercase">Generation cost</dt>
+            <dd className="mt-1 text-slate-300">${estimatedCost.toFixed(4)}</dd>
+          </div>
+        ) : null}
+        {typeof artifactMetadata.target_audience === 'string' ? (
+          <div>
+            <dt className="font-bold tracking-wide text-slate-600 uppercase">Audience</dt>
+            <dd className="mt-1 text-slate-300">{artifactMetadata.target_audience}</dd>
           </div>
         ) : null}
       </dl>
@@ -420,6 +476,38 @@ function OverviewPanel({
   const latestJobs = workspace.generationJobs.slice(0, 5);
   const latestEvents = workspace.releaseEvents.slice(0, 8);
   const isTestEdition = workspace.digest.is_test;
+  const engagementSegments = Array.from(
+    workspace.engagementEvents.reduce((segments, event) => {
+      const key = `${event.channel ?? 'direct'}|${event.locale}|${event.hook_angle ?? 'default'}`;
+      const current = segments.get(key) ?? {
+        channel: event.channel ?? 'direct',
+        locale: event.locale,
+        hookAngle: event.hook_angle ?? 'default',
+        views: new Set<string>(),
+        engaged: new Set<string>(),
+        subscribeClicks: new Set<string>(),
+        signups: new Set<string>(),
+      };
+      if (event.event_type === 'digest_view') current.views.add(event.session_hash);
+      if (event.event_type === 'scroll_50' || event.event_type === 'story_open')
+        current.engaged.add(event.session_hash);
+      if (event.event_type === 'subscribe_click') current.subscribeClicks.add(event.session_hash);
+      if (event.event_type === 'signup_complete') current.signups.add(event.session_hash);
+      segments.set(key, current);
+      return segments;
+    }, new Map<string, { channel: string; locale: string; hookAngle: string; views: Set<string>; engaged: Set<string>; subscribeClicks: Set<string>; signups: Set<string> }>()),
+  )
+    .map(([, segment]) => ({
+      channel: segment.channel,
+      locale: segment.locale,
+      hookAngle: segment.hookAngle,
+      views: segment.views.size,
+      engaged: segment.engaged.size,
+      subscribeClicks: segment.subscribeClicks.size,
+      signups: segment.signups.size,
+    }))
+    .sort((left, right) => right.views - left.views)
+    .slice(0, 10);
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,.6fr)]">
@@ -535,6 +623,56 @@ function OverviewPanel({
       </div>
 
       <aside className="grid content-start gap-5">
+        <section className={PANEL} aria-labelledby="engagement-heading">
+          <h2 id="engagement-heading" className="text-lg font-bold text-white">
+            First-party engagement
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Latest 500 events, segmented by channel, language and hook angle. No raw IP is stored.
+          </p>
+          {engagementSegments.length ? (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[30rem] text-left text-xs">
+                <thead className="font-bold tracking-wide text-slate-500 uppercase">
+                  <tr>
+                    <th className="pb-2">Segment</th>
+                    <th className="pb-2">Views</th>
+                    <th className="pb-2">Engaged</th>
+                    <th className="pb-2">Subscribe CTR</th>
+                    <th className="pb-2">Signup CVR</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/8">
+                  {engagementSegments.map((segment) => (
+                    <tr key={`${segment.channel}:${segment.locale}:${segment.hookAngle}`}>
+                      <td className="max-w-52 py-2 pr-3 text-slate-300">
+                        <span className="font-bold text-white">
+                          {segment.channel} · {segment.locale}
+                        </span>
+                        <span className="block truncate text-slate-500">{segment.hookAngle}</span>
+                      </td>
+                      <td className="py-2 text-slate-300">{segment.views}</td>
+                      <td className="py-2 text-slate-300">{segment.engaged}</td>
+                      <td className="py-2 text-slate-300">
+                        {segment.views
+                          ? `${((segment.subscribeClicks / segment.views) * 100).toFixed(1)}%`
+                          : '—'}
+                      </td>
+                      <td className="py-2 text-slate-300">
+                        {segment.views
+                          ? `${((segment.signups / segment.views) * 100).toFixed(1)}%`
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-slate-500">No engagement events recorded yet.</p>
+          )}
+        </section>
+
         <section className={PANEL} aria-labelledby="schedule-heading">
           <h2 id="schedule-heading" className="text-lg font-bold text-white">
             Edition clock
@@ -583,6 +721,266 @@ function OverviewPanel({
           ) : null}
         </section>
       </aside>
+    </div>
+  );
+}
+
+function ResearchPanel({
+  workspace,
+  canEdit,
+  canReview,
+}: {
+  workspace: WeeklyDigestWorkspace;
+  canEdit: boolean;
+  canReview: boolean;
+}) {
+  const features = workspace.items.filter((item) => item.rank <= 3);
+  const quality = artifactFor(workspace.artifacts, 'content_quality_report', 'neutral');
+  const qualityContent = asRecord(quality?.content);
+  const qualityIssues = Array.isArray(qualityContent.issues)
+    ? qualityContent.issues.filter(
+        (value): value is Json =>
+          Boolean(value) && typeof value === 'object' && !Array.isArray(value),
+      )
+    : [];
+  const qualityDimensions = Array.isArray(qualityContent.dimensions)
+    ? qualityContent.dimensions.filter(
+        (value): value is Json =>
+          Boolean(value) && typeof value === 'object' && !Array.isArray(value),
+      )
+    : [];
+  const approvedResearch = features.filter(
+    (item) => researchArtifactFor(workspace.artifacts, item)?.review_status === 'approved',
+  ).length;
+
+  return (
+    <div className="grid gap-5">
+      <section className={PANEL} aria-labelledby="research-heading">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">
+              Content Studio v2 · Research gate
+            </p>
+            <h2 id="research-heading" className="mt-1 text-xl font-bold text-white">
+              Top 3 evidence packs
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+              Master generation remains queued until all three current packs are approved. Radar
+              stories use approved facts plus source sanity checks.
+            </p>
+          </div>
+          {canEdit && workspace.revision ? (
+            <form action={startWeeklyContentStudioAction}>
+              <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+              <input type="hidden" name="revision_id" value={workspace.revision.id} />
+              <ActionSubmitButton
+                className={PRIMARY}
+                idleLabel="Start / retry Content Studio"
+                pendingLabel="Queueing research…"
+              />
+            </form>
+          ) : null}
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
+            <p className="text-xs font-bold text-slate-500 uppercase">Approved research</p>
+            <p className="mt-1 text-2xl font-bold text-white">{approvedResearch}/3</p>
+          </div>
+          <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
+            <p className="text-xs font-bold text-slate-500 uppercase">Audience</p>
+            <p className="mt-1 text-sm font-semibold text-white">Builders & AI decision-makers</p>
+          </div>
+          <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
+            <p className="text-xs font-bold text-slate-500 uppercase">Master voice</p>
+            <p className="mt-1 text-sm font-semibold text-white">Editor-practitioner</p>
+          </div>
+        </div>
+      </section>
+
+      {features.map((item) => {
+        const artifact = researchArtifactFor(workspace.artifacts, item);
+        const researchJob = workspace.generationJobs.find(
+          (job) =>
+            job.job_type === 'research_pack' && textFrom(job.input, 'revision_item_id') === item.id,
+        );
+        const content = asRecord(artifact?.content);
+        const primary = asRecord(content.primarySource);
+        const claims = Array.isArray(content.claims)
+          ? content.claims.filter(
+              (value): value is Json =>
+                Boolean(value) && typeof value === 'object' && !Array.isArray(value),
+            )
+          : [];
+        const risks = listFrom(artifact?.metadata, 'risk_flags');
+        return (
+          <section key={item.id} className={PANEL}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">
+                  Feature {item.rank} · deep research
+                </p>
+                <h3 className="mt-1 max-w-4xl text-lg font-bold text-white">{item.title_en}</h3>
+              </div>
+              {artifact ? (
+                <div className="flex gap-2">
+                  <StatusPill value={artifact.generation_status} />
+                  <StatusPill value={artifact.review_status} />
+                </div>
+              ) : (
+                <StatusPill value="queued" />
+              )}
+            </div>
+            {artifact ? (
+              <>
+                <dl className="mt-4 grid gap-3 rounded-xl border border-white/8 bg-black/15 p-4 text-sm md:grid-cols-3">
+                  <div>
+                    <dt className="font-bold text-slate-500">Primary source</dt>
+                    <dd className="mt-1 break-words text-white">
+                      {textFrom(primary as Json, 'sourceName') || 'Unknown'}
+                    </dd>
+                    {textFrom(primary as Json, 'url') ? (
+                      <a
+                        href={textFrom(primary as Json, 'url')}
+                        className="mt-1 block text-xs break-all text-cyan-200 hover:underline"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {textFrom(primary as Json, 'url')}
+                      </a>
+                    ) : null}
+                  </div>
+                  <div>
+                    <dt className="font-bold text-slate-500">Approved claims</dt>
+                    <dd className="mt-1 text-white">{claims.length}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-bold text-slate-500">Risk flags</dt>
+                    <dd className="mt-1 text-white">{risks.length ? risks.join(', ') : 'None'}</dd>
+                  </div>
+                </dl>
+                <div className="mt-4 grid gap-2">
+                  {claims.map((claim, index) => {
+                    const row = asRecord(claim);
+                    const evidenceUrls = Array.isArray(row.evidenceUrls)
+                      ? row.evidenceUrls.filter(
+                          (value): value is string => typeof value === 'string',
+                        )
+                      : [];
+                    return (
+                      <div
+                        key={`${textFrom(claim, 'id')}:${index}`}
+                        className="rounded-xl border border-white/8 p-3"
+                      >
+                        <p className="text-xs font-bold text-cyan-200">{textFrom(claim, 'id')}</p>
+                        <p className="mt-1 text-sm leading-6 text-slate-200">
+                          {textFrom(claim, 'text')}
+                        </p>
+                        <p className="mt-2 text-xs text-slate-500">
+                          Evidence: {evidenceUrls.length ? evidenceUrls.join(' · ') : 'missing'}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <ArtifactReview
+                  digestId={workspace.digest.id}
+                  artifact={artifact}
+                  reviews={workspace.artifactReviews}
+                  canReview={canReview && artifact.revision_id === workspace.revision?.id}
+                />
+              </>
+            ) : (
+              <div className="mt-4 rounded-xl border border-amber-400/20 bg-amber-400/6 p-4 text-sm text-amber-100">
+                <p>Research has not completed. The system will not substitute generic copy.</p>
+                {researchJob?.last_error ? (
+                  <p className="mt-2 text-xs whitespace-pre-wrap text-red-200">
+                    {researchJob.last_error}
+                  </p>
+                ) : null}
+                {researchJob?.status === 'failed' ? (
+                  <p className="mt-2 text-xs">
+                    Correct the source, replace the story, or move it below rank 3 in Stories before
+                    retrying.
+                  </p>
+                ) : null}
+              </div>
+            )}
+          </section>
+        );
+      })}
+
+      {quality ? (
+        <section className={PANEL} aria-labelledby="quality-heading">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">
+                Independent audit
+              </p>
+              <h3 id="quality-heading" className="mt-1 text-lg font-bold text-white">
+                Master quality ·{' '}
+                {typeof qualityContent.score === 'number' ? qualityContent.score : 0}/100
+              </h3>
+            </div>
+            <StatusPill value={quality.review_status} />
+          </div>
+          {qualityDimensions.length ? (
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {qualityDimensions.map((dimension, index) => {
+                const row = asRecord(dimension);
+                return (
+                  <div
+                    key={`${textFrom(dimension, 'name')}:${index}`}
+                    className="rounded-xl border border-white/8 p-3"
+                  >
+                    <p className="text-xs font-bold text-slate-500 uppercase">
+                      {textFrom(dimension, 'name') || 'dimension'}
+                    </p>
+                    <p className="mt-1 text-xl font-bold text-white">
+                      {typeof row.score === 'number' ? `${row.score}/100` : '—'}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      {textFrom(dimension, 'note')}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : null}
+          <div className="mt-4 grid gap-2">
+            {qualityIssues.map((value, index) => {
+              const issue = asRecord(value);
+              return (
+                <div
+                  key={`${textFrom(value, 'code')}:${index}`}
+                  className={`rounded-xl border p-3 text-sm ${
+                    issue.blocker === true
+                      ? 'border-red-400/25 bg-red-400/7 text-red-100'
+                      : 'border-amber-400/20 bg-amber-400/6 text-amber-100'
+                  }`}
+                >
+                  <p className="font-bold">{textFrom(value, 'code')}</p>
+                  <p className="mt-1">{textFrom(value, 'message')}</p>
+                  {textFrom(value, 'span') ? (
+                    <p className="mt-2 rounded-lg bg-black/20 p-2 text-xs">
+                      “{textFrom(value, 'span')}”
+                    </p>
+                  ) : null}
+                  {textFrom(value, 'suggestedFix') ? (
+                    <p className="mt-2 text-xs opacity-80">
+                      Fix: {textFrom(value, 'suggestedFix')}
+                    </p>
+                  ) : null}
+                </div>
+              );
+            })}
+            {qualityIssues.length === 0 ? (
+              <p className="rounded-xl border border-emerald-400/20 bg-emerald-400/6 p-4 text-sm text-emerald-100">
+                No editorial or factual issues reported.
+              </p>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -868,6 +1266,8 @@ function ArticlePanel({
   }
   const articleEn = artifactFor(workspace.artifacts, 'article', 'en');
   const articleUk = artifactFor(workspace.artifacts, 'article', 'uk');
+  const articleEnContent = asRecord(articleEn?.content);
+  const articleUkContent = asRecord(articleUk?.content);
 
   return (
     <div className="grid gap-5">
@@ -905,6 +1305,82 @@ function ArticlePanel({
                 className={FIELD}
               />
             </label>
+            <label className={LABEL}>
+              SEO title
+              <input
+                name="seo_title_en"
+                required
+                defaultValue={textFrom(articleEnContent as Json, 'seoTitle') || revision.title_en}
+                disabled={!canEdit}
+                className={FIELD}
+              />
+            </label>
+            <label className={LABEL}>
+              Theme
+              <input
+                name="theme_en"
+                required
+                defaultValue={textFrom(articleEnContent as Json, 'theme') || revision.title_en}
+                disabled={!canEdit}
+                className={FIELD}
+              />
+            </label>
+            <label className={LABEL}>
+              Standfirst
+              <textarea
+                name="standfirst_en"
+                rows={3}
+                required
+                defaultValue={
+                  textFrom(articleEnContent as Json, 'standfirst') || revision.intro_en || ''
+                }
+                disabled={!canEdit}
+                className={TEXTAREA}
+              />
+            </label>
+            <label className={LABEL}>
+              Meta description
+              <textarea
+                name="meta_description_en"
+                rows={3}
+                required
+                defaultValue={
+                  textFrom(articleEnContent as Json, 'metaDescription') || revision.intro_en || ''
+                }
+                disabled={!canEdit}
+                className={TEXTAREA}
+              />
+            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className={LABEL}>
+                OG title
+                <input
+                  name="og_title_en"
+                  defaultValue={
+                    textFrom(articleEnContent as Json, 'ogTitle') ||
+                    textFrom(articleEnContent as Json, 'seoTitle') ||
+                    revision.title_en
+                  }
+                  disabled={!canEdit}
+                  className={FIELD}
+                />
+              </label>
+              <label className={LABEL}>
+                OG description
+                <textarea
+                  name="og_description_en"
+                  rows={2}
+                  defaultValue={
+                    textFrom(articleEnContent as Json, 'ogDescription') ||
+                    textFrom(articleEnContent as Json, 'metaDescription') ||
+                    revision.intro_en ||
+                    ''
+                  }
+                  disabled={!canEdit}
+                  className={TEXTAREA}
+                />
+              </label>
+            </div>
             <label className={LABEL}>
               Introduction
               <textarea
@@ -944,6 +1420,36 @@ function ArticlePanel({
                 className={TEXTAREA}
               />
             </label>
+            <label className={LABEL}>
+              Topics (one per line)
+              <textarea
+                name="topics_en"
+                rows={4}
+                defaultValue={listFrom(articleEnContent as Json, 'topics').join('\n')}
+                disabled={!canEdit}
+                className={TEXTAREA}
+              />
+            </label>
+            <label className={LABEL}>
+              Entities (one per line)
+              <textarea
+                name="entities_en"
+                rows={4}
+                defaultValue={listFrom(articleEnContent as Json, 'entities').join('\n')}
+                disabled={!canEdit}
+                className={TEXTAREA}
+              />
+            </label>
+            <label className={LABEL}>
+              Internal links (JSON)
+              <textarea
+                name="internal_links_en"
+                rows={5}
+                defaultValue={jsonText(articleEnContent.internalLinks ?? [], '[]')}
+                disabled={!canEdit}
+                className={`${TEXTAREA} font-mono text-xs`}
+              />
+            </label>
           </fieldset>
 
           <fieldset className="grid content-start gap-4">
@@ -960,6 +1466,82 @@ function ArticlePanel({
                 className={FIELD}
               />
             </label>
+            <label className={LABEL}>
+              SEO-заголовок
+              <input
+                name="seo_title_uk"
+                required
+                defaultValue={textFrom(articleUkContent as Json, 'seoTitle') || revision.title_uk}
+                disabled={!canEdit}
+                className={FIELD}
+              />
+            </label>
+            <label className={LABEL}>
+              Тема випуску
+              <input
+                name="theme_uk"
+                required
+                defaultValue={textFrom(articleUkContent as Json, 'theme') || revision.title_uk}
+                disabled={!canEdit}
+                className={FIELD}
+              />
+            </label>
+            <label className={LABEL}>
+              Стендфьорст
+              <textarea
+                name="standfirst_uk"
+                rows={3}
+                required
+                defaultValue={
+                  textFrom(articleUkContent as Json, 'standfirst') || revision.intro_uk || ''
+                }
+                disabled={!canEdit}
+                className={TEXTAREA}
+              />
+            </label>
+            <label className={LABEL}>
+              Meta description
+              <textarea
+                name="meta_description_uk"
+                rows={3}
+                required
+                defaultValue={
+                  textFrom(articleUkContent as Json, 'metaDescription') || revision.intro_uk || ''
+                }
+                disabled={!canEdit}
+                className={TEXTAREA}
+              />
+            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className={LABEL}>
+                OG title
+                <input
+                  name="og_title_uk"
+                  defaultValue={
+                    textFrom(articleUkContent as Json, 'ogTitle') ||
+                    textFrom(articleUkContent as Json, 'seoTitle') ||
+                    revision.title_uk
+                  }
+                  disabled={!canEdit}
+                  className={FIELD}
+                />
+              </label>
+              <label className={LABEL}>
+                OG description
+                <textarea
+                  name="og_description_uk"
+                  rows={2}
+                  defaultValue={
+                    textFrom(articleUkContent as Json, 'ogDescription') ||
+                    textFrom(articleUkContent as Json, 'metaDescription') ||
+                    revision.intro_uk ||
+                    ''
+                  }
+                  disabled={!canEdit}
+                  className={TEXTAREA}
+                />
+              </label>
+            </div>
             <label className={LABEL}>
               Вступ
               <textarea
@@ -997,6 +1579,36 @@ function ArticlePanel({
                 }
                 disabled={!canEdit}
                 className={TEXTAREA}
+              />
+            </label>
+            <label className={LABEL}>
+              Теми (по одній у рядку)
+              <textarea
+                name="topics_uk"
+                rows={4}
+                defaultValue={listFrom(articleUkContent as Json, 'topics').join('\n')}
+                disabled={!canEdit}
+                className={TEXTAREA}
+              />
+            </label>
+            <label className={LABEL}>
+              Сутності (по одній у рядку)
+              <textarea
+                name="entities_uk"
+                rows={4}
+                defaultValue={listFrom(articleUkContent as Json, 'entities').join('\n')}
+                disabled={!canEdit}
+                className={TEXTAREA}
+              />
+            </label>
+            <label className={LABEL}>
+              Внутрішні посилання (JSON)
+              <textarea
+                name="internal_links_uk"
+                rows={5}
+                defaultValue={jsonText(articleUkContent.internalLinks ?? [], '[]')}
+                disabled={!canEdit}
+                className={`${TEXTAREA} font-mono text-xs`}
               />
             </label>
           </fieldset>
@@ -1135,7 +1747,8 @@ function VisualsPanel({
   if (!revision) return <p className={`${PANEL} text-sm text-slate-400`}>No active revision.</p>;
   const cover = artifactFor(workspace.artifacts, 'cover', 'neutral');
   const socialAssets = workspace.artifacts.filter(
-    (artifact) => artifact.artifact_type === 'social_asset',
+    (artifact) =>
+      artifact.artifact_type === 'social_asset' && artifact.mime_type?.startsWith('image/'),
   );
 
   return (
@@ -1322,6 +1935,17 @@ function SocialPanel({
   canSchedule: boolean;
 }) {
   const postsByChannel = new Map(workspace.socialPosts.map((post) => [post.channel, post]));
+  const configuredLocales = new Map(
+    workspace.localeMap
+      .filter((entry) => entry.locale === 'en' || entry.locale === 'uk')
+      .map((entry) => [entry.channel, entry.locale as 'en' | 'uk']),
+  );
+  const socialMatrix = Object.fromEntries(
+    Object.entries(WEEKLY_SOCIAL_MATRIX).map(([channel, fallback]) => [
+      channel,
+      configuredLocales.get(channel) ?? fallback,
+    ]),
+  ) as Record<keyof typeof WEEKLY_SOCIAL_MATRIX, 'en' | 'uk'>;
 
   return (
     <div className="grid gap-5">
@@ -1339,9 +1963,7 @@ function SocialPanel({
       </div>
 
       {(
-        Object.entries(WEEKLY_SOCIAL_MATRIX) as Array<
-          [keyof typeof WEEKLY_SOCIAL_MATRIX, 'en' | 'uk']
-        >
+        Object.entries(socialMatrix) as Array<[keyof typeof WEEKLY_SOCIAL_MATRIX, 'en' | 'uk']>
       ).map(([channel, locale]) => {
         const post = postsByChannel.get(channel);
         if (!post) {
@@ -1368,6 +1990,19 @@ function SocialPanel({
           .slice(0, 5);
         const enabled = post.publish_enabled;
         const meta = asRecord(post.meta);
+        const socialQuality = asRecord(post.quality_report);
+        const writer = asRecord(socialQuality.writer);
+        const critic = asRecord(socialQuality.critic);
+        const hookCandidates = Array.isArray(meta.hook_candidates)
+          ? meta.hook_candidates.filter(
+              (candidate): candidate is string =>
+                typeof candidate === 'string' && Boolean(candidate.trim()),
+            )
+          : [];
+        const linkedinDocument =
+          channel === 'linkedin' && typeof meta.document_artifact_id === 'string'
+            ? workspace.artifacts.find((artifact) => artifact.id === meta.document_artifact_id)
+            : undefined;
         return (
           <section key={channel} className={PANEL} aria-labelledby={`social-${channel}-heading`}>
             <div className="flex flex-wrap items-center gap-2">
@@ -1380,6 +2015,23 @@ function SocialPanel({
               <StatusPill value={post.status} />
               {!enabled ? <StatusPill value="paused" /> : null}
             </div>
+            {channel === 'threads' && post.status === 'needs_reconciliation' ? (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/25 bg-amber-400/7 p-3">
+                <p className="text-sm text-amber-100">
+                  A partial sequence is stored. Resume continues from the last published reply and
+                  does not repost the root.
+                </p>
+                <form action={resumeWeeklyThreadsSequenceAction}>
+                  <input type="hidden" name="social_post_id" value={post.id} />
+                  <ActionSubmitButton
+                    idleLabel="Resume sequence"
+                    pendingLabel="Resuming…"
+                    disabled={!canSchedule}
+                    className={SECONDARY}
+                  />
+                </form>
+              </div>
+            ) : null}
 
             <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,.55fr)]">
               <form action={saveWeeklySocialAction} className="grid gap-4">
@@ -1463,6 +2115,16 @@ function SocialPanel({
                         placeholder="File/version or handoff note"
                       />
                     </label>
+                    {linkedinDocument?.external_url ? (
+                      <a
+                        href={linkedinDocument.external_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="self-end text-sm font-bold text-[#47e4d3] underline underline-offset-4"
+                      >
+                        Open generated 7-page document
+                      </a>
+                    ) : null}
                   </div>
                 ) : null}
                 <label className={LABEL}>
@@ -1474,6 +2136,32 @@ function SocialPanel({
                     disabled={!canEdit}
                     className={TEXTAREA}
                   />
+                </label>
+                <label className={LABEL}>
+                  {channel === 'threads'
+                    ? 'Thread messages (JSON)'
+                    : channel === 'instagram'
+                      ? 'Carousel slides (JSON)'
+                      : channel === 'x'
+                        ? 'Root + self-reply (JSON)'
+                        : 'Content parts (JSON)'}
+                  <textarea
+                    name="content_parts_json"
+                    rows={channel === 'instagram' ? 10 : 6}
+                    spellCheck={false}
+                    defaultValue={jsonText(post.content_parts)}
+                    disabled={!canEdit}
+                    className={`${TEXTAREA} font-mono text-xs`}
+                  />
+                  <span className="text-xs font-normal text-slate-500">
+                    {channel === 'threads'
+                      ? '3–5 messages, each ≤500 characters.'
+                      : channel === 'instagram'
+                        ? '7–9 native slide texts; the caption stays above.'
+                        : channel === 'x'
+                          ? 'The first item is the root; the URL belongs in the self-reply.'
+                          : 'Optional structured parts used by previews, hashing and publishing.'}
+                  </span>
                 </label>
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className={LABEL}>
@@ -1584,8 +2272,92 @@ function SocialPanel({
                   <p className="mt-4 text-sm leading-6 whitespace-pre-wrap text-slate-200">
                     {post.post_text || 'No copy yet.'}
                   </p>
+                  {Array.isArray(post.content_parts) && post.content_parts.length > 0 ? (
+                    <ol className="mt-4 grid gap-2 border-l border-white/10 pl-4 text-xs leading-5 text-slate-400">
+                      {post.content_parts.flatMap((part, index) =>
+                        typeof part === 'string' ? (
+                          <li key={`${post.id}-part-${index}`}>{part}</li>
+                        ) : (
+                          []
+                        ),
+                      )}
+                    </ol>
+                  ) : null}
                   {post.url ? (
                     <p className="mt-4 truncate text-xs text-[#47e4d3]">{post.url}</p>
+                  ) : null}
+                </div>
+
+                <div className="rounded-xl border border-white/10 p-4">
+                  <dl className="grid gap-3 text-xs sm:grid-cols-2">
+                    <div>
+                      <dt className="font-bold text-slate-500 uppercase">Hook angle</dt>
+                      <dd className="mt-1 text-slate-300">
+                        {typeof meta.hook_angle === 'string' ? meta.hook_angle : '—'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-bold text-slate-500 uppercase">Writer model</dt>
+                      <dd className="mt-1 break-words text-slate-300">
+                        {[writer.provider, writer.model]
+                          .filter((value) => typeof value === 'string')
+                          .join(' · ') || '—'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-bold text-slate-500 uppercase">Critic model</dt>
+                      <dd className="mt-1 break-words text-slate-300">
+                        {[critic.provider, critic.model]
+                          .filter((value) => typeof value === 'string')
+                          .join(' · ') || '—'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-bold text-slate-500 uppercase">Platform fit</dt>
+                      <dd className="mt-1 text-slate-300">
+                        {typeof socialQuality.platformFitScore === 'number'
+                          ? `${socialQuality.platformFitScore}/100`
+                          : '—'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-bold text-slate-500 uppercase">Generation cost</dt>
+                      <dd className="mt-1 text-slate-300">
+                        {typeof asRecord(writer.usage).estimatedCostUsd === 'number' ||
+                        typeof asRecord(critic.usage).estimatedCostUsd === 'number'
+                          ? `$${(
+                              (typeof asRecord(writer.usage).estimatedCostUsd === 'number'
+                                ? (asRecord(writer.usage).estimatedCostUsd as number)
+                                : 0) +
+                              (typeof asRecord(critic.usage).estimatedCostUsd === 'number'
+                                ? (asRecord(critic.usage).estimatedCostUsd as number)
+                                : 0)
+                            ).toFixed(6)}`
+                          : '—'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="font-bold text-slate-500 uppercase">Audience</dt>
+                      <dd className="mt-1 text-slate-300">Builders, founders & AI leaders</dd>
+                    </div>
+                  </dl>
+                  {hookCandidates.length ? (
+                    <details className="mt-4 border-t border-white/8 pt-3">
+                      <summary className="cursor-pointer text-xs font-bold text-cyan-200">
+                        Compare {hookCandidates.length} generated hooks
+                      </summary>
+                      <ol className="mt-3 grid gap-2 text-xs leading-5 text-slate-400">
+                        {hookCandidates.map((candidate, index) => (
+                          <li
+                            key={`${post.id}-hook-${index}`}
+                            className="rounded-lg bg-black/20 p-2"
+                          >
+                            <span className="mr-2 font-bold text-slate-200">{index + 1}.</span>
+                            {candidate}
+                          </li>
+                        ))}
+                      </ol>
+                    </details>
                   ) : null}
                 </div>
 
@@ -1602,10 +2374,18 @@ function SocialPanel({
                       {quality.blocking} blockers · {quality.warnings} warnings
                     </span>
                   </div>
-                  {quality.messages.length ? (
+                  {quality.items.length ? (
                     <ul className="mt-3 grid gap-2 text-xs leading-5 text-slate-400">
-                      {quality.messages.map((message, index) => (
-                        <li key={`${message}-${index}`}>• {message}</li>
+                      {quality.items.map((item) => (
+                        <li key={item.key} className="rounded-lg border border-white/8 p-2.5">
+                          <p>• {item.message}</p>
+                          {item.span ? (
+                            <p className="mt-1 text-red-200">Exact span: “{item.span}”</p>
+                          ) : null}
+                          {item.suggestedFix ? (
+                            <p className="mt-1 text-cyan-200">Suggested fix: {item.suggestedFix}</p>
+                          ) : null}
+                        </li>
                       ))}
                     </ul>
                   ) : (
@@ -1813,10 +2593,12 @@ function VideoPanel({
   const graphicsPreview = artifactFor(workspace.artifacts, 'graphics_preview', 'en');
 
   const scriptText = textFrom(script?.content, 'script', 'text', 'body');
+  const manifestContent = asRecord(manifest?.content);
+  const scriptContent = asRecord(script?.content);
   const scenes =
-    asRecord(manifest?.content).scenes ??
-    asRecord(script?.content).scenes ??
-    (manifest ? manifest.content : []);
+    asRecord(manifestContent.longForm).scenes ??
+    asRecord(scriptContent.narration_plan).scenes ??
+    [];
   const scenesJson = jsonText(scenes, '[]');
   const captionsEnText = textFrom(captionsEn?.content, 'vtt', 'srt', 'text');
   const captionsUkText = textFrom(captionsUk?.content, 'vtt', 'srt', 'text');
@@ -1895,10 +2677,9 @@ function VideoPanel({
               <textarea
                 name="captions_en"
                 rows={12}
-                required
                 spellCheck={false}
                 defaultValue={captionsEnText}
-                disabled={!canEdit}
+                disabled
                 className={`${TEXTAREA} font-mono text-xs`}
               />
             </label>
@@ -1907,10 +2688,9 @@ function VideoPanel({
               <textarea
                 name="captions_uk"
                 rows={12}
-                required
                 spellCheck={false}
                 defaultValue={captionsUkText}
-                disabled={!canEdit}
+                disabled
                 className={`${TEXTAREA} font-mono text-xs`}
               />
             </label>
@@ -1957,7 +2737,7 @@ function VideoPanel({
                 type="url"
                 name="youtube_url"
                 defaultValue={finalVideo?.external_url ?? ''}
-                disabled={!canEdit}
+                disabled
                 className={FIELD}
                 placeholder="https://www.youtube.com/watch?v=…"
               />
@@ -1969,7 +2749,7 @@ function VideoPanel({
                 pattern="[A-Za-z0-9_-]{11}"
                 maxLength={11}
                 defaultValue={finalVideo?.provider_id ?? ''}
-                disabled={!canEdit}
+                disabled
                 className={FIELD}
               />
             </label>
@@ -1981,7 +2761,7 @@ function VideoPanel({
                 type="url"
                 name="thumbnail_url"
                 defaultValue={thumbnail?.external_url ?? ''}
-                disabled={!canEdit}
+                disabled
                 className={FIELD}
               />
             </label>
@@ -1992,11 +2772,47 @@ function VideoPanel({
                 min={1}
                 name="duration_seconds"
                 defaultValue={finalVideo?.duration_seconds ?? ''}
-                disabled={!canEdit}
+                disabled
                 className={FIELD}
               />
             </label>
           </div>
+          <label className={LABEL}>
+            Render result manifest (`weekly-video-result-v2` JSON)
+            <textarea
+              name="result_manifest_json"
+              rows={14}
+              spellCheck={false}
+              disabled={!canEdit}
+              className={`${TEXTAREA} font-mono text-xs`}
+              placeholder={JSON.stringify(
+                {
+                  schemaVersion: 'weekly-video-result-v2',
+                  digestId: workspace.digest.id,
+                  revisionId: revision.id,
+                  inputHash:
+                    textFrom(manifestContent as Json, 'inputHash') || '<approved inputHash>',
+                  youtube: {
+                    id: '<youtube-id>',
+                    url: 'https://www.youtube.com/watch?v=<youtube-id>',
+                    thumbnailUrl: 'https://…',
+                    durationSeconds: 420,
+                    publishedAt: '<ISO timestamp>',
+                  },
+                  captions: [
+                    { locale: 'en', url: 'https://…/captions-en.vtt' },
+                    { locale: 'uk', url: 'https://…/captions-uk.vtt' },
+                  ],
+                },
+                null,
+                2,
+              )}
+            />
+            <span className="text-xs font-normal text-slate-500">
+              Final YouTube data is accepted only when digestId, revisionId and inputHash exactly
+              match the approved manifest.
+            </span>
+          </label>
           <div>
             <ActionSubmitButton
               idleLabel="Save video workspace"
@@ -2022,6 +2838,13 @@ function VideoPanel({
             reviews={workspace.artifactReviews}
             canReview={canReview}
             label="English script"
+          />
+          <ArtifactCard
+            digestId={workspace.digest.id}
+            artifact={manifest}
+            reviews={workspace.artifactReviews}
+            canReview={canReview}
+            label="weekly-video-v2 manifest"
           />
           <ArtifactCard
             digestId={workspace.digest.id}
@@ -2333,11 +3156,17 @@ export function WeeklyWorkspace({
   const storyIds = workspace.items.map((item) => item.id);
   const artifacts: WeeklyPreflightArtifact[] = workspace.artifacts.flatMap((artifact) => {
     if (!ARTIFACT_TYPES.has(artifact.artifact_type as WeeklyArtifactType)) return [];
+    const provenanceStoryId =
+      artifact.artifact_type === 'research_pack'
+        ? workspace.items.find(
+            (item) => researchArtifactFor(workspace.artifacts, item)?.id === artifact.id,
+          )?.id
+        : undefined;
     return [
       {
         artifactType: artifact.artifact_type as WeeklyArtifactType,
         locale: artifact.locale === 'en' || artifact.locale === 'uk' ? artifact.locale : undefined,
-        storyId: artifact.revision_item_id,
+        storyId: provenanceStoryId ?? artifact.revision_item_id,
         generationStatus: artifact.generation_status,
         reviewStatus: artifact.review_status,
         stale: artifact.review_status === 'stale',
@@ -2362,8 +3191,16 @@ export function WeeklyWorkspace({
       },
     ];
   });
-  const preflight = validateWeeklyDigestPreflight({ storyIds, artifacts, social });
-  const requiredSlots = 9 + storyIds.length + Object.keys(WEEKLY_SOCIAL_MATRIX).length;
+  const localeMap = Object.fromEntries(
+    workspace.localeMap.flatMap((entry) =>
+      Object.hasOwn(WEEKLY_SOCIAL_MATRIX, entry.channel) &&
+      (entry.locale === 'en' || entry.locale === 'uk')
+        ? [[entry.channel, entry.locale]]
+        : [],
+    ),
+  );
+  const preflight = validateWeeklyDigestPreflight({ storyIds, artifacts, social, localeMap });
+  const requiredSlots = 15 + storyIds.length + Object.keys(WEEKLY_SOCIAL_MATRIX).length;
   const blockedSlots = new Set(preflight.blockers.map((blocker) => blocker.slot)).size;
   const progress = Math.max(
     0,
@@ -2385,6 +3222,9 @@ export function WeeklyWorkspace({
         <OverviewPanel workspace={workspace} blockers={preflight.blockers} progress={progress} />
       ) : null}
       {activeTab === 'stories' ? <StoriesPanel workspace={workspace} canEdit={canEdit} /> : null}
+      {activeTab === 'research' ? (
+        <ResearchPanel workspace={workspace} canEdit={canEdit} canReview={canReview} />
+      ) : null}
       {activeTab === 'article' ? (
         <ArticlePanel workspace={workspace} canEdit={canEdit} canReview={canReview} />
       ) : null}

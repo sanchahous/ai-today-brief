@@ -4,12 +4,14 @@ export const WEEKLY_SOCIAL_MATRIX = {
   telegram: 'uk',
   facebook: 'uk',
   x: 'en',
-  threads: 'en',
+  threads: 'uk',
   linkedin: 'en',
   instagram: 'en',
 } as const satisfies Record<SocialChannel, SocialLocale>;
 
 export type WeeklyArtifactType =
+  | 'research_pack'
+  | 'content_quality_report'
   | 'article'
   | 'pdf'
   | 'cover'
@@ -50,6 +52,7 @@ export interface WeeklyPreflightInput {
   storyIds: string[];
   artifacts: WeeklyPreflightArtifact[];
   social: WeeklyPreflightSocial[];
+  localeMap?: Partial<Record<SocialChannel, SocialLocale>>;
 }
 
 export interface WeeklyPreflightBlocker {
@@ -125,6 +128,9 @@ export function validateWeeklyDigestPreflight(input: WeeklyPreflightInput): Week
 
   requireArtifact('article', { locale: 'en', label: 'English article' });
   requireArtifact('article', { locale: 'uk', label: 'Ukrainian article' });
+  requireArtifact('content_quality_report', { locale: null, label: 'Master quality report' });
+  requireArtifact('video_script', { locale: 'en', label: 'Approved English video script' });
+  requireArtifact('video_manifest', { locale: 'en', label: 'Approved weekly-video-v2 manifest' });
   requireArtifact('pdf', { locale: 'en', label: 'English PDF' });
   requireArtifact('pdf', { locale: 'uk', label: 'Ukrainian PDF' });
   requireArtifact('cover', { locale: null, label: 'Weekly cover' });
@@ -140,17 +146,23 @@ export function validateWeeklyDigestPreflight(input: WeeklyPreflightInput): Week
       slot: 'stories',
       message: 'At least one selected story is required.',
     });
-  } else if (storyIds.length < 3 || storyIds.length > 7) {
+  } else if (storyIds.length < 6 || storyIds.length > 7) {
     blockers.push({
       code: 'stories_count',
       slot: 'stories',
-      message: 'Weekly Digest must contain between three and seven unique stories.',
+      message: 'Content Studio v2 requires Top 3 plus three or four Radar stories (6–7 total).',
     });
   }
   for (const storyId of storyIds) {
     requireArtifact('story_image', {
       storyId,
       label: `Story image for ${storyId}`,
+    });
+  }
+  for (const storyId of storyIds.slice(0, 3)) {
+    requireArtifact('research_pack', {
+      storyId,
+      label: `Approved research pack for Top 3 story ${storyId}`,
     });
   }
 
@@ -164,7 +176,8 @@ export function validateWeeklyDigestPreflight(input: WeeklyPreflightInput): Week
     }
   }
 
-  for (const [channel, locale] of Object.entries(WEEKLY_SOCIAL_MATRIX) as Array<
+  const localeMatrix = { ...WEEKLY_SOCIAL_MATRIX, ...(input.localeMap ?? {}) };
+  for (const [channel, locale] of Object.entries(localeMatrix) as Array<
     [SocialChannel, SocialLocale]
   >) {
     const posts = input.social.filter((post) => post.channel === channel);

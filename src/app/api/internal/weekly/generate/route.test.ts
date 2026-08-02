@@ -9,7 +9,7 @@ vi.mock('@/lib/weekly-digest/generation-worker', () => ({
   runWeeklyDigestGenerationJobs,
 }));
 
-import { POST } from './route';
+import { maxDuration, POST } from './route';
 
 describe('Weekly generation internal route', () => {
   afterEach(() => {
@@ -24,6 +24,10 @@ describe('Weekly generation internal route', () => {
     );
     expect(response.status).toBe(401);
     expect(runWeeklyDigestGenerationJobs).not.toHaveBeenCalled();
+  });
+
+  it('allows a complete bilingual writer and critic cycle', () => {
+    expect(maxDuration).toBe(300);
   });
 
   it('claims one heavy job for the exact bearer secret', async () => {

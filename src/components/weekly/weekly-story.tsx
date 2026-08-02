@@ -26,6 +26,8 @@ export function WeeklyStory({ item, lang }: { item: WeeklyDigestItemView; lang: 
   return (
     <section
       id={`story-${item.rank}`}
+      data-weekly-story
+      data-story-id={item.id}
       aria-labelledby={`story-${item.rank}-title`}
       className="border-border-soft scroll-mt-[calc(var(--header-h)+2rem)] border-t pt-10"
     >

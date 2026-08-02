@@ -41,6 +41,7 @@ const LAYOUT = 'e2e/layout-regression.spec.ts';
 const HEADER = 'e2e/header-layout.spec.ts';
 const FOOTER = 'e2e/footer-newsletter.spec.ts';
 const ADMIN_MOBILE = 'e2e/admin-mobile.spec.ts';
+const WEEKLY_SEO = 'e2e/weekly-seo.spec.ts';
 
 /** Cheap canaries that visit many routes — the safety net for unmapped UI changes. */
 const CORE = [SMOKE, LAYOUT];
@@ -69,6 +70,10 @@ const OVERRIDES: Array<{ match: RegExp; specs: string[] }> = [
   {
     match: /^(?:src\/(?:app|components)\/admin\/|src\/app\/manifest\.ts$|public\/admin-sw\.js$)/,
     specs: [ADMIN_MOBILE],
+  },
+  {
+    match: /^(?:src\/app\/\[lang\]\/weekly\/\[slug\]\/page\.tsx|src\/lib\/digests\.ts)$/,
+    specs: [WEEKLY_SEO],
   },
 ];
 
@@ -125,7 +130,8 @@ function buildCoverage(): Coverage {
     const ids = new Set<string>();
     for (const m of text.matchAll(TESTID_RE)) ids.add(m[1] ?? m[2]);
     const dirs = new Set<string>();
-    for (const m of text.matchAll(ROUTE_RE)) dirs.add(m[1] ? `src/app/[lang]${m[1]}` : 'src/app/[lang]');
+    for (const m of text.matchAll(ROUTE_RE))
+      dirs.add(m[1] ? `src/app/[lang]${m[1]}` : 'src/app/[lang]');
 
     specTestids.set(spec, [...ids]);
     specRouteDirs.set(spec, [...dirs]);
@@ -133,7 +139,8 @@ function buildCoverage(): Coverage {
       allTestids.add(id);
       (testidToSpecs.get(id) ?? testidToSpecs.set(id, new Set()).get(id)!).add(spec);
     }
-    for (const d of dirs) (routeDirToSpecs.get(d) ?? routeDirToSpecs.set(d, new Set()).get(d)!).add(spec);
+    for (const d of dirs)
+      (routeDirToSpecs.get(d) ?? routeDirToSpecs.set(d, new Set()).get(d)!).add(spec);
   }
 
   // Index source for each asserted testid as a quoted string literal — matches both
@@ -149,7 +156,15 @@ function buildCoverage(): Coverage {
     }
   }
 
-  return { specs, specTestids, specRouteDirs, testidToSpecs, routeDirToSpecs, testidToSources, srcFiles };
+  return {
+    specs,
+    specTestids,
+    specRouteDirs,
+    testidToSpecs,
+    routeDirToSpecs,
+    testidToSources,
+    srcFiles,
+  };
 }
 
 /** Source file → specs it triggers, via the testids defined in it. */
@@ -174,13 +189,17 @@ function validate(cov: Coverage): string[] {
   for (const [id, specs] of cov.testidToSpecs) {
     if ((cov.testidToSources.get(id)?.size ?? 0) === 0) {
       const who = [...specs].map(baseSpec).join(', ');
-      errors.push(`testid "${id}" (asserted by ${who}) is not defined anywhere in src/ — renamed or removed?`);
+      errors.push(
+        `testid "${id}" (asserted by ${who}) is not defined anywhere in src/ — renamed or removed?`,
+      );
     }
   }
 
   // Orphan: a spec that no source change can reach (no resolvable testid, route, or override).
   for (const spec of cov.specs) {
-    const hasTestid = (cov.specTestids.get(spec) ?? []).some((id) => (cov.testidToSources.get(id)?.size ?? 0) > 0);
+    const hasTestid = (cov.specTestids.get(spec) ?? []).some(
+      (id) => (cov.testidToSources.get(id)?.size ?? 0) > 0,
+    );
     const hasRoute = (cov.specRouteDirs.get(spec) ?? []).some(dirExists);
     const hasOverride = OVERRIDES.some((o) => o.specs.includes(spec));
     if (!hasTestid && !hasRoute && !hasOverride) {
@@ -193,7 +212,8 @@ function validate(cov: Coverage): string[] {
   // Stale override: points at a spec file that no longer exists.
   for (const o of OVERRIDES) {
     for (const s of o.specs) {
-      if (!cov.specs.includes(s)) errors.push(`OVERRIDES references missing spec ${baseSpec(s)} — remove or fix it.`);
+      if (!cov.specs.includes(s))
+        errors.push(`OVERRIDES references missing spec ${baseSpec(s)} — remove or fix it.`);
     }
   }
 
@@ -201,7 +221,10 @@ function validate(cov: Coverage): string[] {
 }
 
 // --- decide what to run -------------------------------------------------------------------
-function plan(files: string[], cov: Coverage): { runAll: boolean; specs: string[]; reasons: string[] } {
+function plan(
+  files: string[],
+  cov: Coverage,
+): { runAll: boolean; specs: string[]; reasons: string[] } {
   const edges = testidEdges(cov);
   const specs = new Set<string>();
   const reasons: string[] = [];
@@ -247,15 +270,31 @@ function git(args: string[]): string {
 function changedFiles(): string[] {
   // Override for previewing ("what would touching X run?") and for tests — comma/space separated.
   const override = process.env.E2E_AFFECTED_FILES;
-  if (override) return [...new Set(override.split(/[\s,]+/).map((s) => s.trim()).filter(Boolean))];
+  if (override)
+    return [
+      ...new Set(
+        override
+          .split(/[\s,]+/)
+          .map((s) => s.trim())
+          .filter(Boolean),
+      ),
+    ];
 
-  const base = git(['merge-base', 'origin/main', 'HEAD']) || git(['merge-base', 'main', 'HEAD']) || 'HEAD';
+  const base =
+    git(['merge-base', 'origin/main', 'HEAD']) || git(['merge-base', 'main', 'HEAD']) || 'HEAD';
   const out = [
     git(['diff', '--name-only', base, 'HEAD']), // committed since base
     git(['diff', '--name-only', 'HEAD']), // staged + unstaged (tracked)
     git(['ls-files', '--others', '--exclude-standard']), // new untracked
   ];
-  return [...new Set(out.flatMap((s) => s.split('\n')).map((s) => toPosix(s.trim())).filter(Boolean))];
+  return [
+    ...new Set(
+      out
+        .flatMap((s) => s.split('\n'))
+        .map((s) => toPosix(s.trim()))
+        .filter(Boolean),
+    ),
+  ];
 }
 
 // --- server / build -----------------------------------------------------------------------
@@ -296,13 +335,17 @@ async function main(): Promise<void> {
       console.error('');
       process.exit(1);
     }
-    console.log(`e2e:affected --check — map OK (${cov.specs.length} specs, ${cov.testidToSpecs.size} testids).`);
+    console.log(
+      `e2e:affected --check — map OK (${cov.specs.length} specs, ${cov.testidToSpecs.size} testids).`,
+    );
     return;
   }
 
   // Normal/dry-run path. Surface drift before the build so you know what to fix.
   if (errors.length > 0) {
-    console.error('e2e:affected — coverage map is out of date (run `npm run e2e:check` for detail):\n');
+    console.error(
+      'e2e:affected — coverage map is out of date (run `npm run e2e:check` for detail):\n',
+    );
     for (const e of errors) console.error(`  ✗ ${e}`);
     console.error('');
     process.exit(1);
@@ -327,7 +370,9 @@ async function main(): Promise<void> {
   if (runAll) {
     console.log('e2e:affected — broad change detected → running the full chromium suite.\n');
   } else {
-    console.log(`e2e:affected — running ${specs.length} spec(s) on chromium:\n  ${specs.join('\n  ')}\n`);
+    console.log(
+      `e2e:affected — running ${specs.length} spec(s) on chromium:\n  ${specs.join('\n  ')}\n`,
+    );
   }
 
   if (process.argv.includes('--dry-run')) {

@@ -4,7 +4,11 @@ import { randomUUID } from 'node:crypto';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { createWeeklyEditorialDraft } from '@/lib/weekly-digest/editorial-draft';
+import { canonicalSourceName, placementForRank } from '@/lib/weekly-digest/content-studio';
+import {
+  startWeeklyContentStudio,
+  weeklyContentStudioMode,
+} from '@/lib/weekly-digest/orchestrator';
 import {
   buildDigestSelectionContext,
   citationUrlsFromUnknown,
@@ -21,7 +25,6 @@ import {
   channelRunsOnDate,
   completedWeeklyRangeForTrigger,
   nextScheduledForChannel,
-  nextWeeklyScheduledForChannel,
   resolveCadenceSettings,
   type ChannelCadence,
 } from './schedule';
@@ -36,15 +39,6 @@ import type {
 } from './types';
 
 export const SOCIAL_GENERATION_VERSION = 'social-v1';
-const WEEKLY_ARTIFACT_QUEUE_VERSION = 'weekly-auto-v2';
-
-interface UntypedRpcClient {
-  rpc(
-    name: string,
-    args?: Record<string, unknown>,
-  ): Promise<{ data: unknown; error: { message: string } | null }>;
-}
-
 interface SourceBrief {
   id: string;
   date: string;
@@ -541,148 +535,6 @@ export interface ComposeResult {
   weeklyDigestId?: string;
 }
 
-function blank(value: string | null | undefined) {
-  return !value?.trim();
-}
-
-function emptyTakeaways(value: Json | null | undefined) {
-  return (
-    !Array.isArray(value) || value.every((entry) => typeof entry !== 'string' || !entry.trim())
-  );
-}
-
-function weeklyEditorialDraftFor(items: SourceItem[]) {
-  return createWeeklyEditorialDraft(
-    items.map((item) => ({
-      id: item.id,
-      category_slug: item.category_slug,
-      title_en: item.title_en,
-      title_uk: item.title_uk,
-      summary_en: item.summary_en,
-      summary_uk: item.summary_uk,
-      why_matters_en: item.why_matters_en,
-      why_matters_uk: item.why_matters_uk,
-      facts_en: item.facts_en,
-      facts_uk: item.facts_uk,
-    })),
-  );
-}
-
-/**
- * Revisions and their story rows are append-only. When legacy initialization
- * left editorial fields blank, create a replacement immutable revision rather
- * than mutating it. The RPC returns the current revision unchanged if its
- * editorial payload is already complete.
- */
-async function ensureWeeklyEditorialDraftRevision(
-  weeklyDigestId: string,
-  revisionId: string,
-  sourceItems: SourceItem[],
-) {
-  const db = getSupabaseAdmin();
-  const draft = weeklyEditorialDraftFor(sourceItems);
-  const [revisionResult, itemsResult] = await Promise.all([
-    db.from('weekly_digest_revisions').select('*').eq('id', revisionId).single(),
-    db.from('weekly_digest_revision_items').select('*').eq('revision_id', revisionId).order('rank'),
-  ]);
-  if (revisionResult.error || !revisionResult.data) {
-    throw new Error(
-      `[social-composer] editorial draft revision: ${revisionResult.error?.message ?? 'missing'}`,
-    );
-  }
-  if (itemsResult.error || !itemsResult.data) {
-    throw new Error(
-      `[social-composer] editorial draft stories: ${itemsResult.error?.message ?? 'missing'}`,
-    );
-  }
-
-  const revision = revisionResult.data;
-  const draftsBySourceId = new Map(draft.stories.map((story) => [story.id, story]));
-  const nextItems = itemsResult.data.map((item) => {
-    const story = item.brief_item_id ? draftsBySourceId.get(item.brief_item_id) : undefined;
-    if (!story) {
-      throw new Error(
-        `[social-composer] editorial draft is missing source ${item.brief_item_id ?? item.id}`,
-      );
-    }
-    return {
-      brief_item_id: item.brief_item_id,
-      rank: item.rank,
-      title_en: item.title_en,
-      title_uk: item.title_uk,
-      summary_en: item.summary_en,
-      summary_uk: item.summary_uk,
-      body_en:
-        blank(item.body_en) || item.body_en.trim() === item.summary_en.trim()
-          ? story.body_en
-          : item.body_en,
-      body_uk:
-        blank(item.body_uk) || item.body_uk.trim() === item.summary_uk.trim()
-          ? story.body_uk
-          : item.body_uk,
-      why_en: item.why_en,
-      why_uk: item.why_uk,
-      practical_en: blank(item.practical_en) ? story.practical_en : item.practical_en,
-      practical_uk: blank(item.practical_uk) ? story.practical_uk : item.practical_uk,
-      takeaway_en: blank(item.takeaway_en) ? story.takeaway_en : item.takeaway_en,
-      takeaway_uk: blank(item.takeaway_uk) ? story.takeaway_uk : item.takeaway_uk,
-      event_date: item.event_date,
-      sources: item.sources,
-      source_snapshot: item.source_snapshot,
-    };
-  });
-  const editorNoteEn = blank(revision.editor_note_en)
-    ? draft.editor_note_en
-    : revision.editor_note_en;
-  const editorNoteUk = blank(revision.editor_note_uk)
-    ? draft.editor_note_uk
-    : revision.editor_note_uk;
-  const takeawaysEn = emptyTakeaways(revision.key_takeaways_en)
-    ? draft.key_takeaways_en
-    : revision.key_takeaways_en;
-  const takeawaysUk = emptyTakeaways(revision.key_takeaways_uk)
-    ? draft.key_takeaways_uk
-    : revision.key_takeaways_uk;
-  const needsRevision =
-    editorNoteEn !== revision.editor_note_en ||
-    editorNoteUk !== revision.editor_note_uk ||
-    takeawaysEn !== revision.key_takeaways_en ||
-    takeawaysUk !== revision.key_takeaways_uk ||
-    nextItems.some((item, index) => {
-      const current = itemsResult.data[index];
-      return (
-        item.body_en !== current.body_en ||
-        item.body_uk !== current.body_uk ||
-        item.practical_en !== current.practical_en ||
-        item.practical_uk !== current.practical_uk ||
-        item.takeaway_en !== current.takeaway_en ||
-        item.takeaway_uk !== current.takeaway_uk
-      );
-    });
-  if (!needsRevision) return revisionId;
-
-  const rpc = db as unknown as UntypedRpcClient;
-  const { data, error } = await rpc.rpc('create_service_weekly_digest_revision', {
-    p_weekly_digest_id: weeklyDigestId,
-    p_title_en: revision.title_en,
-    p_title_uk: revision.title_uk,
-    p_intro_en: revision.intro_en ?? '',
-    p_intro_uk: revision.intro_uk ?? '',
-    p_editor_note_en: editorNoteEn,
-    p_editor_note_uk: editorNoteUk,
-    p_key_takeaways_en: takeawaysEn,
-    p_key_takeaways_uk: takeawaysUk,
-    p_items: nextItems,
-    p_reason: 'composer_editorial_draft',
-  });
-  if (error || typeof data !== 'string') {
-    throw new Error(
-      `[social-composer] editorial revision: ${error?.message ?? 'replacement revision was not returned'}`,
-    );
-  }
-  return data;
-}
-
 async function notifyPackagesReady(packageIds: string[], label: string) {
   if (process.env.SOCIAL_SHADOW_MODE === '1') return;
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -878,227 +730,10 @@ function weeklyCandidates(
   });
 }
 
-function weeklyTargetUrl(locale: SocialLocale, slug: string, channel: SocialChannel) {
-  const url = new URL(`/${locale}/weekly/${slug}`, SITE_URL);
-  url.searchParams.set('utm_source', channel);
-  url.searchParams.set('utm_medium', 'social');
-  url.searchParams.set('utm_campaign', 'weekly_digest');
-  return url.toString();
-}
-
-function weeklyTitleList(
-  items: SourceItem[],
-  locale: SocialLocale,
-  options: { separator?: string; maxTitleChars?: number } = {},
-) {
-  const separator = options.separator ?? '\n';
-  const maxTitleChars = options.maxTitleChars ?? 160;
-  return items
-    .map((item, index) => {
-      const title = locale === 'uk' ? text(item.title_uk) : text(item.title_en);
-      return `${index + 1}. ${truncate(title, maxTitleChars)}`;
-    })
-    .join(separator);
-}
-
-function weeklySeeds(
-  slug: string,
-  items: SourceItem[],
-  anchorDate: string,
-  now: Date,
-  urls: Record<SocialChannel, string>,
-): VariantSeed[] {
-  const ukList = weeklyTitleList(items, 'uk');
-  const enList = weeklyTitleList(items, 'en');
-  const xList = weeklyTitleList(items, 'en', {
-    separator: '; ',
-    maxTitleChars: Math.max(20, Math.floor(150 / items.length)),
-  });
-  const threadsList = weeklyTitleList(items, 'en', {
-    separator: '; ',
-    maxTitleChars: 24,
-  });
-  return [
-    {
-      channel: 'telegram',
-      locale: 'uk',
-      format: 'weekly_digest',
-      text: `Тиждень в AI — ${items.length} головних новин\n\n${ukList}\n\nПовний тижневий дайджест: ${urls.telegram}`,
-      trackingToken: urls.telegram.split('/').at(-1)!,
-      sourceUrl: weeklyTargetUrl('uk', slug, 'telegram'),
-      scheduledFor: nextWeeklyScheduledForChannel('telegram', anchorDate, now),
-    },
-    {
-      channel: 'x',
-      locale: 'en',
-      format: 'weekly_digest',
-      text: truncate(
-        `This week in AI: ${xList}. ${items.length} evidence-backed developments, with the practical context in the full digest. Link in the reply.`,
-        280,
-      ),
-      firstComment: `Read the full weekly digest: ${urls.x}`,
-      trackingToken: urls.x.split('/').at(-1)!,
-      sourceUrl: weeklyTargetUrl('en', slug, 'x'),
-      scheduledFor: nextWeeklyScheduledForChannel('x', anchorDate, now),
-    },
-    {
-      channel: 'threads',
-      locale: 'en',
-      format: 'weekly_conversation',
-      text: `This week’s AI engineering shifts: ${threadsList}. We reviewed the evidence and practical implications across all ${items.length} stories. Which change will affect your work first? ${urls.threads}`,
-      trackingToken: urls.threads.split('/').at(-1)!,
-      sourceUrl: weeklyTargetUrl('en', slug, 'threads'),
-      scheduledFor: nextWeeklyScheduledForChannel('threads', anchorDate, now),
-    },
-    {
-      channel: 'linkedin',
-      locale: 'en',
-      format: 'weekly_insight',
-      text: `The week in AI engineering: ${items.length} developments worth acting on.\n\n${enList}\n\nWe selected these stories for evidence quality, industry impact, and practical value—not headline volume. The full edition explains what changed, why it matters, and what builders, technical leaders, and product teams can do next.\n\nRead the complete Weekly Digest: ${urls.linkedin}\n\n#AI #Engineering #AITools`,
-      trackingToken: urls.linkedin.split('/').at(-1)!,
-      sourceUrl: weeklyTargetUrl('en', slug, 'linkedin'),
-      scheduledFor: nextWeeklyScheduledForChannel('linkedin', anchorDate, now),
-    },
-    {
-      channel: 'instagram',
-      locale: 'en',
-      format: 'weekly_carousel_4x5',
-      text: `The week in AI engineering — ${items.length} stories worth your time.\n\n${enList}\n\nSwipe for the practical context, then save this roundup for your next planning session. Full edition via the link in bio.\n\n#AI #Engineering #AITools`,
-      trackingToken: urls.instagram.split('/').at(-1)!,
-      sourceUrl: weeklyTargetUrl('en', slug, 'instagram'),
-      scheduledFor: nextWeeklyScheduledForChannel('instagram', anchorDate, now),
-    },
-    {
-      channel: 'facebook',
-      locale: 'uk',
-      format: 'weekly_roundup',
-      text: `Підсумки тижня в AI для розробників\n\n${ukList}\n\nМи перевірили джерела та зібрали контекст, значення й практичні висновки до кожної новини в одному випуску: ${urls.facebook}`,
-      trackingToken: urls.facebook.split('/').at(-1)!,
-      sourceUrl: weeklyTargetUrl('uk', slug, 'facebook'),
-      scheduledFor: nextWeeklyScheduledForChannel('facebook', anchorDate, now),
-    },
-  ];
-}
-
-async function queueInitialWeeklyArtifacts(
-  weeklyDigestId: string,
-  revisionId: string,
-  items: SourceItem[],
-) {
-  const db = getSupabaseAdmin();
-  const [revisionResult, itemResult, articleResult] = await Promise.all([
-    db.from('weekly_digest_revisions').select('*').eq('id', revisionId).single(),
-    db
-      .from('weekly_digest_revision_items')
-      .select('id,brief_item_id,rank,title_en,title_uk')
-      .eq('revision_id', revisionId)
-      .order('rank'),
-    db
-      .from('weekly_digest_artifacts')
-      .select('slot_key')
-      .eq('revision_id', revisionId)
-      .eq('is_current', true)
-      .in('slot_key', ['article:en', 'article:uk']),
-  ]);
-  if (revisionResult.error || !revisionResult.data) {
-    throw new Error(
-      `[social-composer] weekly artifact queue: ${
-        revisionResult.error?.message ?? 'revision missing'
-      }`,
-    );
-  }
-  const revision = revisionResult.data;
-  const revisionItems = itemResult.data;
-  if (itemResult.error || !revisionItems) {
-    throw new Error(
-      `[social-composer] weekly artifact queue: ${
-        itemResult.error?.message ?? 'revision items missing'
-      }`,
-    );
-  }
-  if (articleResult.error) {
-    throw new Error(`[social-composer] weekly article artifacts: ${articleResult.error.message}`);
-  }
-  const currentArticleSlots = new Set(
-    (articleResult.data ?? []).map((artifact) => artifact.slot_key),
-  );
-  for (const locale of ['en', 'uk'] as const) {
-    if (currentArticleSlots.has(`article:${locale}`)) continue;
-    const { error } = await db.rpc('save_weekly_digest_artifact', {
-      p_weekly_digest_id: weeklyDigestId,
-      p_revision_id: revisionId,
-      p_artifact_type: 'article',
-      p_locale: locale,
-      p_slot_key: `article:${locale}`,
-      p_generation_status: 'ready',
-      p_review_status: 'in_review',
-      p_content: {
-        title: locale === 'uk' ? revision.title_uk : revision.title_en,
-        intro: locale === 'uk' ? revision.intro_uk : revision.intro_en,
-        editor_note: locale === 'uk' ? revision.editor_note_uk : revision.editor_note_en,
-        key_takeaways: locale === 'uk' ? revision.key_takeaways_uk : revision.key_takeaways_en,
-        story_count: revisionItems.length,
-      } as Json,
-      p_metadata: { format: 'weekly-landing-v2', source: 'initial_revision' } as Json,
-    });
-    if (error) throw new Error(`[social-composer] initialize article ${locale}: ${error.message}`);
-  }
-  const sourceById = new Map(items.map((item) => [item.id, item]));
-  const jobs: Array<{
-    type: 'story_image' | 'cover' | 'pdf';
-    key: string;
-    input: Json;
-  }> = [
-    ...revisionItems.map((item) => {
-      const source = item.brief_item_id ? sourceById.get(item.brief_item_id) : null;
-      return {
-        type: 'story_image' as const,
-        key: `story-image:${item.id}`,
-        input: {
-          revision_item_id: item.id,
-          alt_text: item.title_en,
-          alt_text_uk: item.title_uk,
-          source_url: null,
-          source_card_image_url: source?.card_image_url ?? null,
-        } as Json,
-      };
-    }),
-    {
-      type: 'cover',
-      key: 'cover:neutral',
-      input: { locale: 'neutral', slot_key: 'cover:neutral' } as Json,
-    },
-    {
-      type: 'pdf',
-      key: 'pdf:en',
-      input: { locale: 'en', slot_key: 'pdf:en' } as Json,
-    },
-    {
-      type: 'pdf',
-      key: 'pdf:uk',
-      input: { locale: 'uk', slot_key: 'pdf:uk' } as Json,
-    },
-  ];
-
-  for (const job of jobs) {
-    const { error } = await db.rpc('queue_weekly_digest_generation_job', {
-      p_weekly_digest_id: weeklyDigestId,
-      p_revision_id: revisionId,
-      p_job_type: job.type,
-      p_idempotency_key: `${WEEKLY_ARTIFACT_QUEUE_VERSION}:${weeklyDigestId}:${revisionId}:${job.key}`,
-      p_input: job.input,
-    });
-    if (error && !/duplicate|unique/i.test(error.message)) {
-      throw new Error(`[social-composer] queue ${job.key}: ${error.message}`);
-    }
-  }
-}
-
 export async function composeWeeklySocial(
   triggerDate: string,
   options: { now?: Date; testMode?: boolean; manual?: boolean } = {},
 ): Promise<ComposeResult> {
-  const now = options.now ?? new Date();
   const testMode = options.testMode === true;
   const manual = options.manual === true;
   const { weekStart: startDate, weekEnd: endDate } = completedWeeklyRangeForTrigger(triggerDate);
@@ -1172,60 +807,19 @@ export async function composeWeeklySocial(
         '[social-composer] test Weekly Digest sources changed; its saved story set cannot be resumed safely.',
       );
     }
-    const sourceItems = existingSources;
-    const revisionId = await ensureWeeklyEditorialDraftRevision(
-      existingTest.id,
-      existingTest.active_revision_id,
-      sourceItems,
-    );
-    await queueInitialWeeklyArtifacts(existingTest.id, revisionId, sourceItems);
-
-    const { data: existingPackage, error: existingPackageError } = await supabase
-      .from('social_packages')
-      .select('id')
-      .eq('weekly_digest_id', existingTest.id)
-      .eq('weekly_digest_revision_id', revisionId)
-      .neq('status', 'cancelled')
-      .maybeSingle();
-    if (existingPackageError) {
-      throw new Error(`[social-composer] existing test package: ${existingPackageError.message}`);
+    const revisionId = existingTest.active_revision_id;
+    const studioMode = weeklyContentStudioMode();
+    if (studioMode !== 'off') {
+      await startWeeklyContentStudio(existingTest.id, revisionId);
     }
-    if (existingPackage) {
-      return {
-        weeklyDigestId: existingTest.id,
-        createdPackageIds: [],
-        skipped: ['test_weekly_digest_resumed'],
-      };
-    }
-
-    const briefById = new Map(briefs.map((brief) => [brief.id, brief]));
-    const lead = sourceItems[0];
-    const leadBrief = briefById.get(lead.brief_id) ?? briefs[0];
-    const packageId = await createPackage(
-      'weekly_digest',
-      'yellow',
-      endDate,
-      `Test weekly digest · ${startDate}`,
-      leadBrief.id,
-      lead.id,
-      existingTest.id,
-      sourceItems.map((item) => item.id),
-      revisionId,
-      generationVersion,
-    );
-    const urls = trackingUrls(freshTrackingTokens());
-    await saveVariants(
-      packageId,
-      lead,
-      weeklySeeds(slug, sourceItems, endDate, now, urls),
-      now,
-      sourceItems,
-    );
-    await notifyPackagesReady([packageId], `Test Weekly Digest · ${startDate}`);
     return {
       weeklyDigestId: existingTest.id,
-      createdPackageIds: [packageId],
-      skipped: ['test_weekly_digest_resumed'],
+      createdPackageIds: [],
+      skipped: [
+        studioMode === 'off'
+          ? 'weekly_content_studio_v2_off'
+          : 'test_weekly_digest_research_queued',
+      ],
     };
   }
 
@@ -1276,12 +870,9 @@ export async function composeWeeklySocial(
   const dateByBrief = new Map(briefs.map((brief) => [brief.id, brief.date]));
   const briefById = new Map(briefs.map((brief) => [brief.id, brief]));
   const scoreByItemId = new Map(selection.selected.map((scored) => [scored.candidate.id, scored]));
-  const editorialDraft = weeklyEditorialDraftFor(selected);
-  const storyDraftsById = new Map(editorialDraft.stories.map((story) => [story.id, story]));
   const { error: itemError } = await supabase.from('weekly_digest_items').insert(
     selected.map((item, index) => {
       const scored = scoreByItemId.get(item.id);
-      const storyDraft = storyDraftsById.get(item.id);
       const snapshot = {
         title_en: item.title_en,
         title_uk: item.title_uk,
@@ -1289,12 +880,15 @@ export async function composeWeeklySocial(
         summary_uk: item.summary_uk,
         why_en: item.why_matters_en,
         why_uk: item.why_matters_uk,
-        body_en: storyDraft?.body_en ?? item.summary_en,
-        body_uk: storyDraft?.body_uk ?? item.summary_uk,
-        practical_en: storyDraft?.practical_en ?? null,
-        practical_uk: storyDraft?.practical_uk ?? null,
-        takeaway_en: storyDraft?.takeaway_en ?? item.why_matters_en,
-        takeaway_uk: storyDraft?.takeaway_uk ?? item.why_matters_uk,
+        body_en: item.summary_en,
+        body_uk: item.summary_uk,
+        practical_en: null,
+        practical_uk: null,
+        takeaway_en: item.why_matters_en,
+        takeaway_uk: item.why_matters_uk,
+        facts_en: item.facts_en,
+        facts_uk: item.facts_uk,
+        placement: placementForRank(index + 1),
         item_slug: item.slug,
         brief_slug: briefById.get(item.brief_id)?.slug ?? null,
         brief_date: dateByBrief.get(item.brief_id) ?? null,
@@ -1305,7 +899,7 @@ export async function composeWeeklySocial(
               score: scored.score,
               breakdown: scored.breakdown,
               reasons: scored.reasons,
-              source_name: scored.candidate.sourceName,
+              source_name: canonicalSourceName(scored.candidate.sourceUrl),
               source_url: scored.candidate.sourceUrl,
               cluster_id: scored.candidate.clusterId,
               impact_level: scored.candidate.impact_level,
@@ -1332,38 +926,15 @@ export async function composeWeeklySocial(
       `[social-composer] weekly revision: ${revisionError?.message ?? 'initializer returned no revision'}`,
     );
   }
-  const editorialRevisionId = await ensureWeeklyEditorialDraftRevision(
-    digest.id,
-    revisionId,
-    selected,
-  );
-  await queueInitialWeeklyArtifacts(digest.id, editorialRevisionId, selected);
-
-  const lead = selected[0];
-  const leadBrief = briefById.get(lead.brief_id) ?? briefs[0];
-  const packageId = await createPackage(
-    'weekly_digest',
-    'yellow',
-    endDate,
-    `${testMode ? 'Test weekly digest' : 'Weekly digest'} · ${startDate}`,
-    leadBrief.id,
-    lead.id,
-    digest.id,
-    selected.map((item) => item.id),
-    editorialRevisionId,
-    generationVersion,
-  );
-  const urls = trackingUrls(freshTrackingTokens());
-  await saveVariants(
-    packageId,
-    lead,
-    weeklySeeds(slug, selected, endDate, now, urls),
-    now,
-    selected,
-  );
-  await notifyPackagesReady(
-    [packageId],
-    `${testMode ? 'Test Weekly Digest' : 'Weekly digest'} · ${startDate}`,
-  );
-  return { weeklyDigestId: digest.id, createdPackageIds: [packageId], skipped: [] };
+  const studioMode = weeklyContentStudioMode();
+  if (studioMode !== 'off') {
+    await startWeeklyContentStudio(digest.id, revisionId);
+  }
+  return {
+    weeklyDigestId: digest.id,
+    createdPackageIds: [],
+    skipped: [
+      studioMode === 'off' ? 'weekly_content_studio_v2_off' : 'weekly_digest_research_queued',
+    ],
+  };
 }

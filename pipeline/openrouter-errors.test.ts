@@ -74,6 +74,16 @@ describe('classifyOpenRouterFailure', () => {
     });
   });
 
+  it('accepts numeric provider codes without throwing', () => {
+    expect(classifyOpenRouterFailure({ httpStatus: 429, code: 429 })).toEqual({
+      isLimit: true,
+      kind: OpenRouterLimitKind.rate_limit,
+    });
+    expect(classifyOpenRouterFailure({ httpStatus: 500, code: 500 })).toEqual({
+      isLimit: false,
+    });
+  });
+
   it('classifies billing mention as insufficient_credits', () => {
     expect(classifyOpenRouterFailure({ message: 'billing issues' })).toEqual({
       isLimit: true,

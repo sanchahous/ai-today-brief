@@ -981,6 +981,7 @@ export type Database = {
           brief_id: string | null;
           brief_item_id: string | null;
           channel: string;
+          content_parts: Json;
           content_hash: string | null;
           content_version: number;
           created_at: string;
@@ -1019,6 +1020,7 @@ export type Database = {
           brief_id?: string | null;
           brief_item_id?: string | null;
           channel: string;
+          content_parts?: Json;
           content_hash?: string | null;
           content_version?: number;
           created_at?: string;
@@ -1057,6 +1059,7 @@ export type Database = {
           brief_id?: string | null;
           brief_item_id?: string | null;
           channel?: string;
+          content_parts?: Json;
           content_hash?: string | null;
           content_version?: number;
           created_at?: string;
@@ -1162,6 +1165,56 @@ export type Database = {
           },
         ];
       };
+      weekly_locale_map: CmsTable<
+        {
+          channel: string;
+          enabled: boolean;
+          experiment_key: string | null;
+          is_default: boolean;
+          locale: string;
+          updated_at: string;
+          updated_by: string | null;
+        },
+        {
+          channel: string;
+          enabled?: boolean;
+          experiment_key?: string | null;
+          is_default?: boolean;
+          locale: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        }
+      >;
+      weekly_digest_engagement_events: CmsTable<
+        {
+          channel: string | null;
+          event_type: string;
+          hook_angle: string | null;
+          id: number;
+          locale: string;
+          metadata: Json;
+          occurred_at: string;
+          revision_id: string;
+          session_hash: string;
+          social_post_id: string | null;
+          story_id: string | null;
+          weekly_digest_id: string;
+        },
+        {
+          channel?: string | null;
+          event_type: string;
+          hook_angle?: string | null;
+          id?: never;
+          locale: string;
+          metadata?: Json;
+          occurred_at?: string;
+          revision_id: string;
+          session_hash: string;
+          social_post_id?: string | null;
+          story_id?: string | null;
+          weekly_digest_id: string;
+        }
+      >;
       weekly_digest_artifact_reviews: CmsTable<
         {
           action: string;
@@ -1795,6 +1848,20 @@ export type Database = {
         };
         Returns: Database['public']['Tables']['social_posts']['Row'];
       };
+      edit_weekly_social_post_v2: {
+        Args: {
+          p_alt_text: string;
+          p_content_hash: string;
+          p_content_parts: Json;
+          p_expected_version: number;
+          p_first_comment: string;
+          p_post_text: string;
+          p_quality_report: Json;
+          p_scheduled_for: string;
+          p_social_post_id: string;
+        };
+        Returns: Database['public']['Tables']['social_posts']['Row'];
+      };
       has_social_aal2: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
@@ -1847,6 +1914,10 @@ export type Database = {
       reconcile_stale_social_posts: {
         Args: Record<PropertyKey, never>;
         Returns: number;
+      };
+      resume_weekly_threads_sequence: {
+        Args: { p_social_post_id: string };
+        Returns: Database['public']['Tables']['social_posts']['Row'];
       };
       reserve_x_budget: {
         Args: { p_amount: number };

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ArrowRight } from '@/components/icons';
 import { trackEvent } from '@/lib/analytics-client';
 import type { Lang } from '@/lib/site';
+import { reportWeeklySignup } from '@/lib/weekly-digest/attribution-client';
 
 /**
  * Inline email capture → POST /api/subscribe (Beehiiv when env is set).
@@ -73,6 +74,7 @@ export function NewsletterForm({
           }
           setStatus('done');
           trackEvent('newsletter_subscribe', { placement, lang });
+          void reportWeeklySignup();
         } catch {
           setStatus('error');
           setErrorMsg(failed);
@@ -92,7 +94,7 @@ export function NewsletterForm({
       <button
         type="submit"
         disabled={status === 'loading'}
-        className="rounded-pill bg-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-on-accent disabled:opacity-70"
+        className="rounded-pill bg-accent text-on-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold disabled:opacity-70"
       >
         {button}
         <ArrowRight size={16} />

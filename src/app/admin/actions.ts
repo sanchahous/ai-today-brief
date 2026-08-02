@@ -31,6 +31,24 @@ function optionalString(formData: FormData, key: string) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function parseContentParts(value: string, fallback: Json): string[] {
+  if (!value) {
+    return Array.isArray(fallback)
+      ? fallback.filter((part): part is string => typeof part === 'string' && Boolean(part.trim()))
+      : [];
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error('Content parts must be a valid JSON array of strings.');
+  }
+  if (!Array.isArray(parsed) || parsed.some((part) => typeof part !== 'string' || !part.trim())) {
+    throw new Error('Content parts must be a JSON array of non-empty strings.');
+  }
+  return parsed.map((part) => part.trim());
+}
+
 function weeklyCandidateIds(value: Json): Set<string> {
   if (!Array.isArray(value)) return new Set();
   return new Set(
@@ -130,16 +148,30 @@ function isoToKyivInput(value: string) {
 function parseWriterResponse(raw: string) {
   const json = raw.match(/\{[\s\S]*\}/)?.[0];
   if (!json) throw new SyntaxError('Writer returned no JSON object.');
-  const parsed = JSON.parse(json) as { text?: unknown; firstComment?: unknown };
+  const parsed = JSON.parse(json) as {
+    text?: unknown;
+    firstComment?: unknown;
+    contentParts?: unknown;
+  };
   if (typeof parsed.text !== 'string' || !parsed.text.trim()) {
     throw new SyntaxError('Writer returned no copy.');
   }
   if (parsed.firstComment !== undefined && typeof parsed.firstComment !== 'string') {
     throw new SyntaxError('Writer returned an invalid first comment.');
   }
+  if (
+    parsed.contentParts !== undefined &&
+    (!Array.isArray(parsed.contentParts) ||
+      parsed.contentParts.some((part) => typeof part !== 'string' || !part.trim()))
+  ) {
+    throw new SyntaxError('Writer returned invalid content parts.');
+  }
   return {
     text: parsed.text.trim(),
     firstComment: typeof parsed.firstComment === 'string' ? parsed.firstComment.trim() : undefined,
+    contentParts: Array.isArray(parsed.contentParts)
+      ? parsed.contentParts.map((part) => (part as string).trim())
+      : undefined,
   };
 }
 
@@ -157,6 +189,7 @@ export async function updateVariantAction(formData: FormData) {
   const id = requiredString(formData, 'id');
   const postText = requiredString(formData, 'post_text');
   const firstComment = optionalString(formData, 'first_comment');
+  const contentPartsJson = optionalString(formData, 'content_parts_json');
   const altText = optionalString(formData, 'alt_text');
   const scheduledFor = parseKyivSchedule(requiredString(formData, 'scheduled_for'));
   const admin = getSupabaseAdmin();
@@ -166,6 +199,7 @@ export async function updateVariantAction(formData: FormData) {
     .eq('id', id)
     .single();
   if (postError || !post) throw new Error('Social variant was not found.');
+  const contentParts = parseContentParts(contentPartsJson, post.content_parts);
   if (
     !isSocialChannel(post.channel) ||
     (post.locale !== 'uk' && post.locale !== 'en') ||
@@ -243,6 +277,7 @@ export async function updateVariantAction(formData: FormData) {
     format: post.format,
     text: postText,
     firstComment,
+    contentParts,
     assets: parseAssets(post.asset_urls),
     altText,
     scheduledFor,
@@ -258,17 +293,19 @@ export async function updateVariantAction(formData: FormData) {
     format: draft.format,
     text: draft.text,
     firstComment: draft.firstComment,
+    contentParts: draft.contentParts,
     assets: draft.assets,
     altText: draft.altText,
     scheduledFor: draft.scheduledFor,
     contentVersion: nextVersion,
   });
   const supabase = await getSupabaseServer();
-  const { error } = await supabase.rpc('edit_social_post', {
+  const { error } = await supabase.rpc('edit_weekly_social_post_v2', {
     p_social_post_id: id,
     p_expected_version: post.content_version,
     p_post_text: postText,
     p_first_comment: firstComment,
+    p_content_parts: contentParts,
     p_alt_text: altText,
     p_scheduled_for: scheduledFor,
     p_quality_report: report as unknown as Json,
@@ -323,19 +360,23 @@ export async function regenerateVariantAction(formData: FormData) {
       'Ukrainian daily or weekly digest, 3–5 numbered stories, 80–1800 characters, exactly one tracking URL.',
     x: 'English link-free root post, 40–280 characters. Put the tracking URL only in firstComment, under 280 characters.',
     threads:
-      'English conversational post, 300–500 characters, context + implication + a genuine question, at most one URL.',
+      'Ukrainian sequence of 3–5 messages, each at most 500 characters: thesis, evidence, implication, question. Put the messages in contentParts.',
     linkedin:
       'English company insight, 600–1200 characters: what happened, what changes, practical takeaway, at most 3 hashtags.',
     instagram:
-      'English carousel caption, 180–1500 characters, no URL, clear save/share CTA, at most 5 hashtags.',
+      'English carousel caption plus 7–9 slide texts in contentParts, no URL, clear save/share CTA, at most 5 hashtags.',
     facebook: 'Ukrainian top story or roundup, 120–1400 characters, one tracking URL.',
   };
-  const prompt = `Create a platform-native ${post.channel} variant for AI Today Brief. Use ONLY the approved facts. Never invent a number, name, quote, or causal claim. ${channelInstruction[post.channel]} Risk level: ${socialPackage?.risk_level}. Package: ${socialPackage?.kind}. Return strict JSON only: {"text":"...","firstComment":"..."}. Tracking URL (include only when the channel rule asks): ${trackingUrl}\n\nAPPROVED FACTS:\n${facts.map((fact) => `- ${fact}`).join('\n')}\n\nCURRENT COPY TO IMPROVE:\n${post.post_text ?? ''}`;
+  const prompt = `Create a platform-native ${post.channel} variant for AI Today Brief. Use ONLY the approved facts. Never invent a number, name, quote, or causal claim. ${channelInstruction[post.channel]} Risk level: ${socialPackage?.risk_level}. Package: ${socialPackage?.kind}. Return strict JSON only: {"text":"...","firstComment":"...","contentParts":["..."]}. Tracking URL (include only when the channel rule asks): ${trackingUrl}\n\nAPPROVED FACTS:\n${facts.map((fact) => `- ${fact}`).join('\n')}\n\nCURRENT COPY TO IMPROVE:\n${post.post_text ?? ''}`;
   const { value: parsed } = await generateSocialJson('writer', prompt, parseWriterResponse);
   const next = new FormData();
   next.set('id', id);
   next.set('post_text', parsed.text);
   next.set('first_comment', parsed.firstComment ?? post.first_comment ?? '');
+  next.set(
+    'content_parts_json',
+    JSON.stringify(parsed.contentParts ?? parseContentParts('', post.content_parts), null, 2),
+  );
   next.set('alt_text', post.alt_text ?? '');
   next.set(
     'scheduled_for',

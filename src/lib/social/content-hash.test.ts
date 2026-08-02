@@ -24,5 +24,8 @@ describe('social content hash', () => {
       original,
     );
     expect(socialContentHash({ ...content, contentVersion: 2 })).not.toBe(original);
+    expect(
+      socialContentHash({ ...content, contentParts: [content.text, content.firstComment] }),
+    ).not.toBe(original);
   });
 });

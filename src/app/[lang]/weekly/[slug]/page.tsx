@@ -5,6 +5,7 @@ import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { MarkdownBody } from '@/components/markdown-body';
 import { LiteYouTube } from '@/components/weekly/lite-youtube';
 import { WEEKLY_COPY } from '@/components/weekly/copy';
+import { DigestEngagement } from '@/components/weekly/digest-engagement';
 import { WeeklyHero } from '@/components/weekly/weekly-hero';
 import { WeeklyStory } from '@/components/weekly/weekly-story';
 import { WeeklyToc } from '@/components/weekly/weekly-toc';
@@ -26,7 +27,13 @@ export async function generateStaticParams() {
 }
 
 function descriptionFor(digest: WeeklyDigestView) {
-  return digest.intro ?? digest.items[0]?.summary ?? digest.title;
+  return (
+    digest.metaDescription ||
+    digest.standfirst ||
+    digest.intro ||
+    digest.items[0]?.summary ||
+    digest.title
+  );
 }
 
 function absoluteUrl(url: string) {
@@ -42,17 +49,18 @@ function isoDuration(seconds: number | null) {
 
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { lang, slug } = await params;
-  if (!isLang(lang)) return {};
+  if (!isLang(lang)) notFound();
   const digest = await getWeeklyDigest(slug, lang);
-  if (!digest) return {};
+  if (!digest) notFound();
 
   const path = `/${lang}/weekly/${slug}`;
   const description = descriptionFor(digest);
   const image = digest.cover ? absoluteUrl(digest.cover.url) : undefined;
 
   return {
-    title: digest.title,
+    title: digest.seoTitle,
     description,
+    keywords: digest.entities.length ? digest.entities : undefined,
     alternates: {
       canonical: `${SITE_URL}${path}`,
       languages: {
@@ -62,8 +70,8 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       },
     },
     openGraph: {
-      title: digest.title,
-      description,
+      title: digest.ogTitle,
+      description: digest.ogDescription,
       type: 'article',
       url: `${SITE_URL}${path}`,
       siteName: SITE_NAME,
@@ -84,8 +92,8 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     },
     twitter: {
       card: 'summary_large_image',
-      title: digest.title,
-      description,
+      title: digest.ogTitle,
+      description: digest.ogDescription,
       images: image ? [image] : undefined,
     },
   };
@@ -175,6 +183,9 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
 
   return (
     <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10 lg:py-14">
+      {digest.revisionId ? (
+        <DigestEngagement digestId={digest.id} revisionId={digest.revisionId} locale={lang} />
+      ) : null}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -192,6 +203,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
               {digest.hasPdf ? (
                 <a
                   href={`/${lang}/weekly/${digest.slug}/download`}
+                  data-digest-event="pdf_download"
                   className="border-border text-text hover:border-accent hover:text-accent rounded-pill flex w-full items-center justify-center border px-4 py-2.5 text-center text-sm font-semibold no-underline transition-colors"
                 >
                   {copy.downloadPdf}
@@ -199,6 +211,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
               ) : null}
               <Link
                 href={`/${lang}/subscribe`}
+                data-digest-event="subscribe_click"
                 className="text-accent mt-4 block text-center text-sm font-semibold no-underline hover:underline"
               >
                 {lang === 'uk' ? 'Отримувати нові випуски' : 'Get the next issue'}
@@ -257,6 +270,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
             {digest.video ? (
               <section
                 aria-labelledby="weekly-video-title"
+                data-digest-event="video_play"
                 className="border-border-soft mt-12 border-t pt-10"
               >
                 <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
@@ -320,6 +334,7 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
               </div>
               <Link
                 href={`/${lang}/subscribe`}
+                data-digest-event="subscribe_click"
                 className="bg-accent text-on-accent rounded-pill mt-5 inline-flex shrink-0 px-5 py-3 text-sm font-semibold no-underline sm:mt-0"
               >
                 {lang === 'uk' ? 'Підписатися' : 'Subscribe'}

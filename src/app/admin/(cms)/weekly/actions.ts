@@ -17,8 +17,12 @@ import {
   SOCIAL_TIME_ZONE,
   weeklyDigestTriggerDateForManualCreate,
 } from '@/lib/social/schedule';
-import { normalizeYouTubeVideo } from '@/lib/weekly-digest/video';
 import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial-validation';
+import {
+  startWeeklyContentStudio,
+  weeklyContentStudioMode,
+} from '@/lib/weekly-digest/orchestrator';
+import { validateWeeklyVideoResultManifest } from '@/lib/weekly-digest/video';
 
 function requiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -204,6 +208,22 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const revisionId = requiredString(formData, 'revision_id');
   const { revision, items } = await editableWorkspace(weeklyDigestId, revisionId);
+  const { data: currentArticleArtifacts } = await getSupabaseAdmin()
+    .from('weekly_digest_artifacts')
+    .select('locale,content,metadata')
+    .eq('revision_id', revisionId)
+    .eq('artifact_type', 'article')
+    .eq('is_current', true);
+  const currentArticle = (locale: 'en' | 'uk') => {
+    const artifact = (currentArticleArtifacts ?? []).find(
+      (candidate) => candidate.locale === locale,
+    );
+    const content =
+      artifact?.content && typeof artifact.content === 'object' && !Array.isArray(artifact.content)
+        ? (artifact.content as Record<string, Json | undefined>)
+        : {};
+    return { content, metadata: artifact?.metadata ?? ({} as Json) };
+  };
   const itemIds = alignedStrings(formData, 'item_id');
   const includedIds = new Set(alignedStrings(formData, 'included_item_id'));
   const submitted = {
@@ -304,6 +324,47 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
   const takeawaysUk = formData.has('key_takeaways_uk')
     ? takeaways(optionalString(formData, 'key_takeaways_uk'))
     : revision.key_takeaways_uk;
+  const articleExtras = (locale: 'en' | 'uk') => {
+    const existing = currentArticle(locale);
+    const value = (field: string, fallback = '') =>
+      formData.has(`${field}_${locale}`)
+        ? optionalString(formData, `${field}_${locale}`)
+        : typeof existing.content[field] === 'string'
+          ? (existing.content[field] as string)
+          : fallback;
+    const list = (field: string) =>
+      formData.has(`${field}_${locale}`)
+        ? takeaways(optionalString(formData, `${field}_${locale}`))
+        : Array.isArray(existing.content[field])
+          ? existing.content[field]
+          : [];
+    const links = formData.has(`internal_links_${locale}`)
+      ? jsonArray(
+          optionalString(formData, `internal_links_${locale}`),
+          `${locale.toUpperCase()} internal links`,
+        )
+      : Array.isArray(existing.content.internalLinks)
+        ? existing.content.internalLinks
+        : [];
+    return {
+      seoTitle: value('seo_title', locale === 'en' ? titleEn : titleUk),
+      metaDescription: value('meta_description', locale === 'en' ? introEn : introUk),
+      ogTitle: value('og_title', value('seo_title', locale === 'en' ? titleEn : titleUk)),
+      ogDescription: value(
+        'og_description',
+        value('meta_description', locale === 'en' ? introEn : introUk),
+      ),
+      standfirst: value('standfirst', locale === 'en' ? introEn : introUk),
+      theme: value('theme', locale === 'en' ? titleEn : titleUk),
+      topics: list('topics'),
+      entities: list('entities'),
+      internalLinks: links,
+      provenance: existing.content.provenance ?? null,
+      metadata: existing.metadata,
+    };
+  };
+  const extrasEn = articleExtras('en');
+  const extrasUk = articleExtras('uk');
 
   const validationError = weeklyRevisionContentErrorMessage({
     title_en: titleEn,
@@ -337,9 +398,9 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
   if (typeof newRevisionId !== 'string') {
     throw new Error('The new Weekly Digest revision ID was not returned.');
   }
-  for (const [locale, title, intro, editorNote, localeTakeaways] of [
-    ['en', titleEn, introEn, editorNoteEn, takeawaysEn],
-    ['uk', titleUk, introUk, editorNoteUk, takeawaysUk],
+  for (const [locale, title, intro, editorNote, localeTakeaways, extras] of [
+    ['en', titleEn, introEn, editorNoteEn, takeawaysEn, extrasEn],
+    ['uk', titleUk, introUk, editorNoteUk, takeawaysUk, extrasUk],
   ] as const) {
     const { error: articleError } = await db.rpc('save_weekly_digest_artifact', {
       p_weekly_digest_id: weeklyDigestId,
@@ -352,10 +413,22 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
         intro,
         editor_note: editorNote,
         key_takeaways: localeTakeaways,
+        seoTitle: extras.seoTitle,
+        metaDescription: extras.metaDescription,
+        ogTitle: extras.ogTitle,
+        ogDescription: extras.ogDescription,
+        standfirst: extras.standfirst,
+        theme: extras.theme,
+        topics: extras.topics,
+        entities: extras.entities,
+        internalLinks: extras.internalLinks,
+        provenance: extras.provenance,
       } as Json,
       p_metadata: {
-        format: 'weekly-landing-v2',
+        format: 'weekly-landing-v3',
+        schema_version: 'article-v3',
         story_count: nextItems.length,
+        inherited_metadata: extras.metadata,
       } as Json,
     });
     if (articleError) throw new Error(articleError.message);
@@ -477,6 +550,7 @@ export async function saveWeeklyVideoAction(formData: FormData) {
   const thumbnailUrl = optionalString(formData, 'thumbnail_url');
   const durationSeconds = optionalNumber(formData, 'duration_seconds');
   const workflowStatus = optionalString(formData, 'workflow_status') || 'draft';
+  const resultManifestJson = optionalString(formData, 'result_manifest_json');
   let savedDigestId: string | null = null;
   let saved = false;
   const persist = async (artifact: Parameters<typeof saveArtifact>[1]) => {
@@ -484,21 +558,98 @@ export async function saveWeeklyVideoAction(formData: FormData) {
     saved = true;
   };
 
+  if (resultManifestJson) {
+    const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+    const revisionId = requiredString(formData, 'revision_id');
+    const admin = getSupabaseAdmin();
+    const { data: manifestArtifact, error: manifestError } = await admin
+      .from('weekly_digest_artifacts')
+      .select('content,review_status,is_current')
+      .eq('weekly_digest_id', weeklyDigestId)
+      .eq('revision_id', revisionId)
+      .eq('artifact_type', 'video_manifest')
+      .eq('slot_key', 'video-manifest:en')
+      .eq('is_current', true)
+      .maybeSingle();
+    if (manifestError || !manifestArtifact || manifestArtifact.review_status !== 'approved') {
+      throw new Error('Approve the current weekly-video-v2 manifest before importing a result.');
+    }
+    const manifestContent =
+      manifestArtifact.content &&
+      typeof manifestArtifact.content === 'object' &&
+      !Array.isArray(manifestArtifact.content)
+        ? (manifestArtifact.content as Record<string, Json | undefined>)
+        : {};
+    const expectedInputHash =
+      typeof manifestContent.inputHash === 'string' ? manifestContent.inputHash : '';
+    const result = validateWeeklyVideoResultManifest(
+      parseJson(resultManifestJson, 'Video result manifest'),
+      { digestId: weeklyDigestId, revisionId, inputHash: expectedInputHash },
+    );
+    await persist({
+      type: 'video_final',
+      locale: 'en',
+      slot: 'video-final:en',
+      externalUrl: result.youtube.url,
+      provider: 'youtube',
+      providerId: result.youtube.id,
+      mimeType: 'text/html',
+      durationSeconds: result.youtube.durationSeconds,
+      metadata: {
+        thumbnail_url: result.youtube.thumbnailUrl,
+        published_at: result.youtube.publishedAt,
+        workflow_status: 'published',
+        audio_locale: 'en',
+        manifest_input_hash: result.inputHash,
+      },
+    });
+    for (const caption of result.captions) {
+      await persist({
+        type: 'captions',
+        locale: caption.locale,
+        slot: `captions:${caption.locale}`,
+        content: { vtt: caption.vtt ?? null, url: caption.url ?? null },
+        externalUrl: caption.url,
+        mimeType: 'text/vtt',
+        metadata: { manifest_input_hash: result.inputHash },
+      });
+    }
+    await persist({
+      type: 'thumbnail',
+      locale: 'neutral',
+      slot: 'video-thumbnail',
+      externalUrl: result.youtube.thumbnailUrl,
+      provider: 'youtube',
+      providerId: result.youtube.id,
+      mimeType: 'image/jpeg',
+      metadata: { manifest_input_hash: result.inputHash },
+    });
+    revalidateWeeklyAdmin(weeklyDigestId);
+    return;
+  }
+
+  if (
+    youtubeUrl ||
+    suppliedVideoId ||
+    thumbnailUrl ||
+    captionsEn ||
+    captionsUk ||
+    durationSeconds
+  ) {
+    throw new Error(
+      'Final video, thumbnail and captions must be imported through a weekly-video-result-v2 manifest so the approved digest, revision and input hash can be verified.',
+    );
+  }
+
   if (script || scenes) {
     await persist({
       type: 'video_script',
       locale: 'en',
       slot: 'video-script:en',
-      content: { script },
-      metadata: { workflow_status: workflowStatus },
-    });
-  }
-  if (scenes) {
-    await persist({
-      type: 'video_manifest',
-      locale: 'en',
-      slot: 'video-manifest:en',
-      content: { scenes: parseJson(scenes, 'Scene structure') },
+      content: {
+        script,
+        ...(scenes ? { narration_plan: parseJson(scenes, 'Scene structure') } : {}),
+      },
       metadata: { workflow_status: workflowStatus },
     });
   }
@@ -519,66 +670,6 @@ export async function saveWeeklyVideoAction(formData: FormData) {
       slot: 'graphics-preview:en',
       externalUrl: graphicsPreviewUrl,
       metadata: { workflow_status: workflowStatus },
-    });
-  }
-  if (youtubeUrl || suppliedVideoId) {
-    const video = normalizeYouTubeVideo(youtubeUrl || suppliedVideoId);
-    if (!video || (suppliedVideoId && suppliedVideoId !== video.videoId)) {
-      throw new Error('Enter a valid HTTPS YouTube URL and matching 11-character video ID.');
-    }
-    await persist({
-      type: 'video_final',
-      locale: 'en',
-      slot: 'video-final:en',
-      externalUrl: video.watchUrl,
-      provider: 'youtube',
-      providerId: video.videoId,
-      mimeType: 'text/html',
-      durationSeconds,
-      metadata: {
-        embed_url: video.embedUrl,
-        thumbnail_url: thumbnailUrl || video.thumbnailUrl,
-        workflow_status: workflowStatus,
-        audio_locale: 'en',
-      },
-    });
-  }
-  if (captionsEn) {
-    await persist({
-      type: 'captions',
-      locale: 'en',
-      slot: 'captions:en',
-      content: { vtt: captionsEn },
-      mimeType: 'text/vtt',
-    });
-  }
-  if (captionsUk) {
-    await persist({
-      type: 'captions',
-      locale: 'uk',
-      slot: 'captions:uk',
-      content: { vtt: captionsUk },
-      mimeType: 'text/vtt',
-    });
-  }
-  if (youtubeUrl || suppliedVideoId) {
-    const video = normalizeYouTubeVideo(youtubeUrl || suppliedVideoId)!;
-    await persist({
-      type: 'thumbnail',
-      locale: 'neutral',
-      slot: 'video-thumbnail',
-      externalUrl: thumbnailUrl || video.thumbnailUrl,
-      provider: 'youtube',
-      providerId: video.videoId,
-      mimeType: 'image/jpeg',
-    });
-  } else if (thumbnailUrl) {
-    await persist({
-      type: 'thumbnail',
-      locale: 'neutral',
-      slot: 'video-thumbnail',
-      externalUrl: thumbnailUrl,
-      mimeType: 'image/jpeg',
     });
   }
   if (!saved || !savedDigestId) throw new Error('Enter at least one video field to save.');
@@ -664,6 +755,7 @@ export async function saveWeeklySocialAction(formData: FormData) {
   mapped.set('id', postId);
   mapped.set('post_text', postText);
   mapped.set('first_comment', optionalString(formData, 'first_comment'));
+  mapped.set('content_parts_json', optionalString(formData, 'content_parts_json') || '[]');
   mapped.set('alt_text', optionalString(formData, 'alt_text'));
   // updateVariantAction performs the single DST-aware Europe/Kyiv → UTC conversion.
   mapped.set('scheduled_for', requiredString(formData, 'scheduled_for_local'));
@@ -742,6 +834,24 @@ export async function commentWeeklySocialAction(formData: FormData) {
   revalidateWeeklyAdmin(socialPackage.weekly_digest_id);
 }
 
+export async function resumeWeeklyThreadsSequenceAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner'], aal2: true });
+  const postId = requiredString(formData, 'social_post_id');
+  const db = await getSupabaseServer();
+  const { data, error } = await db.rpc('resume_weekly_threads_sequence', {
+    p_social_post_id: postId,
+  });
+  if (error) throw new Error(error.message);
+  if (!data.package_id) throw new Error('The resumed Threads post has no social package.');
+  const admin = getSupabaseAdmin();
+  const { data: socialPackage } = await admin
+    .from('social_packages')
+    .select('weekly_digest_id')
+    .eq('id', data.package_id)
+    .maybeSingle();
+  if (socialPackage?.weekly_digest_id) revalidateWeeklyAdmin(socialPackage.weekly_digest_id);
+}
+
 export async function toggleWeeklySocialAction(formData: FormData) {
   await requireSocialAdmin({ aal2: true, roles: ['owner'] });
   const postId = requiredString(formData, 'social_post_id');
@@ -773,18 +883,34 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const revisionId = requiredString(formData, 'revision_id');
   const jobType = requiredString(formData, 'job_type');
-  const allowed = new Set(['pdf', 'cover', 'story_image', 'social_asset']);
+  const allowed = new Set([
+    'research_pack',
+    'editorial_master',
+    'social_copy',
+    'video_manifest',
+    'pdf',
+    'cover',
+    'story_image',
+    'social_asset',
+  ]);
   if (!allowed.has(jobType)) throw new Error('Unsupported Weekly Digest generation job.');
   const slotKey = optionalString(formData, 'slot_key');
   const locale = optionalString(formData, 'locale') || 'neutral';
   const revisionItemId = optionalString(formData, 'revision_item_id');
   const requestKey = optionalString(formData, 'request_key') || randomUUID();
+  const contentStudioMode = ['research_pack', 'editorial_master'].includes(jobType)
+    ? weeklyContentStudioMode()
+    : null;
+  if (contentStudioMode === 'off') {
+    throw new Error('WEEKLY_CONTENT_STUDIO_V2 is off. Enable shadow or production mode first.');
+  }
   const input = {
     slot_key: slotKey || null,
     locale,
     revision_item_id: revisionItemId || null,
     source_url: optionalString(formData, 'source_url') || null,
     alt_text: optionalString(formData, 'alt_text') || null,
+    ...(contentStudioMode ? { mode: contentStudioMode } : {}),
   };
   const db = await getSupabaseServer();
   const { error } = await db.rpc('queue_weekly_digest_generation_job', {
@@ -795,6 +921,14 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
     p_input: input as Json,
   });
   if (error && !/duplicate|unique/i.test(error.message)) throw new Error(error.message);
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+export async function startWeeklyContentStudioAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const revisionId = requiredString(formData, 'revision_id');
+  await startWeeklyContentStudio(weeklyDigestId, revisionId);
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 

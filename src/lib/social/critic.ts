@@ -6,18 +6,38 @@ import type { QualityReport, SocialDraft } from './types';
 interface CriticResult {
   score: number;
   flags: string[];
+  platformFitScore?: number;
+  platformFlags?: string[];
 }
 
 export function parseCritic(raw: string): CriticResult {
   const json = raw.match(/\{[\s\S]*\}/)?.[0];
   if (!json) throw new SyntaxError('Critic returned no JSON object.');
   try {
-    const value = JSON.parse(json) as { score?: unknown; flags?: unknown };
+    const value = JSON.parse(json) as {
+      score?: unknown;
+      flags?: unknown;
+      platformFitScore?: unknown;
+      platformFlags?: unknown;
+    };
     if (typeof value.score !== 'number' || !Number.isFinite(value.score)) {
       throw new SyntaxError('Critic score is missing.');
     }
     if (!Array.isArray(value.flags) || value.flags.some((flag) => typeof flag !== 'string')) {
       throw new SyntaxError('Critic flags are invalid.');
+    }
+    if (
+      value.platformFitScore !== undefined &&
+      (typeof value.platformFitScore !== 'number' || !Number.isFinite(value.platformFitScore))
+    ) {
+      throw new SyntaxError('Critic platform fit score is invalid.');
+    }
+    if (
+      value.platformFlags !== undefined &&
+      (!Array.isArray(value.platformFlags) ||
+        value.platformFlags.some((flag) => typeof flag !== 'string'))
+    ) {
+      throw new SyntaxError('Critic platform flags are invalid.');
     }
     return {
       score: Math.max(0, Math.min(100, value.score)),
@@ -25,6 +45,17 @@ export function parseCritic(raw: string): CriticResult {
         .map((flag) => flag.trim())
         .filter(Boolean)
         .slice(0, 8),
+      ...(typeof value.platformFitScore === 'number'
+        ? { platformFitScore: Math.max(0, Math.min(100, value.platformFitScore)) }
+        : {}),
+      ...(Array.isArray(value.platformFlags)
+        ? {
+            platformFlags: value.platformFlags
+              .map((flag) => flag.trim())
+              .filter(Boolean)
+              .slice(0, 8),
+          }
+        : {}),
     };
   } catch (error) {
     throw error instanceof SyntaxError ? error : new SyntaxError('Critic returned invalid JSON.');
@@ -76,6 +107,7 @@ ${draft.firstComment ?? ''}`;
         model: result.model,
         fallbackUsed: result.fallbackUsed,
         attempts: result.attempts,
+        usage: result.usage,
         auditedAt: new Date().toISOString(),
       },
       warnings: needsReview

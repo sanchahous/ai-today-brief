@@ -17,6 +17,8 @@ export type WeeklyReleaseEventAdminRow = Row<'weekly_digest_release_events'>;
 export type WeeklySocialPackageAdminRow = Row<'social_packages'>;
 export type WeeklySocialPostAdminRow = Row<'social_posts'>;
 export type WeeklySocialPostReviewAdminRow = Row<'social_post_reviews'>;
+export type WeeklyLocaleMapAdminRow = Row<'weekly_locale_map'>;
+export type WeeklyEngagementEventAdminRow = Row<'weekly_digest_engagement_events'>;
 
 export interface WeeklyDigestWorkspace {
   digest: WeeklyDigestAdminRow;
@@ -30,6 +32,8 @@ export interface WeeklyDigestWorkspace {
   socialPackage: WeeklySocialPackageAdminRow | null;
   socialPosts: WeeklySocialPostAdminRow[];
   socialPostReviews: WeeklySocialPostReviewAdminRow[];
+  localeMap: WeeklyLocaleMapAdminRow[];
+  engagementEvents: WeeklyEngagementEventAdminRow[];
 }
 
 function assertQuery<T>(
@@ -45,6 +49,12 @@ function jsonRecord(value: Json): Record<string, Json | undefined> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, Json | undefined>)
     : {};
+}
+
+function provenanceResearchArtifactId(item: WeeklyRevisionItemAdminRow) {
+  const contentStudio = jsonRecord(jsonRecord(item.source_snapshot).content_studio ?? {});
+  const value = contentStudio.research_artifact_id;
+  return typeof value === 'string' && value ? value : null;
 }
 
 async function withPrivatePreviewUrls(artifacts: WeeklyArtifactAdminRow[]) {
@@ -107,7 +117,14 @@ export const getWeeklyDigestWorkspace = cache(
     const digest = digestResult.data;
     if (!digest) return null;
 
-    const [revisionsResult, jobsResult, eventsResult, packageResult] = await Promise.all([
+    const [
+      revisionsResult,
+      jobsResult,
+      eventsResult,
+      packageResult,
+      localeMapResult,
+      engagementResult,
+    ] = await Promise.all([
       db
         .from('weekly_digest_revisions')
         .select('*')
@@ -125,18 +142,35 @@ export const getWeeklyDigestWorkspace = cache(
         .eq('weekly_digest_id', digest.id)
         .order('created_at', { ascending: false })
         .limit(100),
+      digest.active_revision_id
+        ? db
+            .from('social_packages')
+            .select('*')
+            .eq('weekly_digest_id', digest.id)
+            .eq('weekly_digest_revision_id', digest.active_revision_id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null as WeeklySocialPackageAdminRow | null, error: null }),
       db
-        .from('social_packages')
+        .from('weekly_locale_map')
+        .select('*')
+        .eq('enabled', true)
+        .eq('is_default', true)
+        .order('channel'),
+      db
+        .from('weekly_digest_engagement_events')
         .select('*')
         .eq('weekly_digest_id', digest.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+        .order('occurred_at', { ascending: false })
+        .limit(500),
     ]);
 
     const revisions = assertQuery('revisions', revisionsResult);
     const generationJobs = assertQuery('generation jobs', jobsResult);
     const releaseEvents = assertQuery('release events', eventsResult);
+    const localeMap = assertQuery('weekly locale map', localeMapResult);
+    const engagementEvents = assertQuery('weekly engagement events', engagementResult);
     if (packageResult.error) {
       throw new Error(`[weekly-admin] social package: ${packageResult.error.message}`);
     }
@@ -170,7 +204,22 @@ export const getWeeklyDigestWorkspace = cache(
     ]);
 
     const items = assertQuery('revision items', itemsResult);
-    const artifacts = await withPrivatePreviewUrls(assertQuery('artifacts', artifactsResult));
+    const activeArtifacts = assertQuery('artifacts', artifactsResult);
+    const provenanceResearchIds = items
+      .map(provenanceResearchArtifactId)
+      .filter((value): value is string => Boolean(value))
+      .filter((value) => !activeArtifacts.some((artifact) => artifact.id === value));
+    const provenanceArtifactsResult = provenanceResearchIds.length
+      ? await db
+          .from('weekly_digest_artifacts')
+          .select('*')
+          .in('id', provenanceResearchIds)
+          .eq('artifact_type', 'research_pack')
+      : { data: [] as WeeklyArtifactAdminRow[], error: null };
+    const artifacts = await withPrivatePreviewUrls([
+      ...activeArtifacts,
+      ...assertQuery('provenance research artifacts', provenanceArtifactsResult),
+    ]);
     const socialPosts = assertQuery('social posts', socialPostsResult);
     const socialPostIds = socialPosts.map((post) => post.id);
     const socialReviewsResult =
@@ -203,6 +252,8 @@ export const getWeeklyDigestWorkspace = cache(
       socialPackage,
       socialPosts,
       socialPostReviews: assertQuery('social post reviews', socialReviewsResult),
+      localeMap,
+      engagementEvents,
     };
   },
 );

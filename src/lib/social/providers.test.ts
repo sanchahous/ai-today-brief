@@ -119,6 +119,74 @@ describe('social provider contracts', () => {
     expect(String(fetchMock.mock.calls[1][0])).toContain('threads_publish');
   });
 
+  it('publishes a native Threads sequence as chained replies', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(json({ id: 'container-1' }))
+      .mockResolvedValueOnce(json({ id: 'thread-1' }))
+      .mockResolvedValueOnce(json({ id: 'container-2' }))
+      .mockResolvedValueOnce(json({ id: 'thread-2' }))
+      .mockResolvedValueOnce(json({ id: 'container-3' }))
+      .mockResolvedValueOnce(json({ id: 'thread-3' }));
+    const receipt = await getSocialPublisher('threads').publish(
+      post('threads', { contentParts: ['Thesis', 'Evidence', 'Question?'] }),
+    );
+    expect(receipt.externalId).toBe('thread-1');
+    expect(String(fetchMock.mock.calls[2][0])).toContain('reply_to_id=thread-1');
+    expect(String(fetchMock.mock.calls[4][0])).toContain('reply_to_id=thread-2');
+    expect(receipt.providerMeta).toMatchObject({
+      reply_ids: ['thread-2', 'thread-3'],
+      sequence_length: 3,
+    });
+  });
+
+  it('resumes a partially published Threads sequence without duplicating its root', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(json({ id: 'container-2' }))
+      .mockResolvedValueOnce(json({ id: 'thread-2' }))
+      .mockResolvedValueOnce(json({ id: 'container-3' }))
+      .mockResolvedValueOnce(json({ id: 'thread-3' }));
+    const receipt = await getSocialPublisher('threads').publish(
+      post('threads', {
+        contentParts: ['Thesis', 'Evidence', 'Question?'],
+        providerMeta: {
+          partial_sequence: true,
+          creation_ids: ['container-1'],
+          published_ids: ['thread-1'],
+          sequence_length: 3,
+        },
+      }),
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+    expect(String(fetchMock.mock.calls[0][0])).toContain('reply_to_id=thread-1');
+    expect(receipt.externalId).toBe('thread-1');
+    expect(receipt.providerMeta).toMatchObject({
+      published_ids: ['thread-1', 'thread-2', 'thread-3'],
+      partial_sequence: false,
+    });
+  });
+
+  it('returns durable reconciliation progress when a Threads reply fails', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(json({ id: 'container-1' }))
+      .mockResolvedValueOnce(json({ id: 'thread-1' }))
+      .mockResolvedValueOnce(json({ error: 'bad reply' }, { status: 400 }));
+    await expect(
+      getSocialPublisher('threads').publish(
+        post('threads', { contentParts: ['Thesis', 'Evidence', 'Question?'] }),
+      ),
+    ).rejects.toMatchObject({
+      kind: 'ambiguous',
+      code: 'partial_threads_sequence',
+      providerMeta: {
+        partial_sequence: true,
+        published_ids: ['thread-1'],
+        sequence_length: 3,
+      },
+    } satisfies Partial<SocialPublishError>);
+  });
+
   it('sends a LinkedIn organization post with version headers', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       json(
@@ -161,6 +229,29 @@ describe('social provider contracts', () => {
     );
     expect(receipt.externalId).toBe('ig-media');
     expect(String(fetchMock.mock.calls[1][0])).toContain('media_publish');
+  });
+
+  it('publishes Instagram carousel children before the parent container', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(json({ id: 'child-1' }))
+      .mockResolvedValueOnce(json({ id: 'child-2' }))
+      .mockResolvedValueOnce(json({ id: 'carousel' }))
+      .mockResolvedValueOnce(json({ id: 'ig-carousel-media' }));
+    const receipt = await getSocialPublisher('instagram').publish(
+      post('instagram', {
+        assets: ['one', 'two'].map((name) => ({
+          url: `https://cdn.example/${name}.jpg`,
+          width: 1080,
+          height: 1350,
+          mimeType: 'image/jpeg' as const,
+        })),
+      }),
+    );
+    expect(receipt.externalId).toBe('ig-carousel-media');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('is_carousel_item=true');
+    expect(String(fetchMock.mock.calls[2][0])).toContain('media_type=CAROUSEL');
+    expect(String(fetchMock.mock.calls[2][0])).toContain('children=child-1%2Cchild-2');
   });
 
   it('classifies a publish timeout as ambiguous', async () => {

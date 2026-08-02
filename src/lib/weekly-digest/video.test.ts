@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { isValidYouTubeVideo, normalizeYouTubeVideo, parseYouTubeVideoId } from './video';
+import {
+  isValidYouTubeVideo,
+  normalizeYouTubeVideo,
+  parseYouTubeVideoId,
+  validateWeeklyVideoResultManifest,
+} from './video';
 
 const VIDEO_ID = 'dQw4w9WgXcQ';
 
@@ -36,5 +41,37 @@ describe('Weekly Digest YouTube validation', () => {
       embedUrl: `https://www.youtube-nocookie.com/embed/${VIDEO_ID}`,
       thumbnailUrl: `https://i.ytimg.com/vi/${VIDEO_ID}/maxresdefault.jpg`,
     });
+  });
+
+  it('accepts a result only for the approved digest, revision and input hash', () => {
+    const expected = {
+      digestId: '11111111-1111-4111-8111-111111111111',
+      revisionId: '22222222-2222-4222-8222-222222222222',
+      inputHash: 'a'.repeat(64),
+    };
+    const manifest = {
+      schemaVersion: 'weekly-video-result-v2',
+      ...expected,
+      youtube: {
+        id: VIDEO_ID,
+        url: `https://www.youtube.com/watch?v=${VIDEO_ID}`,
+        thumbnailUrl: `https://i.ytimg.com/vi/${VIDEO_ID}/maxresdefault.jpg`,
+        durationSeconds: 420,
+        publishedAt: '2026-08-01T20:00:00.000Z',
+      },
+      captions: [
+        { locale: 'en', url: 'https://cdn.example/captions-en.vtt' },
+        { locale: 'uk', vtt: 'WEBVTT\n\n00:00.000 --> 00:01.000\nТекст' },
+      ],
+    };
+    expect(validateWeeklyVideoResultManifest(manifest, expected).inputHash).toBe(
+      expected.inputHash,
+    );
+    expect(() =>
+      validateWeeklyVideoResultManifest(
+        { ...manifest, revisionId: '99999999-9999-4999-8999-999999999999' },
+        expected,
+      ),
+    ).toThrow(/does not match/i);
   });
 });
