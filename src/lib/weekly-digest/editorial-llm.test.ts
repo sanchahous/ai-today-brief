@@ -1,10 +1,40 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../../pipeline/openrouter-models', () => ({
+  fetchOpenRouterModels: vi.fn().mockResolvedValue([
+    {
+      id: 'vendor/critic-model',
+      context_length: 128_000,
+      architecture: { modality: 'text' },
+      pricing: { prompt: '0.000001', completion: '0.000006' },
+      benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+    },
+    {
+      // A distinct vendor so the independent critic's OpenRouter fallback
+      // (which excludes the writer's vendor) still has a model to pick.
+      id: 'other-vendor/writer-model',
+      context_length: 128_000,
+      architecture: { modality: 'text' },
+      pricing: { prompt: '0.000001', completion: '0.000006' },
+      benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+    },
+  ]),
+}));
+
+vi.mock('../../../pipeline/openrouter-summarize', () => ({
+  generateWithOpenRouterChain: vi.fn(),
+}));
+
+import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summarize';
 import {
   normalizeWeeklySocialAngles,
   masterRetryGuidancePrompt,
   openRouterModelVendor,
   premiumGeminiEditorialModels,
   premiumOpenRouterModels,
+  generateWeeklyMaster,
+  type WeeklyMasterEnglishResult,
+  type WeeklyMasterUkrainianResult,
 } from './editorial-llm';
 
 function socialAngle(channel: string) {
@@ -170,5 +200,180 @@ describe('normalizeWeeklySocialAngles', () => {
         ['telegram', 'facebook', 'threads', 'x', 'linkedin'].map(socialAngle),
       ),
     ).toThrow('exactly one social angle for each channel');
+  });
+});
+
+describe('generateWeeklyMaster checkpoint reuse', () => {
+  const story = (revisionItemId: string, placement: 'feature' | 'radar') => ({
+    revisionItemId,
+    rank: placement === 'feature' ? 1 : 4,
+    placement,
+    titleEn: 'Title',
+    titleUk: 'Заголовок',
+    summaryEn: 'Summary',
+    summaryUk: 'Підсумок',
+    whyEn: null,
+    whyUk: null,
+    sources: [{ name: 'Example', url: 'https://example.com' }],
+    claims: [{ id: 'claim-1', text: 'A supported claim.', evidenceUrls: ['https://example.com'] }],
+  });
+
+  const articleStory = (revisionItemId: string, placement: 'feature' | 'radar') => ({
+    revisionItemId,
+    placement,
+    headline: 'Headline',
+    summary: 'Summary',
+    hook: 'Hook',
+    body: 'Body',
+    why: 'Why',
+    practical: 'Practical',
+    limitation: 'Limitation',
+    takeaway: 'Takeaway',
+    claimIds: ['claim-1'],
+  });
+
+  function englishResult(): WeeklyMasterEnglishResult {
+    return {
+      value: {
+        article: {
+          locale: 'en',
+          title: 't',
+          seoTitle: 't',
+          metaDescription: 'd',
+          ogTitle: 't',
+          ogDescription: 'd',
+          standfirst: 's',
+          theme: 'th',
+          intro: 'i',
+          editorNote: 'e',
+          keyTakeaways: ['k'],
+          topics: ['t'],
+          entities: ['e'],
+          internalLinks: [],
+          conclusion: 'c',
+          stories: [articleStory('item-1', 'feature')],
+        },
+        video: { title: 't', hook: 'h', narration: 'n', scenes: [], shorts: [] },
+        socialAngles: [
+          'telegram',
+          'facebook',
+          'threads',
+          'x',
+          'linkedin',
+          'instagram',
+        ].map(socialAngle),
+      },
+      metadata: {
+        provider: 'openrouter',
+        model: 'checkpointed/english-model',
+        promptTokens: 100,
+        outputTokens: 200,
+        estimatedCostUsd: 0.05,
+        costSource: 'reported',
+        promptVersion: 'weekly-master-v3',
+      },
+    } as unknown as WeeklyMasterEnglishResult;
+  }
+
+  function ukrainianResult(): WeeklyMasterUkrainianResult {
+    return {
+      value: {
+        locale: 'uk',
+        title: 't',
+        seoTitle: 't',
+        metaDescription: 'd',
+        ogTitle: 't',
+        ogDescription: 'd',
+        standfirst: 's',
+        theme: 'th',
+        intro: 'i',
+        editorNote: 'e',
+        keyTakeaways: ['k'],
+        topics: ['t'],
+        entities: ['e'],
+        internalLinks: [],
+        conclusion: 'c',
+        stories: [articleStory('item-1', 'feature')],
+      },
+      metadata: {
+        provider: 'openrouter',
+        model: 'checkpointed/ukrainian-model',
+        promptTokens: 100,
+        outputTokens: 200,
+        estimatedCostUsd: 0.04,
+        costSource: 'reported',
+        promptVersion: 'weekly-master-v3',
+      },
+    } as unknown as WeeklyMasterUkrainianResult;
+  }
+
+  const CRITIC_JSON = JSON.stringify({
+    score: 90,
+    dimensions: ['hook', 'clarity', 'trust', 'usefulness', 'structure', 'naturalness', 'parity'].map(
+      (name) => ({ name, score: 90, note: 'ok' }),
+    ),
+    factualFlags: [],
+    issues: [],
+  });
+
+  afterEach(() => {
+    vi.mocked(generateWithOpenRouterChain).mockReset();
+    vi.unstubAllEnvs();
+  });
+
+  it('skips EN/UK generation and reuses the checkpoint when both steps are cached', async () => {
+    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
+      text: CRITIC_JSON,
+      provider: 'openrouter',
+      model: 'vendor/critic-model',
+      usage: null,
+    });
+    const onStepComplete = vi.fn();
+
+    const result = await generateWeeklyMaster([story('item-1', 'feature')], [], [], {
+      checkpoint: { english: englishResult(), ukrainian: ukrainianResult() },
+      onStepComplete,
+    });
+
+    // Only the critic call should have hit a provider — EN/UK came from the checkpoint.
+    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(1);
+    expect(onStepComplete).not.toHaveBeenCalled();
+    expect(result.generation.english.model).toBe('checkpointed/english-model');
+    expect(result.generation.ukrainian.model).toBe('checkpointed/ukrainian-model');
+  });
+
+  it('generates EN/UK and reports both steps when no checkpoint is provided', async () => {
+    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
+    vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => {
+      if (prompt.includes('independent factual and editorial critic')) {
+        return { text: CRITIC_JSON, provider: 'openrouter', model: 'vendor/critic-model', usage: null };
+      }
+      if (prompt.includes('Ukrainian senior news editor')) {
+        return {
+          text: JSON.stringify(englishResult().value.article),
+          provider: 'openrouter',
+          model: 'other-vendor/writer-model',
+          usage: null,
+        };
+      }
+      return {
+        text: JSON.stringify({
+          article: englishResult().value.article,
+          video: englishResult().value.video,
+          socialAngles: englishResult().value.socialAngles,
+        }),
+        provider: 'openrouter',
+        model: 'other-vendor/writer-model',
+        usage: null,
+      };
+    });
+    const onStepComplete = vi.fn();
+
+    await generateWeeklyMaster([story('item-1', 'feature')], [], [], { onStepComplete });
+
+    expect(onStepComplete).toHaveBeenCalledWith('english', expect.anything());
+    expect(onStepComplete).toHaveBeenCalledWith('ukrainian', expect.anything());
+    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(3); // english + ukrainian + critic
   });
 });

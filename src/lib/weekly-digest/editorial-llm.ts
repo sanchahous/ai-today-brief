@@ -71,9 +71,24 @@ export interface WeeklyMasterRetryGuidance {
   field?: string;
 }
 
-interface ProviderResult<T> {
+export interface ProviderResult<T> {
   value: T;
   metadata: EditorialGenerationMetadata;
+}
+
+export type WeeklyMasterEnglishResult = ProviderResult<ReturnType<typeof parseEnglishPackage>>;
+export type WeeklyMasterUkrainianResult = ProviderResult<WeeklyArticleMaster>;
+
+/**
+ * A prior attempt's EN/UK write, reusable when the caller has already
+ * confirmed it matches the current research packs + retry guidance (see
+ * generation-worker.ts). Letting a retry skip straight to the critic avoids
+ * re-paying for a write that already succeeded and would produce the same
+ * result again.
+ */
+export interface WeeklyMasterCheckpoint {
+  english: WeeklyMasterEnglishResult;
+  ukrainian?: WeeklyMasterUkrainianResult;
 }
 
 function parseJsonObject(raw: string): Record<string, unknown> {
@@ -600,16 +615,28 @@ export async function generateWeeklyMaster(
   stories: WeeklyMasterInputStory[],
   researchPacks: WeeklyResearchPack[],
   retryGuidance: WeeklyMasterRetryGuidance[] = [],
+  options: {
+    checkpoint?: WeeklyMasterCheckpoint | null;
+    onStepComplete?: (
+      step: 'english' | 'ukrainian',
+      result: WeeklyMasterEnglishResult | WeeklyMasterUkrainianResult,
+    ) => void | Promise<void>;
+  } = {},
 ): Promise<WeeklyMasterGenerationResult> {
-  const english = await generateFirstAvailable(
-    englishPrompt(stories, retryGuidance),
-    parseEnglishPackage,
-  );
-  const ukrainian = await generateWithProvider(
-    english.metadata.provider,
-    ukrainianPrompt(english.value.article, stories),
-    (raw) => parseArticle(raw, 'uk'),
-  );
+  let english = options.checkpoint?.english;
+  if (!english) {
+    english = await generateFirstAvailable(englishPrompt(stories, retryGuidance), parseEnglishPackage);
+    await options.onStepComplete?.('english', english);
+  }
+  let ukrainian = options.checkpoint?.ukrainian;
+  if (!ukrainian) {
+    ukrainian = await generateWithProvider(
+      english.metadata.provider,
+      ukrainianPrompt(english.value.article, stories),
+      (raw) => parseArticle(raw, 'uk'),
+    );
+    await options.onStepComplete?.('ukrainian', ukrainian);
+  }
   const bundle: WeeklyMasterBundle = {
     en: english.value.article,
     uk: ukrainian.value,

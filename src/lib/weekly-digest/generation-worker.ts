@@ -29,6 +29,7 @@ import {
   resolveWeeklyContentStudioMode,
   sourceNameMatchesDomain,
   WEEKLY_CONTENT_STUDIO_VERSION,
+  WEEKLY_MASTER_SPEC_VERSION,
   WEEKLY_VIDEO_MANIFEST_VERSION,
   type WeeklyContentQualityReport,
   type WeeklyMasterBundle,
@@ -36,8 +37,11 @@ import {
 } from './content-studio';
 import {
   generateWeeklyMaster,
+  type WeeklyMasterCheckpoint,
+  type WeeklyMasterEnglishResult,
   type WeeklyMasterInputStory,
   type WeeklyMasterRetryGuidance,
+  type WeeklyMasterUkrainianResult,
 } from './editorial-llm';
 import {
   buildWeeklyResearchPack,
@@ -626,6 +630,60 @@ async function assertWithinMasterBudget(revisionId: string) {
   }
 }
 
+/**
+ * Identifies whether a prior attempt's EN/UK write is still valid to reuse:
+ * changes iff the research packs or retry guidance feeding the prompts
+ * change. priorMasterRetryGuidance() only changes once a critic verdict is
+ * actually saved, so a retry after a failure that happened *before* that
+ * point (every editorial_master failure seen in production so far — a
+ * transient provider error or malformed critic JSON) hashes identically and
+ * reuses the already-paid EN/UK write instead of re-generating it.
+ */
+export function computeMasterCheckpointHash(
+  researchPacks: WeeklyResearchPack[],
+  retryGuidance: WeeklyMasterRetryGuidance[],
+): string {
+  return createHash('sha256')
+    .update(JSON.stringify({ researchPacks, retryGuidance, promptVersion: WEEKLY_MASTER_SPEC_VERSION }))
+    .digest('hex');
+}
+
+type MasterCheckpointOutput = {
+  checkpointHash?: string;
+  english?: WeeklyMasterEnglishResult;
+  ukrainian?: WeeklyMasterUkrainianResult;
+};
+
+async function loadMasterCheckpoint(
+  jobId: string,
+  expectedHash: string,
+): Promise<WeeklyMasterCheckpoint | null> {
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('weekly_digest_generation_jobs')
+    .select('output')
+    .eq('id', jobId)
+    .maybeSingle();
+  if (error) throw new Error(`[weekly-generation] checkpoint lookup: ${error.message}`);
+  const output = asRecord(data?.output as Json | undefined) as MasterCheckpointOutput;
+  if (output.checkpointHash !== expectedHash || !output.english) return null;
+  return { english: output.english, ukrainian: output.ukrainian };
+}
+
+async function saveMasterCheckpoint(
+  jobId: string,
+  checkpointHash: string,
+  checkpoint: WeeklyMasterCheckpoint,
+) {
+  const output: MasterCheckpointOutput = { checkpointHash, ...checkpoint };
+  const db = getSupabaseAdmin();
+  const { error } = await db
+    .from('weekly_digest_generation_jobs')
+    .update({ output: output as unknown as Json })
+    .eq('id', jobId);
+  if (error) throw new Error(`[weekly-generation] checkpoint save: ${error.message}`);
+}
+
 async function generateEditorialMaster(job: ClaimedGenerationJob) {
   const requestedMode = contentStudioJobMode(job);
   await assertWithinMasterBudget(job.revision_id);
@@ -642,11 +700,24 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
     throw new Error('Approve all three current Top 3 research packs before master generation.');
   }
   const sourceStories = masterInputStories(context, approvedResearch);
-  const result = await generateWeeklyMaster(
-    sourceStories,
-    approvedResearch.map(({ pack }) => pack),
-    priorMasterRetryGuidance(context),
-  );
+  const researchPacks = approvedResearch.map(({ pack }) => pack);
+  const retryGuidance = priorMasterRetryGuidance(context);
+  const checkpointHash = computeMasterCheckpointHash(researchPacks, retryGuidance);
+  const checkpoint = await loadMasterCheckpoint(job.id, checkpointHash);
+  // Accumulates across both onStepComplete calls so the ukrainian save doesn't
+  // clobber the english step just persisted moments earlier in this same run.
+  let runningCheckpoint = checkpoint;
+  const result = await generateWeeklyMaster(sourceStories, researchPacks, retryGuidance, {
+    checkpoint,
+    onStepComplete: async (step, stepResult) => {
+      runningCheckpoint = {
+        english: step === 'english' ? (stepResult as WeeklyMasterEnglishResult) : runningCheckpoint!.english,
+        ukrainian:
+          step === 'ukrainian' ? (stepResult as WeeklyMasterUkrainianResult) : runningCheckpoint?.ukrainian,
+      };
+      await saveMasterCheckpoint(job.id, checkpointHash, runningCheckpoint);
+    },
+  });
   const passed = editorialQualityPasses(result.quality);
   if (!passed) {
     const qualityArtifactId = await saveQualityReport({
