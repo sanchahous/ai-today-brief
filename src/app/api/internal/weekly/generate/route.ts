@@ -5,9 +5,9 @@ import { runWeeklyDigestGenerationJobs } from '@/lib/weekly-digest/generation-wo
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 // A master run performs EN writing, UK adaptation and an independent critic
-// sequentially. Vercel's 300-second default can terminate a healthy run between
-// provider calls, leaving the durable job to wait for stale-lock recovery.
-export const maxDuration = 800;
+// sequentially. Keep the platform limit explicit so Hobby staging and production
+// execute the same contract and stale-lock recovery remains predictable.
+export const maxDuration = 300;
 
 // Supabase pg_net waits up to 55 seconds. Story image generation and PDF
 // rasterization are intentionally claimed one at a time so the request remains

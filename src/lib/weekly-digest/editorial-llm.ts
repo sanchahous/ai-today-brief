@@ -289,7 +289,7 @@ function providerOrder() {
   return [...new Set(configured)];
 }
 
-function premiumOpenRouterModels(models: OpenRouterModelRecord[]) {
+export function premiumOpenRouterModels(models: OpenRouterModelRecord[]) {
   const configured = (process.env.WEEKLY_MASTER_OPENROUTER_MODELS ?? '')
     .split(',')
     .map((value) => value.trim())
@@ -309,7 +309,11 @@ function premiumOpenRouterModels(models: OpenRouterModelRecord[]) {
     .map((model) => model.id);
   const allowed = new Set(eligible);
   const selected = configured.length ? configured.filter((model) => allowed.has(model)) : eligible;
-  return selected.slice(0, 3);
+  // A full master response is large. Retrying another OpenRouter model inside
+  // the same request can consume the entire 300-second function budget. The
+  // caller still has the independent premium provider fallback, while durable
+  // job retries handle transient failures across separate invocations.
+  return selected.slice(0, 1);
 }
 
 async function generateOpenRouter<T>(

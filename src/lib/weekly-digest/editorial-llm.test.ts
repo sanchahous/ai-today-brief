@@ -1,9 +1,39 @@
-import { describe, expect, it } from 'vitest';
-import { normalizeWeeklySocialAngles, premiumGeminiEditorialModels } from './editorial-llm';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  normalizeWeeklySocialAngles,
+  premiumGeminiEditorialModels,
+  premiumOpenRouterModels,
+} from './editorial-llm';
 
 function socialAngle(channel: string) {
   return { channel, hookAngle: `Hook for ${channel}`, thesis: 'Thesis', factIds: ['claim-1'] };
 }
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+describe('premiumOpenRouterModels', () => {
+  it('keeps one in-request model attempt within the function budget', () => {
+    vi.stubEnv('WEEKLY_MASTER_OPENROUTER_MODELS', 'provider/new,provider/older');
+    expect(
+      premiumOpenRouterModels([
+        {
+          id: 'provider/new',
+          created: 2,
+          context_length: 128_000,
+          architecture: { modality: 'text' },
+        },
+        {
+          id: 'provider/older',
+          created: 1,
+          context_length: 128_000,
+          architecture: { modality: 'text' },
+        },
+      ]),
+    ).toEqual(['provider/new']);
+  });
+});
 
 describe('premiumGeminiEditorialModels', () => {
   it('finds Pro after faster models in the live-ranked queue', () => {
