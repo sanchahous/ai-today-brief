@@ -152,4 +152,54 @@ describe('generateSocialJson', () => {
     });
     expect(result.fallbackUsed).toBe(true);
   });
+
+  it('ignores excludeProviders rather than leaving zero candidates', async () => {
+    // If the writer already used the only other configured provider, forcing the
+    // critic to avoid it too would guarantee failure. Falling back to the same
+    // provider is preferable to no critic opinion at all.
+    const gemini = vi.fn(async () => ({
+      text: '{"score":90,"flags":[]}',
+      model: 'gemini-3.5-flash',
+    }));
+    const result = await generateSocialJson(
+      'critic',
+      'audit',
+      (raw) => JSON.parse(raw) as { score: number; flags: string[] },
+      {
+        env: { SOCIAL_CRITIC_PROVIDER_ORDER: 'gemini' },
+        excludeProviders: ['gemini'],
+        deps: { generators: { gemini } as never },
+      },
+    );
+    expect(result.provider).toBe('gemini');
+    expect(gemini).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries an excluded provider once every independent one has also failed', async () => {
+    // Writer already used openrouter, so critic prefers gemini for independence.
+    // Gemini is globally out of quota today -- if openrouter (the excluded,
+    // shared provider) is otherwise healthy, the critic should still get an
+    // opinion instead of failing solely because its first choice is down.
+    const gemini = vi.fn(async () => {
+      throw new Error('429 quota exceeded');
+    });
+    const openrouter = vi.fn(async () => ({
+      text: '{"score":85,"flags":[]}',
+      model: 'qwen/qwen3.7-flash',
+    }));
+    const result = await generateSocialJson(
+      'critic',
+      'audit',
+      (raw) => JSON.parse(raw) as { score: number; flags: string[] },
+      {
+        env: { SOCIAL_CRITIC_PROVIDER_ORDER: 'openrouter,gemini' },
+        excludeProviders: ['openrouter'],
+        deps: { generators: { gemini, openrouter } as never },
+      },
+    );
+    expect(result.provider).toBe('openrouter');
+    expect(result.attempts.map((attempt) => attempt.provider)).toEqual(['gemini', 'openrouter']);
+    expect(gemini).toHaveBeenCalledTimes(1);
+    expect(openrouter).toHaveBeenCalledTimes(1);
+  });
 });

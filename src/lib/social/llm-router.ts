@@ -93,7 +93,11 @@ const MODEL_FRESHNESS_SECONDS = 400 * 24 * 60 * 60;
 
 export class SocialLlmExhaustedError extends Error {
   constructor(readonly attempts: SocialLlmAttempt[]) {
-    super('All configured social LLM providers failed.');
+    super(
+      `All configured social LLM providers failed -- ${attempts
+        .map((a) => `${a.provider}${a.model ? `/${a.model}` : ''}: ${a.status}${a.reason ? ` (${a.reason})` : ''}`)
+        .join(' | ')}`,
+    );
     this.name = 'SocialLlmExhaustedError';
   }
 }
@@ -387,9 +391,14 @@ export async function generateSocialJson<T>(
   const fetchFn = deps.fetchFn ?? fetch;
 
   const excluded = new Set(options.excludeProviders ?? []);
-  for (const provider of resolveSocialProviderOrder(role, env).filter(
-    (candidate) => !excluded.has(candidate),
-  )) {
+  const resolvedOrder = resolveSocialProviderOrder(role, env);
+  const independent = resolvedOrder.filter((candidate) => !excluded.has(candidate));
+  const sharedWithOtherRole = resolvedOrder.filter((candidate) => excluded.has(candidate));
+  // Independence from the other role is a preference, not a hard requirement: try every
+  // independent provider first, but if all of them fail too, fall through to the one(s) the
+  // other role already used rather than throw while a working provider still exists.
+  const providerOrder = [...independent, ...sharedWithOtherRole];
+  for (const provider of providerOrder) {
     try {
       const injected = deps.generators?.[provider];
       const output = injected
