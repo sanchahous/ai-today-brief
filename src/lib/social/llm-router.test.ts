@@ -152,4 +152,26 @@ describe('generateSocialJson', () => {
     });
     expect(result.fallbackUsed).toBe(true);
   });
+
+  it('ignores excludeProviders rather than leaving zero candidates', async () => {
+    // If the writer already used the only other configured provider, forcing the
+    // critic to avoid it too would guarantee failure. Falling back to the same
+    // provider is preferable to no critic opinion at all.
+    const gemini = vi.fn(async () => ({
+      text: '{"score":90,"flags":[]}',
+      model: 'gemini-3.5-flash',
+    }));
+    const result = await generateSocialJson(
+      'critic',
+      'audit',
+      (raw) => JSON.parse(raw) as { score: number; flags: string[] },
+      {
+        env: { SOCIAL_CRITIC_PROVIDER_ORDER: 'gemini' },
+        excludeProviders: ['gemini'],
+        deps: { generators: { gemini } as never },
+      },
+    );
+    expect(result.provider).toBe('gemini');
+    expect(gemini).toHaveBeenCalledTimes(1);
+  });
 });
