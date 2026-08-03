@@ -103,6 +103,10 @@ describe('generateEditorialIllustration ladder', () => {
     expect(result!.bytes.length).toBeGreaterThan(1000);
     const calledUrls = vi.mocked(globalThis.fetch).mock.calls.map((call) => String(call[0]));
     expect(calledUrls.some((url) => url.includes('flux-2-klein-9b'))).toBe(true);
+    const kleinCall = vi.mocked(globalThis.fetch).mock.calls.find((call) =>
+      String(call[0]).includes('flux-2-klein-9b'),
+    );
+    expect(kleinCall?.[1]?.body).toBeInstanceOf(FormData);
   });
 
   it('spills over to FLUX-1-schnell when the primary CF model fails', async () => {

@@ -24,7 +24,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import sharp from 'sharp';
 import type { PipelineDb } from './db';
 import { resolveGeminiModelQueue } from './gemini-models';
-import { logEvent } from './log';
+import { logEvent, serializeErrorDetails } from './log';
 
 const BUCKET = 'card-images';
 /**
@@ -696,24 +696,27 @@ async function runCloudflareMultipart(
     if (/flux-2-dev/i.test(model)) {
       form.append('steps', '25');
     }
-    const formResponse = new Response(form);
-    const body = formResponse.body;
-    const contentType = formResponse.headers.get('content-type');
-    if (!body || !contentType) return null;
+    // Pass FormData directly. The Workers-binding docs serialize via
+    // `new Response(form).body`, but Node/undici fetch rejects a raw
+    // ReadableStream body without `duplex: 'half'` and we were catching that
+    // as a silent null — every prod call spilled over to flux-1-schnell.
     const res = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${cfg.cloudflareAccountId}/ai/run/${model}`,
       {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${cfg.cloudflareApiToken}`,
-          'content-type': contentType,
         },
-        body,
+        body: form,
         signal: AbortSignal.timeout(90_000),
       },
     );
     return await readCloudflareImageResponse(res, model);
-  } catch {
+  } catch (error) {
+    logEvent('warn', 'publish', 'Cloudflare multipart image gen threw', {
+      model,
+      ...serializeErrorDetails(error),
+    });
     return null;
   }
 }
@@ -751,7 +754,11 @@ async function runCloudflareJson(
       },
     );
     return await readCloudflareImageResponse(res, model);
-  } catch {
+  } catch (error) {
+    logEvent('warn', 'publish', 'Cloudflare JSON image gen threw', {
+      model,
+      ...serializeErrorDetails(error),
+    });
     return null;
   }
 }
