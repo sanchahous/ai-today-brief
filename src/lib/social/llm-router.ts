@@ -392,11 +392,12 @@ export async function generateSocialJson<T>(
 
   const excluded = new Set(options.excludeProviders ?? []);
   const resolvedOrder = resolveSocialProviderOrder(role, env);
-  const withoutExcluded = resolvedOrder.filter((candidate) => !excluded.has(candidate));
-  // Independence from the other role is a preference, not a hard requirement: if honoring
-  // it would leave zero providers (e.g. the excluded one is the only one left standing),
-  // fall back to the full order rather than guarantee failure.
-  const providerOrder = withoutExcluded.length > 0 ? withoutExcluded : resolvedOrder;
+  const independent = resolvedOrder.filter((candidate) => !excluded.has(candidate));
+  const sharedWithOtherRole = resolvedOrder.filter((candidate) => excluded.has(candidate));
+  // Independence from the other role is a preference, not a hard requirement: try every
+  // independent provider first, but if all of them fail too, fall through to the one(s) the
+  // other role already used rather than throw while a working provider still exists.
+  const providerOrder = [...independent, ...sharedWithOtherRole];
   for (const provider of providerOrder) {
     try {
       const injected = deps.generators?.[provider];
