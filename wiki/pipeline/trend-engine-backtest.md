@@ -1,7 +1,7 @@
 # Trend-engine — backtest findings & "compress the data clock"
 
 Summary: Результати бектесту trend-engine на історичних брифах.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
+Sources: none (analysis)
 Last updated: 2026-06-13
 
 
@@ -11,7 +11,7 @@ Last updated: 2026-06-13
 >
 > **Відповідь: так, здебільшого.** Доказ нижче — на **реальних** даних (prod `ai-news-scrapper`,
 > 2150 статей, read-only) і реальному коді (`pipeline/rank.ts`). Доповнює `MASTER-ROADMAP.md` (L1/L2)
-> та `INSTRUMENTATION-PR-PLAN.md` (переформульовує PR-I1).
+> та `wiki/pipeline/instrumentation-plan.md` (переформульовує PR-I1).
 
 ---
 
@@ -116,7 +116,7 @@ Backfill velocity/recency **обов'язково стампити as-of `fetche
 ## 4. Переформульований L1-план (що з цього будуємо)
 
 ### PR-I1 — Persist + **backfill** score telemetry `[S→M]` · міграція 032
-Розширено проти `INSTRUMENTATION-PR-PLAN`: **бекфілити історію, не лише писати наперед.**
+Розширено проти `wiki/pipeline/instrumentation-plan.md`: **бекфілити історію, не лише писати наперед.**
 - Міграція: 6 `score_*` компонент + `score_version` + `cluster_id` + **`scored_as_of`** (новий — §1.1).
 - `rank.ts`: `SCORE_VERSION`, `scored` (pre-cap), `memberUrls`/`clusterId`.
 - `db.ts`/`run-daily.ts`: персистити всі члени всіх кластерів, незалежно від publish.

@@ -1,7 +1,7 @@
 # Analytics — довідник (підтримувати актуальним!)
 
 Summary: Довідник GA4 / GTM / GSC: property, measurement ID, key events.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
+Sources: none (analysis)
 Last updated: 2026-06-12
 
 

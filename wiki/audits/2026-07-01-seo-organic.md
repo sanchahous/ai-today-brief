@@ -1,8 +1,8 @@
 # SEO + маркетинг аудит — чому нема органіки — aitodaybrief.com
 
 Summary: SEO/organic аудит: чому немає органіки (2026-07-01).
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-07-02
 
 
 **Дата:** 2026-07-01

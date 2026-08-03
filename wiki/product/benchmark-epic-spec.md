@@ -1,8 +1,8 @@
 # AOB epic spec v1 — "Standup Tracker" (Track W)
 
 Summary: Epic-спека бенчмарк-інфраструктури.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-11
 
 
 **FROZEN.** Any change bumps the protocol version; scores across versions are

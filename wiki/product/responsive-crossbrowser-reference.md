@@ -1,8 +1,8 @@
 # AI Today Brief — Responsive & Cross-Browser Defect Handoff Spec
 
 Summary: Повний референс responsive / cross-browser аудиту.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-12
 
 
 Target: `D:/domains/ai-today-brief` (Next.js 16, Tailwind v4). 88 verified defects: 13 high, 36 medium, 39 low.

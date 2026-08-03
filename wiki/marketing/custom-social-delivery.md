@@ -1,8 +1,8 @@
 # Custom social delivery — operator runbook
 
 Summary: Кастомна доставка соц-постів поза стандартним CMS-шляхом.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-07-18
 
 
 The site publishes social content directly through GitHub Actions and the

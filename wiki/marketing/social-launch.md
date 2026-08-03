@@ -1,8 +1,8 @@
 # Запуск соцмереж AI Today Brief — покроковий playbook
 
 Summary: Чек-лист запуску соцмереж і експорту бренд-ассетів.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-11
 
 
 **Дата:** 2026-06-11 · **Базується на:** research офіційних доків кожної платформи. **Волатильні цифри (ціни, ліміти, спеки) перехресно верифіковані проти офіційних джерел 2026-06-11** — Telegram/X/Bluesky/LinkedIn/Facebook підтверджені без зауважень, 2 дрібні корекції (Threads-хендл, YouTube-флоу) внесені. Платформи змінюють правила — при виконанні через місяці перевір дати.

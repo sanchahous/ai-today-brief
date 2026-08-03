@@ -1,8 +1,8 @@
 # AI Trends Research & Content Selection Strategy
 
 Summary: Дослідження AI-трендів, конкурентів і дворівневого відбору новин.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-13
 
 
 > **Звіт станом на 2026-06-13.** Динамічна модель — переглядати щотижня (наступний реврю: 2026-06-20).

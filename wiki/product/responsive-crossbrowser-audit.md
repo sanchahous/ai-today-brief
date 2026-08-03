@@ -1,8 +1,8 @@
 # Mission: Responsive & Cross-Browser Hardening (Header · Mobile menu · Filters + systemic roots)
 
 Summary: Аудит responsive / cross-browser готовності продукту.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-12
 
 
 > **Status:** Operator-framed spec for autonomous implementation. Source: 88-defect whole-site audit (this is the focused mission-#2 subset).

@@ -1,8 +1,8 @@
 # Trend-двигун як «центральний мозок» порталу — критичний brainstorm
 
 Summary: Аналіз trend-engine: сигнали, ваги, gap-и й пропозиції до rank.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-13
 
 
 > **Дата:** 2026-06-13 · **Статус:** brainstorm / стратегічний аналіз (не специфікація)
@@ -147,7 +147,7 @@ bandits із guardrails**, не чорною скринькою. Перш ніж
 
 ---
 
-## 10. Звірка з планами (AI-TRENDS-RESEARCH-STRATEGY + SITE-UPDATES)
+## 10. Звірка з планами (ai-trends-research + site-updates-plan)
 
 Моя рекомендація = те, до чого ти вже прийшов сам (`STRATEGY §3`: лишити `rank.ts` + редакційний гейт
 T40/P35/A15/U10 cut<60 + щотижневий ручний реврю). **Але три факти міняють рамку:**

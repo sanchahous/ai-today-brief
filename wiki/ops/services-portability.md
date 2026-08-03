@@ -1,8 +1,8 @@
 # Portability — swapping Beehiiv, Resend, LemonSqueezy, Telegram
 
 Summary: Портативність зовнішніх сервісів і env-контракти.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-04
 
 
 Short answer: **yes, you can migrate**; difficulty depends on the service.

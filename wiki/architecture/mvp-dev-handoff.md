@@ -1,8 +1,8 @@
 # 07 — AI Brief · MVP Dev Handoff (фінальна специфікація)
 
 Summary: MVP Dev Handoff: стек, схема БД, маршрути та критерії готовності брифу.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-03
 
 
 > **Що це.** Єдиний документ для передачі проєкту **AI Brief** (робоча назва, AI-News scraper) команді розробки. Зводить твій research (`05 — AI News`) і зведену оцінку трьох інвесторів (`deep-research-report-ai-news.md`) у фінальний флоу запуску MVP: сторінки, фічі, база даних Supabase, SEO та інтеграції.

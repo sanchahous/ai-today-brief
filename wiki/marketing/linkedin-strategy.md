@@ -1,8 +1,8 @@
 # LinkedIn-стратегія Sasha Kuzmenko / AI Today Brief
 
 Summary: LinkedIn-стратегія 2026 для AI Today Brief.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-07-18
 
 
 **Версія:** 1.0<br>
@@ -10,7 +10,7 @@ Last updated: 2026-08-02
 **Горизонт плану:** 90 днів<br>
 **Статус:** стратегія і вимоги до CMS; без автоматичних змін у LinkedIn
 
-> Цей документ замінює LinkedIn-специфічні поради з `SOCIAL-LAUNCH.md`. Загальні правила запуску Social CMS залишаються чинними, але рішення щодо форматів, посилань, cadence й автоматизації LinkedIn слід брати звідси.
+> Цей документ замінює LinkedIn-специфічні поради з `social-launch.md`. Загальні правила запуску Social CMS залишаються чинними, але рішення щодо форматів, посилань, cadence й автоматизації LinkedIn слід брати звідси.
 
 ## 1. Рішення в одному абзаці
 

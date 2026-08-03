@@ -1,8 +1,8 @@
 # Reddit Data API — compliance & status
 
 Summary: Чому Reddit API вимкнено і що потрібно для вмикання.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-07-16
 
 
 > **Status (2026-07-16): DISABLED pending written approval.**

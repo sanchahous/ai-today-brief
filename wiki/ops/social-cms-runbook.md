@@ -1,8 +1,8 @@
 # AI Today Brief Social CMS runbook
 
 Summary: Runbook соц-CMS: хвилі підключення destination-ів.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-07-24
 
 
 The CMS is deliberately safe on first deploy: migration `040_social_cms.sql`

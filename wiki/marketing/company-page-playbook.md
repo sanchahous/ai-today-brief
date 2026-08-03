@@ -1,21 +1,21 @@
 # AI Today Brief — Company Page playbook
 
 Summary: Playbook Company Page ATB на LinkedIn (ассети, URN, CMS-гейт).
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-07-22
 
 
 **Версія:** 1.0<br>
 **Дата:** 21 липня 2026<br>
 **Статус:** execution-ready. Публікація — вручну через нативний планувальник LinkedIn.<br>
-**Базується на:** [`LINKEDIN-STRATEGY-2026.md`](./linkedin-strategy.md) §8–9, 14 · [`LINKEDIN-ACTION-PLAN.md`](./linkedin-action-plan.md) · [`SOCIAL-LAUNCH.md`](./social-launch.md) §6 · факти продукту з `src/lib/i18n.ts`, `src/app/llms.txt`.
+**Базується на:** [`linkedin-strategy.md`](./linkedin-strategy.md) §8–9, 14 · [`linkedin-action-plan.md`](./linkedin-action-plan.md) · [`social-launch.md`](./social-launch.md) §6 · факти продукту з `src/lib/i18n.ts`, `src/app/llms.txt`.
 
 > **Рішення власника (21.07.2026), зафіксовано:**
 > 1. Сторінка ATB — вже **standalone Company Page** (конверсія завершена), але **нова, з нуля підписників**. Тому launch-пост A0 — це **знайомство з брендом** («ось хто ми»), а НЕ анонс переходу «now independent»: немає аудиторії, якій анонсувати зміну, і для нової компанії такий фрейм недоречний.
 > 2. Позиціонування — **власний бренд/видання**: ATB має свою ідентичність і голос, окремий від профілю Sasha. Крос-промо в профіль лишається, але сторінка стоїть сама.
 > 3. Публікація — **native scheduler батчем**. CMS-API — пізніше, за гейтом (runbook §5, wave 5): OAuth + AAL2 + ре-верифікація org-URN після конверсії.
 >
-> Цей файл — контент-стратегія + запуск + двигун росту **саме для Company Page ATB**. Загальна 3-identity стратегія лишається в `LINKEDIN-STRATEGY-2026.md`; тут — усе, що робиться руками на цій одній сторінці.
+> Цей файл — контент-стратегія + запуск + двигун росту **саме для Company Page ATB**. Загальна 3-identity стратегія лишається в `linkedin-strategy.md`; тут — усе, що робиться руками на цій одній сторінці.
 
 ---
 
@@ -68,7 +68,7 @@ Read the full brief and subscribe → aitodaybrief.com
 
 ## 3. Контент-піллари та формати
 
-Піллари (з `LINKEDIN-STRATEGY-2026.md` §8):
+Піллари (з `linkedin-strategy.md` §8):
 
 | Піллар | Що це | Формат |
 |---|---|---|

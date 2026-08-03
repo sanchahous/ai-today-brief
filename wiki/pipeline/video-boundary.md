@@ -1,8 +1,8 @@
 # Video pipeline boundary
 
 Summary: Межа відповідальності video-pipeline відносно основного брифу.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-07-23
 
 
 Status: accepted and implemented

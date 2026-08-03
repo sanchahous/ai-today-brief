@@ -1,8 +1,8 @@
 # Weekly editorial selection
 
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-07-23
 
 
 `weekly-editorial-v2` replaces the old `impact → recency → daily rank` sort used

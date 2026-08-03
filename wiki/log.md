@@ -19,7 +19,25 @@ Last updated: 2026-08-03
 
 ---
 
+## 2026-08-03 — fix: Last updated + дрібні шляхи після ревʼю #166
+
+**Джерело:** ревʼю PR #166
+
+**Змінено:**
+
+- усі 33 мігровані сторінки — `Last updated` перештамповано з contentful `git log --follow`
+  (міграційні коміти пропущені); `Sources:` → `none (analysis)`
+- `wiki/architecture/prototype-to-production.md` — історичний шлях `docs/STARTUP-PLAN.md` відновлено
+- `wiki/strategy/master-roadmap.md`, marketing/pipeline посилання — старі імена файлів → поточні wiki-шляхи
+- `wiki/ops/mcp.md` — лінк на reddit-compliance спростити до `./`
+- коментарі e2e/sonar workflows: `docs/` → `wiki/`
+
+**Нотатка:** виправляє п. 1–5 ревʼю #166 до мержу.
+
+---
+
 ## 2026-08-03 — міграція docs/** → wiki/** · raw/ · artifacts/
+
 
 **Джерело:** [ADR 2026-08-02](decisions/2026-08-02-knowledge-base-restructure.md) кроки 2–8;
 гілка `chore/migrate-docs-to-wiki`

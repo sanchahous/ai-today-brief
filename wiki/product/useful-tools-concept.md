@@ -1,8 +1,8 @@
 # Розділ «AI Toolbox» (Useful Tools) — концепція v2
 
 Summary: Концепт AI Toolbox (Useful Tools): принципи, роадмеп, вердикт ринку.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-11
 
 
 **Дата:** 2026-06-11 (v2 — після конкурентного research і adversarial-критики) · **Статус:** на затвердження
@@ -113,5 +113,5 @@ Last updated: 2026-08-02
 
 1. **[затвердити]** v2: назву розділу, першу хвилю (Optimizer → settings.json Builder → CLAUDE.md Generator).
 2. PR: `/tools` + `/tools/prompt-optimizer` (Фаза A; правила-як-дані + SSG-каталог правил + телеметрія counts-only) — ~2–3 дні.
-3. Анонс-звʼязка з запуском соцмереж (SOCIAL-LAUNCH.md): тулза = ідеальний перший інфопривід.
+3. Анонс-звʼязка з запуском соцмереж (`social-launch.md`): тулза = ідеальний перший інфопривід.
 4. CI-джоб хешування docs-сторінки гайда (фейл при зміні → ритуал оновлення правил).

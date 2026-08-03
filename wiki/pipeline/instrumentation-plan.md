@@ -1,7 +1,7 @@
 # Instrumentation PR — фундамент під trend-двигун (крок 1)
 
 Summary: План інструментації pipeline для вимірювання якості відбору.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
+Sources: none (analysis)
 Last updated: 2026-06-13
 
 

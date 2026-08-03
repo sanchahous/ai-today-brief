@@ -1,8 +1,8 @@
 # Launch status — AI Today Brief
 
 Summary: Owner checklist: go-live, сервіси, блокери поза кодом.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-04
 
 
 Last updated: after **015/016** applied on Supabase + GSC sitemap check.

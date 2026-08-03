@@ -1,8 +1,8 @@
 # Card images — per-item AI brand cards
 
 Summary: Генерація карток/OG-зображень: провайдери, fallback, стилі.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-18
 
 
 Every brief item gets a unique cinematic AI illustration tied to its headline,

@@ -1,8 +1,8 @@
 # 08 — SignalGist · Prototype → Production Plan (MVP launch)
 
 Summary: План переносу прототипу в прод (Next.js / Supabase / pipeline).
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-03
 
 
 > **Що це.** Виконавчий план переходу від поточної точки (повний клік-через **прототип** на mock-даті,
@@ -14,7 +14,7 @@ Last updated: 2026-08-02
 >
 > **Джерела істини:** `startup-way/07 — MVP Dev Handoff` (EPICs A–I, DoD §8.1, БД §5, SEO §6, інтеграції §7),
 > `startup-way/07a — Supabase MVP migration.sql`, прототип у `apps/ai-news-scrapper/prototypes/` (PR #86),
-> `apps/ai-news-scrapper/wiki/strategy/startup-plan.md`.
+> `apps/ai-news-scrapper/docs/STARTUP-PLAN.md` (історичний шлях; тепер `wiki/strategy/startup-plan.md`).
 >
 > Дата: 2026-06-01 · Бренд: **SignalGist** · Домен: **signalgist.com**
 

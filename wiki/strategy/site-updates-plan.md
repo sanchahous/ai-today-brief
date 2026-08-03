@@ -1,7 +1,7 @@
 # Site Updates & Improvement Plan
 
 Summary: План оновлень сайту: workstreams A–E і трихвильова послідовність.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
+Sources: none (analysis)
 Last updated: 2026-06-13
 
 
@@ -133,7 +133,7 @@ verify→revise→re-verify→auto-drop → publish(DRAFT) → store-embeddings 
 
 ### WS-E — Корекції стратегії і каденс
 
-- **E1 (зроблено):** Grok 4 → **Grok 4.3** у `AI-TRENDS-RESEARCH-STRATEGY.md`. ✅
+- **E1 (зроблено):** Grok 4 → **Grok 4.3** у `wiki/strategy/ai-trends-research.md`. ✅
 - **E2:** датувати всі adoption-числа (MCP «41% у проді» не «78%»; «15,926 repos» не «7,800») — цитувати зі snapshot-датою. Vendor-числа (Mem0, Klarna $60M, 47–80% cost-cut) подавати як claims; citation-safe якорі — **OWASP ASI06, Princeton AGENTS.md study, LoCoMo/LongMemEval/BEAM benchmarks**.
 - **E3:** щотижневий реврю ваг (наст. 2026-06-20) — додати «верифікувати швидкоплинні факти (video pricing, model leaderboard) перед публікацією».
 

@@ -1,7 +1,7 @@
 # Ретро-дедуп опублікованих новин + опівнічний автопост брифів
 
 Summary: План дедуплікації та правил автопаблишу (з людським гейтом).
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
+Sources: none (analysis)
 Last updated: 2026-07-30
 
 

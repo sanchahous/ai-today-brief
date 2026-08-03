@@ -1,8 +1,8 @@
 # ATB Orchestration Bench (AOB) — protocol v1
 
 Summary: Протокол бенчмарків якості відбору та контенту.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-11
 
 
 The signature benchmark of AI Today Brief: every notable release of a coding

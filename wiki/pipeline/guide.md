@@ -1,7 +1,7 @@
 # Як працює AI Today Brief — гайд для власника
 
 Summary: Власникський гайд pipeline: fetch → rank → summarize → publish.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
+Sources: none (analysis)
 Last updated: 2026-06-11
 
 

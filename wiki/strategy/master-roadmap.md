@@ -1,7 +1,7 @@
 # Master Roadmap — AI Today Brief
 
 Summary: Єдиний роадмап L0→L4: синтез трендів, апдейтів сайту, pipeline і аудитів.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
+Sources: none (analysis)
 Last updated: 2026-06-13
 
 
@@ -9,8 +9,8 @@ Last updated: 2026-06-13
 > послідовний roadmap із залежностями та гейтами:
 > 1. `wiki/strategy/ai-trends-research.md` — тренди + конкуренти + дворівневий відбір новин.
 > 2. `wiki/strategy/site-updates-plan.md` — workstreams A–E, трихвильовий план.
-> 3. `TREND-ENGINE-ANALYSIS.md` *(brainstorm-артефакт)* — критика «автономного мозку», вердикт «спершу інструментуй».
-> 4. `INSTRUMENTATION-PR-PLAN.md` *(brainstorm-артефакт)* — 3-PR пакет телеметрії (T1/T2/T3).
+> 3. `wiki/pipeline/trend-engine.md` *(brainstorm-артефакт)* — критика «автономного мозку», вердикт «спершу інструментуй».
+> 4. `wiki/pipeline/instrumentation-plan.md` *(brainstorm-артефакт)* — 3-PR пакет телеметрії (T1/T2/T3).
 > 5. `wiki/audits/2026-06-10-portal.md` + `wiki/audits/2026-06-12-analytics-gsc.md`.
 >
 > **Усе нижче ground-truthed 2026-06-13** проти живої prod-БД `ai-news-scrapper`
@@ -119,7 +119,7 @@ sitemap на 2-тижневому домені, 241 із них `Discovered – 
 
 ### L1 — Інструментація енейблерів *(паралельно з L0; нульовий ризик; запускає годинник даних)*
 
-3-PR пакет із `INSTRUMENTATION-PR-PLAN`, **перенумерований** (міграції 032/033/034) і скоригований
+3-PR пакет із `wiki/pipeline/instrumentation-plan.md`, **перенумерований** (міграції 032/033/034) і скоригований
 під реальні точки коду. Усі — write-only телеметрія; `WEIGHTS`/відбір/публікація/UI **не чіпаються**
 (крім невидимого beacon у PR-I3).
 

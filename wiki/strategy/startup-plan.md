@@ -1,8 +1,8 @@
 # AI News Scrapper → Startup Plan
 
 Summary: Стратегія переходу від персонального скрапера до комерційного AI-новинного продукту.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-03
 
 
 > Документ-стратегія переходу з персонального скрапера на **комерційний, прибутковий

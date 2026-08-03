@@ -1,8 +1,8 @@
 # AI Toolbox — Wave 1: settings.json Builder + CLAUDE.md/AGENTS.md Generator (Epic Spec)
 
 Summary: Epic-спека хвилі 1 Toolbox: settings.json Builder і CLAUDE.md/AGENTS.md Generator.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-15
 
 
 Цей документ — decompose-ready epic-спека для **другої та третьої тулз** розділу «AI Toolbox» (Useful Tools) проєкту `ai-today-brief`. Стратегію, принципи та роадмеп задає [`wiki/product/useful-tools-concept.md`](./useful-tools-concept.md) (концепт v2, вердикт ринку: ship-with-fixes). Перша тулза хвилі — **Prompt Optimizer for Claude (Fable 5)** — уже відвантажена в `main` і слугує референс-архітектурою (`src/lib/prompt-lint.ts` / `prompt-lint-rules.ts`, `src/components/tools/rule-catalog.tsx`, `src/app/[lang]/tools/prompt-optimizer/page.tsx`). Ця спека описує **tool #2 (settings.json Builder)** та **tool #3 (CLAUDE.md/AGENTS.md Generator)**: обидві — повністю client-side, $0-собівартість, counts-only телеметрія, кожна рекомендація з інлайн-цитатою на офіційне джерело. Документ декомпозується автономним оркестратором (Hermes) у child-таски за DAG-ом у розділі «Декомпозиція місії».

@@ -1,8 +1,8 @@
 # Аудит аналітики та Search Console — aitodaybrief.com
 
 Summary: Аудит аналітики та GSC від 2026-06-12.
-Sources: migrated from `docs/` (git history via `git log --follow`); none (analysis) where unmarked
-Last updated: 2026-08-02
+Sources: none (analysis)
+Last updated: 2026-06-12
 
 
 **Дата:** 2026-06-12
