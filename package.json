@@ -18,6 +18,7 @@
     "verify:coverage": "npm run test:coverage && npm run verify:logic-lcov",
     "ci:check": "npm run verify:coverage",
     "sonar:report": "npx tsx scripts/sonar-fetch-report.ts",
+    "wiki:lint": "node wiki/_tools/wiki-lint.mjs",
     "pipeline": "tsx pipeline/run-daily.ts",
     "pipeline:dry": "tsx pipeline/run-daily.ts --dry-run",
     "custom-news": "tsx pipeline/scripts/custom-news.ts",

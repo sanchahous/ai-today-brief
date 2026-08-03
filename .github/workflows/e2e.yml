@@ -9,6 +9,9 @@ on:
     branches: [main]
     paths-ignore:
       - "docs/**"
+      - "wiki/**"
+      - "raw/**"
+      - "artifacts/**"
       - "**/*.md"
       - "supabase/migrations/**"
       - ".github/**"
