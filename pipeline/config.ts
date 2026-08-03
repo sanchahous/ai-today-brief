@@ -47,7 +47,7 @@ export interface PipelineConfig {
    * Requires billing on the Gemini key; otherwise it auto-falls-back to Cloudflare.
    */
   geminiImageModel?: string;
-  /** Cloudflare Workers AI image model id (default '@cf/leonardo/lucid-origin'). */
+  /** Cloudflare Workers AI image model id (default '@cf/black-forest-labs/flux-2-klein-9b'). */
   cloudflareImageModel?: string;
   /** Bot token for pushing review cards (optional — notify is skipped if unset). */
   telegramBotToken?: string;

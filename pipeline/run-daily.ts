@@ -606,6 +606,27 @@ async function main(): Promise<void> {
         geminiImageModel: config.geminiImageModel,
         cloudflareImageModel: config.cloudflareImageModel,
         openRouterApiKey: config.openRouterApiKey,
+        onImageGenerated: async (image) => {
+          if (image.provider === 'local') return;
+          const { error: costError } = await db.from('generation_cost_events').insert({
+            scope: 'daily',
+            kind: 'image',
+            provider: image.provider,
+            model: image.model,
+            cost_usd: image.estimatedCostUsd,
+            cost_source: image.costSource,
+            metadata: {
+              brief_id: result.briefId,
+              width: image.width,
+              height: image.height,
+            },
+          });
+          if (costError) {
+            logEvent('warn', 'publish', 'Card image cost ledger write failed', {
+              error: costError.message,
+            });
+          }
+        },
       });
       logEvent('info', 'publish', 'Card images filled', {
         brief_id: result.briefId,

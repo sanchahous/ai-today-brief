@@ -6,6 +6,7 @@ import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { generateEditorialIllustration } from '../../../pipeline/card-image';
+import { recordGenerationCost } from '@/lib/generation-costs';
 import { alertWeeklyDigestIssue } from './alerts';
 import { renderWeeklyDigestPdf, type WeeklyPdfInput } from './pdf';
 import { openWeeklyPdfPreview } from './pdf-preview';
@@ -569,8 +570,9 @@ async function saveQualityReport(input: {
   report: WeeklyContentQualityReport;
   generation: Awaited<ReturnType<typeof generateWeeklyMaster>>['generation'];
   passed: boolean;
+  jobId?: string;
 }) {
-  return saveGeneratedArtifact({
+  const artifactId = await saveGeneratedArtifact({
     weeklyDigestId: input.weeklyDigestId,
     revisionId: input.revisionId,
     artifactType: 'content_quality_report',
@@ -595,6 +597,24 @@ async function saveQualityReport(input: {
         : 'estimated',
     },
   });
+  for (const [step, meta] of Object.entries(input.generation)) {
+    await recordGenerationCost({
+      scope: 'weekly',
+      kind: 'llm',
+      provider: meta.provider,
+      model: meta.model,
+      costUsd: meta.estimatedCostUsd,
+      costSource: meta.costSource,
+      promptTokens: meta.promptTokens,
+      outputTokens: meta.outputTokens,
+      weeklyDigestId: input.weeklyDigestId,
+      revisionId: input.revisionId,
+      jobId: input.jobId ?? null,
+      artifactId,
+      metadata: { step, prompt_version: meta.promptVersion },
+    });
+  }
+  return artifactId;
 }
 
 async function queuePostMasterJobs(
@@ -756,6 +776,7 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
       report: result.quality,
       generation: result.generation,
       passed: false,
+      jobId: job.id,
     });
     throw new Error(
       `Master quality gate failed (${result.quality.score}/100, ${result.quality.issues.filter((issue) => issue.blocker).length} blockers). Review artifact ${qualityArtifactId}.`,
@@ -947,6 +968,7 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
     report: result.quality,
     generation: result.generation,
     passed: true,
+    jobId: job.id,
   });
   await queuePostMasterJobs(job.weekly_digest_id, newRevisionId, newItems);
   return {
@@ -1275,6 +1297,37 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
           ? `Обкладинка тижневого дайджесту: ${bundle.uk.title}`
           : `Weekly Digest cover: ${bundle.en.title}`,
     });
+    await recordGenerationCost({
+      scope: 'social',
+      kind: 'llm',
+      provider: adaptation.writer.provider,
+      model: adaptation.writer.model,
+      costUsd: adaptation.writer.usage.estimatedCostUsd,
+      costSource: 'estimated',
+      promptTokens: adaptation.writer.usage.promptTokens,
+      outputTokens: adaptation.writer.usage.outputTokens,
+      weeklyDigestId: job.weekly_digest_id,
+      revisionId: job.revision_id,
+      jobId: job.id,
+      metadata: { channel, role: 'writer' },
+    });
+    const criticUsage = adaptation.qualityReport?.critic?.usage;
+    if (criticUsage && adaptation.qualityReport?.critic) {
+      await recordGenerationCost({
+        scope: 'social',
+        kind: 'llm',
+        provider: adaptation.qualityReport.critic.provider ?? 'unknown',
+        model: adaptation.qualityReport.critic.model ?? 'unknown',
+        costUsd: criticUsage.estimatedCostUsd,
+        costSource: 'estimated',
+        promptTokens: criticUsage.promptTokens,
+        outputTokens: criticUsage.outputTokens,
+        weeklyDigestId: job.weekly_digest_id,
+        revisionId: job.revision_id,
+        jobId: job.id,
+        metadata: { channel, role: 'critic' },
+      });
+    }
     adaptations.push(adaptation);
     checkpointAdaptations[channel] = adaptation;
     await saveSocialCopyCheckpoint(job.id, checkpointHash, {
@@ -1695,6 +1748,12 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   let source: Buffer;
   let sourceKind = 'generated';
   let sourceUrl: string | null = null;
+  let imageMeta: {
+    provider: string;
+    model: string;
+    estimatedCostUsd: number;
+    costSource: 'reported' | 'estimated' | 'subscription';
+  } | null = null;
 
   if (requestedSourceUrl?.startsWith('http')) {
     const response = await fetch(requestedSourceUrl, {
@@ -1725,7 +1784,13 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     );
 
     if (generatedSource) {
-      source = generatedSource;
+      source = generatedSource.bytes;
+      imageMeta = {
+        provider: generatedSource.provider,
+        model: generatedSource.model,
+        estimatedCostUsd: generatedSource.estimatedCostUsd,
+        costSource: generatedSource.costSource,
+      };
     } else {
       const fallbackUrl = snapshotImage(item.source_snapshot);
       if (!fallbackUrl?.startsWith('http')) {
@@ -1772,9 +1837,32 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       source_kind: sourceKind,
       source_url: sourceUrl,
       focal_point: text(input.focal_point) ?? 'attention',
-      prompt_policy: 'story-specific-editorial-v2',
+      prompt_policy: 'story-specific-editorial-v3-flux2-klein',
+      ...(imageMeta
+        ? {
+            provider: imageMeta.provider,
+            model: imageMeta.model,
+            estimated_cost_usd: imageMeta.estimatedCostUsd,
+            cost_source: imageMeta.costSource,
+          }
+        : {}),
     },
   });
+  if (imageMeta && imageMeta.provider !== 'local') {
+    await recordGenerationCost({
+      scope: 'weekly',
+      kind: 'image',
+      provider: imageMeta.provider,
+      model: imageMeta.model,
+      costUsd: imageMeta.estimatedCostUsd,
+      costSource: imageMeta.costSource,
+      weeklyDigestId: job.weekly_digest_id,
+      revisionId: job.revision_id,
+      jobId: job.id,
+      artifactId,
+      metadata: { revision_item_id: item.id, source_kind: sourceKind },
+    });
+  }
   return { artifactId, output: { path, byte_size: image.length, sha256: hash } };
 }
 
