@@ -7,6 +7,9 @@ coverage
 .cursor
 .agents
 docs
+raw
+wiki
+artifacts
 public
 package-lock.json
 pnpm-lock.yaml

@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Today Brief
 
-## Getting Started
+Щоденний курований AI/engineering-бриф (`aitodaybrief.com`) плюс evergreen концепт-хаби.
+EN — основна мова, UK — вторинна. Next.js 16 (App Router) на Vercel, дані й pipeline
+`fetch → rank → summarize → publish` — на Supabase.
 
-First, run the development server:
+Бізнес-контекст, ринок, обмеження й «що НЕ спрацювало» — [wiki/overview.md](wiki/overview.md).
+Поточний стан робіт — [wiki/now.md](wiki/now.md).
+
+## Чотири зони репозиторію
+
+| Зона | Шлях | Правило |
+|---|---|---|
+| **Код** | `src/` `pipeline/` `supabase/` `e2e/` `scripts/` `public/` | правила — `.cursor/rules/00-core.mdc` |
+| **Сирі джерела** | [`raw/`](raw/README.md) | **immutable** — ніколи не редагувати |
+| **База знань** | [`wiki/`](wiki/index.md) | markdown із обов'язковими джерелами |
+| **Деліверабли** | [`artifacts/`](artifacts/README.md) | згенеровані, безпечно перегенерувати |
+
+Контракт для AI-агентів (Claude Code, Claude Projects, Codex/Cursor) — [`CLAUDE.md`](CLAUDE.md)
+та [`AGENTS.md`](AGENTS.md).
+
+## Розробка
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Основні команди:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Команда | Що робить |
+|---|---|
+| `npm run pr:check` | **обов'язково перед пушем**: coverage + typecheck + lint + e2e-check + build |
+| `npm test` / `npm run test:coverage` | Vitest (гейт ≥70% на logic-модулях) |
+| `npm run e2e` | Playwright (спершу одноразово `npm run e2e:install`) |
+| `npm run pipeline` / `npm run pipeline:dry` | прогін щоденного pipeline |
+| `npm run wiki:lint` | перевірка бази знань: формат сторінок, посилання, сирітство |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Ніколи не пушити в `main`** — тільки feature-гілка + PR (`.cursor/rules/pr-gate.mdc`).
 
-## Learn More
+## Документація
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [wiki/index.md](wiki/index.md) — карта всієї бази знань
+- `docs/` — історичні документи, які мігрують у `wiki/` за
+  [ADR 2026-08-02](wiki/decisions/2026-08-02-knowledge-base-restructure.md)
+- `.cursor/rules/` — інженерні правила (читати `00-core.mdc` першим)

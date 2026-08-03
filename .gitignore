@@ -55,3 +55,10 @@ pipeline/scripts/_*
 
 # generated card-image samples / OG render checks (large binaries — regenerate locally)
 docs/marketing/card-samples/
+
+# knowledge layer: local-only zone for bulk media, scrape dumps, PII or
+# licence-restricted sources. Everything else under raw/ and artifacts/ IS tracked.
+raw/_local/*
+!raw/_local/.gitkeep
+artifacts/_local/*
+!artifacts/_local/.gitkeep
