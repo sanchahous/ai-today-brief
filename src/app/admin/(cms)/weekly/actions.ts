@@ -18,6 +18,7 @@ import {
   weeklyDigestTriggerDateForManualCreate,
 } from '@/lib/social/schedule';
 import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial-validation';
+import { dispatchWeeklyMasterCliWorker } from '@/lib/weekly-digest/github-dispatch';
 import {
   startWeeklyContentStudio,
   weeklyContentStudioMode,
@@ -929,6 +930,16 @@ export async function startWeeklyContentStudioAction(formData: FormData) {
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const revisionId = requiredString(formData, 'revision_id');
   await startWeeklyContentStudio(weeklyDigestId, revisionId);
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+// Vercel's serverless functions never have the `claude` binary — this hands
+// the queued editorial_master job to a GitHub Actions runner instead, the
+// only place claude-cli (subscription-covered, no OpenRouter spend) can run.
+export async function dispatchWeeklyMasterCliAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  await dispatchWeeklyMasterCliWorker();
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 

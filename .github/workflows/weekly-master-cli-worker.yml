@@ -2,14 +2,12 @@ name: Weekly master CLI worker
 
 # Drains editorial_master jobs via the Claude Code CLI (subscription-covered),
 # falling back to the normal OpenRouter/Gemini chain inside the same job when
-# claude-cli isn't available. Staging only while Content Studio v2 stays in
-# shadow mode — do NOT add SCRAPPER_BASE_URL/SCRAPPER_SERVICE_KEY here, they
-# take precedence over the staging vars below and would silently repoint this
-# worker at production (see getSupabaseAdmin in src/lib/supabase-admin.ts).
+# claude-cli isn't available. Manual/on-demand only, dispatched from the
+# admin Weekly Digest Research tab (Server Action -> GitHub API) so it never
+# spends Actions minutes on an unattended schedule. Runs against production —
+# see src/lib/weekly-digest/github-dispatch.ts for the trigger.
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
   workflow_dispatch: {}
 
 jobs:
@@ -30,10 +28,10 @@ jobs:
 
       - name: Run weekly master CLI worker
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_KEY }}
+          SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+          SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          WEEKLY_CONTENT_STUDIO_V2: shadow
+          WEEKLY_CONTENT_STUDIO_V2: production
         run: npm run weekly:master-cli-worker

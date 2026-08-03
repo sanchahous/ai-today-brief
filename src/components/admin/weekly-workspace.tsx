@@ -19,6 +19,7 @@ import {
   approveWeeklyDigestAction,
   commentWeeklyArtifactAction,
   commentWeeklySocialAction,
+  dispatchWeeklyMasterCliAction,
   enqueueWeeklyGenerationAction,
   pauseWeeklyDigestAction,
   resumeWeeklyThreadsSequenceAction,
@@ -770,17 +771,35 @@ function ResearchPanel({
             </p>
           </div>
           {canEdit && workspace.revision ? (
-            <form action={startWeeklyContentStudioAction}>
-              <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
-              <input type="hidden" name="revision_id" value={workspace.revision.id} />
-              <ActionSubmitButton
-                className={PRIMARY}
-                idleLabel="Start / retry Content Studio"
-                pendingLabel="Queueing research…"
-              />
-            </form>
+            <div className="flex flex-wrap items-center gap-3">
+              <form action={startWeeklyContentStudioAction}>
+                <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+                <input type="hidden" name="revision_id" value={workspace.revision.id} />
+                <ActionSubmitButton
+                  className={PRIMARY}
+                  idleLabel="Start / retry Content Studio"
+                  pendingLabel="Queueing research…"
+                />
+              </form>
+              <form action={dispatchWeeklyMasterCliAction}>
+                <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+                <ActionSubmitButton
+                  className={SECONDARY}
+                  idleLabel="Write master via Claude subscription"
+                  pendingLabel="Dispatching GitHub Actions…"
+                />
+              </form>
+            </div>
           ) : null}
         </div>
+        {canEdit && workspace.revision ? (
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            The queued <code>editorial_master</code> job is picked up automatically every 5
+            minutes via OpenRouter. &quot;Write master via Claude subscription&quot; instead hands
+            it to a one-off GitHub Actions run against your Claude Code subscription — no
+            OpenRouter spend, but it needs a `claude` runner, so it isn&apos;t instant.
+          </p>
+        ) : null}
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
             <p className="text-xs font-bold text-slate-500 uppercase">Approved research</p>
