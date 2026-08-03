@@ -79,14 +79,22 @@ async function withPrivatePreviewUrls(artifacts: WeeklyArtifactAdminRow[]) {
       const previewUrls = previewResults.flatMap((result) =>
         result.error || !result.data?.signedUrl ? [] : [result.data.signedUrl],
       );
+      const signedArtifactUrl =
+        artifact.external_url ??
+        (artifactUrlResult.error ? null : (artifactUrlResult.data?.signedUrl ?? null));
+      // Bust browser/CDN caches when a new artifact version reuses a similar preview slot.
+      const versionedUrl = signedArtifactUrl
+        ? `${signedArtifactUrl}${signedArtifactUrl.includes('?') ? '&' : '?'}v=${artifact.version}`
+        : null;
+      const versionedPreviews = previewUrls.map(
+        (url) => `${url}${url.includes('?') ? '&' : '?'}v=${artifact.version}`,
+      );
       return {
         ...artifact,
-        external_url:
-          artifact.external_url ??
-          (artifactUrlResult.error ? null : (artifactUrlResult.data?.signedUrl ?? null)),
+        external_url: versionedUrl,
         content:
-          previewUrls.length > 0
-            ? ({ ...content, preview_urls: previewUrls } as Json)
+          versionedPreviews.length > 0
+            ? ({ ...content, preview_urls: versionedPreviews } as Json)
             : artifact.content,
       };
     }),

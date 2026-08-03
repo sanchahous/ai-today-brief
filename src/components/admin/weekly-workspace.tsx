@@ -339,6 +339,26 @@ function artifactFor(
   );
 }
 
+/** Most recent job for a Visuals/PDF slot (jobs are ordered newest-first in admin data). */
+function latestJobForSlot(
+  jobs: WeeklyGenerationJobAdminRow[],
+  jobType: string,
+  opts?: { slotKey?: string | null; revisionItemId?: string | null },
+) {
+  return (
+    jobs.find((job) => {
+      if (job.job_type !== jobType) return false;
+      if (opts?.revisionItemId) {
+        return textFrom(job.input, 'revision_item_id') === opts.revisionItemId;
+      }
+      if (opts?.slotKey) {
+        return textFrom(job.input, 'slot_key') === opts.slotKey;
+      }
+      return true;
+    }) ?? null
+  );
+}
+
 function researchArtifactFor(
   artifacts: WeeklyArtifactAdminRow[],
   item: { id: string; source_snapshot: Json },
@@ -543,6 +563,7 @@ function ArtifactCard({
       {previewUrl ? (
         <div className="relative mt-4 aspect-[16/9] overflow-hidden rounded-xl border border-white/10 bg-black">
           <Image
+            key={`${artifact.id}:${artifact.version}:${previewUrl}`}
             src={previewUrl}
             alt={
               textFrom(artifact.content, 'alt_text', 'alt', 'alt_en', 'alt_uk') ||
@@ -2019,27 +2040,48 @@ function VisualsPanel({
           {workspace.items.map((item) => {
             const artifact = artifactFor(workspace.artifacts, 'story_image', undefined, item.id);
             const slotKey = `story-image:${item.id}`;
+            const job = latestJobForSlot(workspace.generationJobs, 'story_image', {
+              revisionItemId: item.id,
+            });
             return (
               <div key={item.id} className="grid content-start gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className="text-sm font-bold text-white">
                     {item.rank}. {item.title_en}
                   </p>
-                  <form action={enqueueWeeklyGenerationAction}>
-                    <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
-                    <input type="hidden" name="revision_id" value={revision.id} />
-                    <input type="hidden" name="job_type" value="story_image" />
-                    <input type="hidden" name="locale" value="neutral" />
-                    <input type="hidden" name="slot_key" value={slotKey} />
-                    <input type="hidden" name="revision_item_id" value={item.id} />
-                    <ActionSubmitButton
-                      idleLabel={artifact ? 'Regenerate' : 'Generate'}
-                      pendingLabel="Queueing…"
-                      disabled={!canEdit}
-                      className={SECONDARY}
-                    />
-                  </form>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {job ? <StatusPill value={job.status} /> : null}
+                    <form action={enqueueWeeklyGenerationAction}>
+                      <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+                      <input type="hidden" name="revision_id" value={revision.id} />
+                      <input type="hidden" name="job_type" value="story_image" />
+                      <input type="hidden" name="locale" value="neutral" />
+                      <input type="hidden" name="slot_key" value={slotKey} />
+                      <input type="hidden" name="revision_item_id" value={item.id} />
+                      <ActionSubmitButton
+                        idleLabel={artifact ? 'Regenerate' : 'Generate'}
+                        pendingLabel="Queueing…"
+                        disabled={!canEdit}
+                        className={SECONDARY}
+                      />
+                    </form>
+                  </div>
                 </div>
+                {job?.status === 'queued' ? (
+                  <p className="rounded-xl border border-amber-400/20 bg-amber-400/6 px-3 py-2 text-xs text-amber-100">
+                    Queued — preview refreshes automatically when the worker finishes this job.
+                  </p>
+                ) : null}
+                {job?.status === 'running' ? (
+                  <p className="rounded-xl border border-cyan-400/20 bg-cyan-400/6 px-3 py-2 text-xs text-cyan-100">
+                    Generating — waiting for the new illustration version…
+                  </p>
+                ) : null}
+                {job?.last_error ? (
+                  <p className="rounded-xl border border-red-400/25 bg-red-400/8 px-3 py-2 text-xs whitespace-pre-wrap text-red-100">
+                    {job.last_error}
+                  </p>
+                ) : null}
                 <ArtifactCard
                   digestId={workspace.digest.id}
                   artifact={artifact}
@@ -2701,26 +2743,44 @@ function PdfPanel({
         {(['en', 'uk'] as const).map((locale) => {
           const artifact = artifactFor(workspace.artifacts, 'pdf', locale);
           const previewUrls = artifact ? listFrom(artifact.content, 'preview_urls') : [];
+          const job = latestJobForSlot(workspace.generationJobs, 'pdf', {
+            slotKey: `pdf:${locale}`,
+          });
           return (
             <section key={locale} className="grid content-start gap-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h3 className="text-lg font-bold text-white">
                   {locale === 'en' ? 'English PDF' : 'Український PDF'}
                 </h3>
-                <form action={enqueueWeeklyGenerationAction}>
-                  <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
-                  <input type="hidden" name="revision_id" value={revision.id} />
-                  <input type="hidden" name="job_type" value="pdf" />
-                  <input type="hidden" name="locale" value={locale} />
-                  <input type="hidden" name="slot_key" value={`pdf:${locale}`} />
-                  <ActionSubmitButton
-                    idleLabel={artifact ? 'Regenerate PDF' : 'Generate PDF'}
-                    pendingLabel="Queueing PDF…"
-                    disabled={!canEdit}
-                    className={PRIMARY}
-                  />
-                </form>
+                <div className="flex flex-wrap items-center gap-2">
+                  {job ? <StatusPill value={job.status} /> : null}
+                  <form action={enqueueWeeklyGenerationAction}>
+                    <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+                    <input type="hidden" name="revision_id" value={revision.id} />
+                    <input type="hidden" name="job_type" value="pdf" />
+                    <input type="hidden" name="locale" value={locale} />
+                    <input type="hidden" name="slot_key" value={`pdf:${locale}`} />
+                    <ActionSubmitButton
+                      idleLabel={artifact ? 'Regenerate PDF' : 'Generate PDF'}
+                      pendingLabel="Queueing PDF…"
+                      disabled={!canEdit}
+                      className={PRIMARY}
+                    />
+                  </form>
+                </div>
               </div>
+              {job?.status === 'queued' || job?.status === 'running' ? (
+                <p className="rounded-xl border border-cyan-400/20 bg-cyan-400/6 px-3 py-2 text-xs text-cyan-100">
+                  {job.status === 'queued'
+                    ? 'Queued — page previews refresh when generation finishes.'
+                    : 'Generating PDF — previews will refresh automatically…'}
+                </p>
+              ) : null}
+              {job?.last_error ? (
+                <p className="rounded-xl border border-red-400/25 bg-red-400/8 px-3 py-2 text-xs whitespace-pre-wrap text-red-100">
+                  {job.last_error}
+                </p>
+              ) : null}
               <ArtifactCard
                 digestId={workspace.digest.id}
                 artifact={artifact}
@@ -3414,6 +3474,9 @@ export function WeeklyWorkspace({
 
   return (
     <>
+      <AutoRefreshWhileActive
+        statuses={workspace.generationJobs.map((job) => job.status)}
+      />
       {workspace.digest.is_test ? (
         <section className="mb-6 rounded-2xl border border-amber-300/30 bg-amber-300/8 p-4 text-sm text-amber-100">
           <p className="font-bold">Test Weekly Digest</p>
