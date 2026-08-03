@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
+import { AutoRefreshWhileActive } from '@/components/admin/auto-refresh-while-active';
 import { StatusPill } from '@/components/admin/status-pill';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
@@ -753,6 +754,8 @@ function ResearchPanel({
   const approvedResearch = features.filter(
     (item) => researchArtifactFor(workspace.artifacts, item)?.review_status === 'approved',
   ).length;
+  const editorialMasterJob =
+    workspace.generationJobs.find((job) => job.job_type === 'editorial_master') ?? null;
 
   return (
     <div className="grid gap-5">
@@ -797,8 +800,42 @@ function ResearchPanel({
             The queued <code>editorial_master</code> job is picked up automatically every 5
             minutes via OpenRouter. &quot;Write master via Claude subscription&quot; instead hands
             it to a one-off GitHub Actions run against your Claude Code subscription — no
-            OpenRouter spend, but it needs a `claude` runner, so it isn&apos;t instant.
+            OpenRouter spend, but it needs a `claude` runner, so it isn&apos;t instant. Track that
+            run itself on{' '}
+            <a
+              href="https://github.com/sanchahous/ai-today-brief/actions/workflows/weekly-master-cli-worker.yml"
+              target="_blank"
+              rel="noreferrer"
+              className="text-cyan-300 underline hover:text-cyan-200"
+            >
+              GitHub Actions
+            </a>
+            ; the status below reflects the underlying job either way.
           </p>
+        ) : null}
+        {editorialMasterJob ? (
+          <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-white/8 bg-white/[.025] px-4 py-3">
+            <AutoRefreshWhileActive status={editorialMasterJob.status} />
+            <span className="text-xs font-bold tracking-wide text-slate-500 uppercase">
+              editorial_master
+            </span>
+            <StatusPill value={editorialMasterJob.status} />
+            <span className="text-xs text-slate-500">
+              Attempt {editorialMasterJob.attempts} · Updated{' '}
+              {kyivDateTime(editorialMasterJob.updated_at ?? editorialMasterJob.created_at)}
+            </span>
+            {editorialMasterJob.status === 'running' || editorialMasterJob.status === 'queued' ? (
+              <span
+                aria-hidden="true"
+                className="size-3 animate-spin rounded-full border-2 border-cyan-300 border-r-transparent"
+              />
+            ) : null}
+            {editorialMasterJob.last_error ? (
+              <p className="w-full text-xs leading-5 whitespace-pre-wrap text-red-200">
+                {editorialMasterJob.last_error}
+              </p>
+            ) : null}
+          </div>
         ) : null}
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
