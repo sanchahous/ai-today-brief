@@ -138,7 +138,7 @@ Every wiki page:
 # Page Title
 
 Summary: 1–2 sentences describing the page.
-Sources: raw/… , docs/… , live check, or "none (analysis)".
+Sources: raw/… , wiki/… , live check, or "none (analysis)".
 Last updated: YYYY-MM-DD
 
 ---

@@ -41,6 +41,6 @@ npm run dev
 ## Документація
 
 - [wiki/index.md](wiki/index.md) — карта всієї бази знань
-- `docs/` — історичні документи, які мігрують у `wiki/` за
-  [ADR 2026-08-02](wiki/decisions/2026-08-02-knowledge-base-restructure.md)
+- [wiki/overview.md](wiki/overview.md) — бізнес-контекст і жорсткі обмеження
+- [ADR 2026-08-02](wiki/decisions/2026-08-02-knowledge-base-restructure.md) — чотири зони `raw/` · `wiki/` · `artifacts/` · код
 - `.cursor/rules/` — інженерні правила (читати `00-core.mdc` першим)

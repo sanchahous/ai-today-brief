@@ -84,7 +84,7 @@ Pulls candidates concurrently (`Promise.allSettled`, so one dead source never
 fails the run):
 - **InBrief** — curated AI feed via its public Supabase RPC `get_archive_articles` (today + yesterday); carries an editorial `importance_score`.
 - **Hacker News** — Algolia search over 11 AI/dev queries; carries points + comments (the engagement signal).
-- **Reddit** — 7 dev/AI subreddits' top-of-day; carries score + comments; self-posts skipped. **OAuth-gated** (returns `[]` without `REDDIT_CLIENT_ID`/`SECRET`; no public-JSON fallback). Runs as non-commercial use while the product is free; **must be Reddit-approved or disabled before monetization** — see [`docs/REDDIT-COMPLIANCE.md`](../docs/REDDIT-COMPLIANCE.md).
+- **Reddit** — 7 dev/AI subreddits' top-of-day; carries score + comments; self-posts skipped. **OAuth-gated** (returns `[]` without `REDDIT_CLIENT_ID`/`SECRET`; no public-JSON fallback). Runs as non-commercial use while the product is free; **must be Reddit-approved or disabled before monetization** — see [`wiki/ops/reddit-compliance.md`](../wiki/ops/reddit-compliance.md).
 - **RSS** — always-on parallel source: 11 first-party lab + press feeds, parsed by the dependency-free `rss-parse.ts`. Promoted from thin-primary fallback so first-party announcements stop being structurally missed.
 - **Bluesky** — public AppView search over dev-community queries; only link-out posts are kept (analog of skipping Reddit self-posts).
 
@@ -184,7 +184,7 @@ Skipped entirely in `--dry-run` (which prints the assembled brief instead).
 ### 6. Editorial gate (out of this pipeline)
 A human reviews the draft and sets `briefs.status = 'published'`. Only then does
 RLS expose it to anon reads, and an on-publish `revalidateTag` should refresh ISR
-(see `docs/07`, EPIC A — not wired yet).
+(see `wiki/architecture/mvp-dev-handoff.md`, EPIC A — not wired yet).
 
 ---
 

@@ -2,7 +2,7 @@
  * External trend signal — the standing "rising index" that substitutes for the
  * pipeline's own engagement time-series (which can't be reconstructed: `url` is
  * unique, so there's one snapshot per article). See
- * docs/TREND-ENGINE-BACKTEST-FINDINGS.md.
+ * wiki/pipeline/trend-engine-backtest.md.
  *
  * GDELT DOC 2.0 `timelinevol` gives a free, historical news-volume timeline per
  * entity; we turn its trailing trend into a [0,1] rising score and temper it with

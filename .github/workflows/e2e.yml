@@ -2,13 +2,12 @@ name: E2E (Playwright)
 
 on:
   # Playwright tests the built website, so it only needs to run on UI-affecting
-  # changes. Skip docs/markdown/SQL/workflow-only AND pipeline-only PRs (the
+  # changes. Skip wiki/markdown/SQL/workflow-only AND pipeline-only PRs (the
   # pipeline never renders the site). PR-only: the post-merge push to main re-tested
   # an identical tree (squash merge), so it was pure duplicate spend — removed.
   pull_request:
     branches: [main]
     paths-ignore:
-      - "docs/**"
       - "wiki/**"
       - "raw/**"
       - "artifacts/**"

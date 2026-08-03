@@ -4,7 +4,7 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-02
+Last updated: 2026-08-03
 
 **Формат запису:**
 
@@ -16,6 +16,51 @@ Last updated: 2026-08-02
 - `wiki/path.md` — що саме
 **Нотатка:** одне речення, якщо потрібне.
 ```
+
+---
+
+## 2026-08-03 — fix: Last updated + дрібні шляхи після ревʼю #166
+
+**Джерело:** ревʼю PR #166
+
+**Змінено:**
+
+- усі 33 мігровані сторінки — `Last updated` перештамповано з contentful `git log --follow`
+  (міграційні коміти пропущені); `Sources:` → `none (analysis)`
+- `wiki/architecture/prototype-to-production.md` — історичний шлях `docs/STARTUP-PLAN.md` відновлено
+- `wiki/strategy/master-roadmap.md`, marketing/pipeline посилання — старі імена файлів → поточні wiki-шляхи
+- `wiki/ops/mcp.md` — лінк на reddit-compliance спростити до `./`
+- коментарі e2e/sonar workflows: `docs/` → `wiki/`
+
+**Нотатка:** виправляє п. 1–5 ревʼю #166 до мержу.
+
+---
+
+## 2026-08-03 — міграція docs/** → wiki/** · raw/ · artifacts/
+
+
+**Джерело:** [ADR 2026-08-02](decisions/2026-08-02-knowledge-base-restructure.md) кроки 2–8;
+гілка `chore/migrate-docs-to-wiki`
+
+**Змінено:**
+
+- `raw/db/2025-07a-supabase-mvp-migration.sql` — `git mv` з `docs/07a — Supabase MVP migration.sql`
+- `raw/reference/prototypes/**` — `git mv` з `docs/reference/prototypes/`
+- `artifacts/brand-kit/**` — `git mv` з `docs/marketing/brand-kit/`
+- `artifacts/card-samples/**` — локальний (gitignore) переніс із `docs/marketing/card-samples/`
+- 33 markdown-сторінки перенесено з `docs/` у тематичні розділи `wiki/` (strategy, architecture,
+  pipeline, analytics, marketing, product, ops, audits) зі збереженням історії (`git mv`)
+- шапки `Summary` / `Sources` / `Last updated` додано всім мігрованим сторінкам
+- посилання `docs/…` переписано в `wiki/` · `raw/` · `artifacts/` у коді, конфігах і ядрі wiki
+- `tsconfig.json`, `eslint.config.mjs`, `.vercelignore`, `sonar-project.properties`,
+  `.gitignore`, `.cursor/rules/{00-core,pr-gate}.mdc`, workflows e2e/sonar — прибрано / оновлено
+  згадки `docs/`
+- `wiki/index.md`, `wiki/now.md`, `wiki/overview.md` — статуси ✅ після міграції
+- `wiki/decisions/2026-08-02-knowledge-base-restructure.md` — статус: кроки 1–8 виконано
+- папку `docs/` видалено (`git ls-files docs` → 0)
+
+**Нотатка:** історичні згадки `docs/` у тексті ADR (команди `git mv`) залишено навмисно як
+документацію плану. Зовнішні URL на `docs.claude.com` / `platform.claude.com` не чіпались.
 
 ---
 
