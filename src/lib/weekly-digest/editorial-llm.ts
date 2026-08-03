@@ -332,22 +332,12 @@ export function openRouterModelVendor(modelId: string) {
 }
 
 /**
- * Anthropic Analysis intelligence-index floor a candidate must clear (or be
- * from a WEEKLY_MASTER_TRUSTED_VENDORS vendor with no score yet) to write the
- * master. Tunable rather than a fixed model list, since the cheapest model
- * that clears this bar changes as the OpenRouter catalog and pricing shift.
+ * Anthropic Analysis intelligence-index floor a candidate must clear to write
+ * the master — every candidate needs a reported score, regardless of vendor.
+ * Tunable rather than a fixed model list, since the cheapest model that
+ * clears this bar changes as the OpenRouter catalog and pricing shift.
  */
 const DEFAULT_MIN_QUALITY_INDEX = 40;
-const DEFAULT_TRUSTED_VENDORS = [
-  'openai',
-  'anthropic',
-  'google',
-  'x-ai',
-  'meta-llama',
-  'mistralai',
-  'deepseek',
-  'qwen',
-];
 // Sized from observed real usage of the weekly EN/UK master write (see PR
 // history) — used only to rank candidates by projected cost, not billed.
 const MASTER_PROMPT_TOKENS_ESTIMATE = 12_000;
@@ -356,13 +346,6 @@ const MASTER_COMPLETION_TOKENS_ESTIMATE = 20_000;
 function masterMinQualityIndex() {
   const parsed = Number(process.env.WEEKLY_MASTER_MIN_QUALITY_INDEX);
   return Number.isFinite(parsed) ? parsed : DEFAULT_MIN_QUALITY_INDEX;
-}
-
-function masterTrustedVendors() {
-  return (process.env.WEEKLY_MASTER_TRUSTED_VENDORS ?? DEFAULT_TRUSTED_VENDORS.join(','))
-    .split(',')
-    .map((vendor) => vendor.trim())
-    .filter(Boolean);
 }
 
 /**
@@ -385,7 +368,6 @@ export function premiumOpenRouterModels(
     promptTokens: MASTER_PROMPT_TOKENS_ESTIMATE,
     completionTokens: MASTER_COMPLETION_TOKENS_ESTIMATE,
     minQualityIndex: masterMinQualityIndex(),
-    trustedVendorsWithoutBenchmark: masterTrustedVendors(),
     excludeVendors: options.excludeVendors,
     configuredModels: configured.length ? configured : undefined,
   });

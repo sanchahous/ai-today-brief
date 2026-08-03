@@ -102,7 +102,12 @@ export function rankOpenRouterModelsByValue(
     if (BASE_EXCLUDED_ID_PATTERN.test(lower)) continue;
     if (model.expiration_date) continue;
     if ((model.context_length ?? 0) < 64_000) continue;
-    if (!(model.architecture?.modality ?? 'text').includes('text')) continue;
+    const outputModalities = model.architecture?.output_modalities;
+    if (outputModalities) {
+      if (!outputModalities.every((modality) => modality === 'text')) continue;
+    } else if (!(model.architecture?.modality ?? 'text').includes('text')) {
+      continue;
+    }
 
     const quality = qualityIndexOf(model);
     if (quality === null) {

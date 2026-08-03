@@ -85,28 +85,28 @@ describe('rankOpenRouterModelsByValue', () => {
     id: 'unknown-vendor/mystery',
     pricing: { prompt: '0.0000001', completion: '0.0000006' },
   });
-  const unratedTrusted = model({
+  const unratedFromTrustedVendor = model({
     id: 'openai/gpt-new-release',
     pricing: { prompt: '0.0000005', completion: '0.000003' },
   });
 
-  const catalog = [cheapGood, expensiveGreat, cheapButWeak, unratedUntrusted, unratedTrusted];
+  const catalog = [cheapGood, expensiveGreat, cheapButWeak, unratedUntrusted, unratedFromTrustedVendor];
 
-  it('ranks cheapest-first among models that clear the quality floor', () => {
+  it('ranks cheapest-first among rated models that clear the quality floor', () => {
     const ranked = rankOpenRouterModelsByValue(catalog, {
       promptTokens: 10_000,
       completionTokens: 20_000,
       minQualityIndex: 50,
-      trustedVendorsWithoutBenchmark: ['openai'],
     });
     const ids = ranked.map((r) => r.id);
     expect(ids).toContain('openai/gpt-cheap');
     expect(ids).toContain('anthropic/claude-expensive');
-    expect(ids).toContain('openai/gpt-new-release');
     expect(ids).not.toContain('someone/weak-model'); // below quality floor
-    expect(ids).not.toContain('unknown-vendor/mystery'); // unrated + untrusted vendor
-    // cheapest overall (unrated trusted release) should rank first
-    expect(ids[0]).toBe('openai/gpt-new-release');
+    expect(ids).not.toContain('unknown-vendor/mystery'); // unrated
+    // an unrated model is excluded even from an otherwise reputable vendor
+    expect(ids).not.toContain('openai/gpt-new-release');
+    // cheapest among the rated models clearing the floor should rank first
+    expect(ids[0]).toBe('openai/gpt-cheap');
   });
 
   it('excludes free-tier, image/audio/embedding, and vendor-excluded models', () => {
@@ -129,7 +129,6 @@ describe('rankOpenRouterModelsByValue', () => {
       promptTokens: 10_000,
       completionTokens: 20_000,
       minQualityIndex: 0,
-      trustedVendorsWithoutBenchmark: ['openai', 'anthropic', 'unknown-vendor'],
       configuredModels: ['anthropic/claude-expensive'],
     });
     expect(ranked.map((r) => r.id)).toEqual(['anthropic/claude-expensive']);
