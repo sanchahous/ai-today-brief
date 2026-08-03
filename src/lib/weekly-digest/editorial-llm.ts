@@ -255,7 +255,9 @@ function parseCritic(raw: string) {
   const dimensions = recordArray(row.dimensions, 'dimensions').map((dimension) => ({
     name: requiredString(dimension, 'name') as WeeklyQualityDimension['name'],
     score: Number(dimension.score),
-    note: requiredString(dimension, 'note'),
+    // Commentary, not structural -- don't fail the whole critic pass when a
+    // model leaves this blank for an unremarkable dimension.
+    note: typeof dimension.note === 'string' ? dimension.note.trim() : '',
   }));
   if (
     dimensions.some(
@@ -300,9 +302,15 @@ function parseCritic(raw: string) {
     score,
     dimensions,
     issues,
-    factualFlags: stringArray(row.factualFlags ?? ['none'], 'factualFlags').filter(
-      (flag) => flag !== 'none',
-    ),
+    // The prompt asks for [] when clean; tolerate a missing/malformed field or
+    // a stray "none" placeholder rather than failing the whole critic pass
+    // over this one auxiliary list.
+    factualFlags: (Array.isArray(row.factualFlags) ? row.factualFlags : [])
+      .filter(
+        (flag): flag is string =>
+          typeof flag === 'string' && flag.trim() !== '' && flag.trim() !== 'none',
+      )
+      .map((flag) => flag.trim()),
   };
 }
 
@@ -559,17 +567,19 @@ async function generateIndependentCritic(
 }
 
 async function generateFirstAvailable<T>(prompt: string, parse: (raw: string) => T) {
-  let lastError: unknown;
+  const failures: string[] = [];
   for (const provider of providerOrder()) {
     try {
       return await generateWithProvider(provider, prompt, parse);
     } catch (error) {
-      lastError = error;
+      failures.push(`${provider}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  throw lastError instanceof Error
-    ? lastError
-    : new Error('No premium editorial provider is configured.');
+  throw new Error(
+    failures.length
+      ? `Every editorial provider failed -- ${failures.join(' | ')}`
+      : 'No premium editorial provider is configured.',
+  );
 }
 
 export function masterRetryGuidancePrompt(guidance: WeeklyMasterRetryGuidance[]) {
