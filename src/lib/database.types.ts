@@ -772,6 +772,42 @@ export type Database = {
           updated_at?: string;
         }
       >;
+      generation_cost_events: CmsTable<
+        {
+          artifact_id: string | null;
+          cost_source: string;
+          cost_usd: number;
+          created_at: string;
+          id: string;
+          job_id: string | null;
+          kind: string;
+          metadata: Json;
+          model: string;
+          output_tokens: number | null;
+          prompt_tokens: number | null;
+          provider: string;
+          revision_id: string | null;
+          scope: string;
+          weekly_digest_id: string | null;
+        },
+        {
+          artifact_id?: string | null;
+          cost_source: string;
+          cost_usd: number;
+          created_at?: string;
+          id?: string;
+          job_id?: string | null;
+          kind: string;
+          metadata?: Json;
+          model: string;
+          output_tokens?: number | null;
+          prompt_tokens?: number | null;
+          provider: string;
+          revision_id?: string | null;
+          scope: string;
+          weekly_digest_id?: string | null;
+        }
+      >;
       social_accounts: CmsTable<
         {
           capabilities: Json;

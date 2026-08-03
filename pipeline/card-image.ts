@@ -10,10 +10,9 @@
  *   1. Gemini "Nano Banana Pro" (gemini-3-pro-image) — best context-fit; opt-in
  *      via GEMINI_IMAGE_MODEL (needs Gemini billing; auto-skipped/-fallen-back
  *      otherwise).
- *   2. Cloudflare Workers AI Leonardo "Lucid Origin" — strong default, uses the
- *      already-configured CF creds, native 16:9 + negative prompts.
- *   3. Cloudflare FLUX-1-schnell — always-free spillover (e.g. once the day's
- *      Workers-AI neuron budget for the premium model is spent).
+ *   2. Cloudflare Workers AI FLUX.2 [klein] 9B — default (multipart API); override
+ *      via CLOUDFLARE_IMAGE_MODEL (e.g. flux-2-dev).
+ *   3. Cloudflare FLUX-1-schnell — JSON spillover if the primary CF model fails.
  *   4. Pollinations FLUX — last-resort public fallback.
  * When all fail the item keeps a null URL and the OG card renders its branded
  * duotone fallback. Runs post-publish, idempotent (skips items that already have
@@ -28,14 +27,22 @@ import { resolveGeminiModelQueue } from './gemini-models';
 import { logEvent } from './log';
 
 const BUCKET = 'card-images';
-/** Best Cloudflare Workers AI image model by default; override with CLOUDFLARE_IMAGE_MODEL. */
-export const DEFAULT_CF_IMAGE_MODEL = '@cf/leonardo/lucid-origin';
-/** Always-free distilled FLUX — the spillover once a premium CF model is unavailable. */
-const SCHNELL_MODEL = '@cf/black-forest-labs/flux-1-schnell';
+/**
+ * Default Cloudflare Workers AI image model. FLUX.2 [klein] 9B — faster/cheaper
+ * than Leonardo Lucid Origin, better quality than FLUX-1-schnell for editorial
+ * covers. Override with CLOUDFLARE_IMAGE_MODEL (e.g. flux-2-dev) without a code
+ * change.
+ */
+export const DEFAULT_CF_IMAGE_MODEL = '@cf/black-forest-labs/flux-2-klein-9b';
+/** Cheap JSON spillover when the primary (multipart) CF model fails. */
+export const SCHNELL_MODEL = '@cf/black-forest-labs/flux-1-schnell';
 const FALLBACK_ACCENT = '#5bc9f0';
 /** 16:9 render size; crops cleanly to the 1200×630 OG card and the 92px feed thumb. */
-const IMG_W = 1280;
-const IMG_H = 720;
+export const IMG_W = 1280;
+export const IMG_H = 720;
+/** CF klein Unit Pricing defaults — overridable via env. */
+const DEFAULT_USD_FIRST_MP = 0.015;
+const DEFAULT_USD_NEXT_MP = 0.002;
 // The local SVG is authored at this larger coordinate grid, then rasterized to
 // the normal daily-card output dimensions above. Keeping the viewBox separate
 // avoids clipping complex motifs while retaining the established 16:9 output.
@@ -60,6 +67,20 @@ export interface CardImageConfig {
   cloudflareImageModel?: string;
   /** OpenRouter key — scene-step fallback when the Gemini free tier is rate-limited. */
   openRouterApiKey?: string;
+  /** Optional hook after each successful remote/local image (cost ledger). */
+  onImageGenerated?: (result: GeneratedImageResult) => void | Promise<void>;
+}
+
+export type ImageCostSource = 'reported' | 'estimated' | 'subscription';
+
+export interface GeneratedImageResult {
+  bytes: Buffer;
+  provider: 'gemini' | 'cloudflare' | 'pollinations' | 'local';
+  model: string;
+  estimatedCostUsd: number;
+  costSource: ImageCostSource;
+  width: number;
+  height: number;
 }
 
 export interface FillCardImagesResult {
@@ -81,6 +102,33 @@ export interface EditorialIllustrationInput {
   fallbackToLocal?: boolean;
 }
 
+/** Megapixels billed for CF klein pricing (ceil, minimum 1). */
+export function megapixelsForDimensions(width: number, height: number): number {
+  return Math.max(1, Math.ceil((width * height) / 1_000_000));
+}
+
+/**
+ * Estimated USD for a Cloudflare FLUX.2 klein-style output bill
+ * ($firstMp + (mp-1)*nextMp). Override rates via env.
+ */
+export function estimateCloudflareImageCostUsd(
+  width = IMG_W,
+  height = IMG_H,
+  env: Record<string, string | undefined> = process.env,
+): number {
+  const first = Number(env.CLOUDFLARE_IMAGE_USD_FIRST_MP ?? DEFAULT_USD_FIRST_MP);
+  const next = Number(env.CLOUDFLARE_IMAGE_USD_NEXT_MP ?? DEFAULT_USD_NEXT_MP);
+  const firstMp = Number.isFinite(first) && first >= 0 ? first : DEFAULT_USD_FIRST_MP;
+  const nextMp = Number.isFinite(next) && next >= 0 ? next : DEFAULT_USD_NEXT_MP;
+  const mp = megapixelsForDimensions(width, height);
+  return firstMp + Math.max(0, mp - 1) * nextMp;
+}
+
+/** FLUX.2 family models require multipart/form-data even for text-only prompts. */
+export function isFlux2MultipartModel(model: string): boolean {
+  return /\/flux-2-/i.test(model);
+}
+
 /**
  * Generate a fresh, story-specific illustration without writing to `brief_items`.
  * Weekly Digest uses this for reviewable revision artifacts while the daily
@@ -89,7 +137,7 @@ export interface EditorialIllustrationInput {
 export async function generateEditorialIllustration(
   input: EditorialIllustrationInput,
   cfg: CardImageConfig,
-): Promise<Buffer | null> {
+): Promise<GeneratedImageResult | null> {
   const scene = await sceneBrief(input.title, input.summary, cfg);
   const generated = await generateImage(
     buildPrompt(input.accent?.trim() || 'cool cyan', scene),
@@ -97,13 +145,25 @@ export async function generateEditorialIllustration(
     cfg,
     seedFromString(input.seedKey),
   );
-  if (generated || !input.fallbackToLocal) return generated;
+  if (generated) {
+    return generated;
+  }
+  if (!input.fallbackToLocal) return null;
   // A Weekly Digest must stay reviewable even when every external image provider
   // is unavailable and the selected source has no approved image. This local
   // fallback uses a topic-specific technical motif rather than inventing a
   // photorealistic event or falling back to generic AI decoration.
   try {
-    return await renderFallbackEditorialIllustration(input);
+    const bytes = await renderFallbackEditorialIllustration(input);
+    return {
+      bytes,
+      provider: 'local',
+      model: 'fallback-svg',
+      estimatedCostUsd: 0,
+      costSource: 'estimated',
+      width: IMG_W,
+      height: IMG_H,
+    };
   } catch {
     return null;
   }
@@ -144,16 +204,16 @@ export async function fillCardImages(
       const title = (it.title_en || it.title_uk || '').trim();
       const summary = (it.summary_en || it.summary_uk || '').trim();
       const accent = hueName(colorBySlug.get(it.category_slug ?? '') ?? FALLBACK_ACCENT);
-      const png = await generateEditorialIllustration(
+      const result = await generateEditorialIllustration(
         { title, summary, accent, seedKey: it.slug! },
         cfg,
       );
-      if (!png) {
+      if (!result) {
         failed++;
         logEvent('warn', 'publish', 'Card image generation returned nothing', { slug: it.slug });
         continue;
       }
-      const url = await uploadCardImage(db, it.slug!, png);
+      const url = await uploadCardImage(db, it.slug!, result.bytes);
       if (!url) {
         failed++;
         continue;
@@ -170,6 +230,7 @@ export async function fillCardImages(
         });
         continue;
       }
+      await cfg.onImageGenerated?.(result);
       generated++;
     } catch (e) {
       failed++;
@@ -514,13 +575,13 @@ export function fallbackScene(text: string): string {
   return DEFAULT_SCENE;
 }
 
-/** Quality ladder: Gemini image → Cloudflare premium → Cloudflare schnell → Pollinations. */
+/** Quality ladder: Gemini image → Cloudflare FLUX.2 (default) → schnell → Pollinations. */
 async function generateImage(
   positive: string,
   negative: string,
   cfg: CardImageConfig,
   seed: number,
-): Promise<Buffer | null> {
+): Promise<GeneratedImageResult | null> {
   if (cfg.geminiImageModel) {
     const g = await generateGemini(positive, cfg);
     if (g) return g;
@@ -539,7 +600,10 @@ async function generateImage(
 }
 
 /** Top tier: Gemini "Nano Banana" image models via the generateContent REST API. */
-async function generateGemini(prompt: string, cfg: CardImageConfig): Promise<Buffer | null> {
+async function generateGemini(
+  prompt: string,
+  cfg: CardImageConfig,
+): Promise<GeneratedImageResult | null> {
   const model = cfg.geminiImageModel!.trim();
   try {
     const res = await fetch(
@@ -568,7 +632,19 @@ async function generateGemini(prompt: string, cfg: CardImageConfig): Promise<Buf
     };
     for (const part of data.candidates?.[0]?.content?.parts ?? []) {
       const b64 = part.inlineData?.data ?? part.inline_data?.data;
-      if (b64) return Buffer.from(b64, 'base64');
+      if (b64) {
+        return {
+          bytes: Buffer.from(b64, 'base64'),
+          provider: 'gemini',
+          model,
+          // Gemini image billing is opt-in and not priced here; mark estimated $0
+          // so the ledger still records the provider/model for audit.
+          estimatedCostUsd: 0,
+          costSource: 'estimated',
+          width: IMG_W,
+          height: IMG_H,
+        };
+      }
     }
     return null;
   } catch {
@@ -577,9 +653,9 @@ async function generateGemini(prompt: string, cfg: CardImageConfig): Promise<Buf
 }
 
 /**
- * Cloudflare Workers AI. Premium models (Leonardo, FLUX.2) take native 16:9 +
- * negative prompts + guidance; distilled flux-1-schnell takes only prompt+steps.
- * Tolerates both response shapes: JSON `{result:{image:base64}}` and raw binary.
+ * Cloudflare Workers AI. FLUX.2 models use multipart/form-data; flux-1-schnell
+ * and legacy Leonardo JSON models use application/json. Tolerates both response
+ * shapes: JSON `{result:{image:base64}}` and raw binary.
  */
 async function generateCloudflare(
   model: string,
@@ -587,10 +663,71 @@ async function generateCloudflare(
   negative: string,
   cfg: CardImageConfig,
   seed: number,
+): Promise<GeneratedImageResult | null> {
+  const bytes = isFlux2MultipartModel(model)
+    ? await runCloudflareMultipart(model, positive, cfg)
+    : await runCloudflareJson(model, positive, negative, cfg, seed);
+  if (!bytes) return null;
+  const isSchnell = model === SCHNELL_MODEL || model.endsWith('/flux-1-schnell');
+  return {
+    bytes,
+    provider: 'cloudflare',
+    model,
+    estimatedCostUsd: isSchnell
+      ? 0.0005 // rough free-tier neuron estimate; refine via CLOUDFLARE_IMAGE_* if needed
+      : estimateCloudflareImageCostUsd(IMG_W, IMG_H),
+    costSource: 'estimated',
+    width: IMG_W,
+    height: IMG_H,
+  };
+}
+
+async function runCloudflareMultipart(
+  model: string,
+  positive: string,
+  cfg: CardImageConfig,
 ): Promise<Buffer | null> {
-  const isSchnell = model === SCHNELL_MODEL;
+  try {
+    const form = new FormData();
+    form.append('prompt', positive);
+    form.append('width', String(IMG_W));
+    form.append('height', String(IMG_H));
+    // klein steps are fixed at 4 server-side — do not send steps.
+    if (/flux-2-dev/i.test(model)) {
+      form.append('steps', '25');
+    }
+    const formResponse = new Response(form);
+    const body = formResponse.body;
+    const contentType = formResponse.headers.get('content-type');
+    if (!body || !contentType) return null;
+    const res = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${cfg.cloudflareAccountId}/ai/run/${model}`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${cfg.cloudflareApiToken}`,
+          'content-type': contentType,
+        },
+        body,
+        signal: AbortSignal.timeout(90_000),
+      },
+    );
+    return await readCloudflareImageResponse(res, model);
+  } catch {
+    return null;
+  }
+}
+
+async function runCloudflareJson(
+  model: string,
+  positive: string,
+  negative: string,
+  cfg: CardImageConfig,
+  seed: number,
+): Promise<Buffer | null> {
+  const isSchnell = model === SCHNELL_MODEL || model.endsWith('/flux-1-schnell');
   const body = isSchnell
-    ? { prompt: positive, steps: 8 }
+    ? { prompt: positive, steps: 8, seed }
     : {
         prompt: positive,
         negative_prompt: negative,
@@ -613,25 +750,32 @@ async function generateCloudflare(
         signal: AbortSignal.timeout(45_000),
       },
     );
-    if (!res.ok) {
-      logEvent('warn', 'publish', 'Cloudflare image gen failed', { status: res.status, model });
-      return null;
-    }
-    const ct = res.headers.get('content-type') ?? '';
-    if (ct.includes('application/json')) {
-      const data = (await res.json()) as { result?: { image?: string } };
-      const b64 = data.result?.image;
-      return b64 ? Buffer.from(b64, 'base64') : null;
-    }
-    const buf = Buffer.from(await res.arrayBuffer());
-    return buf.length > 1024 ? buf : null;
+    return await readCloudflareImageResponse(res, model);
   } catch {
     return null;
   }
 }
 
+async function readCloudflareImageResponse(res: Response, model: string): Promise<Buffer | null> {
+  if (!res.ok) {
+    logEvent('warn', 'publish', 'Cloudflare image gen failed', { status: res.status, model });
+    return null;
+  }
+  const ct = res.headers.get('content-type') ?? '';
+  if (ct.includes('application/json')) {
+    const data = (await res.json()) as { result?: { image?: string } };
+    const b64 = data.result?.image;
+    return b64 ? Buffer.from(b64, 'base64') : null;
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  return buf.length > 1024 ? buf : null;
+}
+
 /** Fallback: Pollinations FLUX (no key, public — native 16:9). */
-async function generatePollinations(prompt: string, seed: number): Promise<Buffer | null> {
+async function generatePollinations(
+  prompt: string,
+  seed: number,
+): Promise<GeneratedImageResult | null> {
   try {
     const url =
       `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}` +
@@ -639,7 +783,16 @@ async function generatePollinations(prompt: string, seed: number): Promise<Buffe
     const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
     if (!res.ok) return null;
     const buf = Buffer.from(await res.arrayBuffer());
-    return buf.length > 1024 ? buf : null;
+    if (buf.length <= 1024) return null;
+    return {
+      bytes: buf,
+      provider: 'pollinations',
+      model: 'flux',
+      estimatedCostUsd: 0,
+      costSource: 'estimated',
+      width: 1216,
+      height: 640,
+    };
   } catch {
     return null;
   }

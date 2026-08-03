@@ -2,14 +2,52 @@ import { describe, expect, it } from 'vitest';
 import sharp from 'sharp';
 import {
   buildPrompt,
+  DEFAULT_CF_IMAGE_MODEL,
+  estimateCloudflareImageCostUsd,
   fallbackIllustrationMotif,
   fallbackScene,
   hueName,
+  IMG_H,
+  IMG_W,
+  isFlux2MultipartModel,
+  megapixelsForDimensions,
   negativePrompt,
   renderFallbackEditorialIllustration,
   sceneBrief,
+  SCHNELL_MODEL,
   seedFromString,
 } from './card-image';
+
+describe('DEFAULT_CF_IMAGE_MODEL', () => {
+  it('uses Cloudflare FLUX.2 klein-9b by default (not Leonardo)', () => {
+    expect(DEFAULT_CF_IMAGE_MODEL).toBe('@cf/black-forest-labs/flux-2-klein-9b');
+    expect(DEFAULT_CF_IMAGE_MODEL).not.toContain('leonardo');
+    expect(SCHNELL_MODEL).toBe('@cf/black-forest-labs/flux-1-schnell');
+  });
+});
+
+describe('FLUX.2 cost helpers', () => {
+  it('bills at least 1 megapixel and ceils fractional MPs', () => {
+    expect(megapixelsForDimensions(IMG_W, IMG_H)).toBe(1);
+    expect(megapixelsForDimensions(2048, 2048)).toBe(5);
+  });
+
+  it('estimates klein pricing from first + subsequent MP rates', () => {
+    expect(estimateCloudflareImageCostUsd(IMG_W, IMG_H, {})).toBe(0.015);
+    expect(
+      estimateCloudflareImageCostUsd(2048, 2048, {
+        CLOUDFLARE_IMAGE_USD_FIRST_MP: '0.015',
+        CLOUDFLARE_IMAGE_USD_NEXT_MP: '0.002',
+      }),
+    ).toBe(0.023);
+  });
+
+  it('detects multipart FLUX.2 model ids', () => {
+    expect(isFlux2MultipartModel('@cf/black-forest-labs/flux-2-klein-9b')).toBe(true);
+    expect(isFlux2MultipartModel('@cf/black-forest-labs/flux-2-dev')).toBe(true);
+    expect(isFlux2MultipartModel(SCHNELL_MODEL)).toBe(false);
+  });
+});
 
 describe('hueName', () => {
   it('maps category accent hexes to prompt-friendly colour words', () => {

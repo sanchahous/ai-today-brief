@@ -5,6 +5,7 @@ const LINKS = [
   { href: '/admin/weekly', label: 'Weekly Digest', short: 'Weekly' },
   { href: '/admin/calendar', label: 'Calendar', short: 'Plan' },
   { href: '/admin/results', label: 'Results', short: 'Results' },
+  { href: '/admin/costs', label: 'Costs', short: 'Costs' },
   { href: '/admin/engagement', label: 'Engagement', short: 'Engage' },
   { href: '/admin/settings', label: 'Settings', short: 'Settings' },
 ] as const;
@@ -30,13 +31,13 @@ export function AdminNav() {
       </aside>
       <nav
         aria-label="Admin navigation"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 border-t border-white/10 bg-[#101418]/95 px-1 pt-1 pb-[max(.35rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-white/10 bg-[#101418]/95 px-0.5 pt-1 pb-[max(.35rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
       >
         {LINKS.map((link) => (
           <Link
             key={link.href}
             href={link.href}
-            className="min-h-12 rounded-lg px-1 py-3 text-center text-[11px] font-semibold text-slate-300 hover:bg-white/8 hover:text-white focus-visible:outline-2 focus-visible:outline-[#47e4d3]"
+            className="min-h-12 rounded-lg px-0.5 py-3 text-center text-[10px] font-semibold text-slate-300 hover:bg-white/8 hover:text-white focus-visible:outline-2 focus-visible:outline-[#47e4d3]"
           >
             {link.short}
           </Link>
