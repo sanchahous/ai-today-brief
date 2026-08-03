@@ -506,15 +506,9 @@ function masterInputStories(
   });
 }
 
-function priorMasterRetryGuidance(
-  context: Awaited<ReturnType<typeof loadGenerationContext>>,
+function blockerGuidanceFromReport(
+  report: { content: Json } | undefined,
 ): WeeklyMasterRetryGuidance[] {
-  const report = context.artifacts.find(
-    (artifact) =>
-      artifact.artifact_type === 'content_quality_report' &&
-      artifact.slot_key === 'content-quality:master' &&
-      artifact.is_current,
-  );
   const issues = asRecord(report?.content).issues;
   if (!Array.isArray(issues)) return [];
   return issues.flatMap((entry) => {
@@ -536,6 +530,37 @@ function priorMasterRetryGuidance(
       },
     ];
   });
+}
+
+/**
+ * Guidance accumulates across every past critic verdict for this revision, not
+ * just the latest one. A single-verdict window lets fixes oscillate forever --
+ * resolving this round's blocker regresses one a prior round already fixed,
+ * because nothing in the prompt says "and don't undo that either." Superseded
+ * reports (is_current = false) still carry that history, so we read all of
+ * them and de-dupe by the issue's identity, keeping the newest wording.
+ */
+async function priorMasterRetryGuidance(
+  revisionId: string,
+): Promise<WeeklyMasterRetryGuidance[]> {
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('weekly_digest_artifacts')
+    .select('content,created_at')
+    .eq('revision_id', revisionId)
+    .eq('artifact_type', 'content_quality_report')
+    .eq('slot_key', 'content-quality:master')
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(`[weekly-generation] retry guidance lookup: ${error.message}`);
+
+  const byIdentity = new Map<string, WeeklyMasterRetryGuidance>();
+  for (const report of data ?? []) {
+    for (const guidance of blockerGuidanceFromReport(report)) {
+      const identity = `${guidance.code}|${guidance.revisionItemId ?? ''}|${guidance.field ?? ''}`;
+      byIdentity.set(identity, guidance);
+    }
+  }
+  return [...byIdentity.values()];
 }
 
 async function saveQualityReport(input: {
@@ -706,7 +731,7 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
   }
   const sourceStories = masterInputStories(context, approvedResearch);
   const researchPacks = approvedResearch.map(({ pack }) => pack);
-  const retryGuidance = priorMasterRetryGuidance(context);
+  const retryGuidance = await priorMasterRetryGuidance(job.revision_id);
   const checkpointHash = computeMasterCheckpointHash(researchPacks, retryGuidance);
   const checkpoint = await loadMasterCheckpoint(job.id, checkpointHash);
   // Accumulates across both onStepComplete calls so the ukrainian save doesn't
