@@ -1384,7 +1384,7 @@ async function generateVideoManifest(job: ClaimedGenerationJob) {
     revisionId: job.revision_id,
     inputHash,
     title: bundle.en.title,
-    theme: text(bundle.en.theme) ?? bundle.en.title,
+    theme: bundle.en.theme,
     sourceUrls: context.items.flatMap((item) =>
       jsonSources(item.sources).map((source) => source.url),
     ),
