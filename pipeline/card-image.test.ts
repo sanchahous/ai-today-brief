@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import {
   buildPrompt,
@@ -6,6 +6,7 @@ import {
   estimateCloudflareImageCostUsd,
   fallbackIllustrationMotif,
   fallbackScene,
+  generateEditorialIllustration,
   hueName,
   IMG_H,
   IMG_W,
@@ -42,10 +43,142 @@ describe('FLUX.2 cost helpers', () => {
     ).toBe(0.023);
   });
 
+  it('falls back to defaults when env rates are invalid', () => {
+    expect(
+      estimateCloudflareImageCostUsd(IMG_W, IMG_H, {
+        CLOUDFLARE_IMAGE_USD_FIRST_MP: 'nope',
+        CLOUDFLARE_IMAGE_USD_NEXT_MP: '-1',
+      }),
+    ).toBe(0.015);
+  });
+
   it('detects multipart FLUX.2 model ids', () => {
     expect(isFlux2MultipartModel('@cf/black-forest-labs/flux-2-klein-9b')).toBe(true);
     expect(isFlux2MultipartModel('@cf/black-forest-labs/flux-2-dev')).toBe(true);
     expect(isFlux2MultipartModel(SCHNELL_MODEL)).toBe(false);
+  });
+});
+
+describe('generateEditorialIllustration ladder', () => {
+  const originalFetch = globalThis.fetch;
+  const pngBytes = Buffer.alloc(2048, 7);
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  function jsonImageResponse() {
+    return new Response(JSON.stringify({ result: { image: pngBytes.toString('base64') } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  it('generates via FLUX.2 klein multipart and reports estimated cost', async () => {
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('flux-2-klein-9b')) return jsonImageResponse();
+      return new Response('fail', { status: 500 });
+    }) as typeof fetch;
+
+    const result = await generateEditorialIllustration(
+      {
+        title: 'MCP agent orchestrates workflows',
+        summary: 'Autonomous agents coordinate tools',
+        seedKey: 'story-1',
+      },
+      {
+        geminiApiKey: '',
+        cloudflareAccountId: 'acc',
+        cloudflareApiToken: 'tok',
+      },
+    );
+
+    expect(result).not.toBeNull();
+    expect(result!.provider).toBe('cloudflare');
+    expect(result!.model).toBe(DEFAULT_CF_IMAGE_MODEL);
+    expect(result!.costSource).toBe('estimated');
+    expect(result!.estimatedCostUsd).toBe(0.015);
+    expect(result!.bytes.length).toBeGreaterThan(1000);
+    const calledUrls = vi.mocked(globalThis.fetch).mock.calls.map((call) => String(call[0]));
+    expect(calledUrls.some((url) => url.includes('flux-2-klein-9b'))).toBe(true);
+  });
+
+  it('spills over to FLUX-1-schnell when the primary CF model fails', async () => {
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('flux-2-klein-9b')) return new Response('busy', { status: 429 });
+      if (url.includes('flux-1-schnell')) return jsonImageResponse();
+      return new Response('fail', { status: 500 });
+    }) as typeof fetch;
+
+    const result = await generateEditorialIllustration(
+      { title: 'Security CVE breach', summary: 'Attackers exploit', seedKey: 'story-2' },
+      {
+        geminiApiKey: '',
+        cloudflareAccountId: 'acc',
+        cloudflareApiToken: 'tok',
+      },
+    );
+
+    expect(result?.provider).toBe('cloudflare');
+    expect(result?.model).toBe(SCHNELL_MODEL);
+    expect(vi.mocked(globalThis.fetch).mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('falls back to Pollinations when Cloudflare is unset', async () => {
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('pollinations.ai')) {
+        return new Response(pngBytes, { status: 200, headers: { 'content-type': 'image/jpeg' } });
+      }
+      return new Response('fail', { status: 500 });
+    }) as typeof fetch;
+
+    const result = await generateEditorialIllustration(
+      { title: 'Funding round', summary: 'Startup raises billion', seedKey: 'story-3' },
+      { geminiApiKey: '' },
+    );
+
+    expect(result?.provider).toBe('pollinations');
+    expect(result?.estimatedCostUsd).toBe(0);
+  });
+
+  it('renders the local SVG fallback when every remote provider fails', async () => {
+    globalThis.fetch = vi.fn(async () => new Response('down', { status: 503 })) as typeof fetch;
+
+    const result = await generateEditorialIllustration(
+      {
+        title: 'Local on-device Gemma LLM',
+        summary: 'Run offline privacy',
+        seedKey: 'story-4',
+        fallbackToLocal: true,
+      },
+      {
+        geminiApiKey: '',
+        cloudflareAccountId: 'acc',
+        cloudflareApiToken: 'tok',
+      },
+    );
+
+    expect(result?.provider).toBe('local');
+    expect(result?.model).toBe('fallback-svg');
+    expect(result?.estimatedCostUsd).toBe(0);
+    await expect(sharp(result!.bytes).metadata()).resolves.toMatchObject({
+      width: 1280,
+      height: 720,
+    });
+  });
+
+  it('returns null without local fallback when providers fail', async () => {
+    globalThis.fetch = vi.fn(async () => new Response('down', { status: 503 })) as typeof fetch;
+
+    const result = await generateEditorialIllustration(
+      { title: 'Anything', summary: 'Else', seedKey: 'story-5' },
+      { geminiApiKey: '', cloudflareAccountId: 'acc', cloudflareApiToken: 'tok' },
+    );
+    expect(result).toBeNull();
   });
 });
 
