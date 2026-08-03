@@ -8,6 +8,7 @@ import type {
   WeeklyArtifactAdminRow,
   WeeklyArtifactReviewAdminRow,
   WeeklyDigestWorkspace,
+  WeeklyGenerationJobAdminRow,
 } from '@/lib/weekly-digest/admin-data';
 import {
   WEEKLY_SOCIAL_MATRIX,
@@ -47,6 +48,31 @@ export const WEEKLY_WORKSPACE_TABS = [
 ] as const;
 
 export type WeeklyWorkspaceTab = (typeof WEEKLY_WORKSPACE_TABS)[number]['id'];
+
+/** Job types shown on each workspace tab (Overview keeps a summary only). */
+const GENERATION_JOB_TYPES_BY_TAB: Record<WeeklyWorkspaceTab, readonly string[]> = {
+  overview: [],
+  stories: [],
+  research: ['research_pack', 'editorial_master'],
+  article: ['editorial_master'],
+  visuals: ['story_image', 'cover', 'social_asset'],
+  social: ['social_copy'],
+  pdf: ['pdf'],
+  video: ['video_manifest'],
+  release: [],
+};
+
+/** Primary tab for Overview counts — each job type counted once. */
+const GENERATION_JOB_PRIMARY_TAB: Record<string, WeeklyWorkspaceTab> = {
+  research_pack: 'research',
+  editorial_master: 'article',
+  story_image: 'visuals',
+  cover: 'visuals',
+  social_asset: 'visuals',
+  social_copy: 'social',
+  pdf: 'pdf',
+  video_manifest: 'video',
+};
 
 const FIELD =
   'min-h-11 w-full rounded-xl border border-white/12 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:border-[#47e4d3] focus:outline-none';
@@ -116,6 +142,158 @@ function kyivDate(value: string | null) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value.length === 10 ? `${value}T12:00:00Z` : value));
+}
+
+function jobsForTab(jobs: WeeklyGenerationJobAdminRow[], tab: WeeklyWorkspaceTab) {
+  const allowed = GENERATION_JOB_TYPES_BY_TAB[tab];
+  if (allowed.length === 0) return [];
+  const types = new Set(allowed);
+  return jobs.filter((job) => types.has(job.job_type));
+}
+
+function isActiveGenerationJob(status: string) {
+  return status === 'queued' || status === 'running';
+}
+
+function GenerationJobsSection({
+  jobs,
+  tab,
+  limit = 25,
+}: {
+  jobs: WeeklyGenerationJobAdminRow[];
+  tab: WeeklyWorkspaceTab;
+  limit?: number;
+}) {
+  if (GENERATION_JOB_TYPES_BY_TAB[tab].length === 0) return null;
+
+  const filtered = jobsForTab(jobs, tab).slice(0, limit);
+  const headingId = `jobs-${tab}-heading`;
+
+  return (
+    <section className={PANEL} aria-labelledby={headingId}>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h2 id={headingId} className="text-lg font-bold text-white">
+          Generation jobs
+        </h2>
+        <span className="text-xs font-semibold text-slate-500">
+          {GENERATION_JOB_TYPES_BY_TAB[tab].join(' · ')}
+        </span>
+      </div>
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full min-w-[52rem] text-left text-sm">
+          <thead className="text-xs font-bold tracking-wide text-slate-500 uppercase">
+            <tr>
+              <th className="pb-3">Job</th>
+              <th className="pb-3">Status</th>
+              <th className="pb-3">Attempts</th>
+              <th className="pb-3">Created</th>
+              <th className="pb-3">Latest result</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/8">
+            {filtered.map((job) => (
+              <tr key={job.id}>
+                <td className="py-3 font-semibold text-white">{job.job_type}</td>
+                <td className="py-3">
+                  <StatusPill value={job.status} />
+                </td>
+                <td className="py-3 text-slate-400">{job.attempts}</td>
+                <td className="py-3 text-slate-400">{kyivDateTime(job.created_at)}</td>
+                <td className="max-w-sm py-3 text-xs leading-5">
+                  {job.last_error ? (
+                    <p className="whitespace-pre-wrap text-red-200">{job.last_error}</p>
+                  ) : job.finished_at ? (
+                    <span className="text-slate-500">Finished {kyivDateTime(job.finished_at)}</span>
+                  ) : (
+                    <span className="text-slate-500">Waiting for worker</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {filtered.length === 0 ? (
+          <p className="py-6 text-center text-sm text-slate-500">
+            No generation jobs for this tab yet.
+          </p>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+function GenerationJobsOverviewSummary({
+  digestId,
+  jobs,
+}: {
+  digestId: string;
+  jobs: WeeklyGenerationJobAdminRow[];
+}) {
+  const byTab = new Map<
+    WeeklyWorkspaceTab,
+    { total: number; active: number; failed: number }
+  >();
+  for (const tab of WEEKLY_WORKSPACE_TABS) {
+    if (GENERATION_JOB_TYPES_BY_TAB[tab.id].length === 0) continue;
+    byTab.set(tab.id, { total: 0, active: 0, failed: 0 });
+  }
+  for (const job of jobs) {
+    const tab = GENERATION_JOB_PRIMARY_TAB[job.job_type];
+    if (!tab) continue;
+    const bucket = byTab.get(tab);
+    if (!bucket) continue;
+    bucket.total += 1;
+    if (isActiveGenerationJob(job.status)) bucket.active += 1;
+    if (job.status === 'failed') bucket.failed += 1;
+  }
+
+  const rows = WEEKLY_WORKSPACE_TABS.flatMap((tab) => {
+    const stats = byTab.get(tab.id);
+    if (!stats) return [];
+    return [{ tab, ...stats }];
+  });
+
+  return (
+    <section className={PANEL} aria-labelledby="jobs-summary-heading">
+      <h2 id="jobs-summary-heading" className="text-lg font-bold text-white">
+        Generation jobs by tab
+      </h2>
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        Full job history lives on each workspace tab — open the tab to see only its job types.
+      </p>
+      <div className="mt-4 overflow-x-auto">
+        <table className="w-full min-w-[36rem] text-left text-sm">
+          <thead className="text-xs font-bold tracking-wide text-slate-500 uppercase">
+            <tr>
+              <th className="pb-3">Tab</th>
+              <th className="pb-3">Jobs</th>
+              <th className="pb-3">Active</th>
+              <th className="pb-3">Failed</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/8">
+            {rows.map(({ tab, total, active, failed }) => (
+              <tr key={tab.id}>
+                <td className="py-3">
+                  <a
+                    href={`/admin/weekly/${encodeURIComponent(digestId)}?tab=${tab.id}`}
+                    className="font-semibold text-[#47e4d3] underline decoration-[#47e4d3]/40 underline-offset-4"
+                  >
+                    {tab.label}
+                  </a>
+                </td>
+                <td className="py-3 text-slate-300">{total}</td>
+                <td className="py-3 text-slate-300">{active}</td>
+                <td className={`py-3 ${failed > 0 ? 'font-semibold text-red-200' : 'text-slate-300'}`}>
+                  {failed}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
 }
 
 function kyivDateTime(value: string | null) {
@@ -475,7 +653,6 @@ function OverviewPanel({
   const unresolvedArtifacts = workspace.artifacts.filter(
     (artifact) => artifact.review_status === 'changes_requested',
   );
-  const latestJobs = workspace.generationJobs.slice(0, 5);
   const latestEvents = workspace.releaseEvents.slice(0, 8);
   const isTestEdition = workspace.digest.is_test;
   const engagementSegments = Array.from(
@@ -578,50 +755,10 @@ function OverviewPanel({
           )}
         </section>
 
-        <section className={PANEL} aria-labelledby="jobs-heading">
-          <h2 id="jobs-heading" className="text-lg font-bold text-white">
-            Generation jobs
-          </h2>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[52rem] text-left text-sm">
-              <thead className="text-xs font-bold tracking-wide text-slate-500 uppercase">
-                <tr>
-                  <th className="pb-3">Job</th>
-                  <th className="pb-3">Status</th>
-                  <th className="pb-3">Attempts</th>
-                  <th className="pb-3">Created</th>
-                  <th className="pb-3">Latest result</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/8">
-                {latestJobs.map((job) => (
-                  <tr key={job.id}>
-                    <td className="py-3 font-semibold text-white">{job.job_type}</td>
-                    <td className="py-3">
-                      <StatusPill value={job.status} />
-                    </td>
-                    <td className="py-3 text-slate-400">{job.attempts}</td>
-                    <td className="py-3 text-slate-400">{kyivDateTime(job.created_at)}</td>
-                    <td className="max-w-sm py-3 text-xs leading-5">
-                      {job.last_error ? (
-                        <p className="whitespace-pre-wrap text-red-200">{job.last_error}</p>
-                      ) : job.finished_at ? (
-                        <span className="text-slate-500">
-                          Finished {kyivDateTime(job.finished_at)}
-                        </span>
-                      ) : (
-                        <span className="text-slate-500">Waiting for worker</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {latestJobs.length === 0 ? (
-              <p className="py-6 text-center text-sm text-slate-500">No generation jobs yet.</p>
-            ) : null}
-          </div>
-        </section>
+        <GenerationJobsOverviewSummary
+          digestId={workspace.digest.id}
+          jobs={workspace.generationJobs}
+        />
       </div>
 
       <aside className="grid content-start gap-5">
@@ -1037,6 +1174,8 @@ function ResearchPanel({
           </div>
         </section>
       ) : null}
+
+      <GenerationJobsSection jobs={workspace.generationJobs} tab="research" />
     </div>
   );
 }
@@ -1700,6 +1839,8 @@ function ArticlePanel({
           />
         </div>
       </section>
+
+      <GenerationJobsSection jobs={workspace.generationJobs} tab="article" />
     </div>
   );
 }
@@ -1964,6 +2105,8 @@ function VisualsPanel({
           </p>
         )}
       </section>
+
+      <GenerationJobsSection jobs={workspace.generationJobs} tab="visuals" />
     </div>
   );
 }
@@ -2521,6 +2664,8 @@ function SocialPanel({
           </section>
         );
       })}
+
+      <GenerationJobsSection jobs={workspace.generationJobs} tab="social" />
     </div>
   );
 }
@@ -2621,6 +2766,8 @@ function PdfPanel({
           );
         })}
       </div>
+
+      <GenerationJobsSection jobs={workspace.generationJobs} tab="pdf" />
     </div>
   );
 }
@@ -2947,6 +3094,8 @@ function VideoPanel({
           />
         </div>
       </section>
+
+      <GenerationJobsSection jobs={workspace.generationJobs} tab="video" />
     </div>
   );
 }
