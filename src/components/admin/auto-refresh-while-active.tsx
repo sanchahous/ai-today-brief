@@ -1,29 +1,42 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
 
+function hasActiveStatus(statuses: Array<string | null | undefined>) {
+  return statuses.some((status) => typeof status === 'string' && ACTIVE_STATUSES.has(status));
+}
+
 /**
- * Renders nothing. Soft-refreshes the current route on an interval while
- * `status` is non-terminal, so a long-running generation job (editorial_master
- * can take minutes) shows up-to-date status without a manual reload.
+ * Renders nothing. Soft-refreshes the current route on an interval while any
+ * watched job status is non-terminal, and once more when the last active job
+ * finishes — so Visuals/PDF previews pick up the new artifact without a manual reload.
  */
 export function AutoRefreshWhileActive({
   status,
+  statuses,
   intervalMs = 5000,
 }: {
-  status: string | null | undefined;
+  status?: string | null;
+  statuses?: Array<string | null | undefined>;
   intervalMs?: number;
 }) {
   const router = useRouter();
+  const watched = statuses ?? [status];
+  const active = hasActiveStatus(watched);
+  const wasActiveRef = useRef(active);
 
   useEffect(() => {
-    if (!status || !ACTIVE_STATUSES.has(status)) return;
+    if (wasActiveRef.current && !active) {
+      router.refresh();
+    }
+    wasActiveRef.current = active;
+    if (!active) return;
     const id = setInterval(() => router.refresh(), intervalMs);
     return () => clearInterval(id);
-  }, [status, intervalMs, router]);
+  }, [active, intervalMs, router]);
 
   return null;
 }
