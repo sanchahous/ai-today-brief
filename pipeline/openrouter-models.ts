@@ -15,7 +15,12 @@ export type OpenRouterModelRecord = {
   created?: number;
   context_length?: number;
   pricing?: { prompt?: string; completion?: string };
-  architecture?: { modality?: string; instruct_type?: string | null };
+  architecture?: {
+    modality?: string;
+    instruct_type?: string | null;
+    input_modalities?: string[];
+    output_modalities?: string[];
+  };
   supported_parameters?: string[];
   expiration_date?: string | null;
   benchmarks?: {
