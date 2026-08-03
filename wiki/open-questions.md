@@ -3,7 +3,7 @@
 Summary: усе, що не має відповіді, суперечить саме собі або не перевірено. Кожен пункт має
 власника рішення й критерій закриття. Порожній пункт видаляти не можна — тільки закривати
 записом «закрито: …».
-Sources: `docs/ANALYTICS.md`, `docs/audit/2026-07-01-seo-organic-audit.md`, `docs/MASTER-ROADMAP.md`,
+Sources: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
 `.env.example`, інвентаризація репозиторію (live check 2026-08-02)
 Last updated: 2026-08-02
 
@@ -11,9 +11,9 @@ Last updated: 2026-08-02
 
 ## 1. ⚠️ Conflict: яка GA4-property справжня
 
-[ANALYTICS](../docs/ANALYTICS.md) документує property **540206735** (акаунт `396774992`),
+[ANALYTICS](analytics/ga4-gsc.md) документує property **540206735** (акаунт `396774992`),
 а аудит 2026-07-01 показує активну **540467725** (акаунт `397017915`), яка отримує реальні
-`page_view`. (source: `docs/ANALYTICS.md`, `docs/audit/2026-07-01-seo-organic-audit.md` §6)
+`page_view`. (source: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md` §6)
 
 **Наслідок:** жодна цифра конверсій/retention недостовірна, доки не звірено.
 **Закривається:** пройдено чек-лист §6 аудиту (measurement ID у Vercel, GSC-link, key event
@@ -32,7 +32,7 @@ Cloudflare + X) у [overview](overview.md) §4. **Власник рішення:
 
 Джерело вимкнено до письмового схвалення; за нотатками сесій створення script-app падає, а запит
 висить без відповіді. `(needs verification)` — у репозиторії підтвердження немає, лише env-гейт
-`REDDIT_DATA_API_APPROVED`. (source: `.env.example`, `docs/REDDIT-COMPLIANCE.md`)
+`REDDIT_DATA_API_APPROVED`. (source: `.env.example`, `wiki/ops/reddit-compliance.md`)
 
 **Закривається:** або отримано схвалення, або зафіксовано «глухий кут» окремою сторінкою
 `ops/reddit-compliance.md` з датою останньої спроби.
@@ -48,7 +48,7 @@ Cloudflare + X) у [overview](overview.md) §4. **Власник рішення:
 
 `MASTER-ROADMAP` вимагає ≥95% покриття `composite_score`, ≥2 знімки на multi-cycle історію і
 joinable reward перед калібруванням ваг. Чи досягнуто — не перевірялося після червня.
-(source: `docs/MASTER-ROADMAP.md` §L1)
+(source: `wiki/strategy/master-roadmap.md` §L1)
 
 **Закривається:** SQL-звірка проти прод-БД + запис результату в `pipeline/instrumentation-plan.md`.
 
@@ -56,7 +56,7 @@ joinable reward перед калібруванням ваг. Чи досягн�
 
 Сигнал mentions ≈ 1.008 → 22% ваги ранжування марнується. Рішення «полагодити кластеризацію»
 vs «перерозподілити на velocity/authority» досі не ухвалене.
-(source: `docs/MASTER-ROADMAP.md` §2 #8, §L2)
+(source: `wiki/strategy/master-roadmap.md` §2 #8, §L2)
 
 **Закривається:** ADR у `decisions/` + bump `SCORE_VERSION`.
 

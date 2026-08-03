@@ -5,7 +5,7 @@
  * Re-scores every stored article with the CURRENT rank.ts formula and writes the
  * six components + composite + score_version + cluster_id + scored_as_of. This is
  * how score-telemetry coverage jumps from ~8% to ~100% without waiting weeks of
- * forward runs (the method is proven in docs/TREND-ENGINE-BACKTEST-FINDINGS.md).
+ * forward runs (the method is proven in wiki/pipeline/trend-engine-backtest.md).
  *
  * recency/velocity are computed AS-OF the corpus's freshest fetched_at, NOT now() —
  * otherwise every old row collapses to recency ≈ 0. Idempotent: re-runs overwrite

@@ -5,7 +5,7 @@ alwaysApply: true
 
 # AI Today Brief — Engineering Rules
 
-A standalone **Next.js 16 (App Router)** product on **Vercel**: a daily curated **AI/engineering brief** (EN primary, UK secondary) plus evergreen technical concept hubs. Strategy = **brief-led product, authority-built architecture**: the daily brief is the hook; every page also builds **topical authority** + **AEO** (being cited by AI engines) in a defensible dev niche. Data and the `fetch→rank→summarize→publish` pipeline live on **Supabase**. Payments via **LemonSqueezy** (Stripe is blocked in UA). Context: `docs/07 — MVP Dev Handoff`, `docs/08 — Prototype to Production Plan`.
+A standalone **Next.js 16 (App Router)** product on **Vercel**: a daily curated **AI/engineering brief** (EN primary, UK secondary) plus evergreen technical concept hubs. Strategy = **brief-led product, authority-built architecture**: the daily brief is the hook; every page also builds **topical authority** + **AEO** (being cited by AI engines) in a defensible dev niche. Data and the `fetch→rank→summarize→publish` pipeline live on **Supabase**. Payments via **LemonSqueezy** (Stripe is blocked in UA). Context: `wiki/architecture/mvp-dev-handoff.md`, `wiki/architecture/prototype-to-production.md`.
 
 ## Stack facts (hard — verify before assuming)
 

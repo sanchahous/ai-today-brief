@@ -64,7 +64,6 @@ const eslintConfig = defineConfig([
     'build/**',
     'coverage/**',
     'next-env.d.ts',
-    'docs/**',
     // Knowledge layer — markdown + immutable sources + generated deliverables.
     'raw/**',
     'wiki/**',

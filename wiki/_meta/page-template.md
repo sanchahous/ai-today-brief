@@ -1,7 +1,7 @@
 # Page Title
 
 Summary: 1–2 речення про те, що на цій сторінці і кому вона потрібна.
-Sources: `raw/…` / `docs/…` / live check YYYY-MM-DD / none (analysis)
+Sources: `raw/…` / `wiki/…` / live check YYYY-MM-DD / none (analysis)
 Last updated: YYYY-MM-DD
 
 ---

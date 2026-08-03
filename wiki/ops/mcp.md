@@ -63,7 +63,7 @@ Last updated: 2026-08-02
 performance trace або сирий DevTools-протокол.
 
 **Правові межі скрапу.** Джерела, для яких зафіксовано заборону або відсутність дозволу
-(наприклад Reddit Data API — див. [REDDIT-COMPLIANCE](../../docs/REDDIT-COMPLIANCE.md)), **не обходяться**
+(наприклад Reddit Data API — див. [REDDIT-COMPLIANCE](../../wiki/ops/reddit-compliance.md)), **не обходяться**
 через Apify. Технічна можливість ≠ дозвіл.
 
 ## 4. Типові сценарії

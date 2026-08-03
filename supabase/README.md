@@ -19,7 +19,7 @@ Schema for the data layer + the `fetch→rank→summarize→publish` pipeline.
 
 RPCs: `search_brief_items`, `search_facets`. Extensions: `pgcrypto`, `uuid-ossp`, `pg_trgm`, `pg_stat_statements`.
 
-**Business layer (`015_mvp_business_layer.sql`, from `docs/07a`):**
+**Business layer (`015_mvp_business_layer.sql`, from `raw/db/2025-07a-supabase-mvp-migration.sql`):**
 
 - `subscribers` — the email list (service_role only; writes via Edge Function + double opt-in).
 - `newsletter_sends` — open/click analytics (feeds the decision-gate open-rate).
