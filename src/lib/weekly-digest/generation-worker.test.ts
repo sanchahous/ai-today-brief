@@ -6,9 +6,14 @@ const rpc = vi.fn(async (_fn: string, _args: Record<string, unknown>) => ({
 }));
 vi.mock('@/lib/supabase-admin', () => ({ getSupabaseAdmin: () => ({ rpc }) }));
 
-import { computeMasterCheckpointHash, runWeeklyDigestGenerationJobs } from './generation-worker';
-import type { WeeklyResearchPack } from './content-studio';
+import {
+  computeMasterCheckpointHash,
+  computeSocialCopyCheckpointHash,
+  runWeeklyDigestGenerationJobs,
+} from './generation-worker';
+import type { WeeklyResearchPack, WeeklyMasterBundle } from './content-studio';
 import type { WeeklyMasterRetryGuidance } from './editorial-llm';
+import type { SocialChannel, SocialLocale } from '@/lib/social/types';
 
 const ALL_JOB_TYPES = [
   'research_pack',
@@ -69,6 +74,55 @@ describe('computeMasterCheckpointHash', () => {
     const attempt1 = computeMasterCheckpointHash(packs, []);
     const attempt2 = computeMasterCheckpointHash(packs, []);
     expect(attempt1).toBe(attempt2);
+  });
+});
+
+function bundle(overrides: Partial<WeeklyMasterBundle> = {}): WeeklyMasterBundle {
+  return {
+    en: { title: 'Weekly Digest' },
+    uk: { title: 'Тижневий дайджест' },
+    video: {},
+    socialAngles: [],
+    ...overrides,
+  } as unknown as WeeklyMasterBundle;
+}
+
+function locales(): Map<SocialChannel, SocialLocale> {
+  return new Map([['x', 'en']]) as Map<SocialChannel, SocialLocale>;
+}
+
+describe('computeSocialCopyCheckpointHash', () => {
+  it('is deterministic for identical inputs', () => {
+    const input = { bundle: bundle(), sourceFacts: ['fact one'], locales: locales() };
+    expect(computeSocialCopyCheckpointHash(input)).toBe(computeSocialCopyCheckpointHash(input));
+  });
+
+  it('changes when the approved article content changes', () => {
+    const a = computeSocialCopyCheckpointHash({
+      bundle: bundle({ en: { title: 'Version A' } as never }),
+      sourceFacts: ['fact one'],
+      locales: locales(),
+    });
+    const b = computeSocialCopyCheckpointHash({
+      bundle: bundle({ en: { title: 'Version B' } as never }),
+      sourceFacts: ['fact one'],
+      locales: locales(),
+    });
+    expect(a).not.toBe(b);
+  });
+
+  it('changes when the default locale map changes', () => {
+    const a = computeSocialCopyCheckpointHash({
+      bundle: bundle(),
+      sourceFacts: ['fact one'],
+      locales: new Map([['x', 'en']]) as Map<SocialChannel, SocialLocale>,
+    });
+    const b = computeSocialCopyCheckpointHash({
+      bundle: bundle(),
+      sourceFacts: ['fact one'],
+      locales: new Map([['x', 'uk']]) as Map<SocialChannel, SocialLocale>,
+    });
+    expect(a).not.toBe(b);
   });
 });
 

@@ -1151,6 +1151,82 @@ async function renderInstagramCarousel(
   return assets;
 }
 
+const SOCIAL_COPY_CHECKPOINT_VERSION = 1;
+
+type SocialCopyCheckpoint = {
+  tokens: Record<SocialChannel, string>;
+  adaptations: Partial<Record<SocialChannel, WeeklySocialAdaptation>>;
+};
+
+type SocialCopyCheckpointOutput = {
+  socialCopyCheckpointHash?: string;
+  tokens?: Record<SocialChannel, string>;
+  adaptations?: Partial<Record<SocialChannel, WeeklySocialAdaptation>>;
+};
+
+/**
+ * Six channels each pay for an independent writer+critic pass, and today
+ * every one of them is forced onto slow OpenRouter streaming (Gemini's
+ * free-tier quota is exhausted, confirmed via the API's own 429 response).
+ * That reliably outruns Vercel's 300s ceiling on this plan mid-loop -- the
+ * platform kills the function outright, with no chance for a catch block to
+ * run. Checkpointing per channel (same pattern as editorial_master's EN/UK
+ * write) means a retry resumes from the next unfinished channel instead of
+ * redoing already-completed ones.
+ */
+export function computeSocialCopyCheckpointHash(input: {
+  bundle: WeeklyMasterBundle;
+  sourceFacts: string[];
+  locales: Map<SocialChannel, SocialLocale>;
+}): string {
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        en: input.bundle.en,
+        uk: input.bundle.uk,
+        socialAngles: input.bundle.socialAngles,
+        sourceFacts: input.sourceFacts,
+        locales: [...input.locales.entries()],
+        version: SOCIAL_COPY_CHECKPOINT_VERSION,
+      }),
+    )
+    .digest('hex');
+}
+
+async function loadSocialCopyCheckpoint(
+  jobId: string,
+  expectedHash: string,
+): Promise<SocialCopyCheckpoint | null> {
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('weekly_digest_generation_jobs')
+    .select('output')
+    .eq('id', jobId)
+    .maybeSingle();
+  if (error) throw new Error(`[weekly-generation] social copy checkpoint lookup: ${error.message}`);
+  const output = asRecord(data?.output as Json | undefined) as SocialCopyCheckpointOutput;
+  if (output.socialCopyCheckpointHash !== expectedHash || !output.tokens) return null;
+  return { tokens: output.tokens, adaptations: output.adaptations ?? {} };
+}
+
+async function saveSocialCopyCheckpoint(
+  jobId: string,
+  checkpointHash: string,
+  checkpoint: SocialCopyCheckpoint,
+) {
+  const output: SocialCopyCheckpointOutput = {
+    socialCopyCheckpointHash: checkpointHash,
+    tokens: checkpoint.tokens,
+    adaptations: checkpoint.adaptations,
+  };
+  const db = getSupabaseAdmin();
+  const { error } = await db
+    .from('weekly_digest_generation_jobs')
+    .update({ output: output as unknown as Json })
+    .eq('id', jobId);
+  if (error) throw new Error(`[weekly-generation] social copy checkpoint save: ${error.message}`);
+}
+
 async function generateSocialCopy(job: ClaimedGenerationJob) {
   const context = await loadGenerationContext(job);
   const bundle = masterBundleFromArtifacts(context);
@@ -1163,31 +1239,48 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
       ...approvedFactsForItem(item).map((claim) => claim.text),
     ])
     .filter(Boolean);
-  const tokens = Object.fromEntries(
-    SOCIAL_CHANNELS.map((channel) => [channel, randomUUID()]),
-  ) as Record<SocialChannel, string>;
+  const checkpointHash = computeSocialCopyCheckpointHash({ bundle, sourceFacts, locales });
+  const existingCheckpoint = await loadSocialCopyCheckpoint(job.id, checkpointHash);
+  const tokens =
+    existingCheckpoint?.tokens ??
+    (Object.fromEntries(SOCIAL_CHANNELS.map((channel) => [channel, randomUUID()])) as Record<
+      SocialChannel,
+      string
+    >);
+  const checkpointAdaptations: Partial<Record<SocialChannel, WeeklySocialAdaptation>> = {
+    ...existingCheckpoint?.adaptations,
+  };
   const adaptations: WeeklySocialAdaptation[] = [];
   for (const channel of SOCIAL_CHANNELS) {
+    const cached = checkpointAdaptations[channel];
+    if (cached) {
+      adaptations.push(cached);
+      continue;
+    }
     const locale = locales.get(channel)!;
     const trackedUrl = new URL(`/r/s/${tokens[channel]}`, SITE_URL).toString();
     const angle = bundle.socialAngles.find((candidate) => candidate.channel === channel);
     const assets = await socialAssetsForChannel(context, channel);
-    adaptations.push(
-      await adaptWeeklySocialChannel({
-        channel,
-        locale,
-        bundle,
-        hookAngle: angle?.hookAngle ?? (locale === 'uk' ? bundle.uk.theme : bundle.en.theme),
-        trackedUrl,
-        scheduledFor: nextWeeklyScheduledForChannel(channel, context.digest.week_end, new Date()),
-        sourceFacts,
-        assets,
-        altText:
-          locale === 'uk'
-            ? `Обкладинка тижневого дайджесту: ${bundle.uk.title}`
-            : `Weekly Digest cover: ${bundle.en.title}`,
-      }),
-    );
+    const adaptation = await adaptWeeklySocialChannel({
+      channel,
+      locale,
+      bundle,
+      hookAngle: angle?.hookAngle ?? (locale === 'uk' ? bundle.uk.theme : bundle.en.theme),
+      trackedUrl,
+      scheduledFor: nextWeeklyScheduledForChannel(channel, context.digest.week_end, new Date()),
+      sourceFacts,
+      assets,
+      altText:
+        locale === 'uk'
+          ? `Обкладинка тижневого дайджесту: ${bundle.uk.title}`
+          : `Weekly Digest cover: ${bundle.en.title}`,
+    });
+    adaptations.push(adaptation);
+    checkpointAdaptations[channel] = adaptation;
+    await saveSocialCopyCheckpoint(job.id, checkpointHash, {
+      tokens,
+      adaptations: checkpointAdaptations,
+    });
   }
   const instagram = adaptations.find((draft) => draft.channel === 'instagram');
   if (instagram) {

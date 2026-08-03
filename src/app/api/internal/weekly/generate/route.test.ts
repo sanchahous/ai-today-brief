@@ -27,7 +27,7 @@ describe('Weekly generation internal route', () => {
   });
 
   it('allows a complete bilingual writer and critic cycle', () => {
-    expect(maxDuration).toBe(800);
+    expect(maxDuration).toBe(300);
   });
 
   it('claims one heavy job for the exact bearer secret', async () => {
