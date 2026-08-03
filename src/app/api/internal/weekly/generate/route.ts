@@ -5,9 +5,12 @@ import { runWeeklyDigestGenerationJobs } from '@/lib/weekly-digest/generation-wo
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 // A master run performs EN writing, UK adaptation and an independent critic
-// sequentially. Keep the platform limit explicit so Hobby staging and production
-// execute the same contract and stale-lock recovery remains predictable.
-export const maxDuration = 300;
+// sequentially; social_copy writes+critiques six channels independently. Both
+// can outrun 300s once a provider fallback is involved (e.g. Gemini down,
+// every call forced onto slower OpenRouter streaming). 800s is the documented
+// ceiling for Pro + Fluid Compute; if the plan doesn't support it Vercel caps
+// it at deploy time.
+export const maxDuration = 800;
 
 // Supabase pg_net waits up to 55 seconds. Story image generation and PDF
 // rasterization are intentionally claimed one at a time so the request remains
