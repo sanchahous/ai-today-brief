@@ -10,11 +10,13 @@ Last updated: 2026-08-04
 
 ## Стан репозиторію
 
-- `main` = `4521de7` — *Fix weekly digest Save wiping approved artifacts across revisions (#177)*.
+- `main` = `eaa9fd0` — *chore(deps): npm-patch-minor 12 updates (#179)*.
   (source: git log live check 2026-08-04)
-- Активна інфра: `chore/dependabot-infra-safe` — automerge без approve + ignore `pdfkit` minor/major;
-  Dependabot secrets `SCRAPPER_BASE_*` скопійовано (раніше e2e #164 падав на порожніх env).
-- Відкриті PR: **#164** (dependabot npm-patch-minor; recreate після інфра-мерджу).
+- Інфра Dependabot: **#178** (automerge без approve + ignore `pdfkit` minor/major + Dependabot
+  secrets `SCRAPPER_BASE_*`). Label `dependencies` створено.
+- **#164** закрито Dependabot після ignore; наступник **#179** змерджено (Playwright 339 passed).
+  `pdfkit` лишається `0.17.2` до окремого smoke-PR.
+- Відкритих Dependabot PR немає.
   (source: `gh pr list` live check 2026-08-04)
 - Міграція `docs/** → wiki/**` **закрита** (#166). Папки `docs/` у git немає.
 
@@ -22,30 +24,25 @@ Last updated: 2026-08-04
 
 | PR | Що |
 |---|---|
+| #179 | Dependabot npm-patch-minor (12 deps; без pdfkit) — next 16.2.12, react 19.2.8, … |
+| #178 | Harden Dependabot automerge + pdfkit ignore + secrets docs |
 | #177 | Weekly digest revision stability (`input_hash` / no-op Save / restore) |
 | #176 | Ребренд favicon / app icons / header-footer logo; expand-on-focus search |
 | #175 | Ілюстрації без впеченого тексту (FLUX.2 prompt policy v5-no-text) |
 | #174 | Persist illustration prompts + сильніші scene briefs |
 | #173 | Stop weekly admin 5s auto-refresh blink |
 | #172 | Stale weekly admin previews після visual regen |
-| #171 | FLUX.2 multipart Node fetch — klein більше не spillover на schnell |
-| #170 | Generation jobs на відповідних workspace tabs |
 
 (source: `gh pr list --state merged` live check 2026-08-04)
 
-Раніше в серпні: #169 FLUX.2 + costs ledger · #168 social LLM · #167 writer-model · #166 docs→wiki ·
-#165 agentic KB · #163 spend gate · #162 Content Studio v2 · #161 completed weeks ·
-#160 manual weekly create.
-
 ## Активна робота
 
-1. **Dependabot #164 + інфра.** Automerge без `gh pr review --approve` (GITHUB_TOKEN не може
-   апрувити); `pdfkit` minor/major винесено з групового bump; recreate після мерджу інфри.
-2. **Редакція `ai-weekly-2026-07-27`.** `artifact_stale = 0`; лишились PDF approve, video
+1. **Редакція `ai-weekly-2026-07-27`.** `artifact_stale = 0`; лишились PDF approve, video
    pipeline (override-eligible), ~6 social variants. (source: Supabase live check 2026-08-04)
-3. **Weekly Content Studio v2 — розкатка.** `WEEKLY_CONTENT_STUDIO_V2=off` у `.env.example`;
+2. **Weekly Content Studio v2 — розкатка.** `WEEKLY_CONTENT_STUDIO_V2=off` у `.env.example`;
    шлях `off → shadow (три історичні) → production` ще не пройдений.
    (source: `.env.example`)
+3. **Опційно:** окремий `pdfkit` 0.19 після `npm run weekly:pdf:sample` / PDF smoke.
 
 ## Чекає на власника (не код)
 
@@ -60,9 +57,9 @@ Last updated: 2026-08-04
 
 ## Найближчі 3 дії в коді
 
-1. Змерджити інфра Dependabot (automerge + pdfkit ignore) і `@dependabot recreate` на **#164**.
-2. Окремий PR `pdfkit` 0.19 після `npm run weekly:pdf:sample` / PDF smoke.
-3. Staging: прогнати no-op Save + Restore на тест-випуску після міграції #177.
+1. Staging: прогнати no-op Save + Restore на тест-випуску після міграції #177.
+2. Окремий PR `pdfkit` 0.19 після PDF smoke (`weekly:pdf:sample`).
+3. Розблокувати редакційний trial release (`ai-weekly-2026-07-27`).
 
 ## Related pages
 
