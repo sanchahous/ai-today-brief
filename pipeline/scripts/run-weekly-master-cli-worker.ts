@@ -18,13 +18,21 @@ const STAGE = 'weekly-master-cli-worker';
 const BATCH_LIMIT = 2;
 const MAX_BATCHES = 5;
 
-function requiredEnv(name: string): void {
-  if (!process.env[name]?.trim()) throw new Error(`${name} is required.`);
+// getSupabaseAdmin() (src/lib/supabase-admin.ts) resolves the URL/key from
+// SCRAPPER_BASE_URL/SCRAPPER_SERVICE_KEY first, falling back to
+// NEXT_PUBLIC_SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY. This check must accept
+// either pair -- requiring only the fallback names made every run fail before
+// generation ever started once #168 switched this workflow to the
+// SCRAPPER_* production secrets.
+function requiredEnvPair(primary: string, fallback: string, label: string): void {
+  if (!process.env[primary]?.trim() && !process.env[fallback]?.trim()) {
+    throw new Error(`${label} is required: set ${primary} or ${fallback}.`);
+  }
 }
 
 async function main(): Promise<void> {
-  requiredEnv('NEXT_PUBLIC_SUPABASE_URL');
-  requiredEnv('SUPABASE_SERVICE_ROLE_KEY');
+  requiredEnvPair('SCRAPPER_BASE_URL', 'NEXT_PUBLIC_SUPABASE_URL', 'Supabase URL');
+  requiredEnvPair('SCRAPPER_SERVICE_KEY', 'SUPABASE_SERVICE_ROLE_KEY', 'Supabase service key');
 
   let totalClaimed = 0;
   let totalFailed = 0;

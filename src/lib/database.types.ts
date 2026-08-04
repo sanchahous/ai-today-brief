@@ -1955,6 +1955,14 @@ export type Database = {
         Args: { p_social_post_id: string };
         Returns: Database['public']['Tables']['social_posts']['Row'];
       };
+      revert_weekly_digest_revision: {
+        Args: {
+          p_reason: string;
+          p_target_revision_id: string;
+          p_weekly_digest_id: string;
+        };
+        Returns: Database['public']['Tables']['weekly_digests']['Row'];
+      };
       reserve_x_budget: {
         Args: { p_amount: number };
         Returns: boolean;

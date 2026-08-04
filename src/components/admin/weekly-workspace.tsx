@@ -23,6 +23,7 @@ import {
   dispatchWeeklyMasterCliAction,
   enqueueWeeklyGenerationAction,
   pauseWeeklyDigestAction,
+  restoreWeeklyDigestRevisionAction,
   resumeWeeklyThreadsSequenceAction,
   reviewWeeklyArtifactAction,
   saveWeeklyRevisionAction,
@@ -710,16 +711,23 @@ function OverviewPanel({
   workspace,
   blockers,
   progress,
+  canEdit,
 }: {
   workspace: WeeklyDigestWorkspace;
   blockers: ReturnType<typeof validateWeeklyDigestPreflight>['blockers'];
   progress: number;
+  canEdit: boolean;
 }) {
   const unresolvedArtifacts = workspace.artifacts.filter(
     (artifact) => artifact.review_status === 'changes_requested',
   );
   const latestEvents = workspace.releaseEvents.slice(0, 8);
   const isTestEdition = workspace.digest.is_test;
+  const canRestoreRevision =
+    canEdit &&
+    workspace.digest.status !== 'publishing' &&
+    workspace.digest.status !== 'published' &&
+    workspace.digest.status !== 'cancelled';
   const engagementSegments = Array.from(
     workspace.engagementEvents.reduce((segments, event) => {
       const key = `${event.channel ?? 'direct'}|${event.locale}|${event.hook_angle ?? 'default'}`;
@@ -904,6 +912,72 @@ function OverviewPanel({
               ? 'This test follows the same Monday review timing, but the database prevents any public publication.'
               : 'Monday is part of the review window. Editors can revise and re-approve until the automated 15:45 Kyiv preflight; publication begins at 16:00.'}
           </p>
+        </section>
+
+        <section className={PANEL} aria-labelledby="versions-heading">
+          <h2 id="versions-heading" className="text-lg font-bold text-white">
+            Editorial versions
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Real content edits create a new immutable version. Identical saves keep the current
+            version and its approvals. Restoring an earlier version makes it active again without
+            inventing a new revision number.
+          </p>
+          {workspace.revisions.length ? (
+            <ul className="mt-4 grid gap-3">
+              {workspace.revisions.map((revision) => {
+                const isActive = revision.id === workspace.digest.active_revision_id;
+                return (
+                  <li
+                    key={revision.id}
+                    className="rounded-xl border border-white/8 bg-white/[.025] p-3"
+                  >
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-bold text-white">
+                        Revision {revision.revision_number}
+                      </p>
+                      {isActive ? (
+                        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-200 uppercase">
+                          Active
+                        </span>
+                      ) : null}
+                      <span className="text-xs text-slate-500">
+                        {kyivDateTime(revision.created_at)}
+                      </span>
+                    </div>
+                    <p className="mt-1 truncate text-sm text-slate-300">{revision.title_en}</p>
+                    {canRestoreRevision && !isActive ? (
+                      <form action={restoreWeeklyDigestRevisionAction} className="mt-3 grid gap-3">
+                        <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+                        <input type="hidden" name="target_revision_id" value={revision.id} />
+                        <label className={LABEL}>
+                          Why restore this version?
+                          <textarea
+                            name="reason"
+                            rows={2}
+                            required
+                            minLength={10}
+                            maxLength={500}
+                            className={TEXTAREA}
+                            placeholder="Undo accidental Save, recover carried artifacts, etc."
+                          />
+                        </label>
+                        <div>
+                          <ActionSubmitButton
+                            idleLabel="Restore this version"
+                            pendingLabel="Restoring…"
+                            className={SECONDARY}
+                          />
+                        </div>
+                      </form>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="mt-4 text-sm text-slate-500">No editorial versions yet.</p>
+          )}
         </section>
 
         <section className={PANEL} aria-labelledby="history-heading">
@@ -1272,13 +1346,13 @@ function StoriesPanel({
         <div>
           <h2 className="text-xl font-bold text-white">Selected stories</h2>
           <p className="mt-2 text-sm text-slate-400">
-            Keep 3–7 stories. Saving creates a new immutable revision and marks dependent artifacts
-            stale.
+            Keep 3–7 stories. Saving creates a new immutable version only when content actually
+            changed; identical saves keep approvals and carried artifacts.
           </p>
         </div>
         <ActionSubmitButton
-          idleLabel="Save stories as new revision"
-          pendingLabel="Creating revision…"
+          idleLabel="Save stories"
+          pendingLabel="Saving…"
           disabled={!canEdit}
           className={PRIMARY}
         />
@@ -1539,11 +1613,12 @@ function ArticlePanel({
             <h2 className="text-xl font-bold text-white">Article framing</h2>
             <p className="mt-2 text-sm text-slate-400">
               Titles, editorial intro and issue-level takeaways for both landing pages and PDFs.
+              Identical framing keeps the current version; only real edits open a new revision.
             </p>
           </div>
           <ActionSubmitButton
-            idleLabel="Save article as new revision"
-            pendingLabel="Creating revision…"
+            idleLabel="Save article framing"
+            pendingLabel="Saving…"
             disabled={!canEdit}
             className={PRIMARY}
           />
@@ -3527,7 +3602,12 @@ export function WeeklyWorkspace({
         </section>
       ) : null}
       {activeTab === 'overview' ? (
-        <OverviewPanel workspace={workspace} blockers={preflight.blockers} progress={progress} />
+        <OverviewPanel
+          workspace={workspace}
+          blockers={preflight.blockers}
+          progress={progress}
+          canEdit={canEdit}
+        />
       ) : null}
       {activeTab === 'stories' ? <StoriesPanel workspace={workspace} canEdit={canEdit} /> : null}
       {activeTab === 'research' ? (
