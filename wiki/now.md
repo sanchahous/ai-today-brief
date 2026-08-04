@@ -35,6 +35,17 @@ Last updated: 2026-08-04
 
 (source: `gh pr list --state merged` live check 2026-08-04)
 
+## Vercel Fluid CPU (2026-08-04)
+
+Hobby-план був на **3h58m з 4h** включеного Fluid Active CPU (99.8% — проєкт `ai-today-brief`).
+Корінь: `generation-worker.ts` еagerly імпортував `sharp`/`pdfkit`/`pdfjs-dist`/canvas на
+кожному 5-хвилинному `pg_cron`-опитуванні `/api/internal/weekly/generate`, навіть при порожній
+черзі; плюс `<Link>` prefetch самостійно бомбардував найважчий route (`/admin/weekly/[id]`) з
+таб-навігації. Фікс на гілці `fix/vercel-fluid-cpu-cost` (деталі —
+[pipeline/weekly-digest](pipeline/weekly-digest.md#fluid-cpu--вартість-2026-08-04)); RPC
+output-overwrite checkpoint-баг editorial_master вже полагоджено і застосовано в прод-Supabase.
+(source: live check Vercel dashboard 2026-08-04)
+
 ## Активна робота
 
 1. **Редакція `ai-weekly-2026-07-27`.** Після деплою primary-excerpt grounding: Research →

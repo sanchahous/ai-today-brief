@@ -116,6 +116,12 @@ export default async function WeeklyDigestListPage({
             <Link
               key={digest.id}
               href={`/admin/weekly/${digest.id}`}
+              // /admin/weekly/[id] is force-dynamic and expensive (loads the
+              // full workspace: jobs, artifacts, reviews). Every card here
+              // sits in the viewport at once, so default prefetch would fire
+              // a real server-executed request per edition on every list
+              // visit for an internal, single-owner tool.
+              prefetch={false}
               className="group rounded-2xl border border-white/10 bg-[#151b20] p-5 transition hover:border-[#47e4d3]/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#47e4d3]"
             >
               <div className="flex flex-wrap items-center gap-2">

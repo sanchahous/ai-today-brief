@@ -102,6 +102,32 @@ live check 2026-08-04)
   Research step 2 → апрув Top 3 packs → Start Content Studio → Master quality → Approve.
   (source: `src/lib/weekly-digest/preflight.ts`, `weekly-workspace.tsx`)
 
+## Fluid CPU / вартість (2026-08-04)
+
+`/api/internal/weekly/generate` (Supabase `pg_cron`, кожні 5 хв, 24/7) до фіксу тягнув
+`sharp`/`pdfkit`/`pdfjs-dist`/`@napi-rs/canvas` на **верхньому рівні** `generation-worker.ts` —
+навіть коли черга порожня. Це головний внесок у Vercel **Fluid Active CPU 3h58m/4h** на Hobby
+(live check дешборду 2026-08-04, проєкт `ai-today-brief` = 99.8% витрати акаунта). Фікс: ці
+залежності тепер завантажуються лінива (`import()`) лише всередині job-хендлера, який їх
+реально використовує (source: `generation-worker.ts`, гілка `fix/vercel-fluid-cpu-cost`).
+
+`finish_weekly_digest_generation_job` робив `output = p_output` (перезапис) замість мержу —
+це стирало mid-attempt checkpoint `editorial_master` (`saveMasterCheckpoint`) на кожній
+невдалій спробі, тож retry завжди перегенеровував повний EN+UK текст замість повторного
+використання. Фікс — migration `20260804180000_weekly_digest_generation_job_output_merge.sql`
+(вже застосована у прод-Supabase).
+
+Таб-навігація `/admin/weekly/[id]` і список видань `/admin/weekly` юзали звичайний Next.js
+`<Link>` з дефолтним prefetch; ~9 таб-лінків одразу у вʼюпорті на кожному завантаженні, кожен
+самостійно префетчить той самий важкий force-dynamic route у проді. Додано `prefetch={false}`
+в обох місцях — це був топ-1 route за invocation count у Vercel Observability (1.9K/12год).
+
+pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інвентаризації) виявився вже
+полагодженим PR #152 (коміт `4710bb1`, 24.07: `font: INTER_FONT` у конструкторі
+`PDFDocument`) — дій не потрібно. Content-hash caching для retry image/pdf-джобів
+розглянуто й відхилено: живого бага немає, `retryableGenerationFailure` вже коректно не
+ретраїть детерміновані помилки (наприклад, page-count contract violation у `generatePdf`).
+
 ## Related pages
 
 - [weekly-editorial-selection](weekly-editorial-selection.md)

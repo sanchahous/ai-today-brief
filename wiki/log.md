@@ -19,6 +19,22 @@ Last updated: 2026-08-04
 
 ---
 
+## 2026-08-04 — Vercel Fluid CPU: lazy imports + checkpoint-merge + admin prefetch
+
+**Джерело:** live check Vercel dashboard 2026-08-04 (Fluid Active CPU 3h58m/4h Hobby, `ai-today-brief` = 99.8% акаунта)
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — новий розділ «Fluid CPU / вартість»: lazy `import()`
+  для sharp/pdfkit/pdfjs-dist/canvas у `generation-worker.ts`, RPC-мерж замість overwrite
+  для checkpoint editorial_master, `prefetch={false}` на admin weekly Links
+- `wiki/now.md` — нова секція «Vercel Fluid CPU» з поточним статусом
+- `wiki/index.md` — лічильник міграцій 62 → 63 (`20260804180000_weekly_digest_generation_job_output_merge.sql`)
+
+**Нотатка:** міграція вже застосована в прод-Supabase. pdfkit Helvetica.afm ENOENT (окрема
+підозра з тієї ж інвентаризації) виявився вже полагодженим PR #152 (24.07) — дій не було.
+Content-hash caching для retry image/pdf-джобів розглянуто і відхилено: живого бага не
+знайдено (`retryableGenerationFailure` вже коректно не ретраїть детерміновані помилки).
+
 ## 2026-08-04 — Master critic grounds on primary excerpts
 
 **Джерело:** live fail `ai-weekly-2026-07-27` (`UNSUPPORTED_DETAIL` Python/Sage vs вузький claim set)
