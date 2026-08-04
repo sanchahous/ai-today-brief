@@ -7,6 +7,12 @@
       "runtimeArgs": ["--prefix", "E:/domains/cockpit", "run", "dev"],
       "port": 4317,
       "autoPort": false
+    },
+    {
+      "name": "ai-today-brief",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
     }
   ]
 }

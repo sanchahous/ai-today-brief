@@ -8,7 +8,9 @@
  *
  * Pure presentational components — safe to import into Server Components.
  */
+import { useId } from 'react';
 import type { CSSProperties, ReactElement, SVGProps } from 'react';
+import { MARK_COLOR, MARK_COLOR_DEEP, MARK_COLOR_CORE } from '@/lib/site';
 
 /** Category icon keys — one glyph per editorial category. */
 export type IconKey =
@@ -277,6 +279,71 @@ export function ExternalLinkIcon({ size = 15, strokeWidth = 1.7, style, classNam
     <svg {...base(size, strokeWidth, style, className)}>
       <path d="M14 4h6v6M20 4l-9 9" />
       <path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" />
+    </svg>
+  );
+}
+
+// ── brand mark ──
+/**
+ * Compact "ascend" mark — three rounded squares stepping up, the inline
+ * companion to the full bloom mark used for the favicon/app icons (see
+ * src/lib/brand-mark.ts). Used before the SITE_NAME wordmark in the header
+ * and footer.
+ */
+export function BrandMark({ size = 24, className }: { size?: number; className?: string }) {
+  const gradientId = useId();
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 28 28"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor={MARK_COLOR} />
+          <stop offset="100%" stopColor={MARK_COLOR_DEEP} />
+        </linearGradient>
+      </defs>
+      <rect x="1" y="20" width="6" height="6" rx="1.7" fill={`url(#${gradientId})`} />
+      <rect x="9" y="11" width="8" height="8" rx="2.2" fill={`url(#${gradientId})`} />
+      <rect x="18" y="1" width="10" height="10" rx="2.8" fill={`url(#${gradientId})`} />
+    </svg>
+  );
+}
+
+/**
+ * Full "bloom" mark — the standalone icon used for the favicon/app icons
+ * (see src/lib/brand-mark.ts, BRAND_MARK_SVG — keep the two in sync). Used
+ * on its own wherever the header/UI needs the brand identifiable without
+ * the wordmark alongside it.
+ */
+export function BrandBloom({ size = 32, className }: { size?: number; className?: string }) {
+  const gradientId = useId();
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 64 64"
+      aria-hidden
+      focusable={false}
+      className={className}
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="6%" y1="6%" x2="94%" y2="94%">
+          <stop offset="0%" stopColor="#8DF3E6" />
+          <stop offset="50%" stopColor={MARK_COLOR} />
+          <stop offset="100%" stopColor={MARK_COLOR_DEEP} />
+        </linearGradient>
+      </defs>
+      <rect x="4" y="16" width="8" height="8" rx="2.2" fill={MARK_COLOR} opacity="0.3" />
+      <rect x="11" y="8" width="10" height="10" rx="2.6" fill={MARK_COLOR} opacity="0.55" />
+      <rect x="20" y="1" width="27" height="27" rx="7.5" fill={`url(#${gradientId})`} />
+      <rect x="37" y="18" width="27" height="27" rx="7.5" fill={`url(#${gradientId})`} />
+      <rect x="20" y="35" width="27" height="27" rx="7.5" fill={`url(#${gradientId})`} />
+      <rect x="24.5" y="24.5" width="15" height="15" rx="4.2" fill={MARK_COLOR_CORE} />
     </svg>
   );
 }

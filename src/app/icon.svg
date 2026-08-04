@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<defs><linearGradient id="atbPetal" x1="6%" y1="6%" x2="94%" y2="94%">
+<stop offset="0%" stop-color="#8DF3E6"/><stop offset="50%" stop-color="#47E4D3"/><stop offset="100%" stop-color="#1C86C9"/>
+</linearGradient></defs>
+<rect x="4" y="16" width="8" height="8" rx="2.2" fill="#47E4D3" opacity="0.3"/>
+<rect x="11" y="8" width="10" height="10" rx="2.6" fill="#47E4D3" opacity="0.55"/>
+<rect x="20" y="1" width="27" height="27" rx="7.5" fill="url(#atbPetal)"/>
+<rect x="37" y="18" width="27" height="27" rx="7.5" fill="url(#atbPetal)"/>
+<rect x="20" y="35" width="27" height="27" rx="7.5" fill="url(#atbPetal)"/>
+<rect x="24.5" y="24.5" width="15" height="15" rx="4.2" fill="#0E2138"/>
+</svg>

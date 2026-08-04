@@ -19,6 +19,7 @@
     "ci:check": "npm run verify:coverage",
     "sonar:report": "npx tsx scripts/sonar-fetch-report.ts",
     "wiki:lint": "node wiki/_tools/wiki-lint.mjs",
+    "icons:generate": "npx tsx scripts/generate-brand-icons.ts",
     "pipeline": "tsx pipeline/run-daily.ts",
     "pipeline:dry": "tsx pipeline/run-daily.ts --dry-run",
     "custom-news": "tsx pipeline/scripts/custom-news.ts",

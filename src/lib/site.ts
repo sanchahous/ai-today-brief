@@ -48,6 +48,10 @@ export const EDITOR_PROFILE = {
 } as const;
 /** Accent for the brand monogram mark. */
 export const MARK_COLOR = '#47E4D3';
+/** Deeper blue paired with MARK_COLOR in the bloom/ascend mark gradients. */
+export const MARK_COLOR_DEEP = '#1C86C9';
+/** Dark navy core of the bloom mark; also the opaque tile bg for app icons. */
+export const MARK_COLOR_CORE = '#0E2138';
 
 export const CONTACT_EMAIL = 'hello@sashakuzmenko.com';
 export const ADVERTISE_EMAIL = 'hello@sashakuzmenko.com';
