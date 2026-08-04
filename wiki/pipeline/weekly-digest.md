@@ -51,6 +51,21 @@ Hard spend-cap weekly master: `WEEKLY_MASTER_MAX_SPEND_USD` (default $4,
 політика промпту `story-specific-editorial-v5-no-text` (без впеченого тексту в кадрі).
 (source: PR #169–#175, `pipeline/card-image.ts`, `generation-worker.ts`)
 
+### Evidence grounding (writer + critic)
+
+Structured claims (`summary_en` + `facts_en`) залишаються обов’язковими, але **не єдиним**
+джерелом правди. Research pack зберігає excerpt першоджерела до **12 000** символів
+(`WEEKLY_RESEARCH_EXCERPT_MAX_CHARS`); writer і незалежний critic отримують claims **плюс**
+`primarySourceExcerpt` / corroborating excerpts. Деталь, яка є в excerpt, але відсутня в
+numbered claims, **не** має валитись як `UNSUPPORTED_*`.
+(source: `editorial-llm.ts`, `research.ts`, `content-studio.ts`)
+
+Studio version **`weekly-content-studio-v2.1`** + research schema **`weekly-research-v3`** +
+master prompt **`weekly-master-v4`**: після деплою **Start / retry Content Studio** ставить
+нові `research_pack` jobs (нові idempotency keys) → треба знову Approve Top 3 → тоді master.
+(source: `WEEKLY_CONTENT_STUDIO_VERSION`, `WEEKLY_RESEARCH_SCHEMA_VERSION`,
+`WEEKLY_MASTER_SPEC_VERSION`)
+
 ## Імутабельні ревізії (критично)
 
 Кожне реальне редагування створює **нову** `weekly_digest_revisions` (+ items). Артефакти

@@ -35,13 +35,18 @@ import { fetchOpenRouterModels } from '../../../pipeline/openrouter-models';
 import {
   normalizeWeeklySocialAngles,
   masterRetryGuidancePrompt,
+  approvedStoryPromptMaterial,
+  criticApprovedEvidence,
+  criticPrompt,
   openRouterModelVendor,
   premiumGeminiEditorialModels,
   premiumOpenRouterModels,
   generateWeeklyMaster,
   type WeeklyMasterEnglishResult,
+  type WeeklyMasterInputStory,
   type WeeklyMasterUkrainianResult,
 } from './editorial-llm';
+import type { WeeklyMasterBundle } from './content-studio';
 
 function socialAngle(channel: string) {
   return { channel, hookAngle: `Hook for ${channel}`, thesis: 'Thesis', factIds: ['claim-1'] };
@@ -158,6 +163,91 @@ describe('masterRetryGuidancePrompt', () => {
     ]);
     expect(prompt).toContain('not approved factual claims');
     expect(prompt).toContain('State only that the reversal occurred.');
+  });
+});
+
+function storyWithPrimaryExcerpt(): WeeklyMasterInputStory {
+  return {
+    revisionItemId: 'item-w2',
+    rank: 2,
+    placement: 'feature',
+    titleEn: 'CryptanalysisBench',
+    titleUk: 'CryptanalysisBench',
+    summaryEn: 'Anthropic released CryptanalysisBench.',
+    summaryUk: 'Anthropic випустив CryptanalysisBench.',
+    whyEn: null,
+    whyUk: null,
+    sources: [{ name: 'Anthropic', url: 'https://www.anthropic.com/research/example' }],
+    claims: [
+      {
+        id: 'W2-C5',
+        text: 'Benchmark Name: CryptanalysisBench',
+        evidenceUrls: ['https://www.anthropic.com/research/example'],
+      },
+    ],
+    research: {
+      schemaVersion: 'weekly-research-v3',
+      digestId: 'digest',
+      revisionId: 'revision',
+      revisionItemId: 'item-w2',
+      placement: 'feature',
+      primarySource: {
+        url: 'https://www.anthropic.com/research/example',
+        sourceName: 'Anthropic',
+        domain: 'anthropic.com',
+        primary: true,
+        extractedText:
+          'For this experiment, we used a Claude Code-like harness that supports multiple worker agents with access to computational tools like Python and Sage.',
+        ogImage: null,
+      },
+      corroboratingSources: [],
+      claims: [
+        {
+          id: 'W2-C5',
+          text: 'Benchmark Name: CryptanalysisBench',
+          kind: 'fact',
+          evidenceUrls: ['https://www.anthropic.com/research/example'],
+        },
+      ],
+      context: [],
+      contradictions: [],
+      limitations: [],
+      risks: [],
+      researchedAt: '2026-08-04T00:00:00.000Z',
+    },
+  };
+}
+
+describe('approvedStoryPromptMaterial', () => {
+  it('surfaces primary source excerpts beside structured claims for the writer', () => {
+    const [material] = approvedStoryPromptMaterial([storyWithPrimaryExcerpt()]);
+    expect(material.claims.map((claim) => claim.id)).toEqual(['W2-C5']);
+    expect(material.primarySourceExcerpt?.excerpt).toContain('Python and Sage');
+    expect(material).not.toHaveProperty('research');
+  });
+});
+
+describe('criticApprovedEvidence', () => {
+  it('gives the critic claims plus primary excerpts so excerpt-only details stay grounded', () => {
+    const [evidence] = criticApprovedEvidence([storyWithPrimaryExcerpt()]);
+    expect(evidence.claims).toHaveLength(1);
+    expect(evidence.primarySourceExcerpt?.excerpt).toContain('Python and Sage');
+  });
+});
+
+describe('criticPrompt', () => {
+  it('instructs the critic to accept excerpt-supported details missing from numbered claims', () => {
+    const bundle = {
+      en: { locale: 'en', stories: [] },
+      uk: { locale: 'uk', stories: [] },
+      video: { title: '', hook: '', narration: '', scenes: [], shorts: [] },
+      socialAngles: [],
+    } as unknown as WeeklyMasterBundle;
+    const prompt = criticPrompt(bundle, [storyWithPrimaryExcerpt()]);
+    expect(prompt).toContain('claims AND the attached primary/corroborating source excerpts');
+    expect(prompt).toContain('do NOT flag it as UNSUPPORTED_');
+    expect(prompt).toContain('Python and Sage');
+    expect(prompt).toContain('APPROVED EVIDENCE');
   });
 });
 
