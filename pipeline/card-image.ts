@@ -273,24 +273,33 @@ async function loadCategoryColors(db: PipelineDb): Promise<Map<string, string | 
  * dominant clause (so each card looks distinct); the constant styling is a thin
  * editorial thread + the category accent — deliberately NOT a heavy "near-black
  * cinematic" preamble, which is what previously homogenised every card.
+ *
+ * Never ask for "space for a headline" — FLUX paints gibberish mastheads when
+ * prompted that way. Typography is added later in layout, never baked into pixels.
  */
 export function buildPrompt(accent: string, scene: string): string {
   return (
-    `Premium editorial illustration for a technology-news cover, in the style of a sophisticated ` +
-    `magazine feature. One strong focal subject, clear visual storytelling, tasteful depth of field ` +
-    `and confident directional lighting, ${accent} as the signature accent woven through the palette, ` +
-    `a refined modern atmosphere with real texture and craft — not flat, not a generic stock render. ` +
-    `Leave calm negative space toward the top and bottom for an overlaid headline. ` +
-    `No text, no words, no letters, no numbers, no logos, no watermark, no user interface, no frame, no border. ` +
+    `Premium editorial illustration, pure visual storytelling only — no typography in the image. ` +
+    `One strong focal subject, clear narrative metaphor, tasteful depth of field and confident ` +
+    `directional lighting, ${accent} as the signature accent woven through the palette, a refined ` +
+    `modern atmosphere with real texture and craft — not flat, not a generic stock render. ` +
+    `Keep the top and bottom calm and empty for later layout compositing; leave those bands blank ` +
+    `(do not paint titles, mastheads, captions, subtitles, or any lettering there). ` +
+    `Absolutely no text, no words, no letters, no numbers, no glyphs, no logos, no watermark, ` +
+    `no title bar, no newspaper headline, no UI chrome, no readable screens, no frame, no border. ` +
     `Scene: ${scene} Wide 16:9 horizontal composition, edge-to-edge full-bleed.`
   );
 }
 
-/** Negative keywords for models that support a negative prompt (Leonardo, FLUX.2). */
+/**
+ * Negative keywords for models that accept them (e.g. flux-1-schnell spillover).
+ * FLUX.2 klein on Workers AI has no negative_prompt — rely on {@link buildPrompt}.
+ */
 export function negativePrompt(): string {
   return (
-    `text, words, letters, typography, numbers, caption, watermark, signature, logo, brand mark, ` +
-    `UI, interface, buttons, frame, border, margin, collage, split panels, ` +
+    `text, words, letters, typography, numbers, glyphs, caption, subtitle, masthead, title bar, ` +
+    `headline, newspaper headline, magazine cover text, watermark, signature, logo, brand mark, ` +
+    `UI, interface, buttons, readable screen text, frame, border, collage, split panels, ` +
     `glowing brain, human brain, brain, neural-network mesh, circuit board, generic glowing orb, ` +
     `floating sphere, abstract blob, anonymous server aisle, lone laptop on desk, ` +
     `generic data-center corridor, stock server room, interchangeable tech stock, ` +
@@ -527,6 +536,7 @@ export async function sceneBrief(
     `anonymous server aisle, lone laptop on a desk, generic data-center corridor, anonymous rack row. ` +
     `Also ban: a glowing brain, glowing orb or core, neural-network mesh, generic circuit board, vague ` +
     `abstract "AI" blob. No text, letters, numbers, logos, brand marks or recognisable real faces. ` +
+    `If a document or screen appears, keep it blank or abstract — never readable writing. ` +
     `Answer with ONE vivid phrase, 18-32 words, concrete nouns, a single focal subject, not a full ` +
     `sentence.\n\nHeadline: "${title}"\nSummary: "${summary}"`;
   const clean = (t: string) => t.replace(/\s+/g, ' ').trim().slice(0, 320);

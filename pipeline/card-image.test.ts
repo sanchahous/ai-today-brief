@@ -231,8 +231,11 @@ describe('buildPrompt', () => {
     expect(prompt).toContain('violet purple');
     expect(prompt).toContain('a cracked padlock over a server rack');
     expect(prompt).toContain('editorial');
-    expect(prompt).toContain('No text');
+    expect(prompt).toMatch(/no text/i);
     expect(prompt).toContain('16:9');
+    // Never invite masthead/headline painting (FLUX hallucinates gibberish).
+    expect(prompt.toLowerCase()).not.toContain('overlaid headline');
+    expect(prompt.toLowerCase()).toContain('no typography');
     // The scene leads (placed after the brand thread), so it is not buried.
     expect(prompt.indexOf('cracked padlock')).toBeGreaterThan(prompt.indexOf('editorial'));
   });
@@ -244,6 +247,8 @@ describe('negativePrompt', () => {
     expect(neg).toContain('glowing brain');
     expect(neg).toContain('circuit board');
     expect(neg).toContain('text');
+    expect(neg).toContain('masthead');
+    expect(neg).toContain('headline');
     expect(neg).toContain('anonymous server aisle');
     expect(neg).toContain('lone laptop on desk');
   });

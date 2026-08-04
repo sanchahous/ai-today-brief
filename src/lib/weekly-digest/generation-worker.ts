@@ -1845,7 +1845,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       source_kind: sourceKind,
       source_url: sourceUrl,
       focal_point: text(input.focal_point) ?? 'attention',
-      prompt_policy: 'story-specific-editorial-v4-narrative',
+      prompt_policy: 'story-specific-editorial-v5-no-text',
       ...(imageMeta
         ? {
             provider: imageMeta.provider,
