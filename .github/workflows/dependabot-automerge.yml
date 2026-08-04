@@ -21,6 +21,9 @@ jobs:
         with:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
+      # GITHUB_TOKEN cannot approve PRs ("GitHub Actions is not permitted to
+      # approve pull requests"). Branch protection already gates the squash on
+      # required checks — enabling auto-merge is enough.
       - name: Enable auto-merge for patch and minor
         if: |
           steps.metadata.outputs.update-type == 'version-update:semver-patch' ||
@@ -28,6 +31,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          gh pr review --approve "$PR_URL"
-          gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL"

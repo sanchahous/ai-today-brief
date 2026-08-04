@@ -19,6 +19,21 @@ Last updated: 2026-08-04
 
 ---
 
+## 2026-08-04 — Dependabot інфра (automerge + secrets + pdfkit ignore)
+
+**Джерело:** live check PR #164 CI / `gh api .../dependabot/secrets`; план safe deps infra
+
+**Змінено:**
+
+- `.github/workflows/dependabot-automerge.yml` — прибрано `gh pr review --approve` (GITHUB_TOKEN не апрувить)
+- `.github/dependabot.yml` — ignore `pdfkit` minor/major (окремий PR після PDF smoke)
+- Dependabot secrets — `SCRAPPER_BASE_URL` + `SCRAPPER_BASE_ANON_KEY` (e2e на Dependabot PR)
+- `wiki/ops/owner-checklist.md`, `wiki/now.md` — стан secrets / #164
+
+**Нотатка:** без Dependabot copies e2e #164 падав на порожніх `NEXT_PUBLIC_SUPABASE_*`.
+
+---
+
 ## 2026-08-04 — wiki:sync гейт (код ↔ специфікація)
 
 **Джерело:** запит власника; live check після #177 wiki refresh

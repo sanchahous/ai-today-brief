@@ -1,11 +1,10 @@
 # Launch status — AI Today Brief
 
 Summary: Owner checklist: go-live, сервіси, блокери поза кодом.
-Sources: none (analysis)
-Last updated: 2026-06-04
+Sources: none (analysis); live GitHub Dependabot secrets check 2026-08-04; `.github/workflows/e2e.yml`
+Last updated: 2026-08-04
 
-
-Last updated: after **015/016** applied on Supabase + GSC sitemap check.
+---
 
 ## Done (product + code)
 
@@ -21,7 +20,7 @@ Last updated: after **015/016** applied on Supabase + GSC sitemap check.
 
 | Item | Local `.env.local` | Vercel | GitHub `ai-today-brief` | Notes |
 |------|-------------------|--------|-------------------------|--------|
-| Supabase (site) | ✅ `NEXT_PUBLIC_*` | ✅ via `VITE_SCRAPPER_*` | — | Aliases OK |
+| Supabase (site) | ✅ `NEXT_PUBLIC_*` | ✅ via `VITE_SCRAPPER_*` | Actions + **Dependabot** secrets `SCRAPPER_BASE_URL` / `SCRAPPER_BASE_ANON_KEY` | Dependabot PRs do not see Actions secrets — e2e needs the Dependabot copies |
 | GA4 | ✅ | ✅ | — | After consent in banner |
 | Beehiiv | ✅ API + V1 + V2 IDs | ✅ | ✅ (for CI if needed) | **No** Beehiiv custom domain on root |
 | Telegram | ✅ | ✅ | ✅ | Used by **news-pipeline**, not Next |
