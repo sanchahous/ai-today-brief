@@ -13,11 +13,17 @@ export function HeaderSearchField({
   placeholder,
   className = '',
   variant = 'desktop',
+  expandOnFocus = false,
 }: {
   lang: Lang;
   placeholder: string;
   className?: string;
   variant?: 'desktop' | 'mobile';
+  /** Grow past the collapsed footprint on focus (absolutely positioned, so
+   * it overlays neighboring content instead of reflowing it). Only makes
+   * sense where the collapsed width is narrower than the expanded target —
+   * the tight primary header, not the already-full-width mobile/404 fields. */
+  expandOnFocus?: boolean;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -56,8 +62,25 @@ export function HeaderSearchField({
   }
 
   return (
-    <div ref={rootRef} className={`relative min-w-0 flex-1 ${className}`}>
-      <form role="search" action={`/${lang}/news`} onSubmit={submit} className="flex min-w-0 items-center gap-2">
+    <div
+      ref={rootRef}
+      className={`relative min-w-0 flex-1 ${expandOnFocus ? 'h-10' : ''} ${className}`}
+    >
+      {/* Unfocused, this is a normal in-flow box (identical footprint to
+          before). With expandOnFocus, it also goes absolute and grows past
+          that footprint on :focus-within — overlaying neighboring header
+          content instead of reflowing it; the wrapper div above keeps
+          reserving the collapsed space in the flex row either way. */}
+      <form
+        role="search"
+        action={`/${lang}/news`}
+        onSubmit={submit}
+        className={`border-border bg-surface focus-within:border-accent flex min-w-0 items-center gap-2 rounded-lg border px-3 py-2 ${
+          expandOnFocus
+            ? 'absolute inset-y-0 left-0 z-10 w-full transition-[width,box-shadow] duration-300 ease-out focus-within:w-[20rem] focus-within:shadow-pop lg:focus-within:w-[26rem] xl:focus-within:w-[32rem]'
+            : ''
+        }`}
+      >
         <label className="sr-only" htmlFor={inputId}>
           {placeholder}
         </label>
@@ -77,7 +100,7 @@ export function HeaderSearchField({
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
           autoComplete="off"
-          className="border-border bg-surface text-text placeholder:text-faint w-full min-w-0 rounded-lg border px-3 py-2 text-sm outline-none focus:border-accent"
+          className="text-text placeholder:text-faint w-full min-w-0 border-0 bg-transparent text-sm outline-none"
         />
       </form>
       <SearchPreviewDropdown

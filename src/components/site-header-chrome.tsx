@@ -4,14 +4,21 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { alternateLangHref } from '@/lib/preferred-lang';
-import { SITE_NAME, MARK_COLOR, type Lang } from '@/lib/site';
+import { SITE_NAME, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { trackEvent } from '@/lib/analytics-client';
 import { HeaderSearchField } from '@/components/header-search-field';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { OverlayDrawer } from '@/components/ui/overlay-drawer';
 import { MobileSearchModal } from '@/components/search/mobile-search-modal';
-import { CategoryGlyph, CloseIcon, MenuIcon, ArrowRight, SearchIcon } from '@/components/icons';
+import {
+  BrandBloom,
+  CategoryGlyph,
+  CloseIcon,
+  MenuIcon,
+  ArrowRight,
+  SearchIcon,
+} from '@/components/icons';
 import type { IconKey } from '@/components/icons';
 import { useMobileSearch } from '@/hooks/use-mobile-search';
 
@@ -80,17 +87,12 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
     <header className="site-header-shell border-border-soft sticky top-0 z-50 border-b">
       <div className="mx-auto max-w-[1160px] px-6">
         <div className="flex h-[calc(var(--header-h)-1px)] items-center gap-2 lg:gap-3">
-          <Link href={`/${lang}`} className="flex shrink-0 items-center gap-2 no-underline">
-            <span
-              aria-hidden
-              className="border-border bg-surface-2 grid h-8 w-8 place-items-center rounded-[9px] border font-mono text-xs font-bold"
-              style={{ color: MARK_COLOR }}
-            >
-              AT
-            </span>
-            <span className="font-serif text-lg font-semibold text-[color:inherit]">
-              {SITE_NAME}
-            </span>
+          <Link
+            href={`/${lang}`}
+            aria-label={SITE_NAME}
+            className="flex shrink-0 items-center no-underline"
+          >
+            <BrandBloom size={34} />
           </Link>
 
           <div className="mx-1 hidden min-w-[10rem] flex-1 basis-[10rem] md:flex lg:mx-2">
@@ -98,6 +100,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
               lang={lang}
               placeholder={t.landing.searchPlaceholder}
               className="min-w-[10rem] max-w-[clamp(10rem,24vw,26rem)] lg:max-w-[clamp(10rem,22vw,32rem)] xl:max-w-xl"
+              expandOnFocus
             />
           </div>
 

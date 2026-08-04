@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { SITE_NAME, SOCIALS, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { CookieSettingsButton } from '@/components/cookie-consent';
+import { BrandMark } from '@/components/icons';
 
 const linkClass = 'hover:text-text inline-flex min-h-10 items-center';
 
@@ -30,7 +31,10 @@ export function SiteFooter({ lang }: { lang: Lang }) {
       <div className="mx-auto max-w-[1160px] px-6 py-10">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between lg:gap-12">
           <div className="text-faint min-w-0 max-w-md shrink-0 text-sm lg:max-w-xs">
-            <p className="text-text font-serif text-base font-semibold">{SITE_NAME}</p>
+            <p className="flex items-center gap-2">
+              <BrandMark size={22} className="shrink-0" />
+              <span className="text-text font-serif text-base font-semibold">{SITE_NAME}</span>
+            </p>
             <p className="mt-2 leading-relaxed">{t.footerTagline}</p>
             <div className="mt-4 flex flex-wrap gap-x-3 gap-y-1">
               {SOCIALS.map((s) => (
