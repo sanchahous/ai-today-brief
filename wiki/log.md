@@ -19,6 +19,18 @@ Last updated: 2026-08-04
 
 ---
 
+## 2026-08-04 — Dependabot #164 → #179 (safe patch/minor)
+
+**Джерело:** live check #178/#179 CI; Playwright run 30899512987 (339 passed)
+
+**Змінено:**
+
+- `wiki/now.md` — #164 закрито, #179 змерджено; `main` = deps bump без pdfkit
+
+**Нотатка:** recreate #164 не знадобився — Dependabot закрив групу після pdfkit ignore і відкрив #179 (12 updates).
+
+---
+
 ## 2026-08-04 — Dependabot інфра (automerge + secrets + pdfkit ignore)
 
 **Джерело:** live check PR #164 CI / `gh api .../dependabot/secrets`; план safe deps infra
