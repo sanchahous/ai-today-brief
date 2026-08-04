@@ -1,8 +1,11 @@
 import { createHash } from 'node:crypto';
 
-export const WEEKLY_CONTENT_STUDIO_VERSION = 'weekly-content-studio-v2';
-export const WEEKLY_MASTER_SPEC_VERSION = 'weekly-master-v3';
+export const WEEKLY_CONTENT_STUDIO_VERSION = 'weekly-content-studio-v2.1';
+export const WEEKLY_MASTER_SPEC_VERSION = 'weekly-master-v4';
 export const WEEKLY_VIDEO_MANIFEST_VERSION = 'weekly-video-v2';
+/** Primary-source excerpt stored on research packs and fed to writer/critic. */
+export const WEEKLY_RESEARCH_EXCERPT_MAX_CHARS = 12_000;
+export const WEEKLY_RESEARCH_SCHEMA_VERSION = 'weekly-research-v3' as const;
 
 export type WeeklyContentStudioMode = 'off' | 'shadow' | 'production';
 
@@ -33,7 +36,7 @@ export interface ResearchClaim {
 }
 
 export interface WeeklyResearchPack {
-  schemaVersion: 'weekly-research-v2';
+  schemaVersion: typeof WEEKLY_RESEARCH_SCHEMA_VERSION | 'weekly-research-v2';
   digestId: string;
   revisionId: string;
   revisionItemId: string;

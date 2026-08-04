@@ -7,6 +7,8 @@ import {
   canonicalSourceName,
   placementForRank,
   sourceNameMatchesDomain,
+  WEEKLY_RESEARCH_EXCERPT_MAX_CHARS,
+  WEEKLY_RESEARCH_SCHEMA_VERSION,
   type ResearchClaim,
   type ResearchEvidence,
   type WeeklyResearchPack,
@@ -17,7 +19,6 @@ const FETCH_HEADERS = {
   Accept: 'text/html,application/xhtml+xml',
 };
 const MAX_HTML_CHARS = 600_000;
-const MAX_STORED_EXCERPT_CHARS = 2_400;
 
 interface ResearchItem {
   id: string;
@@ -187,7 +188,7 @@ async function fetchEvidence(url: string, primary: boolean): Promise<ResearchEvi
     throw new Error(`Research source is not readable text: ${url}`);
   }
   const html = (await response.text()).slice(0, MAX_HTML_CHARS);
-  const extracted = extractMainText(html, MAX_STORED_EXCERPT_CHARS);
+  const extracted = extractMainText(html, WEEKLY_RESEARCH_EXCERPT_MAX_CHARS);
   if (!extracted || extracted.length < 160) {
     throw new Error(`Research source did not expose enough article text: ${url}`);
   }
@@ -243,7 +244,7 @@ export async function buildWeeklyResearchPack(input: {
     ...(claims.some((claim) => claim.kind === 'number') ? ['verify_numbers_against_primary'] : []),
   ];
   return {
-    schemaVersion: 'weekly-research-v2',
+    schemaVersion: WEEKLY_RESEARCH_SCHEMA_VERSION,
     digestId: input.digestId,
     revisionId: input.revisionId,
     revisionItemId: input.item.id,
@@ -267,7 +268,8 @@ export function isWeeklyResearchPack(value: unknown): value is WeeklyResearchPac
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const pack = value as Partial<WeeklyResearchPack>;
   return (
-    pack.schemaVersion === 'weekly-research-v2' &&
+    (pack.schemaVersion === WEEKLY_RESEARCH_SCHEMA_VERSION ||
+      pack.schemaVersion === 'weekly-research-v2') &&
     typeof pack.revisionItemId === 'string' &&
     (pack.placement === 'feature' || pack.placement === 'radar') &&
     Boolean(pack.primarySource?.url) &&

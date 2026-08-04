@@ -37,8 +37,10 @@ Last updated: 2026-08-04
 
 ## Активна робота
 
-1. **Редакція `ai-weekly-2026-07-27`.** `artifact_stale = 0`; лишились PDF approve, video
-   pipeline (override-eligible), ~6 social variants. (source: Supabase live check 2026-08-04)
+1. **Редакція `ai-weekly-2026-07-27`.** Після деплою primary-excerpt grounding: Research →
+   **Start / retry Content Studio** (нові research packs v3) → Approve Top 3 знову →
+   дочекатися `editorial_master` → Approve Master quality. (source: `weekly-digest.md`
+   evidence grounding 2026-08-04)
 2. **Weekly Content Studio v2 — розкатка.** `WEEKLY_CONTENT_STUDIO_V2=off` у `.env.example`;
    шлях `off → shadow (три історичні) → production` ще не пройдений.
    (source: `.env.example`)

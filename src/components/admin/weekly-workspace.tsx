@@ -1138,7 +1138,8 @@ function ResearchPanel({
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
               Master generation remains queued until all three current packs are approved. Radar
-              stories use approved facts plus source sanity checks.
+              stories use approved facts plus source sanity checks. Writer and critic also ground
+              against primary-source excerpts from each approved pack — not only numbered claims.
             </p>
           </div>
           {canEdit && workspace.revision ? (

@@ -75,6 +75,87 @@ export interface WeeklyMasterRetryGuidance {
   field?: string;
 }
 
+/** Lean evidence payload for writer/critic prompts (avoids dumping full research packs). */
+export interface ApprovedStoryPromptMaterial {
+  revisionItemId: string;
+  rank: number;
+  placement: 'feature' | 'radar';
+  titleEn: string;
+  titleUk: string;
+  summaryEn: string;
+  summaryUk: string;
+  whyEn: string | null;
+  whyUk: string | null;
+  sources: Array<{ name: string; url: string }>;
+  claims: Array<{ id: string; text: string; evidenceUrls: string[] }>;
+  primarySourceExcerpt?: {
+    url: string;
+    sourceName: string;
+    domain: string;
+    excerpt: string;
+  };
+  corroboratingExcerpts?: Array<{
+    url: string;
+    sourceName: string;
+    excerpt: string;
+  }>;
+}
+
+const CORROBORATING_EXCERPT_PROMPT_CHARS = 1_500;
+
+export function approvedStoryPromptMaterial(
+  stories: WeeklyMasterInputStory[],
+): ApprovedStoryPromptMaterial[] {
+  return stories.map((story) => {
+    const primary = story.research?.primarySource;
+    const corroborating = story.research?.corroboratingSources ?? [];
+    const material: ApprovedStoryPromptMaterial = {
+      revisionItemId: story.revisionItemId,
+      rank: story.rank,
+      placement: story.placement,
+      titleEn: story.titleEn,
+      titleUk: story.titleUk,
+      summaryEn: story.summaryEn,
+      summaryUk: story.summaryUk,
+      whyEn: story.whyEn,
+      whyUk: story.whyUk,
+      sources: story.sources,
+      claims: story.claims,
+    };
+    if (primary?.extractedText?.trim()) {
+      material.primarySourceExcerpt = {
+        url: primary.url,
+        sourceName: primary.sourceName,
+        domain: primary.domain,
+        excerpt: primary.extractedText.trim(),
+      };
+    }
+    const excerpts = corroborating
+      .filter((source) => source.extractedText?.trim())
+      .slice(0, 2)
+      .map((source) => ({
+        url: source.url,
+        sourceName: source.sourceName,
+        excerpt: source.extractedText.trim().slice(0, CORROBORATING_EXCERPT_PROMPT_CHARS),
+      }));
+    if (excerpts.length) material.corroboratingExcerpts = excerpts;
+    return material;
+  });
+}
+
+export function criticApprovedEvidence(stories: WeeklyMasterInputStory[]) {
+  return approvedStoryPromptMaterial(stories).map((story) => ({
+    revisionItemId: story.revisionItemId,
+    claims: story.claims,
+    ...(story.primarySourceExcerpt
+      ? { primarySourceExcerpt: story.primarySourceExcerpt }
+      : {}),
+    ...(story.corroboratingExcerpts?.length
+      ? { corroboratingExcerpts: story.corroboratingExcerpts }
+      : {}),
+  }));
+}
+
 export interface ProviderResult<T> {
   value: T;
   metadata: EditorialGenerationMetadata;
@@ -601,7 +682,8 @@ CONTRACT
 - Structure: Top 3 feature stories followed by 3–4 radar stories, preserving the supplied order and revisionItemId.
 - Feature body: 400–650 words each. Radar body: 80–140 words each.
 - Every feature must have a human hook, what happened, context, tension/change, evidence, audience, one concrete scenario, limitations and one decision-ready takeaway.
-- Use only supplied claims. Every factual sentence must be attributable to claimIds; never invent numbers, names, quotes or causal implications.
+- Ground every factual sentence in supplied claims and/or primarySourceExcerpt (and corroboratingExcerpts when present). Prefer claimIds for structured facts; excerpts may supply additional detail that appears in the approved research pack. Never invent numbers, names, quotes or causal implications absent from both claims and excerpts.
+- Every story must still cite at least one real claimId from its claims array. Do not invent claim IDs.
 - The practical field must name a concrete actor, workflow, action, constraint and observable result. Never use a reusable category template.
 - Theme-led title; the date is secondary. All prose across the article object must total 2,000–3,000 words. Keep why, practical, limitation and takeaway concise and do not duplicate the body.
 - Video: one English 6–8 minute narration plan and exactly three Ukrainian Shorts (35–50 seconds) for the Top 3.
@@ -612,7 +694,7 @@ JSON SHAPE
 {"article":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":"","stories":[{"revisionItemId":"","placement":"feature|radar","headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","claimIds":[""]}]},"video":{"title":"","hook":"","narration":"","scenes":[{"id":"","purpose":"","voiceover":"","onScreenText":"","visualBrief":"","factIds":[""],"durationSeconds":1}],"shorts":[{"revisionItemId":"","hook":"","context":"","insight":"","takeaway":"","factIds":[""],"durationSeconds":40}]},"socialAngles":[{"channel":"telegram","hookAngle":"","thesis":"","factIds":[""]},{"channel":"facebook","hookAngle":"","thesis":"","factIds":[""]},{"channel":"threads","hookAngle":"","thesis":"","factIds":[""]},{"channel":"x","hookAngle":"","thesis":"","factIds":[""]},{"channel":"linkedin","hookAngle":"","thesis":"","factIds":[""]},{"channel":"instagram","hookAngle":"","thesis":"","factIds":[""]}]}
 
 APPROVED STORY MATERIAL
-${JSON.stringify(stories)}${masterRetryGuidancePrompt(retryGuidance)}`;
+${JSON.stringify(approvedStoryPromptMaterial(stories))}${masterRetryGuidancePrompt(retryGuidance)}`;
 }
 
 function ukrainianPrompt(en: WeeklyArticleMaster, stories: WeeklyMasterInputStory[]) {
@@ -625,16 +707,16 @@ SOURCE MATERIAL FOR TERMINOLOGY
 ${JSON.stringify(stories.map(({ revisionItemId, titleUk, summaryUk, whyUk }) => ({ revisionItemId, titleUk, summaryUk, whyUk })))}`;
 }
 
-function criticPrompt(bundle: WeeklyMasterBundle, stories: WeeklyMasterInputStory[]) {
-  return `You are the independent factual and editorial critic for AI Today Brief. Audit the bilingual master against ONLY the approved claims. Flag any unsupported number, quote, named claim, or causal implication. Also evaluate hook, clarity, trust, usefulness, structure, Ukrainian naturalness and EN/UK factual parity. A writer may paraphrase a claim but may not strengthen it. Return JSON only.
+export function criticPrompt(bundle: WeeklyMasterBundle, stories: WeeklyMasterInputStory[]) {
+  return `You are the independent factual and editorial critic for AI Today Brief. Audit the bilingual master against approved claims AND the attached primary/corroborating source excerpts. A detail clearly supported by an approved excerpt is grounded even when it is missing from the numbered claims list — do NOT flag it as UNSUPPORTED_*. Flag only numbers, quotes, named claims, or causal implications that appear in neither the claims nor the excerpts. A writer may paraphrase but may not strengthen beyond what claims+excerpts support. Also evaluate hook, clarity, trust, usefulness, structure, Ukrainian naturalness and EN/UK factual parity. Return JSON only.
 
 Required dimensions: hook, clarity, trust, usefulness, structure, naturalness, parity. Score each 0–100. Overall score 0–100. factualFlags must be [] when clean. Every issue needs code, message, blocker, and when possible locale, revisionItemId, field, exact span, suggestedFix.
 
 JSON SHAPE
 {"score":0,"dimensions":[{"name":"hook","score":0,"note":""}],"factualFlags":[],"issues":[{"code":"","message":"","blocker":true,"locale":"en|uk","revisionItemId":"","field":"","span":"","suggestedFix":""}]}
 
-APPROVED CLAIMS
-${JSON.stringify(stories.map(({ revisionItemId, claims }) => ({ revisionItemId, claims })))}
+APPROVED EVIDENCE (claims + source excerpts)
+${JSON.stringify(criticApprovedEvidence(stories))}
 
 MASTER TO AUDIT
 ${JSON.stringify(bundle)}`;

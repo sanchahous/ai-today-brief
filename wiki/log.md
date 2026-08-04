@@ -19,6 +19,18 @@ Last updated: 2026-08-04
 
 ---
 
+## 2026-08-04 — Master critic grounds on primary excerpts
+
+**Джерело:** live fail `ai-weekly-2026-07-27` (`UNSUPPORTED_DETAIL` Python/Sage vs вузький claim set)
+
+**Змінено:**
+
+- `wiki/pipeline/weekly-digest.md` — evidence grounding: claims + primary excerpt (12k),
+  studio `v2.1` / research `v3` / master `v4`
+- `wiki/now.md` — після деплою: regen research packs → re-approve Top 3 → retry master
+
+**Нотатка:** старі packs з 2.4k excerpt не містили mid-article деталей; потрібна перегенерація.
+
 ## 2026-08-04 — Preflight blockers: sectioned release path
 
 **Джерело:** запит власника (порядок ворнінгів)

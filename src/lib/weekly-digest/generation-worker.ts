@@ -443,7 +443,7 @@ async function generateResearchPack(job: ClaimedGenerationJob) {
       source_label_verified: true,
       independent_source_count: pack.corroboratingSources.length,
       risk_flags: pack.risks,
-      excerpt_policy: 'max-2400-chars-per-source',
+      excerpt_policy: 'max-12000-chars-per-source',
     },
   });
   return {
