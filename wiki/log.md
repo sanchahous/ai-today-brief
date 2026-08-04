@@ -4,7 +4,7 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-03
+Last updated: 2026-08-04
 
 **Формат запису:**
 
@@ -16,6 +16,40 @@ Last updated: 2026-08-03
 - `wiki/path.md` — що саме
 **Нотатка:** одне речення, якщо потрібне.
 ```
+
+---
+
+## 2026-08-04 — wiki:sync гейт (код ↔ специфікація)
+
+**Джерело:** запит власника; live check після #177 wiki refresh
+
+**Змінено:**
+
+- `wiki/_meta/project-sync.json` — контракт watchers/facts/counts/index
+- `wiki/_tools/lib/project-sync.mjs` + `wiki-project-sync.mjs` + `*.test.mjs`
+- `package.json` — `wiki:sync`, `wiki:sync:test`, `wiki:check`; `pr:check` включає `wiki:check`
+- `.cursor/rules/pr-gate.mdc`, `CLAUDE.md`, `wiki/architecture/agentic-workflow.md` — опис гейту
+- `wiki/pipeline/weekly-digest.md` — формулювання `default $4` під fact-check
+
+**Нотатка:** зміна коду під watcher без оновлення listed wiki-сторінок тепер валить `pr:check`.
+
+---
+
+## 2026-08-04 — актуалізація wiki під main + weekly stability
+
+**Джерело:** live check `git log` / `gh pr list` / Supabase preflight 2026-08-04; PR #166–#177
+
+**Змінено:**
+
+- `wiki/now.md` — повне оновлення: `main`=#176, відкриті #177/#164, закрита docs→wiki,
+  активна редакція `ai-weekly-2026-07-27`, owner/code next steps
+- `wiki/pipeline/weekly-digest.md` — **нова** сторінка Content Studio v2 + revision stability
+- `wiki/marketing/card-images.md` — FLUX.2 klein, no-text policy, multipart Node, costs
+- `wiki/overview.md` §4 — FLUX.2, spend-cap, `generation_cost_events` / `/admin/costs`
+- `wiki/open-questions.md` #2/#4 — ledger існує; критерій shadow→production ще відкритий
+- `wiki/index.md` — `weekly-digest` ✅; ~62 міграції; дати live check
+
+**Нотатка:** `now.md` від 2026-08-03 був застарілий (ще описував docs→wiki як активну роботу).
 
 ---
 

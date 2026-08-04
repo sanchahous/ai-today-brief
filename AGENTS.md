@@ -17,6 +17,7 @@ The full contract is in [`CLAUDE.md`](CLAUDE.md) — read it once per session. S
 - **Four zones:** `raw/` immutable inputs · `wiki/` curated knowledge · `artifacts/` deliverables ·
   code in `src/` `pipeline/` `supabase/` `e2e/` `scripts/`.
 - **Never** modify `raw/`. **Never** push to `main`. **Never** put business facts in `CLAUDE.md`.
-- Before any push: `npm run pr:check`. After any wiki change: update `wiki/index.md` **and** append
-  to `wiki/log.md`.
+- Before any push: `npm run pr:check` (includes `wiki:check` — project↔wiki sync). After any wiki
+  change: update `wiki/index.md` **and** append to `wiki/log.md`. Watched code zones are listed in
+  `wiki/_meta/project-sync.json`.
 - Every factual claim in `wiki/` carries `(source: …)` or a link to the page that holds it.

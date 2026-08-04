@@ -925,6 +925,27 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
+// Lets an editor undo a revision without understanding the revision chain:
+// "restore this version" is exactly the create_weekly_digest_revision write
+// path, replayed against an earlier revision's content.
+export async function restoreWeeklyDigestRevisionAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const targetRevisionId = requiredString(formData, 'target_revision_id');
+  const reason = requiredString(formData, 'reason');
+  if (reason.length < 10 || reason.length > 500) {
+    throw new Error('A 10 to 500 character reason is required to restore a version.');
+  }
+  const db = await getSupabaseServer();
+  const { error } = await db.rpc('revert_weekly_digest_revision', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_target_revision_id: targetRevisionId,
+    p_reason: reason,
+  });
+  if (error) throw new Error(error.message);
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
 export async function startWeeklyContentStudioAction(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');

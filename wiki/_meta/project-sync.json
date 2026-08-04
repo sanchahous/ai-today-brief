@@ -1,0 +1,97 @@
+{
+  "description": "Contract: when watched project paths change, listed wiki pages must be updated in the same branch (git timestamp) and must still contain extracted facts.",
+  "watchers": [
+    {
+      "id": "weekly-digest",
+      "paths": [
+        "src/lib/weekly-digest",
+        "pipeline/weekly-digest.ts",
+        "pipeline/scripts/weekly-digest.ts",
+        "pipeline/scripts/run-weekly-master-cli-worker.ts",
+        "src/app/admin/(cms)/weekly",
+        "src/components/admin/weekly-workspace.tsx",
+        "supabase/migrations"
+      ],
+      "pathFilter": "weekly_digest|weekly-digest|WeeklyDigest|weekly/",
+      "wikiPages": [
+        "pipeline/weekly-digest.md",
+        "pipeline/weekly-editorial-selection.md",
+        "now.md"
+      ]
+    },
+    {
+      "id": "card-images",
+      "paths": ["pipeline/card-image.ts", "pipeline/card-image.test.ts"],
+      "wikiPages": ["marketing/card-images.md", "overview.md"]
+    },
+    {
+      "id": "generation-costs",
+      "paths": [
+        "src/lib/generation-costs.ts",
+        "src/app/admin/(cms)/costs",
+        "supabase/migrations"
+      ],
+      "pathFilter": "generation_cost",
+      "wikiPages": ["overview.md", "pipeline/weekly-digest.md", "open-questions.md"]
+    },
+    {
+      "id": "brand-chrome",
+      "paths": [
+        "src/lib/brand-mark.ts",
+        "src/components/icons.tsx",
+        "src/components/site-header-chrome.tsx",
+        "src/components/site-footer.tsx",
+        "scripts/generate-brand-icons.ts",
+        "src/app/icon.svg",
+        "src/app/favicon.ico"
+      ],
+      "wikiPages": ["now.md"]
+    },
+    {
+      "id": "env-feature-flags",
+      "paths": [".env.example"],
+      "wikiPages": ["now.md", "overview.md", "pipeline/weekly-digest.md", "open-questions.md"]
+    }
+  ],
+  "facts": [
+    {
+      "id": "default-cf-image-model",
+      "fromFile": "pipeline/card-image.ts",
+      "regex": "DEFAULT_CF_IMAGE_MODEL\\s*=\\s*'([^']+)'",
+      "mustAppearIn": ["wiki/marketing/card-images.md", "wiki/overview.md"]
+    },
+    {
+      "id": "weekly-studio-flag-default",
+      "fromFile": ".env.example",
+      "regex": "WEEKLY_CONTENT_STUDIO_V2=(\\w+)",
+      "mustAppearIn": ["wiki/pipeline/weekly-digest.md", "wiki/now.md", "wiki/open-questions.md"]
+    },
+    {
+      "id": "weekly-master-spend-cap-default",
+      "fromFile": "src/lib/weekly-digest/generation-worker.ts",
+      "regex": "DEFAULT_WEEKLY_MASTER_MAX_SPEND_USD\\s*=\\s*(\\d+)",
+      "mustAppearIn": ["wiki/pipeline/weekly-digest.md", "wiki/overview.md"],
+      "format": "default $${1}"
+    },
+    {
+      "id": "illustration-prompt-policy",
+      "fromFile": "src/lib/weekly-digest/generation-worker.ts",
+      "regex": "prompt_policy:\\s*'([^']+)'",
+      "mustAppearIn": ["wiki/marketing/card-images.md", "wiki/pipeline/weekly-digest.md"]
+    }
+  ],
+  "counts": [
+    {
+      "id": "supabase-migrations",
+      "globDir": "supabase/migrations",
+      "globExt": ".sql",
+      "wikiPage": "wiki/index.md",
+      "wikiRegex": "~?(\\d+)\\s*міграц",
+      "tolerance": 0
+    }
+  ],
+  "index": {
+    "requireExistingForCheckmark": true,
+    "forbidExistingForPlanned": true
+  }
+}

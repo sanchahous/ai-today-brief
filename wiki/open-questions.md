@@ -4,8 +4,8 @@ Summary: усе, що не має відповіді, суперечить са�
 власника рішення й критерій закриття. Порожній пункт видаляти не можна — тільки закривати
 записом «закрито: …».
 Sources: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
-`.env.example`, інвентаризація репозиторію (live check 2026-08-02)
-Last updated: 2026-08-02
+`.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04)
+Last updated: 2026-08-04
 
 ---
 
@@ -22,11 +22,12 @@ Last updated: 2026-08-02
 
 ## 2. Реальні місячні витрати проєкту невідомі
 
-У репозиторії є лише **параметри оцінки** вартості LLM (`WEEKLY_LLM_*`, `SOCIAL_LLM_*`) і hard cap
-на X (≤ €10/міс), але не фактичний рахунок за місяць. (source: `.env.example`)
+У репозиторії є **параметри оцінки** (`WEEKLY_LLM_*`, `SOCIAL_LLM_*`, `CLOUDFLARE_IMAGE_USD_*`)
+і event-ledger `generation_cost_events` + UI `/admin/costs` (PR #169), але не зведений
+фактичний рахунок провайдерів за місяць. (source: `.env.example`, PR #169)
 
 **Закривається:** зафіксовано фактичні витрати за місяць (Vercel + Supabase + Gemini/OpenRouter +
-Cloudflare + X) у [overview](overview.md) §4. **Власник рішення:** власник продукту.
+Cloudflare + X) у [overview](overview.md) §4 поруч із ledger. **Власник рішення:** власник продукту.
 
 ## 3. Reddit Data API — статус запиту
 
@@ -40,9 +41,12 @@ Cloudflare + X) у [overview](overview.md) §4. **Власник рішення:
 ## 4. Weekly Content Studio v2 — коли `shadow → production`
 
 Прапорець `WEEKLY_CONTENT_STUDIO_V2=off`; передбачений шлях — три історичні випуски у `shadow`.
-Критерій переходу в `production` ніде не зафіксовано числом. (source: `.env.example`)
+Сторінка [pipeline/weekly-digest](pipeline/weekly-digest.md) описує режим і spend-cap, але
+**числовий критерій** переходу в `production` (макс. $ / випуск + якісний чек-лист) ще не
+затверджений. (source: `.env.example`, `wiki/pipeline/weekly-digest.md`)
 
-**Закривається:** записано поріг (вартість на випуск + якісний критерій) у `pipeline/weekly-digest.md`.
+**Закривається:** власник записує поріг у [weekly-digest](pipeline/weekly-digest.md) і
+підтверджує три shadow-прогони з `/admin/costs`.
 
 ## 5. Порогові значення L1→L2 гейта не перевірені на живих даних
 
