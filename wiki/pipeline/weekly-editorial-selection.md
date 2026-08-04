@@ -107,3 +107,8 @@ Weight changes must bump `WEEKLY_SELECTION_VERSION` and add a regression fixture
 showing the intended ranking change. Calibrate against editor decisions and
 reader engagement only after enough weekly observations exist; do not tune to a
 single unusually noisy week.
+
+## Related pages
+
+- [weekly-digest](weekly-digest.md) — Content Studio v2, ревізії, spend-cap, admin UX
+- [video-boundary](video-boundary.md)
