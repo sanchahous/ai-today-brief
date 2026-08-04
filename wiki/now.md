@@ -10,10 +10,11 @@ Last updated: 2026-08-04
 
 ## Стан репозиторію
 
-- `main` = `16de6cb` — *Rebrand favicon/app icons and header/footer logo (#176)*.
+- `main` = `4521de7` — *Fix weekly digest Save wiping approved artifacts across revisions (#177)*.
   (source: git log live check 2026-08-04)
-- Робоча гілка: `fix/weekly-digest-revision-stability` — PR **#177** (відкритий).
-- Відкриті PR: **#177** (weekly revision stability), **#164** (dependabot npm-patch-minor, 14 deps).
+- Активна інфра: `chore/dependabot-infra-safe` — automerge без approve + ignore `pdfkit` minor/major;
+  Dependabot secrets `SCRAPPER_BASE_*` скопійовано (раніше e2e #164 падав на порожніх env).
+- Відкриті PR: **#164** (dependabot npm-patch-minor; recreate після інфра-мерджу).
   (source: `gh pr list` live check 2026-08-04)
 - Міграція `docs/** → wiki/**` **закрита** (#166). Папки `docs/` у git немає.
 
@@ -21,6 +22,7 @@ Last updated: 2026-08-04
 
 | PR | Що |
 |---|---|
+| #177 | Weekly digest revision stability (`input_hash` / no-op Save / restore) |
 | #176 | Ребренд favicon / app icons / header-footer logo; expand-on-focus search |
 | #175 | Ілюстрації без впеченого тексту (FLUX.2 prompt policy v5-no-text) |
 | #174 | Persist illustration prompts + сильніші scene briefs |
@@ -28,20 +30,17 @@ Last updated: 2026-08-04
 | #172 | Stale weekly admin previews після visual regen |
 | #171 | FLUX.2 multipart Node fetch — klein більше не spillover на schnell |
 | #170 | Generation jobs на відповідних workspace tabs |
-| #169 | Weekly master OpenRouter resilience + FLUX.2 + `/admin/costs` ledger |
 
 (source: `gh pr list --state merged` live check 2026-08-04)
 
-Раніше в серпні: #168 social LLM resilience · #167 writer-model picker · #166 docs→wiki ·
+Раніше в серпні: #169 FLUX.2 + costs ledger · #168 social LLM · #167 writer-model · #166 docs→wiki ·
 #165 agentic KB · #163 spend gate · #162 Content Studio v2 · #161 completed weeks ·
 #160 manual weekly create.
 
 ## Активна робота
 
-1. **Weekly digest revision stability — PR #177.** Фікс `input_hash` / no-op Save / restore
-   version UX. SQL уже в **prod** (MCP); у git — міграція
-   `20260804090000_weekly_digest_revision_stability.sql`. Деталі:
-   [pipeline/weekly-digest](pipeline/weekly-digest.md).
+1. **Dependabot #164 + інфра.** Automerge без `gh pr review --approve` (GITHUB_TOKEN не може
+   апрувити); `pdfkit` minor/major винесено з групового bump; recreate після мерджу інфри.
 2. **Редакція `ai-weekly-2026-07-27`.** `artifact_stale = 0`; лишились PDF approve, video
    pipeline (override-eligible), ~6 social variants. (source: Supabase live check 2026-08-04)
 3. **Weekly Content Studio v2 — розкатка.** `WEEKLY_CONTENT_STUDIO_V2=off` у `.env.example`;
@@ -61,14 +60,15 @@ Last updated: 2026-08-04
 
 ## Найближчі 3 дії в коді
 
-1. Домержити **#177** (revision stability) після зелених checks.
-2. Домержити або закрити **#164** (dependabot) — lockfile у дрейфі.
-3. Застосувати міграцію #177 на **staging** (`supabase db push` / MCP) і прогнати no-op Save + Restore на тест-випуску.
+1. Змерджити інфра Dependabot (automerge + pdfkit ignore) і `@dependabot recreate` на **#164**.
+2. Окремий PR `pdfkit` 0.19 після `npm run weekly:pdf:sample` / PDF smoke.
+3. Staging: прогнати no-op Save + Restore на тест-випуску після міграції #177.
 
 ## Related pages
 
 - [overview](overview.md) — бізнес-контекст і жорсткі обмеження
 - [pipeline/weekly-digest](pipeline/weekly-digest.md) — Content Studio v2 + revision stability
+- [ops/owner-checklist](ops/owner-checklist.md) — env / Dependabot secrets
 - [index](index.md) — карта бази знань
 - [open-questions](open-questions.md) — невирішені питання
 - [log](log.md) — журнал операцій

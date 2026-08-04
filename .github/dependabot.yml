@@ -32,6 +32,13 @@ updates:
       # install (Vercel build + Daily Pipeline). Unpin only once the linter supports TS 7.
       - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
+      # pdfkit 0.17→0.19 spans two minors with BREAKING notes (Node 20+, browser
+      # floors). Keep patch; land minor/major in a dedicated PR after
+      # `npm run weekly:pdf:sample` / PDF smoke.
+      - dependency-name: "pdfkit"
+        update-types:
+          - "version-update:semver-minor"
+          - "version-update:semver-major"
 
   - package-ecosystem: "github-actions"
     directory: "/"
