@@ -1,16 +1,13 @@
 import 'server-only';
 
 import { createHash, randomUUID } from 'node:crypto';
-import sharp from 'sharp';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { generateEditorialIllustration } from '../../../pipeline/card-image';
 import { recordGenerationCost } from '@/lib/generation-costs';
 import { alertWeeklyDigestIssue } from './alerts';
-import { renderWeeklyDigestPdf, type WeeklyPdfInput } from './pdf';
-import { openWeeklyPdfPreview } from './pdf-preview';
-import { renderWeeklyVisualSet, type WeeklyVisualInput, type WeeklyVisualLocale } from './visuals';
+import type { WeeklyPdfInput } from './pdf';
+import type { WeeklyVisualInput, WeeklyVisualLocale } from './visuals';
 import { storageBlob } from '@/lib/storage/binary';
 import { socialContentHash } from '@/lib/social/content-hash';
 import { findBlindCrossPosts } from '@/lib/social/quality';
@@ -50,10 +47,43 @@ import {
   trustedWeeklyResearchSources,
 } from './research';
 import { adaptWeeklySocialChannel, type WeeklySocialAdaptation } from './social-adapter';
-import { renderWeeklyLinkedInDocument } from './linkedin-document';
 
 const PRIVATE_BUCKET = 'weekly-digest-private';
 const MAX_JOBS = 10;
+
+// This module backs /api/internal/weekly/generate, polled every 5 minutes,
+// 24/7, by a Supabase pg_cron job. On the common case where
+// claimGenerationJobs() below finds nothing to do, eagerly loading native/
+// heavy deps (sharp, @napi-rs/canvas via ./visuals, pdfkit/pdfjs-dist via
+// ./pdf, ./pdf-preview and ./linkedin-document) at module scope would pay
+// that cost on every empty poll. Load them lazily, only inside the handler
+// that actually needs them, and cache the import so a warm instance that
+// processes several jobs of the same type doesn't reload it each time.
+let sharpPromise: Promise<typeof import('sharp')> | null = null;
+async function lazySharp() {
+  sharpPromise ??= import('sharp');
+  return (await sharpPromise).default;
+}
+let pdfPromise: Promise<typeof import('./pdf')> | null = null;
+function lazyPdf() {
+  return (pdfPromise ??= import('./pdf'));
+}
+let pdfPreviewPromise: Promise<typeof import('./pdf-preview')> | null = null;
+function lazyPdfPreview() {
+  return (pdfPreviewPromise ??= import('./pdf-preview'));
+}
+let visualsPromise: Promise<typeof import('./visuals')> | null = null;
+function lazyVisuals() {
+  return (visualsPromise ??= import('./visuals'));
+}
+let cardImagePromise: Promise<typeof import('../../../pipeline/card-image')> | null = null;
+function lazyCardImage() {
+  return (cardImagePromise ??= import('../../../pipeline/card-image'));
+}
+let linkedinDocumentPromise: Promise<typeof import('./linkedin-document')> | null = null;
+function lazyLinkedinDocument() {
+  return (linkedinDocumentPromise ??= import('./linkedin-document'));
+}
 
 interface RpcError {
   message: string;
@@ -1104,6 +1134,7 @@ async function renderInstagramCarousel(
   const response = await fetch(draft.assets[0].url, { signal: AbortSignal.timeout(15_000) });
   if (!response.ok) throw new Error(`Instagram carousel source returned ${response.status}.`);
   const source = Buffer.from(await response.arrayBuffer());
+  const sharp = await lazySharp();
   const background = await sharp(source)
     .resize(1080, 1350, { fit: 'cover', position: 'attention' })
     .modulate({ brightness: 0.3, saturation: 0.75 })
@@ -1352,6 +1383,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
       };
     }
   }
+  const { renderWeeklyLinkedInDocument } = await lazyLinkedinDocument();
   const linkedinDocument = await renderWeeklyLinkedInDocument({
     title: bundle.en.title,
     theme: bundle.en.theme,
@@ -1678,6 +1710,7 @@ async function generatePdf(job: ClaimedGenerationJob) {
       };
     }),
   };
+  const { renderWeeklyDigestPdf } = await lazyPdf();
   const pdf = await renderWeeklyDigestPdf(pdfInput);
   const hash = createHash('sha256').update(pdf).digest('hex');
   // Do not reuse a path written by an earlier job. A previously corrupted
@@ -1685,6 +1718,7 @@ async function generatePdf(job: ClaimedGenerationJob) {
   const outputKey = `${hash}-${job.id}`;
   const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/pdf/${locale}/${outputKey}.pdf`;
   const previewPaths: string[] = [];
+  const { openWeeklyPdfPreview } = await lazyPdfPreview();
   const document = await openWeeklyPdfPreview(pdf, 1.15);
   try {
     const contentStudioPdf = context.items.some(
@@ -1701,6 +1735,7 @@ async function generatePdf(job: ClaimedGenerationJob) {
       throw new Error(`PDF preview safety limit exceeded (${document.length} pages).`);
     }
     await uploadPrivate(path, pdf, 'application/pdf');
+    const sharp = await lazySharp();
     for (let pageNumber = 1; pageNumber <= document.length; pageNumber += 1) {
       const png = await document.getPage(pageNumber);
       const preview = await sharp(png).webp({ quality: 82, effort: 4 }).toBuffer();
@@ -1768,6 +1803,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     sourceUrl = requestedSourceUrl;
     sourceKind = 'editor_url';
   } else {
+    const { generateEditorialIllustration } = await lazyCardImage();
     const generatedSource = await generateEditorialIllustration(
       {
         title: item.title_en,
@@ -1817,6 +1853,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   }
 
   if (source.length > 15 * 1024 * 1024) throw new Error('Story image source exceeds 15 MB.');
+  const sharp = await lazySharp();
   const image = await sharp(source)
     .rotate()
     .resize(1600, 900, { fit: 'cover', position: 'attention' })
@@ -1920,6 +1957,7 @@ async function generateCover(job: ClaimedGenerationJob) {
         : 'A composition of the Weekly AI Digest lead stories.'),
     stories,
   };
+  const { renderWeeklyVisualSet } = await lazyVisuals();
   const variants = await renderWeeklyVisualSet(visualInput);
   let primaryArtifactId: string | null = null;
   const artifactIds: string[] = [];
@@ -1984,6 +2022,7 @@ async function generateCoverDerivatives(job: ClaimedGenerationJob) {
     { slot: 'stories', width: 1080, height: 1920 },
   ] as const;
   const artifactIds: string[] = [];
+  const sharp = await lazySharp();
   for (const variant of variants) {
     const portrait = variant.height > variant.width;
     const background = portrait

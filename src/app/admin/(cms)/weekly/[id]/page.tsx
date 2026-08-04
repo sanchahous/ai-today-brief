@@ -123,6 +123,14 @@ export default async function WeeklyDigestWorkspacePage({
             <Link
               key={tab.id}
               href={`/admin/weekly/${workspace.digest.id}?tab=${tab.id}`}
+              // This bar renders ~9 links back to this same force-dynamic
+              // route (just a different ?tab=) and sits in the viewport on
+              // every load with no scrolling — Next's default prefetch
+              // (production-only) would fire a real server-executed request
+              // per tab on every visit. Vercel Observability showed this
+              // route as the single highest-invocation Function in the app;
+              // manual tab clicks are cheap enough without prefetch.
+              prefetch={false}
               aria-current={activeTab === tab.id ? 'page' : undefined}
               className={`min-h-11 rounded-xl px-4 py-3 text-sm font-bold transition focus-visible:outline-2 focus-visible:outline-[#47e4d3] ${
                 activeTab === tab.id
