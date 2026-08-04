@@ -1,6 +1,5 @@
 import Image from 'next/image';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
-import { AutoRefreshWhileActive } from '@/components/admin/auto-refresh-while-active';
 import { StatusPill } from '@/components/admin/status-pill';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
@@ -973,7 +972,6 @@ function ResearchPanel({
         ) : null}
         {editorialMasterJob ? (
           <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-white/8 bg-white/[.025] px-4 py-3">
-            <AutoRefreshWhileActive status={editorialMasterJob.status} />
             <span className="text-xs font-bold tracking-wide text-slate-500 uppercase">
               editorial_master
             </span>
@@ -2069,12 +2067,12 @@ function VisualsPanel({
                 </div>
                 {job?.status === 'queued' ? (
                   <p className="rounded-xl border border-amber-400/20 bg-amber-400/6 px-3 py-2 text-xs text-amber-100">
-                    Queued — preview refreshes automatically when the worker finishes this job.
+                    Queued — reload this tab after the job succeeds to see the new preview.
                   </p>
                 ) : null}
                 {job?.status === 'running' ? (
                   <p className="rounded-xl border border-cyan-400/20 bg-cyan-400/6 px-3 py-2 text-xs text-cyan-100">
-                    Generating — waiting for the new illustration version…
+                    Generating — reload this tab when status becomes succeeded.
                   </p>
                 ) : null}
                 {job?.last_error ? (
@@ -2772,8 +2770,8 @@ function PdfPanel({
               {job?.status === 'queued' || job?.status === 'running' ? (
                 <p className="rounded-xl border border-cyan-400/20 bg-cyan-400/6 px-3 py-2 text-xs text-cyan-100">
                   {job.status === 'queued'
-                    ? 'Queued — page previews refresh when generation finishes.'
-                    : 'Generating PDF — previews will refresh automatically…'}
+                    ? 'Queued — reload this tab after the job succeeds to see new page previews.'
+                    : 'Generating PDF — reload this tab when status becomes succeeded.'}
                 </p>
               ) : null}
               {job?.last_error ? (
@@ -3474,9 +3472,6 @@ export function WeeklyWorkspace({
 
   return (
     <>
-      <AutoRefreshWhileActive
-        statuses={workspace.generationJobs.map((job) => job.status)}
-      />
       {workspace.digest.is_test ? (
         <section className="mb-6 rounded-2xl border border-amber-300/30 bg-amber-300/8 p-4 text-sm text-amber-100">
           <p className="font-bold">Test Weekly Digest</p>
