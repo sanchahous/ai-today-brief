@@ -19,6 +19,28 @@ Last updated: 2026-08-04
 
 ---
 
+## 2026-08-04 — Preflight blockers: sectioned release path
+
+**Джерело:** запит власника (порядок ворнінгів)
+
+**Змінено:**
+
+- `wiki/pipeline/weekly-digest.md` — preflight згруповано по Steps 1–8 (вкладки) з
+  порядком усередині секції
+
+**Нотатка:** порожні секції приховані; шлях зверху вниз = Stories→…→Video.
+
+## 2026-08-04 — Preflight blockers: fix + tab links
+
+**Джерело:** запит власника (UX Release preflight)
+
+**Змінено:**
+
+- `wiki/pipeline/weekly-digest.md` — Admin UX: actionable preflight (`fix` + лінк на вкладку;
+  Master quality на Research)
+
+**Нотатка:** `content_quality_report` не окремий upload — з’являється після Content Studio critic.
+
 ## 2026-08-04 — Dependabot #164 → #179 (safe patch/minor)
 
 **Джерело:** live check #178/#179 CI; Playwright run 30899512987 (339 passed)

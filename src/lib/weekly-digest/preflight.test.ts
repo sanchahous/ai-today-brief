@@ -4,7 +4,7 @@ import type {
   WeeklyPreflightInput,
   WeeklyPreflightSocial,
 } from './preflight';
-import { validateWeeklyDigestPreflight, WEEKLY_SOCIAL_MATRIX } from './preflight';
+import { validateWeeklyDigestPreflight, WEEKLY_SOCIAL_MATRIX, groupWeeklyPreflightBlockers } from './preflight';
 
 function artifact(
   artifactType: WeeklyPreflightArtifact['artifactType'],
@@ -74,11 +74,22 @@ describe('Weekly Digest release preflight', () => {
     expect(result.ready).toBe(false);
     expect(result.blockers).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ code: 'artifact_missing', slot: 'pdf:uk' }),
-        expect.objectContaining({ code: 'artifact_not_approved', slot: 'cover' }),
+        expect.objectContaining({
+          code: 'artifact_missing',
+          slot: 'pdf:uk',
+          tab: 'pdf',
+          fix: expect.stringMatching(/Open PDF/i),
+        }),
+        expect.objectContaining({
+          code: 'artifact_not_approved',
+          slot: 'cover',
+          tab: 'visuals',
+          fix: expect.stringMatching(/Open Visuals/i),
+        }),
         expect.objectContaining({
           code: 'artifact_missing',
           slot: 'story_image:story:story-2',
+          tab: 'visuals',
         }),
       ]),
     );
@@ -120,11 +131,44 @@ describe('Weekly Digest release preflight', () => {
     const result = validateWeeklyDigestPreflight(input);
     expect(result.blockers).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ code: 'social_locale', slot: 'social:telegram' }),
-        expect.objectContaining({ code: 'social_not_approved', slot: 'social:linkedin' }),
-        expect.objectContaining({ code: 'social_missing', slot: 'social:threads' }),
-        expect.objectContaining({ code: 'social_duplicate', slot: 'social:x' }),
+        expect.objectContaining({
+          code: 'social_locale',
+          slot: 'social:telegram',
+          tab: 'social',
+          fix: expect.stringMatching(/UK/i),
+        }),
+        expect.objectContaining({
+          code: 'social_not_approved',
+          slot: 'social:linkedin',
+          tab: 'social',
+        }),
+        expect.objectContaining({
+          code: 'social_missing',
+          slot: 'social:threads',
+          tab: 'social',
+        }),
+        expect.objectContaining({
+          code: 'social_duplicate',
+          slot: 'social:x',
+          tab: 'social',
+        }),
       ]),
+    );
+  });
+
+  it('points content_quality_report blockers at the Research tab with a concrete fix', () => {
+    const input = completeInput();
+    input.artifacts = input.artifacts.filter(
+      (entry) => entry.artifactType !== 'content_quality_report',
+    );
+
+    expect(validateWeeklyDigestPreflight(input).blockers).toContainEqual(
+      expect.objectContaining({
+        code: 'artifact_missing',
+        slot: 'content_quality_report',
+        tab: 'research',
+        fix: expect.stringMatching(/Research.*Content Studio.*Master quality/i),
+      }),
     );
   });
 
@@ -211,6 +255,42 @@ describe('Weekly Digest release preflight', () => {
         code: 'social_disabled_owner',
         slot: 'social:x',
       }),
+    );
+  });
+
+  it('orders and groups blockers along the release path', () => {
+    const input = completeInput();
+    input.artifacts = input.artifacts.filter(
+      (entry) =>
+        !(entry.artifactType === 'pdf' && entry.locale === 'uk') &&
+        entry.artifactType !== 'content_quality_report' &&
+        entry.artifactType !== 'video_script',
+    );
+    input.social = input.social.map((post) =>
+      post.channel === 'telegram' ? { ...post, approved: false } : post,
+    );
+
+    const { blockers } = validateWeeklyDigestPreflight(input);
+    expect(blockers.map((blocker) => blocker.slot)).toEqual([
+      'content_quality_report',
+      'social:telegram',
+      'pdf:uk',
+      'video_script:en',
+    ]);
+
+    const groups = groupWeeklyPreflightBlockers(blockers, input.storyIds);
+    expect(groups.map((group) => group.section.tab)).toEqual([
+      'research',
+      'social',
+      'pdf',
+      'video',
+    ]);
+    expect(groups[0]?.section.step).toBe(2);
+    expect(groups.map((group) => group.section.blurb)).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/Top 3 packs/i),
+        expect.stringMatching(/Script → manifest/i),
+      ]),
     );
   });
 });

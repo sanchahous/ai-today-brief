@@ -11,9 +11,12 @@ import type {
 } from '@/lib/weekly-digest/admin-data';
 import {
   WEEKLY_SOCIAL_MATRIX,
+  groupWeeklyPreflightBlockers,
   type WeeklyArtifactType,
   type WeeklyPreflightArtifact,
+  type WeeklyPreflightBlocker,
   type WeeklyPreflightSocial,
+  type WeeklyPreflightTab,
   validateWeeklyDigestPreflight,
 } from '@/lib/weekly-digest/preflight';
 import {
@@ -408,6 +411,99 @@ function formatBytes(value: number | null) {
   if (value < 1024) return `${value} B`;
   if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const PREFLIGHT_TAB_LABEL: Record<WeeklyPreflightTab, string> = {
+  overview: 'Overview',
+  stories: 'Stories',
+  research: 'Research',
+  article: 'Article UK / EN',
+  visuals: 'Visuals',
+  social: 'Social',
+  pdf: 'PDF',
+  video: 'Video',
+  release: 'Release',
+};
+
+function PreflightBlockerList({
+  digestId,
+  blockers,
+  storyIds = [],
+  compact = false,
+}: {
+  digestId: string;
+  blockers: WeeklyPreflightBlocker[];
+  storyIds?: string[];
+  compact?: boolean;
+}) {
+  const groups = groupWeeklyPreflightBlockers(blockers, storyIds);
+  const path = groups.map((group) => `${group.section.step}. ${group.section.title}`).join(' → ');
+
+  return (
+    <div className="grid gap-4">
+      <p className={`leading-5 text-slate-400 ${compact ? 'text-xs' : 'text-sm'}`}>
+        Work top → bottom along the release path
+        {path ? (
+          <>
+            : <span className="font-semibold text-slate-300">{path}</span>
+          </>
+        ) : null}
+        . Inside each section, clear items in listed order.
+      </p>
+      {groups.map((group) => (
+        <section
+          key={group.section.tab}
+          className="rounded-xl border border-amber-400/15 bg-black/15 p-3"
+          aria-labelledby={`preflight-section-${group.section.tab}`}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold tracking-wide text-amber-200/70 uppercase">
+                Step {group.section.step} of 8
+              </p>
+              <h3
+                id={`preflight-section-${group.section.tab}`}
+                className={`mt-0.5 font-bold text-amber-50 ${compact ? 'text-sm' : 'text-base'}`}
+              >
+                {group.section.title}
+                <span className="ml-2 text-xs font-semibold text-amber-200/60">
+                  {group.blockers.length} gate{group.blockers.length === 1 ? '' : 's'}
+                </span>
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-amber-100/55">{group.section.blurb}</p>
+            </div>
+            <a
+              href={`/admin/weekly/${encodeURIComponent(digestId)}?tab=${group.section.tab}`}
+              className="inline-flex shrink-0 text-xs font-bold text-cyan-300 underline hover:text-cyan-200"
+            >
+              Open {PREFLIGHT_TAB_LABEL[group.section.tab]} →
+            </a>
+          </div>
+          <ol className="mt-3 grid gap-2">
+            {group.blockers.map((blocker, index) => (
+              <li
+                key={`${blocker.slot}:${blocker.code}`}
+                className="rounded-lg border border-amber-400/20 bg-amber-400/6 px-3 py-2.5 text-amber-100"
+              >
+                <p className={compact ? 'text-sm font-bold' : 'text-sm'}>
+                  <span className="mr-2 inline-flex size-5 items-center justify-center rounded-full bg-amber-300/15 text-[11px] font-bold text-amber-100">
+                    {index + 1}
+                  </span>
+                  <span className="font-bold">{blocker.slot}</span>
+                  <span className="text-amber-100/75"> — {blocker.message}</span>
+                </p>
+                <p
+                  className={`mt-1.5 leading-5 text-amber-100/70 ${compact ? 'text-xs' : 'text-xs sm:text-sm'}`}
+                >
+                  {blocker.fix}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
+    </div>
+  );
 }
 
 function ArtifactReview({
@@ -810,17 +906,13 @@ function OverviewPanel({
             <span className="text-xs font-semibold text-slate-500">Required gates only</span>
           </div>
           {blockers.length ? (
-            <ul className="mt-4 grid gap-2">
-              {blockers.map((blocker) => (
-                <li
-                  key={`${blocker.slot}:${blocker.code}`}
-                  className="rounded-xl border border-amber-400/20 bg-amber-400/6 px-3 py-2.5 text-sm text-amber-100"
-                >
-                  <span className="font-bold">{blocker.slot}</span>
-                  <span className="text-amber-100/75"> — {blocker.message}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-4">
+              <PreflightBlockerList
+                digestId={workspace.digest.id}
+                blockers={blockers}
+                storyIds={workspace.items.map((item) => item.id)}
+              />
+            </div>
           ) : (
             <p className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/6 p-4 text-sm text-emerald-200">
               Every required artifact and enabled social variant is current and approved.
@@ -1310,8 +1402,44 @@ function ResearchPanel({
               </p>
             ) : null}
           </div>
+          <ArtifactReview
+            digestId={workspace.digest.id}
+            artifact={quality}
+            reviews={workspace.artifactReviews}
+            canReview={canReview && quality.revision_id === workspace.revision?.id}
+          />
         </section>
-      ) : null}
+      ) : (
+        <section className={PANEL} aria-labelledby="quality-missing-heading">
+          <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">
+            Independent audit
+          </p>
+          <h3 id="quality-missing-heading" className="mt-1 text-lg font-bold text-white">
+            Master quality report
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            This report is written by the Content Studio critic after all three Top research packs
+            are approved and <code>editorial_master</code> finishes. It is not a separate upload —
+            it appears here automatically.
+          </p>
+          <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-300">
+            <li>Approve all three Top 3 research packs above (owner).</li>
+            <li>
+              Click <span className="font-semibold text-white">Start / retry Content Studio</span>.
+            </li>
+            <li>
+              Wait until <code>editorial_master</code> succeeds (Overview jobs or the status chip
+              above).
+            </li>
+            <li>Return here, review the score/issues, then Approve version (owner).</li>
+          </ol>
+          {editorialMasterJob?.status === 'failed' && editorialMasterJob.last_error ? (
+            <p className="mt-4 rounded-xl border border-red-400/25 bg-red-400/7 p-3 text-xs leading-5 whitespace-pre-wrap text-red-100">
+              {editorialMasterJob.last_error}
+            </p>
+          ) : null}
+        </section>
+      )}
 
       <GenerationJobsSection jobs={workspace.generationJobs} tab="research" />
     </div>
@@ -3473,17 +3601,14 @@ function ReleasePanel({
             <span className="text-2xl font-bold text-white">{blockers.length}</span>
           </div>
           {blockers.length ? (
-            <ul className="mt-4 grid gap-2 text-sm">
-              {blockers.map((blocker) => (
-                <li
-                  key={`${blocker.slot}:${blocker.code}`}
-                  className="rounded-xl border border-amber-400/20 bg-amber-400/6 p-3 text-amber-100"
-                >
-                  <p className="font-bold">{blocker.slot}</p>
-                  <p className="mt-1 text-xs leading-5 text-amber-100/70">{blocker.message}</p>
-                </li>
-              ))}
-            </ul>
+            <div className="mt-4">
+              <PreflightBlockerList
+                digestId={workspace.digest.id}
+                blockers={blockers}
+                storyIds={workspace.items.map((item) => item.id)}
+                compact
+              />
+            </div>
           ) : (
             <p className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/6 p-3 text-sm text-emerald-200">
               Preflight is ready to pass.
