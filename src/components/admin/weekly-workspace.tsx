@@ -860,6 +860,33 @@ function OverviewPanel({
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,.6fr)]">
       <div className="grid gap-5">
+        <section className={PANEL} aria-labelledby="playbook-heading">
+          <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">Editor playbook</p>
+          <h2 id="playbook-heading" className="mt-1 text-lg font-bold text-white">
+            How to move this weekly forward
+          </h2>
+          <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm leading-6 text-slate-300">
+            <li>
+              <span className="font-semibold text-white">Stories</span> — keep Top 3 + 3–4 Radar,
+              Save.
+            </li>
+            <li>
+              <span className="font-semibold text-white">Research</span> — Start Content Studio →
+              wait packs ready → <span className="font-semibold text-white">Approve</span> all 3
+              packs (succeeded ≠ approved) → wait <code>editorial_master</code> → Approve Master
+              quality.
+            </li>
+            <li>
+              Then Article → Visuals → Social → PDF → Video → Release, approving each artifact the
+              preflight lists.
+            </li>
+          </ol>
+          <p className="mt-3 text-xs leading-5 text-slate-500">
+            Full runbook (stuck jobs, retries, overrides):{' '}
+            <code className="text-slate-400">wiki/ops/weekly-admin-runbook.md</code> in the repo.
+          </p>
+        </section>
+
         <section className={PANEL} aria-labelledby="readiness-heading">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -1119,11 +1146,19 @@ function ResearchPanel({
           Boolean(value) && typeof value === 'object' && !Array.isArray(value),
       )
     : [];
+  const readyResearch = features.filter((item) => {
+    const artifact = researchArtifactFor(workspace.artifacts, item);
+    return artifact?.generation_status === 'ready';
+  }).length;
   const approvedResearch = features.filter(
     (item) => researchArtifactFor(workspace.artifacts, item)?.review_status === 'approved',
   ).length;
   const editorialMasterJob =
     workspace.generationJobs.find((job) => job.job_type === 'editorial_master') ?? null;
+  const masterWaitingOnPackApprovals =
+    editorialMasterJob?.status === 'queued' && readyResearch === 3 && approvedResearch < 3;
+  const masterRunnable =
+    editorialMasterJob?.status === 'queued' && approvedResearch === 3;
 
   return (
     <div className="grid gap-5">
@@ -1137,9 +1172,10 @@ function ResearchPanel({
               Top 3 evidence packs
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-              Master generation remains queued until all three current packs are approved. Radar
-              stories use approved facts plus source sanity checks. Writer and critic also ground
-              against primary-source excerpts from each approved pack — not only numbered claims.
+              Job <span className="font-semibold text-slate-300">succeeded</span> only means the pack
+              was generated. The worker will not start <code>editorial_master</code> until you click{' '}
+              <span className="font-semibold text-slate-300">Approve version</span> on all three
+              packs below ({approvedResearch}/3 approved now).
             </p>
           </div>
           {canEdit && workspace.revision ? (
@@ -1164,13 +1200,60 @@ function ResearchPanel({
             </div>
           ) : null}
         </div>
+
+        <ol className="mt-4 list-decimal space-y-2 rounded-xl border border-white/8 bg-black/15 px-5 py-4 pl-9 text-sm leading-6 text-slate-300">
+          <li>
+            Click <span className="font-semibold text-white">Start / retry Content Studio</span> —
+            generates (or regenerates) the three research packs.
+          </li>
+          <li>
+            When each pack shows <span className="font-semibold text-white">ready</span> /{' '}
+            <span className="font-semibold text-white">in review</span>, open it and click{' '}
+            <span className="font-semibold text-white">Approve version</span> (owner). Do this for
+            all three — not optional.
+          </li>
+          <li>
+            Only then does <code>editorial_master</code> leave the queue (cron ~every 5 min via
+            OpenRouter, or use Claude subscription).
+          </li>
+          <li>
+            Review Master quality below → fix blockers via retry if needed →{' '}
+            <span className="font-semibold text-white">Approve version</span> on the quality report.
+          </li>
+        </ol>
+
+        {masterWaitingOnPackApprovals ? (
+          <div
+            role="status"
+            className="mt-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-4 py-3 text-sm leading-6 text-amber-50"
+          >
+            <p className="font-bold text-amber-100">Next action: approve the three packs</p>
+            <p className="mt-1">
+              Research jobs finished ({readyResearch}/3 ready), but only {approvedResearch}/3 are
+              approved. <code>editorial_master</code> stays <strong>queued on purpose</strong> until
+              you approve every Feature pack below. The spinner does not mean the worker is about to
+              start.
+            </p>
+          </div>
+        ) : null}
+        {masterRunnable ? (
+          <div
+            role="status"
+            className="mt-4 rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-3 text-sm leading-6 text-cyan-50"
+          >
+            <p className="font-bold text-cyan-100">Packs approved — master is eligible</p>
+            <p className="mt-1">
+              All three packs are approved. The generate cron should claim{' '}
+              <code>editorial_master</code> within ~5 minutes. Refresh this tab if the status stays
+              queued longer than that.
+            </p>
+          </div>
+        ) : null}
+
         {canEdit && workspace.revision ? (
           <p className="mt-3 text-xs leading-5 text-slate-500">
-            The queued <code>editorial_master</code> job is picked up automatically every 5
-            minutes via OpenRouter. &quot;Write master via Claude subscription&quot; instead hands
-            it to a one-off GitHub Actions run against your Claude Code subscription — no
-            OpenRouter spend, but it needs a `claude` runner, so it isn&apos;t instant. Track that
-            run itself on{' '}
+            &quot;Write master via Claude subscription&quot; hands the same queued job to GitHub
+            Actions (Claude Code) instead of OpenRouter. Track that run on{' '}
             <a
               href="https://github.com/sanchahous/ai-today-brief/actions/workflows/weekly-master-cli-worker.yml"
               target="_blank"
@@ -1179,7 +1262,7 @@ function ResearchPanel({
             >
               GitHub Actions
             </a>
-            ; the status below reflects the underlying job either way.
+            .
           </p>
         ) : null}
         {editorialMasterJob ? (
@@ -1192,7 +1275,13 @@ function ResearchPanel({
               Attempt {editorialMasterJob.attempts} · Updated{' '}
               {kyivDateTime(editorialMasterJob.updated_at ?? editorialMasterJob.created_at)}
             </span>
-            {editorialMasterJob.status === 'running' || editorialMasterJob.status === 'queued' ? (
+            {masterWaitingOnPackApprovals ? (
+              <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-0.5 text-xs font-semibold text-amber-100">
+                Waiting for pack approvals ({approvedResearch}/3)
+              </span>
+            ) : null}
+            {editorialMasterJob.status === 'running' ||
+            (editorialMasterJob.status === 'queued' && !masterWaitingOnPackApprovals) ? (
               <span
                 aria-hidden="true"
                 className="size-3 animate-spin rounded-full border-2 border-cyan-300 border-r-transparent"
@@ -1209,6 +1298,7 @@ function ResearchPanel({
           <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
             <p className="text-xs font-bold text-slate-500 uppercase">Approved research</p>
             <p className="mt-1 text-2xl font-bold text-white">{approvedResearch}/3</p>
+            <p className="mt-1 text-xs text-slate-500">{readyResearch}/3 packs ready to review</p>
           </div>
           <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
             <p className="text-xs font-bold text-slate-500 uppercase">Audience</p>
@@ -1254,6 +1344,14 @@ function ResearchPanel({
                 <StatusPill value="queued" />
               )}
             </div>
+            {artifact?.generation_status === 'ready' &&
+            artifact.review_status !== 'approved' &&
+            canReview ? (
+              <p className="mt-3 rounded-lg border border-amber-400/25 bg-amber-400/8 px-3 py-2 text-xs leading-5 text-amber-100">
+                Pack is generated. Scroll to <span className="font-semibold">Approve version</span>{' '}
+                at the bottom of this card — until then master stays queued.
+              </p>
+            ) : null}
             {artifact ? (
               <>
                 <dl className="mt-4 grid gap-3 rounded-xl border border-white/8 bg-black/15 p-4 text-sm md:grid-cols-3">

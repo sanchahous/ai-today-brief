@@ -16,6 +16,7 @@
       "wikiPages": [
         "pipeline/weekly-digest.md",
         "pipeline/weekly-editorial-selection.md",
+        "ops/weekly-admin-runbook.md",
         "now.md"
       ]
     },
