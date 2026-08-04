@@ -19,6 +19,19 @@ Last updated: 2026-08-04
 
 ---
 
+## 2026-08-04 — Weekly Social: preview assets + safe save/approve
+
+**Джерело:** live fail Telegram Save & approve (`schedule_past`) + founder report
+«бачу alt text, не бачу image»
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — нотатки Social tab (preview `asset_urls`, Destination URL,
+  blockers, збереження provenance)
+- `wiki/ops/social-cms-runbook.md` — Weekly Social tab notes
+- `wiki/now.md` — поточний фокус на Social save/UX
+
+**Нотатка:** ілюстрації вже були в БД; UI показував лише alt/JSON без превʼю.
+
 ## 2026-08-04 — Vercel Fluid CPU: lazy imports + checkpoint-merge + admin prefetch
 
 **Джерело:** live check Vercel dashboard 2026-08-04 (Fluid Active CPU 3h58m/4h Hobby, `ai-today-brief` = 99.8% акаунта)

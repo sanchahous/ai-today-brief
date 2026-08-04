@@ -10,15 +10,12 @@ Last updated: 2026-08-04
 
 ## Стан репозиторію
 
-- `main` = `eaa9fd0` — *chore(deps): npm-patch-minor 12 updates (#179)*.
-  (source: git log live check 2026-08-04)
-- Інфра Dependabot: **#178** (automerge без approve + ignore `pdfkit` minor/major + Dependabot
-  secrets `SCRAPPER_BASE_*`). Label `dependencies` створено.
-- **#164** закрито Dependabot після ignore; наступник **#179** змерджено (Playwright 339 passed).
-  `pdfkit` лишається `0.17.2` до окремого smoke-PR.
-- Відкритих Dependabot PR немає.
-  (source: `gh pr list` live check 2026-08-04)
-- Міграція `docs/** → wiki/**` **закрита** (#166). Папки `docs/` у git немає.
+- Гілка `fix/weekly-social-save-and-assets`: Social tab preview ілюстрацій з `asset_urls`,
+  safe Save/Approve (`save_error` banner, disable при blockers, preserve writer/hook/fit),
+  Destination URL на генерації. Див. [weekly-digest](pipeline/weekly-digest.md),
+  [social-cms-runbook](ops/social-cms-runbook.md).
+- `main` tip включає Fluid CPU fix (#184) і master critic excerpts (#183).
+  (source: `git log` / live work 2026-08-04)
 
 ## Щойно відвантажено (останні 8 PR)
 

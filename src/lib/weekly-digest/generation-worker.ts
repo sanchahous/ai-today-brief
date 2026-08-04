@@ -1467,7 +1467,8 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
       scheduledFor: draft.scheduledFor,
       contentVersion,
     });
-    const publicUrl = new URL(`/${draft.locale}/weekly/${context.digest.slug}`, SITE_URL);
+    const destinationUrl = new URL(`/${draft.locale}/weekly/${context.digest.slug}`, SITE_URL);
+    const publicUrl = new URL(destinationUrl.toString());
     publicUrl.searchParams.set('utm_source', draft.channel);
     publicUrl.searchParams.set('utm_medium', 'social');
     publicUrl.searchParams.set('utm_campaign', 'weekly_digest');
@@ -1490,6 +1491,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
       scheduled_for: draft.scheduledFor,
       idempotency_key: `${socialPackage.id}:${draft.channel}:${contentHash.slice(0, 16)}`,
       tracking_token: tokens[draft.channel],
+      url: destinationUrl.toString(),
       utm_url: publicUrl.toString(),
       meta: {
         hook_angle: draft.hookAngle,

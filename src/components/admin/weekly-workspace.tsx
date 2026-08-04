@@ -3,6 +3,7 @@ import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { StatusPill } from '@/components/admin/status-pill';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
+import { SITE_URL } from '@/lib/site';
 import type {
   WeeklyArtifactAdminRow,
   WeeklyArtifactReviewAdminRow,
@@ -396,6 +397,8 @@ function qualityReport(value: Json) {
       return typeof record.message === 'string'
         ? {
             key: `${typeof record.code === 'string' ? record.code : 'quality'}-${index}`,
+            code: typeof record.code === 'string' ? record.code : null,
+            blocking: index < blocking.length,
             message: record.message,
             span: typeof record.span === 'string' ? record.span : null,
             suggestedFix: typeof record.suggestedFix === 'string' ? record.suggestedFix : null,
@@ -404,6 +407,29 @@ function qualityReport(value: Json) {
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   return { blocking: blocking.length, warnings: warnings.length, items };
+}
+
+function socialAssetUrls(value: Json): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
+    const url = asRecord(entry).url;
+    return typeof url === 'string' && url.startsWith('https://') ? [url] : [];
+  });
+}
+
+function cleanWeeklyDestinationUrl(locale: string, slug: string, utmUrl: string | null): string {
+  if (utmUrl) {
+    try {
+      const parsed = new URL(utmUrl);
+      parsed.search = '';
+      parsed.hash = '';
+      return parsed.toString();
+    } catch {
+      // Fall through to slug-based weekly URL.
+    }
+  }
+  return new URL(`/${locale}/weekly/${slug}`, SITE_URL).toString();
 }
 
 function formatBytes(value: number | null) {
@@ -2479,14 +2505,37 @@ function SocialPanel({
         const enabled = post.publish_enabled;
         const meta = asRecord(post.meta);
         const socialQuality = asRecord(post.quality_report);
-        const writer = asRecord(socialQuality.writer);
+        const writer = asRecord(
+          socialQuality.writer && typeof socialQuality.writer === 'object'
+            ? socialQuality.writer
+            : meta.writer,
+        );
         const critic = asRecord(socialQuality.critic);
+        const hookAngle =
+          (typeof meta.hook_angle === 'string' && meta.hook_angle) ||
+          (typeof socialQuality.hookAngle === 'string' && socialQuality.hookAngle) ||
+          null;
+        const platformFitScore =
+          typeof socialQuality.platformFitScore === 'number'
+            ? socialQuality.platformFitScore
+            : typeof critic.platformFitScore === 'number'
+              ? critic.platformFitScore
+              : null;
+        const assetPreviewUrls = socialAssetUrls(post.asset_urls);
+        const destinationUrl =
+          post.url || cleanWeeklyDestinationUrl(locale, workspace.digest.slug, post.utm_url);
+        const hasQualityBlockers = quality.blocking > 0;
         const hookCandidates = Array.isArray(meta.hook_candidates)
           ? meta.hook_candidates.filter(
               (candidate): candidate is string =>
                 typeof candidate === 'string' && Boolean(candidate.trim()),
             )
-          : [];
+          : Array.isArray(socialQuality.hookCandidates)
+            ? socialQuality.hookCandidates.filter(
+                (candidate): candidate is string =>
+                  typeof candidate === 'string' && Boolean(candidate.trim()),
+              )
+            : [];
         const linkedinDocument =
           channel === 'linkedin' && typeof meta.document_artifact_id === 'string'
             ? workspace.artifacts.find((artifact) => artifact.id === meta.document_artifact_id)
@@ -2503,6 +2552,26 @@ function SocialPanel({
               <StatusPill value={post.status} />
               {!enabled ? <StatusPill value="paused" /> : null}
             </div>
+            {hasQualityBlockers ? (
+              <div className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 p-3">
+                <p className="text-sm font-bold text-red-100">
+                  {quality.blocking} quality blocker
+                  {quality.blocking === 1 ? '' : 's'} — Save & approve is disabled until fixed.
+                </p>
+                <ul className="mt-2 grid gap-1 text-xs leading-5 text-red-100/90">
+                  {quality.items
+                    .filter((item) => item.blocking)
+                    .map((item) => (
+                      <li key={`banner-${item.key}`}>
+                        • {item.message}
+                        {item.code === 'schedule_past'
+                          ? ' Set Scheduled time in Kyiv to a future slot, then Save draft.'
+                          : null}
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            ) : null}
             {channel === 'threads' && post.status === 'needs_reconciliation' ? (
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-400/25 bg-amber-400/7 p-3">
                 <p className="text-sm text-amber-100">
@@ -2658,10 +2727,13 @@ function SocialPanel({
                       type="url"
                       name="url"
                       required
-                      defaultValue={post.url ?? ''}
+                      defaultValue={destinationUrl}
                       disabled={!canEdit}
                       className={FIELD}
                     />
+                    <span className="text-xs font-normal text-slate-500">
+                      Clean weekly page URL (no UTM). Tracked URL below keeps campaign params.
+                    </span>
                   </label>
                   <label className={LABEL}>
                     Tracked URL
@@ -2685,6 +2757,44 @@ function SocialPanel({
                     className={TEXTAREA}
                   />
                 </label>
+                {assetPreviewUrls.length > 0 ? (
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                    <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">
+                      Channel illustrations ({assetPreviewUrls.length})
+                    </p>
+                    <div
+                      className={`mt-3 grid gap-2 ${assetPreviewUrls.length > 1 ? 'grid-cols-2' : ''}`}
+                    >
+                      {assetPreviewUrls.map((url, index) => (
+                        <a
+                          key={`${post.id}-asset-${index}`}
+                          href={url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block overflow-hidden rounded-lg border border-white/10"
+                        >
+                          <Image
+                            src={url}
+                            alt={
+                              post.alt_text
+                                ? `${post.alt_text}${assetPreviewUrls.length > 1 ? ` (${index + 1})` : ''}`
+                                : `Social asset ${index + 1} for ${channelLabel(channel)}`
+                            }
+                            width={channel === 'instagram' ? 540 : 600}
+                            height={channel === 'instagram' ? 675 : 315}
+                            className="h-auto w-full object-cover"
+                            sizes="(max-width: 1280px) 90vw, 28vw"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="rounded-xl border border-amber-400/20 bg-amber-400/7 px-3 py-2 text-xs text-amber-100">
+                    No channel images yet. Generate Social assets on the Visuals tab, then regenerate
+                    social copy if assets stay empty.
+                  </p>
+                )}
                 <label className={LABEL}>
                   Asset URLs (JSON)
                   <textarea
@@ -2738,8 +2848,13 @@ function SocialPanel({
                     value="approved"
                     idleLabel="Save & approve"
                     pendingLabel="Approving…"
-                    disabled={!canReview}
+                    disabled={!canReview || hasQualityBlockers}
                     className={PRIMARY}
+                    title={
+                      hasQualityBlockers
+                        ? 'Fix quality blockers before approving this channel'
+                        : undefined
+                    }
                   />
                   <ActionSubmitButton
                     name="intent"
@@ -2771,8 +2886,31 @@ function SocialPanel({
                       )}
                     </ol>
                   ) : null}
-                  {post.url ? (
-                    <p className="mt-4 truncate text-xs text-[#47e4d3]">{post.url}</p>
+                  {post.url || destinationUrl ? (
+                    <p className="mt-4 truncate text-xs text-[#47e4d3]">
+                      {post.url || destinationUrl}
+                    </p>
+                  ) : null}
+                  {assetPreviewUrls.length > 0 ? (
+                    <div
+                      className={`mt-4 grid gap-2 ${assetPreviewUrls.length > 1 ? 'grid-cols-2' : ''}`}
+                    >
+                      {assetPreviewUrls.slice(0, 4).map((url, index) => (
+                        <Image
+                          key={`${post.id}-preview-${index}`}
+                          src={url}
+                          alt={
+                            post.alt_text
+                              ? `${post.alt_text}${assetPreviewUrls.length > 1 ? ` (${index + 1})` : ''}`
+                              : `Preview asset ${index + 1}`
+                          }
+                          width={channel === 'instagram' ? 270 : 300}
+                          height={channel === 'instagram' ? 338 : 160}
+                          className="h-auto w-full rounded-lg object-cover"
+                          sizes="(max-width: 1280px) 45vw, 14vw"
+                        />
+                      ))}
+                    </div>
                   ) : null}
                 </div>
 
@@ -2780,9 +2918,7 @@ function SocialPanel({
                   <dl className="grid gap-3 text-xs sm:grid-cols-2">
                     <div>
                       <dt className="font-bold text-slate-500 uppercase">Hook angle</dt>
-                      <dd className="mt-1 text-slate-300">
-                        {typeof meta.hook_angle === 'string' ? meta.hook_angle : '—'}
-                      </dd>
+                      <dd className="mt-1 text-slate-300">{hookAngle ?? '—'}</dd>
                     </div>
                     <div>
                       <dt className="font-bold text-slate-500 uppercase">Writer model</dt>
@@ -2803,9 +2939,7 @@ function SocialPanel({
                     <div>
                       <dt className="font-bold text-slate-500 uppercase">Platform fit</dt>
                       <dd className="mt-1 text-slate-300">
-                        {typeof socialQuality.platformFitScore === 'number'
-                          ? `${socialQuality.platformFitScore}/100`
-                          : '—'}
+                        {typeof platformFitScore === 'number' ? `${platformFitScore}/100` : '—'}
                       </dd>
                     </div>
                     <div>
@@ -2865,8 +2999,18 @@ function SocialPanel({
                   {quality.items.length ? (
                     <ul className="mt-3 grid gap-2 text-xs leading-5 text-slate-400">
                       {quality.items.map((item) => (
-                        <li key={item.key} className="rounded-lg border border-white/8 p-2.5">
-                          <p>• {item.message}</p>
+                        <li
+                          key={item.key}
+                          className={`rounded-lg border p-2.5 ${
+                            item.blocking
+                              ? 'border-red-400/25 bg-red-400/8 text-red-100'
+                              : 'border-white/8 text-slate-400'
+                          }`}
+                        >
+                          <p>
+                            {item.blocking ? 'Blocker: ' : '• '}
+                            {item.message}
+                          </p>
                           {item.span ? (
                             <p className="mt-1 text-red-200">Exact span: “{item.span}”</p>
                           ) : null}

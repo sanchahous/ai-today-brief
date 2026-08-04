@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { SocialDraft } from './types';
-import { findBlindCrossPosts, runQualityGate } from './quality';
+import type { QualityReport, SocialDraft } from './types';
+import { findBlindCrossPosts, mergePreservedQualityProvenance, runQualityGate } from './quality';
 
 function draft(overrides: Partial<SocialDraft> = {}): SocialDraft {
   return {
@@ -93,5 +93,32 @@ describe('social quality gate', () => {
     ]);
     expect(matches.get('threads')?.[0].code).toBe('blind_cross_post');
     expect(matches.get('facebook')?.[0].code).toBe('blind_cross_post');
+  });
+
+  it('preserves writer / hook / platform-fit provenance across quality re-runs', () => {
+    const next: QualityReport = {
+      blocking: [],
+      warnings: [],
+      checkedAt: '2026-08-04T12:00:00.000Z',
+      critic: {
+        score: 92,
+        flags: [],
+        provider: 'gemini',
+        model: 'gemini-2.5-flash',
+        auditedAt: '2026-08-04T12:00:00.000Z',
+      },
+    };
+    const previous = {
+      writer: { provider: 'openrouter', model: 'anthropic/claude-sonnet-4', fallbackUsed: false },
+      platformFitScore: 91,
+      hookAngle: 'risk-of-agent-misconfig',
+      hookCandidates: ['A', 'B'],
+    };
+    const merged = mergePreservedQualityProvenance(next, previous);
+    expect(merged.writer?.model).toBe('anthropic/claude-sonnet-4');
+    expect(merged.platformFitScore).toBe(91);
+    expect(merged.hookAngle).toBe('risk-of-agent-misconfig');
+    expect(merged.hookCandidates).toEqual(['A', 'B']);
+    expect(merged.critic?.score).toBe(92);
   });
 });

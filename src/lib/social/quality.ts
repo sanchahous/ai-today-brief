@@ -70,8 +70,18 @@ const LATIN_RE = /[a-z]/gi;
 const FORBIDDEN_CHAR_RE =
   /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/u;
 
-function issue(code: string, message: string, field?: QualityIssue['field']): QualityIssue {
-  return { code, message, ...(field ? { field } : {}) };
+function issue(
+  code: string,
+  message: string,
+  field?: QualityIssue['field'],
+  suggestedFix?: string,
+): QualityIssue {
+  return {
+    code,
+    message,
+    ...(field ? { field } : {}),
+    ...(suggestedFix ? { suggestedFix } : {}),
+  };
 }
 
 function validateAsset(channel: SocialChannel, draft: SocialDraft, blocking: QualityIssue[]) {
@@ -233,7 +243,14 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
   }
 
   if (new Date(draft.scheduledFor).getTime() <= now.getTime() - 5 * 60_000) {
-    blocking.push(issue('schedule_past', 'Schedule is already in the past.'));
+    blocking.push(
+      issue(
+        'schedule_past',
+        'Schedule is already in the past.',
+        undefined,
+        'Pick a future Europe/Kyiv datetime, Save draft, then Approve.',
+      ),
+    );
   }
   if (draft.sourceFacts.length === 0) {
     blocking.push(issue('facts_missing', 'No approved fact snapshot is attached.', 'source'));
@@ -275,6 +292,50 @@ function jaccard(left: Set<string>, right: Set<string>) {
   const intersection = [...left].filter((token) => right.has(token)).length;
   const union = new Set([...left, ...right]).size;
   return union ? intersection / union : 0;
+}
+
+/**
+ * Saving a variant re-runs the quality gate + critic. Keep generation provenance
+ * (writer, platform fit, hook metadata) that those steps do not recompute.
+ */
+export function mergePreservedQualityProvenance(
+  next: QualityReport,
+  previous: unknown,
+): QualityReport {
+  if (!previous || typeof previous !== 'object' || Array.isArray(previous)) return next;
+  const prior = previous as Record<string, unknown>;
+  const writer =
+    next.writer ??
+    (prior.writer && typeof prior.writer === 'object' && !Array.isArray(prior.writer)
+      ? (prior.writer as QualityReport['writer'])
+      : undefined);
+  const platformFitScore =
+    typeof next.platformFitScore === 'number'
+      ? next.platformFitScore
+      : typeof prior.platformFitScore === 'number'
+        ? prior.platformFitScore
+        : undefined;
+  const hookAngle =
+    typeof next.hookAngle === 'string' && next.hookAngle.trim()
+      ? next.hookAngle
+      : typeof prior.hookAngle === 'string' && prior.hookAngle.trim()
+        ? prior.hookAngle
+        : undefined;
+  const hookCandidates = next.hookCandidates?.length
+    ? next.hookCandidates
+    : Array.isArray(prior.hookCandidates)
+      ? prior.hookCandidates.filter(
+          (candidate): candidate is string =>
+            typeof candidate === 'string' && Boolean(candidate.trim()),
+        )
+      : undefined;
+  return {
+    ...next,
+    ...(writer ? { writer } : {}),
+    ...(typeof platformFitScore === 'number' ? { platformFitScore } : {}),
+    ...(hookAngle ? { hookAngle } : {}),
+    ...(hookCandidates?.length ? { hookCandidates } : {}),
+  };
 }
 
 /** Near-identical same-language cross-posts are blocked; native reuse of facts is allowed. */
