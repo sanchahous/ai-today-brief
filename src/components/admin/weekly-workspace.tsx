@@ -551,6 +551,18 @@ function ArtifactCard({
       : imagePreview
         ? previewUrls[0]
         : undefined;
+  const illustrationScene =
+    typeof artifactMetadata.scene === 'string' ? artifactMetadata.scene : null;
+  const illustrationPositive =
+    typeof artifactMetadata.positive_prompt === 'string'
+      ? artifactMetadata.positive_prompt
+      : null;
+  const illustrationNegative =
+    typeof artifactMetadata.negative_prompt === 'string'
+      ? artifactMetadata.negative_prompt
+      : null;
+  const illustrationSceneSource =
+    typeof artifactMetadata.scene_source === 'string' ? artifactMetadata.scene_source : null;
 
   return (
     <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -575,6 +587,39 @@ function ArtifactCard({
             className="object-cover"
           />
         </div>
+      ) : null}
+
+      {imagePreview && illustrationScene ? (
+        <details className="mt-4 rounded-xl border border-white/10 bg-black/20 p-3">
+          <summary className="cursor-pointer text-xs font-bold text-cyan-200">
+            Illustration prompt
+            {illustrationSceneSource ? ` · ${illustrationSceneSource}` : ''}
+          </summary>
+          <div className="mt-3 grid gap-3 text-xs text-slate-300">
+            <div>
+              <p className="font-bold tracking-wide text-slate-500 uppercase">Scene</p>
+              <p className="mt-1 font-mono whitespace-pre-wrap text-slate-200">
+                {illustrationScene}
+              </p>
+            </div>
+            {illustrationPositive ? (
+              <div>
+                <p className="font-bold tracking-wide text-slate-500 uppercase">Positive</p>
+                <p className="mt-1 font-mono whitespace-pre-wrap text-slate-200">
+                  {illustrationPositive}
+                </p>
+              </div>
+            ) : null}
+            {illustrationNegative ? (
+              <div>
+                <p className="font-bold tracking-wide text-slate-500 uppercase">Negative</p>
+                <p className="mt-1 font-mono whitespace-pre-wrap text-slate-200">
+                  {illustrationNegative}
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </details>
       ) : null}
 
       <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">

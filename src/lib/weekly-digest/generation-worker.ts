@@ -1753,6 +1753,10 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     model: string;
     estimatedCostUsd: number;
     costSource: 'reported' | 'estimated' | 'subscription';
+    scene?: string;
+    positivePrompt?: string;
+    negativePrompt?: string;
+    sceneSource?: string;
   } | null = null;
 
   if (requestedSourceUrl?.startsWith('http')) {
@@ -1790,6 +1794,10 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         model: generatedSource.model,
         estimatedCostUsd: generatedSource.estimatedCostUsd,
         costSource: generatedSource.costSource,
+        scene: generatedSource.scene,
+        positivePrompt: generatedSource.positivePrompt,
+        negativePrompt: generatedSource.negativePrompt,
+        sceneSource: generatedSource.sceneSource,
       };
     } else {
       const fallbackUrl = snapshotImage(item.source_snapshot);
@@ -1837,13 +1845,21 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       source_kind: sourceKind,
       source_url: sourceUrl,
       focal_point: text(input.focal_point) ?? 'attention',
-      prompt_policy: 'story-specific-editorial-v3-flux2-klein',
+      prompt_policy: 'story-specific-editorial-v4-narrative',
       ...(imageMeta
         ? {
             provider: imageMeta.provider,
             model: imageMeta.model,
             estimated_cost_usd: imageMeta.estimatedCostUsd,
             cost_source: imageMeta.costSource,
+            ...(imageMeta.scene
+              ? {
+                  scene: imageMeta.scene,
+                  positive_prompt: imageMeta.positivePrompt,
+                  negative_prompt: imageMeta.negativePrompt,
+                  scene_source: imageMeta.sceneSource,
+                }
+              : {}),
           }
         : {}),
     },

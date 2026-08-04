@@ -73,6 +73,14 @@ export interface CardImageConfig {
 
 export type ImageCostSource = 'reported' | 'estimated' | 'subscription';
 
+/** Where the cover scene phrase came from (art-director LLM or keyword fallback). */
+export type SceneSource = 'gemini' | 'openrouter' | 'fallback';
+
+export interface SceneBriefResult {
+  scene: string;
+  source: SceneSource;
+}
+
 export interface GeneratedImageResult {
   bytes: Buffer;
   provider: 'gemini' | 'cloudflare' | 'pollinations' | 'local';
@@ -81,6 +89,11 @@ export interface GeneratedImageResult {
   costSource: ImageCostSource;
   width: number;
   height: number;
+  /** Story-specific scene phrase sent to the image model (audit / admin). */
+  scene?: string;
+  positivePrompt?: string;
+  negativePrompt?: string;
+  sceneSource?: SceneSource;
 }
 
 export interface FillCardImagesResult {
@@ -138,15 +151,18 @@ export async function generateEditorialIllustration(
   input: EditorialIllustrationInput,
   cfg: CardImageConfig,
 ): Promise<GeneratedImageResult | null> {
-  const scene = await sceneBrief(input.title, input.summary, cfg);
-  const generated = await generateImage(
-    buildPrompt(input.accent?.trim() || 'cool cyan', scene),
-    negativePrompt(),
-    cfg,
-    seedFromString(input.seedKey),
-  );
+  const { scene, source: sceneSource } = await sceneBrief(input.title, input.summary, cfg);
+  const positive = buildPrompt(input.accent?.trim() || 'cool cyan', scene);
+  const negative = negativePrompt();
+  const generated = await generateImage(positive, negative, cfg, seedFromString(input.seedKey));
   if (generated) {
-    return generated;
+    return {
+      ...generated,
+      scene,
+      positivePrompt: positive,
+      negativePrompt: negative,
+      sceneSource,
+    };
   }
   if (!input.fallbackToLocal) return null;
   // A Weekly Digest must stay reviewable even when every external image provider
@@ -163,6 +179,10 @@ export async function generateEditorialIllustration(
       costSource: 'estimated',
       width: IMG_W,
       height: IMG_H,
+      scene,
+      positivePrompt: positive,
+      negativePrompt: negative,
+      sceneSource,
     };
   } catch {
     return null;
@@ -272,7 +292,9 @@ export function negativePrompt(): string {
     `text, words, letters, typography, numbers, caption, watermark, signature, logo, brand mark, ` +
     `UI, interface, buttons, frame, border, margin, collage, split panels, ` +
     `glowing brain, human brain, brain, neural-network mesh, circuit board, generic glowing orb, ` +
-    `floating sphere, abstract blob, low quality, blurry, jpeg artifacts, distorted, deformed, ` +
+    `floating sphere, abstract blob, anonymous server aisle, lone laptop on desk, ` +
+    `generic data-center corridor, stock server room, interchangeable tech stock, ` +
+    `low quality, blurry, jpeg artifacts, distorted, deformed, ` +
     `extra fingers, extra limbs, cluttered, busy, stock-photo look`
   );
 }
@@ -487,21 +509,24 @@ export async function sceneBrief(
   title: string,
   summary: string,
   cfg: CardImageConfig,
-): Promise<string> {
+): Promise<SceneBriefResult> {
   const ctx = [title, summary].filter(Boolean).join('. ').trim();
-  if (!ctx) return DEFAULT_SCENE;
+  if (!ctx) return { scene: DEFAULT_SCENE, source: 'fallback' };
   const instruction =
     `You are the art director for a developer-focused technology magazine. Read this news item and ` +
     `describe ONE concrete cover illustration a reader instantly connects to THIS specific story. ` +
-    `Name a real, tangible focal subject + setting + action grounded in the actual topic — for example ` +
-    `a coding terminal or IDE, a laptop or phone on a desk, a server rack, a data-center corridor, ` +
-    `interlocking precision machinery, a robotic arm, an architectural structure, a lock or shield for ` +
-    `security, an MRI/scan lightbox for medical imaging, flowing light or stacked coins for funding, a ` +
-    `product on a reveal stage for a launch, cooperating figures for agents. Make each story look ` +
-    `visually DISTINCT. ` +
-    `STRICTLY AVOID these clichés: a glowing brain, a glowing orb or core, a neural-network mesh, a ` +
-    `generic circuit board, or a vague abstract "AI" blob. No text, letters, numbers, logos, brand ` +
-    `marks or recognisable real faces. ` +
+    `Name the distinctive news claim in visual form; avoid interchangeable tech stock. ` +
+    `Invent a UNIQUE narrative metaphor for THIS claim — what sets it apart from neighbouring ` +
+    `AI-security or model-launch stories — as a tangible focal subject + setting + action. ` +
+    `Good claim-specific examples: an agent figure breaking out of a cracked glass sandbox cage toward ` +
+    `glowing external network routes (egress / misconfig escape); a shattered cryptographic seal or ` +
+    `cracked padlock over dark circuitry (cryptanalysis); interlocking precision machinery for tooling; ` +
+    `cooperating robotic arms for multi-agent orchestration; an MRI lightbox for medical imaging; ` +
+    `stacked translucent coins for funding; a product unveiled on a reveal stage for a launch. ` +
+    `STRICTLY AVOID default stock unless the story is literally about those objects as the main claim: ` +
+    `anonymous server aisle, lone laptop on a desk, generic data-center corridor, anonymous rack row. ` +
+    `Also ban: a glowing brain, glowing orb or core, neural-network mesh, generic circuit board, vague ` +
+    `abstract "AI" blob. No text, letters, numbers, logos, brand marks or recognisable real faces. ` +
     `Answer with ONE vivid phrase, 18-32 words, concrete nouns, a single focal subject, not a full ` +
     `sentence.\n\nHeadline: "${title}"\nSummary: "${summary}"`;
   const clean = (t: string) => t.replace(/\s+/g, ' ').trim().slice(0, 320);
@@ -518,7 +543,7 @@ export async function sceneBrief(
       try {
         const response = await client.getGenerativeModel({ model }).generateContent(instruction);
         const text = clean(response.response.text());
-        if (text.length >= 6) return text;
+        if (text.length >= 6) return { scene: text, source: 'gemini' };
       } catch {
         // Advance only within the current generation resolved from the catalog.
       }
@@ -544,20 +569,55 @@ export async function sceneBrief(
       if (res.ok) {
         const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
         const text = clean(data.choices?.[0]?.message?.content ?? '');
-        if (text.length >= 6) return text;
+        if (text.length >= 6) return { scene: text, source: 'openrouter' };
       }
     } catch {
       /* fall through to keyword scene */
     }
   }
 
-  return fallbackScene(ctx);
+  return { scene: fallbackScene(ctx), source: 'fallback' };
 }
 
 /** Keyword → concrete scene, so even without the model cards vary by topic (never a brain). */
 export function fallbackScene(text: string): string {
   const t = text.toLowerCase();
   const has = (...ws: string[]) => ws.some((w) => t.includes(w));
+  // Isolation / network escape — before generic agent or model-launch branches.
+  if (
+    has(
+      'misconfig',
+      'egress',
+      'sandbox',
+      'post-mortem',
+      'postmortem',
+      'breakout',
+      'exfiltrat',
+    ) ||
+    (has('network') && has('isolat', 'external', 'misconfig', 'egress'))
+  ) {
+    return (
+      'an autonomous agent figure breaking through a cracked glass sandbox cage toward glowing ' +
+      'external network routes, shards of the isolation barrier mid-air'
+    );
+  }
+  // Cryptanalysis / cipher strength — before "claude" / model-launch stock.
+  if (
+    has(
+      'cryptanalys',
+      'cryptograph',
+      'cipher',
+      'encryption',
+      'decrypt',
+      'key strength',
+      'mythos',
+    )
+  ) {
+    return (
+      'a cracked cryptographic seal and shattered padlock over dark circuitry, shards catching a ' +
+      'hard rim light'
+    );
+  }
   if (has('security', 'vulnerab', 'exploit', 'breach', 'cve', 'malware', 'attack'))
     return 'a cracked metallic padlock over a dark server panel, shards catching a hard rim light';
   if (has('fund', 'raise', 'valuation', 'investment', 'revenue', 'ipo', 'billion'))

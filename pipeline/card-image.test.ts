@@ -101,6 +101,11 @@ describe('generateEditorialIllustration ladder', () => {
     expect(result!.costSource).toBe('estimated');
     expect(result!.estimatedCostUsd).toBe(0.015);
     expect(result!.bytes.length).toBeGreaterThan(1000);
+    expect(result!.scene).toBeTruthy();
+    expect(result!.sceneSource).toBe('fallback');
+    expect(result!.positivePrompt).toContain('Scene:');
+    expect(result!.positivePrompt).toContain(result!.scene!);
+    expect(result!.negativePrompt).toContain('glowing brain');
     const calledUrls = vi.mocked(globalThis.fetch).mock.calls.map((call) => String(call[0]));
     expect(calledUrls.some((url) => url.includes('flux-2-klein-9b'))).toBe(true);
     const kleinCall = vi.mocked(globalThis.fetch).mock.calls.find((call) =>
@@ -239,6 +244,8 @@ describe('negativePrompt', () => {
     expect(neg).toContain('glowing brain');
     expect(neg).toContain('circuit board');
     expect(neg).toContain('text');
+    expect(neg).toContain('anonymous server aisle');
+    expect(neg).toContain('lone laptop on desk');
   });
 });
 
@@ -251,6 +258,24 @@ describe('fallbackScene', () => {
     expect(fallbackScene('Run Gemma 4 as a local on-device LLM offline')).toContain('laptop');
     expect(fallbackScene('Cut token cost and latency with this optimization')).toContain('gauge');
     expect(fallbackScene('AI medical scan and MRI vision analysis')).toContain('lightbox');
+  });
+
+  it('uses isolation-breakout metaphor for network misconfig / post-mortem stories', () => {
+    const postMortem = fallbackScene(
+      'Anthropic Post-Mortem: Network misconfigurations let an evaluation agent reach external systems',
+    );
+    expect(postMortem.toLowerCase()).toContain('sandbox');
+    expect(postMortem.toLowerCase()).toContain('network');
+    expect(postMortem.toLowerCase()).not.toContain('laptop');
+    expect(postMortem.toLowerCase()).not.toContain('reveal stage');
+  });
+
+  it('prefers cryptographic seal over model-launch stage for Mythos cryptanalysis', () => {
+    const mythos = fallbackScene(
+      'Claude Mythos Preview: Early access model shows unexpected cryptanalysis capabilities',
+    );
+    expect(mythos.toLowerCase()).toMatch(/padlock|cryptographic seal/);
+    expect(mythos.toLowerCase()).not.toContain('reveal stage');
   });
 
   it('returns a sensible default and never the banned brain cliché', () => {
@@ -281,7 +306,8 @@ describe('renderFallbackEditorialIllustration', () => {
 
 describe('sceneBrief', () => {
   it('returns the default scene without any network call when there is no context', async () => {
-    const scene = await sceneBrief('', '', { geminiApiKey: 'unused' });
+    const { scene, source } = await sceneBrief('', '', { geminiApiKey: 'unused' });
     expect(scene).toContain('workstation');
+    expect(source).toBe('fallback');
   });
 });
