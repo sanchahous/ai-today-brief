@@ -19,6 +19,22 @@ Last updated: 2026-08-04
 
 ---
 
+## 2026-08-04 — wiki:sync гейт (код ↔ специфікація)
+
+**Джерело:** запит власника; live check після #177 wiki refresh
+
+**Змінено:**
+
+- `wiki/_meta/project-sync.json` — контракт watchers/facts/counts/index
+- `wiki/_tools/lib/project-sync.mjs` + `wiki-project-sync.mjs` + `*.test.mjs`
+- `package.json` — `wiki:sync`, `wiki:sync:test`, `wiki:check`; `pr:check` включає `wiki:check`
+- `.cursor/rules/pr-gate.mdc`, `CLAUDE.md`, `wiki/architecture/agentic-workflow.md` — опис гейту
+- `wiki/pipeline/weekly-digest.md` — формулювання `default $4` під fact-check
+
+**Нотатка:** зміна коду під watcher без оновлення listed wiki-сторінок тепер валить `pr:check`.
+
+---
+
 ## 2026-08-04 — актуалізація wiki під main + weekly stability
 
 **Джерело:** live check `git log` / `gh pr list` / Supabase preflight 2026-08-04; PR #166–#177

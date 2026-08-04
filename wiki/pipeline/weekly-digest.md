@@ -43,7 +43,7 @@ Video / Release).
 4. `social_copy` / `pdf` / `video_manifest` (manifest → зовнішній Remotion)
 5. import `video_final` + captions + thumbnail
 
-Hard spend-cap weekly master: `WEEKLY_MASTER_MAX_SPEND_USD` (default **$4**,
+Hard spend-cap weekly master: `WEEKLY_MASTER_MAX_SPEND_USD` (default $4,
 `generation-worker.ts`) + kill-switch режиму `off` (source: PR #163, `.env.example`).
 Витрати пишуться в `generation_cost_events`, UI — `/admin/costs` (source: PR #169).
 

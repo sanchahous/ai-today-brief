@@ -117,7 +117,12 @@ One source typically touches 5–15 pages. That is normal.
 
 ## Wiki lint
 
-`npm run wiki:lint` (report-only) plus a human pass. On "run lint" / "audit the wiki":
+`npm run wiki:check` (= `wiki:sync` + sync unit tests + `wiki:lint --strict`) is part of
+`pr:check`. `wiki:sync` fails when watched code is newer than its wiki pages or when extracted
+project facts drift out of the docs (contract: `wiki/_meta/project-sync.json`).
+
+`npm run wiki:lint` alone stays report-friendly; use `--strict` or `wiki:check` in CI. On
+"run lint" / "audit the wiki" also do a human/agent semantic pass:
 
 - contradictions between pages;
 - orphan pages (no incoming links);
