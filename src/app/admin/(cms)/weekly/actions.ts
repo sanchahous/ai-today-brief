@@ -677,16 +677,46 @@ export async function saveWeeklyVideoAction(formData: FormData) {
   revalidateWeeklyAdmin(savedDigestId);
 }
 
+function redirectWeeklySocialError(weeklyDigestId: string, message: string): never {
+  redirect(
+    `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=social&save_error=${encodeURIComponent(message.slice(0, 500))}`,
+  );
+}
+
+function isNextRedirectError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'digest' in error &&
+    typeof (error as { digest: unknown }).digest === 'string' &&
+    (error as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+  );
+}
+
+function qualityBlockingMessages(value: Json | null | undefined): string[] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+  const blocking = (value as { blocking?: unknown }).blocking;
+  if (!Array.isArray(blocking)) return [];
+  return blocking.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
+    const row = entry as Record<string, unknown>;
+    if (typeof row.message === 'string' && row.message.trim()) return [row.message.trim()];
+    if (typeof row.code === 'string' && row.code.trim()) return [row.code.trim()];
+    return [];
+  });
+}
+
 export async function saveWeeklySocialAction(formData: FormData) {
   const intent = optionalString(formData, 'intent') || 'save';
   const session = await requireSocialAdmin({
     roles: intent === 'approved' ? ['owner'] : ['owner', 'editor'],
   });
   const postId = requiredString(formData, 'social_post_id');
+  const weeklyDigestIdHint = optionalString(formData, 'weekly_digest_id');
   const admin = getSupabaseAdmin();
   const { data: post } = await admin
     .from('social_posts')
-    .select('package_id,channel,locale,meta')
+    .select('package_id,channel,locale,meta,quality_report,publish_enabled,content_hash')
     .eq('id', postId)
     .maybeSingle();
   if (
@@ -696,6 +726,20 @@ export async function saveWeeklySocialAction(formData: FormData) {
   ) {
     throw new Error('The weekly social variant changed. Reload before saving.');
   }
+  const { data: socialPackage } = post.package_id
+    ? await admin
+        .from('social_packages')
+        .select('weekly_digest_id')
+        .eq('id', post.package_id)
+        .maybeSingle()
+    : { data: null };
+  const weeklyDigestId = socialPackage?.weekly_digest_id || weeklyDigestIdHint;
+  if (!weeklyDigestId) {
+    throw new Error('Weekly social package was not found.');
+  }
+
+  const fail = (message: string): never => redirectWeeklySocialError(weeklyDigestId, message);
+
   const cta = optionalString(formData, 'cta');
   const hashtags = optionalString(formData, 'hashtags');
   let postText = requiredString(formData, 'post_text');
@@ -703,12 +747,23 @@ export async function saveWeeklySocialAction(formData: FormData) {
     if (suffix && !postText.includes(suffix)) postText = `${postText}\n\n${suffix}`;
   }
   const assetUrlsText = optionalString(formData, 'asset_urls_json');
-  const assetUrls = assetUrlsText ? jsonArray(assetUrlsText, 'Social assets') : null;
+  let assetUrls: unknown[] | null = null;
+  try {
+    assetUrls = assetUrlsText ? jsonArray(assetUrlsText, 'Social assets') : null;
+  } catch (error) {
+    fail(error instanceof Error ? error.message : 'Social assets JSON is invalid.');
+  }
   const url = optionalString(formData, 'url');
   const utmUrl = optionalString(formData, 'utm_url');
   const currentMeta =
     post.meta && typeof post.meta === 'object' && !Array.isArray(post.meta)
       ? (post.meta as Record<string, Json | undefined>)
+      : {};
+  const priorQuality =
+    post.quality_report &&
+    typeof post.quality_report === 'object' &&
+    !Array.isArray(post.quality_report)
+      ? (post.quality_report as Record<string, Json | undefined>)
       : {};
   const linkedinDocumentStatus = optionalString(formData, 'linkedin_document_status');
   const linkedinDocumentNote = optionalString(formData, 'linkedin_document_note');
@@ -716,22 +771,36 @@ export async function saveWeeklySocialAction(formData: FormData) {
     post.channel === 'linkedin' &&
     !['not_started', 'draft_ready', 'ready', 'completed'].includes(linkedinDocumentStatus)
   ) {
-    throw new Error('Select a valid LinkedIn document checklist status.');
+    fail('Select a valid LinkedIn document checklist status.');
   }
   if (
     intent === 'approved' &&
     post.channel === 'linkedin' &&
     !['ready', 'completed'].includes(linkedinDocumentStatus)
   ) {
-    throw new Error('Prepare the manual LinkedIn PDF/document post before approval.');
+    fail('Prepare the manual LinkedIn PDF/document post before approval.');
   }
   for (const [label, value] of [
     ['URL', url],
     ['UTM URL', utmUrl],
   ] as const) {
-    if (value && !/^https:\/\//i.test(value)) throw new Error(`${label} must use HTTPS.`);
+    if (value && !/^https:\/\//i.test(value)) fail(`${label} must use HTTPS.`);
   }
   const userDb = await getSupabaseServer();
+  const hookAngle =
+    (typeof currentMeta.hook_angle === 'string' && currentMeta.hook_angle) ||
+    (typeof priorQuality.hookAngle === 'string' && priorQuality.hookAngle) ||
+    null;
+  const hookCandidates = Array.isArray(currentMeta.hook_candidates)
+    ? currentMeta.hook_candidates
+    : Array.isArray(priorQuality.hookCandidates)
+      ? priorQuality.hookCandidates
+      : null;
+  const writerMeta =
+    (currentMeta.writer && typeof currentMeta.writer === 'object'
+      ? currentMeta.writer
+      : null) ??
+    (priorQuality.writer && typeof priorQuality.writer === 'object' ? priorQuality.writer : null);
   const { error: metadataError } = await userDb
     .from('social_posts')
     .update({
@@ -742,6 +811,9 @@ export async function saveWeeklySocialAction(formData: FormData) {
         ...currentMeta,
         cta: cta || null,
         hashtags: hashtags || null,
+        ...(hookAngle ? { hook_angle: hookAngle } : {}),
+        ...(hookCandidates ? { hook_candidates: hookCandidates } : {}),
+        ...(writerMeta ? { writer: writerMeta } : {}),
         ...(post.channel === 'linkedin'
           ? {
               document_status: linkedinDocumentStatus,
@@ -751,7 +823,8 @@ export async function saveWeeklySocialAction(formData: FormData) {
       } as Json,
     })
     .eq('id', postId);
-  if (metadataError) throw new Error(metadataError.message);
+  if (metadataError) fail(metadataError.message);
+
   const mapped = new FormData();
   mapped.set('id', postId);
   mapped.set('post_text', postText);
@@ -760,17 +833,40 @@ export async function saveWeeklySocialAction(formData: FormData) {
   mapped.set('alt_text', optionalString(formData, 'alt_text'));
   // updateVariantAction performs the single DST-aware Europe/Kyiv → UTC conversion.
   mapped.set('scheduled_for', requiredString(formData, 'scheduled_for_local'));
-  await updateVariantAction(mapped);
+  try {
+    await updateVariantAction(mapped);
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
+    fail(error instanceof Error ? error.message : 'Could not save the social variant.');
+  }
+
   if (intent === 'approved') {
+    const { data: refreshed } = await admin
+      .from('social_posts')
+      .select('quality_report,publish_enabled,content_hash')
+      .eq('id', postId)
+      .maybeSingle();
+    const blockers = qualityBlockingMessages(refreshed?.quality_report);
+    if (blockers.length > 0) {
+      fail(
+        `Cannot approve yet — fix quality blockers first: ${blockers.slice(0, 3).join(' · ')}`,
+      );
+    }
+    if (!refreshed?.publish_enabled) {
+      fail('This channel is paused. Enable publishing before approving.');
+    }
+    if (!refreshed?.content_hash) {
+      fail('Save the draft successfully before approving — content hash is missing.');
+    }
     const { error } = await userDb.rpc('approve_social_post', {
       p_social_post_id: postId,
     });
-    if (error) throw new Error(error.message);
+    if (error) fail(error.message);
   }
   if (intent === 'changes_requested') {
     const note = requiredString(formData, 'review_note');
     if (note.length < 10 || note.length > 2000) {
-      throw new Error('A review note must contain 10 to 2000 characters.');
+      fail('A review note must contain 10 to 2000 characters.');
     }
     const { data: reviewedPost, error: reviewedPostError } = await admin
       .from('social_posts')
@@ -778,7 +874,10 @@ export async function saveWeeklySocialAction(formData: FormData) {
       .eq('id', postId)
       .single();
     if (reviewedPostError || !reviewedPost) {
-      throw new Error('The updated social variant could not be loaded for review.');
+      redirectWeeklySocialError(
+        weeklyDigestId,
+        'The updated social variant could not be loaded for review.',
+      );
     }
     const { error } = await userDb.from('social_post_reviews').insert({
       social_post_id: reviewedPost.id,
@@ -795,16 +894,9 @@ export async function saveWeeklySocialAction(formData: FormData) {
       } as Json,
       note,
     });
-    if (error) throw new Error(error.message);
+    if (error) fail(error.message);
   }
-  const { data: socialPackage } = post.package_id
-    ? await admin
-        .from('social_packages')
-        .select('weekly_digest_id')
-        .eq('id', post.package_id)
-        .maybeSingle()
-    : { data: null };
-  if (socialPackage?.weekly_digest_id) revalidateWeeklyAdmin(socialPackage.weekly_digest_id);
+  revalidateWeeklyAdmin(weeklyDigestId);
 }
 
 export async function commentWeeklySocialAction(formData: FormData) {

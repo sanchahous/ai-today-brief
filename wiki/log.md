@@ -19,6 +19,19 @@ Last updated: 2026-08-04
 
 ---
 
+## 2026-08-04 — Weekly Social: preview assets + safe save/approve
+
+**Джерело:** live fail Telegram Save & approve (`schedule_past`) + founder report
+«бачу alt text, не бачу image»
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — нотатки Social tab (preview `asset_urls`, Destination URL,
+  blockers, збереження provenance)
+- `wiki/ops/social-cms-runbook.md` — Weekly Social tab notes
+- `wiki/now.md` — поточний фокус на Social save/UX
+
+**Нотатка:** ілюстрації вже були в БД; UI показував лише alt/JSON без превʼю.
+
 ## 2026-08-04 — Weekly admin runbook + Research next-step UX
 
 **Джерело:** запит власника (незрозумілий gate: master queued після succeeded packs)

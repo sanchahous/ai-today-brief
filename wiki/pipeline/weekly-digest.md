@@ -96,7 +96,7 @@ live check 2026-08-04)
 - Немає 5s auto-`router.refresh` blink під час queued jobs (PR #173)
 - Preview URL version-bust після regen visuals (PR #172)
 - Restore earlier version — Overview → Editorial versions (PR #177)
-- **Release preflight blockers** (Overview + Release): згруповані по секціях релізного
+  - **Release preflight blockers** (Overview + Release): згруповані по секціях релізного
   шляху (Stories → Research → Article → Visuals → Social → PDF → Video), з `Step N of 8`,
   нумерацією всередині секції і лінком на вкладку. Приклад: `content_quality_report` —
   Research step 2 → апрув Top 3 packs → Start Content Studio → Master quality → Approve.
@@ -106,6 +106,12 @@ live check 2026-08-04)
   зараз стартує. Overview має короткий Editor playbook. Повний гайд —
   [weekly-admin-runbook](../ops/weekly-admin-runbook.md).
   (source: `weekly-workspace.tsx`, 2026-08-04)
+- **Social tab** (серп 2026): ілюстрації каналу показуються з `asset_urls` (не лише alt
+  text / JSON); Destination URL автозаповнюється з clean weekly URL; Save & approve
+  вимкнений при quality blockers (наприклад `schedule_past` — треба майбутній Kyiv
+  час); помилки Save йдуть у `?tab=social&save_error=…` замість opaque server error;
+  Save більше не стирає writer / hook / platformFit у `quality_report`.
+  (source: `weekly-workspace.tsx`, `saveWeeklySocialAction`, `updateVariantAction`)
 
 ## Fluid CPU / вартість (2026-08-04)
 

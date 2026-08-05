@@ -11,7 +11,7 @@ import { composeDailySocial, composeWeeklySocial } from '@/lib/social/composer';
 import { socialContentHash } from '@/lib/social/content-hash';
 import { attachCriticReport } from '@/lib/social/critic';
 import { generateSocialJson } from '@/lib/social/llm-router';
-import { runQualityGate } from '@/lib/social/quality';
+import { mergePreservedQualityProvenance, runQualityGate } from '@/lib/social/quality';
 import {
   kyivWallClockToUtc,
   resolveCadenceSettings,
@@ -271,6 +271,10 @@ export async function updateVariantAction(formData: FormData) {
           .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
           .map((value) => value.trim())
       : [];
+  const sourceApproved =
+    socialPackage?.kind === 'weekly_digest'
+      ? Boolean(weeklyItems?.length)
+      : item?.review_status === 'approved' && brief?.status === 'published';
   const draft = {
     channel: post.channel,
     locale,
@@ -281,11 +285,14 @@ export async function updateVariantAction(formData: FormData) {
     assets: parseAssets(post.asset_urls),
     altText,
     scheduledFor,
-    sourceApproved: item?.review_status === 'approved' && brief?.status === 'published',
+    sourceApproved,
     sourceFacts,
-    sourceUrl: post.utm_url ?? '',
+    sourceUrl: post.utm_url ?? post.url ?? '',
   };
-  const report = await attachCriticReport(draft, runQualityGate(draft));
+  const report = mergePreservedQualityProvenance(
+    await attachCriticReport(draft, runQualityGate(draft)),
+    post.quality_report,
+  );
   const nextVersion = post.content_version + 1;
   const contentHash = socialContentHash({
     channel: draft.channel,
@@ -315,6 +322,9 @@ export async function updateVariantAction(formData: FormData) {
   revalidatePath(`/admin/packages/${post.package_id}`);
   revalidatePath('/admin');
   revalidatePath('/admin/calendar');
+  if (socialPackage?.kind === 'weekly_digest' && socialPackage.weekly_digest_id) {
+    revalidatePath(`/admin/weekly/${socialPackage.weekly_digest_id}`);
+  }
 }
 
 export async function regenerateVariantAction(formData: FormData) {

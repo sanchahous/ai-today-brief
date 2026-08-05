@@ -205,6 +205,20 @@ After a critic outage or model change, open the package and press **Save** (no
 copy change is required) or **Regenerate selected**. The new audit timestamp,
 provider, model, score and flags appear in the package editor.
 
+### Weekly Social tab notes
+
+- Channel illustrations live in `social_posts.asset_urls` (public storage URLs).
+  The Weekly admin Social tab previews those images; alt text alone is not the
+  image. If previews are empty, regenerate Social assets on Visuals, then social
+  copy if needed.
+- **Destination URL** = clean weekly page (`/{lang}/weekly/{slug}`). **Tracked
+  URL** keeps UTM params. Generation now writes both fields.
+- Do not Approve with a past Kyiv schedule (`schedule_past` blocker). Set a
+  future datetime → Save draft → Save & approve.
+- Save errors redirect to `?tab=social&save_error=…` instead of a blank server
+  error page. Saving preserves writer / hook / platform-fit provenance in
+  `quality_report`.
+
 ## 4. 20-day shadow discovery
 
 Keep the global kill switch on. Generate recent packages locally or in a secure
