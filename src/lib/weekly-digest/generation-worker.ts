@@ -22,8 +22,10 @@ import { nextWeeklyScheduledForChannel } from '@/lib/social/schedule';
 import {
   canonicalSourceName,
   contentFingerprint,
-  editorialQualityPasses,
+  editorialQualityFailures,
+  editorialQualityRetryGuidance,
   placementForRank,
+  REQUIRED_QUALITY_DIMENSIONS,
   resolveWeeklyContentStudioMode,
   sourceNameMatchesDomain,
   WEEKLY_CONTENT_STUDIO_VERSION,
@@ -31,10 +33,12 @@ import {
   WEEKLY_VIDEO_MANIFEST_VERSION,
   type WeeklyContentQualityReport,
   type WeeklyMasterBundle,
+  type WeeklyQualityDimension,
   type WeeklyResearchPack,
 } from './content-studio';
 import {
   generateWeeklyMaster,
+  splitMasterRetryGuidance,
   type WeeklyMasterCheckpoint,
   type WeeklyMasterEnglishResult,
   type WeeklyMasterInputStory,
@@ -564,6 +568,32 @@ function blockerGuidanceFromReport(
 }
 
 /**
+ * A low dimension score (e.g. naturalness/parity below their floor) is not a
+ * `blocker` issue, so `blockerGuidanceFromReport` never sees it -- a retry
+ * after that kind of failure had no instruction to act on and just re-rolled
+ * the same prompt. Mirrors `editorialQualityRetryGuidance` (content-studio.ts)
+ * but parses the loosely-typed JSON `content` column the way
+ * `blockerGuidanceFromReport` does, instead of assuming a validated report.
+ */
+function dimensionGuidanceFromReport(
+  report: { content: Json } | undefined,
+): WeeklyMasterRetryGuidance[] {
+  const known = new Set<string>(REQUIRED_QUALITY_DIMENSIONS);
+  const rawDimensions = asRecord(report?.content).dimensions;
+  if (!Array.isArray(rawDimensions)) return [];
+  const dimensions = rawDimensions.flatMap((entry) => {
+    const row = asRecord(entry);
+    const name = text(row.name);
+    const score = Number(row.score);
+    if (!name || !known.has(name) || !Number.isFinite(score)) return [];
+    return [
+      { name, score, note: text(row.note) ?? '' } as WeeklyQualityDimension,
+    ];
+  });
+  return editorialQualityRetryGuidance({ dimensions });
+}
+
+/**
  * Guidance accumulates across every past critic verdict for this revision, not
  * just the latest one. A single-verdict window lets fixes oscillate forever --
  * resolving this round's blocker regresses one a prior round already fixed,
@@ -586,7 +616,10 @@ async function priorMasterRetryGuidance(
 
   const byIdentity = new Map<string, WeeklyMasterRetryGuidance>();
   for (const report of data ?? []) {
-    for (const guidance of blockerGuidanceFromReport(report)) {
+    for (const guidance of [
+      ...blockerGuidanceFromReport(report),
+      ...dimensionGuidanceFromReport(report),
+    ]) {
       const identity = `${guidance.code}|${guidance.revisionItemId ?? ''}|${guidance.field ?? ''}`;
       byIdentity.set(identity, guidance);
     }
@@ -601,6 +634,13 @@ async function saveQualityReport(input: {
   generation: Awaited<ReturnType<typeof generateWeeklyMaster>>['generation'];
   passed: boolean;
   jobId?: string;
+  /**
+   * The gate-failure path saves this same report a second time, against a
+   * draft revision, purely so the draft carries its own visible explanation
+   * in the admin UI — the LLM spend it describes was already recorded once,
+   * against `job.revision_id`, so that second save must not record it again.
+   */
+  recordCost?: boolean;
 }) {
   const artifactId = await saveGeneratedArtifact({
     weeklyDigestId: input.weeklyDigestId,
@@ -627,22 +667,24 @@ async function saveQualityReport(input: {
         : 'estimated',
     },
   });
-  for (const [step, meta] of Object.entries(input.generation)) {
-    await recordGenerationCost({
-      scope: 'weekly',
-      kind: 'llm',
-      provider: meta.provider,
-      model: meta.model,
-      costUsd: meta.estimatedCostUsd,
-      costSource: meta.costSource,
-      promptTokens: meta.promptTokens,
-      outputTokens: meta.outputTokens,
-      weeklyDigestId: input.weeklyDigestId,
-      revisionId: input.revisionId,
-      jobId: input.jobId ?? null,
-      artifactId,
-      metadata: { step, prompt_version: meta.promptVersion },
-    });
+  if (input.recordCost ?? true) {
+    for (const [step, meta] of Object.entries(input.generation)) {
+      await recordGenerationCost({
+        scope: 'weekly',
+        kind: 'llm',
+        provider: meta.provider,
+        model: meta.model,
+        costUsd: meta.estimatedCostUsd,
+        costSource: meta.costSource,
+        promptTokens: meta.promptTokens,
+        outputTokens: meta.outputTokens,
+        weeklyDigestId: input.weeklyDigestId,
+        revisionId: input.revisionId,
+        jobId: input.jobId ?? null,
+        artifactId,
+        metadata: { step, prompt_version: meta.promptVersion },
+      });
+    }
   }
   return artifactId;
 }
@@ -711,32 +753,66 @@ async function assertWithinMasterBudget(revisionId: string) {
 }
 
 /**
- * Identifies whether a prior attempt's EN/UK write is still valid to reuse:
- * changes iff the research packs or retry guidance feeding the prompts
- * change. priorMasterRetryGuidance() only changes once a critic verdict is
- * actually saved, so a retry after a failure that happened *before* that
- * point (every editorial_master failure seen in production so far — a
- * transient provider error or malformed critic JSON) hashes identically and
- * reuses the already-paid EN/UK write instead of re-generating it.
+ * Identifies whether a prior attempt's English write (article+video+social
+ * angles) is still valid to reuse: changes iff the research packs or the
+ * English-relevant slice of retry guidance change. Takes the *full*,
+ * unsplit guidance list and filters internally (via
+ * `splitMasterRetryGuidance`, the same split `generateWeeklyMaster` uses for
+ * the prompts themselves) rather than trusting the caller to pre-filter --
+ * a caller that accidentally passed unfiltered guidance would otherwise
+ * silently defeat the whole point of the split with no type error to catch
+ * it. `naturalness`/`parity` guidance is Ukrainian-only, so a retry that
+ * only needs to fix the Ukrainian translation leaves this hash — and
+ * therefore the already-paid English/video write — untouched.
  */
-export function computeMasterCheckpointHash(
+export function computeEnglishCheckpointHash(
   researchPacks: WeeklyResearchPack[],
   retryGuidance: WeeklyMasterRetryGuidance[],
 ): string {
+  const { english: englishGuidance } = splitMasterRetryGuidance(retryGuidance);
   return createHash('sha256')
-    .update(JSON.stringify({ researchPacks, retryGuidance, promptVersion: WEEKLY_MASTER_SPEC_VERSION }))
+    .update(
+      JSON.stringify({ researchPacks, englishGuidance, promptVersion: WEEKLY_MASTER_SPEC_VERSION }),
+    )
+    .digest('hex');
+}
+
+/**
+ * Ukrainian write is valid to reuse only if the research packs, the
+ * Ukrainian-relevant guidance, AND the English checkpoint it was translated
+ * from are all unchanged — a fresh English pass always invalidates the
+ * existing Ukrainian translation, even without new Ukrainian-tagged guidance.
+ * Same full-list-in, filter-internally contract as computeEnglishCheckpointHash.
+ */
+export function computeUkrainianCheckpointHash(
+  researchPacks: WeeklyResearchPack[],
+  englishCheckpointHash: string,
+  retryGuidance: WeeklyMasterRetryGuidance[],
+): string {
+  const { ukrainian: ukrainianGuidance } = splitMasterRetryGuidance(retryGuidance);
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        researchPacks,
+        englishCheckpointHash,
+        ukrainianGuidance,
+        promptVersion: WEEKLY_MASTER_SPEC_VERSION,
+      }),
+    )
     .digest('hex');
 }
 
 type MasterCheckpointOutput = {
-  checkpointHash?: string;
+  englishCheckpointHash?: string;
+  ukrainianCheckpointHash?: string;
   english?: WeeklyMasterEnglishResult;
   ukrainian?: WeeklyMasterUkrainianResult;
 };
 
 async function loadMasterCheckpoint(
   jobId: string,
-  expectedHash: string,
+  expectedEnglishHash: string,
+  expectedUkrainianHash: string,
 ): Promise<WeeklyMasterCheckpoint | null> {
   const db = getSupabaseAdmin();
   const { data, error } = await db
@@ -746,16 +822,24 @@ async function loadMasterCheckpoint(
     .maybeSingle();
   if (error) throw new Error(`[weekly-generation] checkpoint lookup: ${error.message}`);
   const output = asRecord(data?.output as Json | undefined) as MasterCheckpointOutput;
-  if (output.checkpointHash !== expectedHash || !output.english) return null;
-  return { english: output.english, ukrainian: output.ukrainian };
+  const english = output.englishCheckpointHash === expectedEnglishHash ? output.english : undefined;
+  const ukrainian =
+    output.ukrainianCheckpointHash === expectedUkrainianHash ? output.ukrainian : undefined;
+  if (!english && !ukrainian) return null;
+  return { english, ukrainian };
 }
 
 async function saveMasterCheckpoint(
   jobId: string,
-  checkpointHash: string,
+  englishCheckpointHash: string,
+  ukrainianCheckpointHash: string,
   checkpoint: WeeklyMasterCheckpoint,
 ) {
-  const output: MasterCheckpointOutput = { checkpointHash, ...checkpoint };
+  const output: MasterCheckpointOutput = {
+    englishCheckpointHash,
+    ukrainianCheckpointHash,
+    ...checkpoint,
+  };
   const db = getSupabaseAdmin();
   const { error } = await db
     .from('weekly_digest_generation_jobs')
@@ -782,8 +866,13 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
   const sourceStories = masterInputStories(context, approvedResearch);
   const researchPacks = approvedResearch.map(({ pack }) => pack);
   const retryGuidance = await priorMasterRetryGuidance(job.revision_id);
-  const checkpointHash = computeMasterCheckpointHash(researchPacks, retryGuidance);
-  const checkpoint = await loadMasterCheckpoint(job.id, checkpointHash);
+  const englishCheckpointHash = computeEnglishCheckpointHash(researchPacks, retryGuidance);
+  const ukrainianCheckpointHash = computeUkrainianCheckpointHash(
+    researchPacks,
+    englishCheckpointHash,
+    retryGuidance,
+  );
+  const checkpoint = await loadMasterCheckpoint(job.id, englishCheckpointHash, ukrainianCheckpointHash);
   // Accumulates across both onStepComplete calls so the ukrainian save doesn't
   // clobber the english step just persisted moments earlier in this same run.
   let runningCheckpoint = checkpoint;
@@ -795,11 +884,11 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
         ukrainian:
           step === 'ukrainian' ? (stepResult as WeeklyMasterUkrainianResult) : runningCheckpoint?.ukrainian,
       };
-      await saveMasterCheckpoint(job.id, checkpointHash, runningCheckpoint);
+      await saveMasterCheckpoint(job.id, englishCheckpointHash, ukrainianCheckpointHash, runningCheckpoint);
     },
   });
-  const passed = editorialQualityPasses(result.quality);
-  if (!passed) {
+  const failures = editorialQualityFailures(result.quality);
+  if (failures.length > 0) {
     const qualityArtifactId = await saveQualityReport({
       weeklyDigestId: job.weekly_digest_id,
       revisionId: job.revision_id,
@@ -808,11 +897,89 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
       passed: false,
       jobId: job.id,
     });
+    // Everything the LLM produced (article EN/UK, video script) is real,
+    // paid-for content -- discarding it because one dimension missed its
+    // floor is what stranded it in a job's internal checkpoint last time,
+    // invisible outside a raw DB query. Save it as an inactive draft
+    // revision instead: it shows up in Overview -> Editorial versions next
+    // to the still-untouched active revision, and the owner decides whether
+    // to restore it, same as any other version.
+    const draft = await createMasterRevision({
+      job,
+      context,
+      result,
+      requestedMode,
+      approvedResearch,
+      rpcName: 'create_service_weekly_digest_revision_draft',
+      // Truncated to 120 chars by the RPC and shown as-is on the revision
+      // card (weekly-workspace.tsx) -- keep it short enough to read there
+      // without opening the linked quality report artifact.
+      reason: `Quality gate: ${result.quality.score}/100, ${failures.length} check(s) failed`,
+    });
+    await saveQualityReport({
+      weeklyDigestId: job.weekly_digest_id,
+      revisionId: draft.revisionId,
+      report: result.quality,
+      generation: result.generation,
+      passed: false,
+      jobId: job.id,
+      recordCost: false,
+    });
     throw new Error(
-      `Master quality gate failed (${result.quality.score}/100, ${result.quality.issues.filter((issue) => issue.blocker).length} blockers). Review artifact ${qualityArtifactId}.`,
+      `Master quality gate failed (${result.quality.score}/100): ${failures.join('; ')}. Review artifact ${qualityArtifactId}. Draft revision ${draft.revisionId} was saved for review under Overview -> Editorial versions -- it did not become active.`,
     );
   }
 
+  const created = await createMasterRevision({
+    job,
+    context,
+    result,
+    requestedMode,
+    approvedResearch,
+    rpcName: 'create_service_weekly_digest_revision',
+    reason: 'weekly_content_studio_v2_master',
+  });
+  const qualityArtifactId = await saveQualityReport({
+    weeklyDigestId: job.weekly_digest_id,
+    revisionId: created.revisionId,
+    report: result.quality,
+    generation: result.generation,
+    passed: true,
+    jobId: job.id,
+  });
+  await queuePostMasterJobs(job.weekly_digest_id, created.revisionId, created.newItems);
+  return {
+    artifactId: null,
+    output: {
+      new_revision_id: created.revisionId,
+      article_artifact_ids: created.articleArtifactIds,
+      video_script_artifact_id: created.videoScriptArtifactId,
+      quality_artifact_id: qualityArtifactId,
+      quality_score: result.quality.score,
+    },
+  };
+}
+
+/**
+ * Shared by the success path (activates immediately, via
+ * create_service_weekly_digest_revision) and the gate-failure path
+ * (create_service_weekly_digest_revision_draft, never touches
+ * active_revision_id): builds the revision-items payload, creates the
+ * revision, rebases the generated bundle onto the new item IDs, and saves
+ * the article + video_script artifacts against it. Callers still handle
+ * their own quality-report save (the two paths use different revisionId/
+ * passed/recordCost combinations) and, on success, queuePostMasterJobs.
+ */
+async function createMasterRevision(params: {
+  job: ClaimedGenerationJob;
+  context: Awaited<ReturnType<typeof loadGenerationContext>>;
+  result: Awaited<ReturnType<typeof generateWeeklyMaster>>;
+  requestedMode: ReturnType<typeof contentStudioJobMode>;
+  approvedResearch: ReturnType<typeof researchPacksFromContext>;
+  rpcName: 'create_service_weekly_digest_revision' | 'create_service_weekly_digest_revision_draft';
+  reason: string;
+}) {
+  const { job, context, result, requestedMode, approvedResearch, rpcName, reason } = params;
   const enById = new Map(result.bundle.en.stories.map((story) => [story.revisionItemId, story]));
   const ukById = new Map(result.bundle.uk.stories.map((story) => [story.revisionItemId, story]));
   const researchById = new Map(
@@ -858,22 +1025,19 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
       },
     };
   });
-  const { data: newRevisionId, error } = await rpcClient().rpc(
-    'create_service_weekly_digest_revision',
-    {
-      p_weekly_digest_id: job.weekly_digest_id,
-      p_title_en: result.bundle.en.title,
-      p_title_uk: result.bundle.uk.title,
-      p_intro_en: result.bundle.en.intro,
-      p_intro_uk: result.bundle.uk.intro,
-      p_editor_note_en: result.bundle.en.editorNote,
-      p_editor_note_uk: result.bundle.uk.editorNote,
-      p_key_takeaways_en: result.bundle.en.keyTakeaways,
-      p_key_takeaways_uk: result.bundle.uk.keyTakeaways,
-      p_items: nextItems,
-      p_reason: 'weekly_content_studio_v2_master',
-    },
-  );
+  const { data: newRevisionId, error } = await rpcClient().rpc(rpcName, {
+    p_weekly_digest_id: job.weekly_digest_id,
+    p_title_en: result.bundle.en.title,
+    p_title_uk: result.bundle.uk.title,
+    p_intro_en: result.bundle.en.intro,
+    p_intro_uk: result.bundle.uk.intro,
+    p_editor_note_en: result.bundle.en.editorNote,
+    p_editor_note_uk: result.bundle.uk.editorNote,
+    p_key_takeaways_en: result.bundle.en.keyTakeaways,
+    p_key_takeaways_uk: result.bundle.uk.keyTakeaways,
+    p_items: nextItems,
+    p_reason: reason,
+  });
   if (error || typeof newRevisionId !== 'string') {
     throw new Error(
       `[weekly-generation] create master revision: ${error?.message ?? 'missing revision ID'}`,
@@ -992,25 +1156,7 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
       prompt_version: result.generation.english.promptVersion,
     },
   });
-  const qualityArtifactId = await saveQualityReport({
-    weeklyDigestId: job.weekly_digest_id,
-    revisionId: newRevisionId,
-    report: result.quality,
-    generation: result.generation,
-    passed: true,
-    jobId: job.id,
-  });
-  await queuePostMasterJobs(job.weekly_digest_id, newRevisionId, newItems);
-  return {
-    artifactId: null,
-    output: {
-      new_revision_id: newRevisionId,
-      article_artifact_ids: articleArtifactIds,
-      video_script_artifact_id: videoScriptArtifactId,
-      quality_artifact_id: qualityArtifactId,
-      quality_score: result.quality.score,
-    },
-  };
+  return { revisionId: newRevisionId, articleArtifactIds, videoScriptArtifactId, newItems };
 }
 
 async function localeMap() {

@@ -482,26 +482,99 @@ export function validateMasterBundle(
   return issues;
 }
 
-export function editorialQualityPasses(report: WeeklyContentQualityReport) {
-  const requiredDimensions = new Set<WeeklyQualityDimension['name']>([
-    'hook',
-    'clarity',
-    'trust',
-    'usefulness',
-    'structure',
-    'naturalness',
-    'parity',
-  ]);
+export const REQUIRED_QUALITY_DIMENSIONS: WeeklyQualityDimension['name'][] = [
+  'hook',
+  'clarity',
+  'trust',
+  'usefulness',
+  'structure',
+  'naturalness',
+  'parity',
+];
+const GENERAL_DIMENSION_MIN_SCORE = 75;
+const NATURALNESS_PARITY_MIN_SCORE = 80;
+const OVERALL_MIN_SCORE = 85;
+
+/**
+ * Every reason `editorialQualityPasses` would reject this report, in plain
+ * language naming the specific dimension/value at fault. `throw new Error`
+ * call sites should join and surface this list — a bare score/blocker-count
+ * summary hides which check actually failed (e.g. an 88/100 report with 0
+ * blockers can still fail solely because one dimension missed its own,
+ * stricter floor).
+ */
+export function editorialQualityFailures(report: WeeklyContentQualityReport): string[] {
+  const requiredDimensions = new Set(REQUIRED_QUALITY_DIMENSIONS);
   const receivedDimensions = new Set(report.dimensions.map((dimension) => dimension.name));
-  return (
-    report.factualFlags.length === 0 &&
-    report.issues.every((issue) => !issue.blocker) &&
-    report.score >= 85 &&
-    requiredDimensions.size === receivedDimensions.size &&
-    [...requiredDimensions].every((dimension) => receivedDimensions.has(dimension)) &&
-    report.dimensions.every((dimension) => dimension.score >= 75) &&
-    report.dimensions
-      .filter((dimension) => dimension.name === 'naturalness' || dimension.name === 'parity')
-      .every((dimension) => dimension.score >= 85)
+  const failures: string[] = [];
+
+  if (report.factualFlags.length > 0) {
+    failures.push(`${report.factualFlags.length} unresolved factual flag(s): ${report.factualFlags.join('; ')}`);
+  }
+  const blockers = report.issues.filter((issue) => issue.blocker);
+  if (blockers.length > 0) {
+    failures.push(`${blockers.length} blocking issue(s): ${blockers.map((issue) => issue.code).join(', ')}`);
+  }
+  if (report.score < OVERALL_MIN_SCORE) {
+    failures.push(`overall score ${report.score}/100 is below the ${OVERALL_MIN_SCORE} minimum`);
+  }
+  const missingDimensions = REQUIRED_QUALITY_DIMENSIONS.filter(
+    (dimension) => !receivedDimensions.has(dimension),
   );
+  if (missingDimensions.length > 0) {
+    failures.push(`missing required dimension(s): ${missingDimensions.join(', ')}`);
+  }
+  if (requiredDimensions.size !== receivedDimensions.size && missingDimensions.length === 0) {
+    failures.push(
+      `expected exactly ${requiredDimensions.size} dimensions, got ${receivedDimensions.size} (duplicate or unexpected entries)`,
+    );
+  }
+  for (const dimension of report.dimensions) {
+    if (dimension.score < GENERAL_DIMENSION_MIN_SCORE) {
+      failures.push(
+        `dimension "${dimension.name}" scored ${dimension.score}/100, below the ${GENERAL_DIMENSION_MIN_SCORE} general minimum`,
+      );
+    } else if (
+      (dimension.name === 'naturalness' || dimension.name === 'parity') &&
+      dimension.score < NATURALNESS_PARITY_MIN_SCORE
+    ) {
+      failures.push(
+        `dimension "${dimension.name}" scored ${dimension.score}/100, below the ${NATURALNESS_PARITY_MIN_SCORE} minimum required for naturalness/parity`,
+      );
+    }
+  }
+  return failures;
+}
+
+export function editorialQualityPasses(report: WeeklyContentQualityReport) {
+  return editorialQualityFailures(report).length === 0;
+}
+
+/**
+ * Turns under-threshold dimensions into retry guidance the writer can act on
+ * — unlike `issues[].blocker`, a low dimension score never reached retry
+ * guidance before, so a retry after a naturalness/parity-only miss had no
+ * instruction to fix and just re-rolled the same prompt. `naturalness` and
+ * `parity` are the critic's translation-side dimensions (see the critic
+ * prompt in editorial-llm.ts), so they're tagged `locale: 'uk'`; the other
+ * five (hook/clarity/trust/usefulness/structure) are English/structural and
+ * left locale-less.
+ */
+export function editorialQualityRetryGuidance(
+  report: Pick<WeeklyContentQualityReport, 'dimensions'>,
+): Array<{ code: string; message: string; locale?: 'uk' }> {
+  const guidance: Array<{ code: string; message: string; locale?: 'uk' }> = [];
+  for (const dimension of report.dimensions) {
+    const isTranslationDimension = dimension.name === 'naturalness' || dimension.name === 'parity';
+    const threshold = isTranslationDimension
+      ? NATURALNESS_PARITY_MIN_SCORE
+      : GENERAL_DIMENSION_MIN_SCORE;
+    if (dimension.score >= threshold) continue;
+    guidance.push({
+      code: `dimension_low_score:${dimension.name}`,
+      message: `The "${dimension.name}" dimension scored ${dimension.score}/100 (needs ${threshold}+). Critic note: ${dimension.note}`,
+      ...(isTranslationDimension ? { locale: 'uk' as const } : {}),
+    });
+  }
+  return guidance;
 }
