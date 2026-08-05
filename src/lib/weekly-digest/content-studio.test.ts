@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canonicalSourceName,
+  editorialQualityFailures,
   editorialQualityPasses,
   resolveWeeklyContentStudioMode,
   sourceNameMatchesDomain,
@@ -180,7 +181,7 @@ describe('Weekly Content Studio hard gates', () => {
         { name: 'trust', score: 90, note: 'grounded' },
         { name: 'usefulness', score: 90, note: 'specific' },
         { name: 'structure', score: 90, note: 'complete' },
-        { name: 'naturalness', score: 84, note: 'one calque remains' },
+        { name: 'naturalness', score: 79, note: 'one calque remains' },
         { name: 'parity', score: 90, note: 'aligned' },
       ],
       issues: [],
@@ -189,7 +190,36 @@ describe('Weekly Content Studio hard gates', () => {
       checkedAt: '2026-08-01T00:00:00.000Z',
     };
     expect(editorialQualityPasses(report)).toBe(false);
-    report.dimensions.find((dimension) => dimension.name === 'naturalness')!.score = 85;
+    report.dimensions.find((dimension) => dimension.name === 'naturalness')!.score = 80;
     expect(editorialQualityPasses(report)).toBe(true);
+  });
+
+  it('names the specific failing dimension instead of only the overall score', () => {
+    const report: WeeklyContentQualityReport = {
+      schemaVersion: 'weekly-quality-v2',
+      score: 88,
+      dimensions: [
+        { name: 'hook', score: 90, note: 'clear' },
+        { name: 'clarity', score: 89, note: 'clear' },
+        { name: 'trust', score: 92, note: 'grounded' },
+        { name: 'usefulness', score: 90, note: 'specific' },
+        { name: 'structure', score: 91, note: 'complete' },
+        { name: 'naturalness', score: 80, note: 'one calque remains' },
+        { name: 'parity', score: 90, note: 'aligned' },
+      ],
+      issues: [],
+      factualFlags: [],
+      approvedClaimIds: ['claim-1'],
+      checkedAt: '2026-08-04T00:00:00.000Z',
+    };
+    // Overall score (88) and blocker count (0) both look fine in isolation —
+    // this is the exact "Master quality gate failed (88/100, 0 blockers)"
+    // case that gave no clue the naturalness dimension was the actual cause.
+    expect(editorialQualityPasses(report)).toBe(true);
+    report.dimensions.find((dimension) => dimension.name === 'naturalness')!.score = 79;
+    const failures = editorialQualityFailures(report);
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toContain('naturalness');
+    expect(failures[0]).toContain('79/100');
   });
 });

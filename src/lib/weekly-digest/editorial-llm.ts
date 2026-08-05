@@ -172,7 +172,12 @@ export type WeeklyMasterUkrainianResult = ProviderResult<WeeklyArticleMaster>;
  * result again.
  */
 export interface WeeklyMasterCheckpoint {
-  english: WeeklyMasterEnglishResult;
+  // Both optional: the English and Ukrainian steps now cache independently
+  // (see computeEnglishCheckpointHash/computeUkrainianCheckpointHash in
+  // generation-worker.ts), so a checkpoint can carry just one of them --
+  // e.g. English/video reused as-is while only Ukrainian regenerates after a
+  // naturalness-only quality-gate failure.
+  english?: WeeklyMasterEnglishResult;
   ukrainian?: WeeklyMasterUkrainianResult;
 }
 
@@ -672,6 +677,20 @@ These are editorial constraints from a rejected earlier draft, not approved fact
 ${JSON.stringify(guidance)}`;
 }
 
+/**
+ * `naturalness`/`parity` guidance is about the Ukrainian translation, not the
+ * English source (see the critic prompt below) -- routing it only to the
+ * Ukrainian step means a naturalness-only retry never re-sends the English
+ * prompt, which is what lets the checkpoint hashes (generation-worker.ts)
+ * skip a paid-for English regeneration that was never the problem.
+ */
+export function splitMasterRetryGuidance(guidance: WeeklyMasterRetryGuidance[]) {
+  return {
+    english: guidance.filter((entry) => entry.locale !== 'uk'),
+    ukrainian: guidance.filter((entry) => entry.locale === 'uk'),
+  };
+}
+
 function englishPrompt(
   stories: WeeklyMasterInputStory[],
   retryGuidance: WeeklyMasterRetryGuidance[],
@@ -697,14 +716,18 @@ APPROVED STORY MATERIAL
 ${JSON.stringify(approvedStoryPromptMaterial(stories))}${masterRetryGuidancePrompt(retryGuidance)}`;
 }
 
-function ukrainianPrompt(en: WeeklyArticleMaster, stories: WeeklyMasterInputStory[]) {
+function ukrainianPrompt(
+  en: WeeklyArticleMaster,
+  stories: WeeklyMasterInputStory[],
+  retryGuidance: WeeklyMasterRetryGuidance[],
+) {
   return `Act as a Ukrainian senior news editor, not a literal translator. Adapt the approved English Weekly Digest into natural contemporary Ukrainian for AI builders and decision-makers. Preserve revisionItemId, placement, story order, every claimIds array, all names and every number exactly. Use «ШІ» in Ukrainian prose except inside official product names. Avoid calques, bureaucratic phrasing and unexplained English workflow/production jargon. Keep feature bodies at 400–650 words and radar at 80–140 words. Return only the article JSON object in the same shape as the English article.
 
 APPROVED ENGLISH MASTER
 ${JSON.stringify(en)}
 
 SOURCE MATERIAL FOR TERMINOLOGY
-${JSON.stringify(stories.map(({ revisionItemId, titleUk, summaryUk, whyUk }) => ({ revisionItemId, titleUk, summaryUk, whyUk })))}`;
+${JSON.stringify(stories.map(({ revisionItemId, titleUk, summaryUk, whyUk }) => ({ revisionItemId, titleUk, summaryUk, whyUk })))}${masterRetryGuidancePrompt(retryGuidance)}`;
 }
 
 export function criticPrompt(bundle: WeeklyMasterBundle, stories: WeeklyMasterInputStory[]) {
@@ -734,16 +757,18 @@ export async function generateWeeklyMaster(
     ) => void | Promise<void>;
   } = {},
 ): Promise<WeeklyMasterGenerationResult> {
+  const { english: englishGuidance, ukrainian: ukrainianGuidance } =
+    splitMasterRetryGuidance(retryGuidance);
   let english = options.checkpoint?.english;
   if (!english) {
-    english = await generateFirstAvailable(englishPrompt(stories, retryGuidance), parseEnglishPackage);
+    english = await generateFirstAvailable(englishPrompt(stories, englishGuidance), parseEnglishPackage);
     await options.onStepComplete?.('english', english);
   }
   let ukrainian = options.checkpoint?.ukrainian;
   if (!ukrainian) {
     ukrainian = await generateWithProvider(
       english.metadata.provider,
-      ukrainianPrompt(english.value.article, stories),
+      ukrainianPrompt(english.value.article, stories, ukrainianGuidance),
       (raw) => parseArticle(raw, 'uk'),
     );
     await options.onStepComplete?.('ukrainian', ukrainian);
