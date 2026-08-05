@@ -42,8 +42,10 @@ import {
   premiumGeminiEditorialModels,
   premiumOpenRouterModels,
   generateWeeklyMaster,
+  splitMasterRetryGuidance,
   type WeeklyMasterEnglishResult,
   type WeeklyMasterInputStory,
+  type WeeklyMasterRetryGuidance,
   type WeeklyMasterUkrainianResult,
 } from './editorial-llm';
 import type { WeeklyMasterBundle } from './content-studio';
@@ -163,6 +165,46 @@ describe('masterRetryGuidancePrompt', () => {
     ]);
     expect(prompt).toContain('not approved factual claims');
     expect(prompt).toContain('State only that the reversal occurred.');
+  });
+});
+
+describe('splitMasterRetryGuidance', () => {
+  it('routes plain locale:uk guidance (e.g. article naturalness) to Ukrainian', () => {
+    const guidance: WeeklyMasterRetryGuidance[] = [
+      { code: 'STYLE_CALQUE', message: 'calqued phrasing', locale: 'uk', field: 'stories.body' },
+    ];
+    const { english, ukrainian } = splitMasterRetryGuidance(guidance);
+    expect(english).toHaveLength(0);
+    expect(ukrainian).toHaveLength(1);
+  });
+
+  it('routes video-field guidance to English even when tagged locale:uk -- ukrainianPrompt never touches video/shorts', () => {
+    // Real case (ai-weekly-2026-07-27, 2026-08-05): LOCALE_MISMATCH flagged
+    // video.shorts as English text under a locale:'uk' entry. Shorts are
+    // produced entirely by the English step (see generateWeeklyMaster --
+    // bundle.video = english.value.video), so guidance about them must
+    // reach englishPrompt, or the checkpoint keeps reusing the same broken
+    // shorts on every retry.
+    const guidance: WeeklyMasterRetryGuidance[] = [
+      {
+        code: 'LOCALE_MISMATCH',
+        message: "shorts declare locale 'uk' but are written in English",
+        locale: 'uk',
+        field: 'video.shorts',
+      },
+    ];
+    const { english, ukrainian } = splitMasterRetryGuidance(guidance);
+    expect(english).toHaveLength(1);
+    expect(ukrainian).toHaveLength(0);
+  });
+
+  it('leaves untagged guidance (structural/English issues) in English', () => {
+    const guidance: WeeklyMasterRetryGuidance[] = [
+      { code: 'top3_radar_structure', message: 'must contain exactly three features' },
+    ];
+    const { english, ukrainian } = splitMasterRetryGuidance(guidance);
+    expect(english).toHaveLength(1);
+    expect(ukrainian).toHaveLength(0);
   });
 });
 
