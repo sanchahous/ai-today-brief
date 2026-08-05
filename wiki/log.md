@@ -32,6 +32,19 @@ Last updated: 2026-08-04
 
 **Нотатка:** ілюстрації вже були в БД; UI показував лише alt/JSON без превʼю.
 
+## 2026-08-04 — Weekly admin runbook + Research next-step UX
+
+**Джерело:** запит власника (незрозумілий gate: master queued після succeeded packs)
+
+**Змінено:**
+
+- `wiki/ops/weekly-admin-runbook.md` — **нова** покрокова інструкція адмінки
+- `wiki/index.md` — рядок ops/weekly-admin-runbook
+- `wiki/pipeline/weekly-digest.md` — лінк на runbook + Research UX note
+- `wiki/now.md` — runbook як primary pointer для редакції
+
+**Нотатка:** succeeded ≠ approved — головна пастка human research gate.
+
 ## 2026-08-04 — Vercel Fluid CPU: lazy imports + checkpoint-merge + admin prefetch
 
 **Джерело:** live check Vercel dashboard 2026-08-04 (Fluid Active CPU 3h58m/4h Hobby, `ai-today-brief` = 99.8% акаунта)

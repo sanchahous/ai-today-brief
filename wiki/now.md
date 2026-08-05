@@ -10,12 +10,13 @@ Last updated: 2026-08-04
 
 ## Стан репозиторію
 
-- Гілка `fix/weekly-social-save-and-assets`: Social tab preview ілюстрацій з `asset_urls`,
-  safe Save/Approve (`save_error` banner, disable при blockers, preserve writer/hook/fit),
-  Destination URL на генерації. Див. [weekly-digest](pipeline/weekly-digest.md),
+- Гілка `fix/weekly-social-save-and-assets` (#186): Social tab preview ілюстрацій з
+  `asset_urls`, safe Save/Approve (`save_error` banner, disable при blockers, preserve
+  writer/hook/fit), Destination URL на генерації. Див. [weekly-digest](pipeline/weekly-digest.md),
   [social-cms-runbook](ops/social-cms-runbook.md).
-- `main` tip включає Fluid CPU fix (#184) і master critic excerpts (#183).
-  (source: `git log` / live work 2026-08-04)
+- `main` tip: admin runbook + Research next-step UX (#185), Fluid CPU (#184), master
+  critic excerpts (#183). Гайд редакції — [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
+  (source: `git log` / live work 2026-08-05)
 
 ## Щойно відвантажено (останні 8 PR)
 
@@ -45,10 +46,9 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Активна робота
 
-1. **Редакція `ai-weekly-2026-07-27`.** Після деплою primary-excerpt grounding: Research →
-   **Start / retry Content Studio** (нові research packs v3) → Approve Top 3 знову →
-   дочекатися `editorial_master` → Approve Master quality. (source: `weekly-digest.md`
-   evidence grounding 2026-08-04)
+1. **Редакція `ai-weekly-2026-07-27`.** Packs v3 уже ready — **Approve 3/3** на Research
+   (succeeded ≠ approved), далі `editorial_master` → Master quality. Гайд:
+   [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
 2. **Weekly Content Studio v2 — розкатка.** `WEEKLY_CONTENT_STUDIO_V2=off` у `.env.example`;
    шлях `off → shadow (три історичні) → production` ще не пройдений.
    (source: `.env.example`)
@@ -75,6 +75,7 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 - [overview](overview.md) — бізнес-контекст і жорсткі обмеження
 - [pipeline/weekly-digest](pipeline/weekly-digest.md) — Content Studio v2 + revision stability
+- [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) — як вести випуск у адмінці
 - [ops/owner-checklist](ops/owner-checklist.md) — env / Dependabot secrets
 - [index](index.md) — карта бази знань
 - [open-questions](open-questions.md) — невирішені питання
