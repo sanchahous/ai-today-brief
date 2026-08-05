@@ -683,11 +683,23 @@ ${JSON.stringify(guidance)}`;
  * Ukrainian step means a naturalness-only retry never re-sends the English
  * prompt, which is what lets the checkpoint hashes (generation-worker.ts)
  * skip a paid-for English regeneration that was never the problem.
+ *
+ * `video` (title/hook/narration/scenes/shorts) is entirely produced by the
+ * English step (`ukrainianPrompt` only ever rewrites `article`) even though
+ * the Shorts inside it are meant to be Ukrainian text -- a critic issue can
+ * legitimately carry `locale: 'uk'` while pointing at `field: "video..."`
+ * (e.g. LOCALE_MISMATCH: shorts tagged uk but written in English). Routing
+ * that to the Ukrainian bucket sends it to the one step that structurally
+ * cannot act on it, and — worse — excludes it from the English hash, so the
+ * checkpoint keeps reusing the exact broken video on every retry. Anything
+ * targeting a `video`-prefixed field always goes to English, regardless of
+ * its locale tag.
  */
 export function splitMasterRetryGuidance(guidance: WeeklyMasterRetryGuidance[]) {
+  const targetsVideo = (entry: WeeklyMasterRetryGuidance) => entry.field?.startsWith('video') ?? false;
   return {
-    english: guidance.filter((entry) => entry.locale !== 'uk'),
-    ukrainian: guidance.filter((entry) => entry.locale === 'uk'),
+    english: guidance.filter((entry) => targetsVideo(entry) || entry.locale !== 'uk'),
+    ukrainian: guidance.filter((entry) => !targetsVideo(entry) && entry.locale === 'uk'),
   };
 }
 
