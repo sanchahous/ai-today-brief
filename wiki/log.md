@@ -147,6 +147,31 @@ provider-ladder. Головний фікс: `buildWeeklyPrompt` вшиває avo
 
 ---
 
+## 2026-08-06 — Editorial quality overhaul: PR3 + PR5 live verification, critic vocab fix
+
+**Джерело:** власник дав дозвіл запустити обидві відкладені live-перевірки (реальні платні
+виклики OpenRouter + Cloudflare) замість чекати окремого рішення по кожній
+
+**Змінено:**
+- `src/lib/weekly-digest/editorial-llm.ts` — `criticPrompt` тепер задає закритий словник із
+  6 кодів для non-factual issues (знайдено живим прогоном, критик вигадував власні коди)
+- `src/lib/weekly-digest/content-studio.ts` — `REVISABLE_ISSUE_CODES` розширено цими 6 кодами
+- `src/lib/weekly-digest/content-studio.test.ts` — тести на новий і старий (відхилений) словник
+- `wiki/pipeline/weekly-digest.md` — результати обох live-перевірок у секціях PR3/PR5
+- `wiki/now.md`
+
+**Нотатка:** PR3 acceptance test **PASSED** — новий критик дав 73/100 (voice 68, naturalness 70)
+на точно тому контенті, що раніше отримав 93/100, і самостійно процитував фрази з оригінальної
+скарги власника («Обмеження полягає в тому, що…», «For product and security leaders…»). Рубрика
+дискримінує за призначенням. PR5 dry-run дав 9 генуїнно фотореалістичних репортажних кадрів —
+технічна перевірка пройдена, зображення надіслані власнику для фінальної візуальної оцінки;
+одна самостійно помічена проблема — композиційна одноманітність між історіями (не хиба
+регістру, радше брак сценарної різноманітності, вартий уваги в майбутньому тюнінгу
+`weeklyReportageSceneBrief`). Скрипти верифікації — `tmp/pr3-shadow-critic/`,
+`tmp/pr5-klein-dryrun/` (одноразові, за конвенцією директорії `tmp/` цього репо).
+
+---
+
 ## 2026-08-04 — Weekly Social: preview assets + safe save/approve
 
 **Джерело:** live fail Telegram Save & approve (`schedule_past`) + founder report

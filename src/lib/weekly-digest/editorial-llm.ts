@@ -816,6 +816,8 @@ ${CRITIC_RUBRIC}
 
 Required dimensions, exactly these seven, each exactly once: engagement, voice, clarity, trust, usefulness, naturalness, parity. Overall score 0–100. factualFlags must be [] when clean. Every issue needs code, message, blocker, and when possible locale, revisionItemId, field, exact span, suggestedFix.
 
+For any non-factual (register/prose) issue, the code MUST be exactly one of: voice_register, engagement_structure, clarity_unclear, trust_attribution, usefulness_generic, naturalness_calque. Do not invent other codes for prose/register problems -- these six are the only ones a downstream automated fix step recognizes as safe to line-edit. Never use these six codes for a grounding or factual problem; put those in factualFlags instead, not issues.
+
 JSON SHAPE
 {"score":0,"dimensions":[{"name":"engagement","score":0,"note":""}],"factualFlags":[],"issues":[{"code":"","message":"","blocker":true,"locale":"en|uk","revisionItemId":"","field":"","span":"","suggestedFix":""}]}
 

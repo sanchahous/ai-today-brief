@@ -119,13 +119,22 @@ revisionItemId+field was echoed on every subsequent retry forever, even after it
 because nothing ever removed it once added — the documented mechanism behind "retries get
 blander." `WEEKLY_MASTER_SPEC_VERSION` bumped `v5` → `v6` (dimension-set change forces regen).
 
-**Not yet done — the acceptance gate before this can ship:** the plan requires a critic-only
-shadow run against the stored `ai-weekly-2026-07-27` master artifact that must fail on
-voice/engagement; if it still scores 90+, the rubric anchors aren't discriminating and this
-PR shouldn't merge. That run needs a real OpenRouter call (~$0.30) and hasn't happened yet —
-flagged to the owner rather than run silently.
+**Acceptance test — PASSED (2026-08-06, live критик-прогін, `anthropic/claude-sonnet-4.5`
+через OpenRouter):** новий критик проти збереженого master `ai-weekly-2026-07-27` (той самий
+контент, що й раніше давав 93/100) дав **73/100** — `voice: 68` (< поріг 75), `naturalness: 70`
+(< поріг 80). Критик самостійно, без підказки, процитував рівно ті фрази, на які скаржився
+власник: `"Обмеження полягає в тому, що цей звіт стосується…"`, `"For product and security
+leaders, the tension is clear."`. Якорі рубрики дискримінують за призначенням.
+
+**Знайдено й виправлено живим прогоном:** критик вільно вигадував власні коди issues
+(`VOICE_TEMPLATE_LEAK`, `NATURALNESS_CALQUE` тощо), які НЕ співпадали з
+`isRevisableIssueCode`'s очікуваним списком (`template_leak:*`, `dimension_low_score:*`) —
+це тихо відправляло б чисто-текстові провали в full-regenerate замість targeted revise.
+Фікс: `criticPrompt` тепер задає закритий словник із шести кодів для non-factual issues
+(`voice_register`, `engagement_structure`, `clarity_unclear`, `trust_attribution`,
+`usefulness_generic`, `naturalness_calque`); `REVISABLE_ISSUE_CODES` розширено відповідно.
 (source: `src/lib/weekly-digest/editorial-llm.ts`, `src/lib/weekly-digest/content-studio.ts`,
-`src/lib/weekly-digest/generation-worker.ts`)
+`src/lib/weekly-digest/generation-worker.ts`, live прогін `tmp/pr3-shadow-critic/` 2026-08-06)
 
 **PR4 (2026-08-06):** owner-set editorial angle per Top-3 story — the first human-in-the-loop
 point the plan called for (~30–60 хв/випуск). New table
@@ -184,12 +193,19 @@ Visuals tab: сітка з 2 мініатюр-альтернатив під ос
 редагована сцена (`scene_override`) + «Regenerate with this scene» перевикористовує вже наявний
 `enqueueWeeklyGenerationAction`, нового job type не знадобилось.
 
-**Не запущено — потрібна жива оцінка перед мержем:** план вимагає dry-run — 9 klein-рендерів
-(3 історії × 3 сіди) старого випуску, власник оцінює, чи klein тримає репортажний стиль. Це
-реальні виклики Cloudflare Workers AI — не запущено самостійно, як і PR3's shadow-прогін.
+**Dry-run виконано (2026-08-06):** 9 klein-рендерів (3 сіди × 3 головні історії
+`ai-weekly-2026-07-27`) через реальний Cloudflare Workers AI. Результат — генуїнно
+фотореалістичні репортажні кадри (людина за клавіатурою, over-the-shoulder/збоку, монітори з
+правдоподібним-але-нечитабельним кодом/UI, жодних «глоу-мізків» чи розбитих замків). Gemini-крок
+сценарію відпрацював, не fallback. **Одна помічена проблема:** усі три історії конвергували до
+схожої композиції «людина за багатомоніторним столом» — klein тримає репортажний РЕГІСТР добре,
+але diversity сцен у межах одного випуску може потребувати уваги (можливо, розширити
+`weeklyReportageSceneBrief` прикладами не-«людина за столом» кадрів). Дев'ять зображень
+надіслано власнику для остаточної візуальної оцінки.
 (source: `pipeline/card-image.ts`, `pipeline/card-image.test.ts`,
 `src/lib/weekly-digest/generation-worker.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
-`src/components/admin/weekly-workspace.tsx`, migration `20260723095458_weekly_digest_v2.sql`
+`src/components/admin/weekly-workspace.tsx`, migration `20260723095458_weekly_digest_v2.sql`,
+live dry-run `tmp/pr5-klein-dryrun/` 2026-08-06
 § `save_weekly_digest_artifact`)
 
 ## Імутабельні ревізії (критично)

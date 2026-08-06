@@ -614,6 +614,15 @@ const OVERALL_MIN_SCORE = 85;
  * parity, top3_radar_structure, locale_mismatch, story_missing, placement_
  * mismatch) -- those mean the writer needs to rethink the story, not
  * reword a sentence, so they always fall through to a full regenerate.
+ *
+ * The six voice_register/engagement_structure/clarity_unclear/trust_
+ * attribution/usefulness_generic/naturalness_calque codes are the critic's
+ * own controlled vocabulary for non-factual issues (see criticPrompt,
+ * editorial-llm.ts) -- added after a live shadow run against the rejected
+ * 2026-07-27 edition (2026-08-06) showed the critic otherwise invents
+ * ad-hoc codes like "VOICE_TEMPLATE_LEAK" that never match this set, which
+ * would silently route a purely-prose failure to a full regenerate instead
+ * of a targeted revise.
  */
 const REVISABLE_ISSUE_CODES = new Set([
   'generic_practical',
@@ -623,6 +632,12 @@ const REVISABLE_ISSUE_CODES = new Set([
   'duplicate_editorial_fields',
   'article_length',
   'story_length',
+  'voice_register',
+  'engagement_structure',
+  'clarity_unclear',
+  'trust_attribution',
+  'usefulness_generic',
+  'naturalness_calque',
 ]);
 
 export function isRevisableIssueCode(code: string): boolean {

@@ -354,6 +354,34 @@ describe('isRevisableIssueCode', () => {
     expect(isRevisableIssueCode('dimension_low_score:voice')).toBe(true);
   });
 
+  it('accepts the critic\'s controlled non-factual vocabulary', () => {
+    // Added after a live shadow run (2026-08-06, ai-weekly-2026-07-27)
+    // showed the critic otherwise invents ad-hoc codes like
+    // "VOICE_TEMPLATE_LEAK" that never match this set.
+    for (const code of [
+      'voice_register',
+      'engagement_structure',
+      'clarity_unclear',
+      'trust_attribution',
+      'usefulness_generic',
+      'naturalness_calque',
+    ]) {
+      expect(isRevisableIssueCode(code), `expected ${code} to be revisable`).toBe(true);
+    }
+  });
+
+  it('rejects the pre-fix ad-hoc codes the critic actually emitted before the controlled vocabulary existed', () => {
+    for (const code of [
+      'VOICE_TEMPLATE_LEAK',
+      'NATURALNESS_CALQUE',
+      'VOICE_ABSTRACT_THESIS',
+      'ENGAGEMENT_CHECKLIST_STRUCTURE',
+      'CLARITY_UNEXPLAINED_TERM',
+    ]) {
+      expect(isRevisableIssueCode(code), `expected ${code} to NOT be revisable`).toBe(false);
+    }
+  });
+
   it('rejects structural/grounding codes -- these need a full rewrite, not a reword', () => {
     for (const code of [
       'unsupported_claim_id',
