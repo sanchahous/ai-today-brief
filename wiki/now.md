@@ -15,9 +15,12 @@ Last updated: 2026-08-06
   2026-08-06) — уніфікований реєстр LLM-провайдерів для всього проєкту (daily+weekly+social),
   план у [pipeline/llm-providers](pipeline/llm-providers.md). Залежить від злиття
   `feat/weekly-editorial-voice` (торкається тих самих файлів: `editorial-llm.ts`, `llm-router.ts`)
-  — або потребуватиме rebase, якщо merge-порядок зміниться. **Фаза 0 (прибрати Gemini з
-  дефолтної ротації) виконано**; фази 1+ (ядро реєстру, БД, admin UI, поетапна міграція) — не
-  почато.
+  — або потребуватиме rebase, якщо merge-порядок зміниться. **Фаза 0 (прибрати Gemini) і Фаза 1
+  (ядро реєстру `pipeline/providers/`) виконані** — живий dry-run проти реального NVIDIA NIM API
+  підтвердив генеричний HTTP-адаптер і по дорозі знайшов/виправив 2 реальні баги (подвійне
+  хардкодження OpenRouter-специфічного `usage`-поля, яке NIM суворо відхиляє). 903 тести, build
+  зелений. **Фаза 1b (БД + Vault-секрети + admin UI) і Фази 2–7 (поетапна міграція існуючих
+  ланцюжків) — не почато.**
 - Гілка `feat/weekly-editorial-voice` (з `main`, 2026-08-06), PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189):
   повний перегляд редакційної якості weekly-дайджесту (власник забракував увесь контент як
   «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). **Усі 7 запланованих PR

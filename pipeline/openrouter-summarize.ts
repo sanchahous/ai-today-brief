@@ -10,6 +10,7 @@ import {
   OpenRouterStallError,
   resolveOpenRouterAdaptiveTimeouts,
   streamOpenRouterCompletion,
+  type OpenRouterRequestConfig,
   type OpenRouterUsage,
 } from './openrouter-adaptive';
 import {
@@ -33,6 +34,11 @@ export type OpenRouterSummarizeResult = {
 };
 
 export const OPENROUTER_CHAT_URL = 'https://openrouter.ai/api/v1/chat/completions';
+
+const DEFAULT_OPENROUTER_HEADERS = {
+  'HTTP-Referer': 'https://aitodaybrief.com',
+  'X-Title': 'AI Today Brief Pipeline',
+};
 
 export function resolveOpenRouterApiKey(
   env: { OPEN_ROUTER_API_KEY?: string; OPENROUTER_API_KEY?: string; [key: string]: string | undefined } = process.env,
@@ -95,17 +101,18 @@ export async function callOpenRouterJson(
   validateResponse: OpenRouterResponseValidator = validateOpenRouterBriefJson,
   onUsage?: (usage: OpenRouterUsage) => void,
   extraBody?: Record<string, unknown>,
+  requestConfig?: OpenRouterRequestConfig,
 ): Promise<string> {
   const started = Date.now();
   const body = { ...buildChatBody(prompt, extraBody), model: modelId };
 
-  const res = await fetchFn(OPENROUTER_CHAT_URL, {
+  const res = await fetchFn(requestConfig?.url ?? OPENROUTER_CHAT_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://aitodaybrief.com',
-      'X-Title': 'AI Today Brief Pipeline',
+      ...(requestConfig?.url ? {} : DEFAULT_OPENROUTER_HEADERS),
+      ...requestConfig?.headers,
     },
     body: JSON.stringify(body),
     signal: AbortSignal.timeout(timeoutMs),
@@ -155,6 +162,7 @@ export async function callOpenRouterAdaptive(
   validateResponse: OpenRouterResponseValidator = validateOpenRouterBriefJson,
   onUsage?: (usage: OpenRouterUsage) => void,
   extraBody?: Record<string, unknown>,
+  requestConfig?: OpenRouterRequestConfig,
 ): Promise<string> {
   const timeouts = resolveOpenRouterAdaptiveTimeouts();
   const body = buildChatBody(prompt, extraBody);
@@ -168,6 +176,7 @@ export async function callOpenRouterAdaptive(
       fetch,
       validateResponse,
       onUsage,
+      requestConfig,
     );
   } catch (streamError) {
     if (streamError instanceof OpenRouterStallError) {
@@ -193,6 +202,7 @@ export async function callOpenRouterAdaptive(
       validateResponse,
       onUsage,
       extraBody,
+      requestConfig,
     );
   }
 }
@@ -210,6 +220,12 @@ export async function generateWithOpenRouterChain(
     validateResponse?: OpenRouterResponseValidator;
     /** Per-model extra request-body fields (e.g. `{ reasoning: { effort: 'low' } }`). */
     extraBodyForModel?: (modelId: string) => Record<string, unknown> | undefined;
+    /**
+     * Points this OpenAI-compatible client at a different provider (e.g.
+     * NVIDIA NIM) instead of OpenRouter. Omit both for OpenRouter's exact
+     * current behavior. See pipeline/providers/http-provider.ts.
+     */
+    requestConfig?: OpenRouterRequestConfig;
   } = {},
 ): Promise<OpenRouterSummarizeResult> {
   const apiKey = options.apiKey ?? resolveOpenRouterApiKey();
@@ -236,6 +252,7 @@ export async function generateWithOpenRouterChain(
           lastUsage = usage;
         },
         options.extraBodyForModel?.(modelId),
+        options.requestConfig,
       ));
 
   const attemptErrors: Array<Record<string, unknown>> = [];

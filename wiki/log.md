@@ -19,6 +19,46 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-06 — LLM provider registry, Phase 1: registry core + live NIM verification (2 bugs found+fixed)
+
+**Джерело:** продовження Фази 0 в межах затвердженого плану (`feat/llm-provider-registry`);
+живий dry-run проти реального NVIDIA NIM API (ключ власника додано в `.env.local`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 1: що збудовано, обидва знайдені баги, успішний
+  результат live-верифікації
+- `wiki/now.md` — стан гілки оновлено
+
+**Код:** новий каталог `pipeline/providers/` (`types.ts`, `http-provider.ts`, `cli-provider.ts`,
+`gemini-provider.ts`, `registry.ts`) + 30 нових тестів (раніше 0 покриття цього шару). Адитивні
+опційні параметри в `openrouter-summarize.ts`/`openrouter-adaptive.ts` (`requestConfig`/`baseUrl`)
+з дефолтами, що 1-в-1 відтворюють поточну поведінку OpenRouter — жоден існуючий виклик не
+змінено. `claude-cli.ts` свідомо НЕ чіпався (немає другого споживача скелету CLI-провайдерів
+поки що).
+
+**Знайдено й виправлено живим прогоном (2026-08-06):**
+1. **Реальний баг, не одноразовий здогад:** `buildChatBody()` (`openrouter-summarize.ts`) і
+   **окремо** `streamOpenRouterCompletion()` (`openrouter-adaptive.ts`) обидва незалежно
+   хардкодили OpenRouter-специфічне поле `usage: {include: true}` у тілі запиту. NIM валідує
+   тіло суворо і повертає HTTP 400 `"Unsupported parameter(s): 'usage'"` — на відміну від
+   припущення в плані про "graceful degradation", яке було правильним лише для ВІДПОВІДІ
+   (`usage.cost` дійсно деградує в `null`), не для ЗАПИТУ. Перша спроба фіксу (лише в
+   `buildChatBody` через `extraBodyForModel`) не спрацювала в живому прогоні — другий,
+   незалежний хардкод у `streamOpenRouterCompletion` мовчки перекривав перший фікс. Знайдено
+   лише повторним живим прогоном після першого «фіксу», який не змінив реальну поведінку.
+2. `moonshotai/kimi-k2.6` — HTTP 404, модель не активована на конкретному NVIDIA-акаунті
+   (обліковий нюанс, не код).
+
+**Результат:** `deepseek-ai/deepseek-v4-pro` через реальний NIM API успішно повернув валідний
+JSON за 86.9с — підтверджує головну тезу дослідження: generic OpenAI-сумісний HTTP-шар дійсно
+працює проти неOpenRouter-провайдера лише зі зміною base URL + ключа.
+
+**Нотатка:** це другий приклад у цій сесії (після PR3's critic-vocabulary фіксу), коли живий
+прогін ловить реальний баг, який юніт-тести з мокнутим fetch не могли б виявити — мокнутий
+`fetch` ніколи б не повернув справжню 400-помилку суворого валідатора NIM.
+
+---
+
 ## 2026-08-06 — LLM provider registry, Phase 0: Gemini removed from default rotation
 
 **Джерело:** рішення власника (session 2026-08-06) — під час обговорення дещо ширшого запиту

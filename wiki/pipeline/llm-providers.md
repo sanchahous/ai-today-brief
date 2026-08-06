@@ -74,9 +74,54 @@ https://build.nvidia.com/ — Kimi K3, DeepSeek V4, GLM 5.2 через OpenAI-с
 Gemini код у `pipeline/gemini-models.ts`/`pipeline/summarize.ts`'s `generateWithModelQueue` не
 чіпався — лишається special-cased клієнтом (SDK, не HTTP) за архітектурою плану.
 
-**Фаза 1+ — не почато.** Ядро реєстру (`pipeline/providers/`), БД-таблиці
-(`llm_providers`/`llm_provider_models`/`llm_role_chains`), Vault RPC, admin UI, і поетапна
-міграція (card-image → custom-research → weekly → social → daily) — див. план.
+**Фаза 1 — ядро реєстру виконано (2026-08-06).** Новий каталог `pipeline/providers/`:
+
+- `types.ts` — спільний `ProviderCallResult`/`ProviderUsage`/`ProviderUnavailableError`.
+- `http-provider.ts` — генеричний OpenAI-сумісний HTTP-адаптер, обгортка над
+  `generateWithOpenRouterChain`; пресети `OPENROUTER_HTTP_DEFAULTS`/`NIM_HTTP_DEFAULTS`.
+- `cli-provider.ts` — узагальнений spawn/timeout/ENOENT-скелет із `claude-cli.ts`. `claude-cli.ts`
+  сам НЕ чіпався (свідоме рішення — нуль споживачів цього скелету поки що, немає сенсу ризикувати
+  єдиним $0-шляхом weekly-майстра заради абстракції без другого користувача).
+- `gemini-provider.ts` — тонка обгортка над `resolveGeminiModelQueue`/`generateWithModelQueue`.
+- `registry.ts` — `ProviderRole` (10 ролей: daily×4, weekly×3, social×2, custom_research),
+  `generateWithRegistry` (обхід ланцюга, fast-skip на `ProviderUnavailableError`,
+  `RegistryExhaustedError` з повним логом спроб при повному провалі), `loadProviderRegistry`
+  (env-only, async — резолвить реальну живу чергу OpenRouter-моделей, а не порожній масив;
+  `db`-параметр зарезервовано під Фазу 1b).
+
+Адитивні параметри (`requestConfig`/`baseUrl`) додані в `openrouter-summarize.ts`/
+`openrouter-adaptive.ts` з дефолтами, що відтворюють поточну поведінку OpenRouter 1-в-1 —
+жоден існуючий виклик не змінено.
+
+**Живий dry-run проти реального NVIDIA NIM API (2026-08-06) знайшов і виправив 2 реальні
+баги:**
+
+1. `buildChatBody()` (`openrouter-summarize.ts`) і **окремо** `streamOpenRouterCompletion()`
+   (`openrouter-adaptive.ts`) **обидва** незалежно хардкодили `usage: { include: true }` —
+   OpenRouter-специфічне поле. NIM валідує тіло запиту суворо і повертає HTTP 400
+   `"Unsupported parameter(s): 'usage'"` для будь-якого провайдера без цього поля — це НЕ
+   тихий no-op, як припускав план на етапі дослідження (`usage.cost` у ВІДПОВІДІ справді
+   деградує в `null` без падіння; але поле в ЗАПИТІ, яке провокує цю відповідь, суворі
+   провайдери відхиляють). Виправлено: `http-provider.ts` передає `extraBodyForModel: () =>
+   ({usage: undefined})` коли `reportsCost: false` (spread у `buildChatBody` перекриває
+   дефолт, `JSON.stringify` прибирає ключ з `undefined`-значенням); і другий, незалежний
+   хардкод у `streamOpenRouterCompletion` видалено повністю (`body` вже несе правильне
+   `usage`-поле від `buildChatBody`, повторний оверрайд там був зайвим і шкідливим).
+2. `moonshotai/kimi-k2.6` дав HTTP 404 (модель не активована на конкретному NVIDIA-акаунті) —
+   не баг коду, обліковий нюанс.
+
+Після фіксу: **`deepseek-ai/deepseek-v4-pro` через NIM успішно повернув валідний JSON за
+86.9с**, підтверджуючи головну тезу дослідження — `generateWithOpenRouterChain`'s HTTP-шар
+дійсно generic OpenAI-сумісний і працює проти зовсім іншого провайдера лише зі зміною
+base URL + ключа. Регресійні тести додані (`http-provider.test.ts`: перевіряють, що
+`usage`-поле дійсно відсутнє в запиті для `reportsCost: false`).
+
+Нове покриття: 30 тестів на `pipeline/providers/*` (типи не тестуються окремо — вони
+tested-by-use в інших файлах), раніше — 0.
+
+**Фаза 1b (БД + admin UI) і Фази 2–7 (міграція існуючих ланцюжків) — не почато.**
+(source: `pipeline/providers/*.ts`, `tmp/nim-http-provider-dryrun/run.ts`, live dry-run
+2026-08-06)
 
 ## Related pages
 
