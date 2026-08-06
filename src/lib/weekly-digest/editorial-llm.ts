@@ -11,6 +11,9 @@ import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summar
 import { generateWithClaudeCli } from '../../../pipeline/claude-cli';
 import {
   WEEKLY_MASTER_SPEC_VERSION,
+  editorialQualityPasses,
+  editorialQualityRetryGuidance,
+  reportIsRevisable,
   validateMasterBundle,
   type WeeklyArticleMaster,
   type WeeklyContentQualityReport,
@@ -361,11 +364,11 @@ function parseCritic(raw: string) {
     throw new SyntaxError('Critic scores must be numbers from 0 to 100.');
   }
   const requiredDimensions = [
-    'hook',
+    'engagement',
+    'voice',
     'clarity',
     'trust',
     'usefulness',
-    'structure',
     'naturalness',
     'parity',
   ];
@@ -759,13 +762,52 @@ SOURCE MATERIAL FOR TERMINOLOGY
 ${JSON.stringify(stories.map(({ revisionItemId, titleUk, summaryUk, whyUk }) => ({ revisionItemId, titleUk, summaryUk, whyUk })))}${masterRetryGuidancePrompt(retryGuidance)}`;
 }
 
-export function criticPrompt(bundle: WeeklyMasterBundle, stories: WeeklyMasterInputStory[]) {
-  return `You are the independent factual and editorial critic for AI Today Brief. Audit the bilingual master against approved claims AND the attached primary/corroborating source excerpts. A detail clearly supported by an approved excerpt is grounded even when it is missing from the numbered claims list — do NOT flag it as UNSUPPORTED_*. Flag only numbers, quotes, named claims, or causal implications that appear in neither the claims nor the excerpts. A writer may paraphrase but may not strengthen beyond what claims+excerpts support. Also evaluate hook, clarity, trust, usefulness, structure, Ukrainian naturalness and EN/UK factual parity. Return JSON only.
+const CRITIC_RUBRIC = `RUBRIC -- score each dimension 0-100. Any dimension scored below 80 MUST quote 1-2 offending spans verbatim in that dimension's "note" (the exact text that earned the low score), not a paraphrase of the problem.
 
-Required dimensions: hook, clarity, trust, usefulness, structure, naturalness, parity. Score each 0–100. Overall score 0–100. factualFlags must be [] when clean. Every issue needs code, message, blocker, and when possible locale, revisionItemId, field, exact span, suggestedFix.
+engagement -- would a person actually read past paragraph one, driven by narrative pull, not just information density.
+  90: opens mid-scene on a concrete, surprising moment; sentence length varies on purpose; each story has one throughline, not four slots stapled together.
+  75: readable and accurate but opens on an abstract thesis or a recap rather than a scene; some paragraphs read like they're working through a checklist.
+  55: opens with an abstract claim about "the tension" or "the operating model"; uniform sentence rhythm throughout; reads like a summary of a summary.
+
+voice -- adherence to the AI Today Brief house style: a sharp colleague explaining over coffee, real editorial judgment, zero template leaks.
+  90: no banned phrases anywhere; body never opens a sentence with a field-name label ("Practical scenario:", "Обмеження полягає в тому"); editorsView is unmistakably framed as the editor's own reasoning, never blended into the sourced voice.
+  75: mostly in-voice but one passage drifts into a generic AI-tell phrase, a hedge-heavy register, or a leader-briefing frame.
+  55: reads like a compliance memo or briefing note in multiple places; editorsView is indistinguishable in register from the sourced body.
+
+clarity -- a reader with no prior context understands what happened and why it's presented this way, on one read.
+  90: technical terms are explained the moment they're used; every paragraph earns its place; no sentence needs a second read.
+  75: mostly clear but one or two passages assume background the reader may not have, or bury the point in a long sentence.
+  55: a reader would need to re-read multiple passages, or the piece never states plainly what actually happened.
+
+trust -- claims are attributed, hedged where the source hedges, and self-reported figures are flagged as such.
+  90: every load-bearing claim names its source inline ("Anthropic reports...", "the report says..."); self-reported/company-provided numbers are explicitly flagged as such.
+  75: attribution is present but inconsistent -- some claims float without a named source even though one exists in the evidence.
+  55: claims read as established fact when the evidence only supports "a report says" or "the company claims."
+
+usefulness -- a builder finishes the story knowing something they can act on or evaluate, not a AI-generated abstract restatement of the summary.
+  90: the practical field names a concrete actor, workflow, action, constraint and observable result specific to this story.
+  75: practical guidance is present but generic enough it could attach to several unrelated stories with a find-and-replace.
+  55: no actionable specificity anywhere in the story; it only restates what happened.
+
+naturalness (Ukrainian only) -- reads as text a Ukrainian editor would actually write, not a translation.
+  90: no calques or bureaucratic phrasing; idiomatic word order and register throughout.
+  75: mostly natural with one or two anglicized calques or stiff constructions.
+  55: reads as translated English -- calqued phrasing, unnatural word order, or unexplained English jargon in multiple places.
+
+parity -- the EN and UK articles tell the same story with the same facts, claim IDs, and structure.
+  90: every fact, number, and claim ID matches exactly between locales; only phrasing and rhythm differ, as intended.
+  75: facts match but emphasis or structure has drifted noticeably between locales.
+  55: a fact, number, or claim present in one locale is missing, altered, or contradicted in the other.`;
+
+export function criticPrompt(bundle: WeeklyMasterBundle, stories: WeeklyMasterInputStory[]) {
+  return `You are the independent factual and editorial critic for AI Today Brief. Audit the bilingual master against approved claims AND the attached primary/corroborating source excerpts. A detail clearly supported by an approved excerpt is grounded even when it is missing from the numbered claims list — do NOT flag it as UNSUPPORTED_*. Flag only numbers, quotes, named claims, or causal implications that appear in neither the claims nor the excerpts. A writer may paraphrase but may not strengthen beyond what claims+excerpts support. Return JSON only.
+
+${CRITIC_RUBRIC}
+
+Required dimensions, exactly these seven, each exactly once: engagement, voice, clarity, trust, usefulness, naturalness, parity. Overall score 0–100. factualFlags must be [] when clean. Every issue needs code, message, blocker, and when possible locale, revisionItemId, field, exact span, suggestedFix.
 
 JSON SHAPE
-{"score":0,"dimensions":[{"name":"hook","score":0,"note":""}],"factualFlags":[],"issues":[{"code":"","message":"","blocker":true,"locale":"en|uk","revisionItemId":"","field":"","span":"","suggestedFix":""}]}
+{"score":0,"dimensions":[{"name":"engagement","score":0,"note":""}],"factualFlags":[],"issues":[{"code":"","message":"","blocker":true,"locale":"en|uk","revisionItemId":"","field":"","span":"","suggestedFix":""}]}
 
 APPROVED EVIDENCE (claims + source excerpts)
 ${JSON.stringify(criticApprovedEvidence(stories))}
@@ -773,6 +815,73 @@ ${JSON.stringify(criticApprovedEvidence(stories))}
 MASTER TO AUDIT
 ${JSON.stringify(bundle)}`;
 }
+
+/**
+ * Line-edit pass: rewrite only the fields a revisable quality-gate failure
+ * names, leaving everything else byte-for-byte unchanged. Replaces a full
+ * EN+UK regenerate for the class of failure that's just prose (a low
+ * dimension score, a template-leak phrase, a too-short editorsView) -- see
+ * `reportIsRevisable` (content-studio.ts) for exactly which failures qualify.
+ * Reusing the same voice block as the original write keeps the revised
+ * prose from drifting back toward a blander, more compliant register than
+ * the first draft.
+ */
+export function reviseArticlePrompt(
+  article: WeeklyArticleMaster,
+  guidance: WeeklyMasterRetryGuidance[],
+  locale: 'en' | 'uk',
+): string {
+  return `You are line-editing an already-drafted AI Today Brief Weekly Digest article, not rewriting it from scratch. Fix ONLY the specific problems listed below. Every field, sentence, and character not implicated by a listed problem must be returned exactly as given in the input -- do not "improve" anything else. Never change claimIds, revisionItemId, placement, or touch a story not named by any problem below.
+
+${voicePromptBlock(locale)}
+
+PROBLEMS TO FIX (each names the story and field at fault; fix every one)
+${JSON.stringify(guidance)}
+
+ARTICLE TO REVISE
+${JSON.stringify(article)}
+
+Return the complete article JSON in the exact same shape as the input, with only the named problems fixed.`;
+}
+
+/**
+ * Converts one in-memory quality report into the same WeeklyMasterRetryGuidance
+ * shape the cross-job-retry path uses (generation-worker.ts's blockerGuidanceFrom
+ * Report/dimensionGuidanceFromReport read the same report back out of the DB) --
+ * kept local since the revise loop below acts on the report it just computed,
+ * with no DB round-trip.
+ */
+function reviseGuidanceFromReport(report: WeeklyContentQualityReport): WeeklyMasterRetryGuidance[] {
+  const fromIssues: WeeklyMasterRetryGuidance[] = report.issues.map((issue) => ({
+    code: issue.code,
+    message: issue.message,
+    ...(issue.suggestedFix ? { suggestedFix: issue.suggestedFix } : {}),
+    ...(issue.locale ? { locale: issue.locale } : {}),
+    ...(issue.revisionItemId ? { revisionItemId: issue.revisionItemId } : {}),
+    ...(issue.field ? { field: issue.field } : {}),
+  }));
+  return [...fromIssues, ...editorialQualityRetryGuidance(report)];
+}
+
+/** Sums token/cost metadata across every call made for one step (write + revise attempts). */
+function accumulateGenerationMetadata(calls: EditorialGenerationMetadata[]): EditorialGenerationMetadata {
+  const last = calls[calls.length - 1]!;
+  return {
+    provider: last.provider,
+    model: last.model,
+    promptTokens: calls.reduce((sum, call) => sum + call.promptTokens, 0),
+    outputTokens: calls.reduce((sum, call) => sum + call.outputTokens, 0),
+    estimatedCostUsd: Number(calls.reduce((sum, call) => sum + call.estimatedCostUsd, 0).toFixed(6)),
+    costSource: calls.every((call) => call.costSource === 'subscription')
+      ? 'subscription'
+      : calls.every((call) => call.costSource === 'reported')
+        ? 'reported'
+        : 'estimated',
+    promptVersion: last.promptVersion,
+  };
+}
+
+const MAX_REVISE_ATTEMPTS = 2;
 
 export async function generateWeeklyMaster(
   stories: WeeklyMasterInputStory[],
@@ -802,39 +911,97 @@ export async function generateWeeklyMaster(
     );
     await options.onStepComplete?.('ukrainian', ukrainian);
   }
-  const bundle: WeeklyMasterBundle = {
-    en: english.value.article,
-    uk: ukrainian.value,
-    video: english.value.video,
-    socialAngles: english.value.socialAngles,
-  };
-  const critic = await generateIndependentCritic(english, criticPrompt(bundle, stories));
-  const deterministicIssues = validateMasterBundle(
-    bundle,
-    researchPacks,
-    stories.map((story) => ({
-      revisionItemId: story.revisionItemId,
-      placement: story.placement,
-      claimIds: story.claims.map((claim) => claim.id),
-    })),
-  );
+  const englishCalls: EditorialGenerationMetadata[] = [english.metadata];
+  const ukrainianCalls: EditorialGenerationMetadata[] = [ukrainian.metadata];
+  const criticCalls: EditorialGenerationMetadata[] = [];
+
+  const expectedStories = stories.map((story) => ({
+    revisionItemId: story.revisionItemId,
+    placement: story.placement,
+    claimIds: story.claims.map((claim) => claim.id),
+  }));
   const approvedClaimIds = stories.flatMap((story) => story.claims.map((claim) => claim.id));
-  const quality: WeeklyContentQualityReport = {
-    schemaVersion: 'weekly-quality-v2',
-    score: critic.value.score,
-    dimensions: critic.value.dimensions,
-    issues: [...deterministicIssues, ...critic.value.issues],
-    factualFlags: critic.value.factualFlags,
-    approvedClaimIds,
-    checkedAt: new Date().toISOString(),
+  const buildBundle = (): WeeklyMasterBundle => ({
+    en: english!.value.article,
+    uk: ukrainian!.value,
+    video: english!.value.video,
+    socialAngles: english!.value.socialAngles,
+  });
+  const evaluate = async (bundle: WeeklyMasterBundle): Promise<WeeklyContentQualityReport> => {
+    const critic = await generateIndependentCritic(english!, criticPrompt(bundle, stories));
+    criticCalls.push(critic.metadata);
+    const deterministicIssues = validateMasterBundle(bundle, researchPacks, expectedStories);
+    return {
+      schemaVersion: 'weekly-quality-v2',
+      score: critic.value.score,
+      dimensions: critic.value.dimensions,
+      issues: [...deterministicIssues, ...critic.value.issues],
+      factualFlags: critic.value.factualFlags,
+      approvedClaimIds,
+      checkedAt: new Date().toISOString(),
+    };
   };
+
+  let bundle = buildBundle();
+  let quality = await evaluate(bundle);
+
+  // Line-edit pass: a revisable failure (see reportIsRevisable) gets a
+  // targeted rewrite of just the flagged fields instead of a full EN+UK
+  // regenerate. Capped at MAX_REVISE_ATTEMPTS so a report the model can't
+  // actually satisfy surfaces to the human via the normal gate-failure path
+  // rather than looping indefinitely.
+  let reviseAttempts = 0;
+  while (
+    reviseAttempts < MAX_REVISE_ATTEMPTS &&
+    !editorialQualityPasses(quality) &&
+    reportIsRevisable(quality)
+  ) {
+    reviseAttempts += 1;
+    const guidance = reviseGuidanceFromReport(quality);
+    const { english: englishRevise, ukrainian: ukrainianRevise } = splitMasterRetryGuidance(guidance);
+
+    if (englishRevise.length) {
+      const revisedEnglish: ProviderResult<WeeklyArticleMaster> = await generateWithProvider(
+        english!.metadata.provider,
+        reviseArticlePrompt(english!.value.article, englishRevise, 'en'),
+        (raw) => parseArticle(raw, 'en'),
+      );
+      english = {
+        value: { ...english!.value, article: revisedEnglish.value },
+        metadata: revisedEnglish.metadata,
+      };
+      englishCalls.push(revisedEnglish.metadata);
+      // English prose changed underneath it -- Ukrainian must be re-adapted
+      // from the new English even when nothing UK-tagged fired this round,
+      // or the two locales drift out of narrative sync with each other.
+      const readapted: WeeklyMasterUkrainianResult = await generateWithProvider(
+        english.metadata.provider,
+        ukrainianPrompt(english.value.article, stories, ukrainianRevise),
+        (raw) => parseArticle(raw, 'uk'),
+      );
+      ukrainian = readapted;
+      ukrainianCalls.push(readapted.metadata);
+    } else if (ukrainianRevise.length) {
+      const revisedUkrainian: WeeklyMasterUkrainianResult = await generateWithProvider(
+        ukrainian!.metadata.provider,
+        reviseArticlePrompt(ukrainian!.value, ukrainianRevise, 'uk'),
+        (raw) => parseArticle(raw, 'uk'),
+      );
+      ukrainian = revisedUkrainian;
+      ukrainianCalls.push(revisedUkrainian.metadata);
+    }
+
+    bundle = buildBundle();
+    quality = await evaluate(bundle);
+  }
+
   return {
     bundle,
     quality,
     generation: {
-      english: english.metadata,
-      ukrainian: ukrainian.metadata,
-      critic: critic.metadata,
+      english: accumulateGenerationMetadata(englishCalls),
+      ukrainian: accumulateGenerationMetadata(ukrainianCalls),
+      critic: accumulateGenerationMetadata(criticCalls),
     },
   };
 }

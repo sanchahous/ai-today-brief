@@ -80,13 +80,15 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Найближчі 3 дії в коді
 
-1. PR1 запушено, PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189) відкритий
-   (усе ще на гілці `feat/weekly-editorial-voice`, комітиться далі туди ж). PR2 (рендеринг
-   `editorsView`/`discussionQuestion`/`limitation`) готовий локально, готується до пушу.
-2. PR3: рубрика критика (`engagement`/`voice` виміри, якорі, line-edit pass замість regenerate).
-   **Зупинка перед мержем:** critic-only shadow-прогін на збереженому master 2026-07-27 має
-   провалитись по voice/engagement — потребує рішення власника, не лише тестів.
-3. PR4–7 (кут подачі, ілюстрації-репортажі, відеосценарій, соц-голос) — після PR3.
+1. PR1–3 закомічені й запушені на PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189)
+   (одна гілка `feat/weekly-editorial-voice`, комітяться туди послідовно). PR3 = рубрика критика
+   (`engagement`/`voice` виміри з якорями, line-edit pass, ретраї більше не накопичуються назавжди).
+2. **Зупинка перед мержем PR3 (і взагалі перед production-рол-аутом усього перегляду):**
+   critic-only shadow-прогін на збереженому master `ai-weekly-2026-07-27` має провалитись по
+   voice/engagement — інакше якорі не дискримінують і мержити не можна. Потребує реального
+   виклику OpenRouter (~$0.30) — **чекає рішення власника**, не запущено самостійно.
+3. PR4–7 (кут подачі, ілюстрації-репортажі, відеосценарій, соц-голос) — код продовжується,
+   кожен зі своєю точкою зупинки перед live-перевіркою (PR5 — dry-run картинок).
 
 ## Related pages
 

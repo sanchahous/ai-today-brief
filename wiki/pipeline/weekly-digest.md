@@ -61,7 +61,7 @@ numbered claims, **не** має валитись як `UNSUPPORTED_*`.
 (source: `editorial-llm.ts`, `research.ts`, `content-studio.ts`)
 
 Studio version **`weekly-content-studio-v2.1`** + research schema **`weekly-research-v3`** +
-master prompt **`weekly-master-v5`**: після деплою **Start / retry Content Studio** ставить
+master prompt **`weekly-master-v6`**: після деплою **Start / retry Content Studio** ставить
 нові `research_pack` jobs (нові idempotency keys) → треба знову Approve Top 3 → тоді master.
 (source: `WEEKLY_CONTENT_STUDIO_VERSION`, `WEEKLY_RESEARCH_SCHEMA_VERSION`,
 `WEEKLY_MASTER_SPEC_VERSION`)
@@ -97,6 +97,35 @@ PDF (`pdf.ts`) отримав `limitation`-панель тим самим шля
 у PDF свідомо не додані — окреме дизайн-рішення власника, не автоматичний перенос.
 (source: `src/lib/digests.ts`, `src/components/weekly/weekly-story.tsx`,
 `src/components/weekly/copy.ts`, `src/lib/weekly-digest/pdf.ts`, live check localhost 2026-08-06)
+
+**PR3 (2026-08-06):** critic rubric redesign + line-edit pass. Critic dimensions `hook`/`structure`
+replaced by **`engagement`**/**`voice`** (still 7 dims total); `criticPrompt` (`editorial-llm.ts`)
+now carries a written rubric — 3 anchors per dimension (what 90/75/55 look like) — and requires
+quoted offending spans for any score below 80. `generateWeeklyMaster` gained an in-process
+**revise loop**: on a gate failure where every issue is prose-level (`reportIsRevisable`,
+`content-studio.ts` — excludes grounding/structural codes like `unsupported_claim_id`,
+`shorts_contract`, `bilingual_claim_parity`), it sends a targeted `reviseArticlePrompt` ("fix only
+these named fields, return everything else byte-for-byte identical") instead of a full EN+UK
+regenerate, capped at **2 attempts** before falling through to the existing gate-failure/draft-
+revision path. English revise always triggers a Ukrainian re-adapt (never a blind UK line-edit)
+so the two locales don't drift out of narrative sync. Cost across every write/critic call in one
+`generateWeeklyMaster` invocation (initial + revise attempts) is summed, not just the last —
+fixes what would otherwise be a cost-undercounting bug the moment revise fired.
+
+Cross-job retry guidance (`priorMasterRetryGuidance`, `generation-worker.ts`) changed from
+"merge every historical critic verdict for this revision, de-duped, keep newest wording" to
+**latest report only**. The old version had a one-way ratchet: a code once seen for a
+revisionItemId+field was echoed on every subsequent retry forever, even after it was fixed,
+because nothing ever removed it once added — the documented mechanism behind "retries get
+blander." `WEEKLY_MASTER_SPEC_VERSION` bumped `v5` → `v6` (dimension-set change forces regen).
+
+**Not yet done — the acceptance gate before this can ship:** the plan requires a critic-only
+shadow run against the stored `ai-weekly-2026-07-27` master artifact that must fail on
+voice/engagement; if it still scores 90+, the rubric anchors aren't discriminating and this
+PR shouldn't merge. That run needs a real OpenRouter call (~$0.30) and hasn't happened yet —
+flagged to the owner rather than run silently.
+(source: `src/lib/weekly-digest/editorial-llm.ts`, `src/lib/weekly-digest/content-studio.ts`,
+`src/lib/weekly-digest/generation-worker.ts`)
 
 `detectTemplateLeaks` блокує точну реєстр-помилку зі знайденого прикладу (`ai-weekly-2026-07-27`):
 речення в `body`, що відкриваються міткою поля («Practical scenario:», «Обмеження полягає в

@@ -69,6 +69,31 @@ AEO-блоки, людина-в-циклі, формат відео, бюдже�
 
 ---
 
+## 2026-08-06 — Editorial quality overhaul, PR3: critic rubric + line-edit pass
+
+**Джерело:** продовження 7-PR плану (PR1/PR2 записи вище)
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — секція PR3: engagement/voice виміри, revise loop, latest-only
+  retry guidance, `weekly-master-v6`
+- `wiki/pipeline/editorial-voice.md` — PR3 позначено вирішеним із застереженням «не змержено»
+- `wiki/now.md` — зупинка перед мержем PR3 явно виділена
+
+**Нотатка:** `criticPrompt` тепер несе якорьовану рубрику (3 приклади на вимір: як виглядає
+90/75/55) і вимагає цитованих спанів для оцінок нижче 80. `generateWeeklyMaster` отримав
+in-process revise-loop (макс 2 спроби): на revisable провалі (`reportIsRevisable` —
+виключає grounding/структурні коди) шле targeted `reviseArticlePrompt` замість повної
+регенерації; англійська правка завжди тягне за собою переадаптацію української (не наосліп).
+Вартість по кожному кроку (english/ukrainian/critic) сумується по всіх спробах в межах одного
+виклику — інакше revise тихо занижував би облік витрат. `priorMasterRetryGuidance` звужено з
+«усі історичні звіти, змерджені» до «лише останній звіт» — стара версія ніколи не забувала
+код, навіть після виправлення, тому ретраї монотонно звужувались і сіріли.
+**НЕ змержено:** потребує critic-only shadow-прогону на `ai-weekly-2026-07-27` (реальний
+виклик OpenRouter, ~$0.30) — власник має підтвердити, що нова рубрика справді провалює
+старий текст по voice/engagement, перш ніж це можна мержити.
+
+---
+
 ## 2026-08-04 — Weekly Social: preview assets + safe save/approve
 
 **Джерело:** live fail Telegram Save & approve (`schedule_past`) + founder report

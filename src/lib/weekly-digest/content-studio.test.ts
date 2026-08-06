@@ -4,12 +4,15 @@ import {
   detectTemplateLeaks,
   editorialQualityFailures,
   editorialQualityPasses,
+  isRevisableIssueCode,
+  reportIsRevisable,
   resolveWeeklyContentStudioMode,
   sourceNameMatchesDomain,
   validateMasterBundle,
   type WeeklyArticleMaster,
   type WeeklyContentQualityReport,
   type WeeklyMasterBundle,
+  type WeeklyQualityDimension,
   type WeeklyResearchPack,
 } from './content-studio';
 
@@ -179,11 +182,11 @@ describe('Weekly Content Studio hard gates', () => {
       schemaVersion: 'weekly-quality-v2',
       score: 90,
       dimensions: [
-        { name: 'hook', score: 90, note: 'clear' },
+        { name: 'engagement', score: 90, note: 'clear' },
+        { name: 'voice', score: 90, note: 'clear' },
         { name: 'clarity', score: 90, note: 'clear' },
         { name: 'trust', score: 90, note: 'grounded' },
         { name: 'usefulness', score: 90, note: 'specific' },
-        { name: 'structure', score: 90, note: 'complete' },
         { name: 'naturalness', score: 79, note: 'one calque remains' },
         { name: 'parity', score: 90, note: 'aligned' },
       ],
@@ -202,11 +205,11 @@ describe('Weekly Content Studio hard gates', () => {
       schemaVersion: 'weekly-quality-v2',
       score: 88,
       dimensions: [
-        { name: 'hook', score: 90, note: 'clear' },
+        { name: 'engagement', score: 90, note: 'clear' },
+        { name: 'voice', score: 91, note: 'clear' },
         { name: 'clarity', score: 89, note: 'clear' },
         { name: 'trust', score: 92, note: 'grounded' },
         { name: 'usefulness', score: 90, note: 'specific' },
-        { name: 'structure', score: 91, note: 'complete' },
         { name: 'naturalness', score: 80, note: 'one calque remains' },
         { name: 'parity', score: 90, note: 'aligned' },
       ],
@@ -313,5 +316,109 @@ describe('detectTemplateLeaks', () => {
         field: 'intro',
       }),
     );
+  });
+});
+
+const PASSING_DIMENSIONS: WeeklyQualityDimension[] = [
+  'engagement',
+  'voice',
+  'clarity',
+  'trust',
+  'usefulness',
+  'naturalness',
+  'parity',
+].map((name) => ({ name: name as WeeklyQualityDimension['name'], score: 90, note: 'fine' }));
+
+function report(overrides: Partial<WeeklyContentQualityReport> = {}): WeeklyContentQualityReport {
+  return {
+    schemaVersion: 'weekly-quality-v2',
+    score: 90,
+    dimensions: PASSING_DIMENSIONS,
+    issues: [],
+    factualFlags: [],
+    approvedClaimIds: ['claim-1'],
+    checkedAt: '2026-08-06T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+describe('isRevisableIssueCode', () => {
+  it('accepts prose-level codes and their prefixed variants', () => {
+    expect(isRevisableIssueCode('generic_practical')).toBe(true);
+    expect(isRevisableIssueCode('editors_view_missing')).toBe(true);
+    expect(isRevisableIssueCode('discussion_question_missing')).toBe(true);
+    expect(isRevisableIssueCode('duplicate_editorial_fields')).toBe(true);
+    expect(isRevisableIssueCode('article_length')).toBe(true);
+    expect(isRevisableIssueCode('story_length')).toBe(true);
+    expect(isRevisableIssueCode('template_leak:label_opener_practical')).toBe(true);
+    expect(isRevisableIssueCode('dimension_low_score:voice')).toBe(true);
+  });
+
+  it('rejects structural/grounding codes -- these need a full rewrite, not a reword', () => {
+    for (const code of [
+      'unsupported_claim_id',
+      'wrong_story_claim_id',
+      'ungrounded_story',
+      'story_set_mismatch',
+      'story_missing',
+      'placement_mismatch',
+      'bilingual_claim_parity',
+      'top3_radar_structure',
+      'shorts_count',
+      'shorts_contract',
+      'video_duration',
+      'scene_grounding',
+      'social_angle_grounding',
+      'locale_mismatch',
+    ]) {
+      expect(isRevisableIssueCode(code), `expected ${code} to be non-revisable`).toBe(false);
+    }
+  });
+});
+
+describe('reportIsRevisable', () => {
+  it('is revisable when the report has zero issues but a low dimension score (e.g. voice)', () => {
+    // The exact bug this exists to fix: a report that fails purely on a
+    // dimension score has an empty issues[] array (dimension guidance is
+    // derived separately via editorialQualityRetryGuidance), so a naive
+    // `issues.length > 0 && issues.every(...)` check would wrongly say
+    // "nothing to revise" here.
+    expect(reportIsRevisable(report({ issues: [] }))).toBe(true);
+  });
+
+  it('is revisable when every issue present is a prose-level code', () => {
+    expect(
+      reportIsRevisable(
+        report({
+          issues: [
+            { code: 'generic_practical', message: 'x', blocker: true },
+            { code: 'template_leak:label_opener_limitation', message: 'x', blocker: true },
+          ],
+        }),
+      ),
+    ).toBe(true);
+  });
+
+  it('is not revisable when any factual flag is present, regardless of issues', () => {
+    expect(reportIsRevisable(report({ factualFlags: ['unsupported number: 141,006'] }))).toBe(false);
+  });
+
+  it('is not revisable when a structural/grounding issue is mixed in with prose issues', () => {
+    expect(
+      reportIsRevisable(
+        report({
+          issues: [
+            { code: 'generic_practical', message: 'x', blocker: true },
+            { code: 'unsupported_claim_id', message: 'x', blocker: true },
+          ],
+        }),
+      ),
+    ).toBe(false);
+  });
+
+  it('is not revisable when the dimension set is malformed (critic misbehaved)', () => {
+    expect(
+      reportIsRevisable(report({ dimensions: PASSING_DIMENSIONS.slice(0, 5) })),
+    ).toBe(false);
   });
 });

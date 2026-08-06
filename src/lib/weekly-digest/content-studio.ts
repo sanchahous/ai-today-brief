@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { bannedPhrasesFor } from './editorial-voice';
 
 export const WEEKLY_CONTENT_STUDIO_VERSION = 'weekly-content-studio-v2.1';
-export const WEEKLY_MASTER_SPEC_VERSION = 'weekly-master-v5';
+export const WEEKLY_MASTER_SPEC_VERSION = 'weekly-master-v6';
 export const WEEKLY_VIDEO_MANIFEST_VERSION = 'weekly-video-v2';
 /** Primary-source excerpt stored on research packs and fed to writer/critic. */
 export const WEEKLY_RESEARCH_EXCERPT_MAX_CHARS = 12_000;
@@ -130,7 +130,12 @@ export interface WeeklyMasterBundle {
 }
 
 export interface WeeklyQualityDimension {
-  name: 'hook' | 'clarity' | 'trust' | 'usefulness' | 'structure' | 'naturalness' | 'parity';
+  // 'engagement'/'voice' replaced 'hook'/'structure' in the PR3 rubric
+  // redesign -- the old pair scored surface hook quality and JSON-shape
+  // completeness, neither of which caught a 93/100 compliance-register
+  // draft. engagement = narrative pull (would a human read past paragraph
+  // one); voice = house-style adherence (editorial-voice.ts).
+  name: 'engagement' | 'voice' | 'clarity' | 'trust' | 'usefulness' | 'naturalness' | 'parity';
   score: number;
   note: string;
 }
@@ -588,17 +593,70 @@ export function validateMasterBundle(
 }
 
 export const REQUIRED_QUALITY_DIMENSIONS: WeeklyQualityDimension['name'][] = [
-  'hook',
+  'engagement',
+  'voice',
   'clarity',
   'trust',
   'usefulness',
-  'structure',
   'naturalness',
   'parity',
 ];
 const GENERAL_DIMENSION_MIN_SCORE = 75;
 const NATURALNESS_PARITY_MIN_SCORE = 80;
 const OVERALL_MIN_SCORE = 85;
+
+/**
+ * Issue codes a targeted revise pass (editorial-llm.ts `reviseArticlePrompt`)
+ * can plausibly fix by rewriting one field's prose without touching story
+ * set, claims, or structure. Deliberately excludes grounding/structural
+ * codes (unsupported_claim_id, story_set_mismatch, shorts_contract,
+ * video_duration, scene_grounding, social_angle_grounding, bilingual_claim_
+ * parity, top3_radar_structure, locale_mismatch, story_missing, placement_
+ * mismatch) -- those mean the writer needs to rethink the story, not
+ * reword a sentence, so they always fall through to a full regenerate.
+ */
+const REVISABLE_ISSUE_CODES = new Set([
+  'generic_practical',
+  'editors_view_length',
+  'editors_view_missing',
+  'discussion_question_missing',
+  'duplicate_editorial_fields',
+  'article_length',
+  'story_length',
+]);
+
+export function isRevisableIssueCode(code: string): boolean {
+  return (
+    REVISABLE_ISSUE_CODES.has(code) ||
+    code.startsWith('template_leak:') ||
+    code.startsWith('dimension_low_score:')
+  );
+}
+
+/**
+ * True when nothing in the report disqualifies a targeted revise pass over a
+ * full EN/UK regenerate. Three things disqualify it: any unresolved factual
+ * flag (grounding problems always need a full rewrite, never a reword), a
+ * malformed dimension set (the critic itself misbehaved -- feed it the same
+ * shape again, don't try to patch around it), or any `issues[]` entry whose
+ * code isn't in the revisable set (a structural/grounding blocker means the
+ * writer needs to rethink the story, not reword a sentence). Note this does
+ * NOT require issues.length > 0 -- a report can fail purely on a low
+ * dimension score (e.g. voice: 70) with an empty issues array, and that case
+ * is exactly what a revise pass should handle.
+ */
+export function reportIsRevisable(
+  report: Pick<WeeklyContentQualityReport, 'issues' | 'factualFlags' | 'dimensions'>,
+): boolean {
+  if (report.factualFlags.length > 0) return false;
+  const receivedDimensions = new Set(report.dimensions.map((dimension) => dimension.name));
+  const wellFormedDimensions =
+    report.dimensions.length === REQUIRED_QUALITY_DIMENSIONS.length &&
+    receivedDimensions.size === REQUIRED_QUALITY_DIMENSIONS.length &&
+    REQUIRED_QUALITY_DIMENSIONS.every((name) => receivedDimensions.has(name));
+  if (!wellFormedDimensions) return false;
+  return report.issues.every((issue) => isRevisableIssueCode(issue.code));
+}
 
 /**
  * Every reason `editorialQualityPasses` would reject this report, in plain

@@ -74,14 +74,18 @@ regex-списки заборонених фраз потребують vitest-�
 
 ## Що це НЕ вирішує (заплановано окремими PR)
 
-- Рубрика критика все ще без якорів і без вимірів `engagement`/`voice` (PR3) — `detectTemplateLeaks`
-  ловить найгрубіші випадки детерміновано, але критик поки оцінює старими 7 вимірами.
 - Кут подачі історії (`story direction`), ілюстрації-репортажі, відеосценарій і соц-голос —
   окремі PR (4–7), кожен зі своєю точкою в `voicePromptBlock`/`bannedPhrasesFor`.
 
 **Вирішено PR2 (2026-08-06):** рендеринг `editorsView`/`discussionQuestion`/`limitation` на
 сайті — `weekly-story.tsx` тепер їх читає й показує (умовно, старі випуски без цих полів
-рендеряться як раніше). Деталі — [weekly-digest](weekly-digest.md#editorial-voice-overhaul-2026-08-06).
+рендеряться як раніше).
+
+**Вирішено PR3 (2026-08-06):** рубрика критика — виміри `engagement`/`voice` з якорями
+(90/75/55) замість `hook`/`structure`; line-edit pass замість повної регенерації на revisable
+провалах; ретраї більше не накопичуються назавжди (лише останній звіт). Деталі —
+[weekly-digest](weekly-digest.md#editorial-voice-overhaul-2026-08-06). **Не змержено** — чекає
+рішення власника про critic-only shadow-прогін (реальний виклик OpenRouter, ~$0.30).
 
 ## Related pages
 

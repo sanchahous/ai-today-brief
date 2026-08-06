@@ -594,12 +594,16 @@ function dimensionGuidanceFromReport(
 }
 
 /**
- * Guidance accumulates across every past critic verdict for this revision, not
- * just the latest one. A single-verdict window lets fixes oscillate forever --
- * resolving this round's blocker regresses one a prior round already fixed,
- * because nothing in the prompt says "and don't undo that either." Superseded
- * reports (is_current = false) still carry that history, so we read all of
- * them and de-dupe by the issue's identity, keeping the newest wording.
+ * PR3 (2026-08-06) narrowed this from "every past critic verdict, merged and
+ * de-duped" to just the latest one. The accumulate-forever version had a
+ * one-way ratchet bug: a code, once it appeared for a given revisionItemId+
+ * field, was echoed on every subsequent retry prompt forever, even after the
+ * writer fixed it -- nothing ever *removed* an entry once a later report
+ * stopped reproducing it, because the merge only ever added/overwrote. Each
+ * retry's prompt monotonically grew and its latitude monotonically shrank,
+ * which is the documented mechanism behind "retries get blander." The
+ * latest critic verdict is a complete, self-consistent picture of what's
+ * currently wrong -- that's the only guidance a fresh attempt needs.
  */
 async function priorMasterRetryGuidance(
   revisionId: string,
@@ -611,20 +615,13 @@ async function priorMasterRetryGuidance(
     .eq('revision_id', revisionId)
     .eq('artifact_type', 'content_quality_report')
     .eq('slot_key', 'content-quality:master')
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false })
+    .limit(1);
   if (error) throw new Error(`[weekly-generation] retry guidance lookup: ${error.message}`);
 
-  const byIdentity = new Map<string, WeeklyMasterRetryGuidance>();
-  for (const report of data ?? []) {
-    for (const guidance of [
-      ...blockerGuidanceFromReport(report),
-      ...dimensionGuidanceFromReport(report),
-    ]) {
-      const identity = `${guidance.code}|${guidance.revisionItemId ?? ''}|${guidance.field ?? ''}`;
-      byIdentity.set(identity, guidance);
-    }
-  }
-  return [...byIdentity.values()];
+  const latest = data?.[0];
+  if (!latest) return [];
+  return [...blockerGuidanceFromReport(latest), ...dimensionGuidanceFromReport(latest)];
 }
 
 async function saveQualityReport(input: {

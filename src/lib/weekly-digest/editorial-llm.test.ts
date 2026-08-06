@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../pipeline/openrouter-models', () => ({
   fetchOpenRouterModels: vi.fn().mockResolvedValue([
@@ -443,7 +443,7 @@ function ukrainianResult(): WeeklyMasterUkrainianResult {
 
 const CRITIC_JSON = JSON.stringify({
   score: 90,
-  dimensions: ['hook', 'clarity', 'trust', 'usefulness', 'structure', 'naturalness', 'parity'].map(
+  dimensions: ['engagement', 'voice', 'clarity', 'trust', 'usefulness', 'naturalness', 'parity'].map(
     (name) => ({ name, score: 90, note: 'ok' }),
   ),
   factualFlags: [],
@@ -624,5 +624,307 @@ describe('generateWeeklyMaster claude-cli provider', () => {
     expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(2);
     const fallbackCall = vi.mocked(generateWithOpenRouterChain).mock.calls.at(-1);
     expect(fallbackCall?.[1]?.modelQueue).toEqual(['other-vendor/critic-fallback']);
+  });
+});
+
+// A fully valid bundle (3 features + 3 radar, matching claims, complete
+// video/social payloads) so validateMasterBundle's deterministic checks emit
+// zero issues -- isolating the revise-loop tests below to purely
+// critic-driven pass/fail, not incidental fixture gaps.
+const REVISE_ITEM_IDS = ['w-1', 'w-2', 'w-3', 'w-4', 'w-5', 'w-6'];
+
+function reviseStories(): WeeklyMasterInputStory[] {
+  return REVISE_ITEM_IDS.map((id, index) => ({
+    revisionItemId: id,
+    rank: index + 1,
+    placement: index < 3 ? 'feature' : 'radar',
+    titleEn: `Title ${index + 1}`,
+    titleUk: `Заголовок ${index + 1}`,
+    summaryEn: `Summary ${index + 1}`,
+    summaryUk: `Підсумок ${index + 1}`,
+    whyEn: null,
+    whyUk: null,
+    sources: [{ name: 'Example', url: 'https://example.com' }],
+    claims: [{ id: `claim-${index + 1}`, text: `Claim ${index + 1}.`, evidenceUrls: ['https://example.com'] }],
+  }));
+}
+
+function reviseArticleStories() {
+  return REVISE_ITEM_IDS.map((id, index) => {
+    const placement = index < 3 ? 'feature' : 'radar';
+    return {
+      revisionItemId: id,
+      placement,
+      headline: `Headline ${index + 1}`,
+      summary: `Summary of story ${index + 1}.`,
+      hook: `Hook ${index + 1}`,
+      body: `A concrete narrative body for story ${index + 1} with real specificity. `.repeat(20),
+      why: `This changes the reliability decision for story ${index + 1}.`,
+      practical: `A named actor runs a specific workflow for story ${index + 1} and measures a real outcome.`,
+      limitation: `The source for story ${index + 1} covers one reported case only.`,
+      takeaway: `Require verification before acting on story ${index + 1}.`,
+      editorsView: placement === 'feature' ? `Editorial reasoning about where story ${index + 1} leads next.` : '',
+      discussionQuestion: placement === 'feature' ? `What would change your mind about story ${index + 1}?` : '',
+      claimIds: [`claim-${index + 1}`],
+    };
+  });
+}
+
+function reviseVideo() {
+  return {
+    title: 'Weekly episode',
+    hook: 'The week changed.',
+    narration: 'Narration',
+    scenes: [0, 1, 2, 3].map((i) => ({
+      id: `scene-${i}`,
+      purpose: 'cover',
+      voiceover: 'Voiceover text.',
+      onScreenText: 'Text',
+      visualBrief: 'Brief',
+      factIds: ['claim-1'],
+      durationSeconds: 100,
+    })),
+    shorts: ['w-1', 'w-2', 'w-3'].map((id, i) => ({
+      revisionItemId: id,
+      locale: 'uk' as const,
+      hook: 'Гук',
+      context: 'Контекст',
+      insight: 'Висновок',
+      takeaway: 'Дія',
+      factIds: [`claim-${i + 1}`],
+      durationSeconds: 40,
+    })),
+  };
+}
+
+function reviseSocialAngles() {
+  return ['telegram', 'facebook', 'threads', 'x', 'linkedin', 'instagram'].map((channel) => ({
+    channel,
+    hookAngle: `Hook for ${channel}`,
+    thesis: 'Thesis',
+    factIds: ['claim-1'],
+  }));
+}
+
+function reviseEnglishResult(): WeeklyMasterEnglishResult {
+  return {
+    value: {
+      article: {
+        locale: 'en',
+        title: 't',
+        seoTitle: 't',
+        metaDescription: 'd',
+        ogTitle: 't',
+        ogDescription: 'd',
+        standfirst: 's',
+        theme: 'th',
+        intro: 'i',
+        editorNote: 'e',
+        keyTakeaways: ['k'],
+        topics: ['t'],
+        entities: ['e'],
+        internalLinks: [],
+        conclusion: 'c',
+        stories: reviseArticleStories(),
+      },
+      video: reviseVideo(),
+      socialAngles: reviseSocialAngles(),
+    },
+    metadata: {
+      provider: 'openrouter',
+      model: 'writer-model',
+      promptTokens: 100,
+      outputTokens: 200,
+      estimatedCostUsd: 0.05,
+      costSource: 'reported',
+      promptVersion: 'weekly-master-v6',
+    },
+  } as unknown as WeeklyMasterEnglishResult;
+}
+
+function reviseUkrainianResult(): WeeklyMasterUkrainianResult {
+  return {
+    value: { ...reviseEnglishResult().value.article, locale: 'uk' },
+    metadata: {
+      provider: 'openrouter',
+      model: 'writer-model',
+      promptTokens: 90,
+      outputTokens: 180,
+      estimatedCostUsd: 0.04,
+      costSource: 'reported',
+      promptVersion: 'weekly-master-v6',
+    },
+  } as unknown as WeeklyMasterUkrainianResult;
+}
+
+function criticJson(overrides: Record<string, unknown> = {}) {
+  return JSON.stringify({
+    score: 90,
+    dimensions: ['engagement', 'voice', 'clarity', 'trust', 'usefulness', 'naturalness', 'parity'].map(
+      (name) => ({ name, score: 90, note: 'ok' }),
+    ),
+    factualFlags: [],
+    issues: [],
+    ...overrides,
+  });
+}
+
+// Fixed usage payloads so accumulated cost is exact arithmetic in the tests
+// below, not dependent on estimateTokens(prompt.length) heuristics.
+const WRITE_USAGE = { promptTokens: 1000, completionTokens: 2000, totalTokens: 3000, costUsd: 0.05 };
+const READAPT_USAGE = { promptTokens: 900, completionTokens: 1800, totalTokens: 2700, costUsd: 0.04 };
+const CRITIC_USAGE = { promptTokens: 500, completionTokens: 300, totalTokens: 800, costUsd: 0.02 };
+
+function mockRouterResponses(handlers: {
+  critic: (callIndex: number) => string;
+  englishWrite?: () => string;
+}) {
+  let criticCalls = 0;
+  vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => {
+    if (prompt.includes('independent factual and editorial critic')) {
+      criticCalls += 1;
+      return {
+        text: handlers.critic(criticCalls),
+        provider: 'openrouter',
+        model: 'vendor/critic-model',
+        usage: CRITIC_USAGE,
+      };
+    }
+    if (prompt.includes('line-editing an already-drafted')) {
+      return {
+        text: JSON.stringify(reviseEnglishResult().value.article),
+        provider: 'openrouter',
+        model: 'writer-model',
+        usage: WRITE_USAGE,
+      };
+    }
+    if (prompt.includes('Ukrainian senior news editor')) {
+      return {
+        text: JSON.stringify(reviseUkrainianResult().value),
+        provider: 'openrouter',
+        model: 'writer-model',
+        usage: READAPT_USAGE,
+      };
+    }
+    return {
+      text:
+        handlers.englishWrite?.() ??
+        JSON.stringify({
+          article: reviseEnglishResult().value.article,
+          video: reviseEnglishResult().value.video,
+          socialAngles: reviseEnglishResult().value.socialAngles,
+        }),
+      provider: 'openrouter',
+      model: 'writer-model',
+      usage: WRITE_USAGE,
+    };
+  });
+}
+
+describe('generateWeeklyMaster revise loop', () => {
+  beforeEach(() => {
+    // A sibling describe block's afterEach resets this mock without
+    // restoring the module-level default -- re-seed it here so this block
+    // isn't affected by file execution order.
+    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
+      {
+        id: 'vendor/critic-model',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.000001', completion: '0.000006' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+      },
+      {
+        id: 'other-vendor/writer-model',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.000001', completion: '0.000006' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+      },
+    ]);
+  });
+
+  afterEach(() => {
+    vi.mocked(generateWithOpenRouterChain).mockReset();
+    vi.unstubAllEnvs();
+  });
+
+  it('revises only the flagged field on a low-engagement failure, then passes on the re-critique', async () => {
+    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
+    mockRouterResponses({
+      critic: (callIndex) =>
+        callIndex === 1
+          ? criticJson({
+              dimensions: ['engagement', 'voice', 'clarity', 'trust', 'usefulness', 'naturalness', 'parity'].map(
+                (name) => ({ name, score: name === 'engagement' ? 60 : 90, note: 'flat opening' }),
+              ),
+            })
+          : criticJson(),
+    });
+
+    const result = await generateWeeklyMaster(reviseStories(), [], []);
+
+    // english write + ukrainian write + critic(fail) + revise(en) + readapt(uk) + critic(pass) = 6
+    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(6);
+    const revisePrompts = vi
+      .mocked(generateWithOpenRouterChain)
+      .mock.calls.map((call) => call[0])
+      .filter((prompt) => prompt.includes('line-editing an already-drafted'));
+    expect(revisePrompts).toHaveLength(1);
+    expect(revisePrompts[0]).toContain('dimension_low_score:engagement');
+    expect(result.quality.score).toBe(90);
+    expect(result.quality.dimensions.find((d) => d.name === 'engagement')?.score).toBe(90);
+
+    // english: initial write + 1 revise; ukrainian: initial write + 1 readapt; critic: 2 calls.
+    expect(result.generation.english.estimatedCostUsd).toBeCloseTo(WRITE_USAGE.costUsd * 2, 6);
+    expect(result.generation.ukrainian.estimatedCostUsd).toBeCloseTo(READAPT_USAGE.costUsd * 2, 6);
+    expect(result.generation.critic.estimatedCostUsd).toBeCloseTo(CRITIC_USAGE.costUsd * 2, 6);
+    expect(result.generation.english.promptTokens).toBe(WRITE_USAGE.promptTokens * 2);
+  });
+
+  it('never attempts a revise pass when a structural/grounding blocker is present', async () => {
+    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
+    mockRouterResponses({
+      critic: () =>
+        criticJson({
+          issues: [{ code: 'UNSUPPORTED_NUMBER', message: 'invented figure', blocker: true }],
+        }),
+    });
+
+    const result = await generateWeeklyMaster(reviseStories(), [], []);
+
+    // english write + ukrainian write + critic = 3, no revise/re-critique calls
+    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(3);
+    expect(
+      vi
+        .mocked(generateWithOpenRouterChain)
+        .mock.calls.some((call) => call[0].includes('line-editing an already-drafted')),
+    ).toBe(false);
+    expect(result.quality.issues).toContainEqual(
+      expect.objectContaining({ code: 'UNSUPPORTED_NUMBER' }),
+    );
+    expect(result.generation.english.estimatedCostUsd).toBeCloseTo(WRITE_USAGE.costUsd, 6);
+  });
+
+  it('caps at MAX_REVISE_ATTEMPTS (2) and returns the still-failing report rather than looping forever', async () => {
+    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
+    mockRouterResponses({
+      critic: () =>
+        criticJson({
+          dimensions: ['engagement', 'voice', 'clarity', 'trust', 'usefulness', 'naturalness', 'parity'].map(
+            (name) => ({ name, score: name === 'voice' ? 60 : 90, note: 'still off' }),
+          ),
+        }),
+    });
+
+    const result = await generateWeeklyMaster(reviseStories(), [], []);
+
+    // initial write (2) + critic + [revise(en) + readapt(uk) + critic] x2 = 2 + 1 + 6 = 9
+    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(9);
+    expect(result.quality.dimensions.find((d) => d.name === 'voice')?.score).toBe(60);
+    // Cost accumulates across every attempt (initial + 2 revise rounds), not just the last one.
+    expect(result.generation.english.estimatedCostUsd).toBeCloseTo(WRITE_USAGE.costUsd * 3, 6);
+    expect(result.generation.ukrainian.estimatedCostUsd).toBeCloseTo(READAPT_USAGE.costUsd * 3, 6);
+    expect(result.generation.critic.estimatedCostUsd).toBeCloseTo(CRITIC_USAGE.costUsd * 3, 6);
   });
 });
