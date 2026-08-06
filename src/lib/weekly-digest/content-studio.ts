@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
+import { bannedPhrasesFor } from './editorial-voice';
 
 export const WEEKLY_CONTENT_STUDIO_VERSION = 'weekly-content-studio-v2.1';
-export const WEEKLY_MASTER_SPEC_VERSION = 'weekly-master-v4';
+export const WEEKLY_MASTER_SPEC_VERSION = 'weekly-master-v5';
 export const WEEKLY_VIDEO_MANIFEST_VERSION = 'weekly-video-v2';
 /** Primary-source excerpt stored on research packs and fed to writer/critic. */
 export const WEEKLY_RESEARCH_EXCERPT_MAX_CHARS = 12_000;
@@ -63,6 +64,13 @@ export interface WeeklyMasterStory {
   limitation: string;
   takeaway: string;
   claimIds: string[];
+  /**
+   * Editor's-view speculation block, required for feature stories only (see
+   * SPECULATION_SPEC_* in editorial-voice.ts). Empty string for radar items.
+   */
+  editorsView: string;
+  /** Closing discussion question, required for feature stories only. */
+  discussionQuestion: string;
 }
 
 export interface WeeklyArticleMaster {
@@ -219,6 +227,67 @@ const GENERIC_PRACTICAL_PATTERNS = [
   /прототип інтеграції в ізольованому середовищі/i,
 ];
 
+const TEMPLATE_LEAK_FIELDS = [
+  'body',
+  'why',
+  'practical',
+  'limitation',
+  'takeaway',
+  'editorsView',
+] as const;
+
+const ARTICLE_LEVEL_TEMPLATE_LEAK_FIELDS = ['standfirst', 'intro', 'editorNote', 'conclusion'] as const;
+
+/**
+ * Deterministic, zero-cost pre-critic gate: fires a blocker whenever a story
+ * or article-level field matches a known template-leak or AI-tell pattern
+ * (editorial-voice.ts). Catches the exact register the owner rejected in the
+ * 2026-07-27 edition -- e.g. a body paragraph opening "Практичний сценарій:"
+ * that just restates the separately-boxed practical field -- before an LLM
+ * critic call is even spent checking for it.
+ */
+export function detectTemplateLeaks(bundle: WeeklyMasterBundle): WeeklyQualityIssue[] {
+  const issues: WeeklyQualityIssue[] = [];
+  for (const locale of ['en', 'uk'] as const) {
+    const article = bundle[locale];
+    const rules = bannedPhrasesFor(locale);
+    for (const field of ARTICLE_LEVEL_TEMPLATE_LEAK_FIELDS) {
+      const value = article[field];
+      for (const rule of rules) {
+        const match = rule.pattern.exec(value);
+        if (!match) continue;
+        issues.push({
+          code: `template_leak:${rule.code}`,
+          message: rule.message,
+          blocker: true,
+          locale,
+          field,
+          span: match[0],
+        });
+      }
+    }
+    for (const story of article.stories) {
+      for (const field of TEMPLATE_LEAK_FIELDS) {
+        const value = story[field];
+        for (const rule of rules) {
+          const match = rule.pattern.exec(value);
+          if (!match) continue;
+          issues.push({
+            code: `template_leak:${rule.code}`,
+            message: rule.message,
+            blocker: true,
+            locale,
+            revisionItemId: story.revisionItemId,
+            field,
+            span: match[0],
+          });
+        }
+      }
+    }
+  }
+  return issues;
+}
+
 export function validateMasterBundle(
   bundle: WeeklyMasterBundle,
   researchPacks: WeeklyResearchPack[],
@@ -331,6 +400,41 @@ export function validateMasterBundle(
           field: 'body',
           suggestedFix: `Rewrite the body to ${target[0]}–${target[1]} words without adding claims.`,
         });
+      }
+      if (story.placement === 'feature') {
+        if (!story.editorsView.trim()) {
+          issues.push({
+            code: 'editors_view_missing',
+            message: 'Every feature story requires an editorsView speculation block.',
+            blocker: true,
+            locale,
+            revisionItemId: itemId,
+            field: 'editorsView',
+          });
+        } else {
+          const editorsViewWords = words(story.editorsView);
+          if (editorsViewWords < 60 || editorsViewWords > 110) {
+            issues.push({
+              code: 'editors_view_length',
+              message: `editorsView is ${editorsViewWords} words; target is 60–110.`,
+              blocker: false,
+              locale,
+              revisionItemId: itemId,
+              field: 'editorsView',
+              suggestedFix: 'Tighten or extend the speculation to 60–110 words without restating the body.',
+            });
+          }
+        }
+        if (!story.discussionQuestion.trim()) {
+          issues.push({
+            code: 'discussion_question_missing',
+            message: 'Every feature story requires a closing discussionQuestion.',
+            blocker: true,
+            locale,
+            revisionItemId: itemId,
+            field: 'discussionQuestion',
+          });
+        }
       }
       const repeated = [story.why, story.practical, story.takeaway].map(normalizedComparable);
       if (new Set(repeated).size !== repeated.length) {
@@ -479,6 +583,7 @@ export function validateMasterBundle(
       blocker: true,
     });
   }
+  issues.push(...detectTemplateLeaks(bundle));
   return issues;
 }
 

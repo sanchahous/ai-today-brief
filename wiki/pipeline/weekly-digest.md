@@ -4,8 +4,8 @@ Summary: як працює weekly-дайджест у проді: оркестр
 гейтами, admin UX і поточний статус розкатки.
 Sources: `.env.example`, PR #160–#163, #167–#175, #177, `src/lib/weekly-digest/**`,
 `supabase/migrations/20260804090000_weekly_digest_revision_stability.sql`,
-live check Supabase 2026-08-04
-Last updated: 2026-08-04
+live check Supabase 2026-08-04, editorial-voice overhaul (гілка `feat/weekly-editorial-voice`, 2026-08-06)
+Last updated: 2026-08-06
 
 ---
 
@@ -61,10 +61,40 @@ numbered claims, **не** має валитись як `UNSUPPORTED_*`.
 (source: `editorial-llm.ts`, `research.ts`, `content-studio.ts`)
 
 Studio version **`weekly-content-studio-v2.1`** + research schema **`weekly-research-v3`** +
-master prompt **`weekly-master-v4`**: після деплою **Start / retry Content Studio** ставить
+master prompt **`weekly-master-v5`**: після деплою **Start / retry Content Studio** ставить
 нові `research_pack` jobs (нові idempotency keys) → треба знову Approve Top 3 → тоді master.
 (source: `WEEKLY_CONTENT_STUDIO_VERSION`, `WEEKLY_RESEARCH_SCHEMA_VERSION`,
 `WEEKLY_MASTER_SPEC_VERSION`)
+
+## Editorial voice overhaul (2026-08-06)
+
+Власник забракував якість усього згенерованого контенту як «машинну» (сухий compliance-регістр,
+абстрактні заголовки, службові мітки типу «Практичний сценарій:» просто в тілі статті). Перша
+з семи запланованих PR цього перегляду landed тут: **`src/lib/weekly-digest/editorial-voice.ts`**
+— єдине джерело редакційного голосу (позитивна модель стилю, few-shot контраст-пари «погано →
+добре», список заборонених фраз/кальок, специфікація блоку «Погляд редакції»). Споживається
+`editorial-llm.ts` (`englishPrompt`/`ukrainianPrompt`) і `content-studio.ts` (`detectTemplateLeaks`
+— детермінований, безкоштовний гейт до критика).
+
+Що змінилось у схемі історії (`WeeklyMasterStory`): додано `editorsView` (маркована editorial-
+спекуляція, обов'язкова для трьох головних історій, 60–110 слів) і `discussionQuestion`
+(дискусійне питання наприкінці); аудиторія промпту змінена з «product, technology and business
+leaders» на «software builders, AI practitioners and the technically curious». `hook` лишився в
+схемі (не рендериться, як і раніше — рендеринг нової анатомії статті це PR2). Персистяться в
+`weekly_digest_revision_items.source_snapshot.content_studio.{editors_view_en,editors_view_uk,
+discussion_en,discussion_uk}` — без нової міграції.
+
+`detectTemplateLeaks` блокує точну реєстр-помилку зі знайденого прикладу (`ai-weekly-2026-07-27`):
+речення в `body`, що відкриваються міткою поля («Practical scenario:», «Обмеження полягає в
+тому», «Висновок для рішення:») замість того, щоб бути суцільною розповіддю. Версія майстер-
+промпту `weekly-master-v5` (bump з v4) форсує реген існуючих чернеток при наступному Start/retry.
+
+Верифікація перед продакшн-рол-аутом: shadow-прогін через `WEEKLY_CONTENT_STUDIO_V2=shadow` на
+історичному випуску; критик-рубрика (нові виміри `engagement`/`voice`, PR3) ще не landed — до
+того часу `editorialQualityFailures` продовжує оцінювати старими вимірами, а `detectTemplateLeaks`
+вже ловить найгрубіші case'и незалежно від критика.
+(source: `editorial-voice.ts`, `editorial-llm.ts`, `content-studio.ts`, `generation-worker.ts`,
+owner session 2026-08-06)
 
 ## Імутабельні ревізії (критично)
 
@@ -141,6 +171,7 @@ pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інв
 
 ## Related pages
 
+- [editorial-voice](editorial-voice.md) — house style, exemplars, banned-phrase gate
 - [weekly-editorial-selection](weekly-editorial-selection.md)
 - [video-boundary](video-boundary.md)
 - [weekly-admin-runbook](../ops/weekly-admin-runbook.md)

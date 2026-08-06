@@ -366,6 +366,8 @@ const articleStory = (revisionItemId: string, placement: 'feature' | 'radar') =>
   practical: 'Practical',
   limitation: 'Limitation',
   takeaway: 'Takeaway',
+  editorsView: placement === 'feature' ? 'Editorial reasoning about where this leads.' : '',
+  discussionQuestion: placement === 'feature' ? 'What would you watch for next?' : '',
   claimIds: ['claim-1'],
 });
 

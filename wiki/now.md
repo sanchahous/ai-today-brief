@@ -3,20 +3,25 @@
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list` (live check 2026-08-04), Supabase preflight live check 2026-08-04,
-`wiki/ops/owner-checklist.md`, `wiki/audits/2026-07-01-seo-organic.md`, `.env.example`
-Last updated: 2026-08-04
+`wiki/ops/owner-checklist.md`, `wiki/audits/2026-07-01-seo-organic.md`, `.env.example`,
+owner session 2026-08-06 (editorial quality feedback)
+Last updated: 2026-08-06
 
 ---
 
 ## Стан репозиторію
 
-- Гілка `fix/weekly-social-save-and-assets` (#186): Social tab preview ілюстрацій з
-  `asset_urls`, safe Save/Approve (`save_error` banner, disable при blockers, preserve
-  writer/hook/fit), Destination URL на генерації. Див. [weekly-digest](pipeline/weekly-digest.md),
-  [social-cms-runbook](ops/social-cms-runbook.md).
-- `main` tip: admin runbook + Research next-step UX (#185), Fluid CPU (#184), master
-  critic excerpts (#183). Гайд редакції — [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
-  (source: `git log` / live work 2026-08-05)
+- Гілка `feat/weekly-editorial-voice` (з `main`, 2026-08-06): PR1 з семи запланованих у
+  повному перегляді редакційної якості weekly-дайджесту (власник забракував увесь контент як
+  «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). PR1 = новий модуль
+  `editorial-voice.ts` (голос, exemplars, contrast-pairs, banned-phrases), переписані
+  EN/UK майстер-промпти, нові поля `editorsView`/`discussionQuestion`, детермінований
+  `detectTemplateLeaks` гейт, `weekly-master-v5`. Ще не змержено, ще не запущено shadow-прогін.
+  PR2–7 (рендеринг, критик-рубрика, кут подачі, ілюстрації-репортажі, відеосценарій,
+  соц-голос) — заплановані, не почато.
+- `main` tip (звідки відгалужено PR1): draft-revision constraint + video-guidance routing
+  fixes (#188, включає #186/#187). Гайд редакції — [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
+  (source: `git log` / live work 2026-08-06)
 
 ## Щойно відвантажено (останні 8 PR)
 
@@ -46,13 +51,21 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Активна робота
 
-1. **Редакція `ai-weekly-2026-07-27`.** Packs v3 уже ready — **Approve 3/3** на Research
+1. **Редакційний перегляд якості weekly-дайджесту (7 PR, гілка `feat/weekly-editorial-voice`).**
+   Власник заблокував реліз до кардинального покращення якості контенту — див.
+   [editorial-voice](pipeline/editorial-voice.md) і план у `wiki/log.md` 2026-08-06. PR1
+   (voice-модуль + промпти) готовий локально, тести/typecheck зелені, ще не змержено.
+   **Це перекриває пункт нижче за пріоритетом:** trial release `ai-weekly-2026-07-27` у
+   поточному вигляді (старий регістр) свідомо НЕ проштовхується, доки PR1–3 не landed і
+   не пройдено shadow-верифікацію.
+2. **Редакція `ai-weekly-2026-07-27`.** Packs v3 уже ready — **Approve 3/3** на Research
    (succeeded ≠ approved), далі `editorial_master` → Master quality. Гайд:
-   [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
-2. **Weekly Content Studio v2 — розкатка.** `WEEKLY_CONTENT_STUDIO_V2=off` у `.env.example`;
-   шлях `off → shadow (три історичні) → production` ще не пройдений.
+   [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md). Призупинено до п.1.
+3. **Weekly Content Studio v2 — розкатка.** `WEEKLY_CONTENT_STUDIO_V2=off` у `.env.example`;
+   шлях `off → shadow (три історичні) → production` ще не пройдений; тепер природно
+   збігається з shadow-верифікацією п.1.
    (source: `.env.example`)
-3. **Опційно:** окремий `pdfkit` 0.19 після `npm run weekly:pdf:sample` / PDF smoke.
+4. **Опційно:** окремий `pdfkit` 0.19 після `npm run weekly:pdf:sample` / PDF smoke.
 
 ## Чекає на власника (не код)
 
@@ -67,13 +80,15 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Найближчі 3 дії в коді
 
-1. Staging: прогнати no-op Save + Restore на тест-випуску після міграції #177.
-2. Окремий PR `pdfkit` 0.19 після PDF smoke (`weekly:pdf:sample`).
-3. Розблокувати редакційний trial release (`ai-weekly-2026-07-27`).
+1. PR1 (`feat/weekly-editorial-voice`): commit + push + відкрити PR, дочекатись рішення
+   власника про shadow-прогін (потребує GitHub Actions Claude CLI + реальні витрати).
+2. PR2: рендеринг `editorsView`/`discussionQuestion`/`limitation` на сайті (weekly-story.tsx).
+3. PR3: рубрика критика (`engagement`/`voice` виміри, якорі, line-edit pass замість regenerate).
 
 ## Related pages
 
 - [overview](overview.md) — бізнес-контекст і жорсткі обмеження
+- [pipeline/editorial-voice](pipeline/editorial-voice.md) — редакційний голос, чому старий контент бракований
 - [pipeline/weekly-digest](pipeline/weekly-digest.md) — Content Studio v2 + revision stability
 - [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) — як вести випуск у адмінці
 - [ops/owner-checklist](ops/owner-checklist.md) — env / Dependabot secrets

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canonicalSourceName,
+  detectTemplateLeaks,
   editorialQualityFailures,
   editorialQualityPasses,
   resolveWeeklyContentStudioMode,
@@ -75,6 +76,8 @@ function article(
         practical,
         limitation: 'The source does not establish performance outside the reported setup.',
         takeaway: 'Require a verified completion metric before expanding the rollout.',
+        editorsView: 'editorial reasoning '.repeat(10),
+        discussionQuestion: 'What would you require before trusting this in production?',
         claimIds: ['claim-1'],
       },
     ],
@@ -221,5 +224,94 @@ describe('Weekly Content Studio hard gates', () => {
     expect(failures).toHaveLength(1);
     expect(failures[0]).toContain('naturalness');
     expect(failures[0]).toContain('79/100');
+  });
+
+  it('requires editorsView and discussionQuestion on feature stories', () => {
+    const value = bundle();
+    value.en.stories[0]!.editorsView = '';
+    value.en.stories[0]!.discussionQuestion = '';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'editors_view_missing', blocker: true, locale: 'en' }),
+        expect.objectContaining({ code: 'discussion_question_missing', blocker: true, locale: 'en' }),
+      ]),
+    );
+  });
+
+  it('does not require editorsView/discussionQuestion on radar stories', () => {
+    const value = bundle();
+    value.en.stories.push({
+      ...value.en.stories[0]!,
+      revisionItemId: '55555555-5555-4555-8555-555555555555',
+      placement: 'radar',
+      body: 'A short radar brief.',
+      editorsView: '',
+      discussionQuestion: '',
+      claimIds: ['claim-2'],
+    });
+    value.uk.stories.push({ ...value.en.stories[1]! });
+    const issues = validateMasterBundle(
+      value,
+      [],
+      [
+        { revisionItemId: itemId, placement: 'feature', claimIds: ['claim-1'] },
+        {
+          revisionItemId: '55555555-5555-4555-8555-555555555555',
+          placement: 'radar',
+          claimIds: ['claim-2'],
+        },
+      ],
+    );
+    expect(issues).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'editors_view_missing' }),
+        expect.objectContaining({ code: 'discussion_question_missing' }),
+      ]),
+    );
+  });
+
+  it('flags a template-leak label opener inside the body as a blocker, in either locale', () => {
+    const value = bundle();
+    value.en.stories[0]!.body =
+      'Practical scenario: a security team runs this exact workflow every week.';
+    value.uk.stories[0]!.body = 'Обмеження полягає в тому, що це стосується лише одного випадку.';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'template_leak:label_opener_practical',
+          blocker: true,
+          locale: 'en',
+          field: 'body',
+        }),
+        expect.objectContaining({
+          code: 'template_leak:label_opener_limitation',
+          blocker: true,
+          locale: 'uk',
+          field: 'body',
+        }),
+      ]),
+    );
+  });
+});
+
+describe('detectTemplateLeaks', () => {
+  it('is clean for prose that avoids every banned pattern', () => {
+    expect(detectTemplateLeaks(bundle())).toEqual([]);
+  });
+
+  it('flags AI-tell phrasing in article-level fields, not just story fields', () => {
+    const value = bundle();
+    value.en.intro = "It's worth noting that this changes the calculus for red-teamers.";
+    const issues = detectTemplateLeaks(value);
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        code: 'template_leak:ai_tell_worth_noting',
+        blocker: true,
+        locale: 'en',
+        field: 'intro',
+      }),
+    );
   });
 });

@@ -4,8 +4,9 @@ Summary: покрокова інструкція для власника/ред�
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/preflight.ts`,
 `claim_weekly_digest_generation_jobs` (editorial_master gate), live fail
-`ai-weekly-2026-07-27` 2026-08-04, [weekly-digest](../pipeline/weekly-digest.md)
-Last updated: 2026-08-04
+`ai-weekly-2026-07-27` 2026-08-04, [weekly-digest](../pipeline/weekly-digest.md),
+[editorial-voice](../pipeline/editorial-voice.md)
+Last updated: 2026-08-06
 
 ---
 
@@ -45,6 +46,11 @@ Overview показує preflight blockers з лінком на вкладку. 
 6. Коли з’явиться **Master quality**:
    - червоні **blockers** → знову Start/retry (guidance підхопить blockers);
    - жовті length warnings часто не блокують Approve, якщо score/gate ок;
+   - з 2026-08-06 сюди можуть потрапити нові блокери `editors_view_missing` /
+     `discussion_question_missing` (тільки для трьох головних історій) і
+     `template_leak:*` (мітка поля, вшита в тіло статті — «Practical scenario:»,
+     «Обмеження полягає в тому» тощо) — обидва детерміновані, без участі критика,
+     retry сам підхопить guidance. Деталі — [editorial-voice](../pipeline/editorial-voice.md);
    - **Approve version** на quality report.
 7. Після успішного master з’являться Article EN/UK і підуть Visuals/Social/PDF/Video jobs.
 

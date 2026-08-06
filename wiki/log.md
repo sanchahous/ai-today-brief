@@ -4,7 +4,7 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-04
+Last updated: 2026-08-06
 
 **Формат запису:**
 
@@ -16,6 +16,34 @@ Last updated: 2026-08-04
 - `wiki/path.md` — що саме
 **Нотатка:** одне речення, якщо потрібне.
 ```
+
+---
+
+## 2026-08-06 — Editorial quality overhaul, PR1: editorial-voice.ts core
+
+**Джерело:** рішення власника (session 2026-08-06) — забракував якість усього weekly-контенту
+(текст/ілюстрації/відео/соц) як «машинну»; опитування власника (аудиторія, голос, спекуляції,
+AEO-блоки, людина-в-циклі, формат відео, бюджет) + 7-PR план `feat/weekly-editorial-voice`
+
+**Змінено:**
+- `wiki/pipeline/editorial-voice.md` — нова сторінка: архітектура голосу, exemplars,
+  contrast-pairs, banned-phrase гейт, Unicode-regex пастка
+- `wiki/pipeline/weekly-digest.md` — секція «Editorial voice overhaul (2026-08-06)»,
+  `weekly-master-v4` → `weekly-master-v5`
+- `wiki/pipeline/weekly-editorial-selection.md` — межа з overhaul (selection незмінний, лише
+  вхід для нового voice-майстер-промпту)
+- `wiki/ops/weekly-admin-runbook.md` — нові блокери `editors_view_missing` /
+  `discussion_question_missing` / `template_leak:*` у кроці Research
+- `wiki/now.md` — активна робота п.1 = редакційний перегляд; trial release
+  `ai-weekly-2026-07-27` свідомо призупинено до PR1–3
+- `wiki/index.md` — новий рядок для `pipeline/editorial-voice.md`; лічильник міграцій 63 → 65
+  (pre-existing drift, не повʼязаний з цією роботою, виправлено заразом бо блокував `wiki:check`)
+
+**Нотатка:** код PR1 (`src/lib/weekly-digest/editorial-voice.ts` + переписані промпти в
+`editorial-llm.ts` + `detectTemplateLeaks`/нові поля `editorsView`/`discussionQuestion` в
+`content-studio.ts` і `generation-worker.ts`) готовий локально — typecheck/lint/vitest (832
+тестів) зелені; ще не закомічено/запушено, чекає рішення власника. PR2–7 заплановані, не
+почато.
 
 ---
 

@@ -20,6 +20,7 @@ import {
   type WeeklyQualityIssue,
   type WeeklyResearchPack,
 } from './content-studio';
+import { voicePromptBlock } from './editorial-voice';
 
 type EditorialProvider = 'gemini' | 'openrouter' | 'claude-cli';
 
@@ -263,6 +264,12 @@ function parseArticle(raw: string, locale: 'en' | 'uk'): WeeklyArticleMaster {
       practical: requiredString(story, 'practical'),
       limitation: requiredString(story, 'limitation'),
       takeaway: requiredString(story, 'takeaway'),
+      // Radar stories legitimately send an empty string for both -- only
+      // features require them, enforced deterministically in
+      // validateMasterBundle (content-studio.ts), not by the parser.
+      editorsView: typeof story.editorsView === 'string' ? story.editorsView.trim() : '',
+      discussionQuestion:
+        typeof story.discussionQuestion === 'string' ? story.discussionQuestion.trim() : '',
       claimIds: stringArray(story.claimIds, 'story.claimIds'),
     };
   });
@@ -707,22 +714,25 @@ function englishPrompt(
   stories: WeeklyMasterInputStory[],
   retryGuidance: WeeklyMasterRetryGuidance[],
 ) {
-  return `You are the senior editor-practitioner at AI Today Brief. Produce an engaging, evidence-bound Weekly Digest for builders, founders, product, technology and business leaders. Explain technical complexity in plain English, show judgment, and never use clickbait or generic advice.
+  return `You are the senior editor-practitioner at AI Today Brief, a weekly digest read by software builders, AI practitioners and the technically curious -- not a briefing for executives. Produce an engaging, evidence-bound Weekly Digest. Explain technical complexity in plain English, show judgment, and never use clickbait or generic advice.
+
+${voicePromptBlock('en')}
 
 CONTRACT
 - Structure: Top 3 feature stories followed by 3–4 radar stories, preserving the supplied order and revisionItemId.
-- Feature body: 400–650 words each. Radar body: 80–140 words each.
-- Every feature must have a human hook, what happened, context, tension/change, evidence, audience, one concrete scenario, limitations and one decision-ready takeaway.
-- Ground every factual sentence in supplied claims and/or primarySourceExcerpt (and corroboratingExcerpts when present). Prefer claimIds for structured facts; excerpts may supply additional detail that appears in the approved research pack. Never invent numbers, names, quotes or causal implications absent from both claims and excerpts.
+- Feature body: 400–650 words each, continuous narrative prose. Radar body: 80–140 words each, same rule.
+- The body must stand alone as a story -- never open a sentence with the name of another field ("Practical scenario:", "The limitation is that...", "Why it matters:", "The takeaway is..."). Those fields have their own boxes elsewhere; restating them inside the body with a label is the single most common failure mode -- do not do it.
+- Ground every factual sentence in supplied claims and/or primarySourceExcerpt (and corroboratingExcerpts when present). Prefer claimIds for structured facts; excerpts may supply additional detail that appears in the approved research pack. Never invent numbers, names, quotes or causal implications absent from both claims and excerpts. editorsView is the one deliberate exception to this rule -- see VOICE above.
 - Every story must still cite at least one real claimId from its claims array. Do not invent claim IDs.
 - The practical field must name a concrete actor, workflow, action, constraint and observable result. Never use a reusable category template.
-- Theme-led title; the date is secondary. All prose across the article object must total 2,000–3,000 words. Keep why, practical, limitation and takeaway concise and do not duplicate the body.
+- editorsView and discussionQuestion are required for the three feature stories only (see VOICE above for what each must do); send both as empty strings for radar stories.
+- Headline must read like a real news headline about what happened -- name the actor and the concrete event -- never an abstract thesis a reader can't picture. Theme-led title for the whole edition; the date is secondary. All prose across the article object must total 2,000–3,000 words.
 - Video: one English 6–8 minute narration plan and exactly three Ukrainian Shorts (35–50 seconds) for the Top 3.
 - Return one JSON object only.
 - socialAngles must contain exactly six objects: one for each exact lowercase channel value telegram, facebook, threads, x, linkedin and instagram. Do not combine channel names in one string.
 
 JSON SHAPE
-{"article":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":"","stories":[{"revisionItemId":"","placement":"feature|radar","headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","claimIds":[""]}]},"video":{"title":"","hook":"","narration":"","scenes":[{"id":"","purpose":"","voiceover":"","onScreenText":"","visualBrief":"","factIds":[""],"durationSeconds":1}],"shorts":[{"revisionItemId":"","hook":"","context":"","insight":"","takeaway":"","factIds":[""],"durationSeconds":40}]},"socialAngles":[{"channel":"telegram","hookAngle":"","thesis":"","factIds":[""]},{"channel":"facebook","hookAngle":"","thesis":"","factIds":[""]},{"channel":"threads","hookAngle":"","thesis":"","factIds":[""]},{"channel":"x","hookAngle":"","thesis":"","factIds":[""]},{"channel":"linkedin","hookAngle":"","thesis":"","factIds":[""]},{"channel":"instagram","hookAngle":"","thesis":"","factIds":[""]}]}
+{"article":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":"","stories":[{"revisionItemId":"","placement":"feature|radar","headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","editorsView":"","discussionQuestion":"","claimIds":[""]}]},"video":{"title":"","hook":"","narration":"","scenes":[{"id":"","purpose":"","voiceover":"","onScreenText":"","visualBrief":"","factIds":[""],"durationSeconds":1}],"shorts":[{"revisionItemId":"","hook":"","context":"","insight":"","takeaway":"","factIds":[""],"durationSeconds":40}]},"socialAngles":[{"channel":"telegram","hookAngle":"","thesis":"","factIds":[""]},{"channel":"facebook","hookAngle":"","thesis":"","factIds":[""]},{"channel":"threads","hookAngle":"","thesis":"","factIds":[""]},{"channel":"x","hookAngle":"","thesis":"","factIds":[""]},{"channel":"linkedin","hookAngle":"","thesis":"","factIds":[""]},{"channel":"instagram","hookAngle":"","thesis":"","factIds":[""]}]}
 
 APPROVED STORY MATERIAL
 ${JSON.stringify(approvedStoryPromptMaterial(stories))}${masterRetryGuidancePrompt(retryGuidance)}`;
@@ -733,7 +743,14 @@ function ukrainianPrompt(
   stories: WeeklyMasterInputStory[],
   retryGuidance: WeeklyMasterRetryGuidance[],
 ) {
-  return `Act as a Ukrainian senior news editor, not a literal translator. Adapt the approved English Weekly Digest into natural contemporary Ukrainian for AI builders and decision-makers. Preserve revisionItemId, placement, story order, every claimIds array, all names and every number exactly. Use «ШІ» in Ukrainian prose except inside official product names. Avoid calques, bureaucratic phrasing and unexplained English workflow/production jargon. Keep feature bodies at 400–650 words and radar at 80–140 words. Return only the article JSON object in the same shape as the English article.
+  return `Act as a Ukrainian senior news editor re-narrating the story for a Ukrainian audience of builders and the technically curious, not a literal translator. You may restructure sentences and paragraph flow freely -- only revisionItemId, placement, story order, every claimIds array, all names and every number must stay exactly as in the English master. Return only the article JSON object in the same shape as the English article, including editorsView and discussionQuestion for the three feature stories (empty strings for radar).
+
+${voicePromptBlock('uk')}
+
+CONTRACT
+- Feature bodies stay 400–650 words, radar 80–140 words -- continuous narrative prose, never opening a sentence with a field-name label ("Практичний сценарій:", "Обмеження полягає в тому", "Висновок для рішення:"). See REGISTER CONTRAST above for exactly this failure mode.
+- This is not a word-for-word translation: re-narrate for rhythm and naturalness in Ukrainian while preserving every fact, claim ID, name and number from the English master exactly.
+- editorsView must be its own independent Ukrainian re-narration of the English editorial reasoning, not a mechanical translation -- keep the same underlying judgment, written the way a Ukrainian editor would actually say it.
 
 APPROVED ENGLISH MASTER
 ${JSON.stringify(en)}

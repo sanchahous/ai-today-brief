@@ -1018,6 +1018,10 @@ async function createMasterRevision(params: {
           limitation_uk: uk.limitation,
           hook_en: en.hook,
           hook_uk: uk.hook,
+          editors_view_en: en.editorsView,
+          editors_view_uk: uk.editorsView,
+          discussion_en: en.discussionQuestion,
+          discussion_uk: uk.discussionQuestion,
           claim_ids: en.claimIds,
           research_artifact_id: research?.artifact.id ?? null,
           research_input_hash: research?.artifact.input_hash ?? null,
@@ -1104,8 +1108,8 @@ async function createMasterRevision(params: {
         providerId:
           locale === 'en' ? result.generation.english.model : result.generation.ukrainian.model,
         metadata: {
-          schema_version: 'article-v3',
-          target_audience: 'AI builders, founders, product, technology and business leaders',
+          schema_version: 'article-v4',
+          target_audience: 'software builders, AI practitioners and the technically curious',
           estimated_cost_usd:
             locale === 'en'
               ? result.generation.english.estimatedCostUsd
