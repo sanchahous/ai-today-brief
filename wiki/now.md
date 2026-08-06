@@ -11,6 +11,13 @@ Last updated: 2026-08-06
 
 ## Стан репозиторію
 
+- **Нова гілка `feat/llm-provider-registry`** (відгалужена від tip `feat/weekly-editorial-voice`,
+  2026-08-06) — уніфікований реєстр LLM-провайдерів для всього проєкту (daily+weekly+social),
+  план у [pipeline/llm-providers](pipeline/llm-providers.md). Залежить від злиття
+  `feat/weekly-editorial-voice` (торкається тих самих файлів: `editorial-llm.ts`, `llm-router.ts`)
+  — або потребуватиме rebase, якщо merge-порядок зміниться. **Фаза 0 (прибрати Gemini з
+  дефолтної ротації) виконано**; фази 1+ (ядро реєстру, БД, admin UI, поетапна міграція) — не
+  почато.
 - Гілка `feat/weekly-editorial-voice` (з `main`, 2026-08-06), PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189):
   повний перегляд редакційної якості weekly-дайджесту (власник забракував увесь контент як
   «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). **Усі 7 запланованих PR

@@ -371,8 +371,11 @@ function estimateCost(promptTokens: number, outputTokens: number) {
   return Number(((promptTokens * inputRate + outputTokens * outputRate) / 1_000_000).toFixed(6));
 }
 
+// Gemini dropped from the default rotation (2026-08-06, owner request): the free
+// tier has no usable premium model for this workload. The gemini client stays
+// wired and testable -- WEEKLY_MASTER_PROVIDER_ORDER can still opt back in.
 function providerOrder() {
-  const configured = (process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? 'claude-cli,openrouter,gemini')
+  const configured = (process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? 'claude-cli,openrouter')
     .split(',')
     .map((value) => value.trim())
     .filter(

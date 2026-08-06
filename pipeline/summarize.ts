@@ -579,45 +579,70 @@ async function runSummarizeFromPrompt(
   openRouterApiKey: string | undefined,
   geminiMaxAttempts: number,
   logLabel: string,
+  // Temporary scaffolding (2026-08-06) so the owner can flip daily off Gemini
+  // without waiting on the project-wide provider-registry migration (see
+  // wiki/pipeline/llm-providers.md) — deleted once that migration reaches
+  // the daily lane. Default preserves today's Gemini-first behavior exactly.
+  primaryProvider: 'gemini' | 'openrouter' = 'gemini',
 ): Promise<SummarizeResult> {
   const modelQueue = await resolveGeminiModelQueue(apiKey);
   logEvent('info', logLabel, 'Curate & summarize started', {
     candidates: candidates.length,
     gemini_model_queue: modelQueue.slice(0, 5),
     openrouter_fallback: Boolean(openRouterApiKey),
+    primary_provider: primaryProvider,
   });
   const start = Date.now();
 
-  let text: string;
-  let provider: SummarizeResult['provider'] = 'gemini';
-  let providerModel: string;
-  let usage: LlmUsage | null = null;
-
-  try {
-    const geminiResult = await generateWithModelQueue(
-      prompt,
-      apiKey,
-      modelQueue,
-      geminiMaxAttempts,
-    );
-    text = geminiResult.text;
-    providerModel = geminiResult.model;
-    usage = geminiResult.usage;
-  } catch (geminiError) {
-    if (!openRouterApiKey) {
-      throw geminiError;
-    }
-    logEvent('warn', logLabel, 'Gemini queue failed — trying OpenRouter fallback', {
-      gemini_models_tried: modelQueue,
-      ...serializeErrorDetails(geminiError),
-    });
+  const runGemini = async () => {
+    const geminiResult = await generateWithModelQueue(prompt, apiKey, modelQueue, geminiMaxAttempts);
+    return {
+      text: geminiResult.text,
+      provider: 'gemini' as const,
+      providerModel: geminiResult.model,
+      usage: geminiResult.usage,
+    };
+  };
+  const runOpenRouter = async () => {
+    if (!openRouterApiKey) throw new Error('[summarize] OpenRouter API key not configured');
     const { generateWithOpenRouterChain } = await import('./openrouter-summarize');
     const orResult = await generateWithOpenRouterChain(prompt, { apiKey: openRouterApiKey });
-    text = orResult.text;
-    provider = 'openrouter';
-    providerModel = orResult.model;
-    // The streaming client doesn't surface provider usage — estimate from chars.
-    usage = estimateUsage(prompt.length, text.length);
+    return {
+      text: orResult.text,
+      provider: 'openrouter' as const,
+      providerModel: orResult.model,
+      // The streaming client doesn't surface provider usage — estimate from chars.
+      usage: estimateUsage(prompt.length, orResult.text.length),
+    };
+  };
+
+  let text: string;
+  let provider: SummarizeResult['provider'];
+  let providerModel: string;
+  let usage: LlmUsage | null;
+
+  if (primaryProvider === 'openrouter' && openRouterApiKey) {
+    try {
+      ({ text, provider, providerModel, usage } = await runOpenRouter());
+    } catch (openRouterError) {
+      logEvent('warn', logLabel, 'OpenRouter primary failed — trying Gemini fallback', {
+        ...serializeErrorDetails(openRouterError),
+      });
+      ({ text, provider, providerModel, usage } = await runGemini());
+    }
+  } else {
+    try {
+      ({ text, provider, providerModel, usage } = await runGemini());
+    } catch (geminiError) {
+      if (!openRouterApiKey) {
+        throw geminiError;
+      }
+      logEvent('warn', logLabel, 'Gemini queue failed — trying OpenRouter fallback', {
+        gemini_models_tried: modelQueue,
+        ...serializeErrorDetails(geminiError),
+      });
+      ({ text, provider, providerModel, usage } = await runOpenRouter());
+    }
   }
 
   const brief = parseBrief(text, candidates);
@@ -641,6 +666,7 @@ export async function summarizeEditorPick(
   apiKey: string,
   openRouterApiKey?: string,
   geminiMaxAttempts = 3,
+  primaryProvider: 'gemini' | 'openrouter' = 'gemini',
 ): Promise<SummarizeResult> {
   const prompt = buildCustomEditorPrompt(candidates, recentlyPublished, research);
   return runSummarizeFromPrompt(
@@ -650,6 +676,7 @@ export async function summarizeEditorPick(
     openRouterApiKey,
     geminiMaxAttempts,
     'summarize-custom',
+    primaryProvider,
   );
 }
 /* v8 ignore end */
@@ -843,6 +870,7 @@ export async function summarize(
   openRouterApiKey?: string,
   geminiMaxAttempts = 3,
   enrichment: EnrichedSource[] = [],
+  primaryProvider: 'gemini' | 'openrouter' = 'gemini',
 ): Promise<SummarizeResult> {
   logEvent('info', 'summarize', 'Curate & summarize started', {
     candidates: candidates.length,
@@ -860,6 +888,7 @@ export async function summarize(
     openRouterApiKey,
     geminiMaxAttempts,
     'summarize',
+    primaryProvider,
   );
 }
 /* v8 ignore end */

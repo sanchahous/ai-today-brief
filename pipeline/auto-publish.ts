@@ -699,6 +699,7 @@ async function processDraft(
           2,
           JUDGE_SCHEMA,
           config.openRouterApiKey,
+          config.primaryTextProvider,
         );
         const rawVerdicts = parseJudgeVerdicts(text, new Set(candidates.map((c) => c.ref)));
         const calibrated = calibrateVerdicts(rawVerdicts, profile.approveRate);

@@ -136,6 +136,7 @@ export async function verifyClaims(
   apiKey: string,
   geminiMaxAttempts: number,
   openRouterApiKey?: string,
+  primaryProvider: 'gemini' | 'openrouter' = 'gemini',
 ): Promise<VerifyOutcome> {
   const pairs = verifiableItems(items, enrichment);
   if (pairs.length === 0) return { checked: 0, flagged: 0, usage: null, model: null };
@@ -148,6 +149,7 @@ export async function verifyClaims(
     geminiMaxAttempts,
     VERIFY_SCHEMA,
     openRouterApiKey,
+    primaryProvider,
   );
 
   const byRef = parseVerifyResults(text, new Set(pairs.map((p) => p.item.ref)));
@@ -232,6 +234,7 @@ export async function reviseFlaggedItems(
   apiKey: string,
   geminiMaxAttempts: number,
   openRouterApiKey?: string,
+  primaryProvider: 'gemini' | 'openrouter' = 'gemini',
 ): Promise<{ revised: DraftItem[]; usage: LlmUsage | null }> {
   const pairs = verifiableItems(flagged, enrichment).filter(
     (p) => p.item.unsupported_claims.length > 0,
@@ -246,6 +249,7 @@ export async function reviseFlaggedItems(
     geminiMaxAttempts,
     GEMINI_SCHEMA,
     openRouterApiKey,
+    primaryProvider,
   );
 
   const flaggedRefs = new Set(pairs.map((p) => p.item.ref));

@@ -53,6 +53,7 @@ Last updated: 2026-08-04
 | ✅ [pipeline/weekly-digest](pipeline/weekly-digest.md) | Weekly Content Studio v2, ревізії, spend-cap, admin UX, статус розкатки | `.env.example` + PR #160–#177 |
 | ✅ [pipeline/editorial-voice](pipeline/editorial-voice.md) | Редакційний голос weekly-дайджесту: exemplars, contrast-pairs, banned-phrase гейт | `editorial-voice.ts`, owner session 2026-08-06 |
 | ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | Межа відео-pipeline | колишній `docs/VIDEO-PIPELINE-BOUNDARY.md` |
+| ✅ [pipeline/llm-providers](pipeline/llm-providers.md) | Уніфікований реєстр LLM-провайдерів (у розробці): навіщо, ключові знахідки, статус фаз | owner session 2026-08-06 |
 
 ## SEO / AEO
 

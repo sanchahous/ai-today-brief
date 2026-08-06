@@ -19,6 +19,46 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-06 — LLM provider registry, Phase 0: Gemini removed from default rotation
+
+**Джерело:** рішення власника (session 2026-08-06) — під час обговорення дещо ширшого запиту
+(«прибрати Gemini + зробити зручну систему керування провайдерами для всього проєкту, не лише
+weekly»); дослідження коду (2 Explore-агенти + 1 Plan-агент) + Plan-mode затверджений план у
+`C:\Users\Oleksandr\.claude\plans\06-08-2026-12-32-oleksandr-kuzmenko-prancy-gizmo.md`
+
+**Змінено:**
+- Нова гілка `feat/llm-provider-registry` (від tip `feat/weekly-editorial-voice`)
+- `wiki/pipeline/llm-providers.md` — нова сторінка: навіщо, ключові знахідки дослідження,
+  статус фаз
+- `wiki/index.md` — новий рядок
+- `wiki/now.md` — стан нової гілки, залежність від `feat/weekly-editorial-voice`
+
+**Код (Фаза 0 з 7+ фаз плану):**
+- `src/lib/weekly-digest/editorial-llm.ts`'s `providerOrder()`: дефолт `WEEKLY_MASTER_PROVIDER_ORDER`
+  `claude-cli,openrouter,gemini` → `claude-cli,openrouter`
+- `src/lib/social/llm-router.ts`'s `DEFAULT_PROVIDER_ORDER`: writer/critic обидва тепер
+  `['openrouter','ollama']` (gemini прибрано з обох); незалежність writer/critic і далі йде через
+  `excludeProviders` у `generateSocialJson`, не через різний перший провайдер за замовчуванням
+- Daily: новий тимчасовий прапорець `DAILY_LLM_PRIMARY_PROVIDER` (`pipeline/config.ts`'s
+  `PipelineConfig.primaryTextProvider`), протягнутий через `pipeline/llm-json.ts`,
+  `pipeline/summarize.ts`, `pipeline/verify.ts`, `pipeline/auto-publish.ts`,
+  `pipeline/custom-news.ts`. Дефолт `'gemini'` — нуль зміни поведінки без явного env override.
+  **Свідомо тимчасова конструкція**, видаляється у фазі 6 плану, коли daily переходить на повний
+  реєстр провайдерів.
+- Gemini-клієнти (`gemini-models.ts`, SDK-виклики) не чіпались — лишаються доступні через явний
+  env override у всіх трьох шляхах.
+
+Typecheck/lint/build/vitest зелені (873 тести). Наступний крок — Фаза 1: ядро реєстру
+(`pipeline/providers/`) + БД-таблиці + один живий dry-run проти реального NVIDIA NIM API
+(ключ власника вже додано в `.env.local` як `NVIDIA_API_KEY`).
+
+**Нотатка:** повний план (типи, БД-схема з Vault-секретами, admin UI, фазовий порядок 0–7) — у
+файлі плану вище, тут навмисно лише статус, щоб не дублювати. `docs`-Plan-агент перевірив і
+підтвердив реальний, робочий Vault-патерн для зберігання секретів провайдера
+(`store_social_oauth_secret`/`read_social_oauth_secret`, `040_social_cms.sql`) — не здогад.
+
+---
+
 ## 2026-08-06 — Editorial quality overhaul, PR7: social voice + hook picker + cleanup (all 7 PRs done)
 
 **Джерело:** рішення власника (session 2026-08-06) — «код продовжується» по завершенні PR6;

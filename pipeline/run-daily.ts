@@ -402,6 +402,7 @@ async function main(): Promise<void> {
     openRouterKey,
     geminiAttempts,
     enrichment,
+    config.primaryTextProvider,
   );
   const { brief, providerModel, usage } = summarized;
   await logStage(db, config.dryRun, {
@@ -450,6 +451,7 @@ async function main(): Promise<void> {
         config.geminiApiKey,
         geminiAttempts,
         openRouterKey,
+        config.primaryTextProvider,
       );
 
       let revisedCount = 0;
@@ -463,6 +465,7 @@ async function main(): Promise<void> {
           config.geminiApiKey,
           geminiAttempts,
           openRouterKey,
+          config.primaryTextProvider,
         );
         if (revised.length > 0) {
           await verifyClaims(
@@ -471,6 +474,7 @@ async function main(): Promise<void> {
             config.geminiApiKey,
             geminiAttempts,
             openRouterKey,
+            config.primaryTextProvider,
           );
         }
         const revisedByRef = new Map(revised.map((r) => [r.ref, r]));

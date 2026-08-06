@@ -102,6 +102,7 @@ export async function runCustomNews(
     config.geminiApiKey,
     config.openRouterApiKey,
     3,
+    config.primaryTextProvider,
   );
 
   if (brief.items.length === 0) {

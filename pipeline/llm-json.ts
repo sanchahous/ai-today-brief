@@ -37,23 +37,18 @@ export async function generateJsonWithFallback(
   geminiMaxAttempts: number,
   schema: GeminiResponseSchema,
   openRouterApiKey?: string,
+  // Temporary scaffolding (2026-08-06) so the owner can flip daily off Gemini
+  // without waiting on the project-wide provider-registry migration (see
+  // wiki/pipeline/llm-providers.md) — deleted once that migration reaches
+  // the daily lane. Default preserves today's Gemini-first behavior exactly.
+  primaryProvider: 'gemini' | 'openrouter' = 'gemini',
 ): Promise<{ text: string; model: string | null; usage: LlmUsage | null }> {
-  const modelQueue = await resolveGeminiModelQueue(apiKey);
-  try {
-    return await generateWithModelQueue(
-      prompt,
-      apiKey,
-      modelQueue,
-      geminiMaxAttempts,
-      undefined,
-      undefined,
-      schema,
-    );
-  } catch (geminiError) {
-    if (!openRouterApiKey) throw geminiError;
-    logEvent('warn', stage, 'Gemini queue exhausted — OpenRouter fallback', {
-      ...serializeErrorDetails(geminiError),
-    });
+  const runGemini = async () => {
+    const modelQueue = await resolveGeminiModelQueue(apiKey);
+    return generateWithModelQueue(prompt, apiKey, modelQueue, geminiMaxAttempts, undefined, undefined, schema);
+  };
+  const runOpenRouter = async () => {
+    if (!openRouterApiKey) throw new Error('[llm-json] OpenRouter API key not configured');
     const { generateWithOpenRouterChain } = await import('./openrouter-summarize');
     const result = await generateWithOpenRouterChain(prompt, {
       apiKey: openRouterApiKey,
@@ -64,6 +59,27 @@ export async function generateJsonWithFallback(
       model: `openrouter:${result.model}`,
       usage: estimateUsage(prompt.length, result.text.length),
     };
+  };
+
+  if (primaryProvider === 'openrouter' && openRouterApiKey) {
+    try {
+      return await runOpenRouter();
+    } catch (openRouterError) {
+      logEvent('warn', stage, 'OpenRouter primary failed — Gemini fallback', {
+        ...serializeErrorDetails(openRouterError),
+      });
+      return await runGemini();
+    }
+  }
+
+  try {
+    return await runGemini();
+  } catch (geminiError) {
+    if (!openRouterApiKey) throw geminiError;
+    logEvent('warn', stage, 'Gemini queue exhausted — OpenRouter fallback', {
+      ...serializeErrorDetails(geminiError),
+    });
+    return await runOpenRouter();
   }
 }
 /* v8 ignore end */

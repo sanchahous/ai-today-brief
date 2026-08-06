@@ -57,10 +57,15 @@ interface SocialLlmDependencies {
 }
 
 const PROVIDERS: readonly SocialLlmProvider[] = ['gemini', 'openrouter', 'ollama'];
+// Gemini dropped from the default rotation (2026-08-06, owner request): the free
+// tier has no usable premium model for this workload. The 'gemini' client stays
+// wired and testable -- SOCIAL_WRITER_PROVIDER_ORDER / SOCIAL_CRITIC_PROVIDER_ORDER
+// can still opt back in explicitly. Writer/critic independence no longer comes
+// from a different first-choice provider here; it's enforced at call time via
+// generateSocialJson's excludeProviders (see social-adapter.ts).
 const DEFAULT_PROVIDER_ORDER: Record<SocialLlmRole, readonly SocialLlmProvider[]> = {
-  // The writer is independent from the first reviewer by default.
-  writer: ['gemini', 'openrouter', 'ollama'],
-  critic: ['openrouter', 'gemini', 'ollama'],
+  writer: ['openrouter', 'ollama'],
+  critic: ['openrouter', 'ollama'],
 };
 
 const GEMINI_SCHEMAS: Record<SocialLlmRole, GeminiResponseSchema> = {

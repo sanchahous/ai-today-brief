@@ -24,9 +24,15 @@ function model(
 }
 
 describe('resolveSocialProviderOrder', () => {
-  it('keeps writer and critic on independent first providers', () => {
-    expect(resolveSocialProviderOrder('writer', {})).toEqual(['gemini', 'openrouter', 'ollama']);
-    expect(resolveSocialProviderOrder('critic', {})).toEqual(['openrouter', 'gemini', 'ollama']);
+  it('defaults to openrouter first for both roles -- gemini dropped from rotation (2026-08-06)', () => {
+    expect(resolveSocialProviderOrder('writer', {})).toEqual(['openrouter', 'ollama']);
+    expect(resolveSocialProviderOrder('critic', {})).toEqual(['openrouter', 'ollama']);
+  });
+
+  it('still accepts gemini when explicitly configured back in', () => {
+    expect(
+      resolveSocialProviderOrder('writer', { SOCIAL_WRITER_PROVIDER_ORDER: 'gemini,openrouter' }),
+    ).toEqual(['gemini', 'openrouter']);
   });
 
   it('filters invalid values and deduplicates configured providers', () => {
