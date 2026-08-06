@@ -151,6 +151,47 @@ AI-suggested angles are a possible follow-up, not done here.
 `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`,
 `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/editorial-llm.ts`)
 
+**PR5 (2026-08-06):** репортажні ілюстрації + вибір варіантів — другий human-in-the-loop пункт.
+Новий, повністю окремий шлях у **`pipeline/card-image.ts`**: `weeklyReportageSceneBrief` (арт-
+директор-промпт просить документальний, репортажний кадр реальної події — "picture a
+photographer standing in the room where this happened" — а не символічну метафору) +
+`buildWeeklyPrompt` (документальний стиль, 35mm, один наскрізний акцент) +
+`generateWeeklyReportageIllustrations` (3 варіанти на одному сценарії/промпті, різні сіди).
+**Daily-пайплайн (`sceneBrief`/`buildPrompt`/`fillCardImages`) не зачеплений** — окремі функції,
+спільний лише provider-ladder (`generateImage`) і рефакторений `runArtDirectorLadder`.
+
+Контекст для арт-директора розширено з title+summary до title+summary+перші ~600 симв. body+
+editorsView (`generateStoryImage`, generation-worker.ts) — суттєво більше матеріалу, ніж daily-шлях
+коли-небудь отримує. Seed більше не містить `job.id` (`digestId:revisionId:itemId:v{n}`) —
+регенерація тепер ітеративна, не лотерея.
+
+**Фікс мертвого negative prompt на klein:** `buildWeeklyPrompt` вшиває весь avoid-list у
+позитивний промпт текстом (не окремим `negative_prompt` полем) — бо `runCloudflareMultipart`
+(FLUX.2 klein, дефолтний провайдер) шле лише `prompt`/`width`/`height`, тож окремий
+`negativePrompt()` ніколи фізично не долітав до моделі на цьому шляху.
+
+**Зберігання варіантів:** RPC `save_weekly_digest_artifact` **не підтримує кілька одночасних
+`is_current` рядків на один `slot_key`** (кожен save демотує попередній) — тож 3 варіанти НЕ
+зберігаються як окремі артефакти. Замість цього використано вже наявний генеричний механізм
+`content.preview_paths` → `content.preview_urls` (той самий, яким PDF-джоба вже підписує превʼю
+сторінок) — 2 альтернативи йдуть туди, основний варіант лишається `storage_path` того самого
+`story_image` артефакту. `selectWeeklyArtifactVariantAction` — просто міняє місцями, який
+уже завантажений файл є primary (без нового рендеру/аплоуду). Це свідоме відхилення від
+початкового формулювання плану («3 артефакти в одному slot») — після прочитання реального SQL
+RPC з'ясувалось, що воно було неточним.
+
+Visuals tab: сітка з 2 мініатюр-альтернатив під основним зображенням (клік = «Use this»);
+редагована сцена (`scene_override`) + «Regenerate with this scene» перевикористовує вже наявний
+`enqueueWeeklyGenerationAction`, нового job type не знадобилось.
+
+**Не запущено — потрібна жива оцінка перед мержем:** план вимагає dry-run — 9 klein-рендерів
+(3 історії × 3 сіди) старого випуску, власник оцінює, чи klein тримає репортажний стиль. Це
+реальні виклики Cloudflare Workers AI — не запущено самостійно, як і PR3's shadow-прогін.
+(source: `pipeline/card-image.ts`, `pipeline/card-image.test.ts`,
+`src/lib/weekly-digest/generation-worker.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
+`src/components/admin/weekly-workspace.tsx`, migration `20260723095458_weekly_digest_v2.sql`
+§ `save_weekly_digest_artifact`)
+
 ## Імутабельні ревізії (критично)
 
 Кожне реальне редагування створює **нову** `weekly_digest_revisions` (+ items). Артефакти

@@ -120,6 +120,33 @@ in-process revise-loop (макс 2 спроби): на revisable провалі 
 
 ---
 
+## 2026-08-06 — Editorial quality overhaul, PR5: reportage illustrations + variants
+
+**Джерело:** продовження 7-PR плану (PR1–4 записи вище); друга точка «людина-в-циклі»
+(вибір з варіантів + редагована сцена), яку власник обрав на опитуванні 2026-08-06
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — секція PR5, включно з відхиленням від початкового плану
+  щодо зберігання варіантів (RPC не підтримує кілька `is_current` на один slot_key)
+- `wiki/pipeline/editorial-voice.md` — PR5 позначено вирішеним, «не змержено»
+
+**Нотатка:** `pipeline/card-image.ts` отримав повністю окремий шлях для weekly
+(`weeklyReportageSceneBrief`/`buildWeeklyPrompt`/`generateWeeklyReportageIllustrations`) —
+daily-пайплайн (`sceneBrief`/`buildPrompt`/`fillCardImages`) не чіпали, спільний лише
+provider-ladder. Головний фікс: `buildWeeklyPrompt` вшиває avoid-list у позитивний промпт,
+бо на дефолтному провайдері (FLUX.2 klein, multipart) окремий `negative_prompt` фізично не
+надсилався — мертвий код, який показувався в адмінці, але ніколи не діяв. Дизайн зберігання
+варіантів довелося переглянути після прочитання реального `save_weekly_digest_artifact` RPC:
+план описував «3 артефакти в одному slot», але RPC демотує попередній `is_current` рядок при
+кожному save — кілька одночасних is_current на один slot_key неможливі. Використано вже
+наявний `content.preview_paths`/`preview_urls` механізм (той самий, яким PDF підписує превʼю
+сторінок) замість нової архітектури — нуль нових DB-запитів у admin-data.ts.
+**НЕ змержено:** потребує dry-run 9 klein-рендерів — власник має підтвердити, що модель
+тримає репортажний стиль (не галюцинує чи не зісковзує назад у метафору), перш ніж це
+можна вважати готовим.
+
+---
+
 ## 2026-08-04 — Weekly Social: preview assets + safe save/approve
 
 **Джерело:** live fail Telegram Save & approve (`schedule_past`) + founder report

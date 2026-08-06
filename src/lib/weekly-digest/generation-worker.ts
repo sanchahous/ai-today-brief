@@ -1954,6 +1954,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   const item = context.items.find((candidate) => candidate.id === revisionItemId);
   if (!item) throw new Error('Story image job requires a valid revision_item_id.');
   const requestedSourceUrl = text(input.source_url);
+  const sceneOverride = text(input.scene_override);
   let source: Buffer;
   let sourceKind = 'generated';
   let sourceUrl: string | null = null;
@@ -1967,6 +1968,8 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     negativePrompt?: string;
     sceneSource?: string;
   } | null = null;
+  /** Additional variant renders (sharp-processed, not yet uploaded) beyond the primary. */
+  let alternateBuffers: Buffer[] = [];
 
   if (requestedSourceUrl?.startsWith('http')) {
     const response = await fetch(requestedSourceUrl, {
@@ -1977,13 +1980,17 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     sourceUrl = requestedSourceUrl;
     sourceKind = 'editor_url';
   } else {
-    const { generateEditorialIllustration } = await lazyCardImage();
-    const generatedSource = await generateEditorialIllustration(
+    const { generateWeeklyReportageIllustrations } = await lazyCardImage();
+    const contentStudio = asRecord(asRecord(item.source_snapshot).content_studio);
+    const illustrations = await generateWeeklyReportageIllustrations(
       {
-        title: item.title_en,
+        headline: item.title_en,
         summary: item.summary_en,
-        seedKey: `${job.weekly_digest_id}:${job.revision_id}:${item.id}:${job.id}`,
-        fallbackToLocal: true,
+        bodyExcerpt: item.body_en?.slice(0, 600),
+        editorsView: text(contentStudio.editors_view_en) ?? undefined,
+        seedBase: `${job.weekly_digest_id}:${job.revision_id}:${item.id}`,
+        sceneOverride: sceneOverride ?? undefined,
+        variantCount: 3,
       },
       {
         geminiApiKey: process.env.GEMINI_API_KEY?.trim() ?? '',
@@ -1997,18 +2004,20 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       },
     );
 
-    if (generatedSource) {
-      source = generatedSource.bytes;
+    if (illustrations?.variants.length) {
+      const [primary, ...alternates] = illustrations.variants;
+      source = primary!.bytes;
       imageMeta = {
-        provider: generatedSource.provider,
-        model: generatedSource.model,
-        estimatedCostUsd: generatedSource.estimatedCostUsd,
-        costSource: generatedSource.costSource,
-        scene: generatedSource.scene,
-        positivePrompt: generatedSource.positivePrompt,
-        negativePrompt: generatedSource.negativePrompt,
-        sceneSource: generatedSource.sceneSource,
+        provider: primary!.provider,
+        model: primary!.model,
+        estimatedCostUsd: illustrations.variants.reduce((sum, v) => sum + v.estimatedCostUsd, 0),
+        costSource: primary!.costSource,
+        scene: illustrations.scene,
+        positivePrompt: primary!.positivePrompt,
+        negativePrompt: primary!.negativePrompt,
+        sceneSource: illustrations.sceneSource,
       };
+      alternateBuffers = alternates.map((variant) => variant.bytes);
     } else {
       const fallbackUrl = snapshotImage(item.source_snapshot);
       if (!fallbackUrl?.startsWith('http')) {
@@ -2028,14 +2037,30 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
 
   if (source.length > 15 * 1024 * 1024) throw new Error('Story image source exceeds 15 MB.');
   const sharp = await lazySharp();
-  const image = await sharp(source)
-    .rotate()
-    .resize(1600, 900, { fit: 'cover', position: 'attention' })
-    .jpeg({ quality: 90, progressive: true })
-    .toBuffer();
+  const processImage = (buffer: Buffer) =>
+    sharp(buffer)
+      .rotate()
+      .resize(1600, 900, { fit: 'cover', position: 'attention' })
+      .jpeg({ quality: 90, progressive: true })
+      .toBuffer();
+  const image = await processImage(source);
   const hash = createHash('sha256').update(image).digest('hex');
   const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/${hash}-${job.id}.jpg`;
   await uploadPrivate(path, image, 'image/jpeg');
+
+  // Upload the alternate variants alongside the primary (same generic
+  // preview_paths mechanism the PDF job already uses for page previews --
+  // admin-data.ts's withPrivatePreviewUrls signs these into preview_urls
+  // with no additional plumbing needed).
+  const previewPaths: string[] = [];
+  for (const [index, buffer] of alternateBuffers.entries()) {
+    const processed = await processImage(buffer);
+    const altHash = createHash('sha256').update(processed).digest('hex');
+    const altPath = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/${altHash}-${job.id}-alt${index + 1}.jpg`;
+    await uploadPrivate(altPath, processed, 'image/jpeg');
+    previewPaths.push(altPath);
+  }
+
   const artifactId = await saveGeneratedArtifact({
     weeklyDigestId: job.weekly_digest_id,
     revisionId: job.revision_id,
@@ -2051,12 +2076,13 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     content: {
       alt_en: text(input.alt_text) ?? item.title_en,
       alt_uk: text(input.alt_text_uk) ?? item.title_uk,
+      ...(previewPaths.length ? { preview_paths: previewPaths } : {}),
     },
     metadata: {
       source_kind: sourceKind,
       source_url: sourceUrl,
       focal_point: text(input.focal_point) ?? 'attention',
-      prompt_policy: 'story-specific-editorial-v5-no-text',
+      prompt_policy: 'weekly-reportage-v1',
       ...(imageMeta
         ? {
             provider: imageMeta.provider,
@@ -2087,10 +2113,10 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       revisionId: job.revision_id,
       jobId: job.id,
       artifactId,
-      metadata: { revision_item_id: item.id, source_kind: sourceKind },
+      metadata: { revision_item_id: item.id, source_kind: sourceKind, variant_count: 1 + alternateBuffers.length },
     });
   }
-  return { artifactId, output: { path, byte_size: image.length, sha256: hash } };
+  return { artifactId, output: { path, byte_size: image.length, sha256: hash, variants: 1 + alternateBuffers.length } };
 }
 
 async function generateCover(job: ClaimedGenerationJob) {

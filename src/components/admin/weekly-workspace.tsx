@@ -35,6 +35,7 @@ import {
   saveWeeklyStoryDirectionAction,
   saveWeeklyVideoAction,
   scheduleWeeklyDigestAction,
+  selectWeeklyArtifactVariantAction,
   startWeeklyContentStudioAction,
   toggleWeeklySocialAction,
   uploadWeeklyArtifactAction,
@@ -638,6 +639,7 @@ function ArtifactCard({
   canReview,
   label,
   imagePreview = false,
+  variantSelection,
 }: {
   digestId: string;
   artifact: WeeklyArtifactAdminRow | undefined;
@@ -645,6 +647,20 @@ function ArtifactCard({
   canReview: boolean;
   label: string;
   imagePreview?: boolean;
+  /**
+   * story_image only (PR5): enables the variant thumbnail strip (promote an
+   * alternate render to primary) and the "edit scene, regenerate" form.
+   * Requires the caller's own edit permission -- passed separately as
+   * `canEdit` below rather than reusing `canReview`, since promoting a
+   * variant is an editing action, not an approval one (same permission
+   * class as ReplacementAssetForm).
+   */
+  variantSelection?: {
+    canEdit: boolean;
+    revisionId: string;
+    revisionItemId: string;
+    slotKey: string;
+  };
 }) {
   if (!artifact) {
     return (
@@ -686,6 +702,8 @@ function ArtifactCard({
       : null;
   const illustrationSceneSource =
     typeof artifactMetadata.scene_source === 'string' ? artifactMetadata.scene_source : null;
+  const alternateVariantPaths = variantSelection ? listFrom(artifact.content, 'preview_paths') : [];
+  const alternateVariantUrls = variantSelection ? previewUrls : [];
 
   return (
     <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -709,6 +727,42 @@ function ArtifactCard({
             unoptimized
             className="object-cover"
           />
+        </div>
+      ) : null}
+
+      {variantSelection && alternateVariantUrls.length > 0 ? (
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {alternateVariantUrls.map((url, index) => {
+            const path = alternateVariantPaths[index];
+            if (!path) return null;
+            return (
+              <form key={path} action={selectWeeklyArtifactVariantAction}>
+                <input type="hidden" name="weekly_digest_id" value={digestId} />
+                <input type="hidden" name="revision_id" value={variantSelection.revisionId} />
+                <input type="hidden" name="artifact_id" value={artifact.id} />
+                <input type="hidden" name="variant_path" value={path} />
+                <button
+                  type="submit"
+                  disabled={!variantSelection.canEdit}
+                  className="group relative block aspect-[16/9] w-full overflow-hidden rounded-lg border border-white/10 hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Image
+                    src={url}
+                    alt={`Alternate render ${index + 1}`}
+                    fill
+                    sizes="160px"
+                    unoptimized
+                    className="object-cover"
+                  />
+                  {variantSelection.canEdit ? (
+                    <span className="absolute inset-0 hidden items-center justify-center bg-black/55 text-xs font-bold text-white group-hover:flex">
+                      Use this
+                    </span>
+                  ) : null}
+                </button>
+              </form>
+            );
+          })}
         </div>
       ) : null}
 
@@ -740,6 +794,37 @@ function ArtifactCard({
                   {illustrationNegative}
                 </p>
               </div>
+            ) : null}
+            {variantSelection ? (
+              <form action={enqueueWeeklyGenerationAction} className="grid gap-2 border-t border-white/10 pt-3">
+                <input type="hidden" name="weekly_digest_id" value={digestId} />
+                <input type="hidden" name="revision_id" value={variantSelection.revisionId} />
+                <input type="hidden" name="job_type" value="story_image" />
+                <input type="hidden" name="locale" value="neutral" />
+                <input type="hidden" name="slot_key" value={variantSelection.slotKey} />
+                <input
+                  type="hidden"
+                  name="revision_item_id"
+                  value={variantSelection.revisionItemId}
+                />
+                <label className="grid gap-1 text-xs font-bold text-slate-300">
+                  Edit scene (optional — replaces the art-director call)
+                  <textarea
+                    name="scene_override"
+                    rows={2}
+                    maxLength={400}
+                    disabled={!variantSelection.canEdit}
+                    defaultValue={illustrationScene ?? ''}
+                    className="rounded-lg border border-white/15 bg-black/30 p-2 font-mono text-xs text-slate-200"
+                  />
+                </label>
+                <ActionSubmitButton
+                  idleLabel="Regenerate with this scene"
+                  pendingLabel="Queueing…"
+                  disabled={!variantSelection.canEdit}
+                  className={SECONDARY}
+                />
+              </form>
             ) : null}
           </div>
         </details>
@@ -2526,6 +2611,12 @@ function VisualsPanel({
                   canReview={canReview}
                   label={`Story ${item.rank} illustration`}
                   imagePreview
+                  variantSelection={{
+                    canEdit,
+                    revisionId: revision.id,
+                    revisionItemId: item.id,
+                    slotKey,
+                  }}
                 />
                 <ReplacementAssetForm
                   workspace={workspace}

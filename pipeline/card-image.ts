@@ -73,8 +73,12 @@ export interface CardImageConfig {
 
 export type ImageCostSource = 'reported' | 'estimated' | 'subscription';
 
-/** Where the cover scene phrase came from (art-director LLM or keyword fallback). */
-export type SceneSource = 'gemini' | 'openrouter' | 'fallback';
+/**
+ * Where the cover scene phrase came from: an art-director LLM call, the
+ * keyword fallback, or (weekly-only) the owner typing their own scene text
+ * directly in the Visuals tab.
+ */
+export type SceneSource = 'gemini' | 'openrouter' | 'fallback' | 'owner';
 
 export interface SceneBriefResult {
   scene: string;
@@ -514,6 +518,71 @@ export async function renderFallbackEditorialIllustration(
  * clichés explicitly banned so cards stop looking interchangeable. Falls back to
  * a keyword-chosen concrete scene (never a brain) if the model call fails.
  */
+function cleanSceneText(text: string): string {
+  return text.replace(/\s+/g, ' ').trim().slice(0, 320);
+}
+
+/**
+ * Shared Gemini → OpenRouter art-director ladder: sends one instruction
+ * string to a text model and returns the cleaned reply, or null if every
+ * provider failed/was unconfigured. {@link sceneBrief} and
+ * {@link weeklyReportageSceneBrief} each build their own instruction text
+ * (daily vs. weekly house style) and fall back to their own keyword scene
+ * when this returns null.
+ */
+async function runArtDirectorLadder(
+  instruction: string,
+  cfg: CardImageConfig,
+): Promise<{ text: string; source: 'gemini' | 'openrouter' } | null> {
+  // Primary: Gemini. Fallback: OpenRouter (separate billing → survives Gemini
+  // free-tier rate limits, e.g. during a backfill).
+  try {
+    const models = await resolveGeminiModelQueue(cfg.geminiApiKey, {
+      ...process.env,
+      GEMINI_MODEL: cfg.geminiModel ?? process.env.GEMINI_MODEL,
+      GEMINI_MAX_MODEL_ATTEMPTS: '2',
+    });
+    const client = new GoogleGenerativeAI(cfg.geminiApiKey);
+    for (const model of models) {
+      try {
+        const response = await client.getGenerativeModel({ model }).generateContent(instruction);
+        const text = cleanSceneText(response.response.text());
+        if (text.length >= 6) return { text, source: 'gemini' };
+      } catch {
+        // Advance only within the current generation resolved from the catalog.
+      }
+    }
+  } catch {
+    /* fall through to OpenRouter */
+  }
+
+  if (cfg.openRouterApiKey) {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${cfg.openRouterApiKey}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          // Moving alias: never falls back to a retired numbered release.
+          model: '~openai/gpt-mini-latest',
+          messages: [{ role: 'user', content: instruction }],
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+        const text = cleanSceneText(data.choices?.[0]?.message?.content ?? '');
+        if (text.length >= 6) return { text, source: 'openrouter' };
+      }
+    } catch {
+      /* fall through to keyword scene */
+    }
+  }
+
+  return null;
+}
+
 export async function sceneBrief(
   title: string,
   summary: string,
@@ -539,54 +608,154 @@ export async function sceneBrief(
     `If a document or screen appears, keep it blank or abstract — never readable writing. ` +
     `Answer with ONE vivid phrase, 18-32 words, concrete nouns, a single focal subject, not a full ` +
     `sentence.\n\nHeadline: "${title}"\nSummary: "${summary}"`;
-  const clean = (t: string) => t.replace(/\s+/g, ' ').trim().slice(0, 320);
-  // Primary: Gemini. Fallback: OpenRouter (separate billing → survives Gemini
-  // free-tier rate limits, e.g. during a backfill). Last resort: a keyword scene.
-  try {
-    const models = await resolveGeminiModelQueue(cfg.geminiApiKey, {
-      ...process.env,
-      GEMINI_MODEL: cfg.geminiModel ?? process.env.GEMINI_MODEL,
-      GEMINI_MAX_MODEL_ATTEMPTS: '2',
-    });
-    const client = new GoogleGenerativeAI(cfg.geminiApiKey);
-    for (const model of models) {
-      try {
-        const response = await client.getGenerativeModel({ model }).generateContent(instruction);
-        const text = clean(response.response.text());
-        if (text.length >= 6) return { scene: text, source: 'gemini' };
-      } catch {
-        // Advance only within the current generation resolved from the catalog.
-      }
-    }
-  } catch {
-    /* fall through to OpenRouter */
-  }
-
-  if (cfg.openRouterApiKey) {
-    try {
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${cfg.openRouterApiKey}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          // Moving alias: never falls back to a retired numbered release.
-          model: '~openai/gpt-mini-latest',
-          messages: [{ role: 'user', content: instruction }],
-        }),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-        const text = clean(data.choices?.[0]?.message?.content ?? '');
-        if (text.length >= 6) return { scene: text, source: 'openrouter' };
-      }
-    } catch {
-      /* fall through to keyword scene */
-    }
-  }
-
+  const result = await runArtDirectorLadder(instruction, cfg);
+  if (result) return { scene: result.text, source: result.source };
   return { scene: fallbackScene(ctx), source: 'fallback' };
+}
+
+// ---------------------------------------------------------------------------
+// Weekly Digest "reportage" illustrations (editorial quality overhaul, PR5).
+// Deliberately separate from sceneBrief/buildPrompt above -- the daily
+// per-item card pipeline (fillCardImages) keeps its existing abstract-
+// metaphor house style untouched. Weekly gets a distinct, single house style:
+// the actual news event as one documentary-style frame, not a metaphor.
+// ---------------------------------------------------------------------------
+
+export interface WeeklyReportageSceneInput {
+  headline: string;
+  summary: string;
+  /** First ~600 chars of the story body -- gives the art director the actual
+   * narrative, not just the one-paragraph summary the daily path gets. */
+  bodyExcerpt?: string;
+  editorsView?: string;
+}
+
+/**
+ * Turn the full story context into ONE reportage-style frame: the actual
+ * event as a photojournalist would have caught it, not a symbolic metaphor
+ * (the daily path's "cracked padlock" / "robotic arms shaking hands"
+ * register). Falls back to the same keyword scene as the daily path if every
+ * provider fails -- better a generic-but-relevant scene than no image.
+ */
+export async function weeklyReportageSceneBrief(
+  input: WeeklyReportageSceneInput,
+  cfg: CardImageConfig,
+): Promise<SceneBriefResult> {
+  const ctx = [input.headline, input.summary].filter(Boolean).join('. ').trim();
+  if (!ctx) return { scene: DEFAULT_SCENE, source: 'fallback' };
+  const contextBlock = [
+    `Headline: "${input.headline}"`,
+    `Summary: "${input.summary}"`,
+    input.bodyExcerpt?.trim() ? `Story excerpt: "${input.bodyExcerpt.trim().slice(0, 600)}"` : null,
+    input.editorsView?.trim() ? `Editor's read on where this leads: "${input.editorsView.trim()}"` : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const instruction =
+    `You are a photojournalist art-directing the cover image for a weekly technology digest. Read ` +
+    `the full story context below and describe ONE reportage-style frame that depicts the actual ` +
+    `event as it happened -- not a symbolic metaphor, not an abstract concept illustration. Picture ` +
+    `a photographer standing in the room where this happened: what is the single most telling, ` +
+    `camera-ready moment? Name a specific concrete actor (a person, a machine, a screen, a physical ` +
+    `object) performing the specific action the story describes -- never a generic stand-in category. ` +
+    `Good reportage-style examples: a security engineer's monitor showing a network map with one ` +
+    `route highlighted red, caught mid-glance over their shoulder; hands adjusting a physical server ` +
+    `rack as one indicator light changes color; a conference-room screen mid-presentation with a ` +
+    `product silhouette on stage and an audience in soft focus; a hand closing a laptop lid in a dim ` +
+    `office at night after an incident. STRICTLY AVOID abstract visual metaphors -- no cracked ` +
+    `padlocks, glowing cryptographic seals, robotic arms cooperating, coin towers, or any object ` +
+    `standing in symbolically for a concept. Also avoid: a glowing brain, glowing orb or core, ` +
+    `neural-network mesh, generic circuit board, anonymous server aisle, lone laptop on an empty ` +
+    `desk. No text, letters, numbers, logos, brand marks or recognisable real faces. If a screen ` +
+    `appears, keep it abstract or blank -- never readable writing. Answer with ONE vivid phrase, ` +
+    `18-32 words, concrete nouns, a single focal subject, not a full sentence.\n\n${contextBlock}`;
+  const result = await runArtDirectorLadder(instruction, cfg);
+  if (result) return { scene: result.text, source: result.source };
+  return { scene: fallbackScene(ctx), source: 'fallback' };
+}
+
+/**
+ * Weekly house style: documentary reportage realism, one recurring accent,
+ * calm top/bottom bands for layout. Unlike {@link buildPrompt}, the avoid-
+ * list is folded directly into this positive prompt rather than relying on
+ * a separate negative_prompt field -- FLUX.2 klein's multipart Workers AI
+ * call never actually transmits negative_prompt (see runCloudflareMultipart
+ * below), so on the default weekly provider a separate negativePrompt() was
+ * silently never sent. Folding it in here means the avoid-list reaches the
+ * model on every provider in the ladder, not only the JSON-body ones.
+ */
+export function buildWeeklyPrompt(accent: string, scene: string): string {
+  return (
+    `Documentary editorial photograph, as if captured in the actual moment this news event ` +
+    `happened -- reportage realism, not illustration or metaphor. 35mm lens, natural available ` +
+    `light, shallow depth of field, a restrained realistic color grade with ${accent} as the one ` +
+    `recurring accent tone. One decisive moment, one clear subject doing the specific thing the ` +
+    `story describes -- a specific person, machine, screen or object performing the specific ` +
+    `action, not a symbolic stand-in for it. ` +
+    `Keep the top and bottom calm and visually quiet for later layout compositing; do not paint ` +
+    `titles, mastheads, captions, subtitles, or any lettering there. ` +
+    `Avoid: text, words, letters, typography, numbers, glyphs, captions, subtitles, mastheads, ` +
+    `title bars, headlines, watermarks, signatures, logos, brand marks, UI chrome, readable ` +
+    `screens, frames, borders, split panels, collage, glowing brain, human brain, neural-network ` +
+    `mesh, generic circuit board, glowing orb, floating abstract sphere, cracked padlock, glowing ` +
+    `seal, robotic arms shaking hands, coin towers, anonymous server aisle, lone laptop on an ` +
+    `empty desk, generic data-center corridor, stock server room, interchangeable tech stock ` +
+    `photography, low quality, blurry, jpeg artifacts, distorted, deformed, extra fingers, extra ` +
+    `limbs, cluttered, busy, staged studio look. ` +
+    `Scene: ${scene} Wide 16:9 horizontal composition, edge-to-edge full-bleed.`
+  );
+}
+
+export interface WeeklyReportageIllustrationInput extends WeeklyReportageSceneInput {
+  accent?: string;
+  /** No job.id here on purpose -- stable across regenerations so a variant
+   * seed can be iterated on rather than re-rolled from scratch every time. */
+  seedBase: string;
+  /** Owner-edited scene text (Visuals tab) bypasses the art-director call entirely. */
+  sceneOverride?: string;
+  /** Defaults to 3 -- one selectable set of candidates per story. */
+  variantCount?: number;
+}
+
+export interface WeeklyReportageIllustrationResult {
+  variants: GeneratedImageResult[];
+  scene: string;
+  sceneSource: SceneSource;
+}
+
+/**
+ * Generates {@link WeeklyReportageIllustrationInput.variantCount} candidate
+ * renders of the same reportage scene (same prompt, different seeds) so the
+ * owner can pick the best one instead of accepting whatever a single roll
+ * produced. Returns null only when every variant attempt failed across the
+ * whole provider ladder.
+ */
+export async function generateWeeklyReportageIllustrations(
+  input: WeeklyReportageIllustrationInput,
+  cfg: CardImageConfig,
+): Promise<WeeklyReportageIllustrationResult | null> {
+  const override = input.sceneOverride?.trim();
+  const { scene, source: sceneSource } = override
+    ? { scene: override, source: 'owner' as const }
+    : await weeklyReportageSceneBrief(input, cfg);
+  const positive = buildWeeklyPrompt(input.accent?.trim() || 'cool cyan', scene);
+  const negative = negativePrompt();
+  const count = Math.max(1, input.variantCount ?? 3);
+  const variants: GeneratedImageResult[] = [];
+  for (let i = 1; i <= count; i += 1) {
+    const seed = seedFromString(`${input.seedBase}:v${i}`);
+    const generated = await generateImage(positive, negative, cfg, seed);
+    if (generated) {
+      variants.push({
+        ...generated,
+        scene,
+        positivePrompt: positive,
+        negativePrompt: negative,
+        sceneSource,
+      });
+    }
+  }
+  return variants.length ? { variants, scene, sceneSource } : null;
 }
 
 /** Keyword → concrete scene, so even without the model cards vary by topic (never a brain). */
