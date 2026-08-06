@@ -80,10 +80,13 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Найближчі 3 дії в коді
 
-1. PR1 (`feat/weekly-editorial-voice`): commit + push + відкрити PR, дочекатись рішення
-   власника про shadow-прогін (потребує GitHub Actions Claude CLI + реальні витрати).
-2. PR2: рендеринг `editorsView`/`discussionQuestion`/`limitation` на сайті (weekly-story.tsx).
-3. PR3: рубрика критика (`engagement`/`voice` виміри, якорі, line-edit pass замість regenerate).
+1. PR1 запушено, PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189) відкритий
+   (усе ще на гілці `feat/weekly-editorial-voice`, комітиться далі туди ж). PR2 (рендеринг
+   `editorsView`/`discussionQuestion`/`limitation`) готовий локально, готується до пушу.
+2. PR3: рубрика критика (`engagement`/`voice` виміри, якорі, line-edit pass замість regenerate).
+   **Зупинка перед мержем:** critic-only shadow-прогін на збереженому master 2026-07-27 має
+   провалитись по voice/engagement — потребує рішення власника, не лише тестів.
+3. PR4–7 (кут подачі, ілюстрації-репортажі, відеосценарій, соц-голос) — після PR3.
 
 ## Related pages
 

@@ -11,6 +11,10 @@ export const WEEKLY_COPY: Record<
     why: string;
     practical: string;
     takeaway: string;
+    limitation: string;
+    editorsView: string;
+    editorsViewNote: string;
+    discuss: string;
     source: string;
     watch: string;
     videoTitle: string;
@@ -33,6 +37,10 @@ export const WEEKLY_COPY: Record<
     why: 'Why it matters',
     practical: 'Practical example',
     takeaway: 'The takeaway',
+    limitation: 'Limitation',
+    editorsView: "Editor's view",
+    editorsViewNote: 'Our read — not established by the sources above.',
+    discuss: 'Worth discussing',
     source: 'Primary source',
     watch: 'Watch the weekly briefing',
     videoTitle: 'This week in AI — video briefing',
@@ -55,6 +63,10 @@ export const WEEKLY_COPY: Record<
     why: 'Чому це важливо',
     practical: 'Практичний приклад',
     takeaway: 'Головний висновок',
+    limitation: 'Обмеження',
+    editorsView: 'Погляд редакції',
+    editorsViewNote: 'Наша думка — не підтверджена джерелами вище.',
+    discuss: 'Варто подискутувати',
     source: 'Першоджерело',
     watch: 'Дивитися тижневий брифінг',
     videoTitle: 'Цей тиждень в AI — відеобрифінг',

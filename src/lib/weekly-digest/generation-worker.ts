@@ -1846,6 +1846,7 @@ async function generatePdf(job: ClaimedGenerationJob) {
     ),
     stories: context.items.map((item, index) => {
       const source = sourceFromJson(item.sources);
+      const studio = asRecord(asRecord(item.source_snapshot).content_studio);
       return {
         rank: item.rank,
         title: localized(item.title_en, item.title_uk),
@@ -1854,6 +1855,7 @@ async function generatePdf(job: ClaimedGenerationJob) {
         why: localized(item.why_en, item.why_uk),
         practical: localized(item.practical_en, item.practical_uk),
         takeaway: localized(item.takeaway_en, item.takeaway_uk),
+        limitation: localized(text(studio.limitation_en), text(studio.limitation_uk)),
         sourceName: source.name,
         sourceUrl: source.url,
         eventDate: item.event_date,

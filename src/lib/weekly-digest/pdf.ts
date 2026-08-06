@@ -43,6 +43,8 @@ export interface WeeklyPdfStory {
   why: string;
   practical: string;
   takeaway: string;
+  /** Empty for editions generated before 2026-08-06 -- infoPanel no-ops on empty. */
+  limitation: string;
   sourceName: string;
   sourceUrl: string;
   eventDate?: string | null;
@@ -73,6 +75,7 @@ const COPY = {
     why: 'Why it matters',
     practical: 'Practical example',
     takeaway: 'Takeaway',
+    limitation: 'Limitation',
     source: 'Primary source',
     closing: 'Key takeaways',
     online: 'Read the live edition',
@@ -85,6 +88,7 @@ const COPY = {
     why: 'Чому це важливо',
     practical: 'Практичний приклад',
     takeaway: 'Висновок',
+    limitation: 'Обмеження',
     source: 'Першоджерело',
     closing: 'Ключові висновки',
     online: 'Читати вебверсію',
@@ -376,6 +380,7 @@ function buildStory(
   infoPanel(doc, copy.why, story.why);
   infoPanel(doc, copy.practical, story.practical, '#47e4d3');
   infoPanel(doc, copy.takeaway, story.takeaway, '#8b7cf6');
+  infoPanel(doc, copy.limitation, story.limitation, COLORS.muted);
 
   ensureSpace(doc, 64);
   doc

@@ -47,6 +47,28 @@ AEO-блоки, людина-в-циклі, формат відео, бюдже�
 
 ---
 
+## 2026-08-06 — Editorial quality overhaul, PR2: render new story anatomy
+
+**Джерело:** продовження 7-PR плану (PR1 запис вище); власник підтвердив підхід «AEO-блоки
+поза прозою» під час опитування 2026-08-06
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — секція PR2: `digests.ts`/`weekly-story.tsx`/`pdf.ts` зміни
+- `wiki/pipeline/editorial-voice.md` — позначено рендеринг як вирішений, приберано з «НЕ вирішує»
+
+**Нотатка:** `src/lib/digests.ts` читає нові поля з `source_snapshot.content_studio`
+(`contentStudioFrame`); `weekly-story.tsx` рендерить `limitation` (приглушений рядок),
+«Погляд редакції» (пунктирна рамка + дисклеймер) і `discussionQuestion` (завершальне питання) —
+усі умовно, зворотна сумісність зі старими випусками. PDF отримав панель `limitation` тим самим
+шляхом; `editorsView`/`discussionQuestion` свідомо НЕ додані в PDF. Живо перевірено на єдиному
+опублікованому випуску (`ai-weekly-2026-06-29`) — 200 OK, без regressions (dev-сервер довелось
+піднімати напряму через Bash, не через preview_start: харнес-тул під час запуску `next dev`
+ловить відомий subst-drive path-duplication баг з `dev-env-subst-drive-e2e-2026-07`, тепер він
+проявляється і поза Playwright-контекстом; `turbopack.root` у `next.config.ts` не допоміг і був
+відкочений — ENOENT стосується internal dev-manifest шляху, не module resolution).
+
+---
+
 ## 2026-08-04 — Weekly Social: preview assets + safe save/approve
 
 **Джерело:** live fail Telegram Save & approve (`schedule_past`) + founder report

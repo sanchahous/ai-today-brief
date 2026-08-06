@@ -43,6 +43,9 @@ function fixture(locale: 'en' | 'uk'): WeeklyPdfInput {
       takeaway: uk
         ? 'Перевіряйте цінність на реальних завданнях, а не на демонстраціях.'
         : 'Validate value on real workloads, not demos.',
+      limitation: uk
+        ? 'Дані описують лише один звітований випадок, не універсальну поведінку.'
+        : 'The data describes one reported case, not universal behavior.',
       sourceName: 'Example source',
       sourceUrl: 'https://example.com/source',
       eventDate: '2026-07-21',

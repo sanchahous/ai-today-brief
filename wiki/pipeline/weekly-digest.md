@@ -80,9 +80,23 @@ master prompt **`weekly-master-v5`**: після деплою **Start / retry Co
 спекуляція, обов'язкова для трьох головних історій, 60–110 слів) і `discussionQuestion`
 (дискусійне питання наприкінці); аудиторія промпту змінена з «product, technology and business
 leaders» на «software builders, AI practitioners and the technically curious». `hook` лишився в
-схемі (не рендериться, як і раніше — рендеринг нової анатомії статті це PR2). Персистяться в
+схемі, але не рендериться (як і раніше). Персистяться в
 `weekly_digest_revision_items.source_snapshot.content_studio.{editors_view_en,editors_view_uk,
 discussion_en,discussion_uk}` — без нової міграції.
+
+**PR2 (2026-08-06):** рендеринг нової анатомії на сайті. `src/lib/digests.ts` читає
+`content_studio.{editors_view_*,discussion_*,limitation_*}` (`contentStudioFrame`) →
+`WeeklyDigestItemView.{editorsView,discussionQuestion,limitation}`. `weekly-story.tsx`: тіло —
+чиста розповідь; `limitation` — приглушений рядок під takeaway-боксом; «Погляд редакції» —
+окремий блок з пунктирною рамкою і явним дисклеймером (`copy.editorsViewNote`); `discussionQuestion`
+— завершальне питання перед джерелами. Усі три блоки умовні (`{item.x ? … : null}`) — старі
+випуски без цих полів рендеряться як раніше, без порожньої розмітки; перевірено вживу на
+єдиному опублікованому випуску (`ai-weekly-2026-06-29`, старий формат) — 200 OK, без regressions.
+PDF (`pdf.ts`) отримав `limitation`-панель тим самим шляхом (generation-worker.ts читає
+`source_snapshot.content_studio` при білді `WeeklyPdfInput`); `editorsView`/`discussionQuestion`
+у PDF свідомо не додані — окреме дизайн-рішення власника, не автоматичний перенос.
+(source: `src/lib/digests.ts`, `src/components/weekly/weekly-story.tsx`,
+`src/components/weekly/copy.ts`, `src/lib/weekly-digest/pdf.ts`, live check localhost 2026-08-06)
 
 `detectTemplateLeaks` блокує точну реєстр-помилку зі знайденого прикладу (`ai-weekly-2026-07-27`):
 речення в `body`, що відкриваються міткою поля («Practical scenario:», «Обмеження полягає в
