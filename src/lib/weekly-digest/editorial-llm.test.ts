@@ -33,7 +33,6 @@ import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summar
 import { generateWithClaudeCli } from '../../../pipeline/claude-cli';
 import { fetchOpenRouterModels } from '../../../pipeline/openrouter-models';
 import {
-  normalizeWeeklySocialAngles,
   masterRetryGuidancePrompt,
   approvedStoryPromptMaterial,
   criticApprovedEvidence,
@@ -49,10 +48,6 @@ import {
   type WeeklyMasterUkrainianResult,
 } from './editorial-llm';
 import type { WeeklyMasterBundle } from './content-studio';
-
-function socialAngle(channel: string) {
-  return { channel, hookAngle: `Hook for ${channel}`, thesis: 'Thesis', factIds: ['claim-1'] };
-}
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -273,7 +268,6 @@ describe('criticPrompt', () => {
     const bundle = {
       en: { locale: 'en', stories: [] },
       uk: { locale: 'uk', stories: [] },
-      socialAngles: [],
     } as unknown as WeeklyMasterBundle;
     const prompt = criticPrompt(bundle, [storyWithPrimaryExcerpt()]);
     expect(prompt).toContain('claims AND the attached primary/corroborating source excerpts');
@@ -302,32 +296,6 @@ describe('premiumGeminiEditorialModels', () => {
         'gemini-3-nano',
       ]),
     ).toEqual([]);
-  });
-});
-
-describe('normalizeWeeklySocialAngles', () => {
-  it('canonicalizes common channel variants and removes harmless duplicates', () => {
-    expect(
-      normalizeWeeklySocialAngles(
-        [
-          'Telegram',
-          'facebook',
-          'threads',
-          'Twitter / X',
-          'Linked-In',
-          'instagram',
-          'Instagram',
-        ].map(socialAngle),
-      ).map((angle) => angle.channel),
-    ).toEqual(['telegram', 'facebook', 'threads', 'x', 'linkedin', 'instagram']);
-  });
-
-  it('still rejects a package that omits a required channel', () => {
-    expect(() =>
-      normalizeWeeklySocialAngles(
-        ['telegram', 'facebook', 'threads', 'x', 'linkedin'].map(socialAngle),
-      ),
-    ).toThrow('exactly one social angle for each channel');
   });
 });
 
@@ -382,9 +350,6 @@ function englishResult(): WeeklyMasterEnglishResult {
         conclusion: 'c',
         stories: [articleStory('item-1', 'feature')],
       },
-      socialAngles: ['telegram', 'facebook', 'threads', 'x', 'linkedin', 'instagram'].map(
-        socialAngle,
-      ),
     },
     metadata: {
       provider: 'openrouter',
@@ -485,7 +450,6 @@ describe('generateWeeklyMaster checkpoint reuse', () => {
       return {
         text: JSON.stringify({
           article: englishResult().value.article,
-          socialAngles: englishResult().value.socialAngles,
         }),
         provider: 'openrouter',
         model: 'other-vendor/writer-model',
@@ -518,7 +482,6 @@ describe('generateWeeklyMaster checkpoint reuse', () => {
       return {
         text: JSON.stringify({
           article: englishResult().value.article,
-          socialAngles: englishResult().value.socialAngles,
         }),
         provider: 'openrouter',
         model: 'other-vendor/writer-model',
@@ -576,7 +539,6 @@ describe('generateWeeklyMaster claude-cli provider', () => {
       return {
         text: JSON.stringify({
           article: englishResult().value.article,
-          socialAngles: englishResult().value.socialAngles,
         }),
         model: 'claude-sonnet-5',
         totalCostUsd: 0.25,
@@ -629,7 +591,6 @@ describe('generateWeeklyMaster claude-cli provider', () => {
       return {
         text: JSON.stringify({
           article: englishResult().value.article,
-          socialAngles: englishResult().value.socialAngles,
         }),
         model: 'claude-sonnet-5',
         totalCostUsd: 0.25,
@@ -656,10 +617,10 @@ describe('generateWeeklyMaster claude-cli provider', () => {
   });
 });
 
-// A fully valid bundle (3 features + 3 radar, matching claims, complete
-// social payload) so validateMasterBundle's deterministic checks emit zero
-// issues -- isolating the revise-loop tests below to purely critic-driven
-// pass/fail, not incidental fixture gaps.
+// A fully valid bundle (3 features + 3 radar, matching claims) so
+// validateMasterBundle's deterministic checks emit zero issues -- isolating
+// the revise-loop tests below to purely critic-driven pass/fail, not
+// incidental fixture gaps.
 const REVISE_ITEM_IDS = ['w-1', 'w-2', 'w-3', 'w-4', 'w-5', 'w-6'];
 
 function reviseStories(): WeeklyMasterInputStory[] {
@@ -699,15 +660,6 @@ function reviseArticleStories() {
   });
 }
 
-function reviseSocialAngles() {
-  return ['telegram', 'facebook', 'threads', 'x', 'linkedin', 'instagram'].map((channel) => ({
-    channel,
-    hookAngle: `Hook for ${channel}`,
-    thesis: 'Thesis',
-    factIds: ['claim-1'],
-  }));
-}
-
 function reviseEnglishResult(): WeeklyMasterEnglishResult {
   return {
     value: {
@@ -729,7 +681,6 @@ function reviseEnglishResult(): WeeklyMasterEnglishResult {
         conclusion: 'c',
         stories: reviseArticleStories(),
       },
-      socialAngles: reviseSocialAngles(),
     },
     metadata: {
       provider: 'openrouter',
@@ -812,7 +763,6 @@ function mockRouterResponses(handlers: {
         handlers.englishWrite?.() ??
         JSON.stringify({
           article: reviseEnglishResult().value.article,
-          socialAngles: reviseEnglishResult().value.socialAngles,
         }),
       provider: 'openrouter',
       model: 'writer-model',

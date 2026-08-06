@@ -134,8 +134,6 @@ function bundle(overrides: Partial<WeeklyMasterBundle> = {}): WeeklyMasterBundle
   return {
     en: { title: 'Weekly Digest' },
     uk: { title: 'Тижневий дайджест' },
-    video: {},
-    socialAngles: [],
     ...overrides,
   } as unknown as WeeklyMasterBundle;
 }

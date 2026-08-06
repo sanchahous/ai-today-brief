@@ -1111,11 +1111,6 @@ async function createMasterRevision(params: {
         slotKey: `article:${locale}`,
         content: {
           ...article,
-          // Only stored on the English article -- video_script generation
-          // (its sole consumer) always reads the English side, and social
-          // copy generation only needs one canonical set of angles, not a
-          // per-locale duplicate. See masterBundleFromArtifacts below.
-          ...(locale === 'en' ? { socialAngles: bundle.socialAngles } : {}),
           provenance: {
             research_artifact_ids: approvedResearch.map(({ artifact }) => artifact.id),
             research_input_hashes: approvedResearch.map(({ artifact }) => artifact.input_hash),
@@ -1198,11 +1193,9 @@ function masterBundleFromArtifacts(context: Awaited<ReturnType<typeof loadGenera
   if (!articleEn || !articleUk) {
     throw new Error('Approved master article artifacts are required.');
   }
-  const socialAngles = asRecord(articleEn.content).socialAngles;
   return {
     en: articleEn.content,
     uk: articleUk.content,
-    socialAngles: Array.isArray(socialAngles) ? socialAngles : [],
   } as unknown as WeeklyMasterBundle;
 }
 
@@ -1407,7 +1400,6 @@ export function computeSocialCopyCheckpointHash(input: {
       JSON.stringify({
         en: input.bundle.en,
         uk: input.bundle.uk,
-        socialAngles: input.bundle.socialAngles,
         sourceFacts: input.sourceFacts,
         locales: [...input.locales.entries()],
         version: SOCIAL_COPY_CHECKPOINT_VERSION,
@@ -1482,13 +1474,11 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
     }
     const locale = locales.get(channel)!;
     const trackedUrl = new URL(`/r/s/${tokens[channel]}`, SITE_URL).toString();
-    const angle = bundle.socialAngles.find((candidate) => candidate.channel === channel);
     const assets = await socialAssetsForChannel(context, channel);
     const adaptation = await adaptWeeklySocialChannel({
       channel,
       locale,
       bundle,
-      hookAngle: angle?.hookAngle ?? (locale === 'uk' ? bundle.uk.theme : bundle.en.theme),
       trackedUrl,
       scheduledFor: nextWeeklyScheduledForChannel(channel, context.digest.week_end, new Date()),
       sourceFacts,

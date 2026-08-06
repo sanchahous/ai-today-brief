@@ -97,12 +97,6 @@ export interface WeeklyArticleMaster {
 export interface WeeklyMasterBundle {
   en: WeeklyArticleMaster;
   uk: WeeklyArticleMaster;
-  socialAngles: Array<{
-    channel: string;
-    hookAngle: string;
-    thesis: string;
-    factIds: string[];
-  }>;
 }
 
 /**
@@ -528,18 +522,6 @@ export function validateMasterBundle(
       message: 'English and Ukrainian stories do not preserve the same claim IDs.',
       blocker: true,
       suggestedFix: 'Adapt the prose while preserving story order and exact claim ID arrays.',
-    });
-  }
-  if (
-    bundle.socialAngles.some(
-      (angle) =>
-        angle.factIds.length === 0 || angle.factIds.some((factId) => !claimIds.has(factId)),
-    )
-  ) {
-    issues.push({
-      code: 'social_angle_grounding',
-      message: 'Every social angle must reference one or more approved fact IDs.',
-      blocker: true,
     });
   }
   issues.push(...detectTemplateLeaks(bundle));

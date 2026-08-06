@@ -8,6 +8,9 @@ interface CriticResult {
   flags: string[];
   platformFitScore?: number;
   platformFlags?: string[];
+  /** How original/non-formulaic the copy reads, 0-100 -- weekly-only (PR7); daily prompts never request it. */
+  originalityScore?: number;
+  originalityFlags?: string[];
 }
 
 export function parseCritic(raw: string): CriticResult {
@@ -19,6 +22,8 @@ export function parseCritic(raw: string): CriticResult {
       flags?: unknown;
       platformFitScore?: unknown;
       platformFlags?: unknown;
+      originalityScore?: unknown;
+      originalityFlags?: unknown;
     };
     if (typeof value.score !== 'number' || !Number.isFinite(value.score)) {
       throw new SyntaxError('Critic score is missing.');
@@ -39,6 +44,19 @@ export function parseCritic(raw: string): CriticResult {
     ) {
       throw new SyntaxError('Critic platform flags are invalid.');
     }
+    if (
+      value.originalityScore !== undefined &&
+      (typeof value.originalityScore !== 'number' || !Number.isFinite(value.originalityScore))
+    ) {
+      throw new SyntaxError('Critic originality score is invalid.');
+    }
+    if (
+      value.originalityFlags !== undefined &&
+      (!Array.isArray(value.originalityFlags) ||
+        value.originalityFlags.some((flag) => typeof flag !== 'string'))
+    ) {
+      throw new SyntaxError('Critic originality flags are invalid.');
+    }
     return {
       score: Math.max(0, Math.min(100, value.score)),
       flags: value.flags
@@ -51,6 +69,17 @@ export function parseCritic(raw: string): CriticResult {
       ...(Array.isArray(value.platformFlags)
         ? {
             platformFlags: value.platformFlags
+              .map((flag) => flag.trim())
+              .filter(Boolean)
+              .slice(0, 8),
+          }
+        : {}),
+      ...(typeof value.originalityScore === 'number'
+        ? { originalityScore: Math.max(0, Math.min(100, value.originalityScore)) }
+        : {}),
+      ...(Array.isArray(value.originalityFlags)
+        ? {
+            originalityFlags: value.originalityFlags
               .map((flag) => flag.trim())
               .filter(Boolean)
               .slice(0, 8),

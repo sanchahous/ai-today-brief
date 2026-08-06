@@ -94,7 +94,6 @@ function bundle(practical?: string): WeeklyMasterBundle {
   return {
     en: article('en', practical),
     uk: article('uk', practical),
-    socialAngles: [],
   };
 }
 

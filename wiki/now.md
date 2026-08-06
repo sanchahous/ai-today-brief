@@ -13,12 +13,12 @@ Last updated: 2026-08-06
 
 - Гілка `feat/weekly-editorial-voice` (з `main`, 2026-08-06), PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189):
   повний перегляд редакційної якості weekly-дайджесту (власник забракував увесь контент як
-  «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). **PR1–6 з семи закомічені**
-  (voice-модуль, нова анатомія історії + рендер, критик-рубрика + revise-loop, owner-set angle,
-  репортажні ілюстрації + вибір варіантів, відеосценарій як окремий job + manifest v3 — деталі
-  в [pipeline/weekly-digest § Editorial voice overhaul](pipeline/weekly-digest.md#editorial-voice-overhaul-2026-08-06)).
-  Ще не змержено, ще не запущено shadow-прогін на весь пайплайн. **PR7** (соц-голос, hook picker,
-  чистка мертвого коду) — останній, не почато.
+  «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). **Усі 7 запланованих PR
+  закомічені** (voice-модуль, нова анатомія історії + рендер, критик-рубрика + revise-loop,
+  owner-set angle, репортажні ілюстрації + вибір варіантів, відеосценарій як окремий job +
+  manifest v3, соц-голос + self-generated angle + hook picker — деталі в
+  [pipeline/weekly-digest § Editorial voice overhaul](pipeline/weekly-digest.md#editorial-voice-overhaul-2026-08-06)).
+  Ще не змержено, ще не запущено shadow-прогін на весь пайплайн.
 - `main` tip (звідки відгалужено PR1): draft-revision constraint + video-guidance routing
   fixes (#188, включає #186/#187). Гайд редакції — [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
   (source: `git log` / live work 2026-08-06)
@@ -100,7 +100,19 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
    Typecheck/lint/vitest зелені (152 тести); **live-верифікацію (реальний `video_script` на
    approved-статті) ще не запущено** — на відміну від PR3/PR5, тут не було окремого дозволу
    власника на живий прогін у межах цієї сесії.
-4. PR7 (соц-голос, hook picker, чистка) — ще не почато.
+4. **PR7 (соц-голос, hook picker, чистка) закомічено 2026-08-06 — усі сім PR плану готові.**
+   `socialAngles` видалено з майстра повністю; `social-adapter.ts` сам пропонує кут для кожного
+   каналу; `VOICE_EN`/`VOICE_UK` + banned-openers у ранжуванні кандидатів; новий critic-вимір
+   `originality` (поріг 70/100); hook-кандидати на Social tab тепер клікабельні
+   (`HookCandidatePicker`). Видалено мертвий `editorial-draft.ts`; `GENERIC_PRACTICAL_PATTERNS`
+   свідомо НЕ видалено (план помилявся — це активний, протестований гейт). Нове покриття:
+   `social-adapter.test.ts` (5 тестів, раніше — нуль). Typecheck/lint/build/vitest зелені
+   (872 тести). **Не верифіковано наживо** (як і PR6) — новий originality-вимір критика жодного
+   разу не бачив реальну відповідь моделі; перед `shadow`-прогоном варто прочитати кілька
+   реальних weekly social-адаптацій вручну.
+5. **Наступний крок — власник:** усі 7 PR готові на гілці, PR #189 не змержено. Рішення, що
+   лишається за власником: (а) code review гілки, (б) `shadow`-прогін усього пайплайну на
+   історичному випуску перед мержем, (в) остаточна оцінка klein-стилю з PR5's dry-run.
 
 ## Related pages
 

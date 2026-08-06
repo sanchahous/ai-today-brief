@@ -228,36 +228,6 @@ function recordArray(value: unknown, key: string) {
   return value as Array<Record<string, unknown>>;
 }
 
-const WEEKLY_SOCIAL_CHANNELS = [
-  'telegram',
-  'facebook',
-  'threads',
-  'x',
-  'linkedin',
-  'instagram',
-] as const;
-
-type WeeklySocialAngle = WeeklyMasterBundle['socialAngles'][number];
-
-function canonicalSocialChannel(channel: string) {
-  const normalized = channel.trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
-  if (normalized === 'twitter' || normalized === 'twitterx') return 'x';
-  if (normalized === 'linkedin') return 'linkedin';
-  return WEEKLY_SOCIAL_CHANNELS.find((candidate) => candidate === normalized);
-}
-
-export function normalizeWeeklySocialAngles(angles: WeeklySocialAngle[]) {
-  const byChannel = new Map<string, WeeklySocialAngle>();
-  for (const angle of angles) {
-    const channel = canonicalSocialChannel(angle.channel);
-    if (channel && !byChannel.has(channel)) byChannel.set(channel, { ...angle, channel });
-  }
-  if (WEEKLY_SOCIAL_CHANNELS.some((channel) => !byChannel.has(channel))) {
-    throw new SyntaxError('English master requires exactly one social angle for each channel.');
-  }
-  return WEEKLY_SOCIAL_CHANNELS.map((channel) => byChannel.get(channel)!);
-}
-
 function parseArticle(raw: string, locale: 'en' | 'uk'): WeeklyArticleMaster {
   const row = parseJsonObject(raw);
   const stories = recordArray(row.stories, 'stories').map((story) => {
@@ -310,7 +280,6 @@ function parseArticle(raw: string, locale: 'en' | 'uk'): WeeklyArticleMaster {
 
 function parseEnglishPackage(raw: string) {
   const row = parseJsonObject(raw);
-  const article = parseArticle(JSON.stringify(row.article), 'en');
   // video moved out of the master call entirely in PR6 (editorial quality
   // overhaul) -- see video-script-llm.ts. The one-sentence video contract
   // that used to live in englishPrompt's CONTRACT block, generated inside
@@ -320,15 +289,12 @@ function parseEnglishPackage(raw: string) {
   // chars -- see ai-today-brief-video's 2026-08-05-professional-ai-video-
   // guide.md). video_script is now its own job, run after the master
   // succeeds, writing real narration long enough for its claimed runtime.
-  const socialAngles = normalizeWeeklySocialAngles(
-    recordArray(row.socialAngles, 'socialAngles').map((angle) => ({
-      channel: requiredString(angle, 'channel'),
-      hookAngle: requiredString(angle, 'hookAngle'),
-      thesis: requiredString(angle, 'thesis'),
-      factIds: stringArray(angle.factIds, 'angle.factIds'),
-    })),
-  );
-  return { article, socialAngles };
+  // socialAngles moved out in PR7 -- social-adapter.ts now proposes its own
+  // angle per channel from the approved article, instead of the master
+  // pre-baking one shared angle per channel that the writer never actually
+  // saw the channel contract for.
+  const article = parseArticle(JSON.stringify(row.article), 'en');
+  return { article };
 }
 
 function parseCritic(raw: string) {
@@ -706,10 +672,9 @@ CONTRACT
 - When a story's approved material includes an "angle" field, that is the owner's binding editorial direction for that story, decided before you started writing -- build the headline, body and editorsView around it, don't default to a generic recap that ignores it. Never contradict supplied claims or excerpts to fit the angle.
 - Headline must read like a real news headline about what happened -- name the actor and the concrete event -- never an abstract thesis a reader can't picture. Theme-led title for the whole edition; the date is secondary. All prose across the article object must total 2,000–3,000 words.
 - Return one JSON object only.
-- socialAngles must contain exactly six objects: one for each exact lowercase channel value telegram, facebook, threads, x, linkedin and instagram. Do not combine channel names in one string.
 
 JSON SHAPE
-{"article":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":"","stories":[{"revisionItemId":"","placement":"feature|radar","headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","editorsView":"","discussionQuestion":"","claimIds":[""]}]},"socialAngles":[{"channel":"telegram","hookAngle":"","thesis":"","factIds":[""]},{"channel":"facebook","hookAngle":"","thesis":"","factIds":[""]},{"channel":"threads","hookAngle":"","thesis":"","factIds":[""]},{"channel":"x","hookAngle":"","thesis":"","factIds":[""]},{"channel":"linkedin","hookAngle":"","thesis":"","factIds":[""]},{"channel":"instagram","hookAngle":"","thesis":"","factIds":[""]}]}
+{"article":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":"","stories":[{"revisionItemId":"","placement":"feature|radar","headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","editorsView":"","discussionQuestion":"","claimIds":[""]}]}}
 
 APPROVED STORY MATERIAL
 ${JSON.stringify(approvedStoryPromptMaterial(stories))}${masterRetryGuidancePrompt(retryGuidance)}`;
@@ -900,7 +865,6 @@ export async function generateWeeklyMaster(
   const buildBundle = (): WeeklyMasterBundle => ({
     en: english!.value.article,
     uk: ukrainian!.value,
-    socialAngles: english!.value.socialAngles,
   });
   const evaluate = async (bundle: WeeklyMasterBundle): Promise<WeeklyContentQualityReport> => {
     const critic = await generateIndependentCritic(english!, criticPrompt(bundle, stories));

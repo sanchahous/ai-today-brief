@@ -19,6 +19,47 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-06 — Editorial quality overhaul, PR7: social voice + hook picker + cleanup (all 7 PRs done)
+
+**Джерело:** рішення власника (session 2026-08-06) — «код продовжується» по завершенні PR6;
+завершення 7-PR плану `feat/weekly-editorial-voice`
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — новий підрозділ «PR7»: socialAngles видалено з майстра,
+  self-generated angle, voice-модуль у social-adapter, banned-openers ranking, originality
+  critic-вимір, hook picker UI, dead-code cleanup, plan-correction на `GENERIC_PRACTICAL_PATTERNS`
+- `wiki/now.md` — усі 7 PR позначені готовими; наступний крок явно передано власнику
+  (code review / shadow-прогін / klein-оцінка)
+
+**Код:** `WeeklyMasterBundle.socialAngles` видалено end-to-end (тип, `englishPrompt` CONTRACT+JSON
+SHAPE, `parseEnglishPackage`, `normalizeWeeklySocialAngles`, `social_angle_grounding` гейт) --
+`social-adapter.ts` тепер сам пропонує кут для кожного каналу в тому ж writer-виклику, що пише
+3 hook-кандидати (`{"angle":"","text":"...","firstComment":""}`), замість читати заздалегідь
+згенерований, каналево-сліпий кут з майстра. Імпортовано `VOICE_EN`/`VOICE_UK` з `editorial-voice.ts`
+(PR1) у writer-промпт; `scoreCandidate` тепер штрафує за `bannedPhrasesFor(locale)`-спрацювання.
+Новий critic-вимір `originality` (`src/lib/social/critic.ts`, `src/lib/social/types.ts` --
+optional-field патерн, daily social-пайплайн не зачеплений) з порогом 70/100. Social tab: hook-
+кандидати клікабельні (`src/components/admin/hook-candidate-picker.tsx`, новий client-компонент).
+
+**Видалено:** мертвий `src/lib/weekly-digest/editorial-draft.ts` + тест (передував Content Studio
+v2, ніде не імпортувався окрім власного тесту).
+
+**Виправлення плану:** початковий план казав видалити й `GENERIC_PRACTICAL_PATTERNS` як нібито
+дублікат `detectTemplateLeaks` -- читання коду показало, що це активний, протестований гейт
+(`generic_practical`) для іншого класу проблеми (reused generic template phrases в полі
+practical), не дублікат. Залишено як є.
+
+**Нове покриття:** `social-adapter.test.ts` (5 тестів, раніше -- нуль тестів на цей модуль):
+self-generated angle, banned-opener ranking, originality blocking/non-blocking, originality-flag
+surfacing. Typecheck/lint/build/vitest зелені (872 тести, 99 файлів).
+
+**Нотатка:** як і PR6, немає окремого live-прогону в межах цієї сесії -- новий originality-вимір
+критика жодного разу не бачив реальну відповідь моделі. Усі 7 PR плану тепер на гілці
+`feat/weekly-editorial-voice`; злиття, shadow-прогін і фінальна візуальна оцінка klein-стилю
+(PR5) лишаються рішенням власника.
+
+---
+
 ## 2026-08-06 — Editorial quality overhaul, PR6: video script stage + manifest v3
 
 **Джерело:** рішення власника (session 2026-08-06) — «кодити PR6–7 паралельно» під час двох

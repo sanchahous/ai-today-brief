@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
+import { HookCandidatePicker } from '@/components/admin/hook-candidate-picker';
 import { StatusPill } from '@/components/admin/status-pill';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
@@ -2797,7 +2798,12 @@ function SocialPanel({
             ? workspace.artifacts.find((artifact) => artifact.id === meta.document_artifact_id)
             : undefined;
         return (
-          <section key={channel} className={PANEL} aria-labelledby={`social-${channel}-heading`}>
+          <section
+            key={channel}
+            className={PANEL}
+            aria-labelledby={`social-${channel}-heading`}
+            data-social-panel={channel}
+          >
             <div className="flex flex-wrap items-center gap-2">
               <h3 id={`social-${channel}-heading`} className="mr-auto text-lg font-bold text-white">
                 {channelLabel(channel)}
@@ -3219,24 +3225,7 @@ function SocialPanel({
                       <dd className="mt-1 text-slate-300">Builders, founders & AI leaders</dd>
                     </div>
                   </dl>
-                  {hookCandidates.length ? (
-                    <details className="mt-4 border-t border-white/8 pt-3">
-                      <summary className="cursor-pointer text-xs font-bold text-cyan-200">
-                        Compare {hookCandidates.length} generated hooks
-                      </summary>
-                      <ol className="mt-3 grid gap-2 text-xs leading-5 text-slate-400">
-                        {hookCandidates.map((candidate, index) => (
-                          <li
-                            key={`${post.id}-hook-${index}`}
-                            className="rounded-lg bg-black/20 p-2"
-                          >
-                            <span className="mr-2 font-bold text-slate-200">{index + 1}.</span>
-                            {candidate}
-                          </li>
-                        ))}
-                      </ol>
-                    </details>
-                  ) : null}
+                  <HookCandidatePicker candidates={hookCandidates} />
                 </div>
 
                 <div className="rounded-xl border border-white/10 p-4">

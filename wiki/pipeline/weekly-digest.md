@@ -244,7 +244,8 @@ anchor bridge (HeyGen-слот) → по одній b-roll сцені на ко�
 `generateVideoManifest` тепер читає окремо `videoScriptFromArtifacts` (замість вимагати
 video_script як частину `masterBundleFromArtifacts`) — фікс побічного багу: `generateSocialCopy`
 раніше **не міг стартувати**, доки не існував video_script-артефакт, хоча соцконтенту він
-ніколи не був потрібен; `socialAngles` тепер зберігається прямо в article:en-артефакті.
+ніколи не був потрібен (`socialAngles`, яке PR6 тимчасово тримало в article:en-артефакті,
+PR7 нижче прибрав з майстра повністю).
 CLI-воркер (`run-weekly-master-cli-worker.ts`) дренує тепер і `editorial_master`, і
 `video_script` (обидва — $0 через Claude-підписку). Video-панель адмінки отримала кнопку
 «Generate script» (`enqueueWeeklyGenerationAction`, job_type `video_script`) + review-блок
@@ -261,6 +262,51 @@ CLI-воркер (`run-weekly-master-cli-worker.ts`) дренує тепер і 
 `src/lib/weekly-digest/editorial-llm.ts`, `src/lib/weekly-digest/generation-worker.ts`,
 migration `20260806150000_weekly_video_script_job.sql`, `src/components/admin/weekly-workspace.tsx`,
 `pipeline/scripts/run-weekly-master-cli-worker.ts`)
+
+**PR7 (2026-08-06, останній з семи):** соц-голос + self-generated angle + hook picker + чистка.
+
+`socialAngles` прибрано з `WeeklyMasterBundle`/майстер-виклику **повністю** (тип, `englishPrompt`'s
+CONTRACT+JSON SHAPE, `parseEnglishPackage`, `normalizeWeeklySocialAngles`/`canonicalSocialChannel`
+у `editorial-llm.ts`, `social_angle_grounding` deterministic-гейт у `content-studio.ts`). Причина:
+майстер писав шість соц-кутів наосліп, без каналевого контракту перед очима, а
+`social-adapter.ts` (де кут реально споживається) вже отримує повну статтю — дублювання без
+користі. Замість цього **`social-adapter.ts` сам пропонує кут** для кожного каналу в тому ж
+writer-виклику, що пише 3 hook-кандидати: JSON-відповідь тепер `{"angle":"","text":"...","firstComment":""}`;
+`hookAngle` (аналітика/UTM, `weekly_digest_release_events`/`hook_angle` — окрема, незалежна
+механіка, не займана) береться з `writer.value.angle`, не з зовнішнього інпуту.
+
+Голос: `promptFor` тепер включає `VOICE_EN`/`VOICE_UK` з `editorial-voice.ts` (той самий модуль,
+що PR1 збудував для статей) замість одного речення "trusted editor-practitioner, direct, vivid".
+Детермінований `scoreCandidate` (ранжує 3 hook-кандидати перед відправкою критику) тепер штрафує
+-15 за кожен спрацьований `bannedPhrasesFor(locale)`-патерн (той самий AI-tell/label-opener
+детектор, що й `detectTemplateLeaks`) — той самий двошаровий підхід deterministic-gate-до-критика,
+що й стаття.
+
+Новий вимір критика — **originality**: третя вісь у тому ж critic-виклику
+(`{"score":0,"flags":[],"platformFitScore":0,"platformFlags":[],"originalityScore":0,"originalityFlags":[]}`),
+питає, чи копія читається як щось специфічне для цього тижня, чи як шаблонний AI-пост. Поріг
+70/100 (`originality_score` blocking issue) + окремі `originality_flag` issues за цитовані фрази.
+`parseCritic`/`QualityReport` (`src/lib/social/critic.ts`, `src/lib/social/types.ts`) розширені
+опційними `originalityScore`/`originalityFlags` — той самий optional-field патерн, що вже мав
+`platformFitScore`/`platformFlags`, тому **daily social-пайплайн не зачеплений** (його критик-
+промпт про ці поля не питає, парсер їх просто не бачить).
+
+Social tab: hook-кандидати тепер клікабельні (`HookCandidatePicker`,
+`src/components/admin/hook-candidate-picker.tsx`, `'use client'`) — клік підставляє обраний
+варіант у textarea "Post copy" напряму (через спільний `data-social-panel` предок, не React
+state, бо кандидати рендеряться в сусідньому `<aside>`, не всередині `<form>`).
+
+Чистка: видалено мертвий `src/lib/weekly-digest/editorial-draft.ts` + тест (передував Content
+Studio v2, ніде не імпортувався). **`GENERIC_PRACTICAL_PATTERNS` НЕ видалено** — на відміну від
+початкового формулювання плану, читання коду показало, що це активний, протестований
+deterministic-гейт (`generic_practical` blocker) для окремого класу проблеми (reused generic
+template phrases), не дублікат `detectTemplateLeaks`; видалення відкрило б регресію без заміни.
+
+Нове покриття: `social-adapter.test.ts` (5 тестів, раніше — нуль) на self-generated angle,
+banned-opener ranking, originality blocking/non-blocking, originality-flag surfacing.
+(source: `src/lib/weekly-digest/social-adapter.ts`, `src/lib/weekly-digest/social-adapter.test.ts`,
+`src/lib/social/critic.ts`, `src/lib/social/types.ts`, `src/components/admin/weekly-workspace.tsx`,
+`src/components/admin/hook-candidate-picker.tsx`)
 
 ## Імутабельні ревізії (критично)
 
