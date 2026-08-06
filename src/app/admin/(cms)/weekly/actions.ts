@@ -1093,6 +1093,7 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
     'research_pack',
     'editorial_master',
     'social_copy',
+    'video_script',
     'video_manifest',
     'pdf',
     'cover',

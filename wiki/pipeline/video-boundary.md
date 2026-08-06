@@ -4,6 +4,12 @@ Summary: Межа відповідальності video-pipeline відносн
 Sources: none (analysis)
 Last updated: 2026-07-23
 
+⚠️ The manifest schema example below (`weekly-video-v1`) is the original ADR draft and is
+**stale** — the live schema is `weekly-video-v3` (per-scene `revisionItemId`, WPS-validated
+scene durations). See [weekly-digest § PR6](weekly-digest.md#editorial-voice-overhaul-2026-08-06)
+for the current shape and `src/lib/weekly-digest/content-studio.ts`'s `WeeklyVideoScript`/
+`WeeklyVideoScene` types for the authoritative contract. The ownership split and rendering
+boundary decided here are unchanged.
 
 Status: accepted and implemented
 

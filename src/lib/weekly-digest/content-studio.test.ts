@@ -9,11 +9,14 @@ import {
   resolveWeeklyContentStudioMode,
   sourceNameMatchesDomain,
   validateMasterBundle,
+  validateVideoScript,
   type WeeklyArticleMaster,
   type WeeklyContentQualityReport,
   type WeeklyMasterBundle,
   type WeeklyQualityDimension,
   type WeeklyResearchPack,
+  type WeeklyVideoScene,
+  type WeeklyVideoScript,
 } from './content-studio';
 
 const itemId = '33333333-3333-4333-8333-333333333333';
@@ -91,22 +94,6 @@ function bundle(practical?: string): WeeklyMasterBundle {
   return {
     en: article('en', practical),
     uk: article('uk', practical),
-    video: {
-      title: 'Weekly episode',
-      hook: 'The week changed.',
-      narration: 'Narration',
-      scenes: [],
-      shorts: [0, 1, 2].map(() => ({
-        revisionItemId: itemId,
-        locale: 'uk' as const,
-        hook: 'Гук',
-        context: 'Контекст',
-        insight: 'Висновок',
-        takeaway: 'Дія',
-        factIds: ['claim-1'],
-        durationSeconds: 40,
-      })),
-    },
     socialAngles: [],
   };
 }
@@ -315,6 +302,183 @@ describe('detectTemplateLeaks', () => {
         locale: 'en',
         field: 'intro',
       }),
+    );
+  });
+});
+
+describe('validateVideoScript', () => {
+  const feature1 = itemId;
+  const feature2 = '66666666-6666-4666-8666-666666666666';
+  const feature3 = '77777777-7777-4777-8777-777777777777';
+  const expectedStories = [
+    { revisionItemId: feature1, placement: 'feature' as const, claimIds: ['claim-1'] },
+    { revisionItemId: feature2, placement: 'feature' as const, claimIds: ['claim-2'] },
+    { revisionItemId: feature3, placement: 'feature' as const, claimIds: ['claim-3'] },
+  ];
+
+  function words(count: number) {
+    return Array.from({ length: count }, (_, index) => `word${index}`).join(' ');
+  }
+
+  // Duration defaults to exactly voiceover-word-count / 2.6 so scenes pass
+  // the WPS check unless a test overrides durationSeconds directly to force
+  // a mismatch -- mirrors how the real generator is instructed to compute it.
+  function makeScene(overrides: Partial<WeeklyVideoScene> = {}): WeeklyVideoScene {
+    const voiceover = overrides.voiceover ?? words(130);
+    const wordCount = voiceover.trim().split(/\s+/).filter(Boolean).length;
+    return {
+      id: 'scene',
+      kind: 'broll',
+      revisionItemId: null,
+      voiceover,
+      onScreenText: '',
+      scenePrompt: 'A concrete reportage scene, one subject, no on-screen text.',
+      durationSeconds: Math.round(wordCount / 2.6),
+      ...overrides,
+    };
+  }
+
+  function makeShort(overrides: Partial<WeeklyVideoScript['shorts'][number]> = {}) {
+    return {
+      revisionItemId: feature1,
+      locale: 'uk' as const,
+      hook: 'Хук',
+      context: 'Контекст',
+      insight: 'Інсайт',
+      takeaway: 'Дія',
+      factIds: ['claim-1'],
+      durationSeconds: 40,
+      ...overrides,
+    };
+  }
+
+  function baselineScript(): WeeklyVideoScript {
+    return {
+      title: 'Weekly episode',
+      hook: 'The week changed.',
+      narration: '',
+      scenes: [
+        makeScene({ id: 'cold_open', kind: 'cold_open', voiceover: words(65) }),
+        makeScene({ id: 'anchor_intro', kind: 'anchor', voiceover: words(45) }),
+        makeScene({ id: 'broll_1', kind: 'broll', revisionItemId: feature1, voiceover: words(260) }),
+        makeScene({ id: 'broll_2', kind: 'broll', revisionItemId: feature2, voiceover: words(260) }),
+        makeScene({ id: 'broll_3', kind: 'broll', revisionItemId: feature3, voiceover: words(260) }),
+        makeScene({ id: 'anchor_radar', kind: 'anchor', voiceover: words(90) }),
+        makeScene({ id: 'outro', kind: 'outro', voiceover: words(55) }),
+      ],
+      shorts: [
+        makeShort({ revisionItemId: feature1, factIds: ['claim-1'] }),
+        makeShort({ revisionItemId: feature2, factIds: ['claim-2'] }),
+        makeShort({ revisionItemId: feature3, factIds: ['claim-3'] }),
+      ],
+    };
+  }
+
+  it('is clean for a well-formed script', () => {
+    expect(validateVideoScript(baselineScript(), expectedStories)).toEqual([]);
+  });
+
+  it('blocks fewer than three Shorts', () => {
+    const script = baselineScript();
+    script.shorts.pop();
+    expect(validateVideoScript(script, expectedStories)).toContainEqual(
+      expect.objectContaining({ code: 'shorts_count', blocker: true }),
+    );
+  });
+
+  it('blocks a Short outside the 35-50s duration band', () => {
+    const script = baselineScript();
+    script.shorts[0]!.durationSeconds = 20;
+    expect(validateVideoScript(script, expectedStories)).toContainEqual(
+      expect.objectContaining({ code: 'shorts_contract', blocker: true }),
+    );
+  });
+
+  it('blocks a Short citing a fact ID outside its own story\'s approved claims', () => {
+    const script = baselineScript();
+    script.shorts[0]!.factIds = ['claim-2'];
+    expect(validateVideoScript(script, expectedStories)).toContainEqual(
+      expect.objectContaining({ code: 'shorts_contract', blocker: true }),
+    );
+  });
+
+  it('blocks a total scene runtime outside 360-480s', () => {
+    const script = baselineScript();
+    script.scenes = script.scenes.slice(0, 2);
+    expect(validateVideoScript(script, expectedStories)).toContainEqual(
+      expect.objectContaining({ code: 'video_duration', blocker: true }),
+    );
+  });
+
+  it('blocks a script missing a broll segment for one of the three features', () => {
+    const script = baselineScript();
+    script.scenes = script.scenes.filter((scene) => scene.id !== 'broll_3');
+    expect(validateVideoScript(script, expectedStories)).toContainEqual(
+      expect.objectContaining({ code: 'scene_structure', blocker: true }),
+    );
+  });
+
+  it('blocks a single scene duration outside the 1-180s bound', () => {
+    const script = baselineScript();
+    script.scenes[0]!.durationSeconds = 200;
+    expect(validateVideoScript(script, expectedStories)).toContainEqual(
+      expect.objectContaining({ code: 'scene_duration', blocker: true, field: 'durationSeconds' }),
+    );
+  });
+
+  it('blocks a scene whose claimed duration does not match its voiceover length -- the "silent slideshow" bug', () => {
+    // Root cause this check exists to kill: the LLM invents a duration that
+    // satisfies the 360-480s total while writing voiceover text far too
+    // short for that runtime (see wiki/pipeline/video-boundary.md).
+    const script = baselineScript();
+    // Claims 100s of runtime (the old broll target) but the voiceover is
+    // only 25 words -- ~9.6s of actual speech at 2.6 words/sec.
+    script.scenes[2]!.durationSeconds = 100;
+    script.scenes[2]!.voiceover = words(25);
+    expect(validateVideoScript(script, expectedStories)).toContainEqual(
+      expect.objectContaining({ code: 'scene_narration_mismatch', blocker: true, field: 'voiceover' }),
+    );
+  });
+
+  it('accepts a scene duration within +-20% of its voiceover word count', () => {
+    const script = baselineScript();
+    const scene = script.scenes[2]!;
+    const exact = Math.round(words(260).trim().split(/\s+/).length / 2.6);
+    scene.durationSeconds = Math.round(exact * 1.15); // inside tolerance
+    expect(validateVideoScript(script, expectedStories)).not.toContainEqual(
+      expect.objectContaining({ code: 'scene_narration_mismatch' }),
+    );
+  });
+
+  it('blocks a broll scene with no revisionItemId', () => {
+    const script = baselineScript();
+    script.scenes[2]!.revisionItemId = null;
+    expect(validateVideoScript(script, expectedStories)).toContainEqual(
+      expect.objectContaining({ code: 'scene_story_link', blocker: true, field: 'revisionItemId' }),
+    );
+  });
+
+  it('flags (non-blocking) a non-broll scene carrying a revisionItemId', () => {
+    const script = baselineScript();
+    script.scenes[0]!.revisionItemId = feature1;
+    expect(validateVideoScript(script, expectedStories)).toContainEqual(
+      expect.objectContaining({ code: 'scene_story_link', blocker: false, field: 'revisionItemId' }),
+    );
+  });
+
+  it('flags a template-leak phrase inside a scene voiceover', () => {
+    const script = baselineScript();
+    script.scenes[2]!.voiceover = "It's worth noting that this changes the story. " + words(255);
+    expect(validateVideoScript(script, expectedStories)).toContainEqual(
+      expect.objectContaining({ code: 'template_leak:ai_tell_worth_noting', blocker: true, field: 'voiceover' }),
+    );
+  });
+
+  it('flags a template-leak phrase inside a Short field', () => {
+    const script = baselineScript();
+    script.shorts[0]!.context = 'Варто зазначити, що це змінює ситуацію.';
+    expect(validateVideoScript(script, expectedStories)).toContainEqual(
+      expect.objectContaining({ code: 'template_leak:ai_tell_varto_zaznachyty', blocker: true, field: 'context' }),
     );
   });
 });

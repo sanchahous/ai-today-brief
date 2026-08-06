@@ -31,10 +31,13 @@ import {
   WEEKLY_CONTENT_STUDIO_VERSION,
   WEEKLY_MASTER_SPEC_VERSION,
   WEEKLY_VIDEO_MANIFEST_VERSION,
+  WEEKLY_VIDEO_SCRIPT_SCHEMA_VERSION,
+  type WeeklyArticleMaster,
   type WeeklyContentQualityReport,
   type WeeklyMasterBundle,
   type WeeklyQualityDimension,
   type WeeklyResearchPack,
+  type WeeklyVideoScript,
 } from './content-studio';
 import {
   generateWeeklyMaster,
@@ -45,6 +48,7 @@ import {
   type WeeklyMasterRetryGuidance,
   type WeeklyMasterUkrainianResult,
 } from './editorial-llm';
+import { generateWeeklyVideoScript } from './video-script-llm';
 import {
   buildWeeklyResearchPack,
   isWeeklyResearchPack,
@@ -164,6 +168,7 @@ const ALL_GENERATION_JOB_TYPES: string[] = [
   'story_image',
   'cover',
   'social_copy',
+  'video_script',
   'video_manifest',
   'pdf',
   'social_asset',
@@ -725,6 +730,7 @@ async function queuePostMasterJobs(
     })),
     { type: 'cover', key: 'cover:neutral', input: { locale: 'en', slot_key: 'cover:neutral' } },
     { type: 'social_copy', key: 'social-copy', input: { locale_map: 'database' } },
+    { type: 'video_script', key: 'video-script:en', input: { locale: 'en' } },
     { type: 'video_manifest', key: 'video-manifest:en', input: { locale: 'en' } },
     { type: 'pdf', key: 'pdf:en', input: { locale: 'en', slot_key: 'pdf:en' } },
     { type: 'pdf', key: 'pdf:uk', input: { locale: 'uk', slot_key: 'pdf:uk' } },
@@ -917,7 +923,7 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
       passed: false,
       jobId: job.id,
     });
-    // Everything the LLM produced (article EN/UK, video script) is real,
+    // Everything the LLM produced (article EN/UK) is real,
     // paid-for content -- discarding it because one dimension missed its
     // floor is what stranded it in a job's internal checkpoint last time,
     // invisible outside a raw DB query. Save it as an inactive draft
@@ -973,7 +979,6 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
     output: {
       new_revision_id: created.revisionId,
       article_artifact_ids: created.articleArtifactIds,
-      video_script_artifact_id: created.videoScriptArtifactId,
       quality_artifact_id: qualityArtifactId,
       quality_score: result.quality.score,
     },
@@ -986,7 +991,8 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
  * (create_service_weekly_digest_revision_draft, never touches
  * active_revision_id): builds the revision-items payload, creates the
  * revision, rebases the generated bundle onto the new item IDs, and saves
- * the article + video_script artifacts against it. Callers still handle
+ * the article artifacts against it (video_script is generated separately,
+ * as its own job -- see generateVideoScript below). Callers still handle
  * their own quality-report save (the two paths use different revisionId/
  * passed/recordCost combinations) and, on success, queuePostMasterJobs.
  */
@@ -1090,16 +1096,6 @@ async function createMasterRevision(params: {
     ...result.bundle,
     en: rebaseArticle(result.bundle.en),
     uk: rebaseArticle(result.bundle.uk),
-    video: {
-      ...result.bundle.video,
-      shorts: result.bundle.video.shorts.map((short) => {
-        const old = oldById.get(short.revisionItemId);
-        return {
-          ...short,
-          revisionItemId: (old && newByBriefId.get(old.brief_item_id)) || short.revisionItemId,
-        };
-      }),
-    },
   };
   const articleArtifactIds: string[] = [];
   for (const [locale, article] of [
@@ -1115,6 +1111,11 @@ async function createMasterRevision(params: {
         slotKey: `article:${locale}`,
         content: {
           ...article,
+          // Only stored on the English article -- video_script generation
+          // (its sole consumer) always reads the English side, and social
+          // copy generation only needs one canonical set of angles, not a
+          // per-locale duplicate. See masterBundleFromArtifacts below.
+          ...(locale === 'en' ? { socialAngles: bundle.socialAngles } : {}),
           provenance: {
             research_artifact_ids: approvedResearch.map(({ artifact }) => artifact.id),
             research_input_hashes: approvedResearch.map(({ artifact }) => artifact.input_hash),
@@ -1160,27 +1161,7 @@ async function createMasterRevision(params: {
       }),
     );
   }
-  const videoScriptArtifactId = await saveGeneratedArtifact({
-    weeklyDigestId: job.weekly_digest_id,
-    revisionId: newRevisionId,
-    artifactType: 'video_script',
-    locale: 'en',
-    slotKey: 'video-script:en',
-    content: {
-      script: bundle.video.narration,
-      narration_plan: bundle.video as unknown as Json,
-      social_angles: bundle.socialAngles as unknown as Json,
-    },
-    provider: result.generation.english.provider,
-    providerId: result.generation.english.model,
-    metadata: {
-      schema_version: WEEKLY_VIDEO_MANIFEST_VERSION,
-      target_duration_seconds: 420,
-      shorts_count: 3,
-      prompt_version: result.generation.english.promptVersion,
-    },
-  });
-  return { revisionId: newRevisionId, articleArtifactIds, videoScriptArtifactId, newItems };
+  return { revisionId: newRevisionId, articleArtifactIds, newItems };
 }
 
 async function localeMap() {
@@ -1198,6 +1179,13 @@ async function localeMap() {
   return map as Map<SocialChannel, SocialLocale>;
 }
 
+/**
+ * Reads the approved bilingual article pair. No longer requires a
+ * video_script artifact to exist -- video generation moved to its own job
+ * (PR6), and generateSocialCopy (the other caller) never needed it in the
+ * first place, so the old hard dependency just meant social copy silently
+ * couldn't run until the video job happened to finish first.
+ */
 function masterBundleFromArtifacts(context: Awaited<ReturnType<typeof loadGenerationContext>>) {
   const articleEn = context.artifacts.find(
     (artifact) =>
@@ -1207,25 +1195,37 @@ function masterBundleFromArtifacts(context: Awaited<ReturnType<typeof loadGenera
     (artifact) =>
       artifact.artifact_type === 'article' && artifact.locale === 'uk' && artifact.is_current,
   );
+  if (!articleEn || !articleUk) {
+    throw new Error('Approved master article artifacts are required.');
+  }
+  const socialAngles = asRecord(articleEn.content).socialAngles;
+  return {
+    en: articleEn.content,
+    uk: articleUk.content,
+    socialAngles: Array.isArray(socialAngles) ? socialAngles : [],
+  } as unknown as WeeklyMasterBundle;
+}
+
+/**
+ * Reads the current, owner-approved video_script artifact for the video
+ * manifest job. Kept separate from masterBundleFromArtifacts because only
+ * video_manifest needs it -- see the claim_weekly_digest_generation_jobs
+ * migration, which already gates video_manifest on this artifact's
+ * review_status being 'approved'.
+ */
+function videoScriptFromArtifacts(
+  context: Awaited<ReturnType<typeof loadGenerationContext>>,
+): WeeklyVideoScript {
   const videoScript = context.artifacts.find(
     (artifact) =>
       artifact.artifact_type === 'video_script' && artifact.locale === 'en' && artifact.is_current,
   );
-  if (!articleEn || !articleUk || !videoScript) {
-    throw new Error('Approved master article and video-script artifacts are required.');
-  }
-  const videoContent = asRecord(videoScript.content);
-  const narrationPlan = videoContent.narration_plan;
-  const socialAngles = videoContent.social_angles;
+  if (!videoScript) throw new Error('Approved video-script artifact is required.');
+  const narrationPlan = asRecord(videoScript.content).narration_plan;
   if (!narrationPlan || typeof narrationPlan !== 'object' || Array.isArray(narrationPlan)) {
-    throw new Error('Video script artifact does not contain the v2 narration plan.');
+    throw new Error('Video script artifact does not contain the v3 script.');
   }
-  return {
-    en: articleEn.content,
-    uk: articleUk.content,
-    video: narrationPlan,
-    socialAngles: Array.isArray(socialAngles) ? socialAngles : [],
-  } as unknown as WeeklyMasterBundle;
+  return narrationPlan as unknown as WeeklyVideoScript;
 }
 
 async function socialAssetsForChannel(
@@ -1715,10 +1715,71 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
   };
 }
 
+/**
+ * Dramatizes the approved English master article into a TV-news-format
+ * script (cold open, anchor, one b-roll segment per Top 3 story, radar
+ * quick-hits, discussion outro) plus three Ukrainian Shorts. Runs as its own
+ * job, after the article is approved -- see wiki/pipeline/video-boundary.md
+ * for why this moved out of the master mega-call in PR6.
+ */
+async function generateVideoScript(job: ClaimedGenerationJob) {
+  const context = await loadGenerationContext(job);
+  const articleEn = context.artifacts.find(
+    (artifact) =>
+      artifact.artifact_type === 'article' &&
+      artifact.locale === 'en' &&
+      artifact.is_current &&
+      artifact.review_status === 'approved',
+  );
+  if (!articleEn) {
+    throw new Error('Approve the current English article before generating the video script.');
+  }
+  const article = articleEn.content as unknown as WeeklyArticleMaster;
+  const { script, generation, issues } = await generateWeeklyVideoScript(article);
+  await recordGenerationCost({
+    scope: 'weekly',
+    kind: 'llm',
+    provider: generation.provider,
+    model: generation.model,
+    costUsd: generation.estimatedCostUsd,
+    costSource: generation.costSource,
+    promptTokens: generation.promptTokens,
+    outputTokens: generation.outputTokens,
+    weeklyDigestId: job.weekly_digest_id,
+    revisionId: job.revision_id,
+    jobId: job.id,
+    metadata: { step: 'video_script', prompt_version: generation.promptVersion },
+  });
+  const artifactId = await saveGeneratedArtifact({
+    weeklyDigestId: job.weekly_digest_id,
+    revisionId: job.revision_id,
+    artifactType: 'video_script',
+    locale: 'en',
+    slotKey: 'video-script:en',
+    content: {
+      script: script.narration,
+      narration_plan: script as unknown as Json,
+    },
+    provider: generation.provider,
+    providerId: generation.model,
+    metadata: {
+      schema_version: WEEKLY_VIDEO_SCRIPT_SCHEMA_VERSION,
+      target_duration_seconds: script.scenes.reduce((sum, scene) => sum + scene.durationSeconds, 0),
+      shorts_count: script.shorts.length,
+      prompt_version: generation.promptVersion,
+      estimated_cost_usd: generation.estimatedCostUsd,
+      cost_source: generation.costSource,
+      non_blocking_issues: issues.filter((issue) => !issue.blocker).length,
+    },
+  });
+  return { artifactId, output: { video_script_artifact_id: artifactId } };
+}
+
 async function generateVideoManifest(job: ClaimedGenerationJob) {
   const context = await loadGenerationContext(job);
   const bundle = masterBundleFromArtifacts(context);
-  const featureIds = new Set(bundle.video.shorts.map((short) => short.revisionItemId));
+  const script = videoScriptFromArtifacts(context);
+  const featureIds = new Set(script.shorts.map((short) => short.revisionItemId));
   const imageArtifacts = context.artifacts.filter(
     (artifact) =>
       artifact.artifact_type === 'story_image' &&
@@ -1746,7 +1807,7 @@ async function generateVideoManifest(job: ClaimedGenerationJob) {
   const dependencies = {
     digestId: job.weekly_digest_id,
     revisionId: job.revision_id,
-    video: bundle.video,
+    script,
     articleInputHashes: context.artifacts
       .filter((artifact) => artifact.artifact_type === 'article' && artifact.is_current)
       .map((artifact) => artifact.input_hash),
@@ -1766,10 +1827,15 @@ async function generateVideoManifest(job: ClaimedGenerationJob) {
     longForm: {
       locale: 'en',
       targetDurationSeconds: 420,
-      narration: bundle.video.narration,
-      scenes: bundle.video.scenes,
+      narration: script.narration,
+      // Each scene carries its own revisionItemId (null for non-story
+      // scenes) -- the video repo maps a broll scene to `assets` by that ID
+      // instead of the old `index % assets.length`, which could show one
+      // story's image during another story's narration. See
+      // wiki/pipeline/video-boundary.md.
+      scenes: script.scenes,
     },
-    shorts: bundle.video.shorts,
+    shorts: script.shorts,
     assets,
     captions: {
       required: ['en', 'uk'],
@@ -2287,6 +2353,7 @@ async function runGenerationJob(job: ClaimedGenerationJob) {
   if (job.job_type === 'research_pack') return generateResearchPack(job);
   if (job.job_type === 'editorial_master') return generateEditorialMaster(job);
   if (job.job_type === 'social_copy') return generateSocialCopy(job);
+  if (job.job_type === 'video_script') return generateVideoScript(job);
   if (job.job_type === 'video_manifest') return generateVideoManifest(job);
   if (job.job_type === 'pdf') return generatePdf(job);
   if (job.job_type === 'story_image') return generateStoryImage(job);
@@ -2299,6 +2366,7 @@ export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string
   const jobs = await claimGenerationJobs(limit, jobTypes);
   const results: Array<{
     id: string;
+    jobType: string;
     outcome: 'succeeded' | 'failed';
     artifactId?: string | null;
     error?: string;
@@ -2307,7 +2375,12 @@ export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string
     try {
       const result = await runGenerationJob(job);
       await finishGenerationJob(job.id, true, result.output, null, result.artifactId);
-      results.push({ id: job.id, outcome: 'succeeded', artifactId: result.artifactId });
+      results.push({
+        id: job.id,
+        jobType: job.job_type,
+        outcome: 'succeeded',
+        artifactId: result.artifactId,
+      });
     } catch (error) {
       const message = safeMessage(error);
       const retryable = retryableGenerationFailure(message);
@@ -2321,6 +2394,7 @@ export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string
         });
         results.push({
           id: job.id,
+          jobType: job.job_type,
           outcome: 'failed',
           error: `${message}; ${safeMessage(finishError)}`.slice(0, 1800),
         });
@@ -2333,7 +2407,7 @@ export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string
           message,
         });
       }
-      results.push({ id: job.id, outcome: 'failed', error: message });
+      results.push({ id: job.id, jobType: job.job_type, outcome: 'failed', error: message });
     }
   }
   return { claimed: jobs.length, results };

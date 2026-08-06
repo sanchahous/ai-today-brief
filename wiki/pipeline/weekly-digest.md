@@ -4,6 +4,7 @@ Summary: як працює weekly-дайджест у проді: оркестр
 гейтами, admin UX і поточний статус розкатки.
 Sources: `.env.example`, PR #160–#163, #167–#175, #177, `src/lib/weekly-digest/**`,
 `supabase/migrations/20260804090000_weekly_digest_revision_stability.sql`,
+`supabase/migrations/20260806150000_weekly_video_script_job.sql`,
 live check Supabase 2026-08-04, editorial-voice overhaul (гілка `feat/weekly-editorial-voice`, 2026-08-06)
 Last updated: 2026-08-06
 
@@ -40,8 +41,11 @@ Video / Release).
 1. `research_pack` (top-3) → owner approve
 2. `editorial_master` (OpenRouter writer models / Gemini / опційно Claude CLI через GitHub Actions)
 3. `story_image` (після bilingual `article`) → `cover`
-4. `social_copy` / `pdf` / `video_manifest` (manifest → зовнішній Remotion)
-5. import `video_final` + captions + thumbnail
+4. `social_copy` / `pdf` / `video_script` (після approved `article` — окремий job, PR6, той самий
+   Claude CLI → OpenRouter → Gemini ladder)
+5. `video_manifest` (після approved `video_script` + 3 approved `story_image` + `cover`) →
+   зовнішній Remotion
+6. import `video_final` + captions + thumbnail
 
 Hard spend-cap weekly master: `WEEKLY_MASTER_MAX_SPEND_USD` (default $4,
 `generation-worker.ts`) + kill-switch режиму `off` (source: PR #163, `.env.example`).
@@ -172,7 +176,9 @@ photographer standing in the room where this happened" — а не символ�
 Контекст для арт-директора розширено з title+summary до title+summary+перші ~600 симв. body+
 editorsView (`generateStoryImage`, generation-worker.ts) — суттєво більше матеріалу, ніж daily-шлях
 коли-небудь отримує. Seed більше не містить `job.id` (`digestId:revisionId:itemId:v{n}`) —
-регенерація тепер ітеративна, не лотерея.
+регенерація тепер ітеративна, не лотерея. `metadata.prompt_policy` артефактів story_image —
+**`weekly-reportage-v1`** (окремий, суворіший за daily's `story-specific-editorial-v5-no-text`;
+деталі стилю — [marketing/card-images](../marketing/card-images.md)).
 
 **Фікс мертвого negative prompt на klein:** `buildWeeklyPrompt` вшиває весь avoid-list у
 позитивний промпт текстом (не окремим `negative_prompt` полем) — бо `runCloudflareMultipart`
@@ -207,6 +213,54 @@ Visuals tab: сітка з 2 мініатюр-альтернатив під ос
 `src/components/admin/weekly-workspace.tsx`, migration `20260723095458_weekly_digest_v2.sql`,
 live dry-run `tmp/pr5-klein-dryrun/` 2026-08-06
 § `save_weekly_digest_artifact`)
+
+**PR6 (2026-08-06):** відеосценарій виніс з майстер-виклику в окремий job type + manifest v3.
+Раніше `video` (title/hook/narration/scenes/shorts) писався **всередині того самого** мега-
+виклику, що й 2000–3000-слівна стаття — задокументований корінь «німого слайдшоу» в
+`ai-today-brief-video`: LLM вигадував `durationSeconds`, що сумарно дає 360–480с, поки реальний
+narration-текст займав лише ~1000 символів (~97с мовлення)
+(source: `ai-today-brief-video/wiki/research/2026-08-05-professional-ai-video-guide.md`).
+
+Тепер: `WeeklyMasterBundle` втратив поле `video` повністю (лишились `en`/`uk`/`socialAngles`);
+`editorial-llm.ts`'s `englishPrompt`/`parseEnglishPackage` більше не пишуть/парсять відео.
+Новий модуль **`src/lib/weekly-digest/video-script-llm.ts`** — окремий LLM-виклик
+(той самий provider-ladder Claude CLI → OpenRouter → Gemini, через щойно експортований
+`generateFirstAvailable` з `editorial-llm.ts`) з драматургією теленовин: cold open (15–25с) →
+anchor bridge (HeyGen-слот) → по одній b-roll сцені на кожну з трьох головних історій
+(`revisionItemId` на сцені — заміна старого `index % assets.length`, який показував не ту
+ілюстрацію) → radar quick-hits → discussion outro. **WPS-валідатор** (`validateVideoScript`,
+`content-studio.ts`): кожна сцена має `durationSeconds ≈ words(voiceover)/2.6 ±20%` —
+бʼє саме той баг, що й спричинив слайдшоу; плюс `shorts_count`/`shorts_contract` (3 UK Shorts,
+факти лише зі своїх claimIds), `video_duration` (сума 360–480с), `scene_structure` (≥3 b-roll,
+по одній на кожну feature-історію), `scene_story_link`, і template-leak-гейт (`bannedPhrasesFor`)
+на voiceover/Shorts-полях. `WEEKLY_VIDEO_MANIFEST_VERSION` → `weekly-video-v3`; новий
+`WEEKLY_VIDEO_SCRIPT_SCHEMA_VERSION`.
+
+`video_script` — новий queueable job type (був лише artifact type, писався синхронно):
+міграція `20260806150000_weekly_video_script_job.sql` розширює job_type CHECK +
+`queue_weekly_digest_generation_job` + `claim_weekly_digest_generation_jobs` (claim-гейт:
+2 approved article-артефакти, той самий гейт, що вже мав `story_image`/`social_copy`) —
+**написана, не застосована до живої БД** (той самий підхід, що й PR4's directions-міграція).
+`generateVideoManifest` тепер читає окремо `videoScriptFromArtifacts` (замість вимагати
+video_script як частину `masterBundleFromArtifacts`) — фікс побічного багу: `generateSocialCopy`
+раніше **не міг стартувати**, доки не існував video_script-артефакт, хоча соцконтенту він
+ніколи не був потрібен; `socialAngles` тепер зберігається прямо в article:en-артефакті.
+CLI-воркер (`run-weekly-master-cli-worker.ts`) дренує тепер і `editorial_master`, і
+`video_script` (обидва — $0 через Claude-підписку). Video-панель адмінки отримала кнопку
+«Generate script» (`enqueueWeeklyGenerationAction`, job_type `video_script`) + review-блок
+(`ArtifactReview`) — video_manifest не стартує, доки script не Approved (той самий гейт, що
+вже існував у claim RPC).
+
+**Не верифіковано наживо** — на відміну від PR3 (critic shadow-run) і PR5 (klein dry-run), ця
+зміна не мала окремого live-прогону в межах цієї сесії; покрито юніт-тестами
+(`content-studio.test.ts`: 13 тестів на `validateVideoScript`, включно з WPS-мисметчем;
+`video-script-llm.test.ts`: 4 тести на generate+retry+throw), typecheck/lint/vitest зелені.
+Перед `shadow`-прогоном варто запустити `video_script` на реальному approved-артикулі й
+прочитати згенерований сценарій, як це робилось для критика й ілюстрацій.
+(source: `src/lib/weekly-digest/video-script-llm.ts`, `src/lib/weekly-digest/content-studio.ts`,
+`src/lib/weekly-digest/editorial-llm.ts`, `src/lib/weekly-digest/generation-worker.ts`,
+migration `20260806150000_weekly_video_script_job.sql`, `src/components/admin/weekly-workspace.tsx`,
+`pipeline/scripts/run-weekly-master-cli-worker.ts`)
 
 ## Імутабельні ревізії (критично)
 

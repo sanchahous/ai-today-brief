@@ -3,7 +3,9 @@ import { bannedPhrasesFor } from './editorial-voice';
 
 export const WEEKLY_CONTENT_STUDIO_VERSION = 'weekly-content-studio-v2.1';
 export const WEEKLY_MASTER_SPEC_VERSION = 'weekly-master-v6';
-export const WEEKLY_VIDEO_MANIFEST_VERSION = 'weekly-video-v2';
+export const WEEKLY_VIDEO_MANIFEST_VERSION = 'weekly-video-v3';
+/** video_script is a standalone job/artifact stage since PR6 -- separate version from the manifest. */
+export const WEEKLY_VIDEO_SCRIPT_SCHEMA_VERSION = 'weekly-video-script-v1';
 /** Primary-source excerpt stored on research packs and fed to writer/critic. */
 export const WEEKLY_RESEARCH_EXCERPT_MAX_CHARS = 12_000;
 export const WEEKLY_RESEARCH_SCHEMA_VERSION = 'weekly-research-v3' as const;
@@ -92,19 +94,42 @@ export interface WeeklyArticleMaster {
   stories: WeeklyMasterStory[];
 }
 
-export interface WeeklyNarrationPlan {
+export interface WeeklyMasterBundle {
+  en: WeeklyArticleMaster;
+  uk: WeeklyArticleMaster;
+  socialAngles: Array<{
+    channel: string;
+    hookAngle: string;
+    thesis: string;
+    factIds: string[];
+  }>;
+}
+
+/**
+ * TV-news-format scene (PR6, editorial quality overhaul). Replaces the old
+ * WeeklyNarrationPlan scene shape (id/purpose/voiceover/onScreenText/
+ * visualBrief), which had no act structure and no per-scene story link --
+ * the video repo's renderer mapped scenes to story images by `index %
+ * assets.length`, which is why a scene about one story could render another
+ * story's illustration. `revisionItemId` fixes that at the source.
+ */
+export interface WeeklyVideoScene {
+  id: string;
+  kind: 'cold_open' | 'anchor' | 'broll' | 'outro';
+  /** null for cold_open/anchor/outro scenes that aren't tied to one story. */
+  revisionItemId: string | null;
+  voiceover: string;
+  onScreenText: string;
+  /** Living b-roll generation prompt, weekly reportage house style (pipeline/card-image.ts buildWeeklyPrompt). */
+  scenePrompt: string;
+  durationSeconds: number;
+}
+
+export interface WeeklyVideoScript {
   title: string;
   hook: string;
   narration: string;
-  scenes: Array<{
-    id: string;
-    purpose: string;
-    voiceover: string;
-    onScreenText: string;
-    visualBrief: string;
-    factIds: string[];
-    durationSeconds: number;
-  }>;
+  scenes: WeeklyVideoScene[];
   shorts: Array<{
     revisionItemId: string;
     locale: 'uk';
@@ -114,18 +139,6 @@ export interface WeeklyNarrationPlan {
     takeaway: string;
     factIds: string[];
     durationSeconds: number;
-  }>;
-}
-
-export interface WeeklyMasterBundle {
-  en: WeeklyArticleMaster;
-  uk: WeeklyArticleMaster;
-  video: WeeklyNarrationPlan;
-  socialAngles: Array<{
-    channel: string;
-    hookAngle: string;
-    thesis: string;
-    factIds: string[];
   }>;
 }
 
@@ -517,32 +530,66 @@ export function validateMasterBundle(
       suggestedFix: 'Adapt the prose while preserving story order and exact claim ID arrays.',
     });
   }
-  if (bundle.video.shorts.length !== 3) {
+  if (
+    bundle.socialAngles.some(
+      (angle) =>
+        angle.factIds.length === 0 || angle.factIds.some((factId) => !claimIds.has(factId)),
+    )
+  ) {
     issues.push({
-      code: 'shorts_count',
-      message: 'The narration plan must include exactly three Ukrainian Shorts.',
+      code: 'social_angle_grounding',
+      message: 'Every social angle must reference one or more approved fact IDs.',
       blocker: true,
     });
   }
-  const narrationSeconds = bundle.video.scenes.reduce(
-    (total, scene) => total + scene.durationSeconds,
-    0,
-  );
-  if (!Number.isFinite(narrationSeconds) || narrationSeconds < 360 || narrationSeconds > 480) {
-    issues.push({
-      code: 'video_duration',
-      message: `Long-form scene plan totals ${narrationSeconds || 0}s; required range is 360–480s.`,
-      blocker: true,
-    });
-  }
-  const shortIds = bundle.video.shorts.map((short) => short.revisionItemId);
+  issues.push(...detectTemplateLeaks(bundle));
+  return issues;
+}
+
+/** Spoken-word pacing used to check a scene's claimed duration against its actual narration length. */
+const VIDEO_WORDS_PER_SECOND = 2.6;
+const VIDEO_WPS_TOLERANCE = 0.2;
+
+/**
+ * Validates a TV-news-format video script (PR6, editorial quality
+ * overhaul). The load-bearing check is `scene_narration_mismatch`: it kills
+ * the documented root cause of the "silent slideshow" (the LLM inventing a
+ * `durationSeconds` that satisfies the 360-480s total while writing
+ * voiceover text far too short for that runtime -- see
+ * ai-today-brief-video's 2026-08-05-professional-ai-video-guide.md, which
+ * measured ~1,000 chars ≈ 97s of actual speech against a claimed 420s
+ * manifest). A scene's duration must now be within ±20% of what its own
+ * voiceover word count would actually take to read aloud at ~2.6 words/sec.
+ */
+export function validateVideoScript(
+  script: WeeklyVideoScript,
+  expectedStories: Array<{
+    revisionItemId: string;
+    placement: WeeklyPlacement;
+    claimIds: string[];
+  }>,
+): WeeklyQualityIssue[] {
+  const issues: WeeklyQualityIssue[] = [];
+  const featureIds = expectedStories
+    .filter((story) => story.placement === 'feature')
+    .map((story) => story.revisionItemId);
   const featureClaimIds = new Map(
     expectedStories
       .filter((story) => story.placement === 'feature')
       .map((story) => [story.revisionItemId, new Set(story.claimIds)]),
   );
+  const knownStoryIds = new Set(expectedStories.map((story) => story.revisionItemId));
+
+  if (script.shorts.length !== 3) {
+    issues.push({
+      code: 'shorts_count',
+      message: 'The video script must include exactly three Ukrainian Shorts.',
+      blocker: true,
+    });
+  }
+  const shortIds = script.shorts.map((short) => short.revisionItemId);
   if (
-    bundle.video.shorts.some(
+    script.shorts.some(
       (short) =>
         short.locale !== 'uk' ||
         short.durationSeconds < 35 ||
@@ -559,36 +606,100 @@ export function validateMasterBundle(
       blocker: true,
     });
   }
+
+  const totalSeconds = script.scenes.reduce((sum, scene) => sum + scene.durationSeconds, 0);
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 360 || totalSeconds > 480) {
+    issues.push({
+      code: 'video_duration',
+      message: `Scene plan totals ${totalSeconds || 0}s; required range is 360–480s.`,
+      blocker: true,
+    });
+  }
+
+  const brollScenes = script.scenes.filter((scene) => scene.kind === 'broll');
+  const brollStoryIds = new Set(brollScenes.map((scene) => scene.revisionItemId));
   if (
-    bundle.video.scenes.length < 4 ||
-    bundle.video.scenes.some(
-      (scene) =>
-        !Number.isFinite(scene.durationSeconds) ||
-        scene.durationSeconds <= 0 ||
-        scene.durationSeconds > 180 ||
-        scene.factIds.some((factId) => !claimIds.has(factId)),
-    )
+    script.scenes.length < 5 ||
+    brollScenes.length < 3 ||
+    !featureIds.every((id) => brollStoryIds.has(id))
   ) {
     issues.push({
-      code: 'scene_grounding',
+      code: 'scene_structure',
       message:
-        'The long-form plan needs at least four scenes; each must be 1–180s and use approved fact IDs.',
+        'The script needs a cold open, an anchor intro, one broll segment per Top 3 story, and an outro.',
       blocker: true,
     });
   }
-  if (
-    bundle.socialAngles.some(
-      (angle) =>
-        angle.factIds.length === 0 || angle.factIds.some((factId) => !claimIds.has(factId)),
-    )
-  ) {
-    issues.push({
-      code: 'social_angle_grounding',
-      message: 'Every social angle must reference one or more approved fact IDs.',
-      blocker: true,
-    });
+
+  for (const scene of script.scenes) {
+    if (
+      !Number.isFinite(scene.durationSeconds) ||
+      scene.durationSeconds <= 0 ||
+      scene.durationSeconds > 180
+    ) {
+      issues.push({
+        code: 'scene_duration',
+        message: `Scene ${scene.id} duration ${scene.durationSeconds}s is outside the 1–180s range.`,
+        blocker: true,
+        field: 'durationSeconds',
+      });
+      continue;
+    }
+    const wordCount = words(scene.voiceover);
+    const expectedSeconds = wordCount / VIDEO_WORDS_PER_SECOND;
+    const lowerBound = expectedSeconds * (1 - VIDEO_WPS_TOLERANCE);
+    const upperBound = expectedSeconds * (1 + VIDEO_WPS_TOLERANCE);
+    if (scene.durationSeconds < lowerBound || scene.durationSeconds > upperBound) {
+      issues.push({
+        code: 'scene_narration_mismatch',
+        message: `Scene ${scene.id} claims ${scene.durationSeconds}s but its voiceover is ${wordCount} words (~${expectedSeconds.toFixed(0)}s at ${VIDEO_WORDS_PER_SECOND} words/sec). Write narration long enough to fill the claimed duration, or shorten the duration to match.`,
+        blocker: true,
+        field: 'voiceover',
+      });
+    }
+    if (scene.kind === 'broll' && !(scene.revisionItemId && knownStoryIds.has(scene.revisionItemId))) {
+      issues.push({
+        code: 'scene_story_link',
+        message: `broll scene ${scene.id} must reference a real revisionItemId from this edition.`,
+        blocker: true,
+        field: 'revisionItemId',
+      });
+    }
+    if (scene.kind !== 'broll' && scene.revisionItemId) {
+      issues.push({
+        code: 'scene_story_link',
+        message: `${scene.kind} scene ${scene.id} is not story-specific; revisionItemId should be null.`,
+        blocker: false,
+        field: 'revisionItemId',
+      });
+    }
+    for (const rule of bannedPhrasesFor('en')) {
+      if (rule.pattern.test(scene.voiceover)) {
+        issues.push({
+          code: `template_leak:${rule.code}`,
+          message: `Scene ${scene.id} voiceover: ${rule.message}`,
+          blocker: true,
+          field: 'voiceover',
+        });
+      }
+    }
   }
-  issues.push(...detectTemplateLeaks(bundle));
+
+  for (const short of script.shorts) {
+    for (const field of ['hook', 'context', 'insight', 'takeaway'] as const) {
+      for (const rule of bannedPhrasesFor('uk')) {
+        if (rule.pattern.test(short[field])) {
+          issues.push({
+            code: `template_leak:${rule.code}`,
+            message: `Short ${short.revisionItemId} ${field}: ${rule.message}`,
+            blocker: true,
+            field,
+          });
+        }
+      }
+    }
+  }
+
   return issues;
 }
 

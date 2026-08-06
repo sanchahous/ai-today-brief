@@ -178,26 +178,6 @@ describe('splitMasterRetryGuidance', () => {
     expect(ukrainian).toHaveLength(1);
   });
 
-  it('routes video-field guidance to English even when tagged locale:uk -- ukrainianPrompt never touches video/shorts', () => {
-    // Real case (ai-weekly-2026-07-27, 2026-08-05): LOCALE_MISMATCH flagged
-    // video.shorts as English text under a locale:'uk' entry. Shorts are
-    // produced entirely by the English step (see generateWeeklyMaster --
-    // bundle.video = english.value.video), so guidance about them must
-    // reach englishPrompt, or the checkpoint keeps reusing the same broken
-    // shorts on every retry.
-    const guidance: WeeklyMasterRetryGuidance[] = [
-      {
-        code: 'LOCALE_MISMATCH',
-        message: "shorts declare locale 'uk' but are written in English",
-        locale: 'uk',
-        field: 'video.shorts',
-      },
-    ];
-    const { english, ukrainian } = splitMasterRetryGuidance(guidance);
-    expect(english).toHaveLength(1);
-    expect(ukrainian).toHaveLength(0);
-  });
-
   it('leaves untagged guidance (structural/English issues) in English', () => {
     const guidance: WeeklyMasterRetryGuidance[] = [
       { code: 'top3_radar_structure', message: 'must contain exactly three features' },
@@ -293,7 +273,6 @@ describe('criticPrompt', () => {
     const bundle = {
       en: { locale: 'en', stories: [] },
       uk: { locale: 'uk', stories: [] },
-      video: { title: '', hook: '', narration: '', scenes: [], shorts: [] },
       socialAngles: [],
     } as unknown as WeeklyMasterBundle;
     const prompt = criticPrompt(bundle, [storyWithPrimaryExcerpt()]);
@@ -403,7 +382,6 @@ function englishResult(): WeeklyMasterEnglishResult {
         conclusion: 'c',
         stories: [articleStory('item-1', 'feature')],
       },
-      video: { title: 't', hook: 'h', narration: 'n', scenes: [], shorts: [] },
       socialAngles: ['telegram', 'facebook', 'threads', 'x', 'linkedin', 'instagram'].map(
         socialAngle,
       ),
@@ -507,7 +485,6 @@ describe('generateWeeklyMaster checkpoint reuse', () => {
       return {
         text: JSON.stringify({
           article: englishResult().value.article,
-          video: englishResult().value.video,
           socialAngles: englishResult().value.socialAngles,
         }),
         provider: 'openrouter',
@@ -541,7 +518,6 @@ describe('generateWeeklyMaster checkpoint reuse', () => {
       return {
         text: JSON.stringify({
           article: englishResult().value.article,
-          video: englishResult().value.video,
           socialAngles: englishResult().value.socialAngles,
         }),
         provider: 'openrouter',
@@ -600,7 +576,6 @@ describe('generateWeeklyMaster claude-cli provider', () => {
       return {
         text: JSON.stringify({
           article: englishResult().value.article,
-          video: englishResult().value.video,
           socialAngles: englishResult().value.socialAngles,
         }),
         model: 'claude-sonnet-5',
@@ -654,7 +629,6 @@ describe('generateWeeklyMaster claude-cli provider', () => {
       return {
         text: JSON.stringify({
           article: englishResult().value.article,
-          video: englishResult().value.video,
           socialAngles: englishResult().value.socialAngles,
         }),
         model: 'claude-sonnet-5',
@@ -683,9 +657,9 @@ describe('generateWeeklyMaster claude-cli provider', () => {
 });
 
 // A fully valid bundle (3 features + 3 radar, matching claims, complete
-// video/social payloads) so validateMasterBundle's deterministic checks emit
-// zero issues -- isolating the revise-loop tests below to purely
-// critic-driven pass/fail, not incidental fixture gaps.
+// social payload) so validateMasterBundle's deterministic checks emit zero
+// issues -- isolating the revise-loop tests below to purely critic-driven
+// pass/fail, not incidental fixture gaps.
 const REVISE_ITEM_IDS = ['w-1', 'w-2', 'w-3', 'w-4', 'w-5', 'w-6'];
 
 function reviseStories(): WeeklyMasterInputStory[] {
@@ -725,33 +699,6 @@ function reviseArticleStories() {
   });
 }
 
-function reviseVideo() {
-  return {
-    title: 'Weekly episode',
-    hook: 'The week changed.',
-    narration: 'Narration',
-    scenes: [0, 1, 2, 3].map((i) => ({
-      id: `scene-${i}`,
-      purpose: 'cover',
-      voiceover: 'Voiceover text.',
-      onScreenText: 'Text',
-      visualBrief: 'Brief',
-      factIds: ['claim-1'],
-      durationSeconds: 100,
-    })),
-    shorts: ['w-1', 'w-2', 'w-3'].map((id, i) => ({
-      revisionItemId: id,
-      locale: 'uk' as const,
-      hook: 'Гук',
-      context: 'Контекст',
-      insight: 'Висновок',
-      takeaway: 'Дія',
-      factIds: [`claim-${i + 1}`],
-      durationSeconds: 40,
-    })),
-  };
-}
-
 function reviseSocialAngles() {
   return ['telegram', 'facebook', 'threads', 'x', 'linkedin', 'instagram'].map((channel) => ({
     channel,
@@ -782,7 +729,6 @@ function reviseEnglishResult(): WeeklyMasterEnglishResult {
         conclusion: 'c',
         stories: reviseArticleStories(),
       },
-      video: reviseVideo(),
       socialAngles: reviseSocialAngles(),
     },
     metadata: {
@@ -866,7 +812,6 @@ function mockRouterResponses(handlers: {
         handlers.englishWrite?.() ??
         JSON.stringify({
           article: reviseEnglishResult().value.article,
-          video: reviseEnglishResult().value.video,
           socialAngles: reviseEnglishResult().value.socialAngles,
         }),
       provider: 'openrouter',

@@ -1,9 +1,11 @@
 /**
- * Drains `editorial_master` jobs through the normal generation worker, but
- * from a host where the Claude Code CLI subscription provider actually works
- * (a GitHub Actions runner — Vercel has no `claude` binary). Reuses
- * `runWeeklyDigestGenerationJobs` unchanged; the only difference from the
- * Vercel route is the job-type filter and where this process runs.
+ * Drains `editorial_master` and `video_script` jobs through the normal
+ * generation worker, but from a host where the Claude Code CLI subscription
+ * provider actually works (a GitHub Actions runner — Vercel has no `claude`
+ * binary). Both stages prefer the same $0-marginal-cost provider ladder, so
+ * they share this worker rather than each needing their own dispatch route.
+ * Reuses `runWeeklyDigestGenerationJobs` unchanged; the only difference from
+ * the Vercel route is the job-type filter and where this process runs.
  *
  * Must run via `node --conditions=react-server --import tsx <this file>` —
  * generation-worker.ts imports `server-only`, which throws under a plain
@@ -39,11 +41,12 @@ async function main(): Promise<void> {
   for (let batch = 0; batch < MAX_BATCHES; batch += 1) {
     const { claimed, results } = await runWeeklyDigestGenerationJobs(BATCH_LIMIT, [
       'editorial_master',
+      'video_script',
     ]);
     totalClaimed += claimed;
     for (const result of results) {
       if (result.outcome === 'failed') totalFailed += 1;
-      logEvent(result.outcome === 'failed' ? 'warn' : 'info', STAGE, 'editorial_master job finished', {
+      logEvent(result.outcome === 'failed' ? 'warn' : 'info', STAGE, `${result.jobType ?? 'weekly'} job finished`, {
         job_id: result.id,
         outcome: result.outcome,
         error: result.error,

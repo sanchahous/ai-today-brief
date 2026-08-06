@@ -19,6 +19,39 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-06 — Editorial quality overhaul, PR6: video script stage + manifest v3
+
+**Джерело:** рішення власника (session 2026-08-06) — «кодити PR6–7 паралельно» під час двох
+live-верифікацій PR3/PR5; продовження 7-PR плану `feat/weekly-editorial-voice`
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — новий підрозділ «PR6» під «Editorial voice overhaul»:
+  video виключено з майстер-виклику, новий standalone job `video_script`, WPS-валідатор,
+  manifest v3 з per-scene `revisionItemId`, оновлений порядок job-пайплайну
+- `wiki/pipeline/video-boundary.md` — попередження про застарілий приклад схеми (`v1` замість
+  живого `v3`), лінк на актуальний контракт
+- `wiki/now.md` — стан гілки (PR1–6 закомічені, PR7 останній), PR6 позначено «не верифіковано
+  наживо» (на відміну від PR3/PR5)
+- `wiki/index.md` — лічильник міграцій ~66 → ~67
+
+**Код:** `WeeklyMasterBundle.video` видалено з типу; новий `src/lib/weekly-digest/video-script-llm.ts`
+(TV-news драматургія: cold open → anchor → b-roll×3 (по одній на feature-історію) → radar
+quick-hits → outro, той самий Claude CLI → OpenRouter → Gemini ladder через щойно експортований
+`generateFirstAvailable`); новий `validateVideoScript` (`content-studio.ts`) — WPS-гейт
+`durationSeconds ≈ words(voiceover)/2.6 ±20%` б'є задокументований корінь «німого слайдслайду»
+з `ai-today-brief-video`; `video_script` — тепер queueable job type (раніше писався синхронно
+всередині `editorial_master`); міграція `20260806150000_weekly_video_script_job.sql`
+(job_type CHECK + обидва RPC) написана, **не застосована до прод-БД**; попутний фікс —
+`generateSocialCopy` більше не залежить від існування video_script-артефакту (побічний баг
+старого коду). Typecheck/lint/vitest зелені (152 тести, +17 нових на `validateVideoScript` і
+`generateWeeklyVideoScript`).
+
+**Нотатка:** на відміну від PR3 (critic shadow-run) і PR5 (klein dry-run), тут не було окремого
+live-прогону в межах цієї сесії — рекомендовано запустити `video_script` на реальному
+approved-артикулі перед shadow-розкаткою всього пайплайну.
+
+---
+
 ## 2026-08-06 — Editorial quality overhaul, PR1: editorial-voice.ts core
 
 **Джерело:** рішення власника (session 2026-08-06) — забракував якість усього weekly-контенту

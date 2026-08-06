@@ -18,7 +18,6 @@ import {
   type WeeklyArticleMaster,
   type WeeklyContentQualityReport,
   type WeeklyMasterBundle,
-  type WeeklyNarrationPlan,
   type WeeklyQualityDimension,
   type WeeklyQualityIssue,
   type WeeklyResearchPack,
@@ -312,38 +311,15 @@ function parseArticle(raw: string, locale: 'en' | 'uk'): WeeklyArticleMaster {
 function parseEnglishPackage(raw: string) {
   const row = parseJsonObject(raw);
   const article = parseArticle(JSON.stringify(row.article), 'en');
-  const videoRow = row.video;
-  if (!videoRow || typeof videoRow !== 'object' || Array.isArray(videoRow)) {
-    throw new SyntaxError('video is required.');
-  }
-  const video = videoRow as Record<string, unknown>;
-  const narration: WeeklyNarrationPlan = {
-    title: requiredString(video, 'title'),
-    hook: requiredString(video, 'hook'),
-    narration: requiredString(video, 'narration'),
-    scenes: recordArray(video.scenes, 'video.scenes').map((scene) => ({
-      id: requiredString(scene, 'id'),
-      purpose: requiredString(scene, 'purpose'),
-      voiceover: requiredString(scene, 'voiceover'),
-      onScreenText: requiredString(scene, 'onScreenText'),
-      visualBrief: requiredString(scene, 'visualBrief'),
-      factIds: stringArray(scene.factIds, 'scene.factIds'),
-      durationSeconds: Number(scene.durationSeconds),
-    })),
-    shorts: recordArray(video.shorts, 'video.shorts').map((short) => ({
-      revisionItemId: requiredString(short, 'revisionItemId'),
-      locale: 'uk' as const,
-      hook: requiredString(short, 'hook'),
-      context: requiredString(short, 'context'),
-      insight: requiredString(short, 'insight'),
-      takeaway: requiredString(short, 'takeaway'),
-      factIds: stringArray(short.factIds, 'short.factIds'),
-      durationSeconds: Number(short.durationSeconds),
-    })),
-  };
-  if (narration.scenes.some((scene) => !Number.isFinite(scene.durationSeconds))) {
-    throw new SyntaxError('Every scene requires a numeric durationSeconds.');
-  }
+  // video moved out of the master call entirely in PR6 (editorial quality
+  // overhaul) -- see video-script-llm.ts. The one-sentence video contract
+  // that used to live in englishPrompt's CONTRACT block, generated inside
+  // the same 20k-token completion as the 2,000-3,000 word article, is the
+  // documented root cause of the "silent slideshow" (durationSeconds was
+  // invented to satisfy a 360-480s sum while narration text stayed ~1,000
+  // chars -- see ai-today-brief-video's 2026-08-05-professional-ai-video-
+  // guide.md). video_script is now its own job, run after the master
+  // succeeds, writing real narration long enough for its claimed runtime.
   const socialAngles = normalizeWeeklySocialAngles(
     recordArray(row.socialAngles, 'socialAngles').map((angle) => ({
       channel: requiredString(angle, 'channel'),
@@ -352,7 +328,7 @@ function parseEnglishPackage(raw: string) {
       factIds: stringArray(angle.factIds, 'angle.factIds'),
     })),
   );
-  return { article, video: narration, socialAngles };
+  return { article, socialAngles };
 }
 
 function parseCritic(raw: string) {
@@ -671,7 +647,8 @@ async function generateIndependentCritic(
   }
 }
 
-async function generateFirstAvailable<T>(prompt: string, parse: (raw: string) => T) {
+/** Exported for reuse by video-script-llm.ts, which needs the same Claude CLI -> OpenRouter -> Gemini ladder for a single-shot generation call outside the master write. */
+export async function generateFirstAvailable<T>(prompt: string, parse: (raw: string) => T) {
   const failures: string[] = [];
   for (const provider of providerOrder()) {
     try {
@@ -702,23 +679,11 @@ ${JSON.stringify(guidance)}`;
  * Ukrainian step means a naturalness-only retry never re-sends the English
  * prompt, which is what lets the checkpoint hashes (generation-worker.ts)
  * skip a paid-for English regeneration that was never the problem.
- *
- * `video` (title/hook/narration/scenes/shorts) is entirely produced by the
- * English step (`ukrainianPrompt` only ever rewrites `article`) even though
- * the Shorts inside it are meant to be Ukrainian text -- a critic issue can
- * legitimately carry `locale: 'uk'` while pointing at `field: "video..."`
- * (e.g. LOCALE_MISMATCH: shorts tagged uk but written in English). Routing
- * that to the Ukrainian bucket sends it to the one step that structurally
- * cannot act on it, and — worse — excludes it from the English hash, so the
- * checkpoint keeps reusing the exact broken video on every retry. Anything
- * targeting a `video`-prefixed field always goes to English, regardless of
- * its locale tag.
  */
 export function splitMasterRetryGuidance(guidance: WeeklyMasterRetryGuidance[]) {
-  const targetsVideo = (entry: WeeklyMasterRetryGuidance) => entry.field?.startsWith('video') ?? false;
   return {
-    english: guidance.filter((entry) => targetsVideo(entry) || entry.locale !== 'uk'),
-    ukrainian: guidance.filter((entry) => !targetsVideo(entry) && entry.locale === 'uk'),
+    english: guidance.filter((entry) => entry.locale !== 'uk'),
+    ukrainian: guidance.filter((entry) => entry.locale === 'uk'),
   };
 }
 
@@ -740,12 +705,11 @@ CONTRACT
 - editorsView and discussionQuestion are required for the three feature stories only (see VOICE above for what each must do); send both as empty strings for radar stories.
 - When a story's approved material includes an "angle" field, that is the owner's binding editorial direction for that story, decided before you started writing -- build the headline, body and editorsView around it, don't default to a generic recap that ignores it. Never contradict supplied claims or excerpts to fit the angle.
 - Headline must read like a real news headline about what happened -- name the actor and the concrete event -- never an abstract thesis a reader can't picture. Theme-led title for the whole edition; the date is secondary. All prose across the article object must total 2,000–3,000 words.
-- Video: one English 6–8 minute narration plan and exactly three Ukrainian Shorts (35–50 seconds) for the Top 3.
 - Return one JSON object only.
 - socialAngles must contain exactly six objects: one for each exact lowercase channel value telegram, facebook, threads, x, linkedin and instagram. Do not combine channel names in one string.
 
 JSON SHAPE
-{"article":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":"","stories":[{"revisionItemId":"","placement":"feature|radar","headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","editorsView":"","discussionQuestion":"","claimIds":[""]}]},"video":{"title":"","hook":"","narration":"","scenes":[{"id":"","purpose":"","voiceover":"","onScreenText":"","visualBrief":"","factIds":[""],"durationSeconds":1}],"shorts":[{"revisionItemId":"","hook":"","context":"","insight":"","takeaway":"","factIds":[""],"durationSeconds":40}]},"socialAngles":[{"channel":"telegram","hookAngle":"","thesis":"","factIds":[""]},{"channel":"facebook","hookAngle":"","thesis":"","factIds":[""]},{"channel":"threads","hookAngle":"","thesis":"","factIds":[""]},{"channel":"x","hookAngle":"","thesis":"","factIds":[""]},{"channel":"linkedin","hookAngle":"","thesis":"","factIds":[""]},{"channel":"instagram","hookAngle":"","thesis":"","factIds":[""]}]}
+{"article":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":"","stories":[{"revisionItemId":"","placement":"feature|radar","headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","editorsView":"","discussionQuestion":"","claimIds":[""]}]},"socialAngles":[{"channel":"telegram","hookAngle":"","thesis":"","factIds":[""]},{"channel":"facebook","hookAngle":"","thesis":"","factIds":[""]},{"channel":"threads","hookAngle":"","thesis":"","factIds":[""]},{"channel":"x","hookAngle":"","thesis":"","factIds":[""]},{"channel":"linkedin","hookAngle":"","thesis":"","factIds":[""]},{"channel":"instagram","hookAngle":"","thesis":"","factIds":[""]}]}
 
 APPROVED STORY MATERIAL
 ${JSON.stringify(approvedStoryPromptMaterial(stories))}${masterRetryGuidancePrompt(retryGuidance)}`;
@@ -936,7 +900,6 @@ export async function generateWeeklyMaster(
   const buildBundle = (): WeeklyMasterBundle => ({
     en: english!.value.article,
     uk: ukrainian!.value,
-    video: english!.value.video,
     socialAngles: english!.value.socialAngles,
   });
   const evaluate = async (bundle: WeeklyMasterBundle): Promise<WeeklyContentQualityReport> => {

@@ -23,6 +23,7 @@ const ALL_JOB_TYPES = [
   'story_image',
   'cover',
   'social_copy',
+  'video_script',
   'video_manifest',
   'pdf',
   'social_asset',

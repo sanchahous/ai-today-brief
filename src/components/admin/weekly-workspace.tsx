@@ -64,7 +64,7 @@ const GENERATION_JOB_TYPES_BY_TAB: Record<WeeklyWorkspaceTab, readonly string[]>
   visuals: ['story_image', 'cover', 'social_asset'],
   social: ['social_copy'],
   pdf: ['pdf'],
-  video: ['video_manifest'],
+  video: ['video_script', 'video_manifest'],
   release: [],
 };
 
@@ -77,6 +77,7 @@ const GENERATION_JOB_PRIMARY_TAB: Record<string, WeeklyWorkspaceTab> = {
   social_asset: 'visuals',
   social_copy: 'social',
   pdf: 'pdf',
+  video_script: 'video',
   video_manifest: 'video',
 };
 
@@ -3511,6 +3512,9 @@ function VideoPanel({
   const scenesJson = jsonText(scenes, '[]');
   const captionsEnText = textFrom(captionsEn?.content, 'vtt', 'srt', 'text');
   const captionsUkText = textFrom(captionsUk?.content, 'vtt', 'srt', 'text');
+  const scriptJob = latestJobForSlot(workspace.generationJobs, 'video_script', {
+    slotKey: 'video-script:en',
+  });
 
   return (
     <div className="grid gap-6">
@@ -3525,6 +3529,45 @@ function VideoPanel({
         <span className="rounded-xl border border-cyan-300/20 bg-cyan-300/6 px-3 py-2 text-xs font-semibold text-cyan-100">
           YouTube is the final video storage — no MP4 upload
         </span>
+      </div>
+
+      <div className={`${PANEL} flex flex-wrap items-center justify-between gap-3`}>
+        <div>
+          <h3 className="text-lg font-bold text-white">TV-news script (cold open → anchor → b-roll → outro)</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Dramatizes the approved English article into the scene plan below plus three Ukrainian
+            Shorts. Review the generated script, then hand-edit it in the form below if needed.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {scriptJob ? <StatusPill value={scriptJob.status} /> : null}
+          <form action={enqueueWeeklyGenerationAction}>
+            <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+            <input type="hidden" name="revision_id" value={revision.id} />
+            <input type="hidden" name="job_type" value="video_script" />
+            <input type="hidden" name="locale" value="en" />
+            <input type="hidden" name="slot_key" value="video-script:en" />
+            <ActionSubmitButton
+              idleLabel={script ? 'Regenerate script' : 'Generate script'}
+              pendingLabel="Queueing script…"
+              disabled={!canEdit}
+              className={SECONDARY}
+            />
+          </form>
+        </div>
+        {script ? (
+          <div className="w-full">
+            <p className="text-xs text-slate-500">
+              video_manifest cannot generate until this script is approved.
+            </p>
+            <ArtifactReview
+              digestId={workspace.digest.id}
+              artifact={script}
+              reviews={workspace.artifactReviews}
+              canReview={canReview && script.revision_id === workspace.revision?.id}
+            />
+          </div>
+        ) : null}
       </div>
 
       <form action={saveWeeklyVideoAction} className={PANEL}>
