@@ -127,17 +127,29 @@ flagged to the owner rather than run silently.
 (source: `src/lib/weekly-digest/editorial-llm.ts`, `src/lib/weekly-digest/content-studio.ts`,
 `src/lib/weekly-digest/generation-worker.ts`)
 
-`detectTemplateLeaks` блокує точну реєстр-помилку зі знайденого прикладу (`ai-weekly-2026-07-27`):
-речення в `body`, що відкриваються міткою поля («Practical scenario:», «Обмеження полягає в
-тому», «Висновок для рішення:») замість того, щоб бути суцільною розповіддю. Версія майстер-
-промпту `weekly-master-v5` (bump з v4) форсує реген існуючих чернеток при наступному Start/retry.
+**PR4 (2026-08-06):** owner-set editorial angle per Top-3 story — the first human-in-the-loop
+point the plan called for (~30–60 хв/випуск). New table
+**`weekly_digest_story_directions`** (migration `20260806140000_weekly_digest_story_directions.sql`
+— **written, not yet applied to the live DB**; DDL goes through the normal deploy pipeline,
+not an ad-hoc call from this session), one row per `(weekly_digest_id, brief_item_id)` — keyed
+by `brief_item_id`, not `revision_item_id`, so the angle survives the revision churn a Save
+mints (#177/#187 fragility history). Research tab: each Feature card gets a "Кут подачі ·
+Editorial angle" textarea (`saveWeeklyStoryDirectionAction`, upsert; empty value deletes the row);
+a stats tile shows `N/3` coverage. `masterInputStories` (`generation-worker.ts`) joins directions
+by `brief_item_id` and injects `angle` onto `WeeklyMasterInputStory`; `englishPrompt`
+(`editorial-llm.ts`) treats a present angle as the owner's **binding editorial direction** for
+that story. Reads/writes degrade gracefully (empty map / empty array, not a thrown error) if the
+table isn't migrated yet — the admin workspace never 500s over this being optional.
 
-Верифікація перед продакшн-рол-аутом: shadow-прогін через `WEEKLY_CONTENT_STUDIO_V2=shadow` на
-історичному випуску; критик-рубрика (нові виміри `engagement`/`voice`, PR3) ще не landed — до
-того часу `editorialQualityFailures` продовжує оцінювати старими вимірами, а `detectTemplateLeaks`
-вже ловить найгрубіші case'и незалежно від критика.
-(source: `editorial-voice.ts`, `editorial-llm.ts`, `content-studio.ts`, `generation-worker.ts`,
-owner session 2026-08-06)
+**Scope trim from the written plan:** the plan sketched research-pack-proposed angle *suggestions*
+(2–3 AI-generated options to pick from). `buildWeeklyResearchPack` (`research.ts`) is currently
+100% deterministic — zero LLM calls, zero failure modes beyond network fetch. Adding suggestion
+generation would mean a new paid LLM call inside an otherwise rock-solid stage, for a feature
+whose core value (owner can set a binding angle) doesn't require it. Shipped free-text only;
+AI-suggested angles are a possible follow-up, not done here.
+(source: `supabase/migrations/20260806140000_weekly_digest_story_directions.sql`,
+`src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`,
+`src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/editorial-llm.ts`)
 
 ## Імутабельні ревізії (критично)
 

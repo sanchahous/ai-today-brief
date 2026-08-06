@@ -32,6 +32,7 @@ import {
   reviewWeeklyArtifactAction,
   saveWeeklyRevisionAction,
   saveWeeklySocialAction,
+  saveWeeklyStoryDirectionAction,
   saveWeeklyVideoAction,
   scheduleWeeklyDigestAction,
   startWeeklyContentStudioAction,
@@ -1194,6 +1195,12 @@ function ResearchPanel({
   const approvedResearch = features.filter(
     (item) => researchArtifactFor(workspace.artifacts, item)?.review_status === 'approved',
   ).length;
+  const featureBriefItemIds = new Set(
+    features.flatMap((item) => (item.brief_item_id ? [item.brief_item_id] : [])),
+  );
+  const directionsSet = workspace.storyDirections.filter(
+    (direction) => direction.angle.trim() && featureBriefItemIds.has(direction.brief_item_id),
+  ).length;
   const editorialMasterJob =
     workspace.generationJobs.find((job) => job.job_type === 'editorial_master') ?? null;
   const masterWaitingOnPackApprovals =
@@ -1343,11 +1350,16 @@ function ResearchPanel({
           </div>
           <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
             <p className="text-xs font-bold text-slate-500 uppercase">Audience</p>
-            <p className="mt-1 text-sm font-semibold text-white">Builders & AI decision-makers</p>
+            <p className="mt-1 text-sm font-semibold text-white">
+              Builders, AI practitioners & the technically curious
+            </p>
           </div>
           <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
-            <p className="text-xs font-bold text-slate-500 uppercase">Master voice</p>
-            <p className="mt-1 text-sm font-semibold text-white">Editor-practitioner</p>
+            <p className="text-xs font-bold text-slate-500 uppercase">Editorial angles</p>
+            <p className="mt-1 text-2xl font-bold text-white">{directionsSet}/3</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Optional — set below per feature. Unset stories default to a plain recap.
+            </p>
           </div>
         </div>
       </section>
@@ -1444,6 +1456,45 @@ function ResearchPanel({
                       </div>
                     );
                   })}
+                </div>
+                <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-400/[.04] p-4">
+                  <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">
+                    Кут подачі · Editorial angle
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-400">
+                    Binding direction the writer follows for this story. Leave empty and the writer
+                    defaults to a plain recap of the claims above.
+                  </p>
+                  {item.brief_item_id ? (
+                    <form action={saveWeeklyStoryDirectionAction} className="mt-3 grid gap-2">
+                      <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+                      <input type="hidden" name="brief_item_id" value={item.brief_item_id} />
+                      <textarea
+                        name="angle"
+                        rows={2}
+                        maxLength={600}
+                        disabled={!canEdit}
+                        defaultValue={
+                          workspace.storyDirections.find(
+                            (direction) => direction.brief_item_id === item.brief_item_id,
+                          )?.angle ?? ''
+                        }
+                        className={TEXTAREA}
+                        placeholder="e.g. Frame this as a cautionary story about infra trust, not a feature announcement."
+                      />
+                      {canEdit ? (
+                        <ActionSubmitButton
+                          idleLabel="Save angle"
+                          pendingLabel="Saving…"
+                          className={SECONDARY}
+                        />
+                      ) : null}
+                    </form>
+                  ) : (
+                    <p className="mt-2 text-xs text-slate-500">
+                      No linked brief item — angle cannot be set for this story.
+                    </p>
+                  )}
                 </div>
                 <ArtifactReview
                   digestId={workspace.digest.id}

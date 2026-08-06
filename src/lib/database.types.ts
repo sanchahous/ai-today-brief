@@ -1461,6 +1461,30 @@ export type Database = {
           weekly_digest_id: string;
         }
       >;
+      weekly_digest_story_directions: CmsTable<
+        {
+          angle: string;
+          brief_item_id: string;
+          created_at: string;
+          editors_view_hint: string | null;
+          id: string;
+          scene_hint: string | null;
+          updated_at: string;
+          updated_by: string | null;
+          weekly_digest_id: string;
+        },
+        {
+          angle: string;
+          brief_item_id: string;
+          created_at?: string;
+          editors_view_hint?: string | null;
+          id?: string;
+          scene_hint?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+          weekly_digest_id: string;
+        }
+      >;
       weekly_digest_release_events: CmsTable<
         {
           actor_id: string | null;

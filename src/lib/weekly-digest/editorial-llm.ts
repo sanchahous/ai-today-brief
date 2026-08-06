@@ -40,6 +40,13 @@ export interface WeeklyMasterInputStory {
   sources: Array<{ name: string; url: string }>;
   claims: Array<{ id: string; text: string; evidenceUrls: string[] }>;
   research?: WeeklyResearchPack;
+  /**
+   * Owner-set editorial angle for this story (PR4, weekly_digest_story_
+   * directions), present only for the Top 3 features the owner has reviewed
+   * in the Research tab before Start Content Studio. Treated as binding
+   * editorial direction in englishPrompt, not just a suggestion.
+   */
+  angle?: string;
 }
 
 export interface EditorialGenerationMetadata {
@@ -92,6 +99,7 @@ export interface ApprovedStoryPromptMaterial {
   whyUk: string | null;
   sources: Array<{ name: string; url: string }>;
   claims: Array<{ id: string; text: string; evidenceUrls: string[] }>;
+  angle?: string;
   primarySourceExcerpt?: {
     url: string;
     sourceName: string;
@@ -126,6 +134,7 @@ export function approvedStoryPromptMaterial(
       sources: story.sources,
       claims: story.claims,
     };
+    if (story.angle?.trim()) material.angle = story.angle.trim();
     if (primary?.extractedText?.trim()) {
       material.primarySourceExcerpt = {
         url: primary.url,
@@ -729,6 +738,7 @@ CONTRACT
 - Every story must still cite at least one real claimId from its claims array. Do not invent claim IDs.
 - The practical field must name a concrete actor, workflow, action, constraint and observable result. Never use a reusable category template.
 - editorsView and discussionQuestion are required for the three feature stories only (see VOICE above for what each must do); send both as empty strings for radar stories.
+- When a story's approved material includes an "angle" field, that is the owner's binding editorial direction for that story, decided before you started writing -- build the headline, body and editorsView around it, don't default to a generic recap that ignores it. Never contradict supplied claims or excerpts to fit the angle.
 - Headline must read like a real news headline about what happened -- name the actor and the concrete event -- never an abstract thesis a reader can't picture. Theme-led title for the whole edition; the date is secondary. All prose across the article object must total 2,000–3,000 words.
 - Video: one English 6–8 minute narration plan and exactly three Ukrainian Shorts (35–50 seconds) for the Top 3.
 - Return one JSON object only.

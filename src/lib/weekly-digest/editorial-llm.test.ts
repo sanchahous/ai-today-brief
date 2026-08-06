@@ -267,6 +267,17 @@ describe('approvedStoryPromptMaterial', () => {
     expect(material.primarySourceExcerpt?.excerpt).toContain('Python and Sage');
     expect(material).not.toHaveProperty('research');
   });
+
+  it('passes through the owner-set editorial angle when present (PR4)', () => {
+    const withAngle = { ...storyWithPrimaryExcerpt(), angle: 'Frame this as a cautionary tale.' };
+    const [material] = approvedStoryPromptMaterial([withAngle]);
+    expect(material.angle).toBe('Frame this as a cautionary tale.');
+  });
+
+  it('omits angle entirely when the story has none, rather than sending an empty string', () => {
+    const [material] = approvedStoryPromptMaterial([storyWithPrimaryExcerpt()]);
+    expect(material).not.toHaveProperty('angle');
+  });
 });
 
 describe('criticApprovedEvidence', () => {
@@ -511,6 +522,50 @@ describe('generateWeeklyMaster checkpoint reuse', () => {
     expect(onStepComplete).toHaveBeenCalledWith('english', expect.anything());
     expect(onStepComplete).toHaveBeenCalledWith('ukrainian', expect.anything());
     expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(3); // english + ukrainian + critic
+  });
+
+  it('surfaces the owner-set angle in the English prompt as binding direction (PR4)', async () => {
+    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
+    vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => {
+      if (prompt.includes('independent factual and editorial critic')) {
+        return { text: CRITIC_JSON, provider: 'openrouter', model: 'vendor/critic-model', usage: null };
+      }
+      if (prompt.includes('Ukrainian senior news editor')) {
+        return {
+          text: JSON.stringify(englishResult().value.article),
+          provider: 'openrouter',
+          model: 'other-vendor/writer-model',
+          usage: null,
+        };
+      }
+      return {
+        text: JSON.stringify({
+          article: englishResult().value.article,
+          video: englishResult().value.video,
+          socialAngles: englishResult().value.socialAngles,
+        }),
+        provider: 'openrouter',
+        model: 'other-vendor/writer-model',
+        usage: null,
+      };
+    });
+
+    await generateWeeklyMaster(
+      [{ ...story('item-1', 'feature'), angle: 'Frame this as a cautionary infra-trust story.' }],
+      [],
+      [],
+    );
+
+    const englishPromptSent = vi
+      .mocked(generateWithOpenRouterChain)
+      .mock.calls.map((call) => call[0])
+      .find(
+        (prompt) =>
+          !prompt.includes('independent factual and editorial critic') &&
+          !prompt.includes('Ukrainian senior news editor'),
+      );
+    expect(englishPromptSent).toContain('Frame this as a cautionary infra-trust story.');
+    expect(englishPromptSent).toContain('binding editorial direction');
   });
 });
 

@@ -495,6 +495,49 @@ export async function commentWeeklyArtifactAction(formData: FormData) {
   revalidateWeeklyAdmin(artifact.weekly_digest_id);
 }
 
+/**
+ * Owner-set editorial angle per Top-3 story (PR4, editorial quality
+ * overhaul) -- a plain upsert, not an RPC, because unlike revisions/
+ * artifacts this table isn't append-only: one row per (weekly_digest_id,
+ * brief_item_id), keyed by brief_item_id specifically so it survives a
+ * Save minting a new revision underneath it (see the migration's comment).
+ * An empty angle deletes the row rather than storing an empty string, so
+ * "no direction set" and "direction cleared" both read the same way to
+ * masterInputStories (generation-worker.ts).
+ */
+export async function saveWeeklyStoryDirectionAction(formData: FormData) {
+  const session = await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const briefItemId = requiredString(formData, 'brief_item_id');
+  const angle = optionalString(formData, 'angle');
+  if (angle.length > 600) {
+    throw new Error('An editorial angle may contain at most 600 characters.');
+  }
+  const admin = getSupabaseAdmin();
+  if (!angle) {
+    const { error } = await admin
+      .from('weekly_digest_story_directions')
+      .delete()
+      .eq('weekly_digest_id', weeklyDigestId)
+      .eq('brief_item_id', briefItemId);
+    if (error) throw new Error(error.message);
+    revalidateWeeklyAdmin(weeklyDigestId);
+    return;
+  }
+  const { error } = await admin.from('weekly_digest_story_directions').upsert(
+    {
+      weekly_digest_id: weeklyDigestId,
+      brief_item_id: briefItemId,
+      angle,
+      updated_by: session.userId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'weekly_digest_id,brief_item_id' },
+  );
+  if (error) throw new Error(error.message);
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
 async function saveArtifact(
   formData: FormData,
   artifact: {

@@ -19,6 +19,7 @@ export type WeeklySocialPostAdminRow = Row<'social_posts'>;
 export type WeeklySocialPostReviewAdminRow = Row<'social_post_reviews'>;
 export type WeeklyLocaleMapAdminRow = Row<'weekly_locale_map'>;
 export type WeeklyEngagementEventAdminRow = Row<'weekly_digest_engagement_events'>;
+export type WeeklyStoryDirectionAdminRow = Row<'weekly_digest_story_directions'>;
 
 export interface WeeklyDigestWorkspace {
   digest: WeeklyDigestAdminRow;
@@ -34,6 +35,7 @@ export interface WeeklyDigestWorkspace {
   socialPostReviews: WeeklySocialPostReviewAdminRow[];
   localeMap: WeeklyLocaleMapAdminRow[];
   engagementEvents: WeeklyEngagementEventAdminRow[];
+  storyDirections: WeeklyStoryDirectionAdminRow[];
 }
 
 function assertQuery<T>(
@@ -132,6 +134,7 @@ export const getWeeklyDigestWorkspace = cache(
       packageResult,
       localeMapResult,
       engagementResult,
+      storyDirectionsResult,
     ] = await Promise.all([
       db
         .from('weekly_digest_revisions')
@@ -172,11 +175,19 @@ export const getWeeklyDigestWorkspace = cache(
         .eq('weekly_digest_id', digest.id)
         .order('occurred_at', { ascending: false })
         .limit(500),
+      db
+        .from('weekly_digest_story_directions')
+        .select('*')
+        .eq('weekly_digest_id', digest.id),
     ]);
 
     const revisions = assertQuery('revisions', revisionsResult);
     const generationJobs = assertQuery('generation jobs', jobsResult);
     const releaseEvents = assertQuery('release events', eventsResult);
+    // Tolerate this table not existing yet (migration not deployed) rather
+    // than 500ing the whole workspace over an additive, optional feature --
+    // "no angles saved" degrades identically to "table not migrated yet."
+    const storyDirections = storyDirectionsResult.error ? [] : (storyDirectionsResult.data ?? []);
     const localeMap = assertQuery('weekly locale map', localeMapResult);
     const engagementEvents = assertQuery('weekly engagement events', engagementResult);
     if (packageResult.error) {
@@ -262,6 +273,7 @@ export const getWeeklyDigestWorkspace = cache(
       socialPostReviews: assertQuery('social post reviews', socialReviewsResult),
       localeMap,
       engagementEvents,
+      storyDirections,
     };
   },
 );

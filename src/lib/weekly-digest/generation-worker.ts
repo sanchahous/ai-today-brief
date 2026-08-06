@@ -506,9 +506,29 @@ function researchPacksFromContext(context: Awaited<ReturnType<typeof loadGenerat
   });
 }
 
-function masterInputStories(
+/**
+ * Owner-set editorial angle per story (PR4, editorial quality overhaul),
+ * keyed by brief_item_id so it survives the revision churn a Save mints
+ * (#177/#187 fragility history). Missing/errored lookups degrade to "no
+ * angle" rather than failing the job -- an angle is a quality booster the
+ * writer treats as binding *when present*, never a hard requirement.
+ */
+async function loadStoryDirections(weeklyDigestId: string): Promise<Map<string, string>> {
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('weekly_digest_story_directions')
+    .select('brief_item_id,angle')
+    .eq('weekly_digest_id', weeklyDigestId);
+  if (error || !data) return new Map();
+  return new Map(
+    data.flatMap((row) => (row.brief_item_id && row.angle ? [[row.brief_item_id, row.angle]] : [])),
+  );
+}
+
+export function masterInputStories(
   context: Awaited<ReturnType<typeof loadGenerationContext>>,
   approvedResearch: ReturnType<typeof researchPacksFromContext>,
+  directionsByBriefItemId: Map<string, string> = new Map(),
 ) {
   const researchByItem = new Map(
     approvedResearch.map(({ artifact, pack }) => [artifact.revision_item_id!, pack]),
@@ -517,6 +537,7 @@ function masterInputStories(
     const research = researchByItem.get(item.id);
     const sources = jsonSources(item.sources);
     const claims = research?.claims ?? approvedFactsForItem(item);
+    const angle = item.brief_item_id ? directionsByBriefItemId.get(item.brief_item_id) : undefined;
     return {
       revisionItemId: item.id,
       rank: item.rank,
@@ -537,6 +558,7 @@ function masterInputStories(
             : sources.map((source) => source.url),
       })),
       ...(research ? { research } : {}),
+      ...(angle ? { angle } : {}),
     };
   });
 }
@@ -860,7 +882,8 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
   ) {
     throw new Error('Approve all three current Top 3 research packs before master generation.');
   }
-  const sourceStories = masterInputStories(context, approvedResearch);
+  const directionsByBriefItemId = await loadStoryDirections(job.weekly_digest_id);
+  const sourceStories = masterInputStories(context, approvedResearch, directionsByBriefItemId);
   const researchPacks = approvedResearch.map(({ pack }) => pack);
   const retryGuidance = await priorMasterRetryGuidance(job.revision_id);
   const englishCheckpointHash = computeEnglishCheckpointHash(researchPacks, retryGuidance);
