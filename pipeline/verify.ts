@@ -17,7 +17,6 @@ import type { PipelineDb } from './db';
 import type { EnrichedSource } from './enrich';
 import { logEvent } from './log';
 import { generateJsonWithFallback } from './llm-json';
-import type { ProviderRole } from './providers/registry';
 import type { PoolItem } from './select';
 import {
   GEMINI_SCHEMA,
@@ -138,25 +137,21 @@ export async function verifyClaims(
   apiKey: string,
   geminiMaxAttempts: number,
   openRouterApiKey?: string,
-  primaryProvider: 'gemini' | 'openrouter' = 'gemini',
-  role?: ProviderRole,
   db?: PipelineDb,
 ): Promise<VerifyOutcome> {
   const pairs = verifiableItems(items, enrichment);
   if (pairs.length === 0) return { checked: 0, flagged: 0, usage: null, model: null };
 
   const prompt = buildVerifyPrompt(pairs);
-  const { text, model, usage } = await generateJsonWithFallback(
-    'verify',
+  const { text, model, usage } = await generateJsonWithFallback({
+    role: 'daily.verify',
     prompt,
-    apiKey,
+    schema: VERIFY_SCHEMA,
+    geminiApiKey: apiKey,
     geminiMaxAttempts,
-    VERIFY_SCHEMA,
     openRouterApiKey,
-    primaryProvider,
-    role,
     db,
-  );
+  });
 
   const byRef = parseVerifyResults(text, new Set(pairs.map((p) => p.item.ref)));
   let flagged = 0;
@@ -240,8 +235,6 @@ export async function reviseFlaggedItems(
   apiKey: string,
   geminiMaxAttempts: number,
   openRouterApiKey?: string,
-  primaryProvider: 'gemini' | 'openrouter' = 'gemini',
-  role?: ProviderRole,
   db?: PipelineDb,
 ): Promise<{ revised: DraftItem[]; usage: LlmUsage | null }> {
   const pairs = verifiableItems(flagged, enrichment).filter(
@@ -250,17 +243,15 @@ export async function reviseFlaggedItems(
   if (pairs.length === 0) return { revised: [], usage: null };
 
   const prompt = buildRevisePrompt(pairs);
-  const { text, usage } = await generateJsonWithFallback(
-    'verify',
+  const { text, usage } = await generateJsonWithFallback({
+    role: 'daily.verify',
     prompt,
-    apiKey,
+    schema: GEMINI_SCHEMA,
+    geminiApiKey: apiKey,
     geminiMaxAttempts,
-    GEMINI_SCHEMA,
     openRouterApiKey,
-    primaryProvider,
-    role,
     db,
-  );
+  });
 
   const flaggedRefs = new Set(pairs.map((p) => p.item.ref));
   const revised = parseBrief(text, candidates).items.filter((i) => flaggedRefs.has(i.ref));

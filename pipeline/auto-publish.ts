@@ -29,8 +29,9 @@ import { indexNowConfigured, submitToIndexNow } from '@/lib/indexnow';
 import type { PipelineConfig } from './config';
 import { logPipelineRun, type PipelineDb } from './db';
 import { getPipelineDateKyiv } from './schedule';
-import { generateJsonWithFallback } from './llm-json';
+import { createRegistryLoader, generateJsonWithFallback } from './llm-json';
 import { logError, logEvent } from './log';
+import type { ProviderRegistry } from './providers/registry';
 import { editMessageText, sendMessage } from './telegram';
 import type { GeminiResponseSchema } from './summarize';
 
@@ -647,6 +648,7 @@ async function processDraft(
   draft: DraftRow,
   dryRun: boolean,
   chat: { token: string; chatId: string } | undefined,
+  loadRegistry: () => Promise<ProviderRegistry>,
 ): Promise<DraftOutcome> {
   const pending = await loadPendingItems(db, draft.id);
   const existingApproved = await countApproved(db, draft.id);
@@ -692,15 +694,15 @@ async function processDraft(
           why_matters_en: item.why_matters_en,
         }));
         const prompt = buildJudgePrompt(profile, candidates);
-        const { text, model } = await generateJsonWithFallback(
-          'auto_publish',
+        const { text, model } = await generateJsonWithFallback({
+          role: 'daily.auto_publish_judge',
           prompt,
-          config.geminiApiKey,
-          2,
-          JUDGE_SCHEMA,
-          config.openRouterApiKey,
-          config.primaryTextProvider,
-        );
+          schema: JUDGE_SCHEMA,
+          geminiApiKey: config.geminiApiKey,
+          geminiMaxAttempts: 2,
+          openRouterApiKey: config.openRouterApiKey,
+          registry: await loadRegistry(),
+        });
         const rawVerdicts = parseJudgeVerdicts(text, new Set(candidates.map((c) => c.ref)));
         const calibrated = calibrateVerdicts(rawVerdicts, profile.approveRate);
         const calibratedByRef = new Map(calibrated.map((c) => [c.ref, c]));
@@ -852,10 +854,19 @@ export async function runAutoPublish(
       ? { token: config.telegramBotToken, chatId: config.telegramReviewChatId }
       : undefined;
 
+  // One registry for the whole sweep: a week's worth of drafts would otherwise
+  // re-fetch the live OpenRouter catalog and re-read the three llm_* tables per
+  // draft. Lazy, so a sweep where every draft is already fully reviewed (no
+  // judge call at all) never touches the network for it.
+  const loadRegistry = createRegistryLoader(
+    { GEMINI_API_KEY: config.geminiApiKey, OPEN_ROUTER_API_KEY: config.openRouterApiKey },
+    db,
+  );
+
   const outcomes: DraftOutcome[] = [];
   for (const draft of windowDrafts) {
     try {
-      outcomes.push(await processDraft(db, config, draft, options.dryRun, chat));
+      outcomes.push(await processDraft(db, config, draft, options.dryRun, chat, loadRegistry));
     } catch (e) {
       logError('auto_publish', 'Draft processing failed — continuing with the rest', e, {
         brief_id: draft.id,

@@ -4,7 +4,7 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-06
+Last updated: 2026-08-07
 
 **Формат запису:**
 
@@ -18,6 +18,38 @@ Last updated: 2026-08-06
 ```
 
 ---
+
+## 2026-08-07 — LLM provider registry Phase 6b: auto-publish judge → реєстр, daily-смуга закрита
+
+**Джерело:** «підтягни main гілку. Продовжи реалізацію по плану починаючи там де закінчив від 6b»
+(власник; гілка `feat/llm-registry-phase-6b` від `main` після мержу #190/#191)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — секція «Фаза 6b» у «Статус», нова секція «Що лишається»
+- `wiki/now.md` — нова бульєта про гілку 6b; бульєта #190 позначена як змержена
+
+**Код:**
+- `pipeline/auto-publish.ts` — judge-виклик іде роллю `daily.auto_publish_judge` через реєстр із
+  `db` (БД-ланцюжок з `/admin/providers` перекриває дефолт). Новий `createRegistryLoader` резолвить
+  реєстр один раз на весь 7-денний sweep, лінивo й із мемоізацією відмови — без цього кожна
+  чернетка окремо била живий каталог OpenRouter + три `llm_*`-читання (та сама проблема, що
+  фіксили батчингом у Фазі 2).
+- `pipeline/llm-json.ts` — став registry-only: мертву `primaryProvider`-гілку видалено (після 6b
+  на ній не лишилось жодного виклику), сигнатуру з 9 позиційних параметрів перероблено на
+  `JsonRoleCallOptions`, `role` обов'язковий. `withJsonSchema` → `withGeminiCallConfig`.
+- `pipeline/verify.ts`/`pipeline/run-daily.ts` — параметри `primaryProvider`/`role` прибрано
+  (роль там може бути лише `daily.verify`). `PipelineConfig.primaryTextProvider` лишається — він
+  і далі керує `summarize.ts` (циклічна залежність, Фаза 6a).
+- **Полагоджено тиху регресію Фази 6a:** `geminiMaxAttempts` (розширений бюджет спроб на
+  останньому слоті доби) губився при переході на реєстр; тепер їде на gemini-запис ланцюга
+  разом зі схемою.
+- Поведінкова зміна даних: `reviewed_by`/`item_reviews.reviewer` тепер `auto:{provider}:{model}`
+  замість `auto:{model}` на Gemini-плечі — обидва споживачі дивляться лише на префікс `auto:`.
+
+**Тести:** 930/930, `tsc`/`eslint` чисті (`llm-json.test.ts` +4 / −1).
+
+**Нотатка:** умову плану «6b лише після ≥1 доби стабільної роботи 6a» не витримано — 6a у `main`
+менш ніж добу; живого прогону `auto-publish --dry-run` не робив (рішення власника).
 
 ## 2026-08-07 — Post-merge tech review PR #189/#190: 3 registry bugs + admin UX/safety fixes
 

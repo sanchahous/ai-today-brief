@@ -472,8 +472,6 @@ async function main(): Promise<void> {
         config.geminiApiKey,
         geminiAttempts,
         openRouterKey,
-        config.primaryTextProvider,
-        'daily.verify',
         db ?? undefined,
       );
 
@@ -488,8 +486,6 @@ async function main(): Promise<void> {
           config.geminiApiKey,
           geminiAttempts,
           openRouterKey,
-          config.primaryTextProvider,
-          'daily.verify',
           db ?? undefined,
         );
         if (revised.length > 0) {
@@ -499,8 +495,6 @@ async function main(): Promise<void> {
             config.geminiApiKey,
             geminiAttempts,
             openRouterKey,
-            config.primaryTextProvider,
-            'daily.verify',
             db ?? undefined,
           );
         }

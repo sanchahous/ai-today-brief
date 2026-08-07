@@ -347,8 +347,53 @@ tested-by-use в інших файлах), раніше — 0.
   на мокнутому реєстрі); `summarize.test.ts` +3 тести для `llmUsageFromProviderUsage`. 927/927
   тестів у проєкті, `tsc`/`eslint`/build чисті.
 
-**Фаза 6b (auto-publish.ts, найвищі ставки) і Фаза 7 (опційно Codex CLI) — не почато.**
+**Фаза 6b — daily `auto-publish.ts` (суддя) мігровано (2026-08-07). Daily-смуга закрита
+повністю.**
+
+- `processDraft`'s judge-виклик тепер іде через `generateJsonWithFallback` з роллю
+  `daily.auto_publish_judge` (роль існувала в `PROVIDER_ROLES` з Фази 1) і `db` — тобто
+  БД-ланцюжок з `/admin/providers` перекриває дефолт і для судді теж.
+- **`pipeline/llm-json.ts` став registry-only.** Після 6b жоден виклик не лишився на старому
+  шляху, тож мертву `primaryProvider`-гілку (Gemini→OpenRouter вручну) видалено разом із
+  параметром — рівно те, що обіцяв її власний коментар («deleted once that migration reaches
+  the daily lane»). Сигнатура з 9 позиційних параметрів перероблена на об'єкт опцій
+  (`JsonRoleCallOptions`), `role` тепер обов'язковий. `verify.ts`'s `verifyClaims`/
+  `reviseFlaggedItems` втратили параметри `primaryProvider`/`role` (роль там може бути лише
+  `daily.verify` — зашито в самі функції), `run-daily.ts` спрощено в трьох викликах.
+  `PipelineConfig.primaryTextProvider`/`DAILY_LLM_PRIMARY_PROVIDER` **лишаються** — вони й далі
+  керують `summarize.ts`, єдиним daily-викликом, який фізично не може імпортувати реєстр
+  (циклічна залежність, Фаза 6a).
+- **Батчинг реєстру (та сама проблема, що у Фазі 2).** `auto-publish` за один прогін обходить
+  усі чернетки за 7-денне вікно; кожен `loadProviderRegistry` — живий HTTP до каталогу
+  OpenRouter плюс три читання `llm_*`-таблиць, без кешу. Новий `createRegistryLoader` резолвить
+  реєстр **один раз на весь sweep** і мемоїзує в тому числі *відмову* (збій каталогу/Supabase
+  оплачується раз, а не на кожну чернетку). Лінивий — прогін, де всі чернетки вже повністю
+  відрев'ю'єні (суддя не потрібен), взагалі не чіпає мережу заради реєстру.
+- **Полагоджено регресію Фази 6a:** `geminiMaxAttempts` (run-daily розширює бюджет спроб до 3
+  на останньому слоті доби — `geminiMaxAttemptsForSlot`) при переході на реєстр тихо губився,
+  фіксуючи всі виклики на дефолті `gemini-provider.ts` (2). `withJsonSchema` перейменовано на
+  `withGeminiCallConfig` і тепер несе на gemini-запис ланцюга і схему, і бюджет спроб.
+- **Свідома зміна даних:** `reviewed_by`/`item_reviews.reviewer` тепер завжди
+  `auto:{provider}:{model}` (напр. `auto:openrouter:deepseek/deepseek-v4-pro`); раніше
+  Gemini-плече давало `auto:{model}` без імені провайдера. Обидва споживачі цього поля
+  (`excludeAutoReviewer`, `loadReviewHistory`'s `not.like 'auto:%'`) дивляться лише на префікс
+  `auto:` — не ламаються; історія стає точнішою (видно провайдера, не лише модель).
+- **Fail-closed збережено без змін:** `RegistryExhaustedError` при повному провалі ланцюга ловить
+  той самий `catch`, що й раніше — `judgeUnavailable = true`, pending-айтеми лишаються
+  недоторканими (RLS ховає їх від публіки), раніше схвалене вручну публікується.
+- Тести: `llm-json.test.ts` переписано під нову сигнатуру (+4: бюджет спроб на записі ланцюга,
+  реюз готового реєстру, мемоізація успіху й відмови в `createRegistryLoader`; −1 тест старого
+  `primaryProvider`-шляху, який більше не існує). 930/930 тестів, `tsc`/`eslint` чисті.
+- **Умову плану «6b лише після ≥1 доби стабільної роботи 6a» не витримано** — 6a змержено в
+  `main` 2026-08-07 (PR #190), 6b написано того ж дня на прохання власника. Отже реального
+  прод-циклу 6a у ролі `daily.verify` ще не спостережено. Живого прогону `auto-publish` теж
+  **не робив** — на відміну від `run-daily --dry-run`, цей скрипт у не-dry режимі реально
+  публікує чернетки; `--dry-run` пропускає всі записи, але суддю викликає по-справжньому, тож
+  це найдешевша реальна перевірка перед першим нічним прогоном (див. «Що лишається»).
+
+**Фаза 7 (опційно Codex CLI) — не почато.**
 (source: `pipeline/providers/*.ts`, `pipeline/llm-json.ts`, `pipeline/verify.ts`,
+`pipeline/auto-publish.ts`,
 `pipeline/summarize.ts`, `pipeline/run-daily.ts`, `pipeline/custom-news.ts`,
 `pipeline/card-image.ts`, `pipeline/custom-research.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
 `src/lib/weekly-digest/generation-worker.ts`, `src/lib/social/llm-router.ts`,
@@ -392,6 +437,17 @@ tested-by-use в інших файлах), раніше — 0.
 `claude/tech-review-pr-189-190-859ena`.
 (source: live review + fixes 2026-08-07, `pipeline/providers/registry.test.ts`,
 `supabase/migrations/20260807120000_llm_provider_registry_fixes.sql`)
+
+## Що лишається
+
+1. Живий `npx tsx --env-file=.env.local pipeline/scripts/auto-publish.ts --dry-run` — суддя
+   викликається по-справжньому, жодного запису в БД/Telegram. Не запускав: рішення власника.
+2. Застосувати міграції реєстру (`20260806160000_llm_provider_registry.sql`,
+   `20260807120000_llm_provider_registry_fixes.sql`) до прод-БД — доти БД-ланцюжки з
+   `/admin/providers` фізично не діють у жодній фазі.
+3. Фаза 7 (Codex CLI) — лише якщо власник справді хоче його в ротації.
+
+(source: план `06-08-2026-12-32-…md` §«Порядок впровадження», статус фаз вище)
 
 ## Related pages
 
