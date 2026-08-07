@@ -3,8 +3,9 @@
 Summary: Генерація карток/OG і weekly story-ілюстрацій: FLUX.2, fallback, no-text policy, cost ledger.
 Sources: `pipeline/card-image.ts`, `.env.example`, PR #169–#175, editorial quality overhaul PR5
 (гілка `feat/weekly-editorial-voice`, 2026-08-06), LLM provider registry Phase 2
-(гілка `feat/llm-provider-registry`, 2026-08-06), none (analysis earlier draft)
-Last updated: 2026-08-06
+(гілка `feat/llm-provider-registry`, 2026-08-06), post-merge review PR #191 (2026-08-07),
+none (analysis earlier draft)
+Last updated: 2026-08-07
 
 ---
 
@@ -22,6 +23,10 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    hardcoded Gemini-SDK-then-OpenRouter ladder — Gemini is still the default first choice, but the
    owner can now add another provider (e.g. a promo like NVIDIA NIM) to either role's chain via
    `/admin/providers` without a deploy. See [llm-providers](../pipeline/llm-providers.md).
+   When the whole chain fails, the ladder falls back to a keyword scene as before, but since the
+   post-merge review of PR #191 (2026-08-07) it also emits a `warn` log with the role and the
+   error — the silent fallback gave no signal that the art director had stopped running at all.
+   (source: `pipeline/card-image.ts`'s `runArtDirectorLadder`, PR #191)
 2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
    separate house style since PR5** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
    `buildWeeklyPrompt`, policy id **`weekly-reportage-v1`**): one documentary-reportage frame

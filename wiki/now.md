@@ -5,7 +5,8 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Sources: `git log` / `gh pr list` (live check 2026-08-04), Supabase preflight live check 2026-08-04,
 `wiki/ops/owner-checklist.md`, `wiki/audits/2026-07-01-seo-organic.md`, `.env.example`,
 owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry), post-merge tech
-review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`)
+review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish --dry-run` check
+2026-08-07
 Last updated: 2026-08-07
 
 ---
@@ -22,8 +23,25 @@ Last updated: 2026-08-07
   [pipeline/llm-providers § Пост-мерж ревʼю](pipeline/llm-providers.md#статус). Нова міграція
   `20260807120000_llm_provider_registry_fixes.sql` (author-only, не застосована до прод-БД).
   927/927 тестів, `tsc`/`eslint`/`wiki:check`/build зелені.
+- **Гілка `feat/llm-registry-phase-6b`** (відгалужена 2026-08-07 від `main` після мержу
+  #190/#191) — **Фаза 6b виконана: daily `auto-publish.ts` (суддя) мігровано на реєстр, daily-смуга
+  закрита повністю.** Judge-виклик іде роллю `daily.auto_publish_judge` з `db`; `pipeline/llm-json.ts`
+  став registry-only (мертву `primaryProvider`-гілку видалено, сигнатуру перероблено на об'єкт
+  опцій, `verify.ts`/`run-daily.ts` спрощено відповідно). Новий `createRegistryLoader` резолвить
+  реєстр один раз на весь 7-денний sweep (без нього кожна чернетка окремо била живий каталог
+  OpenRouter — та сама проблема, що фіксили у Фазі 2). Заодно полагоджено тиху регресію Фази 6a:
+  `geminiMaxAttempts` губився при переході на реєстр. Fail-closed поведінка судді не змінилась.
+  930/930 тестів, `tsc`/`eslint` чисті. **Умову плану «6b лише після ≥1 доби роботи 6a» не
+  витримано** — 6a у `main` менш ніж добу. **Живий `auto-publish --dry-run` виконано 2026-08-07**
+  (не запис у БД/Telegram, суддя викликається по-справжньому): дефолтне 7-денне вікно зараз
+  порожнє (`window_drafts: 0`) — прод має 9 старих `draft`-брифів, усі свідомо поза вікном;
+  `--window-days 90` підняв їх у вікно й отримав 3 реальні успішні виклики через
+  `daily.auto_publish_judge` → реєстр → OpenRouter (`deepseek/deepseek-v4-pro`), БД без змін.
+  Деталі й що лишається — [pipeline/llm-providers](pipeline/llm-providers.md#що-лишається).
+  **Наступна — Фаза 7 (опційно Codex CLI).**
 - **Гілка `feat/llm-provider-registry`** (PR [#190](https://github.com/sanchahous/ai-today-brief/pull/190),
-  відгалужена 2026-08-06 від tip `feat/weekly-editorial-voice`) — уніфікований реєстр
+  **змержено в `main` 2026-08-07**, `9d32347`; відгалужена 2026-08-06 від tip
+  `feat/weekly-editorial-voice`) — уніфікований реєстр
   LLM-провайдерів для всього проєкту (daily+weekly+social), план у
   [pipeline/llm-providers](pipeline/llm-providers.md). **Фаза 0 (прибрати Gemini), Фаза 1
   (ядро реєстру), Фаза 1b (БД + admin `/admin/providers`), Фаза 2 (card-image.ts), Фаза 3
@@ -40,8 +58,7 @@ Last updated: 2026-08-07
   ~36с), валідний 3-айтемний бриф. Сильніша верифікація, ніж Фази 4/5 (там дефолтний шлях лише
   успадковував Фазу 1; тут Фаза 6a's власний дефолтний шлях протестовано наживо). 927 тестів,
   `tsc`/`eslint`/build зелені. Власник дав добро йти по всіх фазах послідовно з комітом на
-  кожну. **Фаза 6b (auto-publish.ts, найвищі ставки) і Фаза 7 (опційно Codex CLI) — в роботі,
-  наступна: Фаза 6b.** `feat/weekly-editorial-voice` (PR #189) змержено в `main` 2026-08-07
+  кожну. `feat/weekly-editorial-voice` (PR #189) змержено в `main` 2026-08-07
   (squash) — PR #190 автоматично перенацілено на `main`; злиття `main` в цю гілку і резолюція
   конфліктів (card-image.ts, editorial-llm.ts + тести, кілька wiki-сторінок) зроблені в цьому ж
   коміті.

@@ -34,6 +34,12 @@ Responses, wiki pages and team-facing artifacts — **Ukrainian**. Keep English 
 marketing terms verbatim (`CLAUDE.md`, `skill`, `MCP`, `prompt`, `pipeline`, `rank`, `AEO`,
 `CTR`, `ISR`, `RLS`). Never translate brand or product names.
 
+This holds for **every** chat response to the operator, no exceptions — including mid-session
+after long English-language technical work (tool output, logs, code, commit messages, PR
+descriptions stay English; the prose talking to the operator does not). Drifting into English
+after an English-heavy stretch is the actual failure mode seen in practice — watch for it
+specifically, don't treat "the last few turns were English" as license to continue.
+
 Agent-instruction files themselves (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules/*.mdc`) stay in
 **English** — they are read by several tools and must match the existing repo convention.
 
@@ -88,6 +94,9 @@ Keep these paths exactly — the index, the linter and downstream tooling depend
 8. Page names — lowercase with hyphens (`weekly-digest.md`, `trend-engine.md`).
 9. Plain, clear language. No bureaucratic filler.
 10. If unsure where a source or page belongs — ask.
+11. **Talk to the operator in Ukrainian, every response, no exceptions** — see
+    [Language](#language). This has been the single most-repeated correction from the owner;
+    treat any drift into English mid-session as a bug to catch, not a one-off slip.
 
 ---
 
