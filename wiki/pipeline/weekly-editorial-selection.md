@@ -2,7 +2,8 @@
 
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
 Sources: none (analysis)
-Last updated: 2026-08-06
+Last updated: 2026-08-07 (reviewed alongside PDF page-cap fix — no change here; selection logic
+is unaffected by how the PDF renders rank>3 items)
 
 
 `weekly-editorial-v2` replaces the old `impact → recency → daily rank` sort used

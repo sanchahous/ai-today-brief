@@ -19,6 +19,42 @@ Last updated: 2026-08-07
 
 ---
 
+## 2026-08-07 — Weekly 08.08 readiness check: PDF page-cap fix + 2 missing migrations applied
+
+**Джерело:** «завтра я буду створювати новий weekly. Чи все готово... чи не має підводних
+каменів» (власник)
+
+**Змінено:**
+- `src/lib/weekly-digest/pdf.ts` — новий `buildRadarSection()`; повний ілюстрований розворот
+  (image+body+4 панелі) лишається лише для `rank<=3`, решта — компактний блок title+summary+source
+- `src/lib/weekly-digest/pdf.test.ts` — новий тест на реалістичній 7-історійній фікстурі
+  (довжини body зняті з реального прод-випуску), перевіряє 10-16 сторінок
+- `wiki/pipeline/weekly-digest.md` — новий розділ «PDF page-count contract violation — фікс»,
+  корекція попереднього невірного запису («живого бага немає»)
+- `wiki/pipeline/editorial-voice.md` — PR3/PR5 позначені змерженими (були «Не змержено», стало
+  неправдою після мержу PR #189 2026-08-07)
+- `wiki/now.md` — «Активна робота» перероблено під поточний стан (усі 7 PR у main, знайдені й
+  виправлені підводні камені)
+
+**Перевірка:**
+- Supabase live read (`mdiqfatpqczwqghwttpm`): `weekly_digest_generation_jobs` — 6/6 останніх
+  `pdf`-джобів `failed` з `last_error: "Content Studio PDF is 20-21 pages; the approved A4
+  contract is 10–16 pages"` (03 і 05.08, 5/5 спроб кожен); job_type CHECK-констрейнт не мав
+  `video_script`; `weekly_digest_story_directions` не існувала
+- Застосовано 2 міграції (`weekly_digest_story_directions`, `weekly_video_script_job`) через
+  Supabase MCP `apply_migration`, підтверджено читанням констрейнту й `to_regclass` після
+- `npx vitest run src/lib/weekly-digest/pdf.test.ts` — новий тест підтвердив 13 сторінок на
+  реалістичній фікстурі (тимчасовий `console.log` для вимірювання, прибраний з коміту)
+- `npx vitest run` повний — 941/941; `npx tsc --noEmit`, `npx eslint`, `npm run pr:check` — усі
+  зелені
+- Git: fluid-cpu fix (#184) підтверджено в `main`; PR #193 (Codex CLI Phase 7) виявився вже
+  змерженим під час підготовки цієї гілки
+
+**Нотатка:** Vercel MCP цієї сесії підключений до проєкту `portfolio` (sashakuzmenko.com), не
+`ai-today-brief` — не вдалось звірити живе значення `WEEKLY_CONTENT_STUDIO_V2` напряму;
+непряме свідчення (успішні джоби в БД ще 05.08) каже, що прапорець не `off`, всупереч
+дефолту `.env.example`.
+
 ## 2026-08-07 — LLM provider registry Phase 7: Codex CLI adapter
 
 **Джерело:** «продовжуємо фазу 7» (власник)

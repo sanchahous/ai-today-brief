@@ -124,19 +124,30 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Активна робота
 
-1. **Редакційний перегляд якості weekly-дайджесту (7 PR, гілка `feat/weekly-editorial-voice`).**
-   Власник заблокував реліз до кардинального покращення якості контенту — див.
-   [editorial-voice](pipeline/editorial-voice.md) і план у `wiki/log.md` 2026-08-06. PR1
-   (voice-модуль + промпти) готовий локально, тести/typecheck зелені, ще не змержено.
-   **Це перекриває пункт нижче за пріоритетом:** trial release `ai-weekly-2026-07-27` у
-   поточному вигляді (старий регістр) свідомо НЕ проштовхується, доки PR1–3 не landed і
-   не пройдено shadow-верифікацію.
-2. **Редакція `ai-weekly-2026-07-27`.** Packs v3 уже ready — **Approve 3/3** на Research
+1. ~~Редакційний перегляд якості weekly-дайджесту (7 PR)~~ — **усі 7 PR у `main` з 2026-08-07**
+   (PR #189). Деталі — [editorial-voice](pipeline/editorial-voice.md). **Жодного живого прогону
+   повного пайплайну через реальний job-worker після мержу ще не було** (останній прогін у
+   БД — 2026-08-05, до мержу) — завтрашній (08.08) новий weekly буде першим.
+2. **Готовність до weekly 08.08 — перевірено 2026-08-07, знайдено й виправлено 3 речі:**
+   - PDF-генерація стабільно валилась (5/5 спроб, 2 останні реальні edition, 20-21 стор. проти
+     контракту 10-16) — `buildStory()` рендерив повний розворот для кожної історії незалежно від
+     рангу. Фікс — гілка `fix/weekly-pdf-page-cap`: повний розворот лише для `rank<=3`, решта —
+     компактна radar-секція. 13 сторінок на реалістичній фікстурі. Деталі —
+     [weekly-digest § PDF page-count contract violation](pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07).
+   - Дві міграції PR4/PR6 (`weekly_digest_story_directions`, `weekly_video_script_job`) не були
+     застосовані до прод-БД — **застосовано 2026-08-07** (Supabase MCP). Без цього кнопка
+     «Generate script» на Video-табі падала б з помилкою CHECK-констрейнту, а фіча
+     «Кут подачі» мовчки не працювала.
+   - Два старі випуски досі `in_review`, не опубліковані: `ai-weekly-2026-07-26`,
+     `ai-weekly-2026-07-27` — уточнити з власником, чи «новий weekly» означає третій паралельний.
+3. **Редакція `ai-weekly-2026-07-27`.** Packs v3 уже ready — **Approve 3/3** на Research
    (succeeded ≠ approved), далі `editorial_master` → Master quality. Гайд:
-   [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md). Призупинено до п.1.
-3. **Weekly Content Studio v2 — розкатка.** `WEEKLY_CONTENT_STUDIO_V2=off` у `.env.example`;
-   шлях `off → shadow (три історичні) → production` ще не пройдений; тепер природно
-   збігається з shadow-верифікацією п.1.
+   [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
+4. **Weekly Content Studio v2 — розкатка.** `.env.example` документує дефолт `off`, але жива
+   активність у прод-БД (джоби `succeeded` ще 05.08) доводить, що в реальному Vercel-середовищі
+   прапорець вже `shadow`/`production` — не звірено напряму (Vercel MCP цієї сесії підключений до
+   іншого проєкту, `portfolio`/sashakuzmenko.com, не ai-today-brief) — власнику варто глянути
+   дашборд самому.
    (source: `.env.example`)
 4. **Опційно:** окремий `pdfkit` 0.19 після `npm run weekly:pdf:sample` / PDF smoke.
 

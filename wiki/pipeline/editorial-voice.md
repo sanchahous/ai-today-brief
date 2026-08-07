@@ -4,8 +4,8 @@ Summary: чому старий weekly-контент читався «машин
 (`editorial-voice.ts`), і як власник курує голос редакції з часом.
 Sources: `src/lib/weekly-digest/editorial-voice.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
 `src/lib/weekly-digest/content-studio.ts`, owner session 2026-08-06 (feedback + опитування),
-план `feat/weekly-editorial-voice`
-Last updated: 2026-08-06
+план `feat/weekly-editorial-voice`, PR #189 (змержено 2026-08-07)
+Last updated: 2026-08-07
 
 ---
 
@@ -83,8 +83,9 @@ regex-списки заборонених фраз потребують vitest-�
 
 **Вирішено PR3 (2026-08-06):** рубрика критика — виміри `engagement`/`voice` з якорями
 (90/75/55) замість `hook`/`structure`; line-edit pass замість повної регенерації на revisable
-провалах; ретраї більше не накопичуються назавжди (лише останній звіт). **Не змержено** — чекає
-рішення власника про critic-only shadow-прогін (реальний виклик OpenRouter, ~$0.30).
+провалах; ретраї більше не накопичуються назавжди (лише останній звіт). **Змержено в `main`
+2026-08-07** (PR #189) — жодного живого прогону в проді через реальний job-пайплайн ще не було
+(останній прогін у БД — 2026-08-05, до мержу).
 
 **Вирішено PR4 (2026-08-06):** кут подачі (`weekly_digest_story_directions`, keyed by
 `brief_item_id`) — власник задає обов'язковий напрям для кожної з трьох головних історій на
@@ -95,9 +96,16 @@ Research tab; `englishPrompt` трактує його як binding editorial dir
 **Вирішено PR5 (2026-08-06):** репортажні ілюстрації (`weeklyReportageSceneBrief` +
 `buildWeeklyPrompt` у `card-image.ts`, повністю окремо від daily-шляху) + вибір з 3 варіантів
 на Visuals tab + редагована сцена. Заодно виправлено мертвий `negative_prompt` на klein (тепер
-вшитий у позитивний промпт). **Не змержено** — потребує dry-run 9 klein-рендерів, власник
-оцінює стиль (реальні виклики Cloudflare, не запущено самостійно). Деталі —
+вшитий у позитивний промпт). **Змержено в `main` 2026-08-07** (PR #189) — dry-run 9 klein-рендерів
+пройдено раніше (2026-08-06, стиль оцінено власником позитивно), але через реальний job-пайплайн
+(не ручний скрипт) ще не запускалось. Деталі —
 [weekly-digest](weekly-digest.md#editorial-voice-overhaul-2026-08-06).
+
+**Стан на 2026-08-07:** усі 7 PR цього перегляду в `main`. Перед завтрашнім (08.08) новим
+weekly-випуском знайдено й виправлено: PDF page-cap regression (13 сторінок замість 20-21, гілка
+`fix/weekly-pdf-page-cap`), дві незастосовані міграції (`weekly_video_script_job`,
+`weekly_digest_story_directions` — обидві застосовано до прод-БД). Деталі —
+[weekly-digest § PDF page-count contract violation](weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07).
 
 ## Related pages
 

@@ -5,8 +5,9 @@ Summary: покрокова інструкція для власника/ред�
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/preflight.ts`,
 `claim_weekly_digest_generation_jobs` (editorial_master gate), live fail
 `ai-weekly-2026-07-27` 2026-08-04, [weekly-digest](../pipeline/weekly-digest.md),
-[editorial-voice](../pipeline/editorial-voice.md)
-Last updated: 2026-08-06
+[editorial-voice](../pipeline/editorial-voice.md), `src/lib/weekly-digest/pdf.ts`
+(PDF page-cap fix, 2026-08-07)
+Last updated: 2026-08-07
 
 ---
 
@@ -72,6 +73,7 @@ Release preflight на Overview / Release покаже, що ще червоне
 | Після retry знову `UNSUPPORTED_*` на деталі зі статті | Старий короткий excerpt / вузькі claims | Переконайся що packs **v3** з довгим excerpt; Approve знову |
 | Visuals/Social не з’являються | Master ще не succeeded | Спочатку зелений Research gate |
 | Release blocked на video | Немає Remotion pipeline / captions | Owner override лише для trial (див. preflight) |
+| PDF: сторінки радар-історій (4-7) виглядають скорочено (без картинки/панелей) | Так задумано з 2026-08-07 — повний розворот тепер лише для Top 3 | Нормально, не баг; деталі — [weekly-digest](../pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07) |
 
 ## Що не робити
 
