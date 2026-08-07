@@ -72,9 +72,14 @@ export async function runCustomNews(
   const dryRun = options.dryRun ?? config.dryRun;
   const shouldNotify = options.notify !== false;
 
+  // Built before the research call (cheap -- no I/O) so an owner-configured
+  // custom_research role chain in /admin/providers applies even in dry-run.
+  const db = deps.db ?? createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
+
   const research = await researchCustomStory(options.topic, config.geminiApiKey, {
     url: options.url,
     openRouterApiKey: config.openRouterApiKey,
+    db,
   });
 
   if (dryRun) {
@@ -89,7 +94,6 @@ export async function runCustomNews(
     };
   }
 
-  const db = deps.db ?? createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
   const date = getPipelineDateKyiv();
   const fetched = toFetchedArticle(research);
   const poolItem = toPoolItem(research);

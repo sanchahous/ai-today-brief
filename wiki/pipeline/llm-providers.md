@@ -193,9 +193,37 @@ tested-by-use в інших файлах), раніше — 0.
   порожній ланцюжок → `RegistryExhaustedError` → та сама поведінка фолбеку, що й раніше).
   914/914 тестів, `tsc`/`eslint`/build чисті.
 
-**Фази 3–7 (міграція решти ланцюжків) — не почато.**
-(source: `pipeline/providers/*.ts`, `pipeline/card-image.ts`,
-`supabase/migrations/20260806160000_llm_provider_registry.sql`,
+**Фаза 3 — `custom-research.ts` мігровано (2026-08-06).**
+
+- `researchCustomStory()` — раніше окремий `new GoogleGenerativeAI(apiKey)`-виклик через
+  `createResearchGenerate()` + `generateWithModelQueue`, без жодного реального OpenRouter-фолбеку
+  (поле `openRouterApiKey` в опціях існувало, але ніде не використовувалось — **реальний,
+  раніше неозвучений баг**, знайдений під час читання коду для цієї фази). Тепер —
+  `generateWithRegistry('custom_research', prompt, registry, {validateResponse})`, роль
+  `custom_research` вже існувала в `PROVIDER_ROLES` з Фази 1.
+- **Gemini structured-output задача:** ця роль вимагає власну `RESEARCH_SCHEMA`
+  (Gemini-native `responseSchema`), яку реєстрова `dispatch()`-гілка для `gemini` не приймає як
+  per-call параметр (тільки CLI-провайдери отримують `options.jsonSchema`). Рішення — новий
+  експортований `withResearchSchema(registry)`: обгортка, яка патчить `RESEARCH_SCHEMA` лише на
+  `gemini`-записи чорги ролі `custom_research`, хоч би звідки вони прийшли (env-дефолт чи
+  БД-ланцюжок з `/admin/providers`) — DB/env-резолюція лишається незайманою, тільки-scheme-injected
+  для gemini. OpenRouter/CLI-записи в тому ж ланцюжку не чіпаються — вони й так отримують
+  «Return JSON only» текстову інструкцію з `buildResearchPrompt` і перевіряються через
+  `validateResearchJson` (легкий валідатор — прогін через `parseResearchResult`, що просуває
+  ланцюжок до наступного провайдера при невалідній формі).
+- `pipeline/custom-news.ts`'s `runCustomNews` тепер будує `db` (дешево, без I/O) ДО виклику
+  research (раніше — тільки після dry-run-гілки), щоб БД-ланцюжок для `custom_research` теж
+  спрацьовував навіть у dry-run режимі.
+- Поведінка Gemini-черги не змінилась (стара і нова реалізація однаково використовували
+  `resolveGeminiModelQueue` без env-оверрайду — breadth 5, 2 спроби на модель).
+- Тести: 2 нових для `withResearchSchema` (патчить лише gemini-записи для `custom_research`,
+  не протікає в інші ролі); `researchCustomStory` сам лишається поза юніт-покриттям
+  (`/* v8 ignore start -- Gemini integration */`, як і раніше — жодних нових вимог до
+  live-верифікації цієї фази). 916/916 тестів, `tsc`/`eslint`/build чисті.
+
+**Фази 4–7 (міграція решти ланцюжків) — не почато.**
+(source: `pipeline/providers/*.ts`, `pipeline/card-image.ts`, `pipeline/custom-research.ts`,
+`pipeline/custom-news.ts`, `supabase/migrations/20260806160000_llm_provider_registry.sql`,
 `src/app/admin/(cms)/providers/*.tsx`, `tmp/nim-http-provider-dryrun/run.ts`, live dry-run
 2026-08-06)
 

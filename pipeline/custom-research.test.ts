@@ -6,7 +6,9 @@ import {
   parseResearchResult,
   toFetchedArticle,
   toPoolItem,
+  withResearchSchema,
 } from './custom-research';
+import type { ResolvedProvider } from './providers/registry';
 
 const MULTI_SOURCE_JSON = {
   title: 'NVIDIA ships Nemotron 3 Ultra',
@@ -95,6 +97,36 @@ describe('dedupeSourcesByUrl', () => {
 describe('htmlToExcerpt', () => {
   it('strips tags and collapses whitespace', () => {
     expect(htmlToExcerpt('<p>Hello <b>world</b></p>')).toBe('Hello world');
+  });
+});
+
+describe('withResearchSchema (Phase 3: registry migration)', () => {
+  const httpEntry: ResolvedProvider = {
+    entry: { kind: 'http', id: 'openrouter' },
+    http: { id: 'openrouter', apiKey: 'k', baseUrl: 'https://openrouter.ai/api/v1', modelQueue: ['m'] },
+  };
+  const geminiEntry: ResolvedProvider = {
+    entry: { kind: 'gemini', id: 'gemini' },
+    gemini: { apiKey: 'g-key' },
+  };
+
+  it('attaches RESEARCH_SCHEMA to a gemini entry only for the custom_research role', () => {
+    const registry = { chainForRole: () => [geminiEntry, httpEntry] };
+    const patched = withResearchSchema(registry);
+
+    const chain = patched.chainForRole('custom_research');
+    expect(chain[0]?.gemini?.schema).toBeDefined();
+    expect(chain[0]?.gemini?.apiKey).toBe('g-key'); // unrelated fields untouched
+    expect(chain[1]).toBe(httpEntry); // non-gemini entries pass through unchanged (same reference)
+  });
+
+  it('leaves other roles untouched (no schema leaks into e.g. daily.summarize)', () => {
+    const registry = { chainForRole: () => [geminiEntry] };
+    const patched = withResearchSchema(registry);
+
+    const chain = patched.chainForRole('daily.summarize');
+    expect(chain[0]).toBe(geminiEntry);
+    expect(chain[0]?.gemini?.schema).toBeUndefined();
   });
 });
 

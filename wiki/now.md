@@ -16,16 +16,15 @@ Last updated: 2026-08-06
   план у [pipeline/llm-providers](pipeline/llm-providers.md). Залежить від злиття
   `feat/weekly-editorial-voice` (торкається тих самих файлів: `editorial-llm.ts`, `llm-router.ts`)
   — або потребуватиме rebase, якщо merge-порядок зміниться. **Фаза 0 (прибрати Gemini), Фаза 1
-  (ядро реєстру), Фаза 1b (БД + admin `/admin/providers`) і Фаза 2 (`card-image.ts`'s
-  art-director ladder мігровано) виконані** — живий dry-run проти реального NVIDIA NIM API
-  підтвердив генеричний HTTP-адаптер і по дорозі знайшов/виправив 2 реальні баги; Фаза 1b додала
-  БД-керовані ланцюжки, власник редагує через `/admin/providers` без деплою; Фаза 2 замінила
-  card-image.ts's хардкоджений Gemini-SDK+сирий-OpenRouter-fetch на `generateWithRegistry` для
-  обох ролей `daily.card_image_scene`/`weekly.card_image_scene`, з резолвом реєстру раз-на-батч
-  (не раз-на-айтем) щоб не множити живі OpenRouter-каталог-запити. 914 тестів, `tsc`/`eslint`/build
-  зелені. Власник дав добро йти по всіх фазах послідовно з комітом на кожну. **Фази 3–7 (поетапна
-  міграція решти ланцюжків — custom-research, weekly master, social, daily
-  verify/summarize/auto-publish, опційно Codex CLI) — в роботі, наступна: Фаза 3.**
+  (ядро реєстру), Фаза 1b (БД + admin `/admin/providers`), Фаза 2 (card-image.ts) і Фаза 3
+  (custom-research.ts) виконані.** Фаза 3 заразом знайшла й закрила реальний баг: старий
+  `researchCustomStory` мав опцію `openRouterApiKey`, яка ніде фактично не використовувалась —
+  жодного OpenRouter-фолбеку не існувало попри видимість опції. Тепер обидва шляхи йдуть через
+  `generateWithRegistry('custom_research', ...)`, з новою `withResearchSchema()`-обгорткою, яка
+  патчить Gemini-специфічну `RESEARCH_SCHEMA` тільки на gemini-записи ланцюжка, лишаючи
+  БД/env-резолюцію незайманою. 916 тестів, `tsc`/`eslint`/build зелені. Власник дав добро йти по
+  всіх фазах послідовно з комітом на кожну. **Фази 4–7 (weekly master, social, daily
+  verify/summarize/auto-publish, опційно Codex CLI) — в роботі, наступна: Фаза 4.**
 - Гілка `feat/weekly-editorial-voice` (з `main`, 2026-08-06), PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189):
   повний перегляд редакційної якості weekly-дайджесту (власник забракував увесь контент як
   «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). **Усі 7 запланованих PR

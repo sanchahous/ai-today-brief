@@ -2,7 +2,8 @@
 
 Summary: Генерація карток/OG і weekly story-ілюстрацій: FLUX.2, fallback, no-text policy, cost ledger.
 Sources: `pipeline/card-image.ts`, `.env.example`, PR #169–#175, editorial quality overhaul PR5
-(гілка `feat/weekly-editorial-voice`, 2026-08-06), none (analysis earlier draft)
+(гілка `feat/weekly-editorial-voice`, 2026-08-06), LLM provider registry Phase 2
+(гілка `feat/llm-provider-registry`, 2026-08-06), none (analysis earlier draft)
 Last updated: 2026-08-06
 
 ---
@@ -14,8 +15,13 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
 
 ## How it works
 
-1. **Subject** — a tiny Gemini text call turns the headline into a visual metaphor
-   (daily cards); weekly story images use scene briefs stored on the artifact.
+1. **Subject** — a tiny text-model call turns the headline into a visual metaphor
+   (daily cards); weekly story images use scene briefs stored on the artifact. As of the LLM
+   provider registry Phase 2 (2026-08-06) this call goes through
+   `generateWithRegistry('daily.card_image_scene' | 'weekly.card_image_scene', ...)` instead of a
+   hardcoded Gemini-SDK-then-OpenRouter ladder — Gemini is still the default first choice, but the
+   owner can now add another provider (e.g. a promo like NVIDIA NIM) to either role's chain via
+   `/admin/providers` without a deploy. See [llm-providers](../pipeline/llm-providers.md).
 2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
    separate house style since PR5** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
    `buildWeeklyPrompt`, policy id **`weekly-reportage-v1`**): one documentary-reportage frame
@@ -72,3 +78,4 @@ server (handy where `next dev` is memory-constrained).
 - [weekly-digest](../pipeline/weekly-digest.md)
 - [overview](../overview.md) §4
 - [custom-social-delivery](custom-social-delivery.md)
+- [llm-providers](../pipeline/llm-providers.md)

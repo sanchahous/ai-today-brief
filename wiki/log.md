@@ -19,6 +19,35 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-06 — LLM provider registry, Phase 3: custom-research.ts migrated
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 2 в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 3: що замінено, знайдений баг (мертва
+  `openRouterApiKey`-опція), `withResearchSchema()`-обгортка для Gemini structured output
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 4
+
+**Код:**
+- `pipeline/custom-research.ts`'s `researchCustomStory()` — раніше прямий
+  `new GoogleGenerativeAI(apiKey)` + `createResearchGenerate()`, без фактичного OpenRouter-фолбеку
+  попри наявну опцію `openRouterApiKey` (**реальний баг, знайдений під час читання коду для цієї
+  фази** — опція існувала, але ніде не використовувалась). Тепер
+  `generateWithRegistry('custom_research', prompt, registry, {validateResponse})`.
+- Новий експортований `withResearchSchema(registry)` — патчить `RESEARCH_SCHEMA`
+  (Gemini-native structured output) лише на `gemini`-записи ланцюжка ролі `custom_research`,
+  хоч би звідки вони прийшли (env-дефолт чи БД-ланцюжок з `/admin/providers`); OpenRouter/CLI-записи
+  не чіпаються — вони й так отримують «Return JSON only» текстову інструкцію та перевіряються
+  легким `validateResearchJson` (прогін через `parseResearchResult`).
+- `pipeline/custom-news.ts`'s `runCustomNews` тепер будує `db` до виклику research (не після
+  dry-run-гілки) — БД-ланцюжок для `custom_research` тепер спрацьовує навіть у dry-run.
+- 2 нових тести для `withResearchSchema`; `researchCustomStory` лишається поза юніт-покриттям
+  (`/* v8 ignore start -- Gemini integration */`, як і раніше).
+
+**Верифіковано:** 916/916 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний.
+
 ## 2026-08-06 — LLM provider registry, Phase 2: card-image.ts art-director ladder migrated
 
 **Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження

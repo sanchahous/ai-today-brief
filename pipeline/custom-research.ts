@@ -3,10 +3,16 @@
  * summarize step. Gathers multiple independent sources — not a single copy-paste.
  */
 
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
-import { resolveGeminiModelQueue } from './gemini-models';
+import { SchemaType } from '@google/generative-ai';
+import type { PipelineDb } from './db';
 import { logEvent } from './log';
-import { generateWithModelQueue } from './summarize';
+import { stripJsonFences, type OpenRouterResponseValidator } from './openrouter-brief-json';
+import {
+  generateWithRegistry,
+  loadProviderRegistry,
+  type ProviderRegistry,
+} from './providers/registry';
+import type { GeminiResponseSchema } from './summarize';
 import type { PoolItem } from './select';
 import type { FetchedArticle } from './sources/http';
 import { categoryForTitle, detectTopic } from './topics';
@@ -34,11 +40,7 @@ export interface CustomResearchResult {
 
 const RESEARCH_STRING = { type: SchemaType.STRING } as const;
 
-const RESEARCH_SCHEMA: NonNullable<
-  NonNullable<
-    Parameters<GoogleGenerativeAI['getGenerativeModel']>[0]['generationConfig']
-  >['responseSchema']
-> = {
+const RESEARCH_SCHEMA: GeminiResponseSchema = {
   type: SchemaType.OBJECT,
   properties: {
     title: RESEARCH_STRING,
@@ -309,24 +311,38 @@ export function toPoolItem(research: CustomResearchResult): PoolItem {
   };
 }
 
-function createResearchGenerate(apiKey: string): (modelId: string, prompt: string) => Promise<string> {
-  const gemini = new GoogleGenerativeAI(apiKey);
-  return async (modelId: string, prompt: string) => {
-    const model = gemini.getGenerativeModel({
-      model: modelId,
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: RESEARCH_SCHEMA,
-      },
-    });
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+/**
+ * Patches the RESEARCH_SCHEMA onto any 'gemini' entry in the custom_research
+ * chain, whichever way that chain was resolved (env-only default, or an
+ * owner-configured /admin/providers row). Gemini's native structured-output
+ * feature needs this role's specific schema attached to the provider config
+ * itself -- generateWithRegistry's dispatch has no generic per-call schema
+ * hook for the gemini branch (only CLI providers take one), and a DB row
+ * can't carry a JS schema object anyway. OpenRouter/CLI entries in the same
+ * chain are untouched -- they already get the "Return JSON only" instruction
+ * from buildResearchPrompt and are checked by validateResearchJson below.
+ */
+export function withResearchSchema(registry: ProviderRegistry): ProviderRegistry {
+  return {
+    chainForRole(role) {
+      const chain = registry.chainForRole(role);
+      if (role !== 'custom_research') return chain;
+      return chain.map((resolved) =>
+        resolved.entry.kind === 'gemini' && resolved.gemini
+          ? { ...resolved, gemini: { ...resolved.gemini, schema: RESEARCH_SCHEMA } }
+          : resolved,
+      );
+    },
   };
 }
 
 export interface ResearchCustomStoryOptions {
   url?: string;
   openRouterApiKey?: string;
+  /** Enables DB-driven role-chain overrides for custom_research (owner-added providers via /admin/providers). */
+  db?: PipelineDb;
+  /** Pre-built registry -- bypasses building one from apiKey/openRouterApiKey/db. */
+  registry?: ProviderRegistry;
 }
 
 /* v8 ignore start -- Gemini integration */
@@ -348,13 +364,31 @@ export async function researchCustomStory(
   }
 
   const prompt = buildResearchPrompt(trimmed, options.url, pageExcerpt);
-  const modelQueue = await resolveGeminiModelQueue(apiKey);
-  const generate = createResearchGenerate(apiKey);
-  const { text, model } = await generateWithModelQueue(prompt, apiKey, modelQueue, 2, generate);
-  const parsed = parseResearchResult(text, trimmed);
+  const registry = withResearchSchema(
+    options.registry ??
+      (await loadProviderRegistry(
+        { GEMINI_API_KEY: apiKey, OPEN_ROUTER_API_KEY: options.openRouterApiKey },
+        {},
+        options.db,
+      )),
+  );
+  // Lenient on the wire (only confirms the shape parseResearchResult itself
+  // requires) so a model that doesn't quite follow the JSON contract advances
+  // the chain to the next provider instead of silently accepting garbage.
+  const validateResearchJson: OpenRouterResponseValidator = (_modelId, rawText, finishReason) => {
+    if (finishReason === 'length') throw new SyntaxError('[custom-research] truncated completion');
+    const text = stripJsonFences(rawText);
+    parseResearchResult(text, trimmed);
+    return text;
+  };
+  const result = await generateWithRegistry('custom_research', prompt, registry, {
+    validateResponse: validateResearchJson,
+  });
+  const parsed = parseResearchResult(result.text, trimmed);
   const enriched = await enrichSourcesWithPageText(parsed.sources);
   logEvent('info', 'custom-research', 'Story researched', {
-    model,
+    provider: result.provider,
+    model: result.model,
     topic: trimmed,
     sources: enriched.length,
   });
