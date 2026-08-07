@@ -28,7 +28,15 @@ export function HookCandidatePicker({ candidates }: { candidates: string[] }) {
                   'textarea[name="post_text"]',
                 );
                 if (!textarea) return;
-                textarea.value = candidate;
+                // maxLength only constrains typed/pasted input, not a
+                // programmatic .value set -- truncate explicitly so a long
+                // candidate can't silently exceed the channel limit.
+                textarea.value =
+                  textarea.maxLength > 0 ? candidate.slice(0, textarea.maxLength) : candidate;
+                // Setting .value directly doesn't fire 'input', so anything
+                // listening for live changes (the character counter) would
+                // otherwise stay stuck on its last-rendered value.
+                textarea.dispatchEvent(new Event('input', { bubbles: true }));
                 textarea.focus();
               }}
             >
