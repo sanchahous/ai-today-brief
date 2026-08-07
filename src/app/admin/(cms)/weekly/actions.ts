@@ -83,6 +83,12 @@ function changedOr(current: string | null, value: string | undefined) {
   return value === undefined ? (current ?? '') : value;
 }
 
+function jsonRecord(value: Json | null | undefined): Record<string, Json | undefined> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, Json | undefined>)
+    : {};
+}
+
 function revalidateWeeklyAdmin(weeklyDigestId: string) {
   revalidatePath('/admin');
   revalidatePath('/admin/weekly');
@@ -493,6 +499,49 @@ export async function commentWeeklyArtifactAction(formData: FormData) {
   });
   if (error) throw new Error(error.message);
   revalidateWeeklyAdmin(artifact.weekly_digest_id);
+}
+
+/**
+ * Owner-set editorial angle per Top-3 story (PR4, editorial quality
+ * overhaul) -- a plain upsert, not an RPC, because unlike revisions/
+ * artifacts this table isn't append-only: one row per (weekly_digest_id,
+ * brief_item_id), keyed by brief_item_id specifically so it survives a
+ * Save minting a new revision underneath it (see the migration's comment).
+ * An empty angle deletes the row rather than storing an empty string, so
+ * "no direction set" and "direction cleared" both read the same way to
+ * masterInputStories (generation-worker.ts).
+ */
+export async function saveWeeklyStoryDirectionAction(formData: FormData) {
+  const session = await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const briefItemId = requiredString(formData, 'brief_item_id');
+  const angle = optionalString(formData, 'angle');
+  if (angle.length > 600) {
+    throw new Error('An editorial angle may contain at most 600 characters.');
+  }
+  const admin = getSupabaseAdmin();
+  if (!angle) {
+    const { error } = await admin
+      .from('weekly_digest_story_directions')
+      .delete()
+      .eq('weekly_digest_id', weeklyDigestId)
+      .eq('brief_item_id', briefItemId);
+    if (error) throw new Error(error.message);
+    revalidateWeeklyAdmin(weeklyDigestId);
+    return;
+  }
+  const { error } = await admin.from('weekly_digest_story_directions').upsert(
+    {
+      weekly_digest_id: weeklyDigestId,
+      brief_item_id: briefItemId,
+      angle,
+      updated_by: session.userId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'weekly_digest_id,brief_item_id' },
+  );
+  if (error) throw new Error(error.message);
+  revalidateWeeklyAdmin(weeklyDigestId);
 }
 
 async function saveArtifact(
@@ -971,6 +1020,70 @@ export async function toggleWeeklySocialAction(formData: FormData) {
   }
 }
 
+/**
+ * Promotes an alternate illustration render to primary (PR5, editorial
+ * quality overhaul). `generateStoryImage` (generation-worker.ts) uploads
+ * story_image's alternates into `content.preview_paths` -- the same generic
+ * mechanism the PDF job already uses for page previews -- rather than as
+ * separate artifact rows, since `weekly_digest_artifacts` only supports one
+ * `is_current` row per slot_key and every downstream reader (digests.ts,
+ * pdf.ts) looks up `story_image` by revision_item_id expecting exactly one
+ * match. Promoting just swaps which already-uploaded file is primary; no new
+ * render, no new upload.
+ */
+export async function selectWeeklyArtifactVariantAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const revisionId = requiredString(formData, 'revision_id');
+  const artifactId = requiredString(formData, 'artifact_id');
+  const variantPath = requiredString(formData, 'variant_path');
+
+  const admin = getSupabaseAdmin();
+  const { data: artifact } = await admin
+    .from('weekly_digest_artifacts')
+    .select('*')
+    .eq('id', artifactId)
+    .maybeSingle();
+  if (!artifact || artifact.artifact_type !== 'story_image') {
+    throw new Error('Story image artifact was not found.');
+  }
+  const content = jsonRecord(artifact.content);
+  const previewPaths = Array.isArray(content.preview_paths)
+    ? content.preview_paths.filter((value): value is string => typeof value === 'string')
+    : [];
+  if (!artifact.storage_path || !previewPaths.includes(variantPath)) {
+    throw new Error('The selected variant is no longer available -- reload and try again.');
+  }
+  const nextPreviewPaths = [
+    artifact.storage_path,
+    ...previewPaths.filter((path) => path !== variantPath),
+  ];
+
+  const db = await getSupabaseServer();
+  const { error } = await db.rpc('save_weekly_digest_artifact', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_revision_id: revisionId,
+    p_revision_item_id: artifact.revision_item_id,
+    p_artifact_type: 'story_image',
+    p_locale: artifact.locale,
+    p_slot_key: artifact.slot_key,
+    p_content: { ...content, preview_paths: nextPreviewPaths } as Json,
+    p_storage_bucket: artifact.storage_bucket,
+    p_storage_path: variantPath,
+    p_mime_type: artifact.mime_type,
+    p_width: artifact.width,
+    p_height: artifact.height,
+    // All three variants share one render (same prompt/scene, different
+    // seed), so byte_size is the only field that can drift slightly from
+    // the promoted file's true size -- copied from the prior artifact
+    // rather than re-fetched from storage; a cosmetic-only approximation.
+    p_byte_size: artifact.byte_size,
+    p_metadata: artifact.metadata as Json,
+  });
+  if (error) throw new Error(error.message);
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
 export async function enqueueWeeklyGenerationAction(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
@@ -980,6 +1093,7 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
     'research_pack',
     'editorial_master',
     'social_copy',
+    'video_script',
     'video_manifest',
     'pdf',
     'cover',
@@ -1003,6 +1117,9 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
     revision_item_id: revisionItemId || null,
     source_url: optionalString(formData, 'source_url') || null,
     alt_text: optionalString(formData, 'alt_text') || null,
+    // Owner-edited scene text (Visuals tab, PR5) -- bypasses the art-director
+    // LLM call entirely when set; see generateWeeklyReportageIllustrations.
+    scene_override: optionalString(formData, 'scene_override') || null,
     ...(contentStudioMode ? { mode: contentStudioMode } : {}),
   };
   const db = await getSupabaseServer();

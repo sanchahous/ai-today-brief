@@ -89,6 +89,32 @@ export function WeeklyStory({ item, lang }: { item: WeeklyDigestItemView; lang: 
         </div>
       ) : null}
 
+      {item.limitation ? (
+        <p className="text-faint mt-4 text-sm leading-6">
+          <span className="font-semibold">{copy.limitation}: </span>
+          {item.limitation}
+        </p>
+      ) : null}
+
+      {item.editorsView ? (
+        <div className="border-border bg-surface/60 rounded-card mt-6 border border-dashed p-5">
+          <p className="text-faint text-xs font-bold tracking-[0.12em] uppercase">
+            {copy.editorsView}
+          </p>
+          <p className="text-faint mt-1 text-xs italic">{copy.editorsViewNote}</p>
+          <p className="mt-3 leading-7">{item.editorsView}</p>
+        </div>
+      ) : null}
+
+      {item.discussionQuestion ? (
+        <p className="border-border mt-6 border-t pt-6 text-lg leading-8 font-medium italic">
+          <span aria-hidden className="text-accent not-italic">
+            {copy.discuss}:{' '}
+          </span>
+          {item.discussionQuestion}
+        </p>
+      ) : null}
+
       {item.sources.length ? (
         <div className="mt-5 text-sm">
           <p className="text-faint text-xs font-bold tracking-[0.08em] uppercase">{copy.source}</p>

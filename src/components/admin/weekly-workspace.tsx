@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
+import { HookCandidatePicker } from '@/components/admin/hook-candidate-picker';
 import { StatusPill } from '@/components/admin/status-pill';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
@@ -32,8 +33,10 @@ import {
   reviewWeeklyArtifactAction,
   saveWeeklyRevisionAction,
   saveWeeklySocialAction,
+  saveWeeklyStoryDirectionAction,
   saveWeeklyVideoAction,
   scheduleWeeklyDigestAction,
+  selectWeeklyArtifactVariantAction,
   startWeeklyContentStudioAction,
   toggleWeeklySocialAction,
   uploadWeeklyArtifactAction,
@@ -62,7 +65,7 @@ const GENERATION_JOB_TYPES_BY_TAB: Record<WeeklyWorkspaceTab, readonly string[]>
   visuals: ['story_image', 'cover', 'social_asset'],
   social: ['social_copy'],
   pdf: ['pdf'],
-  video: ['video_manifest'],
+  video: ['video_script', 'video_manifest'],
   release: [],
 };
 
@@ -75,6 +78,7 @@ const GENERATION_JOB_PRIMARY_TAB: Record<string, WeeklyWorkspaceTab> = {
   social_asset: 'visuals',
   social_copy: 'social',
   pdf: 'pdf',
+  video_script: 'video',
   video_manifest: 'video',
 };
 
@@ -637,6 +641,7 @@ function ArtifactCard({
   canReview,
   label,
   imagePreview = false,
+  variantSelection,
 }: {
   digestId: string;
   artifact: WeeklyArtifactAdminRow | undefined;
@@ -644,6 +649,20 @@ function ArtifactCard({
   canReview: boolean;
   label: string;
   imagePreview?: boolean;
+  /**
+   * story_image only (PR5): enables the variant thumbnail strip (promote an
+   * alternate render to primary) and the "edit scene, regenerate" form.
+   * Requires the caller's own edit permission -- passed separately as
+   * `canEdit` below rather than reusing `canReview`, since promoting a
+   * variant is an editing action, not an approval one (same permission
+   * class as ReplacementAssetForm).
+   */
+  variantSelection?: {
+    canEdit: boolean;
+    revisionId: string;
+    revisionItemId: string;
+    slotKey: string;
+  };
 }) {
   if (!artifact) {
     return (
@@ -685,6 +704,8 @@ function ArtifactCard({
       : null;
   const illustrationSceneSource =
     typeof artifactMetadata.scene_source === 'string' ? artifactMetadata.scene_source : null;
+  const alternateVariantPaths = variantSelection ? listFrom(artifact.content, 'preview_paths') : [];
+  const alternateVariantUrls = variantSelection ? previewUrls : [];
 
   return (
     <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -708,6 +729,42 @@ function ArtifactCard({
             unoptimized
             className="object-cover"
           />
+        </div>
+      ) : null}
+
+      {variantSelection && alternateVariantUrls.length > 0 ? (
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {alternateVariantUrls.map((url, index) => {
+            const path = alternateVariantPaths[index];
+            if (!path) return null;
+            return (
+              <form key={path} action={selectWeeklyArtifactVariantAction}>
+                <input type="hidden" name="weekly_digest_id" value={digestId} />
+                <input type="hidden" name="revision_id" value={variantSelection.revisionId} />
+                <input type="hidden" name="artifact_id" value={artifact.id} />
+                <input type="hidden" name="variant_path" value={path} />
+                <button
+                  type="submit"
+                  disabled={!variantSelection.canEdit}
+                  className="group relative block aspect-[16/9] w-full overflow-hidden rounded-lg border border-white/10 hover:border-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Image
+                    src={url}
+                    alt={`Alternate render ${index + 1}`}
+                    fill
+                    sizes="160px"
+                    unoptimized
+                    className="object-cover"
+                  />
+                  {variantSelection.canEdit ? (
+                    <span className="absolute inset-0 hidden items-center justify-center bg-black/55 text-xs font-bold text-white group-hover:flex">
+                      Use this
+                    </span>
+                  ) : null}
+                </button>
+              </form>
+            );
+          })}
         </div>
       ) : null}
 
@@ -739,6 +796,37 @@ function ArtifactCard({
                   {illustrationNegative}
                 </p>
               </div>
+            ) : null}
+            {variantSelection ? (
+              <form action={enqueueWeeklyGenerationAction} className="grid gap-2 border-t border-white/10 pt-3">
+                <input type="hidden" name="weekly_digest_id" value={digestId} />
+                <input type="hidden" name="revision_id" value={variantSelection.revisionId} />
+                <input type="hidden" name="job_type" value="story_image" />
+                <input type="hidden" name="locale" value="neutral" />
+                <input type="hidden" name="slot_key" value={variantSelection.slotKey} />
+                <input
+                  type="hidden"
+                  name="revision_item_id"
+                  value={variantSelection.revisionItemId}
+                />
+                <label className="grid gap-1 text-xs font-bold text-slate-300">
+                  Edit scene (optional — replaces the art-director call)
+                  <textarea
+                    name="scene_override"
+                    rows={2}
+                    maxLength={400}
+                    disabled={!variantSelection.canEdit}
+                    defaultValue={illustrationScene ?? ''}
+                    className="rounded-lg border border-white/15 bg-black/30 p-2 font-mono text-xs text-slate-200"
+                  />
+                </label>
+                <ActionSubmitButton
+                  idleLabel="Regenerate with this scene"
+                  pendingLabel="Queueing…"
+                  disabled={!variantSelection.canEdit}
+                  className={SECONDARY}
+                />
+              </form>
             ) : null}
           </div>
         </details>
@@ -1194,6 +1282,12 @@ function ResearchPanel({
   const approvedResearch = features.filter(
     (item) => researchArtifactFor(workspace.artifacts, item)?.review_status === 'approved',
   ).length;
+  const featureBriefItemIds = new Set(
+    features.flatMap((item) => (item.brief_item_id ? [item.brief_item_id] : [])),
+  );
+  const directionsSet = workspace.storyDirections.filter(
+    (direction) => direction.angle.trim() && featureBriefItemIds.has(direction.brief_item_id),
+  ).length;
   const editorialMasterJob =
     workspace.generationJobs.find((job) => job.job_type === 'editorial_master') ?? null;
   const masterWaitingOnPackApprovals =
@@ -1343,11 +1437,16 @@ function ResearchPanel({
           </div>
           <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
             <p className="text-xs font-bold text-slate-500 uppercase">Audience</p>
-            <p className="mt-1 text-sm font-semibold text-white">Builders & AI decision-makers</p>
+            <p className="mt-1 text-sm font-semibold text-white">
+              Builders, AI practitioners & the technically curious
+            </p>
           </div>
           <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
-            <p className="text-xs font-bold text-slate-500 uppercase">Master voice</p>
-            <p className="mt-1 text-sm font-semibold text-white">Editor-practitioner</p>
+            <p className="text-xs font-bold text-slate-500 uppercase">Editorial angles</p>
+            <p className="mt-1 text-2xl font-bold text-white">{directionsSet}/3</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Optional — set below per feature. Unset stories default to a plain recap.
+            </p>
           </div>
         </div>
       </section>
@@ -1444,6 +1543,45 @@ function ResearchPanel({
                       </div>
                     );
                   })}
+                </div>
+                <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-400/[.04] p-4">
+                  <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">
+                    Кут подачі · Editorial angle
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-slate-400">
+                    Binding direction the writer follows for this story. Leave empty and the writer
+                    defaults to a plain recap of the claims above.
+                  </p>
+                  {item.brief_item_id ? (
+                    <form action={saveWeeklyStoryDirectionAction} className="mt-3 grid gap-2">
+                      <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+                      <input type="hidden" name="brief_item_id" value={item.brief_item_id} />
+                      <textarea
+                        name="angle"
+                        rows={2}
+                        maxLength={600}
+                        disabled={!canEdit}
+                        defaultValue={
+                          workspace.storyDirections.find(
+                            (direction) => direction.brief_item_id === item.brief_item_id,
+                          )?.angle ?? ''
+                        }
+                        className={TEXTAREA}
+                        placeholder="e.g. Frame this as a cautionary story about infra trust, not a feature announcement."
+                      />
+                      {canEdit ? (
+                        <ActionSubmitButton
+                          idleLabel="Save angle"
+                          pendingLabel="Saving…"
+                          className={SECONDARY}
+                        />
+                      ) : null}
+                    </form>
+                  ) : (
+                    <p className="mt-2 text-xs text-slate-500">
+                      No linked brief item — angle cannot be set for this story.
+                    </p>
+                  )}
                 </div>
                 <ArtifactReview
                   digestId={workspace.digest.id}
@@ -2475,6 +2613,12 @@ function VisualsPanel({
                   canReview={canReview}
                   label={`Story ${item.rank} illustration`}
                   imagePreview
+                  variantSelection={{
+                    canEdit,
+                    revisionId: revision.id,
+                    revisionItemId: item.id,
+                    slotKey,
+                  }}
                 />
                 <ReplacementAssetForm
                   workspace={workspace}
@@ -2654,7 +2798,12 @@ function SocialPanel({
             ? workspace.artifacts.find((artifact) => artifact.id === meta.document_artifact_id)
             : undefined;
         return (
-          <section key={channel} className={PANEL} aria-labelledby={`social-${channel}-heading`}>
+          <section
+            key={channel}
+            className={PANEL}
+            aria-labelledby={`social-${channel}-heading`}
+            data-social-panel={channel}
+          >
             <div className="flex flex-wrap items-center gap-2">
               <h3 id={`social-${channel}-heading`} className="mr-auto text-lg font-bold text-white">
                 {channelLabel(channel)}
@@ -3076,24 +3225,7 @@ function SocialPanel({
                       <dd className="mt-1 text-slate-300">Builders, founders & AI leaders</dd>
                     </div>
                   </dl>
-                  {hookCandidates.length ? (
-                    <details className="mt-4 border-t border-white/8 pt-3">
-                      <summary className="cursor-pointer text-xs font-bold text-cyan-200">
-                        Compare {hookCandidates.length} generated hooks
-                      </summary>
-                      <ol className="mt-3 grid gap-2 text-xs leading-5 text-slate-400">
-                        {hookCandidates.map((candidate, index) => (
-                          <li
-                            key={`${post.id}-hook-${index}`}
-                            className="rounded-lg bg-black/20 p-2"
-                          >
-                            <span className="mr-2 font-bold text-slate-200">{index + 1}.</span>
-                            {candidate}
-                          </li>
-                        ))}
-                      </ol>
-                    </details>
-                  ) : null}
+                  <HookCandidatePicker candidates={hookCandidates} />
                 </div>
 
                 <div className="rounded-xl border border-white/10 p-4">
@@ -3369,6 +3501,9 @@ function VideoPanel({
   const scenesJson = jsonText(scenes, '[]');
   const captionsEnText = textFrom(captionsEn?.content, 'vtt', 'srt', 'text');
   const captionsUkText = textFrom(captionsUk?.content, 'vtt', 'srt', 'text');
+  const scriptJob = latestJobForSlot(workspace.generationJobs, 'video_script', {
+    slotKey: 'video-script:en',
+  });
 
   return (
     <div className="grid gap-6">
@@ -3383,6 +3518,45 @@ function VideoPanel({
         <span className="rounded-xl border border-cyan-300/20 bg-cyan-300/6 px-3 py-2 text-xs font-semibold text-cyan-100">
           YouTube is the final video storage — no MP4 upload
         </span>
+      </div>
+
+      <div className={`${PANEL} flex flex-wrap items-center justify-between gap-3`}>
+        <div>
+          <h3 className="text-lg font-bold text-white">TV-news script (cold open → anchor → b-roll → outro)</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Dramatizes the approved English article into the scene plan below plus three Ukrainian
+            Shorts. Review the generated script, then hand-edit it in the form below if needed.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {scriptJob ? <StatusPill value={scriptJob.status} /> : null}
+          <form action={enqueueWeeklyGenerationAction}>
+            <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+            <input type="hidden" name="revision_id" value={revision.id} />
+            <input type="hidden" name="job_type" value="video_script" />
+            <input type="hidden" name="locale" value="en" />
+            <input type="hidden" name="slot_key" value="video-script:en" />
+            <ActionSubmitButton
+              idleLabel={script ? 'Regenerate script' : 'Generate script'}
+              pendingLabel="Queueing script…"
+              disabled={!canEdit}
+              className={SECONDARY}
+            />
+          </form>
+        </div>
+        {script ? (
+          <div className="w-full">
+            <p className="text-xs text-slate-500">
+              video_manifest cannot generate until this script is approved.
+            </p>
+            <ArtifactReview
+              digestId={workspace.digest.id}
+              artifact={script}
+              reviews={workspace.artifactReviews}
+              canReview={canReview && script.revision_id === workspace.revision?.id}
+            />
+          </div>
+        ) : null}
       </div>
 
       <form action={saveWeeklyVideoAction} className={PANEL}>

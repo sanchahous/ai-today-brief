@@ -334,14 +334,14 @@ const ARTIFACT_GATE_GUIDANCE: Record<WeeklyArtifactType, ArtifactGateGuidance> =
   video_script: {
     tab: 'video',
     fixMissing:
-      'Open Video → Content Studio writes the EN script with the master, or paste/save the narration under Video contract → Approve.',
-    fixUnapproved: 'Open Video → review English narration script → Approve version (owner).',
+      'Open Video → Approve the English article → Generate script (dramatizes it into the TV-news scene plan), or paste/save narration under Video contract → Approve.',
+    fixUnapproved: 'Open Video → review the generated scene plan and Shorts → Approve version (owner).',
   },
   video_manifest: {
     tab: 'video',
     fixMissing:
-      'Open Video → enqueue video_manifest (after the approved EN script) → Approve the weekly-video-v2 manifest.',
-    fixUnapproved: 'Open Video → review the weekly-video-v2 manifest → Approve version (owner).',
+      'Open Video → enqueue video_manifest (after the approved script) → Approve the weekly-video-v3 manifest.',
+    fixUnapproved: 'Open Video → review the weekly-video-v3 manifest → Approve version (owner).',
   },
   video_preview: {
     tab: 'video',

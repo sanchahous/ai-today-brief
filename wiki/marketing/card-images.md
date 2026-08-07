@@ -1,8 +1,9 @@
 # Card images — per-item AI brand cards
 
 Summary: Генерація карток/OG і weekly story-ілюстрацій: FLUX.2, fallback, no-text policy, cost ledger.
-Sources: `pipeline/card-image.ts`, `.env.example`, PR #169–#175, none (analysis earlier draft)
-Last updated: 2026-08-04
+Sources: `pipeline/card-image.ts`, `.env.example`, PR #169–#175, editorial quality overhaul PR5
+(гілка `feat/weekly-editorial-voice`, 2026-08-06), none (analysis earlier draft)
+Last updated: 2026-08-06
 
 ---
 
@@ -15,10 +16,18 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
 
 1. **Subject** — a tiny Gemini text call turns the headline into a visual metaphor
    (daily cards); weekly story images use scene briefs stored on the artifact.
-2. **Prompt** — cinematic house style + category accent. Weekly policy id:
-   `story-specific-editorial-v5-no-text` — **no baked-in typography / mastheads**
-   in the generated frame (FLUX.2 klein has no `negative_prompt`, so the positive
-   brief is the only lever). (source: PR #174–#175)
+2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
+   separate house style since PR5** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
+   `buildWeeklyPrompt`, policy id **`weekly-reportage-v1`**): one documentary-reportage frame
+   of the actual news event — "picture a photographer standing in the room where this
+   happened" — not the daily path's abstract metaphor register. Avoid-list is folded into the
+   **positive** prompt, not a separate `negative_prompt` field — FLUX.2 klein's multipart
+   Workers AI call never transmits `negative_prompt`, so a separate one silently never reached
+   the model on this provider. Three variants (same scene, different seeds) are generated per
+   story so the owner can pick the best render; seed is `digestId:revisionItemId:v{n}`, no
+   `job.id`, so a regeneration is iterative rather than a fresh lottery. Daily generation keeps
+   its own **no baked-in typography / mastheads** policy `story-specific-editorial-v5-no-text`,
+   untouched by PR5. (source: PR #174–#175, editorial quality overhaul PR5 2026-08-06)
 3. **Image** — Cloudflare Workers AI default
    `@cf/black-forest-labs/flux-2-klein-9b` (multipart FormData under Node; do not
    stream the body without duplex — that silently spilled to `flux-1-schnell`).

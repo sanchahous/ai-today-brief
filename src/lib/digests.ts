@@ -145,6 +145,15 @@ export interface WeeklyDigestItemView {
   why: string;
   practicalExample: string;
   takeaway: string;
+  /** Editor's-caveat sidebar copy, feature and radar stories alike. */
+  limitation: string;
+  /**
+   * Marked editorial speculation ("Погляд редакції") -- feature stories only.
+   * Empty for radar stories and any edition generated before 2026-08-06.
+   */
+  editorsView: string;
+  /** Closing discussion question -- feature stories only, same availability as editorsView. */
+  discussionQuestion: string;
   sources: WeeklyDigestSource[];
   sourceName: string | null;
   sourceUrl: string | null;
@@ -237,6 +246,24 @@ function articleFrame(artifact: WeeklyArtifactRow | null | undefined) {
     theme: stringValue(content.theme),
     entities: stringArray(content.entities),
     internalLinks,
+  };
+}
+
+/**
+ * Reads the editorial-voice-overhaul fields persisted alongside each revision
+ * item's `source_snapshot.content_studio` (generation-worker.ts createMasterRevision)
+ * -- not their own columns, so this is the one place that knows the path.
+ * Absent on editions generated before 2026-08-06, hence the null-safe reads.
+ */
+function contentStudioFrame(value: Json | null | undefined) {
+  const row = asRecord(asRecord(value).content_studio);
+  return {
+    limitationEn: stringValue(row.limitation_en),
+    limitationUk: stringValue(row.limitation_uk),
+    editorsViewEn: stringValue(row.editors_view_en),
+    editorsViewUk: stringValue(row.editors_view_uk),
+    discussionEn: stringValue(row.discussion_en),
+    discussionUk: stringValue(row.discussion_uk),
   };
 }
 
@@ -538,6 +565,9 @@ async function readLegacyDigest(
         why: pick(lang, item.why_en, item.why_uk),
         practicalExample: '',
         takeaway: '',
+        limitation: '',
+        editorsView: '',
+        discussionQuestion: '',
         sources: [],
         sourceName: null,
         sourceUrl: null,
@@ -618,6 +648,7 @@ const getWeeklyDigestCached = cache(
         lang,
         itemTitle,
       );
+      const studio = contentStudioFrame(item.source_snapshot);
       return {
         id: item.id,
         rank: item.rank,
@@ -627,6 +658,9 @@ const getWeeklyDigestCached = cache(
         why: pick(lang, item.why_en, item.why_uk),
         practicalExample: pick(lang, item.practical_en, item.practical_uk),
         takeaway: pick(lang, item.takeaway_en, item.takeaway_uk),
+        limitation: pick(lang, studio.limitationEn, studio.limitationUk),
+        editorsView: pick(lang, studio.editorsViewEn, studio.editorsViewUk),
+        discussionQuestion: pick(lang, studio.discussionEn, studio.discussionUk),
         sources,
         sourceName: primarySource?.name ?? null,
         sourceUrl: primarySource?.url ?? null,

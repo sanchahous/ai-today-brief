@@ -4,7 +4,7 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-04
+Last updated: 2026-08-06
 
 **Формат запису:**
 
@@ -16,6 +16,233 @@ Last updated: 2026-08-04
 - `wiki/path.md` — що саме
 **Нотатка:** одне речення, якщо потрібне.
 ```
+
+---
+
+## 2026-08-06 — Editorial quality overhaul, PR7: social voice + hook picker + cleanup (all 7 PRs done)
+
+**Джерело:** рішення власника (session 2026-08-06) — «код продовжується» по завершенні PR6;
+завершення 7-PR плану `feat/weekly-editorial-voice`
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — новий підрозділ «PR7»: socialAngles видалено з майстра,
+  self-generated angle, voice-модуль у social-adapter, banned-openers ranking, originality
+  critic-вимір, hook picker UI, dead-code cleanup, plan-correction на `GENERIC_PRACTICAL_PATTERNS`
+- `wiki/now.md` — усі 7 PR позначені готовими; наступний крок явно передано власнику
+  (code review / shadow-прогін / klein-оцінка)
+
+**Код:** `WeeklyMasterBundle.socialAngles` видалено end-to-end (тип, `englishPrompt` CONTRACT+JSON
+SHAPE, `parseEnglishPackage`, `normalizeWeeklySocialAngles`, `social_angle_grounding` гейт) --
+`social-adapter.ts` тепер сам пропонує кут для кожного каналу в тому ж writer-виклику, що пише
+3 hook-кандидати (`{"angle":"","text":"...","firstComment":""}`), замість читати заздалегідь
+згенерований, каналево-сліпий кут з майстра. Імпортовано `VOICE_EN`/`VOICE_UK` з `editorial-voice.ts`
+(PR1) у writer-промпт; `scoreCandidate` тепер штрафує за `bannedPhrasesFor(locale)`-спрацювання.
+Новий critic-вимір `originality` (`src/lib/social/critic.ts`, `src/lib/social/types.ts` --
+optional-field патерн, daily social-пайплайн не зачеплений) з порогом 70/100. Social tab: hook-
+кандидати клікабельні (`src/components/admin/hook-candidate-picker.tsx`, новий client-компонент).
+
+**Видалено:** мертвий `src/lib/weekly-digest/editorial-draft.ts` + тест (передував Content Studio
+v2, ніде не імпортувався окрім власного тесту).
+
+**Виправлення плану:** початковий план казав видалити й `GENERIC_PRACTICAL_PATTERNS` як нібито
+дублікат `detectTemplateLeaks` -- читання коду показало, що це активний, протестований гейт
+(`generic_practical`) для іншого класу проблеми (reused generic template phrases в полі
+practical), не дублікат. Залишено як є.
+
+**Нове покриття:** `social-adapter.test.ts` (5 тестів, раніше -- нуль тестів на цей модуль):
+self-generated angle, banned-opener ranking, originality blocking/non-blocking, originality-flag
+surfacing. Typecheck/lint/build/vitest зелені (872 тести, 99 файлів).
+
+**Нотатка:** як і PR6, немає окремого live-прогону в межах цієї сесії -- новий originality-вимір
+критика жодного разу не бачив реальну відповідь моделі. Усі 7 PR плану тепер на гілці
+`feat/weekly-editorial-voice`; злиття, shadow-прогін і фінальна візуальна оцінка klein-стилю
+(PR5) лишаються рішенням власника.
+
+---
+
+## 2026-08-06 — Editorial quality overhaul, PR6: video script stage + manifest v3
+
+**Джерело:** рішення власника (session 2026-08-06) — «кодити PR6–7 паралельно» під час двох
+live-верифікацій PR3/PR5; продовження 7-PR плану `feat/weekly-editorial-voice`
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — новий підрозділ «PR6» під «Editorial voice overhaul»:
+  video виключено з майстер-виклику, новий standalone job `video_script`, WPS-валідатор,
+  manifest v3 з per-scene `revisionItemId`, оновлений порядок job-пайплайну
+- `wiki/pipeline/video-boundary.md` — попередження про застарілий приклад схеми (`v1` замість
+  живого `v3`), лінк на актуальний контракт
+- `wiki/now.md` — стан гілки (PR1–6 закомічені, PR7 останній), PR6 позначено «не верифіковано
+  наживо» (на відміну від PR3/PR5)
+- `wiki/index.md` — лічильник міграцій ~66 → ~67
+
+**Код:** `WeeklyMasterBundle.video` видалено з типу; новий `src/lib/weekly-digest/video-script-llm.ts`
+(TV-news драматургія: cold open → anchor → b-roll×3 (по одній на feature-історію) → radar
+quick-hits → outro, той самий Claude CLI → OpenRouter → Gemini ladder через щойно експортований
+`generateFirstAvailable`); новий `validateVideoScript` (`content-studio.ts`) — WPS-гейт
+`durationSeconds ≈ words(voiceover)/2.6 ±20%` б'є задокументований корінь «німого слайдслайду»
+з `ai-today-brief-video`; `video_script` — тепер queueable job type (раніше писався синхронно
+всередині `editorial_master`); міграція `20260806150000_weekly_video_script_job.sql`
+(job_type CHECK + обидва RPC) написана, **не застосована до прод-БД**; попутний фікс —
+`generateSocialCopy` більше не залежить від існування video_script-артефакту (побічний баг
+старого коду). Typecheck/lint/vitest зелені (152 тести, +17 нових на `validateVideoScript` і
+`generateWeeklyVideoScript`).
+
+**Нотатка:** на відміну від PR3 (critic shadow-run) і PR5 (klein dry-run), тут не було окремого
+live-прогону в межах цієї сесії — рекомендовано запустити `video_script` на реальному
+approved-артикулі перед shadow-розкаткою всього пайплайну.
+
+---
+
+## 2026-08-06 — Editorial quality overhaul, PR1: editorial-voice.ts core
+
+**Джерело:** рішення власника (session 2026-08-06) — забракував якість усього weekly-контенту
+(текст/ілюстрації/відео/соц) як «машинну»; опитування власника (аудиторія, голос, спекуляції,
+AEO-блоки, людина-в-циклі, формат відео, бюджет) + 7-PR план `feat/weekly-editorial-voice`
+
+**Змінено:**
+- `wiki/pipeline/editorial-voice.md` — нова сторінка: архітектура голосу, exemplars,
+  contrast-pairs, banned-phrase гейт, Unicode-regex пастка
+- `wiki/pipeline/weekly-digest.md` — секція «Editorial voice overhaul (2026-08-06)»,
+  `weekly-master-v4` → `weekly-master-v5`
+- `wiki/pipeline/weekly-editorial-selection.md` — межа з overhaul (selection незмінний, лише
+  вхід для нового voice-майстер-промпту)
+- `wiki/ops/weekly-admin-runbook.md` — нові блокери `editors_view_missing` /
+  `discussion_question_missing` / `template_leak:*` у кроці Research
+- `wiki/now.md` — активна робота п.1 = редакційний перегляд; trial release
+  `ai-weekly-2026-07-27` свідомо призупинено до PR1–3
+- `wiki/index.md` — новий рядок для `pipeline/editorial-voice.md`; лічильник міграцій 63 → 65
+  (pre-existing drift, не повʼязаний з цією роботою, виправлено заразом бо блокував `wiki:check`)
+
+**Нотатка:** код PR1 (`src/lib/weekly-digest/editorial-voice.ts` + переписані промпти в
+`editorial-llm.ts` + `detectTemplateLeaks`/нові поля `editorsView`/`discussionQuestion` в
+`content-studio.ts` і `generation-worker.ts`) готовий локально — typecheck/lint/vitest (832
+тестів) зелені; ще не закомічено/запушено, чекає рішення власника. PR2–7 заплановані, не
+почато.
+
+---
+
+## 2026-08-06 — Editorial quality overhaul, PR2: render new story anatomy
+
+**Джерело:** продовження 7-PR плану (PR1 запис вище); власник підтвердив підхід «AEO-блоки
+поза прозою» під час опитування 2026-08-06
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — секція PR2: `digests.ts`/`weekly-story.tsx`/`pdf.ts` зміни
+- `wiki/pipeline/editorial-voice.md` — позначено рендеринг як вирішений, приберано з «НЕ вирішує»
+
+**Нотатка:** `src/lib/digests.ts` читає нові поля з `source_snapshot.content_studio`
+(`contentStudioFrame`); `weekly-story.tsx` рендерить `limitation` (приглушений рядок),
+«Погляд редакції» (пунктирна рамка + дисклеймер) і `discussionQuestion` (завершальне питання) —
+усі умовно, зворотна сумісність зі старими випусками. PDF отримав панель `limitation` тим самим
+шляхом; `editorsView`/`discussionQuestion` свідомо НЕ додані в PDF. Живо перевірено на єдиному
+опублікованому випуску (`ai-weekly-2026-06-29`) — 200 OK, без regressions (dev-сервер довелось
+піднімати напряму через Bash, не через preview_start: харнес-тул під час запуску `next dev`
+ловить відомий subst-drive path-duplication баг з `dev-env-subst-drive-e2e-2026-07`, тепер він
+проявляється і поза Playwright-контекстом; `turbopack.root` у `next.config.ts` не допоміг і був
+відкочений — ENOENT стосується internal dev-manifest шляху, не module resolution).
+
+---
+
+## 2026-08-06 — Editorial quality overhaul, PR3: critic rubric + line-edit pass
+
+**Джерело:** продовження 7-PR плану (PR1/PR2 записи вище)
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — секція PR3: engagement/voice виміри, revise loop, latest-only
+  retry guidance, `weekly-master-v6`
+- `wiki/pipeline/editorial-voice.md` — PR3 позначено вирішеним із застереженням «не змержено»
+- `wiki/now.md` — зупинка перед мержем PR3 явно виділена
+
+**Нотатка:** `criticPrompt` тепер несе якорьовану рубрику (3 приклади на вимір: як виглядає
+90/75/55) і вимагає цитованих спанів для оцінок нижче 80. `generateWeeklyMaster` отримав
+in-process revise-loop (макс 2 спроби): на revisable провалі (`reportIsRevisable` —
+виключає grounding/структурні коди) шле targeted `reviseArticlePrompt` замість повної
+регенерації; англійська правка завжди тягне за собою переадаптацію української (не наосліп).
+Вартість по кожному кроку (english/ukrainian/critic) сумується по всіх спробах в межах одного
+виклику — інакше revise тихо занижував би облік витрат. `priorMasterRetryGuidance` звужено з
+«усі історичні звіти, змерджені» до «лише останній звіт» — стара версія ніколи не забувала
+код, навіть після виправлення, тому ретраї монотонно звужувались і сіріли.
+**НЕ змержено:** потребує critic-only shadow-прогону на `ai-weekly-2026-07-27` (реальний
+виклик OpenRouter, ~$0.30) — власник має підтвердити, що нова рубрика справді провалює
+старий текст по voice/engagement, перш ніж це можна мержити.
+
+---
+
+## 2026-08-06 — Editorial quality overhaul, PR4: owner-set story angle
+
+**Джерело:** продовження 7-PR плану (PR1–3 записи вище); перша точка «людина-в-циклі»
+(~30–60 хв/випуск), яку власник обрав на опитуванні 2026-08-06
+
+**Змінено:**
+- `supabase/migrations/20260806140000_weekly_digest_story_directions.sql` — нова таблиця
+  (написана, **не застосована** до живої БД)
+- `src/lib/database.types.ts` — ручний тип для `weekly_digest_story_directions` (codegen
+  неможливий, доки міграція не задеплоєна)
+- `wiki/pipeline/weekly-digest.md` — секція PR4 + виправлено дублікат абзацу (залишок від
+  вставки PR2/PR3 між старим текстом PR1)
+- `wiki/pipeline/editorial-voice.md` — PR4 позначено вирішеним зі спрощенням (без AI-пропозицій)
+- `wiki/now.md`, `wiki/index.md` (лічильник міграцій 65 → 66)
+
+**Нотатка:** таблиця keyed by `brief_item_id` (не `revision_item_id`) — щоб кут подачі не
+губився при кожному Save, який карбує нову ревізію (той самий урок з #177/#187). Спрощено
+проти плану: research pack лишається 100% детермінованим (без LLM-викликів), тому AI-пропозиції
+кута (2-3 варіанти на вибір) НЕ реалізовані — тільки вільний текст власника. Це і economy
+рішення (не додавати платний LLM-виклик у надійний детермінований етап), і узгоджується з
+принципом сесії «не витрачати гроші власника без питання» — згенеровані пропозиції довелося б
+показувати без live-перевірки якості. `masterInputStories` і адмін-читання деградують до
+порожньої мапи/масиву, якщо таблиця ще не задеплоєна — жодна сторінка не падає.
+
+---
+
+## 2026-08-06 — Editorial quality overhaul, PR5: reportage illustrations + variants
+
+**Джерело:** продовження 7-PR плану (PR1–4 записи вище); друга точка «людина-в-циклі»
+(вибір з варіантів + редагована сцена), яку власник обрав на опитуванні 2026-08-06
+
+**Змінено:**
+- `wiki/pipeline/weekly-digest.md` — секція PR5, включно з відхиленням від початкового плану
+  щодо зберігання варіантів (RPC не підтримує кілька `is_current` на один slot_key)
+- `wiki/pipeline/editorial-voice.md` — PR5 позначено вирішеним, «не змержено»
+
+**Нотатка:** `pipeline/card-image.ts` отримав повністю окремий шлях для weekly
+(`weeklyReportageSceneBrief`/`buildWeeklyPrompt`/`generateWeeklyReportageIllustrations`) —
+daily-пайплайн (`sceneBrief`/`buildPrompt`/`fillCardImages`) не чіпали, спільний лише
+provider-ladder. Головний фікс: `buildWeeklyPrompt` вшиває avoid-list у позитивний промпт,
+бо на дефолтному провайдері (FLUX.2 klein, multipart) окремий `negative_prompt` фізично не
+надсилався — мертвий код, який показувався в адмінці, але ніколи не діяв. Дизайн зберігання
+варіантів довелося переглянути після прочитання реального `save_weekly_digest_artifact` RPC:
+план описував «3 артефакти в одному slot», але RPC демотує попередній `is_current` рядок при
+кожному save — кілька одночасних is_current на один slot_key неможливі. Використано вже
+наявний `content.preview_paths`/`preview_urls` механізм (той самий, яким PDF підписує превʼю
+сторінок) замість нової архітектури — нуль нових DB-запитів у admin-data.ts.
+**НЕ змержено:** потребує dry-run 9 klein-рендерів — власник має підтвердити, що модель
+тримає репортажний стиль (не галюцинує чи не зісковзує назад у метафору), перш ніж це
+можна вважати готовим.
+
+---
+
+## 2026-08-06 — Editorial quality overhaul: PR3 + PR5 live verification, critic vocab fix
+
+**Джерело:** власник дав дозвіл запустити обидві відкладені live-перевірки (реальні платні
+виклики OpenRouter + Cloudflare) замість чекати окремого рішення по кожній
+
+**Змінено:**
+- `src/lib/weekly-digest/editorial-llm.ts` — `criticPrompt` тепер задає закритий словник із
+  6 кодів для non-factual issues (знайдено живим прогоном, критик вигадував власні коди)
+- `src/lib/weekly-digest/content-studio.ts` — `REVISABLE_ISSUE_CODES` розширено цими 6 кодами
+- `src/lib/weekly-digest/content-studio.test.ts` — тести на новий і старий (відхилений) словник
+- `wiki/pipeline/weekly-digest.md` — результати обох live-перевірок у секціях PR3/PR5
+- `wiki/now.md`
+
+**Нотатка:** PR3 acceptance test **PASSED** — новий критик дав 73/100 (voice 68, naturalness 70)
+на точно тому контенті, що раніше отримав 93/100, і самостійно процитував фрази з оригінальної
+скарги власника («Обмеження полягає в тому, що…», «For product and security leaders…»). Рубрика
+дискримінує за призначенням. PR5 dry-run дав 9 генуїнно фотореалістичних репортажних кадрів —
+технічна перевірка пройдена, зображення надіслані власнику для фінальної візуальної оцінки;
+одна самостійно помічена проблема — композиційна одноманітність між історіями (не хиба
+регістру, радше брак сценарної різноманітності, вартий уваги в майбутньому тюнінгу
+`weeklyReportageSceneBrief`). Скрипти верифікації — `tmp/pr3-shadow-critic/`,
+`tmp/pr5-klein-dryrun/` (одноразові, за конвенцією директорії `tmp/` цього репо).
 
 ---
 

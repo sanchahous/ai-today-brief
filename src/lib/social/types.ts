@@ -50,6 +50,9 @@ export interface QualityReport {
     flags: string[];
     platformFitScore?: number;
     platformFlags?: string[];
+    /** How original/non-formulaic the copy reads, 0-100 -- weekly-only (PR7). */
+    originalityScore?: number;
+    originalityFlags?: string[];
     provider?: 'gemini' | 'openrouter' | 'ollama';
     model?: string;
     fallbackUsed?: boolean;

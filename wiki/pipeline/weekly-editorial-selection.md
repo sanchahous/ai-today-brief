@@ -2,7 +2,7 @@
 
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
 Sources: none (analysis)
-Last updated: 2026-07-23
+Last updated: 2026-08-06
 
 
 `weekly-editorial-v2` replaces the old `impact → recency → daily rank` sort used
@@ -108,7 +108,16 @@ showing the intended ranking change. Calibrate against editor decisions and
 reader engagement only after enough weekly observations exist; do not tune to a
 single unusually noisy week.
 
+## Межа з editorial voice overhaul (2026-08-06)
+
+Цей відбір (7-story shortlist, score, diversity gates) **не змінився** у перегляді редакційного
+голосу — він лишається чистим входом для майстер-промпту. Змінилось те, що відбувається зі
+story ПІСЛЯ відбору: `editorial-llm.ts` тепер пише текст через `editorial-voice.ts`
+(house-style, exemplars, banned-phrase гейт). Деталі — [editorial-voice](editorial-voice.md).
+(source: `src/lib/weekly-digest/editorial-voice.ts`, `editorial-llm.ts`)
+
 ## Related pages
 
 - [weekly-digest](weekly-digest.md) — Content Studio v2, ревізії, spend-cap, admin UX
+- [editorial-voice](editorial-voice.md) — редакційний голос після відбору
 - [video-boundary](video-boundary.md)

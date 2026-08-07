@@ -5,8 +5,8 @@ Summary: продукт, ринок, економіка, жорсткі обме
 Sources: `wiki/strategy/startup-plan.md`, `wiki/strategy/master-roadmap.md`, `wiki/audits/2026-07-01-seo-organic.md`,
 `wiki/audits/2026-06-12-analytics-gsc.md`, `wiki/analytics/ga4-gsc.md`, `wiki/pipeline/guide.md`,
 `wiki/ops/owner-checklist.md`, `.cursor/rules/00-core.mdc`, `.env.example`, `package.json`,
-live check git/PR 2026-08-04
-Last updated: 2026-08-04
+live check git/PR 2026-08-04, editorial quality overhaul PR5 (гілка `feat/weekly-editorial-voice`, 2026-08-06)
+Last updated: 2026-08-06
 
 ---
 
@@ -69,7 +69,7 @@ LemonSqueezy відкладено, спонсорство «через email с�
 | Стаття | Стан | Джерело |
 |---|---|---|
 | LLM для pipeline | Gemini Flash (AI Studio free 250/день) → OpenRouter fallback → Ollama локально | `wiki/pipeline/guide.md` §4, `.env.example` |
-| Картинки карток / weekly story | Cloudflare Workers AI **FLUX.2 klein** (`@cf/black-forest-labs/flux-2-klein-9b`); без ключа — брендований duotone-fallback | `.env.example`, PR #169–#171, [card-images](marketing/card-images.md) |
+| Картинки карток / weekly story | Cloudflare Workers AI **FLUX.2 klein** (`@cf/black-forest-labs/flux-2-klein-9b`); без ключа — брендований duotone-fallback. Weekly story-ілюстрації від PR5 (2026-08-06) — окрема репортажна house-style (policy `weekly-reportage-v1`, 3 варіанти на історію) | `.env.example`, PR #169–#171, editorial quality overhaul PR5, [card-images](marketing/card-images.md) |
 | X (Twitter) постинг | hard cap **≤ €10/міс** у БД; резервація `X_POST_ESTIMATED_COST_EUR=0.40` на пост | `.env.example` |
 | Weekly master LLM | оцінка $3/M input, $15/M output; kill-switch `WEEKLY_CONTENT_STUDIO_V2=off`; hard cap `WEEKLY_MASTER_MAX_SPEND_USD` (default $4) | `.env.example`, PR #163, `generation-worker.ts` |
 | Social writer/critic LLM | оцінка $0.3/M input, $1/M output | `.env.example` |

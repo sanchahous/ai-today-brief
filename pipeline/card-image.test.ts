@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
 import {
   buildPrompt,
+  buildWeeklyPrompt,
   DEFAULT_CF_IMAGE_MODEL,
   estimateCloudflareImageCostUsd,
   fallbackIllustrationMotif,
   fallbackScene,
   generateEditorialIllustration,
+  generateWeeklyReportageIllustrations,
   hueName,
   IMG_H,
   IMG_W,
@@ -17,6 +19,7 @@ import {
   sceneBrief,
   SCHNELL_MODEL,
   seedFromString,
+  weeklyReportageSceneBrief,
 } from './card-image';
 
 describe('DEFAULT_CF_IMAGE_MODEL', () => {
@@ -314,5 +317,124 @@ describe('sceneBrief', () => {
     const { scene, source } = await sceneBrief('', '', { geminiApiKey: 'unused' });
     expect(scene).toContain('workstation');
     expect(source).toBe('fallback');
+  });
+});
+
+// --- Weekly Digest "reportage" illustrations (editorial quality overhaul, PR5) ---
+
+describe('weeklyReportageSceneBrief', () => {
+  it('returns the default scene without any network call when there is no context', async () => {
+    const { scene, source } = await weeklyReportageSceneBrief(
+      { headline: '', summary: '' },
+      { geminiApiKey: 'unused' },
+    );
+    expect(scene).toContain('workstation');
+    expect(source).toBe('fallback');
+  });
+
+  it('falls back to the same keyword scene as the daily path when every provider is unconfigured', async () => {
+    const { scene, source } = await weeklyReportageSceneBrief(
+      { headline: 'Critical CVE lets attackers breach the server', summary: '' },
+      { geminiApiKey: '' },
+    );
+    expect(source).toBe('fallback');
+    expect(scene).toContain('padlock');
+  });
+});
+
+describe('buildWeeklyPrompt', () => {
+  it('describes a documentary/reportage register, distinct from the daily illustration style', () => {
+    const prompt = buildWeeklyPrompt('cyan', 'a security engineer glancing at a red-highlighted network map');
+    expect(prompt).toContain('cyan');
+    expect(prompt).toContain('a security engineer glancing at a red-highlighted network map');
+    expect(prompt).toMatch(/documentary|reportage/i);
+    expect(prompt).toContain('16:9');
+    // Never the daily path's "illustration/metaphor" framing.
+    expect(prompt.toLowerCase()).not.toContain('narrative metaphor');
+  });
+
+  it('folds the full avoid-list into the positive prompt (the klein-multipart negative_prompt fix)', () => {
+    // FLUX.2 klein's multipart Workers AI call never transmits a separate
+    // negative_prompt (runCloudflareMultipart only sends prompt/width/
+    // height) -- so on the default weekly provider, a bare negativePrompt()
+    // is silently never sent. This is the actual fix: the avoid-list must
+    // live inside the positive prompt string itself.
+    const prompt = buildWeeklyPrompt('cyan', 'a scene');
+    expect(prompt).toContain('glowing brain');
+    expect(prompt).toContain('cracked padlock');
+    expect(prompt).toContain('robotic arms shaking hands');
+    expect(prompt).toContain('anonymous server aisle');
+    expect(prompt.toLowerCase()).toContain('avoid:');
+  });
+});
+
+describe('generateWeeklyReportageIllustrations', () => {
+  const originalFetch = globalThis.fetch;
+  const pngBytes = Buffer.alloc(2048, 7);
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  function jsonImageResponse() {
+    return new Response(JSON.stringify({ result: { image: pngBytes.toString('base64') } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  it('generates the requested number of variants, each from a distinct seed, using a scene override to skip the art-director call', async () => {
+    const seenSeeds: string[] = [];
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes('flux-2-klein-9b')) {
+        const body = init?.body;
+        if (body instanceof FormData) seenSeeds.push(String(body.get('prompt')).length.toString());
+        return jsonImageResponse();
+      }
+      return new Response('fail', { status: 500 });
+    }) as typeof fetch;
+
+    const result = await generateWeeklyReportageIllustrations(
+      {
+        headline: 'unused because of sceneOverride',
+        summary: 'unused',
+        sceneOverride: 'a hand closing a laptop lid in a dim office at night',
+        seedBase: 'digest-1:item-1',
+        variantCount: 3,
+      },
+      { geminiApiKey: 'unused', cloudflareAccountId: 'acct', cloudflareApiToken: 'token' },
+    );
+
+    expect(result?.sceneSource).toBe('owner');
+    expect(result?.scene).toBe('a hand closing a laptop lid in a dim office at night');
+    expect(result?.variants).toHaveLength(3);
+    // No Gemini/OpenRouter scene call was made -- only 3 klein calls.
+    const kleinCalls = vi
+      .mocked(globalThis.fetch)
+      .mock.calls.filter((call) => String(call[0]).includes('flux-2-klein-9b'));
+    expect(kleinCalls).toHaveLength(3);
+  });
+
+  it('derives a different seed per variant from the same seedBase', () => {
+    const base = 'digest-1:item-1';
+    const seeds = [1, 2, 3].map((n) => seedFromString(`${base}:v${n}`));
+    expect(new Set(seeds).size).toBe(3);
+  });
+
+  it('returns null when every variant attempt fails across the whole provider ladder', async () => {
+    globalThis.fetch = vi.fn(async () => new Response('fail', { status: 500 })) as typeof fetch;
+    const result = await generateWeeklyReportageIllustrations(
+      {
+        headline: 'A story with no configured providers',
+        summary: '',
+        sceneOverride: 'a scene',
+        seedBase: 'digest-1:item-2',
+        variantCount: 2,
+      },
+      { geminiApiKey: '' },
+    );
+    expect(result).toBeNull();
   });
 });

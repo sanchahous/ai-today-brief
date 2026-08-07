@@ -11,6 +11,7 @@ import type {
   SocialLocale,
 } from '@/lib/social/types';
 import type { WeeklyMasterBundle } from './content-studio';
+import { bannedPhrasesFor, VOICE_EN, VOICE_UK } from './editorial-voice';
 
 export interface WeeklySocialAdaptation extends SocialDraft {
   hookAngle: string;
@@ -44,11 +45,15 @@ const CHANNEL_CONTRACT: Record<SocialChannel, string> = {
 function parseWriter(raw: string) {
   const match = raw.match(/\{[\s\S]*\}/)?.[0];
   if (!match) throw new SyntaxError('Writer returned no JSON object.');
-  const value = JSON.parse(match) as { text?: unknown; firstComment?: unknown };
+  const value = JSON.parse(match) as { angle?: unknown; text?: unknown; firstComment?: unknown };
+  if (typeof value.angle !== 'string' || !value.angle.trim()) {
+    throw new SyntaxError('Writer angle is missing.');
+  }
   if (typeof value.text !== 'string' || !value.text.trim()) {
     throw new SyntaxError('Writer text is missing.');
   }
   return {
+    angle: value.angle.trim(),
     text: value.text.trim(),
     firstComment: typeof value.firstComment === 'string' ? value.firstComment.trim() : null,
   };
@@ -94,12 +99,18 @@ function unpackCandidate(channel: SocialChannel, candidate: string, firstComment
   return { text: candidate, contentParts: [], firstComment };
 }
 
-function scoreCandidate(channel: SocialChannel, candidate: string) {
+function scoreCandidate(channel: SocialChannel, locale: SocialLocale, candidate: string) {
   let score = 100;
   if (/…/.test(candidate)) score -= 40;
   if (/^(?:\s*\d+[.)].*\n){3,}/m.test(candidate)) score -= 30;
   if (/this week in ai|цього тижня в (?:ai|ші)/i.test(candidate)) score -= 8;
   if (!/[.!?]/.test(candidate.slice(0, 140))) score -= 8;
+  // Same deterministic AI-tell/template-leak detectors PR1 built for article
+  // prose -- generic hedge phrasing and label-openers read just as badly in
+  // a social hook as in a 600-word story.
+  for (const rule of bannedPhrasesFor(locale)) {
+    if (rule.pattern.test(candidate)) score -= 15;
+  }
   const characterRange: Partial<Record<SocialChannel, [number, number]>> = {
     telegram: [900, 1_600],
     facebook: [700, 1_400],
@@ -144,30 +155,28 @@ function promptFor(input: {
   channel: SocialChannel;
   locale: SocialLocale;
   bundle: WeeklyMasterBundle;
-  hookAngle: string;
   trackedUrl: string;
 }) {
   const article = input.locale === 'uk' ? input.bundle.uk : input.bundle.en;
-  return `You are a senior social editor for AI Today Brief. Adapt the approved master into native ${input.channel} copy for builders, founders and AI decision-makers. Voice: trusted editor-practitioner, direct, vivid and useful without clickbait. Do not list all headlines. Do not truncate or use ellipses. Use only claim IDs and facts already present in the master.
+  const voice = input.locale === 'uk' ? VOICE_UK : VOICE_EN;
+  return `You are a senior social editor for AI Today Brief. Adapt the approved master into native ${input.channel} copy for builders, founders and AI decision-makers. Do not list all headlines. Do not truncate or use ellipses. Use only claim IDs and facts already present in the master.
+
+VOICE
+${voice}
 
 CHANNEL CONTRACT: ${CHANNEL_CONTRACT[input.channel]}
-HOOK ANGLE: ${input.hookAngle}
 TRACKED URL: ${input.trackedUrl}
 
-Create THREE meaningfully different hook candidates. Put all candidates inside the JSON "text" string and separate them with <CANDIDATE>. For Threads use <PART> inside each candidate. For Instagram use <SLIDE> and <CAPTION>. For X return the tracked URL in "firstComment"; for other channels put it only where the contract permits. Return strict JSON only: {"text":"candidate 1<CANDIDATE>candidate 2<CANDIDATE>candidate 3","firstComment":""}.
+First, read the approved article below and decide your own angle for this channel's audience -- the single most compelling entry point, not a recap of every headline. Write it as a short (3-8 word) label in "angle". Then create THREE hook candidates built on that angle that are genuinely different from each other in opening, tone or emphasis -- not the same sentence reworded. Never open with a generic AI-tell phrase ("in today's fast-moving AI landscape", "it's worth noting", "game-changer") or a leader-briefing frame ("for product and security leaders") -- open on the concrete fact or scene. Put all candidates inside the JSON "text" string and separate them with <CANDIDATE>. For Threads use <PART> inside each candidate. For Instagram use <SLIDE> and <CAPTION>. For X return the tracked URL in "firstComment"; for other channels put it only where the contract permits. Return strict JSON only: {"angle":"","text":"candidate 1<CANDIDATE>candidate 2<CANDIDATE>candidate 3","firstComment":""}.
 
 APPROVED ARTICLE
-${JSON.stringify(article)}
-
-APPROVED SOCIAL ANGLES
-${JSON.stringify(input.bundle.socialAngles)}`;
+${JSON.stringify(article)}`;
 }
 
 export async function adaptWeeklySocialChannel(input: {
   channel: SocialChannel;
   locale: SocialLocale;
   bundle: WeeklyMasterBundle;
-  hookAngle: string;
   trackedUrl: string;
   scheduledFor: string;
   sourceFacts: string[];
@@ -177,7 +186,10 @@ export async function adaptWeeklySocialChannel(input: {
   const writer = await generateSocialJson('writer', promptFor(input), parseWriter);
   const hookCandidates = candidatesFromText(writer.value.text);
   const ranked = hookCandidates
-    .map((candidate) => ({ candidate, score: scoreCandidate(input.channel, candidate) }))
+    .map((candidate) => ({
+      candidate,
+      score: scoreCandidate(input.channel, input.locale, candidate),
+    }))
     .sort((left, right) => right.score - left.score);
   const selected = ranked[0]!;
   const firstComment = input.channel === 'x' ? input.trackedUrl : writer.value.firstComment;
@@ -197,7 +209,7 @@ export async function adaptWeeklySocialChannel(input: {
     sourceUrl: input.trackedUrl,
   };
   const base = runQualityGate(draft);
-  const criticPrompt = `Audit this social adaptation independently. First, compare it against ONLY the approved facts and flag unsupported numbers, names, quotes, causal implications or misleading compression. Second, audit it against the exact ${input.channel} contract: ${CHANNEL_CONTRACT[input.channel]}. Score factual grounding and platform-native fit separately from 0–100. Return JSON only: {"score":0,"flags":[],"platformFitScore":0,"platformFlags":[]}.
+  const criticPrompt = `Audit this social adaptation independently. First, compare it against ONLY the approved facts and flag unsupported numbers, names, quotes, causal implications or misleading compression. Second, audit it against the exact ${input.channel} contract: ${CHANNEL_CONTRACT[input.channel]}. Third, score how ORIGINAL and non-formulaic the copy reads -- would a reader who follows this beat recognize it as a distinct, specific take, or does it read like a generic AI-generated social post that could describe any AI news week? Flag any generic-AI-tell phrase or hedge you find. Score factual grounding, platform-native fit and originality separately from 0–100. Return JSON only: {"score":0,"flags":[],"platformFitScore":0,"platformFlags":[],"originalityScore":0,"originalityFlags":[]}.
 
 APPROVED FACTS
 ${input.sourceFacts.map((fact) => `- ${fact}`).join('\n')}
@@ -215,7 +227,7 @@ ${[draft.text, ...unpacked.contentParts, draft.firstComment ?? ''].join('\n---\n
   const qualityReport: QualityReport = {
     ...base,
     platformFitScore,
-    hookAngle: input.hookAngle,
+    hookAngle: writer.value.angle,
     hookCandidates,
     writer: {
       provider: writer.provider,
@@ -262,11 +274,26 @@ ${[draft.text, ...unpacked.contentParts, draft.firstComment ?? ''].join('\n---\n
             },
           ]
         : []),
+      ...(typeof critic.value.originalityScore === 'number' && critic.value.originalityScore < 70
+        ? [
+            {
+              code: 'originality_score',
+              message: `Independent critic scored this variant ${critic.value.originalityScore}/100 for originality; 70 is required.`,
+              suggestedFix: 'Rewrite with a more specific, non-generic angle -- avoid AI-tell phrasing.',
+            },
+          ]
+        : []),
+      ...(critic.value.originalityFlags ?? []).map((flag) => ({
+        code: 'originality_flag',
+        message: flag,
+        span: criticSpan(flag, auditedCopy),
+        suggestedFix: 'Rewrite the flagged phrase in this channel\'s own voice.',
+      })),
     ],
   };
   return {
     ...draft,
-    hookAngle: input.hookAngle,
+    hookAngle: writer.value.angle,
     hookCandidates,
     writer: {
       provider: writer.provider,

@@ -1,8 +1,11 @@
 import { createHash } from 'node:crypto';
+import { bannedPhrasesFor } from './editorial-voice';
 
 export const WEEKLY_CONTENT_STUDIO_VERSION = 'weekly-content-studio-v2.1';
-export const WEEKLY_MASTER_SPEC_VERSION = 'weekly-master-v4';
-export const WEEKLY_VIDEO_MANIFEST_VERSION = 'weekly-video-v2';
+export const WEEKLY_MASTER_SPEC_VERSION = 'weekly-master-v6';
+export const WEEKLY_VIDEO_MANIFEST_VERSION = 'weekly-video-v3';
+/** video_script is a standalone job/artifact stage since PR6 -- separate version from the manifest. */
+export const WEEKLY_VIDEO_SCRIPT_SCHEMA_VERSION = 'weekly-video-script-v1';
 /** Primary-source excerpt stored on research packs and fed to writer/critic. */
 export const WEEKLY_RESEARCH_EXCERPT_MAX_CHARS = 12_000;
 export const WEEKLY_RESEARCH_SCHEMA_VERSION = 'weekly-research-v3' as const;
@@ -63,6 +66,13 @@ export interface WeeklyMasterStory {
   limitation: string;
   takeaway: string;
   claimIds: string[];
+  /**
+   * Editor's-view speculation block, required for feature stories only (see
+   * SPECULATION_SPEC_* in editorial-voice.ts). Empty string for radar items.
+   */
+  editorsView: string;
+  /** Closing discussion question, required for feature stories only. */
+  discussionQuestion: string;
 }
 
 export interface WeeklyArticleMaster {
@@ -84,19 +94,36 @@ export interface WeeklyArticleMaster {
   stories: WeeklyMasterStory[];
 }
 
-export interface WeeklyNarrationPlan {
+export interface WeeklyMasterBundle {
+  en: WeeklyArticleMaster;
+  uk: WeeklyArticleMaster;
+}
+
+/**
+ * TV-news-format scene (PR6, editorial quality overhaul). Replaces the old
+ * WeeklyNarrationPlan scene shape (id/purpose/voiceover/onScreenText/
+ * visualBrief), which had no act structure and no per-scene story link --
+ * the video repo's renderer mapped scenes to story images by `index %
+ * assets.length`, which is why a scene about one story could render another
+ * story's illustration. `revisionItemId` fixes that at the source.
+ */
+export interface WeeklyVideoScene {
+  id: string;
+  kind: 'cold_open' | 'anchor' | 'broll' | 'outro';
+  /** null for cold_open/anchor/outro scenes that aren't tied to one story. */
+  revisionItemId: string | null;
+  voiceover: string;
+  onScreenText: string;
+  /** Living b-roll generation prompt, weekly reportage house style (pipeline/card-image.ts buildWeeklyPrompt). */
+  scenePrompt: string;
+  durationSeconds: number;
+}
+
+export interface WeeklyVideoScript {
   title: string;
   hook: string;
   narration: string;
-  scenes: Array<{
-    id: string;
-    purpose: string;
-    voiceover: string;
-    onScreenText: string;
-    visualBrief: string;
-    factIds: string[];
-    durationSeconds: number;
-  }>;
+  scenes: WeeklyVideoScene[];
   shorts: Array<{
     revisionItemId: string;
     locale: 'uk';
@@ -109,20 +136,13 @@ export interface WeeklyNarrationPlan {
   }>;
 }
 
-export interface WeeklyMasterBundle {
-  en: WeeklyArticleMaster;
-  uk: WeeklyArticleMaster;
-  video: WeeklyNarrationPlan;
-  socialAngles: Array<{
-    channel: string;
-    hookAngle: string;
-    thesis: string;
-    factIds: string[];
-  }>;
-}
-
 export interface WeeklyQualityDimension {
-  name: 'hook' | 'clarity' | 'trust' | 'usefulness' | 'structure' | 'naturalness' | 'parity';
+  // 'engagement'/'voice' replaced 'hook'/'structure' in the PR3 rubric
+  // redesign -- the old pair scored surface hook quality and JSON-shape
+  // completeness, neither of which caught a 93/100 compliance-register
+  // draft. engagement = narrative pull (would a human read past paragraph
+  // one); voice = house-style adherence (editorial-voice.ts).
+  name: 'engagement' | 'voice' | 'clarity' | 'trust' | 'usefulness' | 'naturalness' | 'parity';
   score: number;
   note: string;
 }
@@ -218,6 +238,67 @@ const GENERIC_PRACTICAL_PATTERNS = [
   /репрезентативному завданні.*вартість.*затримк/i,
   /прототип інтеграції в ізольованому середовищі/i,
 ];
+
+const TEMPLATE_LEAK_FIELDS = [
+  'body',
+  'why',
+  'practical',
+  'limitation',
+  'takeaway',
+  'editorsView',
+] as const;
+
+const ARTICLE_LEVEL_TEMPLATE_LEAK_FIELDS = ['standfirst', 'intro', 'editorNote', 'conclusion'] as const;
+
+/**
+ * Deterministic, zero-cost pre-critic gate: fires a blocker whenever a story
+ * or article-level field matches a known template-leak or AI-tell pattern
+ * (editorial-voice.ts). Catches the exact register the owner rejected in the
+ * 2026-07-27 edition -- e.g. a body paragraph opening "Практичний сценарій:"
+ * that just restates the separately-boxed practical field -- before an LLM
+ * critic call is even spent checking for it.
+ */
+export function detectTemplateLeaks(bundle: WeeklyMasterBundle): WeeklyQualityIssue[] {
+  const issues: WeeklyQualityIssue[] = [];
+  for (const locale of ['en', 'uk'] as const) {
+    const article = bundle[locale];
+    const rules = bannedPhrasesFor(locale);
+    for (const field of ARTICLE_LEVEL_TEMPLATE_LEAK_FIELDS) {
+      const value = article[field];
+      for (const rule of rules) {
+        const match = rule.pattern.exec(value);
+        if (!match) continue;
+        issues.push({
+          code: `template_leak:${rule.code}`,
+          message: rule.message,
+          blocker: true,
+          locale,
+          field,
+          span: match[0],
+        });
+      }
+    }
+    for (const story of article.stories) {
+      for (const field of TEMPLATE_LEAK_FIELDS) {
+        const value = story[field];
+        for (const rule of rules) {
+          const match = rule.pattern.exec(value);
+          if (!match) continue;
+          issues.push({
+            code: `template_leak:${rule.code}`,
+            message: rule.message,
+            blocker: true,
+            locale,
+            revisionItemId: story.revisionItemId,
+            field,
+            span: match[0],
+          });
+        }
+      }
+    }
+  }
+  return issues;
+}
 
 export function validateMasterBundle(
   bundle: WeeklyMasterBundle,
@@ -332,6 +413,41 @@ export function validateMasterBundle(
           suggestedFix: `Rewrite the body to ${target[0]}–${target[1]} words without adding claims.`,
         });
       }
+      if (story.placement === 'feature') {
+        if (!story.editorsView.trim()) {
+          issues.push({
+            code: 'editors_view_missing',
+            message: 'Every feature story requires an editorsView speculation block.',
+            blocker: true,
+            locale,
+            revisionItemId: itemId,
+            field: 'editorsView',
+          });
+        } else {
+          const editorsViewWords = words(story.editorsView);
+          if (editorsViewWords < 60 || editorsViewWords > 110) {
+            issues.push({
+              code: 'editors_view_length',
+              message: `editorsView is ${editorsViewWords} words; target is 60–110.`,
+              blocker: false,
+              locale,
+              revisionItemId: itemId,
+              field: 'editorsView',
+              suggestedFix: 'Tighten or extend the speculation to 60–110 words without restating the body.',
+            });
+          }
+        }
+        if (!story.discussionQuestion.trim()) {
+          issues.push({
+            code: 'discussion_question_missing',
+            message: 'Every feature story requires a closing discussionQuestion.',
+            blocker: true,
+            locale,
+            revisionItemId: itemId,
+            field: 'discussionQuestion',
+          });
+        }
+      }
       const repeated = [story.why, story.practical, story.takeaway].map(normalizedComparable);
       if (new Set(repeated).size !== repeated.length) {
         issues.push({
@@ -408,32 +524,54 @@ export function validateMasterBundle(
       suggestedFix: 'Adapt the prose while preserving story order and exact claim ID arrays.',
     });
   }
-  if (bundle.video.shorts.length !== 3) {
-    issues.push({
-      code: 'shorts_count',
-      message: 'The narration plan must include exactly three Ukrainian Shorts.',
-      blocker: true,
-    });
-  }
-  const narrationSeconds = bundle.video.scenes.reduce(
-    (total, scene) => total + scene.durationSeconds,
-    0,
-  );
-  if (!Number.isFinite(narrationSeconds) || narrationSeconds < 360 || narrationSeconds > 480) {
-    issues.push({
-      code: 'video_duration',
-      message: `Long-form scene plan totals ${narrationSeconds || 0}s; required range is 360–480s.`,
-      blocker: true,
-    });
-  }
-  const shortIds = bundle.video.shorts.map((short) => short.revisionItemId);
+  issues.push(...detectTemplateLeaks(bundle));
+  return issues;
+}
+
+/** Spoken-word pacing used to check a scene's claimed duration against its actual narration length. */
+const VIDEO_WORDS_PER_SECOND = 2.6;
+const VIDEO_WPS_TOLERANCE = 0.2;
+
+/**
+ * Validates a TV-news-format video script (PR6, editorial quality
+ * overhaul). The load-bearing check is `scene_narration_mismatch`: it kills
+ * the documented root cause of the "silent slideshow" (the LLM inventing a
+ * `durationSeconds` that satisfies the 360-480s total while writing
+ * voiceover text far too short for that runtime -- see
+ * ai-today-brief-video's 2026-08-05-professional-ai-video-guide.md, which
+ * measured ~1,000 chars ≈ 97s of actual speech against a claimed 420s
+ * manifest). A scene's duration must now be within ±20% of what its own
+ * voiceover word count would actually take to read aloud at ~2.6 words/sec.
+ */
+export function validateVideoScript(
+  script: WeeklyVideoScript,
+  expectedStories: Array<{
+    revisionItemId: string;
+    placement: WeeklyPlacement;
+    claimIds: string[];
+  }>,
+): WeeklyQualityIssue[] {
+  const issues: WeeklyQualityIssue[] = [];
+  const featureIds = expectedStories
+    .filter((story) => story.placement === 'feature')
+    .map((story) => story.revisionItemId);
   const featureClaimIds = new Map(
     expectedStories
       .filter((story) => story.placement === 'feature')
       .map((story) => [story.revisionItemId, new Set(story.claimIds)]),
   );
+  const knownStoryIds = new Set(expectedStories.map((story) => story.revisionItemId));
+
+  if (script.shorts.length !== 3) {
+    issues.push({
+      code: 'shorts_count',
+      message: 'The video script must include exactly three Ukrainian Shorts.',
+      blocker: true,
+    });
+  }
+  const shortIds = script.shorts.map((short) => short.revisionItemId);
   if (
-    bundle.video.shorts.some(
+    script.shorts.some(
       (short) =>
         short.locale !== 'uk' ||
         short.durationSeconds < 35 ||
@@ -450,50 +588,183 @@ export function validateMasterBundle(
       blocker: true,
     });
   }
+
+  const totalSeconds = script.scenes.reduce((sum, scene) => sum + scene.durationSeconds, 0);
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 360 || totalSeconds > 480) {
+    issues.push({
+      code: 'video_duration',
+      message: `Scene plan totals ${totalSeconds || 0}s; required range is 360–480s.`,
+      blocker: true,
+    });
+  }
+
+  const brollScenes = script.scenes.filter((scene) => scene.kind === 'broll');
+  const brollStoryIds = new Set(brollScenes.map((scene) => scene.revisionItemId));
   if (
-    bundle.video.scenes.length < 4 ||
-    bundle.video.scenes.some(
-      (scene) =>
-        !Number.isFinite(scene.durationSeconds) ||
-        scene.durationSeconds <= 0 ||
-        scene.durationSeconds > 180 ||
-        scene.factIds.some((factId) => !claimIds.has(factId)),
-    )
+    script.scenes.length < 5 ||
+    brollScenes.length < 3 ||
+    !featureIds.every((id) => brollStoryIds.has(id))
   ) {
     issues.push({
-      code: 'scene_grounding',
+      code: 'scene_structure',
       message:
-        'The long-form plan needs at least four scenes; each must be 1–180s and use approved fact IDs.',
+        'The script needs a cold open, an anchor intro, one broll segment per Top 3 story, and an outro.',
       blocker: true,
     });
   }
-  if (
-    bundle.socialAngles.some(
-      (angle) =>
-        angle.factIds.length === 0 || angle.factIds.some((factId) => !claimIds.has(factId)),
-    )
-  ) {
-    issues.push({
-      code: 'social_angle_grounding',
-      message: 'Every social angle must reference one or more approved fact IDs.',
-      blocker: true,
-    });
+
+  for (const scene of script.scenes) {
+    if (
+      !Number.isFinite(scene.durationSeconds) ||
+      scene.durationSeconds <= 0 ||
+      scene.durationSeconds > 180
+    ) {
+      issues.push({
+        code: 'scene_duration',
+        message: `Scene ${scene.id} duration ${scene.durationSeconds}s is outside the 1–180s range.`,
+        blocker: true,
+        field: 'durationSeconds',
+      });
+      continue;
+    }
+    const wordCount = words(scene.voiceover);
+    const expectedSeconds = wordCount / VIDEO_WORDS_PER_SECOND;
+    const lowerBound = expectedSeconds * (1 - VIDEO_WPS_TOLERANCE);
+    const upperBound = expectedSeconds * (1 + VIDEO_WPS_TOLERANCE);
+    if (scene.durationSeconds < lowerBound || scene.durationSeconds > upperBound) {
+      issues.push({
+        code: 'scene_narration_mismatch',
+        message: `Scene ${scene.id} claims ${scene.durationSeconds}s but its voiceover is ${wordCount} words (~${expectedSeconds.toFixed(0)}s at ${VIDEO_WORDS_PER_SECOND} words/sec). Write narration long enough to fill the claimed duration, or shorten the duration to match.`,
+        blocker: true,
+        field: 'voiceover',
+      });
+    }
+    if (scene.kind === 'broll' && !(scene.revisionItemId && knownStoryIds.has(scene.revisionItemId))) {
+      issues.push({
+        code: 'scene_story_link',
+        message: `broll scene ${scene.id} must reference a real revisionItemId from this edition.`,
+        blocker: true,
+        field: 'revisionItemId',
+      });
+    }
+    if (scene.kind !== 'broll' && scene.revisionItemId) {
+      issues.push({
+        code: 'scene_story_link',
+        message: `${scene.kind} scene ${scene.id} is not story-specific; revisionItemId should be null.`,
+        blocker: false,
+        field: 'revisionItemId',
+      });
+    }
+    for (const rule of bannedPhrasesFor('en')) {
+      if (rule.pattern.test(scene.voiceover)) {
+        issues.push({
+          code: `template_leak:${rule.code}`,
+          message: `Scene ${scene.id} voiceover: ${rule.message}`,
+          blocker: true,
+          field: 'voiceover',
+        });
+      }
+    }
   }
+
+  for (const short of script.shorts) {
+    for (const field of ['hook', 'context', 'insight', 'takeaway'] as const) {
+      for (const rule of bannedPhrasesFor('uk')) {
+        if (rule.pattern.test(short[field])) {
+          issues.push({
+            code: `template_leak:${rule.code}`,
+            message: `Short ${short.revisionItemId} ${field}: ${rule.message}`,
+            blocker: true,
+            field,
+          });
+        }
+      }
+    }
+  }
+
   return issues;
 }
 
 export const REQUIRED_QUALITY_DIMENSIONS: WeeklyQualityDimension['name'][] = [
-  'hook',
+  'engagement',
+  'voice',
   'clarity',
   'trust',
   'usefulness',
-  'structure',
   'naturalness',
   'parity',
 ];
 const GENERAL_DIMENSION_MIN_SCORE = 75;
 const NATURALNESS_PARITY_MIN_SCORE = 80;
 const OVERALL_MIN_SCORE = 85;
+
+/**
+ * Issue codes a targeted revise pass (editorial-llm.ts `reviseArticlePrompt`)
+ * can plausibly fix by rewriting one field's prose without touching story
+ * set, claims, or structure. Deliberately excludes grounding/structural
+ * codes (unsupported_claim_id, story_set_mismatch, shorts_contract,
+ * video_duration, scene_grounding, social_angle_grounding, bilingual_claim_
+ * parity, top3_radar_structure, locale_mismatch, story_missing, placement_
+ * mismatch) -- those mean the writer needs to rethink the story, not
+ * reword a sentence, so they always fall through to a full regenerate.
+ *
+ * The six voice_register/engagement_structure/clarity_unclear/trust_
+ * attribution/usefulness_generic/naturalness_calque codes are the critic's
+ * own controlled vocabulary for non-factual issues (see criticPrompt,
+ * editorial-llm.ts) -- added after a live shadow run against the rejected
+ * 2026-07-27 edition (2026-08-06) showed the critic otherwise invents
+ * ad-hoc codes like "VOICE_TEMPLATE_LEAK" that never match this set, which
+ * would silently route a purely-prose failure to a full regenerate instead
+ * of a targeted revise.
+ */
+const REVISABLE_ISSUE_CODES = new Set([
+  'generic_practical',
+  'editors_view_length',
+  'editors_view_missing',
+  'discussion_question_missing',
+  'duplicate_editorial_fields',
+  'article_length',
+  'story_length',
+  'voice_register',
+  'engagement_structure',
+  'clarity_unclear',
+  'trust_attribution',
+  'usefulness_generic',
+  'naturalness_calque',
+]);
+
+export function isRevisableIssueCode(code: string): boolean {
+  return (
+    REVISABLE_ISSUE_CODES.has(code) ||
+    code.startsWith('template_leak:') ||
+    code.startsWith('dimension_low_score:')
+  );
+}
+
+/**
+ * True when nothing in the report disqualifies a targeted revise pass over a
+ * full EN/UK regenerate. Three things disqualify it: any unresolved factual
+ * flag (grounding problems always need a full rewrite, never a reword), a
+ * malformed dimension set (the critic itself misbehaved -- feed it the same
+ * shape again, don't try to patch around it), or any `issues[]` entry whose
+ * code isn't in the revisable set (a structural/grounding blocker means the
+ * writer needs to rethink the story, not reword a sentence). Note this does
+ * NOT require issues.length > 0 -- a report can fail purely on a low
+ * dimension score (e.g. voice: 70) with an empty issues array, and that case
+ * is exactly what a revise pass should handle.
+ */
+export function reportIsRevisable(
+  report: Pick<WeeklyContentQualityReport, 'issues' | 'factualFlags' | 'dimensions'>,
+): boolean {
+  if (report.factualFlags.length > 0) return false;
+  const receivedDimensions = new Set(report.dimensions.map((dimension) => dimension.name));
+  const wellFormedDimensions =
+    report.dimensions.length === REQUIRED_QUALITY_DIMENSIONS.length &&
+    receivedDimensions.size === REQUIRED_QUALITY_DIMENSIONS.length &&
+    REQUIRED_QUALITY_DIMENSIONS.every((name) => receivedDimensions.has(name));
+  if (!wellFormedDimensions) return false;
+  return report.issues.every((issue) => isRevisableIssueCode(issue.code));
+}
 
 /**
  * Every reason `editorialQualityPasses` would reject this report, in plain

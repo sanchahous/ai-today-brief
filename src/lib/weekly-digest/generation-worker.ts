@@ -31,10 +31,13 @@ import {
   WEEKLY_CONTENT_STUDIO_VERSION,
   WEEKLY_MASTER_SPEC_VERSION,
   WEEKLY_VIDEO_MANIFEST_VERSION,
+  WEEKLY_VIDEO_SCRIPT_SCHEMA_VERSION,
+  type WeeklyArticleMaster,
   type WeeklyContentQualityReport,
   type WeeklyMasterBundle,
   type WeeklyQualityDimension,
   type WeeklyResearchPack,
+  type WeeklyVideoScript,
 } from './content-studio';
 import {
   generateWeeklyMaster,
@@ -45,6 +48,7 @@ import {
   type WeeklyMasterRetryGuidance,
   type WeeklyMasterUkrainianResult,
 } from './editorial-llm';
+import { generateWeeklyVideoScript } from './video-script-llm';
 import {
   buildWeeklyResearchPack,
   isWeeklyResearchPack,
@@ -164,6 +168,7 @@ const ALL_GENERATION_JOB_TYPES: string[] = [
   'story_image',
   'cover',
   'social_copy',
+  'video_script',
   'video_manifest',
   'pdf',
   'social_asset',
@@ -506,9 +511,29 @@ function researchPacksFromContext(context: Awaited<ReturnType<typeof loadGenerat
   });
 }
 
-function masterInputStories(
+/**
+ * Owner-set editorial angle per story (PR4, editorial quality overhaul),
+ * keyed by brief_item_id so it survives the revision churn a Save mints
+ * (#177/#187 fragility history). Missing/errored lookups degrade to "no
+ * angle" rather than failing the job -- an angle is a quality booster the
+ * writer treats as binding *when present*, never a hard requirement.
+ */
+async function loadStoryDirections(weeklyDigestId: string): Promise<Map<string, string>> {
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('weekly_digest_story_directions')
+    .select('brief_item_id,angle')
+    .eq('weekly_digest_id', weeklyDigestId);
+  if (error || !data) return new Map();
+  return new Map(
+    data.flatMap((row) => (row.brief_item_id && row.angle ? [[row.brief_item_id, row.angle]] : [])),
+  );
+}
+
+export function masterInputStories(
   context: Awaited<ReturnType<typeof loadGenerationContext>>,
   approvedResearch: ReturnType<typeof researchPacksFromContext>,
+  directionsByBriefItemId: Map<string, string> = new Map(),
 ) {
   const researchByItem = new Map(
     approvedResearch.map(({ artifact, pack }) => [artifact.revision_item_id!, pack]),
@@ -517,6 +542,7 @@ function masterInputStories(
     const research = researchByItem.get(item.id);
     const sources = jsonSources(item.sources);
     const claims = research?.claims ?? approvedFactsForItem(item);
+    const angle = item.brief_item_id ? directionsByBriefItemId.get(item.brief_item_id) : undefined;
     return {
       revisionItemId: item.id,
       rank: item.rank,
@@ -537,6 +563,7 @@ function masterInputStories(
             : sources.map((source) => source.url),
       })),
       ...(research ? { research } : {}),
+      ...(angle ? { angle } : {}),
     };
   });
 }
@@ -594,12 +621,16 @@ function dimensionGuidanceFromReport(
 }
 
 /**
- * Guidance accumulates across every past critic verdict for this revision, not
- * just the latest one. A single-verdict window lets fixes oscillate forever --
- * resolving this round's blocker regresses one a prior round already fixed,
- * because nothing in the prompt says "and don't undo that either." Superseded
- * reports (is_current = false) still carry that history, so we read all of
- * them and de-dupe by the issue's identity, keeping the newest wording.
+ * PR3 (2026-08-06) narrowed this from "every past critic verdict, merged and
+ * de-duped" to just the latest one. The accumulate-forever version had a
+ * one-way ratchet bug: a code, once it appeared for a given revisionItemId+
+ * field, was echoed on every subsequent retry prompt forever, even after the
+ * writer fixed it -- nothing ever *removed* an entry once a later report
+ * stopped reproducing it, because the merge only ever added/overwrote. Each
+ * retry's prompt monotonically grew and its latitude monotonically shrank,
+ * which is the documented mechanism behind "retries get blander." The
+ * latest critic verdict is a complete, self-consistent picture of what's
+ * currently wrong -- that's the only guidance a fresh attempt needs.
  */
 async function priorMasterRetryGuidance(
   revisionId: string,
@@ -611,20 +642,13 @@ async function priorMasterRetryGuidance(
     .eq('revision_id', revisionId)
     .eq('artifact_type', 'content_quality_report')
     .eq('slot_key', 'content-quality:master')
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false })
+    .limit(1);
   if (error) throw new Error(`[weekly-generation] retry guidance lookup: ${error.message}`);
 
-  const byIdentity = new Map<string, WeeklyMasterRetryGuidance>();
-  for (const report of data ?? []) {
-    for (const guidance of [
-      ...blockerGuidanceFromReport(report),
-      ...dimensionGuidanceFromReport(report),
-    ]) {
-      const identity = `${guidance.code}|${guidance.revisionItemId ?? ''}|${guidance.field ?? ''}`;
-      byIdentity.set(identity, guidance);
-    }
-  }
-  return [...byIdentity.values()];
+  const latest = data?.[0];
+  if (!latest) return [];
+  return [...blockerGuidanceFromReport(latest), ...dimensionGuidanceFromReport(latest)];
 }
 
 async function saveQualityReport(input: {
@@ -706,6 +730,7 @@ async function queuePostMasterJobs(
     })),
     { type: 'cover', key: 'cover:neutral', input: { locale: 'en', slot_key: 'cover:neutral' } },
     { type: 'social_copy', key: 'social-copy', input: { locale_map: 'database' } },
+    { type: 'video_script', key: 'video-script:en', input: { locale: 'en' } },
     { type: 'video_manifest', key: 'video-manifest:en', input: { locale: 'en' } },
     { type: 'pdf', key: 'pdf:en', input: { locale: 'en', slot_key: 'pdf:en' } },
     { type: 'pdf', key: 'pdf:uk', input: { locale: 'uk', slot_key: 'pdf:uk' } },
@@ -863,7 +888,8 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
   ) {
     throw new Error('Approve all three current Top 3 research packs before master generation.');
   }
-  const sourceStories = masterInputStories(context, approvedResearch);
+  const directionsByBriefItemId = await loadStoryDirections(job.weekly_digest_id);
+  const sourceStories = masterInputStories(context, approvedResearch, directionsByBriefItemId);
   const researchPacks = approvedResearch.map(({ pack }) => pack);
   const retryGuidance = await priorMasterRetryGuidance(job.revision_id);
   const englishCheckpointHash = computeEnglishCheckpointHash(researchPacks, retryGuidance);
@@ -897,7 +923,7 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
       passed: false,
       jobId: job.id,
     });
-    // Everything the LLM produced (article EN/UK, video script) is real,
+    // Everything the LLM produced (article EN/UK) is real,
     // paid-for content -- discarding it because one dimension missed its
     // floor is what stranded it in a job's internal checkpoint last time,
     // invisible outside a raw DB query. Save it as an inactive draft
@@ -953,7 +979,6 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
     output: {
       new_revision_id: created.revisionId,
       article_artifact_ids: created.articleArtifactIds,
-      video_script_artifact_id: created.videoScriptArtifactId,
       quality_artifact_id: qualityArtifactId,
       quality_score: result.quality.score,
     },
@@ -966,7 +991,8 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
  * (create_service_weekly_digest_revision_draft, never touches
  * active_revision_id): builds the revision-items payload, creates the
  * revision, rebases the generated bundle onto the new item IDs, and saves
- * the article + video_script artifacts against it. Callers still handle
+ * the article artifacts against it (video_script is generated separately,
+ * as its own job -- see generateVideoScript below). Callers still handle
  * their own quality-report save (the two paths use different revisionId/
  * passed/recordCost combinations) and, on success, queuePostMasterJobs.
  */
@@ -1018,6 +1044,10 @@ async function createMasterRevision(params: {
           limitation_uk: uk.limitation,
           hook_en: en.hook,
           hook_uk: uk.hook,
+          editors_view_en: en.editorsView,
+          editors_view_uk: uk.editorsView,
+          discussion_en: en.discussionQuestion,
+          discussion_uk: uk.discussionQuestion,
           claim_ids: en.claimIds,
           research_artifact_id: research?.artifact.id ?? null,
           research_input_hash: research?.artifact.input_hash ?? null,
@@ -1066,16 +1096,6 @@ async function createMasterRevision(params: {
     ...result.bundle,
     en: rebaseArticle(result.bundle.en),
     uk: rebaseArticle(result.bundle.uk),
-    video: {
-      ...result.bundle.video,
-      shorts: result.bundle.video.shorts.map((short) => {
-        const old = oldById.get(short.revisionItemId);
-        return {
-          ...short,
-          revisionItemId: (old && newByBriefId.get(old.brief_item_id)) || short.revisionItemId,
-        };
-      }),
-    },
   };
   const articleArtifactIds: string[] = [];
   for (const [locale, article] of [
@@ -1104,8 +1124,8 @@ async function createMasterRevision(params: {
         providerId:
           locale === 'en' ? result.generation.english.model : result.generation.ukrainian.model,
         metadata: {
-          schema_version: 'article-v3',
-          target_audience: 'AI builders, founders, product, technology and business leaders',
+          schema_version: 'article-v4',
+          target_audience: 'software builders, AI practitioners and the technically curious',
           estimated_cost_usd:
             locale === 'en'
               ? result.generation.english.estimatedCostUsd
@@ -1136,27 +1156,7 @@ async function createMasterRevision(params: {
       }),
     );
   }
-  const videoScriptArtifactId = await saveGeneratedArtifact({
-    weeklyDigestId: job.weekly_digest_id,
-    revisionId: newRevisionId,
-    artifactType: 'video_script',
-    locale: 'en',
-    slotKey: 'video-script:en',
-    content: {
-      script: bundle.video.narration,
-      narration_plan: bundle.video as unknown as Json,
-      social_angles: bundle.socialAngles as unknown as Json,
-    },
-    provider: result.generation.english.provider,
-    providerId: result.generation.english.model,
-    metadata: {
-      schema_version: WEEKLY_VIDEO_MANIFEST_VERSION,
-      target_duration_seconds: 420,
-      shorts_count: 3,
-      prompt_version: result.generation.english.promptVersion,
-    },
-  });
-  return { revisionId: newRevisionId, articleArtifactIds, videoScriptArtifactId, newItems };
+  return { revisionId: newRevisionId, articleArtifactIds, newItems };
 }
 
 async function localeMap() {
@@ -1174,6 +1174,13 @@ async function localeMap() {
   return map as Map<SocialChannel, SocialLocale>;
 }
 
+/**
+ * Reads the approved bilingual article pair. No longer requires a
+ * video_script artifact to exist -- video generation moved to its own job
+ * (PR6), and generateSocialCopy (the other caller) never needed it in the
+ * first place, so the old hard dependency just meant social copy silently
+ * couldn't run until the video job happened to finish first.
+ */
 function masterBundleFromArtifacts(context: Awaited<ReturnType<typeof loadGenerationContext>>) {
   const articleEn = context.artifacts.find(
     (artifact) =>
@@ -1183,25 +1190,35 @@ function masterBundleFromArtifacts(context: Awaited<ReturnType<typeof loadGenera
     (artifact) =>
       artifact.artifact_type === 'article' && artifact.locale === 'uk' && artifact.is_current,
   );
-  const videoScript = context.artifacts.find(
-    (artifact) =>
-      artifact.artifact_type === 'video_script' && artifact.locale === 'en' && artifact.is_current,
-  );
-  if (!articleEn || !articleUk || !videoScript) {
-    throw new Error('Approved master article and video-script artifacts are required.');
-  }
-  const videoContent = asRecord(videoScript.content);
-  const narrationPlan = videoContent.narration_plan;
-  const socialAngles = videoContent.social_angles;
-  if (!narrationPlan || typeof narrationPlan !== 'object' || Array.isArray(narrationPlan)) {
-    throw new Error('Video script artifact does not contain the v2 narration plan.');
+  if (!articleEn || !articleUk) {
+    throw new Error('Approved master article artifacts are required.');
   }
   return {
     en: articleEn.content,
     uk: articleUk.content,
-    video: narrationPlan,
-    socialAngles: Array.isArray(socialAngles) ? socialAngles : [],
   } as unknown as WeeklyMasterBundle;
+}
+
+/**
+ * Reads the current, owner-approved video_script artifact for the video
+ * manifest job. Kept separate from masterBundleFromArtifacts because only
+ * video_manifest needs it -- see the claim_weekly_digest_generation_jobs
+ * migration, which already gates video_manifest on this artifact's
+ * review_status being 'approved'.
+ */
+function videoScriptFromArtifacts(
+  context: Awaited<ReturnType<typeof loadGenerationContext>>,
+): WeeklyVideoScript {
+  const videoScript = context.artifacts.find(
+    (artifact) =>
+      artifact.artifact_type === 'video_script' && artifact.locale === 'en' && artifact.is_current,
+  );
+  if (!videoScript) throw new Error('Approved video-script artifact is required.');
+  const narrationPlan = asRecord(videoScript.content).narration_plan;
+  if (!narrationPlan || typeof narrationPlan !== 'object' || Array.isArray(narrationPlan)) {
+    throw new Error('Video script artifact does not contain the v3 script.');
+  }
+  return narrationPlan as unknown as WeeklyVideoScript;
 }
 
 async function socialAssetsForChannel(
@@ -1383,7 +1400,6 @@ export function computeSocialCopyCheckpointHash(input: {
       JSON.stringify({
         en: input.bundle.en,
         uk: input.bundle.uk,
-        socialAngles: input.bundle.socialAngles,
         sourceFacts: input.sourceFacts,
         locales: [...input.locales.entries()],
         version: SOCIAL_COPY_CHECKPOINT_VERSION,
@@ -1458,13 +1474,11 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
     }
     const locale = locales.get(channel)!;
     const trackedUrl = new URL(`/r/s/${tokens[channel]}`, SITE_URL).toString();
-    const angle = bundle.socialAngles.find((candidate) => candidate.channel === channel);
     const assets = await socialAssetsForChannel(context, channel);
     const adaptation = await adaptWeeklySocialChannel({
       channel,
       locale,
       bundle,
-      hookAngle: angle?.hookAngle ?? (locale === 'uk' ? bundle.uk.theme : bundle.en.theme),
       trackedUrl,
       scheduledFor: nextWeeklyScheduledForChannel(channel, context.digest.week_end, new Date()),
       sourceFacts,
@@ -1691,10 +1705,71 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
   };
 }
 
+/**
+ * Dramatizes the approved English master article into a TV-news-format
+ * script (cold open, anchor, one b-roll segment per Top 3 story, radar
+ * quick-hits, discussion outro) plus three Ukrainian Shorts. Runs as its own
+ * job, after the article is approved -- see wiki/pipeline/video-boundary.md
+ * for why this moved out of the master mega-call in PR6.
+ */
+async function generateVideoScript(job: ClaimedGenerationJob) {
+  const context = await loadGenerationContext(job);
+  const articleEn = context.artifacts.find(
+    (artifact) =>
+      artifact.artifact_type === 'article' &&
+      artifact.locale === 'en' &&
+      artifact.is_current &&
+      artifact.review_status === 'approved',
+  );
+  if (!articleEn) {
+    throw new Error('Approve the current English article before generating the video script.');
+  }
+  const article = articleEn.content as unknown as WeeklyArticleMaster;
+  const { script, generation, issues } = await generateWeeklyVideoScript(article);
+  await recordGenerationCost({
+    scope: 'weekly',
+    kind: 'llm',
+    provider: generation.provider,
+    model: generation.model,
+    costUsd: generation.estimatedCostUsd,
+    costSource: generation.costSource,
+    promptTokens: generation.promptTokens,
+    outputTokens: generation.outputTokens,
+    weeklyDigestId: job.weekly_digest_id,
+    revisionId: job.revision_id,
+    jobId: job.id,
+    metadata: { step: 'video_script', prompt_version: generation.promptVersion },
+  });
+  const artifactId = await saveGeneratedArtifact({
+    weeklyDigestId: job.weekly_digest_id,
+    revisionId: job.revision_id,
+    artifactType: 'video_script',
+    locale: 'en',
+    slotKey: 'video-script:en',
+    content: {
+      script: script.narration,
+      narration_plan: script as unknown as Json,
+    },
+    provider: generation.provider,
+    providerId: generation.model,
+    metadata: {
+      schema_version: WEEKLY_VIDEO_SCRIPT_SCHEMA_VERSION,
+      target_duration_seconds: script.scenes.reduce((sum, scene) => sum + scene.durationSeconds, 0),
+      shorts_count: script.shorts.length,
+      prompt_version: generation.promptVersion,
+      estimated_cost_usd: generation.estimatedCostUsd,
+      cost_source: generation.costSource,
+      non_blocking_issues: issues.filter((issue) => !issue.blocker).length,
+    },
+  });
+  return { artifactId, output: { video_script_artifact_id: artifactId } };
+}
+
 async function generateVideoManifest(job: ClaimedGenerationJob) {
   const context = await loadGenerationContext(job);
   const bundle = masterBundleFromArtifacts(context);
-  const featureIds = new Set(bundle.video.shorts.map((short) => short.revisionItemId));
+  const script = videoScriptFromArtifacts(context);
+  const featureIds = new Set(script.shorts.map((short) => short.revisionItemId));
   const imageArtifacts = context.artifacts.filter(
     (artifact) =>
       artifact.artifact_type === 'story_image' &&
@@ -1722,7 +1797,7 @@ async function generateVideoManifest(job: ClaimedGenerationJob) {
   const dependencies = {
     digestId: job.weekly_digest_id,
     revisionId: job.revision_id,
-    video: bundle.video,
+    script,
     articleInputHashes: context.artifacts
       .filter((artifact) => artifact.artifact_type === 'article' && artifact.is_current)
       .map((artifact) => artifact.input_hash),
@@ -1742,10 +1817,15 @@ async function generateVideoManifest(job: ClaimedGenerationJob) {
     longForm: {
       locale: 'en',
       targetDurationSeconds: 420,
-      narration: bundle.video.narration,
-      scenes: bundle.video.scenes,
+      narration: script.narration,
+      // Each scene carries its own revisionItemId (null for non-story
+      // scenes) -- the video repo maps a broll scene to `assets` by that ID
+      // instead of the old `index % assets.length`, which could show one
+      // story's image during another story's narration. See
+      // wiki/pipeline/video-boundary.md.
+      scenes: script.scenes,
     },
-    shorts: bundle.video.shorts,
+    shorts: script.shorts,
     assets,
     captions: {
       required: ['en', 'uk'],
@@ -1842,6 +1922,7 @@ async function generatePdf(job: ClaimedGenerationJob) {
     ),
     stories: context.items.map((item, index) => {
       const source = sourceFromJson(item.sources);
+      const studio = asRecord(asRecord(item.source_snapshot).content_studio);
       return {
         rank: item.rank,
         title: localized(item.title_en, item.title_uk),
@@ -1850,6 +1931,7 @@ async function generatePdf(job: ClaimedGenerationJob) {
         why: localized(item.why_en, item.why_uk),
         practical: localized(item.practical_en, item.practical_uk),
         takeaway: localized(item.takeaway_en, item.takeaway_uk),
+        limitation: localized(text(studio.limitation_en), text(studio.limitation_uk)),
         sourceName: source.name,
         sourceUrl: source.url,
         eventDate: item.event_date,
@@ -1928,6 +2010,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   const item = context.items.find((candidate) => candidate.id === revisionItemId);
   if (!item) throw new Error('Story image job requires a valid revision_item_id.');
   const requestedSourceUrl = text(input.source_url);
+  const sceneOverride = text(input.scene_override);
   let source: Buffer;
   let sourceKind = 'generated';
   let sourceUrl: string | null = null;
@@ -1941,6 +2024,8 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     negativePrompt?: string;
     sceneSource?: string;
   } | null = null;
+  /** Additional variant renders (sharp-processed, not yet uploaded) beyond the primary. */
+  let alternateBuffers: Buffer[] = [];
 
   if (requestedSourceUrl?.startsWith('http')) {
     const response = await fetch(requestedSourceUrl, {
@@ -1951,13 +2036,17 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     sourceUrl = requestedSourceUrl;
     sourceKind = 'editor_url';
   } else {
-    const { generateEditorialIllustration } = await lazyCardImage();
-    const generatedSource = await generateEditorialIllustration(
+    const { generateWeeklyReportageIllustrations } = await lazyCardImage();
+    const contentStudio = asRecord(asRecord(item.source_snapshot).content_studio);
+    const illustrations = await generateWeeklyReportageIllustrations(
       {
-        title: item.title_en,
+        headline: item.title_en,
         summary: item.summary_en,
-        seedKey: `${job.weekly_digest_id}:${job.revision_id}:${item.id}:${job.id}`,
-        fallbackToLocal: true,
+        bodyExcerpt: item.body_en?.slice(0, 600),
+        editorsView: text(contentStudio.editors_view_en) ?? undefined,
+        seedBase: `${job.weekly_digest_id}:${job.revision_id}:${item.id}`,
+        sceneOverride: sceneOverride ?? undefined,
+        variantCount: 3,
       },
       {
         geminiApiKey: process.env.GEMINI_API_KEY?.trim() ?? '',
@@ -1971,18 +2060,20 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       },
     );
 
-    if (generatedSource) {
-      source = generatedSource.bytes;
+    if (illustrations?.variants.length) {
+      const [primary, ...alternates] = illustrations.variants;
+      source = primary!.bytes;
       imageMeta = {
-        provider: generatedSource.provider,
-        model: generatedSource.model,
-        estimatedCostUsd: generatedSource.estimatedCostUsd,
-        costSource: generatedSource.costSource,
-        scene: generatedSource.scene,
-        positivePrompt: generatedSource.positivePrompt,
-        negativePrompt: generatedSource.negativePrompt,
-        sceneSource: generatedSource.sceneSource,
+        provider: primary!.provider,
+        model: primary!.model,
+        estimatedCostUsd: illustrations.variants.reduce((sum, v) => sum + v.estimatedCostUsd, 0),
+        costSource: primary!.costSource,
+        scene: illustrations.scene,
+        positivePrompt: primary!.positivePrompt,
+        negativePrompt: primary!.negativePrompt,
+        sceneSource: illustrations.sceneSource,
       };
+      alternateBuffers = alternates.map((variant) => variant.bytes);
     } else {
       const fallbackUrl = snapshotImage(item.source_snapshot);
       if (!fallbackUrl?.startsWith('http')) {
@@ -2002,14 +2093,30 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
 
   if (source.length > 15 * 1024 * 1024) throw new Error('Story image source exceeds 15 MB.');
   const sharp = await lazySharp();
-  const image = await sharp(source)
-    .rotate()
-    .resize(1600, 900, { fit: 'cover', position: 'attention' })
-    .jpeg({ quality: 90, progressive: true })
-    .toBuffer();
+  const processImage = (buffer: Buffer) =>
+    sharp(buffer)
+      .rotate()
+      .resize(1600, 900, { fit: 'cover', position: 'attention' })
+      .jpeg({ quality: 90, progressive: true })
+      .toBuffer();
+  const image = await processImage(source);
   const hash = createHash('sha256').update(image).digest('hex');
   const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/${hash}-${job.id}.jpg`;
   await uploadPrivate(path, image, 'image/jpeg');
+
+  // Upload the alternate variants alongside the primary (same generic
+  // preview_paths mechanism the PDF job already uses for page previews --
+  // admin-data.ts's withPrivatePreviewUrls signs these into preview_urls
+  // with no additional plumbing needed).
+  const previewPaths: string[] = [];
+  for (const [index, buffer] of alternateBuffers.entries()) {
+    const processed = await processImage(buffer);
+    const altHash = createHash('sha256').update(processed).digest('hex');
+    const altPath = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/${altHash}-${job.id}-alt${index + 1}.jpg`;
+    await uploadPrivate(altPath, processed, 'image/jpeg');
+    previewPaths.push(altPath);
+  }
+
   const artifactId = await saveGeneratedArtifact({
     weeklyDigestId: job.weekly_digest_id,
     revisionId: job.revision_id,
@@ -2025,12 +2132,13 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     content: {
       alt_en: text(input.alt_text) ?? item.title_en,
       alt_uk: text(input.alt_text_uk) ?? item.title_uk,
+      ...(previewPaths.length ? { preview_paths: previewPaths } : {}),
     },
     metadata: {
       source_kind: sourceKind,
       source_url: sourceUrl,
       focal_point: text(input.focal_point) ?? 'attention',
-      prompt_policy: 'story-specific-editorial-v5-no-text',
+      prompt_policy: 'weekly-reportage-v1',
       ...(imageMeta
         ? {
             provider: imageMeta.provider,
@@ -2061,10 +2169,10 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       revisionId: job.revision_id,
       jobId: job.id,
       artifactId,
-      metadata: { revision_item_id: item.id, source_kind: sourceKind },
+      metadata: { revision_item_id: item.id, source_kind: sourceKind, variant_count: 1 + alternateBuffers.length },
     });
   }
-  return { artifactId, output: { path, byte_size: image.length, sha256: hash } };
+  return { artifactId, output: { path, byte_size: image.length, sha256: hash, variants: 1 + alternateBuffers.length } };
 }
 
 async function generateCover(job: ClaimedGenerationJob) {
@@ -2235,6 +2343,7 @@ async function runGenerationJob(job: ClaimedGenerationJob) {
   if (job.job_type === 'research_pack') return generateResearchPack(job);
   if (job.job_type === 'editorial_master') return generateEditorialMaster(job);
   if (job.job_type === 'social_copy') return generateSocialCopy(job);
+  if (job.job_type === 'video_script') return generateVideoScript(job);
   if (job.job_type === 'video_manifest') return generateVideoManifest(job);
   if (job.job_type === 'pdf') return generatePdf(job);
   if (job.job_type === 'story_image') return generateStoryImage(job);
@@ -2247,6 +2356,7 @@ export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string
   const jobs = await claimGenerationJobs(limit, jobTypes);
   const results: Array<{
     id: string;
+    jobType: string;
     outcome: 'succeeded' | 'failed';
     artifactId?: string | null;
     error?: string;
@@ -2255,7 +2365,12 @@ export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string
     try {
       const result = await runGenerationJob(job);
       await finishGenerationJob(job.id, true, result.output, null, result.artifactId);
-      results.push({ id: job.id, outcome: 'succeeded', artifactId: result.artifactId });
+      results.push({
+        id: job.id,
+        jobType: job.job_type,
+        outcome: 'succeeded',
+        artifactId: result.artifactId,
+      });
     } catch (error) {
       const message = safeMessage(error);
       const retryable = retryableGenerationFailure(message);
@@ -2269,6 +2384,7 @@ export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string
         });
         results.push({
           id: job.id,
+          jobType: job.job_type,
           outcome: 'failed',
           error: `${message}; ${safeMessage(finishError)}`.slice(0, 1800),
         });
@@ -2281,7 +2397,7 @@ export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string
           message,
         });
       }
-      results.push({ id: job.id, outcome: 'failed', error: message });
+      results.push({ id: job.id, jobType: job.job_type, outcome: 'failed', error: message });
     }
   }
   return { claimed: jobs.length, results };

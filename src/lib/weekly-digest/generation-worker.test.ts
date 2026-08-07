@@ -10,6 +10,7 @@ import {
   computeEnglishCheckpointHash,
   computeSocialCopyCheckpointHash,
   computeUkrainianCheckpointHash,
+  masterInputStories,
   runWeeklyDigestGenerationJobs,
 } from './generation-worker';
 import type { WeeklyResearchPack, WeeklyMasterBundle } from './content-studio';
@@ -22,6 +23,7 @@ const ALL_JOB_TYPES = [
   'story_image',
   'cover',
   'social_copy',
+  'video_script',
   'video_manifest',
   'pdf',
   'social_asset',
@@ -132,8 +134,6 @@ function bundle(overrides: Partial<WeeklyMasterBundle> = {}): WeeklyMasterBundle
   return {
     en: { title: 'Weekly Digest' },
     uk: { title: 'Тижневий дайджест' },
-    video: {},
-    socialAngles: [],
     ...overrides,
   } as unknown as WeeklyMasterBundle;
 }
@@ -196,5 +196,51 @@ describe('runWeeklyDigestGenerationJobs job type filter', () => {
       p_job_types: ['editorial_master'],
       p_limit: 2,
     });
+  });
+});
+
+function revisionItem(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'revitem-1',
+    brief_item_id: 'brief-1',
+    rank: 1,
+    title_en: 'Title',
+    title_uk: 'Заголовок',
+    summary_en: 'Summary sentence.',
+    summary_uk: 'Речення підсумку.',
+    why_en: null,
+    why_uk: null,
+    sources: [],
+    source_snapshot: {},
+    ...overrides,
+  };
+}
+
+describe('masterInputStories (PR4 -- story angle join)', () => {
+  it('attaches the angle when a direction exists for the story\'s brief_item_id', () => {
+    const context = { items: [revisionItem()] } as unknown as Parameters<typeof masterInputStories>[0];
+    const directions = new Map([['brief-1', 'Frame this as a cautionary infra-trust story.']]);
+    const [story] = masterInputStories(context, [], directions);
+    expect(story!.angle).toBe('Frame this as a cautionary infra-trust story.');
+  });
+
+  it('omits angle entirely (not an empty string) when no direction is set for this brief_item_id', () => {
+    const context = { items: [revisionItem()] } as unknown as Parameters<typeof masterInputStories>[0];
+    const [story] = masterInputStories(context, [], new Map([['brief-999', 'unrelated story']]));
+    expect(story).not.toHaveProperty('angle');
+  });
+
+  it('defaults to no directions map at all without throwing', () => {
+    const context = { items: [revisionItem()] } as unknown as Parameters<typeof masterInputStories>[0];
+    expect(() => masterInputStories(context, [])).not.toThrow();
+    expect(masterInputStories(context, [])[0]).not.toHaveProperty('angle');
+  });
+
+  it('never attaches an angle for an item with no linked brief_item_id', () => {
+    const context = {
+      items: [revisionItem({ brief_item_id: null })],
+    } as unknown as Parameters<typeof masterInputStories>[0];
+    const [story] = masterInputStories(context, [], new Map([['brief-1', 'should not apply']]));
+    expect(story).not.toHaveProperty('angle');
   });
 });

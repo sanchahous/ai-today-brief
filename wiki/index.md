@@ -37,7 +37,7 @@ Last updated: 2026-08-04
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
-| 📋 `architecture/data-model.md` | Схема Supabase, RLS, ~63 міграції, `database.types.ts` | `supabase/migrations/**` + live check |
+| 📋 `architecture/data-model.md` | Схема Supabase, RLS, ~67 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
 
@@ -51,6 +51,7 @@ Last updated: 2026-08-04
 | ✅ [pipeline/instrumentation-plan](pipeline/instrumentation-plan.md) | Пакет телеметрії PR-I1/I2/I3 (міграції 032/033/034) | колишній `docs/INSTRUMENTATION-PR-PLAN.md` |
 | ✅ [pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md) | Редакційний відбір weekly-дайджесту | колишній `docs/weekly-editorial-selection.md` |
 | ✅ [pipeline/weekly-digest](pipeline/weekly-digest.md) | Weekly Content Studio v2, ревізії, spend-cap, admin UX, статус розкатки | `.env.example` + PR #160–#177 |
+| ✅ [pipeline/editorial-voice](pipeline/editorial-voice.md) | Редакційний голос weekly-дайджесту: exemplars, contrast-pairs, banned-phrase гейт | `editorial-voice.ts`, owner session 2026-08-06 |
 | ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | Межа відео-pipeline | колишній `docs/VIDEO-PIPELINE-BOUNDARY.md` |
 
 ## SEO / AEO
