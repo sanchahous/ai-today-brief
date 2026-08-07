@@ -581,8 +581,15 @@ async function runArtDirectorLadder(
     const result = await generateWithRegistry(role, instruction, registry);
     const text = cleanSceneText(result.text);
     if (text.length >= 6) return { text, source: result.provider };
-  } catch {
-    /* every provider in the chain unconfigured/failed -- caller falls back to keyword scene */
+  } catch (error) {
+    // Every provider in the chain unconfigured/failed -- caller falls back
+    // to a keyword scene, so this is non-fatal, but still worth a log line:
+    // a silent fallback here previously gave no signal that the art
+    // director ladder stopped actually running.
+    logEvent('warn', 'publish', 'Art director ladder failed -- falling back to keyword scene', {
+      role,
+      ...serializeErrorDetails(error),
+    });
   }
   return null;
 }

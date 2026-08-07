@@ -19,6 +19,64 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-07 — Post-merge tech review PR #189/#190: 3 registry bugs + admin UX/safety fixes
+
+**Джерело:** «зроби технічне ревʼю 189 і 190 пул реквесту як senior full stack developer» →
+«давай пофіксимо всі ці баги» (власник, гілка `claude/tech-review-pr-189-190-859ena`, обидва PR
+вже змержені в `main` до початку ревʼю)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — новий підрозділ «Пост-мерж ревʼю + фікси» в кінці «Статус»
+- `wiki/now.md` — нова бульєта в «Стан репозиторію»
+- `wiki/index.md` — лічильник міграцій 68 → 69 (нова міграція цієї сесії)
+
+**Код (блокери, підтверджені тестом до/після фіксу):**
+- `pipeline/providers/registry.ts`'s `loadDbRoleChains` — порожній резолвлений DB-чейн більше не
+  пишеться в мапу (раніше `[]` вигравав над `defaultChain` через `??`, перетворюючи одну
+  недоналаштовану роль на повну відмову); `logEvent('warn', ...)` коли непорожній вихідний чейн
+  резолвився в нуль провайдерів.
+- `pipeline/providers/registry.ts`'s `loadProviderRegistry` — `resolveOpenRouterModelQueue` і
+  `loadDbRoleChains` обгорнуто в try/catch (429/мережевий збій каталогу раніше валив побудову
+  всього реєстру, навіть коли Gemini був живий); `run-daily.ts`'s
+  `resolveDbHttpProvider('daily.summarize', db)` отримав `.catch(() => null)` для узгодженості з
+  сусідніми викликами.
+- `src/lib/weekly-digest/editorial-llm.ts`'s і `src/lib/social/llm-router.ts`'s `generateOpenRouter`
+  — DB-override провайдер (Phase 4/5 «partial by design») тепер падає на звичайну
+  ranked-OpenRouter драбину при збої виклику, замість валити весь запит.
+
+**Код (важливе):**
+- `src/app/admin/(cms)/providers/actions.ts` — усі 12 `throw new Error` тепер редиректять на
+  `/admin/providers?error=...` (новий `withProvidersErrorRedirect`, за патерном
+  `redirectWeeklySocialError`); `updateLlmRoleChainAction` валідує, що id у чейні існує в
+  `llm_providers`.
+- `src/app/admin/(cms)/weekly/actions.ts` — `saveWeeklyStoryDirectionAction`/
+  `selectWeeklyArtifactVariantAction` (нові в PR #189) переведено з сирих throw на існуючий
+  `fail()`/redirect патерн файлу.
+- `src/app/admin/(cms)/loading.tsx` + `error.tsx` (нові) — жодного admin-маршруту не мав
+  loading/error boundary; спільні на весь `(cms)` route group.
+- `supabase/migrations/20260807120000_llm_provider_registry_fixes.sql` (нова, author-only) —
+  `delete_llm_provider_secret` (Vault-секрет лишався сиротою при видаленні провайдера) і
+  `replace_llm_provider_models` (атомарна заміна списку моделей); `providers/page.tsx` більше не
+  фільтрує за `enabled` при побудові textarea (раніше тихо губило disabled-моделі на наступний
+  Save).
+- `src/components/admin/social-char-count.tsx` (новий) + `hook-candidate-picker.tsx` — лічильник
+  символів посту був статичним server-рендером, що ніколи не оновлювався (ні від тайпінгу, ні від
+  кліку по hook-кандидату); тепер живий client-компонент на `input`-івенті,
+  `HookCandidatePicker` диспатчить `input` і ріже кандидата до `maxLength`.
+- `pipeline/card-image.ts`'s `runArtDirectorLadder` — мовчазний catch отримав `logEvent('warn', ...)`.
+- `wiki/_tools/lib/project-sync.mjs` і `wiki/_tools/wiki-lint.mjs`'s `toPosix` — `p.split(sep)`
+  було no-op на Linux (`sep === '/'`), тест падав на будь-чому крім Windows; тепер
+  `p.split(/[\\/]/)` — блокувало `npm run wiki:check` (частина `pr:check`) у цьому середовищі.
+
+**Retracted:** ревʼю спершу стверджувало (а) «сервер довжину поста взагалі не валідує» —
+неточно, `runQualityGate` (`quality.ts`) вже блокує Approve через наявний `maxChars`-чек; реальна
+дірка була вужчою (мертвий лічильник, вище); (б) AAL2-write RLS на provider-таблицях «обходиться»
+— насправді той самий наскрізний патерн, що й в усьому CMS (`040_social_cms.sql`), де всі записи
+йдуть через `service_role`; не PR-специфічна проблема, код не змінено.
+
+**Верифіковано:** 927/927 тестів, `tsc --noEmit` чисто, `eslint` чисто (ті самі 8 pre-existing
+warnings), `npm run wiki:check` зелений (раніше падав), `npm run build` зелений.
+
 ## 2026-08-07 — LLM provider registry, Phase 6a: daily verify.ts + summarize.ts migrated, verified live
 
 **Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження

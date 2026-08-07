@@ -358,6 +358,41 @@ tested-by-use в інших файлах), раніше — 0.
 `src/app/admin/(cms)/providers/*.tsx`, `tmp/nim-http-provider-dryrun/run.ts`, live dry-run
 2026-08-06/07)
 
+**Пост-мерж ревʼю + фікси (2026-08-07).** Senior-рівневе технічне ревʼю PR #189/#190 після мержу
+в `main` знайшло і виправило три поведінкові баги в `pipeline/providers/registry.ts`, підтверджені
+тестами до і після фіксу:
+
+- **Порожній DB-чейн затіняв робочий дефолт.** `loadDbRoleChains` записувала `resolved: []` у
+  мапу навіть коли жоден рядок чейну не резолвився (відсутній секрет, disabled провайдер,
+  незареєстрований CLI id) — а `chainForRole`'s `dbChains?.get(role) ?? defaultChain` вважає
+  присутній (навіть порожній) запис у Map явним оверрайдом, що вигравав над `??`. Наслідок: одна
+  недоналаштована роль в `/admin/providers` (наприклад, `nim` доданий у чейн, але ключ ще не
+  вставлено) повністю вбивала роль, хоч OpenRouter/Gemini лишались живими. Фікс: порожній
+  резолвлений чейн більше не записується в мапу — falls through на `defaultChain`, з
+  `logEvent('warn', ...)` коли вихідний (непорожній) чейн так і не резолвився в жодного провайдера.
+- **Збій каталогу OpenRouter валив побудову всього реєстру.** `resolveOpenRouterModelQueue` кидає
+  на HTTP-помилці/порожньому списку/порожньому ранкінгу; `loadProviderRegistry` це не ловила —
+  429/мережевий збій каталогу клав `loadProviderRegistry` цілком, навіть коли Gemini був живий.
+  Той самий захист додано навколо `loadDbRoleChains` (мережевий збій Supabase). Обидва тепер
+  логують і деградують до наявного дефолту замість кидати. Побічно: `run-daily.ts`'s
+  `resolveDbHttpProvider('daily.summarize', db)` не мав `.catch()`, на відміну від сусідніх
+  викликів — додано для узгодженості.
+- **DB-override провайдер у weekly master (`editorial-llm.ts`) і social (`llm-router.ts`) не мав
+  фолбеку.** Обидва Phase 4/5 «partial by design» шляхи резолвили лише перший `http`-запис
+  DB-чейну і викликали його без try/catch — збій під час виклику валив увесь виклик замість
+  падіння на звичайну ranked-OpenRouter драбину нижче (як уже робив `dbHttp === null`). Обидва
+  тепер ловлять і логують, потім падають на дефолтний шлях.
+
+Плюс дрібніші: `/admin/providers`'s копірайт більше не тверджує «нічого це не читає» (читає, з
+Фази 2); `deleteLlmProviderAction` більше не лишає сирітський Vault-секрет
+(`delete_llm_provider_secret`, нова міграція); `upsertLlmProviderAction`'s заміна списку моделей
+атомарна (`replace_llm_provider_models`) і більше не губить disabled-моделі; Server Actions на
+`/admin/providers` більше не кидають сирі `Error` (Next ковтає їх generic-дайджестом) — редіректять
+на `?error=`, за патерном `redirectWeeklySocialError`. Деталі: `git log` на
+`claude/tech-review-pr-189-190-859ena`.
+(source: live review + fixes 2026-08-07, `pipeline/providers/registry.test.ts`,
+`supabase/migrations/20260807120000_llm_provider_registry_fixes.sql`)
+
 ## Related pages
 
 - [pipeline/weekly-digest](weekly-digest.md) — weekly-майстер, який фаза 4 мігрує на реєстр

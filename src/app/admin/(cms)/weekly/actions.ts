@@ -110,6 +110,12 @@ function redirectWeeklyRevisionContentError(
   );
 }
 
+function redirectWeeklyVisualsError(weeklyDigestId: string, message: string): never {
+  redirect(
+    `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=visuals&save_error=${encodeURIComponent(message.slice(0, 500))}`,
+  );
+}
+
 function kyivDate(now = new Date()) {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: SOCIAL_TIME_ZONE,
@@ -516,8 +522,10 @@ export async function saveWeeklyStoryDirectionAction(formData: FormData) {
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const briefItemId = requiredString(formData, 'brief_item_id');
   const angle = optionalString(formData, 'angle');
+  const fail = (message: string): never =>
+    redirectWeeklyRevisionContentError(weeklyDigestId, formData, message);
   if (angle.length > 600) {
-    throw new Error('An editorial angle may contain at most 600 characters.');
+    fail('An editorial angle may contain at most 600 characters.');
   }
   const admin = getSupabaseAdmin();
   if (!angle) {
@@ -526,7 +534,7 @@ export async function saveWeeklyStoryDirectionAction(formData: FormData) {
       .delete()
       .eq('weekly_digest_id', weeklyDigestId)
       .eq('brief_item_id', briefItemId);
-    if (error) throw new Error(error.message);
+    if (error) fail(error.message);
     revalidateWeeklyAdmin(weeklyDigestId);
     return;
   }
@@ -540,7 +548,7 @@ export async function saveWeeklyStoryDirectionAction(formData: FormData) {
     },
     { onConflict: 'weekly_digest_id,brief_item_id' },
   );
-  if (error) throw new Error(error.message);
+  if (error) fail(error.message);
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
@@ -1037,6 +1045,7 @@ export async function selectWeeklyArtifactVariantAction(formData: FormData) {
   const revisionId = requiredString(formData, 'revision_id');
   const artifactId = requiredString(formData, 'artifact_id');
   const variantPath = requiredString(formData, 'variant_path');
+  const fail = (message: string): never => redirectWeeklyVisualsError(weeklyDigestId, message);
 
   const admin = getSupabaseAdmin();
   const { data: artifact } = await admin
@@ -1045,14 +1054,14 @@ export async function selectWeeklyArtifactVariantAction(formData: FormData) {
     .eq('id', artifactId)
     .maybeSingle();
   if (!artifact || artifact.artifact_type !== 'story_image') {
-    throw new Error('Story image artifact was not found.');
+    return fail('Story image artifact was not found.');
   }
   const content = jsonRecord(artifact.content);
   const previewPaths = Array.isArray(content.preview_paths)
     ? content.preview_paths.filter((value): value is string => typeof value === 'string')
     : [];
   if (!artifact.storage_path || !previewPaths.includes(variantPath)) {
-    throw new Error('The selected variant is no longer available -- reload and try again.');
+    return fail('The selected variant is no longer available -- reload and try again.');
   }
   const nextPreviewPaths = [
     artifact.storage_path,
@@ -1080,7 +1089,7 @@ export async function selectWeeklyArtifactVariantAction(formData: FormData) {
     p_byte_size: artifact.byte_size,
     p_metadata: artifact.metadata as Json,
   });
-  if (error) throw new Error(error.message);
+  if (error) fail(error.message);
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 

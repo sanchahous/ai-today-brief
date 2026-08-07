@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { HookCandidatePicker } from '@/components/admin/hook-candidate-picker';
+import { SocialCharCount } from '@/components/admin/social-char-count';
 import { StatusPill } from '@/components/admin/status-pill';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
@@ -2863,6 +2864,7 @@ function SocialPanel({
                 <label className={LABEL}>
                   Post copy
                   <textarea
+                    id={`social-post-text-${post.id}`}
                     name="post_text"
                     rows={8}
                     required
@@ -2870,15 +2872,14 @@ function SocialPanel({
                     defaultValue={post.post_text ?? ''}
                     disabled={!canEdit}
                     className={TEXTAREA}
-                    aria-describedby={`social-${channel}-limit`}
+                    aria-describedby={`social-${post.id}-limit`}
                   />
-                  <span
-                    id={`social-${channel}-limit`}
-                    className="text-xs font-normal text-slate-500"
-                  >
-                    Current: {(post.post_text ?? '').length.toLocaleString()} /{' '}
-                    {SOCIAL_LIMITS[channel].toLocaleString()} characters
-                  </span>
+                  <SocialCharCount
+                    id={`social-${post.id}-limit`}
+                    textareaId={`social-post-text-${post.id}`}
+                    limit={SOCIAL_LIMITS[channel]}
+                    initialLength={(post.post_text ?? '').length}
+                  />
                 </label>
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className={LABEL}>

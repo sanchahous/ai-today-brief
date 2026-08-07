@@ -23,12 +23,18 @@ const SECONDARY =
 const DANGER =
   'min-h-11 rounded-xl border border-red-400/30 bg-red-400/8 px-4 text-sm font-bold text-red-200 transition hover:bg-red-400/15';
 
-export default async function ProvidersPage() {
+export default async function ProvidersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string | string[] }>;
+}) {
   const session = await requireSocialAdmin();
   const canEdit = session.role === 'owner' || session.role === 'editor';
   const canDelete = session.role === 'owner';
 
   const admin = getSupabaseAdmin();
+  const query = await searchParams;
+  const errorMessage = Array.isArray(query.error) ? query.error[0] : query.error;
   const [{ data: providers }, { data: models }, { data: roleChains }] = await Promise.all([
     admin.from('llm_providers').select('*').order('id'),
     admin.from('llm_provider_models').select('*').order('provider_id').order('rank'),
@@ -37,8 +43,11 @@ export default async function ProvidersPage() {
 
   const modelsByProvider = new Map<string, string[]>();
   for (const model of models ?? []) {
+    // Show every model, including disabled ones: this textarea is the full
+    // round-trip source of truth for replace_llm_provider_models -- filtering
+    // here would silently delete a disabled model's row on the next save.
     const list = modelsByProvider.get(model.provider_id) ?? [];
-    if (model.enabled) list.push(model.model_id);
+    list.push(model.model_id);
     modelsByProvider.set(model.provider_id, list);
   }
   const chainByRole = new Map((roleChains ?? []).map((row) => [row.role, row.chain]));
@@ -47,13 +56,22 @@ export default async function ProvidersPage() {
     <div className="mx-auto max-w-5xl">
       <p className="text-sm font-bold tracking-[.16em] text-[#47e4d3] uppercase">Providers</p>
       <h1 className="mt-2 text-3xl font-bold text-white">LLM provider registry</h1>
+      {errorMessage ? (
+        <div className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 p-3">
+          <p className="text-sm font-bold text-red-100">{errorMessage}</p>
+        </div>
+      ) : null}
       <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
         Add or remove an OpenAI-compatible HTTP provider (e.g. a promotional free tier like NVIDIA
         NIM) without a deploy. CLI-subscription providers (Claude Code, Codex) still need their
         auth env var set in Vercel/GitHub secrets ahead of time -- a row here only controls
-        ordering and enablement, not installing the binary or provisioning the token. Nothing in
-        the app reads this registry yet (see wiki/pipeline/llm-providers.md for the migration
-        status) -- this page is safe to experiment with.
+        ordering and enablement, not installing the binary or provisioning the token.
+      </p>
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-amber-200/90">
+        This is live production config: the daily pipeline, weekly master writer/critic, social
+        writer/critic and card-image scene briefs all resolve their provider chain through this
+        registry, and a saved role chain below overrides the built-in default the moment you save
+        it. See wiki/pipeline/llm-providers.md for exactly which call sites are migrated.
       </p>
 
       <section className="mt-7 grid gap-4">
@@ -261,8 +279,11 @@ export default async function ProvidersPage() {
       <section className="mt-7">
         <h2 className="text-lg font-bold text-white">Role chains</h2>
         <p className="mt-1 text-sm text-slate-500">
-          Which providers each call site tries, in order. Not read by any call site yet --
-          migrated one at a time, see wiki/pipeline/llm-providers.md.
+          Which providers each call site tries, in order, for roles that have been migrated onto
+          the registry -- see wiki/pipeline/llm-providers.md for the current per-role status. An
+          empty chain here is a no-op (falls back to the built-in default); a chain that resolves
+          to zero usable providers (e.g. a key not pasted yet) also falls back to the default and
+          logs a warning, it does not take the role down.
         </p>
         <div className="mt-3 grid gap-4 md:grid-cols-2">
           {PROVIDER_ROLES.map((role) => {
