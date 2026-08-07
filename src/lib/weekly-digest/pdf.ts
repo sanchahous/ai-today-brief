@@ -80,6 +80,7 @@ const COPY = {
     closing: 'Key takeaways',
     online: 'Read the live edition',
     video: 'Watch the weekly video',
+    radar: 'Also this week',
   },
   uk: {
     weekly: 'ТИЖНЕВИЙ ДАЙДЖЕСТ',
@@ -93,6 +94,7 @@ const COPY = {
     closing: 'Ключові висновки',
     online: 'Читати вебверсію',
     video: 'Дивитися відеовипуск',
+    radar: 'Ще цього тижня',
   },
 } as const;
 
@@ -397,6 +399,59 @@ function buildStory(
   }
 }
 
+/**
+ * Compact, image-free entries for stories ranked below the top 3 -- title +
+ * summary + source, no body/info panels. The full `buildStory` spread (image
+ * + body + 4 info panels) is reserved for the top-3 features; giving every
+ * item that same treatment is what pushed real editions to 20-21 pages
+ * against the approved 10-16 page A4 contract (`generation-worker.ts`'s
+ * `generatePdf`). This mirrors the existing `rank <= 3` "feature" boundary
+ * already enforced elsewhere (e.g. `claim_weekly_digest_generation_jobs`'s
+ * `editorial_master`/`video_manifest` gates) -- it's not a new content tier,
+ * just the first place the PDF renderer honors it.
+ */
+function buildRadarSection(doc: PDFKit.PDFDocument, input: WeeklyPdfInput, items: WeeklyPdfStory[]) {
+  if (items.length === 0) return;
+  const copy = COPY[input.locale];
+  addPage(doc);
+  label(doc, input.issueLabel);
+  doc.moveDown(1.2);
+  sectionHeading(doc, input.locale, copy.radar, { size: 26 });
+  doc.moveDown(0.8);
+  items.forEach((story, index) => {
+    ensureSpace(doc, 140);
+    doc
+      .font(headingFont(input.locale))
+      .fontSize(13)
+      .fillColor(COLORS.ink)
+      .text(story.title, { lineGap: 3 });
+    doc.moveDown(0.2);
+    doc
+      .font('Inter')
+      .fontSize(10)
+      .fillColor(COLORS.muted)
+      .text(story.summary, { lineGap: 3, paragraphGap: 4 });
+    doc
+      .font('Inter')
+      .fontSize(8.5)
+      .fillColor(COLORS.muted)
+      .text(`${copy.source}: `, { continued: true });
+    doc.fillColor(COLORS.ink).text(story.sourceName || story.sourceUrl, {
+      link: story.sourceUrl,
+      underline: true,
+    });
+    if (index < items.length - 1) {
+      doc.moveDown(0.6);
+      doc
+        .save()
+        .rect(PAGE.margin, doc.y, PAGE.width - PAGE.margin * 2, 1)
+        .fill(COLORS.rule)
+        .restore();
+      doc.moveDown(0.8);
+    }
+  });
+}
+
 async function buildClosing(doc: PDFKit.PDFDocument, input: WeeklyPdfInput) {
   const copy = COPY[input.locale];
   addPage(doc);
@@ -541,9 +596,17 @@ export async function renderWeeklyDigestPdf(input: WeeklyPdfInput): Promise<Buff
   doc.addPage({ size: 'A4', margin: 0 });
   await buildCover(doc, input, cover ?? null);
   buildContents(doc, input);
+  // Full illustrated spread only for the top-3 features; everything else
+  // goes into the compact radar section below (see buildRadarSection).
+  const radarStories: WeeklyPdfStory[] = [];
   input.stories.forEach((story, index) => {
-    buildStory(doc, input, story, storyImages[index] ?? null);
+    if (story.rank <= 3) {
+      buildStory(doc, input, story, storyImages[index] ?? null);
+    } else {
+      radarStories.push(story);
+    }
   });
+  buildRadarSection(doc, input, radarStories);
   await buildClosing(doc, input);
   addHeadersAndFooters(doc, input);
   doc.end();
