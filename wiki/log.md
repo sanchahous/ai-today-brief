@@ -19,6 +19,39 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-06 — LLM provider registry, Phase 5: social writer/critic (llm-router.ts) migrated, partial by design
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 4 в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 5: що мігровано/не мігровано і чому, важлива
+  відмінність тестового покриття від попередніх фаз
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 6a
+
+**Код:**
+- `src/lib/social/llm-router.ts`'s `generateOpenRouter()` — транспорт замінено на
+  `generateWithHttpProviderChain` (`OPENROUTER_HTTP_DEFAULTS`); `rankSocialOpenRouterModels`
+  лишилось незайманим. Новий `resolveSocialDbHttpProvider(role, db)` — той самий патерн, що й
+  Фази 4, для ролей `social.writer`/`social.critic` (вже існували в `PROVIDER_ROLES`).
+- Свідомо НЕ мігровано: `generateGemini` (per-role `GEMINI_SCHEMAS` + env-специфічні
+  оверрайди/фільтри, не покриті generic-адаптером) і `generateOllama` (локальний self-hosted
+  сервер з власною security-перевіркою, поза призначенням `http-provider.ts`).
+- `generateSocialJson` отримав `options.db?: PipelineDb`, протягнуто через усі реальні
+  продакшн-виклики: `attachCriticReport` (`src/lib/social/critic.ts`, викликається з
+  `composer.ts` і `admin/actions.ts`), `adaptWeeklySocialChannel`
+  (`src/lib/weekly-digest/social-adapter.ts`, викликається з `generation-worker.ts`), і прямий
+  виклик у `admin/actions.ts`'s ручному regenerate-екшені — усюди `getSupabaseAdmin()`.
+- 2 нових тести — перші, що реально викликають `generateOpenRouter` (не через
+  `deps.generators`-injection, як усі наявні тести цього файлу); наявні 12 тестів пройшли без
+  змін.
+
+**Свідомо не зроблено:** живий shadow-run (та сама причина, що й Фаза 4 — БД-шлях не перевірити
+без застосованої міграції; дефолтний шлях успадковує живу верифікацію Фази 1).
+
+**Верифіковано:** 920/920 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний.
+
 ## 2026-08-06 — LLM provider registry, Phase 4: weekly master (editorial-llm.ts) migrated, partial by design
 
 **Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження

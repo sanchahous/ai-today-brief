@@ -1,5 +1,6 @@
 import 'server-only';
 
+import type { PipelineDb } from '../../../pipeline/db';
 import { generateSocialJson } from './llm-router';
 import type { QualityReport, SocialDraft } from './types';
 
@@ -99,6 +100,7 @@ function envEnabled(value: string | undefined) {
 export async function attachCriticReport(
   draft: SocialDraft,
   report: QualityReport,
+  db?: PipelineDb,
 ): Promise<QualityReport> {
   const prompt = `You are an independent factual critic. Compare the proposed social copy ONLY with the approved facts below. Do not use outside knowledge. Flag every number, name, causal claim, quote, or implication not supported by those facts. Also flag misleading compression.
 
@@ -124,7 +126,7 @@ FIRST COMMENT:
 ${draft.firstComment ?? ''}`;
 
   try {
-    const result = await generateSocialJson('critic', prompt, parseCritic);
+    const result = await generateSocialJson('critic', prompt, parseCritic, { db });
     const critic = result.value;
     const minimumScore = Number.parseInt(process.env.SOCIAL_CRITIC_MIN_SCORE ?? '85', 10);
     const needsReview = critic.flags.length > 0 || critic.score < minimumScore;

@@ -1490,6 +1490,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
         locale === 'uk'
           ? `Обкладинка тижневого дайджесту: ${bundle.uk.title}`
           : `Weekly Digest cover: ${bundle.en.title}`,
+      db: getSupabaseAdmin(),
     });
     await recordGenerationCost({
       scope: 'social',

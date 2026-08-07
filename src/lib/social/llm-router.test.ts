@@ -1,10 +1,25 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('../../../pipeline/openrouter-summarize', () => ({
+  generateWithOpenRouterChain: vi.fn(),
+}));
+
+// Wraps the real loadProviderRegistry (pass-through by default) the same way
+// pipeline/card-image.test.ts does -- most tests here never touch it (no
+// `db` option), the Phase 5 describe block below overrides it explicitly.
+vi.mock('../../../pipeline/providers/registry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../pipeline/providers/registry')>();
+  return { ...actual, loadProviderRegistry: vi.fn(actual.loadProviderRegistry) };
+});
+
 import {
   generateSocialJson,
   rankLocalModelIds,
   rankSocialOpenRouterModels,
   resolveSocialProviderOrder,
 } from './llm-router';
+import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summarize';
+import { loadProviderRegistry } from '../../../pipeline/providers/registry';
 import type { OpenRouterModelRecord } from '../../../pipeline/openrouter-models';
 
 function model(
@@ -207,5 +222,96 @@ describe('generateSocialJson', () => {
     expect(result.attempts.map((attempt) => attempt.provider)).toEqual(['gemini', 'openrouter']);
     expect(gemini).toHaveBeenCalledTimes(1);
     expect(openrouter).toHaveBeenCalledTimes(1);
+  });
+});
+
+// --- Phase 5: real (non-injected) OpenRouter path, migrated onto the registry's http-provider adapter ---
+
+describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
+  afterEach(() => {
+    vi.mocked(generateWithOpenRouterChain).mockReset();
+    vi.mocked(loadProviderRegistry).mockClear();
+  });
+
+  const catalogModel = (id: string): OpenRouterModelRecord => ({
+    id,
+    created: 1_784_000_000,
+    context_length: 128_000,
+    supported_parameters: ['response_format', 'structured_outputs'],
+    architecture: { modality: 'text->text' },
+    expiration_date: null,
+  });
+
+  it('routes the default (no db) writer call through the value-ranked queue, never touching the DB registry', async () => {
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
+      text: '{"text":"ready"}',
+      provider: 'openrouter',
+      model: 'deepseek/deepseek-v4-flash',
+      usage: null,
+    });
+
+    const result = await generateSocialJson(
+      'writer',
+      'write',
+      (raw) => JSON.parse(raw) as { text: string },
+      {
+        env: { SOCIAL_WRITER_PROVIDER_ORDER: 'openrouter', OPEN_ROUTER_API_KEY: 'test-key' },
+        deps: { fetchOpenRouterModels: async () => [catalogModel('deepseek/deepseek-v4-flash')] },
+      },
+    );
+
+    expect(result.provider).toBe('openrouter');
+    expect(result.value.text).toBe('ready');
+    expect(loadProviderRegistry).not.toHaveBeenCalled();
+    expect(vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.modelQueue).toEqual([
+      'deepseek/deepseek-v4-flash',
+    ]);
+  });
+
+  it('routes through an owner-configured DB HTTP provider (e.g. NIM) for social.critic instead of the value-ranked default when db is supplied', async () => {
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
+      text: '{"score":90,"flags":[]}',
+      provider: 'openrouter',
+      model: 'deepseek-ai/deepseek-v4-pro',
+      usage: null,
+    });
+    vi.mocked(loadProviderRegistry).mockResolvedValue({
+      chainForRole: (role) =>
+        role === 'social.critic'
+          ? [
+              {
+                entry: { kind: 'http', id: 'nim' },
+                http: {
+                  id: 'nim',
+                  apiKey: 'nim-key',
+                  baseUrl: 'https://integrate.api.nvidia.com/v1',
+                  modelQueue: ['deepseek-ai/deepseek-v4-pro'],
+                },
+              },
+            ]
+          : [],
+    });
+    const fetchOpenRouterModelsMock = vi.fn();
+    const fakeDb = {} as never;
+
+    const result = await generateSocialJson(
+      'critic',
+      'audit',
+      (raw) => JSON.parse(raw) as { score: number; flags: string[] },
+      {
+        env: { SOCIAL_CRITIC_PROVIDER_ORDER: 'openrouter' },
+        deps: { fetchOpenRouterModels: fetchOpenRouterModelsMock },
+        db: fakeDb,
+      },
+    );
+
+    // Stable slot name -- see resolveSocialDbHttpProvider's doc comment.
+    expect(result.provider).toBe('openrouter');
+    expect(result.value.score).toBe(90);
+    expect(fetchOpenRouterModelsMock).not.toHaveBeenCalled();
+    expect(vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.apiKey).toBe('nim-key');
+    expect(vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.modelQueue).toEqual([
+      'deepseek-ai/deepseek-v4-pro',
+    ]);
   });
 });

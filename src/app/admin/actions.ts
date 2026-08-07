@@ -290,7 +290,7 @@ export async function updateVariantAction(formData: FormData) {
     sourceUrl: post.utm_url ?? post.url ?? '',
   };
   const report = mergePreservedQualityProvenance(
-    await attachCriticReport(draft, runQualityGate(draft)),
+    await attachCriticReport(draft, runQualityGate(draft), getSupabaseAdmin()),
     post.quality_report,
   );
   const nextVersion = post.content_version + 1;
@@ -378,7 +378,9 @@ export async function regenerateVariantAction(formData: FormData) {
     facebook: 'Ukrainian top story or roundup, 120–1400 characters, one tracking URL.',
   };
   const prompt = `Create a platform-native ${post.channel} variant for AI Today Brief. Use ONLY the approved facts. Never invent a number, name, quote, or causal claim. ${channelInstruction[post.channel]} Risk level: ${socialPackage?.risk_level}. Package: ${socialPackage?.kind}. Return strict JSON only: {"text":"...","firstComment":"...","contentParts":["..."]}. Tracking URL (include only when the channel rule asks): ${trackingUrl}\n\nAPPROVED FACTS:\n${facts.map((fact) => `- ${fact}`).join('\n')}\n\nCURRENT COPY TO IMPROVE:\n${post.post_text ?? ''}`;
-  const { value: parsed } = await generateSocialJson('writer', prompt, parseWriterResponse);
+  const { value: parsed } = await generateSocialJson('writer', prompt, parseWriterResponse, {
+    db: getSupabaseAdmin(),
+  });
   const next = new FormData();
   next.set('id', id);
   next.set('post_text', parsed.text);

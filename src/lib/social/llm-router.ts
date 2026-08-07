@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { SchemaType } from '@google/generative-ai';
+import type { PipelineDb } from '../../../pipeline/db';
 import { resolveGeminiModelQueue } from '../../../pipeline/gemini-models';
 import {
   fetchOpenRouterModels,
@@ -8,7 +9,12 @@ import {
   type OpenRouterModelRecord,
 } from '../../../pipeline/openrouter-models';
 import type { OpenRouterResponseValidator } from '../../../pipeline/openrouter-brief-json';
-import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summarize';
+import {
+  generateWithHttpProviderChain,
+  OPENROUTER_HTTP_DEFAULTS,
+  type HttpProviderConfig,
+} from '../../../pipeline/providers/http-provider';
+import { loadProviderRegistry, type ProviderRole } from '../../../pipeline/providers/registry';
 import { generateWithModelQueue, type GeminiResponseSchema } from '../../../pipeline/summarize';
 
 export type SocialLlmRole = 'writer' | 'critic';
@@ -262,23 +268,54 @@ async function generateGemini<T>(input: ProviderInput<T>): Promise<ProviderOutpu
   return { text: result.text, model: result.model, fallbackUsed: result.model !== queue[0] };
 }
 
+/**
+ * An owner-configured HTTP provider for this role (e.g. a promo like NVIDIA
+ * NIM, added via /admin/providers) takes over entirely -- its own model
+ * list, no live-catalog ranking (rankSocialOpenRouterModels needs
+ * OpenRouter's own benchmark/pricing fields, which a catalog-less provider
+ * doesn't have -- see wiki/pipeline/llm-providers.md). Null when no `db` was
+ * supplied or nothing is configured for this role.
+ */
+async function resolveSocialDbHttpProvider(
+  role: SocialLlmRole,
+  db?: PipelineDb,
+): Promise<HttpProviderConfig | null> {
+  if (!db) return null;
+  const providerRole: ProviderRole = role === 'critic' ? 'social.critic' : 'social.writer';
+  const registry = await loadProviderRegistry(process.env, {}, db);
+  const resolved = registry.chainForRole(providerRole).find((entry) => entry.entry.kind === 'http');
+  return resolved?.http ?? null;
+}
+
 async function generateOpenRouter<T>(
   input: ProviderInput<T>,
   fetchModels: (apiKey: string) => Promise<OpenRouterModelRecord[]>,
+  db?: PipelineDb,
 ): Promise<ProviderOutput> {
-  const apiKey = openRouterApiKey(input.env);
-  if (!apiKey) throw new Error('UNCONFIGURED:OPEN_ROUTER_API_KEY');
-  const modelQueue = await resolveSocialOpenRouterQueue(input.role, apiKey, input.env, fetchModels);
   const validateResponse: OpenRouterResponseValidator = (_modelId, text, finishReason) => {
     if (finishReason === 'length') throw new SyntaxError('Truncated social JSON response.');
     input.parse(text);
     return text;
   };
-  const result = await generateWithOpenRouterChain(input.prompt, {
-    apiKey,
-    modelQueue,
-    validateResponse,
-  });
+
+  const dbHttp = await resolveSocialDbHttpProvider(input.role, db);
+  if (dbHttp) {
+    const result = await generateWithHttpProviderChain(input.prompt, dbHttp, { validateResponse });
+    return {
+      text: result.text,
+      model: result.model,
+      fallbackUsed: result.model !== dbHttp.modelQueue[0],
+    };
+  }
+
+  const apiKey = openRouterApiKey(input.env);
+  if (!apiKey) throw new Error('UNCONFIGURED:OPEN_ROUTER_API_KEY');
+  const modelQueue = await resolveSocialOpenRouterQueue(input.role, apiKey, input.env, fetchModels);
+  const result = await generateWithHttpProviderChain(
+    input.prompt,
+    { id: 'openrouter', apiKey, modelQueue, ...OPENROUTER_HTTP_DEFAULTS },
+    { validateResponse },
+  );
   return {
     text: result.text,
     model: result.model,
@@ -387,6 +424,8 @@ export async function generateSocialJson<T>(
     env?: SocialLlmEnv;
     deps?: SocialLlmDependencies;
     excludeProviders?: readonly SocialLlmProvider[];
+    /** Enables DB-driven role-chain overrides (owner-added HTTP providers via /admin/providers) for the openrouter slot. */
+    db?: PipelineDb;
   } = {},
 ): Promise<SocialLlmResult<T>> {
   const env = options.env ?? process.env;
@@ -411,7 +450,7 @@ export async function generateSocialJson<T>(
         : provider === 'gemini'
           ? await generateGemini({ prompt, role, parse, env })
           : provider === 'openrouter'
-            ? await generateOpenRouter({ prompt, role, parse, env }, fetchModels)
+            ? await generateOpenRouter({ prompt, role, parse, env }, fetchModels, options.db)
             : await generateOllama({ prompt, role, parse, env }, fetchFn);
       const value = parse(output.text);
       const promptTokens = Math.max(1, Math.ceil(prompt.length / 4));

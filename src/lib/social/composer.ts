@@ -441,7 +441,7 @@ async function saveVariants(
         sourceUrl: seed.sourceUrl,
       };
       const rules = runQualityGate(draft, now);
-      return { ...draft, qualityReport: await attachCriticReport(draft, rules) };
+      return { ...draft, qualityReport: await attachCriticReport(draft, rules, getSupabaseAdmin()) };
     }),
   );
 

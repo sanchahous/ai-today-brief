@@ -17,17 +17,17 @@ Last updated: 2026-08-06
   `feat/weekly-editorial-voice` (торкається тих самих файлів: `editorial-llm.ts`, `llm-router.ts`)
   — або потребуватиме rebase, якщо merge-порядок зміниться. **Фаза 0 (прибрати Gemini), Фаза 1
   (ядро реєстру), Фаза 1b (БД + admin `/admin/providers`), Фаза 2 (card-image.ts), Фаза 3
-  (custom-research.ts) і Фаза 4 (editorial-llm.ts, частково) виконані.** Фаза 4 — найскладніший
-  файл досі: мігровано лише транспортний шар OpenRouter-кроку (тепер `generateWithHttpProviderChain`
-  замість прямого `generateWithOpenRouterChain`) + новий БД-override
-  (`weekly.master_writer`/`weekly.master_critic` можуть тепер обслуговуватись
-  owner-доданим провайдером через `/admin/providers`); Gemini- і Claude CLI-кроки свідомо НЕ
-  чіпались (бо потребують несумісних з поточним реєстром гарантій — три різні JSON-форми без
-  native схеми для Gemini, і немає другого CLI-споживача поза weekly). Живої shadow-верифікації
-  цієї фази не проведено — свідомо, БД-шлях фізично неможливо живо перевірити, доки міграція
-  `llm_role_chains` не застосована до прод-БД. 918 тестів, `tsc`/`eslint`/build зелені. Власник дав
-  добро йти по всіх фазах послідовно з комітом на кожну. **Фази 5–7 (social, daily
-  verify/summarize/auto-publish, опційно Codex CLI) — в роботі, наступна: Фаза 5.**
+  (custom-research.ts), Фаза 4 (editorial-llm.ts, частково) і Фаза 5 (llm-router.ts, частково)
+  виконані.** Фази 4 і 5 — той самий підхід: мігрувати лише транспортний шар OpenRouter-кроку
+  (тепер `generateWithHttpProviderChain` скрізь) + додати БД-override для owner-доданого
+  провайдера (weekly's `weekly.master_writer`/`weekly.master_critic`, social's
+  `social.writer`/`social.critic`); Gemini- і CLI/Ollama-кроки свідомо НЕ чіпались усюди (кожен
+  має власні гарантії, несумісні з поточним generic-адаптером — деталі у
+  [pipeline/llm-providers](pipeline/llm-providers.md)). Живої shadow-верифікації жодної з цих двох
+  фаз не проведено — свідомо, БД-шлях фізично неможливо живо перевірити, доки міграція
+  `llm_role_chains` не застосована до прод-БД. 920 тестів, `tsc`/`eslint`/build зелені. Власник дав
+  добро йти по всіх фазах послідовно з комітом на кожну. **Фази 6–7 (daily
+  verify/summarize/auto-publish, опційно Codex CLI) — в роботі, наступна: Фаза 6a.**
 - Гілка `feat/weekly-editorial-voice` (з `main`, 2026-08-06), PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189):
   повний перегляд редакційної якості weekly-дайджесту (власник забракував увесь контент як
   «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). **Усі 7 запланованих PR

@@ -1,5 +1,6 @@
 import 'server-only';
 
+import type { PipelineDb } from '../../../pipeline/db';
 import { parseCritic } from '@/lib/social/critic';
 import { generateSocialJson } from '@/lib/social/llm-router';
 import { runQualityGate } from '@/lib/social/quality';
@@ -182,8 +183,10 @@ export async function adaptWeeklySocialChannel(input: {
   sourceFacts: string[];
   assets?: SocialAsset[];
   altText?: string | null;
+  /** Enables DB-driven role-chain overrides (owner-added HTTP providers via /admin/providers) for social.writer/social.critic. */
+  db?: PipelineDb;
 }): Promise<WeeklySocialAdaptation> {
-  const writer = await generateSocialJson('writer', promptFor(input), parseWriter);
+  const writer = await generateSocialJson('writer', promptFor(input), parseWriter, { db: input.db });
   const hookCandidates = candidatesFromText(writer.value.text);
   const ranked = hookCandidates
     .map((candidate) => ({
@@ -218,6 +221,7 @@ COPY
 ${[draft.text, ...unpacked.contentParts, draft.firstComment ?? ''].join('\n---\n')}`;
   const critic = await generateSocialJson('critic', criticPrompt, parseCritic, {
     excludeProviders: [writer.provider],
+    db: input.db,
   });
   const platformFitScore = Math.min(
     selected.score,

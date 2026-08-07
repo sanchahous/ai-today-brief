@@ -269,10 +269,47 @@ tested-by-use в інших файлах), раніше — 0.
   Перша реальна live-перевірка цього шляху відбудеться природно, коли власник і застосує міграцію,
   і реально додасть перший HTTP-провайдер через `/admin/providers`.
 
-**Фази 5–7 (міграція решти ланцюжків) — не почато.**
+**Фаза 5 — social writer/critic (`llm-router.ts`) мігровано (2026-08-06), той самий частковий
+підхід, що й Фаза 4.**
+
+- **Мігровано:** `generateOpenRouter()`'s транспорт — `generateWithOpenRouterChain` (прямий
+  виклик) замінено на `generateWithHttpProviderChain` через `OPENROUTER_HTTP_DEFAULTS`.
+  Власне ранжування моделей (`rankSocialOpenRouterModels`, provider-diverse — один сімейний
+  представник на family, freshness-вікно) лишилось незайманим.
+- **Нова можливість:** `resolveSocialDbHttpProvider(role, db)` перевіряє БД-ланцюжок ролі
+  (`social.writer`/`social.critic` — обидві вже існували в `PROVIDER_ROLES` з Фази 1) на
+  `http`-запис перед дефолтним value-ранжованим шляхом. Той самий патерн, що й Фаза 4.
+- **Свідомо НЕ мігровано:** `generateGemini` (пряма Gemini-SDK-логіка з per-role
+  `GEMINI_SCHEMAS`/env-оверрайдами моделі/max-attempts — на відміну від weekly, тут ролі мають
+  власні коректні схеми, але env-специфічні нюанси (`SOCIAL_WRITER_GEMINI_MODEL`,
+  `SOCIAL_GEMINI_MAX_MODEL_ATTEMPTS`, critic's "уникати lite" фільтр) все одно не покриваються
+  generic `generateWithGemini`-адаптером без ризику зміни поведінки) і `generateOllama`
+  (локальний self-hosted сервер із власною loopback/HTTPS-security перевіркою
+  (`safeOllamaBaseUrl`) — за межами того, що registry's `http-provider.ts` взагалі покликаний
+  обслуговувати).
+- `generateSocialJson` отримав новий `options.db?: PipelineDb`. Протягнуто через усі реальні
+  продакшн-виклики (`attachCriticReport` у `src/lib/social/critic.ts` — 2 виклики:
+  `src/lib/social/composer.ts`, `src/app/admin/actions.ts`; `adaptWeeklySocialChannel` у
+  `src/lib/weekly-digest/social-adapter.ts` — виклик з `generation-worker.ts`; і прямий
+  `generateSocialJson('writer', ...)` у `src/app/admin/actions.ts`'s ручному regenerate-екшені)
+  — усюди `getSupabaseAdmin()`, вже дешевий кешований синглтон у цих файлах.
+- **Важлива відмінність від тестів Фаз 1-4:** `llm-router.test.ts` НІКОЛИ не викликав реальний
+  `generateOpenRouter` — усі наявні тести підміняють його через `deps.generators` injection,
+  тож (на відміну від card-image/custom-research/editorial-llm, де існуючі тести прозоро
+  перехопили новий шлях) міграція транспорту тут не мала жодного наявного захисту тестів.
+  Додано 2 нових тести, що вперше реально викликають `generateOpenRouter` (без injection):
+  дефолтний value-ранжований шлях і БД-override шлях.
+- Усі 14 наявних + нових тестів пройшли. 920/920 тестів у проєкті, `tsc`/`eslint`/build чисті.
+- Той самий чесний застережний коментар, що й у Фазі 4: живої shadow-верифікації не проведено
+  (та сама причина — БД-шлях фізично не перевірити, доки міграція не застосована до прод-БД;
+  дефолтний шлях успадковує живу верифікацію `http-provider.ts` з Фази 1).
+
+**Фази 6–7 (daily verify/summarize/auto-publish, опційно Codex CLI) — не почато.**
 (source: `pipeline/providers/*.ts`, `pipeline/card-image.ts`, `pipeline/custom-research.ts`,
 `pipeline/custom-news.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
-`src/lib/weekly-digest/generation-worker.ts`,
+`src/lib/weekly-digest/generation-worker.ts`, `src/lib/social/llm-router.ts`,
+`src/lib/social/critic.ts`, `src/lib/social/composer.ts`,
+`src/lib/weekly-digest/social-adapter.ts`, `src/app/admin/actions.ts`,
 `supabase/migrations/20260806160000_llm_provider_registry.sql`,
 `src/app/admin/(cms)/providers/*.tsx`, `tmp/nim-http-provider-dryrun/run.ts`, live dry-run
 2026-08-06)
