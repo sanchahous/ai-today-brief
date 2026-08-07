@@ -2151,9 +2151,17 @@ export type Database = {
         };
         Returns: undefined;
       };
+      delete_llm_provider_secret: {
+        Args: { p_provider_id: string };
+        Returns: undefined;
+      };
       read_llm_provider_secret: {
         Args: { p_provider_id: string };
         Returns: string | null;
+      };
+      replace_llm_provider_models: {
+        Args: { p_model_ids: string[]; p_provider_id: string };
+        Returns: undefined;
       };
       store_llm_provider_secret: {
         Args: { p_provider_id: string; p_secret: string };
