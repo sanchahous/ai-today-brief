@@ -2057,6 +2057,9 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID?.trim(),
         cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN?.trim(),
         cloudflareImageModel: process.env.CLOUDFLARE_IMAGE_MODEL?.trim(),
+        // Lets an owner-configured /admin/providers role chain for
+        // weekly.card_image_scene override the env-only default.
+        db: getSupabaseAdmin(),
       },
     );
 

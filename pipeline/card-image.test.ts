@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import { loadProviderRegistry } from './providers/registry';
 import {
   buildPrompt,
   buildWeeklyPrompt,
@@ -21,6 +22,18 @@ import {
   seedFromString,
   weeklyReportageSceneBrief,
 } from './card-image';
+
+// Wraps the real loadProviderRegistry (pass-through by default) so existing
+// tests keep exercising real env-key resolution unchanged, while new tests
+// below can assert call count/args or override it for a specific case.
+vi.mock('./providers/registry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./providers/registry')>();
+  return { ...actual, loadProviderRegistry: vi.fn(actual.loadProviderRegistry) };
+});
+
+afterEach(() => {
+  vi.mocked(loadProviderRegistry).mockClear();
+});
 
 describe('DEFAULT_CF_IMAGE_MODEL', () => {
   it('uses Cloudflare FLUX.2 klein-9b by default (not Leonardo)', () => {
@@ -436,5 +449,94 @@ describe('generateWeeklyReportageIllustrations', () => {
       { geminiApiKey: '' },
     );
     expect(result).toBeNull();
+  });
+});
+
+// --- Phase 2: scene-brief ladder migrated onto pipeline/providers/registry ---
+
+describe('scene-brief registry wiring (Phase 2)', () => {
+  const FAKE_CLI_ENV_VAR = 'CARD_IMAGE_TEST_CLI_TOKEN';
+
+  afterEach(() => {
+    delete process.env[FAKE_CLI_ENV_VAR];
+  });
+
+  it('reuses a caller-supplied registry instead of building a new one (fillCardImages batching)', async () => {
+    const registry = { chainForRole: () => [] };
+    const { source } = await sceneBrief(
+      'MCP agent orchestrates workflows',
+      'Autonomous agents coordinate tools',
+      { geminiApiKey: 'unused', registry },
+    );
+    expect(source).toBe('fallback');
+    expect(loadProviderRegistry).not.toHaveBeenCalled();
+  });
+
+  it('builds a registry from this call\'s env keys + db when none is supplied', async () => {
+    vi.mocked(loadProviderRegistry).mockResolvedValueOnce({ chainForRole: () => [] });
+    const fakeDb = {} as never;
+
+    await sceneBrief('A story about a launch', 'Summary text', {
+      geminiApiKey: 'g-key',
+      openRouterApiKey: 'or-key',
+      db: fakeDb,
+    });
+
+    expect(loadProviderRegistry).toHaveBeenCalledTimes(1);
+    expect(loadProviderRegistry).toHaveBeenCalledWith(
+      { GEMINI_API_KEY: 'g-key', OPEN_ROUTER_API_KEY: 'or-key' },
+      {},
+      fakeDb,
+    );
+  });
+
+  it('threads a real registry success through end-to-end: role dispatch -> provider id as source -> text as scene', async () => {
+    process.env[FAKE_CLI_ENV_VAR] = 'token';
+    const registry = {
+      chainForRole: (role: string) => {
+        expect(role).toBe('daily.card_image_scene');
+        return [
+          {
+            entry: { kind: 'cli' as const, id: 'stub-cli' },
+            cli: {
+              id: 'stub-cli',
+              binary: 'stub',
+              authEnvVar: FAKE_CLI_ENV_VAR,
+              buildArgs: () => [],
+              parseEnvelope: () => ({
+                text: 'a security engineer glancing at a red-highlighted network map',
+                model: 'stub-model',
+                costUsd: 0,
+              }),
+              spawnFn: async () => ({ stdout: 'ok', stderr: '', exitCode: 0, spawnError: null }),
+            },
+          },
+        ];
+      },
+    };
+
+    const { scene, source } = await sceneBrief('Security breach', 'Attackers exploit a flaw', {
+      geminiApiKey: 'unused',
+      registry,
+    });
+
+    expect(source).toBe('stub-cli');
+    expect(scene).toBe('a security engineer glancing at a red-highlighted network map');
+    expect(loadProviderRegistry).not.toHaveBeenCalled();
+  });
+
+  it('passes the weekly role to a supplied registry', async () => {
+    const seenRoles: string[] = [];
+    const registry = {
+      chainForRole: (role: string) => {
+        seenRoles.push(role);
+        return [];
+      },
+    };
+    await weeklyReportageSceneBrief(
+      { headline: 'A weekly story', summary: 'Summary' },
+      { geminiApiKey: 'unused', registry },
+    );
+    expect(seenRoles).toEqual(['weekly.card_image_scene']);
   });
 });

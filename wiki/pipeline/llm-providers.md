@@ -156,8 +156,46 @@ tested-by-use в інших файлах), раніше — 0.
   admin-сторінка на цьому етапі безпечна для експериментів, порожні таблиці = поточна
   поведінка без змін.
 
-**Фази 2–7 (міграція існуючих ланцюжків) — не почато.**
-(source: `pipeline/providers/*.ts`, `supabase/migrations/20260806160000_llm_provider_registry.sql`,
+**Фаза 2 — `card-image.ts`'s art-director ladder мігровано (2026-08-06).**
+
+- `runArtDirectorLadder()` (`pipeline/card-image.ts`) — раніше хардкоджений Gemini SDK-виклик
+  (`GoogleGenerativeAI`) + сирий `fetch` на `~openai/gpt-mini-latest` через OpenRouter — тепер
+  викликає `generateWithRegistry(role, instruction, registry)`, де `role` —
+  `daily.card_image_scene` (`sceneBrief`) або `weekly.card_image_scene`
+  (`weeklyReportageSceneBrief`). Обидві ці ролі вже існували в `PROVIDER_ROLES` з Фази 1.
+  `GoogleGenerativeAI`/`resolveGeminiModelQueue` імпорти прибрано з файлу — тепер живуть лише
+  всередині `gemini-provider.ts`.
+- `CardImageConfig` отримав два нових опційних поля: `db?: PipelineDb` (дозволяє
+  БД-керованим ланцюжкам з Фази 1b перекрити дефолт для цих двох ролей) і
+  `registry?: ProviderRegistry` (готовий реєстр — уникає повторного резолву).
+- **Продуктивність:** `resolveOpenRouterModelQueue` (жива черга з каталогу) робить реальний
+  HTTP-запит без кешування. `fillCardImages` (daily, до `MAX_PER_RUN=12` айтемів за прогін)
+  резолвить реєстр **один раз на весь батч** і повторно використовує його для кожного айтема —
+  без цього кожен айтем окремо бив би живий каталог OpenRouter. `generateWeeklyReportageIllustrations`
+  (weekly) викликає ladder лише раз на джобу — batching там не потрібен.
+- **Свідомий компроміс:** стара реалізація на OpenRouter-фолбеку хардкодила дешеву модель-псевдонім
+  (`~openai/gpt-mini-latest`) саме для цього дешевого «опиши сцену» виклику. Новий шлях іде через
+  `loadProviderRegistry`'s спільний `defaultChain`, який використовує той самий
+  benchmark-ранжований каталог, що й усі інші ролі (потенційно дорожча модель на OpenRouter-фолбеку).
+  Свідомо НЕ компенсовано через `roleOverrides` — `roleOverrides` в `loadProviderRegistry`
+  має пріоритет НАД БД-ланцюжком (`roleOverrides > db > default`), тож жорстке зашивання дешевої
+  моделі тут назавжди заблокувало б власника від керування цією роллю через `/admin/providers` —
+  а це якраз ціль усього реєстру. Оскільки Gemini зазвичай сконфігурований у проді, цей
+  OpenRouter-фолбек — рідкісний шлях (Gemini rate-limit/збій); вартість прийнятна за уніфікацію.
+- `SceneBriefResult.source` (`SceneSource`) розширено з фіксованого `'gemini' | 'openrouter' |
+  'fallback' | 'owner'` до `string` — тепер може бути будь-який provider id з реєстру (напр.
+  `'nim'`, якщо власник додасть NIM у ланцюжок цієї ролі через адмінку). UI вже рендерив це як
+  довільний рядок (`weekly-workspace.tsx`), зміна типу не торкається жодного споживача.
+- Тести: 4 нових у `card-image.test.ts` (registry reuse пропускає `loadProviderRegistry`;
+  правильні env-ключі/`db` передаються при побудові; повний успішний шлях через
+  registry → CLI-адаптер зі stub `spawnFn` → `source`/`scene` заповнюються коректно; weekly-роль
+  передається правильно) — існуючі 29 тестів пройшли без жодної зміни (порожні/falsy ключі →
+  порожній ланцюжок → `RegistryExhaustedError` → та сама поведінка фолбеку, що й раніше).
+  914/914 тестів, `tsc`/`eslint`/build чисті.
+
+**Фази 3–7 (міграція решти ланцюжків) — не почато.**
+(source: `pipeline/providers/*.ts`, `pipeline/card-image.ts`,
+`supabase/migrations/20260806160000_llm_provider_registry.sql`,
 `src/app/admin/(cms)/providers/*.tsx`, `tmp/nim-http-provider-dryrun/run.ts`, live dry-run
 2026-08-06)
 

@@ -19,6 +19,39 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-06 — LLM provider registry, Phase 2: card-image.ts art-director ladder migrated
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 1b в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 2: що замінено, продуктивність-компроміс
+  (резолв реєстру раз-на-батч), свідомий компроміс вартості на OpenRouter-фолбеку
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 3
+
+**Код:**
+- `pipeline/card-image.ts`'s `runArtDirectorLadder()` — раніше хардкоджений
+  `GoogleGenerativeAI`-виклик + сирий `fetch` на `~openai/gpt-mini-latest` через OpenRouter,
+  тепер `generateWithRegistry(role, instruction, registry)` для ролей
+  `daily.card_image_scene`/`weekly.card_image_scene`. `CardImageConfig` отримав `db?`/`registry?`
+  опційні поля. `fillCardImages` резолвить реєстр один раз на весь батч (до 12 айтемів), не на
+  кожен айтем окремо — інакше кожен айтем окремо бив би живий каталог OpenRouter.
+  `SceneBriefResult.source` розширено з фіксованого union до `string` (може нести будь-який
+  provider id з реєстру, напр. `'nim'`).
+- `src/lib/weekly-digest/generation-worker.ts` — weekly-виклик тепер передає `db:
+  getSupabaseAdmin()`, щоб БД-ланцюжок для `weekly.card_image_scene` теж міг спрацювати.
+- 4 нових тести в `card-image.test.ts` (registry reuse, env-ключі при побудові, повний успішний
+  шлях через CLI-адаптер зі stub `spawnFn`, weekly-роль); існуючі 29 тестів пройшли без змін.
+
+**Свідомий компроміс:** OpenRouter-фолбек для цієї (дешевої, низько-ставкової) ролі тепер іде
+через той самий benchmark-ранжований каталог, що й усі інші ролі, замість старої хардкодженої
+дешевої моделі-псевдоніма. НЕ компенсовано через `roleOverrides`, бо `roleOverrides` в
+`loadProviderRegistry` має пріоритет над БД-ланцюжком — жорстке зашивання дешевої моделі
+назавжди заблокувало б власника від керування цією роллю через `/admin/providers`.
+
+**Верифіковано:** 914/914 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний.
+
 ## 2026-08-06 — LLM provider registry, Phase 1b: DB-driven role chains + admin UI
 
 **Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
