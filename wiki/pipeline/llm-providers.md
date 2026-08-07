@@ -2,10 +2,11 @@
 
 Summary: план і статус переходу від трьох окремих Gemini→OpenRouter реалізацій (daily/weekly/social)
 до одного спільного, власником-керованого реєстру провайдерів для всього проєкту.
-Sources: owner session 2026-08-06, дослідження коду (Explore-агенти) + Plan-агент,
+Sources: owner session 2026-08-06/07, дослідження коду (Explore-агенти) + Plan-агент,
 `supabase/migrations/040_social_cms.sql` (Vault secret-патерн), план у
-`C:\Users\Oleksandr\.claude\plans\06-08-2026-12-32-oleksandr-kuzmenko-prancy-gizmo.md`
-Last updated: 2026-08-06
+`C:\Users\Oleksandr\.claude\plans\06-08-2026-12-32-oleksandr-kuzmenko-prancy-gizmo.md`,
+live dry-run `run-daily.ts` 2026-08-07
+Last updated: 2026-08-07
 
 ---
 
@@ -304,15 +305,58 @@ tested-by-use в інших файлах), раніше — 0.
   (та сама причина — БД-шлях фізично не перевірити, доки міграція не застосована до прод-БД;
   дефолтний шлях успадковує живу верифікацію `http-provider.ts` з Фази 1).
 
-**Фази 6–7 (daily verify/summarize/auto-publish, опційно Codex CLI) — не почато.**
-(source: `pipeline/providers/*.ts`, `pipeline/card-image.ts`, `pipeline/custom-research.ts`,
-`pipeline/custom-news.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
+**Фаза 6a — daily `verify.ts` + `summarize.ts` мігровано (2026-08-06/07), верифіковано ЖИВИМ
+прогоном `run-daily.ts --dry-run`.**
+
+- `pipeline/llm-json.ts`'s `generateJsonWithFallback()` (спільний Gemini→OpenRouter шар для
+  `verify.ts`, і досі й для `auto-publish.ts`) отримав два нових опційних параметри —
+  `role?: ProviderRole` і `db?: PipelineDb`. Коли `role` передано — виклик іде через
+  `generateWithRegistry(role, ...)`, з новою `withJsonSchema()`-обгорткою (той самий патерн,
+  що й `custom-research.ts`'s `withResearchSchema`, потрібен бо роль `daily.verify`
+  використовується ДВОМА різними викликами з різними схемами — `VERIFY_SCHEMA` і
+  `GEMINI_SCHEMA`). Коли `role` не передано (поки що `auto-publish.ts` — Фаза 6b) — стара
+  `primaryProvider`-логіка лишається побайтово незмінною.
+- **Реальна, свідома зміна поведінки:** реєстровий шлях використовує ВЛАСНИЙ дефолтний порядок
+  ланцюжка (`loadProviderRegistry`'s `defaultChain` — OpenRouter першим, Gemini другим,
+  узгоджено з рештою проєкту з Фази 0), а НЕ старий `primaryProvider`-прапорець (типово
+  `'gemini'`). Це саме те, що коментар цієї «тимчасової заглушки» в коді обіцяв від самого
+  початку («deleted once that migration reaches the daily lane») — `verify.ts` тепер справді
+  йде на OpenRouter першим, не Gemini.
+- `verify.ts`'s `verifyClaims`/`reviseFlaggedItems` отримали `role?`/`db?`, обидва завжди
+  передають `'daily.verify'` з `run-daily.ts` (усі 3 виклики: перевірка, revise, повторна
+  перевірка після revise).
+- `summarize.ts`'s `runSummarizeFromPrompt` — **інша конструкція, свідомо**: пряме
+  `import` з `pipeline/providers/registry.ts` сюди створило б циклічну залежність
+  (`summarize.ts` → `registry.ts` → `gemini-provider.ts` → `summarize.ts`, бо
+  `gemini-provider.ts` вже імпортує `generateWithModelQueue` звідси). Тому транспорт
+  OpenRouter-плеча замінено на `generateWithHttpProviderChain` (імпорт лише з
+  `http-provider.ts`, без циклу), а БД-override резолвиться ЗАКЛИЧНИКОМ
+  (`run-daily.ts`/`custom-news.ts`, де імпорт з `registry.ts` безпечний) і передається як
+  готовий `dbHttpOverride?: HttpProviderConfig | null` параметр. Gemini-плече незаймане.
+  `primaryProvider`-прапорець тут НЕ прибрано (типово `'gemini'` лишається дефолтом
+  gemini-first для summarize — асиметрія з verify.ts, задокументована свідомо: обидва файли
+  тепер мають DB-override, але порядок дефолту різний через архітектурне обмеження, не забаганку).
+- **Живо верифіковано (2026-08-07):** `npx tsx --env-file=.env.local pipeline/run-daily.ts
+  --dry-run` — повний реальний прогін: fetch (214 статей) → rank → enrich → summarize (Gemini
+  503/429 retry-ланцюжок відпрацював коректно, зрештою `gemini-3.5-flash-lite` встиг) → verify
+  (реальний виклик через новий реєстровий шлях, живий `deepseek/deepseek-v4-pro` через
+  OpenRouter відповів за ~36с) → валідний 3-айтемний бриф надруковано. Сильніша верифікація,
+  ніж у Фаз 4/5 (там дефолтний шлях лише успадковував Фазу 1; тут дефолтний шлях самого Phase 6a
+  протестовано наживо end-to-end).
+- Тести: `pipeline/llm-json.test.ts` (новий файл, 4 тести — `withJsonSchema` + dispatch-wiring
+  на мокнутому реєстрі); `summarize.test.ts` +3 тести для `llmUsageFromProviderUsage`. 927/927
+  тестів у проєкті, `tsc`/`eslint`/build чисті.
+
+**Фаза 6b (auto-publish.ts, найвищі ставки) і Фаза 7 (опційно Codex CLI) — не почато.**
+(source: `pipeline/providers/*.ts`, `pipeline/llm-json.ts`, `pipeline/verify.ts`,
+`pipeline/summarize.ts`, `pipeline/run-daily.ts`, `pipeline/custom-news.ts`,
+`pipeline/card-image.ts`, `pipeline/custom-research.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
 `src/lib/weekly-digest/generation-worker.ts`, `src/lib/social/llm-router.ts`,
 `src/lib/social/critic.ts`, `src/lib/social/composer.ts`,
 `src/lib/weekly-digest/social-adapter.ts`, `src/app/admin/actions.ts`,
 `supabase/migrations/20260806160000_llm_provider_registry.sql`,
 `src/app/admin/(cms)/providers/*.tsx`, `tmp/nim-http-provider-dryrun/run.ts`, live dry-run
-2026-08-06)
+2026-08-06/07)
 
 ## Related pages
 

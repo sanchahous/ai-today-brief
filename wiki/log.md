@@ -19,6 +19,45 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-07 — LLM provider registry, Phase 6a: daily verify.ts + summarize.ts migrated, verified live
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 5 в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 6a: реальна зміна дефолтного порядку для
+  verify.ts, циклічна залежність, яка змусила іншу конструкцію для summarize.ts, live-верифікація
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 6b
+
+**Код:**
+- `pipeline/llm-json.ts`'s `generateJsonWithFallback()` — новий `role?`/`db?`; коли `role`
+  передано, іде через `generateWithRegistry` з новою `withJsonSchema()`-обгорткою (роль
+  `daily.verify` потребує різних схем залежно від виклику — `VERIFY_SCHEMA` чи `GEMINI_SCHEMA`).
+  **Реальна зміна поведінки:** реєстровий шлях використовує дефолтний порядок реєстру
+  (OpenRouter першим), а не старий `primaryProvider`-прапорець (типово gemini) — саме те, що
+  коментар «тимчасова заглушка... deleted once this migration reaches the daily lane» обіцяв з
+  Фази 0. Коли `role` не передано (`auto-publish.ts`, Фаза 6b) — стара логіка незмінна.
+- `verify.ts`'s `verifyClaims`/`reviseFlaggedItems` — новий `role?`/`db?`, усі 3 виклики з
+  `run-daily.ts` передають `'daily.verify'`.
+- `summarize.ts`'s `runSummarizeFromPrompt` — **інша конструкція, свідомо**: прямий імпорт з
+  `pipeline/providers/registry.ts` створив би циклічну залежність
+  (`summarize.ts`→`registry.ts`→`gemini-provider.ts`→`summarize.ts`). Транспорт OpenRouter-плеча
+  замінено на `generateWithHttpProviderChain` (імпорт лише з `http-provider.ts`, без циклу);
+  БД-override резолвиться викликачем (`run-daily.ts`/`custom-news.ts`, де імпорт з `registry.ts`
+  безпечний) і передається як `dbHttpOverride`. `primaryProvider` (gemini-first) НЕ прибрано
+  тут — асиметрія з verify.ts, задокументована як архітектурне обмеження, не забаганка.
+- Нові тести: `pipeline/llm-json.test.ts` (новий файл, 4 тести); `summarize.test.ts` +3 для
+  `llmUsageFromProviderUsage`.
+
+**Живо верифіковано (2026-08-07):** `npx tsx --env-file=.env.local pipeline/run-daily.ts
+--dry-run` — повний реальний прогін: fetch (214 статей) → rank → enrich → summarize (Gemini
+503/429 retry відпрацював, `gemini-3.5-flash-lite` встиг) → verify (реальний виклик через новий
+реєстровий шлях, живий `deepseek/deepseek-v4-pro` через OpenRouter відповів за ~36с) → валідний
+3-айтемний бриф. Сильніша верифікація, ніж Фази 4/5.
+
+**Верифіковано:** 927/927 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний, плюс живий `run-daily.ts --dry-run` вище.
+
 ## 2026-08-06 — LLM provider registry, Phase 5: social writer/critic (llm-router.ts) migrated, partial by design
 
 **Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження

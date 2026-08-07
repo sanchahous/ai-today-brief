@@ -22,6 +22,12 @@ import type { EnrichedSource } from './enrich';
 import { resolveGeminiModelQueue } from './gemini-models';
 import { ukQualityFlags } from './lang-check';
 import { logError, logEvent, serializeErrorDetails } from './log';
+import { validateOpenRouterBriefJson } from './openrouter-brief-json';
+import {
+  generateWithHttpProviderChain,
+  OPENROUTER_HTTP_DEFAULTS,
+  type HttpProviderConfig,
+} from './providers/http-provider';
 import type { PoolItem } from './select';
 import { slugify, dedupeSlugs } from './text';
 import { CATEGORY_SLUGS, isCategorySlug, type CategorySlug } from './topics';
@@ -572,6 +578,31 @@ WRITING RULES (override generic curation for this single item):
 - Candidate [1] URL is the primary attribution link; supporting facts may come from other sources.`;
 }
 
+/**
+ * pipeline/providers/registry.ts can't be imported here: it depends on
+ * gemini-provider.ts, which depends on summarize.ts (generateWithModelQueue),
+ * so a direct import from here would be a circular dependency. Callers that
+ * want a DB-driven role-chain override (owner-added HTTP provider via
+ * /admin/providers) resolve one themselves via loadProviderRegistry and pass
+ * the result in as `dbHttpOverride` -- see run-daily.ts / custom-news.ts.
+ */
+export function llmUsageFromProviderUsage(
+  usage: { promptTokens: number | null; outputTokens: number | null; costSource: string },
+  promptChars: number,
+  outputChars: number,
+): LlmUsage {
+  if (usage.promptTokens != null && usage.outputTokens != null) {
+    return {
+      promptTokens: usage.promptTokens,
+      outputTokens: usage.outputTokens,
+      estimated: usage.costSource !== 'reported',
+    };
+  }
+  // The streaming client doesn't always surface provider usage -- fall back
+  // to the same char-count estimate this path has always used.
+  return estimateUsage(promptChars, outputChars);
+}
+
 async function runSummarizeFromPrompt(
   prompt: string,
   candidates: PoolItem[],
@@ -584,6 +615,11 @@ async function runSummarizeFromPrompt(
   // wiki/pipeline/llm-providers.md) — deleted once that migration reaches
   // the daily lane. Default preserves today's Gemini-first behavior exactly.
   primaryProvider: 'gemini' | 'openrouter' = 'gemini',
+  // Owner-configured HTTP provider for daily.summarize (resolved by the
+  // caller from /admin/providers -- see the doc comment above). Takes over
+  // the OpenRouter leg entirely (its own model list, no live-catalog
+  // resolution) when present.
+  dbHttpOverride?: HttpProviderConfig | null,
 ): Promise<SummarizeResult> {
   const modelQueue = await resolveGeminiModelQueue(apiKey);
   logEvent('info', logLabel, 'Curate & summarize started', {
@@ -591,6 +627,7 @@ async function runSummarizeFromPrompt(
     gemini_model_queue: modelQueue.slice(0, 5),
     openrouter_fallback: Boolean(openRouterApiKey),
     primary_provider: primaryProvider,
+    db_provider_override: dbHttpOverride?.id ?? null,
   });
   const start = Date.now();
 
@@ -604,15 +641,30 @@ async function runSummarizeFromPrompt(
     };
   };
   const runOpenRouter = async () => {
+    if (dbHttpOverride) {
+      const result = await generateWithHttpProviderChain(prompt, dbHttpOverride, {
+        validateResponse: validateOpenRouterBriefJson,
+      });
+      return {
+        text: result.text,
+        provider: 'openrouter' as const,
+        providerModel: result.model,
+        usage: llmUsageFromProviderUsage(result.usage, prompt.length, result.text.length),
+      };
+    }
     if (!openRouterApiKey) throw new Error('[summarize] OpenRouter API key not configured');
-    const { generateWithOpenRouterChain } = await import('./openrouter-summarize');
-    const orResult = await generateWithOpenRouterChain(prompt, { apiKey: openRouterApiKey });
+    const { resolveOpenRouterModelQueue } = await import('./openrouter-models');
+    const orModelQueue = await resolveOpenRouterModelQueue(openRouterApiKey);
+    const result = await generateWithHttpProviderChain(
+      prompt,
+      { id: 'openrouter', apiKey: openRouterApiKey, modelQueue: orModelQueue, ...OPENROUTER_HTTP_DEFAULTS },
+      { validateResponse: validateOpenRouterBriefJson },
+    );
     return {
-      text: orResult.text,
+      text: result.text,
       provider: 'openrouter' as const,
-      providerModel: orResult.model,
-      // The streaming client doesn't surface provider usage — estimate from chars.
-      usage: estimateUsage(prompt.length, orResult.text.length),
+      providerModel: result.model,
+      usage: llmUsageFromProviderUsage(result.usage, prompt.length, result.text.length),
     };
   };
 
@@ -667,6 +719,7 @@ export async function summarizeEditorPick(
   openRouterApiKey?: string,
   geminiMaxAttempts = 3,
   primaryProvider: 'gemini' | 'openrouter' = 'gemini',
+  dbHttpOverride?: HttpProviderConfig | null,
 ): Promise<SummarizeResult> {
   const prompt = buildCustomEditorPrompt(candidates, recentlyPublished, research);
   return runSummarizeFromPrompt(
@@ -677,6 +730,7 @@ export async function summarizeEditorPick(
     geminiMaxAttempts,
     'summarize-custom',
     primaryProvider,
+    dbHttpOverride,
   );
 }
 /* v8 ignore end */
@@ -871,6 +925,7 @@ export async function summarize(
   geminiMaxAttempts = 3,
   enrichment: EnrichedSource[] = [],
   primaryProvider: 'gemini' | 'openrouter' = 'gemini',
+  dbHttpOverride?: HttpProviderConfig | null,
 ): Promise<SummarizeResult> {
   logEvent('info', 'summarize', 'Curate & summarize started', {
     candidates: candidates.length,
@@ -889,6 +944,7 @@ export async function summarize(
     geminiMaxAttempts,
     'summarize',
     primaryProvider,
+    dbHttpOverride,
   );
 }
 /* v8 ignore end */

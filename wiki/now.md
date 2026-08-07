@@ -4,8 +4,8 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list` (live check 2026-08-04), Supabase preflight live check 2026-08-04,
 `wiki/ops/owner-checklist.md`, `wiki/audits/2026-07-01-seo-organic.md`, `.env.example`,
-owner session 2026-08-06 (editorial quality feedback)
-Last updated: 2026-08-06
+owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry)
+Last updated: 2026-08-07
 
 ---
 
@@ -17,17 +17,21 @@ Last updated: 2026-08-06
   `feat/weekly-editorial-voice` (торкається тих самих файлів: `editorial-llm.ts`, `llm-router.ts`)
   — або потребуватиме rebase, якщо merge-порядок зміниться. **Фаза 0 (прибрати Gemini), Фаза 1
   (ядро реєстру), Фаза 1b (БД + admin `/admin/providers`), Фаза 2 (card-image.ts), Фаза 3
-  (custom-research.ts), Фаза 4 (editorial-llm.ts, частково) і Фаза 5 (llm-router.ts, частково)
-  виконані.** Фази 4 і 5 — той самий підхід: мігрувати лише транспортний шар OpenRouter-кроку
-  (тепер `generateWithHttpProviderChain` скрізь) + додати БД-override для owner-доданого
-  провайдера (weekly's `weekly.master_writer`/`weekly.master_critic`, social's
-  `social.writer`/`social.critic`); Gemini- і CLI/Ollama-кроки свідомо НЕ чіпались усюди (кожен
-  має власні гарантії, несумісні з поточним generic-адаптером — деталі у
-  [pipeline/llm-providers](pipeline/llm-providers.md)). Живої shadow-верифікації жодної з цих двох
-  фаз не проведено — свідомо, БД-шлях фізично неможливо живо перевірити, доки міграція
-  `llm_role_chains` не застосована до прод-БД. 920 тестів, `tsc`/`eslint`/build зелені. Власник дав
-  добро йти по всіх фазах послідовно з комітом на кожну. **Фази 6–7 (daily
-  verify/summarize/auto-publish, опційно Codex CLI) — в роботі, наступна: Фаза 6a.**
+  (custom-research.ts), Фаза 4 (editorial-llm.ts, частково), Фаза 5 (llm-router.ts, частково) і
+  Фаза 6a (verify.ts + summarize.ts, частково) виконані.** Фаза 6a — реальна поведінкова зміна:
+  `verify.ts` тепер іде через реєстр із його дефолтним порядком (OpenRouter першим, не
+  Gemini-first як стара `primaryProvider`-заглушка обіцяла прибрати ще з Фази 0);
+  `summarize.ts` лишився на `primaryProvider` (gemini-first) через реальне архітектурне
+  обмеження — прямий імпорт з `registry.ts` створив би циклічну залежність
+  (`summarize.ts`↔`gemini-provider.ts`), тож БД-override для `daily.summarize` резолвиться
+  викликачем (`run-daily.ts`/`custom-news.ts`), а не самим файлом. **Живо верифіковано
+  2026-08-07:** повний `run-daily.ts --dry-run` пройшов end-to-end — реальний Gemini
+  retry-ланцюжок, реальний OpenRouter-виклик через новий реєстровий шлях (deepseek-v4-pro,
+  ~36с), валідний 3-айтемний бриф. Сильніша верифікація, ніж Фази 4/5 (там дефолтний шлях лише
+  успадковував Фазу 1; тут Фаза 6a's власний дефолтний шлях протестовано наживо). 927 тестів,
+  `tsc`/`eslint`/build зелені. Власник дав добро йти по всіх фазах послідовно з комітом на
+  кожну. **Фаза 6b (auto-publish.ts, найвищі ставки) і Фаза 7 (опційно Codex CLI) — в роботі,
+  наступна: Фаза 6b.**
 - Гілка `feat/weekly-editorial-voice` (з `main`, 2026-08-06), PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189):
   повний перегляд редакційної якості weekly-дайджесту (власник забракував увесь контент як
   «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). **Усі 7 запланованих PR

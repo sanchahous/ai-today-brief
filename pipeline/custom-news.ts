@@ -20,6 +20,7 @@ import {
 import { createEmbedder } from './embeddings';
 import { logError, logEvent } from './log';
 import { notifyReview } from './notify';
+import { loadProviderRegistry } from './providers/registry';
 import { publish } from './publish';
 import { getPipelineDateKyiv } from './schedule';
 import { summarizeEditorPick } from './summarize';
@@ -99,6 +100,10 @@ export async function runCustomNews(
   const poolItem = toPoolItem(research);
 
   const recent = await recentPublishedTitles(db, config.recentTitles);
+  const summarizeRegistry = await loadProviderRegistry(process.env, {}, db);
+  const summarizeDbOverride =
+    summarizeRegistry.chainForRole('daily.summarize').find((entry) => entry.entry.kind === 'http')
+      ?.http ?? null;
   const { brief, providerModel } = await summarizeEditorPick(
     [poolItem],
     recent,
@@ -107,6 +112,7 @@ export async function runCustomNews(
     config.openRouterApiKey,
     3,
     config.primaryTextProvider,
+    summarizeDbOverride,
   );
 
   if (brief.items.length === 0) {

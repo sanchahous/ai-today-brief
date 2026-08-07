@@ -13,9 +13,11 @@
  */
 
 import { SchemaType } from '@google/generative-ai';
+import type { PipelineDb } from './db';
 import type { EnrichedSource } from './enrich';
 import { logEvent } from './log';
 import { generateJsonWithFallback } from './llm-json';
+import type { ProviderRole } from './providers/registry';
 import type { PoolItem } from './select';
 import {
   GEMINI_SCHEMA,
@@ -137,6 +139,8 @@ export async function verifyClaims(
   geminiMaxAttempts: number,
   openRouterApiKey?: string,
   primaryProvider: 'gemini' | 'openrouter' = 'gemini',
+  role?: ProviderRole,
+  db?: PipelineDb,
 ): Promise<VerifyOutcome> {
   const pairs = verifiableItems(items, enrichment);
   if (pairs.length === 0) return { checked: 0, flagged: 0, usage: null, model: null };
@@ -150,6 +154,8 @@ export async function verifyClaims(
     VERIFY_SCHEMA,
     openRouterApiKey,
     primaryProvider,
+    role,
+    db,
   );
 
   const byRef = parseVerifyResults(text, new Set(pairs.map((p) => p.item.ref)));
@@ -235,6 +241,8 @@ export async function reviseFlaggedItems(
   geminiMaxAttempts: number,
   openRouterApiKey?: string,
   primaryProvider: 'gemini' | 'openrouter' = 'gemini',
+  role?: ProviderRole,
+  db?: PipelineDb,
 ): Promise<{ revised: DraftItem[]; usage: LlmUsage | null }> {
   const pairs = verifiableItems(flagged, enrichment).filter(
     (p) => p.item.unsupported_claims.length > 0,
@@ -250,6 +258,8 @@ export async function reviseFlaggedItems(
     GEMINI_SCHEMA,
     openRouterApiKey,
     primaryProvider,
+    role,
+    db,
   );
 
   const flaggedRefs = new Set(pairs.map((p) => p.item.ref));
