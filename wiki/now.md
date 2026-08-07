@@ -4,13 +4,24 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list` (live check 2026-08-04), Supabase preflight live check 2026-08-04,
 `wiki/ops/owner-checklist.md`, `wiki/audits/2026-07-01-seo-organic.md`, `.env.example`,
-owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry)
+owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry), post-merge tech
+review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`)
 Last updated: 2026-08-07
 
 ---
 
 ## Стан репозиторію
 
+- **`main` тепер включає обидва PR #189 і #190** (Phase 0-6a злито `9d32347`). Senior-рівневе
+  технічне ревʼю обох PR постфактум (гілка `claude/tech-review-pr-189-190-859ena`) знайшло і
+  виправило три поведінкові баги в `pipeline/providers/registry.ts` (порожній DB-чейн затіняв
+  робочий дефолт; збій каталогу OpenRouter валив побудову всього реєстру; DB-override провайдер у
+  weekly/social не мав фолбеку) плюс UX/безпекові дірки в `/admin/providers` (сирі throw замість
+  редиректу з повідомленням, відсутні `loading.tsx`/`error.tsx`, сирітський Vault-секрет при
+  видаленні провайдера, non-atomic заміна списку моделей) — повний перелік і обґрунтування у
+  [pipeline/llm-providers § Пост-мерж ревʼю](pipeline/llm-providers.md#статус). Нова міграція
+  `20260807120000_llm_provider_registry_fixes.sql` (author-only, не застосована до прод-БД).
+  927/927 тестів, `tsc`/`eslint`/`wiki:check`/build зелені.
 - **Гілка `feat/llm-provider-registry`** (PR [#190](https://github.com/sanchahous/ai-today-brief/pull/190),
   відгалужена 2026-08-06 від tip `feat/weekly-editorial-voice`) — уніфікований реєстр
   LLM-провайдерів для всього проєкту (daily+weekly+social), план у
