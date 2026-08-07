@@ -912,6 +912,9 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
       };
       await saveMasterCheckpoint(job.id, englishCheckpointHash, ukrainianCheckpointHash, runningCheckpoint);
     },
+    // Lets an owner-configured /admin/providers chain for weekly.master_writer
+    // / weekly.master_critic override the default value-ranked OpenRouter step.
+    db: getSupabaseAdmin(),
   });
   const failures = editorialQualityFailures(result.quality);
   if (failures.length > 0) {
@@ -1487,6 +1490,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
         locale === 'uk'
           ? `Обкладинка тижневого дайджесту: ${bundle.uk.title}`
           : `Weekly Digest cover: ${bundle.en.title}`,
+      db: getSupabaseAdmin(),
     });
     await recordGenerationCost({
       scope: 'social',
@@ -2057,6 +2061,9 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID?.trim(),
         cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN?.trim(),
         cloudflareImageModel: process.env.CLOUDFLARE_IMAGE_MODEL?.trim(),
+        // Lets an owner-configured /admin/providers role chain for
+        // weekly.card_image_scene override the env-only default.
+        db: getSupabaseAdmin(),
       },
     );
 

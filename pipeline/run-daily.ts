@@ -12,6 +12,8 @@
 import { loadPipelineConfig } from './config';
 import { enrichPool, type EnrichedSource } from './enrich';
 import { collectArticles, toCandidate } from './fetch';
+import type { HttpProviderConfig } from './providers/http-provider';
+import { loadProviderRegistry, type ProviderRole } from './providers/registry';
 import { rankCandidates, SCORE_VERSION } from './rank';
 import { dropKnownUrls, isColdSingleton, selectPool } from './select';
 import { summarize, type DraftBrief } from './summarize';
@@ -81,6 +83,23 @@ async function logStage(
   } catch (e) {
     logError(run.stage, 'pipeline_runs log failed (non-fatal)', e);
   }
+}
+
+/**
+ * Owner-configured HTTP provider for this role via /admin/providers, or null
+ * (dry-run has no db; nothing configured for this role) -- passed into
+ * summarize()'s dbHttpOverride param, which can't resolve this itself
+ * (pipeline/providers/registry.ts can't be imported from summarize.ts, see
+ * that file's doc comment on the circular-dependency constraint).
+ */
+async function resolveDbHttpProvider(
+  role: ProviderRole,
+  db: PipelineDb | null,
+): Promise<HttpProviderConfig | null> {
+  if (!db) return null;
+  const registry = await loadProviderRegistry(process.env, {}, db);
+  const resolved = registry.chainForRole(role).find((entry) => entry.entry.kind === 'http');
+  return resolved?.http ?? null;
 }
 
 async function main(): Promise<void> {
@@ -394,6 +413,7 @@ async function main(): Promise<void> {
     0,
     todays.length + config.recentTitles,
   );
+  const summarizeDbOverride = await resolveDbHttpProvider('daily.summarize', db);
   const summarized = await summarize(
     dedupedPool,
     recent,
@@ -402,6 +422,8 @@ async function main(): Promise<void> {
     openRouterKey,
     geminiAttempts,
     enrichment,
+    config.primaryTextProvider,
+    summarizeDbOverride,
   );
   const { brief, providerModel, usage } = summarized;
   await logStage(db, config.dryRun, {
@@ -450,6 +472,9 @@ async function main(): Promise<void> {
         config.geminiApiKey,
         geminiAttempts,
         openRouterKey,
+        config.primaryTextProvider,
+        'daily.verify',
+        db ?? undefined,
       );
 
       let revisedCount = 0;
@@ -463,6 +488,9 @@ async function main(): Promise<void> {
           config.geminiApiKey,
           geminiAttempts,
           openRouterKey,
+          config.primaryTextProvider,
+          'daily.verify',
+          db ?? undefined,
         );
         if (revised.length > 0) {
           await verifyClaims(
@@ -471,6 +499,9 @@ async function main(): Promise<void> {
             config.geminiApiKey,
             geminiAttempts,
             openRouterKey,
+            config.primaryTextProvider,
+            'daily.verify',
+            db ?? undefined,
           );
         }
         const revisedByRef = new Map(revised.map((r) => [r.ref, r]));

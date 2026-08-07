@@ -1,14 +1,22 @@
 import 'server-only';
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import type { PipelineDb } from '../../../pipeline/db';
 import { resolveGeminiModelQueue } from '../../../pipeline/gemini-models';
+import type { OpenRouterResponseValidator } from '../../../pipeline/openrouter-brief-json';
 import {
   fetchOpenRouterModels,
   type OpenRouterModelRecord,
 } from '../../../pipeline/openrouter-models';
 import { rankOpenRouterModelsByValue, minimalReasoningEffort } from '../../../pipeline/openrouter-value';
-import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summarize';
 import { generateWithClaudeCli } from '../../../pipeline/claude-cli';
+import {
+  generateWithHttpProviderChain,
+  OPENROUTER_HTTP_DEFAULTS,
+  type HttpProviderConfig,
+} from '../../../pipeline/providers/http-provider';
+import { loadProviderRegistry, type ProviderRole } from '../../../pipeline/providers/registry';
+import type { ProviderCallResult } from '../../../pipeline/providers/types';
 import {
   WEEKLY_MASTER_SPEC_VERSION,
   editorialQualityPasses,
@@ -371,8 +379,11 @@ function estimateCost(promptTokens: number, outputTokens: number) {
   return Number(((promptTokens * inputRate + outputTokens * outputRate) / 1_000_000).toFixed(6));
 }
 
+// Gemini dropped from the default rotation (2026-08-06, owner request): the free
+// tier has no usable premium model for this workload. The gemini client stays
+// wired and testable -- WEEKLY_MASTER_PROVIDER_ORDER can still opt back in.
 function providerOrder() {
-  const configured = (process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? 'claude-cli,openrouter,gemini')
+  const configured = (process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? 'claude-cli,openrouter')
     .split(',')
     .map((value) => value.trim())
     .filter(
@@ -433,11 +444,69 @@ export function premiumOpenRouterModels(
   return ranked.slice(0, 1).map((candidate) => candidate.id);
 }
 
+/** Wraps a registry ProviderCallResult in this file's own ProviderResult<T> shape (shared by both the DB-override and the default value-ranked OpenRouter path below). */
+function toOpenRouterResult<T>(result: ProviderCallResult, value: T, promptChars: number): ProviderResult<T> {
+  const promptTokens = result.usage.promptTokens ?? estimateTokens(promptChars);
+  const outputTokens = result.usage.outputTokens ?? estimateTokens(result.text.length);
+  return {
+    value,
+    metadata: {
+      // Stable EditorialProvider slot name, regardless of which concrete HTTP
+      // provider actually served this call (default OpenRouter, or an
+      // owner-configured one -- see resolveWeeklyDbHttpProvider below).
+      provider: 'openrouter',
+      model: result.model,
+      promptTokens,
+      outputTokens,
+      estimatedCostUsd: result.usage.costUsd ?? estimateCost(promptTokens, outputTokens),
+      costSource: result.usage.costSource,
+      promptVersion: WEEKLY_MASTER_SPEC_VERSION,
+    },
+  };
+}
+
+/**
+ * Looks up an owner-configured HTTP provider for this role via
+ * /admin/providers (e.g. a promo like NVIDIA NIM) — null when no `db` was
+ * supplied or nothing is configured, in which case generateOpenRouter falls
+ * through to its normal value-ranked OpenRouter path below. An owner-added
+ * provider's model list is theirs to manage (no live catalog/benchmark data
+ * exists for a provider like NIM, see wiki/pipeline/llm-providers.md), so
+ * premiumOpenRouterModels' value-ranking is intentionally not applied here.
+ */
+async function resolveWeeklyDbHttpProvider(
+  role: ProviderRole,
+  db?: PipelineDb,
+): Promise<HttpProviderConfig | null> {
+  if (!db) return null;
+  const registry = await loadProviderRegistry(process.env, {}, db);
+  const resolved = registry.chainForRole(role).find((entry) => entry.entry.kind === 'http');
+  return resolved?.http ?? null;
+}
+
 async function generateOpenRouter<T>(
   prompt: string,
   parse: (raw: string) => T,
-  options: { configuredModels?: string[]; excludeVendors?: string[] } = {},
+  options: {
+    configuredModels?: string[];
+    excludeVendors?: string[];
+    /** weekly.master_writer | weekly.master_critic -- which role's DB chain to check for an owner override. */
+    role?: ProviderRole;
+    db?: PipelineDb;
+  } = {},
 ): Promise<ProviderResult<T>> {
+  const validateResponse: OpenRouterResponseValidator = (_model, raw, finishReason) => {
+    if (finishReason === 'length') throw new SyntaxError('Truncated editorial response.');
+    parse(raw);
+    return raw;
+  };
+
+  const dbHttp = options.role ? await resolveWeeklyDbHttpProvider(options.role, options.db) : null;
+  if (dbHttp) {
+    const result = await generateWithHttpProviderChain(prompt, dbHttp, { validateResponse });
+    return toOpenRouterResult(result, parse(result.text), prompt.length);
+  }
+
   const apiKey = process.env.OPEN_ROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim();
   if (!apiKey) throw new Error('UNCONFIGURED:OPEN_ROUTER_API_KEY');
   const models = await fetchOpenRouterModels(apiKey);
@@ -445,31 +514,15 @@ async function generateOpenRouter<T>(
   if (!queue.length) throw new Error('No premium OpenRouter editorial model is available.');
   const chosenModel = models.find((model) => model.id === queue[0]);
   const reasoningEffort = chosenModel ? minimalReasoningEffort(chosenModel) : null;
-  const result = await generateWithOpenRouterChain(prompt, {
-    apiKey,
-    modelQueue: queue,
-    validateResponse: (_model, raw, finishReason) => {
-      if (finishReason === 'length') throw new SyntaxError('Truncated editorial response.');
-      parse(raw);
-      return raw;
+  const result = await generateWithHttpProviderChain(
+    prompt,
+    { id: 'openrouter', apiKey, modelQueue: queue, ...OPENROUTER_HTTP_DEFAULTS },
+    {
+      validateResponse,
+      extraBodyForModel: reasoningEffort ? () => ({ reasoning: { effort: reasoningEffort } }) : undefined,
     },
-    extraBodyForModel: reasoningEffort ? () => ({ reasoning: { effort: reasoningEffort } }) : undefined,
-  });
-  const value = parse(result.text);
-  const promptTokens = result.usage?.promptTokens ?? estimateTokens(prompt.length);
-  const outputTokens = result.usage?.completionTokens ?? estimateTokens(result.text.length);
-  return {
-    value,
-    metadata: {
-      provider: 'openrouter',
-      model: result.model,
-      promptTokens,
-      outputTokens,
-      estimatedCostUsd: result.usage?.costUsd ?? estimateCost(promptTokens, outputTokens),
-      costSource: result.usage ? 'reported' : 'estimated',
-      promptVersion: WEEKLY_MASTER_SPEC_VERSION,
-    },
-  };
+  );
+  return toOpenRouterResult(result, parse(result.text), prompt.length);
 }
 
 async function generateGemini<T>(
@@ -561,10 +614,12 @@ async function generateWithProvider<T>(
   provider: EditorialProvider,
   prompt: string,
   parse: (raw: string) => T,
+  role?: ProviderRole,
+  db?: PipelineDb,
 ) {
   if (provider === 'claude-cli') return generateClaudeCli(prompt, parse);
   return provider === 'openrouter'
-    ? generateOpenRouter(prompt, parse)
+    ? generateOpenRouter(prompt, parse, { role, db })
     : generateGemini(prompt, parse);
 }
 
@@ -578,6 +633,7 @@ function configuredCriticOpenRouterModels() {
 async function generateIndependentCritic(
   english: ProviderResult<ReturnType<typeof parseEnglishPackage>>,
   prompt: string,
+  db?: PipelineDb,
 ) {
   let primaryError: unknown;
   const independentProvider = providerOrder().find(
@@ -585,7 +641,7 @@ async function generateIndependentCritic(
   );
   if (independentProvider) {
     try {
-      return await generateWithProvider(independentProvider, prompt, parseCritic);
+      return await generateWithProvider(independentProvider, prompt, parseCritic, 'weekly.master_critic', db);
     } catch (error) {
       primaryError = error;
     }
@@ -601,6 +657,8 @@ async function generateIndependentCritic(
     return await generateOpenRouter(prompt, parseCritic, {
       configuredModels: configuredCriticOpenRouterModels(),
       excludeVendors: [writerVendor],
+      role: 'weekly.master_critic',
+      db,
     });
   } catch (fallbackError) {
     const primaryMessage =
@@ -613,12 +671,22 @@ async function generateIndependentCritic(
   }
 }
 
-/** Exported for reuse by video-script-llm.ts, which needs the same Claude CLI -> OpenRouter -> Gemini ladder for a single-shot generation call outside the master write. */
-export async function generateFirstAvailable<T>(prompt: string, parse: (raw: string) => T) {
+/**
+ * Exported for reuse by video-script-llm.ts, which needs the same Claude CLI
+ * -> OpenRouter -> Gemini ladder for a single-shot generation call outside
+ * the master write -- it calls this with 2 args, so role/db default to
+ * undefined there and behave exactly as before this migration.
+ */
+export async function generateFirstAvailable<T>(
+  prompt: string,
+  parse: (raw: string) => T,
+  role?: ProviderRole,
+  db?: PipelineDb,
+) {
   const failures: string[] = [];
   for (const provider of providerOrder()) {
     try {
-      return await generateWithProvider(provider, prompt, parse);
+      return await generateWithProvider(provider, prompt, parse, role, db);
     } catch (error) {
       failures.push(`${provider}: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -834,13 +902,20 @@ export async function generateWeeklyMaster(
       step: 'english' | 'ukrainian',
       result: WeeklyMasterEnglishResult | WeeklyMasterUkrainianResult,
     ) => void | Promise<void>;
+    /** Enables DB-driven role-chain overrides (owner-added HTTP providers via /admin/providers) for the openrouter slot. */
+    db?: PipelineDb;
   } = {},
 ): Promise<WeeklyMasterGenerationResult> {
   const { english: englishGuidance, ukrainian: ukrainianGuidance } =
     splitMasterRetryGuidance(retryGuidance);
   let english = options.checkpoint?.english;
   if (!english) {
-    english = await generateFirstAvailable(englishPrompt(stories, englishGuidance), parseEnglishPackage);
+    english = await generateFirstAvailable(
+      englishPrompt(stories, englishGuidance),
+      parseEnglishPackage,
+      'weekly.master_writer',
+      options.db,
+    );
     await options.onStepComplete?.('english', english);
   }
   let ukrainian = options.checkpoint?.ukrainian;
@@ -849,6 +924,8 @@ export async function generateWeeklyMaster(
       english.metadata.provider,
       ukrainianPrompt(english.value.article, stories, ukrainianGuidance),
       (raw) => parseArticle(raw, 'uk'),
+      'weekly.master_writer',
+      options.db,
     );
     await options.onStepComplete?.('ukrainian', ukrainian);
   }
@@ -867,7 +944,7 @@ export async function generateWeeklyMaster(
     uk: ukrainian!.value,
   });
   const evaluate = async (bundle: WeeklyMasterBundle): Promise<WeeklyContentQualityReport> => {
-    const critic = await generateIndependentCritic(english!, criticPrompt(bundle, stories));
+    const critic = await generateIndependentCritic(english!, criticPrompt(bundle, stories), options.db);
     criticCalls.push(critic.metadata);
     const deterministicIssues = validateMasterBundle(bundle, researchPacks, expectedStories);
     return {
@@ -904,6 +981,8 @@ export async function generateWeeklyMaster(
         english!.metadata.provider,
         reviseArticlePrompt(english!.value.article, englishRevise, 'en'),
         (raw) => parseArticle(raw, 'en'),
+        'weekly.master_writer',
+        options.db,
       );
       english = {
         value: { ...english!.value, article: revisedEnglish.value },
@@ -917,6 +996,8 @@ export async function generateWeeklyMaster(
         english.metadata.provider,
         ukrainianPrompt(english.value.article, stories, ukrainianRevise),
         (raw) => parseArticle(raw, 'uk'),
+        'weekly.master_writer',
+        options.db,
       );
       ukrainian = readapted;
       ukrainianCalls.push(readapted.metadata);
@@ -925,6 +1006,8 @@ export async function generateWeeklyMaster(
         ukrainian!.metadata.provider,
         reviseArticlePrompt(ukrainian!.value, ukrainianRevise, 'uk'),
         (raw) => parseArticle(raw, 'uk'),
+        'weekly.master_writer',
+        options.db,
       );
       ukrainian = revisedUkrainian;
       ukrainianCalls.push(revisedUkrainian.metadata);

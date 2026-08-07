@@ -20,11 +20,15 @@
  */
 
 import { createHash } from 'node:crypto';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import sharp from 'sharp';
 import type { PipelineDb } from './db';
-import { resolveGeminiModelQueue } from './gemini-models';
 import { logEvent, serializeErrorDetails } from './log';
+import {
+  generateWithRegistry,
+  loadProviderRegistry,
+  type ProviderRegistry,
+  type ProviderRole,
+} from './providers/registry';
 
 const BUCKET = 'card-images';
 /**
@@ -67,6 +71,19 @@ export interface CardImageConfig {
   cloudflareImageModel?: string;
   /** OpenRouter key — scene-step fallback when the Gemini free tier is rate-limited. */
   openRouterApiKey?: string;
+  /**
+   * Supabase client -- enables DB-driven role-chain overrides for the scene-brief
+   * step (owner-added providers via /admin/providers, see
+   * pipeline/providers/registry.ts). Optional; the ladder still works from the
+   * env keys above alone without it.
+   */
+  db?: PipelineDb;
+  /**
+   * Pre-built registry for the scene-brief step. {@link fillCardImages} resolves
+   * one once per batch and reuses it across items instead of re-resolving (and
+   * re-fetching the live OpenRouter catalog) on every item.
+   */
+  registry?: ProviderRegistry;
   /** Optional hook after each successful remote/local image (cost ledger). */
   onImageGenerated?: (result: GeneratedImageResult) => void | Promise<void>;
 }
@@ -74,11 +91,14 @@ export interface CardImageConfig {
 export type ImageCostSource = 'reported' | 'estimated' | 'subscription';
 
 /**
- * Where the cover scene phrase came from: an art-director LLM call, the
- * keyword fallback, or (weekly-only) the owner typing their own scene text
- * directly in the Visuals tab.
+ * Where the cover scene phrase came from. 'fallback' = keyword-matched scene
+ * (no model call, or every provider in the chain failed/was unconfigured);
+ * 'owner' = typed directly in the Visuals tab (weekly only). Any other value
+ * is the id of the provider that generated it (e.g. 'gemini', 'openrouter',
+ * or an id an owner added via /admin/providers, e.g. 'nim') -- see
+ * pipeline/providers/registry.ts.
  */
-export type SceneSource = 'gemini' | 'openrouter' | 'fallback' | 'owner';
+export type SceneSource = string;
 
 export interface SceneBriefResult {
   scene: string;
@@ -220,6 +240,11 @@ export async function fillCardImages(
   }
 
   const colorBySlug = await loadCategoryColors(db);
+  // Resolve the scene-brief provider chain once for the whole batch -- per-item
+  // resolution would re-fetch the live OpenRouter catalog (and re-query the DB
+  // role chain) up to MAX_PER_RUN times for no benefit.
+  const sceneRegistry = await resolveSceneRegistry({ ...cfg, db });
+  const itemCfg: CardImageConfig = { ...cfg, db, registry: sceneRegistry };
 
   let generated = 0;
   let failed = 0;
@@ -230,7 +255,7 @@ export async function fillCardImages(
       const accent = hueName(colorBySlug.get(it.category_slug ?? '') ?? FALLBACK_ACCENT);
       const result = await generateEditorialIllustration(
         { title, summary, accent, seedKey: it.slug! },
-        cfg,
+        itemCfg,
       );
       if (!result) {
         failed++;
@@ -523,63 +548,42 @@ function cleanSceneText(text: string): string {
 }
 
 /**
- * Shared Gemini → OpenRouter art-director ladder: sends one instruction
- * string to a text model and returns the cleaned reply, or null if every
- * provider failed/was unconfigured. {@link sceneBrief} and
+ * Resolves the provider chain for a scene-brief call: reuses a pre-built
+ * registry if the caller supplied one (see {@link fillCardImages}), else
+ * builds one from this call's env keys + optional `db` (DB-driven role-chain
+ * overrides an owner configured via /admin/providers -- see
+ * pipeline/providers/registry.ts).
+ */
+async function resolveSceneRegistry(cfg: CardImageConfig): Promise<ProviderRegistry> {
+  if (cfg.registry) return cfg.registry;
+  return loadProviderRegistry(
+    { GEMINI_API_KEY: cfg.geminiApiKey, OPEN_ROUTER_API_KEY: cfg.openRouterApiKey },
+    {},
+    cfg.db,
+  );
+}
+
+/**
+ * Shared art-director ladder: resolves this call's provider chain and sends
+ * one instruction string to it, returning the cleaned reply or null if every
+ * provider in the chain failed/was unconfigured. {@link sceneBrief} and
  * {@link weeklyReportageSceneBrief} each build their own instruction text
  * (daily vs. weekly house style) and fall back to their own keyword scene
  * when this returns null.
  */
 async function runArtDirectorLadder(
   instruction: string,
+  role: ProviderRole,
   cfg: CardImageConfig,
-): Promise<{ text: string; source: 'gemini' | 'openrouter' } | null> {
-  // Primary: Gemini. Fallback: OpenRouter (separate billing → survives Gemini
-  // free-tier rate limits, e.g. during a backfill).
+): Promise<{ text: string; source: string } | null> {
   try {
-    const models = await resolveGeminiModelQueue(cfg.geminiApiKey, {
-      ...process.env,
-      GEMINI_MODEL: cfg.geminiModel ?? process.env.GEMINI_MODEL,
-      GEMINI_MAX_MODEL_ATTEMPTS: '2',
-    });
-    const client = new GoogleGenerativeAI(cfg.geminiApiKey);
-    for (const model of models) {
-      try {
-        const response = await client.getGenerativeModel({ model }).generateContent(instruction);
-        const text = cleanSceneText(response.response.text());
-        if (text.length >= 6) return { text, source: 'gemini' };
-      } catch {
-        // Advance only within the current generation resolved from the catalog.
-      }
-    }
+    const registry = await resolveSceneRegistry(cfg);
+    const result = await generateWithRegistry(role, instruction, registry);
+    const text = cleanSceneText(result.text);
+    if (text.length >= 6) return { text, source: result.provider };
   } catch {
-    /* fall through to OpenRouter */
+    /* every provider in the chain unconfigured/failed -- caller falls back to keyword scene */
   }
-
-  if (cfg.openRouterApiKey) {
-    try {
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${cfg.openRouterApiKey}`,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          // Moving alias: never falls back to a retired numbered release.
-          model: '~openai/gpt-mini-latest',
-          messages: [{ role: 'user', content: instruction }],
-        }),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-        const text = cleanSceneText(data.choices?.[0]?.message?.content ?? '');
-        if (text.length >= 6) return { text, source: 'openrouter' };
-      }
-    } catch {
-      /* fall through to keyword scene */
-    }
-  }
-
   return null;
 }
 
@@ -608,7 +612,7 @@ export async function sceneBrief(
     `If a document or screen appears, keep it blank or abstract — never readable writing. ` +
     `Answer with ONE vivid phrase, 18-32 words, concrete nouns, a single focal subject, not a full ` +
     `sentence.\n\nHeadline: "${title}"\nSummary: "${summary}"`;
-  const result = await runArtDirectorLadder(instruction, cfg);
+  const result = await runArtDirectorLadder(instruction, 'daily.card_image_scene', cfg);
   if (result) return { scene: result.text, source: result.source };
   return { scene: fallbackScene(ctx), source: 'fallback' };
 }
@@ -669,7 +673,7 @@ export async function weeklyReportageSceneBrief(
     `desk. No text, letters, numbers, logos, brand marks or recognisable real faces. If a screen ` +
     `appears, keep it abstract or blank -- never readable writing. Answer with ONE vivid phrase, ` +
     `18-32 words, concrete nouns, a single focal subject, not a full sentence.\n\n${contextBlock}`;
-  const result = await runArtDirectorLadder(instruction, cfg);
+  const result = await runArtDirectorLadder(instruction, 'weekly.card_image_scene', cfg);
   if (result) return { scene: result.text, source: result.source };
   return { scene: fallbackScene(ctx), source: 'fallback' };
 }

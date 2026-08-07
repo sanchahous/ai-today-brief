@@ -20,6 +20,7 @@ import {
 import { createEmbedder } from './embeddings';
 import { logError, logEvent } from './log';
 import { notifyReview } from './notify';
+import { loadProviderRegistry } from './providers/registry';
 import { publish } from './publish';
 import { getPipelineDateKyiv } from './schedule';
 import { summarizeEditorPick } from './summarize';
@@ -72,9 +73,14 @@ export async function runCustomNews(
   const dryRun = options.dryRun ?? config.dryRun;
   const shouldNotify = options.notify !== false;
 
+  // Built before the research call (cheap -- no I/O) so an owner-configured
+  // custom_research role chain in /admin/providers applies even in dry-run.
+  const db = deps.db ?? createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
+
   const research = await researchCustomStory(options.topic, config.geminiApiKey, {
     url: options.url,
     openRouterApiKey: config.openRouterApiKey,
+    db,
   });
 
   if (dryRun) {
@@ -89,12 +95,15 @@ export async function runCustomNews(
     };
   }
 
-  const db = deps.db ?? createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
   const date = getPipelineDateKyiv();
   const fetched = toFetchedArticle(research);
   const poolItem = toPoolItem(research);
 
   const recent = await recentPublishedTitles(db, config.recentTitles);
+  const summarizeRegistry = await loadProviderRegistry(process.env, {}, db);
+  const summarizeDbOverride =
+    summarizeRegistry.chainForRole('daily.summarize').find((entry) => entry.entry.kind === 'http')
+      ?.http ?? null;
   const { brief, providerModel } = await summarizeEditorPick(
     [poolItem],
     recent,
@@ -102,6 +111,8 @@ export async function runCustomNews(
     config.geminiApiKey,
     config.openRouterApiKey,
     3,
+    config.primaryTextProvider,
+    summarizeDbOverride,
   );
 
   if (brief.items.length === 0) {

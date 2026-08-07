@@ -29,9 +29,15 @@ vi.mock('../../../pipeline/claude-cli', () => ({
   generateWithClaudeCli: vi.fn(),
 }));
 
+vi.mock('../../../pipeline/providers/registry', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../pipeline/providers/registry')>();
+  return { ...actual, loadProviderRegistry: vi.fn() };
+});
+
 import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summarize';
 import { generateWithClaudeCli } from '../../../pipeline/claude-cli';
 import { fetchOpenRouterModels } from '../../../pipeline/openrouter-models';
+import { loadProviderRegistry } from '../../../pipeline/providers/registry';
 import {
   masterRetryGuidancePrompt,
   approvedStoryPromptMaterial,
@@ -876,5 +882,85 @@ describe('generateWeeklyMaster revise loop', () => {
     expect(result.generation.english.estimatedCostUsd).toBeCloseTo(WRITE_USAGE.costUsd * 3, 6);
     expect(result.generation.ukrainian.estimatedCostUsd).toBeCloseTo(READAPT_USAGE.costUsd * 3, 6);
     expect(result.generation.critic.estimatedCostUsd).toBeCloseTo(CRITIC_USAGE.costUsd * 3, 6);
+  });
+});
+
+// --- Phase 4: DB-driven role-chain override (owner-added HTTP provider, e.g. NIM) ---
+
+describe('generateWeeklyMaster DB-driven provider override (Phase 4)', () => {
+  afterEach(() => {
+    vi.mocked(generateWithOpenRouterChain).mockReset();
+    vi.mocked(fetchOpenRouterModels).mockReset();
+    vi.mocked(loadProviderRegistry).mockReset();
+    vi.unstubAllEnvs();
+  });
+
+  it('never touches the DB registry when no db option is supplied (default path, unchanged)', async () => {
+    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
+    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
+      {
+        id: 'vendor/critic-model',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.000001', completion: '0.000006' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+      },
+      {
+        id: 'other-vendor/writer-model',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.000001', completion: '0.000006' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+      },
+    ]);
+    mockRouterResponses({ critic: () => criticJson() });
+
+    await generateWeeklyMaster([story('item-1', 'feature')], [], []);
+
+    expect(loadProviderRegistry).not.toHaveBeenCalled();
+  });
+
+  it('routes the write through an owner-configured HTTP provider for weekly.master_writer, bypassing value-ranked OpenRouter model selection, while the critic (no DB entry for that role) still falls back to the default', async () => {
+    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
+    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
+      {
+        id: 'vendor/critic-model',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.000001', completion: '0.000006' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+      },
+    ]);
+    vi.mocked(loadProviderRegistry).mockResolvedValue({
+      chainForRole: (role: string) =>
+        role === 'weekly.master_writer'
+          ? [
+              {
+                entry: { kind: 'http', id: 'nim' },
+                http: {
+                  id: 'nim',
+                  apiKey: 'nim-key',
+                  baseUrl: 'https://integrate.api.nvidia.com/v1',
+                  modelQueue: ['deepseek-ai/deepseek-v4-pro'],
+                },
+              },
+            ]
+          : [],
+    });
+    mockRouterResponses({ critic: () => criticJson() });
+    const fakeDb = {} as never;
+
+    await generateWeeklyMaster([story('item-1', 'feature')], [], [], { db: fakeDb });
+
+    // fetchOpenRouterModels (the live-catalog value-ranking path) is only
+    // reached by the critic's default fallback -- the writer never calls it.
+    expect(fetchOpenRouterModels).toHaveBeenCalledTimes(1);
+    const writeCall = vi
+      .mocked(generateWithOpenRouterChain)
+      .mock.calls.find(
+        (call) => !call[0].includes('critic') && !call[0].includes('Ukrainian senior news editor'),
+      );
+    expect(writeCall?.[1]?.modelQueue).toEqual(['deepseek-ai/deepseek-v4-pro']);
+    expect(writeCall?.[1]?.apiKey).toBe('nim-key');
   });
 });

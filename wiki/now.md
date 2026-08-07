@@ -4,23 +4,47 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list` (live check 2026-08-04), Supabase preflight live check 2026-08-04,
 `wiki/ops/owner-checklist.md`, `wiki/audits/2026-07-01-seo-organic.md`, `.env.example`,
-owner session 2026-08-06 (editorial quality feedback)
-Last updated: 2026-08-06
+owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry)
+Last updated: 2026-08-07
 
 ---
 
 ## Стан репозиторію
 
-- Гілка `feat/weekly-editorial-voice` (з `main`, 2026-08-06), PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189):
-  повний перегляд редакційної якості weekly-дайджесту (власник забракував увесь контент як
-  «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). **Усі 7 запланованих PR
-  закомічені** (voice-модуль, нова анатомія історії + рендер, критик-рубрика + revise-loop,
+- **Гілка `feat/llm-provider-registry`** (PR [#190](https://github.com/sanchahous/ai-today-brief/pull/190),
+  відгалужена 2026-08-06 від tip `feat/weekly-editorial-voice`) — уніфікований реєстр
+  LLM-провайдерів для всього проєкту (daily+weekly+social), план у
+  [pipeline/llm-providers](pipeline/llm-providers.md). **Фаза 0 (прибрати Gemini), Фаза 1
+  (ядро реєстру), Фаза 1b (БД + admin `/admin/providers`), Фаза 2 (card-image.ts), Фаза 3
+  (custom-research.ts), Фаза 4 (editorial-llm.ts, частково), Фаза 5 (llm-router.ts, частково) і
+  Фаза 6a (verify.ts + summarize.ts, частково) виконані.** Фаза 6a — реальна поведінкова зміна:
+  `verify.ts` тепер іде через реєстр із його дефолтним порядком (OpenRouter першим, не
+  Gemini-first як стара `primaryProvider`-заглушка обіцяла прибрати ще з Фази 0);
+  `summarize.ts` лишився на `primaryProvider` (gemini-first) через реальне архітектурне
+  обмеження — прямий імпорт з `registry.ts` створив би циклічну залежність
+  (`summarize.ts`↔`gemini-provider.ts`), тож БД-override для `daily.summarize` резолвиться
+  викликачем (`run-daily.ts`/`custom-news.ts`), а не самим файлом. **Живо верифіковано
+  2026-08-07:** повний `run-daily.ts --dry-run` пройшов end-to-end — реальний Gemini
+  retry-ланцюжок, реальний OpenRouter-виклик через новий реєстровий шлях (deepseek-v4-pro,
+  ~36с), валідний 3-айтемний бриф. Сильніша верифікація, ніж Фази 4/5 (там дефолтний шлях лише
+  успадковував Фазу 1; тут Фаза 6a's власний дефолтний шлях протестовано наживо). 927 тестів,
+  `tsc`/`eslint`/build зелені. Власник дав добро йти по всіх фазах послідовно з комітом на
+  кожну. **Фаза 6b (auto-publish.ts, найвищі ставки) і Фаза 7 (опційно Codex CLI) — в роботі,
+  наступна: Фаза 6b.** `feat/weekly-editorial-voice` (PR #189) змержено в `main` 2026-08-07
+  (squash) — PR #190 автоматично перенацілено на `main`; злиття `main` в цю гілку і резолюція
+  конфліктів (card-image.ts, editorial-llm.ts + тести, кілька wiki-сторінок) зроблені в цьому ж
+  коміті.
+- **PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189) змержено в `main` 2026-08-07** (squash-мерж,
+  `e5d8df5`): повний перегляд редакційної якості weekly-дайджесту (власник забракував увесь
+  контент як «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). **Усі 7
+  запланованих PR** (voice-модуль, нова анатомія історії + рендер, критик-рубрика + revise-loop,
   owner-set angle, репортажні ілюстрації + вибір варіантів, відеосценарій як окремий job +
   manifest v3, соц-голос + self-generated angle + hook picker — деталі в
   [pipeline/weekly-digest § Editorial voice overhaul](pipeline/weekly-digest.md#editorial-voice-overhaul-2026-08-06)).
-  Ще не змержено, ще не запущено shadow-прогін на весь пайплайн.
-- `main` tip (звідки відгалужено PR1): draft-revision constraint + video-guidance routing
-  fixes (#188, включає #186/#187). Гайд редакції — [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
+  Гілка `feat/weekly-editorial-voice` автоматично видалена після мержу. Ще не запущено
+  shadow-прогін на весь пайплайн.
+- `main` tip до PR #189 (звідки відгалужено PR1): draft-revision constraint + video-guidance
+  routing fixes (#188, включає #186/#187). Гайд редакції — [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
   (source: `git log` / live work 2026-08-06)
 
 ## Щойно відвантажено (останні 8 PR)

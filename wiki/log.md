@@ -19,6 +19,290 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-07 — LLM provider registry, Phase 6a: daily verify.ts + summarize.ts migrated, verified live
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 5 в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 6a: реальна зміна дефолтного порядку для
+  verify.ts, циклічна залежність, яка змусила іншу конструкцію для summarize.ts, live-верифікація
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 6b
+
+**Код:**
+- `pipeline/llm-json.ts`'s `generateJsonWithFallback()` — новий `role?`/`db?`; коли `role`
+  передано, іде через `generateWithRegistry` з новою `withJsonSchema()`-обгорткою (роль
+  `daily.verify` потребує різних схем залежно від виклику — `VERIFY_SCHEMA` чи `GEMINI_SCHEMA`).
+  **Реальна зміна поведінки:** реєстровий шлях використовує дефолтний порядок реєстру
+  (OpenRouter першим), а не старий `primaryProvider`-прапорець (типово gemini) — саме те, що
+  коментар «тимчасова заглушка... deleted once this migration reaches the daily lane» обіцяв з
+  Фази 0. Коли `role` не передано (`auto-publish.ts`, Фаза 6b) — стара логіка незмінна.
+- `verify.ts`'s `verifyClaims`/`reviseFlaggedItems` — новий `role?`/`db?`, усі 3 виклики з
+  `run-daily.ts` передають `'daily.verify'`.
+- `summarize.ts`'s `runSummarizeFromPrompt` — **інша конструкція, свідомо**: прямий імпорт з
+  `pipeline/providers/registry.ts` створив би циклічну залежність
+  (`summarize.ts`→`registry.ts`→`gemini-provider.ts`→`summarize.ts`). Транспорт OpenRouter-плеча
+  замінено на `generateWithHttpProviderChain` (імпорт лише з `http-provider.ts`, без циклу);
+  БД-override резолвиться викликачем (`run-daily.ts`/`custom-news.ts`, де імпорт з `registry.ts`
+  безпечний) і передається як `dbHttpOverride`. `primaryProvider` (gemini-first) НЕ прибрано
+  тут — асиметрія з verify.ts, задокументована як архітектурне обмеження, не забаганка.
+- Нові тести: `pipeline/llm-json.test.ts` (новий файл, 4 тести); `summarize.test.ts` +3 для
+  `llmUsageFromProviderUsage`.
+
+**Живо верифіковано (2026-08-07):** `npx tsx --env-file=.env.local pipeline/run-daily.ts
+--dry-run` — повний реальний прогін: fetch (214 статей) → rank → enrich → summarize (Gemini
+503/429 retry відпрацював, `gemini-3.5-flash-lite` встиг) → verify (реальний виклик через новий
+реєстровий шлях, живий `deepseek/deepseek-v4-pro` через OpenRouter відповів за ~36с) → валідний
+3-айтемний бриф. Сильніша верифікація, ніж Фази 4/5.
+
+**Верифіковано:** 927/927 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний, плюс живий `run-daily.ts --dry-run` вище.
+
+## 2026-08-06 — LLM provider registry, Phase 5: social writer/critic (llm-router.ts) migrated, partial by design
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 4 в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 5: що мігровано/не мігровано і чому, важлива
+  відмінність тестового покриття від попередніх фаз
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 6a
+
+**Код:**
+- `src/lib/social/llm-router.ts`'s `generateOpenRouter()` — транспорт замінено на
+  `generateWithHttpProviderChain` (`OPENROUTER_HTTP_DEFAULTS`); `rankSocialOpenRouterModels`
+  лишилось незайманим. Новий `resolveSocialDbHttpProvider(role, db)` — той самий патерн, що й
+  Фази 4, для ролей `social.writer`/`social.critic` (вже існували в `PROVIDER_ROLES`).
+- Свідомо НЕ мігровано: `generateGemini` (per-role `GEMINI_SCHEMAS` + env-специфічні
+  оверрайди/фільтри, не покриті generic-адаптером) і `generateOllama` (локальний self-hosted
+  сервер з власною security-перевіркою, поза призначенням `http-provider.ts`).
+- `generateSocialJson` отримав `options.db?: PipelineDb`, протягнуто через усі реальні
+  продакшн-виклики: `attachCriticReport` (`src/lib/social/critic.ts`, викликається з
+  `composer.ts` і `admin/actions.ts`), `adaptWeeklySocialChannel`
+  (`src/lib/weekly-digest/social-adapter.ts`, викликається з `generation-worker.ts`), і прямий
+  виклик у `admin/actions.ts`'s ручному regenerate-екшені — усюди `getSupabaseAdmin()`.
+- 2 нових тести — перші, що реально викликають `generateOpenRouter` (не через
+  `deps.generators`-injection, як усі наявні тести цього файлу); наявні 12 тестів пройшли без
+  змін.
+
+**Свідомо не зроблено:** живий shadow-run (та сама причина, що й Фаза 4 — БД-шлях не перевірити
+без застосованої міграції; дефолтний шлях успадковує живу верифікацію Фази 1).
+
+**Верифіковано:** 920/920 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний.
+
+## 2026-08-06 — LLM provider registry, Phase 4: weekly master (editorial-llm.ts) migrated, partial by design
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 3 в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 4: що мігровано, що свідомо НЕ мігровано і чому,
+  чому live shadow-run не проведено
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 5
+
+**Код:**
+- `src/lib/weekly-digest/editorial-llm.ts`'s `generateOpenRouter()` — транспортний шар
+  замінено з прямого `generateWithOpenRouterChain` на `generateWithHttpProviderChain`
+  (`pipeline/providers/http-provider.ts`, Фаза 1) через `OPENROUTER_HTTP_DEFAULTS`.
+  Value-ранжування моделей (`premiumOpenRouterModels`, токен-профіль 12k/20k, поріг якості)
+  лишилось незайманим.
+- Новий `resolveWeeklyDbHttpProvider(role, db)` — перевіряє БД-ланцюжок
+  `weekly.master_writer`/`weekly.master_critic` на `http`-запис перед дефолтним value-ранжованим
+  шляхом; якщо власник додав провайдера (напр. NIM) через `/admin/providers` для однієї з цих
+  ролей, він обслуговує виклик зі своїм сконфігурованим списком моделей.
+- Свідомо НЕ мігровано: `generateGemini` (пряма Gemini-SDK-логіка, три різні JSON-форми без
+  native schema — `generateWithGemini`-адаптер дефолтить на неправильну daily-brief-схему коли
+  `cfg.schema` не задано) і `generateClaudeCli` (лишається на `pipeline/claude-cli.ts`, узгоджено
+  з рішенням Фази 1 — немає другого CLI-споживача).
+- `generateWeeklyMaster` отримав `options.db?: PipelineDb`; `generation-worker.ts` передає
+  `getSupabaseAdmin()`.
+- 2 нових тести для DB-override; усі 22 наявні тести пройшли БЕЗ ЗМІН (мокають
+  `generateWithOpenRouterChain` на рівень нижче за новий код — той самий мок прозоро перехоплює
+  новий шлях, підтверджуючи побайтову ідентичність запиту).
+
+**Свідомо не зроблено:** живий shadow-run цієї фази (план це передбачав). Дефолтний шлях
+успадковує живу верифікацію Фази 1 (та сама `http-provider.ts`-обгортка). Новий БД-override шлях
+неможливо живо перевірити зараз — міграція `llm_role_chains` навмисно не застосована до прод-БД.
+
+**Верифіковано:** 918/918 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний.
+
+## 2026-08-06 — LLM provider registry, Phase 3: custom-research.ts migrated
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 2 в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 3: що замінено, знайдений баг (мертва
+  `openRouterApiKey`-опція), `withResearchSchema()`-обгортка для Gemini structured output
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 4
+
+**Код:**
+- `pipeline/custom-research.ts`'s `researchCustomStory()` — раніше прямий
+  `new GoogleGenerativeAI(apiKey)` + `createResearchGenerate()`, без фактичного OpenRouter-фолбеку
+  попри наявну опцію `openRouterApiKey` (**реальний баг, знайдений під час читання коду для цієї
+  фази** — опція існувала, але ніде не використовувалась). Тепер
+  `generateWithRegistry('custom_research', prompt, registry, {validateResponse})`.
+- Новий експортований `withResearchSchema(registry)` — патчить `RESEARCH_SCHEMA`
+  (Gemini-native structured output) лише на `gemini`-записи ланцюжка ролі `custom_research`,
+  хоч би звідки вони прийшли (env-дефолт чи БД-ланцюжок з `/admin/providers`); OpenRouter/CLI-записи
+  не чіпаються — вони й так отримують «Return JSON only» текстову інструкцію та перевіряються
+  легким `validateResearchJson` (прогін через `parseResearchResult`).
+- `pipeline/custom-news.ts`'s `runCustomNews` тепер будує `db` до виклику research (не після
+  dry-run-гілки) — БД-ланцюжок для `custom_research` тепер спрацьовує навіть у dry-run.
+- 2 нових тести для `withResearchSchema`; `researchCustomStory` лишається поза юніт-покриттям
+  (`/* v8 ignore start -- Gemini integration */`, як і раніше).
+
+**Верифіковано:** 916/916 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний.
+
+## 2026-08-06 — LLM provider registry, Phase 2: card-image.ts art-director ladder migrated
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 1b в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 2: що замінено, продуктивність-компроміс
+  (резолв реєстру раз-на-батч), свідомий компроміс вартості на OpenRouter-фолбеку
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 3
+
+**Код:**
+- `pipeline/card-image.ts`'s `runArtDirectorLadder()` — раніше хардкоджений
+  `GoogleGenerativeAI`-виклик + сирий `fetch` на `~openai/gpt-mini-latest` через OpenRouter,
+  тепер `generateWithRegistry(role, instruction, registry)` для ролей
+  `daily.card_image_scene`/`weekly.card_image_scene`. `CardImageConfig` отримав `db?`/`registry?`
+  опційні поля. `fillCardImages` резолвить реєстр один раз на весь батч (до 12 айтемів), не на
+  кожен айтем окремо — інакше кожен айтем окремо бив би живий каталог OpenRouter.
+  `SceneBriefResult.source` розширено з фіксованого union до `string` (може нести будь-який
+  provider id з реєстру, напр. `'nim'`).
+- `src/lib/weekly-digest/generation-worker.ts` — weekly-виклик тепер передає `db:
+  getSupabaseAdmin()`, щоб БД-ланцюжок для `weekly.card_image_scene` теж міг спрацювати.
+- 4 нових тести в `card-image.test.ts` (registry reuse, env-ключі при побудові, повний успішний
+  шлях через CLI-адаптер зі stub `spawnFn`, weekly-роль); існуючі 29 тестів пройшли без змін.
+
+**Свідомий компроміс:** OpenRouter-фолбек для цієї (дешевої, низько-ставкової) ролі тепер іде
+через той самий benchmark-ранжований каталог, що й усі інші ролі, замість старої хардкодженої
+дешевої моделі-псевдоніма. НЕ компенсовано через `roleOverrides`, бо `roleOverrides` в
+`loadProviderRegistry` має пріоритет над БД-ланцюжком — жорстке зашивання дешевої моделі
+назавжди заблокувало б власника від керування цією роллю через `/admin/providers`.
+
+**Верифіковано:** 914/914 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний.
+
+## 2026-08-06 — LLM provider registry, Phase 1b: DB-driven role chains + admin UI
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 1 в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 1b: що збудовано, свідоме обмеження CLI-рядків з БД
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 2
+
+**Код:**
+- `supabase/migrations/20260806160000_llm_provider_registry.sql` (авторська, НЕ застосована до
+  живої БД) — таблиці `llm_providers`/`llm_provider_models`/`llm_role_chains`, той самий
+  admin-read+AAL2-write RLS-патерн що в `040_social_cms.sql`, дві нові Vault RPC
+  (`store_llm_provider_secret`/`read_llm_provider_secret`, змодельовані на
+  `store_social_oauth_secret`/`read_social_oauth_secret`).
+- Нова сторінка `/admin/providers` (`src/app/admin/(cms)/providers/{page.tsx,actions.ts}`) —
+  додати/редагувати/видалити провайдера, вставити ключ (write-only, AAL2), редагувати
+  ланцюжок провайдерів по кожній з 10 ролей. Посилання в `admin-nav.tsx`.
+- `pipeline/providers/registry.ts`'s `loadProviderRegistry` тепер реально читає `db`-параметр
+  (у Фазі 1 був зарезервованим): `http`/`gemini`-рядки резолвляться повністю, `cli`-рядки —
+  лише для інструментів, зареєстрованих у `KNOWN_CLI_PROVIDERS` (поки що порожньо), інакше
+  пропускаються з `logEvent('warn', ...)`. Черговість: `roleOverrides > db > built-in default`.
+- 19 нових тестів у `registry.test.ts`; попутно виправлено leak стану моків (`vi.mock()` без
+  `afterEach`-скидання) у `http-provider.test.ts` і `registry.test.ts` — читання
+  `mock.calls[0]` між тестами давало хибні pass/fail.
+
+**Верифіковано:** 910/910 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний (`/admin/providers` — новий маршрут у білді).
+
+**Нотатка:** нічого в проєкті ще не викликає `generateWithRegistry` для реального LLM-запиту —
+admin-сторінка й БД-читання безпечні для експериментів, порожні таблиці = поточна поведінка без
+змін. Наступний крок — Фаза 2 (`card-image.ts`'s `runArtDirectorLadder`).
+
+## 2026-08-06 — LLM provider registry, Phase 1: registry core + live NIM verification (2 bugs found+fixed)
+
+**Джерело:** продовження Фази 0 в межах затвердженого плану (`feat/llm-provider-registry`);
+живий dry-run проти реального NVIDIA NIM API (ключ власника додано в `.env.local`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 1: що збудовано, обидва знайдені баги, успішний
+  результат live-верифікації
+- `wiki/now.md` — стан гілки оновлено
+
+**Код:** новий каталог `pipeline/providers/` (`types.ts`, `http-provider.ts`, `cli-provider.ts`,
+`gemini-provider.ts`, `registry.ts`) + 30 нових тестів (раніше 0 покриття цього шару). Адитивні
+опційні параметри в `openrouter-summarize.ts`/`openrouter-adaptive.ts` (`requestConfig`/`baseUrl`)
+з дефолтами, що 1-в-1 відтворюють поточну поведінку OpenRouter — жоден існуючий виклик не
+змінено. `claude-cli.ts` свідомо НЕ чіпався (немає другого споживача скелету CLI-провайдерів
+поки що).
+
+**Знайдено й виправлено живим прогоном (2026-08-06):**
+1. **Реальний баг, не одноразовий здогад:** `buildChatBody()` (`openrouter-summarize.ts`) і
+   **окремо** `streamOpenRouterCompletion()` (`openrouter-adaptive.ts`) обидва незалежно
+   хардкодили OpenRouter-специфічне поле `usage: {include: true}` у тілі запиту. NIM валідує
+   тіло суворо і повертає HTTP 400 `"Unsupported parameter(s): 'usage'"` — на відміну від
+   припущення в плані про "graceful degradation", яке було правильним лише для ВІДПОВІДІ
+   (`usage.cost` дійсно деградує в `null`), не для ЗАПИТУ. Перша спроба фіксу (лише в
+   `buildChatBody` через `extraBodyForModel`) не спрацювала в живому прогоні — другий,
+   незалежний хардкод у `streamOpenRouterCompletion` мовчки перекривав перший фікс. Знайдено
+   лише повторним живим прогоном після першого «фіксу», який не змінив реальну поведінку.
+2. `moonshotai/kimi-k2.6` — HTTP 404, модель не активована на конкретному NVIDIA-акаунті
+   (обліковий нюанс, не код).
+
+**Результат:** `deepseek-ai/deepseek-v4-pro` через реальний NIM API успішно повернув валідний
+JSON за 86.9с — підтверджує головну тезу дослідження: generic OpenAI-сумісний HTTP-шар дійсно
+працює проти неOpenRouter-провайдера лише зі зміною base URL + ключа.
+
+**Нотатка:** це другий приклад у цій сесії (після PR3's critic-vocabulary фіксу), коли живий
+прогін ловить реальний баг, який юніт-тести з мокнутим fetch не могли б виявити — мокнутий
+`fetch` ніколи б не повернув справжню 400-помилку суворого валідатора NIM.
+
+---
+
+## 2026-08-06 — LLM provider registry, Phase 0: Gemini removed from default rotation
+
+**Джерело:** рішення власника (session 2026-08-06) — під час обговорення дещо ширшого запиту
+(«прибрати Gemini + зробити зручну систему керування провайдерами для всього проєкту, не лише
+weekly»); дослідження коду (2 Explore-агенти + 1 Plan-агент) + Plan-mode затверджений план у
+`C:\Users\Oleksandr\.claude\plans\06-08-2026-12-32-oleksandr-kuzmenko-prancy-gizmo.md`
+
+**Змінено:**
+- Нова гілка `feat/llm-provider-registry` (від tip `feat/weekly-editorial-voice`)
+- `wiki/pipeline/llm-providers.md` — нова сторінка: навіщо, ключові знахідки дослідження,
+  статус фаз
+- `wiki/index.md` — новий рядок
+- `wiki/now.md` — стан нової гілки, залежність від `feat/weekly-editorial-voice`
+
+**Код (Фаза 0 з 7+ фаз плану):**
+- `src/lib/weekly-digest/editorial-llm.ts`'s `providerOrder()`: дефолт `WEEKLY_MASTER_PROVIDER_ORDER`
+  `claude-cli,openrouter,gemini` → `claude-cli,openrouter`
+- `src/lib/social/llm-router.ts`'s `DEFAULT_PROVIDER_ORDER`: writer/critic обидва тепер
+  `['openrouter','ollama']` (gemini прибрано з обох); незалежність writer/critic і далі йде через
+  `excludeProviders` у `generateSocialJson`, не через різний перший провайдер за замовчуванням
+- Daily: новий тимчасовий прапорець `DAILY_LLM_PRIMARY_PROVIDER` (`pipeline/config.ts`'s
+  `PipelineConfig.primaryTextProvider`), протягнутий через `pipeline/llm-json.ts`,
+  `pipeline/summarize.ts`, `pipeline/verify.ts`, `pipeline/auto-publish.ts`,
+  `pipeline/custom-news.ts`. Дефолт `'gemini'` — нуль зміни поведінки без явного env override.
+  **Свідомо тимчасова конструкція**, видаляється у фазі 6 плану, коли daily переходить на повний
+  реєстр провайдерів.
+- Gemini-клієнти (`gemini-models.ts`, SDK-виклики) не чіпались — лишаються доступні через явний
+  env override у всіх трьох шляхах.
+
+Typecheck/lint/build/vitest зелені (873 тести). Наступний крок — Фаза 1: ядро реєстру
+(`pipeline/providers/`) + БД-таблиці + один живий dry-run проти реального NVIDIA NIM API
+(ключ власника вже додано в `.env.local` як `NVIDIA_API_KEY`).
+
+**Нотатка:** повний план (типи, БД-схема з Vault-секретами, admin UI, фазовий порядок 0–7) — у
+файлі плану вище, тут навмисно лише статус, щоб не дублювати. `docs`-Plan-агент перевірив і
+підтвердив реальний, робочий Vault-патерн для зберігання секретів провайдера
+(`store_social_oauth_secret`/`read_social_oauth_secret`, `040_social_cms.sql`) — не здогад.
+
+---
+
 ## 2026-08-06 — Editorial quality overhaul, PR7: social voice + hook picker + cleanup (all 7 PRs done)
 
 **Джерело:** рішення власника (session 2026-08-06) — «код продовжується» по завершенні PR6;

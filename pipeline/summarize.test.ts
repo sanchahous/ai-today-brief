@@ -6,6 +6,7 @@ import {
   generateWithModelQueue,
   isGeminiRateLimitError,
   isRetryableGeminiError,
+  llmUsageFromProviderUsage,
   normalizeEscapedNewlines,
   parseBrief,
   parseImpactLevel,
@@ -496,5 +497,40 @@ describe('generateWithModelQueue + Gemini errors', () => {
       generateWithModelQueue('p', 'key', ['gemini-3.5-flash', 'gemini-2.5-flash'], 1, gen, async () => {}),
     ).rejects.toThrow(/400/);
     expect(gen).toHaveBeenCalledTimes(2);
+  });
+});
+
+// --- Phase 6a: registry migration (runOpenRouter's transport swap + DB-driven override) ---
+
+describe('llmUsageFromProviderUsage', () => {
+  it('uses the provider-reported token counts when both are present', () => {
+    expect(
+      llmUsageFromProviderUsage(
+        { promptTokens: 120, outputTokens: 340, costSource: 'reported' },
+        999,
+        999,
+      ),
+    ).toEqual({ promptTokens: 120, outputTokens: 340, estimated: false });
+  });
+
+  it('marks the result estimated when costSource is not "reported", even with real token counts', () => {
+    expect(
+      llmUsageFromProviderUsage(
+        { promptTokens: 50, outputTokens: 20, costSource: 'estimated' },
+        999,
+        999,
+      ),
+    ).toEqual({ promptTokens: 50, outputTokens: 20, estimated: true });
+  });
+
+  it('falls back to char-count estimation when the provider reports no usage (e.g. the streaming client)', () => {
+    const result = llmUsageFromProviderUsage(
+      { promptTokens: null, outputTokens: null, costSource: 'estimated' },
+      400,
+      200,
+    );
+    expect(result.estimated).toBe(true);
+    expect(result.promptTokens).toBe(100); // 400 chars / 4
+    expect(result.outputTokens).toBe(50); // 200 chars / 4
   });
 });

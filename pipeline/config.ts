@@ -55,6 +55,13 @@ export interface PipelineConfig {
   telegramReviewChatId?: string;
   /** Explicit social delivery allowlist. Defaults preserve existing Telegram/X behaviour. */
   socialChannels: SocialChannel[];
+  /**
+   * Which text-generation provider daily tries first, Gemini-then-OpenRouter
+   * fallback either way. Temporary scaffolding (2026-08-06, owner request) so
+   * daily can move off free-tier Gemini without waiting on the project-wide
+   * provider-registry migration — deleted once that migration reaches daily.
+   */
+  primaryTextProvider: 'gemini' | 'openrouter';
   /** Long-lived Threads user token; harmless until `threads` is allowlisted. */
   threadsAccessToken?: string;
   /** Stop before any Supabase write — assemble + print only. */
@@ -148,5 +155,6 @@ export function loadPipelineConfig(
     socialChannels: parseSocialChannels(env.SOCIAL_CHANNELS),
     threadsAccessToken: env.THREADS_ACCESS_TOKEN?.trim() || undefined,
     dryRun: argv.includes('--dry-run') || env.DRY_RUN === '1',
+    primaryTextProvider: env.DAILY_LLM_PRIMARY_PROVIDER?.trim() === 'openrouter' ? 'openrouter' : 'gemini',
   };
 }

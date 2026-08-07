@@ -225,6 +225,22 @@ export function checkStreamStall(
 
 export type FetchStreamFn = (url: string, init: RequestInit) => Promise<Response>;
 
+/**
+ * Lets a caller point this OpenAI-compatible streaming client at a different
+ * provider (e.g. NVIDIA NIM) instead of OpenRouter -- see
+ * pipeline/providers/http-provider.ts. Defaults reproduce OpenRouter exactly.
+ */
+export interface OpenRouterRequestConfig {
+  url?: string;
+  headers?: Record<string, string>;
+}
+
+const DEFAULT_OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEFAULT_OPENROUTER_HEADERS = {
+  'HTTP-Referer': 'https://aitodaybrief.com',
+  'X-Title': 'AI Today Brief Pipeline',
+};
+
 /* v8 ignore start -- live streaming; pure helpers above are unit-tested */
 
 /** Stream chat completion; abort via signal when stalled. */
@@ -236,12 +252,20 @@ export async function streamOpenRouterCompletion(
   fetchFn: FetchStreamFn = fetch,
   validateResponse: OpenRouterResponseValidator = validateOpenRouterBriefJson,
   onUsage?: (usage: OpenRouterUsage) => void,
+  requestConfig?: OpenRouterRequestConfig,
 ): Promise<string> {
   const started = Date.now();
   const controller = new AbortController();
   let sseBuffer = '';
   let progress = createStreamProgress(started);
-  const requestBody = { ...body, model: modelId, stream: true, usage: { include: true } };
+  // `body` (from buildChatBody, openrouter-summarize.ts) already carries the
+  // final `usage` field -- either `{ include: true }` or `undefined` when a
+  // provider that doesn't support the field needs it suppressed entirely
+  // (see http-provider.ts's reportsCost). This used to unconditionally
+  // re-add `usage: { include: true }` here, silently reintroducing the field
+  // NVIDIA NIM's strict validator rejects with HTTP 400 -- found via a live
+  // dry-run against the real NIM API (2026-08-06).
+  const requestBody = { ...body, model: modelId, stream: true };
 
   logEvent('info', 'summarize', 'OpenRouter adaptive stream starting', {
     model: modelId,
@@ -250,13 +274,13 @@ export async function streamOpenRouterCompletion(
     absolute_ceiling_ms: timeouts.absoluteCeilingMs,
   });
 
-  const res = await fetchFn('https://openrouter.ai/api/v1/chat/completions', {
+  const res = await fetchFn(requestConfig?.url ?? DEFAULT_OPENROUTER_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://aitodaybrief.com',
-      'X-Title': 'AI Today Brief Pipeline',
+      ...(requestConfig?.url ? {} : DEFAULT_OPENROUTER_HEADERS),
+      ...requestConfig?.headers,
     },
     body: JSON.stringify(requestBody),
     signal: controller.signal,
