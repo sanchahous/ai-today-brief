@@ -278,6 +278,26 @@ async function loadDbRoleChains(
       );
       if (provider) resolved.push(provider);
     }
+    // A saved chain that resolves to zero usable providers (missing secret,
+    // disabled provider, unregistered CLI id) must NOT shadow defaultChain --
+    // `chainForRole`'s `dbChains?.get(role) ?? defaultChain` treats a present
+    // (even empty) Map entry as an explicit override that wins over `??`, so
+    // storing `[]` here would turn one misconfigured DB row into a total
+    // outage for a role that's otherwise perfectly servable by env keys. An
+    // empty `rawEntries` (owner cleared the chain on purpose) is a silent
+    // no-op; a non-empty one that still resolved to nothing is almost
+    // certainly a mistake (e.g. key not pasted yet) worth a log line.
+    if (resolved.length === 0) {
+      if (rawEntries.length > 0) {
+        logEvent(
+          'warn',
+          'llm-providers',
+          'DB role chain resolved to zero usable providers -- falling back to the default chain',
+          { role: row.role },
+        );
+      }
+      continue;
+    }
     result.set(row.role as ProviderRole, resolved);
   }
   return result;
@@ -310,19 +330,48 @@ export async function loadProviderRegistry(
 
   const defaultChain: ResolvedProvider[] = [];
   if (openRouterKey) {
-    const modelQueue = await resolveOpenRouterModelQueue(openRouterKey, env);
-    if (modelQueue.length > 0) {
-      defaultChain.push({
-        entry: { kind: 'http', id: 'openrouter' },
-        http: { id: 'openrouter', apiKey: openRouterKey, modelQueue, ...OPENROUTER_HTTP_DEFAULTS },
-      });
+    // A transient catalog outage (rate limit, network blip) must not take
+    // down the whole registry -- every role that also has Gemini, or a DB
+    // chain, should still work. Treat it the same as "OpenRouter
+    // unconfigured" for defaultChain purposes: log and move on.
+    try {
+      const modelQueue = await resolveOpenRouterModelQueue(openRouterKey, env);
+      if (modelQueue.length > 0) {
+        defaultChain.push({
+          entry: { kind: 'http', id: 'openrouter' },
+          http: { id: 'openrouter', apiKey: openRouterKey, modelQueue, ...OPENROUTER_HTTP_DEFAULTS },
+        });
+      }
+    } catch (error) {
+      logEvent(
+        'warn',
+        'llm-providers',
+        'OpenRouter model catalog fetch failed -- continuing without OpenRouter in the default chain',
+        { error: error instanceof Error ? error.message : String(error) },
+      );
     }
   }
   if (geminiKey) {
     defaultChain.push({ entry: { kind: 'gemini', id: 'gemini' }, gemini: { apiKey: geminiKey } });
   }
 
-  const dbChains = db ? await loadDbRoleChains(db, env) : null;
+  // Same reasoning as above: a DB read failure (network blip against
+  // Supabase) should degrade to "no DB override this call", not crash
+  // registry construction and every role that would otherwise resolve fine
+  // from defaultChain alone.
+  let dbChains: Map<ProviderRole, ResolvedProvider[]> | null = null;
+  if (db) {
+    try {
+      dbChains = await loadDbRoleChains(db, env);
+    } catch (error) {
+      logEvent(
+        'warn',
+        'llm-providers',
+        'Loading DB-configured role chains failed -- continuing with the env-only default chain',
+        { error: error instanceof Error ? error.message : String(error) },
+      );
+    }
+  }
 
   return {
     chainForRole(role) {

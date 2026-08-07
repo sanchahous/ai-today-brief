@@ -413,7 +413,7 @@ async function main(): Promise<void> {
     0,
     todays.length + config.recentTitles,
   );
-  const summarizeDbOverride = await resolveDbHttpProvider('daily.summarize', db);
+  const summarizeDbOverride = await resolveDbHttpProvider('daily.summarize', db).catch(() => null);
   const summarized = await summarize(
     dedupedPool,
     recent,
