@@ -6,12 +6,15 @@
  * nothing in the app calls generateWithRegistry yet; later phases migrate
  * one existing call site at a time onto it.
  *
- * `loadProviderRegistry` is env-only for now (the `db` param is accepted and
- * reserved for Phase 1b's DB-backed llm_providers/llm_role_chains tables +
- * admin UI, not yet built). Per-role chain overrides can be passed directly
- * to `loadProviderRegistry` — each migration phase supplies the real chain
- * that call site needs (e.g. social's critic excluding the writer's vendor),
- * since that's a caller-side decision, not something the registry dictates.
+ * `db` (Phase 1b) points at the `llm_providers`/`llm_provider_models`/
+ * `llm_role_chains` tables an owner edits through /admin/providers — when
+ * given, a role with a saved chain there overrides the env-only default.
+ * DB-driven resolution is complete for `http` and `gemini` chain entries; a
+ * `cli` entry in a DB-saved chain is honestly unresolvable from the DB alone
+ * (see resolveKnownCliProvider below) and is skipped with a log line, not
+ * silently pretended to work — a DB row can name a CLI tool's ordering, but
+ * can't supply the real argv-builder/envelope-parser code every CLI tool
+ * needs (see cli-provider.ts's module doc).
  */
 
 import {
@@ -25,18 +28,24 @@ import { generateWithGemini, type GeminiProviderConfig } from './gemini-provider
 import { ProviderUnavailableError, type ProviderCallResult } from './types';
 import type { OpenRouterResponseValidator } from '../openrouter-brief-json';
 import { resolveOpenRouterModelQueue } from '../openrouter-models';
+import { logEvent } from '../log';
+import type { PipelineDb } from '../db';
 
-export type ProviderRole =
-  | 'daily.summarize'
-  | 'daily.verify'
-  | 'daily.auto_publish_judge'
-  | 'daily.card_image_scene'
-  | 'weekly.master_writer'
-  | 'weekly.master_critic'
-  | 'weekly.card_image_scene'
-  | 'social.writer'
-  | 'social.critic'
-  | 'custom_research';
+/** ProviderRole is derived from this array, so the two can never drift apart. */
+export const PROVIDER_ROLES = [
+  'daily.summarize',
+  'daily.verify',
+  'daily.auto_publish_judge',
+  'daily.card_image_scene',
+  'weekly.master_writer',
+  'weekly.master_critic',
+  'weekly.card_image_scene',
+  'social.writer',
+  'social.critic',
+  'custom_research',
+] as const;
+
+export type ProviderRole = (typeof PROVIDER_ROLES)[number];
 
 export interface ProviderChainEntry {
   kind: 'gemini' | 'http' | 'cli';
@@ -171,12 +180,118 @@ export function nimProvider(
 }
 
 /**
- * Env-only registry (Phase 1): builds whichever provider configs the
- * environment actually has keys for, and resolves every role to the same
- * `defaultChain` unless `roleOverrides` supplies a role-specific one. Each
- * later migration phase (2-6 in the plan) passes the real chain that call
- * site needs, informed by that call site's own requirements -- the registry
- * itself has no opinion on what belongs in a chain.
+ * Registered here as new CLI tools get real code (buildArgs/parseEnvelope) --
+ * see cli-provider.ts's module doc for why this can't be config-driven. A DB
+ * chain entry naming a CLI provider id not registered here is skipped, not
+ * silently mis-resolved. Empty today: claude-cli.ts wasn't refactored onto
+ * cli-provider.ts's shape in Phase 1 (no second consumer existed yet to
+ * justify the risk on weekly's only $0-cost path) -- the first entry here
+ * will most likely be added alongside that refactor or Phase 7's Codex CLI.
+ */
+const KNOWN_CLI_PROVIDERS: Record<string, Omit<CliProviderConfig, 'id'>> = {};
+
+function resolveKnownCliProvider(id: string): CliProviderConfig | null {
+  const known = KNOWN_CLI_PROVIDERS[id];
+  return known ? { id, ...known } : null;
+}
+
+/** Builds one ResolvedProvider from a DB row, or null if it can't be resolved (missing key, disabled, unknown CLI tool). */
+async function resolveDbProvider(
+  db: PipelineDb,
+  providerRow: { id: string; kind: string; base_url: string | null; extra_headers: unknown; reports_cost: boolean },
+  modelQueue: string[],
+  geminiKey: string | undefined,
+): Promise<ResolvedProvider | null> {
+  if (providerRow.kind === 'http') {
+    if (!providerRow.base_url || modelQueue.length === 0) return null;
+    const { data: secret } = await db.rpc('read_llm_provider_secret', { p_provider_id: providerRow.id });
+    if (!secret) return null;
+    const extraHeaders =
+      providerRow.extra_headers && typeof providerRow.extra_headers === 'object' && !Array.isArray(providerRow.extra_headers)
+        ? (providerRow.extra_headers as Record<string, string>)
+        : undefined;
+    return {
+      entry: { kind: 'http', id: providerRow.id },
+      http: {
+        id: providerRow.id,
+        apiKey: secret,
+        baseUrl: providerRow.base_url,
+        modelQueue,
+        extraHeaders,
+        reportsCost: providerRow.reports_cost,
+      },
+    };
+  }
+  if (providerRow.kind === 'gemini') {
+    if (!geminiKey) return null;
+    return { entry: { kind: 'gemini', id: providerRow.id }, gemini: { apiKey: geminiKey } };
+  }
+  if (providerRow.kind === 'cli') {
+    const cli = resolveKnownCliProvider(providerRow.id);
+    if (!cli) {
+      logEvent('warn', 'llm-providers', 'DB role chain references an unregistered CLI provider id -- skipped', {
+        provider_id: providerRow.id,
+      });
+      return null;
+    }
+    return { entry: { kind: 'cli', id: providerRow.id }, cli };
+  }
+  return null;
+}
+
+/** Reads llm_role_chains + llm_providers + llm_provider_models and resolves each saved chain into ResolvedProvider[]. */
+async function loadDbRoleChains(
+  db: PipelineDb,
+  env: RegistryEnv,
+): Promise<Map<ProviderRole, ResolvedProvider[]>> {
+  const [{ data: chains }, { data: providers }, { data: models }] = await Promise.all([
+    db.from('llm_role_chains').select('*'),
+    db.from('llm_providers').select('*').eq('enabled', true),
+    db.from('llm_provider_models').select('*').eq('enabled', true).order('rank'),
+  ]);
+
+  const modelsByProvider = new Map<string, string[]>();
+  for (const model of models ?? []) {
+    const list = modelsByProvider.get(model.provider_id) ?? [];
+    list.push(model.model_id);
+    modelsByProvider.set(model.provider_id, list);
+  }
+  const providerById = new Map((providers ?? []).map((row) => [row.id, row]));
+  const geminiKey = env.GEMINI_API_KEY?.trim();
+
+  const result = new Map<ProviderRole, ResolvedProvider[]>();
+  for (const row of chains ?? []) {
+    if (!(PROVIDER_ROLES as readonly string[]).includes(row.role)) continue;
+    const rawEntries = Array.isArray(row.chain) ? row.chain : [];
+    const resolved: ResolvedProvider[] = [];
+    for (const rawEntry of rawEntries) {
+      if (!rawEntry || typeof rawEntry !== 'object' || Array.isArray(rawEntry)) continue;
+      const id = (rawEntry as Record<string, unknown>).id;
+      if (typeof id !== 'string') continue;
+      const providerRow = providerById.get(id);
+      if (!providerRow) continue;
+      const provider = await resolveDbProvider(
+        db,
+        providerRow,
+        modelsByProvider.get(id) ?? [],
+        geminiKey,
+      );
+      if (provider) resolved.push(provider);
+    }
+    result.set(row.role as ProviderRole, resolved);
+  }
+  return result;
+}
+
+/**
+ * Builds whichever provider configs the environment actually has keys for,
+ * and resolves every role to the same `defaultChain` unless `roleOverrides`
+ * or a saved `db` row supplies a role-specific one (`db` wins over the
+ * built-in default, `roleOverrides` wins over `db` -- a caller-supplied
+ * override is always the most specific signal). Each later migration phase
+ * (2-6 in the plan) passes the real chain that call site needs, informed by
+ * that call site's own requirements -- the registry itself has no opinion on
+ * what belongs in a chain.
  *
  * Async because the OpenRouter entry in `defaultChain` needs a real,
  * live-fetched model queue -- `HttpProviderConfig.modelQueue` must be
@@ -188,8 +303,7 @@ export function nimProvider(
 export async function loadProviderRegistry(
   env: RegistryEnv = process.env,
   roleOverrides: Partial<Record<ProviderRole, ResolvedProvider[]>> = {},
-  // Reserved for Phase 1b (DB-backed llm_providers/llm_role_chains + admin UI). Unused today.
-  _db?: unknown,
+  db?: PipelineDb,
 ): Promise<ProviderRegistry> {
   const openRouterKey = resolveOpenRouterKey(env);
   const geminiKey = env.GEMINI_API_KEY?.trim();
@@ -208,9 +322,11 @@ export async function loadProviderRegistry(
     defaultChain.push({ entry: { kind: 'gemini', id: 'gemini' }, gemini: { apiKey: geminiKey } });
   }
 
+  const dbChains = db ? await loadDbRoleChains(db, env) : null;
+
   return {
     chainForRole(role) {
-      return roleOverrides[role] ?? defaultChain;
+      return roleOverrides[role] ?? dbChains?.get(role) ?? defaultChain;
     },
   };
 }

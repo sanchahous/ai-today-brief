@@ -19,6 +19,39 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-06 — LLM provider registry, Phase 1b: DB-driven role chains + admin UI
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 1 в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 1b: що збудовано, свідоме обмеження CLI-рядків з БД
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 2
+
+**Код:**
+- `supabase/migrations/20260806160000_llm_provider_registry.sql` (авторська, НЕ застосована до
+  живої БД) — таблиці `llm_providers`/`llm_provider_models`/`llm_role_chains`, той самий
+  admin-read+AAL2-write RLS-патерн що в `040_social_cms.sql`, дві нові Vault RPC
+  (`store_llm_provider_secret`/`read_llm_provider_secret`, змодельовані на
+  `store_social_oauth_secret`/`read_social_oauth_secret`).
+- Нова сторінка `/admin/providers` (`src/app/admin/(cms)/providers/{page.tsx,actions.ts}`) —
+  додати/редагувати/видалити провайдера, вставити ключ (write-only, AAL2), редагувати
+  ланцюжок провайдерів по кожній з 10 ролей. Посилання в `admin-nav.tsx`.
+- `pipeline/providers/registry.ts`'s `loadProviderRegistry` тепер реально читає `db`-параметр
+  (у Фазі 1 був зарезервованим): `http`/`gemini`-рядки резолвляться повністю, `cli`-рядки —
+  лише для інструментів, зареєстрованих у `KNOWN_CLI_PROVIDERS` (поки що порожньо), інакше
+  пропускаються з `logEvent('warn', ...)`. Черговість: `roleOverrides > db > built-in default`.
+- 19 нових тестів у `registry.test.ts`; попутно виправлено leak стану моків (`vi.mock()` без
+  `afterEach`-скидання) у `http-provider.test.ts` і `registry.test.ts` — читання
+  `mock.calls[0]` між тестами давало хибні pass/fail.
+
+**Верифіковано:** 910/910 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний (`/admin/providers` — новий маршрут у білді).
+
+**Нотатка:** нічого в проєкті ще не викликає `generateWithRegistry` для реального LLM-запиту —
+admin-сторінка й БД-читання безпечні для експериментів, порожні таблиці = поточна поведінка без
+змін. Наступний крок — Фаза 2 (`card-image.ts`'s `runArtDirectorLadder`).
+
 ## 2026-08-06 — LLM provider registry, Phase 1: registry core + live NIM verification (2 bugs found+fixed)
 
 **Джерело:** продовження Фази 0 в межах затвердженого плану (`feat/llm-provider-registry`);

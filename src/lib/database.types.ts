@@ -808,6 +808,66 @@ export type Database = {
           weekly_digest_id?: string | null;
         }
       >;
+      llm_providers: CmsTable<
+        {
+          auth_env_var: string | null;
+          base_url: string | null;
+          binary_name: string | null;
+          created_at: string;
+          enabled: boolean;
+          extra_headers: Json;
+          id: string;
+          kind: string;
+          notes: string | null;
+          reports_cost: boolean;
+          secret_reference: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        },
+        {
+          auth_env_var?: string | null;
+          base_url?: string | null;
+          binary_name?: string | null;
+          created_at?: string;
+          enabled?: boolean;
+          extra_headers?: Json;
+          id: string;
+          kind: string;
+          notes?: string | null;
+          reports_cost?: boolean;
+          secret_reference?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        }
+      >;
+      llm_provider_models: CmsTable<
+        {
+          enabled: boolean;
+          model_id: string;
+          provider_id: string;
+          rank: number;
+        },
+        {
+          enabled?: boolean;
+          model_id: string;
+          provider_id: string;
+          rank?: number;
+        }
+      >;
+      llm_role_chains: CmsTable<
+        {
+          chain: Json;
+          role: string;
+          updated_at: string;
+          updated_by: string | null;
+        },
+        {
+          chain?: Json;
+          role: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        }
+      >;
       social_accounts: CmsTable<
         {
           capabilities: Json;
@@ -2089,6 +2149,14 @@ export type Database = {
           p_provider_account_id?: string | null;
           p_secret: string;
         };
+        Returns: undefined;
+      };
+      read_llm_provider_secret: {
+        Args: { p_provider_id: string };
+        Returns: string | null;
+      };
+      store_llm_provider_secret: {
+        Args: { p_provider_id: string; p_secret: string };
         Returns: undefined;
       };
       search_brief_items: {

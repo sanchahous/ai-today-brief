@@ -119,8 +119,46 @@ base URL + ключа. Регресійні тести додані (`http-provi
 Нове покриття: 30 тестів на `pipeline/providers/*` (типи не тестуються окремо — вони
 tested-by-use в інших файлах), раніше — 0.
 
-**Фаза 1b (БД + admin UI) і Фази 2–7 (міграція існуючих ланцюжків) — не почато.**
-(source: `pipeline/providers/*.ts`, `tmp/nim-http-provider-dryrun/run.ts`, live dry-run
+**Фаза 1b — БД + admin UI виконано (2026-08-06).**
+
+- Нова міграція `supabase/migrations/20260806160000_llm_provider_registry.sql` (**авторська,
+  НЕ застосована до живої БД** — застосування через `supabase db push`/деплой окремо): три
+  таблиці — `llm_providers` (id/kind/enabled/base_url/secret_reference/extra_headers/
+  reports_cost/binary_name/auth_env_var/notes), `llm_provider_models` (provider_id/model_id/
+  rank/enabled), `llm_role_chains` (role/chain jsonb). RLS — той самий admin-read + AAL2-write
+  патерн, що й у решті social-cms таблиць (`040_social_cms.sql`). Дві нові Vault RPC —
+  `store_llm_provider_secret`/`read_llm_provider_secret`, змодельовані 1-в-1 на
+  `store_social_oauth_secret`/`read_social_oauth_secret`: `service_role`-only, ключ ніколи не
+  лежить у звичайній колонці, лише `secret_reference`.
+- Нова сторінка `/admin/providers` (`src/app/admin/(cms)/providers/page.tsx` +
+  `actions.ts`): додати/редагувати/видалити провайдера, вставити API-ключ (write-only поле,
+  вимагає AAL2, ніколи не повертається в браузер), редагувати список моделей і ланцюжок
+  провайдерів для кожної з 10 ролей (`kind:id` по рядку). Посилання в `admin-nav.tsx`.
+  UI чесно попереджає: CLI-провайдери (Claude Code, Codex) все одно потребують env var у
+  Vercel/GitHub secrets заздалегідь — рядок у БД керує лише порядком/увімкненням, не
+  встановленням бінарника.
+- `pipeline/providers/registry.ts`'s `loadProviderRegistry` тепер реально читає `db`-параметр
+  (у Фазі 1 був зарезервованим і невикористаним): `resolveDbProvider` резолвить `http`-рядки
+  (читає секрет через `read_llm_provider_secret`, пропускає якщо секрету ще нема) і
+  `gemini`-рядки (env `GEMINI_API_KEY`) повністю; `cli`-рядки — лише якщо CLI-інструмент
+  зареєстрований у `KNOWN_CLI_PROVIDERS` (поки що порожній список — `claude-cli.ts` не
+  рефакторено на `cli-provider.ts`'s форму, бо другого споживача ще нема), інакше пропускається
+  з `logEvent('warn', ...)`, а не тихо ламається. Пріоритет вирішення ланцюжка для ролі:
+  `roleOverrides[role] ?? dbChains?.get(role) ?? defaultChain` (явний виклик коду > збережено в
+  БД > вбудований env-only дефолт).
+- Тести: 19 нових у `registry.test.ts` (позитивна/негативна резолюція http/gemini,
+  unregistered-CLI-skip, три-рівнева черговість `roleOverrides > db > default`), плюс фікс
+  leak-стану моків (`vi.mock()` без `afterEach`-скидання давав хибні pass/fail між тестами) у
+  `http-provider.test.ts` і `registry.test.ts`. Повний прогін: 910/910 тестів,
+  `tsc --noEmit` чисто, `eslint` чисто, `npm run build` успішний (`/admin/providers` — новий
+  маршрут у білді).
+- Нічого в проєкті ще не читає реєстр для реального виклику LLM (це й далі робить Фази 2–6) —
+  admin-сторінка на цьому етапі безпечна для експериментів, порожні таблиці = поточна
+  поведінка без змін.
+
+**Фази 2–7 (міграція існуючих ланцюжків) — не почато.**
+(source: `pipeline/providers/*.ts`, `supabase/migrations/20260806160000_llm_provider_registry.sql`,
+`src/app/admin/(cms)/providers/*.tsx`, `tmp/nim-http-provider-dryrun/run.ts`, live dry-run
 2026-08-06)
 
 ## Related pages

@@ -189,3 +189,130 @@ describe('loadProviderRegistry', () => {
     expect(registry.chainForRole('daily.summarize')).not.toBe(override);
   });
 });
+
+describe('loadProviderRegistry with a db (Phase 1b)', () => {
+  /** Minimal fake matching only the query chains registry.ts actually calls. */
+  function fakeDb(tables: Record<string, unknown[]>, secrets: Record<string, string | null> = {}) {
+    function makeBuilder(rows: unknown[]) {
+      const builder = {
+        select: () => builder,
+        eq: (column: string, value: unknown) =>
+          makeBuilder(rows.filter((row) => (row as Record<string, unknown>)[column] === value)),
+        order: () => Promise.resolve({ data: rows, error: null }),
+        // select().eq() alone (no .order()) must also resolve -- llm_role_chains has no .eq()/.order() call.
+        then: (resolve: (value: { data: unknown[]; error: null }) => void) =>
+          resolve({ data: rows, error: null }),
+      };
+      return builder;
+    }
+    return {
+      from: (table: string) => makeBuilder(tables[table] ?? []),
+      rpc: (fn: string, args: Record<string, unknown>) => {
+        if (fn !== 'read_llm_provider_secret') throw new Error(`unexpected rpc ${fn}`);
+        const id = args.p_provider_id as string;
+        return Promise.resolve({ data: secrets[id] ?? null, error: null });
+      },
+    } as any;
+  }
+
+  it('resolves an HTTP provider from a saved role chain, reading its secret via the Vault RPC', async () => {
+    const db = fakeDb(
+      {
+        llm_role_chains: [{ role: 'daily.card_image_scene', chain: [{ kind: 'http', id: 'nim' }] }],
+        llm_providers: [
+          { id: 'nim', kind: 'http', enabled: true, base_url: 'https://integrate.api.nvidia.com/v1', extra_headers: {}, reports_cost: false },
+        ],
+        llm_provider_models: [{ provider_id: 'nim', model_id: 'deepseek-ai/deepseek-v4-pro', rank: 0, enabled: true }],
+      },
+      { nim: 'nvapi-secret' },
+    );
+
+    const registry = await loadProviderRegistry({}, {}, db);
+    const chain = registry.chainForRole('daily.card_image_scene');
+
+    expect(chain).toHaveLength(1);
+    expect(chain[0]).toMatchObject({
+      entry: { kind: 'http', id: 'nim' },
+      http: {
+        id: 'nim',
+        apiKey: 'nvapi-secret',
+        baseUrl: 'https://integrate.api.nvidia.com/v1',
+        modelQueue: ['deepseek-ai/deepseek-v4-pro'],
+      },
+    });
+  });
+
+  it('resolves a gemini chain entry using the env-supplied GEMINI_API_KEY (no Vault secret involved)', async () => {
+    const db = fakeDb({
+      llm_role_chains: [{ role: 'daily.card_image_scene', chain: [{ kind: 'gemini', id: 'gemini' }] }],
+      llm_providers: [{ id: 'gemini', kind: 'gemini', enabled: true, base_url: null, extra_headers: {}, reports_cost: false }],
+      llm_provider_models: [],
+    });
+
+    const registry = await loadProviderRegistry({ GEMINI_API_KEY: 'g-key' }, {}, db);
+    expect(registry.chainForRole('daily.card_image_scene')).toEqual([
+      { entry: { kind: 'gemini', id: 'gemini' }, gemini: { apiKey: 'g-key' } },
+    ]);
+  });
+
+  it('drops a gemini chain entry when GEMINI_API_KEY is not set', async () => {
+    const db = fakeDb({
+      llm_role_chains: [{ role: 'daily.card_image_scene', chain: [{ kind: 'gemini', id: 'gemini' }] }],
+      llm_providers: [{ id: 'gemini', kind: 'gemini', enabled: true, base_url: null, extra_headers: {}, reports_cost: false }],
+      llm_provider_models: [],
+    });
+
+    const registry = await loadProviderRegistry({}, {}, db);
+    expect(registry.chainForRole('daily.card_image_scene')).toEqual([]);
+  });
+
+  it('drops an HTTP provider entry when no secret has been stored yet', async () => {
+    const db = fakeDb({
+      llm_role_chains: [{ role: 'daily.card_image_scene', chain: [{ kind: 'http', id: 'nim' }] }],
+      llm_providers: [
+        { id: 'nim', kind: 'http', enabled: true, base_url: 'https://integrate.api.nvidia.com/v1', extra_headers: {}, reports_cost: false },
+      ],
+      llm_provider_models: [{ provider_id: 'nim', model_id: 'm', rank: 0, enabled: true }],
+    });
+
+    const registry = await loadProviderRegistry({}, {}, db);
+    expect(registry.chainForRole('daily.card_image_scene')).toEqual([]);
+  });
+
+  it('skips a CLI entry in a saved chain (honest limitation: DB can\'t supply argv-builder/envelope-parser code)', async () => {
+    const db = fakeDb({
+      llm_role_chains: [{ role: 'weekly.master_writer', chain: [{ kind: 'cli', id: 'claude-cli' }] }],
+      llm_providers: [
+        { id: 'claude-cli', kind: 'cli', enabled: true, base_url: null, extra_headers: {}, reports_cost: false },
+      ],
+      llm_provider_models: [],
+    });
+
+    const registry = await loadProviderRegistry({}, {}, db);
+    expect(registry.chainForRole('weekly.master_writer')).toEqual([]);
+  });
+
+  it('falls back to the env-only default chain for a role with no saved DB row', async () => {
+    vi.mocked(resolveOpenRouterModelQueue).mockResolvedValue(['vendor/model']);
+    const db = fakeDb({ llm_role_chains: [], llm_providers: [], llm_provider_models: [] });
+
+    const registry = await loadProviderRegistry({ OPEN_ROUTER_API_KEY: 'or-key' }, {}, db);
+
+    expect(registry.chainForRole('daily.summarize')).toHaveLength(1);
+    expect(registry.chainForRole('daily.summarize')[0]?.entry.id).toBe('openrouter');
+  });
+
+  it('lets an explicit roleOverride win over a saved DB chain', async () => {
+    const override: ResolvedProvider[] = [cliEntry];
+    const db = fakeDb({
+      llm_role_chains: [{ role: 'weekly.master_writer', chain: [{ kind: 'http', id: 'nim' }] }],
+      llm_providers: [
+        { id: 'nim', kind: 'http', enabled: true, base_url: 'https://x', extra_headers: {}, reports_cost: false },
+      ],
+      llm_provider_models: [],
+    });
+
+    const registry = await loadProviderRegistry({}, { 'weekly.master_writer': override }, db);
+    expect(registry.chainForRole('weekly.master_writer')).toBe(override);
+  });
+});

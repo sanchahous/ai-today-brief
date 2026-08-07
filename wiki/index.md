@@ -37,7 +37,7 @@ Last updated: 2026-08-04
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
-| 📋 `architecture/data-model.md` | Схема Supabase, RLS, ~67 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
+| 📋 `architecture/data-model.md` | Схема Supabase, RLS, ~68 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
 
