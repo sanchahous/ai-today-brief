@@ -4,11 +4,14 @@
  */
 
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
-import { join, relative, resolve, sep } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
+// Always normalize backslashes regardless of the host OS -- path.sep is '/'
+// on POSIX, which used to make this a no-op there and left any
+// Windows-style separator untouched.
 export function toPosix(p) {
-  return p.split(sep).join('/');
+  return p.split(/[\\/]/).join('/');
 }
 
 export function loadJson(path) {

@@ -17,7 +17,7 @@
  */
 
 import { access, readdir, readFile } from 'node:fs/promises';
-import { join, dirname, relative, resolve, sep } from 'node:path';
+import { join, dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const WIKI_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -41,7 +41,11 @@ const exists = async (p) => {
   }
 };
 
-const toPosix = (p) => p.split(sep).join('/');
+// Always normalize backslashes regardless of the host OS -- path.sep is '/'
+// on POSIX, which used to make this a no-op there and left any
+// Windows-style separator untouched (only ever exercised in CI/dev on
+// Windows, since relative()'s own output already matches the host OS).
+const toPosix = (p) => p.split(/[\\/]/).join('/');
 const findings = [];
 const add = (level, page, message, hint) => findings.push({ level, page, message, hint });
 
