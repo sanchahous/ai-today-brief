@@ -912,6 +912,9 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
       };
       await saveMasterCheckpoint(job.id, englishCheckpointHash, ukrainianCheckpointHash, runningCheckpoint);
     },
+    // Lets an owner-configured /admin/providers chain for weekly.master_writer
+    // / weekly.master_critic override the default value-ranked OpenRouter step.
+    db: getSupabaseAdmin(),
   });
   const failures = editorialQualityFailures(result.quality);
   if (failures.length > 0) {

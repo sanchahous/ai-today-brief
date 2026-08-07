@@ -221,9 +221,59 @@ tested-by-use в інших файлах), раніше — 0.
   (`/* v8 ignore start -- Gemini integration */`, як і раніше — жодних нових вимог до
   live-верифікації цієї фази). 916/916 тестів, `tsc`/`eslint`/build чисті.
 
-**Фази 4–7 (міграція решти ланцюжків) — не почато.**
+**Фаза 4 — weekly-майстер (`editorial-llm.ts`) мігровано (2026-08-06), навмисно ЧАСТКОВО.**
+
+Це найскладніший і найризикованіший файл із досі мігрованих — власна value-ранжована модель-
+селекція для OpenRouter (`premiumOpenRouterModels`, врахований токен-профіль 12k/20k, поріг
+якості `WEEKLY_MASTER_MIN_QUALITY_INDEX`), критик-незалежність через vendor-exclusion
+(`excludeVendors`), і той факт, що ОДИН і той самий провайдер навмисно перевикористовується
+через write→translate→revise (не заново обирається щоразу). Пряме заміщення на generic
+`generateWithRegistry`-обхід ланцюжка зламало б цю бізнес-логіку. Тому:
+
+- **Мігровано:** транспортний шар OpenRouter-кроку — `generateWithOpenRouterChain` (прямий
+  виклик) замінено на `generateWithHttpProviderChain` (`pipeline/providers/http-provider.ts`,
+  Фаза 1) через новий `OPENROUTER_HTTP_DEFAULTS`-пресет — той самий request/response контракт,
+  доведений живим NIM-тестом у Фазі 1, тепер спільний з рештою реєстру. Value-ранжування моделей
+  (`premiumOpenRouterModels`) лишилось незайманим — воно й далі формує `modelQueue`, просто
+  передає його в generic-адаптер замість прямого виклику.
+- **Нова можливість:** новий `resolveWeeklyDbHttpProvider(role, db)` перевіряє БД-ланцюжок ролі
+  (`weekly.master_writer`/`weekly.master_critic`) на `http`-запис ПЕРЕД тим, як впасти на
+  дефолтний value-ранжований шлях. Якщо власник додав провайдера (напр. NIM) через
+  `/admin/providers` для однієї з цих ролей — саме він обслуговує виклик, з власним
+  сконфігурованим списком моделей (без value-ранжування — для каталог-less провайдера воно й
+  неможливе, той самий висновок, що й у Фазі 1). Якщо нічого не сконфігуровано — поведінка
+  100% ідентична попередній.
+- **Свідомо НЕ мігровано:** Gemini-крок (`generateGemini`) — лишається прямим SDK-викликом.
+  Причина: він єдиною генеричною функцією обслуговує ТРИ різні JSON-форми (`parseEnglishPackage`/
+  `parseArticle`/`parseCritic`) без native `responseSchema` (лише `responseMimeType:
+  'application/json'` + постфактум-валідація парсером) — `generateWithGemini`-адаптер з Фази 1,
+  навпаки, дефолтить на `GEMINI_SCHEMA` (daily-brief-схема) коли `cfg.schema` не задано, що було б
+  прямим регресійним багом тут. Побудова трьох окремих Gemini-схем для weekly — поза обсягом цієї
+  фази. Claude CLI-крок (`generateClaudeCli`) — лишається на `pipeline/claude-cli.ts`, узгоджено з
+  рішенням Фази 1 не чіпати цей файл (немає другого споживача `cli-provider.ts`'s скелету, weekly
+  лишається його єдиним $0-шляхом).
+- Ролі `weekly.master_writer`/`weekly.master_critic` вже існували в `PROVIDER_ROLES` з Фази 1.
+  `generateWeeklyMaster` отримав новий `options.db?: PipelineDb`; `generation-worker.ts` передає
+  `getSupabaseAdmin()`.
+- Тести: 2 нових (DB-override дійсно обходить value-ранжування і не викликає
+  `fetchOpenRouterModels`; без `db` реєстр взагалі не чіпається). Усі 22 наявні тести пройшли БЕЗ
+  ЗМІН — важливий сигнал: вони мокають `generateWithOpenRouterChain` на рівні
+  `openrouter-summarize.ts`, а `generateWithHttpProviderChain` викликає ту саму функцію на рівень
+  глибше — той самий мок прозоро перехоплює новий шлях, підтверджуючи побайтову ідентичність
+  запиту. 918/918 тестів, `tsc`/`eslint`/build чисті.
+- **Живої shadow-верифікації (план це передбачав) для цієї фази НЕ проведено** — свідомо, з двох
+  причин: (1) дефолтний шлях фактично успадковує живу верифікацію Фази 1 (та сама
+  `http-provider.ts`-обгортка, доведена live проти NIM, тепер лише викликається з іншого файлу);
+  (2) нову БД-override можливість неможливо живо перевірити зараз — міграція `llm_role_chains`
+  свідомо НЕ застосована до прод-БД (авторський артефакт, той самий підхід, що й у Фазі 1b).
+  Перша реальна live-перевірка цього шляху відбудеться природно, коли власник і застосує міграцію,
+  і реально додасть перший HTTP-провайдер через `/admin/providers`.
+
+**Фази 5–7 (міграція решти ланцюжків) — не почато.**
 (source: `pipeline/providers/*.ts`, `pipeline/card-image.ts`, `pipeline/custom-research.ts`,
-`pipeline/custom-news.ts`, `supabase/migrations/20260806160000_llm_provider_registry.sql`,
+`pipeline/custom-news.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
+`src/lib/weekly-digest/generation-worker.ts`,
+`supabase/migrations/20260806160000_llm_provider_registry.sql`,
 `src/app/admin/(cms)/providers/*.tsx`, `tmp/nim-http-provider-dryrun/run.ts`, live dry-run
 2026-08-06)
 

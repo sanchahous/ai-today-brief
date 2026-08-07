@@ -19,6 +19,43 @@ Last updated: 2026-08-06
 
 ---
 
+## 2026-08-06 — LLM provider registry, Phase 4: weekly master (editorial-llm.ts) migrated, partial by design
+
+**Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
+Фази 3 в межах затвердженого плану, `feat/llm-provider-registry`)
+
+**Змінено:**
+- `wiki/pipeline/llm-providers.md` — статус Фази 4: що мігровано, що свідомо НЕ мігровано і чому,
+  чому live shadow-run не проведено
+- `wiki/now.md` — стан гілки оновлено, наступний крок = Фаза 5
+
+**Код:**
+- `src/lib/weekly-digest/editorial-llm.ts`'s `generateOpenRouter()` — транспортний шар
+  замінено з прямого `generateWithOpenRouterChain` на `generateWithHttpProviderChain`
+  (`pipeline/providers/http-provider.ts`, Фаза 1) через `OPENROUTER_HTTP_DEFAULTS`.
+  Value-ранжування моделей (`premiumOpenRouterModels`, токен-профіль 12k/20k, поріг якості)
+  лишилось незайманим.
+- Новий `resolveWeeklyDbHttpProvider(role, db)` — перевіряє БД-ланцюжок
+  `weekly.master_writer`/`weekly.master_critic` на `http`-запис перед дефолтним value-ранжованим
+  шляхом; якщо власник додав провайдера (напр. NIM) через `/admin/providers` для однієї з цих
+  ролей, він обслуговує виклик зі своїм сконфігурованим списком моделей.
+- Свідомо НЕ мігровано: `generateGemini` (пряма Gemini-SDK-логіка, три різні JSON-форми без
+  native schema — `generateWithGemini`-адаптер дефолтить на неправильну daily-brief-схему коли
+  `cfg.schema` не задано) і `generateClaudeCli` (лишається на `pipeline/claude-cli.ts`, узгоджено
+  з рішенням Фази 1 — немає другого CLI-споживача).
+- `generateWeeklyMaster` отримав `options.db?: PipelineDb`; `generation-worker.ts` передає
+  `getSupabaseAdmin()`.
+- 2 нових тести для DB-override; усі 22 наявні тести пройшли БЕЗ ЗМІН (мокають
+  `generateWithOpenRouterChain` на рівень нижче за новий код — той самий мок прозоро перехоплює
+  новий шлях, підтверджуючи побайтову ідентичність запиту).
+
+**Свідомо не зроблено:** живий shadow-run цієї фази (план це передбачав). Дефолтний шлях
+успадковує живу верифікацію Фази 1 (та сама `http-provider.ts`-обгортка). Новий БД-override шлях
+неможливо живо перевірити зараз — міграція `llm_role_chains` навмисно не застосована до прод-БД.
+
+**Верифіковано:** 918/918 тестів, `tsc --noEmit` чисто, `eslint` на змінених файлах чисто,
+`npm run build` успішний.
+
 ## 2026-08-06 — LLM provider registry, Phase 3: custom-research.ts migrated
 
 **Джерело:** «продовжуй далі усі фази по порядку з фіксуванням комітами» (власник, продовження
