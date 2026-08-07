@@ -19,6 +19,69 @@ Last updated: 2026-08-07
 
 ---
 
+## 2026-08-07 — LLM provider registry Phase 7: Codex CLI adapter
+
+**Джерело:** «продовжуємо фазу 7» (власник)
+
+**Змінено:**
+- `pipeline/providers/cli/codex.ts` (новий) — `CODEX_CLI_CONFIG` (buildArgs + parseCodexExecEnvelope),
+  перший реальний другий споживач `cli-provider.ts`'s Фаза-1-скелету
+- `pipeline/providers/cli/codex.test.ts` (новий) — 9 тестів
+- `pipeline/providers/registry.ts` — `KNOWN_CLI_PROVIDERS['codex-cli']` зареєстровано
+- `pipeline/providers/registry.test.ts` — +1 тест (DB-ланцюжок з `codex-cli` резолвиться,
+  на відміну від незареєстрованого `claude-cli`)
+- `wiki/pipeline/llm-providers.md` — статус Фази 7 + «Що лишається» п.3 позначено виконаним
+- `wiki/now.md` — нова бульєта під гілку `feat/llm-registry-phase-7`
+
+**Перевірка:**
+- Дослідження CLI-флагів/env var через WebSearch/WebFetch офіційної документації OpenAI
+  (learn.chatgpt.com: non-interactive-mode, config-file/environment-variables, auth) +
+  незалежний community-гіст із реальним виводом 81 прапорця `codex exec` — звірено між
+  джерелами, розбіжність (`CODEX_API_KEY` vs `OPENAI_API_KEY`) вирішена додатковим пошуком
+  (`CODEX_API_KEY` підтверджено як призначений саме для одноразового `codex exec`-виклику).
+  **Не верифіковано живим прогоном** — немає бінарника/ключа в сесії, на відміну від Фази 1's
+  NIM dry-run.
+- `npx vitest run` — 940/940 тестів (було 930, +10).
+- `npx tsc --noEmit`, `npx eslint` на змінених файлах — чисто.
+- `npm run build` — успішний, `/admin/providers` у білді.
+- `npm run wiki:check` — чисто (46 сторінок, sync-тести зелені).
+
+**Нотатка:** Codex не вмикається сам по собі — реєстрація в `KNOWN_CLI_PROVIDERS` лише робить
+`codex-cli` резолвним, коли власник (а) поставить бінарник + `CODEX_API_KEY` на runner і (б)
+додасть провайдера через `/admin/providers`. Жоден живий шлях не зачеплений.
+
+## 2026-08-07 — LLM provider registry: PR #192 (Phase 6b) змержено, міграції застосовано до прод-БД
+
+**Джерело:** «продовжити далі план, 192 ПР вмержено» (власник) → «застосувати міграції до
+прод-БД» (власник, вибір із запропонованих варіантів)
+
+**Змінено:**
+- `wiki/now.md` — бульєти «Стан репозиторію» зведені під PR #192 (`290eaf5`, гілка
+  `feat/llm-registry-phase-6b` видалена після мержу); зафіксовано застосування обох реєстрових
+  міграцій до прод-БД і 2 нові WARN з `get_advisors`
+- `wiki/pipeline/llm-providers.md` — «Що лишається» п.2 позначено виконаним з деталями
+  застосування і знахідками advisors; лишились лише п.3 (Фаза 7, опційно) і п.4 (спостереження
+  живого циклу)
+
+**Перевірка:**
+- `git checkout main && git pull --ff-only` — fast-forward `8909f50..290eaf5`; локальну гілку
+  `feat/llm-registry-phase-6b` видалено (`git branch -d`, вже змержена).
+- Supabase MCP `list_migrations` на `mdiqfatpqczwqghwttpm` підтвердив: обидві цільові міграції
+  відсутні в проді → прочитано SQL обох файлів (чисто адитивні, той самий Vault-паттерн, що й
+  `040_social_cms.sql`) → `apply_migration` для `llm_provider_registry`, потім
+  `llm_provider_registry_fixes` — обидва `{"success":true}`.
+- `list_tables` підтвердив: `llm_providers`/`llm_provider_models`/`llm_role_chains` існують,
+  RLS увімкнено, 0 рядків (без зміни поведінки pipeline — `loadProviderRegistry` і далі фолбечить
+  на дефолтний ланцюг).
+- `get_advisors('security')` після застосування: 2 нові WARN (mutable `search_path` на
+  `replace_llm_provider_models`; anon/authenticated технічно можуть викликати
+  `store_/read_/delete_llm_provider_secret` через REST RPC, хоч і безрезультатно — власна
+  `service_role`-перевірка кидає виняток). Не пофіксовано — звіт власнику, рішення чекає.
+
+**Нотатка:** усі фази 0-6b плану `pipeline/llm-providers.md` тепер живі й діють у проді. З плану
+лишається: Фаза 7 (Codex CLI, лише якщо власник хоче) і спостереження живого прод-циклу 6a/6b
+з часом.
+
 ## 2026-08-07 — LLM provider registry Phase 6b: живий auto-publish dry-run
 
 **Джерело:** «безпечно продовжувати» (власник, після паузи через паралельну сесію) → «живий

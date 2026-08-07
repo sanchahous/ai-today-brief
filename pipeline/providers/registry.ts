@@ -24,6 +24,7 @@ import {
   type HttpProviderConfig,
 } from './http-provider';
 import { generateWithCliProvider, type CliProviderConfig } from './cli-provider';
+import { CODEX_CLI_CONFIG } from './cli/codex';
 import { generateWithGemini, type GeminiProviderConfig } from './gemini-provider';
 import { ProviderUnavailableError, type ProviderCallResult } from './types';
 import type { OpenRouterResponseValidator } from '../openrouter-brief-json';
@@ -183,12 +184,18 @@ export function nimProvider(
  * Registered here as new CLI tools get real code (buildArgs/parseEnvelope) --
  * see cli-provider.ts's module doc for why this can't be config-driven. A DB
  * chain entry naming a CLI provider id not registered here is skipped, not
- * silently mis-resolved. Empty today: claude-cli.ts wasn't refactored onto
- * cli-provider.ts's shape in Phase 1 (no second consumer existed yet to
- * justify the risk on weekly's only $0-cost path) -- the first entry here
- * will most likely be added alongside that refactor or Phase 7's Codex CLI.
+ * silently mis-resolved. `claude-cli` is deliberately still absent:
+ * claude-cli.ts wasn't refactored onto cli-provider.ts's shape (no second
+ * consumer existed to justify the risk on weekly's only $0-cost path before
+ * Phase 7 -- and there still isn't one now, Codex is a genuinely separate
+ * tool, not a claude-cli.ts replacement). Adding 'codex-cli' here only makes
+ * it *resolvable* from a DB-saved chain via /admin/providers -- it joins no
+ * role's chain on its own; the owner opts it in explicitly once CODEX_API_KEY
+ * is set on the runner (see wiki/pipeline/llm-providers.md, Phase 7).
  */
-const KNOWN_CLI_PROVIDERS: Record<string, Omit<CliProviderConfig, 'id'>> = {};
+const KNOWN_CLI_PROVIDERS: Record<string, Omit<CliProviderConfig, 'id'>> = {
+  'codex-cli': CODEX_CLI_CONFIG,
+};
 
 function resolveKnownCliProvider(id: string): CliProviderConfig | null {
   const known = KNOWN_CLI_PROVIDERS[id];
