@@ -3,6 +3,7 @@ import 'server-only';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { PipelineDb } from '../../../pipeline/db';
 import { resolveGeminiModelQueue } from '../../../pipeline/gemini-models';
+import { logEvent } from '../../../pipeline/log';
 import type { OpenRouterResponseValidator } from '../../../pipeline/openrouter-brief-json';
 import {
   fetchOpenRouterModels,
@@ -503,8 +504,21 @@ async function generateOpenRouter<T>(
 
   const dbHttp = options.role ? await resolveWeeklyDbHttpProvider(options.role, options.db) : null;
   if (dbHttp) {
-    const result = await generateWithHttpProviderChain(prompt, dbHttp, { validateResponse });
-    return toOpenRouterResult(result, parse(result.text), prompt.length);
+    // An owner-configured provider failing mid-call must not take down the
+    // whole editorial generation -- fall through to the normal value-ranked
+    // OpenRouter ladder below instead of throwing, same as an unconfigured
+    // dbHttp (null) already falls through.
+    try {
+      const result = await generateWithHttpProviderChain(prompt, dbHttp, { validateResponse });
+      return toOpenRouterResult(result, parse(result.text), prompt.length);
+    } catch (error) {
+      logEvent(
+        'warn',
+        'weekly-editorial',
+        'Owner-configured OpenRouter provider failed -- falling back to the default value-ranked OpenRouter path',
+        { role: options.role, provider: dbHttp.id, error: error instanceof Error ? error.message : String(error) },
+      );
+    }
   }
 
   const apiKey = process.env.OPEN_ROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim();

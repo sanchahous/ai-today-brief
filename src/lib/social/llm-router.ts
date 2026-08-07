@@ -3,6 +3,7 @@ import 'server-only';
 import { SchemaType } from '@google/generative-ai';
 import type { PipelineDb } from '../../../pipeline/db';
 import { resolveGeminiModelQueue } from '../../../pipeline/gemini-models';
+import { logEvent } from '../../../pipeline/log';
 import {
   fetchOpenRouterModels,
   isUnstableOpenRouterModelId,
@@ -300,12 +301,25 @@ async function generateOpenRouter<T>(
 
   const dbHttp = await resolveSocialDbHttpProvider(input.role, db);
   if (dbHttp) {
-    const result = await generateWithHttpProviderChain(input.prompt, dbHttp, { validateResponse });
-    return {
-      text: result.text,
-      model: result.model,
-      fallbackUsed: result.model !== dbHttp.modelQueue[0],
-    };
+    // An owner-configured provider failing mid-call must not take down the
+    // whole social generation -- fall through to the normal OpenRouter path
+    // below instead of throwing, same as an unconfigured dbHttp (null)
+    // already falls through.
+    try {
+      const result = await generateWithHttpProviderChain(input.prompt, dbHttp, { validateResponse });
+      return {
+        text: result.text,
+        model: result.model,
+        fallbackUsed: result.model !== dbHttp.modelQueue[0],
+      };
+    } catch (error) {
+      logEvent(
+        'warn',
+        'social-llm',
+        'Owner-configured OpenRouter provider failed -- falling back to the default OpenRouter path',
+        { role: input.role, provider: dbHttp.id, error: error instanceof Error ? error.message : String(error) },
+      );
+    }
   }
 
   const apiKey = openRouterApiKey(input.env);
