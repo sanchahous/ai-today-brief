@@ -11,11 +11,10 @@ Last updated: 2026-08-07
 
 ## Стан репозиторію
 
-- **Нова гілка `feat/llm-provider-registry`** (відгалужена від tip `feat/weekly-editorial-voice`,
-  2026-08-06) — уніфікований реєстр LLM-провайдерів для всього проєкту (daily+weekly+social),
-  план у [pipeline/llm-providers](pipeline/llm-providers.md). Залежить від злиття
-  `feat/weekly-editorial-voice` (торкається тих самих файлів: `editorial-llm.ts`, `llm-router.ts`)
-  — або потребуватиме rebase, якщо merge-порядок зміниться. **Фаза 0 (прибрати Gemini), Фаза 1
+- **Гілка `feat/llm-provider-registry`** (PR [#190](https://github.com/sanchahous/ai-today-brief/pull/190),
+  відгалужена 2026-08-06 від tip `feat/weekly-editorial-voice`) — уніфікований реєстр
+  LLM-провайдерів для всього проєкту (daily+weekly+social), план у
+  [pipeline/llm-providers](pipeline/llm-providers.md). **Фаза 0 (прибрати Gemini), Фаза 1
   (ядро реєстру), Фаза 1b (БД + admin `/admin/providers`), Фаза 2 (card-image.ts), Фаза 3
   (custom-research.ts), Фаза 4 (editorial-llm.ts, частково), Фаза 5 (llm-router.ts, частково) і
   Фаза 6a (verify.ts + summarize.ts, частково) виконані.** Фаза 6a — реальна поведінкова зміна:
@@ -31,17 +30,21 @@ Last updated: 2026-08-07
   успадковував Фазу 1; тут Фаза 6a's власний дефолтний шлях протестовано наживо). 927 тестів,
   `tsc`/`eslint`/build зелені. Власник дав добро йти по всіх фазах послідовно з комітом на
   кожну. **Фаза 6b (auto-publish.ts, найвищі ставки) і Фаза 7 (опційно Codex CLI) — в роботі,
-  наступна: Фаза 6b.**
-- Гілка `feat/weekly-editorial-voice` (з `main`, 2026-08-06), PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189):
-  повний перегляд редакційної якості weekly-дайджесту (власник забракував увесь контент як
-  «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). **Усі 7 запланованих PR
-  закомічені** (voice-модуль, нова анатомія історії + рендер, критик-рубрика + revise-loop,
+  наступна: Фаза 6b.** `feat/weekly-editorial-voice` (PR #189) змержено в `main` 2026-08-07
+  (squash) — PR #190 автоматично перенацілено на `main`; злиття `main` в цю гілку і резолюція
+  конфліктів (card-image.ts, editorial-llm.ts + тести, кілька wiki-сторінок) зроблені в цьому ж
+  коміті.
+- **PR [#189](https://github.com/sanchahous/ai-today-brief/pull/189) змержено в `main` 2026-08-07** (squash-мерж,
+  `e5d8df5`): повний перегляд редакційної якості weekly-дайджесту (власник забракував увесь
+  контент як «машинний» — див. [editorial-voice](pipeline/editorial-voice.md)). **Усі 7
+  запланованих PR** (voice-модуль, нова анатомія історії + рендер, критик-рубрика + revise-loop,
   owner-set angle, репортажні ілюстрації + вибір варіантів, відеосценарій як окремий job +
   manifest v3, соц-голос + self-generated angle + hook picker — деталі в
   [pipeline/weekly-digest § Editorial voice overhaul](pipeline/weekly-digest.md#editorial-voice-overhaul-2026-08-06)).
-  Ще не змержено, ще не запущено shadow-прогін на весь пайплайн.
-- `main` tip (звідки відгалужено PR1): draft-revision constraint + video-guidance routing
-  fixes (#188, включає #186/#187). Гайд редакції — [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
+  Гілка `feat/weekly-editorial-voice` автоматично видалена після мержу. Ще не запущено
+  shadow-прогін на весь пайплайн.
+- `main` tip до PR #189 (звідки відгалужено PR1): draft-revision constraint + video-guidance
+  routing fixes (#188, включає #186/#187). Гайд редакції — [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
   (source: `git log` / live work 2026-08-06)
 
 ## Щойно відвантажено (останні 8 PR)
