@@ -13,7 +13,7 @@ Last updated: 2026-08-07
 
 ## Стан репозиторію
 
-- **`main` тепер включає обидва PR #189 і #190** (Phase 0-6a злито `9d32347`). Senior-рівневе
+- **`main` тепер включає PR #189, #190, #191 і #192** (Phase 0-6a злито `9d32347`). Senior-рівневе
   технічне ревʼю обох PR постфактум (гілка `claude/tech-review-pr-189-190-859ena`) знайшло і
   виправило три поведінкові баги в `pipeline/providers/registry.ts` (порожній DB-чейн затіняв
   робочий дефолт; збій каталогу OpenRouter валив побудову всього реєстру; DB-override провайдер у
@@ -23,9 +23,11 @@ Last updated: 2026-08-07
   [pipeline/llm-providers § Пост-мерж ревʼю](pipeline/llm-providers.md#статус). Нова міграція
   `20260807120000_llm_provider_registry_fixes.sql` (author-only, не застосована до прод-БД).
   927/927 тестів, `tsc`/`eslint`/`wiki:check`/build зелені.
-- **Гілка `feat/llm-registry-phase-6b`** (відгалужена 2026-08-07 від `main` після мержу
-  #190/#191) — **Фаза 6b виконана: daily `auto-publish.ts` (суддя) мігровано на реєстр, daily-смуга
-  закрита повністю.** Judge-виклик іде роллю `daily.auto_publish_judge` з `db`; `pipeline/llm-json.ts`
+- **PR [#192](https://github.com/sanchahous/ai-today-brief/pull/192) змержено в `main` 2026-08-07**
+  (`290eaf5`; гілка `feat/llm-registry-phase-6b`, автоматично видалена після мержу) —
+  **Фаза 6b виконана: daily `auto-publish.ts` (суддя) мігровано на реєстр, daily-смуга
+  закрита повністю. Реєстровою є вся LLM-маршрутизація проєкту (daily+weekly+social), Фази 0-6b
+  готові.** Judge-виклик іде роллю `daily.auto_publish_judge` з `db`; `pipeline/llm-json.ts`
   став registry-only (мертву `primaryProvider`-гілку видалено, сигнатуру перероблено на об'єкт
   опцій, `verify.ts`/`run-daily.ts` спрощено відповідно). Новий `createRegistryLoader` резолвить
   реєстр один раз на весь 7-денний sweep (без нього кожна чернетка окремо била живий каталог
@@ -38,7 +40,26 @@ Last updated: 2026-08-07
   `--window-days 90` підняв їх у вікно й отримав 3 реальні успішні виклики через
   `daily.auto_publish_judge` → реєстр → OpenRouter (`deepseek/deepseek-v4-pro`), БД без змін.
   Деталі й що лишається — [pipeline/llm-providers](pipeline/llm-providers.md#що-лишається).
-  **Наступна — Фаза 7 (опційно Codex CLI).**
+  **Обидві реєстрові міграції застосовано до прод-БД 2026-08-07** (Supabase MCP, проєкт
+  `mdiqfatpqczwqghwttpm`) — `llm_providers`/`llm_provider_models`/`llm_role_chains` тепер існують
+  у проді (порожні, RLS увімкнено), `/admin/providers` реально впливає на реєстр. `get_advisors`
+  знайшов 2 дрібні WARN на нових функціях (mutable `search_path` на
+  `replace_llm_provider_models`; `store_/read_/delete_llm_provider_secret` технічно
+  RPC-викличні для anon/authenticated, функціонально безпечно через внутрішню
+  `service_role`-перевірку) — не пофіксено, деталі й обґрунтування у
+  [pipeline/llm-providers § Що лишається](pipeline/llm-providers.md#що-лишається).
+- **Гілка `feat/llm-registry-phase-7`** (відгалужена 2026-08-07 від `main`) — **Фаза 7 (Codex
+  CLI) виконана.** Новий `pipeline/providers/cli/codex.ts` — перший реальний другий споживач
+  `cli-provider.ts`'s Фаза-1-скелету (доти — нуль споживачів). Автентифікація `CODEX_API_KEY`,
+  `codex exec --json --skip-git-repo-check --sandbox read-only`, NDJSON-парсер бере `text` з
+  останньої `agent_message`-події. Зареєстровано в `registry.ts`'s `KNOWN_CLI_PROVIDERS['codex-cli']`
+  — робить DB-ланцюжок з `codex-cli` резолвним через `/admin/providers`, **нічого не вмикає за
+  замовчуванням** (не входить у жоден `defaultChain`). ⚠️ **Не верифіковано живим прогоном** —
+  немає `CODEX_API_KEY`/бінарника в сесії; флаги й env var узяті з офіційної документації
+  OpenAI (звірено між кількома сторінками), не з реального запуску. 940/940 тестів (+10),
+  `tsc`/`eslint`/`npm run build` чисті. Деталі —
+  [pipeline/llm-providers § Фаза 7](pipeline/llm-providers.md#статус). **З плану лишається:**
+  тільки спостереження живого прод-циклу 6a/6b (не dry-run) з часом — усе інше зроблено.
 - **Гілка `feat/llm-provider-registry`** (PR [#190](https://github.com/sanchahous/ai-today-brief/pull/190),
   **змержено в `main` 2026-08-07**, `9d32347`; відгалужена 2026-08-06 від tip
   `feat/weekly-editorial-voice`) — уніфікований реєстр

@@ -292,6 +292,23 @@ describe('loadProviderRegistry with a db (Phase 1b)', () => {
     expect(registry.chainForRole('weekly.master_writer')).toEqual([]);
   });
 
+  it('resolves a CLI entry in a saved chain when the provider id IS registered (codex-cli, Phase 7)', async () => {
+    const db = fakeDb({
+      llm_role_chains: [{ role: 'weekly.master_writer', chain: [{ kind: 'cli', id: 'codex-cli' }] }],
+      llm_providers: [
+        { id: 'codex-cli', kind: 'cli', enabled: true, base_url: null, extra_headers: {}, reports_cost: false },
+      ],
+      llm_provider_models: [],
+    });
+
+    const registry = await loadProviderRegistry({}, {}, db);
+    const chain = registry.chainForRole('weekly.master_writer');
+    expect(chain).toHaveLength(1);
+    expect(chain[0]?.entry).toEqual({ kind: 'cli', id: 'codex-cli' });
+    expect(chain[0]?.cli?.binary).toBe('codex');
+    expect(chain[0]?.cli?.authEnvVar).toBe('CODEX_API_KEY');
+  });
+
   it('falls back to the env-only default chain for a role with no saved DB row', async () => {
     vi.mocked(resolveOpenRouterModelQueue).mockResolvedValue(['vendor/model']);
     const db = fakeDb({ llm_role_chains: [], llm_providers: [], llm_provider_models: [] });

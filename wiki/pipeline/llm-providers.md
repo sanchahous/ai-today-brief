@@ -409,7 +409,46 @@ tested-by-use в інших файлах), раніше — 0.
   так виходить лише коли `windowDrafts.length > 0`), лише на видимість у логах/меті
   `logPipelineRun`. Існував і до цієї міграції — pre-existing, не фіксився в межах 6b.
 
-**Фаза 7 (опційно Codex CLI) — не почато.**
+**Фаза 7 (Codex CLI) — виконано (2026-08-07), суто опційна інфраструктура, нічого не ввімкнено
+за замовчуванням.**
+
+- Новий `pipeline/providers/cli/codex.ts` — перший реальний другий споживач
+  `cli-provider.ts`'s генеричного скелету з Фази 1 (до цього — нуль споживачів, скелет лишався
+  недоведеним на практиці). Codex-специфічний код — рівно те, що й обіцяв план: `buildArgs`
+  (`codex exec --json --skip-git-repo-check --sandbox read-only <prompt>`, плюс
+  `--output-schema <tmp-файл>`, коли передано `jsonSchema`) і `parseCodexExecEnvelope`
+  (NDJSON-парсер: бере `text` з останньої `item.completed`-події, де `item.type ===
+  'agent_message'`).
+- **Автентифікація:** `CODEX_API_KEY` — офіційно задокументована саме для одноразового
+  неінтерактивного `codex exec`-виклику (окремо від персистентного `codex login`, який пише
+  `~/.codex/auth.json`). ⚠️ **Не верифіковано живим прогоном** (на відміну від Фази 1's NIM
+  dry-run) — у власника зараз немає ні встановленого `codex`-бінарника, ні `CODEX_API_KEY`.
+  Флаги/env var взято з офіційної документації (learn.chatgpt.com — environment-variables,
+  non-interactive-mode, auth — звірено між кількома сторінками й незалежним джерелом
+  (community-гіст із реальним виводом 81 прапорця)), не з живого запуску. Перший реальний виклик
+  власника і буде живою верифікацією.
+- **Codex не звітує, яка саме модель відповіла** (на відміну від Claude CLI's `modelUsage`) —
+  `model` у результаті завжди фіксований рядок `'codex-cli'`, не живе значення. `costUsd` завжди
+  `0` — NDJSON несе лише токен-каунти (`turn.completed`'s `usage.input_tokens`/`output_tokens`),
+  жодного $-числа per call, а `ProviderCallResult` для CLI-провайдерів (`cli-provider.ts`) і так
+  ігнорує токен-каунти, лише `costUsd`/`costSource:'subscription'` фіксовані на рівні скелету.
+- **Зареєстровано в `registry.ts`'s `KNOWN_CLI_PROVIDERS['codex-cli']`** — це єдина дія, що
+  робить DB-збережений ланцюжок з `{kind:'cli', id:'codex-cli'}` реально резолвним замість
+  пропуску з `logEvent('warn', ...)` (той самий шлях, яким `claude-cli` і далі свідомо
+  ігнорується — воно НЕ зареєстроване, `claude-cli.ts` лишається окремим файлом, не
+  рефакторений на `cli-provider.ts`'s форму, той самий аргумент, що й у Фазі 1/4/5: нема другого
+  споживача, що виправдав би ризик на єдиному $0-шляху weekly-майстра).
+- **Нічого не увімкнено за замовчуванням.** Реєстрація в `KNOWN_CLI_PROVIDERS` лише робить
+  Codex *резолвним* — він не входить у жоден `defaultChain` і не зачіпає жодного живого шляху.
+  Щоб реально ввімкнути: (1) встановити `codex`-бінарник і виставити `CODEX_API_KEY` на
+  GitHub Actions runner'і (Vercel serverless його не бачитиме, той самий контракт, що й
+  Claude CLI); (2) додати рядок через `/admin/providers` (`id: codex-cli`, `kind: cli`,
+  `binary_name: codex`, `auth_env_var: CODEX_API_KEY`); (3) дописати `cli:codex-cli` у
+  чейн потрібної ролі (напр. `weekly.master_writer`).
+- Тести: 10 нових (`codex.test.ts` — 6 на `parseCodexExecEnvelope`, 3 на `CODEX_CLI_CONFIG`;
+  `registry.test.ts` — 1 новий, доводить DB-ланцюжок з `codex-cli` резолвиться, на відміну від
+  сусіднього наявного тесту з незареєстрованим `claude-cli`, який і далі скіпається). 940/940
+  тестів, `tsc`/`eslint`/`npm run build` чисті (`/admin/providers` і далі в білді).
 (source: `pipeline/providers/*.ts`, `pipeline/llm-json.ts`, `pipeline/verify.ts`,
 `pipeline/auto-publish.ts`,
 `pipeline/summarize.ts`, `pipeline/run-daily.ts`, `pipeline/custom-news.ts`,
@@ -459,14 +498,31 @@ tested-by-use в інших файлах), раніше — 0.
 ## Що лишається
 
 1. ~~Живий `auto-publish --dry-run`~~ — **виконано 2026-08-07**, деталі в статусі Фази 6b вище.
-2. Застосувати міграції реєстру (`20260806160000_llm_provider_registry.sql`,
-   `20260807120000_llm_provider_registry_fixes.sql`) до прод-БД — доти БД-ланцюжки з
-   `/admin/providers` фізично не діють у жодній фазі.
-3. Фаза 7 (Codex CLI) — лише якщо власник справді хоче його в ротації.
+2. ~~Застосувати міграції реєстру до прод-БД~~ — **виконано 2026-08-07** (Supabase MCP
+   `apply_migration`, проєкт `mdiqfatpqczwqghwttpm`): `llm_provider_registry` і
+   `llm_provider_registry_fixes` обидві застосовані успішно. `llm_providers`/`llm_provider_models`/
+   `llm_role_chains` тепер існують у проді, порожні (RLS увімкнено, `select` для admin,
+   `all` для AAL2-admin — той самий патерн, що `040_social_cms.sql`), тож поведінка pipeline і далі
+   не змінилась — `loadProviderRegistry` фолбечить на дефолтний ланцюг, доки власник щось не додасть
+   через `/admin/providers`. `get_advisors('security')` після застосування знайшов два дрібні пункти
+   на нових функціях (не блокери, не фіксилось — звіт власнику, чекає рішення):
+   - `replace_llm_provider_models` — mutable `search_path` (WARN); сусідні
+     `store_/read_/delete_llm_provider_secret` мають `set search_path = public, vault`, ця — ні.
+   - `store_/read_/delete_llm_provider_secret` — технічно викликні через `/rest/v1/rpc/...` роллю
+     `anon`/`authenticated` (WARN), бо `revoke all … from public` не прибирає прямі
+     default-privilege-гранти Supabase на ці ролі. Функціонально безпечно — кожна сама перевіряє
+     `auth.jwt() ->> 'role' = 'service_role'` і кидає виняток інакше; той самий патерн, що
+     `store_social_oauth_secret` в `040_social_cms.sql` (там advisor цього не показав — варто
+     звірити, чи це вже пофіксено там, а не просто не проскановано заново).
+3. ~~Фаза 7 (Codex CLI)~~ — **код виконано 2026-08-07**, деталі в статусі Фази 7 вище. Лишається
+   не-код: власник ставить `codex`-бінарник + `CODEX_API_KEY` на runner і опційно додає
+   `codex-cli` через `/admin/providers`, якщо реально хоче його в ротації. **Не верифіковано
+   живим прогоном** — немає CODEX_API_KEY у власника зараз.
 4. **Спостерегти реальний прод-цикл 6a/6b** (не dry-run) — умову плану «6b лише після ≥1 доби
    стабільної 6a» досі не витримано, лише формально обійдено ручною live-перевіркою вище.
 
-(source: план `06-08-2026-12-32-…md` §«Порядок впровадження», статус фаз вище)
+(source: план `06-08-2026-12-32-…md` §«Порядок впровадження», статус фаз вище, `get_advisors`
+live check 2026-08-07)
 
 ## Related pages
 
