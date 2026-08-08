@@ -4,7 +4,7 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-07
+Last updated: 2026-08-08
 
 **Формат запису:**
 
@@ -18,6 +18,53 @@ Last updated: 2026-08-07
 ```
 
 ---
+
+## 2026-08-08 — Admin mobile responsive fix
+
+**Джерело:** запит власника — скріншот адмінки на телефоні, контент горизонтально
+обрізається без можливості побачити решту
+
+**Змінено:**
+- `src/components/admin/admin-nav.tsx` — мобільний нижній нав мав `grid-cols-7` на 8
+  пунктів (`LINKS`); «Settings» сиротою переносився на непорахований другий рядок. Фікс:
+  `grid-cols-4` — два рівні рядки по 4
+- `src/app/admin/(cms)/layout.tsx` — `pb-20` (розрахований на 1 рядок нава) замінено на
+  `pb-[calc(7rem+env(safe-area-inset-bottom))]` під новий 2-рядковий нав
+- `src/components/admin/weekly-workspace.tsx` (`PreflightBlockerList`) — блокери
+  рендерять сирі story-UUID усередині вкладених `grid`-контейнерів без `min-w-0`; додано
+  `min-w-0` на grid-обгортки й `break-words` на текст блокера (той самий патерн, що вже
+  був на `artifact.provider_id` у цьому ж файлі)
+- `src/components/admin/scroll-fade.tsx` — новий `'use client'`-компонент: м'яке
+  затемнення на краю горизонтально прогортаного ряду, коли є ще вміст поза екраном
+- `src/app/admin/(cms)/weekly/[id]/page.tsx` — таб-бар секцій workspace обгорнуто в
+  `ScrollFade`
+- `src/app/admin/(cms)/weekly/page.tsx` — `min-w-60` на картці видання знято з мобільного
+  брейкпоінту (`md:min-w-60`), щоб не форсувати ширину там, де макет одноколонковий
+- `wiki/pipeline/weekly-digest.md`, `wiki/ops/weekly-admin-runbook.md`,
+  `wiki/pipeline/weekly-editorial-selection.md`, `wiki/now.md` — синхронізовано під
+  wiki-sync gate (watcher `weekly-digest` зачепив шляхи з `weekly/`)
+
+**Перевірка:**
+- Ізольований прод-білд (`npm run build && npm run start`) + Playwright (Chromium з
+  `/opt/pw-browsers`) на вʼюпорті 375px: до фіксу — `grid-cols-7` дає 2 нерівні рядки
+  (7+1 сирота), після — 2 рівні рядки по 4 (скріншот + `offsetTop`-вимірювання рядків)
+- `ScrollFade`: підтверджено через прод-білд (dev-mode тут ламав гідратацію — HMR
+  WebSocket не піднімається в цьому сендбоксі) — `opacity-0 → opacity-100` на потрібному
+  краю коректно і на mount, і після програмного скролу
+- `PreflightBlockerList`: конкретний UUID із реального скріншота в Chromium сам не
+  «вибивав» ширину (браузер розбиває на дефісах), але той самий клас бага (`grid`-item
+  без `min-w-0` + жорстка `min-w-max`-дитина) емпірично відтворено в тому ж тестовому
+  дереві іншим вмістом — `min-w-0` на grid-item це виправляє; `break-words`/`min-w-0`
+  лишені як захист для інших рушіїв (Safari/WebKit не тестувався — недоступний у
+  сендбоксі) і довших id
+- `npm run pr:check` — 941/941 тестів, `tsc`/`eslint` чисті (8 попередніх warning не по
+  цих файлах), `build` зелений
+
+**Нотатка:** справжній `/admin/weekly/[id]` із реальними даними перевірити не вдалось —
+немає живих Supabase-креденшлів у цій сесії, `requireSocialAdmin()` редіректить на
+login. Верифікація йшла через ізольований debug-роут з реальним компонентним деревом і
+mock-даними (видалений перед комітом). Власнику варто самому глянути на реальному
+телефоні після мержу.
 
 ## 2026-08-07 — Weekly 08.08 readiness check: PDF page-cap fix + 2 missing migrations applied
 

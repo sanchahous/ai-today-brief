@@ -6,8 +6,8 @@ Sources: `git log` / `gh pr list` (live check 2026-08-04), Supabase preflight li
 `wiki/ops/owner-checklist.md`, `wiki/audits/2026-07-01-seo-organic.md`, `.env.example`,
 owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry), post-merge tech
 review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish --dry-run` check
-2026-08-07
-Last updated: 2026-08-07
+2026-08-07, owner session 2026-08-08 (admin mobile-responsive fix, screenshot report)
+Last updated: 2026-08-08
 
 ---
 
@@ -150,6 +150,15 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
    дашборд самому.
    (source: `.env.example`)
 4. **Опційно:** окремий `pdfkit` 0.19 після `npm run weekly:pdf:sample` / PDF smoke.
+5. **Мобільна адаптивність `/admin` — гілка `claude/admin-mobile-responsive-pfb65o`
+   (2026-08-08), PR не змержено.** Власник надіслав скріншот: контент в адмінці на
+   телефоні горизонтально обрізається. Знайдено й виправлено: `AdminNav` мав
+   `grid-cols-7` на 8 пунктів (Settings-сирота на непорахованому другому рядку);
+   `PreflightBlockerList` рендерив сирі UUID у вкладених `grid` без `min-w-0` —
+   потенційний grid-blowout, невидимий через `overflow-x:clip` на `html`/`body`;
+   таб-бар секцій workspace отримав `ScrollFade`-підказку скролу. Перевірено
+   ізольовано (прод-білд + Playwright, 375px) — деталі й що НЕ вдалось перевірити
+   (реальний Supabase-логін, Safari/WebKit) — [log](log.md#2026-08-08--admin-mobile-responsive-fix).
 
 ## Чекає на власника (не код)
 

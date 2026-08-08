@@ -6,8 +6,9 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 `claim_weekly_digest_generation_jobs` (editorial_master gate), live fail
 `ai-weekly-2026-07-27` 2026-08-04, [weekly-digest](../pipeline/weekly-digest.md),
 [editorial-voice](../pipeline/editorial-voice.md), `src/lib/weekly-digest/pdf.ts`
-(PDF page-cap fix, 2026-08-07)
-Last updated: 2026-08-07
+(PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
+`claude/admin-mobile-responsive-pfb65o`, 2026-08-08)
+Last updated: 2026-08-08
 
 ---
 
@@ -80,6 +81,15 @@ Release preflight на Overview / Release покаже, що ще червоне
 - Не Approve **Master quality** при `passed: false` — master у ревізію не записався.
 - Не спамити Start/retry без Approve packs — master все одно не стартує.
 - Не правити Article body вручну, щоб «обійти» failed master — правильний шлях retry / research.
+
+## Мобільна версія (2026-08-08)
+
+`/admin` тепер зручний з телефону. Нижня навігація (Today…Settings) — два рівні рядки
+замість поламаного 7-колонкового grid. Таб-бар секцій (Overview…Release) на
+`/admin/weekly/[id]` прогортається пальцем — на краю з'являється м'яке затемнення, якщо
+праворуч/ліворуч є ще вкладки поза екраном. Довгі story-ідентифікатори у preflight
+blockers тепер переносяться, а не обрізаються за межу екрана.
+(source: гілка `claude/admin-mobile-responsive-pfb65o`)
 
 ## Related pages
 
