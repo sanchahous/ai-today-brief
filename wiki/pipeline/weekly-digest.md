@@ -2,11 +2,13 @@
 
 Summary: як працює weekly-дайджест у проді: оркестрація, ревізії, артефакти, вартісні
 гейтами, admin UX і поточний статус розкатки.
-Sources: `.env.example`, PR #160–#163, #167–#175, #177, `src/lib/weekly-digest/**`,
+Sources: `.env.example`, PR #160–#163, #167–#175, #177, #189, `src/lib/weekly-digest/**`,
 `supabase/migrations/20260804090000_weekly_digest_revision_stability.sql`,
 `supabase/migrations/20260806150000_weekly_video_script_job.sql`,
-live check Supabase 2026-08-04, editorial-voice overhaul (гілка `feat/weekly-editorial-voice`, 2026-08-06)
-Last updated: 2026-08-06
+`supabase/migrations/20260806140000_weekly_digest_story_directions.sql`,
+live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189, змержено
+2026-08-07), PDF page-cap fix (гілка `fix/weekly-pdf-page-cap`, 2026-08-07)
+Last updated: 2026-08-07
 
 ---
 
@@ -378,8 +380,31 @@ live check 2026-08-04)
 pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інвентаризації) виявився вже
 полагодженим PR #152 (коміт `4710bb1`, 24.07: `font: INTER_FONT` у конструкторі
 `PDFDocument`) — дій не потрібно. Content-hash caching для retry image/pdf-джобів
-розглянуто й відхилено: живого бага немає, `retryableGenerationFailure` вже коректно не
-ретраїть детерміновані помилки (наприклад, page-count contract violation у `generatePdf`).
+розглянуто й відхилено: `retryableGenerationFailure` вже коректно не ретраїть детерміновані
+помилки (наприклад, page-count contract violation у `generatePdf`).
+
+## PDF page-count contract violation — фікс (2026-08-07)
+
+⚠️ Виправлення попереднього запису вище: page-count contract violation **не** був гіпотетичним
+прикладом коректної retry-поведінки — це був **живий, невиправлений баг**. Останні 2 реальні PDF
+(`ai-weekly-2026-07-26`, `ai-weekly-2026-07-27`, 03–05.08) впали **5/5 спроб** з
+`Content Studio PDF is 20-21 pages; the approved A4 contract is 10–16 pages` — знайдено при
+підготовці до weekly-випуску 08.08.
+
+**Причина:** `buildStory()` (`pdf.ts`) рендерив повний ілюстрований розворот (зображення + body +
+4 info-панелі) для **кожної** історії в дайджесті, незалежно від рангу — 700-слівна feature-стаття
+й 140-слівний radar-айтем отримували однаковий обсяг. Виміряно на реальному випуску: rank 1-3
+(features) — body ~4100-4240 симв., rank 4-7 (radar) — ~790-900 симв., усі з тим самим
+зображенням+4 панелями.
+
+**Фікс:** новий `buildRadarSection()` — повний розворот лишається лише для `rank <= 3` (той самий
+кордон feature/radar, що вже використовує `claim_weekly_digest_generation_jobs`'s гейти для
+`editorial_master`/`video_manifest`); решта рендериться компактним блоком title+summary+source без
+зображення й панелей. Реалістична 7-історійна фікстура (3× ~4200 симв. body, 4× ~850, ті самі
+довжини, що й у прод-випуску) тепер дає **13 сторінок** — комфортно в межах 10–16.
+(source: `src/lib/weekly-digest/pdf.ts`, `src/lib/weekly-digest/pdf.test.ts`, live DB read
+`weekly_digest_generation_jobs`/`weekly_digest_revision_items` 2026-08-07, гілка
+`fix/weekly-pdf-page-cap`)
 
 ## Related pages
 
