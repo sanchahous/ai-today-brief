@@ -7,8 +7,9 @@ Sources: `.env.example`, PR #160–#163, #167–#175, #177, #189, `src/lib/weekl
 `supabase/migrations/20260806150000_weekly_video_script_job.sql`,
 `supabase/migrations/20260806140000_weekly_digest_story_directions.sql`,
 live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189, змержено
-2026-08-07), PDF page-cap fix (гілка `fix/weekly-pdf-page-cap`, 2026-08-07)
-Last updated: 2026-08-07
+2026-08-07), PDF page-cap fix (гілка `fix/weekly-pdf-page-cap`, 2026-08-07), admin
+mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08)
+Last updated: 2026-08-08
 
 ---
 
@@ -356,6 +357,19 @@ live check 2026-08-04)
   час); помилки Save йдуть у `?tab=social&save_error=…` замість opaque server error;
   Save більше не стирає writer / hook / platformFit у `quality_report`.
   (source: `weekly-workspace.tsx`, `saveWeeklySocialAction`, `updateVariantAction`)
+- **Мобільна адаптивність `/admin`** (2026-08-08): нижня навігація (`AdminNav`) мала
+  `grid-cols-7` на 8 пунктів — «Settings» сиротою переносився на непорахований другий
+  рядок, що перекривав контент сторінки знизу; фікс — `grid-cols-4` (два рівні рядки) +
+  узгоджений `padding-bottom` у `CmsLayout`. `PreflightBlockerList` рендерить сирі
+  story-UUID усередині вкладених `grid`-контейнерів без `min-w-0`/`break-words` — на
+  вузькому вʼюпорті довгий непереносний токен міг «вибити» спільний grid-трек ширше за
+  екран; `overflow-x:clip` на `html`/`body` (глобальний захист від horizontal scroll,
+  `globals.css`) робить такий overflow невидимим і непрокручуваним, а не просто
+  обрізаним зі скролом. Таб-бар секцій workspace (`overflow-x-auto`) отримав новий
+  `ScrollFade` (`src/components/admin/scroll-fade.tsx`) — м'яке затемнення на краю, коли
+  є ще вкладки для свайпу (мобільні браузери ховають скролбар).
+  (source: гілка `claude/admin-mobile-responsive-pfb65o`, `admin-nav.tsx`,
+  `weekly-workspace.tsx`, `scroll-fade.tsx`)
 
 ## Fluid CPU / вартість (2026-08-04)
 
