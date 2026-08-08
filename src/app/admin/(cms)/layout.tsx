@@ -9,7 +9,7 @@ export default async function CmsLayout({ children }: { children: React.ReactNod
   return (
     <div className="mx-auto flex min-h-dvh max-w-[1600px]">
       <AdminNav />
-      <div className="min-w-0 flex-1 pb-20 lg:pb-0">
+      <div className="min-w-0 flex-1 pb-[calc(7rem+env(safe-area-inset-bottom))] lg:pb-0">
         <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-white/10 bg-[#0c1014]/90 px-4 backdrop-blur sm:px-6 lg:px-8">
           <div>
             <p className="text-xs font-bold tracking-[.16em] text-[#47e4d3] uppercase">

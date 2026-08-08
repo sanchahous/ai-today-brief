@@ -154,7 +154,7 @@ export default async function WeeklyDigestListPage({
                     {digest.active_revision_id ? 'available' : 'not created'}
                   </p>
                 </div>
-                <dl className="grid min-w-60 grid-cols-2 gap-3 text-xs md:text-right">
+                <dl className="grid grid-cols-2 gap-3 text-xs md:min-w-60 md:text-right">
                   <div>
                     <dt className="font-bold tracking-wide text-slate-500 uppercase">Preflight</dt>
                     <dd className="mt-1 text-slate-300">{dateTimeLabel(digest.preflight_at)}</dd>

@@ -32,7 +32,11 @@ export function AdminNav() {
       </aside>
       <nav
         aria-label="Admin navigation"
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-7 border-t border-white/10 bg-[#101418]/95 px-0.5 pt-1 pb-[max(.35rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
+        // grid-cols-4 (not -7): LINKS has 8 entries, so a 7-column grid
+        // orphans the 8th item onto an unaccounted-for second row that
+        // overlaps page content (see CmsLayout's matching bottom padding).
+        // 4 columns gives two clean, evenly-spaced rows of four.
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t border-white/10 bg-[#101418]/95 px-0.5 pt-1 pb-[max(.35rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
       >
         {LINKS.map((link) => (
           <Link
