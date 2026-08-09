@@ -17,16 +17,13 @@ import type { WeeklyResearchPack, WeeklyMasterBundle } from './content-studio';
 import type { WeeklyMasterRetryGuidance } from './editorial-llm';
 import type { SocialChannel, SocialLocale } from '@/lib/social/types';
 
-const ALL_JOB_TYPES = [
+const SHORT_JOB_TYPES = [
   'research_pack',
-  'editorial_master',
   'story_image',
   'cover',
-  'social_copy',
-  'video_script',
-  'video_manifest',
   'pdf',
   'social_asset',
+  'video_manifest',
 ];
 
 function pack(overrides: Partial<WeeklyResearchPack> = {}): WeeklyResearchPack {
@@ -65,9 +62,16 @@ describe('computeEnglishCheckpointHash', () => {
 
   it('changes once English-tagged retry guidance from a saved critic verdict is present', () => {
     const before = computeEnglishCheckpointHash([pack()], []);
-    const after = computeEnglishCheckpointHash([pack()], [
-      { code: 'FACT-001', message: 'Unsupported claim', blocker: true } as unknown as WeeklyMasterRetryGuidance,
-    ]);
+    const after = computeEnglishCheckpointHash(
+      [pack()],
+      [
+        {
+          code: 'FACT-001',
+          message: 'Unsupported claim',
+          blocker: true,
+        } as unknown as WeeklyMasterRetryGuidance,
+      ],
+    );
     expect(before).not.toBe(after);
   });
 
@@ -182,19 +186,31 @@ describe('runWeeklyDigestGenerationJobs job type filter', () => {
     rpc.mockClear();
   });
 
-  it('claims the full job type list when none is given, unchanged from before', async () => {
+  it('claims only short jobs on the Vercel worker by default', async () => {
     await runWeeklyDigestGenerationJobs(5);
-    expect(rpc).toHaveBeenCalledWith('claim_weekly_digest_generation_jobs', {
-      p_job_types: ALL_JOB_TYPES,
+    expect(rpc).toHaveBeenCalledWith('claim_weekly_digest_generation_jobs_v2', {
+      p_backend: 'vercel',
+      p_job_types: SHORT_JOB_TYPES,
       p_limit: 5,
     });
   });
 
-  it('narrows the claim to the given job types', async () => {
-    await runWeeklyDigestGenerationJobs(2, ['editorial_master']);
-    expect(rpc).toHaveBeenCalledWith('claim_weekly_digest_generation_jobs', {
+  it('passes the fenced GitHub job and dispatch token to the claim RPC', async () => {
+    await runWeeklyDigestGenerationJobs(1, ['editorial_master'], {
+      backend: 'github_actions',
+      jobId: 'job-1',
+      dispatchToken: 'token-1',
+      externalRunId: '123',
+      externalRunUrl: 'https://github.example/run/123',
+    });
+    expect(rpc).toHaveBeenCalledWith('claim_weekly_digest_generation_jobs_v2', {
+      p_backend: 'github_actions',
       p_job_types: ['editorial_master'],
-      p_limit: 2,
+      p_limit: 1,
+      p_job_id: 'job-1',
+      p_dispatch_token: 'token-1',
+      p_external_run_id: '123',
+      p_external_run_url: 'https://github.example/run/123',
     });
   });
 });
@@ -217,21 +233,27 @@ function revisionItem(overrides: Record<string, unknown> = {}) {
 }
 
 describe('masterInputStories (PR4 -- story angle join)', () => {
-  it('attaches the angle when a direction exists for the story\'s brief_item_id', () => {
-    const context = { items: [revisionItem()] } as unknown as Parameters<typeof masterInputStories>[0];
+  it("attaches the angle when a direction exists for the story's brief_item_id", () => {
+    const context = { items: [revisionItem()] } as unknown as Parameters<
+      typeof masterInputStories
+    >[0];
     const directions = new Map([['brief-1', 'Frame this as a cautionary infra-trust story.']]);
     const [story] = masterInputStories(context, [], directions);
     expect(story!.angle).toBe('Frame this as a cautionary infra-trust story.');
   });
 
   it('omits angle entirely (not an empty string) when no direction is set for this brief_item_id', () => {
-    const context = { items: [revisionItem()] } as unknown as Parameters<typeof masterInputStories>[0];
+    const context = { items: [revisionItem()] } as unknown as Parameters<
+      typeof masterInputStories
+    >[0];
     const [story] = masterInputStories(context, [], new Map([['brief-999', 'unrelated story']]));
     expect(story).not.toHaveProperty('angle');
   });
 
   it('defaults to no directions map at all without throwing', () => {
-    const context = { items: [revisionItem()] } as unknown as Parameters<typeof masterInputStories>[0];
+    const context = { items: [revisionItem()] } as unknown as Parameters<
+      typeof masterInputStories
+    >[0];
     expect(() => masterInputStories(context, [])).not.toThrow();
     expect(masterInputStories(context, [])[0]).not.toHaveProperty('angle');
   });

@@ -286,21 +286,13 @@ describe('criticPrompt', () => {
 describe('premiumGeminiEditorialModels', () => {
   it('finds Pro after faster models in the live-ranked queue', () => {
     expect(
-      premiumGeminiEditorialModels([
-        'gemini-3.6-flash',
-        'gemini-3.5-flash-lite',
-        'gemini-3.5-pro',
-      ]),
+      premiumGeminiEditorialModels(['gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.5-pro']),
     ).toEqual(['gemini-3.5-pro']);
   });
 
   it('rejects non-premium model families', () => {
     expect(
-      premiumGeminiEditorialModels([
-        'gemini-3.6-flash',
-        'gemini-3-mini',
-        'gemini-3-nano',
-      ]),
+      premiumGeminiEditorialModels(['gemini-3.6-flash', 'gemini-3-mini', 'gemini-3-nano']),
     ).toEqual([]);
   });
 });
@@ -403,9 +395,15 @@ function ukrainianResult(): WeeklyMasterUkrainianResult {
 
 const CRITIC_JSON = JSON.stringify({
   score: 90,
-  dimensions: ['engagement', 'voice', 'clarity', 'trust', 'usefulness', 'naturalness', 'parity'].map(
-    (name) => ({ name, score: 90, note: 'ok' }),
-  ),
+  dimensions: [
+    'engagement',
+    'voice',
+    'clarity',
+    'trust',
+    'usefulness',
+    'naturalness',
+    'parity',
+  ].map((name) => ({ name, score: 90, note: 'ok' })),
   factualFlags: [],
   issues: [],
 });
@@ -443,7 +441,12 @@ describe('generateWeeklyMaster checkpoint reuse', () => {
     vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
     vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => {
       if (prompt.includes('independent factual and editorial critic')) {
-        return { text: CRITIC_JSON, provider: 'openrouter', model: 'vendor/critic-model', usage: null };
+        return {
+          text: CRITIC_JSON,
+          provider: 'openrouter',
+          model: 'vendor/critic-model',
+          usage: null,
+        };
       }
       if (prompt.includes('Ukrainian senior news editor')) {
         return {
@@ -463,11 +466,27 @@ describe('generateWeeklyMaster checkpoint reuse', () => {
       };
     });
     const onStepComplete = vi.fn();
+    const onProviderCallStarted = vi.fn();
+    const onProviderCallCompleted = vi.fn();
 
-    await generateWeeklyMaster([story('item-1', 'feature')], [], [], { onStepComplete });
+    await generateWeeklyMaster([story('item-1', 'feature')], [], [], {
+      onStepComplete,
+      onProviderCallStarted,
+      onProviderCallCompleted,
+    });
 
     expect(onStepComplete).toHaveBeenCalledWith('english', expect.anything());
     expect(onStepComplete).toHaveBeenCalledWith('ukrainian', expect.anything());
+    expect(onProviderCallStarted.mock.calls.map(([step]) => step)).toEqual([
+      'english',
+      'ukrainian',
+      'critic',
+    ]);
+    expect(onProviderCallCompleted.mock.calls.map(([step]) => step)).toEqual([
+      'english',
+      'ukrainian',
+      'critic',
+    ]);
     expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(3); // english + ukrainian + critic
   });
 
@@ -475,7 +494,12 @@ describe('generateWeeklyMaster checkpoint reuse', () => {
     vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
     vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => {
       if (prompt.includes('independent factual and editorial critic')) {
-        return { text: CRITIC_JSON, provider: 'openrouter', model: 'vendor/critic-model', usage: null };
+        return {
+          text: CRITIC_JSON,
+          provider: 'openrouter',
+          model: 'vendor/critic-model',
+          usage: null,
+        };
       }
       if (prompt.includes('Ukrainian senior news editor')) {
         return {
@@ -641,7 +665,13 @@ function reviseStories(): WeeklyMasterInputStory[] {
     whyEn: null,
     whyUk: null,
     sources: [{ name: 'Example', url: 'https://example.com' }],
-    claims: [{ id: `claim-${index + 1}`, text: `Claim ${index + 1}.`, evidenceUrls: ['https://example.com'] }],
+    claims: [
+      {
+        id: `claim-${index + 1}`,
+        text: `Claim ${index + 1}.`,
+        evidenceUrls: ['https://example.com'],
+      },
+    ],
   }));
 }
 
@@ -659,8 +689,12 @@ function reviseArticleStories() {
       practical: `A named actor runs a specific workflow for story ${index + 1} and measures a real outcome.`,
       limitation: `The source for story ${index + 1} covers one reported case only.`,
       takeaway: `Require verification before acting on story ${index + 1}.`,
-      editorsView: placement === 'feature' ? `Editorial reasoning about where story ${index + 1} leads next.` : '',
-      discussionQuestion: placement === 'feature' ? `What would change your mind about story ${index + 1}?` : '',
+      editorsView:
+        placement === 'feature'
+          ? `Editorial reasoning about where story ${index + 1} leads next.`
+          : '',
+      discussionQuestion:
+        placement === 'feature' ? `What would change your mind about story ${index + 1}?` : '',
       claimIds: [`claim-${index + 1}`],
     };
   });
@@ -718,9 +752,15 @@ function reviseUkrainianResult(): WeeklyMasterUkrainianResult {
 function criticJson(overrides: Record<string, unknown> = {}) {
   return JSON.stringify({
     score: 90,
-    dimensions: ['engagement', 'voice', 'clarity', 'trust', 'usefulness', 'naturalness', 'parity'].map(
-      (name) => ({ name, score: 90, note: 'ok' }),
-    ),
+    dimensions: [
+      'engagement',
+      'voice',
+      'clarity',
+      'trust',
+      'usefulness',
+      'naturalness',
+      'parity',
+    ].map((name) => ({ name, score: 90, note: 'ok' })),
     factualFlags: [],
     issues: [],
     ...overrides,
@@ -729,8 +769,18 @@ function criticJson(overrides: Record<string, unknown> = {}) {
 
 // Fixed usage payloads so accumulated cost is exact arithmetic in the tests
 // below, not dependent on estimateTokens(prompt.length) heuristics.
-const WRITE_USAGE = { promptTokens: 1000, completionTokens: 2000, totalTokens: 3000, costUsd: 0.05 };
-const READAPT_USAGE = { promptTokens: 900, completionTokens: 1800, totalTokens: 2700, costUsd: 0.04 };
+const WRITE_USAGE = {
+  promptTokens: 1000,
+  completionTokens: 2000,
+  totalTokens: 3000,
+  costUsd: 0.05,
+};
+const READAPT_USAGE = {
+  promptTokens: 900,
+  completionTokens: 1800,
+  totalTokens: 2700,
+  costUsd: 0.04,
+};
 const CRITIC_USAGE = { promptTokens: 500, completionTokens: 300, totalTokens: 800, costUsd: 0.02 };
 
 function mockRouterResponses(handlers: {
@@ -811,9 +861,19 @@ describe('generateWeeklyMaster revise loop', () => {
       critic: (callIndex) =>
         callIndex === 1
           ? criticJson({
-              dimensions: ['engagement', 'voice', 'clarity', 'trust', 'usefulness', 'naturalness', 'parity'].map(
-                (name) => ({ name, score: name === 'engagement' ? 60 : 90, note: 'flat opening' }),
-              ),
+              dimensions: [
+                'engagement',
+                'voice',
+                'clarity',
+                'trust',
+                'usefulness',
+                'naturalness',
+                'parity',
+              ].map((name) => ({
+                name,
+                score: name === 'engagement' ? 60 : 90,
+                note: 'flat opening',
+              })),
             })
           : criticJson(),
     });
@@ -867,9 +927,15 @@ describe('generateWeeklyMaster revise loop', () => {
     mockRouterResponses({
       critic: () =>
         criticJson({
-          dimensions: ['engagement', 'voice', 'clarity', 'trust', 'usefulness', 'naturalness', 'parity'].map(
-            (name) => ({ name, score: name === 'voice' ? 60 : 90, note: 'still off' }),
-          ),
+          dimensions: [
+            'engagement',
+            'voice',
+            'clarity',
+            'trust',
+            'usefulness',
+            'naturalness',
+            'parity',
+          ].map((name) => ({ name, score: name === 'voice' ? 60 : 90, note: 'still off' })),
         }),
     });
 

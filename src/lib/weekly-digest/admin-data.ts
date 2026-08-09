@@ -13,6 +13,8 @@ export type WeeklyRevisionItemAdminRow = Row<'weekly_digest_revision_items'>;
 export type WeeklyArtifactAdminRow = Row<'weekly_digest_artifacts'>;
 export type WeeklyArtifactReviewAdminRow = Row<'weekly_digest_artifact_reviews'>;
 export type WeeklyGenerationJobAdminRow = Row<'weekly_digest_generation_jobs'>;
+export type WeeklyGenerationAttemptAdminRow = Row<'weekly_digest_generation_attempts'>;
+export type WeeklyGenerationEventAdminRow = Row<'weekly_digest_generation_events'>;
 export type WeeklyReleaseEventAdminRow = Row<'weekly_digest_release_events'>;
 export type WeeklySocialPackageAdminRow = Row<'social_packages'>;
 export type WeeklySocialPostAdminRow = Row<'social_posts'>;
@@ -29,6 +31,8 @@ export interface WeeklyDigestWorkspace {
   artifacts: WeeklyArtifactAdminRow[];
   artifactReviews: WeeklyArtifactReviewAdminRow[];
   generationJobs: WeeklyGenerationJobAdminRow[];
+  generationAttempts: WeeklyGenerationAttemptAdminRow[];
+  generationEvents: WeeklyGenerationEventAdminRow[];
   releaseEvents: WeeklyReleaseEventAdminRow[];
   socialPackage: WeeklySocialPackageAdminRow | null;
   socialPosts: WeeklySocialPostAdminRow[];
@@ -175,10 +179,7 @@ export const getWeeklyDigestWorkspace = cache(
         .eq('weekly_digest_id', digest.id)
         .order('occurred_at', { ascending: false })
         .limit(500),
-      db
-        .from('weekly_digest_story_directions')
-        .select('*')
-        .eq('weekly_digest_id', digest.id),
+      db.from('weekly_digest_story_directions').select('*').eq('weekly_digest_id', digest.id),
     ]);
 
     const revisions = assertQuery('revisions', revisionsResult);
@@ -194,6 +195,33 @@ export const getWeeklyDigestWorkspace = cache(
       throw new Error(`[weekly-admin] social package: ${packageResult.error.message}`);
     }
     const socialPackage = packageResult.data;
+    const generationJobIds = generationJobs.map((job) => job.id);
+    const [generationAttemptsResult, generationEventsResult] = await Promise.all([
+      generationJobIds.length > 0
+        ? db
+            .from('weekly_digest_generation_attempts')
+            .select('*')
+            .in('job_id', generationJobIds)
+            .order('started_at', { ascending: false })
+            .limit(150)
+        : Promise.resolve({ data: [] as WeeklyGenerationAttemptAdminRow[], error: null }),
+      generationJobIds.length > 0
+        ? db
+            .from('weekly_digest_generation_events')
+            .select('*')
+            .in('job_id', generationJobIds)
+            .order('id', { ascending: false })
+            .limit(250)
+        : Promise.resolve({ data: [] as WeeklyGenerationEventAdminRow[], error: null }),
+    ]);
+    // These tables are additive during rollout. The rest of the workspace is
+    // still usable until the migration reaches an environment.
+    const generationAttempts = generationAttemptsResult.error
+      ? []
+      : (generationAttemptsResult.data ?? []);
+    const generationEvents = generationEventsResult.error
+      ? []
+      : (generationEventsResult.data ?? []);
     const revision =
       revisions.find((candidate) => candidate.id === digest.active_revision_id) ?? null;
 
@@ -267,6 +295,8 @@ export const getWeeklyDigestWorkspace = cache(
       artifacts,
       artifactReviews: assertQuery('artifact reviews', reviewsResult),
       generationJobs,
+      generationAttempts,
+      generationEvents,
       releaseEvents,
       socialPackage,
       socialPosts,

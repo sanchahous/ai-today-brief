@@ -5,8 +5,9 @@ Summary: покрокова інструкція для власника/ред�
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/preflight.ts`,
 `claim_weekly_digest_generation_jobs` (editorial_master gate), live fail
 `ai-weekly-2026-07-27` 2026-08-04, [weekly-digest](../pipeline/weekly-digest.md),
-[editorial-voice](../pipeline/editorial-voice.md)
-Last updated: 2026-08-06
+[editorial-voice](../pipeline/editorial-voice.md),
+`weekly_generation_control_plane` implementation 2026-08-09
+Last updated: 2026-08-09
 
 ---
 
@@ -42,7 +43,8 @@ Overview показує preflight blockers з лінком на вкладку. 
 2. Дочекайся трьох packs **ready** (Generation jobs: succeeded).
 3. На **кожній** Feature-картці: **Approve version** (owner, AAL2).
 4. Лічильник **Approved research** має стати **3/3**.
-5. Лише тоді cron (~кожні **5 хв**) claim-ить `editorial_master`.
+5. Лише тоді `editorial_master` переходить у **queued** і одразу отримує один GitHub Actions
+   worker (cron ~кожні **5 хв** лишається safety-dispatcher).
 6. Коли з’явиться **Master quality**:
    - червоні **blockers** → знову Start/retry (guidance підхопить blockers);
    - жовті length warnings часто не блокують Approve, якщо score/gate ок;
@@ -54,8 +56,26 @@ Overview показує preflight blockers з лінком на вкладку. 
    - **Approve version** на quality report.
 7. Після успішного master з’являться Article EN/UK і підуть Visuals/Social/PDF/Video jobs.
 
-Опція: **Write master via Claude subscription** — той самий job через GitHub Actions
-(без OpenRouter $), не миттєво. (source: Research tab copy)
+Довгі master/social/video jobs завжди показують конкретний GitHub run; короткі jobs лишаються
+на Vercel. Не потрібно вручну вибирати worker. (source:
+`weekly_generation_control_plane` implementation 2026-08-09)
+
+## Як читати нову панель Generation jobs
+
+- **Attempt 2/3** — скільки фактичних worker leases уже було; human approval у `waiting` не
+  витрачає спробу.
+- **Backend / Open run** — де працює конкретна спроба і пряме посилання на GitHub Actions.
+- **Step / provider** — поточний етап і provider/model; для ще не стартованої задачі це явно
+  написано, а не замінено здогадом.
+- **≈ progress / elapsed / ETA** — збережений прогрес, фактичний час, heartbeat і deadline.
+  Поки мало історії, ETA позначено як configured budget.
+- **Latest result / next action** — причина попередньої невдачі, retryable чи terminal, коли
+  буде retry або що саме має зробити редактор.
+
+`running` без heartbeat понад 90 секунд щохвилинний database reaper закриває як `timed_out` і ставить backoff; третя
+інфраструктурна невдача завжди terminal. Для quality/validation/quota помилок автоматичного
+retry немає: переглянь конкретну причину, виправ gate і створи linked manual retry.
+(source: `supabase/migrations/20260809060929_weekly_generation_control_plane.sql`)
 
 ### 3–7. Article → … → Release
 

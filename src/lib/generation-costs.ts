@@ -19,7 +19,9 @@ export interface RecordGenerationCostInput {
   weeklyDigestId?: string | null;
   revisionId?: string | null;
   jobId?: string | null;
+  attemptId?: string | null;
   artifactId?: string | null;
+  stepKey?: string | null;
   metadata?: Record<string, unknown>;
 }
 
@@ -37,7 +39,9 @@ export interface GenerationCostEvent {
   weekly_digest_id: string | null;
   revision_id: string | null;
   job_id: string | null;
+  attempt_id: string | null;
   artifact_id: string | null;
+  step_key: string | null;
   metadata: Json;
 }
 
@@ -73,7 +77,9 @@ export async function recordGenerationCost(input: RecordGenerationCostInput): Pr
     weekly_digest_id: input.weeklyDigestId ?? null,
     revision_id: input.revisionId ?? null,
     job_id: input.jobId ?? null,
+    attempt_id: input.attemptId ?? null,
     artifact_id: input.artifactId ?? null,
+    step_key: input.stepKey ?? null,
     metadata: (input.metadata ?? {}) as Json,
   });
   if (error) {
@@ -99,7 +105,9 @@ export function aggregateGenerationCosts(
     eventCount: events.length,
   };
   for (const event of events) {
-    const cost = safeCost(typeof event.cost_usd === 'string' ? Number(event.cost_usd) : event.cost_usd);
+    const cost = safeCost(
+      typeof event.cost_usd === 'string' ? Number(event.cost_usd) : event.cost_usd,
+    );
     totals.totalUsd = safeCost(totals.totalUsd + cost);
     totals.byKind[event.kind] = safeCost((totals.byKind[event.kind] ?? 0) + cost);
     totals.byProvider[event.provider] = safeCost((totals.byProvider[event.provider] ?? 0) + cost);
@@ -119,7 +127,7 @@ export async function listGenerationCosts(opts: {
   let query = db
     .from('generation_cost_events')
     .select(
-      'id,created_at,scope,kind,provider,model,cost_usd,cost_source,prompt_tokens,output_tokens,weekly_digest_id,revision_id,job_id,artifact_id,metadata',
+      'id,created_at,scope,kind,provider,model,cost_usd,cost_source,prompt_tokens,output_tokens,weekly_digest_id,revision_id,job_id,attempt_id,artifact_id,step_key,metadata',
     )
     .gte('created_at', opts.since)
     .order('created_at', { ascending: false })

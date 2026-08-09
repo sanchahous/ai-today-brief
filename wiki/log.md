@@ -4,7 +4,40 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-07
+Last updated: 2026-08-09
+
+## 2026-08-09 — durable Weekly Digest worker control plane (production DB migration)
+
+**Джерело:** production Supabase migration `20260809060929_weekly_generation_control_plane`;
+verification query 2026-08-09.
+
+**Змінено:**
+
+- additive control-plane migration застосовано в production DB; minute reaper, private attempt/event
+  tables і linked recovery ledger підтверджені query;
+- historical `editorial_master` `f41de2f1-6056-4e84-9ee0-0528fedce615` закрито як
+  `legacy_worker_timeout`; створено пов’язаний GitHub Actions retry
+  `fe82f82c-7ceb-458e-9889-b5890b0e6d11` у `queued`, Attempt 1/3;
+- application dispatch/worker code ще очікує merge та deployment; до цього queued GitHub retry
+  навмисно не може бути claimed legacy Vercel worker.
+
+---
+
+## 2026-08-09 — durable Weekly Digest worker control plane (implementation)
+
+**Джерело:** owner-approved reliability plan 2026-08-08; `supabase/migrations/20260808204920_weekly_generation_control_plane.sql`.
+
+**Змінено:**
+
+- additive attempt/event ledger, fenced lease/checkpoint/finish RPC, a minute-by-minute heartbeat reaper, linked manual retry and one automatic linked GitHub recovery retry for a terminal legacy long job;
+- long master/social/video routing to one 120-minute GitHub Actions job; Vercel keeps only short jobs;
+- provider/model/cost event instrumentation plus live 5-second admin status panel;
+- SQL contract tests and unit tests for routing, progress, ETA fallback, redaction and failure classification.
+
+**Стан:** код готовий у `codex/weekly-generation-control-plane`; production migration/deploy і smoke
+master ще не виконані, тому старий current job не змінювався цією гілкою.
+
+---
 
 **Формат запису:**
 

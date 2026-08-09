@@ -6,8 +6,8 @@ Sources: `git log` / `gh pr list` (live check 2026-08-04), Supabase preflight li
 `wiki/ops/owner-checklist.md`, `wiki/audits/2026-07-01-seo-organic.md`, `.env.example`,
 owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry), post-merge tech
 review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish --dry-run` check
-2026-08-07
-Last updated: 2026-08-07
+2026-08-07, owner-approved Weekly Digest reliability plan 2026-08-08
+Last updated: 2026-08-09
 
 ---
 
@@ -123,6 +123,8 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 (source: live check Vercel dashboard 2026-08-04)
 
 ## Активна робота
+
+0. **Weekly Digest durable worker control plane — DB migration застосовано; application deploy ще очікує merge PR.** Attempt/event ledger, fenced lease + heartbeat/reaper, linked retry та per-call cost attribution вже працюють у production Supabase. Старий `editorial_master` для digest `843975a8-8c19-4eca-96a8-035f76eae3ab` закрито як `legacy_worker_timeout` зі збереженими 5 спробами; створено пов’язаний GitHub job `fe82f82c-7ceb-458e-9889-b5890b0e6d11` у `queued` з `Attempt 1/3`. Він стартує після merge/deploy цього PR, який додає dispatch і worker. (source: production Supabase verification 2026-08-09; `supabase/migrations/20260809060929_weekly_generation_control_plane.sql`, `src/lib/weekly-digest/generation-worker.ts`)
 
 1. **Редакційний перегляд якості weekly-дайджесту (7 PR, гілка `feat/weekly-editorial-voice`).**
    Власник заблокував реліз до кардинального покращення якості контенту — див.
