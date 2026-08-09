@@ -13,7 +13,10 @@ export function FactsVisualBlock({ visual, color }: { visual: FactsVisual; color
       <div aria-hidden className="border-border border-b px-4 py-3.5">
         <div className="grid gap-2">
           {visual.items.map((item) => (
-            <div key={item.label} className="grid grid-cols-[minmax(96px,9rem)_1fr_auto] items-center gap-3">
+            <div
+              key={item.label}
+              className="grid grid-cols-[minmax(96px,9rem)_minmax(0,1fr)_auto] items-center gap-3"
+            >
               <span className="text-muted truncate text-[0.78rem]">{item.label}</span>
               <span className="bg-surface-2 h-2.5 overflow-hidden rounded-pill">
                 <span

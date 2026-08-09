@@ -67,6 +67,16 @@
 }
 
 @layer base {
+  /*
+   * Grid items default to `min-width: auto`, so a long form control or a
+   * preformatted value can widen an otherwise fluid track beyond its parent.
+   * Make every Tailwind grid child shrinkable; intentional wide data tables
+   * retain their explicit `min-w-*` inside an `overflow-x-auto` wrapper.
+   */
+  :where(.grid > *) {
+    min-width: 0;
+  }
+
   html,
   body {
     max-width: 100%;
@@ -463,12 +473,12 @@
 }
 .news-layout {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 2rem;
 }
 .post-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1.1rem;
 }
 .mobile-only {

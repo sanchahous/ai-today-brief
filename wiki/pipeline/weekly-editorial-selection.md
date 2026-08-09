@@ -1,9 +1,8 @@
 # Weekly editorial selection
 
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
-Sources: none (analysis)
-Last updated: 2026-08-08 (reviewed alongside admin mobile-responsive fix — no change here;
-selection logic is unaffected by admin UI/CSS)
+Sources: `src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`
+Last updated: 2026-08-09
 
 
 `weekly-editorial-v2` replaces the old `impact → recency → daily rank` sort used
@@ -116,6 +115,14 @@ single unusually noisy week.
 story ПІСЛЯ відбору: `editorial-llm.ts` тепер пише текст через `editorial-voice.ts`
 (house-style, exemplars, banned-phrase гейт). Деталі — [editorial-voice](editorial-voice.md).
 (source: `src/lib/weekly-digest/editorial-voice.ts`, `editorial-llm.ts`)
+
+## Межа з responsive grid-фіксом (2026-08-09)
+
+Відбір, score і persisted selection runs не змінювались. Змінено лише безпечне стискання
+контейнерів у Weekly admin: `.grid > *` може стискатися, а гнучкі колонки використовують
+`minmax(0, …)`. Це не дозволяє довгому control або тексту зсунути контент за viewport, але не
+змінює склад shortlist чи критерії editorial-рішення.
+(source: `src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`)
 
 ## Related pages
 

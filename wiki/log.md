@@ -6,6 +6,30 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-09
 
+## 2026-08-09 — Weekly admin grid overflow
+
+**Джерело:** скріншот власника + Chrome layout measurement 2026-08-09; `src/app/globals.css` і
+`src/components/admin/weekly-workspace.tsx`.
+
+**Змінено:**
+
+- `src/app/globals.css` — базове правило `.grid > * { min-width: 0 }`; custom grid-треки
+  `1fr` у public layout змінено на `minmax(0, 1fr)`;
+- `src/components/admin/weekly-workspace.tsx`, `src/app/admin/(cms)/packages/[id]/page.tsx`,
+  `facts-visual.tsx`, `top-of-week.tsx`, `trending-topics.tsx` — уразливі custom grid-треки
+  переведено на `minmax(0, …)`;
+- `src/components/admin/admin-nav.tsx` — desktop sidebar отримав доступне згортання у вузький
+  rail; mobile нижня навігація не змінюється;
+- `wiki/pipeline/weekly-digest.md`, `wiki/pipeline/weekly-editorial-selection.md`,
+  `wiki/ops/weekly-admin-runbook.md`, `wiki/now.md`, `wiki/index.md` — синхронізовано під
+  watcher `weekly-digest`.
+
+**Нотатка:** Article tab розтягував 1193 px wrapper до 1258 px через automatic minimum size
+grid-item; `p-5` проявляв дефект, але не був його причиною. На mobile контент усіх вкладок
+залишається в межах документа; таб-бар зберігає свій навмисний локальний scroll.
+
+---
+
 ## 2026-08-09 — durable Weekly Digest worker control plane (production DB migration)
 
 **Джерело:** production Supabase migration `20260809060929_weekly_generation_control_plane`;
