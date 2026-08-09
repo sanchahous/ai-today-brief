@@ -9,7 +9,10 @@ import {
   fetchOpenRouterModels,
   type OpenRouterModelRecord,
 } from '../../../pipeline/openrouter-models';
-import { rankOpenRouterModelsByValue, minimalReasoningEffort } from '../../../pipeline/openrouter-value';
+import {
+  rankOpenRouterModelsByValue,
+  minimalReasoningEffort,
+} from '../../../pipeline/openrouter-value';
 import { generateWithClaudeCli } from '../../../pipeline/claude-cli';
 import {
   generateWithHttpProviderChain,
@@ -94,6 +97,8 @@ export interface WeeklyMasterRetryGuidance {
   field?: string;
 }
 
+export type WeeklyMasterProviderStep = 'english' | 'ukrainian' | 'critic' | 'revisions';
+
 /** Lean evidence payload for writer/critic prompts (avoids dumping full research packs). */
 export interface ApprovedStoryPromptMaterial {
   revisionItemId: string;
@@ -168,9 +173,7 @@ export function criticApprovedEvidence(stories: WeeklyMasterInputStory[]) {
   return approvedStoryPromptMaterial(stories).map((story) => ({
     revisionItemId: story.revisionItemId,
     claims: story.claims,
-    ...(story.primarySourceExcerpt
-      ? { primarySourceExcerpt: story.primarySourceExcerpt }
-      : {}),
+    ...(story.primarySourceExcerpt ? { primarySourceExcerpt: story.primarySourceExcerpt } : {}),
     ...(story.corroboratingExcerpts?.length
       ? { corroboratingExcerpts: story.corroboratingExcerpts }
       : {}),
@@ -446,7 +449,11 @@ export function premiumOpenRouterModels(
 }
 
 /** Wraps a registry ProviderCallResult in this file's own ProviderResult<T> shape (shared by both the DB-override and the default value-ranked OpenRouter path below). */
-function toOpenRouterResult<T>(result: ProviderCallResult, value: T, promptChars: number): ProviderResult<T> {
+function toOpenRouterResult<T>(
+  result: ProviderCallResult,
+  value: T,
+  promptChars: number,
+): ProviderResult<T> {
   const promptTokens = result.usage.promptTokens ?? estimateTokens(promptChars);
   const outputTokens = result.usage.outputTokens ?? estimateTokens(result.text.length);
   return {
@@ -516,7 +523,11 @@ async function generateOpenRouter<T>(
         'warn',
         'weekly-editorial',
         'Owner-configured OpenRouter provider failed -- falling back to the default value-ranked OpenRouter path',
-        { role: options.role, provider: dbHttp.id, error: error instanceof Error ? error.message : String(error) },
+        {
+          role: options.role,
+          provider: dbHttp.id,
+          error: error instanceof Error ? error.message : String(error),
+        },
       );
     }
   }
@@ -533,7 +544,9 @@ async function generateOpenRouter<T>(
     { id: 'openrouter', apiKey, modelQueue: queue, ...OPENROUTER_HTTP_DEFAULTS },
     {
       validateResponse,
-      extraBodyForModel: reasoningEffort ? () => ({ reasoning: { effort: reasoningEffort } }) : undefined,
+      extraBodyForModel: reasoningEffort
+        ? () => ({ reasoning: { effort: reasoningEffort } })
+        : undefined,
     },
   );
   return toOpenRouterResult(result, parse(result.text), prompt.length);
@@ -592,9 +605,7 @@ async function generateGemini<T>(
 }
 
 export function premiumGeminiEditorialModels(models: string[]) {
-  return models.filter(
-    (model) => !/(?:^|[-_/])(?:flash|lite|mini|nano)(?:[-_/]|$)/i.test(model),
-  );
+  return models.filter((model) => !/(?:^|[-_/])(?:flash|lite|mini|nano)(?:[-_/]|$)/i.test(model));
 }
 
 /**
@@ -655,7 +666,13 @@ async function generateIndependentCritic(
   );
   if (independentProvider) {
     try {
-      return await generateWithProvider(independentProvider, prompt, parseCritic, 'weekly.master_critic', db);
+      return await generateWithProvider(
+        independentProvider,
+        prompt,
+        parseCritic,
+        'weekly.master_critic',
+        db,
+      );
     } catch (error) {
       primaryError = error;
     }
@@ -887,14 +904,18 @@ function reviseGuidanceFromReport(report: WeeklyContentQualityReport): WeeklyMas
 }
 
 /** Sums token/cost metadata across every call made for one step (write + revise attempts). */
-function accumulateGenerationMetadata(calls: EditorialGenerationMetadata[]): EditorialGenerationMetadata {
+function accumulateGenerationMetadata(
+  calls: EditorialGenerationMetadata[],
+): EditorialGenerationMetadata {
   const last = calls[calls.length - 1]!;
   return {
     provider: last.provider,
     model: last.model,
     promptTokens: calls.reduce((sum, call) => sum + call.promptTokens, 0),
     outputTokens: calls.reduce((sum, call) => sum + call.outputTokens, 0),
-    estimatedCostUsd: Number(calls.reduce((sum, call) => sum + call.estimatedCostUsd, 0).toFixed(6)),
+    estimatedCostUsd: Number(
+      calls.reduce((sum, call) => sum + call.estimatedCostUsd, 0).toFixed(6),
+    ),
     costSource: calls.every((call) => call.costSource === 'subscription')
       ? 'subscription'
       : calls.every((call) => call.costSource === 'reported')
@@ -916,6 +937,12 @@ export async function generateWeeklyMaster(
       step: 'english' | 'ukrainian',
       result: WeeklyMasterEnglishResult | WeeklyMasterUkrainianResult,
     ) => void | Promise<void>;
+    /** Emits every paid model call so workers can persist provider/cost telemetry durably. */
+    onProviderCallStarted?: (step: WeeklyMasterProviderStep) => void | Promise<void>;
+    onProviderCallCompleted?: (
+      step: WeeklyMasterProviderStep,
+      metadata: EditorialGenerationMetadata,
+    ) => void | Promise<void>;
     /** Enables DB-driven role-chain overrides (owner-added HTTP providers via /admin/providers) for the openrouter slot. */
     db?: PipelineDb;
   } = {},
@@ -924,16 +951,19 @@ export async function generateWeeklyMaster(
     splitMasterRetryGuidance(retryGuidance);
   let english = options.checkpoint?.english;
   if (!english) {
+    await options.onProviderCallStarted?.('english');
     english = await generateFirstAvailable(
       englishPrompt(stories, englishGuidance),
       parseEnglishPackage,
       'weekly.master_writer',
       options.db,
     );
+    await options.onProviderCallCompleted?.('english', english.metadata);
     await options.onStepComplete?.('english', english);
   }
   let ukrainian = options.checkpoint?.ukrainian;
   if (!ukrainian) {
+    await options.onProviderCallStarted?.('ukrainian');
     ukrainian = await generateWithProvider(
       english.metadata.provider,
       ukrainianPrompt(english.value.article, stories, ukrainianGuidance),
@@ -941,6 +971,7 @@ export async function generateWeeklyMaster(
       'weekly.master_writer',
       options.db,
     );
+    await options.onProviderCallCompleted?.('ukrainian', ukrainian.metadata);
     await options.onStepComplete?.('ukrainian', ukrainian);
   }
   const englishCalls: EditorialGenerationMetadata[] = [english.metadata];
@@ -958,7 +989,13 @@ export async function generateWeeklyMaster(
     uk: ukrainian!.value,
   });
   const evaluate = async (bundle: WeeklyMasterBundle): Promise<WeeklyContentQualityReport> => {
-    const critic = await generateIndependentCritic(english!, criticPrompt(bundle, stories), options.db);
+    await options.onProviderCallStarted?.('critic');
+    const critic = await generateIndependentCritic(
+      english!,
+      criticPrompt(bundle, stories),
+      options.db,
+    );
+    await options.onProviderCallCompleted?.('critic', critic.metadata);
     criticCalls.push(critic.metadata);
     const deterministicIssues = validateMasterBundle(bundle, researchPacks, expectedStories);
     return {
@@ -988,9 +1025,11 @@ export async function generateWeeklyMaster(
   ) {
     reviseAttempts += 1;
     const guidance = reviseGuidanceFromReport(quality);
-    const { english: englishRevise, ukrainian: ukrainianRevise } = splitMasterRetryGuidance(guidance);
+    const { english: englishRevise, ukrainian: ukrainianRevise } =
+      splitMasterRetryGuidance(guidance);
 
     if (englishRevise.length) {
+      await options.onProviderCallStarted?.('revisions');
       const revisedEnglish: ProviderResult<WeeklyArticleMaster> = await generateWithProvider(
         english!.metadata.provider,
         reviseArticlePrompt(english!.value.article, englishRevise, 'en'),
@@ -998,6 +1037,7 @@ export async function generateWeeklyMaster(
         'weekly.master_writer',
         options.db,
       );
+      await options.onProviderCallCompleted?.('revisions', revisedEnglish.metadata);
       english = {
         value: { ...english!.value, article: revisedEnglish.value },
         metadata: revisedEnglish.metadata,
@@ -1006,6 +1046,7 @@ export async function generateWeeklyMaster(
       // English prose changed underneath it -- Ukrainian must be re-adapted
       // from the new English even when nothing UK-tagged fired this round,
       // or the two locales drift out of narrative sync with each other.
+      await options.onProviderCallStarted?.('revisions');
       const readapted: WeeklyMasterUkrainianResult = await generateWithProvider(
         english.metadata.provider,
         ukrainianPrompt(english.value.article, stories, ukrainianRevise),
@@ -1013,9 +1054,11 @@ export async function generateWeeklyMaster(
         'weekly.master_writer',
         options.db,
       );
+      await options.onProviderCallCompleted?.('revisions', readapted.metadata);
       ukrainian = readapted;
       ukrainianCalls.push(readapted.metadata);
     } else if (ukrainianRevise.length) {
+      await options.onProviderCallStarted?.('revisions');
       const revisedUkrainian: WeeklyMasterUkrainianResult = await generateWithProvider(
         ukrainian!.metadata.provider,
         reviseArticlePrompt(ukrainian!.value, ukrainianRevise, 'uk'),
@@ -1023,6 +1066,7 @@ export async function generateWeeklyMaster(
         'weekly.master_writer',
         options.db,
       );
+      await options.onProviderCallCompleted?.('revisions', revisedUkrainian.metadata);
       ukrainian = revisedUkrainian;
       ukrainianCalls.push(revisedUkrainian.metadata);
     }

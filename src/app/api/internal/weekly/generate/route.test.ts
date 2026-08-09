@@ -4,9 +4,18 @@ import { NextRequest } from 'next/server';
 const { runWeeklyDigestGenerationJobs } = vi.hoisted(() => ({
   runWeeklyDigestGenerationJobs: vi.fn(async () => ({ claimed: 0, results: [] })),
 }));
+const { dispatchQueuedWeeklyGenerationJob } = vi.hoisted(() => ({
+  dispatchQueuedWeeklyGenerationJob: vi.fn(async () => false),
+}));
 
 vi.mock('@/lib/weekly-digest/generation-worker', () => ({
   runWeeklyDigestGenerationJobs,
+}));
+vi.mock('@/lib/weekly-digest/github-dispatch', () => ({ dispatchQueuedWeeklyGenerationJob }));
+vi.mock('@/lib/supabase-admin', () => ({
+  getSupabaseAdmin: () => ({
+    rpc: async () => ({ data: { timed_out: 0 }, error: null }),
+  }),
 }));
 
 import { maxDuration, POST } from './route';
@@ -15,6 +24,7 @@ describe('Weekly generation internal route', () => {
   afterEach(() => {
     delete process.env.SOCIAL_CRON_SECRET;
     runWeeklyDigestGenerationJobs.mockClear();
+    dispatchQueuedWeeklyGenerationJob.mockClear();
   });
 
   it('rejects a request without the cron bearer', async () => {
@@ -30,7 +40,7 @@ describe('Weekly generation internal route', () => {
     expect(maxDuration).toBe(300);
   });
 
-  it('claims one heavy job for the exact bearer secret', async () => {
+  it('claims one short Vercel job and dispatches long jobs for the exact bearer secret', async () => {
     process.env.SOCIAL_CRON_SECRET = 'generation-secret';
     const response = await POST(
       new NextRequest('https://example.com/api/internal/weekly/generate', {
@@ -39,7 +49,15 @@ describe('Weekly generation internal route', () => {
       }),
     );
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ claimed: 0, results: [] });
-    expect(runWeeklyDigestGenerationJobs).toHaveBeenCalledWith(1);
+    expect(await response.json()).toMatchObject({
+      claimed: 0,
+      results: [],
+      githubDispatched: false,
+    });
+    expect(runWeeklyDigestGenerationJobs).toHaveBeenCalledWith(
+      1,
+      ['research_pack', 'story_image', 'cover', 'pdf', 'social_asset', 'video_manifest'],
+      { backend: 'vercel' },
+    );
   });
 });

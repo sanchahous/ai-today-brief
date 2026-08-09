@@ -18,7 +18,7 @@ import {
   weeklyDigestTriggerDateForManualCreate,
 } from '@/lib/social/schedule';
 import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial-validation';
-import { dispatchWeeklyMasterCliWorker } from '@/lib/weekly-digest/github-dispatch';
+import { dispatchQueuedWeeklyGenerationJob } from '@/lib/weekly-digest/github-dispatch';
 import {
   startWeeklyContentStudio,
   weeklyContentStudioMode,
@@ -483,6 +483,28 @@ export async function reviewWeeklyArtifactAction(formData: FormData) {
     p_note: note || null,
   });
   if (error) throw new Error(error.message);
+  // Approval can make a durable `waiting` job runnable. Wake the control
+  // plane immediately instead of making the editor wait for the five-minute
+  // safety cron. A dispatch failure is non-destructive: the job stays queued
+  // and the cron dispatcher will try again.
+  if (decision === 'approved') {
+    const controlDb = admin as unknown as {
+      rpc: (name: string) => Promise<{ data: unknown; error: { message: string } | null }>;
+    };
+    const refreshed = await controlDb.rpc('refresh_weekly_digest_generation_waiting_states');
+    if (refreshed.error) {
+      console.error('[weekly-generation] dependency refresh failed', refreshed.error.message);
+    } else {
+      try {
+        await dispatchQueuedWeeklyGenerationJob();
+      } catch (dispatchError) {
+        console.error(
+          '[weekly-generation] immediate GitHub dispatch failed',
+          dispatchError instanceof Error ? dispatchError.message : String(dispatchError),
+        );
+      }
+    }
+  }
   revalidateWeeklyAdmin(artifact.weekly_digest_id);
 }
 
@@ -854,9 +876,7 @@ export async function saveWeeklySocialAction(formData: FormData) {
       ? priorQuality.hookCandidates
       : null;
   const writerMeta =
-    (currentMeta.writer && typeof currentMeta.writer === 'object'
-      ? currentMeta.writer
-      : null) ??
+    (currentMeta.writer && typeof currentMeta.writer === 'object' ? currentMeta.writer : null) ??
     (priorQuality.writer && typeof priorQuality.writer === 'object' ? priorQuality.writer : null);
   const { error: metadataError } = await userDb
     .from('social_posts')
@@ -905,9 +925,7 @@ export async function saveWeeklySocialAction(formData: FormData) {
       .maybeSingle();
     const blockers = qualityBlockingMessages(refreshed?.quality_report);
     if (blockers.length > 0) {
-      fail(
-        `Cannot approve yet — fix quality blockers first: ${blockers.slice(0, 3).join(' · ')}`,
-      );
+      fail(`Cannot approve yet — fix quality blockers first: ${blockers.slice(0, 3).join(' · ')}`);
     }
     if (!refreshed?.publish_enabled) {
       fail('This channel is paused. Enable publishing before approving.');
@@ -1132,7 +1150,7 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
     ...(contentStudioMode ? { mode: contentStudioMode } : {}),
   };
   const db = await getSupabaseServer();
-  const { error } = await db.rpc('queue_weekly_digest_generation_job', {
+  const { data: queuedJob, error } = await db.rpc('queue_weekly_digest_generation_job', {
     p_weekly_digest_id: weeklyDigestId,
     p_revision_id: revisionId,
     p_job_type: jobType,
@@ -1140,6 +1158,9 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
     p_input: input as Json,
   });
   if (error && !/duplicate|unique/i.test(error.message)) throw new Error(error.message);
+  if (['editorial_master', 'social_copy', 'video_script'].includes(jobType) && queuedJob?.id) {
+    await dispatchQueuedWeeklyGenerationJob(queuedJob.id);
+  }
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
@@ -1172,13 +1193,27 @@ export async function startWeeklyContentStudioAction(formData: FormData) {
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
-// Vercel's serverless functions never have the `claude` binary — this hands
-// the queued editorial_master job to a GitHub Actions runner instead, the
-// only place claude-cli (subscription-covered, no OpenRouter spend) can run.
+// Long LLM jobs are dispatched one-at-a-time to GitHub Actions. PostgreSQL
+// creates a dispatch token first, so this action never drains an unrelated job.
 export async function dispatchWeeklyMasterCliAction(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
-  await dispatchWeeklyMasterCliWorker();
+  await dispatchQueuedWeeklyGenerationJob();
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+export async function retryWeeklyGenerationJobAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const jobId = requiredString(formData, 'job_id');
+  const db = await getSupabaseServer();
+  const { data: retryJob, error } = await db.rpc('retry_weekly_digest_generation_job', {
+    p_job_id: jobId,
+  });
+  if (error) throw new Error(error.message);
+  if (retryJob.execution_backend === 'github_actions') {
+    await dispatchQueuedWeeklyGenerationJob(retryJob.id);
+  }
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 

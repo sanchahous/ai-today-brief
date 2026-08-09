@@ -8,13 +8,30 @@ name: Weekly master CLI worker
 # see src/lib/weekly-digest/github-dispatch.ts for the trigger.
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: Weekly Digest generation job UUID
+        required: true
+        type: string
+      dispatch_token:
+        description: One-time durable dispatch token
+        required: true
+        type: string
+      weekly_digest_id:
+        description: Weekly Digest UUID, used only for per-digest concurrency
+        required: true
+        type: string
+
+concurrency:
+  group: weekly-generation-${{ inputs.weekly_digest_id }}
+  cancel-in-progress: false
 
 jobs:
   drain:
-    name: Drain editorial_master jobs
+    name: Weekly generation ${{ inputs.job_id }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
 
@@ -34,4 +51,8 @@ jobs:
           OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           WEEKLY_CONTENT_STUDIO_V2: production
+          WEEKLY_GENERATION_JOB_ID: ${{ inputs.job_id }}
+          WEEKLY_GENERATION_DISPATCH_TOKEN: ${{ inputs.dispatch_token }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: npm run weekly:master-cli-worker

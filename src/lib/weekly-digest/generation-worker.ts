@@ -6,6 +6,13 @@ import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { recordGenerationCost } from '@/lib/generation-costs';
 import { alertWeeklyDigestIssue } from './alerts';
+import {
+  classifyGenerationFailure,
+  LONG_RUNNING_GENERATION_JOB_TYPES,
+  redactGenerationMessage,
+  SHORT_RUNNING_GENERATION_JOB_TYPES,
+  type GenerationBackend,
+} from './generation-control';
 import type { WeeklyPdfInput } from './pdf';
 import type { WeeklyVisualInput, WeeklyVisualLocale } from './visuals';
 import { storageBlob } from '@/lib/storage/binary';
@@ -42,6 +49,7 @@ import {
 import {
   generateWeeklyMaster,
   splitMasterRetryGuidance,
+  type EditorialGenerationMetadata,
   type WeeklyMasterCheckpoint,
   type WeeklyMasterEnglishResult,
   type WeeklyMasterInputStory,
@@ -60,7 +68,8 @@ const PRIVATE_BUCKET = 'weekly-digest-private';
 const MAX_JOBS = 10;
 
 // This module backs /api/internal/weekly/generate, polled every 5 minutes,
-// 24/7, by a Supabase pg_cron job. On the common case where
+// 24/7, by a Supabase pg_cron safety dispatcher. A separate database reaper
+// runs each minute. On the common case where
 // claimGenerationJobs() below finds nothing to do, eagerly loading native/
 // heavy deps (sharp, @napi-rs/canvas via ./visuals, pdfkit/pdfjs-dist via
 // ./pdf, ./pdf-preview and ./linkedin-document) at module scope would pay
@@ -111,6 +120,17 @@ interface ClaimedGenerationJob {
   job_type: string;
   attempts: number;
   input: Json;
+  execution_backend: GenerationBackend;
+  attempt_id: string;
+  lease_token: string;
+}
+
+interface GenerationWorkerOptions {
+  backend?: GenerationBackend;
+  jobId?: string;
+  dispatchToken?: string;
+  externalRunId?: string;
+  externalRunUrl?: string;
 }
 
 function rpcClient() {
@@ -134,15 +154,7 @@ function stringArray(value: Json | null | undefined) {
 }
 
 function safeMessage(error: unknown) {
-  return (error instanceof Error ? error.message : String(error))
-    .replace(/Bearer\s+\S+/gi, 'Bearer [redacted]')
-    .slice(0, 1800);
-}
-
-function retryableGenerationFailure(message: string) {
-  return /\b(?:429|5\d\d)\b|timed? out|timeout|fetch failed|network|econnreset|eai_again|temporar(?:y|ily)|rate limit|connection reset/i.test(
-    message,
-  );
+  return redactGenerationMessage(error instanceof Error ? error.message : String(error));
 }
 
 function contentStudioJobMode(job: ClaimedGenerationJob) {
@@ -162,25 +174,29 @@ function contentStudioJobMode(job: ClaimedGenerationJob) {
   return requestedMode;
 }
 
-const ALL_GENERATION_JOB_TYPES: string[] = [
-  'research_pack',
-  'editorial_master',
-  'story_image',
-  'cover',
-  'social_copy',
-  'video_script',
-  'video_manifest',
-  'pdf',
-  'social_asset',
-];
+function defaultJobTypes(backend: GenerationBackend): string[] {
+  return [
+    ...(backend === 'github_actions'
+      ? LONG_RUNNING_GENERATION_JOB_TYPES
+      : SHORT_RUNNING_GENERATION_JOB_TYPES),
+  ];
+}
 
 async function claimGenerationJobs(
   limit: number,
-  jobTypes: string[] = ALL_GENERATION_JOB_TYPES,
+  jobTypes: string[] | undefined,
+  options: GenerationWorkerOptions = {},
 ): Promise<ClaimedGenerationJob[]> {
-  const { data, error } = await rpcClient().rpc('claim_weekly_digest_generation_jobs', {
-    p_job_types: jobTypes,
+  const backend = options.backend ?? 'vercel';
+  const requestedJobTypes = jobTypes ?? defaultJobTypes(backend);
+  const { data, error } = await rpcClient().rpc('claim_weekly_digest_generation_jobs_v2', {
+    p_backend: backend,
+    p_job_types: requestedJobTypes,
     p_limit: Math.max(1, Math.min(Math.trunc(limit), MAX_JOBS)),
+    ...(options.jobId ? { p_job_id: options.jobId } : {}),
+    ...(options.dispatchToken ? { p_dispatch_token: options.dispatchToken } : {}),
+    ...(options.externalRunId ? { p_external_run_id: options.externalRunId } : {}),
+    ...(options.externalRunUrl ? { p_external_run_url: options.externalRunUrl } : {}),
   });
   if (error) throw new Error(`[weekly-generation] claim: ${error.message}`);
   if (!Array.isArray(data)) return [];
@@ -192,7 +208,10 @@ async function claimGenerationJobs(
       typeof row.weekly_digest_id !== 'string' ||
       typeof row.revision_id !== 'string' ||
       typeof row.job_type !== 'string' ||
-      typeof row.attempts !== 'number'
+      typeof row.attempts !== 'number' ||
+      (row.execution_backend !== 'vercel' && row.execution_backend !== 'github_actions') ||
+      typeof row.attempt_id !== 'string' ||
+      typeof row.lease_token !== 'string'
     ) {
       return [];
     }
@@ -204,26 +223,117 @@ async function claimGenerationJobs(
         job_type: row.job_type,
         attempts: row.attempts,
         input: (row.input ?? {}) as Json,
+        execution_backend: row.execution_backend,
+        attempt_id: row.attempt_id,
+        lease_token: row.lease_token,
       },
     ];
   });
 }
 
 async function finishGenerationJob(
-  jobId: string,
+  job: ClaimedGenerationJob,
   succeeded: boolean,
   output: Record<string, Json | undefined>,
   errorMessage: string | null,
+  failureCode: string | null,
+  retryable: boolean,
   artifactId?: string | null,
 ) {
-  const { error } = await rpcClient().rpc('finish_weekly_digest_generation_job', {
-    p_job_id: jobId,
+  const { error } = await rpcClient().rpc('finish_weekly_digest_generation_attempt', {
+    p_attempt_id: job.attempt_id,
+    p_lease_token: job.lease_token,
     p_succeeded: succeeded,
     p_output: output,
     p_error: errorMessage,
+    p_failure_code: failureCode,
+    p_retryable: retryable,
     p_artifact_id: artifactId ?? null,
   });
   if (error) throw new Error(`[weekly-generation] finish: ${error.message}`);
+}
+
+class GenerationAttemptTracker {
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+
+  constructor(private readonly job: ClaimedGenerationJob) {}
+
+  start() {
+    this.heartbeatTimer = setInterval(() => {
+      void this.heartbeat().catch(() => undefined);
+    }, 15_000);
+  }
+
+  async stop() {
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    this.heartbeatTimer = null;
+  }
+
+  async heartbeat(
+    input: {
+      step?: string;
+      progressCurrent?: number;
+      progressTotal?: number;
+      provider?: string;
+      model?: string;
+    } = {},
+  ) {
+    const { error } = await rpcClient().rpc('heartbeat_weekly_digest_generation_attempt', {
+      p_attempt_id: this.job.attempt_id,
+      p_lease_token: this.job.lease_token,
+      p_step: input.step ?? null,
+      p_progress_current: input.progressCurrent ?? null,
+      p_progress_total: input.progressTotal ?? null,
+      p_provider: input.provider ?? null,
+      p_model: input.model ?? null,
+    });
+    if (error) throw new Error(`[weekly-generation] heartbeat: ${error.message}`);
+  }
+
+  async event(input: {
+    type: string;
+    level?: 'debug' | 'info' | 'warning' | 'error';
+    step?: string;
+    provider?: string;
+    model?: string;
+    progressCurrent?: number;
+    progressTotal?: number;
+    message?: string;
+    metadata?: Record<string, Json | undefined>;
+  }) {
+    const { error } = await rpcClient().rpc('record_weekly_digest_generation_event', {
+      p_attempt_id: this.job.attempt_id,
+      p_lease_token: this.job.lease_token,
+      p_event_type: input.type,
+      p_level: input.level ?? 'info',
+      p_step: input.step ?? null,
+      p_provider: input.provider ?? null,
+      p_model: input.model ?? null,
+      p_progress_current: input.progressCurrent ?? null,
+      p_progress_total: input.progressTotal ?? null,
+      p_message: input.message ? redactGenerationMessage(input.message, 2000) : null,
+      p_metadata: input.metadata ?? {},
+    });
+    if (error) throw new Error(`[weekly-generation] event: ${error.message}`);
+  }
+
+  async checkpoint(
+    output: Record<string, Json | undefined>,
+    step: string,
+    progressCurrent: number,
+  ) {
+    const { data, error } = await rpcClient().rpc('checkpoint_weekly_digest_generation_attempt', {
+      p_attempt_id: this.job.attempt_id,
+      p_lease_token: this.job.lease_token,
+      p_output: output,
+      p_step: step,
+      p_progress_current: progressCurrent,
+      p_progress_total: 100,
+    });
+    if (error) throw new Error(`[weekly-generation] checkpoint: ${error.message}`);
+    if (data !== true)
+      throw new Error('[weekly-generation] checkpoint lease is no longer current.');
+  }
 }
 
 async function uploadPrivate(
@@ -585,9 +695,7 @@ function blockerGuidanceFromReport(
         message,
         ...(text(row.suggestedFix) ? { suggestedFix: text(row.suggestedFix)! } : {}),
         ...(locale === 'en' || locale === 'uk' ? { locale } : {}),
-        ...(text(row.revisionItemId)
-          ? { revisionItemId: text(row.revisionItemId)! }
-          : {}),
+        ...(text(row.revisionItemId) ? { revisionItemId: text(row.revisionItemId)! } : {}),
         ...(text(row.field) ? { field: text(row.field)! } : {}),
       },
     ];
@@ -613,9 +721,7 @@ function dimensionGuidanceFromReport(
     const name = text(row.name);
     const score = Number(row.score);
     if (!name || !known.has(name) || !Number.isFinite(score)) return [];
-    return [
-      { name, score, note: text(row.note) ?? '' } as WeeklyQualityDimension,
-    ];
+    return [{ name, score, note: text(row.note) ?? '' } as WeeklyQualityDimension];
   });
   return editorialQualityRetryGuidance({ dimensions });
 }
@@ -632,9 +738,7 @@ function dimensionGuidanceFromReport(
  * latest critic verdict is a complete, self-consistent picture of what's
  * currently wrong -- that's the only guidance a fresh attempt needs.
  */
-async function priorMasterRetryGuidance(
-  revisionId: string,
-): Promise<WeeklyMasterRetryGuidance[]> {
+async function priorMasterRetryGuidance(revisionId: string): Promise<WeeklyMasterRetryGuidance[]> {
   const db = getSupabaseAdmin();
   const { data, error } = await db
     .from('weekly_digest_artifacts')
@@ -767,7 +871,9 @@ async function revisionSpendSoFarUsd(revisionId: string): Promise<number> {
 }
 
 async function assertWithinMasterBudget(revisionId: string) {
-  const maxSpend = Number(process.env.WEEKLY_MASTER_MAX_SPEND_USD ?? DEFAULT_WEEKLY_MASTER_MAX_SPEND_USD);
+  const maxSpend = Number(
+    process.env.WEEKLY_MASTER_MAX_SPEND_USD ?? DEFAULT_WEEKLY_MASTER_MAX_SPEND_USD,
+  );
   const cap = Number.isFinite(maxSpend) ? maxSpend : DEFAULT_WEEKLY_MASTER_MAX_SPEND_USD;
   const spent = await revisionSpendSoFarUsd(revisionId);
   if (spent >= cap) {
@@ -855,25 +961,105 @@ async function loadMasterCheckpoint(
 }
 
 async function saveMasterCheckpoint(
-  jobId: string,
+  tracker: GenerationAttemptTracker,
   englishCheckpointHash: string,
   ukrainianCheckpointHash: string,
   checkpoint: WeeklyMasterCheckpoint,
+  step: 'english' | 'ukrainian',
 ) {
   const output: MasterCheckpointOutput = {
     englishCheckpointHash,
     ukrainianCheckpointHash,
     ...checkpoint,
   };
-  const db = getSupabaseAdmin();
-  const { error } = await db
-    .from('weekly_digest_generation_jobs')
-    .update({ output: output as unknown as Json })
-    .eq('id', jobId);
-  if (error) throw new Error(`[weekly-generation] checkpoint save: ${error.message}`);
+  await tracker.checkpoint(
+    output as unknown as Record<string, Json | undefined>,
+    step,
+    step === 'english' ? 30 : 58,
+  );
 }
 
-async function generateEditorialMaster(job: ClaimedGenerationJob) {
+async function recordMasterProviderCall(input: {
+  job: ClaimedGenerationJob;
+  tracker: GenerationAttemptTracker;
+  step: 'english' | 'ukrainian' | 'critic' | 'revisions';
+  metadata: EditorialGenerationMetadata;
+  durationMs?: number;
+}) {
+  const progress =
+    input.step === 'english'
+      ? 30
+      : input.step === 'ukrainian'
+        ? 60
+        : input.step === 'critic'
+          ? 77
+          : 80;
+  await input.tracker.event({
+    type: 'provider_call_completed',
+    step: input.step,
+    provider: input.metadata.provider,
+    model: input.metadata.model,
+    progressCurrent: progress,
+    progressTotal: 100,
+    metadata: {
+      role: input.step === 'critic' ? 'weekly.master_critic' : 'weekly.master_writer',
+      prompt_version: input.metadata.promptVersion,
+      prompt_tokens: input.metadata.promptTokens,
+      output_tokens: input.metadata.outputTokens,
+      cost_source: input.metadata.costSource,
+      estimated_cost_usd: input.metadata.estimatedCostUsd,
+      duration_ms: input.durationMs ?? null,
+    },
+  });
+  await recordGenerationCost({
+    scope: 'weekly',
+    kind: 'llm',
+    provider: input.metadata.provider,
+    model: input.metadata.model,
+    costUsd: input.metadata.estimatedCostUsd,
+    costSource: input.metadata.costSource,
+    promptTokens: input.metadata.promptTokens,
+    outputTokens: input.metadata.outputTokens,
+    weeklyDigestId: input.job.weekly_digest_id,
+    revisionId: input.job.revision_id,
+    jobId: input.job.id,
+    attemptId: input.job.attempt_id,
+    stepKey: input.step,
+    metadata: { prompt_version: input.metadata.promptVersion },
+  });
+}
+
+async function recordMasterProviderStart(
+  tracker: GenerationAttemptTracker,
+  step: 'english' | 'ukrainian' | 'critic' | 'revisions',
+) {
+  const progress = step === 'english' ? 2 : step === 'ukrainian' ? 30 : step === 'critic' ? 60 : 77;
+  await tracker.event({
+    type: 'provider_call_started',
+    step,
+    provider: 'router',
+    model: 'auto',
+    progressCurrent: progress,
+    progressTotal: 100,
+    message: `Starting ${step === 'critic' ? 'editorial critic' : 'editorial writer'} provider call`,
+    metadata: {
+      role: step === 'critic' ? 'weekly.master_critic' : 'weekly.master_writer',
+      selection: 'provider_chain',
+    },
+  });
+}
+
+async function generateEditorialMaster(
+  job: ClaimedGenerationJob,
+  tracker: GenerationAttemptTracker,
+) {
+  await tracker.event({
+    type: 'step_started',
+    step: 'prepare',
+    progressCurrent: 0,
+    progressTotal: 100,
+    message: 'Loading approved research packs',
+  });
   const requestedMode = contentStudioJobMode(job);
   await assertWithinMasterBudget(job.revision_id);
   const context = await loadGenerationContext(job);
@@ -898,23 +1084,79 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
     englishCheckpointHash,
     retryGuidance,
   );
-  const checkpoint = await loadMasterCheckpoint(job.id, englishCheckpointHash, ukrainianCheckpointHash);
+  const checkpoint = await loadMasterCheckpoint(
+    job.id,
+    englishCheckpointHash,
+    ukrainianCheckpointHash,
+  );
   // Accumulates across both onStepComplete calls so the ukrainian save doesn't
   // clobber the english step just persisted moments earlier in this same run.
   let runningCheckpoint = checkpoint;
+  const providerCallStartedAt = new Map<'english' | 'ukrainian' | 'critic' | 'revisions', number>();
+  await tracker.event({
+    type: 'step_started',
+    step: checkpoint?.english ? 'ukrainian' : 'english',
+    progressCurrent: checkpoint?.english ? 30 : 2,
+    progressTotal: 100,
+    message: checkpoint?.english ? 'Reusing English checkpoint' : 'Starting English writer',
+  });
   const result = await generateWeeklyMaster(sourceStories, researchPacks, retryGuidance, {
     checkpoint,
     onStepComplete: async (step, stepResult) => {
       runningCheckpoint = {
-        english: step === 'english' ? (stepResult as WeeklyMasterEnglishResult) : runningCheckpoint!.english,
+        english:
+          step === 'english'
+            ? (stepResult as WeeklyMasterEnglishResult)
+            : runningCheckpoint!.english,
         ukrainian:
-          step === 'ukrainian' ? (stepResult as WeeklyMasterUkrainianResult) : runningCheckpoint?.ukrainian,
+          step === 'ukrainian'
+            ? (stepResult as WeeklyMasterUkrainianResult)
+            : runningCheckpoint?.ukrainian,
       };
-      await saveMasterCheckpoint(job.id, englishCheckpointHash, ukrainianCheckpointHash, runningCheckpoint);
+      await saveMasterCheckpoint(
+        tracker,
+        englishCheckpointHash,
+        ukrainianCheckpointHash,
+        runningCheckpoint,
+        step,
+      );
+      if (step === 'english') {
+        await tracker.event({
+          type: 'step_started',
+          step: 'ukrainian',
+          progressCurrent: 30,
+          progressTotal: 100,
+          message: 'Starting Ukrainian adaptation',
+        });
+      }
+    },
+    onProviderCallStarted: async (step) => {
+      providerCallStartedAt.set(step, Date.now());
+      await recordMasterProviderStart(tracker, step);
+    },
+    onProviderCallCompleted: async (step, metadata) => {
+      const startedAt = providerCallStartedAt.get(step);
+      providerCallStartedAt.delete(step);
+      await recordMasterProviderCall({
+        job,
+        tracker,
+        step,
+        metadata,
+        durationMs: startedAt ? Date.now() - startedAt : undefined,
+      });
     },
     // Lets an owner-configured /admin/providers chain for weekly.master_writer
     // / weekly.master_critic override the default value-ranked OpenRouter step.
     db: getSupabaseAdmin(),
+  });
+  await tracker.event({
+    type: 'step_completed',
+    step: 'critic',
+    provider: result.generation.critic.provider,
+    model: result.generation.critic.model,
+    progressCurrent: 77,
+    progressTotal: 100,
+    message: 'Editorial critic completed',
   });
   const failures = editorialQualityFailures(result.quality);
   if (failures.length > 0) {
@@ -925,6 +1167,7 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
       generation: result.generation,
       passed: false,
       jobId: job.id,
+      recordCost: false,
     });
     // Everything the LLM produced (article EN/UK) is real,
     // paid-for content -- discarding it because one dimension missed its
@@ -975,6 +1218,14 @@ async function generateEditorialMaster(job: ClaimedGenerationJob) {
     generation: result.generation,
     passed: true,
     jobId: job.id,
+    recordCost: false,
+  });
+  await tracker.event({
+    type: 'step_completed',
+    step: 'persist',
+    progressCurrent: 95,
+    progressTotal: 100,
+    message: 'Revision and quality report saved',
   });
   await queuePostMasterJobs(job.weekly_digest_id, created.revisionId, created.newItems);
   return {
@@ -1428,24 +1679,31 @@ async function loadSocialCopyCheckpoint(
 }
 
 async function saveSocialCopyCheckpoint(
-  jobId: string,
+  tracker: GenerationAttemptTracker,
   checkpointHash: string,
   checkpoint: SocialCopyCheckpoint,
+  progressCurrent: number,
 ) {
   const output: SocialCopyCheckpointOutput = {
     socialCopyCheckpointHash: checkpointHash,
     tokens: checkpoint.tokens,
     adaptations: checkpoint.adaptations,
   };
-  const db = getSupabaseAdmin();
-  const { error } = await db
-    .from('weekly_digest_generation_jobs')
-    .update({ output: output as unknown as Json })
-    .eq('id', jobId);
-  if (error) throw new Error(`[weekly-generation] social copy checkpoint save: ${error.message}`);
+  await tracker.checkpoint(
+    output as unknown as Record<string, Json | undefined>,
+    'channels',
+    progressCurrent,
+  );
 }
 
-async function generateSocialCopy(job: ClaimedGenerationJob) {
+async function generateSocialCopy(job: ClaimedGenerationJob, tracker: GenerationAttemptTracker) {
+  await tracker.event({
+    type: 'step_started',
+    step: 'prepare',
+    progressCurrent: 0,
+    progressTotal: 100,
+    message: 'Loading approved articles and cover for social copy',
+  });
   const context = await loadGenerationContext(job);
   const bundle = masterBundleFromArtifacts(context);
   const locales = await localeMap();
@@ -1476,6 +1734,19 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
       continue;
     }
     const locale = locales.get(channel)!;
+    const completedChannels = adaptations.length;
+    const channelProgress = Math.round(5 + ((completedChannels + 1) / SOCIAL_CHANNELS.length) * 85);
+    await tracker.event({
+      type: 'provider_call_started',
+      step: 'channels',
+      provider: 'router',
+      model: 'auto',
+      progressCurrent: Math.round(5 + (completedChannels / SOCIAL_CHANNELS.length) * 85),
+      progressTotal: 100,
+      message: `Starting ${channel} social writer and critic`,
+      metadata: { channel, role: 'weekly.social_writer', selection: 'provider_chain' },
+    });
+    const providerPipelineStartedAt = Date.now();
     const trackedUrl = new URL(`/r/s/${tokens[channel]}`, SITE_URL).toString();
     const assets = await socialAssetsForChannel(context, channel);
     const adaptation = await adaptWeeklySocialChannel({
@@ -1504,7 +1775,26 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
       weeklyDigestId: job.weekly_digest_id,
       revisionId: job.revision_id,
       jobId: job.id,
+      attemptId: job.attempt_id,
+      stepKey: `social:${channel}:writer`,
       metadata: { channel, role: 'writer' },
+    });
+    await tracker.event({
+      type: 'provider_call_completed',
+      step: 'channels',
+      provider: adaptation.writer.provider,
+      model: adaptation.writer.model,
+      progressCurrent: channelProgress,
+      progressTotal: 100,
+      message: `${channel} social writer completed`,
+      metadata: {
+        channel,
+        role: 'weekly.social_writer',
+        prompt_tokens: adaptation.writer.usage.promptTokens,
+        output_tokens: adaptation.writer.usage.outputTokens,
+        estimated_cost_usd: adaptation.writer.usage.estimatedCostUsd,
+        duration_ms: Date.now() - providerPipelineStartedAt,
+      },
     });
     const criticUsage = adaptation.qualityReport?.critic?.usage;
     if (criticUsage && adaptation.qualityReport?.critic) {
@@ -1520,15 +1810,35 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
         weeklyDigestId: job.weekly_digest_id,
         revisionId: job.revision_id,
         jobId: job.id,
+        attemptId: job.attempt_id,
+        stepKey: `social:${channel}:critic`,
         metadata: { channel, role: 'critic' },
+      });
+      await tracker.event({
+        type: 'provider_call_completed',
+        step: 'channels',
+        provider: adaptation.qualityReport.critic.provider ?? 'unknown',
+        model: adaptation.qualityReport.critic.model ?? 'unknown',
+        progressCurrent: channelProgress,
+        progressTotal: 100,
+        message: `${channel} social critic completed`,
+        metadata: {
+          channel,
+          role: 'weekly.social_critic',
+          prompt_tokens: criticUsage.promptTokens,
+          output_tokens: criticUsage.outputTokens,
+          estimated_cost_usd: criticUsage.estimatedCostUsd,
+        },
       });
     }
     adaptations.push(adaptation);
     checkpointAdaptations[channel] = adaptation;
-    await saveSocialCopyCheckpoint(job.id, checkpointHash, {
-      tokens,
-      adaptations: checkpointAdaptations,
-    });
+    await saveSocialCopyCheckpoint(
+      tracker,
+      checkpointHash,
+      { tokens, adaptations: checkpointAdaptations },
+      channelProgress,
+    );
   }
   const instagram = adaptations.find((draft) => draft.channel === 'instagram');
   if (instagram) {
@@ -1694,6 +2004,13 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
     })),
   );
   if (reviewError) throw new Error(`[weekly-generation] social reviews: ${reviewError.message}`);
+  await tracker.event({
+    type: 'step_completed',
+    step: 'persist',
+    progressCurrent: 95,
+    progressTotal: 100,
+    message: 'Social package and review records saved',
+  });
   return {
     artifactId: null,
     output: {
@@ -1716,7 +2033,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob) {
  * job, after the article is approved -- see wiki/pipeline/video-boundary.md
  * for why this moved out of the master mega-call in PR6.
  */
-async function generateVideoScript(job: ClaimedGenerationJob) {
+async function generateVideoScript(job: ClaimedGenerationJob, tracker: GenerationAttemptTracker) {
   const context = await loadGenerationContext(job);
   const articleEn = context.artifacts.find(
     (artifact) =>
@@ -1729,7 +2046,35 @@ async function generateVideoScript(job: ClaimedGenerationJob) {
     throw new Error('Approve the current English article before generating the video script.');
   }
   const article = articleEn.content as unknown as WeeklyArticleMaster;
+  const startedAt = Date.now();
+  await tracker.event({
+    type: 'provider_call_started',
+    step: 'script',
+    provider: 'router',
+    model: 'auto',
+    progressCurrent: 10,
+    progressTotal: 100,
+    message: 'Starting video script provider call',
+    metadata: { role: 'weekly.video_script', selection: 'provider_chain' },
+  });
   const { script, generation, issues } = await generateWeeklyVideoScript(article);
+  await tracker.event({
+    type: 'provider_call_completed',
+    step: 'script',
+    provider: generation.provider,
+    model: generation.model,
+    progressCurrent: 90,
+    progressTotal: 100,
+    message: 'Video script provider call completed',
+    metadata: {
+      role: 'weekly.video_script',
+      prompt_version: generation.promptVersion,
+      prompt_tokens: generation.promptTokens,
+      output_tokens: generation.outputTokens,
+      estimated_cost_usd: generation.estimatedCostUsd,
+      duration_ms: Date.now() - startedAt,
+    },
+  });
   await recordGenerationCost({
     scope: 'weekly',
     kind: 'llm',
@@ -1742,6 +2087,8 @@ async function generateVideoScript(job: ClaimedGenerationJob) {
     weeklyDigestId: job.weekly_digest_id,
     revisionId: job.revision_id,
     jobId: job.id,
+    attemptId: job.attempt_id,
+    stepKey: 'video_script',
     metadata: { step: 'video_script', prompt_version: generation.promptVersion },
   });
   const artifactId = await saveGeneratedArtifact({
@@ -2176,10 +2523,17 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       revisionId: job.revision_id,
       jobId: job.id,
       artifactId,
-      metadata: { revision_item_id: item.id, source_kind: sourceKind, variant_count: 1 + alternateBuffers.length },
+      metadata: {
+        revision_item_id: item.id,
+        source_kind: sourceKind,
+        variant_count: 1 + alternateBuffers.length,
+      },
     });
   }
-  return { artifactId, output: { path, byte_size: image.length, sha256: hash, variants: 1 + alternateBuffers.length } };
+  return {
+    artifactId,
+    output: { path, byte_size: image.length, sha256: hash, variants: 1 + alternateBuffers.length },
+  };
 }
 
 async function generateCover(job: ClaimedGenerationJob) {
@@ -2346,11 +2700,11 @@ async function generateCoverDerivatives(job: ClaimedGenerationJob) {
   };
 }
 
-async function runGenerationJob(job: ClaimedGenerationJob) {
+async function runGenerationJob(job: ClaimedGenerationJob, tracker: GenerationAttemptTracker) {
   if (job.job_type === 'research_pack') return generateResearchPack(job);
-  if (job.job_type === 'editorial_master') return generateEditorialMaster(job);
-  if (job.job_type === 'social_copy') return generateSocialCopy(job);
-  if (job.job_type === 'video_script') return generateVideoScript(job);
+  if (job.job_type === 'editorial_master') return generateEditorialMaster(job, tracker);
+  if (job.job_type === 'social_copy') return generateSocialCopy(job, tracker);
+  if (job.job_type === 'video_script') return generateVideoScript(job, tracker);
   if (job.job_type === 'video_manifest') return generateVideoManifest(job);
   if (job.job_type === 'pdf') return generatePdf(job);
   if (job.job_type === 'story_image') return generateStoryImage(job);
@@ -2359,8 +2713,12 @@ async function runGenerationJob(job: ClaimedGenerationJob) {
   throw new Error(`Unsupported generation job type: ${job.job_type}`);
 }
 
-export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string[]) {
-  const jobs = await claimGenerationJobs(limit, jobTypes);
+export async function runWeeklyDigestGenerationJobs(
+  limit = 5,
+  jobTypes?: string[],
+  options: GenerationWorkerOptions = {},
+) {
+  const jobs = await claimGenerationJobs(limit, jobTypes, options);
   const results: Array<{
     id: string;
     jobType: string;
@@ -2369,9 +2727,19 @@ export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string
     error?: string;
   }> = [];
   for (const job of jobs) {
+    const tracker = new GenerationAttemptTracker(job);
+    tracker.start();
     try {
-      const result = await runGenerationJob(job);
-      await finishGenerationJob(job.id, true, result.output, null, result.artifactId);
+      await tracker.event({
+        type: 'worker_ready',
+        step: 'prepare',
+        progressCurrent: 0,
+        progressTotal: 100,
+        message: `Worker claimed by ${job.execution_backend}`,
+        metadata: { backend: job.execution_backend, attempt: job.attempts },
+      });
+      const result = await runGenerationJob(job, tracker);
+      await finishGenerationJob(job, true, result.output, null, null, false, result.artifactId);
       results.push({
         id: job.id,
         jobType: job.job_type,
@@ -2380,14 +2748,26 @@ export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string
       });
     } catch (error) {
       const message = safeMessage(error);
-      const retryable = retryableGenerationFailure(message);
+      const failure = classifyGenerationFailure(message);
       try {
-        await finishGenerationJob(job.id, false, { retryable }, message, null);
+        await finishGenerationJob(
+          job,
+          false,
+          { retryable: failure.retryable, failure_code: failure.code },
+          message,
+          failure.code,
+          failure.retryable,
+          null,
+        );
       } catch (finishError) {
         await alertWeeklyDigestIssue({
           weeklyDigestId: job.weekly_digest_id,
           phase: 'generation',
-          message: `${message}; ${safeMessage(finishError)}`.slice(0, 1800),
+          message:
+            `${job.job_type} attempt ${job.attempts} on ${job.execution_backend}: ${message}; ${safeMessage(finishError)}`.slice(
+              0,
+              1800,
+            ),
         });
         results.push({
           id: job.id,
@@ -2397,14 +2777,16 @@ export async function runWeeklyDigestGenerationJobs(limit = 5, jobTypes?: string
         });
         continue;
       }
-      if (!retryable || job.attempts >= 5) {
+      if (!failure.retryable || job.attempts >= 3) {
         await alertWeeklyDigestIssue({
           weeklyDigestId: job.weekly_digest_id,
           phase: 'generation',
-          message,
+          message: `${job.job_type} attempt ${job.attempts} on ${job.execution_backend}: ${message}. ${failure.nextAction}`,
         });
       }
       results.push({ id: job.id, jobType: job.job_type, outcome: 'failed', error: message });
+    } finally {
+      await tracker.stop();
     }
   }
   return { claimed: jobs.length, results };

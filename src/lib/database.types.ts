@@ -775,6 +775,7 @@ export type Database = {
       generation_cost_events: CmsTable<
         {
           artifact_id: string | null;
+          attempt_id: string | null;
           cost_source: string;
           cost_usd: number;
           created_at: string;
@@ -788,10 +789,12 @@ export type Database = {
           provider: string;
           revision_id: string | null;
           scope: string;
+          step_key: string | null;
           weekly_digest_id: string | null;
         },
         {
           artifact_id?: string | null;
+          attempt_id?: string | null;
           cost_source: string;
           cost_usd: number;
           created_at?: string;
@@ -805,6 +808,7 @@ export type Database = {
           provider: string;
           revision_id?: string | null;
           scope: string;
+          step_key?: string | null;
           weekly_digest_id?: string | null;
         }
       >;
@@ -1399,17 +1403,32 @@ export type Database = {
           attempts: number;
           created_at: string;
           created_by: string | null;
+          current_attempt_id: string | null;
+          current_model: string | null;
+          current_provider: string | null;
+          current_step: string | null;
+          dispatch_token: string | null;
+          execution_backend: string;
+          failure_code: string | null;
           finished_at: string | null;
+          heartbeat_at: string | null;
           id: string;
           idempotency_key: string;
           input: Json;
           job_type: string;
           last_error: string | null;
           locked_at: string | null;
+          max_attempts: number;
+          next_attempt_at: string | null;
           output: Json;
+          progress_current: number;
+          progress_total: number;
+          progress_unit: string;
           revision_id: string;
+          retry_of_job_id: string | null;
           started_at: string | null;
           status: string;
+          status_reason: string | null;
           updated_at: string;
           weekly_digest_id: string;
         },
@@ -1418,19 +1437,112 @@ export type Database = {
           attempts?: number;
           created_at?: string;
           created_by?: string | null;
+          current_attempt_id?: string | null;
+          current_model?: string | null;
+          current_provider?: string | null;
+          current_step?: string | null;
+          dispatch_token?: string | null;
+          execution_backend?: string;
+          failure_code?: string | null;
           finished_at?: string | null;
+          heartbeat_at?: string | null;
           id?: string;
           idempotency_key: string;
           input?: Json;
           job_type: string;
           last_error?: string | null;
           locked_at?: string | null;
+          max_attempts?: number;
+          next_attempt_at?: string | null;
           output?: Json;
+          progress_current?: number;
+          progress_total?: number;
+          progress_unit?: string;
           revision_id: string;
+          retry_of_job_id?: string | null;
           started_at?: string | null;
           status?: string;
+          status_reason?: string | null;
           updated_at?: string;
           weekly_digest_id: string;
+        }
+      >;
+      weekly_digest_generation_attempts: CmsTable<
+        {
+          attempt_number: number;
+          backend: string;
+          current_step: string | null;
+          deadline_at: string | null;
+          error_code: string | null;
+          error_message: string | null;
+          external_run_url: string | null;
+          finished_at: string | null;
+          github_run_id: string | null;
+          heartbeat_at: string;
+          id: string;
+          job_id: string;
+          lease_token: string;
+          model: string | null;
+          outcome: Json;
+          progress_current: number;
+          progress_total: number;
+          provider: string | null;
+          started_at: string;
+          status: string;
+        },
+        {
+          attempt_number: number;
+          backend: string;
+          current_step?: string | null;
+          deadline_at?: string | null;
+          error_code?: string | null;
+          error_message?: string | null;
+          external_run_url?: string | null;
+          finished_at?: string | null;
+          github_run_id?: string | null;
+          heartbeat_at?: string;
+          id?: string;
+          job_id: string;
+          lease_token?: string;
+          model?: string | null;
+          outcome?: Json;
+          progress_current?: number;
+          progress_total?: number;
+          provider?: string | null;
+          started_at?: string;
+          status?: string;
+        }
+      >;
+      weekly_digest_generation_events: CmsTable<
+        {
+          attempt_id: string | null;
+          created_at: string;
+          event_type: string;
+          id: number;
+          job_id: string;
+          level: string;
+          message: string | null;
+          metadata: Json;
+          model: string | null;
+          progress_current: number | null;
+          progress_total: number | null;
+          provider: string | null;
+          step: string | null;
+        },
+        {
+          attempt_id?: string | null;
+          created_at?: string;
+          event_type: string;
+          id?: number;
+          job_id: string;
+          level?: string;
+          message?: string | null;
+          metadata?: Json;
+          model?: string | null;
+          progress_current?: number | null;
+          progress_total?: number | null;
+          provider?: string | null;
+          step?: string | null;
         }
       >;
       weekly_digest_review_items: CmsTable<
@@ -2006,6 +2118,10 @@ export type Database = {
           p_output?: Json;
           p_succeeded: boolean;
         };
+        Returns: Database['public']['Tables']['weekly_digest_generation_jobs']['Row'];
+      };
+      retry_weekly_digest_generation_job: {
+        Args: { p_job_id: string };
         Returns: Database['public']['Tables']['weekly_digest_generation_jobs']['Row'];
       };
       finish_weekly_digest_release: {

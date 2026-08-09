@@ -8,8 +8,10 @@ Sources: `.env.example`, PR #160–#163, #167–#175, #177, #189, `src/lib/weekl
 `supabase/migrations/20260806140000_weekly_digest_story_directions.sql`,
 live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189, змержено
 2026-08-07), PDF page-cap fix (гілка `fix/weekly-pdf-page-cap`, 2026-08-07), admin
-mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08)
-Last updated: 2026-08-08
+mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
+`supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
+owner-approved reliability plan 2026-08-08
+Last updated: 2026-08-09
 
 ---
 
@@ -66,6 +68,43 @@ Structured claims (`summary_en` + `facts_en`) залишаються обов’
 `primarySourceExcerpt` / corroborating excerpts. Деталь, яка є в excerpt, але відсутня в
 numbered claims, **не** має валитись як `UNSUPPORTED_*`.
 (source: `editorial-llm.ts`, `research.ts`, `content-studio.ts`)
+
+## Durable generation control plane (implementation 2026-08-09)
+
+`weekly_digest_generation_jobs` is the logical job; each actual worker lease is an append-only
+row in `weekly_digest_generation_attempts`, and state transitions/provider calls are stored in
+`weekly_digest_generation_events`. A completion/checkpoint is accepted only when its
+`attempt_id + lease_token` is still current, so an evicted Vercel process cannot overwrite a
+newer retry. The job snapshot contains `current_step`, provider/model, monotonic progress,
+heartbeat, next retry, failure code and human-readable status reason.
+(source: `supabase/migrations/20260809060929_weekly_generation_control_plane.sql`)
+
+| Job type | Worker | Time budget |
+|---|---|---|
+| `editorial_master`, `social_copy`, `video_script` | one fenced GitHub Actions run per job | 120 min workflow timeout |
+| `research_pack`, `story_image`, `cover`, `pdf`, `social_asset`, `video_manifest` | Vercel | internal 240 s deadline under the 300 s platform cap |
+
+The database `pg_cron` reaper runs each minute with a 90-second stale-heartbeat threshold. The
+five-minute internal route claims only short Vercel jobs and dispatches at most one eligible long job.
+Queuing a long job also dispatches it immediately. GitHub receives its exact `job_id` plus one-time
+dispatch token and uses a per-digest
+concurrency group; it cannot drain unrelated jobs. Retryable infrastructure failures back off for
+1, 5 then 15 minutes; validation, quality and quota failures are terminal and require a linked
+manual retry. Legacy counter-only attempts are materialized during migration so historical retry
+counts are not rewritten as one fictional run; a stale legacy long job becomes terminal
+`legacy_worker_timeout` and receives exactly one linked GitHub recovery job with `Attempt 1/3`.
+(source: `.github/workflows/weekly-master-cli-worker.yml`,
+`pipeline/scripts/run-weekly-master-cli-worker.ts`, `src/lib/weekly-digest/generation-worker.ts`,
+`src/app/api/internal/weekly/generate/route.ts`)
+
+The admin workspace polls `/api/admin/weekly/[id]/generation-status` every five seconds without
+refreshing the editor. It displays attempt/max, backend/run link, current step/provider/model,
+progress, elapsed/deadline ETA, heartbeat, retry timing, terminal reason and a compact event
+timeline. Until five comparable successful samples exist, ETA is explicitly labelled as the
+configured budget rather than invented precision.
+(source: `src/components/admin/weekly-generation-jobs-live.tsx`,
+`src/app/api/admin/weekly/[id]/generation-status/route.ts`,
+`src/lib/weekly-digest/generation-control.ts`)
 
 Studio version **`weekly-content-studio-v2.1`** + research schema **`weekly-research-v3`** +
 master prompt **`weekly-master-v6`**: після деплою **Start / retry Content Studio** ставить

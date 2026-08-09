@@ -3,6 +3,7 @@ import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { HookCandidatePicker } from '@/components/admin/hook-candidate-picker';
 import { SocialCharCount } from '@/components/admin/social-char-count';
 import { StatusPill } from '@/components/admin/status-pill';
+import { WeeklyGenerationJobsLive } from '@/components/admin/weekly-generation-jobs-live';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
@@ -10,6 +11,8 @@ import type {
   WeeklyArtifactAdminRow,
   WeeklyArtifactReviewAdminRow,
   WeeklyDigestWorkspace,
+  WeeklyGenerationAttemptAdminRow,
+  WeeklyGenerationEventAdminRow,
   WeeklyGenerationJobAdminRow,
 } from '@/lib/weekly-digest/admin-data';
 import {
@@ -153,29 +156,25 @@ function kyivDate(value: string | null) {
   }).format(new Date(value.length === 10 ? `${value}T12:00:00Z` : value));
 }
 
-function jobsForTab(jobs: WeeklyGenerationJobAdminRow[], tab: WeeklyWorkspaceTab) {
-  const allowed = GENERATION_JOB_TYPES_BY_TAB[tab];
-  if (allowed.length === 0) return [];
-  const types = new Set(allowed);
-  return jobs.filter((job) => types.has(job.job_type));
-}
-
 function isActiveGenerationJob(status: string) {
   return status === 'queued' || status === 'running';
 }
 
 function GenerationJobsSection({
+  digestId,
   jobs,
+  attempts,
+  events,
   tab,
-  limit = 25,
 }: {
+  digestId: string;
   jobs: WeeklyGenerationJobAdminRow[];
+  attempts: WeeklyGenerationAttemptAdminRow[];
+  events: WeeklyGenerationEventAdminRow[];
   tab: WeeklyWorkspaceTab;
-  limit?: number;
 }) {
   if (GENERATION_JOB_TYPES_BY_TAB[tab].length === 0) return null;
 
-  const filtered = jobsForTab(jobs, tab).slice(0, limit);
   const headingId = `jobs-${tab}-heading`;
 
   return (
@@ -188,45 +187,13 @@ function GenerationJobsSection({
           {GENERATION_JOB_TYPES_BY_TAB[tab].join(' · ')}
         </span>
       </div>
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[52rem] text-left text-sm">
-          <thead className="text-xs font-bold tracking-wide text-slate-500 uppercase">
-            <tr>
-              <th className="pb-3">Job</th>
-              <th className="pb-3">Status</th>
-              <th className="pb-3">Attempts</th>
-              <th className="pb-3">Created</th>
-              <th className="pb-3">Latest result</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/8">
-            {filtered.map((job) => (
-              <tr key={job.id}>
-                <td className="py-3 font-semibold text-white">{job.job_type}</td>
-                <td className="py-3">
-                  <StatusPill value={job.status} />
-                </td>
-                <td className="py-3 text-slate-400">{job.attempts}</td>
-                <td className="py-3 text-slate-400">{kyivDateTime(job.created_at)}</td>
-                <td className="max-w-sm py-3 text-xs leading-5">
-                  {job.last_error ? (
-                    <p className="whitespace-pre-wrap text-red-200">{job.last_error}</p>
-                  ) : job.finished_at ? (
-                    <span className="text-slate-500">Finished {kyivDateTime(job.finished_at)}</span>
-                  ) : (
-                    <span className="text-slate-500">Waiting for worker</span>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {filtered.length === 0 ? (
-          <p className="py-6 text-center text-sm text-slate-500">
-            No generation jobs for this tab yet.
-          </p>
-        ) : null}
-      </div>
+      <WeeklyGenerationJobsLive
+        digestId={digestId}
+        jobTypes={GENERATION_JOB_TYPES_BY_TAB[tab]}
+        initialJobs={jobs}
+        initialAttempts={attempts}
+        initialEvents={events}
+      />
     </section>
   );
 }
@@ -238,10 +205,7 @@ function GenerationJobsOverviewSummary({
   digestId: string;
   jobs: WeeklyGenerationJobAdminRow[];
 }) {
-  const byTab = new Map<
-    WeeklyWorkspaceTab,
-    { total: number; active: number; failed: number }
-  >();
+  const byTab = new Map<WeeklyWorkspaceTab, { total: number; active: number; failed: number }>();
   for (const tab of WEEKLY_WORKSPACE_TABS) {
     if (GENERATION_JOB_TYPES_BY_TAB[tab.id].length === 0) continue;
     byTab.set(tab.id, { total: 0, active: 0, failed: 0 });
@@ -293,7 +257,9 @@ function GenerationJobsOverviewSummary({
                 </td>
                 <td className="py-3 text-slate-300">{total}</td>
                 <td className="py-3 text-slate-300">{active}</td>
-                <td className={`py-3 ${failed > 0 ? 'font-semibold text-red-200' : 'text-slate-300'}`}>
+                <td
+                  className={`py-3 ${failed > 0 ? 'font-semibold text-red-200' : 'text-slate-300'}`}
+                >
                   {failed}
                 </td>
               </tr>
@@ -696,13 +662,9 @@ function ArtifactCard({
   const illustrationScene =
     typeof artifactMetadata.scene === 'string' ? artifactMetadata.scene : null;
   const illustrationPositive =
-    typeof artifactMetadata.positive_prompt === 'string'
-      ? artifactMetadata.positive_prompt
-      : null;
+    typeof artifactMetadata.positive_prompt === 'string' ? artifactMetadata.positive_prompt : null;
   const illustrationNegative =
-    typeof artifactMetadata.negative_prompt === 'string'
-      ? artifactMetadata.negative_prompt
-      : null;
+    typeof artifactMetadata.negative_prompt === 'string' ? artifactMetadata.negative_prompt : null;
   const illustrationSceneSource =
     typeof artifactMetadata.scene_source === 'string' ? artifactMetadata.scene_source : null;
   const alternateVariantPaths = variantSelection ? listFrom(artifact.content, 'preview_paths') : [];
@@ -799,7 +761,10 @@ function ArtifactCard({
               </div>
             ) : null}
             {variantSelection ? (
-              <form action={enqueueWeeklyGenerationAction} className="grid gap-2 border-t border-white/10 pt-3">
+              <form
+                action={enqueueWeeklyGenerationAction}
+                className="grid gap-2 border-t border-white/10 pt-3"
+              >
                 <input type="hidden" name="weekly_digest_id" value={digestId} />
                 <input type="hidden" name="revision_id" value={variantSelection.revisionId} />
                 <input type="hidden" name="job_type" value="story_image" />
@@ -1163,7 +1128,8 @@ function OverviewPanel({
                 const isActive = revision.id === workspace.digest.active_revision_id;
                 const draftEvent = workspace.releaseEvents.find(
                   (event) =>
-                    event.revision_id === revision.id && event.event_type === 'draft_revision_created',
+                    event.revision_id === revision.id &&
+                    event.event_type === 'draft_revision_created',
                 );
                 const draftReason = draftEvent ? textFrom(draftEvent.payload, 'reason') : null;
                 return (
@@ -1191,8 +1157,8 @@ function OverviewPanel({
                     <p className="mt-1 truncate text-sm text-slate-300">{revision.title_en}</p>
                     {draftReason ? (
                       <p className="mt-1 text-xs text-amber-200/80">
-                        Never became active — {draftReason}. Review the article/video content
-                        before restoring.
+                        Never became active — {draftReason}. Review the article/video content before
+                        restoring.
                       </p>
                     ) : null}
                     {canRestoreRevision && !isActive ? (
@@ -1293,8 +1259,7 @@ function ResearchPanel({
     workspace.generationJobs.find((job) => job.job_type === 'editorial_master') ?? null;
   const masterWaitingOnPackApprovals =
     editorialMasterJob?.status === 'queued' && readyResearch === 3 && approvedResearch < 3;
-  const masterRunnable =
-    editorialMasterJob?.status === 'queued' && approvedResearch === 3;
+  const masterRunnable = editorialMasterJob?.status === 'queued' && approvedResearch === 3;
 
   return (
     <div className="grid gap-5">
@@ -1308,10 +1273,10 @@ function ResearchPanel({
               Top 3 evidence packs
             </h2>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-              Job <span className="font-semibold text-slate-300">succeeded</span> only means the pack
-              was generated. The worker will not start <code>editorial_master</code> until you click{' '}
-              <span className="font-semibold text-slate-300">Approve version</span> on all three
-              packs below ({approvedResearch}/3 approved now).
+              Job <span className="font-semibold text-slate-300">succeeded</span> only means the
+              pack was generated. The worker will not start <code>editorial_master</code> until you
+              click <span className="font-semibold text-slate-300">Approve version</span> on all
+              three packs below ({approvedResearch}/3 approved now).
             </p>
           </div>
           {canEdit && workspace.revision ? (
@@ -1349,8 +1314,8 @@ function ResearchPanel({
             all three — not optional.
           </li>
           <li>
-            Only then does <code>editorial_master</code> leave the queue (cron ~every 5 min via
-            OpenRouter, or use Claude subscription).
+            Only then does <code>editorial_master</code> leave the queue and receive its dedicated
+            GitHub Actions worker (the five-minute cron remains a safety dispatcher).
           </li>
           <li>
             Review Master quality below → fix blockers via retry if needed →{' '}
@@ -1379,9 +1344,9 @@ function ResearchPanel({
           >
             <p className="font-bold text-cyan-100">Packs approved — master is eligible</p>
             <p className="mt-1">
-              All three packs are approved. The generate cron should claim{' '}
-              <code>editorial_master</code> within ~5 minutes. Refresh this tab if the status stays
-              queued longer than that.
+              All three packs are approved. The control plane should dispatch{' '}
+              <code>editorial_master</code> immediately. Check its precise status and run link below
+              if it remains queued.
             </p>
           </div>
         ) : null}
@@ -1720,7 +1685,13 @@ function ResearchPanel({
         </section>
       )}
 
-      <GenerationJobsSection jobs={workspace.generationJobs} tab="research" />
+      <GenerationJobsSection
+        digestId={workspace.digest.id}
+        jobs={workspace.generationJobs}
+        attempts={workspace.generationAttempts}
+        events={workspace.generationEvents}
+        tab="research"
+      />
     </div>
   );
 }
@@ -2386,7 +2357,13 @@ function ArticlePanel({
         </div>
       </section>
 
-      <GenerationJobsSection jobs={workspace.generationJobs} tab="article" />
+      <GenerationJobsSection
+        digestId={workspace.digest.id}
+        jobs={workspace.generationJobs}
+        attempts={workspace.generationAttempts}
+        events={workspace.generationEvents}
+        tab="article"
+      />
     </div>
   );
 }
@@ -2679,7 +2656,13 @@ function VisualsPanel({
         )}
       </section>
 
-      <GenerationJobsSection jobs={workspace.generationJobs} tab="visuals" />
+      <GenerationJobsSection
+        digestId={workspace.digest.id}
+        jobs={workspace.generationJobs}
+        attempts={workspace.generationAttempts}
+        events={workspace.generationEvents}
+        tab="visuals"
+      />
     </div>
   );
 }
@@ -3054,8 +3037,8 @@ function SocialPanel({
                   </div>
                 ) : (
                   <p className="rounded-xl border border-amber-400/20 bg-amber-400/7 px-3 py-2 text-xs text-amber-100">
-                    No channel images yet. Generate Social assets on the Visuals tab, then regenerate
-                    social copy if assets stay empty.
+                    No channel images yet. Generate Social assets on the Visuals tab, then
+                    regenerate social copy if assets stay empty.
                   </p>
                 )}
                 <label className={LABEL}>
@@ -3344,7 +3327,13 @@ function SocialPanel({
         );
       })}
 
-      <GenerationJobsSection jobs={workspace.generationJobs} tab="social" />
+      <GenerationJobsSection
+        digestId={workspace.digest.id}
+        jobs={workspace.generationJobs}
+        attempts={workspace.generationAttempts}
+        events={workspace.generationEvents}
+        tab="social"
+      />
     </div>
   );
 }
@@ -3464,7 +3453,13 @@ function PdfPanel({
         })}
       </div>
 
-      <GenerationJobsSection jobs={workspace.generationJobs} tab="pdf" />
+      <GenerationJobsSection
+        digestId={workspace.digest.id}
+        jobs={workspace.generationJobs}
+        attempts={workspace.generationAttempts}
+        events={workspace.generationEvents}
+        tab="pdf"
+      />
     </div>
   );
 }
@@ -3523,7 +3518,9 @@ function VideoPanel({
 
       <div className={`${PANEL} flex flex-wrap items-center justify-between gap-3`}>
         <div>
-          <h3 className="text-lg font-bold text-white">TV-news script (cold open → anchor → b-roll → outro)</h3>
+          <h3 className="text-lg font-bold text-white">
+            TV-news script (cold open → anchor → b-roll → outro)
+          </h3>
           <p className="mt-1 text-sm text-slate-500">
             Dramatizes the approved English article into the scene plan below plus three Ukrainian
             Shorts. Review the generated script, then hand-edit it in the form below if needed.
@@ -3834,7 +3831,13 @@ function VideoPanel({
         </div>
       </section>
 
-      <GenerationJobsSection jobs={workspace.generationJobs} tab="video" />
+      <GenerationJobsSection
+        digestId={workspace.digest.id}
+        jobs={workspace.generationJobs}
+        attempts={workspace.generationAttempts}
+        events={workspace.generationEvents}
+        tab="video"
+      />
     </div>
   );
 }
