@@ -162,12 +162,14 @@ function isActiveGenerationJob(status: string) {
 
 function GenerationJobsSection({
   digestId,
+  revisionId,
   jobs,
   attempts,
   events,
   tab,
 }: {
   digestId: string;
+  revisionId: string | null;
   jobs: WeeklyGenerationJobAdminRow[];
   attempts: WeeklyGenerationAttemptAdminRow[];
   events: WeeklyGenerationEventAdminRow[];
@@ -189,6 +191,7 @@ function GenerationJobsSection({
       </div>
       <WeeklyGenerationJobsLive
         digestId={digestId}
+        revisionId={revisionId}
         jobTypes={GENERATION_JOB_TYPES_BY_TAB[tab]}
         initialJobs={jobs}
         initialAttempts={attempts}
@@ -1687,6 +1690,7 @@ function ResearchPanel({
 
       <GenerationJobsSection
         digestId={workspace.digest.id}
+        revisionId={workspace.revision?.id ?? null}
         jobs={workspace.generationJobs}
         attempts={workspace.generationAttempts}
         events={workspace.generationEvents}
@@ -2397,6 +2401,7 @@ function ArticlePanel({
 
       <GenerationJobsSection
         digestId={workspace.digest.id}
+        revisionId={workspace.revision?.id ?? null}
         jobs={workspace.generationJobs}
         attempts={workspace.generationAttempts}
         events={workspace.generationEvents}
@@ -2696,6 +2701,7 @@ function VisualsPanel({
 
       <GenerationJobsSection
         digestId={workspace.digest.id}
+        revisionId={workspace.revision?.id ?? null}
         jobs={workspace.generationJobs}
         attempts={workspace.generationAttempts}
         events={workspace.generationEvents}
@@ -3367,6 +3373,7 @@ function SocialPanel({
 
       <GenerationJobsSection
         digestId={workspace.digest.id}
+        revisionId={workspace.revision?.id ?? null}
         jobs={workspace.generationJobs}
         attempts={workspace.generationAttempts}
         events={workspace.generationEvents}
@@ -3493,6 +3500,7 @@ function PdfPanel({
 
       <GenerationJobsSection
         digestId={workspace.digest.id}
+        revisionId={workspace.revision?.id ?? null}
         jobs={workspace.generationJobs}
         attempts={workspace.generationAttempts}
         events={workspace.generationEvents}
@@ -3871,6 +3879,7 @@ function VideoPanel({
 
       <GenerationJobsSection
         digestId={workspace.digest.id}
+        revisionId={workspace.revision?.id ?? null}
         jobs={workspace.generationJobs}
         attempts={workspace.generationAttempts}
         events={workspace.generationEvents}
