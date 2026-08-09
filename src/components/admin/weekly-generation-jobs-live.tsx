@@ -2,7 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StatusPill } from '@/components/admin/status-pill';
-import { retryWeeklyGenerationJobAction } from '@/app/admin/(cms)/weekly/actions';
+import { ActionSubmitButton } from '@/components/admin/action-submit-button';
+import {
+  enqueueWeeklyGenerationAction,
+  retryWeeklyGenerationJobAction,
+} from '@/app/admin/(cms)/weekly/actions';
 import { estimateGenerationEta } from '@/lib/weekly-digest/generation-control';
 
 interface GenerationJob {
@@ -22,6 +26,7 @@ interface GenerationJob {
   next_attempt_at: string | null;
   progress_current: number;
   progress_total: number;
+  revision_id: string;
   status: string;
   status_reason: string | null;
 }
@@ -163,12 +168,14 @@ function mergeEvents(current: GenerationEvent[], incoming: GenerationEvent[]) {
 
 export function WeeklyGenerationJobsLive({
   digestId,
+  revisionId,
   jobTypes,
   initialJobs,
   initialAttempts,
   initialEvents,
 }: {
   digestId: string;
+  revisionId: string | null;
   jobTypes: readonly string[];
   initialJobs: GenerationJob[];
   initialAttempts: GenerationAttempt[];
@@ -310,6 +317,25 @@ export function WeeklyGenerationJobsLive({
                       >
                         Create linked retry
                       </button>
+                    </form>
+                  ) : null}
+                  {job.job_type === 'editorial_master' &&
+                  job.status === 'succeeded' &&
+                  revisionId &&
+                  job.revision_id === revisionId ? (
+                    <form action={enqueueWeeklyGenerationAction} className="mt-2">
+                      <input type="hidden" name="weekly_digest_id" value={digestId} />
+                      <input type="hidden" name="revision_id" value={revisionId} />
+                      <input type="hidden" name="job_type" value="editorial_master" />
+                      <ActionSubmitButton
+                        idleLabel="Regenerate master"
+                        pendingLabel="Queueing…"
+                        className="min-h-9 rounded-lg border border-[#47e4d3]/40 px-3 text-xs font-bold text-[#47e4d3] transition hover:bg-[#47e4d3]/10"
+                      />
+                      <p className="mt-1 text-slate-500">
+                        Runs the writer/critic loop again against the same approved research,
+                        billed on top of this revision&apos;s spend cap.
+                      </p>
                     </form>
                   ) : null}
                   {job.last_error && job.status !== 'failed' ? (
