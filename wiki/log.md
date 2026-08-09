@@ -1243,3 +1243,11 @@ PR за планом у
 
 **Нотатка:** source job містив повний EN+UK checkpoint; фактичний failure був спробою записати
 article artifact у неактивну quality-draft revision, яку DB навмисно відхиляє.
+
+---
+
+## 2026-08-09 — recovery PR відкрито
+
+**Джерело:** draft PR [#208](https://github.com/sanchahous/ai-today-brief/pull/208).
+
+**Змінено:** `wiki/now.md` та `wiki/index.md` тепер посилаються на відкритий draft PR.

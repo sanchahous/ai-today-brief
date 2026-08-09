@@ -153,8 +153,9 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Активна робота
 
-−4. **Emergency recovery для `editorial_master` — гілка `fix/weekly-master-durable-recovery`,
-готова до PR.** Після live failure Actions `31327537969` виявлено, що job
+−4. **Emergency recovery для `editorial_master` — draft PR
+[#208](https://github.com/sanchahous/ai-today-brief/pull/208).** Після live failure Actions
+`31327537969` виявлено, що job
 `a3c2f8a6-e8b8-4609-992c-21f284f4820a` уже має durable EN+UK checkpoint, але quality failure
 падав під час спроби записати article artifact у неактивну draft revision. Фікс додає owner-only
 **Resume saved master**: він створює linked job, повторно перевіряє source/current revision і
