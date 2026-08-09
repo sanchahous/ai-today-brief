@@ -52,6 +52,89 @@ master ще не виконані, тому старий current job не змі
 
 ---
 
+## 2026-08-08 — Admin mobile responsive fix
+
+**Джерело:** запит власника — скріншот адмінки на телефоні, контент горизонтально
+обрізається без можливості побачити решту
+
+**Змінено:**
+- `src/components/admin/admin-nav.tsx` — мобільний нижній нав мав `grid-cols-7` на 8
+  пунктів (`LINKS`); «Settings» сиротою переносився на непорахований другий рядок. Фікс:
+  `grid-cols-4` — два рівні рядки по 4
+- `src/app/admin/(cms)/layout.tsx` — `pb-20` (розрахований на 1 рядок нава) замінено на
+  `pb-[calc(7rem+env(safe-area-inset-bottom))]` під новий 2-рядковий нав
+- `src/components/admin/weekly-workspace.tsx` (`PreflightBlockerList`) — блокери
+  рендерять сирі story-UUID усередині вкладених `grid`-контейнерів без `min-w-0`; додано
+  `min-w-0` на grid-обгортки й `break-words` на текст блокера (той самий патерн, що вже
+  був на `artifact.provider_id` у цьому ж файлі)
+- `src/components/admin/scroll-fade.tsx` — новий `'use client'`-компонент: м'яке
+  затемнення на краю горизонтально прогортаного ряду, коли є ще вміст поза екраном
+- `src/app/admin/(cms)/weekly/[id]/page.tsx` — таб-бар секцій workspace обгорнуто в
+  `ScrollFade`
+- `src/app/admin/(cms)/weekly/page.tsx` — `min-w-60` на картці видання знято з мобільного
+  брейкпоінту (`md:min-w-60`), щоб не форсувати ширину там, де макет одноколонковий
+- `wiki/pipeline/weekly-digest.md`, `wiki/ops/weekly-admin-runbook.md`,
+  `wiki/pipeline/weekly-editorial-selection.md`, `wiki/now.md` — синхронізовано під
+  wiki-sync gate (watcher `weekly-digest` зачепив шляхи з `weekly/`)
+
+**Перевірка:**
+- Ізольований прод-білд (`npm run build && npm run start`) + Playwright (Chromium з
+  `/opt/pw-browsers`) на вʼюпорті 375px: до фіксу — `grid-cols-7` дає 2 нерівні рядки
+  (7+1 сирота), після — 2 рівні рядки по 4 (скріншот + `offsetTop`-вимірювання рядків)
+- `ScrollFade`: підтверджено через прод-білд (dev-mode тут ламав гідратацію — HMR
+  WebSocket не піднімається в цьому сендбоксі) — `opacity-0 → opacity-100` на потрібному
+  краю коректно і на mount, і після програмного скролу
+- `PreflightBlockerList`: конкретний UUID із реального скріншота в Chromium сам не
+  «вибивав» ширину (браузер розбиває на дефісах), але той самий клас бага (`grid`-item
+  без `min-w-0` + жорстка `min-w-max`-дитина) емпірично відтворено в тому ж тестовому
+  дереві іншим вмістом — `min-w-0` на grid-item це виправляє; `break-words`/`min-w-0`
+  лишені як захист для інших рушіїв (Safari/WebKit не тестувався — недоступний у
+  сендбоксі) і довших id
+- `npm run pr:check` — 941/941 тестів, `tsc`/`eslint` чисті (8 попередніх warning не по
+  цих файлах), `build` зелений
+
+**Нотатка:** справжній `/admin/weekly/[id]` із реальними даними перевірити не вдалось —
+немає живих Supabase-креденшлів у цій сесії, `requireSocialAdmin()` редіректить на
+login. Верифікація йшла через ізольований debug-роут з реальним компонентним деревом і
+mock-даними (видалений перед комітом). Власнику варто самому глянути на реальному
+телефоні після мержу.
+
+## 2026-08-07 — Weekly 08.08 readiness check: PDF page-cap fix + 2 missing migrations applied
+
+**Джерело:** «завтра я буду створювати новий weekly. Чи все готово... чи не має підводних
+каменів» (власник)
+
+**Змінено:**
+- `src/lib/weekly-digest/pdf.ts` — новий `buildRadarSection()`; повний ілюстрований розворот
+  (image+body+4 панелі) лишається лише для `rank<=3`, решта — компактний блок title+summary+source
+- `src/lib/weekly-digest/pdf.test.ts` — новий тест на реалістичній 7-історійній фікстурі
+  (довжини body зняті з реального прод-випуску), перевіряє 10-16 сторінок
+- `wiki/pipeline/weekly-digest.md` — новий розділ «PDF page-count contract violation — фікс»,
+  корекція попереднього невірного запису («живого бага немає»)
+- `wiki/pipeline/editorial-voice.md` — PR3/PR5 позначені змерженими (були «Не змержено», стало
+  неправдою після мержу PR #189 2026-08-07)
+- `wiki/now.md` — «Активна робота» перероблено під поточний стан (усі 7 PR у main, знайдені й
+  виправлені підводні камені)
+
+**Перевірка:**
+- Supabase live read (`mdiqfatpqczwqghwttpm`): `weekly_digest_generation_jobs` — 6/6 останніх
+  `pdf`-джобів `failed` з `last_error: "Content Studio PDF is 20-21 pages; the approved A4
+  contract is 10–16 pages"` (03 і 05.08, 5/5 спроб кожен); job_type CHECK-констрейнт не мав
+  `video_script`; `weekly_digest_story_directions` не існувала
+- Застосовано 2 міграції (`weekly_digest_story_directions`, `weekly_video_script_job`) через
+  Supabase MCP `apply_migration`, підтверджено читанням констрейнту й `to_regclass` після
+- `npx vitest run src/lib/weekly-digest/pdf.test.ts` — новий тест підтвердив 13 сторінок на
+  реалістичній фікстурі (тимчасовий `console.log` для вимірювання, прибраний з коміту)
+- `npx vitest run` повний — 941/941; `npx tsc --noEmit`, `npx eslint`, `npm run pr:check` — усі
+  зелені
+- Git: fluid-cpu fix (#184) підтверджено в `main`; PR #193 (Codex CLI Phase 7) виявився вже
+  змерженим під час підготовки цієї гілки
+
+**Нотатка:** Vercel MCP цієї сесії підключений до проєкту `portfolio` (sashakuzmenko.com), не
+`ai-today-brief` — не вдалось звірити живе значення `WEEKLY_CONTENT_STUDIO_V2` напряму;
+непряме свідчення (успішні джоби в БД ще 05.08) каже, що прапорець не `off`, всупереч
+дефолту `.env.example`.
+
 ## 2026-08-07 — LLM provider registry Phase 7: Codex CLI adapter
 
 **Джерело:** «продовжуємо фазу 7» (власник)

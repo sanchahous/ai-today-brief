@@ -6,7 +6,8 @@ Sources: `git log` / `gh pr list` (live check 2026-08-04), Supabase preflight li
 `wiki/ops/owner-checklist.md`, `wiki/audits/2026-07-01-seo-organic.md`, `.env.example`,
 owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry), post-merge tech
 review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish --dry-run` check
-2026-08-07, owner-approved Weekly Digest reliability plan 2026-08-08
+2026-08-07, owner session 2026-08-08 (admin mobile-responsive fix, screenshot report),
+owner-approved Weekly Digest reliability plan 2026-08-08
 Last updated: 2026-08-09
 
 ---
@@ -126,21 +127,41 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 0. **Weekly Digest durable worker control plane — DB migration застосовано; application deploy ще очікує merge PR.** Attempt/event ledger, fenced lease + heartbeat/reaper, linked retry та per-call cost attribution вже працюють у production Supabase. Старий `editorial_master` для digest `843975a8-8c19-4eca-96a8-035f76eae3ab` закрито як `legacy_worker_timeout` зі збереженими 5 спробами; створено пов’язаний GitHub job `fe82f82c-7ceb-458e-9889-b5890b0e6d11` у `queued` з `Attempt 1/3`. Він стартує після merge/deploy цього PR, який додає dispatch і worker. (source: production Supabase verification 2026-08-09; `supabase/migrations/20260809060929_weekly_generation_control_plane.sql`, `src/lib/weekly-digest/generation-worker.ts`)
 
-1. **Редакційний перегляд якості weekly-дайджесту (7 PR, гілка `feat/weekly-editorial-voice`).**
-   Власник заблокував реліз до кардинального покращення якості контенту — див.
-   [editorial-voice](pipeline/editorial-voice.md) і план у `wiki/log.md` 2026-08-06. PR1
-   (voice-модуль + промпти) готовий локально, тести/typecheck зелені, ще не змержено.
-   **Це перекриває пункт нижче за пріоритетом:** trial release `ai-weekly-2026-07-27` у
-   поточному вигляді (старий регістр) свідомо НЕ проштовхується, доки PR1–3 не landed і
-   не пройдено shadow-верифікацію.
-2. **Редакція `ai-weekly-2026-07-27`.** Packs v3 уже ready — **Approve 3/3** на Research
+1. ~~Редакційний перегляд якості weekly-дайджесту (7 PR)~~ — **усі 7 PR у `main` з 2026-08-07**
+   (PR #189). Деталі — [editorial-voice](pipeline/editorial-voice.md). **Жодного живого прогону
+   повного пайплайну через реальний job-worker після мержу ще не було** (останній прогін у
+   БД — 2026-08-05, до мержу) — завтрашній (08.08) новий weekly буде першим.
+2. **Готовність до weekly 08.08 — перевірено 2026-08-07, знайдено й виправлено 3 речі:**
+   - PDF-генерація стабільно валилась (5/5 спроб, 2 останні реальні edition, 20-21 стор. проти
+     контракту 10-16) — `buildStory()` рендерив повний розворот для кожної історії незалежно від
+     рангу. Фікс — гілка `fix/weekly-pdf-page-cap`: повний розворот лише для `rank<=3`, решта —
+     компактна radar-секція. 13 сторінок на реалістичній фікстурі. Деталі —
+     [weekly-digest § PDF page-count contract violation](pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07).
+   - Дві міграції PR4/PR6 (`weekly_digest_story_directions`, `weekly_video_script_job`) не були
+     застосовані до прод-БД — **застосовано 2026-08-07** (Supabase MCP). Без цього кнопка
+     «Generate script» на Video-табі падала б з помилкою CHECK-констрейнту, а фіча
+     «Кут подачі» мовчки не працювала.
+   - Два старі випуски досі `in_review`, не опубліковані: `ai-weekly-2026-07-26`,
+     `ai-weekly-2026-07-27` — уточнити з власником, чи «новий weekly» означає третій паралельний.
+3. **Редакція `ai-weekly-2026-07-27`.** Packs v3 уже ready — **Approve 3/3** на Research
    (succeeded ≠ approved), далі `editorial_master` → Master quality. Гайд:
-   [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md). Призупинено до п.1.
-3. **Weekly Content Studio v2 — розкатка.** `WEEKLY_CONTENT_STUDIO_V2=off` у `.env.example`;
-   шлях `off → shadow (три історичні) → production` ще не пройдений; тепер природно
-   збігається з shadow-верифікацією п.1.
+   [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
+4. **Weekly Content Studio v2 — розкатка.** `.env.example` документує дефолт `off`, але жива
+   активність у прод-БД (джоби `succeeded` ще 05.08) доводить, що в реальному Vercel-середовищі
+   прапорець вже `shadow`/`production` — не звірено напряму (Vercel MCP цієї сесії підключений до
+   іншого проєкту, `portfolio`/sashakuzmenko.com, не ai-today-brief) — власнику варто глянути
+   дашборд самому.
    (source: `.env.example`)
 4. **Опційно:** окремий `pdfkit` 0.19 після `npm run weekly:pdf:sample` / PDF smoke.
+5. **Мобільна адаптивність `/admin` — гілка `claude/admin-mobile-responsive-pfb65o`
+   (2026-08-08), PR не змержено.** Власник надіслав скріншот: контент в адмінці на
+   телефоні горизонтально обрізається. Знайдено й виправлено: `AdminNav` мав
+   `grid-cols-7` на 8 пунктів (Settings-сирота на непорахованому другому рядку);
+   `PreflightBlockerList` рендерив сирі UUID у вкладених `grid` без `min-w-0` —
+   потенційний grid-blowout, невидимий через `overflow-x:clip` на `html`/`body`;
+   таб-бар секцій workspace отримав `ScrollFade`-підказку скролу. Перевірено
+   ізольовано (прод-білд + Playwright, 375px) — деталі й що НЕ вдалось перевірити
+   (реальний Supabase-логін, Safari/WebKit) — [log](log.md#2026-08-08--admin-mobile-responsive-fix).
 
 ## Чекає на власника (не код)
 

@@ -53,6 +53,12 @@ function fixture(locale: 'en' | 'uk'): WeeklyPdfInput {
   };
 }
 
+function repeatToLength(unit: string, targetLength: number): string {
+  let out = '';
+  while (out.length < targetLength) out += (out ? ' ' : '') + unit;
+  return out.slice(0, targetLength).trim();
+}
+
 describe('renderWeeklyDigestPdf', () => {
   it('initializes the in-process PDF.js worker used by server previews', () => {
     const worker = (
@@ -73,6 +79,39 @@ describe('renderWeeklyDigestPdf', () => {
     await expect(
       renderWeeklyDigestPdf({ ...fixture('en'), stories: fixture('en').stories.slice(0, 2) }),
     ).rejects.toThrow('3 to 7');
+  });
+
+  it('keeps a realistic 7-story edition within the approved 10-16 page A4 contract', async () => {
+    // Body lengths measured against a real production edition (2026-08-07):
+    // rank 1-3 features run ~4100-4240 chars, rank 4-7 radar items ~790-900.
+    // Giving every item the full illustrated spread (image + body + 4 info
+    // panels) is what pushed real editions to 20-21 pages -- this is the
+    // regression guard for that failure (see buildRadarSection in pdf.ts).
+    const longBody = repeatToLength(
+      'The mechanism behind this shift changes cost, speed, and reliability for teams shipping real systems, not just demos.',
+      4200,
+    );
+    const shortBody = repeatToLength(
+      'This smaller radar item covers a narrower but still concrete change worth tracking this week.',
+      850,
+    );
+    const base = fixture('en');
+    const template = base.stories[0]!;
+    const stories: WeeklyPdfInput['stories'] = Array.from({ length: 7 }, (_, index) => ({
+      ...template,
+      rank: index + 1,
+      title: `${template.title} ${index + 1}`,
+      body: index < 3 ? longBody : shortBody,
+    }));
+
+    const pdf = await renderWeeklyDigestPdf({ ...base, stories });
+    const document = await openWeeklyPdfPreview(pdf, 0.4);
+    try {
+      expect(document.length).toBeGreaterThanOrEqual(10);
+      expect(document.length).toBeLessThanOrEqual(16);
+    } finally {
+      await document.destroy();
+    }
   });
 
   it('can rasterize generated pages for the private admin preview', async () => {

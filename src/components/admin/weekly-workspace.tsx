@@ -437,7 +437,7 @@ function PreflightBlockerList({
   const path = groups.map((group) => `${group.section.step}. ${group.section.title}`).join(' → ');
 
   return (
-    <div className="grid gap-4">
+    <div className="grid min-w-0 gap-4">
       <p className={`leading-5 text-slate-400 ${compact ? 'text-xs' : 'text-sm'}`}>
         Work top → bottom along the release path
         {path ? (
@@ -450,7 +450,7 @@ function PreflightBlockerList({
       {groups.map((group) => (
         <section
           key={group.section.tab}
-          className="rounded-xl border border-amber-400/15 bg-black/15 p-3"
+          className="min-w-0 rounded-xl border border-amber-400/15 bg-black/15 p-3"
           aria-labelledby={`preflight-section-${group.section.tab}`}
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -476,13 +476,13 @@ function PreflightBlockerList({
               Open {PREFLIGHT_TAB_LABEL[group.section.tab]} →
             </a>
           </div>
-          <ol className="mt-3 grid gap-2">
+          <ol className="mt-3 grid min-w-0 gap-2">
             {group.blockers.map((blocker, index) => (
               <li
                 key={`${blocker.slot}:${blocker.code}`}
-                className="rounded-lg border border-amber-400/20 bg-amber-400/6 px-3 py-2.5 text-amber-100"
+                className="min-w-0 rounded-lg border border-amber-400/20 bg-amber-400/6 px-3 py-2.5 text-amber-100"
               >
-                <p className={compact ? 'text-sm font-bold' : 'text-sm'}>
+                <p className={`break-words ${compact ? 'text-sm font-bold' : 'text-sm'}`}>
                   <span className="mr-2 inline-flex size-5 items-center justify-center rounded-full bg-amber-300/15 text-[11px] font-bold text-amber-100">
                     {index + 1}
                   </span>

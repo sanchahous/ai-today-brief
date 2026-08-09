@@ -2,7 +2,8 @@
 
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
 Sources: none (analysis)
-Last updated: 2026-08-06
+Last updated: 2026-08-08 (reviewed alongside admin mobile-responsive fix — no change here;
+selection logic is unaffected by admin UI/CSS)
 
 
 `weekly-editorial-v2` replaces the old `impact → recency → daily rank` sort used
