@@ -132,6 +132,11 @@ Release preflight на Overview / Release покаже, що ще червоне
    центи, без жодного запису в прод.
 3. `gh run list` тепер каже правду: провалена джоба робить прогін **червоним** (до
    2026-08-09 усі провалені прогони показувались зеленими).
+4. Якщо timeline показує збій на **Ukrainian** або **Revisions**, не переписуй Article вручну:
+   ці кроки спершу тримають голос EN-writer, але після його збою автоматично переходять до
+   наступного provider у драбині. Звір фактичний provider/model і причину в run; prose перед
+   валідним JSON від CLI також відновлюється автоматично.
+(source: `src/lib/weekly-digest/editorial-llm.ts`, Actions run `31324873875`)
 
 Деталі й що вже виправлено — [pipeline/weekly-master-failures](../pipeline/weekly-master-failures.md),
 інструменти — [ops/weekly-sandbox](weekly-sandbox.md).

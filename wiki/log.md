@@ -6,6 +6,43 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-09
 
+## 2026-08-09 — follow-up master fallback + синхронізація wiki
+
+**Джерело:** follow-up `fix/weekly-master-revise-parse-fallback` після Actions run
+`31324873875`.
+
+**Змінено:** `parseJsonObject` відновлює валідний JSON із prose-преамбулою CLI; UK і revise
+кроки тримають preferred EN-provider, але після його збою переходять до решти драбини.
+Оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[weekly-master-failures](pipeline/weekly-master-failures.md), [now](now.md) та [index](index.md).
+Додано регресійні тести для JSON-преамбули, fallback UK і fallback revise; фокусний набір
+`editorial-llm.test.ts` пройшов 32/32. (source: `src/lib/weekly-digest/editorial-llm.ts`,
+`src/lib/weekly-digest/editorial-llm.test.ts`, локальний прогін 2026-08-09)
+
+## 2026-08-09 — прогін 31324873875: підтвердження фіксів + причини 6 і 7
+
+**Джерело:** власник — «знову фейл». Перший прогін уже з фіксами PR #205/#206.
+
+**Що фікси підтвердили наживо** (Actions run `31324873875`): preflight 9/9 OK за 6 секунд
+(токен у Secrets живий, CLI 2.1.226); `--tools ""` дав **1 turn** замість 3 і 7; EN+UK через
+claude-cli зайняли **12 хв 18 с** — стара 4-хвилинна стеля вбила б це знову; critic мав
+`first_token_ms` **315 162 мс** проти 90-секундного ліміту й **завершився** — за старим кодом
+був би вбитий як «зависання»; провалена джоба зробила прогін **червоним**.
+
+**Дві нові причини, обидві виправлені:**
+
+- **6.** Revise-крок повернув `**Applying…` перед JSON — CLI відповідає як асистент, а не як
+  API. `parseJsonObject` умів зрізати лише ```-огорожу. Новий `extractJsonObject` витягує
+  перший збалансований `{…}` з урахуванням рядків і екранування; у revise-промпт додано
+  вимогу «raw JSON, без преамбули».
+- **7.** UK і revise взагалі не мали драбини провайдерів — лише англійський крок її мав.
+  Новий `generatePreferringProvider` лишає перевагу тому самому провайдеру (спільний голос
+  обох локалей), але за ним тепер стоїть решта ланцюжка.
+
+Деталі — [pipeline/weekly-master-failures](pipeline/weekly-master-failures.md).
+
 ## 2026-08-09 — OpenRouter-фолбек у воркері + гейт `numeric_parity`
 
 **Джерело:** власник після мержу PR #205 — «роби фолбек звісно щоб не було падінь» і

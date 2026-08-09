@@ -138,6 +138,12 @@ energy claims і UK language defects. Хороший selection score підтв�
 видавати diversity shortlist за єдину тему: зв'язок Top 3 мусить випливати з evidence.
 (source: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`, owner audit 2026-08-09)
 
+Після live run `31324873875` ця межа також коректно переживає форматування та provider-fallback:
+преамбула CLI навколо валідного JSON не змінює shortlist, а fallback на UK/revise-кроках лише
+продовжує роботу з тим самим approved набором stories і claims. Відбір, його ваги та
+diversity constraints не змінюються. (source: `src/lib/weekly-digest/editorial-llm.ts`,
+Actions run `31324873875`)
+
 ## Межа з v7.1 commercial-balance point fixes (2026-08-09)
 
 Відбір знову не змінювався. Три v7-гейти звужено після емпіричної перевірки на хибнопозитиви:

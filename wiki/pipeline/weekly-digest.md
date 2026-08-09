@@ -3,14 +3,14 @@
 Summary: як працює weekly-дайджест у проді: оркестрація, ревізії, артефакти, вартісні
 гейти, admin UX і поточний статус розкатки.
 Sources: `.env.example`, PR #160–#163, #167–#175, #177, #189, `src/lib/weekly-digest/**`,
-`supabase/migrations/20260804090000_weekly_digest_revision_stability.sql`,
-`supabase/migrations/20260806150000_weekly_video_script_job.sql`,
+`supabase/migrations/20260804090000_weekly_digest_revision_stability.sql`, `supabase/migrations/20260806150000_weekly_video_script_job.sql`,
 `supabase/migrations/20260806140000_weekly_digest_story_directions.sql`,
 live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189, змержено
 2026-08-07), PDF page-cap fix (гілка `fix/weekly-pdf-page-cap`, 2026-08-07), admin
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
-owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09
+owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
+Actions run `31324873875` and follow-up `fix/weekly-master-revise-parse-fallback` 2026-08-09
 Last updated: 2026-08-09
 
 ---
@@ -500,12 +500,21 @@ pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інв
 
 ## Надійність master-write (2026-08-09)
 
-Три `editorial_master` джоби поспіль впали на кроці `english` — жодна причина не була
-редакційною. Коротко: 4-хвилинна стеля `claude-cli` вбивала здоровий write на 240-й
+`editorial_master` впав через сім окремих не-редакційних причин у трьох хвилях. Коротко:
+4-хвилинна стеля `claude-cli` вбивала здоровий write на 240-й
 секунді; CLI ганяв агентні tool-use цикли замість одного текстового виклику; stall-детектор
 OpenRouter рахував лише `delta.content`, тому reasoning-моделі вмирали як «мовчазні»;
 провалена джоба лишала Actions-прогін зеленим; а сам master-write мав рівно одного
-кандидата-модель без фолбеку.
+кандидата-модель без фолбеку. Наступний прогін підтвердив ці фікси, але виявив ще дві
+межі: CLI може повернути прозову преамбулу перед валідним JSON, а UK/revise-кроки раніше
+не мали fallback-драбини взагалі.
+
+`parseJsonObject` тепер витягує перший збалансований JSON-обʼєкт із відповіді CLI, враховуючи
+рядки й екранування. Для UK і кожного revise-кроку `generatePreferringProvider` спершу лишає
+провайдера, який написав англійський master (спільний голос), а після його збою пробує решту
+налаштованої драбини. Це не маскує провал: у timeline видно фактичний provider кожного кроку,
+а неуспішна джоба лишає Actions run червоним.
+(source: `src/lib/weekly-digest/editorial-llm.ts`, Actions run `31324873875`)
 
 Повний розбір із цифрами й фіксами — [weekly-master-failures](weekly-master-failures.md).
 Спосіб перевіряти цей флоу без прода — [ops/weekly-sandbox](../ops/weekly-sandbox.md).
