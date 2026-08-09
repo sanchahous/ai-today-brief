@@ -15,27 +15,29 @@ Last updated: 2026-08-09
 
 ## Стан репозиторію
 
-- **Гілка `agent/weekly-content-quality-hardening` (локально, 2026-08-09)** — критичний аудит
-  згенерованого weekly master виявив дослівний витік voice exemplar у вступ, вигадані сцени,
-  абстрактні titles, непояснені energy claims і системні UK spelling/grammar/localization
-  дефекти, які critic пропустив із сімома однаковими 90/100. Підготовлено `weekly-master-v7`:
-  exemplars вилучено з prompt, додано deterministic blockers, `language_mechanics`, жорсткішу
-  critic calibration і зрозумілі Article labels. Повний `npm run pr:check` зелений: 957/957
-  тестів із coverage, typecheck, lint, affected E2E map, wiki contract і production build;
-  writer окремо заборонено форсувати umbrella-тему без доказового зв'язку Top 3. Деталі —
+- **PR [#199](https://github.com/sanchahous/ai-today-brief/pull/199) змержено в `main` 2026-08-09**
+  (`6f6d875`, власник змержив вручну одразу після зеленого CI) — критичний аудит згенерованого
+  weekly master виявив дослівний витік voice exemplar у вступ, вигадані сцени, абстрактні titles,
+  непояснені energy claims і системні UK spelling/grammar/localization дефекти, які critic
+  пропустив із сімома однаковими 90/100. `weekly-master-v7`: exemplars вилучено з prompt, додано
+  deterministic blockers, `language_mechanics`, жорсткішу critic calibration і зрозумілі Article
+  labels; writer окремо заборонено форсувати umbrella-тему без доказового звʼязку Top 3. Повний
+  `npm run pr:check` зелений. Деталі —
   [pipeline/editorial-voice § Аудит 2026-08-09](pipeline/editorial-voice.md#аудит-згенерованого-випуску-2026-08-09).
-  **v7.1 (той самий PR, [#199](https://github.com/sanchahous/ai-today-brief/pull/199)) звузив
-  три хибнопозитиви** — `ambiguous_energy_claim` реагує лише на явне порівняння (не на будь-яку
-  згадку «energy»), UK-блоклист більше не чіпає `score`/`мейнтейнер`, uniform-critic-score гейт
-  має escape valve для дійсно рівно сильного тексту (≥95). Деталі — [log](log.md). **Знайдено й
-  закрито прогалину продукту:** для вже `succeeded` job `editorial_master` не було способу
-  перегенерувати master на тій самій ревізії (retry RPC приймає лише `failed`/`cancelled`,
-  ідемпотентний ключ «Start / retry Content Studio» незмінний для тієї ж ревізії) — додано
-  кнопку «Regenerate master» у `WeeklyGenerationJobsLive` (Research/Article-таби), що заводить
-  новий job з унікальним ключем на тому самому approved research.
-  `843975a8-8c19-4eca-96a8-035f76eae3ab` (`ai-weekly-2026-08-02`) досі `in_review` з
+  **Той самий PR також звузив v7.1 три хибнопозитиви** (уже в `main`) — `ambiguous_energy_claim`
+  реагує лише на явне порівняння (не на будь-яку згадку «energy»), UK-блоклист більше не чіпає
+  `score`/`мейнтейнер`, uniform-critic-score гейт має escape valve для дійсно рівно сильного
+  тексту (≥95). Деталі — [log](log.md).
+- **PR [#200](https://github.com/sanchahous/ai-today-brief/pull/200) відкрито 2026-08-09, не
+  змержено** (гілка `agent/weekly-master-regenerate-button`) — окремий PR, бо #199 автомержився
+  раніше, ніж цей коміт запушився. **Знайдено й закрито прогалину продукту:** для вже `succeeded`
+  job `editorial_master` не було способу перегенерувати master на тій самій ревізії (retry RPC
+  приймає лише `failed`/`cancelled`, ідемпотентний ключ «Start / retry Content Studio» незмінний
+  для тієї ж ревізії) — додано кнопку «Regenerate master» у `WeeklyGenerationJobsLive`
+  (Research/Article-таби), що заводить новий job з унікальним ключем на тому самому approved
+  research. `843975a8-8c19-4eca-96a8-035f76eae3ab` (`ai-weekly-2026-08-02`) досі `in_review` з
   `editorial_master`, згенерованим ДО v7-гейтів (job `fe82f82c…`, успішний прогін 09.08 07:27) —
-  після мержу PR #199 варто натиснути цю кнопку, щоб отримати текст, перевірений новими гейтами,
+  після мержу PR #200 варто натиснути цю кнопку, щоб отримати текст, перевірений новими гейтами,
   перш ніж апрувити випуск.
 - **`main` тепер включає PR #189, #190, #191 і #192** (Phase 0-6a злито `9d32347`). Senior-рівневе
   технічне ревʼю обох PR постфактум (гілка `claude/tech-review-pr-189-190-859ena`) знайшло і
