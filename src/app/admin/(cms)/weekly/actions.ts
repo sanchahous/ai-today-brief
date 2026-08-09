@@ -1267,18 +1267,58 @@ export async function regenerateWeeklyMasterAction(formData: FormData) {
     if (copyError) throw new Error(copyError.message);
   }
 
-  const requestKey = randomUUID();
-  const { data: queuedJob, error: queueError } = await db.rpc('queue_weekly_digest_generation_job', {
-    p_weekly_digest_id: weeklyDigestId,
-    p_revision_id: revisionId,
-    p_job_type: 'editorial_master',
-    p_idempotency_key: `weekly:${weeklyDigestId}:${revisionId}:editorial_master:regenerate:${requestKey}`,
-    p_input: { mode: contentStudioMode } as Json,
-  });
-  if (queueError && !/duplicate|unique/i.test(queueError.message)) {
-    throw new Error(queueError.message);
+  // Reuse a non-terminal editorial_master job already sitting on this
+  // revision instead of piling up a duplicate -- most commonly a job stuck
+  // in `waiting` from an earlier click before research was copied.
+  const { data: existingJobs, error: existingJobsError } = await db
+    .from('weekly_digest_generation_jobs')
+    .select('id,status')
+    .eq('weekly_digest_id', weeklyDigestId)
+    .eq('revision_id', revisionId)
+    .eq('job_type', 'editorial_master')
+    .in('status', ['queued', 'waiting', 'dispatching', 'running', 'retry_scheduled'])
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (existingJobsError) throw new Error(existingJobsError.message);
+  const existingJob = existingJobs?.[0] ?? null;
+
+  let jobIdToDispatch: string | null;
+  if (existingJob) {
+    if (existingJob.status === 'waiting') {
+      // The dependency gate normally re-evaluates on the next periodic sweep
+      // (reap_stale_weekly_digest_generation_attempts, invoked every 5
+      // minutes by /api/internal/weekly/generate) -- nudge it now instead of
+      // waiting. Only service_role may call this, hence the admin client.
+      // Cast needed: this control-plane RPC postdates the last
+      // `database.types.ts` generation (same pattern as generation-worker.ts's
+      // UntypedRpcClient).
+      const untypedAdmin = getSupabaseAdmin() as unknown as {
+        rpc(name: string): Promise<{ error: { message: string } | null }>;
+      };
+      const { error: refreshError } = await untypedAdmin.rpc(
+        'refresh_weekly_digest_generation_waiting_states',
+      );
+      if (refreshError) throw new Error(refreshError.message);
+    }
+    jobIdToDispatch = existingJob.id;
+  } else {
+    const requestKey = randomUUID();
+    const { data: queuedJob, error: queueError } = await db.rpc(
+      'queue_weekly_digest_generation_job',
+      {
+        p_weekly_digest_id: weeklyDigestId,
+        p_revision_id: revisionId,
+        p_job_type: 'editorial_master',
+        p_idempotency_key: `weekly:${weeklyDigestId}:${revisionId}:editorial_master:regenerate:${requestKey}`,
+        p_input: { mode: contentStudioMode } as Json,
+      },
+    );
+    if (queueError && !/duplicate|unique/i.test(queueError.message)) {
+      throw new Error(queueError.message);
+    }
+    jobIdToDispatch = queuedJob?.id ?? null;
   }
-  if (queuedJob?.id) await dispatchQueuedWeeklyGenerationJob(queuedJob.id);
+  if (jobIdToDispatch) await dispatchQueuedWeeklyGenerationJob(jobIdToDispatch);
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 

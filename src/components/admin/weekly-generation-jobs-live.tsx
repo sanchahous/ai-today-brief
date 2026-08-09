@@ -231,9 +231,15 @@ export function WeeklyGenerationJobsLive({
   // against -- job.revision_id === the active revision is never true again
   // after success. "Regenerate" therefore targets the most recent
   // editorial_master job regardless of its stored revision_id, not a
-  // revision-id match.
+  // revision-id match. Only 'dispatching'/'running' block it -- those mean a
+  // worker is actively on the job right now; every other state (including
+  // 'waiting', which just means research hasn't been copied onto this
+  // revision yet) is safe to click, since regenerateWeeklyMasterAction
+  // reuses that same job instead of piling up a duplicate.
   const latestEditorialMasterJobId = useMemo(() => {
-    const masterJobs = data.jobs.filter((job) => job.job_type === 'editorial_master');
+    const masterJobs = data.jobs.filter(
+      (job) => job.job_type === 'editorial_master' && !['dispatching', 'running'].includes(job.status),
+    );
     if (masterJobs.length === 0) return null;
     return masterJobs.reduce((latest, job) =>
       new Date(job.created_at).getTime() > new Date(latest.created_at).getTime() ? job : latest,
@@ -334,7 +340,6 @@ export function WeeklyGenerationJobsLive({
                     </form>
                   ) : null}
                   {job.job_type === 'editorial_master' &&
-                  job.status === 'succeeded' &&
                   revisionId &&
                   job.id === latestEditorialMasterJobId ? (
                     <form action={regenerateWeeklyMasterAction} className="mt-2">
