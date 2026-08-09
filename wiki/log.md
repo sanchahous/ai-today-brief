@@ -6,6 +6,33 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-09
 
+## 2026-08-09 — Weekly Content Studio: v7.1 commercial-balance point fixes
+
+**Джерело:** owner review of PR #199 (v7 hardening) — питання, чи детерміновані гейти зарізали
+комерційну привабливість (авторське бачення, практична цінність, retention) заради чистоти
+фактажу. Три хибнопозитиви підтверджено емпіричним прогоном regex-гейтів на реальних заголовках.
+
+**Змінено (`content-studio.ts`):**
+
+- `ambiguous_energy_claim` звужено до явного порівняння («N times/разів more energy») — раніше
+  блокував будь-яку згадку слова «energy»/«енергія» у framing-полях (title/seoTitle/meta/
+  standfirst/theme), напр. «OpenAI signs nuclear energy deal» чи «Скільки енергії з'їдає
+  кодинг-агент». Конкретна одиниця (kWh/електроенергія) тепер шукається по всій статті, а не в
+  тому самому полі — `seoTitle` фізично не вміщує і гачок, і одиницю в 65 символів;
+- UK `uk_language_residue`: прибрано `score` і `мейнтейнер` з блоклиста — усталені
+  dev-жаргонізми цільової аудиторії, не неперекладений/зламаний текст;
+- `looksLikeUniformCriticRubberStamp`: замість жорсткого «усі сім рівно 90/100» — будь-яка
+  однакова оцінка нижче 95 (лишає можливість для дійсно рівно сильного, не «заглушеного»
+  чернетки отримати uniform ≥95 без штучного regenerate-циклу).
+
+**Чому:** Definition of Done проєкту — прибутковий продукт із повторюваним трафіком
+(`wiki/overview.md` §1), а Week-1 retention вже задокументовано як ≈0 (§7 #2). Заборонні гейти
+без симетричних вимог до цікавості тягнуть текст у канцелярит, що працює проти retention.
+
+**Не змінено:** решта v7-гейтів (prompt-copy, metadata length, abstract title, standfirst
+boilerplate, unsupported-original-research, article length) — залишені як є, підтверджені
+коректними.
+
 ## 2026-08-09 — Weekly Content Studio: quality hardening v7
 
 **Джерело:** owner audit + live admin read випуску

@@ -138,6 +138,16 @@ energy claims і UK language defects. Хороший selection score підтв�
 видавати diversity shortlist за єдину тему: зв'язок Top 3 мусить випливати з evidence.
 (source: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`, owner audit 2026-08-09)
 
+## Межа з v7.1 commercial-balance point fixes (2026-08-09)
+
+Відбір знову не змінювався. Три v7-гейти звужено після емпіричної перевірки на хибнопозитиви:
+`ambiguous_energy_claim` тепер реагує лише на явне порівняння («у 600 разів більше енергії»), а
+не на будь-яку згадку «energy» у заголовку/meta; UK `uk_language_residue` більше не блокує
+`score` і `мейнтейнер` — усталений dev-жаргон цільової аудиторії; uniform-critic-score гейт ловить
+будь-яку однакову оцінку нижче 95, а не лише рівно 90, і не чіпає дійсно рівно сильний текст.
+Мета — тримати баланс між фактажем і привабливістю, а не лише нарощувати заборони.
+(source: `src/lib/weekly-digest/content-studio.ts`, owner review 2026-08-09)
+
 ## Related pages
 
 - [weekly-digest](weekly-digest.md) — Content Studio v2, ревізії, spend-cap, admin UX

@@ -377,8 +377,11 @@ const ABSTRACT_EDITION_TITLE_PATTERNS: Record<WeeklyLocale, RegExp[]> = {
 
 const UKRAINIAN_LANGUAGE_RESIDUE: Array<{ pattern: RegExp; replacement: string }> = [
   {
+    // "score" deliberately excluded: an established dev-community loanword
+    // (benchmark score, model score) the house voice keeps in English, not
+    // untranslated residue.
     pattern:
-      /\b(?:hours?|minutes?|seconds?|thousandths|kilowatt-hours?|billions?|millions?|score)\b|\b\d[\d,.]*\s+to\s+\d[\d,.]*/i,
+      /\b(?:hours?|minutes?|seconds?|thousandths|kilowatt-hours?|billions?|millions?)\b|\b\d[\d,.]*\s+to\s+\d[\d,.]*/i,
     replacement: 'Перекладіть слово й локалізуйте одиницю або числовий діапазон українською.',
   },
   {
@@ -400,9 +403,11 @@ const UKRAINIAN_LANGUAGE_RESIDUE: Array<{ pattern: RegExp; replacement: string }
     replacement: 'Виправте російське закінчення на нормативну українську форму.',
   },
   {
-    pattern: /(?:інтеракці[яєїю]|інтеракцій|мейнтейнер[а-яіїєґ]*)/iu,
-    replacement:
-      'Використайте зрозумілий український відповідник: «взаємодія» або «супроводжувач».',
+    // "мейнтейнер" deliberately excluded: standard Ukrainian dev-community
+    // loanword the target audience actually uses, not an office-calque like
+    // "інтеракція" -> "взаємодія".
+    pattern: /(?:інтеракці[яєїю]|інтеракцій)/iu,
+    replacement: 'Використайте зрозумілий український відповідник: «взаємодія».',
   },
 ];
 
@@ -487,48 +492,43 @@ function metadataQualityIssues(bundle: WeeklyMasterBundle): WeeklyQualityIssue[]
   return issues;
 }
 
+/**
+ * Only fires on an explicit "N times more energy" comparison, not on the bare
+ * word "energy" -- an earlier version flagged any energy-adjacent framing
+ * (a headline about an energy deal, an energy-cost debate) with no
+ * comparison to justify. The concrete unit only needs to appear somewhere in
+ * the article, not the same field as the multiplier, since a headline has no
+ * room for both a hook and "kWh".
+ */
 function ambiguousEnergyClaimIssues(bundle: WeeklyMasterBundle): WeeklyQualityIssue[] {
   const issues: WeeklyQualityIssue[] = [];
-  const framingFields = new Set([
-    'title',
-    'seoTitle',
-    'metaDescription',
-    'ogTitle',
-    'ogDescription',
-    'standfirst',
-    'theme',
-  ]);
   for (const locale of ['en', 'uk'] as const) {
-    for (const textField of articleTextFields(bundle[locale])) {
+    const fields = articleTextFields(bundle[locale]);
+    const hasConcreteUnitAnywhere = fields.some((textField) =>
+      locale === 'en'
+        ? /\b(?:electricity|electrical|kwh|watt-hours?|power consumption)\b/i.test(
+            textField.value,
+          )
+        : /(?:електроенергі|кВт|Вт·?год|ват-год)/iu.test(textField.value),
+    );
+    if (hasConcreteUnitAnywhere) continue;
+    for (const textField of fields) {
       const comparison =
         locale === 'en'
           ? /\b\d+\s*(?:x|times?)\s+more energy\b/i.exec(textField.value)?.[0]
           : /в \d+ раз(?:и|ів)? більше енергії/iu.exec(textField.value)?.[0];
-      const vagueFraming = framingFields.has(textField.field)
-        ? locale === 'en'
-          ? /\benergy\b/i.exec(textField.value)?.[0]
-          : /енерг[а-яіїєґ]*/iu.exec(textField.value)?.[0]
-        : undefined;
-      const vagueClaim = comparison ?? vagueFraming;
-      if (!vagueClaim) continue;
-      const hasConcreteUnit =
-        locale === 'en'
-          ? /\b(?:electricity|electrical|kwh|watt-hours?|power consumption)\b/i.test(
-              textField.value,
-            )
-          : /(?:електроенергі|кВт|Вт·?год|ват-год)/iu.test(textField.value);
-      if (hasConcreteUnit) continue;
+      if (!comparison) continue;
       issues.push({
         code: 'ambiguous_energy_claim',
         message:
-          'The framing says “energy” without naming electricity, the measured unit, workload, or single-case-study scope.',
+          'The story claims a multiple of “energy” without naming electricity, the measured unit, or workload anywhere in the article.',
         blocker: true,
         locale,
         field: textField.field,
         ...(textField.revisionItemId ? { revisionItemId: textField.revisionItemId } : {}),
-        span: vagueClaim,
+        span: comparison,
         suggestedFix:
-          'Name the estimated electricity use and unit (for example kWh per session), and attribute it to the specific measured workload.',
+          'Name the estimated electricity use and unit (for example kWh per session) somewhere in the story, and attribute it to the specific measured workload.',
       });
     }
   }
@@ -1034,15 +1034,28 @@ const REVISABLE_ISSUE_CODES = new Set([
   'unsupported_editorial_claim',
 ]);
 
+/** Below this, a uniform score reads as a lazy default rather than earned excellence. */
+const RUBBER_STAMP_CEILING_SCORE = 95;
+
+/**
+ * Catches any identical-across-the-board score (not only the literal 90 the
+ * 2026-08-06 shadow run produced) as a likely lazy default, while carving
+ * out an escape valve for a genuinely outstanding, evenly-strong draft: a
+ * uniform score at or above RUBBER_STAMP_CEILING_SCORE is treated as earned.
+ */
 function looksLikeUniformCriticRubberStamp(
   dimensions: Pick<WeeklyQualityDimension, 'name' | 'score'>[],
 ) {
   const receivedDimensions = new Set(dimensions.map((dimension) => dimension.name));
-  return (
+  const wellFormed =
     dimensions.length === REQUIRED_QUALITY_DIMENSIONS.length &&
     receivedDimensions.size === REQUIRED_QUALITY_DIMENSIONS.length &&
-    REQUIRED_QUALITY_DIMENSIONS.every((name) => receivedDimensions.has(name)) &&
-    dimensions.every((dimension) => dimension.score === 90)
+    REQUIRED_QUALITY_DIMENSIONS.every((name) => receivedDimensions.has(name));
+  if (!wellFormed) return false;
+  const [firstScore] = dimensions.map((dimension) => dimension.score);
+  return (
+    firstScore < RUBBER_STAMP_CEILING_SCORE &&
+    dimensions.every((dimension) => dimension.score === firstScore)
   );
 }
 
@@ -1123,7 +1136,7 @@ export function editorialQualityFailures(report: WeeklyContentQualityReport): st
   }
   if (looksLikeUniformCriticRubberStamp(report.dimensions)) {
     failures.push(
-      'all seven critic dimensions are exactly 90/100; the evaluator must score and justify each dimension independently',
+      `all seven critic dimensions received the identical ${report.dimensions[0]!.score}/100; the evaluator must score and justify each dimension independently`,
     );
   }
   for (const dimension of report.dimensions) {

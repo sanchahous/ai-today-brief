@@ -368,9 +368,18 @@ describe('Weekly Content Studio hard gates', () => {
     );
   });
 
-  it('blocks vague energy multipliers and unsupported original-research boilerplate', () => {
+  it('does not block "score" or "мейнтейнер" -- established dev-community loanwords, not untranslated residue', () => {
     const value = bundle();
-    value.en.seoTitle = 'Agentic coding energy: Claude Code and Muse';
+    value.uk.stories[0]!.body =
+      'Модель показала кращий score у бенчмарку, а патч підтвердив мейнтейнер репозиторію.';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'uk_language_residue' })]),
+    );
+  });
+
+  it('blocks an energy multiplier with no unit named anywhere in the article, and unsupported original-research boilerplate', () => {
+    const value = bundle();
     value.en.metaDescription = 'Agentic AI uses 600 times more energy than chat prompts.';
     value.uk.standfirst = 'Агентне програмування спалює в 600 разів більше енергії.';
     value.uk.editorNote =
@@ -378,12 +387,11 @@ describe('Weekly Content Studio hard gates', () => {
     const issues = validateMasterBundle(value, [research]);
     expect(issues).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ code: 'ambiguous_energy_claim', blocker: true, locale: 'en' }),
         expect.objectContaining({
           code: 'ambiguous_energy_claim',
           blocker: true,
           locale: 'en',
-          field: 'seoTitle',
+          field: 'metaDescription',
         }),
         expect.objectContaining({ code: 'ambiguous_energy_claim', blocker: true, locale: 'uk' }),
         expect.objectContaining({
@@ -392,6 +400,29 @@ describe('Weekly Content Studio hard gates', () => {
           locale: 'uk',
           field: 'editorNote',
         }),
+      ]),
+    );
+  });
+
+  it('does not block a bare mention of "energy" with no comparison -- fixes a false positive that blocked routine energy-sector news', () => {
+    const value = bundle();
+    value.en.title = 'OpenAI signs nuclear energy deal for data centers';
+    value.en.seoTitle = "The energy question nobody's asking about AI agents";
+    value.en.standfirst = 'Inside the energy debate reshaping AI infrastructure this week.';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'ambiguous_energy_claim' })]),
+    );
+  });
+
+  it('does not block an energy multiplier when the concrete unit appears elsewhere in the article, not the same field', () => {
+    const value = bundle();
+    value.en.metaDescription = 'Agentic AI uses 600 times more energy than chat prompts.';
+    value.en.stories[0]!.body = `${'evidence '.repeat(390)} The measured workload used 0.6 kWh per Claude Code session.`;
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'ambiguous_energy_claim', locale: 'en' }),
       ]),
     );
   });
@@ -749,12 +780,26 @@ describe('reportIsRevisable', () => {
     expect(reportIsRevisable(report({ issues: [], dimensions }))).toBe(true);
   });
 
-  it('does not send seven mechanically identical 90s to the writer revise loop', () => {
+  it('does not send seven mechanically identical scores to the writer revise loop', () => {
     const dimensions = PASSING_DIMENSIONS.map((dimension) => ({ ...dimension, score: 90 }));
     const value = report({ dimensions });
     expect(reportIsRevisable(value)).toBe(false);
     expect(editorialQualityFailures(value)).toContainEqual(
-      expect.stringContaining('all seven critic dimensions are exactly 90/100'),
+      expect.stringContaining('all seven critic dimensions received the identical 90/100'),
+    );
+  });
+
+  it('catches a uniform lazy default at any score, not only the literal 90 the shadow run produced', () => {
+    const dimensions = PASSING_DIMENSIONS.map((dimension) => ({ ...dimension, score: 85 }));
+    expect(reportIsRevisable(report({ dimensions }))).toBe(false);
+  });
+
+  it('does not flag a genuinely outstanding, evenly-strong draft as a rubber stamp', () => {
+    const dimensions = PASSING_DIMENSIONS.map((dimension) => ({ ...dimension, score: 96 }));
+    const value = report({ dimensions });
+    expect(reportIsRevisable(value)).toBe(true);
+    expect(editorialQualityFailures(value)).not.toContainEqual(
+      expect.stringContaining('received the identical'),
     );
   });
 
