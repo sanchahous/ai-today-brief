@@ -10,8 +10,8 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875` and follow-up `fix/weekly-master-revise-parse-fallback` 2026-08-09
-Last updated: 2026-08-09
+Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10
+Last updated: 2026-08-10
 
 ---
 
@@ -491,12 +491,18 @@ pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інв
 |---|---|---|
 | gate пройдено | `succeeded` | активна ревізія + quality report, як раніше |
 | лишились невирішені перевірки | **`succeeded`** з `needs_owner_review: true` | неактивна draft-ревізія + `unresolved_issues` у стрічці |
-| бюджет часу / сегмент не дописано | `failed`, код **`resumable`** (retryable) | «N/14 сегментів збережено», повтор продовжує |
+| бюджет часу / сегмент не дописано / critic недоступний | `failed`, код **`resumable`** (retryable) | «N/14 сегментів збережено», повтор продовжує |
 
 Провал якості більше **не** робить джобу `failed`: блокер спершу проходить цикл точкового
 ремонту поля, і те, що лишилось нерозвʼязаним, їде до власника разом із чернеткою.
 (source: `src/lib/weekly-digest/master-engine.ts`, `generation-worker.ts`,
 `src/components/admin/weekly-generation-jobs-live.tsx`)
+
+Якщо незалежний critic вичерпав власну provider-драбину і не може дати verdict, це
+інфраструктурний, а не редакційний провал: рушій не створює неперевірену чернетку і не губить
+14 уже збережених сегментів. Джоба завершується retryable `resumable`; **Resume saved master**
+повторює лише оцінювання/наступні ремонти на тому самому durable тексті. (source:
+`src/lib/weekly-digest/master-engine.ts`, follow-up critic-recovery fix 2026-08-10)
 
 Quality rejection як і раніше не пише article artifacts у неактивну draft revision:
 `save_weekly_digest_artifact` навмисно приймає лише active revision. Draft зберігає поля master

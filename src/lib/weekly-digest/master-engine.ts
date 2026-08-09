@@ -612,9 +612,30 @@ export async function runWeeklyMaster(
     // leaves deliberate slack for exactly this (see WEEKLY_MASTER_DEADLINE_MS).
     if (outOfTime() && quality) break;
     const percent = Math.min(94, 72 + (round - 1) * 8);
-    const critic = await call('critic', `Editorial critic round ${round}`, percent, () =>
-      generateIndependentCritic(writerMetadata, criticPrompt(bundle, input.stories), input.db),
-    );
+    let critic: Awaited<ReturnType<typeof generateIndependentCritic>>;
+    try {
+      critic = await call('critic', `Editorial critic round ${round}`, percent, () =>
+        generateIndependentCritic(writerMetadata, criticPrompt(bundle, input.stories), input.db),
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      // The bilingual bundle is durable before the critic starts. Treat a
+      // critic outage like any other resumable infrastructure failure, so a
+      // retry can score the saved copy instead of throwing the edition away.
+      await note('warning', 'critic', `Critic round ${round} could not score the edition: ${message}`);
+      await saveState({
+        step: 'critic',
+        percent,
+        message: 'Editorial critic unavailable; retry will reuse the saved segments.',
+      });
+      return {
+        status: 'incomplete',
+        state,
+        completedSegments: Object.keys(state.segments).length,
+        totalSegments: plan.length,
+        reason: `Editorial critic round ${round} could not score the edition: ${message}`,
+      };
+    }
     const deterministicIssues = validateMasterBundle(bundle, input.researchPacks, expectedStories);
     quality = {
       schemaVersion: 'weekly-quality-v2',

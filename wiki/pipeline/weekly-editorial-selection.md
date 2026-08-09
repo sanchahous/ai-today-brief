@@ -3,8 +3,8 @@
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
 Sources: `src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
 `src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`, owner content-quality
-audit 2026-08-09
-Last updated: 2026-08-09
+audit 2026-08-09, follow-up critic-recovery fix 2026-08-10
+Last updated: 2026-08-10
 
 
 `weekly-editorial-v2` replaces the old `impact → recency → daily rank` sort used
@@ -163,6 +163,11 @@ critic-а лишається fail-closed: resume не перетворює не�
 послаблює редакційний відбір заради швидкості.
 (source: `src/lib/weekly-digest/generation-worker.ts`,
 `src/lib/weekly-digest/content-studio.ts`)
+
+Якщо critic недоступний після власної provider-драбини, рішення відбору так само не
+підміняється припущенням: job є `resumable`, а не `succeeded`, і наступна спроба оцінить той
+самий збережений текст. Власник не отримує «проштовхнути без verdict» як шлях до апруву.
+(source: `src/lib/weekly-digest/master-engine.ts`, follow-up critic-recovery fix 2026-08-10)
 
 ## Related pages
 

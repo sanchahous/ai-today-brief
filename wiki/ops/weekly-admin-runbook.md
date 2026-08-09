@@ -9,8 +9,8 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 `weekly_generation_control_plane` implementation 2026-08-09, `src/lib/weekly-digest/pdf.ts`
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
-+ Chrome layout measurement 2026-08-09
-Last updated: 2026-08-09
++ Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10
+Last updated: 2026-08-10
 
 ---
 
@@ -23,7 +23,7 @@ Last updated: 2026-08-09
 | Review **approved** | Можна йти далі по пайплайну | Нічого, наступний крок |
 | Job **queued** + packs не approved | Worker **свідомо не стартує** master | Approve усі 3 Top packs |
 | Job **succeeded** + **Needs your review** | Рушій вичерпав ремонт, лишились невирішені перевірки; текст збережено як **неактивна draft-ревізія** | Читай `unresolved` у стрічці → Overview → Editorial versions → правити вручну або **Resume saved master** |
-| Job **failed**, код **`resumable`** | Скінчився бюджет часу або не дописано сегмент; усі готові сегменти збережено | **Resume saved master** — уже написані історії не оплачуються вдруге |
+| Job **failed**, код **`resumable`** | Скінчився бюджет часу, не дописано сегмент або critic недоступний; усі готові сегменти збережено | **Resume saved master** — уже написані історії не оплачуються вдруге |
 | Job **failed** + **Resume saved master** | Є збережені сегменти (навіть частково) | Натисни **Resume saved master**, не generic retry |
 | Job **failed** без Resume | Немає жодного збереженого сегмента або інший тип збою | Читай причину → doctor/sandbox → linked retry лише після діагностики |
 
@@ -57,7 +57,8 @@ Overview показує preflight blockers з лінком на вкладку. 
      **Needs your review** із переліком `unresolved` — це задача на редагування, не збій
      інфраструктури (source: [weekly-master-engine](../pipeline/weekly-master-engine.md));
    - якщо джоба показує **Resume saved master** → натисни її: уже написані сегменти не
-     пишуться повторно, критик і раунди ремонту стартують заново; не тисни поруч generic retry;
+     пишуться повторно, critic і раунди ремонту стартують заново; це також правильний шлях після
+     недоступного critic-а, не тисни поруч generic retry;
    - якщо **Resume saved master** немає → діагностуй blocker, далі Start/retry за потреби;
    - жовті length warnings часто не блокують Approve, якщо score/gate ок;
    - з 2026-08-06 сюди можуть потрапити нові блокери `editors_view_missing` /

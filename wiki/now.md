@@ -9,8 +9,9 @@ review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish -
 2026-08-07, owner session 2026-08-08 (admin mobile-responsive fix, screenshot report),
 owner-approved Weekly Digest reliability plan 2026-08-08, owner screenshot + Chrome layout
 measurement 2026-08-09, `editorial_master` failure investigation + live sandbox runs 2026-08-09,
-owner decision 2026-08-09 to rewrite `editorial_master` as an iterative engine
-Last updated: 2026-08-09
+owner decision 2026-08-09 to rewrite `editorial_master` as an iterative engine,
+follow-up critic-recovery fix 2026-08-10
+Last updated: 2026-08-10
 
 ---
 
@@ -153,6 +154,13 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 (source: live check Vercel dashboard 2026-08-04)
 
 ## Активна робота
+
+−6. **Follow-up після PR #209: critic outage тепер не відкидає завершений випуск.** Єдиний
+прямий виклик незалежного critic-а у `master-engine` був unguarded: якщо всі його provider-и
+падали, `editorial_master` викидав exception, попри 14 durable сегментів. Тепер він повертає
+retryable `resumable`, зберігає checkpoint і підказує **Resume saved master**; наступна спроба
+переоцінює збережений текст. Додано регресійний test на цей шлях. (source:
+`src/lib/weekly-digest/master-engine.ts`, `master-engine.test.ts`, local test 2026-08-10)
 
 −5. **`editorial_master` переписано на ітеративний рушій — гілка
 `claude/editorial-master-refactor-i6n8zl`.** Власник відмовився від подальших точкових фіксів
