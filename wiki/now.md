@@ -15,27 +15,32 @@ Last updated: 2026-08-09
 
 ## Стан репозиторію
 
-- **Гілка `agent/weekly-content-quality-hardening` (локально, 2026-08-09)** — критичний аудит
-  згенерованого weekly master виявив дослівний витік voice exemplar у вступ, вигадані сцени,
-  абстрактні titles, непояснені energy claims і системні UK spelling/grammar/localization
-  дефекти, які critic пропустив із сімома однаковими 90/100. Підготовлено `weekly-master-v7`:
-  exemplars вилучено з prompt, додано deterministic blockers, `language_mechanics`, жорсткішу
-  critic calibration і зрозумілі Article labels. Повний `npm run pr:check` зелений: 957/957
-  тестів із coverage, typecheck, lint, affected E2E map, wiki contract і production build;
-  writer окремо заборонено форсувати umbrella-тему без доказового зв'язку Top 3. Деталі —
-  [pipeline/editorial-voice § Аудит 2026-08-09](pipeline/editorial-voice.md#аудит-згенерованого-випуску-2026-08-09).
-  **v7.1 (той самий PR, [#199](https://github.com/sanchahous/ai-today-brief/pull/199)) звузив
-  три хибнопозитиви** — `ambiguous_energy_claim` реагує лише на явне порівняння (не на будь-яку
-  згадку «energy»), UK-блоклист більше не чіпає `score`/`мейнтейнер`, uniform-critic-score гейт
-  має escape valve для дійсно рівно сильного тексту (≥95). Деталі — [log](log.md). **Знайдено й
-  закрито прогалину продукту:** для вже `succeeded` job `editorial_master` не було способу
-  перегенерувати master на тій самій ревізії (retry RPC приймає лише `failed`/`cancelled`,
-  ідемпотентний ключ «Start / retry Content Studio» незмінний для тієї ж ревізії) — додано
-  кнопку «Regenerate master» у `WeeklyGenerationJobsLive` (Research/Article-таби), що заводить
-  новий job з унікальним ключем на тому самому approved research.
+- **PR [#199](https://github.com/sanchahous/ai-today-brief/pull/199) змержено в `main` 2026-08-09**
+  (`6f6d875`, власник змержив вручну одразу після зеленого CI) — критичний аудит згенерованого
+  weekly master виявив дослівний витік voice exemplar у вступ, вигадані сцени, абстрактні titles,
+  непояснені energy claims і системні UK spelling/grammar/localization дефекти, які critic
+  пропустив із сімома однаковими 90/100. `weekly-master-v7`: exemplars вилучено з prompt, додано
+  deterministic blockers, `language_mechanics`, жорсткішу critic calibration і зрозумілі Article
+  labels; writer окремо заборонено форсувати umbrella-тему без доказового звʼязку Top 3. Той самий
+  PR звузив три хибнопозитиви (v7.1) — `ambiguous_energy_claim` реагує лише на явне порівняння,
+  UK-блоклист більше не чіпає `score`/`мейнтейнер`, uniform-critic-score гейт має escape valve
+  для тексту ≥95. Деталі — [pipeline/editorial-voice § Аудит 2026-08-09](pipeline/editorial-voice.md#аудит-згенерованого-випуску-2026-08-09),
+  [log](log.md).
+- **PR [#200](https://github.com/sanchahous/ai-today-brief/pull/200) змержено в `main` 2026-08-09**
+  (`d63b583`) — додав кнопку «Regenerate master» (`WeeklyGenerationJobsLive`, Research/Article-таби)
+  для вже `succeeded` `editorial_master` job, бо raw retry RPC приймає лише `failed`/`cancelled`,
+  а «Start / retry Content Studio» б'ється об незмінний ідемпотентний ключ. **Живо на
+  `843975a8-8c19-4eca-96a8-035f76eae3ab` кнопка не зʼявилась** — знайдено реальний баг: умова
+  рендеру звіряла `job.revision_id === активна ревізія`, а успішний `editorial_master`
+  (`createMasterRevision` у `generation-worker.ts`) завжди мінтить і активує НОВУ ревізію, тобто
+  `job.revision_id` після успіху назавжди лишається прив'язаним до вже витісненої ревізії —
+  умова була недосяжною для будь-якого реально успішного job. Фікс — гілка
+  `fix/weekly-master-regenerate-condition`: кнопка тепер орієнтується на «останній
+  `editorial_master` job цього дайджесту» (за `created_at`), а не на збіг `revision_id`; нова
+  job все одно заводиться проти поточної активної ревізії (`revision_id={revisionId}` у формі).
   `843975a8-8c19-4eca-96a8-035f76eae3ab` (`ai-weekly-2026-08-02`) досі `in_review` з
   `editorial_master`, згенерованим ДО v7-гейтів (job `fe82f82c…`, успішний прогін 09.08 07:27) —
-  після мержу PR #199 варто натиснути цю кнопку, щоб отримати текст, перевірений новими гейтами,
+  після мержу цього фіксу варто натиснути кнопку, щоб отримати текст, перевірений новими гейтами,
   перш ніж апрувити випуск.
 - **`main` тепер включає PR #189, #190, #191 і #192** (Phase 0-6a злито `9d32347`). Senior-рівневе
   технічне ревʼю обох PR постфактум (гілка `claude/tech-review-pr-189-190-859ena`) знайшло і
