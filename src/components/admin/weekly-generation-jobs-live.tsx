@@ -225,6 +225,20 @@ export function WeeklyGenerationJobsLive({
 
   const allowed = useMemo(() => new Set(jobTypes), [jobTypes]);
   const jobs = data.jobs.filter((job) => allowed.has(job.job_type));
+  // A succeeded editorial_master job always mints and activates a *new*
+  // revision (see createMasterRevision in generation-worker.ts), so the job
+  // itself is permanently tied to the now-superseded revision it was queued
+  // against -- job.revision_id === the active revision is never true again
+  // after success. "Regenerate" therefore targets the most recent
+  // editorial_master job regardless of its stored revision_id, not a
+  // revision-id match.
+  const latestEditorialMasterJobId = useMemo(() => {
+    const masterJobs = data.jobs.filter((job) => job.job_type === 'editorial_master');
+    if (masterJobs.length === 0) return null;
+    return masterJobs.reduce((latest, job) =>
+      new Date(job.created_at).getTime() > new Date(latest.created_at).getTime() ? job : latest,
+    ).id;
+  }, [data.jobs]);
 
   return (
     <div className="mt-4 overflow-x-auto">
@@ -322,7 +336,7 @@ export function WeeklyGenerationJobsLive({
                   {job.job_type === 'editorial_master' &&
                   job.status === 'succeeded' &&
                   revisionId &&
-                  job.revision_id === revisionId ? (
+                  job.id === latestEditorialMasterJobId ? (
                     <form action={enqueueWeeklyGenerationAction} className="mt-2">
                       <input type="hidden" name="weekly_digest_id" value={digestId} />
                       <input type="hidden" name="revision_id" value={revisionId} />
