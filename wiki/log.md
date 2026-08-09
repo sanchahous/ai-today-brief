@@ -20,6 +20,9 @@ live verification 2026-08-09.
 - stalled linked `editorial_master` без створеної спроби повернуто в `queued` з append-only
   recovery event; новий GitHub Actions run успішно створив `Attempt 1/3`, перейшов у `running`
   та надсилає heartbeat;
+- workflow тепер встановлює Claude Code CLI й запускає writer з `claude-cli` як єдиним дозволеним
+  writer-провайдером: несправність CLI/subscription стає явною terminal-помилкою, а не тихим
+  OpenRouter fallback;
 - `wiki/index.md` — лічильник міграцій 70 → 73.
 
 **Перевірка:** три SQL contract tests виконано напряму в production DB; `get_advisors` не показав
