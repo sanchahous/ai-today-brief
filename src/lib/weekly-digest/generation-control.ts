@@ -6,7 +6,15 @@ export type GenerationFailureKind =
   | 'quota'
   | 'network'
   | 'validation'
+  /**
+   * Legacy only. The editorial master no longer fails on quality: an edition
+   * the repair loop cannot fully fix is saved as an inactive draft revision
+   * and the job finishes as `succeeded` with `needs_owner_review`. Kept so
+   * historical rows still classify.
+   */
   | 'quality_gate'
+  /** Ran out of run budget with durable segments saved; a retry continues. */
+  | 'resumable'
   | 'cancelled'
   | 'unknown';
 
@@ -50,13 +58,17 @@ export const SHORT_RUNNING_GENERATION_JOB_TYPES = [
 ] as const;
 
 const STAGES: Record<string, readonly GenerationStage[]> = {
+  // Mirrors the engine's own steps (master-engine.ts): the writes are now a
+  // sequence of per-story/per-frame segments, and `validate` is the free
+  // deterministic repair pass that runs before any paid critic call.
   editorial_master: [
-    { key: 'prepare', label: 'Preparing approved research', weight: 2 },
-    { key: 'english', label: 'Writing English edition', weight: 28 },
-    { key: 'ukrainian', label: 'Adapting Ukrainian edition', weight: 28 },
-    { key: 'critic', label: 'Running editorial critic', weight: 17 },
-    { key: 'revisions', label: 'Applying optional revisions', weight: 20 },
-    { key: 'persist', label: 'Saving revision', weight: 5 },
+    { key: 'prepare', label: 'Preparing approved research', weight: 4 },
+    { key: 'english', label: 'Writing English stories and frame', weight: 34 },
+    { key: 'ukrainian', label: 'Adapting Ukrainian stories and frame', weight: 28 },
+    { key: 'validate', label: 'Repairing deterministic checks', weight: 6 },
+    { key: 'critic', label: 'Running editorial critic', weight: 12 },
+    { key: 'revisions', label: 'Repairing flagged fields', weight: 12 },
+    { key: 'persist', label: 'Saving revision', weight: 4 },
   ],
   social_copy: [
     { key: 'prepare', label: 'Preparing social source', weight: 5 },
@@ -108,6 +120,16 @@ export function clampMonotonicProgress(previous: number, next: number): number {
 
 export function classifyGenerationFailure(message: string): GenerationFailure {
   const normalized = message.toLowerCase();
+  // Checked before everything else: this message names its own remedy and
+  // must not be mistaken for a timeout or a quality failure. Nothing is lost
+  // when it fires -- every finished segment is already on the job row.
+  if (/segments saved|a retry resumes from the saved state/.test(normalized)) {
+    return {
+      code: 'resumable',
+      retryable: true,
+      nextAction: 'A retry continues from the saved segments instead of starting over.',
+    };
+  }
   if (/quality gate|quality.*(?:failed|block)|dimension.*score/.test(normalized)) {
     return {
       code: 'quality_gate',

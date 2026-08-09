@@ -477,23 +477,31 @@ pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інв
 
 ## Durable recovery для `editorial_master` (2026-08-09)
 
-Коли master job уже зберіг повний EN+UK checkpoint і потім впав на critic або targeted
-revision, кнопка **Resume saved master** створює окремий linked job для тієї ж активної
-ревізії. Новий job копіює обидві перевірені checkpoint-частини у власний durable output і
-пропускає початкові EN-writer та UK-adaptation: лишаються тільки critic і, якщо verdict
-дозволяє, targeted revise. UI показує цю дію лише для failed `editorial_master` із двома
-hash-addressable checkpoint-ами; server action повторно перевіряє owner-сесію, digest,
-active revision і source job, тож приховані поля форми не можуть підмінити джерело.
-(source: `src/lib/weekly-digest/generation-worker.ts`,
-`src/app/admin/(cms)/weekly/actions.ts`,
+> **Переписано того ж дня.** Секцію нижче лишено як історію: контрольна площина й межа
+> «артефакти лише на активній ревізії» чинні, але одиниця відновлення змінилась із
+> «повний EN+UK checkpoint» на **окремий сегмент**, а провал якості більше не є провалом
+> джоби. Повний опис — [weekly-master-engine](weekly-master-engine.md).
+
+Від 2026-08-09 `editorial_master` виконується посегментно: одна історія — один виклик, плюс
+рамка випуску на локаль (14 сегментів для 3 feature + 3 radar). Кожен сегмент durable у
+`weekly_digest_generation_jobs.output.master_run_state`, тож **Resume saved master** продовжує
+з будь-якої точки, а не лише з повної пари локалей. Джоба має рівно три виходи:
+
+| Вихід | Стан джоби | Що бачить власник |
+|---|---|---|
+| gate пройдено | `succeeded` | активна ревізія + quality report, як раніше |
+| лишились невирішені перевірки | **`succeeded`** з `needs_owner_review: true` | неактивна draft-ревізія + `unresolved_issues` у стрічці |
+| бюджет часу / сегмент не дописано | `failed`, код **`resumable`** (retryable) | «N/14 сегментів збережено», повтор продовжує |
+
+Провал якості більше **не** робить джобу `failed`: блокер спершу проходить цикл точкового
+ремонту поля, і те, що лишилось нерозвʼязаним, їде до власника разом із чернеткою.
+(source: `src/lib/weekly-digest/master-engine.ts`, `generation-worker.ts`,
 `src/components/admin/weekly-generation-jobs-live.tsx`)
 
-Quality rejection більше не намагається писати article artifacts у неактивну draft revision:
+Quality rejection як і раніше не пише article artifacts у неактивну draft revision:
 `save_weekly_digest_artifact` навмисно приймає лише active revision. Draft зберігає поля master
-для review, а quality report лишається на чинній активній ревізії; job checkpoint фіксує
-`master_draft_revision_id` і `quality_artifact_id` перед terminal quality-gate result. Це
-відділяє реальну редакційну відмову від помилки persistence і залишає наступний resume
-дешевим та відновлюваним.
+для review, а quality report лишається на чинній активній ревізії; job output фіксує
+`master_draft_revision_id`, `quality_artifact_id` і `unresolved_issues`.
 (source: `src/lib/weekly-digest/generation-worker.ts`,
 `supabase/migrations/20260723095458_weekly_digest_v2.sql`)
 
@@ -551,6 +559,7 @@ critic 130–295 с, revise-раунди 101–240 с. Тобто один кр�
 
 ## Related pages
 
+- [weekly-master-engine](weekly-master-engine.md) — ітеративний рушій `editorial_master`
 - [weekly-master-failures](weekly-master-failures.md) — чому падав `editorial_master` 09.08
 - [editorial-voice](editorial-voice.md) — house style, exemplars, banned-phrase gate
 - [weekly-editorial-selection](weekly-editorial-selection.md)

@@ -1251,3 +1251,30 @@ article artifact у неактивну quality-draft revision, яку DB нав�
 **Джерело:** draft PR [#208](https://github.com/sanchahous/ai-today-brief/pull/208).
 
 **Змінено:** `wiki/now.md` та `wiki/index.md` тепер посилаються на відкритий draft PR.
+
+---
+
+## 2026-08-09 — `editorial_master` переписано на ітеративний рушій
+
+**Джерело:** рішення власника 2026-08-09 (відмова від подальших точкових фіксів старої схеми),
+`src/lib/weekly-digest/master-engine.ts`, `master-segments.ts`, `master-repair.ts`,
+`editorial-llm.ts`, `generation-worker.ts`, `generation-control.ts`,
+`pipeline/scripts/weekly-master-sandbox.ts`.
+
+**Змінено:**
+
+- **нова сторінка** `wiki/pipeline/weekly-master-engine.md` — сегментований запис (14 сегментів
+  замість двох монолітів), точковий ремонт поля, безкоштовний детермінований раунд до критика,
+  правило «якість ніколи не валить джобу», бюджети й прозорість стрічки;
+- `wiki/pipeline/weekly-master-failures.md` — додано розділ про те, що з семи причин усунуто
+  структурно, а не латкою;
+- `wiki/pipeline/weekly-digest.md` — секцію master оновлено на новий рушій і три виходи джоби;
+- `wiki/ops/weekly-sandbox.md` — `run` тепер пише `state.json` після кожного сегмента,
+  доданий `--resume <dir>`;
+- `wiki/ops/weekly-admin-runbook.md` — що робити з `needs_owner_review` і як читати
+  **Resume saved master** з частковими сегментами;
+- `wiki/now.md`, `wiki/index.md` — поточний стан і мапа.
+
+**Нотатка:** редакційні гейти v7 і пороги якості не послаблені — перенесені в посегментні
+промпти дослівно. Змінилась одиниця роботи (поле замість статті) і поведінка на провалі
+(draft-ревізія на огляд власника замість `failed`), не планка.

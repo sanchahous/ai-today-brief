@@ -29,14 +29,12 @@ import { nextWeeklyScheduledForChannel } from '@/lib/social/schedule';
 import {
   canonicalSourceName,
   contentFingerprint,
-  editorialQualityFailures,
   editorialQualityRetryGuidance,
   placementForRank,
   REQUIRED_QUALITY_DIMENSIONS,
   resolveWeeklyContentStudioMode,
   sourceNameMatchesDomain,
   WEEKLY_CONTENT_STUDIO_VERSION,
-  WEEKLY_MASTER_SPEC_VERSION,
   WEEKLY_VIDEO_MANIFEST_VERSION,
   WEEKLY_VIDEO_SCRIPT_SCHEMA_VERSION,
   type WeeklyArticleMaster,
@@ -47,15 +45,19 @@ import {
   type WeeklyVideoScript,
 } from './content-studio';
 import {
-  generateWeeklyMaster,
-  splitMasterRetryGuidance,
   type EditorialGenerationMetadata,
-  type WeeklyMasterCheckpoint,
-  type WeeklyMasterEnglishResult,
   type WeeklyMasterInputStory,
+  type WeeklyMasterProviderStep,
   type WeeklyMasterRetryGuidance,
-  type WeeklyMasterUkrainianResult,
 } from './editorial-llm';
+import {
+  computeMasterPlanHash,
+  reusableMasterRunState,
+  runWeeklyMaster,
+  type MasterRunState,
+  type WeeklyMasterRunOutcome,
+} from './master-engine';
+import type { UnresolvedIssue } from './master-repair';
 import { generateWeeklyVideoScript } from './video-script-llm';
 import {
   buildWeeklyResearchPack,
@@ -794,7 +796,7 @@ async function saveQualityReport(input: {
   weeklyDigestId: string;
   revisionId: string;
   report: WeeklyContentQualityReport;
-  generation: Awaited<ReturnType<typeof generateWeeklyMaster>>['generation'];
+  generation: Extract<WeeklyMasterRunOutcome, { status: 'complete' }>['generation'];
   passed: boolean;
   jobId?: string;
   /**
@@ -919,111 +921,48 @@ async function assertWithinMasterBudget(revisionId: string) {
 }
 
 /**
- * Identifies whether a prior attempt's English write (article+video+social
- * angles) is still valid to reuse: changes iff the research packs or the
- * English-relevant slice of retry guidance change. Takes the *full*,
- * unsplit guidance list and filters internally (via
- * `splitMasterRetryGuidance`, the same split `generateWeeklyMaster` uses for
- * the prompts themselves) rather than trusting the caller to pre-filter --
- * a caller that accidentally passed unfiltered guidance would otherwise
- * silently defeat the whole point of the split with no type error to catch
- * it. `naturalness`/`parity` guidance is Ukrainian-only, so a retry that
- * only needs to fix the Ukrainian translation leaves this hash — and
- * therefore the already-paid English/video write — untouched.
+ * The durable run state lives under one output key, so a checkpoint merges
+ * over the previous one instead of accumulating (both the checkpoint and the
+ * finish RPC do `output = output || p_output`).
  */
-export function computeEnglishCheckpointHash(
-  researchPacks: WeeklyResearchPack[],
-  retryGuidance: WeeklyMasterRetryGuidance[],
-): string {
-  const { english: englishGuidance } = splitMasterRetryGuidance(retryGuidance);
-  return createHash('sha256')
-    .update(
-      JSON.stringify({ researchPacks, englishGuidance, promptVersion: WEEKLY_MASTER_SPEC_VERSION }),
-    )
-    .digest('hex');
-}
+const MASTER_STATE_KEY = 'master_run_state';
 
-/**
- * Ukrainian write is valid to reuse only if the research packs, the
- * Ukrainian-relevant guidance, AND the English checkpoint it was translated
- * from are all unchanged — a fresh English pass always invalidates the
- * existing Ukrainian translation, even without new Ukrainian-tagged guidance.
- * Same full-list-in, filter-internally contract as computeEnglishCheckpointHash.
- */
-export function computeUkrainianCheckpointHash(
-  researchPacks: WeeklyResearchPack[],
-  englishCheckpointHash: string,
-  retryGuidance: WeeklyMasterRetryGuidance[],
-): string {
-  const { ukrainian: ukrainianGuidance } = splitMasterRetryGuidance(retryGuidance);
-  return createHash('sha256')
-    .update(
-      JSON.stringify({
-        researchPacks,
-        englishCheckpointHash,
-        ukrainianGuidance,
-        promptVersion: WEEKLY_MASTER_SPEC_VERSION,
-      }),
-    )
-    .digest('hex');
-}
-
-type MasterCheckpointOutput = {
-  englishCheckpointHash?: string;
-  ukrainianCheckpointHash?: string;
-  english?: WeeklyMasterEnglishResult;
-  ukrainian?: WeeklyMasterUkrainianResult;
-};
-
-/**
- * A completed bilingual checkpoint can safely outlive the job that wrote it.
- * The parser already validated both values before `saveMasterCheckpoint`
- * persisted them, so recovery only verifies a non-empty, hash-addressable
- * bilingual pair rather than duplicating every nested editorial schema.
- */
-export function fullMasterCheckpointFromOutput(
+export function masterRunStateFromOutput(
   value: Json | null | undefined,
-): WeeklyMasterCheckpoint | null {
-  const output = asRecord(value);
-  const english = asRecord(output.english);
-  const ukrainian = asRecord(output.ukrainian);
-  if (
-    !text(output.englishCheckpointHash) ||
-    !text(output.ukrainianCheckpointHash) ||
-    Object.keys(english).length === 0 ||
-    Object.keys(ukrainian).length === 0
-  ) {
-    return null;
-  }
-  return {
-    english: output.english as unknown as WeeklyMasterEnglishResult,
-    ukrainian: output.ukrainian as unknown as WeeklyMasterUkrainianResult,
-  };
+  planHash: string,
+): MasterRunState | null {
+  return reusableMasterRunState(asRecord(value)[MASTER_STATE_KEY], planHash);
 }
 
-async function loadMasterCheckpoint(
-  jobId: string,
-  expectedEnglishHash: string,
-  expectedUkrainianHash: string,
-): Promise<WeeklyMasterCheckpoint | null> {
+/**
+ * State this job already wrote (an in-place retry of the same job) takes
+ * precedence over an explicitly requested resume source, because it is by
+ * definition at least as far along.
+ */
+async function loadOwnMasterRunState(jobId: string, planHash: string) {
   const db = getSupabaseAdmin();
   const { data, error } = await db
     .from('weekly_digest_generation_jobs')
     .select('output')
     .eq('id', jobId)
     .maybeSingle();
-  if (error) throw new Error(`[weekly-generation] checkpoint lookup: ${error.message}`);
-  const output = asRecord(data?.output as Json | undefined) as MasterCheckpointOutput;
-  const english = output.englishCheckpointHash === expectedEnglishHash ? output.english : undefined;
-  const ukrainian =
-    output.ukrainianCheckpointHash === expectedUkrainianHash ? output.ukrainian : undefined;
-  if (!english && !ukrainian) return null;
-  return { english, ukrainian };
+  if (error) throw new Error(`[weekly-generation] run state lookup: ${error.message}`);
+  return masterRunStateFromOutput(data?.output as Json | undefined, planHash);
 }
 
-async function loadMasterResumeCheckpoint(
+/**
+ * "Resume saved master": continue a previous job's saved segments rather than
+ * paying for them again.
+ *
+ * Accepts any terminal prior state, not just `failed`. A run that stopped
+ * short on unresolved quality items now finishes as `succeeded` (see
+ * generateEditorialMaster below), and that is precisely the case an owner
+ * most wants to resume from.
+ */
+async function loadMasterResumeState(
   job: ClaimedGenerationJob,
-): Promise<{ checkpoint: WeeklyMasterCheckpoint; sourceJobId: string } | null> {
+  planHash: string,
+): Promise<{ state: MasterRunState; sourceJobId: string } | null> {
   const sourceJobId = text(asRecord(job.input).resume_from_job_id);
   if (!sourceJobId) return null;
   const db = getSupabaseAdmin();
@@ -1036,62 +975,74 @@ async function loadMasterResumeCheckpoint(
   if (
     !data ||
     data.job_type !== 'editorial_master' ||
-    data.status !== 'failed' ||
     data.weekly_digest_id !== job.weekly_digest_id ||
-    data.revision_id !== job.revision_id
+    data.revision_id !== job.revision_id ||
+    !['failed', 'cancelled', 'succeeded'].includes(data.status)
   ) {
-    throw new Error('Master resume source must be a failed master job for this digest revision.');
+    throw new Error(
+      'Master resume source must be a finished master job for this digest revision.',
+    );
   }
-  const checkpoint = fullMasterCheckpointFromOutput(data.output);
-  if (!checkpoint) {
-    throw new Error('Master resume source does not contain a complete saved EN and UK checkpoint.');
+  const state = masterRunStateFromOutput(data.output, planHash);
+  if (!state) {
+    throw new Error(
+      'Master resume source has no saved state for the current research packs — start a fresh master instead.',
+    );
   }
-  return { checkpoint, sourceJobId };
+  // An explicit owner-triggered resume buys a fresh critic/repair budget for
+  // the copy that was already paid for. Without this reset a resume of a run
+  // that used up its rounds would re-report the same verdict and change
+  // nothing, which is the "retry does nothing" trap this refactor exists to
+  // remove.
+  return {
+    state: { ...state, criticRounds: 0, repairAttempts: {}, unresolved: [] },
+    sourceJobId,
+  };
 }
 
-async function saveMasterCheckpoint(
-  tracker: GenerationAttemptTracker,
-  englishCheckpointHash: string,
-  ukrainianCheckpointHash: string,
-  checkpoint: WeeklyMasterCheckpoint,
-  step: 'english' | 'ukrainian',
-) {
-  const output: MasterCheckpointOutput = {
-    englishCheckpointHash,
-    ukrainianCheckpointHash,
-    ...checkpoint,
-  };
-  await tracker.checkpoint(
-    output as unknown as Record<string, Json | undefined>,
-    step,
-    step === 'english' ? 30 : 58,
-  );
+/**
+ * Wall-clock budget for one master run. The GitHub Actions job allows 120
+ * minutes; stopping short of that leaves room to persist the state and finish
+ * the job cleanly, so an over-running edition resumes from its last segment
+ * instead of starting over.
+ */
+function masterRunDeadline(): number {
+  const configured = Number(process.env.WEEKLY_MASTER_DEADLINE_MS);
+  const budget = Number.isFinite(configured) && configured > 0 ? configured : 95 * 60_000;
+  return Date.now() + budget;
+}
+
+function unresolvedSummary(unresolved: UnresolvedIssue[]): string {
+  if (!unresolved.length) return 'none';
+  return unresolved
+    .slice(0, 6)
+    .map(
+      (entry) =>
+        `${entry.code}${entry.locale ? `/${entry.locale}` : ''}${entry.field ? `.${entry.field}` : ''} (${entry.reason})`,
+    )
+    .join('; ');
 }
 
 async function recordMasterProviderCall(input: {
   job: ClaimedGenerationJob;
   tracker: GenerationAttemptTracker;
-  step: 'english' | 'ukrainian' | 'critic' | 'revisions';
+  step: WeeklyMasterProviderStep;
   metadata: EditorialGenerationMetadata;
+  label: string;
+  progress: number;
   durationMs?: number;
 }) {
-  const progress =
-    input.step === 'english'
-      ? 30
-      : input.step === 'ukrainian'
-        ? 60
-        : input.step === 'critic'
-          ? 77
-          : 80;
   await input.tracker.event({
     type: 'provider_call_completed',
     step: input.step,
     provider: input.metadata.provider,
     model: input.metadata.model,
-    progressCurrent: progress,
+    progressCurrent: input.progress,
     progressTotal: 100,
+    message: `${input.label} — ${input.metadata.provider}/${input.metadata.model}`,
     metadata: {
       role: input.step === 'critic' ? 'weekly.master_critic' : 'weekly.master_writer',
+      segment: input.label,
       prompt_version: input.metadata.promptVersion,
       prompt_tokens: input.metadata.promptTokens,
       output_tokens: input.metadata.outputTokens,
@@ -1114,27 +1065,7 @@ async function recordMasterProviderCall(input: {
     jobId: input.job.id,
     attemptId: input.job.attempt_id,
     stepKey: input.step,
-    metadata: { prompt_version: input.metadata.promptVersion },
-  });
-}
-
-async function recordMasterProviderStart(
-  tracker: GenerationAttemptTracker,
-  step: 'english' | 'ukrainian' | 'critic' | 'revisions',
-) {
-  const progress = step === 'english' ? 2 : step === 'ukrainian' ? 30 : step === 'critic' ? 60 : 77;
-  await tracker.event({
-    type: 'provider_call_started',
-    step,
-    provider: 'router',
-    model: 'auto',
-    progressCurrent: progress,
-    progressTotal: 100,
-    message: `Starting ${step === 'critic' ? 'editorial critic' : 'editorial writer'} provider call`,
-    metadata: {
-      role: step === 'critic' ? 'weekly.master_critic' : 'weekly.master_writer',
-      selection: 'provider_chain',
-    },
+    metadata: { prompt_version: input.metadata.promptVersion, segment: input.label },
   });
 }
 
@@ -1167,159 +1098,165 @@ async function generateEditorialMaster(
   const sourceStories = masterInputStories(context, approvedResearch, directionsByBriefItemId);
   const researchPacks = approvedResearch.map(({ pack }) => pack);
   const retryGuidance = await priorMasterRetryGuidance(job.revision_id);
-  const englishCheckpointHash = computeEnglishCheckpointHash(researchPacks, retryGuidance);
-  const ukrainianCheckpointHash = computeUkrainianCheckpointHash(
-    researchPacks,
-    englishCheckpointHash,
-    retryGuidance,
-  );
-  const resume = await loadMasterResumeCheckpoint(job);
-  const checkpoint =
-    resume?.checkpoint ??
-    (await loadMasterCheckpoint(job.id, englishCheckpointHash, ukrainianCheckpointHash));
-  if (resume) {
-    // Copy the source before the next paid call. A later critic/revise failure
-    // can then resume from this newest job instead of relying on an older row.
-    await saveMasterCheckpoint(
-      tracker,
-      englishCheckpointHash,
-      ukrainianCheckpointHash,
-      resume.checkpoint,
-      'ukrainian',
-    );
+  const planHash = computeMasterPlanHash(researchPacks, retryGuidance);
+
+  const resume = await loadMasterResumeState(job, planHash);
+  const state = (await loadOwnMasterRunState(job.id, planHash)) ?? resume?.state ?? null;
+  if (state) {
     await tracker.event({
       type: 'checkpoint_reused',
       step: 'prepare',
-      progressCurrent: 58,
+      progressCurrent: 4,
       progressTotal: 100,
-      message: 'Reused saved English and Ukrainian master checkpoint',
-      metadata: { resume_source_job_id: resume.sourceJobId },
+      message: `Reusing ${Object.keys(state.segments).length} saved editorial segment(s)`,
+      ...(resume ? { metadata: { resume_source_job_id: resume.sourceJobId } } : {}),
     });
   }
-  // Accumulates across both onStepComplete calls so the ukrainian save doesn't
-  // clobber the english step just persisted moments earlier in this same run.
-  let runningCheckpoint = checkpoint;
-  const providerCallStartedAt = new Map<'english' | 'ukrainian' | 'critic' | 'revisions', number>();
-  const hasFullCheckpoint = Boolean(checkpoint?.english && checkpoint.ukrainian);
-  await tracker.event({
-    type: 'step_started',
-    step: hasFullCheckpoint ? 'critic' : checkpoint?.english ? 'ukrainian' : 'english',
-    progressCurrent: hasFullCheckpoint ? 60 : checkpoint?.english ? 30 : 2,
-    progressTotal: 100,
-    message: hasFullCheckpoint
-      ? 'Reusing English and Ukrainian checkpoints; starting editorial critic'
-      : checkpoint?.english
-        ? 'Reusing English checkpoint'
-        : 'Starting English writer',
-  });
-  const result = await generateWeeklyMaster(sourceStories, researchPacks, retryGuidance, {
-    checkpoint,
-    onStepComplete: async (step, stepResult) => {
-      runningCheckpoint = {
-        english:
-          step === 'english'
-            ? (stepResult as WeeklyMasterEnglishResult)
-            : runningCheckpoint!.english,
-        ukrainian:
-          step === 'ukrainian'
-            ? (stepResult as WeeklyMasterUkrainianResult)
-            : runningCheckpoint?.ukrainian,
-      };
-      await saveMasterCheckpoint(
-        tracker,
-        englishCheckpointHash,
-        ukrainianCheckpointHash,
-        runningCheckpoint,
-        step,
-      );
-      if (step === 'english') {
-        await tracker.event({
-          type: 'step_started',
-          step: 'ukrainian',
-          progressCurrent: 30,
-          progressTotal: 100,
-          message: 'Starting Ukrainian adaptation',
-        });
-      }
-    },
-    onProviderCallStarted: async (step) => {
-      providerCallStartedAt.set(step, Date.now());
-      await recordMasterProviderStart(tracker, step);
-    },
-    onProviderCallCompleted: async (step, metadata) => {
-      const startedAt = providerCallStartedAt.get(step);
-      providerCallStartedAt.delete(step);
-      await recordMasterProviderCall({
-        job,
-        tracker,
-        step,
-        metadata,
-        durationMs: startedAt ? Date.now() - startedAt : undefined,
-      });
-    },
+
+  const outcome = await runWeeklyMaster({
+    stories: sourceStories,
+    researchPacks,
+    retryGuidance,
+    state,
+    deadlineAt: masterRunDeadline(),
     // Lets an owner-configured /admin/providers chain for weekly.master_writer
     // / weekly.master_critic override the default value-ranked OpenRouter step.
     db: getSupabaseAdmin(),
+    hooks: {
+      onState: async (runState, progress) => {
+        await tracker.checkpoint(
+          { [MASTER_STATE_KEY]: runState as unknown as Json },
+          progress.step,
+          progress.percent,
+        );
+        await tracker.event({
+          type: 'step_progress',
+          step: progress.step,
+          progressCurrent: progress.percent,
+          progressTotal: 100,
+          message: progress.message,
+        });
+      },
+      onProviderCallStarted: async (step, { label, percent }) => {
+        await tracker.event({
+          type: 'provider_call_started',
+          step,
+          progressCurrent: percent,
+          progressTotal: 100,
+          message: `Starting ${label}`,
+          metadata: {
+            role: step === 'critic' ? 'weekly.master_critic' : 'weekly.master_writer',
+            segment: label,
+          },
+        });
+      },
+      onProviderCallCompleted: async (step, metadata, { label, percent, durationMs }) => {
+        await recordMasterProviderCall({
+          job,
+          tracker,
+          step,
+          metadata,
+          label,
+          progress: percent,
+          durationMs,
+        });
+      },
+      onNote: async (entry) => {
+        await tracker.event({
+          type: 'worker_note',
+          level: entry.level,
+          step: entry.step,
+          message: entry.message,
+          ...(entry.metadata ? { metadata: entry.metadata as Record<string, Json> } : {}),
+        });
+      },
+    },
   });
+
+  if (outcome.status === 'incomplete') {
+    // Not an editorial failure and not lost work: every finished segment is
+    // on the job row, so the linked retry picks up here. Retryable on purpose.
+    throw new Error(
+      `Master run paused with ${outcome.completedSegments}/${outcome.totalSegments} segments saved — a retry resumes from the saved state. Reason: ${outcome.reason}`,
+    );
+  }
+
+  const { bundle: _bundle, quality, converged, unresolved } = outcome;
   await tracker.event({
     type: 'step_completed',
     step: 'critic',
-    provider: result.generation.critic.provider,
-    model: result.generation.critic.model,
-    progressCurrent: 77,
+    provider: outcome.generation.critic.provider,
+    model: outcome.generation.critic.model,
+    progressCurrent: 94,
     progressTotal: 100,
-    message: 'Editorial critic completed',
+    message: `Editorial critic finished at ${quality.score}/100`,
   });
-  const failures = editorialQualityFailures(result.quality);
-  if (failures.length > 0) {
+
+  if (!converged) {
+    // The edition is imperfect, not lost. Everything the models produced is
+    // real, paid-for copy that the repair loop already improved as far as it
+    // could; the remaining items are judgment calls for the owner. Saving it
+    // as an inactive draft and finishing the job as *succeeded* is the whole
+    // point of this path: an unresolved quality item is a review task, not an
+    // infrastructure failure, and it must never again burn a 30-minute run
+    // and leave nothing behind.
     const qualityArtifactId = await saveQualityReport({
       weeklyDigestId: job.weekly_digest_id,
       revisionId: job.revision_id,
-      report: result.quality,
-      generation: result.generation,
+      report: quality,
+      generation: outcome.generation,
       passed: false,
       jobId: job.id,
       recordCost: false,
     });
-    // Everything the LLM produced (article EN/UK) is real,
-    // paid-for content -- discarding it because one dimension missed its
-    // floor is what stranded it in a job's internal checkpoint last time,
-    // invisible outside a raw DB query. Save it as an inactive draft
-    // revision instead: it shows up in Overview -> Editorial versions next
-    // to the still-untouched active revision, and the owner decides whether
-    // to restore it, same as any other version.
     const draft = await createMasterRevision({
       job,
       context,
-      result,
+      result: outcome,
       requestedMode,
       approvedResearch,
       rpcName: 'create_service_weekly_digest_revision_draft',
       persistArticleArtifacts: false,
       // Truncated to 120 chars by the RPC and shown as-is on the revision
-      // card (weekly-workspace.tsx) -- keep it short enough to read there
-      // without opening the linked quality report artifact.
-      reason: `Quality gate: ${result.quality.score}/100, ${failures.length} check(s) failed`,
+      // card (weekly-workspace.tsx).
+      reason: `Needs review: ${quality.score}/100, ${unresolved.length} unresolved check(s)`,
     });
-    await tracker.checkpoint(
-      {
+    await tracker.event({
+      type: 'quality_review_required',
+      level: 'warning',
+      step: 'persist',
+      progressCurrent: 98,
+      progressTotal: 100,
+      message: `Saved for owner review: ${unresolved.length} unresolved check(s) — ${unresolvedSummary(unresolved)}`,
+      metadata: {
+        draft_revision_id: draft.revisionId,
+        quality_artifact_id: qualityArtifactId,
+        unresolved: unresolved as unknown as Json,
+      },
+    });
+    await alertWeeklyDigestIssue({
+      weeklyDigestId: job.weekly_digest_id,
+      phase: 'generation',
+      message: `Weekly master saved as a draft revision for review: ${quality.score}/100 with ${unresolved.length} unresolved check(s).`,
+    });
+    return {
+      artifactId: null,
+      output: {
+        [MASTER_STATE_KEY]: outcome.state as unknown as Json,
         master_draft_revision_id: draft.revisionId,
         quality_artifact_id: qualityArtifactId,
-        quality_score: result.quality.score,
+        quality_score: quality.score,
         quality_passed: false,
+        needs_owner_review: true,
+        unresolved_issues: unresolved as unknown as Json,
       },
-      'quality',
-      90,
-    );
-    throw new Error(
-      `Master quality gate failed (${result.quality.score}/100): ${failures.join('; ')}. Review artifact ${qualityArtifactId}. Draft revision ${draft.revisionId} was saved for review under Overview -> Editorial versions -- it did not become active.`,
-    );
+    };
   }
 
   const created = await createMasterRevision({
     job,
     context,
-    result,
+    result: outcome,
     requestedMode,
     approvedResearch,
     rpcName: 'create_service_weekly_digest_revision',
@@ -1329,8 +1266,8 @@ async function generateEditorialMaster(
   const qualityArtifactId = await saveQualityReport({
     weeklyDigestId: job.weekly_digest_id,
     revisionId: created.revisionId,
-    report: result.quality,
-    generation: result.generation,
+    report: quality,
+    generation: outcome.generation,
     passed: true,
     jobId: job.id,
     recordCost: false,
@@ -1338,7 +1275,7 @@ async function generateEditorialMaster(
   await tracker.event({
     type: 'step_completed',
     step: 'persist',
-    progressCurrent: 95,
+    progressCurrent: 98,
     progressTotal: 100,
     message: 'Revision and quality report saved',
   });
@@ -1346,13 +1283,17 @@ async function generateEditorialMaster(
   return {
     artifactId: null,
     output: {
+      [MASTER_STATE_KEY]: outcome.state as unknown as Json,
       new_revision_id: created.revisionId,
       article_artifact_ids: created.articleArtifactIds,
       quality_artifact_id: qualityArtifactId,
-      quality_score: result.quality.score,
+      quality_score: quality.score,
+      quality_passed: true,
+      needs_owner_review: false,
     },
   };
 }
+
 
 /**
  * Shared by the success path (activates immediately, via
@@ -1368,7 +1309,7 @@ async function generateEditorialMaster(
 async function createMasterRevision(params: {
   job: ClaimedGenerationJob;
   context: Awaited<ReturnType<typeof loadGenerationContext>>;
-  result: Awaited<ReturnType<typeof generateWeeklyMaster>>;
+  result: Extract<WeeklyMasterRunOutcome, { status: 'complete' }>;
   requestedMode: ReturnType<typeof contentStudioJobMode>;
   approvedResearch: ReturnType<typeof researchPacksFromContext>;
   rpcName: 'create_service_weekly_digest_revision' | 'create_service_weekly_digest_revision_draft';

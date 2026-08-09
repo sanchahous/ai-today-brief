@@ -32,6 +32,16 @@ describe('Weekly generation control helpers', () => {
     expect(classifyGenerationFailure('provider quota exhausted').code).toBe('quota');
   });
 
+  // A paused master run has every finished segment on the job row, so the
+  // retry continues rather than restarting -- it must not be classified as a
+  // plain timeout, and it must never read as a terminal quality failure.
+  it('classifies a paused, resumable master run as retryable', () => {
+    const paused = classifyGenerationFailure(
+      'Master run paused with 9/14 segments saved — a retry resumes from the saved state. Reason: Run deadline reached while writing UK feature story #2.',
+    );
+    expect(paused).toMatchObject({ code: 'resumable', retryable: true });
+  });
+
   it('retries transient network and timeout failures', () => {
     expect(classifyGenerationFailure('fetch failed: ECONNRESET').retryable).toBe(true);
     expect(classifyGenerationFailure('request timed out').code).toBe('timeout');

@@ -7,13 +7,13 @@ const rpc = vi.fn(async (_fn: string, _args: Record<string, unknown>) => ({
 vi.mock('@/lib/supabase-admin', () => ({ getSupabaseAdmin: () => ({ rpc }) }));
 
 import {
-  computeEnglishCheckpointHash,
   computeSocialCopyCheckpointHash,
-  computeUkrainianCheckpointHash,
-  fullMasterCheckpointFromOutput,
   masterInputStories,
+  masterRunStateFromOutput,
   runWeeklyDigestGenerationJobs,
 } from './generation-worker';
+import { computeMasterPlanHash } from './master-engine';
+import type { Json } from '@/lib/database.types';
 import type { WeeklyResearchPack, WeeklyMasterBundle } from './content-studio';
 import type { WeeklyMasterRetryGuidance } from './editorial-llm';
 import type { SocialChannel, SocialLocale } from '@/lib/social/types';
@@ -46,115 +46,67 @@ function pack(overrides: Partial<WeeklyResearchPack> = {}): WeeklyResearchPack {
   } as unknown as WeeklyResearchPack;
 }
 
-describe('computeEnglishCheckpointHash', () => {
+describe('computeMasterPlanHash', () => {
   it('is deterministic for identical inputs', () => {
     const packs = [pack()];
     const guidance: WeeklyMasterRetryGuidance[] = [];
-    expect(computeEnglishCheckpointHash(packs, guidance)).toBe(
-      computeEnglishCheckpointHash(packs, guidance),
-    );
+    expect(computeMasterPlanHash(packs, guidance)).toBe(computeMasterPlanHash(packs, guidance));
   });
 
-  it('changes when research packs change', () => {
-    const a = computeEnglishCheckpointHash([pack({ revisionItemId: 'item-1' })], []);
-    const b = computeEnglishCheckpointHash([pack({ revisionItemId: 'item-2' })], []);
+  it('changes when research packs change, so stale segments are never resumed onto new evidence', () => {
+    const a = computeMasterPlanHash([pack({ revisionItemId: 'item-1' })], []);
+    const b = computeMasterPlanHash([pack({ revisionItemId: 'item-2' })], []);
     expect(a).not.toBe(b);
   });
 
-  it('changes once English-tagged retry guidance from a saved critic verdict is present', () => {
-    const before = computeEnglishCheckpointHash([pack()], []);
-    const after = computeEnglishCheckpointHash(
-      [pack()],
-      [
-        {
-          code: 'FACT-001',
-          message: 'Unsupported claim',
-          blocker: true,
-        } as unknown as WeeklyMasterRetryGuidance,
-      ],
-    );
-    expect(before).not.toBe(after);
-  });
-
-  it('stays identical across two attempts that both failed before any guidance was saved', () => {
-    // Mirrors the real failure mode: a transient provider/JSON error on the
-    // critic step never produces a saved quality report, so retryGuidance
-    // stays empty on the next attempt and the checkpoint should still hit.
-    const packs = [pack(), pack({ revisionItemId: 'item-2', placement: 'radar' })];
-    const attempt1 = computeEnglishCheckpointHash(packs, []);
-    const attempt2 = computeEnglishCheckpointHash(packs, []);
-    expect(attempt1).toBe(attempt2);
-  });
-
-  it('is unaffected by Ukrainian-only guidance -- a naturalness-only retry keeps the English/video cache valid', () => {
-    // This is the exact case that motivated the split: "Master quality gate
-    // failed (88/100): dimension "naturalness" scored 80/100 ...". Nothing
-    // about the English content was wrong, so the next attempt must not pay
-    // to regenerate it.
+  it('changes when retry guidance changes', () => {
     const packs = [pack()];
-    const withoutGuidance = computeEnglishCheckpointHash(packs, []);
-    const withUkrainianGuidance = computeEnglishCheckpointHash(packs, [
-      {
-        code: 'dimension_low_score:naturalness',
-        message: 'The "naturalness" dimension scored 80/100 (needs 80+).',
-        locale: 'uk',
-      } as WeeklyMasterRetryGuidance,
+    const before = computeMasterPlanHash(packs, []);
+    const after = computeMasterPlanHash(packs, [
+      { code: 'dimension_low_score:naturalness', message: 'Fix the Ukrainian.', locale: 'uk' },
     ]);
-    expect(withoutGuidance).toBe(withUkrainianGuidance);
+    expect(after).not.toBe(before);
   });
 });
 
-describe('computeUkrainianCheckpointHash', () => {
-  it('is deterministic for identical inputs', () => {
-    const packs = [pack()];
-    const englishHash = computeEnglishCheckpointHash(packs, []);
-    expect(computeUkrainianCheckpointHash(packs, englishHash, [])).toBe(
-      computeUkrainianCheckpointHash(packs, englishHash, []),
+describe('masterRunStateFromOutput', () => {
+  const planHash = computeMasterPlanHash([pack()], []);
+  const savedState = {
+    master_run_state: {
+      version: 'weekly-master-run-v2',
+      planHash,
+      segments: { 'en:story:item-1': { value: { body: 'x' }, metadata: {} } },
+      repairs: [],
+      repairAttempts: {},
+      criticRounds: 0,
+      quality: null,
+      unresolved: [],
+      calls: { english: [], ukrainian: [], critic: [] },
+    },
+  } as unknown as Json;
+
+  it('restores a state written for the same plan', () => {
+    expect(masterRunStateFromOutput(savedState, planHash)?.segments).toHaveProperty(
+      'en:story:item-1',
     );
   });
 
-  it('changes when Ukrainian-tagged guidance changes, independent of English guidance', () => {
-    const packs = [pack()];
-    const englishHash = computeEnglishCheckpointHash(packs, []);
-    const before = computeUkrainianCheckpointHash(packs, englishHash, []);
-    const after = computeUkrainianCheckpointHash(packs, englishHash, [
-      {
-        code: 'dimension_low_score:naturalness',
-        message: 'The "naturalness" dimension scored 80/100 (needs 80+).',
-        locale: 'uk',
-      } as WeeklyMasterRetryGuidance,
-    ]);
-    expect(before).not.toBe(after);
+  // A resume onto a different plan would splice copy written against
+  // superseded research into a new edition -- the one silent-corruption risk
+  // a resumable worker introduces.
+  it('refuses a state written for a different plan', () => {
+    expect(masterRunStateFromOutput(savedState, 'some-other-hash')).toBeNull();
   });
 
-  it('changes when the upstream English checkpoint hash changes -- a fresh English pass always invalidates the translation', () => {
-    const packs = [pack()];
-    const before = computeUkrainianCheckpointHash(packs, 'english-hash-a', []);
-    const after = computeUkrainianCheckpointHash(packs, 'english-hash-b', []);
-    expect(before).not.toBe(after);
-  });
-});
-
-describe('fullMasterCheckpointFromOutput', () => {
-  const savedCheckpoint = {
-    englishCheckpointHash: 'english-hash',
-    ukrainianCheckpointHash: 'ukrainian-hash',
-    english: { value: { article: { title: 'English' } }, metadata: { provider: 'test' } },
-    ukrainian: { value: { title: 'Українська' }, metadata: { provider: 'test' } },
-  };
-
-  it('accepts the durable EN and UK pair saved by a prior failed master job', () => {
-    expect(fullMasterCheckpointFromOutput(savedCheckpoint)).toEqual({
-      english: savedCheckpoint.english,
-      ukrainian: savedCheckpoint.ukrainian,
-    });
+  it('refuses a state written by an older engine version', () => {
+    const legacy = {
+      master_run_state: { version: 'weekly-master-run-v1', planHash, segments: {} },
+    } as unknown as Json;
+    expect(masterRunStateFromOutput(legacy, planHash)).toBeNull();
   });
 
-  it('refuses a partial or unaddressable checkpoint as a resume source', () => {
-    expect(fullMasterCheckpointFromOutput({ ...savedCheckpoint, ukrainian: undefined })).toBeNull();
-    expect(
-      fullMasterCheckpointFromOutput({ ...savedCheckpoint, englishCheckpointHash: '' }),
-    ).toBeNull();
+  it('returns null for an output that has no saved state at all', () => {
+    expect(masterRunStateFromOutput({ quality_score: 90 } as unknown as Json, planHash)).toBeNull();
   });
 });
 

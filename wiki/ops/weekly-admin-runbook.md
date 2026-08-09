@@ -22,8 +22,10 @@ Last updated: 2026-08-09
 | Review **in_review** | Чекає людського апруву | **Approve** або Request changes |
 | Review **approved** | Можна йти далі по пайплайну | Нічого, наступний крок |
 | Job **queued** + packs не approved | Worker **свідомо не стартує** master | Approve усі 3 Top packs |
-| Job **failed** + **Resume saved master** | EN+UK уже збережено, далі впав critic/revise | Натисни **Resume saved master**, не generic retry |
-| Job **failed** без Resume | Немає повного checkpoint або інший тип збою | Читай причину → doctor/sandbox → linked retry лише після діагностики |
+| Job **succeeded** + **Needs your review** | Рушій вичерпав ремонт, лишились невирішені перевірки; текст збережено як **неактивна draft-ревізія** | Читай `unresolved` у стрічці → Overview → Editorial versions → правити вручну або **Resume saved master** |
+| Job **failed**, код **`resumable`** | Скінчився бюджет часу або не дописано сегмент; усі готові сегменти збережено | **Resume saved master** — уже написані історії не оплачуються вдруге |
+| Job **failed** + **Resume saved master** | Є збережені сегменти (навіть частково) | Натисни **Resume saved master**, не generic retry |
+| Job **failed** без Resume | Немає жодного збереженого сегмента або інший тип збою | Читай причину → doctor/sandbox → linked retry лише після діагностики |
 
 **Succeeded ≠ approved.** Це найчастіша причина «чому master у черзі».
 
@@ -50,8 +52,12 @@ Overview показує preflight blockers з лінком на вкладку. 
 5. Лише тоді `editorial_master` переходить у **queued** і одразу отримує один GitHub Actions
    worker (cron ~кожні **5 хв** лишається safety-dispatcher).
 6. Коли з’явиться **Master quality**:
-   - якщо failed job показує **Resume saved master** → натисни її: EN+UK не пишуться повторно,
-     запускається тільки critic/targeted revise; не тисни поруч generic retry;
+   - **джоба більше не падає через якість.** Якщо рушій не зміг закрити всі перевірки, він
+     зберігає випуск як неактивну draft-ревізію, завершується `succeeded` і показує
+     **Needs your review** із переліком `unresolved` — це задача на редагування, не збій
+     інфраструктури (source: [weekly-master-engine](../pipeline/weekly-master-engine.md));
+   - якщо джоба показує **Resume saved master** → натисни її: уже написані сегменти не
+     пишуться повторно, критик і раунди ремонту стартують заново; не тисни поруч generic retry;
    - якщо **Resume saved master** немає → діагностуй blocker, далі Start/retry за потреби;
    - жовті length warnings часто не блокують Approve, якщо score/gate ок;
    - з 2026-08-06 сюди можуть потрапити нові блокери `editors_view_missing` /
@@ -139,11 +145,15 @@ Release preflight на Overview / Release покаже, що ще червоне
    ці кроки спершу тримають голос EN-writer, але після його збою автоматично переходять до
    наступного provider у драбині. Звір фактичний provider/model і причину в run; prose перед
    валідним JSON від CLI також відновлюється автоматично.
-5. Якщо у failed `editorial_master` доступна **Resume saved master**, це означає, що job має
-   обидві durable checkpoint-частини та їх hashes. Вона створює окремий linked job на тій самій
-   active revision, не запускає початкові EN/UK writer calls і перед першою наступною paid
-   операцією копіює checkpoint у новий job. Дочекайся нового critic verdict; uniform 90/100
-   лишається коректним quality failure, а не привід обходити перевірку.
+5. Якщо доступна **Resume saved master**, job має збережені сегменти (кнопка показує скільки).
+   Вона створює окремий linked job на тій самій active revision, пропускає вже написані історії
+   й дає критику та ремонту свіжий бюджет раундів. Дочекайся нового critic verdict; uniform
+   90/100 лишається некаліброваним вердиктом — рушій сам переоцінює його наступним раундом,
+   і це не привід обходити перевірку.
+6. **Needs your review** ≠ провал. Текст є, він пройшов усі можливі автоматичні ремонти, і
+   кожен `unresolved`-запис несе причину (`unmappable`, `attempts_exhausted`, `repair_failed`,
+   `rounds_exhausted`, `deadline`). Швидше за все дешевше доправити руками у draft-ревізії,
+   ніж ганяти ще один прогін.
 (source: `src/lib/weekly-digest/editorial-llm.ts`, `src/lib/weekly-digest/generation-worker.ts`,
 `src/components/admin/weekly-generation-jobs-live.tsx`, Actions run `31324873875`)
 

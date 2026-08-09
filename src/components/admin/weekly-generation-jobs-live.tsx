@@ -168,23 +168,41 @@ function mergeEvents(current: GenerationEvent[], incoming: GenerationEvent[]) {
   return [...byId.values()].sort((left, right) => right.id - left.id).slice(0, 250);
 }
 
-function hasSavedMasterCheckpoint(job: GenerationJob) {
-  if (job.job_type !== 'editorial_master' || job.status !== 'failed') return false;
+function jobOutput(job: GenerationJob): Record<string, unknown> | null {
   const output = job.output;
-  if (!output || typeof output !== 'object' || Array.isArray(output)) return false;
-  const checkpoint = output as Record<string, unknown>;
-  return Boolean(
-    typeof checkpoint.englishCheckpointHash === 'string' &&
-    checkpoint.englishCheckpointHash.trim() &&
-    typeof checkpoint.ukrainianCheckpointHash === 'string' &&
-    checkpoint.ukrainianCheckpointHash.trim() &&
-    checkpoint.english &&
-    typeof checkpoint.english === 'object' &&
-    !Array.isArray(checkpoint.english) &&
-    checkpoint.ukrainian &&
-    typeof checkpoint.ukrainian === 'object' &&
-    !Array.isArray(checkpoint.ukrainian),
-  );
+  if (!output || typeof output !== 'object' || Array.isArray(output)) return null;
+  return output as Record<string, unknown>;
+}
+
+/**
+ * A resumable run state (master-engine.ts) on a finished job. Unlike the old
+ * whole-locale checkpoint this can be partial — nine of fourteen segments is
+ * still worth resuming — so the check is "any saved segment", not "both
+ * locales complete".
+ */
+function savedMasterSegments(job: GenerationJob): number {
+  if (job.job_type !== 'editorial_master') return 0;
+  if (!['failed', 'cancelled', 'succeeded'].includes(job.status)) return 0;
+  const state = jobOutput(job)?.master_run_state;
+  if (!state || typeof state !== 'object' || Array.isArray(state)) return 0;
+  const segments = (state as Record<string, unknown>).segments;
+  if (!segments || typeof segments !== 'object' || Array.isArray(segments)) return 0;
+  return Object.keys(segments).length;
+}
+
+/**
+ * The edition generated, but the repair loop could not clear every check, so
+ * it was saved as an inactive draft revision for the owner instead of failing
+ * the job. Distinct from a failure on purpose: the copy exists and is waiting
+ * on a human, not on another 30-minute run.
+ */
+function needsOwnerReview(job: GenerationJob): boolean {
+  return jobOutput(job)?.needs_owner_review === true;
+}
+
+function unresolvedCount(job: GenerationJob): number {
+  const unresolved = jobOutput(job)?.unresolved_issues;
+  return Array.isArray(unresolved) ? unresolved.length : 0;
 }
 
 export function WeeklyGenerationJobsLive({
@@ -349,7 +367,14 @@ export function WeeklyGenerationJobsLive({
                   {job.failure_code ? (
                     <p className="mt-1 text-amber-200">Code: {job.failure_code}</p>
                   ) : null}
-                  {job.status === 'failed' && !hasSavedMasterCheckpoint(job) ? (
+                  {needsOwnerReview(job) ? (
+                    <p className="mt-1 text-amber-200">
+                      Needs your review: {unresolvedCount(job)} check(s) the repair loop could not
+                      clear. The edition was saved as an inactive draft under Overview → Editorial
+                      versions.
+                    </p>
+                  ) : null}
+                  {job.status === 'failed' && !savedMasterSegments(job) ? (
                     <form action={retryWeeklyGenerationJobAction} className="mt-2">
                       <input type="hidden" name="weekly_digest_id" value={digestId} />
                       <input type="hidden" name="job_id" value={job.id} />
@@ -361,18 +386,19 @@ export function WeeklyGenerationJobsLive({
                       </button>
                     </form>
                   ) : null}
-                  {hasSavedMasterCheckpoint(job) ? (
+                  {savedMasterSegments(job) > 0 ? (
                     <form action={resumeWeeklyMasterFromCheckpointAction} className="mt-2">
                       <input type="hidden" name="weekly_digest_id" value={digestId} />
                       <input type="hidden" name="source_job_id" value={job.id} />
                       <ActionSubmitButton
                         idleLabel="Resume saved master"
-                        pendingLabel="Queueing saved checkpoint…"
+                        pendingLabel="Queueing saved segments…"
                         className="min-h-9 rounded-lg border border-[#47e4d3]/40 px-3 text-xs font-bold text-[#47e4d3] transition hover:bg-[#47e4d3]/10"
                       />
                       <p className="mt-1 text-slate-500">
-                        Reuses the saved English and Ukrainian master; only critic/revision checks
-                        run.
+                        Continues from {savedMasterSegments(job)} saved segment(s) — already-written
+                        stories are not paid for again, and the critic and repair rounds start
+                        fresh.
                       </p>
                     </form>
                   ) : null}

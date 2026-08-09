@@ -10,17 +10,20 @@
  *            (stories + approved research packs + retry guidance) into
  *            raw/_local/, via the worker's own loaders — no parallel query
  *            path, so the fixture cannot drift from what the worker sends.
- *   run      generateWeeklyMaster() against that fixture with NO database
- *            handle: the real prompts, the real provider ladder, the real
- *            critic and revise loop, but nothing is written back — no lease,
- *            no revision, no artifact, no cost ledger row.
+ *   run      runWeeklyMaster() against that fixture with NO database handle:
+ *            the real segment prompts, the real provider ladder, the real
+ *            critic and the real targeted-repair loop, but nothing is written
+ *            back — no lease, no revision, no artifact, no cost ledger row.
+ *            The durable run state is written to state.json after every
+ *            segment, so `--resume <dir>` continues an interrupted run exactly
+ *            the way a retried production job does.
  *   gates    re-run the deterministic validators over a bundle saved by an
  *            earlier `run`. Free, instant, no provider call at all — this is
  *            the loop for iterating on validateMasterBundle rules.
  *
  * Usage (env comes from .env.local, same as every other pipeline script):
  *   npm run weekly:sandbox -- capture --digest <uuid> [--revision <uuid>]
- *   npm run weekly:sandbox -- run --fixture <path> [--only english] [--order claude-cli]
+ *   npm run weekly:sandbox -- run --fixture <path> [--resume <dir>] [--order claude-cli]
  *   npm run weekly:sandbox -- gates --run <artifacts/_local/weekly-sandbox/dir>
  *
  * `capture` reads production through the service key. Everything else is
@@ -30,18 +33,19 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
-  editorialQualityFailures,
   validateMasterBundle,
   type WeeklyMasterBundle,
   type WeeklyResearchPack,
 } from '../../src/lib/weekly-digest/content-studio';
-import {
-  generateWeeklyMaster,
-  type EditorialGenerationMetadata,
-  type WeeklyMasterInputStory,
-  type WeeklyMasterProviderStep,
-  type WeeklyMasterRetryGuidance,
+import type {
+  WeeklyMasterInputStory,
+  WeeklyMasterProviderStep,
+  WeeklyMasterRetryGuidance,
 } from '../../src/lib/weekly-digest/editorial-llm';
+import {
+  runWeeklyMaster,
+  type MasterRunState,
+} from '../../src/lib/weekly-digest/master-engine';
 
 const FIXTURE_DIR = 'raw/_local/weekly-sandbox';
 const OUTPUT_DIR = 'artifacts/_local/weekly-sandbox';
@@ -54,16 +58,6 @@ interface SandboxFixture {
   stories: WeeklyMasterInputStory[];
   researchPacks: WeeklyResearchPack[];
   retryGuidance: WeeklyMasterRetryGuidance[];
-}
-
-/** Thrown from an onStepComplete callback to end a `--only` run early. The
- * callback is the documented extension point and the step's result is already
- * saved by the time it fires, so aborting there costs nothing and needs no
- * sandbox-only branch inside generateWeeklyMaster itself. */
-class StopAfterStep extends Error {
-  constructor(readonly step: string) {
-    super(`stop-after:${step}`);
-  }
 }
 
 function flag(name: string): string | undefined {
@@ -137,16 +131,28 @@ function readFixture(): { fixture: SandboxFixture; path: string } {
   return { fixture: JSON.parse(readFileSync(path, 'utf8')) as SandboxFixture, path };
 }
 
+function readState(dir: string | undefined): MasterRunState | null {
+  if (!dir) return null;
+  const path = join(dir, 'state.json');
+  try {
+    return JSON.parse(readFileSync(path, 'utf8')) as MasterRunState;
+  } catch {
+    throw new Error(`--resume ${dir} has no readable state.json`);
+  }
+}
+
 async function run(): Promise<void> {
   const { fixture, path } = readFixture();
-  const only = flag('only');
   const order = flag('order');
   if (order) process.env.WEEKLY_MASTER_PROVIDER_ORDER = order;
+  const resumeState = readState(flag('resume'));
 
   const outDir = flag('out-dir') ?? join(OUTPUT_DIR, runStamp());
+  const statePath = join(outDir, 'state.json');
   const startedAt = new Date();
   const calls: Array<{
     step: WeeklyMasterProviderStep;
+    label: string;
     provider: string;
     model: string;
     durationMs: number;
@@ -154,27 +160,41 @@ async function run(): Promise<void> {
     costUsd: number;
     costSource: string;
   }> = [];
-  const stepStartedAt = new Map<WeeklyMasterProviderStep, number>();
 
   console.log(`Fixture      ${path}`);
-  console.log(`Digest       ${fixture.slug ?? fixture.weeklyDigestId} (revision ${fixture.revisionId})`);
-  console.log(`Provider order ${process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? 'claude-cli,openrouter (default)'}`);
+  console.log(
+    `Digest       ${fixture.slug ?? fixture.weeklyDigestId} (revision ${fixture.revisionId})`,
+  );
+  console.log(
+    `Provider order ${process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? 'claude-cli,openrouter (default)'}`,
+  );
   console.log(`Output       ${outDir}`);
-  console.log(only ? `Mode         stop after "${only}"\n` : 'Mode         full master (writer -> critic -> revise)\n');
+  console.log(
+    resumeState
+      ? `Mode         resuming ${Object.keys(resumeState.segments).length} saved segment(s)\n`
+      : 'Mode         full master (segmented write -> validate -> critic -> targeted repair)\n',
+  );
 
-  let result: Awaited<ReturnType<typeof generateWeeklyMaster>> | null = null;
-  let failed = false;
-
-  try {
-    result = await generateWeeklyMaster(fixture.stories, fixture.researchPacks, fixture.retryGuidance, {
-      onProviderCallStarted: async (step) => {
-        stepStartedAt.set(step, Date.now());
-        console.log(`  -> ${step} started`);
+  const outcome = await runWeeklyMaster({
+    stories: fixture.stories,
+    researchPacks: fixture.researchPacks,
+    retryGuidance: fixture.retryGuidance,
+    state: resumeState,
+    hooks: {
+      // The local stand-in for the production checkpoint. Killing the run at
+      // any point and re-running with `--resume <dir>` must continue rather
+      // than restart -- which is exactly the property this refactor is for.
+      onState: (state, progress) => {
+        writeJson(statePath, state);
+        console.log(`  .. ${String(progress.percent).padStart(3)}%  ${progress.message}`);
       },
-      onProviderCallCompleted: async (step, metadata: EditorialGenerationMetadata) => {
-        const durationMs = Date.now() - (stepStartedAt.get(step) ?? Date.now());
+      onProviderCallStarted: (_step, { label }) => {
+        console.log(`  -> ${label}`);
+      },
+      onProviderCallCompleted: (step, metadata, { label, durationMs }) => {
         calls.push({
           step,
+          label,
           provider: metadata.provider,
           model: metadata.model,
           durationMs,
@@ -183,65 +203,67 @@ async function run(): Promise<void> {
           costSource: metadata.costSource,
         });
         console.log(
-          `  <- ${step} ${seconds(durationMs)} via ${metadata.provider}/${metadata.model} ` +
+          `  <- ${label} ${seconds(durationMs)} via ${metadata.provider}/${metadata.model} ` +
             `(${metadata.outputTokens} out, $${metadata.estimatedCostUsd.toFixed(4)} ${metadata.costSource})`,
         );
       },
-      onStepComplete: async (step, stepResult) => {
-        writeJson(join(outDir, `${step}.json`), stepResult);
-        if (only === step) throw new StopAfterStep(step);
+      onNote: (note) => {
+        console.log(`  !! [${note.level}] ${note.message}`);
       },
-      // No `db` on purpose: the sandbox must never reach the database, so an
-      // /admin/providers override is not applied here. Pass --order to
-      // reproduce a specific chain instead.
-    });
-  } catch (error) {
-    if (!(error instanceof StopAfterStep)) {
-      writeJson(join(outDir, 'error.json'), {
-        message: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-      });
-      console.error(`\nFAILED after ${seconds(Date.now() - startedAt.getTime())}`);
-      console.error(error instanceof Error ? error.message : String(error));
-      console.error(`\nPartial results and timings: ${outDir}`);
-      failed = true;
-    } else {
-      console.log(`\nStopped after "${error.step}" as requested.`);
-    }
-  }
+    },
+    // No `db` on purpose: the sandbox must never reach the database, so an
+    // /admin/providers override is not applied here. Pass --order to
+    // reproduce a specific chain instead.
+  });
 
-  if (result) {
-    writeJson(join(outDir, 'bundle.json'), result.bundle);
-    writeJson(join(outDir, 'quality.json'), result.quality);
-    const failures = editorialQualityFailures(result.quality);
-    console.log(`\nQuality      ${result.quality.score}/100`);
-    for (const dimension of result.quality.dimensions) {
-      console.log(`  ${dimension.name.padEnd(20)} ${dimension.score}`);
-    }
-    if (failures.length === 0) {
-      console.log('Gate         PASS — this bundle would have been promoted.');
-    } else {
-      console.log(`Gate         FAIL (${failures.length})`);
-      for (const failure of failures) console.log(`  - ${failure}`);
-    }
-  }
-
-  // Written on every path, failures included: per-step timings are the whole
-  // reason to run this, and they matter most when something blew up.
+  const totalCost = calls.reduce((sum, entry) => sum + entry.costUsd, 0);
   writeJson(join(outDir, 'run.json'), {
     fixture: path,
     startedAt: startedAt.toISOString(),
     totalMs: Date.now() - startedAt.getTime(),
     providerOrder: process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? null,
-    only: only ?? null,
-    outcome: failed ? 'failed' : 'ok',
+    resumedFrom: flag('resume') ?? null,
+    outcome: outcome.status,
+    totalCostUsd: Number(totalCost.toFixed(4)),
     calls,
   });
+  writeJson(statePath, outcome.state);
 
-  console.log(`\nTotal        ${seconds(Date.now() - startedAt.getTime())}`);
+  if (outcome.status === 'incomplete') {
+    console.log(
+      `\nPAUSED       ${outcome.completedSegments}/${outcome.totalSegments} segments written`,
+    );
+    console.log(`Reason       ${outcome.reason}`);
+    console.log(`Resume with  npm run weekly:sandbox -- run --fixture ${path} --resume ${outDir}`);
+    process.exitCode = 1;
+  } else {
+    writeJson(join(outDir, 'bundle.json'), outcome.bundle);
+    writeJson(join(outDir, 'quality.json'), outcome.quality);
+    writeJson(join(outDir, 'unresolved.json'), outcome.unresolved);
+    console.log(`\nQuality      ${outcome.quality.score}/100`);
+    for (const dimension of outcome.quality.dimensions) {
+      console.log(`  ${dimension.name.padEnd(20)} ${dimension.score}`);
+    }
+    if (outcome.converged) {
+      console.log('Gate         PASS — this bundle would have been promoted.');
+    } else {
+      console.log(`Gate         NEEDS REVIEW (${outcome.unresolved.length} unresolved)`);
+      for (const entry of outcome.unresolved) {
+        console.log(
+          `  - ${entry.code}${entry.locale ? ` [${entry.locale}]` : ''}${entry.field ? `.${entry.field}` : ''} (${entry.reason}) ${entry.message}`,
+        );
+      }
+      console.log(
+        '  A production run would save this as an inactive draft revision and finish as succeeded.',
+      );
+    }
+  }
+
+  console.log(`\nCalls        ${calls.length}, $${totalCost.toFixed(4)} total`);
+  console.log(`Total        ${seconds(Date.now() - startedAt.getTime())}`);
   console.log(`Written to   ${outDir}`);
-  if (failed) process.exitCode = 1;
 }
+
 
 function gates(): void {
   const runDir = flag('run');

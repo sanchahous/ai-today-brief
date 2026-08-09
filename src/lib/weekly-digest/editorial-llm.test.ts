@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../pipeline/openrouter-models', () => ({
   fetchOpenRouterModels: vi.fn().mockResolvedValue([
@@ -34,10 +34,6 @@ vi.mock('../../../pipeline/providers/registry', async (importOriginal) => {
   return { ...actual, loadProviderRegistry: vi.fn() };
 });
 
-import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summarize';
-import { generateWithClaudeCli } from '../../../pipeline/claude-cli';
-import { fetchOpenRouterModels } from '../../../pipeline/openrouter-models';
-import { loadProviderRegistry } from '../../../pipeline/providers/registry';
 import {
   extractJsonObject,
   masterRetryGuidancePrompt,
@@ -45,14 +41,15 @@ import {
   criticApprovedEvidence,
   criticPrompt,
   openRouterModelVendor,
+  parseRepairedValue,
+  parseStorySegment,
   premiumGeminiEditorialModels,
   premiumOpenRouterModels,
-  generateWeeklyMaster,
+  repairFieldPrompt,
   splitMasterRetryGuidance,
-  type WeeklyMasterEnglishResult,
+  storySegmentPrompt,
   type WeeklyMasterInputStory,
   type WeeklyMasterRetryGuidance,
-  type WeeklyMasterUkrainianResult,
 } from './editorial-llm';
 import type { WeeklyMasterBundle } from './content-studio';
 
@@ -312,918 +309,153 @@ const story = (revisionItemId: string, placement: 'feature' | 'radar') => ({
   claims: [{ id: 'claim-1', text: 'A supported claim.', evidenceUrls: ['https://example.com'] }],
 });
 
-const articleStory = (revisionItemId: string, placement: 'feature' | 'radar') => ({
-  revisionItemId,
-  placement,
-  headline: 'Headline',
-  summary: 'Summary',
-  hook: 'Hook',
-  body: 'Body',
-  why: 'Why',
-  practical: 'Practical',
-  limitation: 'Limitation',
-  takeaway: 'Takeaway',
-  editorsView: placement === 'feature' ? 'Editorial reasoning about where this leads.' : '',
-  discussionQuestion: placement === 'feature' ? 'What would you watch for next?' : '',
-  claimIds: ['claim-1'],
-});
+describe('storySegmentPrompt', () => {
+  const material = approvedStoryPromptMaterial([story('item-1', 'feature')])[0]!;
 
-function englishResult(): WeeklyMasterEnglishResult {
-  return {
-    value: {
-      article: {
-        locale: 'en',
-        title: 't',
-        seoTitle: 't',
-        metaDescription: 'd',
-        ogTitle: 't',
-        ogDescription: 'd',
-        standfirst: 's',
-        theme: 'th',
-        intro: 'i',
-        editorNote: 'e',
-        keyTakeaways: ['k'],
-        topics: ['t'],
-        entities: ['e'],
-        internalLinks: [],
-        conclusion: 'c',
-        stories: [articleStory('item-1', 'feature')],
-      },
-    },
-    metadata: {
-      provider: 'openrouter',
-      model: 'checkpointed/english-model',
-      promptTokens: 100,
-      outputTokens: 200,
-      estimatedCostUsd: 0.05,
-      costSource: 'reported',
-      promptVersion: 'weekly-master-v3',
-    },
-  } as unknown as WeeklyMasterEnglishResult;
-}
-
-function ukrainianResult(): WeeklyMasterUkrainianResult {
-  return {
-    value: {
-      locale: 'uk',
-      title: 't',
-      seoTitle: 't',
-      metaDescription: 'd',
-      ogTitle: 't',
-      ogDescription: 'd',
-      standfirst: 's',
-      theme: 'th',
-      intro: 'i',
-      editorNote: 'e',
-      keyTakeaways: ['k'],
-      topics: ['t'],
-      entities: ['e'],
-      internalLinks: [],
-      conclusion: 'c',
-      stories: [articleStory('item-1', 'feature')],
-    },
-    metadata: {
-      provider: 'openrouter',
-      model: 'checkpointed/ukrainian-model',
-      promptTokens: 100,
-      outputTokens: 200,
-      estimatedCostUsd: 0.04,
-      costSource: 'reported',
-      promptVersion: 'weekly-master-v3',
-    },
-  } as unknown as WeeklyMasterUkrainianResult;
-}
-
-const CRITIC_JSON = JSON.stringify({
-  score: 90,
-  dimensions: [
-    'engagement',
-    'voice',
-    'clarity',
-    'trust',
-    'usefulness',
-    'naturalness',
-    'parity',
-  ].map((name) => ({ name, score: 90, note: 'ok' })),
-  factualFlags: [],
-  issues: [],
-});
-
-describe('generateWeeklyMaster checkpoint reuse', () => {
-  afterEach(() => {
-    vi.mocked(generateWithOpenRouterChain).mockReset();
-    vi.mocked(generateWithClaudeCli).mockReset();
-    vi.unstubAllEnvs();
+  it('scopes the call to one story and gives it its own word budget', () => {
+    const prompt = storySegmentPrompt({
+      material,
+      placement: 'feature',
+      rank: 1,
+      alreadyWritten: [],
+      guidance: [],
+    });
+    expect(prompt).toContain('Write ONE story (rank 1, feature)');
+    expect(prompt).toContain('400-520 words');
+    expect(prompt).toContain('only this one');
   });
 
-  it('skips EN/UK generation and reuses the checkpoint when both steps are cached', async () => {
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
-      text: CRITIC_JSON,
-      provider: 'openrouter',
-      model: 'vendor/critic-model',
-      usage: null,
+  it('gives radar stories the shorter body budget and drops the feature-only fields', () => {
+    const prompt = storySegmentPrompt({
+      material,
+      placement: 'radar',
+      rank: 5,
+      alreadyWritten: [],
+      guidance: [],
     });
-    const onStepComplete = vi.fn();
-
-    const result = await generateWeeklyMaster([story('item-1', 'feature')], [], [], {
-      checkpoint: { english: englishResult(), ukrainian: ukrainianResult() },
-      onStepComplete,
-    });
-
-    // Only the critic call should have hit a provider — EN/UK came from the checkpoint.
-    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(1);
-    expect(onStepComplete).not.toHaveBeenCalled();
-    expect(result.generation.english.model).toBe('checkpointed/english-model');
-    expect(result.generation.ukrainian.model).toBe('checkpointed/ukrainian-model');
+    expect(prompt).toContain('80-120 words');
+    expect(prompt).toContain('must both be empty strings');
   });
 
-  it('generates EN/UK and reports both steps when no checkpoint is provided', async () => {
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => {
-      if (prompt.includes('independent factual and editorial critic')) {
-        return {
-          text: CRITIC_JSON,
-          provider: 'openrouter',
-          model: 'vendor/critic-model',
-          usage: null,
-        };
-      }
-      if (prompt.includes('Ukrainian senior news editor')) {
-        return {
-          text: JSON.stringify(englishResult().value.article),
-          provider: 'openrouter',
-          model: 'other-vendor/writer-model',
-          usage: null,
-        };
-      }
-      return {
-        text: JSON.stringify({
-          article: englishResult().value.article,
-        }),
-        provider: 'openrouter',
-        model: 'other-vendor/writer-model',
-        usage: null,
-      };
+  // One call per story cannot see the rest of the edition, so the writer is
+  // handed what has already been said to keep three stories from opening the
+  // same way.
+  it('passes already-written headlines so framings are not repeated', () => {
+    const prompt = storySegmentPrompt({
+      material,
+      placement: 'feature',
+      rank: 3,
+      alreadyWritten: [{ rank: 1, headline: 'First story', hook: 'First hook' }],
+      guidance: [],
     });
-    const onStepComplete = vi.fn();
-    const onProviderCallStarted = vi.fn();
-    const onProviderCallCompleted = vi.fn();
-
-    await generateWeeklyMaster([story('item-1', 'feature')], [], [], {
-      onStepComplete,
-      onProviderCallStarted,
-      onProviderCallCompleted,
-    });
-
-    expect(onStepComplete).toHaveBeenCalledWith('english', expect.anything());
-    expect(onStepComplete).toHaveBeenCalledWith('ukrainian', expect.anything());
-    expect(onProviderCallStarted.mock.calls.map(([step]) => step)).toEqual([
-      'english',
-      'ukrainian',
-      'critic',
-    ]);
-    expect(onProviderCallCompleted.mock.calls.map(([step]) => step)).toEqual([
-      'english',
-      'ukrainian',
-      'critic',
-    ]);
-    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(3); // english + ukrainian + critic
-    const prompts = vi.mocked(generateWithOpenRouterChain).mock.calls.map(([prompt]) => prompt);
-    const englishWriterPrompt = prompts.find(
-      (prompt) =>
-        !prompt.includes('independent factual and editorial critic') &&
-        !prompt.includes('Ukrainian senior news editor'),
-    );
-    const ukrainianWriterPrompt = prompts.find((prompt) =>
-      prompt.includes('Ukrainian senior news editor'),
-    );
-    const auditPrompt = prompts.find((prompt) =>
-      prompt.includes('independent factual and editorial critic'),
-    );
-    expect(englishWriterPrompt).not.toContain('STYLE REFERENCE ONLY');
-    expect(englishWriterPrompt).toContain('Never invent a person staring at a screen');
-    expect(englishWriterPrompt).toContain('seoTitle <=65 characters');
-    expect(englishWriterPrompt).toContain('one honest edition throughline');
-    expect(ukrainianWriterPrompt).toContain('0.6 kWh -> 0,6 кВт·год');
-    expect(ukrainianWriterPrompt).toContain('Proofread every field');
-    expect(ukrainianWriterPrompt).toContain('одну чесну наскрізну логіку');
-    expect(auditPrompt).toContain('language_mechanics');
-    expect(auditPrompt).toContain('Do not rubber-stamp the draft with uniform 90s');
+    expect(prompt).toContain('ALREADY WRITTEN IN THIS EDITION');
+    expect(prompt).toContain('First story');
   });
 
-  it('surfaces the owner-set angle in the English prompt as binding direction (PR4)', async () => {
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => {
-      if (prompt.includes('independent factual and editorial critic')) {
-        return {
-          text: CRITIC_JSON,
-          provider: 'openrouter',
-          model: 'vendor/critic-model',
-          usage: null,
-        };
-      }
-      if (prompt.includes('Ukrainian senior news editor')) {
-        return {
-          text: JSON.stringify(englishResult().value.article),
-          provider: 'openrouter',
-          model: 'other-vendor/writer-model',
-          usage: null,
-        };
-      }
-      return {
-        text: JSON.stringify({
-          article: englishResult().value.article,
-        }),
-        provider: 'openrouter',
-        model: 'other-vendor/writer-model',
-        usage: null,
-      };
+  it('keeps the evidence and invented-scene rules from the whole-edition prompt', () => {
+    const prompt = storySegmentPrompt({
+      material,
+      placement: 'feature',
+      rank: 1,
+      alreadyWritten: [],
+      guidance: [],
     });
-
-    await generateWeeklyMaster(
-      [{ ...story('item-1', 'feature'), angle: 'Frame this as a cautionary infra-trust story.' }],
-      [],
-      [],
-    );
-
-    const englishPromptSent = vi
-      .mocked(generateWithOpenRouterChain)
-      .mock.calls.map((call) => call[0])
-      .find(
-        (prompt) =>
-          !prompt.includes('independent factual and editorial critic') &&
-          !prompt.includes('Ukrainian senior news editor'),
-      );
-    expect(englishPromptSent).toContain('Frame this as a cautionary infra-trust story.');
-    expect(englishPromptSent).toContain('binding editorial direction');
+    expect(prompt).toContain('Never invent a person staring at a screen');
+    expect(prompt).toContain('never open a sentence with the name of another field');
   });
 });
 
-describe('generateWeeklyMaster claude-cli provider', () => {
-  afterEach(() => {
-    vi.mocked(generateWithOpenRouterChain).mockReset();
-    vi.mocked(generateWithClaudeCli).mockReset();
-    vi.mocked(fetchOpenRouterModels).mockReset();
-    vi.unstubAllEnvs();
+describe('parseStorySegment', () => {
+  const response = JSON.stringify({
+    story: {
+      headline: 'H',
+      summary: 'S',
+      hook: 'K',
+      body: 'B',
+      why: 'W',
+      practical: 'P',
+      limitation: 'L',
+      takeaway: 'T',
+      editorsView: 'E',
+      discussionQuestion: 'Q',
+      claimIds: ['claim-1', 'invented-claim', 'claim-from-another-story'],
+    },
   });
 
-  it('writes EN/UK through claude-cli when the subscription token is configured, and only the critic reaches OpenRouter', async () => {
-    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
-      {
-        id: 'vendor/critic-model',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000006' },
-        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-      },
-    ]);
-    vi.mocked(generateWithClaudeCli).mockImplementation(async (prompt: string) => {
-      if (prompt.includes('Ukrainian senior news editor')) {
-        return {
-          text: JSON.stringify(englishResult().value.article),
-          model: 'claude-sonnet-5',
-          totalCostUsd: 0.25,
-        };
-      }
-      return {
-        text: JSON.stringify({
-          article: englishResult().value.article,
-        }),
-        model: 'claude-sonnet-5',
-        totalCostUsd: 0.25,
-      };
-    });
-    vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
-      text: CRITIC_JSON,
-      provider: 'openrouter',
-      model: 'vendor/critic-model',
-      usage: null,
-    });
-
-    const result = await generateWeeklyMaster([story('item-1', 'feature')], [], []);
-
-    expect(generateWithClaudeCli).toHaveBeenCalledTimes(2); // english + ukrainian
-    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(1); // critic only
-    expect(result.generation.english.provider).toBe('claude-cli');
-    expect(result.generation.english.costSource).toBe('subscription');
-    expect(result.generation.english.estimatedCostUsd).toBe(0);
-    expect(result.generation.ukrainian.provider).toBe('claude-cli');
+  // An invented or borrowed claim id used to survive into the bundle and
+  // become an `unsupported_claim_id` blocker that cost a full regenerate.
+  it('drops claim ids outside this story’s approved set', () => {
+    expect(parseStorySegment(response, ['claim-1']).claimIds).toEqual(['claim-1']);
   });
 
-  // The Ukrainian and revise steps deliberately reuse the English writer's
-  // provider so both locales share one voice, but until 2026-08-09 that
-  // preference had no ladder behind it: run 31324873875 lost a job at the
-  // revise step, after 22 minutes and a good EN/UK/critic pass, because one
-  // claude-cli response arrived with a prose preamble.
-  it('falls back past the preferred provider when it fails on the Ukrainian step', async () => {
-    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
-      {
-        id: 'vendor/critic-model',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000006' },
-        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-      },
-    ]);
-    vi.mocked(generateWithClaudeCli).mockImplementation(async (prompt: string) => {
-      if (prompt.includes('Ukrainian senior news editor')) {
-        throw new SyntaxError(`Unexpected token '*', "**Applying"... is not valid JSON`);
-      }
-      return {
-        text: JSON.stringify({ article: englishResult().value.article }),
-        model: 'claude-sonnet-5',
-        totalCostUsd: 0.25,
-      };
-    });
-    vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => ({
-      text: prompt.includes('independent factual and editorial critic')
-        ? CRITIC_JSON
-        : JSON.stringify(englishResult().value.article),
-      provider: 'openrouter',
-      model: 'vendor/critic-model',
-      usage: null,
-    }));
-
-    const result = await generateWeeklyMaster([story('item-1', 'feature')], [], []);
-
-    expect(result.generation.english.provider).toBe('claude-cli');
-    expect(result.generation.ukrainian.provider).toBe('openrouter');
+  it('accepts a bare story object as well as a wrapped one', () => {
+    const bare = JSON.stringify(JSON.parse(response).story);
+    expect(parseStorySegment(bare, ['claim-1']).headline).toBe('H');
   });
 
-  it('falls back past the preferred provider when it fails on a revise step', async () => {
-    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
-      {
-        id: 'vendor/critic-model',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000006' },
-        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-      },
-    ]);
-    vi.mocked(generateWithClaudeCli).mockImplementation(async (prompt: string) => {
-      if (prompt.includes('line-editing an already-drafted')) {
-        throw new SyntaxError(`Unexpected token '*', "**Applying"... is not valid JSON`);
-      }
-      if (prompt.includes('independent factual and editorial critic')) {
-        return { text: criticJson(), model: 'claude-sonnet-5', totalCostUsd: 0.25 };
-      }
-      return {
-        text: prompt.includes('Ukrainian senior news editor')
-          ? JSON.stringify(reviseUkrainianResult().value)
-          : JSON.stringify({ article: reviseEnglishResult().value.article }),
-        model: 'claude-sonnet-5',
-        totalCostUsd: 0.25,
-      };
-    });
-    let openRouterCalls = 0;
-    vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => {
-      openRouterCalls += 1;
-      if (prompt.includes('independent factual and editorial critic')) {
-        return {
-          text: criticJson({
-            dimensions: [
-              'engagement',
-              'voice',
-              'clarity',
-              'trust',
-              'usefulness',
-              'naturalness',
-              'parity',
-            ].map((name) => ({ name, score: name === 'engagement' ? 60 : 90, note: 'flat opening' })),
-          }),
-          provider: 'openrouter',
-          model: 'vendor/critic-model',
-          usage: WRITE_USAGE,
-        };
-      }
-      return {
-        text:
-          openRouterCalls === 2
-            ? JSON.stringify(reviseEnglishResult().value.article)
-            : JSON.stringify(reviseUkrainianResult().value),
-        provider: 'openrouter',
-        model: 'vendor/critic-model',
-        usage: WRITE_USAGE,
-      };
-    });
-
-    const result = await generateWeeklyMaster(reviseStories(), [], []);
-
-    expect(result.quality.score).toBe(90);
-    expect(result.generation.english.provider).toBe('openrouter');
-    expect(result.generation.ukrainian.provider).toBe('openrouter');
+  it('treats a missing editorsView as an empty radar field rather than a parse failure', () => {
+    const radar = JSON.parse(response);
+    delete radar.story.editorsView;
+    expect(parseStorySegment(JSON.stringify(radar), ['claim-1']).editorsView).toBe('');
   });
 
-  it('does not silently fall back from an explicit Claude-only worker', async () => {
-    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
-    vi.stubEnv('WEEKLY_MASTER_PROVIDER_ORDER', 'claude-cli');
-    vi.mocked(generateWithClaudeCli).mockRejectedValue(
-      new Error('subscription authentication failed'),
-    );
-
-    await expect(generateWeeklyMaster([story('item-1', 'feature')], [], [])).rejects.toThrow(
-      /Every editorial provider failed -- claude-cli: subscription authentication failed/,
-    );
-    expect(generateWithOpenRouterChain).not.toHaveBeenCalled();
-  });
-
-  it('excludes the anthropic vendor from the critic OpenRouter fallback when claude-cli wrote the article', async () => {
-    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
-      {
-        id: 'anthropic/claude-should-be-excluded',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000006' },
-        benchmarks: { artificial_analysis: { intelligence_index: 90 } },
-      },
-      {
-        id: 'other-vendor/critic-fallback',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000006' },
-        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-      },
-    ]);
-    vi.mocked(generateWithClaudeCli).mockImplementation(async (prompt: string) => {
-      if (prompt.includes('Ukrainian senior news editor')) {
-        return {
-          text: JSON.stringify(englishResult().value.article),
-          model: 'claude-sonnet-5',
-          totalCostUsd: 0.25,
-        };
-      }
-      return {
-        text: JSON.stringify({
-          article: englishResult().value.article,
-        }),
-        model: 'claude-sonnet-5',
-        totalCostUsd: 0.25,
-      };
-    });
-    // The critic's primary "independent provider" attempt (plain OpenRouter,
-    // no vendor exclusion — providerOrder's first non-claude-cli entry) has
-    // to fail before the code falls back to the vendor-exclusion branch that
-    // is actually under test here.
-    vi.mocked(generateWithOpenRouterChain)
-      .mockRejectedValueOnce(new Error('independent provider attempt failed'))
-      .mockResolvedValue({
-        text: CRITIC_JSON,
-        provider: 'openrouter',
-        model: 'other-vendor/critic-fallback',
-        usage: null,
-      });
-
-    await generateWeeklyMaster([story('item-1', 'feature')], [], []);
-
-    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(2);
-    const fallbackCall = vi.mocked(generateWithOpenRouterChain).mock.calls.at(-1);
-    expect(fallbackCall?.[1]?.modelQueue).toEqual(['other-vendor/critic-fallback']);
+  it('rejects a response missing a required prose field', () => {
+    const broken = JSON.parse(response);
+    delete broken.story.body;
+    expect(() => parseStorySegment(JSON.stringify(broken), ['claim-1'])).toThrow(/body/);
   });
 });
 
-// A fully valid bundle (3 features + 3 radar, matching claims) so
-// validateMasterBundle's deterministic checks emit zero issues -- isolating
-// the revise-loop tests below to purely critic-driven pass/fail, not
-// incidental fixture gaps.
-const REVISE_ITEM_IDS = ['w-1', 'w-2', 'w-3', 'w-4', 'w-5', 'w-6'];
-
-function reviseStories(): WeeklyMasterInputStory[] {
-  return REVISE_ITEM_IDS.map((id, index) => ({
-    revisionItemId: id,
-    rank: index + 1,
-    placement: index < 3 ? 'feature' : 'radar',
-    titleEn: `Title ${index + 1}`,
-    titleUk: `Заголовок ${index + 1}`,
-    summaryEn: `Summary ${index + 1}`,
-    summaryUk: `Підсумок ${index + 1}`,
-    whyEn: null,
-    whyUk: null,
-    sources: [{ name: 'Example', url: 'https://example.com' }],
-    claims: [
-      {
-        id: `claim-${index + 1}`,
-        text: `Claim ${index + 1}.`,
-        evidenceUrls: ['https://example.com'],
-      },
-    ],
-  }));
-}
-
-function reviseArticleStories() {
-  return REVISE_ITEM_IDS.map((id, index) => {
-    const placement = index < 3 ? 'feature' : 'radar';
-    return {
-      revisionItemId: id,
-      placement,
-      headline: `Headline ${index + 1}`,
-      summary: `Summary of story ${index + 1}.`,
-      hook: `Hook ${index + 1}`,
-      body: `A concrete narrative body for story ${index + 1} with real specificity. `.repeat(20),
-      why: `This changes the reliability decision for story ${index + 1}.`,
-      practical: `A named actor runs a specific workflow for story ${index + 1} and measures a real outcome.`,
-      limitation: `The source for story ${index + 1} covers one reported case only.`,
-      takeaway: `Require verification before acting on story ${index + 1}.`,
-      editorsView:
-        placement === 'feature'
-          ? `Editorial reasoning about where story ${index + 1} leads next.`
-          : '',
-      discussionQuestion:
-        placement === 'feature' ? `What would change your mind about story ${index + 1}?` : '',
-      claimIds: [`claim-${index + 1}`],
-    };
-  });
-}
-
-function reviseEnglishResult(): WeeklyMasterEnglishResult {
-  return {
-    value: {
-      article: {
-        locale: 'en',
-        title: 't',
-        seoTitle: 't',
-        metaDescription: 'd',
-        ogTitle: 't',
-        ogDescription: 'd',
-        standfirst: 's',
-        theme: 'th',
-        intro: 'i',
-        editorNote: 'e',
-        keyTakeaways: ['k'],
-        topics: ['t'],
-        entities: ['e'],
-        internalLinks: [],
-        conclusion: 'c',
-        stories: reviseArticleStories(),
-      },
-    },
-    metadata: {
-      provider: 'openrouter',
-      model: 'writer-model',
-      promptTokens: 100,
-      outputTokens: 200,
-      estimatedCostUsd: 0.05,
-      costSource: 'reported',
-      promptVersion: 'weekly-master-v7',
-    },
-  } as unknown as WeeklyMasterEnglishResult;
-}
-
-function reviseUkrainianResult(): WeeklyMasterUkrainianResult {
-  return {
-    value: { ...reviseEnglishResult().value.article, locale: 'uk' },
-    metadata: {
-      provider: 'openrouter',
-      model: 'writer-model',
-      promptTokens: 90,
-      outputTokens: 180,
-      estimatedCostUsd: 0.04,
-      costSource: 'reported',
-      promptVersion: 'weekly-master-v7',
-    },
-  } as unknown as WeeklyMasterUkrainianResult;
-}
-
-function criticJson(overrides: Record<string, unknown> = {}) {
-  return JSON.stringify({
-    score: 90,
-    dimensions: [
-      'engagement',
-      'voice',
-      'clarity',
-      'trust',
-      'usefulness',
-      'naturalness',
-      'parity',
-    ].map((name) => ({ name, score: 90, note: 'ok' })),
-    factualFlags: [],
-    issues: [],
-    ...overrides,
-  });
-}
-
-// Fixed usage payloads so accumulated cost is exact arithmetic in the tests
-// below, not dependent on estimateTokens(prompt.length) heuristics.
-const WRITE_USAGE = {
-  promptTokens: 1000,
-  completionTokens: 2000,
-  totalTokens: 3000,
-  costUsd: 0.05,
-};
-const READAPT_USAGE = {
-  promptTokens: 900,
-  completionTokens: 1800,
-  totalTokens: 2700,
-  costUsd: 0.04,
-};
-const CRITIC_USAGE = { promptTokens: 500, completionTokens: 300, totalTokens: 800, costUsd: 0.02 };
-
-function mockRouterResponses(handlers: {
-  critic: (callIndex: number) => string;
-  englishWrite?: () => string;
-}) {
-  let criticCalls = 0;
-  vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => {
-    if (prompt.includes('independent factual and editorial critic')) {
-      criticCalls += 1;
-      return {
-        text: handlers.critic(criticCalls),
-        provider: 'openrouter',
-        model: 'vendor/critic-model',
-        usage: CRITIC_USAGE,
-      };
-    }
-    if (prompt.includes('line-editing an already-drafted')) {
-      return {
-        text: JSON.stringify(reviseEnglishResult().value.article),
-        provider: 'openrouter',
-        model: 'writer-model',
-        usage: WRITE_USAGE,
-      };
-    }
-    if (prompt.includes('Ukrainian senior news editor')) {
-      return {
-        text: JSON.stringify(reviseUkrainianResult().value),
-        provider: 'openrouter',
-        model: 'writer-model',
-        usage: READAPT_USAGE,
-      };
-    }
-    return {
-      text:
-        handlers.englishWrite?.() ??
-        JSON.stringify({
-          article: reviseEnglishResult().value.article,
-        }),
-      provider: 'openrouter',
-      model: 'writer-model',
-      usage: WRITE_USAGE,
-    };
-  });
-}
-
-describe('generateWeeklyMaster revise loop', () => {
-  beforeEach(() => {
-    // A sibling describe block's afterEach resets this mock without
-    // restoring the module-level default -- re-seed it here so this block
-    // isn't affected by file execution order.
-    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
-      {
-        id: 'vendor/critic-model',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000006' },
-        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-      },
-      {
-        id: 'other-vendor/writer-model',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000006' },
-        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-      },
-    ]);
-  });
-
-  afterEach(() => {
-    vi.mocked(generateWithOpenRouterChain).mockReset();
-    vi.unstubAllEnvs();
-  });
-
-  it('revises only the flagged field on a low-engagement failure, then passes on the re-critique', async () => {
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    mockRouterResponses({
-      critic: (callIndex) =>
-        callIndex === 1
-          ? criticJson({
-              dimensions: [
-                'engagement',
-                'voice',
-                'clarity',
-                'trust',
-                'usefulness',
-                'naturalness',
-                'parity',
-              ].map((name) => ({
-                name,
-                score: name === 'engagement' ? 60 : 90,
-                note: 'flat opening',
-              })),
-            })
-          : criticJson(),
+describe('repairFieldPrompt / parseRepairedValue', () => {
+  it('sends one field with its contract, problems and grounding — not the article', () => {
+    const prompt = repairFieldPrompt({
+      target: { locale: 'en', revisionItemId: 'item-1', field: 'practical' },
+      currentValue: 'Teams can use this in their workflow.',
+      issues: [
+        {
+          code: 'usefulness_generic',
+          message: 'Generic template.',
+          suggestedFix: 'Name a concrete actor.',
+        },
+      ],
+      grounding: { claims: [{ id: 'claim-1', text: 'A supported claim.' }] },
     });
-
-    const result = await generateWeeklyMaster(reviseStories(), [], []);
-
-    // english write + ukrainian write + critic(fail) + revise(en) + readapt(uk) + critic(pass) = 6
-    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(6);
-    const revisePrompts = vi
-      .mocked(generateWithOpenRouterChain)
-      .mock.calls.map((call) => call[0])
-      .filter((prompt) => prompt.includes('line-editing an already-drafted'));
-    expect(revisePrompts).toHaveLength(1);
-    expect(revisePrompts[0]).toContain('dimension_low_score:engagement');
-    expect(result.quality.score).toBe(90);
-    expect(result.quality.dimensions.find((d) => d.name === 'engagement')?.score).toBe(90);
-
-    // english: initial write + 1 revise; ukrainian: initial write + 1 readapt; critic: 2 calls.
-    expect(result.generation.english.estimatedCostUsd).toBeCloseTo(WRITE_USAGE.costUsd * 2, 6);
-    expect(result.generation.ukrainian.estimatedCostUsd).toBeCloseTo(READAPT_USAGE.costUsd * 2, 6);
-    expect(result.generation.critic.estimatedCostUsd).toBeCloseTo(CRITIC_USAGE.costUsd * 2, 6);
-    expect(result.generation.english.promptTokens).toBe(WRITE_USAGE.promptTokens * 2);
+    expect(prompt).toContain('FIELD: practical');
+    expect(prompt).toContain('concrete actor, workflow, action, constraint and observable result');
+    expect(prompt).toContain('APPROVED EVIDENCE FOR THIS STORY');
+    expect(prompt).toContain('{"value": ""}');
+    // The whole point: a fraction of the ~53,000-character writer prompt.
+    expect(prompt.length).toBeLessThan(12_000);
   });
 
-  it('never attempts a revise pass when a structural/grounding blocker is present', async () => {
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    mockRouterResponses({
-      critic: () =>
-        criticJson({
-          issues: [{ code: 'UNSUPPORTED_NUMBER', message: 'invented figure', blocker: true }],
-        }),
+  it('asks a Ukrainian repair to hold parity with the English counterpart', () => {
+    const prompt = repairFieldPrompt({
+      target: { locale: 'uk', revisionItemId: 'item-1', field: 'body' },
+      currentValue: 'Український текст.',
+      issues: [{ code: 'language_mechanics', message: 'Помилка узгодження.', span: 'узгодження' }],
+      englishCounterpart: 'The English body.',
     });
-
-    const result = await generateWeeklyMaster(reviseStories(), [], []);
-
-    // english write + ukrainian write + critic = 3, no revise/re-critique calls
-    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(3);
-    expect(
-      vi
-        .mocked(generateWithOpenRouterChain)
-        .mock.calls.some((call) => call[0].includes('line-editing an already-drafted')),
-    ).toBe(false);
-    expect(result.quality.issues).toContainEqual(
-      expect.objectContaining({ code: 'UNSUPPORTED_NUMBER' }),
-    );
-    expect(result.generation.english.estimatedCostUsd).toBeCloseTo(WRITE_USAGE.costUsd, 6);
+    expect(prompt).toContain('ENGLISH COUNTERPART');
+    expect(prompt).toContain('The English body.');
   });
 
-  it('caps at MAX_REVISE_ATTEMPTS (2) and returns the still-failing report rather than looping forever', async () => {
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    mockRouterResponses({
-      critic: () =>
-        criticJson({
-          dimensions: [
-            'engagement',
-            'voice',
-            'clarity',
-            'trust',
-            'usefulness',
-            'naturalness',
-            'parity',
-          ].map((name) => ({ name, score: name === 'voice' ? 60 : 90, note: 'still off' })),
-        }),
+  it('asks for a list shape when the field is a list', () => {
+    const prompt = repairFieldPrompt({
+      target: { locale: 'en', revisionItemId: 'item-1', field: 'claimIds' },
+      currentValue: ['claim-1'],
+      issues: [{ code: 'ungrounded_story', message: 'No approved claim cited.' }],
     });
-
-    const result = await generateWeeklyMaster(reviseStories(), [], []);
-
-    // initial write (2) + critic + [revise(en) + readapt(uk) + critic] x2 = 2 + 1 + 6 = 9
-    expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(9);
-    expect(result.quality.dimensions.find((d) => d.name === 'voice')?.score).toBe(60);
-    // Cost accumulates across every attempt (initial + 2 revise rounds), not just the last one.
-    expect(result.generation.english.estimatedCostUsd).toBeCloseTo(WRITE_USAGE.costUsd * 3, 6);
-    expect(result.generation.ukrainian.estimatedCostUsd).toBeCloseTo(READAPT_USAGE.costUsd * 3, 6);
-    expect(result.generation.critic.estimatedCostUsd).toBeCloseTo(CRITIC_USAGE.costUsd * 3, 6);
-  });
-});
-
-// --- Phase 4: DB-driven role-chain override (owner-added HTTP provider, e.g. NIM) ---
-
-describe('generateWeeklyMaster DB-driven provider override (Phase 4)', () => {
-  afterEach(() => {
-    vi.mocked(generateWithOpenRouterChain).mockReset();
-    vi.mocked(fetchOpenRouterModels).mockReset();
-    vi.mocked(loadProviderRegistry).mockReset();
-    vi.unstubAllEnvs();
+    expect(prompt).toContain('{"value": ["", ""]}');
   });
 
-  it('never touches the DB registry when no db option is supplied (default path, unchanged)', async () => {
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
-      {
-        id: 'vendor/critic-model',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000006' },
-        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-      },
-      {
-        id: 'other-vendor/writer-model',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000006' },
-        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-      },
-    ]);
-    mockRouterResponses({ critic: () => criticJson() });
-
-    await generateWeeklyMaster([story('item-1', 'feature')], [], []);
-
-    expect(loadProviderRegistry).not.toHaveBeenCalled();
+  it('parses both response shapes and rejects an empty one', () => {
+    expect(parseRepairedValue('{"value":"Fixed."}', false)).toBe('Fixed.');
+    expect(parseRepairedValue('{"value":["claim-1"]}', true)).toEqual(['claim-1']);
+    expect(() => parseRepairedValue('{"value":""}', false)).toThrow();
   });
 
-  it('routes the write through an owner-configured HTTP provider for weekly.master_writer, bypassing value-ranked OpenRouter model selection, while the critic (no DB entry for that role) still falls back to the default', async () => {
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
-      {
-        id: 'vendor/critic-model',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000006' },
-        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-      },
-    ]);
-    vi.mocked(loadProviderRegistry).mockResolvedValue({
-      chainForRole: (role: string) =>
-        role === 'weekly.master_writer'
-          ? [
-              {
-                entry: { kind: 'http', id: 'nim' },
-                http: {
-                  id: 'nim',
-                  apiKey: 'nim-key',
-                  baseUrl: 'https://integrate.api.nvidia.com/v1',
-                  modelQueue: ['deepseek-ai/deepseek-v4-pro'],
-                },
-              },
-            ]
-          : [],
-    });
-    mockRouterResponses({ critic: () => criticJson() });
-    const fakeDb = {} as never;
-
-    await generateWeeklyMaster([story('item-1', 'feature')], [], [], { db: fakeDb });
-
-    // fetchOpenRouterModels (the live-catalog value-ranking path) is only
-    // reached by the critic's default fallback -- the writer never calls it.
-    expect(fetchOpenRouterModels).toHaveBeenCalledTimes(1);
-    const writeCall = vi
-      .mocked(generateWithOpenRouterChain)
-      .mock.calls.find(
-        (call) => !call[0].includes('critic') && !call[0].includes('Ukrainian senior news editor'),
-      );
-    expect(writeCall?.[1]?.modelQueue).toEqual(['deepseek-ai/deepseek-v4-pro']);
-    expect(writeCall?.[1]?.apiKey).toBe('nim-key');
-  });
-});
-
-describe('OpenRouter reasoning-effort suppression', () => {
-  afterEach(() => {
-    vi.mocked(generateWithOpenRouterChain).mockReset();
-    vi.mocked(fetchOpenRouterModels).mockReset();
-    vi.unstubAllEnvs();
-  });
-
-  // Regression: the effort used to be computed once from queue[0] and handed
-  // to every model in the chain. Invisible while the queue was always length
-  // 1; with several candidates a fallback model that reasons by default got
-  // no suppression at all and billed reasoning as output all the way to the
-  // wall ceiling.
-  it('resolves the effort per model, not once from the head of the queue', async () => {
-    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
-    vi.stubEnv('WEEKLY_MASTER_OPENROUTER_CANDIDATES', '2');
-    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
-      {
-        id: 'vendor/no-reasoning',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000002' },
-        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-      },
-      {
-        id: 'vendor/reasons-by-default',
-        context_length: 128_000,
-        architecture: { modality: 'text' },
-        pricing: { prompt: '0.000001', completion: '0.000006' },
-        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-        reasoning: { default_enabled: true, supported_efforts: ['none', 'low'] },
-      },
-    ]);
-    vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
-      text: CRITIC_JSON,
-      provider: 'openrouter',
-      model: 'vendor/no-reasoning',
-      usage: null,
-    });
-
-    await generateWeeklyMaster([story('item-1', 'feature')], [], [], {
-      checkpoint: { english: englishResult(), ukrainian: ukrainianResult() },
-    });
-
-    const options = vi.mocked(generateWithOpenRouterChain).mock.calls[0]![1] as {
-      extraBodyForModel?: (modelId: string) => Record<string, unknown> | undefined;
-    };
-    expect(options.extraBodyForModel?.('vendor/reasons-by-default')).toMatchObject({
-      reasoning: { effort: 'none' },
-    });
-    expect(options.extraBodyForModel?.('vendor/no-reasoning')?.reasoning).toBeUndefined();
+  it('recovers a repair value from a conversational preamble', () => {
+    expect(parseRepairedValue('Here is the fix:\n\n{"value":"Fixed."}', false)).toBe('Fixed.');
   });
 });
 

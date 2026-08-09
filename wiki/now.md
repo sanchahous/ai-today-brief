@@ -8,7 +8,8 @@ owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry),
 review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish --dry-run` check
 2026-08-07, owner session 2026-08-08 (admin mobile-responsive fix, screenshot report),
 owner-approved Weekly Digest reliability plan 2026-08-08, owner screenshot + Chrome layout
-measurement 2026-08-09, `editorial_master` failure investigation + live sandbox runs 2026-08-09
+measurement 2026-08-09, `editorial_master` failure investigation + live sandbox runs 2026-08-09,
+owner decision 2026-08-09 to rewrite `editorial_master` as an iterative engine
 Last updated: 2026-08-09
 
 ---
@@ -152,6 +153,35 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 (source: live check Vercel dashboard 2026-08-04)
 
 ## Активна робота
+
+−5. **`editorial_master` переписано на ітеративний рушій — гілка
+`claude/editorial-master-refactor-i6n8zl`.** Власник відмовився від подальших точкових фіксів
+старої схеми: цілий день правок 09.08 дав шість послідовних червоних прогонів, кожен по
+20–35 хвилин, і жодного випуску. Корінь був спільний — **найменшою одиницею роботи була ціла
+стаття**, тож будь-яка проблема на 12-й хвилині коштувала пів години. Що зроблено:
+   - **посегментний запис**: одна історія — один короткий виклик, плюс рамка випуску на локаль
+     (14 сегментів для 3 feature + 3 radar); кожен сегмент durable у
+     `output.master_run_state`, тож повтор **продовжує**, а не починає спочатку;
+   - **точковий ремонт поля** замість перегенерації статті: блокер → адреса
+     `{locale, story, field}` → маленький промпт із контрактом поля, доказами і цитованим
+     спаном → `{"value": …}` → сплайс назад → повторна перевірка. Раунд коштує секунди й
+     частки цента, тому ітерувати до збіжності дешево;
+   - **безкоштовний детермінований раунд до критика** — приблизно половина блокерів
+     (довжина метаданих, template-leaks, `numeric_parity`, українські мовні залишки)
+     лагодиться до першого платного виклику критика;
+   - **якість більше не валить джобу**: невирішені перевірки дають неактивну draft-ревізію,
+     `succeeded` + `needs_owner_review` і перелік `unresolved` із причиною кожного;
+     ненадійний вердикт критика (сім однакових оцінок) тепер переоцінюється, а не вважається
+     термінальним провалом; вихід `resumable` (retryable) — коли скінчився бюджет часу;
+   - **структурно неможливі блокери**: `revisionItemId`, `placement` і українські `claimIds`
+     тепер копіює складальник, а не модель — `story_set_mismatch`, `placement_mismatch`,
+     `bilingual_claim_parity` зникли за побудовою.
+   Редакційні гейти v7 і пороги (85 / 75 / 80) **не послаблені** — перенесені в посегментні
+   промпти дослівно. 1023 тести зелені, `pr:check` чистий. **Живого прогону ще не було** —
+   перевірено юніт-тестами та типами, не реальним випуском.
+   Деталі — [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md).
+   (source: `src/lib/weekly-digest/master-engine.ts`, `master-segments.ts`, `master-repair.ts`,
+   owner session 2026-08-09)
 
 −4. **Emergency recovery для `editorial_master` — draft PR
 [#208](https://github.com/sanchahous/ai-today-brief/pull/208).** Після live failure Actions
@@ -297,6 +327,7 @@ artifact write. Правило про uniform critic verdict навмисно н
 
 - [overview](overview.md) — бізнес-контекст і жорсткі обмеження
 - [pipeline/editorial-voice](pipeline/editorial-voice.md) — редакційний голос, чому старий контент бракований
+- [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) — ітеративний рушій `editorial_master`
 - [pipeline/weekly-digest](pipeline/weekly-digest.md) — Content Studio v2 + revision stability
 - [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) — як вести випуск у адмінці
 - [ops/owner-checklist](ops/owner-checklist.md) — env / Dependabot secrets

@@ -23,18 +23,21 @@ import { loadProviderRegistry, type ProviderRole } from '../../../pipeline/provi
 import type { ProviderCallResult } from '../../../pipeline/providers/types';
 import {
   WEEKLY_MASTER_SPEC_VERSION,
-  editorialQualityPasses,
-  editorialQualityRetryGuidance,
-  reportIsRevisable,
-  validateMasterBundle,
-  type WeeklyArticleMaster,
-  type WeeklyContentQualityReport,
   type WeeklyMasterBundle,
+  type WeeklyMasterStory,
+  type WeeklyPlacement,
   type WeeklyQualityDimension,
   type WeeklyQualityIssue,
   type WeeklyResearchPack,
 } from './content-studio';
 import { voicePromptBlock } from './editorial-voice';
+import {
+  MASTER_FRAME_WORD_TARGETS,
+  storyBodyWordTarget,
+  storySupportWordCap,
+  type MasterFrame,
+} from './master-segments';
+import { isListRepairField, type RepairTarget } from './master-repair';
 
 type EditorialProvider = 'gemini' | 'openrouter' | 'claude-cli';
 
@@ -76,16 +79,6 @@ export interface EditorialGenerationMetadata {
    */
   costSource: 'reported' | 'estimated' | 'subscription';
   promptVersion: string;
-}
-
-export interface WeeklyMasterGenerationResult {
-  bundle: WeeklyMasterBundle;
-  quality: WeeklyContentQualityReport;
-  generation: {
-    english: EditorialGenerationMetadata;
-    ukrainian: EditorialGenerationMetadata;
-    critic: EditorialGenerationMetadata;
-  };
 }
 
 export interface WeeklyMasterRetryGuidance {
@@ -185,26 +178,6 @@ export interface ProviderResult<T> {
   metadata: EditorialGenerationMetadata;
 }
 
-export type WeeklyMasterEnglishResult = ProviderResult<ReturnType<typeof parseEnglishPackage>>;
-export type WeeklyMasterUkrainianResult = ProviderResult<WeeklyArticleMaster>;
-
-/**
- * A prior attempt's EN/UK write, reusable when the caller has already
- * confirmed it matches the current research packs + retry guidance (see
- * generation-worker.ts). Letting a retry skip straight to the critic avoids
- * re-paying for a write that already succeeded and would produce the same
- * result again.
- */
-export interface WeeklyMasterCheckpoint {
-  // Both optional: the English and Ukrainian steps now cache independently
-  // (see computeEnglishCheckpointHash/computeUkrainianCheckpointHash in
-  // generation-worker.ts), so a checkpoint can carry just one of them --
-  // e.g. English/video reused as-is while only Ukrainian regenerates after a
-  // naturalness-only quality-gate failure.
-  english?: WeeklyMasterEnglishResult;
-  ukrainian?: WeeklyMasterUkrainianResult;
-}
-
 /**
  * Returns the first balanced top-level `{…}` in the text, or null.
  * Brace-counting is string- and escape-aware, so a `{` inside a quoted value
@@ -288,73 +261,86 @@ function recordArray(value: unknown, key: string) {
   return value as Array<Record<string, unknown>>;
 }
 
-function parseArticle(raw: string, locale: 'en' | 'uk'): WeeklyArticleMaster {
+/**
+ * One story segment. `revisionItemId` and `placement` are deliberately NOT
+ * read from the response: the assembler owns story identity and order
+ * (master-segments.ts), so a model that echoes the wrong id or flips a
+ * placement can no longer produce `story_set_mismatch` or
+ * `placement_mismatch` -- two blockers that used to cost a full regenerate.
+ *
+ * `claimIds` is intersected with the story's own approved ids for the same
+ * reason: an invented or borrowed claim id is dropped here rather than
+ * surviving to become an `unsupported_claim_id` blocker downstream. An empty
+ * result is still a real defect and is left for the gate to catch.
+ */
+export function parseStorySegment(
+  raw: string,
+  approvedClaimIds: string[],
+): Omit<WeeklyMasterStory, 'revisionItemId' | 'placement'> {
   const row = parseJsonObject(raw);
-  const stories = recordArray(row.stories, 'stories').map((story) => {
-    const placement = requiredString(story, 'placement');
-    if (placement !== 'feature' && placement !== 'radar')
-      throw new SyntaxError('Invalid placement.');
-    return {
-      revisionItemId: requiredString(story, 'revisionItemId'),
-      placement: placement as 'feature' | 'radar',
-      headline: requiredString(story, 'headline'),
-      summary: requiredString(story, 'summary'),
-      hook: requiredString(story, 'hook'),
-      body: requiredString(story, 'body'),
-      why: requiredString(story, 'why'),
-      practical: requiredString(story, 'practical'),
-      limitation: requiredString(story, 'limitation'),
-      takeaway: requiredString(story, 'takeaway'),
-      // Radar stories legitimately send an empty string for both -- only
-      // features require them, enforced deterministically in
-      // validateMasterBundle (content-studio.ts), not by the parser.
-      editorsView: typeof story.editorsView === 'string' ? story.editorsView.trim() : '',
-      discussionQuestion:
-        typeof story.discussionQuestion === 'string' ? story.discussionQuestion.trim() : '',
-      claimIds: stringArray(story.claimIds, 'story.claimIds'),
-    };
-  });
-  const links = recordArray(row.internalLinks, 'internalLinks').map((link) => ({
+  const story = (row.story && typeof row.story === 'object' && !Array.isArray(row.story)
+    ? row.story
+    : row) as Record<string, unknown>;
+  const approved = new Set(approvedClaimIds);
+  const claimIds = stringArray(story.claimIds, 'story.claimIds').filter((id) => approved.has(id));
+  return {
+    headline: requiredString(story, 'headline'),
+    summary: requiredString(story, 'summary'),
+    hook: requiredString(story, 'hook'),
+    body: requiredString(story, 'body'),
+    why: requiredString(story, 'why'),
+    practical: requiredString(story, 'practical'),
+    limitation: requiredString(story, 'limitation'),
+    takeaway: requiredString(story, 'takeaway'),
+    // Radar stories legitimately send an empty string for both -- only
+    // features require them, enforced deterministically in
+    // validateMasterBundle (content-studio.ts), not by the parser.
+    editorsView: typeof story.editorsView === 'string' ? story.editorsView.trim() : '',
+    discussionQuestion:
+      typeof story.discussionQuestion === 'string' ? story.discussionQuestion.trim() : '',
+    claimIds,
+  };
+}
+
+/** The article-level fields, written once per locale after every story exists. */
+export function parseFrameSegment(raw: string): MasterFrame {
+  const row = parseJsonObject(raw);
+  const frame = (row.frame && typeof row.frame === 'object' && !Array.isArray(row.frame)
+    ? row.frame
+    : row) as Record<string, unknown>;
+  const links = recordArray(frame.internalLinks, 'internalLinks').map((link) => ({
     anchor: requiredString(link, 'anchor'),
     query: requiredString(link, 'query'),
   }));
   return {
-    locale,
-    title: requiredString(row, 'title'),
-    seoTitle: requiredString(row, 'seoTitle'),
-    metaDescription: requiredString(row, 'metaDescription'),
-    ogTitle: requiredString(row, 'ogTitle'),
-    ogDescription: requiredString(row, 'ogDescription'),
-    standfirst: requiredString(row, 'standfirst'),
-    theme: requiredString(row, 'theme'),
-    intro: requiredString(row, 'intro'),
-    editorNote: requiredString(row, 'editorNote'),
-    keyTakeaways: stringArray(row.keyTakeaways, 'keyTakeaways'),
-    topics: stringArray(row.topics, 'topics'),
-    entities: stringArray(row.entities, 'entities'),
+    title: requiredString(frame, 'title'),
+    seoTitle: requiredString(frame, 'seoTitle'),
+    metaDescription: requiredString(frame, 'metaDescription'),
+    ogTitle: requiredString(frame, 'ogTitle'),
+    ogDescription: requiredString(frame, 'ogDescription'),
+    standfirst: requiredString(frame, 'standfirst'),
+    theme: requiredString(frame, 'theme'),
+    intro: requiredString(frame, 'intro'),
+    editorNote: requiredString(frame, 'editorNote'),
+    keyTakeaways: stringArray(frame.keyTakeaways, 'keyTakeaways'),
+    topics: stringArray(frame.topics, 'topics'),
+    entities: stringArray(frame.entities, 'entities'),
     internalLinks: links,
-    conclusion: requiredString(row, 'conclusion'),
-    stories,
+    conclusion: requiredString(frame, 'conclusion'),
   };
 }
 
-function parseEnglishPackage(raw: string) {
+/**
+ * A repair response carries one field's replacement value and nothing else --
+ * `{"value": "..."}` for prose, `{"value": ["..."]}` for a string list. The
+ * narrow shape is the point: the model cannot accidentally restructure the
+ * edition while fixing one sentence, which is how the old whole-article
+ * revise pass kept trading one blocker for another.
+ */
+export function parseRepairedValue(raw: string, list: boolean): string | string[] {
   const row = parseJsonObject(raw);
-  // video moved out of the master call entirely in PR6 (editorial quality
-  // overhaul) -- see video-script-llm.ts. The one-sentence video contract
-  // that used to live in englishPrompt's CONTRACT block, generated inside
-  // the same 20k-token completion as the 2,000-3,000 word article, is the
-  // documented root cause of the "silent slideshow" (durationSeconds was
-  // invented to satisfy a 360-480s sum while narration text stayed ~1,000
-  // chars -- see ai-today-brief-video's 2026-08-05-professional-ai-video-
-  // guide.md). video_script is now its own job, run after the master
-  // succeeds, writing real narration long enough for its claimed runtime.
-  // socialAngles moved out in PR7 -- social-adapter.ts now proposes its own
-  // angle per channel from the approved article, instead of the master
-  // pre-baking one shared angle per channel that the writer never actually
-  // saw the channel contract for.
-  const article = parseArticle(JSON.stringify(row.article), 'en');
-  return { article };
+  if (list) return stringArray(row.value, 'value');
+  return requiredString(row, 'value');
 }
 
 function parseCritic(raw: string) {
@@ -722,15 +708,19 @@ function configuredCriticOpenRouterModels() {
     .filter(Boolean);
 }
 
-async function generateIndependentCritic(
-  english: ProviderResult<ReturnType<typeof parseEnglishPackage>>,
+/**
+ * The critic must not be the model that wrote the copy. `writer` is the
+ * metadata of whichever call produced the English prose, so the ladder can
+ * both prefer a different provider slot and, when it has to fall back to
+ * OpenRouter, exclude the writer's own vendor.
+ */
+export async function generateIndependentCritic(
+  writer: Pick<EditorialGenerationMetadata, 'provider' | 'model'>,
   prompt: string,
   db?: PipelineDb,
 ) {
   let primaryError: unknown;
-  const independentProvider = providerOrder().find(
-    (provider) => provider !== english.metadata.provider,
-  );
+  const independentProvider = providerOrder().find((provider) => provider !== writer.provider);
   if (independentProvider) {
     try {
       return await generateWithProvider(
@@ -746,9 +736,9 @@ async function generateIndependentCritic(
   }
 
   const writerVendor =
-    english.metadata.provider === 'openrouter'
-      ? openRouterModelVendor(english.metadata.model)
-      : english.metadata.provider === 'claude-cli'
+    writer.provider === 'openrouter'
+      ? openRouterModelVendor(writer.model)
+      : writer.provider === 'claude-cli'
         ? 'anthropic'
         : 'google';
   try {
@@ -808,7 +798,7 @@ export async function generateFirstAvailable<T>(
  * arrived with a prose preamble. The preference is worth keeping; dying on
  * it is not.
  */
-async function generatePreferringProvider<T>(
+export async function generatePreferringProvider<T>(
   preferred: EditorialProvider,
   prompt: string,
   parse: (raw: string) => T,
@@ -849,63 +839,297 @@ export function splitMasterRetryGuidance(guidance: WeeklyMasterRetryGuidance[]) 
   };
 }
 
-function englishPrompt(
-  stories: WeeklyMasterInputStory[],
-  retryGuidance: WeeklyMasterRetryGuidance[],
-) {
-  return `You are the senior editor-practitioner at AI Today Brief, a weekly digest read by software builders, AI practitioners and the technically curious -- not a briefing for executives. Produce an engaging, evidence-bound Weekly Digest. Explain technical complexity in plain English, show judgment, and never use clickbait or generic advice.
+/**
+ * Story-level prompts. One call writes one story, not an edition.
+ *
+ * The contract lines are inherited verbatim from the v7 whole-edition prompt
+ * (the invented-scene ban, the field-label ban, the evidence rules, the
+ * limited-evidence attribution rule) -- the editorial standard did not change,
+ * only the size of the unit it is applied to. What is new is that each call
+ * carries its own word budget, which one 2,500-word completion could never
+ * hold itself to.
+ */
+export interface StorySegmentPromptInput {
+  material: ApprovedStoryPromptMaterial;
+  placement: WeeklyPlacement;
+  rank: number;
+  /** Stories already written for this edition, so framings are not repeated. */
+  alreadyWritten: Array<{ rank: number; headline: string; hook: string }>;
+  guidance: WeeklyMasterRetryGuidance[];
+}
+
+function storyFieldContract(placement: WeeklyPlacement) {
+  const body = storyBodyWordTarget(placement);
+  const support = storySupportWordCap(placement);
+  const featureOnly =
+    placement === 'feature'
+      ? `- editorsView and discussionQuestion are required (see EDITOR'S VIEW above for what each must do).`
+      : `- editorsView and discussionQuestion must both be empty strings -- they belong to feature stories only.`;
+  return `- headline: a real news headline about what happened -- name the actor and the concrete event. Never an abstract thesis a reader cannot picture.
+- summary: one sentence, at most 40 words, stating what happened.
+- hook: one or two sentences that make a reader want the body. Never a question, never a category label.
+- body: ${body.min}-${body.max} words of continuous narrative prose.
+- why, practical, limitation, takeaway: one tight paragraph each, ${support} words for all four combined. They must do four different jobs -- if two of them could be swapped without loss, rewrite them.
+- practical must name a concrete actor, workflow, action, constraint and observable result. Never a reusable category template.
+${featureOnly}
+- claimIds: every id you cite must come from this story's claims array below. Cite at least one.`;
+}
+
+export function storySegmentPrompt(input: StorySegmentPromptInput): string {
+  const { material, placement, rank, alreadyWritten, guidance } = input;
+  const context = alreadyWritten.length
+    ? `
+
+ALREADY WRITTEN IN THIS EDITION -- do not repeat these framings, openings or examples
+${JSON.stringify(alreadyWritten)}`
+    : '';
+  const angle = material.angle
+    ? `
+
+BINDING EDITORIAL ANGLE (set by the owner before you started writing)
+${material.angle}
+Build the headline, body and editor's view around it. Never contradict a supplied claim or excerpt to fit it.`
+    : '';
+  return `You are the senior editor-practitioner at AI Today Brief, a weekly digest read by software builders, AI practitioners and the technically curious -- not a briefing for executives. Write ONE story (rank ${rank}, ${placement}) for this week's edition. You are not writing the edition introduction, the title or any other story -- only this one.
 
 ${voicePromptBlock('en')}
 
-CONTRACT
-- Structure: Top 3 feature stories followed by 3–4 radar stories, preserving the supplied order and revisionItemId.
-- Feature body: 400–650 words each, continuous narrative prose. Radar body: 80–140 words each, same rule.
-- A vivid opening must still be true. Use only a documented moment or source-supported fact from APPROVED STORY MATERIAL. Never invent a person staring at a screen, a machine crashing after N hours, a reaction, quote, chronology, or other cinematic detail merely to satisfy the voice guidance. When the source has no real scene, open with the strongest verified contrast or result.
-- The body must stand alone as a story -- never open a sentence with the name of another field ("Practical scenario:", "The limitation is that...", "Why it matters:", "The takeaway is..."). Those fields have their own boxes elsewhere; restating them inside the body with a label is the single most common failure mode -- do not do it.
-- Ground every factual sentence in supplied claims and/or primarySourceExcerpt (and corroboratingExcerpts when present). Prefer claimIds for structured facts; excerpts may supply additional detail that appears in the approved research pack. Never invent numbers, names, quotes or causal implications absent from both claims and excerpts. editorsView is the one deliberate exception to this rule -- see VOICE above.
-- Treat single-person logs, company benchmarks and vendor announcements as limited evidence. Attribute them in the headline/dek/body and do not turn one measured workload into a universal statement about all agentic AI. For energy claims, name electricity, the unit and workload (for example kWh per Claude Code session), not vague "energy".
-- Every story must still cite at least one real claimId from its claims array. Do not invent claim IDs.
-- The practical field must name a concrete actor, workflow, action, constraint and observable result. Never use a reusable category template.
-- editorsView and discussionQuestion are required for the three feature stories only (see VOICE above for what each must do); send both as empty strings for radar stories.
-- When a story's approved material includes an "angle" field, that is the owner's binding editorial direction for that story, decided before you started writing -- build the headline, body and editorsView around it, don't default to a generic recap that ignores it. Never contradict supplied claims or excerpts to fit the angle.
-- Establish one honest edition throughline from the Top 3 before drafting. Use a thematic umbrella only when the approved evidence supports a real connection; otherwise frame the edition transparently around the three concrete developments instead of forcing a vague idea onto unrelated stories.
-- Headline must read like a real news headline about what happened -- name the actor and the concrete event -- never an abstract thesis a reader can't picture. The edition title must make the Top 3 legible on first read by naming concrete actors/products/results; do not use umbrella labels such as "The Agentic Shift", "The Future of AI", or a bare list of categories. All prose across the article object must total 2,000–3,000 words.
-- Framing limits are hard: seoTitle <=65 characters; metaDescription <=160; ogTitle <=70; ogDescription <=200. The standfirst opens on the issue's strongest news value, never "A weekly digest..." boilerplate. editorNote may say the edition uses cited primary sources and separately labeled editorial analysis, but must not claim "original research" unless the supplied material explicitly proves AI Today Brief conducted it.
-- Return one JSON object only.
+STORY CONTRACT
+${storyFieldContract(placement)}
+
+EVIDENCE RULES
+- A vivid opening must still be true. Use only a documented moment or source-supported fact from APPROVED STORY MATERIAL. Never invent a person staring at a screen, a machine crashing after N hours, a reaction, quote, chronology or other cinematic detail merely to satisfy the voice guidance. When the source has no real scene, open with the strongest verified contrast or result.
+- The body must stand alone as a story -- never open a sentence with the name of another field ("Practical scenario:", "The limitation is that...", "Why it matters:", "The takeaway is..."). Those fields have their own boxes; restating them inside the body with a label is the single most common failure mode.
+- Ground every factual sentence in the supplied claims and/or primarySourceExcerpt (and corroboratingExcerpts when present). Excerpts may supply detail absent from the numbered claims. Never invent numbers, names, quotes or causal implications absent from both. editorsView is the one deliberate exception -- see EDITOR'S VIEW above.
+- Treat single-person logs, company benchmarks and vendor announcements as limited evidence. Attribute them in the headline and body, and do not turn one measured workload into a universal statement. For energy claims, name electricity, the unit and the workload (for example kWh per Claude Code session), not vague "energy".
+- Return one JSON object only, no preamble and no code fence.
 
 JSON SHAPE
-{"article":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":"","stories":[{"revisionItemId":"","placement":"feature|radar","headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","editorsView":"","discussionQuestion":"","claimIds":[""]}]}}
+{"story":{"headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","editorsView":"","discussionQuestion":"","claimIds":[""]}}${context}${angle}
 
 APPROVED STORY MATERIAL
-${JSON.stringify(approvedStoryPromptMaterial(stories))}${masterRetryGuidancePrompt(retryGuidance)}`;
+${JSON.stringify(material)}${masterRetryGuidancePrompt(guidance)}`;
 }
 
-function ukrainianPrompt(
-  en: WeeklyArticleMaster,
-  stories: WeeklyMasterInputStory[],
-  retryGuidance: WeeklyMasterRetryGuidance[],
-) {
-  return `Act as a Ukrainian senior news editor re-narrating the story for a Ukrainian audience of builders and the technically curious, not a literal translator. You may restructure sentences and paragraph flow freely. revisionItemId, placement, story order, every claimIds array, names and numeric values must stay faithful to the English master; localize how numbers and units are written (for example 1,138 -> 1 138; 0.6 kWh -> 0,6 кВт·год; 24 hours -> 24 години). Return only the article JSON object in the same shape as the English article, including editorsView and discussionQuestion for the three feature stories (empty strings for radar).
+export interface FramePromptStory {
+  rank: number;
+  placement: WeeklyPlacement;
+  headline: string;
+  hook: string;
+  why: string;
+  takeaway: string;
+}
+
+/**
+ * The frame is written last, from the finished stories.
+ *
+ * The old writer had to commit to an edition theme in the same breath as its
+ * first sentence, before a single story existed -- which is how "The Agentic
+ * Shift" got stapled onto three unrelated developments (2026-08-09 audit).
+ * Deriving the throughline from copy that already exists removes the
+ * incentive to invent one.
+ */
+export function frameSegmentPrompt(
+  stories: FramePromptStory[],
+  guidance: WeeklyMasterRetryGuidance[],
+): string {
+  const targets = MASTER_FRAME_WORD_TARGETS;
+  return `You are the senior editor-practitioner at AI Today Brief. The stories below are already written and approved for this week's edition. Write the edition frame: the title, metadata and the prose that wraps those stories. Do not rewrite the stories and do not introduce a story that is not in the list.
+
+${voicePromptBlock('en')}
+
+FRAME CONTRACT
+- Establish one honest throughline from the three feature stories. Use a thematic umbrella only when the stories actually support a real connection; otherwise frame the edition transparently around the three concrete developments instead of forcing a vague idea onto unrelated stories.
+- title: makes the Top 3 legible on first read by naming concrete actors, products or results. Never an umbrella label such as "The Agentic Shift" or "The Future of AI", and never a bare list of categories.
+- standfirst: about ${targets.standfirst} words, opening on the edition's strongest news value. Never "A weekly digest..." boilerplate.
+- intro: about ${targets.intro} words of continuous prose that earns the reader's next minute.
+- editorNote: about ${targets.editorNote} words. It may say the edition uses cited primary sources and separately labeled editorial analysis. It must NOT claim original research -- this edition is a synthesis of external primary sources.
+- conclusion: about ${targets.conclusion} words. Land the throughline; do not restate every story in turn.
+- theme: a short internal label for this edition's throughline.
+- Hard framing limits: seoTitle <=65 characters; metaDescription <=160; ogTitle <=70; ogDescription <=200. Count characters, not words.
+- keyTakeaways: 3-5 entries, each one sentence, each traceable to a story below.
+- topics and entities: drawn from the stories, no invented names.
+- internalLinks: 2-4 entries of {anchor, query} pointing at concepts this edition would naturally link to.
+- Return one JSON object only, no preamble and no code fence.
+
+JSON SHAPE
+{"frame":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":""}}
+
+STORIES IN THIS EDITION
+${JSON.stringify(stories)}${masterRetryGuidancePrompt(guidance)}`;
+}
+
+const UKRAINIAN_ADAPTATION_RULES = `- Це не дослівний переклад: перекажіть заново для ритму й природності українською, зберігши кожен факт, назву та числове значення.
+- Перекладайте звичайні англійські слова та одиниці; лишайте англійською лише назви продуктів, код, CLI-прапорці та справді усталені технічні терміни.
+- Надавайте перевагу зрозумілим українським відповідникам замість зайвих запозичень: «взаємодія», а не «інтеракція»; «супроводжувач пакета», а не «мейнтейнер»; «робочий процес», де «воркфлоу» нічого не додає. Ніколи не вигадуйте слово і не гадайте форму. Якщо не впевнені -- перепишіть простішою усталеною лексикою.
+- Локалізуйте запис чисел і одиниць (1,138 -> 1 138; 0.6 kWh -> 0,6 кВт·год; 24 hours -> 24 години).
+- Кратність лишається кратністю, а відсоток -- відсотком. «600x» -- це «у 600 разів», ніколи «на 600%»: різниця у два порядки.
+- Порівняння енергії має казати «електроенергія», містити виміряну одиницю та навантаження і посилання на конкретний вимір.
+- Вичитайте кожне поле після написання. Покручені слова, російські закінчення, неперекладені сполучники чи одиниці ("to", "hours", "minutes"), внутрішні назви полів, невідповідні десяткові роздільники та помилки узгодження -- це провалений текст, а не стилістична дрібниця.
+- Ніколи не починайте речення міткою поля («Практичний сценарій:», «Обмеження полягає в тому», «Висновок для рішення:»).`;
+
+export function ukrainianStorySegmentPrompt(input: {
+  english: Omit<WeeklyMasterStory, 'revisionItemId' | 'placement'>;
+  placement: WeeklyPlacement;
+  terminology: { titleUk: string; summaryUk: string; whyUk: string | null };
+  guidance: WeeklyMasterRetryGuidance[];
+}): string {
+  const body = storyBodyWordTarget(input.placement);
+  return `Ви -- український старший редактор, який переповідає цю історію для української аудиторії розробників і техно-цікавих читачів, а не дослівний перекладач. Адаптуйте ОДНУ історію, подану нижче англійською. Не додавайте і не прибирайте фактів.
 
 ${voicePromptBlock('uk')}
 
-CONTRACT
-- Feature bodies stay 400–650 words, radar 80–140 words -- continuous narrative prose, never opening a sentence with a field-name label ("Практичний сценарій:", "Обмеження полягає в тому", "Висновок для рішення:"). See REGISTER CONTRAST above for exactly this failure mode.
-- This is not a word-for-word translation: re-narrate for rhythm and naturalness in Ukrainian while preserving every fact, claim ID, name and numeric value. Translate ordinary English words and units; keep only product names, code, CLI flags and genuinely standard technical terms in English.
-- Prefer clear Ukrainian equivalents over unnecessary loans: «взаємодія» instead of «інтеракція», «супроводжувач пакета» instead of «мейнтейнер», «робочий процес» where «воркфлоу» adds nothing. Never coin a word or guess a form. If uncertain, rewrite with simpler established vocabulary.
-- Proofread every field after drafting, including title, metadata, intro, editorNote and each story field. Reject malformed words, Russian endings, untranslated connectors/time units ("to", "hours", "minutes"), internal field names such as editorsView, mismatched decimal/thousands separators, and agreement/case errors. One such error is a failed draft, not an acceptable stylistic blemish.
-- Keep the same hard framing limits as English: seoTitle <=65 characters; metaDescription <=160; ogTitle <=70; ogDescription <=200. The standfirst starts with the news, not «Щотижневий дайджест». The edition title must name concrete actors/products/results, not an abstract label such as «Зсув до агентів».
-- Побудуйте одну чесну наскрізну логіку з трьох головних історій. Не вигадуйте спільну «велику тему», якщо джерела її не підтверджують: тоді прямо назвіть у рамці три конкретні події.
-- A multiple stays a multiple and a percentage stays a percentage. «600x» is «у 600 разів», never «на 600%» — they differ by two orders of magnitude, and a headline that disagrees with its own standfirst is a failed draft.
-- Energy comparisons must say «електроенергія» and include the measured unit/workload and single-case-study attribution; do not write an unqualified «у 600 разів більше енергії».
-- editorNote may describe cited primary sources and separately labeled editorial analysis, but never translate or introduce an unsupported claim about «оригінальні дослідження».
-- editorsView must be its own independent Ukrainian re-narration of the English editorial reasoning, not a mechanical translation -- keep the same underlying judgment, written the way a Ukrainian editor would actually say it.
+ПРАВИЛА АДАПТАЦІЇ
+${UKRAINIAN_ADAPTATION_RULES}
+- body лишається в межах ${body.min}-${body.max} слів суцільної розповідної прози.
+- ${input.placement === 'feature' ? 'editorsView -- самостійне українське переповідання редакційного міркування, а не механічний переклад; discussionQuestion обовʼязкове.' : 'editorsView і discussionQuestion лишаються порожніми рядками.'}
+- claimIds не повертайте взагалі: вони копіюються з англійського оригіналу.
+- Поверніть лише один JSON-обʼєкт, без преамбули й без огорожі коду.
 
-APPROVED ENGLISH MASTER
-${JSON.stringify(en)}
+JSON SHAPE
+{"story":{"headline":"","summary":"","hook":"","body":"","why":"","practical":"","limitation":"","takeaway":"","editorsView":"","discussionQuestion":""}}
 
-SOURCE MATERIAL FOR TERMINOLOGY
-${JSON.stringify(stories.map(({ revisionItemId, titleUk, summaryUk, whyUk }) => ({ revisionItemId, titleUk, summaryUk, whyUk })))}${masterRetryGuidancePrompt(retryGuidance)}`;
+АНГЛІЙСЬКИЙ ОРИГІНАЛ
+${JSON.stringify(input.english)}
+
+ТЕРМІНОЛОГІЯ З ДЖЕРЕЛА
+${JSON.stringify(input.terminology)}${masterRetryGuidancePrompt(input.guidance)}`;
+}
+
+export function ukrainianFramePrompt(input: {
+  english: MasterFrame;
+  stories: Array<{ rank: number; headline: string; takeaway: string }>;
+  guidance: WeeklyMasterRetryGuidance[];
+}): string {
+  return `Ви -- український старший редактор. Адаптуйте рамку випуску (заголовок, метадані та обгортковий текст), подану нижче англійською. Історії вже адаптовані окремо; тут не переказуйте їх заново.
+
+${voicePromptBlock('uk')}
+
+ПРАВИЛА АДАПТАЦІЇ
+${UKRAINIAN_ADAPTATION_RULES}
+- Ті самі жорсткі межі, що й англійською: seoTitle <=65 символів; metaDescription <=160; ogTitle <=70; ogDescription <=200. Рахуйте символи.
+- standfirst починається з новини, а не зі «Щотижневий дайджест».
+- title називає конкретних дійових осіб, продукти або результати, а не абстрактну мітку на кшталт «Зсув до агентів».
+- editorNote може описувати цитовані першоджерела та окремо позначений редакційний аналіз, але ніколи не вводить твердження про «оригінальні дослідження».
+- Побудуйте ту саму наскрізну логіку, що й англійський оригінал. Не вигадуйте спільну «велику тему», якщо її немає в оригіналі.
+- Поверніть лише один JSON-обʼєкт, без преамбули й без огорожі коду.
+
+JSON SHAPE
+{"frame":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":""}}
+
+АНГЛІЙСЬКА РАМКА
+${JSON.stringify(input.english)}
+
+ІСТОРІЇ ВИПУСКУ (для узгодження термінів)
+${JSON.stringify(input.stories)}${masterRetryGuidancePrompt(input.guidance)}`;
+}
+
+/**
+ * One-line contract per repairable field, so a repair call knows what the
+ * field is *for* without being handed the whole 5,000-character writer
+ * prompt. Without this a "fix the practical field" request reliably produced
+ * a second generic template -- the model had the complaint but not the spec.
+ */
+const REPAIR_FIELD_CONTRACT: Record<string, string> = {
+  headline:
+    'A real news headline about what happened: name the actor and the concrete event, never an abstract thesis.',
+  summary: 'One sentence, at most 40 words, stating what happened.',
+  hook: 'One or two sentences that make a reader want the body. Never a question, never a category label.',
+  body: 'Continuous narrative prose with one throughline. Never open a sentence with another field name ("Practical scenario:", "Why it matters:").',
+  why: 'One tight paragraph on why this matters, doing a different job from practical and takeaway.',
+  practical:
+    'One paragraph naming a concrete actor, workflow, action, constraint and observable result. Never a reusable category template that would fit another story with a find-and-replace.',
+  limitation:
+    'One paragraph saying plainly what the evidence does not establish, in a sentence a person would actually say -- not a boilerplate disclaimer clause.',
+  takeaway: 'One decision a reader can act on, distinct from why and practical.',
+  editorsView:
+    "60-110 words of clearly-labeled editorial speculation in the editor's own voice, extending the story rather than summarizing it, ending on a real open tension.",
+  discussionQuestion:
+    'One closing question a thoughtful reader could genuinely disagree about. Not rhetorical.',
+  claimIds: 'Ids from this story\'s approved claims array only. At least one.',
+  title:
+    'Names concrete actors, products or results from the Top 3. Never an umbrella label or a list of categories.',
+  seoTitle: 'At most 65 characters.',
+  metaDescription: 'At most 160 characters.',
+  ogTitle: 'At most 70 characters.',
+  ogDescription: 'At most 200 characters.',
+  standfirst:
+    "Opens on the edition's strongest news value in about 30 words. Never \"A weekly digest...\" boilerplate.",
+  theme: "A short internal label for this edition's throughline.",
+  intro: "About 150 words of continuous prose that earns the reader's next minute.",
+  editorNote:
+    'About 50 words. May say the edition uses cited primary sources and separately labeled editorial analysis. Must never claim original research.',
+  conclusion: 'About 120 words landing the throughline without restating every story in turn.',
+  keyTakeaways: '3-5 entries, each one sentence, each traceable to a story in this edition.',
+  topics: 'Topic labels drawn from the edition, no invented names.',
+  entities: 'Named entities that actually appear in the edition.',
+};
+
+export interface RepairFieldPromptInput {
+  target: RepairTarget;
+  currentValue: string | string[];
+  issues: Array<Pick<WeeklyQualityIssue, 'code' | 'message' | 'span' | 'suggestedFix'>>;
+  /** Claims + excerpts for the story being repaired; frame repairs get none. */
+  grounding?: unknown;
+  /** For a Ukrainian repair: the English value this field must stay in parity with. */
+  englishCounterpart?: string | string[];
+  /** Other fields of the same story, so a rewrite does not duplicate them. */
+  siblings?: Record<string, string>;
+}
+
+/**
+ * The targeted repair call: one field in, one field out.
+ *
+ * This is what replaced "regenerate the article" as the response to a
+ * blocker. The prompt is small (single-digit thousands of characters against
+ * ~53,000 for the old writer prompt) and the completion is a few hundred
+ * tokens, so a repair round costs seconds and fractions of a cent instead of
+ * a second full-length write -- which is what makes it affordable to keep
+ * iterating until the edition converges instead of failing the job.
+ */
+export function repairFieldPrompt(input: RepairFieldPromptInput): string {
+  const { target } = input;
+  const list = isListRepairField(target.field);
+  const contract = REPAIR_FIELD_CONTRACT[target.field] ?? 'Keep the field doing its existing job.';
+  const localeRule =
+    target.locale === 'uk'
+      ? `Answer in Ukrainian. ${UKRAINIAN_ADAPTATION_RULES}`
+      : 'Answer in English, in the house voice above.';
+  const parity = input.englishCounterpart
+    ? `
+
+ENGLISH COUNTERPART -- your replacement must carry the same facts, numbers and claim ids as this, re-narrated naturally in Ukrainian (never word-for-word)
+${JSON.stringify(input.englishCounterpart)}`
+    : '';
+  const grounding = input.grounding
+    ? `
+
+APPROVED EVIDENCE FOR THIS STORY -- every factual statement in your replacement must be supported by this. Drop anything that is not.
+${JSON.stringify(input.grounding)}`
+    : '';
+  const siblings =
+    input.siblings && Object.keys(input.siblings).length
+      ? `
+
+OTHER FIELDS OF THIS STORY -- your replacement must not duplicate or restate these
+${JSON.stringify(input.siblings)}`
+      : '';
+  return `You are line-editing ONE field of an already-written AI Today Brief Weekly Digest. Fix exactly the problems listed below and change nothing else. Do not rewrite the story, do not restructure the edition, do not add facts.
+
+${voicePromptBlock(target.locale)}
+
+FIELD: ${target.field}${target.revisionItemId ? ` (story ${target.revisionItemId})` : ' (edition frame)'}
+WHAT THIS FIELD MUST DO: ${contract}
+LANGUAGE: ${localeRule}
+
+PROBLEMS TO FIX
+${JSON.stringify(input.issues)}
+
+CURRENT VALUE
+${JSON.stringify(input.currentValue)}${parity}${grounding}${siblings}
+
+Return raw JSON and nothing else -- no preamble, no explanation, no code fence:
+{"value": ${list ? '["", ""]' : '""'}}`;
 }
 
 const CRITIC_RUBRIC = `RUBRIC -- score each dimension 0-100. Any dimension scored below 80 MUST quote 1-2 offending spans verbatim in that dimension's "note" (the exact text that earned the low score), not a paraphrase of the problem.
@@ -964,234 +1188,4 @@ ${JSON.stringify(criticApprovedEvidence(stories))}
 
 MASTER TO AUDIT
 ${JSON.stringify(bundle)}`;
-}
-
-/**
- * Line-edit pass: rewrite only the fields a revisable quality-gate failure
- * names, leaving everything else byte-for-byte unchanged. Replaces a full
- * EN+UK regenerate for the class of failure that's just prose (a low
- * dimension score, a template-leak phrase, a too-short editorsView) -- see
- * `reportIsRevisable` (content-studio.ts) for exactly which failures qualify.
- * Reusing the same voice block as the original write keeps the revised
- * prose from drifting back toward a blander, more compliant register than
- * the first draft.
- */
-export function reviseArticlePrompt(
-  article: WeeklyArticleMaster,
-  guidance: WeeklyMasterRetryGuidance[],
-  locale: 'en' | 'uk',
-): string {
-  return `You are line-editing an already-drafted AI Today Brief Weekly Digest article, not rewriting it from scratch. Fix ONLY the specific problems listed below. Every field, sentence, and character not implicated by a listed problem must be returned exactly as given in the input -- do not "improve" anything else. Never change claimIds, revisionItemId, placement, or touch a story not named by any problem below.
-
-${voicePromptBlock(locale)}
-
-PROBLEMS TO FIX (each names the story and field at fault; fix every one)
-${JSON.stringify(guidance)}
-
-ARTICLE TO REVISE
-${JSON.stringify(article)}
-
-Return the complete article JSON in the exact same shape as the input, with only the named problems fixed. Output the raw JSON object and nothing else -- no preamble, no explanation of what you changed, no code fence.`;
-}
-
-/**
- * Converts one in-memory quality report into the same WeeklyMasterRetryGuidance
- * shape the cross-job-retry path uses (generation-worker.ts's blockerGuidanceFrom
- * Report/dimensionGuidanceFromReport read the same report back out of the DB) --
- * kept local since the revise loop below acts on the report it just computed,
- * with no DB round-trip.
- */
-function reviseGuidanceFromReport(report: WeeklyContentQualityReport): WeeklyMasterRetryGuidance[] {
-  const fromIssues: WeeklyMasterRetryGuidance[] = report.issues.map((issue) => ({
-    code: issue.code,
-    message: issue.message,
-    ...(issue.suggestedFix ? { suggestedFix: issue.suggestedFix } : {}),
-    ...(issue.locale ? { locale: issue.locale } : {}),
-    ...(issue.revisionItemId ? { revisionItemId: issue.revisionItemId } : {}),
-    ...(issue.field ? { field: issue.field } : {}),
-  }));
-  return [...fromIssues, ...editorialQualityRetryGuidance(report)];
-}
-
-/** Sums token/cost metadata across every call made for one step (write + revise attempts). */
-function accumulateGenerationMetadata(
-  calls: EditorialGenerationMetadata[],
-): EditorialGenerationMetadata {
-  const last = calls[calls.length - 1]!;
-  return {
-    provider: last.provider,
-    model: last.model,
-    promptTokens: calls.reduce((sum, call) => sum + call.promptTokens, 0),
-    outputTokens: calls.reduce((sum, call) => sum + call.outputTokens, 0),
-    estimatedCostUsd: Number(
-      calls.reduce((sum, call) => sum + call.estimatedCostUsd, 0).toFixed(6),
-    ),
-    costSource: calls.every((call) => call.costSource === 'subscription')
-      ? 'subscription'
-      : calls.every((call) => call.costSource === 'reported')
-        ? 'reported'
-        : 'estimated',
-    promptVersion: last.promptVersion,
-  };
-}
-
-const MAX_REVISE_ATTEMPTS = 2;
-
-export async function generateWeeklyMaster(
-  stories: WeeklyMasterInputStory[],
-  researchPacks: WeeklyResearchPack[],
-  retryGuidance: WeeklyMasterRetryGuidance[] = [],
-  options: {
-    checkpoint?: WeeklyMasterCheckpoint | null;
-    onStepComplete?: (
-      step: 'english' | 'ukrainian',
-      result: WeeklyMasterEnglishResult | WeeklyMasterUkrainianResult,
-    ) => void | Promise<void>;
-    /** Emits every paid model call so workers can persist provider/cost telemetry durably. */
-    onProviderCallStarted?: (step: WeeklyMasterProviderStep) => void | Promise<void>;
-    onProviderCallCompleted?: (
-      step: WeeklyMasterProviderStep,
-      metadata: EditorialGenerationMetadata,
-    ) => void | Promise<void>;
-    /** Enables DB-driven role-chain overrides (owner-added HTTP providers via /admin/providers) for the openrouter slot. */
-    db?: PipelineDb;
-  } = {},
-): Promise<WeeklyMasterGenerationResult> {
-  const { english: englishGuidance, ukrainian: ukrainianGuidance } =
-    splitMasterRetryGuidance(retryGuidance);
-  let english = options.checkpoint?.english;
-  if (!english) {
-    await options.onProviderCallStarted?.('english');
-    english = await generateFirstAvailable(
-      englishPrompt(stories, englishGuidance),
-      parseEnglishPackage,
-      'weekly.master_writer',
-      options.db,
-    );
-    await options.onProviderCallCompleted?.('english', english.metadata);
-    await options.onStepComplete?.('english', english);
-  }
-  let ukrainian = options.checkpoint?.ukrainian;
-  if (!ukrainian) {
-    await options.onProviderCallStarted?.('ukrainian');
-    ukrainian = await generatePreferringProvider(
-      english.metadata.provider,
-      ukrainianPrompt(english.value.article, stories, ukrainianGuidance),
-      (raw) => parseArticle(raw, 'uk'),
-      'weekly.master_writer',
-      options.db,
-    );
-    await options.onProviderCallCompleted?.('ukrainian', ukrainian.metadata);
-    await options.onStepComplete?.('ukrainian', ukrainian);
-  }
-  const englishCalls: EditorialGenerationMetadata[] = [english.metadata];
-  const ukrainianCalls: EditorialGenerationMetadata[] = [ukrainian.metadata];
-  const criticCalls: EditorialGenerationMetadata[] = [];
-
-  const expectedStories = stories.map((story) => ({
-    revisionItemId: story.revisionItemId,
-    placement: story.placement,
-    claimIds: story.claims.map((claim) => claim.id),
-  }));
-  const approvedClaimIds = stories.flatMap((story) => story.claims.map((claim) => claim.id));
-  const buildBundle = (): WeeklyMasterBundle => ({
-    en: english!.value.article,
-    uk: ukrainian!.value,
-  });
-  const evaluate = async (bundle: WeeklyMasterBundle): Promise<WeeklyContentQualityReport> => {
-    await options.onProviderCallStarted?.('critic');
-    const critic = await generateIndependentCritic(
-      english!,
-      criticPrompt(bundle, stories),
-      options.db,
-    );
-    await options.onProviderCallCompleted?.('critic', critic.metadata);
-    criticCalls.push(critic.metadata);
-    const deterministicIssues = validateMasterBundle(bundle, researchPacks, expectedStories);
-    return {
-      schemaVersion: 'weekly-quality-v2',
-      score: critic.value.score,
-      dimensions: critic.value.dimensions,
-      issues: [...deterministicIssues, ...critic.value.issues],
-      factualFlags: critic.value.factualFlags,
-      approvedClaimIds,
-      checkedAt: new Date().toISOString(),
-    };
-  };
-
-  let bundle = buildBundle();
-  let quality = await evaluate(bundle);
-
-  // Line-edit pass: a revisable failure (see reportIsRevisable) gets a
-  // targeted rewrite of just the flagged fields instead of a full EN+UK
-  // regenerate. Capped at MAX_REVISE_ATTEMPTS so a report the model can't
-  // actually satisfy surfaces to the human via the normal gate-failure path
-  // rather than looping indefinitely.
-  let reviseAttempts = 0;
-  while (
-    reviseAttempts < MAX_REVISE_ATTEMPTS &&
-    !editorialQualityPasses(quality) &&
-    reportIsRevisable(quality)
-  ) {
-    reviseAttempts += 1;
-    const guidance = reviseGuidanceFromReport(quality);
-    const { english: englishRevise, ukrainian: ukrainianRevise } =
-      splitMasterRetryGuidance(guidance);
-
-    if (englishRevise.length) {
-      await options.onProviderCallStarted?.('revisions');
-      const revisedEnglish: ProviderResult<WeeklyArticleMaster> = await generatePreferringProvider(
-        english!.metadata.provider,
-        reviseArticlePrompt(english!.value.article, englishRevise, 'en'),
-        (raw) => parseArticle(raw, 'en'),
-        'weekly.master_writer',
-        options.db,
-      );
-      await options.onProviderCallCompleted?.('revisions', revisedEnglish.metadata);
-      english = {
-        value: { ...english!.value, article: revisedEnglish.value },
-        metadata: revisedEnglish.metadata,
-      };
-      englishCalls.push(revisedEnglish.metadata);
-      // English prose changed underneath it -- Ukrainian must be re-adapted
-      // from the new English even when nothing UK-tagged fired this round,
-      // or the two locales drift out of narrative sync with each other.
-      await options.onProviderCallStarted?.('revisions');
-      const readapted: WeeklyMasterUkrainianResult = await generatePreferringProvider(
-        english.metadata.provider,
-        ukrainianPrompt(english.value.article, stories, ukrainianRevise),
-        (raw) => parseArticle(raw, 'uk'),
-        'weekly.master_writer',
-        options.db,
-      );
-      await options.onProviderCallCompleted?.('revisions', readapted.metadata);
-      ukrainian = readapted;
-      ukrainianCalls.push(readapted.metadata);
-    } else if (ukrainianRevise.length) {
-      await options.onProviderCallStarted?.('revisions');
-      const revisedUkrainian: WeeklyMasterUkrainianResult = await generatePreferringProvider(
-        ukrainian!.metadata.provider,
-        reviseArticlePrompt(ukrainian!.value, ukrainianRevise, 'uk'),
-        (raw) => parseArticle(raw, 'uk'),
-        'weekly.master_writer',
-        options.db,
-      );
-      await options.onProviderCallCompleted?.('revisions', revisedUkrainian.metadata);
-      ukrainian = revisedUkrainian;
-      ukrainianCalls.push(revisedUkrainian.metadata);
-    }
-
-    bundle = buildBundle();
-    quality = await evaluate(bundle);
-  }
-
-  return {
-    bundle,
-    quality,
-    generation: {
-      english: accumulateGenerationMetadata(englishCalls),
-      ukrainian: accumulateGenerationMetadata(ukrainianCalls),
-      critic: accumulateGenerationMetadata(criticCalls),
-    },
-  };
 }
