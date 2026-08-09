@@ -205,12 +205,60 @@ export interface WeeklyMasterCheckpoint {
   ukrainian?: WeeklyMasterUkrainianResult;
 }
 
+/**
+ * Returns the first balanced top-level `{…}` in the text, or null.
+ * Brace-counting is string- and escape-aware, so a `{` inside a quoted value
+ * (or the `\"` before it) can't close the object early.
+ */
+export function extractJsonObject(text: string): string | null {
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < text.length; index += 1) {
+    const char = text[index]!;
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === '\\') {
+      if (inString) escaped = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (char === '{') depth += 1;
+    else if (char === '}') {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, index + 1);
+    }
+  }
+  return null;
+}
+
 function parseJsonObject(raw: string): Record<string, unknown> {
   const normalized = raw
     .trim()
     .replace(/^```(?:json)?\s*/i, '')
     .replace(/\s*```$/, '');
-  const value = JSON.parse(normalized) as unknown;
+  let value: unknown;
+  try {
+    value = JSON.parse(normalized) as unknown;
+  } catch (error) {
+    // A subscription CLI answers as an assistant, not as an API: the live
+    // 2026-08-09 revise step came back as "**Applying the requested
+    // fixes**\n\n{…}" and killed a job that had already spent 22 minutes
+    // producing a good EN, UK and critic pass. Prose around an otherwise
+    // valid object is a formatting slip, not a failed generation — dig the
+    // object out rather than discard the work.
+    const embedded = extractJsonObject(normalized);
+    if (!embedded) throw error;
+    value = JSON.parse(embedded) as unknown;
+  }
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new SyntaxError('Editorial model must return one JSON object.');
   }
@@ -748,6 +796,36 @@ export async function generateFirstAvailable<T>(
   );
 }
 
+/**
+ * Preferred provider first, then the rest of the ladder.
+ *
+ * The Ukrainian adaptation and every revise pass deliberately reuse whichever
+ * provider wrote the English master, so both locales share one voice. Until
+ * 2026-08-09 that preference was also a single point of failure: those steps
+ * called one provider and let its error propagate, while only the English
+ * step had a ladder. A live run lost a job at the revise step — after 22
+ * minutes and a successful EN, UK and critic pass — because one response
+ * arrived with a prose preamble. The preference is worth keeping; dying on
+ * it is not.
+ */
+async function generatePreferringProvider<T>(
+  preferred: EditorialProvider,
+  prompt: string,
+  parse: (raw: string) => T,
+  role?: ProviderRole,
+  db?: PipelineDb,
+) {
+  const failures: string[] = [];
+  for (const provider of [preferred, ...providerOrder().filter((one) => one !== preferred)]) {
+    try {
+      return await generateWithProvider(provider, prompt, parse, role, db);
+    } catch (error) {
+      failures.push(`${provider}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  throw new Error(`Every editorial provider failed -- ${failures.join(' | ')}`);
+}
+
 export function masterRetryGuidancePrompt(guidance: WeeklyMasterRetryGuidance[]) {
   if (!guidance.length) return '';
   return `
@@ -913,7 +991,7 @@ ${JSON.stringify(guidance)}
 ARTICLE TO REVISE
 ${JSON.stringify(article)}
 
-Return the complete article JSON in the exact same shape as the input, with only the named problems fixed.`;
+Return the complete article JSON in the exact same shape as the input, with only the named problems fixed. Output the raw JSON object and nothing else -- no preamble, no explanation of what you changed, no code fence.`;
 }
 
 /**
@@ -996,7 +1074,7 @@ export async function generateWeeklyMaster(
   let ukrainian = options.checkpoint?.ukrainian;
   if (!ukrainian) {
     await options.onProviderCallStarted?.('ukrainian');
-    ukrainian = await generateWithProvider(
+    ukrainian = await generatePreferringProvider(
       english.metadata.provider,
       ukrainianPrompt(english.value.article, stories, ukrainianGuidance),
       (raw) => parseArticle(raw, 'uk'),
@@ -1062,7 +1140,7 @@ export async function generateWeeklyMaster(
 
     if (englishRevise.length) {
       await options.onProviderCallStarted?.('revisions');
-      const revisedEnglish: ProviderResult<WeeklyArticleMaster> = await generateWithProvider(
+      const revisedEnglish: ProviderResult<WeeklyArticleMaster> = await generatePreferringProvider(
         english!.metadata.provider,
         reviseArticlePrompt(english!.value.article, englishRevise, 'en'),
         (raw) => parseArticle(raw, 'en'),
@@ -1079,7 +1157,7 @@ export async function generateWeeklyMaster(
       // from the new English even when nothing UK-tagged fired this round,
       // or the two locales drift out of narrative sync with each other.
       await options.onProviderCallStarted?.('revisions');
-      const readapted: WeeklyMasterUkrainianResult = await generateWithProvider(
+      const readapted: WeeklyMasterUkrainianResult = await generatePreferringProvider(
         english.metadata.provider,
         ukrainianPrompt(english.value.article, stories, ukrainianRevise),
         (raw) => parseArticle(raw, 'uk'),
@@ -1091,7 +1169,7 @@ export async function generateWeeklyMaster(
       ukrainianCalls.push(readapted.metadata);
     } else if (ukrainianRevise.length) {
       await options.onProviderCallStarted?.('revisions');
-      const revisedUkrainian: WeeklyMasterUkrainianResult = await generateWithProvider(
+      const revisedUkrainian: WeeklyMasterUkrainianResult = await generatePreferringProvider(
         ukrainian!.metadata.provider,
         reviseArticlePrompt(ukrainian!.value, ukrainianRevise, 'uk'),
         (raw) => parseArticle(raw, 'uk'),

@@ -39,6 +39,7 @@ import { generateWithClaudeCli } from '../../../pipeline/claude-cli';
 import { fetchOpenRouterModels } from '../../../pipeline/openrouter-models';
 import { loadProviderRegistry } from '../../../pipeline/providers/registry';
 import {
+  extractJsonObject,
   masterRetryGuidancePrompt,
   approvedStoryPromptMaterial,
   criticApprovedEvidence,
@@ -612,6 +613,114 @@ describe('generateWeeklyMaster claude-cli provider', () => {
     expect(result.generation.ukrainian.provider).toBe('claude-cli');
   });
 
+  // The Ukrainian and revise steps deliberately reuse the English writer's
+  // provider so both locales share one voice, but until 2026-08-09 that
+  // preference had no ladder behind it: run 31324873875 lost a job at the
+  // revise step, after 22 minutes and a good EN/UK/critic pass, because one
+  // claude-cli response arrived with a prose preamble.
+  it('falls back past the preferred provider when it fails on the Ukrainian step', async () => {
+    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
+    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
+    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
+      {
+        id: 'vendor/critic-model',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.000001', completion: '0.000006' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+      },
+    ]);
+    vi.mocked(generateWithClaudeCli).mockImplementation(async (prompt: string) => {
+      if (prompt.includes('Ukrainian senior news editor')) {
+        throw new SyntaxError(`Unexpected token '*', "**Applying"... is not valid JSON`);
+      }
+      return {
+        text: JSON.stringify({ article: englishResult().value.article }),
+        model: 'claude-sonnet-5',
+        totalCostUsd: 0.25,
+      };
+    });
+    vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => ({
+      text: prompt.includes('independent factual and editorial critic')
+        ? CRITIC_JSON
+        : JSON.stringify(englishResult().value.article),
+      provider: 'openrouter',
+      model: 'vendor/critic-model',
+      usage: null,
+    }));
+
+    const result = await generateWeeklyMaster([story('item-1', 'feature')], [], []);
+
+    expect(result.generation.english.provider).toBe('claude-cli');
+    expect(result.generation.ukrainian.provider).toBe('openrouter');
+  });
+
+  it('falls back past the preferred provider when it fails on a revise step', async () => {
+    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
+    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
+    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
+      {
+        id: 'vendor/critic-model',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.000001', completion: '0.000006' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+      },
+    ]);
+    vi.mocked(generateWithClaudeCli).mockImplementation(async (prompt: string) => {
+      if (prompt.includes('line-editing an already-drafted')) {
+        throw new SyntaxError(`Unexpected token '*', "**Applying"... is not valid JSON`);
+      }
+      if (prompt.includes('independent factual and editorial critic')) {
+        return { text: criticJson(), model: 'claude-sonnet-5', totalCostUsd: 0.25 };
+      }
+      return {
+        text: prompt.includes('Ukrainian senior news editor')
+          ? JSON.stringify(reviseUkrainianResult().value)
+          : JSON.stringify({ article: reviseEnglishResult().value.article }),
+        model: 'claude-sonnet-5',
+        totalCostUsd: 0.25,
+      };
+    });
+    let openRouterCalls = 0;
+    vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => {
+      openRouterCalls += 1;
+      if (prompt.includes('independent factual and editorial critic')) {
+        return {
+          text: criticJson({
+            dimensions: [
+              'engagement',
+              'voice',
+              'clarity',
+              'trust',
+              'usefulness',
+              'naturalness',
+              'parity',
+            ].map((name) => ({ name, score: name === 'engagement' ? 60 : 90, note: 'flat opening' })),
+          }),
+          provider: 'openrouter',
+          model: 'vendor/critic-model',
+          usage: WRITE_USAGE,
+        };
+      }
+      return {
+        text:
+          openRouterCalls === 2
+            ? JSON.stringify(reviseEnglishResult().value.article)
+            : JSON.stringify(reviseUkrainianResult().value),
+        provider: 'openrouter',
+        model: 'vendor/critic-model',
+        usage: WRITE_USAGE,
+      };
+    });
+
+    const result = await generateWeeklyMaster(reviseStories(), [], []);
+
+    expect(result.quality.score).toBe(90);
+    expect(result.generation.english.provider).toBe('openrouter');
+    expect(result.generation.ukrainian.provider).toBe('openrouter');
+  });
+
   it('does not silently fall back from an explicit Claude-only worker', async () => {
     vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
     vi.stubEnv('WEEKLY_MASTER_PROVIDER_ORDER', 'claude-cli');
@@ -1115,5 +1224,31 @@ describe('OpenRouter reasoning-effort suppression', () => {
       reasoning: { effort: 'none' },
     });
     expect(options.extraBodyForModel?.('vendor/no-reasoning')?.reasoning).toBeUndefined();
+  });
+});
+
+describe('extractJsonObject', () => {
+  // The exact shape that killed a live job (2026-08-09, run 31324873875)
+  // after 22 minutes and a successful EN, UK and critic pass: the revise
+  // step answered as an assistant instead of as an API.
+  it('digs the object out of a conversational preamble', () => {
+    const raw = '**Applying the requested fixes**\n\n{"locale":"en","title":"Fixed"}';
+    expect(JSON.parse(extractJsonObject(raw)!)).toEqual({ locale: 'en', title: 'Fixed' });
+  });
+
+  it('is not fooled by braces or escaped quotes inside strings', () => {
+    const raw = 'here you go: {"body":"a \\"quoted\\" { brace }","n":1} -- hope that helps';
+    expect(JSON.parse(extractJsonObject(raw)!)).toEqual({
+      body: 'a "quoted" { brace }',
+      n: 1,
+    });
+  });
+
+  it('stops at the first complete object rather than swallowing trailing prose', () => {
+    expect(extractJsonObject('{"a":{"b":2}} and then some chatter {')).toBe('{"a":{"b":2}}');
+  });
+
+  it('returns null when there is no object at all', () => {
+    expect(extractJsonObject('I cannot help with that.')).toBeNull();
   });
 });

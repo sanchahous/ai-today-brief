@@ -153,13 +153,21 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Активна робота
 
-−2. **Фолоу-ап після мержу PR #205 (гілка `fix/weekly-master-numeric-parity`).** За рішенням
+−3. **Прогін `31324873875` (16:51 UTC) — перший уже з фіксами: дійшов значно далі, впав на
+   новому місці.** Підтвердив три попередні фікси наживо: preflight 9/9 за 6 секунд (токен у
+   Secrets **живий** — питання нижче закрите), `--tools ""` дав 1 turn, EN+UK через claude-cli
+   зайняли 12 хв 18 с (стара 4-хвилинна стеля вбила б це знову), critic мовчав 315 секунд і
+   **завершився** (за старим кодом — убитий на 90-й), провал зробив прогін червоним. Впало на
+   revise-кроці: CLI повернув `**Applying…` перед JSON, а UK і revise взагалі не мали драбини
+   провайдерів. Обидві причини виправлені у follow-up `fix/weekly-master-revise-parse-fallback`.
+   Деталі — [pipeline/weekly-master-failures](pipeline/weekly-master-failures.md).
+
+−2. **PR [#206](https://github.com/sanchahous/ai-today-brief/pull/206) змержено 2026-08-09 (`fix/weekly-master-numeric-parity`).** За рішенням
    власника воркер переведено на ланцюжок `claude-cli,openrouter` — падіння CLI більше не
    вбиває джобу, а видимість забезпечують preflight-крок і червоний прогін на провалі. Плюс
    новий блокер `numeric_parity`: sandbox показав, що EN «600x» став українською «на 600%»
-   (два порядки різниці), критик пропустив це з `parity` 88/100. **Відкрите питання до
-   власника:** чи живий `CLAUDE_CODE_OAUTH_TOKEN` у GitHub Secrets — локальний бінарник
-   повертає «OAuth session expired», перевірити не було можливості.
+   (два порядки різниці), критик пропустив це з `parity` 88/100. Наступний живий прогін
+   підтвердив, що `CLAUDE_CODE_OAUTH_TOKEN` у GitHub Secrets працює.
 
 −1. **`editorial_master` падав тричі поспіль 09.08 — знайдено п'ять окремих причин, усі
    інфраструктурні, жодної редакційної.** Гілка `fix/weekly-master-provider-timeouts`, PR
