@@ -535,6 +535,104 @@ function ambiguousEnergyClaimIssues(bundle: WeeklyMasterBundle): WeeklyQualityIs
   return issues;
 }
 
+/** `9,9` (Ukrainian decimal comma) and `1 000` (thin/NBSP grouping) must
+ * compare equal to `9.9` and `1000`, or every localized number looks changed. */
+function numericValue(raw: string): string {
+  return String(Number(raw.replace(/[\s  ]/g, '').replace(',', '.')));
+}
+
+function magnitudes(text: string, pattern: RegExp): Map<string, string> {
+  const found = new Map<string, string>();
+  for (const match of text.matchAll(pattern)) {
+    const digits = match.slice(1).find(Boolean);
+    if (!digits) continue;
+    const value = numericValue(digits);
+    if (value !== 'NaN' && !found.has(value)) found.set(value, match[0].trim());
+  }
+  return found;
+}
+
+// `\b` and `\w` stay ASCII-only even under /u, so a Cyrillic word never gets
+// a trailing boundary and `раз(?:ів)?\b` silently never matches. Every
+// Ukrainian suffix here ends with an explicit "not another Cyrillic letter"
+// lookahead instead.
+const NOT_CYRILLIC = '(?![\\u0400-\\u04FF])';
+
+const MULTIPLIER_PATTERNS = {
+  en: /(\d+(?:[.,]\d+)?)\s*(?:x\b|×|-fold\b|\s+times\b)/giu,
+  uk: new RegExp(
+    // раз / рази / разів / разу / раза — «у 1,5 раза» is as ordinary as
+    // «у 600 разів», and missing it would silently disable this direction.
+    `(?:у|в)\\s+(\\d+(?:[.,]\\d+)?)\\s+раз(?:и|ів|у|а)?${NOT_CYRILLIC}|(\\d+(?:[.,]\\d+)?)\\s*(?:x\\b|×)`,
+    'giu',
+  ),
+} as const;
+
+const PERCENT_PATTERNS = {
+  en: /(\d+(?:[.,]\d+)?)\s*(?:%|percent\b)/giu,
+  uk: new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*(?:%|відсотк[\\u0400-\\u04FF]*)`, 'giu'),
+} as const;
+
+/**
+ * Catches the multiplier↔percentage swap between locales — an order-of-
+ * magnitude error that reads as a fluent sentence, so neither a human skim
+ * nor the critic's `parity` dimension reliably stops it. Live example
+ * (sandbox run 2026-08-09): EN "Claude Code's 600x Energy Bill" became UK
+ * «Рахунки Claude Code на 600% більше». 600% is roughly 7x, not 600x, and
+ * the same edition's UK standfirst said «в 600 разів» correctly — so the
+ * article contradicted itself and still scored 88/100 on parity.
+ *
+ * Deliberately narrow: the magnitude must be a percentage here, a multiple in
+ * the other locale, and *not* a percentage there — so an edition that
+ * genuinely carries both "600x energy" and "600% growth" in both locales
+ * passes untouched, while an idiomatic «на 100%» only ever fires if the other
+ * locale really says "100x". Everything softer is left to the critic.
+ *
+ * The check does not require the offending locale to be internally
+ * consistent: the live case contradicted itself (title «600%», standfirst
+ * «в 600 разів»), which is exactly the shape a self-consistency guard would
+ * have waved through.
+ */
+function numericParityIssues(bundle: WeeklyMasterBundle): WeeklyQualityIssue[] {
+  const issues: WeeklyQualityIssue[] = [];
+  const joined = {
+    en: articleTextFields(bundle.en)
+      .map((field) => field.value)
+      .join('\n'),
+    uk: articleTextFields(bundle.uk)
+      .map((field) => field.value)
+      .join('\n'),
+  };
+
+  for (const [locale, other] of [
+    ['uk', 'en'],
+    ['en', 'uk'],
+  ] as const) {
+    const percents = magnitudes(joined[locale], PERCENT_PATTERNS[locale]);
+    const otherMultipliers = magnitudes(joined[other], MULTIPLIER_PATTERNS[other]);
+    const otherPercents = magnitudes(joined[other], PERCENT_PATTERNS[other]);
+    for (const [value, span] of percents) {
+      // A swap, not a coincidence: the other locale calls this magnitude a
+      // multiple and never states it as a percentage of its own.
+      if (!otherMultipliers.has(value) || otherPercents.has(value)) continue;
+      const field = articleTextFields(bundle[locale]).find((candidate) =>
+        candidate.value.includes(span),
+      );
+      issues.push({
+        code: 'numeric_parity',
+        message: `${locale.toUpperCase()} states ${span} where ${other.toUpperCase()} states a ${value}x multiple — a percentage and a multiple are not the same magnitude.`,
+        blocker: true,
+        locale,
+        ...(field?.field ? { field: field.field } : {}),
+        ...(field?.revisionItemId ? { revisionItemId: field.revisionItemId } : {}),
+        span,
+        suggestedFix: `Express it as a multiple, matching ${other.toUpperCase()} (${locale === 'uk' ? `«у ${value} разів»` : `"${value}x"`}), not as a percentage.`,
+      });
+    }
+  }
+  return issues;
+}
+
 function ukrainianLanguageIssues(article: WeeklyArticleMaster): WeeklyQualityIssue[] {
   const issues: WeeklyQualityIssue[] = [];
   for (const textField of articleTextFields(article)) {
@@ -814,6 +912,7 @@ export function validateMasterBundle(
   issues.push(...metadataQualityIssues(bundle));
   issues.push(...ambiguousEnergyClaimIssues(bundle));
   issues.push(...ukrainianLanguageIssues(bundle.uk));
+  issues.push(...numericParityIssues(bundle));
   issues.push(...editorNoteClaimIssues(bundle));
   return issues;
 }
@@ -1031,6 +1130,7 @@ const REVISABLE_ISSUE_CODES = new Set([
   'standfirst_boilerplate',
   'ambiguous_energy_claim',
   'uk_language_residue',
+  'numeric_parity',
   'unsupported_editorial_claim',
 ]);
 

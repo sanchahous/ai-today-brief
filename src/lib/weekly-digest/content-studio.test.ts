@@ -404,6 +404,67 @@ describe('Weekly Content Studio hard gates', () => {
     );
   });
 
+  // Live defect, sandbox run 2026-08-09: EN "Claude Code's 600x Energy Bill"
+  // came back as UK «Рахунки Claude Code на 600% більше» while the same
+  // edition's UK standfirst said «в 600 разів». Two orders of magnitude out,
+  // self-contradictory, and the critic still scored parity 88/100.
+  it('blocks a UK percentage where English states a multiple', () => {
+    const value = bundle();
+    value.en.title = "Claude Code's 600x energy bill";
+    value.uk.title = 'Рахунки Claude Code на 600% більше';
+    value.uk.standfirst = 'Агентний ШІ спалює в 600 разів більше, ніж чат-запит.';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'numeric_parity',
+          blocker: true,
+          locale: 'uk',
+          field: 'title',
+          span: '600%',
+        }),
+      ]),
+    );
+  });
+
+  // Also proves the Ukrainian multiplier pattern actually matches: `\b` and
+  // `\w` stay ASCII-only under /u, so `раз(?:ів)?\b` never fires and this
+  // whole direction would silently pass on everything.
+  it.each([
+    ['у 40 разів', 'Costs climbed 40%'],
+    ['у 1,5 раза', 'Costs climbed 1.5%'],
+  ])('blocks the same swap in the other direction (%s)', (ukPhrase, enTitle) => {
+    const value = bundle();
+    value.uk.title = `Витрати зросли ${ukPhrase}`;
+    value.en.title = enTitle;
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'numeric_parity', blocker: true, locale: 'en' }),
+      ]),
+    );
+  });
+
+  it('accepts a faithful multiple, including the Ukrainian decimal comma', () => {
+    const value = bundle();
+    value.en.title = 'Energy use climbed 600x, latency 1.5x';
+    value.uk.title = 'Споживання зросло у 600 разів, затримка у 1,5 раза';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'numeric_parity' })]),
+    );
+  });
+
+  it('leaves a percentage alone when English states the same percentage somewhere too', () => {
+    const value = bundle();
+    value.en.title = 'Agents burn 600x the energy while CTR fell 61%';
+    value.uk.title = 'Агенти спалюють у 600 разів більше, а CTR впав на 61%';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'numeric_parity' })]),
+    );
+  });
+
   it('does not block a bare mention of "energy" with no comparison -- fixes a false positive that blocked routine energy-sector news', () => {
     const value = bundle();
     value.en.title = 'OpenAI signs nuclear energy deal for data centers';
