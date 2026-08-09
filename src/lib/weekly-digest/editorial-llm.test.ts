@@ -488,6 +488,27 @@ describe('generateWeeklyMaster checkpoint reuse', () => {
       'critic',
     ]);
     expect(generateWithOpenRouterChain).toHaveBeenCalledTimes(3); // english + ukrainian + critic
+    const prompts = vi.mocked(generateWithOpenRouterChain).mock.calls.map(([prompt]) => prompt);
+    const englishWriterPrompt = prompts.find(
+      (prompt) =>
+        !prompt.includes('independent factual and editorial critic') &&
+        !prompt.includes('Ukrainian senior news editor'),
+    );
+    const ukrainianWriterPrompt = prompts.find((prompt) =>
+      prompt.includes('Ukrainian senior news editor'),
+    );
+    const auditPrompt = prompts.find((prompt) =>
+      prompt.includes('independent factual and editorial critic'),
+    );
+    expect(englishWriterPrompt).not.toContain('STYLE REFERENCE ONLY');
+    expect(englishWriterPrompt).toContain('Never invent a person staring at a screen');
+    expect(englishWriterPrompt).toContain('seoTitle <=65 characters');
+    expect(englishWriterPrompt).toContain('one honest edition throughline');
+    expect(ukrainianWriterPrompt).toContain('0.6 kWh -> 0,6 кВт·год');
+    expect(ukrainianWriterPrompt).toContain('Proofread every field');
+    expect(ukrainianWriterPrompt).toContain('одну чесну наскрізну логіку');
+    expect(auditPrompt).toContain('language_mechanics');
+    expect(auditPrompt).toContain('Do not rubber-stamp the draft with uniform 90s');
   });
 
   it('surfaces the owner-set angle in the English prompt as binding direction (PR4)', async () => {
@@ -594,7 +615,9 @@ describe('generateWeeklyMaster claude-cli provider', () => {
   it('does not silently fall back from an explicit Claude-only worker', async () => {
     vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
     vi.stubEnv('WEEKLY_MASTER_PROVIDER_ORDER', 'claude-cli');
-    vi.mocked(generateWithClaudeCli).mockRejectedValue(new Error('subscription authentication failed'));
+    vi.mocked(generateWithClaudeCli).mockRejectedValue(
+      new Error('subscription authentication failed'),
+    );
 
     await expect(generateWeeklyMaster([story('item-1', 'feature')], [], [])).rejects.toThrow(
       /Every editorial provider failed -- claude-cli: subscription authentication failed/,
@@ -740,7 +763,7 @@ function reviseEnglishResult(): WeeklyMasterEnglishResult {
       outputTokens: 200,
       estimatedCostUsd: 0.05,
       costSource: 'reported',
-      promptVersion: 'weekly-master-v6',
+      promptVersion: 'weekly-master-v7',
     },
   } as unknown as WeeklyMasterEnglishResult;
 }
@@ -755,7 +778,7 @@ function reviseUkrainianResult(): WeeklyMasterUkrainianResult {
       outputTokens: 180,
       estimatedCostUsd: 0.04,
       costSource: 'reported',
-      promptVersion: 'weekly-master-v6',
+      promptVersion: 'weekly-master-v7',
     },
   } as unknown as WeeklyMasterUkrainianResult;
 }

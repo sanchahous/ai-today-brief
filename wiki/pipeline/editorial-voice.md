@@ -3,9 +3,9 @@
 Summary: чому старий weekly-контент читався «машинно», яке архітектурне рішення це фіксує
 (`editorial-voice.ts`), і як власник курує голос редакції з часом.
 Sources: `src/lib/weekly-digest/editorial-voice.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
-`src/lib/weekly-digest/content-studio.ts`, owner session 2026-08-06 (feedback + опитування),
+`src/lib/weekly-digest/content-studio.ts`, owner sessions 2026-08-06/09 (feedback + audit),
 план `feat/weekly-editorial-voice`, PR #189 (змержено 2026-08-07)
-Last updated: 2026-08-07
+Last updated: 2026-08-09
 
 ---
 
@@ -35,8 +35,9 @@ regex-списки заборонених фраз потребують vitest-�
 - **`VOICE_EN` / `VOICE_UK`** — позитивна модель голосу («жива редакція з думкою», sharp
   colleague explaining over coffee), написана нативно для кожної мови, а не перекладена.
   UK-версія має власний список кальок/канцеляризмів.
-- **`EXEMPLAR_EN` / `EXEMPLAR_UK`** — один повний зразок відкриття feature-історії (~120 слів),
-  явно позначений «style reference only — do not reuse facts».
+- **`EXEMPLAR_EN` / `EXEMPLAR_UK`** — legacy-зразки, які більше **не передаються моделі**.
+  Вони лишаються в коді тільки як корпус для детермінованого copy-overlap гейта: якщо генерація
+  повторить 12-слівну послідовність зі старого зразка, master блокується.
 - **`CONTRAST_PAIRS_EN` / `CONTRAST_PAIRS_UK`** — 3 пари «уникай → пиши так» на прикладах з
   реального забракованого випуску (компліанс-регістр → живе речення). Контраст-пари дешевші за
   повні зразки (~10% токенів) і краще вчать регістру.
@@ -49,9 +50,41 @@ regex-списки заборонених фраз потребують vitest-�
   ШІ», рамка «для керівників»). Споживаються `detectTemplateLeaks()` у `content-studio.ts` —
   безкоштовний блокуючий гейт **до** виклику LLM-критика.
 
-`voicePromptBlock(locale)` збирає ці частини в один блок, який `editorial-llm.ts` вставляє і в
-англійський, і в український майстер-промпт. (source: `src/lib/weekly-digest/editorial-voice.ts`,
+`voicePromptBlock(locale)` збирає voice rules, contrast pairs і speculation spec в один блок, який
+`editorial-llm.ts` вставляє і в англійський, і в український майстер-промпт. Повні приклади до
+нього не входять. (source: `src/lib/weekly-digest/editorial-voice.ts`,
 `src/lib/weekly-digest/editorial-llm.ts`)
+
+## Аудит згенерованого випуску 2026-08-09
+
+Власник забракував master випуску `843975a8-8c19-4eca-96a8-035f76eae3ab`: абстрактна рамка
+«The Agentic Shift / Зсув до агентів», непояснена «енергія», механічна українська адаптація та
+помилки на кшталт `доп'яти`, `притеча`, `покладается`, `енерговитраження`. Незалежний critic
+водночас виставив рівно 90/100 усім семи вимірам і пропустив ці об'єктивні дефекти.
+
+Корінна причина вступу — prompt leakage: повний `EXEMPLAR_EN` був дослівно відтворений в EN,
+після чого UK-генератор переклав ту саму вигадану сцену. Окрема інструкція «починай in medias res»
+підштовхувала модель додумувати реакції людей, тривалість запусків і аварії, яких не було в
+research evidence. Виправлення `weekly-master-v7`:
+
+- повні exemplars вилучені з writer prompt, додано legacy-overlap blocker;
+- сцена/цитата/хронологія дозволена лише коли прямо підтверджена джерелом; інакше відкриття
+  починається з конкретного перевіреного результату;
+- writer спершу формулює чесну наскрізну логіку Top 3; якщо джерела не дають реального
+  тематичного зв'язку, рамка прямо називає три події замість вигаданої umbrella-теми;
+- UK prompt вимагає перекладати звичайні англійські слова й одиниці, локалізувати числа
+  (`1,138` → `1 138`, `0.6 kWh` → `0,6 кВт·год`) і робити окремий proofreading кожного поля;
+- `language_mechanics` став сьомим revisable-кодом; одна об'єктивна мовна помилка обмежує
+  `naturalness` до 55 і зобов'язує critic створити blocker;
+- детерміновані гейти блокують відомі malformed/Russian/untranslated tokens, сирий
+  `editorsView`, абстрактну назву випуску, непояснене `energy/енергія` у framing fields,
+  завеликі metadata, gross length і непідтверджену заяву про «original research»;
+- critic прямо заборонено ставити однакові «безпечні» 90 усім вимірам без незалежного
+  обґрунтування; сім однакових 90 окремо валять quality gate як evaluator failure і не
+  запускають беззмістовний writer revise-loop.
+
+(source: owner session + live admin read 2026-08-09,
+`editorial-voice.ts`, `editorial-llm.ts`, `content-studio.ts`)
 
 ### Пастка з Unicode-регексами (задокументовано в коді)
 

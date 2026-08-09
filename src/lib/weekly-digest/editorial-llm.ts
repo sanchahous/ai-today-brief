@@ -763,13 +763,17 @@ ${voicePromptBlock('en')}
 CONTRACT
 - Structure: Top 3 feature stories followed by 3–4 radar stories, preserving the supplied order and revisionItemId.
 - Feature body: 400–650 words each, continuous narrative prose. Radar body: 80–140 words each, same rule.
+- A vivid opening must still be true. Use only a documented moment or source-supported fact from APPROVED STORY MATERIAL. Never invent a person staring at a screen, a machine crashing after N hours, a reaction, quote, chronology, or other cinematic detail merely to satisfy the voice guidance. When the source has no real scene, open with the strongest verified contrast or result.
 - The body must stand alone as a story -- never open a sentence with the name of another field ("Practical scenario:", "The limitation is that...", "Why it matters:", "The takeaway is..."). Those fields have their own boxes elsewhere; restating them inside the body with a label is the single most common failure mode -- do not do it.
 - Ground every factual sentence in supplied claims and/or primarySourceExcerpt (and corroboratingExcerpts when present). Prefer claimIds for structured facts; excerpts may supply additional detail that appears in the approved research pack. Never invent numbers, names, quotes or causal implications absent from both claims and excerpts. editorsView is the one deliberate exception to this rule -- see VOICE above.
+- Treat single-person logs, company benchmarks and vendor announcements as limited evidence. Attribute them in the headline/dek/body and do not turn one measured workload into a universal statement about all agentic AI. For energy claims, name electricity, the unit and workload (for example kWh per Claude Code session), not vague "energy".
 - Every story must still cite at least one real claimId from its claims array. Do not invent claim IDs.
 - The practical field must name a concrete actor, workflow, action, constraint and observable result. Never use a reusable category template.
 - editorsView and discussionQuestion are required for the three feature stories only (see VOICE above for what each must do); send both as empty strings for radar stories.
 - When a story's approved material includes an "angle" field, that is the owner's binding editorial direction for that story, decided before you started writing -- build the headline, body and editorsView around it, don't default to a generic recap that ignores it. Never contradict supplied claims or excerpts to fit the angle.
-- Headline must read like a real news headline about what happened -- name the actor and the concrete event -- never an abstract thesis a reader can't picture. Theme-led title for the whole edition; the date is secondary. All prose across the article object must total 2,000–3,000 words.
+- Establish one honest edition throughline from the Top 3 before drafting. Use a thematic umbrella only when the approved evidence supports a real connection; otherwise frame the edition transparently around the three concrete developments instead of forcing a vague idea onto unrelated stories.
+- Headline must read like a real news headline about what happened -- name the actor and the concrete event -- never an abstract thesis a reader can't picture. The edition title must make the Top 3 legible on first read by naming concrete actors/products/results; do not use umbrella labels such as "The Agentic Shift", "The Future of AI", or a bare list of categories. All prose across the article object must total 2,000–3,000 words.
+- Framing limits are hard: seoTitle <=65 characters; metaDescription <=160; ogTitle <=70; ogDescription <=200. The standfirst opens on the issue's strongest news value, never "A weekly digest..." boilerplate. editorNote may say the edition uses cited primary sources and separately labeled editorial analysis, but must not claim "original research" unless the supplied material explicitly proves AI Today Brief conducted it.
 - Return one JSON object only.
 
 JSON SHAPE
@@ -784,13 +788,19 @@ function ukrainianPrompt(
   stories: WeeklyMasterInputStory[],
   retryGuidance: WeeklyMasterRetryGuidance[],
 ) {
-  return `Act as a Ukrainian senior news editor re-narrating the story for a Ukrainian audience of builders and the technically curious, not a literal translator. You may restructure sentences and paragraph flow freely -- only revisionItemId, placement, story order, every claimIds array, all names and every number must stay exactly as in the English master. Return only the article JSON object in the same shape as the English article, including editorsView and discussionQuestion for the three feature stories (empty strings for radar).
+  return `Act as a Ukrainian senior news editor re-narrating the story for a Ukrainian audience of builders and the technically curious, not a literal translator. You may restructure sentences and paragraph flow freely. revisionItemId, placement, story order, every claimIds array, names and numeric values must stay faithful to the English master; localize how numbers and units are written (for example 1,138 -> 1 138; 0.6 kWh -> 0,6 кВт·год; 24 hours -> 24 години). Return only the article JSON object in the same shape as the English article, including editorsView and discussionQuestion for the three feature stories (empty strings for radar).
 
 ${voicePromptBlock('uk')}
 
 CONTRACT
 - Feature bodies stay 400–650 words, radar 80–140 words -- continuous narrative prose, never opening a sentence with a field-name label ("Практичний сценарій:", "Обмеження полягає в тому", "Висновок для рішення:"). See REGISTER CONTRAST above for exactly this failure mode.
-- This is not a word-for-word translation: re-narrate for rhythm and naturalness in Ukrainian while preserving every fact, claim ID, name and number from the English master exactly.
+- This is not a word-for-word translation: re-narrate for rhythm and naturalness in Ukrainian while preserving every fact, claim ID, name and numeric value. Translate ordinary English words and units; keep only product names, code, CLI flags and genuinely standard technical terms in English.
+- Prefer clear Ukrainian equivalents over unnecessary loans: «взаємодія» instead of «інтеракція», «супроводжувач пакета» instead of «мейнтейнер», «робочий процес» where «воркфлоу» adds nothing. Never coin a word or guess a form. If uncertain, rewrite with simpler established vocabulary.
+- Proofread every field after drafting, including title, metadata, intro, editorNote and each story field. Reject malformed words, Russian endings, untranslated connectors/time units ("to", "hours", "minutes"), internal field names such as editorsView, mismatched decimal/thousands separators, and agreement/case errors. One such error is a failed draft, not an acceptable stylistic blemish.
+- Keep the same hard framing limits as English: seoTitle <=65 characters; metaDescription <=160; ogTitle <=70; ogDescription <=200. The standfirst starts with the news, not «Щотижневий дайджест». The edition title must name concrete actors/products/results, not an abstract label such as «Зсув до агентів».
+- Побудуйте одну чесну наскрізну логіку з трьох головних історій. Не вигадуйте спільну «велику тему», якщо джерела її не підтверджують: тоді прямо назвіть у рамці три конкретні події.
+- Energy comparisons must say «електроенергія» and include the measured unit/workload and single-case-study attribution; do not write an unqualified «у 600 разів більше енергії».
+- editorNote may describe cited primary sources and separately labeled editorial analysis, but never translate or introduce an unsupported claim about «оригінальні дослідження».
 - editorsView must be its own independent Ukrainian re-narration of the English editorial reasoning, not a mechanical translation -- keep the same underlying judgment, written the way a Ukrainian editor would actually say it.
 
 APPROVED ENGLISH MASTER
@@ -803,9 +813,9 @@ ${JSON.stringify(stories.map(({ revisionItemId, titleUk, summaryUk, whyUk }) => 
 const CRITIC_RUBRIC = `RUBRIC -- score each dimension 0-100. Any dimension scored below 80 MUST quote 1-2 offending spans verbatim in that dimension's "note" (the exact text that earned the low score), not a paraphrase of the problem.
 
 engagement -- would a person actually read past paragraph one, driven by narrative pull, not just information density.
-  90: opens mid-scene on a concrete, surprising moment; sentence length varies on purpose; each story has one throughline, not four slots stapled together.
+  90: opens on a concrete, surprising AND source-supported moment or fact; sentence length varies on purpose; each story has one throughline, not four slots stapled together.
   75: readable and accurate but opens on an abstract thesis or a recap rather than a scene; some paragraphs read like they're working through a checklist.
-  55: opens with an abstract claim about "the tension" or "the operating model"; uniform sentence rhythm throughout; reads like a summary of a summary.
+  55: opens with an abstract claim about "the tension" or "the operating model", or invents cinematic detail absent from the evidence; uniform sentence rhythm throughout; reads like a summary of a summary.
 
 voice -- adherence to the AI Today Brief house style: a sharp colleague explaining over coffee, real editorial judgment, zero template leaks.
   90: no banned phrases anywhere; body never opens a sentence with a field-name label ("Practical scenario:", "Обмеження полягає в тому"); editorsView is unmistakably framed as the editor's own reasoning, never blended into the sourced voice.
@@ -818,22 +828,22 @@ clarity -- a reader with no prior context understands what happened and why it's
   55: a reader would need to re-read multiple passages, or the piece never states plainly what actually happened.
 
 trust -- claims are attributed, hedged where the source hedges, and self-reported figures are flagged as such.
-  90: every load-bearing claim names its source inline ("Anthropic reports...", "the report says..."); self-reported/company-provided numbers are explicitly flagged as such.
+  90: every load-bearing claim names its source inline ("Anthropic reports...", "the report says..."); self-reported/company-provided numbers are explicitly flagged as such; openings contain no invented scenes; single-person logs are not generalized to an entire category; energy claims name electricity, unit and workload.
   75: attribution is present but inconsistent -- some claims float without a named source even though one exists in the evidence.
-  55: claims read as established fact when the evidence only supports "a report says" or "the company claims."
+  55: claims read as established fact when the evidence only supports "a report says" or "the company claims", or a vivid opening event is absent from the approved evidence.
 
 usefulness -- a builder finishes the story knowing something they can act on or evaluate, not a AI-generated abstract restatement of the summary.
   90: the practical field names a concrete actor, workflow, action, constraint and observable result specific to this story.
   75: practical guidance is present but generic enough it could attach to several unrelated stories with a find-and-replace.
   55: no actionable specificity anywhere in the story; it only restates what happened.
 
-naturalness (Ukrainian only) -- reads as text a Ukrainian editor would actually write, not a translation.
-  90: no calques or bureaucratic phrasing; idiomatic word order and register throughout.
-  75: mostly natural with one or two anglicized calques or stiff constructions.
-  55: reads as translated English -- calqued phrasing, unnatural word order, or unexplained English jargon in multiple places.
+naturalness (Ukrainian only) -- reads as copy a Ukrainian editor has fully proofread, not a translation draft.
+  90: no calques, malformed/nonexistent words, Russian endings, grammar or agreement errors, untranslated ordinary English words/units, internal field names, or non-localized number/unit formatting; idiomatic word order and register throughout.
+  75: one minor stiff construction or debatable loanword, but no spelling/grammar error and no untranslated ordinary English residue.
+  55: any malformed/nonexistent word or grammar error, or multiple calques, untranslated words/units, unnatural word order, and unexplained English jargon.
 
 parity -- the EN and UK articles tell the same story with the same facts, claim IDs, and structure.
-  90: every fact, number, and claim ID matches exactly between locales; only phrasing and rhythm differ, as intended.
+  90: every fact, numeric value, and claim ID matches between locales; locale formatting may differ (1,138 -> 1 138, 0.6 kWh -> 0,6 кВт·год), while phrasing and rhythm differ as intended.
   75: facts match but emphasis or structure has drifted noticeably between locales.
   55: a fact, number, or claim present in one locale is missing, altered, or contradicted in the other.`;
 
@@ -842,9 +852,11 @@ export function criticPrompt(bundle: WeeklyMasterBundle, stories: WeeklyMasterIn
 
 ${CRITIC_RUBRIC}
 
+Before scoring, inspect every article-level field and every story field in both locales. In Ukrainian, explicitly scan token by token for spelling, grammar, Russian endings, malformed words, untranslated ordinary English words/units, internal field names, decimal/thousands formatting and unnatural loans. A single objective language error caps naturalness at 55 and MUST create a blocking language_mechanics issue with the exact span and replacement. An unqualified energy multiplier, invented opening scene, unsupported "original research" claim, overlong metadata, abstract edition title, or copied prompt/example prose is also blocker-worthy. Do not rubber-stamp the draft with uniform 90s: scores must follow the actual evidence in the notes, and no dimension may score 90+ while an issue relevant to it remains.
+
 Required dimensions, exactly these seven, each exactly once: engagement, voice, clarity, trust, usefulness, naturalness, parity. Overall score 0–100. factualFlags must be [] when clean. Every issue needs code, message, blocker, and when possible locale, revisionItemId, field, exact span, suggestedFix.
 
-For any non-factual (register/prose) issue, the code MUST be exactly one of: voice_register, engagement_structure, clarity_unclear, trust_attribution, usefulness_generic, naturalness_calque. Do not invent other codes for prose/register problems -- these six are the only ones a downstream automated fix step recognizes as safe to line-edit. Never use these six codes for a grounding or factual problem; put those in factualFlags instead, not issues.
+For any non-factual (register/prose/language) issue, the code MUST be exactly one of: voice_register, engagement_structure, clarity_unclear, trust_attribution, usefulness_generic, naturalness_calque, language_mechanics. Use language_mechanics for spelling, grammar, untranslated ordinary words/units, broken morphology and numeric/unit localization. Do not invent other codes for prose/register problems -- these seven are the only ones a downstream automated fix step recognizes as safe to line-edit. Never use them for a grounding or factual problem; put those in factualFlags instead, not issues.
 
 JSON SHAPE
 {"score":0,"dimensions":[{"name":"engagement","score":0,"note":""}],"factualFlags":[],"issues":[{"code":"","message":"","blocker":true,"locale":"en|uk","revisionItemId":"","field":"","span":"","suggestedFix":""}]}

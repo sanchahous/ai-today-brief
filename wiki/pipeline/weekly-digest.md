@@ -1,7 +1,7 @@
 # Weekly Digest — Content Studio v2
 
 Summary: як працює weekly-дайджест у проді: оркестрація, ревізії, артефакти, вартісні
-гейтами, admin UX і поточний статус розкатки.
+гейти, admin UX і поточний статус розкатки.
 Sources: `.env.example`, PR #160–#163, #167–#175, #177, #189, `src/lib/weekly-digest/**`,
 `supabase/migrations/20260804090000_weekly_digest_revision_stability.sql`,
 `supabase/migrations/20260806150000_weekly_video_script_job.sql`,
@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 2026-08-07), PDF page-cap fix (гілка `fix/weekly-pdf-page-cap`, 2026-08-07), admin
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
-owner-approved reliability plan 2026-08-08
+owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09
 Last updated: 2026-08-09
 
 ---
@@ -107,10 +107,41 @@ configured budget rather than invented precision.
 `src/lib/weekly-digest/generation-control.ts`)
 
 Studio version **`weekly-content-studio-v2.1`** + research schema **`weekly-research-v3`** +
-master prompt **`weekly-master-v6`**: після деплою **Start / retry Content Studio** ставить
+master prompt **`weekly-master-v7`**: після деплою **Start / retry Content Studio** ставить
 нові `research_pack` jobs (нові idempotency keys) → треба знову Approve Top 3 → тоді master.
 (source: `WEEKLY_CONTENT_STUDIO_VERSION`, `WEEKLY_RESEARCH_SCHEMA_VERSION`,
 `WEEKLY_MASTER_SPEC_VERSION`)
+
+### Content-quality hardening (`weekly-master-v7`, 2026-08-09)
+
+Аудит випуску `843975a8-8c19-4eca-96a8-035f76eae3ab` виявив системний prompt leak: повний
+voice exemplar дослівно став англійським вступом, а український writer переклав його разом із
+вигаданими деталями. Master також пройшов із однаковими 90/100 по всіх семи вимірах попри
+очевидні орфографічні, граматичні та локалізаційні помилки.
+
+`weekly-master-v7` прибирає повні exemplars із prompt, забороняє непідтверджені сцени й додає
+детерміновані blockers до LLM-критика:
+
+- writer не форсує umbrella-тему: використовує спільну логіку лише за реального зв'язку Top 3,
+  інакше прямо називає конкретні події;
+- 12-слівний overlap із legacy exemplar (`prompt_exemplar_copy`);
+- абстрактний edition title і boilerplate standfirst;
+- внутрішні редакційні бюджети metadata: SEO title 65, meta description 160, Open Graph title
+  70, Open Graph description 200 символів. Це продуктове обмеження для компактного preview,
+  не твердження про фіксований ліміт Google;
+- непояснене слово `energy/енергія` у framing fields або energy multiplier без
+  `electricity/електроенергія`, одиниці й workload;
+- UK language residue: untranslated ordinary English/units, російські закінчення, сирі імена
+  полів, відомі malformed tokens та нелокалізовані тисячі/десяткові дроби;
+- твердження про власне `original research`, якщо випуск лише синтезує зовнішні джерела;
+- article body менш як 1 800 або понад 3 300 слів при контракті 2 000–3 000 (дрібне
+  відхилення лишається warning).
+
+Новий revisable-код `language_mechanics` дає targeted line-edit для мовних помилок. Critic
+повинен сканувати кожне UK-поле на spelling/grammar/localization і не може ставити 90+ виміру з
+релевантним issue. Сім механічно однакових 90 тепер є окремою причиною провалу quality gate, а
+не лише побажанням у промпті.
+(source: `editorial-voice.ts`, `editorial-llm.ts`, `content-studio.ts`, owner audit 2026-08-09)
 
 ## Editorial voice overhaul (2026-08-06)
 

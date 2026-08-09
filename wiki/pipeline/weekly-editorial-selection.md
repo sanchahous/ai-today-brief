@@ -1,9 +1,9 @@
 # Weekly editorial selection
 
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
-Sources: none (analysis)
-Last updated: 2026-08-08 (reviewed alongside admin mobile-responsive fix — no change here;
-selection logic is unaffected by admin UI/CSS)
+Sources: `src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
+owner content-quality audit 2026-08-09
+Last updated: 2026-08-09
 
 
 `weekly-editorial-v2` replaces the old `impact → recency → daily rank` sort used
@@ -116,6 +116,18 @@ single unusually noisy week.
 story ПІСЛЯ відбору: `editorial-llm.ts` тепер пише текст через `editorial-voice.ts`
 (house-style, exemplars, banned-phrase гейт). Деталі — [editorial-voice](editorial-voice.md).
 (source: `src/lib/weekly-digest/editorial-voice.ts`, `editorial-llm.ts`)
+
+## Межа з quality hardening v7 (2026-08-09)
+
+Алгоритм shortlist, його ваги й diversity constraints знову не змінювались. Після аудиту
+випуску `843975a8-8c19-4eca-96a8-035f76eae3ab` посилено наступну межу: writer має явно
+атрибутувати одиничні case studies й не перетворювати їх на універсальну тезу, а critic та
+детерміновані гейти блокують вигадані сцени, prompt leakage, абстрактні заголовки, розмиті
+energy claims і UK language defects. Хороший selection score підтверджує цінність кандидата,
+але не гарантує якість або фактичну обережність готового тексту; числа й одиниці перевіряються
+вже на writer/critic boundary, а не під час shortlist scoring. Writer також не має права
+видавати diversity shortlist за єдину тему: зв'язок Top 3 мусить випливати з evidence.
+(source: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`, owner audit 2026-08-09)
 
 ## Related pages
 

@@ -6,6 +6,36 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-09
 
+## 2026-08-09 — Weekly Content Studio: quality hardening v7
+
+**Джерело:** owner audit + live admin read випуску
+`843975a8-8c19-4eca-96a8-035f76eae3ab`, 2026-08-09.
+
+**Змінено:**
+
+- `editorial-voice.ts` — повні exemplars вилучено з writer prompt; джерельно непідтверджені
+  сцени/реакції/хронологія прямо заборонені;
+- `editorial-llm.ts` — конкретні titles, атрибуція single-source case studies, визначені
+  electricity units/workload, доказова наскрізна логіка Top 3 без форсованої umbrella-теми,
+  UK proofreading/localization, critic calibration і новий revisable-код `language_mechanics`;
+- `content-studio.ts` — `weekly-master-v7`, legacy exemplar overlap, metadata, abstract-title,
+  ambiguous-energy framing, UK residue, unsupported-original-research, gross-length і
+  uniform-critic-score blockers;
+- `weekly-workspace.tsx` — зрозумілі підписи standfirst / search preview / Open Graph і
+  редакційні ліміти полів;
+- тести — регресії для prompt leakage, вигаданих сцен, мовних помилок, localization, metadata
+  та critic rubber-stamping;
+- `wiki/pipeline/{weekly-digest,editorial-voice}.md`, `wiki/ops/weekly-admin-runbook.md`,
+  `wiki/now.md`, `wiki/index.md` — оновлено контракт і редакторський runbook.
+
+**Нотатка:** поточний записаний випуск не редагувався й не апрувився автоматично; зміни
+посилюють наступну регенерацію після deployment.
+
+**Перевірка:** `npm run pr:check` — 957/957 тестів, coverage gate, TypeScript, ESLint,
+affected E2E map, strict wiki sync/lint і Next.js production build пройшли.
+
+---
+
 ## 2026-08-09 — recovery GitHub Actions dispatcher для Weekly Digest
 
 **Джерело:** production Supabase migrations `20260809064415_weekly_github_dispatch_fix`,

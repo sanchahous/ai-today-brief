@@ -2022,10 +2022,14 @@ function ArticlePanel({
               <input
                 name="seo_title_en"
                 required
+                maxLength={65}
                 defaultValue={textFrom(articleEnContent as Json, 'seoTitle') || revision.title_en}
                 disabled={!canEdit}
                 className={FIELD}
               />
+              <span className="text-xs font-normal text-slate-500">
+                Search-result headline · maximum 65 characters.
+              </span>
             </label>
             <label className={LABEL}>
               Theme
@@ -2038,7 +2042,7 @@ function ArticlePanel({
               />
             </label>
             <label className={LABEL}>
-              Standfirst
+              Short intro under the headline (standfirst)
               <textarea
                 name="standfirst_en"
                 rows={3}
@@ -2049,6 +2053,9 @@ function ArticlePanel({
                 disabled={!canEdit}
                 className={TEXTAREA}
               />
+              <span className="text-xs font-normal text-slate-500">
+                One compact paragraph that sells the issue before the full introduction.
+              </span>
             </label>
             <label className={LABEL}>
               Meta description
@@ -2056,18 +2063,23 @@ function ArticlePanel({
                 name="meta_description_en"
                 rows={3}
                 required
+                maxLength={160}
                 defaultValue={
                   textFrom(articleEnContent as Json, 'metaDescription') || revision.intro_en || ''
                 }
                 disabled={!canEdit}
                 className={TEXTAREA}
               />
+              <span className="text-xs font-normal text-slate-500">
+                Search-result summary · maximum 160 characters.
+              </span>
             </label>
             <div className="grid gap-4 md:grid-cols-2">
               <label className={LABEL}>
-                OG title
+                Social sharing title (Open Graph)
                 <input
                   name="og_title_en"
+                  maxLength={70}
                   defaultValue={
                     textFrom(articleEnContent as Json, 'ogTitle') ||
                     textFrom(articleEnContent as Json, 'seoTitle') ||
@@ -2076,12 +2088,16 @@ function ArticlePanel({
                   disabled={!canEdit}
                   className={FIELD}
                 />
+                <span className="text-xs font-normal text-slate-500">
+                  Headline shown when the page is shared in social apps.
+                </span>
               </label>
               <label className={LABEL}>
-                OG description
+                Social sharing summary (Open Graph)
                 <textarea
                   name="og_description_en"
                   rows={2}
+                  maxLength={200}
                   defaultValue={
                     textFrom(articleEnContent as Json, 'ogDescription') ||
                     textFrom(articleEnContent as Json, 'metaDescription') ||
@@ -2091,6 +2107,9 @@ function ArticlePanel({
                   disabled={!canEdit}
                   className={TEXTAREA}
                 />
+                <span className="text-xs font-normal text-slate-500">
+                  Description shown in social link previews · maximum 200 characters.
+                </span>
               </label>
             </div>
             <label className={LABEL}>
@@ -2183,10 +2202,14 @@ function ArticlePanel({
               <input
                 name="seo_title_uk"
                 required
+                maxLength={65}
                 defaultValue={textFrom(articleUkContent as Json, 'seoTitle') || revision.title_uk}
                 disabled={!canEdit}
                 className={FIELD}
               />
+              <span className="text-xs font-normal text-slate-500">
+                Заголовок у результатах пошуку · максимум 65 символів.
+              </span>
             </label>
             <label className={LABEL}>
               Тема випуску
@@ -2199,7 +2222,7 @@ function ArticlePanel({
               />
             </label>
             <label className={LABEL}>
-              Стендфьорст
+              Короткий вступ під заголовком (standfirst)
               <textarea
                 name="standfirst_uk"
                 rows={3}
@@ -2210,6 +2233,9 @@ function ArticlePanel({
                 disabled={!canEdit}
                 className={TEXTAREA}
               />
+              <span className="text-xs font-normal text-slate-500">
+                Один стислий абзац, який пояснює цінність випуску перед основним вступом.
+              </span>
             </label>
             <label className={LABEL}>
               Meta description
@@ -2217,18 +2243,23 @@ function ArticlePanel({
                 name="meta_description_uk"
                 rows={3}
                 required
+                maxLength={160}
                 defaultValue={
                   textFrom(articleUkContent as Json, 'metaDescription') || revision.intro_uk || ''
                 }
                 disabled={!canEdit}
                 className={TEXTAREA}
               />
+              <span className="text-xs font-normal text-slate-500">
+                Опис у результатах пошуку · максимум 160 символів.
+              </span>
             </label>
             <div className="grid gap-4 md:grid-cols-2">
               <label className={LABEL}>
-                OG title
+                Заголовок для соцмереж (Open Graph)
                 <input
                   name="og_title_uk"
+                  maxLength={70}
                   defaultValue={
                     textFrom(articleUkContent as Json, 'ogTitle') ||
                     textFrom(articleUkContent as Json, 'seoTitle') ||
@@ -2237,12 +2268,16 @@ function ArticlePanel({
                   disabled={!canEdit}
                   className={FIELD}
                 />
+                <span className="text-xs font-normal text-slate-500">
+                  Заголовок у прев’ю посилання в соцмережах і месенджерах.
+                </span>
               </label>
               <label className={LABEL}>
-                OG description
+                Опис для соцмереж (Open Graph)
                 <textarea
                   name="og_description_uk"
                   rows={2}
+                  maxLength={200}
                   defaultValue={
                     textFrom(articleUkContent as Json, 'ogDescription') ||
                     textFrom(articleUkContent as Json, 'metaDescription') ||
@@ -2252,6 +2287,9 @@ function ArticlePanel({
                   disabled={!canEdit}
                   className={TEXTAREA}
                 />
+                <span className="text-xs font-normal text-slate-500">
+                  Текст у прев’ю посилання · максимум 200 символів.
+                </span>
               </label>
             </div>
             <label className={LABEL}>
