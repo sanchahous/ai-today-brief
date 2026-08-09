@@ -29,6 +29,8 @@ export type SpawnCliFn = (
   stderr: string;
   exitCode: number | null;
   spawnError: NodeJS.ErrnoException | null;
+  /** Set when the OS killed the child — `timeout` expiring reports SIGTERM. */
+  signal?: NodeJS.Signals | null;
 }>;
 
 export interface CliProviderConfig {
@@ -46,7 +48,16 @@ export interface CliProviderConfig {
   timeoutMs?: number;
 }
 
-const DEFAULT_TIMEOUT_MS = 4 * 60_000;
+/** Matches pipeline/claude-cli.ts — a subscription CLI writing a full weekly
+ * master needs minutes, not seconds, and the 4-minute ceiling this used to
+ * carry was the direct cause of the 2026-08-09 editorial_master failures. */
+const DEFAULT_TIMEOUT_MS = 20 * 60_000;
+
+function resolveTimeoutMs(explicit?: number): number {
+  if (explicit && explicit > 0) return explicit;
+  const configured = Number(process.env.CLI_PROVIDER_TIMEOUT_MS);
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_TIMEOUT_MS;
+}
 
 /* v8 ignore start -- live process spawn; envelope parsing is unit-tested via injected spawn */
 const defaultSpawn: SpawnCliFn = (binary, args, { cwd, env, timeoutMs }) =>
@@ -71,10 +82,10 @@ const defaultSpawn: SpawnCliFn = (binary, args, { cwd, env, timeoutMs }) =>
       stderr += chunk.toString('utf8');
     });
     child.on('error', (spawnError: NodeJS.ErrnoException) => {
-      resolve({ stdout, stderr, exitCode: null, spawnError });
+      resolve({ stdout, stderr, exitCode: null, spawnError, signal: null });
     });
-    child.on('close', (exitCode) => {
-      resolve({ stdout, stderr, exitCode, spawnError: null });
+    child.on('close', (exitCode, signal) => {
+      resolve({ stdout, stderr, exitCode, spawnError: null, signal });
     });
   });
 /* v8 ignore end */
@@ -98,18 +109,27 @@ export async function generateWithCliProvider(
   const spawnFn = cfg.spawnFn ?? defaultSpawn;
   const args = cfg.buildArgs(prompt, { jsonSchema: opts?.jsonSchema });
 
+  const timeoutMs = resolveTimeoutMs(cfg.timeoutMs);
   const scratchDir = mkdtempSync(join(tmpdir(), `${cfg.id}-`));
   try {
-    const { stdout, stderr, exitCode, spawnError } = await spawnFn(cfg.binary, args, {
+    const { stdout, stderr, exitCode, spawnError, signal } = await spawnFn(cfg.binary, args, {
       cwd: scratchDir,
       env: { ...process.env, [cfg.authEnvVar]: token },
-      timeoutMs: cfg.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      timeoutMs,
     });
     if (spawnError) {
       if (spawnError.code === 'ENOENT') {
         throw new ProviderUnavailableError(cfg.id, `the \`${cfg.binary}\` binary is not installed on this host`);
       }
       throw new Error(`[${cfg.id}] spawn failed: ${spawnError.message}`);
+    }
+    // See pipeline/claude-cli.ts: 143 is the shell's encoding of the same
+    // SIGTERM the spawn `timeout` sends. Naming it beats dumping an envelope.
+    if (signal === 'SIGTERM' || exitCode === 143) {
+      throw new Error(
+        `[${cfg.id}] timed out after ${Math.round(timeoutMs / 1000)}s and was killed. ` +
+          'Raise CLI_PROVIDER_TIMEOUT_MS if the prompt legitimately needs longer.',
+      );
     }
     if (exitCode !== 0) {
       throw new Error(`[${cfg.id}] exited ${exitCode}: ${stderr.slice(0, 500) || stdout.slice(0, 500)}`);

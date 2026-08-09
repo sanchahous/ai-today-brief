@@ -118,6 +118,24 @@ Release preflight на Overview / Release покаже, що ще червоне
 | Release blocked на video | Немає Remotion pipeline / captions | Owner override лише для trial (див. preflight) |
 | PDF: сторінки радар-історій (4-7) виглядають скорочено (без картинки/панелей) | Так задумано з 2026-08-07 — повний розворот тепер лише для Top 3 | Нормально, не баг; деталі — [weekly-digest](../pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07) |
 
+## Master **failed** без зрозумілої причини — що робити (з 2026-08-09)
+
+Не тисни retry наосліп: кожен ретрай — це 5–40 хвилин Actions і реальні гроші, а причина
+здебільшого **не редакційна**. Порядок такий:
+
+1. `npm run weekly:doctor` — за хвилину покаже, чи взагалі жива драбина провайдерів
+   (протухла OAuth-сесія CLI, вичерпаний баланс OpenRouter, одинокий провайдер без фолбеку).
+   Той самий крок тепер стоїть першим у самому workflow, тож відповідь часто вже в лозі
+   прогону, у самому верху.
+2. Якщо провайдери живі — `npm run weekly:sandbox -- capture --digest <id>`, далі
+   `run --only english`. Це відтворює саме той крок, що падає, локально, за хвилини й за
+   центи, без жодного запису в прод.
+3. `gh run list` тепер каже правду: провалена джоба робить прогін **червоним** (до
+   2026-08-09 усі провалені прогони показувались зеленими).
+
+Деталі й що вже виправлено — [pipeline/weekly-master-failures](../pipeline/weekly-master-failures.md),
+інструменти — [ops/weekly-sandbox](weekly-sandbox.md).
+
 ## Що не робити
 
 - Не Approve **Master quality** при `passed: false` — master у ревізію не записався.

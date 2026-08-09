@@ -442,10 +442,22 @@ export function premiumOpenRouterModels(
     configuredModels: configured.length ? configured : undefined,
   });
   // A full master response is large. Retrying another OpenRouter model inside
-  // the same request can consume the entire 300-second function budget. The
-  // caller still has the independent premium provider fallback, while durable
-  // job retries handle transient failures across separate invocations.
-  return ranked.slice(0, 1).map((candidate) => candidate.id);
+  // the same request can consume the entire 300-second function budget, so
+  // the default stays at one candidate for anything running on Vercel.
+  //
+  // That budget does not exist on the GitHub Actions worker (120-minute job),
+  // where a single candidate means a single sloppy answer kills the whole
+  // job: observed live 2026-08-09 on the sandbox fixture — the cheapest
+  // qualifying model, tencent/hy3-preview, streamed a complete 31k-char
+  // article whose opening brace carried one stray quote (`{"article":{"`),
+  // failed JSON.parse, and had nothing to fall back to. That path sets
+  // WEEKLY_MASTER_OPENROUTER_CANDIDATES so a second model gets a turn.
+  return ranked.slice(0, masterOpenRouterCandidates()).map((candidate) => candidate.id);
+}
+
+function masterOpenRouterCandidates() {
+  const parsed = Number(process.env.WEEKLY_MASTER_OPENROUTER_CANDIDATES);
+  return Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 1;
 }
 
 /** Wraps a registry ProviderCallResult in this file's own ProviderResult<T> shape (shared by both the DB-override and the default value-ranked OpenRouter path below). */
@@ -537,16 +549,23 @@ async function generateOpenRouter<T>(
   const models = await fetchOpenRouterModels(apiKey);
   const queue = premiumOpenRouterModels(models, options);
   if (!queue.length) throw new Error('No premium OpenRouter editorial model is available.');
-  const chosenModel = models.find((model) => model.id === queue[0]);
-  const reasoningEffort = chosenModel ? minimalReasoningEffort(chosenModel) : null;
+  // `extraBodyForModel` is a per-model hook, but this used to compute one
+  // effort from queue[0] and hand it to every model in the chain. Harmless
+  // while the queue was always length 1; actively wrong now that the Actions
+  // worker runs several candidates — a fallback model whose reasoning
+  // defaults on would get no suppression at all and reason until the wall
+  // ceiling, billing those tokens as output the whole way.
+  const modelsById = new Map(models.map((model) => [model.id, model]));
   const result = await generateWithHttpProviderChain(
     prompt,
     { id: 'openrouter', apiKey, modelQueue: queue, ...OPENROUTER_HTTP_DEFAULTS },
     {
       validateResponse,
-      extraBodyForModel: reasoningEffort
-        ? () => ({ reasoning: { effort: reasoningEffort } })
-        : undefined,
+      extraBodyForModel: (modelId) => {
+        const record = modelsById.get(modelId);
+        const effort = record ? minimalReasoningEffort(record) : null;
+        return effort ? { reasoning: { effort } } : undefined;
+      },
     },
   );
   return toOpenRouterResult(result, parse(result.text), prompt.length);

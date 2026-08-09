@@ -83,8 +83,75 @@ describe('generateWithClaudeCli', () => {
     expect(result).toEqual({ text: 'hello', model: 'claude-sonnet-5', totalCostUsd: 0.01 });
     expect(spawnFn).toHaveBeenCalledTimes(1);
     const [args, options] = spawnFn.mock.calls[0]!;
-    expect(args).toEqual(['-p', 'prompt', '--output-format', 'json']);
+    expect(args).toEqual(['-p', 'prompt', '--output-format', 'json', '--tools', '']);
     expect(options.env.CLAUDE_CODE_OAUTH_TOKEN).toBe('test-token');
+  });
+
+  it('disables every built-in tool so a one-shot write cannot turn agentic', async () => {
+    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
+    const spawnFn = vi.fn(async (_args: SpawnArgs, _options: SpawnOptions) => ({
+      stdout: JSON.stringify({ is_error: false, result: 'hello' }),
+      stderr: '',
+      exitCode: 0,
+      spawnError: null,
+    }));
+    await generateWithClaudeCli('prompt', { spawnFn });
+    const [args] = spawnFn.mock.calls[0]!;
+    expect(args[args.indexOf('--tools') + 1]).toBe('');
+  });
+
+  it('defaults to a timeout long enough for a full master write', async () => {
+    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
+    const spawnFn = vi.fn(async (_args: SpawnArgs, _options: SpawnOptions) => ({
+      stdout: JSON.stringify({ is_error: false, result: 'hello' }),
+      stderr: '',
+      exitCode: 0,
+      spawnError: null,
+    }));
+    await generateWithClaudeCli('prompt', { spawnFn });
+    expect(spawnFn.mock.calls[0]![1].timeoutMs).toBe(20 * 60_000);
+  });
+
+  it('honours CLAUDE_CLI_TIMEOUT_MS', async () => {
+    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
+    vi.stubEnv('CLAUDE_CLI_TIMEOUT_MS', '90000');
+    const spawnFn = vi.fn(async (_args: SpawnArgs, _options: SpawnOptions) => ({
+      stdout: JSON.stringify({ is_error: false, result: 'hello' }),
+      stderr: '',
+      exitCode: 0,
+      spawnError: null,
+    }));
+    await generateWithClaudeCli('prompt', { spawnFn });
+    expect(spawnFn.mock.calls[0]![1].timeoutMs).toBe(90_000);
+  });
+
+  it.each([
+    ['SIGTERM signal', { exitCode: null, signal: 'SIGTERM' as const }],
+    ['shell exit 143', { exitCode: 143, signal: null }],
+  ])('reports a timeout kill as a timeout, not a model error (%s)', async (_label, outcome) => {
+    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
+    const spawnFn = vi.fn(async (_args: SpawnArgs, _options: SpawnOptions) => ({
+      stdout: '{"is_error":true,"duration_api_ms":178618}',
+      stderr: '',
+      spawnError: null,
+      ...outcome,
+    }));
+    await expect(generateWithClaudeCli('prompt', { spawnFn, timeoutMs: 240_000 })).rejects.toThrow(
+      /timed out after 240s and was killed/,
+    );
+  });
+
+  it('allows the local sandbox to lean on the binary’s own login', async () => {
+    vi.stubEnv('CLAUDE_CLI_USE_LOCAL_AUTH', '1');
+    const spawnFn = vi.fn(async (_args: SpawnArgs, _options: SpawnOptions) => ({
+      stdout: JSON.stringify({ is_error: false, result: 'hello' }),
+      stderr: '',
+      exitCode: 0,
+      spawnError: null,
+    }));
+    await expect(generateWithClaudeCli('prompt', { spawnFn })).resolves.toMatchObject({
+      text: 'hello',
+    });
   });
 
   it('adds --json-schema only when a schema is given', async () => {
@@ -103,6 +170,8 @@ describe('generateWithClaudeCli', () => {
       'prompt',
       '--output-format',
       'json',
+      '--tools',
+      '',
       '--json-schema',
       JSON.stringify(schema),
     ]);

@@ -62,6 +62,17 @@ async function main(): Promise<void> {
   if (claimed !== 1) {
     throw new Error(`Expected to claim dispatched job ${jobId}, claimed ${claimed}.`);
   }
+  // A claimed-and-failed job used to leave this process at exit 0, so every
+  // failed editorial_master still showed up green in `gh run list` and the
+  // only way to learn otherwise was to open the run and read the log, or
+  // notice the job stuck in the admin UI. The durable ledger already records
+  // the failure; the run itself must show it too.
+  const failed = results.filter((result) => result.outcome === 'failed');
+  if (failed.length > 0) {
+    throw new Error(
+      `Job ${jobId} finished as failed: ${failed[0].error ?? 'no error recorded'}`,
+    );
+  }
   logEvent('info', STAGE, 'single job complete', { job_id: jobId, claimed });
 }
 

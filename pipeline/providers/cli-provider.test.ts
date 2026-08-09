@@ -126,4 +126,32 @@ describe('generateWithCliProvider', () => {
     const [binary] = spawnFn.mock.calls[0]!;
     expect(binary).toBe('codex');
   });
+
+  it.each([
+    ['SIGTERM signal', { exitCode: null, signal: 'SIGTERM' as const }],
+    ['shell exit 143', { exitCode: 143, signal: null }],
+  ])('names a timeout kill instead of dumping the envelope (%s)', async (_label, outcome) => {
+    vi.stubEnv('FAKE_CLI_TOKEN', 'test-token');
+    const spawnFn = vi.fn(async (..._args: SpawnArgs) => ({
+      stdout: '{"is_error":true}',
+      stderr: '',
+      spawnError: null,
+      ...outcome,
+    }));
+    await expect(
+      generateWithCliProvider('prompt', fakeCliConfig({ spawnFn, timeoutMs: 240_000 })),
+    ).rejects.toThrow(/timed out after 240s and was killed/);
+  });
+
+  it('defaults to a timeout a full editorial write can actually fit in', async () => {
+    vi.stubEnv('FAKE_CLI_TOKEN', 'test-token');
+    const spawnFn = vi.fn(async (..._args: SpawnArgs) => ({
+      stdout: JSON.stringify({ text: 'hi', model: 'fake', costUsd: 0 }),
+      stderr: '',
+      exitCode: 0,
+      spawnError: null,
+    }));
+    await generateWithCliProvider('prompt', fakeCliConfig({ spawnFn }));
+    expect(spawnFn.mock.calls[0]![2].timeoutMs).toBe(20 * 60_000);
+  });
 });

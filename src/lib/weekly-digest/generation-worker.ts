@@ -425,7 +425,7 @@ async function signedArtifactUrl(
   return error ? null : data.signedUrl;
 }
 
-async function loadGenerationContext(job: ClaimedGenerationJob) {
+async function loadGenerationContext(job: Pick<ClaimedGenerationJob, 'weekly_digest_id' | 'revision_id'>) {
   const db = getSupabaseAdmin();
   const [digestResult, revisionResult, itemsResult, artifactsResult] = await Promise.all([
     db
@@ -753,6 +753,39 @@ async function priorMasterRetryGuidance(revisionId: string): Promise<WeeklyMaste
   const latest = data?.[0];
   if (!latest) return [];
   return [...blockerGuidanceFromReport(latest), ...dimensionGuidanceFromReport(latest)];
+}
+
+/**
+ * Read-only assembly of exactly what `generateEditorialMaster` feeds the LLM,
+ * without claiming a job, opening a lease, writing an event or touching the
+ * cost ledger. Exists so `pipeline/scripts/weekly-master-sandbox.ts` can
+ * capture real production input and replay a prompt/provider change against
+ * it off-production — see wiki/ops/weekly-sandbox.md.
+ *
+ * It deliberately reuses the worker's own loaders instead of re-querying:
+ * a fixture built by a parallel code path would drift from what the worker
+ * actually sends and would be worse than having no fixture at all.
+ */
+export async function loadMasterGenerationInput(input: {
+  weeklyDigestId: string;
+  revisionId: string;
+}): Promise<{
+  stories: WeeklyMasterInputStory[];
+  researchPacks: WeeklyResearchPack[];
+  retryGuidance: WeeklyMasterRetryGuidance[];
+}> {
+  const context = await loadGenerationContext({
+    weekly_digest_id: input.weeklyDigestId,
+    revision_id: input.revisionId,
+  });
+  assertRadarSourceSanity(context.items);
+  const approvedResearch = researchPacksFromContext(context);
+  const directions = await loadStoryDirections(input.weeklyDigestId);
+  return {
+    stories: masterInputStories(context, approvedResearch, directions),
+    researchPacks: approvedResearch.map(({ pack }) => pack),
+    retryGuidance: await priorMasterRetryGuidance(input.revisionId),
+  };
 }
 
 async function saveQualityReport(input: {

@@ -45,6 +45,12 @@ export default defineConfig({
         'pipeline/custom-news.ts',
         'pipeline/scripts/indexnow-backfill.ts',
         'pipeline/scripts/auto-publish.ts',
+        // Operator entrypoints: argv parsing plus live provider/DB IO, with no
+        // logic of their own worth asserting in isolation — same category as
+        // the two scripts above. The behaviour they exercise is covered where
+        // it lives (claude-cli.ts, openrouter-adaptive.ts, editorial-llm.ts).
+        'pipeline/scripts/weekly-doctor.ts',
+        'pipeline/scripts/weekly-master-sandbox.ts',
         'pipeline/publish.ts',
         'pipeline/summarize.ts',
         'pipeline/db.ts',

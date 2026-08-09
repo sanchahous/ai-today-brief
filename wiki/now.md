@@ -8,7 +8,7 @@ owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry),
 review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish --dry-run` check
 2026-08-07, owner session 2026-08-08 (admin mobile-responsive fix, screenshot report),
 owner-approved Weekly Digest reliability plan 2026-08-08, owner screenshot + Chrome layout
-measurement 2026-08-09
+measurement 2026-08-09, `editorial_master` failure investigation + live sandbox runs 2026-08-09
 Last updated: 2026-08-09
 
 ---
@@ -152,6 +152,21 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 (source: live check Vercel dashboard 2026-08-04)
 
 ## Активна робота
+
+−1. **`editorial_master` падав тричі поспіль 09.08 — знайдено п'ять окремих причин, усі
+   інфраструктурні, жодної редакційної.** Гілка `fix/weekly-master-provider-timeouts`, PR
+   ще не створено. Коротко: 4-хвилинна стеля `claude-cli` вбивала здоровий EN-write на
+   240-й секунді (SIGTERM/143 при `duration_api_ms` 178с і 233с); CLI ганяв агентні
+   tool-use цикли там, де треба один текст; stall-детектор OpenRouter рахував лише
+   `delta.content`, тому reasoning-моделі помирали як «мовчазні» (≈20 хвилин ротації по
+   12 моделях у прогоні 07:27); провалена джоба лишала Actions-прогін **зеленим**; а
+   master-write мав рівно одного кандидата-модель без фолбеку. Повний розбір —
+   [pipeline/weekly-master-failures](pipeline/weekly-master-failures.md).
+   **Разом із фіксами додано sandbox** — [ops/weekly-sandbox](ops/weekly-sandbox.md):
+   `npm run weekly:doctor` (префлайт провайдерів за хвилину) і `npm run weekly:sandbox`
+   (capture реального входу з прода read-only → повний прогін `generateWeeklyMaster` без
+   хендла БД → безкоштовний повтор детерміністичних гейтів). П'яту причину знайшов саме
+   sandbox: за 138 секунд і за центи, замість 40-хвилинного Actions-прогону.
 
 0. **Weekly Digest durable worker control plane — DB migration застосовано; application deploy ще очікує merge PR.** Attempt/event ledger, fenced lease + heartbeat/reaper, linked retry та per-call cost attribution вже працюють у production Supabase. Старий `editorial_master` для digest `843975a8-8c19-4eca-96a8-035f76eae3ab` закрито як `legacy_worker_timeout` зі збереженими 5 спробами; створено пов’язаний GitHub job `fe82f82c-7ceb-458e-9889-b5890b0e6d11` у `queued` з `Attempt 1/3`. Він стартує після merge/deploy цього PR, який додає dispatch і worker. (source: production Supabase verification 2026-08-09; `supabase/migrations/20260809060929_weekly_generation_control_plane.sql`, `src/lib/weekly-digest/generation-worker.ts`)
 
