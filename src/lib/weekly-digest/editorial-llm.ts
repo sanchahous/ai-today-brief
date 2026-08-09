@@ -442,10 +442,22 @@ export function premiumOpenRouterModels(
     configuredModels: configured.length ? configured : undefined,
   });
   // A full master response is large. Retrying another OpenRouter model inside
-  // the same request can consume the entire 300-second function budget. The
-  // caller still has the independent premium provider fallback, while durable
-  // job retries handle transient failures across separate invocations.
-  return ranked.slice(0, 1).map((candidate) => candidate.id);
+  // the same request can consume the entire 300-second function budget, so
+  // the default stays at one candidate for anything running on Vercel.
+  //
+  // That budget does not exist on the GitHub Actions worker (120-minute job),
+  // where a single candidate means a single sloppy answer kills the whole
+  // job: observed live 2026-08-09 on the sandbox fixture — the cheapest
+  // qualifying model, tencent/hy3-preview, streamed a complete 31k-char
+  // article whose opening brace carried one stray quote (`{"article":{"`),
+  // failed JSON.parse, and had nothing to fall back to. That path sets
+  // WEEKLY_MASTER_OPENROUTER_CANDIDATES so a second model gets a turn.
+  return ranked.slice(0, masterOpenRouterCandidates()).map((candidate) => candidate.id);
+}
+
+function masterOpenRouterCandidates() {
+  const parsed = Number(process.env.WEEKLY_MASTER_OPENROUTER_CANDIDATES);
+  return Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 1;
 }
 
 /** Wraps a registry ProviderCallResult in this file's own ProviderResult<T> shape (shared by both the DB-override and the default value-ranked OpenRouter path below). */

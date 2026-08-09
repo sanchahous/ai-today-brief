@@ -99,6 +99,19 @@ describe('parseOpenRouterSseChunk', () => {
     const { chunks } = parseOpenRouterSseChunk('', raw);
     expect(chunks[0]!.usage).toBeUndefined();
   });
+
+  it.each(['reasoning', 'reasoning_content'])(
+    'surfaces a %s delta separately from content',
+    (field) => {
+      const { chunks } = parseOpenRouterSseChunk(
+        '',
+        `data: ${JSON.stringify({ choices: [{ delta: { [field]: 'weighing options' } }] })}\n`,
+      );
+      expect(chunks).toHaveLength(1);
+      expect(chunks[0]!.reasoning).toBe('weighing options');
+      expect(chunks[0]!.content).toBeUndefined();
+    },
+  );
 });
 
 describe('createStreamProgress', () => {
@@ -139,6 +152,17 @@ describe('applyStreamChunks', () => {
     const p = createStreamProgress(0);
     const next = applyStreamChunks(p, [{ finishReason: 'stop' }], 99);
     expect(next.lastActivityMs).toBe(0); // unchanged from init
+  });
+
+  it('counts reasoning as activity without letting it reach the parsed content', () => {
+    const p = createStreamProgress(0);
+    const next = applyStreamChunks(p, [{ reasoning: 'let me think' }], 100);
+    expect(next.content).toBe('');
+    expect(next.chars).toBe(0);
+    expect(next.reasoningChars).toBe('let me think'.length);
+    expect(next.firstReasoningMs).toBe(100);
+    expect(next.firstTokenMs).toBeNull();
+    expect(next.lastActivityMs).toBe(100);
   });
 });
 
@@ -190,6 +214,31 @@ describe('checkStreamStall', () => {
     const stall = checkStreamStall(withContent, DEFAULT_TIMEOUTS, 200_000);
     // 200s idle since last activity at 10 → should be idle stall, not first_token
     expect(stall!.reason).toBe('idle');
+  });
+
+  // The live regression this guards: a reasoning model streams its chain of
+  // thought for minutes before the first content delta, and the old detector
+  // counted that as silence and rotated to the next model (2026-08-09 master
+  // run: twelve models, ~20 minutes, zero output).
+  it('does not kill a model that is still streaming reasoning', () => {
+    let p = createStreamProgress(0);
+    for (let t = 1_000; t <= 200_000; t += 1_000) {
+      p = applyStreamChunks(p, [{ reasoning: 'thinking' }], t);
+      expect(checkStreamStall(p, DEFAULT_TIMEOUTS, t)).toBeNull();
+    }
+    expect(p.chars).toBe(0);
+  });
+
+  it('still kills a model whose reasoning goes silent', () => {
+    const p = applyStreamChunks(createStreamProgress(0), [{ reasoning: 'thinking' }], 1_000);
+    const stall = checkStreamStall(p, DEFAULT_TIMEOUTS, 1_000 + 45_001);
+    expect(stall!.reason).toBe('idle');
+  });
+
+  it('still enforces the absolute ceiling on an endlessly reasoning model', () => {
+    const p = applyStreamChunks(createStreamProgress(0), [{ reasoning: 'thinking' }], 719_000);
+    const stall = checkStreamStall({ ...p, lastActivityMs: 720_000 }, DEFAULT_TIMEOUTS, 720_001);
+    expect(stall!.reason).toBe('wall');
   });
 });
 

@@ -498,8 +498,21 @@ pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інв
 `weekly_digest_generation_jobs`/`weekly_digest_revision_items` 2026-08-07, гілка
 `fix/weekly-pdf-page-cap`)
 
+## Надійність master-write (2026-08-09)
+
+Три `editorial_master` джоби поспіль впали на кроці `english` — жодна причина не була
+редакційною. Коротко: 4-хвилинна стеля `claude-cli` вбивала здоровий write на 240-й
+секунді; CLI ганяв агентні tool-use цикли замість одного текстового виклику; stall-детектор
+OpenRouter рахував лише `delta.content`, тому reasoning-моделі вмирали як «мовчазні»;
+провалена джоба лишала Actions-прогін зеленим; а сам master-write мав рівно одного
+кандидата-модель без фолбеку.
+
+Повний розбір із цифрами й фіксами — [weekly-master-failures](weekly-master-failures.md).
+Спосіб перевіряти цей флоу без прода — [ops/weekly-sandbox](../ops/weekly-sandbox.md).
+
 ## Related pages
 
+- [weekly-master-failures](weekly-master-failures.md) — чому падав `editorial_master` 09.08
 - [editorial-voice](editorial-voice.md) — house style, exemplars, banned-phrase gate
 - [weekly-editorial-selection](weekly-editorial-selection.md)
 - [video-boundary](video-boundary.md)

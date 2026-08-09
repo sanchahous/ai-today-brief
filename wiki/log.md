@@ -6,6 +6,42 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-09
 
+## 2026-08-09 — `editorial_master`: 5 причин збоїв + sandbox для тестування флоу
+
+**Джерело:** власник — «джоба фейлиться, розберись що з флоу і налаштуй безпечну можливість
+тестування в sandbox, в сліпу далі працювати не варіант». Розбір GitHub Actions runs
+`31312642192` / `31313598133` / `31313601219` / `31299873942` + живі sandbox-прогони на
+фікстурі `ai-weekly-2026-08-02`.
+
+**Знайдено пʼять окремих причин, жодної редакційної** — повний розбір у новій сторінці
+[pipeline/weekly-master-failures](pipeline/weekly-master-failures.md):
+
+1. `claude-cli` мав 4-хвилинну стелю, яку ніхто не перевизначав; EN-write більше в неї не
+   вкладається (SIGTERM/143 рівно на 240с при `duration_api_ms` 178с і 233с) → дефолт 20 хв,
+   `CLAUDE_CLI_TIMEOUT_MS`, і вбивство по таймауту тепер називається таймаутом;
+2. CLI ганяв агентні tool-use цикли (3 і 7 turn-ів, 296k cache-read токенів) → `--tools ""`;
+3. stall-детектор OpenRouter рахував лише `delta.content`, тож reasoning-моделі вмирали як
+   «мовчазні» — ≈20 хвилин ротації по 12 моделях у прогоні 07:27 → `reasoning` тепер
+   рахується як активність, але ніколи не потрапляє в парсений `content`;
+4. провалена джоба лишала Actions-прогін зеленим → тепер червоний;
+5. master-write мав рівно одного кандидата-модель без фолбеку → `WEEKLY_MASTER_OPENROUTER_CANDIDATES`
+   (дефолт 1, на CLI-воркері 3).
+
+**Додано (нова сторінка [ops/weekly-sandbox](ops/weekly-sandbox.md)):**
+
+- `npm run weekly:doctor` — префлайт провайдерів за хвилину, read-only; стоїть першим кроком
+  у `weekly-master-cli-worker.yml` із `continue-on-error: true` (діагностика, не гейт);
+- `npm run weekly:sandbox` — `capture` (read-only знімок реального master-входу з прода
+  воркеровими ж лоадерами), `run` (повний `generateWeeklyMaster` **без хендла БД**),
+  `gates` (детерміністичні валідатори безкоштовно);
+- `loadMasterGenerationInput` експортовано з `generation-worker.ts` як read-only seam.
+
+**Чому це важливо:** причину №5 знайшов сам sandbox — за 138 секунд і за центи замість
+40-хвилинного Actions-прогону. Найдешевша модель, що проходить quality-floor, стабільно
+віддає повну статтю на 31k символів з однією зайвою лапкою у відкривальній дужці.
+
+**Оновлено:** `wiki/index.md` (дві нові сторінки), `wiki/now.md` (пункт −1), `.env.example`.
+
 ## 2026-08-09 — Weekly Content Studio: v7.1 commercial-balance point fixes
 
 **Джерело:** owner review of PR #199 (v7 hardening) — питання, чи детерміновані гейти зарізали

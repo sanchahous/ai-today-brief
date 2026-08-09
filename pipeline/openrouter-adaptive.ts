@@ -59,7 +59,9 @@ export function logOpenRouterStreamProgress(
   logEvent('info', 'summarize', 'OpenRouter stream progress', {
     model: modelId,
     chars: progress.chars,
+    reasoning_chars: progress.reasoningChars,
     first_token_ms: progress.firstTokenMs,
+    first_reasoning_ms: progress.firstReasoningMs,
     idle_ms: now - progress.lastActivityMs,
     elapsed_ms: now - started,
     ...extra,
@@ -88,7 +90,17 @@ export class OpenRouterStallError extends Error {
   }
 }
 
-type StreamChunk = { content?: string; finishReason?: string | null; usage?: OpenRouterUsage };
+type StreamChunk = {
+  content?: string;
+  /**
+   * Reasoning-model chain-of-thought delta. Kept strictly separate from
+   * `content`: it must never reach the JSON the caller parses, but it is
+   * proof the model is alive and working, which the stall detector needs.
+   */
+  reasoning?: string;
+  finishReason?: string | null;
+  usage?: OpenRouterUsage;
+};
 
 /**
  * Real billed cost/tokens reported by OpenRouter (requires `usage: {include: true}`
@@ -132,7 +144,10 @@ export function parseOpenRouterSseChunk(
     try {
       const json = JSON.parse(payload) as {
         choices?: Array<{
-          delta?: { content?: string };
+          // `reasoning` is OpenRouter's normalized field; `reasoning_content`
+          // is what some upstream providers emit verbatim. Both appear well
+          // before the first `content` delta on a reasoning model.
+          delta?: { content?: string; reasoning?: string; reasoning_content?: string };
           finish_reason?: string | null;
         }>;
         usage?: unknown;
@@ -148,7 +163,10 @@ export function parseOpenRouterSseChunk(
       const usage = parseOpenRouterUsage(json.usage);
       const choice = json.choices?.[0];
       const content = choice?.delta?.content;
+      const reasoning = choice?.delta?.reasoning ?? choice?.delta?.reasoning_content;
       if (content) chunks.push({ content, finishReason: choice?.finish_reason ?? null, usage });
+      else if (reasoning)
+        chunks.push({ reasoning, finishReason: choice?.finish_reason ?? null, usage });
       else if (choice?.finish_reason) chunks.push({ finishReason: choice.finish_reason, usage });
       else if (usage) chunks.push({ usage });
     } catch {
@@ -162,13 +180,24 @@ export function parseOpenRouterSseChunk(
 export type StreamProgress = {
   content: string;
   chars: number;
+  /** Chain-of-thought characters seen so far. Never part of `content`. */
+  reasoningChars: number;
   firstTokenMs: number | null;
+  firstReasoningMs: number | null;
   lastActivityMs: number;
   startedMs: number;
 };
 
 export function createStreamProgress(now = Date.now()): StreamProgress {
-  return { content: '', chars: 0, firstTokenMs: null, lastActivityMs: now, startedMs: now };
+  return {
+    content: '',
+    chars: 0,
+    reasoningChars: 0,
+    firstTokenMs: null,
+    firstReasoningMs: null,
+    lastActivityMs: now,
+    startedMs: now,
+  };
 }
 
 export function applyStreamChunks(
@@ -176,7 +205,7 @@ export function applyStreamChunks(
   chunks: StreamChunk[],
   now = Date.now(),
 ): StreamProgress {
-  let { content, chars, firstTokenMs, lastActivityMs } = progress;
+  let { content, chars, reasoningChars, firstTokenMs, firstReasoningMs, lastActivityMs } = progress;
   for (const chunk of chunks) {
     if (chunk.content) {
       content += chunk.content;
@@ -184,8 +213,23 @@ export function applyStreamChunks(
       if (firstTokenMs === null) firstTokenMs = now - progress.startedMs;
       lastActivityMs = now;
     }
+    // Reasoning counts as activity but never as output: it keeps the stall
+    // detector honest without polluting the JSON the caller has to parse.
+    if (chunk.reasoning) {
+      reasoningChars += chunk.reasoning.length;
+      if (firstReasoningMs === null) firstReasoningMs = now - progress.startedMs;
+      lastActivityMs = now;
+    }
   }
-  return { content, chars, firstTokenMs, lastActivityMs, startedMs: progress.startedMs };
+  return {
+    content,
+    chars,
+    reasoningChars,
+    firstTokenMs,
+    firstReasoningMs,
+    lastActivityMs,
+    startedMs: progress.startedMs,
+  };
 }
 
 export function checkStreamStall(
@@ -195,8 +239,15 @@ export function checkStreamStall(
 ): OpenRouterStallError | null {
   const elapsed = now - progress.startedMs;
   const idleFor = now - progress.lastActivityMs;
+  // A reasoning model streams its chain of thought for a long time before the
+  // first content delta — on the weekly critic prompt, far longer than the
+  // 90s first-token budget. Counting only `content` made the detector read
+  // that as silence and rotate to the next model, which did the same thing:
+  // twelve models, ~20 minutes, zero output (live 2026-08-09 master run).
+  // "Working" is content OR reasoning; "stalled" is neither.
+  const producing = progress.chars > 0 || progress.reasoningChars > 0;
 
-  if (progress.chars === 0 && elapsed >= timeouts.firstTokenMs) {
+  if (!producing && elapsed >= timeouts.firstTokenMs) {
     return new OpenRouterStallError(
       'first_token',
       '',
@@ -204,11 +255,11 @@ export function checkStreamStall(
     );
   }
 
-  if (progress.chars > 0 && idleFor >= timeouts.idleMs) {
+  if (producing && idleFor >= timeouts.idleMs) {
     return new OpenRouterStallError(
       'idle',
       '',
-      `idle ${idleFor}ms >= ${timeouts.idleMs}ms, chars=${progress.chars}`,
+      `idle ${idleFor}ms >= ${timeouts.idleMs}ms, chars=${progress.chars}, reasoning_chars=${progress.reasoningChars}`,
     );
   }
 
@@ -448,7 +499,25 @@ export async function streamOpenRouterCompletion(
     throw new OpenRouterStallError('first_token', modelId, 'stream ended with empty content');
   }
 
-  const validated = validateResponse(modelId, text, lastFinishReason);
+  let validated: string;
+  try {
+    validated = validateResponse(modelId, text, lastFinishReason);
+  } catch (error) {
+    // "Expected ':' after property name at position 16" says nothing about
+    // which model wrote what. Without the actual head and tail of the
+    // response there is no way to tell a fenced block from a truncated one
+    // from a chatty preamble, and that guesswork is what makes a failed
+    // master run unactionable. Bounded on both ends so a 30k-char answer
+    // stays loggable.
+    logError('summarize', 'OpenRouter response failed validation', error, {
+      model: modelId,
+      response_chars: text.length,
+      finish_reason: lastFinishReason,
+      response_head: text.slice(0, 400),
+      response_tail: text.length > 400 ? text.slice(-200) : '',
+    });
+    throw error;
+  }
 
   logEvent('info', 'summarize', 'OpenRouter adaptive stream complete', {
     model: modelId,

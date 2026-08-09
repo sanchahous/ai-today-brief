@@ -46,6 +46,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Diagnostic, never gating: a false positive here must not block a
+      # weekly. It runs first so the log opens with "the CLI is not
+      # authenticated" / "OpenRouter is out of credit" instead of burying
+      # that under forty minutes of generation.
+      - name: Provider preflight
+        continue-on-error: true
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+          SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+          WEEKLY_MASTER_PROVIDER_ORDER: claude-cli
+          WEEKLY_CONTENT_STUDIO_V2: production
+        run: npm run weekly:doctor
+
       - name: Run weekly master CLI worker
         env:
           SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
@@ -53,6 +68,10 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           DISABLE_AUTOUPDATER: '1'
           WEEKLY_MASTER_PROVIDER_ORDER: claude-cli
+          # No 300-second serverless budget here (the job runs for up to 120
+          # minutes), so the master write gets real model fallback instead of
+          # dying on one sloppy answer. See premiumOpenRouterModels.
+          WEEKLY_MASTER_OPENROUTER_CANDIDATES: '3'
           OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           WEEKLY_CONTENT_STUDIO_V2: production

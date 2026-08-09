@@ -52,7 +52,14 @@ function primaryModel(usage: ClaudeCliEnvelope['modelUsage']): string {
 export type SpawnClaudeCliFn = (
   args: string[],
   options: { cwd: string; env: NodeJS.ProcessEnv; timeoutMs: number },
-) => Promise<{ stdout: string; stderr: string; exitCode: number | null; spawnError: NodeJS.ErrnoException | null }>;
+) => Promise<{
+  stdout: string;
+  stderr: string;
+  exitCode: number | null;
+  spawnError: NodeJS.ErrnoException | null;
+  /** Set when the OS killed the child — `timeout` expiring reports SIGTERM. */
+  signal?: NodeJS.Signals | null;
+}>;
 
 /* v8 ignore start -- live process spawn; envelope parsing is unit-tested via injected spawn */
 const defaultSpawn: SpawnClaudeCliFn = (args, { cwd, env, timeoutMs }) =>
@@ -80,10 +87,10 @@ const defaultSpawn: SpawnClaudeCliFn = (args, { cwd, env, timeoutMs }) =>
       stderr += chunk.toString('utf8');
     });
     child.on('error', (spawnError: NodeJS.ErrnoException) => {
-      resolve({ stdout, stderr, exitCode: null, spawnError });
+      resolve({ stdout, stderr, exitCode: null, spawnError, signal: null });
     });
-    child.on('close', (exitCode) => {
-      resolve({ stdout, stderr, exitCode, spawnError: null });
+    child.on('close', (exitCode, signal) => {
+      resolve({ stdout, stderr, exitCode, spawnError: null, signal });
     });
   });
 /* v8 ignore end */
@@ -118,7 +125,37 @@ export type GenerateWithClaudeCliOptions = {
   spawnFn?: SpawnClaudeCliFn;
 };
 
-const DEFAULT_TIMEOUT_MS = 4 * 60_000;
+/**
+ * A weekly master EN write is a single ~20k-output-token generation over a
+ * ~50k-token prompt. The old 4-minute ceiling was set before the v7 prompt
+ * and the research-pack copy grew it, and it silently became the actual
+ * cause of every editorial_master failure on 2026-08-09: the CLI was working
+ * (178s and 233s of real API time on the two observed runs, still mid-answer)
+ * and got SIGTERMed at exactly 240s. Sized from the sandbox measurement in
+ * wiki/ops/weekly-sandbox.md with headroom for a slow day, and well inside
+ * the workflow's own 120-minute job timeout.
+ */
+const DEFAULT_TIMEOUT_MS = 20 * 60_000;
+
+function resolveTimeoutMs(explicit?: number): number {
+  if (explicit && explicit > 0) return explicit;
+  const configured = Number(process.env.CLAUDE_CLI_TIMEOUT_MS);
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_TIMEOUT_MS;
+}
+
+/**
+ * Every call here is a one-shot text generation, so the agentic toolbelt is
+ * pure downside: the two failed 2026-08-09 runs both died with
+ * `stop_reason: "tool_use"` after 3 and 7 turns, re-sending the prompt each
+ * turn (296k cached input tokens on the second) for an answer that needs no
+ * file access at all. `--tools ""` is the CLI's documented way to disable
+ * every built-in tool, which collapses this back to a single turn.
+ */
+function buildArgs(prompt: string, jsonSchema?: Record<string, unknown>): string[] {
+  const args = ['-p', prompt, '--output-format', 'json', '--tools', ''];
+  if (jsonSchema) args.push('--json-schema', JSON.stringify(jsonSchema));
+  return args;
+}
 
 /**
  * Runs `claude -p <prompt> --output-format json`, isolated to a throwaway
@@ -132,24 +169,40 @@ export async function generateWithClaudeCli(
   options: GenerateWithClaudeCliOptions = {},
 ): Promise<ClaudeCliResult> {
   const token = process.env.CLAUDE_CODE_OAUTH_TOKEN?.trim();
-  if (!token) throw new ClaudeCliUnavailableError('CLAUDE_CODE_OAUTH_TOKEN is not set');
+  // Opt-in escape hatch for the local sandbox, where the binary is already
+  // signed in interactively and minting a second long-lived token into a
+  // dotfile buys nothing. Unset (the CI default) the token stays required,
+  // so a misconfigured runner still fails fast and visibly.
+  const useLocalAuth = process.env.CLAUDE_CLI_USE_LOCAL_AUTH === '1';
+  if (!token && !useLocalAuth) {
+    throw new ClaudeCliUnavailableError('CLAUDE_CODE_OAUTH_TOKEN is not set');
+  }
 
   const spawnFn = options.spawnFn ?? defaultSpawn;
-  const args = ['-p', prompt, '--output-format', 'json'];
-  if (options.jsonSchema) args.push('--json-schema', JSON.stringify(options.jsonSchema));
+  const args = buildArgs(prompt, options.jsonSchema);
+  const timeoutMs = resolveTimeoutMs(options.timeoutMs);
 
   const scratchDir = mkdtempSync(join(tmpdir(), 'claude-cli-'));
   try {
-    const { stdout, stderr, exitCode, spawnError } = await spawnFn(args, {
+    const { stdout, stderr, exitCode, spawnError, signal } = await spawnFn(args, {
       cwd: scratchDir,
-      env: { ...process.env, CLAUDE_CODE_OAUTH_TOKEN: token },
-      timeoutMs: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+      env: token ? { ...process.env, CLAUDE_CODE_OAUTH_TOKEN: token } : { ...process.env },
+      timeoutMs,
     });
     if (spawnError) {
       if (spawnError.code === 'ENOENT') {
         throw new ClaudeCliUnavailableError('the `claude` binary is not installed on this host');
       }
       throw new Error(`[claude-cli] spawn failed: ${spawnError.message}`);
+    }
+    // 143 is the shell's encoding of the same SIGTERM the spawn `timeout`
+    // sends; report it as the timeout it is instead of dumping a truncated
+    // JSON envelope that reads like a model error.
+    if (signal === 'SIGTERM' || exitCode === 143) {
+      throw new Error(
+        `[claude-cli] timed out after ${Math.round(timeoutMs / 1000)}s and was killed. ` +
+          'Raise CLAUDE_CLI_TIMEOUT_MS if the prompt legitimately needs longer.',
+      );
     }
     if (exitCode !== 0) {
       throw new Error(`[claude-cli] exited ${exitCode}: ${stderr.slice(0, 500) || stdout.slice(0, 500)}`);
