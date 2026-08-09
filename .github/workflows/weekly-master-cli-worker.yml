@@ -79,6 +79,10 @@ jobs:
           # minutes), so the master write gets real model fallback instead of
           # dying on one sloppy answer. See premiumOpenRouterModels.
           WEEKLY_MASTER_OPENROUTER_CANDIDATES: '3'
+          # Stop starting new work with 25 minutes of the 120-minute job left,
+          # so an over-running edition saves its segments and finishes cleanly
+          # instead of being killed mid-write with nothing durable to resume.
+          WEEKLY_MASTER_DEADLINE_MS: '5700000'
           OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           WEEKLY_CONTENT_STUDIO_V2: production

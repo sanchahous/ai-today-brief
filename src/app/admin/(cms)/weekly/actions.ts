@@ -36,18 +36,16 @@ function optionalString(formData: FormData, key: string) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function hasCompleteMasterCheckpoint(value: Json | null | undefined) {
-  const output = jsonRecord(value);
-  const english = jsonRecord(output.english);
-  const ukrainian = jsonRecord(output.ukrainian);
-  return Boolean(
-    typeof output.englishCheckpointHash === 'string' &&
-    output.englishCheckpointHash.trim() &&
-    typeof output.ukrainianCheckpointHash === 'string' &&
-    output.ukrainianCheckpointHash.trim() &&
-    Object.keys(english).length > 0 &&
-    Object.keys(ukrainian).length > 0,
-  );
+/**
+ * Any saved editorial segment is worth resuming (master-engine.ts writes the
+ * run state after every one), so this no longer demands a complete EN+UK
+ * pair — nine of fourteen segments is exactly the case where resuming saves
+ * the most. The worker re-validates the state against the current research
+ * packs before reusing a single word of it.
+ */
+function hasResumableMasterState(value: Json | null | undefined) {
+  const state = jsonRecord(jsonRecord(value).master_run_state);
+  return Object.keys(jsonRecord(state.segments)).length > 0;
 }
 
 function optionalNumber(formData: FormData, key: string) {
@@ -1371,13 +1369,15 @@ export async function resumeWeeklyMasterFromCheckpointAction(formData: FormData)
   if (
     !source ||
     source.job_type !== 'editorial_master' ||
-    source.status !== 'failed' ||
+    // A run that stopped on unresolved quality items now finishes as
+    // `succeeded`, and that is the case an owner most often wants to resume.
+    !['failed', 'cancelled', 'succeeded'].includes(source.status) ||
     source.weekly_digest_id !== weeklyDigestId ||
     source.revision_id !== revisionId ||
-    !hasCompleteMasterCheckpoint(source.output)
+    !hasResumableMasterState(source.output)
   ) {
     throw new Error(
-      'This job is not a failed master with a complete saved EN and UK checkpoint for the active revision.',
+      'This job is not a finished master with saved editorial segments for the active revision.',
     );
   }
 

@@ -3,9 +3,8 @@ import {
   canonicalSourceName,
   detectTemplateLeaks,
   editorialQualityFailures,
+  criticVerdictLooksUnreliable,
   editorialQualityPasses,
-  isRevisableIssueCode,
-  reportIsRevisable,
   resolveWeeklyContentStudioMode,
   sourceNameMatchesDomain,
   validateMasterBundle,
@@ -762,141 +761,28 @@ function report(overrides: Partial<WeeklyContentQualityReport> = {}): WeeklyCont
   };
 }
 
-describe('isRevisableIssueCode', () => {
-  it('accepts prose-level codes and their prefixed variants', () => {
-    expect(isRevisableIssueCode('generic_practical')).toBe(true);
-    expect(isRevisableIssueCode('editors_view_missing')).toBe(true);
-    expect(isRevisableIssueCode('discussion_question_missing')).toBe(true);
-    expect(isRevisableIssueCode('duplicate_editorial_fields')).toBe(true);
-    expect(isRevisableIssueCode('article_length')).toBe(true);
-    expect(isRevisableIssueCode('story_length')).toBe(true);
-    expect(isRevisableIssueCode('template_leak:label_opener_practical')).toBe(true);
-    expect(isRevisableIssueCode('dimension_low_score:voice')).toBe(true);
-    expect(isRevisableIssueCode('prompt_exemplar_copy')).toBe(true);
-    expect(isRevisableIssueCode('metadata_length')).toBe(true);
-    expect(isRevisableIssueCode('uk_language_residue')).toBe(true);
-  });
-
-  it("accepts the critic's controlled non-factual vocabulary", () => {
-    // Added after a live shadow run (2026-08-06, ai-weekly-2026-07-27)
-    // showed the critic otherwise invents ad-hoc codes like
-    // "VOICE_TEMPLATE_LEAK" that never match this set.
-    for (const code of [
-      'voice_register',
-      'engagement_structure',
-      'clarity_unclear',
-      'trust_attribution',
-      'usefulness_generic',
-      'naturalness_calque',
-      'language_mechanics',
-    ]) {
-      expect(isRevisableIssueCode(code), `expected ${code} to be revisable`).toBe(true);
-    }
-  });
-
-  it('rejects the pre-fix ad-hoc codes the critic actually emitted before the controlled vocabulary existed', () => {
-    for (const code of [
-      'VOICE_TEMPLATE_LEAK',
-      'NATURALNESS_CALQUE',
-      'VOICE_ABSTRACT_THESIS',
-      'ENGAGEMENT_CHECKLIST_STRUCTURE',
-      'CLARITY_UNEXPLAINED_TERM',
-    ]) {
-      expect(isRevisableIssueCode(code), `expected ${code} to NOT be revisable`).toBe(false);
-    }
-  });
-
-  it('rejects structural/grounding codes -- these need a full rewrite, not a reword', () => {
-    for (const code of [
-      'unsupported_claim_id',
-      'wrong_story_claim_id',
-      'ungrounded_story',
-      'story_set_mismatch',
-      'story_missing',
-      'placement_mismatch',
-      'bilingual_claim_parity',
-      'top3_radar_structure',
-      'shorts_count',
-      'shorts_contract',
-      'video_duration',
-      'scene_grounding',
-      'social_angle_grounding',
-      'locale_mismatch',
-    ]) {
-      expect(isRevisableIssueCode(code), `expected ${code} to be non-revisable`).toBe(false);
-    }
-  });
-});
-
-describe('reportIsRevisable', () => {
-  it('is revisable when the report has zero issues but a low dimension score (e.g. voice)', () => {
-    // The exact bug this exists to fix: a report that fails purely on a
-    // dimension score has an empty issues[] array (dimension guidance is
-    // derived separately via editorialQualityRetryGuidance), so a naive
-    // `issues.length > 0 && issues.every(...)` check would wrongly say
-    // "nothing to revise" here.
-    const dimensions = PASSING_DIMENSIONS.map((dimension) =>
-      dimension.name === 'voice' ? { ...dimension, score: 70 } : dimension,
-    );
-    expect(reportIsRevisable(report({ issues: [], dimensions }))).toBe(true);
-  });
-
-  it('does not send seven mechanically identical scores to the writer revise loop', () => {
+describe('criticVerdictLooksUnreliable', () => {
+  // A lazy or malformed verdict is an evaluator failure, not a copy failure:
+  // the engine re-scores instead of declaring the edition unfixable, which is
+  // what the old reportIsRevisable gate did (and why a uniform 90/100 could
+  // discard half an hour of paid generation).
+  it('flags seven mechanically identical scores', () => {
     const dimensions = PASSING_DIMENSIONS.map((dimension) => ({ ...dimension, score: 90 }));
-    const value = report({ dimensions });
-    expect(reportIsRevisable(value)).toBe(false);
-    expect(editorialQualityFailures(value)).toContainEqual(
-      expect.stringContaining('all seven critic dimensions received the identical 90/100'),
-    );
+    expect(criticVerdictLooksUnreliable(report({ dimensions }))).toBe(true);
   });
 
-  it('catches a uniform lazy default at any score, not only the literal 90 the shadow run produced', () => {
-    const dimensions = PASSING_DIMENSIONS.map((dimension) => ({ ...dimension, score: 85 }));
-    expect(reportIsRevisable(report({ dimensions }))).toBe(false);
-  });
-
-  it('does not flag a genuinely outstanding, evenly-strong draft as a rubber stamp', () => {
+  it('treats a uniform but outstanding verdict as earned', () => {
     const dimensions = PASSING_DIMENSIONS.map((dimension) => ({ ...dimension, score: 96 }));
-    const value = report({ dimensions });
-    expect(reportIsRevisable(value)).toBe(true);
-    expect(editorialQualityFailures(value)).not.toContainEqual(
-      expect.stringContaining('received the identical'),
-    );
+    expect(criticVerdictLooksUnreliable(report({ dimensions }))).toBe(false);
   });
 
-  it('is revisable when every issue present is a prose-level code', () => {
+  it('flags a malformed dimension set', () => {
     expect(
-      reportIsRevisable(
-        report({
-          issues: [
-            { code: 'generic_practical', message: 'x', blocker: true },
-            { code: 'template_leak:label_opener_limitation', message: 'x', blocker: true },
-          ],
-        }),
-      ),
+      criticVerdictLooksUnreliable(report({ dimensions: PASSING_DIMENSIONS.slice(0, 5) })),
     ).toBe(true);
   });
 
-  it('is not revisable when any factual flag is present, regardless of issues', () => {
-    expect(reportIsRevisable(report({ factualFlags: ['unsupported number: 141,006'] }))).toBe(
-      false,
-    );
-  });
-
-  it('is not revisable when a structural/grounding issue is mixed in with prose issues', () => {
-    expect(
-      reportIsRevisable(
-        report({
-          issues: [
-            { code: 'generic_practical', message: 'x', blocker: true },
-            { code: 'unsupported_claim_id', message: 'x', blocker: true },
-          ],
-        }),
-      ),
-    ).toBe(false);
-  });
-
-  it('is not revisable when the dimension set is malformed (critic misbehaved)', () => {
-    expect(reportIsRevisable(report({ dimensions: PASSING_DIMENSIONS.slice(0, 5) }))).toBe(false);
+  it('accepts a well-formed, differentiated verdict', () => {
+    expect(criticVerdictLooksUnreliable(report({}))).toBe(false);
   });
 });

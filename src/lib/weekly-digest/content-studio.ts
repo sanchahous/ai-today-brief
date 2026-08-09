@@ -1090,50 +1090,6 @@ const GENERAL_DIMENSION_MIN_SCORE = 75;
 const NATURALNESS_PARITY_MIN_SCORE = 80;
 const OVERALL_MIN_SCORE = 85;
 
-/**
- * Issue codes a targeted revise pass (editorial-llm.ts `reviseArticlePrompt`)
- * can plausibly fix by rewriting one field's prose without touching story
- * set, claims, or structure. Deliberately excludes grounding/structural
- * codes (unsupported_claim_id, story_set_mismatch, shorts_contract,
- * video_duration, scene_grounding, social_angle_grounding, bilingual_claim_
- * parity, top3_radar_structure, locale_mismatch, story_missing, placement_
- * mismatch) -- those mean the writer needs to rethink the story, not
- * reword a sentence, so they always fall through to a full regenerate.
- *
- * The seven voice_register/engagement_structure/clarity_unclear/trust_
- * attribution/usefulness_generic/naturalness_calque/language_mechanics codes are the critic's
- * own controlled vocabulary for non-factual issues (see criticPrompt,
- * editorial-llm.ts) -- added after a live shadow run against the rejected
- * 2026-07-27 edition (2026-08-06) showed the critic otherwise invents
- * ad-hoc codes like "VOICE_TEMPLATE_LEAK" that never match this set, which
- * would silently route a purely-prose failure to a full regenerate instead
- * of a targeted revise.
- */
-const REVISABLE_ISSUE_CODES = new Set([
-  'generic_practical',
-  'editors_view_length',
-  'editors_view_missing',
-  'discussion_question_missing',
-  'duplicate_editorial_fields',
-  'article_length',
-  'story_length',
-  'voice_register',
-  'engagement_structure',
-  'clarity_unclear',
-  'trust_attribution',
-  'usefulness_generic',
-  'naturalness_calque',
-  'language_mechanics',
-  'prompt_exemplar_copy',
-  'metadata_length',
-  'abstract_edition_title',
-  'standfirst_boilerplate',
-  'ambiguous_energy_claim',
-  'uk_language_residue',
-  'numeric_parity',
-  'unsupported_editorial_claim',
-]);
-
 /** Below this, a uniform score reads as a lazy default rather than earned excellence. */
 const RUBBER_STAMP_CEILING_SCORE = 95;
 
@@ -1159,41 +1115,24 @@ function looksLikeUniformCriticRubberStamp(
   );
 }
 
-export function isRevisableIssueCode(code: string): boolean {
-  return (
-    REVISABLE_ISSUE_CODES.has(code) ||
-    code.startsWith('template_leak:') ||
-    code.startsWith('dimension_low_score:')
-  );
-}
-
 /**
- * True when nothing in the report disqualifies a targeted revise pass over a
- * full EN/UK regenerate. Three things disqualify it: any unresolved factual
- * flag (grounding problems always need a full rewrite, never a reword), a
- * malformed dimension set (the critic itself misbehaved -- feed it the same
- * shape again, don't try to patch around it), or any `issues[]` entry whose
- * code isn't in the revisable set (a structural/grounding blocker means the
- * writer needs to rethink the story, not reword a sentence). Note this does
- * NOT require issues.length > 0 -- a report can fail purely on a low
- * dimension score (e.g. voice: 70) with an empty issues array, and that case
- * is exactly what a revise pass should handle.
+ * True when the *evaluator* misbehaved rather than the copy being bad: seven
+ * identical scores (a lazy default) or a malformed dimension set.
+ *
+ * Worth distinguishing, because there is nothing in the article to repair in
+ * that case -- the right response is to score it again, which is exactly what
+ * the old loop could not do. It treated an unreliable verdict as a terminal
+ * quality failure and threw away the edition over the critic's own laziness.
  */
-export function reportIsRevisable(
-  report: Pick<WeeklyContentQualityReport, 'issues' | 'factualFlags' | 'dimensions'>,
+export function criticVerdictLooksUnreliable(
+  report: Pick<WeeklyContentQualityReport, 'dimensions'>,
 ): boolean {
-  if (report.factualFlags.length > 0) return false;
-  const receivedDimensions = new Set(report.dimensions.map((dimension) => dimension.name));
-  const wellFormedDimensions =
+  const received = new Set(report.dimensions.map((dimension) => dimension.name));
+  const wellFormed =
     report.dimensions.length === REQUIRED_QUALITY_DIMENSIONS.length &&
-    receivedDimensions.size === REQUIRED_QUALITY_DIMENSIONS.length &&
-    REQUIRED_QUALITY_DIMENSIONS.every((name) => receivedDimensions.has(name));
-  if (!wellFormedDimensions) return false;
-  // This is an evaluator failure, not an article field that the writer can
-  // safely line-edit. The live v6 critic returned seven identical 90s while
-  // missing obvious spelling, grammar and prompt-copy defects.
-  if (looksLikeUniformCriticRubberStamp(report.dimensions)) return false;
-  return report.issues.every((issue) => isRevisableIssueCode(issue.code));
+    received.size === REQUIRED_QUALITY_DIMENSIONS.length &&
+    REQUIRED_QUALITY_DIMENSIONS.every((name) => received.has(name));
+  return !wellFormed || looksLikeUniformCriticRubberStamp(report.dimensions);
 }
 
 /**
