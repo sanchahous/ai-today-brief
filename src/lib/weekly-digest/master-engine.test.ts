@@ -281,6 +281,33 @@ describe('segmented writing', () => {
     expect(outcome.totalSegments).toBe(14);
     expect(outcome.state.segments).toHaveProperty(masterSegmentKey({ kind: 'story', locale: 'en', revisionItemId: 'item-1', placement: 'feature', rank: 1 }));
   });
+
+  it('returns a resumable incomplete outcome when the critic cannot score saved copy', async () => {
+    const notes: string[] = [];
+    const log = mockRouter({
+      critic: () => {
+        throw new Error('critic provider is unavailable');
+      },
+    });
+
+    const outcome = await runWeeklyMaster({
+      stories: STORIES,
+      researchPacks: RESEARCH,
+      hooks: { onNote: (entry) => void notes.push(entry.message) },
+    });
+
+    expect(outcome.status).toBe('incomplete');
+    if (outcome.status !== 'incomplete') throw new Error('unreachable');
+    expect(outcome.completedSegments).toBe(14);
+    expect(outcome.totalSegments).toBe(14);
+    expect(outcome.state.quality).toBeNull();
+    expect(outcome.state.criticRounds).toBe(0);
+    expect(outcome.state.calls.critic).toEqual([]);
+    expect(log.kinds.filter((kind) => kind === 'critic')).toHaveLength(1);
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toContain('Critic round 1 could not score the edition:');
+    expect(notes[0]).toContain('critic provider is unavailable');
+  });
 });
 
 describe('targeted repair', () => {

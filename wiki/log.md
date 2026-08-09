@@ -4,7 +4,22 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-09
+Last updated: 2026-08-10
+
+## 2026-08-10 — `editorial_master`: critic outage зберігає випуск для retry
+
+**Джерело:** follow-up до змерженого PR #209; локальний регресійний тест
+`master-engine.test.ts`.
+
+**Змінено:** незалежний critic-виклик у `runWeeklyMaster()` тепер guarded. Якщо його
+provider-драбина не дала verdict, рушій зберігає вже готові сегменти, пише warning у timeline і
+повертає retryable `resumable`; **Resume saved master** починає з того самого тексту, а не
+переплачує за EN/UK generation. Неперевірена чернетка не створюється й не може пройти human
+approval. Оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md) та [index](index.md).
+(source: `src/lib/weekly-digest/master-engine.ts`,
+`src/lib/weekly-digest/master-engine.test.ts`, local test 2026-08-10)
 
 ## 2026-08-09 — follow-up master fallback + синхронізація wiki
 
