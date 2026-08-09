@@ -163,6 +163,7 @@ async function run(): Promise<void> {
   console.log(only ? `Mode         stop after "${only}"\n` : 'Mode         full master (writer -> critic -> revise)\n');
 
   let result: Awaited<ReturnType<typeof generateWeeklyMaster>> | null = null;
+  let failed = false;
 
   try {
     result = await generateWeeklyMaster(fixture.stories, fixture.researchPacks, fixture.retryGuidance, {
@@ -199,15 +200,14 @@ async function run(): Promise<void> {
       writeJson(join(outDir, 'error.json'), {
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        calls,
       });
       console.error(`\nFAILED after ${seconds(Date.now() - startedAt.getTime())}`);
       console.error(error instanceof Error ? error.message : String(error));
       console.error(`\nPartial results and timings: ${outDir}`);
-      process.exitCode = 1;
-      return;
+      failed = true;
+    } else {
+      console.log(`\nStopped after "${error.step}" as requested.`);
     }
-    console.log(`\nStopped after "${error.step}" as requested.`);
   }
 
   if (result) {
@@ -226,17 +226,21 @@ async function run(): Promise<void> {
     }
   }
 
+  // Written on every path, failures included: per-step timings are the whole
+  // reason to run this, and they matter most when something blew up.
   writeJson(join(outDir, 'run.json'), {
     fixture: path,
     startedAt: startedAt.toISOString(),
     totalMs: Date.now() - startedAt.getTime(),
     providerOrder: process.env.WEEKLY_MASTER_PROVIDER_ORDER ?? null,
     only: only ?? null,
+    outcome: failed ? 'failed' : 'ok',
     calls,
   });
 
   console.log(`\nTotal        ${seconds(Date.now() - startedAt.getTime())}`);
   console.log(`Written to   ${outDir}`);
+  if (failed) process.exitCode = 1;
 }
 
 function gates(): void {
