@@ -1,7 +1,9 @@
 # Weekly editorial selection
 
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
-Sources: `src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`
+Sources: `src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
+`src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`, owner content-quality
+audit 2026-08-09
 Last updated: 2026-08-09
 
 
@@ -123,6 +125,28 @@ story ПІСЛЯ відбору: `editorial-llm.ts` тепер пише текс
 `minmax(0, …)`. Це не дозволяє довгому control або тексту зсунути контент за viewport, але не
 змінює склад shortlist чи критерії editorial-рішення.
 (source: `src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`)
+
+## Межа з quality hardening v7 (2026-08-09)
+
+Алгоритм shortlist, його ваги й diversity constraints знову не змінювались. Після аудиту
+випуску `843975a8-8c19-4eca-96a8-035f76eae3ab` посилено наступну межу: writer має явно
+атрибутувати одиничні case studies й не перетворювати їх на універсальну тезу, а critic та
+детерміновані гейти блокують вигадані сцени, prompt leakage, абстрактні заголовки, розмиті
+energy claims і UK language defects. Хороший selection score підтверджує цінність кандидата,
+але не гарантує якість або фактичну обережність готового тексту; числа й одиниці перевіряються
+вже на writer/critic boundary, а не під час shortlist scoring. Writer також не має права
+видавати diversity shortlist за єдину тему: зв'язок Top 3 мусить випливати з evidence.
+(source: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`, owner audit 2026-08-09)
+
+## Межа з v7.1 commercial-balance point fixes (2026-08-09)
+
+Відбір знову не змінювався. Три v7-гейти звужено після емпіричної перевірки на хибнопозитиви:
+`ambiguous_energy_claim` тепер реагує лише на явне порівняння («у 600 разів більше енергії»), а
+не на будь-яку згадку «energy» у заголовку/meta; UK `uk_language_residue` більше не блокує
+`score` і `мейнтейнер` — усталений dev-жаргон цільової аудиторії; uniform-critic-score гейт ловить
+будь-яку однакову оцінку нижче 95, а не лише рівно 90, і не чіпає дійсно рівно сильний текст.
+Мета — тримати баланс між фактажем і привабливістю, а не лише нарощувати заборони.
+(source: `src/lib/weekly-digest/content-studio.ts`, owner review 2026-08-09)
 
 ## Related pages
 

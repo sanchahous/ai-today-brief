@@ -15,6 +15,15 @@ Last updated: 2026-08-09
 
 ## Стан репозиторію
 
+- **Гілка `agent/weekly-content-quality-hardening` (локально, 2026-08-09)** — критичний аудит
+  згенерованого weekly master виявив дослівний витік voice exemplar у вступ, вигадані сцени,
+  абстрактні titles, непояснені energy claims і системні UK spelling/grammar/localization
+  дефекти, які critic пропустив із сімома однаковими 90/100. Підготовлено `weekly-master-v7`:
+  exemplars вилучено з prompt, додано deterministic blockers, `language_mechanics`, жорсткішу
+  critic calibration і зрозумілі Article labels. Повний `npm run pr:check` зелений: 957/957
+  тестів із coverage, typecheck, lint, affected E2E map, wiki contract і production build;
+  writer окремо заборонено форсувати umbrella-тему без доказового зв'язку Top 3. Деталі —
+  [pipeline/editorial-voice § Аудит 2026-08-09](pipeline/editorial-voice.md#аудит-згенерованого-випуску-2026-08-09).
 - **`main` тепер включає PR #189, #190, #191 і #192** (Phase 0-6a злито `9d32347`). Senior-рівневе
   технічне ревʼю обох PR постфактум (гілка `claude/tech-review-pr-189-190-859ena`) знайшло і
   виправило три поведінкові баги в `pipeline/providers/registry.ts` (порожній DB-чейн затіняв

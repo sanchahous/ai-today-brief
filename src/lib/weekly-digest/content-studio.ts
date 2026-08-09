@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
-import { bannedPhrasesFor } from './editorial-voice';
+import { bannedPhrasesFor, exemplarFor } from './editorial-voice';
 
 export const WEEKLY_CONTENT_STUDIO_VERSION = 'weekly-content-studio-v2.1';
-export const WEEKLY_MASTER_SPEC_VERSION = 'weekly-master-v6';
+export const WEEKLY_MASTER_SPEC_VERSION = 'weekly-master-v7';
 export const WEEKLY_VIDEO_MANIFEST_VERSION = 'weekly-video-v3';
 /** video_script is a standalone job/artifact stage since PR6 -- separate version from the manifest. */
 export const WEEKLY_VIDEO_SCRIPT_SCHEMA_VERSION = 'weekly-video-script-v1';
@@ -228,6 +228,64 @@ function normalizedComparable(value: string) {
     .trim();
 }
 
+function normalizedWords(value: string) {
+  return normalizedComparable(value).split(/\s+/).filter(Boolean);
+}
+
+function firstSharedWordSequence(value: string, reference: string, wordCount = 12) {
+  const candidateWords = normalizedWords(value);
+  const referenceWords = normalizedWords(reference);
+  if (candidateWords.length < wordCount || referenceWords.length < wordCount) return null;
+  const referenceSequences = new Set<string>();
+  for (let index = 0; index <= referenceWords.length - wordCount; index += 1) {
+    referenceSequences.add(referenceWords.slice(index, index + wordCount).join(' '));
+  }
+  for (let index = 0; index <= candidateWords.length - wordCount; index += 1) {
+    const sequence = candidateWords.slice(index, index + wordCount).join(' ');
+    if (referenceSequences.has(sequence)) return sequence;
+  }
+  return null;
+}
+
+type ArticleTextField = {
+  field: string;
+  value: string;
+  revisionItemId?: string;
+};
+
+function articleTextFields(article: WeeklyArticleMaster): ArticleTextField[] {
+  const articleFields: ArticleTextField[] = [
+    ['title', article.title],
+    ['seoTitle', article.seoTitle],
+    ['metaDescription', article.metaDescription],
+    ['ogTitle', article.ogTitle],
+    ['ogDescription', article.ogDescription],
+    ['standfirst', article.standfirst],
+    ['theme', article.theme],
+    ['intro', article.intro],
+    ['editorNote', article.editorNote],
+    ['conclusion', article.conclusion],
+    ...article.keyTakeaways.map((value) => ['keyTakeaways', value]),
+  ].map(([field, value]) => ({ field, value }));
+  const storyFields = article.stories.flatMap((story) =>
+    (
+      [
+        ['headline', story.headline],
+        ['summary', story.summary],
+        ['hook', story.hook],
+        ['body', story.body],
+        ['why', story.why],
+        ['practical', story.practical],
+        ['limitation', story.limitation],
+        ['takeaway', story.takeaway],
+        ['editorsView', story.editorsView],
+        ['discussionQuestion', story.discussionQuestion],
+      ] as Array<[string, string]>
+    ).map(([field, value]) => ({ field, value, revisionItemId: story.revisionItemId })),
+  );
+  return [...articleFields, ...storyFields];
+}
+
 const GENERIC_PRACTICAL_PATTERNS = [
   /small, reversible research task/i,
   /run a small pilot/i,
@@ -248,7 +306,12 @@ const TEMPLATE_LEAK_FIELDS = [
   'editorsView',
 ] as const;
 
-const ARTICLE_LEVEL_TEMPLATE_LEAK_FIELDS = ['standfirst', 'intro', 'editorNote', 'conclusion'] as const;
+const ARTICLE_LEVEL_TEMPLATE_LEAK_FIELDS = [
+  'standfirst',
+  'intro',
+  'editorNote',
+  'conclusion',
+] as const;
 
 /**
  * Deterministic, zero-cost pre-critic gate: fires a blocker whenever a story
@@ -296,6 +359,224 @@ export function detectTemplateLeaks(bundle: WeeklyMasterBundle): WeeklyQualityIs
         }
       }
     }
+  }
+  return issues;
+}
+
+const METADATA_MAX_CHARS = {
+  seoTitle: 65,
+  metaDescription: 160,
+  ogTitle: 70,
+  ogDescription: 200,
+} as const;
+
+const ABSTRACT_EDITION_TITLE_PATTERNS: Record<WeeklyLocale, RegExp[]> = {
+  en: [/\bthe agentic shift\b/i, /\b(?:the )?new era of\b/i, /\bthe future of\b/i],
+  uk: [/зсув до агентів/iu, /нова ера/iu, /майбутнє (?:ші|ai)/iu],
+};
+
+const UKRAINIAN_LANGUAGE_RESIDUE: Array<{ pattern: RegExp; replacement: string }> = [
+  {
+    // "score" deliberately excluded: an established dev-community loanword
+    // (benchmark score, model score) the house voice keeps in English, not
+    // untranslated residue.
+    pattern:
+      /\b(?:hours?|minutes?|seconds?|thousandths|kilowatt-hours?|billions?|millions?)\b|\b\d[\d,.]*\s+to\s+\d[\d,.]*/i,
+    replacement: 'Перекладіть слово й локалізуйте одиницю або числовий діапазон українською.',
+  },
+  {
+    pattern:
+      /\b\d{1,3}(?:,\d{3})+\b|\b\d+\.\d+\s*(?:%|мільярд[а-яіїєґ]*|мільйон[а-яіїєґ]*|кВт|Вт|токен[а-яіїєґ]*)/iu,
+    replacement: 'Локалізуйте число українською: пробіл для тисяч і кома для десяткового дробу.',
+  },
+  {
+    pattern: /\beditorsView\b/,
+    replacement: 'Використайте читацьку назву «Погляд редакції», а не внутрішнє ім’я поля.',
+  },
+  {
+    pattern:
+      /(?:доп['’]яти|притеча|енерговитраження|нехтої|компактизац[а-яіїєґ]*|декорен[а-яіїєґ]*)/iu,
+    replacement: 'Замініть зламане або неіснуюче слово нормативним українським відповідником.',
+  },
+  {
+    pattern: /[а-яіїєґ]+ется(?![а-яіїєґ])/iu,
+    replacement: 'Виправте російське закінчення на нормативну українську форму.',
+  },
+  {
+    // "мейнтейнер" deliberately excluded: standard Ukrainian dev-community
+    // loanword the target audience actually uses, not an office-calque like
+    // "інтеракція" -> "взаємодія".
+    pattern: /(?:інтеракці[яєїю]|інтеракцій)/iu,
+    replacement: 'Використайте зрозумілий український відповідник: «взаємодія».',
+  },
+];
+
+function promptCopyIssues(bundle: WeeklyMasterBundle): WeeklyQualityIssue[] {
+  const issues: WeeklyQualityIssue[] = [];
+  for (const locale of ['en', 'uk'] as const) {
+    const reference = exemplarFor(locale).opening;
+    for (const textField of articleTextFields(bundle[locale])) {
+      const sharedSequence = firstSharedWordSequence(textField.value, reference);
+      if (!sharedSequence) continue;
+      issues.push({
+        code: 'prompt_exemplar_copy',
+        message:
+          'Published copy repeats a full phrase from the prompt’s legacy style exemplar instead of using this edition’s evidence.',
+        blocker: true,
+        locale,
+        field: textField.field,
+        ...(textField.revisionItemId ? { revisionItemId: textField.revisionItemId } : {}),
+        span: sharedSequence,
+        suggestedFix:
+          'Rewrite this field from the approved stories. Do not reuse the exemplar’s incident, actors, chronology, or wording.',
+      });
+    }
+  }
+  return issues;
+}
+
+function metadataQualityIssues(bundle: WeeklyMasterBundle): WeeklyQualityIssue[] {
+  const issues: WeeklyQualityIssue[] = [];
+  for (const locale of ['en', 'uk'] as const) {
+    const article = bundle[locale];
+    for (const [field, maximum] of Object.entries(METADATA_MAX_CHARS) as Array<
+      [keyof typeof METADATA_MAX_CHARS, number]
+    >) {
+      const value = article[field];
+      if ([...value].length <= maximum) continue;
+      issues.push({
+        code: 'metadata_length',
+        message: `${field} is ${[...value].length} characters; maximum is ${maximum}.`,
+        blocker: true,
+        locale,
+        field,
+        suggestedFix: `Shorten ${field} to ${maximum} characters or fewer without removing the concrete news hook.`,
+      });
+    }
+    for (const field of ['title', 'theme'] as const) {
+      const abstractTitle = ABSTRACT_EDITION_TITLE_PATTERNS[locale]
+        .map((pattern) => pattern.exec(article[field])?.[0])
+        .find(Boolean);
+      if (abstractTitle) {
+        issues.push({
+          code: 'abstract_edition_title',
+          message:
+            'The edition framing is an abstract theme label; it does not tell a reader which concrete stories are inside.',
+          blocker: true,
+          locale,
+          field,
+          span: abstractTitle,
+          suggestedFix:
+            'Name two or three concrete actors, products, results, or consequences from the lead stories.',
+        });
+      }
+    }
+    const standfirstBoilerplate =
+      locale === 'en'
+        ? /^(?:a )?weekly digest\b/i.exec(article.standfirst)?.[0]
+        : /^щотижневий дайджест/iu.exec(article.standfirst)?.[0];
+    if (standfirstBoilerplate) {
+      issues.push({
+        code: 'standfirst_boilerplate',
+        message:
+          'The standfirst spends its opening on format boilerplate instead of the issue’s news value.',
+        blocker: true,
+        locale,
+        field: 'standfirst',
+        span: standfirstBoilerplate,
+        suggestedFix:
+          'Open with the issue’s strongest concrete development and why it matters now.',
+      });
+    }
+  }
+  return issues;
+}
+
+/**
+ * Only fires on an explicit "N times more energy" comparison, not on the bare
+ * word "energy" -- an earlier version flagged any energy-adjacent framing
+ * (a headline about an energy deal, an energy-cost debate) with no
+ * comparison to justify. The concrete unit only needs to appear somewhere in
+ * the article, not the same field as the multiplier, since a headline has no
+ * room for both a hook and "kWh".
+ */
+function ambiguousEnergyClaimIssues(bundle: WeeklyMasterBundle): WeeklyQualityIssue[] {
+  const issues: WeeklyQualityIssue[] = [];
+  for (const locale of ['en', 'uk'] as const) {
+    const fields = articleTextFields(bundle[locale]);
+    const hasConcreteUnitAnywhere = fields.some((textField) =>
+      locale === 'en'
+        ? /\b(?:electricity|electrical|kwh|watt-hours?|power consumption)\b/i.test(
+            textField.value,
+          )
+        : /(?:електроенергі|кВт|Вт·?год|ват-год)/iu.test(textField.value),
+    );
+    if (hasConcreteUnitAnywhere) continue;
+    for (const textField of fields) {
+      const comparison =
+        locale === 'en'
+          ? /\b\d+\s*(?:x|times?)\s+more energy\b/i.exec(textField.value)?.[0]
+          : /в \d+ раз(?:и|ів)? більше енергії/iu.exec(textField.value)?.[0];
+      if (!comparison) continue;
+      issues.push({
+        code: 'ambiguous_energy_claim',
+        message:
+          'The story claims a multiple of “energy” without naming electricity, the measured unit, or workload anywhere in the article.',
+        blocker: true,
+        locale,
+        field: textField.field,
+        ...(textField.revisionItemId ? { revisionItemId: textField.revisionItemId } : {}),
+        span: comparison,
+        suggestedFix:
+          'Name the estimated electricity use and unit (for example kWh per session) somewhere in the story, and attribute it to the specific measured workload.',
+      });
+    }
+  }
+  return issues;
+}
+
+function ukrainianLanguageIssues(article: WeeklyArticleMaster): WeeklyQualityIssue[] {
+  const issues: WeeklyQualityIssue[] = [];
+  for (const textField of articleTextFields(article)) {
+    for (const rule of UKRAINIAN_LANGUAGE_RESIDUE) {
+      const match = rule.pattern.exec(textField.value);
+      if (!match) continue;
+      issues.push({
+        code: 'uk_language_residue',
+        message:
+          'The Ukrainian copy contains an untranslated, malformed, Russian, or internal-only word.',
+        blocker: true,
+        locale: 'uk',
+        field: textField.field,
+        ...(textField.revisionItemId ? { revisionItemId: textField.revisionItemId } : {}),
+        span: match[0],
+        suggestedFix: rule.replacement,
+      });
+    }
+  }
+  return issues;
+}
+
+function editorNoteClaimIssues(bundle: WeeklyMasterBundle): WeeklyQualityIssue[] {
+  const issues: WeeklyQualityIssue[] = [];
+  const patterns: Record<WeeklyLocale, RegExp> = {
+    en: /\boriginal research\b/i,
+    uk: /оригінальн(?:их|і) дослідженн(?:ях|я)/iu,
+  };
+  for (const locale of ['en', 'uk'] as const) {
+    const span = patterns[locale].exec(bundle[locale].editorNote)?.[0];
+    if (!span) continue;
+    issues.push({
+      code: 'unsupported_editorial_claim',
+      message:
+        'The editor note claims original research even though this edition is a synthesis of cited external primary sources.',
+      blocker: true,
+      locale,
+      field: 'editorNote',
+      span,
+      suggestedFix:
+        'Say that stories are based on cited primary sources and that editorial analysis is labeled separately.',
+    });
   }
   return issues;
 }
@@ -363,7 +644,10 @@ export function validateMasterBundle(
       issues.push({
         code: 'article_length',
         message: `${locale.toUpperCase()} master is ${articleWordCount} words; target is 2,000–3,000.`,
-        blocker: false,
+        // Small misses remain editorial warnings, but a draft more than 10%
+        // above the upper bound is too long to approve as-is. The first live
+        // v6 run reached 3,703 EN / 3,351 UK words and still passed.
+        blocker: articleWordCount < 1_800 || articleWordCount > 3_300,
         locale,
         suggestedFix: 'Adjust context and analysis without introducing unsupported claims.',
       });
@@ -433,7 +717,8 @@ export function validateMasterBundle(
               locale,
               revisionItemId: itemId,
               field: 'editorsView',
-              suggestedFix: 'Tighten or extend the speculation to 60–110 words without restating the body.',
+              suggestedFix:
+                'Tighten or extend the speculation to 60–110 words without restating the body.',
             });
           }
         }
@@ -525,6 +810,11 @@ export function validateMasterBundle(
     });
   }
   issues.push(...detectTemplateLeaks(bundle));
+  issues.push(...promptCopyIssues(bundle));
+  issues.push(...metadataQualityIssues(bundle));
+  issues.push(...ambiguousEnergyClaimIssues(bundle));
+  issues.push(...ukrainianLanguageIssues(bundle.uk));
+  issues.push(...editorNoteClaimIssues(bundle));
   return issues;
 }
 
@@ -639,7 +929,10 @@ export function validateVideoScript(
         field: 'voiceover',
       });
     }
-    if (scene.kind === 'broll' && !(scene.revisionItemId && knownStoryIds.has(scene.revisionItemId))) {
+    if (
+      scene.kind === 'broll' &&
+      !(scene.revisionItemId && knownStoryIds.has(scene.revisionItemId))
+    ) {
       issues.push({
         code: 'scene_story_link',
         message: `broll scene ${scene.id} must reference a real revisionItemId from this edition.`,
@@ -708,8 +1001,8 @@ const OVERALL_MIN_SCORE = 85;
  * mismatch) -- those mean the writer needs to rethink the story, not
  * reword a sentence, so they always fall through to a full regenerate.
  *
- * The six voice_register/engagement_structure/clarity_unclear/trust_
- * attribution/usefulness_generic/naturalness_calque codes are the critic's
+ * The seven voice_register/engagement_structure/clarity_unclear/trust_
+ * attribution/usefulness_generic/naturalness_calque/language_mechanics codes are the critic's
  * own controlled vocabulary for non-factual issues (see criticPrompt,
  * editorial-llm.ts) -- added after a live shadow run against the rejected
  * 2026-07-27 edition (2026-08-06) showed the critic otherwise invents
@@ -731,7 +1024,40 @@ const REVISABLE_ISSUE_CODES = new Set([
   'trust_attribution',
   'usefulness_generic',
   'naturalness_calque',
+  'language_mechanics',
+  'prompt_exemplar_copy',
+  'metadata_length',
+  'abstract_edition_title',
+  'standfirst_boilerplate',
+  'ambiguous_energy_claim',
+  'uk_language_residue',
+  'unsupported_editorial_claim',
 ]);
+
+/** Below this, a uniform score reads as a lazy default rather than earned excellence. */
+const RUBBER_STAMP_CEILING_SCORE = 95;
+
+/**
+ * Catches any identical-across-the-board score (not only the literal 90 the
+ * 2026-08-06 shadow run produced) as a likely lazy default, while carving
+ * out an escape valve for a genuinely outstanding, evenly-strong draft: a
+ * uniform score at or above RUBBER_STAMP_CEILING_SCORE is treated as earned.
+ */
+function looksLikeUniformCriticRubberStamp(
+  dimensions: Pick<WeeklyQualityDimension, 'name' | 'score'>[],
+) {
+  const receivedDimensions = new Set(dimensions.map((dimension) => dimension.name));
+  const wellFormed =
+    dimensions.length === REQUIRED_QUALITY_DIMENSIONS.length &&
+    receivedDimensions.size === REQUIRED_QUALITY_DIMENSIONS.length &&
+    REQUIRED_QUALITY_DIMENSIONS.every((name) => receivedDimensions.has(name));
+  if (!wellFormed) return false;
+  const [firstScore] = dimensions.map((dimension) => dimension.score);
+  return (
+    firstScore < RUBBER_STAMP_CEILING_SCORE &&
+    dimensions.every((dimension) => dimension.score === firstScore)
+  );
+}
 
 export function isRevisableIssueCode(code: string): boolean {
   return (
@@ -763,6 +1089,10 @@ export function reportIsRevisable(
     receivedDimensions.size === REQUIRED_QUALITY_DIMENSIONS.length &&
     REQUIRED_QUALITY_DIMENSIONS.every((name) => receivedDimensions.has(name));
   if (!wellFormedDimensions) return false;
+  // This is an evaluator failure, not an article field that the writer can
+  // safely line-edit. The live v6 critic returned seven identical 90s while
+  // missing obvious spelling, grammar and prompt-copy defects.
+  if (looksLikeUniformCriticRubberStamp(report.dimensions)) return false;
   return report.issues.every((issue) => isRevisableIssueCode(issue.code));
 }
 
@@ -780,11 +1110,15 @@ export function editorialQualityFailures(report: WeeklyContentQualityReport): st
   const failures: string[] = [];
 
   if (report.factualFlags.length > 0) {
-    failures.push(`${report.factualFlags.length} unresolved factual flag(s): ${report.factualFlags.join('; ')}`);
+    failures.push(
+      `${report.factualFlags.length} unresolved factual flag(s): ${report.factualFlags.join('; ')}`,
+    );
   }
   const blockers = report.issues.filter((issue) => issue.blocker);
   if (blockers.length > 0) {
-    failures.push(`${blockers.length} blocking issue(s): ${blockers.map((issue) => issue.code).join(', ')}`);
+    failures.push(
+      `${blockers.length} blocking issue(s): ${blockers.map((issue) => issue.code).join(', ')}`,
+    );
   }
   if (report.score < OVERALL_MIN_SCORE) {
     failures.push(`overall score ${report.score}/100 is below the ${OVERALL_MIN_SCORE} minimum`);
@@ -798,6 +1132,11 @@ export function editorialQualityFailures(report: WeeklyContentQualityReport): st
   if (requiredDimensions.size !== receivedDimensions.size && missingDimensions.length === 0) {
     failures.push(
       `expected exactly ${requiredDimensions.size} dimensions, got ${receivedDimensions.size} (duplicate or unexpected entries)`,
+    );
+  }
+  if (looksLikeUniformCriticRubberStamp(report.dimensions)) {
+    failures.push(
+      `all seven critic dimensions received the identical ${report.dimensions[0]!.score}/100; the evaluator must score and justify each dimension independently`,
     );
   }
   for (const dimension of report.dimensions) {

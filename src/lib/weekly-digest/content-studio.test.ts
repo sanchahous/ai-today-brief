@@ -223,7 +223,11 @@ describe('Weekly Content Studio hard gates', () => {
     expect(issues).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 'editors_view_missing', blocker: true, locale: 'en' }),
-        expect.objectContaining({ code: 'discussion_question_missing', blocker: true, locale: 'en' }),
+        expect.objectContaining({
+          code: 'discussion_question_missing',
+          blocker: true,
+          locale: 'en',
+        }),
       ]),
     );
   });
@@ -281,6 +285,163 @@ describe('Weekly Content Studio hard gates', () => {
           field: 'body',
         }),
       ]),
+    );
+  });
+
+  it('blocks prose copied from the legacy full-length prompt exemplar', () => {
+    const value = bundle();
+    value.en.intro =
+      "The pull request looked routine: a one-line dependency bump, approved by a bot, merged before anyone's coffee finished brewing.";
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        code: 'prompt_exemplar_copy',
+        blocker: true,
+        locale: 'en',
+        field: 'intro',
+      }),
+    );
+  });
+
+  it('blocks abstract framing, format boilerplate and overlong search/social metadata', () => {
+    const value = bundle();
+    value.uk.title = 'Зсув до агентів: енергія, інструменти й інфраструктура';
+    value.uk.theme = 'Зсув до агентів';
+    value.uk.standfirst = 'Щотижневий дайджест для програмістів і фахівців із ШІ.';
+    value.uk.seoTitle = 'Дуже довгий SEO-заголовок '.repeat(4);
+    value.uk.metaDescription = 'Надто довгий опис '.repeat(12);
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'abstract_edition_title',
+          blocker: true,
+          locale: 'uk',
+          field: 'title',
+        }),
+        expect.objectContaining({
+          code: 'abstract_edition_title',
+          blocker: true,
+          locale: 'uk',
+          field: 'theme',
+        }),
+        expect.objectContaining({ code: 'standfirst_boilerplate', blocker: true, locale: 'uk' }),
+        expect.objectContaining({ code: 'metadata_length', blocker: true, field: 'seoTitle' }),
+        expect.objectContaining({
+          code: 'metadata_length',
+          blocker: true,
+          field: 'metaDescription',
+        }),
+      ]),
+    );
+  });
+
+  it('blocks untranslated or malformed residue in Ukrainian copy', () => {
+    const value = bundle();
+    value.uk.stories[0]!.body =
+      'Агент опрацював 1,138 запитів і 3.2 мільярда токенів за 24 hours, але команда покладается на автоматизацію й отримала енерговитраження.';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'uk_language_residue',
+          blocker: true,
+          locale: 'uk',
+          field: 'body',
+          span: 'hours',
+        }),
+        expect.objectContaining({
+          code: 'uk_language_residue',
+          blocker: true,
+          locale: 'uk',
+          field: 'body',
+          span: '1,138',
+        }),
+        expect.objectContaining({
+          code: 'uk_language_residue',
+          blocker: true,
+          locale: 'uk',
+          field: 'body',
+          span: 'покладается',
+        }),
+      ]),
+    );
+  });
+
+  it('does not block "score" or "мейнтейнер" -- established dev-community loanwords, not untranslated residue', () => {
+    const value = bundle();
+    value.uk.stories[0]!.body =
+      'Модель показала кращий score у бенчмарку, а патч підтвердив мейнтейнер репозиторію.';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'uk_language_residue' })]),
+    );
+  });
+
+  it('blocks an energy multiplier with no unit named anywhere in the article, and unsupported original-research boilerplate', () => {
+    const value = bundle();
+    value.en.metaDescription = 'Agentic AI uses 600 times more energy than chat prompts.';
+    value.uk.standfirst = 'Агентне програмування спалює в 600 разів більше енергії.';
+    value.uk.editorNote =
+      'Кожна історія базується на первинних джерелах і оригінальних дослідженнях.';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'ambiguous_energy_claim',
+          blocker: true,
+          locale: 'en',
+          field: 'metaDescription',
+        }),
+        expect.objectContaining({ code: 'ambiguous_energy_claim', blocker: true, locale: 'uk' }),
+        expect.objectContaining({
+          code: 'unsupported_editorial_claim',
+          blocker: true,
+          locale: 'uk',
+          field: 'editorNote',
+        }),
+      ]),
+    );
+  });
+
+  it('does not block a bare mention of "energy" with no comparison -- fixes a false positive that blocked routine energy-sector news', () => {
+    const value = bundle();
+    value.en.title = 'OpenAI signs nuclear energy deal for data centers';
+    value.en.seoTitle = "The energy question nobody's asking about AI agents";
+    value.en.standfirst = 'Inside the energy debate reshaping AI infrastructure this week.';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'ambiguous_energy_claim' })]),
+    );
+  });
+
+  it('does not block an energy multiplier when the concrete unit appears elsewhere in the article, not the same field', () => {
+    const value = bundle();
+    value.en.metaDescription = 'Agentic AI uses 600 times more energy than chat prompts.';
+    value.en.stories[0]!.body = `${'evidence '.repeat(390)} The measured workload used 0.6 kWh per Claude Code session.`;
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'ambiguous_energy_claim', locale: 'en' }),
+      ]),
+    );
+  });
+
+  it('blocks a master that exceeds the article contract by more than ten percent', () => {
+    const value = bundle();
+    value.en.stories[0]!.body = 'evidence '.repeat(3_400);
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toContainEqual(
+      expect.objectContaining({ code: 'article_length', blocker: true, locale: 'en' }),
+    );
+  });
+
+  it('blocks a master that misses the article contract by more than ten percent', () => {
+    const value = bundle();
+    value.en.stories[0]!.body = 'Brief evidence.';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toContainEqual(
+      expect.objectContaining({ code: 'article_length', blocker: true, locale: 'en' }),
     );
   });
 });
@@ -359,9 +520,24 @@ describe('validateVideoScript', () => {
       scenes: [
         makeScene({ id: 'cold_open', kind: 'cold_open', voiceover: words(65) }),
         makeScene({ id: 'anchor_intro', kind: 'anchor', voiceover: words(45) }),
-        makeScene({ id: 'broll_1', kind: 'broll', revisionItemId: feature1, voiceover: words(260) }),
-        makeScene({ id: 'broll_2', kind: 'broll', revisionItemId: feature2, voiceover: words(260) }),
-        makeScene({ id: 'broll_3', kind: 'broll', revisionItemId: feature3, voiceover: words(260) }),
+        makeScene({
+          id: 'broll_1',
+          kind: 'broll',
+          revisionItemId: feature1,
+          voiceover: words(260),
+        }),
+        makeScene({
+          id: 'broll_2',
+          kind: 'broll',
+          revisionItemId: feature2,
+          voiceover: words(260),
+        }),
+        makeScene({
+          id: 'broll_3',
+          kind: 'broll',
+          revisionItemId: feature3,
+          voiceover: words(260),
+        }),
         makeScene({ id: 'anchor_radar', kind: 'anchor', voiceover: words(90) }),
         makeScene({ id: 'outro', kind: 'outro', voiceover: words(55) }),
       ],
@@ -393,7 +569,7 @@ describe('validateVideoScript', () => {
     );
   });
 
-  it('blocks a Short citing a fact ID outside its own story\'s approved claims', () => {
+  it("blocks a Short citing a fact ID outside its own story's approved claims", () => {
     const script = baselineScript();
     script.shorts[0]!.factIds = ['claim-2'];
     expect(validateVideoScript(script, expectedStories)).toContainEqual(
@@ -435,7 +611,11 @@ describe('validateVideoScript', () => {
     script.scenes[2]!.durationSeconds = 100;
     script.scenes[2]!.voiceover = words(25);
     expect(validateVideoScript(script, expectedStories)).toContainEqual(
-      expect.objectContaining({ code: 'scene_narration_mismatch', blocker: true, field: 'voiceover' }),
+      expect.objectContaining({
+        code: 'scene_narration_mismatch',
+        blocker: true,
+        field: 'voiceover',
+      }),
     );
   });
 
@@ -461,7 +641,11 @@ describe('validateVideoScript', () => {
     const script = baselineScript();
     script.scenes[0]!.revisionItemId = feature1;
     expect(validateVideoScript(script, expectedStories)).toContainEqual(
-      expect.objectContaining({ code: 'scene_story_link', blocker: false, field: 'revisionItemId' }),
+      expect.objectContaining({
+        code: 'scene_story_link',
+        blocker: false,
+        field: 'revisionItemId',
+      }),
     );
   });
 
@@ -469,7 +653,11 @@ describe('validateVideoScript', () => {
     const script = baselineScript();
     script.scenes[2]!.voiceover = "It's worth noting that this changes the story. " + words(255);
     expect(validateVideoScript(script, expectedStories)).toContainEqual(
-      expect.objectContaining({ code: 'template_leak:ai_tell_worth_noting', blocker: true, field: 'voiceover' }),
+      expect.objectContaining({
+        code: 'template_leak:ai_tell_worth_noting',
+        blocker: true,
+        field: 'voiceover',
+      }),
     );
   });
 
@@ -477,7 +665,11 @@ describe('validateVideoScript', () => {
     const script = baselineScript();
     script.shorts[0]!.context = 'Варто зазначити, що це змінює ситуацію.';
     expect(validateVideoScript(script, expectedStories)).toContainEqual(
-      expect.objectContaining({ code: 'template_leak:ai_tell_varto_zaznachyty', blocker: true, field: 'context' }),
+      expect.objectContaining({
+        code: 'template_leak:ai_tell_varto_zaznachyty',
+        blocker: true,
+        field: 'context',
+      }),
     );
   });
 });
@@ -490,7 +682,11 @@ const PASSING_DIMENSIONS: WeeklyQualityDimension[] = [
   'usefulness',
   'naturalness',
   'parity',
-].map((name) => ({ name: name as WeeklyQualityDimension['name'], score: 90, note: 'fine' }));
+].map((name, index) => ({
+  name: name as WeeklyQualityDimension['name'],
+  score: [91, 90, 92, 89, 91, 88, 90][index]!,
+  note: 'fine',
+}));
 
 function report(overrides: Partial<WeeklyContentQualityReport> = {}): WeeklyContentQualityReport {
   return {
@@ -515,9 +711,12 @@ describe('isRevisableIssueCode', () => {
     expect(isRevisableIssueCode('story_length')).toBe(true);
     expect(isRevisableIssueCode('template_leak:label_opener_practical')).toBe(true);
     expect(isRevisableIssueCode('dimension_low_score:voice')).toBe(true);
+    expect(isRevisableIssueCode('prompt_exemplar_copy')).toBe(true);
+    expect(isRevisableIssueCode('metadata_length')).toBe(true);
+    expect(isRevisableIssueCode('uk_language_residue')).toBe(true);
   });
 
-  it('accepts the critic\'s controlled non-factual vocabulary', () => {
+  it("accepts the critic's controlled non-factual vocabulary", () => {
     // Added after a live shadow run (2026-08-06, ai-weekly-2026-07-27)
     // showed the critic otherwise invents ad-hoc codes like
     // "VOICE_TEMPLATE_LEAK" that never match this set.
@@ -528,6 +727,7 @@ describe('isRevisableIssueCode', () => {
       'trust_attribution',
       'usefulness_generic',
       'naturalness_calque',
+      'language_mechanics',
     ]) {
       expect(isRevisableIssueCode(code), `expected ${code} to be revisable`).toBe(true);
     }
@@ -574,7 +774,33 @@ describe('reportIsRevisable', () => {
     // derived separately via editorialQualityRetryGuidance), so a naive
     // `issues.length > 0 && issues.every(...)` check would wrongly say
     // "nothing to revise" here.
-    expect(reportIsRevisable(report({ issues: [] }))).toBe(true);
+    const dimensions = PASSING_DIMENSIONS.map((dimension) =>
+      dimension.name === 'voice' ? { ...dimension, score: 70 } : dimension,
+    );
+    expect(reportIsRevisable(report({ issues: [], dimensions }))).toBe(true);
+  });
+
+  it('does not send seven mechanically identical scores to the writer revise loop', () => {
+    const dimensions = PASSING_DIMENSIONS.map((dimension) => ({ ...dimension, score: 90 }));
+    const value = report({ dimensions });
+    expect(reportIsRevisable(value)).toBe(false);
+    expect(editorialQualityFailures(value)).toContainEqual(
+      expect.stringContaining('all seven critic dimensions received the identical 90/100'),
+    );
+  });
+
+  it('catches a uniform lazy default at any score, not only the literal 90 the shadow run produced', () => {
+    const dimensions = PASSING_DIMENSIONS.map((dimension) => ({ ...dimension, score: 85 }));
+    expect(reportIsRevisable(report({ dimensions }))).toBe(false);
+  });
+
+  it('does not flag a genuinely outstanding, evenly-strong draft as a rubber stamp', () => {
+    const dimensions = PASSING_DIMENSIONS.map((dimension) => ({ ...dimension, score: 96 }));
+    const value = report({ dimensions });
+    expect(reportIsRevisable(value)).toBe(true);
+    expect(editorialQualityFailures(value)).not.toContainEqual(
+      expect.stringContaining('received the identical'),
+    );
   });
 
   it('is revisable when every issue present is a prose-level code', () => {
@@ -591,7 +817,9 @@ describe('reportIsRevisable', () => {
   });
 
   it('is not revisable when any factual flag is present, regardless of issues', () => {
-    expect(reportIsRevisable(report({ factualFlags: ['unsupported number: 141,006'] }))).toBe(false);
+    expect(reportIsRevisable(report({ factualFlags: ['unsupported number: 141,006'] }))).toBe(
+      false,
+    );
   });
 
   it('is not revisable when a structural/grounding issue is mixed in with prose issues', () => {
@@ -608,8 +836,6 @@ describe('reportIsRevisable', () => {
   });
 
   it('is not revisable when the dimension set is malformed (critic misbehaved)', () => {
-    expect(
-      reportIsRevisable(report({ dimensions: PASSING_DIMENSIONS.slice(0, 5) })),
-    ).toBe(false);
+    expect(reportIsRevisable(report({ dimensions: PASSING_DIMENSIONS.slice(0, 5) }))).toBe(false);
   });
 });

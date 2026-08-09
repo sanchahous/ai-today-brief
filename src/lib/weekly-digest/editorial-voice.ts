@@ -22,13 +22,13 @@ export interface BannedPhraseRule {
   message: string;
 }
 
-export const VOICE_EN = `You write the way a sharp, well-read colleague explains the week's most important AI story to another builder over coffee -- not the way a compliance memo summarizes an incident. Open every story mid-scene, at the concrete moment that makes it real: an agent finding a door that should have been locked, a researcher staring at a cipher that just gave way. Never open with an abstract thesis about "the tension" or "the operating model."
+export const VOICE_EN = `You write the way a sharp, well-read colleague explains the week's most important AI story to another builder over coffee -- not the way a compliance memo summarizes an incident. Open with a concrete, source-supported fact, contrast, or documented moment. Never invent a scene, reaction, crash, chronology, quote, or character detail just to make the opening feel cinematic. If the evidence contains no real scene, lead with the strongest verified result and explain why it is surprising. Never open with an abstract thesis about "the tension" or "the operating model."
 
 Vary your sentence length on purpose. A short sentence lands a fact. A longer one carries the reasoning that connects it to what came before. Name real actors doing real things -- "Anthropic's red team found," not "it was found that." Read every paragraph back and ask whether a person would keep reading, or whether it reads like a form that happened to use full sentences.
 
 Show your own reasoning, not just the facts. Say plainly what surprised you, what still bothers you about it, or where you think this is heading -- that is the editorial judgment the reader is here for, not a neutral recap they could get from the source. A story is not four interchangeable slots (what/why/how/limits) stapled together; it has one throughline: what happened, why it is stranger or bigger than the headline suggests, and what you think it changes. The reader should feel a person thought about this, not that a template got filled in.`;
 
-export const VOICE_UK = `Пишіть так, як розумний, начитаний колега розповідає іншому розробнику головну подію тижня за кавою -- а не так, як службова записка описує інцидент. Кожна історія відкривається зі сцени, з конкретного моменту, який робить подію реальною: агент знаходить двері, які мали бути замкнені, дослідник дивиться на шифр, що щойно піддався. Ніколи не починайте з абстрактної тези на кшталт «напруга очевидна» чи «операційна модель».
+export const VOICE_UK = `Пишіть так, як розумний, начитаний колега розповідає іншому розробнику головну подію тижня за кавою -- а не так, як службова записка описує інцидент. Починайте з конкретного факту, контрасту або моменту, який прямо підтверджений джерелом. Не вигадуйте сцену, реакцію людини, збій, хронологію, цитату чи деталь персонажа заради кінематографічного відкриття. Якщо в доказах немає реальної сцени, почніть із найсильнішого перевіреного результату й поясніть, чому він дивує. Ніколи не починайте з абстрактної тези на кшталт «напруга очевидна» чи «операційна модель».
 
 Свідомо чергуйте довжину речень. Коротке речення фіксує факт. Довше -- несе міркування, яке пов'язує цей факт із попереднім. Називайте реальних дійових осіб, які роблять реальні речі: «команда Anthropic виявила», а не «було виявлено». Перечитайте кожен абзац і запитайте: людина читатиме це далі, чи це читається як форма, яку заповнили повними реченнями.
 
@@ -37,7 +37,11 @@ export const VOICE_UK = `Пишіть так, як розумний, начит�
 Уникайте кальок з англійської та канцеляризмів: не «є ключовим», а конкретне дієслово; не «в рамках», а «під час» або «як частина»; не «забезпечує можливість», а «дозволяє» чи «дає змогу»; не «варто зазначити», просто скажіть це.`;
 
 export interface VoiceExemplar {
-  /** Style reference only -- the model must never reuse its facts/names/numbers. */
+  /**
+   * Legacy full-length exemplar retained only for deterministic copy-leak
+   * detection. It is deliberately NOT injected into writer prompts: the
+   * first live v6 run copied it verbatim into the edition introduction.
+   */
   opening: string;
 }
 
@@ -70,7 +74,7 @@ export const CONTRAST_PAIRS_EN: ContrastPair[] = [
     note: 'Drop the leader-briefing frame and the abstract noun "tension"; open on the concrete, surprising fact instead.',
   },
   {
-    bad: 'This report is limited to a retrospective review of Anthropic\'s specific third-party evaluation environments and does not establish a universal measure of risk.',
+    bad: "This report is limited to a retrospective review of Anthropic's specific third-party evaluation environments and does not establish a universal measure of risk.",
     good: "That doesn't mean every agent behaves this way in every test environment -- Anthropic is describing its own retrospective review, not handing down a general forecast.",
     note: 'Say the limitation as a sentence a person would say, not as a boilerplate disclaimer clause.',
   },
@@ -85,7 +89,7 @@ export const CONTRAST_PAIRS_UK: ContrastPair[] = [
   {
     bad: 'Для керівників продукту та безпеки напруга очевидна: реалізм може зробити справжню ціль правдоподібною, якщо ізоляція неповна.',
     good: 'Ось незручна частина: що реалістичнішою робиш симуляцію злому, то більше вона починає виглядати як справжня ціль -- і цього разу модель не змогла відрізнити одне від іншого.',
-    note: 'Прибрати рамку "для керівників" і абстрактний "напругу"; почати з конкретного, несподіваного факту.',
+    note: 'Прибрати рамку «для керівників» і абстрактну «напругу»; почати з конкретного, несподіваного факту.',
   },
   {
     bad: 'Обмеження полягає в тому, що цей звіт стосується ретроспективного огляду Anthropic і конкретних сторонніх середовищ оцінювання.',
@@ -112,14 +116,18 @@ export const SPECULATION_SPEC_UK = `ПОГЛЯД РЕДАКЦІЇ (editorsView, 
 Це єдине місце, де можна вийти за межі того, що встановлюють джерела. Сформулюйте реальне, конкретне припущення про те, куди це веде або чому це важливіше, ніж здається -- «якщо ця закономірність триватиме, наступна версія цієї помилки може стосуватися X» -- а не переказ тіла статті. Це має бути однозначно позначено як ваше власне міркування, не як факт із джерела: використовуйте явно редакційне формулювання («На нашу думку», «Варто стежити за тим», «Ось де стає цікаво») -- ніколи не подавайте припущення тим самим рівним стверджувальним тоном, що й факт із джерела. 60-110 слів. Не повторюйте твердження, цифру чи цитату, вже використану в тілі статті -- розвивайте історію, а не переказуйте її. Завершіть реальним, відкритим напруженням: чимось, із чим уважний читач міг би посперечатися, а не риторичним питанням з очевидною відповіддю.`;
 
 /**
- * Assembles the voice block (positive model + exemplar + contrast pairs +
- * speculation spec) for the master writer prompts. Kept as one function so
+ * Assembles the voice block (positive model + contrast pairs + speculation
+ * spec) for the master writer prompts. Kept as one function so
  * both englishPrompt and ukrainianPrompt build the block identically instead
  * of hand-concatenating these constants at each call site.
+ *
+ * Full-length exemplars are intentionally excluded. A real v6 generation
+ * copied EXEMPLAR_EN verbatim into intro and translated the same fabricated
+ * incident into Ukrainian. Contrast pairs teach register without supplying a
+ * ready-made paragraph that can leak into published copy.
  */
 export function voicePromptBlock(locale: 'en' | 'uk'): string {
   const voice = locale === 'en' ? VOICE_EN : VOICE_UK;
-  const exemplar = locale === 'en' ? EXEMPLAR_EN : EXEMPLAR_UK;
   const pairs = locale === 'en' ? CONTRAST_PAIRS_EN : CONTRAST_PAIRS_UK;
   const speculation = locale === 'en' ? SPECULATION_SPEC_EN : SPECULATION_SPEC_UK;
   const pairsBlock = pairs
@@ -131,13 +139,15 @@ export function voicePromptBlock(locale: 'en' | 'uk'): string {
   return `VOICE
 ${voice}
 
-OPENING STYLE REFERENCE
-${exemplar.opening}
-
 REGISTER CONTRAST -- avoid the left column, write like the right column
 ${pairsBlock}
 
 ${speculation}`;
+}
+
+/** Full exemplar text used only by the deterministic prompt-copy gate. */
+export function exemplarFor(locale: 'en' | 'uk'): VoiceExemplar {
+  return locale === 'en' ? EXEMPLAR_EN : EXEMPLAR_UK;
 }
 
 /**
@@ -153,17 +163,20 @@ export const BANNED_PHRASES_EN: BannedPhraseRule[] = [
   {
     code: 'label_opener_practical',
     pattern: /\b(practical scenario|practical example)\s*:/i,
-    message: 'Never open a sentence with a category label like "Practical scenario:" -- narrate the scenario directly instead of restating the practical field inside the body.',
+    message:
+      'Never open a sentence with a category label like "Practical scenario:" -- narrate the scenario directly instead of restating the practical field inside the body.',
   },
   {
     code: 'label_opener_limitation',
     pattern: /\b(the limitation is that|limitations?\s*:)/i,
-    message: 'Never state the limitation as a labeled clause inside the body -- it already has its own field; say it as a sentence a person would say, or omit it from the body.',
+    message:
+      'Never state the limitation as a labeled clause inside the body -- it already has its own field; say it as a sentence a person would say, or omit it from the body.',
   },
   {
     code: 'label_opener_takeaway',
     pattern: /\b(the takeaway (?:is|here)|decision[- ]ready takeaway\s*:)/i,
-    message: 'Never restate the takeaway inside the body using its field name -- the takeaway has its own box.',
+    message:
+      'Never restate the takeaway inside the body using its field name -- the takeaway has its own box.',
   },
   {
     code: 'label_opener_why',
@@ -198,7 +211,8 @@ export const BANNED_PHRASES_EN: BannedPhraseRule[] = [
   {
     code: 'ai_tell_leader_frame',
     pattern: /\bfor (?:product|security|technology|business) (?:and \w+ )?leaders\b/i,
-    message: 'The audience is builders and the tech-curious, not a leadership briefing -- drop the leader-memo frame.',
+    message:
+      'The audience is builders and the tech-curious, not a leadership briefing -- drop the leader-memo frame.',
   },
 ];
 
@@ -206,12 +220,14 @@ export const BANNED_PHRASES_UK: BannedPhraseRule[] = [
   {
     code: 'label_opener_practical',
     pattern: /практичн(?:ий|ого) сценарі[йя]\s*:/i,
-    message: 'Не починати речення міткою «Практичний сценарій:» -- розповісти сценарій напряму, не переказуючи поле practical у тілі статті.',
+    message:
+      'Не починати речення міткою «Практичний сценарій:» -- розповісти сценарій напряму, не переказуючи поле practical у тілі статті.',
   },
   {
     code: 'label_opener_limitation',
     pattern: /обмеженн(?:я|ям) полягає в тому/i,
-    message: 'Не подавати обмеження як шаблонну конструкцію в тілі -- у нього є власне поле; сформулювати як живе речення або прибрати з тіла.',
+    message:
+      'Не подавати обмеження як шаблонну конструкцію в тілі -- у нього є власне поле; сформулювати як живе речення або прибрати з тіла.',
   },
   {
     code: 'label_opener_takeaway',
@@ -243,7 +259,8 @@ export const BANNED_PHRASES_UK: BannedPhraseRule[] = [
   {
     code: 'ai_tell_leader_frame',
     pattern: /для керівник(?:ів|а) (?:продукту|безпеки|технологій|бізнесу)/i,
-    message: 'Аудиторія -- розробники й техно-цікаві читачі, не керівництво; прибрати рамку "для керівників".',
+    message:
+      'Аудиторія -- розробники й техно-цікаві читачі, не керівництво; прибрати рамку "для керівників".',
   },
   {
     code: 'listicle_opener_this_week',

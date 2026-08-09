@@ -6,6 +6,63 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-09
 
+## 2026-08-09 — Weekly Content Studio: v7.1 commercial-balance point fixes
+
+**Джерело:** owner review of PR #199 (v7 hardening) — питання, чи детерміновані гейти зарізали
+комерційну привабливість (авторське бачення, практична цінність, retention) заради чистоти
+фактажу. Три хибнопозитиви підтверджено емпіричним прогоном regex-гейтів на реальних заголовках.
+
+**Змінено (`content-studio.ts`):**
+
+- `ambiguous_energy_claim` звужено до явного порівняння («N times/разів more energy») — раніше
+  блокував будь-яку згадку слова «energy»/«енергія» у framing-полях (title/seoTitle/meta/
+  standfirst/theme), напр. «OpenAI signs nuclear energy deal» чи «Скільки енергії з'їдає
+  кодинг-агент». Конкретна одиниця (kWh/електроенергія) тепер шукається по всій статті, а не в
+  тому самому полі — `seoTitle` фізично не вміщує і гачок, і одиницю в 65 символів;
+- UK `uk_language_residue`: прибрано `score` і `мейнтейнер` з блоклиста — усталені
+  dev-жаргонізми цільової аудиторії, не неперекладений/зламаний текст;
+- `looksLikeUniformCriticRubberStamp`: замість жорсткого «усі сім рівно 90/100» — будь-яка
+  однакова оцінка нижче 95 (лишає можливість для дійсно рівно сильного, не «заглушеного»
+  чернетки отримати uniform ≥95 без штучного regenerate-циклу).
+
+**Чому:** Definition of Done проєкту — прибутковий продукт із повторюваним трафіком
+(`wiki/overview.md` §1), а Week-1 retention вже задокументовано як ≈0 (§7 #2). Заборонні гейти
+без симетричних вимог до цікавості тягнуть текст у канцелярит, що працює проти retention.
+
+**Не змінено:** решта v7-гейтів (prompt-copy, metadata length, abstract title, standfirst
+boilerplate, unsupported-original-research, article length) — залишені як є, підтверджені
+коректними.
+
+## 2026-08-09 — Weekly Content Studio: quality hardening v7
+
+**Джерело:** owner audit + live admin read випуску
+`843975a8-8c19-4eca-96a8-035f76eae3ab`, 2026-08-09.
+
+**Змінено:**
+
+- `editorial-voice.ts` — повні exemplars вилучено з writer prompt; джерельно непідтверджені
+  сцени/реакції/хронологія прямо заборонені;
+- `editorial-llm.ts` — конкретні titles, атрибуція single-source case studies, визначені
+  electricity units/workload, доказова наскрізна логіка Top 3 без форсованої umbrella-теми,
+  UK proofreading/localization, critic calibration і новий revisable-код `language_mechanics`;
+- `content-studio.ts` — `weekly-master-v7`, legacy exemplar overlap, metadata, abstract-title,
+  ambiguous-energy framing, UK residue, unsupported-original-research, gross-length і
+  uniform-critic-score blockers;
+- `weekly-workspace.tsx` — зрозумілі підписи standfirst / search preview / Open Graph і
+  редакційні ліміти полів;
+- тести — регресії для prompt leakage, вигаданих сцен, мовних помилок, localization, metadata
+  та critic rubber-stamping;
+- `wiki/pipeline/{weekly-digest,editorial-voice}.md`, `wiki/ops/weekly-admin-runbook.md`,
+  `wiki/now.md`, `wiki/index.md` — оновлено контракт і редакторський runbook.
+
+**Нотатка:** поточний записаний випуск не редагувався й не апрувився автоматично; зміни
+посилюють наступну регенерацію після deployment.
+
+**Перевірка:** `npm run pr:check` — 957/957 тестів, coverage gate, TypeScript, ESLint,
+affected E2E map, strict wiki sync/lint і Next.js production build пройшли.
+
+---
+
 ## 2026-08-09 — recovery GitHub Actions dispatcher для Weekly Digest
 
 **Джерело:** production Supabase migrations `20260809064415_weekly_github_dispatch_fix`,
