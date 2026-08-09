@@ -10,6 +10,7 @@ import {
   computeEnglishCheckpointHash,
   computeSocialCopyCheckpointHash,
   computeUkrainianCheckpointHash,
+  fullMasterCheckpointFromOutput,
   masterInputStories,
   runWeeklyDigestGenerationJobs,
 } from './generation-worker';
@@ -131,6 +132,29 @@ describe('computeUkrainianCheckpointHash', () => {
     const before = computeUkrainianCheckpointHash(packs, 'english-hash-a', []);
     const after = computeUkrainianCheckpointHash(packs, 'english-hash-b', []);
     expect(before).not.toBe(after);
+  });
+});
+
+describe('fullMasterCheckpointFromOutput', () => {
+  const savedCheckpoint = {
+    englishCheckpointHash: 'english-hash',
+    ukrainianCheckpointHash: 'ukrainian-hash',
+    english: { value: { article: { title: 'English' } }, metadata: { provider: 'test' } },
+    ukrainian: { value: { title: 'Українська' }, metadata: { provider: 'test' } },
+  };
+
+  it('accepts the durable EN and UK pair saved by a prior failed master job', () => {
+    expect(fullMasterCheckpointFromOutput(savedCheckpoint)).toEqual({
+      english: savedCheckpoint.english,
+      ukrainian: savedCheckpoint.ukrainian,
+    });
+  });
+
+  it('refuses a partial or unaddressable checkpoint as a resume source', () => {
+    expect(fullMasterCheckpointFromOutput({ ...savedCheckpoint, ukrainian: undefined })).toBeNull();
+    expect(
+      fullMasterCheckpointFromOutput({ ...savedCheckpoint, englishCheckpointHash: '' }),
+    ).toBeNull();
   });
 });
 

@@ -22,7 +22,8 @@ Last updated: 2026-08-09
 | Review **in_review** | Чекає людського апруву | **Approve** або Request changes |
 | Review **approved** | Можна йти далі по пайплайну | Нічого, наступний крок |
 | Job **queued** + packs не approved | Worker **свідомо не стартує** master | Approve усі 3 Top packs |
-| Job **failed** + quality report | Critic / gate відхилив master | Читай blockers → Start/retry |
+| Job **failed** + **Resume saved master** | EN+UK уже збережено, далі впав critic/revise | Натисни **Resume saved master**, не generic retry |
+| Job **failed** без Resume | Немає повного checkpoint або інший тип збою | Читай причину → doctor/sandbox → linked retry лише після діагностики |
 
 **Succeeded ≠ approved.** Це найчастіша причина «чому master у черзі».
 
@@ -49,7 +50,9 @@ Overview показує preflight blockers з лінком на вкладку. 
 5. Лише тоді `editorial_master` переходить у **queued** і одразу отримує один GitHub Actions
    worker (cron ~кожні **5 хв** лишається safety-dispatcher).
 6. Коли з’явиться **Master quality**:
-   - червоні **blockers** → знову Start/retry (guidance підхопить blockers);
+   - якщо failed job показує **Resume saved master** → натисни її: EN+UK не пишуться повторно,
+     запускається тільки critic/targeted revise; не тисни поруч generic retry;
+   - якщо **Resume saved master** немає → діагностуй blocker, далі Start/retry за потреби;
    - жовті length warnings часто не блокують Approve, якщо score/gate ок;
    - з 2026-08-06 сюди можуть потрапити нові блокери `editors_view_missing` /
      `discussion_question_missing` (тільки для трьох головних історій) і
@@ -136,14 +139,21 @@ Release preflight на Overview / Release покаже, що ще червоне
    ці кроки спершу тримають голос EN-writer, але після його збою автоматично переходять до
    наступного provider у драбині. Звір фактичний provider/model і причину в run; prose перед
    валідним JSON від CLI також відновлюється автоматично.
-(source: `src/lib/weekly-digest/editorial-llm.ts`, Actions run `31324873875`)
+5. Якщо у failed `editorial_master` доступна **Resume saved master**, це означає, що job має
+   обидві durable checkpoint-частини та їх hashes. Вона створює окремий linked job на тій самій
+   active revision, не запускає початкові EN/UK writer calls і перед першою наступною paid
+   операцією копіює checkpoint у новий job. Дочекайся нового critic verdict; uniform 90/100
+   лишається коректним quality failure, а не привід обходити перевірку.
+(source: `src/lib/weekly-digest/editorial-llm.ts`, `src/lib/weekly-digest/generation-worker.ts`,
+`src/components/admin/weekly-generation-jobs-live.tsx`, Actions run `31324873875`)
 
 Деталі й що вже виправлено — [pipeline/weekly-master-failures](../pipeline/weekly-master-failures.md),
 інструменти — [ops/weekly-sandbox](weekly-sandbox.md).
 
 ## Що не робити
 
-- Не Approve **Master quality** при `passed: false` — master у ревізію не записався.
+- Не Approve **Master quality** при `passed: false` — master не став active; draft може бути
+  збережений для review, а quality report лишається прив'язаним до active revision.
 - Не спамити Start/retry без Approve packs — master все одно не стартує.
 - Не правити Article body вручну, щоб «обійти» failed master — правильний шлях retry / research.
 

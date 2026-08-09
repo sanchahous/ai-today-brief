@@ -425,7 +425,9 @@ async function signedArtifactUrl(
   return error ? null : data.signedUrl;
 }
 
-async function loadGenerationContext(job: Pick<ClaimedGenerationJob, 'weekly_digest_id' | 'revision_id'>) {
+async function loadGenerationContext(
+  job: Pick<ClaimedGenerationJob, 'weekly_digest_id' | 'revision_id'>,
+) {
   const db = getSupabaseAdmin();
   const [digestResult, revisionResult, itemsResult, artifactsResult] = await Promise.all([
     db
@@ -973,6 +975,32 @@ type MasterCheckpointOutput = {
   ukrainian?: WeeklyMasterUkrainianResult;
 };
 
+/**
+ * A completed bilingual checkpoint can safely outlive the job that wrote it.
+ * The parser already validated both values before `saveMasterCheckpoint`
+ * persisted them, so recovery only verifies a non-empty, hash-addressable
+ * bilingual pair rather than duplicating every nested editorial schema.
+ */
+export function fullMasterCheckpointFromOutput(
+  value: Json | null | undefined,
+): WeeklyMasterCheckpoint | null {
+  const output = asRecord(value);
+  const english = asRecord(output.english);
+  const ukrainian = asRecord(output.ukrainian);
+  if (
+    !text(output.englishCheckpointHash) ||
+    !text(output.ukrainianCheckpointHash) ||
+    Object.keys(english).length === 0 ||
+    Object.keys(ukrainian).length === 0
+  ) {
+    return null;
+  }
+  return {
+    english: output.english as unknown as WeeklyMasterEnglishResult,
+    ukrainian: output.ukrainian as unknown as WeeklyMasterUkrainianResult,
+  };
+}
+
 async function loadMasterCheckpoint(
   jobId: string,
   expectedEnglishHash: string,
@@ -991,6 +1019,34 @@ async function loadMasterCheckpoint(
     output.ukrainianCheckpointHash === expectedUkrainianHash ? output.ukrainian : undefined;
   if (!english && !ukrainian) return null;
   return { english, ukrainian };
+}
+
+async function loadMasterResumeCheckpoint(
+  job: ClaimedGenerationJob,
+): Promise<{ checkpoint: WeeklyMasterCheckpoint; sourceJobId: string } | null> {
+  const sourceJobId = text(asRecord(job.input).resume_from_job_id);
+  if (!sourceJobId) return null;
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('weekly_digest_generation_jobs')
+    .select('id,weekly_digest_id,revision_id,job_type,status,output')
+    .eq('id', sourceJobId)
+    .maybeSingle();
+  if (error) throw new Error(`[weekly-generation] master resume lookup: ${error.message}`);
+  if (
+    !data ||
+    data.job_type !== 'editorial_master' ||
+    data.status !== 'failed' ||
+    data.weekly_digest_id !== job.weekly_digest_id ||
+    data.revision_id !== job.revision_id
+  ) {
+    throw new Error('Master resume source must be a failed master job for this digest revision.');
+  }
+  const checkpoint = fullMasterCheckpointFromOutput(data.output);
+  if (!checkpoint) {
+    throw new Error('Master resume source does not contain a complete saved EN and UK checkpoint.');
+  }
+  return { checkpoint, sourceJobId };
 }
 
 async function saveMasterCheckpoint(
@@ -1117,21 +1173,44 @@ async function generateEditorialMaster(
     englishCheckpointHash,
     retryGuidance,
   );
-  const checkpoint = await loadMasterCheckpoint(
-    job.id,
-    englishCheckpointHash,
-    ukrainianCheckpointHash,
-  );
+  const resume = await loadMasterResumeCheckpoint(job);
+  const checkpoint =
+    resume?.checkpoint ??
+    (await loadMasterCheckpoint(job.id, englishCheckpointHash, ukrainianCheckpointHash));
+  if (resume) {
+    // Copy the source before the next paid call. A later critic/revise failure
+    // can then resume from this newest job instead of relying on an older row.
+    await saveMasterCheckpoint(
+      tracker,
+      englishCheckpointHash,
+      ukrainianCheckpointHash,
+      resume.checkpoint,
+      'ukrainian',
+    );
+    await tracker.event({
+      type: 'checkpoint_reused',
+      step: 'prepare',
+      progressCurrent: 58,
+      progressTotal: 100,
+      message: 'Reused saved English and Ukrainian master checkpoint',
+      metadata: { resume_source_job_id: resume.sourceJobId },
+    });
+  }
   // Accumulates across both onStepComplete calls so the ukrainian save doesn't
   // clobber the english step just persisted moments earlier in this same run.
   let runningCheckpoint = checkpoint;
   const providerCallStartedAt = new Map<'english' | 'ukrainian' | 'critic' | 'revisions', number>();
+  const hasFullCheckpoint = Boolean(checkpoint?.english && checkpoint.ukrainian);
   await tracker.event({
     type: 'step_started',
-    step: checkpoint?.english ? 'ukrainian' : 'english',
-    progressCurrent: checkpoint?.english ? 30 : 2,
+    step: hasFullCheckpoint ? 'critic' : checkpoint?.english ? 'ukrainian' : 'english',
+    progressCurrent: hasFullCheckpoint ? 60 : checkpoint?.english ? 30 : 2,
     progressTotal: 100,
-    message: checkpoint?.english ? 'Reusing English checkpoint' : 'Starting English writer',
+    message: hasFullCheckpoint
+      ? 'Reusing English and Ukrainian checkpoints; starting editorial critic'
+      : checkpoint?.english
+        ? 'Reusing English checkpoint'
+        : 'Starting English writer',
   });
   const result = await generateWeeklyMaster(sourceStories, researchPacks, retryGuidance, {
     checkpoint,
@@ -1216,20 +1295,22 @@ async function generateEditorialMaster(
       requestedMode,
       approvedResearch,
       rpcName: 'create_service_weekly_digest_revision_draft',
+      persistArticleArtifacts: false,
       // Truncated to 120 chars by the RPC and shown as-is on the revision
       // card (weekly-workspace.tsx) -- keep it short enough to read there
       // without opening the linked quality report artifact.
       reason: `Quality gate: ${result.quality.score}/100, ${failures.length} check(s) failed`,
     });
-    await saveQualityReport({
-      weeklyDigestId: job.weekly_digest_id,
-      revisionId: draft.revisionId,
-      report: result.quality,
-      generation: result.generation,
-      passed: false,
-      jobId: job.id,
-      recordCost: false,
-    });
+    await tracker.checkpoint(
+      {
+        master_draft_revision_id: draft.revisionId,
+        quality_artifact_id: qualityArtifactId,
+        quality_score: result.quality.score,
+        quality_passed: false,
+      },
+      'quality',
+      90,
+    );
     throw new Error(
       `Master quality gate failed (${result.quality.score}/100): ${failures.join('; ')}. Review artifact ${qualityArtifactId}. Draft revision ${draft.revisionId} was saved for review under Overview -> Editorial versions -- it did not become active.`,
     );
@@ -1242,6 +1323,7 @@ async function generateEditorialMaster(
     requestedMode,
     approvedResearch,
     rpcName: 'create_service_weekly_digest_revision',
+    persistArticleArtifacts: true,
     reason: 'weekly_content_studio_v2_master',
   });
   const qualityArtifactId = await saveQualityReport({
@@ -1290,9 +1372,19 @@ async function createMasterRevision(params: {
   requestedMode: ReturnType<typeof contentStudioJobMode>;
   approvedResearch: ReturnType<typeof researchPacksFromContext>;
   rpcName: 'create_service_weekly_digest_revision' | 'create_service_weekly_digest_revision_draft';
+  persistArticleArtifacts: boolean;
   reason: string;
 }) {
-  const { job, context, result, requestedMode, approvedResearch, rpcName, reason } = params;
+  const {
+    job,
+    context,
+    result,
+    requestedMode,
+    approvedResearch,
+    rpcName,
+    persistArticleArtifacts,
+    reason,
+  } = params;
   const enById = new Map(result.bundle.en.stories.map((story) => [story.revisionItemId, story]));
   const ukById = new Map(result.bundle.uk.stories.map((story) => [story.revisionItemId, story]));
   const researchById = new Map(
@@ -1359,6 +1451,12 @@ async function createMasterRevision(params: {
     throw new Error(
       `[weekly-generation] create master revision: ${error?.message ?? 'missing revision ID'}`,
     );
+  }
+  // Artifacts are deliberately active-revision-only. A quality-rejected
+  // revision remains inactive for owner review, so attaching EN/UK artifacts
+  // here would turn an editorial rejection into an infrastructure failure.
+  if (!persistArticleArtifacts) {
+    return { revisionId: newRevisionId, articleArtifactIds: [], newItems: [] };
   }
   const db = getSupabaseAdmin();
   const { data: newItems, error: newItemsError } = await db

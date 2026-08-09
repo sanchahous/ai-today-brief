@@ -154,6 +154,16 @@ Actions run `31324873875`)
 Мета — тримати баланс між фактажем і привабливістю, а не лише нарощувати заборони.
 (source: `src/lib/weekly-digest/content-studio.ts`, owner review 2026-08-09)
 
+## Межа з durable master recovery (2026-08-09)
+
+Recovery не змінює shortlist, ваги, evidence або diversity constraints. Він повторно
+використовує рівно той EN+UK master, який уже був зібраний з current approved research, і
+запускає тільки наступну quality/revise межу. Натомість rule про механічні однакові оцінки
+critic-а лишається fail-closed: resume не перетворює некалібрований verdict на апрув і не
+послаблює редакційний відбір заради швидкості.
+(source: `src/lib/weekly-digest/generation-worker.ts`,
+`src/lib/weekly-digest/content-studio.ts`)
+
 ## Related pages
 
 - [weekly-digest](weekly-digest.md) — Content Studio v2, ревізії, spend-cap, admin UX
