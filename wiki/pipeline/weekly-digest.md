@@ -409,6 +409,14 @@ live check 2026-08-04)
   є ще вкладки для свайпу (мобільні браузери ховають скролбар).
   (source: гілка `claude/admin-mobile-responsive-pfb65o`, `admin-nav.tsx`,
   `weekly-workspace.tsx`, `scroll-fade.tsx`)
+- **Стискання grid-треків** (2026-08-09): кожна пряма дитина Tailwind `.grid` отримує базове
+  `min-width: 0`; кастомні гнучкі треки використовують `minmax(0, …)` замість голого `1fr`.
+  Це не дає intrinsic-ширині form/textarea або довгому значенню збільшити трек ширше за батька.
+  Саме так Article tab міг розтягнути 1193 px wrapper до 1258 px і винести праву колонку за
+  екран; `p-5` лише робив дефект видимим. Таблиці з навмисною мінімальною шириною лишилися
+  всередині власних `overflow-x-auto` контейнерів.
+  (source: `src/app/globals.css`, `src/components/admin/weekly-workspace.tsx`, owner screenshot
+  + Chrome layout measurement 2026-08-09)
 
 ## Fluid CPU / вартість (2026-08-04)
 

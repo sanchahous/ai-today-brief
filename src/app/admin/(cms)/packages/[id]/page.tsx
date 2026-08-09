@@ -428,7 +428,7 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
               </div>
             ))}
           </dl>
-          <div className="mt-4 grid gap-3 lg:grid-cols-[1fr_.8fr]">
+          <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,.8fr)]">
             <ul className="grid gap-2 text-sm text-slate-300 sm:grid-cols-2">
               {rationale.factors.map((factor) => (
                 <li key={factor} className="rounded-xl border border-white/10 px-3 py-2">
@@ -467,7 +467,7 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
           </div>
           <form
             action={addressWeeklyDigestChangesAction}
-            className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"
+            className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
           >
             <input type="hidden" name="id" value={id} />
             <label className="grid gap-1 text-sm font-semibold text-amber-100">

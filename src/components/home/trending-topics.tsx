@@ -27,7 +27,7 @@ export function TrendingTopics({ lang, topics }: { lang: Lang; topics: TrendingT
         </p>
         <h2 id="trending-title" className="mt-2 text-2xl sm:text-3xl">{t.trendingTitle}</h2>
         <p className="text-muted mt-1 mb-6 max-w-xl text-sm">{t.trendingSubtitle}</p>
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.2fr] lg:items-start">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start">
           <MentionsChart lang={lang} topics={chartTopics} />
           <div className="flex flex-wrap content-start gap-2.5">
             {topics.map((topic) => (
@@ -63,7 +63,7 @@ function MentionsChart({ lang, topics }: { lang: Lang; topics: TrendingTopic[] }
           <li key={topic.name}>
             <Link
               href={topic.href}
-              className="group grid grid-cols-[7.5rem_1fr_2ch] items-center gap-3"
+              className="group grid grid-cols-[7.5rem_minmax(0,1fr)_2ch] items-center gap-3"
               aria-label={`${topic.name}: ${topic.mentions} ${t.mentions}`}
             >
               <span className="text-muted group-hover:text-text truncate text-xs font-semibold transition-colors">
