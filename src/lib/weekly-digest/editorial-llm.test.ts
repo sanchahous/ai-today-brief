@@ -591,6 +591,17 @@ describe('generateWeeklyMaster claude-cli provider', () => {
     expect(result.generation.ukrainian.provider).toBe('claude-cli');
   });
 
+  it('does not silently fall back from an explicit Claude-only worker', async () => {
+    vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
+    vi.stubEnv('WEEKLY_MASTER_PROVIDER_ORDER', 'claude-cli');
+    vi.mocked(generateWithClaudeCli).mockRejectedValue(new Error('subscription authentication failed'));
+
+    await expect(generateWeeklyMaster([story('item-1', 'feature')], [], [])).rejects.toThrow(
+      /Every editorial provider failed -- claude-cli: subscription authentication failed/,
+    );
+    expect(generateWithOpenRouterChain).not.toHaveBeenCalled();
+  });
+
   it('excludes the anthropic vendor from the critic OpenRouter fallback when claude-cli wrote the article', async () => {
     vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', 'test-token');
     vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');

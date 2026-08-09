@@ -6,6 +6,30 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-09
 
+## 2026-08-09 — recovery GitHub Actions dispatcher для Weekly Digest
+
+**Джерело:** production Supabase migrations `20260809064415_weekly_github_dispatch_fix`,
+`20260809064621_weekly_github_dispatch_token_fix`, `20260809065118_weekly_generation_claim_shadowing_fix`;
+live verification 2026-08-09.
+
+**Змінено:**
+
+- усунуто три PL/pgSQL name-shadowing помилки в GitHub dispatch/claim RPC: dispatcher тепер
+  створює одноразовий token без двозначного `RETURNING`, а fenced claim однозначно резолвить
+  поля таблиці;
+- stalled linked `editorial_master` без створеної спроби повернуто в `queued` з append-only
+  recovery event; новий GitHub Actions run успішно створив `Attempt 1/3`, перейшов у `running`
+  та надсилає heartbeat;
+- workflow тепер встановлює Claude Code CLI й запускає writer з `claude-cli` як єдиним дозволеним
+  writer-провайдером: несправність CLI/subscription стає явною terminal-помилкою, а не тихим
+  OpenRouter fallback;
+- `wiki/index.md` — лічильник міграцій 70 → 73.
+
+**Перевірка:** три SQL contract tests виконано напряму в production DB; `get_advisors` не показав
+нових WARN від цих функцій. Існуючі RLS/SECURITY DEFINER advisory findings не змінювалися.
+
+---
+
 ## 2026-08-09 — durable Weekly Digest worker control plane (production DB migration)
 
 **Джерело:** production Supabase migration `20260809060929_weekly_generation_control_plane`;
