@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { StatusPill } from '@/components/admin/status-pill';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import {
-  enqueueWeeklyGenerationAction,
+  regenerateWeeklyMasterAction,
   retryWeeklyGenerationJobAction,
 } from '@/app/admin/(cms)/weekly/actions';
 import { estimateGenerationEta } from '@/lib/weekly-digest/generation-control';
@@ -337,18 +337,18 @@ export function WeeklyGenerationJobsLive({
                   job.status === 'succeeded' &&
                   revisionId &&
                   job.id === latestEditorialMasterJobId ? (
-                    <form action={enqueueWeeklyGenerationAction} className="mt-2">
+                    <form action={regenerateWeeklyMasterAction} className="mt-2">
                       <input type="hidden" name="weekly_digest_id" value={digestId} />
                       <input type="hidden" name="revision_id" value={revisionId} />
-                      <input type="hidden" name="job_type" value="editorial_master" />
                       <ActionSubmitButton
                         idleLabel="Regenerate master"
-                        pendingLabel="Queueing…"
+                        pendingLabel="Copying research…"
                         className="min-h-9 rounded-lg border border-[#47e4d3]/40 px-3 text-xs font-bold text-[#47e4d3] transition hover:bg-[#47e4d3]/10"
                       />
                       <p className="mt-1 text-slate-500">
-                        Runs the writer/critic loop again against the same approved research,
-                        billed on top of this revision&apos;s spend cap.
+                        Copies each Top 3 story&apos;s last approved research onto this revision,
+                        then runs the writer/critic loop again, billed on top of this revision&apos;s
+                        spend cap.
                       </p>
                     </form>
                   ) : null}

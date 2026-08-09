@@ -1164,6 +1164,124 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
+/**
+ * Re-runs the writer/critic loop for the active revision without re-doing
+ * research from scratch. A successful editorial_master job always mints and
+ * activates a *new* revision (createMasterRevision in generation-worker.ts),
+ * so approved research_pack artifacts -- scoped to the revision they were
+ * approved under -- never carry forward to that new revision on their own.
+ * Without this copy step, editorial_master's dependency gate
+ * (weekly_generation_waiting_reason) would stay unmet forever and the job
+ * would sit in `waiting`. Copies each Top 3 story's most recently approved
+ * research_pack (matched by brief_item_id, since revision_item IDs are
+ * reissued per revision) onto the current active revision, owner-approved
+ * in the same write -- save_weekly_digest_artifact only allows
+ * review_status='approved' for a real owner session, never service_role.
+ */
+export async function regenerateWeeklyMasterAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const revisionId = requiredString(formData, 'revision_id');
+  const contentStudioMode = weeklyContentStudioMode();
+  if (contentStudioMode === 'off') {
+    throw new Error('WEEKLY_CONTENT_STUDIO_V2 is off. Enable shadow or production mode first.');
+  }
+  const db = await getSupabaseServer();
+
+  const { data: items, error: itemsError } = await db
+    .from('weekly_digest_revision_items')
+    .select('id,brief_item_id,rank')
+    .eq('revision_id', revisionId)
+    .order('rank');
+  if (itemsError) throw new Error(itemsError.message);
+  const featureItems = (items ?? []).filter(
+    (item): item is typeof item & { brief_item_id: string } =>
+      item.rank <= 3 && Boolean(item.brief_item_id),
+  );
+  if (featureItems.length !== 3) {
+    throw new Error('The active revision needs exactly three Top 3 feature stories.');
+  }
+
+  const { data: approvedResearch, error: researchError } = await db
+    .from('weekly_digest_artifacts')
+    .select('revision_item_id,content,metadata,provider,provider_id,created_at')
+    .eq('weekly_digest_id', weeklyDigestId)
+    .eq('artifact_type', 'research_pack')
+    .eq('is_current', true)
+    .eq('review_status', 'approved')
+    .eq('generation_status', 'ready')
+    .order('created_at', { ascending: false });
+  if (researchError) throw new Error(researchError.message);
+
+  const researchRevisionItemIds = [
+    ...new Set((approvedResearch ?? []).map((artifact) => artifact.revision_item_id)),
+  ].filter((id): id is string => Boolean(id));
+  const { data: researchItems, error: researchItemsError } =
+    researchRevisionItemIds.length > 0
+      ? await db
+          .from('weekly_digest_revision_items')
+          .select('id,brief_item_id')
+          .in('id', researchRevisionItemIds)
+      : { data: [], error: null };
+  if (researchItemsError) throw new Error(researchItemsError.message);
+  const briefItemIdByResearchItem = new Map(
+    (researchItems ?? []).map((item) => [item.id, item.brief_item_id]),
+  );
+
+  // approvedResearch is already sorted newest-first, so the first hit per
+  // brief_item_id is the most recently approved one.
+  const latestResearchByBriefItemId = new Map<string, (typeof approvedResearch)[number]>();
+  for (const artifact of approvedResearch ?? []) {
+    const briefItemId = artifact.revision_item_id
+      ? briefItemIdByResearchItem.get(artifact.revision_item_id)
+      : null;
+    if (!briefItemId || latestResearchByBriefItemId.has(briefItemId)) continue;
+    latestResearchByBriefItemId.set(briefItemId, artifact);
+  }
+
+  const missing = featureItems.filter(
+    (item) => !latestResearchByBriefItemId.has(item.brief_item_id),
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      `No previously approved research found for ${missing.length} of 3 Top stories. Use "Start / retry Content Studio" to generate and approve research for this revision first.`,
+    );
+  }
+
+  for (const item of featureItems) {
+    const research = latestResearchByBriefItemId.get(item.brief_item_id)!;
+    const { error: copyError } = await db.rpc('save_weekly_digest_artifact', {
+      p_weekly_digest_id: weeklyDigestId,
+      p_revision_id: revisionId,
+      p_artifact_type: 'research_pack',
+      p_locale: 'neutral',
+      p_slot_key: `research:${item.id}`,
+      p_revision_item_id: item.id,
+      p_generation_status: 'ready',
+      p_review_status: 'approved',
+      p_content: research.content as Json,
+      p_provider: research.provider,
+      p_provider_id: research.provider_id,
+      p_metadata: research.metadata as Json,
+    });
+    if (copyError) throw new Error(copyError.message);
+  }
+
+  const requestKey = randomUUID();
+  const { data: queuedJob, error: queueError } = await db.rpc('queue_weekly_digest_generation_job', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_revision_id: revisionId,
+    p_job_type: 'editorial_master',
+    p_idempotency_key: `weekly:${weeklyDigestId}:${revisionId}:editorial_master:regenerate:${requestKey}`,
+    p_input: { mode: contentStudioMode } as Json,
+  });
+  if (queueError && !/duplicate|unique/i.test(queueError.message)) {
+    throw new Error(queueError.message);
+  }
+  if (queuedJob?.id) await dispatchQueuedWeeklyGenerationJob(queuedJob.id);
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
 // Lets an editor undo a revision without understanding the revision chain:
 // "restore this version" is exactly the create_weekly_digest_revision write
 // path, replayed against an earlier revision's content.
