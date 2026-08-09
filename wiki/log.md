@@ -6,27 +6,27 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-09
 
-## 2026-08-09 — Weekly admin grid overflow
+## 2026-08-09 — recovery GitHub Actions dispatcher для Weekly Digest
 
-**Джерело:** скріншот власника + Chrome layout measurement 2026-08-09; `src/app/globals.css` і
-`src/components/admin/weekly-workspace.tsx`.
+**Джерело:** production Supabase migrations `20260809064415_weekly_github_dispatch_fix`,
+`20260809064621_weekly_github_dispatch_token_fix`, `20260809065118_weekly_generation_claim_shadowing_fix`;
+live verification 2026-08-09.
 
 **Змінено:**
 
-- `src/app/globals.css` — базове правило `.grid > * { min-width: 0 }`; custom grid-треки
-  `1fr` у public layout змінено на `minmax(0, 1fr)`;
-- `src/components/admin/weekly-workspace.tsx`, `src/app/admin/(cms)/packages/[id]/page.tsx`,
-  `facts-visual.tsx`, `top-of-week.tsx`, `trending-topics.tsx` — уразливі custom grid-треки
-  переведено на `minmax(0, …)`;
-- `src/components/admin/admin-nav.tsx` — desktop sidebar отримав доступне згортання у вузький
-  rail; mobile нижня навігація не змінюється;
-- `wiki/pipeline/weekly-digest.md`, `wiki/pipeline/weekly-editorial-selection.md`,
-  `wiki/ops/weekly-admin-runbook.md`, `wiki/now.md`, `wiki/index.md` — синхронізовано під
-  watcher `weekly-digest`.
+- усунуто три PL/pgSQL name-shadowing помилки в GitHub dispatch/claim RPC: dispatcher тепер
+  створює одноразовий token без двозначного `RETURNING`, а fenced claim однозначно резолвить
+  поля таблиці;
+- stalled linked `editorial_master` без створеної спроби повернуто в `queued` з append-only
+  recovery event; новий GitHub Actions run успішно створив `Attempt 1/3`, перейшов у `running`
+  та надсилає heartbeat;
+- workflow тепер встановлює Claude Code CLI й запускає writer з `claude-cli` як єдиним дозволеним
+  writer-провайдером: несправність CLI/subscription стає явною terminal-помилкою, а не тихим
+  OpenRouter fallback;
+- `wiki/index.md` — лічильник міграцій 70 → 73.
 
-**Нотатка:** Article tab розтягував 1193 px wrapper до 1258 px через automatic minimum size
-grid-item; `p-5` проявляв дефект, але не був його причиною. На mobile контент усіх вкладок
-залишається в межах документа; таб-бар зберігає свій навмисний локальний scroll.
+**Перевірка:** три SQL contract tests виконано напряму в production DB; `get_advisors` не показав
+нових WARN від цих функцій. Існуючі RLS/SECURITY DEFINER advisory findings не змінювалися.
 
 ---
 
