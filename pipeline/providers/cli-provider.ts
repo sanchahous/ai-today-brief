@@ -51,7 +51,17 @@ const DEFAULT_TIMEOUT_MS = 4 * 60_000;
 /* v8 ignore start -- live process spawn; envelope parsing is unit-tested via injected spawn */
 const defaultSpawn: SpawnCliFn = (binary, args, { cwd, env, timeoutMs }) =>
   new Promise((resolve) => {
-    const child = spawn(binary, args, { cwd, env, timeout: timeoutMs });
+    // stdio[0] must be closed, not the Node default open-but-silent pipe --
+    // see pipeline/claude-cli.ts's defaultSpawn for the live incident
+    // (2026-08-09) this mirrors: a CLI tool that checks whether stdin carries
+    // piped input hangs on an open-but-unwritten pipe until the spawn
+    // `timeout` SIGTERMs it. 'ignore' is the equivalent of `< /dev/null`.
+    const child = spawn(binary, args, {
+      cwd,
+      env,
+      timeout: timeoutMs,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (chunk: Buffer) => {

@@ -57,7 +57,20 @@ export type SpawnClaudeCliFn = (
 /* v8 ignore start -- live process spawn; envelope parsing is unit-tested via injected spawn */
 const defaultSpawn: SpawnClaudeCliFn = (args, { cwd, env, timeoutMs }) =>
   new Promise((resolve) => {
-    const child = spawn('claude', args, { cwd, env, timeout: timeoutMs });
+    // stdio[0] must be closed, not the Node default open-but-silent pipe: the
+    // `claude` binary itself waits to see whether stdin carries piped input,
+    // and an open pipe nobody writes to or ends never resolves that wait --
+    // observed live (2026-08-09, job 33ebdf9e) as a ~4-minute hang ending in
+    // SIGTERM (exit 143) at exactly the spawn `timeout`, with the CLI's own
+    // "no stdin data received in 3s ... redirect stdin explicitly: < /dev/null"
+    // warning on stderr. 'ignore' is the child_process equivalent of that
+    // redirect.
+    const child = spawn('claude', args, {
+      cwd,
+      env,
+      timeout: timeoutMs,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (chunk: Buffer) => {
