@@ -1,31 +1,66 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 
 const LINKS = [
-  { href: '/admin', label: 'Today', short: 'Today' },
-  { href: '/admin/weekly', label: 'Weekly Digest', short: 'Weekly' },
-  { href: '/admin/calendar', label: 'Calendar', short: 'Plan' },
-  { href: '/admin/results', label: 'Results', short: 'Results' },
-  { href: '/admin/costs', label: 'Costs', short: 'Costs' },
-  { href: '/admin/engagement', label: 'Engagement', short: 'Engage' },
-  { href: '/admin/providers', label: 'Providers', short: 'Providers' },
-  { href: '/admin/settings', label: 'Settings', short: 'Settings' },
+  { href: '/admin', label: 'Today', short: 'Today', rail: 'To' },
+  { href: '/admin/weekly', label: 'Weekly Digest', short: 'Weekly', rail: 'We' },
+  { href: '/admin/calendar', label: 'Calendar', short: 'Plan', rail: 'Pl' },
+  { href: '/admin/results', label: 'Results', short: 'Results', rail: 'Re' },
+  { href: '/admin/costs', label: 'Costs', short: 'Costs', rail: 'Co' },
+  { href: '/admin/engagement', label: 'Engagement', short: 'Engage', rail: 'En' },
+  { href: '/admin/providers', label: 'Providers', short: 'Providers', rail: 'Pr' },
+  { href: '/admin/settings', label: 'Settings', short: 'Settings', rail: 'Se' },
 ] as const;
 
 export function AdminNav() {
+  const [collapsed, setCollapsed] = useState(false);
+  const toggleLabel = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+
   return (
     <>
-      <aside className="hidden w-60 shrink-0 border-r border-white/10 bg-[#101418] p-5 lg:block">
-        <Link href="/admin" className="mb-8 block text-lg font-bold tracking-tight text-white">
-          <span className="text-[#47e4d3]">AT</span> Social CMS
-        </Link>
-        <nav aria-label="Admin navigation" className="grid gap-2">
+      <aside
+        className={`hidden shrink-0 overflow-hidden border-r border-white/10 bg-[#101418] transition-[width,padding] duration-200 lg:block ${
+          collapsed ? 'w-16 p-2' : 'w-60 p-5'
+        }`}
+      >
+        <div
+          className={`mb-8 flex min-h-11 items-center ${
+            collapsed ? 'justify-center' : 'justify-between gap-2'
+          }`}
+        >
+          {collapsed ? null : (
+            <Link href="/admin" className="text-lg font-bold tracking-tight text-white">
+              <span className="text-[#47e4d3]">AT</span> Social CMS
+            </Link>
+          )}
+          <button
+            type="button"
+            aria-controls="admin-desktop-navigation"
+            aria-expanded={!collapsed}
+            aria-label={toggleLabel}
+            title={toggleLabel}
+            onClick={() => setCollapsed((value) => !value)}
+            className="grid size-10 shrink-0 place-items-center rounded-xl border border-white/10 text-lg font-bold text-slate-300 transition hover:border-white/30 hover:bg-white/[.04] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#47e4d3]"
+          >
+            <span aria-hidden>{collapsed ? '›' : '‹'}</span>
+          </button>
+        </div>
+        <nav id="admin-desktop-navigation" aria-label="Admin navigation" className="grid gap-2">
           {LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-xl px-4 py-3 text-sm font-semibold text-slate-300 transition hover:bg-white/8 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#47e4d3]"
+              aria-label={collapsed ? link.label : undefined}
+              title={collapsed ? link.label : undefined}
+              className={`rounded-xl font-semibold text-slate-300 transition hover:bg-white/8 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#47e4d3] ${
+                collapsed
+                  ? 'grid min-h-11 place-items-center px-1 text-[10px]'
+                  : 'px-4 py-3 text-sm'
+              }`}
             >
-              {link.label}
+              {collapsed ? link.rail : link.label}
             </Link>
           ))}
         </nav>

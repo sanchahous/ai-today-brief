@@ -2,7 +2,8 @@
 
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
 Sources: `src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
-owner content-quality audit 2026-08-09
+`src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`, owner content-quality
+audit 2026-08-09
 Last updated: 2026-08-09
 
 
@@ -116,6 +117,14 @@ single unusually noisy week.
 story ПІСЛЯ відбору: `editorial-llm.ts` тепер пише текст через `editorial-voice.ts`
 (house-style, exemplars, banned-phrase гейт). Деталі — [editorial-voice](editorial-voice.md).
 (source: `src/lib/weekly-digest/editorial-voice.ts`, `editorial-llm.ts`)
+
+## Межа з responsive grid-фіксом (2026-08-09)
+
+Відбір, score і persisted selection runs не змінювались. Змінено лише безпечне стискання
+контейнерів у Weekly admin: `.grid > *` може стискатися, а гнучкі колонки використовують
+`minmax(0, …)`. Це не дозволяє довгому control або тексту зсунути контент за viewport, але не
+змінює склад shortlist чи критерії editorial-рішення.
+(source: `src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`)
 
 ## Межа з quality hardening v7 (2026-08-09)
 

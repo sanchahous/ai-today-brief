@@ -54,7 +54,7 @@ export function TopOfWeek({
         </div>
       </Reveal>
 
-      <div className="mt-7 grid gap-6 lg:grid-cols-[1.15fr_1fr]">
+      <div className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         <Reveal>
           <FeaturedCard lang={lang} item={featured} />
         </Reveal>

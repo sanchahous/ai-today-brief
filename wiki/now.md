@@ -7,7 +7,8 @@ Sources: `git log` / `gh pr list` (live check 2026-08-04), Supabase preflight li
 owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry), post-merge tech
 review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish --dry-run` check
 2026-08-07, owner session 2026-08-08 (admin mobile-responsive fix, screenshot report),
-owner-approved Weekly Digest reliability plan 2026-08-08
+owner-approved Weekly Digest reliability plan 2026-08-08, owner screenshot + Chrome layout
+measurement 2026-08-09
 Last updated: 2026-08-09
 
 ---
@@ -171,6 +172,19 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
    таб-бар секцій workspace отримав `ScrollFade`-підказку скролу. Перевірено
    ізольовано (прод-білд + Playwright, 375px) — деталі й що НЕ вдалось перевірити
    (реальний Supabase-логін, Safari/WebKit) — [log](log.md#2026-08-08--admin-mobile-responsive-fix).
+6. **Grid overflow у Weekly admin — готово до PR.** На Article tab intrinsic minimum width
+   двох формових колонок розтягувала 1193 px wrapper до 1258 px, отже права колонка виходила за
+   viewport; `p-5` не був причиною, а робив дефект помітним. `globals.css` тепер задає
+   `min-width: 0` для прямої дитини кожної Tailwind `.grid`, а голі гнучкі `1fr`-треки замінено
+   на `minmax(0, …)` у Weekly admin та інших уразливих layout-компонентах. На 390 px усі дев’ять
+   вкладок workspace не мають document overflow; горизонтальний swipe лишається тільки в
+   навмисному tab-bar `ScrollFade`.
+   (source: `src/app/globals.css`, `src/components/admin/weekly-workspace.tsx`, owner screenshot
+   + Chrome layout measurement 2026-08-09)
+7. **Згортання desktop sidebar — готово до PR.** Кнопка у лівій навігації перемикає повне
+   240 px меню у 64 px rail, тому робоча область отримує додаткову ширину без втрати способу
+   повернути навігацію. Mobile bottom nav не змінюється.
+   (source: `src/components/admin/admin-nav.tsx`)
 
 ## Чекає на власника (не код)
 

@@ -8,7 +8,8 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 [editorial-voice](../pipeline/editorial-voice.md),
 `weekly_generation_control_plane` implementation 2026-08-09, `src/lib/weekly-digest/pdf.ts`
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
-`claude/admin-mobile-responsive-pfb65o`, 2026-08-08)
+`claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
++ Chrome layout measurement 2026-08-09
 Last updated: 2026-08-09
 
 ---
@@ -131,6 +132,17 @@ Release preflight на Overview / Release покаже, що ще червоне
 праворуч/ліворуч є ще вкладки поза екраном. Довгі story-ідентифікатори у preflight
 blockers тепер переносяться, а не обрізаються за межу екрана.
 (source: гілка `claude/admin-mobile-responsive-pfb65o`)
+
+Grid-форма й картки на будь-якій вкладці не мають виходити за екран: базове правило
+`.grid > * { min-width: 0 }` і `minmax(0, …)` для гнучких треків дозволяють textarea та довгим
+значенням стискатися всередині контейнера. Якщо широка data-таблиця потрібна навмисно, вона має
+залишатися тільки у власному `overflow-x-auto` контейнері — не розтягувати сторінку.
+(source: `src/app/globals.css`, `src/components/admin/weekly-workspace.tsx`)
+
+На desktop лівий sidebar можна згорнути кнопкою зі стрілкою: він стає вузьким rail з короткими
+підписами розділів, а робоча область одразу отримує звільнену ширину. Та сама кнопка повертає
+повне меню; вона має назву для screen reader і клавіатурний focus.
+(source: `src/components/admin/admin-nav.tsx`)
 
 ## Related pages
 

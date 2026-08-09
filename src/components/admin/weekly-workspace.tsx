@@ -1766,7 +1766,7 @@ function StoriesPanel({
                 Include this story in the next revision
               </label>
 
-              <div className="grid gap-4 md:grid-cols-[8rem_1fr]">
+              <div className="grid gap-4 md:grid-cols-[8rem_minmax(0,1fr)]">
                 <label className={LABEL}>
                   Rank
                   <input
