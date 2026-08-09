@@ -475,6 +475,28 @@ pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інв
 розглянуто й відхилено: `retryableGenerationFailure` вже коректно не ретраїть детерміновані
 помилки (наприклад, page-count contract violation у `generatePdf`).
 
+## Durable recovery для `editorial_master` (2026-08-09)
+
+Коли master job уже зберіг повний EN+UK checkpoint і потім впав на critic або targeted
+revision, кнопка **Resume saved master** створює окремий linked job для тієї ж активної
+ревізії. Новий job копіює обидві перевірені checkpoint-частини у власний durable output і
+пропускає початкові EN-writer та UK-adaptation: лишаються тільки critic і, якщо verdict
+дозволяє, targeted revise. UI показує цю дію лише для failed `editorial_master` із двома
+hash-addressable checkpoint-ами; server action повторно перевіряє owner-сесію, digest,
+active revision і source job, тож приховані поля форми не можуть підмінити джерело.
+(source: `src/lib/weekly-digest/generation-worker.ts`,
+`src/app/admin/(cms)/weekly/actions.ts`,
+`src/components/admin/weekly-generation-jobs-live.tsx`)
+
+Quality rejection більше не намагається писати article artifacts у неактивну draft revision:
+`save_weekly_digest_artifact` навмисно приймає лише active revision. Draft зберігає поля master
+для review, а quality report лишається на чинній активній ревізії; job checkpoint фіксує
+`master_draft_revision_id` і `quality_artifact_id` перед terminal quality-gate result. Це
+відділяє реальну редакційну відмову від помилки persistence і залишає наступний resume
+дешевим та відновлюваним.
+(source: `src/lib/weekly-digest/generation-worker.ts`,
+`supabase/migrations/20260723095458_weekly_digest_v2.sql`)
+
 ## PDF page-count contract violation — фікс (2026-08-07)
 
 ⚠️ Виправлення попереднього запису вище: page-count contract violation **не** був гіпотетичним

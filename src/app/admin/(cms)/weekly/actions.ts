@@ -36,6 +36,20 @@ function optionalString(formData: FormData, key: string) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function hasCompleteMasterCheckpoint(value: Json | null | undefined) {
+  const output = jsonRecord(value);
+  const english = jsonRecord(output.english);
+  const ukrainian = jsonRecord(output.ukrainian);
+  return Boolean(
+    typeof output.englishCheckpointHash === 'string' &&
+    output.englishCheckpointHash.trim() &&
+    typeof output.ukrainianCheckpointHash === 'string' &&
+    output.ukrainianCheckpointHash.trim() &&
+    Object.keys(english).length > 0 &&
+    Object.keys(ukrainian).length > 0,
+  );
+}
+
 function optionalNumber(formData: FormData, key: string) {
   const value = optionalString(formData, key);
   if (!value) return null;
@@ -1319,6 +1333,92 @@ export async function regenerateWeeklyMasterAction(formData: FormData) {
     jobIdToDispatch = queuedJob?.id ?? null;
   }
   if (jobIdToDispatch) await dispatchQueuedWeeklyGenerationJob(jobIdToDispatch);
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+/**
+ * Starts a new, explicitly linked master job from a failed job's durable
+ * bilingual checkpoint. This is intentionally not the generic job retry:
+ * retrying a failed quality gate with new guidance can invalidate hashes and
+ * otherwise re-run the expensive EN and UK writers.
+ */
+export async function resumeWeeklyMasterFromCheckpointAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const sourceJobId = requiredString(formData, 'source_job_id');
+  const contentStudioMode = weeklyContentStudioMode();
+  if (contentStudioMode === 'off') {
+    throw new Error('WEEKLY_CONTENT_STUDIO_V2 is off. Enable shadow or production mode first.');
+  }
+  const db = await getSupabaseServer();
+  const [{ data: digest, error: digestError }, { data: source, error: sourceError }] =
+    await Promise.all([
+      db
+        .from('weekly_digests')
+        .select('id,active_revision_id')
+        .eq('id', weeklyDigestId)
+        .maybeSingle(),
+      db
+        .from('weekly_digest_generation_jobs')
+        .select('id,weekly_digest_id,revision_id,job_type,status,output')
+        .eq('id', sourceJobId)
+        .maybeSingle(),
+    ]);
+  if (digestError) throw new Error(digestError.message);
+  if (sourceError) throw new Error(sourceError.message);
+  if (!digest?.active_revision_id) throw new Error('Weekly Digest has no active revision.');
+  const revisionId = digest.active_revision_id;
+  if (
+    !source ||
+    source.job_type !== 'editorial_master' ||
+    source.status !== 'failed' ||
+    source.weekly_digest_id !== weeklyDigestId ||
+    source.revision_id !== revisionId ||
+    !hasCompleteMasterCheckpoint(source.output)
+  ) {
+    throw new Error(
+      'This job is not a failed master with a complete saved EN and UK checkpoint for the active revision.',
+    );
+  }
+
+  const activeStatuses = ['queued', 'waiting', 'dispatching', 'running', 'retry_scheduled'];
+  const { data: activeJobs, error: activeJobsError } = await db
+    .from('weekly_digest_generation_jobs')
+    .select('id,status,input')
+    .eq('weekly_digest_id', weeklyDigestId)
+    .eq('revision_id', revisionId)
+    .eq('job_type', 'editorial_master')
+    .in('status', activeStatuses)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (activeJobsError) throw new Error(activeJobsError.message);
+  const activeJob = activeJobs?.[0] ?? null;
+  const activeResumeSource = activeJob ? jsonRecord(activeJob.input)?.resume_from_job_id : null;
+  if (activeJob && activeResumeSource !== sourceJobId) {
+    throw new Error(
+      'Another master generation is already active for this revision. Wait for it to finish.',
+    );
+  }
+
+  let jobIdToDispatch: string | null = activeJob?.id ?? null;
+  if (!jobIdToDispatch) {
+    const { data: queuedJob, error: queueError } = await db.rpc(
+      'queue_weekly_digest_generation_job',
+      {
+        p_weekly_digest_id: weeklyDigestId,
+        p_revision_id: revisionId,
+        p_job_type: 'editorial_master',
+        p_idempotency_key: `weekly:${weeklyDigestId}:${revisionId}:editorial_master:resume:${sourceJobId}:${randomUUID()}`,
+        p_input: { mode: contentStudioMode, resume_from_job_id: sourceJobId } as Json,
+      },
+    );
+    if (queueError && !/duplicate|unique/i.test(queueError.message)) {
+      throw new Error(queueError.message);
+    }
+    jobIdToDispatch = queuedJob?.id ?? null;
+  }
+  if (!jobIdToDispatch) throw new Error('Could not queue the master recovery job.');
+  await dispatchQueuedWeeklyGenerationJob(jobIdToDispatch);
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 

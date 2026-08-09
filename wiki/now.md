@@ -153,6 +153,16 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Активна робота
 
+−4. **Emergency recovery для `editorial_master` — гілка `fix/weekly-master-durable-recovery`,
+готова до PR.** Після live failure Actions `31327537969` виявлено, що job
+`a3c2f8a6-e8b8-4609-992c-21f284f4820a` уже має durable EN+UK checkpoint, але quality failure
+падав під час спроби записати article artifact у неактивну draft revision. Фікс додає owner-only
+**Resume saved master**: він створює linked job, повторно перевіряє source/current revision і
+пропускає EN/UK writer calls; також quality path зберігає draft та його IDs без забороненого
+artifact write. Правило про uniform critic verdict навмисно не послаблюється.
+(source: production Supabase + Actions live check 2026-08-09,
+`src/lib/weekly-digest/generation-worker.ts`, `src/app/admin/(cms)/weekly/actions.ts`)
+
 −3. **Прогін `31324873875` (16:51 UTC) — перший уже з фіксами: дійшов значно далі, впав на
    новому місці.** Підтвердив три попередні фікси наживо: preflight 9/9 за 6 секунд (токен у
    Secrets **живий** — питання нижче закрите), `--tools ""` дав 1 turn, EN+UK через claude-cli

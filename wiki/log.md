@@ -1223,3 +1223,23 @@ PR за планом у
 щоб не змішувати створення каркасу з масовим `git mv` і переписуванням посилань.
 Вихідний PDF воркшопу навмисно не скопійовано в `raw/research/` — рішення за власником
 (файл особистий, репозиторій має remote на GitHub).
+
+---
+
+## 2026-08-09 — durable recovery для weekly master
+
+**Джерело:** production Supabase + Actions run `31327537969` (live check 2026-08-09),
+`src/lib/weekly-digest/generation-worker.ts`, `src/app/admin/(cms)/weekly/actions.ts`.
+
+**Змінено:**
+
+- `wiki/pipeline/weekly-digest.md` — описано checkpoint-resume без повторного EN/UK writer run
+  та active-revision межу article artifacts;
+- `wiki/pipeline/weekly-editorial-selection.md` — зафіксовано, що recovery не послаблює
+  shortlist або fail-closed uniform-critic rule;
+- `wiki/ops/weekly-admin-runbook.md` — додано відмінність **Resume saved master** від generic
+  retry і порядок дій для failed master;
+- `wiki/now.md`, `wiki/index.md` — поточний emergency recovery та мапу оновлено.
+
+**Нотатка:** source job містив повний EN+UK checkpoint; фактичний failure був спробою записати
+article artifact у неактивну quality-draft revision, яку DB навмисно відхиляє.

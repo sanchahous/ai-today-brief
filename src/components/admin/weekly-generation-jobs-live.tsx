@@ -5,6 +5,7 @@ import { StatusPill } from '@/components/admin/status-pill';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import {
   regenerateWeeklyMasterAction,
+  resumeWeeklyMasterFromCheckpointAction,
   retryWeeklyGenerationJobAction,
 } from '@/app/admin/(cms)/weekly/actions';
 import { estimateGenerationEta } from '@/lib/weekly-digest/generation-control';
@@ -29,6 +30,7 @@ interface GenerationJob {
   revision_id: string;
   status: string;
   status_reason: string | null;
+  output: unknown;
 }
 
 interface GenerationAttempt {
@@ -166,6 +168,25 @@ function mergeEvents(current: GenerationEvent[], incoming: GenerationEvent[]) {
   return [...byId.values()].sort((left, right) => right.id - left.id).slice(0, 250);
 }
 
+function hasSavedMasterCheckpoint(job: GenerationJob) {
+  if (job.job_type !== 'editorial_master' || job.status !== 'failed') return false;
+  const output = job.output;
+  if (!output || typeof output !== 'object' || Array.isArray(output)) return false;
+  const checkpoint = output as Record<string, unknown>;
+  return Boolean(
+    typeof checkpoint.englishCheckpointHash === 'string' &&
+    checkpoint.englishCheckpointHash.trim() &&
+    typeof checkpoint.ukrainianCheckpointHash === 'string' &&
+    checkpoint.ukrainianCheckpointHash.trim() &&
+    checkpoint.english &&
+    typeof checkpoint.english === 'object' &&
+    !Array.isArray(checkpoint.english) &&
+    checkpoint.ukrainian &&
+    typeof checkpoint.ukrainian === 'object' &&
+    !Array.isArray(checkpoint.ukrainian),
+  );
+}
+
 export function WeeklyGenerationJobsLive({
   digestId,
   revisionId,
@@ -238,7 +259,8 @@ export function WeeklyGenerationJobsLive({
   // reuses that same job instead of piling up a duplicate.
   const latestEditorialMasterJobId = useMemo(() => {
     const masterJobs = data.jobs.filter(
-      (job) => job.job_type === 'editorial_master' && !['dispatching', 'running'].includes(job.status),
+      (job) =>
+        job.job_type === 'editorial_master' && !['dispatching', 'running'].includes(job.status),
     );
     if (masterJobs.length === 0) return null;
     return masterJobs.reduce((latest, job) =>
@@ -327,7 +349,7 @@ export function WeeklyGenerationJobsLive({
                   {job.failure_code ? (
                     <p className="mt-1 text-amber-200">Code: {job.failure_code}</p>
                   ) : null}
-                  {job.status === 'failed' ? (
+                  {job.status === 'failed' && !hasSavedMasterCheckpoint(job) ? (
                     <form action={retryWeeklyGenerationJobAction} className="mt-2">
                       <input type="hidden" name="weekly_digest_id" value={digestId} />
                       <input type="hidden" name="job_id" value={job.id} />
@@ -337,6 +359,21 @@ export function WeeklyGenerationJobsLive({
                       >
                         Create linked retry
                       </button>
+                    </form>
+                  ) : null}
+                  {hasSavedMasterCheckpoint(job) ? (
+                    <form action={resumeWeeklyMasterFromCheckpointAction} className="mt-2">
+                      <input type="hidden" name="weekly_digest_id" value={digestId} />
+                      <input type="hidden" name="source_job_id" value={job.id} />
+                      <ActionSubmitButton
+                        idleLabel="Resume saved master"
+                        pendingLabel="Queueing saved checkpoint…"
+                        className="min-h-9 rounded-lg border border-[#47e4d3]/40 px-3 text-xs font-bold text-[#47e4d3] transition hover:bg-[#47e4d3]/10"
+                      />
+                      <p className="mt-1 text-slate-500">
+                        Reuses the saved English and Ukrainian master; only critic/revision checks
+                        run.
+                      </p>
                     </form>
                   ) : null}
                   {job.job_type === 'editorial_master' &&
@@ -352,8 +389,8 @@ export function WeeklyGenerationJobsLive({
                       />
                       <p className="mt-1 text-slate-500">
                         Copies each Top 3 story&apos;s last approved research onto this revision,
-                        then runs the writer/critic loop again, billed on top of this revision&apos;s
-                        spend cap.
+                        then runs the writer/critic loop again, billed on top of this
+                        revision&apos;s spend cap.
                       </p>
                     </form>
                   ) : null}
