@@ -510,6 +510,14 @@ OpenRouter рахував лише `delta.content`, тому reasoning-моде�
 Повний розбір із цифрами й фіксами — [weekly-master-failures](weekly-master-failures.md).
 Спосіб перевіряти цей флоу без прода — [ops/weekly-sandbox](../ops/weekly-sandbox.md).
 
+**Виміряна база (щоб наступного разу було з чим порівняти).** Повний master через OpenRouter
+на реальній фікстурі: **28 хвилин, 9 викликів провайдера, $0.032** — EN 204 с, UK 251 с,
+critic 130–295 с, revise-раунди 101–240 с. Тобто один крок master-а нормально живе
+2–5 хвилин; будь-яка стеля коротша за це — не запобіжник, а причина збою. Критичне число:
+`first_token_ms` у critic-викликів — 120.4 с і 116.6 с, тобто модель мовчить **довше** за
+90-секундний first-token ліміт, поки думає.
+(source: `artifacts/_local/weekly-sandbox/2026-08-09T15-34-07-721Z/run.json`, sandbox 2026-08-09)
+
 ## Related pages
 
 - [weekly-master-failures](weekly-master-failures.md) — чому падав `editorial_master` 09.08
