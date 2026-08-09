@@ -1064,3 +1064,56 @@ describe('generateWeeklyMaster DB-driven provider override (Phase 4)', () => {
     expect(writeCall?.[1]?.apiKey).toBe('nim-key');
   });
 });
+
+describe('OpenRouter reasoning-effort suppression', () => {
+  afterEach(() => {
+    vi.mocked(generateWithOpenRouterChain).mockReset();
+    vi.mocked(fetchOpenRouterModels).mockReset();
+    vi.unstubAllEnvs();
+  });
+
+  // Regression: the effort used to be computed once from queue[0] and handed
+  // to every model in the chain. Invisible while the queue was always length
+  // 1; with several candidates a fallback model that reasons by default got
+  // no suppression at all and billed reasoning as output all the way to the
+  // wall ceiling.
+  it('resolves the effort per model, not once from the head of the queue', async () => {
+    vi.stubEnv('OPEN_ROUTER_API_KEY', 'test-key');
+    vi.stubEnv('WEEKLY_MASTER_OPENROUTER_CANDIDATES', '2');
+    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
+      {
+        id: 'vendor/no-reasoning',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.000001', completion: '0.000002' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+      },
+      {
+        id: 'vendor/reasons-by-default',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.000001', completion: '0.000006' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+        reasoning: { default_enabled: true, supported_efforts: ['none', 'low'] },
+      },
+    ]);
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
+      text: CRITIC_JSON,
+      provider: 'openrouter',
+      model: 'vendor/no-reasoning',
+      usage: null,
+    });
+
+    await generateWeeklyMaster([story('item-1', 'feature')], [], [], {
+      checkpoint: { english: englishResult(), ukrainian: ukrainianResult() },
+    });
+
+    const options = vi.mocked(generateWithOpenRouterChain).mock.calls[0]![1] as {
+      extraBodyForModel?: (modelId: string) => Record<string, unknown> | undefined;
+    };
+    expect(options.extraBodyForModel?.('vendor/reasons-by-default')).toMatchObject({
+      reasoning: { effort: 'none' },
+    });
+    expect(options.extraBodyForModel?.('vendor/no-reasoning')?.reasoning).toBeUndefined();
+  });
+});

@@ -549,16 +549,23 @@ async function generateOpenRouter<T>(
   const models = await fetchOpenRouterModels(apiKey);
   const queue = premiumOpenRouterModels(models, options);
   if (!queue.length) throw new Error('No premium OpenRouter editorial model is available.');
-  const chosenModel = models.find((model) => model.id === queue[0]);
-  const reasoningEffort = chosenModel ? minimalReasoningEffort(chosenModel) : null;
+  // `extraBodyForModel` is a per-model hook, but this used to compute one
+  // effort from queue[0] and hand it to every model in the chain. Harmless
+  // while the queue was always length 1; actively wrong now that the Actions
+  // worker runs several candidates — a fallback model whose reasoning
+  // defaults on would get no suppression at all and reason until the wall
+  // ceiling, billing those tokens as output the whole way.
+  const modelsById = new Map(models.map((model) => [model.id, model]));
   const result = await generateWithHttpProviderChain(
     prompt,
     { id: 'openrouter', apiKey, modelQueue: queue, ...OPENROUTER_HTTP_DEFAULTS },
     {
       validateResponse,
-      extraBodyForModel: reasoningEffort
-        ? () => ({ reasoning: { effort: reasoningEffort } })
-        : undefined,
+      extraBodyForModel: (modelId) => {
+        const record = modelsById.get(modelId);
+        const effort = record ? minimalReasoningEffort(record) : null;
+        return effort ? { reasoning: { effort } } : undefined;
+      },
     },
   );
   return toOpenRouterResult(result, parse(result.text), prompt.length);

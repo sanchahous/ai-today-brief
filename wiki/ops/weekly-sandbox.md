@@ -99,6 +99,21 @@ npm run weekly:sandbox -- gates --fixture <path> --run artifacts/_local/weekly-s
 Той самий прогін показав, що doctor заробив свій хліб: `claude-cli` локально не
 автентифікований («OAuth session expired»), і це видно за 40 секунд, а не за 40 хвилин.
 
+Повний прогін master-а на тій самій фікстурі (через OpenRouter, бо CLI локально без авторизації)
+пройшов **end-to-end за 28 хвилин, 9 викликів провайдера, $0.032 сумарно** — EN → UK → critic →
+2 раунди revise → critic, із реальним quality-звітом на виході (74/100, gate FAIL на трьох
+редакційних причинах — гейти працюють, це не збій). Орієнтир по кроках:
+
+| Крок | Час | Модель |
+|---|---|---|
+| english | 204 с | `z-ai/glm-5.2` (після падіння `hy3-preview`) |
+| ukrainian | 251 с | `tencent/hy3-preview` |
+| critic | 130–295 с | `z-ai/glm-5.2`, `openai/gpt-5.6-luna` |
+| revisions | 101–240 с | `tencent/hy3-preview` |
+
+Саме тут вимірялось головне: два critic-виклики мали `first_token_ms` 120.4 с і 116.6 с — вище
+90-секундного ліміту, і за старим кодом були б убиті як «зависання».
+
 ## Related pages
 
 - [pipeline/weekly-master-failures](../pipeline/weekly-master-failures.md) — розбір збоїв 09.08 і що виправлено
