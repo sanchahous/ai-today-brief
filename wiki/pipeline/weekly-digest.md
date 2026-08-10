@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10, newer-draft banner + restore/save security-definer fix 2026-08-10
+Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10, newer-draft banner + restore/save security-definer fix 2026-08-10, Postpone release feature 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -476,6 +476,22 @@ live check 2026-08-04)
   `src/app/admin/(cms)/weekly/actions.ts`, live incident + Supabase/Vercel log read 2026-08-10,
   `set local role authenticated` reproduction 2026-08-10, production migration
   `20260810160000_weekly_revision_rpc_security_definer.sql` applied 2026-08-10)
+- **Postpone release** (2026-08-10): `schedule_weekly_digest` only accepts Monday 16:00
+  Europe/Kyiv and only from `status = 'approved'` — there was no way to move an
+  already-`scheduled` release without three separate manual steps (Pause, write a reason;
+  Resume, which re-approves; retype both Preflight/Release datetime-local fields for a new
+  Monday). `postponeWeeklyDigestAction` composes the same three existing RPCs
+  (`pause_weekly_digest` → `approve_weekly_digest` → `schedule_weekly_digest`) behind one
+  button — pick 1–4 weeks, write one reason, done. No new RPC, so no new grants to get wrong;
+  the re-approve step is a genuine full preflight re-check against current content, not a
+  formality. The new date is computed in the Kyiv calendar (`addKyivWeeks`) rather than by
+  adding a fixed UTC duration, so a postpone across a DST transition still lands on 16:00
+  Kyiv, not 15:00 or 17:00 — verified by hand against both 2026 DST boundaries. Only shown
+  when `status === 'scheduled'`; if an intermediate step fails, the edition lands in whatever
+  state that step left it (`paused` or `approved`), never a partial/undefined state, and the
+  error banner says exactly which step failed.
+  (source: `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`,
+  owner request 2026-08-10)
 
 ## Fluid CPU / вартість (2026-08-04)
 

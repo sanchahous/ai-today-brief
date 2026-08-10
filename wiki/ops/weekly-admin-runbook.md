@@ -10,7 +10,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner + restore error fix 2026-08-10
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner + restore error fix 2026-08-10, Postpone release feature 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -130,6 +130,30 @@ Release preflight на Overview / Release покаже, що ще червоне
 числа в UK мусять бути локалізовані, а одиничний case study не можна подавати як універсальний
 факт про весь agentic AI. Якщо Top 3 не мають чесного спільного зв'язку, не вимагай umbrella-
 тему — краще прямо назвати три новини.
+
+### Release: approve → schedule → (за потреби) postpone → pause
+
+Реліз завжди виходить рівно в понеділок 16:00 Kyiv — `schedule_weekly_digest` не приймає
+жодного іншого дня/часу. Порядок кнопок на Release tab:
+
+1. **Approve active revision** — фіксує поточну ревізію й усі approved артефакти; ще не
+   публікує.
+2. **Schedule release** — вводить дату/час у полях Preflight/Release (Kyiv); кнопка активна
+   лише коли статус `approved`. Preflight — завжди рівно на 15 хв раніше за Release.
+3. **Postpone** (з 2026-08-10) — з'являється лише коли статус уже `scheduled`, тобто «я
+   думав, що встигну, а не встигаю». Один клік: вибираєш 1–4 тижні, пишеш причину — і за
+   лаштунками воркфлоу сам робить pause → re-approve (це реальна повторна перевірка preflight
+   на поточному контенті, не формальність) → schedule на той самий час у понеділок N тижнів
+   пізніше. Якщо якийсь крок посередині впаде (наприклад, з'явився новий blocker), випуск
+   лишається в проміжному стані (`paused` або `approved`) — банер угорі покаже точний текст
+   помилки, дальше веди руками через Pause/Schedule.
+4. **Pause and recover** — ручний шлях для правок після 15:45 (перезаписує контент, потребує
+   Resume → Schedule заново) або коли Postpone не підходить (потрібна не понеділкова дата,
+   чи більше 4 тижнів наперед — тисни Postpone кілька разів).
+
+Postpone не створює нову RPC — це той самий Pause → Approve → Schedule, які вже існували,
+просто в один клік з правильно порахованою датою (наступний понеділок 16:00, DST-safe).
+(source: `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`)
 
 ## Типові «чому не їде»
 

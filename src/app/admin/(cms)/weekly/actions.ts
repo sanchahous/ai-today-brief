@@ -1660,3 +1660,111 @@ export async function pauseWeeklyDigestAction(formData: FormData) {
   if (error) throw new Error(error.message);
   revalidateWeeklyAdmin(weeklyDigestId);
 }
+
+function redirectWeeklyReleaseError(weeklyDigestId: string, message: string): never {
+  redirect(
+    `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=release&save_error=${encodeURIComponent(message.slice(0, 500))}`,
+  );
+}
+
+/**
+ * `schedule_weekly_digest` only accepts Monday 16:00 Europe/Kyiv and only
+ * from `status = 'approved'` -- there is no direct "move the date" RPC, by
+ * design (a scheduled edition is meant to require the same owner sign-off a
+ * fresh schedule does). Shifting by whole weeks keeps the result on the same
+ * weekday/time, calculated in the Kyiv calendar so DST transitions can never
+ * shift the wall-clock hour.
+ */
+function addKyivWeeks(releaseAt: Date, weeks: number): string {
+  const ymd = new Intl.DateTimeFormat('en-CA', {
+    timeZone: SOCIAL_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(releaseAt);
+  const [year, month, day] = ymd.split('-').map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1, day + weeks * 7));
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(shifted);
+}
+
+/**
+ * One click for "I won't make it this Monday" -- pause, re-approve against
+ * the current content (this re-runs the full preflight check, exactly as a
+ * fresh approval would), then reschedule to the same time N weeks later.
+ * Composed from the three existing RPCs rather than a new one: no new grants
+ * to get wrong, and every intermediate state (`paused`, `approved`) is
+ * already a state the rest of the UI understands and can recover from if a
+ * later step fails.
+ */
+export async function postponeWeeklyDigestAction(formData: FormData) {
+  await requireSocialAdmin({ aal2: true, roles: ['owner'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const weeks = Number.parseInt(requiredString(formData, 'weeks'), 10);
+  if (!Number.isInteger(weeks) || weeks < 1 || weeks > 8) {
+    redirectWeeklyReleaseError(weeklyDigestId, 'Postpone by 1 to 8 weeks at a time.');
+  }
+  const reason = requiredString(formData, 'reason');
+  if (reason.length < 10 || reason.length > 500) {
+    redirectWeeklyReleaseError(
+      weeklyDigestId,
+      'Postpone reason must contain 10 to 500 characters.',
+    );
+  }
+
+  const db = await getSupabaseServer();
+  const { data: digest, error: readError } = await db
+    .from('weekly_digests')
+    .select('status,release_at')
+    .eq('id', weeklyDigestId)
+    .maybeSingle();
+  if (readError) redirectWeeklyReleaseError(weeklyDigestId, readError.message);
+  if (!digest) redirectWeeklyReleaseError(weeklyDigestId, 'Weekly digest was not found.');
+  if (digest.status !== 'scheduled' || !digest.release_at) {
+    redirectWeeklyReleaseError(
+      weeklyDigestId,
+      'Only an already-scheduled edition can be postponed. Approve it and use Schedule directly to pick a first release date.',
+    );
+  }
+
+  const newReleaseAt = kyivWallClockToUtc(
+    addKyivWeeks(new Date(digest.release_at), weeks),
+    16,
+    0,
+  ).toISOString();
+
+  const { error: pauseError } = await db.rpc('pause_weekly_digest', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_reason: `Postponed ${weeks} week(s): ${reason}`,
+  });
+  if (pauseError) {
+    redirectWeeklyReleaseError(weeklyDigestId, `Could not pause before postponing: ${pauseError.message}`);
+  }
+
+  const { error: approveError } = await db.rpc('approve_weekly_digest', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_override_reason: null,
+  });
+  if (approveError) {
+    redirectWeeklyReleaseError(
+      weeklyDigestId,
+      `Paused, but could not re-approve to reschedule: ${approveError.message}. The edition is now paused -- resolve the blocker, then use Resume and Schedule.`,
+    );
+  }
+
+  const { error: scheduleError } = await db.rpc('schedule_weekly_digest', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_release_at: newReleaseAt,
+  });
+  if (scheduleError) {
+    redirectWeeklyReleaseError(
+      weeklyDigestId,
+      `Paused and re-approved, but could not schedule the new date: ${scheduleError.message}. The edition is now approved -- use Schedule directly.`,
+    );
+  }
+  revalidateWeeklyAdmin(weeklyDigestId);
+}

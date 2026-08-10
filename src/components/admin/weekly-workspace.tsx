@@ -33,6 +33,7 @@ import {
   dispatchWeeklyMasterCliAction,
   enqueueWeeklyGenerationAction,
   pauseWeeklyDigestAction,
+  postponeWeeklyDigestAction,
   restoreWeeklyDigestRevisionAction,
   resumeWeeklyThreadsSequenceAction,
   reviewWeeklyArtifactAction,
@@ -4042,6 +4043,59 @@ function ReleasePanel({
             </div>
           </form>
         </section>
+
+        {!testEdition && digest.status === 'scheduled' ? (
+          <section className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5">
+            <h2 className="text-lg font-bold text-white">Postpone</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-400">
+              Not going to make {kyivDateTime(digest.release_at)}? This pauses, re-approves
+              against the current content (a full preflight re-check, same as approving fresh),
+              and reschedules to the same time on a later Monday — one click instead of the
+              three steps below.
+            </p>
+            <form action={postponeWeeklyDigestAction} className="mt-5 grid gap-4">
+              <input type="hidden" name="weekly_digest_id" value={digest.id} />
+              <div className="grid gap-4 sm:grid-cols-[8rem_1fr]">
+                <label className={LABEL}>
+                  Postpone by
+                  <select
+                    name="weeks"
+                    defaultValue="1"
+                    disabled={finalReleaseDisabled}
+                    className={FIELD}
+                  >
+                    {[1, 2, 3, 4].map((count) => (
+                      <option key={count} value={count}>
+                        {count} week{count > 1 ? 's' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className={LABEL}>
+                  Reason
+                  <textarea
+                    name="reason"
+                    rows={2}
+                    required
+                    minLength={10}
+                    maxLength={500}
+                    disabled={finalReleaseDisabled}
+                    className={TEXTAREA}
+                    placeholder="Not enough time to finish review this week."
+                  />
+                </label>
+              </div>
+              <div>
+                <ActionSubmitButton
+                  idleLabel="Postpone release"
+                  pendingLabel="Postponing…"
+                  disabled={finalReleaseDisabled}
+                  className={SECONDARY}
+                />
+              </div>
+            </form>
+          </section>
+        ) : null}
 
         <section className="rounded-2xl border border-red-400/20 bg-red-400/5 p-5">
           <h2 className="text-lg font-bold text-white">Pause and recover</h2>
