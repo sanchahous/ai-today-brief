@@ -76,8 +76,8 @@
     },
     {
       "id": "illustration-prompt-policy",
-      "fromFile": "src/lib/weekly-digest/generation-worker.ts",
-      "regex": "prompt_policy:\\s*'([^']+)'",
+      "fromFile": "pipeline/card-image.ts",
+      "regex": "WEEKLY_PROMPT_POLICY\\s*=\\s*'([^']+)'",
       "mustAppearIn": ["wiki/marketing/card-images.md", "wiki/pipeline/weekly-digest.md"]
     }
   ],
