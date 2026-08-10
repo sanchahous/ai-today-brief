@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { HookCandidatePicker } from '@/components/admin/hook-candidate-picker';
 import { SocialCharCount } from '@/components/admin/social-char-count';
@@ -4132,6 +4133,45 @@ function ReleasePanel({
   );
 }
 
+/**
+ * The active revision is not always the newest one: `editorial_master`
+ * creates a fresh draft revision whenever a run does not fully converge, and
+ * nothing promotes it automatically -- that is a deliberate human gate, not a
+ * bug (see wiki/pipeline/weekly-master-engine.md). Without this banner an
+ * editor on any tab has no way to tell the article they are reading was
+ * superseded by a later, usually better, AI attempt.
+ */
+function NewerDraftBanner({ workspace }: { workspace: WeeklyDigestWorkspace }) {
+  const latest = workspace.revisions[0];
+  if (!latest || latest.id === workspace.digest.active_revision_id) return null;
+  const active = workspace.revisions.find(
+    (revision) => revision.id === workspace.digest.active_revision_id,
+  );
+  const draftEvent = workspace.releaseEvents.find(
+    (event) => event.revision_id === latest.id && event.event_type === 'draft_revision_created',
+  );
+  const draftReason = draftEvent ? textFrom(draftEvent.payload, 'reason') : '';
+  return (
+    <section className="mb-6 rounded-2xl border border-cyan-300/30 bg-cyan-300/8 p-4 text-sm text-cyan-100">
+      <p className="font-bold">
+        Newer draft available — Revision {latest.revision_number}
+        {latest.title_en ? `: ${latest.title_en}` : ''}
+      </p>
+      <p className="mt-1 leading-6 text-cyan-100/80">
+        {draftReason ? `${draftReason}. ` : ''}
+        The active version shown below is Revision {active?.revision_number ?? '?'}, not the
+        latest AI attempt.
+      </p>
+      <Link
+        href={`/admin/weekly/${workspace.digest.id}?tab=overview#versions-heading`}
+        className="mt-2 inline-block font-semibold text-cyan-100 underline underline-offset-2"
+      >
+        Review Editorial versions →
+      </Link>
+    </section>
+  );
+}
+
 export function WeeklyWorkspace({
   workspace,
   activeTab,
@@ -4209,6 +4249,7 @@ export function WeeklyWorkspace({
           </p>
         </section>
       ) : null}
+      <NewerDraftBanner workspace={workspace} />
       {activeTab === 'overview' ? (
         <OverviewPanel
           workspace={workspace}

@@ -6,6 +6,67 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-10
 
+## 2026-08-10 — Weekly admin: справжня причина Restore/Save 403 знайдена й виправлена в прод-БД
+
+**Коригує запис нижче** («newer-draft banner, читабельні restore-помилки, quantified
+length-repair»): там 403 на **Restore this version** приписаний «ймовірно транзиентному
+глюку сесії». **Це виявилось хибним** — власник спробував ще раз і повідомив, що помилка
+стабільна, не одноразова.
+
+**Знайдено (відтворено детерміновано):** `create_weekly_digest_revision` («Save») і
+`revert_weekly_digest_revision` («Restore») — обидві `security invoker` — намагаються
+`UPDATE weekly_digest_generation_jobs`, а роль `authenticated` мала до цієї таблиці лише
+`SELECT` з моменту її створення (23.07, `weekly_digest_v2` migration) — жодного `UPDATE`.
+Постгрес перевіряє право на рівні таблиці до WHERE-умови, тож навіть 0 підхожих рядків усе
+одно валить запит `42501: permission denied for table weekly_digest_generation_jobs`. Це
+б'є **кожен** виклик owner/editor, не рідкісний випадок: за всю історію прод-БД був рівно
+**один** успішний людський Save (04.08) і жодного відтоді — Save, судячи з усього, теж тихо
+ламався весь цей час, просто непомітно (AI-пайплайн пише через окремі `security definer`
+шляхи, не через цю RPC). Відтворено напряму через `set local role authenticated;` у
+транзакції з відкатом — детерміновано, не залежить від сесії.
+
+**Змінено й застосовано до прод-БД:** обидві функції отримали `security definer` (той самий
+патерн, що вже мають `retry_weekly_digest_generation_job`/`claim_weekly_digest_generation_
+jobs_v2` для тієї ж таблиці). Перевірка `has_social_role(['owner','editor'])` усередині
+незмінна — авторизація не послаблена, дано лише права на конкретний запис. Перед застосуванням
+перевірено в транзакції з відкатом на реальному дайджесті — виклик успішно повернув нову
+активну ревізію, прод не чіпався до явного дозволу власника. Міграція
+`supabase/migrations/20260810160000_weekly_revision_rpc_security_definer.sql` застосована
+через Supabase MCP 2026-08-10; `get_advisors` після застосування показує очікувані WARN
+(«authenticated може виконати SECURITY DEFINER») — той самий прийнятий патерн, що вже є для
+інших definer-функцій цієї таблиці. Оновлено [now](now.md), [weekly-digest](pipeline/weekly-digest.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md).
+(source: production Supabase read + `set local role authenticated` reproduction 2026-08-10,
+`supabase/migrations/20260810160000_weekly_revision_rpc_security_definer.sql`,
+`get_advisors` live check 2026-08-10)
+
+## 2026-08-10 — Weekly admin: newer-draft banner, читабельні restore-помилки, quantified length-repair
+
+**Джерело:** owner намагався зрозуміти «Needs your review», побачив у активній ревізії
+абстрактний заголовок «Зсув до агентів» і зламане слово «доп'яти», потім при спробі **Restore
+this version** на Revision 5 отримав `Minified React error #441`.
+
+**Знайдено:** активна ревізія дайджесту `ai-weekly-2026-08-02` (843975a8…) була написана
+09.08 07:27, до всіх v7-гейтів, поки три новіші ревізії (3, 4, 5 — усі кращі) лежали
+неактивованими без жодного UI-сигналу. Restore впав через `POST rpc/revert_weekly_digest_revision`
+403 (`Owner or editor session required`) для акаунту з коректним `role: owner, enabled: true`
+у БД — ймовірно транзиентна сесійна гонка; реальна причина була невидима, бо дія кидала сиру
+помилку замість читабельного повідомлення. Окремо: 7 із 8 unresolved-пунктів прогону
+`3c60e3bc…` зводились до однієї задовгої історії (EN 1203 / UK 1121 слів проти 400–650) — ремонт
+не зміг довести її до цілі за 2 спроби з розпливчастим «rewrite to 400–650 words».
+
+**Змінено:** `NewerDraftBanner` (`weekly-workspace.tsx`) — банер на кожній вкладці, коли є
+новіша ревізія за активну. `restoreWeeklyDigestRevisionAction` редіректить із `?save_error=…`
+замість сирого throw. `story_length`'s `suggestedFix` тепер називає точну дельту слів і вимагає
+структурної правки при великому розриві. `WEEKLY_MASTER_MAX_REPAIR_ATTEMPTS` дефолт 2→3.
+Два нові тести в `content-studio.test.ts`. Оновлено [weekly-master-engine](pipeline/weekly-master-engine.md),
+[weekly-digest](pipeline/weekly-digest.md), [weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md) та [now](now.md). Повний `pr:check` зелений
+локально; PR ще не відкрито.
+(source: production Supabase read 2026-08-10, `src/components/admin/weekly-workspace.tsx`,
+`src/app/admin/(cms)/weekly/actions.ts`, `src/lib/weekly-digest/content-studio.ts`,
+`src/lib/weekly-digest/master-engine.ts`)
+
 ## 2026-08-10 — `editorial_master`: перший живий прогін нового рушія знайшов і виправив UK `claimIds` регресію
 
 **Джерело:** owner помітив дві задачі GitHub Actions ([`31367921173`](https://github.com/sanchahous/ai-today-brief/actions/runs/31367921173)

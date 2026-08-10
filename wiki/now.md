@@ -10,7 +10,7 @@ review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish -
 owner-approved Weekly Digest reliability plan 2026-08-08, owner screenshot + Chrome layout
 measurement 2026-08-09, `editorial_master` failure investigation + live sandbox runs 2026-08-09,
 owner decision 2026-08-09 to rewrite `editorial_master` as an iterative engine,
-follow-up critic-recovery fix 2026-08-10, UK claimIds engine fix 2026-08-10 (run `31367921173`)
+follow-up critic-recovery fix 2026-08-10, UK claimIds engine fix 2026-08-10 (run `31367921173`), live restore-error incident + UI/repair fixes 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -155,6 +155,56 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Активна робота
 
+−8. **Живий розбір "Needs your review" на `ai-weekly-2026-08-02` — власник не розумів, що
+робити, і хіт реальний production-баг при спробі Restore, підтверджений двічі й виправлений
+у прод-БД того ж дня.** Розбір прод-БД показав: 7 із 8 нерозв'язаних пунктів джоби `3c60e3bc…`
+зводяться до **однієї** задовгої історії (EN 1203 / UK 1121 слів проти 400–650) — вона сама
+тягнула обидва `article_length`-блокери. Активна ревізія цього дайджесту (Revision 2)
+виявилась написаною **09.08 о 07:27, до жодного з v7-гейтів** — містила буквально банерний
+приклад «Зсув до агентів» (той самий рядок, що UK-промпт наводить як заборонений зразок —
+класичний LLM-провал «не роби X» → відтворює X) і зламане слово «доп'яти» (те саме, що вже в
+`UKRAINIAN_LANGUAGE_RESIDUE` блоклісті). Три новіші ревізії (3, 4, 5) існували як ніколи не
+активовані drafts, і Article tab про це жодним чином не сигналив.
+> ⚠️ **Коригує запис вище (перша спроба діагнозу):** перший клік власника на **Restore this
+> version** упав з `Minified React error #441`; я спершу приписав це «транзиентній сесії» —
+> **виявилось хибним, власник підтвердив, що помилка стабільна.** Реальна причина: SQL-функції
+> `create_weekly_digest_revision` («Save») і `revert_weekly_digest_revision` («Restore»)
+> викликані як `security invoker` намагаються `UPDATE weekly_digest_generation_jobs`, а ролі
+> `authenticated` цю таблицю з 23.07 видано лише `SELECT` — жодного `UPDATE` (постгрес
+> перевіряє право на рівні таблиці ще до WHERE, тож навіть 0 підхожих рядків усе одно валить
+> запит `42501`). Це б'є **кожен** owner/editor-виклик, не рідкісний випадок; за весь час у
+> проді був рівно один успішний людський Save (04.08) і жодного відтоді — Save, судячи з усього,
+> так само тихо ламався весь цей час. Відтворено напряму в БД через `set local role authenticated`
+> у транзакції з відкатом — 100% детерміновано.
+**Зроблено й застосовано до прод-БД 2026-08-10:**
+- `security definer` на обидві функції (`supabase/migrations/20260810160000_weekly_revision_rpc_security_definer.sql`)
+  — той самий патерн, що вже мають `retry_weekly_digest_generation_job`/
+  `claim_weekly_digest_generation_jobs_v2` для тієї ж таблиці; перевірка `has_social_role`
+  усередині лишається незмінною — авторизація не послаблена, дано лише права на конкретний
+  запис. Перевірено в транзакції з відкатом ДО застосування — виклик успішно повернув нову
+  активну ревізію, прод не чіплявся;
+- `NewerDraftBanner` (`weekly-workspace.tsx`) — жовтий банер на кожній вкладці, коли
+  найновіша ревізія не активна, з посиланням на Editorial versions;
+- `restoreWeeklyDigestRevisionAction` більше не кидає сиру помилку — редіректить із
+  `?save_error=…`, той самий банер, що й інші revision-дії, тож наступний збій покаже
+  реальний текст, а не opaque `Ref: …`;
+- `story_length`'s `suggestedFix` тепер називає точну дельту слів і вимагає структурної
+  правки при великому розриві («Cut at least 550 words… a 46% cut needs structural
+  editing»), а не розпливчасте «rewrite to 400–650 words»;
+- `WEEKLY_MASTER_MAX_REPAIR_ATTEMPTS` дефолт 2→3 — важкий випадок ремонту отримує ще одну
+  спробу.
+Повний `pr:check` зелений; міграція живе в БД, PR [#213](https://github.com/sanchahous/ai-today-brief/pull/213)
+з рештою коду ще відкритий. Деталі —
+[weekly-master-engine § Чому ремонт задовгого body не сходився сам](pipeline/weekly-master-engine.md#чому-ремонт-задовгого-body-не-сходився-сам--і-що-змінено-2026-08-10),
+[weekly-digest § Admin UX нотатки](pipeline/weekly-digest.md#admin-ux-нотатки-серп-2026).
+(source: production Supabase read job `3c60e3bc-e0d9-4c5f-b1b1-34123c587129` + digest
+`843975a8-8c19-4eca-96a8-035f76eae3ab` 2026-08-10, Supabase API/postgres logs live read
+2026-08-10, `set local role authenticated` reproduction 2026-08-10, production migration
+`20260810160000_weekly_revision_rpc_security_definer.sql` applied 2026-08-10,
+`src/components/admin/weekly-workspace.tsx`, `src/app/admin/(cms)/weekly/actions.ts`,
+`src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/master-engine.ts`,
+local `pr:check` 2026-08-10)
+
 −7. **Перший живий прогін нового рушія — Actions run
 [`31367921173`](https://github.com/sanchahous/ai-today-brief/actions/runs/31367921173),
 2026-08-10 — знайшов реальну регресію, не редакційну.** UK feature story #1 не могла пройти
@@ -170,7 +220,7 @@ provider failed» після ~40 хв на нуль результату. Рез
 негайно перезаписується `english.claimIds`, EN-контракт лишається строгим); заразом
 виключено з черги `openai/gpt-5.6-luna:batch` — Batch-only варіант, що 404-ив 6 разів
 поспіль і забирав слот у кожному циклі ретраю. 85 фокусних тестів + повний `pr:check`
-зелені. **Ще не влито в `main`.** Деталі —
+зелені. **Змержено в `main` 2026-08-10** (PR [#212](https://github.com/sanchahous/ai-today-brief/pull/212)). Деталі —
 [pipeline/weekly-master-engine § Перший живий прогін](pipeline/weekly-master-engine.md#перший-живий-прогін--2026-08-10-знайшов-реальну-регресію).
 (source: Actions runs `31367921173`/`31371078952`, `src/lib/weekly-digest/editorial-llm.ts`,
 `src/lib/weekly-digest/master-engine.ts`, `pipeline/openrouter-models.ts`, local `pr:check`

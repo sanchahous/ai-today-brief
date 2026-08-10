@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10
+Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10, newer-draft banner + restore/save security-definer fix 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -448,6 +448,34 @@ live check 2026-08-04)
   всередині власних `overflow-x-auto` контейнерів.
   (source: `src/app/globals.css`, `src/components/admin/weekly-workspace.tsx`, owner screenshot
   + Chrome layout measurement 2026-08-09)
+- **«Newer draft available» banner + readable restore errors** (2026-08-10): the Article tab
+  always rendered the **active** revision, with no indicator when a newer, usually better,
+  auto-generated draft existed — the owner spent real time reading and reacting to a stale
+  revision (`ai-weekly-2026-08-02`'s Revision 2, written before any v7 quality gate existed)
+  while three later revisions sat unreviewed. `NewerDraftBanner` now renders on every tab
+  whenever `workspace.revisions[0]` (newest by `created_at`) is not the active revision, with
+  the draft's own "never became active" reason and a link straight to Editorial versions.
+  Separately, `restoreWeeklyDigestRevisionAction` used a bare `throw` on any RPC error, which
+  Next.js renders as an opaque digest-only production error (`Minified React error #441`) — a
+  live click on **Restore this version** hit exactly this. ⚠️ First diagnosed (wrongly) as a
+  transient session race; the owner confirmed the failure was consistent, and the real cause
+  was a genuine `42501: permission denied for table weekly_digest_generation_jobs` —
+  `create_weekly_digest_revision` ("Save") and `revert_weekly_digest_revision` ("Restore") are
+  both `security invoker` and UPDATE that table directly, which `authenticated` has never had
+  write access to (SELECT-only since 2026-07-23; Postgres checks table privilege before the
+  WHERE clause, so even zero matching rows still fails). This hit every owner/editor call, not
+  a rare edge case — production history shows exactly one successful human Save, ever.
+  **Fixed in production the same day**: both functions moved to `security definer`
+  (`supabase/migrations/20260810160000_weekly_revision_rpc_security_definer.sql`), matching
+  the pattern this table's other writers (`retry_weekly_digest_generation_job`,
+  `claim_weekly_digest_generation_jobs_v2`) already use; the internal `has_social_role` check
+  is unchanged, so authorization is not weakened. Verified in a rolled-back transaction before
+  applying. The action still redirects with `?save_error=…` instead of a bare throw, so any
+  future failure shows its real message instead of a bare "Ref: …".
+  (source: `src/components/admin/weekly-workspace.tsx`,
+  `src/app/admin/(cms)/weekly/actions.ts`, live incident + Supabase/Vercel log read 2026-08-10,
+  `set local role authenticated` reproduction 2026-08-10, production migration
+  `20260810160000_weekly_revision_rpc_security_definer.sql` applied 2026-08-10)
 
 ## Fluid CPU / вартість (2026-08-04)
 

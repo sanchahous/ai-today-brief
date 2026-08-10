@@ -10,7 +10,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`)
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner + restore error fix 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -57,6 +57,20 @@ Overview показує preflight blockers з лінком на вкладку. 
      зберігає випуск як неактивну draft-ревізію, завершується `succeeded` і показує
      **Needs your review** із переліком `unresolved` — це задача на редагування, не збій
      інфраструктури (source: [weekly-master-engine](../pipeline/weekly-master-engine.md));
+   - **ця draft-ревізія НЕ стає активною сама.** Approve research не має до цього стосунку —
+     то окремий гейт, який лише дозволяє почати писати. Article tab за замовчуванням показує
+     активну ревізію, а не найновішу; з 2026-08-10 жовтий банер «Newer draft available»
+     з'являється на кожній вкладці, коли є новіша ревізія за активну, з посиланням на Overview
+     → Editorial versions. Там **Restore this version** на потрібній ревізії робить її
+     активною — без цього кліку весь текст лишається невидимим редактору;
+   - **Restore/Save падали для кожного owner/editor до 2026-08-10 — це вже виправлено в
+     прод-БД.** Реальна причина не в сесії: `create_weekly_digest_revision` і
+     `revert_weekly_digest_revision` намагались писати в `weekly_digest_generation_jobs`, а
+     роль `authenticated` мала до цієї таблиці лише `SELECT` з 23.07 — `42501: permission
+     denied`, детерміновано, щоразу. Фікс — `security definer` на обидві функції
+     (`supabase/migrations/20260810160000_weekly_revision_rpc_security_definer.sql`),
+     застосовано до прод-БД. Якщо все одно бачиш помилку на Restore/Save після 2026-08-10 —
+     це вже щось інше, дивись реальний текст у червоному банері (більше не opaque `Ref: …`);
    - якщо джоба показує **Resume saved master** → натисни її: уже написані сегменти не
      пишуться повторно, critic і раунди ремонту стартують заново; це також правильний шлях після
      недоступного critic-а, не тисни поруч generic retry;

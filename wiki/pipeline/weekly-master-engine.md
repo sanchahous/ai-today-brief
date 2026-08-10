@@ -5,7 +5,8 @@ Summary: як `editorial_master` тепер працює — сегментов�
 Sources: `src/lib/weekly-digest/master-engine.ts`, `master-segments.ts`, `master-repair.ts`,
 `editorial-llm.ts`, `generation-worker.ts`, `generation-control.ts`,
 [weekly-master-failures](weekly-master-failures.md), рішення власника 2026-08-09,
-Actions runs `31367921173`/`31371078952` (перший живий прогін), `pipeline/openrouter-models.ts`
+Actions runs `31367921173`/`31371078952` (перший живий прогін), `pipeline/openrouter-models.ts`,
+`content-studio.ts` (quantified length-repair fix), live incident 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -95,7 +96,7 @@ Last updated: 2026-08-10
 
 | Змінна | Дефолт | Що обмежує |
 |---|---|---|
-| `WEEKLY_MASTER_MAX_REPAIR_ATTEMPTS` | 2 | спроб на одне поле |
+| `WEEKLY_MASTER_MAX_REPAIR_ATTEMPTS` | 3 | спроб на одне поле |
 | `WEEKLY_MASTER_MAX_CRITIC_ROUNDS` | 3 | циклів критик → ремонт → критик |
 | `WEEKLY_MASTER_MAX_DETERMINISTIC_ROUNDS` | 3 | безкоштовних раундів до критика |
 | `WEEKLY_MASTER_MAX_REPAIRS_PER_ROUND` | 12 | полів за раунд |
@@ -141,6 +142,33 @@ UK-відповіді. `claude-cli` і всі 6 моделей у OpenRouter-ч�
 (source: Actions runs `31367921173`/`31371078952`, `src/lib/weekly-digest/editorial-llm.ts`,
 `src/lib/weekly-digest/master-engine.ts`, `pipeline/openrouter-models.ts`, local `pr:check`
 2026-08-10, гілка `fix/weekly-master-uk-claimids`)
+
+## Чому ремонт задовгого body не сходився сам — і що змінено (2026-08-10)
+
+Той самий прогін (job `3c60e3bc…`, дайджест `ai-weekly-2026-08-02`) завершився
+`succeeded` + `needs_owner_review` із 8 нерозв'язаними пунктами. Розбір прод-БД показав, що
+7 із 8 зводяться до **однієї** історії: EN-body 1203 слова, UK-body 1121 слово проти цілі
+400–650 — саме вона сама по собі й тягнула обидва блокери `article_length` (EN 3848 слів,
+UK 3696 замість 2000–3000). `reason: attempts_exhausted` — ремонт намагався, але не встиг.
+
+**Корінь:** `suggestedFix` для `story_length` казав лише «Rewrite the body to 400–650 words»
+— без числа, наскільки саме скоротити. Для body, що на 85% довше за верхню межу, це не
+адреса, а напрямок: модель обережно підрізає речення замість структурної правки, і двох
+спроб (`WEEKLY_MASTER_MAX_REPAIR_ATTEMPTS`) не вистачає, щоб влучити в діапазон.
+
+**Фікс:**
+- `story_length`'s `suggestedFix` тепер називає точну дельту й вимагає структурної правки:
+  `"Cut at least 550 words from the current 1200-word body down to 400–650. Remove whole
+  paragraphs or sub-plots rather than trimming individual sentences -- a 46% cut needs
+  structural editing."` (симетрично для замалого body — `Expand... by at least N words`).
+  Цей текст іде прямо в `PROBLEMS TO FIX` блок промпту ремонту без додаткових полів схеми.
+- `WEEKLY_MASTER_MAX_REPAIR_ATTEMPTS` дефолт піднято з 2 до 3 — важкий випадок отримує ще
+  одну спробу; виклик ремонту коштує секунди й частки цента, тож зайва спроба дешевша за
+  нерозв'язаний пункт на огляді власника.
+Два нові тести в `content-studio.test.ts` фіксують точний текст дельти для over/under case.
+(source: `src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/master-engine.ts`,
+`content-studio.test.ts`, production Supabase read job `3c60e3bc-e0d9-4c5f-b1b1-34123c587129`
+2026-08-10)
 
 ## Як перевірити без прода
 

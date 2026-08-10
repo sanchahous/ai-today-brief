@@ -206,9 +206,16 @@ function numberFromEnv(name: string, fallback: number): number {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }
 
-/** How many times one field may be sent back before it is declared unresolved. */
+/**
+ * How many times one field may be sent back before it is declared unresolved.
+ * A large cut (e.g. a feature body nearly double its target) rarely lands in
+ * one repair call -- the model trims conservatively rather than
+ * restructuring. 3 gives a hard case one more shot before the loop gives up;
+ * a repair call is seconds and a fraction of a cent, so the extra attempt
+ * costs little against the alternative of an unresolved review item.
+ */
 function maxRepairAttemptsPerTarget() {
-  return Math.max(1, numberFromEnv('WEEKLY_MASTER_MAX_REPAIR_ATTEMPTS', 2));
+  return Math.max(1, numberFromEnv('WEEKLY_MASTER_MAX_REPAIR_ATTEMPTS', 3));
 }
 
 /** How many critic → repair → critic cycles a run may spend. */
