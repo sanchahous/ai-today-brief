@@ -4,7 +4,8 @@ Summary: Правила тижневого editorial-відбору для weekl
 Sources: `src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
 `src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`, owner content-quality
 audit 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK `claimIds` parser fix 2026-08-10
-(Actions run `31367921173`), quantified length-repair fix + newer-draft banner 2026-08-10
+(Actions run `31367921173`), quantified length-repair fix + newer-draft banner 2026-08-10,
+Postpone release feature 2026-08-10
 Last updated: 2026-08-10
 
 
@@ -189,6 +190,14 @@ critic-а лишається fail-closed: resume не перетворює не�
 `weekly-workspace.tsx` — суто UI-індикатор, що активна ревізія не найновіша, без жодного
 впливу на сам відбір чи approved research. (source: `src/lib/weekly-digest/content-studio.ts`,
 `src/components/admin/weekly-workspace.tsx`)
+
+## Межа з Postpone release (2026-08-10)
+
+Відбір не змінювався. `postponeWeeklyDigestAction` рухає лише `weekly_digests.release_at`/
+`preflight_at` і статус релізу — не торкається shortlist, approved research чи самого
+контенту статті. Re-approve крок усередині postpone повторно ганяє `weekly_digest_preflight`
+на **вже** approved research/artifacts, не переоцінює відбір заново. (source:
+`src/app/admin/(cms)/weekly/actions.ts`)
 
 ## Related pages
 

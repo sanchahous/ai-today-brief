@@ -6,6 +6,31 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-10
 
+## 2026-08-10 — Weekly admin: додано Postpone release
+
+**Джерело:** власник попросив «можливість вручну переносити реліз, бо деколи не встигаю».
+
+**Знайдено:** `schedule_weekly_digest` жорстко вимагає понеділок 16:00 Europe/Kyiv і статус
+`approved` — прямої RPC «перенеси дату» немає навмисно. Для вже `scheduled` випуску єдиний
+робочий шлях був Pause → Resume (= re-approve) → заново вписати обидва datetime-local поля.
+
+**Змінено:** новий `postponeWeeklyDigestAction` (`src/app/admin/(cms)/weekly/actions.ts`)
+компонує три вже наявні RPC (`pause_weekly_digest` → `approve_weekly_digest` →
+`schedule_weekly_digest`) за один клік — 1–4 тижні, одна причина. Жодної нової RPC, тож
+жодних нових грантів (враховуючи щойно знайдений і виправлений баг з грантами того самого
+дня — свідомо уникнув повторення). Нова дата рахується в Kyiv-календарі
+(`addKyivWeeks` — Kyiv Y-M-D + N×7 днів → назад через `kyivWallClockToUtc`), не додаванням
+UTC-тривалості — перевірено вручну на обох DST-переходах 2026 (25.10 і 29.03), час
+лишається 16:00 Kyiv по обидва боки. Новий блок «Postpone» на Release tab
+(`weekly-workspace.tsx`) видимий лише коли `status === 'scheduled'`. `pr:check` зелений,
+49/49 pre-push e2e. Оновлено [now](now.md), [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md). Гілка `feat/weekly-postpone-release`,
+PR ще не відкрито.
+(source: owner request 2026-08-10, `src/app/admin/(cms)/weekly/actions.ts`,
+`src/components/admin/weekly-workspace.tsx`, manual DST verification 2026-08-10,
+local `pr:check` 2026-08-10)
+
 ## 2026-08-10 — Weekly admin: справжня причина Restore/Save 403 знайдена й виправлена в прод-БД
 
 **Коригує запис нижче** («newer-draft banner, читабельні restore-помилки, quantified

@@ -10,7 +10,7 @@ review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish -
 owner-approved Weekly Digest reliability plan 2026-08-08, owner screenshot + Chrome layout
 measurement 2026-08-09, `editorial_master` failure investigation + live sandbox runs 2026-08-09,
 owner decision 2026-08-09 to rewrite `editorial_master` as an iterative engine,
-follow-up critic-recovery fix 2026-08-10, UK claimIds engine fix 2026-08-10 (run `31367921173`), live restore-error incident + UI/repair fixes 2026-08-10
+follow-up critic-recovery fix 2026-08-10, UK claimIds engine fix 2026-08-10 (run `31367921173`), live restore-error incident + UI/repair fixes 2026-08-10, Postpone release feature 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -154,6 +154,25 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 (source: live check Vercel dashboard 2026-08-04)
 
 ## Активна робота
+
+−9. **Postpone release — гілка `feat/weekly-postpone-release`, PR ще не відкрито.** Власник
+попросив ручний спосіб переносити реліз, бо не завжди встигає. `schedule_weekly_digest`
+приймає лише понеділок 16:00 Kyiv і лише зі статусу `approved` — для вже `scheduled` випуску
+єдиний шлях був три ручні кроки (Pause з причиною → Resume, що ре-апрувить → перевписати
+обидва datetime-local поля на нову дату). Новий `postponeWeeklyDigestAction` компонує ті самі
+три вже наявні RPC (`pause_weekly_digest` → `approve_weekly_digest` → `schedule_weekly_digest`)
+за одну кнопку: 1–4 тижні, одна причина. Нової RPC немає — жодних нових грантів ризикувати
+(враховуючи, що знайшлось сьогодні вище). Дата рахується в календарі Kyiv (`addKyivWeeks`),
+не додаванням фіксованої UTC-тривалості — перевірено вручну на обох DST-переходах 2026
+(жовтень і березень), час лишається 16:00 Kyiv по обидва боки. Кнопка видима лише коли
+`status === 'scheduled'`. Якщо проміжний крок впаде — випуск лишається в тому стані, який цей
+крок залишив (`paused` або `approved`), банер каже точно, що саме не вдалось. `pr:check`
+зелений; UI/JS-верифікація в браузері не зроблена — той самий відомий subst-drive `next dev`
+глюк середовища, не повʼязаний зі зміною. Деталі —
+[weekly-digest § Postpone release](pipeline/weekly-digest.md#admin-ux-нотатки-серп-2026),
+[weekly-admin-runbook § Release](ops/weekly-admin-runbook.md#release-approve--schedule--за-потреби-postpone--pause).
+(source: `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`,
+owner request 2026-08-10, manual DST verification 2026-08-10, local `pr:check` 2026-08-10)
 
 −8. **Живий розбір "Needs your review" на `ai-weekly-2026-08-02` — власник не розумів, що
 робити, і хіт реальний production-баг при спробі Restore, підтверджений двічі й виправлений
