@@ -4,8 +4,9 @@ Summary: як `editorial_master` тепер працює — сегментов�
 поля замість перегенерації і принцип «якість ніколи не валить джобу».
 Sources: `src/lib/weekly-digest/master-engine.ts`, `master-segments.ts`, `master-repair.ts`,
 `editorial-llm.ts`, `generation-worker.ts`, `generation-control.ts`,
-[weekly-master-failures](weekly-master-failures.md), рішення власника 2026-08-09
-Last updated: 2026-08-09
+[weekly-master-failures](weekly-master-failures.md), рішення власника 2026-08-09,
+Actions runs `31367921173`/`31371078952` (перший живий прогін), `pipeline/openrouter-models.ts`
+Last updated: 2026-08-10
 
 ---
 
@@ -110,6 +111,36 @@ Last updated: 2026-08-09
 провайдером/моделлю, токенами й вартістю. Прогрес рухається по 14 сегментах, а не по чотирьох
 макрокроках. Манифест стадій у `generation-control.ts` віддзеркалює кроки рушія:
 `prepare → english → ukrainian → validate → critic → revisions → persist`.
+
+## Перший живий прогін — 2026-08-10 знайшов реальну регресію
+
+Actions run [`31367921173`](https://github.com/sanchahous/ai-today-brief/actions/runs/31367921173)
+— перший live-прогін нового рушія — впав на UK feature story #1 після 8/16 durable сегментів.
+Причина структурна, не редакційна: `ukrainianStorySegmentPrompt` прямо наказує моделі **не
+повертати** `claimIds` (поле копіює `writeStorySegment` з англійського оригіналу), але
+`parseStorySegment` вимагав це поле безумовно й кидав `SyntaxError` на кожній конформній
+UK-відповіді. `claude-cli` і всі 6 моделей у OpenRouter-черзі писали валідний текст і
+відкидались на тому самому рядку — «Every editorial provider failed» після ~40 хв на нуль
+результату, хоча жоден провайдер насправді не був несправний. Резюм-прогін
+(`31371078952`) продовжив із тих самих 8/16 сегментів і впав так само — власник скасував
+його вручну.
+
+**Фікс:** `parseStorySegment(raw, approvedClaimIds, requireClaimIds = true)` — UK-виклик
+передає `false`; повернуте значення все одно негайно перезаписується `english.claimIds` у
+`writeStorySegment`, тож EN-контракт («claimIds обов'язкові, мінімум один») лишається
+строгим без змін.
+
+Другий, менший дефект з того самого прогону: чергу моделей засмічував
+`openai/gpt-5.6-luna:batch` — варіант, доступний лише через окремий Batch API, що дає
+`HTTP 404` на звичайному chat-completions шляху; 6 циклів ретраю в одному прогоні згоріли на
+цьому. `:batch` тепер виключений в `isEligibleModel` (`pipeline/openrouter-models.ts`) так
+само, як `:free`.
+
+85 фокусних тестів (`editorial-llm.test.ts`, `master-engine.test.ts`,
+`openrouter-models.test.ts`) і повний `pr:check` зелені після фіксу.
+(source: Actions runs `31367921173`/`31371078952`, `src/lib/weekly-digest/editorial-llm.ts`,
+`src/lib/weekly-digest/master-engine.ts`, `pipeline/openrouter-models.ts`, local `pr:check`
+2026-08-10, гілка `fix/weekly-master-uk-claimids`)
 
 ## Як перевірити без прода
 
