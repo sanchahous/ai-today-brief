@@ -4,6 +4,14 @@ import { loadProviderRegistry } from './providers/registry';
 import {
   buildPrompt,
   buildWeeklyPrompt,
+  cleanSceneText,
+  accentToHex,
+  extractWeeklyStoryEntities,
+  flattenWeeklySceneSpec,
+  parseWeeklySceneSpec,
+  validateWeeklySceneSpec,
+  weeklyFallbackScene,
+  WEEKLY_PROMPT_POLICY,
   DEFAULT_CF_IMAGE_MODEL,
   estimateCloudflareImageCostUsd,
   fallbackIllustrationMotif,
@@ -335,6 +343,28 @@ describe('sceneBrief', () => {
 
 // --- Weekly Digest "reportage" illustrations (editorial quality overhaul, PR5) ---
 
+describe('cleanSceneText', () => {
+  it('unwraps art-director JSON wrappers so keys never reach the image prompt', () => {
+    expect(
+      cleanSceneText(
+        '{"frame":"edge aisle with a technician sliding a server blade into a rack"}',
+      ),
+    ).toBe('edge aisle with a technician sliding a server blade into a rack');
+  });
+
+  it('unwraps markdown-fenced JSON and common alternate keys', () => {
+    expect(
+      cleanSceneText('```json\n{"scene":"hand paused over a trackpad under cool cyan glow"}\n```'),
+    ).toBe('hand paused over a trackpad under cool cyan glow');
+  });
+
+  it('leaves a plain phrase untouched (aside from whitespace collapse)', () => {
+    expect(cleanSceneText('  researcher hand hovering over a keyboard  ')).toBe(
+      'researcher hand hovering over a keyboard',
+    );
+  });
+});
+
 describe('weeklyReportageSceneBrief', () => {
   it('returns the default scene without any network call when there is no context', async () => {
     const { scene, source } = await weeklyReportageSceneBrief(
@@ -345,39 +375,85 @@ describe('weeklyReportageSceneBrief', () => {
     expect(source).toBe('fallback');
   });
 
-  it('falls back to the same keyword scene as the daily path when every provider is unconfigured', async () => {
+  it('uses a reportage-safe weekly fallback (not daily metaphor padlocks) when providers are unconfigured', async () => {
     const { scene, source } = await weeklyReportageSceneBrief(
       { headline: 'Critical CVE lets attackers breach the server', summary: '' },
       { geminiApiKey: '' },
     );
     expect(source).toBe('fallback');
-    expect(scene).toContain('padlock');
+    expect(scene.toLowerCase()).not.toContain('padlock');
+    expect(scene.toLowerCase()).toMatch(/incident|laptop|operations|security/);
+  });
+});
+
+describe('weekly scene schema gates', () => {
+  it('parses structured art-director JSON and flattens subject-first', () => {
+    const spec = parseWeeklySceneSpec(
+      JSON.stringify({
+        subject: 'hands cradling a game controller',
+        action: 'resting beside printed level sketches',
+        setting: 'living-room table after a long Codex build',
+        props: ['printed level sketches', 'game controller'],
+        must_include: ['Codex', '3D game'],
+      }),
+    );
+    expect(spec?.subject).toContain('game controller');
+    expect(flattenWeeklySceneSpec(spec!).toLowerCase()).toContain('codex');
+  });
+
+  it('rejects split-panel / terminal / desk-default scenes missing story entities', () => {
+    const bad = parseWeeklySceneSpec(
+      '{"subject":"split-screen monitor","action":"showing terminal npx output","setting":"office desk","props":[],"must_include":[]}',
+    )!;
+    const errors = validateWeeklySceneSpec(bad, ['Codex', '3D game']);
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it('accepts a story-faithful physical-prop scene', () => {
+    const good = parseWeeklySceneSpec(
+      '{"subject":"hands cradling a game controller","action":"beside printed level sketches","setting":"living room after Codex sub-agents built a 3D game","props":["controller","sketches"],"must_include":["Codex","3D game"]}',
+    )!;
+    expect(validateWeeklySceneSpec(good, ['Codex', '3D game'])).toEqual([]);
+  });
+
+  it('extracts distinctive entities from headline + angle', () => {
+    const entities = extractWeeklyStoryEntities({
+      headline: "Codex Desktop's Sub-Agents Built a 3D Game in 52 Minutes",
+      summary: 'Agents shipped a playable build then failed diagnostics.',
+      editorialAngle: 'Focus on the speed of the game build, not the later bug.',
+    });
+    expect(entities.some((e) => /codex/i.test(e))).toBe(true);
+    expect(entities.some((e) => /3d game/i.test(e))).toBe(true);
+  });
+
+  it('weeklyFallbackScene prefers game/controller language for game stories', () => {
+    expect(
+      weeklyFallbackScene('Codex sub-agents built a 3D game', ['Codex', '3D game']).toLowerCase(),
+    ).toMatch(/controller|sketch|game/);
   });
 });
 
 describe('buildWeeklyPrompt', () => {
-  it('describes a documentary/reportage register, distinct from the daily illustration style', () => {
-    const prompt = buildWeeklyPrompt('cyan', 'a security engineer glancing at a red-highlighted network map');
-    expect(prompt).toContain('cyan');
-    expect(prompt).toContain('a security engineer glancing at a red-highlighted network map');
-    expect(prompt).toMatch(/documentary|reportage/i);
+  it('leads with the scene subject (BFL word-order) and stays medium-length', () => {
+    const scene = 'hands cradling a game controller beside printed level sketches after a Codex build';
+    const prompt = buildWeeklyPrompt('cool cyan', scene);
+    expect(prompt.startsWith(scene)).toBe(true);
+    expect(prompt).toMatch(/documentary|reportage|photojournalism/i);
     expect(prompt).toContain('16:9');
-    // Never the daily path's "illustration/metaphor" framing.
+    expect(prompt).toContain(accentToHex('cool cyan'));
     expect(prompt.toLowerCase()).not.toContain('narrative metaphor');
+    // BFL: no giant Avoid: laundry list; positive desired state only.
+    expect(prompt.toLowerCase()).not.toContain('avoid:');
+    expect(prompt.split(/\s+/).length).toBeLessThan(90);
   });
 
-  it('folds the full avoid-list into the positive prompt (the klein-multipart negative_prompt fix)', () => {
-    // FLUX.2 klein's multipart Workers AI call never transmits a separate
-    // negative_prompt (runCloudflareMultipart only sends prompt/width/
-    // height) -- so on the default weekly provider, a bare negativePrompt()
-    // is silently never sent. This is the actual fix: the avoid-list must
-    // live inside the positive prompt string itself.
-    const prompt = buildWeeklyPrompt('cyan', 'a scene');
-    expect(prompt).toContain('glowing brain');
-    expect(prompt).toContain('cracked padlock');
-    expect(prompt).toContain('robotic arms shaking hands');
-    expect(prompt).toContain('anonymous server aisle');
-    expect(prompt.toLowerCase()).toContain('avoid:');
+  it('maps accent names to HEX for FLUX.2 color control', () => {
+    expect(accentToHex('cool cyan')).toBe('#22D3EE');
+    expect(accentToHex('#a1b2c3')).toBe('#A1B2C3');
+  });
+
+  it('exports the v2 prompt policy id', () => {
+    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-reportage-v2');
   });
 });
 

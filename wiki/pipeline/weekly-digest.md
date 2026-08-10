@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10, newer-draft banner + restore/save security-definer fix 2026-08-10, Postpone release feature 2026-08-10
+Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10, newer-draft banner + restore/save security-definer fix 2026-08-10, Postpone release feature 2026-08-10, weekly-reportage-v2 prompt rewrite 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -250,13 +250,16 @@ photographer standing in the room where this happened" — а не символ�
 editorsView (`generateStoryImage`, generation-worker.ts) — суттєво більше матеріалу, ніж daily-шлях
 коли-небудь отримує. Seed більше не містить `job.id` (`digestId:revisionId:itemId:v{n}`) —
 регенерація тепер ітеративна, не лотерея. `metadata.prompt_policy` артефактів story_image —
-**`weekly-reportage-v1`** (окремий, суворіший за daily's `story-specific-editorial-v5-no-text`;
-деталі стилю — [marketing/card-images](../marketing/card-images.md)).
+**`weekly-reportage-v2`** (з 2026-08-10; раніше `weekly-reportage-v1`): арт-директор повертає
+структурований JSON сцени → детерміністичний validator + 1 retry → subject-first SASC промпт
+для FLUX (BFL guidance: без giant Avoid-list, HEX accent, camera/lighting). Контекст включає
+binding `editorialAngle` + `why` + entity extraction. Деталі стилю —
+[marketing/card-images](../marketing/card-images.md).
 
-**Фікс мертвого negative prompt на klein:** `buildWeeklyPrompt` вшиває весь avoid-list у
-позитивний промпт текстом (не окремим `negative_prompt` полем) — бо `runCloudflareMultipart`
-(FLUX.2 klein, дефолтний провайдер) шле лише `prompt`/`width`/`height`, тож окремий
-`negativePrompt()` ніколи фізично не долітав до моделі на цьому шляху.
+**Фікс мертвого negative prompt на klein (PR5, уточнено v2):** klein multipart не шле
+окремий `negative_prompt`. v1 вшивав Avoid-list у позитивний промпт; v2 замінює це на
+позитивний desired-state (BFL: FLUX.2 не підтримує negatives) і переносить заборони в
+validator сцени *до* виклику FLUX.
 
 **Зберігання варіантів:** RPC `save_weekly_digest_artifact` **не підтримує кілька одночасних
 `is_current` рядків на один `slot_key`** (кожен save демотує попередній) — тож 3 варіанти НЕ

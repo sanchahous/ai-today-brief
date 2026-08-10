@@ -6,6 +6,20 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-10
 
+## 2026-08-10 — Weekly story images: prompt policy v2 (BFL-aligned)
+
+**Джерело:** аудит якості ілюстрацій `ai-weekly-2026-08-02` (сцени без сенсу новини,
+JSON-leak арт-директора, desk-convergence) + офіційні BFL/Cloudflare guides.
+
+**Змінено:**
+- `pipeline/card-image.ts` — `WEEKLY_PROMPT_POLICY = weekly-reportage-v2`: structured scene
+  JSON + `validateWeeklySceneSpec` + 1 retry; `buildWeeklyPrompt` subject-first SASC + HEX
+  (без giant Avoid-list); `weeklyFallbackScene` замість daily-метафор; entity extraction +
+  `editorialAngle`/`why` у бриф.
+- `generation-worker.ts` — передає angle/why; пише `prompt_policy` з константи.
+- Wiki: [card-images](marketing/card-images.md), [weekly-digest](pipeline/weekly-digest.md),
+  [overview](overview.md); sync fact `illustration-prompt-policy` → `WEEKLY_PROMPT_POLICY`.
+
 ## 2026-08-10 — Weekly admin: додано Postpone release
 
 **Джерело:** власник попросив «можливість вручну переносити реліз, бо деколи не встигаю».

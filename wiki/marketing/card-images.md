@@ -4,8 +4,9 @@ Summary: Генерація карток/OG і weekly story-ілюстрацій
 Sources: `pipeline/card-image.ts`, `.env.example`, PR #169–#175, editorial quality overhaul PR5
 (гілка `feat/weekly-editorial-voice`, 2026-08-06), LLM provider registry Phase 2
 (гілка `feat/llm-provider-registry`, 2026-08-06), post-merge review PR #191 (2026-08-07),
-none (analysis earlier draft)
-Last updated: 2026-08-07
+BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
+`feat/weekly-reportage-prompt-v2` (2026-08-10)
+Last updated: 2026-08-10
 
 ---
 
@@ -29,16 +30,19 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    (source: `pipeline/card-image.ts`'s `runArtDirectorLadder`, PR #191)
 2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
    separate house style since PR5** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
-   `buildWeeklyPrompt`, policy id **`weekly-reportage-v1`**): one documentary-reportage frame
+   `buildWeeklyPrompt`, policy id **`weekly-reportage-v2`** as of 2026-08-10): one documentary-reportage frame
    of the actual news event — "picture a photographer standing in the room where this
-   happened" — not the daily path's abstract metaphor register. Avoid-list is folded into the
-   **positive** prompt, not a separate `negative_prompt` field — FLUX.2 klein's multipart
-   Workers AI call never transmits `negative_prompt`, so a separate one silently never reached
-   the model on this provider. Three variants (same scene, different seeds) are generated per
+   happened" — not the daily path's abstract metaphor register. **v2 (BFL-aligned):** art director
+   returns structured JSON `{subject, action, setting, props, must_include}` with a deterministic
+   validator + one retry (bans split/UI/desk-defaults missing story entities); final FLUX prompt is
+   **subject-first** SASC prose (~40–80 words) with camera/lighting/HEX accent — no giant `Avoid:`
+   laundry list (FLUX.2 has no negative prompts). Context now includes binding `editorialAngle`
+   (PR4) + `why` + entity extraction. Three variants (same scene, different seeds) are generated per
    story so the owner can pick the best render; seed is `digestId:revisionItemId:v{n}`, no
    `job.id`, so a regeneration is iterative rather than a fresh lottery. Daily generation keeps
    its own **no baked-in typography / mastheads** policy `story-specific-editorial-v5-no-text`,
-   untouched by PR5. (source: PR #174–#175, editorial quality overhaul PR5 2026-08-06)
+   untouched by PR5. (source: PR #174–#175, editorial quality overhaul PR5 2026-08-06,
+   BFL prompting guide + JSON structured prompting 2026-08-10)
 3. **Image** — Cloudflare Workers AI default
    `@cf/black-forest-labs/flux-2-klein-9b` (multipart FormData under Node; do not
    stream the body without duplex — that silently spilled to `flux-1-schnell`).

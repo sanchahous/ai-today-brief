@@ -2437,6 +2437,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   let source: Buffer;
   let sourceKind = 'generated';
   let sourceUrl: string | null = null;
+  let promptPolicy = 'weekly-reportage-v2';
   let imageMeta: {
     provider: string;
     model: string;
@@ -2459,14 +2460,21 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     sourceUrl = requestedSourceUrl;
     sourceKind = 'editor_url';
   } else {
-    const { generateWeeklyReportageIllustrations } = await lazyCardImage();
+    const { generateWeeklyReportageIllustrations, WEEKLY_PROMPT_POLICY } = await lazyCardImage();
+    promptPolicy = WEEKLY_PROMPT_POLICY;
     const contentStudio = asRecord(asRecord(item.source_snapshot).content_studio);
+    const directions = await loadStoryDirections(job.weekly_digest_id);
+    const editorialAngle = item.brief_item_id
+      ? directions.get(item.brief_item_id)
+      : undefined;
     const illustrations = await generateWeeklyReportageIllustrations(
       {
         headline: item.title_en,
         summary: item.summary_en,
         bodyExcerpt: item.body_en?.slice(0, 600),
         editorsView: text(contentStudio.editors_view_en) ?? undefined,
+        editorialAngle,
+        why: item.why_en ?? undefined,
         seedBase: `${job.weekly_digest_id}:${job.revision_id}:${item.id}`,
         sceneOverride: sceneOverride ?? undefined,
         variantCount: 3,
@@ -2564,7 +2572,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       source_kind: sourceKind,
       source_url: sourceUrl,
       focal_point: text(input.focal_point) ?? 'attention',
-      prompt_policy: 'weekly-reportage-v1',
+      prompt_policy: promptPolicy,
       ...(imageMeta
         ? {
             provider: imageMeta.provider,
