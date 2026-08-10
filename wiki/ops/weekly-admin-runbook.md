@@ -9,7 +9,8 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 `weekly_generation_control_plane` implementation 2026-08-09, `src/lib/weekly-digest/pdf.ts`
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
-+ Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10
++ Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
+engine fix 2026-08-10 (run `31367921173`)
 Last updated: 2026-08-10
 
 ---
@@ -155,8 +156,15 @@ Release preflight на Overview / Release покаже, що ще червоне
    кожен `unresolved`-запис несе причину (`unmappable`, `attempts_exhausted`, `repair_failed`,
    `rounds_exhausted`, `deadline`). Швидше за все дешевше доправити руками у draft-ревізії,
    ніж ганяти ще один прогін.
+7. Якщо стрічка каже **«Every editorial provider failed -- claude-cli: story.claimIds must
+   be a non-empty string array»** — це відомий баг, знайдений і виправлений 2026-08-10
+   (Actions run `31367921173`), не проблема з провайдерами чи балансом. UK-крок падав на
+   кожній спробі, доки не влито `fix/weekly-master-uk-claimids`. Якщо стрічка також показує
+   повторні `HTTP 404 (…:batch)`, це другий, менший дефект того самого прогону — той самий
+   фікс виключив `:batch`-моделі з черги OpenRouter. Дочекайся мержу фіксу, потім Resume.
 (source: `src/lib/weekly-digest/editorial-llm.ts`, `src/lib/weekly-digest/generation-worker.ts`,
-`src/components/admin/weekly-generation-jobs-live.tsx`, Actions run `31324873875`)
+`src/components/admin/weekly-generation-jobs-live.tsx`, Actions runs `31324873875`/
+`31367921173`)
 
 Деталі й що вже виправлено — [pipeline/weekly-master-failures](../pipeline/weekly-master-failures.md),
 інструменти — [ops/weekly-sandbox](weekly-sandbox.md).

@@ -3,7 +3,8 @@
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
 Sources: `src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
 `src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`, owner content-quality
-audit 2026-08-09, follow-up critic-recovery fix 2026-08-10
+audit 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK `claimIds` parser fix 2026-08-10
+(Actions run `31367921173`)
 Last updated: 2026-08-10
 
 
@@ -168,6 +169,16 @@ critic-а лишається fail-closed: resume не перетворює не�
 підміняється припущенням: job є `resumable`, а не `succeeded`, і наступна спроба оцінить той
 самий збережений текст. Власник не отримує «проштовхнути без verdict» як шлях до апруву.
 (source: `src/lib/weekly-digest/master-engine.ts`, follow-up critic-recovery fix 2026-08-10)
+
+## Межа з UK `claimIds` parser fix (2026-08-10)
+
+Відбір знову не змінювався. Перший живий прогін нового рушія (Actions run `31367921173`)
+відкидав кожну коректну UK-відповідь через контракт-мисматч у парсері (UK-промпт не
+повертає `claimIds`, парсер їх вимагав) — це формат письма/парсингу однієї конкретної мови,
+а не переоцінка чи повторний відбір approved claims. Approved claim ids для кожної story
+й далі приходять із того самого selection/research pack і копіюються складальником; фікс
+лише дозволив UK-відповіді без цього поля пройти парсинг. (source:
+`src/lib/weekly-digest/editorial-llm.ts`, Actions run `31367921173`)
 
 ## Related pages
 

@@ -962,7 +962,7 @@ async function writeStorySegment(
   // arrays across locales are the whole content of the `bilingual_claim_parity`
   // blocker, so making them structural removes that failure mode entirely.
   const parse = (raw: string) => ({
-    ...parseStorySegment(raw, english.claimIds),
+    ...parseStorySegment(raw, english.claimIds, false),
     claimIds: english.claimIds,
   });
   return context.preferredProvider

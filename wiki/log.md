@@ -6,6 +6,36 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-10
 
+## 2026-08-10 — `editorial_master`: перший живий прогін нового рушія знайшов і виправив UK `claimIds` регресію
+
+**Джерело:** owner помітив дві задачі GitHub Actions ([`31367921173`](https://github.com/sanchahous/ai-today-brief/actions/runs/31367921173)
+failed, [`31371078952`](https://github.com/sanchahous/ai-today-brief/actions/runs/31371078952)
+running 46 хв на 35%) і попросив розібратись.
+
+**Знайдено:** перший живий прогін нового ітеративного рушія (PR #209, вже в `main`) впав на
+UK feature story #1 — структурна регресія, не редакційна. `ukrainianStorySegmentPrompt`
+наказує моделі не повертати `claimIds` (складальник копіює їх з EN), але `parseStorySegment`
+вимагав це поле безумовно й кидав `SyntaxError` на кожній конформній UK-відповіді —
+`claude-cli` і всі 6 моделей OpenRouter-черги писали валідний текст і відкидались на тому
+самому рядку, «Every editorial provider failed» після ~40 хв на нуль результату. Другий
+прогін резюмував ті самі 8/16 durable-сегментів і впав так само (власник скасував вручну).
+Супутній менший дефект: `openai/gpt-5.6-luna:batch` (Batch-only модель, 404 на звичайному
+шляху) 6 разів забирав слот у черзі того самого прогону.
+
+**Змінено (гілка `fix/weekly-master-uk-claimids`, PR ще не відкрито):**
+`parseStorySegment` отримав `requireClaimIds = true` за замовчуванням; UK-виклик передає
+`false` (значення все одно негайно перезаписується `english.claimIds`, EN-контракт
+лишається строгим). `isEligibleModel` (`pipeline/openrouter-models.ts`) тепер виключає
+`:batch`-моделі так само, як `:free`. Додано регресійні тести на обидва випадки. Оновлено
+[weekly-master-engine](pipeline/weekly-master-engine.md),
+[weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md) та [now](now.md). 85 фокусних тестів і
+повний `pr:check` (coverage/typecheck/lint/e2e:check/wiki:check/build) зелені локально.
+(source: Actions runs `31367921173`/`31371078952`, `src/lib/weekly-digest/editorial-llm.ts`,
+`src/lib/weekly-digest/master-engine.ts`, `pipeline/openrouter-models.ts`, local `pr:check`
+2026-08-10)
+
 ## 2026-08-10 — `editorial_master`: critic outage зберігає випуск для retry
 
 **Джерело:** follow-up до змерженого PR #209; локальний регресійний тест

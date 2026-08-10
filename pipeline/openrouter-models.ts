@@ -284,6 +284,11 @@ function isEligibleModel(model: OpenRouterModelRecord): boolean {
   // that make it unreliable as a production fallback. This is distinct from the free
   // quota on the Google AI Studio / Gemini API which we use as primary.
   if (id.includes(':free')) return false;
+  // `:batch` variants only respond through OpenRouter's separate Batch API and
+  // 404 on the normal chat completions endpoint we use — a live run burned six
+  // provider-queue slots retrying `openai/gpt-5.6-luna:batch` before falling
+  // through to a working model (2026-08-10).
+  if (id.includes(':batch')) return false;
   if (id.includes('distill')) return false;
   if (id.includes('vision') || id.includes('image')) return false;
   if (isUnstableOpenRouterModelId(model.id)) return false;

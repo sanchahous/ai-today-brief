@@ -272,17 +272,25 @@ function recordArray(value: unknown, key: string) {
  * reason: an invented or borrowed claim id is dropped here rather than
  * surviving to become an `unsupported_claim_id` blocker downstream. An empty
  * result is still a real defect and is left for the gate to catch.
+ *
+ * `requireClaimIds` is false for the Ukrainian pass: its prompt (see
+ * `ukrainianStorySegmentPrompt`) tells the model not to return the field at
+ * all because the caller copies it structurally from the English story, so
+ * requiring it here would reject every conforming Ukrainian response.
  */
 export function parseStorySegment(
   raw: string,
   approvedClaimIds: string[],
+  requireClaimIds = true,
 ): Omit<WeeklyMasterStory, 'revisionItemId' | 'placement'> {
   const row = parseJsonObject(raw);
   const story = (row.story && typeof row.story === 'object' && !Array.isArray(row.story)
     ? row.story
     : row) as Record<string, unknown>;
   const approved = new Set(approvedClaimIds);
-  const claimIds = stringArray(story.claimIds, 'story.claimIds').filter((id) => approved.has(id));
+  const claimIds = requireClaimIds
+    ? stringArray(story.claimIds, 'story.claimIds').filter((id) => approved.has(id))
+    : [];
   return {
     headline: requiredString(story, 'headline'),
     summary: requiredString(story, 'summary'),

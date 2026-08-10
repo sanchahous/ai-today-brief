@@ -404,6 +404,21 @@ describe('parseStorySegment', () => {
     delete broken.story.body;
     expect(() => parseStorySegment(JSON.stringify(broken), ['claim-1'])).toThrow(/body/);
   });
+
+  it('rejects a missing claimIds field by default (English contract)', () => {
+    const noClaimIds = JSON.parse(response);
+    delete noClaimIds.story.claimIds;
+    expect(() => parseStorySegment(JSON.stringify(noClaimIds), ['claim-1'])).toThrow(/claimIds/);
+  });
+
+  // The Ukrainian prompt (ukrainianStorySegmentPrompt) tells the model to omit
+  // claimIds entirely -- the caller copies it structurally from the English
+  // story instead. requireClaimIds=false must accept exactly that shape.
+  it('accepts a response with no claimIds field when requireClaimIds is false', () => {
+    const noClaimIds = JSON.parse(response);
+    delete noClaimIds.story.claimIds;
+    expect(parseStorySegment(JSON.stringify(noClaimIds), ['claim-1'], false).claimIds).toEqual([]);
+  });
 });
 
 describe('repairFieldPrompt / parseRepairedValue', () => {

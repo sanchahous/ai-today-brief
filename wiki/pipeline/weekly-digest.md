@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10
+Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -503,6 +503,16 @@ pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інв
 14 уже збережених сегментів. Джоба завершується retryable `resumable`; **Resume saved master**
 повторює лише оцінювання/наступні ремонти на тому самому durable тексті. (source:
 `src/lib/weekly-digest/master-engine.ts`, follow-up critic-recovery fix 2026-08-10)
+
+**Перший живий прогін нового рушія** (Actions run `31367921173`, 2026-08-10) знайшов реальну
+регресію: UK-промпт наказує моделі не повертати `claimIds` (їх копіює складальник з EN), але
+парсер вимагав це поле безумовно — кожна конформна UK-відповідь відкидалась, «Every
+editorial provider failed» після ~40 хв на нуль результату. Не редакційний збій — інфраструктурний
+контракт-мисматч між промптом і парсером. Виправлено на гілці
+`fix/weekly-master-uk-claimids` (`requireClaimIds` параметр); заразом виключено
+`openai/gpt-5.6-luna:batch` (Batch-only модель, 404 на звичайному шляху) з черги OpenRouter.
+Повний розбір — [weekly-master-engine § Перший живий прогін](weekly-master-engine.md#перший-живий-прогін--2026-08-10-знайшов-реальну-регресію).
+(source: Actions runs `31367921173`/`31371078952`, `src/lib/weekly-digest/editorial-llm.ts`)
 
 Quality rejection як і раніше не пише article artifacts у неактивну draft revision:
 `save_weekly_digest_artifact` навмисно приймає лише active revision. Draft зберігає поля master

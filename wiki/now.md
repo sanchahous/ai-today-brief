@@ -10,7 +10,7 @@ review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish -
 owner-approved Weekly Digest reliability plan 2026-08-08, owner screenshot + Chrome layout
 measurement 2026-08-09, `editorial_master` failure investigation + live sandbox runs 2026-08-09,
 owner decision 2026-08-09 to rewrite `editorial_master` as an iterative engine,
-follow-up critic-recovery fix 2026-08-10
+follow-up critic-recovery fix 2026-08-10, UK claimIds engine fix 2026-08-10 (run `31367921173`)
 Last updated: 2026-08-10
 
 ---
@@ -155,6 +155,27 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Активна робота
 
+−7. **Перший живий прогін нового рушія — Actions run
+[`31367921173`](https://github.com/sanchahous/ai-today-brief/actions/runs/31367921173),
+2026-08-10 — знайшов реальну регресію, не редакційну.** UK feature story #1 не могла пройти
+жодного разу: `ukrainianStorySegmentPrompt` наказує моделі не повертати `claimIds` (поле
+копіюється з англійського оригіналу), а `parseStorySegment` вимагав його безумовно й
+відкидав кожну відповідь, що слухалась промпту — `claude-cli` і всі 6 моделей
+OpenRouter-черги писали валідний текст і падали на тому самому рядку, «Every editorial
+provider failed» після ~40 хв на нуль результату. Резюм-прогін
+([`31371078952`](https://github.com/sanchahous/ai-today-brief/actions/runs/31371078952))
+продовжив із тих самих 8/16 durable-сегментів і впав так само (власник скасував вручну).
+**Фікс на гілці `fix/weekly-master-uk-claimids`:** `parseStorySegment` отримав
+`requireClaimIds = true` за замовчуванням, UK-виклик передає `false` (значення все одно
+негайно перезаписується `english.claimIds`, EN-контракт лишається строгим); заразом
+виключено з черги `openai/gpt-5.6-luna:batch` — Batch-only варіант, що 404-ив 6 разів
+поспіль і забирав слот у кожному циклі ретраю. 85 фокусних тестів + повний `pr:check`
+зелені. **Ще не влито в `main`.** Деталі —
+[pipeline/weekly-master-engine § Перший живий прогін](pipeline/weekly-master-engine.md#перший-живий-прогін--2026-08-10-знайшов-реальну-регресію).
+(source: Actions runs `31367921173`/`31371078952`, `src/lib/weekly-digest/editorial-llm.ts`,
+`src/lib/weekly-digest/master-engine.ts`, `pipeline/openrouter-models.ts`, local `pr:check`
+2026-08-10)
+
 −6. **Follow-up після PR #209: critic outage тепер не відкидає завершений випуск.** Єдиний
 прямий виклик незалежного critic-а у `master-engine` був unguarded: якщо всі його provider-и
 падали, `editorial_master` викидав exception, попри 14 durable сегментів. Тепер він повертає
@@ -187,7 +208,8 @@ retryable `resumable`, зберігає checkpoint і підказує **Resume 
    Редакційні гейти v7 і пороги (85 / 75 / 80) **не послаблені** — перенесені в посегментні
    промпти дослівно. 1023 тести зелені, `pr:check` чистий. **Живого прогону ще не було** —
    перевірено юніт-тестами та типами, не реальним випуском.
-   Деталі — [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md).
+   Деталі — [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md). **Перший живий
+   прогін відбувся 2026-08-10 і знайшов реальну регресію — деталі в пункті −7 вище.**
    (source: `src/lib/weekly-digest/master-engine.ts`, `master-segments.ts`, `master-repair.ts`,
    owner session 2026-08-09)
 

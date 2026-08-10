@@ -208,6 +208,12 @@ describe('rankOpenRouterModelIds', () => {
     expect(ranked).not.toContain('meta-llama/llama-3.3-70b-instruct:free');
   });
 
+  it('filters out :batch models', () => {
+    const withBatch = [...models, makeModel('openai/gpt-5.6-luna:batch')];
+    const ranked = rankOpenRouterModelIds(withBatch);
+    expect(ranked).not.toContain('openai/gpt-5.6-luna:batch');
+  });
+
   it('filters out experimental models', () => {
     const ranked = rankOpenRouterModelIds(models);
     expect(ranked).not.toContain('vendor/model-exp');
