@@ -10,7 +10,7 @@ review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish -
 owner-approved Weekly Digest reliability plan 2026-08-08, owner screenshot + Chrome layout
 measurement 2026-08-09, `editorial_master` failure investigation + live sandbox runs 2026-08-09,
 owner decision 2026-08-09 to rewrite `editorial_master` as an iterative engine,
-follow-up critic-recovery fix 2026-08-10, UK claimIds engine fix 2026-08-10 (run `31367921173`)
+follow-up critic-recovery fix 2026-08-10, UK claimIds engine fix 2026-08-10 (run `31367921173`), live restore-error incident + UI/repair fixes 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -155,6 +155,39 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Активна робота
 
+−8. **Живий разбір "Needs your review" на `ai-weekly-2026-08-02` — власник не розумів, що
+робити, і хіт реальний production-баг при спробі Restore.** Розбір прод-БД показав: 7 із 8
+нерозв'язаних пунктів джоби `3c60e3bc…` зводяться до **однієї** задовгої історії (EN 1203 /
+UK 1121 слів проти 400–650) — вона сама тягнула обидва `article_length`-блокери. Активна
+ревізія цього дайджесту (Revision 2) виявилась написаною **09.08 о 07:27, до жодного з
+v7-гейтів** — містила буквально банерний приклад «Зсув до агентів» (той самий рядок, що
+UK-промпт наводить як заборонений зразок — класичний LLM-провал «не роби X» → відтворює X) і
+зламане слово «доп'яти» (те саме, що вже в `UKRAINIAN_LANGUAGE_RESIDUE` блоклісті). Три
+новіші ревізії (3, 4, 5) існували як ніколи не активовані drafts, і Article tab про це
+жодним чином не сигналив. Спроба власника натиснути **Restore this version** на Revision 5
+впала з `Minified React error #441` — реальна причина: `POST rpc/revert_weekly_digest_revision`
+повернув **403** (`Owner or editor session required`) для акаунту, що в БД коректно
+`role: owner, enabled: true` — ймовірно транзиентний глюк сесії/токена, DB-стан лишився
+чистим (rollback, `active_revision_id` не змінився). **Зроблено (ще не в PR):**
+- `NewerDraftBanner` (`weekly-workspace.tsx`) — жовтий банер на кожній вкладці, коли
+  найновіша ревізія не активна, з посиланням на Editorial versions;
+- `restoreWeeklyDigestRevisionAction` більше не кидає сиру помилку — редіректить із
+  `?save_error=…`, той самий банер, що й інші revision-дії, тож наступний збій (ця гонка чи
+  будь-яка інша) покаже реальний текст, а не opaque `Ref: …`;
+- `story_length`'s `suggestedFix` тепер називає точну дельту слів і вимагає структурної
+  правки при великому розриві («Cut at least 550 words… a 46% cut needs structural
+  editing»), а не розпливчасте «rewrite to 400–650 words»;
+- `WEEKLY_MASTER_MAX_REPAIR_ATTEMPTS` дефолт 2→3 — важкий випадок ремонту отримує ще одну
+  спробу.
+Повний `pr:check` зелений. Деталі —
+[weekly-master-engine § Чому ремонт задовгого body не сходився сам](pipeline/weekly-master-engine.md#чому-ремонт-задовгого-body-не-сходився-сам--і-що-змінено-2026-08-10),
+[weekly-digest § Admin UX нотатки](pipeline/weekly-digest.md#admin-ux-нотатки-серп-2026).
+(source: production Supabase read job `3c60e3bc-e0d9-4c5f-b1b1-34123c587129` + digest
+`843975a8-8c19-4eca-96a8-035f76eae3ab` 2026-08-10, Supabase API/postgres logs live read
+2026-08-10, `src/components/admin/weekly-workspace.tsx`,
+`src/app/admin/(cms)/weekly/actions.ts`, `src/lib/weekly-digest/content-studio.ts`,
+`src/lib/weekly-digest/master-engine.ts`, local `pr:check` 2026-08-10)
+
 −7. **Перший живий прогін нового рушія — Actions run
 [`31367921173`](https://github.com/sanchahous/ai-today-brief/actions/runs/31367921173),
 2026-08-10 — знайшов реальну регресію, не редакційну.** UK feature story #1 не могла пройти
@@ -170,7 +203,7 @@ provider failed» після ~40 хв на нуль результату. Рез
 негайно перезаписується `english.claimIds`, EN-контракт лишається строгим); заразом
 виключено з черги `openai/gpt-5.6-luna:batch` — Batch-only варіант, що 404-ив 6 разів
 поспіль і забирав слот у кожному циклі ретраю. 85 фокусних тестів + повний `pr:check`
-зелені. **Ще не влито в `main`.** Деталі —
+зелені. **Змержено в `main` 2026-08-10** (PR [#212](https://github.com/sanchahous/ai-today-brief/pull/212)). Деталі —
 [pipeline/weekly-master-engine § Перший живий прогін](pipeline/weekly-master-engine.md#перший-живий-прогін--2026-08-10-знайшов-реальну-регресію).
 (source: Actions runs `31367921173`/`31371078952`, `src/lib/weekly-digest/editorial-llm.ts`,
 `src/lib/weekly-digest/master-engine.ts`, `pipeline/openrouter-models.ts`, local `pr:check`

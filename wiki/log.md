@@ -6,6 +6,33 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-10
 
+## 2026-08-10 — Weekly admin: newer-draft banner, читабельні restore-помилки, quantified length-repair
+
+**Джерело:** owner намагався зрозуміти «Needs your review», побачив у активній ревізії
+абстрактний заголовок «Зсув до агентів» і зламане слово «доп'яти», потім при спробі **Restore
+this version** на Revision 5 отримав `Minified React error #441`.
+
+**Знайдено:** активна ревізія дайджесту `ai-weekly-2026-08-02` (843975a8…) була написана
+09.08 07:27, до всіх v7-гейтів, поки три новіші ревізії (3, 4, 5 — усі кращі) лежали
+неактивованими без жодного UI-сигналу. Restore впав через `POST rpc/revert_weekly_digest_revision`
+403 (`Owner or editor session required`) для акаунту з коректним `role: owner, enabled: true`
+у БД — ймовірно транзиентна сесійна гонка; реальна причина була невидима, бо дія кидала сиру
+помилку замість читабельного повідомлення. Окремо: 7 із 8 unresolved-пунктів прогону
+`3c60e3bc…` зводились до однієї задовгої історії (EN 1203 / UK 1121 слів проти 400–650) — ремонт
+не зміг довести її до цілі за 2 спроби з розпливчастим «rewrite to 400–650 words».
+
+**Змінено:** `NewerDraftBanner` (`weekly-workspace.tsx`) — банер на кожній вкладці, коли є
+новіша ревізія за активну. `restoreWeeklyDigestRevisionAction` редіректить із `?save_error=…`
+замість сирого throw. `story_length`'s `suggestedFix` тепер називає точну дельту слів і вимагає
+структурної правки при великому розриві. `WEEKLY_MASTER_MAX_REPAIR_ATTEMPTS` дефолт 2→3.
+Два нові тести в `content-studio.test.ts`. Оновлено [weekly-master-engine](pipeline/weekly-master-engine.md),
+[weekly-digest](pipeline/weekly-digest.md), [weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md) та [now](now.md). Повний `pr:check` зелений
+локально; PR ще не відкрито.
+(source: production Supabase read 2026-08-10, `src/components/admin/weekly-workspace.tsx`,
+`src/app/admin/(cms)/weekly/actions.ts`, `src/lib/weekly-digest/content-studio.ts`,
+`src/lib/weekly-digest/master-engine.ts`)
+
 ## 2026-08-10 — `editorial_master`: перший живий прогін нового рушія знайшов і виправив UK `claimIds` регресію
 
 **Джерело:** owner помітив дві задачі GitHub Actions ([`31367921173`](https://github.com/sanchahous/ai-today-brief/actions/runs/31367921173)

@@ -10,7 +10,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`)
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner + restore error fix 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -57,6 +57,16 @@ Overview показує preflight blockers з лінком на вкладку. 
      зберігає випуск як неактивну draft-ревізію, завершується `succeeded` і показує
      **Needs your review** із переліком `unresolved` — це задача на редагування, не збій
      інфраструктури (source: [weekly-master-engine](../pipeline/weekly-master-engine.md));
+   - **ця draft-ревізія НЕ стає активною сама.** Approve research не має до цього стосунку —
+     то окремий гейт, який лише дозволяє почати писати. Article tab за замовчуванням показує
+     активну ревізію, а не найновішу; з 2026-08-10 жовтий банер «Newer draft available»
+     з'являється на кожній вкладці, коли є новіша ревізія за активну, з посиланням на Overview
+     → Editorial versions. Там **Restore this version** на потрібній ревізії робить її
+     активною — без цього кліку весь текст лишається невидимим редактору;
+   - помилка на **Restore this version** тепер показується червоним банером угорі сторінки з
+     реальним текстом, а не як `Minified React error #441`/opaque «Ref: …» (фікс 2026-08-10,
+     після живого 403 на цілком валідному owner-акаунті — ймовірно транзиентний глюк сесії;
+     перезавантаж сторінку і спробуй ще раз);
    - якщо джоба показує **Resume saved master** → натисни її: уже написані сегменти не
      пишуться повторно, critic і раунди ремонту стартують заново; це також правильний шлях після
      недоступного critic-а, не тисни поруч generic retry;

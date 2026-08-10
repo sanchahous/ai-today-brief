@@ -1422,16 +1422,33 @@ export async function resumeWeeklyMasterFromCheckpointAction(formData: FormData)
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
+function redirectWeeklyRevisionRestoreError(weeklyDigestId: string, message: string): never {
+  redirect(
+    `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=overview&save_error=${encodeURIComponent(message.slice(0, 500))}`,
+  );
+}
+
 // Lets an editor undo a revision without understanding the revision chain:
 // "restore this version" is exactly the create_weekly_digest_revision write
 // path, replayed against an earlier revision's content.
+//
+// Errors redirect with `save_error` (the same banner every other revision
+// action uses) rather than throwing: a bare throw from a Server Action
+// renders as an opaque, digest-only production error with no readable
+// message -- exactly what happened live when this RPC's own role check
+// 403'd (live incident 2026-08-10, despite the caller genuinely holding an
+// enabled owner row -- see wiki/ops/weekly-admin-runbook.md). The owner
+// could not tell what failed; a redirect with the real message tells them.
 export async function restoreWeeklyDigestRevisionAction(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const targetRevisionId = requiredString(formData, 'target_revision_id');
   const reason = requiredString(formData, 'reason');
   if (reason.length < 10 || reason.length > 500) {
-    throw new Error('A 10 to 500 character reason is required to restore a version.');
+    redirectWeeklyRevisionRestoreError(
+      weeklyDigestId,
+      'A 10 to 500 character reason is required to restore a version.',
+    );
   }
   const db = await getSupabaseServer();
   const { error } = await db.rpc('revert_weekly_digest_revision', {
@@ -1439,7 +1456,7 @@ export async function restoreWeeklyDigestRevisionAction(formData: FormData) {
     p_target_revision_id: targetRevisionId,
     p_reason: reason,
   });
-  if (error) throw new Error(error.message);
+  if (error) redirectWeeklyRevisionRestoreError(weeklyDigestId, error.message);
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 

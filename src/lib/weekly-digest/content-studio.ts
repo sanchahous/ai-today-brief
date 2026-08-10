@@ -785,6 +785,18 @@ export function validateMasterBundle(
       const target = story.placement === 'feature' ? [400, 650] : [80, 140];
       const wordCount = words(story.body);
       if (wordCount < target[0] || wordCount > target[1]) {
+        // A vague "rewrite to N-M words" instruction reliably under-cuts a body
+        // that is far outside the target -- the repair model trims a sentence
+        // or two rather than restructuring, and burns its attempt budget
+        // without landing in range (live case: a 1,203-word feature body given
+        // only two repair attempts against a 400-650 target). Naming the exact
+        // delta and explicitly permitting paragraph-level cuts, not just line
+        // edits, gives the model a concrete target instead of a direction.
+        const tooLong = wordCount > target[1];
+        const delta = tooLong ? wordCount - target[1] : target[0] - wordCount;
+        const instruction = tooLong
+          ? `Cut at least ${delta} words from the current ${wordCount}-word body down to ${target[0]}–${target[1]}. Remove whole paragraphs or sub-plots rather than trimming individual sentences -- a ${Math.round((delta / wordCount) * 100)}% cut needs structural editing.`
+          : `Expand the current ${wordCount}-word body by at least ${delta} words up to ${target[0]}–${target[1]}, adding detail grounded in this story's approved claims. Never invent facts to reach the target.`;
         issues.push({
           code: 'story_length',
           message: `${story.placement} story is ${wordCount} words; target is ${target[0]}–${target[1]}.`,
@@ -792,7 +804,7 @@ export function validateMasterBundle(
           locale,
           revisionItemId: itemId,
           field: 'body',
-          suggestedFix: `Rewrite the body to ${target[0]}–${target[1]} words without adding claims.`,
+          suggestedFix: instruction,
         });
       }
       if (story.placement === 'feature') {

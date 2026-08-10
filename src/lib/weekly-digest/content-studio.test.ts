@@ -504,6 +504,35 @@ describe('Weekly Content Studio hard gates', () => {
       expect.objectContaining({ code: 'article_length', blocker: true, locale: 'en' }),
     );
   });
+
+  // A vague "rewrite to 400-650 words" instruction used to leave the repair
+  // model trimming a sentence or two off a body nearly double its target,
+  // burning its attempt budget without ever landing in range (live case:
+  // 2026-08-10, Actions run 31367921173's successor). Naming the exact word
+  // delta and permitting structural cuts is what the repair prompt actually
+  // sends the model (see repairFieldPrompt's PROBLEMS TO FIX block).
+  it('names the exact word delta and demands structural cuts for a feature body far over target', () => {
+    const value = bundle();
+    value.en.stories[0]!.body = 'evidence '.repeat(1_200);
+    const issues = validateMasterBundle(value, [research]);
+    const storyLength = issues.find(
+      (issue) => issue.code === 'story_length' && issue.locale === 'en',
+    );
+    expect(storyLength?.suggestedFix).toContain('Cut at least 550 words');
+    expect(storyLength?.suggestedFix).toContain('1200-word body');
+    expect(storyLength?.suggestedFix).toContain('structural editing');
+  });
+
+  it('names the exact word delta for a feature body far under target', () => {
+    const value = bundle();
+    value.en.stories[0]!.body = 'evidence '.repeat(100);
+    const issues = validateMasterBundle(value, [research]);
+    const storyLength = issues.find(
+      (issue) => issue.code === 'story_length' && issue.locale === 'en',
+    );
+    expect(storyLength?.suggestedFix).toContain('Expand the current 100-word body by at least 300 words');
+    expect(storyLength?.suggestedFix).toContain('Never invent facts');
+  });
 });
 
 describe('detectTemplateLeaks', () => {

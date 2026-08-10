@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10
+Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10, newer-draft banner + restore error fix 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -448,6 +448,22 @@ live check 2026-08-04)
   всередині власних `overflow-x-auto` контейнерів.
   (source: `src/app/globals.css`, `src/components/admin/weekly-workspace.tsx`, owner screenshot
   + Chrome layout measurement 2026-08-09)
+- **«Newer draft available» banner + readable restore errors** (2026-08-10): the Article tab
+  always rendered the **active** revision, with no indicator when a newer, usually better,
+  auto-generated draft existed — the owner spent real time reading and reacting to a stale
+  revision (`ai-weekly-2026-08-02`'s Revision 2, written before any v7 quality gate existed)
+  while three later revisions sat unreviewed. `NewerDraftBanner` now renders on every tab
+  whenever `workspace.revisions[0]` (newest by `created_at`) is not the active revision, with
+  the draft's own "never became active" reason and a link straight to Editorial versions.
+  Separately, `restoreWeeklyDigestRevisionAction` used a bare `throw` on any RPC error, which
+  Next.js renders as an opaque digest-only production error (`Minified React error #441`) — a
+  live click on **Restore this version** hit exactly this (the RPC's own role check 403'd for
+  a genuinely enabled owner, most likely a transient session/token race; the account and role
+  were verified correct in the database). The action now redirects with `?save_error=…`, the
+  same readable banner every other revision action already uses, so a future failure — this
+  race or any other — shows its real message instead of a bare "Ref: …".
+  (source: `src/components/admin/weekly-workspace.tsx`,
+  `src/app/admin/(cms)/weekly/actions.ts`, live incident + Supabase/Vercel log read 2026-08-10)
 
 ## Fluid CPU / вартість (2026-08-04)
 
