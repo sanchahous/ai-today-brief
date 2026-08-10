@@ -71,6 +71,7 @@ const eslintConfig = defineConfig([
     '.agents/**',
     '.claude/**',
     '.tmp-portfolio/**',
+    '.tmp-browse/**',
   ]),
 ]);
 

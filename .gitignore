@@ -24,6 +24,7 @@
 
 # local clones / reports
 .tmp-portfolio/
+.tmp-browse/
 sonar-report.md
 
 # misc
