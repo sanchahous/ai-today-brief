@@ -46,11 +46,11 @@ export const LONG_RUNNING_GENERATION_JOB_TYPES = [
   'editorial_master',
   'social_copy',
   'video_script',
+  'story_image',
 ] as const;
 
 export const SHORT_RUNNING_GENERATION_JOB_TYPES = [
   'research_pack',
-  'story_image',
   'cover',
   'pdf',
   'social_asset',
@@ -79,6 +79,11 @@ const STAGES: Record<string, readonly GenerationStage[]> = {
     { key: 'prepare', label: 'Preparing article source', weight: 10 },
     { key: 'script', label: 'Writing video script', weight: 80 },
     { key: 'persist', label: 'Saving script', weight: 10 },
+  ],
+  story_image: [
+    { key: 'prepare', label: 'Preparing story evidence', weight: 5 },
+    { key: 'generate', label: 'Directing, rendering and reviewing illustration', weight: 85 },
+    { key: 'persist', label: 'Saving illustration variants', weight: 10 },
   ],
 };
 

@@ -4,14 +4,14 @@ import { NextRequest } from 'next/server';
 const { runWeeklyDigestGenerationJobs } = vi.hoisted(() => ({
   runWeeklyDigestGenerationJobs: vi.fn(async () => ({ claimed: 0, results: [] })),
 }));
-const { dispatchQueuedWeeklyGenerationJob } = vi.hoisted(() => ({
-  dispatchQueuedWeeklyGenerationJob: vi.fn(async () => false),
+const { dispatchQueuedWeeklyGenerationJobs } = vi.hoisted(() => ({
+  dispatchQueuedWeeklyGenerationJobs: vi.fn(async () => ({ dispatched: 0, error: null })),
 }));
 
 vi.mock('@/lib/weekly-digest/generation-worker', () => ({
   runWeeklyDigestGenerationJobs,
 }));
-vi.mock('@/lib/weekly-digest/github-dispatch', () => ({ dispatchQueuedWeeklyGenerationJob }));
+vi.mock('@/lib/weekly-digest/github-dispatch', () => ({ dispatchQueuedWeeklyGenerationJobs }));
 vi.mock('@/lib/supabase-admin', () => ({
   getSupabaseAdmin: () => ({
     rpc: async () => ({ data: { timed_out: 0 }, error: null }),
@@ -24,7 +24,7 @@ describe('Weekly generation internal route', () => {
   afterEach(() => {
     delete process.env.SOCIAL_CRON_SECRET;
     runWeeklyDigestGenerationJobs.mockClear();
-    dispatchQueuedWeeklyGenerationJob.mockClear();
+    dispatchQueuedWeeklyGenerationJobs.mockClear();
   });
 
   it('rejects a request without the cron bearer', async () => {
@@ -56,8 +56,9 @@ describe('Weekly generation internal route', () => {
     });
     expect(runWeeklyDigestGenerationJobs).toHaveBeenCalledWith(
       1,
-      ['research_pack', 'story_image', 'cover', 'pdf', 'social_asset', 'video_manifest'],
+      ['research_pack', 'cover', 'pdf', 'social_asset', 'video_manifest'],
       { backend: 'vercel' },
     );
+    expect(dispatchQueuedWeeklyGenerationJobs).toHaveBeenCalledWith(10);
   });
 });

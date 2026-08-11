@@ -11,7 +11,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
 engine fix 2026-08-10 (run `31367921173`), newer-draft banner + restore error fix 2026-08-10, Postpone release feature 2026-08-10
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
 ---
 
@@ -88,9 +88,11 @@ Overview показує preflight blockers з лінком на вкладку. 
    - **Approve version** на quality report.
 7. Після успішного master з’являться Article EN/UK і підуть Visuals/Social/PDF/Video jobs.
 
-Довгі master/social/video jobs завжди показують конкретний GitHub run; короткі jobs лишаються
-на Vercel. Не потрібно вручну вибирати worker. (source:
-`weekly_generation_control_plane` implementation 2026-08-09)
+Довгі master/social/video/**story image** jobs завжди показують конкретний GitHub run; короткі
+deterministic jobs лишаються на Vercel. Не потрібно вручну вибирати worker. Різні story images
+мають незалежні concurrency keys і можуть рендеритись паралельно; editorial jobs одного digest
+лишаються серіалізованими. (source: `.github/workflows/weekly-master-cli-worker.yml`,
+`weekly_generation_control_plane` implementation 2026-08-09/11)
 
 ## Як читати нову панель Generation jobs
 
@@ -108,6 +110,19 @@ Overview показує preflight blockers з лінком на вкладку. 
 інфраструктурна невдача завжди terminal. Для quality/validation/quota помилок автоматичного
 retry немає: переглянь конкретну причину, виправ gate і створи linked manual retry.
 (source: `supabase/migrations/20260809060929_weekly_generation_control_plane.sql`)
+
+### Після deploy async story-image worker
+
+Спочатку має бути застосована міграція
+`20260811173217_weekly_story_image_async_worker.sql`, потім — production deploy відповідного
+commit. Після цього в адмінці **не створюй нові дублікати**: онови Visuals і зачекай до 5 хвилин
+на safety poll. Уже queued/retry jobs автоматично змінять backend на **GitHub Actions**; поточна
+жива Vercel-спроба може коректно завершитись, але її наступний retry піде в Actions. Timeout jobs
+цього інциденту отримують три нові durable attempts. Очікуваний стан: окремий **Open run** для
+кожної story, кілька `story_image` у `running` одночасно, step `generate`, живий heartbeat, далі
+`persist` → `succeeded` і три variants у Visuals. (source:
+`supabase/migrations/20260811173217_weekly_story_image_async_worker.sql`,
+`src/app/api/internal/weekly/generate/route.ts`, `src/lib/weekly-digest/generation-worker.ts`)
 
 ### 3–7. Article → … → Release
 

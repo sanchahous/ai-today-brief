@@ -1,7 +1,11 @@
-name: Weekly master CLI worker
+name: Weekly generation worker
 
-# Drains editorial_master jobs via the Claude Code CLI (subscription-covered),
-# falling back to OpenRouter. The chain used to be claude-cli only, on the
+# Runs one fenced long-lived Weekly generation job. Editorial jobs use the
+# Claude Code CLI (subscription-covered), falling back to OpenRouter. Semantic
+# story images use the same durable lease because their multi-provider render
+# and vision loop can exceed Vercel's 300-second serverless ceiling.
+#
+# The editorial chain used to be claude-cli only, on the
 # reasoning that a missing binary or dead token should fail visibly rather
 # than silently spend money — but 2026-08-09 showed what that costs: three
 # jobs lost to a CLI-side timeout with nothing behind it. Visibility now comes
@@ -9,9 +13,9 @@ name: Weekly master CLI worker
 # fallback no longer hides anything. A full master through OpenRouter measured
 # $0.032 (wiki/ops/weekly-sandbox.md) — cheaper than a lost edition.
 #
-# Manual/on-demand only, dispatched from the admin Weekly Digest Research tab
-# (Server Action -> GitHub API) so it never spends Actions minutes on an
-# unattended schedule. Runs against production — see
+# On-demand only, dispatched by the admin Server Action or the five-minute
+# safety dispatcher, so it never spends Actions minutes on an unattended
+# schedule without queued work. Runs against production — see
 # src/lib/weekly-digest/github-dispatch.ts for the trigger.
 
 on:
@@ -26,12 +30,20 @@ on:
         required: true
         type: string
       weekly_digest_id:
-        description: Weekly Digest UUID, used only for per-digest concurrency
+        description: Weekly Digest UUID, used for editorial concurrency
         required: true
+        type: string
+      job_type:
+        description: Generation job type (optional during zero-downtime rollout)
+        required: false
+        default: editorial_master
         type: string
 
 concurrency:
-  group: weekly-generation-${{ inputs.weekly_digest_id }}
+  # Story images are isolated by revision_item_id and must start independently.
+  # Editorial jobs keep the original per-digest serialization because they can
+  # mint/activate revisions shared by downstream work.
+  group: weekly-generation-${{ inputs.job_type == 'story_image' && inputs.job_id || inputs.weekly_digest_id }}
   cancel-in-progress: false
 
 jobs:
@@ -48,6 +60,7 @@ jobs:
           cache: npm
 
       - name: Install Claude Code CLI
+        if: ${{ inputs.job_type != 'story_image' }}
         run: npm install --global @anthropic-ai/claude-code
 
       - name: Install dependencies
@@ -58,6 +71,7 @@ jobs:
       # authenticated" / "OpenRouter is out of credit" instead of burying
       # that under forty minutes of generation.
       - name: Provider preflight
+        if: ${{ inputs.job_type != 'story_image' }}
         continue-on-error: true
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -68,23 +82,25 @@ jobs:
           WEEKLY_CONTENT_STUDIO_V2: production
         run: npm run weekly:doctor
 
-      - name: Run weekly master CLI worker
+      - name: Run weekly generation worker
         env:
           SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
           SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          DISABLE_AUTOUPDATER: '1'
+          DISABLE_AUTOUPDATER: "1"
           WEEKLY_MASTER_PROVIDER_ORDER: claude-cli,openrouter
           # No 300-second serverless budget here (the job runs for up to 120
           # minutes), so the master write gets real model fallback instead of
           # dying on one sloppy answer. See premiumOpenRouterModels.
-          WEEKLY_MASTER_OPENROUTER_CANDIDATES: '3'
+          WEEKLY_MASTER_OPENROUTER_CANDIDATES: "3"
           # Stop starting new work with 25 minutes of the 120-minute job left,
           # so an over-running edition saves its segments and finishes cleanly
           # instead of being killed mid-write with nothing durable to resume.
-          WEEKLY_MASTER_DEADLINE_MS: '5700000'
+          WEEKLY_MASTER_DEADLINE_MS: "5700000"
           OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           WEEKLY_CONTENT_STUDIO_V2: production
           WEEKLY_GENERATION_JOB_ID: ${{ inputs.job_id }}
           WEEKLY_GENERATION_DISPATCH_TOKEN: ${{ inputs.dispatch_token }}

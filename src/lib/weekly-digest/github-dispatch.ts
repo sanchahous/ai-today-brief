@@ -15,7 +15,13 @@ const WORKFLOW_FILE = 'weekly-master-cli-worker.yml';
 interface DispatchLease {
   job_id: string;
   weekly_digest_id: string;
+  job_type?: string;
   dispatch_token: string;
+}
+
+export interface DispatchBatchResult {
+  dispatched: number;
+  error: string | null;
 }
 
 interface RpcClient {
@@ -45,6 +51,7 @@ function dispatchLeaseFrom(value: unknown): DispatchLease | null {
   return {
     job_id: row.job_id,
     weekly_digest_id: row.weekly_digest_id,
+    ...(typeof row.job_type === 'string' ? { job_type: row.job_type } : {}),
     dispatch_token: row.dispatch_token,
   };
 }
@@ -53,6 +60,7 @@ export async function dispatchWeeklyMasterCliWorker(options: {
   jobId: string;
   dispatchToken: string;
   weeklyDigestId: string;
+  jobType?: string;
   ref?: string;
   fetchFn?: typeof fetch;
 }): Promise<void> {
@@ -79,6 +87,10 @@ export async function dispatchWeeklyMasterCliWorker(options: {
           job_id: options.jobId,
           dispatch_token: options.dispatchToken,
           weekly_digest_id: options.weeklyDigestId,
+          // Optional in the workflow for zero-downtime rollout: the previously
+          // deployed dispatcher does not send it, and all of its jobs are the
+          // serialized editorial types.
+          job_type: options.jobType ?? 'editorial_master',
         },
       }),
     },
@@ -106,6 +118,29 @@ export async function dispatchQueuedWeeklyGenerationJob(jobId?: string): Promise
     jobId: lease.job_id,
     dispatchToken: lease.dispatch_token,
     weeklyDigestId: lease.weekly_digest_id,
+    jobType: lease.job_type,
   });
   return true;
+}
+
+/**
+ * Dispatches independent ready jobs without waiting for the five-minute
+ * safety poll between each one. A failed external dispatch leaves its fenced
+ * row in `dispatching`; the database reaper returns it to the queue.
+ */
+export async function dispatchQueuedWeeklyGenerationJobs(limit = 10): Promise<DispatchBatchResult> {
+  const boundedLimit = Math.max(1, Math.min(Math.trunc(limit), 20));
+  let dispatched = 0;
+  try {
+    for (let index = 0; index < boundedLimit; index += 1) {
+      if (!(await dispatchQueuedWeeklyGenerationJob())) break;
+      dispatched += 1;
+    }
+    return { dispatched, error: null };
+  } catch (error) {
+    return {
+      dispatched,
+      error: error instanceof Error ? error.message.slice(0, 500) : 'github_dispatch_failed',
+    };
+  }
 }

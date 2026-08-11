@@ -9,6 +9,15 @@ Last updated: 2026-08-11
 
 ## Стан репозиторію
 
+- **Async story-image recovery (2026-08-11):** production v4 jobs підтвердили архітектурний
+  конфлікт: Vercel poller запускав лише одну image job кожні 5 хв, а послідовні art-director
+  calls/retry тричі досягли platform timeout рівно 300 с. `story_image` перенесено у fenced
+  GitHub Actions backend; admin dispatch-ить її одразу, safety poll — batch до 10, різні stories
+  мають per-job concurrency. Міграція переводить активну чергу без обриву живого lease і повертає
+  три durable attempts incident timeout jobs. (source: Vercel production runtime logs 2026-08-11,
+  `src/lib/weekly-digest/generation-control.ts`, `.github/workflows/weekly-master-cli-worker.yml`,
+  `supabase/migrations/20260811173217_weekly_story_image_async_worker.sql`)
+
 - **Weekly semantic illustration v4 (2026-08-11):** актуальний policy
   `weekly-semantic-story-v4` замінив self-referential essence-only перевірку на contract
   `context → meaning → mechanism → consequence → visual thesis`. Worker тепер передає

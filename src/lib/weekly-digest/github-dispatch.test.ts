@@ -1,11 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { dispatchWeeklyMasterCliWorker } from './github-dispatch';
+
+const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
+vi.mock('@/lib/supabase-admin', () => ({ getSupabaseAdmin: () => ({ rpc }) }));
+
+import {
+  dispatchQueuedWeeklyGenerationJobs,
+  dispatchWeeklyMasterCliWorker,
+} from './github-dispatch';
 
 describe('dispatchWeeklyMasterCliWorker', () => {
   const originalToken = process.env.GH_ACTIONS_DISPATCH_TOKEN;
 
   afterEach(() => {
     process.env.GH_ACTIONS_DISPATCH_TOKEN = originalToken;
+    rpc.mockReset();
+    vi.unstubAllGlobals();
   });
 
   it('throws when the dispatch token is not configured', async () => {
@@ -40,10 +49,62 @@ describe('dispatchWeeklyMasterCliWorker', () => {
             job_id: 'job-1',
             dispatch_token: 'dispatch-1',
             weekly_digest_id: 'digest-1',
+            job_type: 'editorial_master',
           },
         }),
       }),
     );
+  });
+
+  it('identifies story image dispatches so the workflow can run them independently', async () => {
+    process.env.GH_ACTIONS_DISPATCH_TOKEN = 'test-token';
+    const fetchFn = vi.fn().mockResolvedValue({ ok: true, text: async () => '' });
+    await dispatchWeeklyMasterCliWorker({
+      jobId: 'image-job-1',
+      dispatchToken: 'dispatch-1',
+      weeklyDigestId: 'digest-1',
+      jobType: 'story_image',
+      fetchFn,
+    });
+    expect(fetchFn).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: expect.stringContaining('"job_type":"story_image"'),
+      }),
+    );
+  });
+
+  it('dispatches a bounded batch of independent queued jobs', async () => {
+    process.env.GH_ACTIONS_DISPATCH_TOKEN = 'test-token';
+    rpc
+      .mockResolvedValueOnce({
+        data: {
+          job_id: 'image-job-1',
+          weekly_digest_id: 'digest-1',
+          job_type: 'story_image',
+          dispatch_token: 'dispatch-1',
+        },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: {
+          job_id: 'image-job-2',
+          weekly_digest_id: 'digest-1',
+          job_type: 'story_image',
+          dispatch_token: 'dispatch-2',
+        },
+        error: null,
+      })
+      .mockResolvedValueOnce({ data: null, error: null });
+    const fetchFn = vi.fn().mockResolvedValue({ ok: true, text: async () => '' });
+    vi.stubGlobal('fetch', fetchFn);
+
+    await expect(dispatchQueuedWeeklyGenerationJobs(3)).resolves.toEqual({
+      dispatched: 2,
+      error: null,
+    });
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    expect(rpc).toHaveBeenCalledTimes(3);
   });
 
   it('throws with the response body when GitHub rejects the dispatch', async () => {
