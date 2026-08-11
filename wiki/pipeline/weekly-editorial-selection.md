@@ -208,6 +208,12 @@ consequence. Vision score впливає на `story_image` artifact/release pre
 selection score і не міняє порядок stories. (source: `src/lib/weekly-digest/generation-worker.ts`,
 `pipeline/card-image.ts`, `src/lib/content-sim/vision-critic.ts`)
 
+Перенесення `story_image` з 300-секундного Vercel request у незалежні GitHub Actions workers також
+не змінює shortlist або score: це лише execution boundary. Кожна story зберігає власний fenced
+`job_id`, input і `revision_item_id`, тому паралельні renders не можуть забрати роботу іншої story.
+(source: `src/lib/weekly-digest/generation-control.ts`,
+`supabase/migrations/20260811173217_weekly_story_image_async_worker.sql`)
+
 ## Related pages
 
 - [weekly-digest](weekly-digest.md) — Content Studio v2, ревізії, spend-cap, admin UX

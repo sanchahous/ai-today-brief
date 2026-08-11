@@ -2423,7 +2423,7 @@ async function generatePdf(job: ClaimedGenerationJob) {
   return { artifactId, output: { locale, path, byte_size: pdf.length, sha256: hash } };
 }
 
-async function generateStoryImage(job: ClaimedGenerationJob) {
+async function generateStoryImage(job: ClaimedGenerationJob, tracker: GenerationAttemptTracker) {
   const context = await loadGenerationContext(job);
   const input = asRecord(job.input);
   const revisionItemId = text(input.revision_item_id);
@@ -2478,6 +2478,14 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   let alternateBuffers: Buffer[] = [];
   let contentSimMeta: import('@/lib/content-sim').ContentSimArtifactMeta | null = null;
   let needsHumanReview = false;
+
+  await tracker.event({
+    type: 'stage_started',
+    step: 'generate',
+    progressCurrent: 5,
+    progressTotal: 100,
+    message: 'Building the semantic contract, rendering variants and running vision review',
+  });
 
   if (requestedSourceUrl?.startsWith('http')) {
     const response = await fetch(requestedSourceUrl, {
@@ -2683,6 +2691,15 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   }
 
   if (source.length > 15 * 1024 * 1024) throw new Error('Story image source exceeds 15 MB.');
+  await tracker.event({
+    type: 'stage_started',
+    step: 'persist',
+    provider: imageMeta?.provider,
+    model: imageMeta?.model,
+    progressCurrent: 90,
+    progressTotal: 100,
+    message: 'Saving the selected illustration and alternate variants',
+  });
   const sharp = await lazySharp();
   const processImage = (buffer: Buffer) =>
     sharp(buffer)
@@ -3005,7 +3022,7 @@ async function runGenerationJob(job: ClaimedGenerationJob, tracker: GenerationAt
   if (job.job_type === 'video_script') return generateVideoScript(job, tracker);
   if (job.job_type === 'video_manifest') return generateVideoManifest(job);
   if (job.job_type === 'pdf') return generatePdf(job);
-  if (job.job_type === 'story_image') return generateStoryImage(job);
+  if (job.job_type === 'story_image') return generateStoryImage(job, tracker);
   if (job.job_type === 'cover') return generateCover(job);
   if (job.job_type === 'social_asset') return generateCoverDerivatives(job);
   throw new Error(`Unsupported generation job type: ${job.job_type}`);

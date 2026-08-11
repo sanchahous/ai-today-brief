@@ -6,6 +6,20 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-11
 
+## 2026-08-11 — Story images: Vercel timeout → parallel durable workers
+
+**Джерело:** production runtime logs після deploy PR #221: `/api/internal/weekly/generate` о
+20:00, 20:05 і 20:10 Kyiv завершувався `504 Task timed out after 300 seconds`; endpoint брав одну
+short job за poll, а v4 робив кілька послідовних 40–137-секундних OpenRouter calls ще до FLUX.
+
+**Змінено:** `story_image` переведено у GitHub Actions long-job backend; enqueue dispatch-ить її
+одразу, cron batch-dispatch-ить до 10, per-job concurrency дозволяє story renders іти паралельно.
+Міграція переносить активну чергу, не обриваючи live Vercel lease, і відновлює три attempts для
+incident timeout jobs. Admin timeline тепер переходить у `generate`/`persist`, а не висить у
+`prepare / Provider not started`. (source: Vercel production runtime logs 2026-08-11,
+`src/app/api/internal/weekly/generate/route.ts`, `.github/workflows/weekly-master-cli-worker.yml`,
+`supabase/migrations/20260811173217_weekly_story_image_async_worker.sql`)
+
 ## 2026-08-11 — Vision critic JSON soft-fail (story_image)
 
 **Джерело:** live fail `story_image` на digest `843975a8…` — `last_error: No JSON object in

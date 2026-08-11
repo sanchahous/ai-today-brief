@@ -9,9 +9,10 @@ import {
 } from './generation-control';
 
 describe('Weekly generation control helpers', () => {
-  it('routes only long editorial jobs to GitHub Actions', () => {
+  it('routes long editorial and semantic image jobs to GitHub Actions', () => {
     expect(backendForGenerationJob('editorial_master')).toBe('github_actions');
     expect(backendForGenerationJob('social_copy')).toBe('github_actions');
+    expect(backendForGenerationJob('story_image')).toBe('github_actions');
     expect(backendForGenerationJob('research_pack')).toBe('vercel');
   });
 

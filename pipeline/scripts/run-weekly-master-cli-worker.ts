@@ -1,9 +1,9 @@
 /**
- * Runs exactly one long Weekly Digest job through the normal generation worker
- * from a host where the Claude Code CLI subscription
- * provider actually works (a GitHub Actions runner — Vercel has no `claude`
- * binary). Both stages prefer the same $0-marginal-cost provider ladder, so
- * they share this worker rather than each needing their own dispatch route.
+ * Runs exactly one long Weekly Digest job through the normal generation worker.
+ * Editorial jobs need a host where the Claude Code CLI subscription provider
+ * works; semantic story images need a host that survives their multi-provider
+ * render/vision loop. A GitHub Actions runner satisfies both boundaries, so the
+ * jobs share one fenced dispatcher rather than separate control planes.
  * The job id + dispatch token are fenced by PostgreSQL, so a late or duplicate
  * GitHub run cannot complete a lease claimed by a newer worker.
  *
@@ -17,7 +17,7 @@ import { runWeeklyDigestGenerationJobs } from '../../src/lib/weekly-digest/gener
 import { logError, logEvent } from '../log';
 
 const STAGE = 'weekly-master-cli-worker';
-const LONG_JOB_TYPES = ['editorial_master', 'social_copy', 'video_script'];
+const LONG_JOB_TYPES = ['editorial_master', 'social_copy', 'video_script', 'story_image'];
 
 // getSupabaseAdmin() (src/lib/supabase-admin.ts) resolves the URL/key from
 // SCRAPPER_BASE_URL/SCRAPPER_SERVICE_KEY first, falling back to
@@ -69,9 +69,7 @@ async function main(): Promise<void> {
   // the failure; the run itself must show it too.
   const failed = results.filter((result) => result.outcome === 'failed');
   if (failed.length > 0) {
-    throw new Error(
-      `Job ${jobId} finished as failed: ${failed[0].error ?? 'no error recorded'}`,
-    );
+    throw new Error(`Job ${jobId} finished as failed: ${failed[0].error ?? 'no error recorded'}`);
   }
   logEvent('info', STAGE, 'single job complete', { job_id: jobId, claimed });
 }

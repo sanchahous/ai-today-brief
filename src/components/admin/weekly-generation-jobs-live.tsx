@@ -311,6 +311,8 @@ export function WeeklyGenerationJobsLive({
               attempt && lastUpdatedAt ? duration(elapsedMs(attempt, lastUpdatedAt) ?? 0) : '—';
             const provider = job.current_provider ?? attempt?.provider;
             const model = job.current_model ?? attempt?.model;
+            const backend =
+              job.status === 'running' && attempt ? attempt.backend : job.execution_backend;
             return (
               <tr key={job.id} className="align-top">
                 <td className="py-3 font-semibold text-white">{job.job_type}</td>
@@ -322,7 +324,7 @@ export function WeeklyGenerationJobsLive({
                     Attempt {job.attempts}/{job.max_attempts}
                   </p>
                   <p className="text-slate-500">
-                    {job.execution_backend === 'github_actions' ? 'GitHub Actions' : 'Vercel'}
+                    {backend === 'github_actions' ? 'GitHub Actions' : 'Vercel'}
                   </p>
                   {attempt?.external_run_url ? (
                     <a
@@ -338,14 +340,19 @@ export function WeeklyGenerationJobsLive({
                 <td className="py-3 text-xs leading-5 text-slate-300">
                   <p>{job.current_step ?? attempt?.current_step ?? '—'}</p>
                   <p className="text-slate-500">
-                    {provider && model ? `${provider} / ${model}` : 'Provider not started yet'}
+                    {provider
+                      ? model
+                        ? `${provider} / ${model}`
+                        : provider
+                      : (job.current_step ?? attempt?.current_step) === 'prepare'
+                        ? 'Provider not started yet'
+                        : 'Provider details pending'}
                   </p>
                 </td>
                 <td className="py-3 text-xs leading-5 text-slate-300">
                   <p>≈ {progress}%</p>
                   <p className="text-slate-500">
-                    {job.execution_backend === 'github_actions' ? 'Actions time' : 'Elapsed'}{' '}
-                    {elapsed}
+                    {backend === 'github_actions' ? 'Actions time' : 'Elapsed'} {elapsed}
                   </p>
                   <p className="text-slate-500">
                     {etaText(job, attempt, data.historicalDurations, lastUpdatedAt ?? 0)}

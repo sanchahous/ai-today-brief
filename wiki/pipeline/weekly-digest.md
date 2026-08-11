@@ -81,14 +81,15 @@ heartbeat, next retry, failure code and human-readable status reason.
 
 | Job type | Worker | Time budget |
 |---|---|---|
-| `editorial_master`, `social_copy`, `video_script` | one fenced GitHub Actions run per job | 120 min workflow timeout |
-| `research_pack`, `story_image`, `cover`, `pdf`, `social_asset`, `video_manifest` | Vercel | internal 240 s deadline under the 300 s platform cap |
+| `editorial_master`, `social_copy`, `video_script`, `story_image` | one fenced GitHub Actions run per job | 120 min workflow timeout |
+| `research_pack`, `cover`, `pdf`, `social_asset`, `video_manifest` | Vercel | internal 240 s deadline under the 300 s platform cap |
 
 The database `pg_cron` reaper runs each minute with a 90-second stale-heartbeat threshold. The
-five-minute internal route claims only short Vercel jobs and dispatches at most one eligible long job.
-Queuing a long job also dispatches it immediately. GitHub receives its exact `job_id` plus one-time
-dispatch token and uses a per-digest
-concurrency group; it cannot drain unrelated jobs. Retryable infrastructure failures back off for
+five-minute internal route claims only short Vercel jobs and dispatches up to ten eligible long jobs
+at the start of the request. Queuing a long job from admin also dispatches it immediately. GitHub
+receives its exact `job_id`, job type and one-time dispatch token; editorial jobs keep a per-digest
+concurrency group, while `story_image` uses per-job concurrency so different stories render in
+parallel. A runner cannot drain an unrelated job. Retryable infrastructure failures back off for
 1, 5 then 15 minutes; validation, quality and quota failures are terminal and require a linked
 manual retry. Legacy counter-only attempts are materialized during migration so historical retry
 counts are not rewritten as one fictional run; a stale legacy long job becomes terminal
@@ -96,6 +97,17 @@ counts are not rewritten as one fictional run; a stale legacy long job becomes t
 (source: `.github/workflows/weekly-master-cli-worker.yml`,
 `pipeline/scripts/run-weekly-master-cli-worker.ts`, `src/lib/weekly-digest/generation-worker.ts`,
 `src/app/api/internal/weekly/generate/route.ts`)
+
+`story_image` moved from Vercel to the long-lived worker after the first v4 production run on
+2026-08-11. Three consecutive `/api/internal/weekly/generate` invocations at 20:00, 20:05 and
+20:10 Kyiv each hit Vercel's exact 300-second timeout: one image spent 40–137 seconds per sequential
+OpenRouter art-direction call, retried rejected metaphors, and never reached FLUX before the whole
+request died. The provider's own absolute ceiling was 720 seconds, already longer than the entire
+serverless invocation. The migration preserves a live Vercel lease but routes any recovery attempt
+to GitHub, and restores three durable attempts to incident jobs whose stale-worker retries were
+already exhausted. (source: Vercel production runtime logs 2026-08-11,
+`src/app/api/internal/weekly/generate/route.ts`,
+`supabase/migrations/20260811173217_weekly_story_image_async_worker.sql`)
 
 The admin workspace polls `/api/admin/weekly/[id]/generation-status` every five seconds without
 refreshing the editor. It displays attempt/max, backend/run link, current step/provider/model,

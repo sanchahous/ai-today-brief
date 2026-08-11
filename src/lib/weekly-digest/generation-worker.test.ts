@@ -18,14 +18,7 @@ import type { WeeklyResearchPack, WeeklyMasterBundle } from './content-studio';
 import type { WeeklyMasterRetryGuidance } from './editorial-llm';
 import type { SocialChannel, SocialLocale } from '@/lib/social/types';
 
-const SHORT_JOB_TYPES = [
-  'research_pack',
-  'story_image',
-  'cover',
-  'pdf',
-  'social_asset',
-  'video_manifest',
-];
+const SHORT_JOB_TYPES = ['research_pack', 'cover', 'pdf', 'social_asset', 'video_manifest'];
 
 function pack(overrides: Partial<WeeklyResearchPack> = {}): WeeklyResearchPack {
   return {

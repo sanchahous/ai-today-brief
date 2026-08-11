@@ -18,6 +18,7 @@ import {
   weeklyDigestTriggerDateForManualCreate,
 } from '@/lib/social/schedule';
 import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial-validation';
+import { backendForGenerationJob } from '@/lib/weekly-digest/generation-control';
 import { dispatchQueuedWeeklyGenerationJob } from '@/lib/weekly-digest/github-dispatch';
 import {
   startWeeklyContentStudio,
@@ -495,7 +496,9 @@ export async function reviewWeeklyArtifactAction(formData: FormData) {
     (artifact.artifact_type === 'story_image' || artifact.artifact_type === 'cover')
   ) {
     const meta =
-      artifact.metadata && typeof artifact.metadata === 'object' && !Array.isArray(artifact.metadata)
+      artifact.metadata &&
+      typeof artifact.metadata === 'object' &&
+      !Array.isArray(artifact.metadata)
         ? { ...(artifact.metadata as Record<string, unknown>) }
         : {};
     const simRaw = meta.content_sim;
@@ -1220,7 +1223,7 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
     p_input: input as Json,
   });
   if (error && !/duplicate|unique/i.test(error.message)) throw new Error(error.message);
-  if (['editorial_master', 'social_copy', 'video_script'].includes(jobType) && queuedJob?.id) {
+  if (backendForGenerationJob(jobType) === 'github_actions' && queuedJob?.id) {
     await dispatchQueuedWeeklyGenerationJob(queuedJob.id);
   }
   revalidateWeeklyAdmin(weeklyDigestId);
@@ -1792,7 +1795,10 @@ export async function postponeWeeklyDigestAction(formData: FormData) {
     p_reason: `Postponed ${weeks} week(s): ${reason}`,
   });
   if (pauseError) {
-    redirectWeeklyReleaseError(weeklyDigestId, `Could not pause before postponing: ${pauseError.message}`);
+    redirectWeeklyReleaseError(
+      weeklyDigestId,
+      `Could not pause before postponing: ${pauseError.message}`,
+    );
   }
 
   const { error: approveError } = await db.rpc('approve_weekly_digest', {
