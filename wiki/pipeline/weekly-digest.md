@@ -104,10 +104,12 @@ counts are not rewritten as one fictional run; a stale legacy long job becomes t
 OpenRouter art-direction call, retried rejected metaphors, and never reached FLUX before the whole
 request died. The provider's own absolute ceiling was 720 seconds, already longer than the entire
 serverless invocation. The migration preserves a live Vercel lease but routes any recovery attempt
-to GitHub, and restores three durable attempts to incident jobs whose stale-worker retries were
-already exhausted. (source: Vercel production runtime logs 2026-08-11,
+to GitHub. If Regenerate already created multiple recoverable rows for one `revision_item_id`, the
+live lease or newest request wins and older retry/stale rows are cancelled as
+`superseded_by_regeneration`; only the winner receives restored durable attempts. (source: Vercel
+production runtime logs and Supabase production queue snapshot 2026-08-11,
 `src/app/api/internal/weekly/generate/route.ts`,
-`supabase/migrations/20260811173217_weekly_story_image_async_worker.sql`)
+`supabase/migrations/20260811183201_weekly_story_image_async_worker.sql`)
 
 The admin workspace polls `/api/admin/weekly/[id]/generation-status` every five seconds without
 refreshing the editor. It displays attempt/max, backend/run link, current step/provider/model,

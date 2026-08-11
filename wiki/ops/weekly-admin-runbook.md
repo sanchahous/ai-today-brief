@@ -114,14 +114,16 @@ retry немає: переглянь конкретну причину, випр
 ### Після deploy async story-image worker
 
 Спочатку має бути застосована міграція
-`20260811173217_weekly_story_image_async_worker.sql`, потім — production deploy відповідного
+`20260811183201_weekly_story_image_async_worker.sql`, потім — production deploy відповідного
 commit. Після цього в адмінці **не створюй нові дублікати**: онови Visuals і зачекай до 5 хвилин
-на safety poll. Уже queued/retry jobs автоматично змінять backend на **GitHub Actions**; поточна
-жива Vercel-спроба може коректно завершитись, але її наступний retry піде в Actions. Timeout jobs
-цього інциденту отримують три нові durable attempts. Очікуваний стан: окремий **Open run** для
-кожної story, кілька `story_image` у `running` одночасно, step `generate`, живий heartbeat, далі
-`persist` → `succeeded` і три variants у Visuals. (source:
-`supabase/migrations/20260811173217_weekly_story_image_async_worker.sql`,
+на safety poll. Міграція групує queued/retry/stale jobs за `revision_item_id`: якщо редактор уже
+натиснув Regenerate, лише найновіша job переходить на **GitHub Actions**, а старі дублікати стають
+`cancelled` з причиною `superseded_by_regeneration`. Уже жива Vercel-спроба має пріоритет, щоб не
+розірвати її lease; її наступний retry піде в Actions. Winning timeout job отримує три нові durable
+attempts. Очікуваний стан: рівно один **Open run** для кожної story, кілька `story_image` у
+`running` одночасно, step `generate`, живий heartbeat, далі `persist` → `succeeded` і три variants
+у Visuals. (source:
+`supabase/migrations/20260811183201_weekly_story_image_async_worker.sql`,
 `src/app/api/internal/weekly/generate/route.ts`, `src/lib/weekly-digest/generation-worker.ts`)
 
 ### 3–7. Article → … → Release

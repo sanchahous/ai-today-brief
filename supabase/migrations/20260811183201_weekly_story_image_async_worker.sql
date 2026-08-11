@@ -1,5 +1,7 @@
 begin;
 
+-- Applied to production as migration version 20260811183201.
+
 -- Semantic illustration v4 performs multiple reasoning, render and vision
 -- calls. Production measurements on 2026-08-11 exceeded Vercel's 300-second
 -- function ceiling before the first image could be persisted, so story_image
@@ -95,12 +97,103 @@ revoke all on function public.prepare_weekly_digest_github_dispatch(uuid)
 grant execute on function public.prepare_weekly_digest_github_dispatch(uuid)
   to service_role;
 
--- Preserve a currently running Vercel lease: it may still finish successfully,
--- and changing its attempt would let a stale worker write an artifact. Changing
--- only the logical job backend means the normal reaper will schedule its next
--- attempt on GitHub if Vercel kills it. Incident jobs that already exhausted
--- their attempts receive three fresh durable attempts without rewriting their
--- immutable attempt history.
+-- Regenerate creates a new idempotency key for the same revision item. Rank the
+-- recoverable incident rows once, before changing any state, so only one job per
+-- story can cross to the new backend. Prefer a currently running lease; otherwise
+-- the latest regeneration wins. This avoids dispatching an old retry alongside
+-- the replacement requested by the editor.
+create temporary table weekly_story_image_migration_candidates
+on commit drop
+as
+select
+  job.id as job_id,
+  first_value(job.id) over candidate_window as keep_job_id,
+  row_number() over candidate_window as candidate_rank
+from public.weekly_digest_generation_jobs job
+join public.weekly_digests digest on digest.id = job.weekly_digest_id
+where digest.active_revision_id = job.revision_id
+  and digest.status not in ('publishing', 'published', 'cancelled')
+  and job.job_type = 'story_image'
+  and job.execution_backend = 'vercel'
+  and (
+    job.status in ('waiting', 'queued', 'running', 'retry_scheduled')
+    or (
+      job.status = 'failed'
+      and job.failure_code = 'worker_heartbeat_stale'
+      and job.created_at >= timestamptz '2026-08-11 00:00:00+00'
+    )
+  )
+window candidate_window as (
+  partition by
+    job.weekly_digest_id,
+    job.revision_id,
+    coalesce(nullif(job.input ->> 'revision_item_id', ''), job.id::text)
+  order by (job.status = 'running') desc, job.created_at desc, job.id desc
+);
+
+-- Fence any superseded live attempt before cancelling its logical job. The
+-- current incident has no duplicate running leases, but keeping the migration
+-- safe for that state prevents a late worker from completing an obsolete job.
+with cancelled_attempts as (
+  update public.weekly_digest_generation_attempts attempt
+  set status = 'cancelled',
+      finished_at = now(),
+      error_code = 'superseded_by_regeneration',
+      error_message = 'A newer story-image regeneration job superseded this attempt.'
+  from public.weekly_digest_generation_jobs job
+  join weekly_story_image_migration_candidates candidate
+    on candidate.job_id = job.id
+  where candidate.candidate_rank > 1
+    and job.status = 'running'
+    and attempt.id = job.current_attempt_id
+    and attempt.status = 'running'
+  returning attempt.id, attempt.job_id
+)
+insert into public.weekly_digest_generation_events (
+  job_id, attempt_id, event_type, step, message, metadata
+)
+select
+  cancelled_attempts.job_id,
+  cancelled_attempts.id,
+  'attempt_cancelled',
+  'prepare',
+  'Attempt fenced because a newer story-image regeneration job exists.',
+  jsonb_build_object('failure_code', 'superseded_by_regeneration')
+from cancelled_attempts;
+
+with superseded as (
+  update public.weekly_digest_generation_jobs job
+  set status = 'cancelled',
+      current_attempt_id = null,
+      locked_at = null,
+      heartbeat_at = null,
+      next_attempt_at = null,
+      dispatch_token = null,
+      finished_at = now(),
+      failure_code = 'superseded_by_regeneration',
+      last_error = 'Superseded by newer story-image regeneration job '
+        || candidate.keep_job_id::text || '.',
+      status_reason = 'Superseded by a newer story-image regeneration request'
+  from weekly_story_image_migration_candidates candidate
+  where candidate.job_id = job.id
+    and candidate.candidate_rank > 1
+  returning job.id, candidate.keep_job_id
+)
+insert into public.weekly_digest_generation_events (
+  job_id, event_type, step, message, metadata
+)
+select
+  superseded.id,
+  'job_superseded',
+  'prepare',
+  'Older story-image job cancelled in favour of the latest regeneration.',
+  jsonb_build_object('replacement_job_id', superseded.keep_job_id)
+from superseded;
+
+-- Preserve the winning running Vercel lease: it may still finish successfully.
+-- Changing only its logical backend means the normal reaper will schedule a
+-- GitHub retry if Vercel kills it. A winning failed/retry row receives three
+-- durable attempts without rewriting its immutable attempt history.
 with migrated as (
   update public.weekly_digest_generation_jobs job
   set execution_backend = 'github_actions',
@@ -119,20 +212,9 @@ with migrated as (
         when job.status = 'waiting' then job.status_reason
         else 'Queued for a dedicated GitHub Actions story-image worker'
       end
-  from public.weekly_digests digest
-  where digest.id = job.weekly_digest_id
-    and digest.active_revision_id = job.revision_id
-    and digest.status not in ('publishing', 'published', 'cancelled')
-    and job.job_type = 'story_image'
-    and job.execution_backend = 'vercel'
-    and (
-      job.status in ('waiting', 'queued', 'running', 'retry_scheduled')
-      or (
-        job.status = 'failed'
-        and job.failure_code = 'worker_heartbeat_stale'
-        and job.created_at >= timestamptz '2026-08-11 00:00:00+00'
-      )
-    )
+  from weekly_story_image_migration_candidates candidate
+  where candidate.job_id = job.id
+    and candidate.candidate_rank = 1
   returning job.id, job.status, job.attempts, job.max_attempts
 )
 insert into public.weekly_digest_generation_events (

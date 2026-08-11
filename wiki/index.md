@@ -3,7 +3,7 @@
 Summary: головний зміст усієї wiki. Кожен рядок — одна сторінка + один рядок опису. Точка входу
 для будь-якого питання: спершу читаємо цей файл, потім релевантні сторінки.
 Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery fix
-2026-08-10
+2026-08-10, story-image rollout deduplication 2026-08-11
 Last updated: 2026-08-11
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
@@ -51,7 +51,7 @@ Last updated: 2026-08-11
 | ✅ [pipeline/trend-engine-backtest](pipeline/trend-engine-backtest.md) | Результати бектесту trend-index | колишній `docs/TREND-ENGINE-BACKTEST-FINDINGS.md` |
 | ✅ [pipeline/instrumentation-plan](pipeline/instrumentation-plan.md) | Пакет телеметрії PR-I1/I2/I3 (міграції 032/033/034) | колишній `docs/INSTRUMENTATION-PR-PLAN.md` |
 | ✅ [pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md) | Редакційний відбір weekly-дайджесту й fail-closed quality boundary | колишній `docs/weekly-editorial-selection.md` + `content-studio.ts` |
-| ✅ [pipeline/weekly-digest](pipeline/weekly-digest.md) | Weekly Content Studio v2, ревізії, durable workers, parallel semantic story images v4, spend-cap і admin UX | `.env.example` + PR #160–#177/#208/#209 + `generation-worker.ts` |
+| ✅ [pipeline/weekly-digest](pipeline/weekly-digest.md) | Weekly Content Studio v2, ревізії, durable workers, parallel semantic story images v4 з regenerate dedupe, spend-cap і admin UX | `.env.example` + PR #160–#177/#208/#209/#222 + `generation-worker.ts` |
 | ✅ [pipeline/editorial-voice](pipeline/editorial-voice.md) | Редакційний голос weekly-дайджесту: prompt-leak захист, contrast-pairs, мовні й banned-phrase гейти, `numeric_parity` EN↔UK | `editorial-voice.ts`, owner sessions 2026-08-06/09 |
 | ✅ [pipeline/weekly-master-failures](pipeline/weekly-master-failures.md) | Розбір збоїв `editorial_master` 09.08: 7 причин (таймаут CLI, tool-use, reasoning-сліпий stall-детектор, зелений прогін на провалі, фолбек, JSON-преамбула, відсутня UK/revise-драбина) | Actions runs + live sandbox 2026-08-09 |
 | ✅ [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) | Ітеративний рушій `editorial_master`: посегментний запис із чекпоїнтом на кожен сегмент, точковий ремонт поля замість перегенерації, якість більше не валить джобу | `master-engine.ts` / `master-segments.ts` / `master-repair.ts`, owner session 2026-08-09 |
