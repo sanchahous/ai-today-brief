@@ -685,6 +685,31 @@ function ArtifactCard({
     typeof artifactMetadata.scene_source === 'string' ? artifactMetadata.scene_source : null;
   const alternateVariantPaths = variantSelection ? listFrom(artifact.content, 'preview_paths') : [];
   const alternateVariantUrls = variantSelection ? previewUrls : [];
+  const variantScoresRaw = Array.isArray(artifactMetadata.variant_scores)
+    ? artifactMetadata.variant_scores
+    : [];
+  const variantScoreByIndex = new Map<
+    number,
+    { overall: number; blockers: string[]; passed: boolean }
+  >();
+  for (const entry of variantScoresRaw) {
+    const row = asRecord(entry);
+    const index = typeof row.index === 'number' ? row.index : null;
+    if (index === null) continue;
+    const blockers = Array.isArray(row.blockers)
+      ? row.blockers.filter((b): b is string => typeof b === 'string')
+      : [];
+    variantScoreByIndex.set(index, {
+      overall: typeof row.overall === 'number' ? row.overall : 0,
+      blockers,
+      passed: row.passed === true,
+    });
+  }
+  const pickSource =
+    artifactMetadata.pick_source === 'owner' ? 'owner' : artifactMetadata.pick_source === 'auto'
+      ? 'auto'
+      : null;
+  const primaryVariantScore = variantScoreByIndex.get(0);
   const contentSim = asRecord(artifactMetadata.content_sim);
   const contentSimOutcome =
     typeof contentSim.outcome === 'string' ? contentSim.outcome : null;
@@ -725,6 +750,22 @@ function ArtifactCard({
             unoptimized
             className="object-cover"
           />
+          {pickSource || primaryVariantScore ? (
+            <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+              {pickSource ? (
+                <span className="rounded bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-200">
+                  {pickSource === 'owner' ? 'owner-promoted' : 'auto-picked'}
+                </span>
+              ) : null}
+              {primaryVariantScore ? (
+                <span className="rounded bg-black/70 px-2 py-0.5 text-[10px] font-bold text-white">
+                  {primaryVariantScore.passed
+                    ? `pass ${Math.round(primaryVariantScore.overall)}`
+                    : `score ${Math.round(primaryVariantScore.overall)}`}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -733,6 +774,8 @@ function ArtifactCard({
           {alternateVariantUrls.map((url, index) => {
             const path = alternateVariantPaths[index];
             if (!path) return null;
+            // Alternate #i maps to variant_scores index i+1 (0 = primary).
+            const scoreMeta = variantScoreByIndex.get(index + 1);
             return (
               <form key={path} action={selectWeeklyArtifactVariantAction}>
                 <input type="hidden" name="weekly_digest_id" value={digestId} />
@@ -752,6 +795,24 @@ function ArtifactCard({
                     unoptimized
                     className="object-cover"
                   />
+                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4 text-left">
+                    {scoreMeta ? (
+                      <>
+                        <span className="block text-[10px] font-bold text-white">
+                          {scoreMeta.passed
+                            ? `pass ${Math.round(scoreMeta.overall)}`
+                            : `score ${Math.round(scoreMeta.overall)}`}
+                        </span>
+                        <span className="block truncate text-[9px] text-slate-300">
+                          {scoreMeta.blockers.length
+                            ? scoreMeta.blockers.slice(0, 2).join(', ')
+                            : 'pass'}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="block text-[10px] text-slate-400">alt {index + 1}</span>
+                    )}
+                  </span>
                   {variantSelection.canEdit ? (
                     <span className="absolute inset-0 hidden items-center justify-center bg-black/55 text-xs font-bold text-white group-hover:flex">
                       Use this

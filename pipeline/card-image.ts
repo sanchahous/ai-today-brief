@@ -656,7 +656,18 @@ export async function sceneBrief(
 // ---------------------------------------------------------------------------
 
 /** Stored on story_image artifacts; bump when house-style / gates change. */
-export const WEEKLY_PROMPT_POLICY = 'weekly-editorial-concept-v1';
+export const WEEKLY_PROMPT_POLICY = 'weekly-editorial-concept-v2';
+
+/** Open vocabulary motif label from the metaphor director (snake_case). */
+export type MetaphorSubjectKind = 'object' | 'process' | 'environment' | 'character';
+
+/** Sibling story metaphors already committed in this digest (structural diversity). */
+export interface SiblingMetaphorHint {
+  motifClass?: string;
+  subjectKind?: string;
+  composition?: 'single' | 'dual_contrast';
+  sceneSummary: string;
+}
 
 export interface WeeklyReportageSceneInput {
   headline: string;
@@ -672,6 +683,8 @@ export interface WeeklyReportageSceneInput {
   claimsExcerpt?: string;
   /** Subjects already used by sibling stories in this digest (diversity). */
   avoidSubjects?: string[];
+  /** Rich sibling metaphor metadata for motif/composition/character gates. */
+  siblingMetaphors?: SiblingMetaphorHint[];
 }
 
 /** One-sentence editorial argument the illustration must make. */
@@ -690,6 +703,9 @@ export interface MetaphorPitch {
   props: string[];
   composition: 'single' | 'dual_contrast';
   whyItFits: string;
+  /** Open snake_case class, e.g. anthropomorphic_guardian, thermal_waste. */
+  motifClass: string;
+  subjectKind: MetaphorSubjectKind;
 }
 
 /** Validated frame ready to flatten into a FLUX scene phrase. */
@@ -702,7 +718,12 @@ export interface WeeklyEditorialFrame {
   props: string[];
   composition: 'single' | 'dual_contrast';
   mustInclude: string[];
+  motifClass: string;
+  subjectKind: MetaphorSubjectKind;
 }
+
+/** Token Jaccard threshold for sibling scene echo (0–1). */
+export const SIBLING_SCENE_ECHO_THRESHOLD = 0.45;
 
 /** Compatibility shape for older tests; prefer MetaphorPitch. */
 export interface WeeklyReportageSceneSpec {
@@ -825,9 +846,100 @@ function buildWeeklyContextBlock(input: WeeklyReportageSceneInput, entities: str
     input.avoidSubjects?.length
       ? `Do not reuse these sibling-story subjects: ${input.avoidSubjects.join(' | ')}`
       : null,
+    formatSiblingMetaphorBlock(input.siblingMetaphors),
   ]
     .filter(Boolean)
     .join('\n');
+}
+
+function formatSiblingMetaphorBlock(siblings: SiblingMetaphorHint[] | undefined): string | null {
+  if (!siblings?.length) return null;
+  const lines = siblings.slice(0, 8).map((sibling, index) => {
+    const bits = [
+      sibling.motifClass ? `motif_class=${sibling.motifClass}` : null,
+      sibling.subjectKind ? `subject_kind=${sibling.subjectKind}` : null,
+      sibling.composition ? `composition=${sibling.composition}` : null,
+      `scene=${sibling.sceneSummary.slice(0, 140)}`,
+    ].filter(Boolean);
+    return `  ${index + 1}. ${bits.join('; ')}`;
+  });
+  return [
+    'Sibling metaphors already used in this digest (do NOT rhyme with these):',
+    ...lines,
+    'Pick a fresh motif_class. Prefer object/process/environment over another character if a character sibling already exists. At most one dual_contrast composition per digest.',
+  ].join('\n');
+}
+
+const SUBJECT_KINDS = new Set<MetaphorSubjectKind>([
+  'object',
+  'process',
+  'environment',
+  'character',
+]);
+
+function normalizeMotifClass(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 48);
+}
+
+function parseSubjectKind(raw: unknown): MetaphorSubjectKind {
+  if (typeof raw !== 'string') return 'object';
+  const key = raw.trim().toLowerCase() as MetaphorSubjectKind;
+  return SUBJECT_KINDS.has(key) ? key : 'object';
+}
+
+/** Significant tokens for sibling scene echo (Jaccard). */
+export function tokenizeSceneForEcho(text: string): Set<string> {
+  const stop = new Set([
+    'a',
+    'an',
+    'the',
+    'and',
+    'or',
+    'of',
+    'in',
+    'on',
+    'at',
+    'to',
+    'for',
+    'with',
+    'from',
+    'into',
+    'over',
+    'under',
+    'vs',
+    'versus',
+  ]);
+  const tokens = text
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 4 && !stop.has(t));
+  return new Set(tokens);
+}
+
+export function jaccardTokenOverlap(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  let inter = 0;
+  for (const token of a) {
+    if (b.has(token)) inter += 1;
+  }
+  const union = a.size + b.size - inter;
+  return union === 0 ? 0 : inter / union;
+}
+
+function pitchSceneBlob(pitch: MetaphorPitch): string {
+  return [pitch.subject, pitch.setting, ...pitch.props].join(' ');
+}
+
+function dualContrastIsArgued(whyItFits: string): boolean {
+  if (whyItFits.trim().length < 28) return false;
+  return /\b(vs\.?|versus|while|against|but|both|facade|front|back|left|right|tiny|huge|small|large|polished|broken|hidden|visible)\b/i.test(
+    whyItFits,
+  );
 }
 
 export function parseEditorialEssence(raw: string): EditorialEssence | null {
@@ -890,6 +1002,12 @@ export function parseMetaphorPitches(raw: string): MetaphorPitch[] {
         (typeof record.why_it_fits === 'string' && record.why_it_fits.trim()) ||
         (typeof record.whyItFits === 'string' && record.whyItFits.trim()) ||
         '',
+      motifClass: normalizeMotifClass(
+        (typeof record.motif_class === 'string' && record.motif_class) ||
+          (typeof record.motifClass === 'string' && record.motifClass) ||
+          subject.slice(0, 32),
+      ),
+      subjectKind: parseSubjectKind(record.subject_kind ?? record.subjectKind),
     });
   }
   return pitches.slice(0, 3);
@@ -952,6 +1070,7 @@ export function validateMetaphorPitch(
   pitch: MetaphorPitch,
   essence: EditorialEssence,
   requiredEntities: string[],
+  siblings: SiblingMetaphorHint[] = [],
 ): string[] {
   const errors: string[] = [];
   const flat = [
@@ -963,6 +1082,9 @@ export function validateMetaphorPitch(
     pitch.whyItFits,
   ].join(' ');
   if (pitch.subject.trim().length < 8) errors.push('subject too short');
+  if (!pitch.motifClass || pitch.motifClass.length < 3) {
+    errors.push('motif_class missing or too short');
+  }
   if (WEEKLY_CRAFT_BANNED.test(flat)) {
     errors.push('banned UI, collage, or stock-metaphor language');
   }
@@ -976,6 +1098,9 @@ export function validateMetaphorPitch(
       );
     if (!hasDivide) {
       errors.push('dual_contrast requires clear spatial-divide language');
+    }
+    if (!dualContrastIsArgued(pitch.whyItFits)) {
+      errors.push('dual_contrast_unargued');
     }
   }
   const hay = flat.toLowerCase();
@@ -998,7 +1123,9 @@ export function validateMetaphorPitch(
   if (
     WEEKLY_DESK_DEFAULT.test(flat) &&
     pitch.composition === 'single' &&
-    !/\b(heat|watt|journal|ledger|facade|backstage|controller|furnace|turbine|scale)\b/i.test(flat)
+    !/\b(heat|watt|controller|furnace|turbine|scale|orb|valve|chassis|keystone|vault|circuit)\b/i.test(
+      flat,
+    )
   ) {
     errors.push('desk/laptop default without a strong conceptual prop');
   }
@@ -1007,6 +1134,33 @@ export function validateMetaphorPitch(
       errors.push(`hits forbidden cliche: ${cliche}`);
     }
   }
+
+  const motif = pitch.motifClass.toLowerCase();
+  if (siblings.some((s) => s.motifClass && s.motifClass.toLowerCase() === motif)) {
+    errors.push('sibling_motif_class_reuse');
+  }
+  const pitchTokens = tokenizeSceneForEcho(pitchSceneBlob(pitch));
+  for (const sibling of siblings) {
+    const overlap = jaccardTokenOverlap(
+      pitchTokens,
+      tokenizeSceneForEcho(sibling.sceneSummary),
+    );
+    if (overlap >= SIBLING_SCENE_ECHO_THRESHOLD) {
+      errors.push('sibling_scene_echo');
+      break;
+    }
+  }
+  const siblingHasCharacter = siblings.some(
+    (s) => (s.subjectKind ?? '').toLowerCase() === 'character',
+  );
+  if (siblingHasCharacter && pitch.subjectKind === 'character') {
+    errors.push('character_budget');
+  }
+  const siblingHasDual = siblings.some((s) => s.composition === 'dual_contrast');
+  if (siblingHasDual && pitch.composition === 'dual_contrast') {
+    errors.push('dual_contrast_digest_cap');
+  }
+
   return errors;
 }
 
@@ -1024,6 +1178,8 @@ export function validateWeeklySceneSpec(
       props: spec.props,
       composition: 'single',
       whyItFits: 'legacy scene spec',
+      motifClass: 'legacy_scene',
+      subjectKind: 'object',
     },
     { essence: requiredEntities[0] || 'story argument', mustFeel: '', forbiddenCliches: [] },
     requiredEntities,
@@ -1107,40 +1263,55 @@ function buildMetaphorInstruction(
   return (
     `You design cover metaphors for a weekly AI/engineering digest. Given this essence, invent ` +
     `2 or 3 vivid visual metaphors a reader grasps without reading any screen text. ` +
-    `Prefer scale, heat, facade/backstage, fairytale-legible characters, physical ledgers -- ` +
-    `NOT people typing at desks, NOT paper heaps, NOT terminal windows. ` +
-    `If the essence needs contrast (facade vs chaos, tiny vs huge), set composition to ` +
-    `"dual_contrast" and describe ONE continuous photograph with a clear spatial divide ` +
-    `(left/right rooms, curtain/backstage) -- never collage or comic panels. ` +
-    `Screens if any stay blank unmarked glow. No logos, no readable UI, no real celebrity faces. ` +
-    `Gold-standard directions: energy waste → tiny chat vs industrial heat; unsupervised agent → ` +
-    `tireless character guarding a sealed journal; rushed game → polished stage vs broken backstage props. ` +
+    `Prefer concrete OBJECTS, PROCESSES, or ENVIRONMENTS that argue the essence. ` +
+    `Use a CHARACTER only when the essence cannot be read without one. ` +
+    `Do NOT default to theater stages, ballerinas, golems, sealed journals, or ledgers unless ` +
+    `the essence uniquely requires that exact mechanism -- invent a fresh motif_class each time. ` +
+    `If the essence needs contrast, set composition to "dual_contrast" and name BOTH halves in ` +
+    `why_it_fits (facade vs chaos, tiny vs huge) as ONE continuous photograph with a spatial divide -- ` +
+    `never collage, never a decorative second beat that does not argue the essence. ` +
+    `At most one dual_contrast per digest (see sibling metaphors). Screens if any stay blank unmarked glow. ` +
+    `No logos, no readable UI, no real celebrity faces. ` +
     `Reply with ONLY JSON: {"metaphors":[{"title":"","subject":"","action":"","setting":"",` +
-    `"props":[],"composition":"single|dual_contrast","why_it_fits":""}]}.\n\n` +
+    `"props":[],"composition":"single|dual_contrast","motif_class":"snake_case_label",` +
+    `"subject_kind":"object|process|environment|character","why_it_fits":""}]}.\n\n` +
     `Essence: "${essence.essence}"\nMust feel: "${essence.mustFeel}"\n` +
     `Forbidden: ${essence.forbiddenCliches.join(' | ') || 'generic AI sludge'}\n` +
     `${buildWeeklyContextBlock(input, entities)}${retry}`
   );
 }
 
-function scoreMetaphorPitch(pitch: MetaphorPitch, essence: EditorialEssence): number {
+function scoreMetaphorPitch(
+  pitch: MetaphorPitch,
+  essence: EditorialEssence,
+  siblings: SiblingMetaphorHint[] = [],
+): number {
   let score = 0;
   if (pitch.whyItFits.length >= 20) score += 2;
   if (pitch.props.length >= 1) score += 1;
-  if (pitch.composition === 'dual_contrast') score += 1;
   if (
-    /\b(heat|furnace|journal|ledger|facade|backstage|scale|watt|orb)\b/i.test(
-      [pitch.subject, pitch.action, ...pitch.props].join(' '),
-    )
+    pitch.subjectKind === 'object' ||
+    pitch.subjectKind === 'process' ||
+    pitch.subjectKind === 'environment'
   ) {
     score += 2;
   }
+  if (pitch.subjectKind === 'character') score -= 1;
   if (WEEKLY_DESK_DEFAULT.test(pitch.subject)) score -= 2;
   if (
     essence.mustFeel &&
     pitch.whyItFits.toLowerCase().includes(essence.mustFeel.toLowerCase().slice(0, 8))
   ) {
     score += 1;
+  }
+  const motif = pitch.motifClass.toLowerCase();
+  for (const sibling of siblings) {
+    if (sibling.motifClass && sibling.motifClass.toLowerCase() === motif) score -= 4;
+    const overlap = jaccardTokenOverlap(
+      tokenizeSceneForEcho(pitchSceneBlob(pitch)),
+      tokenizeSceneForEcho(sibling.sceneSummary),
+    );
+    if (overlap >= SIBLING_SCENE_ECHO_THRESHOLD) score -= 3;
   }
   return score;
 }
@@ -1168,10 +1339,19 @@ export async function extractEditorialEssence(
 export async function weeklyReportageSceneBrief(
   input: WeeklyReportageSceneInput,
   cfg: CardImageConfig,
-): Promise<SceneBriefResult & { essence?: string; metaphorTitle?: string }> {
+): Promise<
+  SceneBriefResult & {
+    essence?: string;
+    metaphorTitle?: string;
+    motifClass?: string;
+    subjectKind?: MetaphorSubjectKind;
+    composition?: MetaphorPitch['composition'];
+  }
+> {
   const ctx = [input.headline, input.summary].filter(Boolean).join('. ').trim();
   if (!ctx) return { scene: DEFAULT_SCENE, source: 'fallback' };
   const entities = extractWeeklyStoryEntities(input);
+  const siblings = input.siblingMetaphors ?? [];
 
   const essenceResult = await extractEditorialEssence(input, cfg);
   const essence: EditorialEssence = essenceResult?.essence ?? {
@@ -1195,12 +1375,13 @@ export async function weeklyReportageSceneBrief(
       continue;
     }
     const ranked = [...pitches].sort(
-      (a, b) => scoreMetaphorPitch(b, essence) - scoreMetaphorPitch(a, essence),
+      (a, b) =>
+        scoreMetaphorPitch(b, essence, siblings) - scoreMetaphorPitch(a, essence, siblings),
     );
     let chosen: MetaphorPitch | null = null;
     const aggregateErrors: string[] = [];
     for (const pitch of ranked) {
-      const errors = validateMetaphorPitch(pitch, essence, entities);
+      const errors = validateMetaphorPitch(pitch, essence, entities, siblings);
       if (errors.length === 0) {
         chosen = pitch;
         break;
@@ -1213,6 +1394,9 @@ export async function weeklyReportageSceneBrief(
         source: result.source || essenceSource || 'fallback',
         essence: essence.essence,
         metaphorTitle: chosen.title,
+        motifClass: chosen.motifClass,
+        subjectKind: chosen.subjectKind,
+        composition: chosen.composition,
       };
     }
     lastErrors = aggregateErrors.slice(0, 3);
@@ -1267,6 +1451,9 @@ export interface WeeklyReportageIllustrationResult {
   sceneSource: SceneSource;
   essence?: string;
   metaphorTitle?: string;
+  motifClass?: string;
+  subjectKind?: MetaphorSubjectKind;
+  composition?: MetaphorPitch['composition'];
 }
 
 /** Generates variant renders of the same editorial-concept scene. */
@@ -1279,6 +1466,9 @@ export async function generateWeeklyReportageIllustrations(
   let sceneSource: SceneSource;
   let essence: string | undefined;
   let metaphorTitle: string | undefined;
+  let motifClass: string | undefined;
+  let subjectKind: MetaphorSubjectKind | undefined;
+  let composition: MetaphorPitch['composition'] | undefined;
   if (override) {
     scene = cleanSceneText(override);
     sceneSource = 'owner';
@@ -1293,9 +1483,12 @@ export async function generateWeeklyReportageIllustrations(
           ? 'dual_contrast'
           : 'single',
         whyItFits: 'owner override',
+        motifClass: 'owner_override',
+        subjectKind: 'object',
       },
       { essence: input.headline || 'story', mustFeel: '', forbiddenCliches: [] },
       extractWeeklyStoryEntities(input),
+      input.siblingMetaphors,
     );
     if (ownerErrors.length) {
       logEvent('warn', 'publish', 'Owner scene_override failed weekly gates (using anyway)', {
@@ -1308,6 +1501,9 @@ export async function generateWeeklyReportageIllustrations(
     sceneSource = brief.source;
     essence = brief.essence;
     metaphorTitle = brief.metaphorTitle;
+    motifClass = brief.motifClass;
+    subjectKind = brief.subjectKind;
+    composition = brief.composition;
   }
   const positive = buildEditorialConceptPrompt(input.accent?.trim() || 'cool cyan', scene);
   const negative = negativePrompt();
@@ -1326,7 +1522,18 @@ export async function generateWeeklyReportageIllustrations(
       });
     }
   }
-  return variants.length ? { variants, scene, sceneSource, essence, metaphorTitle } : null;
+  return variants.length
+    ? {
+        variants,
+        scene,
+        sceneSource,
+        essence,
+        metaphorTitle,
+        motifClass,
+        subjectKind,
+        composition,
+      }
+    : null;
 }
 
 /** Keyword → concrete scene, so even without the model cards vary by topic (never a brain). */

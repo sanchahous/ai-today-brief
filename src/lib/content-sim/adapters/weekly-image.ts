@@ -1,6 +1,6 @@
 /**
- * Weekly story-image adapter for content-sim: FLUX generate → deterministic →
- * vision critic → repair directive (≤5) → pass or escalate.
+ * Weekly story-image adapter for content-sim: FLUX generate → per-variant
+ * deterministic + vision → pick best → repair directive (≤5) → pass or escalate.
  */
 
 import {
@@ -21,6 +21,13 @@ import {
 } from '@/lib/content-sim';
 import { generateWithVision } from '../../../../pipeline/providers/vision';
 
+export interface VariantScoreMeta {
+  index: number;
+  overall: number;
+  blockers: string[];
+  passed: boolean;
+}
+
 export interface WeeklyImageSimCandidate {
   bytes: Buffer;
   width: number;
@@ -35,40 +42,229 @@ export interface WeeklyImageSimCandidate {
   sceneSource: string;
   essence?: string;
   metaphorTitle?: string;
+  whyItFits?: string;
+  motifClass?: string;
+  subjectKind?: string;
+  composition?: string;
   alternateBuffers: Buffer[];
+  /** Per-variant QA scores (aligned with bytes + alternateBuffers order before pick). */
+  variantScores?: VariantScoreMeta[];
+  /** When set, skip a second vision call in the repair-loop critique. */
+  preCritique?: ContentSimCritique;
+  /** How primary was chosen for this candidate. */
+  pickSource?: 'auto' | 'owner';
 }
 
 export interface WeeklyImageSimContext {
   headline: string;
   summary?: string;
   policyId: string;
+  siblingScenes?: string[];
+}
+
+/** Cheap ranking when vision budget is nearly exhausted. */
+function heuristicVariantRank(bytes: Buffer): number {
+  return bytes.length;
+}
+
+/**
+ * Prefer highest overall among variants with zero blockers; if none pass,
+ * still return the highest overall index (caller escalates via critique).
+ */
+export function pickBestVariantIndex(
+  scores: Array<{ index: number; overall: number; blockers: string[] }>,
+): number {
+  if (scores.length === 0) return 0;
+  const passing = scores.filter((s) => s.blockers.length === 0);
+  const pool = passing.length > 0 ? passing : scores;
+  let best = pool[0]!;
+  for (let i = 1; i < pool.length; i += 1) {
+    const cur = pool[i]!;
+    if (cur.overall > best.overall) best = cur;
+  }
+  return best.index;
+}
+
+export async function critiqueWeeklyImageBytes(
+  input: {
+    bytes: Buffer;
+    width: number;
+    height: number;
+    scene: string;
+    essence?: string;
+    metaphorTitle?: string;
+    whyItFits?: string;
+  },
+  ctx: WeeklyImageSimContext,
+): Promise<ContentSimCritique> {
+  const deterministic = deterministicImageCritique({
+    width: input.width,
+    height: input.height,
+    byteSize: input.bytes.length,
+  });
+  if (deterministic && !deterministic.passed) return deterministic;
+
+  const prompt = buildImageCriticPrompt({
+    headline: ctx.headline,
+    essence: input.essence,
+    metaphorTitle: input.metaphorTitle,
+    whyItFits: input.whyItFits,
+    scene: input.scene,
+    policyId: ctx.policyId,
+    scoreThreshold: contentSimScoreThreshold(),
+    siblingScenes: ctx.siblingScenes,
+  });
+  const result = await generateWithVision('weekly.image_critic', {
+    prompt,
+    imageBytes: input.bytes,
+    mimeType: 'image/jpeg',
+  });
+  return parseImageCriticResponse(result.text, contentSimScoreThreshold());
 }
 
 export async function critiqueWeeklyImageCandidate(
   candidate: WeeklyImageSimCandidate,
   ctx: WeeklyImageSimContext,
 ): Promise<ContentSimCritique> {
-  const deterministic = deterministicImageCritique({
-    width: candidate.width,
-    height: candidate.height,
-    byteSize: candidate.bytes.length,
-  });
-  if (deterministic && !deterministic.passed) return deterministic;
+  if (candidate.preCritique) return candidate.preCritique;
+  return critiqueWeeklyImageBytes(
+    {
+      bytes: candidate.bytes,
+      width: candidate.width,
+      height: candidate.height,
+      scene: candidate.scene,
+      essence: candidate.essence,
+      metaphorTitle: candidate.metaphorTitle,
+      whyItFits: candidate.whyItFits,
+    },
+    ctx,
+  );
+}
 
-  const prompt = buildImageCriticPrompt({
-    headline: ctx.headline,
-    essence: candidate.essence,
-    metaphorTitle: candidate.metaphorTitle,
-    scene: candidate.scene,
-    policyId: ctx.policyId,
-    scoreThreshold: contentSimScoreThreshold(),
-  });
-  const result = await generateWithVision('weekly.image_critic', {
-    prompt,
-    imageBytes: candidate.bytes,
-    mimeType: 'image/jpeg',
-  });
-  return parseImageCriticResponse(result.text, contentSimScoreThreshold());
+/**
+ * Vision-score each buffer; pick best as primary. When remaining budget is
+ * tight, vision only the top heuristic variant and mark others unscored.
+ */
+export async function scoreAndPickVariants(
+  candidate: WeeklyImageSimCandidate,
+  ctx: WeeklyImageSimContext,
+  options: { remainingBudgetUsd: number },
+): Promise<WeeklyImageSimCandidate> {
+  const buffers = [candidate.bytes, ...candidate.alternateBuffers];
+  if (buffers.length <= 1) {
+    const critique = await critiqueWeeklyImageCandidate(candidate, ctx);
+    return {
+      ...candidate,
+      preCritique: critique,
+      pickSource: 'auto',
+      variantScores: [
+        {
+          index: 0,
+          overall: critique.scores.overall,
+          blockers: critique.blockers.map((b) => b.code),
+          passed: critique.passed,
+        },
+      ],
+    };
+  }
+
+  const visionCost = contentSimVisionCriticEstimatedUsd();
+  const canScoreAll = options.remainingBudgetUsd >= visionCost * buffers.length;
+  const scores: VariantScoreMeta[] = [];
+  const critiques: ContentSimCritique[] = [];
+
+  if (canScoreAll) {
+    for (let index = 0; index < buffers.length; index += 1) {
+      const bytes = buffers[index]!;
+      const critique = await critiqueWeeklyImageBytes(
+        {
+          bytes,
+          width: candidate.width,
+          height: candidate.height,
+          scene: candidate.scene,
+          essence: candidate.essence,
+          metaphorTitle: candidate.metaphorTitle,
+          whyItFits: candidate.whyItFits,
+        },
+        ctx,
+      );
+      critiques[index] = critique;
+      scores.push({
+        index,
+        overall: critique.scores.overall,
+        blockers: critique.blockers.map((b) => b.code),
+        passed: critique.passed,
+      });
+    }
+  } else {
+    let bestIdx = 0;
+    let bestRank = heuristicVariantRank(buffers[0]!);
+    for (let i = 1; i < buffers.length; i += 1) {
+      const rank = heuristicVariantRank(buffers[i]!);
+      if (rank > bestRank) {
+        bestRank = rank;
+        bestIdx = i;
+      }
+    }
+    for (let index = 0; index < buffers.length; index += 1) {
+      if (index !== bestIdx) {
+        scores.push({
+          index,
+          overall: 0,
+          blockers: ['budget_skip'],
+          passed: false,
+        });
+        critiques[index] = {
+          passed: false,
+          scores: { overall: 0 },
+          blockers: [
+            {
+              code: 'budget_skip',
+              message: 'Vision skipped due to spend budget; heuristic rank only.',
+              blocker: true,
+            },
+          ],
+        };
+        continue;
+      }
+      const critique = await critiqueWeeklyImageBytes(
+        {
+          bytes: buffers[index]!,
+          width: candidate.width,
+          height: candidate.height,
+          scene: candidate.scene,
+          essence: candidate.essence,
+          metaphorTitle: candidate.metaphorTitle,
+          whyItFits: candidate.whyItFits,
+        },
+        ctx,
+      );
+      critiques[index] = critique;
+      scores.push({
+        index,
+        overall: critique.scores.overall,
+        blockers: critique.blockers.map((b) => b.code),
+        passed: critique.passed,
+      });
+    }
+  }
+
+  const bestIndex = pickBestVariantIndex(scores);
+  const primaryBytes = buffers[bestIndex]!;
+  const alternates = buffers.filter((_, i) => i !== bestIndex);
+  const reorderedScores = [
+    scores.find((s) => s.index === bestIndex)!,
+    ...scores.filter((s) => s.index !== bestIndex),
+  ].map((s, orderIndex) => ({ ...s, index: orderIndex }));
+
+  return {
+    ...candidate,
+    bytes: primaryBytes,
+    alternateBuffers: alternates,
+    variantScores: reorderedScores,
+    preCritique: critiques[bestIndex],
+    pickSource: 'auto',
+  };
 }
 
 export function applyRepairToSceneInput(
@@ -140,31 +336,35 @@ export async function runWeeklyImageSimLoop(input: {
       finalScores: candidate ? { overall: 100 } : undefined,
     };
     return {
-      candidate,
+      candidate: candidate
+        ? { ...candidate, pickSource: candidate.pickSource ?? 'auto' }
+        : null,
       report,
       meta: toContentSimArtifactMeta(report),
     };
   }
 
+  let spentUsd = 0;
+  const maxSpend = contentSimMaxImageSpendUsd();
+
   const { report, artifact } = await runRepairLoop<WeeklyImageSimCandidate>({
     adapter: 'weekly-image',
     maxAttempts: contentSimMaxImageRepairAttempts(),
-    maxSpendUsd: contentSimMaxImageSpendUsd(),
+    maxSpendUsd: maxSpend,
     generate: async ({ attempt, directive }) => {
       const repaired = applyRepairToSceneInput(
         { sceneOverride: input.sceneOverride, seedBase: input.seedBase },
         attempt,
         directive,
       );
-      const candidate = await input.generate({
+      const raw = await input.generate({
         attempt,
         sceneOverride: repaired.sceneOverride,
         seedBase: repaired.seedBase,
         promptSuffix: repaired.promptSuffix,
         directive,
       });
-      if (!candidate) {
-        // Deterministic critique will fail dimensions/bytes; loop continues or escalates.
+      if (!raw) {
         return {
           artifact: {
             bytes: Buffer.alloc(0),
@@ -185,13 +385,22 @@ export async function runWeeklyImageSimLoop(input: {
         };
       }
       if (repaired.promptSuffix) {
-        candidate.positivePrompt = `${candidate.positivePrompt}${repaired.promptSuffix}`;
-        candidate.scene = `${candidate.scene}${repaired.promptSuffix}`;
+        raw.positivePrompt = `${raw.positivePrompt}${repaired.promptSuffix}`;
+        raw.scene = `${raw.scene}${repaired.promptSuffix}`;
       }
+      const remaining = Math.max(0, maxSpend - spentUsd - raw.estimatedCostUsd);
+      const picked = await scoreAndPickVariants(raw, input.ctx, {
+        remainingBudgetUsd: remaining,
+      });
+      const visionCalls = picked.variantScores?.filter((s) => !s.blockers.includes('budget_skip'))
+        .length ?? 1;
+      const costUsd =
+        picked.estimatedCostUsd + visionCalls * contentSimVisionCriticEstimatedUsd();
+      spentUsd += costUsd;
       return {
-        artifact: candidate,
-        promptSummary: candidate.scene.slice(0, 400),
-        costUsd: candidate.estimatedCostUsd + contentSimVisionCriticEstimatedUsd(),
+        artifact: picked,
+        promptSummary: picked.scene.slice(0, 400),
+        costUsd,
       };
     },
     deterministicCritique: (candidate) =>

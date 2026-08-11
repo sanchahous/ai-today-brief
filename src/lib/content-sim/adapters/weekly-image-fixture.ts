@@ -21,12 +21,14 @@ export interface WeeklyImageFixture {
   summary?: string;
   essence?: string;
   metaphorTitle?: string;
+  whyItFits?: string;
   scene?: string;
   /** Path to a JPEG/PNG to critique. */
   imagePath?: string;
   policyId?: string;
   width?: number;
   height?: number;
+  siblingScenes?: string[];
 }
 
 function loadFixture(path: string): WeeklyImageFixture {
@@ -88,6 +90,7 @@ export async function runWeeklyImageFixtureSim(
         sceneSource: 'fixture',
         essence: fixture.essence,
         metaphorTitle: fixture.metaphorTitle,
+        whyItFits: fixture.whyItFits,
         alternateBuffers: [],
       };
       const iterPath = join(outDir, 'iterations', `${attempt}.json`);
@@ -106,7 +109,8 @@ export async function runWeeklyImageFixtureSim(
       critiqueWeeklyImageCandidate(candidate, {
         headline: fixture.headline,
         summary: fixture.summary,
-        policyId: fixture.policyId ?? 'weekly-editorial-concept-v1',
+        policyId: fixture.policyId ?? 'weekly-editorial-concept-v2',
+        siblingScenes: fixture.siblingScenes,
       }),
   });
 

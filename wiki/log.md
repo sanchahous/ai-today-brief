@@ -6,6 +6,21 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-11
 
+## 2026-08-11 — Weekly illustration flow overhaul (editorial-concept-v2)
+
+**Джерело:** ревʼю Stories 1/2/7 (`ai-weekly-2026-08-02`) — bias theater/journal у промпті й
+скорері; physics fail; primary без ранжування 3 variants. План `illustration_flow_overhaul`.
+
+**Змінено:**
+- `pipeline/card-image.ts` — `WEEKLY_PROMPT_POLICY = weekly-editorial-concept-v2`:
+  `motifClass`/`subjectKind`, `siblingMetaphors`, rewrite metaphor prompt/score (без
+  theater/journal gold-standard boost), sibling gates у `validateMetaphorPitch`.
+- Vision critic — blockers `impossible_orientation` / `prop_use_mismatch` /
+  `decorative_second_beat` / `sibling_echo`.
+- `adapters/weekly-image.ts` — per-variant QA + `pickBestVariantIndex`; metadata
+  `variant_scores` / `pick_source`; worker збирає sibling metadata; Visuals UI chips.
+- Wiki: card-images, content-sim, weekly-digest, overview, now.
+
 ## 2026-08-11 — Content Simulation & Backtest System
 
 **Джерело:** план власника (універсальна симуляція daily+weekly+images; vision critic ≤5
