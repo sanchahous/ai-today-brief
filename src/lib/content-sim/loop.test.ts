@@ -45,8 +45,9 @@ describe('extractJsonObject', () => {
     expect(extractJsonObject('note\n{"a":2}\ntrailing')).toEqual({ a: 2 });
   });
 
-  it('throws when no object is present', () => {
-    expect(() => extractJsonObject('no json here')).toThrow(/No JSON object/);
+  it('returns null when no object is present', () => {
+    expect(extractJsonObject('no json here')).toBeNull();
+    expect(extractJsonObject('')).toBeNull();
   });
 });
 
@@ -114,6 +115,16 @@ describe('parseImageCriticResponse', () => {
     expect(critique.blockers.map((b) => b.code)).toEqual(
       expect.arrayContaining(['off_news', 'melted_motion']),
     );
+  });
+
+  it('soft-fails when the critic returns prose instead of JSON', () => {
+    const critique = parseImageCriticResponse(
+      'I looked at the image and it seems fine, overall ninety.',
+      80,
+    );
+    expect(critique.passed).toBe(false);
+    expect(critique.blockers.some((b) => b.code === 'critic_parse_error')).toBe(true);
+    expect(critique.repairDirective?.changeSeed).toBe(true);
   });
 
   it('fails on readable_text even with high score', () => {

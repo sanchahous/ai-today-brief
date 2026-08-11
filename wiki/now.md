@@ -9,6 +9,10 @@ Last updated: 2026-08-11
 
 ## Стан репозиторію
 
+- **Vision critic JSON soft-fail (2026-08-11):** prose/empty vision response →
+  `critic_parse_error` + repair, не terminal `story_image` fail. Див.
+  [content-sim](pipeline/content-sim.md).
+
 - **Weekly illustration fidelity v3 (2026-08-11):** policy `weekly-editorial-concept-v3` —
   `mechanism` + `reader_test` на essence; gate `mechanism_not_visible`; ban motion-blur у
   pitch; vision `off_news` / `melted_motion` + `news_legibility` (overall clamp); Visuals

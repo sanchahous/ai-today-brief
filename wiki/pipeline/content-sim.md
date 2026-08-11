@@ -41,7 +41,9 @@ Adapters: `weekly-master` (делегує `weekly:sandbox`), `weekly-image`, `da
    плюс editorial fidelity: **`off_news`** (картинка не аргументує distinctive mechanism),
    **`melted_motion`** (smeared/blur artifacts). `overall` clamp:
    `min(overall, news_legibility + 5)` — craft не може дати «голий» 100 при слабкій новині.
-   Prompt отримує `mechanism` + `readerTest` + headline.
+   Prompt отримує `mechanism` + `readerTest` + headline. Якщо vision повертає prose замість
+   JSON — **`critic_parse_error`** (soft-fail → repair/retry), а не hard-fail усієї
+   `story_image` джоби.
 4. Repair directive → новий seed / scene_override / prompt patches / reject metaphor.
 5. Максимум **`CONTENT_SIM_MAX_IMAGE_REPAIR=5`** спроб; spend cap `CONTENT_SIM_MAX_IMAGE_SPEND_USD`.
 6. Fail → `needs_human_review` + escalation (blockers + suggested actions). Джоба **не** валиться.

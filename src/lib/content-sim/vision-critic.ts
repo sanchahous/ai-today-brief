@@ -156,9 +156,14 @@ function parseRepair(raw: unknown): ContentSimRepairDirective | undefined {
   };
 }
 
-/** Extract first JSON object from a model response (tolerates fences). */
-export function extractJsonObject(text: string): unknown {
+/**
+ * Extract first JSON object from a model response (tolerates fences).
+ * Returns null when the model returns prose / empty / truncated garbage —
+ * callers must soft-fail (never throw through scoreAndPickVariants).
+ */
+export function extractJsonObject(text: string): unknown | null {
   const trimmed = text.trim();
+  if (!trimmed) return null;
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const candidate = fenced?.[1]?.trim() ?? trimmed;
   try {
@@ -166,16 +171,51 @@ export function extractJsonObject(text: string): unknown {
   } catch {
     const start = candidate.indexOf('{');
     const end = candidate.lastIndexOf('}');
-    if (start === -1 || end <= start) throw new SyntaxError('No JSON object in critic response');
-    return JSON.parse(candidate.slice(start, end + 1)) as unknown;
+    if (start === -1 || end <= start) return null;
+    try {
+      return JSON.parse(candidate.slice(start, end + 1)) as unknown;
+    } catch {
+      return null;
+    }
   }
+}
+
+function criticParseFailure(reason: string): ContentSimCritique {
+  return {
+    passed: false,
+    scores: { overall: 0, news_legibility: 0, craft: 0 },
+    blockers: [
+      {
+        code: 'critic_parse_error',
+        message: reason,
+        blocker: true,
+      },
+    ],
+    notes: reason,
+    repairDirective: {
+      changeSeed: true,
+      suggestedActions: ['Retry vision critic with a fresh seed'],
+    },
+  };
 }
 
 export function parseImageCriticResponse(
   text: string,
   scoreThreshold = contentSimScoreThreshold(),
 ): ContentSimCritique {
-  const parsed = asRecord(extractJsonObject(text));
+  let raw: unknown;
+  try {
+    raw = extractJsonObject(text);
+  } catch {
+    return criticParseFailure('Vision critic response could not be parsed as JSON.');
+  }
+  if (raw == null) {
+    return criticParseFailure('No JSON object in critic response');
+  }
+  const parsed = asRecord(raw);
+  if (Object.keys(parsed).length === 0 && typeof raw !== 'object') {
+    return criticParseFailure('Critic JSON was empty or not an object.');
+  }
   const dimensions = asRecord(parsed.dimensions);
   const rawOverall = num(parsed.overall, num(dimensions.overall, 0));
   const newsLegibility = num(dimensions.news_legibility, rawOverall);

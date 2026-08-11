@@ -6,6 +6,14 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-11
 
+## 2026-08-11 — Vision critic JSON soft-fail (story_image)
+
+**Джерело:** live fail `story_image` на digest `843975a8…` — `last_error: No JSON object in
+critic response` (code `unknown`); throw у `scoreAndPickVariants` (до try/catch repair loop).
+
+**Змінено:** `parseImageCriticResponse` / `extractJsonObject` більше не кидають — повертають
+`critic_parse_error` + `changeSeed` repair; джоба йде в retry/escalation замість terminal fail.
+
 ## 2026-08-11 — Illustration fidelity: mechanism anchor + honest critic (v3)
 
 **Джерело:** ревʼю Stories 2/3/6/7 після v2 regen — critic давав 100 за craft+match до pitched
