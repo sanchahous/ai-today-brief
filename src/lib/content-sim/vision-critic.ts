@@ -14,6 +14,10 @@ export const IMAGE_CRITIC_BLOCKER_CODES = [
   'banned_cliche',
   'off_metaphor',
   'off_news',
+  'missing_context',
+  'missing_mechanism',
+  'missing_consequence',
+  'ambiguous_visual_story',
   'melted_motion',
   'brand_unsafe',
   'low_quality',
@@ -43,8 +47,19 @@ export function clampOverallByNewsLegibility(overall: number, newsLegibility: nu
 
 export function buildImageCriticPrompt(input: {
   headline: string;
+  summary?: string;
+  why?: string;
+  practical?: string;
+  limitation?: string;
+  takeaway?: string;
+  claimsExcerpt?: string;
+  editorialAngle?: string;
+  storyContext?: string;
+  meaning?: string;
   essence?: string;
   mechanism?: string;
+  consequence?: string;
+  visualThesis?: string;
   readerTest?: string;
   metaphorTitle?: string;
   whyItFits?: string;
@@ -55,32 +70,56 @@ export function buildImageCriticPrompt(input: {
 }): string {
   const threshold = input.scoreThreshold ?? contentSimScoreThreshold();
   const newsFloor = newsLegibilityThreshold(threshold);
-  const siblingBlock =
-    input.siblingScenes?.length ?
-      [
+  const semanticStory =
+    input.policyId?.startsWith('weekly-') === true ||
+    Boolean(input.storyContext || input.meaning || input.consequence || input.visualThesis);
+  const siblingBlock = input.siblingScenes?.length
+    ? [
         'Sibling scenes already used in this digest (flag sibling_echo if this image rhymes with them):',
         ...input.siblingScenes.slice(0, 6).map((s, i) => `  ${i + 1}. ${s.slice(0, 160)}`),
       ].join('\n')
     : '';
   return [
     'You are the art director QA for AI Today Brief.',
-    `Policy: ${input.policyId ?? 'weekly-editorial-concept-v3'} (no readable text, no UI chrome, no comic panels/collage).`,
-    `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, AND no blocking issues.`,
-    'Blocking codes (use exactly): readable_text | ui_chrome | collage_panels | banned_cliche | off_metaphor | off_news | melted_motion | brand_unsafe | low_quality | wrong_subject | impossible_orientation | prop_use_mismatch | decorative_second_beat | sibling_echo.',
+    `Policy: ${input.policyId ?? 'weekly-semantic-story-v4'} (no readable text, no UI chrome, no comic panels/collage).`,
+    semanticStory
+      ? `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, context_fidelity >= ${newsFloor}, mechanism_legibility >= ${newsFloor}, consequence_legibility >= ${newsFloor}, instant_comprehension >= ${newsFloor}, AND no blocking issues.`
+      : `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, AND no blocking issues.`,
+    'Blocking codes (use exactly): readable_text | ui_chrome | collage_panels | banned_cliche | off_metaphor | off_news | missing_context | missing_mechanism | missing_consequence | ambiguous_visual_story | melted_motion | brand_unsafe | low_quality | wrong_subject | impossible_orientation | prop_use_mismatch | decorative_second_beat | sibling_echo.',
     'banned_cliche includes: terminal/IDE screens, paper-heap sludge, generic desk without a conceptual prop.',
     'Editorial fidelity (news first):',
-    '- off_news: the image could illustrate almost any tech story; it does not make THIS story’s distinctive mechanism visible. Score news_legibility low.',
+    '- Treat SOURCE STORY below as truth. Treat the generated semantic contract and scene brief as hypotheses to verify against it.',
+    '- missing_context: the image lacks a specific anchor for who/what changed in THIS story.',
+    '- missing_mechanism: the causal process is absent, decorative, or only explained in the prompt rather than visible.',
+    '- missing_consequence: no grounded benefit, harm, trade-off, or uncertainty is visibly caused by the mechanism.',
+    '- ambiguous_visual_story: anchor, cause, and result exist as props but their relationship is not instantly readable.',
+    '- off_news: the image could illustrate almost any tech story, or argues a different claim than the source story.',
     '- melted_motion: smeared shuttles, melted limbs, motion-lag blobs, streaking blur that destroys silhouette readability.',
-    'Ask yourself: would a developer infer THIS story’s distinctive claim from the image alone?',
+    semanticStory
+      ? 'Ask yourself, in order: What changed? How? So what? Could a developer infer all three in under three seconds without seeing the prompt?'
+      : 'Ask yourself: would a developer connect this image to the named story rather than generic technology?',
     'Physics / craft checks:',
     '- impossible_orientation: readable surfaces (books, journals, screens, signs) upside-down or rotated vs how a human would use them.',
     '- prop_use_mismatch: grip, posture, or object use that a human would not do this way.',
     '- decorative_second_beat: second half of a dual/contrast frame that does not argue the essence (ballerinas, props that are mood-only).',
     '- sibling_echo: composition/subject rhymes with a sibling scene listed below.',
     '',
+    'SOURCE STORY (authority):',
     `Headline: ${input.headline}`,
+    input.summary ? `Summary: ${input.summary}` : '',
+    input.why ? `Why it matters: ${input.why}` : '',
+    input.practical ? `Practical benefit/use: ${input.practical}` : '',
+    input.limitation ? `Limitation/counterweight: ${input.limitation}` : '',
+    input.takeaway ? `Takeaway: ${input.takeaway}` : '',
+    input.claimsExcerpt ? `Approved claims: ${input.claimsExcerpt}` : '',
+    input.editorialAngle ? `Binding editorial angle: ${input.editorialAngle}` : '',
+    'GENERATED SEMANTIC CONTRACT (must remain faithful to source):',
+    input.storyContext ? `Context: ${input.storyContext}` : '',
+    input.meaning ? `Meaning: ${input.meaning}` : '',
     input.essence ? `Essence: ${input.essence}` : '',
     input.mechanism ? `Mechanism that must be visible: ${input.mechanism}` : '',
+    input.consequence ? `Consequence that must be visible: ${input.consequence}` : '',
+    input.visualThesis ? `Visual thesis: ${input.visualThesis}` : '',
     input.readerTest ? `Reader test: ${input.readerTest}` : '',
     input.metaphorTitle ? `Metaphor: ${input.metaphorTitle}` : '',
     input.whyItFits ? `Why it fits: ${input.whyItFits}` : '',
@@ -90,11 +129,11 @@ export function buildImageCriticPrompt(input: {
     'Inspect the attached image. Reply with ONLY JSON:',
     '{',
     '  "overall": number,',
-    '  "dimensions": { "metaphor_fit": number, "no_text": number, "craft": number, "brand_safe": number, "news_legibility": number },',
+    '  "dimensions": { "metaphor_fit": number, "no_text": number, "craft": number, "brand_safe": number, "news_legibility": number, "context_fidelity": number, "mechanism_legibility": number, "consequence_legibility": number, "instant_comprehension": number },',
     '  "blockers": [{ "code": string, "message": string, "region": string }],',
     '  "notes": string,',
     '  "repair": {',
-    '    "prompt_patches": string[],',
+    '    "prompt_patches": ["concrete depictable changes for the next image render, never abstract critique"],',
     '    "reject_metaphor": boolean,',
     '    "scene_override": string | null,',
     '    "change_seed": boolean,',
@@ -202,6 +241,7 @@ function criticParseFailure(reason: string): ContentSimCritique {
 export function parseImageCriticResponse(
   text: string,
   scoreThreshold = contentSimScoreThreshold(),
+  options: { requireStorySemantics?: boolean } = {},
 ): ContentSimCritique {
   let raw: unknown;
   try {
@@ -219,7 +259,21 @@ export function parseImageCriticResponse(
   const dimensions = asRecord(parsed.dimensions);
   const rawOverall = num(parsed.overall, num(dimensions.overall, 0));
   const newsLegibility = num(dimensions.news_legibility, rawOverall);
-  const overall = clampOverallByNewsLegibility(rawOverall, newsLegibility);
+  const semanticFallback = options.requireStorySemantics ? 0 : rawOverall;
+  const contextFidelity = num(dimensions.context_fidelity, semanticFallback);
+  const mechanismLegibility = num(dimensions.mechanism_legibility, semanticFallback);
+  const consequenceLegibility = num(dimensions.consequence_legibility, semanticFallback);
+  const instantComprehension = num(dimensions.instant_comprehension, semanticFallback);
+  const semanticMin = Math.min(
+    contextFidelity,
+    mechanismLegibility,
+    consequenceLegibility,
+    instantComprehension,
+  );
+  const newsClamped = clampOverallByNewsLegibility(rawOverall, newsLegibility);
+  const overall = options.requireStorySemantics
+    ? Math.min(newsClamped, semanticMin + 5)
+    : newsClamped;
   const blockers = parseBlockers(parsed.blockers);
   const scores = {
     overall,
@@ -228,14 +282,26 @@ export function parseImageCriticResponse(
     craft: num(dimensions.craft, overall),
     brand_safe: num(dimensions.brand_safe, overall),
     news_legibility: newsLegibility,
+    context_fidelity: contextFidelity,
+    mechanism_legibility: mechanismLegibility,
+    consequence_legibility: consequenceLegibility,
+    instant_comprehension: instantComprehension,
+    semantic_min: semanticMin,
   };
   const newsFloor = newsLegibilityThreshold(scoreThreshold);
   const hasOffNews = blockers.some((b) => b.code === 'off_news');
+  const semanticPass =
+    !options.requireStorySemantics ||
+    (contextFidelity >= newsFloor &&
+      mechanismLegibility >= newsFloor &&
+      consequenceLegibility >= newsFloor &&
+      instantComprehension >= newsFloor);
   const passed =
     blockers.length === 0 &&
     !hasOffNews &&
     overall >= scoreThreshold &&
-    newsLegibility >= newsFloor;
+    newsLegibility >= newsFloor &&
+    semanticPass;
   return {
     passed,
     scores,

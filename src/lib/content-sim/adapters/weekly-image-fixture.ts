@@ -19,8 +19,18 @@ import { critiqueWeeklyImageCandidate, type WeeklyImageSimCandidate } from './we
 export interface WeeklyImageFixture {
   headline: string;
   summary?: string;
+  why?: string;
+  practical?: string;
+  limitation?: string;
+  takeaway?: string;
+  claimsExcerpt?: string;
+  editorialAngle?: string;
+  storyContext?: string;
+  meaning?: string;
   essence?: string;
   mechanism?: string;
+  consequence?: string;
+  visualThesis?: string;
   readerTest?: string;
   metaphorTitle?: string;
   whyItFits?: string;
@@ -54,7 +64,8 @@ export async function runWeeklyImageFixtureSim(
       blockers: [
         {
           code: 'fixture_image_missing',
-          message: 'Fixture has no readable imagePath — capture a render before running vision sim.',
+          message:
+            'Fixture has no readable imagePath — capture a render before running vision sim.',
           blocker: true,
         },
       ],
@@ -90,8 +101,12 @@ export async function runWeeklyImageFixtureSim(
         positivePrompt: scene,
         negativePrompt: '',
         sceneSource: 'fixture',
+        storyContext: fixture.storyContext,
+        meaning: fixture.meaning,
         essence: fixture.essence,
         mechanism: fixture.mechanism,
+        consequence: fixture.consequence,
+        visualThesis: fixture.visualThesis,
         readerTest: fixture.readerTest,
         metaphorTitle: fixture.metaphorTitle,
         whyItFits: fixture.whyItFits,
@@ -113,7 +128,13 @@ export async function runWeeklyImageFixtureSim(
       critiqueWeeklyImageCandidate(candidate, {
         headline: fixture.headline,
         summary: fixture.summary,
-        policyId: fixture.policyId ?? 'weekly-editorial-concept-v3',
+        why: fixture.why,
+        practical: fixture.practical,
+        limitation: fixture.limitation,
+        takeaway: fixture.takeaway,
+        claimsExcerpt: fixture.claimsExcerpt,
+        editorialAngle: fixture.editorialAngle,
+        policyId: fixture.policyId ?? 'weekly-semantic-story-v4',
         siblingScenes: fixture.siblingScenes,
       }),
   });

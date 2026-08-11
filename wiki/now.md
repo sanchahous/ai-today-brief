@@ -9,6 +9,16 @@ Last updated: 2026-08-11
 
 ## Стан репозиторію
 
+- **Weekly semantic illustration v4 (2026-08-11):** актуальний policy
+  `weekly-semantic-story-v4` замінив self-referential essence-only перевірку на contract
+  `context → meaning → mechanism → consequence → visual thesis`. Worker тепер передає
+  practical/limitation/takeaway й approved research замість `[object Object]` claims; gate не
+  зараховує невидимий `why_it_fits`; `dual_contrast` більше не інʼєктить backstage у кожну
+  story; critic gate-ить чотири semantic dimensions, а repair patch реально потрапляє в наступний
+  FLUX request. Visuals показує semantic contract + `semantic · news · craft`. (source:
+  `pipeline/card-image.ts`, `src/lib/content-sim/vision-critic.ts`,
+  `src/lib/weekly-digest/generation-worker.ts`, owner prompt review 2026-08-11)
+
 - **Vision critic JSON soft-fail (2026-08-11):** prose/empty vision response →
   `critic_parse_error` + repair, не terminal `story_image` fail. Див.
   [content-sim](pipeline/content-sim.md).

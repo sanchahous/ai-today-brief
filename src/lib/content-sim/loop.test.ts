@@ -1,9 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { contentSimMaxImageRepairAttempts, CONTENT_SIM_DEFAULTS } from './config';
 import { deterministicImageCritique } from './deterministic-image';
-import { buildEscalationPackage, contentSimGateCleared, toContentSimArtifactMeta } from './escalation';
+import {
+  buildEscalationPackage,
+  contentSimGateCleared,
+  toContentSimArtifactMeta,
+} from './escalation';
 import { runRepairLoop } from './loop';
-import { buildImageCriticPrompt, clampOverallByNewsLegibility, extractJsonObject, newsLegibilityThreshold, parseImageCriticResponse } from './vision-critic';
+import {
+  buildImageCriticPrompt,
+  clampOverallByNewsLegibility,
+  extractJsonObject,
+  newsLegibilityThreshold,
+  parseImageCriticResponse,
+} from './vision-critic';
 import type { ContentSimCritique } from './types';
 
 describe('content-sim config', () => {
@@ -15,9 +25,7 @@ describe('content-sim config', () => {
 
 describe('deterministicImageCritique', () => {
   it('returns null for a healthy 16:9 frame', () => {
-    expect(
-      deterministicImageCritique({ width: 1600, height: 900, byteSize: 120_000 }),
-    ).toBeNull();
+    expect(deterministicImageCritique({ width: 1600, height: 900, byteSize: 120_000 })).toBeNull();
   });
 
   it('flags tiny frames without calling vision', () => {
@@ -91,6 +99,42 @@ describe('parseImageCriticResponse', () => {
     );
     expect(critique.scores.overall).toBe(65);
     expect(critique.passed).toBe(false);
+  });
+
+  it('fails weekly story semantics when any context -> mechanism -> consequence score is missing', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 95,
+        dimensions: { news_legibility: 95, craft: 95 },
+        blockers: [],
+      }),
+      80,
+      { requireStorySemantics: true },
+    );
+    expect(critique.passed).toBe(false);
+    expect(critique.scores.semantic_min).toBe(0);
+    expect(critique.scores.overall).toBe(5);
+  });
+
+  it('clamps weekly overall to the weakest semantic dimension', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 96,
+        dimensions: {
+          news_legibility: 92,
+          context_fidelity: 91,
+          mechanism_legibility: 88,
+          consequence_legibility: 54,
+          instant_comprehension: 86,
+        },
+        blockers: [],
+      }),
+      80,
+      { requireStorySemantics: true },
+    );
+    expect(critique.passed).toBe(false);
+    expect(critique.scores.semantic_min).toBe(54);
+    expect(critique.scores.overall).toBe(59);
   });
 
   it('parses off_news and melted_motion blockers', () => {
@@ -325,8 +369,15 @@ describe('buildImageCriticPrompt', () => {
   it('includes physics codes, mechanism, and sibling scenes', () => {
     const prompt = buildImageCriticPrompt({
       headline: 'Agents burn energy',
+      summary: 'Repeated agent loops consume far more electricity than a chat response.',
+      practical: 'Teams can include electricity in automation cost decisions.',
+      limitation: 'The measurement covers one workflow.',
+      storyContext: 'An agentic coding workflow repeats model calls and tool runs.',
+      meaning: 'Convenience hides infrastructure cost.',
       essence: 'Invisible wattage from agentic loops',
       mechanism: 'agentic coding loops that burn energy',
+      consequence: 'extra electricity becomes waste heat and operating cost',
+      visualThesis: 'repeated loops feed a visible furnace of waste heat',
       readerTest: 'grasp: agentic work costs far more wattage than chat',
       whyItFits: 'tiny orb vs furnace',
       siblingScenes: ['clay golem guarding a sealed journal'],
@@ -340,5 +391,8 @@ describe('buildImageCriticPrompt', () => {
     expect(prompt).toContain('clay golem');
     expect(prompt).toContain('Invisible wattage');
     expect(prompt).toContain('agentic coding loops');
+    expect(prompt).toContain('What changed? How? So what?');
+    expect(prompt).toContain('missing_consequence');
+    expect(prompt).toContain('extra electricity becomes waste heat');
   });
 });

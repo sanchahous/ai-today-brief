@@ -28,6 +28,11 @@ export interface VariantScoreMeta {
   passed: boolean;
   news_legibility?: number;
   craft?: number;
+  context_fidelity?: number;
+  mechanism_legibility?: number;
+  consequence_legibility?: number;
+  instant_comprehension?: number;
+  semantic_min?: number;
 }
 
 export interface WeeklyImageSimCandidate {
@@ -42,11 +47,18 @@ export interface WeeklyImageSimCandidate {
   positivePrompt: string;
   negativePrompt: string;
   sceneSource: string;
+  storyContext?: string;
+  meaning?: string;
   essence?: string;
   mechanism?: string;
+  consequence?: string;
+  visualThesis?: string;
   readerTest?: string;
   metaphorTitle?: string;
   whyItFits?: string;
+  storyAnchor?: string;
+  visibleMechanism?: string;
+  visibleConsequence?: string;
   motifClass?: string;
   subjectKind?: string;
   composition?: string;
@@ -70,12 +82,36 @@ function variantScoreFromCritique(index: number, critique: ContentSimCritique): 
         ? critique.scores.news_legibility
         : undefined,
     craft: typeof critique.scores.craft === 'number' ? critique.scores.craft : undefined,
+    context_fidelity:
+      typeof critique.scores.context_fidelity === 'number'
+        ? critique.scores.context_fidelity
+        : undefined,
+    mechanism_legibility:
+      typeof critique.scores.mechanism_legibility === 'number'
+        ? critique.scores.mechanism_legibility
+        : undefined,
+    consequence_legibility:
+      typeof critique.scores.consequence_legibility === 'number'
+        ? critique.scores.consequence_legibility
+        : undefined,
+    instant_comprehension:
+      typeof critique.scores.instant_comprehension === 'number'
+        ? critique.scores.instant_comprehension
+        : undefined,
+    semantic_min:
+      typeof critique.scores.semantic_min === 'number' ? critique.scores.semantic_min : undefined,
   };
 }
 
 export interface WeeklyImageSimContext {
   headline: string;
   summary?: string;
+  why?: string;
+  practical?: string;
+  limitation?: string;
+  takeaway?: string;
+  claimsExcerpt?: string;
+  editorialAngle?: string;
   policyId: string;
   siblingScenes?: string[];
 }
@@ -109,8 +145,12 @@ export async function critiqueWeeklyImageBytes(
     width: number;
     height: number;
     scene: string;
+    storyContext?: string;
+    meaning?: string;
     essence?: string;
     mechanism?: string;
+    consequence?: string;
+    visualThesis?: string;
     readerTest?: string;
     metaphorTitle?: string;
     whyItFits?: string;
@@ -126,8 +166,19 @@ export async function critiqueWeeklyImageBytes(
 
   const prompt = buildImageCriticPrompt({
     headline: ctx.headline,
+    summary: ctx.summary,
+    why: ctx.why,
+    practical: ctx.practical,
+    limitation: ctx.limitation,
+    takeaway: ctx.takeaway,
+    claimsExcerpt: ctx.claimsExcerpt,
+    editorialAngle: ctx.editorialAngle,
+    storyContext: input.storyContext,
+    meaning: input.meaning,
     essence: input.essence,
     mechanism: input.mechanism,
+    consequence: input.consequence,
+    visualThesis: input.visualThesis,
     readerTest: input.readerTest,
     metaphorTitle: input.metaphorTitle,
     whyItFits: input.whyItFits,
@@ -141,7 +192,9 @@ export async function critiqueWeeklyImageBytes(
     imageBytes: input.bytes,
     mimeType: 'image/jpeg',
   });
-  return parseImageCriticResponse(result.text, contentSimScoreThreshold());
+  return parseImageCriticResponse(result.text, contentSimScoreThreshold(), {
+    requireStorySemantics: true,
+  });
 }
 
 export async function critiqueWeeklyImageCandidate(
@@ -155,8 +208,12 @@ export async function critiqueWeeklyImageCandidate(
       width: candidate.width,
       height: candidate.height,
       scene: candidate.scene,
+      storyContext: candidate.storyContext,
+      meaning: candidate.meaning,
       essence: candidate.essence,
       mechanism: candidate.mechanism,
+      consequence: candidate.consequence,
+      visualThesis: candidate.visualThesis,
       readerTest: candidate.readerTest,
       metaphorTitle: candidate.metaphorTitle,
       whyItFits: candidate.whyItFits,
@@ -199,8 +256,12 @@ export async function scoreAndPickVariants(
           width: candidate.width,
           height: candidate.height,
           scene: candidate.scene,
+          storyContext: candidate.storyContext,
+          meaning: candidate.meaning,
           essence: candidate.essence,
           mechanism: candidate.mechanism,
+          consequence: candidate.consequence,
+          visualThesis: candidate.visualThesis,
           readerTest: candidate.readerTest,
           metaphorTitle: candidate.metaphorTitle,
           whyItFits: candidate.whyItFits,
@@ -247,8 +308,12 @@ export async function scoreAndPickVariants(
           width: candidate.width,
           height: candidate.height,
           scene: candidate.scene,
+          storyContext: candidate.storyContext,
+          meaning: candidate.meaning,
           essence: candidate.essence,
           mechanism: candidate.mechanism,
+          consequence: candidate.consequence,
+          visualThesis: candidate.visualThesis,
           readerTest: candidate.readerTest,
           metaphorTitle: candidate.metaphorTitle,
           whyItFits: candidate.whyItFits,
@@ -347,9 +412,7 @@ export async function runWeeklyImageSimLoop(input: {
       finalScores: candidate ? { overall: 100 } : undefined,
     };
     return {
-      candidate: candidate
-        ? { ...candidate, pickSource: candidate.pickSource ?? 'auto' }
-        : null,
+      candidate: candidate ? { ...candidate, pickSource: candidate.pickSource ?? 'auto' } : null,
       report,
       meta: toContentSimArtifactMeta(report),
     };
@@ -395,18 +458,13 @@ export async function runWeeklyImageSimLoop(input: {
           costUsd: 0,
         };
       }
-      if (repaired.promptSuffix) {
-        raw.positivePrompt = `${raw.positivePrompt}${repaired.promptSuffix}`;
-        raw.scene = `${raw.scene}${repaired.promptSuffix}`;
-      }
       const remaining = Math.max(0, maxSpend - spentUsd - raw.estimatedCostUsd);
       const picked = await scoreAndPickVariants(raw, input.ctx, {
         remainingBudgetUsd: remaining,
       });
-      const visionCalls = picked.variantScores?.filter((s) => !s.blockers.includes('budget_skip'))
-        .length ?? 1;
-      const costUsd =
-        picked.estimatedCostUsd + visionCalls * contentSimVisionCriticEstimatedUsd();
+      const visionCalls =
+        picked.variantScores?.filter((s) => !s.blockers.includes('budget_skip')).length ?? 1;
+      const costUsd = picked.estimatedCostUsd + visionCalls * contentSimVisionCriticEstimatedUsd();
       spentUsd += costUsd;
       return {
         artifact: picked,

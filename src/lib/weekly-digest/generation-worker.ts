@@ -979,9 +979,7 @@ async function loadMasterResumeState(
     data.revision_id !== job.revision_id ||
     !['failed', 'cancelled', 'succeeded'].includes(data.status)
   ) {
-    throw new Error(
-      'Master resume source must be a finished master job for this digest revision.',
-    );
+    throw new Error('Master resume source must be a finished master job for this digest revision.');
   }
   const state = masterRunStateFromOutput(data.output, planHash);
   if (!state) {
@@ -1293,7 +1291,6 @@ async function generateEditorialMaster(
     },
   };
 }
-
 
 /**
  * Shared by the success path (activates immediately, via
@@ -2437,7 +2434,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   let source: Buffer;
   let sourceKind = 'generated';
   let sourceUrl: string | null = null;
-  let promptPolicy = 'weekly-editorial-concept-v3';
+  let promptPolicy = 'weekly-semantic-story-v4';
   let imageMeta: {
     provider: string;
     model: string;
@@ -2447,10 +2444,18 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     positivePrompt?: string;
     negativePrompt?: string;
     sceneSource?: string;
+    storyContext?: string;
+    meaning?: string;
     essence?: string;
     mechanism?: string;
+    consequence?: string;
+    visualThesis?: string;
     readerTest?: string;
     metaphorTitle?: string;
+    whyItFits?: string;
+    storyAnchor?: string;
+    visibleMechanism?: string;
+    visibleConsequence?: string;
     motifClass?: string;
     subjectKind?: string;
     composition?: string;
@@ -2461,6 +2466,11 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       passed: boolean;
       news_legibility?: number;
       craft?: number;
+      context_fidelity?: number;
+      mechanism_legibility?: number;
+      consequence_legibility?: number;
+      instant_comprehension?: number;
+      semantic_min?: number;
     }>;
     pickSource?: 'auto' | 'owner';
   } | null = null;
@@ -2483,11 +2493,27 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     promptPolicy = WEEKLY_PROMPT_POLICY;
     const contentStudio = asRecord(asRecord(item.source_snapshot).content_studio);
     const directions = await loadStoryDirections(job.weekly_digest_id);
-    const editorialAngle = item.brief_item_id
-      ? directions.get(item.brief_item_id)
-      : undefined;
+    const editorialAngle = item.brief_item_id ? directions.get(item.brief_item_id) : undefined;
+    const researchPack = researchPacksFromContext(context).find(
+      ({ artifact }) => artifact.revision_item_id === item.id,
+    )?.pack;
     const claimsExcerpt =
-      approvedFactsForItem(item).slice(0, 4).join(' · ').slice(0, 400) || undefined;
+      (
+        researchPack?.claims.map((claim) => claim.text) ??
+        approvedFactsForItem(item).map((claim) => claim.text)
+      )
+        .slice(0, 6)
+        .join(' · ')
+        .slice(0, 800) || undefined;
+    const researchContext = researchPack?.context.slice(0, 4).join(' · ').slice(0, 600);
+    const researchLimitations = [
+      ...(researchPack?.limitations ?? []),
+      ...(researchPack?.contradictions ?? []),
+    ]
+      .slice(0, 4)
+      .join(' · ')
+      .slice(0, 500);
+    const researchRisks = researchPack?.risks.slice(0, 4).join(' · ').slice(0, 400);
     const siblingMetaphors: Array<{
       motifClass?: string;
       subjectKind?: string;
@@ -2502,10 +2528,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       )
       .flatMap((artifact) => {
         const meta = asRecord(artifact.metadata);
-        const scene =
-          text(meta.scene) ??
-          text(meta.metaphor_title) ??
-          undefined;
+        const scene = text(meta.scene) ?? text(meta.metaphor_title) ?? undefined;
         if (!scene) return [];
         const compositionRaw = text(meta.composition);
         const composition: 'single' | 'dual_contrast' | undefined =
@@ -2528,13 +2551,19 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       ctx: {
         headline: item.title_en,
         summary: item.summary_en ?? undefined,
+        why: item.why_en ?? undefined,
+        practical: item.practical_en ?? undefined,
+        limitation: text(contentStudio.limitation_en) ?? undefined,
+        takeaway: item.takeaway_en ?? undefined,
+        claimsExcerpt,
+        editorialAngle,
         policyId: WEEKLY_PROMPT_POLICY,
         siblingScenes: siblingScenes.length ? siblingScenes : undefined,
       },
       seedBase: `${job.weekly_digest_id}:${job.revision_id}:${item.id}`,
       sceneOverride: sceneOverride ?? undefined,
       generate: async ({ attempt, sceneOverride: override, seedBase, promptSuffix }) => {
-        const sceneForGen = override ? `${override}${promptSuffix}` : undefined;
+        const sceneForGen = override || undefined;
         const illustrations = await generateWeeklyReportageIllustrations(
           {
             headline: item.title_en,
@@ -2543,11 +2572,18 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
             editorsView: text(contentStudio.editors_view_en) ?? undefined,
             editorialAngle,
             why: item.why_en ?? undefined,
+            practical: item.practical_en ?? undefined,
+            limitation: text(contentStudio.limitation_en) ?? undefined,
+            takeaway: item.takeaway_en ?? undefined,
             claimsExcerpt,
+            researchContext: researchContext || undefined,
+            researchLimitations: researchLimitations || undefined,
+            researchRisks: researchRisks || undefined,
             avoidSubjects: siblingScenes.length ? siblingScenes : undefined,
             siblingMetaphors: siblingMetaphors.length ? siblingMetaphors : undefined,
             seedBase,
             sceneOverride: sceneForGen,
+            renderDirective: promptSuffix || undefined,
             variantCount: attempt === 1 ? 3 : 1,
           },
           {
@@ -2576,10 +2612,18 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
           positivePrompt: primary!.positivePrompt ?? '',
           negativePrompt: primary!.negativePrompt ?? '',
           sceneSource: illustrations.sceneSource,
+          storyContext: illustrations.storyContext,
+          meaning: illustrations.meaning,
           essence: illustrations.essence,
           mechanism: illustrations.mechanism,
+          consequence: illustrations.consequence,
+          visualThesis: illustrations.visualThesis,
           readerTest: illustrations.readerTest,
           metaphorTitle: illustrations.metaphorTitle,
+          whyItFits: illustrations.whyItFits,
+          storyAnchor: illustrations.storyAnchor,
+          visibleMechanism: illustrations.visibleMechanism,
+          visibleConsequence: illustrations.visibleConsequence,
           motifClass: illustrations.motifClass,
           subjectKind: illustrations.subjectKind,
           composition: illustrations.composition,
@@ -2601,10 +2645,18 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         positivePrompt: sim.candidate.positivePrompt,
         negativePrompt: sim.candidate.negativePrompt,
         sceneSource: sim.candidate.sceneSource,
+        storyContext: sim.candidate.storyContext,
+        meaning: sim.candidate.meaning,
         essence: sim.candidate.essence,
         mechanism: sim.candidate.mechanism,
+        consequence: sim.candidate.consequence,
+        visualThesis: sim.candidate.visualThesis,
         readerTest: sim.candidate.readerTest,
         metaphorTitle: sim.candidate.metaphorTitle,
+        whyItFits: sim.candidate.whyItFits,
+        storyAnchor: sim.candidate.storyAnchor,
+        visibleMechanism: sim.candidate.visibleMechanism,
+        visibleConsequence: sim.candidate.visibleConsequence,
         motifClass: sim.candidate.motifClass,
         subjectKind: sim.candidate.subjectKind,
         composition: sim.candidate.composition,
@@ -2689,11 +2741,21 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
                   positive_prompt: imageMeta.positivePrompt,
                   negative_prompt: imageMeta.negativePrompt,
                   scene_source: imageMeta.sceneSource,
+                  ...(imageMeta.storyContext ? { story_context: imageMeta.storyContext } : {}),
+                  ...(imageMeta.meaning ? { meaning: imageMeta.meaning } : {}),
                   ...(imageMeta.essence ? { essence: imageMeta.essence } : {}),
                   ...(imageMeta.mechanism ? { mechanism: imageMeta.mechanism } : {}),
+                  ...(imageMeta.consequence ? { consequence: imageMeta.consequence } : {}),
+                  ...(imageMeta.visualThesis ? { visual_thesis: imageMeta.visualThesis } : {}),
                   ...(imageMeta.readerTest ? { reader_test: imageMeta.readerTest } : {}),
-                  ...(imageMeta.metaphorTitle
-                    ? { metaphor_title: imageMeta.metaphorTitle }
+                  ...(imageMeta.metaphorTitle ? { metaphor_title: imageMeta.metaphorTitle } : {}),
+                  ...(imageMeta.whyItFits ? { why_it_fits: imageMeta.whyItFits } : {}),
+                  ...(imageMeta.storyAnchor ? { story_anchor: imageMeta.storyAnchor } : {}),
+                  ...(imageMeta.visibleMechanism
+                    ? { visible_mechanism: imageMeta.visibleMechanism }
+                    : {}),
+                  ...(imageMeta.visibleConsequence
+                    ? { visible_consequence: imageMeta.visibleConsequence }
                     : {}),
                   ...(imageMeta.motifClass ? { motif_class: imageMeta.motifClass } : {}),
                   ...(imageMeta.subjectKind ? { subject_kind: imageMeta.subjectKind } : {}),
@@ -2709,6 +2771,21 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
                             ? { news_legibility: row.news_legibility }
                             : {}),
                           ...(typeof row.craft === 'number' ? { craft: row.craft } : {}),
+                          ...(typeof row.context_fidelity === 'number'
+                            ? { context_fidelity: row.context_fidelity }
+                            : {}),
+                          ...(typeof row.mechanism_legibility === 'number'
+                            ? { mechanism_legibility: row.mechanism_legibility }
+                            : {}),
+                          ...(typeof row.consequence_legibility === 'number'
+                            ? { consequence_legibility: row.consequence_legibility }
+                            : {}),
+                          ...(typeof row.instant_comprehension === 'number'
+                            ? { instant_comprehension: row.instant_comprehension }
+                            : {}),
+                          ...(typeof row.semantic_min === 'number'
+                            ? { semantic_min: row.semantic_min }
+                            : {}),
                         })),
                       }
                     : {}),

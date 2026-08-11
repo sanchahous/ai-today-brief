@@ -546,7 +546,10 @@ export async function renderFallbackEditorialIllustration(
  */
 export function cleanSceneText(text: string): string {
   let cleaned = text.replace(/\s+/g, ' ').trim();
-  cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+  cleaned = cleaned
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
   if (cleaned.startsWith('{')) {
     try {
       const parsed: unknown = JSON.parse(cleaned);
@@ -647,16 +650,16 @@ export async function sceneBrief(
 }
 
 // ---------------------------------------------------------------------------
-// Weekly Digest "editorial concept" illustrations (prompt-v3).
+// Weekly Digest semantic editorial illustrations (prompt-v4).
 // Pivot from documentary reportage-v2: find the story's ESSENCE, invent a
-// visual METAPHOR that argues that essence, then render subject-first SASC
-// for FLUX.2 (BFL-aligned). dual_contrast compositions allowed when the
-// argument needs facade-vs-chaos / tiny-vs-huge spatial divide -- still one
-// continuous photograph, never collage or readable UI.
+// visual METAPHOR that exposes context -> mechanism -> consequence, then
+// render subject-first SASC for FLUX.2 (BFL-aligned). dual_contrast
+// compositions are allowed only when that causal argument needs a spatial
+// divide -- still one continuous photograph, never collage or readable UI.
 // ---------------------------------------------------------------------------
 
 /** Stored on story_image artifacts; bump when house-style / gates change. */
-export const WEEKLY_PROMPT_POLICY = 'weekly-editorial-concept-v3';
+export const WEEKLY_PROMPT_POLICY = 'weekly-semantic-story-v4';
 
 /** Open vocabulary motif label from the metaphor director (snake_case). */
 export type MetaphorSubjectKind = 'object' | 'process' | 'environment' | 'character';
@@ -672,15 +675,27 @@ export interface SiblingMetaphorHint {
 export interface WeeklyReportageSceneInput {
   headline: string;
   summary: string;
-  /** First ~600 chars of the story body. */
+  /** Opening story passage; source context, not the whole article. */
   bodyExcerpt?: string;
   editorsView?: string;
   /** Binding editorial angle from weekly_digest_story_directions (PR4). */
   editorialAngle?: string;
   /** Why-it-matters line -- distinctive claim for entity extraction. */
   why?: string;
+  /** Concrete reader use or action from the approved master. */
+  practical?: string;
+  /** Grounded counterweight / uncertainty from the approved master. */
+  limitation?: string;
+  /** Approved closing implication from the story. */
+  takeaway?: string;
   /** Short claim snippets from research (optional). */
   claimsExcerpt?: string;
+  /** Approved research context that may not appear in the opening excerpt. */
+  researchContext?: string;
+  /** Research-pack limitations / contradictions, kept separate from claims. */
+  researchLimitations?: string;
+  /** Research-pack risks, used to avoid falsely positive imagery. */
+  researchRisks?: string;
   /** Subjects already used by sibling stories in this digest (diversity). */
   avoidSubjects?: string[];
   /** Rich sibling metaphor metadata for motif/composition/character gates. */
@@ -689,11 +704,19 @@ export interface WeeklyReportageSceneInput {
 
 /** One-sentence editorial argument the illustration must make. */
 export interface EditorialEssence {
+  /** Specific actor/system and factual change; keeps the image on this story. */
+  storyContext: string;
+  /** What the factual change means, without visual-poetry filler. */
+  meaning: string;
   essence: string;
   mustFeel: string;
   forbiddenCliches: string[];
   /** Concrete mechanism that distinguishes this story (from why/angle). */
   mechanism: string;
+  /** Grounded benefit, harm, trade-off, or uncertainty -- never invented. */
+  consequence: string;
+  /** One causal sentence the physical scene must communicate. */
+  visualThesis: string;
   /** What a reader should grasp after seeing the image. */
   readerTest: string;
 }
@@ -710,6 +733,12 @@ export interface MetaphorPitch {
   /** Open snake_case class, e.g. anthropomorphic_guardian, thermal_waste. */
   motifClass: string;
   subjectKind: MetaphorSubjectKind;
+  /** Literal story-specific anchor visible in the rendered scene. */
+  storyAnchor?: string;
+  /** Physical cause/process visible in the rendered scene. */
+  visibleMechanism?: string;
+  /** Physical result/stake visible in the rendered scene. */
+  visibleConsequence?: string;
 }
 
 /** Validated frame ready to flatten into a FLUX scene phrase. */
@@ -746,8 +775,7 @@ const WEEKLY_CRAFT_BANNED =
 const WEEKLY_SLUDGE_BANNED =
   /\b(heap of (?:paper|papers|transcript|transcripts)|tall stack of|stack of (?:paper|papers|transcript|books)|melted|deformed|warped pages|illegible (?:pages|paper))\b/i;
 
-const WEEKLY_DESK_DEFAULT =
-  /\b(desk|laptop|keyboard|monitor|trackpad|office chair)\b/i;
+const WEEKLY_DESK_DEFAULT = /\b(desk|laptop|keyboard|monitor|trackpad|office chair)\b/i;
 
 /** Motion language that makes FLUX paint smeared / laggy limbs (Story 7 fail-mode). */
 const WEEKLY_MOTION_BLUR_BANNED =
@@ -807,7 +835,9 @@ export function extractWeeklyStoryEntities(input: WeeklyReportageSceneInput): st
   const out: string[] = [];
   const headline = input.headline.trim();
   const lead = headline.split(/[—–:\-|]/)[0]?.trim() || headline;
-  if (lead) out.push(lead.slice(0, 80));
+  const headlineHasEntityDelimiter = lead.length < headline.length;
+  const leadWordCount = lead.split(/\s+/).filter(Boolean).length;
+  if (lead && (headlineHasEntityDelimiter || leadWordCount <= 5)) out.push(lead.slice(0, 80));
   for (const match of headline.match(
     /\b(?:[A-Z][a-z]+(?:[A-Z][a-zA-Z0-9]*)+|[A-Z]{2,}[a-zA-Z0-9]*|Claude|Codex|Stripe|Cloudflare|Meta|Gemini|GPT)\b/g,
   ) ?? []) {
@@ -818,8 +848,12 @@ export function extractWeeklyStoryEntities(input: WeeklyReportageSceneInput): st
   if (/\b(browser|headless)\b/.test(lower)) out.push('browser');
   if (/\b(plugin|package)\b/.test(lower)) out.push('plugin');
   if (/\b(agent|sub-?agents?)\b/.test(lower)) out.push('coding agent');
-  if (/\b(energ|watt|600x|token)\b/.test(lower)) out.push('energy');
-  if (input.editorialAngle?.trim()) out.push(input.editorialAngle.trim().slice(0, 72));
+  if (/\b(agentic coding|coding loops?|autonomous loops?)\b/.test(lower)) {
+    out.push('agentic coding loop');
+  }
+  if (/\b(energy|electricity|watt(?:age)?|power use|600x|token)\b/.test(lower)) {
+    out.push(lower.includes('electricity') ? 'electricity' : 'energy');
+  }
   return [...new Set(out.map((s) => s.trim()).filter((s) => s.length >= 3))].slice(0, 8);
 }
 
@@ -836,22 +870,59 @@ function entityMentioned(haystack: string, entity: string): boolean {
   return haystack.includes(best);
 }
 
-function buildWeeklyContextBlock(input: WeeklyReportageSceneInput, entities: string[]): string {
+function primaryEntityGrounded(haystack: string, entity: string): boolean {
+  const tokens = [
+    ...new Set(
+      entity
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((token) => token.length >= 4),
+    ),
+  ];
+  if (tokens.length === 0)
+    return haystack.toLowerCase().includes(entity.toLowerCase().slice(0, 12));
+  const lower = haystack.toLowerCase();
+  const hits = tokens.filter((token) => lower.includes(token)).length;
+  return hits >= Math.min(2, tokens.length);
+}
+
+/** Full evidence-shaped story context shared by essence and metaphor directors. */
+export function buildWeeklyContextBlock(
+  input: WeeklyReportageSceneInput,
+  entities: string[],
+): string {
   return [
+    'SOURCE STORY (facts outrank the generated metaphor; do not invent outcomes):',
     `Headline: "${input.headline}"`,
     `Summary: "${input.summary}"`,
     input.bodyExcerpt?.trim()
-      ? `Story excerpt: "${input.bodyExcerpt.trim().slice(0, 600)}"`
+      ? `Story excerpt: "${input.bodyExcerpt.trim().slice(0, 1_000)}"`
+      : null,
+    input.why?.trim() ? `Meaning / why it matters: "${input.why.trim().slice(0, 360)}"` : null,
+    input.practical?.trim()
+      ? `Reader benefit / practical use: "${input.practical.trim().slice(0, 320)}"`
+      : null,
+    input.limitation?.trim()
+      ? `Limitation / counterweight: "${input.limitation.trim().slice(0, 320)}"`
+      : null,
+    input.takeaway?.trim() ? `Grounded takeaway: "${input.takeaway.trim().slice(0, 320)}"` : null,
+    input.claimsExcerpt?.trim()
+      ? `Approved claims: "${input.claimsExcerpt.trim().slice(0, 800)}"`
+      : null,
+    input.researchContext?.trim()
+      ? `Approved research context: "${input.researchContext.trim().slice(0, 600)}"`
+      : null,
+    input.researchLimitations?.trim()
+      ? `Research limitations / contradictions: "${input.researchLimitations.trim().slice(0, 500)}"`
+      : null,
+    input.researchRisks?.trim()
+      ? `Research risks: "${input.researchRisks.trim().slice(0, 400)}"`
       : null,
     input.editorsView?.trim()
-      ? `Editor's read on where this leads: "${input.editorsView.trim()}"`
+      ? `Editor's inference (interpretation, NOT a reported fact): "${input.editorsView.trim().slice(0, 400)}"`
       : null,
     input.editorialAngle?.trim()
-      ? `Binding editorial angle: "${input.editorialAngle.trim()}"`
-      : null,
-    input.why?.trim() ? `Why it matters: "${input.why.trim().slice(0, 280)}"` : null,
-    input.claimsExcerpt?.trim()
-      ? `Key claims: "${input.claimsExcerpt.trim().slice(0, 400)}"`
+      ? `Binding editorial angle: "${input.editorialAngle.trim().slice(0, 320)}"`
       : null,
     entities.length ? `Story entities to honor: ${entities.join(' | ')}` : null,
     input.avoidSubjects?.length
@@ -942,8 +1013,17 @@ export function jaccardTokenOverlap(a: Set<string>, b: Set<string>): number {
   return union === 0 ? 0 : inter / union;
 }
 
-function pitchSceneBlob(pitch: MetaphorPitch): string {
-  return [pitch.subject, pitch.setting, ...pitch.props, pitch.whyItFits, pitch.action].join(' ');
+/** Only fields that reach FLUX; rationale text must never satisfy a visual gate. */
+export function pitchRenderableBlob(pitch: MetaphorPitch): string {
+  return [
+    pitch.subject,
+    pitch.storyAnchor ?? '',
+    pitch.visibleMechanism ?? '',
+    pitch.visibleConsequence ?? '',
+    pitch.action,
+    pitch.setting,
+    ...pitch.props,
+  ].join(' ');
 }
 
 function dualContrastIsArgued(whyItFits: string): boolean {
@@ -954,7 +1034,11 @@ function dualContrastIsArgued(whyItFits: string): boolean {
 }
 
 /** True when enough distinctive mechanism tokens appear in the pitch blob. */
-export function mechanismTokensVisible(mechanism: string, pitchBlob: string): boolean {
+export function mechanismTokensVisible(
+  mechanism: string,
+  pitchBlob: string,
+  hitRatio = MECHANISM_TOKEN_HIT_RATIO,
+): boolean {
   const tokens = [...tokenizeSceneForEcho(mechanism)];
   if (tokens.length === 0) return true;
   const hay = pitchBlob.toLowerCase();
@@ -962,8 +1046,15 @@ export function mechanismTokensVisible(mechanism: string, pitchBlob: string): bo
   for (const token of tokens) {
     if (hay.includes(token)) hits += 1;
   }
-  const need = Math.max(1, Math.ceil(tokens.length * MECHANISM_TOKEN_HIT_RATIO));
+  const need = Math.max(1, Math.ceil(tokens.length * Math.min(1, Math.max(0, hitRatio))));
   return hits >= need;
+}
+
+function anySemanticFieldVisible(fields: string[], pitchBlob: string): boolean {
+  const grounded = fields.map((field) => field.trim()).filter((field) => field.length >= 8);
+  return (
+    grounded.length === 0 || grounded.some((field) => mechanismTokensVisible(field, pitchBlob))
+  );
 }
 
 function fallbackMechanism(input: WeeklyReportageSceneInput, essence: string): string {
@@ -972,6 +1063,28 @@ function fallbackMechanism(input: WeeklyReportageSceneInput, essence: string): s
   const fromAngle = input.editorialAngle?.trim();
   if (fromAngle && fromAngle.length >= 12) return fromAngle.slice(0, 160);
   return essence.slice(0, 160);
+}
+
+function firstGroundedField(values: Array<string | null | undefined>, fallback: string): string {
+  for (const value of values) {
+    const clean = value?.replace(/\s+/g, ' ').trim();
+    if (clean && clean.length >= 8) return clean;
+  }
+  return fallback;
+}
+
+function fallbackStoryContext(input: WeeklyReportageSceneInput, essence: string): string {
+  return firstGroundedField([input.summary, input.headline, input.bodyExcerpt], essence).slice(
+    0,
+    220,
+  );
+}
+
+function fallbackConsequence(input: WeeklyReportageSceneInput, essence: string): string {
+  return firstGroundedField(
+    [input.practical, input.limitation, input.takeaway, input.why, input.editorsView],
+    `The grounded stake is the change described by: ${essence}`,
+  ).slice(0, 220);
 }
 
 export function parseEditorialEssence(
@@ -988,6 +1101,15 @@ export function parseEditorialEssence(
         ? record.argument.trim()
         : '';
   if (essence.length < 12) return null;
+  const storyContextRaw =
+    (typeof record.context === 'string' && record.context.trim()) ||
+    (typeof record.story_context === 'string' && record.story_context.trim()) ||
+    (typeof record.storyContext === 'string' && record.storyContext.trim()) ||
+    '';
+  const meaningRaw =
+    (typeof record.meaning === 'string' && record.meaning.trim()) ||
+    (typeof record.significance === 'string' && record.significance.trim()) ||
+    '';
   const mustFeel =
     typeof record.must_feel === 'string'
       ? record.must_feel.trim()
@@ -1002,21 +1124,54 @@ export function parseEditorialEssence(
     (typeof record.reader_test === 'string' && record.reader_test.trim()) ||
     (typeof record.readerTest === 'string' && record.readerTest.trim()) ||
     '';
+  const consequenceRaw =
+    (typeof record.consequence === 'string' && record.consequence.trim()) ||
+    (typeof record.stakes === 'string' && record.stakes.trim()) ||
+    (typeof record.impact === 'string' && record.impact.trim()) ||
+    '';
+  const visualThesisRaw =
+    (typeof record.visual_thesis === 'string' && record.visual_thesis.trim()) ||
+    (typeof record.visualThesis === 'string' && record.visualThesis.trim()) ||
+    '';
+  const storyContext =
+    storyContextRaw.length >= 8
+      ? storyContextRaw.slice(0, 220)
+      : input
+        ? fallbackStoryContext(input, essence)
+        : essence.slice(0, 220);
+  const meaning =
+    meaningRaw.length >= 8
+      ? meaningRaw.slice(0, 220)
+      : firstGroundedField(input ? [input.why, input.summary] : [], essence).slice(0, 220);
   const mechanism =
     mechanismRaw.length >= 8
       ? mechanismRaw.slice(0, 180)
       : input
         ? fallbackMechanism(input, essence)
         : essence.slice(0, 160);
+  const consequence =
+    consequenceRaw.length >= 8
+      ? consequenceRaw.slice(0, 220)
+      : input
+        ? fallbackConsequence(input, essence)
+        : essence.slice(0, 220);
+  const visualThesis =
+    visualThesisRaw.length >= 12
+      ? visualThesisRaw.slice(0, 240)
+      : `${mechanism.slice(0, 110)} visibly leads to ${consequence.slice(0, 110)}`;
   const readerTest =
     readerTestRaw.length >= 8
       ? readerTestRaw.slice(0, 200)
-      : `After seeing the image, grasp: ${mechanism.slice(0, 120)}`;
+      : `After seeing the image, grasp what changed, how it works, and why it matters: ${visualThesis.slice(0, 140)}`;
   return {
+    storyContext,
+    meaning,
     essence,
     mustFeel: mustFeel || 'sharp editorial tension',
     forbiddenCliches: asStringArray(record.forbidden_cliches ?? record.forbiddenCliches),
     mechanism,
+    consequence,
+    visualThesis,
     readerTest,
   };
 }
@@ -1063,30 +1218,61 @@ export function parseMetaphorPitches(raw: string): MetaphorPitch[] {
           subject.slice(0, 32),
       ),
       subjectKind: parseSubjectKind(record.subject_kind ?? record.subjectKind),
+      storyAnchor:
+        (typeof record.story_anchor === 'string' && record.story_anchor.trim()) ||
+        (typeof record.storyAnchor === 'string' && record.storyAnchor.trim()) ||
+        undefined,
+      visibleMechanism:
+        (typeof record.visible_mechanism === 'string' && record.visible_mechanism.trim()) ||
+        (typeof record.visibleMechanism === 'string' && record.visibleMechanism.trim()) ||
+        undefined,
+      visibleConsequence:
+        (typeof record.visible_consequence === 'string' && record.visible_consequence.trim()) ||
+        (typeof record.visibleConsequence === 'string' && record.visibleConsequence.trim()) ||
+        undefined,
     });
   }
   return pitches.slice(0, 3);
 }
 
-export function flattenMetaphorPitch(pitch: MetaphorPitch, essence?: string): string {
+export function flattenMetaphorPitch(
+  pitch: MetaphorPitch,
+  semantic?: EditorialEssence | string,
+): string {
+  const clip = (value: string, max: number): string => {
+    const clean = value.replace(/\s+/g, ' ').trim();
+    if (clean.length <= max) return clean;
+    const candidate = clean.slice(0, max + 1);
+    const boundary = candidate.lastIndexOf(' ');
+    return candidate
+      .slice(0, boundary >= Math.floor(max * 0.7) ? boundary : max)
+      .replace(/[,:;.-]+$/g, '');
+  };
   const props = pitch.props.filter(Boolean).join(', ');
   const dualNote =
     pitch.composition === 'dual_contrast'
-      ? 'one continuous photograph with a clear spatial divide (facade versus backstage), not a collage'
+      ? 'one continuous photograph with a clear causal spatial divide, not a collage'
       : '';
-  return [
-    pitch.subject,
-    pitch.action,
-    pitch.setting,
-    props ? `with ${props}` : '',
+  const fallbackEssence = typeof semantic === 'string' ? semantic : semantic?.visualThesis;
+  const scene = [
+    clip(pitch.subject, 140),
+    pitch.storyAnchor ? `the story-specific anchor is ${clip(pitch.storyAnchor, 120)}` : '',
+    pitch.visibleMechanism
+      ? `the visible cause is ${clip(pitch.visibleMechanism, 170)}`
+      : clip(pitch.action, 140),
+    pitch.visibleConsequence ? `the visible result is ${clip(pitch.visibleConsequence, 170)}` : '',
+    clip(pitch.setting, 90),
+    props ? `with ${clip(props, 90)}` : '',
     dualNote,
-    essence ? `arguing: ${essence}` : '',
+    !pitch.visibleConsequence && fallbackEssence
+      ? `one causal moment showing ${clip(fallbackEssence, 160)}`
+      : '',
   ]
     .filter(Boolean)
     .join(', ')
     .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 320);
+    .trim();
+  return clip(scene, 800);
 }
 
 export function parseWeeklySceneSpec(raw: string): WeeklyReportageSceneSpec | null {
@@ -1128,15 +1314,23 @@ export function validateMetaphorPitch(
   siblings: SiblingMetaphorHint[] = [],
 ): string[] {
   const errors: string[] = [];
-  const flat = [
-    pitch.title,
-    pitch.subject,
-    pitch.action,
-    pitch.setting,
-    ...pitch.props,
-    pitch.whyItFits,
-  ].join(' ');
+  const flat = pitchRenderableBlob(pitch);
   if (pitch.subject.trim().length < 8) errors.push('subject too short');
+  if (!pitch.storyAnchor || pitch.storyAnchor.trim().length < 6) {
+    errors.push('story_anchor_not_visible');
+  } else if (
+    requiredEntities[0]
+      ? !primaryEntityGrounded(pitch.storyAnchor, requiredEntities[0])
+      : !mechanismTokensVisible(essence.storyContext, pitch.storyAnchor, 0.15)
+  ) {
+    errors.push('story_anchor_not_grounded_in_context');
+  }
+  if (!pitch.visibleMechanism || pitch.visibleMechanism.trim().length < 10) {
+    errors.push('visible_mechanism_missing');
+  }
+  if (!pitch.visibleConsequence || pitch.visibleConsequence.trim().length < 10) {
+    errors.push('visible_consequence_missing');
+  }
   if (!pitch.motifClass || pitch.motifClass.length < 3) {
     errors.push('motif_class missing or too short');
   }
@@ -1162,18 +1356,21 @@ export function validateMetaphorPitch(
     }
   }
   const hay = flat.toLowerCase();
-  const essenceTokens = essence.essence
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((t) => t.length >= 5)
-    .slice(0, 4);
-  const essenceHit =
-    essenceTokens.length === 0 || essenceTokens.some((token) => hay.includes(token));
+  const essenceHit = anySemanticFieldVisible(
+    [essence.essence, essence.meaning, essence.visualThesis],
+    flat,
+  );
   if (!essenceHit) {
     errors.push('metaphor does not clearly argue the essence');
   }
-  if (essence.mechanism.trim().length >= 8 && !mechanismTokensVisible(essence.mechanism, flat)) {
+  if (!anySemanticFieldVisible([essence.mechanism, essence.visualThesis], flat)) {
     errors.push('mechanism_not_visible');
+  }
+  if (
+    !mechanismTokensVisible(essence.consequence, pitch.visibleConsequence ?? '') &&
+    !mechanismTokensVisible(essence.visualThesis, pitch.visibleConsequence ?? '', 0.05)
+  ) {
+    errors.push('consequence_not_visible');
   }
   const entityHit =
     requiredEntities.length === 0 ||
@@ -1200,12 +1397,9 @@ export function validateMetaphorPitch(
   if (siblings.some((s) => s.motifClass && s.motifClass.toLowerCase() === motif)) {
     errors.push('sibling_motif_class_reuse');
   }
-  const pitchTokens = tokenizeSceneForEcho(pitchSceneBlob(pitch));
+  const pitchTokens = tokenizeSceneForEcho(pitchRenderableBlob(pitch));
   for (const sibling of siblings) {
-    const overlap = jaccardTokenOverlap(
-      pitchTokens,
-      tokenizeSceneForEcho(sibling.sceneSummary),
-    );
+    const overlap = jaccardTokenOverlap(pitchTokens, tokenizeSceneForEcho(sibling.sceneSummary));
     if (overlap >= SIBLING_SCENE_ECHO_THRESHOLD) {
       errors.push('sibling_scene_echo');
       break;
@@ -1241,12 +1435,21 @@ export function validateWeeklySceneSpec(
       whyItFits: 'legacy scene spec',
       motifClass: 'legacy_scene',
       subjectKind: 'object',
+      storyAnchor: requiredEntities[0] || spec.subject,
+      visibleMechanism: spec.action,
+      visibleConsequence:
+        spec.mustInclude[0] ||
+        [spec.subject, spec.action, spec.setting, ...spec.props].filter(Boolean).join(' '),
     },
     {
+      storyContext: requiredEntities[0] || 'story argument',
+      meaning: requiredEntities[0] || 'story argument',
       essence: requiredEntities[0] || 'story argument',
       mustFeel: '',
       forbiddenCliches: [],
       mechanism: requiredEntities[0] || 'story argument',
+      consequence: requiredEntities[0] || 'story argument',
+      visualThesis: requiredEntities[0] || 'story argument',
       readerTest: 'legacy scene spec',
     },
     requiredEntities,
@@ -1286,6 +1489,37 @@ export function weeklyFallbackScene(text: string, entities: string[] = []): stri
   return `${prefix}a single symbolic object under a hard editorial spotlight arguing the story claim, photoreal materials, no screens`;
 }
 
+/**
+ * Last-resort weekly scene that preserves the approved semantic contract.
+ * The former generic spotlight fallback discarded the mechanism and result
+ * precisely when the metaphor model needed help most.
+ */
+export function weeklySemanticFallbackScene(essence: EditorialEssence): string {
+  const withoutLabelInvitations = (value: string): string =>
+    value
+      .replace(
+        /["“”']?model["“”']?\s+(slot|station|module|gate)/gi,
+        'unlabelled silicon-compute $1',
+      )
+      .replace(
+        /["“”']?tool["“”']?\s+(slot|station|module|gate)/gi,
+        'unlabelled mechanical-action $1',
+      )
+      .replace(/[“”"]/g, '');
+  return [
+    withoutLabelInvitations(essence.visualThesis).slice(0, 240),
+    `the literal story context is ${essence.storyContext.slice(0, 150)}`,
+    `show the physical causal process clearly: ${essence.mechanism.slice(0, 150)}`,
+    `make its grounded result unmistakable: ${essence.consequence.slice(0, 150)}`,
+    'one continuous physical scene with no symbolic mystery',
+  ]
+    .filter(Boolean)
+    .join(', ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 680);
+}
+
 async function runArtDirectorRaw(
   instruction: string,
   role: ProviderRole,
@@ -1307,17 +1541,22 @@ async function runArtDirectorRaw(
 
 function buildEssenceInstruction(input: WeeklyReportageSceneInput, entities: string[]): string {
   return (
-    `You are the editorial director for a developer technology digest. Read the story and state ` +
-    `the ONE argument the cover illustration must make -- not logistics of who sat where. ` +
-    `Also name the concrete MECHANISM that distinguishes this story from a generic AI-agent piece ` +
-    `(from Why it matters / editorial angle). Mechanism examples: "crash-proof event log that resumes after failure"; ` +
-    `"headless browser stripped of human UI for agents"; "server-side tools turning the CLI into an observation pane". ` +
-    `Do NOT replace the mechanism with a vague poetic abstraction. ` +
-    `Examples of good essence: "Agentic coding burns vastly more energy than a chat prompt, often invisibly"; ` +
-    `"An unsupervised agent stays reliable because of its durable task journal"; ` +
-    `"Shipping speed outran quality -- a finished facade hides broken internals". ` +
-    `Reply with ONLY JSON: {"essence":"one sentence","mechanism":"concrete noun-phrase",` +
-    `"reader_test":"After seeing the image, a reader should grasp: ...",` +
+    `You are the editorial director for a developer technology digest. Convert the approved source ` +
+    `story into a semantic illustration contract. Preserve four layers separately: CONTEXT (who/what ` +
+    `changed), MEANING (why that change matters), MECHANISM (the concrete causal process), and ` +
+    `CONSEQUENCE (a grounded benefit, harm, trade-off, or unresolved risk). Never invent a downstream ` +
+    `outcome; when evidence only supports uncertainty, say that explicitly. The visual_thesis must be ` +
+    `one cause-to-effect sentence that can be shown physically without captions, UI, or logos. It ` +
+    `must include a recognizable physical anchor for the actual actor/system in CONTEXT; a generic ` +
+    `battery, cog, pump, or gauge that only signals the topic is insufficient. Avoid ` +
+    `quoted labels, printed words, signs, captions, and named slots; distinguish components through ` +
+    `physical shape, material, position, and connection instead. ` +
+    `borrowing motifs or vocabulary from unrelated stories. ` +
+    `Reply with ONLY JSON: {"context":"specific actor/system and change",` +
+    `"meaning":"what the change means","essence":"one-sentence editorial argument",` +
+    `"mechanism":"concrete causal noun-phrase","consequence":"grounded benefit/harm/trade-off/uncertainty",` +
+    `"visual_thesis":"visible cause leads to visible result",` +
+    `"reader_test":"After seeing the image, a reader should grasp context + mechanism + consequence",` +
     `"must_feel":"emotional register","forbidden_cliches":["desk with laptop","generic AI brain",...]}.\n\n` +
     buildWeeklyContextBlock(input, entities)
   );
@@ -1333,25 +1572,35 @@ function buildMetaphorInstruction(
     ? `\nPrevious pitches failed: ${priorErrors.join('; ')}. Propose corrected metaphors.\n`
     : '';
   return (
-    `You design cover metaphors for a weekly AI/engineering digest. Given this essence, invent ` +
-    `2 or 3 vivid visual metaphors a reader grasps without reading any screen text. ` +
-    `CRITICAL: subject + props must make the MECHANISM visible as a physical analogue ` +
-    `(event log / resume latch, stripped machine chassis, thin observation pane) -- not a decorative ` +
-    `industrial scene that could illustrate any tech story. ` +
+    `You design cover metaphors for a weekly AI/engineering digest. Invent 2 or 3 distinct, ` +
+    `instantly readable physical scenes. Each must communicate a causal mini-story: a ` +
+    `story-specific anchor, the visible mechanism acting on it, and the visible consequence. ` +
+    `CRITICAL: why_it_fits is only rationale and is NOT sent to the image model. Therefore every ` +
+    `fact required to understand the story must also appear concretely in story_anchor, ` +
+    `visible_mechanism, visible_consequence, subject, action, setting, or props. Reuse the distinctive ` +
+    `concrete nouns from the mechanism and consequence so fidelity can be checked. The story_anchor ` +
+    `must visibly identify the source actor/system using at least two distinctive CONTEXT nouns; ` +
+    `do not substitute a topic-only battery, meter, cog, pump, cloud, or light. Keep subject and ` +
+    `story_anchor under 14 words, visible_mechanism under 20 words, and visible_consequence under 18 words. ` +
     `Prefer concrete OBJECTS, PROCESSES, or ENVIRONMENTS that argue the essence. ` +
     `Use a CHARACTER only when the essence cannot be read without one. ` +
-    `Do NOT default to theater stages, ballerinas, golems, sealed journals, or ledgers unless ` +
-    `the essence uniquely requires that exact mechanism -- invent a fresh motif_class each time. ` +
+    `Do NOT default to recurring performance-stage tableaux, personified guardians, or archival-book ` +
+    `symbols. Invent a fresh motif_class grounded in this source story each time. ` +
     `Never use high-speed, motion blur, blurred, smeared, or streaking language (FLUX paints lag artifacts). ` +
-    `If the essence needs contrast, set composition to "dual_contrast" and name BOTH halves in ` +
-    `why_it_fits (facade vs chaos, tiny vs huge) as ONE continuous photograph with a spatial divide -- ` +
+    `If the essence needs contrast, set composition to "dual_contrast" and name BOTH causal halves in ` +
+    `why_it_fits as ONE continuous photograph with a spatial divide -- ` +
     `never collage, never a decorative second beat that does not argue the essence. ` +
     `At most one dual_contrast per digest (see sibling metaphors). Screens if any stay blank unmarked glow. ` +
-    `No logos, no readable UI, no real celebrity faces. ` +
-    `Reply with ONLY JSON: {"metaphors":[{"title":"","subject":"","action":"","setting":"",` +
+    `No quoted labels, printed words, logos, readable UI, or real celebrity faces. ` +
+    `Reply with ONLY JSON: {"metaphors":[{"title":"","subject":"",` +
+    `"story_anchor":"specific visible story anchor","visible_mechanism":"physical cause/process",` +
+    `"visible_consequence":"physical benefit/harm/trade-off/uncertainty","action":"","setting":"",` +
     `"props":[],"composition":"single|dual_contrast","motif_class":"snake_case_label",` +
     `"subject_kind":"object|process|environment|character","why_it_fits":""}]}.\n\n` +
+    `Context: "${essence.storyContext}"\nMeaning: "${essence.meaning}"\n` +
     `Essence: "${essence.essence}"\nMechanism that MUST be visible: "${essence.mechanism}"\n` +
+    `Consequence that MUST be visible: "${essence.consequence}"\n` +
+    `Visual thesis: "${essence.visualThesis}"\n` +
     `Reader test: "${essence.readerTest}"\nMust feel: "${essence.mustFeel}"\n` +
     `Forbidden: ${essence.forbiddenCliches.join(' | ') || 'generic AI sludge'}\n` +
     `${buildWeeklyContextBlock(input, entities)}${retry}`
@@ -1384,14 +1633,15 @@ function scoreMetaphorPitch(
   ) {
     score += 1;
   }
-  if (mechanismTokensVisible(essence.mechanism, pitchSceneBlob(pitch))) {
+  const renderable = pitchRenderableBlob(pitch);
+  if (anySemanticFieldVisible([essence.mechanism, essence.visualThesis], renderable)) {
     score += 3;
   } else {
     score -= 4;
   }
   if (
-    /\b(industrial|factory|furnace|press|grinding|diamond|gauge)\b/i.test(pitchSceneBlob(pitch)) &&
-    !mechanismTokensVisible(essence.mechanism, pitchSceneBlob(pitch))
+    /\b(industrial|factory|furnace|press|grinding|diamond|gauge)\b/i.test(renderable) &&
+    !anySemanticFieldVisible([essence.mechanism, essence.visualThesis], renderable)
   ) {
     score -= 2;
   }
@@ -1399,7 +1649,7 @@ function scoreMetaphorPitch(
   for (const sibling of siblings) {
     if (sibling.motifClass && sibling.motifClass.toLowerCase() === motif) score -= 4;
     const overlap = jaccardTokenOverlap(
-      tokenizeSceneForEcho(pitchSceneBlob(pitch)),
+      tokenizeSceneForEcho(renderable),
       tokenizeSceneForEcho(sibling.sceneSummary),
     );
     if (overlap >= SIBLING_SCENE_ECHO_THRESHOLD) score -= 3;
@@ -1437,8 +1687,16 @@ export async function weeklyReportageSceneBrief(
     motifClass?: string;
     subjectKind?: MetaphorSubjectKind;
     composition?: MetaphorPitch['composition'];
+    storyContext?: string;
+    meaning?: string;
     mechanism?: string;
+    consequence?: string;
+    visualThesis?: string;
     readerTest?: string;
+    whyItFits?: string;
+    storyAnchor?: string;
+    visibleMechanism?: string;
+    visibleConsequence?: string;
   }
 > {
   const ctx = [input.headline, input.summary].filter(Boolean).join('. ').trim();
@@ -1447,12 +1705,19 @@ export async function weeklyReportageSceneBrief(
   const siblings = input.siblingMetaphors ?? [];
 
   const essenceResult = await extractEditorialEssence(input, cfg);
+  const fallbackEssence = ctx.slice(0, 160);
+  const fallbackMechanismText = fallbackMechanism(input, fallbackEssence);
+  const fallbackConsequenceText = fallbackConsequence(input, fallbackEssence);
   const essence: EditorialEssence = essenceResult?.essence ?? {
-    essence: ctx.slice(0, 160),
+    storyContext: fallbackStoryContext(input, fallbackEssence),
+    meaning: firstGroundedField([input.why, input.summary], fallbackEssence).slice(0, 220),
+    essence: fallbackEssence,
     mustFeel: 'editorial tension',
     forbiddenCliches: ['person at laptop desk', 'glowing brain', 'paper heap'],
-    mechanism: fallbackMechanism(input, ctx.slice(0, 160)),
-    readerTest: `After seeing the image, grasp: ${fallbackMechanism(input, ctx.slice(0, 120))}`,
+    mechanism: fallbackMechanismText,
+    consequence: fallbackConsequenceText,
+    visualThesis: `${fallbackMechanismText.slice(0, 110)} visibly leads to ${fallbackConsequenceText.slice(0, 110)}`,
+    readerTest: `After seeing the image, grasp context, mechanism, and consequence: ${fallbackMechanismText.slice(0, 90)} -> ${fallbackConsequenceText.slice(0, 90)}`,
   };
   const essenceSource = essenceResult?.source;
 
@@ -1470,8 +1735,7 @@ export async function weeklyReportageSceneBrief(
       continue;
     }
     const ranked = [...pitches].sort(
-      (a, b) =>
-        scoreMetaphorPitch(b, essence, siblings) - scoreMetaphorPitch(a, essence, siblings),
+      (a, b) => scoreMetaphorPitch(b, essence, siblings) - scoreMetaphorPitch(a, essence, siblings),
     );
     let chosen: MetaphorPitch | null = null;
     const aggregateErrors: string[] = [];
@@ -1485,15 +1749,23 @@ export async function weeklyReportageSceneBrief(
     }
     if (chosen) {
       return {
-        scene: flattenMetaphorPitch(chosen, essence.essence),
+        scene: flattenMetaphorPitch(chosen, essence),
         source: result.source || essenceSource || 'fallback',
         essence: essence.essence,
         metaphorTitle: chosen.title,
         motifClass: chosen.motifClass,
         subjectKind: chosen.subjectKind,
         composition: chosen.composition,
+        storyContext: essence.storyContext,
+        meaning: essence.meaning,
         mechanism: essence.mechanism,
+        consequence: essence.consequence,
+        visualThesis: essence.visualThesis,
         readerTest: essence.readerTest,
+        whyItFits: chosen.whyItFits,
+        storyAnchor: chosen.storyAnchor,
+        visibleMechanism: chosen.visibleMechanism,
+        visibleConsequence: chosen.visibleConsequence,
       };
     }
     lastErrors = aggregateErrors.slice(0, 3);
@@ -1504,10 +1776,16 @@ export async function weeklyReportageSceneBrief(
   }
 
   return {
-    scene: weeklyFallbackScene(ctx, entities),
+    scene: essenceResult
+      ? weeklySemanticFallbackScene(essence)
+      : weeklyFallbackScene(ctx, entities),
     source: 'fallback',
     essence: essence.essence,
+    storyContext: essence.storyContext,
+    meaning: essence.meaning,
     mechanism: essence.mechanism,
+    consequence: essence.consequence,
+    visualThesis: essence.visualThesis,
     readerTest: essence.readerTest,
   };
 }
@@ -1516,16 +1794,24 @@ export async function weeklyReportageSceneBrief(
  * FLUX.2 weekly image prompt (policy {@link WEEKLY_PROMPT_POLICY}).
  * Subject-first SASC, craft-focused (photoreal materials, no sludge heaps).
  */
-export function buildEditorialConceptPrompt(accent: string, scene: string): string {
+export function buildEditorialConceptPrompt(
+  accent: string,
+  scene: string,
+  renderDirective?: string,
+): string {
   const subject = scene.replace(/\s+/g, ' ').trim();
+  const repair = renderDirective?.replace(/\s+/g, ' ').trim().slice(0, 280);
   const hex = accentToHex(accent.trim() || 'cool cyan');
   return (
     `${subject}. ` +
-    `Editorial concept illustration for a technology magazine cover, photoreal materials, ` +
+    `One instantly readable cause-and-effect moment: the story anchor, mechanism, and result ` +
+    `must be visually connected, not merely placed beside each other. Editorial concept ` +
+    `illustration for a technology magazine cover, photoreal materials, ` +
     `clear silhouette, believable physics, shot on 35mm lens, dramatic available light, ` +
     `shallow depth of field, restrained grade with accent color ${hex}, wide 16:9 edge-to-edge, ` +
-    `calm empty top and bottom bands, unmarked blank surfaces only, no deformed stacks, ` +
-    `sharp focus on the subject.`
+    `calm empty top and bottom bands, unmarked blank surfaces only, absolutely no readable text, ` +
+    `letters, numbers, logos, captions, UI, or screens, no deformed stacks, ` +
+    `sharp focus on the subject.${repair ? ` Repair requirement: ${repair}.` : ''}`
   );
 }
 
@@ -1540,6 +1826,8 @@ export interface WeeklyReportageIllustrationInput extends WeeklyReportageSceneIn
   seedBase: string;
   /** Owner-edited scene text bypasses essence/metaphor calls. */
   sceneOverride?: string;
+  /** Vision-critic instruction applied to the actual next FLUX request. */
+  renderDirective?: string;
   /** Defaults to 3. */
   variantCount?: number;
 }
@@ -1553,8 +1841,16 @@ export interface WeeklyReportageIllustrationResult {
   motifClass?: string;
   subjectKind?: MetaphorSubjectKind;
   composition?: MetaphorPitch['composition'];
+  storyContext?: string;
+  meaning?: string;
   mechanism?: string;
+  consequence?: string;
+  visualThesis?: string;
   readerTest?: string;
+  whyItFits?: string;
+  storyAnchor?: string;
+  visibleMechanism?: string;
+  visibleConsequence?: string;
 }
 
 /** Generates variant renders of the same editorial-concept scene. */
@@ -1570,12 +1866,32 @@ export async function generateWeeklyReportageIllustrations(
   let motifClass: string | undefined;
   let subjectKind: MetaphorSubjectKind | undefined;
   let composition: MetaphorPitch['composition'] | undefined;
+  let storyContext: string | undefined;
+  let meaning: string | undefined;
   let mechanism: string | undefined;
+  let consequence: string | undefined;
+  let visualThesis: string | undefined;
   let readerTest: string | undefined;
+  let whyItFits: string | undefined;
+  let storyAnchor: string | undefined;
+  let visibleMechanism: string | undefined;
+  let visibleConsequence: string | undefined;
   if (override) {
     scene = cleanSceneText(override);
     sceneSource = 'owner';
     const ownerMechanism = fallbackMechanism(input, input.headline || 'story');
+    const ownerContext = fallbackStoryContext(input, input.headline || 'story');
+    const ownerConsequence = fallbackConsequence(input, input.headline || 'story');
+    storyContext = ownerContext;
+    meaning = firstGroundedField([input.why, input.summary], input.headline || 'story');
+    mechanism = ownerMechanism;
+    consequence = ownerConsequence;
+    visualThesis = `${ownerMechanism.slice(0, 110)} visibly leads to ${ownerConsequence.slice(0, 110)}`;
+    readerTest = `After seeing the image, grasp context, mechanism, and consequence: ${visualThesis.slice(0, 140)}`;
+    whyItFits = 'Owner-supplied scene; vision critic must verify it against the source story.';
+    storyAnchor = scene;
+    visibleMechanism = scene;
+    visibleConsequence = scene;
     const ownerErrors = validateMetaphorPitch(
       {
         title: 'owner-override',
@@ -1589,13 +1905,20 @@ export async function generateWeeklyReportageIllustrations(
         whyItFits: 'owner override',
         motifClass: 'owner_override',
         subjectKind: 'object',
+        storyAnchor,
+        visibleMechanism,
+        visibleConsequence,
       },
       {
+        storyContext: ownerContext,
+        meaning,
         essence: input.headline || 'story',
         mustFeel: '',
         forbiddenCliches: [],
         mechanism: ownerMechanism,
-        readerTest: `After seeing the image, grasp: ${ownerMechanism.slice(0, 120)}`,
+        consequence: ownerConsequence,
+        visualThesis,
+        readerTest,
       },
       extractWeeklyStoryEntities(input),
       input.siblingMetaphors,
@@ -1614,10 +1937,22 @@ export async function generateWeeklyReportageIllustrations(
     motifClass = brief.motifClass;
     subjectKind = brief.subjectKind;
     composition = brief.composition;
+    storyContext = brief.storyContext;
+    meaning = brief.meaning;
     mechanism = brief.mechanism;
+    consequence = brief.consequence;
+    visualThesis = brief.visualThesis;
     readerTest = brief.readerTest;
+    whyItFits = brief.whyItFits;
+    storyAnchor = brief.storyAnchor;
+    visibleMechanism = brief.visibleMechanism;
+    visibleConsequence = brief.visibleConsequence;
   }
-  const positive = buildEditorialConceptPrompt(input.accent?.trim() || 'cool cyan', scene);
+  const positive = buildEditorialConceptPrompt(
+    input.accent?.trim() || 'cool cyan',
+    scene,
+    input.renderDirective,
+  );
   const negative = negativePrompt();
   const count = Math.max(1, input.variantCount ?? 3);
   const variants: GeneratedImageResult[] = [];
@@ -1644,8 +1979,16 @@ export async function generateWeeklyReportageIllustrations(
         motifClass,
         subjectKind,
         composition,
+        storyContext,
+        meaning,
         mechanism,
+        consequence,
+        visualThesis,
         readerTest,
+        whyItFits,
+        storyAnchor,
+        visibleMechanism,
+        visibleConsequence,
       }
     : null;
 }
@@ -1656,15 +1999,7 @@ export function fallbackScene(text: string): string {
   const has = (...ws: string[]) => ws.some((w) => t.includes(w));
   // Isolation / network escape — before generic agent or model-launch branches.
   if (
-    has(
-      'misconfig',
-      'egress',
-      'sandbox',
-      'post-mortem',
-      'postmortem',
-      'breakout',
-      'exfiltrat',
-    ) ||
+    has('misconfig', 'egress', 'sandbox', 'post-mortem', 'postmortem', 'breakout', 'exfiltrat') ||
     (has('network') && has('isolat', 'external', 'misconfig', 'egress'))
   ) {
     return (
@@ -1674,15 +2009,7 @@ export function fallbackScene(text: string): string {
   }
   // Cryptanalysis / cipher strength — before "claude" / model-launch stock.
   if (
-    has(
-      'cryptanalys',
-      'cryptograph',
-      'cipher',
-      'encryption',
-      'decrypt',
-      'key strength',
-      'mythos',
-    )
+    has('cryptanalys', 'cryptograph', 'cipher', 'encryption', 'decrypt', 'key strength', 'mythos')
   ) {
     return (
       'a cracked cryptographic seal and shattered padlock over dark circuitry, shards catching a ' +

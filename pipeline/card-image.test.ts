@@ -5,6 +5,7 @@ import {
   buildPrompt,
   buildWeeklyPrompt,
   buildEditorialConceptPrompt,
+  buildWeeklyContextBlock,
   cleanSceneText,
   accentToHex,
   extractWeeklyStoryEntities,
@@ -15,7 +16,10 @@ import {
   validateMetaphorPitch,
   validateWeeklySceneSpec,
   weeklyFallbackScene,
+  weeklySemanticFallbackScene,
   mechanismTokensVisible,
+  pitchRenderableBlob,
+  type EditorialEssence,
   WEEKLY_PROMPT_POLICY,
   DEFAULT_CF_IMAGE_MODEL,
   estimateCloudflareImageCostUsd,
@@ -137,9 +141,9 @@ describe('generateEditorialIllustration ladder', () => {
     expect(result!.negativePrompt).toContain('glowing brain');
     const calledUrls = vi.mocked(globalThis.fetch).mock.calls.map((call) => String(call[0]));
     expect(calledUrls.some((url) => url.includes('flux-2-klein-9b'))).toBe(true);
-    const kleinCall = vi.mocked(globalThis.fetch).mock.calls.find((call) =>
-      String(call[0]).includes('flux-2-klein-9b'),
-    );
+    const kleinCall = vi
+      .mocked(globalThis.fetch)
+      .mock.calls.find((call) => String(call[0]).includes('flux-2-klein-9b'));
     expect(kleinCall?.[1]?.body).toBeInstanceOf(FormData);
   });
 
@@ -348,12 +352,26 @@ describe('sceneBrief', () => {
 
 // --- Weekly Digest editorial-concept illustrations (essence → metaphor) ---
 
+function semanticEssence(
+  input: Pick<
+    EditorialEssence,
+    'essence' | 'mustFeel' | 'forbiddenCliches' | 'mechanism' | 'readerTest'
+  > &
+    Partial<EditorialEssence>,
+): EditorialEssence {
+  return {
+    storyContext: input.essence,
+    meaning: input.essence,
+    consequence: input.readerTest,
+    visualThesis: `${input.mechanism} leads to ${input.readerTest}`,
+    ...input,
+  };
+}
+
 describe('cleanSceneText', () => {
   it('unwraps art-director JSON wrappers so keys never reach the image prompt', () => {
     expect(
-      cleanSceneText(
-        '{"frame":"edge aisle with a technician sliding a server blade into a rack"}',
-      ),
+      cleanSceneText('{"frame":"edge aisle with a technician sliding a server blade into a rack"}'),
     ).toBe('edge aisle with a technician sliding a server blade into a rack');
   });
 
@@ -394,10 +412,14 @@ describe('weeklyReportageSceneBrief', () => {
 describe('weekly essence + metaphor gates', () => {
   it('parses essence JSON', () => {
     const essence = parseEditorialEssence(
-      '{"essence":"Shipping speed outran quality","mechanism":"rushed game build before QA","reader_test":"grasp: facade shipped first","must_feel":"uneasy contrast","forbidden_cliches":["glowing brain"]}',
+      '{"context":"Codex generated a 3D game","meaning":"speed arrived before verification","essence":"Shipping speed outran quality","mechanism":"rushed game build before QA","consequence":"unfinished defects reached the playable build","visual_thesis":"rushed assembly exposes unfinished defects","reader_test":"grasp: facade shipped first","must_feel":"uneasy contrast","forbidden_cliches":["glowing brain"]}',
     );
     expect(essence?.essence).toMatch(/speed outran quality/i);
     expect(essence?.mechanism).toMatch(/rushed game build/i);
+    expect(essence?.storyContext).toMatch(/Codex/i);
+    expect(essence?.meaning).toMatch(/verification/i);
+    expect(essence?.consequence).toMatch(/defects/i);
+    expect(essence?.visualThesis).toMatch(/assembly/i);
     expect(essence?.readerTest).toMatch(/facade shipped/i);
     expect(essence?.forbiddenCliches).toContain('glowing brain');
   });
@@ -416,6 +438,29 @@ describe('weekly essence + metaphor gates', () => {
     expect(mechanismTokensVisible('', 'anything')).toBe(true);
   });
 
+  it('passes approved context, benefit, limitation, and research risk as separate evidence', () => {
+    const context = buildWeeklyContextBlock(
+      {
+        headline: 'Agent ships a new runtime',
+        summary: 'The runtime resumes work after crashes.',
+        why: 'Teams lose less work during long-running jobs.',
+        practical: 'Developers can resume a failed automation.',
+        limitation: 'Only one workload was tested.',
+        takeaway: 'Durability matters more than a flashy demo.',
+        claimsExcerpt: 'A persisted event log records each completed step.',
+        researchRisks: 'No independent production benchmark yet.',
+        editorsView: 'This could make unattended jobs operationally safer.',
+        editorialAngle: 'Focus on recovery, not autonomy hype.',
+      },
+      ['runtime', 'event log'],
+    );
+    expect(context).toContain('SOURCE STORY');
+    expect(context).toContain('Reader benefit / practical use');
+    expect(context).toContain('Limitation / counterweight');
+    expect(context).toContain('Research risks');
+    expect(context).toContain('interpretation, NOT a reported fact');
+  });
+
   it('parses metaphor pitches and flattens subject-first', () => {
     const pitches = parseMetaphorPitches(
       JSON.stringify({
@@ -430,6 +475,9 @@ describe('weekly essence + metaphor gates', () => {
             motif_class: 'theatrical_reveal',
             subject_kind: 'character',
             why_it_fits: 'speed shipped a facade before quality caught up',
+            story_anchor: 'Codex 3D game character and build props',
+            visible_mechanism: 'polished facade assembled before QA inspection',
+            visible_consequence: 'unfinished missing-texture props exposed behind the curtain',
           },
         ],
       }),
@@ -437,7 +485,12 @@ describe('weekly essence + metaphor gates', () => {
     expect(pitches[0]?.composition).toBe('dual_contrast');
     expect(pitches[0]?.motifClass).toBe('theatrical_reveal');
     expect(pitches[0]?.subjectKind).toBe('character');
+    expect(pitches[0]?.visibleMechanism).toMatch(/QA inspection/i);
+    expect(pitches[0]?.visibleConsequence).toMatch(/unfinished/i);
     expect(flattenMetaphorPitch(pitches[0]!).toLowerCase()).toContain('spatial divide');
+    expect(flattenMetaphorPitch(pitches[0]!)).toContain(
+      'unfinished missing-texture props exposed behind the curtain',
+    );
   });
 
   it('allows dual_contrast when spatial-divide language is present', () => {
@@ -452,14 +505,19 @@ describe('weekly essence + metaphor gates', () => {
         whyItFits: 'polished facade vs broken backstage — speed outran quality',
         motifClass: 'theatrical_reveal',
         subjectKind: 'character',
+        storyAnchor: 'Codex 3D game character and build props',
+        visibleMechanism: 'polished game facade shipped before quality caught up',
+        visibleConsequence: 'unfinished quality defects hidden behind the polished facade',
       },
-      {
+      semanticEssence({
+        storyContext: 'Codex generated a rushed 3D game build before QA.',
         essence: 'Speed outran quality in a rushed 3D game build',
         mustFeel: 'uneasy',
         forbiddenCliches: [],
         mechanism: 'polished game facade shipped before quality caught up',
+        consequence: 'unfinished quality defects remain hidden behind the polished facade',
         readerTest: 'After seeing the image, grasp: facade shipped ahead of quality',
-      },
+      }),
       ['Codex', '3D game'],
     );
     expect(errors).toEqual([]);
@@ -474,13 +532,13 @@ describe('weekly essence + metaphor gates', () => {
         sceneSummary: 'clay golem guarding a sealed journal in a vault',
       },
     ];
-    const essence = {
+    const essence = semanticEssence({
       essence: 'Unsupervised agents stay reliable via durable memory',
       mustFeel: 'vigilance',
       forbiddenCliches: [],
       mechanism: 'durable memory ledger that keeps the agent honest',
       readerTest: 'grasp: durable memory keeps unsupervised agents reliable',
-    };
+    });
     const reuse = validateMetaphorPitch(
       {
         title: 'Guardian',
@@ -512,13 +570,13 @@ describe('weekly essence + metaphor gates', () => {
         motifClass: 'thermal_waste',
         subjectKind: 'object',
       },
-      {
+      semanticEssence({
         essence: 'Agentic coding burns vastly more energy than a chat prompt',
         mustFeel: 'waste',
         forbiddenCliches: [],
         mechanism: 'agentic coding loops that burn energy vs a tiny chat prompt',
         readerTest: 'grasp: agentic loops waste far more energy than chat',
-      },
+      }),
       ['energy'],
       siblings,
     );
@@ -538,13 +596,13 @@ describe('weekly essence + metaphor gates', () => {
         motifClass: 'blind_excavation',
         subjectKind: 'object',
       },
-      {
+      semanticEssence({
         essence: 'Crash-proof agents need a durable event log',
         mustFeel: 'reliability under failure',
         forbiddenCliches: [],
         mechanism: 'crash-proof event log that resumes after failure',
         readerTest: 'After seeing the image, grasp: durable event log resumes after crash',
-      },
+      }),
       ['Muse', 'event log'],
     );
     expect(errors).toContain('mechanism_not_visible');
@@ -562,6 +620,101 @@ describe('weekly essence + metaphor gates', () => {
     ).toBe(true);
   });
 
+  it('does not let why_it_fits text satisfy a mechanism that is absent from the rendered scene', () => {
+    const pitch = {
+      title: 'Decorative turbine',
+      subject: 'a polished turbine under a cyan spotlight',
+      action: 'rotating in an empty gallery',
+      setting: 'dark exhibition hall',
+      props: ['one steel pedestal'],
+      composition: 'single' as const,
+      whyItFits: 'A crash-proof event log resumes the agent after failure.',
+      motifClass: 'decorative_turbine',
+      subjectKind: 'object' as const,
+      storyAnchor: 'generic steel turbine',
+      visibleMechanism: 'turbine blades rotate around a central axle',
+      visibleConsequence: 'a pool of cyan light reaches the floor',
+    };
+    const semantic = semanticEssence({
+      essence: 'A durable event log makes the agent recoverable',
+      mustFeel: 'resilience',
+      forbiddenCliches: [],
+      mechanism: 'crash-proof event log that resumes after failure',
+      consequence: 'failed automation resumes without losing completed work',
+      readerTest: 'grasp: the event log preserves completed work through a crash',
+    });
+    expect(pitchRenderableBlob(pitch)).not.toContain('event log');
+    expect(validateMetaphorPitch(pitch, semantic, ['event log'])).toContain(
+      'mechanism_not_visible',
+    );
+  });
+
+  it('accepts physical cause-and-effect language grounded in the visual thesis', () => {
+    const errors = validateMetaphorPitch(
+      {
+        title: 'Meter cascade',
+        subject: 'a blank ceramic chat token starting a chain of analog electricity meters',
+        action: 'each mechanical relay turns the next meter faster',
+        setting: 'one continuous dark industrial workbench',
+        props: ['unmarked relays', 'power cables', 'analog meter needles'],
+        composition: 'single',
+        whyItFits: 'The small request hides repeated infrastructure work and accumulated energy.',
+        motifClass: 'meter_cascade',
+        subjectKind: 'process',
+        storyAnchor: 'agentic coding loop represented by one blank chat token',
+        visibleMechanism: 'a chain reaction through repeated model-call relays and tool cables',
+        visibleConsequence: 'the chain of electricity meters spin faster at the final meter',
+      },
+      semanticEssence({
+        storyContext: 'Agentic coding loops repeatedly invoke models and tools.',
+        meaning: 'A simple interface hides accumulating infrastructure work.',
+        essence: 'One chat-like request can conceal a much larger electricity cost.',
+        mustFeel: 'uneasy accumulation',
+        forbiddenCliches: [],
+        mechanism: 'Repeated planning, model calls, tool execution, and retries multiply work.',
+        consequence: 'Teams should account for loop count and electricity use.',
+        visualThesis: 'A blank chat token causes a chain of electricity meters to spin faster.',
+        readerTest: 'grasp: repeated hidden work accumulates electricity use',
+      }),
+      ['agentic coding', 'energy'],
+    );
+
+    expect(errors).toEqual([]);
+  });
+
+  it('rejects a topic-only anchor that omits the source actor or system', () => {
+    const errors = validateMetaphorPitch(
+      {
+        title: 'Generic energy loop',
+        subject: 'a water wheel turning an electricity meter',
+        action: 'circulating water through a pump',
+        setting: 'clear acrylic tank',
+        props: ['pipes', 'meter'],
+        composition: 'single',
+        whyItFits: 'The loop consumes electricity.',
+        motifClass: 'water_loop',
+        subjectKind: 'process',
+        storyAnchor: 'a closed-loop electric water pump',
+        visibleMechanism: 'the pump repeatedly circulates water through the wheel',
+        visibleConsequence: 'the electricity meter spins while the wheel repeats',
+      },
+      semanticEssence({
+        storyContext: 'An agentic coding loop repeatedly invokes models and developer tools.',
+        meaning: 'The interface hides repeated infrastructure work.',
+        essence: 'Agentic coding can conceal accumulated electricity use.',
+        mustFeel: 'uneasy accumulation',
+        forbiddenCliches: [],
+        mechanism: 'Repeated model calls and tool execution multiply work.',
+        consequence: 'Electricity use accumulates across the hidden loop.',
+        visualThesis: 'A coding-agent loop drives repeated tools and an accelerating meter.',
+        readerTest: 'grasp: repeated agent work accumulates energy use',
+      }),
+      ['agentic coding loop', 'electricity'],
+    );
+
+    expect(errors).toContain('story_anchor_not_grounded_in_context');
+  });
+
   it('rejects high-speed / motion-blur language in the pitch', () => {
     const errors = validateMetaphorPitch(
       {
@@ -575,13 +728,13 @@ describe('weekly essence + metaphor gates', () => {
         motifClass: 'blind_loom',
         subjectKind: 'object',
       },
-      {
+      semanticEssence({
         essence: 'Agents build blind to their own bugs',
         mustFeel: 'uneasy speed',
         forbiddenCliches: [],
         mechanism: 'build process blind to its own bugs',
         readerTest: 'grasp: the build cannot see its own defects',
-      },
+      }),
       ['Codex'],
     );
     expect(errors.some((e) => /motion-blur|high-speed/i.test(e))).toBe(true);
@@ -600,13 +753,13 @@ describe('weekly essence + metaphor gates', () => {
         motifClass: 'paper_heap',
         subjectKind: 'object',
       },
-      {
+      semanticEssence({
         essence: 'Agentic work burns energy invisibly',
         mustFeel: 'waste',
         forbiddenCliches: [],
         mechanism: 'invisible energy waste from agentic work',
         readerTest: 'grasp: agentic work burns energy invisibly',
-      },
+      }),
       ['Stripe', 'energy'],
     );
     expect(sludge.some((e) => /sludge|paper/i.test(e))).toBe(true);
@@ -634,12 +787,28 @@ describe('weekly essence + metaphor gates', () => {
     expect(entities.some((e) => /3d game/i.test(e))).toBe(true);
   });
 
+  it('does not mistake a long prose headline for one required visual entity', () => {
+    const entities = extractWeeklyStoryEntities({
+      headline: 'Agentic coding loops can hide a much larger electricity cost than one chat reply',
+      summary: 'Repeated model calls and tool retries multiply infrastructure work.',
+    });
+
+    expect(entities).toContain('agentic coding loop');
+    expect(entities).toContain('electricity');
+    expect(entities).not.toContain(
+      'Agentic coding loops can hide a much larger electricity cost than one chat reply',
+    );
+  });
+
   it('weeklyFallbackScene prefers conceptual metaphors for known story shapes', () => {
     expect(
       weeklyFallbackScene('Codex sub-agents built a 3D game', ['Codex', '3D game']).toLowerCase(),
     ).toMatch(/facade|backstage|stage/);
     expect(
-      weeklyFallbackScene('Stripe Claude Code energy 600x tokens', ['Stripe', 'energy']).toLowerCase(),
+      weeklyFallbackScene('Stripe Claude Code energy 600x tokens', [
+        'Stripe',
+        'energy',
+      ]).toLowerCase(),
     ).toMatch(/furnace|heat|chat/);
     expect(
       weeklyFallbackScene('Muse Code unsupervised 24 hour journal agent', [
@@ -648,19 +817,61 @@ describe('weekly essence + metaphor gates', () => {
       ]).toLowerCase(),
     ).toMatch(/journal|ledger|fairytale/);
   });
+
+  it('builds the last-resort weekly scene from the semantic contract', () => {
+    const scene = weeklySemanticFallbackScene(
+      semanticEssence({
+        storyContext: 'Agentic coding loops invoke models and tools repeatedly.',
+        meaning: 'A simple interface hides accumulating infrastructure work.',
+        essence: 'One request can conceal a larger electricity cost.',
+        mustFeel: 'uneasy accumulation',
+        forbiddenCliches: [],
+        mechanism: 'Repeated model calls and tool retries multiply work.',
+        consequence: 'Electricity use accumulates across the hidden loop.',
+        visualThesis: 'A blank chat token starts a chain of electricity meters spinning faster.',
+        readerTest: 'grasp: repeated hidden work accumulates energy use',
+      }),
+    );
+
+    expect(scene).toContain('chain of electricity meters');
+    expect(scene).toContain('Repeated model calls and tool retries');
+    expect(scene).not.toContain('single symbolic object under a hard editorial spotlight');
+  });
+
+  it('removes literal label invitations from the semantic fallback scene', () => {
+    const scene = weeklySemanticFallbackScene(
+      semanticEssence({
+        storyContext: 'An agentic coding loop repeatedly invokes models and tools.',
+        meaning: 'The visible answer hides repeated work.',
+        essence: 'Repeated coding loops accumulate energy use.',
+        mustFeel: 'uneasy accumulation',
+        forbiddenCliches: [],
+        mechanism: 'Cards cycle through compute and action stages.',
+        consequence: 'An attached electricity meter accumulates usage.',
+        visualThesis:
+          "Punch cards cycle through a 'model' slot and a 'tool' slot, spinning an electricity meter.",
+        readerTest: 'grasp: the coding loop accumulates energy use',
+      }),
+    );
+
+    expect(scene).toContain('unlabelled silicon-compute slot');
+    expect(scene).toContain('unlabelled mechanical-action slot');
+    expect(scene).not.toMatch(/['"](?:model|tool)['"]/i);
+  });
 });
 
 describe('buildWeeklyPrompt / buildEditorialConceptPrompt', () => {
   it('leads with the scene subject (BFL word-order) and stays craft-focused', () => {
-    const scene =
-      'tiny chat bubble beside industrial furnace of wasted heat arguing energy waste';
+    const scene = 'tiny chat bubble beside industrial furnace of wasted heat arguing energy waste';
     const prompt = buildEditorialConceptPrompt('cool cyan', scene);
     expect(prompt.startsWith(scene)).toBe(true);
     expect(prompt).toMatch(/editorial concept|photoreal/i);
     expect(prompt).toContain('16:9');
     expect(prompt).toContain(accentToHex('cool cyan'));
     expect(prompt.toLowerCase()).not.toContain('avoid:');
-    expect(prompt.split(/\s+/).length).toBeLessThan(90);
+    expect(prompt).toContain('cause-and-effect');
+    expect(prompt).toContain('absolutely no readable text');
+    expect(prompt.split(/\s+/).length).toBeLessThan(125);
     expect(buildWeeklyPrompt('cool cyan', scene)).toBe(prompt);
   });
 
@@ -670,7 +881,7 @@ describe('buildWeeklyPrompt / buildEditorialConceptPrompt', () => {
   });
 
   it('exports the editorial-concept prompt policy id', () => {
-    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-editorial-concept-v3');
+    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-semantic-story-v4');
   });
 });
 
@@ -725,6 +936,34 @@ describe('generateWeeklyReportageIllustrations', () => {
     expect(new Set(seeds).size).toBe(3);
   });
 
+  it('applies a vision repair directive to the actual FLUX prompt before rendering', async () => {
+    let sentPrompt = '';
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).includes('flux-2-klein-9b')) {
+        const form = init?.body as FormData;
+        sentPrompt = String(form.get('prompt'));
+        return jsonImageResponse();
+      }
+      return new Response('fail', { status: 500 });
+    }) as typeof fetch;
+
+    const result = await generateWeeklyReportageIllustrations(
+      {
+        headline: 'Agent recovery story',
+        summary: 'A persisted event log resumes failed work.',
+        sceneOverride: 'a snapped process chain reconnecting through a durable event ledger',
+        renderDirective: 'show the resumed downstream task physically moving again',
+        seedBase: 'digest-1:item-repair',
+        variantCount: 1,
+      },
+      { geminiApiKey: 'unused', cloudflareAccountId: 'acct', cloudflareApiToken: 'token' },
+    );
+
+    expect(result).not.toBeNull();
+    expect(sentPrompt).toContain('Repair requirement');
+    expect(sentPrompt).toContain('downstream task physically moving again');
+  });
+
   it('returns null when every variant attempt fails across the whole provider ladder', async () => {
     globalThis.fetch = vi.fn(async () => new Response('fail', { status: 500 })) as typeof fetch;
     const result = await generateWeeklyReportageIllustrations(
@@ -761,7 +1000,7 @@ describe('scene-brief registry wiring (Phase 2)', () => {
     expect(loadProviderRegistry).not.toHaveBeenCalled();
   });
 
-  it('builds a registry from this call\'s env keys + db when none is supplied', async () => {
+  it("builds a registry from this call's env keys + db when none is supplied", async () => {
     vi.mocked(loadProviderRegistry).mockResolvedValueOnce({ chainForRole: () => [] });
     const fakeDb = {} as never;
 

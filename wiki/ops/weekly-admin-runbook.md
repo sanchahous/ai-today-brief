@@ -131,6 +131,21 @@ Release preflight на Overview / Release покаже, що ще червоне
 факт про весь agentic AI. Якщо Top 3 не мають чесного спільного зв'язку, не вимагай umbrella-
 тему — краще прямо назвати три новини.
 
+На **Visuals** (policy `weekly-semantic-story-v4`) відкрий **Illustration prompt** і прочитай
+semantic contract до approval:
+
+1. **Context** — чи видно, яка саме система/обʼєкт/подія змінилась, а не «будь-який AI».
+2. **Mechanism** — чи причина/процес фізично видимі, а не існують лише в описі prompt.
+3. **Consequence** — чи механізм приводить до grounded benefit/harm/trade-off/uncertainty зі story.
+4. **Visual thesis** — чи звʼязок context → mechanism → consequence читається за ~3 секунди без
+   тексту на картинці.
+
+Chip `semantic` — мінімум із context/mechanism/consequence/instant-comprehension, а не середнє:
+високий `craft` не компенсує відсутній сенс. `needs_human_review` означає: переглянь blockers і
+prompt history; Approve override використовуй лише якщо очима підтверджуєш усі чотири пункти.
+(source: `src/components/admin/weekly-workspace.tsx`, `src/lib/content-sim/vision-critic.ts`,
+`pipeline/card-image.ts`)
+
 ### Release: approve → schedule → (за потреби) postpone → pause
 
 Реліз завжди виходить рівно в понеділок 16:00 Kyiv — `schedule_weekly_digest` не приймає
