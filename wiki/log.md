@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-11
 
+## 2026-08-11 — Story-image rollout: regenerate deduplication
+
+**Коригує запис нижче про parallel durable workers. Джерело:** після merge PR #222 production
+app уже працював на `241f4e5`, але Supabase migration history закінчувалась на
+`20260810114150`; сім нових Regenerate jobs о 21:05 отримали backend `vercel`, тоді як новий
+Vercel worker навмисно більше не claim-ив `story_image`. У тій самій active revision лишались
+retry/stale jobs для частини тих самих `revision_item_id`. (source: Vercel deployment/runtime logs,
+GitHub Actions run list і Supabase production snapshot 2026-08-11)
+
+**Змінено:** migration ранжує recoverable rows один раз: live lease або найновіший Regenerate
+стає winner, старі attempts/jobs фіксуються як `cancelled / superseded_by_regeneration`, і лише
+winner переходить у GitHub Actions. Production preview з rollback підтвердив 7 winners і 7
+superseded без зміни даних. Міграцію застосовано як production version `20260811183201`; cron о
+21:35 повернув `200` і створив рівно сім паралельних Actions runs `31523472069`…`31523483477`
+на `241f4e5`, без старих дублікатів. (source:
+`supabase/migrations/20260811183201_weekly_story_image_async_worker.sql`, Vercel production log
+2026-08-11 21:35 Kyiv, GitHub Actions runs `31523472069`…`31523483477`)
+
 ## 2026-08-11 — Story images: Vercel timeout → parallel durable workers
 
 **Джерело:** production runtime logs після deploy PR #221: `/api/internal/weekly/generate` о
@@ -18,7 +36,7 @@ short job за poll, а v4 робив кілька послідовних 40–1
 incident timeout jobs. Admin timeline тепер переходить у `generate`/`persist`, а не висить у
 `prepare / Provider not started`. (source: Vercel production runtime logs 2026-08-11,
 `src/app/api/internal/weekly/generate/route.ts`, `.github/workflows/weekly-master-cli-worker.yml`,
-`supabase/migrations/20260811173217_weekly_story_image_async_worker.sql`)
+`supabase/migrations/20260811183201_weekly_story_image_async_worker.sql`)
 
 ## 2026-08-11 — Vision critic JSON soft-fail (story_image)
 

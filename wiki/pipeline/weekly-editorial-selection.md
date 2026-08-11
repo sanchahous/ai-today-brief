@@ -211,8 +211,11 @@ selection score і не міняє порядок stories. (source: `src/lib/wee
 Перенесення `story_image` з 300-секундного Vercel request у незалежні GitHub Actions workers також
 не змінює shortlist або score: це лише execution boundary. Кожна story зберігає власний fenced
 `job_id`, input і `revision_item_id`, тому паралельні renders не можуть забрати роботу іншої story.
+Під час rollout кілька regenerate rows одного `revision_item_id` не стають кількома renders:
+міграція залишає live lease або найновіший запит, а попередні retry/stale jobs фіксує як
+superseded.
 (source: `src/lib/weekly-digest/generation-control.ts`,
-`supabase/migrations/20260811173217_weekly_story_image_async_worker.sql`)
+`supabase/migrations/20260811183201_weekly_story_image_async_worker.sql`)
 
 ## Related pages
 
