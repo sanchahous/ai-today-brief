@@ -6,8 +6,9 @@ Sources: `pipeline/card-image.ts`, `.env.example`, PR #169–#175, editorial qua
 (гілка `feat/llm-provider-registry`, 2026-08-06), post-merge review PR #191 (2026-08-07),
 BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-reportage-prompt-v2` (2026-08-10),
-`feat/weekly-editorial-concept-v1` (2026-08-10)
-Last updated: 2026-08-10
+`feat/weekly-editorial-concept-v1` (2026-08-10),
+Content Sim vision loop 2026-08-11
+Last updated: 2026-08-11
 
 ---
 
@@ -81,8 +82,17 @@ npx tsx scripts/backfill-card-images.ts <brief-slug>  # one brief
 `scripts/render-og-check.ts` renders the OG card via `next/og` without a dev
 server (handy where `next dev` is memory-constrained).
 
+**Content Sim (2026-08-11):** weekly `story_image` jobs run a vision critic loop
+(≤`CONTENT_SIM_MAX_IMAGE_REPAIR`, default 5) via `src/lib/content-sim` +
+`pipeline/providers/vision.ts` (`weekly.image_critic`). Failures escalate to human
+review with an admin escalation panel; release preflight blocks on
+`simulation_not_passed` until pass or owner override. Offline:
+`npm run content-sim -- run --adapter weekly-image|daily-image --fixture …`.
+See [content-sim](../pipeline/content-sim.md).
+
 ## Related pages
 
+- [content-sim](../pipeline/content-sim.md)
 - [weekly-digest](../pipeline/weekly-digest.md)
 - [overview](../overview.md) §4
 - [custom-social-delivery](custom-social-delivery.md)

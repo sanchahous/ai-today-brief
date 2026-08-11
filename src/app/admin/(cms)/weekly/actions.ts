@@ -478,7 +478,7 @@ export async function reviewWeeklyArtifactAction(formData: FormData) {
   const admin = getSupabaseAdmin();
   const { data: artifact } = await admin
     .from('weekly_digest_artifacts')
-    .select('weekly_digest_id,version,input_hash,is_current')
+    .select('weekly_digest_id,version,input_hash,is_current,artifact_type,metadata')
     .eq('id', artifactId)
     .maybeSingle();
   if (
@@ -487,6 +487,36 @@ export async function reviewWeeklyArtifactAction(formData: FormData) {
     artifact.input_hash !== expectedHash
   ) {
     throw new Error('This artifact changed while it was being reviewed. Reload before approval.');
+  }
+  // Approving a failed content-sim image records an explicit human override so
+  // release preflight can clear simulation_not_passed.
+  if (
+    decision === 'approved' &&
+    (artifact.artifact_type === 'story_image' || artifact.artifact_type === 'cover')
+  ) {
+    const meta =
+      artifact.metadata && typeof artifact.metadata === 'object' && !Array.isArray(artifact.metadata)
+        ? { ...(artifact.metadata as Record<string, unknown>) }
+        : {};
+    const simRaw = meta.content_sim;
+    if (simRaw && typeof simRaw === 'object' && !Array.isArray(simRaw)) {
+      const sim = { ...(simRaw as Record<string, unknown>) };
+      if (sim.passed !== true && sim.human_override !== true) {
+        meta.content_sim = {
+          ...sim,
+          human_override: true,
+          human_override_at: new Date().toISOString(),
+          human_override_note: note || 'Owner approved after content-sim escalation review.',
+          passed: true,
+          outcome: 'passed',
+        };
+        const { error: metaError } = await admin
+          .from('weekly_digest_artifacts')
+          .update({ metadata: meta as import('@/lib/database.types').Json })
+          .eq('id', artifactId);
+        if (metaError) throw new Error(metaError.message);
+      }
+    }
   }
   const db = await getSupabaseServer();
   const { error } = await db.rpc('review_weekly_digest_artifact', {

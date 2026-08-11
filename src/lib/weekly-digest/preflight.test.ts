@@ -61,6 +61,26 @@ describe('Weekly Digest release preflight', () => {
     });
   });
 
+  it('blocks release when story image content-sim failed without override', () => {
+    const input = completeInput();
+    input.artifacts = input.artifacts.map((entry) =>
+      entry.artifactType === 'story_image' && entry.storyId === 'story-1'
+        ? { ...entry, contentSimCleared: false }
+        : entry,
+    );
+    const result = validateWeeklyDigestPreflight(input);
+    expect(result.ready).toBe(false);
+    expect(result.blockers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'simulation_not_passed',
+          slot: 'story_image:story:story-1',
+          tab: 'visuals',
+        }),
+      ]),
+    );
+  });
+
   it('reports missing, stale, and unapproved artifact slots', () => {
     const input = completeInput();
     input.artifacts = input.artifacts

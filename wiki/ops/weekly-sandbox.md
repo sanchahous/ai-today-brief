@@ -124,6 +124,7 @@ npm run weekly:sandbox -- gates --fixture <path> --run artifacts/_local/weekly-s
 
 ## Related pages
 
+- [pipeline/content-sim](../pipeline/content-sim.md) — універсальний harness (images + daily + hypothesis); `npm run content-sim`
 - [pipeline/weekly-master-engine](../pipeline/weekly-master-engine.md) — ітеративний рушій, який цей сендбокс ганяє
 - [pipeline/weekly-master-failures](../pipeline/weekly-master-failures.md) — розбір збоїв 09.08 і що виправлено
 - [ops/weekly-admin-runbook](weekly-admin-runbook.md) — як вести випуск у адмінці
