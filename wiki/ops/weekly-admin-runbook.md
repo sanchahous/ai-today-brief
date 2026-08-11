@@ -126,6 +126,13 @@ attempts. Очікуваний стан: рівно один **Open run** для
 `supabase/migrations/20260811183201_weekly_story_image_async_worker.sql`,
 `src/app/api/internal/weekly/generate/route.ts`, `src/lib/weekly-digest/generation-worker.ts`)
 
+Manual **Retry** тепер ідемпотентний: повторний клік для тієї самої terminal job повертає вже
+створений live/succeeded child. У нормальному стані для одного `retry_of_job_id` може бути лише
+одна active job; кілька рядків із `cancelled · duplicate_manual_retry` — це збережений audit trail,
+а не черга, яку worker ще запустить. Якщо active-копій більше однієї, не натискай Retry/Regenerate
+ще раз і перевір partial unique guard з migration `20260811185251`. (source:
+`supabase/migrations/20260811185251_weekly_manual_retry_idempotency.sql`)
+
 ### 3–7. Article → … → Release
 
 На кожній вкладці: дочекайся generation **ready** → переглянь → **Approve**.

@@ -1562,3 +1562,26 @@ semantic-вдалий кадр із псевдотекстом блокуєть�
 render; красивий, але менш зрозумілий repair лишається failed за `ambiguous_visual_story` /
 `missing_mechanism` / `missing_consequence`. Повний `npm run pr:check` пройшов (1 095 tests,
 coverage/typecheck/lint/e2e/wiki/build).
+
+---
+
+## 2026-08-11 — Manual retry duplicate incident and idempotency guard
+
+**Джерело:** owner incident report 2026-08-11; production Supabase queue snapshot; GitHub Actions
+runs `31524340046`…`31524357383`;
+`supabase/migrations/20260811185251_weekly_manual_retry_idempotency.sql`.
+
+**Виявлено:** аварійний SQL-виклик `select (retry_rpc()).*` розгортав composite return і повторно
+виконав volatile RPC для кожної з 32 колонок `weekly_digest_generation_jobs`. Це створило 32
+linked retry children для одного failed `story_image`; safety poll забрав перші 10 у паралельні
+GitHub runs, решта лишилась queued.
+
+**Відновлено:** 22 queued duplicates скасовано до dispatch; дев'ять duplicate GitHub runs
+скасовано і fenced у durable ledger; retry `7886cc88-30cf-4f83-a90a-7263c753a124` залишено
+канонічним. Production snapshot після cleanup: 32 children = 31 cancelled + 1 active, active
+duplicate groups = 0.
+
+**Захищено:** migration `20260811185251` дедуплікує старі active children, додає partial unique
+index на active `retry_of_job_id`, source-row lock і reuse live/succeeded child у retry RPC.
+Production dry-run із rollback і повторним composite expansion не створив нових jobs; migration
+застосована в production, guard index і нова function definition перевірені.

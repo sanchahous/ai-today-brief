@@ -38,7 +38,7 @@ Last updated: 2026-08-11
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
-| 📋 `architecture/data-model.md` | Схема Supabase, RLS, ~75 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
+| 📋 `architecture/data-model.md` | Схема Supabase, RLS, ~76 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
 
@@ -101,7 +101,7 @@ Last updated: 2026-08-11
 | ✅ [ops/mcp](ops/mcp.md) | MCP-сервери: chrome-devtools, apify, supabase, ahrefs, vercel | нове |
 | ✅ [ops/owner-checklist](ops/owner-checklist.md) | Env-матриця, launch-блокери, go-live послідовність | колишній `docs/OWNER-CHECKLIST.md` |
 | ✅ [ops/social-cms-runbook](ops/social-cms-runbook.md) | Runbook соц-CMS | колишній `docs/SOCIAL-CMS-RUNBOOK.md` |
-| ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладки, succeeded≠approved, stuck jobs і checkpoint-resume master | нове 2026-08-04, оновлено 2026-08-09 |
+| ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладки, succeeded≠approved, stuck jobs, async images та idempotent retry | нове 2026-08-04, оновлено 2026-08-11 |
 | ✅ [ops/weekly-sandbox](ops/weekly-sandbox.md) | `weekly:doctor` + `weekly:sandbox`: префлайт провайдерів і повний прогін master-флоу на прод-даних без записів у прод | нове 2026-08-09 |
 | ✅ [ops/services-portability](ops/services-portability.md) | Портативність сервісів | колишній `docs/SERVICES-PORTABILITY.md` |
 | ✅ [ops/reddit-compliance](ops/reddit-compliance.md) | Чому Reddit API вимкнено і що потрібно для вмикання | колишній `docs/REDDIT-COMPLIANCE.md` |
