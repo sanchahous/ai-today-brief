@@ -98,6 +98,12 @@ counts are not rewritten as one fictional run; a stale legacy long job becomes t
 `pipeline/scripts/run-weekly-master-cli-worker.ts`, `src/lib/weekly-digest/generation-worker.ts`,
 `src/app/api/internal/weekly/generate/route.ts`)
 
+Linked manual retry is idempotent per terminal source: the RPC locks the source row and returns an
+existing live or succeeded child instead of inserting another one. A partial unique index also
+prevents two active retry children if a caller bypasses the RPC lock. Failed/cancelled child jobs
+remain immutable history and can themselves be retried as the next link in the chain. (source:
+`supabase/migrations/20260811185251_weekly_manual_retry_idempotency.sql`)
+
 `story_image` moved from Vercel to the long-lived worker after the first v4 production run on
 2026-08-11. Three consecutive `/api/internal/weekly/generate` invocations at 20:00, 20:05 and
 20:10 Kyiv each hit Vercel's exact 300-second timeout: one image spent 40–137 seconds per sequential
