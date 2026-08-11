@@ -15,6 +15,7 @@ import {
   validateMetaphorPitch,
   validateWeeklySceneSpec,
   weeklyFallbackScene,
+  mechanismTokensVisible,
   WEEKLY_PROMPT_POLICY,
   DEFAULT_CF_IMAGE_MODEL,
   estimateCloudflareImageCostUsd,
@@ -393,10 +394,26 @@ describe('weeklyReportageSceneBrief', () => {
 describe('weekly essence + metaphor gates', () => {
   it('parses essence JSON', () => {
     const essence = parseEditorialEssence(
-      '{"essence":"Shipping speed outran quality","must_feel":"uneasy contrast","forbidden_cliches":["glowing brain"]}',
+      '{"essence":"Shipping speed outran quality","mechanism":"rushed game build before QA","reader_test":"grasp: facade shipped first","must_feel":"uneasy contrast","forbidden_cliches":["glowing brain"]}',
     );
     expect(essence?.essence).toMatch(/speed outran quality/i);
+    expect(essence?.mechanism).toMatch(/rushed game build/i);
+    expect(essence?.readerTest).toMatch(/facade shipped/i);
     expect(essence?.forbiddenCliches).toContain('glowing brain');
+  });
+
+  it('falls back mechanism from why when JSON omits it', () => {
+    const essence = parseEditorialEssence(
+      '{"essence":"Agents need durable recovery","must_feel":"vigilance","forbidden_cliches":[]}',
+      {
+        headline: 'Muse crash-proof agents',
+        summary: 'Unsupervised coding with durable recovery',
+        why: 'crash-proof event log that resumes after failure',
+      },
+    );
+    expect(essence?.mechanism).toMatch(/event log/i);
+    expect(essence?.readerTest).toMatch(/event log/i);
+    expect(mechanismTokensVisible('', 'anything')).toBe(true);
   });
 
   it('parses metaphor pitches and flattens subject-first', () => {
@@ -440,6 +457,8 @@ describe('weekly essence + metaphor gates', () => {
         essence: 'Speed outran quality in a rushed 3D game build',
         mustFeel: 'uneasy',
         forbiddenCliches: [],
+        mechanism: 'polished game facade shipped before quality caught up',
+        readerTest: 'After seeing the image, grasp: facade shipped ahead of quality',
       },
       ['Codex', '3D game'],
     );
@@ -459,6 +478,8 @@ describe('weekly essence + metaphor gates', () => {
       essence: 'Unsupervised agents stay reliable via durable memory',
       mustFeel: 'vigilance',
       forbiddenCliches: [],
+      mechanism: 'durable memory ledger that keeps the agent honest',
+      readerTest: 'grasp: durable memory keeps unsupervised agents reliable',
     };
     const reuse = validateMetaphorPitch(
       {
@@ -495,11 +516,75 @@ describe('weekly essence + metaphor gates', () => {
         essence: 'Agentic coding burns vastly more energy than a chat prompt',
         mustFeel: 'waste',
         forbiddenCliches: [],
+        mechanism: 'agentic coding loops that burn energy vs a tiny chat prompt',
+        readerTest: 'grasp: agentic loops waste far more energy than chat',
       },
       ['energy'],
       siblings,
     );
     expect(dualCap).toContain('dual_contrast_digest_cap');
+  });
+
+  it('rejects diamond-vs-grinder when mechanism is an event log', () => {
+    const errors = validateMetaphorPitch(
+      {
+        title: 'Blind Excavation',
+        subject: 'a flawless diamond pressed against an industrial grinder',
+        action: 'trusting the wheel without a resume checkpoint',
+        setting: 'dark workshop',
+        props: ['sparks', 'grinder wheel'],
+        composition: 'single',
+        whyItFits: 'blind trust in a polished surface',
+        motifClass: 'blind_excavation',
+        subjectKind: 'object',
+      },
+      {
+        essence: 'Crash-proof agents need a durable event log',
+        mustFeel: 'reliability under failure',
+        forbiddenCliches: [],
+        mechanism: 'crash-proof event log that resumes after failure',
+        readerTest: 'After seeing the image, grasp: durable event log resumes after crash',
+      },
+      ['Muse', 'event log'],
+    );
+    expect(errors).toContain('mechanism_not_visible');
+    expect(
+      mechanismTokensVisible(
+        'crash-proof event log that resumes after failure',
+        'flawless diamond against industrial grinder blind trust',
+      ),
+    ).toBe(false);
+    expect(
+      mechanismTokensVisible(
+        'crash-proof event log that resumes after failure',
+        'sealed event log ledger that resumes after a crash failure',
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects high-speed / motion-blur language in the pitch', () => {
+    const errors = validateMetaphorPitch(
+      {
+        title: 'Loom',
+        subject: 'a high-speed loom with motion blur smeared shuttles',
+        action: 'streaking across the frame',
+        setting: 'mill floor',
+        props: ['blurred soft lens'],
+        composition: 'single',
+        whyItFits: 'build blind to its own bugs while racing',
+        motifClass: 'blind_loom',
+        subjectKind: 'object',
+      },
+      {
+        essence: 'Agents build blind to their own bugs',
+        mustFeel: 'uneasy speed',
+        forbiddenCliches: [],
+        mechanism: 'build process blind to its own bugs',
+        readerTest: 'grasp: the build cannot see its own defects',
+      },
+      ['Codex'],
+    );
+    expect(errors.some((e) => /motion-blur|high-speed/i.test(e))).toBe(true);
   });
 
   it('rejects paper-heap sludge and terminal/UI collage language', () => {
@@ -519,6 +604,8 @@ describe('weekly essence + metaphor gates', () => {
         essence: 'Agentic work burns energy invisibly',
         mustFeel: 'waste',
         forbiddenCliches: [],
+        mechanism: 'invisible energy waste from agentic work',
+        readerTest: 'grasp: agentic work burns energy invisibly',
       },
       ['Stripe', 'energy'],
     );
@@ -583,7 +670,7 @@ describe('buildWeeklyPrompt / buildEditorialConceptPrompt', () => {
   });
 
   it('exports the editorial-concept prompt policy id', () => {
-    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-editorial-concept-v2');
+    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-editorial-concept-v3');
   });
 });
 

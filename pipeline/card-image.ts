@@ -656,7 +656,7 @@ export async function sceneBrief(
 // ---------------------------------------------------------------------------
 
 /** Stored on story_image artifacts; bump when house-style / gates change. */
-export const WEEKLY_PROMPT_POLICY = 'weekly-editorial-concept-v2';
+export const WEEKLY_PROMPT_POLICY = 'weekly-editorial-concept-v3';
 
 /** Open vocabulary motif label from the metaphor director (snake_case). */
 export type MetaphorSubjectKind = 'object' | 'process' | 'environment' | 'character';
@@ -692,6 +692,10 @@ export interface EditorialEssence {
   essence: string;
   mustFeel: string;
   forbiddenCliches: string[];
+  /** Concrete mechanism that distinguishes this story (from why/angle). */
+  mechanism: string;
+  /** What a reader should grasp after seeing the image. */
+  readerTest: string;
 }
 
 /** A concrete visual metaphor that expresses an essence. */
@@ -744,6 +748,13 @@ const WEEKLY_SLUDGE_BANNED =
 
 const WEEKLY_DESK_DEFAULT =
   /\b(desk|laptop|keyboard|monitor|trackpad|office chair)\b/i;
+
+/** Motion language that makes FLUX paint smeared / laggy limbs (Story 7 fail-mode). */
+const WEEKLY_MOTION_BLUR_BANNED =
+  /\b(high[-\s]?speed|motion\s*blur|blurred|smeared|streaking|motion[-\s]?lag|racing through)\b/i;
+
+/** Min fraction of mechanism tokens (≥4 chars) that must appear in the pitch. */
+export const MECHANISM_TOKEN_HIT_RATIO = 0.35;
 
 function stripArtDirectorFences(text: string): string {
   return text
@@ -932,7 +943,7 @@ export function jaccardTokenOverlap(a: Set<string>, b: Set<string>): number {
 }
 
 function pitchSceneBlob(pitch: MetaphorPitch): string {
-  return [pitch.subject, pitch.setting, ...pitch.props].join(' ');
+  return [pitch.subject, pitch.setting, ...pitch.props, pitch.whyItFits, pitch.action].join(' ');
 }
 
 function dualContrastIsArgued(whyItFits: string): boolean {
@@ -942,7 +953,31 @@ function dualContrastIsArgued(whyItFits: string): boolean {
   );
 }
 
-export function parseEditorialEssence(raw: string): EditorialEssence | null {
+/** True when enough distinctive mechanism tokens appear in the pitch blob. */
+export function mechanismTokensVisible(mechanism: string, pitchBlob: string): boolean {
+  const tokens = [...tokenizeSceneForEcho(mechanism)];
+  if (tokens.length === 0) return true;
+  const hay = pitchBlob.toLowerCase();
+  let hits = 0;
+  for (const token of tokens) {
+    if (hay.includes(token)) hits += 1;
+  }
+  const need = Math.max(1, Math.ceil(tokens.length * MECHANISM_TOKEN_HIT_RATIO));
+  return hits >= need;
+}
+
+function fallbackMechanism(input: WeeklyReportageSceneInput, essence: string): string {
+  const fromWhy = input.why?.trim();
+  if (fromWhy && fromWhy.length >= 12) return fromWhy.slice(0, 160);
+  const fromAngle = input.editorialAngle?.trim();
+  if (fromAngle && fromAngle.length >= 12) return fromAngle.slice(0, 160);
+  return essence.slice(0, 160);
+}
+
+export function parseEditorialEssence(
+  raw: string,
+  input?: WeeklyReportageSceneInput,
+): EditorialEssence | null {
   const parsed = extractJsonObject(raw);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
   const record = parsed as Record<string, unknown>;
@@ -959,10 +994,30 @@ export function parseEditorialEssence(raw: string): EditorialEssence | null {
       : typeof record.mustFeel === 'string'
         ? record.mustFeel.trim()
         : 'sharp editorial tension';
+  const mechanismRaw =
+    (typeof record.mechanism === 'string' && record.mechanism.trim()) ||
+    (typeof record.mechanism_phrase === 'string' && record.mechanism_phrase.trim()) ||
+    '';
+  const readerTestRaw =
+    (typeof record.reader_test === 'string' && record.reader_test.trim()) ||
+    (typeof record.readerTest === 'string' && record.readerTest.trim()) ||
+    '';
+  const mechanism =
+    mechanismRaw.length >= 8
+      ? mechanismRaw.slice(0, 180)
+      : input
+        ? fallbackMechanism(input, essence)
+        : essence.slice(0, 160);
+  const readerTest =
+    readerTestRaw.length >= 8
+      ? readerTestRaw.slice(0, 200)
+      : `After seeing the image, grasp: ${mechanism.slice(0, 120)}`;
   return {
     essence,
     mustFeel: mustFeel || 'sharp editorial tension',
     forbiddenCliches: asStringArray(record.forbidden_cliches ?? record.forbiddenCliches),
+    mechanism,
+    readerTest,
   };
 }
 
@@ -1091,6 +1146,9 @@ export function validateMetaphorPitch(
   if (WEEKLY_SLUDGE_BANNED.test(flat)) {
     errors.push('banned paper-heap / sludge props that klein renders poorly');
   }
+  if (WEEKLY_MOTION_BLUR_BANNED.test(flat)) {
+    errors.push('banned high-speed / motion-blur language (causes smeared FLUX artifacts)');
+  }
   if (pitch.composition === 'dual_contrast') {
     const hasDivide =
       /\b(left|right|facade|backstage|curtain|behind|reflection|foreground|background|two (?:rooms|spaces)|spatial divide)\b/i.test(
@@ -1104,15 +1162,18 @@ export function validateMetaphorPitch(
     }
   }
   const hay = flat.toLowerCase();
+  const essenceTokens = essence.essence
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 5)
+    .slice(0, 4);
   const essenceHit =
-    essence.essence
-      .toLowerCase()
-      .split(/[^a-z0-9]+/)
-      .filter((t) => t.length >= 5)
-      .slice(0, 4)
-      .some((token) => hay.includes(token)) || pitch.whyItFits.length >= 12;
+    essenceTokens.length === 0 || essenceTokens.some((token) => hay.includes(token));
   if (!essenceHit) {
     errors.push('metaphor does not clearly argue the essence');
+  }
+  if (essence.mechanism.trim().length >= 8 && !mechanismTokensVisible(essence.mechanism, flat)) {
+    errors.push('mechanism_not_visible');
   }
   const entityHit =
     requiredEntities.length === 0 ||
@@ -1181,7 +1242,13 @@ export function validateWeeklySceneSpec(
       motifClass: 'legacy_scene',
       subjectKind: 'object',
     },
-    { essence: requiredEntities[0] || 'story argument', mustFeel: '', forbiddenCliches: [] },
+    {
+      essence: requiredEntities[0] || 'story argument',
+      mustFeel: '',
+      forbiddenCliches: [],
+      mechanism: requiredEntities[0] || 'story argument',
+      readerTest: 'legacy scene spec',
+    },
     requiredEntities,
   );
 }
@@ -1201,11 +1268,11 @@ export function weeklyFallbackScene(text: string, entities: string[] = []): stri
   if (has('game', '3d', 'render', 'bug', 'quality', '52 minute', 'codex')) {
     return `${prefix}polished game character on a lit stage left, unfinished pink-black missing-texture props and wooden braces backstage right, one continuous photograph`;
   }
-  if (has('muse', 'unsupervised', '24 hour', 'journal', 'kernel', 'endurance', 'agent')) {
-    return `${prefix}a tireless fairytale workshop character juggling glowing task orbs while guarding a sleek sealed journal ledger, no screens`;
+  if (has('muse', 'unsupervised', '24 hour', 'journal', 'kernel', 'endurance', 'event log')) {
+    return `${prefix}a sealed crash-proof event ledger replaying itself after a fallen tool, durable resume without a human restart, no screens`;
   }
   if (has('browser', 'headless', 'kitesurf', 'edge')) {
-    return `${prefix}a stripped racing chassis without seats or mirrors speeding through fog, implying headless software`;
+    return `${prefix}a stripped racing chassis without seats or mirrors rolling through fog, implying headless software`;
   }
   if (has('security', 'cve', 'breach', 'vulnerab')) {
     return `${prefix}a glass vault wall spiderweb-cracking under pressure while an alarm light blooms, no logos`;
@@ -1242,11 +1309,16 @@ function buildEssenceInstruction(input: WeeklyReportageSceneInput, entities: str
   return (
     `You are the editorial director for a developer technology digest. Read the story and state ` +
     `the ONE argument the cover illustration must make -- not logistics of who sat where. ` +
+    `Also name the concrete MECHANISM that distinguishes this story from a generic AI-agent piece ` +
+    `(from Why it matters / editorial angle). Mechanism examples: "crash-proof event log that resumes after failure"; ` +
+    `"headless browser stripped of human UI for agents"; "server-side tools turning the CLI into an observation pane". ` +
+    `Do NOT replace the mechanism with a vague poetic abstraction. ` +
     `Examples of good essence: "Agentic coding burns vastly more energy than a chat prompt, often invisibly"; ` +
     `"An unsupervised agent stays reliable because of its durable task journal"; ` +
     `"Shipping speed outran quality -- a finished facade hides broken internals". ` +
-    `Reply with ONLY JSON: {"essence":"one sentence","must_feel":"emotional register",` +
-    `"forbidden_cliches":["desk with laptop","generic AI brain",...]}.\n\n` +
+    `Reply with ONLY JSON: {"essence":"one sentence","mechanism":"concrete noun-phrase",` +
+    `"reader_test":"After seeing the image, a reader should grasp: ...",` +
+    `"must_feel":"emotional register","forbidden_cliches":["desk with laptop","generic AI brain",...]}.\n\n` +
     buildWeeklyContextBlock(input, entities)
   );
 }
@@ -1263,10 +1335,14 @@ function buildMetaphorInstruction(
   return (
     `You design cover metaphors for a weekly AI/engineering digest. Given this essence, invent ` +
     `2 or 3 vivid visual metaphors a reader grasps without reading any screen text. ` +
+    `CRITICAL: subject + props must make the MECHANISM visible as a physical analogue ` +
+    `(event log / resume latch, stripped machine chassis, thin observation pane) -- not a decorative ` +
+    `industrial scene that could illustrate any tech story. ` +
     `Prefer concrete OBJECTS, PROCESSES, or ENVIRONMENTS that argue the essence. ` +
     `Use a CHARACTER only when the essence cannot be read without one. ` +
     `Do NOT default to theater stages, ballerinas, golems, sealed journals, or ledgers unless ` +
     `the essence uniquely requires that exact mechanism -- invent a fresh motif_class each time. ` +
+    `Never use high-speed, motion blur, blurred, smeared, or streaking language (FLUX paints lag artifacts). ` +
     `If the essence needs contrast, set composition to "dual_contrast" and name BOTH halves in ` +
     `why_it_fits (facade vs chaos, tiny vs huge) as ONE continuous photograph with a spatial divide -- ` +
     `never collage, never a decorative second beat that does not argue the essence. ` +
@@ -1275,7 +1351,8 @@ function buildMetaphorInstruction(
     `Reply with ONLY JSON: {"metaphors":[{"title":"","subject":"","action":"","setting":"",` +
     `"props":[],"composition":"single|dual_contrast","motif_class":"snake_case_label",` +
     `"subject_kind":"object|process|environment|character","why_it_fits":""}]}.\n\n` +
-    `Essence: "${essence.essence}"\nMust feel: "${essence.mustFeel}"\n` +
+    `Essence: "${essence.essence}"\nMechanism that MUST be visible: "${essence.mechanism}"\n` +
+    `Reader test: "${essence.readerTest}"\nMust feel: "${essence.mustFeel}"\n` +
     `Forbidden: ${essence.forbiddenCliches.join(' | ') || 'generic AI sludge'}\n` +
     `${buildWeeklyContextBlock(input, entities)}${retry}`
   );
@@ -1298,11 +1375,25 @@ function scoreMetaphorPitch(
   }
   if (pitch.subjectKind === 'character') score -= 1;
   if (WEEKLY_DESK_DEFAULT.test(pitch.subject)) score -= 2;
+  if (WEEKLY_MOTION_BLUR_BANNED.test([pitch.subject, pitch.action, ...pitch.props].join(' '))) {
+    score -= 3;
+  }
   if (
     essence.mustFeel &&
     pitch.whyItFits.toLowerCase().includes(essence.mustFeel.toLowerCase().slice(0, 8))
   ) {
     score += 1;
+  }
+  if (mechanismTokensVisible(essence.mechanism, pitchSceneBlob(pitch))) {
+    score += 3;
+  } else {
+    score -= 4;
+  }
+  if (
+    /\b(industrial|factory|furnace|press|grinding|diamond|gauge)\b/i.test(pitchSceneBlob(pitch)) &&
+    !mechanismTokensVisible(essence.mechanism, pitchSceneBlob(pitch))
+  ) {
+    score -= 2;
   }
   const motif = pitch.motifClass.toLowerCase();
   for (const sibling of siblings) {
@@ -1327,7 +1418,7 @@ export async function extractEditorialEssence(
     cfg,
   );
   if (!result) return null;
-  const essence = parseEditorialEssence(result.text);
+  const essence = parseEditorialEssence(result.text, input);
   if (!essence) return null;
   return { essence, source: result.source };
 }
@@ -1346,6 +1437,8 @@ export async function weeklyReportageSceneBrief(
     motifClass?: string;
     subjectKind?: MetaphorSubjectKind;
     composition?: MetaphorPitch['composition'];
+    mechanism?: string;
+    readerTest?: string;
   }
 > {
   const ctx = [input.headline, input.summary].filter(Boolean).join('. ').trim();
@@ -1358,6 +1451,8 @@ export async function weeklyReportageSceneBrief(
     essence: ctx.slice(0, 160),
     mustFeel: 'editorial tension',
     forbiddenCliches: ['person at laptop desk', 'glowing brain', 'paper heap'],
+    mechanism: fallbackMechanism(input, ctx.slice(0, 160)),
+    readerTest: `After seeing the image, grasp: ${fallbackMechanism(input, ctx.slice(0, 120))}`,
   };
   const essenceSource = essenceResult?.source;
 
@@ -1397,6 +1492,8 @@ export async function weeklyReportageSceneBrief(
         motifClass: chosen.motifClass,
         subjectKind: chosen.subjectKind,
         composition: chosen.composition,
+        mechanism: essence.mechanism,
+        readerTest: essence.readerTest,
       };
     }
     lastErrors = aggregateErrors.slice(0, 3);
@@ -1410,6 +1507,8 @@ export async function weeklyReportageSceneBrief(
     scene: weeklyFallbackScene(ctx, entities),
     source: 'fallback',
     essence: essence.essence,
+    mechanism: essence.mechanism,
+    readerTest: essence.readerTest,
   };
 }
 
@@ -1454,6 +1553,8 @@ export interface WeeklyReportageIllustrationResult {
   motifClass?: string;
   subjectKind?: MetaphorSubjectKind;
   composition?: MetaphorPitch['composition'];
+  mechanism?: string;
+  readerTest?: string;
 }
 
 /** Generates variant renders of the same editorial-concept scene. */
@@ -1469,9 +1570,12 @@ export async function generateWeeklyReportageIllustrations(
   let motifClass: string | undefined;
   let subjectKind: MetaphorSubjectKind | undefined;
   let composition: MetaphorPitch['composition'] | undefined;
+  let mechanism: string | undefined;
+  let readerTest: string | undefined;
   if (override) {
     scene = cleanSceneText(override);
     sceneSource = 'owner';
+    const ownerMechanism = fallbackMechanism(input, input.headline || 'story');
     const ownerErrors = validateMetaphorPitch(
       {
         title: 'owner-override',
@@ -1486,7 +1590,13 @@ export async function generateWeeklyReportageIllustrations(
         motifClass: 'owner_override',
         subjectKind: 'object',
       },
-      { essence: input.headline || 'story', mustFeel: '', forbiddenCliches: [] },
+      {
+        essence: input.headline || 'story',
+        mustFeel: '',
+        forbiddenCliches: [],
+        mechanism: ownerMechanism,
+        readerTest: `After seeing the image, grasp: ${ownerMechanism.slice(0, 120)}`,
+      },
       extractWeeklyStoryEntities(input),
       input.siblingMetaphors,
     );
@@ -1504,6 +1614,8 @@ export async function generateWeeklyReportageIllustrations(
     motifClass = brief.motifClass;
     subjectKind = brief.subjectKind;
     composition = brief.composition;
+    mechanism = brief.mechanism;
+    readerTest = brief.readerTest;
   }
   const positive = buildEditorialConceptPrompt(input.accent?.trim() || 'cool cyan', scene);
   const negative = negativePrompt();
@@ -1532,6 +1644,8 @@ export async function generateWeeklyReportageIllustrations(
         motifClass,
         subjectKind,
         composition,
+        mechanism,
+        readerTest,
       }
     : null;
 }

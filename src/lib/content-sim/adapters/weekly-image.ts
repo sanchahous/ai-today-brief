@@ -26,6 +26,8 @@ export interface VariantScoreMeta {
   overall: number;
   blockers: string[];
   passed: boolean;
+  news_legibility?: number;
+  craft?: number;
 }
 
 export interface WeeklyImageSimCandidate {
@@ -41,6 +43,8 @@ export interface WeeklyImageSimCandidate {
   negativePrompt: string;
   sceneSource: string;
   essence?: string;
+  mechanism?: string;
+  readerTest?: string;
   metaphorTitle?: string;
   whyItFits?: string;
   motifClass?: string;
@@ -53,6 +57,20 @@ export interface WeeklyImageSimCandidate {
   preCritique?: ContentSimCritique;
   /** How primary was chosen for this candidate. */
   pickSource?: 'auto' | 'owner';
+}
+
+function variantScoreFromCritique(index: number, critique: ContentSimCritique): VariantScoreMeta {
+  return {
+    index,
+    overall: critique.scores.overall,
+    blockers: critique.blockers.map((b) => b.code),
+    passed: critique.passed,
+    news_legibility:
+      typeof critique.scores.news_legibility === 'number'
+        ? critique.scores.news_legibility
+        : undefined,
+    craft: typeof critique.scores.craft === 'number' ? critique.scores.craft : undefined,
+  };
 }
 
 export interface WeeklyImageSimContext {
@@ -92,6 +110,8 @@ export async function critiqueWeeklyImageBytes(
     height: number;
     scene: string;
     essence?: string;
+    mechanism?: string;
+    readerTest?: string;
     metaphorTitle?: string;
     whyItFits?: string;
   },
@@ -107,6 +127,8 @@ export async function critiqueWeeklyImageBytes(
   const prompt = buildImageCriticPrompt({
     headline: ctx.headline,
     essence: input.essence,
+    mechanism: input.mechanism,
+    readerTest: input.readerTest,
     metaphorTitle: input.metaphorTitle,
     whyItFits: input.whyItFits,
     scene: input.scene,
@@ -134,6 +156,8 @@ export async function critiqueWeeklyImageCandidate(
       height: candidate.height,
       scene: candidate.scene,
       essence: candidate.essence,
+      mechanism: candidate.mechanism,
+      readerTest: candidate.readerTest,
       metaphorTitle: candidate.metaphorTitle,
       whyItFits: candidate.whyItFits,
     },
@@ -157,14 +181,7 @@ export async function scoreAndPickVariants(
       ...candidate,
       preCritique: critique,
       pickSource: 'auto',
-      variantScores: [
-        {
-          index: 0,
-          overall: critique.scores.overall,
-          blockers: critique.blockers.map((b) => b.code),
-          passed: critique.passed,
-        },
-      ],
+      variantScores: [variantScoreFromCritique(0, critique)],
     };
   }
 
@@ -183,18 +200,15 @@ export async function scoreAndPickVariants(
           height: candidate.height,
           scene: candidate.scene,
           essence: candidate.essence,
+          mechanism: candidate.mechanism,
+          readerTest: candidate.readerTest,
           metaphorTitle: candidate.metaphorTitle,
           whyItFits: candidate.whyItFits,
         },
         ctx,
       );
       critiques[index] = critique;
-      scores.push({
-        index,
-        overall: critique.scores.overall,
-        blockers: critique.blockers.map((b) => b.code),
-        passed: critique.passed,
-      });
+      scores.push(variantScoreFromCritique(index, critique));
     }
   } else {
     let bestIdx = 0;
@@ -234,18 +248,15 @@ export async function scoreAndPickVariants(
           height: candidate.height,
           scene: candidate.scene,
           essence: candidate.essence,
+          mechanism: candidate.mechanism,
+          readerTest: candidate.readerTest,
           metaphorTitle: candidate.metaphorTitle,
           whyItFits: candidate.whyItFits,
         },
         ctx,
       );
       critiques[index] = critique;
-      scores.push({
-        index,
-        overall: critique.scores.overall,
-        blockers: critique.blockers.map((b) => b.code),
-        passed: critique.passed,
-      });
+      scores.push(variantScoreFromCritique(index, critique));
     }
   }
 

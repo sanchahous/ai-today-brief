@@ -35,9 +35,13 @@ Adapters: `weekly-master` (делегує `weekly:sandbox`), `weekly-image`, `da
    primary = найвищий overall без blockers (`pickBestVariantIndex`); scores у
    `metadata.variant_scores`. При тиску `CONTENT_SIM_MAX_IMAGE_SPEND_USD` — vision лише на
    top-1 за heuristic (розмір буфера), інші `budget_skip`.
-3. Vision critic JSON (пороги: overall ≥ `CONTENT_SIM_SCORE_THRESHOLD`, default **80**).
-   Blockers включають physics: `impossible_orientation`, `prop_use_mismatch`,
-   `decorative_second_beat`, `sibling_echo` (+ craft/UI).
+3. Vision critic JSON (пороги: overall ≥ `CONTENT_SIM_SCORE_THRESHOLD`, default **80**,
+   **і** `news_legibility` ≥ max(75, threshold)). Blockers включають physics:
+   `impossible_orientation`, `prop_use_mismatch`, `decorative_second_beat`, `sibling_echo`,
+   плюс editorial fidelity: **`off_news`** (картинка не аргументує distinctive mechanism),
+   **`melted_motion`** (smeared/blur artifacts). `overall` clamp:
+   `min(overall, news_legibility + 5)` — craft не може дати «голий» 100 при слабкій новині.
+   Prompt отримує `mechanism` + `readerTest` + headline.
 4. Repair directive → новий seed / scene_override / prompt patches / reject metaphor.
 5. Максимум **`CONTENT_SIM_MAX_IMAGE_REPAIR=5`** спроб; spend cap `CONTENT_SIM_MAX_IMAGE_SPEND_USD`.
 6. Fail → `needs_human_review` + escalation (blockers + suggested actions). Джоба **не** валиться.

@@ -20,6 +20,8 @@ export interface WeeklyImageFixture {
   headline: string;
   summary?: string;
   essence?: string;
+  mechanism?: string;
+  readerTest?: string;
   metaphorTitle?: string;
   whyItFits?: string;
   scene?: string;
@@ -89,6 +91,8 @@ export async function runWeeklyImageFixtureSim(
         negativePrompt: '',
         sceneSource: 'fixture',
         essence: fixture.essence,
+        mechanism: fixture.mechanism,
+        readerTest: fixture.readerTest,
         metaphorTitle: fixture.metaphorTitle,
         whyItFits: fixture.whyItFits,
         alternateBuffers: [],
@@ -109,7 +113,7 @@ export async function runWeeklyImageFixtureSim(
       critiqueWeeklyImageCandidate(candidate, {
         headline: fixture.headline,
         summary: fixture.summary,
-        policyId: fixture.policyId ?? 'weekly-editorial-concept-v2',
+        policyId: fixture.policyId ?? 'weekly-editorial-concept-v3',
         siblingScenes: fixture.siblingScenes,
       }),
   });

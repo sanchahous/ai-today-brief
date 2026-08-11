@@ -9,6 +9,12 @@ Last updated: 2026-08-11
 
 ## Стан репозиторію
 
+- **Weekly illustration fidelity v3 (2026-08-11):** policy `weekly-editorial-concept-v3` —
+  `mechanism` + `reader_test` на essence; gate `mechanism_not_visible`; ban motion-blur у
+  pitch; vision `off_news` / `melted_motion` + `news_legibility` (overall clamp); Visuals
+  показує `news · craft` поруч з overall. Див. [card-images](marketing/card-images.md),
+  [content-sim](pipeline/content-sim.md).
+
 - **Weekly illustration overhaul v2 (2026-08-11):** policy `weekly-editorial-concept-v2` —
   прибрано theater/journal bias у metaphor prompt/score; `motif_class` + sibling structural
   gates (reuse / scene echo / character budget / dual_contrast cap); vision physics blockers;

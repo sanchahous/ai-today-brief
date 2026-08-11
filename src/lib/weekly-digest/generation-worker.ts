@@ -2437,7 +2437,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   let source: Buffer;
   let sourceKind = 'generated';
   let sourceUrl: string | null = null;
-  let promptPolicy = 'weekly-editorial-concept-v2';
+  let promptPolicy = 'weekly-editorial-concept-v3';
   let imageMeta: {
     provider: string;
     model: string;
@@ -2448,6 +2448,8 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     negativePrompt?: string;
     sceneSource?: string;
     essence?: string;
+    mechanism?: string;
+    readerTest?: string;
     metaphorTitle?: string;
     motifClass?: string;
     subjectKind?: string;
@@ -2457,6 +2459,8 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       overall: number;
       blockers: string[];
       passed: boolean;
+      news_legibility?: number;
+      craft?: number;
     }>;
     pickSource?: 'auto' | 'owner';
   } | null = null;
@@ -2573,6 +2577,8 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
           negativePrompt: primary!.negativePrompt ?? '',
           sceneSource: illustrations.sceneSource,
           essence: illustrations.essence,
+          mechanism: illustrations.mechanism,
+          readerTest: illustrations.readerTest,
           metaphorTitle: illustrations.metaphorTitle,
           motifClass: illustrations.motifClass,
           subjectKind: illustrations.subjectKind,
@@ -2596,6 +2602,8 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         negativePrompt: sim.candidate.negativePrompt,
         sceneSource: sim.candidate.sceneSource,
         essence: sim.candidate.essence,
+        mechanism: sim.candidate.mechanism,
+        readerTest: sim.candidate.readerTest,
         metaphorTitle: sim.candidate.metaphorTitle,
         motifClass: sim.candidate.motifClass,
         subjectKind: sim.candidate.subjectKind,
@@ -2682,6 +2690,8 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
                   negative_prompt: imageMeta.negativePrompt,
                   scene_source: imageMeta.sceneSource,
                   ...(imageMeta.essence ? { essence: imageMeta.essence } : {}),
+                  ...(imageMeta.mechanism ? { mechanism: imageMeta.mechanism } : {}),
+                  ...(imageMeta.readerTest ? { reader_test: imageMeta.readerTest } : {}),
                   ...(imageMeta.metaphorTitle
                     ? { metaphor_title: imageMeta.metaphorTitle }
                     : {}),
@@ -2695,6 +2705,10 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
                           overall: row.overall,
                           blockers: row.blockers,
                           passed: row.passed,
+                          ...(typeof row.news_legibility === 'number'
+                            ? { news_legibility: row.news_legibility }
+                            : {}),
+                          ...(typeof row.craft === 'number' ? { craft: row.craft } : {}),
                         })),
                       }
                     : {}),

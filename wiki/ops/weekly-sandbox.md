@@ -4,7 +4,7 @@ Summary: як прогнати `editorial_master` локально на реал
 і як за хвилину перевірити провайдерів перед тим, як витрачати Actions-прогін.
 Sources: `pipeline/scripts/weekly-master-sandbox.ts`, `pipeline/scripts/weekly-doctor.ts`,
 live sandbox-прогони 2026-08-09 на фікстурі `ai-weekly-2026-08-02`,
-content-sim / illustration overhaul 2026-08-11
+content-sim / illustration overhaul 2026-08-11, fidelity v3 (mechanism + news_legibility)
 Last updated: 2026-08-11
 
 ---
@@ -125,7 +125,7 @@ npm run weekly:sandbox -- gates --fixture <path> --run artifacts/_local/weekly-s
 
 ## Related pages
 
-- [pipeline/content-sim](../pipeline/content-sim.md) — універсальний harness (images + daily + hypothesis); `npm run content-sim`
+- [pipeline/content-sim](../pipeline/content-sim.md) — універсальний harness (images + daily + hypothesis); `npm run content-sim`; weekly image critic також перевіряє `news_legibility` / `off_news` (policy v3)
 - [pipeline/weekly-master-engine](../pipeline/weekly-master-engine.md) — ітеративний рушій, який цей сендбокс ганяє
 - [pipeline/weekly-master-failures](../pipeline/weekly-master-failures.md) — розбір збоїв 09.08 і що виправлено
 - [ops/weekly-admin-runbook](weekly-admin-runbook.md) — як вести випуск у адмінці

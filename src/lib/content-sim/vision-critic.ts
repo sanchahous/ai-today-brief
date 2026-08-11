@@ -13,6 +13,8 @@ export const IMAGE_CRITIC_BLOCKER_CODES = [
   'collage_panels',
   'banned_cliche',
   'off_metaphor',
+  'off_news',
+  'melted_motion',
   'brand_unsafe',
   'low_quality',
   'wrong_subject',
@@ -24,9 +26,26 @@ export const IMAGE_CRITIC_BLOCKER_CODES = [
 
 export type ImageCriticBlockerCode = (typeof IMAGE_CRITIC_BLOCKER_CODES)[number];
 
+/** Floor for news_legibility when CONTENT_SIM_SCORE_THRESHOLD is lower. */
+export const NEWS_LEGIBILITY_MIN = 75;
+
+export function newsLegibilityThreshold(scoreThreshold = contentSimScoreThreshold()): number {
+  return Math.max(NEWS_LEGIBILITY_MIN, scoreThreshold);
+}
+
+/**
+ * Honest overall: craft cannot inflate past news legibility.
+ * `overall = min(overall, news_legibility + 5)`.
+ */
+export function clampOverallByNewsLegibility(overall: number, newsLegibility: number): number {
+  return Math.min(overall, newsLegibility + 5);
+}
+
 export function buildImageCriticPrompt(input: {
   headline: string;
   essence?: string;
+  mechanism?: string;
+  readerTest?: string;
   metaphorTitle?: string;
   whyItFits?: string;
   scene?: string;
@@ -35,6 +54,7 @@ export function buildImageCriticPrompt(input: {
   siblingScenes?: string[];
 }): string {
   const threshold = input.scoreThreshold ?? contentSimScoreThreshold();
+  const newsFloor = newsLegibilityThreshold(threshold);
   const siblingBlock =
     input.siblingScenes?.length ?
       [
@@ -44,10 +64,14 @@ export function buildImageCriticPrompt(input: {
     : '';
   return [
     'You are the art director QA for AI Today Brief.',
-    `Policy: ${input.policyId ?? 'weekly-editorial-concept-v2'} (no readable text, no UI chrome, no comic panels/collage).`,
-    `Score overall 0–100. Pass only if overall >= ${threshold} AND no blocking issues.`,
-    'Blocking codes (use exactly): readable_text | ui_chrome | collage_panels | banned_cliche | off_metaphor | brand_unsafe | low_quality | wrong_subject | impossible_orientation | prop_use_mismatch | decorative_second_beat | sibling_echo.',
+    `Policy: ${input.policyId ?? 'weekly-editorial-concept-v3'} (no readable text, no UI chrome, no comic panels/collage).`,
+    `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, AND no blocking issues.`,
+    'Blocking codes (use exactly): readable_text | ui_chrome | collage_panels | banned_cliche | off_metaphor | off_news | melted_motion | brand_unsafe | low_quality | wrong_subject | impossible_orientation | prop_use_mismatch | decorative_second_beat | sibling_echo.',
     'banned_cliche includes: terminal/IDE screens, paper-heap sludge, generic desk without a conceptual prop.',
+    'Editorial fidelity (news first):',
+    '- off_news: the image could illustrate almost any tech story; it does not make THIS story’s distinctive mechanism visible. Score news_legibility low.',
+    '- melted_motion: smeared shuttles, melted limbs, motion-lag blobs, streaking blur that destroys silhouette readability.',
+    'Ask yourself: would a developer infer THIS story’s distinctive claim from the image alone?',
     'Physics / craft checks:',
     '- impossible_orientation: readable surfaces (books, journals, screens, signs) upside-down or rotated vs how a human would use them.',
     '- prop_use_mismatch: grip, posture, or object use that a human would not do this way.',
@@ -56,6 +80,8 @@ export function buildImageCriticPrompt(input: {
     '',
     `Headline: ${input.headline}`,
     input.essence ? `Essence: ${input.essence}` : '',
+    input.mechanism ? `Mechanism that must be visible: ${input.mechanism}` : '',
+    input.readerTest ? `Reader test: ${input.readerTest}` : '',
     input.metaphorTitle ? `Metaphor: ${input.metaphorTitle}` : '',
     input.whyItFits ? `Why it fits: ${input.whyItFits}` : '',
     input.scene ? `Scene brief: ${input.scene.slice(0, 800)}` : '',
@@ -64,7 +90,7 @@ export function buildImageCriticPrompt(input: {
     'Inspect the attached image. Reply with ONLY JSON:',
     '{',
     '  "overall": number,',
-    '  "dimensions": { "metaphor_fit": number, "no_text": number, "craft": number, "brand_safe": number },',
+    '  "dimensions": { "metaphor_fit": number, "no_text": number, "craft": number, "brand_safe": number, "news_legibility": number },',
     '  "blockers": [{ "code": string, "message": string, "region": string }],',
     '  "notes": string,',
     '  "repair": {',
@@ -151,7 +177,9 @@ export function parseImageCriticResponse(
 ): ContentSimCritique {
   const parsed = asRecord(extractJsonObject(text));
   const dimensions = asRecord(parsed.dimensions);
-  const overall = num(parsed.overall, num(dimensions.overall, 0));
+  const rawOverall = num(parsed.overall, num(dimensions.overall, 0));
+  const newsLegibility = num(dimensions.news_legibility, rawOverall);
+  const overall = clampOverallByNewsLegibility(rawOverall, newsLegibility);
   const blockers = parseBlockers(parsed.blockers);
   const scores = {
     overall,
@@ -159,8 +187,15 @@ export function parseImageCriticResponse(
     no_text: num(dimensions.no_text, overall),
     craft: num(dimensions.craft, overall),
     brand_safe: num(dimensions.brand_safe, overall),
+    news_legibility: newsLegibility,
   };
-  const passed = blockers.length === 0 && overall >= scoreThreshold;
+  const newsFloor = newsLegibilityThreshold(scoreThreshold);
+  const hasOffNews = blockers.some((b) => b.code === 'off_news');
+  const passed =
+    blockers.length === 0 &&
+    !hasOffNews &&
+    overall >= scoreThreshold &&
+    newsLegibility >= newsFloor;
   return {
     passed,
     scores,
