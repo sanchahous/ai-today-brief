@@ -6,6 +6,20 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-10
 
+## 2026-08-10 — Weekly story images: editorial-concept-v1 (essence → metaphor)
+
+**Джерело:** feedback після regen stories 1/2/7 на `ai-weekly-2026-08-02` — reportage-v2
+давав literal props / fallback blink / слабкий essence; план `editorial_metaphor_images`.
+
+**Змінено:**
+- `pipeline/card-image.ts` — `WEEKLY_PROMPT_POLICY = weekly-editorial-concept-v1`: essence +
+  metaphor JSON, `validateMetaphorPitch` (incl. `dual_contrast`), craft bans (paper-heap,
+  UI/collage), `buildEditorialConceptPrompt`, keyword metaphor fallbacks.
+- `generation-worker.ts` — claims excerpt + sibling scenes; metadata `essence` /
+  `metaphor_title`.
+- Wiki: [card-images](marketing/card-images.md), [weekly-digest](pipeline/weekly-digest.md),
+  [overview](overview.md); sync fact `WEEKLY_PROMPT_POLICY`.
+
 ## 2026-08-10 — Weekly story images: prompt policy v2 (BFL-aligned)
 
 **Джерело:** аудит якості ілюстрацій `ai-weekly-2026-08-02` (сцени без сенсу новини,

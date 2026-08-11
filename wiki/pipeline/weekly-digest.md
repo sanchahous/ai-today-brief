@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10, newer-draft banner + restore/save security-definer fix 2026-08-10, Postpone release feature 2026-08-10, weekly-reportage-v2 prompt rewrite 2026-08-10
+Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10, newer-draft banner + restore/save security-definer fix 2026-08-10, Postpone release feature 2026-08-10, weekly-reportage-v2 prompt rewrite 2026-08-10, weekly-editorial-concept-v1 2026-08-10
 Last updated: 2026-08-10
 
 ---
@@ -237,29 +237,21 @@ AI-suggested angles are a possible follow-up, not done here.
 `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`,
 `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/editorial-llm.ts`)
 
-**PR5 (2026-08-06):** репортажні ілюстрації + вибір варіантів — другий human-in-the-loop пункт.
-Новий, повністю окремий шлях у **`pipeline/card-image.ts`**: `weeklyReportageSceneBrief` (арт-
-директор-промпт просить документальний, репортажний кадр реальної події — "picture a
-photographer standing in the room where this happened" — а не символічну метафору) +
-`buildWeeklyPrompt` (документальний стиль, 35mm, один наскрізний акцент) +
-`generateWeeklyReportageIllustrations` (3 варіанти на одному сценарії/промпті, різні сіди).
-**Daily-пайплайн (`sceneBrief`/`buildPrompt`/`fillCardImages`) не зачеплений** — окремі функції,
-спільний лише provider-ladder (`generateImage`) і рефакторений `runArtDirectorLadder`.
+**PR5 (2026-08-06) → editorial-concept-v1 (2026-08-10):** окремий шлях у
+**`pipeline/card-image.ts`**: `weeklyReportageSceneBrief` тепер робить **essence → metaphor**
+(два LLM-кроки на ролі `weekly.card_image_scene`) + `buildEditorialConceptPrompt` (subject-first
+SASC, craft bans) + `generateWeeklyReportageIllustrations` (3 варіанти / різні сіди).
+**Daily-пайплайн не зачеплений.**
 
-Контекст для арт-директора розширено з title+summary до title+summary+перші ~600 симв. body+
-editorsView (`generateStoryImage`, generation-worker.ts) — суттєво більше матеріалу, ніж daily-шлях
-коли-небудь отримує. Seed більше не містить `job.id` (`digestId:revisionId:itemId:v{n}`) —
-регенерація тепер ітеративна, не лотерея. `metadata.prompt_policy` артефактів story_image —
-**`weekly-reportage-v2`** (з 2026-08-10; раніше `weekly-reportage-v1`): арт-директор повертає
-структурований JSON сцени → детерміністичний validator + 1 retry → subject-first SASC промпт
-для FLUX (BFL guidance: без giant Avoid-list, HEX accent, camera/lighting). Контекст включає
-binding `editorialAngle` + `why` + entity extraction. Деталі стилю —
+Контекст: title+summary+body excerpt+editorsView+`editorialAngle`+`why`+claim snippets+sibling
+scenes (`generateStoryImage`). Seed без `job.id`. `metadata.prompt_policy` =
+**`weekly-editorial-concept-v1`** (раніше `weekly-reportage-v2` / `v1`). Validator дозволяє
+`dual_contrast` (один continuous кадр з просторовим поділом facade/backstage); банить paper-heap
+sludge, terminal/IDE, collage. Артефакт зберігає `essence` / `metaphor_title`. Деталі —
 [marketing/card-images](../marketing/card-images.md).
 
-**Фікс мертвого negative prompt на klein (PR5, уточнено v2):** klein multipart не шле
-окремий `negative_prompt`. v1 вшивав Avoid-list у позитивний промпт; v2 замінює це на
-позитивний desired-state (BFL: FLUX.2 не підтримує negatives) і переносить заборони в
-validator сцени *до* виклику FLUX.
+**Фікс мертвого negative prompt на klein:** multipart не шле `negative_prompt`; заборони в
+validator *до* FLUX; позитивний desired-state (BFL: FLUX.2 без negatives).
 
 **Зберігання варіантів:** RPC `save_weekly_digest_artifact` **не підтримує кілька одночасних
 `is_current` рядків на один `slot_key`** (кожен save демотує попередній) — тож 3 варіанти НЕ

@@ -2437,7 +2437,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   let source: Buffer;
   let sourceKind = 'generated';
   let sourceUrl: string | null = null;
-  let promptPolicy = 'weekly-reportage-v2';
+  let promptPolicy = 'weekly-editorial-concept-v1';
   let imageMeta: {
     provider: string;
     model: string;
@@ -2447,6 +2447,8 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     positivePrompt?: string;
     negativePrompt?: string;
     sceneSource?: string;
+    essence?: string;
+    metaphorTitle?: string;
   } | null = null;
   /** Additional variant renders (sharp-processed, not yet uploaded) beyond the primary. */
   let alternateBuffers: Buffer[] = [];
@@ -2467,6 +2469,20 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     const editorialAngle = item.brief_item_id
       ? directions.get(item.brief_item_id)
       : undefined;
+    // Cheap claim snippets from the revision item snapshot (no extra research load).
+    const claimsExcerpt = approvedFactsForItem(item).slice(0, 4).join(' · ').slice(0, 400) || undefined;
+    const siblingScenes = context.artifacts
+      .filter(
+        (artifact) =>
+          artifact.artifact_type === 'story_image' &&
+          artifact.revision_item_id &&
+          artifact.revision_item_id !== item.id,
+      )
+      .flatMap((artifact) => {
+        const scene = text(asRecord(artifact.metadata).scene);
+        return scene ? [scene.slice(0, 120)] : [];
+      })
+      .slice(0, 6);
     const illustrations = await generateWeeklyReportageIllustrations(
       {
         headline: item.title_en,
@@ -2475,6 +2491,8 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         editorsView: text(contentStudio.editors_view_en) ?? undefined,
         editorialAngle,
         why: item.why_en ?? undefined,
+        claimsExcerpt,
+        avoidSubjects: siblingScenes.length ? siblingScenes : undefined,
         seedBase: `${job.weekly_digest_id}:${job.revision_id}:${item.id}`,
         sceneOverride: sceneOverride ?? undefined,
         variantCount: 3,
@@ -2506,6 +2524,8 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         positivePrompt: primary!.positivePrompt,
         negativePrompt: primary!.negativePrompt,
         sceneSource: illustrations.sceneSource,
+        essence: illustrations.essence,
+        metaphorTitle: illustrations.metaphorTitle,
       };
       alternateBuffers = alternates.map((variant) => variant.bytes);
     } else {
@@ -2585,6 +2605,10 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
                   positive_prompt: imageMeta.positivePrompt,
                   negative_prompt: imageMeta.negativePrompt,
                   scene_source: imageMeta.sceneSource,
+                  ...(imageMeta.essence ? { essence: imageMeta.essence } : {}),
+                  ...(imageMeta.metaphorTitle
+                    ? { metaphor_title: imageMeta.metaphorTitle }
+                    : {}),
                 }
               : {}),
           }

@@ -647,33 +647,64 @@ export async function sceneBrief(
 }
 
 // ---------------------------------------------------------------------------
-// Weekly Digest "reportage" illustrations (PR5 + prompt-v2).
-// Deliberately separate from sceneBrief/buildPrompt above -- daily cards keep
-// abstract metaphors. Weekly = documentary frame of the actual news event.
-// Prompt-v2 aligns with Black Forest Labs FLUX.2 guidance (2026): subject-first
-// SASC prose, no negative-prompt laundry lists, structured art-director JSON
-// with a deterministic validator + one retry (same maturity as video/master).
+// Weekly Digest "editorial concept" illustrations (prompt-v3).
+// Pivot from documentary reportage-v2: find the story's ESSENCE, invent a
+// visual METAPHOR that argues that essence, then render subject-first SASC
+// for FLUX.2 (BFL-aligned). dual_contrast compositions allowed when the
+// argument needs facade-vs-chaos / tiny-vs-huge spatial divide -- still one
+// continuous photograph, never collage or readable UI.
 // ---------------------------------------------------------------------------
 
 /** Stored on story_image artifacts; bump when house-style / gates change. */
-export const WEEKLY_PROMPT_POLICY = 'weekly-reportage-v2';
+export const WEEKLY_PROMPT_POLICY = 'weekly-editorial-concept-v1';
 
 export interface WeeklyReportageSceneInput {
   headline: string;
   summary: string;
-  /** First ~600 chars of the story body -- gives the art director the actual
-   * narrative, not just the one-paragraph summary the daily path gets. */
+  /** First ~600 chars of the story body. */
   bodyExcerpt?: string;
   editorsView?: string;
   /** Binding editorial angle from weekly_digest_story_directions (PR4). */
   editorialAngle?: string;
   /** Why-it-matters line -- distinctive claim for entity extraction. */
   why?: string;
+  /** Short claim snippets from research (optional). */
+  claimsExcerpt?: string;
   /** Subjects already used by sibling stories in this digest (diversity). */
   avoidSubjects?: string[];
 }
 
-/** Structured scene from the weekly art director (validated before FLUX). */
+/** One-sentence editorial argument the illustration must make. */
+export interface EditorialEssence {
+  essence: string;
+  mustFeel: string;
+  forbiddenCliches: string[];
+}
+
+/** A concrete visual metaphor that expresses an essence. */
+export interface MetaphorPitch {
+  title: string;
+  subject: string;
+  action: string;
+  setting: string;
+  props: string[];
+  composition: 'single' | 'dual_contrast';
+  whyItFits: string;
+}
+
+/** Validated frame ready to flatten into a FLUX scene phrase. */
+export interface WeeklyEditorialFrame {
+  essence: string;
+  metaphorTitle: string;
+  subject: string;
+  action: string;
+  setting: string;
+  props: string[];
+  composition: 'single' | 'dual_contrast';
+  mustInclude: string[];
+}
+
+/** Compatibility shape for older tests; prefer MetaphorPitch. */
 export interface WeeklyReportageSceneSpec {
   subject: string;
   action: string;
@@ -682,19 +713,17 @@ export interface WeeklyReportageSceneSpec {
   mustInclude: string[];
 }
 
-const WEEKLY_SCENE_BANNED =
-  /\b(split[-\s]?(?:screen|panel|pane)|dual[-\s]?pane|side[-\s]?by[-\s]?side|npx\b|terminal(?:\s+window)?|ide\b|vs\s*code|dashboard|taskbar|browser chrome|title bar|readable (?:ui|text|screen|code)|gibberish|glowing brain|cracked padlock|robotic arms?|coin towers?|finger pointing|pointing at (?:the )?screen|neural[-\s]?network mesh)\b/i;
+/** Hard bans: readable UI, AI sludge stock, comic collage. */
+const WEEKLY_CRAFT_BANNED =
+  /\b(npx\b|terminal(?:\s+window)?|ide\b|vs\s*code|dashboard|taskbar|browser chrome|title bar|readable (?:ui|text|screen|code)|gibberish|glowing brain|cracked padlock|robotic arms?|coin towers?|finger pointing|pointing at (?:the )?screen|neural[-\s]?network mesh|comic panel|collage|split[-\s]?screen)\b/i;
+
+/** Paper/transcript heaps that klein renders as melted AI sludge. */
+const WEEKLY_SLUDGE_BANNED =
+  /\b(heap of (?:paper|papers|transcript|transcripts)|tall stack of|stack of (?:paper|papers|transcript|books)|melted|deformed|warped pages|illegible (?:pages|paper))\b/i;
 
 const WEEKLY_DESK_DEFAULT =
   /\b(desk|laptop|keyboard|monitor|trackpad|office chair)\b/i;
 
-const WEEKLY_DISTINCTIVE_PROP =
-  /\b(rack|blade|controller|crate|stage|lab|workbench|server|instrument|binder|sketch|package|LED|shipping|factory|workshop)\b/i;
-
-/**
- * Light cleanup for art-director raw replies before JSON parse -- do not
- * unwrap {"frame":...} here; weekly wants the full structured object.
- */
 function stripArtDirectorFences(text: string): string {
   return text
     .replace(/^```(?:json)?\s*/i, '')
@@ -702,10 +731,37 @@ function stripArtDirectorFences(text: string): string {
     .trim();
 }
 
+function extractJsonObject(text: string): unknown | null {
+  const cleaned = stripArtDirectorFences(text);
+  const tryParse = (candidate: string): unknown | null => {
+    try {
+      return JSON.parse(candidate) as unknown;
+    } catch {
+      return null;
+    }
+  };
+  const direct = tryParse(cleaned);
+  if (direct) return direct;
+  const braced = cleaned.match(/\{[\s\S]*\}/);
+  if (braced) return tryParse(braced[0]);
+  const arrayed = cleaned.match(/\[[\s\S]*\]/);
+  if (arrayed) return tryParse(arrayed[0]);
+  return null;
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
+    .map((p) => p.trim());
+}
+
 /** Map house accent names (or raw hex) to a FLUX.2-friendly HEX token. */
 export function accentToHex(accent: string): string {
   const raw = accent.trim();
-  if (/^#?[0-9a-fA-F]{6}$/.test(raw)) return raw.startsWith('#') ? raw.toUpperCase() : `#${raw.toUpperCase()}`;
+  if (/^#?[0-9a-fA-F]{6}$/.test(raw)) {
+    return raw.startsWith('#') ? raw.toUpperCase() : `#${raw.toUpperCase()}`;
+  }
   const key = raw.toLowerCase();
   if (key.includes('cyan') || key.includes('teal') || key.includes('cool')) return '#22D3EE';
   if (key.includes('amber') || key.includes('warm') || key.includes('orange')) return '#F59E0B';
@@ -715,10 +771,6 @@ export function accentToHex(accent: string): string {
   return '#22D3EE';
 }
 
-/**
- * Pull distinctive story entities the scene must visually cue -- headline
- * lead, CamelCase/product tokens, and the owner angle when present.
- */
 export function extractWeeklyStoryEntities(input: WeeklyReportageSceneInput): string[] {
   const out: string[] = [];
   const headline = input.headline.trim();
@@ -734,64 +786,153 @@ export function extractWeeklyStoryEntities(input: WeeklyReportageSceneInput): st
   if (/\b(browser|headless)\b/.test(lower)) out.push('browser');
   if (/\b(plugin|package)\b/.test(lower)) out.push('plugin');
   if (/\b(agent|sub-?agents?)\b/.test(lower)) out.push('coding agent');
+  if (/\b(energ|watt|600x|token)\b/.test(lower)) out.push('energy');
   if (input.editorialAngle?.trim()) out.push(input.editorialAngle.trim().slice(0, 72));
   return [...new Set(out.map((s) => s.trim()).filter((s) => s.length >= 3))].slice(0, 8);
 }
 
-export function parseWeeklySceneSpec(raw: string): WeeklyReportageSceneSpec | null {
-  const text = stripArtDirectorFences(raw);
-  const tryParse = (candidate: string): WeeklyReportageSceneSpec | null => {
-    try {
-      const parsed: unknown = JSON.parse(candidate);
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
-      const record = parsed as Record<string, unknown>;
-      const subject =
-        typeof record.subject === 'string'
-          ? record.subject
-          : typeof record.frame === 'string'
-            ? record.frame
-            : typeof record.scene === 'string'
-              ? record.scene
-              : typeof record.description === 'string'
-                ? record.description
-                : '';
-      const action = typeof record.action === 'string' ? record.action : '';
-      const setting = typeof record.setting === 'string' ? record.setting : '';
-      const props = Array.isArray(record.props)
-        ? record.props.filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
-        : [];
-      const mustInclude = Array.isArray(record.must_include)
-        ? record.must_include.filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
-        : Array.isArray(record.mustInclude)
-          ? record.mustInclude.filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
-          : [];
-      if (subject.trim().length < 8) return null;
-      return {
-        subject: subject.trim(),
-        action: action.trim() || 'caught in a decisive documentary moment',
-        setting: setting.trim() || 'real environment matching the news event',
-        props,
-        mustInclude,
-      };
-    } catch {
-      return null;
-    }
-  };
-
-  const direct = tryParse(text);
-  if (direct) return direct;
-  const braced = text.match(/\{[\s\S]*\}/);
-  if (braced) {
-    const nested = tryParse(braced[0]);
-    if (nested) return nested;
+function entityMentioned(haystack: string, entity: string): boolean {
+  const tokens = entity
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((t) => t.length >= 4);
+  if (!tokens.length) return haystack.includes(entity.toLowerCase().slice(0, 12));
+  let best = tokens[0]!;
+  for (const token of tokens) {
+    if (token.length > best.length) best = token;
   }
-  // Plain phrase fallback -- still structured so validators can run.
-  const phrase = cleanSceneText(text);
+  return haystack.includes(best);
+}
+
+function buildWeeklyContextBlock(input: WeeklyReportageSceneInput, entities: string[]): string {
+  return [
+    `Headline: "${input.headline}"`,
+    `Summary: "${input.summary}"`,
+    input.bodyExcerpt?.trim()
+      ? `Story excerpt: "${input.bodyExcerpt.trim().slice(0, 600)}"`
+      : null,
+    input.editorsView?.trim()
+      ? `Editor's read on where this leads: "${input.editorsView.trim()}"`
+      : null,
+    input.editorialAngle?.trim()
+      ? `Binding editorial angle: "${input.editorialAngle.trim()}"`
+      : null,
+    input.why?.trim() ? `Why it matters: "${input.why.trim().slice(0, 280)}"` : null,
+    input.claimsExcerpt?.trim()
+      ? `Key claims: "${input.claimsExcerpt.trim().slice(0, 400)}"`
+      : null,
+    entities.length ? `Story entities to honor: ${entities.join(' | ')}` : null,
+    input.avoidSubjects?.length
+      ? `Do not reuse these sibling-story subjects: ${input.avoidSubjects.join(' | ')}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+export function parseEditorialEssence(raw: string): EditorialEssence | null {
+  const parsed = extractJsonObject(raw);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+  const record = parsed as Record<string, unknown>;
+  const essence =
+    typeof record.essence === 'string'
+      ? record.essence.trim()
+      : typeof record.argument === 'string'
+        ? record.argument.trim()
+        : '';
+  if (essence.length < 12) return null;
+  const mustFeel =
+    typeof record.must_feel === 'string'
+      ? record.must_feel.trim()
+      : typeof record.mustFeel === 'string'
+        ? record.mustFeel.trim()
+        : 'sharp editorial tension';
+  return {
+    essence,
+    mustFeel: mustFeel || 'sharp editorial tension',
+    forbiddenCliches: asStringArray(record.forbidden_cliches ?? record.forbiddenCliches),
+  };
+}
+
+export function parseMetaphorPitches(raw: string): MetaphorPitch[] {
+  const parsed = extractJsonObject(raw);
+  let rows: unknown[] = [];
+  if (Array.isArray(parsed)) {
+    rows = parsed;
+  } else if (parsed && typeof parsed === 'object') {
+    const record = parsed as Record<string, unknown>;
+    if (Array.isArray(record.metaphors)) rows = record.metaphors;
+    else if (Array.isArray(record.pitches)) rows = record.pitches;
+    else rows = [parsed];
+  }
+  const pitches: MetaphorPitch[] = [];
+  for (const row of rows) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) continue;
+    const record = row as Record<string, unknown>;
+    const subject = typeof record.subject === 'string' ? record.subject.trim() : '';
+    if (subject.length < 8) continue;
+    const compositionRaw =
+      typeof record.composition === 'string' ? record.composition.trim().toLowerCase() : 'single';
+    const composition: MetaphorPitch['composition'] =
+      compositionRaw === 'dual_contrast' || compositionRaw === 'dual' ? 'dual_contrast' : 'single';
+    pitches.push({
+      title: (typeof record.title === 'string' && record.title.trim()) || subject.slice(0, 48),
+      subject,
+      action:
+        (typeof record.action === 'string' && record.action.trim()) ||
+        'embodying the story argument',
+      setting:
+        (typeof record.setting === 'string' && record.setting.trim()) ||
+        'an editorial symbolic space',
+      props: asStringArray(record.props),
+      composition,
+      whyItFits:
+        (typeof record.why_it_fits === 'string' && record.why_it_fits.trim()) ||
+        (typeof record.whyItFits === 'string' && record.whyItFits.trim()) ||
+        '',
+    });
+  }
+  return pitches.slice(0, 3);
+}
+
+export function flattenMetaphorPitch(pitch: MetaphorPitch, essence?: string): string {
+  const props = pitch.props.filter(Boolean).join(', ');
+  const dualNote =
+    pitch.composition === 'dual_contrast'
+      ? 'one continuous photograph with a clear spatial divide (facade versus backstage), not a collage'
+      : '';
+  return [
+    pitch.subject,
+    pitch.action,
+    pitch.setting,
+    props ? `with ${props}` : '',
+    dualNote,
+    essence ? `arguing: ${essence}` : '',
+  ]
+    .filter(Boolean)
+    .join(', ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 320);
+}
+
+export function parseWeeklySceneSpec(raw: string): WeeklyReportageSceneSpec | null {
+  const pitches = parseMetaphorPitches(raw);
+  if (pitches[0]) {
+    return {
+      subject: pitches[0].subject,
+      action: pitches[0].action,
+      setting: pitches[0].setting,
+      props: pitches[0].props,
+      mustInclude: [],
+    };
+  }
+  const phrase = cleanSceneText(raw);
   if (phrase.length < 12) return null;
   return {
     subject: phrase,
-    action: 'caught in a decisive documentary moment',
-    setting: 'real environment matching the news event',
+    action: 'embodying the story argument',
+    setting: 'an editorial symbolic space',
     props: [],
     mustInclude: [],
   };
@@ -807,78 +948,119 @@ export function flattenWeeklySceneSpec(spec: WeeklyReportageSceneSpec): string {
     .slice(0, 280);
 }
 
-function entityMentioned(haystack: string, entity: string): boolean {
-  const tokens = entity
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((t) => t.length >= 4);
-  if (!tokens.length) return haystack.includes(entity.toLowerCase().slice(0, 12));
-  // Require the most distinctive token (longest) so "One Stripe Engineer…" matches "stripe".
-  let best = tokens[0]!;
-  for (const token of tokens) {
-    if (token.length > best.length) best = token;
-  }
-  return haystack.includes(best);
-}
-
-export function validateWeeklySceneSpec(
-  spec: WeeklyReportageSceneSpec,
+export function validateMetaphorPitch(
+  pitch: MetaphorPitch,
+  essence: EditorialEssence,
   requiredEntities: string[],
 ): string[] {
   const errors: string[] = [];
-  const flat = [spec.subject, spec.action, spec.setting, ...spec.props, ...spec.mustInclude].join(
-    ' ',
-  );
-  if (spec.subject.trim().length < 8) errors.push('subject too short');
-  if (WEEKLY_SCENE_BANNED.test(flat)) {
-    errors.push('banned UI, split-panel, metaphor, or pointing-at-screen language');
+  const flat = [
+    pitch.title,
+    pitch.subject,
+    pitch.action,
+    pitch.setting,
+    ...pitch.props,
+    pitch.whyItFits,
+  ].join(' ');
+  if (pitch.subject.trim().length < 8) errors.push('subject too short');
+  if (WEEKLY_CRAFT_BANNED.test(flat)) {
+    errors.push('banned UI, collage, or stock-metaphor language');
+  }
+  if (WEEKLY_SLUDGE_BANNED.test(flat)) {
+    errors.push('banned paper-heap / sludge props that klein renders poorly');
+  }
+  if (pitch.composition === 'dual_contrast') {
+    const hasDivide =
+      /\b(left|right|facade|backstage|curtain|behind|reflection|foreground|background|two (?:rooms|spaces)|spatial divide)\b/i.test(
+        flat,
+      );
+    if (!hasDivide) {
+      errors.push('dual_contrast requires clear spatial-divide language');
+    }
   }
   const hay = flat.toLowerCase();
+  const essenceHit =
+    essence.essence
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((t) => t.length >= 5)
+      .slice(0, 4)
+      .some((token) => hay.includes(token)) || pitch.whyItFits.length >= 12;
+  if (!essenceHit) {
+    errors.push('metaphor does not clearly argue the essence');
+  }
   const entityHit =
     requiredEntities.length === 0 ||
     requiredEntities.some((entity) => entityMentioned(hay, entity));
   if (requiredEntities.length > 0 && !entityHit) {
     errors.push(`scene missing story entities (${requiredEntities.slice(0, 3).join(', ')})`);
   }
-  if (WEEKLY_DESK_DEFAULT.test(flat) && !WEEKLY_DISTINCTIVE_PROP.test(flat) && !entityHit) {
-    errors.push('desk/laptop default without a story-specific prop or entity');
+  if (
+    WEEKLY_DESK_DEFAULT.test(flat) &&
+    pitch.composition === 'single' &&
+    !/\b(heat|watt|journal|ledger|facade|backstage|controller|furnace|turbine|scale)\b/i.test(flat)
+  ) {
+    errors.push('desk/laptop default without a strong conceptual prop');
+  }
+  for (const cliche of essence.forbiddenCliches) {
+    if (cliche.trim().length >= 4 && hay.includes(cliche.toLowerCase())) {
+      errors.push(`hits forbidden cliche: ${cliche}`);
+    }
   }
   return errors;
 }
 
-/** Reportage-safe keyword fallback -- never daily metaphor padlocks/robot arms. */
-export function weeklyFallbackScene(
-  text: string,
-  entities: string[] = [],
-): string {
+/** Compatibility wrapper for older call sites/tests. */
+export function validateWeeklySceneSpec(
+  spec: WeeklyReportageSceneSpec,
+  requiredEntities: string[],
+): string[] {
+  return validateMetaphorPitch(
+    {
+      title: spec.subject.slice(0, 40),
+      subject: spec.subject,
+      action: spec.action,
+      setting: spec.setting,
+      props: spec.props,
+      composition: 'single',
+      whyItFits: 'legacy scene spec',
+    },
+    { essence: requiredEntities[0] || 'story argument', mustFeel: '', forbiddenCliches: [] },
+    requiredEntities,
+  );
+}
+
+/**
+ * Essence-aware keyword fallback -- conceptual metaphors, never desk blink
+ * boxes or daily padlock/robot-arm leftovers.
+ */
+export function weeklyFallbackScene(text: string, entities: string[] = []): string {
   const t = text.toLowerCase();
   const has = (...ws: string[]) => ws.some((w) => t.includes(w));
-  const cue = entities[0] ? `${entities[0]} — ` : '';
-  if (has('game', '3d', 'unity', 'unreal', 'controller')) {
-    return `${cue}hands cradling a game controller beside printed level sketches on a living-room table after a long build`;
+  const cue = entities.find((e) => e.length <= 40) ?? entities[0] ?? '';
+  const prefix = cue ? `${cue}: ` : '';
+  if (has('energy', 'watt', '600x', 'token', 'burn', 'stripe', 'claude')) {
+    return `${prefix}a tiny chat bubble beside a towering industrial furnace of wasted heat, scale contrast, no readable text`;
   }
-  if (has('browser', 'headless', 'kitesurf', 'edge rack', 'cloudflare')) {
-    return `${cue}technician sliding a thin server blade into an edge rack aisle as one cool LED shifts color`;
+  if (has('game', '3d', 'render', 'bug', 'quality', '52 minute', 'codex')) {
+    return `${prefix}polished game character on a lit stage left, unfinished pink-black missing-texture props and wooden braces backstage right, one continuous photograph`;
   }
-  if (has('security', 'cve', 'breach', 'vulnerab', 'exploit', 'attack')) {
-    return `${cue}security engineer closing a laptop lid in a dim operations room after an incident, blank soft glow only`;
+  if (has('muse', 'unsupervised', '24 hour', 'journal', 'kernel', 'endurance', 'agent')) {
+    return `${prefix}a tireless fairytale workshop character juggling glowing task orbs while guarding a sleek sealed journal ledger, no screens`;
   }
-  if (has('agent', 'autonom', 'orchestr', 'muse', 'codex', 'terminal agent')) {
-    return `${cue}engineer watching a small unsupervised agent box blink on a night workbench, soft cyan LED only`;
+  if (has('browser', 'headless', 'kitesurf', 'edge')) {
+    return `${prefix}a stripped racing chassis without seats or mirrors speeding through fog, implying headless software`;
   }
-  if (has('plugin', 'package', 'install', 'release', 'launch', 'ships')) {
-    return `${cue}hand placing a small software package card on a quiet dusk desk beside a closed laptop`;
+  if (has('security', 'cve', 'breach', 'vulnerab')) {
+    return `${prefix}a glass vault wall spiderweb-cracking under pressure while an alarm light blooms, no logos`;
   }
-  if (has('tutor', 'teach', 'education', 'classroom', 'research', 'allen')) {
-    return `${cue}researcher pausing over handwritten notes and a closed binder in a bright lab, no screens in focus`;
+  if (has('plugin', 'package', 'release', 'launch')) {
+    return `${prefix}a precision keystone locking into an arch of modular blocks, soft dusk light`;
   }
-  if (has('fund', 'raise', 'ipo', 'investment', 'valuation')) {
-    return `${cue}founders reviewing signed term sheets on a conference table, papers only, available window light`;
+  if (has('tutor', 'teach', 'education', 'research')) {
+    return `${prefix}a weighing scale balancing a glowing decision pebble against a stack of blank tutoring cards`;
   }
-  if (has('energy', 'token', 'cost', 'usage', 'measure', 'stripe', 'claude')) {
-    return `${cue}engineer's hand paused over a trackpad, blank laptop casting only soft cool cyan glow across the keyboard`;
-  }
-  return `${cue}engineer pausing mid-task at a physical workbench with tools, soft available light, unmarked blank surfaces`;
+  return `${prefix}a single symbolic object under a hard editorial spotlight arguing the story claim, photoreal materials, no screens`;
 }
 
 async function runArtDirectorRaw(
@@ -900,122 +1082,182 @@ async function runArtDirectorRaw(
   return null;
 }
 
-function buildWeeklyArtDirectorInstruction(
-  input: WeeklyReportageSceneInput,
-  entities: string[],
-  priorErrors?: string[],
-): string {
-  const contextBlock = [
-    `Headline: "${input.headline}"`,
-    `Summary: "${input.summary}"`,
-    input.bodyExcerpt?.trim()
-      ? `Story excerpt: "${input.bodyExcerpt.trim().slice(0, 600)}"`
-      : null,
-    input.editorsView?.trim()
-      ? `Editor's read on where this leads: "${input.editorsView.trim()}"`
-      : null,
-    input.editorialAngle?.trim()
-      ? `Binding editorial angle (must shape the frame): "${input.editorialAngle.trim()}"`
-      : null,
-    input.why?.trim() ? `Why it matters: "${input.why.trim().slice(0, 280)}"` : null,
-    entities.length ? `Must visually cue these story entities: ${entities.join(' | ')}` : null,
-    input.avoidSubjects?.length
-      ? `Do not reuse these sibling-story subjects: ${input.avoidSubjects.join(' | ')}`
-      : null,
-  ]
-    .filter(Boolean)
-    .join('\n');
-
-  const retryBlock = priorErrors?.length
-    ? `\nPrevious attempt failed validation: ${priorErrors.join('; ')}. Return a corrected JSON object.\n`
-    : '';
-
+function buildEssenceInstruction(input: WeeklyReportageSceneInput, entities: string[]): string {
   return (
-    `You are a photojournalist art-directing ONE cover frame for a weekly technology digest. ` +
-    `Depict the actual news event as a camera-ready moment -- not a metaphor, not a stock desk shot. ` +
-    `Carry the story meaning with physical props and actions a reader can recognize without reading a screen. ` +
-    `Good examples: hands cradling a game controller beside printed level sketches after a long agent build; ` +
-    `a technician sliding a server blade into an edge rack as one cool LED shifts; ` +
-    `a researcher pausing over a closed binder of tutoring transcripts in a bright lab; ` +
-    `founders reviewing paper term sheets on a conference table under window light. ` +
-    `Do NOT default to a person at a multi-monitor desk unless the story is literally about measuring desk tooling. ` +
-    `Screens, if visible at all, stay blank soft glow only -- never code, UI, terminals, dashboards, or lettering. ` +
-    `No split panels, no finger pointing at a screen, no logos, no recognisable real faces, no cracked padlocks or glowing brains. ` +
-    `Reply with ONLY a JSON object (no markdown) using this schema: ` +
-    `{"subject":"concrete actor","action":"specific verb phrase","setting":"where this happened",` +
-    `"props":["physical story-specific objects"],"must_include":["entities from the story"]}. ` +
-    `Keep each string short and concrete.\n\n${contextBlock}${retryBlock}`
+    `You are the editorial director for a developer technology digest. Read the story and state ` +
+    `the ONE argument the cover illustration must make -- not logistics of who sat where. ` +
+    `Examples of good essence: "Agentic coding burns vastly more energy than a chat prompt, often invisibly"; ` +
+    `"An unsupervised agent stays reliable because of its durable task journal"; ` +
+    `"Shipping speed outran quality -- a finished facade hides broken internals". ` +
+    `Reply with ONLY JSON: {"essence":"one sentence","must_feel":"emotional register",` +
+    `"forbidden_cliches":["desk with laptop","generic AI brain",...]}.\n\n` +
+    buildWeeklyContextBlock(input, entities)
   );
 }
 
+function buildMetaphorInstruction(
+  input: WeeklyReportageSceneInput,
+  essence: EditorialEssence,
+  entities: string[],
+  priorErrors?: string[],
+): string {
+  const retry = priorErrors?.length
+    ? `\nPrevious pitches failed: ${priorErrors.join('; ')}. Propose corrected metaphors.\n`
+    : '';
+  return (
+    `You design cover metaphors for a weekly AI/engineering digest. Given this essence, invent ` +
+    `2 or 3 vivid visual metaphors a reader grasps without reading any screen text. ` +
+    `Prefer scale, heat, facade/backstage, fairytale-legible characters, physical ledgers -- ` +
+    `NOT people typing at desks, NOT paper heaps, NOT terminal windows. ` +
+    `If the essence needs contrast (facade vs chaos, tiny vs huge), set composition to ` +
+    `"dual_contrast" and describe ONE continuous photograph with a clear spatial divide ` +
+    `(left/right rooms, curtain/backstage) -- never collage or comic panels. ` +
+    `Screens if any stay blank unmarked glow. No logos, no readable UI, no real celebrity faces. ` +
+    `Gold-standard directions: energy waste → tiny chat vs industrial heat; unsupervised agent → ` +
+    `tireless character guarding a sealed journal; rushed game → polished stage vs broken backstage props. ` +
+    `Reply with ONLY JSON: {"metaphors":[{"title":"","subject":"","action":"","setting":"",` +
+    `"props":[],"composition":"single|dual_contrast","why_it_fits":""}]}.\n\n` +
+    `Essence: "${essence.essence}"\nMust feel: "${essence.mustFeel}"\n` +
+    `Forbidden: ${essence.forbiddenCliches.join(' | ') || 'generic AI sludge'}\n` +
+    `${buildWeeklyContextBlock(input, entities)}${retry}`
+  );
+}
+
+function scoreMetaphorPitch(pitch: MetaphorPitch, essence: EditorialEssence): number {
+  let score = 0;
+  if (pitch.whyItFits.length >= 20) score += 2;
+  if (pitch.props.length >= 1) score += 1;
+  if (pitch.composition === 'dual_contrast') score += 1;
+  if (
+    /\b(heat|furnace|journal|ledger|facade|backstage|scale|watt|orb)\b/i.test(
+      [pitch.subject, pitch.action, ...pitch.props].join(' '),
+    )
+  ) {
+    score += 2;
+  }
+  if (WEEKLY_DESK_DEFAULT.test(pitch.subject)) score -= 2;
+  if (
+    essence.mustFeel &&
+    pitch.whyItFits.toLowerCase().includes(essence.mustFeel.toLowerCase().slice(0, 8))
+  ) {
+    score += 1;
+  }
+  return score;
+}
+
+export async function extractEditorialEssence(
+  input: WeeklyReportageSceneInput,
+  cfg: CardImageConfig,
+): Promise<{ essence: EditorialEssence; source: string } | null> {
+  const entities = extractWeeklyStoryEntities(input);
+  const result = await runArtDirectorRaw(
+    buildEssenceInstruction(input, entities),
+    'weekly.card_image_scene',
+    cfg,
+  );
+  if (!result) return null;
+  const essence = parseEditorialEssence(result.text);
+  if (!essence) return null;
+  return { essence, source: result.source };
+}
+
 /**
- * Structured art-director brief with validator + one retry. Falls back to
- * {@link weeklyFallbackScene} (reportage-safe), never daily metaphor padlocks.
+ * Essence → metaphor brief with validation + one metaphor retry.
+ * Falls back to {@link weeklyFallbackScene} conceptual keywords.
  */
 export async function weeklyReportageSceneBrief(
   input: WeeklyReportageSceneInput,
   cfg: CardImageConfig,
-): Promise<SceneBriefResult> {
+): Promise<SceneBriefResult & { essence?: string; metaphorTitle?: string }> {
   const ctx = [input.headline, input.summary].filter(Boolean).join('. ').trim();
   if (!ctx) return { scene: DEFAULT_SCENE, source: 'fallback' };
   const entities = extractWeeklyStoryEntities(input);
-  let lastErrors: string[] | undefined;
 
+  const essenceResult = await extractEditorialEssence(input, cfg);
+  const essence: EditorialEssence = essenceResult?.essence ?? {
+    essence: ctx.slice(0, 160),
+    mustFeel: 'editorial tension',
+    forbiddenCliches: ['person at laptop desk', 'glowing brain', 'paper heap'],
+  };
+  const essenceSource = essenceResult?.source;
+
+  let lastErrors: string[] | undefined;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const result = await runArtDirectorRaw(
-      buildWeeklyArtDirectorInstruction(input, entities, lastErrors),
+      buildMetaphorInstruction(input, essence, entities, lastErrors),
       'weekly.card_image_scene',
       cfg,
     );
     if (!result) break;
-    const spec = parseWeeklySceneSpec(result.text);
-    if (!spec) {
-      lastErrors = ['unparseable scene JSON'];
+    const pitches = parseMetaphorPitches(result.text);
+    if (!pitches.length) {
+      lastErrors = ['no parseable metaphors'];
       continue;
     }
-    spec.mustInclude = [...new Set([...spec.mustInclude, ...entities])].slice(0, 8);
-    const errors = validateWeeklySceneSpec(spec, entities);
-    if (errors.length === 0) {
-      return { scene: flattenWeeklySceneSpec(spec), source: result.source };
+    const ranked = [...pitches].sort(
+      (a, b) => scoreMetaphorPitch(b, essence) - scoreMetaphorPitch(a, essence),
+    );
+    let chosen: MetaphorPitch | null = null;
+    const aggregateErrors: string[] = [];
+    for (const pitch of ranked) {
+      const errors = validateMetaphorPitch(pitch, essence, entities);
+      if (errors.length === 0) {
+        chosen = pitch;
+        break;
+      }
+      aggregateErrors.push(`${pitch.title}: ${errors.join(', ')}`);
     }
-    lastErrors = errors;
-    logEvent('warn', 'publish', 'Weekly scene failed validation -- retrying art director', {
+    if (chosen) {
+      return {
+        scene: flattenMetaphorPitch(chosen, essence.essence),
+        source: result.source || essenceSource || 'fallback',
+        essence: essence.essence,
+        metaphorTitle: chosen.title,
+      };
+    }
+    lastErrors = aggregateErrors.slice(0, 3);
+    logEvent('warn', 'publish', 'Weekly metaphors failed validation -- retrying', {
       attempt: attempt + 1,
-      errors,
+      errors: lastErrors,
     });
   }
 
-  return { scene: weeklyFallbackScene(ctx, entities), source: 'fallback' };
+  return {
+    scene: weeklyFallbackScene(ctx, entities),
+    source: 'fallback',
+    essence: essence.essence,
+  };
 }
 
 /**
  * FLUX.2 weekly image prompt (policy {@link WEEKLY_PROMPT_POLICY}).
- * Follows Black Forest Labs guidance: subject/action FIRST, medium length,
- * positive desired state (no giant Avoid: lists -- FLUX.2 has no negatives),
- * camera + lighting + HEX accent. Klein multipart still ignores separate
- * negative_prompt; we keep calling negativePrompt() only for admin audit.
+ * Subject-first SASC, craft-focused (photoreal materials, no sludge heaps).
  */
-export function buildWeeklyPrompt(accent: string, scene: string): string {
+export function buildEditorialConceptPrompt(accent: string, scene: string): string {
   const subject = scene.replace(/\s+/g, ' ').trim();
   const hex = accentToHex(accent.trim() || 'cool cyan');
   return (
     `${subject}. ` +
-    `Documentary editorial photograph, photojournalism reportage of the real event, ` +
-    `shot on 35mm lens, natural available light, shallow depth of field, ` +
-    `restrained grade with accent color ${hex}, wide 16:9 edge-to-edge full-bleed, ` +
-    `one clear subject, calm empty top and bottom bands, physical props only, ` +
-    `unmarked blank surfaces, sharp focus on the subject.`
+    `Editorial concept illustration for a technology magazine cover, photoreal materials, ` +
+    `clear silhouette, believable physics, shot on 35mm lens, dramatic available light, ` +
+    `shallow depth of field, restrained grade with accent color ${hex}, wide 16:9 edge-to-edge, ` +
+    `calm empty top and bottom bands, unmarked blank surfaces only, no deformed stacks, ` +
+    `sharp focus on the subject.`
   );
+}
+
+/** Alias kept for existing imports/tests. */
+export function buildWeeklyPrompt(accent: string, scene: string): string {
+  return buildEditorialConceptPrompt(accent, scene);
 }
 
 export interface WeeklyReportageIllustrationInput extends WeeklyReportageSceneInput {
   accent?: string;
-  /** No job.id here on purpose -- stable across regenerations so a variant
-   * seed can be iterated on rather than re-rolled from scratch every time. */
+  /** No job.id here on purpose -- stable across regenerations. */
   seedBase: string;
-  /** Owner-edited scene text (Visuals tab) bypasses the art-director call entirely. */
+  /** Owner-edited scene text bypasses essence/metaphor calls. */
   sceneOverride?: string;
-  /** Defaults to 3 -- one selectable set of candidates per story. */
+  /** Defaults to 3. */
   variantCount?: number;
 }
 
@@ -1023,15 +1265,11 @@ export interface WeeklyReportageIllustrationResult {
   variants: GeneratedImageResult[];
   scene: string;
   sceneSource: SceneSource;
+  essence?: string;
+  metaphorTitle?: string;
 }
 
-/**
- * Generates {@link WeeklyReportageIllustrationInput.variantCount} candidate
- * renders of the same reportage scene (same prompt, different seeds) so the
- * owner can pick the best one instead of accepting whatever a single roll
- * produced. Returns null only when every variant attempt failed across the
- * whole provider ladder.
- */
+/** Generates variant renders of the same editorial-concept scene. */
 export async function generateWeeklyReportageIllustrations(
   input: WeeklyReportageIllustrationInput,
   cfg: CardImageConfig,
@@ -1039,18 +1277,24 @@ export async function generateWeeklyReportageIllustrations(
   const override = input.sceneOverride?.trim();
   let scene: string;
   let sceneSource: SceneSource;
+  let essence: string | undefined;
+  let metaphorTitle: string | undefined;
   if (override) {
-    // Escape hatch: still clean JSON wrappers; ban-list is advisory (owner intent wins).
     scene = cleanSceneText(override);
     sceneSource = 'owner';
-    const ownerErrors = validateWeeklySceneSpec(
-      parseWeeklySceneSpec(scene) ?? {
+    const ownerErrors = validateMetaphorPitch(
+      {
+        title: 'owner-override',
         subject: scene,
         action: '',
         setting: '',
         props: [],
-        mustInclude: [],
+        composition: /facade|backstage|left|right|spatial divide/i.test(scene)
+          ? 'dual_contrast'
+          : 'single',
+        whyItFits: 'owner override',
       },
+      { essence: input.headline || 'story', mustFeel: '', forbiddenCliches: [] },
       extractWeeklyStoryEntities(input),
     );
     if (ownerErrors.length) {
@@ -1062,8 +1306,10 @@ export async function generateWeeklyReportageIllustrations(
     const brief = await weeklyReportageSceneBrief(input, cfg);
     scene = brief.scene;
     sceneSource = brief.source;
+    essence = brief.essence;
+    metaphorTitle = brief.metaphorTitle;
   }
-  const positive = buildWeeklyPrompt(input.accent?.trim() || 'cool cyan', scene);
+  const positive = buildEditorialConceptPrompt(input.accent?.trim() || 'cool cyan', scene);
   const negative = negativePrompt();
   const count = Math.max(1, input.variantCount ?? 3);
   const variants: GeneratedImageResult[] = [];
@@ -1080,7 +1326,7 @@ export async function generateWeeklyReportageIllustrations(
       });
     }
   }
-  return variants.length ? { variants, scene, sceneSource } : null;
+  return variants.length ? { variants, scene, sceneSource, essence, metaphorTitle } : null;
 }
 
 /** Keyword → concrete scene, so even without the model cards vary by topic (never a brain). */
