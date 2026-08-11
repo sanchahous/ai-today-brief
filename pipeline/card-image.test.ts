@@ -4,11 +4,15 @@ import { loadProviderRegistry } from './providers/registry';
 import {
   buildPrompt,
   buildWeeklyPrompt,
+  buildEditorialConceptPrompt,
   cleanSceneText,
   accentToHex,
   extractWeeklyStoryEntities,
-  flattenWeeklySceneSpec,
+  flattenMetaphorPitch,
+  parseEditorialEssence,
+  parseMetaphorPitches,
   parseWeeklySceneSpec,
+  validateMetaphorPitch,
   validateWeeklySceneSpec,
   weeklyFallbackScene,
   WEEKLY_PROMPT_POLICY,
@@ -341,7 +345,7 @@ describe('sceneBrief', () => {
   });
 });
 
-// --- Weekly Digest "reportage" illustrations (editorial quality overhaul, PR5) ---
+// --- Weekly Digest editorial-concept illustrations (essence → metaphor) ---
 
 describe('cleanSceneText', () => {
   it('unwraps art-director JSON wrappers so keys never reach the image prompt', () => {
@@ -375,45 +379,98 @@ describe('weeklyReportageSceneBrief', () => {
     expect(source).toBe('fallback');
   });
 
-  it('uses a reportage-safe weekly fallback (not daily metaphor padlocks) when providers are unconfigured', async () => {
+  it('uses a conceptual weekly fallback (not daily metaphor padlocks) when providers are unconfigured', async () => {
     const { scene, source } = await weeklyReportageSceneBrief(
       { headline: 'Critical CVE lets attackers breach the server', summary: '' },
       { geminiApiKey: '' },
     );
     expect(source).toBe('fallback');
     expect(scene.toLowerCase()).not.toContain('padlock');
-    expect(scene.toLowerCase()).toMatch(/incident|laptop|operations|security/);
+    expect(scene.toLowerCase()).toMatch(/vault|alarm|crack|security/);
   });
 });
 
-describe('weekly scene schema gates', () => {
-  it('parses structured art-director JSON and flattens subject-first', () => {
-    const spec = parseWeeklySceneSpec(
-      JSON.stringify({
-        subject: 'hands cradling a game controller',
-        action: 'resting beside printed level sketches',
-        setting: 'living-room table after a long Codex build',
-        props: ['printed level sketches', 'game controller'],
-        must_include: ['Codex', '3D game'],
-      }),
+describe('weekly essence + metaphor gates', () => {
+  it('parses essence JSON', () => {
+    const essence = parseEditorialEssence(
+      '{"essence":"Shipping speed outran quality","must_feel":"uneasy contrast","forbidden_cliches":["glowing brain"]}',
     );
-    expect(spec?.subject).toContain('game controller');
-    expect(flattenWeeklySceneSpec(spec!).toLowerCase()).toContain('codex');
+    expect(essence?.essence).toMatch(/speed outran quality/i);
+    expect(essence?.forbiddenCliches).toContain('glowing brain');
   });
 
-  it('rejects split-panel / terminal / desk-default scenes missing story entities', () => {
+  it('parses metaphor pitches and flattens subject-first', () => {
+    const pitches = parseMetaphorPitches(
+      JSON.stringify({
+        metaphors: [
+          {
+            title: 'Facade vs backstage',
+            subject: 'polished game character on a lit stage',
+            action: 'hiding unfinished props behind a curtain',
+            setting: 'theatre with clear left-right spatial divide',
+            props: ['curtain', 'missing-texture crates'],
+            composition: 'dual_contrast',
+            why_it_fits: 'speed shipped a facade before quality caught up',
+          },
+        ],
+      }),
+    );
+    expect(pitches[0]?.composition).toBe('dual_contrast');
+    expect(flattenMetaphorPitch(pitches[0]!).toLowerCase()).toContain('spatial divide');
+  });
+
+  it('allows dual_contrast when spatial-divide language is present', () => {
+    const errors = validateMetaphorPitch(
+      {
+        title: 'Facade',
+        subject: 'polished Codex game character on stage left',
+        action: 'contrasting unfinished props backstage right',
+        setting: 'one continuous photograph with a curtain spatial divide',
+        props: ['curtain'],
+        composition: 'dual_contrast',
+        whyItFits: 'speed outran quality',
+      },
+      {
+        essence: 'Speed outran quality in a rushed 3D game build',
+        mustFeel: 'uneasy',
+        forbiddenCliches: [],
+      },
+      ['Codex', '3D game'],
+    );
+    expect(errors).toEqual([]);
+  });
+
+  it('rejects paper-heap sludge and terminal/UI collage language', () => {
+    const sludge = validateMetaphorPitch(
+      {
+        title: 'Papers',
+        subject: 'a tall stack of papers and transcript heap',
+        action: 'towering on a desk',
+        setting: 'office',
+        props: ['melted warped pages'],
+        composition: 'single',
+        whyItFits: 'energy waste somehow',
+      },
+      {
+        essence: 'Agentic work burns energy invisibly',
+        mustFeel: 'waste',
+        forbiddenCliches: [],
+      },
+      ['Stripe', 'energy'],
+    );
+    expect(sludge.some((e) => /sludge|paper/i.test(e))).toBe(true);
+
     const bad = parseWeeklySceneSpec(
       '{"subject":"split-screen monitor","action":"showing terminal npx output","setting":"office desk","props":[],"must_include":[]}',
     )!;
-    const errors = validateWeeklySceneSpec(bad, ['Codex', '3D game']);
-    expect(errors.length).toBeGreaterThan(0);
+    expect(validateWeeklySceneSpec(bad, ['Codex', '3D game']).length).toBeGreaterThan(0);
   });
 
-  it('accepts a story-faithful physical-prop scene', () => {
+  it('accepts a story-faithful conceptual metaphor', () => {
     const good = parseWeeklySceneSpec(
-      '{"subject":"hands cradling a game controller","action":"beside printed level sketches","setting":"living room after Codex sub-agents built a 3D game","props":["controller","sketches"],"must_include":["Codex","3D game"]}',
+      '{"subject":"tiny chat bubble beside industrial heat furnace","action":"dwarfed by wasted wattage","setting":"dark plant floor after Stripe Claude coding","props":["heat haze","scale contrast"],"composition":"single","why_it_fits":"agentic work burns energy"}',
     )!;
-    expect(validateWeeklySceneSpec(good, ['Codex', '3D game'])).toEqual([]);
+    expect(validateWeeklySceneSpec(good, ['Stripe', 'energy']).length).toBe(0);
   });
 
   it('extracts distinctive entities from headline + angle', () => {
@@ -426,25 +483,34 @@ describe('weekly scene schema gates', () => {
     expect(entities.some((e) => /3d game/i.test(e))).toBe(true);
   });
 
-  it('weeklyFallbackScene prefers game/controller language for game stories', () => {
+  it('weeklyFallbackScene prefers conceptual metaphors for known story shapes', () => {
     expect(
       weeklyFallbackScene('Codex sub-agents built a 3D game', ['Codex', '3D game']).toLowerCase(),
-    ).toMatch(/controller|sketch|game/);
+    ).toMatch(/facade|backstage|stage/);
+    expect(
+      weeklyFallbackScene('Stripe Claude Code energy 600x tokens', ['Stripe', 'energy']).toLowerCase(),
+    ).toMatch(/furnace|heat|chat/);
+    expect(
+      weeklyFallbackScene('Muse Code unsupervised 24 hour journal agent', [
+        'Muse',
+        'journal',
+      ]).toLowerCase(),
+    ).toMatch(/journal|ledger|fairytale/);
   });
 });
 
-describe('buildWeeklyPrompt', () => {
-  it('leads with the scene subject (BFL word-order) and stays medium-length', () => {
-    const scene = 'hands cradling a game controller beside printed level sketches after a Codex build';
-    const prompt = buildWeeklyPrompt('cool cyan', scene);
+describe('buildWeeklyPrompt / buildEditorialConceptPrompt', () => {
+  it('leads with the scene subject (BFL word-order) and stays craft-focused', () => {
+    const scene =
+      'tiny chat bubble beside industrial furnace of wasted heat arguing energy waste';
+    const prompt = buildEditorialConceptPrompt('cool cyan', scene);
     expect(prompt.startsWith(scene)).toBe(true);
-    expect(prompt).toMatch(/documentary|reportage|photojournalism/i);
+    expect(prompt).toMatch(/editorial concept|photoreal/i);
     expect(prompt).toContain('16:9');
     expect(prompt).toContain(accentToHex('cool cyan'));
-    expect(prompt.toLowerCase()).not.toContain('narrative metaphor');
-    // BFL: no giant Avoid: laundry list; positive desired state only.
     expect(prompt.toLowerCase()).not.toContain('avoid:');
     expect(prompt.split(/\s+/).length).toBeLessThan(90);
+    expect(buildWeeklyPrompt('cool cyan', scene)).toBe(prompt);
   });
 
   it('maps accent names to HEX for FLUX.2 color control', () => {
@@ -452,8 +518,8 @@ describe('buildWeeklyPrompt', () => {
     expect(accentToHex('#a1b2c3')).toBe('#A1B2C3');
   });
 
-  it('exports the v2 prompt policy id', () => {
-    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-reportage-v2');
+  it('exports the editorial-concept prompt policy id', () => {
+    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-editorial-concept-v1');
   });
 });
 
@@ -474,12 +540,9 @@ describe('generateWeeklyReportageIllustrations', () => {
   }
 
   it('generates the requested number of variants, each from a distinct seed, using a scene override to skip the art-director call', async () => {
-    const seenSeeds: string[] = [];
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.includes('flux-2-klein-9b')) {
-        const body = init?.body;
-        if (body instanceof FormData) seenSeeds.push(String(body.get('prompt')).length.toString());
         return jsonImageResponse();
       }
       return new Response('fail', { status: 500 });
@@ -489,7 +552,7 @@ describe('generateWeeklyReportageIllustrations', () => {
       {
         headline: 'unused because of sceneOverride',
         summary: 'unused',
-        sceneOverride: 'a hand closing a laptop lid in a dim office at night',
+        sceneOverride: 'a tiny chat bubble beside industrial heat arguing energy waste',
         seedBase: 'digest-1:item-1',
         variantCount: 3,
       },
@@ -497,9 +560,8 @@ describe('generateWeeklyReportageIllustrations', () => {
     );
 
     expect(result?.sceneSource).toBe('owner');
-    expect(result?.scene).toBe('a hand closing a laptop lid in a dim office at night');
+    expect(result?.scene).toContain('chat bubble');
     expect(result?.variants).toHaveLength(3);
-    // No Gemini/OpenRouter scene call was made -- only 3 klein calls.
     const kleinCalls = vi
       .mocked(globalThis.fetch)
       .mock.calls.filter((call) => String(call[0]).includes('flux-2-klein-9b'));
@@ -601,7 +663,7 @@ describe('scene-brief registry wiring (Phase 2)', () => {
     expect(loadProviderRegistry).not.toHaveBeenCalled();
   });
 
-  it('passes the weekly role to a supplied registry', async () => {
+  it('passes the weekly role for essence and metaphor steps', async () => {
     const seenRoles: string[] = [];
     const registry = {
       chainForRole: (role: string) => {
@@ -613,6 +675,7 @@ describe('scene-brief registry wiring (Phase 2)', () => {
       { headline: 'A weekly story', summary: 'Summary' },
       { geminiApiKey: 'unused', registry },
     );
-    expect(seenRoles).toEqual(['weekly.card_image_scene']);
+    expect(seenRoles.length).toBeGreaterThanOrEqual(1);
+    expect(seenRoles.every((role) => role === 'weekly.card_image_scene')).toBe(true);
   });
 });

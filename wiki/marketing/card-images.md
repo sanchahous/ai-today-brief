@@ -5,7 +5,8 @@ Sources: `pipeline/card-image.ts`, `.env.example`, PR #169–#175, editorial qua
 (гілка `feat/weekly-editorial-voice`, 2026-08-06), LLM provider registry Phase 2
 (гілка `feat/llm-provider-registry`, 2026-08-06), post-merge review PR #191 (2026-08-07),
 BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
-`feat/weekly-reportage-prompt-v2` (2026-08-10)
+`feat/weekly-reportage-prompt-v2` (2026-08-10),
+`feat/weekly-editorial-concept-v1` (2026-08-10)
 Last updated: 2026-08-10
 
 ---
@@ -30,19 +31,17 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    (source: `pipeline/card-image.ts`'s `runArtDirectorLadder`, PR #191)
 2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
    separate house style since PR5** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
-   `buildWeeklyPrompt`, policy id **`weekly-reportage-v2`** as of 2026-08-10): one documentary-reportage frame
-   of the actual news event — "picture a photographer standing in the room where this
-   happened" — not the daily path's abstract metaphor register. **v2 (BFL-aligned):** art director
-   returns structured JSON `{subject, action, setting, props, must_include}` with a deterministic
-   validator + one retry (bans split/UI/desk-defaults missing story entities); final FLUX prompt is
-   **subject-first** SASC prose (~40–80 words) with camera/lighting/HEX accent — no giant `Avoid:`
-   laundry list (FLUX.2 has no negative prompts). Context now includes binding `editorialAngle`
-   (PR4) + `why` + entity extraction. Three variants (same scene, different seeds) are generated per
-   story so the owner can pick the best render; seed is `digestId:revisionItemId:v{n}`, no
-   `job.id`, so a regeneration is iterative rather than a fresh lottery. Daily generation keeps
-   its own **no baked-in typography / mastheads** policy `story-specific-editorial-v5-no-text`,
-   untouched by PR5. (source: PR #174–#175, editorial quality overhaul PR5 2026-08-06,
-   BFL prompting guide + JSON structured prompting 2026-08-10)
+   `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-editorial-concept-v1`**
+   as of 2026-08-10): **essence → metaphor**, not documentary desk reportage. Pipeline:
+   (1) essence director → one-sentence argument + forbidden clichés; (2) metaphor director →
+   2–3 concrete visual metaphors; (3) deterministic score + `validateMetaphorPitch` (bans
+   terminal/IDE/collage, paper-heap sludge, desk defaults without a conceptual prop; allows
+   **`dual_contrast`** as one continuous photograph with a clear spatial divide — facade/backstage,
+   left/right — never comic panels or readable UI); (4) subject-first SASC + HEX for FLUX.2
+   (BFL: no giant `Avoid:` list). Context: `editorialAngle` + `why` + claim snippets + sibling
+   scene diversity. Three seed variants; `scene_override` remains the escape hatch. Daily keeps
+   `story-specific-editorial-v5-no-text`. (source: PR #174–#175, PR5 2026-08-06, reportage-v2
+   2026-08-10, editorial-concept-v1 2026-08-10)
 3. **Image** — Cloudflare Workers AI default
    `@cf/black-forest-labs/flux-2-klein-9b` (multipart FormData under Node; do not
    stream the body without duplex — that silently spilled to `flux-1-schnell`).
