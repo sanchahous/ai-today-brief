@@ -27,6 +27,17 @@ import {
   validateWeeklyDigestPreflight,
 } from '@/lib/weekly-digest/preflight';
 import {
+  contentSimGateCleared,
+  type ContentSimArtifactMeta,
+} from '@/lib/content-sim';
+
+function contentSimClearedFromMetadata(metadata: Json | null | undefined): boolean | undefined {
+  const root = asRecord(metadata);
+  const raw = root.content_sim;
+  if (raw === undefined || raw === null) return undefined;
+  return contentSimGateCleared(raw as unknown as ContentSimArtifactMeta);
+}
+import {
   approveWeeklyDigestAction,
   commentWeeklyArtifactAction,
   commentWeeklySocialAction,
@@ -674,6 +685,23 @@ function ArtifactCard({
     typeof artifactMetadata.scene_source === 'string' ? artifactMetadata.scene_source : null;
   const alternateVariantPaths = variantSelection ? listFrom(artifact.content, 'preview_paths') : [];
   const alternateVariantUrls = variantSelection ? previewUrls : [];
+  const contentSim = asRecord(artifactMetadata.content_sim);
+  const contentSimOutcome =
+    typeof contentSim.outcome === 'string' ? contentSim.outcome : null;
+  const contentSimPassed = contentSim.passed === true || contentSim.human_override === true;
+  const contentSimEscalation = asRecord(contentSim.escalation);
+  const contentSimSummary =
+    typeof contentSimEscalation.summary === 'string' ? contentSimEscalation.summary : null;
+  const contentSimBlockers = Array.isArray(contentSimEscalation.blockers)
+    ? contentSimEscalation.blockers
+    : Array.isArray(contentSim.blockers)
+      ? contentSim.blockers
+      : [];
+  const contentSimActions = Array.isArray(contentSimEscalation.suggestedActions)
+    ? contentSimEscalation.suggestedActions
+    : Array.isArray(contentSimEscalation.suggested_actions)
+      ? contentSimEscalation.suggested_actions
+      : [];
 
   return (
     <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -876,6 +904,55 @@ function ArtifactCard({
             )}
           </ul>
         </div>
+      ) : null}
+
+      {contentSimOutcome && !contentSimPassed ? (
+        <div className="mt-4 rounded-xl border border-rose-300/25 bg-rose-300/8 p-3 text-xs text-rose-50">
+          <p className="font-bold text-rose-100">
+            Content Sim · {String(contentSimOutcome).replaceAll('_', ' ')}
+            {typeof contentSim.attempts === 'number'
+              ? ` · ${contentSim.attempts}/${typeof contentSim.max_attempts === 'number' ? contentSim.max_attempts : '?'} attempts`
+              : ''}
+          </p>
+          {contentSimSummary ? <p className="mt-2 leading-5 text-rose-50/90">{contentSimSummary}</p> : null}
+          {contentSimBlockers.length > 0 ? (
+            <ul className="mt-2 grid gap-1">
+              {contentSimBlockers.slice(0, 6).map((entry, index) => {
+                const row = asRecord(entry as Json);
+                const code = typeof row.code === 'string' ? row.code : 'issue';
+                const message = typeof row.message === 'string' ? row.message : '';
+                return (
+                  <li key={`${code}-${index}`}>
+                    • <span className="font-mono text-rose-100/80">{code}</span>
+                    {message ? ` — ${message}` : ''}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+          {contentSimActions.length > 0 ? (
+            <div className="mt-3">
+              <p className="font-bold tracking-wide text-rose-200/80 uppercase">Suggested next steps</p>
+              <ul className="mt-1 grid gap-1 text-rose-50/90">
+                {contentSimActions.slice(0, 3).map((action) => (
+                  <li key={String(action)}>• {String(action)}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          <p className="mt-3 text-rose-100/70">
+            Approve after review to record a human override, or regenerate with a scene override.
+          </p>
+        </div>
+      ) : null}
+
+      {contentSim.human_override === true ? (
+        <p className="mt-3 text-xs text-amber-100/80">
+          Content Sim human override recorded
+          {typeof contentSim.human_override_note === 'string' && contentSim.human_override_note
+            ? `: ${contentSim.human_override_note}`
+            : '.'}
+        </p>
       ) : null}
 
       <ArtifactReview
@@ -4255,6 +4332,7 @@ export function WeeklyWorkspace({
         generationStatus: artifact.generation_status,
         reviewStatus: artifact.review_status,
         stale: artifact.review_status === 'stale',
+        contentSimCleared: contentSimClearedFromMetadata(artifact.metadata),
       },
     ];
   });

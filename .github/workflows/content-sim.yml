@@ -1,0 +1,50 @@
+name: Content Sim (manual)
+
+# Expensive / LLM-backed content simulation. Not part of pr:check.
+# Trigger via workflow_dispatch or by labeling a PR `run-content-sim`.
+
+on:
+  workflow_dispatch:
+    inputs:
+      adapter:
+        description: content-sim adapter
+        required: true
+        default: weekly-master
+        type: choice
+        options:
+          - weekly-master
+          - weekly-image
+          - daily-brief
+          - daily-image
+      fixture:
+        description: Path to fixture JSON (repo-relative). Required for run.
+        required: false
+        type: string
+  pull_request:
+    types: [labeled]
+
+jobs:
+  content-sim:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'run-content-sim'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Run content-sim gates (deterministic only when no fixture)
+        env:
+          CONTENT_SIM_IMAGE_LOOP: 'off'
+        run: |
+          ADAPTER="${{ github.event.inputs.adapter || 'weekly-master' }}"
+          FIXTURE="${{ github.event.inputs.fixture }}"
+          if [ -n "$FIXTURE" ] && [ -f "$FIXTURE" ]; then
+            npm run content-sim -- run --adapter "$ADAPTER" --fixture "$FIXTURE"
+          else
+            echo "No fixture supplied — skipping live run. Use workflow_dispatch with fixture path."
+          fi

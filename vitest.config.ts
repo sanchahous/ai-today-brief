@@ -21,6 +21,7 @@ const LOGIC_INCLUDE = [
   'src/lib/settings-builder.ts',
   'src/lib/settings-builder-rules.ts',
   'src/lib/tools-mentioned.ts',
+  'src/lib/content-sim/**/*.ts',
   'pipeline/**/*.ts',
 ];
 
@@ -51,6 +52,7 @@ export default defineConfig({
         // it lives (claude-cli.ts, openrouter-adaptive.ts, editorial-llm.ts).
         'pipeline/scripts/weekly-doctor.ts',
         'pipeline/scripts/weekly-master-sandbox.ts',
+        'pipeline/scripts/content-sim.ts',
         'pipeline/publish.ts',
         'pipeline/summarize.ts',
         'pipeline/db.ts',

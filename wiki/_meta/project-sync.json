@@ -26,6 +26,22 @@
       "wikiPages": ["marketing/card-images.md", "overview.md"]
     },
     {
+      "id": "content-sim",
+      "paths": [
+        "src/lib/content-sim",
+        "pipeline/providers/vision.ts",
+        "pipeline/scripts/content-sim.ts",
+        ".github/workflows/content-sim.yml"
+      ],
+      "wikiPages": [
+        "pipeline/content-sim.md",
+        "ops/weekly-sandbox.md",
+        "marketing/card-images.md",
+        "pipeline/weekly-digest.md",
+        "now.md"
+      ]
+    },
+    {
       "id": "generation-costs",
       "paths": [
         "src/lib/generation-costs.ts",

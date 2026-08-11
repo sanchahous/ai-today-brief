@@ -47,6 +47,12 @@ export interface WeeklyPreflightArtifact {
   reviewStatus?: string | null;
   status?: string | null;
   stale?: boolean;
+  /**
+   * Content-sim gate for story_image / cover. `undefined` = legacy artifact
+   * without a sim report (grandfathered). `false` blocks release until the
+   * image loop passes or the owner overrides after escalation.
+   */
+  contentSimCleared?: boolean;
 }
 
 export interface WeeklyPreflightSocial {
@@ -73,6 +79,7 @@ export interface WeeklyPreflightBlocker {
     | 'stories_count'
     | 'artifact_missing'
     | 'artifact_not_approved'
+    | 'simulation_not_passed'
     | 'social_missing'
     | 'social_duplicate'
     | 'social_unexpected'
@@ -321,15 +328,15 @@ const ARTIFACT_GATE_GUIDANCE: Record<WeeklyArtifactType, ArtifactGateGuidance> =
     fixMissing: 'Open PDF → enqueue generation for this locale → reload when ready → Approve.',
     fixUnapproved: 'Open PDF → review the current locale file → Approve version (owner).',
   },
-  cover: {
-    tab: 'visuals',
-    fixMissing: 'Open Visuals → generate the weekly cover → Approve the master cover.',
-    fixUnapproved: 'Open Visuals → review the cover → Approve version (owner).',
-  },
   story_image: {
     tab: 'visuals',
     fixMissing: 'Open Visuals → generate story images for selected stories → Approve each.',
     fixUnapproved: 'Open Visuals → find the story image still in review → Approve version.',
+  },
+  cover: {
+    tab: 'visuals',
+    fixMissing: 'Open Visuals → generate the weekly cover → Approve the master cover.',
+    fixUnapproved: 'Open Visuals → review the cover → Approve version (owner).',
   },
   video_script: {
     tab: 'video',
@@ -428,14 +435,28 @@ export function validateWeeklyDigestPreflight(input: WeeklyPreflightInput): Week
         fix: guidance.fixMissing,
         tab: guidance.tab,
       });
-    } else if (!matches.some(artifactApproved)) {
-      blockers.push({
-        code: 'artifact_not_approved',
-        slot,
-        message: `${options.label} must be current and approved.`,
-        fix: guidance.fixUnapproved,
-        tab: guidance.tab,
-      });
+    } else {
+      if (!matches.some(artifactApproved)) {
+        blockers.push({
+          code: 'artifact_not_approved',
+          slot,
+          message: `${options.label} must be current and approved.`,
+          fix: guidance.fixUnapproved,
+          tab: guidance.tab,
+        });
+      }
+      if (
+        (artifactType === 'story_image' || artifactType === 'cover') &&
+        matches.some((artifact) => artifact.contentSimCleared === false)
+      ) {
+        blockers.push({
+          code: 'simulation_not_passed',
+          slot,
+          message: `${options.label} failed content simulation and has no human override.`,
+          fix: 'Open Visuals → review the Content Sim escalation (blockers + suggested fixes) → Regenerate or Approve to override after review.',
+          tab: 'visuals',
+        });
+      }
     }
   }
 

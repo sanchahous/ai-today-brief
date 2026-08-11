@@ -4,7 +4,22 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-10
+Last updated: 2026-08-11
+
+## 2026-08-11 — Content Simulation & Backtest System
+
+**Джерело:** план власника (універсальна симуляція daily+weekly+images; vision critic ≤5
+ітерацій → human review).
+
+**Змінено:**
+- Нове ядро `src/lib/content-sim/` (loop, escalation, deterministic + vision critic parse).
+- `pipeline/providers/vision.ts` + roles `weekly.image_critic` / `daily.image_critic`.
+- Weekly `generateStoryImage` — vision repair loop; `metadata.content_sim`; preflight
+  `simulation_not_passed`; admin escalation UI; Approve → human override.
+- CLI `npm run content-sim` (capture/run/gates/hypothesis); adapters daily-brief/daily-image/
+  weekly-image-fixture; optional workflow `content-sim.yml`.
+- Wiki: [content-sim](pipeline/content-sim.md), оновлення card-images / weekly-digest /
+  weekly-sandbox / now / index; `.env.example` `CONTENT_SIM_*`.
 
 ## 2026-08-10 — Weekly story images: editorial-concept-v1 (essence → metaphor)
 

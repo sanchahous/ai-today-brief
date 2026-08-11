@@ -2,20 +2,18 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list` (live check 2026-08-04), Supabase preflight live check 2026-08-04,
-`wiki/ops/owner-checklist.md`, `wiki/audits/2026-07-01-seo-organic.md`, `.env.example`,
-owner session 2026-08-06/07 (editorial quality feedback, LLM provider registry), post-merge tech
-review 2026-08-07 (`claude/tech-review-pr-189-190-859ena`), live `auto-publish --dry-run` check
-2026-08-07, owner session 2026-08-08 (admin mobile-responsive fix, screenshot report),
-owner-approved Weekly Digest reliability plan 2026-08-08, owner screenshot + Chrome layout
-measurement 2026-08-09, `editorial_master` failure investigation + live sandbox runs 2026-08-09,
-owner decision 2026-08-09 to rewrite `editorial_master` as an iterative engine,
-follow-up critic-recovery fix 2026-08-10, UK claimIds engine fix 2026-08-10 (run `31367921173`), live restore-error incident + UI/repair fixes 2026-08-10, Postpone release feature 2026-08-10
-Last updated: 2026-08-10
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…11, Content Sim plan 2026-08-11
+Last updated: 2026-08-11
 
 ---
 
 ## Стан репозиторію
+
+- **Content Sim / backtest (2026-08-11):** універсальний harness `src/lib/content-sim` +
+  `npm run content-sim` (capture/run/gates/hypothesis). Weekly `story_image` — vision critic
+  loop ≤5 з escalation у admin Visuals; release preflight `simulation_not_passed`. Roles
+  `weekly.image_critic` / `daily.image_critic`. Docs — [pipeline/content-sim](pipeline/content-sim.md).
+  Опційний CI: `.github/workflows/content-sim.yml` (label `run-content-sim`).
 
 - **PR [#199](https://github.com/sanchahous/ai-today-brief/pull/199) змержено в `main` 2026-08-09**
   (`6f6d875`, власник змержив вручну одразу після зеленого CI) — критичний аудит згенерованого

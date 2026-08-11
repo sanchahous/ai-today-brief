@@ -11,7 +11,7 @@ mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
 Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10, newer-draft banner + restore/save security-definer fix 2026-08-10, Postpone release feature 2026-08-10, weekly-reportage-v2 prompt rewrite 2026-08-10, weekly-editorial-concept-v1 2026-08-10
-Last updated: 2026-08-10
+Last updated: 2026-08-11
 
 ---
 
@@ -266,6 +266,11 @@ RPC з'ясувалось, що воно було неточним.
 Visuals tab: сітка з 2 мініатюр-альтернатив під основним зображенням (клік = «Use this»);
 редагована сцена (`scene_override`) + «Regenerate with this scene» перевикористовує вже наявний
 `enqueueWeeklyGenerationAction`, нового job type не знадобилось.
+
+**Content Sim (2026-08-11):** після FLUX `generateStoryImage` ганяє vision repair loop
+(≤5, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
+блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.
+CLI: `npm run content-sim`. Деталі — [content-sim](content-sim.md).
 
 **Dry-run виконано (2026-08-06):** 9 klein-рендерів (3 сіди × 3 головні історії
 `ai-weekly-2026-07-27`) через реальний Cloudflare Workers AI. Результат — генуїнно

@@ -2452,6 +2452,8 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   } | null = null;
   /** Additional variant renders (sharp-processed, not yet uploaded) beyond the primary. */
   let alternateBuffers: Buffer[] = [];
+  let contentSimMeta: import('@/lib/content-sim').ContentSimArtifactMeta | null = null;
+  let needsHumanReview = false;
 
   if (requestedSourceUrl?.startsWith('http')) {
     const response = await fetch(requestedSourceUrl, {
@@ -2463,14 +2465,15 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     sourceKind = 'editor_url';
   } else {
     const { generateWeeklyReportageIllustrations, WEEKLY_PROMPT_POLICY } = await lazyCardImage();
+    const { runWeeklyImageSimLoop } = await import('@/lib/content-sim/adapters/weekly-image');
     promptPolicy = WEEKLY_PROMPT_POLICY;
     const contentStudio = asRecord(asRecord(item.source_snapshot).content_studio);
     const directions = await loadStoryDirections(job.weekly_digest_id);
     const editorialAngle = item.brief_item_id
       ? directions.get(item.brief_item_id)
       : undefined;
-    // Cheap claim snippets from the revision item snapshot (no extra research load).
-    const claimsExcerpt = approvedFactsForItem(item).slice(0, 4).join(' · ').slice(0, 400) || undefined;
+    const claimsExcerpt =
+      approvedFactsForItem(item).slice(0, 4).join(' · ').slice(0, 400) || undefined;
     const siblingScenes = context.artifacts
       .filter(
         (artifact) =>
@@ -2483,51 +2486,81 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         return scene ? [scene.slice(0, 120)] : [];
       })
       .slice(0, 6);
-    const illustrations = await generateWeeklyReportageIllustrations(
-      {
-        headline: item.title_en,
-        summary: item.summary_en,
-        bodyExcerpt: item.body_en?.slice(0, 600),
-        editorsView: text(contentStudio.editors_view_en) ?? undefined,
-        editorialAngle,
-        why: item.why_en ?? undefined,
-        claimsExcerpt,
-        avoidSubjects: siblingScenes.length ? siblingScenes : undefined,
-        seedBase: `${job.weekly_digest_id}:${job.revision_id}:${item.id}`,
-        sceneOverride: sceneOverride ?? undefined,
-        variantCount: 3,
-      },
-      {
-        geminiApiKey: process.env.GEMINI_API_KEY?.trim() ?? '',
-        geminiImageModel: process.env.GEMINI_IMAGE_MODEL?.trim(),
-        geminiModel: process.env.GEMINI_MODEL?.trim(),
-        openRouterApiKey:
-          process.env.OPEN_ROUTER_API_KEY?.trim() ?? process.env.OPENROUTER_API_KEY?.trim(),
-        cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID?.trim(),
-        cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN?.trim(),
-        cloudflareImageModel: process.env.CLOUDFLARE_IMAGE_MODEL?.trim(),
-        // Lets an owner-configured /admin/providers role chain for
-        // weekly.card_image_scene override the env-only default.
-        db: getSupabaseAdmin(),
-      },
-    );
 
-    if (illustrations?.variants.length) {
-      const [primary, ...alternates] = illustrations.variants;
-      source = primary!.bytes;
+    const sim = await runWeeklyImageSimLoop({
+      ctx: {
+        headline: item.title_en,
+        summary: item.summary_en ?? undefined,
+        policyId: WEEKLY_PROMPT_POLICY,
+      },
+      seedBase: `${job.weekly_digest_id}:${job.revision_id}:${item.id}`,
+      sceneOverride: sceneOverride ?? undefined,
+      generate: async ({ attempt, sceneOverride: override, seedBase, promptSuffix }) => {
+        const sceneForGen = override ? `${override}${promptSuffix}` : undefined;
+        const illustrations = await generateWeeklyReportageIllustrations(
+          {
+            headline: item.title_en,
+            summary: item.summary_en,
+            bodyExcerpt: item.body_en?.slice(0, 600),
+            editorsView: text(contentStudio.editors_view_en) ?? undefined,
+            editorialAngle,
+            why: item.why_en ?? undefined,
+            claimsExcerpt,
+            avoidSubjects: siblingScenes.length ? siblingScenes : undefined,
+            seedBase,
+            sceneOverride: sceneForGen,
+            variantCount: attempt === 1 ? 3 : 1,
+          },
+          {
+            geminiApiKey: process.env.GEMINI_API_KEY?.trim() ?? '',
+            geminiImageModel: process.env.GEMINI_IMAGE_MODEL?.trim(),
+            geminiModel: process.env.GEMINI_MODEL?.trim(),
+            openRouterApiKey:
+              process.env.OPEN_ROUTER_API_KEY?.trim() ?? process.env.OPENROUTER_API_KEY?.trim(),
+            cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID?.trim(),
+            cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN?.trim(),
+            cloudflareImageModel: process.env.CLOUDFLARE_IMAGE_MODEL?.trim(),
+            db: getSupabaseAdmin(),
+          },
+        );
+        if (!illustrations?.variants.length) return null;
+        const [primary, ...alternates] = illustrations.variants;
+        return {
+          bytes: primary!.bytes,
+          width: primary!.width,
+          height: primary!.height,
+          provider: primary!.provider,
+          model: primary!.model,
+          estimatedCostUsd: illustrations.variants.reduce((sum, v) => sum + v.estimatedCostUsd, 0),
+          costSource: primary!.costSource,
+          scene: illustrations.scene,
+          positivePrompt: primary!.positivePrompt ?? '',
+          negativePrompt: primary!.negativePrompt ?? '',
+          sceneSource: illustrations.sceneSource,
+          essence: illustrations.essence,
+          metaphorTitle: illustrations.metaphorTitle,
+          alternateBuffers: alternates.map((variant) => variant.bytes),
+        };
+      },
+    });
+
+    contentSimMeta = sim.meta;
+    needsHumanReview = !sim.report.passed;
+    if (sim.candidate && sim.candidate.bytes.length > 0) {
+      source = sim.candidate.bytes;
       imageMeta = {
-        provider: primary!.provider,
-        model: primary!.model,
-        estimatedCostUsd: illustrations.variants.reduce((sum, v) => sum + v.estimatedCostUsd, 0),
-        costSource: primary!.costSource,
-        scene: illustrations.scene,
-        positivePrompt: primary!.positivePrompt,
-        negativePrompt: primary!.negativePrompt,
-        sceneSource: illustrations.sceneSource,
-        essence: illustrations.essence,
-        metaphorTitle: illustrations.metaphorTitle,
+        provider: sim.candidate.provider,
+        model: sim.candidate.model,
+        estimatedCostUsd: sim.report.totalCostUsd || sim.candidate.estimatedCostUsd,
+        costSource: sim.candidate.costSource,
+        scene: sim.candidate.scene,
+        positivePrompt: sim.candidate.positivePrompt,
+        negativePrompt: sim.candidate.negativePrompt,
+        sceneSource: sim.candidate.sceneSource,
+        essence: sim.candidate.essence,
+        metaphorTitle: sim.candidate.metaphorTitle,
       };
-      alternateBuffers = alternates.map((variant) => variant.bytes);
+      alternateBuffers = sim.candidate.alternateBuffers;
     } else {
       const fallbackUrl = snapshotImage(item.source_snapshot);
       if (!fallbackUrl?.startsWith('http')) {
@@ -2542,6 +2575,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       source = Buffer.from(await response.arrayBuffer());
       sourceUrl = fallbackUrl;
       sourceKind = 'source_fallback';
+      needsHumanReview = true;
     }
   }
 
@@ -2558,10 +2592,6 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/${hash}-${job.id}.jpg`;
   await uploadPrivate(path, image, 'image/jpeg');
 
-  // Upload the alternate variants alongside the primary (same generic
-  // preview_paths mechanism the PDF job already uses for page previews --
-  // admin-data.ts's withPrivatePreviewUrls signs these into preview_urls
-  // with no additional plumbing needed).
   const previewPaths: string[] = [];
   for (const [index, buffer] of alternateBuffers.entries()) {
     const processed = await processImage(buffer);
@@ -2593,6 +2623,9 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       source_url: sourceUrl,
       focal_point: text(input.focal_point) ?? 'attention',
       prompt_policy: promptPolicy,
+      ...(contentSimMeta
+        ? { content_sim: contentSimMeta as unknown as import('@/lib/database.types').Json }
+        : {}),
       ...(imageMeta
         ? {
             provider: imageMeta.provider,
@@ -2631,12 +2664,25 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         revision_item_id: item.id,
         source_kind: sourceKind,
         variant_count: 1 + alternateBuffers.length,
+        content_sim_outcome: contentSimMeta?.outcome,
+        content_sim_attempts: contentSimMeta?.attempts,
       },
     });
   }
   return {
     artifactId,
-    output: { path, byte_size: image.length, sha256: hash, variants: 1 + alternateBuffers.length },
+    output: {
+      path,
+      byte_size: image.length,
+      sha256: hash,
+      variants: 1 + alternateBuffers.length,
+      ...(needsHumanReview
+        ? {
+            needs_owner_review: true,
+            content_sim_outcome: contentSimMeta?.outcome ?? 'needs_human_review',
+          }
+        : { content_sim_outcome: contentSimMeta?.outcome ?? 'passed' }),
+    },
   };
 }
 
