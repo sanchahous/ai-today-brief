@@ -9,6 +9,12 @@ Last updated: 2026-08-11
 
 ## Стан репозиторію
 
+- **Weekly illustration overhaul v2 (2026-08-11):** policy `weekly-editorial-concept-v2` —
+  прибрано theater/journal bias у metaphor prompt/score; `motif_class` + sibling structural
+  gates (reuse / scene echo / character budget / dual_contrast cap); vision physics blockers;
+  per-variant QA + auto-pick primary; Visuals показує scores на alternates. Див.
+  [card-images](marketing/card-images.md), [content-sim](pipeline/content-sim.md).
+
 - **Content Sim / backtest (2026-08-11):** універсальний harness `src/lib/content-sim` +
   `npm run content-sim` (capture/run/gates/hypothesis). Weekly `story_image` — vision critic
   loop ≤5 з escalation у admin Visuals; release preflight `simulation_not_passed`. Roles

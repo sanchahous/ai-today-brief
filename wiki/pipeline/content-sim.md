@@ -31,14 +31,21 @@ Adapters: `weekly-master` (делегує `weekly:sandbox`), `weekly-image`, `da
 ## Image loop
 
 1. Deterministic (розмір / aspect / bytes) — безкоштовно.
-2. Vision critic JSON (пороги: overall ≥ `CONTENT_SIM_SCORE_THRESHOLD`, default **80**).
-3. Repair directive → новий seed / scene_override / prompt patches.
-4. Максимум **`CONTENT_SIM_MAX_IMAGE_REPAIR=5`** спроб; spend cap `CONTENT_SIM_MAX_IMAGE_SPEND_USD`.
-5. Fail → `needs_human_review` + escalation (blockers + suggested actions). Джоба **не** валиться.
-(source: `src/lib/content-sim/loop.ts`, `config.ts`, `adapters/weekly-image.ts`)
+2. **Per-variant vision** (weekly): після FLUX (зазвичай 3 варіанти) critic оцінює **кожен**;
+   primary = найвищий overall без blockers (`pickBestVariantIndex`); scores у
+   `metadata.variant_scores`. При тиску `CONTENT_SIM_MAX_IMAGE_SPEND_USD` — vision лише на
+   top-1 за heuristic (розмір буфера), інші `budget_skip`.
+3. Vision critic JSON (пороги: overall ≥ `CONTENT_SIM_SCORE_THRESHOLD`, default **80**).
+   Blockers включають physics: `impossible_orientation`, `prop_use_mismatch`,
+   `decorative_second_beat`, `sibling_echo` (+ craft/UI).
+4. Repair directive → новий seed / scene_override / prompt patches / reject metaphor.
+5. Максимум **`CONTENT_SIM_MAX_IMAGE_REPAIR=5`** спроб; spend cap `CONTENT_SIM_MAX_IMAGE_SPEND_USD`.
+6. Fail → `needs_human_review` + escalation (blockers + suggested actions). Джоба **не** валиться.
+(source: `src/lib/content-sim/loop.ts`, `config.ts`, `adapters/weekly-image.ts`,
+`vision-critic.ts`)
 
 Owner Approve на failed sim ставить `metadata.content_sim.human_override=true` і знімає
-`simulation_not_passed`.
+`simulation_not_passed`. Promote alternate у Visuals ставить `pick_source=owner`.
 (source: `src/app/admin/(cms)/weekly/actions.ts`, `preflight.ts`)
 
 ## CLI

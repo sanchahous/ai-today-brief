@@ -244,10 +244,11 @@ SASC, craft bans) + `generateWeeklyReportageIllustrations` (3 варіанти /
 **Daily-пайплайн не зачеплений.**
 
 Контекст: title+summary+body excerpt+editorsView+`editorialAngle`+`why`+claim snippets+sibling
-scenes (`generateStoryImage`). Seed без `job.id`. `metadata.prompt_policy` =
-**`weekly-editorial-concept-v1`** (раніше `weekly-reportage-v2` / `v1`). Validator дозволяє
-`dual_contrast` (один continuous кадр з просторовим поділом facade/backstage); банить paper-heap
-sludge, terminal/IDE, collage. Артефакт зберігає `essence` / `metaphor_title`. Деталі —
+metaphors (`generateStoryImage` → `siblingMetaphors` з metadata). Seed без `job.id`.
+`metadata.prompt_policy` = **`weekly-editorial-concept-v2`** (раніше `v1` / `weekly-reportage-v2`).
+Validator: craft bans + structural sibling gates (`motif_class` uniqueness, scene echo,
+character budget, dual_contrast cap/argued). Артефакт зберігає `essence` / `metaphor_title` /
+`motif_class` / `subject_kind` / `composition` / `variant_scores` / `pick_source`. Деталі —
 [marketing/card-images](../marketing/card-images.md).
 
 **Фікс мертвого negative prompt на klein:** multipart не шле `negative_prompt`; заборони в
@@ -263,7 +264,8 @@ validator *до* FLUX; позитивний desired-state (BFL: FLUX.2 без ne
 початкового формулювання плану («3 артефакти в одному slot») — після прочитання реального SQL
 RPC з'ясувалось, що воно було неточним.
 
-Visuals tab: сітка з 2 мініатюр-альтернатив під основним зображенням (клік = «Use this»);
+Visuals tab: сітка з 2 мініатюр-альтернатив під основним зображенням (клік = «Use this») з
+per-variant score/blocker chips; primary badge `auto-picked` / `owner-promoted`;
 редагована сцена (`scene_override`) + «Regenerate with this scene» перевикористовує вже наявний
 `enqueueWeeklyGenerationAction`, нового job type не знадобилось.
 

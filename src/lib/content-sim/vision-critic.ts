@@ -16,6 +16,10 @@ export const IMAGE_CRITIC_BLOCKER_CODES = [
   'brand_unsafe',
   'low_quality',
   'wrong_subject',
+  'impossible_orientation',
+  'prop_use_mismatch',
+  'decorative_second_beat',
+  'sibling_echo',
 ] as const;
 
 export type ImageCriticBlockerCode = (typeof IMAGE_CRITIC_BLOCKER_CODES)[number];
@@ -24,22 +28,38 @@ export function buildImageCriticPrompt(input: {
   headline: string;
   essence?: string;
   metaphorTitle?: string;
+  whyItFits?: string;
   scene?: string;
   policyId?: string;
   scoreThreshold?: number;
+  siblingScenes?: string[];
 }): string {
   const threshold = input.scoreThreshold ?? contentSimScoreThreshold();
+  const siblingBlock =
+    input.siblingScenes?.length ?
+      [
+        'Sibling scenes already used in this digest (flag sibling_echo if this image rhymes with them):',
+        ...input.siblingScenes.slice(0, 6).map((s, i) => `  ${i + 1}. ${s.slice(0, 160)}`),
+      ].join('\n')
+    : '';
   return [
     'You are the art director QA for AI Today Brief.',
-    `Policy: ${input.policyId ?? 'weekly-editorial-concept-v1'} (no readable text, no UI chrome, no comic panels/collage).`,
+    `Policy: ${input.policyId ?? 'weekly-editorial-concept-v2'} (no readable text, no UI chrome, no comic panels/collage).`,
     `Score overall 0–100. Pass only if overall >= ${threshold} AND no blocking issues.`,
-    'Blocking codes (use exactly): readable_text | ui_chrome | collage_panels | banned_cliche | off_metaphor | brand_unsafe | low_quality | wrong_subject.',
+    'Blocking codes (use exactly): readable_text | ui_chrome | collage_panels | banned_cliche | off_metaphor | brand_unsafe | low_quality | wrong_subject | impossible_orientation | prop_use_mismatch | decorative_second_beat | sibling_echo.',
     'banned_cliche includes: terminal/IDE screens, paper-heap sludge, generic desk without a conceptual prop.',
+    'Physics / craft checks:',
+    '- impossible_orientation: readable surfaces (books, journals, screens, signs) upside-down or rotated vs how a human would use them.',
+    '- prop_use_mismatch: grip, posture, or object use that a human would not do this way.',
+    '- decorative_second_beat: second half of a dual/contrast frame that does not argue the essence (ballerinas, props that are mood-only).',
+    '- sibling_echo: composition/subject rhymes with a sibling scene listed below.',
     '',
     `Headline: ${input.headline}`,
     input.essence ? `Essence: ${input.essence}` : '',
     input.metaphorTitle ? `Metaphor: ${input.metaphorTitle}` : '',
+    input.whyItFits ? `Why it fits: ${input.whyItFits}` : '',
     input.scene ? `Scene brief: ${input.scene.slice(0, 800)}` : '',
+    siblingBlock,
     '',
     'Inspect the attached image. Reply with ONLY JSON:',
     '{',

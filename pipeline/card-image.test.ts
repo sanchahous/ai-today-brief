@@ -410,12 +410,16 @@ describe('weekly essence + metaphor gates', () => {
             setting: 'theatre with clear left-right spatial divide',
             props: ['curtain', 'missing-texture crates'],
             composition: 'dual_contrast',
+            motif_class: 'theatrical_reveal',
+            subject_kind: 'character',
             why_it_fits: 'speed shipped a facade before quality caught up',
           },
         ],
       }),
     );
     expect(pitches[0]?.composition).toBe('dual_contrast');
+    expect(pitches[0]?.motifClass).toBe('theatrical_reveal');
+    expect(pitches[0]?.subjectKind).toBe('character');
     expect(flattenMetaphorPitch(pitches[0]!).toLowerCase()).toContain('spatial divide');
   });
 
@@ -428,7 +432,9 @@ describe('weekly essence + metaphor gates', () => {
         setting: 'one continuous photograph with a curtain spatial divide',
         props: ['curtain'],
         composition: 'dual_contrast',
-        whyItFits: 'speed outran quality',
+        whyItFits: 'polished facade vs broken backstage — speed outran quality',
+        motifClass: 'theatrical_reveal',
+        subjectKind: 'character',
       },
       {
         essence: 'Speed outran quality in a rushed 3D game build',
@@ -438,6 +444,62 @@ describe('weekly essence + metaphor gates', () => {
       ['Codex', '3D game'],
     );
     expect(errors).toEqual([]);
+  });
+
+  it('rejects sibling motif reuse, character budget, and dual_contrast digest cap', () => {
+    const siblings = [
+      {
+        motifClass: 'anthropomorphic_guardian',
+        subjectKind: 'character',
+        composition: 'dual_contrast' as const,
+        sceneSummary: 'clay golem guarding a sealed journal in a vault',
+      },
+    ];
+    const essence = {
+      essence: 'Unsupervised agents stay reliable via durable memory',
+      mustFeel: 'vigilance',
+      forbiddenCliches: [],
+    };
+    const reuse = validateMetaphorPitch(
+      {
+        title: 'Guardian',
+        subject: 'another tireless golem watching a ledger',
+        action: 'standing watch',
+        setting: 'stone vault',
+        props: ['journal'],
+        composition: 'single',
+        whyItFits: 'durable memory keeps the agent honest',
+        motifClass: 'anthropomorphic_guardian',
+        subjectKind: 'character',
+      },
+      essence,
+      ['agent'],
+      siblings,
+    );
+    expect(reuse).toContain('sibling_motif_class_reuse');
+    expect(reuse).toContain('character_budget');
+
+    const dualCap = validateMetaphorPitch(
+      {
+        title: 'Split plant',
+        subject: 'tiny chat orb left of industrial heat furnace',
+        action: 'dwarfed by wasted wattage',
+        setting: 'one continuous photograph with left-right spatial divide',
+        props: ['heat haze'],
+        composition: 'dual_contrast',
+        whyItFits: 'tiny chat vs industrial heat — invisible energy waste',
+        motifClass: 'thermal_waste',
+        subjectKind: 'object',
+      },
+      {
+        essence: 'Agentic coding burns vastly more energy than a chat prompt',
+        mustFeel: 'waste',
+        forbiddenCliches: [],
+      },
+      ['energy'],
+      siblings,
+    );
+    expect(dualCap).toContain('dual_contrast_digest_cap');
   });
 
   it('rejects paper-heap sludge and terminal/UI collage language', () => {
@@ -450,6 +512,8 @@ describe('weekly essence + metaphor gates', () => {
         props: ['melted warped pages'],
         composition: 'single',
         whyItFits: 'energy waste somehow',
+        motifClass: 'paper_heap',
+        subjectKind: 'object',
       },
       {
         essence: 'Agentic work burns energy invisibly',
@@ -519,7 +583,7 @@ describe('buildWeeklyPrompt / buildEditorialConceptPrompt', () => {
   });
 
   it('exports the editorial-concept prompt policy id', () => {
-    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-editorial-concept-v1');
+    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-editorial-concept-v2');
   });
 });
 

@@ -51,6 +51,45 @@ describe('parseImageCriticResponse', () => {
     expect(critique.passed).toBe(false);
     expect(critique.repairDirective?.promptPatches?.[0]).toContain('no text');
   });
+
+  it('parses physics and decorative-beat blocker codes', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 70,
+        dimensions: {},
+        blockers: [
+          {
+            code: 'impossible_orientation',
+            message: 'Journal is upside-down relative to the reader',
+            region: 'center',
+          },
+          {
+            code: 'decorative_second_beat',
+            message: 'Ballerinas do not argue the essence',
+            region: 'right',
+          },
+          {
+            code: 'prop_use_mismatch',
+            message: 'Grip on the ledger is impossible',
+            region: 'hands',
+          },
+          {
+            code: 'sibling_echo',
+            message: 'Same golem motif as sibling story',
+            region: 'full',
+          },
+        ],
+      }),
+      80,
+    );
+    expect(critique.passed).toBe(false);
+    expect(critique.blockers.map((b) => b.code)).toEqual([
+      'impossible_orientation',
+      'decorative_second_beat',
+      'prop_use_mismatch',
+      'sibling_echo',
+    ]);
+  });
 });
 
 describe('runRepairLoop', () => {
@@ -195,5 +234,19 @@ describe('buildImageCriticPrompt', () => {
     const prompt = buildImageCriticPrompt({ headline: 'OpenAI ships X', scoreThreshold: 80 });
     expect(prompt).toContain('OpenAI ships X');
     expect(prompt).toContain('80');
+  });
+
+  it('includes physics codes and sibling scenes', () => {
+    const prompt = buildImageCriticPrompt({
+      headline: 'Agents burn energy',
+      essence: 'Invisible wattage from agentic loops',
+      whyItFits: 'tiny orb vs furnace',
+      siblingScenes: ['clay golem guarding a sealed journal'],
+      scoreThreshold: 80,
+    });
+    expect(prompt).toContain('impossible_orientation');
+    expect(prompt).toContain('decorative_second_beat');
+    expect(prompt).toContain('clay golem');
+    expect(prompt).toContain('Invisible wattage');
   });
 });

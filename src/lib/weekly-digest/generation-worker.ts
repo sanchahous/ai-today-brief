@@ -2437,7 +2437,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
   let source: Buffer;
   let sourceKind = 'generated';
   let sourceUrl: string | null = null;
-  let promptPolicy = 'weekly-editorial-concept-v1';
+  let promptPolicy = 'weekly-editorial-concept-v2';
   let imageMeta: {
     provider: string;
     model: string;
@@ -2449,6 +2449,16 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
     sceneSource?: string;
     essence?: string;
     metaphorTitle?: string;
+    motifClass?: string;
+    subjectKind?: string;
+    composition?: string;
+    variantScores?: Array<{
+      index: number;
+      overall: number;
+      blockers: string[];
+      passed: boolean;
+    }>;
+    pickSource?: 'auto' | 'owner';
   } | null = null;
   /** Additional variant renders (sharp-processed, not yet uploaded) beyond the primary. */
   let alternateBuffers: Buffer[] = [];
@@ -2474,7 +2484,12 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
       : undefined;
     const claimsExcerpt =
       approvedFactsForItem(item).slice(0, 4).join(' · ').slice(0, 400) || undefined;
-    const siblingScenes = context.artifacts
+    const siblingMetaphors: Array<{
+      motifClass?: string;
+      subjectKind?: string;
+      composition?: 'single' | 'dual_contrast';
+      sceneSummary: string;
+    }> = context.artifacts
       .filter(
         (artifact) =>
           artifact.artifact_type === 'story_image' &&
@@ -2482,16 +2497,35 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
           artifact.revision_item_id !== item.id,
       )
       .flatMap((artifact) => {
-        const scene = text(asRecord(artifact.metadata).scene);
-        return scene ? [scene.slice(0, 120)] : [];
+        const meta = asRecord(artifact.metadata);
+        const scene =
+          text(meta.scene) ??
+          text(meta.metaphor_title) ??
+          undefined;
+        if (!scene) return [];
+        const compositionRaw = text(meta.composition);
+        const composition: 'single' | 'dual_contrast' | undefined =
+          compositionRaw === 'dual_contrast' || compositionRaw === 'single'
+            ? compositionRaw
+            : undefined;
+        return [
+          {
+            motifClass: text(meta.motif_class) ?? undefined,
+            subjectKind: text(meta.subject_kind) ?? undefined,
+            composition,
+            sceneSummary: scene.slice(0, 180),
+          },
+        ];
       })
       .slice(0, 6);
+    const siblingScenes = siblingMetaphors.map((s) => s.sceneSummary);
 
     const sim = await runWeeklyImageSimLoop({
       ctx: {
         headline: item.title_en,
         summary: item.summary_en ?? undefined,
         policyId: WEEKLY_PROMPT_POLICY,
+        siblingScenes: siblingScenes.length ? siblingScenes : undefined,
       },
       seedBase: `${job.weekly_digest_id}:${job.revision_id}:${item.id}`,
       sceneOverride: sceneOverride ?? undefined,
@@ -2507,6 +2541,7 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
             why: item.why_en ?? undefined,
             claimsExcerpt,
             avoidSubjects: siblingScenes.length ? siblingScenes : undefined,
+            siblingMetaphors: siblingMetaphors.length ? siblingMetaphors : undefined,
             seedBase,
             sceneOverride: sceneForGen,
             variantCount: attempt === 1 ? 3 : 1,
@@ -2539,6 +2574,9 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
           sceneSource: illustrations.sceneSource,
           essence: illustrations.essence,
           metaphorTitle: illustrations.metaphorTitle,
+          motifClass: illustrations.motifClass,
+          subjectKind: illustrations.subjectKind,
+          composition: illustrations.composition,
           alternateBuffers: alternates.map((variant) => variant.bytes),
         };
       },
@@ -2559,6 +2597,11 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
         sceneSource: sim.candidate.sceneSource,
         essence: sim.candidate.essence,
         metaphorTitle: sim.candidate.metaphorTitle,
+        motifClass: sim.candidate.motifClass,
+        subjectKind: sim.candidate.subjectKind,
+        composition: sim.candidate.composition,
+        variantScores: sim.candidate.variantScores,
+        pickSource: sim.candidate.pickSource ?? 'auto',
       };
       alternateBuffers = sim.candidate.alternateBuffers;
     } else {
@@ -2642,6 +2685,20 @@ async function generateStoryImage(job: ClaimedGenerationJob) {
                   ...(imageMeta.metaphorTitle
                     ? { metaphor_title: imageMeta.metaphorTitle }
                     : {}),
+                  ...(imageMeta.motifClass ? { motif_class: imageMeta.motifClass } : {}),
+                  ...(imageMeta.subjectKind ? { subject_kind: imageMeta.subjectKind } : {}),
+                  ...(imageMeta.composition ? { composition: imageMeta.composition } : {}),
+                  ...(imageMeta.variantScores?.length
+                    ? {
+                        variant_scores: imageMeta.variantScores.map((row) => ({
+                          index: row.index,
+                          overall: row.overall,
+                          blockers: row.blockers,
+                          passed: row.passed,
+                        })),
+                      }
+                    : {}),
+                  ...(imageMeta.pickSource ? { pick_source: imageMeta.pickSource } : {}),
                 }
               : {}),
           }

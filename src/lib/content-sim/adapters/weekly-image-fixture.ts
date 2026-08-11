@@ -106,7 +106,7 @@ export async function runWeeklyImageFixtureSim(
       critiqueWeeklyImageCandidate(candidate, {
         headline: fixture.headline,
         summary: fixture.summary,
-        policyId: fixture.policyId ?? 'weekly-editorial-concept-v1',
+        policyId: fixture.policyId ?? 'weekly-editorial-concept-v2',
       }),
   });
 

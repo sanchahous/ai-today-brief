@@ -1128,6 +1128,22 @@ export async function selectWeeklyArtifactVariantAction(formData: FormData) {
     ...previewPaths.filter((path) => path !== variantPath),
   ];
 
+  const priorMeta = jsonRecord(artifact.metadata);
+  const priorScores = Array.isArray(priorMeta.variant_scores) ? priorMeta.variant_scores : [];
+  // Promote selected alternate: swap score rows so index 0 tracks the new primary.
+  const promotedAltIndex = previewPaths.indexOf(variantPath);
+  let nextScores = priorScores;
+  if (priorScores.length > 0 && promotedAltIndex >= 0) {
+    const fromIndex = promotedAltIndex + 1; // 0 = old primary
+    const rows = priorScores.map((entry) => jsonRecord(entry));
+    const promoted = rows[fromIndex] ?? rows[0];
+    const demotedPrimary = rows[0];
+    const rest = rows.filter((_, i) => i !== 0 && i !== fromIndex);
+    nextScores = [promoted, demotedPrimary, ...rest]
+      .filter(Boolean)
+      .map((row, index) => ({ ...row, index }));
+  }
+
   const db = await getSupabaseServer();
   const { error } = await db.rpc('save_weekly_digest_artifact', {
     p_weekly_digest_id: weeklyDigestId,
@@ -1147,7 +1163,11 @@ export async function selectWeeklyArtifactVariantAction(formData: FormData) {
     // the promoted file's true size -- copied from the prior artifact
     // rather than re-fetched from storage; a cosmetic-only approximation.
     p_byte_size: artifact.byte_size,
-    p_metadata: artifact.metadata as Json,
+    p_metadata: {
+      ...priorMeta,
+      pick_source: 'owner',
+      ...(nextScores.length ? { variant_scores: nextScores } : {}),
+    } as Json,
   });
   if (error) fail(error.message);
   revalidateWeeklyAdmin(weeklyDigestId);

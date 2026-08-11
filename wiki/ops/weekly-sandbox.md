@@ -3,8 +3,9 @@
 Summary: як прогнати `editorial_master` локально на реальних даних, не чіпаючи прод-БД,
 і як за хвилину перевірити провайдерів перед тим, як витрачати Actions-прогін.
 Sources: `pipeline/scripts/weekly-master-sandbox.ts`, `pipeline/scripts/weekly-doctor.ts`,
-live sandbox-прогони 2026-08-09 на фікстурі `ai-weekly-2026-08-02`
-Last updated: 2026-08-09
+live sandbox-прогони 2026-08-09 на фікстурі `ai-weekly-2026-08-02`,
+content-sim / illustration overhaul 2026-08-11
+Last updated: 2026-08-11
 
 ---
 
