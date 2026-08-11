@@ -14,6 +14,20 @@ import {
 
 const mockedVision = vi.mocked(generateWithVision);
 
+function semanticDimensions(score: number) {
+  return {
+    metaphor_fit: score,
+    no_text: score,
+    craft: score,
+    brand_safe: score,
+    news_legibility: score,
+    context_fidelity: score,
+    mechanism_legibility: score,
+    consequence_legibility: score,
+    instant_comprehension: score,
+  };
+}
+
 function baseCandidate(overrides?: Partial<WeeklyImageSimCandidate>): WeeklyImageSimCandidate {
   return {
     bytes: Buffer.alloc(1200, 1),
@@ -27,7 +41,12 @@ function baseCandidate(overrides?: Partial<WeeklyImageSimCandidate>): WeeklyImag
     positivePrompt: 'prompt',
     negativePrompt: 'neg',
     sceneSource: 'art_director',
+    storyContext: 'An agentic workflow consumes more electricity than a chat request.',
+    meaning: 'The convenient abstraction hides infrastructure cost.',
     essence: 'Invisible energy waste',
+    mechanism: 'agentic coding loops repeatedly consume electricity',
+    consequence: 'wasted electricity becomes visible heat',
+    visualThesis: 'repeated agent loops feed a furnace of waste heat',
     metaphorTitle: 'Orb vs furnace',
     alternateBuffers: [Buffer.alloc(800, 2), Buffer.alloc(2000, 3)],
     ...overrides,
@@ -48,20 +67,17 @@ describe('applyRepairToSceneInput', () => {
   });
 
   it('clears override when metaphor is rejected without replacement', () => {
-    const out = applyRepairToSceneInput(
-      { seedBase: 'x', sceneOverride: 'old scene' },
-      2,
-      { rejectMetaphor: true },
-    );
+    const out = applyRepairToSceneInput({ seedBase: 'x', sceneOverride: 'old scene' }, 2, {
+      rejectMetaphor: true,
+    });
     expect(out.sceneOverride).toBeUndefined();
   });
 
   it('keeps critic-supplied scene_override', () => {
-    const out = applyRepairToSceneInput(
-      { seedBase: 'x', sceneOverride: 'old' },
-      2,
-      { rejectMetaphor: true, sceneOverride: 'new concrete metaphor' },
-    );
+    const out = applyRepairToSceneInput({ seedBase: 'x', sceneOverride: 'old' }, 2, {
+      rejectMetaphor: true,
+      sceneOverride: 'new concrete metaphor',
+    });
     expect(out.sceneOverride).toBe('new concrete metaphor');
   });
 
@@ -109,6 +125,7 @@ describe('scoreAndPickVariants', () => {
       .mockResolvedValueOnce({
         text: JSON.stringify({
           overall: 70,
+          dimensions: semanticDimensions(70),
           blockers: [{ code: 'decorative_second_beat', message: 'mood only', region: 'right' }],
         }),
         provider: 'gemini',
@@ -116,7 +133,7 @@ describe('scoreAndPickVariants', () => {
         usage,
       })
       .mockResolvedValueOnce({
-        text: JSON.stringify({ overall: 91, blockers: [] }),
+        text: JSON.stringify({ overall: 91, dimensions: semanticDimensions(91), blockers: [] }),
         provider: 'gemini',
         model: 'vision',
         usage,
@@ -124,6 +141,7 @@ describe('scoreAndPickVariants', () => {
       .mockResolvedValueOnce({
         text: JSON.stringify({
           overall: 85,
+          dimensions: semanticDimensions(85),
           blockers: [{ code: 'sibling_echo', message: 'rhymes', region: 'full' }],
         }),
         provider: 'gemini',
@@ -131,11 +149,15 @@ describe('scoreAndPickVariants', () => {
         usage,
       });
 
-    const picked = await scoreAndPickVariants(baseCandidate(), {
-      headline: 'Energy story',
-      policyId: 'weekly-editorial-concept-v2',
-      siblingScenes: ['clay golem with journal'],
-    }, { remainingBudgetUsd: 5 });
+    const picked = await scoreAndPickVariants(
+      baseCandidate(),
+      {
+        headline: 'Energy story',
+        policyId: 'weekly-editorial-concept-v2',
+        siblingScenes: ['clay golem with journal'],
+      },
+      { remainingBudgetUsd: 5 },
+    );
 
     expect(mockedVision).toHaveBeenCalledTimes(3);
     expect(picked.bytes.equals(Buffer.alloc(800, 2))).toBe(true);
@@ -148,16 +170,20 @@ describe('scoreAndPickVariants', () => {
 
   it('visions only the largest buffer when budget is tight', async () => {
     mockedVision.mockResolvedValue({
-      text: JSON.stringify({ overall: 88, blockers: [] }),
+      text: JSON.stringify({ overall: 88, dimensions: semanticDimensions(88), blockers: [] }),
       provider: 'gemini',
       model: 'vision',
       usage,
     });
 
-    const picked = await scoreAndPickVariants(baseCandidate(), {
-      headline: 'Energy story',
-      policyId: 'weekly-editorial-concept-v2',
-    }, { remainingBudgetUsd: 0.01 });
+    const picked = await scoreAndPickVariants(
+      baseCandidate(),
+      {
+        headline: 'Energy story',
+        policyId: 'weekly-editorial-concept-v2',
+      },
+      { remainingBudgetUsd: 0.01 },
+    );
 
     expect(mockedVision).toHaveBeenCalledTimes(1);
     expect(picked.bytes.equals(Buffer.alloc(2000, 3))).toBe(true);
@@ -166,7 +192,7 @@ describe('scoreAndPickVariants', () => {
 
   it('scores a single-buffer candidate without reordering', async () => {
     mockedVision.mockResolvedValue({
-      text: JSON.stringify({ overall: 86, blockers: [] }),
+      text: JSON.stringify({ overall: 86, dimensions: semanticDimensions(86), blockers: [] }),
       provider: 'gemini',
       model: 'vision',
       usage,
@@ -187,6 +213,11 @@ describe('scoreAndPickVariants', () => {
         passed: true,
         news_legibility: 86,
         craft: 86,
+        context_fidelity: 86,
+        mechanism_legibility: 86,
+        consequence_legibility: 86,
+        instant_comprehension: 86,
+        semantic_min: 86,
       },
     ]);
   });

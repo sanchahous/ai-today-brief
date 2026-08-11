@@ -3,7 +3,8 @@
 Summary: універсальний harness симуляції контенту (daily + weekly + images): generate →
 critic → auto-repair ≤5 → pass або human review з escalation; weekly release гейтиться цим.
 Sources: `src/lib/content-sim/`, `pipeline/providers/vision.ts`, `pipeline/scripts/content-sim.ts`,
-`.github/workflows/content-sim.yml`, план Content Sim Backtest 2026-08-11
+`.github/workflows/content-sim.yml`, план Content Sim Backtest 2026-08-11,
+owner prompt review + `weekly-semantic-story-v4` 2026-08-11
 Last updated: 2026-08-11
 
 ---
@@ -36,15 +37,20 @@ Adapters: `weekly-master` (делегує `weekly:sandbox`), `weekly-image`, `da
    `metadata.variant_scores`. При тиску `CONTENT_SIM_MAX_IMAGE_SPEND_USD` — vision лише на
    top-1 за heuristic (розмір буфера), інші `budget_skip`.
 3. Vision critic JSON (пороги: overall ≥ `CONTENT_SIM_SCORE_THRESHOLD`, default **80**,
-   **і** `news_legibility` ≥ max(75, threshold)). Blockers включають physics:
+   **і** `news_legibility` ≥ max(75, threshold)). Для weekly v4 додатково кожен із
+   `context_fidelity`, `mechanism_legibility`, `consequence_legibility`,
+   `instant_comprehension` мусить пройти той самий floor; overall clamp-иться до
+   `semantic_min + 5`. Critic отримує original summary/why/practical/limitation/takeaway/claims
+   як authority, а generated semantic contract — як hypothesis для перевірки. Blockers включають:
    `impossible_orientation`, `prop_use_mismatch`, `decorative_second_beat`, `sibling_echo`,
-   плюс editorial fidelity: **`off_news`** (картинка не аргументує distinctive mechanism),
-   **`melted_motion`** (smeared/blur artifacts). `overall` clamp:
-   `min(overall, news_legibility + 5)` — craft не може дати «голий» 100 при слабкій новині.
-   Prompt отримує `mechanism` + `readerTest` + headline. Якщо vision повертає prose замість
+   editorial fidelity **`missing_context` / `missing_mechanism` / `missing_consequence` /
+   `ambiguous_visual_story` / `off_news`**, і **`melted_motion`** (smeared/blur artifacts).
+   Якщо vision повертає prose замість
    JSON — **`critic_parse_error`** (soft-fail → repair/retry), а не hard-fail усієї
    `story_image` джоби.
-4. Repair directive → новий seed / scene_override / prompt patches / reject metaphor.
+4. Repair directive → новий seed / scene_override / prompt patches / reject metaphor. У v4
+   `prompt_patches` передаються в `renderDirective` **до** наступного FLUX request; старе
+   post-render дописування metadata видалено, бо воно не ремонтувало пікселі.
 5. Максимум **`CONTENT_SIM_MAX_IMAGE_REPAIR=5`** спроб; spend cap `CONTENT_SIM_MAX_IMAGE_SPEND_USD`.
 6. Fail → `needs_human_review` + escalation (blockers + suggested actions). Джоба **не** валиться.
 (source: `src/lib/content-sim/loop.ts`, `config.ts`, `adapters/weekly-image.ts`,

@@ -51,11 +51,11 @@ Last updated: 2026-08-11
 | ✅ [pipeline/trend-engine-backtest](pipeline/trend-engine-backtest.md) | Результати бектесту trend-index | колишній `docs/TREND-ENGINE-BACKTEST-FINDINGS.md` |
 | ✅ [pipeline/instrumentation-plan](pipeline/instrumentation-plan.md) | Пакет телеметрії PR-I1/I2/I3 (міграції 032/033/034) | колишній `docs/INSTRUMENTATION-PR-PLAN.md` |
 | ✅ [pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md) | Редакційний відбір weekly-дайджесту й fail-closed quality boundary | колишній `docs/weekly-editorial-selection.md` + `content-studio.ts` |
-| ✅ [pipeline/weekly-digest](pipeline/weekly-digest.md) | Weekly Content Studio v2, ревізії, durable worker control plane, checkpoint recovery master, spend-cap і admin UX | `.env.example` + PR #160–#177/#208/#209 + `generation-worker.ts` |
+| ✅ [pipeline/weekly-digest](pipeline/weekly-digest.md) | Weekly Content Studio v2, ревізії, durable worker, semantic story images v4, spend-cap і admin UX | `.env.example` + PR #160–#177/#208/#209 + `generation-worker.ts` |
 | ✅ [pipeline/editorial-voice](pipeline/editorial-voice.md) | Редакційний голос weekly-дайджесту: prompt-leak захист, contrast-pairs, мовні й banned-phrase гейти, `numeric_parity` EN↔UK | `editorial-voice.ts`, owner sessions 2026-08-06/09 |
 | ✅ [pipeline/weekly-master-failures](pipeline/weekly-master-failures.md) | Розбір збоїв `editorial_master` 09.08: 7 причин (таймаут CLI, tool-use, reasoning-сліпий stall-детектор, зелений прогін на провалі, фолбек, JSON-преамбула, відсутня UK/revise-драбина) | Actions runs + live sandbox 2026-08-09 |
 | ✅ [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) | Ітеративний рушій `editorial_master`: посегментний запис із чекпоїнтом на кожен сегмент, точковий ремонт поля замість перегенерації, якість більше не валить джобу | `master-engine.ts` / `master-segments.ts` / `master-repair.ts`, owner session 2026-08-09 |
-| ✅ [pipeline/content-sim](pipeline/content-sim.md) | Симуляція/бектест контенту (daily+weekly+images): vision loop ≤5, escalation, release gate, CLI `content-sim` | `src/lib/content-sim`, 2026-08-11 |
+| ✅ [pipeline/content-sim](pipeline/content-sim.md) | Симуляція/бектест: vision loop ≤5, semantic context/mechanism/consequence gates, escalation, release gate | `src/lib/content-sim`, 2026-08-11 |
 | ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | Межа відео-pipeline | колишній `docs/VIDEO-PIPELINE-BOUNDARY.md` |
 | ✅ [pipeline/llm-providers](pipeline/llm-providers.md) | Уніфікований реєстр LLM-провайдерів (у розробці): навіщо, ключові знахідки, статус фаз | owner session 2026-08-06 |
 
@@ -80,7 +80,7 @@ Last updated: 2026-08-11
 | ✅ [marketing/linkedin-action-plan](marketing/linkedin-action-plan.md) | 90-денний покроковий план | колишній `docs/marketing/LINKEDIN-ACTION-PLAN.md` |
 | ✅ [marketing/company-page-playbook](marketing/company-page-playbook.md) | Playbook company-page | колишній `docs/marketing/ATB-COMPANY-PAGE-PLAYBOOK.md` |
 | ✅ [marketing/social-launch](marketing/social-launch.md) | Запуск соцканалів | колишній `docs/marketing/SOCIAL-LAUNCH.md` |
-| ✅ [marketing/card-images](marketing/card-images.md) | Генерація банерів карток | колишній `docs/marketing/CARD-IMAGES.md` |
+| ✅ [marketing/card-images](marketing/card-images.md) | Daily cards + weekly semantic illustration v4: context anchor, causal fallback, live vision-repair gate | `pipeline/card-image.ts`, owner review + smoke renders 2026-08-11 |
 | ✅ [marketing/custom-social-delivery](marketing/custom-social-delivery.md) | Кастомна соц-доставка | колишній `docs/marketing/CUSTOM-SOCIAL-DELIVERY.md` |
 
 ## Product

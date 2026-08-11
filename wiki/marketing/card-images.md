@@ -9,7 +9,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v1` (2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
-Content Sim vision loop 2026-08-11
+Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v4` 2026-08-11
 Last updated: 2026-08-11
 
 ---
@@ -33,25 +33,26 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    error — the silent fallback gave no signal that the art director had stopped running at all.
    (source: `pipeline/card-image.ts`'s `runArtDirectorLadder`, PR #191)
 2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
-   separate house style** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
-   `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-editorial-concept-v3`**
-   as of 2026-08-11): **essence → mechanism → metaphor**, not documentary desk reportage. Pipeline:
-   (1) essence director → one-sentence argument + **`mechanism`** (concrete noun-phrase from
-   `why`/`editorialAngle`) + **`reader_test`** + forbidden clichés; (2) metaphor director →
-   2–3 concrete visual metaphors with open `motif_class` + `subject_kind`
-   (prefer object/process/environment; character only when required; subject/props must make the
-   mechanism visible; no high-speed/motion-blur language); (3) deterministic score +
-   `validateMetaphorPitch` — craft bans (terminal/IDE/collage, paper-heap sludge, desk without
-   conceptual prop, motion-blur) **plus `mechanism_not_visible`** + structural sibling gates
-   (`sibling_motif_class_reuse`, `sibling_scene_echo` Jaccard ≥0.45, `character_budget` max one
-   character per digest, `dual_contrast_unargued`, `dual_contrast_digest_cap` max one dual per
-   digest); allows **`dual_contrast`** as one continuous photograph with a clear spatial divide —
-   never comic panels or readable UI; (4) subject-first SASC + HEX for FLUX.2. Context:
-   `editorialAngle` + `why` + claim snippets + rich `siblingMetaphors` (not only short
-   avoidSubjects text). Three seed variants; **Content Sim scores all three**, auto-picks primary
-   (`metadata.variant_scores` with `news_legibility`/`craft`, `pick_source`); vision fail codes
-   include `off_news` / `melted_motion`; Visuals chips show `news · craft` beside overall.
-   `scene_override` remains the escape hatch. Daily keeps `story-specific-editorial-v5-no-text`.
+   separate semantic house style** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
+   `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-semantic-story-v4`**
+   as of 2026-08-11): **approved source → context → meaning → mechanism → consequence → causal
+   visual metaphor**. `generation-worker.ts` передає не лише headline/summary: `why`, practical,
+   limitation, takeaway, editor inference, owner angle, approved research claims/context/risks.
+   Essence director мусить відділити факт від inference і не вигадувати downstream outcome;
+   metaphor director повертає `story_anchor`, `visible_mechanism`, `visible_consequence`.
+   `validateMetaphorPitch` рахує semantic/craft gates тільки за renderable полями, які реально
+   потрапляють у FLUX prompt — пояснення `why_it_fits` більше не може фальшиво виконати
+   `mechanism_not_visible`. Окремий context-anchor gate вимагає actor/system із story context,
+   тому generic battery/cog/pump, що показує лише тему, не проходить. Якщо обидва metaphor rounds
+   провалились, fallback будується з semantic contract/visual thesis, а не з generic spotlight;
+   literal label invitations на кшталт `"model" slot` прибираються із semantic fallback до FLUX.
+   Subject-first prompt
+   ставить causal mini-story до стилю й більше не інʼєктить `facade versus backstage` у кожен
+   `dual_contrast`. Structural sibling gates v2/v3
+   (`motif_class`, scene echo, character/dual caps) лишились. Three seed variants; **Content Sim
+   scores all three** й auto-picks primary; `metadata.variant_scores` має semantic minimum + craft,
+   а Visuals показує semantic contract і `semantic` score. `scene_override` лишається escape hatch.
+   Daily keeps `story-specific-editorial-v5-no-text`.
    (source: PR #174–#175, PR5 2026-08-06, reportage-v2 / editorial-concept-v1 2026-08-10,
    illustration overhaul v2 + fidelity v3 2026-08-11)
 3. **Image** — Cloudflare Workers AI default
@@ -100,6 +101,15 @@ review with an admin escalation panel; release preflight blocks on
 `simulation_not_passed` until pass or owner override. Offline:
 `npm run content-sim -- run --adapter weekly-image|daily-image --fixture …`.
 See [content-sim](../pipeline/content-sim.md).
+
+**Виявлені v3 failure modes, закриті v4:** approved claims серіалізувались як
+`[object Object]`; semantic gate міг зарахувати слова лише з невидимого `why_it_fits`; vision
+  `prompt_patches` дописувались у metadata після render, тому не змінювали наступне зображення;
+  critic порівнював картинку переважно з власною essence, а не з original story; `dual_contrast`
+  примусово отримував backstage-мотив; довгий prose headline міг помилково стати однією required
+  entity, а reject усіх pitches викидав semantic contract у generic fallback. (source:
+  `generation-worker.ts`, `pipeline/card-image.ts`,
+`src/lib/content-sim/adapters/weekly-image.ts`, owner prompt review 2026-08-11)
 
 ## Related pages
 

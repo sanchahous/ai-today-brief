@@ -26,10 +26,7 @@ import {
   type WeeklyPreflightTab,
   validateWeeklyDigestPreflight,
 } from '@/lib/weekly-digest/preflight';
-import {
-  contentSimGateCleared,
-  type ContentSimArtifactMeta,
-} from '@/lib/content-sim';
+import { contentSimGateCleared, type ContentSimArtifactMeta } from '@/lib/content-sim';
 
 function contentSimClearedFromMetadata(metadata: Json | null | undefined): boolean | undefined {
   const root = asRecord(metadata);
@@ -134,17 +131,21 @@ function asRecord(value: Json | null | undefined): Record<string, Json | undefin
   return value;
 }
 
-/** Overall plus news/craft dims so a naked 100 is not read as editorial OK. */
+/** Overall plus semantic/craft dims so a naked 100 is not read as editorial OK. */
 function formatVariantScoreChip(score: {
   overall: number;
   passed: boolean;
   news_legibility?: number;
   craft?: number;
+  semantic_min?: number;
 }): string {
   const head = score.passed
     ? `pass ${Math.round(score.overall)}`
     : `score ${Math.round(score.overall)}`;
   const dims: string[] = [];
+  if (typeof score.semantic_min === 'number') {
+    dims.push(`semantic ${Math.round(score.semantic_min)}`);
+  }
   if (typeof score.news_legibility === 'number') {
     dims.push(`news ${Math.round(score.news_legibility)}`);
   }
@@ -703,6 +704,13 @@ function ArtifactCard({
     typeof artifactMetadata.negative_prompt === 'string' ? artifactMetadata.negative_prompt : null;
   const illustrationSceneSource =
     typeof artifactMetadata.scene_source === 'string' ? artifactMetadata.scene_source : null;
+  const illustrationSemanticContract = [
+    ['Context', artifactMetadata.story_context],
+    ['Meaning', artifactMetadata.meaning],
+    ['Mechanism', artifactMetadata.mechanism],
+    ['Consequence', artifactMetadata.consequence],
+    ['Visual thesis', artifactMetadata.visual_thesis],
+  ].filter((entry): entry is [string, string] => typeof entry[1] === 'string');
   const alternateVariantPaths = variantSelection ? listFrom(artifact.content, 'preview_paths') : [];
   const alternateVariantUrls = variantSelection ? previewUrls : [];
   const variantScoresRaw = Array.isArray(artifactMetadata.variant_scores)
@@ -716,6 +724,7 @@ function ArtifactCard({
       passed: boolean;
       news_legibility?: number;
       craft?: number;
+      semantic_min?: number;
     }
   >();
   for (const entry of variantScoresRaw) {
@@ -729,19 +738,20 @@ function ArtifactCard({
       overall: typeof row.overall === 'number' ? row.overall : 0,
       blockers,
       passed: row.passed === true,
-      news_legibility:
-        typeof row.news_legibility === 'number' ? row.news_legibility : undefined,
+      news_legibility: typeof row.news_legibility === 'number' ? row.news_legibility : undefined,
       craft: typeof row.craft === 'number' ? row.craft : undefined,
+      semantic_min: typeof row.semantic_min === 'number' ? row.semantic_min : undefined,
     });
   }
   const pickSource =
-    artifactMetadata.pick_source === 'owner' ? 'owner' : artifactMetadata.pick_source === 'auto'
-      ? 'auto'
-      : null;
+    artifactMetadata.pick_source === 'owner'
+      ? 'owner'
+      : artifactMetadata.pick_source === 'auto'
+        ? 'auto'
+        : null;
   const primaryVariantScore = variantScoreByIndex.get(0);
   const contentSim = asRecord(artifactMetadata.content_sim);
-  const contentSimOutcome =
-    typeof contentSim.outcome === 'string' ? contentSim.outcome : null;
+  const contentSimOutcome = typeof contentSim.outcome === 'string' ? contentSim.outcome : null;
   const contentSimPassed = contentSim.passed === true || contentSim.human_override === true;
   const contentSimEscalation = asRecord(contentSim.escalation);
   const contentSimSummary =
@@ -780,9 +790,9 @@ function ArtifactCard({
             className="object-cover"
           />
           {pickSource || primaryVariantScore ? (
-            <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+            <div className="absolute top-2 left-2 flex flex-wrap gap-1">
               {pickSource ? (
-                <span className="rounded bg-black/70 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-200">
+                <span className="rounded bg-black/70 px-2 py-0.5 text-[10px] font-bold tracking-wide text-cyan-200 uppercase">
                   {pickSource === 'owner' ? 'owner-promoted' : 'auto-picked'}
                 </span>
               ) : null}
@@ -822,7 +832,7 @@ function ArtifactCard({
                     unoptimized
                     className="object-cover"
                   />
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4 text-left">
+                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pt-4 pb-1 text-left">
                     {scoreMeta ? (
                       <>
                         <span className="block text-[10px] font-bold text-white">
@@ -857,6 +867,16 @@ function ArtifactCard({
             {illustrationSceneSource ? ` · ${illustrationSceneSource}` : ''}
           </summary>
           <div className="mt-3 grid gap-3 text-xs text-slate-300">
+            {illustrationSemanticContract.length ? (
+              <div className="grid gap-2 rounded-lg border border-cyan-300/15 bg-cyan-300/[.03] p-2">
+                {illustrationSemanticContract.map(([name, value]) => (
+                  <div key={name}>
+                    <p className="font-bold tracking-wide text-slate-500 uppercase">{name}</p>
+                    <p className="mt-0.5 text-slate-200">{value}</p>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div>
               <p className="font-bold tracking-wide text-slate-500 uppercase">Scene</p>
               <p className="mt-1 font-mono whitespace-pre-wrap text-slate-200">
@@ -1000,7 +1020,9 @@ function ArtifactCard({
               ? ` · ${contentSim.attempts}/${typeof contentSim.max_attempts === 'number' ? contentSim.max_attempts : '?'} attempts`
               : ''}
           </p>
-          {contentSimSummary ? <p className="mt-2 leading-5 text-rose-50/90">{contentSimSummary}</p> : null}
+          {contentSimSummary ? (
+            <p className="mt-2 leading-5 text-rose-50/90">{contentSimSummary}</p>
+          ) : null}
           {contentSimBlockers.length > 0 ? (
             <ul className="mt-2 grid gap-1">
               {contentSimBlockers.slice(0, 6).map((entry, index) => {
@@ -1018,7 +1040,9 @@ function ArtifactCard({
           ) : null}
           {contentSimActions.length > 0 ? (
             <div className="mt-3">
-              <p className="font-bold tracking-wide text-rose-200/80 uppercase">Suggested next steps</p>
+              <p className="font-bold tracking-wide text-rose-200/80 uppercase">
+                Suggested next steps
+              </p>
               <ul className="mt-1 grid gap-1 text-rose-50/90">
                 {contentSimActions.slice(0, 3).map((action) => (
                   <li key={String(action)}>• {String(action)}</li>
@@ -4211,10 +4235,10 @@ function ReleasePanel({
           <section className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5">
             <h2 className="text-lg font-bold text-white">Postpone</h2>
             <p className="mt-2 text-sm leading-6 text-slate-400">
-              Not going to make {kyivDateTime(digest.release_at)}? This pauses, re-approves
-              against the current content (a full preflight re-check, same as approving fresh),
-              and reschedules to the same time on a later Monday — one click instead of the
-              three steps below.
+              Not going to make {kyivDateTime(digest.release_at)}? This pauses, re-approves against
+              the current content (a full preflight re-check, same as approving fresh), and
+              reschedules to the same time on a later Monday — one click instead of the three steps
+              below.
             </p>
             <form action={postponeWeeklyDigestAction} className="mt-5 grid gap-4">
               <input type="hidden" name="weekly_digest_id" value={digest.id} />
@@ -4376,8 +4400,8 @@ function NewerDraftBanner({ workspace }: { workspace: WeeklyDigestWorkspace }) {
       </p>
       <p className="mt-1 leading-6 text-cyan-100/80">
         {draftReason ? `${draftReason}. ` : ''}
-        The active version shown below is Revision {active?.revision_number ?? '?'}, not the
-        latest AI attempt.
+        The active version shown below is Revision {active?.revision_number ?? '?'}, not the latest
+        AI attempt.
       </p>
       <Link
         href={`/admin/weekly/${workspace.digest.id}?tab=overview#versions-heading`}

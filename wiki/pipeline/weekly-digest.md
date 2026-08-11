@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, follow-up critic-recovery fix 2026-08-10, UK claimIds fix 2026-08-10, newer-draft banner + restore/save security-definer fix 2026-08-10, Postpone release feature 2026-08-10, weekly-reportage-v2 prompt rewrite 2026-08-10, weekly-editorial-concept-v1 2026-08-10
+Actions run `31324873875`, PR #209, 2026-08-10 fixes, owner prompt review + `weekly-semantic-story-v4` 2026-08-11
 Last updated: 2026-08-11
 
 ---
@@ -237,23 +237,30 @@ AI-suggested angles are a possible follow-up, not done here.
 `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`,
 `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/editorial-llm.ts`)
 
-**PR5 (2026-08-06) → editorial-concept-v1 (2026-08-10):** окремий шлях у
-**`pipeline/card-image.ts`**: `weeklyReportageSceneBrief` тепер робить **essence → metaphor**
-(два LLM-кроки на ролі `weekly.card_image_scene`) + `buildEditorialConceptPrompt` (subject-first
-SASC, craft bans) + `generateWeeklyReportageIllustrations` (3 варіанти / різні сіди).
+**PR5 (2026-08-06) → semantic-story-v4 (2026-08-11):** окремий шлях у
+**`pipeline/card-image.ts`**: `weeklyReportageSceneBrief` робить **source story → semantic
+contract → causal metaphor** (два LLM-кроки на ролі `weekly.card_image_scene`) +
+`buildEditorialConceptPrompt` (subject-first context → mechanism → consequence, craft bans) +
+`generateWeeklyReportageIllustrations` (3 варіанти / різні сіди).
 **Daily-пайплайн не зачеплений.**
 
-Контекст: title+summary+body excerpt+editorsView+`editorialAngle`+`why`+claim snippets+sibling
-metaphors (`generateStoryImage` → `siblingMetaphors` з metadata). Seed без `job.id`.
-`metadata.prompt_policy` = **`weekly-editorial-concept-v3`** (раніше `v2` / `v1` / `weekly-reportage-v2`).
-Validator: craft bans + **`mechanism_not_visible`** + structural sibling gates (`motif_class`
-uniqueness, scene echo, character budget, dual_contrast cap/argued). Артефакт зберігає
-`essence` / `mechanism` / `reader_test` / `metaphor_title` / `motif_class` / `subject_kind` /
-`composition` / `variant_scores` (з `news_legibility`/`craft`) / `pick_source`. Деталі —
+Контекст: title+summary+body excerpt+`why`+practical+limitation+takeaway+editorsView+
+`editorialAngle`+approved research claims/context/risks+sibling metaphors. Top 3 беруть claims із
+approved `research_pack`; fallback серіалізує `.text`, а не обʼєкти. Seed без `job.id`.
+`metadata.prompt_policy` = **`weekly-semantic-story-v4`** (раніше `weekly-editorial-concept-v3`).
+Validator рахує semantic gates лише за `story_anchor` / `visible_mechanism` /
+`visible_consequence` та іншими renderable fields; `why_it_fits` лишається rationale і не може
+сам виконати `mechanism_not_visible`. `story_anchor` мусить містити actor/system із context, не лише
+topic/impact entity; довгий prose headline не вважається однією required entity. Семантичний
+fallback зберігає visual thesis + mechanism + consequence, а його literal component labels
+санітизуються до FLUX. Structural sibling gates (`motif_class` uniqueness, scene
+echo, character budget, dual_contrast cap/argued) лишились. Артефакт зберігає повний semantic
+contract, metaphor rationale й `variant_scores` (`semantic_min`/`news_legibility`/`craft`). Деталі —
 [marketing/card-images](../marketing/card-images.md).
 
 **Фікс мертвого negative prompt на klein:** multipart не шле `negative_prompt`; заборони в
-validator *до* FLUX; позитивний desired-state (BFL: FLUX.2 без negatives).
+validator *до* FLUX; позитивний desired-state (BFL: FLUX.2 без negatives) прямо забороняє readable
+text/letters/numbers/logos/UI/screens.
 
 **Зберігання варіантів:** RPC `save_weekly_digest_artifact` **не підтримує кілька одночасних
 `is_current` рядків на один `slot_key`** (кожен save демотує попередній) — тож 3 варіанти НЕ
@@ -266,13 +273,17 @@ validator *до* FLUX; позитивний desired-state (BFL: FLUX.2 без ne
 RPC з'ясувалось, що воно було неточним.
 
 Visuals tab: сітка з 2 мініатюр-альтернатив під основним зображенням (клік = «Use this») з
-per-variant score/blocker chips; primary badge `auto-picked` / `owner-promoted`;
+per-variant score/blocker chips (`semantic` / `news` / `craft`); prompt details показує context,
+meaning, mechanism, consequence і visual thesis; primary badge `auto-picked` / `owner-promoted`;
 редагована сцена (`scene_override`) + «Regenerate with this scene» перевикористовує вже наявний
 `enqueueWeeklyGenerationAction`, нового job type не знадобилось.
 
 **Content Sim (2026-08-11):** після FLUX `generateStoryImage` ганяє vision repair loop
 (≤5, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.
+V4 critic звіряє pixels з original story, окремо gate-ить context/mechanism/consequence/
+instant comprehension; його `prompt_patches` застосовуються до наступного реального FLUX prompt,
+не дописуються постфактум у metadata.
 CLI: `npm run content-sim`. Деталі — [content-sim](content-sim.md).
 
 **Dry-run виконано (2026-08-06):** 9 klein-рендерів (3 сіди × 3 головні історії

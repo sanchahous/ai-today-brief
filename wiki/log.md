@@ -1491,3 +1491,42 @@ article artifact у неактивну quality-draft revision, яку DB нав�
 **Нотатка:** редакційні гейти v7 і пороги якості не послаблені — перенесені в посегментні
 промпти дослівно. Змінилась одиниця роботи (поле замість статті) і поведінка на провалі
 (draft-ревізія на огляд власника замість `failed`), не планка.
+
+---
+
+## 2026-08-11 — Weekly image prompt review: semantic-story-v4
+
+**Джерело:** owner request 2026-08-11, `pipeline/card-image.ts`,
+`src/lib/weekly-digest/generation-worker.ts`, `src/lib/content-sim/vision-critic.ts`,
+`src/lib/content-sim/adapters/weekly-image.ts`.
+
+**Виявлено:** v3 втрачав або імітував story context у пʼяти місцях: fallback claims ішли як
+`[object Object]`; `why_it_fits`, якого не бачив FLUX, міг виконати mechanism gate;
+practical/limitation/takeaway/research risks не доходили до art director/critic; critic оцінював
+власну essence без повного original story; repair `prompt_patches` дописувались уже після render.
+Окремо кожен `dual_contrast` отримував hidden `facade versus backstage` bias.
+
+**Змінено:**
+
+- policy → `weekly-semantic-story-v4`: context → meaning → mechanism → consequence → visual thesis;
+- metaphor schema → `story_anchor` / `visible_mechanism` / `visible_consequence`; deterministic
+  gates бачать лише renderable FLUX fields;
+- context-anchor gate відсікає topic-only metaphor без story actor/system; prose headline більше не
+  стає однією required entity;
+- reject усіх LLM pitches переходить у semantic fallback (visual thesis + context + mechanism +
+  consequence), не generic spotlight; його literal component-label invitations санітизуються перед
+  FLUX;
+- worker передає approved research claims/context/risks + practical/limitation/takeaway;
+- vision fail-closed gate: context/mechanism/consequence/instant comprehension, overall clamp за
+  `semantic_min`; repair patch застосовується до наступного реального FLUX request;
+- Visuals показує semantic contract і semantic score; оновлено card-images/content-sim/
+  weekly-digest/weekly-selection/admin-runbook/sandbox/overview/now/index.
+
+**Перевірено:** `npm run typecheck`; 103 targeted Vitest tests (`card-image`, content-sim loop,
+weekly-image adapter, generation-worker); чотири live art-director + Cloudflare smoke-render
+ітерації показали й закрили generic fallback, headline-as-entity, topic-only anchor і literal-label
+failure modes. Окремий реальний FLUX → vision → repair → FLUX → vision прогін підтвердив:
+semantic-вдалий кадр із псевдотекстом блокується як `readable_text`; repair доходить до наступного
+render; красивий, але менш зрозумілий repair лишається failed за `ambiguous_visual_story` /
+`missing_mechanism` / `missing_consequence`. Повний `npm run pr:check` пройшов (1 095 tests,
+coverage/typecheck/lint/e2e/wiki/build).
