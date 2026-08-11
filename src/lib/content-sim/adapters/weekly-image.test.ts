@@ -180,7 +180,14 @@ describe('scoreAndPickVariants', () => {
 
     expect(mockedVision).toHaveBeenCalledTimes(1);
     expect(picked.variantScores).toEqual([
-      { index: 0, overall: 86, blockers: [], passed: true },
+      {
+        index: 0,
+        overall: 86,
+        blockers: [],
+        passed: true,
+        news_legibility: 86,
+        craft: 86,
+      },
     ]);
   });
 });

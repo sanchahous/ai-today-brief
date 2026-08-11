@@ -6,6 +6,22 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-11
 
+## 2026-08-11 — Illustration fidelity: mechanism anchor + honest critic (v3)
+
+**Джерело:** ревʼю Stories 2/3/6/7 після v2 regen — critic давав 100 за craft+match до pitched
+сцени, а не за читабельність новини; метафора дропала concrete mechanism з `why_en`.
+План `illustration_fidelity_fix`.
+
+**Змінено:**
+- `pipeline/card-image.ts` — `WEEKLY_PROMPT_POLICY = weekly-editorial-concept-v3`:
+  `EditorialEssence.mechanism` / `readerTest`; gate `mechanism_not_visible`; ban high-speed /
+  motion-blur language; score бонус/штраф за mechanism hit.
+- Vision critic — `off_news`, `melted_motion`, dimension `news_legibility`, overall clamp
+  `min(overall, news_legibility + 5)`; pass потребує news floor.
+- Worker / weekly-image adapter — проброс mechanism/readerTest; `variant_scores` з dims;
+  Visuals chips `news · craft`.
+- Wiki: card-images, content-sim, weekly-digest, overview, now; sync fact `WEEKLY_PROMPT_POLICY`.
+
 ## 2026-08-11 — Weekly illustration flow overhaul (editorial-concept-v2)
 
 **Джерело:** ревʼю Stories 1/2/7 (`ai-weekly-2026-08-02`) — bias theater/journal у промпті й

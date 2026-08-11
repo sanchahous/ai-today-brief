@@ -3,7 +3,7 @@ import { contentSimMaxImageRepairAttempts, CONTENT_SIM_DEFAULTS } from './config
 import { deterministicImageCritique } from './deterministic-image';
 import { buildEscalationPackage, contentSimGateCleared, toContentSimArtifactMeta } from './escalation';
 import { runRepairLoop } from './loop';
-import { buildImageCriticPrompt, parseImageCriticResponse } from './vision-critic';
+import { buildImageCriticPrompt, clampOverallByNewsLegibility, extractJsonObject, newsLegibilityThreshold, parseImageCriticResponse } from './vision-critic';
 import type { ContentSimCritique } from './types';
 
 describe('content-sim config', () => {
@@ -27,18 +27,93 @@ describe('deterministicImageCritique', () => {
   });
 });
 
+describe('news legibility helpers', () => {
+  it('floors news threshold at 75', () => {
+    expect(newsLegibilityThreshold(60)).toBe(75);
+    expect(newsLegibilityThreshold(90)).toBe(90);
+  });
+
+  it('clamps overall to news_legibility + 5', () => {
+    expect(clampOverallByNewsLegibility(100, 60)).toBe(65);
+    expect(clampOverallByNewsLegibility(70, 80)).toBe(70);
+  });
+});
+
+describe('extractJsonObject', () => {
+  it('parses fenced JSON and recovers from trailing noise', () => {
+    expect(extractJsonObject('```json\n{"a":1}\n```')).toEqual({ a: 1 });
+    expect(extractJsonObject('note\n{"a":2}\ntrailing')).toEqual({ a: 2 });
+  });
+
+  it('throws when no object is present', () => {
+    expect(() => extractJsonObject('no json here')).toThrow(/No JSON object/);
+  });
+});
+
 describe('parseImageCriticResponse', () => {
   it('passes when overall meets threshold and no blockers', () => {
     const critique = parseImageCriticResponse(
       JSON.stringify({
         overall: 88,
-        dimensions: { metaphor_fit: 90, no_text: 95, craft: 85, brand_safe: 90 },
+        dimensions: {
+          metaphor_fit: 90,
+          no_text: 95,
+          craft: 85,
+          brand_safe: 90,
+          news_legibility: 88,
+        },
         blockers: [],
         notes: 'ok',
       }),
       80,
     );
     expect(critique.passed).toBe(true);
+    expect(critique.scores.overall).toBe(88);
+    expect(critique.scores.news_legibility).toBe(88);
+  });
+
+  it('clamps overall by news_legibility and fails low news', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 100,
+        dimensions: {
+          metaphor_fit: 100,
+          no_text: 100,
+          craft: 100,
+          brand_safe: 100,
+          news_legibility: 60,
+        },
+        blockers: [],
+        notes: 'pretty but off',
+      }),
+      80,
+    );
+    expect(critique.scores.overall).toBe(65);
+    expect(critique.passed).toBe(false);
+  });
+
+  it('parses off_news and melted_motion blockers', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 92,
+        dimensions: {
+          metaphor_fit: 90,
+          no_text: 95,
+          craft: 95,
+          brand_safe: 90,
+          news_legibility: 40,
+        },
+        blockers: [
+          { code: 'off_news', message: 'Could be any tech story', region: 'full' },
+          { code: 'melted_motion', message: 'Smeared shuttles', region: 'center' },
+        ],
+      }),
+      80,
+    );
+    expect(critique.passed).toBe(false);
+    expect(critique.blockers.map((b) => b.code)).toEqual(
+      expect.arrayContaining(['off_news', 'melted_motion']),
+    );
   });
 
   it('fails on readable_text even with high score', () => {
@@ -236,17 +311,23 @@ describe('buildImageCriticPrompt', () => {
     expect(prompt).toContain('80');
   });
 
-  it('includes physics codes and sibling scenes', () => {
+  it('includes physics codes, mechanism, and sibling scenes', () => {
     const prompt = buildImageCriticPrompt({
       headline: 'Agents burn energy',
       essence: 'Invisible wattage from agentic loops',
+      mechanism: 'agentic coding loops that burn energy',
+      readerTest: 'grasp: agentic work costs far more wattage than chat',
       whyItFits: 'tiny orb vs furnace',
       siblingScenes: ['clay golem guarding a sealed journal'],
       scoreThreshold: 80,
     });
     expect(prompt).toContain('impossible_orientation');
     expect(prompt).toContain('decorative_second_beat');
+    expect(prompt).toContain('off_news');
+    expect(prompt).toContain('melted_motion');
+    expect(prompt).toContain('news_legibility');
     expect(prompt).toContain('clay golem');
     expect(prompt).toContain('Invisible wattage');
+    expect(prompt).toContain('agentic coding loops');
   });
 });

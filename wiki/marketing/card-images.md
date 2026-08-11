@@ -8,6 +8,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-reportage-prompt-v2` (2026-08-10),
 `feat/weekly-editorial-concept-v1` (2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
+`feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11
 Last updated: 2026-08-11
 
@@ -33,22 +34,26 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    (source: `pipeline/card-image.ts`'s `runArtDirectorLadder`, PR #191)
 2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
    separate house style** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
-   `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-editorial-concept-v2`**
-   as of 2026-08-11): **essence → metaphor**, not documentary desk reportage. Pipeline:
-   (1) essence director → one-sentence argument + forbidden clichés; (2) metaphor director →
+   `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-editorial-concept-v3`**
+   as of 2026-08-11): **essence → mechanism → metaphor**, not documentary desk reportage. Pipeline:
+   (1) essence director → one-sentence argument + **`mechanism`** (concrete noun-phrase from
+   `why`/`editorialAngle`) + **`reader_test`** + forbidden clichés; (2) metaphor director →
    2–3 concrete visual metaphors with open `motif_class` + `subject_kind`
-   (prefer object/process/environment; character only when required); (3) deterministic score +
+   (prefer object/process/environment; character only when required; subject/props must make the
+   mechanism visible; no high-speed/motion-blur language); (3) deterministic score +
    `validateMetaphorPitch` — craft bans (terminal/IDE/collage, paper-heap sludge, desk without
-   conceptual prop) **plus structural sibling gates** (`sibling_motif_class_reuse`,
-   `sibling_scene_echo` Jaccard ≥0.45, `character_budget` max one character per digest,
-   `dual_contrast_unargued`, `dual_contrast_digest_cap` max one dual per digest); allows
-   **`dual_contrast`** as one continuous photograph with a clear spatial divide — never comic
-   panels or readable UI; (4) subject-first SASC + HEX for FLUX.2. Context: `editorialAngle` +
-   `why` + claim snippets + rich `siblingMetaphors` (not only short avoidSubjects text).
-   Three seed variants; **Content Sim scores all three**, auto-picks primary
-   (`metadata.variant_scores`, `pick_source`); `scene_override` remains the escape hatch.
-   Daily keeps `story-specific-editorial-v5-no-text`. (source: PR #174–#175, PR5 2026-08-06,
-   reportage-v2 / editorial-concept-v1 2026-08-10, illustration overhaul v2 2026-08-11)
+   conceptual prop, motion-blur) **plus `mechanism_not_visible`** + structural sibling gates
+   (`sibling_motif_class_reuse`, `sibling_scene_echo` Jaccard ≥0.45, `character_budget` max one
+   character per digest, `dual_contrast_unargued`, `dual_contrast_digest_cap` max one dual per
+   digest); allows **`dual_contrast`** as one continuous photograph with a clear spatial divide —
+   never comic panels or readable UI; (4) subject-first SASC + HEX for FLUX.2. Context:
+   `editorialAngle` + `why` + claim snippets + rich `siblingMetaphors` (not only short
+   avoidSubjects text). Three seed variants; **Content Sim scores all three**, auto-picks primary
+   (`metadata.variant_scores` with `news_legibility`/`craft`, `pick_source`); vision fail codes
+   include `off_news` / `melted_motion`; Visuals chips show `news · craft` beside overall.
+   `scene_override` remains the escape hatch. Daily keeps `story-specific-editorial-v5-no-text`.
+   (source: PR #174–#175, PR5 2026-08-06, reportage-v2 / editorial-concept-v1 2026-08-10,
+   illustration overhaul v2 + fidelity v3 2026-08-11)
 3. **Image** — Cloudflare Workers AI default
    `@cf/black-forest-labs/flux-2-klein-9b` (multipart FormData under Node; do not
    stream the body without duplex — that silently spilled to `flux-1-schnell`).

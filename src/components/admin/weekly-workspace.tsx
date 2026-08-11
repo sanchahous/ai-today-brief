@@ -134,6 +134,26 @@ function asRecord(value: Json | null | undefined): Record<string, Json | undefin
   return value;
 }
 
+/** Overall plus news/craft dims so a naked 100 is not read as editorial OK. */
+function formatVariantScoreChip(score: {
+  overall: number;
+  passed: boolean;
+  news_legibility?: number;
+  craft?: number;
+}): string {
+  const head = score.passed
+    ? `pass ${Math.round(score.overall)}`
+    : `score ${Math.round(score.overall)}`;
+  const dims: string[] = [];
+  if (typeof score.news_legibility === 'number') {
+    dims.push(`news ${Math.round(score.news_legibility)}`);
+  }
+  if (typeof score.craft === 'number') {
+    dims.push(`craft ${Math.round(score.craft)}`);
+  }
+  return dims.length ? `${head} · ${dims.join(' · ')}` : head;
+}
+
 function textFrom(value: Json | null | undefined, ...keys: string[]) {
   const object = asRecord(value);
   for (const key of keys) {
@@ -690,7 +710,13 @@ function ArtifactCard({
     : [];
   const variantScoreByIndex = new Map<
     number,
-    { overall: number; blockers: string[]; passed: boolean }
+    {
+      overall: number;
+      blockers: string[];
+      passed: boolean;
+      news_legibility?: number;
+      craft?: number;
+    }
   >();
   for (const entry of variantScoresRaw) {
     const row = asRecord(entry);
@@ -703,6 +729,9 @@ function ArtifactCard({
       overall: typeof row.overall === 'number' ? row.overall : 0,
       blockers,
       passed: row.passed === true,
+      news_legibility:
+        typeof row.news_legibility === 'number' ? row.news_legibility : undefined,
+      craft: typeof row.craft === 'number' ? row.craft : undefined,
     });
   }
   const pickSource =
@@ -759,9 +788,7 @@ function ArtifactCard({
               ) : null}
               {primaryVariantScore ? (
                 <span className="rounded bg-black/70 px-2 py-0.5 text-[10px] font-bold text-white">
-                  {primaryVariantScore.passed
-                    ? `pass ${Math.round(primaryVariantScore.overall)}`
-                    : `score ${Math.round(primaryVariantScore.overall)}`}
+                  {formatVariantScoreChip(primaryVariantScore)}
                 </span>
               ) : null}
             </div>
@@ -799,9 +826,7 @@ function ArtifactCard({
                     {scoreMeta ? (
                       <>
                         <span className="block text-[10px] font-bold text-white">
-                          {scoreMeta.passed
-                            ? `pass ${Math.round(scoreMeta.overall)}`
-                            : `score ${Math.round(scoreMeta.overall)}`}
+                          {formatVariantScoreChip(scoreMeta)}
                         </span>
                         <span className="block truncate text-[9px] text-slate-300">
                           {scoreMeta.blockers.length

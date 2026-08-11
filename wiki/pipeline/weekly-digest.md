@@ -245,10 +245,11 @@ SASC, craft bans) + `generateWeeklyReportageIllustrations` (3 варіанти /
 
 Контекст: title+summary+body excerpt+editorsView+`editorialAngle`+`why`+claim snippets+sibling
 metaphors (`generateStoryImage` → `siblingMetaphors` з metadata). Seed без `job.id`.
-`metadata.prompt_policy` = **`weekly-editorial-concept-v2`** (раніше `v1` / `weekly-reportage-v2`).
-Validator: craft bans + structural sibling gates (`motif_class` uniqueness, scene echo,
-character budget, dual_contrast cap/argued). Артефакт зберігає `essence` / `metaphor_title` /
-`motif_class` / `subject_kind` / `composition` / `variant_scores` / `pick_source`. Деталі —
+`metadata.prompt_policy` = **`weekly-editorial-concept-v3`** (раніше `v2` / `v1` / `weekly-reportage-v2`).
+Validator: craft bans + **`mechanism_not_visible`** + structural sibling gates (`motif_class`
+uniqueness, scene echo, character budget, dual_contrast cap/argued). Артефакт зберігає
+`essence` / `mechanism` / `reader_test` / `metaphor_title` / `motif_class` / `subject_kind` /
+`composition` / `variant_scores` (з `news_legibility`/`craft`) / `pick_source`. Деталі —
 [marketing/card-images](../marketing/card-images.md).
 
 **Фікс мертвого negative prompt на klein:** multipart не шле `negative_prompt`; заборони в

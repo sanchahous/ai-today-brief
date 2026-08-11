@@ -32,5 +32,8 @@ export {
   buildImageCriticPrompt,
   extractJsonObject,
   parseImageCriticResponse,
+  clampOverallByNewsLegibility,
+  newsLegibilityThreshold,
   IMAGE_CRITIC_BLOCKER_CODES,
+  NEWS_LEGIBILITY_MIN,
 } from './vision-critic';
