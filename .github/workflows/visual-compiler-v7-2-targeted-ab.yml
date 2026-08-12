@@ -99,3 +99,5 @@ jobs:
           git fetch origin experiment/visual-compiler-v7-role-router-20260812
           git rebase origin/experiment/visual-compiler-v7-role-router-20260812
           SKIP_E2E=1 git push origin HEAD:experiment/visual-compiler-v7-role-router-20260812
+
+# rerun-after-budget-type-fix
