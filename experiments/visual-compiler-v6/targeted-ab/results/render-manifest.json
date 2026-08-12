@@ -1,0 +1,191 @@
+[
+  {
+    "storyId": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+    "rank": 1,
+    "headline": "Why frontier Anthropic models are performing worse on strict tool calling schemas",
+    "role": "causal_mechanism",
+    "certainty": "observed",
+    "mappingMode": "editorial_analogy",
+    "format": "cinematic_single",
+    "renderMode": "generated_audited_analogy",
+    "claimEligible": true,
+    "baselineImagePath": "images/1-162f3cca-30e6-48d3-8f5d-2e5b0d11cf23-current.jpg",
+    "compilerPixelPath": "images/1-162f3cca-30e6-48d3-8f5d-2e5b0d11cf23-compiler-pixels.jpg",
+    "compilerFinalPath": "images/1-162f3cca-30e6-48d3-8f5d-2e5b0d11cf23-compiler-final.jpg",
+    "blindXCardPath": "cards/1-162f3cca-30e6-48d3-8f5d-2e5b0d11cf23-X.png",
+    "blindYCardPath": "cards/1-162f3cca-30e6-48d3-8f5d-2e5b0d11cf23-Y.png",
+    "blindXSource": "current",
+    "blindYSource": "compiler",
+    "current": {
+      "provider": "cloudflare",
+      "model": "@cf/black-forest-labs/flux-2-klein-9b",
+      "imageCalls": 1,
+      "estimatedImageCostUsd": 0.015,
+      "durationMs": 98278,
+      "scene": "locksmith apprentice at workbench, the story-specific anchor is misshapen brass key and lock plate with nested pin channels, the visible cause is padded leather clamp gently pushes bent key teeth back toward original outline before insertion, the visible result is lock plate's inner pins remain jammed outward, rejecting the key, old locksmith workshop, shelves of key blanks and pin kits, with misshapen brass key, lock plate with nested pin channels, padded leather clamp, pin kit",
+      "prompt": "locksmith apprentice at workbench, the story-specific anchor is misshapen brass key and lock plate with nested pin channels, the visible cause is padded leather clamp gently pushes bent key teeth back toward original outline before insertion, the visible result is lock plate's inner pins remain jammed outward, rejecting the key, old locksmith workshop, shelves of key blanks and pin kits, with misshapen brass key, lock plate with nested pin channels, padded leather clamp, pin kit. One instantly readable cause-and-effect moment: the story anchor, mechanism, and result must be visually connected, not merely placed beside each other. Editorial concept illustration for a technology magazine cover, photoreal materials, clear silhouette, believable physics, shot on 35mm lens, dramatic available light, shallow depth of field, restrained grade with accent color #22D3EE, wide 16:9 edge-to-edge, calm empty top and bottom bands, unmarked blank surfaces only, absolutely no readable text, letters, numbers, logos, captions, UI, or screens, no deformed stacks, sharp focus on the subject.",
+      "assetPaths": []
+    },
+    "compiler": {
+      "provider": "cloudflare",
+      "model": "@cf/black-forest-labs/flux-2-klein-9b",
+      "imageCalls": 1,
+      "estimatedImageCostUsd": 0.015,
+      "durationMs": 1806,
+      "prompt": "a tailor sewing a garment with loose, uneven stitches in a brightly lit, traditional tailor's workshop. Supporting physical props: a partially sewn garment, a sewing machine. The physical story anchor is the tailor, representing Anthropic models. The visible causal action is the tailor's hand movements, guided by a forgiving, flexible template, resulting in loose stitches. The visible physical result is the garment having visible, uneven, and 'made-up' looking stitches that don't properly secure the fabric. One coherent editorial photograph with one focal action and an immediately readable cause-to-effect relationship. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, restrained dramatic light, wide 16:9 composition, calm margins for an external headline. Absolutely no readable text, letters, numbers, code, UI, logos, captions, labels, arrows, diagrams, infographic panels, split screens, watermarks or brand marks. Do not contradict: Anthropic models are intentionally designed to fail on strict tool calling schemas.",
+      "assetPaths": [
+        "assets/1-162f3cca-30e6-48d3-8f5d-2e5b0d11cf23-audited-analogy.jpg"
+      ]
+    }
+  },
+  {
+    "storyId": "746ae14f-9836-4803-8b05-117195dfc4f0",
+    "rank": 2,
+    "headline": "Leveraging the Mistral AI Platform Beyond Standard Chatbot Integrations",
+    "role": "uncertainty_announcement",
+    "certainty": "expected",
+    "mappingMode": "literal",
+    "format": "cinematic_split",
+    "renderMode": "deterministic_literal",
+    "claimEligible": true,
+    "baselineImagePath": "images/2-746ae14f-9836-4803-8b05-117195dfc4f0-current.jpg",
+    "compilerPixelPath": "images/2-746ae14f-9836-4803-8b05-117195dfc4f0-compiler-pixels.jpg",
+    "compilerFinalPath": "images/2-746ae14f-9836-4803-8b05-117195dfc4f0-compiler-final.jpg",
+    "blindXCardPath": "cards/2-746ae14f-9836-4803-8b05-117195dfc4f0-X.png",
+    "blindYCardPath": "cards/2-746ae14f-9836-4803-8b05-117195dfc4f0-Y.png",
+    "blindXSource": "current",
+    "blindYSource": "compiler",
+    "current": {
+      "provider": "cloudflare",
+      "model": "@cf/black-forest-labs/flux-2-klein-9b",
+      "imageCalls": 1,
+      "estimatedImageCostUsd": 0.015,
+      "durationMs": 160666,
+      "scene": "A blacksmith forging miniature brass wind spirits in a Parisian courtyard, the story-specific anchor is A Parisian courtyard blacksmith's forge with the Eiffel Tower visible, hammering glowing miniature brass wind spirits, the visible cause is A bellows labeled with a stylized 'M' pumps air into the forge, shaping tiny brass wind spirits on an anvil, the visible result is The forged wind spirits fly outward, one landing on a nearby spinning European windmill, powering it independently, A cobblestone Parisian courtyard with the Eiffel Tower in the background under a clear sky, with bellows with a stylized 'M', anvil, hammer, glowing miniature brass wind spirits, spinning",
+      "prompt": "A blacksmith forging miniature brass wind spirits in a Parisian courtyard, the story-specific anchor is A Parisian courtyard blacksmith's forge with the Eiffel Tower visible, hammering glowing miniature brass wind spirits, the visible cause is A bellows labeled with a stylized 'M' pumps air into the forge, shaping tiny brass wind spirits on an anvil, the visible result is The forged wind spirits fly outward, one landing on a nearby spinning European windmill, powering it independently, A cobblestone Parisian courtyard with the Eiffel Tower in the background under a clear sky, with bellows with a stylized 'M', anvil, hammer, glowing miniature brass wind spirits, spinning. One instantly readable cause-and-effect moment: the story anchor, mechanism, and result must be visually connected, not merely placed beside each other. Editorial concept illustration for a technology magazine cover, photoreal materials, clear silhouette, believable physics, shot on 35mm lens, dramatic available light, shallow depth of field, restrained grade with accent color #22D3EE, wide 16:9 edge-to-edge, calm empty top and bottom bands, unmarked blank surfaces only, absolutely no readable text, letters, numbers, logos, captions, UI, or screens, no deformed stacks, sharp focus on the subject.",
+      "assetPaths": []
+    },
+    "compiler": {
+      "provider": "local",
+      "model": "hybrid-deterministic-v6",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 350,
+      "assetPaths": []
+    }
+  },
+  {
+    "storyId": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+    "rank": 4,
+    "headline": "Agentic testing playbook: How fuzzing and property testing empower autonomous coding",
+    "role": "causal_mechanism",
+    "certainty": "observed",
+    "mappingMode": "editorial_analogy",
+    "format": "cinematic_single",
+    "renderMode": "generated_audited_analogy",
+    "claimEligible": true,
+    "baselineImagePath": "images/4-be11c774-29c8-4a9b-85d7-308fc27695fe-current.jpg",
+    "compilerPixelPath": "images/4-be11c774-29c8-4a9b-85d7-308fc27695fe-compiler-pixels.jpg",
+    "compilerFinalPath": "images/4-be11c774-29c8-4a9b-85d7-308fc27695fe-compiler-final.jpg",
+    "blindXCardPath": "cards/4-be11c774-29c8-4a9b-85d7-308fc27695fe-X.png",
+    "blindYCardPath": "cards/4-be11c774-29c8-4a9b-85d7-308fc27695fe-Y.png",
+    "blindXSource": "compiler",
+    "blindYSource": "current",
+    "current": {
+      "provider": "cloudflare",
+      "model": "@cf/black-forest-labs/flux-2-klein-9b",
+      "imageCalls": 1,
+      "estimatedImageCostUsd": 0.015,
+      "durationMs": 67680,
+      "scene": "Grounded real-world tableau centered on AI coding agents generate code at superhuman speeds, making manual code review impractical.; Fuzzing and property-based testing automatically exercise generated code with random inputs and invariant checks to catch errors that manual review would miss. visibly acts on that specific actor or system and physically produces Benefit: Reliable code at scale without human bottleneck; trade-off: requires upfront investment in test specification and may miss logic errors that property tests don't cover.. A robotic arm rapidly assembling blocks onto a conveyor belt leads to a testing machine that shakes and discards unstable blocks., the lit",
+      "prompt": "Grounded real-world tableau centered on AI coding agents generate code at superhuman speeds, making manual code review impractical.; Fuzzing and property-based testing automatically exercise generated code with random inputs and invariant checks to catch errors that manual review would miss. visibly acts on that specific actor or system and physically produces Benefit: Reliable code at scale without human bottleneck; trade-off: requires upfront investment in test specification and may miss logic errors that property tests don't cover.. A robotic arm rapidly assembling blocks onto a conveyor belt leads to a testing machine that shakes and discards unstable blocks., the lit. One instantly readable cause-and-effect moment: the story anchor, mechanism, and result must be visually connected, not merely placed beside each other. Editorial concept illustration for a technology magazine cover, photoreal materials, clear silhouette, believable physics, shot on 35mm lens, dramatic available light, shallow depth of field, restrained grade with accent color #22D3EE, wide 16:9 edge-to-edge, calm empty top and bottom bands, unmarked blank surfaces only, absolutely no readable text, letters, numbers, logos, captions, UI, or screens, no deformed stacks, sharp focus on the subject.",
+      "assetPaths": []
+    },
+    "compiler": {
+      "provider": "cloudflare",
+      "model": "@cf/black-forest-labs/flux-2-klein-9b",
+      "imageCalls": 1,
+      "estimatedImageCostUsd": 0.015,
+      "durationMs": 1490,
+      "prompt": "a robotic arm rapidly assembling and disassembling complex structures in a brightly lit, sterile laboratory or factory floor. Supporting physical props: a pile of intricate, modular building blocks, a conveyor belt. The physical story anchor is The robotic arm, representing AI-driven development, is the central actor, performing tasks that would typically require human dexterity and thought.. The visible causal action is The robotic arm's continuous and rapid assembly and immediate, forceful disassembly of the structures, symbolizing the 'fuzzing' and 'property testing' of code, where components are constantly tested for robustness and f. The visible physical result is The absence of any broken or malformed blocks on the conveyor belt, indicating that the structures (code) are consistently robust and functional despite the rapid and rigorous testing process.. One coherent editorial photograph with one focal action and an immediately readable cause-to-effect relationship. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, restrained dramatic light, wide 16:9 composition, calm margins for an external headline. Absolutely no readable text, letters, numbers, code, UI, logos, captions, labels, arrows, diagrams, infographic panels, split screens, watermarks or brand marks. Do not contradict: Manual code review is still efficient with AI-generated code.",
+      "assetPaths": [
+        "assets/4-be11c774-29c8-4a9b-85d7-308fc27695fe-audited-analogy.jpg"
+      ]
+    }
+  },
+  {
+    "storyId": "907e49c3-2852-427b-9c92-377d1f055bdf",
+    "rank": 6,
+    "headline": "Optimizing Token Caching to Avoid Unexpected Cloud Large Language Model Costs",
+    "role": "quantitative_result",
+    "certainty": "observed",
+    "mappingMode": "literal",
+    "format": "cinematic_data_contrast",
+    "renderMode": "deterministic_literal",
+    "claimEligible": true,
+    "baselineImagePath": "images/6-907e49c3-2852-427b-9c92-377d1f055bdf-current.jpg",
+    "compilerPixelPath": "images/6-907e49c3-2852-427b-9c92-377d1f055bdf-compiler-pixels.jpg",
+    "compilerFinalPath": "images/6-907e49c3-2852-427b-9c92-377d1f055bdf-compiler-final.jpg",
+    "blindXCardPath": "cards/6-907e49c3-2852-427b-9c92-377d1f055bdf-X.png",
+    "blindYCardPath": "cards/6-907e49c3-2852-427b-9c92-377d1f055bdf-Y.png",
+    "blindXSource": "current",
+    "blindYSource": "compiler",
+    "current": {
+      "provider": "cloudflare",
+      "model": "@cf/black-forest-labs/flux-2-klein-9b",
+      "imageCalls": 1,
+      "estimatedImageCostUsd": 0.015,
+      "durationMs": 128908,
+      "scene": "A developer staring at a shocking bill, the story-specific anchor is A developer holds a paper invoice next to a scattered pile of loose letter tiles on a table., the visible cause is Loose letter tiles representing an unstructured prompt sequence fail to lock into a repeating track., the visible result is A paper invoice shows a large red '90% Waste' stamp, causing visible distress., A sunlit kitchen table with a coffee mug and a messy pile of letter tiles., with paper invoice with red stamp, scattered wooden letter tiles, coffee mug",
+      "prompt": "A developer staring at a shocking bill, the story-specific anchor is A developer holds a paper invoice next to a scattered pile of loose letter tiles on a table., the visible cause is Loose letter tiles representing an unstructured prompt sequence fail to lock into a repeating track., the visible result is A paper invoice shows a large red '90% Waste' stamp, causing visible distress., A sunlit kitchen table with a coffee mug and a messy pile of letter tiles., with paper invoice with red stamp, scattered wooden letter tiles, coffee mug. One instantly readable cause-and-effect moment: the story anchor, mechanism, and result must be visually connected, not merely placed beside each other. Editorial concept illustration for a technology magazine cover, photoreal materials, clear silhouette, believable physics, shot on 35mm lens, dramatic available light, shallow depth of field, restrained grade with accent color #22D3EE, wide 16:9 edge-to-edge, calm empty top and bottom bands, unmarked blank surfaces only, absolutely no readable text, letters, numbers, logos, captions, UI, or screens, no deformed stacks, sharp focus on the subject.",
+      "assetPaths": []
+    },
+    "compiler": {
+      "provider": "local",
+      "model": "hybrid-deterministic-v6",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 356,
+      "assetPaths": []
+    }
+  },
+  {
+    "storyId": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+    "rank": 7,
+    "headline": "Cutting Claude Code Token Costs with Optical Context Compression",
+    "role": "causal_mechanism",
+    "certainty": "observed",
+    "mappingMode": "editorial_analogy",
+    "format": "cinematic_single",
+    "renderMode": "generated_audited_analogy",
+    "claimEligible": true,
+    "baselineImagePath": "images/7-1fc8e909-93c6-4ff1-ba09-63f751e1ebf5-current.jpg",
+    "compilerPixelPath": "images/7-1fc8e909-93c6-4ff1-ba09-63f751e1ebf5-compiler-pixels.jpg",
+    "compilerFinalPath": "images/7-1fc8e909-93c6-4ff1-ba09-63f751e1ebf5-compiler-final.jpg",
+    "blindXCardPath": "cards/7-1fc8e909-93c6-4ff1-ba09-63f751e1ebf5-X.png",
+    "blindYCardPath": "cards/7-1fc8e909-93c6-4ff1-ba09-63f751e1ebf5-Y.png",
+    "blindXSource": "current",
+    "blindYSource": "compiler",
+    "current": {
+      "provider": "cloudflare",
+      "model": "@cf/black-forest-labs/flux-2-klein-9b",
+      "imageCalls": 1,
+      "estimatedImageCostUsd": 0.015,
+      "durationMs": 83262,
+      "scene": "A hydraulic press compressing a thick stack of punch cards into a single microchip, the story-specific anchor is A thick stack of punch cards labeled with dense developer text and a microchip, the visible cause is Hydraulic press crushes the punch cards into a single microchip, the visible result is A magnifying lens examines the microchip, revealing tiny text, Industrial workshop with a hydraulic press and magnifying lens, with punch cards, hydraulic press, microchip, magnifying lens",
+      "prompt": "A hydraulic press compressing a thick stack of punch cards into a single microchip, the story-specific anchor is A thick stack of punch cards labeled with dense developer text and a microchip, the visible cause is Hydraulic press crushes the punch cards into a single microchip, the visible result is A magnifying lens examines the microchip, revealing tiny text, Industrial workshop with a hydraulic press and magnifying lens, with punch cards, hydraulic press, microchip, magnifying lens. One instantly readable cause-and-effect moment: the story anchor, mechanism, and result must be visually connected, not merely placed beside each other. Editorial concept illustration for a technology magazine cover, photoreal materials, clear silhouette, believable physics, shot on 35mm lens, dramatic available light, shallow depth of field, restrained grade with accent color #22D3EE, wide 16:9 edge-to-edge, calm empty top and bottom bands, unmarked blank surfaces only, absolutely no readable text, letters, numbers, logos, captions, UI, or screens, no deformed stacks, sharp focus on the subject.",
+      "assetPaths": []
+    },
+    "compiler": {
+      "provider": "cloudflare",
+      "model": "@cf/black-forest-labs/flux-2-klein-9b",
+      "imageCalls": 1,
+      "estimatedImageCostUsd": 0.015,
+      "durationMs": 1884,
+      "prompt": "a person carefully folding a large, detailed map into a small, compact square in a well-lit, modern office desk with a computer monitor in the background. Supporting physical props: a large, unfolded map covered in intricate details and symbols, a small, neatly folded square of paper. The physical story anchor is the large, detailed map representing the verbose text context, schemas, and system prompts. The visible causal action is the act of folding the map, symbolizing the conversion and compression process. The visible physical result is the small, compact square of paper, representing the reduced token cost and compressed data. One coherent editorial photograph with one focal action and an immediately readable cause-to-effect relationship. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, restrained dramatic light, wide 16:9 composition, calm margins for an external headline. Absolutely no readable text, letters, numbers, code, UI, logos, captions, labels, arrows, diagrams, infographic panels, split screens, watermarks or brand marks. Do not contradict: Converting text to images increases token counts.",
+      "assetPaths": [
+        "assets/7-1fc8e909-93c6-4ff1-ba09-63f751e1ebf5-audited-analogy.jpg"
+      ]
+    }
+  }
+]

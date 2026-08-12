@@ -1,0 +1,501 @@
+{
+  "rows": [
+    {
+      "storyId": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+      "rank": 1,
+      "headline": "Why frontier Anthropic models are performing worse on strict tool calling schemas",
+      "role": "causal_mechanism",
+      "certainty": "observed",
+      "mappingMode": "editorial_analogy",
+      "format": "cinematic_single",
+      "renderMode": "generated_audited_analogy",
+      "claimEligible": true,
+      "claimAudit": {
+        "storyId": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+        "passed": true,
+        "issues": [],
+        "rationale": "The analogy accurately maps the core claim elements: Anthropic models to the tailor, post-training optimization to the tailor's movements guided by a forgiving template, and made-up keys to loose, uneven stitches. The certainty is maintained, and the scene is visually testable without text."
+      },
+      "current": {
+        "pixel": {
+          "sourceContextSupported": false,
+          "roleEvidenceVisible": false,
+          "outcomeVisible": false,
+          "relationVisible": false,
+          "directionOrStateCorrect": false,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": false,
+          "analogyMappingValid": false,
+          "roleEvidence": "The image shows a person working with keys and locks, which is a process. However, it does not clearly depict a 'causal mechanism' in the context of the story's technical nature. It's a generic craft.",
+          "outcomeEvidence": "No specific outcome related to the story's 'failing on nested tool arguments' or 'degradation' is visible.",
+          "ambiguity": "The image is a generic depiction of locksmithing, which could be an analogy for 'fixing' or 'matching', but it lacks the specificity to map to the story's technical details about model performance and tool calling schemas. The 'physical action' of working with keys and locks does"
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": true,
+          "overlaySupportedByPixels": true,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 85,
+          "visualBeauty": 80,
+          "brandConsistency": 70,
+          "originality": 75,
+          "summary": "The image of a key not fitting a lock effectively illustrates the problem of models failing on strict tool calling schemas due to emitting 'made-up keys'. The visual analogy is strong and directly supports the headline and summary."
+        },
+        "pixelPass": false,
+        "visualPass": false,
+        "productionPass": false,
+        "weightedScore": 80.25
+      },
+      "compiler": {
+        "pixel": {
+          "sourceContextSupported": false,
+          "roleEvidenceVisible": false,
+          "outcomeVisible": false,
+          "relationVisible": false,
+          "directionOrStateCorrect": false,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": false,
+          "analogyMappingValid": false,
+          "roleEvidence": "The image shows a person sewing, which is a process. However, it does not clearly depict a 'causal mechanism' in the context of the story's technical nature. It's a generic craft.",
+          "outcomeEvidence": "No specific outcome related to the story's 'failing on nested tool arguments' or 'degradation' is visible.",
+          "ambiguity": "The image is a generic depiction of sewing, which could be an analogy for 'crafting' or 'repairing', but it lacks the specificity to map to the story's technical details about model performance and tool calling schemas. The 'physical action' of sewing doesn't directly mirror the "
+        },
+        "card": {
+          "headlinePairUnderstood": false,
+          "centralClaimGrounded": false,
+          "certaintyPreserved": true,
+          "labelsExact": false,
+          "overlaySupportedByPixels": false,
+          "thumbnailReadable": false,
+          "misleading": true,
+          "instantMeaning": 30,
+          "visualBeauty": 65,
+          "brandConsistency": 70,
+          "originality": 50,
+          "summary": "The sewing machine image with abstract labels does not clearly convey the causal mechanism of models failing on strict tool calling schemas. The labels are generic and do not add specific meaning, and the sewing analogy is not intuitive for 'made-up keys' or 'strict tool calling schemas'."
+        },
+        "pixelPass": false,
+        "visualPass": false,
+        "productionPass": false,
+        "weightedScore": 48.5
+      },
+      "preferredSource": "current",
+      "confidence": 0.9,
+      "reason": "Card X uses a strong, intuitive visual analogy of a key not fitting a lock, which directly maps to the headline's 'strict tool calling schemas' and the summary's 'emitting made-up keys'. This makes the central claim immediately understandable and grounded. Card Y's sewing machine image is less relevant, and its abstract labels do not enhance understanding, making it misleading and less effective at conveying the causal mechanism.",
+      "pixelOrder": {
+        "X": "compiler",
+        "Y": "current"
+      },
+      "cardOrder": {
+        "X": "current",
+        "Y": "compiler"
+      }
+    },
+    {
+      "storyId": "746ae14f-9836-4803-8b05-117195dfc4f0",
+      "rank": 2,
+      "headline": "Leveraging the Mistral AI Platform Beyond Standard Chatbot Integrations",
+      "role": "uncertainty_announcement",
+      "certainty": "expected",
+      "mappingMode": "literal",
+      "format": "cinematic_split",
+      "renderMode": "deterministic_literal",
+      "claimEligible": true,
+      "claimAudit": {
+        "storyId": "746ae14f-9836-4803-8b05-117195dfc4f0",
+        "passed": true,
+        "issues": [],
+        "rationale": "This explanatory role is safer and clearer as deterministic literal geometry."
+      },
+      "current": {
+        "pixel": {
+          "sourceContextSupported": true,
+          "roleEvidenceVisible": true,
+          "outcomeVisible": true,
+          "relationVisible": true,
+          "directionOrStateCorrect": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": true,
+          "analogyMappingValid": true,
+          "roleEvidence": "The blacksmith is actively forging, creating sparks and small winged figures, but the large windmill (representing the 'new open-weight model' or 'scaling') is not yet fully powered or integrated with the figures, and the figures themselves are small and in the process of being c",
+          "outcomeEvidence": "The small winged figures are being forged and released, but the large windmill is not yet fully operational or integrated with them, and the figures are small and in the process of being created, representing the 'teased new open-weight model coming in July' and the 'scaling' tha",
+          "ambiguity": "The image effectively uses the analogy of a blacksmith forging new creations (models, platform features) in a Parisian setting (European alternative). The 'M' on the anvil subtly hints at Mistral. The small, newly formed winged figures and the large, somewhat static windmill effe"
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": true,
+          "overlaySupportedByPixels": true,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 85,
+          "visualBeauty": 90,
+          "brandConsistency": 80,
+          "originality": 95,
+          "summary": "The image shows a blacksmith forging metal with the Eiffel Tower in the background, and small winged figures flying towards a wind-powered mechanism. This visually represents 'Forge' and 'Les Ministraux' (the small figures), and the European context, while the act of forging implies building and scaling beyond standard"
+        },
+        "pixelPass": true,
+        "visualPass": true,
+        "productionPass": true,
+        "weightedScore": 86.75
+      },
+      "compiler": {
+        "pixel": {
+          "sourceContextSupported": false,
+          "roleEvidenceVisible": true,
+          "outcomeVisible": true,
+          "relationVisible": true,
+          "directionOrStateCorrect": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": true,
+          "analogyMappingValid": false,
+          "roleEvidence": "The right side shows a dashed outline of a larger, more complex structure with a partially filled gauge, indicating something is not yet fully realized or confirmed.",
+          "outcomeEvidence": "The right side shows a dashed outline of a larger, more complex structure with a partially filled gauge, indicating a future or planned state that is not yet complete or proven.",
+          "ambiguity": "The specific elements (stacked bars, gauge) are generic and not clearly tied to 'Mistral AI platform', 'Forge', 'Les Ministraux models', or 'ARR'. The 'scaling' aspect is implied by growth from left to right, but the nature of what is scaling is not specific to the story. The 'un"
+        },
+        "card": {
+          "headlinePairUnderstood": false,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": true,
+          "overlaySupportedByPixels": true,
+          "thumbnailReadable": false,
+          "misleading": false,
+          "instantMeaning": 30,
+          "visualBeauty": 50,
+          "brandConsistency": 70,
+          "originality": 40,
+          "summary": "This card uses abstract shapes and gauges to represent financial metrics. It shows 'OVER $400M ARR' and 'ON TRACK $1B ARR'. While the numbers are exact and certainty is preserved, the visual representation is too abstract to quickly convey the core message of 'leveraging the platform beyond standard chatbot integration"
+        },
+        "pixelPass": false,
+        "visualPass": false,
+        "productionPass": false,
+        "weightedScore": 43
+      },
+      "preferredSource": "current",
+      "confidence": 0.9,
+      "reason": "Card X is significantly better because it uses a strong, clear, and creative visual analogy that directly supports the headline's theme of 'leveraging the platform beyond standard chatbot integrations' and the company's specific initiatives (Forge, Les Ministraux, European identity). The image is engaging, instantly understandable, and maintains the required uncertainty for future plans through the visual metaphor rather than explicit l",
+      "pixelOrder": {
+        "X": "compiler",
+        "Y": "current"
+      },
+      "cardOrder": {
+        "X": "current",
+        "Y": "compiler"
+      }
+    },
+    {
+      "storyId": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+      "rank": 4,
+      "headline": "Agentic testing playbook: How fuzzing and property testing empower autonomous coding",
+      "role": "causal_mechanism",
+      "certainty": "observed",
+      "mappingMode": "editorial_analogy",
+      "format": "cinematic_single",
+      "renderMode": "generated_audited_analogy",
+      "claimEligible": true,
+      "claimAudit": {
+        "storyId": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+        "passed": true,
+        "issues": [],
+        "rationale": "The analogy accurately maps the core elements of the story to visual components. The robotic arm represents AI-driven development and its speed, while the assembly/disassembly represents continuous automated testing. The outcome of no broken blocks reflects reliable code. All mappings are one-to-one and visually testable without unsupported specifics."
+      },
+      "current": {
+        "pixel": {
+          "sourceContextSupported": false,
+          "roleEvidenceVisible": true,
+          "outcomeVisible": true,
+          "relationVisible": true,
+          "directionOrStateCorrect": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": true,
+          "analogyMappingValid": false,
+          "roleEvidence": "A robotic arm is placing blocks on a conveyor belt, while a machine on the right appears to be processing or generating more blocks, some of which are falling. This could represent an automated process of code generation and assembly.",
+          "outcomeEvidence": "The blocks are being processed and moved, suggesting an efficient, continuous workflow.",
+          "ambiguity": "The specific 'fuzzing' or 'property testing' aspect is not clearly depicted. The blocks are generic and don't clearly represent 'code' or 'tests'. The machine on the right is ambiguous in its function."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": true,
+          "overlaySupportedByPixels": true,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 75,
+          "visualBeauty": 65,
+          "brandConsistency": 80,
+          "originality": 70,
+          "summary": "The image depicts a robotic arm placing wooden blocks onto a conveyor belt, which leads to a machine that appears to be processing or testing them. This visually represents the concept of automated processes and testing. The analogy of blocks as code and the robot as an AI agent performing testing is understandable, th"
+        },
+        "pixelPass": false,
+        "visualPass": false,
+        "productionPass": false,
+        "weightedScore": 72.25
+      },
+      "compiler": {
+        "pixel": {
+          "sourceContextSupported": false,
+          "roleEvidenceVisible": true,
+          "outcomeVisible": true,
+          "relationVisible": true,
+          "directionOrStateCorrect": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": true,
+          "analogyMappingValid": false,
+          "roleEvidence": "A robotic arm is interacting with a pile of complex, hollow, cube-like objects on a conveyor belt, with some objects scattered. This could represent an automated process of handling or testing code components.",
+          "outcomeEvidence": "The robotic arm is actively engaged with the components, suggesting an automated workflow. The pile of components could imply a large volume of generated code.",
+          "ambiguity": "The specific 'fuzzing' or 'property testing' is not visible. The objects are generic and don't clearly represent 'code' or 'tests'. The action of the robot is not clearly defined as 'testing' or 'reviewing'."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": false,
+          "overlaySupportedByPixels": true,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 80,
+          "visualBeauty": 70,
+          "brandConsistency": 80,
+          "originality": 75,
+          "summary": "The image shows a robotic arm interacting with small, block-like objects on a conveyor belt, with a pile of similar objects nearby. The overlay labels 'AI Agents', 'Code Review', and 'Automated Testing' are present. The robotic arm can be interpreted as an 'AI Agent' performing 'Automated Testing' on 'Code Review' (rep"
+        },
+        "pixelPass": false,
+        "visualPass": false,
+        "productionPass": false,
+        "weightedScore": 76.5
+      },
+      "preferredSource": "compiler",
+      "confidence": 0.9,
+      "reason": "Card X's visual analogy is stronger for the 'causal_mechanism' role. The blocks in Card X, especially the pile, better represent the 'code review' bottleneck and the robot's action of 'automated testing' on them. The labels in Card X, while not exact, help to clarify the analogy without being misleading. Card Y is also good, but the 'testing' aspect is less explicit, and the machine at the end is a bit ambiguous in its function compared",
+      "pixelOrder": {
+        "X": "current",
+        "Y": "compiler"
+      },
+      "cardOrder": {
+        "X": "compiler",
+        "Y": "current"
+      }
+    },
+    {
+      "storyId": "907e49c3-2852-427b-9c92-377d1f055bdf",
+      "rank": 6,
+      "headline": "Optimizing Token Caching to Avoid Unexpected Cloud Large Language Model Costs",
+      "role": "quantitative_result",
+      "certainty": "observed",
+      "mappingMode": "literal",
+      "format": "cinematic_data_contrast",
+      "renderMode": "deterministic_literal",
+      "claimEligible": true,
+      "claimAudit": {
+        "storyId": "907e49c3-2852-427b-9c92-377d1f055bdf",
+        "passed": true,
+        "issues": [],
+        "rationale": "This explanatory role is safer and clearer as deterministic literal geometry."
+      },
+      "current": {
+        "pixel": {
+          "sourceContextSupported": false,
+          "roleEvidenceVisible": false,
+          "outcomeVisible": true,
+          "relationVisible": false,
+          "directionOrStateCorrect": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": true,
+          "generatedTextPresent": true,
+          "subjectConsistent": false,
+          "analogyMappingValid": false,
+          "roleEvidence": "A bill with '90% Waste' stamped on it. There is no baseline or result to compare.",
+          "outcomeEvidence": "The '90% Waste' stamp on the bill indicates a negative outcome related to cost.",
+          "ambiguity": "The image shows a bill and '90% Waste' but does not show a comparison or a process that leads to this outcome. The scrabble tiles are irrelevant. The text on the bill is gibberish."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": false,
+          "labelsExact": false,
+          "overlaySupportedByPixels": false,
+          "thumbnailReadable": true,
+          "misleading": true,
+          "instantMeaning": 60,
+          "visualBeauty": 70,
+          "brandConsistency": 80,
+          "originality": 70,
+          "summary": "The image shows a bill with '90% Waste' stamped on it, and scrabble tiles. While it attempts to convey cost reduction, the '90% Waste' is not directly from the source, and the source states 'up to 90% reduction', not 90% waste. The scrabble tiles are a weak analogy for tokens. The '90% Waste' is an unstated cause and a"
+        },
+        "pixelPass": false,
+        "visualPass": false,
+        "productionPass": false,
+        "weightedScore": 67
+      },
+      "compiler": {
+        "pixel": {
+          "sourceContextSupported": true,
+          "roleEvidenceVisible": true,
+          "outcomeVisible": true,
+          "relationVisible": true,
+          "directionOrStateCorrect": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": true,
+          "analogyMappingValid": true,
+          "roleEvidence": "The left side shows a CPU with many stacked tokens/data and a gauge indicating high usage/cost. The right side shows the same CPU with fewer tokens/data and a gauge indicating lower usage/cost.",
+          "outcomeEvidence": "The reduction in stacked tokens/data and the lower reading on the gauge on the right side compared to the left side.",
+          "ambiguity": "The specific meaning of the 'tokens' as stacked bars is an abstraction, but generally represents data/workload."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": true,
+          "overlaySupportedByPixels": true,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 90,
+          "visualBeauty": 85,
+          "brandConsistency": 90,
+          "originality": 60,
+          "summary": "This card clearly illustrates the reduction in API costs due to token caching. The 'UP TO 90%' label accurately reflects the source's certainty. The visual metaphor of a processor and reduced bars effectively conveys cost optimization. It directly addresses the quantitative result requirement."
+        },
+        "pixelPass": true,
+        "visualPass": true,
+        "productionPass": true,
+        "weightedScore": 85.5
+      },
+      "preferredSource": "compiler",
+      "confidence": 1,
+      "reason": "Card Y is preferred because it adheres strictly to the fidelity rules. It accurately represents the 'up to 90%' cost reduction without upgrading certainty or inventing causes. The visual is clear, directly supports the claim, and is readable at thumbnail size. Card X, while attempting an analogy, misrepresents the 'up to' certainty as a definitive '90% Waste' and introduces an unstated cause, making it misleading and failing on certaint",
+      "pixelOrder": {
+        "X": "compiler",
+        "Y": "current"
+      },
+      "cardOrder": {
+        "X": "current",
+        "Y": "compiler"
+      }
+    },
+    {
+      "storyId": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+      "rank": 7,
+      "headline": "Cutting Claude Code Token Costs with Optical Context Compression",
+      "role": "causal_mechanism",
+      "certainty": "observed",
+      "mappingMode": "editorial_analogy",
+      "format": "cinematic_single",
+      "renderMode": "generated_audited_analogy",
+      "claimEligible": true,
+      "claimAudit": {
+        "storyId": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+        "passed": true,
+        "issues": [],
+        "rationale": "The analogy accurately maps the source anchor (verbose text context), the mechanism (converting to compact PNGs via folding), and the outcome (reduced token cost via the compact square). The mappings are one-to-one and no unsupported specifics are introduced. The scene is visually testable."
+      },
+      "current": {
+        "pixel": {
+          "sourceContextSupported": true,
+          "roleEvidenceVisible": true,
+          "outcomeVisible": true,
+          "relationVisible": true,
+          "directionOrStateCorrect": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": true,
+          "analogyMappingValid": true,
+          "roleEvidence": "A press is actively compressing a stack of cards, which visually represents 'squeezing dense text down to a fraction of its original token cost'. The cards themselves, with visible text, can be interpreted as 'verbose text context, schemas, and system prompts'.",
+          "outcomeEvidence": "The act of compression by the press directly leads to a more compact form of the cards, implying a reduction in 'size' or 'cost' (as token costs are linked to size). The magnifying glass and circuit board suggest the 'vision capabilities' and 'Claude Code' aspects of the story, w",
+          "ambiguity": ""
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": true,
+          "overlaySupportedByPixels": true,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 85,
+          "visualBeauty": 70,
+          "brandConsistency": 80,
+          "originality": 85,
+          "summary": "The image of a press compressing a stack of papers, with a magnifying glass and a circuit board, effectively illustrates 'compression' and 'optical' context. The press represents the action of reducing something, while the magnifying glass hints at optical processing or reading. The circuit board subtly connects to 'Cl"
+        },
+        "pixelPass": true,
+        "visualPass": true,
+        "productionPass": true,
+        "weightedScore": 79.75
+      },
+      "compiler": {
+        "pixel": {
+          "sourceContextSupported": false,
+          "roleEvidenceVisible": false,
+          "outcomeVisible": false,
+          "relationVisible": false,
+          "directionOrStateCorrect": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": false,
+          "analogyMappingValid": false,
+          "roleEvidence": "",
+          "outcomeEvidence": "",
+          "ambiguity": "The image shows a person placing a small map on a larger map. This does not clearly represent 'reducing input token counts by converting verbose text context, schemas, and system prompts into compact PNG images' or 'squeezing dense text down to a fraction of its original token co"
+        },
+        "card": {
+          "headlinePairUnderstood": false,
+          "centralClaimGrounded": false,
+          "certaintyPreserved": true,
+          "labelsExact": true,
+          "overlaySupportedByPixels": false,
+          "thumbnailReadable": false,
+          "misleading": true,
+          "instantMeaning": 30,
+          "visualBeauty": 60,
+          "brandConsistency": 80,
+          "originality": 40,
+          "summary": "The image shows a hand placing a small map onto a larger map. While the labels 'Claude Code', 'Token Costs', and 'Optical Compression' are present, the visual analogy is weak and unclear. It doesn't intuitively convey 'compression' or 'cutting costs'. The act of placing a small map on a larger one doesn't clearly repre"
+        },
+        "pixelPass": false,
+        "visualPass": false,
+        "productionPass": false,
+        "weightedScore": 47.5
+      },
+      "preferredSource": "current",
+      "confidence": 1,
+      "reason": "Card X clearly illustrates the concept of 'compression' and 'optical context' through the use of a press, a stack of papers, and a magnifying glass. This directly aligns with the headline's claim of 'Cutting Claude Code Token Costs with Optical Context Compression'. The visual analogy is strong and immediately understandable. Card Y, on the other hand, uses a less intuitive analogy of placing a small map on a larger one, which does not ",
+      "pixelOrder": {
+        "X": "compiler",
+        "Y": "current"
+      },
+      "cardOrder": {
+        "X": "current",
+        "Y": "compiler"
+      }
+    }
+  ],
+  "usage": {
+    "promptTokens": 10664,
+    "completionTokens": 5531,
+    "totalTokens": 16195,
+    "costUsd": 0.017026700000000002,
+    "calls": 10
+  }
+}
