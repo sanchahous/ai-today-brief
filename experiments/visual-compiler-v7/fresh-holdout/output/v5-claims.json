@@ -1,0 +1,2055 @@
+[
+  {
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 1,
+      "revision_item_id": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+      "title": "The Shift to Harness-Level Agent Loops in Software Engineering",
+      "summary": "The development workflow is shifting from manual prompting to outer harness loops that orchestrate agent sessions. While highly effective for mechanical translation and porting code, these autonomous loops often generate overly defensive, complex, and unmaintainable code for long-term production systems.",
+      "why": "Understanding where agentic loops excel—and where they generate technical debt—helps developers choose the right automation boundaries.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+      "explanatory_role": "architecture_transformation",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "software engineering workflow",
+      "change": "shifting from manual prompting to outer harness loops orchestrating agent sessions",
+      "visual_driver": "a workflow diagram showing the transition from a human-centric, manual prompting approach to an automated, agent-orchestrated loop",
+      "visible_outcome": "a new workflow where an outer harness loop manages agent sessions",
+      "core_claim": "The software engineering workflow is shifting from manual prompting to outer harness loops that orchestrate agent sessions.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Manual Prompting",
+        "Outer Harness Loop",
+        "Agent Sessions"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [
+        {
+          "layer_id": "manual_prompting",
+          "name": "Manual Prompting",
+          "order": 1,
+          "color": "#FFDDC1"
+        },
+        {
+          "layer_id": "outer_harness_loop",
+          "name": "Outer Harness Loop",
+          "order": 2,
+          "color": "#C1FFDD"
+        },
+        {
+          "layer_id": "agent_sessions",
+          "name": "Agent Sessions",
+          "order": 3,
+          "color": "#DDC1FF"
+        }
+      ],
+      "routing": {
+        "from_layer": "manual_prompting",
+        "to_layer": "outer_harness_loop",
+        "transformation": "orchestration"
+      },
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "workflow",
+        "mechanism_glyph": "orchestration",
+        "outcome_glyph": "workflow",
+        "branch_glyphs": null,
+        "relation": "transform",
+        "outcome_signal": "new_workflow",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+      "explanatory_role": "architecture_transformation",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "software engineering workflow",
+      "change": "shifting from manual prompting to outer harness loops orchestrating agent sessions",
+      "visual_driver": "a workflow diagram showing the transition from a human-centric, manual prompting approach to an automated, agent-orchestrated loop",
+      "visible_outcome": "a new workflow where an outer harness loop manages agent sessions",
+      "core_claim": "The software engineering workflow is shifting from manual prompting to outer harness loops that orchestrate agent sessions.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Manual Prompting",
+        "Outer Harness Loop",
+        "Agent Sessions"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [
+        {
+          "layer_id": "manual_prompting",
+          "name": "Manual Prompting",
+          "order": 1,
+          "color": "#FFDDC1"
+        },
+        {
+          "layer_id": "outer_harness_loop",
+          "name": "Outer Harness Loop",
+          "order": 2,
+          "color": "#C1FFDD"
+        },
+        {
+          "layer_id": "agent_sessions",
+          "name": "Agent Sessions",
+          "order": 3,
+          "color": "#DDC1FF"
+        }
+      ],
+      "routing": {
+        "from_layer": "manual_prompting",
+        "to_layer": "outer_harness_loop",
+        "transformation": "orchestration"
+      },
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "workflow",
+        "mechanism_glyph": "orchestration",
+        "outcome_glyph": "workflow",
+        "branch_glyphs": null,
+        "relation": "transform",
+        "outcome_signal": "new_workflow",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+      "claim": {
+        "storyId": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+        "identity": "software engineering workflow",
+        "change": "shifting from manual prompting to outer harness loops orchestrating agent sessions",
+        "mechanism": "a workflow diagram showing the transition from a human-centric, manual prompting approach to an automated, agent-orchestrated loop",
+        "primaryOutcome": "a new workflow where an outer harness loop manages agent sessions",
+        "coreClaim": "The software engineering workflow is shifting from manual prompting to outer harness loops that orchestrate agent sessions.",
+        "primaryEvidence": "architecture_change",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Manual Prompting",
+          "Outer Harness Loop",
+          "Agent Sessions"
+        ],
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "Manual Prompting",
+            "regionId": "full-system",
+            "importance": "primary"
+          },
+          {
+            "text": "Outer Harness Loop",
+            "regionId": "remaining-core",
+            "importance": "secondary"
+          },
+          {
+            "text": "Agent Sessions",
+            "regionId": "remaining-core",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "workflow",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "workflow",
+        "branchGlyphs": null,
+        "relation": "transform",
+        "outcomeSignal": "success",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [
+        "architecture_without_layers"
+      ],
+      "semantics": {
+        "explanatoryRole": "architecture_transformation",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "a workflow diagram showing the transition from a human-centric, manual prompting approach to an automated, agent-orchestrated loop",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+        "identity": "software engineering workflow",
+        "change": "shifting from manual prompting to outer harness loops orchestrating agent sessions",
+        "mechanism": "a workflow diagram showing the transition from a human-centric, manual prompting approach to an automated, agent-orchestrated loop",
+        "primaryOutcome": "a new workflow where an outer harness loop manages agent sessions",
+        "coreClaim": "The software engineering workflow is shifting from manual prompting to outer harness loops that orchestrate agent sessions.",
+        "primaryEvidence": "architecture_change",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Manual Prompting",
+          "Outer Harness Loop",
+          "Agent Sessions"
+        ],
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "Manual Prompting",
+            "regionId": "full-system",
+            "importance": "primary"
+          },
+          {
+            "text": "Outer Harness Loop",
+            "regionId": "remaining-core",
+            "importance": "secondary"
+          },
+          {
+            "text": "Agent Sessions",
+            "regionId": "remaining-core",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_cutaway",
+      "renderStrategy": "one_asset_plus_vector",
+      "regions": [
+        {
+          "id": "full-system",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.1,
+            "width": 0.41,
+            "height": 0.76
+          },
+          "role": "context",
+          "description": "software engineering workflow"
+        },
+        {
+          "id": "removed-layers",
+          "bounds": {
+            "x": 0.455,
+            "y": 0.2,
+            "width": 0.16,
+            "height": 0.56
+          },
+          "role": "mechanism",
+          "description": "shifting from manual prompting to outer harness"
+        },
+        {
+          "id": "remaining-core",
+          "bounds": {
+            "x": 0.62,
+            "y": 0.1,
+            "width": 0.34,
+            "height": 0.76
+          },
+          "role": "outcome",
+          "description": "a new workflow where an outer harness loop manages agent sessions"
+        }
+      ],
+      "transitions": [
+        {
+          "from": "full-system",
+          "to": "removed-layers",
+          "type": "reveal"
+        },
+        {
+          "from": "removed-layers",
+          "to": "remaining-core",
+          "type": "flow"
+        }
+      ],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Manual Prompting",
+          "regionId": "full-system",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Outer Harness Loop",
+          "regionId": "remaining-core",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Agent Sessions",
+          "regionId": "remaining-core",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "full-system",
+          "assetRequest": "software engineering workflow",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: software engineering workflow. This asset must show: software engineering workflow. The physical action must support this mechanism: a workflow diagram showing the transition from a human-centric, manual prompting approach to an automated, agent-orchestrated loop. The visible result must remain compatible with: a new workflow where an outer harness loop manages agent sessions. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 21161f64-804b-4bea-aa06-35a475dd9f0f:software engineering workflow. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "21161f64-804b-4bea-aa06-35a475dd9f0f:software engineering workflow",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        },
+        {
+          "id": "asset-2",
+          "regionId": "remaining-core",
+          "assetRequest": "a new workflow where an outer harness loop manages agent sessions",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: software engineering workflow. This asset must show: a new workflow where an outer harness loop manages agent sessions. The physical action must support this mechanism: a workflow diagram showing the transition from a human-centric, manual prompting approach to an automated, agent-orchestrated loop. The visible result must remain compatible with: a new workflow where an outer harness loop manages agent sessions. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 21161f64-804b-4bea-aa06-35a475dd9f0f:software engineering workflow. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "21161f64-804b-4bea-aa06-35a475dd9f0f:software engineering workflow",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: a workflow diagram showing the transition from a human-centric, manual prompting approach to an automated, agent-orchestrated loop",
+        "Visible outcome: a new workflow where an outer harness loop manages agent sessions",
+        "One causal claim: The software engineering workflow is shifting from manual prompting to outer harness loops that orchestrate agent sessions."
+      ],
+      "forbiddenContradictions": [],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": ""
+    },
+    "finalAudit": {
+      "storyId": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": ""
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  },
+  {
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 2,
+      "revision_item_id": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "title": "Gemini faces community critique regarding model performance consistency",
+      "summary": "The developer community is actively debating the reliability of Gemini in coding environments compared to alternatives. Users highlight inconsistencies that impact production-grade tasks.",
+      "why": "Evaluate your current model selection by testing critical code paths against multiple providers to avoid unexpected regression.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "explanatory_role": "uncertainty_announcement",
+      "certainty": "reported",
+      "mapping_mode": "literal",
+      "identity": "Gemini model performance",
+      "change": "community debating reliability in coding environments compared to alternatives",
+      "visual_driver": "a comparison chart or graph showing inconsistent performance of Gemini against alternatives for coding tasks",
+      "visible_outcome": "a visual representation of inconsistent performance or varying results for Gemini in coding tasks",
+      "core_claim": "The developer community is actively debating the reliability of Gemini in coding environments compared to alternatives, highlighting inconsistencies that impact production-grade tasks.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": "alternatives",
+        "baseline_label": "Gemini",
+        "result_label": "Alternatives"
+      },
+      "labels": [
+        "Gemini",
+        "Alternatives",
+        "Coding Performance"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": {
+        "comparison_type": "model_vs_model",
+        "comparison_target_name": "alternatives",
+        "comparison_target_value": null,
+        "comparison_metric": "reliability",
+        "comparison_result": "inconsistent"
+      },
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "comparison",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "inconsistent_performance",
+        "human_behavior": true
+      }
+    },
+    "finalRaw": {
+      "story_id": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "explanatory_role": "uncertainty_announcement",
+      "certainty": "reported",
+      "mapping_mode": "literal",
+      "identity": "Gemini model performance",
+      "change": "community debating reliability in coding environments compared to alternatives",
+      "visual_driver": "a comparison chart or graph showing reported inconsistent performance of Gemini against alternatives for coding tasks",
+      "visible_outcome": "a visual representation of reported inconsistent performance or varying results for Gemini in coding tasks",
+      "core_claim": "The developer community is actively debating the reliability of Gemini in coding environments compared to alternatives, highlighting inconsistencies that impact production-grade tasks.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": "alternatives",
+        "baseline_label": "Gemini",
+        "result_label": "Alternatives"
+      },
+      "labels": [
+        "Gemini",
+        "Alternatives",
+        "Coding Performance"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": {
+        "comparison_type": "model_vs_model",
+        "comparison_target_name": "alternatives",
+        "comparison_target_value": null,
+        "comparison_metric": "reliability",
+        "comparison_result": "inconsistent"
+      },
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "comparison",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "inconsistent_performance",
+        "human_behavior": true
+      }
+    },
+    "autoClaim": {
+      "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "claim": {
+        "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+        "identity": "Gemini model performance",
+        "change": "community debating reliability in coding environments compared to alternatives",
+        "mechanism": "the current Gemini is placed beside the Alternatives, with the future target visibly unconfirmed",
+        "primaryOutcome": "the Alternatives remains visibly future beyond the current Gemini",
+        "coreClaim": "The developer community is actively debating the reliability of Gemini in coding environments compared to alternatives, highlighting inconsistencies that impact production-grade tasks.",
+        "primaryEvidence": "counterfactual_comparison",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Gemini",
+          "Alternatives",
+          "UNCONFIRMED"
+        ],
+        "comparison": {
+          "left": "the current confirmed state before the announced model or capability exists",
+          "right": "the Alternatives shown with an explicit unconfirmed boundary"
+        },
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "Gemini",
+            "regionId": "left",
+            "importance": "primary"
+          },
+          {
+            "text": "Alternatives",
+            "regionId": "right",
+            "importance": "secondary"
+          },
+          {
+            "text": "UNCONFIRMED",
+            "regionId": "right",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "code_file",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "compare",
+        "outcomeSignal": "success",
+        "humanBehavior": true
+      },
+      "extractionWarnings": [
+        "certainty_aligned_reported_to_observed"
+      ],
+      "semantics": {
+        "explanatoryRole": "uncertainty_announcement",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "the current Gemini is placed beside the Alternatives, with the future target visibly unconfirmed",
+        "metric": {
+          "direction": "neutral",
+          "comparisonTarget": "alternatives",
+          "baselineLabel": "Gemini",
+          "resultLabel": "Alternatives"
+        },
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+        "identity": "Gemini model performance",
+        "change": "community debating reliability in coding environments compared to alternatives",
+        "mechanism": "the current Gemini is placed beside the Alternatives, with the future target visibly unconfirmed",
+        "primaryOutcome": "the Alternatives remains visibly future beyond the current Gemini",
+        "coreClaim": "The developer community is actively debating the reliability of Gemini in coding environments compared to alternatives, highlighting inconsistencies that impact production-grade tasks.",
+        "primaryEvidence": "counterfactual_comparison",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Gemini",
+          "Alternatives",
+          "UNCONFIRMED"
+        ],
+        "comparison": {
+          "left": "the current confirmed state before the announced model or capability exists",
+          "right": "the Alternatives shown with an explicit unconfirmed boundary"
+        },
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "Gemini",
+            "regionId": "left",
+            "importance": "primary"
+          },
+          {
+            "text": "Alternatives",
+            "regionId": "right",
+            "importance": "secondary"
+          },
+          {
+            "text": "UNCONFIRMED",
+            "regionId": "right",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [],
+      "transitions": [],
+      "overlays": [],
+      "renderUnits": [],
+      "pixelAssertions": [],
+      "forbiddenContradictions": [],
+      "execution": {
+        "candidateCount": 0,
+        "imageCalls": 0,
+        "visionCalls": 0,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0,
+        "estimatedDurationMs": 0,
+        "withinPolicy": false
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": false,
+      "outcomeSupported": false,
+      "certaintyPreserved": false,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": false,
+      "issues": [
+        "visual_driver_supported",
+        "outcome_supported",
+        "certainty_preserved"
+      ],
+      "repairInstruction": "The certainty is 'reported', not 'observed'. The visual driver should reflect a reported state, not a current, confirmed state. The outcome should reflect the reported debate/inconsistency, not a confirmed future state.",
+      "rationale": "The original claim states 'certainty': 'reported', but the normalized claim changes it to 'observed'. The visual driver and outcome also imply a confirmed state rather than a reported debate or inconsistency."
+    },
+    "finalAudit": {
+      "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": false,
+      "outcomeSupported": false,
+      "certaintyPreserved": false,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": false,
+      "passed": false,
+      "issues": [
+        "visual_driver_supported",
+        "outcome_supported",
+        "certainty_preserved",
+        "visually_testable"
+      ],
+      "repairInstruction": "The certainty should be 'reported' as per the source. The visual_driver and visible_outcome should reflect a comparison of reported inconsistent performance, not an unconfirmed future state. The claim is about current reported debate and inconsistencies, not a future unconfirmed state. The visual_driver should be 'a comparison chart or graph showing reported inconsistent performance of Gemini against alternatives for coding tasks' and visible_outcome should be 'a visual representation of reporte",
+      "rationale": "The original claim states 'The developer community is actively debating the reliability of Gemini in coding environments compared to alternatives, highlighting inconsistencies that impact production-grade tasks.' This is a reported state of affairs, not an 'uncertainty_announcement' about a future unconfirmed state. The certainty should be 'reported'. The visual driver and outcome in the normalized claim describe an 'unconfirmed boundary' and 'future beyond the current Gemini', which contradicts"
+    },
+    "deterministicIssues": [
+      "announcement_certainty_not_guarded",
+      "plan_compile_failed"
+    ],
+    "repaired": true,
+    "eligible": false
+  },
+  {
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 3,
+      "revision_item_id": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+      "title": "Git-Lazy-Mount: Mount Repositories on Demand for MicroVM Coding Agents",
+      "summary": "Git-lazy-mount allows developers to mount large Git repositories without cloning them first, downloading files only on demand. It is optimized for ephemeral microVMs running coding agents, cutting startup delays to zero.",
+      "why": "You can spin up sandboxed coding agents instantly on huge codebases without waiting for slow git clone operations.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Git-lazy-mount",
+      "change": "allows mounting large Git repositories without cloning them first, downloading files only on demand",
+      "visual_driver": "a diagram showing a microVM accessing a Git repository directly without a full clone operation, with files being downloaded as needed",
+      "visible_outcome": "instant startup of microVMs with access to large Git repositories",
+      "core_claim": "Git-lazy-mount allows developers to mount large Git repositories without cloning them first, downloading files only on demand, cutting startup delays to zero for ephemeral microVMs.",
+      "metric": {
+        "direction": "decrease",
+        "comparison_target": "traditional git clone",
+        "baseline_label": "Startup Delay (with clone)",
+        "result_label": "Startup Delay (Git-lazy-mount)"
+      },
+      "labels": [
+        "Git Repository",
+        "MicroVM",
+        "On-Demand Access"
+      ],
+      "quantitative_facts": [
+        {
+          "label": "startup delays",
+          "value": "zero"
+        }
+      ],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "code_repository",
+        "mechanism_glyph": "access_path",
+        "outcome_glyph": "speedometer",
+        "branch_glyphs": null,
+        "relation": "enable",
+        "outcome_signal": "faster_access",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Git-lazy-mount",
+      "change": "allows mounting large Git repositories without cloning them first, downloading files only on demand",
+      "visual_driver": "a diagram showing a microVM accessing a Git repository directly without a full clone operation, with files being downloaded as needed",
+      "visible_outcome": "instant startup of microVMs with access to large Git repositories",
+      "core_claim": "Git-lazy-mount allows developers to mount large Git repositories without cloning them first, downloading files only on demand, cutting startup delays to zero for ephemeral microVMs.",
+      "metric": {
+        "direction": "decrease",
+        "comparison_target": "traditional git clone",
+        "baseline_label": "Startup Delay (with clone)",
+        "result_label": "Startup Delay (Git-lazy-mount)"
+      },
+      "labels": [
+        "Git Repository",
+        "MicroVM",
+        "On-Demand Access"
+      ],
+      "quantitative_facts": [
+        {
+          "label": "startup delays",
+          "value": "zero"
+        }
+      ],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "code_repository",
+        "mechanism_glyph": "access_path",
+        "outcome_glyph": "speedometer",
+        "branch_glyphs": null,
+        "relation": "enable",
+        "outcome_signal": "faster_access",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+      "claim": {
+        "storyId": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+        "identity": "Git-lazy-mount",
+        "change": "allows mounting large Git repositories without cloning them first, downloading files only on demand",
+        "mechanism": "a diagram showing a microVM accessing a Git repository directly without a full clone operation, with files being downloaded as needed",
+        "primaryOutcome": "instant startup of microVMs with access to large Git repositories",
+        "coreClaim": "Git-lazy-mount allows developers to mount large Git repositories without cloning them first, downloading files only on demand, cutting startup delays to zero for ephemeral microVMs.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Git Repository",
+          "MicroVM",
+          "On-Demand Access"
+        ],
+        "quantitativeFacts": [
+          {
+            "label": "startup delays",
+            "value": "zero"
+          }
+        ],
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "Git Repository",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "MicroVM",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "On-Demand Access",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "sandbox",
+        "mechanismGlyph": "code_file",
+        "outcomeGlyph": "speedometer",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "success",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [],
+      "semantics": {
+        "explanatoryRole": "capability_access",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "a diagram showing a microVM accessing a Git repository directly without a full clone operation, with files being downloaded as needed",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+        "identity": "Git-lazy-mount",
+        "change": "allows mounting large Git repositories without cloning them first, downloading files only on demand",
+        "mechanism": "a diagram showing a microVM accessing a Git repository directly without a full clone operation, with files being downloaded as needed",
+        "primaryOutcome": "instant startup of microVMs with access to large Git repositories",
+        "coreClaim": "Git-lazy-mount allows developers to mount large Git repositories without cloning them first, downloading files only on demand, cutting startup delays to zero for ephemeral microVMs.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Git Repository",
+          "MicroVM",
+          "On-Demand Access"
+        ],
+        "quantitativeFacts": [
+          {
+            "label": "startup delays",
+            "value": "zero"
+          }
+        ],
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "Git Repository",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "MicroVM",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "On-Demand Access",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "a diagram showing a microVM accessing a Git repository directly without a full clone operation, with files being downloaded as needed visibly produces instant startup of microVMs with access to large Git repositories"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Git Repository",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "MicroVM",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "On-Demand Access",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "a diagram showing a microVM accessing a Git repository directly without a full clone operation, with files being downloaded as needed visibly produces instant startup of microVMs with access to large Git repositories",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Git-lazy-mount. This asset must show: a diagram showing a microVM accessing a Git repository directly without a full clone operation, with files being downloaded as needed visibly produces instant startup of microVMs with access to large Git repositories. The physical action must support this mechanism: a diagram showing a microVM accessing a Git repository directly without a full clone operation, with files being downloaded as needed. The visible result must remain compatible with: instant startup of microVMs with access to large Git repositories. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: b2b29a4f-e909-4766-9734-968e6a679aa0:Git-lazy-mount. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "b2b29a4f-e909-4766-9734-968e6a679aa0:Git-lazy-mount",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: a diagram showing a microVM accessing a Git repository directly without a full clone operation, with files being downloaded as needed",
+        "Visible outcome: instant startup of microVMs with access to large Git repositories",
+        "One causal claim: Git-lazy-mount allows developers to mount large Git repositories without cloning them first, downloading files only on demand, cutting startup delays to zero for ephemeral microVMs."
+      ],
+      "forbiddenContradictions": [],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": ""
+    },
+    "finalAudit": {
+      "storyId": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": ""
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  },
+  {
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 4,
+      "revision_item_id": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "title": "Managing AI-Driven Distraction and Rediscovering Deep Work",
+      "summary": "Recent community discussions highlight how constant reliance on Claude for trivial reasoning can erode personal problem-solving skills. The key is to use LLMs as sparring partners rather than offloading the entire cognitive load.",
+      "why": "Prevents cognitive atrophy and helps you maintain your ability to solve complex architecture problems independently.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "explanatory_role": "causal_mechanism",
+      "certainty": "observed",
+      "mapping_mode": "editorial_analogy",
+      "identity": "constant reliance on Claude for trivial reasoning",
+      "change": "erodes personal problem-solving skills",
+      "visual_driver": "a visual analogy of a muscle atrophying due to lack of use, representing cognitive skills diminishing from over-reliance on AI",
+      "visible_outcome": "a depiction of reduced cognitive ability or problem-solving capacity",
+      "core_claim": "Constant reliance on Claude for trivial reasoning can erode personal problem-solving skills.",
+      "metric": {
+        "direction": "decrease",
+        "comparison_target": null,
+        "baseline_label": "Problem-Solving Skills (before)",
+        "result_label": "Problem-Solving Skills (after)"
+      },
+      "labels": [
+        "Claude",
+        "Problem-Solving Skills",
+        "Cognitive Atrophy"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "dependency",
+        "outcome_glyph": "brain",
+        "branch_glyphs": null,
+        "relation": "cause",
+        "outcome_signal": "cognitive_decline",
+        "human_behavior": true
+      }
+    },
+    "finalRaw": {
+      "story_id": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "explanatory_role": "causal_mechanism",
+      "certainty": "observed",
+      "mapping_mode": "editorial_analogy",
+      "identity": "constant reliance on Claude for trivial reasoning",
+      "change": "erodes personal problem-solving skills",
+      "visual_driver": "a visual analogy of a muscle atrophying due to lack of use, representing cognitive skills diminishing from over-reliance on AI",
+      "visible_outcome": "a depiction of reduced cognitive ability or problem-solving capacity",
+      "core_claim": "Constant reliance on Claude for trivial reasoning can erode personal problem-solving skills.",
+      "metric": {
+        "direction": "decrease",
+        "comparison_target": null,
+        "baseline_label": "Problem-Solving Skills (before)",
+        "result_label": "Problem-Solving Skills (after)"
+      },
+      "labels": [
+        "Claude",
+        "Problem-Solving Skills",
+        "Cognitive Atrophy"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "dependency",
+        "outcome_glyph": "brain",
+        "branch_glyphs": null,
+        "relation": "cause",
+        "outcome_signal": "cognitive_decline",
+        "human_behavior": true
+      }
+    },
+    "autoClaim": {
+      "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "claim": {
+        "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+        "identity": "constant reliance on Claude for trivial reasoning",
+        "change": "erodes personal problem-solving skills",
+        "mechanism": "a visual analogy of a muscle atrophying due to lack of use, representing cognitive skills diminishing from over-reliance on AI",
+        "primaryOutcome": "a depiction of reduced cognitive ability or problem-solving capacity",
+        "coreClaim": "Constant reliance on Claude for trivial reasoning can erode personal problem-solving skills.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude",
+          "Problem-Solving Skills",
+          "Cognitive Atrophy"
+        ],
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "Claude",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Problem-Solving Skills",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Cognitive Atrophy",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "tool",
+        "outcomeGlyph": "checkmark",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "success",
+        "humanBehavior": true
+      },
+      "extractionWarnings": [],
+      "semantics": {
+        "explanatoryRole": "causal_mechanism",
+        "certainty": "observed",
+        "mappingMode": "editorial_analogy",
+        "visualDriver": "a visual analogy of a muscle atrophying due to lack of use, representing cognitive skills diminishing from over-reliance on AI",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+        "identity": "constant reliance on Claude for trivial reasoning",
+        "change": "erodes personal problem-solving skills",
+        "mechanism": "a visual analogy of a muscle atrophying due to lack of use, representing cognitive skills diminishing from over-reliance on AI",
+        "primaryOutcome": "a depiction of reduced cognitive ability or problem-solving capacity",
+        "coreClaim": "Constant reliance on Claude for trivial reasoning can erode personal problem-solving skills.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude",
+          "Problem-Solving Skills",
+          "Cognitive Atrophy"
+        ],
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "Claude",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Problem-Solving Skills",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Cognitive Atrophy",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "a visual analogy of a muscle atrophying due to lack of use, representing cognitive skills diminishing from over-reliance on AI visibly produces a depiction of reduced cognitive ability or problem-solving capacity"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Claude",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Problem-Solving Skills",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Cognitive Atrophy",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "a visual analogy of a muscle atrophying due to lack of use, representing cognitive skills diminishing from over-reliance on AI visibly produces a depiction of reduced cognitive ability or problem-solving capacity",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: constant reliance on Claude for trivial reasoning. This asset must show: a visual analogy of a muscle atrophying due to lack of use, representing cognitive skills diminishing from over-reliance on AI visibly produces a depiction of reduced cognitive ability or problem-solving capacity. The physical action must support this mechanism: a visual analogy of a muscle atrophying due to lack of use, representing cognitive skills diminishing from over-reliance on AI. The visible result must remain compatible with: a depiction of reduced cognitive ability or problem-solving capacity. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 672e4320-6b71-4f9c-89da-82ce92770746:constant reliance on Claude for trivial reasoning. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "672e4320-6b71-4f9c-89da-82ce92770746:constant reliance on Claude for trivial reasoning",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: a visual analogy of a muscle atrophying due to lack of use, representing cognitive skills diminishing from over-reliance on AI",
+        "Visible outcome: a depiction of reduced cognitive ability or problem-solving capacity",
+        "One causal claim: Constant reliance on Claude for trivial reasoning can erode personal problem-solving skills."
+      ],
+      "forbiddenContradictions": [],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "generated_identity_action_pair",
+    "initialAudit": {
+      "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": ""
+    },
+    "finalAudit": {
+      "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": ""
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  },
+  {
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 5,
+      "revision_item_id": "40673aee-fac7-451f-be07-51016c857613",
+      "title": "Claude Usage Thresholds: Insights from High-Volume Token Consumption",
+      "summary": "Users pushing the limits of Claude's context window and rate limits are reporting anecdotal signals from Anthropic regarding usage patterns. This highlights the importance of monitoring token spend in high-intensity agentic tasks.",
+      "why": "Understanding your token burn rate helps prevent unexpected session interruptions during deep-code refactoring.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "40673aee-fac7-451f-be07-51016c857613",
+      "explanatory_role": "uncertainty_announcement",
+      "certainty": "reported",
+      "mapping_mode": "literal",
+      "identity": "Claude usage patterns",
+      "change": "users pushing limits of context window and rate limits are reporting anecdotal signals from Anthropic",
+      "visual_driver": "a dashboard or graph showing token consumption rates approaching or exceeding defined limits, with an alert indicating 'anecdotal signals'",
+      "visible_outcome": "a visual representation of high token spend and potential session interruptions",
+      "core_claim": "Users pushing the limits of Claude's context window and rate limits are reporting anecdotal signals from Anthropic regarding usage patterns, highlighting the importance of monitoring token spend.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Claude",
+        "Token Spend",
+        "Usage Limits"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "monitoring",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "indicate",
+        "outcome_signal": "high_usage",
+        "human_behavior": true
+      }
+    },
+    "finalRaw": {
+      "story_id": "40673aee-fac7-451f-be07-51016c857613",
+      "explanatory_role": "uncertainty_announcement",
+      "certainty": "reported",
+      "mapping_mode": "literal",
+      "identity": "Claude usage patterns",
+      "change": "users pushing limits of context window and rate limits are reporting anecdotal signals from Anthropic",
+      "visual_driver": "a dashboard or graph showing token consumption rates approaching or exceeding defined limits, with an alert indicating 'anecdotal signals'",
+      "visible_outcome": "a visual representation of high token spend and potential session interruptions",
+      "core_claim": "Users pushing the limits of Claude's context window and rate limits are reporting anecdotal signals from Anthropic regarding usage patterns, highlighting the importance of monitoring token spend.",
+      "metric": null,
+      "labels": [
+        "Claude",
+        "Token Spend",
+        "Usage Limits"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": {
+        "left": "current usage patterns without explicit guidance",
+        "right": "anecdotal signals from Anthropic regarding usage patterns"
+      },
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "monitoring",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "indicate",
+        "outcome_signal": "high_usage",
+        "human_behavior": true
+      }
+    },
+    "autoClaim": {
+      "storyId": "40673aee-fac7-451f-be07-51016c857613",
+      "claim": {
+        "storyId": "40673aee-fac7-451f-be07-51016c857613",
+        "identity": "Claude usage patterns",
+        "change": "users pushing limits of context window and rate limits are reporting anecdotal signals from Anthropic",
+        "mechanism": "a dashboard or graph showing token consumption rates approaching or exceeding defined limits, with an alert indicating 'anecdotal signals'",
+        "primaryOutcome": "a visual representation of high token spend and potential session interruptions",
+        "coreClaim": "Users pushing the limits of Claude's context window and rate limits are reporting anecdotal signals from Anthropic regarding usage patterns, highlighting the importance of monitoring token spend.",
+        "primaryEvidence": "counterfactual_comparison",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude",
+          "Token Spend",
+          "Usage Limits"
+        ],
+        "comparison": {
+          "left": "current usage patterns without explicit guidance",
+          "right": "anecdotal signals from Anthropic regarding usage patterns"
+        },
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "Claude",
+            "regionId": "left",
+            "importance": "primary"
+          },
+          {
+            "text": "Token Spend",
+            "regionId": "right",
+            "importance": "secondary"
+          },
+          {
+            "text": "Usage Limits",
+            "regionId": "right",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "context_stack",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "success",
+        "humanBehavior": true
+      },
+      "extractionWarnings": [
+        "certainty_aligned_reported_to_observed"
+      ],
+      "semantics": {
+        "explanatoryRole": "uncertainty_announcement",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "a dashboard or graph showing token consumption rates approaching or exceeding defined limits, with an alert indicating 'anecdotal signals'",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "40673aee-fac7-451f-be07-51016c857613",
+        "identity": "Claude usage patterns",
+        "change": "users pushing limits of context window and rate limits are reporting anecdotal signals from Anthropic",
+        "mechanism": "a dashboard or graph showing token consumption rates approaching or exceeding defined limits, with an alert indicating 'anecdotal signals'",
+        "primaryOutcome": "a visual representation of high token spend and potential session interruptions",
+        "coreClaim": "Users pushing the limits of Claude's context window and rate limits are reporting anecdotal signals from Anthropic regarding usage patterns, highlighting the importance of monitoring token spend.",
+        "primaryEvidence": "counterfactual_comparison",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude",
+          "Token Spend",
+          "Usage Limits"
+        ],
+        "comparison": {
+          "left": "current usage patterns without explicit guidance",
+          "right": "anecdotal signals from Anthropic regarding usage patterns"
+        },
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "Claude",
+            "regionId": "left",
+            "importance": "primary"
+          },
+          {
+            "text": "Token Spend",
+            "regionId": "right",
+            "importance": "secondary"
+          },
+          {
+            "text": "Usage Limits",
+            "regionId": "right",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [],
+      "transitions": [],
+      "overlays": [],
+      "renderUnits": [],
+      "pixelAssertions": [],
+      "forbiddenContradictions": [],
+      "execution": {
+        "candidateCount": 0,
+        "imageCalls": 0,
+        "visionCalls": 0,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0,
+        "estimatedDurationMs": 0,
+        "withinPolicy": false
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "40673aee-fac7-451f-be07-51016c857613",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": false,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": false,
+      "issues": [
+        "certainty_preserved"
+      ],
+      "repairInstruction": "The certainty is 'reported', not 'observed'. The comparison field should reflect the reported nature of the signals, not a confirmed state.",
+      "rationale": "The original claim states 'certainty': 'reported', but the normalized claim changes it to 'observed'. The comparison field also implies a confirmed state rather than reported signals."
+    },
+    "finalAudit": {
+      "storyId": "40673aee-fac7-451f-be07-51016c857613",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": false,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": false,
+      "issues": [
+        "certainty_preserved"
+      ],
+      "repairInstruction": "Change certainty from 'observed' to 'reported'.",
+      "rationale": "The source states 'Users ... are reporting anecdotal signals', which is a reported fact, not an observed one. The normalized claim incorrectly changes 'reported' to 'observed'."
+    },
+    "deterministicIssues": [
+      "announcement_certainty_not_guarded",
+      "plan_compile_failed"
+    ],
+    "repaired": true,
+    "eligible": false
+  },
+  {
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 6,
+      "revision_item_id": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+      "title": "TikZ Editor: WYSIWYG Interface for LaTeX Vector Graphics",
+      "summary": "TikZ Editor offers a visual interface for generating TikZ code, simplifying the creation of complex diagrams for LaTeX documents. It bridges the gap between manual code writing and graphical design for technical documentation.",
+      "why": "You can now sketch technical diagrams visually and export them as clean TikZ code for your papers or documentation.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "TikZ Editor",
+      "change": "offers a visual interface for generating TikZ code, simplifying the creation of complex diagrams",
+      "visual_driver": "a split-screen view showing a graphical editor on one side and the corresponding TikZ code being generated in real-time on the other",
+      "visible_outcome": "the ability to create complex diagrams visually and export them as TikZ code",
+      "core_claim": "TikZ Editor offers a visual interface for generating TikZ code, simplifying the creation of complex diagrams for LaTeX documents.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "TikZ Editor",
+        "Visual Interface",
+        "TikZ Code"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "code_editor",
+        "mechanism_glyph": "interface",
+        "outcome_glyph": "diagram",
+        "branch_glyphs": null,
+        "relation": "enable",
+        "outcome_signal": "easier_creation",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "TikZ Editor",
+      "change": "offers a visual interface for generating TikZ code, simplifying the creation of complex diagrams",
+      "visual_driver": "a split-screen view showing a graphical editor on one side and the corresponding TikZ code being generated in real-time on the other",
+      "visible_outcome": "the ability to create complex diagrams visually and export them as TikZ code",
+      "core_claim": "TikZ Editor offers a visual interface for generating TikZ code, simplifying the creation of complex diagrams for LaTeX documents.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "TikZ Editor",
+        "Visual Interface",
+        "TikZ Code"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "code_editor",
+        "mechanism_glyph": "interface",
+        "outcome_glyph": "diagram",
+        "branch_glyphs": null,
+        "relation": "enable",
+        "outcome_signal": "easier_creation",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+      "claim": {
+        "storyId": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+        "identity": "TikZ Editor",
+        "change": "offers a visual interface for generating TikZ code, simplifying the creation of complex diagrams",
+        "mechanism": "a split-screen view showing a graphical editor on one side and the corresponding TikZ code being generated in real-time on the other",
+        "primaryOutcome": "the ability to create complex diagrams visually and export them as TikZ code",
+        "coreClaim": "TikZ Editor offers a visual interface for generating TikZ code, simplifying the creation of complex diagrams for LaTeX documents.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "TikZ Editor",
+          "Visual Interface",
+          "TikZ Code"
+        ],
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "TikZ Editor",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Visual Interface",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "TikZ Code",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "component_grid",
+        "mechanismGlyph": "code_graph",
+        "outcomeGlyph": "code_file",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "success",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [],
+      "semantics": {
+        "explanatoryRole": "capability_access",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "a split-screen view showing a graphical editor on one side and the corresponding TikZ code being generated in real-time on the other",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+        "identity": "TikZ Editor",
+        "change": "offers a visual interface for generating TikZ code, simplifying the creation of complex diagrams",
+        "mechanism": "a split-screen view showing a graphical editor on one side and the corresponding TikZ code being generated in real-time on the other",
+        "primaryOutcome": "the ability to create complex diagrams visually and export them as TikZ code",
+        "coreClaim": "TikZ Editor offers a visual interface for generating TikZ code, simplifying the creation of complex diagrams for LaTeX documents.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "TikZ Editor",
+          "Visual Interface",
+          "TikZ Code"
+        ],
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "TikZ Editor",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Visual Interface",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "TikZ Code",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "a split-screen view showing a graphical editor on one side and the corresponding TikZ code being generated in real-time on the other visibly produces the ability to create complex diagrams visually and export them as Tik"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "TikZ Editor",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Visual Interface",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "TikZ Code",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "a split-screen view showing a graphical editor on one side and the corresponding TikZ code being generated in real-time on the other visibly produces the ability to create complex diagrams visually and export them as Tik",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: TikZ Editor. This asset must show: a split-screen view showing a graphical editor on one side and the corresponding TikZ code being generated in real-time on the other visibly produces the ability to create complex diagrams visually and export them as Tik. The physical action must support this mechanism: a split-screen view showing a graphical editor on one side and the corresponding TikZ code being generated in real-time on the other. The visible result must remain compatible with: the ability to create complex diagrams visually and export them as TikZ code. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1:TikZ Editor. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1:TikZ Editor",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: a split-screen view showing a graphical editor on one side and the corresponding TikZ code being generated in real-time on the other",
+        "Visible outcome: the ability to create complex diagrams visually and export them as TikZ code",
+        "One causal claim: TikZ Editor offers a visual interface for generating TikZ code, simplifying the creation of complex diagrams for LaTeX documents."
+      ],
+      "forbiddenContradictions": [],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": ""
+    },
+    "finalAudit": {
+      "storyId": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": ""
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  },
+  {
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 7,
+      "revision_item_id": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+      "title": "GPT-5 Aids Immunologists in Solving T-Cell Mystery",
+      "summary": "Researchers leveraged GPT-5 to resolve a three-year-old bottleneck in immunology related to T-cell behavior. The model successfully synthesized complex biological datasets to provide an actionable hypothesis.",
+      "why": "It demonstrates how high-reasoning models are becoming reliable partners for domain-specific scientific research.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "GPT-5",
+      "change": "leveraged to resolve a three-year-old bottleneck in immunology related to T-cell behavior",
+      "visual_driver": "a diagram showing GPT-5 processing complex biological datasets and outputting an actionable hypothesis, breaking a previous bottleneck",
+      "visible_outcome": "a clear path forward or a resolved problem in T-cell research",
+      "core_claim": "Researchers leveraged GPT-5 to resolve a three-year-old bottleneck in immunology related to T-cell behavior by synthesizing complex biological datasets to provide an actionable hypothesis.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "GPT-5",
+        "Immunology",
+        "T-Cell Behavior"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "data_synthesis",
+        "outcome_glyph": "breakthrough",
+        "branch_glyphs": null,
+        "relation": "enable",
+        "outcome_signal": "problem_solved",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "GPT-5",
+      "change": "leveraged to resolve a three-year-old bottleneck in immunology related to T-cell behavior",
+      "visual_driver": "a diagram showing GPT-5 processing complex biological datasets and outputting an actionable hypothesis, breaking a previous bottleneck",
+      "visible_outcome": "a clear path forward or a resolved problem in T-cell research",
+      "core_claim": "Researchers leveraged GPT-5 to resolve a three-year-old bottleneck in immunology related to T-cell behavior by synthesizing complex biological datasets to provide an actionable hypothesis.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "GPT-5",
+        "Immunology",
+        "T-Cell Behavior"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": null,
+      "forbidden_contradictions": [],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "data_synthesis",
+        "outcome_glyph": "breakthrough",
+        "branch_glyphs": null,
+        "relation": "enable",
+        "outcome_signal": "problem_solved",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+      "claim": {
+        "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+        "identity": "GPT-5 Aids Immunologists in Solving T-Cell Mystery",
+        "change": "leveraged to resolve a three-year-old bottleneck in immunology related to T-cell behavior",
+        "mechanism": "a diagram showing GPT-5 processing complex biological datasets and outputting an actionable hypothesis, breaking a previous bottleneck",
+        "primaryOutcome": "a clear path forward or a resolved problem in T-cell research",
+        "coreClaim": "Researchers leveraged GPT-5 to resolve a three-year-old bottleneck in immunology related to T-cell behavior by synthesizing complex biological datasets to provide an actionable hypothesis.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "GPT-5",
+          "Immunology",
+          "T-Cell Behavior"
+        ],
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "GPT-5",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Immunology",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "T-Cell Behavior",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "tool",
+        "outcomeGlyph": "checkmark",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "success",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [
+        "identity_expanded_from_story_title"
+      ],
+      "semantics": {
+        "explanatoryRole": "capability_access",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "a diagram showing GPT-5 processing complex biological datasets and outputting an actionable hypothesis, breaking a previous bottleneck",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+        "identity": "GPT-5 Aids Immunologists in Solving T-Cell Mystery",
+        "change": "leveraged to resolve a three-year-old bottleneck in immunology related to T-cell behavior",
+        "mechanism": "a diagram showing GPT-5 processing complex biological datasets and outputting an actionable hypothesis, breaking a previous bottleneck",
+        "primaryOutcome": "a clear path forward or a resolved problem in T-cell research",
+        "coreClaim": "Researchers leveraged GPT-5 to resolve a three-year-old bottleneck in immunology related to T-cell behavior by synthesizing complex biological datasets to provide an actionable hypothesis.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "GPT-5",
+          "Immunology",
+          "T-Cell Behavior"
+        ],
+        "forbiddenContradictions": [],
+        "overlayDirectives": [
+          {
+            "text": "GPT-5",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Immunology",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "T-Cell Behavior",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "a diagram showing GPT-5 processing complex biological datasets and outputting an actionable hypothesis, breaking a previous bottleneck visibly produces a clear path forward or a resolved problem in T-cell research"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "GPT-5",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Immunology",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "T-Cell Behavior",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "a diagram showing GPT-5 processing complex biological datasets and outputting an actionable hypothesis, breaking a previous bottleneck visibly produces a clear path forward or a resolved problem in T-cell research",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: GPT-5 Aids Immunologists in Solving T-Cell Mystery. This asset must show: a diagram showing GPT-5 processing complex biological datasets and outputting an actionable hypothesis, breaking a previous bottleneck visibly produces a clear path forward or a resolved problem in T-cell research. The physical action must support this mechanism: a diagram showing GPT-5 processing complex biological datasets and outputting an actionable hypothesis, breaking a previous bottleneck. The visible result must remain compatible with: a clear path forward or a resolved problem in T-cell research. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 5104e334-3ee9-4b0e-8e64-1f6e95bc5701:GPT-5 Aids Immunologists in Solving T-Cell Mystery. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701:GPT-5 Aids Immunologists in Solving T-Cell Mystery",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: a diagram showing GPT-5 processing complex biological datasets and outputting an actionable hypothesis, breaking a previous bottleneck",
+        "Visible outcome: a clear path forward or a resolved problem in T-cell research",
+        "One causal claim: Researchers leveraged GPT-5 to resolve a three-year-old bottleneck in immunology related to T-cell behavior by synthesizing complex biological datasets to provide an actionable hypothesis."
+      ],
+      "forbiddenContradictions": [],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": ""
+    },
+    "finalAudit": {
+      "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": ""
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  }
+]
