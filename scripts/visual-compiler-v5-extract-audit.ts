@@ -285,6 +285,10 @@ function auditPrompt(
     'The original approved story is the only ground truth. Audit each claim without rewarding persuasive wording.',
     '',
     'Role-aware rules:',
+    'Normalized certainty rules (use only these meanings): observed = a direct factual or causal statement in the approved source; released = a currently available product or capability, including text such as is an open-source server/tool; reported = only an explicitly reported or self-reported fact; claimed = a claim or promise; planned = a plan, tease, preview or coming release; expected = an on-track forecast or explicitly expected result; uncertain = explicitly unresolved.',
+    'Do not demand unsupported raw labels such as available or on_track: released and expected are their normalized equivalents.',
+    'For an expected numeric announcement, a reported current baseline may appear beside an expected target when deterministic labels clearly distinguish the two states; certainty applies to the focal future proposition.',
+    'visually_testable is true when identity, operation/comparison and outcome can be depicted as physical geometry or deterministic labels without generated prose. Deterministic labels and numeric overlays are allowed.',
     '- causal_mechanism: visual_driver must be an explicit causal process in the source;',
     '- quantitative_result: visual_driver is the measured baseline/result comparison; do not demand or invent a cause;',
     '- benchmark_comparison: the benchmark/evaluation is comparison context, not a cause; preserve the named target;',
@@ -395,6 +399,7 @@ function repairPrompt(input: {
   return [
     'Repair one AI Today Brief VisualClaim v5. Return the full claim object, not a patch.',
     'Use only the original approved story. Preserve exact metrics, comparison targets and uncertainty. Do not invent a mechanism for a benchmark, capability claim or measured result.',
+    'Use normalized certainty only: observed for direct approved facts, released for a current available capability, reported only for explicitly reported facts, claimed for claims/promises, planned for teased/planned releases, expected for on-track forecasts, and uncertain only for explicitly unresolved facts.',
     'The repaired claim must satisfy the role definitions and every failed issue below. Keep one core claim and at most three deterministic labels.',
     `SOURCE=${JSON.stringify(sourcePayload(input.story))}`,
     `PREVIOUS_RAW=${JSON.stringify(input.previousRaw)}`,

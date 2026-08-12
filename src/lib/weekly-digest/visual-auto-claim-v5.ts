@@ -153,26 +153,68 @@ function sourceText(story: HoldoutStoryInput): string {
     .trim();
 }
 
-function inferSourceCertainty(story: HoldoutStoryInput): VisualCertainty {
-  const source = sourceText(story).toLowerCase();
+function inferCertaintyFromText(
+  value: string,
+  fallback: VisualCertainty,
+): VisualCertainty {
+  const normalized = value.toLowerCase();
   if (
-    /\b(prepares?|planning|plans?|set to|is set to|expected|expects?|aims?|will launch|upcoming|preview)\b/.test(
-      source,
+    /\b(on track|forecast|forecasted|expected|expects?|aims?|set to)\b/.test(
+      normalized,
     )
   ) {
-    return /\bexpected|expects?\b/.test(source) ? 'expected' : 'planned';
+    return 'expected';
   }
-  if (/\b(claims?|promis(?:e|es|ing)|positions?|says it can)\b/.test(source)) return 'claimed';
-  if (/\b(reports?|reported|self-reported|according to|the supplied report)\b/.test(source)) {
+  if (
+    /\b(prepares?|planning|plans?|planned|teased|coming|upcoming|previewed?|will launch)\b/.test(
+      normalized,
+    )
+  ) {
+    return 'planned';
+  }
+  if (/\b(claims?|promis(?:e|es|ing)|says it can)\b/.test(normalized)) {
+    return 'claimed';
+  }
+  if (
+    /\b(reports?|reported|self-reported|according to|the supplied report)\b/.test(
+      normalized,
+    )
+  ) {
     return 'reported';
   }
-  if (/\b(released|launched|introduced|open-sourced|made permanent|renamed|added)\b/.test(source)) {
+  if (
+    /\b(available|released|launched|introduced|open-sourced|made permanent|renamed|added|is an open-source|is a self-contained|automates|integrates with|enables users?|grants access)\b/.test(
+      normalized,
+    )
+  ) {
     return 'released';
   }
-  if (/\b(measured|found|analysis|achieved|reached|completed|reveals?)\b/.test(source)) {
+  if (
+    /\b(measured|found|analysis|achieved|reached|completed|reveals?|fails?|failing|occurs because|reduces?|cuts?|converts?|validates?|are highly suited|ensures?)\b/.test(
+      normalized,
+    )
+  ) {
     return 'observed';
   }
-  return 'reported';
+  return fallback;
+}
+
+function inferSourceCertainty(story: HoldoutStoryInput): VisualCertainty {
+  return inferCertaintyFromText(sourceText(story), 'observed');
+}
+
+function inferFocalCertainty(
+  raw: RawV5Claim,
+  story: HoldoutStoryInput,
+): VisualCertainty {
+  const focal = [
+    clean(raw.change, 180),
+    clean(raw.core_claim, 240),
+    clean(raw.visible_outcome, 220),
+  ]
+    .filter(Boolean)
+    .join(' ');
+  return inferCertaintyFromText(focal, inferSourceCertainty(story));
 }
 
 function certaintyAssertiveness(value: VisualCertainty): number {
@@ -378,7 +420,7 @@ function guardCoreClaim(
 function sourceGuardTerms(story: HoldoutStoryInput): string[] {
   const source = sourceText(story);
   const matches = source.match(
-    /\b(prepares?|planned|set to|expected|aims?|reports?|reported|self-reported|claims?|promising|may|could|up to)\b/gi,
+    /\b(prepares?|planned|set to|expected|aims?|reports?|reported|self-reported|claims?|promising|may|could|up to|on track|teased|coming)\b/gi,
   );
   return [...new Set((matches ?? []).map((value) => value.toLowerCase()))].slice(0, 8);
 }
@@ -423,11 +465,12 @@ const roleResult = guardExplanatoryRole(inferRole(raw, story), raw, story);
 const role = roleResult.role;
 if (roleResult.warning) warnings.push(roleResult.warning);
   const sourceCertainty = inferSourceCertainty(story);
-  const requestedCertainty = normalizedEnum<VisualCertainty>(
-    raw.certainty,
-    CERTAINTIES,
-    sourceCertainty,
-  );
+const focalCertainty = inferFocalCertainty(raw, story);
+const requestedCertainty = normalizedEnum<VisualCertainty>(
+  raw.certainty,
+  CERTAINTIES,
+  focalCertainty,
+);
   const certaintyResult = guardedCertainty(requestedCertainty, sourceCertainty);
   if (certaintyResult.warning) warnings.push(certaintyResult.warning);
   const requestedMapping = normalizedEnum<VisualMappingMode>(
@@ -440,7 +483,17 @@ if (roleResult.warning) warnings.push(roleResult.warning);
 
   const metricRaw = record(raw.metric) as RawMetric;
   const direction = inferMetricDirection(metricRaw, story);
-  const metricNeeded = role === 'quantitative_result' || role === 'benchmark_comparison';
+  const rawQuantitativeFacts = Array.isArray(raw.quantitative_facts)
+  ? raw.quantitative_facts
+  : [];
+const announcementHasMetric =
+  role === 'uncertainty_announcement' &&
+  (rawQuantitativeFacts.length > 0 ||
+    Boolean(clean(metricRaw.baseline_label, 34) && clean(metricRaw.result_label, 34)));
+const metricNeeded =
+  role === 'quantitative_result' ||
+  role === 'benchmark_comparison' ||
+  announcementHasMetric;
   const metric: VisualMetricSemantics | null = metricNeeded
     ? {
         direction,
@@ -462,17 +515,28 @@ if (rawIdentity && rawIdentity.length < 8 && identity !== rawIdentity) {
   warnings.push('identity_expanded_from_story_title');
 }
   const change = clean(raw.change, 180) || story.summary.slice(0, 180);
+  const rawVisualDriver = clean(raw.visual_driver, 220);
   const visualDriver =
-    clean(raw.visual_driver, 220) ||
-    (role === 'benchmark_comparison'
-      ? 'the evaluation places the reported result beside its named comparison target'
-      : role === 'quantitative_result'
-        ? 'the reported baseline is placed beside the measured result with the correct direction'
-        : role === 'uncertainty_announcement'
-          ? 'the current confirmed state is separated from the explicitly expected future state'
-          : story.summary.slice(0, 220));
+    role === 'uncertainty_announcement' && metric
+      ? `the current ${metric.baselineLabel || 'reported baseline'} is placed beside the ${
+          metric.resultLabel || 'future target'
+        }, with the future target visibly unconfirmed`
+      : rawVisualDriver ||
+        (role === 'benchmark_comparison'
+          ? 'the evaluation places the reported result beside its named comparison target'
+          : role === 'quantitative_result'
+            ? 'the reported baseline is placed beside the measured result with the correct direction'
+            : role === 'uncertainty_announcement'
+              ? 'the current confirmed state is separated from the explicitly expected future state'
+              : story.summary.slice(0, 220));
+  const rawVisibleOutcome = clean(raw.visible_outcome, 220);
   const visibleOutcome =
-    clean(raw.visible_outcome, 220) || (story.why ?? story.takeaway ?? story.summary).slice(0, 220);
+    role === 'uncertainty_announcement' && metric
+      ? `the ${metric.resultLabel || 'future target'} remains visibly future beyond the current ${
+          metric.baselineLabel || 'reported baseline'
+        }`
+      : rawVisibleOutcome ||
+        (story.why ?? story.takeaway ?? story.summary).slice(0, 220);
   const rawCoreClaim =
     clean(raw.core_claim, 240) || `${visualDriver.slice(0, 105)}; ${visibleOutcome.slice(0, 120)}`;
   const guardedCore = guardCoreClaim(
@@ -492,7 +556,20 @@ if (rawIdentity && rawIdentity.length < 8 && identity !== rawIdentity) {
           right: clean(rawComparison.right, 180),
         }
       : defaultComparison(role, story, metric, change, visibleOutcome);
-  const labels = labelsFromRaw(raw);
+  const announcementGuardLabel =
+  /\bon track\b/i.test(sourceText(story))
+    ? 'ON TRACK'
+    : certaintyResult.certainty === 'expected'
+      ? 'EXPECTED'
+      : certaintyResult.certainty === 'planned'
+        ? 'PLANNED'
+        : 'UNCONFIRMED';
+const labels =
+  role === 'uncertainty_announcement' && metric
+    ? [metric.baselineLabel, metric.resultLabel, announcementGuardLabel]
+        .filter(Boolean)
+        .slice(0, 3)
+    : labelsFromRaw(raw);
   const rawGrammar = record(raw.grammar) as RawGrammar;
 
   const baseRaw: Record<string, unknown> = {

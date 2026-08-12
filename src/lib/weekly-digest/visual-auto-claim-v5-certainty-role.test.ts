@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  compileAutoVisualClaimV5,
   parseAutoVisualClaimV5,
   validateAutoVisualClaimV5,
 } from './visual-auto-claim-v5';
@@ -53,18 +54,86 @@ function raw(overrides: Record<string, unknown> = {}) {
   };
 }
 
-describe('VisualClaim v5 source certainty alignment', () => {
-  it('aligns an unsupported uncertain default to reported source certainty', () => {
+describe('VisualClaim v5 focal certainty', () => {
+  it('uses observed for a direct approved causal proposition', () => {
     const value = parseAutoVisualClaimV5(raw(), story());
-    expect(value.semantics.certainty).toBe('reported');
-    expect(value.claim.coreClaim).toMatch(/reported/i);
+    expect(value.semantics.certainty).toBe('observed');
+    expect(value.claim.coreClaim).not.toMatch(/reported|expected|planned/i);
     expect(value.extractionWarnings).toContain(
-      'certainty_aligned_uncertain_to_reported',
+      'certainty_aligned_uncertain_to_observed',
     );
     expect(validateAutoVisualClaimV5(value)).toEqual([]);
   });
 
-  it('reclassifies a non-numeric compression story away from quantitative_result', () => {
+  it('maps a current open-source capability to released certainty', () => {
+    const source = story({
+      revision_item_id: 'review-flow',
+      title: 'Review-flow automates code review pipelines',
+      summary:
+        'Review-flow is an open-source server that automates code review pipelines using Claude Code background sessions and MCP.',
+    });
+    const value = parseAutoVisualClaimV5(
+      raw({
+        story_id: 'review-flow',
+        explanatory_role: 'capability_access',
+        certainty: 'available',
+        identity: 'Review-flow server',
+        change: 'automates code review pipelines',
+        visual_driver: 'Claude Code background sessions and MCP execute structured multi-agent audits',
+        visible_outcome: 'GitHub and GitLab review pipelines are automated',
+        core_claim: 'Review-flow is an open-source server that automates code review pipelines',
+      }),
+      source,
+    );
+    expect(value.semantics.certainty).toBe('released');
+    expect(validateAutoVisualClaimV5(value)).toEqual([]);
+  });
+
+  it('keeps an on-track numeric announcement future-facing and visually comparable', () => {
+    const source = story({
+      revision_item_id: 'mistral',
+      title: 'Mistral platform expansion',
+      summary:
+        'Mistral AI reported reaching over $400 million ARR and is on track to surpass $1 billion ARR this year.',
+    });
+    const value = parseAutoVisualClaimV5(
+      raw({
+        story_id: 'mistral',
+        explanatory_role: 'uncertainty_announcement',
+        certainty: 'on_track',
+        identity: 'Mistral AI',
+        change: 'is on track to surpass $1 billion ARR this year',
+        visual_driver: 'unrelated platform scaling activity',
+        visible_outcome: 'reaching over $400 million ARR',
+        core_claim:
+          'Mistral AI reported reaching over $400 million ARR and is on track to surpass $1 billion ARR this year.',
+        metric: {
+          direction: 'increase',
+          comparison_target: '',
+          baseline_label: '$400M ARR',
+          result_label: '$1B ARR',
+        },
+        quantitative_facts: [
+          { label: 'CURRENT ARR', value: 'OVER $400M' },
+          { label: 'TARGET ARR', value: 'OVER $1B' },
+        ],
+      }),
+      source,
+    );
+    expect(value.semantics.certainty).toBe('expected');
+    expect(value.semantics.metric?.direction).toBe('increase');
+    expect(value.semantics.visualDriver).toMatch(/\$400M ARR.*\$1B ARR/i);
+    expect(value.claim.primaryOutcome).toMatch(/future/i);
+    expect(value.claim.approvedLabels).toEqual([
+      '$400M ARR',
+      '$1B ARR',
+      'ON TRACK',
+    ]);
+    expect(compileAutoVisualClaimV5(value).format).toBe('cinematic_split');
+    expect(validateAutoVisualClaimV5(value)).toEqual([]);
+  });
+
+  it('reclassifies non-numeric optical compression as a causal mechanism', () => {
     const source = story({
       revision_item_id: 'optical-compression',
       title: 'Cutting Claude Code Token Costs with Optical Context Compression',
@@ -91,12 +160,9 @@ describe('VisualClaim v5 source certainty alignment', () => {
       }),
       source,
     );
-
     expect(value.semantics.explanatoryRole).toBe('causal_mechanism');
     expect(value.semantics.metric).toBeNull();
-    expect(value.extractionWarnings).toContain(
-      'role_aligned_quantitative_result_to_causal_mechanism_without_exact_metric',
-    );
+    expect(value.semantics.certainty).toBe('observed');
     expect(validateAutoVisualClaimV5(value)).toEqual([]);
   });
 });
