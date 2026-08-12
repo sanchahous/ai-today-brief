@@ -89,6 +89,7 @@ function compactMoney(value: string): string {
     .replace(/\$\s*/g, '$')
     .replace(/\b(million)\b/gi, 'M')
     .replace(/\b(billion)\b/gi, 'B')
+    .replace(/\s+([MB])\b/g, '$1')
     .replace(/\s+/g, ' ')
     .trim()
     .toUpperCase();
@@ -99,7 +100,7 @@ export function exactDeterministicLabelsV6(
   story: HoldoutStoryInput,
 ): string[] {
   const source = sourceText(story);
-  const base = unique(value.claim.approvedLabels.map((label) => clean(label, 34))).slice(0, 3);
+  const base = unique((value.claim.approvedLabels ?? []).map((label) => clean(label, 34))).slice(0, 3);
 
   const upToPercent = source.match(/\bup to\s+(\d+(?:\.\d+)?)\s*%/i);
   if (upToPercent?.[1]) {
@@ -309,7 +310,7 @@ export function analogyImagePromptV6(
     'One coherent editorial photograph with one focal action and an immediately readable cause-to-effect relationship.',
     'Premium technology-magazine cinematography, believable materials and physics, strong silhouette, restrained dramatic light, wide 16:9 composition, calm margins for an external headline.',
     'Absolutely no readable text, letters, numbers, code, UI, logos, captions, labels, arrows, diagrams, infographic panels, split screens, watermarks or brand marks.',
-    `Do not contradict: ${value.claim.forbiddenContradictions.join('; ') || 'the approved source claim'}.`,
+    `Do not contradict: ${(value.claim.forbiddenContradictions ?? []).join('; ') || 'the approved source claim'}.`,
   ]
     .filter(Boolean)
     .join(' ');
