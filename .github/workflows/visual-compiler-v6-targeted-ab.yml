@@ -1,0 +1,600 @@
+name: Visual compiler v6 targeted A-B
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-v6-targeted-ab-20260812
+    paths:
+      - .github/workflows/visual-compiler-v6-targeted-ab.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  ab:
+    name: Build render evaluate and persist five targeted stories
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-compiler-v6-targeted-ab-20260812
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Generate targeted v6 harness from validated v5 A-B harness
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          render_source = Path('scripts/visual-compiler-v5-render-ab.ts').read_text()
+          import_start = render_source.index("import {\n  analogyPromptV5")
+          import_end_marker = "import { renderGenericVisualSvgV5 } from '../src/lib/weekly-digest/visual-generic-svg-v5';"
+          import_end = render_source.index(import_end_marker, import_start) + len(import_end_marker)
+          new_imports = """import {
+            compileAutoVisualClaimV5,
+            type AutoVisualClaimV5,
+          } from '../src/lib/weekly-digest/visual-auto-claim-v5';
+          import {
+            overlayDirectivesForLabels,
+            type HoldoutStoryInput,
+          } from '../src/lib/weekly-digest/visual-auto-claim';
+          import type { VisualPlan, VisualRegion } from '../src/lib/weekly-digest/visual-compiler';
+          import {
+            analogyImagePromptV6,
+            type HybridTreatmentV6,
+          } from '../src/lib/weekly-digest/visual-hybrid-v6';
+          import { renderGenericVisualSvgV6 } from '../src/lib/weekly-digest/visual-generic-svg-v6';"""
+          render_source = render_source[:import_start] + new_imports + render_source[import_end:]
+
+          constants_start = render_source.index('const INPUT_PATH =')
+          constants_end = render_source.index('const CARD_WIDTH', constants_start)
+          constants = """const INPUT_PATH =
+            process.env.VISUAL_V6_TREATMENTS?.trim() ||
+            'artifacts/visual-compiler-v6-hybrid/v6-treatments.json';
+          const ROOT =
+            process.env.VISUAL_V6_AB_OUT_DIR?.trim() || 'artifacts/visual-compiler-v6-targeted-ab';
+          const IMAGE_DIR = join(ROOT, 'images');
+          const CARD_DIR = join(ROOT, 'cards');
+          const ASSET_DIR = join(ROOT, 'assets');
+          const OPEN_ROUTER_API_KEY = process.env.OPEN_ROUTER_API_KEY?.trim() || '';
+          const CF_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID?.trim() || '';
+          const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN?.trim() || '';
+          const MODEL =
+            process.env.VISUAL_V6_IMAGE_MODEL?.trim() ||
+            '@cf/black-forest-labs/flux-2-klein-9b';
+          const TARGET_RANKS = new Set([1, 2, 4, 6, 7]);
+          """
+          render_source = render_source[:constants_start] + constants + render_source[constants_end:]
+
+          interface_start = render_source.index('interface ClaimAudit')
+          interface_end = render_source.index('interface PixelBounds', interface_start)
+          interfaces = """interface V6TreatmentRecord {
+            story: HoldoutStoryInput;
+            autoClaim: AutoVisualClaimV5;
+            treatment: HybridTreatmentV6;
+            deterministicIssues: string[];
+            planningAttempts: number;
+            auditAttempts: number;
+          }
+
+          """
+          render_source = render_source[:interface_start] + interfaces + render_source[interface_end:]
+          render_source = render_source.replace(
+            "renderMode: VisualRenderModeV5;",
+            "renderMode: HybridTreatmentV6['mode'];",
+            1,
+          )
+          render_source = render_source.replace(
+            'async function renderCurrent(record: V5ClaimRecord)',
+            'async function renderCurrent(record: V6TreatmentRecord)',
+            1,
+          )
+
+          compiler_start = render_source.index('async function renderCompiler(')
+          compiler_end = render_source.index('\n\nfunction wrapHeadline', compiler_start)
+          compiler = r'''function compileTreatment(record: V6TreatmentRecord): {
+            autoClaim: AutoVisualClaimV5;
+            plan: VisualPlan;
+          } {
+            const firstPlan = compileAutoVisualClaimV5(record.autoClaim);
+            const overlayDirectives = overlayDirectivesForLabels(
+              record.treatment.labels,
+              firstPlan.format,
+            );
+            const autoClaim: AutoVisualClaimV5 = {
+              ...record.autoClaim,
+              claim: {
+                ...record.autoClaim.claim,
+                approvedLabels: record.treatment.labels,
+                overlayDirectives,
+              },
+            };
+            return { autoClaim, plan: compileAutoVisualClaimV5(autoClaim) };
+          }
+
+          async function renderCompiler(record: V6TreatmentRecord): Promise<{
+            pixels: Buffer;
+            final: Buffer;
+            audit: VariantAudit;
+            autoClaim: AutoVisualClaimV5;
+            plan: VisualPlan;
+          }> {
+            const started = Date.now();
+            const { autoClaim, plan } = compileTreatment(record);
+            if (!record.treatment.eligible) {
+              const pixels = await sharp(fallbackSvg()).jpeg({ quality: 93 }).toBuffer();
+              return {
+                pixels,
+                final: pixels,
+                autoClaim,
+                plan,
+                audit: {
+                  provider: 'local',
+                  model: 'source-led-fallback-v6',
+                  imageCalls: 0,
+                  estimatedImageCostUsd: 0,
+                  durationMs: Date.now() - started,
+                  assetPaths: [],
+                },
+              };
+            }
+
+            if (record.treatment.mode === 'deterministic_literal') {
+              const pixels = await sharp(
+                renderGenericVisualSvgV6({
+                  story: record.story,
+                  autoClaim,
+                  plan,
+                  treatment: record.treatment,
+                  width: IMG_W,
+                  height: IMG_H,
+                  includeOverlays: false,
+                }),
+              )
+                .jpeg({ quality: 93, chromaSubsampling: '4:4:4' })
+                .toBuffer();
+              const final = await sharp(
+                renderGenericVisualSvgV6({
+                  story: record.story,
+                  autoClaim,
+                  plan,
+                  treatment: record.treatment,
+                  width: IMG_W,
+                  height: IMG_H,
+                  includeOverlays: true,
+                }),
+              )
+                .jpeg({ quality: 93, chromaSubsampling: '4:4:4' })
+                .toBuffer();
+              return {
+                pixels,
+                final,
+                autoClaim,
+                plan,
+                audit: {
+                  provider: 'local',
+                  model: 'hybrid-deterministic-v6',
+                  imageCalls: 0,
+                  estimatedImageCostUsd: 0,
+                  durationMs: Date.now() - started,
+                  assetPaths: [],
+                },
+              };
+            }
+
+            const analogy = record.treatment.analogy;
+            if (!analogy || !record.treatment.analogyAudit?.passed) {
+              throw new Error(`Generated treatment lacks a passed analogy audit for ${record.story.title}.`);
+            }
+            const prompt = analogyImagePromptV6(autoClaim, analogy);
+            const raw = await generateAsset({
+              id: `v6:${record.story.revision_item_id}:audited-analogy`,
+              prompt,
+              width: IMG_W,
+              height: IMG_H,
+            });
+            const pixels = await normalizeImage(raw);
+            const path = join(
+              ASSET_DIR,
+              `${record.story.rank}-${safeName(record.story.revision_item_id)}-audited-analogy.jpg`,
+            );
+            await writeFile(path, pixels);
+            return {
+              pixels,
+              final: await applyOverlays(pixels, plan),
+              autoClaim,
+              plan,
+              audit: {
+                provider: 'cloudflare',
+                model: MODEL,
+                imageCalls: 1,
+                estimatedImageCostUsd: 0.015,
+                durationMs: Date.now() - started,
+                prompt,
+                assetPaths: [path],
+              },
+            };
+          }'''
+          render_source = render_source[:compiler_start] + compiler + render_source[compiler_end:]
+
+          main_start = render_source.index('async function main()')
+          main_end = render_source.index('\n\nmain().catch', main_start)
+          main = r'''async function main() {
+            assertEnvironment();
+            await Promise.all([
+              mkdir(ROOT, { recursive: true }),
+              mkdir(IMAGE_DIR, { recursive: true }),
+              mkdir(CARD_DIR, { recursive: true }),
+              mkdir(ASSET_DIR, { recursive: true }),
+            ]);
+            const allTreatments = JSON.parse(
+              await readFile(INPUT_PATH, 'utf8'),
+            ) as V6TreatmentRecord[];
+            const treatments = allTreatments
+              .filter((record) => TARGET_RANKS.has(record.story.rank))
+              .sort((left, right) => left.story.rank - right.story.rank);
+            if (treatments.length !== 5) {
+              throw new Error(`Expected 5 targeted v6 treatments; received ${treatments.length}.`);
+            }
+            const rows: RenderRow[] = [];
+
+            for (const [index, record] of treatments.entries()) {
+              const label = `${record.story.rank}-${safeName(record.story.revision_item_id)}`;
+              console.log(
+                `[v6-targeted] ${index + 1}/${treatments.length} current: ${record.story.title}`,
+              );
+              const current = await renderCurrent(record);
+              console.log(
+                `[v6-targeted] ${index + 1}/${treatments.length} compiler: ${record.treatment.mode}`,
+              );
+              const compiler = await renderCompiler(record);
+              const currentImagePath = join(IMAGE_DIR, `${label}-current.jpg`);
+              const compilerPixelPath = join(IMAGE_DIR, `${label}-compiler-pixels.jpg`);
+              const compilerFinalPath = join(IMAGE_DIR, `${label}-compiler-final.jpg`);
+              await Promise.all([
+                writeFile(currentImagePath, current.bytes),
+                writeFile(compilerPixelPath, compiler.pixels),
+                writeFile(compilerFinalPath, compiler.final),
+              ]);
+              const currentCard = await card(record.story.title, current.bytes);
+              const compilerCard = await card(record.story.title, compiler.final);
+              const compilerIsX =
+                seedFromString(`v6-targeted-blind:${record.story.revision_item_id}`) % 2 === 0;
+              const xCard = compilerIsX ? compilerCard : currentCard;
+              const yCard = compilerIsX ? currentCard : compilerCard;
+              const blindXCardPath = join(CARD_DIR, `${label}-X.png`);
+              const blindYCardPath = join(CARD_DIR, `${label}-Y.png`);
+              await Promise.all([
+                writeFile(blindXCardPath, xCard),
+                writeFile(blindYCardPath, yCard),
+                writeFile(join(CARD_DIR, `${label}-current.png`), currentCard),
+                writeFile(join(CARD_DIR, `${label}-compiler.png`), compilerCard),
+              ]);
+              const mappingMode =
+                record.treatment.mode === 'generated_audited_analogy'
+                  ? 'editorial_analogy'
+                  : compiler.autoClaim.semantics.mappingMode;
+              rows.push({
+                storyId: record.story.revision_item_id,
+                rank: record.story.rank,
+                headline: record.story.title,
+                role: compiler.autoClaim.semantics.explanatoryRole,
+                certainty: compiler.autoClaim.semantics.certainty,
+                mappingMode,
+                format: compiler.plan.format,
+                renderMode: record.treatment.mode,
+                claimEligible: record.treatment.eligible,
+                baselineImagePath: currentImagePath,
+                compilerPixelPath,
+                compilerFinalPath,
+                blindXCardPath,
+                blindYCardPath,
+                blindXSource: compilerIsX ? 'compiler' : 'current',
+                blindYSource: compilerIsX ? 'current' : 'compiler',
+                current: {
+                  provider: current.variant.provider,
+                  model: current.variant.model,
+                  imageCalls: 1,
+                  estimatedImageCostUsd: current.variant.estimatedCostUsd,
+                  durationMs: current.durationMs,
+                  scene: current.variant.scene,
+                  prompt: current.variant.positivePrompt,
+                  assetPaths: [],
+                },
+                compiler: compiler.audit,
+              });
+              await writeFile(
+                join(ROOT, 'render-progress.json'),
+                `${JSON.stringify(
+                  rows.map((row) => ({
+                    ...row,
+                    baselineImagePath: rel(row.baselineImagePath),
+                    compilerPixelPath: rel(row.compilerPixelPath),
+                    compilerFinalPath: rel(row.compilerFinalPath),
+                    blindXCardPath: rel(row.blindXCardPath),
+                    blindYCardPath: rel(row.blindYCardPath),
+                    compiler: {
+                      ...row.compiler,
+                      assetPaths: row.compiler.assetPaths.map(rel),
+                    },
+                  })),
+                  null,
+                  2,
+                )}\n`,
+              );
+            }
+
+            const serializable = rows.map((row) => ({
+              ...row,
+              baselineImagePath: rel(row.baselineImagePath),
+              compilerPixelPath: rel(row.compilerPixelPath),
+              compilerFinalPath: rel(row.compilerFinalPath),
+              blindXCardPath: rel(row.blindXCardPath),
+              blindYCardPath: rel(row.blindYCardPath),
+              compiler: {
+                ...row.compiler,
+                assetPaths: row.compiler.assetPaths.map(rel),
+              },
+            }));
+            await Promise.all([
+              writeFile(
+                join(ROOT, 'render-manifest.json'),
+                `${JSON.stringify(serializable, null, 2)}\n`,
+              ),
+              writeFile(
+                join(ROOT, 'blind-key.json'),
+                `${JSON.stringify(
+                  rows.map((row) => ({
+                    storyId: row.storyId,
+                    X: row.blindXSource,
+                    Y: row.blindYSource,
+                  })),
+                  null,
+                  2,
+                )}\n`,
+              ),
+              writeFile(join(ROOT, 'render-report.md'), report(rows)),
+              writeFile(join(ROOT, 'blind-contact-sheet.png'), await blindSheet(rows)),
+            ]);
+            console.log(report(rows));
+          }'''
+          render_source = render_source[:main_start] + main + render_source[main_end:]
+          render_source = render_source.replace(
+            '# Visual Compiler v5 fresh A/B render',
+            '# Visual Compiler v6 targeted hybrid A/B render',
+          )
+          render_source = render_source.replace(/\[v5-ab\]/g, '[v6-targeted]') if False else render_source
+          Path('scripts/visual-compiler-v6-render-ab.ts').write_text(render_source)
+
+          eval_source = Path('scripts/visual-compiler-v5-evaluate-ab.ts').read_text()
+          eval_source = eval_source.replace(
+            "import type { HoldoutStoryInput } from '../src/lib/weekly-digest/visual-auto-claim';",
+            "import type { HoldoutStoryInput } from '../src/lib/weekly-digest/visual-auto-claim';\nimport type { HybridTreatmentV6 } from '../src/lib/weekly-digest/visual-hybrid-v6';",
+            1,
+          )
+          constants_start = eval_source.index('const ROOT =')
+          constants_end = eval_source.index("type Source", constants_start)
+          eval_constants = """const ROOT =
+            process.env.VISUAL_V6_AB_OUT_DIR?.trim() || 'artifacts/visual-compiler-v6-targeted-ab';
+          const CLAIMS_PATH =
+            process.env.VISUAL_V6_TREATMENTS?.trim() ||
+            'artifacts/visual-compiler-v6-hybrid/v6-treatments.json';
+          const OPEN_ROUTER_API_KEY = process.env.OPEN_ROUTER_API_KEY?.trim() || '';
+          const MODEL =
+            process.env.VISUAL_V6_JUDGE_MODEL?.trim() || 'google/gemini-2.5-flash';
+
+          """
+          eval_source = eval_source[:constants_start] + eval_constants + eval_source[constants_end:]
+          claim_start = eval_source.index('interface ClaimRecord')
+          claim_end = eval_source.index('interface ManifestRow', claim_start)
+          claim_interface = """interface ClaimRecord {
+            story: HoldoutStoryInput;
+            autoClaim: AutoVisualClaimV5;
+            treatment: HybridTreatmentV6;
+            deterministicIssues: string[];
+            planningAttempts: number;
+            auditAttempts: number;
+          }
+
+          """
+          eval_source = eval_source[:claim_start] + claim_interface + eval_source[claim_end:]
+          eval_source = eval_source.replace(
+            "'X-Title': 'AI Today Brief v5 role-aware visual evaluation'",
+            "'X-Title': 'AI Today Brief v6 targeted visual evaluation'",
+          )
+          eval_source = eval_source.replace('[v5-eval]', '[v6-eval]')
+          eval_source = eval_source.replace('v5-pixel:', 'v6-targeted-pixel:')
+          eval_source = eval_source.replace(
+            '# Visual Compiler v5 fresh source-grounded A/B evaluation',
+            '# Visual Compiler v6 targeted source-grounded A/B evaluation',
+          )
+          eval_source = eval_source.replace('Compiler v5', 'Compiler v6')
+
+          main_start = eval_source.index('async function main()')
+          main_end = eval_source.index('\n\nmain().catch', main_start)
+          eval_main = r'''function treatmentAudit(claim: ClaimRecord): ClaimAudit {
+            const issues = [
+              ...claim.deterministicIssues,
+              ...(claim.treatment.analogyAudit?.issues ?? []),
+            ];
+            return {
+              storyId: claim.story.revision_item_id,
+              passed: claim.treatment.eligible,
+              issues,
+              rationale:
+                claim.treatment.analogyAudit?.rationale || claim.treatment.reason,
+            };
+          }
+
+          async function main() {
+            assertEnvironment();
+            await mkdir(ROOT, { recursive: true });
+            const [manifest, claims] = await Promise.all([
+              readFile(join(ROOT, 'render-manifest.json'), 'utf8').then(
+                (value) => JSON.parse(value) as ManifestRow[],
+              ),
+              readFile(CLAIMS_PATH, 'utf8').then(
+                (value) => JSON.parse(value) as ClaimRecord[],
+              ),
+            ]);
+            if (manifest.length !== 5) {
+              throw new Error(`Expected 5 targeted manifest rows; got ${manifest.length}.`);
+            }
+            const claimById = new Map(
+              claims.map((claim) => [claim.story.revision_item_id, claim] as const),
+            );
+            const rows: EvaluationRow[] = [];
+            const usage = emptyUsage();
+
+            for (const [index, item] of [...manifest]
+              .sort((left, right) => left.rank - right.rank)
+              .entries()) {
+              const claim = claimById.get(item.storyId);
+              if (!claim) throw new Error(`Missing treatment for ${item.storyId}.`);
+              console.log(
+                `[v6-eval] ${index + 1}/${manifest.length} pixels: ${item.headline}`,
+              );
+              const pixels = await evaluatePixels(item, claim, usage);
+              console.log(`[v6-eval] ${index + 1}/${manifest.length} cards`);
+              const cards = await evaluateCards(item, claim, usage);
+              const pixelBySource = mapBySource(pixels.order, {
+                X: pixels.X,
+                Y: pixels.Y,
+              });
+              const cardOrder: Record<Side, Source> = {
+                X: item.blindXSource,
+                Y: item.blindYSource,
+              };
+              const cardBySource = mapBySource(cardOrder, {
+                X: cards.X,
+                Y: cards.Y,
+              });
+              const eligible = claim.treatment.eligible;
+              rows.push({
+                storyId: item.storyId,
+                rank: item.rank,
+                headline: item.headline,
+                role: item.role,
+                certainty: item.certainty,
+                mappingMode: item.mappingMode,
+                format: item.format,
+                renderMode: item.renderMode,
+                claimEligible: eligible,
+                claimAudit: treatmentAudit(claim),
+                current: sourceEvaluation(
+                  'current',
+                  pixelBySource.current,
+                  cardBySource.current,
+                  eligible,
+                ),
+                compiler: sourceEvaluation(
+                  'compiler',
+                  pixelBySource.compiler,
+                  cardBySource.compiler,
+                  eligible,
+                ),
+                preferredSource:
+                  cards.preferred === 'tie' ? 'tie' : cardOrder[cards.preferred],
+                confidence: cards.confidence,
+                reason: cards.reason,
+                pixelOrder: pixels.order,
+                cardOrder,
+              });
+              await writeFile(
+                join(ROOT, 'evaluation-progress.json'),
+                `${JSON.stringify({ rows, usage }, null, 2)}\n`,
+              );
+            }
+
+            const reportText = report(rows, usage);
+            await Promise.all([
+              writeFile(
+                join(ROOT, 'evaluation.json'),
+                `${JSON.stringify({ rows, usage }, null, 2)}\n`,
+              ),
+              writeFile(join(ROOT, 'evaluation-report.md'), reportText),
+              writeFile(
+                join(ROOT, 'evaluated-contact-sheet.png'),
+                await evaluatedSheet(rows, manifest),
+              ),
+            ]);
+            console.log(reportText);
+          }'''
+          eval_source = eval_source[:main_start] + eval_main + eval_source[main_end:]
+          Path('scripts/visual-compiler-v6-evaluate-ab.ts').write_text(eval_source)
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck generated targeted harness
+        run: npm run typecheck
+
+      - name: Persist validated targeted harness before image calls
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            scripts/visual-compiler-v6-render-ab.ts \
+            scripts/visual-compiler-v6-evaluate-ab.ts
+          git commit -m "Add targeted hybrid v6 A-B harness"
+          git push origin HEAD:experiment/visual-compiler-v6-targeted-ab-20260812
+
+      - name: Download source-audited v6 treatment artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh run download 31608889038
+          --repo "$GITHUB_REPOSITORY"
+          --name visual-compiler-v6-hybrid-treatments
+          --dir artifacts/visual-compiler-v6-hybrid
+
+      - name: Render exact current and hybrid v6 treatments
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VISUAL_V6_IMAGE_MODEL: '@cf/black-forest-labs/flux-2-klein-9b'
+          VISUAL_V6_TREATMENTS: artifacts/visual-compiler-v6-hybrid/v6-treatments.json
+          VISUAL_V6_AB_OUT_DIR: artifacts/visual-compiler-v6-targeted-ab
+        run: npx tsx scripts/visual-compiler-v6-render-ab.ts
+
+      - name: Evaluate five targeted stories blinded
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          VISUAL_V6_JUDGE_MODEL: google/gemini-2.5-flash
+          VISUAL_V6_TREATMENTS: artifacts/visual-compiler-v6-hybrid/v6-treatments.json
+          VISUAL_V6_AB_OUT_DIR: artifacts/visual-compiler-v6-targeted-ab
+        run: npx tsx scripts/visual-compiler-v6-evaluate-ab.ts
+
+      - name: Upload complete targeted A-B package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-compiler-v6-targeted-ab-evaluated
+          path: artifacts/visual-compiler-v6-targeted-ab
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Persist targeted A-B results on isolated branch
+        if: success()
+        run: |
+          mkdir -p experiments/visual-compiler-v6/targeted-ab/results
+          cp artifacts/visual-compiler-v6-targeted-ab/render-report.md experiments/visual-compiler-v6/targeted-ab/results/
+          cp artifacts/visual-compiler-v6-targeted-ab/render-manifest.json experiments/visual-compiler-v6/targeted-ab/results/
+          cp artifacts/visual-compiler-v6-targeted-ab/blind-contact-sheet.png experiments/visual-compiler-v6/targeted-ab/results/
+          cp artifacts/visual-compiler-v6-targeted-ab/evaluation-report.md experiments/visual-compiler-v6/targeted-ab/results/
+          cp artifacts/visual-compiler-v6-targeted-ab/evaluation.json experiments/visual-compiler-v6/targeted-ab/results/
+          cp artifacts/visual-compiler-v6-targeted-ab/evaluated-contact-sheet.png experiments/visual-compiler-v6/targeted-ab/results/
+          printf '%s\n' "$GITHUB_RUN_ID" > experiments/visual-compiler-v6/targeted-ab/results/run-id.txt
+          git add experiments/visual-compiler-v6/targeted-ab/results
+          git commit -m "Record targeted hybrid v6 A-B results [skip ci]"
+          git push origin HEAD:experiment/visual-compiler-v6-targeted-ab-20260812
