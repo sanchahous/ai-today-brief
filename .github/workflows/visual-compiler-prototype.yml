@@ -7,10 +7,13 @@ on:
     paths:
       - src/lib/weekly-digest/visual-compiler.ts
       - src/lib/weekly-digest/visual-compiler.test.ts
+      - src/lib/weekly-digest/visual-gate-policy.ts
+      - src/lib/weekly-digest/visual-gate-policy.test.ts
       - src/lib/weekly-digest/visual-render-policy.ts
       - src/lib/weekly-digest/visual-render-policy.test.ts
       - scripts/visual-compiler-shadow.ts
       - scripts/visual-compiler-render-shadow-v2.ts
+      - scripts/visual-compiler-patch-energy-v3.ts
       - scripts/visual-compiler-contact-sheet.ts
       - scripts/sharp-namespace.d.ts
       - .github/workflows/visual-compiler-prototype.yml
@@ -39,6 +42,7 @@ jobs:
         run: >-
           npx vitest run
           src/lib/weekly-digest/visual-compiler.test.ts
+          src/lib/weekly-digest/visual-gate-policy.test.ts
           src/lib/weekly-digest/visual-render-policy.test.ts
 
       - name: Typecheck repository
