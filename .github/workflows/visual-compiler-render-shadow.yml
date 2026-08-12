@@ -32,6 +32,9 @@ jobs:
           VISUAL_COMPILER_IMAGE_MODEL: '@cf/black-forest-labs/flux-2-klein-9b'
         run: npx tsx scripts/visual-compiler-render-shadow.ts
 
+      - name: Rebuild review contact sheet
+        run: npx tsx scripts/visual-compiler-contact-sheet.ts
+
       - name: Upload visual compiler shadow package
         if: always()
         uses: actions/upload-artifact@v4
