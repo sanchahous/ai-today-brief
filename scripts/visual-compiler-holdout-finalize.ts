@@ -133,10 +133,12 @@ export function selectHoldoutRenderSet(records: HoldoutPlanRecord[], perWeek = 4
       usedEvidence.add(evidence);
       if (weekSelection.length >= perWeek) break;
     }
-    for (const item of ordered) {
-      if (weekSelection.includes(item)) continue;
-      weekSelection.push(item);
-      if (weekSelection.length >= perWeek) break;
+    if (weekSelection.length < perWeek) {
+      for (const item of ordered) {
+        if (weekSelection.includes(item)) continue;
+        weekSelection.push(item);
+        if (weekSelection.length >= perWeek) break;
+      }
     }
     if (weekSelection.length !== Math.min(perWeek, ordered.length)) {
       throw new Error(`Could not select ${perWeek} holdout stories for ${week}.`);
