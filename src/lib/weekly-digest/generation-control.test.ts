@@ -4,6 +4,7 @@ import {
   clampMonotonicProgress,
   classifyGenerationFailure,
   estimateGenerationEta,
+  mapWithConcurrency,
   redactGenerationMessage,
   stageManifest,
 } from './generation-control';
@@ -71,5 +72,30 @@ describe('Weekly generation control helpers', () => {
       completedAt: new Date(Date.UTC(2026, 0, index + 1)).toISOString(),
     }));
     expect(estimateGenerationEta(samples, 10_000)).toMatchObject({ p50Ms: 1_000, p95Ms: 1_000 });
+  });
+
+  it('runs independent work concurrently while preserving input order', async () => {
+    const started: number[] = [];
+    const resolve = new Map<number, (value: string) => void>();
+    let signalThirdStarted: (() => void) | undefined;
+    const thirdStarted = new Promise<void>((done) => {
+      signalThirdStarted = done;
+    });
+    const run = mapWithConcurrency([1, 2, 3], 2, async (value) => {
+      started.push(value);
+      if (value === 3) signalThirdStarted!();
+      return new Promise<string>((done) => {
+        resolve.set(value, done);
+      });
+    });
+
+    expect(started).toEqual([1, 2]);
+    resolve.get(2)!('two');
+    await thirdStarted;
+    expect(started).toEqual([1, 2, 3]);
+    resolve.get(1)!('one');
+    resolve.get(3)!('three');
+
+    await expect(run).resolves.toEqual(['one', 'two', 'three']);
   });
 });

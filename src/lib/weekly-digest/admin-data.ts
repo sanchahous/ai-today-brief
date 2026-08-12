@@ -15,6 +15,7 @@ export type WeeklyArtifactReviewAdminRow = Row<'weekly_digest_artifact_reviews'>
 export type WeeklyGenerationJobAdminRow = Row<'weekly_digest_generation_jobs'>;
 export type WeeklyGenerationAttemptAdminRow = Row<'weekly_digest_generation_attempts'>;
 export type WeeklyGenerationEventAdminRow = Row<'weekly_digest_generation_events'>;
+export type WeeklyGenerationCostAdminRow = Row<'generation_cost_events'>;
 export type WeeklyReleaseEventAdminRow = Row<'weekly_digest_release_events'>;
 export type WeeklySocialPackageAdminRow = Row<'social_packages'>;
 export type WeeklySocialPostAdminRow = Row<'social_posts'>;
@@ -33,6 +34,7 @@ export interface WeeklyDigestWorkspace {
   generationJobs: WeeklyGenerationJobAdminRow[];
   generationAttempts: WeeklyGenerationAttemptAdminRow[];
   generationEvents: WeeklyGenerationEventAdminRow[];
+  generationCosts: WeeklyGenerationCostAdminRow[];
   releaseEvents: WeeklyReleaseEventAdminRow[];
   socialPackage: WeeklySocialPackageAdminRow | null;
   socialPosts: WeeklySocialPostAdminRow[];
@@ -134,6 +136,7 @@ export const getWeeklyDigestWorkspace = cache(
     const [
       revisionsResult,
       jobsResult,
+      generationCostsResult,
       eventsResult,
       packageResult,
       localeMapResult,
@@ -151,6 +154,15 @@ export const getWeeklyDigestWorkspace = cache(
         .eq('weekly_digest_id', digest.id)
         .order('created_at', { ascending: false })
         .limit(50),
+      digest.active_revision_id
+        ? db
+            .from('generation_cost_events')
+            .select('*')
+            .eq('weekly_digest_id', digest.id)
+            .eq('revision_id', digest.active_revision_id)
+            .order('created_at', { ascending: false })
+            .limit(1000)
+        : Promise.resolve({ data: [] as WeeklyGenerationCostAdminRow[], error: null }),
       db
         .from('weekly_digest_release_events')
         .select('*')
@@ -184,6 +196,7 @@ export const getWeeklyDigestWorkspace = cache(
 
     const revisions = assertQuery('revisions', revisionsResult);
     const generationJobs = assertQuery('generation jobs', jobsResult);
+    const generationCosts = generationCostsResult.error ? [] : (generationCostsResult.data ?? []);
     const releaseEvents = assertQuery('release events', eventsResult);
     // Tolerate this table not existing yet (migration not deployed) rather
     // than 500ing the whole workspace over an additive, optional feature --
@@ -297,6 +310,7 @@ export const getWeeklyDigestWorkspace = cache(
       generationJobs,
       generationAttempts,
       generationEvents,
+      generationCosts,
       releaseEvents,
       socialPackage,
       socialPosts,

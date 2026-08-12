@@ -51,23 +51,29 @@ export async function startWeeklyContentStudio(weeklyDigestId: string, revisionI
     throw new Error('Content Studio requires Top 3 plus 3–4 Radar stories (6–7 total).');
   }
   const rpc = db as unknown as RpcClient;
-  const queued: string[] = [];
-  for (const item of items.filter((candidate) => candidate.rank <= 3)) {
-    const key = `${WEEKLY_CONTENT_STUDIO_VERSION}:${weeklyDigestId}:${revisionId}:research:${item.id}`;
-    const { error } = await rpc.rpc('queue_weekly_digest_generation_job', {
-      p_weekly_digest_id: weeklyDigestId,
-      p_revision_id: revisionId,
-      p_job_type: 'research_pack',
-      p_idempotency_key: key,
-      p_input: {
+  const researchJobs = items
+    .filter((candidate) => candidate.rank <= 3)
+    .map((item) => ({
+      key: `${WEEKLY_CONTENT_STUDIO_VERSION}:${weeklyDigestId}:${revisionId}:research:${item.id}`,
+      input: {
         revision_item_id: item.id,
         placement: 'feature',
         mode,
       } as Json,
-    });
-    if (error && !/duplicate|unique/i.test(error.message)) throw new Error(error.message);
-    queued.push(key);
-  }
+    }));
+  await Promise.all(
+    researchJobs.map(async ({ key, input }) => {
+      const { error } = await rpc.rpc('queue_weekly_digest_generation_job', {
+        p_weekly_digest_id: weeklyDigestId,
+        p_revision_id: revisionId,
+        p_job_type: 'research_pack',
+        p_idempotency_key: key,
+        p_input: input,
+      });
+      if (error && !/duplicate|unique/i.test(error.message)) throw new Error(error.message);
+    }),
+  );
+  const queued = researchJobs.map((job) => job.key);
   const masterKey = `${WEEKLY_CONTENT_STUDIO_VERSION}:${weeklyDigestId}:${revisionId}:master`;
   const { error: masterError } = await rpc.rpc('queue_weekly_digest_generation_job', {
     p_weekly_digest_id: weeklyDigestId,

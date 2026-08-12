@@ -9,6 +9,7 @@ import { alertWeeklyDigestIssue } from './alerts';
 import {
   classifyGenerationFailure,
   LONG_RUNNING_GENERATION_JOB_TYPES,
+  mapWithConcurrency,
   redactGenerationMessage,
   SHORT_RUNNING_GENERATION_JOB_TYPES,
   type GenerationBackend,
@@ -876,7 +877,7 @@ async function queuePostMasterJobs(
     { type: 'pdf', key: 'pdf:en', input: { locale: 'en', slot_key: 'pdf:en' } },
     { type: 'pdf', key: 'pdf:uk', input: { locale: 'uk', slot_key: 'pdf:uk' } },
   ];
-  for (const queued of jobs) {
+  await mapWithConcurrency(jobs, jobs.length, async (queued) => {
     const { error } = await rpcClient().rpc('queue_weekly_digest_generation_job', {
       p_weekly_digest_id: weeklyDigestId,
       p_revision_id: revisionId,
@@ -887,7 +888,7 @@ async function queuePostMasterJobs(
     if (error && !/duplicate|unique/i.test(error.message)) {
       throw new Error(`[weekly-generation] queue ${queued.key}: ${error.message}`);
     }
-  }
+  });
 }
 
 // Target is $3/digest; $4 is the hard stop enforced below.
@@ -2434,7 +2435,7 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
   let source: Buffer;
   let sourceKind = 'generated';
   let sourceUrl: string | null = null;
-  let promptPolicy = 'weekly-semantic-story-v4';
+  let promptPolicy = 'weekly-semantic-story-v5';
   let imageMeta: {
     provider: string;
     model: string;
@@ -2459,6 +2460,18 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
     motifClass?: string;
     subjectKind?: string;
     composition?: string;
+    conceptLens?: string;
+    variantConcepts?: Array<{
+      conceptLens?: string;
+      scene: string;
+      sceneSource: string;
+      positivePrompt: string;
+      negativePrompt: string;
+      metaphorTitle?: string;
+      motifClass?: string;
+      subjectKind?: string;
+      composition?: string;
+    }>;
     variantScores?: Array<{
       index: number;
       overall: number;
@@ -2570,7 +2583,7 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
       },
       seedBase: `${job.weekly_digest_id}:${job.revision_id}:${item.id}`,
       sceneOverride: sceneOverride ?? undefined,
-      generate: async ({ attempt, sceneOverride: override, seedBase, promptSuffix }) => {
+      generate: async ({ attempt, sceneOverride: override, seedBase, promptSuffix, directive }) => {
         const sceneForGen = override || undefined;
         const illustrations = await generateWeeklyReportageIllustrations(
           {
@@ -2591,8 +2604,9 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
             siblingMetaphors: siblingMetaphors.length ? siblingMetaphors : undefined,
             seedBase,
             sceneOverride: sceneForGen,
+            sceneOverrideSource: directive?.sceneOverride?.trim() ? 'critic_repair' : 'owner',
             renderDirective: promptSuffix || undefined,
-            variantCount: attempt === 1 ? 3 : 1,
+            variantCount: 3,
           },
           {
             geminiApiKey: process.env.GEMINI_API_KEY?.trim() ?? '',
@@ -2604,6 +2618,28 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
             cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN?.trim(),
             cloudflareImageModel: process.env.CLOUDFLARE_IMAGE_MODEL?.trim(),
             db: getSupabaseAdmin(),
+            onImageGenerated: async (result, variant) => {
+              if (result.provider === 'local') return;
+              await recordGenerationCost({
+                scope: 'weekly',
+                kind: 'image',
+                provider: result.provider,
+                model: result.model,
+                costUsd: result.estimatedCostUsd,
+                costSource: result.costSource,
+                weeklyDigestId: job.weekly_digest_id,
+                revisionId: job.revision_id,
+                jobId: job.id,
+                attemptId: job.attempt_id,
+                stepKey: `story_image.round.${attempt}.render.${variant?.variantIndex ?? 0}`,
+                metadata: {
+                  revision_item_id: item.id,
+                  round: attempt,
+                  variant_index: variant?.variantIndex ?? null,
+                  cost_granularity: 'provider_call',
+                },
+              });
+            },
           },
         );
         if (!illustrations?.variants.length) return null;
@@ -2620,6 +2656,7 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
           positivePrompt: primary!.positivePrompt ?? '',
           negativePrompt: primary!.negativePrompt ?? '',
           sceneSource: illustrations.sceneSource,
+          conceptLens: primary!.conceptLens,
           storyContext: illustrations.storyContext,
           meaning: illustrations.meaning,
           essence: illustrations.essence,
@@ -2636,7 +2673,52 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
           subjectKind: illustrations.subjectKind,
           composition: illustrations.composition,
           alternateBuffers: alternates.map((variant) => variant.bytes),
+          variantConcepts: illustrations.variants.map((variant) => ({
+            conceptLens: variant.conceptLens,
+            scene: variant.scene,
+            sceneSource: variant.sceneSource,
+            positivePrompt: variant.positivePrompt,
+            negativePrompt: variant.negativePrompt,
+            storyContext: variant.storyContext,
+            meaning: variant.meaning,
+            essence: variant.essence,
+            mechanism: variant.mechanism,
+            consequence: variant.consequence,
+            visualThesis: variant.visualThesis,
+            readerTest: variant.readerTest,
+            metaphorTitle: variant.metaphorTitle,
+            whyItFits: variant.whyItFits,
+            storyAnchor: variant.storyAnchor,
+            visibleMechanism: variant.visibleMechanism,
+            visibleConsequence: variant.visibleConsequence,
+            motifClass: variant.motifClass,
+            subjectKind: variant.subjectKind,
+            composition: variant.composition,
+          })),
         };
+      },
+      onCostEvent: async (event) => {
+        await recordGenerationCost({
+          scope: 'weekly',
+          kind: event.kind,
+          provider: event.provider,
+          model: event.model,
+          costUsd: event.costUsd,
+          costSource: event.costSource,
+          promptTokens: event.promptTokens,
+          outputTokens: event.outputTokens,
+          weeklyDigestId: job.weekly_digest_id,
+          revisionId: job.revision_id,
+          jobId: job.id,
+          attemptId: job.attempt_id,
+          stepKey: `story_image.round.${event.attempt}.vision.${event.variantIndex + 1}`,
+          metadata: {
+            revision_item_id: item.id,
+            round: event.attempt,
+            variant_index: event.variantIndex + 1,
+            cost_granularity: 'provider_call',
+          },
+        });
       },
     });
 
@@ -2668,6 +2750,8 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
         motifClass: sim.candidate.motifClass,
         subjectKind: sim.candidate.subjectKind,
         composition: sim.candidate.composition,
+        conceptLens: sim.candidate.conceptLens,
+        variantConcepts: sim.candidate.variantConcepts,
         variantScores: sim.candidate.variantScores,
         pickSource: sim.candidate.pickSource ?? 'auto',
       };
@@ -2777,6 +2861,23 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
                   ...(imageMeta.motifClass ? { motif_class: imageMeta.motifClass } : {}),
                   ...(imageMeta.subjectKind ? { subject_kind: imageMeta.subjectKind } : {}),
                   ...(imageMeta.composition ? { composition: imageMeta.composition } : {}),
+                  ...(imageMeta.conceptLens ? { concept_lens: imageMeta.conceptLens } : {}),
+                  ...(imageMeta.variantConcepts?.length
+                    ? {
+                        variant_concepts: imageMeta.variantConcepts.map((concept, index) => ({
+                          index,
+                          concept_lens: concept.conceptLens,
+                          scene: concept.scene,
+                          scene_source: concept.sceneSource,
+                          positive_prompt: concept.positivePrompt,
+                          negative_prompt: concept.negativePrompt,
+                          metaphor_title: concept.metaphorTitle,
+                          motif_class: concept.motifClass,
+                          subject_kind: concept.subjectKind,
+                          composition: concept.composition,
+                        })),
+                      }
+                    : {}),
                   ...(imageMeta.variantScores?.length
                     ? {
                         variant_scores: imageMeta.variantScores.map((row) => ({
@@ -2813,27 +2914,6 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
         : {}),
     },
   });
-  if (imageMeta && imageMeta.provider !== 'local') {
-    await recordGenerationCost({
-      scope: 'weekly',
-      kind: 'image',
-      provider: imageMeta.provider,
-      model: imageMeta.model,
-      costUsd: imageMeta.estimatedCostUsd,
-      costSource: imageMeta.costSource,
-      weeklyDigestId: job.weekly_digest_id,
-      revisionId: job.revision_id,
-      jobId: job.id,
-      artifactId,
-      metadata: {
-        revision_item_id: item.id,
-        source_kind: sourceKind,
-        variant_count: 1 + alternateBuffers.length,
-        content_sim_outcome: contentSimMeta?.outcome,
-        content_sim_attempts: contentSimMeta?.attempts,
-      },
-    });
-  }
   return {
     artifactId,
     output: {
@@ -3028,81 +3108,75 @@ async function runGenerationJob(job: ClaimedGenerationJob, tracker: GenerationAt
   throw new Error(`Unsupported generation job type: ${job.job_type}`);
 }
 
+async function runClaimedGenerationJob(job: ClaimedGenerationJob) {
+  const tracker = new GenerationAttemptTracker(job);
+  tracker.start();
+  try {
+    await tracker.event({
+      type: 'worker_ready',
+      step: 'prepare',
+      progressCurrent: 0,
+      progressTotal: 100,
+      message: `Worker claimed by ${job.execution_backend}`,
+      metadata: { backend: job.execution_backend, attempt: job.attempts },
+    });
+    const result = await runGenerationJob(job, tracker);
+    await finishGenerationJob(job, true, result.output, null, null, false, result.artifactId);
+    return {
+      id: job.id,
+      jobType: job.job_type,
+      outcome: 'succeeded' as const,
+      artifactId: result.artifactId,
+    };
+  } catch (error) {
+    const message = safeMessage(error);
+    const failure = classifyGenerationFailure(message);
+    try {
+      await finishGenerationJob(
+        job,
+        false,
+        { retryable: failure.retryable, failure_code: failure.code },
+        message,
+        failure.code,
+        failure.retryable,
+        null,
+      );
+    } catch (finishError) {
+      await alertWeeklyDigestIssue({
+        weeklyDigestId: job.weekly_digest_id,
+        phase: 'generation',
+        message:
+          `${job.job_type} attempt ${job.attempts} on ${job.execution_backend}: ${message}; ${safeMessage(finishError)}`.slice(
+            0,
+            1800,
+          ),
+      });
+      return {
+        id: job.id,
+        jobType: job.job_type,
+        outcome: 'failed' as const,
+        error: `${message}; ${safeMessage(finishError)}`.slice(0, 1800),
+      };
+    }
+    if (!failure.retryable || job.attempts >= 3) {
+      await alertWeeklyDigestIssue({
+        weeklyDigestId: job.weekly_digest_id,
+        phase: 'generation',
+        message: `${job.job_type} attempt ${job.attempts} on ${job.execution_backend}: ${message}. ${failure.nextAction}`,
+      });
+    }
+    return { id: job.id, jobType: job.job_type, outcome: 'failed' as const, error: message };
+  } finally {
+    await tracker.stop();
+  }
+}
+
 export async function runWeeklyDigestGenerationJobs(
   limit = 5,
   jobTypes?: string[],
   options: GenerationWorkerOptions = {},
 ) {
   const jobs = await claimGenerationJobs(limit, jobTypes, options);
-  const results: Array<{
-    id: string;
-    jobType: string;
-    outcome: 'succeeded' | 'failed';
-    artifactId?: string | null;
-    error?: string;
-  }> = [];
-  for (const job of jobs) {
-    const tracker = new GenerationAttemptTracker(job);
-    tracker.start();
-    try {
-      await tracker.event({
-        type: 'worker_ready',
-        step: 'prepare',
-        progressCurrent: 0,
-        progressTotal: 100,
-        message: `Worker claimed by ${job.execution_backend}`,
-        metadata: { backend: job.execution_backend, attempt: job.attempts },
-      });
-      const result = await runGenerationJob(job, tracker);
-      await finishGenerationJob(job, true, result.output, null, null, false, result.artifactId);
-      results.push({
-        id: job.id,
-        jobType: job.job_type,
-        outcome: 'succeeded',
-        artifactId: result.artifactId,
-      });
-    } catch (error) {
-      const message = safeMessage(error);
-      const failure = classifyGenerationFailure(message);
-      try {
-        await finishGenerationJob(
-          job,
-          false,
-          { retryable: failure.retryable, failure_code: failure.code },
-          message,
-          failure.code,
-          failure.retryable,
-          null,
-        );
-      } catch (finishError) {
-        await alertWeeklyDigestIssue({
-          weeklyDigestId: job.weekly_digest_id,
-          phase: 'generation',
-          message:
-            `${job.job_type} attempt ${job.attempts} on ${job.execution_backend}: ${message}; ${safeMessage(finishError)}`.slice(
-              0,
-              1800,
-            ),
-        });
-        results.push({
-          id: job.id,
-          jobType: job.job_type,
-          outcome: 'failed',
-          error: `${message}; ${safeMessage(finishError)}`.slice(0, 1800),
-        });
-        continue;
-      }
-      if (!failure.retryable || job.attempts >= 3) {
-        await alertWeeklyDigestIssue({
-          weeklyDigestId: job.weekly_digest_id,
-          phase: 'generation',
-          message: `${job.job_type} attempt ${job.attempts} on ${job.execution_backend}: ${message}. ${failure.nextAction}`,
-        });
-      }
-      results.push({ id: job.id, jobType: job.job_type, outcome: 'failed', error: message });
-    } finally {
-      await tracker.stop();
-    }
-  }
+  const results = await mapWithConcurrency(jobs, jobs.length, runClaimedGenerationJob);
   return { claimed: jobs.length, results };
 }

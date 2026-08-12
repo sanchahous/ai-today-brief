@@ -12,9 +12,7 @@ import type {
   ContentSimRepairDirective,
 } from './types';
 
-function failingFromDirective(
-  critique: ContentSimCritique,
-): ContentSimRepairDirective | undefined {
+function failingFromDirective(critique: ContentSimCritique): ContentSimRepairDirective | undefined {
   if (critique.passed) return undefined;
   return (
     critique.repairDirective ?? {
@@ -65,9 +63,7 @@ export async function runRepairLoop<TArtifact>(
     lastArtifact = generated.artifact;
     totalCostUsd += generated.costUsd ?? 0;
 
-    let critique =
-      hooks.deterministicCritique?.(generated.artifact) ??
-      null;
+    let critique = hooks.deterministicCritique?.(generated.artifact) ?? null;
     if (!critique || critique.passed) {
       // Deterministic pass (or no deterministic step) → paid critic.
       try {
@@ -124,6 +120,28 @@ export async function runRepairLoop<TArtifact>(
     iterations.push(record);
     await hooks.onIteration?.(record, generated.artifact);
     previous = critique;
+
+    if (critique.blockers.some((blocker) => blocker.code === 'critic_unavailable')) {
+      const escalation = buildEscalationPackage({
+        reason: 'critic_unavailable',
+        iterations,
+      });
+      return {
+        artifact: lastArtifact,
+        report: {
+          adapter: hooks.adapter,
+          outcome: 'needs_human_review',
+          passed: false,
+          attempts: attempt,
+          maxAttempts,
+          blockers: escalation.blockers,
+          iterations,
+          totalCostUsd,
+          escalation,
+          finalScores: critique.scores,
+        },
+      };
+    }
 
     if (critique.passed) {
       return {

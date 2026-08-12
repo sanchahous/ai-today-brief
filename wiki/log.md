@@ -1585,3 +1585,84 @@ duplicate groups = 0.
 index на active `retry_of_job_id`, source-row lock і reuse live/succeeded child у retry RPC.
 Production dry-run із rollback і повторним composite expansion не створив нових jobs; migration
 застосована в production, guard index і нова function definition перевірені.
+
+---
+
+## 2026-08-11 — паралельний short-job fan-out Weekly Digest
+
+**Джерело:** `src/lib/weekly-digest/generation-worker.ts`,
+`src/lib/weekly-digest/generation-control.ts`, `src/lib/weekly-digest/orchestrator.ts`,
+`src/app/api/internal/weekly/generate/route.ts`,
+`supabase/migrations/20260809060929_weekly_generation_control_plane.sql`.
+
+**Змінено:**
+
+- `generation-worker.ts` — worker може обробляти claimed незалежні jobs паралельно; Vercel route
+  свідомо лишається з claim=1 для short jobs, а 6–7 long story images dispatch-яться в окремі
+  GitHub workers;
+- `orchestrator.ts` і post-master fan-out — незалежні research/derivative jobs ставляться в чергу
+  паралельно;
+- `generation-control.ts` — додано bounded helper із збереженням порядку результатів і очікуванням
+  усіх already-started tasks перед передаванням помилки;
+- `pipeline/weekly-digest.md`, `index.md` — зафіксовано нову паралельність і межі, які лишаються
+  послідовними через checkpoint/dependency contract.
+
+**Нотатка:** quality та dependency gates не послаблено: `cover`, PDF і video manifest усе ще
+стартують лише після готовності обов’язкових артефактів; `editorial_master` і поканальний
+`social_copy` залишаються checkpoint-послідовними.
+
+---
+
+## 2026-08-11 — двораундовий illustration loop і прозорий spend
+
+**Джерело:** owner audit Story 2/3/5/6 2026-08-11; production Supabase snapshot;
+`pipeline/card-image.ts`, `src/lib/content-sim/config.ts`,
+`src/lib/content-sim/adapters/weekly-image.ts`, `src/lib/content-sim/vision-critic.ts`,
+`src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/admin-data.ts`,
+`src/components/admin/weekly-workspace.tsx`.
+
+**Виявлено:** максимальний successful cost поточного artifact був $0.175 (3 renders + 3 vision у
+першому раунді, потім до чотирьох single-render repairs), але повторні manual regenerations
+накопичили приблизно $3.173 recorded spend по active revision. Failed/cancelled provider work міг
+не потрапити в ledger, бо aggregate cost писався лише після artifact save. Пізній single repair
+перезаписував початкові три variants одним. Story 5 pneumatic tubes і Story 6 switchboard показали,
+що high craft score не дорівнює зрозумілому news context. Окремий incident із 32 retry children
+був process bug і вже закритий idempotency migration.
+
+**Змінено:** hard cap 2 rounds; обидва раунди мають 3 variants; seed renders і vision reviews
+паралельні. Три critiques агрегуються, а суцільний semantic fail примусово re-plan-ить метафору.
+Opaque data-flow machinery блокується, human-centered scene budget дозволяє до двох character
+stories, critic вимагає pixel evidence і headline-substitution test. Кожен image/vision provider
+call тепер пишеться в cost ledger до artifact save; Visuals показує current run і cumulative story
+revision spend з legacy-safe breakdown.
+
+**Перевірено:** 96 targeted Vitest tests (`card-image`, content-sim loop, weekly-image adapter) і
+`npm run typecheck` пройшли; окремі concurrency-тести доводять peak=3 для render і vision batch.
+Повний Vitest: 113 files / 1 107 tests; ESLint — 0 errors (7 pre-existing warnings у чужих
+файлах); `npm run wiki:check` — 0 errors / 0 warnings; `npm run e2e:check` і production
+`next build` пройшли.
+
+---
+
+## 2026-08-11 — три незалежні концепції замість seed-варіацій
+
+**Джерело:** owner follow-up про три різні візії на одну новину 2026-08-11;
+`pipeline/card-image.ts`, `src/lib/content-sim/adapters/weekly-image.ts`,
+`src/lib/weekly-digest/generation-worker.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
+`src/components/admin/weekly-workspace.tsx`.
+
+**Виявлено:** три FLUX renders мали різні seeds, але ділили один scene brief і positive prompt,
+тому давали косметичні варіації тієї самої візії. Це витрачало три image/vision calls без реальної
+диверсифікації editorial hypothesis.
+
+**Змінено:** policy bump → `weekly-semantic-story-v5`. Один factual semantic contract тепер
+подається в three-seat concept jury. За один
+structured LLM call jury повертає `literal_context`, `mechanism` і `consequence`; validator до
+рендеру вимагає різні subject, `motif_class`, setting і physical action. Кожен concept має власні
+scene/prompt/render/vision metadata. Owner-edited scene зберігається як concept 1, а дві альтернативи
+плануються незалежно. `variant_concepts` зберігається aligned із файлами/scores; auto-pick і owner
+promotion переносять scene/prompt/lens обраного concept. Visuals показує concept title/lens/scene.
+
+**Перевірено:** targeted Vitest для concept lenses, окремих FLUX prompts, per-concept vision input
+і auto-pick metadata alignment; повний `npm run pr:check` пройшов: 113 files / 1 109 tests,
+coverage/typecheck/e2e/wiki/build зелені, ESLint — 0 errors (7 pre-existing warnings).

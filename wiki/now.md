@@ -9,6 +9,25 @@ Last updated: 2026-08-11
 
 ## Стан репозиторію
 
+- **Weekly illustration cost/quality loop hardening (2026-08-11):** owner-аудит Story 2/3/5/6
+  підтвердив, що 5-round repair loop був дорогим seed roulette, фінальний repair лишав один variant,
+  а critic пропускав opaque tubes/switchboards із високими шаблонними scores. Новий контракт —
+  максимум 2 раунди по 3 паралельні renders + 3 паралельні vision reviews; batch critiques
+  агрегуються й суцільний semantic fail змінює метафору. Додано `opaque_abstraction`, обовʼязковий
+  pixel evidence/headline-substitution test, до двох character scenes для human-centered stories,
+  provider-call cost ledger і cumulative Story revision spend у Visuals. (source: owner incident
+  report 2026-08-11, `pipeline/card-image.ts`, `src/lib/content-sim/`,
+  `src/lib/weekly-digest/generation-worker.ts`, `src/components/admin/weekly-workspace.tsx`)
+
+- **Three independent illustration concepts (2026-08-11):** кожна story тепер має не три
+  косметичні seed-варіації однієї сцени, а до трьох сценаріїв із різних editorial lenses:
+  literal context, mechanism і consequence. Один jury call тримає planning cost обмеженим;
+  validator відхиляє повтори subject/motif/setting/action до FLUX spend. Кожен concept має власні
+  scene/prompt/vision metadata; Visuals показує назву/лінзу, а owner promotion і ручний regenerate
+  зберігають правильний concept contract. (source: owner follow-up 2026-08-11,
+  `pipeline/card-image.ts`, `src/lib/content-sim/adapters/weekly-image.ts`,
+  `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`)
+
 - **Async story-image recovery (2026-08-11):** production v4 jobs підтвердили архітектурний
   конфлікт: Vercel poller запускав лише одну image job кожні 5 хв, а послідовні art-director
   calls/retry тричі досягли platform timeout рівно 300 с. `story_image` перенесено у fenced
@@ -33,8 +52,8 @@ Last updated: 2026-08-11
   owner incident report і production Supabase/GitHub snapshot 2026-08-11,
   `supabase/migrations/20260811185251_weekly_manual_retry_idempotency.sql`)
 
-- **Weekly semantic illustration v4 (2026-08-11):** актуальний policy
-  `weekly-semantic-story-v4` замінив self-referential essence-only перевірку на contract
+- **Weekly semantic illustration v4 foundation (2026-08-11):** policy v4 (тепер замінений v5)
+  замінив self-referential essence-only перевірку на contract
   `context → meaning → mechanism → consequence → visual thesis`. Worker тепер передає
   practical/limitation/takeaway й approved research замість `[object Object]` claims; gate не
   зараховує невидимий `why_it_fits`; `dual_contrast` більше не інʼєктить backstage у кожну
@@ -61,7 +80,7 @@ Last updated: 2026-08-11
 
 - **Content Sim / backtest (2026-08-11):** універсальний harness `src/lib/content-sim` +
   `npm run content-sim` (capture/run/gates/hypothesis). Weekly `story_image` — vision critic
-  loop ≤5 з escalation у admin Visuals; release preflight `simulation_not_passed`. Roles
+  loop максимум 2 раунди з escalation у admin Visuals; release preflight `simulation_not_passed`. Roles
   `weekly.image_critic` / `daily.image_critic`. Docs — [pipeline/content-sim](pipeline/content-sim.md).
   Опційний CI: `.github/workflows/content-sim.yml` (label `run-content-sim`).
 

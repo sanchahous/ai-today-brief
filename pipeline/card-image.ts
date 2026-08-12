@@ -85,7 +85,10 @@ export interface CardImageConfig {
    */
   registry?: ProviderRegistry;
   /** Optional hook after each successful remote/local image (cost ledger). */
-  onImageGenerated?: (result: GeneratedImageResult) => void | Promise<void>;
+  onImageGenerated?: (
+    result: GeneratedImageResult,
+    context?: { variantIndex?: number },
+  ) => void | Promise<void>;
 }
 
 export type ImageCostSource = 'reported' | 'estimated' | 'subscription';
@@ -659,10 +662,17 @@ export async function sceneBrief(
 // ---------------------------------------------------------------------------
 
 /** Stored on story_image artifacts; bump when house-style / gates change. */
-export const WEEKLY_PROMPT_POLICY = 'weekly-semantic-story-v4';
+export const WEEKLY_PROMPT_POLICY = 'weekly-semantic-story-v5';
 
 /** Open vocabulary motif label from the metaphor director (snake_case). */
 export type MetaphorSubjectKind = 'object' | 'process' | 'environment' | 'character';
+export type MetaphorLens = 'literal_context' | 'mechanism' | 'consequence';
+
+export const METAPHOR_LENSES: readonly MetaphorLens[] = [
+  'literal_context',
+  'mechanism',
+  'consequence',
+] as const;
 
 /** Sibling story metaphors already committed in this digest (structural diversity). */
 export interface SiblingMetaphorHint {
@@ -733,6 +743,8 @@ export interface MetaphorPitch {
   /** Open snake_case class, e.g. anthropomorphic_guardian, thermal_waste. */
   motifClass: string;
   subjectKind: MetaphorSubjectKind;
+  /** Orthogonal editorial angle used to prevent three seed-variants of one idea. */
+  lens?: MetaphorLens;
   /** Literal story-specific anchor visible in the rendered scene. */
   storyAnchor?: string;
   /** Physical cause/process visible in the rendered scene. */
@@ -780,6 +792,10 @@ const WEEKLY_DESK_DEFAULT = /\b(desk|laptop|keyboard|monitor|trackpad|office cha
 /** Motion language that makes FLUX paint smeared / laggy limbs (Story 7 fail-mode). */
 const WEEKLY_MOTION_BLUR_BANNED =
   /\b(high[-\s]?speed|motion\s*blur|blurred|smeared|streaking|motion[-\s]?lag|racing through)\b/i;
+
+/** Software-as-pipes imagery is legible only when the source is literally about those objects. */
+const WEEKLY_OPAQUE_ABSTRACTION =
+  /\b(pneumatic tubes?|tube network|canisters?|telephone switchboards?|patch cables?|glowing (?:data )?(?:streams?|capsules?)|generic pipework|generic conduits?)\b/i;
 
 /** Min fraction of mechanism tokens (≥4 chars) that must appear in the pitch. */
 export const MECHANISM_TOKEN_HIT_RATIO = 0.35;
@@ -857,35 +873,6 @@ export function extractWeeklyStoryEntities(input: WeeklyReportageSceneInput): st
   return [...new Set(out.map((s) => s.trim()).filter((s) => s.length >= 3))].slice(0, 8);
 }
 
-function entityMentioned(haystack: string, entity: string): boolean {
-  const tokens = entity
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((t) => t.length >= 4);
-  if (!tokens.length) return haystack.includes(entity.toLowerCase().slice(0, 12));
-  let best = tokens[0]!;
-  for (const token of tokens) {
-    if (token.length > best.length) best = token;
-  }
-  return haystack.includes(best);
-}
-
-function primaryEntityGrounded(haystack: string, entity: string): boolean {
-  const tokens = [
-    ...new Set(
-      entity
-        .toLowerCase()
-        .split(/[^a-z0-9]+/)
-        .filter((token) => token.length >= 4),
-    ),
-  ];
-  if (tokens.length === 0)
-    return haystack.toLowerCase().includes(entity.toLowerCase().slice(0, 12));
-  const lower = haystack.toLowerCase();
-  const hits = tokens.filter((token) => lower.includes(token)).length;
-  return hits >= Math.min(2, tokens.length);
-}
-
 /** Full evidence-shaped story context shared by essence and metaphor directors. */
 export function buildWeeklyContextBlock(
   input: WeeklyReportageSceneInput,
@@ -948,7 +935,7 @@ function formatSiblingMetaphorBlock(siblings: SiblingMetaphorHint[] | undefined)
   return [
     'Sibling metaphors already used in this digest (do NOT rhyme with these):',
     ...lines,
-    'Pick a fresh motif_class. Prefer object/process/environment over another character if a character sibling already exists. At most one dual_contrast composition per digest.',
+    'Pick a fresh motif_class. Human-centered stories may use a character; cap the digest at two character-led scenes. At most one dual_contrast composition per digest.',
   ].join('\n');
 }
 
@@ -972,6 +959,29 @@ function parseSubjectKind(raw: unknown): MetaphorSubjectKind {
   if (typeof raw !== 'string') return 'object';
   const key = raw.trim().toLowerCase() as MetaphorSubjectKind;
   return SUBJECT_KINDS.has(key) ? key : 'object';
+}
+
+function parseMetaphorLens(
+  raw: unknown,
+  fallbackIndex: number,
+  fallbackLenses: readonly MetaphorLens[],
+): MetaphorLens {
+  if (typeof raw === 'string') {
+    const normalized = raw
+      .trim()
+      .toLowerCase()
+      .replace(/[\s-]+/g, '_');
+    if (normalized === 'literal' || normalized === 'context' || normalized === 'human_context') {
+      return 'literal_context';
+    }
+    if (normalized === 'mechanism' || normalized === 'process' || normalized === 'systems') {
+      return 'mechanism';
+    }
+    if (normalized === 'consequence' || normalized === 'impact' || normalized === 'tradeoff') {
+      return 'consequence';
+    }
+  }
+  return fallbackLenses[fallbackIndex % fallbackLenses.length] ?? 'literal_context';
 }
 
 /** Significant tokens for sibling scene echo (Jaccard). */
@@ -1176,7 +1186,10 @@ export function parseEditorialEssence(
   };
 }
 
-export function parseMetaphorPitches(raw: string): MetaphorPitch[] {
+export function parseMetaphorPitches(
+  raw: string,
+  fallbackLenses: readonly MetaphorLens[] = METAPHOR_LENSES,
+): MetaphorPitch[] {
   const parsed = extractJsonObject(raw);
   let rows: unknown[] = [];
   if (Array.isArray(parsed)) {
@@ -1188,7 +1201,7 @@ export function parseMetaphorPitches(raw: string): MetaphorPitch[] {
     else rows = [parsed];
   }
   const pitches: MetaphorPitch[] = [];
-  for (const row of rows) {
+  for (const [rowIndex, row] of rows.entries()) {
     if (!row || typeof row !== 'object' || Array.isArray(row)) continue;
     const record = row as Record<string, unknown>;
     const subject = typeof record.subject === 'string' ? record.subject.trim() : '';
@@ -1218,6 +1231,7 @@ export function parseMetaphorPitches(raw: string): MetaphorPitch[] {
           subject.slice(0, 32),
       ),
       subjectKind: parseSubjectKind(record.subject_kind ?? record.subjectKind),
+      lens: parseMetaphorLens(record.lens, rowIndex, fallbackLenses),
       storyAnchor:
         (typeof record.story_anchor === 'string' && record.story_anchor.trim()) ||
         (typeof record.storyAnchor === 'string' && record.storyAnchor.trim()) ||
@@ -1318,11 +1332,7 @@ export function validateMetaphorPitch(
   if (pitch.subject.trim().length < 8) errors.push('subject too short');
   if (!pitch.storyAnchor || pitch.storyAnchor.trim().length < 6) {
     errors.push('story_anchor_not_visible');
-  } else if (
-    requiredEntities[0]
-      ? !primaryEntityGrounded(pitch.storyAnchor, requiredEntities[0])
-      : !mechanismTokensVisible(essence.storyContext, pitch.storyAnchor, 0.15)
-  ) {
+  } else if (!mechanismTokensVisible(essence.storyContext, pitch.storyAnchor, 0.2)) {
     errors.push('story_anchor_not_grounded_in_context');
   }
   if (!pitch.visibleMechanism || pitch.visibleMechanism.trim().length < 10) {
@@ -1342,6 +1352,10 @@ export function validateMetaphorPitch(
   }
   if (WEEKLY_MOTION_BLUR_BANNED.test(flat)) {
     errors.push('banned high-speed / motion-blur language (causes smeared FLUX artifacts)');
+  }
+  const literalSource = [essence.storyContext, essence.mechanism, ...requiredEntities].join(' ');
+  if (WEEKLY_OPAQUE_ABSTRACTION.test(flat) && !WEEKLY_OPAQUE_ABSTRACTION.test(literalSource)) {
+    errors.push('opaque_abstraction_not_literal_to_story');
   }
   if (pitch.composition === 'dual_contrast') {
     const hasDivide =
@@ -1372,11 +1386,8 @@ export function validateMetaphorPitch(
   ) {
     errors.push('consequence_not_visible');
   }
-  const entityHit =
-    requiredEntities.length === 0 ||
-    requiredEntities.some((entity) => entityMentioned(hay, entity));
-  if (requiredEntities.length > 0 && !entityHit) {
-    errors.push(`scene missing story entities (${requiredEntities.slice(0, 3).join(', ')})`);
+  if (!mechanismTokensVisible(essence.storyContext, flat, 0.12)) {
+    errors.push('scene_missing_story_context');
   }
   if (
     WEEKLY_DESK_DEFAULT.test(flat) &&
@@ -1405,10 +1416,10 @@ export function validateMetaphorPitch(
       break;
     }
   }
-  const siblingHasCharacter = siblings.some(
+  const siblingCharacterCount = siblings.filter(
     (s) => (s.subjectKind ?? '').toLowerCase() === 'character',
-  );
-  if (siblingHasCharacter && pitch.subjectKind === 'character') {
+  ).length;
+  if (siblingCharacterCount >= 2 && pitch.subjectKind === 'character') {
     errors.push('character_budget');
   }
   const siblingHasDual = siblings.some((s) => s.composition === 'dual_contrast');
@@ -1567,32 +1578,44 @@ function buildMetaphorInstruction(
   essence: EditorialEssence,
   entities: string[],
   priorErrors?: string[],
+  desiredLenses: readonly MetaphorLens[] = METAPHOR_LENSES,
+  avoidScenes: readonly string[] = [],
 ): string {
   const retry = priorErrors?.length
     ? `\nPrevious pitches failed: ${priorErrors.join('; ')}. Propose corrected metaphors.\n`
     : '';
   return (
-    `You design cover metaphors for a weekly AI/engineering digest. Invent 2 or 3 distinct, ` +
-    `instantly readable physical scenes. Each must communicate a causal mini-story: a ` +
+    `You are a three-seat concept jury for a weekly AI/engineering digest. Work as independent ` +
+    `art directors, not as three renderers of one composition. Return exactly one structurally ` +
+    `different physical scene for each requested lens: ${desiredLenses.join(', ')}. ` +
+    `literal_context prioritizes who/what changed; mechanism prioritizes how the change works; ` +
+    `consequence prioritizes the benefit, harm, trade-off, or uncertainty. Every scene must still ` +
+    `communicate the complete causal mini-story: a ` +
     `story-specific anchor, the visible mechanism acting on it, and the visible consequence. ` +
     `CRITICAL: why_it_fits is only rationale and is NOT sent to the image model. Therefore every ` +
     `fact required to understand the story must also appear concretely in story_anchor, ` +
     `visible_mechanism, visible_consequence, subject, action, setting, or props. Reuse the distinctive ` +
     `concrete nouns from the mechanism and consequence so fidelity can be checked. The story_anchor ` +
-    `must visibly identify the source actor/system using at least two distinctive CONTEXT nouns; ` +
-    `do not substitute a topic-only battery, meter, cog, pump, cloud, or light. Keep subject and ` +
+    `must visibly identify the source situation using at least two distinctive, depictable CONTEXT ` +
+    `nouns; a proper product name, logo, or printed label does not count as visual grounding. ` +
+    `Do not substitute a topic-only battery, meter, cog, pump, cloud, or light. Keep subject and ` +
     `story_anchor under 14 words, visible_mechanism under 20 words, and visible_consequence under 18 words. ` +
     `Prefer concrete OBJECTS, PROCESSES, or ENVIRONMENTS that argue the essence. ` +
-    `Use a CHARACTER only when the essence cannot be read without one. ` +
+    `When the news is about tutoring, evaluation, help, or another human interaction, a CHARACTER ` +
+    `is often the clearest literal anchor; do not abstract the people away merely to satisfy variety. ` +
+    `The three scenes must differ in subject, motif_class, setting, and physical action -- changing ` +
+    `camera angle, color, seed, prop placement, or scale does NOT create a new concept. ` +
     `Do NOT default to recurring performance-stage tableaux, personified guardians, or archival-book ` +
     `symbols. Invent a fresh motif_class grounded in this source story each time. ` +
+    `Never encode generic software/data flow as pneumatic tubes, canisters, telephone switchboards, ` +
+    `patch cables, pipework, or glowing data streams unless the source story is literally about them. ` +
     `Never use high-speed, motion blur, blurred, smeared, or streaking language (FLUX paints lag artifacts). ` +
     `If the essence needs contrast, set composition to "dual_contrast" and name BOTH causal halves in ` +
     `why_it_fits as ONE continuous photograph with a spatial divide -- ` +
     `never collage, never a decorative second beat that does not argue the essence. ` +
     `At most one dual_contrast per digest (see sibling metaphors). Screens if any stay blank unmarked glow. ` +
     `No quoted labels, printed words, logos, readable UI, or real celebrity faces. ` +
-    `Reply with ONLY JSON: {"metaphors":[{"title":"","subject":"",` +
+    `Reply with ONLY JSON: {"metaphors":[{"lens":"literal_context|mechanism|consequence","title":"","subject":"",` +
     `"story_anchor":"specific visible story anchor","visible_mechanism":"physical cause/process",` +
     `"visible_consequence":"physical benefit/harm/trade-off/uncertainty","action":"","setting":"",` +
     `"props":[],"composition":"single|dual_contrast","motif_class":"snake_case_label",` +
@@ -1603,6 +1626,7 @@ function buildMetaphorInstruction(
     `Visual thesis: "${essence.visualThesis}"\n` +
     `Reader test: "${essence.readerTest}"\nMust feel: "${essence.mustFeel}"\n` +
     `Forbidden: ${essence.forbiddenCliches.join(' | ') || 'generic AI sludge'}\n` +
+    `${avoidScenes.length ? `Owner/critic direction already represented; alternatives must not resemble: ${avoidScenes.join(' | ')}\n` : ''}` +
     `${buildWeeklyContextBlock(input, entities)}${retry}`
   );
 }
@@ -1622,11 +1646,20 @@ function scoreMetaphorPitch(
   ) {
     score += 2;
   }
-  if (pitch.subjectKind === 'character') score -= 1;
+  if (pitch.subjectKind === 'character') {
+    const humanContext = [essence.storyContext, essence.meaning, essence.mechanism].join(' ');
+    score +=
+      /\b(tutor|student|teacher|human|person|people|developer|researcher|help|assist|evaluation|tested)\b/i.test(
+        humanContext,
+      )
+        ? 2
+        : -1;
+  }
   if (WEEKLY_DESK_DEFAULT.test(pitch.subject)) score -= 2;
   if (WEEKLY_MOTION_BLUR_BANNED.test([pitch.subject, pitch.action, ...pitch.props].join(' '))) {
     score -= 3;
   }
+  if (WEEKLY_OPAQUE_ABSTRACTION.test(pitchRenderableBlob(pitch))) score -= 6;
   if (
     essence.mustFeel &&
     pitch.whyItFits.toLowerCase().includes(essence.mustFeel.toLowerCase().slice(0, 8))
@@ -1673,45 +1706,115 @@ export async function extractEditorialEssence(
   return { essence, source: result.source };
 }
 
+export interface WeeklyReportageSceneBriefResult extends SceneBriefResult {
+  conceptLens: MetaphorLens | 'owner_direction';
+  essence?: string;
+  metaphorTitle?: string;
+  motifClass?: string;
+  subjectKind?: MetaphorSubjectKind;
+  composition?: MetaphorPitch['composition'];
+  storyContext?: string;
+  meaning?: string;
+  mechanism?: string;
+  consequence?: string;
+  visualThesis?: string;
+  readerTest?: string;
+  whyItFits?: string;
+  storyAnchor?: string;
+  visibleMechanism?: string;
+  visibleConsequence?: string;
+}
+
+function sceneBriefFromPitch(
+  pitch: MetaphorPitch,
+  essence: EditorialEssence,
+  source: string,
+): WeeklyReportageSceneBriefResult {
+  return {
+    scene: flattenMetaphorPitch(pitch, essence),
+    source,
+    conceptLens: pitch.lens ?? 'literal_context',
+    essence: essence.essence,
+    metaphorTitle: pitch.title,
+    motifClass: pitch.motifClass,
+    subjectKind: pitch.subjectKind,
+    composition: pitch.composition,
+    storyContext: essence.storyContext,
+    meaning: essence.meaning,
+    mechanism: essence.mechanism,
+    consequence: essence.consequence,
+    visualThesis: essence.visualThesis,
+    readerTest: essence.readerTest,
+    whyItFits: pitch.whyItFits,
+    storyAnchor: pitch.storyAnchor,
+    visibleMechanism: pitch.visibleMechanism,
+    visibleConsequence: pitch.visibleConsequence,
+  };
+}
+
+function fallbackSceneBrief(
+  lens: MetaphorLens,
+  baseScene: string,
+  essence: EditorialEssence,
+): WeeklyReportageSceneBriefResult {
+  const scene =
+    lens === 'literal_context'
+      ? `Grounded real-world tableau centered on ${essence.storyContext}; ${essence.mechanism} visibly acts on that specific actor or system and physically produces ${essence.consequence}. ${baseScene}`
+      : lens === 'mechanism'
+        ? `Exposed process cutaway centered on ${essence.mechanism}; a concrete anchor from ${essence.storyContext} enters the cause-and-effect process and visibly emerges with ${essence.consequence}. Do not reuse the literal tableau.`
+        : `Wide outcome-led environment centered on ${essence.consequence}; physical traces lead back to ${essence.mechanism} acting on a recognizable anchor from ${essence.storyContext}. No cutaway and no reuse of the literal tableau.`;
+  return {
+    scene: scene.replace(/\s+/g, ' ').slice(0, 680),
+    source: 'fallback',
+    conceptLens: lens,
+    essence: essence.essence,
+    metaphorTitle:
+      lens === 'literal_context'
+        ? 'Literal context'
+        : lens === 'mechanism'
+          ? 'Visible mechanism'
+          : 'Visible consequence',
+    motifClass: `fallback_${lens}`,
+    subjectKind: lens === 'mechanism' ? 'process' : 'environment',
+    composition: 'single',
+    storyContext: essence.storyContext,
+    meaning: essence.meaning,
+    mechanism: essence.mechanism,
+    consequence: essence.consequence,
+    visualThesis: essence.visualThesis,
+    readerTest: essence.readerTest,
+    whyItFits: `Fallback ${lens} lens preserving the approved semantic contract.`,
+    storyAnchor: essence.storyContext,
+    visibleMechanism: essence.mechanism,
+    visibleConsequence: essence.consequence,
+  };
+}
+
 /**
- * Essence → metaphor brief with validation + one metaphor retry.
- * Falls back to {@link weeklyFallbackScene} conceptual keywords.
+ * One factual semantic contract → three orthogonal visual concepts. The model
+ * returns a literal-context, mechanism, and consequence treatment in one call;
+ * validation then enforces different motifs/scenes before any image spend.
  */
-export async function weeklyReportageSceneBrief(
+export async function weeklyReportageSceneBriefs(
   input: WeeklyReportageSceneInput,
   cfg: CardImageConfig,
-): Promise<
-  SceneBriefResult & {
-    essence?: string;
-    metaphorTitle?: string;
-    motifClass?: string;
-    subjectKind?: MetaphorSubjectKind;
-    composition?: MetaphorPitch['composition'];
-    storyContext?: string;
-    meaning?: string;
-    mechanism?: string;
-    consequence?: string;
-    visualThesis?: string;
-    readerTest?: string;
-    whyItFits?: string;
-    storyAnchor?: string;
-    visibleMechanism?: string;
-    visibleConsequence?: string;
-  }
-> {
+  options: {
+    count?: number;
+    excludedLenses?: readonly MetaphorLens[];
+    avoidScenes?: readonly string[];
+  } = {},
+): Promise<WeeklyReportageSceneBriefResult[]> {
+  const count = Math.max(1, Math.min(3, options.count ?? 3));
   const ctx = [input.headline, input.summary].filter(Boolean).join('. ').trim();
-  if (!ctx) return { scene: DEFAULT_SCENE, source: 'fallback' };
   const entities = extractWeeklyStoryEntities(input);
-  const siblings = input.siblingMetaphors ?? [];
-
-  const essenceResult = await extractEditorialEssence(input, cfg);
-  const fallbackEssence = ctx.slice(0, 160);
-  const fallbackMechanismText = fallbackMechanism(input, fallbackEssence);
-  const fallbackConsequenceText = fallbackConsequence(input, fallbackEssence);
+  const fallbackEssenceText = (ctx || 'weekly technology story').slice(0, 160);
+  const fallbackMechanismText = fallbackMechanism(input, fallbackEssenceText);
+  const fallbackConsequenceText = fallbackConsequence(input, fallbackEssenceText);
+  const essenceResult = ctx ? await extractEditorialEssence(input, cfg) : null;
   const essence: EditorialEssence = essenceResult?.essence ?? {
-    storyContext: fallbackStoryContext(input, fallbackEssence),
-    meaning: firstGroundedField([input.why, input.summary], fallbackEssence).slice(0, 220),
-    essence: fallbackEssence,
+    storyContext: fallbackStoryContext(input, fallbackEssenceText),
+    meaning: firstGroundedField([input.why, input.summary], fallbackEssenceText).slice(0, 220),
+    essence: fallbackEssenceText,
     mustFeel: 'editorial tension',
     forbiddenCliches: ['person at laptop desk', 'glowing brain', 'paper heap'],
     mechanism: fallbackMechanismText,
@@ -1719,75 +1822,101 @@ export async function weeklyReportageSceneBrief(
     visualThesis: `${fallbackMechanismText.slice(0, 110)} visibly leads to ${fallbackConsequenceText.slice(0, 110)}`,
     readerTest: `After seeing the image, grasp context, mechanism, and consequence: ${fallbackMechanismText.slice(0, 90)} -> ${fallbackConsequenceText.slice(0, 90)}`,
   };
-  const essenceSource = essenceResult?.source;
+  const excluded = new Set(options.excludedLenses ?? []);
+  const targetLenses = METAPHOR_LENSES.filter((lens) => !excluded.has(lens)).slice(0, count);
+  const baseFallbackScene = !ctx
+    ? DEFAULT_SCENE
+    : essenceResult
+      ? weeklySemanticFallbackScene(essence)
+      : weeklyFallbackScene(ctx, entities);
+  if (!ctx) {
+    return targetLenses.map((lens) => fallbackSceneBrief(lens, baseFallbackScene, essence));
+  }
 
+  const accepted: Array<{ pitch: MetaphorPitch; source: string }> = [];
+  const externalSiblings = input.siblingMetaphors ?? [];
+  const avoidHints: SiblingMetaphorHint[] = (options.avoidScenes ?? []).map((scene, index) => ({
+    motifClass: `reserved_direction_${index + 1}`,
+    sceneSummary: scene,
+  }));
   let lastErrors: string[] | undefined;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 2 && accepted.length < targetLenses.length; attempt += 1) {
+    const missingLenses = targetLenses.filter(
+      (lens) => !accepted.some(({ pitch }) => pitch.lens === lens),
+    );
     const result = await runArtDirectorRaw(
-      buildMetaphorInstruction(input, essence, entities, lastErrors),
+      buildMetaphorInstruction(
+        input,
+        essence,
+        entities,
+        lastErrors,
+        missingLenses,
+        options.avoidScenes,
+      ),
       'weekly.card_image_scene',
       cfg,
     );
     if (!result) break;
-    const pitches = parseMetaphorPitches(result.text);
-    if (!pitches.length) {
+    const ranked = parseMetaphorPitches(result.text, missingLenses).sort(
+      (a, b) =>
+        scoreMetaphorPitch(b, essence, externalSiblings) -
+        scoreMetaphorPitch(a, essence, externalSiblings),
+    );
+    if (!ranked.length) {
       lastErrors = ['no parseable metaphors'];
       continue;
     }
-    const ranked = [...pitches].sort(
-      (a, b) => scoreMetaphorPitch(b, essence, siblings) - scoreMetaphorPitch(a, essence, siblings),
-    );
-    let chosen: MetaphorPitch | null = null;
     const aggregateErrors: string[] = [];
-    for (const pitch of ranked) {
-      const errors = validateMetaphorPitch(pitch, essence, entities, siblings);
-      if (errors.length === 0) {
-        chosen = pitch;
-        break;
+    const used = new Set<MetaphorPitch>();
+    for (const lens of missingLenses) {
+      const candidates = ranked.filter((pitch) => pitch.lens === lens && !used.has(pitch));
+      for (const pitch of candidates) {
+        const acceptedHints: SiblingMetaphorHint[] = accepted.map(({ pitch: prior }) => ({
+          motifClass: prior.motifClass,
+          subjectKind: prior.subjectKind,
+          composition: prior.composition,
+          sceneSummary: flattenMetaphorPitch(prior, essence),
+        }));
+        const errors = validateMetaphorPitch(pitch, essence, entities, [
+          ...externalSiblings,
+          ...avoidHints,
+          ...acceptedHints,
+        ]);
+        if (errors.length === 0) {
+          accepted.push({ pitch, source: result.source || essenceResult?.source || 'fallback' });
+          used.add(pitch);
+          break;
+        }
+        aggregateErrors.push(`${lens}/${pitch.title}: ${errors.join(', ')}`);
       }
-      aggregateErrors.push(`${pitch.title}: ${errors.join(', ')}`);
     }
-    if (chosen) {
-      return {
-        scene: flattenMetaphorPitch(chosen, essence),
-        source: result.source || essenceSource || 'fallback',
-        essence: essence.essence,
-        metaphorTitle: chosen.title,
-        motifClass: chosen.motifClass,
-        subjectKind: chosen.subjectKind,
-        composition: chosen.composition,
-        storyContext: essence.storyContext,
-        meaning: essence.meaning,
-        mechanism: essence.mechanism,
-        consequence: essence.consequence,
-        visualThesis: essence.visualThesis,
-        readerTest: essence.readerTest,
-        whyItFits: chosen.whyItFits,
-        storyAnchor: chosen.storyAnchor,
-        visibleMechanism: chosen.visibleMechanism,
-        visibleConsequence: chosen.visibleConsequence,
-      };
+    lastErrors = aggregateErrors.slice(0, 6);
+    if (accepted.length < targetLenses.length) {
+      logEvent('warn', 'publish', 'Weekly concept jury missing distinct lenses -- retrying', {
+        attempt: attempt + 1,
+        missingLenses: targetLenses.filter(
+          (lens) => !accepted.some(({ pitch }) => pitch.lens === lens),
+        ),
+        errors: lastErrors,
+      });
     }
-    lastErrors = aggregateErrors.slice(0, 3);
-    logEvent('warn', 'publish', 'Weekly metaphors failed validation -- retrying', {
-      attempt: attempt + 1,
-      errors: lastErrors,
-    });
   }
 
-  return {
-    scene: essenceResult
-      ? weeklySemanticFallbackScene(essence)
-      : weeklyFallbackScene(ctx, entities),
-    source: 'fallback',
-    essence: essence.essence,
-    storyContext: essence.storyContext,
-    meaning: essence.meaning,
-    mechanism: essence.mechanism,
-    consequence: essence.consequence,
-    visualThesis: essence.visualThesis,
-    readerTest: essence.readerTest,
-  };
+  const briefs = targetLenses.map((lens) => {
+    const match = accepted.find(({ pitch }) => pitch.lens === lens);
+    return match
+      ? sceneBriefFromPitch(match.pitch, essence, match.source)
+      : fallbackSceneBrief(lens, baseFallbackScene, essence);
+  });
+  return briefs.slice(0, count);
+}
+
+/** Compatibility wrapper for callers that need one scene only. */
+export async function weeklyReportageSceneBrief(
+  input: WeeklyReportageSceneInput,
+  cfg: CardImageConfig,
+): Promise<WeeklyReportageSceneBriefResult> {
+  return (await weeklyReportageSceneBriefs(input, cfg, { count: 1 }))[0]!;
 }
 
 /**
@@ -1824,8 +1953,10 @@ export interface WeeklyReportageIllustrationInput extends WeeklyReportageSceneIn
   accent?: string;
   /** No job.id here on purpose -- stable across regenerations. */
   seedBase: string;
-  /** Owner-edited scene text bypasses essence/metaphor calls. */
+  /** Owner-edited scene text is kept as concept one; alternatives remain independent. */
   sceneOverride?: string;
+  /** Distinguishes a human scene edit from a critic-authored replacement. */
+  sceneOverrideSource?: 'owner' | 'critic_repair';
   /** Vision-critic instruction applied to the actual next FLUX request. */
   renderDirective?: string;
   /** Defaults to 3. */
@@ -1833,7 +1964,7 @@ export interface WeeklyReportageIllustrationInput extends WeeklyReportageSceneIn
 }
 
 export interface WeeklyReportageIllustrationResult {
-  variants: GeneratedImageResult[];
+  variants: WeeklyReportageGeneratedVariant[];
   scene: string;
   sceneSource: SceneSource;
   essence?: string;
@@ -1851,47 +1982,90 @@ export interface WeeklyReportageIllustrationResult {
   storyAnchor?: string;
   visibleMechanism?: string;
   visibleConsequence?: string;
+  conceptLens?: MetaphorLens | 'owner_direction';
 }
 
-/** Generates variant renders of the same editorial-concept scene. */
+export interface WeeklyReportageGeneratedVariant extends GeneratedImageResult {
+  scene: string;
+  positivePrompt: string;
+  negativePrompt: string;
+  sceneSource: SceneSource;
+  conceptLens: MetaphorLens | 'owner_direction';
+  essence?: string;
+  metaphorTitle?: string;
+  motifClass?: string;
+  subjectKind?: MetaphorSubjectKind;
+  composition?: MetaphorPitch['composition'];
+  storyContext?: string;
+  meaning?: string;
+  mechanism?: string;
+  consequence?: string;
+  visualThesis?: string;
+  readerTest?: string;
+  whyItFits?: string;
+  storyAnchor?: string;
+  visibleMechanism?: string;
+  visibleConsequence?: string;
+}
+
+/** Generates one render for each of three independent editorial concepts. */
 export async function generateWeeklyReportageIllustrations(
   input: WeeklyReportageIllustrationInput,
   cfg: CardImageConfig,
 ): Promise<WeeklyReportageIllustrationResult | null> {
   const override = input.sceneOverride?.trim();
-  let scene: string;
-  let sceneSource: SceneSource;
-  let essence: string | undefined;
-  let metaphorTitle: string | undefined;
-  let motifClass: string | undefined;
-  let subjectKind: MetaphorSubjectKind | undefined;
-  let composition: MetaphorPitch['composition'] | undefined;
-  let storyContext: string | undefined;
-  let meaning: string | undefined;
-  let mechanism: string | undefined;
-  let consequence: string | undefined;
-  let visualThesis: string | undefined;
-  let readerTest: string | undefined;
-  let whyItFits: string | undefined;
-  let storyAnchor: string | undefined;
-  let visibleMechanism: string | undefined;
-  let visibleConsequence: string | undefined;
+  const count = Math.max(1, Math.min(3, input.variantCount ?? 3));
+  let concepts: WeeklyReportageSceneBriefResult[];
   if (override) {
-    scene = cleanSceneText(override);
-    sceneSource = 'owner';
+    const scene = cleanSceneText(override);
+    const alternatives =
+      count > 1
+        ? await weeklyReportageSceneBriefs(input, cfg, {
+            count: count - 1,
+            excludedLenses: ['literal_context'],
+            avoidScenes: [scene],
+          })
+        : [];
+    const semanticReference = alternatives[0];
     const ownerMechanism = fallbackMechanism(input, input.headline || 'story');
     const ownerContext = fallbackStoryContext(input, input.headline || 'story');
     const ownerConsequence = fallbackConsequence(input, input.headline || 'story');
-    storyContext = ownerContext;
-    meaning = firstGroundedField([input.why, input.summary], input.headline || 'story');
-    mechanism = ownerMechanism;
-    consequence = ownerConsequence;
-    visualThesis = `${ownerMechanism.slice(0, 110)} visibly leads to ${ownerConsequence.slice(0, 110)}`;
-    readerTest = `After seeing the image, grasp context, mechanism, and consequence: ${visualThesis.slice(0, 140)}`;
-    whyItFits = 'Owner-supplied scene; vision critic must verify it against the source story.';
-    storyAnchor = scene;
-    visibleMechanism = scene;
-    visibleConsequence = scene;
+    const storyContext = semanticReference?.storyContext ?? ownerContext;
+    const meaning =
+      semanticReference?.meaning ??
+      firstGroundedField([input.why, input.summary], input.headline || 'story');
+    const mechanism = semanticReference?.mechanism ?? ownerMechanism;
+    const consequence = semanticReference?.consequence ?? ownerConsequence;
+    const visualThesis =
+      semanticReference?.visualThesis ??
+      `${ownerMechanism.slice(0, 110)} visibly leads to ${ownerConsequence.slice(0, 110)}`;
+    const readerTest =
+      semanticReference?.readerTest ??
+      `After seeing the image, grasp context, mechanism, and consequence: ${visualThesis.slice(0, 140)}`;
+    const ownerConcept: WeeklyReportageSceneBriefResult = {
+      scene,
+      source: input.sceneOverrideSource ?? 'owner',
+      conceptLens: 'owner_direction',
+      essence: (semanticReference?.essence ?? input.headline) || 'story',
+      metaphorTitle:
+        input.sceneOverrideSource === 'critic_repair' ? 'Critic replacement' : 'Owner direction',
+      motifClass:
+        input.sceneOverrideSource === 'critic_repair' ? 'critic_repair' : 'owner_direction',
+      subjectKind: 'object',
+      composition: /facade|backstage|left|right|spatial divide/i.test(scene)
+        ? 'dual_contrast'
+        : 'single',
+      storyContext,
+      meaning,
+      mechanism,
+      consequence,
+      visualThesis,
+      readerTest,
+      whyItFits: 'Supplied direction; vision critic must verify it against the source story.',
+      storyAnchor: scene,
+      visibleMechanism: scene,
+      visibleConsequence: scene,
+    };
     const ownerErrors = validateMetaphorPitch(
       {
         title: 'owner-override',
@@ -1905,14 +2079,14 @@ export async function generateWeeklyReportageIllustrations(
         whyItFits: 'owner override',
         motifClass: 'owner_override',
         subjectKind: 'object',
-        storyAnchor,
-        visibleMechanism,
-        visibleConsequence,
+        storyAnchor: scene,
+        visibleMechanism: scene,
+        visibleConsequence: scene,
       },
       {
         storyContext: ownerContext,
         meaning,
-        essence: input.headline || 'story',
+        essence: (ownerConcept.essence ?? input.headline) || 'story',
         mustFeel: '',
         forbiddenCliches: [],
         mechanism: ownerMechanism,
@@ -1924,71 +2098,80 @@ export async function generateWeeklyReportageIllustrations(
       input.siblingMetaphors,
     );
     if (ownerErrors.length) {
-      logEvent('warn', 'publish', 'Owner scene_override failed weekly gates (using anyway)', {
+      logEvent('warn', 'publish', 'Scene override failed weekly gates (using anyway)', {
+        source: ownerConcept.source,
         errors: ownerErrors,
       });
     }
+    concepts = [ownerConcept, ...alternatives].slice(0, count);
   } else {
-    const brief = await weeklyReportageSceneBrief(input, cfg);
-    scene = brief.scene;
-    sceneSource = brief.source;
-    essence = brief.essence;
-    metaphorTitle = brief.metaphorTitle;
-    motifClass = brief.motifClass;
-    subjectKind = brief.subjectKind;
-    composition = brief.composition;
-    storyContext = brief.storyContext;
-    meaning = brief.meaning;
-    mechanism = brief.mechanism;
-    consequence = brief.consequence;
-    visualThesis = brief.visualThesis;
-    readerTest = brief.readerTest;
-    whyItFits = brief.whyItFits;
-    storyAnchor = brief.storyAnchor;
-    visibleMechanism = brief.visibleMechanism;
-    visibleConsequence = brief.visibleConsequence;
+    concepts = await weeklyReportageSceneBriefs(input, cfg, { count });
   }
-  const positive = buildEditorialConceptPrompt(
-    input.accent?.trim() || 'cool cyan',
-    scene,
-    input.renderDirective,
-  );
   const negative = negativePrompt();
-  const count = Math.max(1, input.variantCount ?? 3);
-  const variants: GeneratedImageResult[] = [];
-  for (let i = 1; i <= count; i += 1) {
-    const seed = seedFromString(`${input.seedBase}:v${i}`);
-    const generated = await generateImage(positive, negative, cfg, seed);
-    if (generated) {
-      variants.push({
+  const generatedVariants = await Promise.all(
+    concepts.map(async (concept, index) => {
+      const variantIndex = index + 1;
+      const positive = buildEditorialConceptPrompt(
+        input.accent?.trim() || 'cool cyan',
+        concept.scene,
+        input.renderDirective,
+      );
+      const seed = seedFromString(
+        `${input.seedBase}:concept:${concept.conceptLens}:v${variantIndex}`,
+      );
+      const generated = await generateImage(positive, negative, cfg, seed);
+      if (!generated) return null;
+      await cfg.onImageGenerated?.(generated, { variantIndex });
+      return {
         ...generated,
-        scene,
+        scene: concept.scene,
         positivePrompt: positive,
         negativePrompt: negative,
-        sceneSource,
-      });
-    }
-  }
-  return variants.length
+        sceneSource: concept.source,
+        conceptLens: concept.conceptLens,
+        essence: concept.essence,
+        metaphorTitle: concept.metaphorTitle,
+        motifClass: concept.motifClass,
+        subjectKind: concept.subjectKind,
+        composition: concept.composition,
+        storyContext: concept.storyContext,
+        meaning: concept.meaning,
+        mechanism: concept.mechanism,
+        consequence: concept.consequence,
+        visualThesis: concept.visualThesis,
+        readerTest: concept.readerTest,
+        whyItFits: concept.whyItFits,
+        storyAnchor: concept.storyAnchor,
+        visibleMechanism: concept.visibleMechanism,
+        visibleConsequence: concept.visibleConsequence,
+      };
+    }),
+  );
+  const variants = generatedVariants.filter(
+    (variant): variant is NonNullable<(typeof generatedVariants)[number]> => variant !== null,
+  );
+  const primary = variants[0];
+  return primary
     ? {
         variants,
-        scene,
-        sceneSource,
-        essence,
-        metaphorTitle,
-        motifClass,
-        subjectKind,
-        composition,
-        storyContext,
-        meaning,
-        mechanism,
-        consequence,
-        visualThesis,
-        readerTest,
-        whyItFits,
-        storyAnchor,
-        visibleMechanism,
-        visibleConsequence,
+        scene: primary.scene,
+        sceneSource: primary.sceneSource,
+        essence: primary.essence,
+        metaphorTitle: primary.metaphorTitle,
+        motifClass: primary.motifClass,
+        subjectKind: primary.subjectKind,
+        composition: primary.composition,
+        storyContext: primary.storyContext,
+        meaning: primary.meaning,
+        mechanism: primary.mechanism,
+        consequence: primary.consequence,
+        visualThesis: primary.visualThesis,
+        readerTest: primary.readerTest,
+        whyItFits: primary.whyItFits,
+        storyAnchor: primary.storyAnchor,
+        visibleMechanism: primary.visibleMechanism,
+        visibleConsequence: primary.visibleConsequence,
+        conceptLens: primary.conceptLens,
       }
     : null;
 }

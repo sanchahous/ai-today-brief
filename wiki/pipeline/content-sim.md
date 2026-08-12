@@ -1,10 +1,11 @@
 # Content Simulation & Backtest
 
 Summary: універсальний harness симуляції контенту (daily + weekly + images): generate →
-critic → auto-repair ≤5 → pass або human review з escalation; weekly release гейтиться цим.
+batch critic → один decisive re-plan → pass або human review з escalation; weekly release
+гейтиться цим.
 Sources: `src/lib/content-sim/`, `pipeline/providers/vision.ts`, `pipeline/scripts/content-sim.ts`,
 `.github/workflows/content-sim.yml`, план Content Sim Backtest 2026-08-11,
-owner prompt review + `weekly-semantic-story-v4` 2026-08-11
+owner prompt review + `weekly-semantic-story-v5` concept-diversity follow-up 2026-08-11
 Last updated: 2026-08-11
 
 ---
@@ -21,7 +22,7 @@ weekly story images перед релізом.
 |---|---|---|
 | Ядро | `src/lib/content-sim/` | типи, `runRepairLoop`, escalation, deterministic image gates, vision critic parse |
 | Vision I/O | `pipeline/providers/vision.ts` | `generateWithVision` (Gemini → OpenRouter); roles `weekly.image_critic` / `daily.image_critic` |
-| Weekly images (prod) | `generation-worker.ts` → `adapters/weekly-image.ts` | FLUX generate + loop ≤5; metadata `content_sim` |
+| Weekly images (prod) | `generation-worker.ts` → `adapters/weekly-image.ts` | FLUX generate + максимум 2 раунди; metadata `content_sim` |
 | CLI | `npm run content-sim` | `capture` / `run` / `gates` / `hypothesis` |
 | Release gate | `preflight.ts` code `simulation_not_passed` | блок без pass або human override |
 | Admin | Visuals ArtifactCard | escalation panel + Approve записує `human_override` |
@@ -32,7 +33,14 @@ Adapters: `weekly-master` (делегує `weekly:sandbox`), `weekly-image`, `da
 ## Image loop
 
 1. Deterministic (розмір / aspect / bytes) — безкоштовно.
-2. **Per-variant vision** (weekly): після FLUX (зазвичай 3 варіанти) critic оцінює **кожен**;
+2. **Per-concept vision** (weekly): art director спершу формує один factual semantic contract,
+   а потім одним structured jury call повертає до **3 незалежних концепцій**: literal context
+   (хто/що змінилось), mechanism (як це працює), consequence (користь/шкода/trade-off/
+   uncertainty). Це не три seed-відхилення одного кадру: validator вимагає різні subject,
+   `motif_class`, setting і physical action; camera/color/seed/scale не зараховуються як нова
+   концепція. Кожен концепт отримує власні scene/prompt/render/vision; три renders і три
+   vision-виклики йдуть паралельно, але порядок та `variant_concepts` зберігаються. Це також
+   прибирає дефект, коли фінальний repair перезаписував першу трійку одним кадром.
    primary = найвищий overall без blockers (`pickBestVariantIndex`); scores у
    `metadata.variant_scores`. При тиску `CONTENT_SIM_MAX_IMAGE_SPEND_USD` — vision лише на
    top-1 за heuristic (розмір буфера), інші `budget_skip`.
@@ -44,21 +52,36 @@ Adapters: `weekly-master` (делегує `weekly:sandbox`), `weekly-image`, `da
    як authority, а generated semantic contract — як hypothesis для перевірки. Blockers включають:
    `impossible_orientation`, `prop_use_mismatch`, `decorative_second_beat`, `sibling_echo`,
    editorial fidelity **`missing_context` / `missing_mechanism` / `missing_consequence` /
-   `ambiguous_visual_story` / `off_news`**, і **`melted_motion`** (smeared/blur artifacts).
+   `ambiguous_visual_story` / `off_news`**, **`opaque_abstraction`** (generic tubes/canisters/
+   switchboards/data-flow machinery) і **`melted_motion`** (smeared/blur artifacts). Для pass
+   critic також мусить назвати видимі pixel-evidence для context/mechanism/consequence/headline
+   pairing; самих високих чисел без доказів недостатньо (`semantic_evidence_missing`).
    Якщо vision повертає prose замість
    JSON — **`critic_parse_error`** (soft-fail → repair/retry), а не hard-fail усієї
    `story_image` джоби.
-4. Repair directive → новий seed / scene_override / prompt patches / reject metaphor. У v4
+4. Три critiques агрегуються в одне batch-рішення. Concrete prompt patches збираються з усіх
+   варіантів; якщо всі три семантично невдалі, другий раунд **відкидає метафору й заново планує
+   сцену**, а не робить seed roulette того самого задуму. Repair directive → новий seed /
+   scene_override / prompt patches / reject metaphor. У v4
    `prompt_patches` передаються в `renderDirective` **до** наступного FLUX request; старе
    post-render дописування metadata видалено, бо воно не ремонтувало пікселі.
-5. Максимум **`CONTENT_SIM_MAX_IMAGE_REPAIR=5`** спроб; spend cap `CONTENT_SIM_MAX_IMAGE_SPEND_USD`.
+5. Максимум **2 раунди**: initial batch + один decisive re-plan. Код hard-cap-ить старе env
+   `CONTENT_SIM_MAX_IMAGE_REPAIR=5` до 2; default spend cap — **$0.20**.
 6. Fail → `needs_human_review` + escalation (blockers + suggested actions). Джоба **не** валиться.
-(source: `src/lib/content-sim/loop.ts`, `config.ts`, `adapters/weekly-image.ts`,
-`vision-critic.ts`)
+(source: `pipeline/card-image.ts`, `src/lib/content-sim/loop.ts`, `config.ts`,
+`adapters/weekly-image.ts`, `vision-critic.ts`)
 
 Owner Approve на failed sim ставить `metadata.content_sim.human_override=true` і знімає
-`simulation_not_passed`. Promote alternate у Visuals ставить `pick_source=owner`.
+`simulation_not_passed`. Promote alternate у Visuals ставить `pick_source=owner` і переносить
+scene/prompt/lens саме обраного запису `variant_concepts`, а не metadata попереднього primary.
 (source: `src/app/admin/(cms)/weekly/actions.ts`, `preflight.ts`)
+
+Кожен успішний image render і vision call записується в `generation_cost_events` одразу після
+provider-виклику, ще до збереження фінального artifact. Тому ledger бачить витрати failed/
+interrupted jobs; Visuals окремо показує current run cost і накопичений Story revision spend із
+render/vision split. Старі aggregate events показуються окремо як legacy, без неправдивого split.
+(source: `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/admin-data.ts`,
+`src/components/admin/weekly-workspace.tsx`)
 
 ## CLI
 
