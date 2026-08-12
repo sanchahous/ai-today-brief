@@ -14,6 +14,7 @@ on:
       - scripts/visual-compiler-shadow.ts
       - scripts/visual-compiler-render-shadow-v2.ts
       - scripts/visual-compiler-patch-energy-v3.ts
+      - scripts/visual-compiler-evaluate-energy-v3.ts
       - scripts/visual-compiler-contact-sheet.ts
       - scripts/sharp-namespace.d.ts
       - .github/workflows/visual-compiler-prototype.yml
