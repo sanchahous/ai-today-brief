@@ -1,10 +1,12 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
+  VISUAL_GLYPHS,
+  VISUAL_OUTCOME_SIGNALS,
+  VISUAL_RELATIONS,
   compileAutoVisualClaim,
   parseAutoVisualClaim,
   validateAutoVisualClaim,
-  visualClaimExtractionJsonSchema,
   visualClaimExtractionPrompt,
   type AutoVisualClaim,
   type HoldoutStoryInput,
@@ -34,8 +36,9 @@ interface OpenRouterResponse {
 interface ExtractionBatchResult {
   weekStart: string;
   model: string;
+  mode: 'batch' | 'per_story_fallback';
   attempts: number;
-  usage: OpenRouterResponse['usage'];
+  usage: NonNullable<OpenRouterResponse['usage']>;
   rawClaims: unknown[];
 }
 
@@ -59,6 +62,22 @@ function sleep(milliseconds: number) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+function emptyUsage(): NonNullable<OpenRouterResponse['usage']> {
+  return { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0, cost: 0 };
+}
+
+function addUsage(
+  left: NonNullable<OpenRouterResponse['usage']>,
+  right: OpenRouterResponse['usage'],
+): NonNullable<OpenRouterResponse['usage']> {
+  return {
+    prompt_tokens: (left.prompt_tokens ?? 0) + (right?.prompt_tokens ?? 0),
+    completion_tokens: (left.completion_tokens ?? 0) + (right?.completion_tokens ?? 0),
+    total_tokens: (left.total_tokens ?? 0) + (right?.total_tokens ?? 0),
+    cost: (left.cost ?? 0) + (right?.cost ?? 0),
+  };
+}
+
 function responseText(value: OpenRouterResponse): string {
   const content = value.choices?.[0]?.message?.content;
   if (Array.isArray(content)) return content.map((part) => part.text ?? '').join('');
@@ -79,9 +98,77 @@ function parseJson(text: string): Record<string, unknown> {
   }
 }
 
-async function extractBatch(stories: HoldoutStoryInput[]): Promise<ExtractionBatchResult> {
+function extractionPrompt(stories: readonly HoldoutStoryInput[]): string {
+  const template = {
+    claims: [
+      {
+        story_id: 'copy an input story_id exactly',
+        identity: 'visible subject or system anchor',
+        change: 'one factual change',
+        mechanism: 'one visible causal process',
+        primary_outcome: 'one visible grounded result',
+        core_claim: 'one cause-to-effect proposition',
+        primary_evidence: 'physical_action',
+        outcome_kind: 'benefit',
+        labels: ['MAX THREE SHORT LABELS'],
+        quantitative_facts: [{ label: 'EXACT FACT LABEL', value: 'EXACT SOURCE VALUE' }],
+        states: [],
+        comparison: null,
+        layers: [],
+        routing: null,
+        forbidden_contradictions: ['one concrete visual contradiction to avoid'],
+        grammar: {
+          context_glyph: 'model_chip',
+          mechanism_glyph: 'workflow',
+          outcome_glyph: 'checkmark',
+          branch_glyphs: null,
+          relation: 'flow',
+          outcome_signal: 'success',
+          human_behavior: false,
+        },
+      },
+    ],
+  };
+  return [
+    visualClaimExtractionPrompt(stories),
+    '',
+    'JSON MODE CONTRACT: return one object with a claims array and every key shown below for every story.',
+    'Use null for comparison, routing, and branch_glyphs when not applicable. Use [] for non-applicable arrays.',
+    `Allowed primary_evidence: physical_action, temporal_change, architecture_change, counterfactual_comparison, quantitative_difference, task_routing.`,
+    `Allowed outcome_kind: benefit, harm, tradeoff, uncertainty.`,
+    `Allowed glyphs: ${VISUAL_GLYPHS.join(', ')}.`,
+    `Allowed relations: ${VISUAL_RELATIONS.join(', ')}.`,
+    `Allowed outcome signals: ${VISUAL_OUTCOME_SIGNALS.join(', ')}.`,
+    'For routing, use {"source":"...","branches":[{"label":"...","destination":"...","visibleOutcome":"..."},{...}]}.',
+    'For comparison, use {"left":"...","right":"..."}.',
+    'Do not add markdown or commentary.',
+    `OUTPUT_TEMPLATE=${JSON.stringify(template)}`,
+  ].join('\n');
+}
+
+function verifyClaimSet(rawClaims: unknown[], stories: readonly HoldoutStoryInput[]) {
+  const expected = new Set(stories.map((story) => story.revision_item_id));
+  const received = new Set<string>();
+  for (const raw of rawClaims) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+    const id = (raw as Record<string, unknown>).story_id;
+    if (typeof id === 'string') received.add(id);
+  }
+  const missing = [...expected].filter((id) => !received.has(id));
+  const unexpected = [...received].filter((id) => !expected.has(id));
+  if (rawClaims.length !== stories.length || missing.length || unexpected.length) {
+    throw new Error(
+      `Claim set mismatch: expected=${stories.length}, received=${rawClaims.length}, missing=${missing.join(',') || 'none'}, unexpected=${unexpected.join(',') || 'none'}.`,
+    );
+  }
+}
+
+async function callExtractor(
+  stories: HoldoutStoryInput[],
+  maxAttempts: number,
+): Promise<{ attempts: number; usage: NonNullable<OpenRouterResponse['usage']>; rawClaims: unknown[] }> {
   let lastError: unknown;
-  for (let attempt = 1; attempt <= 4; attempt += 1) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -93,17 +180,10 @@ async function extractBatch(stories: HoldoutStoryInput[]): Promise<ExtractionBat
         },
         body: JSON.stringify({
           model: MODEL,
-          messages: [
-            {
-              role: 'user',
-              content: visualClaimExtractionPrompt(stories),
-            },
-          ],
-          temperature: 0.1,
-          max_tokens: 12_000,
-          response_format: visualClaimExtractionJsonSchema(
-            stories.map((story) => story.revision_item_id),
-          ),
+          messages: [{ role: 'user', content: extractionPrompt(stories) }],
+          temperature: 0,
+          max_tokens: stories.length === 1 ? 2_500 : 12_000,
+          response_format: { type: 'json_object' },
         }),
         signal: AbortSignal.timeout(180_000),
       });
@@ -113,25 +193,50 @@ async function extractBatch(stories: HoldoutStoryInput[]): Promise<ExtractionBat
       const payload = (await response.json()) as OpenRouterResponse;
       const parsed = parseJson(responseText(payload));
       const rawClaims = Array.isArray(parsed.claims) ? parsed.claims : [];
-      if (rawClaims.length !== stories.length) {
-        throw new Error(
-          `Expected ${stories.length} claims but received ${rawClaims.length} for ${stories[0]?.week_start}.`,
-        );
-      }
-      return {
-        weekStart: stories[0]?.week_start ?? 'unknown',
-        model: MODEL,
-        attempts: attempt,
-        usage: payload.usage,
-        rawClaims,
-      };
+      verifyClaimSet(rawClaims, stories);
+      return { attempts: attempt, usage: payload.usage ?? emptyUsage(), rawClaims };
     } catch (error) {
       lastError = error;
-      console.warn(`[holdout-extract] attempt ${attempt} failed`, error);
-      await sleep(attempt * 2_000);
+      console.warn(
+        `[holdout-extract] ${stories[0]?.week_start}/${stories.length} attempt ${attempt} failed`,
+        error,
+      );
+      await sleep(attempt * 1_500);
     }
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
+}
+
+async function extractBatch(stories: HoldoutStoryInput[]): Promise<ExtractionBatchResult> {
+  try {
+    const batch = await callExtractor(stories, 3);
+    return {
+      weekStart: stories[0]?.week_start ?? 'unknown',
+      model: MODEL,
+      mode: 'batch',
+      ...batch,
+    };
+  } catch (batchError) {
+    console.warn('[holdout-extract] batch failed; falling back to one story per request', batchError);
+    const rawClaims: unknown[] = [];
+    let usage = emptyUsage();
+    let attempts = 3;
+    for (const story of stories) {
+      const single = await callExtractor([story], 3);
+      rawClaims.push(...single.rawClaims);
+      usage = addUsage(usage, single.usage);
+      attempts += single.attempts;
+    }
+    verifyClaimSet(rawClaims, stories);
+    return {
+      weekStart: stories[0]?.week_start ?? 'unknown',
+      model: MODEL,
+      mode: 'per_story_fallback',
+      attempts,
+      usage,
+      rawClaims,
+    };
+  }
 }
 
 function markdownEscape(value: string): string {
@@ -150,14 +255,14 @@ function report(records: HoldoutPlanRecord[], batches: ExtractionBatchResult[]):
     );
   }
   const promptTokens = batches.reduce(
-    (sum, batch) => sum + (batch.usage?.prompt_tokens ?? 0),
+    (sum, batch) => sum + (batch.usage.prompt_tokens ?? 0),
     0,
   );
   const completionTokens = batches.reduce(
-    (sum, batch) => sum + (batch.usage?.completion_tokens ?? 0),
+    (sum, batch) => sum + (batch.usage.completion_tokens ?? 0),
     0,
   );
-  const reportedCost = batches.reduce((sum, batch) => sum + (batch.usage?.cost ?? 0), 0);
+  const reportedCost = batches.reduce((sum, batch) => sum + (batch.usage.cost ?? 0), 0);
   const lines = [
     '# Unseen multi-digest VisualClaim extraction',
     '',
@@ -189,13 +294,14 @@ function report(records: HoldoutPlanRecord[], batches: ExtractionBatchResult[]):
   lines.push('', '## Batch diagnostics', '');
   for (const batch of batches) {
     lines.push(
-      `- ${batch.weekStart}: ${batch.attempts} attempt(s), ${batch.usage?.total_tokens ?? 'unknown'} tokens.`,
+      `- ${batch.weekStart}: ${batch.mode}, ${batch.attempts} total attempt(s), ${batch.usage.total_tokens ?? 'unknown'} tokens.`,
     );
   }
   return `${lines.join('\n')}\n`;
 }
 
 async function main() {
+  await mkdir(OUT_DIR, { recursive: true });
   assertEnvironment();
   const stories = JSON.parse(await readFile(DATA_PATH, 'utf8')) as HoldoutStoryInput[];
   if (stories.length !== 21) {
@@ -212,6 +318,7 @@ async function main() {
   for (const [weekStart, group] of [...groups].sort(([a], [b]) => b.localeCompare(a))) {
     console.log(`[holdout-extract] ${weekStart}: ${group.length} stories`);
     batches.push(await extractBatch(group));
+    await writeFile(join(OUT_DIR, 'partial-batches.json'), `${JSON.stringify(batches, null, 2)}\n`);
   }
 
   const rawById = new Map<string, unknown>();
@@ -249,7 +356,6 @@ async function main() {
     );
   }
 
-  await mkdir(OUT_DIR, { recursive: true });
   await Promise.all([
     writeFile(join(OUT_DIR, 'extracted-claims.json'), `${JSON.stringify(records, null, 2)}\n`),
     writeFile(join(OUT_DIR, 'extraction-batches.json'), `${JSON.stringify(batches, null, 2)}\n`),
@@ -258,7 +364,12 @@ async function main() {
   console.log(report(records, batches));
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
+  await mkdir(OUT_DIR, { recursive: true });
+  await writeFile(
+    join(OUT_DIR, 'extraction-failure.txt'),
+    `${error instanceof Error ? error.stack ?? error.message : String(error)}\n`,
+  );
   console.error(error);
   process.exitCode = 1;
 });
