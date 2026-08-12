@@ -57,6 +57,13 @@ export interface VisualRoutingSpec {
   branches: VisualRouteBranch[];
 }
 
+export interface ApprovedOverlayDirective {
+  text: string;
+  /** Exact region ID from the chosen layout, e.g. state-2, remaining-core or route-a. */
+  regionId?: string;
+  importance?: 'primary' | 'secondary';
+}
+
 export interface VisualClaim {
   storyId: string;
   /** Headline supplies named identity; this is the visible subject/system anchor. */
@@ -71,6 +78,9 @@ export interface VisualClaim {
   coreClaim: string;
   primaryEvidence: PrimaryVisualEvidence;
   outcomeKind: VisualOutcomeKind;
+  /** Preferred: exact deterministic overlay placement. */
+  overlayDirectives?: ApprovedOverlayDirective[];
+  /** Compatibility/fallback when an exact region has not been planned yet. */
   approvedLabels?: string[];
   quantitativeFacts?: QuantitativeVisualFact[];
   /** Two or three states for a temporal claim. */
@@ -417,6 +427,12 @@ export function buildVisualTransitions(format: VisualFormat): VisualTransition[]
 }
 
 export function normalizeApprovedLabels(claim: VisualClaim): string[] {
+  if (claim.overlayDirectives?.length) {
+    return unique(claim.overlayDirectives.map((directive) => directive.text)).slice(
+      0,
+      WEEKLY_VISUAL_POLICY.overlayGroups.max,
+    );
+  }
   const explicit = claim.approvedLabels ?? [];
   const quantitative = (claim.quantitativeFacts ?? []).map((fact) =>
     clean(`${fact.label} ${fact.value}`, 48),
@@ -436,6 +452,17 @@ export function buildOverlayGroups(
   claim: VisualClaim,
   regions: VisualRegion[],
 ): OverlayGroup[] {
+  if (claim.overlayDirectives?.length) {
+    return claim.overlayDirectives
+      .slice(0, WEEKLY_VISUAL_POLICY.overlayGroups.max)
+      .map((directive, index) => ({
+        id: `overlay-${index + 1}`,
+        text: clean(directive.text, 48),
+        regionId: directive.regionId,
+        importance: directive.importance ?? (index === 0 ? 'primary' : 'secondary'),
+        source: 'approved_claim',
+      }));
+  }
   const labels = normalizeApprovedLabels(claim);
   return labels.map((text, index) => ({
     id: `overlay-${index + 1}`,
@@ -610,6 +637,7 @@ export function compileVisualPlan(
 export type VisualPlanIssue =
   | 'format_evidence_mismatch'
   | 'too_many_overlays'
+  | 'overlay_region_missing'
   | 'render_unit_allows_text'
   | 'render_unit_allows_infographic'
   | 'budget_exceeded';
@@ -621,6 +649,10 @@ export function validateVisualPlan(plan: VisualPlan): VisualPlanIssue[] {
   }
   if (plan.overlays.length > WEEKLY_VISUAL_POLICY.overlayGroups.max) {
     issues.push('too_many_overlays');
+  }
+  const regionIds = new Set(plan.regions.map((region) => region.id));
+  if (plan.overlays.some((overlay) => overlay.regionId && !regionIds.has(overlay.regionId))) {
+    issues.push('overlay_region_missing');
   }
   if (plan.renderUnits.some((unit) => unit.generatedTextAllowed !== false)) {
     issues.push('render_unit_allows_text');
