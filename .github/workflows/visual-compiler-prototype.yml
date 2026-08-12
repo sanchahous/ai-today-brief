@@ -8,6 +8,7 @@ on:
       - src/lib/weekly-digest/visual-compiler.ts
       - src/lib/weekly-digest/visual-compiler.test.ts
       - scripts/visual-compiler-shadow.ts
+      - scripts/sharp-namespace.d.ts
       - .github/workflows/visual-compiler-prototype.yml
   workflow_dispatch:
 
@@ -16,7 +17,7 @@ permissions:
 
 jobs:
   validate:
-    name: Test and typecheck visual compiler
+    name: Test, typecheck and compile shadow plans
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -35,3 +36,14 @@ jobs:
 
       - name: Typecheck repository
         run: npm run typecheck
+
+      - name: Compile seven-story shadow plans
+        run: npx tsx scripts/visual-compiler-shadow.ts
+
+      - name: Upload shadow plan package
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-compiler-shadow
+          path: artifacts/visual-compiler-shadow
+          if-no-files-found: error
+          retention-days: 14
