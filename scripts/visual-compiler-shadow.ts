@@ -43,6 +43,11 @@ const stories: ShadowStory[] = [
         { label: 'AGENT LOOP', value: '600×' },
         { label: 'CONTEXT RE-READS', value: '96%' },
       ],
+      overlayDirectives: [
+        { text: 'CHAT 1×', regionId: 'baseline' },
+        { text: 'AGENT LOOP 600×', regionId: 'amplified', importance: 'primary' },
+        { text: 'CONTEXT RE-READS 96%', regionId: 'amplified' },
+      ],
       forbiddenContradictions: [
         'the chat path consumes more power than the agent loop',
         'the agent context passes through compute only once',
@@ -66,7 +71,11 @@ const stories: ShadowStory[] = [
       primaryEvidence: 'temporal_change',
       outcomeKind: 'benefit',
       states: ['RUN', 'CRASH', 'RESUME'],
-      approvedLabels: ['RUN', 'CRASH', 'RESUME'],
+      overlayDirectives: [
+        { text: 'RUN', regionId: 'state-1' },
+        { text: 'CRASH', regionId: 'state-2' },
+        { text: 'RESUME', regionId: 'state-3', importance: 'primary' },
+      ],
       forbiddenContradictions: [
         'the resumed arm starts a different groove',
         'a human manually restarts the arm',
@@ -91,7 +100,11 @@ const stories: ShadowStory[] = [
       primaryEvidence: 'architecture_change',
       outcomeKind: 'tradeoff',
       layers: ['FULL BROWSER', 'HUMAN-FACING LAYERS', 'AGENT CORE'],
-      approvedLabels: ['FULL BROWSER', 'AGENT CORE', 'LESS CPU + MEMORY'],
+      overlayDirectives: [
+        { text: 'FULL BROWSER', regionId: 'full-system' },
+        { text: 'AGENT CORE', regionId: 'remaining-core', importance: 'primary' },
+        { text: 'LESS CPU + MEMORY', regionId: 'remaining-core' },
+      ],
       forbiddenContradictions: [
         'the compact core is inactive',
         'the removed layers remain attached',
@@ -130,7 +143,11 @@ const stories: ShadowStory[] = [
           },
         ],
       },
-      approvedLabels: ['LOCAL ROUTER', 'DENSE • CODE', 'MOE • SHELL'],
+      overlayDirectives: [
+        { text: 'LOCAL ROUTER', regionId: 'route-source' },
+        { text: 'DENSE • CODE', regionId: 'route-a', importance: 'primary' },
+        { text: 'MOE • SHELL', regionId: 'route-b', importance: 'primary' },
+      ],
       forbiddenContradictions: [
         'both task types go to the same model',
         'either route visibly exits to a cloud service',
@@ -163,7 +180,11 @@ const stories: ShadowStory[] = [
         { label: 'DEFAULT', value: '0.182' },
         { label: 'EVALUATION', value: '0.458' },
       ],
-      approvedLabels: ['HELP LESS'],
+      overlayDirectives: [
+        { text: 'DEFAULT 0.182', regionId: 'left' },
+        { text: 'EVALUATION 0.458', regionId: 'right' },
+        { text: 'HELP LESS', regionId: 'right', importance: 'primary' },
+      ],
       forbiddenContradictions: [
         'the evaluated assistant actively builds the tower',
         'both sides show the same level of intervention',
@@ -202,7 +223,11 @@ const stories: ShadowStory[] = [
           },
         ],
       },
-      approvedLabels: ['ONE FLAG', 'SEARCH • FETCH', 'CODE • MCP'],
+      overlayDirectives: [
+        { text: 'ONE FLAG', regionId: 'route-source' },
+        { text: 'SEARCH • FETCH', regionId: 'route-a', importance: 'primary' },
+        { text: 'CODE • MCP', regionId: 'route-b', importance: 'primary' },
+      ],
       forbiddenContradictions: [
         'the developer manually wires every tool loop',
         'tool outputs never return to the terminal result',
@@ -230,7 +255,11 @@ const stories: ShadowStory[] = [
         right:
           'an inspection camera gives a positive signal while a large broken texture remains plainly visible',
       },
-      approvedLabels: ['BUILD • 52 MIN', 'SELF-CHECK', 'BUG MISSED'],
+      overlayDirectives: [
+        { text: 'BUILD • 52 MIN', regionId: 'left', importance: 'primary' },
+        { text: 'SELF-CHECK', regionId: 'right' },
+        { text: 'BUG MISSED', regionId: 'right', importance: 'primary' },
+      ],
       forbiddenContradictions: [
         'the screenshot inspector correctly highlights the rendering bug',
         'the final game has no visible rendering defect',
@@ -247,13 +276,19 @@ function seconds(milliseconds: number): string {
   return `${Math.round(milliseconds / 100) / 10}s`;
 }
 
+function overlaySummary(plan: VisualPlan): string {
+  return plan.overlays
+    .map((overlay) => `${overlay.text}@${overlay.regionId ?? 'global'}`)
+    .join(' · ');
+}
+
 function report(plans: Array<{ story: ShadowStory; plan: VisualPlan }>): string {
   const lines = [
     '# Weekly Visual Compiler shadow plans',
     '',
     'Policy: `weekly-visual-compiler-v0` — headline-paired, one core claim, cinematic assets plus deterministic explanatory structure.',
     '',
-    '| # | Story | Core claim | Format | Overlays | Assets | Est. cost | Est. time | Plan gate |',
+    '| # | Story | Core claim | Format | Overlay@region | Assets | Est. cost | Est. time | Plan gate |',
     '|---:|---|---|---|---|---:|---:|---:|---|',
   ];
   for (const { story, plan } of plans) {
@@ -262,7 +297,7 @@ function report(plans: Array<{ story: ShadowStory; plan: VisualPlan }>): string 
       `| ${story.rank} | ${markdownEscape(story.headline)} | ${markdownEscape(
         plan.claim.coreClaim,
       )} | \`${plan.format}\` | ${markdownEscape(
-        plan.overlays.map((overlay) => overlay.text).join(' · ') || 'none',
+        overlaySummary(plan) || 'none',
       )} | ${plan.renderUnits.length} | $${plan.execution.estimatedUsd.toFixed(
         3,
       )} | ${seconds(plan.execution.estimatedDurationMs)} | ${
@@ -278,6 +313,7 @@ function report(plans: Array<{ story: ShadowStory; plan: VisualPlan }>): string 
   lines.push('- Maximum accepted-image budget: `$0.10`.');
   lines.push('- Maximum elapsed time: `60s`.');
   lines.push('- Maximum deterministic overlay groups: `3`.');
+  lines.push('- Every overlay is assigned to an explicit semantic region.');
   lines.push('- Generated assets must contain no text, labels, arrows, logos or infographic layout.');
   lines.push('- Pixel-only semantic gate runs before overlays are added.');
   return `${lines.join('\n')}\n`;
@@ -288,7 +324,8 @@ function prompts(plans: Array<{ story: ShadowStory; plan: VisualPlan }>): string
   for (const { story, plan } of plans) {
     lines.push(`## ${story.rank}. ${story.headline}`, '');
     lines.push(`Format: \`${plan.format}\`  `);
-    lines.push(`Core claim: ${plan.claim.coreClaim}`, '');
+    lines.push(`Core claim: ${plan.claim.coreClaim}  `);
+    lines.push(`Overlays: ${overlaySummary(plan) || 'none'}`, '');
     for (const unit of plan.renderUnits) {
       lines.push(`### ${unit.id} — ${unit.regionId}`, '', '```text', unit.prompt, '```', '');
     }
