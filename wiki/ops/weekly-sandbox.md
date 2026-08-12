@@ -97,7 +97,7 @@ npm run weekly:sandbox -- gates --fixture <path> --run artifacts/_local/weekly-s
 лишається діагностикою правил, а не єдиним захистом.
 
 Для images використовуй окремий `npm run content-sim -- run --adapter weekly-image --fixture …`.
-Policy `weekly-semantic-story-v5` вимагає у fixture original summary/why/practical/limitation/
+Policy `weekly-semantic-story-v5.1` вимагає у fixture original summary/why/practical/limitation/
 takeaway/claims і generated context/meaning/mechanism/consequence/visual thesis. Critic має
 повернути всі чотири semantic scores; відсутній score fail-closed дорівнює 0. Repair directive у
 prod застосовується до наступного FLUX render, тоді як offline fixture повторно оцінює ті самі

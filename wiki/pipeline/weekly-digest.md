@@ -298,7 +298,7 @@ contract → three-lens concept jury** (два LLM-кроки на ролі `wee
 Контекст: title+summary+body excerpt+`why`+practical+limitation+takeaway+editorsView+
 `editorialAngle`+approved research claims/context/risks+sibling metaphors. Top 3 беруть claims із
 approved `research_pack`; fallback серіалізує `.text`, а не обʼєкти. Seed без `job.id`.
-`metadata.prompt_policy` = **`weekly-semantic-story-v5`** (v4 був one-scene/three-seed policy).
+`metadata.prompt_policy` = **`weekly-semantic-story-v5.1`** (v4 був one-scene/three-seed policy).
 Validator рахує semantic gates лише за `story_anchor` / `visible_mechanism` /
 `visible_consequence` та іншими renderable fields; `why_it_fits` лишається rationale і не може
 сам виконати `mechanism_not_visible`. `story_anchor` мусить містити actor/system із context, не лише

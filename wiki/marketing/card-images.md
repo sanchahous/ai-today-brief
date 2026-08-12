@@ -9,7 +9,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v1` (2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
-Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5` and
+Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5.1` and
 three-concept jury follow-up 2026-08-11
 Last updated: 2026-08-11
 
@@ -35,7 +35,7 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    (source: `pipeline/card-image.ts`'s `runArtDirectorLadder`, PR #191)
 2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
    separate semantic house style** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
-   `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-semantic-story-v5`**
+   `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-semantic-story-v5.1`**
    as of 2026-08-11): **approved source → context → meaning → mechanism → consequence → causal
    visual metaphor**. `generation-worker.ts` передає не лише headline/summary: `why`, practical,
    limitation, takeaway, editor inference, owner angle, approved research claims/context/risks.
@@ -127,6 +127,13 @@ tubes/canisters/switchboards/data streams блокуються як `opaque_abst
 provider-call ledger і Visuals показують фактичний render/vision spend поточної ревізії. (source:
 `pipeline/card-image.ts`, `src/lib/content-sim/adapters/weekly-image.ts`,
 `src/lib/content-sim/vision-critic.ts`, `src/lib/weekly-digest/generation-worker.ts`)
+
+**v5.1 concept-collapse fix (owner production review 2026-08-12):** jury pitch-ів, які відрізняються
+структурно, більше не відкидаються лише через literal story-token mismatch — це advisory для paid
+vision. Якщо critic просить `rejectMetaphor`, його replacement scene/patches стають feedback нового
+jury, але не shared FLUX instruction. Так три варіанти не перетворюються на три typewriters/cars/
+hands. (source: `pipeline/card-image.ts`, `src/lib/content-sim/adapters/weekly-image.ts`,
+`src/lib/weekly-digest/generation-worker.ts`, owner review 2026-08-12)
 
 ## Related pages
 

@@ -155,7 +155,7 @@ Release preflight на Overview / Release покаже, що ще червоне
 факт про весь agentic AI. Якщо Top 3 не мають чесного спільного зв'язку, не вимагай umbrella-
 тему — краще прямо назвати три новини.
 
-На **Visuals** (policy `weekly-semantic-story-v5`) відкрий **Illustration prompt** і прочитай
+На **Visuals** (policy `weekly-semantic-story-v5.1`) відкрий **Illustration prompt** і прочитай
 semantic contract до approval:
 
 1. **Context** — чи видно, яка саме система/обʼєкт/подія змінилась, а не «будь-який AI».

@@ -201,7 +201,7 @@ critic-а лишається fail-closed: resume не перетворює не�
 
 ## Межа з semantic illustration v5 (2026-08-11)
 
-Shortlist/rank/diversity відбору не змінювались. `weekly-semantic-story-v5` починає роботу вже
+Shortlist/rank/diversity відбору не змінювались. `weekly-semantic-story-v5.1` починає роботу вже
 після bilingual article master: бере approved story fields і, для Top 3, лише approved
 `research_pack`; перетворює їх на illustration contract context → meaning → mechanism →
 consequence. Vision score впливає на `story_image` artifact/release preflight, але не переоцінює

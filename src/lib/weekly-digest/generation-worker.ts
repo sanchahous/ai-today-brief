@@ -2435,7 +2435,7 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
   let source: Buffer;
   let sourceKind = 'generated';
   let sourceUrl: string | null = null;
-  let promptPolicy = 'weekly-semantic-story-v5';
+  let promptPolicy = 'weekly-semantic-story-v5.1';
   let imageMeta: {
     provider: string;
     model: string;
@@ -2583,7 +2583,14 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
       },
       seedBase: `${job.weekly_digest_id}:${job.revision_id}:${item.id}`,
       sceneOverride: sceneOverride ?? undefined,
-      generate: async ({ attempt, sceneOverride: override, seedBase, promptSuffix, directive }) => {
+      generate: async ({
+        attempt,
+        sceneOverride: override,
+        seedBase,
+        promptSuffix,
+        rejectedScene,
+        planningFeedback,
+      }) => {
         const sceneForGen = override || undefined;
         const illustrations = await generateWeeklyReportageIllustrations(
           {
@@ -2604,7 +2611,9 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
             siblingMetaphors: siblingMetaphors.length ? siblingMetaphors : undefined,
             seedBase,
             sceneOverride: sceneForGen,
-            sceneOverrideSource: directive?.sceneOverride?.trim() ? 'critic_repair' : 'owner',
+            sceneOverrideSource: 'owner',
+            rejectedScenes: rejectedScene ? [rejectedScene] : undefined,
+            repairFeedback: planningFeedback.length ? planningFeedback : undefined,
             renderDirective: promptSuffix || undefined,
             variantCount: 3,
           },

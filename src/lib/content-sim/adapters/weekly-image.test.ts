@@ -75,19 +75,27 @@ describe('applyRepairToSceneInput', () => {
     expect(second.seedBase).toContain('attempt2');
   });
 
-  it('clears override when metaphor is rejected without replacement', () => {
+  it('keeps only the owner override when a metaphor is rejected', () => {
     const out = applyRepairToSceneInput({ seedBase: 'x', sceneOverride: 'old scene' }, 2, {
       rejectMetaphor: true,
     });
-    expect(out.sceneOverride).toBeUndefined();
+    expect(out.sceneOverride).toBe('old scene');
+    expect(out.promptSuffix).toBe('');
   });
 
-  it('keeps critic-supplied scene_override', () => {
-    const out = applyRepairToSceneInput({ seedBase: 'x', sceneOverride: 'old' }, 2, {
+  it('uses a critic replacement as jury feedback, not a shared scene override', () => {
+    const out = applyRepairToSceneInput({ seedBase: 'x' }, 2, {
       rejectMetaphor: true,
-      sceneOverride: 'new concrete metaphor',
+      sceneOverride: 'a rejected typewriter motif',
+      promptPatches: ['make the typewriter tape restart visibly'],
     });
-    expect(out.sceneOverride).toBe('new concrete metaphor');
+    expect(out.sceneOverride).toBeUndefined();
+    expect(out.rejectedScene).toBe('a rejected typewriter motif');
+    expect(out.planningFeedback).toContain(
+      'Rejected critic direction: a rejected typewriter motif',
+    );
+    expect(out.planningFeedback).toContain('make the typewriter tape restart visibly');
+    expect(out.promptSuffix).toBe('');
   });
 
   it('joins prompt patches into a suffix', () => {
@@ -253,7 +261,7 @@ describe('scoreAndPickVariants', () => {
     const costs: number[] = [];
     const pending = scoreAndPickVariants(
       baseCandidate(),
-      { headline: 'Energy story', policyId: 'weekly-semantic-story-v5' },
+      { headline: 'Energy story', policyId: 'weekly-semantic-story-v5.1' },
       {
         remainingBudgetUsd: 1,
         onCostEvent: (event) => {
@@ -336,7 +344,7 @@ describe('scoreAndPickVariants', () => {
     const ctx = {
       headline: 'TutorMoments benchmarks when language models should help a student',
       summary: 'Seven models improve when told they are being tested.',
-      policyId: 'weekly-semantic-story-v5',
+      policyId: 'weekly-semantic-story-v5.1',
     };
     const scene = 'a pneumatic tube network carries sealed canisters through generic pipework';
     expect(opaqueAbstractionCritique(scene, ctx)?.blockers[0]?.code).toBe('opaque_abstraction');
@@ -352,7 +360,7 @@ describe('scoreAndPickVariants', () => {
     mockedVision.mockRejectedValue(new Error('provider timeout'));
     const picked = await scoreAndPickVariants(
       baseCandidate(),
-      { headline: 'Energy story', policyId: 'weekly-semantic-story-v5' },
+      { headline: 'Energy story', policyId: 'weekly-semantic-story-v5.1' },
       { remainingBudgetUsd: 1 },
     );
     expect(picked.alternateBuffers).toHaveLength(2);
