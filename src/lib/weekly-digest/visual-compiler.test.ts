@@ -9,6 +9,7 @@ import {
   normalizeApprovedLabels,
   rankVisualCandidate,
   selectVisualFormat,
+  validateVisualPlan,
   weightedVisualScore,
   type FinalGateEvidence,
   type VisualClaim,
@@ -21,7 +22,8 @@ function energyClaim(): VisualClaim {
     change: 'the agent loop repeatedly rereads the same large context',
     mechanism: 'completed context blocks cycle back through the compute path on every agent step',
     primaryOutcome: 'the repeated loop creates a dramatically larger heat and power footprint',
-    coreClaim: 'context rereading makes an agentic coding session far more energy intensive than one chat exchange',
+    coreClaim:
+      'context rereading makes an agentic coding session far more energy intensive than one chat exchange',
     primaryEvidence: 'quantitative_difference',
     outcomeKind: 'harm',
     comparison: {
@@ -42,14 +44,20 @@ function museClaim(): VisualClaim {
     storyId: 'muse-resume',
     identity: 'the same autonomous tool arm working on one GPU-kernel groove',
     change: 'an interruption stops the arm before the groove is complete',
-    mechanism: 'a persistent event marker returns the same arm to the exact interrupted coordinate',
-    primaryOutcome: 'the arm resumes the unfinished groove without restarting the completed work',
-    coreClaim: 'a replayable event log lets a long autonomous coding run resume from the exact interruption point',
+    mechanism:
+      'a persistent event marker returns the same arm to the exact interrupted coordinate',
+    primaryOutcome:
+      'the arm resumes the unfinished groove without restarting the completed work',
+    coreClaim:
+      'a replayable event log lets a long autonomous coding run resume from the exact interruption point',
     primaryEvidence: 'temporal_change',
     outcomeKind: 'benefit',
     states: ['RUN', 'CRASH', 'RESUME'],
     approvedLabels: ['RUN', 'CRASH', 'RESUME'],
-    forbiddenContradictions: ['the resumed arm starts a different groove', 'a human manually restarts the arm'],
+    forbiddenContradictions: [
+      'the resumed arm starts a different groove',
+      'a human manually restarts the arm',
+    ],
   };
 }
 
@@ -58,14 +66,55 @@ function kitesurfClaim(): VisualClaim {
     storyId: 'kitesurf-browser',
     identity: 'a full browser stack beside a compact agent-facing browser core',
     change: 'human-facing tabs and high-fidelity rendering layers are removed',
-    mechanism: 'the removable outer browser layers separate while the web-execution core stays active',
+    mechanism:
+      'the removable outer browser layers separate while the web-execution core stays active',
     primaryOutcome: 'the remaining core fits a smaller compute footprint for agent automation',
-    coreClaim: 'removing human-facing browser layers leaves a smaller browser core optimized for agents',
+    coreClaim:
+      'removing human-facing browser layers leaves a smaller browser core optimized for agents',
     primaryEvidence: 'architecture_change',
     outcomeKind: 'tradeoff',
     layers: ['FULL BROWSER', 'HUMAN-FACING LAYERS', 'AGENT CORE'],
     approvedLabels: ['FULL BROWSER', 'AGENT CORE', 'LESS CPU + MEMORY'],
-    forbiddenContradictions: ['the compact core is inactive', 'the removed layers remain attached'],
+    forbiddenContradictions: [
+      'the compact core is inactive',
+      'the removed layers remain attached',
+    ],
+  };
+}
+
+function qwenRoutingClaim(): VisualClaim {
+  return {
+    storyId: 'qwen-local-routing',
+    identity: 'one local coding-agent router connected to two distinct local model engines',
+    change: 'each task is sent to the local model specialized for that kind of work',
+    mechanism:
+      'code review branches to the dense model while shell and git tasks branch to the MoE model',
+    primaryOutcome:
+      'accurate code work and fast system actions complete without sending either route to the cloud',
+    coreClaim:
+      'pairing two specialized local models can replace one cloud model for a coding-agent workflow',
+    primaryEvidence: 'task_routing',
+    outcomeKind: 'benefit',
+    routing: {
+      source: 'a local task classifier at the center of the coding-agent workflow',
+      branches: [
+        {
+          label: 'DENSE • CODE',
+          destination: 'a dense local model engine',
+          visibleOutcome: 'precise code review and code edits',
+        },
+        {
+          label: 'MOE • SHELL',
+          destination: 'a sparse MoE local model engine',
+          visibleOutcome: 'fast git, shell and system actions',
+        },
+      ],
+    },
+    approvedLabels: ['LOCAL ROUTER', 'DENSE • CODE', 'MOE • SHELL'],
+    forbiddenContradictions: [
+      'both task types go to the same model',
+      'either route visibly exits to a cloud service',
+    ],
   };
 }
 
@@ -73,15 +122,20 @@ function tutorClaim(): VisualClaim {
   return {
     storyId: 'tutor-restraint',
     identity: 'the same student and tutoring assistant in two matched learning situations',
-    change: 'evaluation awareness changes the assistant from constant intervention to deliberate restraint',
-    mechanism: 'the default assistant repeatedly moves the student’s blocks while the evaluated assistant keeps its hands back unless collapse is imminent',
-    primaryOutcome: 'the evaluated student performs the task independently with only minimal safety intervention',
-    coreClaim: 'telling a tutoring model it is being evaluated makes it help less and preserve the learner’s agency',
+    change:
+      'evaluation awareness changes the assistant from constant intervention to deliberate restraint',
+    mechanism:
+      'the default assistant repeatedly moves the student’s blocks while the evaluated assistant keeps its hands back unless collapse is imminent',
+    primaryOutcome:
+      'the evaluated student performs the task independently with only minimal safety intervention',
+    coreClaim:
+      'telling a tutoring model it is being evaluated makes it help less and preserve the learner’s agency',
     primaryEvidence: 'counterfactual_comparison',
     outcomeKind: 'benefit',
     comparison: {
       left: 'default assistant constantly rearranges blocks while the student becomes passive',
-      right: 'evaluation-aware assistant keeps both hands back while the student builds independently',
+      right:
+        'evaluation-aware assistant keeps both hands back while the student builds independently',
     },
     quantitativeFacts: [
       { label: 'DEFAULT', value: '0.182' },
@@ -93,6 +147,10 @@ function tutorClaim(): VisualClaim {
       'both sides show the same level of intervention',
     ],
   };
+}
+
+function sampleClaims(): VisualClaim[] {
+  return [energyClaim(), museClaim(), kitesurfClaim(), qwenRoutingClaim(), tutorClaim()];
 }
 
 function passingEvidence(overrides: Partial<FinalGateEvidence> = {}): FinalGateEvidence {
@@ -117,6 +175,7 @@ describe('weekly visual compiler routing', () => {
     [energyClaim(), 'cinematic_data_contrast'],
     [museClaim(), 'cinematic_sequence'],
     [kitesurfClaim(), 'cinematic_cutaway'],
+    [qwenRoutingClaim(), 'cinematic_routing'],
     [tutorClaim(), 'cinematic_split'],
   ] as const)('routes %s to %s', (claim, expectedFormat) => {
     expect(selectVisualFormat(claim)).toBe(expectedFormat);
@@ -139,7 +198,11 @@ describe('compiled plans', () => {
   it('builds a three-state, continuity-matched sequence for crash recovery', () => {
     const plan = compileVisualPlan(museClaim());
 
-    expect(plan.regions.map((region) => region.id)).toEqual(['state-1', 'state-2', 'state-3']);
+    expect(plan.regions.map((region) => region.id)).toEqual([
+      'state-1',
+      'state-2',
+      'state-3',
+    ]);
     expect(plan.transitions).toEqual([
       { from: 'state-1', to: 'state-2', type: 'state_change' },
       { from: 'state-2', to: 'state-3', type: 'state_change' },
@@ -165,8 +228,25 @@ describe('compiled plans', () => {
     expect(plan.renderStrategy).toBe('one_asset_plus_vector');
   });
 
+  it('builds a central source with two deterministic branches for task routing', () => {
+    const plan = compileVisualPlan(qwenRoutingClaim());
+
+    expect(plan.regions.map((region) => region.id)).toEqual([
+      'route-source',
+      'route-a',
+      'route-b',
+    ]);
+    expect(plan.transitions).toEqual([
+      { from: 'route-source', to: 'route-a', type: 'branch' },
+      { from: 'route-source', to: 'route-b', type: 'branch' },
+    ]);
+    expect(plan.renderUnits.map((unit) => unit.regionId)).toEqual(['route-a', 'route-b']);
+    expect(plan.renderUnits[1]?.referenceFrom).toBe('asset-1');
+    expect(plan.renderStrategy).toBe('reference_split');
+  });
+
   it('never asks the image model to create labels, arrows, or a finished infographic', () => {
-    for (const claim of [energyClaim(), museClaim(), kitesurfClaim(), tutorClaim()]) {
+    for (const claim of sampleClaims()) {
       const plan = compileVisualPlan(claim);
       for (const unit of plan.renderUnits) {
         expect(unit.generatedTextAllowed).toBe(false);
@@ -189,16 +269,24 @@ describe('compiled plans', () => {
   });
 
   it('keeps every planned format within the configured cost and time policy', () => {
-    for (const claim of [energyClaim(), museClaim(), kitesurfClaim(), tutorClaim()]) {
+    for (const claim of sampleClaims()) {
       const execution = compileVisualPlan(claim).execution;
       expect(execution.withinPolicy).toBe(true);
-      expect(execution.estimatedUsd).toBeLessThanOrEqual(WEEKLY_VISUAL_POLICY.budget.maxUsd);
+      expect(execution.estimatedUsd).toBeLessThanOrEqual(
+        WEEKLY_VISUAL_POLICY.budget.maxUsd,
+      );
       expect(execution.estimatedDurationMs).toBeLessThanOrEqual(
         WEEKLY_VISUAL_POLICY.budget.maxDurationMs,
       );
       expect(execution.visionCalls).toBeLessThanOrEqual(
         WEEKLY_VISUAL_POLICY.budget.maxVisionCalls,
       );
+    }
+  });
+
+  it('emits plans that pass deterministic plan validation', () => {
+    for (const claim of sampleClaims()) {
+      expect(validateVisualPlan(compileVisualPlan(claim))).toEqual([]);
     }
   });
 });
@@ -271,8 +359,16 @@ describe('repair routing', () => {
     expect(chooseVisualRepair(['mechanism_missing'])).toBe('regenerate_failed_asset');
   });
 
+  it('prioritizes a semantic contradiction over an overlay-only failure', () => {
+    expect(chooseVisualRepair(['labels_not_approved', 'contradictory_action'])).toBe(
+      'replan_visual_claim',
+    );
+  });
+
   it('falls back deterministically when a contradiction remains and regeneration is exhausted', () => {
-    expect(chooseVisualRepair(['contradictory_action'], 0)).toBe('deterministic_fallback');
+    expect(chooseVisualRepair(['contradictory_action'], 0)).toBe(
+      'deterministic_fallback',
+    );
   });
 });
 
