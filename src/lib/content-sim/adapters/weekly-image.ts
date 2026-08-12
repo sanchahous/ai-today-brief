@@ -70,6 +70,21 @@ export interface WeeklyImageVariantConcept {
   composition?: string;
 }
 
+/**
+ * Every rendered buffer from every repair round, kept until the owner
+ * approves the selected artifact. This is intentionally separate from the
+ * final candidate so failed concepts are still reviewable in admin.
+ */
+export interface WeeklyImageIterationPreview {
+  attempt: number;
+  variantIndex: number;
+  bytes: Buffer;
+  concept: WeeklyImageVariantConcept;
+  score?: VariantScoreMeta;
+  attemptCostUsd?: number;
+  critiquePassed?: boolean;
+}
+
 export interface WeeklyImageSimCandidate {
   bytes: Buffer;
   width: number;
@@ -716,7 +731,29 @@ export async function runWeeklyImageSimLoop(input: {
   candidate: WeeklyImageSimCandidate | null;
   report: ContentSimQualityReport;
   meta: ContentSimArtifactMeta;
+  iterationPreviews: WeeklyImageIterationPreview[];
 }> {
+  const iterationPreviews: WeeklyImageIterationPreview[] = [];
+  const captureIteration = (
+    attempt: number,
+    candidate: WeeklyImageSimCandidate,
+    record?: { critique?: ContentSimCritique; costUsd?: number },
+  ) => {
+    const buffers = [candidate.bytes, ...candidate.alternateBuffers];
+    const concepts = variantConceptsFor(candidate, buffers.length);
+    const scores = candidate.variantScores ?? [];
+    buffers.forEach((bytes, variantIndex) => {
+      iterationPreviews.push({
+        attempt,
+        variantIndex,
+        bytes,
+        concept: concepts[variantIndex]!,
+        score: scores[variantIndex],
+        attemptCostUsd: record?.costUsd,
+        critiquePassed: scores[variantIndex]?.passed ?? record?.critique?.passed,
+      });
+    });
+  };
   if (!contentSimImageLoopEnabled()) {
     const candidate = await input.generate({
       attempt: 1,
@@ -725,6 +762,7 @@ export async function runWeeklyImageSimLoop(input: {
       promptSuffix: '',
       planningFeedback: [],
     });
+    if (candidate) captureIteration(1, candidate);
     const report: ContentSimQualityReport = {
       adapter: 'weekly-image',
       outcome: candidate ? 'passed' : 'needs_human_review',
@@ -748,6 +786,7 @@ export async function runWeeklyImageSimLoop(input: {
       candidate: candidate ? { ...candidate, pickSource: candidate.pickSource ?? 'auto' } : null,
       report,
       meta: toContentSimArtifactMeta(report),
+      iterationPreviews,
     };
   }
 
@@ -824,6 +863,9 @@ export async function runWeeklyImageSimLoop(input: {
         byteSize: candidate.bytes.length,
       }),
     critique: (candidate) => critiqueWeeklyImageCandidate(candidate, input.ctx),
+    onIteration: async (record, candidate) => {
+      if (candidate.bytes.length > 0) captureIteration(record.attempt, candidate, record);
+    },
   });
 
   return {
@@ -838,5 +880,6 @@ export async function runWeeklyImageSimLoop(input: {
         vision_usd: visionCostUsd,
       },
     },
+    iterationPreviews,
   };
 }

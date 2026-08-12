@@ -135,6 +135,13 @@ jury, але не shared FLUX instruction. Так три варіанти не �
 hands. (source: `pipeline/card-image.ts`, `src/lib/content-sim/adapters/weekly-image.ts`,
 `src/lib/weekly-digest/generation-worker.ts`, owner review 2026-08-12)
 
+**Reviewable render history (2026-08-12):** кожен image buffer з кожного repair round зберігається
+до approval як підписаний private preview із round, variant, concept lens/title, motif, scene та
+per-variant score. Visuals показує всю generation history; owner promotion лишається можливим для
+поточної трійки. Після approval storage cleanup видаляє review-only previews і залишає тільки
+обраний primary, тоді як artifact/review ledger зберігає audit trail. (source: `generation-worker.ts`,
+`admin-data.ts`, `weekly-workspace.tsx`, `weekly/actions.ts`, owner request 2026-08-12)
+
 ## Related pages
 
 - [content-sim](../pipeline/content-sim.md)

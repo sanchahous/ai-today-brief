@@ -1686,3 +1686,16 @@ opaque abstraction, banned UI/clichés лишаються blockers; semantic mis
 paid vision. При `rejectMetaphor` critic direction і patches ідуть у concept jury як feedback,
 але не копіюються в усі три renders. Додані regression tests для variant prompts, critic feedback
 і production-shaped three-pitch planning.
+
+---
+
+## 2026-08-12 — reviewable illustration render history
+
+**Джерело:** owner request 2026-08-12; `src/lib/content-sim/adapters/weekly-image.ts`,
+`src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/admin-data.ts`,
+`src/components/admin/weekly-workspace.tsx`, `src/app/admin/(cms)/weekly/actions.ts`.
+
+**Змінено:** кожен фактично згенерований buffer із кожного repair round зберігається у private
+storage з round/variant/concept/score labels і доступний у Visuals до approval. Approve прибирає
+review-only files та gallery metadata, залишаючи selected primary; artifact/review rows
+залишаються для audit.
