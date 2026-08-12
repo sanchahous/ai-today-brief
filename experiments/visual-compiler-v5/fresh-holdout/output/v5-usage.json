@@ -1,7 +1,7 @@
 {
-  "promptTokens": 18106,
-  "completionTokens": 7707,
-  "totalTokens": 25813,
-  "costUsd": 0.024699299999999997,
-  "calls": 15
+  "promptTokens": 6715,
+  "completionTokens": 4783,
+  "totalTokens": 11498,
+  "costUsd": 0.013972,
+  "calls": 2
 }
