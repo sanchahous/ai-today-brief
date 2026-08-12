@@ -1,0 +1,117 @@
+name: Visual compiler v7 fallback routing rerun
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-v7-role-router-20260812
+    paths:
+      - .github/workflows/visual-compiler-v7-route-fallback-rerun.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  route:
+    name: Route audited unseen claims including safe fallbacks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-compiler-v7-role-router-20260812
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate fallback router
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-auto-claim-v5.test.ts
+          src/lib/weekly-digest/visual-role-router-v7.test.ts
+
+      - name: Typecheck repository
+        run: npm run typecheck
+
+      - name: Download successful unseen claim audit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh run download 31613943481
+          --repo "$GITHUB_REPOSITORY"
+          --name visual-compiler-v7-fresh-routed-claims-fallback
+          --dir artifacts
+
+      - name: Route eligible claims and retain ineligible claims as fallbacks
+        env:
+          VISUAL_V7_CLAIMS: artifacts/visual-compiler-v7-fresh-claims/v5-claims.json
+          VISUAL_V7_OUT_DIR: artifacts/visual-compiler-v7-fresh
+        run: npx tsx scripts/visual-compiler-v7-route-claims.ts
+
+      - name: Assert unseen route distribution before image calls
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const rows = JSON.parse(
+            fs.readFileSync('artifacts/visual-compiler-v7-fresh/v7-routed-claims.json', 'utf8'),
+          );
+          const counts = rows.reduce(
+            (acc, row) => {
+              acc[row.router.pipeline] = (acc[row.router.pipeline] || 0) + 1;
+              acc.imageCalls += row.router.expectedImageCalls;
+              return acc;
+            },
+            { imageCalls: 0 },
+          );
+          const expected = {
+            current_art_director: 1,
+            deterministic_compiler: 4,
+            source_led_fallback: 2,
+            imageCalls: 1,
+          };
+          for (const [key, value] of Object.entries(expected)) {
+            if ((counts[key] || 0) !== value) {
+              throw new Error(`Unexpected ${key}: ${counts[key] || 0}; expected ${value}.`);
+            }
+          }
+          const unsafe = rows.filter(
+            (row) => !row.eligible && row.router.pipeline !== 'source_led_fallback',
+          );
+          if (unsafe.length) {
+            throw new Error(`Ineligible claims escaped fallback: ${unsafe.map((row) => row.story.rank).join(', ')}`);
+          }
+          console.log(JSON.stringify(counts, null, 2));
+          NODE
+
+      - name: Persist routed package on isolated branch
+        run: |
+          mkdir -p experiments/visual-compiler-v7/fresh-holdout/output
+          cp artifacts/visual-compiler-v7-fresh-claims/v5-claims.json experiments/visual-compiler-v7/fresh-holdout/output/
+          cp artifacts/visual-compiler-v7-fresh-claims/v5-claim-report.md experiments/visual-compiler-v7/fresh-holdout/output/
+          cp artifacts/visual-compiler-v7-fresh/v7-routed-claims.json experiments/visual-compiler-v7/fresh-holdout/output/
+          cp artifacts/visual-compiler-v7-fresh/v7-routing-report.md experiments/visual-compiler-v7/fresh-holdout/output/
+          printf '%s\n' "$GITHUB_RUN_ID" > experiments/visual-compiler-v7/fresh-holdout/output/routing-run-id.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/visual-compiler-v7/fresh-holdout/output
+          git commit -m "Record unseen v7 fallback routing [skip ci]"
+          git fetch origin experiment/visual-compiler-v7-role-router-20260812
+          git rebase origin/experiment/visual-compiler-v7-role-router-20260812
+          SKIP_E2E=1 git push origin HEAD:experiment/visual-compiler-v7-role-router-20260812
+
+      - name: Upload routed unseen package
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-compiler-v7-fresh-routed-package
+          path: |
+            artifacts/visual-compiler-v7-fresh-claims
+            artifacts/visual-compiler-v7-fresh
+          if-no-files-found: error
+          retention-days: 14
