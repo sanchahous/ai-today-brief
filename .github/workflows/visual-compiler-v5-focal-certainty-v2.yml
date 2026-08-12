@@ -1,0 +1,112 @@
+name: Visual compiler v5 focal certainty v2
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-v5-fresh-holdout-20260812
+    paths:
+      - .github/workflows/visual-compiler-v5-focal-certainty-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    name: Apply source ceiling and rerun fresh claim gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-compiler-v5-fresh-holdout-20260812
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Reapply focal patch then enforce source certainty ceiling
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent
+
+          workflow = Path('.github/workflows/visual-compiler-v5-focal-certainty.yml').read_text()
+          marker = "          python - <<'PY'\n"
+          start = workflow.index(marker) + len(marker)
+          end = workflow.index("\n          PY", start)
+          embedded = dedent(workflow[start:end])
+          exec(compile(embedded, 'focal-certainty-embedded.py', 'exec'))
+
+          source = Path('src/lib/weekly-digest/visual-auto-claim-v5.ts')
+          text = source.read_text()
+          old = """  const sourceCertainty = inferFocalCertainty(raw, story);
+          const requestedCertainty = normalizedEnum<VisualCertainty>(
+            raw.certainty,
+            CERTAINTIES,
+            sourceCertainty,
+          );"""
+          new = """  const sourceCertainty = inferSourceCertainty(story);
+          const focalCertainty = inferFocalCertainty(raw, story);
+          const requestedCertainty = normalizedEnum<VisualCertainty>(
+            raw.certainty,
+            CERTAINTIES,
+            focalCertainty,
+          );"""
+          if old not in text:
+              raise SystemExit('Expected focal certainty parse block was not found.')
+          source.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test source-ceiling focal certainty
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-auto-claim-v5.test.ts
+          src/lib/weekly-digest/visual-auto-claim-v5-short-identity.test.ts
+          src/lib/weekly-digest/visual-auto-claim-v5-certainty-role.test.ts
+          src/lib/weekly-digest/visual-generic-svg-v5.test.ts
+
+      - name: Typecheck source-ceiling compiler
+        run: npm run typecheck
+
+      - name: Persist source-ceiling focal repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/lib/weekly-digest/visual-auto-claim-v5.ts \
+            src/lib/weekly-digest/visual-auto-claim-v5-certainty-role.test.ts \
+            scripts/visual-compiler-v5-extract-audit.ts
+          git commit -m "Infer focal certainty under a source hard ceiling"
+          git push origin HEAD:experiment/visual-compiler-v5-fresh-holdout-20260812
+
+      - name: Extract audit and repair fresh claims
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          VISUAL_V5_EXTRACT_MODEL: google/gemini-2.5-flash
+          VISUAL_V5_AUDIT_MODEL: google/gemini-2.5-flash
+          VISUAL_V5_OUT_DIR: artifacts/visual-compiler-v5-fresh
+        run: npx tsx scripts/visual-compiler-v5-extract-audit.ts
+
+      - name: Persist source-ceiling claim reports
+        run: |
+          mkdir -p experiments/visual-compiler-v5/fresh-holdout/output
+          cp artifacts/visual-compiler-v5-fresh/v5-claims.json experiments/visual-compiler-v5/fresh-holdout/output/
+          cp artifacts/visual-compiler-v5-fresh/v5-claim-report.md experiments/visual-compiler-v5/fresh-holdout/output/
+          cp artifacts/visual-compiler-v5-fresh/v5-usage.json experiments/visual-compiler-v5/fresh-holdout/output/
+          printf '%s\n' "$GITHUB_RUN_ID" > experiments/visual-compiler-v5/fresh-holdout/output/claim-run-id.txt
+          git add experiments/visual-compiler-v5/fresh-holdout/output
+          git commit -m "Record source-ceiling fresh v5 claims [skip ci]"
+          git push origin HEAD:experiment/visual-compiler-v5-fresh-holdout-20260812
+
+      - name: Upload source-ceiling claim package
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-compiler-v5-fresh-claims-source-ceiling
+          path: artifacts/visual-compiler-v5-fresh
+          if-no-files-found: error
+          retention-days: 14
