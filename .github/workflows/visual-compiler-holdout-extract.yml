@@ -1,0 +1,59 @@
+name: Visual compiler unseen holdout extraction
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-unseen-holdout-20260812
+    paths:
+      - experiments/visual-compiler/holdout/holdout-stories.json
+      - src/lib/weekly-digest/visual-auto-claim.ts
+      - src/lib/weekly-digest/visual-auto-claim.test.ts
+      - scripts/visual-compiler-holdout-extract.ts
+      - .github/workflows/visual-compiler-holdout-extract.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  extract:
+    name: Extract and validate 21 unseen VisualClaims
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run focused compiler tests
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-compiler.test.ts
+          src/lib/weekly-digest/visual-auto-claim.test.ts
+          src/lib/weekly-digest/visual-render-policy.test.ts
+          src/lib/weekly-digest/visual-gate-policy.test.ts
+
+      - name: Typecheck repository
+        run: npm run typecheck
+
+      - name: Extract unseen VisualClaims
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          VISUAL_HOLDOUT_EXTRACT_MODEL: google/gemini-2.5-flash
+          VISUAL_HOLDOUT_OUT_DIR: artifacts/visual-compiler-holdout
+        run: npx tsx scripts/visual-compiler-holdout-extract.ts
+
+      - name: Upload extraction package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-compiler-holdout-extraction
+          path: artifacts/visual-compiler-holdout
+          if-no-files-found: error
+          retention-days: 14
