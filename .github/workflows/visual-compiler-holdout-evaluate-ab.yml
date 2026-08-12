@@ -1,6 +1,13 @@
 name: Visual compiler unseen holdout A-B evaluation
 
 on:
+  push:
+    branches:
+      - experiment/visual-compiler-unseen-holdout-20260812
+    paths:
+      - scripts/visual-compiler-holdout-audit-claims.ts
+      - scripts/visual-compiler-holdout-evaluate-source-ab.ts
+      - .github/workflows/visual-compiler-holdout-evaluate-ab.yml
   workflow_dispatch:
 
 permissions:
@@ -9,7 +16,7 @@ permissions:
 
 jobs:
   evaluate:
-    name: Evaluate 12 blinded current-versus-compiler cards
+    name: Source-grounded evaluation of 12 blinded cards
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -52,13 +59,14 @@ jobs:
           VISUAL_HOLDOUT_SELECTION: artifacts/visual-compiler-holdout/render-selection.json
         run: npx tsx scripts/visual-compiler-holdout-audit-claims.ts
 
-      - name: Run blinded pixel and headline-paired evaluation
+      - name: Run source-grounded blinded visual evaluation
         env:
           OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
           VISUAL_HOLDOUT_JUDGE_MODEL: google/gemini-2.5-flash
           VISUAL_HOLDOUT_AB_OUT_DIR: artifacts/visual-compiler-holdout-ab
           VISUAL_HOLDOUT_SELECTION: artifacts/visual-compiler-holdout/render-selection.json
-        run: npx tsx scripts/visual-compiler-holdout-evaluate-ab.ts
+          VISUAL_HOLDOUT_CLAIM_AUDIT: artifacts/visual-compiler-holdout-ab/claim-fidelity.json
+        run: npx tsx scripts/visual-compiler-holdout-evaluate-source-ab.ts
 
       - name: Upload evaluated A-B package
         if: always()
