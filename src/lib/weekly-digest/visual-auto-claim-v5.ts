@@ -408,7 +408,17 @@ export function parseAutoVisualClaimV5(
       }
     : null;
 
-  const identity = clean(raw.identity, 180) || story.title.split(/[—:]/)[0]!.trim().slice(0, 180);
+  const rawIdentity = clean(raw.identity, 180);
+const titleIdentity = clean(story.title, 180);
+const identity =
+  rawIdentity.length >= 8
+    ? rawIdentity
+    : titleIdentity.length >= 8
+      ? titleIdentity
+      : clean(story.summary, 180);
+if (rawIdentity && rawIdentity.length < 8 && identity !== rawIdentity) {
+  warnings.push('identity_expanded_from_story_title');
+}
   const change = clean(raw.change, 180) || story.summary.slice(0, 180);
   const visualDriver =
     clean(raw.visual_driver, 220) ||

@@ -187,6 +187,15 @@ function sourcePayload(story: HoldoutStoryInput) {
   };
 }
 
+function uuidCharacterDistance(left: string, right: string): number {
+  if (left.length !== right.length) return Number.POSITIVE_INFINITY;
+  let distance = 0;
+  for (let index = 0; index < left.length; index += 1) {
+    if (left[index] !== right[index]) distance += 1;
+  }
+  return distance;
+}
+
 function verifyRawClaimSet(rawClaims: unknown[], stories: HoldoutStoryInput[]) {
   const expected = new Set(stories.map((story) => story.revision_item_id));
   const received = new Set<string>();
@@ -203,6 +212,59 @@ function verifyRawClaimSet(rawClaims: unknown[], stories: HoldoutStoryInput[]) {
   }
 }
 
+function canonicalizeRawClaimSet(
+  rawClaims: unknown[],
+  stories: HoldoutStoryInput[],
+): unknown[] {
+  const expectedIds = stories.map((story) => story.revision_item_id);
+  const expected = new Set(expectedIds);
+  const exactIds = new Set(
+    rawClaims
+      .map((value) => clean(record(value).story_id, 100))
+      .filter((id) => expected.has(id)),
+  );
+  const missingIds = expectedIds.filter((id) => !exactIds.has(id));
+  const unexpectedRows = rawClaims
+    .map((value, index) => ({
+      value,
+      index,
+      id: clean(record(value).story_id, 100),
+    }))
+    .filter((row) => row.id && !expected.has(row.id));
+  const mapping = new Map<number, string>();
+  const usedExpectedIds = new Set<string>();
+
+  for (const row of unexpectedRows) {
+    const candidates = missingIds.filter(
+      (candidate) =>
+        !usedExpectedIds.has(candidate) &&
+        uuidCharacterDistance(row.id, candidate) <= 2,
+    );
+    if (candidates.length !== 1) continue;
+    const candidate = candidates[0]!;
+    const competingRows = unexpectedRows.filter(
+      (other) =>
+        !mapping.has(other.index) &&
+        uuidCharacterDistance(other.id, candidate) <= 2,
+    );
+    if (competingRows.length !== 1) continue;
+    mapping.set(row.index, candidate);
+    usedExpectedIds.add(candidate);
+  }
+
+  const normalized = rawClaims.map((value, index) => {
+    const canonicalId = mapping.get(index);
+    if (!canonicalId) return value;
+    const suppliedId = clean(record(value).story_id, 100);
+    console.warn(
+      `[v5-extract] canonicalized near-match story_id ${suppliedId} -> ${canonicalId}`,
+    );
+    return { ...record(value), story_id: canonicalId };
+  });
+  verifyRawClaimSet(normalized, stories);
+  return normalized;
+}
+
 async function extractBatch(stories: HoldoutStoryInput[], usage: UsageTotals): Promise<unknown[]> {
   const response = await callModel<{ claims?: unknown }>({
     model: EXTRACT_MODEL,
@@ -212,8 +274,7 @@ async function extractBatch(stories: HoldoutStoryInput[], usage: UsageTotals): P
     usage,
   });
   const rawClaims = Array.isArray(response.claims) ? response.claims : [];
-  verifyRawClaimSet(rawClaims, stories);
-  return rawClaims;
+  return canonicalizeRawClaimSet(rawClaims, stories);
 }
 
 function auditPrompt(
