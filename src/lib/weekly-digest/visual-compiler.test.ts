@@ -35,6 +35,11 @@ function energyClaim(): VisualClaim {
       { label: 'AGENT LOOP', value: '600×' },
       { label: 'CONTEXT RE-READS', value: '96%' },
     ],
+    overlayDirectives: [
+      { text: 'CHAT 1×', regionId: 'baseline' },
+      { text: 'AGENT LOOP 600×', regionId: 'amplified', importance: 'primary' },
+      { text: 'CONTEXT RE-READS 96%', regionId: 'amplified' },
+    ],
     forbiddenContradictions: ['the chat path consumes more power than the agent loop'],
   };
 }
@@ -53,7 +58,11 @@ function museClaim(): VisualClaim {
     primaryEvidence: 'temporal_change',
     outcomeKind: 'benefit',
     states: ['RUN', 'CRASH', 'RESUME'],
-    approvedLabels: ['RUN', 'CRASH', 'RESUME'],
+    overlayDirectives: [
+      { text: 'RUN', regionId: 'state-1' },
+      { text: 'CRASH', regionId: 'state-2' },
+      { text: 'RESUME', regionId: 'state-3', importance: 'primary' },
+    ],
     forbiddenContradictions: [
       'the resumed arm starts a different groove',
       'a human manually restarts the arm',
@@ -74,7 +83,11 @@ function kitesurfClaim(): VisualClaim {
     primaryEvidence: 'architecture_change',
     outcomeKind: 'tradeoff',
     layers: ['FULL BROWSER', 'HUMAN-FACING LAYERS', 'AGENT CORE'],
-    approvedLabels: ['FULL BROWSER', 'AGENT CORE', 'LESS CPU + MEMORY'],
+    overlayDirectives: [
+      { text: 'FULL BROWSER', regionId: 'full-system' },
+      { text: 'AGENT CORE', regionId: 'remaining-core', importance: 'primary' },
+      { text: 'LESS CPU + MEMORY', regionId: 'remaining-core' },
+    ],
     forbiddenContradictions: [
       'the compact core is inactive',
       'the removed layers remain attached',
@@ -110,7 +123,11 @@ function qwenRoutingClaim(): VisualClaim {
         },
       ],
     },
-    approvedLabels: ['LOCAL ROUTER', 'DENSE • CODE', 'MOE • SHELL'],
+    overlayDirectives: [
+      { text: 'LOCAL ROUTER', regionId: 'route-source' },
+      { text: 'DENSE • CODE', regionId: 'route-a', importance: 'primary' },
+      { text: 'MOE • SHELL', regionId: 'route-b', importance: 'primary' },
+    ],
     forbiddenContradictions: [
       'both task types go to the same model',
       'either route visibly exits to a cloud service',
@@ -141,7 +158,11 @@ function tutorClaim(): VisualClaim {
       { label: 'DEFAULT', value: '0.182' },
       { label: 'EVALUATION', value: '0.458' },
     ],
-    approvedLabels: ['HELP LESS'],
+    overlayDirectives: [
+      { text: 'DEFAULT 0.182', regionId: 'left' },
+      { text: 'EVALUATION 0.458', regionId: 'right' },
+      { text: 'HELP LESS', regionId: 'right', importance: 'primary' },
+    ],
     forbiddenContradictions: [
       'the evaluated assistant actively builds the tower',
       'both sides show the same level of intervention',
@@ -245,6 +266,29 @@ describe('compiled plans', () => {
     expect(plan.renderStrategy).toBe('reference_split');
   });
 
+  it('targets each deterministic label to the semantic region it describes', () => {
+    expect(compileVisualPlan(energyClaim()).overlays).toMatchObject([
+      { text: 'CHAT 1×', regionId: 'baseline' },
+      { text: 'AGENT LOOP 600×', regionId: 'amplified' },
+      { text: 'CONTEXT RE-READS 96%', regionId: 'amplified' },
+    ]);
+    expect(compileVisualPlan(museClaim()).overlays).toMatchObject([
+      { text: 'RUN', regionId: 'state-1' },
+      { text: 'CRASH', regionId: 'state-2' },
+      { text: 'RESUME', regionId: 'state-3' },
+    ]);
+    expect(compileVisualPlan(kitesurfClaim()).overlays).toMatchObject([
+      { text: 'FULL BROWSER', regionId: 'full-system' },
+      { text: 'AGENT CORE', regionId: 'remaining-core' },
+      { text: 'LESS CPU + MEMORY', regionId: 'remaining-core' },
+    ]);
+    expect(compileVisualPlan(tutorClaim()).overlays).toMatchObject([
+      { text: 'DEFAULT 0.182', regionId: 'left' },
+      { text: 'EVALUATION 0.458', regionId: 'right' },
+      { text: 'HELP LESS', regionId: 'right' },
+    ]);
+  });
+
   it('never asks the image model to create labels, arrows, or a finished infographic', () => {
     for (const claim of sampleClaims()) {
       const plan = compileVisualPlan(claim);
@@ -261,6 +305,7 @@ describe('compiled plans', () => {
   it('caps deterministic overlay groups at three', () => {
     const labels = normalizeApprovedLabels({
       ...energyClaim(),
+      overlayDirectives: undefined,
       approvedLabels: ['ONE', 'TWO', 'THREE', 'FOUR'],
     });
 
@@ -288,6 +333,15 @@ describe('compiled plans', () => {
     for (const claim of sampleClaims()) {
       expect(validateVisualPlan(compileVisualPlan(claim))).toEqual([]);
     }
+  });
+
+  it('rejects an overlay assigned to a region that does not exist', () => {
+    const plan = compileVisualPlan({
+      ...museClaim(),
+      overlayDirectives: [{ text: 'RESUME', regionId: 'missing-state' }],
+    });
+
+    expect(validateVisualPlan(plan)).toContain('overlay_region_missing');
   });
 });
 
