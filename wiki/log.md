@@ -1666,3 +1666,23 @@ promotion переносять scene/prompt/lens обраного concept. Visua
 **Перевірено:** targeted Vitest для concept lenses, окремих FLUX prompts, per-concept vision input
 і auto-pick metadata alignment; повний `npm run pr:check` пройшов: 113 files / 1 109 tests,
 coverage/typecheck/e2e/wiki/build зелені, ESLint — 0 errors (7 pre-existing warnings).
+
+---
+
+## 2026-08-12 — v5.1 concept-collapse repair
+
+**Джерело:** owner production review Story 2/3/5 2026-08-12; GitHub worker logs
+`31570121815`, `31570127047`, `31570130567`; Supabase artifact metadata;
+`pipeline/card-image.ts`, `src/lib/content-sim/adapters/weekly-image.ts`,
+`src/lib/weekly-digest/generation-worker.ts`.
+
+**Виявлено:** jury реально повертав різні motifs, але planning validator відкидав їх через
+literal `story_anchor`/semantic token mismatch. Після двох спроб fallback створював однакову
+семантичну форму для всіх lens. Додатково critic `sceneOverride` і його prompt patches ставали
+спільним наступним FLUX prompt, тому production показав три typewriters/cars/hands.
+
+**Змінено:** `weekly-semantic-story-v5.1` розділяє planning gates: structural duplication,
+opaque abstraction, banned UI/clichés лишаються blockers; semantic mismatch стає advisory для
+paid vision. При `rejectMetaphor` critic direction і patches ідуть у concept jury як feedback,
+але не копіюються в усі три renders. Додані regression tests для variant prompts, critic feedback
+і production-shaped three-pitch planning.

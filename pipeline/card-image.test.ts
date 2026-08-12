@@ -7,6 +7,7 @@ import {
   buildEditorialConceptPrompt,
   buildWeeklyContextBlock,
   cleanSceneText,
+  conceptPlanningBlockers,
   accentToHex,
   extractWeeklyStoryEntities,
   flattenMetaphorPitch,
@@ -38,6 +39,7 @@ import {
   SCHNELL_MODEL,
   seedFromString,
   weeklyReportageSceneBrief,
+  weeklyReportageSceneBriefs,
 } from './card-image';
 
 // Wraps the real loadProviderRegistry (pass-through by default) so existing
@@ -676,6 +678,25 @@ describe('weekly essence + metaphor gates', () => {
     );
   });
 
+  it('treats semantic token mismatch as a vision advisory while keeping structural blockers fatal', () => {
+    expect(
+      conceptPlanningBlockers([
+        'story_anchor_not_grounded_in_context',
+        'metaphor does not clearly argue the essence',
+        'mechanism_not_visible',
+        'consequence_not_visible',
+        'scene_missing_story_context',
+      ]),
+    ).toEqual([]);
+    expect(
+      conceptPlanningBlockers([
+        'story_anchor_not_grounded_in_context',
+        'sibling_scene_echo',
+        'opaque_abstraction_not_literal_to_story',
+      ]),
+    ).toEqual(['sibling_scene_echo', 'opaque_abstraction_not_literal_to_story']);
+  });
+
   it('accepts physical cause-and-effect language grounded in the visual thesis', () => {
     const errors = validateMetaphorPitch(
       {
@@ -939,7 +960,7 @@ describe('buildWeeklyPrompt / buildEditorialConceptPrompt', () => {
   });
 
   it('exports the editorial-concept prompt policy id', () => {
-    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-semantic-story-v5');
+    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-semantic-story-v5.1');
   });
 });
 
@@ -1102,6 +1123,41 @@ describe('generateWeeklyReportageIllustrations', () => {
     expect(sentPrompt).toContain('downstream task physically moving again');
   });
 
+  it('re-plans a critic replacement as three concepts instead of forcing it as owner direction', async () => {
+    const sentPrompts: string[] = [];
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (!String(input).includes('flux-2-klein-9b')) {
+        return new Response('fail', { status: 500 });
+      }
+      sentPrompts.push(String((init?.body as FormData).get('prompt')));
+      return jsonImageResponse();
+    }) as typeof fetch;
+
+    const result = await generateWeeklyReportageIllustrations(
+      {
+        headline: 'Muse Code resumes long agent runs after crashes',
+        summary: 'A replay-exact event log lets an unattended agent continue.',
+        sceneOverride: 'a vintage typewriter restarting a paper tape',
+        sceneOverrideSource: 'critic_repair',
+        repairFeedback: ['The rejected typewriter did not show crash recovery clearly.'],
+        seedBase: 'digest-1:critic-replan',
+        variantCount: 3,
+      },
+      { geminiApiKey: '', cloudflareAccountId: 'acct', cloudflareApiToken: 'token' },
+    );
+
+    expect(result?.variants.map((variant) => variant.conceptLens)).toEqual([
+      'literal_context',
+      'mechanism',
+      'consequence',
+    ]);
+    expect(result?.variants.every((variant) => variant.sceneSource !== 'critic_repair')).toBe(true);
+    expect(result?.variants.every((variant) => variant.conceptLens !== 'owner_direction')).toBe(
+      true,
+    );
+    expect(sentPrompts.every((prompt) => !prompt.includes('Repair requirement:'))).toBe(true);
+  });
+
   it('returns null when every variant attempt fails across the whole provider ladder', async () => {
     globalThis.fetch = vi.fn(async () => new Response('fail', { status: 500 })) as typeof fetch;
     const result = await generateWeeklyReportageIllustrations(
@@ -1205,5 +1261,115 @@ describe('scene-brief registry wiring (Phase 2)', () => {
     );
     expect(seenRoles.length).toBeGreaterThanOrEqual(1);
     expect(seenRoles.every((role) => role === 'weekly.card_image_scene')).toBe(true);
+  });
+
+  it('keeps three structurally distinct analogies instead of collapsing to semantic fallbacks', async () => {
+    process.env[FAKE_CLI_ENV_VAR] = 'token';
+    const replies = [
+      JSON.stringify({
+        context: 'Muse Code runs unattended kernel work and resumes after crashes.',
+        meaning: 'Long agent work becomes recoverable instead of disposable.',
+        essence: 'A durable checkpoint trail lets unattended work survive interruption.',
+        mechanism: 'A replay-exact event log resumes the agent from its last completed action.',
+        consequence: 'A long GPU optimization run can continue overnight after a crash.',
+        visual_thesis: 'Physical checkpoints restart interrupted work and carry it to completion.',
+        reader_test: 'See interruption, exact restart, and completed overnight work.',
+        must_feel: 'durable progress',
+        forbidden_cliches: ['person at laptop desk'],
+      }),
+      JSON.stringify({
+        metaphors: [
+          {
+            lens: 'literal_context',
+            title: 'Night workshop',
+            subject: 'an unattended automaton tending a half-finished precision mold',
+            story_anchor: 'night automaton beside one unfinished metal mold',
+            visible_mechanism: 'breadcrumb pegs restart the same interrupted carving',
+            visible_consequence: 'the mold finishes before the workshop lights return',
+            action: 'resuming the interrupted cut from one fixed peg',
+            setting: 'silent metal workshop before dawn',
+            props: ['checkpoint pegs', 'unfinished mold'],
+            composition: 'single',
+            motif_class: 'night_mold_workshop',
+            subject_kind: 'character',
+            why_it_fits:
+              'The unattended craft resumes at an exact checkpoint instead of restarting.',
+          },
+          {
+            lens: 'mechanism',
+            title: 'Rewinding loom',
+            subject: 'a loom rewinding one snapped thread to the last intact knot',
+            story_anchor: 'one complex woven pattern halted at a snapped thread',
+            visible_mechanism: 'colored knots guide the shuttle back to the exact break',
+            visible_consequence: 'the shuttle resumes weaving without unmaking completed cloth',
+            action: 'restarting from the final intact knot',
+            setting: 'bright textile repair floor',
+            props: ['colored knots', 'single shuttle'],
+            composition: 'single',
+            motif_class: 'checkpoint_loom',
+            subject_kind: 'process',
+            why_it_fits:
+              'The knots preserve completed steps and make an exact resume physically visible.',
+          },
+          {
+            lens: 'consequence',
+            title: 'Recovered kiln',
+            subject: 'a stopped kiln relighting around one preserved ceramic casting',
+            story_anchor: 'large unfinished casting surviving a darkened kiln',
+            visible_mechanism: 'one retained heat ring reignites the interrupted firing sequence',
+            visible_consequence: 'the intact casting emerges finished at sunrise',
+            action: 'continuing the firing cycle after a blackout',
+            setting: 'ceramic foundry at sunrise',
+            props: ['retained heat ring', 'finished casting'],
+            composition: 'single',
+            motif_class: 'recovered_kiln',
+            subject_kind: 'environment',
+            why_it_fits: 'Preserved state turns a failed overnight process into completed work.',
+          },
+        ],
+      }),
+    ];
+    let call = 0;
+    const registry = {
+      chainForRole: () => [
+        {
+          entry: { kind: 'cli' as const, id: 'stub-jury' },
+          cli: {
+            id: 'stub-jury',
+            binary: 'stub',
+            authEnvVar: FAKE_CLI_ENV_VAR,
+            buildArgs: () => [],
+            parseEnvelope: (stdout: string) => ({ text: stdout, model: 'stub', costUsd: 0 }),
+            spawnFn: async () => ({
+              stdout: replies[call++]!,
+              stderr: '',
+              exitCode: 0,
+              spawnError: null,
+            }),
+          },
+        },
+      ],
+    };
+
+    const concepts = await weeklyReportageSceneBriefs(
+      {
+        headline: 'Muse Code resumes unattended GPU work after crashes',
+        summary: 'A replay-exact event log preserves completed steps for a 24-hour run.',
+      },
+      { geminiApiKey: '', registry },
+    );
+
+    expect(call).toBe(2);
+    expect(concepts.map((concept) => concept.conceptLens)).toEqual([
+      'literal_context',
+      'mechanism',
+      'consequence',
+    ]);
+    expect(concepts.map((concept) => concept.motifClass)).toEqual([
+      'night_mold_workshop',
+      'checkpoint_loom',
+      'recovered_kiln',
+    ]);
+    expect(concepts.every((concept) => concept.source === 'stub-jury')).toBe(true);
   });
 });

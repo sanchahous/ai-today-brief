@@ -662,7 +662,7 @@ export async function sceneBrief(
 // ---------------------------------------------------------------------------
 
 /** Stored on story_image artifacts; bump when house-style / gates change. */
-export const WEEKLY_PROMPT_POLICY = 'weekly-semantic-story-v5';
+export const WEEKLY_PROMPT_POLICY = 'weekly-semantic-story-v5.1';
 
 /** Open vocabulary motif label from the metaphor director (snake_case). */
 export type MetaphorSubjectKind = 'object' | 'process' | 'environment' | 'character';
@@ -1430,6 +1430,24 @@ export function validateMetaphorPitch(
   return errors;
 }
 
+const CONCEPT_SEMANTIC_ADVISORIES = new Set([
+  'story_anchor_not_grounded_in_context',
+  'metaphor does not clearly argue the essence',
+  'mechanism_not_visible',
+  'consequence_not_visible',
+  'scene_missing_story_context',
+]);
+
+/**
+ * Planning must reject unsafe/duplicated structure, not valid visual analogy.
+ * Semantic token-overlap warnings are advisory here because metaphors often
+ * replace source nouns (event log -> loom/tape); the paid vision gate judges
+ * whether that analogy is actually legible in pixels.
+ */
+export function conceptPlanningBlockers(errors: readonly string[]): string[] {
+  return errors.filter((error) => !CONCEPT_SEMANTIC_ADVISORIES.has(error));
+}
+
 /** Compatibility wrapper for older call sites/tests. */
 export function validateWeeklySceneSpec(
   spec: WeeklyReportageSceneSpec,
@@ -1580,6 +1598,7 @@ function buildMetaphorInstruction(
   priorErrors?: string[],
   desiredLenses: readonly MetaphorLens[] = METAPHOR_LENSES,
   avoidScenes: readonly string[] = [],
+  repairFeedback: readonly string[] = [],
 ): string {
   const retry = priorErrors?.length
     ? `\nPrevious pitches failed: ${priorErrors.join('; ')}. Propose corrected metaphors.\n`
@@ -1627,6 +1646,7 @@ function buildMetaphorInstruction(
     `Reader test: "${essence.readerTest}"\nMust feel: "${essence.mustFeel}"\n` +
     `Forbidden: ${essence.forbiddenCliches.join(' | ') || 'generic AI sludge'}\n` +
     `${avoidScenes.length ? `Owner/critic direction already represented; alternatives must not resemble: ${avoidScenes.join(' | ')}\n` : ''}` +
+    `${repairFeedback.length ? `Prior vision feedback describes WHAT FAILED, not a scene to copy. Solve the semantic failure with new subjects and motifs; never repeat named objects from the rejected direction merely because the critic mentioned them:\n- ${repairFeedback.join('\n- ')}\n` : ''}` +
     `${buildWeeklyContextBlock(input, entities)}${retry}`
   );
 }
@@ -1802,6 +1822,7 @@ export async function weeklyReportageSceneBriefs(
     count?: number;
     excludedLenses?: readonly MetaphorLens[];
     avoidScenes?: readonly string[];
+    repairFeedback?: readonly string[];
   } = {},
 ): Promise<WeeklyReportageSceneBriefResult[]> {
   const count = Math.max(1, Math.min(3, options.count ?? 3));
@@ -1852,6 +1873,7 @@ export async function weeklyReportageSceneBriefs(
         lastErrors,
         missingLenses,
         options.avoidScenes,
+        options.repairFeedback,
       ),
       'weekly.card_image_scene',
       cfg,
@@ -1882,12 +1904,20 @@ export async function weeklyReportageSceneBriefs(
           ...avoidHints,
           ...acceptedHints,
         ]);
-        if (errors.length === 0) {
+        const blockers = conceptPlanningBlockers(errors);
+        if (blockers.length === 0) {
           accepted.push({ pitch, source: result.source || essenceResult?.source || 'fallback' });
           used.add(pitch);
+          if (errors.length > 0) {
+            logEvent('info', 'publish', 'Concept jury accepted with semantic advisories', {
+              lens,
+              title: pitch.title,
+              advisories: errors,
+            });
+          }
           break;
         }
-        aggregateErrors.push(`${lens}/${pitch.title}: ${errors.join(', ')}`);
+        aggregateErrors.push(`${lens}/${pitch.title}: ${blockers.join(', ')}`);
       }
     }
     lastErrors = aggregateErrors.slice(0, 6);
@@ -1957,6 +1987,10 @@ export interface WeeklyReportageIllustrationInput extends WeeklyReportageSceneIn
   sceneOverride?: string;
   /** Distinguishes a human scene edit from a critic-authored replacement. */
   sceneOverrideSource?: 'owner' | 'critic_repair';
+  /** Rejected critic scenes must inform planning but never become shared FLUX instructions. */
+  rejectedScenes?: string[];
+  /** Batch critique for the next concept jury, not for direct FLUX injection. */
+  repairFeedback?: string[];
   /** Vision-critic instruction applied to the actual next FLUX request. */
   renderDirective?: string;
   /** Defaults to 3. */
@@ -2013,7 +2047,17 @@ export async function generateWeeklyReportageIllustrations(
   input: WeeklyReportageIllustrationInput,
   cfg: CardImageConfig,
 ): Promise<WeeklyReportageIllustrationResult | null> {
-  const override = input.sceneOverride?.trim();
+  const suppliedOverride = input.sceneOverride?.trim();
+  const override =
+    suppliedOverride && input.sceneOverrideSource !== 'critic_repair'
+      ? suppliedOverride
+      : undefined;
+  const rejectedScenes = [
+    ...(input.rejectedScenes ?? []),
+    ...(suppliedOverride && input.sceneOverrideSource === 'critic_repair'
+      ? [suppliedOverride]
+      : []),
+  ];
   const count = Math.max(1, Math.min(3, input.variantCount ?? 3));
   let concepts: WeeklyReportageSceneBriefResult[];
   if (override) {
@@ -2023,7 +2067,8 @@ export async function generateWeeklyReportageIllustrations(
         ? await weeklyReportageSceneBriefs(input, cfg, {
             count: count - 1,
             excludedLenses: ['literal_context'],
-            avoidScenes: [scene],
+            avoidScenes: [scene, ...rejectedScenes],
+            repairFeedback: input.repairFeedback,
           })
         : [];
     const semanticReference = alternatives[0];
@@ -2044,13 +2089,11 @@ export async function generateWeeklyReportageIllustrations(
       `After seeing the image, grasp context, mechanism, and consequence: ${visualThesis.slice(0, 140)}`;
     const ownerConcept: WeeklyReportageSceneBriefResult = {
       scene,
-      source: input.sceneOverrideSource ?? 'owner',
+      source: 'owner',
       conceptLens: 'owner_direction',
       essence: (semanticReference?.essence ?? input.headline) || 'story',
-      metaphorTitle:
-        input.sceneOverrideSource === 'critic_repair' ? 'Critic replacement' : 'Owner direction',
-      motifClass:
-        input.sceneOverrideSource === 'critic_repair' ? 'critic_repair' : 'owner_direction',
+      metaphorTitle: 'Owner direction',
+      motifClass: 'owner_direction',
       subjectKind: 'object',
       composition: /facade|backstage|left|right|spatial divide/i.test(scene)
         ? 'dual_contrast'
@@ -2105,7 +2148,11 @@ export async function generateWeeklyReportageIllustrations(
     }
     concepts = [ownerConcept, ...alternatives].slice(0, count);
   } else {
-    concepts = await weeklyReportageSceneBriefs(input, cfg, { count });
+    concepts = await weeklyReportageSceneBriefs(input, cfg, {
+      count,
+      avoidScenes: rejectedScenes,
+      repairFeedback: input.repairFeedback,
+    });
   }
   const negative = negativePrompt();
   const generatedVariants = await Promise.all(

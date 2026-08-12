@@ -83,7 +83,7 @@ export function buildImageCriticPrompt(input: {
     : '';
   return [
     'You are the art director QA for AI Today Brief.',
-    `Policy: ${input.policyId ?? 'weekly-semantic-story-v5'} (no readable text, no UI chrome, no comic panels/collage).`,
+    `Policy: ${input.policyId ?? 'weekly-semantic-story-v5.1'} (no readable text, no UI chrome, no comic panels/collage).`,
     semanticStory
       ? `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, context_fidelity >= ${newsFloor}, mechanism_legibility >= ${newsFloor}, consequence_legibility >= ${newsFloor}, instant_comprehension >= ${newsFloor}, AND no blocking issues.`
       : `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, AND no blocking issues.`,

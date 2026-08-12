@@ -5,7 +5,7 @@ batch critic → один decisive re-plan → pass або human review з escal
 гейтиться цим.
 Sources: `src/lib/content-sim/`, `pipeline/providers/vision.ts`, `pipeline/scripts/content-sim.ts`,
 `.github/workflows/content-sim.yml`, план Content Sim Backtest 2026-08-11,
-owner prompt review + `weekly-semantic-story-v5` concept-diversity follow-up 2026-08-11
+owner prompt review + `weekly-semantic-story-v5.1` concept-diversity repair follow-up 2026-08-12
 Last updated: 2026-08-11
 
 ---
@@ -59,12 +59,13 @@ Adapters: `weekly-master` (делегує `weekly:sandbox`), `weekly-image`, `da
    Якщо vision повертає prose замість
    JSON — **`critic_parse_error`** (soft-fail → repair/retry), а не hard-fail усієї
    `story_image` джоби.
-4. Три critiques агрегуються в одне batch-рішення. Concrete prompt patches збираються з усіх
-   варіантів; якщо всі три семантично невдалі, другий раунд **відкидає метафору й заново планує
-   сцену**, а не робить seed roulette того самого задуму. Repair directive → новий seed /
-   scene_override / prompt patches / reject metaphor. У v4
-   `prompt_patches` передаються в `renderDirective` **до** наступного FLUX request; старе
-   post-render дописування metadata видалено, бо воно не ремонтувало пікселі.
+4. Три critiques агрегуються в одне batch-рішення. Якщо всі три семантично невдалі, другий раунд
+   **відкидає метафору й заново планує сцену**, а не робить seed roulette того самого задуму.
+   Structural blockers (sibling echo, opaque abstraction, banned UI/clichés) відхиляють pitch до
+   render; semantic token mismatch лишається advisory, бо vision має перевірити, чи метафора читається
+   в pixels. Critic `sceneOverride` і prompt patches при `rejectMetaphor` передаються в новий jury як
+   feedback, але не копіюються в усі три FLUX prompts — це запобігає collapse до одного motif.
+   Non-reject prompt patches можуть потрапити в наступний FLUX request.
 5. Максимум **2 раунди**: initial batch + один decisive re-plan. Код hard-cap-ить старе env
    `CONTENT_SIM_MAX_IMAGE_REPAIR=5` до 2; default spend cap — **$0.20**.
 6. Fail → `needs_human_review` + escalation (blockers + suggested actions). Джоба **не** валиться.

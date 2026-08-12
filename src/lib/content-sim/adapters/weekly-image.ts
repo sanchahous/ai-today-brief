@@ -614,10 +614,9 @@ function semanticFailure(critique: ContentSimCritique): boolean {
 }
 
 /**
- * All variants share one scene, so their combined verdict must repair the
- * concept, not merely sample another seed. Preserve the winning score for the
- * UI, merge concrete fixes, and force a new metaphor when every view agrees
- * that the scene misses the news semantics.
+ * Combine the three independent concept verdicts into one batch decision.
+ * Preserve the winning score for the UI and force a fresh concept jury when
+ * every evaluated concept misses the news semantics.
  */
 export function aggregateVariantRepairCritique(
   best: ContentSimCritique,
@@ -668,18 +667,30 @@ export function applyRepairToSceneInput(
   },
   attempt: number,
   directive?: ContentSimRepairDirective,
-): { sceneOverride?: string; seedBase: string; promptSuffix: string } {
+): {
+  sceneOverride?: string;
+  seedBase: string;
+  promptSuffix: string;
+  rejectedScene?: string;
+  planningFeedback: string[];
+} {
   const patches = directive?.promptPatches?.filter(Boolean) ?? [];
-  const promptSuffix = patches.length ? ` ${patches.join(' ')}` : '';
-  let sceneOverride = directive?.sceneOverride?.trim() || base.sceneOverride;
-  if (directive?.rejectMetaphor) {
-    // Force a fresh art-director pass (no owner override) unless critic
-    // supplied an explicit replacement scene.
-    if (!directive.sceneOverride?.trim()) sceneOverride = undefined;
-  }
+  const rejectedScene = directive?.sceneOverride?.trim() || undefined;
+  const planningFeedback = directive?.rejectMetaphor
+    ? [
+        ...(rejectedScene ? [`Rejected critic direction: ${rejectedScene}`] : []),
+        ...patches,
+        ...(directive.suggestedActions ?? []),
+      ].slice(0, 10)
+    : [];
+  // A critic-authored replacement is planning evidence, not an owner
+  // override. Applying its named motif to all three FLUX prompts collapses
+  // concept diversity (e.g. three typewriters/cars/hands).
+  const sceneOverride = base.sceneOverride;
+  const promptSuffix = !directive?.rejectMetaphor && patches.length ? ` ${patches.join(' ')}` : '';
   const seedBase =
     directive?.changeSeed || attempt > 1 ? `${base.seedBase}:attempt${attempt}` : base.seedBase;
-  return { sceneOverride, seedBase, promptSuffix };
+  return { sceneOverride, seedBase, promptSuffix, rejectedScene, planningFeedback };
 }
 
 /**
@@ -696,6 +707,8 @@ export async function runWeeklyImageSimLoop(input: {
     sceneOverride?: string;
     seedBase: string;
     promptSuffix: string;
+    rejectedScene?: string;
+    planningFeedback: string[];
     directive?: ContentSimRepairDirective;
   }) => Promise<WeeklyImageSimCandidate | null>;
   onCostEvent?: (event: WeeklyImageCostEvent) => void | Promise<void>;
@@ -710,6 +723,7 @@ export async function runWeeklyImageSimLoop(input: {
       sceneOverride: input.sceneOverride,
       seedBase: input.seedBase,
       promptSuffix: '',
+      planningFeedback: [],
     });
     const report: ContentSimQualityReport = {
       adapter: 'weekly-image',
@@ -759,6 +773,8 @@ export async function runWeeklyImageSimLoop(input: {
         sceneOverride: repaired.sceneOverride,
         seedBase: repaired.seedBase,
         promptSuffix: repaired.promptSuffix,
+        rejectedScene: repaired.rejectedScene,
+        planningFeedback: repaired.planningFeedback,
         directive,
       });
       if (!raw) {

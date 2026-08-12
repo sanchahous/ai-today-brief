@@ -28,6 +28,13 @@ Last updated: 2026-08-11
   `pipeline/card-image.ts`, `src/lib/content-sim/adapters/weekly-image.ts`,
   `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`)
 
+- **v5.1 concept-collapse repair (2026-08-12):** production review Story 2/3/5 показав, що
+  різні jury motifs відкидалися через semantic token mismatch, після чого fallback-и виглядали як
+  один motif. Critic replacement також копіювався в усі три prompts. Тепер structural gates
+  відділені від paid vision semantic review, а rejected critic direction використовується лише як
+  jury feedback. (source: worker logs, Supabase artifact metadata 2026-08-12, `pipeline/card-image.ts`,
+  `src/lib/content-sim/adapters/weekly-image.ts`, `generation-worker.ts`)
+
 - **Async story-image recovery (2026-08-11):** production v4 jobs підтвердили архітектурний
   конфлікт: Vercel poller запускав лише одну image job кожні 5 хв, а послідовні art-director
   calls/retry тричі досягли platform timeout рівно 300 с. `story_image` перенесено у fenced
