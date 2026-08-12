@@ -1,11 +1,6 @@
 name: Visual compiler shadow v3
 
 on:
-  push:
-    branches:
-      - experiment/visual-routing-backtest-20260812
-    paths:
-      - .github/workflows/visual-compiler-shadow-v3.yml
   workflow_dispatch:
 
 permissions:
