@@ -1,0 +1,576 @@
+name: Visual compiler v7 unseen routed A-B
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-v7-role-router-20260812
+    paths:
+      - .github/workflows/visual-compiler-v7-unseen-ab.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  ab:
+    name: Render evaluate and persist seven unseen routed stories
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-compiler-v7-role-router-20260812
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Wait for and load the source-audited routed package
+        run: |
+          for attempt in $(seq 1 60); do
+            git fetch origin experiment/visual-compiler-v7-role-router-20260812
+            git checkout origin/experiment/visual-compiler-v7-role-router-20260812 -- \
+              experiments/visual-compiler-v7/fresh-holdout/output 2>/dev/null || true
+            if [ -f experiments/visual-compiler-v7/fresh-holdout/output/v7-routed-claims.json ]; then
+              break
+            fi
+            sleep 5
+          done
+          test -f experiments/visual-compiler-v7/fresh-holdout/output/v7-routed-claims.json
+          mkdir -p artifacts/visual-compiler-v7-fresh
+          cp experiments/visual-compiler-v7/fresh-holdout/output/v7-routed-claims.json \
+            artifacts/visual-compiler-v7-fresh/v7-routed-claims.json
+          cp experiments/visual-compiler-v7/fresh-holdout/output/v7-routing-report.md \
+            artifacts/visual-compiler-v7-fresh/v7-routing-report.md
+          cp experiments/visual-compiler-v7/fresh-holdout/output/v7-routing-summary.json \
+            artifacts/visual-compiler-v7-fresh/v7-routing-summary.json
+
+      - name: Generate the seven-story v7 A-B harness from the validated v6 harness
+        run: |
+          git fetch origin experiment/visual-compiler-v6-targeted-ab-20260812
+          git show origin/experiment/visual-compiler-v6-targeted-ab-20260812:scripts/visual-compiler-v6-render-ab.ts \
+            > scripts/visual-compiler-v7-render-ab.ts
+          git show origin/experiment/visual-compiler-v6-targeted-ab-20260812:scripts/visual-compiler-v6-evaluate-ab.ts \
+            > scripts/visual-compiler-v7-evaluate-ab.ts
+
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          render_path = Path('scripts/visual-compiler-v7-render-ab.ts')
+          text = render_path.read_text()
+
+          text = re.sub(
+              r"import \{\s*analogyImagePromptV6,\s*type HybridTreatmentV6,\s*\} from '../src/lib/weekly-digest/visual-hybrid-v6';\s*",
+              "",
+              text,
+              count=1,
+          )
+          text = re.sub(
+              r"import \{ renderGenericVisualSvgV6 \} from '../src/lib/weekly-digest/visual-generic-svg-v6';",
+              "import { renderGenericVisualSvgV5 } from '../src/lib/weekly-digest/visual-generic-svg-v5';\nimport type { VisualRouteV7 } from '../src/lib/weekly-digest/visual-role-router-v7';",
+              text,
+              count=1,
+          )
+
+          constants_start = text.index('const INPUT_PATH =')
+          constants_end = text.index('const CARD_WIDTH', constants_start)
+          constants = """const INPUT_PATH =
+            process.env.VISUAL_V7_ROUTED_CLAIMS?.trim() ||
+            'artifacts/visual-compiler-v7-fresh/v7-routed-claims.json';
+          const ROOT =
+            process.env.VISUAL_V7_AB_OUT_DIR?.trim() || 'artifacts/visual-compiler-v7-unseen-ab';
+          const IMAGE_DIR = join(ROOT, 'images');
+          const CARD_DIR = join(ROOT, 'cards');
+          const ASSET_DIR = join(ROOT, 'assets');
+          const OPEN_ROUTER_API_KEY = process.env.OPEN_ROUTER_API_KEY?.trim() || '';
+          const CF_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID?.trim() || '';
+          const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN?.trim() || '';
+          const MODEL =
+            process.env.VISUAL_V7_IMAGE_MODEL?.trim() ||
+            '@cf/black-forest-labs/flux-2-klein-9b';
+          """
+          text = text[:constants_start] + constants + text[constants_end:]
+
+          interface_start = text.index('interface V6TreatmentRecord')
+          interface_end = text.index('interface PixelBounds', interface_start)
+          interfaces = """interface V7RoutedRecord {
+            story: HoldoutStoryInput;
+            autoClaim: AutoVisualClaimV5;
+            renderAutoClaim: AutoVisualClaimV5;
+            eligible: boolean;
+            v7Route: VisualRouteV7;
+            routeDecision: {
+              reason: string;
+              expectedImageCalls: number;
+              estimatedImageCostUsd: number;
+              factualVisualAllowed: boolean;
+              safeFallback: boolean;
+            };
+          }
+
+          """
+          text = text[:interface_start] + interfaces + text[interface_end:]
+          text = text.replace('V6TreatmentRecord', 'V7RoutedRecord')
+          text = text.replace("renderMode: HybridTreatmentV6['mode'];", 'renderMode: VisualRouteV7;')
+
+          compiler_start = text.index('function compileTreatment(')
+          compiler_end = text.index('\n\nfunction wrapHeadline', compiler_start)
+          compiler = r'''function compileRecord(record: V7RoutedRecord): {
+            autoClaim: AutoVisualClaimV5;
+            plan: VisualPlan;
+          } {
+            const autoClaim = record.renderAutoClaim ?? record.autoClaim;
+            return { autoClaim, plan: compileAutoVisualClaimV5(autoClaim) };
+          }
+
+          async function renderCompiler(
+            record: V7RoutedRecord,
+            currentBytes: Buffer,
+          ): Promise<{
+            pixels: Buffer;
+            final: Buffer;
+            audit: VariantAudit;
+            autoClaim: AutoVisualClaimV5;
+            plan: VisualPlan;
+          }> {
+            const started = Date.now();
+            const { autoClaim, plan } = compileRecord(record);
+
+            if (record.v7Route === 'current_art_director') {
+              return {
+                pixels: currentBytes,
+                final: currentBytes,
+                autoClaim,
+                plan,
+                audit: {
+                  provider: 'reuse',
+                  model: 'exact-current-reused-v7',
+                  imageCalls: 0,
+                  estimatedImageCostUsd: 0,
+                  durationMs: Date.now() - started,
+                  assetPaths: [],
+                },
+              };
+            }
+
+            if (record.v7Route === 'source_led_fallback') {
+              const pixels = await sharp(fallbackSvg())
+                .jpeg({ quality: 93, chromaSubsampling: '4:4:4' })
+                .toBuffer();
+              return {
+                pixels,
+                final: pixels,
+                autoClaim,
+                plan,
+                audit: {
+                  provider: 'local',
+                  model: 'source-led-fallback-v7',
+                  imageCalls: 0,
+                  estimatedImageCostUsd: 0,
+                  durationMs: Date.now() - started,
+                  assetPaths: [],
+                },
+              };
+            }
+
+            const pixels = await sharp(
+              renderGenericVisualSvgV5({
+                autoClaim,
+                plan,
+                width: IMG_W,
+                height: IMG_H,
+                includeOverlays: false,
+              }),
+            )
+              .jpeg({ quality: 93, chromaSubsampling: '4:4:4' })
+              .toBuffer();
+            const final = await sharp(
+              renderGenericVisualSvgV5({
+                autoClaim,
+                plan,
+                width: IMG_W,
+                height: IMG_H,
+                includeOverlays: true,
+              }),
+            )
+              .jpeg({ quality: 93, chromaSubsampling: '4:4:4' })
+              .toBuffer();
+            return {
+              pixels,
+              final,
+              autoClaim,
+              plan,
+              audit: {
+                provider: 'local',
+                model: 'deterministic-compiler-v7',
+                imageCalls: 0,
+                estimatedImageCostUsd: 0,
+                durationMs: Date.now() - started,
+                assetPaths: [],
+              },
+            };
+          }'''
+          text = text[:compiler_start] + compiler + text[compiler_end:]
+
+          main_start = text.index('async function main()')
+          main_end = text.index('\n\nmain().catch', main_start)
+          main = r'''async function main() {
+            assertEnvironment();
+            await Promise.all([
+              mkdir(ROOT, { recursive: true }),
+              mkdir(IMAGE_DIR, { recursive: true }),
+              mkdir(CARD_DIR, { recursive: true }),
+              mkdir(ASSET_DIR, { recursive: true }),
+            ]);
+            const records = (JSON.parse(
+              await readFile(INPUT_PATH, 'utf8'),
+            ) as V7RoutedRecord[]).sort(
+              (left, right) => left.story.rank - right.story.rank,
+            );
+            if (records.length !== 7) {
+              throw new Error(`Expected 7 unseen v7 records; received ${records.length}.`);
+            }
+            const rows: RenderRow[] = [];
+
+            for (const [index, record] of records.entries()) {
+              const label = `${record.story.rank}-${safeName(record.story.revision_item_id)}`;
+              console.log(`[v7-unseen] ${index + 1}/${records.length} current: ${record.story.title}`);
+              const current = await renderCurrent(record);
+              console.log(`[v7-unseen] ${index + 1}/${records.length} selected: ${record.v7Route}`);
+              const compiler = await renderCompiler(record, current.bytes);
+              const currentImagePath = join(IMAGE_DIR, `${label}-current.jpg`);
+              const compilerPixelPath = join(IMAGE_DIR, `${label}-selected-pixels.jpg`);
+              const compilerFinalPath = join(IMAGE_DIR, `${label}-selected-final.jpg`);
+              await Promise.all([
+                writeFile(currentImagePath, current.bytes),
+                writeFile(compilerPixelPath, compiler.pixels),
+                writeFile(compilerFinalPath, compiler.final),
+              ]);
+              const currentCard = await card(record.story.title, current.bytes);
+              const compilerCard = await card(record.story.title, compiler.final);
+              const compilerIsX =
+                seedFromString(`v7-unseen-blind:${record.story.revision_item_id}`) % 2 === 0;
+              const xCard = compilerIsX ? compilerCard : currentCard;
+              const yCard = compilerIsX ? currentCard : compilerCard;
+              const blindXCardPath = join(CARD_DIR, `${label}-X.png`);
+              const blindYCardPath = join(CARD_DIR, `${label}-Y.png`);
+              await Promise.all([
+                writeFile(blindXCardPath, xCard),
+                writeFile(blindYCardPath, yCard),
+                writeFile(join(CARD_DIR, `${label}-current.png`), currentCard),
+                writeFile(join(CARD_DIR, `${label}-selected.png`), compilerCard),
+              ]);
+              rows.push({
+                storyId: record.story.revision_item_id,
+                rank: record.story.rank,
+                headline: record.story.title,
+                role: compiler.autoClaim.semantics.explanatoryRole,
+                certainty: compiler.autoClaim.semantics.certainty,
+                mappingMode: compiler.autoClaim.semantics.mappingMode,
+                format: compiler.plan.format,
+                renderMode: record.v7Route,
+                claimEligible: record.eligible,
+                baselineImagePath: currentImagePath,
+                compilerPixelPath,
+                compilerFinalPath,
+                blindXCardPath,
+                blindYCardPath,
+                blindXSource: compilerIsX ? 'compiler' : 'current',
+                blindYSource: compilerIsX ? 'current' : 'compiler',
+                current: {
+                  provider: current.variant.provider,
+                  model: current.variant.model,
+                  imageCalls: 1,
+                  estimatedImageCostUsd: current.variant.estimatedCostUsd,
+                  durationMs: current.durationMs,
+                  scene: current.variant.scene,
+                  prompt: current.variant.positivePrompt,
+                  assetPaths: [],
+                },
+                compiler: compiler.audit,
+              });
+              await writeFile(
+                join(ROOT, 'render-progress.json'),
+                `${JSON.stringify(
+                  rows.map((row) => ({
+                    ...row,
+                    baselineImagePath: rel(row.baselineImagePath),
+                    compilerPixelPath: rel(row.compilerPixelPath),
+                    compilerFinalPath: rel(row.compilerFinalPath),
+                    blindXCardPath: rel(row.blindXCardPath),
+                    blindYCardPath: rel(row.blindYCardPath),
+                    compiler: {
+                      ...row.compiler,
+                      assetPaths: row.compiler.assetPaths.map(rel),
+                    },
+                  })),
+                  null,
+                  2,
+                )}\n`,
+              );
+            }
+
+            const serializable = rows.map((row) => ({
+              ...row,
+              baselineImagePath: rel(row.baselineImagePath),
+              compilerPixelPath: rel(row.compilerPixelPath),
+              compilerFinalPath: rel(row.compilerFinalPath),
+              blindXCardPath: rel(row.blindXCardPath),
+              blindYCardPath: rel(row.blindYCardPath),
+              compiler: {
+                ...row.compiler,
+                assetPaths: row.compiler.assetPaths.map(rel),
+              },
+            }));
+            await Promise.all([
+              writeFile(join(ROOT, 'render-manifest.json'), `${JSON.stringify(serializable, null, 2)}\n`),
+              writeFile(
+                join(ROOT, 'blind-key.json'),
+                `${JSON.stringify(
+                  rows.map((row) => ({
+                    storyId: row.storyId,
+                    X: row.blindXSource,
+                    Y: row.blindYSource,
+                  })),
+                  null,
+                  2,
+                )}\n`,
+              ),
+              writeFile(join(ROOT, 'render-report.md'), report(rows)),
+              writeFile(join(ROOT, 'blind-contact-sheet.png'), await blindSheet(rows)),
+            ]);
+            console.log(report(rows));
+          }'''
+          text = text[:main_start] + main + text[main_end:]
+          text = text.replace(
+              '# Visual Compiler v6 targeted hybrid A/B render',
+              '# Visual Compiler v7 unseen role-routed A/B render',
+          )
+          render_path.write_text(text)
+
+          eval_path = Path('scripts/visual-compiler-v7-evaluate-ab.ts')
+          eval_text = eval_path.read_text()
+          eval_text = eval_text.replace(
+              "import type { HybridTreatmentV6 } from '../src/lib/weekly-digest/visual-hybrid-v6';\n",
+              '',
+          )
+          constants_start = eval_text.index('const ROOT =')
+          constants_end = eval_text.index('type Source', constants_start)
+          eval_constants = """const ROOT =
+            process.env.VISUAL_V7_AB_OUT_DIR?.trim() || 'artifacts/visual-compiler-v7-unseen-ab';
+          const CLAIMS_PATH =
+            process.env.VISUAL_V7_ROUTED_CLAIMS?.trim() ||
+            'artifacts/visual-compiler-v7-fresh/v7-routed-claims.json';
+          const OPEN_ROUTER_API_KEY = process.env.OPEN_ROUTER_API_KEY?.trim() || '';
+          const MODEL =
+            process.env.VISUAL_V7_JUDGE_MODEL?.trim() || 'google/gemini-2.5-flash';
+
+          """
+          eval_text = eval_text[:constants_start] + eval_constants + eval_text[constants_end:]
+          eval_text = eval_text.replace('V6TreatmentRecord', 'V7RoutedRecord')
+          eval_text = eval_text.replace("HybridTreatmentV6['mode']", 'string')
+          eval_text = eval_text.replace('record.treatment.eligible', 'record.eligible')
+          eval_text = eval_text.replace('record.treatment.mode', 'record.v7Route')
+          eval_text = eval_text.replace(
+              'record.treatment.labels',
+              '(record.renderAutoClaim?.claim.approvedLabels ?? record.autoClaim.claim.approvedLabels ?? [])',
+          )
+          eval_text = re.sub(
+              r'interface V7RoutedRecord \{.*?\n\}\n\n',
+              """interface V7RoutedRecord {
+            story: HoldoutStoryInput;
+            autoClaim: AutoVisualClaimV5;
+            renderAutoClaim: AutoVisualClaimV5;
+            eligible: boolean;
+            v7Route: string;
+          }
+
+          """,
+              eval_text,
+              count=1,
+              flags=re.S,
+          )
+          eval_text = eval_text.replace('new Set([1, 2, 4, 6, 7])', 'new Set([1, 2, 3, 4, 5, 6, 7])')
+          eval_text = eval_text.replace('Expected 5 targeted v6 treatments', 'Expected 7 unseen v7 routed claims')
+          eval_text = eval_text.replace('treatments.length !== 5', 'treatments.length !== 7')
+          eval_text = eval_text.replace(
+              '# Visual Compiler v6 targeted source-grounded A/B evaluation',
+              '# Visual Compiler v7 unseen role-routed A/B evaluation',
+          )
+          eval_path.write_text(eval_text)
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck the generated v7 harness
+        run: npm run typecheck
+
+      - name: Render exact current and v7-selected cards
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VISUAL_V7_IMAGE_MODEL: '@cf/black-forest-labs/flux-2-klein-9b'
+          VISUAL_V7_ROUTED_CLAIMS: artifacts/visual-compiler-v7-fresh/v7-routed-claims.json
+          VISUAL_V7_AB_OUT_DIR: artifacts/visual-compiler-v7-unseen-ab
+        run: npx tsx scripts/visual-compiler-v7-render-ab.ts
+
+      - name: Evaluate seven stories blinded at pixel and card level
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          VISUAL_V7_JUDGE_MODEL: google/gemini-2.5-flash
+          VISUAL_V7_ROUTED_CLAIMS: artifacts/visual-compiler-v7-fresh/v7-routed-claims.json
+          VISUAL_V7_AB_OUT_DIR: artifacts/visual-compiler-v7-unseen-ab
+        run: npx tsx scripts/visual-compiler-v7-evaluate-ab.ts
+
+      - name: Build v7 selection and safety decision
+        run: |
+          cat > /tmp/v7-decision.mjs <<'JS'
+          import { readFile, writeFile } from 'node:fs/promises';
+          import { join } from 'node:path';
+
+          const root = 'artifacts/visual-compiler-v7-unseen-ab';
+          const routed = JSON.parse(
+            await readFile('artifacts/visual-compiler-v7-fresh/v7-routed-claims.json', 'utf8'),
+          );
+          const evaluation = JSON.parse(await readFile(join(root, 'evaluation.json'), 'utf8'));
+          const byId = new Map(routed.map((row) => [row.story.revision_item_id, row]));
+          const rows = evaluation.rows.map((row) => {
+            const routedRow = byId.get(row.storyId);
+            const route = routedRow.v7Route;
+            const selected = route === 'current_art_director' ? row.current : row.compiler;
+            const pixel = selected?.pixel ?? {};
+            const final = selected?.final ?? {};
+            const safe =
+              !Boolean(pixel.generatedTextPresent) &&
+              !Boolean(pixel.unsupportedSpecifics) &&
+              !Boolean(final.misleading) &&
+              !Boolean(final.overlayContradictsPixels);
+            return {
+              rank: row.rank,
+              headline: row.headline,
+              role: row.role,
+              eligible: Boolean(routedRow.eligible),
+              route,
+              currentProductionPass: Boolean(row.current.productionPass),
+              selectedProductionPass: Boolean(selected.productionPass),
+              currentScore: Number(row.current.weightedScore ?? 0),
+              selectedScore: Number(selected.weightedScore ?? 0),
+              preferredSource: row.preferredSource,
+              selectedPreferred:
+                route === 'current_art_director'
+                  ? row.preferredSource === 'current' || row.preferredSource === 'tie'
+                  : row.preferredSource === 'compiler' || row.preferredSource === 'tie',
+              safe,
+            };
+          });
+          const eligibleRows = rows.filter((row) => row.eligible);
+          const fallbackRows = rows.filter((row) => row.route === 'source_led_fallback');
+          const selectedPass = eligibleRows.filter((row) => row.selectedProductionPass).length;
+          const currentPass = eligibleRows.filter((row) => row.currentProductionPass).length;
+          const allSafe = rows.every((row) => row.safe);
+          const fallbackSafe = fallbackRows.every((row) => row.safe);
+          const average = (values) =>
+            values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+          const selectedAverage = average(rows.map((row) => row.selectedScore));
+          const currentAverage = average(rows.map((row) => row.currentScore));
+          const selectedPreference = rows.filter((row) => row.selectedPreferred).length;
+          const expectedImageCalls = routed.reduce(
+            (sum, row) => sum + Number(row.routeDecision.expectedImageCalls ?? 0),
+            0,
+          );
+          const promotion =
+            allSafe &&
+            fallbackSafe &&
+            selectedPass >= currentPass &&
+            selectedAverage >= currentAverage - 5 &&
+            selectedPreference >= 5 &&
+            expectedImageCalls < rows.length;
+          const lines = [
+            '# Visual Compiler v7 unseen routing decision',
+            '',
+            `Stories: **${rows.length}**; eligible factual claims: **${eligibleRows.length}/${rows.length}**; safe fallbacks: **${fallbackRows.length}**.`,
+            '',
+            '| Metric | Current-only | v7 selected |',
+            '|---|---:|---:|',
+            `| Production pass among eligible claims | ${currentPass}/${eligibleRows.length} | ${selectedPass}/${eligibleRows.length} |`,
+            `| Average weighted score, all cards | ${currentAverage.toFixed(1)} | ${selectedAverage.toFixed(1)} |`,
+            `| Selected/preferred-or-tied | — | ${selectedPreference}/${rows.length} |`,
+            `| Safety pass | — | ${rows.filter((row) => row.safe).length}/${rows.length} |`,
+            `| Production image calls | ${rows.length} | ${expectedImageCalls} |`,
+            `| Estimated image cost | $${(rows.length * 0.015).toFixed(3)} | $${(expectedImageCalls * 0.015).toFixed(3)} |`,
+            '',
+            `Automated shadow decision: **${promotion ? 'PROMOTE TO OWNER-BLINDED SHADOW REVIEW' : 'HOLD'}**.`,
+            '',
+            '| # | Story | Role | Eligible | Route | Current pass/score | Selected pass/score | Preferred | Safe |',
+            '|---:|---|---|---:|---|---|---|---|---:|',
+            ...rows
+              .sort((a, b) => a.rank - b.rank)
+              .map(
+                (row) =>
+                  `| ${row.rank} | ${row.headline.replace(/\|/g, '\\|')} | \`${row.role}\` | ${row.eligible ? '✓' : '✕'} | \`${row.route}\` | ${row.currentProductionPass ? '✓' : '✕'} / ${row.currentScore.toFixed(1)} | ${row.selectedProductionPass ? '✓' : '✕'} / ${row.selectedScore.toFixed(1)} | ${row.preferredSource} | ${row.safe ? '✓' : '✕'} |`,
+              ),
+            '',
+            'Fallback cards are judged for safety and non-misleading presentation, not for a factual explanatory pass. They intentionally make no unsupported mechanism or metric assertion.',
+            '',
+          ];
+          await Promise.all([
+            writeFile(join(root, 'v7-decision.md'), `${lines.join('\n')}\n`),
+            writeFile(
+              join(root, 'v7-decision.json'),
+              `${JSON.stringify(
+                {
+                  promotion,
+                  currentPass,
+                  selectedPass,
+                  currentAverage,
+                  selectedAverage,
+                  selectedPreference,
+                  allSafe,
+                  fallbackSafe,
+                  expectedImageCalls,
+                  rows,
+                },
+                null,
+                2,
+              )}\n`,
+            ),
+          ]);
+          console.log(lines.join('\n'));
+          JS
+          node /tmp/v7-decision.mjs
+
+      - name: Upload complete unseen v7 A-B package
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-compiler-v7-unseen-ab-evaluated
+          path: |
+            artifacts/visual-compiler-v7-fresh
+            artifacts/visual-compiler-v7-unseen-ab
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Persist unseen v7 A-B results
+        run: |
+          mkdir -p experiments/visual-compiler-v7/fresh-holdout/results
+          cp artifacts/visual-compiler-v7-unseen-ab/render-report.md experiments/visual-compiler-v7/fresh-holdout/results/
+          cp artifacts/visual-compiler-v7-unseen-ab/render-manifest.json experiments/visual-compiler-v7/fresh-holdout/results/
+          cp artifacts/visual-compiler-v7-unseen-ab/blind-contact-sheet.png experiments/visual-compiler-v7/fresh-holdout/results/
+          cp artifacts/visual-compiler-v7-unseen-ab/evaluation-report.md experiments/visual-compiler-v7/fresh-holdout/results/
+          cp artifacts/visual-compiler-v7-unseen-ab/evaluation.json experiments/visual-compiler-v7/fresh-holdout/results/
+          cp artifacts/visual-compiler-v7-unseen-ab/evaluated-contact-sheet.png experiments/visual-compiler-v7/fresh-holdout/results/
+          cp artifacts/visual-compiler-v7-unseen-ab/v7-decision.md experiments/visual-compiler-v7/fresh-holdout/results/
+          cp artifacts/visual-compiler-v7-unseen-ab/v7-decision.json experiments/visual-compiler-v7/fresh-holdout/results/
+          printf '%s\n' "$GITHUB_RUN_ID" > experiments/visual-compiler-v7/fresh-holdout/results/ab-run-id.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/visual-compiler-v7/fresh-holdout/results
+          git commit -m "Record unseen role-routed v7 A-B results [skip ci]"
+          git fetch origin experiment/visual-compiler-v7-role-router-20260812
+          git rebase origin/experiment/visual-compiler-v7-role-router-20260812
+          SKIP_E2E=1 git push origin HEAD:experiment/visual-compiler-v7-role-router-20260812
