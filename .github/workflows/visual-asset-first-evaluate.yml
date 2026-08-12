@@ -1,0 +1,51 @@
+name: Visual asset-first blind evaluation
+
+on:
+  push:
+    branches:
+      - experiment/visual-routing-backtest-20260812
+    paths:
+      - scripts/visual-asset-first-evaluate.ts
+      - .github/workflows/visual-asset-first-evaluate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  evaluate:
+    name: Compare clean assets with final composites
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download asset-first render package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 31578527611 --repo "$GITHUB_REPOSITORY" --name visual-asset-first-backtest --dir artifacts/visual-routing-backtest
+
+      - name: Run bounded blind evaluator
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          BACKTEST_JUDGE_MODEL: google/gemini-2.5-flash
+          BACKTEST_INPUT_DIR: artifacts/visual-routing-backtest
+        run: npx tsx scripts/visual-asset-first-evaluate.ts
+
+      - name: Upload evaluated asset-first package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-asset-first-backtest-evaluated
+          path: artifacts/visual-routing-backtest
+          if-no-files-found: error
+          retention-days: 14
