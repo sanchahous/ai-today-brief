@@ -25,6 +25,7 @@ export const VISUAL_FORMATS = [
   'cinematic_split',
   'cinematic_cutaway',
   'cinematic_data_contrast',
+  'cinematic_routing',
 ] as const;
 
 export type VisualFormat = (typeof VISUAL_FORMATS)[number];
@@ -34,7 +35,8 @@ export type PrimaryVisualEvidence =
   | 'temporal_change'
   | 'architecture_change'
   | 'counterfactual_comparison'
-  | 'quantitative_difference';
+  | 'quantitative_difference'
+  | 'task_routing';
 
 export type VisualOutcomeKind = 'benefit' | 'harm' | 'tradeoff' | 'uncertainty';
 
@@ -42,6 +44,17 @@ export interface QuantitativeVisualFact {
   label: string;
   value: string;
   sourceClaim?: string;
+}
+
+export interface VisualRouteBranch {
+  label: string;
+  destination: string;
+  visibleOutcome: string;
+}
+
+export interface VisualRoutingSpec {
+  source: string;
+  branches: VisualRouteBranch[];
 }
 
 export interface VisualClaim {
@@ -66,6 +79,8 @@ export interface VisualClaim {
   comparison?: { left: string; right: string };
   /** Two or three meaningful layers for an architecture claim. */
   layers?: string[];
+  /** One source routed into two visibly different specialist destinations. */
+  routing?: VisualRoutingSpec;
   /** Concrete contradictions the pixels must not imply. */
   forbiddenContradictions?: string[];
   /** Optional owner/editor selection; still validated against the claim evidence. */
@@ -88,7 +103,12 @@ export interface VisualRegion {
   description: string;
 }
 
-export type VisualTransitionType = 'flow' | 'state_change' | 'contrast' | 'reveal';
+export type VisualTransitionType =
+  | 'flow'
+  | 'state_change'
+  | 'contrast'
+  | 'reveal'
+  | 'branch';
 
 export interface VisualTransition {
   from: string;
@@ -189,13 +209,18 @@ export function formatSupportsEvidence(
       return format === 'cinematic_split';
     case 'quantitative_difference':
       return format === 'cinematic_data_contrast';
+    case 'task_routing':
+      return format === 'cinematic_routing';
     case 'physical_action':
       return format === 'cinematic_single';
   }
 }
 
 export function selectVisualFormat(claim: VisualClaim): VisualFormat {
-  if (claim.preferredFormat && formatSupportsEvidence(claim.preferredFormat, claim.primaryEvidence)) {
+  if (
+    claim.preferredFormat &&
+    formatSupportsEvidence(claim.preferredFormat, claim.primaryEvidence)
+  ) {
     return claim.preferredFormat;
   }
   switch (claim.primaryEvidence) {
@@ -207,6 +232,8 @@ export function selectVisualFormat(claim: VisualClaim): VisualFormat {
       return 'cinematic_split';
     case 'quantitative_difference':
       return 'cinematic_data_contrast';
+    case 'task_routing':
+      return 'cinematic_routing';
     case 'physical_action':
       return 'cinematic_single';
   }
@@ -221,6 +248,21 @@ function region(
   return { id, bounds, role, description: clean(description, 220) };
 }
 
+function twoRouteBranches(claim: VisualClaim): [VisualRouteBranch, VisualRouteBranch] {
+  const branches = claim.routing?.branches.slice(0, 2) ?? [];
+  const left = branches[0] ?? {
+    label: 'ROUTE A',
+    destination: 'first specialist destination',
+    visibleOutcome: claim.primaryOutcome,
+  };
+  const right = branches[1] ?? {
+    label: 'ROUTE B',
+    destination: 'second specialist destination',
+    visibleOutcome: claim.primaryOutcome,
+  };
+  return [left, right];
+}
+
 export function buildVisualRegions(claim: VisualClaim, format: VisualFormat): VisualRegion[] {
   switch (format) {
     case 'cinematic_sequence': {
@@ -232,33 +274,108 @@ export function buildVisualRegions(claim: VisualClaim, format: VisualFormat): Vi
       const padded = [...states];
       while (padded.length < 3) padded.push(claim.primaryOutcome);
       return [
-        region('state-1', { x: 0.03, y: 0.09, width: 0.29, height: 0.78 }, 'context', padded[0]!),
-        region('state-2', { x: 0.355, y: 0.09, width: 0.29, height: 0.78 }, 'mechanism', padded[1]!),
-        region('state-3', { x: 0.68, y: 0.09, width: 0.29, height: 0.78 }, 'outcome', padded[2]!),
+        region(
+          'state-1',
+          { x: 0.03, y: 0.09, width: 0.29, height: 0.78 },
+          'context',
+          padded[0]!,
+        ),
+        region(
+          'state-2',
+          { x: 0.355, y: 0.09, width: 0.29, height: 0.78 },
+          'mechanism',
+          padded[1]!,
+        ),
+        region(
+          'state-3',
+          { x: 0.68, y: 0.09, width: 0.29, height: 0.78 },
+          'outcome',
+          padded[2]!,
+        ),
       ];
     }
     case 'cinematic_split': {
       const left = claim.comparison?.left ?? `${claim.identity} before the change`;
       const right = claim.comparison?.right ?? claim.primaryOutcome;
       return [
-        region('left', { x: 0.03, y: 0.08, width: 0.455, height: 0.8 }, 'contrast', left),
-        region('right', { x: 0.515, y: 0.08, width: 0.455, height: 0.8 }, 'outcome', right),
+        region(
+          'left',
+          { x: 0.03, y: 0.08, width: 0.455, height: 0.8 },
+          'contrast',
+          left,
+        ),
+        region(
+          'right',
+          { x: 0.515, y: 0.08, width: 0.455, height: 0.8 },
+          'outcome',
+          right,
+        ),
       ];
     }
     case 'cinematic_cutaway': {
-      const layers = unique(claim.layers?.length ? claim.layers.slice(0, 3) : [claim.identity, claim.change]);
+      const layers = unique(
+        claim.layers?.length ? claim.layers.slice(0, 3) : [claim.identity, claim.change],
+      );
       return [
-        region('full-system', { x: 0.04, y: 0.1, width: 0.41, height: 0.76 }, 'context', layers[0] ?? claim.identity),
-        region('removed-layers', { x: 0.455, y: 0.2, width: 0.16, height: 0.56 }, 'mechanism', layers[1] ?? claim.change),
-        region('remaining-core', { x: 0.62, y: 0.1, width: 0.34, height: 0.76 }, 'outcome', layers[2] ?? claim.primaryOutcome),
+        region(
+          'full-system',
+          { x: 0.04, y: 0.1, width: 0.41, height: 0.76 },
+          'context',
+          layers[0] ?? claim.identity,
+        ),
+        region(
+          'removed-layers',
+          { x: 0.455, y: 0.2, width: 0.16, height: 0.56 },
+          'mechanism',
+          layers[1] ?? claim.change,
+        ),
+        region(
+          'remaining-core',
+          { x: 0.62, y: 0.1, width: 0.34, height: 0.76 },
+          'outcome',
+          layers[2] ?? claim.primaryOutcome,
+        ),
       ];
     }
     case 'cinematic_data_contrast': {
       const left = claim.comparison?.left ?? 'small baseline workload';
       const right = claim.comparison?.right ?? claim.mechanism;
       return [
-        region('baseline', { x: 0.04, y: 0.1, width: 0.4, height: 0.76 }, 'context', left),
-        region('amplified', { x: 0.56, y: 0.1, width: 0.4, height: 0.76 }, 'outcome', right),
+        region(
+          'baseline',
+          { x: 0.04, y: 0.1, width: 0.4, height: 0.76 },
+          'context',
+          left,
+        ),
+        region(
+          'amplified',
+          { x: 0.56, y: 0.1, width: 0.4, height: 0.76 },
+          'outcome',
+          right,
+        ),
+      ];
+    }
+    case 'cinematic_routing': {
+      const [left, right] = twoRouteBranches(claim);
+      return [
+        region(
+          'route-source',
+          { x: 0.38, y: 0.34, width: 0.24, height: 0.32 },
+          'mechanism',
+          claim.routing?.source ?? claim.mechanism,
+        ),
+        region(
+          'route-a',
+          { x: 0.03, y: 0.09, width: 0.3, height: 0.78 },
+          'outcome',
+          `${left.destination}: ${left.visibleOutcome}`,
+        ),
+        region(
+          'route-b',
+          { x: 0.67, y: 0.09, width: 0.3, height: 0.78 },
+          'outcome',
+          `${right.destination}: ${right.visibleOutcome}`,
+        ),
       ];
     }
     case 'cinematic_single':
@@ -281,12 +398,18 @@ export function buildVisualTransitions(format: VisualFormat): VisualTransition[]
         { from: 'state-2', to: 'state-3', type: 'state_change' },
       ];
     case 'cinematic_split':
+      return [{ from: 'left', to: 'right', type: 'contrast' }];
     case 'cinematic_data_contrast':
-      return [{ from: format === 'cinematic_split' ? 'left' : 'baseline', to: format === 'cinematic_split' ? 'right' : 'amplified', type: 'contrast' }];
+      return [{ from: 'baseline', to: 'amplified', type: 'contrast' }];
     case 'cinematic_cutaway':
       return [
         { from: 'full-system', to: 'removed-layers', type: 'reveal' },
         { from: 'removed-layers', to: 'remaining-core', type: 'flow' },
+      ];
+    case 'cinematic_routing':
+      return [
+        { from: 'route-source', to: 'route-a', type: 'branch' },
+        { from: 'route-source', to: 'route-b', type: 'branch' },
       ];
     case 'cinematic_single':
       return [];
@@ -298,14 +421,21 @@ export function normalizeApprovedLabels(claim: VisualClaim): string[] {
   const quantitative = (claim.quantitativeFacts ?? []).map((fact) =>
     clean(`${fact.label} ${fact.value}`, 48),
   );
-  const fallback = claim.primaryEvidence === 'temporal_change' ? claim.states ?? [] : [];
-  return unique([...explicit, ...quantitative, ...fallback]).slice(
+  const stateFallback = claim.primaryEvidence === 'temporal_change' ? claim.states ?? [] : [];
+  const routingFallback =
+    claim.primaryEvidence === 'task_routing'
+      ? claim.routing?.branches.map((branch) => branch.label) ?? []
+      : [];
+  return unique([...explicit, ...quantitative, ...stateFallback, ...routingFallback]).slice(
     0,
     WEEKLY_VISUAL_POLICY.overlayGroups.max,
   );
 }
 
-export function buildOverlayGroups(claim: VisualClaim, regions: VisualRegion[]): OverlayGroup[] {
+export function buildOverlayGroups(
+  claim: VisualClaim,
+  regions: VisualRegion[],
+): OverlayGroup[] {
   const labels = normalizeApprovedLabels(claim);
   return labels.map((text, index) => ({
     id: `overlay-${index + 1}`,
@@ -332,8 +462,10 @@ function assetPrompt(input: {
     `Continuity key: ${input.continuityKey}. Preserve the same subject design, camera language, environment, scale and material identity across related assets.`,
     'Asset only. Do not create an infographic or finished card layout.',
     'Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings.',
-    input.format === 'cinematic_sequence'
-      ? 'Leave stable margins so this asset can sit beside two continuity-matched states.'
+    input.format === 'cinematic_sequence' ||
+    input.format === 'cinematic_split' ||
+    input.format === 'cinematic_routing'
+      ? 'Leave stable margins so this asset can sit beside continuity-matched companion assets.'
       : 'Leave calm negative space for deterministic labels added after rendering.',
   ].join(' ');
 }
@@ -343,6 +475,7 @@ function renderStrategyFor(format: VisualFormat): RenderStrategy {
     case 'cinematic_sequence':
       return 'reference_sequence';
     case 'cinematic_split':
+    case 'cinematic_routing':
       return 'reference_split';
     case 'cinematic_cutaway':
     case 'cinematic_data_contrast':
@@ -361,16 +494,22 @@ export function buildRenderUnits(
   const renderRegions =
     format === 'cinematic_cutaway'
       ? regions.filter((candidate) => candidate.id !== 'removed-layers')
-      : regions;
+      : format === 'cinematic_routing'
+        ? regions.filter((candidate) => candidate.id !== 'route-source')
+        : regions;
   return renderRegions.map((candidate, index) => ({
     id: `asset-${index + 1}`,
     regionId: candidate.id,
     assetRequest: candidate.description,
     prompt: assetPrompt({ claim, region: candidate, format, continuityKey }),
     continuityKey,
-    referenceFrom: index > 0 && (format === 'cinematic_sequence' || format === 'cinematic_split')
-      ? 'asset-1'
-      : undefined,
+    referenceFrom:
+      index > 0 &&
+      (format === 'cinematic_sequence' ||
+        format === 'cinematic_split' ||
+        format === 'cinematic_routing')
+        ? 'asset-1'
+        : undefined,
     generatedTextAllowed: false,
     infographicLayoutAllowed: false,
   }));
@@ -380,17 +519,51 @@ export function planVisualExecution(
   format: VisualFormat,
   assumptions: VisualCostAssumptions = DEFAULT_VISUAL_COST_ASSUMPTIONS,
 ): VisualExecutionBudget {
-  const callPlan: Record<VisualFormat, Omit<VisualExecutionBudget, 'estimatedUsd' | 'estimatedDurationMs' | 'withinPolicy'>> = {
-    cinematic_single: { candidateCount: 2, imageCalls: 2, visionCalls: 2, fullRegenerations: 0 },
-    cinematic_data_contrast: { candidateCount: 2, imageCalls: 2, visionCalls: 2, fullRegenerations: 0 },
-    cinematic_cutaway: { candidateCount: 2, imageCalls: 2, visionCalls: 2, fullRegenerations: 0 },
-    cinematic_split: { candidateCount: 1, imageCalls: 2, visionCalls: 2, fullRegenerations: 0 },
-    cinematic_sequence: { candidateCount: 1, imageCalls: 3, visionCalls: 2, fullRegenerations: 0 },
+  const callPlan: Record<
+    VisualFormat,
+    Omit<VisualExecutionBudget, 'estimatedUsd' | 'estimatedDurationMs' | 'withinPolicy'>
+  > = {
+    cinematic_single: {
+      candidateCount: 2,
+      imageCalls: 2,
+      visionCalls: 2,
+      fullRegenerations: 0,
+    },
+    cinematic_data_contrast: {
+      candidateCount: 2,
+      imageCalls: 2,
+      visionCalls: 2,
+      fullRegenerations: 0,
+    },
+    cinematic_cutaway: {
+      candidateCount: 2,
+      imageCalls: 2,
+      visionCalls: 2,
+      fullRegenerations: 0,
+    },
+    cinematic_split: {
+      candidateCount: 1,
+      imageCalls: 2,
+      visionCalls: 2,
+      fullRegenerations: 0,
+    },
+    cinematic_routing: {
+      candidateCount: 1,
+      imageCalls: 2,
+      visionCalls: 2,
+      fullRegenerations: 0,
+    },
+    cinematic_sequence: {
+      candidateCount: 1,
+      imageCalls: 3,
+      visionCalls: 2,
+      fullRegenerations: 0,
+    },
   };
   const plan = callPlan[format];
   const estimatedUsd =
     plan.imageCalls * assumptions.imageCallUsd + plan.visionCalls * assumptions.visionCallUsd;
-  // Image assets in one candidate are expected to render concurrently where possible.
+  // Related assets render concurrently where possible; a sequence needs one reference wave.
   const imageWaves = format === 'cinematic_sequence' ? 2 : 1;
   const estimatedDurationMs =
     imageWaves * assumptions.imageCallDurationMs +
@@ -432,6 +605,31 @@ export function compileVisualPlan(
     forbiddenContradictions: unique(claim.forbiddenContradictions ?? []),
     execution: planVisualExecution(format, assumptions),
   };
+}
+
+export type VisualPlanIssue =
+  | 'format_evidence_mismatch'
+  | 'too_many_overlays'
+  | 'render_unit_allows_text'
+  | 'render_unit_allows_infographic'
+  | 'budget_exceeded';
+
+export function validateVisualPlan(plan: VisualPlan): VisualPlanIssue[] {
+  const issues: VisualPlanIssue[] = [];
+  if (!formatSupportsEvidence(plan.format, plan.claim.primaryEvidence)) {
+    issues.push('format_evidence_mismatch');
+  }
+  if (plan.overlays.length > WEEKLY_VISUAL_POLICY.overlayGroups.max) {
+    issues.push('too_many_overlays');
+  }
+  if (plan.renderUnits.some((unit) => unit.generatedTextAllowed !== false)) {
+    issues.push('render_unit_allows_text');
+  }
+  if (plan.renderUnits.some((unit) => unit.infographicLayoutAllowed !== false)) {
+    issues.push('render_unit_allows_infographic');
+  }
+  if (!plan.execution.withinPolicy) issues.push('budget_exceeded');
+  return issues;
 }
 
 export type PixelGateFailureCode =
@@ -548,15 +746,9 @@ export type VisualRepairMode =
 
 export function chooseVisualRepair(
   failures: readonly FinalGateFailureCode[],
-  remainingFullRegenerations = WEEKLY_VISUAL_POLICY.budget.maxFullRegenerations,
+  remainingFullRegenerations: number = WEEKLY_VISUAL_POLICY.budget.maxFullRegenerations,
 ): VisualRepairMode {
   if (failures.length === 0) return 'none';
-  if (failures.some((failure) => failure === 'labels_not_approved' || failure === 'thumbnail_unreadable')) {
-    return 'recompose_overlays';
-  }
-  if (failures.length === 1 && failures[0] === 'generated_text') {
-    return 'edit_generated_text';
-  }
   if (
     failures.some(
       (failure) =>
@@ -578,6 +770,16 @@ export function chooseVisualRepair(
     )
   ) {
     return 'regenerate_failed_asset';
+  }
+  if (failures.every((failure) => failure === 'generated_text')) {
+    return 'edit_generated_text';
+  }
+  if (
+    failures.every(
+      (failure) => failure === 'labels_not_approved' || failure === 'thumbnail_unreadable',
+    )
+  ) {
+    return 'recompose_overlays';
   }
   return 'deterministic_fallback';
 }
