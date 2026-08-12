@@ -1,9 +1,9 @@
 import type { HoldoutStoryInput } from './visual-auto-claim';
 import type { AutoVisualClaimV5 } from './visual-auto-claim-v5';
 import {
-  routeVisualClaimV7,
+  selectSourceVisualPipelineV7,
   type VisualPipelineV7,
-  type VisualRouteDecisionV7,
+  type VisualRouterDecisionV7,
 } from './visual-role-router-v7';
 import {
   selectSpecializedVisualTreatmentV8,
@@ -33,7 +33,7 @@ export interface VisualRouteDecisionV9 {
   expectedImageCalls: 0 | 1;
   sourceClaimEligible: boolean;
   specializedTreatment: SpecializedVisualTreatmentV8 | null;
-  v7Decision: VisualRouteDecisionV7 | null;
+  v7Decision: VisualRouterDecisionV7 | null;
   requiredGuards: string[];
 }
 
@@ -53,7 +53,8 @@ export function routeVisualStoryV9(
 ): VisualRouteDecisionV9 {
   const specializedTreatment = selectSpecializedVisualTreatmentV8(input);
   if (specializedTreatment) {
-    const generated = specializedTreatment.renderMode === 'generated_source_cinematic';
+    const generated =
+      specializedTreatment.renderMode === 'generated_source_cinematic';
     return {
       storyId: input.story.revision_item_id,
       pipeline: generated
@@ -73,8 +74,8 @@ export function routeVisualStoryV9(
     };
   }
 
-  const v7Decision = routeVisualClaimV7({
-    autoClaim: input.autoClaim,
+  const v7Decision = selectSourceVisualPipelineV7({
+    claim: input.autoClaim,
     eligible: input.eligible,
   });
   return {
