@@ -5,6 +5,12 @@ on:
     branches:
       - experiment/visual-compiler-v5-fresh-holdout-20260812
     paths:
+      - src/lib/weekly-digest/visual-auto-claim-v5.ts
+      - src/lib/weekly-digest/visual-auto-claim-v5.test.ts
+      - src/lib/weekly-digest/visual-generic-svg-v5.ts
+      - src/lib/weekly-digest/visual-generic-svg-v5.test.ts
+      - scripts/visual-compiler-v5-extract-audit.ts
+      - experiments/visual-compiler-v5/fresh-holdout/stories.json
       - .github/workflows/visual-compiler-v5-fresh-extract-persist.yml
   workflow_dispatch:
 
