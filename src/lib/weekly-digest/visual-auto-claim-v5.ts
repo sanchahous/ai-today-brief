@@ -405,7 +405,7 @@ function guardCoreClaim(
   if (certainty === 'released' || certainty === 'observed') {
     return { coreClaim: rawCoreClaim, warning: null };
   }
-  const hasGuard = /\b(expected|planned|prepares?|set to|aims?|reported|claims?|may|could|preview)\b/i.test(
+  const hasGuard = /\b(expected|planned|prepares?|set to|aims?|reported|claims?|may|could|preview|on track|teased|coming)\b/i.test(
     rawCoreClaim,
   );
   if (hasGuard) return { coreClaim: rawCoreClaim, warning: null };
