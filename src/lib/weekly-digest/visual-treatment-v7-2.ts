@@ -17,7 +17,7 @@ export interface VisualTreatmentDecisionV72 {
   treatment: VisualTreatmentV72;
   reason: string;
   selectedSource: 'current' | 'compiler';
-  expectedImageCalls: 0 | 3;
+  expectedImageCalls: 0 | 1 | 3;
   approvedLabels: string[];
   safetyMode: 'factual_visual' | 'reported_signal' | 'headline_only';
 }
