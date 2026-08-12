@@ -1,0 +1,67 @@
+name: Visual compiler shadow render v2
+
+on:
+  push:
+    branches:
+      - experiment/visual-routing-backtest-20260812
+    paths:
+      - scripts/visual-compiler-render-shadow-v2.ts
+      - .github/workflows/visual-compiler-render-shadow-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  render:
+    name: Render deterministic-first seven-story candidates
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download successful v1 Muse sequence assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh run download 31586491707
+          --repo "$GITHUB_REPOSITORY"
+          --name visual-compiler-shadow-render
+          --dir artifacts/visual-compiler-shadow-v1
+
+      - name: Compile current seven-story plans
+        env:
+          VISUAL_COMPILER_OUT_DIR: artifacts/visual-compiler-shadow-v2
+        run: npx tsx scripts/visual-compiler-shadow.ts
+
+      - name: Render deterministic-first v2 candidates
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VISUAL_COMPILER_IMAGE_MODEL: '@cf/black-forest-labs/flux-2-klein-9b'
+          VISUAL_COMPILER_OUT_DIR: artifacts/visual-compiler-shadow-v2
+          VISUAL_COMPILER_V1_DIR: artifacts/visual-compiler-shadow-v1
+        run: npx tsx scripts/visual-compiler-render-shadow-v2.ts
+
+      - name: Build v2 review contact sheet
+        env:
+          VISUAL_COMPILER_OUT_DIR: artifacts/visual-compiler-shadow-v2
+        run: npx tsx scripts/visual-compiler-contact-sheet.ts
+
+      - name: Upload v2 shadow package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-compiler-shadow-v2
+          path: artifacts/visual-compiler-shadow-v2
+          if-no-files-found: error
+          retention-days: 14
