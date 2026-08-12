@@ -1,0 +1,115 @@
+name: Visual compiler v8 targeted specialized A-B v2
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-v7-role-router-20260812
+    paths:
+      - .github/workflows/visual-compiler-v8-targeted-v2.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  targeted:
+    name: Repair validate render and evaluate four specialized stories
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-compiler-v7-role-router-20260812
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Repair consistency classifier before paid calls
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/lib/weekly-digest/visual-specialized-v8.ts')
+          text = path.read_text()
+          old = r"/\b(consisten|inconsisten|reliab|regression|community critique|community debate)\b/"
+          new = r"/\b(?:consistency|consistent|inconsistency|inconsistencies|inconsistent|reliability|reliable|regression|community critique|community debate)\b/"
+          if old not in text:
+              raise SystemExit('Expected v8 consistency classifier was not found.')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate specialized visual contracts
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-specialized-v8.test.ts
+          src/lib/weekly-digest/visual-role-router-v7.test.ts
+          src/lib/weekly-digest/visual-auto-claim-v5.test.ts
+
+      - name: Typecheck repository and targeted harnesses
+        run: npm run typecheck
+
+      - name: Persist validated classifier repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/weekly-digest/visual-specialized-v8.ts
+          git commit -m "Broaden observed variability classifier"
+          git fetch origin experiment/visual-compiler-v7-role-router-20260812
+          git rebase origin/experiment/visual-compiler-v7-role-router-20260812
+          SKIP_E2E=1 git push origin HEAD:experiment/visual-compiler-v7-role-router-20260812
+
+      - name: Download exact-current baseline from completed unseen A-B
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh run download 31625086067
+          --repo "$GITHUB_REPOSITORY"
+          --name visual-compiler-v7-fresh-ab-evaluated
+          --dir artifacts/visual-compiler-v7-baseline
+
+      - name: Render two deterministic and two source-cinematic treatments
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VISUAL_V8_IMAGE_MODEL: '@cf/black-forest-labs/flux-2-klein-9b'
+          VISUAL_V8_CLAIMS: experiments/visual-compiler-v7/fresh-holdout/output/v7-routed-claims.json
+          VISUAL_V8_BASELINE_ROOT: artifacts/visual-compiler-v7-baseline
+          VISUAL_V8_OUT_DIR: artifacts/visual-compiler-v8-targeted
+        run: npx tsx scripts/visual-compiler-v8-targeted-render.ts
+
+      - name: Evaluate targeted candidates blinded
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          VISUAL_V8_JUDGE_MODEL: google/gemini-2.5-flash
+          VISUAL_V8_OUT_DIR: artifacts/visual-compiler-v8-targeted
+        run: npx tsx scripts/visual-compiler-v8-targeted-evaluate.ts
+
+      - name: Upload complete targeted v8 package
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-compiler-v8-targeted-evaluated-v2
+          path: artifacts/visual-compiler-v8-targeted
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Persist targeted v8 results on isolated branch
+        run: |
+          mkdir -p experiments/visual-compiler-v8/targeted/results
+          cp artifacts/visual-compiler-v8-targeted/render-report.md experiments/visual-compiler-v8/targeted/results/
+          cp artifacts/visual-compiler-v8-targeted/render-manifest.json experiments/visual-compiler-v8/targeted/results/
+          cp artifacts/visual-compiler-v8-targeted/blind-contact-sheet.png experiments/visual-compiler-v8/targeted/results/
+          cp artifacts/visual-compiler-v8-targeted/evaluation-report.md experiments/visual-compiler-v8/targeted/results/
+          cp artifacts/visual-compiler-v8-targeted/evaluation.json experiments/visual-compiler-v8/targeted/results/
+          cp artifacts/visual-compiler-v8-targeted/evaluated-contact-sheet.png experiments/visual-compiler-v8/targeted/results/
+          printf '%s\n' "$GITHUB_RUN_ID" > experiments/visual-compiler-v8/targeted/results/run-id.txt
+          git add experiments/visual-compiler-v8/targeted/results
+          git commit -m "Record specialized v8 targeted A-B results [skip ci]"
+          git fetch origin experiment/visual-compiler-v7-role-router-20260812
+          git rebase origin/experiment/visual-compiler-v7-role-router-20260812
+          SKIP_E2E=1 git push origin HEAD:experiment/visual-compiler-v7-role-router-20260812
