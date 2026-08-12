@@ -44,6 +44,14 @@ jobs:
       - name: Typecheck repository
         run: npm run typecheck
 
+      - name: Audit extracted VisualClaims against source stories
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          VISUAL_HOLDOUT_CLAIM_JUDGE_MODEL: google/gemini-2.5-flash
+          VISUAL_HOLDOUT_AB_OUT_DIR: artifacts/visual-compiler-holdout-ab
+          VISUAL_HOLDOUT_SELECTION: artifacts/visual-compiler-holdout/render-selection.json
+        run: npx tsx scripts/visual-compiler-holdout-audit-claims.ts
+
       - name: Run blinded pixel and headline-paired evaluation
         env:
           OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
