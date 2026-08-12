@@ -76,6 +76,12 @@ async function withPrivatePreviewUrls(artifacts: WeeklyArtifactAdminRow[]) {
             (value): value is string => typeof value === 'string' && Boolean(value),
           )
         : [];
+      const iterationPreviews = Array.isArray(content.iteration_previews)
+        ? content.iteration_previews.filter(
+            (value): value is Record<string, Json | undefined> =>
+              Boolean(value) && typeof value === 'object' && !Array.isArray(value),
+          )
+        : [];
       const [artifactUrlResult, ...previewResults] = await Promise.all([
         artifact.storage_path
           ? db.storage.from(artifact.storage_bucket).createSignedUrl(artifact.storage_path, 3600)
@@ -83,10 +89,29 @@ async function withPrivatePreviewUrls(artifacts: WeeklyArtifactAdminRow[]) {
         ...previewPaths.map((path) =>
           db.storage.from(artifact.storage_bucket!).createSignedUrl(path, 3600),
         ),
+        ...iterationPreviews.map((preview) =>
+          typeof preview.path === 'string'
+            ? db.storage.from(artifact.storage_bucket!).createSignedUrl(preview.path, 3600)
+            : Promise.resolve({ data: null, error: null }),
+        ),
       ]);
-      const previewUrls = previewResults.flatMap((result) =>
+      const previewPathResults = previewResults.slice(0, previewPaths.length);
+      const previewUrls = previewPathResults.flatMap((result) =>
         result.error || !result.data?.signedUrl ? [] : [result.data.signedUrl],
       );
+      const iterationUrlStart = previewPaths.length;
+      const signedIterationPreviews = iterationPreviews.map((preview, index) => {
+        const result = previewResults[iterationUrlStart + index];
+        const url = result?.error || !result?.data?.signedUrl ? null : result.data.signedUrl;
+        return {
+          ...preview,
+          ...(url
+            ? {
+                preview_url: `${url}${url.includes('?') ? '&' : '?'}v=${artifact.version}`,
+              }
+            : {}),
+        };
+      });
       const signedArtifactUrl =
         artifact.external_url ??
         (artifactUrlResult.error ? null : (artifactUrlResult.data?.signedUrl ?? null));
@@ -101,8 +126,14 @@ async function withPrivatePreviewUrls(artifacts: WeeklyArtifactAdminRow[]) {
         ...artifact,
         external_url: versionedUrl,
         content:
-          versionedPreviews.length > 0
-            ? ({ ...content, preview_urls: versionedPreviews } as Json)
+          versionedPreviews.length > 0 || signedIterationPreviews.length > 0
+            ? ({
+                ...content,
+                ...(versionedPreviews.length > 0 ? { preview_urls: versionedPreviews } : {}),
+                ...(signedIterationPreviews.length > 0
+                  ? { iteration_previews: signedIterationPreviews }
+                  : {}),
+              } as Json)
             : artifact.content,
       };
     }),

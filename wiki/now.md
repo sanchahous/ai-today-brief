@@ -35,6 +35,12 @@ Last updated: 2026-08-11
   jury feedback. (source: worker logs, Supabase artifact metadata 2026-08-12, `pipeline/card-image.ts`,
   `src/lib/content-sim/adapters/weekly-image.ts`, `generation-worker.ts`)
 
+- **Reviewable illustration history (2026-08-12):** усі зображення, реально відрендерені у кожному
+  repair round, тепер зберігаються як підписані private previews із concept/score metadata і
+  показуються у Visuals до owner approval. Після approval extra storage previews видаляються,
+  лишається один selected primary; artifact/review ledger не стирається. (source: owner request
+  2026-08-12, `generation-worker.ts`, `admin-data.ts`, `weekly-workspace.tsx`, `weekly/actions.ts`)
+
 - **Async story-image recovery (2026-08-11):** production v4 jobs підтвердили архітектурний
   конфлікт: Vercel poller запускав лише одну image job кожні 5 хв, а послідовні art-director
   calls/retry тричі досягли platform timeout рівно 300 с. `story_image` перенесено у fenced

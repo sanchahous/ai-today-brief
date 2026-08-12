@@ -10,6 +10,7 @@ import {
   applyRepairToSceneInput,
   opaqueAbstractionCritique,
   pickBestVariantIndex,
+  runWeeklyImageSimLoop,
   scoreAndPickVariants,
   type WeeklyImageSimCandidate,
 } from './weekly-image';
@@ -65,6 +66,7 @@ function baseCandidate(overrides?: Partial<WeeklyImageSimCandidate>): WeeklyImag
 afterEach(() => {
   mockedVision.mockReset();
   delete process.env.CONTENT_SIM_SCORE_THRESHOLD;
+  delete process.env.CONTENT_SIM_IMAGE_LOOP;
 });
 
 describe('applyRepairToSceneInput', () => {
@@ -367,6 +369,99 @@ describe('scoreAndPickVariants', () => {
     expect(
       picked.preCritique?.blockers.some((blocker) => blocker.code === 'critic_unavailable'),
     ).toBe(true);
+  });
+});
+
+describe('runWeeklyImageSimLoop history', () => {
+  it('keeps failed first-round renders alongside the successful repair round', async () => {
+    const critique = (overall: number, code?: string) => ({
+      text: JSON.stringify({
+        overall,
+        dimensions: semanticDimensions(overall),
+        pixel_evidence: pixelEvidence,
+        blockers: code ? [{ code, message: 'missed context' }] : [],
+      }),
+      provider: 'gemini',
+      model: 'vision',
+      usage: {
+        promptTokens: 1,
+        outputTokens: 1,
+        costUsd: 0.01,
+        costSource: 'estimated' as const,
+      },
+    });
+    mockedVision
+      .mockResolvedValueOnce(critique(40, 'off_news'))
+      .mockResolvedValueOnce(critique(40, 'off_news'))
+      .mockResolvedValueOnce(critique(40, 'off_news'))
+      .mockResolvedValueOnce(critique(90))
+      .mockResolvedValueOnce(critique(90))
+      .mockResolvedValueOnce(critique(90));
+
+    let calls = 0;
+    const result = await runWeeklyImageSimLoop({
+      ctx: {
+        headline: 'A durable checkpoint resumes an interrupted agent run',
+        policyId: 'weekly-semantic-story-v5.1',
+      },
+      seedBase: 'digest:story',
+      generate: async () => {
+        calls += 1;
+        return baseCandidate();
+      },
+    });
+
+    expect(calls).toBe(2);
+    expect(result.iterationPreviews).toHaveLength(6);
+    expect(result.iterationPreviews.filter((preview) => preview.attempt === 1)).toHaveLength(3);
+    expect(result.iterationPreviews.filter((preview) => preview.attempt === 2)).toHaveLength(3);
+  });
+
+  it('returns every rendered variant for admin review when vision is disabled', async () => {
+    process.env.CONTENT_SIM_IMAGE_LOOP = 'off';
+    const result = await runWeeklyImageSimLoop({
+      ctx: {
+        headline: 'A durable checkpoint resumes an interrupted agent run',
+        policyId: 'weekly-semantic-story-v5.1',
+      },
+      seedBase: 'digest:story',
+      generate: async () => ({
+        ...baseCandidate(),
+        variantConcepts: [
+          {
+            scene: 'a night workshop resumes a half-finished mold',
+            sceneSource: 'jury',
+            positivePrompt: 'night workshop',
+            negativePrompt: 'neg',
+            conceptLens: 'literal_context',
+            metaphorTitle: 'Night workshop',
+          },
+          {
+            scene: 'a loom rewinds to one intact knot',
+            sceneSource: 'jury',
+            positivePrompt: 'loom',
+            negativePrompt: 'neg',
+            conceptLens: 'mechanism',
+            metaphorTitle: 'Rewinding loom',
+          },
+          {
+            scene: 'a kiln relights around a preserved casting',
+            sceneSource: 'jury',
+            positivePrompt: 'kiln',
+            negativePrompt: 'neg',
+            conceptLens: 'consequence',
+            metaphorTitle: 'Recovered kiln',
+          },
+        ],
+      }),
+    });
+
+    expect(result.iterationPreviews).toHaveLength(3);
+    expect(result.iterationPreviews.map((preview) => preview.concept.metaphorTitle)).toEqual([
+      'Night workshop',
+      'Rewinding loom',
+      'Recovered kiln',
+    ]);
   });
 });
 

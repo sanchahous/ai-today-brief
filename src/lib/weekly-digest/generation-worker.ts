@@ -66,6 +66,7 @@ import {
   trustedWeeklyResearchSources,
 } from './research';
 import { adaptWeeklySocialChannel, type WeeklySocialAdaptation } from './social-adapter';
+import type { WeeklyImageIterationPreview } from '@/lib/content-sim/adapters/weekly-image';
 
 const PRIVATE_BUCKET = 'weekly-digest-private';
 const MAX_JOBS = 10;
@@ -2486,6 +2487,7 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
       semantic_min?: number;
     }>;
     pickSource?: 'auto' | 'owner';
+    iterationPreviews?: WeeklyImageIterationPreview[];
   } | null = null;
   /** Additional variant renders (sharp-processed, not yet uploaded) beyond the primary. */
   let alternateBuffers: Buffer[] = [];
@@ -2763,6 +2765,7 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
         variantConcepts: sim.candidate.variantConcepts,
         variantScores: sim.candidate.variantScores,
         pickSource: sim.candidate.pickSource ?? 'auto',
+        iterationPreviews: sim.iterationPreviews,
       };
       alternateBuffers = sim.candidate.alternateBuffers;
     } else {
@@ -2814,6 +2817,35 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
     previewPaths.push(altPath);
   }
 
+  const iterationPreviews: Array<Record<string, Json | undefined>> = [];
+  for (const preview of imageMeta?.iterationPreviews ?? []) {
+    if (!preview.bytes?.length) continue;
+    const processed = await processImage(preview.bytes);
+    const previewHash = createHash('sha256').update(processed).digest('hex');
+    const previewPath =
+      `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/` +
+      `${previewHash}-${job.id}-attempt${preview.attempt}-v${preview.variantIndex + 1}.jpg`;
+    await uploadPrivate(previewPath, processed, 'image/jpeg');
+    iterationPreviews.push({
+      path: previewPath,
+      attempt: preview.attempt,
+      variant_index: preview.variantIndex,
+      label:
+        preview.concept.metaphorTitle ||
+        preview.concept.conceptLens ||
+        `Attempt ${preview.attempt} · variant ${preview.variantIndex + 1}`,
+      concept_lens: preview.concept.conceptLens,
+      metaphor_title: preview.concept.metaphorTitle,
+      motif_class: preview.concept.motifClass,
+      subject_kind: preview.concept.subjectKind,
+      scene: preview.concept.scene,
+      scene_source: preview.concept.sceneSource,
+      score: preview.score as unknown as Json,
+      critique_passed: preview.critiquePassed,
+      attempt_cost_usd: preview.attemptCostUsd,
+    });
+  }
+
   const artifactId = await saveGeneratedArtifact({
     weeklyDigestId: job.weekly_digest_id,
     revisionId: job.revision_id,
@@ -2830,6 +2862,9 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
       alt_en: text(input.alt_text) ?? item.title_en,
       alt_uk: text(input.alt_text_uk) ?? item.title_uk,
       ...(previewPaths.length ? { preview_paths: previewPaths } : {}),
+      ...(iterationPreviews.length
+        ? { iteration_previews: iterationPreviews as unknown as Json }
+        : {}),
     },
     metadata: {
       source_kind: sourceKind,
