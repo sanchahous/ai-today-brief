@@ -1,0 +1,79 @@
+[
+  {
+    "week_start": "2026-06-22",
+    "week_end": "2026-06-28",
+    "rank": 1,
+    "revision_item_id": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+    "title": "The Shift to Harness-Level Agent Loops in Software Engineering",
+    "summary": "The development workflow is shifting from manual prompting to outer harness loops that orchestrate agent sessions. While highly effective for mechanical translation and porting code, these autonomous loops often generate overly defensive, complex, and unmaintainable code for long-term production systems.",
+    "why": "Understanding where agentic loops excel—and where they generate technical debt—helps developers choose the right automation boundaries.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-22",
+    "week_end": "2026-06-28",
+    "rank": 2,
+    "revision_item_id": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+    "title": "Gemini faces community critique regarding model performance consistency",
+    "summary": "The developer community is actively debating the reliability of Gemini in coding environments compared to alternatives. Users highlight inconsistencies that impact production-grade tasks.",
+    "why": "Evaluate your current model selection by testing critical code paths against multiple providers to avoid unexpected regression.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-22",
+    "week_end": "2026-06-28",
+    "rank": 3,
+    "revision_item_id": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+    "title": "Git-Lazy-Mount: Mount Repositories on Demand for MicroVM Coding Agents",
+    "summary": "Git-lazy-mount allows developers to mount large Git repositories without cloning them first, downloading files only on demand. It is optimized for ephemeral microVMs running coding agents, cutting startup delays to zero.",
+    "why": "You can spin up sandboxed coding agents instantly on huge codebases without waiting for slow git clone operations.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-22",
+    "week_end": "2026-06-28",
+    "rank": 4,
+    "revision_item_id": "672e4320-6b71-4f9c-89da-82ce92770746",
+    "title": "Managing AI-Driven Distraction and Rediscovering Deep Work",
+    "summary": "Recent community discussions highlight how constant reliance on Claude for trivial reasoning can erode personal problem-solving skills. The key is to use LLMs as sparring partners rather than offloading the entire cognitive load.",
+    "why": "Prevents cognitive atrophy and helps you maintain your ability to solve complex architecture problems independently.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-22",
+    "week_end": "2026-06-28",
+    "rank": 5,
+    "revision_item_id": "40673aee-fac7-451f-be07-51016c857613",
+    "title": "Claude Usage Thresholds: Insights from High-Volume Token Consumption",
+    "summary": "Users pushing the limits of Claude's context window and rate limits are reporting anecdotal signals from Anthropic regarding usage patterns. This highlights the importance of monitoring token spend in high-intensity agentic tasks.",
+    "why": "Understanding your token burn rate helps prevent unexpected session interruptions during deep-code refactoring.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-22",
+    "week_end": "2026-06-28",
+    "rank": 6,
+    "revision_item_id": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+    "title": "TikZ Editor: WYSIWYG Interface for LaTeX Vector Graphics",
+    "summary": "TikZ Editor offers a visual interface for generating TikZ code, simplifying the creation of complex diagrams for LaTeX documents. It bridges the gap between manual code writing and graphical design for technical documentation.",
+    "why": "You can now sketch technical diagrams visually and export them as clean TikZ code for your papers or documentation.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-22",
+    "week_end": "2026-06-28",
+    "rank": 7,
+    "revision_item_id": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+    "title": "GPT-5 Aids Immunologists in Solving T-Cell Mystery",
+    "summary": "Researchers leveraged GPT-5 to resolve a three-year-old bottleneck in immunology related to T-cell behavior. The model successfully synthesized complex biological datasets to provide an actionable hypothesis.",
+    "why": "It demonstrates how high-reasoning models are becoming reliable partners for domain-specific scientific research.",
+    "practical": null,
+    "takeaway": null
+  }
+]
