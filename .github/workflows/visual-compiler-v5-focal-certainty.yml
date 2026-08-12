@@ -1,0 +1,430 @@
+name: Visual compiler v5 focal certainty
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-v5-fresh-holdout-20260812
+    paths:
+      - .github/workflows/visual-compiler-v5-focal-certainty.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    name: Validate focal certainty and fresh claim contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-compiler-v5-fresh-holdout-20260812
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Patch focal certainty and uncertainty comparison semantics
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          source = Path('src/lib/weekly-digest/visual-auto-claim-v5.ts')
+          text = source.read_text()
+
+          certainty_start = text.index('function inferSourceCertainty(')
+          certainty_end = text.index('\n\nfunction certaintyAssertiveness', certainty_start)
+          certainty_block = r'''function inferCertaintyFromText(
+            value: string,
+            fallback: VisualCertainty,
+          ): VisualCertainty {
+            const normalized = value.toLowerCase();
+            if (
+              /\b(on track|forecast|forecasted|expected|expects?|aims?|set to)\b/.test(
+                normalized,
+              )
+            ) {
+              return 'expected';
+            }
+            if (
+              /\b(prepares?|planning|plans?|planned|teased|coming|upcoming|previewed?|will launch)\b/.test(
+                normalized,
+              )
+            ) {
+              return 'planned';
+            }
+            if (/\b(claims?|promis(?:e|es|ing)|says it can)\b/.test(normalized)) {
+              return 'claimed';
+            }
+            if (
+              /\b(reports?|reported|self-reported|according to|the supplied report)\b/.test(
+                normalized,
+              )
+            ) {
+              return 'reported';
+            }
+            if (
+              /\b(available|released|launched|introduced|open-sourced|made permanent|renamed|added|is an open-source|is a self-contained|automates|integrates with|enables users?|grants access)\b/.test(
+                normalized,
+              )
+            ) {
+              return 'released';
+            }
+            if (
+              /\b(measured|found|analysis|achieved|reached|completed|reveals?|fails?|failing|occurs because|reduces?|cuts?|converts?|validates?|are highly suited|ensures?)\b/.test(
+                normalized,
+              )
+            ) {
+              return 'observed';
+            }
+            return fallback;
+          }
+
+          function inferSourceCertainty(story: HoldoutStoryInput): VisualCertainty {
+            return inferCertaintyFromText(sourceText(story), 'observed');
+          }
+
+          function inferFocalCertainty(
+            raw: RawV5Claim,
+            story: HoldoutStoryInput,
+          ): VisualCertainty {
+            const focal = [
+              clean(raw.change, 180),
+              clean(raw.core_claim, 240),
+              clean(raw.visible_outcome, 220),
+            ]
+              .filter(Boolean)
+              .join(' ');
+            return inferCertaintyFromText(focal, inferSourceCertainty(story));
+          }'''
+          text = text[:certainty_start] + certainty_block + text[certainty_end:]
+
+          text = text.replace(
+              '  const sourceCertainty = inferSourceCertainty(story);',
+              '  const sourceCertainty = inferFocalCertainty(raw, story);',
+              1,
+          )
+
+          metric_old = "  const metricNeeded = role === 'quantitative_result' || role === 'benchmark_comparison';"
+          metric_new = """  const rawQuantitativeFacts = Array.isArray(raw.quantitative_facts)
+            ? raw.quantitative_facts
+            : [];
+          const announcementHasMetric =
+            role === 'uncertainty_announcement' &&
+            (rawQuantitativeFacts.length > 0 ||
+              Boolean(clean(metricRaw.baseline_label, 34) && clean(metricRaw.result_label, 34)));
+          const metricNeeded =
+            role === 'quantitative_result' ||
+            role === 'benchmark_comparison' ||
+            announcementHasMetric;"""
+          if metric_old not in text:
+              raise SystemExit('Metric-needed assignment was not found.')
+          text = text.replace(metric_old, metric_new, 1)
+
+          driver_start = text.index('  const change = clean(raw.change, 180)')
+          driver_end = text.index('\n  const rawCoreClaim =', driver_start)
+          driver_block = r'''  const change = clean(raw.change, 180) || story.summary.slice(0, 180);
+            const rawVisualDriver = clean(raw.visual_driver, 220);
+            const visualDriver =
+              role === 'uncertainty_announcement' && metric
+                ? `the current ${metric.baselineLabel || 'reported baseline'} is placed beside the ${
+                    metric.resultLabel || 'future target'
+                  }, with the future target visibly unconfirmed`
+                : rawVisualDriver ||
+                  (role === 'benchmark_comparison'
+                    ? 'the evaluation places the reported result beside its named comparison target'
+                    : role === 'quantitative_result'
+                      ? 'the reported baseline is placed beside the measured result with the correct direction'
+                      : role === 'uncertainty_announcement'
+                        ? 'the current confirmed state is separated from the explicitly expected future state'
+                        : story.summary.slice(0, 220));
+            const rawVisibleOutcome = clean(raw.visible_outcome, 220);
+            const visibleOutcome =
+              role === 'uncertainty_announcement' && metric
+                ? `the ${metric.resultLabel || 'future target'} remains visibly future beyond the current ${
+                    metric.baselineLabel || 'reported baseline'
+                  }`
+                : rawVisibleOutcome ||
+                  (story.why ?? story.takeaway ?? story.summary).slice(0, 220);'''
+          text = text[:driver_start] + driver_block + text[driver_end:]
+
+          text = text.replace(
+              "    /\\b(expected|planned|prepares?|set to|aims?|reported|claims?|may|could|preview)\\b/i.test(",
+              "    /\\b(expected|planned|prepares?|set to|aims?|reported|claims?|may|could|preview|on track|teased|coming)\\b/i.test(",
+              1,
+          )
+          text = text.replace(
+              "/\\b(prepares?|planned|set to|expected|aims?|reports?|reported|self-reported|claims?|promising|may|could|up to)\\b/gi,",
+              "/\\b(prepares?|planned|set to|expected|aims?|reports?|reported|self-reported|claims?|promising|may|could|up to|on track|teased|coming)\\b/gi,",
+              1,
+          )
+
+          labels_old = '  const labels = labelsFromRaw(raw);'
+          labels_new = r'''  const announcementGuardLabel =
+            /\bon track\b/i.test(sourceText(story))
+              ? 'ON TRACK'
+              : certaintyResult.certainty === 'expected'
+                ? 'EXPECTED'
+                : certaintyResult.certainty === 'planned'
+                  ? 'PLANNED'
+                  : 'UNCONFIRMED';
+          const labels =
+            role === 'uncertainty_announcement' && metric
+              ? [metric.baselineLabel, metric.resultLabel, announcementGuardLabel]
+                  .filter(Boolean)
+                  .slice(0, 3)
+              : labelsFromRaw(raw);'''
+          if labels_old not in text:
+              raise SystemExit('Labels assignment was not found.')
+          text = text.replace(labels_old, labels_new, 1)
+
+          source.write_text(text)
+
+          test = Path('src/lib/weekly-digest/visual-auto-claim-v5-certainty-role.test.ts')
+          test.write_text("""import { describe, expect, it } from 'vitest';
+          import {
+            compileAutoVisualClaimV5,
+            parseAutoVisualClaimV5,
+            validateAutoVisualClaimV5,
+          } from './visual-auto-claim-v5';
+          import type { HoldoutStoryInput } from './visual-auto-claim';
+
+          function story(overrides: Partial<HoldoutStoryInput> = {}): HoldoutStoryInput {
+            return {
+              week_start: '2026-06-29',
+              week_end: '2026-07-05',
+              rank: 1,
+              revision_item_id: 'certainty-story',
+              title: 'Prompt caching avoids repeated token billing',
+              summary: 'Prompt caching reduces repeated processing when conversation history is structured correctly.',
+              why: 'Teams reduce unnecessary cloud API costs.',
+              practical: null,
+              takeaway: null,
+              ...overrides,
+            };
+          }
+
+          function raw(overrides: Record<string, unknown> = {}) {
+            return {
+              story_id: 'certainty-story',
+              explanatory_role: 'causal_mechanism',
+              certainty: 'uncertain',
+              mapping_mode: 'literal',
+              identity: 'the structured prompt and cached context workload',
+              change: 'reuse previously processed context instead of billing it again',
+              visual_driver: 'a cache intercepts repeated context before duplicate cloud processing',
+              visible_outcome: 'the repeated workload becomes smaller and costs less',
+              core_claim: 'prompt caching prevents duplicate processing and reduces cost',
+              metric: null,
+              labels: ['PROMPT', 'CACHE', 'REUSE'],
+              quantitative_facts: [],
+              states: [],
+              comparison: null,
+              layers: [],
+              routing: null,
+              required_visible_delta: '',
+              forbidden_contradictions: [],
+              grammar: {
+                context_glyph: 'context_stack',
+                mechanism_glyph: 'database',
+                outcome_glyph: 'coins',
+                branch_glyphs: null,
+                relation: 'flow',
+                outcome_signal: 'lower_cost',
+                human_behavior: false,
+              },
+              ...overrides,
+            };
+          }
+
+          describe('VisualClaim v5 focal certainty', () => {
+            it('uses observed for a direct approved causal proposition', () => {
+              const value = parseAutoVisualClaimV5(raw(), story());
+              expect(value.semantics.certainty).toBe('observed');
+              expect(value.claim.coreClaim).not.toMatch(/reported|expected|planned/i);
+              expect(value.extractionWarnings).toContain(
+                'certainty_aligned_uncertain_to_observed',
+              );
+              expect(validateAutoVisualClaimV5(value)).toEqual([]);
+            });
+
+            it('maps a current open-source capability to released certainty', () => {
+              const source = story({
+                revision_item_id: 'review-flow',
+                title: 'Review-flow automates code review pipelines',
+                summary:
+                  'Review-flow is an open-source server that automates code review pipelines using Claude Code background sessions and MCP.',
+              });
+              const value = parseAutoVisualClaimV5(
+                raw({
+                  story_id: 'review-flow',
+                  explanatory_role: 'capability_access',
+                  certainty: 'available',
+                  identity: 'Review-flow server',
+                  change: 'automates code review pipelines',
+                  visual_driver: 'Claude Code background sessions and MCP execute structured multi-agent audits',
+                  visible_outcome: 'GitHub and GitLab review pipelines are automated',
+                  core_claim: 'Review-flow is an open-source server that automates code review pipelines',
+                }),
+                source,
+              );
+              expect(value.semantics.certainty).toBe('released');
+              expect(validateAutoVisualClaimV5(value)).toEqual([]);
+            });
+
+            it('keeps an on-track numeric announcement future-facing and visually comparable', () => {
+              const source = story({
+                revision_item_id: 'mistral',
+                title: 'Mistral platform expansion',
+                summary:
+                  'Mistral AI reported reaching over $400 million ARR and is on track to surpass $1 billion ARR this year.',
+              });
+              const value = parseAutoVisualClaimV5(
+                raw({
+                  story_id: 'mistral',
+                  explanatory_role: 'uncertainty_announcement',
+                  certainty: 'on_track',
+                  identity: 'Mistral AI',
+                  change: 'is on track to surpass $1 billion ARR this year',
+                  visual_driver: 'unrelated platform scaling activity',
+                  visible_outcome: 'reaching over $400 million ARR',
+                  core_claim:
+                    'Mistral AI reported reaching over $400 million ARR and is on track to surpass $1 billion ARR this year.',
+                  metric: {
+                    direction: 'increase',
+                    comparison_target: '',
+                    baseline_label: '$400M ARR',
+                    result_label: '$1B ARR',
+                  },
+                  quantitative_facts: [
+                    { label: 'CURRENT ARR', value: 'OVER $400M' },
+                    { label: 'TARGET ARR', value: 'OVER $1B' },
+                  ],
+                }),
+                source,
+              );
+              expect(value.semantics.certainty).toBe('expected');
+              expect(value.semantics.metric?.direction).toBe('increase');
+              expect(value.semantics.visualDriver).toMatch(/\$400M ARR.*\$1B ARR/i);
+              expect(value.claim.primaryOutcome).toMatch(/future/i);
+              expect(value.claim.approvedLabels).toEqual([
+                '$400M ARR',
+                '$1B ARR',
+                'ON TRACK',
+              ]);
+              expect(compileAutoVisualClaimV5(value).format).toBe('cinematic_split');
+              expect(validateAutoVisualClaimV5(value)).toEqual([]);
+            });
+
+            it('reclassifies non-numeric optical compression as a causal mechanism', () => {
+              const source = story({
+                revision_item_id: 'optical-compression',
+                title: 'Cutting Claude Code Token Costs with Optical Context Compression',
+                summary:
+                  'A local proxy intercepts requests and converts verbose text context into compact PNG images, squeezing it to a fraction of the original token cost.',
+                why: 'Vision reads the compressed representation instead of repeatedly sending dense text.',
+              });
+              const value = parseAutoVisualClaimV5(
+                raw({
+                  story_id: 'optical-compression',
+                  explanatory_role: 'quantitative_result',
+                  identity: 'the local proxy and verbose text context',
+                  visual_driver: 'the proxy converts dense text context into a compact optical representation',
+                  visible_outcome: 'the same context occupies a smaller token workload',
+                  core_claim: 'optical context compression reduces the token workload',
+                  metric: {
+                    direction: 'decrease',
+                    comparison_target: 'the original token cost',
+                    baseline_label: 'TEXT CONTEXT',
+                    result_label: 'OPTICAL CONTEXT',
+                  },
+                  labels: ['TEXT', 'PROXY', 'PNG'],
+                  quantitative_facts: [],
+                }),
+                source,
+              );
+              expect(value.semantics.explanatoryRole).toBe('causal_mechanism');
+              expect(value.semantics.metric).toBeNull();
+              expect(value.semantics.certainty).toBe('observed');
+              expect(validateAutoVisualClaimV5(value)).toEqual([]);
+            });
+          });
+          """)
+
+          script = Path('scripts/visual-compiler-v5-extract-audit.ts')
+          script_text = script.read_text()
+          audit_anchor = "    'Role-aware rules:',"
+          certainty_rules = """    'Normalized certainty rules (use only these meanings): observed = a direct factual or causal statement in the approved source; released = a currently available product or capability, including text such as is an open-source server/tool; reported = only an explicitly reported or self-reported fact; claimed = a claim or promise; planned = a plan, tease, preview or coming release; expected = an on-track forecast or explicitly expected result; uncertain = explicitly unresolved.',
+              'Do not demand unsupported raw labels such as available or on_track: released and expected are their normalized equivalents.',
+              'For an expected numeric announcement, a reported current baseline may appear beside an expected target when deterministic labels clearly distinguish the two states; certainty applies to the focal future proposition.',
+              'visually_testable is true when identity, operation/comparison and outcome can be depicted as physical geometry or deterministic labels without generated prose. Deterministic labels and numeric overlays are allowed.',"""
+          if 'Normalized certainty rules (use only these meanings)' not in script_text:
+              script_text = script_text.replace(
+                  audit_anchor,
+                  audit_anchor + '\n' + certainty_rules,
+                  1,
+              )
+          repair_anchor = "    'Use only the original approved story. Preserve exact metrics, comparison targets and uncertainty. Do not invent a mechanism for a benchmark, capability claim or measured result.',"
+          repair_rule = "    'Use normalized certainty only: observed for direct approved facts, released for a current available capability, reported only for explicitly reported facts, claimed for claims/promises, planned for teased/planned releases, expected for on-track forecasts, and uncertain only for explicitly unresolved facts.',"
+          if repair_rule not in script_text:
+              script_text = script_text.replace(
+                  repair_anchor,
+                  repair_anchor + '\n' + repair_rule,
+                  1,
+              )
+          script.write_text(script_text)
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test focal certainty contracts
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-auto-claim-v5.test.ts
+          src/lib/weekly-digest/visual-auto-claim-v5-short-identity.test.ts
+          src/lib/weekly-digest/visual-auto-claim-v5-certainty-role.test.ts
+          src/lib/weekly-digest/visual-generic-svg-v5.test.ts
+
+      - name: Typecheck focal compiler
+        run: npm run typecheck
+
+      - name: Persist deterministic focal repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/lib/weekly-digest/visual-auto-claim-v5.ts \
+            src/lib/weekly-digest/visual-auto-claim-v5-certainty-role.test.ts \
+            scripts/visual-compiler-v5-extract-audit.ts
+          git commit -m "Infer v5 certainty from focal proposition"
+          git push origin HEAD:experiment/visual-compiler-v5-fresh-holdout-20260812
+
+      - name: Extract audit and repair fresh claims
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          VISUAL_V5_EXTRACT_MODEL: google/gemini-2.5-flash
+          VISUAL_V5_AUDIT_MODEL: google/gemini-2.5-flash
+          VISUAL_V5_OUT_DIR: artifacts/visual-compiler-v5-fresh
+        run: npx tsx scripts/visual-compiler-v5-extract-audit.ts
+
+      - name: Persist focal claim reports
+        run: |
+          mkdir -p experiments/visual-compiler-v5/fresh-holdout/output
+          cp artifacts/visual-compiler-v5-fresh/v5-claims.json experiments/visual-compiler-v5/fresh-holdout/output/
+          cp artifacts/visual-compiler-v5-fresh/v5-claim-report.md experiments/visual-compiler-v5/fresh-holdout/output/
+          cp artifacts/visual-compiler-v5-fresh/v5-usage.json experiments/visual-compiler-v5/fresh-holdout/output/
+          printf '%s\n' "$GITHUB_RUN_ID" > experiments/visual-compiler-v5/fresh-holdout/output/claim-run-id.txt
+          git add experiments/visual-compiler-v5/fresh-holdout/output
+          git commit -m "Record focal-certainty fresh v5 claims [skip ci]"
+          git push origin HEAD:experiment/visual-compiler-v5-fresh-holdout-20260812
+
+      - name: Upload focal claim package
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-compiler-v5-fresh-claims-focal
+          path: artifacts/visual-compiler-v5-fresh
+          if-no-files-found: error
+          retention-days: 14
