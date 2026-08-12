@@ -1,0 +1,79 @@
+[
+  {
+    "week_start": "2026-06-29",
+    "week_end": "2026-07-05",
+    "rank": 1,
+    "revision_item_id": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+    "title": "Why frontier Anthropic models are performing worse on strict tool calling schemas",
+    "summary": "Newer models like Opus 4.8 and Sonnet 5 are failing on nested tool arguments by emitting made-up keys. This degradation occurs because their post-training optimizes for Claude Code's highly forgiving client, which silently repairs malformed calls.",
+    "why": "You must design simpler, flatter schemas or implement lenient parsers in your agent frameworks to prevent unexpected model-side tool failures.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-29",
+    "week_end": "2026-07-05",
+    "rank": 2,
+    "revision_item_id": "746ae14f-9836-4803-8b05-117195dfc4f0",
+    "title": "Leveraging the Mistral AI Platform Beyond Standard Chatbot Integrations",
+    "summary": "Mistral AI is scaling its enterprise platform, Forge, and edge-optimized 'Les Ministraux' models. The company reported reaching over $400 million ARR, is on track to surpass $1 billion ARR this year, and teased a new open-weight model coming in July.",
+    "why": "Mistral AI is positioning itself as a sovereign European alternative to US frontier labs, combining enterprise-focused customization, edge deployment capability, and open-weight models.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-29",
+    "week_end": "2026-07-05",
+    "rank": 3,
+    "revision_item_id": "ec757520-7d7d-4cfe-8fc4-eacde8c48e06",
+    "title": "Strix: Open-source AI penetration testing tool finds and patches vulnerabilities",
+    "summary": "Strix is an open-source autonomous AI penetration testing agent that acts like a real hacker, running your code dynamically to find and validate vulnerabilities with proofs-of-concept. It integrates seamlessly with GitHub Actions to block insecure pull requests and can auto-generate patches.",
+    "why": "Traditional static analysis often suffers from high false-positive rates, while manual penetration testing is slow. Strix solves this by dynamically validating exploits and providing working proofs-of-concept automatically.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-29",
+    "week_end": "2026-07-05",
+    "rank": 4,
+    "revision_item_id": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+    "title": "Agentic testing playbook: How fuzzing and property testing empower autonomous coding",
+    "summary": "Dan Luu shares deep insights on engineering workflows with coding agents, explaining why heavy testing methodologies like fuzzing and property-based testing are highly suited to AI-driven development where manual code review becomes impractical.",
+    "why": "As AI agents generate code at superhuman speeds, manual code reviews become a bottleneck. Transitioning to a continuous automated testing workflow ensures code reliability without manual intervention.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-29",
+    "week_end": "2026-07-05",
+    "rank": 5,
+    "revision_item_id": "10ea81e6-4af6-41da-9433-8f938b037bf3",
+    "title": "Review-flow: Automate 80% of code reviews using Claude Code and Model Context Protocol",
+    "summary": "Review-flow is an open-source server that automates code review pipelines on GitHub and GitLab. It utilizes Claude Code background sessions and a dedicated Model Context Protocol server to execute structured multi-agent audits.",
+    "why": "Self-host Review-flow to automate repetitive code quality, architecture, and security reviews directly within your merge requests.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-29",
+    "week_end": "2026-07-05",
+    "rank": 6,
+    "revision_item_id": "907e49c3-2852-427b-9c92-377d1f055bdf",
+    "title": "Optimizing Token Caching to Avoid Unexpected Cloud Large Language Model Costs",
+    "summary": "Developers often encounter unexpectedly high API bills because they fail to configure and utilize prompt caching correctly. Understanding how token state, system prompts, and history affect cache hits can drastically cut costs.",
+    "why": "You can reduce your API costs up to 90% by structuring your prompts and conversation history to maximize cache hits.",
+    "practical": null,
+    "takeaway": null
+  },
+  {
+    "week_start": "2026-06-29",
+    "week_end": "2026-07-05",
+    "rank": 7,
+    "revision_item_id": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+    "title": "Cutting Claude Code Token Costs with Optical Context Compression",
+    "summary": "Reduce input token counts by converting verbose text context, schemas, and system prompts into compact PNG images. A local proxy intercepts requests to Claude Code, squeezing dense text down to a fraction of its original token cost.",
+    "why": "As context windows grow, token costs for repetitive, dense developer data can skyrocket. Using vision capabilities to read compressed text representation is a highly creative way to bypass pricing limits.",
+    "practical": null,
+    "takeaway": null
+  }
+]
