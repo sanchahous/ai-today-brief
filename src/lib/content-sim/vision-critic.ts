@@ -26,6 +26,8 @@ export const IMAGE_CRITIC_BLOCKER_CODES = [
   'prop_use_mismatch',
   'decorative_second_beat',
   'sibling_echo',
+  'opaque_abstraction',
+  'semantic_evidence_missing',
 ] as const;
 
 export type ImageCriticBlockerCode = (typeof IMAGE_CRITIC_BLOCKER_CODES)[number];
@@ -81,12 +83,13 @@ export function buildImageCriticPrompt(input: {
     : '';
   return [
     'You are the art director QA for AI Today Brief.',
-    `Policy: ${input.policyId ?? 'weekly-semantic-story-v4'} (no readable text, no UI chrome, no comic panels/collage).`,
+    `Policy: ${input.policyId ?? 'weekly-semantic-story-v5'} (no readable text, no UI chrome, no comic panels/collage).`,
     semanticStory
       ? `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, context_fidelity >= ${newsFloor}, mechanism_legibility >= ${newsFloor}, consequence_legibility >= ${newsFloor}, instant_comprehension >= ${newsFloor}, AND no blocking issues.`
       : `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, AND no blocking issues.`,
-    'Blocking codes (use exactly): readable_text | ui_chrome | collage_panels | banned_cliche | off_metaphor | off_news | missing_context | missing_mechanism | missing_consequence | ambiguous_visual_story | melted_motion | brand_unsafe | low_quality | wrong_subject | impossible_orientation | prop_use_mismatch | decorative_second_beat | sibling_echo.',
+    'Blocking codes (use exactly): readable_text | ui_chrome | collage_panels | banned_cliche | off_metaphor | off_news | missing_context | missing_mechanism | missing_consequence | ambiguous_visual_story | melted_motion | brand_unsafe | low_quality | wrong_subject | impossible_orientation | prop_use_mismatch | decorative_second_beat | sibling_echo | opaque_abstraction | semantic_evidence_missing.',
     'banned_cliche includes: terminal/IDE screens, paper-heap sludge, generic desk without a conceptual prop.',
+    'opaque_abstraction includes generic pneumatic tubes, canisters, switchboards, patch cables, pipework, or glowing data streams used merely to mean software/data flow when those objects are not literal news context.',
     'Editorial fidelity (news first):',
     '- Treat SOURCE STORY below as truth. Treat the generated semantic contract and scene brief as hypotheses to verify against it.',
     '- missing_context: the image lacks a specific anchor for who/what changed in THIS story.',
@@ -94,10 +97,13 @@ export function buildImageCriticPrompt(input: {
     '- missing_consequence: no grounded benefit, harm, trade-off, or uncertainty is visibly caused by the mechanism.',
     '- ambiguous_visual_story: anchor, cause, and result exist as props but their relationship is not instantly readable.',
     '- off_news: the image could illustrate almost any tech story, or argues a different claim than the source story.',
+    '- opaque_abstraction: the pixels show polished machinery/data flow but give a human reader no way to identify this story.',
     '- melted_motion: smeared shuttles, melted limbs, motion-lag blobs, streaking blur that destroys silhouette readability.',
     semanticStory
       ? 'Ask yourself, in order: What changed? How? So what? Could a developer infer all three in under three seconds without seeing the prompt?'
       : 'Ask yourself: would a developer connect this image to the named story rather than generic technology?',
+    'BLIND PIXEL TEST: first ignore the scene brief and infer the news only from visible pixels. Then compare with SOURCE STORY. Do not award any semantic dimension above 74 when the connection depends on prompt knowledge rather than visible evidence.',
+    'HEADLINE SUBSTITUTION TEST: if the same pixels could fit two unrelated AI headlines, flag off_news or opaque_abstraction even when craft is excellent.',
     'Physics / craft checks:',
     '- impossible_orientation: readable surfaces (books, journals, screens, signs) upside-down or rotated vs how a human would use them.',
     '- prop_use_mismatch: grip, posture, or object use that a human would not do this way.',
@@ -131,6 +137,7 @@ export function buildImageCriticPrompt(input: {
     '  "overall": number,',
     '  "dimensions": { "metaphor_fit": number, "no_text": number, "craft": number, "brand_safe": number, "news_legibility": number, "context_fidelity": number, "mechanism_legibility": number, "consequence_legibility": number, "instant_comprehension": number },',
     '  "blockers": [{ "code": string, "message": string, "region": string }],',
+    '  "pixel_evidence": { "context": "visible evidence only", "mechanism": "visible evidence only", "consequence": "visible evidence only", "headline_pairing": "why these pixels identify this story" },',
     '  "notes": string,',
     '  "repair": {',
     '    "prompt_patches": ["concrete depictable changes for the next image render, never abstract critique"],',
@@ -241,7 +248,7 @@ function criticParseFailure(reason: string): ContentSimCritique {
 export function parseImageCriticResponse(
   text: string,
   scoreThreshold = contentSimScoreThreshold(),
-  options: { requireStorySemantics?: boolean } = {},
+  options: { requireStorySemantics?: boolean; requirePixelEvidence?: boolean } = {},
 ): ContentSimCritique {
   let raw: unknown;
   try {
@@ -275,6 +282,19 @@ export function parseImageCriticResponse(
     ? Math.min(newsClamped, semanticMin + 5)
     : newsClamped;
   const blockers = parseBlockers(parsed.blockers);
+  if (options.requirePixelEvidence) {
+    const evidence = asRecord(parsed.pixel_evidence);
+    const missingEvidence = ['context', 'mechanism', 'consequence', 'headline_pairing'].filter(
+      (key) => !str(evidence[key]),
+    );
+    if (missingEvidence.length > 0) {
+      blockers.push({
+        code: 'semantic_evidence_missing',
+        message: `Vision scores lack visible-pixel evidence for: ${missingEvidence.join(', ')}.`,
+        blocker: true,
+      });
+    }
+  }
   const scores = {
     overall,
     metaphor_fit: num(dimensions.metaphor_fit, overall),

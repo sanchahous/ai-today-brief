@@ -13,11 +13,7 @@ export const CONTENT_SIM_ADAPTERS = [
 
 export type ContentSimAdapterId = (typeof CONTENT_SIM_ADAPTERS)[number];
 
-export type ContentSimOutcome =
-  | 'passed'
-  | 'needs_human_review'
-  | 'budget_exhausted'
-  | 'incomplete';
+export type ContentSimOutcome = 'passed' | 'needs_human_review' | 'budget_exhausted' | 'incomplete';
 
 export interface ContentSimBlocker {
   code: string;
@@ -107,6 +103,15 @@ export interface ContentSimArtifactMeta {
   human_override_at?: string;
   human_override_note?: string;
   total_cost_usd?: number;
+  /** Number of provider image renders made by this job, including alternates. */
+  image_generations?: number;
+  /** Number of paid vision critiques made by this job. */
+  vision_critiques?: number;
+  /** Provider-call cost split for owner-facing auditability. */
+  cost_breakdown?: {
+    render_usd: number;
+    vision_usd: number;
+  };
 }
 
 export interface ContentSimManifest {

@@ -123,6 +123,41 @@ export function clampMonotonicProgress(previous: number, next: number): number {
   return Math.min(100, Math.max(0, previous, Math.round(next)));
 }
 
+/**
+ * Runs independent work with a fixed upper bound while preserving input order.
+ * It waits for every started task before propagating a failure, so callers can
+ * safely clean up or persist the work that did complete.
+ */
+export async function mapWithConcurrency<TValue, TResult>(
+  values: readonly TValue[],
+  maxConcurrency: number,
+  mapper: (value: TValue, index: number) => Promise<TResult>,
+): Promise<TResult[]> {
+  if (values.length === 0) return [];
+  const concurrency = Number.isFinite(maxConcurrency)
+    ? Math.max(1, Math.min(values.length, Math.trunc(maxConcurrency)))
+    : 1;
+  const results: TResult[] = new Array(values.length);
+  const failures: unknown[] = [];
+  let nextIndex = 0;
+
+  async function runNext() {
+    while (nextIndex < values.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      try {
+        results[index] = await mapper(values[index]!, index);
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => runNext()));
+  if (failures.length > 0) throw failures[0];
+  return results;
+}
+
 export function classifyGenerationFailure(message: string): GenerationFailure {
   const normalized = message.toLowerCase();
   // Checked before everything else: this message names its own remedy and

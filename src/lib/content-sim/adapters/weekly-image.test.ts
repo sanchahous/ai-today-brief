@@ -6,7 +6,9 @@ vi.mock('../../../../pipeline/providers/vision', () => ({
 
 import { generateWithVision } from '../../../../pipeline/providers/vision';
 import {
+  aggregateVariantRepairCritique,
   applyRepairToSceneInput,
+  opaqueAbstractionCritique,
   pickBestVariantIndex,
   scoreAndPickVariants,
   type WeeklyImageSimCandidate,
@@ -27,6 +29,13 @@ function semanticDimensions(score: number) {
     instant_comprehension: score,
   };
 }
+
+const pixelEvidence = {
+  context: 'A visible tutoring or engineering anchor identifies the source situation.',
+  mechanism: 'A physical cause acts on the anchor.',
+  consequence: 'The resulting change is visibly connected to that cause.',
+  headline_pairing: 'The combined anchor, cause, and result distinguish this headline.',
+};
 
 function baseCandidate(overrides?: Partial<WeeklyImageSimCandidate>): WeeklyImageSimCandidate {
   return {
@@ -121,11 +130,38 @@ describe('scoreAndPickVariants', () => {
   };
 
   it('visions all variants and promotes the best pass as primary', async () => {
+    const variantConcepts = [
+      {
+        conceptLens: 'literal_context',
+        scene: 'a tutor deciding whether to interrupt a student solving a physical puzzle',
+        sceneSource: 'art_director',
+        positivePrompt: 'literal prompt',
+        negativePrompt: 'neg',
+        metaphorTitle: 'The tutoring moment',
+      },
+      {
+        conceptLens: 'mechanism',
+        scene: 'a balance gate opening only when a learner reaches a visible impasse',
+        sceneSource: 'art_director',
+        positivePrompt: 'mechanism prompt',
+        negativePrompt: 'neg',
+        metaphorTitle: 'When the gate opens',
+      },
+      {
+        conceptLens: 'consequence',
+        scene: 'two learning paths ending at visibly different completed structures',
+        sceneSource: 'art_director',
+        positivePrompt: 'consequence prompt',
+        negativePrompt: 'neg',
+        metaphorTitle: 'Changed outcome',
+      },
+    ];
     mockedVision
       .mockResolvedValueOnce({
         text: JSON.stringify({
           overall: 70,
           dimensions: semanticDimensions(70),
+          pixel_evidence: pixelEvidence,
           blockers: [{ code: 'decorative_second_beat', message: 'mood only', region: 'right' }],
         }),
         provider: 'gemini',
@@ -133,7 +169,12 @@ describe('scoreAndPickVariants', () => {
         usage,
       })
       .mockResolvedValueOnce({
-        text: JSON.stringify({ overall: 91, dimensions: semanticDimensions(91), blockers: [] }),
+        text: JSON.stringify({
+          overall: 91,
+          dimensions: semanticDimensions(91),
+          pixel_evidence: pixelEvidence,
+          blockers: [],
+        }),
         provider: 'gemini',
         model: 'vision',
         usage,
@@ -142,6 +183,7 @@ describe('scoreAndPickVariants', () => {
         text: JSON.stringify({
           overall: 85,
           dimensions: semanticDimensions(85),
+          pixel_evidence: pixelEvidence,
           blockers: [{ code: 'sibling_echo', message: 'rhymes', region: 'full' }],
         }),
         provider: 'gemini',
@@ -150,7 +192,7 @@ describe('scoreAndPickVariants', () => {
       });
 
     const picked = await scoreAndPickVariants(
-      baseCandidate(),
+      baseCandidate({ variantConcepts }),
       {
         headline: 'Energy story',
         policyId: 'weekly-editorial-concept-v2',
@@ -160,7 +202,18 @@ describe('scoreAndPickVariants', () => {
     );
 
     expect(mockedVision).toHaveBeenCalledTimes(3);
+    const prompts = mockedVision.mock.calls.map((call) => String(call[1].prompt));
+    expect(prompts[0]).toContain(variantConcepts[0]!.scene);
+    expect(prompts[1]).toContain(variantConcepts[1]!.scene);
+    expect(prompts[2]).toContain(variantConcepts[2]!.scene);
     expect(picked.bytes.equals(Buffer.alloc(800, 2))).toBe(true);
+    expect(picked.conceptLens).toBe('mechanism');
+    expect(picked.scene).toBe(variantConcepts[1]!.scene);
+    expect(picked.variantConcepts?.map((concept) => concept.conceptLens)).toEqual([
+      'mechanism',
+      'literal_context',
+      'consequence',
+    ]);
     expect(picked.alternateBuffers).toHaveLength(2);
     expect(picked.pickSource).toBe('auto');
     expect(picked.preCritique?.passed).toBe(true);
@@ -168,9 +221,61 @@ describe('scoreAndPickVariants', () => {
     expect(picked.variantScores?.[0]?.overall).toBe(91);
   });
 
+  it('runs the three paid vision reviews concurrently and records each provider call', async () => {
+    let active = 0;
+    let peak = 0;
+    let release!: () => void;
+    let allStarted!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    const started = new Promise<void>((done) => {
+      allStarted = done;
+    });
+    mockedVision.mockImplementation(async () => {
+      active += 1;
+      peak = Math.max(peak, active);
+      if (active === 3) allStarted();
+      await gate;
+      active -= 1;
+      return {
+        text: JSON.stringify({
+          overall: 86,
+          dimensions: semanticDimensions(86),
+          pixel_evidence: pixelEvidence,
+          blockers: [],
+        }),
+        provider: 'gemini',
+        model: 'vision',
+        usage,
+      };
+    });
+    const costs: number[] = [];
+    const pending = scoreAndPickVariants(
+      baseCandidate(),
+      { headline: 'Energy story', policyId: 'weekly-semantic-story-v5' },
+      {
+        remainingBudgetUsd: 1,
+        onCostEvent: (event) => {
+          costs.push(event.costUsd);
+        },
+      },
+    );
+    await started;
+    expect(peak).toBe(3);
+    release();
+    await pending;
+    expect(costs).toEqual([0.01, 0.01, 0.01]);
+  });
+
   it('visions only the largest buffer when budget is tight', async () => {
     mockedVision.mockResolvedValue({
-      text: JSON.stringify({ overall: 88, dimensions: semanticDimensions(88), blockers: [] }),
+      text: JSON.stringify({
+        overall: 88,
+        dimensions: semanticDimensions(88),
+        pixel_evidence: pixelEvidence,
+        blockers: [],
+      }),
       provider: 'gemini',
       model: 'vision',
       usage,
@@ -192,7 +297,12 @@ describe('scoreAndPickVariants', () => {
 
   it('scores a single-buffer candidate without reordering', async () => {
     mockedVision.mockResolvedValue({
-      text: JSON.stringify({ overall: 86, dimensions: semanticDimensions(86), blockers: [] }),
+      text: JSON.stringify({
+        overall: 86,
+        dimensions: semanticDimensions(86),
+        pixel_evidence: pixelEvidence,
+        blockers: [],
+      }),
       provider: 'gemini',
       model: 'vision',
       usage,
@@ -219,6 +329,58 @@ describe('scoreAndPickVariants', () => {
         instant_comprehension: 86,
         semantic_min: 86,
       },
+    ]);
+  });
+
+  it('rejects generic tube machinery before spending on vision', async () => {
+    const ctx = {
+      headline: 'TutorMoments benchmarks when language models should help a student',
+      summary: 'Seven models improve when told they are being tested.',
+      policyId: 'weekly-semantic-story-v5',
+    };
+    const scene = 'a pneumatic tube network carries sealed canisters through generic pipework';
+    expect(opaqueAbstractionCritique(scene, ctx)?.blockers[0]?.code).toBe('opaque_abstraction');
+
+    const picked = await scoreAndPickVariants(baseCandidate({ scene }), ctx, {
+      remainingBudgetUsd: 1,
+    });
+    expect(mockedVision).not.toHaveBeenCalled();
+    expect(picked.preCritique?.repairDirective?.rejectMetaphor).toBe(true);
+  });
+
+  it('soft-fails a vision provider outage without losing the rendered batch', async () => {
+    mockedVision.mockRejectedValue(new Error('provider timeout'));
+    const picked = await scoreAndPickVariants(
+      baseCandidate(),
+      { headline: 'Energy story', policyId: 'weekly-semantic-story-v5' },
+      { remainingBudgetUsd: 1 },
+    );
+    expect(picked.alternateBuffers).toHaveLength(2);
+    expect(
+      picked.preCritique?.blockers.some((blocker) => blocker.code === 'critic_unavailable'),
+    ).toBe(true);
+  });
+});
+
+describe('aggregateVariantRepairCritique', () => {
+  it('uses all failed variants to force one conceptual re-plan', () => {
+    const critiques = ['show the tutor', 'show the help decision', 'show the changed outcome'].map(
+      (patch, index) => ({
+        passed: false,
+        scores: { overall: 55 + index, news_legibility: 50, semantic_min: 45 },
+        blockers: [
+          { code: 'missing_context', message: 'The story is not identifiable.', blocker: true },
+        ],
+        repairDirective: { promptPatches: [patch], changeSeed: true },
+      }),
+    );
+
+    const combined = aggregateVariantRepairCritique(critiques[2]!, critiques);
+    expect(combined.repairDirective?.rejectMetaphor).toBe(true);
+    expect(combined.repairDirective?.promptPatches).toEqual([
+      'show the tutor',
+      'show the help decision',
+      'show the changed outcome',
     ]);
   });
 });

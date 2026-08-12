@@ -666,6 +666,14 @@ function ArtifactCard({
     revisionId: string;
     revisionItemId: string;
     slotKey: string;
+    costSummary?: {
+      totalUsd: number;
+      renderUsd: number;
+      visionUsd: number;
+      legacyUsd: number;
+      eventCount: number;
+      jobCount: number;
+    };
   };
 }) {
   if (!artifact) {
@@ -743,6 +751,29 @@ function ArtifactCard({
       semantic_min: typeof row.semantic_min === 'number' ? row.semantic_min : undefined,
     });
   }
+  const variantConceptsRaw = Array.isArray(artifactMetadata.variant_concepts)
+    ? artifactMetadata.variant_concepts
+    : [];
+  const variantConceptByIndex = new Map<
+    number,
+    {
+      lens: string | null;
+      title: string | null;
+      scene: string | null;
+      source: string | null;
+    }
+  >();
+  for (const entry of variantConceptsRaw) {
+    const row = asRecord(entry);
+    const index = typeof row.index === 'number' ? row.index : null;
+    if (index === null) continue;
+    variantConceptByIndex.set(index, {
+      lens: typeof row.concept_lens === 'string' ? row.concept_lens : null,
+      title: typeof row.metaphor_title === 'string' ? row.metaphor_title : null,
+      scene: typeof row.scene === 'string' ? row.scene : null,
+      source: typeof row.scene_source === 'string' ? row.scene_source : null,
+    });
+  }
   const pickSource =
     artifactMetadata.pick_source === 'owner'
       ? 'owner'
@@ -750,6 +781,7 @@ function ArtifactCard({
         ? 'auto'
         : null;
   const primaryVariantScore = variantScoreByIndex.get(0);
+  const primaryVariantConcept = variantConceptByIndex.get(0);
   const contentSim = asRecord(artifactMetadata.content_sim);
   const contentSimOutcome = typeof contentSim.outcome === 'string' ? contentSim.outcome : null;
   const contentSimPassed = contentSim.passed === true || contentSim.human_override === true;
@@ -801,6 +833,11 @@ function ArtifactCard({
                   {formatVariantScoreChip(primaryVariantScore)}
                 </span>
               ) : null}
+              {primaryVariantConcept?.lens ? (
+                <span className="rounded bg-black/70 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-200 uppercase">
+                  {primaryVariantConcept.lens.replaceAll('_', ' ')}
+                </span>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -813,6 +850,7 @@ function ArtifactCard({
             if (!path) return null;
             // Alternate #i maps to variant_scores index i+1 (0 = primary).
             const scoreMeta = variantScoreByIndex.get(index + 1);
+            const conceptMeta = variantConceptByIndex.get(index + 1);
             return (
               <form key={path} action={selectWeeklyArtifactVariantAction}>
                 <input type="hidden" name="weekly_digest_id" value={digestId} />
@@ -839,9 +877,11 @@ function ArtifactCard({
                           {formatVariantScoreChip(scoreMeta)}
                         </span>
                         <span className="block truncate text-[9px] text-slate-300">
-                          {scoreMeta.blockers.length
-                            ? scoreMeta.blockers.slice(0, 2).join(', ')
-                            : 'pass'}
+                          {conceptMeta?.title ||
+                            conceptMeta?.lens?.replaceAll('_', ' ') ||
+                            (scoreMeta.blockers.length
+                              ? scoreMeta.blockers.slice(0, 2).join(', ')
+                              : 'pass')}
                         </span>
                       </>
                     ) : (
@@ -867,6 +907,26 @@ function ArtifactCard({
             {illustrationSceneSource ? ` · ${illustrationSceneSource}` : ''}
           </summary>
           <div className="mt-3 grid gap-3 text-xs text-slate-300">
+            {variantConceptByIndex.size > 1 ? (
+              <div className="grid gap-2 rounded-lg border border-amber-300/15 bg-amber-300/[.03] p-2">
+                <p className="font-bold tracking-wide text-amber-200 uppercase">
+                  Three independent concepts
+                </p>
+                {[...variantConceptByIndex.entries()]
+                  .sort(([left], [right]) => left - right)
+                  .map(([index, concept]) => (
+                    <div key={index}>
+                      <p className="font-bold text-slate-200">
+                        {index + 1}.{' '}
+                        {concept.title || concept.lens?.replaceAll('_', ' ') || 'Concept'}
+                      </p>
+                      {concept.scene ? (
+                        <p className="mt-0.5 text-slate-400">{concept.scene}</p>
+                      ) : null}
+                    </div>
+                  ))}
+              </div>
+            ) : null}
             {illustrationSemanticContract.length ? (
               <div className="grid gap-2 rounded-lg border border-cyan-300/15 bg-cyan-300/[.03] p-2">
                 {illustrationSemanticContract.map(([name, value]) => (
@@ -915,7 +975,7 @@ function ArtifactCard({
                   value={variantSelection.revisionItemId}
                 />
                 <label className="grid gap-1 text-xs font-bold text-slate-300">
-                  Edit scene (optional — replaces the art-director call)
+                  Edit direction (kept as concept 1; concepts 2–3 stay independent)
                   <textarea
                     name="scene_override"
                     rows={2}
@@ -972,8 +1032,28 @@ function ArtifactCard({
         ) : null}
         {estimatedCost !== null ? (
           <div>
-            <dt className="font-bold tracking-wide text-slate-600 uppercase">Generation cost</dt>
+            <dt className="font-bold tracking-wide text-slate-600 uppercase">Current run cost</dt>
             <dd className="mt-1 text-slate-300">${estimatedCost.toFixed(4)}</dd>
+          </div>
+        ) : null}
+        {variantSelection?.costSummary ? (
+          <div className="col-span-2 rounded-lg border border-cyan-300/15 bg-cyan-300/[.03] p-2">
+            <dt className="font-bold tracking-wide text-slate-500 uppercase">
+              Story revision spend
+            </dt>
+            <dd className="mt-1 text-slate-200">
+              ${variantSelection.costSummary.totalUsd.toFixed(4)} tracked across{' '}
+              {variantSelection.costSummary.jobCount} job
+              {variantSelection.costSummary.jobCount === 1 ? '' : 's'}
+            </dd>
+            <dd className="mt-1 text-[11px] text-slate-500">
+              render ${variantSelection.costSummary.renderUsd.toFixed(4)} · vision $
+              {variantSelection.costSummary.visionUsd.toFixed(4)}
+              {variantSelection.costSummary.legacyUsd > 0
+                ? ` · legacy aggregate $${variantSelection.costSummary.legacyUsd.toFixed(4)}`
+                : ''}{' '}
+              · {variantSelection.costSummary.eventCount} ledger events
+            </dd>
           </div>
         ) : null}
         {typeof artifactMetadata.target_audience === 'string' ? (
@@ -2777,6 +2857,26 @@ function VisualsPanel({
             const job = latestJobForSlot(workspace.generationJobs, 'story_image', {
               revisionItemId: item.id,
             });
+            const storyCostEvents = workspace.generationCosts.filter(
+              (event) => asRecord(event.metadata).revision_item_id === item.id,
+            );
+            const preciseCostEvents = storyCostEvents.filter(
+              (event) => asRecord(event.metadata).cost_granularity === 'provider_call',
+            );
+            const costOf = (events: typeof storyCostEvents) =>
+              events.reduce((sum, event) => sum + Number(event.cost_usd || 0), 0);
+            const costSummary = {
+              totalUsd: costOf(storyCostEvents),
+              renderUsd: costOf(preciseCostEvents.filter((event) => event.kind === 'image')),
+              visionUsd: costOf(preciseCostEvents.filter((event) => event.kind === 'llm')),
+              legacyUsd: costOf(
+                storyCostEvents.filter(
+                  (event) => asRecord(event.metadata).cost_granularity !== 'provider_call',
+                ),
+              ),
+              eventCount: storyCostEvents.length,
+              jobCount: new Set(storyCostEvents.map((event) => event.job_id).filter(Boolean)).size,
+            };
             return (
               <div key={item.id} className="grid content-start gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -2828,6 +2928,7 @@ function VisualsPanel({
                     revisionId: revision.id,
                     revisionItemId: item.id,
                     slotKey,
+                    costSummary,
                   }}
                 />
                 <ReplacementAssetForm

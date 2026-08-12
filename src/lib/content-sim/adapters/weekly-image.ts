@@ -1,6 +1,6 @@
 /**
  * Weekly story-image adapter for content-sim: FLUX generate → per-variant
- * deterministic + vision → pick best → repair directive (≤5) → pass or escalate.
+ * deterministic + vision → pick best → one decisive re-plan → pass or escalate.
  */
 
 import {
@@ -35,6 +35,41 @@ export interface VariantScoreMeta {
   semantic_min?: number;
 }
 
+export interface WeeklyImageCostEvent {
+  attempt: number;
+  variantIndex: number;
+  kind: 'llm';
+  provider: string;
+  model: string;
+  costUsd: number;
+  costSource: 'reported' | 'estimated' | 'subscription';
+  promptTokens: number | null;
+  outputTokens: number | null;
+}
+
+export interface WeeklyImageVariantConcept {
+  conceptLens?: string;
+  scene: string;
+  sceneSource: string;
+  positivePrompt: string;
+  negativePrompt: string;
+  storyContext?: string;
+  meaning?: string;
+  essence?: string;
+  mechanism?: string;
+  consequence?: string;
+  visualThesis?: string;
+  readerTest?: string;
+  metaphorTitle?: string;
+  whyItFits?: string;
+  storyAnchor?: string;
+  visibleMechanism?: string;
+  visibleConsequence?: string;
+  motifClass?: string;
+  subjectKind?: string;
+  composition?: string;
+}
+
 export interface WeeklyImageSimCandidate {
   bytes: Buffer;
   width: number;
@@ -47,6 +82,7 @@ export interface WeeklyImageSimCandidate {
   positivePrompt: string;
   negativePrompt: string;
   sceneSource: string;
+  conceptLens?: string;
   storyContext?: string;
   meaning?: string;
   essence?: string;
@@ -63,12 +99,17 @@ export interface WeeklyImageSimCandidate {
   subjectKind?: string;
   composition?: string;
   alternateBuffers: Buffer[];
+  /** Per-buffer concept metadata, aligned with bytes + alternateBuffers. */
+  variantConcepts?: WeeklyImageVariantConcept[];
   /** Per-variant QA scores (aligned with bytes + alternateBuffers order before pick). */
   variantScores?: VariantScoreMeta[];
   /** When set, skip a second vision call in the repair-loop critique. */
   preCritique?: ContentSimCritique;
   /** How primary was chosen for this candidate. */
   pickSource?: 'auto' | 'owner';
+  /** Actual/fallback vision spend attached after per-variant scoring. */
+  visionCostUsd?: number;
+  visionCallCount?: number;
 }
 
 function variantScoreFromCritique(index: number, critique: ContentSimCritique): VariantScoreMeta {
@@ -116,6 +157,42 @@ export interface WeeklyImageSimContext {
   siblingScenes?: string[];
 }
 
+function baseVariantConcept(candidate: WeeklyImageSimCandidate): WeeklyImageVariantConcept {
+  return {
+    conceptLens: candidate.conceptLens,
+    scene: candidate.scene,
+    sceneSource: candidate.sceneSource,
+    positivePrompt: candidate.positivePrompt,
+    negativePrompt: candidate.negativePrompt,
+    storyContext: candidate.storyContext,
+    meaning: candidate.meaning,
+    essence: candidate.essence,
+    mechanism: candidate.mechanism,
+    consequence: candidate.consequence,
+    visualThesis: candidate.visualThesis,
+    readerTest: candidate.readerTest,
+    metaphorTitle: candidate.metaphorTitle,
+    whyItFits: candidate.whyItFits,
+    storyAnchor: candidate.storyAnchor,
+    visibleMechanism: candidate.visibleMechanism,
+    visibleConsequence: candidate.visibleConsequence,
+    motifClass: candidate.motifClass,
+    subjectKind: candidate.subjectKind,
+    composition: candidate.composition,
+  };
+}
+
+function variantConceptsFor(
+  candidate: WeeklyImageSimCandidate,
+  count: number,
+): WeeklyImageVariantConcept[] {
+  const fallback = baseVariantConcept(candidate);
+  return Array.from(
+    { length: count },
+    (_, index) => candidate.variantConcepts?.[index] ?? fallback,
+  );
+}
+
 /** Cheap ranking when vision budget is nearly exhausted. */
 function heuristicVariantRank(bytes: Buffer): number {
   return bytes.length;
@@ -139,7 +216,60 @@ export function pickBestVariantIndex(
   return best.index;
 }
 
-export async function critiqueWeeklyImageBytes(
+const OPAQUE_SOFTWARE_METAPHOR =
+  /\b(pneumatic tubes?|tube network|canisters?|telephone switchboards?|patch cables?|glowing (?:data )?(?:streams?|capsules?)|generic pipework|generic conduits?)\b/i;
+
+/**
+ * Generic data-flow machinery usually communicates no news context to a
+ * reader. It is allowed only when the source story is literally about it.
+ */
+export function opaqueAbstractionCritique(
+  scene: string,
+  ctx: WeeklyImageSimContext,
+): ContentSimCritique | null {
+  if (!OPAQUE_SOFTWARE_METAPHOR.test(scene)) return null;
+  const source = [ctx.headline, ctx.summary, ctx.why, ctx.practical, ctx.editorialAngle]
+    .filter(Boolean)
+    .join(' ');
+  if (OPAQUE_SOFTWARE_METAPHOR.test(source)) return null;
+  return {
+    passed: false,
+    scores: {
+      overall: 35,
+      news_legibility: 30,
+      context_fidelity: 25,
+      mechanism_legibility: 45,
+      consequence_legibility: 25,
+      instant_comprehension: 25,
+      semantic_min: 25,
+      craft: 80,
+    },
+    blockers: [
+      {
+        code: 'opaque_abstraction',
+        message:
+          'Generic tubes, canisters, switchboards, or data-flow machinery do not identify this news story to a reader.',
+        blocker: true,
+      },
+    ],
+    notes: 'Reject this metaphor before paying to compare more seeds of the same opaque scene.',
+    repairDirective: {
+      rejectMetaphor: true,
+      changeSeed: true,
+      promptPatches: [
+        'Replace generic data-flow machinery with a literal story anchor and a visibly human-readable cause and result.',
+      ],
+      suggestedActions: ['Choose a new metaphor that pairs with this headline unaided.'],
+    },
+  };
+}
+
+interface CritiqueWithUsage {
+  critique: ContentSimCritique;
+  usage: Omit<WeeklyImageCostEvent, 'attempt' | 'variantIndex' | 'kind'> | null;
+}
+
+async function critiqueWeeklyImageBytesWithUsage(
   input: {
     bytes: Buffer;
     width: number;
@@ -156,13 +286,16 @@ export async function critiqueWeeklyImageBytes(
     whyItFits?: string;
   },
   ctx: WeeklyImageSimContext,
-): Promise<ContentSimCritique> {
+): Promise<CritiqueWithUsage> {
   const deterministic = deterministicImageCritique({
     width: input.width,
     height: input.height,
     byteSize: input.bytes.length,
   });
-  if (deterministic && !deterministic.passed) return deterministic;
+  if (deterministic && !deterministic.passed) return { critique: deterministic, usage: null };
+
+  const opaque = opaqueAbstractionCritique(input.scene, ctx);
+  if (opaque) return { critique: opaque, usage: null };
 
   const prompt = buildImageCriticPrompt({
     headline: ctx.headline,
@@ -187,14 +320,72 @@ export async function critiqueWeeklyImageBytes(
     scoreThreshold: contentSimScoreThreshold(),
     siblingScenes: ctx.siblingScenes,
   });
-  const result = await generateWithVision('weekly.image_critic', {
-    prompt,
-    imageBytes: input.bytes,
-    mimeType: 'image/jpeg',
-  });
-  return parseImageCriticResponse(result.text, contentSimScoreThreshold(), {
-    requireStorySemantics: true,
-  });
+  let result: Awaited<ReturnType<typeof generateWithVision>>;
+  try {
+    result = await generateWithVision('weekly.image_critic', {
+      prompt,
+      imageBytes: input.bytes,
+      mimeType: 'image/jpeg',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      critique: {
+        passed: false,
+        scores: { overall: 0 },
+        blockers: [
+          {
+            code: 'critic_unavailable',
+            message: `Vision provider unavailable: ${message.slice(0, 240)}`,
+            blocker: true,
+          },
+        ],
+        notes: 'A provider failure is a soft quality failure, not a failed story-image job.',
+        repairDirective: {
+          changeSeed: true,
+          suggestedActions: [
+            'Retry vision review or inspect the three rendered variants manually.',
+          ],
+        },
+      },
+      usage: null,
+    };
+  }
+  return {
+    critique: parseImageCriticResponse(result.text, contentSimScoreThreshold(), {
+      requireStorySemantics: true,
+      requirePixelEvidence: true,
+    }),
+    usage: {
+      provider: result.provider,
+      model: result.model,
+      costUsd: result.usage.costUsd ?? contentSimVisionCriticEstimatedUsd(),
+      costSource: result.usage.costUsd === null ? 'estimated' : result.usage.costSource,
+      promptTokens: result.usage.promptTokens,
+      outputTokens: result.usage.outputTokens,
+    },
+  };
+}
+
+export async function critiqueWeeklyImageBytes(
+  input: {
+    bytes: Buffer;
+    width: number;
+    height: number;
+    scene: string;
+    storyContext?: string;
+    meaning?: string;
+    essence?: string;
+    mechanism?: string;
+    consequence?: string;
+    visualThesis?: string;
+    readerTest?: string;
+    metaphorTitle?: string;
+    whyItFits?: string;
+  },
+  ctx: WeeklyImageSimContext,
+): Promise<ContentSimCritique> {
+  return (await critiqueWeeklyImageBytesWithUsage(input, ctx)).critique;
 }
 
 export async function critiqueWeeklyImageCandidate(
@@ -229,16 +420,36 @@ export async function critiqueWeeklyImageCandidate(
 export async function scoreAndPickVariants(
   candidate: WeeklyImageSimCandidate,
   ctx: WeeklyImageSimContext,
-  options: { remainingBudgetUsd: number },
+  options: {
+    remainingBudgetUsd: number;
+    attempt?: number;
+    onCostEvent?: (event: WeeklyImageCostEvent) => void | Promise<void>;
+  },
 ): Promise<WeeklyImageSimCandidate> {
   const buffers = [candidate.bytes, ...candidate.alternateBuffers];
+  const concepts = variantConceptsFor(candidate, buffers.length);
   if (buffers.length <= 1) {
-    const critique = await critiqueWeeklyImageCandidate(candidate, ctx);
+    const scored = candidate.preCritique
+      ? { critique: candidate.preCritique, usage: null }
+      : await critiqueWeeklyImageBytesWithUsage(candidate, ctx);
+    if (scored.usage) {
+      await options.onCostEvent?.({
+        attempt: options.attempt ?? 1,
+        variantIndex: 0,
+        kind: 'llm',
+        ...scored.usage,
+      });
+    }
+    const concept = concepts[0]!;
     return {
       ...candidate,
-      preCritique: critique,
+      ...concept,
+      preCritique: scored.critique,
       pickSource: 'auto',
-      variantScores: [variantScoreFromCritique(0, critique)],
+      variantScores: [variantScoreFromCritique(0, scored.critique)],
+      variantConcepts: [concept],
+      visionCostUsd: scored.usage?.costUsd ?? 0,
+      visionCallCount: scored.usage ? 1 : 0,
     };
   }
 
@@ -246,31 +457,48 @@ export async function scoreAndPickVariants(
   const canScoreAll = options.remainingBudgetUsd >= visionCost * buffers.length;
   const scores: VariantScoreMeta[] = [];
   const critiques: ContentSimCritique[] = [];
+  let visionCostUsd = 0;
+  let visionCallCount = 0;
 
   if (canScoreAll) {
-    for (let index = 0; index < buffers.length; index += 1) {
-      const bytes = buffers[index]!;
-      const critique = await critiqueWeeklyImageBytes(
-        {
-          bytes,
-          width: candidate.width,
-          height: candidate.height,
-          scene: candidate.scene,
-          storyContext: candidate.storyContext,
-          meaning: candidate.meaning,
-          essence: candidate.essence,
-          mechanism: candidate.mechanism,
-          consequence: candidate.consequence,
-          visualThesis: candidate.visualThesis,
-          readerTest: candidate.readerTest,
-          metaphorTitle: candidate.metaphorTitle,
-          whyItFits: candidate.whyItFits,
-        },
-        ctx,
-      );
-      critiques[index] = critique;
-      scores.push(variantScoreFromCritique(index, critique));
-    }
+    const scored = await Promise.all(
+      buffers.map((bytes, index) => {
+        const concept = concepts[index]!;
+        return critiqueWeeklyImageBytesWithUsage(
+          {
+            bytes,
+            width: candidate.width,
+            height: candidate.height,
+            scene: concept.scene,
+            storyContext: concept.storyContext,
+            meaning: concept.meaning,
+            essence: concept.essence,
+            mechanism: concept.mechanism,
+            consequence: concept.consequence,
+            visualThesis: concept.visualThesis,
+            readerTest: concept.readerTest,
+            metaphorTitle: concept.metaphorTitle,
+            whyItFits: concept.whyItFits,
+          },
+          ctx,
+        );
+      }),
+    );
+    await Promise.all(
+      scored.map(async (result, index) => {
+        critiques[index] = result.critique;
+        scores[index] = variantScoreFromCritique(index, result.critique);
+        if (!result.usage) return;
+        visionCostUsd += result.usage.costUsd;
+        visionCallCount += 1;
+        await options.onCostEvent?.({
+          attempt: options.attempt ?? 1,
+          variantIndex: index,
+          kind: 'llm',
+          ...result.usage,
+        });
+      }),
+    );
   } else {
     let bestIdx = 0;
     let bestRank = heuristicVariantRank(buffers[0]!);
@@ -302,32 +530,48 @@ export async function scoreAndPickVariants(
         };
         continue;
       }
-      const critique = await critiqueWeeklyImageBytes(
+      const concept = concepts[index]!;
+      const result = await critiqueWeeklyImageBytesWithUsage(
         {
           bytes: buffers[index]!,
           width: candidate.width,
           height: candidate.height,
-          scene: candidate.scene,
-          storyContext: candidate.storyContext,
-          meaning: candidate.meaning,
-          essence: candidate.essence,
-          mechanism: candidate.mechanism,
-          consequence: candidate.consequence,
-          visualThesis: candidate.visualThesis,
-          readerTest: candidate.readerTest,
-          metaphorTitle: candidate.metaphorTitle,
-          whyItFits: candidate.whyItFits,
+          scene: concept.scene,
+          storyContext: concept.storyContext,
+          meaning: concept.meaning,
+          essence: concept.essence,
+          mechanism: concept.mechanism,
+          consequence: concept.consequence,
+          visualThesis: concept.visualThesis,
+          readerTest: concept.readerTest,
+          metaphorTitle: concept.metaphorTitle,
+          whyItFits: concept.whyItFits,
         },
         ctx,
       );
-      critiques[index] = critique;
-      scores.push(variantScoreFromCritique(index, critique));
+      critiques[index] = result.critique;
+      scores.push(variantScoreFromCritique(index, result.critique));
+      if (result.usage) {
+        visionCostUsd += result.usage.costUsd;
+        visionCallCount += 1;
+        await options.onCostEvent?.({
+          attempt: options.attempt ?? 1,
+          variantIndex: index,
+          kind: 'llm',
+          ...result.usage,
+        });
+      }
     }
   }
 
   const bestIndex = pickBestVariantIndex(scores);
   const primaryBytes = buffers[bestIndex]!;
   const alternates = buffers.filter((_, i) => i !== bestIndex);
+  const selectedConcept = concepts[bestIndex]!;
+  const reorderedConcepts = [
+    selectedConcept,
+    ...concepts.filter((_, index) => index !== bestIndex),
+  ];
   const reorderedScores = [
     scores.find((s) => s.index === bestIndex)!,
     ...scores.filter((s) => s.index !== bestIndex),
@@ -335,11 +579,85 @@ export async function scoreAndPickVariants(
 
   return {
     ...candidate,
+    ...selectedConcept,
     bytes: primaryBytes,
     alternateBuffers: alternates,
+    variantConcepts: reorderedConcepts,
     variantScores: reorderedScores,
-    preCritique: critiques[bestIndex],
+    preCritique: aggregateVariantRepairCritique(critiques[bestIndex]!, critiques),
     pickSource: 'auto',
+    visionCostUsd,
+    visionCallCount,
+  };
+}
+
+const SEMANTIC_FAILURE_CODES = new Set([
+  'off_metaphor',
+  'off_news',
+  'missing_context',
+  'missing_mechanism',
+  'missing_consequence',
+  'ambiguous_visual_story',
+  'wrong_subject',
+  'opaque_abstraction',
+  'semantic_evidence_missing',
+]);
+
+function semanticFailure(critique: ContentSimCritique): boolean {
+  const floor = contentSimScoreThreshold();
+  return (
+    (typeof critique.scores.semantic_min === 'number' && critique.scores.semantic_min < floor) ||
+    (typeof critique.scores.news_legibility === 'number' &&
+      critique.scores.news_legibility < floor) ||
+    critique.blockers.some((blocker) => SEMANTIC_FAILURE_CODES.has(blocker.code))
+  );
+}
+
+/**
+ * All variants share one scene, so their combined verdict must repair the
+ * concept, not merely sample another seed. Preserve the winning score for the
+ * UI, merge concrete fixes, and force a new metaphor when every view agrees
+ * that the scene misses the news semantics.
+ */
+export function aggregateVariantRepairCritique(
+  best: ContentSimCritique,
+  critiques: ContentSimCritique[],
+): ContentSimCritique {
+  if (best.passed) return best;
+  const evaluated = critiques.filter(
+    (critique) =>
+      !critique.blockers.some(
+        (blocker) => blocker.code === 'budget_skip' || blocker.code === 'critic_unavailable',
+      ),
+  );
+  const rejectMetaphor = evaluated.length > 0 && evaluated.every(semanticFailure);
+  const unique = (values: Array<string | undefined>) =>
+    [
+      ...new Set(
+        values.map((value) => value?.trim()).filter((value): value is string => Boolean(value)),
+      ),
+    ].slice(0, 6);
+  const promptPatches = unique(
+    critiques.flatMap((critique) => critique.repairDirective?.promptPatches ?? []),
+  );
+  const suggestedActions = unique(
+    critiques.flatMap((critique) => critique.repairDirective?.suggestedActions ?? []),
+  );
+  const sceneOverride = critiques
+    .map((critique) => critique.repairDirective?.sceneOverride?.trim())
+    .find(Boolean);
+  return {
+    ...best,
+    repairDirective: {
+      ...best.repairDirective,
+      rejectMetaphor: rejectMetaphor || best.repairDirective?.rejectMetaphor === true,
+      changeSeed: true,
+      sceneOverride: sceneOverride || best.repairDirective?.sceneOverride,
+      promptPatches: promptPatches.length ? promptPatches : best.repairDirective?.promptPatches,
+      suggestedActions: suggestedActions.length
+        ? suggestedActions
+        : best.repairDirective?.suggestedActions,
+    },
   };
 }
 
@@ -380,6 +698,7 @@ export async function runWeeklyImageSimLoop(input: {
     promptSuffix: string;
     directive?: ContentSimRepairDirective;
   }) => Promise<WeeklyImageSimCandidate | null>;
+  onCostEvent?: (event: WeeklyImageCostEvent) => void | Promise<void>;
 }): Promise<{
   candidate: WeeklyImageSimCandidate | null;
   report: ContentSimQualityReport;
@@ -419,6 +738,10 @@ export async function runWeeklyImageSimLoop(input: {
   }
 
   let spentUsd = 0;
+  let imageGenerations = 0;
+  let visionCritiques = 0;
+  let renderCostUsd = 0;
+  let visionCostUsd = 0;
   const maxSpend = contentSimMaxImageSpendUsd();
 
   const { report, artifact } = await runRepairLoop<WeeklyImageSimCandidate>({
@@ -458,13 +781,19 @@ export async function runWeeklyImageSimLoop(input: {
           costUsd: 0,
         };
       }
+      imageGenerations += 1 + raw.alternateBuffers.length;
+      renderCostUsd += raw.estimatedCostUsd;
       const remaining = Math.max(0, maxSpend - spentUsd - raw.estimatedCostUsd);
       const picked = await scoreAndPickVariants(raw, input.ctx, {
         remainingBudgetUsd: remaining,
+        attempt,
+        onCostEvent: async (event) => {
+          visionCritiques += 1;
+          visionCostUsd += event.costUsd;
+          await input.onCostEvent?.(event);
+        },
       });
-      const visionCalls =
-        picked.variantScores?.filter((s) => !s.blockers.includes('budget_skip')).length ?? 1;
-      const costUsd = picked.estimatedCostUsd + visionCalls * contentSimVisionCriticEstimatedUsd();
+      const costUsd = picked.estimatedCostUsd + (picked.visionCostUsd ?? 0);
       spentUsd += costUsd;
       return {
         artifact: picked,
@@ -484,6 +813,14 @@ export async function runWeeklyImageSimLoop(input: {
   return {
     candidate: artifact,
     report,
-    meta: toContentSimArtifactMeta(report),
+    meta: {
+      ...toContentSimArtifactMeta(report),
+      image_generations: imageGenerations,
+      vision_critiques: visionCritiques,
+      cost_breakdown: {
+        render_usd: renderCostUsd,
+        vision_usd: visionCostUsd,
+      },
+    },
   };
 }

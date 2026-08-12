@@ -134,7 +134,7 @@ export async function runWeeklyImageFixtureSim(
         takeaway: fixture.takeaway,
         claimsExcerpt: fixture.claimsExcerpt,
         editorialAngle: fixture.editorialAngle,
-        policyId: fixture.policyId ?? 'weekly-semantic-story-v4',
+        policyId: fixture.policyId ?? 'weekly-semantic-story-v5',
         siblingScenes: fixture.siblingScenes,
       }),
   });

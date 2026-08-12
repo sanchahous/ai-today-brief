@@ -1133,19 +1133,23 @@ export async function selectWeeklyArtifactVariantAction(formData: FormData) {
 
   const priorMeta = jsonRecord(artifact.metadata);
   const priorScores = Array.isArray(priorMeta.variant_scores) ? priorMeta.variant_scores : [];
-  // Promote selected alternate: swap score rows so index 0 tracks the new primary.
+  const priorConcepts = Array.isArray(priorMeta.variant_concepts) ? priorMeta.variant_concepts : [];
+  // Promote selected alternate: score and concept rows must move with its bytes.
   const promotedAltIndex = previewPaths.indexOf(variantPath);
-  let nextScores = priorScores;
-  if (priorScores.length > 0 && promotedAltIndex >= 0) {
+  const promoteRows = (entries: Json[]) => {
+    if (entries.length === 0 || promotedAltIndex < 0) return entries;
     const fromIndex = promotedAltIndex + 1; // 0 = old primary
-    const rows = priorScores.map((entry) => jsonRecord(entry));
+    const rows = entries.map((entry) => jsonRecord(entry));
     const promoted = rows[fromIndex] ?? rows[0];
     const demotedPrimary = rows[0];
     const rest = rows.filter((_, i) => i !== 0 && i !== fromIndex);
-    nextScores = [promoted, demotedPrimary, ...rest]
+    return [promoted, demotedPrimary, ...rest]
       .filter(Boolean)
       .map((row, index) => ({ ...row, index }));
-  }
+  };
+  const nextScores = promoteRows(priorScores);
+  const nextConcepts = promoteRows(priorConcepts);
+  const primaryConcept = jsonRecord(nextConcepts[0]);
 
   const db = await getSupabaseServer();
   const { error } = await db.rpc('save_weekly_digest_artifact', {
@@ -1161,15 +1165,39 @@ export async function selectWeeklyArtifactVariantAction(formData: FormData) {
     p_mime_type: artifact.mime_type,
     p_width: artifact.width,
     p_height: artifact.height,
-    // All three variants share one render (same prompt/scene, different
-    // seed), so byte_size is the only field that can drift slightly from
-    // the promoted file's true size -- copied from the prior artifact
-    // rather than re-fetched from storage; a cosmetic-only approximation.
+    // byte_size can drift slightly from the promoted file's true size -- it
+    // is copied from the prior artifact rather than re-fetched from storage.
     p_byte_size: artifact.byte_size,
     p_metadata: {
       ...priorMeta,
       pick_source: 'owner',
+      ...(typeof primaryConcept.scene === 'string' ? { scene: primaryConcept.scene } : {}),
+      ...(typeof primaryConcept.scene_source === 'string'
+        ? { scene_source: primaryConcept.scene_source }
+        : {}),
+      ...(typeof primaryConcept.positive_prompt === 'string'
+        ? { positive_prompt: primaryConcept.positive_prompt }
+        : {}),
+      ...(typeof primaryConcept.negative_prompt === 'string'
+        ? { negative_prompt: primaryConcept.negative_prompt }
+        : {}),
+      ...(typeof primaryConcept.concept_lens === 'string'
+        ? { concept_lens: primaryConcept.concept_lens }
+        : {}),
+      ...(typeof primaryConcept.metaphor_title === 'string'
+        ? { metaphor_title: primaryConcept.metaphor_title }
+        : {}),
+      ...(typeof primaryConcept.motif_class === 'string'
+        ? { motif_class: primaryConcept.motif_class }
+        : {}),
+      ...(typeof primaryConcept.subject_kind === 'string'
+        ? { subject_kind: primaryConcept.subject_kind }
+        : {}),
+      ...(typeof primaryConcept.composition === 'string'
+        ? { composition: primaryConcept.composition }
+        : {}),
       ...(nextScores.length ? { variant_scores: nextScores } : {}),
+      ...(nextConcepts.length ? { variant_concepts: nextConcepts } : {}),
     } as Json,
   });
   if (error) fail(error.message);
@@ -1209,8 +1237,8 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
     revision_item_id: revisionItemId || null,
     source_url: optionalString(formData, 'source_url') || null,
     alt_text: optionalString(formData, 'alt_text') || null,
-    // Owner-edited scene text (Visuals tab, PR5) -- bypasses the art-director
-    // LLM call entirely when set; see generateWeeklyReportageIllustrations.
+    // Owner-edited direction (Visuals tab): kept as concept #1 while the art
+    // director proposes two structurally different alternatives.
     scene_override: optionalString(formData, 'scene_override') || null,
     ...(contentStudioMode ? { mode: contentStudioMode } : {}),
   };

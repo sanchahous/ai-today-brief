@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { contentSimMaxImageRepairAttempts, CONTENT_SIM_DEFAULTS } from './config';
+import {
+  contentSimMaxImageRepairAttempts,
+  contentSimMaxImageSpendUsd,
+  CONTENT_SIM_DEFAULTS,
+} from './config';
 import { deterministicImageCritique } from './deterministic-image';
 import {
   buildEscalationPackage,
@@ -17,9 +21,17 @@ import {
 import type { ContentSimCritique } from './types';
 
 describe('content-sim config', () => {
-  it('defaults max image repair attempts to 5', () => {
-    expect(CONTENT_SIM_DEFAULTS.maxImageRepairAttempts).toBe(5);
-    expect(contentSimMaxImageRepairAttempts()).toBeGreaterThanOrEqual(1);
+  it('hard-caps image rounds at two even when an old env asks for five', () => {
+    process.env.CONTENT_SIM_MAX_IMAGE_REPAIR = '5';
+    expect(CONTENT_SIM_DEFAULTS.maxImageRepairAttempts).toBe(2);
+    expect(contentSimMaxImageRepairAttempts()).toBe(2);
+    delete process.env.CONTENT_SIM_MAX_IMAGE_REPAIR;
+  });
+
+  it('hard-caps an old image spend env at twenty cents', () => {
+    process.env.CONTENT_SIM_MAX_IMAGE_SPEND_USD = '0.5';
+    expect(contentSimMaxImageSpendUsd()).toBe(0.2);
+    delete process.env.CONTENT_SIM_MAX_IMAGE_SPEND_USD;
   });
 });
 
@@ -135,6 +147,28 @@ describe('parseImageCriticResponse', () => {
     expect(critique.passed).toBe(false);
     expect(critique.scores.semantic_min).toBe(54);
     expect(critique.scores.overall).toBe(59);
+  });
+
+  it('rejects high semantic scores that provide no visible-pixel evidence', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 90,
+        dimensions: {
+          news_legibility: 90,
+          context_fidelity: 90,
+          mechanism_legibility: 90,
+          consequence_legibility: 90,
+          instant_comprehension: 90,
+        },
+        blockers: [],
+      }),
+      80,
+      { requireStorySemantics: true, requirePixelEvidence: true },
+    );
+    expect(critique.passed).toBe(false);
+    expect(critique.blockers.some((blocker) => blocker.code === 'semantic_evidence_missing')).toBe(
+      true,
+    );
   });
 
   it('parses off_news and melted_motion blockers', () => {
@@ -295,6 +329,23 @@ describe('runRepairLoop', () => {
     });
     expect(critiqueCalls).toBe(0);
     expect(report.outcome).toBe('needs_human_review');
+  });
+
+  it('escalates a structured critic outage without paying for another render', async () => {
+    let generations = 0;
+    const { report } = await runRepairLoop<{ id: number }>({
+      adapter: 'weekly-image',
+      maxAttempts: 2,
+      maxSpendUsd: 1,
+      generate: async () => ({ artifact: { id: ++generations }, costUsd: 0.05 }),
+      critique: async () => ({
+        passed: false,
+        scores: { overall: 0 },
+        blockers: [{ code: 'critic_unavailable', message: 'timeout', blocker: true }],
+      }),
+    });
+    expect(generations).toBe(1);
+    expect(report.escalation?.reason).toBe('critic_unavailable');
   });
 
   it('stops early on budget', async () => {

@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, 2026-08-10 fixes, owner prompt review + `weekly-semantic-story-v4` 2026-08-11
+Actions run `31324873875`, PR #209, 2026-08-10 fixes, parallel enqueue/worker update and owner prompt review + `weekly-semantic-story-v5` 2026-08-11
 Last updated: 2026-08-11
 
 ---
@@ -45,7 +45,7 @@ Video / Release).
 
 1. `research_pack` (top-3) → owner approve
 2. `editorial_master` (OpenRouter writer models / Gemini / опційно Claude CLI через GitHub Actions)
-3. `story_image` (після bilingual `article`) → `cover`
+3. незалежні `story_image` (після bilingual `article`) запускаються паралельно → `cover`
 4. `social_copy` / `pdf` / `video_script` (після approved `article` — окремий job, PR6, той самий
    Claude CLI → OpenRouter → Gemini ladder)
 5. `video_manifest` (після approved `video_script` + 3 approved `story_image` + `cover`) →
@@ -89,7 +89,9 @@ five-minute internal route claims only short Vercel jobs and dispatches up to te
 at the start of the request. Queuing a long job from admin also dispatches it immediately. GitHub
 receives its exact `job_id`, job type and one-time dispatch token; editorial jobs keep a per-digest
 concurrency group, while `story_image` uses per-job concurrency so different stories render in
-parallel. A runner cannot drain an unrelated job. Retryable infrastructure failures back off for
+parallel. A runner cannot drain an unrelated job. Independent research/post-master jobs are queued
+in parallel, but the Vercel route deliberately claims one short job per invocation so PDF
+rasterization cannot exhaust the lease. Retryable infrastructure failures back off for
 1, 5 then 15 minutes; validation, quality and quota failures are terminal and require a linked
 manual retry. Legacy counter-only attempts are materialized during migration so historical retry
 counts are not rewritten as one fictional run; a stale legacy long job becomes terminal
@@ -116,6 +118,35 @@ live lease or newest request wins and older retry/stale rows are cancelled as
 production runtime logs and Supabase production queue snapshot 2026-08-11,
 `src/app/api/internal/weekly/generate/route.ts`,
 `supabase/migrations/20260811183201_weekly_story_image_async_worker.sql`)
+
+Після owner-аудиту Story 2/3/5/6 image quality loop скорочено з пʼяти до **двох** раундів:
+initial 3-concept diagnosis і один 3-concept semantic re-plan. Один semantic contract живить
+three-seat jury (`literal_context` / `mechanism` / `consequence`); validator вимагає різні subject,
+motif, setting і physical action, а не косметичну seed-варіацію однієї сцени. Три FLUX renders і
+три vision reviews всередині batch виконуються паралельно; кожен vision бачить metadata власної
+концепції. Critiques усіх варіантів агрегуються; якщо всі три
+провалюють news/context/mechanism/consequence, repair відкидає метафору, а не продовжує той самий
+seed roulette. Обидва результати зберігають три variants, тому пізній repair більше не замінює
+першу трійку одним кадром. Opaque tubes/canisters/switchboards/data-flow machinery fail до нового
+paid vision, якщо це не буквальний контекст source story; critic окремо вимагає pixel evidence й
+headline-substitution test. (source: `src/lib/content-sim/config.ts`,
+`src/lib/content-sim/adapters/weekly-image.ts`, `src/lib/content-sim/vision-critic.ts`,
+`pipeline/card-image.ts`)
+
+Image/vision spend тепер записується в `generation_cost_events` на кожен provider call одразу,
+а не одним aggregate event лише після успішного artifact save. Visuals показує `Current run cost`
+і `Story revision spend` із render/vision split; pre-change aggregate rows лишаються видимими як
+legacy. Це включає витрати job, який згодом упав або був перерваний після вже успішного provider
+call. (source: `src/lib/weekly-digest/generation-worker.ts`,
+`src/lib/weekly-digest/admin-data.ts`, `src/components/admin/weekly-workspace.tsx`)
+
+`editorial_master` лишається послідовним усередині segment/checkpoint loop, а `social_copy` —
+послідовним по каналах: обидва порядки потрібні для durable resume після timeout. Уже паралельні
+без зміни контракту: завантаження даних контексту, research corroboration, PDF story assets і
+варіанти cover. Queuing трьох research packs та похідних jobs після master також виконується
+паралельно, оскільки їхній фактичний старт усе одно контролюють DB dependency gates.
+(source: `src/lib/weekly-digest/orchestrator.ts`, `src/lib/weekly-digest/generation-worker.ts`,
+`src/lib/weekly-digest/research.ts`, `src/lib/weekly-digest/pdf.ts`, `src/lib/weekly-digest/visuals.ts`)
 
 The admin workspace polls `/api/admin/weekly/[id]/generation-status` every five seconds without
 refreshing the editor. It displays attempt/max, backend/run link, current step/provider/model,
@@ -258,16 +289,16 @@ AI-suggested angles are a possible follow-up, not done here.
 `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/editorial-llm.ts`)
 
 **PR5 (2026-08-06) → semantic-story-v4 (2026-08-11):** окремий шлях у
-**`pipeline/card-image.ts`**: `weeklyReportageSceneBrief` робить **source story → semantic
-contract → causal metaphor** (два LLM-кроки на ролі `weekly.card_image_scene`) +
+**`pipeline/card-image.ts`**: `weeklyReportageSceneBriefs` робить **source story → semantic
+contract → three-lens concept jury** (два LLM-кроки на ролі `weekly.card_image_scene`) +
 `buildEditorialConceptPrompt` (subject-first context → mechanism → consequence, craft bans) +
-`generateWeeklyReportageIllustrations` (3 варіанти / різні сіди).
+`generateWeeklyReportageIllustrations` (до 3 окремих сценаріїв; один render на концепцію).
 **Daily-пайплайн не зачеплений.**
 
 Контекст: title+summary+body excerpt+`why`+practical+limitation+takeaway+editorsView+
 `editorialAngle`+approved research claims/context/risks+sibling metaphors. Top 3 беруть claims із
 approved `research_pack`; fallback серіалізує `.text`, а не обʼєкти. Seed без `job.id`.
-`metadata.prompt_policy` = **`weekly-semantic-story-v4`** (раніше `weekly-editorial-concept-v3`).
+`metadata.prompt_policy` = **`weekly-semantic-story-v5`** (v4 був one-scene/three-seed policy).
 Validator рахує semantic gates лише за `story_anchor` / `visible_mechanism` /
 `visible_consequence` та іншими renderable fields; `why_it_fits` лишається rationale і не може
 сам виконати `mechanism_not_visible`. `story_anchor` мусить містити actor/system із context, не лише
@@ -275,7 +306,8 @@ topic/impact entity; довгий prose headline не вважається од�
 fallback зберігає visual thesis + mechanism + consequence, а його literal component labels
 санітизуються до FLUX. Structural sibling gates (`motif_class` uniqueness, scene
 echo, character budget, dual_contrast cap/argued) лишились. Артефакт зберігає повний semantic
-contract, metaphor rationale й `variant_scores` (`semantic_min`/`news_legibility`/`craft`). Деталі —
+contract, metaphor rationale, `variant_scores` (`semantic_min`/`news_legibility`/`craft`) і
+aligned `variant_concepts` (lens/scene/prompt/title/motif). Деталі —
 [marketing/card-images](../marketing/card-images.md).
 
 **Фікс мертвого negative prompt на klein:** multipart не шле `negative_prompt`; заборони в
@@ -294,12 +326,14 @@ RPC з'ясувалось, що воно було неточним.
 
 Visuals tab: сітка з 2 мініатюр-альтернатив під основним зображенням (клік = «Use this») з
 per-variant score/blocker chips (`semantic` / `news` / `craft`); prompt details показує context,
-meaning, mechanism, consequence і visual thesis; primary badge `auto-picked` / `owner-promoted`;
-редагована сцена (`scene_override`) + «Regenerate with this scene» перевикористовує вже наявний
+meaning, mechanism, consequence, visual thesis і три independent concept briefs; overlays показують
+concept title/lens. Primary badge `auto-picked` / `owner-promoted`; promotion переносить metadata
+обраної концепції разом із файлом. Редагована сцена (`scene_override`) + «Regenerate with this
+scene» зберігає її як concept 1, а concept 2–3 лишає незалежними; використовується наявний
 `enqueueWeeklyGenerationAction`, нового job type не знадобилось.
 
 **Content Sim (2026-08-11):** після FLUX `generateStoryImage` ганяє vision repair loop
-(≤5, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
+(hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.
 V4 critic звіряє pixels з original story, окремо gate-ить context/mechanism/consequence/
 instant comprehension; його `prompt_patches` застосовуються до наступного реального FLUX prompt,

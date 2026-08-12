@@ -9,7 +9,8 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v1` (2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
-Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v4` 2026-08-11
+Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5` and
+three-concept jury follow-up 2026-08-11
 Last updated: 2026-08-11
 
 ---
@@ -34,7 +35,7 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    (source: `pipeline/card-image.ts`'s `runArtDirectorLadder`, PR #191)
 2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
    separate semantic house style** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
-   `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-semantic-story-v4`**
+   `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-semantic-story-v5`**
    as of 2026-08-11): **approved source → context → meaning → mechanism → consequence → causal
    visual metaphor**. `generation-worker.ts` передає не лише headline/summary: `why`, practical,
    limitation, takeaway, editor inference, owner angle, approved research claims/context/risks.
@@ -46,12 +47,17 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    тому generic battery/cog/pump, що показує лише тему, не проходить. Якщо обидва metaphor rounds
    провалились, fallback будується з semantic contract/visual thesis, а не з generic spotlight;
    literal label invitations на кшталт `"model" slot` прибираються із semantic fallback до FLUX.
-   Subject-first prompt
+   Один shared semantic contract подається в **three-seat concept jury**, який за один structured
+   LLM call створює три окремі сценарії: `literal_context`, `mechanism`, `consequence`. Кожен має
+   інші subject, motif, setting і physical action; зміна camera/color/seed/prop placement/scale
+   не вважається новою концепцією. Якщо owner редагує scene вручну, вона лишається concept 1, а
+   concept 2–3 плануються незалежно й мають не повторювати owner direction. Subject-first prompt
    ставить causal mini-story до стилю й більше не інʼєктить `facade versus backstage` у кожен
    `dual_contrast`. Structural sibling gates v2/v3
-   (`motif_class`, scene echo, character/dual caps) лишились. Three seed variants; **Content Sim
-   scores all three** й auto-picks primary; `metadata.variant_scores` має semantic minimum + craft,
-   а Visuals показує semantic contract і `semantic` score. `scene_override` лишається escape hatch.
+   (`motif_class`, scene echo, character/dual caps) лишились. **Content Sim scores each concept
+   against its own scene/prompt** й auto-picks primary; `metadata.variant_scores` має semantic
+   minimum + craft, `metadata.variant_concepts` зберігає aligned concept metadata, а Visuals показує
+   три назви/лінзи/сцени. `scene_override` лишається escape hatch.
    Daily keeps `story-specific-editorial-v5-no-text`.
    (source: PR #174–#175, PR5 2026-08-06, reportage-v2 / editorial-concept-v1 2026-08-10,
    illustration overhaul v2 + fidelity v3 2026-08-11)
@@ -95,7 +101,7 @@ npx tsx scripts/backfill-card-images.ts <brief-slug>  # one brief
 server (handy where `next dev` is memory-constrained).
 
 **Content Sim (2026-08-11):** weekly `story_image` jobs run a vision critic loop
-(≤`CONTENT_SIM_MAX_IMAGE_REPAIR`, default 5) via `src/lib/content-sim` +
+of maximum two rounds (initial 3-variant batch + one 3-variant re-plan) via `src/lib/content-sim` +
 `pipeline/providers/vision.ts` (`weekly.image_critic`). Failures escalate to human
 review with an admin escalation panel; release preflight blocks on
 `simulation_not_passed` until pass or owner override. Offline:
@@ -110,6 +116,17 @@ See [content-sim](../pipeline/content-sim.md).
   entity, а reject усіх pitches викидав semantic contract у generic fallback. (source:
   `generation-worker.ts`, `pipeline/card-image.ts`,
 `src/lib/content-sim/adapters/weekly-image.ts`, owner prompt review 2026-08-11)
+
+**v4 cost/quality hardening (owner audit 2026-08-11):** три independent-concept renders і
+per-concept vision працюють паралельно; critiques агрегуються, а суцільний semantic fail примусово
+планує нову трійку в єдиному repair-раунді. Обидва раунди лишають три owner-visible concepts.
+Generic pneumatic
+tubes/canisters/switchboards/data streams блокуються як `opaque_abstraction`, якщо це не буквальний
+контекст новини; human-centered tutoring/help/evaluation stories можуть використати персонажів
+(digest cap піднято з одного до двох character-led scenes). Vision вимагає pixel evidence, а
+provider-call ledger і Visuals показують фактичний render/vision spend поточної ревізії. (source:
+`pipeline/card-image.ts`, `src/lib/content-sim/adapters/weekly-image.ts`,
+`src/lib/content-sim/vision-critic.ts`, `src/lib/weekly-digest/generation-worker.ts`)
 
 ## Related pages
 

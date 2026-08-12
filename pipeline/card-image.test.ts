@@ -493,6 +493,27 @@ describe('weekly essence + metaphor gates', () => {
     );
   });
 
+  it('assigns the three independent concept lenses, including a retry subset fallback', () => {
+    const rows = JSON.stringify({
+      metaphors: [
+        { subject: 'a tutor deciding whether to interrupt a student' },
+        { subject: 'a balance gate opening only at the moment help is useful' },
+        { subject: 'two learning paths ending at visibly different outcomes' },
+      ],
+    });
+    expect(parseMetaphorPitches(rows).map((pitch) => pitch.lens)).toEqual([
+      'literal_context',
+      'mechanism',
+      'consequence',
+    ]);
+    expect(
+      parseMetaphorPitches(
+        JSON.stringify({ metaphors: [{ subject: 'a result diverging after timely help' }] }),
+        ['consequence'],
+      )[0]?.lens,
+    ).toBe('consequence');
+  });
+
   it('allows dual_contrast when spatial-divide language is present', () => {
     const errors = validateMetaphorPitch(
       {
@@ -530,6 +551,12 @@ describe('weekly essence + metaphor gates', () => {
         subjectKind: 'character',
         composition: 'dual_contrast' as const,
         sceneSummary: 'clay golem guarding a sealed journal in a vault',
+      },
+      {
+        motifClass: 'human_operator',
+        subjectKind: 'character',
+        composition: 'single' as const,
+        sceneSummary: 'a human operator reconnecting a stopped assembly line',
       },
     ];
     const essence = semanticEssence({
@@ -770,6 +797,37 @@ describe('weekly essence + metaphor gates', () => {
     expect(validateWeeklySceneSpec(bad, ['Codex', '3D game']).length).toBeGreaterThan(0);
   });
 
+  it('rejects polished but opaque data-flow machinery when it is not literal news context', () => {
+    const errors = validateMetaphorPitch(
+      {
+        title: 'Tube network',
+        subject: 'a pneumatic tube network carrying sealed canisters',
+        action: 'routing each canister through generic pipework',
+        setting: 'polished industrial wall',
+        props: ['brass valves'],
+        composition: 'single',
+        whyItFits: 'The benchmark decides when the model should help.',
+        motifClass: 'tube_routing',
+        subjectKind: 'process',
+        storyAnchor: 'a tutor deciding when a student needs help',
+        visibleMechanism: 'a help decision routes one canister to the student',
+        visibleConsequence: 'the selected canister arrives while the others wait',
+      },
+      semanticEssence({
+        storyContext: 'TutorMoments evaluates when language models should help a student.',
+        essence: 'A benchmark exposes how evaluation awareness changes help decisions.',
+        mustFeel: 'uneasy evaluation pressure',
+        forbiddenCliches: [],
+        mechanism: 'Models decide whether a tutoring moment needs intervention.',
+        consequence: 'Models score better when they know they are being evaluated.',
+        visualThesis: 'A tutor changes a help decision when an evaluator is watching.',
+        readerTest: 'grasp: evaluation awareness changes when the tutor helps',
+      }),
+      ['TutorMoments', 'language models'],
+    );
+    expect(errors).toContain('opaque_abstraction_not_literal_to_story');
+  });
+
   it('accepts a story-faithful conceptual metaphor', () => {
     const good = parseWeeklySceneSpec(
       '{"subject":"tiny chat bubble beside industrial heat furnace","action":"dwarfed by wasted wattage","setting":"dark plant floor after Stripe Claude coding","props":["heat haze","scale contrast"],"composition":"single","why_it_fits":"agentic work burns energy"}',
@@ -881,7 +939,7 @@ describe('buildWeeklyPrompt / buildEditorialConceptPrompt', () => {
   });
 
   it('exports the editorial-concept prompt policy id', () => {
-    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-semantic-story-v4');
+    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-semantic-story-v5');
   });
 });
 
@@ -901,10 +959,12 @@ describe('generateWeeklyReportageIllustrations', () => {
     });
   }
 
-  it('generates the requested number of variants, each from a distinct seed, using a scene override to skip the art-director call', async () => {
-    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+  it('keeps an owner direction as concept one and renders two independent alternatives', async () => {
+    const sentPrompts: string[] = [];
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url.includes('flux-2-klein-9b')) {
+        sentPrompts.push(String((init?.body as FormData).get('prompt')));
         return jsonImageResponse();
       }
       return new Response('fail', { status: 500 });
@@ -924,15 +984,93 @@ describe('generateWeeklyReportageIllustrations', () => {
     expect(result?.sceneSource).toBe('owner');
     expect(result?.scene).toContain('chat bubble');
     expect(result?.variants).toHaveLength(3);
+    expect(result?.variants.map((variant) => variant.conceptLens)).toEqual([
+      'owner_direction',
+      'mechanism',
+      'consequence',
+    ]);
+    expect(new Set(result?.variants.map((variant) => variant.scene)).size).toBe(3);
+    expect(new Set(sentPrompts).size).toBe(3);
     const kleinCalls = vi
       .mocked(globalThis.fetch)
       .mock.calls.filter((call) => String(call[0]).includes('flux-2-klein-9b'));
     expect(kleinCalls).toHaveLength(3);
   });
 
-  it('derives a different seed per variant from the same seedBase', () => {
+  it('renders literal context, mechanism, and consequence as separate concepts', async () => {
+    const sentPrompts: string[] = [];
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (!String(input).includes('flux-2-klein-9b')) {
+        return new Response('fail', { status: 500 });
+      }
+      sentPrompts.push(String((init?.body as FormData).get('prompt')));
+      return jsonImageResponse();
+    }) as typeof fetch;
+
+    const result = await generateWeeklyReportageIllustrations(
+      {
+        headline: 'TutorMoments tests when language models should help a student',
+        summary: 'Seven models improve once they know their help timing is evaluated.',
+        why: 'The evaluation changes whether assistance arrives at a useful moment.',
+        seedBase: 'digest-1:tutor-moments',
+        variantCount: 3,
+      },
+      { geminiApiKey: '', cloudflareAccountId: 'acct', cloudflareApiToken: 'token' },
+    );
+
+    expect(result?.variants.map((variant) => variant.conceptLens)).toEqual([
+      'literal_context',
+      'mechanism',
+      'consequence',
+    ]);
+    expect(new Set(result?.variants.map((variant) => variant.scene)).size).toBe(3);
+    expect(new Set(sentPrompts).size).toBe(3);
+  });
+
+  it('renders the three independent concepts concurrently', async () => {
+    let active = 0;
+    let peak = 0;
+    let release!: () => void;
+    let allStarted!: () => void;
+    const gate = new Promise<void>((done) => {
+      release = done;
+    });
+    const started = new Promise<void>((done) => {
+      allStarted = done;
+    });
+    globalThis.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      if (!String(input).includes('flux-2-klein-9b')) return new Response('fail', { status: 500 });
+      active += 1;
+      peak = Math.max(peak, active);
+      if (active === 3) allStarted();
+      await gate;
+      active -= 1;
+      return jsonImageResponse();
+    }) as typeof fetch;
+
+    const pending = generateWeeklyReportageIllustrations(
+      {
+        headline: 'Concurrent illustration batch',
+        summary: 'Three independent concepts render together.',
+        sceneOverride: 'three blank ceramic tokens passing through a visible quality gate',
+        seedBase: 'digest-1:item-parallel',
+        variantCount: 3,
+      },
+      { geminiApiKey: 'unused', cloudflareAccountId: 'acct', cloudflareApiToken: 'token' },
+    );
+    await started;
+    expect(peak).toBe(3);
+    release();
+    await expect(pending).resolves.toMatchObject({ variants: expect.any(Array) });
+  });
+
+  it('derives a different seed per concept from the same seedBase', () => {
     const base = 'digest-1:item-1';
-    const seeds = [1, 2, 3].map((n) => seedFromString(`${base}:v${n}`));
+    const seeds = [
+      seedFromString(`${base}:concept:literal_context:v1`),
+      seedFromString(`${base}:concept:mechanism:v2`),
+      seedFromString(`${base}:concept:consequence:v3`),
+    ];
     expect(new Set(seeds).size).toBe(3);
   });
 
