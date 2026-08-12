@@ -1,6 +1,6 @@
 import type { VisualPlan } from './visual-compiler';
 import { overlayDirectivesForLabels, type HoldoutStoryInput } from './visual-auto-claim';
-import type { AutoVisualClaimV5 } from './visual-auto-claim-v5';
+import { compileAutoVisualClaimV5, type AutoVisualClaimV5 } from './visual-auto-claim-v5';
 import { renderGenericVisualSvgV5 } from './visual-generic-svg-v5';
 import type { HybridTreatmentV6 } from './visual-hybrid-v6';
 
@@ -105,7 +105,7 @@ export function renderGenericVisualSvgV6(input: GenericVisualSvgV6Input): Buffer
       overlayDirectives: overlays,
     },
   };
-  const plan: VisualPlan = { ...input.plan, overlays };
+  const plan = compileAutoVisualClaimV5(autoClaim);
   return renderGenericVisualSvgV5({
     autoClaim,
     plan,
