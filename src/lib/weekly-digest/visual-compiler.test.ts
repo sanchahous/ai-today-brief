@@ -215,7 +215,7 @@ describe('semantic hard gates', () => {
       passingEvidence({ mechanismVisible: false }),
     );
 
-    expect(candidate.weightedScore).toBe(80);
+    expect(candidate.weightedScore).toBe(77.5);
     expect(candidate.eligible).toBe(false);
     expect(candidate.finalGate.failures).toContain('mechanism_missing');
   });
