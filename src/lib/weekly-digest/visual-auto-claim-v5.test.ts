@@ -5,7 +5,6 @@ import {
   selectVisualRenderModeV5,
   validateAutoVisualClaimV5,
   visualClaimV5ExtractionPrompt,
-  type AutoVisualClaimV5,
 } from './visual-auto-claim-v5';
 import type { HoldoutStoryInput } from './visual-auto-claim';
 
@@ -85,7 +84,7 @@ describe('VisualClaim v5 certainty guard', () => {
         explanatory_role: 'uncertainty_announcement',
         certainty: 'released',
         identity: 'Kimi K3 open-weight model',
-        change: 'provides a 2–3 trillion parameter open-weight alternative',
+        change: 'provide a 2–3 trillion parameter open-weight alternative',
         visual_driver: 'an open vault reveals an available frontier-scale model',
         visible_outcome: 'teams can self-host the model now',
         core_claim: 'Kimi K3 provides an available self-hosted alternative',
@@ -108,15 +107,15 @@ describe('VisualClaim v5 certainty guard', () => {
       source,
     );
 
-    expect(value.semantics.certainty).toBe('planned');
+    expect(value.semantics.certainty).toBe('expected');
     expect(value.semantics.mappingMode).toBe('literal');
     expect(value.claim.coreClaim).toMatch(/planned|expected|set to|prepares/i);
     expect(value.claim.coreClaim).not.toMatch(/available self-hosted/i);
     expect(value.grammar.outcomeSignal).toBe('uncertain');
     expect(value.extractionWarnings).toEqual(
       expect.arrayContaining([
-        'certainty_downgraded_released_to_planned',
-        'core_claim_guarded_for_planned',
+        'certainty_downgraded_released_to_expected',
+        'core_claim_guarded_for_expected',
       ]),
     );
     expect(validateAutoVisualClaimV5(value)).toEqual([]);
@@ -244,7 +243,7 @@ describe('role-aware visual drivers', () => {
         grammar: grammar({
           context_glyph: 'agent',
           mechanism_glyph: 'policy_gate',
-          outcome_glyph: 'blocked',
+          outcome_glyph: 'shield',
           relation: 'block',
           outcome_signal: 'blocked',
         }),
