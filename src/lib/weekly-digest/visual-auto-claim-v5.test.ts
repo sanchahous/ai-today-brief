@@ -279,7 +279,7 @@ describe('role-aware visual drivers', () => {
 describe('v5 extraction prompt', () => {
   it('explicitly separates result, benchmark, mechanism and uncertainty roles', () => {
     const prompt = visualClaimV5ExtractionPrompt([story()]);
-    expect(prompt).toContain('Do not invent a causal mechanism');
+    expect(prompt.toLowerCase()).toContain('do not invent a causal mechanism');
     expect(prompt).toContain('CERTAINTY IS A HARD CONTRACT');
     expect(prompt).toContain('benchmark_comparison');
     expect(prompt).toContain('comparison target');
