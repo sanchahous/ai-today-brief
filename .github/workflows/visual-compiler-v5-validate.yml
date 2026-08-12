@@ -8,6 +8,8 @@ on:
       - src/lib/weekly-digest/visual-auto-claim-v5.ts
       - src/lib/weekly-digest/visual-auto-claim-v5.test.ts
       - src/lib/weekly-digest/visual-generic-svg.ts
+      - src/lib/weekly-digest/visual-generic-svg-v5.ts
+      - src/lib/weekly-digest/visual-generic-svg-v5.test.ts
       - .github/workflows/visual-compiler-v5-validate.yml
   workflow_dispatch:
 
@@ -37,6 +39,7 @@ jobs:
           src/lib/weekly-digest/visual-auto-claim.test.ts
           src/lib/weekly-digest/visual-auto-claim-v5.test.ts
           src/lib/weekly-digest/visual-generic-svg.test.ts
+          src/lib/weekly-digest/visual-generic-svg-v5.test.ts
           src/lib/weekly-digest/visual-render-policy.test.ts
           src/lib/weekly-digest/visual-gate-policy.test.ts
 
