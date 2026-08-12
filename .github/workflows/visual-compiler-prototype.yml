@@ -1,0 +1,37 @@
+name: Visual compiler prototype
+
+on:
+  push:
+    branches:
+      - experiment/visual-routing-backtest-20260812
+    paths:
+      - src/lib/weekly-digest/visual-compiler.ts
+      - src/lib/weekly-digest/visual-compiler.test.ts
+      - scripts/visual-compiler-shadow.ts
+      - .github/workflows/visual-compiler-prototype.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Test and typecheck visual compiler
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run focused visual compiler tests
+        run: npx vitest run src/lib/weekly-digest/visual-compiler.test.ts
+
+      - name: Typecheck repository
+        run: npm run typecheck
