@@ -1,0 +1,44 @@
+name: Visual compiler v5 validation
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-v5-fresh-holdout-20260812
+    paths:
+      - src/lib/weekly-digest/visual-auto-claim-v5.ts
+      - src/lib/weekly-digest/visual-auto-claim-v5.test.ts
+      - src/lib/weekly-digest/visual-generic-svg.ts
+      - .github/workflows/visual-compiler-v5-validate.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Test and typecheck v5 semantic compiler
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run focused visual compiler tests
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-compiler.test.ts
+          src/lib/weekly-digest/visual-auto-claim.test.ts
+          src/lib/weekly-digest/visual-auto-claim-v5.test.ts
+          src/lib/weekly-digest/visual-generic-svg.test.ts
+          src/lib/weekly-digest/visual-render-policy.test.ts
+          src/lib/weekly-digest/visual-gate-policy.test.ts
+
+      - name: Typecheck repository
+        run: npm run typecheck
