@@ -77,7 +77,7 @@ export function selectSpecializedVisualTreatmentV8(
   const source = sourceText(input.story).toLowerCase();
 
   if (
-    /\b(consisten|inconsisten|reliab|regression|community critique|community debate)\b/.test(
+    /\b(?:consistency|consistent|inconsistency|inconsistencies|inconsistent|reliability|reliable|regression|community critique|community debate)\b/.test(
       source,
     ) && /\b(model|gemini|coding)\b/.test(source)
   ) {
