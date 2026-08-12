@@ -1,0 +1,231 @@
+name: Visual compiler v6 render contract repair
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-v6-hybrid-20260812
+    paths:
+      - .github/workflows/visual-compiler-v6-render-contract-fix.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    name: Repair compiled overlays and analogy sanitation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-compiler-v6-hybrid-20260812
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Patch compiled overlays and sanitation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          renderer = Path('src/lib/weekly-digest/visual-generic-svg-v6.ts')
+          text = renderer.read_text()
+          text = text.replace(
+              "import type { AutoVisualClaimV5 } from './visual-auto-claim-v5';",
+              "import { compileAutoVisualClaimV5, type AutoVisualClaimV5 } from './visual-auto-claim-v5';",
+              1,
+          )
+          old_plan = "  const plan: VisualPlan = { ...input.plan, overlays };"
+          if old_plan not in text:
+              raise SystemExit('Expected v6 overlay plan assignment was not found.')
+          text = text.replace(old_plan, '  const plan = compileAutoVisualClaimV5(autoClaim);', 1)
+          renderer.write_text(text)
+
+          hybrid = Path('src/lib/weekly-digest/visual-hybrid-v6.ts')
+          text = hybrid.read_text()
+          text = text.replace(
+              "|terminal window|printed text",
+              "|terminal window|monitor|computer monitor|laptop|desktop computer|printed text",
+              1,
+          )
+          insert_anchor = "function sourceText(story: HoldoutStoryInput): string {"
+          insert_at = text.index(insert_anchor)
+          sanitizer = r'''export interface AnalogySanitizationV6 {
+            plan: AnalogyPlanV6;
+            changes: string[];
+          }
+
+          function sanitizeAnalogyRenderText(value: string): string {
+            return value
+              .replace(/\s+with (?:a )?(?:computer )?monitor in the background/gi, '')
+              .replace(/\s+with (?:a )?(?:screen|monitor|laptop|desktop computer)[^,.;]*/gi, '')
+              .replace(/\bmodern office desk\b/gi, 'neutral studio worktable')
+              .replace(/\boffice desk\b/gi, 'studio worktable')
+              .replace(
+                /\b(?:intricate details and symbols|details and symbols|intricate symbols|readable symbols)\b/gi,
+                'non-readable contour patterns',
+              )
+              .replace(/\s+,/g, ',')
+              .replace(/\s{2,}/g, ' ')
+              .replace(/\bwith\s*$/i, '')
+              .trim();
+          }
+
+          export function sanitizeAnalogyPlanV6(
+            input: AnalogyPlanV6,
+          ): AnalogySanitizationV6 {
+            const changes: string[] = [];
+            const patch = (field: string, value: string): string => {
+              const sanitized = sanitizeAnalogyRenderText(value);
+              if (sanitized !== value) changes.push(field);
+              return sanitized;
+            };
+            const props = input.props.map((prop, index) =>
+              patch(`props[${index}]`, prop),
+            );
+            const mappings = input.mappings.map((mapping, index) => ({
+              sourceElement: mapping.sourceElement,
+              physicalElement: patch(
+                `mappings[${index}].physicalElement`,
+                mapping.physicalElement,
+              ),
+            }));
+            return {
+              plan: {
+                ...input,
+                subject: patch('subject', input.subject),
+                action: patch('action', input.action),
+                setting: patch('setting', input.setting),
+                props,
+                sourceAnchor: patch('sourceAnchor', input.sourceAnchor),
+                visibleMechanism: patch(
+                  'visibleMechanism',
+                  input.visibleMechanism,
+                ),
+                visibleOutcome: patch('visibleOutcome', input.visibleOutcome),
+                mappings,
+              },
+              changes: [...new Set(changes)],
+            };
+          }
+
+          '''
+          if 'export function sanitizeAnalogyPlanV6' not in text:
+              text = text[:insert_at] + sanitizer + text[insert_at:]
+
+          old_select = """  if (
+            value.semantics.explanatoryRole === 'causal_mechanism' &&
+            analogy &&
+            audit?.passed &&
+            validateAnalogyPlanV6(analogy, value).length === 0
+          ) {"""
+          new_select = """  const sanitized = analogy ? sanitizeAnalogyPlanV6(analogy).plan : null;
+          if (
+            value.semantics.explanatoryRole === 'causal_mechanism' &&
+            sanitized &&
+            audit?.passed &&
+            validateAnalogyPlanV6(sanitized, value).length === 0
+          ) {"""
+          if old_select not in text:
+              raise SystemExit('Expected hybrid treatment selector was not found.')
+          text = text.replace(old_select, new_select, 1)
+
+          old_analogy = "    analogy: mode === 'generated_audited_analogy' ? analogy : null,"
+          new_analogy = """    analogy:
+              mode === 'generated_audited_analogy' && analogy
+                ? sanitizeAnalogyPlanV6(analogy).plan
+                : null,"""
+          if old_analogy not in text:
+              raise SystemExit('Expected treatment analogy assignment was not found.')
+          text = text.replace(old_analogy, new_analogy, 1)
+
+          prompt_anchor = "export function analogyImagePromptV6(\n  value: AutoVisualClaimV5,\n  plan: AnalogyPlanV6,\n): string {\n  return ["
+          prompt_replacement = """export function analogyImagePromptV6(
+            value: AutoVisualClaimV5,
+            plan: AnalogyPlanV6,
+          ): string {
+            const sanitized = sanitizeAnalogyPlanV6(plan).plan;
+            return ["""
+          if prompt_anchor not in text:
+              raise SystemExit('Expected analogy image prompt function was not found.')
+          text = text.replace(prompt_anchor, prompt_replacement, 1)
+          for field in [
+              'subject',
+              'action',
+              'setting',
+              'props',
+              'sourceAnchor',
+              'visibleMechanism',
+              'visibleOutcome',
+          ]:
+              text = text.replace(f'plan.{field}', f'sanitized.{field}')
+          hybrid.write_text(text)
+
+          test = Path('src/lib/weekly-digest/visual-hybrid-v6.test.ts')
+          test_text = test.read_text()
+          test_text = test_text.replace(
+              '  selectHybridTreatmentModeV6,',
+              '  sanitizeAnalogyPlanV6,\n  selectHybridTreatmentModeV6,',
+              1,
+          )
+          new_test = r'''
+
+            it('sanitizes monitor and pseudo-text cues before image generation', () => {
+              const dirty = analogy({
+                setting:
+                  'a well-lit, modern office desk with a computer monitor in the background',
+                props: [
+                  'a large map covered in intricate details and symbols',
+                  'a compact folded square',
+                ],
+              });
+              const sanitized = sanitizeAnalogyPlanV6(dirty);
+              expect(sanitized.changes).toContain('setting');
+              expect(sanitized.changes).toContain('props[0]');
+              expect(sanitized.plan.setting).toContain('neutral studio worktable');
+              expect(sanitized.plan.setting).not.toMatch(/monitor|screen|desk/i);
+              expect(sanitized.plan.props[0]).toContain(
+                'non-readable contour patterns',
+              );
+              expect(analogyImagePromptV6(claim(), dirty)).not.toMatch(
+                /monitor|details and symbols/i,
+              );
+              expect(validateAnalogyPlanV6(sanitized.plan, claim())).toEqual([]);
+            });
+          '''
+          close = test_text.rfind('\n});')
+          if close < 0:
+              raise SystemExit('Could not locate v6 test suite closing block.')
+          test_text = test_text[:close] + new_test + test_text[close:]
+          test.write_text(test_text)
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run renderer and sanitation regressions
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-hybrid-v6.test.ts
+          src/lib/weekly-digest/visual-generic-svg-v6.test.ts
+          src/lib/weekly-digest/visual-generic-svg-v5.test.ts
+
+      - name: Typecheck repository
+        run: npm run typecheck
+
+      - name: Persist repaired render contract
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/lib/weekly-digest/visual-hybrid-v6.ts \
+            src/lib/weekly-digest/visual-hybrid-v6.test.ts \
+            src/lib/weekly-digest/visual-generic-svg-v6.ts
+          git commit -m "Compile v6 overlays and sanitize analogy prompts"
+          git fetch origin experiment/visual-compiler-v6-hybrid-20260812
+          git rebase origin/experiment/visual-compiler-v6-hybrid-20260812
+          git push origin HEAD:experiment/visual-compiler-v6-hybrid-20260812
