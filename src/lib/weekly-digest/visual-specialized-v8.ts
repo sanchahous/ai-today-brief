@@ -77,9 +77,9 @@ export function selectSpecializedVisualTreatmentV8(
   const source = sourceText(input.story).toLowerCase();
 
   if (
-    /\b(?:consistency|consistent|inconsistency|inconsistencies|inconsistent|reliability|reliable|regression|community critique|community debate)\b/.test(
+    /\b(?:consistency|consistent|inconsistency|inconsistencies|inconsistent|regression|community critique|community debate)\b/.test(
       source,
-    ) && /\b(model|gemini|coding)\b/.test(source)
+    ) && /\b(gemini|coding|developer community)\b/.test(source)
   ) {
     return {
       storyId: input.story.revision_item_id,
@@ -389,8 +389,8 @@ export function specializedImagePromptV8(
     return [
       'Create a premium cinematic editorial photograph for a technology magazine, wide 16:9.',
       'Scene: one knowledge worker in a dark workshop-like thinking space, hands actively solving a difficult mechanical logic mechanism. The person must be visibly performing the reasoning and manipulating the key component.',
-      'A restrained translucent AI assistant light projects exactly one bounded hint onto a single part but never touches the mechanism and never completes the task.',
-      'Behind a frosted acoustic glass boundary, a storm of diffuse notification lights, branching prompts and attention-grabbing signals is visibly muted. The foreground remains calm, sharply focused and physically separated from the distraction.',
+      'The image must contain exactly one bounded hint from AI. AI assistance must not appear as a humanoid, robot, holographic avatar, screen, interface or floating panel. Represent the entire AI contribution only as one narrow cyan beam illuminating a single gear tooth while the person continues the physical reasoning.',
+      'Behind frosted acoustic glass, distraction appears only as defocused colored light and motion blur. No boxes, nodes, icons, diagrams, letters, pseudo-text or interface-like shapes may appear anywhere. The focused foreground remains calm and physically separated from that diffuse noise.',
       'The visual thesis is active problem-solving with AI as a sparring partner restores deep work; passive automation is forbidden.',
       'High-end documentary cinematography, warm practical light against restrained cyan guidance, believable materials, strong human posture, one continuous scene, clear at thumbnail size.',
       `Source grounding: ${treatment.sourceGrounding}`,

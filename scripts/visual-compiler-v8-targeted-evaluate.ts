@@ -369,6 +369,7 @@ async function evaluateCards(
           `FORBIDDEN IMPLICATIONS: ${manifest.treatment.forbiddenImplications.join('; ')}`,
           `ONLY APPROVED OVERLAY LABELS FOR THE V8 TREATMENT: ${JSON.stringify(manifest.treatment.labels)}`,
           'For each card assess headline_pair_understood, central_claim_grounded, certainty_preserved, labels_exact, overlay_supported_by_pixels, thumbnail_readable, misleading, instant_meaning, visual_beauty, brand_consistency, originality and summary.',
+          'All four numeric quality scores must be numbers from 0 to 100, not a 0-to-10 scale.',
           'Weights for preference: instant meaning 45%, visual beauty 30%, brand consistency 15%, originality 10%, but any misleading or unsupported card must lose regardless of weighted beauty.',
           'Return JSON only: {"X":{headline_pair_understood:boolean,central_claim_grounded:boolean,certainty_preserved:boolean,labels_exact:boolean,overlay_supported_by_pixels:boolean,thumbnail_readable:boolean,misleading:boolean,instant_meaning:number,visual_beauty:number,brand_consistency:number,originality:number,summary:string},"Y":{same fields},"preferred":"X"|"Y"|"tie","confidence":number,"reason":string}.',
         ].join('\n'),
