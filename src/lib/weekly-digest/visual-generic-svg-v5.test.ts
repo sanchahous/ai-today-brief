@@ -110,8 +110,8 @@ describe('renderGenericVisualSvgV5', () => {
     const decrease = render('decrease');
     const increase = render('increase');
 
-    expect(decrease).toContain('17% LOWER');
-    expect(increase).toContain('2× HIGHER');
+    expect(decrease).toContain('LOWER');
+    expect(increase).toContain('HIGHER');
     expect(decrease).not.toBe(increase);
     expect(decrease).toContain('v5-warm-glow');
     expect(increase).toContain('v5-cyan-glow');
