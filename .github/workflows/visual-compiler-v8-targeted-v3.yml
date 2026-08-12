@@ -1,0 +1,178 @@
+name: Visual compiler v8 targeted specialized A-B v3
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-v7-role-router-20260812
+    paths:
+      - .github/workflows/visual-compiler-v8-targeted-v3.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  targeted:
+    name: Repair route render inspect and evaluate specialized candidates
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-compiler-v7-role-router-20260812
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Repair scientific routing deep-work prompt and scoring scale
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          module = Path('src/lib/weekly-digest/visual-specialized-v8.ts')
+          text = module.read_text()
+          old_regex = r"/\b(?:consistency|consistent|inconsistency|inconsistencies|inconsistent|reliability|reliable|regression|community critique|community debate)\b/"
+          new_regex = r"/\b(?:consistency|consistent|inconsistency|inconsistencies|inconsistent|regression|community critique|community debate)\b/"
+          if old_regex not in text:
+              raise SystemExit('Expected broad variability regex was not found.')
+          text = text.replace(old_regex, new_regex, 1)
+          old_context = r"/\b(model|gemini|coding)\b/"
+          new_context = r"/\b(gemini|coding|developer community)\b/"
+          if old_context not in text:
+              raise SystemExit('Expected broad variability context regex was not found.')
+          text = text.replace(old_context, new_context, 1)
+
+          old_hint = (
+              "'A restrained translucent AI assistant light projects exactly one bounded hint onto a single part but never touches the mechanism and never completes the task.',"
+          )
+          new_hint = (
+              "'AI assistance must not appear as a humanoid, robot, holographic avatar, screen, interface or floating panel. Represent the entire AI contribution only as one narrow cyan beam illuminating a single gear tooth while the person continues the physical reasoning.',"
+          )
+          if old_hint not in text:
+              raise SystemExit('Expected deep-work hint instruction was not found.')
+          text = text.replace(old_hint, new_hint, 1)
+
+          old_background = (
+              "'Behind a frosted acoustic glass boundary, a storm of diffuse notification lights, branching prompts and attention-grabbing signals is visibly muted. The foreground remains calm, sharply focused and physically separated from the distraction.',"
+          )
+          new_background = (
+              "'Behind frosted acoustic glass, distraction appears only as defocused colored light and motion blur. No boxes, nodes, icons, diagrams, letters, pseudo-text or interface-like shapes may appear anywhere. The focused foreground remains calm and physically separated from that diffuse noise.',"
+          )
+          if old_background not in text:
+              raise SystemExit('Expected deep-work background instruction was not found.')
+          text = text.replace(old_background, new_background, 1)
+          module.write_text(text)
+
+          evaluator = Path('scripts/visual-compiler-v8-targeted-evaluate.ts')
+          eval_text = evaluator.read_text()
+          scoring = (
+              "'For each card assess headline_pair_understood, central_claim_grounded, certainty_preserved, labels_exact, overlay_supported_by_pixels, thumbnail_readable, misleading, instant_meaning, visual_beauty, brand_consistency, originality and summary.',"
+          )
+          scoring_replacement = scoring + "\n          'All four numeric quality scores must be numbers from 0 to 100, not a 0-to-10 scale.',"
+          if scoring not in eval_text:
+              raise SystemExit('Expected evaluator scoring instruction was not found.')
+          evaluator.write_text(eval_text.replace(scoring, scoring_replacement, 1))
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate specialized visual contracts
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-specialized-v8.test.ts
+          src/lib/weekly-digest/visual-role-router-v7.test.ts
+          src/lib/weekly-digest/visual-auto-claim-v5.test.ts
+
+      - name: Typecheck repository and targeted harnesses
+        run: npm run typecheck
+
+      - name: Verify exact story routing before paid calls
+        run: |
+          npx tsx <<'TS'
+          import { readFile } from 'node:fs/promises';
+          import { selectSpecializedVisualTreatmentV8 } from './src/lib/weekly-digest/visual-specialized-v8';
+          const rows = JSON.parse(
+            await readFile('experiments/visual-compiler-v7/fresh-holdout/output/v7-routed-claims.json', 'utf8'),
+          );
+          const expected = new Map([
+            [2, 'observed_variability'],
+            [4, 'focused_cognition'],
+            [5, 'operational_threshold'],
+            [7, 'scientific_discovery'],
+          ]);
+          for (const row of rows.filter((value: any) => expected.has(value.story.rank))) {
+            const treatment = selectSpecializedVisualTreatmentV8(row);
+            const wanted = expected.get(row.story.rank);
+            if (!treatment || treatment.kind !== wanted) {
+              throw new Error(`Rank ${row.story.rank}: ${treatment?.kind ?? 'none'}; expected ${wanted}.`);
+            }
+            console.log(`#${row.story.rank}: ${treatment.kind} (${treatment.renderMode})`);
+          }
+          TS
+
+      - name: Persist validated semantic repairs before image calls
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/lib/weekly-digest/visual-specialized-v8.ts \
+            scripts/visual-compiler-v8-targeted-evaluate.ts
+          git commit -m "Correct specialized scientific routing and cinematic constraints"
+          git fetch origin experiment/visual-compiler-v7-role-router-20260812
+          git rebase origin/experiment/visual-compiler-v7-role-router-20260812
+          SKIP_E2E=1 git push origin HEAD:experiment/visual-compiler-v7-role-router-20260812
+
+      - name: Download exact-current baseline from completed unseen A-B
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh run download 31625086067
+          --repo "$GITHUB_REPOSITORY"
+          --name visual-compiler-v7-fresh-ab-evaluated
+          --dir artifacts/visual-compiler-v7-baseline
+
+      - name: Render specialized treatments
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VISUAL_V8_IMAGE_MODEL: '@cf/black-forest-labs/flux-2-klein-9b'
+          VISUAL_V8_CLAIMS: experiments/visual-compiler-v7/fresh-holdout/output/v7-routed-claims.json
+          VISUAL_V8_BASELINE_ROOT: artifacts/visual-compiler-v7-baseline
+          VISUAL_V8_OUT_DIR: artifacts/visual-compiler-v8-targeted-v3
+        run: npx tsx scripts/visual-compiler-v8-targeted-render.ts
+
+      - name: Evaluate candidates blinded on 0-to-100 scale
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          VISUAL_V8_JUDGE_MODEL: google/gemini-2.5-flash
+          VISUAL_V8_OUT_DIR: artifacts/visual-compiler-v8-targeted-v3
+        run: npx tsx scripts/visual-compiler-v8-targeted-evaluate.ts
+
+      - name: Upload complete targeted v8 v3 package
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-compiler-v8-targeted-evaluated-v3
+          path: artifacts/visual-compiler-v8-targeted-v3
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Persist targeted v8 v3 results on isolated branch
+        run: |
+          mkdir -p experiments/visual-compiler-v8/targeted-v3/results
+          cp artifacts/visual-compiler-v8-targeted-v3/render-report.md experiments/visual-compiler-v8/targeted-v3/results/
+          cp artifacts/visual-compiler-v8-targeted-v3/render-manifest.json experiments/visual-compiler-v8/targeted-v3/results/
+          cp artifacts/visual-compiler-v8-targeted-v3/blind-contact-sheet.png experiments/visual-compiler-v8/targeted-v3/results/
+          cp artifacts/visual-compiler-v8-targeted-v3/evaluation-report.md experiments/visual-compiler-v8/targeted-v3/results/
+          cp artifacts/visual-compiler-v8-targeted-v3/evaluation.json experiments/visual-compiler-v8/targeted-v3/results/
+          cp artifacts/visual-compiler-v8-targeted-v3/evaluated-contact-sheet.png experiments/visual-compiler-v8/targeted-v3/results/
+          printf '%s\n' "$GITHUB_RUN_ID" > experiments/visual-compiler-v8/targeted-v3/results/run-id.txt
+          git add experiments/visual-compiler-v8/targeted-v3/results
+          git commit -m "Record corrected specialized v8 targeted results [skip ci]"
+          git fetch origin experiment/visual-compiler-v7-role-router-20260812
+          git rebase origin/experiment/visual-compiler-v7-role-router-20260812
+          SKIP_E2E=1 git push origin HEAD:experiment/visual-compiler-v7-role-router-20260812
