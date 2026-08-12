@@ -380,13 +380,54 @@ async function auditClaims(
     const id = clean(record(value).story_id, 100);
     if (id) byId.set(id, value);
   }
-  const audits = rows.map(({ story }) =>
-    normalizeAudit(byId.get(story.revision_item_id), story.revision_item_id),
+
+  const missingRows = rows.filter(
+    ({ story }) => !byId.has(story.revision_item_id),
   );
-  if (audits.some((audit) => !byId.has(audit.storyId))) {
-    throw new Error('Source audit omitted one or more story IDs.');
+  for (const row of missingRows) {
+    console.warn(
+      `[v5-audit-fallback] auditing omitted story individually: ${row.story.rank} ${row.story.title}`,
+    );
+    const fallback = await callModel<{ audits?: unknown }>({
+      model: AUDIT_MODEL,
+      title: 'AI Today Brief VisualClaim v5 single-story source audit fallback',
+      prompt: auditPrompt([row]),
+      maxTokens: 2_500,
+      usage,
+    });
+    const candidates = Array.isArray(fallback.audits)
+      ? fallback.audits
+      : [];
+    const exact = candidates.find(
+      (value) =>
+        clean(record(value).story_id, 100) ===
+        row.story.revision_item_id,
+    );
+    const value = exact ?? candidates[0];
+    if (!value) {
+      throw new Error(
+        `Single-story source audit returned no audit for ${row.story.revision_item_id}.`,
+      );
+    }
+    byId.set(row.story.revision_item_id, value);
   }
-  return audits;
+
+  const unresolved = rows.filter(
+    ({ story }) => !byId.has(story.revision_item_id),
+  );
+  if (unresolved.length > 0) {
+    throw new Error(
+      `Source audit still omitted story IDs after fallback: ${unresolved
+        .map(({ story }) => story.revision_item_id)
+        .join(', ')}.`,
+    );
+  }
+  return rows.map(({ story }) =>
+    normalizeAudit(
+      byId.get(story.revision_item_id),
+      story.revision_item_id,
+    ),
+  );
 }
 
 function repairPrompt(input: {
