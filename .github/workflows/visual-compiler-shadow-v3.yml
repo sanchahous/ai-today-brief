@@ -1,0 +1,64 @@
+name: Visual compiler shadow v3
+
+on:
+  push:
+    branches:
+      - experiment/visual-routing-backtest-20260812
+    paths:
+      - .github/workflows/visual-compiler-shadow-v3.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  calibrate:
+    name: Patch energy outcome and recalibrate headline-paired gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download evaluated v2 package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh run download 31587583373
+          --repo "$GITHUB_REPOSITORY"
+          --name visual-compiler-shadow-v2-evaluated
+          --dir artifacts/visual-compiler-shadow-v3
+
+      - name: Strengthen the visible energy outcome
+        env:
+          VISUAL_COMPILER_OUT_DIR: artifacts/visual-compiler-shadow-v3
+        run: npx tsx scripts/visual-compiler-patch-energy-v3.ts
+
+      - name: Rebuild v3 review contact sheet
+        env:
+          VISUAL_COMPILER_OUT_DIR: artifacts/visual-compiler-shadow-v3
+        run: npx tsx scripts/visual-compiler-contact-sheet.ts
+
+      - name: Re-evaluate energy and recalibrate all headline-paired gates
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          VISUAL_COMPILER_JUDGE_MODEL: 'google/gemini-2.5-flash'
+          VISUAL_COMPILER_OUT_DIR: artifacts/visual-compiler-shadow-v3
+        run: npx tsx scripts/visual-compiler-evaluate-energy-v3.ts
+
+      - name: Upload v3 package
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-compiler-shadow-v3
+          path: artifacts/visual-compiler-shadow-v3
+          if-no-files-found: error
+          retention-days: 14
