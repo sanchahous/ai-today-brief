@@ -1,0 +1,242 @@
+[
+  {
+    "storyId": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+    "rank": 1,
+    "headline": "The Shift to Harness-Level Agent Loops in Software Engineering",
+    "eligible": true,
+    "router": {
+      "storyId": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+      "role": "architecture_transformation",
+      "pipeline": "deterministic_compiler",
+      "reason": "This role depends on exact labels, comparison direction, architecture or access geometry that deterministic rendering preserves more reliably than generated pixels.",
+      "expectedImageCalls": 0,
+      "requiredGuards": [
+        "source_claim_gate",
+        "exact_overlay_gate",
+        "certainty_gate",
+        "thumbnail_gate"
+      ]
+    },
+    "treatment": {
+      "treatment": "reuse_router_selection",
+      "reason": "The existing router-selected treatment already matches the source role.",
+      "selectedSource": "compiler",
+      "expectedImageCalls": 0,
+      "approvedLabels": [
+        "Manual Prompting",
+        "Outer Harness Loop",
+        "Agent Sessions"
+      ],
+      "safetyMode": "factual_visual"
+    },
+    "compilerPixelPath": "images/1-21161f64-804b-4bea-aa06-35a475dd9f0f-compiler-pixels.jpg",
+    "compilerFinalPath": "images/1-21161f64-804b-4bea-aa06-35a475dd9f0f-compiler-final.jpg",
+    "compilerCardPath": "artifacts/visual-compiler-v7-1-ab/cards/1-21161f64-804b-4bea-aa06-35a475dd9f0f-compiler.png"
+  },
+  {
+    "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+    "rank": 2,
+    "headline": "Gemini faces community critique regarding model performance consistency",
+    "eligible": false,
+    "router": {
+      "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "role": "uncertainty_announcement",
+      "pipeline": "source_led_fallback",
+      "reason": "The explanatory claim failed the source gate (announcement_certainty_not_guarded; plan_compile_failed; visual_driver_supported), so the card must preserve only approved source identity and headline context.",
+      "expectedImageCalls": 0,
+      "requiredGuards": [
+        "approved_headline_only",
+        "no_explanatory_assertion",
+        "no_unapproved_metric",
+        "no_certainty_upgrade",
+        "no_generated_text"
+      ]
+    },
+    "treatment": {
+      "treatment": "reported_consistency_signal",
+      "reason": "The source describes community observations about inconsistent results. Repeated-run variability and a cross-provider check communicate the report without asserting definitive model failure.",
+      "selectedSource": "compiler",
+      "expectedImageCalls": 0,
+      "approvedLabels": [
+        "COMMUNITY REPORTS",
+        "INCONSISTENT RESULTS",
+        "CROSS-PROVIDER TEST"
+      ],
+      "safetyMode": "reported_signal"
+    },
+    "compilerPixelPath": "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-compiler-pixels.jpg",
+    "compilerFinalPath": "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-compiler-final.jpg",
+    "compilerCardPath": "artifacts/visual-compiler-v7-1-ab/cards/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-compiler.png"
+  },
+  {
+    "storyId": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+    "rank": 3,
+    "headline": "Git-Lazy-Mount: Mount Repositories on Demand for MicroVM Coding Agents",
+    "eligible": true,
+    "router": {
+      "storyId": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+      "role": "capability_access",
+      "pipeline": "deterministic_compiler",
+      "reason": "This role depends on exact labels, comparison direction, architecture or access geometry that deterministic rendering preserves more reliably than generated pixels.",
+      "expectedImageCalls": 0,
+      "requiredGuards": [
+        "source_claim_gate",
+        "exact_overlay_gate",
+        "certainty_gate",
+        "thumbnail_gate"
+      ]
+    },
+    "treatment": {
+      "treatment": "reuse_router_selection",
+      "reason": "The existing router-selected treatment already matches the source role.",
+      "selectedSource": "compiler",
+      "expectedImageCalls": 0,
+      "approvedLabels": [
+        "Git Repository",
+        "MicroVM",
+        "On-Demand Access"
+      ],
+      "safetyMode": "factual_visual"
+    },
+    "compilerPixelPath": "images/3-b2b29a4f-e909-4766-9734-968e6a679aa0-compiler-pixels.jpg",
+    "compilerFinalPath": "images/3-b2b29a4f-e909-4766-9734-968e6a679aa0-compiler-final.jpg",
+    "compilerCardPath": "artifacts/visual-compiler-v7-1-ab/cards/3-b2b29a4f-e909-4766-9734-968e6a679aa0-compiler.png"
+  },
+  {
+    "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+    "rank": 4,
+    "headline": "Managing AI-Driven Distraction and Rediscovering Deep Work",
+    "eligible": true,
+    "router": {
+      "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "role": "causal_mechanism",
+      "pipeline": "current_art_director",
+      "reason": "This role requires a concrete physical situation, causal action, human state or future-facing editorial metaphor that the current art director communicates more naturally.",
+      "expectedImageCalls": 1,
+      "requiredGuards": [
+        "source_claim_gate",
+        "generated_text_gate",
+        "certainty_gate",
+        "headline_pair_gate"
+      ]
+    },
+    "treatment": {
+      "treatment": "human_behavior_split",
+      "reason": "The causal claim is about human behavior. Two continuity-matched actions must show passive cognitive offloading versus active problem solving with bounded AI assistance.",
+      "selectedSource": "compiler",
+      "expectedImageCalls": 3,
+      "approvedLabels": [
+        "OFFLOAD",
+        "SPARRING PARTNER",
+        "KEEP THINKING"
+      ],
+      "safetyMode": "factual_visual"
+    },
+    "compilerPixelPath": "images/4-672e4320-6b71-4f9c-89da-82ce92770746-compiler-pixels.jpg",
+    "compilerFinalPath": "images/4-672e4320-6b71-4f9c-89da-82ce92770746-compiler-final.jpg",
+    "compilerCardPath": "artifacts/visual-compiler-v7-1-ab/cards/4-672e4320-6b71-4f9c-89da-82ce92770746-compiler.png"
+  },
+  {
+    "storyId": "40673aee-fac7-451f-be07-51016c857613",
+    "rank": 5,
+    "headline": "Claude Usage Thresholds: Insights from High-Volume Token Consumption",
+    "eligible": false,
+    "router": {
+      "storyId": "40673aee-fac7-451f-be07-51016c857613",
+      "role": "uncertainty_announcement",
+      "pipeline": "source_led_fallback",
+      "reason": "The explanatory claim failed the source gate (announcement_certainty_not_guarded; plan_compile_failed; certainty_preserved), so the card must preserve only approved source identity and headline context.",
+      "expectedImageCalls": 0,
+      "requiredGuards": [
+        "approved_headline_only",
+        "no_explanatory_assertion",
+        "no_unapproved_metric",
+        "no_certainty_upgrade",
+        "no_generated_text"
+      ]
+    },
+    "treatment": {
+      "treatment": "reported_usage_signal",
+      "reason": "The source describes anecdotal usage signals rather than a confirmed threshold. A deterministic meter can show token burn approaching an explicitly uncertain boundary without inventing a cutoff.",
+      "selectedSource": "compiler",
+      "expectedImageCalls": 0,
+      "approvedLabels": [
+        "HIGH TOKEN BURN",
+        "REPORTED SIGNALS",
+        "MONITOR SPEND"
+      ],
+      "safetyMode": "reported_signal"
+    },
+    "compilerPixelPath": "images/5-40673aee-fac7-451f-be07-51016c857613-compiler-pixels.jpg",
+    "compilerFinalPath": "images/5-40673aee-fac7-451f-be07-51016c857613-compiler-final.jpg",
+    "compilerCardPath": "artifacts/visual-compiler-v7-1-ab/cards/5-40673aee-fac7-451f-be07-51016c857613-compiler.png"
+  },
+  {
+    "storyId": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+    "rank": 6,
+    "headline": "TikZ Editor: WYSIWYG Interface for LaTeX Vector Graphics",
+    "eligible": true,
+    "router": {
+      "storyId": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+      "role": "capability_access",
+      "pipeline": "deterministic_compiler",
+      "reason": "This role depends on exact labels, comparison direction, architecture or access geometry that deterministic rendering preserves more reliably than generated pixels.",
+      "expectedImageCalls": 0,
+      "requiredGuards": [
+        "source_claim_gate",
+        "exact_overlay_gate",
+        "certainty_gate",
+        "thumbnail_gate"
+      ]
+    },
+    "treatment": {
+      "treatment": "reuse_router_selection",
+      "reason": "The existing router-selected treatment already matches the source role.",
+      "selectedSource": "compiler",
+      "expectedImageCalls": 0,
+      "approvedLabels": [
+        "TikZ Editor",
+        "Visual Interface",
+        "TikZ Code"
+      ],
+      "safetyMode": "factual_visual"
+    },
+    "compilerPixelPath": "images/6-bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1-compiler-pixels.jpg",
+    "compilerFinalPath": "images/6-bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1-compiler-final.jpg",
+    "compilerCardPath": "artifacts/visual-compiler-v7-1-ab/cards/6-bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1-compiler.png"
+  },
+  {
+    "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+    "rank": 7,
+    "headline": "GPT-5 Aids Immunologists in Solving T-Cell Mystery",
+    "eligible": true,
+    "router": {
+      "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+      "role": "capability_access",
+      "pipeline": "deterministic_compiler",
+      "reason": "This role depends on exact labels, comparison direction, architecture or access geometry that deterministic rendering preserves more reliably than generated pixels.",
+      "expectedImageCalls": 0,
+      "requiredGuards": [
+        "source_claim_gate",
+        "exact_overlay_gate",
+        "certainty_gate",
+        "thumbnail_gate"
+      ]
+    },
+    "treatment": {
+      "treatment": "science_reasoning_flow",
+      "reason": "The capability is domain-specific scientific reasoning. The visual must show an AI model synthesizing biological datasets into an actionable T-cell hypothesis rather than generic technology icons.",
+      "selectedSource": "compiler",
+      "expectedImageCalls": 0,
+      "approvedLabels": [
+        "GPT-5",
+        "BIOLOGICAL DATA",
+        "T-CELL HYPOTHESIS"
+      ],
+      "safetyMode": "factual_visual"
+    },
+    "compilerPixelPath": "images/7-5104e334-3ee9-4b0e-8e64-1f6e95bc5701-compiler-pixels.jpg",
+    "compilerFinalPath": "images/7-5104e334-3ee9-4b0e-8e64-1f6e95bc5701-compiler-final.jpg",
+    "compilerCardPath": "artifacts/visual-compiler-v7-1-ab/cards/7-5104e334-3ee9-4b0e-8e64-1f6e95bc5701-compiler.png"
+  }
+]
