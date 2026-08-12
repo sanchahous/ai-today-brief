@@ -172,7 +172,7 @@ function inferSourceCertainty(story: HoldoutStoryInput): VisualCertainty {
   if (/\b(measured|found|analysis|achieved|reached|completed|reveals?)\b/.test(source)) {
     return 'observed';
   }
-  return 'uncertain';
+  return 'reported';
 }
 
 function certaintyAssertiveness(value: VisualCertainty): number {
@@ -196,12 +196,16 @@ function guardedCertainty(
   requested: VisualCertainty,
   source: VisualCertainty,
 ): { certainty: VisualCertainty; warning: string | null } {
-  if (certaintyAssertiveness(requested) <= certaintyAssertiveness(source)) {
-    return { certainty: requested, warning: null };
+  if (requested === source) return { certainty: source, warning: null };
+  if (certaintyAssertiveness(requested) > certaintyAssertiveness(source)) {
+    return {
+      certainty: source,
+      warning: `certainty_downgraded_${requested}_to_${source}`,
+    };
   }
   return {
     certainty: source,
-    warning: `certainty_downgraded_${requested}_to_${source}`,
+    warning: `certainty_aligned_${requested}_to_${source}`,
   };
 }
 
@@ -238,6 +242,42 @@ function inferRole(raw: RawV5Claim, story: HoldoutStoryInput): VisualExplanatory
     return 'capability_access';
   }
   return requested;
+}
+
+function sourceHasExactMetric(story: HoldoutStoryInput): boolean {
+  return /(?:[$€£]\s*\d|\b\d+(?:\.\d+)?\s*(?:%|x|×|million|billion|trillion|tokens?|milliseconds?|ms|seconds?|minutes?|hours?)\b)/i.test(
+    sourceText(story),
+  );
+}
+
+function guardExplanatoryRole(
+  requested: VisualExplanatoryRole,
+  raw: RawV5Claim,
+  story: HoldoutStoryInput,
+): { role: VisualExplanatoryRole; warning: string | null } {
+  if (
+    requested !== 'quantitative_result' &&
+    requested !== 'benchmark_comparison'
+  ) {
+    return { role: requested, warning: null };
+  }
+  const facts = Array.isArray(raw.quantitative_facts)
+    ? raw.quantitative_facts
+    : [];
+  if (facts.length > 0 || sourceHasExactMetric(story)) {
+    return { role: requested, warning: null };
+  }
+  const source = sourceText(story);
+  const role: VisualExplanatoryRole =
+    /\b(by|because|via|using|converts?|converting|intercepts?|caching|compression|compresses?|proxy|fuzzing|property-based)\b/i.test(
+      source,
+    )
+      ? 'causal_mechanism'
+      : 'capability_access';
+  return {
+    role,
+    warning: `role_aligned_${requested}_to_${role}_without_exact_metric`,
+  };
 }
 
 function inferMetricDirection(raw: RawMetric, story: HoldoutStoryInput): VisualMetricDirection {
@@ -379,7 +419,9 @@ export function parseAutoVisualClaimV5(
 ): AutoVisualClaimV5 {
   const raw = record(rawValue) as RawV5Claim;
   const warnings: string[] = [];
-  const role = inferRole(raw, story);
+const roleResult = guardExplanatoryRole(inferRole(raw, story), raw, story);
+const role = roleResult.role;
+if (roleResult.warning) warnings.push(roleResult.warning);
   const sourceCertainty = inferSourceCertainty(story);
   const requestedCertainty = normalizedEnum<VisualCertainty>(
     raw.certainty,
