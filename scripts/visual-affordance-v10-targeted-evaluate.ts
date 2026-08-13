@@ -371,9 +371,9 @@ async function observePixels(
           'Inspect IMAGE X and IMAGE Y using pixels only.',
           'You do not know the headline, story, intended meaning, labels, prompt or rendering method. Do not infer hidden intent.',
           'Describe literally what is visible and identify craft, anatomy, physics and diagram defects.',
-          'generated_text_present means unintended, garbled or unsupported text in pixels. Do not flag controlled deterministic labels or intentional, legible code-artifact typography as generated text.',
+          'generated_text_present means any readable text baked into the pixels: words, labels, code, numbers or captions, garbled or legible alike. Report it wherever you see it. You do not know how either image was produced, so do not excuse text on the assumption that it was drawn deliberately.',
           'For a beam or light path, mark source/target/purpose true only when each is visibly unambiguous in the pixels.',
-          'For a comparison, input_invariant_preserved means the pixels visibly reuse one identical input; system_invariant_preserved means one identical system/actor is visibly reused. Do not use labels because labels are hidden.',
+          'For a comparison, input_invariant_preserved means the pixels visibly reuse one identical input; system_invariant_preserved means one identical system/actor is visibly reused. Judge this from shapes and structure; if text is present, do not let it carry the judgement.',
           'chart_metric_defined means the chart or meter has a visually interpretable quantity or operational state, not merely decorative curves.',
           'List only literal visible actions and outcomes. Do not decide whether they support the hidden story at this stage.',
           'Return JSON only: {"X":{literal_description:string,visible_objects:string[],visible_actions:string[],visible_outcomes:string[],generated_text_present:boolean,extra_limb_visible:boolean,unowned_hand_visible:boolean,object_fusion_visible:boolean,impossible_interaction_visible:boolean,beam_present:boolean,beam_source_visible:boolean,beam_target_visible:boolean,beam_purpose_clear:boolean,disconnected_prop_visible:boolean,broken_arrow_visible:boolean,direction_unambiguous:boolean,input_invariant_preserved:boolean,system_invariant_preserved:boolean,chart_metric_defined:boolean,core_action_visible:boolean,outcome_visible:boolean,causal_relation_visible:boolean,domain_context_visible:boolean},"Y":{same fields}}.',
@@ -394,8 +394,14 @@ async function observePixels(
 async function evaluateCards(
   manifest: ManifestRow,
   observations: Record<Source, BlindImageObservation>,
+  cardOrder: Record<Side, Source>,
   usage: UsageTotals,
 ): Promise<CardComparison> {
+  // The rubric is built from the approved story only. It must never contain the
+  // candidate's own treatment contract (grammar / expectedEvidence /
+  // forbiddenImplications / labels): grading both arms against one arm's spec
+  // sheet makes the other arm unable to win by construction. Observations are
+  // keyed by SIDE, never by arm name, or the comparison stops being blind.
   const raw = await callJudge<Record<string, unknown>>(
     [
       {
@@ -403,16 +409,13 @@ async function evaluateCards(
         text: [
           'Compare CARD X and CARD Y at real feed size. The same approved headline is visible on both cards.',
           sourceText(manifest.story),
-          `TARGET VISUAL GRAMMAR: ${manifest.treatment.grammar}`,
-          `OWNER-GROUNDED REQUIRED EVIDENCE: ${manifest.treatment.expectedEvidence.join('; ')}`,
-          `HARD FORBIDDEN IMPLICATIONS: ${manifest.treatment.forbiddenImplications.join('; ')}`,
-          `APPROVED LABELS: ${JSON.stringify(manifest.treatment.labels)}`,
+          'Judge only against the approved story above. State, per card, what claim the pixels make and whether the story entails it.',
           'The first-stage image-only observations were produced before the story was revealed:',
-          `V8 observation: ${JSON.stringify(observations.v8)}`,
-          `V10 observation: ${JSON.stringify(observations.v10)}`,
-          'Do not excuse a defect merely because you understand the intended prompt. A label cannot rescue missing action, outcome or relation in the pixels.',
-          'mapping_complete means the visible objects/actions/outcome map one-to-one to the approved source claim without unexplained props.',
-          'pixel_action_supports_claim, pixel_outcome_supports_claim and pixel_relation_supports_claim must be grounded in the first-stage literal observation, not inferred from labels or the intended prompt.',
+          `OBSERVATION FOR CARD X: ${JSON.stringify(observations[cardOrder.X])}`,
+          `OBSERVATION FOR CARD Y: ${JSON.stringify(observations[cardOrder.Y])}`,
+          'Do not excuse a defect merely because you can reconstruct an intent. A label cannot rescue missing action, outcome or relation in the pixels.',
+          'mapping_complete means the visible objects/actions/outcome map one-to-one to the approved story without unexplained props.',
+          'pixel_action_supports_claim, pixel_outcome_supports_claim and pixel_relation_supports_claim must be grounded in the first-stage literal observation, not inferred from labels or from an assumed intent.',
           'domain_context_supported means the pixels visibly anchor the real domain or human situation needed by this story.',
           'input_invariant_supported means the literal observation shows one identical input reused across compared runs; system_invariant_supported means one identical model, actor or chamber is reused. Judge these after the story reveals which invariants matter.',
           'beam_purpose_supports_claim means a visible beam or light has a source-grounded function once the story is known. Source and target still come only from the blind observation.',
@@ -451,12 +454,18 @@ function combinedObservation(
     beamPresent: blind.beamPresent,
     beamSourceVisible: blind.beamSourceVisible,
     beamTargetVisible: blind.beamTargetVisible,
-    beamPurposeClear: card.beamPurposeSupportsClaim,
+    // beamPurposeClear and the two invariants come from the BLIND stage. They
+    // were moved to the story-aware stage in an earlier repair round, which let a
+    // card pass by restating the premise it had just been handed — the same
+    // pixels then scored 1/3 -> 2/3 with no image change. The story-aware answers
+    // are still recorded on the CardVerdict for diagnostics; they must not feed
+    // the integrity gate.
+    beamPurposeClear: blind.beamPurposeClear,
     disconnectedPropVisible: blind.disconnectedPropVisible,
     brokenArrowVisible: blind.brokenArrowVisible,
     directionUnambiguous: blind.directionUnambiguous,
-    inputInvariantPreserved: card.inputInvariantSupported,
-    systemInvariantPreserved: card.systemInvariantSupported,
+    inputInvariantPreserved: blind.inputInvariantPreserved,
+    systemInvariantPreserved: blind.systemInvariantPreserved,
     chartMetricDefined: blind.chartMetricDefined,
     labelsCarryClaim: card.labelsCarryClaim,
     mappingComplete: card.mappingComplete,
@@ -469,20 +478,18 @@ function combinedObservation(
   };
 }
 
+// Deliberately takes no `Source`: scoring must not be able to branch on which
+// arm it is grading. The previous version cleared `generatedTextPresent` for the
+// V10 deterministic arm only, switching off the one hard blocker on the exact
+// axis where V10 differs from the production `no baked text` policy while the
+// baseline kept it. If deterministic typography is ever to be exempted, model it
+// as a separate observation field applied by render mode, not by arm.
 function sourceEvaluation(
   manifest: ManifestRow,
-  source: Source,
   blind: BlindImageObservation,
   card: CardVerdict,
 ): SourceEvaluation {
   const observation = combinedObservation(blind, card);
-  // The V10 deterministic renderer owns every text glyph in source. It cannot
-  // produce model-garbled typography, so approved code fragments and bounded
-  // session labels are evaluated as visual structure rather than as generated
-  // text. V8 and generated V10 treatments keep the normal hard text gate.
-  if (source === 'v10' && manifest.treatment.renderMode === 'deterministic') {
-    observation.generatedTextPresent = false;
-  }
   const integrity = evaluateVisualIntegrityV10(
     manifest.treatment.grammar,
     observation,
@@ -650,11 +657,11 @@ async function main() {
       [blind.order.Y]: blind.Y,
     } as Record<Source, BlindImageObservation>;
     console.log(`[v10-eval] ${index + 1}/${manifests.length} headline-paired comparison`);
-    const cards = await evaluateCards(manifest, blindBySource, usage);
     const cardOrder: Record<Side, Source> = {
       X: manifest.blindXSource,
       Y: manifest.blindYSource,
     };
+    const cards = await evaluateCards(manifest, blindBySource, cardOrder, usage);
     const cardBySource = {
       [cardOrder.X]: cards.X,
       [cardOrder.Y]: cards.Y,
@@ -666,8 +673,8 @@ async function main() {
       rank: manifest.rank,
       headline: manifest.headline,
       treatment: manifest.treatment,
-      v8: sourceEvaluation(manifest, 'v8', blindBySource.v8, cardBySource.v8),
-      v10: sourceEvaluation(manifest, 'v10', blindBySource.v10, cardBySource.v10),
+      v8: sourceEvaluation(manifest, blindBySource.v8, cardBySource.v8),
+      v10: sourceEvaluation(manifest, blindBySource.v10, cardBySource.v10),
       preferredSource,
       confidence: cards.confidence,
       reason: cards.reason,

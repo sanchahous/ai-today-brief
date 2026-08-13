@@ -6,6 +6,47 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-13
 
+## 2026-08-13 — W0 cleanup: підготовка PR #229 до мержу в `main`
+
+**Джерело:** [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md) §W0;
+гілка `chore/visual-v11-hygiene` (від гілки експерименту, вже з PR #230).
+
+**Змінено:**
+
+- з git видалено 101 PNG/JPG (**83 МБ**) під `experiments/` і `artifacts/`; пікселі
+  `experiments/**` додані в `.gitignore` — звіти `.md`/`.json`/`.csv` лишаються трековані,
+  бо wiki на них посилається;
+- видалено 35 із 41 one-shot скриптів `scripts/visual-*.ts`; лишилось 6 багаторазових
+  (targeted render/evaluate, calibration, v9 generalization render/evaluate/route-claims);
+- видалено 3 модулі, що після цього стали недосяжними: `visual-gate-policy.ts`,
+  `visual-specialized-svg-v7-2.ts`, `visual-treatment-v7-2.ts` (+ тести). Решту v5–v9
+  свідомо лишено — вони або досяжні з kept-скриптів, або названі базою порту для v11;
+  їх прибирає окремий chore-PR після появи v11 (§7);
+- видалено 66 із 67 `.github/workflows/visual-*.yml`; замість них один
+  `visual-experiment.yml`: `workflow_dispatch` only, `permissions: contents: read`,
+  без `git push`, вивід через `actions/upload-artifact`. Старі 62 були push-тригерні з
+  `contents: write` і платними секретами;
+- видалено `artifacts/visual-affordance-v10-owner-review-complete/` — після зняття бінарників
+  це була побайтова копія `experiments/visual-affordance-v10/targeted-v3/results/` під назвою
+  «complete», яка суперечила заявленому V6;
+- `experiments/` описано як пʼяту зону в `CLAUDE.md` і додано в `tsconfig` `exclude`;
+- **evaluator**: знято waiver `generated_text` для гілки-кандидата (параметр `Source` прибрано
+  з `sourceEvaluation`, щоб гілка не могла повернутись), спостереження тепер підставляються за
+  стороною (`OBSERVATION FOR CARD X/Y`), рубрика більше не містить `expectedEvidence` /
+  `forbiddenImplications` / `labels` кандидата, а `beamPurposeClear` і обидва invariant
+  повернуто з story-aware у blind-стадію.
+
+**Виміряно:** покриття нових модулів — 83.17% statements / 72.03% branches / 86.62% lines
+(17 файлів, 121 тест). Це вище 70%-гейта; проблема PR не в обсязі покриття, а в тому, які саме
+шляхи не покриті.
+
+**Не зроблено:** переоцінка виправленим харнесом — потребує платного прогону
+(Cloudflare + OpenRouter). Тому всі числа V6 позначені як невалідні у `now.md`,
+`pipeline/weekly-digest.md` і в README прогону; питання відкрите —
+[open-questions](open-questions.md) §8.
+
+---
+
 ## 2026-08-13 — PR #229 Visual V10 review + Sonnet executor plan
 
 **Джерело:** GitHub PR #229; код `src/lib/weekly-digest/visual-*.ts`; V6 pixels у

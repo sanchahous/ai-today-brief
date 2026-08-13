@@ -77,8 +77,10 @@ vs «перерозподілити на velocity/authority» досі не ух
 
 [now](now.md), V6 `evaluation-report.md` і `wiki/log.md` наводять «3/3 hard integrity, 3–0 blind
 preference» для Visual Affordance V10. Пакет
-`artifacts/visual-affordance-v10-owner-review-complete/evaluation-report.md` — це насправді
-прогін **v3** з **1/3** integrity (підтверджено побайтовим порівнянням git blob). Незалежно від
+`artifacts/visual-affordance-v10-owner-review-complete/evaluation-report.md` був насправді
+прогоном **v3** з **1/3** integrity (підтверджено побайтовим порівнянням git blob); у W0 цю теку
+видалено як стару копію — той самий звіт лишається в
+`experiments/visual-affordance-v10/targeted-v3/results/`. Незалежно від
 того, який файл актуальний, обидва числа отримані вимірюванням, у якому hard-блокер
 `generated_text` вимкнено лише для кандидата, рубрика для обох гілок узята зі специфікації
 кандидата, а описи гілок підставлені судді підписаними. Baseline при цьому — не продакшн, а

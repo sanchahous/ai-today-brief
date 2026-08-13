@@ -62,15 +62,20 @@ For a code task, also read `.cursor/rules/00-core.mdc`. Do not re-read them mid-
 | **Raw sources** | `raw/` | **Immutable. Never modify, never delete, never reformat.** Inputs only. |
 | **Knowledge** | `wiki/` | Markdown pages you maintain. Every fact carries a source. |
 | **Deliverables** | `artifacts/` | Generated output: dashboards, decks, exports, screenshots, brand assets. |
+| **Experiments** | `experiments/` | Backtest ledger: **reports only** (`.md` / `.json` / `.csv`), never rendered pixels. Ephemeral by intent — a wiki page may cite a report as a source, but nothing here is product truth. |
 | **Agent behavior** | `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/`, `.claude/`, `.agents/skills/`, `.cursor/skills/` | Rules and tooling, not knowledge. |
 
 `raw/_local/` and `artifacts/_local/` are git-ignored — bulk media, scraped dumps, anything
-with PII or licence restrictions goes there.
+with PII or licence restrictions goes there. Image output under `experiments/` is git-ignored
+for the same reason: download the run package from the Actions artifact of
+`.github/workflows/visual-experiment.yml` and commit only the reports.
 
 **Where to put a new file**
 
 - Markdown knowledge (analysis, plan, audit, hypothesis, spec) → `wiki/` in the matching subfolder.
 - Standalone deliverable (one-pager, dashboard, generated site, PDF, deck) → `artifacts/{slug}/`.
+- Backtest run report (A/B numbers, routing table, claim gate ledger) → `experiments/{run}/`, then
+  cite it from the `wiki/` page that draws the conclusion.
 - Bulk media, scrape dumps, raw exports, audio/video → `raw/` (or `raw/_local/` if bulky/private).
 - New code → wherever `.cursor/rules/00-core.mdc` says.
 
