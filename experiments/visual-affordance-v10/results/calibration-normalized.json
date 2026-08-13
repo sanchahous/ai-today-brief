@@ -1,0 +1,345 @@
+{
+  "calibration_id": "owner-review-v7-v8-2026-08-13-v1",
+  "source": "Owner comments written directly on evaluated V7 and V8 screenshots",
+  "weights": {
+    "instant_meaning": 45,
+    "visual_beauty": 30,
+    "brand_consistency": 15,
+    "originality": 10
+  },
+  "acceptance_policy": {
+    "automated_production_pass": false,
+    "pairwise_critic_role": "ranking_only",
+    "owner_review_required": true,
+    "labels_may_carry_required_evidence": false
+  },
+  "reason_tags": [
+    "strong_intuitive_analogy",
+    "domain_context_success",
+    "strong_visual_thesis",
+    "weak_context",
+    "generic_diagram",
+    "weak_visual_thesis",
+    "labels_help_but_do_not_rescue",
+    "broken_arrow",
+    "disconnected_prop",
+    "anatomy_error",
+    "unclear_causal_source",
+    "good_concept_bad_execution",
+    "uninterpretable_chart",
+    "opaque_metaphor",
+    "production_ready",
+    "major_rework",
+    "local_repair",
+    "reject"
+  ],
+  "examples": [
+    {
+      "id": "v8-gpt5-tcell",
+      "story_title": "GPT-5 Aids Immunologists in Solving T-Cell Mystery",
+      "owner_preference": "v8",
+      "preferred_affordance": "cinematic_domain_scene",
+      "overall_verdict": "production_ready",
+      "candidates": {
+        "current": {
+          "verdict": "reject",
+          "reason_tags": [
+            "weak_context",
+            "weak_visual_thesis",
+            "opaque_metaphor"
+          ],
+          "owner_note": "The molecular desk scene is too abstract and does not clearly communicate the scientific collaboration or discovery."
+        },
+        "v8": {
+          "verdict": "production_ready",
+          "reason_tags": [
+            "domain_context_success",
+            "strong_visual_thesis",
+            "production_ready"
+          ],
+          "owner_note": "The laboratory, researchers, biological data and converging insight communicate the context and vision clearly."
+        }
+      },
+      "expected_repair": "none",
+      "inferred_failures": [
+        "missing_context",
+        "weak_visual_thesis",
+        "mapping_not_one_to_one"
+      ],
+      "tag_derived_repair": "replan_proposition"
+    },
+    {
+      "id": "v8-claude-usage-thresholds",
+      "story_title": "Claude Usage Thresholds: Insights from High-Volume Token Consumption",
+      "owner_preference": "none",
+      "preferred_affordance": "deterministic_technical_hybrid",
+      "overall_verdict": "reject",
+      "candidates": {
+        "current": {
+          "verdict": "reject",
+          "reason_tags": [
+            "weak_context",
+            "opaque_metaphor",
+            "weak_visual_thesis"
+          ],
+          "owner_note": "The blacksmith scene conveys neither token thresholds nor practical value."
+        },
+        "v8": {
+          "verdict": "reject",
+          "reason_tags": [
+            "generic_diagram",
+            "weak_visual_thesis",
+            "labels_help_but_do_not_rescue"
+          ],
+          "owner_note": "The diagram is abstract, unintuitive and does not explain the operational response to long high-volume sessions."
+        }
+      },
+      "expected_repair": "replan_proposition",
+      "target_core_claim": "Long agent sessions need cache, split and monitoring controls before they reach hidden operational limits.",
+      "inferred_failures": [
+        "missing_context",
+        "mapping_not_one_to_one",
+        "weak_visual_thesis",
+        "uninterpretable_chart",
+        "labels_carry_the_claim"
+      ],
+      "tag_derived_repair": "replan_proposition"
+    },
+    {
+      "id": "v8-deep-work",
+      "story_title": "Managing AI-Driven Distraction and Rediscovering Deep Work",
+      "owner_preference": "v8_direction_only",
+      "preferred_affordance": "cinematic_domain_scene",
+      "overall_verdict": "major_rework",
+      "candidates": {
+        "current": {
+          "verdict": "reject",
+          "reason_tags": [
+            "weak_context",
+            "weak_visual_thesis"
+          ],
+          "owner_note": "The generic mechanical workshop does not show bounded AI assistance or the deep-work argument."
+        },
+        "v8": {
+          "verdict": "major_rework",
+          "reason_tags": [
+            "good_concept_bad_execution",
+            "anatomy_error",
+            "unclear_causal_source"
+          ],
+          "owner_note": "The direction is better, but an extra hand is visible, the laser source and function are unclear, and the physical scene is not logically closed."
+        }
+      },
+      "expected_repair": "regenerate_scene",
+      "target_core_claim": "A visible AI device gives one bounded hint while the person keeps thinking and doing all of the work.",
+      "inferred_failures": [
+        "missing_context",
+        "weak_visual_thesis",
+        "unowned_hand",
+        "beam_without_visible_source"
+      ],
+      "tag_derived_repair": "regenerate_scene"
+    },
+    {
+      "id": "v8-gemini-consistency",
+      "story_title": "Gemini faces community critique regarding model performance consistency",
+      "owner_preference": "none",
+      "preferred_affordance": "controlled_comparison",
+      "overall_verdict": "reject",
+      "candidates": {
+        "current": {
+          "verdict": "reject",
+          "reason_tags": [
+            "weak_context",
+            "opaque_metaphor"
+          ],
+          "owner_note": "The broken bolt does not communicate repeated model runs or output inconsistency."
+        },
+        "v8": {
+          "verdict": "reject",
+          "reason_tags": [
+            "generic_diagram",
+            "uninterpretable_chart",
+            "labels_help_but_do_not_rescue"
+          ],
+          "owner_note": "The line charts are ambiguous, the two chips can look like different models, and the labels carry more meaning than the pixels."
+        }
+      },
+      "expected_repair": "replan_proposition",
+      "target_core_claim": "The same coding task run through the same model twice produces two visibly different code artifacts.",
+      "inferred_failures": [
+        "missing_context",
+        "mapping_not_one_to_one",
+        "uninterpretable_chart",
+        "labels_carry_the_claim"
+      ],
+      "tag_derived_repair": "replan_proposition"
+    },
+    {
+      "id": "v7-anthropic-strict-schemas",
+      "story_title": "Why frontier Anthropic models are performing worse on strict tool calling schemas",
+      "owner_preference": "current",
+      "preferred_affordance": "one_to_one_physical_analogy",
+      "overall_verdict": "acceptable",
+      "candidates": {
+        "current": {
+          "verdict": "acceptable",
+          "reason_tags": [
+            "strong_intuitive_analogy"
+          ],
+          "owner_note": "The exact key and lock fit is a useful analogy for strict schemas, although the execution could still be improved."
+        },
+        "compiler": {
+          "verdict": "reject",
+          "reason_tags": [
+            "weak_context",
+            "labels_help_but_do_not_rescue",
+            "opaque_metaphor"
+          ],
+          "owner_note": "The sewing machine and fabric do not map intuitively to tool calls and schemas; labels only partly explain the intended idea."
+        }
+      },
+      "expected_repair": "edit_local_region",
+      "inferred_failures": [
+        "missing_context",
+        "labels_carry_the_claim",
+        "mapping_not_one_to_one"
+      ],
+      "tag_derived_repair": "replan_proposition"
+    },
+    {
+      "id": "v7-mistral-platform",
+      "story_title": "Leveraging the Mistral AI Platform Beyond Standard Chatbot Integrations",
+      "owner_preference": "current",
+      "preferred_affordance": "cinematic_domain_scene",
+      "overall_verdict": "production_ready",
+      "candidates": {
+        "current": {
+          "verdict": "production_ready",
+          "reason_tags": [
+            "domain_context_success",
+            "strong_visual_thesis",
+            "production_ready"
+          ],
+          "owner_note": "The cinematic scene communicates expansion, ambition and platform vision clearly and beautifully."
+        },
+        "compiler": {
+          "verdict": "reject",
+          "reason_tags": [
+            "generic_diagram",
+            "weak_visual_thesis"
+          ],
+          "owner_note": "The curve diagram is sterile, visually weak and does not carry the larger platform story."
+        }
+      },
+      "expected_repair": "none",
+      "inferred_failures": [
+        "uninterpretable_chart",
+        "weak_visual_thesis"
+      ],
+      "tag_derived_repair": "replan_proposition"
+    },
+    {
+      "id": "v7-fuzzing-property-testing",
+      "story_title": "Agentic testing playbook: How fuzzing and property testing empower autonomous coding",
+      "owner_preference": "compiler_slightly",
+      "preferred_affordance": "causal_process_sequence",
+      "overall_verdict": "reject",
+      "candidates": {
+        "current": {
+          "verdict": "reject",
+          "reason_tags": [
+            "weak_visual_thesis",
+            "opaque_metaphor"
+          ],
+          "owner_note": "The block factory is generic and does not show edge-case generation, failure, repair and verification."
+        },
+        "compiler": {
+          "verdict": "reject",
+          "reason_tags": [
+            "weak_visual_thesis",
+            "labels_help_but_do_not_rescue"
+          ],
+          "owner_note": "The tags help slightly, but the robot and pile of blocks still do not communicate the testing loop."
+        }
+      },
+      "expected_repair": "replan_proposition",
+      "target_core_claim": "Fuzzing creates edge cases, exposes a failure, drives a patch and verifies the repaired result.",
+      "inferred_failures": [
+        "weak_visual_thesis",
+        "mapping_not_one_to_one",
+        "labels_carry_the_claim"
+      ],
+      "tag_derived_repair": "replan_proposition"
+    },
+    {
+      "id": "v7-token-caching",
+      "story_title": "Optimizing Token Caching to Avoid Unexpected Large Language Model Costs",
+      "owner_preference": "compiler",
+      "preferred_affordance": "deterministic_technical_hybrid",
+      "overall_verdict": "local_repair",
+      "candidates": {
+        "current": {
+          "verdict": "reject",
+          "reason_tags": [
+            "weak_context",
+            "weak_visual_thesis"
+          ],
+          "owner_note": "The receipt and scattered tokens are not an intuitive explanation of caching."
+        },
+        "compiler": {
+          "verdict": "local_repair",
+          "reason_tags": [
+            "good_concept_bad_execution",
+            "broken_arrow",
+            "local_repair"
+          ],
+          "owner_note": "The diagram concept is useful, but the central arrow is visibly broken and should be repaired without replanning the concept."
+        }
+      },
+      "expected_repair": "recompose_geometry",
+      "inferred_failures": [
+        "missing_context",
+        "weak_visual_thesis",
+        "broken_arrow"
+      ],
+      "tag_derived_repair": "replan_proposition"
+    },
+    {
+      "id": "v7-optical-context-compression",
+      "story_title": "Cutting Claude Code Token Costs with Optical Context Compression",
+      "owner_preference": "current",
+      "preferred_affordance": "one_to_one_physical_analogy",
+      "overall_verdict": "local_repair",
+      "candidates": {
+        "current": {
+          "verdict": "local_repair",
+          "reason_tags": [
+            "good_concept_bad_execution",
+            "disconnected_prop",
+            "local_repair"
+          ],
+          "owner_note": "The press and compression concept is promising, but the magnifying glass is disconnected and reveals no preserved information."
+        },
+        "compiler": {
+          "verdict": "reject",
+          "reason_tags": [
+            "weak_context",
+            "opaque_metaphor",
+            "labels_help_but_do_not_rescue"
+          ],
+          "owner_note": "The map-and-card scene does not communicate optical context compression."
+        }
+      },
+      "expected_repair": "edit_local_region",
+      "target_core_claim": "Compression makes the context physically smaller while an optical inspection reveals that dense information is still preserved.",
+      "inferred_failures": [
+        "disconnected_prop",
+        "missing_context",
+        "mapping_not_one_to_one",
+        "labels_carry_the_claim"
+      ],
+      "tag_derived_repair": "replan_proposition"
+    }
+  ]
+}
