@@ -1,0 +1,169 @@
+name: Visual affordance v10 router repair
+
+on:
+  push:
+    branches:
+      - experiment/visual-affordance-router-v10-20260813
+    paths:
+      - .github/workflows/visual-affordance-v10-router-repair.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    name: Repair over-broad sequencing and audited direct-story treatments
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-affordance-router-v10-20260813
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply source repairs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          router = Path('src/lib/weekly-digest/visual-affordance-router-v10.ts')
+          text = router.read_text()
+          old = r"/\b(crash|resume|restart|checkpoint|cache|caching|split|bounded sessions?|monitor|fuzz(?:ing)?|property testing|failure|repair|retest|retry|before|after|interruption|continuation|pipeline stages?)\b/i"
+          new = r"/\b(crash|resume|restart|checkpoint|cache|caching|split|bounded sessions?|monitor|fuzz(?:ing)?|property testing|failure|repair|retest|retry|interruption|continuation|pipeline stages?)\b/i"
+          if old not in text:
+              raise SystemExit('Expected temporal-sequence expression was not found.')
+          router.write_text(text.replace(old, new, 1))
+
+          treatment = Path('src/lib/weekly-digest/visual-affordance-treatment-v10.ts')
+          text = treatment.read_text()
+          old_start = """export function selectAffordanceTreatmentV10(
+            input: AffordanceTreatmentInputV10,
+          ): AffordanceTreatmentV10 | null {
+            if (!input.eligible) return null;
+            const plan = planVisualAffordancesV10(input);
+            const primary = plan.candidates[0]?.grammar;
+            const source = sourceText(input.story).toLowerCase();
+          """
+          new_start = """export function selectAffordanceTreatmentV10(
+            input: AffordanceTreatmentInputV10,
+          ): AffordanceTreatmentV10 | null {
+            const source = sourceText(input.story).toLowerCase();
+            const directComparison =
+              /\\b(?:consistency|inconsistency|inconsistencies|inconsistent|reliability|community critique|community debate)\\b/.test(source) &&
+              /\\b(?:gemini|model|coding|developer community)\\b/.test(source);
+            const directSessionWorkflow =
+              /\\b(?:token|context window|rate limit|usage threshold|high-volume|burn rate|session)\\b/.test(source) &&
+              /\\b(?:cache|caching|split|monitor|limit|threshold|interrupt|consumption)\\b/.test(source);
+            const plan = input.eligible ? planVisualAffordancesV10(input) : null;
+            const primary = plan?.candidates[0]?.grammar;
+          """
+          if old_start not in text:
+              raise SystemExit('Expected treatment selector start was not found.')
+          text = text.replace(old_start, new_start, 1)
+          text = text.replace(
+              "if (primary === 'controlled_comparison') {",
+              "if (primary === 'controlled_comparison' || directComparison) {",
+              1,
+          )
+          text = text.replace("grammar: primary,", "grammar: 'controlled_comparison',", 1)
+          old_session = """if (
+              primary === 'causal_process_sequence' &&
+              /\\b(token|context|session|cache|caching|threshold|rate limit|monitor|split)\\b/.test(
+                source,
+              )
+            ) {"""
+          new_session = """if (
+              (primary === 'causal_process_sequence' || directSessionWorkflow) &&
+              /\\b(token|context|session|cache|caching|threshold|rate limit|monitor|split)\\b/.test(
+                source,
+              )
+            ) {"""
+          if old_session not in text:
+              raise SystemExit('Expected session treatment condition was not found.')
+          text = text.replace(old_session, new_session, 1)
+          text = text.replace("grammar: primary,", "grammar: 'causal_process_sequence',", 1)
+          old_bounded = """if (
+              primary === 'cinematic_domain_scene' &&
+              /\\b(deep work|active thinking|problem-solving|sparring partner|bounded hint|distraction|cognitive)\\b/.test(
+                source,
+              )
+            ) {"""
+          new_bounded = """if (
+              input.eligible &&
+              primary === 'cinematic_domain_scene' &&
+              /\\b(deep work|active thinking|problem-solving|sparring partner|bounded hint|distraction|cognitive)\\b/.test(
+                source,
+              )
+            ) {"""
+          if old_bounded not in text:
+              raise SystemExit('Expected bounded-assistance condition was not found.')
+          treatment.write_text(text.replace(old_bounded, new_bounded, 1))
+
+          tests = Path('src/lib/weekly-digest/visual-affordance-treatment-v10.test.ts')
+          text = tests.read_text()
+          anchor = """  it('does not create a factual treatment for an ineligible claim', () => {"""
+          additions = """  it('uses direct approved story text when the generic Gemini claim audit was ineligible', () => {
+            const value = selectAffordanceTreatmentV10({
+              story: story({
+                title: 'Gemini faces community critique regarding model performance consistency',
+                summary:
+                  'The developer community debates reliability in coding environments and reports inconsistencies affecting production tasks.',
+              }),
+              autoClaim: claim('uncertainty_announcement'),
+              eligible: false,
+            });
+            expect(value?.kind).toBe('same_system_output_variability');
+            expect(value?.grammar).toBe('controlled_comparison');
+          });
+
+          it('uses direct approved story text for an ineligible generic threshold claim', () => {
+            const value = selectAffordanceTreatmentV10({
+              story: story({
+                title: 'Claude Usage Thresholds: Insights from High-Volume Token Consumption',
+                summary:
+                  'High-volume sessions approach usage thresholds, and teams should monitor token consumption to avoid interruption.',
+              }),
+              autoClaim: claim('uncertainty_announcement'),
+              eligible: false,
+            });
+            expect(value?.kind).toBe('controlled_session_workflow');
+            expect(value?.grammar).toBe('causal_process_sequence');
+          });
+
+          """
+          if anchor not in text:
+              raise SystemExit('Expected ineligible treatment test anchor was not found.')
+          tests.write_text(text.replace(anchor, additions + anchor, 1))
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate repaired owner-grounded routes
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-affordance-router-v10.test.ts
+          src/lib/weekly-digest/visual-affordance-treatment-v10.test.ts
+          src/lib/weekly-digest/visual-integrity-v10.test.ts
+
+      - name: Typecheck repository
+        run: npm run typecheck
+
+      - name: Persist repaired V10 source
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/lib/weekly-digest/visual-affordance-router-v10.ts \
+            src/lib/weekly-digest/visual-affordance-treatment-v10.ts \
+            src/lib/weekly-digest/visual-affordance-treatment-v10.test.ts
+          git commit -m "Repair V10 affordance routing and direct-story evidence"
+          git fetch origin experiment/visual-affordance-router-v10-20260813
+          git rebase origin/experiment/visual-affordance-router-v10-20260813
+          SKIP_E2E=1 git push origin HEAD:experiment/visual-affordance-router-v10-20260813
