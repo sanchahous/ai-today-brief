@@ -80,7 +80,7 @@ Last updated: 2026-08-11
 | ✅ [marketing/linkedin-action-plan](marketing/linkedin-action-plan.md) | 90-денний покроковий план | колишній `docs/marketing/LINKEDIN-ACTION-PLAN.md` |
 | ✅ [marketing/company-page-playbook](marketing/company-page-playbook.md) | Playbook company-page | колишній `docs/marketing/ATB-COMPANY-PAGE-PLAYBOOK.md` |
 | ✅ [marketing/social-launch](marketing/social-launch.md) | Запуск соцканалів | колишній `docs/marketing/SOCIAL-LAUNCH.md` |
-| ✅ [marketing/card-images](marketing/card-images.md) | Daily cards + weekly semantic illustration v5.1: three-lens concept jury, causal fallback, per-concept vision gate | `pipeline/card-image.ts`, owner review + smoke renders 2026-08-12 |
+| ✅ [marketing/card-images](marketing/card-images.md) | Daily cards + weekly semantic illustration v5.1: three-lens concept jury, reviewable per-round render history, causal fallback, per-concept vision gate | `pipeline/card-image.ts`, owner review + smoke renders 2026-08-12 |
 | ✅ [marketing/custom-social-delivery](marketing/custom-social-delivery.md) | Кастомна соц-доставка | колишній `docs/marketing/CUSTOM-SOCIAL-DELIVERY.md` |
 
 ## Product

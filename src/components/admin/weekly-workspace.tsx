@@ -689,6 +689,7 @@ function ArtifactCard({
   }
 
   const previewUrls = listFrom(artifact.content, 'preview_urls');
+  const artifactContent = asRecord(artifact.content);
   const artifactWarnings = listFrom(artifact.metadata, 'warnings');
   const artifactMetadata = asRecord(artifact.metadata);
   const estimatedCost =
@@ -782,6 +783,44 @@ function ArtifactCard({
         : null;
   const primaryVariantScore = variantScoreByIndex.get(0);
   const primaryVariantConcept = variantConceptByIndex.get(0);
+  const iterationPreviewRows = Array.isArray(artifactContent.iteration_previews)
+    ? artifactContent.iteration_previews.flatMap((entry) => {
+        const row = asRecord(entry);
+        const previewUrl = typeof row.preview_url === 'string' ? row.preview_url : null;
+        if (!previewUrl) return [];
+        const score = asRecord(row.score);
+        const scoreMeta =
+          typeof score.overall === 'number'
+            ? {
+                overall: score.overall,
+                blockers: Array.isArray(score.blockers)
+                  ? score.blockers.filter((value): value is string => typeof value === 'string')
+                  : [],
+                passed: score.passed === true,
+                news_legibility:
+                  typeof score.news_legibility === 'number' ? score.news_legibility : undefined,
+                craft: typeof score.craft === 'number' ? score.craft : undefined,
+                semantic_min:
+                  typeof score.semantic_min === 'number' ? score.semantic_min : undefined,
+              }
+            : null;
+        return [
+          {
+            previewUrl,
+            attempt: typeof row.attempt === 'number' ? row.attempt : null,
+            variantIndex: typeof row.variant_index === 'number' ? row.variant_index : null,
+            label: typeof row.label === 'string' ? row.label : 'Unlabelled render',
+            lens: typeof row.concept_lens === 'string' ? row.concept_lens : null,
+            title: typeof row.metaphor_title === 'string' ? row.metaphor_title : null,
+            motif: typeof row.motif_class === 'string' ? row.motif_class : null,
+            scene: typeof row.scene === 'string' ? row.scene : null,
+            attemptCostUsd: typeof row.attempt_cost_usd === 'number' ? row.attempt_cost_usd : null,
+            score: scoreMeta,
+            critiquePassed: row.critique_passed === true,
+          },
+        ];
+      })
+    : [];
   const contentSim = asRecord(artifactMetadata.content_sim);
   const contentSimOutcome = typeof contentSim.outcome === 'string' ? contentSim.outcome : null;
   const contentSimPassed = contentSim.passed === true || contentSim.human_override === true;
@@ -898,6 +937,68 @@ function ArtifactCard({
             );
           })}
         </div>
+      ) : null}
+
+      {variantSelection && iterationPreviewRows.length > 0 ? (
+        <details className="mt-4 rounded-xl border border-amber-300/15 bg-amber-300/[.03] p-3" open>
+          <summary className="cursor-pointer text-xs font-bold tracking-wide text-amber-200 uppercase">
+            Generation history · {iterationPreviewRows.length} rendered versions
+          </summary>
+          <p className="mt-2 text-xs leading-5 text-slate-400">
+            Every rendered concept from every repair round is retained here until this artifact is
+            approved. Failed scores remain visible; approval keeps only the selected primary.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {iterationPreviewRows.map((row, index) => (
+              <div
+                key={`${row.previewUrl}:${index}`}
+                className="overflow-hidden rounded-lg border border-white/10 bg-black/30"
+              >
+                <div className="relative aspect-[16/9]">
+                  <Image
+                    src={row.previewUrl}
+                    alt={`${row.label}, generation ${row.attempt ?? '?'}`}
+                    fill
+                    sizes="(max-width: 768px) 50vw, 220px"
+                    unoptimized
+                    className="object-cover"
+                  />
+                </div>
+                <div className="grid gap-1 p-2 text-[11px]">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="font-bold text-slate-200">{row.label}</span>
+                    {row.attempt !== null ? (
+                      <span className="text-slate-500">round {row.attempt}</span>
+                    ) : null}
+                    {row.variantIndex !== null ? (
+                      <span className="text-slate-500">variant {row.variantIndex + 1}</span>
+                    ) : null}
+                    {row.attemptCostUsd !== null ? (
+                      <span className="text-slate-500">${row.attemptCostUsd.toFixed(4)} run</span>
+                    ) : null}
+                  </div>
+                  {row.score ? (
+                    <span className={row.score.passed ? 'text-emerald-300' : 'text-rose-300'}>
+                      {formatVariantScoreChip(row.score)}
+                    </span>
+                  ) : (
+                    <span className="text-slate-500">
+                      {row.critiquePassed ? 'vision pass' : 'not scored'}
+                    </span>
+                  )}
+                  {row.lens || row.motif ? (
+                    <span className="truncate text-slate-400">
+                      {[row.lens?.replaceAll('_', ' '), row.motif].filter(Boolean).join(' · ')}
+                    </span>
+                  ) : null}
+                  {row.scene ? (
+                    <span className="line-clamp-3 text-slate-500">{row.scene}</span>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
       ) : null}
 
       {imagePreview && illustrationScene ? (
