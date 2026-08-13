@@ -1,0 +1,410 @@
+{
+  "rows": [
+    {
+      "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "rank": 2,
+      "headline": "Gemini faces community critique regarding model performance consistency",
+      "treatment": {
+        "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+        "kind": "observed_variability",
+        "renderMode": "deterministic",
+        "labels": [
+          "SAME TASK",
+          "DIVERGENT OUTPUTS",
+          "CONSISTENCY DEBATE"
+        ],
+        "expectedEvidence": [
+          "the same coding task is visibly repeated",
+          "the repeated runs produce visibly divergent outputs",
+          "the image communicates observed consistency concerns without inventing a numeric failure rate"
+        ],
+        "forbiddenImplications": [
+          "Gemini is always broken",
+          "a named alternative is proven superior",
+          "a future model or fix is confirmed"
+        ],
+        "sourceGrounding": "The approved story explicitly describes community debate about reliability and inconsistencies in coding environments.",
+        "expectedImageCalls": 0
+      },
+      "current": {
+        "pixel": {
+          "sourceGrounded": false,
+          "requiredEvidenceVisible": false,
+          "outcomeVisible": false,
+          "relationVisible": false,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": false,
+          "evidence": "The image shows two wrenches attempting to turn a bolt, with metal shavings around it. This does not depict a coding task, repeated runs, or divergent outputs. It is a literal interpretation of 'inconsistencies' or 'reliability' in a mechanical sense, not a digital or coding context.",
+          "ambiguity": "The image could be interpreted as a metaphor for difficulty or a 'wrench in the works', but it does not directly relate to the specific context of model performance consistency in coding environments."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": false,
+          "overlaySupportedByPixels": false,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 0.3,
+          "visualBeauty": 0.8,
+          "brandConsistency": 0.9,
+          "originality": 0.7,
+          "summary": "Card X uses a metaphor of two wrenches struggling with a bolt, implying difficulty or inconsistency. While visually appealing and somewhat related to 'consistency', it doesn't directly show 'same task' or 'divergent outputs' as required. The connection to model performance consistency is abstract and requires interpret"
+        },
+        "pixelPass": false,
+        "productionPass": false,
+        "weightedScore": 0.58
+      },
+      "v8": {
+        "pixel": {
+          "sourceGrounded": true,
+          "requiredEvidenceVisible": true,
+          "outcomeVisible": true,
+          "relationVisible": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": true,
+          "evidence": "The image shows two identical inputs (represented by text blocks) being processed by two identical processors (represented by chips), leading to two visibly different outputs (represented by divergent graphs). This directly illustrates the concept of the same coding task being repeated and producing visibly divergent o",
+          "ambiguity": "The specific nature of the 'coding task' or the 'model' is abstract, but the visual representation of input, processing, and divergent output clearly conveys the core message of inconsistent performance from repeated runs."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": true,
+          "overlaySupportedByPixels": true,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 0.9,
+          "visualBeauty": 0.6,
+          "brandConsistency": 0.9,
+          "originality": 0.8,
+          "summary": "Card Y directly illustrates the concept of 'same task' leading to 'divergent outputs' using a clear diagram with processing units and different graph results. The approved overlay labels are used exactly and are well-supported by the visual elements. This card immediately conveys the core claim of performance inconsist"
+        },
+        "pixelPass": true,
+        "productionPass": true,
+        "weightedScore": 0.8
+      },
+      "preferredSource": "v8",
+      "confidence": 0.95,
+      "reason": "Card Y is significantly better because it directly addresses all the visual requirements and uses the approved overlay labels. The visual representation of 'same task' leading to 'divergent outputs' is explicit and instantly understandable, aligning perfectly with the 'observed_variability' role. Card X, while aesthetically pleasing, relies on a metaphor that is less direct and doesn't fulfill the specific requirements for showing repeated tasks and divergent outputs, nor does it use the required labels. Card Y's instant meaning is much higher due to its literal depiction of the problem.",
+      "pixelOrder": {
+        "X": "current",
+        "Y": "v8"
+      },
+      "cardOrder": {
+        "X": "current",
+        "Y": "v8"
+      }
+    },
+    {
+      "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "rank": 4,
+      "headline": "Managing AI-Driven Distraction and Rediscovering Deep Work",
+      "treatment": {
+        "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+        "kind": "focused_cognition",
+        "renderMode": "generated_source_cinematic",
+        "labels": [
+          "ACTIVE THINKING",
+          "AI AS SPARRING PARTNER"
+        ],
+        "expectedEvidence": [
+          "a person remains physically engaged in solving the difficult task",
+          "the AI offers one bounded hint but does not perform the task",
+          "distraction is visibly muted while sustained focus returns"
+        ],
+        "forbiddenImplications": [
+          "the AI completes the work autonomously",
+          "the person is passive",
+          "the scene is only a generic workshop with no bounded AI assistance"
+        ],
+        "sourceGrounding": "The approved story argues for active problem-solving and using LLMs as sparring partners rather than offloading all cognitive work.",
+        "expectedImageCalls": 1
+      },
+      "current": {
+        "pixel": {
+          "sourceGrounded": false,
+          "requiredEvidenceVisible": false,
+          "outcomeVisible": false,
+          "relationVisible": false,
+          "contradictionVisible": true,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": false,
+          "evidence": "The image shows a person's hand interacting with gears, but there is no visible AI assistance or interaction. The story requires the AI to offer a bounded hint, which is entirely absent. The scene is a generic workshop without any indication of AI assistance, which contradicts the 'forbidden implications' of 'the scene",
+          "ambiguity": "None. The absence of AI interaction is clear."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": false,
+          "certaintyPreserved": false,
+          "labelsExact": false,
+          "overlaySupportedByPixels": false,
+          "thumbnailReadable": true,
+          "misleading": true,
+          "instantMeaning": 3,
+          "visualBeauty": 7,
+          "brandConsistency": 7,
+          "originality": 5,
+          "summary": "Card Y fails to ground the central claim. While it shows a person engaged in a task, there is no visible AI assistance or interaction, making it impossible to convey the 'AI as sparring partner' aspect. The image depicts a generic workshop scene with no bounded AI assistance, which is a forbidden implication. It does n"
+        },
+        "pixelPass": false,
+        "productionPass": false,
+        "weightedScore": 5
+      },
+      "v8": {
+        "pixel": {
+          "sourceGrounded": true,
+          "requiredEvidenceVisible": true,
+          "outcomeVisible": true,
+          "relationVisible": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": true,
+          "evidence": "The image shows a person actively engaged in assembling gears, demonstrating physical engagement in a difficult task. A holographic AI figure is present, pointing towards the gears and displaying a mind map, which can be interpreted as offering a bounded hint or guidance without performing the task itself. The person's",
+          "ambiguity": "The exact nature of the AI's 'hint' is not explicitly clear from the visual alone, but its gesture and the mind map suggest guidance rather than direct action."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": true,
+          "overlaySupportedByPixels": true,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 9,
+          "visualBeauty": 8,
+          "brandConsistency": 9,
+          "originality": 8,
+          "summary": "Card X effectively illustrates the core claim. The human is actively engaged with a physical task, while the AI (represented by the holographic figure) appears to be offering a bounded hint or information on the screen, not performing the task itself. The labels 'ACTIVE THINKING' and 'AI AS SPARRING PARTNER' are presen"
+        },
+        "pixelPass": true,
+        "productionPass": true,
+        "weightedScore": 8.6
+      },
+      "preferredSource": "v8",
+      "confidence": 5,
+      "reason": "Card X is strongly preferred because it directly addresses all the requirements and avoids all forbidden implications. It clearly shows a person actively engaged in problem-solving with AI providing bounded assistance, aligning perfectly with 'AI as sparring partner' and 'active thinking'. Card Y, while visually appealing in its own right, completely misses the AI interaction aspect, making it misleading and ungrounded for the given headline and summary. The instant meaning and central claim grounding are significantly higher in Card X.",
+      "pixelOrder": {
+        "X": "v8",
+        "Y": "current"
+      },
+      "cardOrder": {
+        "X": "v8",
+        "Y": "current"
+      }
+    },
+    {
+      "storyId": "40673aee-fac7-451f-be07-51016c857613",
+      "rank": 5,
+      "headline": "Claude Usage Thresholds: Insights from High-Volume Token Consumption",
+      "treatment": {
+        "storyId": "40673aee-fac7-451f-be07-51016c857613",
+        "kind": "operational_threshold",
+        "renderMode": "deterministic",
+        "labels": [
+          "HIGH-VOLUME",
+          "USAGE THRESHOLD",
+          "ANECDOTAL SIGNALS"
+        ],
+        "expectedEvidence": [
+          "a high-volume token stream approaches a visible operating boundary",
+          "the boundary implies interruption risk without claiming an exact undocumented limit",
+          "the image preserves that the reported signals are anecdotal"
+        ],
+        "forbiddenImplications": [
+          "an exact token limit is known",
+          "Anthropic has published a confirmed threshold",
+          "every high-volume session will be interrupted"
+        ],
+        "sourceGrounding": "The approved story describes high-volume token use, context/rate limits, anecdotal signals and the need to monitor burn rate.",
+        "expectedImageCalls": 0
+      },
+      "current": {
+        "pixel": {
+          "sourceGrounded": true,
+          "requiredEvidenceVisible": true,
+          "outcomeVisible": true,
+          "relationVisible": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": true,
+          "evidence": "The image shows a person hammering coins that are being fed from a pipe into a fire, with some coins already stacked and burning. This visually represents high-volume token use (coins being fed), approaching a boundary (the fire/anvil), and the risk of interruption (coins burning/being hammered). The 'anecdotal' aspect",
+          "ambiguity": "The exact nature of the 'boundary' and 'interruption' is somewhat abstract, but the visual metaphor is strong enough to convey the core concepts."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": false,
+          "certaintyPreserved": false,
+          "labelsExact": false,
+          "overlaySupportedByPixels": false,
+          "thumbnailReadable": true,
+          "misleading": true,
+          "instantMeaning": 2,
+          "visualBeauty": 7,
+          "brandConsistency": 5,
+          "originality": 7,
+          "summary": "The image shows a person forging coins, which vaguely relates to 'token consumption' but fails to convey 'thresholds' or 'anecdotal signals'. The visual metaphor is too abstract and doesn't clearly show a boundary or interruption risk. It also implies a physical, manual process which is not relevant to AI token usage. "
+        },
+        "pixelPass": true,
+        "productionPass": false,
+        "weightedScore": 4.45
+      },
+      "v8": {
+        "pixel": {
+          "sourceGrounded": true,
+          "requiredEvidenceVisible": true,
+          "outcomeVisible": true,
+          "relationVisible": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": true,
+          "evidence": "The image depicts a block of text being processed into another block, where a dashed line indicates a threshold. Some text segments are highlighted in red, suggesting they are at or beyond a limit, and a small icon with a 'plus' sign and a phone-like device further implies a usage or rate limit being reached or exceede",
+          "ambiguity": "The 'anecdotal' nature of the signals is not directly represented, but the visual clearly shows a threshold being approached and potentially exceeded, which aligns with the core message."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": true,
+          "overlaySupportedByPixels": true,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 9,
+          "visualBeauty": 8,
+          "brandConsistency": 9,
+          "originality": 8,
+          "summary": "This card effectively visualizes the concept of high-volume token consumption approaching a threshold. The stacked lines represent tokens, and the dashed line clearly indicates a usage threshold. The 'plus' sign and the small icon next to it suggest an interruption or a signal, aligning with 'anecdotal signals'. The la"
+        },
+        "pixelPass": true,
+        "productionPass": true,
+        "weightedScore": 8.6
+      },
+      "preferredSource": "v8",
+      "confidence": 5,
+      "reason": "Card Y is significantly better because it directly addresses all the requirements. It clearly visualizes 'high-volume token stream approaches a visible operating boundary' and 'interruption risk' without claiming an exact limit. The labels are correctly applied and supported by the visual. Card X, while visually interesting, fails to convey the core claims of 'thresholds' and 'anecdotal signals' and is misleading by implying a physical, manual process for AI token consumption. It also lacks the required labels.",
+      "pixelOrder": {
+        "X": "current",
+        "Y": "v8"
+      },
+      "cardOrder": {
+        "X": "current",
+        "Y": "v8"
+      }
+    },
+    {
+      "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+      "rank": 7,
+      "headline": "GPT-5 Aids Immunologists in Solving T-Cell Mystery",
+      "treatment": {
+        "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+        "kind": "observed_variability",
+        "renderMode": "deterministic",
+        "labels": [
+          "SAME TASK",
+          "DIVERGENT OUTPUTS",
+          "CONSISTENCY DEBATE"
+        ],
+        "expectedEvidence": [
+          "the same coding task is visibly repeated",
+          "the repeated runs produce visibly divergent outputs",
+          "the image communicates observed consistency concerns without inventing a numeric failure rate"
+        ],
+        "forbiddenImplications": [
+          "Gemini is always broken",
+          "a named alternative is proven superior",
+          "a future model or fix is confirmed"
+        ],
+        "sourceGrounding": "The approved story explicitly describes community debate about reliability and inconsistencies in coding environments.",
+        "expectedImageCalls": 0
+      },
+      "current": {
+        "pixel": {
+          "sourceGrounded": false,
+          "requiredEvidenceVisible": false,
+          "outcomeVisible": false,
+          "relationVisible": false,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": true,
+          "generatedTextPresent": false,
+          "subjectConsistent": false,
+          "evidence": "The image depicts a laboratory setting with molecular models and glowing abstract shapes connected by wires. While it vaguely relates to scientific research, it does not show any repeated tasks, divergent outputs, or consistency concerns. There is no visible evidence of coding, data processing, or any specific outcome ",
+          "ambiguity": "The image is highly ambiguous regarding the specific narrative. It could represent many scientific concepts but fails to provide any specific evidence for the given story's requirements."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": false,
+          "certaintyPreserved": true,
+          "labelsExact": false,
+          "overlaySupportedByPixels": false,
+          "thumbnailReadable": true,
+          "misleading": true,
+          "instantMeaning": 1,
+          "visualBeauty": 3,
+          "brandConsistency": 4,
+          "originality": 3,
+          "summary": "Card Y presents a visually appealing image of a scientific setup, but it fails to address the 'observed_variability' requirement or the source grounding about community debate on reliability and inconsistencies. The image does not show repeated tasks or divergent outputs, nor does it convey consistency concerns. It lac"
+        },
+        "pixelPass": false,
+        "productionPass": false,
+        "weightedScore": 2.25
+      },
+      "v8": {
+        "pixel": {
+          "sourceGrounded": true,
+          "requiredEvidenceVisible": true,
+          "outcomeVisible": true,
+          "relationVisible": true,
+          "contradictionVisible": false,
+          "unsupportedSpecificsVisible": false,
+          "generatedTextPresent": false,
+          "subjectConsistent": true,
+          "evidence": "The image shows two identical inputs being processed by two identical 'processors' (representing coding environments or models), leading to two visibly different outputs (a smooth upward trend vs. a jagged, inconsistent line). This directly illustrates the 'same coding task is visibly repeated' and 'repeated runs produ",
+          "ambiguity": "The nature of the 'processors' (coding environments vs. models) is abstract, but the core concept of repeated processing leading to divergent results is clear."
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "centralClaimGrounded": true,
+          "certaintyPreserved": true,
+          "labelsExact": true,
+          "overlaySupportedByPixels": true,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 5,
+          "visualBeauty": 4,
+          "brandConsistency": 5,
+          "originality": 5,
+          "summary": "Card X effectively uses a diagrammatic representation to illustrate the concept of observed variability. The 'SAME TASK' input leading to 'DIVERGENT OUTPUTS' on the graphs, with the 'CONSISTENCY DEBATE' label, directly supports the required visual evidence and addresses the source grounding. The visual is clean, uses a"
+        },
+        "pixelPass": true,
+        "productionPass": true,
+        "weightedScore": 4.7
+      },
+      "preferredSource": "v8",
+      "confidence": 5,
+      "reason": "Card X perfectly fulfills all the requirements. It directly addresses the 'observed_variability' role by visually demonstrating the 'SAME TASK' leading to 'DIVERGENT OUTPUTS' and explicitly uses the approved overlay labels. It grounds the central claim about consistency concerns without being misleading. Card Y, while aesthetically pleasing, completely misses the core requirement of illustrating 'observed_variability' and the specific source grounding about consistency debate, making it misleading for the intended purpose. Card X's instant meaning is high because it directly visualizes the requested concept, and its originality comes from its clear, abstract representation of a complex issue",
+      "pixelOrder": {
+        "X": "v8",
+        "Y": "current"
+      },
+      "cardOrder": {
+        "X": "v8",
+        "Y": "current"
+      }
+    }
+  ],
+  "usage": {
+    "promptTokens": 7513,
+    "completionTokens": 3923,
+    "totalTokens": 11436,
+    "costUsd": 0.0120614,
+    "calls": 8
+  }
+}

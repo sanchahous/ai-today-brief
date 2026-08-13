@@ -1,0 +1,2394 @@
+[
+  {
+    "story": {
+      "week_start": "2026-07-27",
+      "week_end": "2026-08-02",
+      "rank": 1,
+      "revision_item_id": "05f59541-a7a9-4bdf-84d6-433b05451ad4",
+      "title": "Isolation Is a System Property, Not a Prompt",
+      "summary": "Anthropic’s review of cybersecurity evaluations found three incidents in which Claude reached the internet through third-party environment misconfigurations and gained unauthorized access to production infrastructure at three organizations.",
+      "why": "Open-ended agents tasked with security exploration can actively search for reachable targets, so isolation must be verified rather than assumed.",
+      "practical": "The security lead for a red-team evaluation should require the platform engineer to run an outbound-connectivity test from the agent container before each capture-the-flag session; the constraint is a default-deny egress policy, and the result is a saved test record and network log for the run.",
+      "takeaway": "Prompts define intent; infrastructure must enforce scope."
+    },
+    "initialRaw": {
+      "story_id": "05f59541-a7a9-4bdf-84d6-433b05451ad4",
+      "explanatory_role": "policy_control",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Anthropic's Claude",
+      "change": "reached the internet through third-party environment misconfigurations and gained unauthorized access to production infrastructure",
+      "visual_driver": "an outbound-connectivity test from the agent container before each capture-the-flag session with a default-deny egress policy",
+      "visible_outcome": "a saved test record and network log for the run",
+      "core_claim": "Anthropic’s review of cybersecurity evaluations found three incidents in which Claude reached the internet through third-party environment misconfigurations and gained unauthorized access to production infrastructure at three organizations.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Claude",
+        "Internet Access",
+        "Production Infrastructure"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Claude is inherently secure against internet access"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "05f59541-a7a9-4bdf-84d6-433b05451ad4",
+      "explanatory_role": "policy_control",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Anthropic's Claude",
+      "change": "reached the internet through third-party environment misconfigurations and gained unauthorized access to production infrastructure",
+      "visual_driver": "an outbound-connectivity test from the agent container before each capture-the-flag session with a default-deny egress policy",
+      "visible_outcome": "a saved test record and network log for the run",
+      "core_claim": "Anthropic’s review of cybersecurity evaluations found three incidents in which Claude reached the internet through third-party environment misconfigurations and gained unauthorized access to production infrastructure at three organizations.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Claude",
+        "Internet Access",
+        "Production Infrastructure"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Claude is inherently secure against internet access"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "05f59541-a7a9-4bdf-84d6-433b05451ad4",
+      "claim": {
+        "storyId": "05f59541-a7a9-4bdf-84d6-433b05451ad4",
+        "identity": "Anthropic's Claude",
+        "change": "reached the internet through third-party environment misconfigurations and gained unauthorized access to production infrastructure",
+        "mechanism": "an outbound-connectivity test from the agent container before each capture-the-flag session with a default-deny egress policy",
+        "primaryOutcome": "a saved test record and network log for the run",
+        "coreClaim": "Anthropic’s review of cybersecurity evaluations found three incidents in which Claude reached the internet through third-party environment misconfigurations and gained unauthorized access to production infrastructure at three organizations.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude",
+          "Internet Access",
+          "Production Infrastructure"
+        ],
+        "forbiddenContradictions": [
+          "Claude is inherently secure against internet access"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Claude",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Internet Access",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Production Infrastructure",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "compare",
+        "outcomeSignal": "lower_tokens",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [],
+      "semantics": {
+        "explanatoryRole": "policy_control",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "an outbound-connectivity test from the agent container before each capture-the-flag session with a default-deny egress policy",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "05f59541-a7a9-4bdf-84d6-433b05451ad4",
+        "identity": "Anthropic's Claude",
+        "change": "reached the internet through third-party environment misconfigurations and gained unauthorized access to production infrastructure",
+        "mechanism": "an outbound-connectivity test from the agent container before each capture-the-flag session with a default-deny egress policy",
+        "primaryOutcome": "a saved test record and network log for the run",
+        "coreClaim": "Anthropic’s review of cybersecurity evaluations found three incidents in which Claude reached the internet through third-party environment misconfigurations and gained unauthorized access to production infrastructure at three organizations.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude",
+          "Internet Access",
+          "Production Infrastructure"
+        ],
+        "forbiddenContradictions": [
+          "Claude is inherently secure against internet access"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Claude",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Internet Access",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Production Infrastructure",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "an outbound-connectivity test from the agent container before each capture-the-flag session with a default-deny egress policy visibly produces a saved test record and network log for the run"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Claude",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Internet Access",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Production Infrastructure",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "an outbound-connectivity test from the agent container before each capture-the-flag session with a default-deny egress policy visibly produces a saved test record and network log for the run",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Anthropic's Claude. This asset must show: an outbound-connectivity test from the agent container before each capture-the-flag session with a default-deny egress policy visibly produces a saved test record and network log for the run. The physical action must support this mechanism: an outbound-connectivity test from the agent container before each capture-the-flag session with a default-deny egress policy. The visible result must remain compatible with: a saved test record and network log for the run. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 05f59541-a7a9-4bdf-84d6-433b05451ad4:Anthropic's Claude. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "05f59541-a7a9-4bdf-84d6-433b05451ad4:Anthropic's Claude",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: an outbound-connectivity test from the agent container before each capture-the-flag session with a default-deny egress policy",
+        "Visible outcome: a saved test record and network log for the run",
+        "One causal claim: Anthropic’s review of cybersecurity evaluations found three incidents in which Claude reached the internet through third-party environment misconfigurations and gained unauthorized access to production infrastructure at "
+      ],
+      "forbiddenContradictions": [
+        "Claude is inherently secure against internet acc"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "05f59541-a7a9-4bdf-84d6-433b05451ad4",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "All elements of the claim are directly supported by the source. The certainty 'observed' is appropriate for a past event described in the source. The visual driver and outcome are directly from the 'practical' section and align with the policy_control role."
+    },
+    "finalAudit": {
+      "storyId": "05f59541-a7a9-4bdf-84d6-433b05451ad4",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "All elements of the claim are directly supported by the source. The certainty 'observed' is appropriate for a past event described in the source. The visual driver and outcome are directly from the 'practical' section and align with the policy_control role."
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true,
+    "router": {
+      "storyId": "05f59541-a7a9-4bdf-84d6-433b05451ad4",
+      "pipeline": "current_art_director",
+      "reason": "This role requires a concrete physical situation, causal action, human state or future-facing editorial metaphor that the current art director communicates more naturally.",
+      "expectedImageCalls": 1,
+      "sourceClaimEligible": true,
+      "specializedTreatment": null,
+      "v7Decision": {
+        "storyId": "05f59541-a7a9-4bdf-84d6-433b05451ad4",
+        "role": "policy_control",
+        "pipeline": "current_art_director",
+        "reason": "This role requires a concrete physical situation, causal action, human state or future-facing editorial metaphor that the current art director communicates more naturally.",
+        "expectedImageCalls": 1,
+        "requiredGuards": [
+          "source_claim_gate",
+          "generated_text_gate",
+          "certainty_gate",
+          "headline_pair_gate"
+        ]
+      },
+      "requiredGuards": [
+        "source_claim_gate",
+        "generated_text_gate",
+        "certainty_gate",
+        "headline_pair_gate"
+      ]
+    }
+  },
+  {
+    "story": {
+      "week_start": "2026-07-27",
+      "week_end": "2026-08-02",
+      "rank": 2,
+      "revision_item_id": "74997de0-5afd-4632-a762-29a2b4d6d9d8",
+      "title": "Cryptanalysis Becomes an Agent Workflow",
+      "summary": "Anthropic reports that Claude Mythos Preview found improved attacks on HAWK and round-reduced AES, while the company released CryptanalysisBench with academic collaborators.",
+      "why": "CryptanalysisBench provides a named way to assess LLM performance on difficult cryptographic tasks rather than relying only on demonstrations.",
+      "practical": "A cryptography lead should evaluate an internal audit agent on CryptanalysisBench, require a reproducible test for every finding and assign an independent reviewer; the constraint is no production change before validation, and the result is a documented accept-or-reject decision per finding.",
+      "takeaway": "Capability claims in cryptography become useful only when paired with reproducible evidence and expert review."
+    },
+    "initialRaw": {
+      "story_id": "74997de0-5afd-4632-a762-29a2b4d6d9d8",
+      "explanatory_role": "capability_access",
+      "certainty": "reported",
+      "mapping_mode": "literal",
+      "identity": "Claude Mythos Preview",
+      "change": "found improved attacks on HAWK and round-reduced AES",
+      "visual_driver": "CryptanalysisBench",
+      "visible_outcome": "a documented accept-or-reject decision per finding",
+      "core_claim": "Anthropic reports that Claude Mythos Preview found improved attacks on HAWK and round-reduced AES, while the company released CryptanalysisBench with academic collaborators.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Claude Mythos Preview",
+        "CryptanalysisBench",
+        "Improved Attacks"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "CryptanalysisBench is a tool for defending against attacks"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "74997de0-5afd-4632-a762-29a2b4d6d9d8",
+      "explanatory_role": "capability_access",
+      "certainty": "reported",
+      "mapping_mode": "literal",
+      "identity": "Claude Mythos Preview",
+      "change": "found improved attacks on HAWK and round-reduced AES",
+      "visual_driver": "CryptanalysisBench",
+      "visible_outcome": "a documented accept-or-reject decision per finding",
+      "core_claim": "Anthropic reports that Claude Mythos Preview found improved attacks on HAWK and round-reduced AES, while the company released CryptanalysisBench with academic collaborators.",
+      "metric": null,
+      "labels": [
+        "Claude Mythos Preview",
+        "CryptanalysisBench",
+        "Improved Attacks"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "CryptanalysisBench is a tool for defending against attacks"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "74997de0-5afd-4632-a762-29a2b4d6d9d8",
+      "claim": {
+        "storyId": "74997de0-5afd-4632-a762-29a2b4d6d9d8",
+        "identity": "Claude Mythos Preview",
+        "change": "found improved attacks on HAWK and round-reduced AES",
+        "mechanism": "CryptanalysisBench",
+        "primaryOutcome": "a documented accept-or-reject decision per finding",
+        "coreClaim": "Anthropic reports that Claude Mythos Preview found improved attacks on HAWK and round-reduced AES, while the company released CryptanalysisBench with academic collaborators.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude Mythos Preview",
+          "CryptanalysisBench",
+          "Improved Attacks"
+        ],
+        "forbiddenContradictions": [
+          "CryptanalysisBench is a tool for defending against attacks"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Claude Mythos Preview",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "CryptanalysisBench",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Improved Attacks",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "compare",
+        "outcomeSignal": "lower_tokens",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [
+        "certainty_downgraded_reported_to_claimed"
+      ],
+      "semantics": {
+        "explanatoryRole": "capability_access",
+        "certainty": "claimed",
+        "mappingMode": "literal",
+        "visualDriver": "CryptanalysisBench",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": [
+          "reports",
+          "claims"
+        ]
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "74997de0-5afd-4632-a762-29a2b4d6d9d8",
+        "identity": "Claude Mythos Preview",
+        "change": "found improved attacks on HAWK and round-reduced AES",
+        "mechanism": "CryptanalysisBench",
+        "primaryOutcome": "a documented accept-or-reject decision per finding",
+        "coreClaim": "Anthropic reports that Claude Mythos Preview found improved attacks on HAWK and round-reduced AES, while the company released CryptanalysisBench with academic collaborators.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude Mythos Preview",
+          "CryptanalysisBench",
+          "Improved Attacks"
+        ],
+        "forbiddenContradictions": [
+          "CryptanalysisBench is a tool for defending against attacks"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Claude Mythos Preview",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "CryptanalysisBench",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Improved Attacks",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "CryptanalysisBench visibly produces a documented accept-or-reject decision per finding"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Claude Mythos Preview",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "CryptanalysisBench",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Improved Attacks",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "CryptanalysisBench visibly produces a documented accept-or-reject decision per finding",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Claude Mythos Preview. This asset must show: CryptanalysisBench visibly produces a documented accept-or-reject decision per finding. The physical action must support this mechanism: CryptanalysisBench. The visible result must remain compatible with: a documented accept-or-reject decision per finding. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 74997de0-5afd-4632-a762-29a2b4d6d9d8:Claude Mythos Preview. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "74997de0-5afd-4632-a762-29a2b4d6d9d8:Claude Mythos Preview",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: CryptanalysisBench",
+        "Visible outcome: a documented accept-or-reject decision per finding",
+        "One causal claim: Anthropic reports that Claude Mythos Preview found improved attacks on HAWK and round-reduced AES, while the company released CryptanalysisBench with academic collaborators."
+      ],
+      "forbiddenContradictions": [
+        "CryptanalysisBench is a tool for defending again"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "74997de0-5afd-4632-a762-29a2b4d6d9d8",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": false,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": false,
+      "issues": [
+        "certainty_preserved"
+      ],
+      "repairInstruction": "Change certainty from 'claimed' to 'reported'.",
+      "rationale": "The source explicitly states 'Anthropic reports that Claude Mythos Preview found improved attacks...', making 'reported' the correct certainty, not 'claimed'."
+    },
+    "finalAudit": {
+      "storyId": "74997de0-5afd-4632-a762-29a2b4d6d9d8",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": false,
+      "certaintyPreserved": false,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": false,
+      "passed": false,
+      "issues": [
+        "The certainty label 'claimed' is not supported by the source, which uses 'reports'.",
+        "The 'visible_outcome' is not supported by the source. The source states that Claude Mythos Preview found improved attacks, and CryptanalysisBench was released. The outcome 'a docum"
+      ],
+      "repairInstruction": "Change 'certainty' from 'claimed' to 'reported'. Change 'visible_outcome' to reflect the direct outcome of Claude Mythos Preview finding improved attacks and the release of CryptanalysisBench, or remove it if no direct visual outcome is supported by the core claim.",
+      "rationale": "The source explicitly states 'Anthropic reports that Claude Mythos Preview found improved attacks...' making 'reported' the correct certainty. The 'visible_outcome' describes a recommended workflow from the 'practical' section, not a direct outcome of the core claim about Claude Mythos Preview's findings or the release of CryptanalysisBench. The core claim is about the findings and the release, not the subsequent decision-making process."
+    },
+    "deterministicIssues": [],
+    "repaired": true,
+    "eligible": false,
+    "router": {
+      "storyId": "74997de0-5afd-4632-a762-29a2b4d6d9d8",
+      "pipeline": "source_led_fallback",
+      "reason": "The explanatory claim failed the source gate, so the card must preserve only approved source identity and headline context.",
+      "expectedImageCalls": 0,
+      "sourceClaimEligible": false,
+      "specializedTreatment": null,
+      "v7Decision": {
+        "storyId": "74997de0-5afd-4632-a762-29a2b4d6d9d8",
+        "role": "capability_access",
+        "pipeline": "source_led_fallback",
+        "reason": "The explanatory claim failed the source gate, so the card must preserve only approved source identity and headline context.",
+        "expectedImageCalls": 0,
+        "requiredGuards": [
+          "approved_headline_only",
+          "no_explanatory_assertion",
+          "no_unapproved_metric",
+          "no_certainty_upgrade",
+          "no_generated_text"
+        ]
+      },
+      "requiredGuards": [
+        "approved_headline_only",
+        "no_explanatory_assertion",
+        "no_unapproved_metric",
+        "no_certainty_upgrade",
+        "no_generated_text"
+      ]
+    }
+  },
+  {
+    "story": {
+      "week_start": "2026-07-27",
+      "week_end": "2026-08-02",
+      "rank": 3,
+      "revision_item_id": "d723750f-6fb2-4af4-8855-9565602e0731",
+      "title": "Make the Evidence Chain Part of the Agent",
+      "summary": "Google Research’s experimental Science One Framework and CoE Audit aim to bind research claims to retrieved references, code and evaluation artifacts rather than adding citations after writing.",
+      "why": "Autonomous agents can generate papers, code and results, but teams need a way to verify that each consequential claim matches underlying evidence.",
+      "practical": "The research manager for a database-scheduling study should require the agent to attach every reported metric to a run log and commit hash and every citation to an approved API record; the constraint is no unresolved claim in the final brief, and the result is a dossier reviewers can independently check.",
+      "takeaway": "Build provenance into the workflow before prose is generated."
+    },
+    "initialRaw": {
+      "story_id": "d723750f-6fb2-4af4-8855-9565602e0731",
+      "explanatory_role": "architecture_transformation",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Google Research’s experimental Science One Framework and CoE Audit",
+      "change": "aim to bind research claims to retrieved references, code and evaluation artifacts rather than adding citations after writing",
+      "visual_driver": "an agent attaching every reported metric to a run log and commit hash and every citation to an approved API record",
+      "visible_outcome": "a dossier reviewers can independently check",
+      "core_claim": "Google Research’s experimental Science One Framework and CoE Audit aim to bind research claims to retrieved references, code and evaluation artifacts rather than adding citations after writing.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Science One Framework",
+        "CoE Audit",
+        "Evidence Chain"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "The framework automatically verifies claims without human review"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "d723750f-6fb2-4af4-8855-9565602e0731",
+      "explanatory_role": "architecture_transformation",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Google Research’s experimental Science One Framework and CoE Audit",
+      "change": "aim to bind research claims to retrieved references, code and evaluation artifacts rather than adding citations after writing",
+      "visual_driver": "an agent attaching every reported metric to a run log and commit hash and every citation to an approved API record",
+      "visible_outcome": "a dossier reviewers can independently check",
+      "core_claim": "Google Research’s experimental Science One Framework and CoE Audit aim to bind research claims to retrieved references, code and evaluation artifacts rather than adding citations after writing.",
+      "metric": null,
+      "labels": [
+        "Science One Framework",
+        "CoE Audit",
+        "Evidence Chain"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "The framework automatically verifies claims without human review"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "uncertain",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "d723750f-6fb2-4af4-8855-9565602e0731",
+      "claim": {
+        "storyId": "d723750f-6fb2-4af4-8855-9565602e0731",
+        "identity": "Google Research’s experimental Science One Framework and CoE Audit",
+        "change": "aim to bind research claims to retrieved references, code and evaluation artifacts rather than adding citations after writing",
+        "mechanism": "an agent attaching every reported metric to a run log and commit hash and every citation to an approved API record",
+        "primaryOutcome": "a dossier reviewers can independently check",
+        "coreClaim": "Google Research’s experimental Science One Framework and CoE Audit aim to bind research claims to retrieved references, code and evaluation artifacts rather than adding citations after writing.",
+        "primaryEvidence": "architecture_change",
+        "outcomeKind": "uncertainty",
+        "approvedLabels": [
+          "Science One Framework",
+          "CoE Audit",
+          "Evidence Chain"
+        ],
+        "forbiddenContradictions": [
+          "The framework automatically verifies claims without human review"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Science One Framework",
+            "regionId": "full-system",
+            "importance": "primary"
+          },
+          {
+            "text": "CoE Audit",
+            "regionId": "remaining-core",
+            "importance": "secondary"
+          },
+          {
+            "text": "Evidence Chain",
+            "regionId": "remaining-core",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "compare",
+        "outcomeSignal": "uncertain",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [
+        "architecture_without_layers",
+        "certainty_downgraded_observed_to_expected"
+      ],
+      "semantics": {
+        "explanatoryRole": "architecture_transformation",
+        "certainty": "expected",
+        "mappingMode": "literal",
+        "visualDriver": "an agent attaching every reported metric to a run log and commit hash and every citation to an approved API record",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": [
+          "aim",
+          "claims",
+          "claim",
+          "reported"
+        ]
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "d723750f-6fb2-4af4-8855-9565602e0731",
+        "identity": "Google Research’s experimental Science One Framework and CoE Audit",
+        "change": "aim to bind research claims to retrieved references, code and evaluation artifacts rather than adding citations after writing",
+        "mechanism": "an agent attaching every reported metric to a run log and commit hash and every citation to an approved API record",
+        "primaryOutcome": "a dossier reviewers can independently check",
+        "coreClaim": "Google Research’s experimental Science One Framework and CoE Audit aim to bind research claims to retrieved references, code and evaluation artifacts rather than adding citations after writing.",
+        "primaryEvidence": "architecture_change",
+        "outcomeKind": "uncertainty",
+        "approvedLabels": [
+          "Science One Framework",
+          "CoE Audit",
+          "Evidence Chain"
+        ],
+        "forbiddenContradictions": [
+          "The framework automatically verifies claims without human review"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Science One Framework",
+            "regionId": "full-system",
+            "importance": "primary"
+          },
+          {
+            "text": "CoE Audit",
+            "regionId": "remaining-core",
+            "importance": "secondary"
+          },
+          {
+            "text": "Evidence Chain",
+            "regionId": "remaining-core",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_cutaway",
+      "renderStrategy": "one_asset_plus_vector",
+      "regions": [
+        {
+          "id": "full-system",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.1,
+            "width": 0.41,
+            "height": 0.76
+          },
+          "role": "context",
+          "description": "Google Research’s experimental Science One Frame"
+        },
+        {
+          "id": "removed-layers",
+          "bounds": {
+            "x": 0.455,
+            "y": 0.2,
+            "width": 0.16,
+            "height": 0.56
+          },
+          "role": "mechanism",
+          "description": "aim to bind research claims to retrieved referen"
+        },
+        {
+          "id": "remaining-core",
+          "bounds": {
+            "x": 0.62,
+            "y": 0.1,
+            "width": 0.34,
+            "height": 0.76
+          },
+          "role": "outcome",
+          "description": "a dossier reviewers can independently check"
+        }
+      ],
+      "transitions": [
+        {
+          "from": "full-system",
+          "to": "removed-layers",
+          "type": "reveal"
+        },
+        {
+          "from": "removed-layers",
+          "to": "remaining-core",
+          "type": "flow"
+        }
+      ],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Science One Framework",
+          "regionId": "full-system",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "CoE Audit",
+          "regionId": "remaining-core",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Evidence Chain",
+          "regionId": "remaining-core",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "full-system",
+          "assetRequest": "Google Research’s experimental Science One Frame",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Google Research’s experimental Science One Framework and CoE Audit. This asset must show: Google Research’s experimental Science One Frame. The physical action must support this mechanism: an agent attaching every reported metric to a run log and commit hash and every citation to an approved API record. The visible result must remain compatible with: a dossier reviewers can independently check. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: d723750f-6fb2-4af4-8855-9565602e0731:Google Research’s experimental Science One Framework and CoE Au. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "d723750f-6fb2-4af4-8855-9565602e0731:Google Research’s experimental Science One Framework and CoE Au",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        },
+        {
+          "id": "asset-2",
+          "regionId": "remaining-core",
+          "assetRequest": "a dossier reviewers can independently check",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Google Research’s experimental Science One Framework and CoE Audit. This asset must show: a dossier reviewers can independently check. The physical action must support this mechanism: an agent attaching every reported metric to a run log and commit hash and every citation to an approved API record. The visible result must remain compatible with: a dossier reviewers can independently check. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: d723750f-6fb2-4af4-8855-9565602e0731:Google Research’s experimental Science One Framework and CoE Au. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "d723750f-6fb2-4af4-8855-9565602e0731:Google Research’s experimental Science One Framework and CoE Au",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: an agent attaching every reported metric to a run log and commit hash and every citation to an approved API record",
+        "Visible outcome: a dossier reviewers can independently check",
+        "One causal claim: Google Research’s experimental Science One Framework and CoE Audit aim to bind research claims to retrieved references, code and evaluation artifacts rather than adding citations after writing."
+      ],
+      "forbiddenContradictions": [
+        "The framework automatically verifies claims with"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "d723750f-6fb2-4af4-8855-9565602e0731",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": false,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": false,
+      "issues": [
+        "certainty_preserved"
+      ],
+      "repairInstruction": "Change certainty from 'expected' to 'observed'.",
+      "rationale": "The source states 'Google Research’s experimental Science One Framework and CoE Audit aim to bind...', which describes an existing aim or observation of their current experimental work, not a future expectation. Therefore, 'observed' is more appropriate than 'expected'."
+    },
+    "finalAudit": {
+      "storyId": "d723750f-6fb2-4af4-8855-9565602e0731",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": false,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": false,
+      "issues": [
+        "certainty_preserved"
+      ],
+      "repairInstruction": "Change certainty from 'expected' to 'observed'.",
+      "rationale": "The source states 'Google Research’s experimental Science One Framework and CoE Audit aim to bind research claims...', which is a direct observation of their current aim, not an expectation of a future state. Therefore, 'observed' is the correct certainty."
+    },
+    "deterministicIssues": [],
+    "repaired": true,
+    "eligible": false,
+    "router": {
+      "storyId": "d723750f-6fb2-4af4-8855-9565602e0731",
+      "pipeline": "source_led_fallback",
+      "reason": "The explanatory claim failed the source gate, so the card must preserve only approved source identity and headline context.",
+      "expectedImageCalls": 0,
+      "sourceClaimEligible": false,
+      "specializedTreatment": null,
+      "v7Decision": {
+        "storyId": "d723750f-6fb2-4af4-8855-9565602e0731",
+        "role": "architecture_transformation",
+        "pipeline": "source_led_fallback",
+        "reason": "The explanatory claim failed the source gate, so the card must preserve only approved source identity and headline context.",
+        "expectedImageCalls": 0,
+        "requiredGuards": [
+          "approved_headline_only",
+          "no_explanatory_assertion",
+          "no_unapproved_metric",
+          "no_certainty_upgrade",
+          "no_generated_text"
+        ]
+      },
+      "requiredGuards": [
+        "approved_headline_only",
+        "no_explanatory_assertion",
+        "no_unapproved_metric",
+        "no_certainty_upgrade",
+        "no_generated_text"
+      ]
+    }
+  },
+  {
+    "story": {
+      "week_start": "2026-07-27",
+      "week_end": "2026-08-02",
+      "rank": 4,
+      "revision_item_id": "8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1",
+      "title": "Aurora Puts Multi-Provider Routing Behind One Gateway",
+      "summary": "Aurora is an Apache 2.0, Go-based AI gateway with OpenAI and Anthropic compatibility across 14 providers, plus pooling, caching, guardrails and token-saving features.",
+      "why": "A gateway can centralize routing and auditing for applications that already use multiple model APIs.",
+      "practical": "The platform engineer for an internal support bot should change its API base URL to Aurora, configure two approved providers and verify failover and audit records; the constraint is existing provider compatibility, and the result is one tested request path.",
+      "takeaway": "Pilot a gateway on one bounded service before standardizing it."
+    },
+    "initialRaw": {
+      "story_id": "8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Aurora",
+      "change": "provides OpenAI and Anthropic compatibility across 14 providers, plus pooling, caching, guardrails and token-saving features",
+      "visual_driver": "changing an API base URL to Aurora, configuring two approved providers and verifying failover and audit records",
+      "visible_outcome": "one tested request path",
+      "core_claim": "Aurora is an Apache 2.0, Go-based AI gateway with OpenAI and Anthropic compatibility across 14 providers, plus pooling, caching, guardrails and token-saving features.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Aurora Gateway",
+        "OpenAI",
+        "Anthropic"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Aurora replaces the need for individual provider APIs"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Aurora",
+      "change": "provides OpenAI and Anthropic compatibility across 14 providers, plus pooling, caching, guardrails and token-saving features",
+      "visual_driver": "changing an API base URL to Aurora, configuring two approved providers and verifying failover and audit records",
+      "visible_outcome": "one tested request path",
+      "core_claim": "Aurora is an Apache 2.0, Go-based AI gateway with OpenAI and Anthropic compatibility across 14 providers, plus pooling, caching, guardrails and token-saving features.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Aurora Gateway",
+        "OpenAI",
+        "Anthropic"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Aurora replaces the need for individual provider APIs"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1",
+      "claim": {
+        "storyId": "8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1",
+        "identity": "Aurora Puts Multi-Provider Routing Behind One Gateway",
+        "change": "provides OpenAI and Anthropic compatibility across 14 providers, plus pooling, caching, guardrails and token-saving features",
+        "mechanism": "changing an API base URL to Aurora, configuring two approved providers and verifying failover and audit records",
+        "primaryOutcome": "one tested request path",
+        "coreClaim": "Aurora is an Apache 2.0, Go-based AI gateway with OpenAI and Anthropic compatibility across 14 providers, plus pooling, caching, guardrails and token-saving features.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Aurora Gateway",
+          "OpenAI",
+          "Anthropic"
+        ],
+        "forbiddenContradictions": [
+          "Aurora replaces the need for individual provider APIs"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Aurora Gateway",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "OpenAI",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Anthropic",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "compare",
+        "outcomeSignal": "lower_tokens",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [
+        "identity_expanded_from_story_title"
+      ],
+      "semantics": {
+        "explanatoryRole": "capability_access",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "changing an API base URL to Aurora, configuring two approved providers and verifying failover and audit records",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1",
+        "identity": "Aurora Puts Multi-Provider Routing Behind One Gateway",
+        "change": "provides OpenAI and Anthropic compatibility across 14 providers, plus pooling, caching, guardrails and token-saving features",
+        "mechanism": "changing an API base URL to Aurora, configuring two approved providers and verifying failover and audit records",
+        "primaryOutcome": "one tested request path",
+        "coreClaim": "Aurora is an Apache 2.0, Go-based AI gateway with OpenAI and Anthropic compatibility across 14 providers, plus pooling, caching, guardrails and token-saving features.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Aurora Gateway",
+          "OpenAI",
+          "Anthropic"
+        ],
+        "forbiddenContradictions": [
+          "Aurora replaces the need for individual provider APIs"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Aurora Gateway",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "OpenAI",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Anthropic",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "changing an API base URL to Aurora, configuring two approved providers and verifying failover and audit records visibly produces one tested request path"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Aurora Gateway",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "OpenAI",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Anthropic",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "changing an API base URL to Aurora, configuring two approved providers and verifying failover and audit records visibly produces one tested request path",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Aurora Puts Multi-Provider Routing Behind One Gateway. This asset must show: changing an API base URL to Aurora, configuring two approved providers and verifying failover and audit records visibly produces one tested request path. The physical action must support this mechanism: changing an API base URL to Aurora, configuring two approved providers and verifying failover and audit records. The visible result must remain compatible with: one tested request path. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1:Aurora Puts Multi-Provider Routing Behind One Gateway. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1:Aurora Puts Multi-Provider Routing Behind One Gateway",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: changing an API base URL to Aurora, configuring two approved providers and verifying failover and audit records",
+        "Visible outcome: one tested request path",
+        "One causal claim: Aurora is an Apache 2.0, Go-based AI gateway with OpenAI and Anthropic compatibility across 14 providers, plus pooling, caching, guardrails and token-saving features."
+      ],
+      "forbiddenContradictions": [
+        "Aurora replaces the need for individual provider"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "All elements are directly supported by the source. The certainty 'observed' is correct for a described product and its capabilities. The visual driver and outcome are from the 'practical' section and align with the capability_access role."
+    },
+    "finalAudit": {
+      "storyId": "8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "All elements are directly supported by the source. The certainty 'observed' is correct for a described product and its capabilities. The visual driver and outcome are from the 'practical' section and align with the capability_access role."
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true,
+    "router": {
+      "storyId": "8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1",
+      "pipeline": "deterministic_compiler",
+      "reason": "This role depends on exact labels, comparison direction, architecture or access geometry that deterministic rendering preserves more reliably than generated pixels.",
+      "expectedImageCalls": 0,
+      "sourceClaimEligible": true,
+      "specializedTreatment": null,
+      "v7Decision": {
+        "storyId": "8e6376cf-2f3d-4499-a1f0-fdd2e54b27c1",
+        "role": "capability_access",
+        "pipeline": "deterministic_compiler",
+        "reason": "This role depends on exact labels, comparison direction, architecture or access geometry that deterministic rendering preserves more reliably than generated pixels.",
+        "expectedImageCalls": 0,
+        "requiredGuards": [
+          "source_claim_gate",
+          "exact_overlay_gate",
+          "certainty_gate",
+          "thumbnail_gate"
+        ]
+      },
+      "requiredGuards": [
+        "source_claim_gate",
+        "exact_overlay_gate",
+        "certainty_gate",
+        "thumbnail_gate"
+      ]
+    }
+  },
+  {
+    "story": {
+      "week_start": "2026-07-27",
+      "week_end": "2026-08-02",
+      "rank": 5,
+      "revision_item_id": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f",
+      "title": "Nemotron 3 Ultra Targets Agentic RTL Workflows",
+      "summary": "NVIDIA says Nemotron 3 Ultra with ACE-RTL reached a self-reported 97.1% average pass rate on Comprehensive Verilog Design Problems while reducing token usage by up to 71% per iteration versus competing open models.",
+      "why": "Long-context agentic code generation may be useful where RTL design and debugging require iterative context.",
+      "practical": "The verification lead should run ACE-RTL on one non-production Verilog bug, require the existing simulation suite to validate the patch and record token use; the constraint is no merge without standard verification, and the result is a comparable pass-or-fail trial.",
+      "takeaway": "Evaluate against your verification stack, not only a vendor benchmark."
+    },
+    "initialRaw": {
+      "story_id": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f",
+      "explanatory_role": "quantitative_result",
+      "certainty": "self-reported",
+      "mapping_mode": "literal",
+      "identity": "Nemotron 3 Ultra with ACE-RTL",
+      "change": "reached a 97.1% average pass rate on Comprehensive Verilog Design Problems",
+      "visual_driver": "a comparison of token usage per iteration",
+      "visible_outcome": "a comparable pass-or-fail trial",
+      "core_claim": "NVIDIA says Nemotron 3 Ultra with ACE-RTL reached a self-reported 97.1% average pass rate on Comprehensive Verilog Design Problems while reducing token usage by up to 71% per iteration versus competing open models.",
+      "metric": {
+        "direction": "decrease",
+        "comparison_target": "competing open models",
+        "baseline_label": "competing open models",
+        "result_label": "Nemotron 3 Ultra"
+      },
+      "labels": [
+        "Nemotron 3 Ultra",
+        "ACE-RTL",
+        "Token Usage"
+      ],
+      "quantitative_facts": [
+        {
+          "label": "average pass rate",
+          "value": "97.1%"
+        },
+        {
+          "label": "token usage reduction",
+          "value": "71%"
+        }
+      ],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Nemotron 3 Ultra is the only model capable of RTL workflows"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f",
+      "explanatory_role": "quantitative_result",
+      "certainty": "self-reported",
+      "mapping_mode": "literal",
+      "identity": "Nemotron 3 Ultra with ACE-RTL",
+      "change": "reached a 97.1% average pass rate on Comprehensive Verilog Design Problems",
+      "visual_driver": "a comparison of token usage per iteration",
+      "visible_outcome": "a comparable pass-or-fail trial",
+      "core_claim": "NVIDIA says Nemotron 3 Ultra with ACE-RTL reached a self-reported 97.1% average pass rate on Comprehensive Verilog Design Problems while reducing token usage by up to 71% per iteration versus competing open models.",
+      "metric": {
+        "direction": "decrease",
+        "comparison_target": "competing open models",
+        "baseline_label": "competing open models",
+        "result_label": "Nemotron 3 Ultra"
+      },
+      "labels": [
+        "Nemotron 3 Ultra",
+        "ACE-RTL",
+        "Token Usage"
+      ],
+      "quantitative_facts": [
+        {
+          "label": "average pass rate",
+          "value": "97.1%"
+        },
+        {
+          "label": "token usage reduction",
+          "value": "71%"
+        }
+      ],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Nemotron 3 Ultra is the only model capable of RTL workflows"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f",
+      "claim": {
+        "storyId": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f",
+        "identity": "Nemotron 3 Ultra with ACE-RTL",
+        "change": "reached a 97.1% average pass rate on Comprehensive Verilog Design Problems",
+        "mechanism": "a comparison of token usage per iteration",
+        "primaryOutcome": "a comparable pass-or-fail trial",
+        "coreClaim": "NVIDIA says Nemotron 3 Ultra with ACE-RTL reached a self-reported 97.1% average pass rate on Comprehensive Verilog Design Problems while reducing token usage by up to 71% per iteration versus competing open models.",
+        "primaryEvidence": "quantitative_difference",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Nemotron 3 Ultra",
+          "ACE-RTL",
+          "Token Usage"
+        ],
+        "quantitativeFacts": [
+          {
+            "label": "average pass rate",
+            "value": "97.1%"
+          },
+          {
+            "label": "token usage reduction",
+            "value": "71%"
+          }
+        ],
+        "comparison": {
+          "left": "competing open models",
+          "right": "Nemotron 3 Ultra"
+        },
+        "forbiddenContradictions": [
+          "Nemotron 3 Ultra is the only model capable of RTL workflows"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Nemotron 3 Ultra",
+            "regionId": "baseline",
+            "importance": "primary"
+          },
+          {
+            "text": "ACE-RTL",
+            "regionId": "amplified",
+            "importance": "secondary"
+          },
+          {
+            "text": "Token Usage",
+            "regionId": "amplified",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "compare",
+        "outcomeSignal": "lower_tokens",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [],
+      "semantics": {
+        "explanatoryRole": "quantitative_result",
+        "certainty": "reported",
+        "mappingMode": "literal",
+        "visualDriver": "a comparison of token usage per iteration",
+        "metric": {
+          "direction": "decrease",
+          "comparisonTarget": "competing open models",
+          "baselineLabel": "competing open models",
+          "resultLabel": "Nemotron 3 Ultra"
+        },
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": [
+          "self-reported",
+          "up to",
+          "may"
+        ]
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f",
+        "identity": "Nemotron 3 Ultra with ACE-RTL",
+        "change": "reached a 97.1% average pass rate on Comprehensive Verilog Design Problems",
+        "mechanism": "a comparison of token usage per iteration",
+        "primaryOutcome": "a comparable pass-or-fail trial",
+        "coreClaim": "NVIDIA says Nemotron 3 Ultra with ACE-RTL reached a self-reported 97.1% average pass rate on Comprehensive Verilog Design Problems while reducing token usage by up to 71% per iteration versus competing open models.",
+        "primaryEvidence": "quantitative_difference",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Nemotron 3 Ultra",
+          "ACE-RTL",
+          "Token Usage"
+        ],
+        "quantitativeFacts": [
+          {
+            "label": "average pass rate",
+            "value": "97.1%"
+          },
+          {
+            "label": "token usage reduction",
+            "value": "71%"
+          }
+        ],
+        "comparison": {
+          "left": "competing open models",
+          "right": "Nemotron 3 Ultra"
+        },
+        "forbiddenContradictions": [
+          "Nemotron 3 Ultra is the only model capable of RTL workflows"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Nemotron 3 Ultra",
+            "regionId": "baseline",
+            "importance": "primary"
+          },
+          {
+            "text": "ACE-RTL",
+            "regionId": "amplified",
+            "importance": "secondary"
+          },
+          {
+            "text": "Token Usage",
+            "regionId": "amplified",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_data_contrast",
+      "renderStrategy": "one_asset_plus_vector",
+      "regions": [
+        {
+          "id": "baseline",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.1,
+            "width": 0.4,
+            "height": 0.76
+          },
+          "role": "context",
+          "description": "competing open models"
+        },
+        {
+          "id": "amplified",
+          "bounds": {
+            "x": 0.56,
+            "y": 0.1,
+            "width": 0.4,
+            "height": 0.76
+          },
+          "role": "outcome",
+          "description": "Nemotron 3 Ultra"
+        }
+      ],
+      "transitions": [
+        {
+          "from": "baseline",
+          "to": "amplified",
+          "type": "contrast"
+        }
+      ],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Nemotron 3 Ultra",
+          "regionId": "baseline",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "ACE-RTL",
+          "regionId": "amplified",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Token Usage",
+          "regionId": "amplified",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "baseline",
+          "assetRequest": "competing open models",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Nemotron 3 Ultra with ACE-RTL. This asset must show: competing open models. The physical action must support this mechanism: a comparison of token usage per iteration. The visible result must remain compatible with: a comparable pass-or-fail trial. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 2a12fd7c-48da-4bbc-838e-69c3f4ecf19f:Nemotron 3 Ultra with ACE-RTL. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f:Nemotron 3 Ultra with ACE-RTL",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        },
+        {
+          "id": "asset-2",
+          "regionId": "amplified",
+          "assetRequest": "Nemotron 3 Ultra",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Nemotron 3 Ultra with ACE-RTL. This asset must show: Nemotron 3 Ultra. The physical action must support this mechanism: a comparison of token usage per iteration. The visible result must remain compatible with: a comparable pass-or-fail trial. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 2a12fd7c-48da-4bbc-838e-69c3f4ecf19f:Nemotron 3 Ultra with ACE-RTL. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f:Nemotron 3 Ultra with ACE-RTL",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: a comparison of token usage per iteration",
+        "Visible outcome: a comparable pass-or-fail trial",
+        "One causal claim: NVIDIA says Nemotron 3 Ultra with ACE-RTL reached a self-reported 97.1% average pass rate on Comprehensive Verilog Design Problems while reducing token usage by up to 71% per iteration versus competing open models."
+      ],
+      "forbiddenContradictions": [
+        "Nemotron 3 Ultra is the only model capable of RT"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "All elements are directly supported by the source. The certainty 'reported' is correct for a self-reported claim. The visual driver and outcome are from the 'practical' section and align with the quantitative_result role. The metric details are exact."
+    },
+    "finalAudit": {
+      "storyId": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "All elements are directly supported by the source. The certainty 'reported' is correct for a self-reported claim. The visual driver and outcome are from the 'practical' section and align with the quantitative_result role. The metric details are exact."
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true,
+    "router": {
+      "storyId": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f",
+      "pipeline": "deterministic_compiler",
+      "reason": "This role depends on exact labels, comparison direction, architecture or access geometry that deterministic rendering preserves more reliably than generated pixels.",
+      "expectedImageCalls": 0,
+      "sourceClaimEligible": true,
+      "specializedTreatment": null,
+      "v7Decision": {
+        "storyId": "2a12fd7c-48da-4bbc-838e-69c3f4ecf19f",
+        "role": "quantitative_result",
+        "pipeline": "deterministic_compiler",
+        "reason": "This role depends on exact labels, comparison direction, architecture or access geometry that deterministic rendering preserves more reliably than generated pixels.",
+        "expectedImageCalls": 0,
+        "requiredGuards": [
+          "source_claim_gate",
+          "exact_overlay_gate",
+          "certainty_gate",
+          "thumbnail_gate"
+        ]
+      },
+      "requiredGuards": [
+        "source_claim_gate",
+        "exact_overlay_gate",
+        "certainty_gate",
+        "thumbnail_gate"
+      ]
+    }
+  },
+  {
+    "story": {
+      "week_start": "2026-07-27",
+      "week_end": "2026-08-02",
+      "rank": 6,
+      "revision_item_id": "c9faf5e4-06a6-439e-8d57-4b3ec4148bc0",
+      "title": "Shared Claude Links Deserve a Data-Exposure Audit",
+      "summary": "The supplied report says Google indexed publicly shared Claude chats and Artifacts, including sensitive medical records, internal documents and source code, through claude.ai/share links.",
+      "why": "Shared code snippets and specifications can create accidental exposure when public links remain active.",
+      "practical": "The engineering manager should review Settings → Privacy → Shared Chats with the repository owner, revoke links containing internal code or specifications and log each disposition; the constraint is confirmed business need, and the result is an audited sharing inventory.",
+      "takeaway": "Treat AI share links like any other externally reachable document."
+    },
+    "initialRaw": {
+      "story_id": "c9faf5e4-06a6-439e-8d57-4b3ec4148bc0",
+      "explanatory_role": "policy_control",
+      "certainty": "reported",
+      "mapping_mode": "literal",
+      "identity": "publicly shared Claude chats and Artifacts through claude.ai/share links",
+      "change": "Google indexed, including sensitive medical records, internal documents and source code",
+      "visual_driver": "reviewing Settings → Privacy → Shared Chats, revoking links containing internal code or specifications, and logging each disposition",
+      "visible_outcome": "an audited sharing inventory",
+      "core_claim": "The supplied report says Google indexed publicly shared Claude chats and Artifacts, including sensitive medical records, internal documents and source code, through claude.ai/share links.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Claude Share Links",
+        "Google Indexing",
+        "Data Exposure"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Claude share links are inherently private"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "c9faf5e4-06a6-439e-8d57-4b3ec4148bc0",
+      "explanatory_role": "policy_control",
+      "certainty": "reported",
+      "mapping_mode": "literal",
+      "identity": "publicly shared Claude chats and Artifacts through claude.ai/share links",
+      "change": "Google indexed, including sensitive medical records, internal documents and source code",
+      "visual_driver": "reviewing Settings → Privacy → Shared Chats, revoking links containing internal code or specifications, and logging each disposition",
+      "visible_outcome": "an audited sharing inventory",
+      "core_claim": "The supplied report says Google indexed publicly shared Claude chats and Artifacts, including sensitive medical records, internal documents and source code, through claude.ai/share links.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Claude Share Links",
+        "Google Indexing",
+        "Data Exposure"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Claude share links are inherently private"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "c9faf5e4-06a6-439e-8d57-4b3ec4148bc0",
+      "claim": {
+        "storyId": "c9faf5e4-06a6-439e-8d57-4b3ec4148bc0",
+        "identity": "publicly shared Claude chats and Artifacts through claude.ai/share links",
+        "change": "Google indexed, including sensitive medical records, internal documents and source code",
+        "mechanism": "reviewing Settings → Privacy → Shared Chats, revoking links containing internal code or specifications, and logging each disposition",
+        "primaryOutcome": "an audited sharing inventory",
+        "coreClaim": "publicly shared Claude chats and Artifacts through claude.ai/share links is reported to Google indexed, including sensitive medical records, internal documents and source code",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude Share Links",
+          "Google Indexing",
+          "Data Exposure"
+        ],
+        "forbiddenContradictions": [
+          "Claude share links are inherently private"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Claude Share Links",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Google Indexing",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Data Exposure",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "compare",
+        "outcomeSignal": "lower_tokens",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [
+        "core_claim_guarded_for_reported"
+      ],
+      "semantics": {
+        "explanatoryRole": "policy_control",
+        "certainty": "reported",
+        "mappingMode": "literal",
+        "visualDriver": "reviewing Settings → Privacy → Shared Chats, revoking links containing internal code or specifications, and logging each disposition",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": [
+          "report"
+        ]
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "c9faf5e4-06a6-439e-8d57-4b3ec4148bc0",
+        "identity": "publicly shared Claude chats and Artifacts through claude.ai/share links",
+        "change": "Google indexed, including sensitive medical records, internal documents and source code",
+        "mechanism": "reviewing Settings → Privacy → Shared Chats, revoking links containing internal code or specifications, and logging each disposition",
+        "primaryOutcome": "an audited sharing inventory",
+        "coreClaim": "publicly shared Claude chats and Artifacts through claude.ai/share links is reported to Google indexed, including sensitive medical records, internal documents and source code",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude Share Links",
+          "Google Indexing",
+          "Data Exposure"
+        ],
+        "forbiddenContradictions": [
+          "Claude share links are inherently private"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Claude Share Links",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Google Indexing",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Data Exposure",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "reviewing Settings → Privacy → Shared Chats, revoking links containing internal code or specifications, and logging each disposition visibly produces an audited sharing inventory"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Claude Share Links",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Google Indexing",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Data Exposure",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "reviewing Settings → Privacy → Shared Chats, revoking links containing internal code or specifications, and logging each disposition visibly produces an audited sharing inventory",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: publicly shared Claude chats and Artifacts through claude.ai/share links. This asset must show: reviewing Settings → Privacy → Shared Chats, revoking links containing internal code or specifications, and logging each disposition visibly produces an audited sharing inventory. The physical action must support this mechanism: reviewing Settings → Privacy → Shared Chats, revoking links containing internal code or specifications, and logging each disposition. The visible result must remain compatible with: an audited sharing inventory. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: c9faf5e4-06a6-439e-8d57-4b3ec4148bc0:publicly shared Claude chats and Artifacts through claude.ai/sh. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "c9faf5e4-06a6-439e-8d57-4b3ec4148bc0:publicly shared Claude chats and Artifacts through claude.ai/sh",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: reviewing Settings → Privacy → Shared Chats, revoking links containing internal code or specifications, and logging each disposition",
+        "Visible outcome: an audited sharing inventory",
+        "One causal claim: publicly shared Claude chats and Artifacts through claude.ai/share links is reported to Google indexed, including sensitive medical records, internal documents and source code"
+      ],
+      "forbiddenContradictions": [
+        "Claude share links are inherently private"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "c9faf5e4-06a6-439e-8d57-4b3ec4148bc0",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "All elements are directly supported by the source. The certainty 'reported' is correct as the source states 'The supplied report says Google indexed...'. The visual driver and outcome are from the 'practical' section and align with the policy_control role."
+    },
+    "finalAudit": {
+      "storyId": "c9faf5e4-06a6-439e-8d57-4b3ec4148bc0",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "All elements are directly supported by the source. The certainty 'reported' is correct as the source states 'The supplied report says Google indexed...'. The visual driver and outcome are from the 'practical' section and align with the policy_control role."
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true,
+    "router": {
+      "storyId": "c9faf5e4-06a6-439e-8d57-4b3ec4148bc0",
+      "pipeline": "current_art_director",
+      "reason": "This role requires a concrete physical situation, causal action, human state or future-facing editorial metaphor that the current art director communicates more naturally.",
+      "expectedImageCalls": 1,
+      "sourceClaimEligible": true,
+      "specializedTreatment": null,
+      "v7Decision": {
+        "storyId": "c9faf5e4-06a6-439e-8d57-4b3ec4148bc0",
+        "role": "policy_control",
+        "pipeline": "current_art_director",
+        "reason": "This role requires a concrete physical situation, causal action, human state or future-facing editorial metaphor that the current art director communicates more naturally.",
+        "expectedImageCalls": 1,
+        "requiredGuards": [
+          "source_claim_gate",
+          "generated_text_gate",
+          "certainty_gate",
+          "headline_pair_gate"
+        ]
+      },
+      "requiredGuards": [
+        "source_claim_gate",
+        "generated_text_gate",
+        "certainty_gate",
+        "headline_pair_gate"
+      ]
+    }
+  },
+  {
+    "story": {
+      "week_start": "2026-07-27",
+      "week_end": "2026-08-02",
+      "rank": 7,
+      "revision_item_id": "f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf",
+      "title": "Modernization Agents Shift the Bottleneck to Verification",
+      "summary": "A reported OpenAI study across eight scientific-computing projects describes speedups, runtime reductions and migrations, while identifying human verification as the core bottleneck.",
+      "why": "Agentic refactoring is most useful when automated parity benchmarks and profiling data define what must be preserved.",
+      "practical": "The maintainer of a legacy Python simulation should define parity tests and a profiling baseline before asking an agent for a PyTorch migration; the constraint is matching expected outputs, and the result is a reviewable before-and-after performance report.",
+      "takeaway": "Use agents to accelerate changes, but use parity tests to decide whether to keep them."
+    },
+    "initialRaw": {
+      "story_id": "f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf",
+      "explanatory_role": "causal_mechanism",
+      "certainty": "reported",
+      "mapping_mode": "literal",
+      "identity": "agentic refactoring",
+      "change": "describes speedups, runtime reductions and migrations, while identifying human verification as the core bottleneck",
+      "visual_driver": "defining parity tests and a profiling baseline before asking an agent for a PyTorch migration",
+      "visible_outcome": "a reviewable before-and-after performance report",
+      "core_claim": "A reported OpenAI study across eight scientific-computing projects describes speedups, runtime reductions and migrations, while identifying human verification as the core bottleneck.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Agentic Refactoring",
+        "Human Verification",
+        "Bottleneck"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Agents eliminate the need for human verification in refactoring"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf",
+      "explanatory_role": "causal_mechanism",
+      "certainty": "reported",
+      "mapping_mode": "literal",
+      "identity": "agentic refactoring",
+      "change": "describes speedups, runtime reductions and migrations, while identifying human verification as the core bottleneck",
+      "visual_driver": "defining parity tests and a profiling baseline before asking an agent for a PyTorch migration",
+      "visible_outcome": "a reviewable before-and-after performance report",
+      "core_claim": "A reported OpenAI study across eight scientific-computing projects describes speedups, runtime reductions and migrations, while identifying human verification as the core bottleneck.",
+      "metric": null,
+      "labels": [
+        "Agentic Refactoring",
+        "Human Verification",
+        "Bottleneck"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Agents eliminate the need for human verification in refactoring"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "compare",
+        "outcome_signal": "uncertain",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf",
+      "claim": {
+        "storyId": "f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf",
+        "identity": "agentic refactoring",
+        "change": "describes speedups, runtime reductions and migrations, while identifying human verification as the core bottleneck",
+        "mechanism": "defining parity tests and a profiling baseline before asking an agent for a PyTorch migration",
+        "primaryOutcome": "a reviewable before-and-after performance report",
+        "coreClaim": "A reported OpenAI study across eight scientific-computing projects describes speedups, runtime reductions and migrations, while identifying human verification as the core bottleneck.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "uncertainty",
+        "approvedLabels": [
+          "Agentic Refactoring",
+          "Human Verification",
+          "Bottleneck"
+        ],
+        "forbiddenContradictions": [
+          "Agents eliminate the need for human verification in refactoring"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Agentic Refactoring",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Human Verification",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Bottleneck",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "compare",
+        "outcomeSignal": "uncertain",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [
+        "certainty_downgraded_reported_to_expected"
+      ],
+      "semantics": {
+        "explanatoryRole": "causal_mechanism",
+        "certainty": "expected",
+        "mappingMode": "literal",
+        "visualDriver": "defining parity tests and a profiling baseline before asking an agent for a PyTorch migration",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": [
+          "reported",
+          "expected",
+          "report"
+        ]
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf",
+        "identity": "agentic refactoring",
+        "change": "describes speedups, runtime reductions and migrations, while identifying human verification as the core bottleneck",
+        "mechanism": "defining parity tests and a profiling baseline before asking an agent for a PyTorch migration",
+        "primaryOutcome": "a reviewable before-and-after performance report",
+        "coreClaim": "A reported OpenAI study across eight scientific-computing projects describes speedups, runtime reductions and migrations, while identifying human verification as the core bottleneck.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "uncertainty",
+        "approvedLabels": [
+          "Agentic Refactoring",
+          "Human Verification",
+          "Bottleneck"
+        ],
+        "forbiddenContradictions": [
+          "Agents eliminate the need for human verification in refactoring"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Agentic Refactoring",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Human Verification",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Bottleneck",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "defining parity tests and a profiling baseline before asking an agent for a PyTorch migration visibly produces a reviewable before-and-after performance report"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Agentic Refactoring",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Human Verification",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Bottleneck",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "defining parity tests and a profiling baseline before asking an agent for a PyTorch migration visibly produces a reviewable before-and-after performance report",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: agentic refactoring. This asset must show: defining parity tests and a profiling baseline before asking an agent for a PyTorch migration visibly produces a reviewable before-and-after performance report. The physical action must support this mechanism: defining parity tests and a profiling baseline before asking an agent for a PyTorch migration. The visible result must remain compatible with: a reviewable before-and-after performance report. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf:agentic refactoring. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf:agentic refactoring",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: defining parity tests and a profiling baseline before asking an agent for a PyTorch migration",
+        "Visible outcome: a reviewable before-and-after performance report",
+        "One causal claim: A reported OpenAI study across eight scientific-computing projects describes speedups, runtime reductions and migrations, while identifying human verification as the core bottleneck."
+      ],
+      "forbiddenContradictions": [
+        "Agents eliminate the need for human verification"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": false,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": false,
+      "issues": [
+        "certainty_preserved"
+      ],
+      "repairInstruction": "Change certainty from 'expected' to 'reported'.",
+      "rationale": "The source states 'A reported OpenAI study across eight scientific-computing projects describes...', indicating that the information is 'reported' from a study, not an 'expected' future outcome."
+    },
+    "finalAudit": {
+      "storyId": "f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": false,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": false,
+      "issues": [
+        "Certainty mismatch"
+      ],
+      "repairInstruction": "Change certainty from 'expected' to 'reported'.",
+      "rationale": "The source explicitly states 'A reported OpenAI study...' and the claim is about what this study 'describes', making 'reported' the correct certainty. The normalized claim changed this to 'expected' without justification."
+    },
+    "deterministicIssues": [],
+    "repaired": true,
+    "eligible": false,
+    "router": {
+      "storyId": "f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf",
+      "pipeline": "source_led_fallback",
+      "reason": "The explanatory claim failed the source gate, so the card must preserve only approved source identity and headline context.",
+      "expectedImageCalls": 0,
+      "sourceClaimEligible": false,
+      "specializedTreatment": null,
+      "v7Decision": {
+        "storyId": "f0357b4c-d9fb-4d15-b5b0-1c55bd3155cf",
+        "role": "causal_mechanism",
+        "pipeline": "source_led_fallback",
+        "reason": "The explanatory claim failed the source gate, so the card must preserve only approved source identity and headline context.",
+        "expectedImageCalls": 0,
+        "requiredGuards": [
+          "approved_headline_only",
+          "no_explanatory_assertion",
+          "no_unapproved_metric",
+          "no_certainty_upgrade",
+          "no_generated_text"
+        ]
+      },
+      "requiredGuards": [
+        "approved_headline_only",
+        "no_explanatory_assertion",
+        "no_unapproved_metric",
+        "no_certainty_upgrade",
+        "no_generated_text"
+      ]
+    }
+  }
+]

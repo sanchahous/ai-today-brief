@@ -1,0 +1,125 @@
+name: Visual experiment harness
+
+# Replaces the 67 one-shot `visual-*.yml` workflows that the V5-V10 experiment
+# accumulated. Manual dispatch only: these steps spend real money on Cloudflare
+# image generation and OpenRouter vision calls, so nothing here may be triggered
+# by a push. Results leave as an Actions artifact - this workflow never writes
+# back to the repository.
+#
+# Promoting a result into `experiments/**` is a deliberate human step: download
+# the artifact and commit the `.md` / `.json` reports only. Rendered PNG/JPG are
+# git-ignored on purpose (see .gitignore).
+
+on:
+  workflow_dispatch:
+    inputs:
+      claims:
+        description: Routed-claims JSON to render from
+        required: true
+        default: experiments/visual-compiler-v7/fresh-holdout/output/v7-routed-claims.json
+      out_dir:
+        description: Output directory for the run package
+        required: true
+        default: artifacts/_local/visual-experiment
+      judge_model:
+        description: OpenRouter vision model used as judge
+        required: true
+        default: google/gemini-2.5-flash
+      image_model:
+        description: Cloudflare Workers AI image model
+        required: true
+        default: '@cf/black-forest-labs/flux-2-klein-9b'
+      baseline_run_id:
+        description: Actions run id holding the comparison baseline package (leave empty to skip the baseline arm)
+        required: false
+        default: '31629283372'
+      baseline_artifact:
+        description: Artifact name inside that run. Required, because the render script expects <root>/images/*.jpg directly — downloading a whole run nests each artifact in its own subdirectory and the lookup misses.
+        required: false
+        default: visual-compiler-v8-targeted-evaluated-v4
+      evaluate:
+        description: Run the paid judge stage after rendering
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: visual-experiment-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: Render and optionally evaluate a visual candidate set
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate visual contracts before any paid call
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-affordance-router-v10.test.ts
+          src/lib/weekly-digest/visual-affordance-treatment-v10.test.ts
+          src/lib/weekly-digest/visual-integrity-v10.test.ts
+
+      - name: Typecheck repository and harnesses
+        run: npm run typecheck
+
+      - name: Download comparison baseline
+        if: inputs.baseline_run_id != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh run download "${{ inputs.baseline_run_id }}"
+          --repo "$GITHUB_REPOSITORY"
+          --name "${{ inputs.baseline_artifact }}"
+          --dir artifacts/_local/visual-baseline
+
+      - name: Verify the baseline layout the render script expects
+        if: inputs.baseline_run_id != ''
+        run: |
+          if [ ! -d artifacts/_local/visual-baseline/images ]; then
+            echo "::error::Baseline is missing artifacts/_local/visual-baseline/images/."
+            echo "Downloaded tree:"
+            find artifacts/_local/visual-baseline -maxdepth 2 -type d
+            exit 1
+          fi
+          ls artifacts/_local/visual-baseline/images | head
+
+      - name: Render candidates
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VISUAL_V10_IMAGE_MODEL: ${{ inputs.image_model }}
+          VISUAL_V10_CLAIMS: ${{ inputs.claims }}
+          VISUAL_V10_BASELINE_ROOT: artifacts/_local/visual-baseline
+          VISUAL_V10_OUT_DIR: ${{ inputs.out_dir }}
+        run: npx tsx scripts/visual-affordance-v10-targeted-render.ts
+
+      - name: Evaluate blind craft then story-aware semantic mapping
+        if: inputs.evaluate
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          VISUAL_V10_JUDGE_MODEL: ${{ inputs.judge_model }}
+          VISUAL_V10_OUT_DIR: ${{ inputs.out_dir }}
+        run: npx tsx scripts/visual-affordance-v10-targeted-evaluate.ts
+
+      - name: Upload run package
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-experiment-${{ github.run_id }}
+          path: ${{ inputs.out_dir }}
+          if-no-files-found: error
+          retention-days: 30

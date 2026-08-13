@@ -4,8 +4,9 @@ Summary: усе, що не має відповіді, суперечить са�
 власника рішення й критерій закриття. Порожній пункт видаляти не можна — тільки закривати
 записом «закрито: …».
 Sources: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
-`.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04)
-Last updated: 2026-08-04
+`.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04),
+`wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`
+Last updated: 2026-08-13
 
 ---
 
@@ -71,6 +72,30 @@ vs «перерозподілити на velocity/authority» досі не ух
 
 **Закривається:** власник каже «копіюй у `raw/research/`» або «лишаємо поза репо» (тоді цитата
 залишається у форматі `(source: WorkShop 23-25_07 Prompts. Personal.pdf, поза репо)`).
+
+## 8. ⚠️ Conflict: які числа V10 справжні і чи є він кращим за продакшн
+
+[now](now.md), V6 `evaluation-report.md` і `wiki/log.md` наводять «3/3 hard integrity, 3–0 blind
+preference» для Visual Affordance V10. Пакет
+`artifacts/visual-affordance-v10-owner-review-complete/evaluation-report.md` був насправді
+прогоном **v3** з **1/3** integrity (підтверджено побайтовим порівнянням git blob); у W0 цю теку
+видалено як стару копію — той самий звіт лишається в
+`experiments/visual-affordance-v10/targeted-v3/results/`. Незалежно від
+того, який файл актуальний, обидва числа отримані вимірюванням, у якому hard-блокер
+`generated_text` вимкнено лише для кандидата, рубрика для обох гілок узята зі специфікації
+кандидата, а описи гілок підставлені судді підписаними. Baseline при цьому — не продакшн, а
+скачаний артефакт застарілого компілятора.
+(source: [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md),
+`scripts/visual-affordance-v10-targeted-evaluate.ts:374,406-412,483`)
+
+**Наслідок:** жодна цифра з PR #229 не може бути підставою для production promotion, і
+залишається без відповіді головне питання — чи V10 узагалі кращий за поточний
+`pipeline/card-image.ts`, бо продакшн у порівнянні не брав участі.
+
+**Закривається:** виконано W0 і W4 плану (симетричний text-гейт, blind за сторонами, заморожена
+рубрика, holdout ≥12 з історіями, де owner віддав перевагу baseline, третя гілка = продакшн із
+`main`, judge↔owner kappa ≥0.6), числа перевипущені й записані сюди та в
+[now](now.md). **Власник рішення:** власник продукту.
 
 ## Related pages
 

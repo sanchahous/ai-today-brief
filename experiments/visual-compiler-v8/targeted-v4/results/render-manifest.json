@@ -1,0 +1,259 @@
+[
+  {
+    "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+    "rank": 2,
+    "headline": "Gemini faces community critique regarding model performance consistency",
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 2,
+      "revision_item_id": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "title": "Gemini faces community critique regarding model performance consistency",
+      "summary": "The developer community is actively debating the reliability of Gemini in coding environments compared to alternatives. Users highlight inconsistencies that impact production-grade tasks.",
+      "why": "Evaluate your current model selection by testing critical code paths against multiple providers to avoid unexpected regression.",
+      "practical": null,
+      "takeaway": null
+    },
+    "treatment": {
+      "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "kind": "observed_variability",
+      "renderMode": "deterministic",
+      "labels": [
+        "SAME TASK",
+        "DIVERGENT OUTPUTS",
+        "CONSISTENCY DEBATE"
+      ],
+      "expectedEvidence": [
+        "the same coding task is visibly repeated",
+        "the repeated runs produce visibly divergent outputs",
+        "the image communicates observed consistency concerns without inventing a numeric failure rate"
+      ],
+      "forbiddenImplications": [
+        "Gemini is always broken",
+        "a named alternative is proven superior",
+        "a future model or fix is confirmed"
+      ],
+      "sourceGrounding": "The approved story explicitly describes community debate about reliability and inconsistencies in coding environments.",
+      "expectedImageCalls": 0
+    },
+    "baselineImagePath": "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-current.jpg",
+    "candidatePixelPath": "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-v8-pixels.jpg",
+    "candidateFinalPath": "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-v8-final.jpg",
+    "blindXCardPath": "cards/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-X.png",
+    "blindYCardPath": "cards/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-Y.png",
+    "blindXSource": "current",
+    "blindYSource": "v8",
+    "current": {
+      "provider": "reused",
+      "model": "exact-current-v7-artifact",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 0,
+      "assetPaths": [
+        "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-current.jpg"
+      ]
+    },
+    "candidate": {
+      "provider": "local",
+      "model": "specialized-observed_variability-v8",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 581,
+      "assetPaths": []
+    }
+  },
+  {
+    "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+    "rank": 4,
+    "headline": "Managing AI-Driven Distraction and Rediscovering Deep Work",
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 4,
+      "revision_item_id": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "title": "Managing AI-Driven Distraction and Rediscovering Deep Work",
+      "summary": "Recent community discussions highlight how constant reliance on Claude for trivial reasoning can erode personal problem-solving skills. The key is to use LLMs as sparring partners rather than offloading the entire cognitive load.",
+      "why": "Prevents cognitive atrophy and helps you maintain your ability to solve complex architecture problems independently.",
+      "practical": null,
+      "takeaway": null
+    },
+    "treatment": {
+      "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "kind": "focused_cognition",
+      "renderMode": "generated_source_cinematic",
+      "labels": [
+        "ACTIVE THINKING",
+        "AI AS SPARRING PARTNER"
+      ],
+      "expectedEvidence": [
+        "a person remains physically engaged in solving the difficult task",
+        "the AI offers one bounded hint but does not perform the task",
+        "distraction is visibly muted while sustained focus returns"
+      ],
+      "forbiddenImplications": [
+        "the AI completes the work autonomously",
+        "the person is passive",
+        "the scene is only a generic workshop with no bounded AI assistance"
+      ],
+      "sourceGrounding": "The approved story argues for active problem-solving and using LLMs as sparring partners rather than offloading all cognitive work.",
+      "expectedImageCalls": 1
+    },
+    "baselineImagePath": "images/4-672e4320-6b71-4f9c-89da-82ce92770746-current.jpg",
+    "candidatePixelPath": "images/4-672e4320-6b71-4f9c-89da-82ce92770746-v8-pixels.jpg",
+    "candidateFinalPath": "images/4-672e4320-6b71-4f9c-89da-82ce92770746-v8-final.jpg",
+    "blindXCardPath": "cards/4-672e4320-6b71-4f9c-89da-82ce92770746-X.png",
+    "blindYCardPath": "cards/4-672e4320-6b71-4f9c-89da-82ce92770746-Y.png",
+    "blindXSource": "v8",
+    "blindYSource": "current",
+    "current": {
+      "provider": "reused",
+      "model": "exact-current-v7-artifact",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 0,
+      "assetPaths": [
+        "images/4-672e4320-6b71-4f9c-89da-82ce92770746-current.jpg"
+      ]
+    },
+    "candidate": {
+      "provider": "cloudflare",
+      "model": "@cf/black-forest-labs/flux-2-klein-9b",
+      "imageCalls": 1,
+      "estimatedImageCostUsd": 0.015,
+      "durationMs": 2479,
+      "prompt": "Create a premium cinematic editorial photograph for a technology magazine, wide 16:9. Scene: one knowledge worker in a dark workshop-like thinking space, hands actively solving a difficult mechanical logic mechanism. The person must be visibly performing the reasoning and manipulating the key component. The image must contain exactly one bounded hint from AI. AI assistance must not appear as a humanoid, robot, holographic avatar, screen, interface or floating panel. Represent the entire AI contribution only as one narrow cyan beam illuminating a single gear tooth while the person continues the physical reasoning. Behind frosted acoustic glass, distraction appears only as defocused colored light and motion blur. No boxes, nodes, icons, diagrams, letters, pseudo-text or interface-like shapes may appear anywhere. The focused foreground remains calm and physically separated from that diffuse noise. The visual thesis is active problem-solving with AI as a sparring partner restores deep work; passive automation is forbidden. High-end documentary cinematography, warm practical light against restrained cyan guidance, believable materials, strong human posture, one continuous scene, clear at thumbnail size. Source grounding: The approved story argues for active problem-solving and using LLMs as sparring partners rather than offloading all cognitive work. Approved headline context: Managing AI-Driven Distraction and Rediscovering Deep Work. Absolutely no readable text, letters, numbers, logos, UI, code, captions, watermarks, split screen or infographic panels.",
+      "assetPaths": [
+        "assets/4-672e4320-6b71-4f9c-89da-82ce92770746-focused_cognition.jpg"
+      ]
+    }
+  },
+  {
+    "storyId": "40673aee-fac7-451f-be07-51016c857613",
+    "rank": 5,
+    "headline": "Claude Usage Thresholds: Insights from High-Volume Token Consumption",
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 5,
+      "revision_item_id": "40673aee-fac7-451f-be07-51016c857613",
+      "title": "Claude Usage Thresholds: Insights from High-Volume Token Consumption",
+      "summary": "Users pushing the limits of Claude's context window and rate limits are reporting anecdotal signals from Anthropic regarding usage patterns. This highlights the importance of monitoring token spend in high-intensity agentic tasks.",
+      "why": "Understanding your token burn rate helps prevent unexpected session interruptions during deep-code refactoring.",
+      "practical": null,
+      "takeaway": null
+    },
+    "treatment": {
+      "storyId": "40673aee-fac7-451f-be07-51016c857613",
+      "kind": "operational_threshold",
+      "renderMode": "deterministic",
+      "labels": [
+        "HIGH-VOLUME",
+        "USAGE THRESHOLD",
+        "ANECDOTAL SIGNALS"
+      ],
+      "expectedEvidence": [
+        "a high-volume token stream approaches a visible operating boundary",
+        "the boundary implies interruption risk without claiming an exact undocumented limit",
+        "the image preserves that the reported signals are anecdotal"
+      ],
+      "forbiddenImplications": [
+        "an exact token limit is known",
+        "Anthropic has published a confirmed threshold",
+        "every high-volume session will be interrupted"
+      ],
+      "sourceGrounding": "The approved story describes high-volume token use, context/rate limits, anecdotal signals and the need to monitor burn rate.",
+      "expectedImageCalls": 0
+    },
+    "baselineImagePath": "images/5-40673aee-fac7-451f-be07-51016c857613-current.jpg",
+    "candidatePixelPath": "images/5-40673aee-fac7-451f-be07-51016c857613-v8-pixels.jpg",
+    "candidateFinalPath": "images/5-40673aee-fac7-451f-be07-51016c857613-v8-final.jpg",
+    "blindXCardPath": "cards/5-40673aee-fac7-451f-be07-51016c857613-X.png",
+    "blindYCardPath": "cards/5-40673aee-fac7-451f-be07-51016c857613-Y.png",
+    "blindXSource": "current",
+    "blindYSource": "v8",
+    "current": {
+      "provider": "reused",
+      "model": "exact-current-v7-artifact",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 0,
+      "assetPaths": [
+        "images/5-40673aee-fac7-451f-be07-51016c857613-current.jpg"
+      ]
+    },
+    "candidate": {
+      "provider": "local",
+      "model": "specialized-operational_threshold-v8",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 327,
+      "assetPaths": []
+    }
+  },
+  {
+    "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+    "rank": 7,
+    "headline": "GPT-5 Aids Immunologists in Solving T-Cell Mystery",
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 7,
+      "revision_item_id": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+      "title": "GPT-5 Aids Immunologists in Solving T-Cell Mystery",
+      "summary": "Researchers leveraged GPT-5 to resolve a three-year-old bottleneck in immunology related to T-cell behavior. The model successfully synthesized complex biological datasets to provide an actionable hypothesis.",
+      "why": "It demonstrates how high-reasoning models are becoming reliable partners for domain-specific scientific research.",
+      "practical": null,
+      "takeaway": null
+    },
+    "treatment": {
+      "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+      "kind": "scientific_discovery",
+      "renderMode": "generated_source_cinematic",
+      "labels": [
+        "GPT-5",
+        "3-YEAR BOTTLENECK",
+        "ACTIONABLE HYPOTHESIS"
+      ],
+      "expectedEvidence": [
+        "multiple complex biological data strands converge through an AI analysis step",
+        "the analysis reveals a concrete T-cell interaction hypothesis",
+        "the visible result is a research bottleneck opening rather than a generic success icon"
+      ],
+      "forbiddenImplications": [
+        "GPT-5 conducted the experiment alone",
+        "the hypothesis is already a clinically proven treatment",
+        "a generic software-tool workflow replaces the immunology context"
+      ],
+      "sourceGrounding": "The approved story says researchers used GPT-5 to synthesize biological datasets and produce an actionable hypothesis that resolved a three-year bottleneck.",
+      "expectedImageCalls": 1
+    },
+    "baselineImagePath": "images/7-5104e334-3ee9-4b0e-8e64-1f6e95bc5701-current.jpg",
+    "candidatePixelPath": "images/7-5104e334-3ee9-4b0e-8e64-1f6e95bc5701-v8-pixels.jpg",
+    "candidateFinalPath": "images/7-5104e334-3ee9-4b0e-8e64-1f6e95bc5701-v8-final.jpg",
+    "blindXCardPath": "cards/7-5104e334-3ee9-4b0e-8e64-1f6e95bc5701-X.png",
+    "blindYCardPath": "cards/7-5104e334-3ee9-4b0e-8e64-1f6e95bc5701-Y.png",
+    "blindXSource": "v8",
+    "blindYSource": "current",
+    "current": {
+      "provider": "reused",
+      "model": "exact-current-v7-artifact",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 0,
+      "assetPaths": [
+        "images/7-5104e334-3ee9-4b0e-8e64-1f6e95bc5701-current.jpg"
+      ]
+    },
+    "candidate": {
+      "provider": "cloudflare",
+      "model": "@cf/black-forest-labs/flux-2-klein-9b",
+      "imageCalls": 1,
+      "estimatedImageCostUsd": 0.015,
+      "durationMs": 1723,
+      "prompt": "Create a premium cinematic editorial illustration for a technology research magazine, wide 16:9. Scene: a dark, believable immunology laboratory at night. Several distinct streams of complex biological evidence—molecular structures, assay patterns and T-cell interaction traces—converge through one restrained translucent AI analysis prism at the center of the composition. On the far side of the prism, the tangled evidence resolves into one clear luminous T-cell interaction hypothesis that human immunologists can inspect. A visibly blocked research pathway opens at the same moment, conveying that a long-standing bottleneck has been overcome. The humans remain the researchers; the AI synthesizes evidence and reveals a hypothesis rather than conducting the science alone. Strong depth, realistic glass and metal, subtle cyan and amber light, high-end documentary cinematography, one continuous scene, immediate causal reading at thumbnail size. Source grounding: The approved story says researchers used GPT-5 to synthesize biological datasets and produce an actionable hypothesis that resolved a three-year bottleneck. Approved headline context: GPT-5 Aids Immunologists in Solving T-Cell Mystery. Absolutely no readable text, letters, numbers, logos, model names, UI, code, captions, watermarks, diagrams, split screen or infographic panels. Do not depict a medical cure, patient treatment or clinical proof.",
+      "assetPaths": [
+        "assets/7-5104e334-3ee9-4b0e-8e64-1f6e95bc5701-scientific_discovery.jpg"
+      ]
+    }
+  }
+]

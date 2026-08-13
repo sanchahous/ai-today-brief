@@ -2,12 +2,43 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…11, Content Sim plan 2026-08-11
-Last updated: 2026-08-11
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…13, Content Sim plan 2026-08-11,
+experimental Visual Affordance V10 owner review 2026-08-13
+Last updated: 2026-08-13
 
 ---
 
 ## Стан репозиторію
+
+- **PR #229 W0 cleanup виконано (2026-08-13):** гілка `chore/visual-v11-hygiene` готує #229 до
+  мержу в `main`. Видалено 83 МБ бінарників з git, 35 one-shot скриптів, 3 осиротілі модулі і
+  66 з 67 workflow (лишився один `workflow_dispatch`-харнес `visual-experiment.yml` без
+  `contents: write` і без `git push`). Знято три маніпуляції в evaluator: waiver `generated_text`
+  для гілки-кандидата, підписані назвами гілок спостереження в промпті судді і рубрику,
+  зібрану зі специфікації кандидата; три перевірки (`beam_purpose`, обидва invariant) повернуто
+  з story-aware у blind-стадію. `experiments/` описано як зону в `CLAUDE.md`, її пікселі —
+  у `.gitignore`. **Наслідок: усі числа V6 невалідні до платної переоцінки** — див.
+  [open-questions](open-questions.md) §8. Далі W1 (стабільність) від `main`.
+  (source: `scripts/visual-affordance-v10-targeted-evaluate.ts`, `.github/workflows/visual-experiment.yml`,
+  [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md))
+
+- **PR #229 review (2026-08-13):** детальний технічний + функціональний review зафіксовано в
+  [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md)
+  (PR [#230](https://github.com/sanchahous/ai-today-brief/pull/230), змержено в гілку
+  експерименту). Вердикт: **не мерджити як є**. V10 покриває 3
+  захардкожені treatment, unmatched → `null`/throw; 3/3 V6 eval не є доказом (n=3, rubric leak,
+  `generated_text` waiver). Executor spec для Sonnet 5: хвилі W0–W5. (source: PR #229,
+  `wf_40755980-8f7` findings dump)
+
+- **Visual Affordance V10 owner local repairs (2026-08-13):** isolated experimental candidate
+  оновив три візуальні пояснення за конкретним owner feedback: Gemini показує два різні code
+  artifacts; Claude — послідовність `cache → split → BOUNDED 1/2/3` та monitor на кожній сесії;
+  Deep Work — промінь до картки-підказки й завершену людську дію на маршруті. Targeted V6 звітував
+  3/3 hard-integrity, 3/3 headline-grounded і 3/0 blind preference для V10 — **ці числа визнані
+  невалідними у W0 і не переоцінені**, бо переоцінка потребує платного прогону. Це не production
+  rollout: `main`, production visuals і Supabase не змінювалися. (source: owner review 2026-08-13,
+  `experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/results/evaluation-report.md`,
+  commit `720b1a2`)
 
 - **Weekly illustration cost/quality loop hardening (2026-08-11):** owner-аудит Story 2/3/5/6
   підтвердив, що 5-round repair loop був дорогим seed roulette, фінальний repair лишав один variant,

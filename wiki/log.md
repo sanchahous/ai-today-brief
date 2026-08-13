@@ -4,7 +4,93 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-11
+Last updated: 2026-08-13
+
+## 2026-08-13 — W0 cleanup: підготовка PR #229 до мержу в `main`
+
+**Джерело:** [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md) §W0;
+гілка `chore/visual-v11-hygiene` (від гілки експерименту, вже з PR #230).
+
+**Змінено:**
+
+- з git видалено 101 PNG/JPG (**83 МБ**) під `experiments/` і `artifacts/`; пікселі
+  `experiments/**` додані в `.gitignore` — звіти `.md`/`.json`/`.csv` лишаються трековані,
+  бо wiki на них посилається;
+- видалено 35 із 41 one-shot скриптів `scripts/visual-*.ts`; лишилось 6 багаторазових
+  (targeted render/evaluate, calibration, v9 generalization render/evaluate/route-claims);
+- видалено 3 модулі, що після цього стали недосяжними: `visual-gate-policy.ts`,
+  `visual-specialized-svg-v7-2.ts`, `visual-treatment-v7-2.ts` (+ тести). Решту v5–v9
+  свідомо лишено — вони або досяжні з kept-скриптів, або названі базою порту для v11;
+  їх прибирає окремий chore-PR після появи v11 (§7);
+- видалено 66 із 67 `.github/workflows/visual-*.yml`; замість них один
+  `visual-experiment.yml`: `workflow_dispatch` only, `permissions: contents: read`,
+  без `git push`, вивід через `actions/upload-artifact`. Старі 62 були push-тригерні з
+  `contents: write` і платними секретами;
+- видалено `artifacts/visual-affordance-v10-owner-review-complete/` — після зняття бінарників
+  це була побайтова копія `experiments/visual-affordance-v10/targeted-v3/results/` під назвою
+  «complete», яка суперечила заявленому V6;
+- `experiments/` описано як пʼяту зону в `CLAUDE.md` і додано в `tsconfig` `exclude`;
+- **evaluator**: знято waiver `generated_text` для гілки-кандидата (параметр `Source` прибрано
+  з `sourceEvaluation`, щоб гілка не могла повернутись), спостереження тепер підставляються за
+  стороною (`OBSERVATION FOR CARD X/Y`), рубрика більше не містить `expectedEvidence` /
+  `forbiddenImplications` / `labels` кандидата, а `beamPurposeClear` і обидва invariant
+  повернуто з story-aware у blind-стадію.
+
+**Виміряно:** покриття нових модулів — 83.17% statements / 72.03% branches / 86.62% lines
+(17 файлів, 121 тест). Це вище 70%-гейта; проблема PR не в обсязі покриття, а в тому, які саме
+шляхи не покриті.
+
+**Не зроблено:** переоцінка виправленим харнесом — потребує платного прогону
+(Cloudflare + OpenRouter). Тому всі числа V6 позначені як невалідні у `now.md`,
+`pipeline/weekly-digest.md` і в README прогону; питання відкрите —
+[open-questions](open-questions.md) §8.
+
+---
+
+## 2026-08-13 — PR #229 Visual V10 review + Sonnet executor plan
+
+**Джерело:** GitHub PR #229; код `src/lib/weekly-digest/visual-*.ts`; V6 pixels у
+`experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/`; interrupted Claude
+workflow `wf_40755980-8f7` (138 findings витягнуто з StructuredOutput після spend-limit).
+Гілка фіксації: `review/pr-229-sonnet-plan`.
+
+**Змінено:** нова сторінка
+[audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md);
+рядок в [index](index.md); уточнення в [now](now.md); новий конфлікт §8 в
+[open-questions](open-questions.md).
+
+**Вердикт:** не мерджити PR як є. V10 — три ручні сцени, не алгоритм; eval 3/3 ненадійний
+(n=3, rubric leak, `generated_text` waiver); 67 workflows + бінарники. План для Sonnet 5 —
+хвилі W0–W5 (hygiene → total router → honest scenes → cost gate → honest eval → shadow worker).
+
+**Другий прохід того ж дня — ручна верифікація + доповнення сторінки.** Оскільки фаза
+adversarial-верифікації в `wf_40755980-8f7` не встигла відпрацювати (spend limit), ключові
+заявки перевірено безпосередньо в коді гілки. Підтвердились усі перевірені; додано те, чого
+в першій редакції не було:
+
+- четверта витік-точка блайнду — blind-промпт (`targeted-evaluate.ts:374`) прямо каже судді не
+  флагати deterministic labels, тобто перша стадія не intent-blind, попри формулювання
+  «image-only and intent-blind» в усіх звітах;
+- `labelsHiddenDuringSemanticTest: true` не виконується: підписи впечені в растр, тому
+  «pixels-only» файли досі містять `BOUNDED 1/2/3` і лістинги коду;
+- фабрикацію `sourceGrounding` для Claude-thresholds підтверджено дослівним звіренням з
+  approved story (джерело каже лише про monitoring token spend — CACHE і SPLIT вигадані);
+- `validateVisualPropositionV10` — механізм, заради якого існує весь V10, — не викликається
+  жодним модулем чи скриптом; це корінь того, чому сцени довелося малювати руками;
+- виміряне покриття: 4/14 історій отримують treatment, 1/14 і eligible, і правильно
+  змаршрутизована; на свіжому holdout 0 specialized matches, repair полагодив 0 із 3;
+- чотири баги коректності (`inferRole` `\b` у альтернаціях, односторонність `guardedCertainty`,
+  скоуп `hasExactMetric`/`requiresTemporalSequence`, null-safety `parseAutoVisualClaimV5`);
+- відсутній `markerUnits` у всіх пʼяти `<marker>` → вістря 84 user units, dispatch-стрілки 9,3 px
+  — механічна причина owner-тегу `broken_arrow`;
+- уточнення по вартості: стеля економії в доларах $19–53/рік, справжній важіль — 190 с/FLUX-виклик
+  проти 95-хвилинного дедлайну воркера;
+- ⚠️ **коригує пункт T0.5 першої редакції:** там сказано, що відсутність
+  `src/lib/weekly-digest/**` у `LOGIC_INCLUDE` — «це добре». Це половина картини: gate справді
+  не роздувається, але покриття 18 нових модулів не вимірюється взагалі, тому заява PR
+  «coverage passed» не є доказом щодо жодного доданого рядка;
+- уточнення до T0.2: `git rm` у follow-up коміті прибирає 88 МБ з `main` **лише при
+  squash-merge** (owner обрав саме його); при merge-коміті блоби входять в історію назавжди.
 
 ## 2026-08-11 — Story-image rollout: regenerate deduplication
 
@@ -1686,6 +1772,20 @@ opaque abstraction, banned UI/clichés лишаються blockers; semantic mis
 paid vision. При `rejectMetaphor` critic direction і patches ідуть у concept jury як feedback,
 але не копіюються в усі три renders. Додані regression tests для variant prompts, critic feedback
 і production-shaped three-pitch planning.
+## 2026-08-13 — Experimental Visual Affordance V10 owner local repairs
+
+**Джерело:** owner review 2026-08-13; `src/lib/weekly-digest/visual-affordance-treatment-v10.ts`;
+`experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/results/evaluation-report.md`.
+
+**Змінено:** в isolated experimental branch Gemini отримав два різні code artifacts; Claude —
+лінійний cache → split → BOUNDED 1/2/3 потік і MONITOR для кожної bounded session; Deep Work —
+чіткий зв'язок device hint → людська дія → фініш задачі.
+
+**Перевірено:** targeted V6: V10 3/3 hard visual integrity, 3/3 headline grounded, blind preference
+3 V10 / 0 V8 / 0 ties. Це не production approval: `main`, production visuals і Supabase не змінені;
+фінальний owner verdict залишається окремим гейтом.
+
+---
 
 ---
 

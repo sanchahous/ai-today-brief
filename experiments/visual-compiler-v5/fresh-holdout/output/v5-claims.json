@@ -1,0 +1,2230 @@
+[
+  {
+    "story": {
+      "week_start": "2026-06-29",
+      "week_end": "2026-07-05",
+      "rank": 1,
+      "revision_item_id": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+      "title": "Why frontier Anthropic models are performing worse on strict tool calling schemas",
+      "summary": "Newer models like Opus 4.8 and Sonnet 5 are failing on nested tool arguments by emitting made-up keys. This degradation occurs because their post-training optimizes for Claude Code's highly forgiving client, which silently repairs malformed calls.",
+      "why": "You must design simpler, flatter schemas or implement lenient parsers in your agent frameworks to prevent unexpected model-side tool failures.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+      "explanatory_role": "causal_mechanism",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Anthropic models",
+      "change": "perform worse on strict tool calling schemas",
+      "visual_driver": "post-training optimization for Claude Code's forgiving client",
+      "visible_outcome": "emission of made-up keys in nested tool arguments",
+      "core_claim": "Newer Anthropic models like Opus 4.8 and Sonnet 5 are failing on nested tool arguments by emitting made-up keys because their post-training optimizes for Claude Code's highly forgiving client, which silently repairs malformed calls.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Anthropic Models",
+        "Strict Tool Calling",
+        "Made-up Keys"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Anthropic models are intentionally designed to fail on strict tool calling schemas"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "bug",
+        "branch_glyphs": null,
+        "relation": "cause",
+        "outcome_signal": "lower_quality",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+      "explanatory_role": "causal_mechanism",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Anthropic models",
+      "change": "perform worse on strict tool calling schemas",
+      "visual_driver": "post-training optimization for Claude Code's forgiving client",
+      "visible_outcome": "emission of made-up keys in nested tool arguments",
+      "core_claim": "Newer Anthropic models like Opus 4.8 and Sonnet 5 are failing on nested tool arguments by emitting made-up keys because their post-training optimizes for Claude Code's highly forgiving client, which silently repairs malformed calls.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Anthropic Models",
+        "Strict Tool Calling",
+        "Made-up Keys"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Anthropic models are intentionally designed to fail on strict tool calling schemas"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "bug",
+        "branch_glyphs": null,
+        "relation": "cause",
+        "outcome_signal": "lower_quality",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+      "claim": {
+        "storyId": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+        "identity": "Anthropic models",
+        "change": "perform worse on strict tool calling schemas",
+        "mechanism": "post-training optimization for Claude Code's forgiving client",
+        "primaryOutcome": "emission of made-up keys in nested tool arguments",
+        "coreClaim": "Newer Anthropic models like Opus 4.8 and Sonnet 5 are failing on nested tool arguments by emitting made-up keys because their post-training optimizes for Claude Code's highly forgiving client, which silently repairs malformed calls.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Anthropic Models",
+          "Strict Tool Calling",
+          "Made-up Keys"
+        ],
+        "forbiddenContradictions": [
+          "Anthropic models are intentionally designed to fail on strict tool calling schemas"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Anthropic Models",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Strict Tool Calling",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Made-up Keys",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "code_file",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "success",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [],
+      "semantics": {
+        "explanatoryRole": "causal_mechanism",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "post-training optimization for Claude Code's forgiving client",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+        "identity": "Anthropic models",
+        "change": "perform worse on strict tool calling schemas",
+        "mechanism": "post-training optimization for Claude Code's forgiving client",
+        "primaryOutcome": "emission of made-up keys in nested tool arguments",
+        "coreClaim": "Newer Anthropic models like Opus 4.8 and Sonnet 5 are failing on nested tool arguments by emitting made-up keys because their post-training optimizes for Claude Code's highly forgiving client, which silently repairs malformed calls.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Anthropic Models",
+          "Strict Tool Calling",
+          "Made-up Keys"
+        ],
+        "forbiddenContradictions": [
+          "Anthropic models are intentionally designed to fail on strict tool calling schemas"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Anthropic Models",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Strict Tool Calling",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Made-up Keys",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "post-training optimization for Claude Code's forgiving client visibly produces emission of made-up keys in nested tool arguments"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Anthropic Models",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Strict Tool Calling",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Made-up Keys",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "post-training optimization for Claude Code's forgiving client visibly produces emission of made-up keys in nested tool arguments",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Anthropic models. This asset must show: post-training optimization for Claude Code's forgiving client visibly produces emission of made-up keys in nested tool arguments. The physical action must support this mechanism: post-training optimization for Claude Code's forgiving client. The visible result must remain compatible with: emission of made-up keys in nested tool arguments. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 162f3cca-30e6-48d3-8f5d-2e5b0d11cf23:Anthropic models. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23:Anthropic models",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: post-training optimization for Claude Code's forgiving client",
+        "Visible outcome: emission of made-up keys in nested tool arguments",
+        "One causal claim: Newer Anthropic models like Opus 4.8 and Sonnet 5 are failing on nested tool arguments by emitting made-up keys because their post-training optimizes for Claude Code's highly forgiving client, which silently repairs malf"
+      ],
+      "forbiddenContradictions": [
+        "Anthropic models are intentionally designed to f"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately reflects the source, identifying the causal mechanism (post-training optimization for Claude Code's forgiving client) leading to the observed outcome (emission of made-up keys in nested tool arguments) and the resulting performance degradation of Anthropic models on strict tool calling schemas. The certainty is 'observed' as stated in the source. The claim is visually testable as the identity, driver, and outcome can be depicted."
+    },
+    "finalAudit": {
+      "storyId": "162f3cca-30e6-48d3-8f5d-2e5b0d11cf23",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately reflects the source, identifying the causal mechanism (post-training optimization for Claude Code's forgiving client) leading to the observed outcome (emission of made-up keys in nested tool arguments) and the resulting performance degradation of Anthropic models on strict tool calling schemas. The certainty is 'observed' as stated in the source. The claim is visually testable as the identity, driver, and outcome can be depicted."
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  },
+  {
+    "story": {
+      "week_start": "2026-06-29",
+      "week_end": "2026-07-05",
+      "rank": 2,
+      "revision_item_id": "746ae14f-9836-4803-8b05-117195dfc4f0",
+      "title": "Leveraging the Mistral AI Platform Beyond Standard Chatbot Integrations",
+      "summary": "Mistral AI is scaling its enterprise platform, Forge, and edge-optimized 'Les Ministraux' models. The company reported reaching over $400 million ARR, is on track to surpass $1 billion ARR this year, and teased a new open-weight model coming in July.",
+      "why": "Mistral AI is positioning itself as a sovereign European alternative to US frontier labs, combining enterprise-focused customization, edge deployment capability, and open-weight models.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "746ae14f-9836-4803-8b05-117195dfc4f0",
+      "explanatory_role": "uncertainty_announcement",
+      "certainty": "on_track",
+      "mapping_mode": "literal",
+      "identity": "Mistral AI",
+      "change": "is on track to surpass $1 billion ARR this year",
+      "visual_driver": "scaling its enterprise platform, Forge, and edge-optimized 'Les Ministraux' models",
+      "visible_outcome": "projected $1 billion ARR",
+      "core_claim": "Mistral AI is on track to surpass $1 billion ARR this year, after reporting reaching over $400 million ARR.",
+      "metric": {
+        "direction": "increase",
+        "comparison_target": "$400 million ARR",
+        "baseline_label": "Current ARR",
+        "result_label": "Projected ARR"
+      },
+      "labels": [
+        "Mistral AI",
+        "ARR",
+        "$1 Billion"
+      ],
+      "quantitative_facts": [
+        {
+          "label": "Current ARR",
+          "value": "$400 million"
+        },
+        {
+          "label": "Projected ARR",
+          "value": "$1 billion"
+        }
+      ],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Mistral AI has already surpassed $1 billion ARR"
+      ],
+      "grammar": {
+        "context_glyph": "company",
+        "mechanism_glyph": "growth",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "predict",
+        "outcome_signal": "higher_value",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "746ae14f-9836-4803-8b05-117195dfc4f0",
+      "explanatory_role": "uncertainty_announcement",
+      "certainty": "on_track",
+      "mapping_mode": "literal",
+      "identity": "Mistral AI",
+      "change": "is on track to surpass $1 billion ARR this year",
+      "visual_driver": "scaling its enterprise platform, Forge, and edge-optimized 'Les Ministraux' models",
+      "visible_outcome": "projected $1 billion ARR",
+      "core_claim": "Mistral AI is on track to surpass $1 billion ARR this year, after reporting reaching over $400 million ARR.",
+      "metric": {
+        "direction": "increase",
+        "comparison_target": "$400 million ARR",
+        "baseline_label": "Current ARR",
+        "result_label": "Projected ARR"
+      },
+      "labels": [
+        "Mistral AI",
+        "ARR",
+        "$1 Billion"
+      ],
+      "quantitative_facts": [
+        {
+          "label": "Current ARR",
+          "value": "$400 million"
+        },
+        {
+          "label": "Projected ARR",
+          "value": "$1 billion"
+        }
+      ],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Mistral AI has already surpassed $1 billion ARR"
+      ],
+      "grammar": {
+        "context_glyph": "company",
+        "mechanism_glyph": "growth",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "predict",
+        "outcome_signal": "higher_value",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "746ae14f-9836-4803-8b05-117195dfc4f0",
+      "claim": {
+        "storyId": "746ae14f-9836-4803-8b05-117195dfc4f0",
+        "identity": "Mistral AI",
+        "change": "is on track to surpass $1 billion ARR this year",
+        "mechanism": "the current Current ARR is placed beside the Projected ARR, with the future target visibly unconfirmed",
+        "primaryOutcome": "the Projected ARR remains visibly future beyond the current Current ARR",
+        "coreClaim": "Mistral AI is expected to is on track to surpass $1 billion ARR this year",
+        "primaryEvidence": "counterfactual_comparison",
+        "outcomeKind": "uncertainty",
+        "approvedLabels": [
+          "Current ARR",
+          "Projected ARR",
+          "ON TRACK"
+        ],
+        "quantitativeFacts": [
+          {
+            "label": "Current ARR",
+            "value": "$400 million"
+          },
+          {
+            "label": "Projected ARR",
+            "value": "$1 billion"
+          }
+        ],
+        "comparison": {
+          "left": "the current confirmed state before the announced model or capability exists",
+          "right": "the Projected ARR shown with an explicit unconfirmed boundary"
+        },
+        "forbiddenContradictions": [
+          "Mistral AI has already surpassed $1 billion ARR"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Current ARR",
+            "regionId": "left",
+            "importance": "primary"
+          },
+          {
+            "text": "Projected ARR",
+            "regionId": "right",
+            "importance": "secondary"
+          },
+          {
+            "text": "ON TRACK",
+            "regionId": "right",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "tool",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "uncertain",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [
+        "core_claim_guarded_for_expected"
+      ],
+      "semantics": {
+        "explanatoryRole": "uncertainty_announcement",
+        "certainty": "expected",
+        "mappingMode": "literal",
+        "visualDriver": "the current Current ARR is placed beside the Projected ARR, with the future target visibly unconfirmed",
+        "metric": {
+          "direction": "increase",
+          "comparisonTarget": "$400 million ARR",
+          "baselineLabel": "Current ARR",
+          "resultLabel": "Projected ARR"
+        },
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": [
+          "reported",
+          "on track",
+          "teased",
+          "coming"
+        ]
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "746ae14f-9836-4803-8b05-117195dfc4f0",
+        "identity": "Mistral AI",
+        "change": "is on track to surpass $1 billion ARR this year",
+        "mechanism": "the current Current ARR is placed beside the Projected ARR, with the future target visibly unconfirmed",
+        "primaryOutcome": "the Projected ARR remains visibly future beyond the current Current ARR",
+        "coreClaim": "Mistral AI is expected to is on track to surpass $1 billion ARR this year",
+        "primaryEvidence": "counterfactual_comparison",
+        "outcomeKind": "uncertainty",
+        "approvedLabels": [
+          "Current ARR",
+          "Projected ARR",
+          "ON TRACK"
+        ],
+        "quantitativeFacts": [
+          {
+            "label": "Current ARR",
+            "value": "$400 million"
+          },
+          {
+            "label": "Projected ARR",
+            "value": "$1 billion"
+          }
+        ],
+        "comparison": {
+          "left": "the current confirmed state before the announced model or capability exists",
+          "right": "the Projected ARR shown with an explicit unconfirmed boundary"
+        },
+        "forbiddenContradictions": [
+          "Mistral AI has already surpassed $1 billion ARR"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Current ARR",
+            "regionId": "left",
+            "importance": "primary"
+          },
+          {
+            "text": "Projected ARR",
+            "regionId": "right",
+            "importance": "secondary"
+          },
+          {
+            "text": "ON TRACK",
+            "regionId": "right",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_split",
+      "renderStrategy": "reference_split",
+      "regions": [
+        {
+          "id": "left",
+          "bounds": {
+            "x": 0.03,
+            "y": 0.08,
+            "width": 0.455,
+            "height": 0.8
+          },
+          "role": "contrast",
+          "description": "the current confirmed state before the announced model or capability exists"
+        },
+        {
+          "id": "right",
+          "bounds": {
+            "x": 0.515,
+            "y": 0.08,
+            "width": 0.455,
+            "height": 0.8
+          },
+          "role": "outcome",
+          "description": "the Projected ARR shown with an explicit unconfirmed boundary"
+        }
+      ],
+      "transitions": [
+        {
+          "from": "left",
+          "to": "right",
+          "type": "contrast"
+        }
+      ],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Current ARR",
+          "regionId": "left",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Projected ARR",
+          "regionId": "right",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "ON TRACK",
+          "regionId": "right",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "left",
+          "assetRequest": "the current confirmed state before the announced model or capability exists",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Mistral AI. This asset must show: the current confirmed state before the announced model or capability exists. The physical action must support this mechanism: the current Current ARR is placed beside the Projected ARR, with the future target visibly unconfirmed. The visible result must remain compatible with: the Projected ARR remains visibly future beyond the current Current ARR. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 746ae14f-9836-4803-8b05-117195dfc4f0:Mistral AI. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave stable margins so this asset can sit beside continuity-matched companion assets.",
+          "continuityKey": "746ae14f-9836-4803-8b05-117195dfc4f0:Mistral AI",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        },
+        {
+          "id": "asset-2",
+          "regionId": "right",
+          "assetRequest": "the Projected ARR shown with an explicit unconfirmed boundary",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Mistral AI. This asset must show: the Projected ARR shown with an explicit unconfirmed boundary. The physical action must support this mechanism: the current Current ARR is placed beside the Projected ARR, with the future target visibly unconfirmed. The visible result must remain compatible with: the Projected ARR remains visibly future beyond the current Current ARR. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 746ae14f-9836-4803-8b05-117195dfc4f0:Mistral AI. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave stable margins so this asset can sit beside continuity-matched companion assets.",
+          "continuityKey": "746ae14f-9836-4803-8b05-117195dfc4f0:Mistral AI",
+          "referenceFrom": "asset-1",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: the current Current ARR is placed beside the Projected ARR, with the future target visibly unconfirmed",
+        "Visible outcome: the Projected ARR remains visibly future beyond the current Current ARR",
+        "One causal claim: Mistral AI is expected to is on track to surpass $1 billion ARR this year"
+      ],
+      "forbiddenContradictions": [
+        "Mistral AI has already surpassed $1 billion ARR"
+      ],
+      "execution": {
+        "candidateCount": 1,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "746ae14f-9836-4803-8b05-117195dfc4f0",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately reflects the source's statement that Mistral AI is 'on track to surpass $1 billion ARR this year' after 'reporting reaching over $400 million ARR'. The certainty is correctly normalized to 'expected'. The visual driver is appropriate for an 'uncertainty_announcement' role, showing the current reported value alongside the projected, unconfirmed future target. The metric and comparison target are exact and preserved."
+    },
+    "finalAudit": {
+      "storyId": "746ae14f-9836-4803-8b05-117195dfc4f0",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately reflects the source's statement that Mistral AI is 'on track to surpass $1 billion ARR this year' after 'reporting reaching over $400 million ARR'. The certainty is correctly normalized to 'expected'. The visual driver is appropriate for an 'uncertainty_announcement' role, showing the current reported value alongside the projected, unconfirmed future target. The metric and comparison target are exact and preserved."
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  },
+  {
+    "story": {
+      "week_start": "2026-06-29",
+      "week_end": "2026-07-05",
+      "rank": 3,
+      "revision_item_id": "ec757520-7d7d-4cfe-8fc4-eacde8c48e06",
+      "title": "Strix: Open-source AI penetration testing tool finds and patches vulnerabilities",
+      "summary": "Strix is an open-source autonomous AI penetration testing agent that acts like a real hacker, running your code dynamically to find and validate vulnerabilities with proofs-of-concept. It integrates seamlessly with GitHub Actions to block insecure pull requests and can auto-generate patches.",
+      "why": "Traditional static analysis often suffers from high false-positive rates, while manual penetration testing is slow. Strix solves this by dynamically validating exploits and providing working proofs-of-concept automatically.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "ec757520-7d7d-4cfe-8fc4-eacde8c48e06",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Strix",
+      "change": "provides an open-source autonomous AI penetration testing agent",
+      "visual_driver": "integration with GitHub Actions",
+      "visible_outcome": "blocking insecure pull requests and auto-generating patches",
+      "core_claim": "Strix is an open-source autonomous AI penetration testing agent that acts like a real hacker, running code dynamically to find and validate vulnerabilities with proofs-of-concept, and integrates with GitHub Actions to block insecure pull requests and auto-generate patches.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Strix",
+        "AI Pen Testing",
+        "GitHub Actions"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Strix requires manual intervention to find vulnerabilities"
+      ],
+      "grammar": {
+        "context_glyph": "tool",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "shield",
+        "branch_glyphs": null,
+        "relation": "enable",
+        "outcome_signal": "higher_quality",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "ec757520-7d7d-4cfe-8fc4-eacde8c48e06",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Strix",
+      "change": "provides an open-source autonomous AI penetration testing agent",
+      "visual_driver": "integration with GitHub Actions",
+      "visible_outcome": "blocking insecure pull requests and auto-generating patches",
+      "core_claim": "Strix is an open-source autonomous AI penetration testing agent that acts like a real hacker, running code dynamically to find and validate vulnerabilities with proofs-of-concept, and integrates with GitHub Actions to block insecure pull requests and auto-generate patches.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "Strix",
+        "AI Pen Testing",
+        "GitHub Actions"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Strix requires manual intervention to find vulnerabilities"
+      ],
+      "grammar": {
+        "context_glyph": "tool",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "shield",
+        "branch_glyphs": null,
+        "relation": "enable",
+        "outcome_signal": "higher_quality",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "ec757520-7d7d-4cfe-8fc4-eacde8c48e06",
+      "claim": {
+        "storyId": "ec757520-7d7d-4cfe-8fc4-eacde8c48e06",
+        "identity": "Strix: Open-source AI penetration testing tool finds and patches vulnerabilities",
+        "change": "provides an open-source autonomous AI penetration testing agent",
+        "mechanism": "integration with GitHub Actions",
+        "primaryOutcome": "blocking insecure pull requests and auto-generating patches",
+        "coreClaim": "Strix is an open-source autonomous AI penetration testing agent that acts like a real hacker, running code dynamically to find and validate vulnerabilities with proofs-of-concept, and integrates with GitHub Actions to block insecure pull re",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Strix",
+          "AI Pen Testing",
+          "GitHub Actions"
+        ],
+        "forbiddenContradictions": [
+          "Strix requires manual intervention to find vulnerabilities"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Strix",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "AI Pen Testing",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "GitHub Actions",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "tool",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "shield",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "success",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [
+        "certainty_downgraded_observed_to_released",
+        "identity_expanded_from_story_title"
+      ],
+      "semantics": {
+        "explanatoryRole": "capability_access",
+        "certainty": "released",
+        "mappingMode": "literal",
+        "visualDriver": "integration with GitHub Actions",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "ec757520-7d7d-4cfe-8fc4-eacde8c48e06",
+        "identity": "Strix: Open-source AI penetration testing tool finds and patches vulnerabilities",
+        "change": "provides an open-source autonomous AI penetration testing agent",
+        "mechanism": "integration with GitHub Actions",
+        "primaryOutcome": "blocking insecure pull requests and auto-generating patches",
+        "coreClaim": "Strix is an open-source autonomous AI penetration testing agent that acts like a real hacker, running code dynamically to find and validate vulnerabilities with proofs-of-concept, and integrates with GitHub Actions to block insecure pull re",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Strix",
+          "AI Pen Testing",
+          "GitHub Actions"
+        ],
+        "forbiddenContradictions": [
+          "Strix requires manual intervention to find vulnerabilities"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Strix",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "AI Pen Testing",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "GitHub Actions",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "integration with GitHub Actions visibly produces blocking insecure pull requests and auto-generating patches"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Strix",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "AI Pen Testing",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "GitHub Actions",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "integration with GitHub Actions visibly produces blocking insecure pull requests and auto-generating patches",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Strix: Open-source AI penetration testing tool finds and patches vulnerabilities. This asset must show: integration with GitHub Actions visibly produces blocking insecure pull requests and auto-generating patches. The physical action must support this mechanism: integration with GitHub Actions. The visible result must remain compatible with: blocking insecure pull requests and auto-generating patches. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: ec757520-7d7d-4cfe-8fc4-eacde8c48e06:Strix: Open-source AI penetration testing tool finds and patche. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "ec757520-7d7d-4cfe-8fc4-eacde8c48e06:Strix: Open-source AI penetration testing tool finds and patche",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: integration with GitHub Actions",
+        "Visible outcome: blocking insecure pull requests and auto-generating patches",
+        "One causal claim: Strix is an open-source autonomous AI penetration testing agent that acts like a real hacker, running code dynamically to find and validate vulnerabilities with proofs-of-concept, and integrates with GitHub Actions to bl"
+      ],
+      "forbiddenContradictions": [
+        "Strix requires manual intervention to find vulne"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "ec757520-7d7d-4cfe-8fc4-eacde8c48e06",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately describes Strix's capabilities and access, stating it's an open-source autonomous AI penetration testing agent that integrates with GitHub Actions to block insecure pull requests and auto-generate patches. The certainty is correctly normalized to 'released' for a currently available product. The visual driver and outcome are directly supported by the source."
+    },
+    "finalAudit": {
+      "storyId": "ec757520-7d7d-4cfe-8fc4-eacde8c48e06",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately describes Strix's capabilities and access, stating it's an open-source autonomous AI penetration testing agent that integrates with GitHub Actions to block insecure pull requests and auto-generate patches. The certainty is correctly normalized to 'released' for a currently available product. The visual driver and outcome are directly supported by the source."
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  },
+  {
+    "story": {
+      "week_start": "2026-06-29",
+      "week_end": "2026-07-05",
+      "rank": 4,
+      "revision_item_id": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+      "title": "Agentic testing playbook: How fuzzing and property testing empower autonomous coding",
+      "summary": "Dan Luu shares deep insights on engineering workflows with coding agents, explaining why heavy testing methodologies like fuzzing and property-based testing are highly suited to AI-driven development where manual code review becomes impractical.",
+      "why": "As AI agents generate code at superhuman speeds, manual code reviews become a bottleneck. Transitioning to a continuous automated testing workflow ensures code reliability without manual intervention.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+      "explanatory_role": "causal_mechanism",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "AI-driven development",
+      "change": "makes manual code review impractical",
+      "visual_driver": "AI agents generating code at superhuman speeds",
+      "visible_outcome": "necessity for continuous automated testing workflows",
+      "core_claim": "As AI agents generate code at superhuman speeds, manual code reviews become a bottleneck, making heavy testing methodologies like fuzzing and property-based testing highly suited to AI-driven development.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "AI Agents",
+        "Code Review",
+        "Automated Testing"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Manual code review is still efficient with AI-generated code"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "cause",
+        "outcome_signal": "lower_efficiency",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+      "explanatory_role": "causal_mechanism",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "AI-driven development",
+      "change": "makes manual code review impractical",
+      "visual_driver": "AI agents generating code at superhuman speeds",
+      "visible_outcome": "necessity for continuous automated testing workflows",
+      "core_claim": "As AI agents generate code at superhuman speeds, manual code reviews become a bottleneck, making heavy testing methodologies like fuzzing and property-based testing highly suited to AI-driven development.",
+      "metric": {
+        "direction": "neutral",
+        "comparison_target": null,
+        "baseline_label": null,
+        "result_label": null
+      },
+      "labels": [
+        "AI Agents",
+        "Code Review",
+        "Automated Testing"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Manual code review is still efficient with AI-generated code"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "cause",
+        "outcome_signal": "lower_efficiency",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+      "claim": {
+        "storyId": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+        "identity": "AI-driven development",
+        "change": "makes manual code review impractical",
+        "mechanism": "AI agents generating code at superhuman speeds",
+        "primaryOutcome": "necessity for continuous automated testing workflows",
+        "coreClaim": "As AI agents generate code at superhuman speeds, manual code reviews become a bottleneck, making heavy testing methodologies like fuzzing and property-based testing highly suited to AI-driven development.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "AI Agents",
+          "Code Review",
+          "Automated Testing"
+        ],
+        "forbiddenContradictions": [
+          "Manual code review is still efficient with AI-generated code"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "AI Agents",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Code Review",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Automated Testing",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "success",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [],
+      "semantics": {
+        "explanatoryRole": "causal_mechanism",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "AI agents generating code at superhuman speeds",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+        "identity": "AI-driven development",
+        "change": "makes manual code review impractical",
+        "mechanism": "AI agents generating code at superhuman speeds",
+        "primaryOutcome": "necessity for continuous automated testing workflows",
+        "coreClaim": "As AI agents generate code at superhuman speeds, manual code reviews become a bottleneck, making heavy testing methodologies like fuzzing and property-based testing highly suited to AI-driven development.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "AI Agents",
+          "Code Review",
+          "Automated Testing"
+        ],
+        "forbiddenContradictions": [
+          "Manual code review is still efficient with AI-generated code"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "AI Agents",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Code Review",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Automated Testing",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "AI agents generating code at superhuman speeds visibly produces necessity for continuous automated testing workflows"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "AI Agents",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Code Review",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Automated Testing",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "AI agents generating code at superhuman speeds visibly produces necessity for continuous automated testing workflows",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: AI-driven development. This asset must show: AI agents generating code at superhuman speeds visibly produces necessity for continuous automated testing workflows. The physical action must support this mechanism: AI agents generating code at superhuman speeds. The visible result must remain compatible with: necessity for continuous automated testing workflows. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: be11c774-29c8-4a9b-85d7-308fc27695fe:AI-driven development. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "be11c774-29c8-4a9b-85d7-308fc27695fe:AI-driven development",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: AI agents generating code at superhuman speeds",
+        "Visible outcome: necessity for continuous automated testing workflows",
+        "One causal claim: As AI agents generate code at superhuman speeds, manual code reviews become a bottleneck, making heavy testing methodologies like fuzzing and property-based testing highly suited to AI-driven development."
+      ],
+      "forbiddenContradictions": [
+        "Manual code review is still efficient with AI-ge"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim correctly identifies the causal mechanism: AI agents generating code at superhuman speeds (visual driver) leading to manual code review becoming impractical (change) and necessitating continuous automated testing workflows (visible outcome) in AI-driven development. The certainty is 'observed' as stated in the source. The claim is visually testable as the identity, driver, and outcome can be depicted."
+    },
+    "finalAudit": {
+      "storyId": "be11c774-29c8-4a9b-85d7-308fc27695fe",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim correctly identifies the causal mechanism: AI agents generating code at superhuman speeds (visual driver) leading to manual code review becoming impractical (change) and necessitating continuous automated testing workflows (visible outcome) in AI-driven development. The certainty is 'observed' as stated in the source. The claim is visually testable as the identity, driver, and outcome can be depicted."
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  },
+  {
+    "story": {
+      "week_start": "2026-06-29",
+      "week_end": "2026-07-05",
+      "rank": 5,
+      "revision_item_id": "10ea81e6-4af6-41da-9433-8f938b037bf3",
+      "title": "Review-flow: Automate 80% of code reviews using Claude Code and Model Context Protocol",
+      "summary": "Review-flow is an open-source server that automates code review pipelines on GitHub and GitLab. It utilizes Claude Code background sessions and a dedicated Model Context Protocol server to execute structured multi-agent audits.",
+      "why": "Self-host Review-flow to automate repetitive code quality, architecture, and security reviews directly within your merge requests.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "10ea81e6-4af6-41da-9433-8f938b037bf3",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Review-flow",
+      "change": "automates code review pipelines on GitHub and GitLab",
+      "visual_driver": "utilizes Claude Code background sessions and a dedicated Model Context Protocol server",
+      "visible_outcome": "automating 80% of code reviews",
+      "core_claim": "Review-flow is an open-source server that automates 80% of code review pipelines on GitHub and GitLab by utilizing Claude Code background sessions and a dedicated Model Context Protocol server to execute structured multi-agent audits.",
+      "metric": {
+        "direction": "increase",
+        "comparison_target": null,
+        "baseline_label": "Manual Review",
+        "result_label": "Automated Review"
+      },
+      "labels": [
+        "Review-flow",
+        "Code Review",
+        "Automation"
+      ],
+      "quantitative_facts": [
+        {
+          "label": "Automation Percentage",
+          "value": "80%"
+        }
+      ],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Review-flow requires manual code review for all aspects"
+      ],
+      "grammar": {
+        "context_glyph": "tool",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "enable",
+        "outcome_signal": "higher_efficiency",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "10ea81e6-4af6-41da-9433-8f938b037bf3",
+      "explanatory_role": "capability_access",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Review-flow",
+      "change": "automates code review pipelines on GitHub and GitLab",
+      "visual_driver": "utilizes Claude Code background sessions and a dedicated Model Context Protocol server",
+      "visible_outcome": "automating 80% of code reviews",
+      "core_claim": "Review-flow is an open-source server that automates 80% of code review pipelines on GitHub and GitLab by utilizing Claude Code background sessions and a dedicated Model Context Protocol server to execute structured multi-agent audits.",
+      "metric": {
+        "direction": "increase",
+        "comparison_target": null,
+        "baseline_label": "Manual Review",
+        "result_label": "Automated Review"
+      },
+      "labels": [
+        "Review-flow",
+        "Code Review",
+        "Automation"
+      ],
+      "quantitative_facts": [
+        {
+          "label": "Automation Percentage",
+          "value": "80%"
+        }
+      ],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Review-flow requires manual code review for all aspects"
+      ],
+      "grammar": {
+        "context_glyph": "tool",
+        "mechanism_glyph": "workflow",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "enable",
+        "outcome_signal": "higher_efficiency",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "10ea81e6-4af6-41da-9433-8f938b037bf3",
+      "claim": {
+        "storyId": "10ea81e6-4af6-41da-9433-8f938b037bf3",
+        "identity": "Review-flow",
+        "change": "automates code review pipelines on GitHub and GitLab",
+        "mechanism": "utilizes Claude Code background sessions and a dedicated Model Context Protocol server",
+        "primaryOutcome": "automating 80% of code reviews",
+        "coreClaim": "Review-flow is an open-source server that automates 80% of code review pipelines on GitHub and GitLab by utilizing Claude Code background sessions and a dedicated Model Context Protocol server to execute structured multi-agent audits.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Review-flow",
+          "Code Review",
+          "Automation"
+        ],
+        "quantitativeFacts": [
+          {
+            "label": "Automation Percentage",
+            "value": "80%"
+          }
+        ],
+        "forbiddenContradictions": [
+          "Review-flow requires manual code review for all aspects"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Review-flow",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Code Review",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Automation",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "tool",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "success",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [
+        "certainty_downgraded_observed_to_released"
+      ],
+      "semantics": {
+        "explanatoryRole": "capability_access",
+        "certainty": "released",
+        "mappingMode": "literal",
+        "visualDriver": "utilizes Claude Code background sessions and a dedicated Model Context Protocol server",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "10ea81e6-4af6-41da-9433-8f938b037bf3",
+        "identity": "Review-flow",
+        "change": "automates code review pipelines on GitHub and GitLab",
+        "mechanism": "utilizes Claude Code background sessions and a dedicated Model Context Protocol server",
+        "primaryOutcome": "automating 80% of code reviews",
+        "coreClaim": "Review-flow is an open-source server that automates 80% of code review pipelines on GitHub and GitLab by utilizing Claude Code background sessions and a dedicated Model Context Protocol server to execute structured multi-agent audits.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Review-flow",
+          "Code Review",
+          "Automation"
+        ],
+        "quantitativeFacts": [
+          {
+            "label": "Automation Percentage",
+            "value": "80%"
+          }
+        ],
+        "forbiddenContradictions": [
+          "Review-flow requires manual code review for all aspects"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Review-flow",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Code Review",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Automation",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "utilizes Claude Code background sessions and a dedicated Model Context Protocol server visibly produces automating 80% of code reviews"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Review-flow",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Code Review",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Automation",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "utilizes Claude Code background sessions and a dedicated Model Context Protocol server visibly produces automating 80% of code reviews",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Review-flow. This asset must show: utilizes Claude Code background sessions and a dedicated Model Context Protocol server visibly produces automating 80% of code reviews. The physical action must support this mechanism: utilizes Claude Code background sessions and a dedicated Model Context Protocol server. The visible result must remain compatible with: automating 80% of code reviews. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 10ea81e6-4af6-41da-9433-8f938b037bf3:Review-flow. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "10ea81e6-4af6-41da-9433-8f938b037bf3:Review-flow",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: utilizes Claude Code background sessions and a dedicated Model Context Protocol server",
+        "Visible outcome: automating 80% of code reviews",
+        "One causal claim: Review-flow is an open-source server that automates 80% of code review pipelines on GitHub and GitLab by utilizing Claude Code background sessions and a dedicated Model Context Protocol server to execute structured multi"
+      ],
+      "forbiddenContradictions": [
+        "Review-flow requires manual code review for all "
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "10ea81e6-4af6-41da-9433-8f938b037bf3",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately states Review-flow's capability to automate code review pipelines on GitHub and GitLab, utilizing Claude Code sessions and a Model Context Protocol server, resulting in 'automating 80% of code reviews'. The certainty is correctly normalized to 'released' for an open-source server. The quantitative fact '80%' is exact and supported. The visual driver and outcome are directly supported by the source."
+    },
+    "finalAudit": {
+      "storyId": "10ea81e6-4af6-41da-9433-8f938b037bf3",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately states Review-flow's capability to automate code review pipelines on GitHub and GitLab, utilizing Claude Code sessions and a Model Context Protocol server, resulting in 'automating 80% of code reviews'. The certainty is correctly normalized to 'released' for an open-source server. The quantitative fact '80%' is exact and supported. The visual driver and outcome are directly supported by the source."
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  },
+  {
+    "story": {
+      "week_start": "2026-06-29",
+      "week_end": "2026-07-05",
+      "rank": 6,
+      "revision_item_id": "907e49c3-2852-427b-9c92-377d1f055bdf",
+      "title": "Optimizing Token Caching to Avoid Unexpected Cloud Large Language Model Costs",
+      "summary": "Developers often encounter unexpectedly high API bills because they fail to configure and utilize prompt caching correctly. Understanding how token state, system prompts, and history affect cache hits can drastically cut costs.",
+      "why": "You can reduce your API costs up to 90% by structuring your prompts and conversation history to maximize cache hits.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "907e49c3-2852-427b-9c92-377d1f055bdf",
+      "explanatory_role": "quantitative_result",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Cloud Large Language Model API bills",
+      "change": "can be drastically cut",
+      "visual_driver": "structuring prompts and conversation history to maximize cache hits",
+      "visible_outcome": "reduction of API costs up to 90%",
+      "core_claim": "Developers can reduce their Cloud Large Language Model API costs up to 90% by structuring prompts and conversation history to maximize cache hits.",
+      "metric": {
+        "direction": "decrease",
+        "comparison_target": null,
+        "baseline_label": "Unoptimized API Costs",
+        "result_label": "Optimized API Costs"
+      },
+      "labels": [
+        "API Costs",
+        "Token Caching",
+        "90% Reduction"
+      ],
+      "quantitative_facts": [
+        {
+          "label": "Cost Reduction",
+          "value": "90%"
+        }
+      ],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Token caching has no impact on API costs"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "optimization",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "reduce",
+        "outcome_signal": "lower_cost",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "907e49c3-2852-427b-9c92-377d1f055bdf",
+      "explanatory_role": "quantitative_result",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Cloud Large Language Model API bills",
+      "change": "can be drastically cut",
+      "visual_driver": "structuring prompts and conversation history to maximize cache hits",
+      "visible_outcome": "reduction of API costs up to 90%",
+      "core_claim": "Developers can reduce their Cloud Large Language Model API costs up to 90% by structuring prompts and conversation history to maximize cache hits.",
+      "metric": {
+        "direction": "decrease",
+        "comparison_target": null,
+        "baseline_label": "Unoptimized API Costs",
+        "result_label": "Optimized API Costs"
+      },
+      "labels": [
+        "API Costs",
+        "Token Caching",
+        "90% Reduction"
+      ],
+      "quantitative_facts": [
+        {
+          "label": "Cost Reduction",
+          "value": "90%"
+        }
+      ],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Token caching has no impact on API costs"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "optimization",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "reduce",
+        "outcome_signal": "lower_cost",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "907e49c3-2852-427b-9c92-377d1f055bdf",
+      "claim": {
+        "storyId": "907e49c3-2852-427b-9c92-377d1f055bdf",
+        "identity": "Cloud Large Language Model API bills",
+        "change": "can be drastically cut",
+        "mechanism": "structuring prompts and conversation history to maximize cache hits",
+        "primaryOutcome": "reduction of API costs up to 90%",
+        "coreClaim": "Developers can reduce their Cloud Large Language Model API costs up to 90% by structuring prompts and conversation history to maximize cache hits.",
+        "primaryEvidence": "quantitative_difference",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "API Costs",
+          "Token Caching",
+          "90% Reduction"
+        ],
+        "quantitativeFacts": [
+          {
+            "label": "Cost Reduction",
+            "value": "90%"
+          }
+        ],
+        "comparison": {
+          "left": "Unoptimized API Costs",
+          "right": "Optimized API Costs"
+        },
+        "forbiddenContradictions": [
+          "Token caching has no impact on API costs"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "API Costs",
+            "regionId": "baseline",
+            "importance": "primary"
+          },
+          {
+            "text": "Token Caching",
+            "regionId": "amplified",
+            "importance": "secondary"
+          },
+          {
+            "text": "90% Reduction",
+            "regionId": "amplified",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "context_stack",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "lower_cost",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [],
+      "semantics": {
+        "explanatoryRole": "quantitative_result",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "structuring prompts and conversation history to maximize cache hits",
+        "metric": {
+          "direction": "decrease",
+          "comparisonTarget": "",
+          "baselineLabel": "Unoptimized API Costs",
+          "resultLabel": "Optimized API Costs"
+        },
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": [
+          "up to"
+        ]
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "907e49c3-2852-427b-9c92-377d1f055bdf",
+        "identity": "Cloud Large Language Model API bills",
+        "change": "can be drastically cut",
+        "mechanism": "structuring prompts and conversation history to maximize cache hits",
+        "primaryOutcome": "reduction of API costs up to 90%",
+        "coreClaim": "Developers can reduce their Cloud Large Language Model API costs up to 90% by structuring prompts and conversation history to maximize cache hits.",
+        "primaryEvidence": "quantitative_difference",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "API Costs",
+          "Token Caching",
+          "90% Reduction"
+        ],
+        "quantitativeFacts": [
+          {
+            "label": "Cost Reduction",
+            "value": "90%"
+          }
+        ],
+        "comparison": {
+          "left": "Unoptimized API Costs",
+          "right": "Optimized API Costs"
+        },
+        "forbiddenContradictions": [
+          "Token caching has no impact on API costs"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "API Costs",
+            "regionId": "baseline",
+            "importance": "primary"
+          },
+          {
+            "text": "Token Caching",
+            "regionId": "amplified",
+            "importance": "secondary"
+          },
+          {
+            "text": "90% Reduction",
+            "regionId": "amplified",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_data_contrast",
+      "renderStrategy": "one_asset_plus_vector",
+      "regions": [
+        {
+          "id": "baseline",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.1,
+            "width": 0.4,
+            "height": 0.76
+          },
+          "role": "context",
+          "description": "Unoptimized API Costs"
+        },
+        {
+          "id": "amplified",
+          "bounds": {
+            "x": 0.56,
+            "y": 0.1,
+            "width": 0.4,
+            "height": 0.76
+          },
+          "role": "outcome",
+          "description": "Optimized API Costs"
+        }
+      ],
+      "transitions": [
+        {
+          "from": "baseline",
+          "to": "amplified",
+          "type": "contrast"
+        }
+      ],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "API Costs",
+          "regionId": "baseline",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Token Caching",
+          "regionId": "amplified",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "90% Reduction",
+          "regionId": "amplified",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "baseline",
+          "assetRequest": "Unoptimized API Costs",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Cloud Large Language Model API bills. This asset must show: Unoptimized API Costs. The physical action must support this mechanism: structuring prompts and conversation history to maximize cache hits. The visible result must remain compatible with: reduction of API costs up to 90%. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 907e49c3-2852-427b-9c92-377d1f055bdf:Cloud Large Language Model API bills. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "907e49c3-2852-427b-9c92-377d1f055bdf:Cloud Large Language Model API bills",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        },
+        {
+          "id": "asset-2",
+          "regionId": "amplified",
+          "assetRequest": "Optimized API Costs",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Cloud Large Language Model API bills. This asset must show: Optimized API Costs. The physical action must support this mechanism: structuring prompts and conversation history to maximize cache hits. The visible result must remain compatible with: reduction of API costs up to 90%. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 907e49c3-2852-427b-9c92-377d1f055bdf:Cloud Large Language Model API bills. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "907e49c3-2852-427b-9c92-377d1f055bdf:Cloud Large Language Model API bills",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: structuring prompts and conversation history to maximize cache hits",
+        "Visible outcome: reduction of API costs up to 90%",
+        "One causal claim: Developers can reduce their Cloud Large Language Model API costs up to 90% by structuring prompts and conversation history to maximize cache hits."
+      ],
+      "forbiddenContradictions": [
+        "Token caching has no impact on API costs"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "907e49c3-2852-427b-9c92-377d1f055bdf",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately reflects the source's statement that 'Cloud Large Language Model API bills can be drastically cut' by 'structuring prompts and conversation history to maximize cache hits', leading to a 'reduction of API costs up to 90%'. The certainty is 'observed'. The quantitative result '90%' is exact. The visual driver and outcome are directly supported by the source. The comparison is correctly set up to show the reduction."
+    },
+    "finalAudit": {
+      "storyId": "907e49c3-2852-427b-9c92-377d1f055bdf",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately reflects the source's statement that 'Cloud Large Language Model API bills can be drastically cut' by 'structuring prompts and conversation history to maximize cache hits', leading to a 'reduction of API costs up to 90%'. The certainty is 'observed'. The quantitative result '90%' is exact. The visual driver and outcome are directly supported by the source. The comparison is correctly set up to show the reduction."
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  },
+  {
+    "story": {
+      "week_start": "2026-06-29",
+      "week_end": "2026-07-05",
+      "rank": 7,
+      "revision_item_id": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+      "title": "Cutting Claude Code Token Costs with Optical Context Compression",
+      "summary": "Reduce input token counts by converting verbose text context, schemas, and system prompts into compact PNG images. A local proxy intercepts requests to Claude Code, squeezing dense text down to a fraction of its original token cost.",
+      "why": "As context windows grow, token costs for repetitive, dense developer data can skyrocket. Using vision capabilities to read compressed text representation is a highly creative way to bypass pricing limits.",
+      "practical": null,
+      "takeaway": null
+    },
+    "initialRaw": {
+      "story_id": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+      "explanatory_role": "quantitative_result",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Claude Code input token counts",
+      "change": "can be reduced",
+      "visual_driver": "converting verbose text context, schemas, and system prompts into compact PNG images",
+      "visible_outcome": "squeezing dense text down to a fraction of its original token cost",
+      "core_claim": "Input token counts for Claude Code can be reduced by converting verbose text context, schemas, and system prompts into compact PNG images, squeezing dense text down to a fraction of its original token cost.",
+      "metric": {
+        "direction": "decrease",
+        "comparison_target": null,
+        "baseline_label": "Verbose Text Tokens",
+        "result_label": "Compressed Image Tokens"
+      },
+      "labels": [
+        "Claude Code",
+        "Token Costs",
+        "Optical Compression"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Converting text to images increases token counts"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "optimization",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "reduce",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "finalRaw": {
+      "story_id": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+      "explanatory_role": "quantitative_result",
+      "certainty": "observed",
+      "mapping_mode": "literal",
+      "identity": "Claude Code input token counts",
+      "change": "can be reduced",
+      "visual_driver": "converting verbose text context, schemas, and system prompts into compact PNG images",
+      "visible_outcome": "squeezing dense text down to a fraction of its original token cost",
+      "core_claim": "Input token counts for Claude Code can be reduced by converting verbose text context, schemas, and system prompts into compact PNG images, squeezing dense text down to a fraction of its original token cost.",
+      "metric": {
+        "direction": "decrease",
+        "comparison_target": null,
+        "baseline_label": "Verbose Text Tokens",
+        "result_label": "Compressed Image Tokens"
+      },
+      "labels": [
+        "Claude Code",
+        "Token Costs",
+        "Optical Compression"
+      ],
+      "quantitative_facts": [],
+      "states": [],
+      "comparison": null,
+      "layers": [],
+      "routing": null,
+      "required_visible_delta": "",
+      "forbidden_contradictions": [
+        "Converting text to images increases token counts"
+      ],
+      "grammar": {
+        "context_glyph": "model_chip",
+        "mechanism_glyph": "optimization",
+        "outcome_glyph": "gauge",
+        "branch_glyphs": null,
+        "relation": "reduce",
+        "outcome_signal": "lower_tokens",
+        "human_behavior": false
+      }
+    },
+    "autoClaim": {
+      "storyId": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+      "claim": {
+        "storyId": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+        "identity": "Claude Code input token counts",
+        "change": "can be reduced",
+        "mechanism": "converting verbose text context, schemas, and system prompts into compact PNG images",
+        "primaryOutcome": "squeezing dense text down to a fraction of its original token cost",
+        "coreClaim": "Input token counts for Claude Code can be reduced by converting verbose text context, schemas, and system prompts into compact PNG images, squeezing dense text down to a fraction of its original token cost.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude Code",
+          "Token Costs",
+          "Optical Compression"
+        ],
+        "forbiddenContradictions": [
+          "Converting text to images increases token counts"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Claude Code",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Token Costs",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Optical Compression",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "grammar": {
+        "contextGlyph": "model_chip",
+        "mechanismGlyph": "workflow",
+        "outcomeGlyph": "gauge",
+        "branchGlyphs": null,
+        "relation": "flow",
+        "outcomeSignal": "lower_tokens",
+        "humanBehavior": false
+      },
+      "extractionWarnings": [
+        "role_aligned_quantitative_result_to_causal_mechanism_without_exact_metric"
+      ],
+      "semantics": {
+        "explanatoryRole": "causal_mechanism",
+        "certainty": "observed",
+        "mappingMode": "literal",
+        "visualDriver": "converting verbose text context, schemas, and system prompts into compact PNG images",
+        "metric": null,
+        "requiredVisibleDelta": "",
+        "sourceGuardTerms": []
+      }
+    },
+    "plan": {
+      "policyId": "weekly-visual-compiler-v0",
+      "claim": {
+        "storyId": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+        "identity": "Claude Code input token counts",
+        "change": "can be reduced",
+        "mechanism": "converting verbose text context, schemas, and system prompts into compact PNG images",
+        "primaryOutcome": "squeezing dense text down to a fraction of its original token cost",
+        "coreClaim": "Input token counts for Claude Code can be reduced by converting verbose text context, schemas, and system prompts into compact PNG images, squeezing dense text down to a fraction of its original token cost.",
+        "primaryEvidence": "physical_action",
+        "outcomeKind": "tradeoff",
+        "approvedLabels": [
+          "Claude Code",
+          "Token Costs",
+          "Optical Compression"
+        ],
+        "forbiddenContradictions": [
+          "Converting text to images increases token counts"
+        ],
+        "overlayDirectives": [
+          {
+            "text": "Claude Code",
+            "regionId": "hero",
+            "importance": "primary"
+          },
+          {
+            "text": "Token Costs",
+            "regionId": "hero",
+            "importance": "secondary"
+          },
+          {
+            "text": "Optical Compression",
+            "regionId": "hero",
+            "importance": "secondary"
+          }
+        ]
+      },
+      "format": "cinematic_single",
+      "renderStrategy": "one_asset",
+      "regions": [
+        {
+          "id": "hero",
+          "bounds": {
+            "x": 0.04,
+            "y": 0.08,
+            "width": 0.92,
+            "height": 0.82
+          },
+          "role": "mechanism",
+          "description": "converting verbose text context, schemas, and system prompts into compact PNG images visibly produces squeezing dense text down to a fraction of its original token cost"
+        }
+      ],
+      "transitions": [],
+      "overlays": [
+        {
+          "id": "overlay-1",
+          "text": "Claude Code",
+          "regionId": "hero",
+          "importance": "primary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-2",
+          "text": "Token Costs",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        },
+        {
+          "id": "overlay-3",
+          "text": "Optical Compression",
+          "regionId": "hero",
+          "importance": "secondary",
+          "source": "approved_claim"
+        }
+      ],
+      "renderUnits": [
+        {
+          "id": "asset-1",
+          "regionId": "hero",
+          "assetRequest": "converting verbose text context, schemas, and system prompts into compact PNG images visibly produces squeezing dense text down to a fraction of its original token cost",
+          "prompt": "Create one clean cinematic visual asset for later editorial compositing. Visible subject/system: Claude Code input token counts. This asset must show: converting verbose text context, schemas, and system prompts into compact PNG images visibly produces squeezing dense text down to a fraction of its original token cost. The physical action must support this mechanism: converting verbose text context, schemas, and system prompts into compact PNG images. The visible result must remain compatible with: squeezing dense text down to a fraction of its original token cost. Premium technology-magazine cinematography, believable materials and physics, strong silhouette, dramatic available light, restrained modern grade, editorial tension, wide horizontal composition. Continuity key: 1fc8e909-93c6-4ff1-ba09-63f751e1ebf5:Claude Code input token counts. Preserve the same subject design, camera language, environment, scale and material identity across related assets. Asset only. Do not create an infographic or finished card layout. Absolutely no text, letters, words, numbers, symbols, logos, watermarks, captions, labels, UI copy, diagrams, arrows, callouts, borders, title bars or panel headings. Leave calm negative space for deterministic labels added after rendering.",
+          "continuityKey": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5:Claude Code input token counts",
+          "generatedTextAllowed": false,
+          "infographicLayoutAllowed": false
+        }
+      ],
+      "pixelAssertions": [
+        "Visible mechanism: converting verbose text context, schemas, and system prompts into compact PNG images",
+        "Visible outcome: squeezing dense text down to a fraction of its original token cost",
+        "One causal claim: Input token counts for Claude Code can be reduced by converting verbose text context, schemas, and system prompts into compact PNG images, squeezing dense text down to a fraction of its original token cost."
+      ],
+      "forbiddenContradictions": [
+        "Converting text to images increases token counts"
+      ],
+      "execution": {
+        "candidateCount": 2,
+        "imageCalls": 2,
+        "visionCalls": 2,
+        "fullRegenerations": 0,
+        "estimatedUsd": 0.05,
+        "estimatedDurationMs": 26000,
+        "withinPolicy": true
+      }
+    },
+    "renderMode": "deterministic_literal",
+    "initialAudit": {
+      "storyId": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately identifies the causal mechanism: 'converting verbose text context, schemas, and system prompts into compact PNG images' (visual driver) leads to 'Claude Code input token counts' being 'reduced' (change) by 'squeezing dense text down to a fraction of its original token cost' (visible outcome). The certainty is 'observed'. The claim is visually testable as the identity, driver, and outcome can be depicted."
+    },
+    "finalAudit": {
+      "storyId": "1fc8e909-93c6-4ff1-ba09-63f751e1ebf5",
+      "roleSupported": true,
+      "claimSupported": true,
+      "visualDriverSupported": true,
+      "outcomeSupported": true,
+      "certaintyPreserved": true,
+      "metricExact": true,
+      "comparisonTargetPreserved": true,
+      "noInventedMechanism": true,
+      "oneCoreClaim": true,
+      "visuallyTestable": true,
+      "passed": true,
+      "issues": [],
+      "repairInstruction": "",
+      "rationale": "The claim accurately identifies the causal mechanism: 'converting verbose text context, schemas, and system prompts into compact PNG images' (visual driver) leads to 'Claude Code input token counts' being 'reduced' (change) by 'squeezing dense text down to a fraction of its original token cost' (visible outcome). The certainty is 'observed'. The claim is visually testable as the identity, driver, and outcome can be depicted."
+    },
+    "deterministicIssues": [],
+    "repaired": false,
+    "eligible": true
+  }
+]

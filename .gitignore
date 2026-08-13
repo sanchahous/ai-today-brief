@@ -63,3 +63,12 @@ raw/_local/*
 !raw/_local/.gitkeep
 artifacts/_local/*
 !artifacts/_local/.gitkeep
+
+# experiments/: ephemeral backtest zone. The .md/.json/.csv reports ARE tracked
+# (wiki pages cite them as sources); rendered pixels are not — 83 MB of them were
+# removed in the W0 cleanup. Download run packages from the Actions artifact of
+# .github/workflows/visual-experiment.yml instead of committing them.
+experiments/**/*.png
+experiments/**/*.jpg
+experiments/**/*.jpeg
+experiments/**/*.webp

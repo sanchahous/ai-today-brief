@@ -11,7 +11,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
 engine fix 2026-08-10 (run `31367921173`), newer-draft banner + restore error fix 2026-08-10, Postpone release feature 2026-08-10
-Last updated: 2026-08-11
+Last updated: 2026-08-13
 
 ---
 
@@ -169,6 +169,12 @@ Chip `semantic` — мінімум із context/mechanism/consequence/instant-co
 prompt history; Approve override використовуй лише якщо очима підтверджуєш усі чотири пункти.
 (source: `src/components/admin/weekly-workspace.tsx`, `src/lib/content-sim/vision-critic.ts`,
 `pipeline/card-image.ts`)
+
+> **Не плутай з experimental V10:** V10 contact sheet — окремий owner-review артефакт, не
+> вкладка production **Visuals**. Його automated score може підказати, що перевірити, але не
+> натискає Approve і не змінює digest, Supabase чи реліз. Для експерименту дай окремий verdict
+> `approve` / `local repair` / `rework` / `reject`.
+> (source: `experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/results/README.md`)
 
 ### Release: approve → schedule → (за потреби) postpone → pause
 

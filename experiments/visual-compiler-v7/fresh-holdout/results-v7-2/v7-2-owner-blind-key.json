@@ -1,0 +1,51 @@
+[
+  {
+    "storyId": "21161f64-804b-4bea-aa06-35a475dd9f0f",
+    "rank": "1",
+    "X": "current",
+    "Y": "selected",
+    "treatment": "reuse_router_selection"
+  },
+  {
+    "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+    "rank": "2",
+    "X": "selected",
+    "Y": "current",
+    "treatment": "reported_consistency_signal"
+  },
+  {
+    "storyId": "b2b29a4f-e909-4766-9734-968e6a679aa0",
+    "rank": "3",
+    "X": "current",
+    "Y": "selected",
+    "treatment": "reuse_router_selection"
+  },
+  {
+    "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+    "rank": "4",
+    "X": "selected",
+    "Y": "current",
+    "treatment": "human_behavior_split"
+  },
+  {
+    "storyId": "40673aee-fac7-451f-be07-51016c857613",
+    "rank": "5",
+    "X": "current",
+    "Y": "selected",
+    "treatment": "reported_usage_signal"
+  },
+  {
+    "storyId": "bbc0432e-fe33-4d31-9fe1-3b2b5e36dfa1",
+    "rank": "6",
+    "X": "selected",
+    "Y": "current",
+    "treatment": "reuse_router_selection"
+  },
+  {
+    "storyId": "5104e334-3ee9-4b0e-8e64-1f6e95bc5701",
+    "rank": "7",
+    "X": "current",
+    "Y": "selected",
+    "treatment": "science_reasoning_flow"
+  }
+]
