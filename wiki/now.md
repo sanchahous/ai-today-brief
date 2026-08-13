@@ -10,13 +10,20 @@ Last updated: 2026-08-13
 
 ## Стан репозиторію
 
+- **PR #229 review (2026-08-13):** детальний технічний + функціональний review зафіксовано в
+  [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md)
+  на гілці `review/pr-229-sonnet-plan`. Вердикт: **не мерджити як є**. V10 покриває 3
+  захардкожені treatment, unmatched → `null`/throw; 3/3 V6 eval не є доказом (n=3, rubric leak,
+  `generated_text` waiver). Executor spec для Sonnet 5: хвилі W0–W5. (source: PR #229,
+  `wf_40755980-8f7` findings dump)
+
 - **Visual Affordance V10 owner local repairs (2026-08-13):** isolated experimental candidate
   оновив три візуальні пояснення за конкретним owner feedback: Gemini показує два різні code
   artifacts; Claude — послідовність `cache → split → BOUNDED 1/2/3` та monitor на кожній сесії;
   Deep Work — промінь до картки-підказки й завершену людську дію на маршруті. Targeted V6 має
-  3/3 hard-integrity, 3/3 headline-grounded і 3/0 blind preference для V10. Це не production
-  rollout: `main`, production visuals і Supabase не змінювалися; фінальний owner verdict ще
-  потрібен. (source: owner review 2026-08-13,
+  3/3 hard-integrity, 3/3 headline-grounded і 3/0 blind preference для V10 — **але див. review
+  вище: ця цифра не є production evidence**. Це не production rollout: `main`, production
+  visuals і Supabase не змінювалися. (source: owner review 2026-08-13,
   `experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/results/evaluation-report.md`,
   commit `720b1a2`)
 
