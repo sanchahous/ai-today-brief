@@ -1,0 +1,103 @@
+name: Visual affordance v10 visual and critic repair v3
+
+on:
+  push:
+    branches:
+      - experiment/visual-affordance-router-v10-20260813
+    paths:
+      - .github/workflows/visual-affordance-v10-visual-repair-v3.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    name: Apply prepared repair with structural integrity anchor
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-affordance-router-v10-20260813
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Reuse prepared repair with robust anchor matching
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          workflow = Path(
+              '.github/workflows/visual-affordance-v10-visual-repair-v2.yml'
+          ).read_text()
+          start_marker = "          python - <<'PY'\n"
+          end_marker = "\n          PY\n"
+          start = workflow.index(start_marker) + len(start_marker)
+          end = workflow.index(end_marker, start)
+          script = textwrap.dedent(workflow[start:end])
+
+          old_start = script.index(
+              'anchor = """  if (',
+              script.index("Expected one universal beam block"),
+          )
+          old_end_marker = (
+              'integrity = integrity.replace(anchor, beam_insert + anchor, 1)'
+          )
+          old_end = script.index(old_end_marker, old_start) + len(old_end_marker)
+          robust_anchor = r'''anchor_match = re.search(
+              r"\n  if \(\n\s+grammar === 'cinematic_domain_scene' &&\n"
+              r"\s+!observation\.domainContextVisible\n\s+\) \{",
+              integrity,
+          )
+          beam_insert = """  if (
+            (grammar === 'cinematic_domain_scene' ||
+              grammar === 'one_to_one_physical_analogy') &&
+            observation.beamPresent
+          ) {
+            if (!observation.beamSourceVisible) blockers.push('beam_source_missing');
+            if (!observation.beamTargetVisible) blockers.push('beam_target_missing');
+            if (!observation.beamPurposeClear) blockers.push('beam_purpose_unclear');
+          }
+
+          """
+          if not anchor_match:
+              raise SystemExit('Cinematic domain integrity anchor was not found structurally.')
+          insert_at = anchor_match.start() + 1
+          integrity = integrity[:insert_at] + beam_insert + integrity[insert_at:]'''
+          script = script[:old_start] + robust_anchor + script[old_end:]
+          exec(compile(script, 'visual-affordance-v10-repair', 'exec'), {})
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate repaired visual grammar and critic
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-affordance-router-v10.test.ts
+          src/lib/weekly-digest/visual-affordance-treatment-v10.test.ts
+          src/lib/weekly-digest/visual-integrity-v10.test.ts
+
+      - name: Typecheck repository
+        run: npm run typecheck
+
+      - name: Persist repaired visual system
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            src/lib/weekly-digest/visual-affordance-treatment-v10.ts \
+            src/lib/weekly-digest/visual-affordance-treatment-v10.test.ts \
+            src/lib/weekly-digest/visual-integrity-v10.ts \
+            src/lib/weekly-digest/visual-integrity-v10.test.ts \
+            scripts/visual-affordance-v10-targeted-evaluate.ts
+          git commit -m "Repair V10 visual grammar and story-aware integrity mapping"
+          git fetch origin experiment/visual-affordance-router-v10-20260813
+          git rebase origin/experiment/visual-affordance-router-v10-20260813
+          SKIP_E2E=1 git push origin HEAD:experiment/visual-affordance-router-v10-20260813
