@@ -30,9 +30,13 @@ on:
         required: true
         default: '@cf/black-forest-labs/flux-2-klein-9b'
       baseline_run_id:
-        description: Optional Actions run id holding the comparison baseline package
+        description: Actions run id holding the comparison baseline package (leave empty to skip the baseline arm)
         required: false
-        default: ''
+        default: '31629283372'
+      baseline_artifact:
+        description: Artifact name inside that run. Required, because the render script expects <root>/images/*.jpg directly — downloading a whole run nests each artifact in its own subdirectory and the lookup misses.
+        required: false
+        default: visual-compiler-v8-targeted-evaluated-v4
       evaluate:
         description: Run the paid judge stage after rendering
         type: boolean
@@ -80,7 +84,19 @@ jobs:
         run: >-
           gh run download "${{ inputs.baseline_run_id }}"
           --repo "$GITHUB_REPOSITORY"
+          --name "${{ inputs.baseline_artifact }}"
           --dir artifacts/_local/visual-baseline
+
+      - name: Verify the baseline layout the render script expects
+        if: inputs.baseline_run_id != ''
+        run: |
+          if [ ! -d artifacts/_local/visual-baseline/images ]; then
+            echo "::error::Baseline is missing artifacts/_local/visual-baseline/images/."
+            echo "Downloaded tree:"
+            find artifacts/_local/visual-baseline -maxdepth 2 -type d
+            exit 1
+          fi
+          ls artifacts/_local/visual-baseline/images | head
 
       - name: Render candidates
         env:
