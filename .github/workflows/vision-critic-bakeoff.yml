@@ -1,0 +1,104 @@
+name: Vision critic model bake-off
+
+# Selects the model that should back the LIVE weekly image critic
+# (CONTENT_SIM_VISION_OPENROUTER_MODEL / CONTENT_SIM_VISION_GEMINI_MODEL, both of
+# which currently default to gemini-2.5-flash — see pipeline/providers/vision.ts).
+#
+# Manual dispatch only: it spends OpenRouter vision credits. Nothing is written
+# back to the repository and no model is switched automatically — the report is
+# evidence for an owner decision.
+#
+# GEMINI_API_KEY is deliberately NOT passed to the run step. generateWithVision
+# prefers the Gemini path whenever that key is present, which would ignore the
+# per-model override and make every arm score identically.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Actions run id of the visual-experiment package holding render-manifest.json and images/
+        required: true
+        default: '31739283280'
+      artifact:
+        description: Artifact name inside that run
+        required: true
+        default: visual-experiment-31739283280
+      models:
+        description: Comma-separated OpenRouter vision models to compare
+        required: true
+        default: google/gemini-2.5-flash,anthropic/claude-sonnet-5,google/gemini-3.1-pro-preview
+      samples:
+        description: Samples per model per image (self-consistency)
+        required: true
+        default: '3'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: vision-critic-bakeoff
+  cancel-in-progress: false
+
+jobs:
+  bakeoff:
+    name: Compare critic models on known-unshippable images
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Download the image package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh run download "${{ inputs.run_id }}"
+          --repo "$GITHUB_REPOSITORY"
+          --name "${{ inputs.artifact }}"
+          --dir artifacts/_local/visual-run
+
+      - name: Verify the package layout
+        run: |
+          if [ ! -f artifacts/_local/visual-run/render-manifest.json ] \
+             || [ ! -d artifacts/_local/visual-run/images ]; then
+            echo "::error::Package is missing render-manifest.json or images/."
+            find artifacts/_local/visual-run -maxdepth 2 | head -40
+            exit 1
+          fi
+          ls artifacts/_local/visual-run/images
+
+      - name: Run the bake-off
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          CRITIC_BAKEOFF_PACKAGE: artifacts/_local/visual-run
+          CRITIC_BAKEOFF_OUT: artifacts/_local/critic-bakeoff
+          CRITIC_BAKEOFF_MODELS: ${{ inputs.models }}
+          CRITIC_BAKEOFF_SAMPLES: ${{ inputs.samples }}
+        run: npx tsx scripts/vision-critic-model-bakeoff.ts
+
+      - name: Summarise in the run page
+        if: always()
+        run: |
+          if [ -f artifacts/_local/critic-bakeoff/bakeoff-report.md ]; then
+            cat artifacts/_local/critic-bakeoff/bakeoff-report.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload the bake-off report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vision-critic-bakeoff-${{ github.run_id }}
+          path: artifacts/_local/critic-bakeoff
+          if-no-files-found: error
+          retention-days: 30
