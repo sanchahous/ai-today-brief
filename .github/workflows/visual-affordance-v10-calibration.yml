@@ -1,0 +1,74 @@
+name: Visual affordance v10 owner calibration
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-v7-role-router-20260812
+    paths:
+      - .github/workflows/visual-affordance-v10-calibration.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  calibrate:
+    name: Validate owner-grounded affordance router and critic
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-compiler-v7-role-router-20260812
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run v10 routing and critic tests
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-affordance-v10.test.ts
+          src/lib/weekly-digest/visual-critic-v10.test.ts
+          src/lib/weekly-digest/visual-role-router-v7.test.ts
+          src/lib/weekly-digest/visual-specialized-v8.test.ts
+
+      - name: Typecheck repository
+        run: npm run typecheck
+
+      - name: Build owner calibration report
+        env:
+          VISUAL_V10_OWNER_CALIBRATION: experiments/visual-affordance-v10/owner-calibration-v1.json
+          VISUAL_V10_CALIBRATION_OUT_DIR: artifacts/visual-affordance-v10
+        run: npx tsx scripts/visual-affordance-v10-calibrate.ts
+
+      - name: Upload calibration package
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-affordance-v10-owner-calibration
+          path: artifacts/visual-affordance-v10
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Persist calibration report on experimental branch
+        run: |
+          mkdir -p experiments/visual-affordance-v10/results
+          cp artifacts/visual-affordance-v10/calibration-report.md experiments/visual-affordance-v10/results/
+          cp artifacts/visual-affordance-v10/calibration-normalized.json experiments/visual-affordance-v10/results/
+          printf '%s\n' "$GITHUB_RUN_ID" > experiments/visual-affordance-v10/results/calibration-run-id.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/visual-affordance-v10/results
+          if git diff --cached --quiet; then
+            echo "Calibration outputs are unchanged."
+          else
+            git commit -m "Record owner-grounded visual v10 calibration [skip ci]"
+            git fetch origin experiment/visual-compiler-v7-role-router-20260812
+            git rebase origin/experiment/visual-compiler-v7-role-router-20260812
+            SKIP_E2E=1 git push origin HEAD:experiment/visual-compiler-v7-role-router-20260812
+          fi
