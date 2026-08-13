@@ -77,16 +77,21 @@ function cleanLabels(values: readonly string[]): string[] {
 export function selectAffordanceTreatmentV10(
   input: AffordanceTreatmentInputV10,
 ): AffordanceTreatmentV10 | null {
-  if (!input.eligible) return null;
-  const plan = planVisualAffordancesV10(input);
-  const primary = plan.candidates[0]?.grammar;
   const source = sourceText(input.story).toLowerCase();
+  const directComparison =
+    /\b(?:consistency|inconsistency|inconsistencies|inconsistent|reliability|community critique|community debate)\b/.test(source) &&
+    /\b(?:gemini|model|coding|developer community)\b/.test(source);
+  const directSessionWorkflow =
+    /\b(?:token|context window|rate limit|usage threshold|high-volume|burn rate|session)\b/.test(source) &&
+    /\b(?:cache|caching|split|monitor|limit|threshold|interrupt|consumption)\b/.test(source);
+  const plan = input.eligible ? planVisualAffordancesV10(input) : null;
+  const primary = plan?.candidates[0]?.grammar;
 
-  if (primary === 'controlled_comparison') {
+  if (primary === 'controlled_comparison' || directComparison) {
     return {
       storyId: input.story.revision_item_id,
       kind: 'same_system_output_variability',
-      grammar: primary,
+      grammar: 'controlled_comparison',
       renderMode: 'deterministic',
       labels: cleanLabels(['SAME TASK', 'RUN A', 'RUN B']),
       expectedEvidence: [
@@ -107,7 +112,7 @@ export function selectAffordanceTreatmentV10(
   }
 
   if (
-    primary === 'causal_process_sequence' &&
+    (primary === 'causal_process_sequence' || directSessionWorkflow) &&
     /\b(token|context|session|cache|caching|threshold|rate limit|monitor|split)\b/.test(
       source,
     )
@@ -115,7 +120,7 @@ export function selectAffordanceTreatmentV10(
     return {
       storyId: input.story.revision_item_id,
       kind: 'controlled_session_workflow',
-      grammar: primary,
+      grammar: 'causal_process_sequence',
       renderMode: 'deterministic',
       labels: cleanLabels(['CACHE', 'SPLIT', 'MONITOR']),
       expectedEvidence: [
@@ -136,6 +141,7 @@ export function selectAffordanceTreatmentV10(
   }
 
   if (
+    input.eligible &&
     primary === 'cinematic_domain_scene' &&
     /\b(deep work|active thinking|problem-solving|sparring partner|bounded hint|distraction|cognitive)\b/.test(
       source,

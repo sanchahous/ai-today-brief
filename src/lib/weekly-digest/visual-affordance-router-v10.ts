@@ -81,7 +81,7 @@ function requiresTemporalSequence(
 ): boolean {
   if (role === 'state_transition') return true;
   if (exactMetric && role === 'quantitative_result') return false;
-  return /\b(crash|resume|restart|checkpoint|cache|caching|split|bounded sessions?|monitor|fuzz(?:ing)?|property testing|failure|repair|retest|retry|before|after|interruption|continuation|pipeline stages?)\b/i.test(
+  return /\b(crash|resume|restart|checkpoint|cache|caching|split|bounded sessions?|monitor|fuzz(?:ing)?|property testing|failure|repair|retest|retry|interruption|continuation|pipeline stages?)\b/i.test(
     source,
   );
 }
