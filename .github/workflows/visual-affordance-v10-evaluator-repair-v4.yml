@@ -1,0 +1,120 @@
+name: Visual affordance v10 evaluator repair v4
+
+on:
+  push:
+    branches:
+      - experiment/visual-affordance-router-v10-20260813
+    paths:
+      - .github/workflows/visual-affordance-v10-evaluator-repair-v4.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    name: Move semantic invariants to the story-aware stage
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-affordance-router-v10-20260813
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Patch story-aware invariant and beam-purpose checks
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/visual-affordance-v10-targeted-evaluate.ts')
+          text = path.read_text()
+
+          text = text.replace(
+              "  domainContextSupported: boolean;\n  labelsSupportedByPixels: boolean;",
+              "  domainContextSupported: boolean;\n  inputInvariantSupported: boolean;\n  systemInvariantSupported: boolean;\n  beamPurposeSupportsClaim: boolean;\n  labelsSupportedByPixels: boolean;",
+              1,
+          )
+          text = text.replace(
+              "    domainContextSupported: bool(row.domain_context_supported),\n    labelsSupportedByPixels: bool(row.labels_supported_by_pixels),",
+              "    domainContextSupported: bool(row.domain_context_supported),\n    inputInvariantSupported: bool(row.input_invariant_supported),\n    systemInvariantSupported: bool(row.system_invariant_supported),\n    beamPurposeSupportsClaim: bool(row.beam_purpose_supports_claim),\n    labelsSupportedByPixels: bool(row.labels_supported_by_pixels),",
+              1,
+          )
+
+          instruction_anchor = (
+              "          'domain_context_supported means the pixels visibly anchor the real domain or human situation needed by this story.',\n"
+              "          'labels_carry_claim is true when the central meaning would disappear after hiding the labels.',"
+          )
+          instruction_replacement = (
+              "          'domain_context_supported means the pixels visibly anchor the real domain or human situation needed by this story.',\n"
+              "          'input_invariant_supported means the literal observation shows one identical input reused across compared runs; system_invariant_supported means one identical model, actor or chamber is reused. Judge these after the story reveals which invariants matter.',\n"
+              "          'beam_purpose_supports_claim means a visible beam or light has a source-grounded function once the story is known. Source and target still come only from the blind observation.',\n"
+              "          'labels_carry_claim is true when the central meaning would disappear after hiding the labels.',"
+          )
+          if instruction_anchor not in text:
+              raise SystemExit('Story-aware instruction anchor was not found.')
+          text = text.replace(instruction_anchor, instruction_replacement, 1)
+
+          text = text.replace(
+              "mapping_complete, pixel_action_supports_claim, pixel_outcome_supports_claim, pixel_relation_supports_claim, domain_context_supported, labels_supported_by_pixels",
+              "mapping_complete, pixel_action_supports_claim, pixel_outcome_supports_claim, pixel_relation_supports_claim, domain_context_supported, input_invariant_supported, system_invariant_supported, beam_purpose_supports_claim, labels_supported_by_pixels",
+              1,
+          )
+          text = text.replace(
+              "mapping_complete:boolean,pixel_action_supports_claim:boolean,pixel_outcome_supports_claim:boolean,pixel_relation_supports_claim:boolean,domain_context_supported:boolean,labels_supported_by_pixels:boolean",
+              "mapping_complete:boolean,pixel_action_supports_claim:boolean,pixel_outcome_supports_claim:boolean,pixel_relation_supports_claim:boolean,domain_context_supported:boolean,input_invariant_supported:boolean,system_invariant_supported:boolean,beam_purpose_supports_claim:boolean,labels_supported_by_pixels:boolean",
+              1,
+          )
+
+          text = text.replace(
+              "    beamPurposeClear: blind.beamPurposeClear,",
+              "    beamPurposeClear: card.beamPurposeSupportsClaim,",
+              1,
+          )
+          text = text.replace(
+              "    inputInvariantPreserved: blind.inputInvariantPreserved,\n    systemInvariantPreserved: blind.systemInvariantPreserved,",
+              "    inputInvariantPreserved: card.inputInvariantSupported,\n    systemInvariantPreserved: card.systemInvariantSupported,",
+              1,
+          )
+
+          for token in [
+              'inputInvariantSupported',
+              'systemInvariantSupported',
+              'beamPurposeSupportsClaim',
+              'input_invariant_supported',
+              'system_invariant_supported',
+              'beam_purpose_supports_claim',
+          ]:
+              if text.count(token) < 2:
+                  raise SystemExit(f'Evaluator v4 patch incomplete for {token}.')
+
+          path.write_text(text)
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run visual integrity regression tests
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-affordance-router-v10.test.ts
+          src/lib/weekly-digest/visual-affordance-treatment-v10.test.ts
+          src/lib/weekly-digest/visual-integrity-v10.test.ts
+
+      - name: Typecheck repository
+        run: npm run typecheck
+
+      - name: Persist evaluator repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/visual-affordance-v10-targeted-evaluate.ts
+          git commit -m "Move visual invariants to story-aware critic stage"
+          git fetch origin experiment/visual-affordance-router-v10-20260813
+          git rebase origin/experiment/visual-affordance-router-v10-20260813
+          SKIP_E2E=1 git push origin HEAD:experiment/visual-affordance-router-v10-20260813
