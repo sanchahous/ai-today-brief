@@ -5,7 +5,7 @@ Summary: головний зміст усієї wiki. Кожен рядок — 
 Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery fix
 2026-08-10, story-image rollout deduplication і three-concept illustration jury 2026-08-11,
 experimental Visual Affordance V10 owner review 2026-08-13
-Last updated: 2026-08-13
+Last updated: 2026-08-13 (PR #229 review plan)
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -114,6 +114,7 @@ Last updated: 2026-08-13
 | ✅ [audits/2026-06-10-portal](audits/2026-06-10-portal.md) | Повний аудит порталу | колишній `docs/audit/2026-06-10-portal-audit.md` |
 | ✅ [audits/2026-06-12-analytics-gsc](audits/2026-06-12-analytics-gsc.md) | Аудит аналітики й GSC | колишній `docs/audit/2026-06-12-analytics-gsc-audit.md` |
 | ✅ [audits/2026-07-01-seo-organic](audits/2026-07-01-seo-organic.md) | Чому немає органіки | колишній `docs/audit/2026-07-01-seo-organic-audit.md` |
+| ✅ [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md) | Review PR #229 (Visual Affordance V10) + executor spec для Sonnet 5: не мерджити як є, v11 total-function + SceneSpec | PR #229, workflow `wf_40755980-8f7` |
 
 ## Decisions (ADR)
 

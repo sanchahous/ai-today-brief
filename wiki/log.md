@@ -4,7 +4,52 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-11
+Last updated: 2026-08-13
+
+## 2026-08-13 — PR #229 Visual V10 review + Sonnet executor plan
+
+**Джерело:** GitHub PR #229; код `src/lib/weekly-digest/visual-*.ts`; V6 pixels у
+`experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/`; interrupted Claude
+workflow `wf_40755980-8f7` (138 findings витягнуто з StructuredOutput після spend-limit).
+Гілка фіксації: `review/pr-229-sonnet-plan`.
+
+**Змінено:** нова сторінка
+[audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md);
+рядок в [index](index.md); уточнення в [now](now.md); новий конфлікт §8 в
+[open-questions](open-questions.md).
+
+**Вердикт:** не мерджити PR як є. V10 — три ручні сцени, не алгоритм; eval 3/3 ненадійний
+(n=3, rubric leak, `generated_text` waiver); 67 workflows + бінарники. План для Sonnet 5 —
+хвилі W0–W5 (hygiene → total router → honest scenes → cost gate → honest eval → shadow worker).
+
+**Другий прохід того ж дня — ручна верифікація + доповнення сторінки.** Оскільки фаза
+adversarial-верифікації в `wf_40755980-8f7` не встигла відпрацювати (spend limit), ключові
+заявки перевірено безпосередньо в коді гілки. Підтвердились усі перевірені; додано те, чого
+в першій редакції не було:
+
+- четверта витік-точка блайнду — blind-промпт (`targeted-evaluate.ts:374`) прямо каже судді не
+  флагати deterministic labels, тобто перша стадія не intent-blind, попри формулювання
+  «image-only and intent-blind» в усіх звітах;
+- `labelsHiddenDuringSemanticTest: true` не виконується: підписи впечені в растр, тому
+  «pixels-only» файли досі містять `BOUNDED 1/2/3` і лістинги коду;
+- фабрикацію `sourceGrounding` для Claude-thresholds підтверджено дослівним звіренням з
+  approved story (джерело каже лише про monitoring token spend — CACHE і SPLIT вигадані);
+- `validateVisualPropositionV10` — механізм, заради якого існує весь V10, — не викликається
+  жодним модулем чи скриптом; це корінь того, чому сцени довелося малювати руками;
+- виміряне покриття: 4/14 історій отримують treatment, 1/14 і eligible, і правильно
+  змаршрутизована; на свіжому holdout 0 specialized matches, repair полагодив 0 із 3;
+- чотири баги коректності (`inferRole` `\b` у альтернаціях, односторонність `guardedCertainty`,
+  скоуп `hasExactMetric`/`requiresTemporalSequence`, null-safety `parseAutoVisualClaimV5`);
+- відсутній `markerUnits` у всіх пʼяти `<marker>` → вістря 84 user units, dispatch-стрілки 9,3 px
+  — механічна причина owner-тегу `broken_arrow`;
+- уточнення по вартості: стеля економії в доларах $19–53/рік, справжній важіль — 190 с/FLUX-виклик
+  проти 95-хвилинного дедлайну воркера;
+- ⚠️ **коригує пункт T0.5 першої редакції:** там сказано, що відсутність
+  `src/lib/weekly-digest/**` у `LOGIC_INCLUDE` — «це добре». Це половина картини: gate справді
+  не роздувається, але покриття 18 нових модулів не вимірюється взагалі, тому заява PR
+  «coverage passed» не є доказом щодо жодного доданого рядка;
+- уточнення до T0.2: `git rm` у follow-up коміті прибирає 88 МБ з `main` **лише при
+  squash-merge** (owner обрав саме його); при merge-коміті блоби входять в історію назавжди.
 
 ## 2026-08-11 — Story-image rollout: regenerate deduplication
 
