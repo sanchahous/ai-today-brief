@@ -462,6 +462,77 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
+/**
+ * Once an owner approves a story image, keep its selected primary file and
+ * discard the review-only render gallery from private storage. The artifact
+ * row and review ledger remain the audit trail; only the extra image bytes
+ * stop being available as selectable versions.
+ */
+async function pruneApprovedStoryImagePreviews(artifactId: string) {
+  const admin = getSupabaseAdmin();
+  const { data: artifact, error: artifactError } = await admin
+    .from('weekly_digest_artifacts')
+    .select('id,storage_bucket,storage_path,content,metadata')
+    .eq('id', artifactId)
+    .maybeSingle();
+  if (artifactError) throw new Error(artifactError.message);
+  if (!artifact || artifact.storage_bucket === null) return;
+
+  const content = jsonRecord(artifact.content);
+  const paths = new Set<string>();
+  const previewPaths = Array.isArray(content.preview_paths)
+    ? content.preview_paths.filter((value): value is string => typeof value === 'string')
+    : [];
+  for (const path of previewPaths) paths.add(path);
+  const iterationPreviews = Array.isArray(content.iteration_previews)
+    ? content.iteration_previews
+        .filter(
+          (value): value is Record<string, Json | undefined> =>
+            Boolean(value) && typeof value === 'object' && !Array.isArray(value),
+        )
+        .map((value) => value.path)
+        .filter((value): value is string => typeof value === 'string')
+    : [];
+  for (const path of iterationPreviews) paths.add(path);
+
+  const removable = [...paths].filter((path) => path !== artifact.storage_path);
+  if (removable.length > 0) {
+    const { error: removeError } = await admin.storage
+      .from(artifact.storage_bucket)
+      .remove(removable);
+    if (removeError) throw new Error(removeError.message);
+  }
+
+  const {
+    preview_paths: _previewPaths,
+    iteration_previews: _iterationPreviews,
+    ...keptContent
+  } = content;
+  const metadata = jsonRecord(artifact.metadata);
+  const selectedConcept = Array.isArray(metadata.variant_concepts)
+    ? metadata.variant_concepts.find((value) => jsonRecord(value).index === 0)
+    : undefined;
+  const selectedScore = Array.isArray(metadata.variant_scores)
+    ? metadata.variant_scores.find((value) => jsonRecord(value).index === 0)
+    : undefined;
+  const {
+    variant_concepts: _variantConcepts,
+    variant_scores: _variantScores,
+    ...keptMetadata
+  } = metadata;
+  if (selectedConcept) {
+    keptMetadata.variant_concepts = [{ ...jsonRecord(selectedConcept), index: 0 }];
+  }
+  if (selectedScore) {
+    keptMetadata.variant_scores = [{ ...jsonRecord(selectedScore), index: 0 }];
+  }
+  const { error: contentError } = await admin
+    .from('weekly_digest_artifacts')
+    .update({ content: keptContent as Json, metadata: keptMetadata as Json })
+    .eq('id', artifactId);
+  if (contentError) throw new Error(contentError.message);
+}
+
 export async function reviewWeeklyArtifactAction(formData: FormData) {
   const decision = requiredString(formData, 'decision');
   const roles = decision === 'approved' ? (['owner'] as const) : (['owner', 'editor'] as const);
@@ -548,6 +619,9 @@ export async function reviewWeeklyArtifactAction(formData: FormData) {
           dispatchError instanceof Error ? dispatchError.message : String(dispatchError),
         );
       }
+    }
+    if (artifact.artifact_type === 'story_image') {
+      await pruneApprovedStoryImagePreviews(artifactId);
     }
   }
   revalidateWeeklyAdmin(artifact.weekly_digest_id);
