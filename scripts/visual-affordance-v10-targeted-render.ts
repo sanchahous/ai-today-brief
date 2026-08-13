@@ -29,6 +29,7 @@ const CF_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN?.trim() || '';
 const MODEL =
   process.env.VISUAL_V10_IMAGE_MODEL?.trim() ||
   '@cf/black-forest-labs/flux-2-klein-9b';
+const RENDER_REVISION = process.env.VISUAL_V10_RENDER_REVISION?.trim() || 'v10';
 
 const IMG_W = 1280;
 const IMG_H = 720;
@@ -150,7 +151,7 @@ async function generateImage(input: {
   form.append('prompt', input.prompt);
   form.append('width', String(IMG_W));
   form.append('height', String(IMG_H));
-  form.append('seed', String(seedFromString(`v10:${input.storyId}`)));
+  form.append('seed', String(seedFromString(`${RENDER_REVISION}:${input.storyId}`)));
   const response = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/run/${MODEL}`,
     {

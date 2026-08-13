@@ -86,6 +86,9 @@ describe('visual affordance treatments v10', () => {
     expect(final).toContain('RUN B');
     expect(pixels).toContain('data-run-output="A"');
     expect(pixels).toContain('data-run-output="B"');
+    expect(pixels).toContain('data-code-artifact="linear"');
+    expect(pixels).toContain('data-code-artifact="branching"');
+    expect(pixels).toContain('function solve(task)');
   });
 
   it('shows cache split and monitor as one operational workflow', () => {
@@ -114,6 +117,11 @@ describe('visual affordance treatments v10', () => {
     expect(svg).toContain('data-cache-reservoir="true"');
     expect(svg).toContain('data-session-splitter="true"');
     expect(svg).toContain('data-bounded-session="1"');
+    expect(svg).toContain('data-session-dispatch="true"');
+    expect(svg).toContain('data-monitor-rail="true"');
+    expect(svg).toContain('BOUNDED 1');
+    expect(svg).toContain('BOUNDED 2');
+    expect(svg).toContain('BOUNDED 3');
   });
 
   it('requires one visible device and exactly two attached hands for bounded assistance', () => {
@@ -134,37 +142,41 @@ describe('visual affordance treatments v10', () => {
     expect(prompt).toContain('Exactly two human hands');
     expect(prompt).toContain('small physical AI assistance device');
     expect(prompt).toContain('unmistakable source of one narrow cyan cone');
+    expect(prompt).toContain('one small physical hint card');
+    expect(prompt).toContain('one thick warm-amber route');
+    expect(prompt).toContain('clearly illuminated amber finish marker');
+    expect(prompt).toContain('one unbroken route to the finish marker');
     expect(prompt).toContain('No other person, arm, hand');
     expect(prompt).toContain('Passive automation is forbidden');
   });
 
   it('uses direct approved story text when the generic Gemini claim audit was ineligible', () => {
-  const value = selectAffordanceTreatmentV10({
-    story: story({
-      title: 'Gemini faces community critique regarding model performance consistency',
-      summary:
-        'The developer community debates reliability in coding environments and reports inconsistencies affecting production tasks.',
-    }),
-    autoClaim: claim('uncertainty_announcement'),
-    eligible: false,
+    const value = selectAffordanceTreatmentV10({
+      story: story({
+        title: 'Gemini faces community critique regarding model performance consistency',
+        summary:
+          'The developer community debates reliability in coding environments and reports inconsistencies affecting production tasks.',
+      }),
+      autoClaim: claim('uncertainty_announcement'),
+      eligible: false,
+    });
+    expect(value?.kind).toBe('same_system_output_variability');
+    expect(value?.grammar).toBe('controlled_comparison');
   });
-  expect(value?.kind).toBe('same_system_output_variability');
-  expect(value?.grammar).toBe('controlled_comparison');
-});
 
-it('uses direct approved story text for an ineligible generic threshold claim', () => {
-  const value = selectAffordanceTreatmentV10({
-    story: story({
-      title: 'Claude Usage Thresholds: Insights from High-Volume Token Consumption',
-      summary:
-        'High-volume sessions approach usage thresholds, and teams should monitor token consumption to avoid interruption.',
-    }),
-    autoClaim: claim('uncertainty_announcement'),
-    eligible: false,
+  it('uses direct approved story text for an ineligible generic threshold claim', () => {
+    const value = selectAffordanceTreatmentV10({
+      story: story({
+        title: 'Claude Usage Thresholds: Insights from High-Volume Token Consumption',
+        summary:
+          'High-volume sessions approach usage thresholds, and teams should monitor token consumption to avoid interruption.',
+      }),
+      autoClaim: claim('uncertainty_announcement'),
+      eligible: false,
+    });
+    expect(value?.kind).toBe('controlled_session_workflow');
+    expect(value?.grammar).toBe('causal_process_sequence');
   });
-  expect(value?.kind).toBe('controlled_session_workflow');
-  expect(value?.grammar).toBe('causal_process_sequence');
-});
 
   it('does not create a factual treatment for an ineligible claim', () => {
     const value = selectAffordanceTreatmentV10({

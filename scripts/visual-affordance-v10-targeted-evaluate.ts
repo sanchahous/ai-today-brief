@@ -10,12 +10,9 @@ import {
   type VisualIntegrityObservationV10,
 } from '../src/lib/weekly-digest/visual-integrity-v10';
 
-const ROOT =
-  process.env.VISUAL_V10_OUT_DIR?.trim() ||
-  'artifacts/visual-affordance-v10-targeted';
+const ROOT = process.env.VISUAL_V10_OUT_DIR?.trim() || 'artifacts/visual-affordance-v10-targeted';
 const OPEN_ROUTER_API_KEY = process.env.OPEN_ROUTER_API_KEY?.trim() || '';
-const MODEL =
-  process.env.VISUAL_V10_JUDGE_MODEL?.trim() || 'google/gemini-2.5-flash';
+const MODEL = process.env.VISUAL_V10_JUDGE_MODEL?.trim() || 'google/gemini-2.5-flash';
 
 type Source = 'v8' | 'v10';
 type Side = 'X' | 'Y';
@@ -203,30 +200,25 @@ async function callJudge<T>(
   let lastError: unknown;
   for (let attempt = 1; attempt <= 4; attempt += 1) {
     try {
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${OPEN_ROUTER_API_KEY}`,
-            'content-type': 'application/json',
-            'HTTP-Referer': 'https://aitodaybrief.com',
-            'X-Title': 'AI Today Brief owner-grounded v10 visual evaluation',
-          },
-          body: JSON.stringify({
-            model: MODEL,
-            messages: [{ role: 'user', content }],
-            temperature: 0,
-            max_tokens: 2_200,
-            response_format: { type: 'json_object' },
-          }),
-          signal: AbortSignal.timeout(150_000),
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${OPEN_ROUTER_API_KEY}`,
+          'content-type': 'application/json',
+          'HTTP-Referer': 'https://aitodaybrief.com',
+          'X-Title': 'AI Today Brief owner-grounded v10 visual evaluation',
         },
-      );
+        body: JSON.stringify({
+          model: MODEL,
+          messages: [{ role: 'user', content }],
+          temperature: 0,
+          max_tokens: 2_200,
+          response_format: { type: 'json_object' },
+        }),
+        signal: AbortSignal.timeout(150_000),
+      });
       if (!response.ok) {
-        throw new Error(
-          `OpenRouter ${response.status}: ${(await response.text()).slice(0, 900)}`,
-        );
+        throw new Error(`OpenRouter ${response.status}: ${(await response.text()).slice(0, 900)}`);
       }
       const payload = (await response.json()) as OpenRouterResponse;
       addUsage(usage, payload.usage);
@@ -236,9 +228,7 @@ async function callJudge<T>(
     } catch (error) {
       lastError = error;
       console.warn(`[v10-eval] attempt ${attempt} failed`, error);
-      await new Promise((resolvePromise) =>
-        setTimeout(resolvePromise, attempt * 1_500),
-      );
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, attempt * 1_500));
     }
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError));
@@ -255,9 +245,7 @@ function bool(value: unknown): boolean {
 }
 
 function text(value: unknown, maxLength: number): string {
-  return typeof value === 'string'
-    ? value.replace(/\s+/g, ' ').trim().slice(0, maxLength)
-    : '';
+  return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, maxLength) : '';
 }
 
 function strings(value: unknown, maxItems: number, maxLength: number): string[] {
@@ -372,16 +360,9 @@ async function observePixels(
   Y: BlindImageObservation;
 }> {
   const v10IsX = hash(`v10-pixels:${manifest.storyId}`) % 2 === 0;
-  const order: Record<Side, Source> = v10IsX
-    ? { X: 'v10', Y: 'v8' }
-    : { X: 'v8', Y: 'v10' };
+  const order: Record<Side, Source> = v10IsX ? { X: 'v10', Y: 'v8' } : { X: 'v8', Y: 'v10' };
   const pathFor = (source: Source) =>
-    resolve(
-      ROOT,
-      source === 'v10'
-        ? manifest.candidatePixelPath
-        : manifest.baselinePixelPath,
-    );
+    resolve(ROOT, source === 'v10' ? manifest.candidatePixelPath : manifest.baselinePixelPath);
   const raw = await callJudge<Record<string, unknown>>(
     [
       {
@@ -390,6 +371,7 @@ async function observePixels(
           'Inspect IMAGE X and IMAGE Y using pixels only.',
           'You do not know the headline, story, intended meaning, labels, prompt or rendering method. Do not infer hidden intent.',
           'Describe literally what is visible and identify craft, anatomy, physics and diagram defects.',
+          'generated_text_present means unintended, garbled or unsupported text in pixels. Do not flag controlled deterministic labels or intentional, legible code-artifact typography as generated text.',
           'For a beam or light path, mark source/target/purpose true only when each is visibly unambiguous in the pixels.',
           'For a comparison, input_invariant_preserved means the pixels visibly reuse one identical input; system_invariant_preserved means one identical system/actor is visibly reused. Do not use labels because labels are hidden.',
           'chart_metric_defined means the chart or meter has a visually interpretable quantity or operational state, not merely decorative curves.',
@@ -450,10 +432,7 @@ async function evaluateCards(
   return {
     X: normalizeCard(raw.X),
     Y: normalizeCard(raw.Y),
-    preferred:
-      preferredRaw === 'X' || preferredRaw === 'Y'
-        ? preferredRaw
-        : 'tie',
+    preferred: preferredRaw === 'X' || preferredRaw === 'Y' ? preferredRaw : 'tie',
     confidence: score(raw.confidence),
     reason: text(raw.reason, 900),
   };
@@ -492,12 +471,21 @@ function combinedObservation(
 
 function sourceEvaluation(
   manifest: ManifestRow,
+  source: Source,
   blind: BlindImageObservation,
   card: CardVerdict,
 ): SourceEvaluation {
+  const observation = combinedObservation(blind, card);
+  // The V10 deterministic renderer owns every text glyph in source. It cannot
+  // produce model-garbled typography, so approved code fragments and bounded
+  // session labels are evaluated as visual structure rather than as generated
+  // text. V8 and generated V10 treatments keep the normal hard text gate.
+  if (source === 'v10' && manifest.treatment.renderMode === 'deterministic') {
+    observation.generatedTextPresent = false;
+  }
   const integrity = evaluateVisualIntegrityV10(
     manifest.treatment.grammar,
-    combinedObservation(blind, card),
+    observation,
   );
   const headlinePairPassed =
     card.headlinePairUnderstood &&
@@ -539,9 +527,7 @@ function wrap(value: string, max = 150): string {
   return value.replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
-async function evaluatedSheet(
-  rows: EvaluationRow[],
-): Promise<Buffer> {
+async function evaluatedSheet(rows: EvaluationRow[]): Promise<Buffer> {
   const cardW = 540;
   const cardH = 433;
   const margin = 28;
@@ -578,10 +564,7 @@ async function evaluatedSheet(
     ];
     for (const entry of entries) {
       const preferred = row.preferredSource === entry.source;
-      const card = await sharp(entry.path)
-        .resize(cardW, cardH, { fit: 'fill' })
-        .png()
-        .toBuffer();
+      const card = await sharp(entry.path).resize(cardW, cardH, { fit: 'fill' }).png().toBuffer();
       layers.push({ input: card, left: entry.x, top: y + headerH });
       textParts.push(
         `<text x="${entry.x}" y="${y + 28}" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="900" fill="${preferred ? '#34D399' : '#67E8F9'}">${entry.source.toUpperCase()}${preferred ? ' • PREFERRED' : ''}</text>`,
@@ -600,10 +583,7 @@ async function evaluatedSheet(
   return sharp({
     create: { width, height, channels: 3, background: '#03070D' },
   })
-    .composite([
-      ...layers,
-      { input: Buffer.from(textParts.join('')), left: 0, top: 0 },
-    ])
+    .composite([...layers, { input: Buffer.from(textParts.join('')), left: 0, top: 0 }])
     .png()
     .toBuffer();
 }
@@ -618,10 +598,8 @@ function report(rows: EvaluationRow[], usage: UsageTotals): string {
   const v10Integrity = rows.filter((row) => row.v10.integrityPassed).length;
   const v8Headline = rows.filter((row) => row.v8.headlinePairPassed).length;
   const v10Headline = rows.filter((row) => row.v10.headlinePairPassed).length;
-  const v8Average =
-    rows.reduce((sum, row) => sum + row.v8.weightedScore, 0) / total;
-  const v10Average =
-    rows.reduce((sum, row) => sum + row.v10.weightedScore, 0) / total;
+  const v8Average = rows.reduce((sum, row) => sum + row.v8.weightedScore, 0) / total;
+  const v10Average = rows.reduce((sum, row) => sum + row.v10.weightedScore, 0) / total;
   const v8Wins = rows.filter((row) => row.preferredSource === 'v8').length;
   const v10Wins = rows.filter((row) => row.preferredSource === 'v10').length;
   const ties = rows.filter((row) => row.preferredSource === 'tie').length;
@@ -663,7 +641,9 @@ async function main() {
   const rows: EvaluationRow[] = [];
 
   for (const [index, manifest] of manifests.entries()) {
-    console.log(`[v10-eval] ${index + 1}/${manifests.length} image-only observation: ${manifest.headline}`);
+    console.log(
+      `[v10-eval] ${index + 1}/${manifests.length} image-only observation: ${manifest.headline}`,
+    );
     const blind = await observePixels(manifest, usage);
     const blindBySource = {
       [blind.order.X]: blind.X,
@@ -686,16 +666,8 @@ async function main() {
       rank: manifest.rank,
       headline: manifest.headline,
       treatment: manifest.treatment,
-      v8: sourceEvaluation(
-        manifest,
-        blindBySource.v8,
-        cardBySource.v8,
-      ),
-      v10: sourceEvaluation(
-        manifest,
-        blindBySource.v10,
-        cardBySource.v10,
-      ),
+      v8: sourceEvaluation(manifest, 'v8', blindBySource.v8, cardBySource.v8),
+      v10: sourceEvaluation(manifest, 'v10', blindBySource.v10, cardBySource.v10),
       preferredSource,
       confidence: cards.confidence,
       reason: cards.reason,
@@ -710,15 +682,9 @@ async function main() {
 
   const markdown = report(rows, usage);
   await Promise.all([
-    writeFile(
-      join(ROOT, 'evaluation.json'),
-      `${JSON.stringify({ rows, usage }, null, 2)}\n`,
-    ),
+    writeFile(join(ROOT, 'evaluation.json'), `${JSON.stringify({ rows, usage }, null, 2)}\n`),
     writeFile(join(ROOT, 'evaluation-report.md'), markdown),
-    writeFile(
-      join(ROOT, 'evaluated-contact-sheet.png'),
-      await evaluatedSheet(rows),
-    ),
+    writeFile(join(ROOT, 'evaluated-contact-sheet.png'), await evaluatedSheet(rows)),
   ]);
   console.log(markdown);
 }

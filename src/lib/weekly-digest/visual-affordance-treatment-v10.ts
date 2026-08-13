@@ -11,8 +11,7 @@ export const AFFORDANCE_TREATMENT_KINDS_V10 = [
   'bounded_assistance',
 ] as const;
 
-export type AffordanceTreatmentKindV10 =
-  (typeof AFFORDANCE_TREATMENT_KINDS_V10)[number];
+export type AffordanceTreatmentKindV10 = (typeof AFFORDANCE_TREATMENT_KINDS_V10)[number];
 
 export interface AffordanceTreatmentV10 {
   storyId: string;
@@ -56,13 +55,7 @@ const COLORS = {
 };
 
 function sourceText(story: HoldoutStoryInput): string {
-  return [
-    story.title,
-    story.summary,
-    story.why ?? '',
-    story.practical ?? '',
-    story.takeaway ?? '',
-  ]
+  return [story.title, story.summary, story.why ?? '', story.practical ?? '', story.takeaway ?? '']
     .join(' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -79,11 +72,13 @@ export function selectAffordanceTreatmentV10(
 ): AffordanceTreatmentV10 | null {
   const source = sourceText(input.story).toLowerCase();
   const directComparison =
-    /\b(?:consistency|inconsistency|inconsistencies|inconsistent|reliability|community critique|community debate)\b/.test(source) &&
-    /\b(?:gemini|model|coding|developer community)\b/.test(source);
+    /\b(?:consistency|inconsistency|inconsistencies|inconsistent|reliability|community critique|community debate)\b/.test(
+      source,
+    ) && /\b(?:gemini|model|coding|developer community)\b/.test(source);
   const directSessionWorkflow =
-    /\b(?:token|context window|rate limit|usage threshold|high-volume|burn rate|session)\b/.test(source) &&
-    /\b(?:cache|caching|split|monitor|limit|threshold|interrupt|consumption)\b/.test(source);
+    /\b(?:token|context window|rate limit|usage threshold|high-volume|burn rate|session)\b/.test(
+      source,
+    ) && /\b(?:cache|caching|split|monitor|limit|threshold|interrupt|consumption)\b/.test(source);
   const plan = input.eligible ? planVisualAffordancesV10(input) : null;
   const primary = plan?.candidates[0]?.grammar;
 
@@ -97,7 +92,7 @@ export function selectAffordanceTreatmentV10(
       expectedEvidence: [
         'one identical task enters one identical model chamber',
         'the same model chamber visibly branches into run A and run B',
-        'two output artifacts are visibly different in structure without implying a numeric failure rate',
+        'two output artifacts are visibly different code structures without implying a numeric failure rate',
       ],
       forbiddenImplications: [
         'two different models were compared',
@@ -113,9 +108,7 @@ export function selectAffordanceTreatmentV10(
 
   if (
     (primary === 'causal_process_sequence' || directSessionWorkflow) &&
-    /\b(token|context|session|cache|caching|threshold|rate limit|monitor|split)\b/.test(
-      source,
-    )
+    /\b(token|context|session|cache|caching|threshold|rate limit|monitor|split)\b/.test(source)
   ) {
     return {
       storyId: input.story.revision_item_id,
@@ -125,8 +118,8 @@ export function selectAffordanceTreatmentV10(
       labels: cleanLabels(['CACHE', 'SPLIT', 'MONITOR']),
       expectedEvidence: [
         'one oversized continuous session visibly approaches an operational risk boundary',
-        'a cache and checkpoint control divides the stream into bounded continuation segments',
-        'a visible monitor shows the bounded sessions remaining below the risk boundary without claiming an exact undocumented limit',
+        'one linear cache-to-split path divides the stream into three explicitly bounded continuation sessions',
+        'one visible monitor is connected to every bounded session and shows them remaining below the risk boundary without claiming an exact undocumented limit',
       ],
       forbiddenImplications: [
         'an exact token threshold is known',
@@ -155,8 +148,8 @@ export function selectAffordanceTreatmentV10(
       labels: cleanLabels(['ACTIVE THINKING', 'BOUNDED HINT']),
       expectedEvidence: [
         'one visible adult remains actively engaged in the difficult reasoning task',
-        'one small visible AI device provides exactly one bounded hint to one specific part of the work',
-        'the person performs the work with exactly two anatomically connected hands while background distraction remains muted',
+        'one small visible AI device projects exactly one bounded hint onto a physical hint card whose highlighted tile matches one specific board gap',
+        'the person uses exactly two anatomically connected hands to press the matching final tile into that gap, visibly completing one unbroken route to a finish marker while background distraction remains muted',
       ],
       forbiddenImplications: [
         'an extra or unowned hand appears',
@@ -164,6 +157,7 @@ export function selectAffordanceTreatmentV10(
         'the AI completes the task',
         'the person is passive',
         'a generic gear workshop replaces the cognitive-work context',
+        'the beam decorates the board without a visible hint card or human result',
       ],
       sourceGrounding:
         'The source argues that AI should act as a bounded sparring partner while the human retains active problem-solving and deep focus.',
@@ -202,13 +196,7 @@ function background(width: number, height: number): string {
   return `<rect width="${width}" height="${height}" fill="url(#v10-bg)"/><ellipse cx="${width * 0.53}" cy="${height * 0.5}" rx="${width * 0.48}" ry="${height * 0.43}" fill="url(#v10-cyan)" opacity="0.28"/>${grid}`;
 }
 
-function panel(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  accent = COLORS.cyan,
-): string {
+function panel(x: number, y: number, width: number, height: number, accent = COLORS.cyan): string {
   return `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="28" fill="url(#v10-panel)" stroke="${accent}" stroke-opacity="0.48" stroke-width="3" filter="url(#v10-shadow)"/>`;
 }
 
@@ -239,36 +227,34 @@ function taskCard(x: number, y: number, width: number, height: number): string {
   return `<g><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="20" fill="#071827" stroke="${COLORS.cyan}" stroke-width="3"/>${lines}</g>`;
 }
 
-function modularArtifact(x: number, y: number, width: number, height: number): string {
-  const nodeW = width * 0.22;
-  const nodeH = height * 0.18;
-  const nodes = [
-    [x + width * 0.13, y + height * 0.14],
-    [x + width * 0.63, y + height * 0.14],
-    [x + width * 0.13, y + height * 0.63],
-    [x + width * 0.63, y + height * 0.63],
-  ];
-  const boxes = nodes
-    .map(
-      ([nx, ny], index) =>
-        `<rect x="${nx}" y="${ny}" width="${nodeW}" height="${nodeH}" rx="12" fill="${index % 2 ? COLORS.violet : COLORS.cyan}" fill-opacity="0.25" stroke="${COLORS.cyanLight}" stroke-width="2"/>`,
-    )
-    .join('');
-  return `<g>${boxes}<path d="M${x + width * 0.35} ${y + height * 0.23}H${x + width * 0.63}M${x + width * 0.24} ${y + height * 0.32}V${y + height * 0.63}M${x + width * 0.74} ${y + height * 0.32}V${y + height * 0.63}M${x + width * 0.35} ${y + height * 0.72}H${x + width * 0.63}" stroke="${COLORS.cyanLight}" stroke-opacity="0.58" stroke-width="4"/></g>`;
+function codeArtifactLine(input: {
+  x: number;
+  y: number;
+  width: number;
+  indent?: number;
+  accent?: string;
+  text: string;
+}): string {
+  const indent = input.indent ?? 0;
+  const accent = input.accent ?? COLORS.cyan;
+  return `<g><rect x="${input.x + indent}" y="${input.y - 17}" width="${input.width}" height="25" rx="6" fill="${accent}" fill-opacity="0.12"/><text x="${input.x + indent + 8}" y="${input.y}" font-family="DejaVu Sans Mono,Consolas,monospace" font-size="15" font-weight="700" fill="${COLORS.cyanLight}">${xml(input.text)}</text></g>`;
 }
 
-function layeredArtifact(x: number, y: number, width: number, height: number): string {
-  const rows = Array.from({ length: 5 }, (_, index) => {
-    const inset = index % 2 ? width * 0.16 : width * 0.07;
-    return `<rect x="${x + inset}" y="${y + height * (0.1 + index * 0.17)}" width="${width - inset * 2}" height="${height * 0.11}" rx="11" fill="${index % 2 ? COLORS.amber : COLORS.rose}" fill-opacity="${0.18 + index * 0.06}" stroke="${index % 2 ? COLORS.amber : COLORS.rose}" stroke-width="2"/>`;
-  }).join('');
-  return `<g>${rows}<path d="M${x + width * 0.25} ${y + height * 0.15}L${x + width * 0.72} ${y + height * 0.78}" stroke="${COLORS.cyanLight}" stroke-opacity="0.46" stroke-width="4"/><path d="M${x + width * 0.7} ${y + height * 0.15}L${x + width * 0.3} ${y + height * 0.78}" stroke="${COLORS.cyanLight}" stroke-opacity="0.28" stroke-width="4"/></g>`;
+function linearCodeArtifact(x: number, y: number, width: number, height: number): string {
+  const lineX = x + width * 0.07;
+  const lineW = width * 0.8;
+  const lineY = [0.18, 0.39, 0.59, 0.8].map((fraction) => y + height * fraction);
+  return `<g data-code-artifact="linear"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="18" fill="#07131E" stroke="${COLORS.green}" stroke-opacity="0.46" stroke-width="2"/>${codeArtifactLine({ x: lineX, y: lineY[0], width: lineW * 0.86, accent: COLORS.violet, text: 'function solve(task) {' })}${codeArtifactLine({ x: lineX, y: lineY[1], width: lineW * 0.72, indent: 13, text: 'const ast = parse(task);' })}${codeArtifactLine({ x: lineX, y: lineY[2], width: lineW * 0.76, indent: 13, accent: COLORS.green, text: 'return build(ast);' })}${codeArtifactLine({ x: lineX, y: lineY[3], width: lineW * 0.16, text: '}' })}<path d="M${x + width * 0.035} ${lineY[1] - 7}V${lineY[2] - 7}" stroke="${COLORS.green}" stroke-width="4" stroke-linecap="round"/></g>`;
 }
 
-function sameSystemOutputVariabilityScene(
-  width: number,
-  height: number,
-): string {
+function branchingCodeArtifact(x: number, y: number, width: number, height: number): string {
+  const lineX = x + width * 0.07;
+  const lineW = width * 0.8;
+  const lineY = [0.15, 0.34, 0.54, 0.73, 0.9].map((fraction) => y + height * fraction);
+  return `<g data-code-artifact="branching"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="18" fill="#07131E" stroke="${COLORS.amber}" stroke-opacity="0.5" stroke-width="2"/>${codeArtifactLine({ x: lineX, y: lineY[0], width: lineW * 0.86, accent: COLORS.violet, text: 'function solve(task) {' })}${codeArtifactLine({ x: lineX, y: lineY[1], width: lineW * 0.84, indent: 13, accent: COLORS.amber, text: 'if (needsRetry(task)) {' })}${codeArtifactLine({ x: lineX, y: lineY[2], width: lineW * 0.7, indent: 29, accent: COLORS.amber, text: 'return retry(task);' })}${codeArtifactLine({ x: lineX, y: lineY[3], width: lineW * 0.7, indent: 13, accent: COLORS.cyan, text: 'return fallback(task);' })}${codeArtifactLine({ x: lineX, y: lineY[4], width: lineW * 0.16, text: '}' })}<path d="M${x + width * 0.05} ${lineY[1] - 8}V${lineY[3] - 8}M${x + width * 0.05} ${lineY[2] - 8}H${x + width * 0.1}" fill="none" stroke="${COLORS.amber}" stroke-width="4" stroke-linecap="round"/></g>`;
+}
+
+function sameSystemOutputVariabilityScene(width: number, height: number): string {
   const taskX = width * 0.045;
   const taskY = height * 0.34;
   const taskW = width * 0.22;
@@ -284,21 +270,6 @@ function sameSystemOutputVariabilityScene(
   const artifactX = outputX + outputW * 0.06;
   const artifactW = outputW * 0.88;
   const artifactH = outputH * 0.82;
-  const nodeW = artifactW * 0.2;
-  const nodeH = artifactH * 0.18;
-  const bottomNodes = [
-    [artifactX + artifactW * 0.12, bottomY + outputH * 0.12],
-    [artifactX + artifactW * 0.62, bottomY + outputH * 0.12],
-    [artifactX + artifactW * 0.12, bottomY + outputH * 0.61],
-    [artifactX + artifactW * 0.62, bottomY + outputH * 0.61],
-  ] as const;
-  const bottomBoxes = bottomNodes
-    .map(
-      ([x, y], index) =>
-        `<rect x="${x}" y="${y}" width="${nodeW}" height="${nodeH}" rx="11" fill="${index % 2 ? COLORS.violet : COLORS.cyan}" fill-opacity="0.25" stroke="${COLORS.cyanLight}" stroke-width="2"/>`,
-    )
-    .join('');
-  const bottomLinks = `<path d="M${bottomNodes[0][0] + nodeW} ${bottomNodes[0][1] + nodeH / 2}L${bottomNodes[3][0]} ${bottomNodes[3][1] + nodeH / 2}M${bottomNodes[1][0]} ${bottomNodes[1][1] + nodeH}L${bottomNodes[2][0] + nodeW} ${bottomNodes[2][1]}M${bottomNodes[0][0] + nodeW / 2} ${bottomNodes[0][1] + nodeH}V${bottomNodes[2][1]}" fill="none" stroke="${COLORS.amber}" stroke-width="4" stroke-linecap="round"/>`;
   return `${panel(width * 0.025, height * 0.16, width * 0.27, height * 0.68)}
     ${panel(width * 0.36, height * 0.23, width * 0.22, height * 0.54, COLORS.violet)}
     ${panel(outputX, topY, outputW, outputH, COLORS.green)}
@@ -310,8 +281,8 @@ function sameSystemOutputVariabilityScene(
     ${arrow(modelCx + modelSize * 0.72, modelCy + modelSize * 0.16, outputX - width * 0.018, bottomY + outputH / 2)}
     <circle cx="${modelCx + modelSize * 0.92}" cy="${modelCy - modelSize * 0.38}" r="11" fill="${COLORS.green}" stroke="${COLORS.cyanLight}" stroke-width="3"/>
     <circle cx="${modelCx + modelSize * 0.92}" cy="${modelCy + modelSize * 0.38}" r="11" fill="${COLORS.amber}" stroke="${COLORS.cyanLight}" stroke-width="3"/>
-    <g data-run-output="A">${modularArtifact(artifactX, topY + outputH * 0.08, artifactW, artifactH)}</g>
-    <g data-run-output="B">${bottomBoxes}${bottomLinks}</g>`;
+    <g data-run-output="A">${linearCodeArtifact(artifactX, topY + outputH * 0.08, artifactW, artifactH)}</g>
+    <g data-run-output="B">${branchingCodeArtifact(artifactX, bottomY + outputH * 0.08, artifactW, artifactH)}</g>`;
 }
 
 function streamBlocks(
@@ -338,23 +309,26 @@ function controlledSessionWorkflowScene(width: number, height: number): string {
   const leftY = height * 0.15;
   const leftW = width * 0.27;
   const leftH = height * 0.7;
-  const cacheX = width * 0.35;
-  const cacheY = height * 0.12;
-  const cacheW = width * 0.21;
-  const cacheH = height * 0.27;
-  const splitCx = width * 0.47;
-  const splitCy = height * 0.65;
-  const rightX = width * 0.665;
+  const cacheX = width * 0.36;
+  const cacheY = height * 0.11;
+  const cacheW = width * 0.18;
+  const cacheH = height * 0.29;
+  const splitCx = width * 0.61;
+  const splitCy = height * 0.58;
+  const splitRadius = Math.min(width, height) * 0.052;
+  const rightX = width * 0.72;
   const rightY = height * 0.08;
-  const rightW = width * 0.31;
+  const rightW = width * 0.255;
   const rightH = height * 0.84;
   const thresholdY = leftY + leftH * 0.79;
-  const sessionX = rightX + rightW * 0.1;
-  const sessionW = rightW * 0.76;
-  const sessionH = rightH * 0.16;
-  const sessionYs = [0.1, 0.36, 0.62].map(
-    (fraction) => rightY + rightH * fraction,
-  );
+  const dispatchX = rightX + rightW * 0.045;
+  const sessionX = rightX + rightW * 0.105;
+  const sessionW = rightW * 0.64;
+  const sessionH = rightH * 0.15;
+  const sessionYs = [0.07, 0.3, 0.53].map((fraction) => rightY + rightH * fraction);
+  const monitorRailX = rightX + rightW * 0.84;
+  const monitorY = rightY + rightH * 0.87;
+  const monitorRadius = rightW * 0.115;
   const cacheBlocks = [0, 1, 2]
     .map(
       (index) =>
@@ -363,34 +337,35 @@ function controlledSessionWorkflowScene(width: number, height: number): string {
     .join('');
   const sessionCards = sessionYs
     .map((y, index) => {
-      const cachedY = y + sessionH * 0.18;
-      return `<g data-bounded-session="${index + 1}"><rect x="${sessionX}" y="${y}" width="${sessionW}" height="${sessionH}" rx="18" fill="#071827" stroke="${COLORS.green}" stroke-opacity="${0.55 + index * 0.1}" stroke-width="3"/><rect x="${sessionX + sessionW * 0.08}" y="${cachedY}" width="${sessionW * 0.36}" height="${sessionH * 0.18}" rx="8" fill="${COLORS.cyan}" fill-opacity="0.52" stroke="${COLORS.cyanLight}" stroke-opacity="0.44"/><rect x="${sessionX + sessionW * 0.08}" y="${cachedY + sessionH * 0.29}" width="${sessionW * 0.58}" height="${sessionH * 0.18}" rx="8" fill="${COLORS.amber}" fill-opacity="0.45"/><rect x="${sessionX + sessionW * 0.08}" y="${cachedY + sessionH * 0.57}" width="${sessionW * 0.47}" height="${sessionH * 0.18}" rx="8" fill="${COLORS.amber}" fill-opacity="0.32"/></g>`;
+      const cachedY = y + sessionH * 0.41;
+      return `<g data-bounded-session="${index + 1}"><rect x="${sessionX}" y="${y}" width="${sessionW}" height="${sessionH}" rx="18" fill="#071827" stroke="${COLORS.green}" stroke-opacity="${0.55 + index * 0.1}" stroke-width="3"/><text x="${sessionX + sessionW * 0.08}" y="${y + sessionH * 0.25}" font-family="DejaVu Sans,Arial,sans-serif" font-size="14" font-weight="800" letter-spacing="1" fill="${COLORS.cyanLight}">BOUNDED ${index + 1}</text><rect x="${sessionX + sessionW * 0.08}" y="${cachedY}" width="${sessionW * 0.36}" height="${sessionH * 0.15}" rx="8" fill="${COLORS.cyan}" fill-opacity="0.52" stroke="${COLORS.cyanLight}" stroke-opacity="0.44"/><rect x="${sessionX + sessionW * 0.08}" y="${cachedY + sessionH * 0.22}" width="${sessionW * 0.58}" height="${sessionH * 0.15}" rx="8" fill="${COLORS.amber}" fill-opacity="0.45"/><rect x="${sessionX + sessionW * 0.08}" y="${cachedY + sessionH * 0.44}" width="${sessionW * 0.47}" height="${sessionH * 0.15}" rx="8" fill="${COLORS.amber}" fill-opacity="0.32"/></g>`;
     })
     .join('');
-  const splitBranches = sessionYs
-    .map(
-      (y) =>
-        `<path d="M${splitCx + width * 0.035} ${splitCy}C${width * 0.58} ${splitCy},${width * 0.61} ${y + sessionH / 2},${sessionX - width * 0.012} ${y + sessionH / 2}" fill="none" stroke="${COLORS.cyanLight}" stroke-width="5" stroke-linecap="round" marker-end="url(#v10-arrow)"/>`,
-    )
+  const dispatchBranches = sessionYs
+    .map((y) => `${arrow(dispatchX, y + sessionH / 2, sessionX - width * 0.008, y + sessionH / 2)}`)
     .join('');
-  const cacheRail = sessionYs
+  const monitorLinks = sessionYs
     .map(
       (y) =>
-        `<path d="M${cacheX + cacheW} ${cacheY + cacheH * 0.5}C${width * 0.61} ${cacheY + cacheH * 0.5},${width * 0.62} ${y + sessionH * 0.25},${sessionX + sessionW * 0.07} ${y + sessionH * 0.25}" fill="none" stroke="${COLORS.cyan}" stroke-opacity="0.58" stroke-width="3"/>`,
+        `<path d="M${sessionX + sessionW} ${y + sessionH / 2}H${monitorRailX}" fill="none" stroke="${COLORS.green}" stroke-opacity="0.62" stroke-width="3" stroke-dasharray="8 7"/>`,
     )
     .join('');
   return `${panel(leftX, leftY, leftW, leftH, COLORS.amber)}
     ${panel(cacheX, cacheY, cacheW, cacheH, COLORS.cyan)}
-    ${panel(width * 0.37, height * 0.48, width * 0.2, height * 0.34, COLORS.violet)}
+    ${panel(width * 0.53, height * 0.43, width * 0.16, height * 0.3, COLORS.violet)}
     ${panel(rightX, rightY, rightW, rightH, COLORS.green)}
     ${streamBlocks(leftX + leftW * 0.1, leftY + leftH * 0.06, leftW * 0.78, 10, 8)}
     <path d="M${leftX + leftW * 0.08} ${thresholdY}H${leftX + leftW * 0.92}" stroke="${COLORS.rose}" stroke-width="6" stroke-dasharray="14 10"/>
-    ${arrow(leftX + leftW, leftY + leftH * 0.29, cacheX - width * 0.015, cacheY + cacheH * 0.5)}
-    ${arrow(leftX + leftW, leftY + leftH * 0.68, splitCx - width * 0.055, splitCy)}
-    <g data-cache-reservoir="true"><ellipse cx="${cacheX + cacheW * 0.5}" cy="${cacheY + cacheH * 0.22}" rx="${cacheW * 0.32}" ry="${cacheH * 0.1}" fill="#0F172A" stroke="${COLORS.cyan}" stroke-width="4"/><rect x="${cacheX + cacheW * 0.18}" y="${cacheY + cacheH * 0.22}" width="${cacheW * 0.64}" height="${cacheH * 0.6}" rx="18" fill="#0F172A" stroke="${COLORS.cyan}" stroke-width="4"/>${cacheBlocks}</g>
-    <g data-session-splitter="true"><circle cx="${splitCx}" cy="${splitCy}" r="${Math.min(width, height) * 0.055}" fill="#0F172A" stroke="${COLORS.violet}" stroke-width="5"/><path d="M${splitCx - 24} ${splitCy}H${splitCx + 2}M${splitCx + 2} ${splitCy}L${splitCx + 30} ${splitCy - 30}M${splitCx + 2} ${splitCy}L${splitCx + 30} ${splitCy}M${splitCx + 2} ${splitCy}L${splitCx + 30} ${splitCy + 30}" fill="none" stroke="${COLORS.cyanLight}" stroke-width="7" stroke-linecap="round"/></g>
-    ${sessionCards}${splitBranches}${cacheRail}
-    ${monitorGauge(rightX + rightW * 0.52, rightY + rightH * 0.92, rightW * 0.16)}`;
+    ${arrow(leftX + leftW, leftY + leftH * 0.29, cacheX - width * 0.012, cacheY + cacheH * 0.5)}
+    ${arrow(cacheX + cacheW, cacheY + cacheH * 0.58, splitCx - splitRadius, splitCy)}
+    <g data-workflow-stage="cache" data-cache-reservoir="true"><ellipse cx="${cacheX + cacheW * 0.5}" cy="${cacheY + cacheH * 0.22}" rx="${cacheW * 0.32}" ry="${cacheH * 0.1}" fill="#0F172A" stroke="${COLORS.cyan}" stroke-width="4"/><rect x="${cacheX + cacheW * 0.18}" y="${cacheY + cacheH * 0.22}" width="${cacheW * 0.64}" height="${cacheH * 0.6}" rx="18" fill="#0F172A" stroke="${COLORS.cyan}" stroke-width="4"/>${cacheBlocks}</g>
+    <g data-workflow-stage="split" data-session-splitter="true"><circle cx="${splitCx}" cy="${splitCy}" r="${splitRadius}" fill="#0F172A" stroke="${COLORS.violet}" stroke-width="5"/><path d="M${splitCx - 24} ${splitCy}H${splitCx + 2}M${splitCx + 2} ${splitCy}L${splitCx + 30} ${splitCy - 30}M${splitCx + 2} ${splitCy}L${splitCx + 30} ${splitCy}M${splitCx + 2} ${splitCy}L${splitCx + 30} ${splitCy + 30}" fill="none" stroke="${COLORS.cyanLight}" stroke-width="7" stroke-linecap="round"/></g>
+    ${arrow(splitCx + splitRadius, splitCy, dispatchX, splitCy)}
+    <path data-session-dispatch="true" d="M${dispatchX} ${sessionYs[0] + sessionH / 2}V${sessionYs[2] + sessionH / 2}" fill="none" stroke="${COLORS.cyanLight}" stroke-width="5" stroke-linecap="round"/>
+    ${sessionCards}${dispatchBranches}
+    <path data-monitor-rail="true" d="M${monitorRailX} ${sessionYs[0] + sessionH / 2}V${sessionYs[2] + sessionH / 2}" fill="none" stroke="${COLORS.green}" stroke-width="4" stroke-linecap="round"/>${monitorLinks}
+    ${arrow(monitorRailX, sessionYs[2] + sessionH / 2, monitorRailX, monitorY - monitorRadius)}
+    <g data-workflow-stage="monitor">${monitorGauge(monitorRailX, monitorY, monitorRadius)}</g>`;
 }
 
 function pill(text: string, x: number, y: number, primary = false): string {
@@ -399,11 +374,7 @@ function pill(text: string, x: number, y: number, primary = false): string {
   return `<g><rect x="${x}" y="${y}" width="${width}" height="39" rx="19.5" fill="${primary ? COLORS.cyanLight : '#083344'}" stroke="${COLORS.cyan}" stroke-width="1.5"/><text x="${x + 17}" y="${y + 25}" font-family="DejaVu Sans,Arial,sans-serif" font-size="${fontSize}" font-weight="800" fill="${primary ? '#083344' : COLORS.white}">${xml(text)}</text></g>`;
 }
 
-function overlays(
-  treatment: AffordanceTreatmentV10,
-  width: number,
-  height: number,
-): string {
+function overlays(treatment: AffordanceTreatmentV10, width: number, height: number): string {
   const labels = treatment.labels.slice(0, 3);
   if (treatment.kind === 'same_system_output_variability') {
     return [
@@ -419,22 +390,14 @@ function overlays(
       labels[2] ? pill(labels[2], width * 0.76, height * 0.8) : '',
     ].join('');
   }
-  return labels
-    .map((label, index) =>
-      pill(label, 42, 42 + index * 47, index === 0),
-    )
-    .join('');
+  return labels.map((label, index) => pill(label, 42, 42 + index * 47, index === 0)).join('');
 }
 
-export function renderAffordanceVisualSvgV10(
-  input: AffordanceSvgInputV10,
-): Buffer {
+export function renderAffordanceVisualSvgV10(input: AffordanceSvgInputV10): Buffer {
   const width = Math.max(640, Math.round(input.width ?? 1280));
   const height = Math.max(360, Math.round(input.height ?? 720));
   if (input.treatment.renderMode !== 'deterministic') {
-    throw new Error(
-      `Treatment ${input.treatment.kind} requires generated pixels.`,
-    );
+    throw new Error(`Treatment ${input.treatment.kind} requires generated pixels.`);
   }
   const scene =
     input.treatment.kind === 'same_system_output_variability'
@@ -467,11 +430,12 @@ export function affordanceImagePromptV10(
     `Approved story context: ${story.title}. ${story.summary}`,
     'Show exactly one adult knowledge worker in deep concentration at a large tactile logic board made of blank interlocking geometric tiles. The face, eyes, upper torso and both forearms are visible.',
     'Exactly two human hands are visible, both anatomically correct and visibly attached to this same person. One hand places one dark geometric tile into the board; the other hand steadies the board. No other person, arm, hand, reflection or partial body is present.',
-    'A small physical AI assistance device is clearly visible on the table at frame left. The device is the unmistakable source of one narrow cyan cone of light aimed at exactly one empty socket and one candidate tile. The light starts at the device, ends on that one bounded target and does nothing else.',
+    'A small physical AI assistance device is clearly visible on the table at frame left. The device is the unmistakable source of one narrow cyan cone of light aimed only at one small physical hint card beside the board. The card shows one simple highlighted geometric tile inside a three-step route, with no letters, numbers or code text. The light starts at the device, ends on that card and does nothing else.',
+    'Use a simple, unmistakable completion puzzle rather than a generic all-over grid. The large board contains one thick warm-amber route from a start at frame left to one clearly illuminated amber finish marker at frame right. The route has exactly one light-blue outlined square gap. One hand presses the matching dark square tile, already seated in that gap, while the other steadies the board. The two amber route ends visibly enter and leave the seated tile, making one unbroken route to the finish marker. Keep enough empty board surface that this completed route is readable at thumbnail size.',
     'Most of the logic board has already been assembled by the person. The person remains physically engaged and chooses where to place the tile; the AI device does not move objects, write, type or complete the puzzle.',
     'Behind a frosted glass divider, distraction is represented only by diffuse defocused colored light and motion blur, never boxes, icons, screens, diagrams or interface shapes.',
     'The foreground must communicate sustained concentration, active human thinking and one bounded hint. It must not resemble a generic gear workshop or passive automation.',
-    'All tiles and surfaces are blank and unmarked. No paper, document, monitor, code or diagram appears in the foreground.',
+    'All tiles and surfaces are blank and unmarked except for the one physical hint card with its simple geometric tile route. No readable words, paper document, monitor, code or diagram appears in the foreground.',
     'Absolutely no readable text, letters, numbers, symbols, logos, captions, UI, watermark, extra fingers, extra limbs, extra hands, detached hands, fused objects, off-screen laser source or impossible anatomy.',
     'Passive automation is forbidden. A beam without a visible physical source and visible target is forbidden.',
   ].join(' ');
