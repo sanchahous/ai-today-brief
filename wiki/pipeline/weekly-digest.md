@@ -345,17 +345,17 @@ owner review порівнює V8 і V10 на трьох зафіксованих
 входить у production Visuals: усі зміни й результати лишаються в experimental branch. Після
 локальних owner repairs V10 показує два різні code artifacts для Gemini, лінійний
 `cache → split → BOUNDED 1/2/3` потік для Claude та видимий ланцюг hint → людська дія → фініш для
-Deep Work. ⚠️ **Числа цього прогону визнані невалідними** (W0, 2026-08-13): гейт `generated_text`
-був вимкнений лише для кандидата, рубрика для обох гілок бралася зі специфікації кандидата, а
-описи гілок подавалися судді підписаними — деталі й виправлення в
-[audits/2026-08-13-pr-229-visual-v10-sonnet-plan](../audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md).
-Наведене нижче — те, що звіт стверджував **до** виправлення харнесу, і не є evidence:
-targeted V6 оцінка дала 3/3 hard-integrity, 3/3 headline-grounded і 3/0 blind preference
-на користь V10. Переоцінка з виправленим харнесом ще не проводилась — вона потребує платного
-прогону, тож станом на зараз порівняння V8↔V10 не має валідного результату.
-(source: `src/lib/weekly-digest/visual-affordance-treatment-v10.ts`,
-`experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/results/evaluation-report.md`,
-owner review 2026-08-13, W0 harness fix 2026-08-13)
+Deep Work. ⚠️ **Заявлені числа цього прогону (3/3 hard-integrity, 3/0 blind preference)
+спростовані переоцінкою 2026-08-13.** Той харнес вимикав гейт `generated_text` лише для
+кандидата, будував рубрику для обох гілок зі специфікації кандидата і подавав судді описи,
+підписані назвами гілок. Після виправлення — ті самі пікселі, той самий суддя — V10 дає
+**0/3 hard-integrity** і blind preference **1-1 з нічиєю**, а розрив зважених балів падає з 33.1
+до 0.5 пункта. Обидві детерміновані сцени V10 блокуються на `generated_text`: впечені лістинги
+коду і підписи суперечать політиці `weekly-semantic-story-v5.1` («без тексту в пікселях»).
+Розбір — [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](../audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md),
+дані — `experiments/visual-affordance-v10/targeted-v7-corrected-harness/`.
+(source: `src/lib/weekly-digest/visual-affordance-treatment-v10.ts`, Actions run `31739283280`
+2026-08-13, owner review 2026-08-13)
 
 **Dry-run виконано (2026-08-06):** 9 klein-рендерів (3 сіди × 3 головні історії
 `ai-weekly-2026-07-27`) через реальний Cloudflare Workers AI. Результат — генуїнно

@@ -10,6 +10,20 @@ Last updated: 2026-08-13
 
 ## Стан репозиторію
 
+- **Переоцінка виправленим харнесом — перевага V10 не підтвердилась (2026-08-13).** Ті самі
+  пікселі, той самий суддя `google/gemini-2.5-flash`, змінені лише правила оцінювання:
+  **V10 hard integrity 3/3 → 0/3**, blind preference **3-0 → 1-1 з нічиєю**, розрив зважених
+  балів 33.1 → **0.5** пункта (шум того самого судді на незмінних пікселях раніше вимірювався
+  у 15.5). V8 headline-grounded зріс 0/3 → 2/3, щойно його перестали оцінювати за специфікацією
+  конкурента — baseline був strawman. Блокери V10: `generated_text` на обох детермінованих
+  сценах (впечені лістинги і підписи, заборонені політикою `weekly-semantic-story-v5.1`),
+  `labels_carry_claim` на Claude-thresholds, пʼять блокерів на Deep Work. Обидві гілки провалюють
+  hard integrity за однаковими правилами. **Висновок: заявлена перевага була артефактом
+  вимірювання, а не якості картинок.** Питання «чи краще за продакшн» лишається відкритим —
+  `pipeline/card-image.ts` у порівнянні не брав участі жодного разу. (source: Actions run
+  `31739283280`, `experiments/visual-affordance-v10/targeted-v7-corrected-harness/`,
+  [open-questions](open-questions.md) §8)
+
 - **PR #229 W0 cleanup виконано (2026-08-13):** гілка `chore/visual-v11-hygiene` готує #229 до
   мержу в `main`. Видалено 83 МБ бінарників з git, 35 one-shot скриптів, 3 осиротілі модулі і
   66 з 67 workflow (лишився один `workflow_dispatch`-харнес `visual-experiment.yml` без
@@ -34,8 +48,8 @@ Last updated: 2026-08-13
   оновив три візуальні пояснення за конкретним owner feedback: Gemini показує два різні code
   artifacts; Claude — послідовність `cache → split → BOUNDED 1/2/3` та monitor на кожній сесії;
   Deep Work — промінь до картки-підказки й завершену людську дію на маршруті. Targeted V6 звітував
-  3/3 hard-integrity, 3/3 headline-grounded і 3/0 blind preference для V10 — **ці числа визнані
-  невалідними у W0 і не переоцінені**, бо переоцінка потребує платного прогону. Це не production
+  3/3 hard-integrity, 3/3 headline-grounded і 3/0 blind preference для V10 — **ці числа спростовано
+  переоцінкою 2026-08-13** (0/3 і 1-1, див. запис вище). Це не production
   rollout: `main`, production visuals і Supabase не змінювалися. (source: owner review 2026-08-13,
   `experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/results/evaluation-report.md`,
   commit `720b1a2`)

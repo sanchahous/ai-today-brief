@@ -1,0 +1,207 @@
+[
+  {
+    "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+    "rank": 2,
+    "headline": "Gemini faces community critique regarding model performance consistency",
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 2,
+      "revision_item_id": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "title": "Gemini faces community critique regarding model performance consistency",
+      "summary": "The developer community is actively debating the reliability of Gemini in coding environments compared to alternatives. Users highlight inconsistencies that impact production-grade tasks.",
+      "why": "Evaluate your current model selection by testing critical code paths against multiple providers to avoid unexpected regression.",
+      "practical": null,
+      "takeaway": null
+    },
+    "treatment": {
+      "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "kind": "same_system_output_variability",
+      "grammar": "controlled_comparison",
+      "renderMode": "deterministic",
+      "labels": [
+        "SAME TASK",
+        "RUN A",
+        "RUN B"
+      ],
+      "expectedEvidence": [
+        "one identical task enters one identical model chamber",
+        "the same model chamber visibly branches into run A and run B",
+        "two output artifacts are visibly different code structures without implying a numeric failure rate"
+      ],
+      "forbiddenImplications": [
+        "two different models were compared",
+        "two different prompts caused the difference",
+        "one output is proven universally better",
+        "the labels create divergence that the output artifacts do not show"
+      ],
+      "sourceGrounding": "The source describes repeated use of the same coding task and system with inconsistent or divergent outputs.",
+      "expectedImageCalls": 0
+    },
+    "baselinePixelPath": "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-v8-pixels.jpg",
+    "baselineFinalPath": "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-v8-final.jpg",
+    "candidatePixelPath": "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-v10-pixels.jpg",
+    "candidateFinalPath": "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-v10-final.jpg",
+    "blindXCardPath": "cards/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-X.png",
+    "blindYCardPath": "cards/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-Y.png",
+    "blindXSource": "v10",
+    "blindYSource": "v8",
+    "baseline": {
+      "provider": "reused",
+      "model": "visual-compiler-v8-v4",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 0,
+      "assetPaths": [
+        "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-v8-pixels.jpg",
+        "images/2-465cf941-4e17-4699-abdf-2b6a40b6b2a2-v8-final.jpg"
+      ]
+    },
+    "candidate": {
+      "provider": "local",
+      "model": "affordance-same_system_output_variability-v10",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 640,
+      "assetPaths": []
+    }
+  },
+  {
+    "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+    "rank": 4,
+    "headline": "Managing AI-Driven Distraction and Rediscovering Deep Work",
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 4,
+      "revision_item_id": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "title": "Managing AI-Driven Distraction and Rediscovering Deep Work",
+      "summary": "Recent community discussions highlight how constant reliance on Claude for trivial reasoning can erode personal problem-solving skills. The key is to use LLMs as sparring partners rather than offloading the entire cognitive load.",
+      "why": "Prevents cognitive atrophy and helps you maintain your ability to solve complex architecture problems independently.",
+      "practical": null,
+      "takeaway": null
+    },
+    "treatment": {
+      "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "kind": "bounded_assistance",
+      "grammar": "cinematic_domain_scene",
+      "renderMode": "generated_source_cinematic",
+      "labels": [
+        "ACTIVE THINKING",
+        "BOUNDED HINT"
+      ],
+      "expectedEvidence": [
+        "one visible adult remains actively engaged in the difficult reasoning task",
+        "one small visible AI device projects exactly one bounded hint onto a physical hint card whose highlighted tile matches one specific board gap",
+        "the person uses exactly two anatomically connected hands to press the matching final tile into that gap, visibly completing one unbroken route to a finish marker while background distraction remains muted"
+      ],
+      "forbiddenImplications": [
+        "an extra or unowned hand appears",
+        "the hint beam begins off-screen",
+        "the AI completes the task",
+        "the person is passive",
+        "a generic gear workshop replaces the cognitive-work context",
+        "the beam decorates the board without a visible hint card or human result"
+      ],
+      "sourceGrounding": "The source argues that AI should act as a bounded sparring partner while the human retains active problem-solving and deep focus.",
+      "expectedImageCalls": 1
+    },
+    "baselinePixelPath": "images/4-672e4320-6b71-4f9c-89da-82ce92770746-v8-pixels.jpg",
+    "baselineFinalPath": "images/4-672e4320-6b71-4f9c-89da-82ce92770746-v8-final.jpg",
+    "candidatePixelPath": "images/4-672e4320-6b71-4f9c-89da-82ce92770746-v10-pixels.jpg",
+    "candidateFinalPath": "images/4-672e4320-6b71-4f9c-89da-82ce92770746-v10-final.jpg",
+    "blindXCardPath": "cards/4-672e4320-6b71-4f9c-89da-82ce92770746-X.png",
+    "blindYCardPath": "cards/4-672e4320-6b71-4f9c-89da-82ce92770746-Y.png",
+    "blindXSource": "v8",
+    "blindYSource": "v10",
+    "baseline": {
+      "provider": "reused",
+      "model": "visual-compiler-v8-v4",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 0,
+      "assetPaths": [
+        "images/4-672e4320-6b71-4f9c-89da-82ce92770746-v8-pixels.jpg",
+        "images/4-672e4320-6b71-4f9c-89da-82ce92770746-v8-final.jpg"
+      ]
+    },
+    "candidate": {
+      "provider": "cloudflare",
+      "model": "@cf/black-forest-labs/flux-2-klein-9b",
+      "imageCalls": 1,
+      "estimatedImageCostUsd": 0.015,
+      "durationMs": 2363,
+      "prompt": "Premium cinematic editorial photograph for a technology magazine, wide 16:9 composition, coherent realistic lighting, natural materials, restrained cyan accent, one readable visual idea. Approved story context: Managing AI-Driven Distraction and Rediscovering Deep Work. Recent community discussions highlight how constant reliance on Claude for trivial reasoning can erode personal problem-solving skills. The key is to use LLMs as sparring partners rather than offloading the entire cognitive load. Show exactly one adult knowledge worker in deep concentration at a large tactile logic board made of blank interlocking geometric tiles. The face, eyes, upper torso and both forearms are visible. Exactly two human hands are visible, both anatomically correct and visibly attached to this same person. One hand places one dark geometric tile into the board; the other hand steadies the board. No other person, arm, hand, reflection or partial body is present. A small physical AI assistance device is clearly visible on the table at frame left. The device is the unmistakable source of one narrow cyan cone of light aimed only at one small physical hint card beside the board. The card shows one simple highlighted geometric tile inside a three-step route, with no letters, numbers or code text. The light starts at the device, ends on that card and does nothing else. Use a simple, unmistakable completion puzzle rather than a generic all-over grid. The large board contains one thick warm-amber route from a start at frame left to one clearly illuminated amber finish marker at frame right. The route has exactly one light-blue outlined square gap. One hand presses the matching dark square tile, already seated in that gap, while the other steadies the board. The two amber route ends visibly enter and leave the seated tile, making one unbroken route to the finish marker. Keep enough empty board surface that this completed route is readable at thumbnail size. Most of the logic board has already been assembled by the person. The person remains physically engaged and chooses where to place the tile; the AI device does not move objects, write, type or complete the puzzle. Behind a frosted glass divider, distraction is represented only by diffuse defocused colored light and motion blur, never boxes, icons, screens, diagrams or interface shapes. The foreground must communicate sustained concentration, active human thinking and one bounded hint. It must not resemble a generic gear workshop or passive automation. All tiles and surfaces are blank and unmarked except for the one physical hint card with its simple geometric tile route. No readable words, paper document, monitor, code or diagram appears in the foreground. Absolutely no readable text, letters, numbers, symbols, logos, captions, UI, watermark, extra fingers, extra limbs, extra hands, detached hands, fused objects, off-screen laser source or impossible anatomy. Passive automation is forbidden. A beam without a visible physical source and visible target is forbidden.",
+      "assetPaths": [
+        "assets/4-672e4320-6b71-4f9c-89da-82ce92770746-bounded_assistance.jpg"
+      ]
+    }
+  },
+  {
+    "storyId": "40673aee-fac7-451f-be07-51016c857613",
+    "rank": 5,
+    "headline": "Claude Usage Thresholds: Insights from High-Volume Token Consumption",
+    "story": {
+      "week_start": "2026-06-22",
+      "week_end": "2026-06-28",
+      "rank": 5,
+      "revision_item_id": "40673aee-fac7-451f-be07-51016c857613",
+      "title": "Claude Usage Thresholds: Insights from High-Volume Token Consumption",
+      "summary": "Users pushing the limits of Claude's context window and rate limits are reporting anecdotal signals from Anthropic regarding usage patterns. This highlights the importance of monitoring token spend in high-intensity agentic tasks.",
+      "why": "Understanding your token burn rate helps prevent unexpected session interruptions during deep-code refactoring.",
+      "practical": null,
+      "takeaway": null
+    },
+    "treatment": {
+      "storyId": "40673aee-fac7-451f-be07-51016c857613",
+      "kind": "controlled_session_workflow",
+      "grammar": "causal_process_sequence",
+      "renderMode": "deterministic",
+      "labels": [
+        "CACHE",
+        "SPLIT",
+        "MONITOR"
+      ],
+      "expectedEvidence": [
+        "one oversized continuous session visibly approaches an operational risk boundary",
+        "one linear cache-to-split path divides the stream into three explicitly bounded continuation sessions",
+        "one visible monitor is connected to every bounded session and shows them remaining below the risk boundary without claiming an exact undocumented limit"
+      ],
+      "forbiddenImplications": [
+        "an exact token threshold is known",
+        "caching alone guarantees no interruption",
+        "the process is merely a generic bar chart",
+        "the labels carry the workflow while pixels show no transformation"
+      ],
+      "sourceGrounding": "The source recommends operational controls for high-volume sessions: cache stable context, split long runs and monitor token burn.",
+      "expectedImageCalls": 0
+    },
+    "baselinePixelPath": "images/5-40673aee-fac7-451f-be07-51016c857613-v8-pixels.jpg",
+    "baselineFinalPath": "images/5-40673aee-fac7-451f-be07-51016c857613-v8-final.jpg",
+    "candidatePixelPath": "images/5-40673aee-fac7-451f-be07-51016c857613-v10-pixels.jpg",
+    "candidateFinalPath": "images/5-40673aee-fac7-451f-be07-51016c857613-v10-final.jpg",
+    "blindXCardPath": "cards/5-40673aee-fac7-451f-be07-51016c857613-X.png",
+    "blindYCardPath": "cards/5-40673aee-fac7-451f-be07-51016c857613-Y.png",
+    "blindXSource": "v10",
+    "blindYSource": "v8",
+    "baseline": {
+      "provider": "reused",
+      "model": "visual-compiler-v8-v4",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 0,
+      "assetPaths": [
+        "images/5-40673aee-fac7-451f-be07-51016c857613-v8-pixels.jpg",
+        "images/5-40673aee-fac7-451f-be07-51016c857613-v8-final.jpg"
+      ]
+    },
+    "candidate": {
+      "provider": "local",
+      "model": "affordance-controlled_session_workflow-v10",
+      "imageCalls": 0,
+      "estimatedImageCostUsd": 0,
+      "durationMs": 401,
+      "assetPaths": []
+    }
+  }
+]

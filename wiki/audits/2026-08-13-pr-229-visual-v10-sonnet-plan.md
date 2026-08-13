@@ -16,9 +16,13 @@ Last updated: 2026-08-13
 > **видалено** — воно було побайтовою копією `experiments/visual-affordance-v10/targeted-v3/results/`,
 > яка й лишається єдиною копією того прогону; знято три маніпуляції в evaluator;
 > `experiments/` описано як зону в [CLAUDE.md](../../CLAUDE.md).
-> **Не зроблено і зроблено бути не могло:** переоцінка з виправленим гейтом — вона потребує
-> платного прогону (Cloudflare + OpenRouter). Тому всі числа V6 лишаються **невалідованими**,
-> див. [open-questions](../open-questions.md) §8. W1–W5 попереду.
+> **Переоцінку виконано 2026-08-13** (Actions run `31739283280`, з дозволу власника, $0.0149).
+> Результат: ті самі пікселі й той самий суддя, змінені лише правила — **V10 hard integrity
+> 3/3 → 0/3**, blind preference **3-0 → 1-1 з нічиєю**, розрив зважених балів 33.1 → **0.5**
+> пункта. V8 headline-grounded зріс 0/3 → 2/3. Заявлена перевага V10 була артефактом
+> вимірювання. Дані — `experiments/visual-affordance-v10/targeted-v7-corrected-harness/`,
+> [open-questions](../open-questions.md) §8. **Це не робить V8 кращим:** обидві гілки дають 0/3
+> за однаковими правилами, а продакшн у порівнянні не брав участі. W1–W5 попереду.
 
 Гілка цього review: `review/pr-229-sonnet-plan` (від `origin/experiment/visual-affordance-router-v10-20260813`). Production код на `main` не чіпати, поки не закінчено W0–W4 і owner не дав окремий вердикт на W5.
 
