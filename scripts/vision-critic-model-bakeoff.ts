@@ -206,32 +206,45 @@ async function main(): Promise<void> {
     const mine = observations.filter((observation) => observation.model === model);
     const keys = [...new Set(mine.map((observation) => observation.key))];
 
-    // A candidate is treated as failed by the critic when the MAJORITY of
+    // A candidate is treated as failed by the critic when the MAJORITY of VALID
     // samples fail it — a model that only sometimes catches a defect is not a
     // gate.
+    //
+    // Transport failures (HTTP 402/429/5xx) and unparseable replies are excluded
+    // rather than counted. They surface as overall=0/passed=false, which would
+    // otherwise read as a correct rejection and silently inflate recall for
+    // whichever model happened to error most. A key with no valid sample is
+    // reported as `insufficient`, never as caught.
     let caught = 0;
     let flagged = 0;
     let flagExpected = 0;
+    let insufficient = 0;
     const spreads: number[] = [];
     const perKey = keys.map((key) => {
       const runs = mine.filter((observation) => observation.key === key);
-      const failures = runs.filter((run) => !run.passed).length;
-      const majorityFailed = failures * 2 > runs.length;
+      const valid = runs.filter((run) => !run.error && !run.parseFailed);
+      const enough = valid.length * 2 > runs.length;
+      const failures = valid.filter((run) => !run.passed).length;
+      const majorityFailed = enough && failures * 2 > valid.length;
       const expectation = EXPECTATION[key];
+      if (!enough) insufficient += 1;
       if (expectation?.mustFail && majorityFailed) caught += 1;
       if (expectation?.mustFlag) {
         flagExpected += 1;
-        const hits = runs.filter((run) => run.blockers.includes(expectation.mustFlag!)).length;
-        if (hits * 2 > runs.length) flagged += 1;
+        const hits = valid.filter((run) => run.blockers.includes(expectation.mustFlag!)).length;
+        if (enough && hits * 2 > valid.length) flagged += 1;
       }
-      const overalls = runs.map((run) => run.overall);
-      spreads.push(spread(overalls));
+      const overalls = valid.map((run) => run.overall);
+      if (overalls.length > 0) spreads.push(spread(overalls));
       return {
         key,
+        validSamples: valid.length,
+        totalSamples: runs.length,
+        verdict: enough ? (majorityFailed ? 'failed' : 'PASSED') : 'insufficient',
         majorityFailed,
         medianOverall: median(overalls),
-        overallSpread: spread(overalls),
-        blockerUnion: [...new Set(runs.flatMap((run) => run.blockers))],
+        overallSpread: overalls.length > 0 ? spread(overalls) : 0,
+        blockerUnion: [...new Set(valid.flatMap((run) => run.blockers))],
         parseFailures: runs.filter((run) => run.parseFailed).length,
         errors: runs.filter((run) => run.error).length,
       };
@@ -242,6 +255,7 @@ async function main(): Promise<void> {
       model,
       mustFailCaught: caught,
       mustFailTotal: keys.filter((key) => EXPECTATION[key]?.mustFail).length,
+      insufficientKeys: insufficient,
       readableTextCaught: flagged,
       readableTextTotal: flagExpected,
       worstOverallSpread: Math.max(0, ...spreads),
@@ -269,23 +283,29 @@ async function main(): Promise<void> {
     'verdicts, three from the corrected-harness blockers and direct inspection. A usable critic fails',
     'all six and names the baked text on the two deterministic cards.',
     '',
-    '| Model | Caught must-fail | Caught readable_text | Worst score spread | Parse fails | Errors | Reported cost |',
-    '|---|---:|---:|---:|---:|---:|---:|',
+    'Recall counts only images with a majority of VALID samples. Transport failures and unparseable',
+    'replies are excluded, not scored as rejections — otherwise the model that errors most looks',
+    'strictest. Any image without enough valid samples is reported as `insufficient`.',
+    '',
+    '| Model | Caught must-fail | Insufficient | Caught readable_text | Worst score spread | Parse fails | Errors | Reported cost |',
+    '|---|---:|---:|---:|---:|---:|---:|---:|',
     ...perModel.map(
       (entry) =>
         `| \`${entry.model}\` | ${entry.mustFailCaught}/${entry.mustFailTotal} | ` +
+        `${entry.insufficientKeys} | ` +
         `${entry.readableTextCaught}/${entry.readableTextTotal} | ${entry.worstOverallSpread} | ` +
         `${entry.parseFailures} | ${entry.errors} | $${entry.reportedCostUsd.toFixed(4)} |`,
     ),
     '',
     '## Per image',
     '',
-    '| Model | Image | Failed by majority | Median overall | Spread | Blockers seen |',
-    '|---|---|---|---:|---:|---|',
+    '| Model | Image | Verdict | Valid samples | Median overall | Spread | Blockers seen |',
+    '|---|---|---|---:|---:|---:|---|',
     ...perModel.flatMap((entry) =>
       entry.perKey.map(
         (key) =>
-          `| \`${entry.model}\` | ${key.key} | ${key.majorityFailed ? 'yes' : '**NO**'} | ` +
+          `| \`${entry.model}\` | ${key.key} | ${key.verdict === 'failed' ? 'failed' : `**${key.verdict}**`} | ` +
+          `${key.validSamples}/${key.totalSamples} | ` +
           `${key.medianOverall} | ${key.overallSpread} | ${key.blockerUnion.join(', ') || '—'} |`,
       ),
     ),
