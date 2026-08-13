@@ -1,0 +1,56 @@
+[
+  {
+    "rank": 1,
+    "id": "gemini-consistency",
+    "kind": "gemini_consistency",
+    "title": "Gemini faces community critique regarding model performance consistency",
+    "summary": "Developers report that the same coding task can produce inconsistent and divergent outputs across repeated runs, creating a reliability concern rather than a simple benchmark comparison.",
+    "why": "The visual must hold the task and model constant and make the output difference concrete.",
+    "takeaway": "Evaluate consistency through repeated identical tasks and inspect the resulting code artifacts."
+  },
+  {
+    "rank": 2,
+    "id": "claude-usage-thresholds",
+    "kind": "claude_threshold_controls",
+    "title": "Claude Usage Thresholds: Insights from High-Volume Token Consumption",
+    "summary": "Long high-volume agent sessions can approach hidden context or rate limits, so teams need caching, bounded session splitting and token monitoring instead of one uncontrolled run.",
+    "why": "The useful visual claim is the operational control workflow, not a generic load chart.",
+    "takeaway": "Cache static context, split long sessions and monitor consumption before the workflow reaches an interruption boundary."
+  },
+  {
+    "rank": 3,
+    "id": "deep-work",
+    "kind": "deep_work_bounded_hint",
+    "title": "Managing AI-Driven Distraction and Rediscovering Deep Work",
+    "summary": "AI is most useful as a bounded sparring partner: it offers one targeted hint while the person remains actively engaged in difficult thinking and performs the work.",
+    "why": "The person must remain visibly active and the AI hint needs a visible physical source, target and limited effect.",
+    "takeaway": "Use AI to illuminate one obstacle, not to replace the reasoning process."
+  },
+  {
+    "rank": 4,
+    "id": "token-caching",
+    "kind": "token_caching",
+    "title": "Optimizing Token Caching to Avoid Unexpected Large Language Model Costs",
+    "summary": "Prompt caching stores static context once so repeated calls do not pay to process the same tokens again, reducing model cost by up to 90% in suitable workflows.",
+    "why": "The existing diagram concept was useful, but its central arrow was broken and must be repaired without changing the concept.",
+    "takeaway": "Cache recurring system instructions and static context, then send only the dynamic portion on later calls."
+  },
+  {
+    "rank": 5,
+    "id": "fuzzing-property-testing",
+    "kind": "fuzz_repair_loop",
+    "title": "Agentic testing playbook: How fuzzing and property testing empower autonomous coding",
+    "summary": "An agent generates varied edge cases, exposes a concrete failure, patches the same code artifact and reruns verification until the failure is resolved.",
+    "why": "A generic robot factory cannot communicate the failure-to-repair loop.",
+    "takeaway": "Make failure generation, repair and verification visible as one bounded causal sequence."
+  },
+  {
+    "rank": 6,
+    "id": "optical-context-compression",
+    "kind": "optical_context_compression",
+    "title": "Cutting Claude Code Token Costs with Optical Context Compression",
+    "summary": "Optical context compression makes a large context representation physically smaller while preserving dense information that can still be recovered through optical inspection.",
+    "why": "The press-and-magnifier metaphor is promising only when the magnifier is physically connected and visibly reveals preserved information.",
+    "takeaway": "Show both the size reduction and the preserved information in the same causal scene."
+  }
+]
