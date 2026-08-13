@@ -5,13 +5,18 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/edito
 `src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`, owner content-quality
 audit 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK `claimIds` parser fix 2026-08-10
 (Actions run `31367921173`), quantified length-repair fix + newer-draft banner 2026-08-10,
-Postpone release feature 2026-08-10
-Last updated: 2026-08-10
+Postpone release feature 2026-08-10, experimental Visual Affordance V10 owner review 2026-08-13
+Last updated: 2026-08-13
 
 
 `weekly-editorial-v2` replaces the old `impact → recency → daily rank` sort used
 for weekly digests. Its purpose is to produce an explainable, evidence-backed
 shortlist for an editor, not to publish an algorithmic verdict.
+
+> **Scope note (2026-08-13):** experimental Visual Affordance V10 evaluates visual explanations
+> for three selected stories only. It does not alter `weekly-editorial-v2` candidates, weights,
+> diversity constraints, approval state or release eligibility.
+> (source: `experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/results/README.md`)
 
 ## Selection pipeline
 

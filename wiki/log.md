@@ -1686,3 +1686,17 @@ opaque abstraction, banned UI/clichés лишаються blockers; semantic mis
 paid vision. При `rejectMetaphor` critic direction і patches ідуть у concept jury як feedback,
 але не копіюються в усі три renders. Додані regression tests для variant prompts, critic feedback
 і production-shaped three-pitch planning.
+## 2026-08-13 — Experimental Visual Affordance V10 owner local repairs
+
+**Джерело:** owner review 2026-08-13; `src/lib/weekly-digest/visual-affordance-treatment-v10.ts`;
+`experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/results/evaluation-report.md`.
+
+**Змінено:** в isolated experimental branch Gemini отримав два різні code artifacts; Claude —
+лінійний cache → split → BOUNDED 1/2/3 потік і MONITOR для кожної bounded session; Deep Work —
+чіткий зв'язок device hint → людська дія → фініш задачі.
+
+**Перевірено:** targeted V6: V10 3/3 hard visual integrity, 3/3 headline grounded, blind preference
+3 V10 / 0 V8 / 0 ties. Це не production approval: `main`, production visuals і Supabase не змінені;
+фінальний owner verdict залишається окремим гейтом.
+
+---

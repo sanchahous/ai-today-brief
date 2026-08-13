@@ -2,12 +2,23 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…11, Content Sim plan 2026-08-11
-Last updated: 2026-08-11
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…13, Content Sim plan 2026-08-11,
+experimental Visual Affordance V10 owner review 2026-08-13
+Last updated: 2026-08-13
 
 ---
 
 ## Стан репозиторію
+
+- **Visual Affordance V10 owner local repairs (2026-08-13):** isolated experimental candidate
+  оновив три візуальні пояснення за конкретним owner feedback: Gemini показує два різні code
+  artifacts; Claude — послідовність `cache → split → BOUNDED 1/2/3` та monitor на кожній сесії;
+  Deep Work — промінь до картки-підказки й завершену людську дію на маршруті. Targeted V6 має
+  3/3 hard-integrity, 3/3 headline-grounded і 3/0 blind preference для V10. Це не production
+  rollout: `main`, production visuals і Supabase не змінювалися; фінальний owner verdict ще
+  потрібен. (source: owner review 2026-08-13,
+  `experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/results/evaluation-report.md`,
+  commit `720b1a2`)
 
 - **Weekly illustration cost/quality loop hardening (2026-08-11):** owner-аудит Story 2/3/5/6
   підтвердив, що 5-round repair loop був дорогим seed roulette, фінальний repair лишав один variant,

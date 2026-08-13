@@ -3,8 +3,9 @@
 Summary: головний зміст усієї wiki. Кожен рядок — одна сторінка + один рядок опису. Точка входу
 для будь-якого питання: спершу читаємо цей файл, потім релевантні сторінки.
 Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery fix
-2026-08-10, story-image rollout deduplication і three-concept illustration jury 2026-08-11
-Last updated: 2026-08-11
+2026-08-10, story-image rollout deduplication і three-concept illustration jury 2026-08-11,
+experimental Visual Affordance V10 owner review 2026-08-13
+Last updated: 2026-08-13
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
