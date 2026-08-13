@@ -10,8 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, 2026-08-10 fixes, parallel enqueue/worker update and owner prompt review + `weekly-semantic-story-v5` 2026-08-11,
-experimental Visual Affordance V10 owner-review package 2026-08-13
+Actions run `31324873875`, PR #209, 2026-08-10 fixes, parallel enqueue/worker update and owner prompt review + `weekly-semantic-story-v5` 2026-08-11
 Last updated: 2026-08-13
 
 ---

@@ -10,8 +10,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner + restore error fix 2026-08-10, Postpone release feature 2026-08-10,
-experimental Visual Affordance V10 owner review 2026-08-13
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner + restore error fix 2026-08-10, Postpone release feature 2026-08-10
 Last updated: 2026-08-13
 
 ---
