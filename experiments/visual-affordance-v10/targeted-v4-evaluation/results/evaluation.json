@@ -1,0 +1,581 @@
+{
+  "rows": [
+    {
+      "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+      "rank": 2,
+      "headline": "Gemini faces community critique regarding model performance consistency",
+      "treatment": {
+        "storyId": "465cf941-4e17-4699-abdf-2b6a40b6b2a2",
+        "kind": "same_system_output_variability",
+        "grammar": "controlled_comparison",
+        "renderMode": "deterministic",
+        "labels": [
+          "SAME TASK",
+          "RUN A",
+          "RUN B"
+        ],
+        "expectedEvidence": [
+          "one identical task enters one identical model chamber",
+          "the same model chamber visibly branches into run A and run B",
+          "two output artifacts are visibly different in structure without implying a numeric failure rate"
+        ],
+        "forbiddenImplications": [
+          "two different models were compared",
+          "two different prompts caused the difference",
+          "one output is proven universally better",
+          "the labels create divergence that the output artifacts do not show"
+        ],
+        "sourceGrounding": "The source describes repeated use of the same coding task and system with inconsistent or divergent outputs.",
+        "expectedImageCalls": 0
+      },
+      "v8": {
+        "blindObservation": {
+          "literalDescription": "A diagram showing two parallel flows. Each flow starts from a document-like object, goes through a processor-like unit, and ends in a chart. The background is dark blue with a subtle gradient.",
+          "visibleObjects": [
+            "large rectangular box containing two smaller rectangular boxes with horizontal lines (document-like)",
+            "two arrows",
+            "two rectangular boxes with central chip icons (processor-like)",
+            "two arrows",
+            "large rectangular box containing two charts",
+            "green chart with a line graph and points",
+            "orange chart with a line graph"
+          ],
+          "visibleActions": [
+            "data flow from first document to first processor",
+            "data flow from second document to second processor",
+            "first processor processing",
+            "second processor processing",
+            "data flow from first processor to first chart",
+            "data flow from second processor to second chart"
+          ],
+          "visibleOutcomes": [
+            "two different charts are generated or updated"
+          ],
+          "generatedTextPresent": false,
+          "extraLimbVisible": false,
+          "unownedHandVisible": false,
+          "objectFusionVisible": false,
+          "impossibleInteractionVisible": false,
+          "beamPresent": true,
+          "beamSourceVisible": true,
+          "beamTargetVisible": true,
+          "beamPurposeClear": true,
+          "disconnectedPropVisible": false,
+          "brokenArrowVisible": false,
+          "directionUnambiguous": true,
+          "inputInvariantPreserved": false,
+          "systemInvariantPreserved": false,
+          "chartMetricDefined": true,
+          "coreActionVisible": true,
+          "outcomeVisible": true,
+          "causalRelationVisible": true,
+          "domainContextVisible": false
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "sourceGrounded": false,
+          "certaintyPreserved": false,
+          "unsupportedSpecificVisible": true,
+          "mappingComplete": false,
+          "pixelActionSupportsClaim": true,
+          "pixelOutcomeSupportsClaim": true,
+          "pixelRelationSupportsClaim": false,
+          "domainContextSupported": false,
+          "inputInvariantSupported": false,
+          "systemInvariantSupported": false,
+          "beamPurposeSupportsClaim": true,
+          "labelsSupportedByPixels": false,
+          "labelsCarryClaim": true,
+          "thumbnailReadable": true,
+          "misleading": true,
+          "instantMeaning": 40,
+          "visualBeauty": 70,
+          "brandConsistency": 85,
+          "originality": 60,
+          "summary": "Card Y fails to meet the 'owner-grounded required evidence' for a controlled comparison. It depicts two separate inputs and two separate processors, implying two different models or runs rather than a single model branching into two outcomes from one input. This directly contradicts the required evidence and the story's intent to show inconsistency from the *same* model/task. The labels 'DIVERGENT"
+        },
+        "integrityPassed": false,
+        "integrityBlockers": [
+          "causal_relation_missing",
+          "unsupported_specific",
+          "certainty_upgrade",
+          "labels_carry_claim",
+          "input_invariant_broken",
+          "system_invariant_broken"
+        ],
+        "headlinePairPassed": false,
+        "ownerApprovalRequired": true,
+        "automatedPublicationAllowed": false,
+        "weightedScore": 57.75
+      },
+      "v10": {
+        "blindObservation": {
+          "literalDescription": "A diagram showing a flow from a document-like object to a central processing unit, which then branches out to two different network-like structures. The background is dark blue with a subtle gradient.",
+          "visibleObjects": [
+            "rectangular box with horizontal lines (document-like)",
+            "arrow",
+            "rectangular box with a central chip icon (processor-like)",
+            "two curved lines branching from the processor-like box",
+            "two arrows",
+            "green rectangular box with four connected nodes (network-like structure)",
+            "orange rectangular box with four connected nodes (different network-like structure)"
+          ],
+          "visibleActions": [
+            "data flow from document to processor",
+            "processor processing",
+            "data flow from processor to two distinct network structures"
+          ],
+          "visibleOutcomes": [
+            "two different network structures are formed or affected"
+          ],
+          "generatedTextPresent": false,
+          "extraLimbVisible": false,
+          "unownedHandVisible": false,
+          "objectFusionVisible": false,
+          "impossibleInteractionVisible": false,
+          "beamPresent": true,
+          "beamSourceVisible": true,
+          "beamTargetVisible": true,
+          "beamPurposeClear": true,
+          "disconnectedPropVisible": false,
+          "brokenArrowVisible": false,
+          "directionUnambiguous": true,
+          "inputInvariantPreserved": false,
+          "systemInvariantPreserved": false,
+          "chartMetricDefined": false,
+          "coreActionVisible": true,
+          "outcomeVisible": true,
+          "causalRelationVisible": true,
+          "domainContextVisible": false
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "sourceGrounded": true,
+          "certaintyPreserved": true,
+          "unsupportedSpecificVisible": false,
+          "mappingComplete": true,
+          "pixelActionSupportsClaim": true,
+          "pixelOutcomeSupportsClaim": true,
+          "pixelRelationSupportsClaim": true,
+          "domainContextSupported": false,
+          "inputInvariantSupported": true,
+          "systemInvariantSupported": true,
+          "beamPurposeSupportsClaim": true,
+          "labelsSupportedByPixels": true,
+          "labelsCarryClaim": false,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 90,
+          "visualBeauty": 85,
+          "brandConsistency": 90,
+          "originality": 80,
+          "summary": "Card X effectively illustrates a single task entering a single model chamber, which then branches into two different runs, producing visibly different network structures. This directly supports the claim of model performance inconsistency. The visual grammar is clear and the labels enhance understanding without being solely reliant on them."
+        },
+        "integrityPassed": true,
+        "integrityBlockers": [],
+        "headlinePairPassed": true,
+        "ownerApprovalRequired": true,
+        "automatedPublicationAllowed": false,
+        "weightedScore": 87.5
+      },
+      "preferredSource": "v10",
+      "confidence": 5,
+      "reason": "Card X perfectly adheres to the 'owner-grounded required evidence' for a controlled comparison: 'one identical task enters one identical model chamber; the same model chamber visibly branches into run A and run B; two output artifacts are visibly different in structure without implying a numeric failure rate'. The single input, single processor branching into two distinct outputs clearly illustrates the intended message of inconsistent performance from a single source. Card Y, however, shows two inputs and two processors, which violates the core requirement of a single model chamber branching, making it misleading and failing to support the claim of model performance consistency from a single source.",
+      "pixelOrder": {
+        "X": "v10",
+        "Y": "v8"
+      },
+      "cardOrder": {
+        "X": "v10",
+        "Y": "v8"
+      }
+    },
+    {
+      "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+      "rank": 4,
+      "headline": "Managing AI-Driven Distraction and Rediscovering Deep Work",
+      "treatment": {
+        "storyId": "672e4320-6b71-4f9c-89da-82ce92770746",
+        "kind": "bounded_assistance",
+        "grammar": "cinematic_domain_scene",
+        "renderMode": "generated_source_cinematic",
+        "labels": [
+          "ACTIVE THINKING",
+          "BOUNDED HINT"
+        ],
+        "expectedEvidence": [
+          "one visible adult remains actively engaged in the difficult reasoning task",
+          "one small visible AI device provides exactly one bounded hint to one specific part of the work",
+          "the person performs the work with exactly two anatomically connected hands while background distraction remains muted"
+        ],
+        "forbiddenImplications": [
+          "an extra or unowned hand appears",
+          "the hint beam begins off-screen",
+          "the AI completes the task",
+          "the person is passive",
+          "a generic gear workshop replaces the cognitive-work context"
+        ],
+        "sourceGrounding": "The source argues that AI should act as a bounded sparring partner while the human retains active problem-solving and deep focus.",
+        "expectedImageCalls": 1
+      },
+      "v8": {
+        "blindObservation": {
+          "literalDescription": "A man with short brown hair and a dark shirt is looking intently at a mechanical assembly of gears. A bright green beam of light emanates from his right eye, striking one of the gears. His hands are positioned near the gears, appearing to manipulate them. The background shows a window with blurred reflections of colorful lights.",
+          "visibleObjects": [
+            "man",
+            "gears",
+            "mechanical assembly",
+            "beam of light",
+            "hands",
+            "window",
+            "blurred lights"
+          ],
+          "visibleActions": [
+            "man looking",
+            "beam emanating",
+            "beam striking",
+            "hands manipulating"
+          ],
+          "visibleOutcomes": [],
+          "generatedTextPresent": false,
+          "extraLimbVisible": false,
+          "unownedHandVisible": false,
+          "objectFusionVisible": false,
+          "impossibleInteractionVisible": true,
+          "beamPresent": true,
+          "beamSourceVisible": true,
+          "beamTargetVisible": true,
+          "beamPurposeClear": false,
+          "disconnectedPropVisible": false,
+          "brokenArrowVisible": false,
+          "directionUnambiguous": true,
+          "inputInvariantPreserved": false,
+          "systemInvariantPreserved": false,
+          "chartMetricDefined": false,
+          "coreActionVisible": true,
+          "outcomeVisible": false,
+          "causalRelationVisible": false,
+          "domainContextVisible": true
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "sourceGrounded": true,
+          "certaintyPreserved": true,
+          "unsupportedSpecificVisible": false,
+          "mappingComplete": false,
+          "pixelActionSupportsClaim": true,
+          "pixelOutcomeSupportsClaim": false,
+          "pixelRelationSupportsClaim": false,
+          "domainContextSupported": false,
+          "inputInvariantSupported": false,
+          "systemInvariantSupported": false,
+          "beamPurposeSupportsClaim": false,
+          "labelsSupportedByPixels": true,
+          "labelsCarryClaim": false,
+          "thumbnailReadable": true,
+          "misleading": true,
+          "instantMeaning": 40,
+          "visualBeauty": 70,
+          "brandConsistency": 80,
+          "originality": 70,
+          "summary": "Card X shows a man actively engaged with mechanical gears, with a beam of light emanating from his eye onto the gears. This visual directly contradicts the 'one small visible AI device provides exactly one bounded hint' requirement, as the beam originates from the man's eye, not an AI device. The context of 'cognitive-work' is also replaced by a 'gear workshop', which is forbidden. The 'impossible"
+        },
+        "integrityPassed": false,
+        "integrityBlockers": [
+          "impossible_interaction",
+          "outcome_missing",
+          "causal_relation_missing",
+          "beam_purpose_unclear",
+          "domain_context_missing"
+        ],
+        "headlinePairPassed": false,
+        "ownerApprovalRequired": true,
+        "automatedPublicationAllowed": false,
+        "weightedScore": 58
+      },
+      "v10": {
+        "blindObservation": {
+          "literalDescription": "A man with short brown hair and a grey t-shirt is seated at a table, looking down at a white grid board with black square pieces. His hands are positioned over the board, appearing to move the pieces. A small grey projector device on the table to his left emits a blue-green light beam onto the board. The background shows a window with blurred colorful reflections.",
+          "visibleObjects": [
+            "man",
+            "table",
+            "white grid board",
+            "black square pieces",
+            "hands",
+            "projector device",
+            "light beam",
+            "window",
+            "blurred reflections"
+          ],
+          "visibleActions": [
+            "man seated",
+            "man looking",
+            "hands moving pieces",
+            "projector emitting light",
+            "light beam projecting"
+          ],
+          "visibleOutcomes": [],
+          "generatedTextPresent": false,
+          "extraLimbVisible": false,
+          "unownedHandVisible": false,
+          "objectFusionVisible": false,
+          "impossibleInteractionVisible": false,
+          "beamPresent": true,
+          "beamSourceVisible": true,
+          "beamTargetVisible": true,
+          "beamPurposeClear": false,
+          "disconnectedPropVisible": false,
+          "brokenArrowVisible": false,
+          "directionUnambiguous": true,
+          "inputInvariantPreserved": false,
+          "systemInvariantPreserved": false,
+          "chartMetricDefined": false,
+          "coreActionVisible": true,
+          "outcomeVisible": false,
+          "causalRelationVisible": false,
+          "domainContextVisible": true
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "sourceGrounded": true,
+          "certaintyPreserved": true,
+          "unsupportedSpecificVisible": false,
+          "mappingComplete": true,
+          "pixelActionSupportsClaim": true,
+          "pixelOutcomeSupportsClaim": false,
+          "pixelRelationSupportsClaim": false,
+          "domainContextSupported": true,
+          "inputInvariantSupported": false,
+          "systemInvariantSupported": false,
+          "beamPurposeSupportsClaim": true,
+          "labelsSupportedByPixels": true,
+          "labelsCarryClaim": false,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 85,
+          "visualBeauty": 75,
+          "brandConsistency": 80,
+          "originality": 75,
+          "summary": "Card Y depicts a man actively engaged with a grid board, with a small projector device emitting a light beam onto the board. This aligns well with the requirements: 'one visible adult remains actively engaged in the difficult reasoning task', 'one small visible AI device provides exactly one bounded hint to one specific part of the work', and 'the person performs the work with exactly two anatomic"
+        },
+        "integrityPassed": false,
+        "integrityBlockers": [
+          "outcome_missing",
+          "causal_relation_missing"
+        ],
+        "headlinePairPassed": false,
+        "ownerApprovalRequired": true,
+        "automatedPublicationAllowed": false,
+        "weightedScore": 80.25
+      },
+      "preferredSource": "v10",
+      "confidence": 5,
+      "reason": "Card Y is significantly better because it adheres to the core requirements of the prompt, especially regarding the source and nature of the AI hint. Card X fails on multiple critical points: the AI hint does not come from an AI device but from the man's eye (impossible interaction), and the context is a gear workshop instead of a cognitive work setting. These are hard forbidden implications and direct contradictions to the owner-grounded evidence requirements. Card Y successfully portrays an active individual receiving a bounded hint from a distinct AI device in a relevant cognitive domain, making it a much more accurate and effective visual representation of the story.",
+      "pixelOrder": {
+        "X": "v8",
+        "Y": "v10"
+      },
+      "cardOrder": {
+        "X": "v8",
+        "Y": "v10"
+      }
+    },
+    {
+      "storyId": "40673aee-fac7-451f-be07-51016c857613",
+      "rank": 5,
+      "headline": "Claude Usage Thresholds: Insights from High-Volume Token Consumption",
+      "treatment": {
+        "storyId": "40673aee-fac7-451f-be07-51016c857613",
+        "kind": "controlled_session_workflow",
+        "grammar": "causal_process_sequence",
+        "renderMode": "deterministic",
+        "labels": [
+          "CACHE",
+          "SPLIT",
+          "MONITOR"
+        ],
+        "expectedEvidence": [
+          "one oversized continuous session visibly approaches an operational risk boundary",
+          "a cache and checkpoint control divides the stream into bounded continuation segments",
+          "a visible monitor shows the bounded sessions remaining below the risk boundary without claiming an exact undocumented limit"
+        ],
+        "forbiddenImplications": [
+          "an exact token threshold is known",
+          "caching alone guarantees no interruption",
+          "the process is merely a generic bar chart",
+          "the labels carry the workflow while pixels show no transformation"
+        ],
+        "sourceGrounding": "The source recommends operational controls for high-volume sessions: cache stable context, split long runs and monitor token burn.",
+        "expectedImageCalls": 0
+      },
+      "v8": {
+        "blindObservation": {
+          "literalDescription": "A diagram showing two large vertical rectangles connected by an arrow on a dark blue background. The left rectangle contains multiple horizontal bars of varying lengths, predominantly blue with some orange. The right rectangle also contains multiple horizontal bars, mostly brown/reddish, with a dashed line near the top and a small plus sign icon next to it. To the right of the second rectangle, a small, stylized mobile phone icon is connected to it by a short line. The mobile phone icon has a ci",
+          "visibleObjects": [
+            "left vertical rectangle",
+            "horizontal bars",
+            "arrow",
+            "right vertical rectangle",
+            "dashed line",
+            "plus sign icon",
+            "mobile phone icon",
+            "circular element"
+          ],
+          "visibleActions": [
+            "data flow indicated by an arrow",
+            "connection between a rectangle and a mobile phone icon"
+          ],
+          "visibleOutcomes": [
+            "transformation or transfer of data from one rectangle to another",
+            "association of data with a mobile device"
+          ],
+          "generatedTextPresent": false,
+          "extraLimbVisible": false,
+          "unownedHandVisible": false,
+          "objectFusionVisible": false,
+          "impossibleInteractionVisible": false,
+          "beamPresent": true,
+          "beamSourceVisible": true,
+          "beamTargetVisible": true,
+          "beamPurposeClear": true,
+          "disconnectedPropVisible": false,
+          "brokenArrowVisible": false,
+          "directionUnambiguous": true,
+          "inputInvariantPreserved": false,
+          "systemInvariantPreserved": false,
+          "chartMetricDefined": false,
+          "coreActionVisible": true,
+          "outcomeVisible": true,
+          "causalRelationVisible": true,
+          "domainContextVisible": false
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "sourceGrounded": false,
+          "certaintyPreserved": false,
+          "unsupportedSpecificVisible": true,
+          "mappingComplete": false,
+          "pixelActionSupportsClaim": false,
+          "pixelOutcomeSupportsClaim": false,
+          "pixelRelationSupportsClaim": false,
+          "domainContextSupported": false,
+          "inputInvariantSupported": false,
+          "systemInvariantSupported": false,
+          "beamPurposeSupportsClaim": true,
+          "labelsSupportedByPixels": false,
+          "labelsCarryClaim": true,
+          "thumbnailReadable": true,
+          "misleading": true,
+          "instantMeaning": 40,
+          "visualBeauty": 70,
+          "brandConsistency": 80,
+          "originality": 60,
+          "summary": "Card Y attempts to show a threshold being approached but fails to convey the causal process of managing token consumption. The image shows a large input transforming into another large output with a dashed line and a plus sign, which doesn't clearly represent caching, splitting, or monitoring. The mobile phone icon is an unexplained prop. The visual does not show a continuous session approaching a"
+        },
+        "integrityPassed": false,
+        "integrityBlockers": [
+          "core_action_missing",
+          "outcome_missing",
+          "causal_relation_missing",
+          "unsupported_specific",
+          "certainty_upgrade",
+          "labels_carry_claim"
+        ],
+        "headlinePairPassed": false,
+        "ownerApprovalRequired": true,
+        "automatedPublicationAllowed": false,
+        "weightedScore": 57
+      },
+      "v10": {
+        "blindObservation": {
+          "literalDescription": "A diagram showing interconnected abstract shapes and lines on a dark blue background. On the left, a large vertical rectangle contains horizontal bars of varying lengths and colors (blue and orange), with a dashed pink line at the bottom. An arrow points from this rectangle to a smaller, rounded rectangle containing horizontal blue lines, and another arrow points from the initial large rectangle to a circular icon with a segmented inner circle. Lines emanate from both the smaller rounded rectang",
+          "visibleObjects": [
+            "large vertical rectangle",
+            "horizontal bars",
+            "dashed line",
+            "arrow",
+            "smaller rounded rectangle",
+            "circular icon",
+            "lines",
+            "three smaller rectangles",
+            "gauge-like icon",
+            "needle"
+          ],
+          "visibleActions": [
+            "data flow indicated by arrows and lines"
+          ],
+          "visibleOutcomes": [
+            "distribution of data to multiple destinations",
+            "a metric being displayed on a gauge"
+          ],
+          "generatedTextPresent": false,
+          "extraLimbVisible": false,
+          "unownedHandVisible": false,
+          "objectFusionVisible": false,
+          "impossibleInteractionVisible": false,
+          "beamPresent": true,
+          "beamSourceVisible": true,
+          "beamTargetVisible": true,
+          "beamPurposeClear": true,
+          "disconnectedPropVisible": false,
+          "brokenArrowVisible": false,
+          "directionUnambiguous": true,
+          "inputInvariantPreserved": false,
+          "systemInvariantPreserved": false,
+          "chartMetricDefined": true,
+          "coreActionVisible": true,
+          "outcomeVisible": true,
+          "causalRelationVisible": true,
+          "domainContextVisible": false
+        },
+        "card": {
+          "headlinePairUnderstood": true,
+          "sourceGrounded": true,
+          "certaintyPreserved": true,
+          "unsupportedSpecificVisible": false,
+          "mappingComplete": true,
+          "pixelActionSupportsClaim": true,
+          "pixelOutcomeSupportsClaim": true,
+          "pixelRelationSupportsClaim": true,
+          "domainContextSupported": false,
+          "inputInvariantSupported": false,
+          "systemInvariantSupported": false,
+          "beamPurposeSupportsClaim": true,
+          "labelsSupportedByPixels": true,
+          "labelsCarryClaim": false,
+          "thumbnailReadable": true,
+          "misleading": false,
+          "instantMeaning": 90,
+          "visualBeauty": 85,
+          "brandConsistency": 90,
+          "originality": 80,
+          "summary": "Card X effectively visualizes the process of managing high-volume token consumption. It shows an initial large stream of data being processed through a 'CACHE' and then 'SPLIT' into smaller, bounded segments. These segments are then 'MONITOR'ed to ensure they remain below a risk boundary, aligning well with the story's emphasis on preventing unexpected session interruptions. The visual grammar cle"
+        },
+        "integrityPassed": true,
+        "integrityBlockers": [],
+        "headlinePairPassed": true,
+        "ownerApprovalRequired": true,
+        "automatedPublicationAllowed": false,
+        "weightedScore": 87.5
+      },
+      "preferredSource": "v10",
+      "confidence": 5,
+      "reason": "Card X is significantly better because it directly visualizes the requested causal process sequence: an oversized session being managed by caching, splitting, and monitoring to stay below a risk boundary. The visual elements for 'CACHE', 'SPLIT', and 'MONITOR' are distinct and their actions are clearly depicted through data flow and transformation. The outcome of bounded sessions remaining below a risk boundary is visually represented by the smaller, monitored segments. Card Y, on the other hand, is misleading and fails to represent the core actions and outcomes. It shows a generic transformation with a threshold, but lacks the specific mechanisms of caching, splitting, and monitoring. The mobile phone icon is an unexplained prop, and the visual grammar is closer to a generic bar chart than a causal process. The labels in Card Y carry the entire meaning, whereas in Card X, the pixels the",
+      "pixelOrder": {
+        "X": "v10",
+        "Y": "v8"
+      },
+      "cardOrder": {
+        "X": "v10",
+        "Y": "v8"
+      }
+    }
+  ],
+  "usage": {
+    "promptTokens": 8348,
+    "completionTokens": 5221,
+    "totalTokens": 13569,
+    "costUsd": 0.0155569,
+    "calls": 6
+  }
+}
