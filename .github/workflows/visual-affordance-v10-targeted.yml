@@ -1,0 +1,92 @@
+name: Visual affordance v10 owner-directed targeted review
+
+on:
+  push:
+    branches:
+      - experiment/visual-compiler-v7-role-router-20260812
+    paths:
+      - .github/workflows/visual-affordance-v10-targeted.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  targeted:
+    name: Validate render and blind-review owner-directed v10 treatments
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: experiment/visual-compiler-v7-role-router-20260812
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate owner-grounded routing, critic and treatment geometry
+        run: >-
+          npx vitest run
+          src/lib/weekly-digest/visual-affordance-v10.test.ts
+          src/lib/weekly-digest/visual-critic-v10.test.ts
+          src/lib/weekly-digest/visual-owner-rework-v10.test.ts
+
+      - name: Typecheck repository and v10 harnesses
+        run: npm run typecheck
+
+      - name: Rebuild owner calibration report
+        env:
+          VISUAL_V10_OWNER_CALIBRATION: experiments/visual-affordance-v10/owner-calibration-v1.json
+          VISUAL_V10_CALIBRATION_OUT_DIR: artifacts/visual-affordance-v10
+        run: npx tsx scripts/visual-affordance-v10-calibrate.ts
+
+      - name: Render six owner-directed story reworks
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VISUAL_V10_IMAGE_MODEL: '@cf/black-forest-labs/flux-2-klein-9b'
+          VISUAL_V10_TARGET_STORIES: experiments/visual-affordance-v10/targeted/owner-rework-stories.json
+          VISUAL_V10_TARGET_OUT_DIR: artifacts/visual-affordance-v10-targeted
+        run: npx tsx scripts/visual-affordance-v10-targeted-render.ts
+
+      - name: Run blind observation and format-integrity review
+        env:
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          VISUAL_V10_JUDGE_MODEL: google/gemini-2.5-flash
+          VISUAL_V10_TARGET_OUT_DIR: artifacts/visual-affordance-v10-targeted
+        run: npx tsx scripts/visual-affordance-v10-targeted-evaluate.ts
+
+      - name: Upload complete v10 review package
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-affordance-v10-targeted-evaluated
+          path: |
+            artifacts/visual-affordance-v10
+            artifacts/visual-affordance-v10-targeted
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Persist reports and review sheets on experimental branch
+        run: |
+          mkdir -p experiments/visual-affordance-v10/results
+          cp artifacts/visual-affordance-v10/calibration-report.md experiments/visual-affordance-v10/results/
+          cp artifacts/visual-affordance-v10-targeted/render-report.md experiments/visual-affordance-v10/results/targeted-render-report.md
+          cp artifacts/visual-affordance-v10-targeted/evaluation-report.md experiments/visual-affordance-v10/results/targeted-evaluation-report.md
+          cp artifacts/visual-affordance-v10-targeted/render-manifest.json experiments/visual-affordance-v10/results/targeted-render-manifest.json
+          cp artifacts/visual-affordance-v10-targeted/evaluation.json experiments/visual-affordance-v10/results/targeted-evaluation.json
+          cp artifacts/visual-affordance-v10-targeted/contact-sheet.png experiments/visual-affordance-v10/results/targeted-contact-sheet.png
+          cp artifacts/visual-affordance-v10-targeted/evaluated-contact-sheet.png experiments/visual-affordance-v10/results/targeted-evaluated-contact-sheet.png
+          printf '%s\n' "$GITHUB_RUN_ID" > experiments/visual-affordance-v10/results/targeted-run-id.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add experiments/visual-affordance-v10/results
+          git commit -m "Record owner-directed visual v10 review [skip ci]"
+          git fetch origin experiment/visual-compiler-v7-role-router-20260812
+          git rebase origin/experiment/visual-compiler-v7-role-router-20260812
+          SKIP_E2E=1 git push origin HEAD:experiment/visual-compiler-v7-role-router-20260812
