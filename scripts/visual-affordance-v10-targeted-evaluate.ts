@@ -82,6 +82,9 @@ interface CardVerdict {
   pixelOutcomeSupportsClaim: boolean;
   pixelRelationSupportsClaim: boolean;
   domainContextSupported: boolean;
+  inputInvariantSupported: boolean;
+  systemInvariantSupported: boolean;
+  beamPurposeSupportsClaim: boolean;
   labelsSupportedByPixels: boolean;
   labelsCarryClaim: boolean;
   thumbnailReadable: boolean;
@@ -311,6 +314,9 @@ function normalizeCard(value: unknown): CardVerdict {
     pixelOutcomeSupportsClaim: bool(row.pixel_outcome_supports_claim),
     pixelRelationSupportsClaim: bool(row.pixel_relation_supports_claim),
     domainContextSupported: bool(row.domain_context_supported),
+    inputInvariantSupported: bool(row.input_invariant_supported),
+    systemInvariantSupported: bool(row.system_invariant_supported),
+    beamPurposeSupportsClaim: bool(row.beam_purpose_supports_claim),
     labelsSupportedByPixels: bool(row.labels_supported_by_pixels),
     labelsCarryClaim: bool(row.labels_carry_claim),
     thumbnailReadable: bool(row.thumbnail_readable),
@@ -426,11 +432,13 @@ async function evaluateCards(
           'mapping_complete means the visible objects/actions/outcome map one-to-one to the approved source claim without unexplained props.',
           'pixel_action_supports_claim, pixel_outcome_supports_claim and pixel_relation_supports_claim must be grounded in the first-stage literal observation, not inferred from labels or the intended prompt.',
           'domain_context_supported means the pixels visibly anchor the real domain or human situation needed by this story.',
+          'input_invariant_supported means the literal observation shows one identical input reused across compared runs; system_invariant_supported means one identical model, actor or chamber is reused. Judge these after the story reveals which invariants matter.',
+          'beam_purpose_supports_claim means a visible beam or light has a source-grounded function once the story is known. Source and target still come only from the blind observation.',
           'labels_carry_claim is true when the central meaning would disappear after hiding the labels.',
           'unsupported_specific_visible is true when the image asserts a detail not supported by the approved story.',
-          'For each card return headline_pair_understood, source_grounded, certainty_preserved, unsupported_specific_visible, mapping_complete, pixel_action_supports_claim, pixel_outcome_supports_claim, pixel_relation_supports_claim, domain_context_supported, labels_supported_by_pixels, labels_carry_claim, thumbnail_readable, misleading, instant_meaning, visual_beauty, brand_consistency, originality and summary.',
+          'For each card return headline_pair_understood, source_grounded, certainty_preserved, unsupported_specific_visible, mapping_complete, pixel_action_supports_claim, pixel_outcome_supports_claim, pixel_relation_supports_claim, domain_context_supported, input_invariant_supported, system_invariant_supported, beam_purpose_supports_claim, labels_supported_by_pixels, labels_carry_claim, thumbnail_readable, misleading, instant_meaning, visual_beauty, brand_consistency, originality and summary.',
           'All four numeric scores must be 0 to 100. Preference weights: instant meaning 45%, visual beauty 30%, brand consistency 15%, originality 10%; any misleading, anatomy, physics, broken-arrow or labels-only defect must outweigh beauty.',
-          'Return JSON only: {"X":{headline_pair_understood:boolean,source_grounded:boolean,certainty_preserved:boolean,unsupported_specific_visible:boolean,mapping_complete:boolean,pixel_action_supports_claim:boolean,pixel_outcome_supports_claim:boolean,pixel_relation_supports_claim:boolean,domain_context_supported:boolean,labels_supported_by_pixels:boolean,labels_carry_claim:boolean,thumbnail_readable:boolean,misleading:boolean,instant_meaning:number,visual_beauty:number,brand_consistency:number,originality:number,summary:string},"Y":{same fields},"preferred":"X"|"Y"|"tie","confidence":number,"reason":string}.',
+          'Return JSON only: {"X":{headline_pair_understood:boolean,source_grounded:boolean,certainty_preserved:boolean,unsupported_specific_visible:boolean,mapping_complete:boolean,pixel_action_supports_claim:boolean,pixel_outcome_supports_claim:boolean,pixel_relation_supports_claim:boolean,domain_context_supported:boolean,input_invariant_supported:boolean,system_invariant_supported:boolean,beam_purpose_supports_claim:boolean,labels_supported_by_pixels:boolean,labels_carry_claim:boolean,thumbnail_readable:boolean,misleading:boolean,instant_meaning:number,visual_beauty:number,brand_consistency:number,originality:number,summary:string},"Y":{same fields},"preferred":"X"|"Y"|"tie","confidence":number,"reason":string}.',
         ].join('\n'),
       },
       await imagePart(resolve(ROOT, manifest.blindXCardPath)),
@@ -464,12 +472,12 @@ function combinedObservation(
     beamPresent: blind.beamPresent,
     beamSourceVisible: blind.beamSourceVisible,
     beamTargetVisible: blind.beamTargetVisible,
-    beamPurposeClear: blind.beamPurposeClear,
+    beamPurposeClear: card.beamPurposeSupportsClaim,
     disconnectedPropVisible: blind.disconnectedPropVisible,
     brokenArrowVisible: blind.brokenArrowVisible,
     directionUnambiguous: blind.directionUnambiguous,
-    inputInvariantPreserved: blind.inputInvariantPreserved,
-    systemInvariantPreserved: blind.systemInvariantPreserved,
+    inputInvariantPreserved: card.inputInvariantSupported,
+    systemInvariantPreserved: card.systemInvariantSupported,
     chartMetricDefined: blind.chartMetricDefined,
     labelsCarryClaim: card.labelsCarryClaim,
     mappingComplete: card.mappingComplete,
