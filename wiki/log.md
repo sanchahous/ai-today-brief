@@ -6,6 +6,45 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-13
 
+## 2026-08-13 — Переоцінка виправленим харнесом: перевага V10 спростована
+
+**Джерело:** Actions run [`31739283280`](https://github.com/sanchahous/ai-today-brief/actions/runs/31739283280)
+(гілка `main`, dispatch `visual-experiment.yml`, дозвіл власника на платний прогін);
+`experiments/visual-affordance-v10/targeted-v7-corrected-harness/`.
+
+**Змінено:** нова тека прогону зі звітами (без пікселів, за новим правилом зони `experiments/`);
+оновлено [now](now.md), [pipeline/weekly-digest](pipeline/weekly-digest.md);
+[open-questions](open-questions.md) §8 закрито частково.
+
+**Результат.** Ті самі пікселі V10 і V8, той самий суддя `google/gemini-2.5-flash` — змінені лише
+правила оцінювання:
+
+| Метрика | v6 (харнес із маніпуляціями) | v7 (виправлений) |
+|---|---:|---:|
+| V10 hard integrity | 3/3 | **0/3** |
+| V8 hard integrity | 0/3 | 0/3 |
+| V8 headline-grounded | 0/3 | **2/3** |
+| Зважений бал V10 / V8 | 87.2 / 54.1 | **68.1 / 67.6** |
+| Blind preference | V10 3-0 | **1-1, 1 нічия** |
+
+Розрив зважених балів впав з 33.1 до **0.5** пункта — при виміряному раніше шумі того самого
+судді у 15.5 пункта на незмінних пікселях. Тобто різниці немає.
+
+Блокери V10: `generated_text` на обох детермінованих сценах (впечені лістинги коду і підписи —
+пряме порушення політики `weekly-semantic-story-v5.1`), `labels_carry_claim` на
+Claude-thresholds, пʼять блокерів на Deep Work (`core_action_missing`, `outcome_missing`,
+`causal_relation_missing`, `beam_purpose_unclear`, `domain_context_missing`).
+
+**Висновок:** заявлена перевага V10 була артефактом вимірювання, а не якості зображень. Baseline
+V8 виявився не таким слабким, як звітувалося, — його headline-grounded зріс з 0/3 до 2/3 щойно
+його перестали оцінювати за специфікацією конкурента. Обидві гілки провалюють hard integrity за
+однаковими правилами, тому це **не** доказ, що V8 кращий. Питання «чи краще за продакшн»
+лишається відкритим: `pipeline/card-image.ts` у порівнянні не брав участі жодного разу.
+
+**Вартість:** 6 vision calls, 13 206 токенів, $0.0149, 1 image call, 1 хвилина CI.
+
+---
+
 ## 2026-08-13 — W0 cleanup: підготовка PR #229 до мержу в `main`
 
 **Джерело:** [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md) §W0;
