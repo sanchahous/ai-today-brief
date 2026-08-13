@@ -269,29 +269,49 @@ function sameSystemOutputVariabilityScene(
   width: number,
   height: number,
 ): string {
-  const taskX = width * 0.055;
+  const taskX = width * 0.045;
   const taskY = height * 0.34;
-  const taskW = width * 0.21;
+  const taskW = width * 0.22;
   const taskH = height * 0.28;
-  const modelX = width * 0.42;
-  const modelY = height * 0.5;
+  const modelCx = width * 0.47;
+  const modelCy = height * 0.5;
+  const modelSize = Math.min(width, height) * 0.145;
   const outputX = width * 0.69;
-  const outputW = width * 0.255;
-  const outputH = height * 0.29;
-  const topY = height * 0.14;
-  const bottomY = height * 0.57;
-  return `${panel(width * 0.035, height * 0.11, width * 0.27, height * 0.78)}
-    ${panel(width * 0.35, height * 0.23, width * 0.22, height * 0.54, COLORS.violet)}
-    ${panel(width * 0.65, height * 0.08, width * 0.315, height * 0.84)}
+  const outputW = width * 0.265;
+  const outputH = height * 0.31;
+  const topY = height * 0.105;
+  const bottomY = height * 0.585;
+  const artifactX = outputX + outputW * 0.06;
+  const artifactW = outputW * 0.88;
+  const artifactH = outputH * 0.82;
+  const nodeW = artifactW * 0.2;
+  const nodeH = artifactH * 0.18;
+  const bottomNodes = [
+    [artifactX + artifactW * 0.12, bottomY + outputH * 0.12],
+    [artifactX + artifactW * 0.62, bottomY + outputH * 0.12],
+    [artifactX + artifactW * 0.12, bottomY + outputH * 0.61],
+    [artifactX + artifactW * 0.62, bottomY + outputH * 0.61],
+  ] as const;
+  const bottomBoxes = bottomNodes
+    .map(
+      ([x, y], index) =>
+        `<rect x="${x}" y="${y}" width="${nodeW}" height="${nodeH}" rx="11" fill="${index % 2 ? COLORS.violet : COLORS.cyan}" fill-opacity="0.25" stroke="${COLORS.cyanLight}" stroke-width="2"/>`,
+    )
+    .join('');
+  const bottomLinks = `<path d="M${bottomNodes[0][0] + nodeW} ${bottomNodes[0][1] + nodeH / 2}L${bottomNodes[3][0]} ${bottomNodes[3][1] + nodeH / 2}M${bottomNodes[1][0]} ${bottomNodes[1][1] + nodeH}L${bottomNodes[2][0] + nodeW} ${bottomNodes[2][1]}M${bottomNodes[0][0] + nodeW / 2} ${bottomNodes[0][1] + nodeH}V${bottomNodes[2][1]}" fill="none" stroke="${COLORS.amber}" stroke-width="4" stroke-linecap="round"/>`;
+  return `${panel(width * 0.025, height * 0.16, width * 0.27, height * 0.68)}
+    ${panel(width * 0.36, height * 0.23, width * 0.22, height * 0.54, COLORS.violet)}
+    ${panel(outputX, topY, outputW, outputH, COLORS.green)}
+    ${panel(outputX, bottomY, outputW, outputH, COLORS.amber)}
     ${taskCard(taskX, taskY, taskW, taskH)}
-    ${chip(modelX + width * 0.04, modelY, Math.min(width, height) * 0.14)}
-    ${arrow(taskX + taskW, taskY + taskH / 2, modelX - width * 0.035, modelY)}
-    ${arrow(modelX + width * 0.11, modelY - height * 0.04, outputX - width * 0.025, topY + outputH / 2)}
-    ${arrow(modelX + width * 0.11, modelY + height * 0.04, outputX - width * 0.025, bottomY + outputH / 2)}
-    <rect x="${outputX}" y="${topY}" width="${outputW}" height="${outputH}" rx="22" fill="#071827" stroke="${COLORS.green}" stroke-width="3"/>
-    <rect x="${outputX}" y="${bottomY}" width="${outputW}" height="${outputH}" rx="22" fill="#071827" stroke="${COLORS.amber}" stroke-width="3"/>
-    ${modularArtifact(outputX + outputW * 0.05, topY + outputH * 0.08, outputW * 0.9, outputH * 0.84)}
-    ${layeredArtifact(outputX + outputW * 0.05, bottomY + outputH * 0.08, outputW * 0.9, outputH * 0.84)}`;
+    ${chip(modelCx, modelCy, modelSize)}
+    ${arrow(taskX + taskW, taskY + taskH / 2, modelCx - modelSize * 0.72, modelCy)}
+    ${arrow(modelCx + modelSize * 0.72, modelCy - modelSize * 0.16, outputX - width * 0.018, topY + outputH / 2)}
+    ${arrow(modelCx + modelSize * 0.72, modelCy + modelSize * 0.16, outputX - width * 0.018, bottomY + outputH / 2)}
+    <circle cx="${modelCx + modelSize * 0.92}" cy="${modelCy - modelSize * 0.38}" r="11" fill="${COLORS.green}" stroke="${COLORS.cyanLight}" stroke-width="3"/>
+    <circle cx="${modelCx + modelSize * 0.92}" cy="${modelCy + modelSize * 0.38}" r="11" fill="${COLORS.amber}" stroke="${COLORS.cyanLight}" stroke-width="3"/>
+    <g data-run-output="A">${modularArtifact(artifactX, topY + outputH * 0.08, artifactW, artifactH)}</g>
+    <g data-run-output="B">${bottomBoxes}${bottomLinks}</g>`;
 }
 
 function streamBlocks(
@@ -314,36 +334,63 @@ function monitorGauge(cx: number, cy: number, radius: number): string {
 }
 
 function controlledSessionWorkflowScene(width: number, height: number): string {
-  const leftX = width * 0.035;
-  const leftY = height * 0.13;
+  const leftX = width * 0.025;
+  const leftY = height * 0.15;
   const leftW = width * 0.27;
-  const leftH = height * 0.74;
-  const controlX = width * 0.39;
-  const controlY = height * 0.29;
-  const controlW = width * 0.19;
-  const controlH = height * 0.42;
-  const rightX = width * 0.66;
-  const rightY = height * 0.1;
-  const rightW = width * 0.305;
-  const rightH = height * 0.8;
-  const thresholdY = leftY + leftH * 0.76;
-  const segmentW = rightW * 0.72;
+  const leftH = height * 0.7;
+  const cacheX = width * 0.35;
+  const cacheY = height * 0.12;
+  const cacheW = width * 0.21;
+  const cacheH = height * 0.27;
+  const splitCx = width * 0.47;
+  const splitCy = height * 0.65;
+  const rightX = width * 0.665;
+  const rightY = height * 0.08;
+  const rightW = width * 0.31;
+  const rightH = height * 0.84;
+  const thresholdY = leftY + leftH * 0.79;
+  const sessionX = rightX + rightW * 0.1;
+  const sessionW = rightW * 0.76;
+  const sessionH = rightH * 0.16;
+  const sessionYs = [0.1, 0.36, 0.62].map(
+    (fraction) => rightY + rightH * fraction,
+  );
+  const cacheBlocks = [0, 1, 2]
+    .map(
+      (index) =>
+        `<rect x="${cacheX + cacheW * 0.19}" y="${cacheY + cacheH * (0.27 + index * 0.2)}" width="${cacheW * 0.62}" height="${cacheH * 0.12}" rx="10" fill="${COLORS.cyan}" fill-opacity="${0.32 + index * 0.13}" stroke="${COLORS.cyanLight}" stroke-opacity="0.5" stroke-width="2"/>`,
+    )
+    .join('');
+  const sessionCards = sessionYs
+    .map((y, index) => {
+      const cachedY = y + sessionH * 0.18;
+      return `<g data-bounded-session="${index + 1}"><rect x="${sessionX}" y="${y}" width="${sessionW}" height="${sessionH}" rx="18" fill="#071827" stroke="${COLORS.green}" stroke-opacity="${0.55 + index * 0.1}" stroke-width="3"/><rect x="${sessionX + sessionW * 0.08}" y="${cachedY}" width="${sessionW * 0.36}" height="${sessionH * 0.18}" rx="8" fill="${COLORS.cyan}" fill-opacity="0.52" stroke="${COLORS.cyanLight}" stroke-opacity="0.44"/><rect x="${sessionX + sessionW * 0.08}" y="${cachedY + sessionH * 0.29}" width="${sessionW * 0.58}" height="${sessionH * 0.18}" rx="8" fill="${COLORS.amber}" fill-opacity="0.45"/><rect x="${sessionX + sessionW * 0.08}" y="${cachedY + sessionH * 0.57}" width="${sessionW * 0.47}" height="${sessionH * 0.18}" rx="8" fill="${COLORS.amber}" fill-opacity="0.32"/></g>`;
+    })
+    .join('');
+  const splitBranches = sessionYs
+    .map(
+      (y) =>
+        `<path d="M${splitCx + width * 0.035} ${splitCy}C${width * 0.58} ${splitCy},${width * 0.61} ${y + sessionH / 2},${sessionX - width * 0.012} ${y + sessionH / 2}" fill="none" stroke="${COLORS.cyanLight}" stroke-width="5" stroke-linecap="round" marker-end="url(#v10-arrow)"/>`,
+    )
+    .join('');
+  const cacheRail = sessionYs
+    .map(
+      (y) =>
+        `<path d="M${cacheX + cacheW} ${cacheY + cacheH * 0.5}C${width * 0.61} ${cacheY + cacheH * 0.5},${width * 0.62} ${y + sessionH * 0.25},${sessionX + sessionW * 0.07} ${y + sessionH * 0.25}" fill="none" stroke="${COLORS.cyan}" stroke-opacity="0.58" stroke-width="3"/>`,
+    )
+    .join('');
   return `${panel(leftX, leftY, leftW, leftH, COLORS.amber)}
-    ${panel(controlX, controlY, controlW, controlH, COLORS.violet)}
+    ${panel(cacheX, cacheY, cacheW, cacheH, COLORS.cyan)}
+    ${panel(width * 0.37, height * 0.48, width * 0.2, height * 0.34, COLORS.violet)}
     ${panel(rightX, rightY, rightW, rightH, COLORS.green)}
-    ${streamBlocks(leftX + leftW * 0.1, leftY + leftH * 0.08, leftW * 0.78, 10, 9)}
+    ${streamBlocks(leftX + leftW * 0.1, leftY + leftH * 0.06, leftW * 0.78, 10, 8)}
     <path d="M${leftX + leftW * 0.08} ${thresholdY}H${leftX + leftW * 0.92}" stroke="${COLORS.rose}" stroke-width="6" stroke-dasharray="14 10"/>
-    <circle cx="${controlX + controlW * 0.5}" cy="${controlY + controlH * 0.5}" r="${Math.min(controlW, controlH) * 0.23}" fill="#0F172A" stroke="${COLORS.violet}" stroke-width="5"/>
-    <path d="M${controlX + controlW * 0.34} ${controlY + controlH * 0.5}H${controlX + controlW * 0.66}M${controlX + controlW * 0.5} ${controlY + controlH * 0.34}V${controlY + controlH * 0.66}" stroke="${COLORS.cyanLight}" stroke-width="8" stroke-linecap="round"/>
-    ${arrow(leftX + leftW, leftY + leftH * 0.5, controlX - width * 0.02, controlY + controlH * 0.5)}
-    ${arrow(controlX + controlW, controlY + controlH * 0.5, rightX - width * 0.02, rightY + rightH * 0.44)}
-    ${[0, 1, 2]
-      .map((index) => {
-        const y = rightY + rightH * (0.12 + index * 0.23);
-        return `<g><rect x="${rightX + rightW * 0.1}" y="${y}" width="${segmentW}" height="${rightH * 0.16}" rx="18" fill="#071827" stroke="${COLORS.green}" stroke-opacity="${0.46 + index * 0.12}" stroke-width="3"/>${streamBlocks(rightX + rightW * 0.16, y + rightH * 0.035, segmentW * 0.75, 3, 5, true)}</g>`;
-      })
-      .join('')}
-    ${monitorGauge(rightX + rightW * 0.53, rightY + rightH * 0.88, rightW * 0.16)}`;
+    ${arrow(leftX + leftW, leftY + leftH * 0.29, cacheX - width * 0.015, cacheY + cacheH * 0.5)}
+    ${arrow(leftX + leftW, leftY + leftH * 0.68, splitCx - width * 0.055, splitCy)}
+    <g data-cache-reservoir="true"><ellipse cx="${cacheX + cacheW * 0.5}" cy="${cacheY + cacheH * 0.22}" rx="${cacheW * 0.32}" ry="${cacheH * 0.1}" fill="#0F172A" stroke="${COLORS.cyan}" stroke-width="4"/><rect x="${cacheX + cacheW * 0.18}" y="${cacheY + cacheH * 0.22}" width="${cacheW * 0.64}" height="${cacheH * 0.6}" rx="18" fill="#0F172A" stroke="${COLORS.cyan}" stroke-width="4"/>${cacheBlocks}</g>
+    <g data-session-splitter="true"><circle cx="${splitCx}" cy="${splitCy}" r="${Math.min(width, height) * 0.055}" fill="#0F172A" stroke="${COLORS.violet}" stroke-width="5"/><path d="M${splitCx - 24} ${splitCy}H${splitCx + 2}M${splitCx + 2} ${splitCy}L${splitCx + 30} ${splitCy - 30}M${splitCx + 2} ${splitCy}L${splitCx + 30} ${splitCy}M${splitCx + 2} ${splitCy}L${splitCx + 30} ${splitCy + 30}" fill="none" stroke="${COLORS.cyanLight}" stroke-width="7" stroke-linecap="round"/></g>
+    ${sessionCards}${splitBranches}${cacheRail}
+    ${monitorGauge(rightX + rightW * 0.52, rightY + rightH * 0.92, rightW * 0.16)}`;
 }
 
 function pill(text: string, x: number, y: number, primary = false): string {
@@ -355,24 +402,27 @@ function pill(text: string, x: number, y: number, primary = false): string {
 function overlays(
   treatment: AffordanceTreatmentV10,
   width: number,
+  height: number,
 ): string {
   const labels = treatment.labels.slice(0, 3);
   if (treatment.kind === 'same_system_output_variability') {
     return [
       labels[0] ? pill(labels[0], 46, 38, true) : '',
       labels[1] ? pill(labels[1], width * 0.69, 38) : '',
-      labels[2] ? pill(labels[2], width * 0.69, 84) : '',
+      labels[2] ? pill(labels[2], width * 0.69, height * 0.54) : '',
     ].join('');
   }
   if (treatment.kind === 'controlled_session_workflow') {
     return [
-      labels[0] ? pill(labels[0], width * 0.39, 38, true) : '',
-      labels[1] ? pill(labels[1], width * 0.53, 38) : '',
-      labels[2] ? pill(labels[2], width * 0.76, 38) : '',
+      labels[0] ? pill(labels[0], width * 0.35, height * 0.055, true) : '',
+      labels[1] ? pill(labels[1], width * 0.425, height * 0.43) : '',
+      labels[2] ? pill(labels[2], width * 0.76, height * 0.8) : '',
     ].join('');
   }
   return labels
-    .map((label, index) => pill(label, 42, 42 + index * 47, index === 0))
+    .map((label, index) =>
+      pill(label, 42, 42 + index * 47, index === 0),
+    )
     .join('');
 }
 
@@ -391,7 +441,7 @@ export function renderAffordanceVisualSvgV10(
       ? sameSystemOutputVariabilityScene(width, height)
       : controlledSessionWorkflowScene(width, height);
   return Buffer.from(
-    `<svg data-affordance-v10="${input.treatment.kind}" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${defs()}${background(width, height)}${scene}${input.includeOverlays ? overlays(input.treatment, width) : ''}<rect x="2" y="2" width="${width - 4}" height="${height - 4}" rx="28" fill="none" stroke="${COLORS.cyan}" stroke-opacity="0.24" stroke-width="3"/></svg>`,
+    `<svg data-affordance-v10="${input.treatment.kind}" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" xmlns="http://www.w3.org/2000/svg">${defs()}${background(width, height)}${scene}${input.includeOverlays ? overlays(input.treatment, width, height) : ''}<rect x="2" y="2" width="${width - 4}" height="${height - 4}" rx="28" fill="none" stroke="${COLORS.cyan}" stroke-opacity="0.24" stroke-width="3"/></svg>`,
   );
 }
 
@@ -401,7 +451,7 @@ export function renderAffordanceOverlaySvgV10(
   height = 720,
 ): Buffer {
   return Buffer.from(
-    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="v10-vignette" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#020617" stop-opacity="0.38"/><stop offset="0.25" stop-color="#020617" stop-opacity="0"/><stop offset="1" stop-color="#020617" stop-opacity="0.26"/></linearGradient></defs><rect width="${width}" height="${height}" fill="url(#v10-vignette)"/>${overlays(treatment, width)}<rect x="2" y="2" width="${width - 4}" height="${height - 4}" rx="28" fill="none" stroke="${COLORS.cyan}" stroke-opacity="0.24" stroke-width="3"/></svg>`,
+    `<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="v10-vignette" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#020617" stop-opacity="0.38"/><stop offset="0.25" stop-color="#020617" stop-opacity="0"/><stop offset="1" stop-color="#020617" stop-opacity="0.26"/></linearGradient></defs><rect width="${width}" height="${height}" fill="url(#v10-vignette)"/>${overlays(treatment, width, height)}<rect x="2" y="2" width="${width - 4}" height="${height - 4}" rx="28" fill="none" stroke="${COLORS.cyan}" stroke-opacity="0.24" stroke-width="3"/></svg>`,
   );
 }
 
@@ -415,13 +465,13 @@ export function affordanceImagePromptV10(
   return [
     'Premium cinematic editorial photograph for a technology magazine, wide 16:9 composition, coherent realistic lighting, natural materials, restrained cyan accent, one readable visual idea.',
     `Approved story context: ${story.title}. ${story.summary}`,
-    'Show exactly one adult knowledge worker at a clean drafting table, fully visible from upper torso to both forearms.',
-    'Exactly two human hands are visible, both anatomically correct and visibly attached to this same person: one hand holds a pencil over a blank systems sketch, the other hand moves one blank physical planning card. No other person, arm, hand, reflection or partial body is present.',
-    'A small physical AI assistance device is clearly visible on the table at frame left. The device is the unmistakable source of one narrow cyan cone of light aimed at exactly one small blank planning card. The light starts at the device, ends on that one card and does nothing else.',
-    'The person continues the difficult reasoning work; the device does not touch the cards, move objects, write, type or complete the task.',
+    'Show exactly one adult knowledge worker in deep concentration at a large tactile logic board made of blank interlocking geometric tiles. The face, eyes, upper torso and both forearms are visible.',
+    'Exactly two human hands are visible, both anatomically correct and visibly attached to this same person. One hand places one dark geometric tile into the board; the other hand steadies the board. No other person, arm, hand, reflection or partial body is present.',
+    'A small physical AI assistance device is clearly visible on the table at frame left. The device is the unmistakable source of one narrow cyan cone of light aimed at exactly one empty socket and one candidate tile. The light starts at the device, ends on that one bounded target and does nothing else.',
+    'Most of the logic board has already been assembled by the person. The person remains physically engaged and chooses where to place the tile; the AI device does not move objects, write, type or complete the puzzle.',
     'Behind a frosted glass divider, distraction is represented only by diffuse defocused colored light and motion blur, never boxes, icons, screens, diagrams or interface shapes.',
-    'The foreground must communicate sustained concentration, active human thinking and one bounded hint. The task is cognitive planning, not a generic gear workshop.',
-    'All cards, paper and screens must be blank and unmarked.',
+    'The foreground must communicate sustained concentration, active human thinking and one bounded hint. It must not resemble a generic gear workshop or passive automation.',
+    'All tiles and surfaces are blank and unmarked. No paper, document, monitor, code or diagram appears in the foreground.',
     'Absolutely no readable text, letters, numbers, symbols, logos, captions, UI, watermark, extra fingers, extra limbs, extra hands, detached hands, fused objects, off-screen laser source or impossible anatomy.',
     'Passive automation is forbidden. A beam without a visible physical source and visible target is forbidden.',
   ].join(' ');

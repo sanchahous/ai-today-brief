@@ -84,6 +84,8 @@ describe('visual affordance treatments v10', () => {
     expect(final).toContain('SAME TASK');
     expect(final).toContain('RUN A');
     expect(final).toContain('RUN B');
+    expect(pixels).toContain('data-run-output="A"');
+    expect(pixels).toContain('data-run-output="B"');
   });
 
   it('shows cache split and monitor as one operational workflow', () => {
@@ -109,6 +111,9 @@ describe('visual affordance treatments v10', () => {
     expect(svg).toContain('CACHE');
     expect(svg).toContain('SPLIT');
     expect(svg).toContain('MONITOR');
+    expect(svg).toContain('data-cache-reservoir="true"');
+    expect(svg).toContain('data-session-splitter="true"');
+    expect(svg).toContain('data-bounded-session="1"');
   });
 
   it('requires one visible device and exactly two attached hands for bounded assistance', () => {

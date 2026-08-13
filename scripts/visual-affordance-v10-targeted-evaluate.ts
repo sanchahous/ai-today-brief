@@ -78,6 +78,10 @@ interface CardVerdict {
   certaintyPreserved: boolean;
   unsupportedSpecificVisible: boolean;
   mappingComplete: boolean;
+  pixelActionSupportsClaim: boolean;
+  pixelOutcomeSupportsClaim: boolean;
+  pixelRelationSupportsClaim: boolean;
+  domainContextSupported: boolean;
   labelsSupportedByPixels: boolean;
   labelsCarryClaim: boolean;
   thumbnailReadable: boolean;
@@ -303,6 +307,10 @@ function normalizeCard(value: unknown): CardVerdict {
     certaintyPreserved: bool(row.certainty_preserved),
     unsupportedSpecificVisible: bool(row.unsupported_specific_visible),
     mappingComplete: bool(row.mapping_complete),
+    pixelActionSupportsClaim: bool(row.pixel_action_supports_claim),
+    pixelOutcomeSupportsClaim: bool(row.pixel_outcome_supports_claim),
+    pixelRelationSupportsClaim: bool(row.pixel_relation_supports_claim),
+    domainContextSupported: bool(row.domain_context_supported),
     labelsSupportedByPixels: bool(row.labels_supported_by_pixels),
     labelsCarryClaim: bool(row.labels_carry_claim),
     thumbnailReadable: bool(row.thumbnail_readable),
@@ -379,7 +387,7 @@ async function observePixels(
           'For a beam or light path, mark source/target/purpose true only when each is visibly unambiguous in the pixels.',
           'For a comparison, input_invariant_preserved means the pixels visibly reuse one identical input; system_invariant_preserved means one identical system/actor is visibly reused. Do not use labels because labels are hidden.',
           'chart_metric_defined means the chart or meter has a visually interpretable quantity or operational state, not merely decorative curves.',
-          'core_action_visible, outcome_visible and causal_relation_visible must be based only on visible pixels.',
+          'List only literal visible actions and outcomes. Do not decide whether they support the hidden story at this stage.',
           'Return JSON only: {"X":{literal_description:string,visible_objects:string[],visible_actions:string[],visible_outcomes:string[],generated_text_present:boolean,extra_limb_visible:boolean,unowned_hand_visible:boolean,object_fusion_visible:boolean,impossible_interaction_visible:boolean,beam_present:boolean,beam_source_visible:boolean,beam_target_visible:boolean,beam_purpose_clear:boolean,disconnected_prop_visible:boolean,broken_arrow_visible:boolean,direction_unambiguous:boolean,input_invariant_preserved:boolean,system_invariant_preserved:boolean,chart_metric_defined:boolean,core_action_visible:boolean,outcome_visible:boolean,causal_relation_visible:boolean,domain_context_visible:boolean},"Y":{same fields}}.',
         ].join('\n'),
       },
@@ -416,11 +424,13 @@ async function evaluateCards(
           `V10 observation: ${JSON.stringify(observations.v10)}`,
           'Do not excuse a defect merely because you understand the intended prompt. A label cannot rescue missing action, outcome or relation in the pixels.',
           'mapping_complete means the visible objects/actions/outcome map one-to-one to the approved source claim without unexplained props.',
+          'pixel_action_supports_claim, pixel_outcome_supports_claim and pixel_relation_supports_claim must be grounded in the first-stage literal observation, not inferred from labels or the intended prompt.',
+          'domain_context_supported means the pixels visibly anchor the real domain or human situation needed by this story.',
           'labels_carry_claim is true when the central meaning would disappear after hiding the labels.',
           'unsupported_specific_visible is true when the image asserts a detail not supported by the approved story.',
-          'For each card return headline_pair_understood, source_grounded, certainty_preserved, unsupported_specific_visible, mapping_complete, labels_supported_by_pixels, labels_carry_claim, thumbnail_readable, misleading, instant_meaning, visual_beauty, brand_consistency, originality and summary.',
+          'For each card return headline_pair_understood, source_grounded, certainty_preserved, unsupported_specific_visible, mapping_complete, pixel_action_supports_claim, pixel_outcome_supports_claim, pixel_relation_supports_claim, domain_context_supported, labels_supported_by_pixels, labels_carry_claim, thumbnail_readable, misleading, instant_meaning, visual_beauty, brand_consistency, originality and summary.',
           'All four numeric scores must be 0 to 100. Preference weights: instant meaning 45%, visual beauty 30%, brand consistency 15%, originality 10%; any misleading, anatomy, physics, broken-arrow or labels-only defect must outweigh beauty.',
-          'Return JSON only: {"X":{headline_pair_understood:boolean,source_grounded:boolean,certainty_preserved:boolean,unsupported_specific_visible:boolean,mapping_complete:boolean,labels_supported_by_pixels:boolean,labels_carry_claim:boolean,thumbnail_readable:boolean,misleading:boolean,instant_meaning:number,visual_beauty:number,brand_consistency:number,originality:number,summary:string},"Y":{same fields},"preferred":"X"|"Y"|"tie","confidence":number,"reason":string}.',
+          'Return JSON only: {"X":{headline_pair_understood:boolean,source_grounded:boolean,certainty_preserved:boolean,unsupported_specific_visible:boolean,mapping_complete:boolean,pixel_action_supports_claim:boolean,pixel_outcome_supports_claim:boolean,pixel_relation_supports_claim:boolean,domain_context_supported:boolean,labels_supported_by_pixels:boolean,labels_carry_claim:boolean,thumbnail_readable:boolean,misleading:boolean,instant_meaning:number,visual_beauty:number,brand_consistency:number,originality:number,summary:string},"Y":{same fields},"preferred":"X"|"Y"|"tie","confidence":number,"reason":string}.',
         ].join('\n'),
       },
       await imagePart(resolve(ROOT, manifest.blindXCardPath)),
@@ -463,10 +473,10 @@ function combinedObservation(
     chartMetricDefined: blind.chartMetricDefined,
     labelsCarryClaim: card.labelsCarryClaim,
     mappingComplete: card.mappingComplete,
-    coreActionVisible: blind.coreActionVisible,
-    outcomeVisible: blind.outcomeVisible,
-    causalRelationVisible: blind.causalRelationVisible,
-    domainContextVisible: blind.domainContextVisible,
+    coreActionVisible: card.pixelActionSupportsClaim,
+    outcomeVisible: card.pixelOutcomeSupportsClaim,
+    causalRelationVisible: card.pixelRelationSupportsClaim,
+    domainContextVisible: card.domainContextSupported,
     unsupportedSpecificVisible: card.unsupportedSpecificVisible,
     certaintyPreserved: card.certaintyPreserved,
   };
@@ -485,6 +495,9 @@ function sourceEvaluation(
     card.headlinePairUnderstood &&
     card.sourceGrounded &&
     card.certaintyPreserved &&
+    card.pixelActionSupportsClaim &&
+    card.pixelOutcomeSupportsClaim &&
+    card.pixelRelationSupportsClaim &&
     card.labelsSupportedByPixels &&
     card.thumbnailReadable &&
     !card.misleading;

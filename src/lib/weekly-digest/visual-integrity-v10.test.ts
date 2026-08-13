@@ -59,6 +59,21 @@ describe('visual integrity gate v10', () => {
     expect(gate.pairwiseRankingEligible).toBe(false);
   });
 
+  it('does not interpret diagram arrows as unexplained cinematic beams', () => {
+  const gate = evaluateVisualIntegrityV10(
+    'controlled_comparison',
+    cleanObservation({
+      beamPresent: true,
+      beamSourceVisible: false,
+      beamTargetVisible: false,
+      beamPurposeClear: false,
+    }),
+  );
+  expect(gate.blockers).not.toContain('beam_source_missing');
+  expect(gate.blockers).not.toContain('beam_target_missing');
+  expect(gate.blockers).not.toContain('beam_purpose_unclear');
+});
+
   it('blocks a deterministic card with a broken arrow even when all semantics are present', () => {
     const gate = evaluateVisualIntegrityV10(
       'deterministic_technical_hybrid',

@@ -79,15 +79,6 @@ function baseBlockers(
   if (observation.impossibleInteractionVisible) {
     blockers.push('impossible_interaction');
   }
-  if (observation.beamPresent && !observation.beamSourceVisible) {
-    blockers.push('beam_source_missing');
-  }
-  if (observation.beamPresent && !observation.beamTargetVisible) {
-    blockers.push('beam_target_missing');
-  }
-  if (observation.beamPresent && !observation.beamPurposeClear) {
-    blockers.push('beam_purpose_unclear');
-  }
   if (observation.disconnectedPropVisible) blockers.push('disconnected_prop');
   if (!observation.coreActionVisible) blockers.push('core_action_missing');
   if (!observation.outcomeVisible) blockers.push('outcome_missing');
@@ -102,6 +93,16 @@ export function evaluateVisualIntegrityV10(
   observation: VisualIntegrityObservationV10,
 ): VisualIntegrityGateV10 {
   const blockers = baseBlockers(observation);
+
+  if (
+  (grammar === 'cinematic_domain_scene' ||
+    grammar === 'one_to_one_physical_analogy') &&
+  observation.beamPresent
+) {
+  if (!observation.beamSourceVisible) blockers.push('beam_source_missing');
+  if (!observation.beamTargetVisible) blockers.push('beam_target_missing');
+  if (!observation.beamPurposeClear) blockers.push('beam_purpose_unclear');
+}
 
   if (
     grammar === 'cinematic_domain_scene' &&
