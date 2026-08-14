@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix → B2 → P1 → P2 → M1 → M2 → B3 → P3 → C → D → E
+B1-fix ✅ → B2 → P1 → P2 → M1 → M2 → B3 → P3 → C → D → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -294,38 +294,27 @@ consequence/Developer pressing one TERMINAL button
 **Не рахуй блокери наївним split по комі** — `banned UI, collage, or stock-metaphor language`
 це один рядок із комами всередині, і split роздуває його у три позиції.
 
-### B1-fix. Дати craft-забороні поправку «не буквально про цю новину»
+### B1-fix ✅ Зроблено 2026-08-15 — craft-заборона з поправкою «не буквально про цю новину»
 
-Правильний патерн уже є в цьому ж файлі, рядком нижче (`:1356`):
+`validateMetaphorPitch` більше не валить pitch за `WEEKLY_CRAFT_BANNED`, якщо заборонений
+термін уже є в `storyContext` / `mechanism` / required entities. Голий `terminal`
+додатково дозволений, коли джерело говорить про `command line` / `CLI` — інакше CLI-story
+все одно падала б, бо новини пишуть «command line», а pitch — «terminal expansion port».
+`terminal window` і решта UI-кліше лишаються забороненими навіть на CLI-новині (виняток
+потерміновий). `WEEKLY_SLUDGE_BANNED` не чіпали.
 
-```ts
-const literalSource = [essence.storyContext, essence.mechanism, ...requiredEntities].join(' ');
-if (WEEKLY_OPAQUE_ABSTRACTION.test(flat) && !WEEKLY_OPAQUE_ABSTRACTION.test(literalSource)) {
-  errors.push('opaque_abstraction_not_literal_to_story');
-}
-```
+**Тест:** `a command-line story may use the word terminal for a physical object` — зелений.
+Контроль: CLI-story з `terminal window` / `glowing brain` / collage все одно відхиляється.
 
-`WEEKLY_CRAFT_BANNED` (`:1347`) такої поправки не має. Дати їй ту саму — і **підняти
-обчислення `literalSource` вище**, до цієї перевірки:
+Наступне — **B2** (не добивати кількість трьома однаковими фолбеками).
 
-```ts
-// перенести на початок, до першої заборони
-const literalSource = [essence.storyContext, essence.mechanism, ...requiredEntities].join(' ');
+Історичний патерн (opaque abstraction) скопійовано потерміново, а не як один regex на весь
+grab-bag: інакше CLI-новина з словом `terminal` у контексті відкривала б і `glowing brain`.
+`WEEKLY_SLUDGE_BANNED` не чіпали — story про друк/документообіг може мати право на стос паперу,
+але без даних цього кроку немає.
 
-if (WEEKLY_CRAFT_BANNED.test(flat) && !WEEKLY_CRAFT_BANNED.test(literalSource)) {
-  errors.push('banned UI, collage, or stock-metaphor language');
-}
-```
-
-Те саме варто розглянути для `WEEKLY_SLUDGE_BANNED` (`:787`) — story про друк/документообіг
-має право на стос паперу, — але це окремий крок і без даних його не роби.
-
-**Тест:** `a command-line story may use the word terminal for a physical object` — фікстура з
-`essence.storyContext` про command line і pitch «brass adapter card into a teleprinter terminal»
-не відхиляється.
-
-**Готово коли:** планування Story 6 дає три лінзи з `openrouter`, а не `fallback`, і три
-різні родини мотивів.
+**Жива перевірка ще відкрита:** «планування Story 6 дає три лінзи з `openrouter`» — це критерій
+на реальному випуску, не юніт-тест. Юніт-гейт зелений.
 
 ### B2. Прибрати тиху деградацію в три копії
 
@@ -1108,7 +1097,7 @@ npm run pr:check
 |---|---|
 | A2 | звіт bake-off містить `Kept the good`; рішення про модель **не** застосоване автоматично |
 | B1 | `experiments/jury-blockers/2026-08-digest-843975a8.md` із реальним розподілом блокерів |
-| B1-fix | тест `a command-line story may use the word terminal for a physical object` зелений; планування story про CLI не падає у fallback |
+| B1-fix | тест `a command-line story may use the word terminal for a physical object` зелений; контроль UI-кліше на CLI-story теж зелений; живе планування Story 6 ще не прогнано |
 | B2 | на фікстурі з однією прийнятою лінзою повертається один бриф, не три; тест на родину мотивів зелений |
 | B3 | в адмінці видно `N/3 промпти готові` |
 | P1 | три `ManualImagePrompt` на story; жоден не потребує ручного редагування; negative завжди банить текст |

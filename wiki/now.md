@@ -2,13 +2,22 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…13, Content Sim plan 2026-08-11,
-experimental Visual Affordance V10 owner review 2026-08-13
-Last updated: 2026-08-13
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…15, Content Sim plan 2026-08-11,
+experimental Visual Affordance V10 owner review 2026-08-13, weekly illustration B1-fix 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
 ## Стан репозиторію
+
+- **B1-fix craft-ban literal exception (2026-08-15).** `validateMetaphorPitch` більше не
+  відхиляє pitch за словом зі списку craft-cliché, якщо це слово вже є в новині
+  (`storyContext` / `mechanism` / entities). Голий `terminal` дозволений і коли джерело каже
+  `command line` / `CLI` — інакше story про командний рядок неможливо було описати, усі три
+  лінзи падали в fallback. `terminal window` і `glowing brain` лишаються забороненими навіть
+  на CLI-новині. Наступне за планом — B2 (не добивати кількість трьома однаковими фолбеками).
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B1-fix,
+  `pipeline/card-image.ts`, `experiments/jury-blockers/2026-08-digest-843975a8.md`)
 
 - **Переоцінка виправленим харнесом — перевага V10 не підтвердилась (2026-08-13).** Ті самі
   пікселі, той самий суддя `google/gemini-2.5-flash`, змінені лише правила оцінювання:

@@ -6,6 +6,25 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — B1-fix: craft-заборона більше не валить предмет самої новини
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B1-fix;
+`experiments/jury-blockers/2026-08-digest-843975a8.md`; `pipeline/card-image.ts`.
+
+**Змінено:** [marketing/card-images](marketing/card-images.md), [overview](overview.md) §4,
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md), [now](now.md),
+[index](index.md).
+
+**Код:** `validateMetaphorPitch` рахує craft-cliché потерміново. Голий `terminal` дозволений,
+коли `storyContext` / `mechanism` / entities говорять про `command line` / `CLI` / `terminal`.
+`terminal window`, `npx`, `glowing brain`, collage лишаються забороненими навіть на CLI-новині.
+`WEEKLY_SLUDGE_BANNED` не чіпали.
+
+**Тест:** `a command-line story may use the word terminal for a physical object`. Контроль —
+CLI-story з UI-кліше все одно відхиляється.
+
+**Не зроблено в цій хвилі (окремі PR):** B2 і далі за порядком плану.
+
 ## 2026-08-15 — Картинки дайджестів переходять на ручну генерацію
 
 **Джерело:** рішення власника 2026-08-15; інспекція коду

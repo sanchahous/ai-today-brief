@@ -779,9 +779,47 @@ export interface WeeklyReportageSceneSpec {
   mustInclude: string[];
 }
 
-/** Hard bans: readable UI, AI sludge stock, comic collage. */
-const WEEKLY_CRAFT_BANNED =
-  /\b(npx\b|terminal(?:\s+window)?|ide\b|vs\s*code|dashboard|taskbar|browser chrome|title bar|readable (?:ui|text|screen|code)|gibberish|glowing brain|cracked padlock|robotic arms?|coin towers?|finger pointing|pointing at (?:the )?screen|neural[-\s]?network mesh|comic panel|collage|split[-\s]?screen)\b/i;
+/**
+ * UI / stock-metaphor clichés. Checked one pattern at a time so a story that
+ * is literally about a terminal does not also unlock "glowing brain" / collage.
+ * `terminal window` stays banned even on CLI news — that is the UI shot the
+ * original list was written to stop. Bare `terminal` is waived when the story
+ * itself is about a command line / CLI / terminal (see B1-fix).
+ */
+const WEEKLY_CRAFT_TERMINAL_WINDOW = /\bterminal\s+window\b/i;
+const WEEKLY_CRAFT_BARE_TERMINAL = /\bterminal\b/i;
+const COMMAND_LINE_STORY = /\b(?:command[-\s]?line|cli|terminal)\b/i;
+const WEEKLY_CRAFT_BANNED_OTHER = [
+  /\bnpx\b/i,
+  /\bide\b/i,
+  /\bvs\s*code\b/i,
+  /\bdashboard\b/i,
+  /\btaskbar\b/i,
+  /\bbrowser chrome\b/i,
+  /\btitle bar\b/i,
+  /\breadable (?:ui|text|screen|code)\b/i,
+  /\bgibberish\b/i,
+  /\bglowing brain\b/i,
+  /\bcracked padlock\b/i,
+  /\brobotic arms?\b/i,
+  /\bcoin towers?\b/i,
+  /\bfinger pointing\b/i,
+  /\bpointing at (?:the )?screen\b/i,
+  /\bneural[-\s]?network mesh\b/i,
+  /\bcomic panel\b/i,
+  /\bcollage\b/i,
+  /\bsplit[-\s]?screen\b/i,
+] as const;
+
+function pitchUsesNonLiteralCraftLanguage(flat: string, literalSource: string): boolean {
+  if (WEEKLY_CRAFT_TERMINAL_WINDOW.test(flat)) return true;
+  if (WEEKLY_CRAFT_BARE_TERMINAL.test(flat) && !COMMAND_LINE_STORY.test(literalSource)) {
+    return true;
+  }
+  return WEEKLY_CRAFT_BANNED_OTHER.some(
+    (pattern) => pattern.test(flat) && !pattern.test(literalSource),
+  );
+}
 
 /** Paper/transcript heaps that klein renders as melted AI sludge. */
 const WEEKLY_SLUDGE_BANNED =
@@ -1344,7 +1382,8 @@ export function validateMetaphorPitch(
   if (!pitch.motifClass || pitch.motifClass.length < 3) {
     errors.push('motif_class missing or too short');
   }
-  if (WEEKLY_CRAFT_BANNED.test(flat)) {
+  const literalSource = [essence.storyContext, essence.mechanism, ...requiredEntities].join(' ');
+  if (pitchUsesNonLiteralCraftLanguage(flat, literalSource)) {
     errors.push('banned UI, collage, or stock-metaphor language');
   }
   if (WEEKLY_SLUDGE_BANNED.test(flat)) {
@@ -1353,7 +1392,6 @@ export function validateMetaphorPitch(
   if (WEEKLY_MOTION_BLUR_BANNED.test(flat)) {
     errors.push('banned high-speed / motion-blur language (causes smeared FLUX artifacts)');
   }
-  const literalSource = [essence.storyContext, essence.mechanism, ...requiredEntities].join(' ');
   if (WEEKLY_OPAQUE_ABSTRACTION.test(flat) && !WEEKLY_OPAQUE_ABSTRACTION.test(literalSource)) {
     errors.push('opaque_abstraction_not_literal_to_story');
   }

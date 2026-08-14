@@ -10,8 +10,8 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5.1` and
-three-concept jury follow-up 2026-08-11
-Last updated: 2026-08-11
+three-concept jury follow-up 2026-08-11, B1-fix craft-ban literal exception 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
@@ -134,6 +134,16 @@ vision. Якщо critic просить `rejectMetaphor`, його replacement sc
 jury, але не shared FLUX instruction. Так три варіанти не перетворюються на три typewriters/cars/
 hands. (source: `pipeline/card-image.ts`, `src/lib/content-sim/adapters/weekly-image.ts`,
 `src/lib/weekly-digest/generation-worker.ts`, owner review 2026-08-12)
+
+**B1-fix craft-ban literal exception (2026-08-15):** `validateMetaphorPitch` більше не відхиляє
+pitch лише тому, що в ньому є слово зі списку craft-cliché, якщо це слово (або `command line` /
+`CLI` для голого `terminal`) уже є в `storyContext` / `mechanism` / required entities. Інакше
+story про командний рядок не можна було описати без слова `terminal`, усі три лінзи падали в
+fallback і власник бачив три однакові шафи. `terminal window`, `npx`, `glowing brain`, collage
+й інші UI-кліше лишаються забороненими навіть на CLI-новині — виняток потерміновий, не на весь
+список одразу. `WEEKLY_SLUDGE_BANNED` не чіпали: немає даних, що він б'є буквальний предмет
+новини. (source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) B1-fix,
+`experiments/jury-blockers/2026-08-digest-843975a8.md`, `pipeline/card-image.ts`)
 
 **Reviewable render history (2026-08-12):** кожен image buffer з кожного repair round зберігається
 до approval як підписаний private preview із round, variant, concept lens/title, motif, scene та

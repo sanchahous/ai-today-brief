@@ -818,6 +818,100 @@ describe('weekly essence + metaphor gates', () => {
     expect(validateWeeklySceneSpec(bad, ['Codex', '3D game']).length).toBeGreaterThan(0);
   });
 
+  it('a command-line story may use the word terminal for a physical object', () => {
+    const errors = validateMetaphorPitch(
+      {
+        title: 'Teleprinter adapter',
+        subject: 'a brass adapter card being pushed into a 1970s teleprinter terminal',
+        action: 'the card is half inserted into the expansion slot',
+        setting: 'one continuous workshop bench in window light',
+        props: ['worn enamel housing', 'contact strip'],
+        composition: 'single',
+        whyItFits: 'Server-side tools now connect through the command line.',
+        motifClass: 'adapter_cartridge',
+        subjectKind: 'object',
+        storyAnchor: 'Claude server-side tools arriving as a command-line plugin',
+        visibleMechanism:
+          'a brass adapter card seats into the teleprinter terminal expansion slot',
+        visibleConsequence: 'the old command line can now run the newly connected tools',
+      },
+      semanticEssence({
+        storyContext:
+          "Simon Willison's llm-anthropic plugin brings Claude server-side tools to the command line.",
+        meaning: 'Tools that lived on the server now run from a local CLI.',
+        essence: 'Server-side tools become usable from the command line.',
+        mustFeel: 'precise connection',
+        forbiddenCliches: [],
+        mechanism: 'A CLI plugin exposes server-side tools through a local command.',
+        consequence: 'Developers invoke those tools from the command line without a separate service.',
+        visualThesis:
+          'A brass adapter card connecting into a teleprinter terminal lets the old system run new tools.',
+        readerTest: 'grasp: server-side tools now plug into the command line',
+      }),
+      ['Claude', 'plugin', 'command line'],
+    );
+    expect(errors).not.toContain('banned UI, collage, or stock-metaphor language');
+    expect(errors).toEqual([]);
+  });
+
+  it('still rejects UI collage language when the story is literally about a terminal', () => {
+    const windowShot = validateMetaphorPitch(
+      {
+        title: 'Terminal window',
+        subject: 'a glowing terminal window with npx output',
+        action: 'showing split-screen IDE chrome',
+        setting: 'office desk',
+        props: ['readable UI'],
+        composition: 'single',
+        whyItFits: 'The plugin exposes server-side tools on the command line.',
+        motifClass: 'terminal_window_ui',
+        subjectKind: 'object',
+        storyAnchor: 'Claude server-side tools in a command-line plugin',
+        visibleMechanism: 'npx output fills a terminal window on the desk',
+        visibleConsequence: 'the developer reads the command line from the screen',
+      },
+      semanticEssence({
+        storyContext:
+          "Simon Willison's llm-anthropic plugin brings Claude server-side tools to the command line.",
+        essence: 'Server-side tools become usable from the command line.',
+        mustFeel: 'precise connection',
+        forbiddenCliches: [],
+        mechanism: 'A CLI plugin exposes server-side tools through a local command.',
+        readerTest: 'grasp: server-side tools now plug into the command line',
+      }),
+      ['Claude', 'plugin', 'command line'],
+    );
+    expect(windowShot).toContain('banned UI, collage, or stock-metaphor language');
+
+    const sludgeOnCli = validateMetaphorPitch(
+      {
+        title: 'Glowing brain',
+        subject: 'a glowing brain above a cracked padlock',
+        action: 'floating over comic panel collage',
+        setting: 'void',
+        props: ['neural-network mesh'],
+        composition: 'single',
+        whyItFits: 'The plugin exposes server-side tools on the command line.',
+        motifClass: 'glowing_brain',
+        subjectKind: 'object',
+        storyAnchor: 'Claude server-side tools in a command-line plugin',
+        visibleMechanism: 'a glowing brain unlocks the cracked padlock',
+        visibleConsequence: 'the command line tools spill out as holograms',
+      },
+      semanticEssence({
+        storyContext:
+          "Simon Willison's llm-anthropic plugin brings Claude server-side tools to the command line.",
+        essence: 'Server-side tools become usable from the command line.',
+        mustFeel: 'precise connection',
+        forbiddenCliches: [],
+        mechanism: 'A CLI plugin exposes server-side tools through a local command.',
+        readerTest: 'grasp: server-side tools now plug into the command line',
+      }),
+      ['Claude', 'plugin', 'command line'],
+    );
+    expect(sludgeOnCli).toContain('banned UI, collage, or stock-metaphor language');
+  });
+
   it('rejects polished but opaque data-flow machinery when it is not literal news context', () => {
     const errors = validateMetaphorPitch(
       {

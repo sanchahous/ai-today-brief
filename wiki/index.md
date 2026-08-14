@@ -4,8 +4,8 @@ Summary: головний зміст усієї wiki. Кожен рядок — 
 для будь-якого питання: спершу читаємо цей файл, потім релевантні сторінки.
 Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery fix
 2026-08-10, story-image rollout deduplication і three-concept illustration jury 2026-08-11,
-experimental Visual Affordance V10 owner review 2026-08-13
-Last updated: 2026-08-13 (PR #229 review plan)
+experimental Visual Affordance V10 owner review 2026-08-13, illustration B1-fix 2026-08-15
+Last updated: 2026-08-15
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -57,7 +57,7 @@ Last updated: 2026-08-13 (PR #229 review plan)
 | ✅ [pipeline/weekly-master-failures](pipeline/weekly-master-failures.md) | Розбір збоїв `editorial_master` 09.08: 7 причин (таймаут CLI, tool-use, reasoning-сліпий stall-детектор, зелений прогін на провалі, фолбек, JSON-преамбула, відсутня UK/revise-драбина) | Actions runs + live sandbox 2026-08-09 |
 | ✅ [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) | Ітеративний рушій `editorial_master`: посегментний запис із чекпоїнтом на кожен сегмент, точковий ремонт поля замість перегенерації, якість більше не валить джобу | `master-engine.ts` / `master-segments.ts` / `master-repair.ts`, owner session 2026-08-09 |
 | ✅ [pipeline/content-sim](pipeline/content-sim.md) | Симуляція/бектест: per-concept 2×3 parallel vision loop, structural gates, advisory semantic planning, escalation, release gate | `pipeline/card-image.ts`, `src/lib/content-sim`, 2026-08-12 |
-| ✅ [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) | Виконавча специфікація ілюстрацій після рішення 2026-08-15: картинки дайджестів вручну, промпти автоматично, новини на автогенерації | owner review живого випуску 2026-08-14 + рішення власника 2026-08-15 + `AI_Today_Brief_Visual_Algorithm_Plan.pdf` |
+| ✅ [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) | Виконавча специфікація ілюстрацій після рішення 2026-08-15: картинки дайджестів вручну, промпти автоматично, новини на автогенерації. B1-fix (craft-ban literal exception) зроблено 2026-08-15 | owner review живого випуску 2026-08-14 + рішення власника 2026-08-15 + `AI_Today_Brief_Visual_Algorithm_Plan.pdf` |
 | ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | Межа відео-pipeline | колишній `docs/VIDEO-PIPELINE-BOUNDARY.md` |
 | ✅ [pipeline/llm-providers](pipeline/llm-providers.md) | Уніфікований реєстр LLM-провайдерів (у розробці): навіщо, ключові знахідки, статус фаз | owner session 2026-08-06 |
 
