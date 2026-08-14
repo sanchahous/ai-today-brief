@@ -111,9 +111,16 @@ const nextConfig: NextConfig = {
   },
   images: {
     // Hero images are the source articles' og:image — arbitrary publisher
-    // hosts by nature (news aggregation), so allow any https origin and let
-    // the image optimizer proxy/resize them.
+    // hosts by nature (news aggregation), so allow any https origin.
     remotePatterns: [{ protocol: 'https', hostname: '**' }],
+    // Vercel's optimizer is bypassed entirely: its quota ran out on 2026-08-14
+    // and `/_next/image` started answering 402 for every image on the site
+    // while the origin files were healthy. `src/lib/image-loader.ts` resizes
+    // our own Supabase card images through Supabase Storage instead (24 KB vs
+    // a 488 KB PNG at thumbnail size) and passes publisher images through
+    // untouched. See wiki/ops/vercel-image-quota.md.
+    loader: 'custom',
+    loaderFile: './src/lib/image-loader.ts',
   },
   async redirects() {
     return [
