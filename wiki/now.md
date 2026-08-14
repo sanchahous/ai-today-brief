@@ -19,8 +19,11 @@ Last updated: 2026-08-13
   сценах (впечені лістинги і підписи, заборонені політикою `weekly-semantic-story-v5.1`),
   `labels_carry_claim` на Claude-thresholds, пʼять блокерів на Deep Work. Обидві гілки провалюють
   hard integrity за однаковими правилами. **Висновок: заявлена перевага була артефактом
-  вимірювання, а не якості картинок.** Питання «чи краще за продакшн» лишається відкритим —
-  `pipeline/card-image.ts` у порівнянні не брав участі жодного разу. (source: Actions run
+  вимірювання, а не якості картинок.** Питання «чи краще за продакшн» лишається відкритим для
+  **цих** прогонів: у targeted-серії V10 порівнювали v10 проти v8, а продакшн-гілку прибрали.
+  У ранніших прогонах v6/v7 продакшн **брав** участь як гілка `current` — див. коригування в
+  [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md).
+  (source: Actions run
   `31739283280`, `experiments/visual-affordance-v10/targeted-v7-corrected-harness/`,
   [open-questions](open-questions.md) §8)
 
