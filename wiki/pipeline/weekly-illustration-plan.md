@@ -28,11 +28,35 @@ Last updated: 2026-08-14
    діаграма чи інфографіка. Зараз усі три лінзи — завжди фото.
 4. Впечений текст протікає в прод (`Clodfire`, `PFfort` у Story 3; нісенітні підписи в Story 6)
    попри політику `weekly-semantic-story-v5.1`.
-5. Реальні витрати — **$0.36–0.90 на story**, тобто $4–6 на випуск.
+5. **Вартість — не проблема; проблема — час.** Див. окремий розділ нижче.
 
-(source: owner review живого digest `843975a8-8c19-4eca-96a8-035f76eae3ab` 2026-08-14; ledger
-`generation_cost_events` у тому ж digest — Story 2 `$0.9050 / 9 jobs`, Story 3 `$0.6906 / 8 jobs`,
-Story 1 `$0.5655 / 8 jobs`)
+(source: owner review живого digest `843975a8-8c19-4eca-96a8-035f76eae3ab` 2026-08-14)
+
+### Про бюджет — не оптимізуй його, поки не заміряєш
+
+Реальний зріз OpenRouter за 2026-08-14, вікно 06:09–09:14 (23 виклики):
+
+| | |
+|---|---:|
+| **Разом** | **$0.3625** |
+| `deepseek-v4-pro` — редакційний текст | $0.3513 (**94%**) |
+| `gemini-2.5-flash` — vision-критик | $0.0113 (3%) |
+
+**Гроші йдуть на генерацію тексту, а не зображень.** Vision-критик коштує копійки.
+Білінг Cloudflare за самі рендери сюди не входить — він окремий.
+
+Реальний ризик у тих самих логах — **латентність**: два скасовані виклики змарнували 885 с,
+найдовший тривав **720 с** (стеля провайдера) і повернув нічого. При 95-хвилинному дедлайні
+воркера (`generation-worker.ts:1011`) це важить більше за долари.
+
+> ⚠️ **Не повторюй помилок попередніх оцінок.** Цифра «$19–53/рік» була виведена з лімітів
+> політики (занижена), цифра «$4–6 на випуск / $200–300 на рік» — з накопичувального
+> `Story revision spend` в адмінці, який містить `legacy aggregate` за багато днів
+> перегенерацій (завищена). **Жодна з них не підтверджена.** Річної цифри поки не існує;
+> щоб її отримати, потрібен чистий замір одного випуску від початку до кінця, включно з
+> білінгом Cloudflare. До того часу — не наводь річних сум і не оптимізуй вартість.
+
+(source: `openrouter_activity_2026-08-14.csv`, 23 виклики, обчислено 2026-08-14)
 
 Проєктна основа — `AI_Today_Brief_Visual_Algorithm_Plan.pdf` власника (11 с., розбір V1–V10).
 Його ключова теза: *«Правильний алгоритм не питає "cinematic чи diagram?". Він питає: який
@@ -110,10 +134,34 @@ E можна робити паралельно з C.
 - **Обмеження, яке треба назвати у звіті:** позитив рівно один (n=1). Тест може дискваліфікувати
   модель, але не підтвердити.
 
-### A3. Власник (не код)
+### A3 ✅ Зроблено 2026-08-14 — і результат змінює B
 
-Натиснути **Regenerate** на Story 4, 6, 7 у `/admin/weekly/843975a8-…`. Якщо вони дадуть по три
-варіанти — гіпотеза про застарілі артефакти підтверджена і ці три story випадають зі скоупу B.
+Власник перегенерував Story 6. Тепер вона має **три обрані концепти + історію з шести рендерів**
+(2 раунди × 3 варіанти), кожен зі своєю лінзою і `motifClass`. **Гіпотеза про застарілі
+артефакти підтверджена** — Story 4, 6, 7 були продуктом старого 5-раундового циклу, а не
+зламаного журі.
+
+**Але перегенерація виявила другу, окрему проблему, якої не було видно раніше.** Шість рендерів
+Story 6 мають різні назви й `motifClass`, а візуально це **одна родина**:
+
+```
+round 1: Single-Slot Vending Console  · Remote Tool Driveshaft · Frayed Single Cord
+round 2: Single Slot Tool Cabinet     · Single Shaft Tool Carousel · Single Key Fragile Output
+scores:  25 · 25 · 0 · 25 · 15 · 25      (усі провалені)
+```
+
+Усі шість — деревʼяні шафи з інструментами в майстерні. `motifClass` у всіх починається з
+`single_…`, бо `essence.mechanism` для цієї story — «single command flag», і **спільний
+`essence` тягне всі три лінзи в одну метафоричну родину**. Лінза змінює ракурс, але простір
+метафор уже звужено до одного.
+
+**Наслідок для B2:** перевірка на дублікати за рівністю рядка `motifClass` цього не ловить —
+`single_slot_cabinet` і `single_shaft_carousel` формально різні. Диверсифікацію треба робити на
+рівні **родини мотивів** (матеріал / середовище / тип субʼєкта), а не назви. Це доповнює B2, не
+замінює його: фолбек-колапс і конвергенція журі — два різні дефекти з тим самим симптомом.
+
+(source: owner regenerate Story 6 у `/admin/weekly/843975a8-…` 2026-08-14, скріншот
+«GENERATION HISTORY · 6 RENDERED VERSIONS»)
 
 ---
 
@@ -224,15 +272,116 @@ E можна робити паралельно з C.
 - **База:** `visual-generic-svg-v5.ts:257` (`quantitativeScene`), керований
   `autoClaim.semantics.metric` і `claim.quantitativeFacts`.
 - **Не брати** три сцени з `visual-affordance-treatment-v10.ts`.
-- **Обовʼязково виправити перед використанням:** у жодному `<marker>` немає `markerUnits`
-  (`grep -rc markerUnits src/lib/weekly-digest/` = 0), тому вістря стрілки рендериться
-  розміром 84 user units і залазить у ціль. Це механічна причина owner-тегу «стрілка поламана».
-  Додати `markerUnits="userSpaceOnUse"`.
-- **Заборонено:** hardcoded величини. `quantitativeScene` зараз малює 7-vs-2 стовпці незалежно
-  від реальної метрики — для «−8%» і «−95%» вийде однакова картинка.
 
 **Готово коли:** story з `quantitativeFacts` отримує схему як **один із** варіантів поруч із
 кінематографічним, і власник може порівняти їх в адмінці.
+
+---
+
+### C5. Обовʼязкові правки при портуванні коду V10
+
+Код V10 містить чотири перевірені дефекти. **Портувати «як є» не можна — успадкуєш усі
+чотири.** Нижче вже готові зміни; аналізувати не треба, треба застосувати й покрити тестом.
+
+#### C5.1 `markerUnits` — механічна причина «поламаної стрілки»
+
+Перевірено: `grep -rc markerUnits src/lib/weekly-digest/` = **0**. За SVG-специфікацією дефолт
+`markerUnits` — `strokeWidth`, тож `markerWidth="12"` при `stroke-width="7"` дає вістря
+**84 user units** (~7% ширини картки), а `refX="10"` масштабується до 70 — вістря залазить на
+14 px усередину цілі.
+
+Файли: `visual-affordance-treatment-v10.ts:187`, `visual-generic-svg-v5.ts:59`,
+`visual-generic-svg-v6.ts:64`, `visual-generic-svg.ts:101` і `:102`.
+
+```
+було:  <marker id="…" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+стало: <marker id="…" markerUnits="userSpaceOnUse"
+                markerWidth="18" markerHeight="18" refX="16" refY="9" orient="auto">
+       <path d="M0 0 18 9 0 18Z" …/>
+```
+
+**Тест:** `every arrow marker declares markerUnits="userSpaceOnUse"` — грепом по згенерованому
+SVG для кожного рендерера.
+
+#### C5.2 `hasExactMetric` бере поля порад
+
+`visual-affordance-router-v10.ts:63` сканує `sourceText(story)`, а той (`:47`) склеює
+`title + summary + why + practical + takeaway`. Порада «Budget about 2 hours for the first run»
+вмикає метрику, після чого `deterministic_technical_hybrid` (пріоритет 96) перекриває
+`cinematic_domain_scene` (92) — доменна сцена перетворюється на діаграму.
+
+```ts
+// додати поруч із sourceText()
+function metricSourceText(story: HoldoutStoryInput): string {
+  return [story.title, story.summary].join(' ').replace(/\s+/g, ' ').trim();
+}
+
+// hasExactMetric(): замінити sourceText(input.story) на metricSourceText(input.story)
+// і вимагати підтвердження фактом, а не самим лише регексом:
+return (
+  (input.autoClaim.claim.quantitativeFacts ?? []).length > 0 ||
+  Boolean(input.autoClaim.semantics.metric) ||
+  METRIC_RE.test(metricSourceText(input.story))
+);
+```
+
+**Тест:** `an incidental duration in practical does not switch a domain story to the diagram grammar`
+— фікстура з `practical: 'Budget about 2 hours for the first run.'` і без метрики в
+title/summary має лишитись на `cinematic_domain_scene`.
+
+#### C5.3 `requiresTemporalSequence` спрацьовує на одному слові
+
+`visual-affordance-router-v10.ts:84` вмикає процесну граматику від одного `cache` / `split` /
+`failure` — усі три надзвичайно часті в AI-новинах.
+
+```ts
+const hits = metricSourceText(story).match(
+  /\b(crash|resume|restart|checkpoint|cach(?:e|ing)|split|monitor|fuzz(?:ing)?|failure|repair|retest|retry|interruption|continuation)\b/gi,
+) ?? [];
+return new Set(hits.map((h) => h.toLowerCase())).size >= 2;
+```
+
+**Тест:** `a single mention of caching does not select the process grammar`.
+
+#### C5.4 `inferRole` — `\b` звʼязується лише з крайніми гілками
+
+`visual-auto-claim-v5.ts:268, 274, 277`. Вираз виду `/\b(a|b|c)\b/` ставить межу слова тільки
+перед `a` і після `c`. Тому підрядок `strip` у «**Strip**e» дає
+`architecture_transformation`, `tops?` у «lap**tops**» — `benchmark_comparison` з примусовою
+вимогою метрики. «Stack Overflow», «multiplayer», «pruned», «compacted» падають так само.
+
+```
+:268  /\b(?:benchmark|evaluation|leaderboard|tops?|pass rate|score)\b/
+:274  /\b(?:policy|access control|authori[sz]|blocked|refused|guardrail)\b/
+:277  /\b(?:lower|compiler?|dialect|layers?|stack|strip|prune|compact|transform)\b/
+```
+
+**Тест:** `inferRole does not classify "OpenAI partners with Stripe" as architecture_transformation`.
+
+#### C5.5 `quantitativeScene` малює однакову геометрію для будь-якої величини
+
+`visual-generic-svg-v5.ts:218` хардкодить стек 7-проти-2 і гейджі 0.84/0.27 незалежно від
+реальної метрики. «Кеш зменшує вартість на 8%» і «оптична компресія зменшує на 95%» дадуть
+**байт-ідентичну** картинку, і обидві стверджують ~71% зниження. Для новинного продукту це
+фабрикація величини.
+
+```ts
+// вивести ratio з даних, а не з константи
+const ratio = parseMetricRatio(claim.quantitativeFacts, semantics.metric); // 0..1 | null
+if (ratio == null) {
+  // немає розбірливої пари чисел -> НЕ малювати stack()/meter() взагалі,
+  // рендерити якісний варіант лише зі стрілкою напрямку
+} else {
+  rightCount = Math.max(1, Math.round(leftCount * ratio));
+  rightLevel = direction === 'decrease' ? ratio : 1 - ratio;
+}
+```
+
+**Тест:** `two stories with different magnitudes produce different geometry` і
+`a story without a parsable metric renders no quantitative stack`.
+
+**Готово для всього C5 коли:** пʼять тестів вище зелені, і `grep -rc markerUnits` по
+`src/lib/weekly-digest/` більше не дорівнює нулю.
 
 ---
 
