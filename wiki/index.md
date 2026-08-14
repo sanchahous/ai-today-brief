@@ -100,6 +100,7 @@ Last updated: 2026-08-13 (PR #229 review plan)
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [ops/mcp](ops/mcp.md) | MCP-сервери: chrome-devtools, apify, supabase, ahrefs, vercel | нове |
+| ✅ [ops/vercel-image-quota](ops/vercel-image-quota.md) | Інцидент 402 на `/_next/image`, власний loader через Supabase transform | live check 2026-08-14, `next.config.ts`, `src/lib/image-loader.ts` |
 | ✅ [ops/owner-checklist](ops/owner-checklist.md) | Env-матриця, launch-блокери, go-live послідовність | колишній `docs/OWNER-CHECKLIST.md` |
 | ✅ [ops/social-cms-runbook](ops/social-cms-runbook.md) | Runbook соц-CMS | колишній `docs/SOCIAL-CMS-RUNBOOK.md` |
 | ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладки, succeeded≠approved, stuck jobs, async images та idempotent retry | нове 2026-08-04, оновлено 2026-08-11 |
