@@ -18,11 +18,15 @@ on:
       run_id:
         description: Actions run id of the visual-experiment package holding render-manifest.json and images/
         required: true
-        default: '31739283280'
+        default: '31611857768'
       artifact:
         description: Artifact name inside that run
         required: true
-        default: visual-experiment-31739283280
+        default: visual-compiler-v6-targeted-ab-evaluated
+      ground_truth:
+        description: JSON file of owner verdicts to score against
+        required: true
+        default: experiments/critic-ground-truth/owner-verdicts-v6.json
       models:
         description: Comma-separated OpenRouter vision models to compare
         required: true
@@ -82,6 +86,7 @@ jobs:
         env:
           OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
           CRITIC_BAKEOFF_PACKAGE: artifacts/_local/visual-run
+          CRITIC_BAKEOFF_GROUND_TRUTH: ${{ inputs.ground_truth }}
           CRITIC_BAKEOFF_OUT: artifacts/_local/critic-bakeoff
           CRITIC_BAKEOFF_MODELS: ${{ inputs.models }}
           CRITIC_BAKEOFF_SAMPLES: ${{ inputs.samples }}

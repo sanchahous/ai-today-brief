@@ -1,0 +1,79 @@
+{
+  "source": "Owner review of the visual-compiler-v6 targeted A/B, transcribed from the owner's annotated contact sheet 2026-08-14 and confirmed in chat.",
+  "package": "Actions run 31611857768, artifact visual-compiler-v6-targeted-ab-evaluated",
+  "note": "verdict 'ship' means the owner would publish it. 'defect' means the concept works but a named flaw blocks it. 'reject' means unusable. Only 'ship' and 'reject' are scored; 'defect' is reported but not counted, because reasonable critics may disagree on whether a named flaw is blocking.",
+  "items": [
+    {
+      "image": "images/1-162f3cca-30e6-48d3-8f5d-2e5b0d11cf23-current.jpg",
+      "rank": 1,
+      "arm": "current",
+      "verdict": "defect",
+      "why": "owner: 'наче непогано, можна було би придумати щось краще для передачі сенсу' — acceptable but not endorsed"
+    },
+    {
+      "image": "images/1-162f3cca-30e6-48d3-8f5d-2e5b0d11cf23-compiler-pixels.jpg",
+      "rank": 1,
+      "arm": "compiler",
+      "verdict": "reject",
+      "why": "owner: 'машинка для шиття і сорочка тут слабо передають контекст новини. Недопрацьовано'"
+    },
+    {
+      "image": "images/2-746ae14f-9836-4803-8b05-117195dfc4f0-current.jpg",
+      "rank": 2,
+      "arm": "current",
+      "verdict": "ship",
+      "why": "owner: 'Сподобалось! Дуже вдало, нарідкість дуже вдало!' — the only image in the reviewed corpus the owner endorsed outright"
+    },
+    {
+      "image": "images/2-746ae14f-9836-4803-8b05-117195dfc4f0-compiler-pixels.jpg",
+      "rank": 2,
+      "arm": "compiler",
+      "verdict": "reject",
+      "why": "owner: 'Просто крива діаграма. Невдало!'"
+    },
+    {
+      "image": "images/4-be11c774-29c8-4a9b-85d7-308fc27695fe-current.jpg",
+      "rank": 4,
+      "arm": "current",
+      "verdict": "reject",
+      "why": "owner: 'задум і суть дуже слабкі. Просто ганяти кубики по виробничій лінії цього недостатньо'"
+    },
+    {
+      "image": "images/4-be11c774-29c8-4a9b-85d7-308fc27695fe-compiler-pixels.jpg",
+      "rank": 4,
+      "arm": "compiler",
+      "verdict": "reject",
+      "why": "owner: 'задум і суть дуже слабкі, але передано трохи краще'"
+    },
+    {
+      "image": "images/6-907e49c3-2852-427b-9c92-377d1f055bdf-current.jpg",
+      "rank": 6,
+      "arm": "current",
+      "verdict": "reject",
+      "why": "owner: 'Невдало!'"
+    },
+    {
+      "image": "images/6-907e49c3-2852-427b-9c92-377d1f055bdf-compiler-pixels.jpg",
+      "rank": 6,
+      "arm": "compiler",
+      "verdict": "defect",
+      "why": "owner: 'непогана діаграма, але стрілка поламана. Все інше добре' — concept accepted, one named blocking flaw",
+      "mustFlag": "ambiguous_visual_story"
+    },
+    {
+      "image": "images/7-1fc8e909-93c6-4ff1-ba09-63f751e1ebf5-current.jpg",
+      "rank": 7,
+      "arm": "current",
+      "verdict": "defect",
+      "why": "owner: 'задум непогано, але лупа вийшла відвʼязаною від зображення — крізь неї мали би бачити щось'",
+      "mustFlag": "prop_use_mismatch"
+    },
+    {
+      "image": "images/7-1fc8e909-93c6-4ff1-ba09-63f751e1ebf5-compiler-pixels.jpg",
+      "rank": 7,
+      "arm": "compiler",
+      "verdict": "reject",
+      "why": "owner: 'Слабенько'"
+    }
+  ]
+}
