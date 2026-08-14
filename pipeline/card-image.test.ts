@@ -11,6 +11,9 @@ import {
   accentToHex,
   extractWeeklyStoryEntities,
   flattenMetaphorPitch,
+  FALLBACK_MOTIF_CLASS,
+  headNoun,
+  motifFamilyKey,
   parseEditorialEssence,
   parseMetaphorPitches,
   parseWeeklySceneSpec,
@@ -612,6 +615,96 @@ describe('weekly essence + metaphor gates', () => {
     expect(dualCap).toContain('dual_contrast_digest_cap');
   });
 
+  it('fallback briefs share a motif class so the sibling validator sees them as duplicates', () => {
+    const essence = semanticEssence({
+      essence: 'Server-side tools become usable from the command line.',
+      mustFeel: 'precise connection',
+      forbiddenCliches: [],
+      mechanism: 'A CLI plugin exposes server-side tools through a local command.',
+      readerTest: 'grasp: server-side tools now plug into the command line',
+    });
+    const fallbackPitch = {
+      title: 'Literal context',
+      subject: 'grounded tableau of the command-line plugin',
+      action: 'showing the mechanism at work',
+      setting: 'one continuous workshop',
+      props: ['adapter card'],
+      composition: 'single' as const,
+      whyItFits: 'Fallback lens preserving the approved semantic contract.',
+      motifClass: FALLBACK_MOTIF_CLASS,
+      subjectKind: 'environment' as const,
+    };
+    const duplicate = validateMetaphorPitch(fallbackPitch, essence, ['Claude', 'plugin'], [
+      {
+        motifClass: FALLBACK_MOTIF_CLASS,
+        subjectKind: 'process',
+        sceneSummary: 'exposed process cutaway of the same essence',
+      },
+    ]);
+    expect(duplicate).toContain('sibling_motif_class_reuse');
+  });
+
+  it('two motif classes from the same material and setting count as one family', () => {
+    expect(headNoun('tool cabinet')).toBe('cabinet');
+    expect(headNoun('workshop bench')).toBe('bench');
+    expect(headNoun('tool cabinets')).toBe('cabinet');
+    const cabinet = {
+      title: 'Single Slot Tool Cabinet',
+      subject: 'a single slot tool cabinet',
+      action: 'holding one command flag in the only open bay',
+      setting: 'workshop bench',
+      props: ['one brass flag'],
+      composition: 'single' as const,
+      whyItFits: 'One command flag is the only way into the tools.',
+      motifClass: 'single_slot_cabinet',
+      subjectKind: 'object' as const,
+      storyAnchor: 'one command flag in a single cabinet bay',
+      visibleMechanism: 'the flag seats into the only open cabinet slot',
+      visibleConsequence: 'every other tool stays locked behind the closed bays',
+    };
+    const carousel = {
+      title: 'Single Shaft Tool Carousel',
+      subject: 'a single shaft tool carousel',
+      action: 'turning every tool from one fragile axle',
+      setting: 'workshop bench',
+      props: ['one brass shaft'],
+      composition: 'single' as const,
+      whyItFits: 'One command flag is the only way into the tools.',
+      motifClass: 'single_shaft_carousel',
+      subjectKind: 'object' as const,
+      storyAnchor: 'one command flag turning the carousel shaft',
+      visibleMechanism: 'the shaft drives every tool from a single axle',
+      visibleConsequence: 'the whole rack fails when that one shaft snaps',
+    };
+    expect(motifFamilyKey(cabinet)).toEqual(['cabinet', 'bench', 'object']);
+    expect(motifFamilyKey(carousel)).toEqual(['carousel', 'bench', 'object']);
+    const family = validateMetaphorPitch(
+      carousel,
+      semanticEssence({
+        storyContext: 'A CLI plugin exposes server-side tools through one command flag.',
+        essence: 'One command flag is the only way into the tools.',
+        mustFeel: 'fragility',
+        forbiddenCliches: [],
+        mechanism: 'A single command flag drives every attached tool.',
+        consequence: 'If that flag fails, the whole tool rack is unusable.',
+        visualThesis: 'One shaft or slot holds every tool on a workshop bench.',
+        readerTest: 'grasp: one command flag is a single point of failure',
+      }),
+      ['command flag', 'plugin'],
+      [
+        {
+          motifClass: cabinet.motifClass,
+          subjectKind: cabinet.subjectKind,
+          sceneSummary: `${cabinet.subject} ${cabinet.setting}`,
+          subject: cabinet.subject,
+          setting: cabinet.setting,
+        },
+      ],
+    );
+    expect(family).toContain('sibling_motif_family_reuse');
+    expect(family).not.toContain('sibling_motif_class_reuse');
+  });
+
   it('rejects diamond-vs-grinder when mechanism is an event log', () => {
     const errors = validateMetaphorPitch(
       {
@@ -1074,7 +1167,7 @@ describe('generateWeeklyReportageIllustrations', () => {
     });
   }
 
-  it('keeps an owner direction as concept one and renders two independent alternatives', async () => {
+  it('keeps an owner direction as concept one and does not pad missing lenses with copies', async () => {
     const sentPrompts: string[] = [];
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -1098,21 +1191,20 @@ describe('generateWeeklyReportageIllustrations', () => {
 
     expect(result?.sceneSource).toBe('owner');
     expect(result?.scene).toContain('chat bubble');
-    expect(result?.variants).toHaveLength(3);
+    expect(result?.variants).toHaveLength(2);
     expect(result?.variants.map((variant) => variant.conceptLens)).toEqual([
       'owner_direction',
       'mechanism',
-      'consequence',
     ]);
-    expect(new Set(result?.variants.map((variant) => variant.scene)).size).toBe(3);
-    expect(new Set(sentPrompts).size).toBe(3);
+    expect(new Set(result?.variants.map((variant) => variant.scene)).size).toBe(2);
+    expect(new Set(sentPrompts).size).toBe(2);
     const kleinCalls = vi
       .mocked(globalThis.fetch)
       .mock.calls.filter((call) => String(call[0]).includes('flux-2-klein-9b'));
-    expect(kleinCalls).toHaveLength(3);
+    expect(kleinCalls).toHaveLength(2);
   });
 
-  it('renders literal context, mechanism, and consequence as separate concepts', async () => {
+  it('emits one fallback concept when the jury cannot plan distinct lenses', async () => {
     const sentPrompts: string[] = [];
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (!String(input).includes('flux-2-klein-9b')) {
@@ -1133,16 +1225,13 @@ describe('generateWeeklyReportageIllustrations', () => {
       { geminiApiKey: '', cloudflareAccountId: 'acct', cloudflareApiToken: 'token' },
     );
 
-    expect(result?.variants.map((variant) => variant.conceptLens)).toEqual([
-      'literal_context',
-      'mechanism',
-      'consequence',
-    ]);
-    expect(new Set(result?.variants.map((variant) => variant.scene)).size).toBe(3);
-    expect(new Set(sentPrompts).size).toBe(3);
+    expect(result?.variants).toHaveLength(1);
+    expect(result?.variants[0]?.conceptLens).toBe('literal_context');
+    expect(result?.variants[0]?.motifClass).toBe(FALLBACK_MOTIF_CLASS);
+    expect(sentPrompts).toHaveLength(1);
   });
 
-  it('renders the three independent concepts concurrently', async () => {
+  it('renders planned concepts concurrently', async () => {
     let active = 0;
     let peak = 0;
     let release!: () => void;
@@ -1157,7 +1246,7 @@ describe('generateWeeklyReportageIllustrations', () => {
       if (!String(input).includes('flux-2-klein-9b')) return new Response('fail', { status: 500 });
       active += 1;
       peak = Math.max(peak, active);
-      if (active === 3) allStarted();
+      if (active === 2) allStarted();
       await gate;
       active -= 1;
       return jsonImageResponse();
@@ -1174,7 +1263,7 @@ describe('generateWeeklyReportageIllustrations', () => {
       { geminiApiKey: 'unused', cloudflareAccountId: 'acct', cloudflareApiToken: 'token' },
     );
     await started;
-    expect(peak).toBe(3);
+    expect(peak).toBe(2);
     release();
     await expect(pending).resolves.toMatchObject({ variants: expect.any(Array) });
   });
@@ -1240,15 +1329,10 @@ describe('generateWeeklyReportageIllustrations', () => {
       { geminiApiKey: '', cloudflareAccountId: 'acct', cloudflareApiToken: 'token' },
     );
 
-    expect(result?.variants.map((variant) => variant.conceptLens)).toEqual([
-      'literal_context',
-      'mechanism',
-      'consequence',
-    ]);
-    expect(result?.variants.every((variant) => variant.sceneSource !== 'critic_repair')).toBe(true);
-    expect(result?.variants.every((variant) => variant.conceptLens !== 'owner_direction')).toBe(
-      true,
-    );
+    expect(result?.variants).toHaveLength(1);
+    expect(result?.variants[0]?.conceptLens).toBe('literal_context');
+    expect(result?.variants[0]?.sceneSource).not.toBe('critic_repair');
+    expect(result?.variants[0]?.conceptLens).not.toBe('owner_direction');
     expect(sentPrompts.every((prompt) => !prompt.includes('Repair requirement:'))).toBe(true);
   });
 
@@ -1465,5 +1549,107 @@ describe('scene-brief registry wiring (Phase 2)', () => {
       'recovered_kiln',
     ]);
     expect(concepts.every((concept) => concept.source === 'stub-jury')).toBe(true);
+  });
+
+  it('does not emit three briefs built from one essence', async () => {
+    const concepts = await weeklyReportageSceneBriefs(
+      {
+        headline: 'Critical CVE lets attackers breach the server',
+        summary: 'Attackers exploit a flaw in the runtime.',
+      },
+      { geminiApiKey: '', registry: { chainForRole: () => [] } },
+    );
+    expect(concepts).toHaveLength(1);
+    expect(concepts[0]?.source).toBe('fallback');
+    expect(concepts[0]?.motifClass).toBe(FALLBACK_MOTIF_CLASS);
+  });
+
+  it('returns two distinct briefs rather than three near-identical ones', async () => {
+    process.env[FAKE_CLI_ENV_VAR] = 'token';
+    const essenceJson = JSON.stringify({
+      context: 'Muse Code runs unattended kernel work and resumes after crashes.',
+      meaning: 'Long agent work becomes recoverable instead of disposable.',
+      essence: 'A durable checkpoint trail lets unattended work survive interruption.',
+      mechanism: 'A replay-exact event log resumes the agent from its last completed action.',
+      consequence: 'A long GPU optimization run can continue overnight after a crash.',
+      visual_thesis: 'Physical checkpoints restart interrupted work and carry it to completion.',
+      reader_test: 'See interruption, exact restart, and completed overnight work.',
+      must_feel: 'durable progress',
+      forbidden_cliches: ['person at laptop desk'],
+    });
+    const twoMetaphors = JSON.stringify({
+      metaphors: [
+        {
+          lens: 'literal_context',
+          title: 'Night workshop',
+          subject: 'an unattended automaton tending a half-finished precision mold',
+          story_anchor: 'night automaton beside one unfinished metal mold',
+          visible_mechanism: 'breadcrumb pegs restart the same interrupted carving',
+          visible_consequence: 'the mold finishes before the workshop lights return',
+          action: 'resuming the interrupted cut from one fixed peg',
+          setting: 'silent metal workshop before dawn',
+          props: ['checkpoint pegs', 'unfinished mold'],
+          composition: 'single',
+          motif_class: 'night_mold_workshop',
+          subject_kind: 'character',
+          why_it_fits:
+            'The unattended craft resumes at an exact checkpoint instead of restarting.',
+        },
+        {
+          lens: 'mechanism',
+          title: 'Rewinding loom',
+          subject: 'a loom rewinding one snapped thread to the last intact knot',
+          story_anchor: 'one complex woven pattern halted at a snapped thread',
+          visible_mechanism: 'colored knots guide the shuttle back to the exact break',
+          visible_consequence: 'the shuttle resumes weaving without unmaking completed cloth',
+          action: 'restarting from the final intact knot',
+          setting: 'bright textile repair floor',
+          props: ['colored knots', 'single shuttle'],
+          composition: 'single',
+          motif_class: 'checkpoint_loom',
+          subject_kind: 'process',
+          why_it_fits:
+            'The knots preserve completed steps and make an exact resume physically visible.',
+        },
+      ],
+    });
+    const replies = [essenceJson, twoMetaphors, twoMetaphors];
+    let call = 0;
+    const registry = {
+      chainForRole: () => [
+        {
+          entry: { kind: 'cli' as const, id: 'stub-jury' },
+          cli: {
+            id: 'stub-jury',
+            binary: 'stub',
+            authEnvVar: FAKE_CLI_ENV_VAR,
+            buildArgs: () => [],
+            parseEnvelope: (stdout: string) => ({ text: stdout, model: 'stub', costUsd: 0 }),
+            spawnFn: async () => ({
+              stdout: replies[call++] ?? '',
+              stderr: '',
+              exitCode: 0,
+              spawnError: null,
+            }),
+          },
+        },
+      ],
+    };
+
+    const concepts = await weeklyReportageSceneBriefs(
+      {
+        headline: 'Muse Code resumes unattended GPU work after crashes',
+        summary: 'A replay-exact event log preserves completed steps for a 24-hour run.',
+      },
+      { geminiApiKey: '', registry },
+    );
+
+    expect(concepts).toHaveLength(2);
+    expect(concepts.map((concept) => concept.conceptLens)).toEqual([
+      'literal_context',
+      'mechanism',
+    ]);
+    expect(concepts.every((concept) => concept.source === 'stub-jury')).toBe(true);
+    expect(concepts.every((concept) => concept.motifClass !== FALLBACK_MOTIF_CLASS)).toBe(true);
   });
 });

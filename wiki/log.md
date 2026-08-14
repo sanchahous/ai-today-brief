@@ -6,6 +6,22 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — B2: журі більше не добиває три однакові фолбеки
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B2;
+`pipeline/card-image.ts`.
+
+**Змінено:** [marketing/card-images](marketing/card-images.md), [overview](overview.md) §4,
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md), [now](now.md),
+[index](index.md).
+
+**Код:** `weeklyReportageSceneBriefs` повертає лише прийняті лінзи (або один `fallback_essence`);
+фолбеки більше не маскують копії різними `fallback_${lens}`; `motifFamilyKey` відхиляє
+ pitched-дублікати однієї родини (`sibling_motif_family_reuse`). Пункт «фолбек з іншої
+грамматики» відкладено до C.
+
+**Не зроблено в цій хвилі (окремі PR):** P1 і далі за порядком плану.
+
 ## 2026-08-15 — B1-fix: craft-заборона більше не валить предмет самої новини
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B1-fix;

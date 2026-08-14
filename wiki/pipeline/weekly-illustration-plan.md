@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 → P1 → P2 → M1 → M2 → B3 → P3 → C → D → E
+B1-fix ✅ → B2 ✅ → P1 → P2 → M1 → M2 → B3 → P3 → C → D → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -316,46 +316,22 @@ grab-bag: інакше CLI-новина з словом `terminal` у конте
 **Жива перевірка ще відкрита:** «планування Story 6 дає три лінзи з `openrouter`» — це критерій
 на реальному випуску, не юніт-тест. Юніт-гейт зелений.
 
-### B2. Прибрати тиху деградацію в три копії
+### B2 ✅ Зроблено 2026-08-15 — не добивати кількість трьома копіями
 
-**Не починати без B1.** Три речі робляться в будь-якому разі:
+- Фолбеки мають спільний `motifClass: fallback_essence` (не `fallback_${lens}`).
+- Якщо лінза не отримала pitch, вона **не** додається як перефразування: журі з 1–2
+  прийнятими лінзами повертає 1–2 брифи. Повний провал → один fallback, не три.
+- `motifFamilyKey` + `sibling_motif_family_reuse`: збіг ≥2 з head-noun subject / head-noun
+  setting / `subjectKind`. `workshop bench` → `bench` (остання значуща лексема, як у прозі
+  специфікації).
+- Пункт «фолбек з іншої грамматики» лишається на **C** — грамматики ще немає в продакшн-шляху.
 
-1. **`pipeline/card-image.ts:1797`** — прибрати `motifClass: fallback_${lens}`. Фолбеки мають
-   ділити один `motifClass` (напр. `fallback_essence`), щоб валідатор бачив їх як однакові,
-   якими вони і є.
-2. **`:1939`** — краще **два справді різні** варіанти, ніж три однакові. Якщо лінза не отримала
-   pitch, вона не має додавати перефразування. Повертати менше брифів, а не добивати кількість.
-3. **`:1780-1785`** — якщо фолбек усе-таки потрібен, він має братись **з іншої грамматики**
-   (див. C), а не бути іншим описом того самого `essence`.
+**Тести зелені:** `does not emit three briefs built from one essence`,
+`fallback briefs share a motif class so the sibling validator sees them as duplicates`,
+`returns two distinct briefs rather than three near-identical ones`,
+`two motif classes from the same material and setting count as one family`.
 
-Плюс дефект із A3 — **родина мотивів, а не рядок `motifClass`**. Нових полів у контракті не
-треба, `MetaphorPitch` (`:735-754`) уже має все потрібне:
-
-```ts
-// нова функція поруч із tokenizeSceneForEcho (:988)
-export function motifFamilyKey(pitch: MetaphorPitch): [string, string, string] {
-  return [
-    headNoun(pitch.subject),   // останній іменник фрази: "tool cabinet" -> cabinet
-    headNoun(pitch.setting),   // "workshop bench" -> workshop
-    pitch.subjectKind,
-  ];
-}
-```
-
-**Критерій дубліката: збіг ≥2 позицій із трьох.** `Single Slot Tool Cabinet` у майстерні і
-`Single Shaft Tool Carousel` у майстерні збігаються за `setting` і `subjectKind` → одна родина →
-другий відхиляється як `sibling_motif_family_reuse`. `headNoun` — остання значуща лексема без
-стоп-слів, без стемінгу: множина зводиться простим правилом `-s/-es`, глибша морфологія не
-потрібна й не виправдана.
-
-**Тести (`pipeline/card-image.test.ts`):**
-- `does not emit three briefs built from one essence`
-- `fallback briefs share a motif class so the sibling validator sees them as duplicates`
-- `returns two distinct briefs rather than three near-identical ones`
-- `two motif classes from the same material and setting count as one family`
-
-**Готово коли:** на фікстурі, де журі приймає лише одну лінзу, функція повертає **один** бриф,
-а не три; тест на однаковість motifClass проходить; тест на родину мотивів проходить.
+Наступне — **P1** (канонічний промпт + похідні синтаксиси).
 
 ### B3. Зробити деградацію видимою в адмінці
 
@@ -1098,7 +1074,7 @@ npm run pr:check
 | A2 | звіт bake-off містить `Kept the good`; рішення про модель **не** застосоване автоматично |
 | B1 | `experiments/jury-blockers/2026-08-digest-843975a8.md` із реальним розподілом блокерів |
 | B1-fix | тест `a command-line story may use the word terminal for a physical object` зелений; контроль UI-кліше на CLI-story теж зелений; живе планування Story 6 ще не прогнано |
-| B2 | на фікстурі з однією прийнятою лінзою повертається один бриф, не три; тест на родину мотивів зелений |
+| B2 | на фікстурі з однією прийнятою лінзою повертається один бриф, не три; чотири названі тести зелені |
 | B3 | в адмінці видно `N/3 промпти готові` |
 | P1 | три `ManualImagePrompt` на story; жоден не потребує ручного редагування; negative завжди банить текст |
 | P2 | у Visuals є три кнопки копіювання і слот upload в одній картці; артефакт `story_prompt_set` пишеться |

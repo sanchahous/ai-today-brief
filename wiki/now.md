@@ -10,6 +10,12 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **B2 — не три копії одного essence (2026-08-15).** Журі більше не добиває кількість
+  фолбеками: 1–2 прийняті лінзи → 1–2 брифи; повний провал → один `fallback_essence`.
+  `sibling_motif_family_reuse` ловить шафи/каруселі в одній майстерні як одну родину.
+  Наступне за планом — P1 (промпт як продукт).
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B2,
+  `pipeline/card-image.ts`)
 - **B1-fix craft-ban literal exception (2026-08-15).** `validateMetaphorPitch` більше не
   відхиляє pitch за словом зі списку craft-cliché, якщо це слово вже є в новині
   (`storyContext` / `mechanism` / entities). Голий `terminal` дозволений і коли джерело каже

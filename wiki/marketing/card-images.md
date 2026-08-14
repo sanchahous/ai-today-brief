@@ -145,6 +145,14 @@ fallback і власник бачив три однакові шафи. `termina
 новини. (source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) B1-fix,
 `experiments/jury-blockers/2026-08-digest-843975a8.md`, `pipeline/card-image.ts`)
 
+**B2 — не добивати кількість трьома копіями (2026-08-15):** якщо журі прийняло одну чи дві лінзи,
+`weeklyReportageSceneBriefs` повертає стільки брифів, скільки є — не дописує перефразування
+одного `essence`. Повний провал журі дає **один** бриф із `motifClass: fallback_essence`, не три
+з `fallback_${lens}`. Дублікат ловиться також за **родиною мотивів** (≥2 з head-noun subject /
+head-noun setting / `subjectKind`), тож `single_slot_cabinet` і `single_shaft_carousel` в одній
+майстерні більше не проходять як різні концепції. (source:
+[weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) B2, `pipeline/card-image.ts`)
+
 **Reviewable render history (2026-08-12):** кожен image buffer з кожного repair round зберігається
 до approval як підписаний private preview із round, variant, concept lens/title, motif, scene та
 per-variant score. Visuals показує всю generation history; owner promotion лишається можливим для

@@ -680,6 +680,9 @@ export interface SiblingMetaphorHint {
   subjectKind?: string;
   composition?: 'single' | 'dual_contrast';
   sceneSummary: string;
+  /** Used by motif-family matching; optional on older sibling rows. */
+  subject?: string;
+  setting?: string;
 }
 
 export interface WeeklyReportageSceneInput {
@@ -769,6 +772,9 @@ export interface WeeklyEditorialFrame {
 
 /** Token Jaccard threshold for sibling scene echo (0–1). */
 export const SIBLING_SCENE_ECHO_THRESHOLD = 0.45;
+
+/** Shared by every last-resort fallback so the sibling validator sees them as copies. */
+export const FALLBACK_MOTIF_CLASS = 'fallback_essence';
 
 /** Compatibility shape for older tests; prefer MetaphorPitch. */
 export interface WeeklyReportageSceneSpec {
@@ -1023,6 +1029,58 @@ function parseMetaphorLens(
 }
 
 /** Significant tokens for sibling scene echo (Jaccard). */
+const HEAD_NOUN_STOP = new Set([
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'of',
+  'in',
+  'on',
+  'at',
+  'to',
+  'for',
+  'with',
+  'from',
+  'into',
+  'over',
+  'under',
+  'vs',
+  'versus',
+]);
+
+function stripSimplePlural(token: string): string {
+  if (token.length >= 5 && token.endsWith('es')) return token.slice(0, -2);
+  if (token.length >= 4 && token.endsWith('s') && !token.endsWith('ss')) return token.slice(0, -1);
+  return token;
+}
+
+/** Last significant lexeme of a phrase; simple -s/-es plural fold, no stemming. */
+export function headNoun(phrase: string): string {
+  const tokens = phrase
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length >= 3 && !HEAD_NOUN_STOP.has(token));
+  const last = tokens[tokens.length - 1] ?? '';
+  return last ? stripSimplePlural(last) : '';
+}
+
+/** Subject head noun, setting head noun, subjectKind — family if ≥2 positions match. */
+export function motifFamilyKey(
+  pitch: Pick<MetaphorPitch, 'subject' | 'setting' | 'subjectKind'>,
+): [string, string, string] {
+  return [headNoun(pitch.subject), headNoun(pitch.setting), pitch.subjectKind];
+}
+
+function familyKeyOverlap(a: [string, string, string], b: [string, string, string]): number {
+  let matched = 0;
+  if (a[0] && a[0] === b[0]) matched += 1;
+  if (a[1] && a[1] === b[1]) matched += 1;
+  if (a[2] && a[2] === b[2]) matched += 1;
+  return matched;
+}
+
 export function tokenizeSceneForEcho(text: string): Set<string> {
   const stop = new Set([
     'a',
@@ -1446,6 +1504,18 @@ export function validateMetaphorPitch(
   if (siblings.some((s) => s.motifClass && s.motifClass.toLowerCase() === motif)) {
     errors.push('sibling_motif_class_reuse');
   }
+  const pitchFamily = motifFamilyKey(pitch);
+  for (const sibling of siblings) {
+    const siblingFamily = motifFamilyKey({
+      subject: sibling.subject ?? sibling.sceneSummary,
+      setting: sibling.setting ?? '',
+      subjectKind: parseSubjectKind(sibling.subjectKind),
+    });
+    if (familyKeyOverlap(pitchFamily, siblingFamily) >= 2) {
+      errors.push('sibling_motif_family_reuse');
+      break;
+    }
+  }
   const pitchTokens = tokenizeSceneForEcho(pitchRenderableBlob(pitch));
   for (const sibling of siblings) {
     const overlap = jaccardTokenOverlap(pitchTokens, tokenizeSceneForEcho(sibling.sceneSummary));
@@ -1832,7 +1902,7 @@ function fallbackSceneBrief(
         : lens === 'mechanism'
           ? 'Visible mechanism'
           : 'Visible consequence',
-    motifClass: `fallback_${lens}`,
+    motifClass: FALLBACK_MOTIF_CLASS,
     subjectKind: lens === 'mechanism' ? 'process' : 'environment',
     composition: 'single',
     storyContext: essence.storyContext,
@@ -1889,7 +1959,13 @@ export async function weeklyReportageSceneBriefs(
       ? weeklySemanticFallbackScene(essence)
       : weeklyFallbackScene(ctx, entities);
   if (!ctx) {
-    return targetLenses.map((lens) => fallbackSceneBrief(lens, baseFallbackScene, essence));
+    return [
+      fallbackSceneBrief(
+        targetLenses[0] ?? 'literal_context',
+        baseFallbackScene,
+        essence,
+      ),
+    ];
   }
 
   const accepted: Array<{ pitch: MetaphorPitch; source: string }> = [];
@@ -1936,6 +2012,8 @@ export async function weeklyReportageSceneBriefs(
           subjectKind: prior.subjectKind,
           composition: prior.composition,
           sceneSummary: flattenMetaphorPitch(prior, essence),
+          subject: prior.subject,
+          setting: prior.setting,
         }));
         const errors = validateMetaphorPitch(pitch, essence, entities, [
           ...externalSiblings,
@@ -1970,13 +2048,18 @@ export async function weeklyReportageSceneBriefs(
     }
   }
 
-  const briefs = targetLenses.map((lens) => {
-    const match = accepted.find(({ pitch }) => pitch.lens === lens);
-    return match
-      ? sceneBriefFromPitch(match.pitch, essence, match.source)
-      : fallbackSceneBrief(lens, baseFallbackScene, essence);
-  });
-  return briefs.slice(0, count);
+  if (accepted.length > 0) {
+    return accepted
+      .map(({ pitch, source }) => sceneBriefFromPitch(pitch, essence, source))
+      .slice(0, count);
+  }
+  return [
+    fallbackSceneBrief(
+      targetLenses[0] ?? 'literal_context',
+      baseFallbackScene,
+      essence,
+    ),
+  ].slice(0, count);
 }
 
 /** Compatibility wrapper for callers that need one scene only. */
