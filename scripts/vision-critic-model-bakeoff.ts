@@ -7,21 +7,23 @@
  * experiment rubric — the model is being selected for that job, not for an A/B
  * harness.
  *
- * Why these images: the six candidates in the targeted V10 run are all
- * independently known to be unshippable, from two different sources.
+ * Ground truth comes from a JSON file of OWNER verdicts (see
+ * `experiments/critic-ground-truth/`), because the only authority on whether an
+ * illustration is publishable is the person who publishes it. Each item is
+ * labelled:
  *
- *   - The V8 arm carries the owner's own verdicts recorded in
- *     `OWNER_VISUAL_CALIBRATION_V10` (reject / reject / major_rework).
- *   - Both deterministic V10 cards bake legible text straight into the raster;
- *     that is mechanically certain from the SVG source, so `readable_text` is a
- *     ground truth no judgement call can soften.
+ *   ship    the owner would publish it   -> the critic MUST pass it
+ *   reject  the owner called it unusable -> the critic MUST fail it
+ *   defect  concept accepted, one named flaw blocks it -> reported, not scored,
+ *           because reasonable critics may disagree on whether a named flaw is
+ *           blocking. A `mustFlag` code, when present, is still checked.
  *
- * A critic that passes any of the six, or misses the baked text, cannot be
- * trusted to gate a weekly release. On top of that we measure self-consistency,
- * because the incumbent `gemini-2.5-flash` was observed spreading 15.5 weighted
- * points while re-scoring unchanged pixels.
+ * Both directions matter and they trade off. A model that fails everything wins
+ * on `reject` recall and is still useless, because it would block the weekly
+ * release outright. `ship` accuracy is the counterweight — read the two numbers
+ * together, never one alone.
  *
- * Reads a run package produced by `.github/workflows/visual-experiment.yml`
+ * Reads an image package produced by any of the visual A/B workflows
  * (render-manifest.json + images/). Writes a markdown + JSON verdict.
  */
 
@@ -38,6 +40,10 @@ import {
 const PACKAGE_DIR = resolve(
   process.env.CRITIC_BAKEOFF_PACKAGE?.trim() || 'artifacts/_local/visual-run',
 );
+const GROUND_TRUTH = resolve(
+  process.env.CRITIC_BAKEOFF_GROUND_TRUTH?.trim() ||
+    'experiments/critic-ground-truth/owner-verdicts-v6.json',
+);
 const OUT_DIR = resolve(process.env.CRITIC_BAKEOFF_OUT?.trim() || 'artifacts/_local/critic-bakeoff');
 const SAMPLES = Math.max(1, Number(process.env.CRITIC_BAKEOFF_SAMPLES ?? 3));
 const MODELS = (
@@ -48,12 +54,27 @@ const MODELS = (
   .map((value) => value.trim())
   .filter(Boolean);
 
-type Arm = 'v8' | 'v10';
+type Verdict = 'ship' | 'reject' | 'defect';
+
+interface GroundTruthItem {
+  image: string;
+  rank: number;
+  arm: string;
+  verdict: Verdict;
+  why: string;
+  mustFlag?: ImageCriticBlockerCode;
+}
+
+interface GroundTruthFile {
+  source: string;
+  package?: string;
+  note?: string;
+  items: GroundTruthItem[];
+}
 
 interface ManifestRow {
-  storyId: string;
   rank: number;
-  headline: string;
+  headline?: string;
   story: {
     title: string;
     summary?: string;
@@ -61,36 +82,11 @@ interface ManifestRow {
     practical?: string | null;
     takeaway?: string | null;
   };
-  candidatePixelPath: string;
-  baselinePixelPath: string;
 }
-
-/**
- * Ground truth. `mustFail` holds for every row: three from the owner's recorded
- * verdicts, three from the corrected-harness blockers plus direct inspection.
- * `mustFlag` is only asserted where the defect is mechanically certain.
- */
-const EXPECTATION: Record<string, { mustFail: true; mustFlag?: ImageCriticBlockerCode; why: string }> = {
-  '2-v8': { mustFail: true, why: 'owner: reject — ambiguous_diagram, weak_visual_thesis, labels_carry_claim' },
-  '4-v8': { mustFail: true, why: 'owner: major_rework — anatomy_error, unclear_causal_source' },
-  '5-v8': { mustFail: true, why: 'owner: reject — generic_diagram, ambiguous_diagram, labels_carry_claim' },
-  '2-v10': {
-    mustFail: true,
-    mustFlag: 'readable_text',
-    why: 'deterministic SVG bakes two JavaScript listings into the raster',
-  },
-  '4-v10': { mustFail: true, why: 'beam never reaches the hint card; the amber route is broken by an unlit tile' },
-  '5-v10': {
-    mustFail: true,
-    mustFlag: 'readable_text',
-    why: 'deterministic SVG bakes BOUNDED 1/2/3 into the raster',
-  },
-};
 
 interface Observation {
   key: string;
-  rank: number;
-  arm: Arm;
+  verdict: Verdict;
   model: string;
   sample: number;
   passed: boolean;
@@ -113,22 +109,15 @@ function promptFor(row: ManifestRow): string {
 }
 
 async function observe(
+  item: GroundTruthItem,
   row: ManifestRow,
-  arm: Arm,
-  imagePath: string,
   model: string,
   sample: number,
 ): Promise<Observation> {
-  const key = `${row.rank}-${arm}`;
-  const base: Omit<Observation, 'passed' | 'overall' | 'blockers' | 'parseFailed' | 'costUsd'> = {
-    key,
-    rank: row.rank,
-    arm,
-    model,
-    sample,
-  };
+  const key = `${item.rank}-${item.arm}`;
+  const base = { key, verdict: item.verdict, model, sample };
   try {
-    const imageBytes = await readFile(imagePath);
+    const imageBytes = await readFile(join(PACKAGE_DIR, item.image));
     const result = await generateWithVision('weekly.image_critic', {
       prompt: promptFor(row),
       imageBytes,
@@ -137,13 +126,12 @@ async function observe(
       timeoutMs: 120_000,
     });
     const critique = parseImageCriticResponse(result.text);
-    const parseFailed = critique.blockers.some((blocker) => blocker.code === 'critic_parse_error');
     return {
       ...base,
       passed: critique.passed,
       overall: critique.scores?.overall ?? 0,
       blockers: critique.blockers.map((blocker) => blocker.code as ImageCriticBlockerCode),
-      parseFailed,
+      parseFailed: critique.blockers.some((blocker) => blocker.code === 'critic_parse_error'),
       costUsd: result.usage?.costUsd ?? null,
     };
   } catch (error) {
@@ -167,36 +155,34 @@ function median(values: number[]): number {
 }
 
 function spread(values: number[]): number {
-  if (values.length === 0) return 0;
-  return Math.max(...values) - Math.min(...values);
+  return values.length === 0 ? 0 : Math.max(...values) - Math.min(...values);
 }
 
 async function main(): Promise<void> {
+  const truth = JSON.parse(await readFile(GROUND_TRUTH, 'utf8')) as GroundTruthFile;
   const manifestRaw = await readFile(join(PACKAGE_DIR, 'render-manifest.json'), 'utf8');
-  const parsed: unknown = JSON.parse(manifestRaw);
-  const rows: ManifestRow[] = Array.isArray(parsed)
-    ? (parsed as ManifestRow[])
-    : ((parsed as { rows?: ManifestRow[] }).rows ?? []);
-  if (rows.length === 0) throw new Error(`No manifest rows in ${PACKAGE_DIR}`);
-
-  const targets: Array<{ row: ManifestRow; arm: Arm; path: string }> = [];
-  for (const row of rows) {
-    const label = `${row.rank}-${row.storyId}`;
-    targets.push({ row, arm: 'v10', path: join(PACKAGE_DIR, 'images', `${label}-v10-pixels.jpg`) });
-    targets.push({ row, arm: 'v8', path: join(PACKAGE_DIR, 'images', `${label}-v8-pixels.jpg`) });
-  }
+  const parsedManifest: unknown = JSON.parse(manifestRaw);
+  const rows: ManifestRow[] = Array.isArray(parsedManifest)
+    ? (parsedManifest as ManifestRow[])
+    : ((parsedManifest as { rows?: ManifestRow[] }).rows ?? []);
+  const rowByRank = new Map<number, ManifestRow>(rows.map((row) => [row.rank, row]));
 
   const observations: Observation[] = [];
   for (const model of MODELS) {
-    for (const target of targets) {
+    for (const item of truth.items) {
+      const row = rowByRank.get(item.rank);
+      if (!row) {
+        console.warn(`[bakeoff] no manifest row for rank ${item.rank}; skipping ${item.image}`);
+        continue;
+      }
       for (let sample = 1; sample <= SAMPLES; sample += 1) {
-        const observation = await observe(target.row, target.arm, target.path, model, sample);
+        const observation = await observe(item, row, model, sample);
         observations.push(observation);
-        const flag = observation.error ? ` ERROR ${observation.error}` : '';
         console.log(
-          `[bakeoff] ${model} ${observation.key} s${sample}: ` +
+          `[bakeoff] ${model} ${observation.key} (${item.verdict}) s${sample}: ` +
             `passed=${observation.passed} overall=${observation.overall} ` +
-            `blockers=[${observation.blockers.join(',')}]${flag}`,
+            `blockers=[${observation.blockers.join(',')}]` +
+            `${observation.error ? ` ERROR ${observation.error}` : ''}`,
         );
       }
     }
@@ -206,47 +192,78 @@ async function main(): Promise<void> {
     const mine = observations.filter((observation) => observation.model === model);
     const keys = [...new Set(mine.map((observation) => observation.key))];
 
-    // A candidate is treated as failed by the critic when the MAJORITY of
-    // samples fail it — a model that only sometimes catches a defect is not a
-    // gate.
-    let caught = 0;
+    let rejectCaught = 0;
+    let rejectTotal = 0;
+    let shipKept = 0;
+    let shipTotal = 0;
     let flagged = 0;
-    let flagExpected = 0;
+    let flagTotal = 0;
+    let insufficient = 0;
     const spreads: number[] = [];
+
     const perKey = keys.map((key) => {
       const runs = mine.filter((observation) => observation.key === key);
-      const failures = runs.filter((run) => !run.passed).length;
-      const majorityFailed = failures * 2 > runs.length;
-      const expectation = EXPECTATION[key];
-      if (expectation?.mustFail && majorityFailed) caught += 1;
-      if (expectation?.mustFlag) {
-        flagExpected += 1;
-        const hits = runs.filter((run) => run.blockers.includes(expectation.mustFlag!)).length;
-        if (hits * 2 > runs.length) flagged += 1;
+      // Transport failures and unparseable replies surface as passed=false.
+      // Counting them would credit whichever model errors most with the
+      // strictest gate, so they are excluded and the image is reported as
+      // `insufficient` instead.
+      const valid = runs.filter((run) => !run.error && !run.parseFailed);
+      const enough = valid.length * 2 > runs.length;
+      const failures = valid.filter((run) => !run.passed).length;
+      const majorityFailed = enough && failures * 2 > valid.length;
+      const item = truth.items.find((entry) => `${entry.rank}-${entry.arm}` === key);
+      const verdict: Verdict = item?.verdict ?? 'reject';
+
+      if (!enough) insufficient += 1;
+      if (verdict === 'reject') {
+        rejectTotal += 1;
+        if (majorityFailed) rejectCaught += 1;
       }
-      const overalls = runs.map((run) => run.overall);
-      spreads.push(spread(overalls));
+      if (verdict === 'ship') {
+        shipTotal += 1;
+        if (enough && !majorityFailed) shipKept += 1;
+      }
+      if (item?.mustFlag) {
+        const wanted = item.mustFlag;
+        flagTotal += 1;
+        const hits = valid.filter((run) => run.blockers.includes(wanted)).length;
+        if (enough && hits * 2 > valid.length) flagged += 1;
+      }
+
+      const overalls = valid.map((run) => run.overall);
+      if (overalls.length > 0) spreads.push(spread(overalls));
+
+      let agrees: boolean | null = null;
+      if (enough && verdict === 'ship') agrees = !majorityFailed;
+      if (enough && verdict === 'reject') agrees = majorityFailed;
+
       return {
         key,
-        majorityFailed,
+        ownerVerdict: verdict,
+        criticVerdict: enough ? (majorityFailed ? 'fail' : 'pass') : 'insufficient',
+        agrees,
+        validSamples: valid.length,
+        totalSamples: runs.length,
         medianOverall: median(overalls),
-        overallSpread: spread(overalls),
-        blockerUnion: [...new Set(runs.flatMap((run) => run.blockers))],
-        parseFailures: runs.filter((run) => run.parseFailed).length,
+        overallSpread: overalls.length > 0 ? spread(overalls) : 0,
+        blockerUnion: [...new Set(valid.flatMap((run) => run.blockers))],
         errors: runs.filter((run) => run.error).length,
       };
     });
 
-    const costs = mine.map((observation) => observation.costUsd).filter((value): value is number => value != null);
+    const costs = mine
+      .map((observation) => observation.costUsd)
+      .filter((value): value is number => value != null);
     return {
       model,
-      mustFailCaught: caught,
-      mustFailTotal: keys.filter((key) => EXPECTATION[key]?.mustFail).length,
-      readableTextCaught: flagged,
-      readableTextTotal: flagExpected,
+      rejectCaught,
+      rejectTotal,
+      shipKept,
+      shipTotal,
+      flagged,
+      flagTotal,
+      insufficient,
       worstOverallSpread: Math.max(0, ...spreads),
-      medianOverallSpread: median(spreads),
-      parseFailures: mine.filter((observation) => observation.parseFailed).length,
       errors: mine.filter((observation) => observation.error).length,
       reportedCostUsd: costs.reduce((sum, value) => sum + value, 0),
       perKey,
@@ -256,55 +273,63 @@ async function main(): Promise<void> {
   await mkdir(OUT_DIR, { recursive: true });
   await writeFile(
     join(OUT_DIR, 'bakeoff.json'),
-    `${JSON.stringify({ models: MODELS, samples: SAMPLES, perModel, observations }, null, 2)}\n`,
+    `${JSON.stringify(
+      { models: MODELS, samples: SAMPLES, groundTruth: truth.source, perModel, observations },
+      null,
+      2,
+    )}\n`,
   );
 
   const lines: string[] = [
     '# Vision critic model bake-off',
     '',
-    `Prompt: production \`buildImageCriticPrompt\` (policy \`weekly-semantic-story-v5.1\`).`,
-    `Images: ${targets.length} labels-stripped renders; ${SAMPLES} samples per model per image.`,
+    'Prompt: production `buildImageCriticPrompt` (policy `weekly-semantic-story-v5.1`).',
+    `Ground truth: ${truth.source}`,
+    `${truth.items.length} images, ${SAMPLES} samples per model per image.`,
     '',
-    'All six candidates are independently known to be unshippable — three from the owner’s recorded',
-    'verdicts, three from the corrected-harness blockers and direct inspection. A usable critic fails',
-    'all six and names the baked text on the two deterministic cards.',
+    '**Read both columns together.** A model that fails everything scores a perfect',
+    '`reject` recall and would still block the weekly release outright. `ship` accuracy is',
+    'the counterweight. Images labelled `defect` are reported but not scored.',
     '',
-    '| Model | Caught must-fail | Caught readable_text | Worst score spread | Parse fails | Errors | Reported cost |',
-    '|---|---:|---:|---:|---:|---:|---:|',
+    '| Model | Rejected the bad | Kept the good | Named flaw caught | Insufficient | Worst spread | Errors | Cost |',
+    '|---|---:|---:|---:|---:|---:|---:|---:|',
     ...perModel.map(
       (entry) =>
-        `| \`${entry.model}\` | ${entry.mustFailCaught}/${entry.mustFailTotal} | ` +
-        `${entry.readableTextCaught}/${entry.readableTextTotal} | ${entry.worstOverallSpread} | ` +
-        `${entry.parseFailures} | ${entry.errors} | $${entry.reportedCostUsd.toFixed(4)} |`,
+        `| \`${entry.model}\` | ${entry.rejectCaught}/${entry.rejectTotal} | ` +
+        `${entry.shipKept}/${entry.shipTotal} | ${entry.flagged}/${entry.flagTotal} | ` +
+        `${entry.insufficient} | ${entry.worstOverallSpread} | ${entry.errors} | ` +
+        `$${entry.reportedCostUsd.toFixed(4)} |`,
     ),
     '',
     '## Per image',
     '',
-    '| Model | Image | Failed by majority | Median overall | Spread | Blockers seen |',
-    '|---|---|---|---:|---:|---|',
+    '| Model | Image | Owner | Critic | Agrees | Valid | Median | Spread | Blockers |',
+    '|---|---|---|---|---|---:|---:|---:|---|',
     ...perModel.flatMap((entry) =>
       entry.perKey.map(
         (key) =>
-          `| \`${entry.model}\` | ${key.key} | ${key.majorityFailed ? 'yes' : '**NO**'} | ` +
-          `${key.medianOverall} | ${key.overallSpread} | ${key.blockerUnion.join(', ') || '—'} |`,
+          `| \`${entry.model}\` | ${key.key} | ${key.ownerVerdict} | ${key.criticVerdict} | ` +
+          `${key.agrees === null ? '—' : key.agrees ? 'yes' : '**NO**'} | ` +
+          `${key.validSamples}/${key.totalSamples} | ${key.medianOverall} | ` +
+          `${key.overallSpread} | ${key.blockerUnion.join(', ') || '—'} |`,
       ),
     ),
     '',
-    '## Ground truth',
+    '## Owner verdicts used',
     '',
-    ...Object.entries(EXPECTATION).map(([key, value]) => `- \`${key}\` — ${value.why}`),
+    ...truth.items.map((item) => `- \`${item.rank}-${item.arm}\` **${item.verdict}** — ${item.why}`),
     '',
-    'No automated switch is performed. Choosing the live critic model is an owner decision;',
-    'this report is the evidence for it.',
+    truth.note ?? '',
+    '',
+    'No model is switched automatically. This report is evidence for an owner decision.',
     '',
   ];
   await writeFile(join(OUT_DIR, 'bakeoff-report.md'), `${lines.join('\n')}\n`);
   console.log(`\n[bakeoff] wrote ${join(OUT_DIR, 'bakeoff-report.md')}`);
   for (const entry of perModel) {
     console.log(
-      `[bakeoff] ${entry.model}: must-fail ${entry.mustFailCaught}/${entry.mustFailTotal}, ` +
-        `readable_text ${entry.readableTextCaught}/${entry.readableTextTotal}, ` +
-        `worst spread ${entry.worstOverallSpread}`,
+      `[bakeoff] ${entry.model}: rejected ${entry.rejectCaught}/${entry.rejectTotal}, ` +
+        `kept ${entry.shipKept}/${entry.shipTotal}, worst spread ${entry.worstOverallSpread}`,
     );
   }
 }
