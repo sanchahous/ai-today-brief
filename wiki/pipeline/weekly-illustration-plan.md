@@ -108,10 +108,10 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-A → B1 → B2 → B3 → D1 → C → D2 → E
+A → B1 ✅ → B1-fix → B2 → B3 → D1 → C → D2 → E
 ```
 
-A незалежний. **B1 — діагностика, і B2 не можна починати без її результату.** C залежить від B2.
+A незалежний. **B1 виконано** — причина знайдена, наступний крок B1-fix. C залежить від B2.
 E можна робити паралельно з C.
 
 ---
@@ -169,29 +169,71 @@ scores:  25 · 25 · 0 · 25 · 15 · 25      (усі провалені)
 
 Головна претензія власника. Без цього все інше не має сенсу — обирати нема з чого.
 
-### B1. Діагностика: які саме блокери валять журі
+### B1 ✅ Виконано 2026-08-14 — причина знайдена
 
-**Це вимірювання, а не здогад. Не пропускай і не заміняй припущенням.**
+Повний звіт: `experiments/jury-blockers/2026-08-digest-843975a8.md`.
 
-- **Джерело:** `logEvent('warn', 'publish', 'Weekly concept jury missing distinct lenses -- retrying', …)`
-  у `pipeline/card-image.ts:1925`. Поле `errors` містить рядки виду `${lens}/${title}: ${blockers}`.
-- **Де шукати:** логи Actions-воркера `weekly-master-cli-worker.yml` за прогони `story_image`
-  дайджесту `843975a8-8c19-4eca-96a8-035f76eae3ab`, плюс `weekly_digest_generation_events`
-  у Supabase.
-- **Що порахувати:** розподіл блокерів по частоті. Очікувані кандидати з коду
-  (`:1330-1428`): `sibling_scene_echo`, `sibling_motif_class_reuse`, `character_budget`,
-  `opaque_abstraction_not_literal_to_story`, `desk/laptop default…`,
-  `banned UI, collage, or stock-metaphor language`, `visible_mechanism_missing`.
-- **Записати:** `experiments/jury-blockers/2026-08-digest-843975a8.md` — таблиця
-  «блокер → скільки разів → на яких lens/story». Плюс: скільки story дійшли до 3 прийнятих лінз,
-  скільки до 2, скільки до 0.
+**Результат для поточного `main`** (прогін `31785537265`, story «…Server-Side Tools to the
+**Command Line**»): пʼять відхилених pitch-ів, в усіх пʼятьох **один і той самий** блокер —
+`banned UI, collage, or stock-metaphor language`.
 
-**Готово коли:** є таблиця з реальними числами, і видно один-два домінантні блокери.
+Назви відхилених pitch-ів пояснюють усе:
 
-> **Гіпотеза, яку треба або підтвердити, або відкинути числами:** обмеження siblings
-> накопичуються протягом випуску (`:1896` передає сцени всіх попередніх story), тому пізнім
-> story фізично бракує простору. Якщо це так — `SIBLING_SCENE_ECHO_THRESHOLD` і
-> `character_budget` треба рахувати **в межах story**, а не всього випуску.
+```
+literal_context/Slim adapter cartridge in TERMINAL expansion port
+mechanism/Insertion of a brass adapter card into a TELEPRINTER
+consequence/Developer pressing one TERMINAL button
+```
+
+**Причина.** `WEEKLY_CRAFT_BANNED` (`pipeline/card-image.ts:783`) містить
+`terminal(?:\s+window)?` і матчить **слово** будь-де. Список писався проти кліше «екран
+терміналу», але не розрізняє екран і фізичний обʼєкт: «terminal expansion port» — це роз'єм.
+**Story про командний рядок неможливо описати, не вживши цього слова**, тому падають усі три
+лінзи → фолбек → три шафи з інструментами.
+
+Це не поріг для тюнінгу. Це заборона, що спрацьовує **на предметі самої новини**.
+
+> ⚠️ Не переноси сюди числа з прогонів 2026-08-12. Там домінували
+> `story_anchor_not_grounded_in_context`, `scene_missing_story_context` та інші —
+> усі пʼять входять у `CONCEPT_SEMANTIC_ADVISORIES` і блокувати не мали. Ремонт v5.1 від
+> 12 серпня це полагодив; у сьогоднішньому прогоні їх немає. Дефект мав **дві різні причини в
+> різний час**.
+
+**Не рахуй блокери наївним split по комі** — `banned UI, collage, or stock-metaphor language`
+це один рядок із комами всередині, і split роздуває його у три позиції.
+
+### B1-fix. Дати craft-забороні поправку «не буквально про цю новину»
+
+Правильний патерн уже є в цьому ж файлі, рядком нижче (`:1356`):
+
+```ts
+const literalSource = [essence.storyContext, essence.mechanism, ...requiredEntities].join(' ');
+if (WEEKLY_OPAQUE_ABSTRACTION.test(flat) && !WEEKLY_OPAQUE_ABSTRACTION.test(literalSource)) {
+  errors.push('opaque_abstraction_not_literal_to_story');
+}
+```
+
+`WEEKLY_CRAFT_BANNED` (`:1347`) такої поправки не має. Дати їй ту саму — і **підняти
+обчислення `literalSource` вище**, до цієї перевірки:
+
+```ts
+// перенести на початок, до першої заборони
+const literalSource = [essence.storyContext, essence.mechanism, ...requiredEntities].join(' ');
+
+if (WEEKLY_CRAFT_BANNED.test(flat) && !WEEKLY_CRAFT_BANNED.test(literalSource)) {
+  errors.push('banned UI, collage, or stock-metaphor language');
+}
+```
+
+Те саме варто розглянути для `WEEKLY_SLUDGE_BANNED` (`:787`) — story про друк/документообіг
+має право на стос паперу, — але це окремий крок і без даних його не роби.
+
+**Тест:** `a command-line story may use the word terminal for a physical object` — фікстура з
+`essence.storyContext` про command line і pitch «brass adapter card into a teleprinter terminal»
+не відхиляється.
+
+**Готово коли:** перегенерація Story 6 дає три лінзи з `openrouter`, а не `fallback`, і три
+різні родини мотивів.
 
 ### B2. Прибрати тиху деградацію в три копії
 
