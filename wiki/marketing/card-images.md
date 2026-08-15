@@ -177,6 +177,11 @@ title/summary, не practical/takeaway. Метрика → `deterministic_techni
 (source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) C3,
 `pipeline/concept-mapping-gate.ts`, `src/lib/weekly-digest/story-prompt-job.ts`)
 
+**D2 — QA-порада (2026-08-15):** після ручного upload Visuals каже, що робити з дефектом
+(inpaint, той самий промпт, інший концепт). Немає auto-repair на дайджестах.
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) D2,
+`src/lib/weekly-digest/post-upload-qa.ts`)
+
 **P2 — Visuals copy/upload (2026-08-15):** артефакт `story_prompt_set` (текст, не в
 `PUBLIC_IMAGE_TYPES`) + картки Canonical / Midjourney / Negative і слот upload на вкладці
 Visuals.

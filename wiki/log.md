@@ -6,6 +6,25 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — D2: QA-порада власнику замість auto-repair
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) D2.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/weekly-digest](pipeline/weekly-digest.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** `adviceForPostUploadQa` у `post-upload-qa.ts`. Visuals показує do/dont. Немає
+`prompt_patches` на upload. Новини лишаються на старому repair-циклі.
+
+**Тест:** `baked text QA advises inpaint not a full regenerate`;
+`false thesis QA advises switching concept not patching labels`.
+
+**Не зроблено в цій хвилі:** D3 (`human_dignity_risk`).
+
 ## 2026-08-15 — C3: mapping gate перед story_prompt_set
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C3.

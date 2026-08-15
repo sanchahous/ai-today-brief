@@ -10,6 +10,12 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **D2 — QA радить, не ремонтує (2026-08-15).** Після upload Visuals показує do/dont:
+  впечений текст → inpaint/crop, не перегенеровувати; геометрія → той самий промпт;
+  хибна теза → інший концепт. Авто-repair лишається лише на новинах. Вага гейта без змін.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) D2,
+  `src/lib/weekly-digest/post-upload-qa.ts`)
 - **C3 — mapping gate перед промптом (2026-08-15).** Концепт без таблиці
   source → visible object → outcome не потрапляє в `story_prompt_set`.
   `visibleElementId` (не підпис); порожній `semanticProps` не проходить вакуумно.

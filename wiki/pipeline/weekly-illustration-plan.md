@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -798,7 +798,16 @@ return new Set(hits.map((h) => h.toLowerCase())).size >= 2;
   `PFfort`; Story 6 — нісенітні підписи на комутаторі. Генератор власника має ту саму слабкість,
   тому вимога переїжджає в промпт, а не зникає.
 
-**Тест:** `every exported negative prompt bans text` (уже в P1).
+**Тест:** `every exported negative prompt bans text` (уже в P1 як
+`negative prompt always bans text, letters and logos`). **Зелений 2026-08-15** у P1;
+QA-попередження `readable_text` — M2.
+
+### D1 ✅ Підтверджено 2026-08-15 — промпт + post-upload QA
+
+Negative завжди містить `no text, no letters, no logos, no watermarks, no UI`; canonical каже,
+що підписи додаються окремим шаром. Після upload `readable_text` показується як попередження,
+не як preflight. SVG-шар зі scope (C4).
+(source: `pipeline/prompt-export.ts`, `src/lib/weekly-digest/post-upload-qa.ts`, P1/M2)
 
 ### D2. Repair на рівні дефекту — тепер порада, не дія
 
@@ -814,6 +823,14 @@ PDF §10, і §2 називає це головним історичним ур�
 | хибна теза / суперечність | **тільки тут** — інший концепт із трьох | не патчити лейблами |
 
 Для **новин** (авто-гілка) repair-цикл лишається кодом і працює як раніше.
+
+### D2 ✅ Зроблено 2026-08-15 — порада власнику, не авто-дія
+
+`adviceForPostUploadQa` мапить коди критика на чотири поради (впечений текст → inpaint/crop;
+геометрія → той самий промпт; sequence → лише цей кадр; хибна теза → інший концепт). Visuals
+показує `do` / `dont`. `reviewUploadedImage` не пише `repair` / `prompt_patches` і не
+перегенеровує. Вага preflight без змін.
+(source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/components/admin/weekly-workspace.tsx`)
 
 ### D3. Етичний блокер
 
@@ -1175,6 +1192,8 @@ npm run pr:check
 | C1 | ✅ журі ставить `cinematic_domain_scene`, fallback — `source_led_fallback`; export читає `brief.grammar` |
 | C2 | ✅ метрика в title/summary/essence → схема; duration у practical не перемикає; один `caching` не є process grammar |
 | C3 | ✅ `empty semanticProps do not vacuously pass`; id ≠ label; концепт без visible outcome не в `story_prompt_set` |
+| D1 | ✅ negative банить текст (P1); `readable_text` — попередження після upload (M2) |
+| D2 | ✅ `baked text QA advises inpaint not a full regenerate`; Visuals показує do/dont; без auto-repair |
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |
 | E1 | вердикт власника з адмінки потрапляє в calibration dataset без ручного перенесення |
 

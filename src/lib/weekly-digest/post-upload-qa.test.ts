@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  adviceForPostUploadQa,
   contentSimClearedFromPostUploadQa,
   formatPostUploadQaLine,
   ignorePostUploadQa,
@@ -27,6 +28,63 @@ describe('post-upload QA presentation', () => {
     expect(formatPostUploadQaLine(ignorePostUploadQa(failedQa))).toBe('QA: проігноровано');
     expect(postUploadQaNeedsWarning(ignorePostUploadQa(failedQa))).toBe(false);
     expect(formatPostUploadQaLine({ ...failedQa, blockers: [] })).toBe('QA чисто');
+  });
+
+  it('baked text QA advises inpaint not a full regenerate', () => {
+    const advice = adviceForPostUploadQa(failedQa);
+    expect(advice).toEqual([
+      expect.objectContaining({
+        kind: 'baked_text',
+        dont: 'Не перегенеровуй кадр.',
+      }),
+    ]);
+    expect(advice[0]?.do.toLowerCase()).toMatch(/inpaint|crop/);
+    expect(advice[0]?.do.toLowerCase()).not.toMatch(/перегенеру/);
+  });
+
+  it('broken geometry QA advises rebuilding with the same prompt', () => {
+    const advice = adviceForPostUploadQa({
+      ...failedQa,
+      blockers: [
+        {
+          code: 'melted_motion',
+          message: 'Arrow fused into the box',
+          blocker: true,
+        },
+      ],
+    });
+    expect(advice).toEqual([
+      expect.objectContaining({
+        kind: 'broken_geometry',
+        do: 'Перезбери композицію тим самим промптом.',
+        dont: 'Не міняй концепт.',
+      }),
+    ]);
+  });
+
+  it('false thesis QA advises switching concept not patching labels', () => {
+    const advice = adviceForPostUploadQa({
+      ...failedQa,
+      blockers: [
+        {
+          code: 'off_metaphor',
+          message: 'Pixels argue a different claim',
+          blocker: true,
+        },
+      ],
+    });
+    expect(advice).toEqual([
+      expect.objectContaining({
+        kind: 'false_thesis',
+        do: 'Візьми інший концепт із трьох.',
+        dont: 'Не патч лейблами.',
+      }),
+    ]);
+  });
+
+  it('ignored or pending QA does not attach repair advice', () => {
+    expect(adviceForPostUploadQa(ignorePostUploadQa(failedQa))).toEqual([]);
+    expect(adviceForPostUploadQa({ ...failedQa, pending: true, checked_at: null })).toEqual([]);
   });
 
   it('parses pending and completed metadata', () => {
@@ -70,5 +128,7 @@ describe('reviewUploadedImage', () => {
     ]);
     expect(qa.model).toBe('test-vision');
     expect(qa.cost_usd).toBe(0.0005);
+    expect(qa).not.toHaveProperty('repair');
+    expect(qa).not.toHaveProperty('prompt_patches');
   });
 });

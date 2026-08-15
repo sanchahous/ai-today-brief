@@ -34,6 +34,7 @@ import {
   storyPromptReadiness,
 } from '@/lib/weekly-digest/story-prompt-set';
 import {
+  adviceForPostUploadQa,
   parsePostUploadQa,
   formatPostUploadQaLine,
   postUploadQaNeedsWarning,
@@ -853,6 +854,7 @@ function ArtifactCard({
       : [];
   const postUploadQa = parsePostUploadQa(artifact.metadata);
   const postUploadQaLine = postUploadQa ? formatPostUploadQaLine(postUploadQa) : null;
+  const postUploadAdvice = postUploadQa ? adviceForPostUploadQa(postUploadQa) : [];
 
   return (
     <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -1218,6 +1220,15 @@ function ArtifactCard({
           }
         >
           <p className="font-bold">{postUploadQaLine}</p>
+          {postUploadAdvice.length > 0 ? (
+            <ul className="mt-2 grid gap-1 text-amber-100/90">
+              {postUploadAdvice.map((row) => (
+                <li key={row.kind}>
+                  {row.do} {row.dont}
+                </li>
+              ))}
+            </ul>
+          ) : null}
           {postUploadQaNeedsWarning(postUploadQa) ? (
             <div className="mt-2 flex flex-wrap items-center gap-3">
               {canReview ? (

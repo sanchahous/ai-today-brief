@@ -383,6 +383,12 @@ image-only critic (`buildImageOnlyCriticPrompt`, без headline/scene) і пи�
 (source: `pipeline/concept-mapping-gate.ts`, `src/lib/weekly-digest/story-prompt-job.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) C3)
 
+**D2 post-upload advice (2026-08-15):** QA після upload радить власнику (inpaint / той самий
+промпт / інший концепт), не патчить промпт і не перегенеровує. Авто-repair лишається на
+новинах. Вага preflight без змін.
+(source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/components/admin/weekly-workspace.tsx`,
+[weekly-illustration-plan](weekly-illustration-plan.md) D2)
+
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.

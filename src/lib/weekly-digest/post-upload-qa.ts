@@ -131,3 +131,85 @@ export function postUploadQaNeedsWarning(qa: PostUploadQa | null): boolean {
   if (qa.error) return true;
   return qa.blockers.some((entry) => entry.blocker);
 }
+
+/** Owner-facing repair advice (D2). Digest QA never auto-patches or re-renders. */
+export const POST_UPLOAD_ADVICE_KINDS = [
+  'baked_text',
+  'broken_geometry',
+  'sequence_frame',
+  'false_thesis',
+] as const;
+export type PostUploadAdviceKind = (typeof POST_UPLOAD_ADVICE_KINDS)[number];
+
+export interface PostUploadAdvice {
+  kind: PostUploadAdviceKind;
+  do: string;
+  dont: string;
+}
+
+const ADVICE_COPY: Record<PostUploadAdviceKind, Omit<PostUploadAdvice, 'kind'>> = {
+  baked_text: {
+    do: 'Локальна правка (inpaint / crop) — прибери текст у пікселях.',
+    dont: 'Не перегенеровуй кадр.',
+  },
+  broken_geometry: {
+    do: 'Перезбери композицію тим самим промптом.',
+    dont: 'Не міняй концепт.',
+  },
+  sequence_frame: {
+    do: 'Перегенеруй лише цей кадр.',
+    dont: 'Не перегенеровуй усі кадри.',
+  },
+  false_thesis: {
+    do: 'Візьми інший концепт із трьох.',
+    dont: 'Не патч лейблами.',
+  },
+};
+
+export function adviceKindForBlockerCode(code: string): PostUploadAdviceKind | null {
+  if (code === 'readable_text' || code === 'ui_chrome') return 'baked_text';
+  if (
+    code === 'melted_motion' ||
+    code === 'impossible_orientation' ||
+    code === 'collage_panels' ||
+    code === 'prop_use_mismatch'
+  ) {
+    return 'broken_geometry';
+  }
+  if (code === 'failed_sequence_state' || code === 'sequence_state_count_invalid') {
+    return 'sequence_frame';
+  }
+  if (
+    code === 'off_metaphor' ||
+    code === 'off_news' ||
+    code === 'missing_context' ||
+    code === 'missing_mechanism' ||
+    code === 'missing_consequence' ||
+    code === 'ambiguous_visual_story' ||
+    code === 'wrong_subject' ||
+    code === 'opaque_abstraction' ||
+    code === 'semantic_evidence_missing' ||
+    code === 'decorative_second_beat'
+  ) {
+    return 'false_thesis';
+  }
+  return null;
+}
+
+export function adviceForPostUploadQa(qa: PostUploadQa): PostUploadAdvice[] {
+  if (qa.ignored || qa.pending || qa.error) return [];
+  const rows: PostUploadAdvice[] = [];
+  for (const kind of POST_UPLOAD_ADVICE_KINDS) {
+    if (!qaHasAdviceKind(qa, kind)) continue;
+    rows.push({ kind, ...ADVICE_COPY[kind] });
+  }
+  return rows;
+}
+
+function qaHasAdviceKind(qa: PostUploadQa, kind: PostUploadAdviceKind): boolean {
+  for (const entry of qa.blockers) {
+    if (!entry.blocker) continue;
+    if (adviceKindForBlockerCode(entry.code) === kind) return true;
+  }
+  return false;
+}
