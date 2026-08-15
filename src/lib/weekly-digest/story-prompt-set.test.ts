@@ -4,6 +4,7 @@ import {
   STORY_IMAGE_SLOT_LABEL,
   storyImageSlotState,
   storyPromptCopyTargets,
+  storyPromptReadiness,
   type StoryPromptCard,
 } from './story-prompt-set';
 
@@ -93,5 +94,70 @@ describe('storyImageSlotState', () => {
         review_status: 'draft',
       }),
     ).toBe('waiting');
+  });
+});
+
+describe('storyPromptReadiness', () => {
+  it('shows N/3 промпти готові when all three seats are present', () => {
+    const result = storyPromptReadiness([
+      { conceptLens: 'literal_context', grammar: 'source_led' },
+      { conceptLens: 'mechanism', grammar: 'source_led' },
+      { conceptLens: 'consequence', grammar: 'source_led' },
+    ]);
+    expect(result.label).toBe('3/3 промпти готові');
+    expect(result.detail).toBe('');
+    expect(result.missingLenses).toEqual([]);
+  });
+
+  it('names the missing lens when B2 returned two seats', () => {
+    const result = storyPromptReadiness([
+      { conceptLens: 'literal_context', grammar: 'source_led' },
+      { conceptLens: 'mechanism', grammar: 'source_led' },
+    ]);
+    expect(result.label).toBe('2/3 промпти готові');
+    expect(result.detail).toContain('немає consequence');
+    expect(result.missingLenses).toEqual(['consequence']);
+  });
+
+  it('shows 0/3 промпти готові with no prompts and no image metadata', () => {
+    const result = storyPromptReadiness([]);
+    expect(result.label).toBe('0/3 промпти готові');
+    expect(result.detail).toBe('немає literal_context, mechanism, consequence');
+  });
+
+  it('flags source_led_fallback lenses in the detail line', () => {
+    const result = storyPromptReadiness([
+      { conceptLens: 'literal_context', grammar: 'source_led' },
+      { conceptLens: 'mechanism', grammar: 'source_led_fallback' },
+    ]);
+    expect(result.label).toBe('2/3 промпти готові');
+    expect(result.detail).toContain('фолбек: mechanism');
+    expect(result.detail).toContain('немає consequence');
+  });
+
+  it('flags fallback_essence from sceneSource even when grammar stays cinematic', () => {
+    const result = storyPromptReadiness([
+      {
+        conceptLens: 'literal_context',
+        grammar: 'cinematic_domain_scene',
+        sceneSource: 'fallback',
+        motifClass: 'fallback_essence',
+      },
+    ]);
+    expect(result.label).toBe('1/3 промпти готові');
+    expect(result.detail).toContain('фолбек: literal context');
+    expect(result.detail).toContain('немає mechanism, consequence');
+  });
+
+  it('reads concept_lens and scene_source from story_image metadata when prompts are empty', () => {
+    const result = storyPromptReadiness([], {
+      variant_concepts: [
+        { concept_lens: 'literal_context', scene_source: 'source' },
+        { concept_lens: 'mechanism', scene_source: 'fallback', motif_class: 'fallback_essence' },
+      ],
+    });
+    expect(result.label).toBe('2/3 промпти готові');
+    expect(result.detail).toContain('немає consequence');
+    expect(result.detail).toContain('фолбек: mechanism');
   });
 });

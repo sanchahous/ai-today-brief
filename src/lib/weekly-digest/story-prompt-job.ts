@@ -36,14 +36,19 @@ export function storyImageJobPath(
   return mode === 'render' ? 'render' : 'prompt_only';
 }
 
+export type StoredStoryPrompt = ManualImagePrompt & {
+  sceneSource?: string | null;
+  motifClass?: string | null;
+};
+
 export interface StoryPromptSetPayload {
-  prompts: ManualImagePrompt[];
+  prompts: StoredStoryPrompt[];
   policy: string;
   generated_at: string;
 }
 
 export function storyPromptSetArtifactContent(
-  prompts: ManualImagePrompt[],
+  prompts: StoredStoryPrompt[],
   policy: string,
   generatedAt = new Date().toISOString(),
 ): StoryPromptSetPayload {
@@ -96,7 +101,14 @@ export async function produceStoryPrompts(input: {
     throw new Error('Illustration prompt job produced no scene briefs.');
   }
   const essence = essenceFromBrief(briefs[0], input.headline);
-  const prompts = input.exportPrompts(briefs, essence, input.accent);
+  const prompts = input.exportPrompts(briefs, essence, input.accent).map((prompt, index) => {
+    const brief = briefs[index];
+    return {
+      ...prompt,
+      sceneSource: brief?.source ?? null,
+      motifClass: brief?.motifClass ?? null,
+    };
+  });
   return {
     content: storyPromptSetArtifactContent(prompts, input.policy, input.generatedAt),
     output: { needs_owner_review: true, prompt_count: prompts.length },

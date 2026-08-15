@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 → P3 → C → D → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 → C → D → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -332,6 +332,12 @@ grab-bag: інакше CLI-новина з словом `terminal` у конте
 `two motif classes from the same material and setting count as one family`.
 
 Наступне — **P1** (канонічний промпт + похідні синтаксиси).
+
+### B3 ✅ Зроблено 2026-08-15 — деградація видима в адмінці
+
+Visuals біля кожної story показує `N/3 промпти готові` і, якщо бракує лінз або журі
+віддало `fallback_essence`, які саме. Cover не в цій хвилі. Вага гейта не змінена.
+(source: `src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/weekly-workspace.tsx`)
 
 ### B3. Зробити деградацію видимою в адмінці
 
@@ -1107,7 +1113,7 @@ npm run pr:check
 | B1 | `experiments/jury-blockers/2026-08-digest-843975a8.md` із реальним розподілом блокерів |
 | B1-fix | тест `a command-line story may use the word terminal for a physical object` зелений; контроль UI-кліше на CLI-story теж зелений; живе планування Story 6 ще не прогнано |
 | B2 | на фікстурі з однією прийнятою лінзою повертається один бриф, не три; чотири названі тести зелені |
-| B3 | в адмінці видно `N/3 промпти готові` |
+| B3 | ✅ в адмінці видно `N/3 промпти готові`; тест `shows N/3 промпти готові when all three seats are present`
 | P1 | три `ManualImagePrompt` на story; negative завжди банить текст; тести `pipeline/prompt-export.test.ts` зелені |
 | P2 | ✅ схема приймає `story_prompt_set`; Visuals має кнопки копіювання + upload в одній картці; worker write — M1 ✅ |
 | P3 | після публікації daily в review-чаті лежить промпт обкладинки; `briefs.cover_prompt` заповнена |

@@ -10,6 +10,9 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **B3 — N/3 промпти готові на Visuals (2026-08-15).** Біля кожної story: `2/3 промпти готові · немає consequence` (або `фолбек: mechanism`). Дані з `story_prompt_set` (лінзи + `sceneSource` журі) або з metadata `story_image` у режимі `render`. Cover не чіпали. Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B3,
+  `src/lib/weekly-digest/story-prompt-set.ts`)
 - **M3 — preflight веде до промпту, не до Regenerate (2026-08-15).**
   `story_image` / `cover` `artifact_missing`: Visuals → скопіюй промпт → згенеруй у своєму
   інструменті → завантаж файл. Вага гейта не змінена — зображення лишається обовʼязковим.

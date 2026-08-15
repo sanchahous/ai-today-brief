@@ -26,6 +26,9 @@ export interface StoryPromptCard {
   negative: string;
   aspectRatio: '16:9';
   notes: string[];
+  /** Jury `source`; `fallback` means this seat used fallback_essence. */
+  sceneSource?: string | null;
+  motifClass?: string | null;
 }
 
 export interface StoryPromptSetContent {
@@ -81,6 +84,8 @@ function parsePromptCard(value: unknown): StoryPromptCard | null {
     negative,
     aspectRatio: '16:9',
     notes: parseNotes(value.notes),
+    sceneSource: asTrimmedString(value.sceneSource) ?? asTrimmedString(value.scene_source),
+    motifClass: asTrimmedString(value.motifClass) ?? asTrimmedString(value.motif_class),
   };
 }
 
@@ -119,3 +124,97 @@ export function storyImageSlotState(artifact?: {
   if (hasFile || artifact.generation_status === 'ready') return 'uploaded_on_review';
   return 'waiting';
 }
+
+/** Three-seat jury: missing seats are how B2 degradation shows up in Visuals. */
+export const STORY_PROMPT_SEATS = ['literal_context', 'mechanism', 'consequence'] as const;
+export type StoryPromptSeat = (typeof STORY_PROMPT_SEATS)[number];
+
+export interface StoryPromptReadiness {
+  ready: number;
+  total: number;
+  missingLenses: StoryPromptSeat[];
+  fallbackLenses: string[];
+  label: string;
+  detail: string;
+}
+
+function isStoryPromptSeat(value: string): value is StoryPromptSeat {
+  return STORY_PROMPT_SEATS.some((seat) => seat === value);
+}
+
+function recordFromUnknown(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? value : {};
+}
+
+function lensesFromImageMetadata(metadata: unknown): Array<{ lens: string; fallback: boolean }> {
+  const root = recordFromUnknown(metadata);
+  const variants = Array.isArray(root.variant_concepts) ? root.variant_concepts : [];
+  if (variants.length > 0) {
+    const rows: Array<{ lens: string; fallback: boolean }> = [];
+    for (const entry of variants) {
+      const row = recordFromUnknown(entry);
+      const lens = asTrimmedString(row.concept_lens) ?? asTrimmedString(row.conceptLens);
+      if (!lens) continue;
+      const source = asTrimmedString(row.scene_source) ?? asTrimmedString(row.sceneSource) ?? '';
+      const motif = asTrimmedString(row.motif_class) ?? asTrimmedString(row.motifClass) ?? '';
+      rows.push({
+        lens,
+        fallback: source === 'fallback' || motif === 'fallback_essence',
+      });
+    }
+    return rows;
+  }
+  const lens = asTrimmedString(root.concept_lens) ?? asTrimmedString(root.conceptLens);
+  if (!lens) return [];
+  const source = asTrimmedString(root.scene_source) ?? asTrimmedString(root.sceneSource) ?? '';
+  const motif = asTrimmedString(root.motif_class) ?? asTrimmedString(root.motifClass) ?? '';
+  return [{ lens, fallback: source === 'fallback' || motif === 'fallback_essence' }];
+}
+
+function promptIsFallback(
+  prompt: Pick<StoryPromptCard, 'grammar' | 'sceneSource' | 'motifClass'>,
+): boolean {
+  return (
+    prompt.grammar === 'source_led_fallback' ||
+    prompt.sceneSource === 'fallback' ||
+    prompt.motifClass === 'fallback_essence'
+  );
+}
+
+export function storyPromptReadiness(
+  prompts: readonly Pick<
+    StoryPromptCard,
+    'conceptLens' | 'grammar' | 'sceneSource' | 'motifClass'
+  >[] = [],
+  imageMetadata?: unknown,
+): StoryPromptReadiness {
+  const fromPrompts = prompts.map((prompt) => ({
+    lens: prompt.conceptLens,
+    fallback: promptIsFallback(prompt),
+  }));
+  const rows = fromPrompts.length > 0 ? fromPrompts : lensesFromImageMetadata(imageMetadata);
+  const present = new Set(
+    rows.map((row) => row.lens).filter((lens): lens is StoryPromptSeat => isStoryPromptSeat(lens)),
+  );
+  const missingLenses = STORY_PROMPT_SEATS.filter((seat) => !present.has(seat));
+  const fallbackLenses = [
+    ...new Set(rows.filter((row) => row.fallback).map((row) => row.lens.replaceAll('_', ' '))),
+  ];
+  const ready = present.size > 0 ? present.size : Math.min(rows.length, STORY_PROMPT_SEATS.length);
+  const parts: string[] = [];
+  if (missingLenses.length > 0) {
+    parts.push(`немає ${missingLenses.join(', ')}`);
+  }
+  if (fallbackLenses.length > 0) {
+    parts.push(`фолбек: ${fallbackLenses.join(', ')}`);
+  }
+  return {
+    ready,
+    total: STORY_PROMPT_SEATS.length,
+    missingLenses,
+    fallbackLenses,
+    label: `${ready}/${STORY_PROMPT_SEATS.length} промпти готові`,
+    detail: parts.join(' · '),
+  };
+}
+

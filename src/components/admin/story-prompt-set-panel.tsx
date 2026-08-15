@@ -19,6 +19,8 @@ export function StoryPromptSetPanel({
   policy,
   generatedAt,
   slotState,
+  readinessLabel,
+  readinessDetail,
   children,
 }: {
   itemId: string;
@@ -26,6 +28,8 @@ export function StoryPromptSetPanel({
   policy: string | null;
   generatedAt: string | null;
   slotState: StoryImageSlotState;
+  readinessLabel?: string;
+  readinessDetail?: string;
   children?: ReactNode;
 }) {
   return (
@@ -36,6 +40,12 @@ export function StoryPromptSetPanel({
           <p className="mt-1 text-xs text-slate-400">
             Copy a concept, generate the image in your tool, then upload it here.
           </p>
+          {readinessLabel ? (
+            <p className="mt-2 text-xs font-bold text-cyan-100/90">
+              {readinessLabel}
+              {readinessDetail ? ` · ${readinessDetail}` : ''}
+            </p>
+          ) : null}
         </div>
         <p
           className="rounded-full border border-white/12 px-3 py-1 text-xs font-bold text-cyan-100"

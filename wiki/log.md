@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — B3: Visuals показує N/3 промпти готові
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B3.
+
+**Змінено:** [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[now](now.md), [index](index.md).
+
+**Код:** `storyPromptReadiness` — три місця журі `literal_context` / `mechanism` /
+`consequence`. Рядок біля story на Visuals. `produceStoryPrompts` штампує `sceneSource` /
+`motifClass` з брифів, бо `prompt-export` не несе `scene_source`. Cover і вага гейта без змін.
+
+**Тест:** `shows N/3 промпти готові when all three seats are present`.
+
+**Не зроблено в цій хвилі:** P3 (daily cover prompt).
+
 ## 2026-08-15 — M3: preflight missing-image веде до промпту, не до Regenerate
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M3.

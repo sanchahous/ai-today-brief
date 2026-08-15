@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, 2026-08-10 fixes, weekly illustration M3 preflight copy 2026-08-15
+Actions run `31324873875`, PR #209, 2026-08-10 fixes, weekly illustration B3 prompt readiness 2026-08-15
 Last updated: 2026-08-15
 
 ---
@@ -364,6 +364,12 @@ image-only critic (`buildImageOnlyCriticPrompt`, без headline/scene) і пи�
 промпт, згенерувати в своєму інструменті й завантажити файл — не «Regenerate». Вага гейта
 без змін. (source: `src/lib/weekly-digest/preflight.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) M3)
+
+**B3 prompt readiness (2026-08-15):** Visuals біля кожної story показує `N/3 промпти готові`
+і деталь `немає consequence` / `фолбек: mechanism`, якщо журі не заповнило три лінзи або
+віддало `fallback_essence`. Cover не в цій хвилі. Вага гейта без змін.
+(source: `src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/weekly-workspace.tsx`,
+[weekly-illustration-plan](weekly-illustration-plan.md) B3)
 
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`

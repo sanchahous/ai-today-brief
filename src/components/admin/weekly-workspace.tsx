@@ -31,6 +31,7 @@ import { contentSimGateCleared, type ContentSimArtifactMeta } from '@/lib/conten
 import {
   parseStoryPromptSetContent,
   storyImageSlotState,
+  storyPromptReadiness,
 } from '@/lib/weekly-digest/story-prompt-set';
 import {
   parsePostUploadQa,
@@ -3010,6 +3011,10 @@ function VisualsPanel({
               item.id,
             );
             const promptSet = parseStoryPromptSetContent(promptArtifact?.content);
+            const promptReadiness = storyPromptReadiness(
+              promptSet?.prompts ?? [],
+              artifact?.metadata,
+            );
             const imageSlot = storyImageSlotState(artifact);
             const slotKey = `story-image:${item.id}`;
             const job = latestJobForSlot(workspace.generationJobs, 'story_image', {
@@ -3038,9 +3043,18 @@ function VisualsPanel({
             return (
               <div key={item.id} className="grid content-start gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm font-bold text-white">
-                    {item.rank}. {item.title_en}
-                  </p>
+                  <div>
+                    <p className="text-sm font-bold text-white">
+                      {item.rank}. {item.title_en}
+                    </p>
+                    <p
+                      className="mt-1 text-xs text-slate-400"
+                      data-testid="story-prompt-readiness"
+                    >
+                      {promptReadiness.label}
+                      {promptReadiness.detail ? ` · ${promptReadiness.detail}` : ''}
+                    </p>
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {job ? <StatusPill value={job.status} /> : null}
                     <form action={enqueueWeeklyGenerationAction}>
@@ -3080,6 +3094,8 @@ function VisualsPanel({
                   policy={promptSet?.policy ?? null}
                   generatedAt={promptSet?.generatedAt ?? null}
                   slotState={imageSlot}
+                  readinessLabel={promptReadiness.label}
+                  readinessDetail={promptReadiness.detail}
                 >
                   <ReplacementAssetForm
                     workspace={workspace}

@@ -7,7 +7,6 @@ import {
   produceStoryPrompts,
   resolveWeeklyStoryImageMode,
   storyImageJobPath,
-  storyPromptSetArtifactContent,
   storyPromptSlot,
 } from './story-prompt-job';
 
@@ -115,13 +114,44 @@ describe('produceStoryPrompts', () => {
     });
     expect(generateWeeklyReportageIllustrations).not.toHaveBeenCalled();
     expect(sceneBriefs).toHaveBeenCalledWith(sceneInput, { geminiApiKey: '' }, { count: 1 });
-    expect(result.content).toEqual(
-      storyPromptSetArtifactContent(
-        exportPrompts.mock.results[0]?.value ?? [],
-        'weekly-semantic-story-v5.1',
-        '2026-08-15T12:00:00.000Z',
-      ),
-    );
+    expect(result.content.prompts).toEqual([
+      {
+        ...(exportPrompts.mock.results[0]?.value[0] ?? {}),
+        sceneSource: 'openrouter',
+        motifClass: null,
+      },
+    ]);
     expect(result.output).toEqual({ needs_owner_review: true, prompt_count: 1 });
+  });
+
+  it('stamps jury fallback source onto the stored prompt set', async () => {
+    const result = await produceStoryPrompts({
+      headline: sceneInput.headline,
+      sceneBriefs: async () => [
+        sceneBrief({
+          source: 'fallback',
+          motifClass: 'fallback_essence',
+          conceptLens: 'literal_context',
+        }),
+      ],
+      exportPrompts: () => [
+        {
+          conceptLens: 'literal_context',
+          grammar: 'cinematic_domain_scene',
+          title: 'Literal context',
+          canonical: 'A grounded tableau.',
+          midjourney: 'a grounded tableau --ar 16:9 --style raw --no text',
+          negative: 'no text',
+          aspectRatio: '16:9',
+          notes: [],
+        },
+      ],
+      sceneInput,
+      cfg: { geminiApiKey: '' },
+      policy: 'weekly-semantic-story-v5.1',
+      count: 1,
+    });
+    expect(result.content.prompts[0]?.sceneSource).toBe('fallback');
+    expect(result.content.prompts[0]?.motifClass).toBe('fallback_essence');
   });
 });
