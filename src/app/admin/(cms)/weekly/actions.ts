@@ -2,6 +2,7 @@
 
 import { createHash, randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
 import { redirect } from 'next/navigation';
 import sharp from 'sharp';
 import type { Json } from '@/lib/database.types';
@@ -25,6 +26,13 @@ import {
   weeklyContentStudioMode,
 } from '@/lib/weekly-digest/orchestrator';
 import { validateWeeklyVideoResultManifest } from '@/lib/weekly-digest/video';
+import {
+  ignorePostUploadQa,
+  parsePostUploadQa,
+  POST_UPLOAD_QA_PENDING,
+  type PostUploadQa,
+} from '@/lib/weekly-digest/post-upload-qa';
+import { reviewUploadedImage } from '@/lib/weekly-digest/run-post-upload-qa';
 
 function requiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -106,6 +114,59 @@ function revalidateWeeklyAdmin(weeklyDigestId: string) {
   revalidatePath('/admin');
   revalidatePath('/admin/weekly');
   revalidatePath(`/admin/weekly/${weeklyDigestId}`);
+}
+
+async function persistPostUploadQa(
+  artifactId: string,
+  weeklyDigestId: string,
+  qa: PostUploadQa,
+) {
+  const admin = getSupabaseAdmin();
+  const { data, error } = await admin
+    .from('weekly_digest_artifacts')
+    .select('metadata')
+    .eq('id', artifactId)
+    .maybeSingle();
+  if (error) {
+    console.error('[weekly-upload-qa] load metadata failed', error.message);
+    return;
+  }
+  const metadata = {
+    ...jsonRecord(data?.metadata),
+    post_upload_qa: qa as unknown as Json, // JSONB: PostUploadQa is a JSON object, not a Json union member.
+  } as Json;
+  const { error: updateError } = await admin
+    .from('weekly_digest_artifacts')
+    .update({ metadata })
+    .eq('id', artifactId);
+  if (updateError) {
+    console.error('[weekly-upload-qa] write metadata failed', updateError.message);
+    return;
+  }
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+function schedulePostUploadQa(input: {
+  artifactId: string;
+  weeklyDigestId: string;
+  bytes: Buffer;
+  mimeType: string;
+}) {
+  after(() =>
+    reviewUploadedImage({ bytes: input.bytes, mimeType: input.mimeType })
+      .then((qa) => persistPostUploadQa(input.artifactId, input.weeklyDigestId, qa))
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : String(error);
+        return persistPostUploadQa(input.artifactId, input.weeklyDigestId, {
+          blockers: [],
+          scores: {},
+          model: null,
+          cost_usd: 0,
+          checked_at: new Date().toISOString(),
+          error: message.slice(0, 240),
+        });
+      }),
+  );
 }
 
 function weeklyRevisionTab(formData: FormData) {
@@ -1729,7 +1790,7 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
     throw new Error('Upload verification failed: stored bytes do not match the selected file.');
   }
   const db = await getSupabaseServer();
-  const { error } = await db.rpc('save_weekly_digest_artifact', {
+  const { data: artifactId, error } = await db.rpc('save_weekly_digest_artifact', {
     p_weekly_digest_id: weeklyDigestId,
     p_revision_id: revisionId,
     p_revision_item_id: revisionItemId || null,
@@ -1754,10 +1815,39 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
       original_name: fileValue.name,
       focal_point: optionalString(formData, 'focal_point') || null,
       sha256,
+      ...(artifactType === 'story_image' || artifactType === 'cover'
+        ? { post_upload_qa: POST_UPLOAD_QA_PENDING }
+        : {}),
     } as Json,
   });
   if (error) throw new Error(error.message);
+  if (
+    (artifactType === 'story_image' || artifactType === 'cover') &&
+    typeof artifactId === 'string'
+  ) {
+    schedulePostUploadQa({ artifactId, weeklyDigestId, bytes, mimeType });
+  }
   revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+export async function ignorePostUploadQaAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const artifactId = requiredString(formData, 'artifact_id');
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const admin = getSupabaseAdmin();
+  const { data, error } = await admin
+    .from('weekly_digest_artifacts')
+    .select('metadata, artifact_type')
+    .eq('id', artifactId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Artifact not found.');
+  if (data.artifact_type !== 'story_image' && data.artifact_type !== 'cover') {
+    throw new Error('Post-upload QA only applies to story images and covers.');
+  }
+  const current = parsePostUploadQa(data.metadata);
+  if (!current) throw new Error('No post-upload QA to ignore.');
+  await persistPostUploadQa(artifactId, weeklyDigestId, ignorePostUploadQa(current));
 }
 
 // Kept as a separate export so the Release tab contract stays stable while

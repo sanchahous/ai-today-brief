@@ -30,6 +30,7 @@ export {
 export { deterministicImageCritique, type DeterministicImageInput } from './deterministic-image';
 export {
   buildImageCriticPrompt,
+  buildImageOnlyCriticPrompt,
   extractJsonObject,
   parseImageCriticResponse,
   clampOverallByNewsLegibility,

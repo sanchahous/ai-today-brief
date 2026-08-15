@@ -32,6 +32,11 @@ import {
   parseStoryPromptSetContent,
   storyImageSlotState,
 } from '@/lib/weekly-digest/story-prompt-set';
+import {
+  parsePostUploadQa,
+  formatPostUploadQaLine,
+  postUploadQaNeedsWarning,
+} from '@/lib/weekly-digest/post-upload-qa';
 import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
 
 function contentSimClearedFromMetadata(metadata: Json | null | undefined): boolean | undefined {
@@ -60,6 +65,7 @@ import {
   startWeeklyContentStudioAction,
   toggleWeeklySocialAction,
   uploadWeeklyArtifactAction,
+  ignorePostUploadQaAction,
 } from '@/app/admin/(cms)/weekly/actions';
 
 export const WEEKLY_WORKSPACE_TABS = [
@@ -844,6 +850,8 @@ function ArtifactCard({
     : Array.isArray(contentSimEscalation.suggested_actions)
       ? contentSimEscalation.suggested_actions
       : [];
+  const postUploadQa = parsePostUploadQa(artifact.metadata);
+  const postUploadQaLine = postUploadQa ? formatPostUploadQaLine(postUploadQa) : null;
 
   return (
     <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -1197,6 +1205,35 @@ function ArtifactCard({
               ),
             )}
           </ul>
+        </div>
+      ) : null}
+
+      {postUploadQaLine ? (
+        <div
+          className={
+            postUploadQaNeedsWarning(postUploadQa)
+              ? 'mt-4 rounded-xl border border-amber-300/25 bg-amber-300/8 p-3 text-xs text-amber-50'
+              : 'mt-4 rounded-xl border border-white/10 bg-white/4 p-3 text-xs text-slate-300'
+          }
+        >
+          <p className="font-bold">{postUploadQaLine}</p>
+          {postUploadQaNeedsWarning(postUploadQa) ? (
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              {canReview ? (
+                <form action={ignorePostUploadQaAction}>
+                  <input type="hidden" name="weekly_digest_id" value={digestId} />
+                  <input type="hidden" name="artifact_id" value={artifact.id} />
+                  <button
+                    type="submit"
+                    className="font-bold text-amber-100 underline decoration-amber-100/40 underline-offset-2"
+                  >
+                    Ігнорувати
+                  </button>
+                </form>
+              ) : null}
+              <span className="text-amber-100/80">Замінити файл — форма upload на цій картці.</span>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

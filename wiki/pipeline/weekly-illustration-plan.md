@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 → B3 → P3 → C → D → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → B3 → P3 → C → D → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -533,6 +533,13 @@ Daily-адмінки не існує, тож доставка — тим сам�
 
 **Готово коли:** прогін weekly не робить жодного виклику до Cloudflare/OpenRouter-image, а у
 Visuals зʼявляються промпти.
+
+### M2 ✅ Зроблено 2026-08-15 — post-upload QA попереджає, не блокує
+
+Після ручного upload story/cover `after()` ганяє image-only critic і пише
+`metadata.post_upload_qa`. Preflight `contentSimCleared` не чіпається. Visuals показує
+«QA чисто» або жовтий рядок з Ігнорувати / Замінити файл.
+(source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/app/admin/(cms)/weekly/actions.ts`)
 
 ### M2. Post-upload QA — попереджає, не блокує
 
@@ -1100,7 +1107,7 @@ npm run pr:check
 | P2 | ✅ схема приймає `story_prompt_set`; Visuals має кнопки копіювання + upload в одній картці; worker write — M1 ✅ |
 | P3 | після публікації daily в review-чаті лежить промпт обкладинки; `briefs.cover_prompt` заповнена |
 | M1 | ✅ `prompt_only` пише `story_prompt_set` і не кличе image provider; `source_url` лишається ingest; `render` — відкат |
-| M2 | провальний QA **не** додає preflight-блокер; результат видно в картці story |
+| M2 | ✅ провальний QA **не** додає preflight-блокер; рядок у картці story |
 | M3 | блокер `artifact_missing` веде до промпту, а не до кнопки Regenerate |
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |
 | E1 | вердикт власника з адмінки потрапляє в calibration dataset без ручного перенесення |

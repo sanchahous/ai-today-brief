@@ -5,8 +5,9 @@ batch critic → один decisive re-plan → pass або human review з escal
 гейтиться цим.
 Sources: `src/lib/content-sim/`, `pipeline/providers/vision.ts`, `pipeline/scripts/content-sim.ts`,
 `.github/workflows/content-sim.yml`, план Content Sim Backtest 2026-08-11,
-owner prompt review + `weekly-semantic-story-v5.1` concept-diversity repair follow-up 2026-08-12
-Last updated: 2026-08-11
+owner prompt review + `weekly-semantic-story-v5.1` concept-diversity repair follow-up 2026-08-12,
+weekly illustration M2 post-upload QA 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
@@ -26,6 +27,7 @@ weekly story images перед релізом.
 | CLI | `npm run content-sim` | `capture` / `run` / `gates` / `hypothesis` |
 | Release gate | `preflight.ts` code `simulation_not_passed` | блок без pass або human override |
 | Admin | Visuals ArtifactCard | escalation panel + Approve записує `human_override` |
+| Post-upload QA (M2) | `uploadWeeklyArtifactAction` → `buildImageOnlyCriticPrompt` | advisory `metadata.post_upload_qa`; **не** пише `content_sim`, реліз не блокує |
 
 Adapters: `weekly-master` (делегує `weekly:sandbox`), `weekly-image`, `daily-brief`, `daily-image`.
 (source: `src/lib/content-sim/`, `pipeline/scripts/content-sim.ts`)
@@ -105,6 +107,11 @@ npm run content-sim -- hypothesis --baseline quality.json --run artifacts/_local
 
 Див. `.env.example` секцію Content simulation (`CONTENT_SIM_*`).
 `CONTENT_SIM_IMAGE_LOOP=off` вимикає vision loop (один generate без critic).
+
+**M2 post-upload (2026-08-15):** ручний upload story/cover запускає один image-only critic
+(`buildImageOnlyCriticPrompt` — без headline і scene brief) і пише `metadata.post_upload_qa`.
+Це не `content_sim` і не `simulation_not_passed`. (source: [weekly-illustration-plan](weekly-illustration-plan.md) M2,
+`src/lib/weekly-digest/post-upload-qa.ts`)
 
 ## Related pages
 

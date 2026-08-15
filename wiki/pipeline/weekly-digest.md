@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, 2026-08-10 fixes, weekly illustration M1 `prompt_only` 2026-08-15
+Actions run `31324873875`, PR #209, 2026-08-10 fixes, weekly illustration M2 post-upload QA 2026-08-15
 Last updated: 2026-08-15
 
 ---
@@ -352,6 +352,13 @@ essence + концепти, експортує `ManualImagePrompt` і збері
 лишається GitHub Actions — не переносити в цьому PR.
 (source: `src/lib/weekly-digest/story-prompt-job.ts`, `generation-worker.ts`, `.env.example`,
 [weekly-illustration-plan](weekly-illustration-plan.md) M1)
+
+**M2 post-upload QA (2026-08-15):** після ручного upload story/cover `after()` викликає
+image-only critic (`buildImageOnlyCriticPrompt`, без headline/scene) і пише
+`metadata.post_upload_qa`. `content_sim` не заповнюється, тож `simulation_not_passed` не
+спрацьовує. Visuals: «QA чисто» або жовтий рядок + Ігнорувати / Замінити файл.
+(source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) M2)
 
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`

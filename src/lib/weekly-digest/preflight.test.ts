@@ -81,6 +81,20 @@ describe('Weekly Digest release preflight', () => {
     );
   });
 
+  it('a failing post-upload QA does not add a preflight blocker', () => {
+    const input = completeInput();
+    input.artifacts = input.artifacts.map((entry) =>
+      entry.artifactType === 'story_image' || entry.artifactType === 'cover'
+        ? { ...entry, contentSimCleared: undefined }
+        : entry,
+    );
+    const result = validateWeeklyDigestPreflight(input);
+    expect(result.blockers.filter((blocker) => blocker.code === 'simulation_not_passed')).toEqual(
+      [],
+    );
+    expect(result.ready).toBe(true);
+  });
+
   it('reports missing, stale, and unapproved artifact slots', () => {
     const input = completeInput();
     input.artifacts = input.artifacts

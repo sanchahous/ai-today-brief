@@ -6,6 +6,27 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — M2: post-upload QA попереджає, не блокує реліз
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M2.
+
+**Змінено:** [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md),
+[pipeline/content-sim](pipeline/content-sim.md),
+[ops/weekly-sandbox](ops/weekly-sandbox.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[now](now.md), [index](index.md).
+
+**Код:** після `save_weekly_digest_artifact` upload story/cover планує `after()` з
+`buildImageOnlyCriticPrompt` (без headline/scene). Результат — `metadata.post_upload_qa`.
+Не пише `content_sim`. Ігнорувати ховає попередження.
+
+**Тест:** `a failing post-upload QA does not add a preflight blocker`.
+
+**Не зроблено в цій хвилі:** M3 (preflight copy), двостадійний critic у prod render (E2).
+
 ## 2026-08-15 — M1: weekly story/cover пишуть промпти, не рендерять FLUX
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M1.

@@ -152,6 +152,28 @@ export function buildImageCriticPrompt(input: {
     .join('\n');
 }
 
+/** Pixel-only QA: no headline, scene brief, or intended prompt (illustration plan E2 / M2). */
+export function buildImageOnlyCriticPrompt(): string {
+  return [
+    'You are checking an uploaded editorial illustration for pixel defects only.',
+    'Do not infer a news story. Do not assume a prompt, headline, scene brief, or labels.',
+    'Judge only what is visible in the attached image.',
+    'Blocking codes (use exactly): readable_text | ui_chrome | collage_panels | banned_cliche | melted_motion | brand_unsafe | low_quality | impossible_orientation | prop_use_mismatch.',
+    'readable_text: letters, logos, watermarks, captions, UI chrome, or any writing baked into the pixels.',
+    'banned_cliche: terminal/IDE screens, collage, glowing brain, generic paper-heap sludge.',
+    'Count distinct readable-text regions in blockers (one blocker per region).',
+    'Do not score context, mechanism, consequence, or headline pairing — those axes are not applicable.',
+    '',
+    'Inspect the attached image. Reply with ONLY JSON:',
+    '{',
+    '  "overall": number,',
+    '  "dimensions": { "no_text": number, "craft": number, "brand_safe": number, "news_legibility": number },',
+    '  "blockers": [{ "code": string, "message": string, "region": string }],',
+    '  "notes": string',
+    '}',
+  ].join('\n');
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)

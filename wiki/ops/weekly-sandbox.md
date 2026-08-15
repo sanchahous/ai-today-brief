@@ -4,8 +4,9 @@ Summary: як прогнати `editorial_master` локально на реал
 і як за хвилину перевірити провайдерів перед тим, як витрачати Actions-прогін.
 Sources: `pipeline/scripts/weekly-master-sandbox.ts`, `pipeline/scripts/weekly-doctor.ts`,
 live sandbox-прогони 2026-08-09 на фікстурі `ai-weekly-2026-08-02`,
-content-sim / illustration overhaul 2026-08-11, semantic illustration v5
-Last updated: 2026-08-11
+content-sim / illustration overhaul 2026-08-11, semantic illustration v5,
+weekly illustration M2 post-upload QA 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
@@ -130,6 +131,9 @@ captured pixels і придатна насамперед для rubric/backtest.
 
 Саме тут вимірялось головне: два critic-виклики мали `first_token_ms` 120.4 с і 116.6 с — вище
 90-секундного ліміту, і за старим кодом були б убиті як «зависання».
+
+Post-upload QA (M2) — це прод Visuals після ручного upload, не sandbox-прогін.
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) M2)
 
 ## Related pages
 

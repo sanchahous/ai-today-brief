@@ -13,6 +13,7 @@ import {
 import { runRepairLoop } from './loop';
 import {
   buildImageCriticPrompt,
+  buildImageOnlyCriticPrompt,
   clampOverallByNewsLegibility,
   extractJsonObject,
   newsLegibilityThreshold,
@@ -445,5 +446,15 @@ describe('buildImageCriticPrompt', () => {
     expect(prompt).toContain('What changed? How? So what?');
     expect(prompt).toContain('missing_consequence');
     expect(prompt).toContain('extra electricity becomes waste heat');
+  });
+
+  it('image-only critic prompt omits headline and scene brief', () => {
+    const prompt = buildImageOnlyCriticPrompt();
+    expect(prompt).toContain('pixel defects only');
+    expect(prompt).toContain('readable_text');
+    expect(prompt).not.toMatch(/Headline:/);
+    expect(prompt).not.toMatch(/SOURCE STORY/);
+    expect(prompt).not.toMatch(/Scene brief:/);
+    expect(prompt).not.toMatch(/GENERATED SEMANTIC CONTRACT/);
   });
 });
