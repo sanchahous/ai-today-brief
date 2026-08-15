@@ -10,7 +10,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5.1` and
-three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / C1 / C2 2026-08-15
+three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / C1 / C2 / C3 2026-08-15
 Last updated: 2026-08-15
 
 ---
@@ -170,6 +170,12 @@ title/summary, не practical/takeaway. Метрика → `deterministic_techni
 імпортується.
 (source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) C2,
 `pipeline/scene-grammar.ts`)
+
+**C3 — mapping gate (2026-08-15):** перед записом `story_prompt_set` кожен концепт мусить мати
+таблицю source → visible object → outcome з `visibleElementId`. Порожній `semanticProps`
+не проходить. V10 не імпортується.
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) C3,
+`pipeline/concept-mapping-gate.ts`, `src/lib/weekly-digest/story-prompt-job.ts`)
 
 **P2 — Visuals copy/upload (2026-08-15):** артефакт `story_prompt_set` (текст, не в
 `PUBLIC_IMAGE_TYPES`) + картки Canonical / Midjourney / Negative і слот upload на вкладці

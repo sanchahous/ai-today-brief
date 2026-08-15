@@ -8,6 +8,7 @@ import type {
   WeeklyReportageSceneBriefResult,
   WeeklyReportageSceneInput,
 } from '../../../pipeline/card-image';
+import { briefsPassingMappingGate } from '../../../pipeline/concept-mapping-gate';
 import type { ManualImagePrompt } from '../../../pipeline/prompt-export';
 
 export const WEEKLY_STORY_IMAGE_MODES = ['prompt_only', 'render'] as const;
@@ -101,8 +102,14 @@ export async function produceStoryPrompts(input: {
     throw new Error('Illustration prompt job produced no scene briefs.');
   }
   const essence = essenceFromBrief(briefs[0], input.headline);
-  const prompts = input.exportPrompts(briefs, essence, input.accent).map((prompt, index) => {
-    const brief = briefs[index];
+  const accepted = briefsPassingMappingGate(briefs, essence);
+  if (!accepted.length) {
+    throw new Error(
+      'Illustration prompt job produced no scene briefs that passed the mapping gate.',
+    );
+  }
+  const prompts = input.exportPrompts(accepted, essence, input.accent).map((prompt, index) => {
+    const brief = accepted[index];
     return {
       ...prompt,
       sceneSource: brief?.source ?? null,

@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — C3: mapping gate перед story_prompt_set
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C3.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[pipeline/weekly-digest](pipeline/weekly-digest.md),
+[now](now.md), [index](index.md).
+
+**Код:** `pipeline/concept-mapping-gate.ts`. `produceStoryPrompts` відсікає брифи без таблиці
+context/action/outcome. Id, не label. Порожній `semanticProps` — fail. V10 не імпортується.
+
+**Тест:** `empty semanticProps do not vacuously pass the mapping gate`;
+`unmapped_semantic_prop matches visibleElementId not visibleElement labels`;
+`a concept missing visible outcome does not enter the prompt set`.
+
+**Не зроблено в цій хвилі:** C5.4 (`inferRole`); D (truth in pixels).
+
 ## 2026-08-15 — C2: роутер грамматики від essence (без V10)
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C2.

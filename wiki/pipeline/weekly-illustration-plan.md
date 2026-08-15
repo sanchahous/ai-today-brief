@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 → D → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -685,6 +685,15 @@ Fallback source лишається `source_led_fallback`.
 контракту. Додати `visibleElementId` і зворотну перевірку; порожній `semanticProps: []` не має
 проходити вакуумно.
 
+### C3 ✅ Зроблено 2026-08-15 — mapping gate перед `story_prompt_set`
+
+`pipeline/concept-mapping-gate.ts` (без імпорту V10). Перед `produceStoryPrompts` експортує
+промпт, бриф мусить мати таблицю context/action/outcome з `visibleElementId`. Порожній
+`semanticProps: []` падає (`empty_semantic_props`); звірка йде по id, не по підпису
+`visibleElement`; зворотна перевірка — `unmapped_visible_element`. Бриф без visible outcome
+не потрапляє в сет; якщо всі провалились — джоба падає, порожній сет не пишеться.
+(source: `pipeline/concept-mapping-gate.ts`, `src/lib/weekly-digest/story-prompt-job.ts`)
+
 ### C4 ⛔ Виведено зі scope (2026-08-15)
 
 Параметричний SVG-рендерер схем (`visual-generic-svg-v5.ts:257`, `quantitativeScene`) — це
@@ -1165,6 +1174,7 @@ npm run pr:check
 | C0 | ✅ рішення: без моста `autoClaim`; C2 — новий `pipeline/scene-grammar.ts` від `EditorialEssence` |
 | C1 | ✅ журі ставить `cinematic_domain_scene`, fallback — `source_led_fallback`; export читає `brief.grammar` |
 | C2 | ✅ метрика в title/summary/essence → схема; duration у practical не перемикає; один `caching` не є process grammar |
+| C3 | ✅ `empty semanticProps do not vacuously pass`; id ≠ label; концепт без visible outcome не в `story_prompt_set` |
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |
 | E1 | вердикт власника з адмінки потрапляє в calibration dataset без ручного перенесення |
 

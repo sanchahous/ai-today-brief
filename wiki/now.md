@@ -10,6 +10,12 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **C3 — mapping gate перед промптом (2026-08-15).** Концепт без таблиці
+  source → visible object → outcome не потрапляє в `story_prompt_set`.
+  `visibleElementId` (не підпис); порожній `semanticProps` не проходить вакуумно.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C3,
+  `pipeline/concept-mapping-gate.ts`, `src/lib/weekly-digest/story-prompt-job.ts`)
 - **C2 — роутер грамматики від essence (2026-08-15).** Метрика в title/summary або claim
   essence → `deterministic_technical_hybrid`. Duration у `practical` і `40%` у takeaway не
   перемикають (C5.2). Один `caching` не є process grammar (C5.3); окремого process prompt немає.

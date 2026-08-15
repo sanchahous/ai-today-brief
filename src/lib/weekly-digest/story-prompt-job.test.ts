@@ -30,6 +30,9 @@ function sceneBrief(
     consequence: 'Developers invoke those tools from the command line.',
     visualThesis: 'An adapter card connecting into a terminal lets the old system run new tools.',
     readerTest: 'grasp: server-side tools now plug into the command line',
+    storyAnchor: 'a brass adapter card in a teleprinter slot',
+    visibleMechanism: 'the card connecting server tools into the local command',
+    visibleConsequence: 'the old terminal runs the new tools',
     ...partial,
   };
 }
@@ -153,5 +156,60 @@ describe('produceStoryPrompts', () => {
     });
     expect(result.content.prompts[0]?.sceneSource).toBe('fallback');
     expect(result.content.prompts[0]?.motifClass).toBe('fallback_essence');
+  });
+
+  it('a concept missing visible outcome does not enter the prompt set', async () => {
+    const exportPrompts = vi.fn((briefs: readonly WeeklyReportageSceneBriefResult[]) =>
+      briefs.map((brief) => ({
+        conceptLens: brief.conceptLens === 'owner_direction' ? 'literal_context' : brief.conceptLens,
+        grammar: 'cinematic_domain_scene' as const,
+        title: brief.metaphorTitle ?? 'Concept',
+        canonical: brief.scene,
+        midjourney: `${brief.scene} --ar 16:9`,
+        negative: 'no text',
+        aspectRatio: '16:9' as const,
+        notes: [],
+      })),
+    );
+    const result = await produceStoryPrompts({
+      headline: sceneInput.headline,
+      sceneBriefs: async () => [
+        sceneBrief({ conceptLens: 'mechanism', metaphorTitle: 'Mapped adapter' }),
+        sceneBrief({
+          conceptLens: 'consequence',
+          metaphorTitle: 'Sewing machine',
+          visibleConsequence: '',
+        }),
+      ],
+      exportPrompts,
+      sceneInput,
+      cfg: { geminiApiKey: '' },
+      policy: 'weekly-semantic-story-v5.1',
+      count: 2,
+    });
+    expect(exportPrompts.mock.calls[0]?.[0]).toHaveLength(1);
+    expect(result.content.prompts).toHaveLength(1);
+    expect(result.content.prompts[0]?.title).toBe('Mapped adapter');
+    expect(result.output.prompt_count).toBe(1);
+  });
+
+  it('throws when every brief fails the mapping gate', async () => {
+    await expect(
+      produceStoryPrompts({
+        headline: sceneInput.headline,
+        sceneBriefs: async () => [
+          sceneBrief({
+            storyAnchor: '',
+            visibleMechanism: '',
+            visibleConsequence: '',
+          }),
+        ],
+        exportPrompts: () => [],
+        sceneInput,
+        cfg: { geminiApiKey: '' },
+        policy: 'weekly-semantic-story-v5.1',
+        count: 1,
+      }),
+    ).rejects.toThrow(/mapping gate/i);
   });
 });

@@ -266,6 +266,9 @@ describe('weekly story image prompt_only mode', () => {
       consequence: 'Developers invoke those tools from the command line.',
       visualThesis: 'An adapter card connecting into a terminal lets the old system run new tools.',
       readerTest: 'grasp: server-side tools now plug into the command line',
+      storyAnchor: 'a brass adapter card in a teleprinter slot',
+      visibleMechanism: 'the card connecting server tools into the local command',
+      visibleConsequence: 'the old terminal runs the new tools',
       ...partial,
     };
   }

@@ -377,6 +377,12 @@ image-only critic (`buildImageOnlyCriticPrompt`, без headline/scene) і пи�
 імпортується. (source: `pipeline/scene-grammar.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) C2)
 
+**C3 mapping gate (2026-08-15):** `produceStoryPrompts` не пише в `story_prompt_set` концепт
+без таблиці context/action/outcome. `visibleElementId`, не підпис; порожній `semanticProps`
+не проходить вакуумно. Вага preflight без змін.
+(source: `pipeline/concept-mapping-gate.ts`, `src/lib/weekly-digest/story-prompt-job.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) C3)
+
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.
