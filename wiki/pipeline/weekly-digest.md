@@ -405,6 +405,13 @@ rejected` + закриті `reasonTags`. Пишеться в `story_prompt_set` 
 (source: `src/lib/content-sim/adapters/weekly-image.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) E2)
 
+**E3 prompt promotion (2026-08-15):** Visuals показує `гейт промптів` з ≥60% прийнятних
+концептів (`used` / `used_with_edits`), 0 misleading у прийнятих, ≤10 хв/story і перевірку
+B2 «не три копії». Це не preflight-код і не змінює `WEEKLY_CONTENT_STUDIO_V2=off`.
+Пороги новин без змін.
+(source: `src/lib/weekly-digest/prompt-promotion-gate.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) E3)
+
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.

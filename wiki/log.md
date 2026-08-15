@@ -6,6 +6,25 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — E3: promotion gate якості промптів
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E3.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/content-sim](pipeline/content-sim.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-sandbox](ops/weekly-sandbox.md), [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** Visuals рядок з ≥60% прийнятних / 0 misleading / ≤10 хв / 3 різні.
+Не preflight. Пороги новин без змін.
+
+**Тест:** `promotion gate passes when 60% of concepts are acceptable on the first or second owner attempt`;
+`prompt promotion gate fails on misleading accepted concepts without blocking release preflight`.
+
+**Не зроблено в цій хвилі:** F (динамічний вибір моделі), G (бюджет), A2 bake-off.
+
 ## 2026-08-15 — E2: двостадійний критик
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E2.

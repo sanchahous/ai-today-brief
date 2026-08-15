@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -908,6 +908,17 @@ PDF §15 задавав пороги для автоматичної гілки.
 Без цього наступна зміна знову буде «здається, краще». Порогів для **новин** це не стосується —
 там лишається стара рубрика.
 
+### E3 ✅ Зроблено 2026-08-15 — promotion gate якості промптів
+
+Visuals показує digest-рядок `гейт промптів: пройдено` / `N/4` / `чекає вердиктів`.
+Рахунок з `owner_feedback` + `story_prompt_set` + timestamps upload:
+`used` / `used_with_edits` = прийнятно з 1–2 спроби; `labels_carry_claim` або
+`readable_text` на `used` = misleading у прийнятих; час = від `generated_at` до першого
+прийнятого вердикту (або upload); три однакові canonical або три `fallback_essence` = fail.
+**Не** preflight-блокер. Пороги новин (overall ≥ 80) без змін.
+(source: `src/lib/weekly-digest/prompt-promotion-gate.ts`,
+`src/components/admin/weekly-workspace.tsx`)
+
 ---
 
 ## F. Динамічний вибір моделі за ціною і якістю
@@ -1223,6 +1234,7 @@ npm run pr:check
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |
 | E1 | ✅ `owner verdict from admin lands on the prompt set and uploaded image metadata` |
 | E2 | ✅ `two-stage critique fails when image-only flags readable_text even if story-aware would pass`; M2 лишається image-only |
+| E3 | ✅ `promotion gate passes when 60% of concepts are acceptable on the first or second owner attempt`; `prompt promotion gate fails on misleading accepted concepts without blocking release preflight` |
 
 Після кожної хвилі — `wiki/log.md` (append-only, нові записи **зверху**) + `wiki/index.md`.
 Кожна хвиля — окремий PR, `pr:check` перед push, ніколи не в `main` напряму.

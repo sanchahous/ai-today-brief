@@ -35,6 +35,10 @@ import {
 } from '@/lib/weekly-digest/story-prompt-set';
 import { ownerFeedbackFromImageMetadata } from '@/lib/weekly-digest/owner-feedback';
 import {
+  evaluatePromptPromotionGate,
+  promptPromotionStoriesFromArtifacts,
+} from '@/lib/weekly-digest/prompt-promotion-gate';
+import {
   adviceForPostUploadQa,
   parsePostUploadQa,
   formatPostUploadQaLine,
@@ -365,6 +369,12 @@ function artifactFor(
       (locale === undefined || artifact.locale === locale) &&
       (revisionItemId === undefined || artifact.revision_item_id === revisionItemId),
   );
+}
+
+function promptPromotionClass(result: { passed: boolean; ready: boolean }): string {
+  if (result.passed) return 'text-cyan-100/90';
+  if (result.ready) return 'text-amber-100/90';
+  return 'text-slate-400';
 }
 
 /** Most recent job for a Visuals/PDF slot (jobs are ordered newest-first in admin data). */
@@ -2943,6 +2953,12 @@ function VisualsPanel({
   );
   const coverPromptSet = parseStoryPromptSetContent(coverPromptArtifact?.content);
   const coverSlot = storyImageSlotState(cover);
+  const promptPromotion = evaluatePromptPromotionGate(
+    promptPromotionStoriesFromArtifacts({
+      storyIds: workspace.items.map((item) => item.id),
+      artifacts: workspace.artifacts,
+    }),
+  );
   const socialAssets = workspace.artifacts.filter(
     (artifact) =>
       artifact.artifact_type === 'social_asset' && artifact.mime_type?.startsWith('image/'),
@@ -3018,6 +3034,13 @@ function VisualsPanel({
             <p className="mt-2 text-sm text-slate-400">
               Copy a concept, generate the image in your tool, then upload it on the same card.
               Each visual must depict that news item, not generic AI decoration.
+            </p>
+            <p
+              className={`mt-2 text-xs font-bold ${promptPromotionClass(promptPromotion)}`}
+              data-testid="prompt-promotion-gate"
+            >
+              {promptPromotion.label}
+              {promptPromotion.detail ? ` · ${promptPromotion.detail}` : ''}
             </p>
           </div>
         </div>

@@ -123,6 +123,12 @@ runs only if pixels passed. M2 upload stays a single image-only pass.
 (source: [weekly-illustration-plan](weekly-illustration-plan.md) E2,
 `src/lib/content-sim/adapters/weekly-image.ts`)
 
+**E3 prompt promotion (2026-08-15):** Visuals digest line scores prompt quality from owner
+verdicts. It does not write `content_sim` and does not add `simulation_not_passed`. News
+score floor stays overall ≥ 80.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) E3,
+`src/lib/weekly-digest/prompt-promotion-gate.ts`)
+
 ## Related pages
 
 - [weekly-sandbox](../ops/weekly-sandbox.md)

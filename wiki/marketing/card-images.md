@@ -197,6 +197,11 @@ title/summary, не practical/takeaway. Метрика → `deterministic_techni
 (source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) E2,
 `src/lib/content-sim/adapters/weekly-image.ts`)
 
+**E3 — promotion gate промптів (2026-08-15):** Visuals рахує ≥60% прийнятних з 1–2 спроби,
+0 misleading, ≤10 хв/story, 3 різні промпти. Не блокує реліз. Пороги **новин** без змін.
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) E3,
+`src/lib/weekly-digest/prompt-promotion-gate.ts`)
+
 **P2 — Visuals copy/upload (2026-08-15):** артефакт `story_prompt_set` (текст, не в
 `PUBLIC_IMAGE_TYPES`) + картки Canonical / Midjourney / Negative і слот upload на вкладці
 Visuals.

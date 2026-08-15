@@ -10,6 +10,12 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **E3 — promotion gate промптів (2026-08-15).** Visuals: ≥60% концептів прийнятні з 1–2
+  спроби (`used` / `used_with_edits`), 0 misleading у прийнятих, ≤10 хв на story, 3 різні
+  промпти (B2). Не блокує реліз. Пороги новин без змін.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E3,
+  `src/lib/weekly-digest/prompt-promotion-gate.ts`)
 - **E2 — двостадійний критик (2026-08-15).** Авто-цикл спершу image-only (без headline);
   story-aware лише якщо пікселі пройшли. M2 upload лишається одним image-only проходом.
   Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
