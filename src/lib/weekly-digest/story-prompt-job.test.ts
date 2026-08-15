@@ -125,6 +125,8 @@ describe('produceStoryPrompts', () => {
         scene: 'A brass adapter card being pushed into a teleprinter terminal',
         subjectKind: null,
         composition: null,
+        subject: null,
+        setting: null,
       },
     ]);
     expect(result.output).toEqual({ needs_owner_review: true, prompt_count: 1 });

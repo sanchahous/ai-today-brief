@@ -49,6 +49,9 @@ export type StoredStoryPrompt = ManualImagePrompt & {
   scene?: string | null;
   subjectKind?: string | null;
   composition?: string | null;
+  /** Head phrases for cross-story motif-family matching (R2.3 / F9). */
+  subject?: string | null;
+  setting?: string | null;
 };
 
 export interface StoryPromptSetPayload {
@@ -134,6 +137,8 @@ export async function produceStoryPrompts(input: {
       scene: brief?.scene ?? null,
       subjectKind: brief?.subjectKind ?? null,
       composition: brief?.composition ?? null,
+      subject: brief?.subject ?? null,
+      setting: brief?.setting ?? null,
     };
   });
   return {

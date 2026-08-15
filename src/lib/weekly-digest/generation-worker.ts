@@ -2367,6 +2367,13 @@ function siblingHintsFromPromptSet(content: Json | null): SiblingMetaphorHint[] 
         subjectKind: prompt.subjectKind ?? undefined,
         composition,
         sceneSummary,
+        // R2.3 / F9: without these, motifFamilyKey falls back to
+        // `sceneSummary` as the subject and `''` as the setting for every
+        // cross-story sibling, which almost never overlaps a fresh pitch's
+        // own subject/setting head nouns -- family matching silently never
+        // fired across stories. Threaded through from the accepted pitch.
+        subject: prompt.subject ?? undefined,
+        setting: prompt.setting ?? undefined,
       },
     ];
   });

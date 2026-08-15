@@ -41,6 +41,9 @@ export interface StoryPromptCard {
   scene?: string | null;
   subjectKind?: string | null;
   composition?: string | null;
+  /** Head phrases for cross-story motif-family matching (R2.3 / F9). */
+  subject?: string | null;
+  setting?: string | null;
 }
 
 export interface StoryPromptSetContent {
@@ -104,6 +107,8 @@ function parsePromptCard(value: unknown): StoryPromptCard | null {
     scene: asTrimmedString(value.scene),
     subjectKind: asTrimmedString(value.subjectKind) ?? asTrimmedString(value.subject_kind),
     composition: asTrimmedString(value.composition),
+    subject: asTrimmedString(value.subject),
+    setting: asTrimmedString(value.setting),
   };
 }
 

@@ -327,6 +327,8 @@ describe('siblingHintsFromStorySiblingArtifact (R1.1 -- cross-story diversificat
             subjectKind: 'object',
             composition: 'single',
             scene: 'A single slot tool cabinet in a workshop, one open bay',
+            subject: 'a single slot tool cabinet',
+            setting: 'workshop bench',
           },
         ],
       } as unknown as Json,
@@ -338,6 +340,11 @@ describe('siblingHintsFromStorySiblingArtifact (R1.1 -- cross-story diversificat
       subjectKind: 'object',
       composition: 'single',
       sceneSummary: 'A single slot tool cabinet in a workshop, one open bay',
+      // R2.3 / F9: subject/setting must survive the round trip, or
+      // motifFamilyKey falls back to sceneSummary/'' for every cross-story
+      // sibling and family matching never fires across stories.
+      subject: 'a single slot tool cabinet',
+      setting: 'workshop bench',
     });
   });
 

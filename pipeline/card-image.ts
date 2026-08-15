@@ -898,11 +898,23 @@ export interface WeeklyReportageSceneSpec {
 }
 
 /**
- * UI / stock-metaphor clichés. Checked one pattern at a time so a story that
- * is literally about a terminal does not also unlock "glowing brain" / collage.
- * `terminal window` stays banned even on CLI news — that is the UI shot the
- * original list was written to stop. Bare `terminal` is waived when the story
- * itself is about a command line / CLI / terminal (see B1-fix).
+ * UI / stock-metaphor clichés. `terminal window` stays banned even on CLI
+ * news — that is the UI shot the original list was written to stop. Bare
+ * `terminal` is the ONE term on this list with a legitimate non-screen
+ * reading (a physical teleprinter/expansion-port terminal), so it alone is
+ * waived when the story itself is about a command line / CLI / terminal
+ * (B1-fix).
+ *
+ * Every other term here (dashboard, IDE, taskbar, browser chrome, readable
+ * UI/text/screen/code, glowing brain, collage, ...) has no such double
+ * meaning — it always names an on-screen UI or a stock-metaphor prop, so a
+ * literal-source exception for them would waive the ban exactly when it
+ * matters most: a news story that is literally about that product (e.g. "the
+ * new dashboard") would unlock a literal screenshot-style prompt, which is
+ * the same baked-gibberish-text channel (`Clodfire`, `PFfort`) B1 diagnosed
+ * in the first place. R2.2 / F8 narrows the literal exception this
+ * function grants back down to that one term — every other pattern here is
+ * an unconditional ban, as it was before B1-fix.
  */
 const WEEKLY_CRAFT_TERMINAL_WINDOW = /\bterminal\s+window\b/i;
 const WEEKLY_CRAFT_BARE_TERMINAL = /\bterminal\b/i;
@@ -934,9 +946,7 @@ function pitchUsesNonLiteralCraftLanguage(flat: string, literalSource: string): 
   if (WEEKLY_CRAFT_BARE_TERMINAL.test(flat) && !COMMAND_LINE_STORY.test(literalSource)) {
     return true;
   }
-  return WEEKLY_CRAFT_BANNED_OTHER.some(
-    (pattern) => pattern.test(flat) && !pattern.test(literalSource),
-  );
+  return WEEKLY_CRAFT_BANNED_OTHER.some((pattern) => pattern.test(flat));
 }
 
 /** Paper/transcript heaps that klein renders as melted AI sludge. */
@@ -1964,6 +1974,13 @@ export interface WeeklyReportageSceneBriefResult extends SceneBriefResult {
   storyAnchor?: string;
   visibleMechanism?: string;
   visibleConsequence?: string;
+  /**
+   * Head phrases for cross-story `motifFamilyKey` matching (R2.3 / F9).
+   * Undefined on fallback briefs -- they already share `FALLBACK_MOTIF_CLASS`
+   * so exact-motif matching catches them without needing a family key.
+   */
+  subject?: string;
+  setting?: string;
 }
 
 function sceneBriefFromPitch(
@@ -2000,6 +2017,8 @@ function sceneBriefFromPitch(
     storyAnchor: pitch.storyAnchor,
     visibleMechanism: pitch.visibleMechanism,
     visibleConsequence: pitch.visibleConsequence,
+    subject: pitch.subject,
+    setting: pitch.setting,
   };
 }
 

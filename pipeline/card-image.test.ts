@@ -1227,6 +1227,39 @@ describe('weekly essence + metaphor gates', () => {
     expect(sludgeOnCli).toContain('banned UI, collage, or stock-metaphor language');
   });
 
+  it('still rejects a literal dashboard screenshot even when the news itself is about a dashboard (R2.2 / F8)', () => {
+    // Unlike `terminal`, `dashboard` has no legitimate non-screen reading --
+    // a news story literally about "the new dashboard" must not unlock a
+    // literal on-screen prop, or the ban stops doing its one job (no baked
+    // gibberish text) on exactly the stories where it matters most.
+    const errors = validateMetaphorPitch(
+      {
+        title: 'New dashboard',
+        subject: 'a glowing analytics dashboard filling the frame',
+        action: 'showing live charts update on screen',
+        setting: 'office monitor',
+        props: ['dashboard widgets'],
+        composition: 'single',
+        whyItFits: 'The company shipped a new dashboard for usage metrics.',
+        motifClass: 'dashboard_screenshot',
+        subjectKind: 'object',
+        storyAnchor: 'the company shipping a new analytics dashboard',
+        visibleMechanism: 'the dashboard renders live usage charts',
+        visibleConsequence: 'the team reads the dashboard to spot regressions',
+      },
+      semanticEssence({
+        storyContext: 'Acme ships a new dashboard for real-time usage metrics.',
+        essence: 'A new dashboard surfaces usage metrics live.',
+        mustFeel: 'clarity',
+        forbiddenCliches: [],
+        mechanism: 'The dashboard aggregates events into live charts.',
+        readerTest: 'grasp: the new dashboard shows usage live',
+      }),
+      ['Acme', 'dashboard', 'usage metrics'],
+    );
+    expect(errors).toContain('banned UI, collage, or stock-metaphor language');
+  });
+
   it('rejects polished but opaque data-flow machinery when it is not literal news context', () => {
     const errors = validateMetaphorPitch(
       {
@@ -1876,5 +1909,14 @@ describe('scene-brief registry wiring (Phase 2)', () => {
     ]);
     expect(concepts.every((concept) => concept.source === 'stub-jury')).toBe(true);
     expect(concepts.every((concept) => concept.motifClass !== FALLBACK_MOTIF_CLASS)).toBe(true);
+    // R2.3 / F9: subject/setting must reach the brief result -- this is what
+    // generation-worker.ts now persists on story_prompt_set so the NEXT
+    // story's cross-digest sibling check has a real subject/setting to match
+    // against, instead of falling back to sceneSummary/''.
+    expect(concepts[0]?.subject).toBe(
+      'an unattended automaton tending a half-finished precision mold',
+    );
+    expect(concepts[0]?.setting).toBe('silent metal workshop before dawn');
+    expect(concepts[1]?.subject).toBe('a loom rewinding one snapped thread to the last intact knot');
   });
 });
