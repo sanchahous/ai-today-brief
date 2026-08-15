@@ -10,6 +10,12 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **Origin JPEG новинних карток (2026-08-15).** Нові `brief_items.card_image_url`
+  пишуться як `${slug}.jpg` 1280×720 q82 (`encodeCardOrigin`); старі PNG лишаються
+  до force/backfill. Loader і модель новин без змін. Картинки дайджесту ручні.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [ops/vercel-image-quota](ops/vercel-image-quota.md),
+  [marketing/card-images](marketing/card-images.md), `pipeline/card-image.ts`)
 - **F5 — без пінів версії моделі в прод-коді (2026-08-15).** `pipeline/` і `src/` поза тестами
   не містять `sonnet-5` / `gpt-5` / `gemini-3.x`. Вибір іде з живого каталогу. Vision-модель
   A2 не перемикали. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.

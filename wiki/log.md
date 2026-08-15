@@ -6,6 +6,25 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — origin JPEG новинних карток (G2 follow-up)
+
+**Джерело:** [ops/vercel-image-quota](ops/vercel-image-quota.md);
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G2.
+
+**Змінено:** [ops/vercel-image-quota](ops/vercel-image-quota.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[now](now.md), [index](index.md).
+
+**Код:** `encodeCardOrigin` перед upload — 1280×720 JPEG q82, `${slug}.jpg`.
+Модель новин не змінювали. Немає автогенерації картинок дайджесту. F4 не будується.
+`WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+
+**Тест:** `encodes a 16:9 raster as a JPEG well under the 488 KB PNG origin`.
+
+**Не зроблено в цій хвилі:** backfill історичних PNG; квота Supabase transform
+`(needs verification)`; F4.
+
 ## 2026-08-15 — F5: без пінів версії моделі в прод-коді
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F5.

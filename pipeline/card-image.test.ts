@@ -25,7 +25,11 @@ import {
   pitchRenderableBlob,
   type EditorialEssence,
   WEEKLY_PROMPT_POLICY,
+  CARD_ORIGIN_CONTENT_TYPE,
+  CARD_ORIGIN_JPEG_QUALITY,
   DEFAULT_CF_IMAGE_MODEL,
+  cardOriginStoragePath,
+  encodeCardOrigin,
   estimateCloudflareImageCostUsd,
   fallbackIllustrationMotif,
   fallbackScene,
@@ -344,6 +348,77 @@ describe('renderFallbackEditorialIllustration', () => {
     expect(first.equals(second)).toBe(true);
     expect(first.subarray(1, 4).toString()).toBe('PNG');
     await expect(sharp(first).metadata()).resolves.toMatchObject({ width: 1280, height: 720 });
+  });
+});
+
+describe('encodeCardOrigin', () => {
+  const jpegMagic = Buffer.from([0xff, 0xd8, 0xff]);
+
+  async function photographicLikePng(): Promise<Buffer> {
+    const raw = Buffer.alloc(IMG_W * IMG_H * 3);
+    for (let y = 0; y < IMG_H; y++) {
+      for (let x = 0; x < IMG_W; x++) {
+        const i = (y * IMG_W + x) * 3;
+        raw[i] = 90 + Math.round(Math.sin(x / 18) * 40 + Math.sin(y / 27) * 30);
+        raw[i + 1] = 70 + Math.round(Math.sin((x + y) / 22) * 35);
+        raw[i + 2] = 50 + Math.round(Math.cos(x / 31) * 25 + Math.sin(y / 14) * 20);
+      }
+    }
+    return sharp(raw, { raw: { width: IMG_W, height: IMG_H, channels: 3 } }).png().toBuffer();
+  }
+
+  it('stores news-card origins as JPEG under the item slug, not PNG', () => {
+    expect(cardOriginStoragePath('alibaba-open-sources-qwen3-8')).toBe(
+      'alibaba-open-sources-qwen3-8.jpg',
+    );
+    expect(CARD_ORIGIN_CONTENT_TYPE).toBe('image/jpeg');
+    expect(CARD_ORIGIN_JPEG_QUALITY).toBe(82);
+  });
+
+  it('encodes a 16:9 raster as a JPEG well under the 488 KB PNG origin', async () => {
+    const png = await renderFallbackEditorialIllustration({
+      title: 'Google Cloud Releases Always-On Memory Agent Powered by Gemini Flash-Lite',
+      summary: 'A background agent consolidates memory into SQLite instead of a RAG database.',
+      seedKey: 'weekly-memory-agent',
+    });
+    const jpeg = await encodeCardOrigin(png);
+    expect(jpeg.subarray(0, 3).equals(jpegMagic)).toBe(true);
+    await expect(sharp(jpeg).metadata()).resolves.toMatchObject({
+      format: 'jpeg',
+      width: IMG_W,
+      height: IMG_H,
+    });
+    expect(jpeg.length).toBeLessThan(200_000);
+  });
+
+  it('compresses a photographic-like 16:9 raster well below a PNG of the same pixels', async () => {
+    const png = await photographicLikePng();
+    const jpeg = await encodeCardOrigin(png);
+    expect(jpeg.length).toBeLessThan(200_000);
+    expect(jpeg.length).toBeLessThan(png.length);
+  });
+
+  it('covers off-size rasters (Pollinations 1216×640) onto the 16:9 origin', async () => {
+    const offSize = await sharp({
+      create: {
+        width: 1216,
+        height: 640,
+        channels: 3,
+        background: { r: 18, g: 32, b: 48 },
+      },
+    })
+      .png()
+      .toBuffer();
+    const jpeg = await encodeCardOrigin(offSize);
+    await expect(sharp(jpeg).metadata()).resolves.toMatchObject({
+      format: 'jpeg',
+      width: IMG_W,
+      height: IMG_H,
+    });
+  });
+
+  it('rejects bytes that are not an image', async () => {
+    await expect(encodeCardOrigin(Buffer.from('not-an-image'))).rejects.toThrow();
   });
 });
 

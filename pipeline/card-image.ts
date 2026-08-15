@@ -3,8 +3,9 @@
  * a unique editorial illustration that actually fits the story: a tiny text-model
  * call turns the headline + summary into a CONCRETE on-topic scene (no "glowing
  * brain" clichés), which becomes the dominant subject of a light brand-styled
- * prompt accented by the item's category colour. The image is stored in the
- * `card-images` Storage bucket and recorded on `brief_items.card_image_url`.
+ * prompt accented by the item's category colour. The origin is encoded as a
+ * 1280×720 JPEG (`encodeCardOrigin`) in the `card-images` Storage bucket and
+ * recorded on `brief_items.card_image_url`.
  *
  * Generation never blocks the brief and degrades gracefully down a quality ladder:
  *   1. Gemini "Nano Banana Pro" (gemini-3-pro-image) — best context-fit; opt-in
@@ -45,6 +46,34 @@ const FALLBACK_ACCENT = '#5bc9f0';
 /** 16:9 render size; crops cleanly to the 1200×630 OG card and the 92px feed thumb. */
 export const IMG_W = 1280;
 export const IMG_H = 720;
+/**
+ * Stored news-card origin. JPEG (not WebP) so OG crawlers can read the file
+ * without a transform. q82 lands well under the ~488 KB PNG origins that
+ * forced a resize on every view (2026-08-14 Vercel quota incident).
+ */
+export const CARD_ORIGIN_JPEG_QUALITY = 82;
+export const CARD_ORIGIN_CONTENT_TYPE = 'image/jpeg';
+/** Flatten alpha onto the fallback illustration backdrop (`#071019`). */
+const CARD_ORIGIN_FLAT_BG = { r: 7, g: 16, b: 25 };
+
+export function cardOriginStoragePath(slug: string): string {
+  return `${slug}.jpg`;
+}
+
+/** Resize/cover to 16:9, flatten transparency, encode as a compact JPEG origin. */
+export async function encodeCardOrigin(bytes: Buffer): Promise<Buffer> {
+  return sharp(bytes)
+    .rotate()
+    .resize(IMG_W, IMG_H, { fit: 'cover', position: 'centre' })
+    .flatten({ background: CARD_ORIGIN_FLAT_BG })
+    .jpeg({
+      quality: CARD_ORIGIN_JPEG_QUALITY,
+      mozjpeg: true,
+      progressive: true,
+    })
+    .toBuffer();
+}
+
 /** CF klein Unit Pricing defaults — overridable via env. */
 const DEFAULT_USD_FIRST_MP = 0.015;
 const DEFAULT_USD_NEXT_MP = 0.002;
@@ -2636,18 +2665,32 @@ async function generatePollinations(
   }
 }
 
-async function uploadCardImage(db: PipelineDb, slug: string, png: Buffer): Promise<string | null> {
-  const path = `${slug}.png`;
+async function uploadCardImage(
+  db: PipelineDb,
+  slug: string,
+  bytes: Buffer,
+): Promise<string | null> {
+  let origin: Buffer;
+  try {
+    origin = await encodeCardOrigin(bytes);
+  } catch (error) {
+    logEvent('warn', 'publish', 'Card image encode failed', {
+      slug,
+      ...serializeErrorDetails(error),
+    });
+    return null;
+  }
+  const path = cardOriginStoragePath(slug);
   const { error } = await db.storage
     .from(BUCKET)
-    .upload(path, png, { contentType: 'image/png', upsert: true });
+    .upload(path, origin, { contentType: CARD_ORIGIN_CONTENT_TYPE, upsert: true });
   if (error) {
     logEvent('warn', 'publish', 'Card image upload failed', { slug, error: error.message });
     return null;
   }
   // Content-hash version query so regenerating the same path busts the
   // image/CDN cache (the public URL is stable; the ?v changes with the bytes).
-  const version = createHash('sha1').update(png).digest('hex').slice(0, 10);
+  const version = createHash('sha1').update(origin).digest('hex').slice(0, 10);
   return `${db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl}?v=${version}`;
 }
 

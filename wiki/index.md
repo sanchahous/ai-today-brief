@@ -57,7 +57,7 @@ Last updated: 2026-08-15
 | ✅ [pipeline/weekly-master-failures](pipeline/weekly-master-failures.md) | Розбір збоїв `editorial_master` 09.08: 7 причин (таймаут CLI, tool-use, reasoning-сліпий stall-детектор, зелений прогін на провалі, фолбек, JSON-преамбула, відсутня UK/revise-драбина) | Actions runs + live sandbox 2026-08-09 |
 | ✅ [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) | Ітеративний рушій `editorial_master`: посегментний запис із чекпоїнтом на кожен сегмент, точковий ремонт поля замість перегенерації, якість більше не валить джобу | `master-engine.ts` / `master-segments.ts` / `master-repair.ts`, owner session 2026-08-09 |
 | ✅ [pipeline/content-sim](pipeline/content-sim.md) | Симуляція/бектест: per-concept 2×3 parallel vision loop, structural gates, advisory semantic planning, escalation, release gate | `pipeline/card-image.ts`, `src/lib/content-sim`, 2026-08-12 |
-| ✅ [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) | Виконавча специфікація ілюстрацій після рішення 2026-08-15. B1-fix … E3, F2, F3, G, A2, F5 зроблено 2026-08-15 | owner review живого випуску 2026-08-14 + рішення власника 2026-08-15 + `AI_Today_Brief_Visual_Algorithm_Plan.pdf` |
+| ✅ [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) | Виконавча специфікація ілюстрацій після рішення 2026-08-15. B1-fix … E3, F2, F3, G, A2, F5 зроблено 2026-08-15; origin JPEG новин — follow-up G2 | owner review живого випуску 2026-08-14 + рішення власника 2026-08-15 + `AI_Today_Brief_Visual_Algorithm_Plan.pdf` |
 | ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | Межа відео-pipeline | колишній `docs/VIDEO-PIPELINE-BOUNDARY.md` |
 | ✅ [pipeline/llm-providers](pipeline/llm-providers.md) | Уніфікований реєстр LLM-провайдерів (у розробці): навіщо, ключові знахідки, статус фаз | owner session 2026-08-06 |
 
@@ -82,7 +82,7 @@ Last updated: 2026-08-15
 | ✅ [marketing/linkedin-action-plan](marketing/linkedin-action-plan.md) | 90-денний покроковий план | колишній `docs/marketing/LINKEDIN-ACTION-PLAN.md` |
 | ✅ [marketing/company-page-playbook](marketing/company-page-playbook.md) | Playbook company-page | колишній `docs/marketing/ATB-COMPANY-PAGE-PLAYBOOK.md` |
 | ✅ [marketing/social-launch](marketing/social-launch.md) | Запуск соцканалів | колишній `docs/marketing/SOCIAL-LAUNCH.md` |
-| ✅ [marketing/card-images](marketing/card-images.md) | Daily cards + weekly semantic illustration v5.1: three-lens concept jury, reviewable per-round render history, causal fallback, per-concept vision gate | `pipeline/card-image.ts`, owner review + smoke renders 2026-08-12 |
+| ✅ [marketing/card-images](marketing/card-images.md) | Daily cards + weekly semantic illustration v5.1; news-card origin JPEG 1280×720 q82 | `pipeline/card-image.ts`, owner review + smoke renders 2026-08-12 |
 | ✅ [marketing/custom-social-delivery](marketing/custom-social-delivery.md) | Кастомна соц-доставка | колишній `docs/marketing/CUSTOM-SOCIAL-DELIVERY.md` |
 
 ## Product
@@ -101,7 +101,7 @@ Last updated: 2026-08-15
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [ops/mcp](ops/mcp.md) | MCP-сервери: chrome-devtools, apify, supabase, ahrefs, vercel | нове |
-| ✅ [ops/vercel-image-quota](ops/vercel-image-quota.md) | Інцидент 402 на `/_next/image`, власний loader через Supabase transform | live check 2026-08-14, `next.config.ts`, `src/lib/image-loader.ts` |
+| ✅ [ops/vercel-image-quota](ops/vercel-image-quota.md) | Інцидент 402 на `/_next/image`, власний loader; origin карток тепер JPEG при генерації | live check 2026-08-14, `next.config.ts`, `src/lib/image-loader.ts`, `pipeline/card-image.ts` |
 | ✅ [ops/owner-checklist](ops/owner-checklist.md) | Env-матриця, launch-блокери, go-live послідовність | колишній `docs/OWNER-CHECKLIST.md` |
 | ✅ [ops/social-cms-runbook](ops/social-cms-runbook.md) | Runbook соц-CMS | колишній `docs/SOCIAL-CMS-RUNBOOK.md` |
 | ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладки, succeeded≠approved, stuck jobs, async images та idempotent retry | нове 2026-08-04, оновлено 2026-08-11 |

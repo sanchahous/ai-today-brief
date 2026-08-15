@@ -3,6 +3,8 @@ import imageLoader, { isSupabasePublicObject } from './image-loader';
 
 const SUPABASE_CARD =
   'https://mdiqfatpqczwqghwttpm.supabase.co/storage/v1/object/public/card-images/alibaba-open-sources-qwen3-8.png?v=93ed3afb5c';
+const SUPABASE_CARD_JPEG =
+  'https://mdiqfatpqczwqghwttpm.supabase.co/storage/v1/object/public/card-images/alibaba-open-sources-qwen3-8.jpg?v=93ed3afb5c';
 
 describe('imageLoader', () => {
   it('routes Supabase public objects through the Storage transform endpoint', () => {
@@ -11,6 +13,13 @@ describe('imageLoader', () => {
     expect(out).not.toContain('/storage/v1/object/public/');
     expect(out).toContain('width=184');
     expect(out).toContain('quality=75');
+  });
+
+  it('transforms JPEG card origins the same way as legacy PNG paths', () => {
+    const out = imageLoader({ src: SUPABASE_CARD_JPEG, width: 184, quality: 75 });
+    expect(out).toContain('/storage/v1/render/image/public/card-images/');
+    expect(out).toContain('.jpg');
+    expect(out).toContain('width=184');
   });
 
   it('preserves the cache-busting query already on the stored URL', () => {

@@ -66,8 +66,14 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    stream the body without duplex — that silently spilled to `flux-1-schnell`).
    Fallback ladder: Pollinations → procedural **duotone**
    (`src/lib/card/duotone.ts`). (source: PR #169, #171, `pipeline/card-image.ts`)
-4. **Store** — public Supabase bucket `card-images` → `brief_items.card_image_url`
-   (daily); weekly artifacts keep their own storage paths + prompt metadata.
+4. **Store** — `encodeCardOrigin` cover-resize to 1280×720, flatten alpha onto
+   `#071019`, JPEG q82 mozjpeg progressive → `${slug}.jpg` (`image/jpeg`) in the
+   public `card-images` bucket → `brief_items.card_image_url`. JPEG, not WebP,
+   so OG crawlers can read the origin without a transform. Idempotent skip
+   leaves existing `.png` (~488 KB from the 2026-08-14 incident) until
+   force/backfill. Weekly artifacts keep their own storage paths + prompt
+   metadata. (source: [ops/vercel-image-quota](../ops/vercel-image-quota.md),
+   `pipeline/card-image.ts`)
 5. **Render** — `opengraph-image.tsx` (Satori) composites the brand overlay for
    OG/share; listings / heroes use `next/image`.
 

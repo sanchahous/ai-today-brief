@@ -5,8 +5,9 @@ Image Optimization, а не генерація. Оптимізатор Vercel з
 ресайзить наші картки через Supabase Storage.
 Sources: live check `https://aitodaybrief.com/_next/image?…` 2026-08-14 (HTTP 402,
 `X-Vercel-Error: OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED`); `next.config.ts`;
-`src/lib/image-loader.ts`; owner report 2026-08-14.
-Last updated: 2026-08-14
+`src/lib/image-loader.ts`; `pipeline/card-image.ts` origin JPEG 2026-08-15;
+owner report 2026-08-14.
+Last updated: 2026-08-15
 
 ---
 
@@ -64,14 +65,20 @@ Cache-buster `?v=<hash>` зі збереженого URL має вижити, т
 
 У слоті 92 px це **у 37 разів менше** трафіку, ніж віддав би `unoptimized`, і нуль квоти Vercel.
 
+## Origin JPEG (закрито 2026-08-15)
+
+Нові картки новин пишуться як `${slug}.jpg` (`image/jpeg`, 1280×720, q82 mozjpeg)
+через `encodeCardOrigin` у `pipeline/card-image.ts` — до upload, на всіх щаблях
+драбини (FLUX / Pollinations / fallback). JPEG, не WebP, бо OG-кrawlerи слабше
+читають WebP. Ідемпотентний skip лишає вже збережені `.png` (~488 КБ) до
+force/backfill; модель новин і loader не змінювали. Мініатюра і повне — як і раніше
+один файл. (source: `pipeline/card-image.ts`, [marketing/card-images](../marketing/card-images.md))
+
 ## Що лишається відкритим
 
 - **Квота Supabase.** Трансформації Storage теж мають ліміт за планом. Зараз працюють
   (HTTP 200), але якщо проєкт на Free — варто звірити ліміт до того, як він скінчиться так само
   раптово. `(needs verification)`
-- **Вага origin-файлів.** 488 КБ PNG для картки — надлишок на самому джерелі. Правильніше
-  зменшувати на етапі генерації в `pipeline/card-image.ts`, а не компенсувати трансформацією
-  на кожному показі.
 - **Hero-зображення видань** тепер віддаються без ресайзу. Для них трансформації немає взагалі;
   якщо це стане проблемою ваги — потрібен власний проксі-кеш, а не повернення до Vercel.
 
