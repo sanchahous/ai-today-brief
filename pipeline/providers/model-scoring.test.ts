@@ -74,6 +74,20 @@ describe('scoreModelForRole', () => {
     expect(QUALITY_AXIS.custom_research).toBe('agentic');
   });
 
+  it('every provider role has an explicit floor -- a 14.2 index model is not chosen for any of them (R1.4 / F4)', () => {
+    const cheapWeak = model({
+      id: 'inclusionai/ling-flash',
+      pricing: perMillion(0.01, 0.03),
+      benchmarks: {
+        artificial_analysis: { intelligence_index: 14.2, coding_index: 14.2, agentic_index: 14.2 },
+      },
+    });
+    for (const role of Object.keys(QUALITY_FLOOR) as (keyof typeof QUALITY_FLOOR)[]) {
+      expect(QUALITY_FLOOR[role]).toBeGreaterThan(14.2);
+      expect(scoreModelForRole(cheapWeak, role)).toBeNull();
+    }
+  });
+
   it('returns a chain of top-3 scored models, not a single winner', () => {
     const catalog = [50, 60, 45, 80].map((quality, index) =>
       model({

@@ -7,6 +7,7 @@ import {
   latestAuditsByRole,
   planOpenRouterRerank,
   qualityDropBlocked,
+  rerankApplyEnabled,
 } from './model-rerank';
 
 function perMillion(promptUsd: number, completionUsd: number): OpenRouterModelRecord['pricing'] {
@@ -117,6 +118,40 @@ describe('planOpenRouterRerank', () => {
     expect(qualityDropBlocked(55, 51)).toBe(false);
     expect(plan.apply).toBe(true);
     expect(plan.openRouterModelIds[0]).toBe('vendor/near-current');
+  });
+
+  it('does not truncate the applied queue to the top-3 scored leaders (R1.3 / F3)', () => {
+    // A larger catalog: 3 scored leaders above the weekly.master_writer floor
+    // plus several more eligible-but-unscored/lower models that only the
+    // family-ranked tail would surface. Every role that falls through to the
+    // shared default OpenRouter queue needs that tail for fallback resilience
+    // -- slicing to 3 here previously threw it away for the whole registry.
+    const extras = Array.from({ length: 6 }, (_, i) =>
+      model({ id: `vendor/extra-${i}`, pricing: perMillion(2, 6) }),
+    );
+    const plan = planOpenRouterRerank({
+      catalog: [...editorialCatalog(), ...extras],
+      currentApply: null,
+    });
+    expect(plan.apply).toBe(true);
+    expect(plan.openRouterModelIds.length).toBeGreaterThan(3);
+    for (const extra of extras) {
+      expect(plan.openRouterModelIds).toContain(extra.id);
+    }
+    // The intelligence_index 14.2 model stays excluded even in the tail --
+    // the floor blocks it everywhere, not just from the scored leaders.
+    expect(plan.openRouterModelIds).not.toContain('vendor/cheap-weak');
+  });
+});
+
+describe('rerankApplyEnabled', () => {
+  it('is enabled by default and only "off" (case/whitespace-insensitive) disables it', () => {
+    expect(rerankApplyEnabled(undefined)).toBe(true);
+    expect(rerankApplyEnabled('')).toBe(true);
+    expect(rerankApplyEnabled('on')).toBe(true);
+    expect(rerankApplyEnabled('off')).toBe(false);
+    expect(rerankApplyEnabled('OFF')).toBe(false);
+    expect(rerankApplyEnabled('  off  ')).toBe(false);
   });
 });
 

@@ -17,6 +17,7 @@ import {
   OPENROUTER_PROVIDER_ID,
   RANK_APPLY_ROLE,
   planOpenRouterRerank,
+  rerankApplyEnabled,
   type CurrentApplyPick,
   type RoleRankAudit,
 } from '../providers/model-rerank';
@@ -124,23 +125,28 @@ async function main(): Promise<void> {
   const currentApply = await loadCurrentApply(db);
   const plan = planOpenRouterRerank({ catalog, currentApply });
   const writer = plan.audits.find((row) => row.role === RANK_APPLY_ROLE);
+  // Owner kill-switch: audits still get written (visible in /admin/providers)
+  // so the ranking stays observable even while apply is off (R1.3 / F3).
+  const applyEnabled = rerankApplyEnabled(env.OPENROUTER_RERANK_APPLY);
 
   logEvent('info', 'rank', 'OpenRouter model rerank planned', {
     catalog_size: catalog.length,
-    apply: plan.apply,
-    skip_reason: writer?.skipReason ?? null,
+    apply: plan.apply && applyEnabled,
+    apply_enabled: applyEnabled,
+    skip_reason: writer?.skipReason ?? (applyEnabled ? null : 'apply_disabled'),
     winner: writer?.modelId ?? null,
     quality_index: writer?.qualityIndex ?? null,
     score: writer?.score ?? null,
     price_per_m: writer?.pricePerM ?? null,
-    queue: plan.openRouterModelIds,
+    queue_size: plan.openRouterModelIds.length,
+    queue_head: plan.openRouterModelIds.slice(0, 5),
     dry_run: dryRun,
   });
 
   if (dryRun) return;
 
   await persistAudits(db, plan.audits);
-  if (plan.apply) {
+  if (plan.apply && applyEnabled) {
     await applyOpenRouterQueue(db, plan.openRouterModelIds);
   }
 }

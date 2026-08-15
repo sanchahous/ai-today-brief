@@ -36,6 +36,9 @@ jobs:
           SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
           SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
           OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          # Owner kill-switch, no deploy needed: repo/org Actions variable, not
+          # a secret. Unset or anything but "off" keeps auto-apply enabled.
+          OPENROUTER_RERANK_APPLY: ${{ vars.OPENROUTER_RERANK_APPLY }}
         run: |
           ARGS=""
           if [[ "${{ inputs.dry_run }}" == "true" ]]; then

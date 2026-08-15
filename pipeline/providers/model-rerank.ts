@@ -8,7 +8,6 @@ import type { OpenRouterModelRecord } from '../openrouter-models';
 import { PROVIDER_ROLES, type ProviderRole } from './registry';
 import {
   QUALITY_AXIS,
-  ROLE_SCORED_CHAIN_CAP,
   rankModelsForRole,
   scoredModelsForRole,
   type ModelRoleScore,
@@ -19,10 +18,30 @@ import {
 export const OPENROUTER_PROVIDER_ID = 'openrouter';
 
 /**
- * llm_provider_models is provider-scoped, not role-scoped. The daily job writes
- * the weekly.master_writer top-3 (highest editorial floor) as that shared queue.
+ * llm_provider_models is provider-scoped, not role-scoped: every role that
+ * falls through to `defaultChain` (no admin-configured `llm_role_chains` row)
+ * shares this one queue. The daily job picks its *ordering* from
+ * weekly.master_writer's ranking (highest editorial floor), but writes the
+ * FULL `rankModelsForRole` result -- scored leaders plus the family-ranked
+ * tail -- not just the top few ids. Truncating to only the top scored
+ * entries here previously shrank every other role's fallback chain from the
+ * full family-ranked catalog down to 3 ids chosen for an unrelated role's
+ * price/quality tradeoff, which is exactly the kind of silent, shared-queue
+ * degradation this job is supposed to guard against (R1.3 / F3).
  */
 export const RANK_APPLY_ROLE: ProviderRole = 'weekly.master_writer';
+
+/**
+ * Owner kill-switch (`OPENROUTER_RERANK_APPLY=off`): the job still fetches the
+ * catalog and writes audit rows either way, so the ranking stays visible in
+ * `/admin/providers`, but never calls `replace_llm_provider_models`. Same
+ * pattern as `WEEKLY_CONTENT_STUDIO_V2=off` / `WEEKLY_STORY_IMAGE_MODE` --
+ * every automated write in this project gets a reversible off-switch that
+ * does not require a deploy.
+ */
+export function rerankApplyEnabled(raw: string | undefined): boolean {
+  return raw?.trim().toLowerCase() !== 'off';
+}
 
 /** Absolute intelligence points. Spec says "noticeably lower"; 5 is the floor. */
 export const QUALITY_DROP_BLOCK = 5;
@@ -49,7 +68,12 @@ export interface CurrentApplyPick {
 
 export interface RerankPlan {
   audits: RoleRankAudit[];
-  /** Top-3 for OpenRouter when `apply` is true; empty when the job must not switch. */
+  /**
+   * Scored leaders (quality/$ for RANK_APPLY_ROLE) plus the full family-ranked
+   * tail when `apply` is true -- NOT truncated, so every role that shares the
+   * default OpenRouter queue keeps a resilient fallback chain, not just 3
+   * ids. Empty when the job must not switch.
+   */
   openRouterModelIds: string[];
   apply: boolean;
 }
@@ -128,9 +152,7 @@ export function planOpenRouterRerank(input: {
   return {
     audits,
     apply,
-    openRouterModelIds: apply
-      ? rankModelsForRole(catalog, RANK_APPLY_ROLE).slice(0, ROLE_SCORED_CHAIN_CAP)
-      : [],
+    openRouterModelIds: apply ? rankModelsForRole(catalog, RANK_APPLY_ROLE) : [],
   };
 }
 

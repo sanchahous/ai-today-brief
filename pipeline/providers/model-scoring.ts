@@ -26,12 +26,33 @@ export const QUALITY_AXIS = {
   custom_research: 'agentic',
 } as const satisfies Record<ProviderRole, QualityAxis>;
 
-/** Below this index the model is not a candidate, however cheap it is. */
-export const QUALITY_FLOOR: Partial<Record<ProviderRole, number>> = {
+/**
+ * Below this index the model is not a candidate, however cheap it is (F4 fix:
+ * this used to be a `Partial` covering 3 of 13 roles, so the other 10 --
+ * including `daily.auto_publish_judge` and `daily.verify` -- had NO floor and
+ * "quality / price" alone will always pick the cheapest model above zero,
+ * which is exactly the `ling-2.6-flash` (intelligence_index 14.2) trap the
+ * plan warns about (F0). Every role now gets an explicit floor, tiered by
+ * how much a bad pick costs: highest for the two editorial-text roles that
+ * ship unreviewed prose, next for judge/critic roles that gate quality,
+ * lowest for creative scene-brief roles where flair matters more than raw
+ * intelligence but a near-zero-competence model is still not acceptable.
+ */
+export const QUALITY_FLOOR = {
+  'daily.summarize': 25,
+  'daily.verify': 30,
+  'daily.auto_publish_judge': 35,
+  'daily.card_image_scene': 20,
+  'daily.cover_scene': 20,
+  'daily.image_critic': 30,
   'weekly.master_writer': 40,
   'weekly.master_critic': 40,
-  'daily.summarize': 25,
-};
+  'weekly.card_image_scene': 20,
+  'weekly.image_critic': 30,
+  'social.writer': 20,
+  'social.critic': 30,
+  custom_research: 20,
+} as const satisfies Record<ProviderRole, number>;
 
 export type TokenMix = { prompt: number; completion: number };
 
