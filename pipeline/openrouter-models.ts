@@ -278,6 +278,17 @@ function compositeRankScore(model: OpenRouterModelRecord, priorities: string[]):
   return tierBase + pattern + priority + stability + contextBoost;
 }
 
+/**
+ * Exported so every path that can put an id into a live model queue applies the
+ * SAME exclusions. The quality/$ scorer used to bypass this and could rank a
+ * `:batch` variant into the head of the shared queue -- those only answer through
+ * OpenRouter's separate Batch API and 404 on chat completions (a live run burned
+ * six queue slots on one, 2026-08-10).
+ */
+export function isEligibleOpenRouterModel(model: OpenRouterModelRecord): boolean {
+  return isEligibleModel(model);
+}
+
 function isEligibleModel(model: OpenRouterModelRecord): boolean {
   const id = model.id.toLowerCase();
   // Exclude OpenRouter's `:free` routing tier — it has severe per-minute rate limits
@@ -309,6 +320,23 @@ export function rankOpenRouterModelIds(
     (a, b) => compositeRankScore(a, priorities) - compositeRankScore(b, priorities),
   );
   return sortModelQueueByTier(sorted.map((m) => m.id));
+}
+
+/**
+ * How many models a single call may walk before giving up. Every consumer of a
+ * model queue must apply it: `generateWithOpenRouterChain` iterates the whole
+ * queue on failures, so an uncapped queue turns one bad model family into an
+ * hours-long rotation (12 models already cost ~20 minutes in production,
+ * 2026-08-09).
+ */
+export function openRouterModelAttemptCap(
+  env: {
+    OPENROUTER_MAX_MODEL_ATTEMPTS?: string;
+    [key: string]: string | undefined;
+  } = process.env,
+): number {
+  const maxAttempts = Number.parseInt(env.OPENROUTER_MAX_MODEL_ATTEMPTS ?? '6', 10);
+  return Number.isFinite(maxAttempts) && maxAttempts > 0 ? maxAttempts : 6;
 }
 
 /* v8 ignore start -- live network: tested via unit tests of ranking logic */
@@ -353,8 +381,7 @@ export async function resolveOpenRouterModelQueue(
   } = {},
 ): Promise<string[]> {
   const priorities = parsePriorityList(env.OPENROUTER_MODEL_PRIORITY);
-  const maxAttempts = Number.parseInt(env.OPENROUTER_MAX_MODEL_ATTEMPTS ?? '6', 10);
-  const cap = Number.isFinite(maxAttempts) && maxAttempts > 0 ? maxAttempts : 6;
+  const cap = openRouterModelAttemptCap(env);
 
   const fetchModels = deps.fetchModels ?? ((key: string) => fetchOpenRouterModels(key));
   const models = await fetchModels(apiKey);

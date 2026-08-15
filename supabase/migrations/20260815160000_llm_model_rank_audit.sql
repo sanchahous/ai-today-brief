@@ -19,7 +19,11 @@ create table if not exists public.llm_model_rank_audit (
   skip_reason             text,
   previous_model_id       text,
   previous_quality_index  double precision,
-  check (skip_reason is null or skip_reason in ('quality_drop', 'no_candidate')),
+  -- apply_disabled: OPENROUTER_RERANK_APPLY=off. The run still ranks and still
+  -- records the winner, but nothing was written to llm_provider_models -- so
+  -- the row must NOT claim applied=true, or the next run's quality-drop guard
+  -- baselines against a model that never entered the queue.
+  check (skip_reason is null or skip_reason in ('quality_drop', 'no_candidate', 'apply_disabled')),
   check (applied = false or skip_reason is null),
   check (applied = false or model_id is not null),
   check (

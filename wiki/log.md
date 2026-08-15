@@ -6,6 +6,35 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — Пре-мерж перевірка самих фіксів: три з них були дефектні
+
+**Джерело:** прод-Supabase `mdiqfatpqczwqghwttpm` (grants, тригери, `list_migrations`), живий
+каталог OpenRouter 2026-08-15, `gh pr checks` по всіх 25 PR стека, локальний `npm run pr:check`.
+
+**Змінено:** [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md)
+(розділ «Пре-мерж перевірка самих фіксів»), [now](now.md).
+
+**Коригує запис нижче** — не спростовує його, а додає: фікси R1–R4 перевірено не лише тестами,
+а проти живих систем, і три виявились такими, що не працюють.
+
+**Код:** (1) `20260815180000` переписано — `revoke select (col)` є no-op проти табличного
+granta, тепер `revoke select` + колонковий `grant` на 12 публічних колонок плюс self-verifying
+`do $$` блок усередині міграції; (2) чергу OpenRouter обрізано до `OPENROUTER_MAX_MODEL_ATTEMPTS`
+у плані rerank і захисно в реєстрі (на живому каталозі 197 → 6); (3) `isEligibleOpenRouterModel`
+експортовано й застосовано в `scoreModelForRole` — `:batch`/`:free` більше не кандидати
+quality/$; (4) `applyEnabled` прокинуто в `planOpenRouterRerank` + новий
+`skip_reason='apply_disabled'`, щоб kill-switch не писав фантомний `applied=true` як базу
+quality-drop guard наступного дня.
+
+**Тест:** 106 тестів у `pipeline/providers/` + `openrouter-models` зелені (нових — 7); повний
+`npm run pr:check` прогнано наскрізь із відсіченим exit code. Обидві правки БД перевірено
+дров-раном на прод-Postgres у транзакції з відкатом — прод не змінювався.
+
+**Не зроблено:** `daily.auto_publish_judge` за quality/$ обирає intelligence 37.8 при порозі 35 —
+роль audit-only, застосовується лише ранжування `weekly.master_writer`; на першому прогоні
+guard-а немає за побудовою (`currentApply = null`), тому apply вмикає власник вручну після
+спостереження, а не cron за замовчуванням.
+
 ## 2026-08-15 — Review 24 PR (#241–#264) і виправлення на `feat/weekly-illustration-fixes`
 
 **Джерело:** [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md) — повний список.

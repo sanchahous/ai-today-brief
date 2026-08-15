@@ -10,6 +10,31 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **Пре-мерж перевірка стека #241–#265 проти живих систем (2026-08-15) — три фікси самі були
+  дефектні, виправлено.** Перед мержем у `main` фікси R1–R4 перевірено не тестами, а прод-БД і
+  живим каталогом OpenRouter. Знайдено: (1) `revoke select (cover_prompt)` — **no-op**, бо
+  `anon`/`authenticated` тримають *табличний* `SELECT` на `briefs`, а колонковий REVOKE від
+  нього не віднімає (доведено пробою на прод-Postgres у транзакції з відкатом); супутній
+  SQL-тест стверджував протилежне і впав би, якби CI його запускав — CI SQL-тести не запускає
+  взагалі; (2) виправлення «не обрізати чергу» стало перекорекцією — `rankModelsForRole` дає
+  **197 id** на реальному каталозі (413 моделей), реєстр віддавав їх у `modelQueue` без стелі
+  `OPENROUTER_MAX_MODEL_ATTEMPTS` (=6), а `llm_role_chains` у проді порожній, тож усі 13 ролей
+  успадкували б 197-модельну ротацію (12 моделей уже коштували ~20 хв 09.08); (3)
+  `scoreModelForRole` не застосовував `isEligibleModel`, тож `:batch`-варіанти (404 на chat
+  completions, спалили 6 слотів 10.08) були повноцінними кандидатами quality/$; (4) kill-switch
+  `OPENROUTER_RERANK_APPLY=off` писав `applied=true` без запису в чергу, отруюючи базу
+  quality-drop guard наступного дня. Усе виправлено, 197 → **6**, `:batch`/`:free` у черзі
+  немає, `skip_reason='apply_disabled'` рендериться в `/admin/providers`. Деталі —
+  [audits/2026-08-15-illustration-pr-stack-review § Пре-мерж перевірка](audits/2026-08-15-illustration-pr-stack-review.md#пре-мерж-перевірка-самих-фіксів-2026-08-15-друга-ітерація).
+  **Перед мержем:** 4 міграції `20260815*` у проді ще немає; `OPENROUTER_RERANK_APPLY=off`
+  ставиться до мержу, бо на першому прогоні `qualityDropBlocked(null, …)` = `false` — guard-а
+  немає за побудовою. Також: `e2e.yml`/`sonarqube.yml` тригеряться лише на `pull_request → main`,
+  тож перецілення PR #265 на `main` — єдиний спосіб, щоб Playwright і Sonar уперше побачили ці
+  12.5k рядків.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-15, живий каталог OpenRouter
+  2026-08-15, `pipeline/providers/model-rerank.ts`, `model-scoring.ts`, `registry.ts`,
+  `supabase/migrations/20260815180000_briefs_cover_prompt_column_privacy.sql`)
+
 - **Review 24 PR ілюстраційного стека + виправлення на гілці `feat/weekly-illustration-fixes`
   (2026-08-15) — завершено.** Технічне ревʼю PR #241–#264 (усі хвилі
   [weekly-illustration-plan](pipeline/weekly-illustration-plan.md)) знайшло 4 блокери,

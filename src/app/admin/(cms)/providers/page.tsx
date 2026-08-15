@@ -44,6 +44,9 @@ function rankingStatusText(row: RankAuditRow): string {
     return 'Not applied: quality dropped — current queue kept';
   }
   if (row.skip_reason === 'no_candidate') return 'Not applied: no scored candidate';
+  if (row.skip_reason === 'apply_disabled') {
+    return 'Not applied: OPENROUTER_RERANK_APPLY=off — ranking recorded only';
+  }
   return 'Recorded (informational — queue is writer-scoped)';
 }
 

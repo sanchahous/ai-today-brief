@@ -25,6 +25,46 @@ function model(partial: Partial<OpenRouterModelRecord> & { id: string }): OpenRo
   };
 }
 
+describe('scoreModelForRole eligibility', () => {
+  it('never scores a :batch variant, however good its quality-per-dollar is', () => {
+    // :batch ids only answer through OpenRouter's separate Batch API and 404 on
+    // chat completions -- a live run burned six queue slots on one (2026-08-10).
+    // The family ranking has always excluded them; the quality/$ head did not,
+    // so a cheap :batch could lead the shared queue.
+    const batch = model({
+      id: 'openai/gpt-5.6-luna:batch',
+      pricing: perMillion(0.1, 0.1),
+      benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+    });
+    expect(scoreModelForRole(batch, 'weekly.master_writer')).toBeNull();
+  });
+
+  it('never scores a :free variant', () => {
+    const free = model({
+      id: 'vendor/model:free',
+      pricing: perMillion(0.01, 0.01),
+      benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+    });
+    expect(scoreModelForRole(free, 'weekly.master_writer')).toBeNull();
+  });
+
+  it('keeps :batch out of the ranked chain head as well as the tail', () => {
+    const batch = model({
+      id: 'openai/gpt-5.6-luna:batch',
+      pricing: perMillion(0.1, 0.1),
+      benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+    });
+    const clean = model({
+      id: 'vendor/editorial-writer',
+      pricing: perMillion(0.5, 2),
+      benchmarks: { artificial_analysis: { intelligence_index: 55 } },
+    });
+    const chain = rankModelsForRole([batch, clean], 'weekly.master_writer');
+    expect(chain).not.toContain('openai/gpt-5.6-luna:batch');
+    expect(chain[0]).toBe('vendor/editorial-writer');
+  });
+});
+
 describe('scoreModelForRole', () => {
   it('a model with intelligence_index 14.2 at $0.01 is not chosen for weekly.master_writer', () => {
     const cheapWeak = model({

@@ -4,7 +4,7 @@
  * Pure — the job script does IO. See wiki/pipeline/weekly-illustration-plan.md F3.
  */
 
-import type { OpenRouterModelRecord } from '../openrouter-models';
+import { openRouterModelAttemptCap, type OpenRouterModelRecord } from '../openrouter-models';
 import { PROVIDER_ROLES, type ProviderRole } from './registry';
 import {
   QUALITY_AXIS,
@@ -46,7 +46,7 @@ export function rerankApplyEnabled(raw: string | undefined): boolean {
 /** Absolute intelligence points. Spec says "noticeably lower"; 5 is the floor. */
 export const QUALITY_DROP_BLOCK = 5;
 
-export type RankSkipReason = 'quality_drop' | 'no_candidate';
+export type RankSkipReason = 'quality_drop' | 'no_candidate' | 'apply_disabled';
 
 export interface RoleRankAudit {
   role: ProviderRole;
@@ -69,10 +69,19 @@ export interface CurrentApplyPick {
 export interface RerankPlan {
   audits: RoleRankAudit[];
   /**
-   * Scored leaders (quality/$ for RANK_APPLY_ROLE) plus the full family-ranked
-   * tail when `apply` is true -- NOT truncated, so every role that shares the
-   * default OpenRouter queue keeps a resilient fallback chain, not just 3
-   * ids. Empty when the job must not switch.
+   * Scored leaders (quality/$ for RANK_APPLY_ROLE) followed by the family-ranked
+   * tail, so every role sharing the default OpenRouter queue keeps a real
+   * fallback chain rather than 3 ids picked for one unrelated role (F3).
+   *
+   * Truncated to `openRouterModelAttemptCap()` -- the same ceiling the live
+   * path has always applied. Writing the *whole* ranking here looked like
+   * "more resilience" but is the opposite: `generateWithOpenRouterChain` walks
+   * the entire queue on failure, `llm_role_chains` is empty in production so
+   * all 13 roles inherit this one queue, and the untruncated ranking is ~197
+   * ids against a real catalog -- a 33x increase in worst-case attempts for a
+   * pipeline that already lost ~20 minutes to a 12-model rotation.
+   *
+   * Empty when the job must not switch.
    */
   openRouterModelIds: string[];
   apply: boolean;
@@ -103,6 +112,7 @@ function auditForRole(
   role: ProviderRole,
   pick: ModelRoleScore | null,
   currentApply: CurrentApplyPick | null,
+  applyEnabled: boolean,
 ): RoleRankAudit {
   const axis = QUALITY_AXIS[role];
   const previous = previousFields(role, currentApply);
@@ -136,23 +146,42 @@ function auditForRole(
   if (qualityDropBlocked(currentApply?.qualityIndex ?? null, pick.quality)) {
     return { ...scored, applied: false, skipReason: 'quality_drop' };
   }
+  // The kill-switch must not fake history: with apply off nothing reaches
+  // replace_llm_provider_models, so recording `applied: true` would make the
+  // NEXT run read this row as the live baseline for the quality-drop guard and
+  // compare against a model that was never in the queue -- corrupting the
+  // guard in exactly the emergency the switch exists for.
+  if (!applyEnabled) {
+    return { ...scored, applied: false, skipReason: 'apply_disabled' };
+  }
   return { ...scored, applied: true, skipReason: null };
 }
 
 export function planOpenRouterRerank(input: {
   catalog: readonly OpenRouterModelRecord[];
   currentApply: CurrentApplyPick | null;
+  /** `OPENROUTER_RERANK_APPLY` resolved by the caller; defaults to enabled. */
+  applyEnabled?: boolean;
+  /** Overridable for tests; defaults to `OPENROUTER_MAX_MODEL_ATTEMPTS`. */
+  queueCap?: number;
 }): RerankPlan {
   const catalog = [...input.catalog];
+  const applyEnabled = input.applyEnabled ?? true;
   const audits = PROVIDER_ROLES.map((role) =>
-    auditForRole(role, scoredModelsForRole(catalog, role)[0] ?? null, input.currentApply),
+    auditForRole(
+      role,
+      scoredModelsForRole(catalog, role)[0] ?? null,
+      input.currentApply,
+      applyEnabled,
+    ),
   );
   const writer = audits.find((row) => row.role === RANK_APPLY_ROLE);
   const apply = writer?.applied === true;
+  const cap = input.queueCap ?? openRouterModelAttemptCap();
   return {
     audits,
     apply,
-    openRouterModelIds: apply ? rankModelsForRole(catalog, RANK_APPLY_ROLE) : [],
+    openRouterModelIds: apply ? rankModelsForRole(catalog, RANK_APPLY_ROLE).slice(0, cap) : [],
   };
 }
 

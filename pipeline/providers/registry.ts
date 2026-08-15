@@ -28,7 +28,7 @@ import { CODEX_CLI_CONFIG } from './cli/codex';
 import { generateWithGemini, type GeminiProviderConfig } from './gemini-provider';
 import { ProviderUnavailableError, type ProviderCallResult } from './types';
 import type { OpenRouterResponseValidator } from '../openrouter-brief-json';
-import { resolveOpenRouterModelQueue } from '../openrouter-models';
+import { openRouterModelAttemptCap, resolveOpenRouterModelQueue } from '../openrouter-models';
 import { logEvent } from '../log';
 import type { PipelineDb } from '../db';
 
@@ -269,13 +269,20 @@ function modelsByProviderFromRows(
 /**
  * Stored OpenRouter ids skip the 411-model catalog fetch. Empty tables still
  * live-rank so a fresh environment can bootstrap before the daily job runs.
+ *
+ * The stored list gets the SAME `OPENROUTER_MAX_MODEL_ATTEMPTS` ceiling the
+ * live path applies. Without it the DB became a way to smuggle an unbounded
+ * queue past the cap -- `generateWithOpenRouterChain` walks every entry on
+ * failure, and `llm_provider_models` is writable both by the daily rerank job
+ * and by the free-text `/admin/providers` textarea, so neither source can be
+ * assumed to be cap-sized.
  */
 async function resolveOpenRouterDefaultQueue(
   openRouterKey: string,
   env: RegistryEnv,
   storedIds: string[],
 ): Promise<string[]> {
-  if (storedIds.length > 0) return storedIds;
+  if (storedIds.length > 0) return storedIds.slice(0, openRouterModelAttemptCap(env));
   return resolveOpenRouterModelQueue(openRouterKey, env);
 }
 

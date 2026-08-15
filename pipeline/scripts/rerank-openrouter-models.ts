@@ -123,17 +123,19 @@ async function main(): Promise<void> {
   const db = createServiceClient(supabaseUrl, supabaseServiceKey);
   const catalog = await fetchOpenRouterModels(openRouterKey);
   const currentApply = await loadCurrentApply(db);
-  const plan = planOpenRouterRerank({ catalog, currentApply });
-  const writer = plan.audits.find((row) => row.role === RANK_APPLY_ROLE);
   // Owner kill-switch: audits still get written (visible in /admin/providers)
-  // so the ranking stays observable even while apply is off (R1.3 / F3).
+  // so the ranking stays observable even while apply is off (R1.3 / F3). It is
+  // passed INTO the plan, not applied after it, so the persisted rows record
+  // what actually happened rather than what would have happened.
   const applyEnabled = rerankApplyEnabled(env.OPENROUTER_RERANK_APPLY);
+  const plan = planOpenRouterRerank({ catalog, currentApply, applyEnabled });
+  const writer = plan.audits.find((row) => row.role === RANK_APPLY_ROLE);
 
   logEvent('info', 'rank', 'OpenRouter model rerank planned', {
     catalog_size: catalog.length,
-    apply: plan.apply && applyEnabled,
+    apply: plan.apply,
     apply_enabled: applyEnabled,
-    skip_reason: writer?.skipReason ?? (applyEnabled ? null : 'apply_disabled'),
+    skip_reason: writer?.skipReason ?? null,
     winner: writer?.modelId ?? null,
     quality_index: writer?.qualityIndex ?? null,
     score: writer?.score ?? null,
@@ -146,7 +148,7 @@ async function main(): Promise<void> {
   if (dryRun) return;
 
   await persistAudits(db, plan.audits);
-  if (plan.apply && applyEnabled) {
+  if (plan.apply) {
     await applyOpenRouterQueue(db, plan.openRouterModelIds);
   }
 }

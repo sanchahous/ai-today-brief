@@ -4,7 +4,11 @@
  * models below the role floor (e.g. a 14.2 index at $0.01/M) are not candidates.
  */
 
-import { rankOpenRouterModelIds, type OpenRouterModelRecord } from '../openrouter-models';
+import {
+  isEligibleOpenRouterModel,
+  rankOpenRouterModelIds,
+  type OpenRouterModelRecord,
+} from '../openrouter-models';
 import type { ProviderRole } from './registry';
 
 export const QUALITY_AXES = ['intelligence', 'coding', 'agentic'] as const;
@@ -114,6 +118,12 @@ export function scoreModelForRole(
   model: OpenRouterModelRecord,
   role: ProviderRole,
 ): ModelRoleScore | null {
+  // The family ranking (rankOpenRouterModelIds) filters these out, but the
+  // quality/$ head used to be built straight from the raw catalog -- so a
+  // `:batch` id (chat-completions 404) or a `:free` id (severe per-minute
+  // limits) could lead the queue purely by being cheap. Scored leaders and the
+  // family-ranked tail must obey the same eligibility rules.
+  if (!isEligibleOpenRouterModel(model)) return null;
   const axis = QUALITY_AXIS[role];
   const quality = qualityIndexForAxis(model, axis);
   if (quality === null) return null;

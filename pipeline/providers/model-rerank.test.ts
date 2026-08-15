@@ -120,7 +120,7 @@ describe('planOpenRouterRerank', () => {
     expect(plan.openRouterModelIds[0]).toBe('vendor/near-current');
   });
 
-  it('does not truncate the applied queue to the top-3 scored leaders (R1.3 / F3)', () => {
+  it('keeps a family-ranked tail past the top-3 scored leaders (R1.3 / F3)', () => {
     // A larger catalog: 3 scored leaders above the weekly.master_writer floor
     // plus several more eligible-but-unscored/lower models that only the
     // family-ranked tail would surface. Every role that falls through to the
@@ -132,6 +132,7 @@ describe('planOpenRouterRerank', () => {
     const plan = planOpenRouterRerank({
       catalog: [...editorialCatalog(), ...extras],
       currentApply: null,
+      queueCap: 20,
     });
     expect(plan.apply).toBe(true);
     expect(plan.openRouterModelIds.length).toBeGreaterThan(3);
@@ -141,6 +142,51 @@ describe('planOpenRouterRerank', () => {
     // The intelligence_index 14.2 model stays excluded even in the tail --
     // the floor blocks it everywhere, not just from the scored leaders.
     expect(plan.openRouterModelIds).not.toContain('vendor/cheap-weak');
+  });
+
+  it('truncates the applied queue to the attempt cap', () => {
+    // The tail must exist, but not without end: the runtime walks every entry
+    // on failure and all 13 roles share this queue while llm_role_chains is
+    // empty, so the untruncated ranking (~197 ids on the real catalog) would
+    // turn one bad model family into an hours-long rotation.
+    const extras = Array.from({ length: 30 }, (_, i) =>
+      model({ id: `vendor/extra-${i}`, pricing: perMillion(2, 6) }),
+    );
+    const plan = planOpenRouterRerank({
+      catalog: [...editorialCatalog(), ...extras],
+      currentApply: null,
+      queueCap: 6,
+    });
+    expect(plan.openRouterModelIds).toHaveLength(6);
+    // The scored winner still leads it.
+    expect(plan.openRouterModelIds[0]).toBe('vendor/editorial-writer');
+  });
+
+  it('records the winner without claiming it was applied when the kill-switch is off', () => {
+    const plan = planOpenRouterRerank({
+      catalog: editorialCatalog(),
+      currentApply: null,
+      applyEnabled: false,
+    });
+    const writer = plan.audits.find((row) => row.role === 'weekly.master_writer');
+    expect(writer?.modelId).toBe('vendor/editorial-writer');
+    expect(writer?.applied).toBe(false);
+    expect(writer?.skipReason).toBe('apply_disabled');
+    expect(plan.apply).toBe(false);
+    // Nothing is written, so nothing may be planned for writing either.
+    expect(plan.openRouterModelIds).toEqual([]);
+  });
+
+  it('never lets a disabled run become the next run\'s quality baseline', () => {
+    // loadCurrentApply reads the newest applied=true row. If the disabled run
+    // had recorded applied=true, tomorrow's guard would compare against a model
+    // that never entered the queue.
+    const disabled = planOpenRouterRerank({
+      catalog: editorialCatalog(),
+      currentApply: null,
+      applyEnabled: false,
+    });
+    expect(disabled.audits.some((row) => row.applied)).toBe(false);
   });
 });
 

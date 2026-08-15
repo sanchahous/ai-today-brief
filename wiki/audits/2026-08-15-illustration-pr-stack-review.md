@@ -1,7 +1,7 @@
 # Illustration PR-stack review (#241–#264) — findings і виправлення
 
 Summary: технічне ревʼю 24 PR (#241–#264), якими виконано `weekly-illustration-plan.md`, звірка з планом і кодом на `main`; знайдено 4 блокери, 8 дефектів якості, 4 безпекові/цілісні прогалини, 7 операційних — усі виправлені на гілці `feat/weekly-illustration-fixes`, крім одного (F23), що потребує рішення власника про тестову інфраструктуру.
-Sources: дифи всіх 24 PR, `pipeline/card-image.ts`/`prompt-export.ts`/`scene-grammar.ts`/`concept-mapping-gate.ts`, `src/lib/weekly-digest/*`, `src/app/admin/(cms)/weekly/actions.ts`, RLS `supabase/migrations/001_initial_schema.sql`, `.github/workflows/*.yml`, live `npm run pr:check` 2026-08-15.
+Sources: дифи всіх 24 PR, `pipeline/card-image.ts`/`prompt-export.ts`/`scene-grammar.ts`/`concept-mapping-gate.ts`, `src/lib/weekly-digest/*`, `src/app/admin/(cms)/weekly/actions.ts`, RLS `supabase/migrations/001_initial_schema.sql`, `.github/workflows/*.yml`, live `npm run pr:check` 2026-08-15, прод-Supabase `mdiqfatpqczwqghwttpm` (grants / тригери / `list_migrations`) і живий каталог OpenRouter 2026-08-15.
 Last updated: 2026-08-15
 
 ---
@@ -88,6 +88,31 @@ F23 — e2e на Visuals prompt-картки. У сьюті взагалі не�
 SQL-тести (`supabase/tests/*.sql`) не виконувались — немає локального Supabase CLI/Docker у цій
 сесії; жоден CI-workflow їх також не запускає (перевірено — конвенція проєкту, не регресія цієї
 гілки).
+
+## Пре-мерж перевірка самих фіксів (2026-08-15, друга ітерація)
+
+Перед мержем стека в `main` фікси R1–R4 перевірено окремо — проти прод-БД і живого каталогу
+OpenRouter, а не лише юніт-тестами. Три з них самі виявились дефектними.
+
+| # | Що знайдено | Доказ | Що зроблено |
+|---|---|---|---|
+| F15-bis | `revoke select (cover_prompt) … from anon, authenticated` — **no-op**. Обидві ролі тримають *табличний* `SELECT` на `public.briefs`, а колонковий REVOKE не віднімає від табличного granta. Фікс виглядав застосованим, не будучи ним; `supabase/tests/20260815180000_*.sql` при цьому стверджує протилежне і **впав би**, якби його хтось запускав (CI SQL-тести не виконує взагалі) | пряма перевірка на прод-Postgres у транзакції з відкатом: `table_level_before=t` → `after_column_revoke=t` (source: live probe 2026-08-15) | міграцію переписано на `revoke select on public.briefs` + колонковий `grant select (…)` на 12 публічних колонок; додано self-verifying `do $$` блок усередині самої міграції, щоб мовчазний no-op не міг повторитись. Дров-ран на проді (транзакція з відкатом): `anon.cover_prompt=f`, `authenticated.cover_prompt=f`, публічні колонки й `service_role` не постраждали |
+| F3-bis | Виправлення «не обрізати чергу» — перекорекція. `rankModelsForRole` віддає **197 id** на реальному каталозі (413 моделей), і `resolveOpenRouterDefaultQueue` віддавав їх у `modelQueue` **без** стелі `OPENROUTER_MAX_MODEL_ATTEMPTS` (дефолт 6). `generateWithOpenRouterChain` — це `for (i < queue.length)`, тобто ротація по 197 моделях на кожному падінні; `llm_role_chains` у проді порожній (0 рядків), отже чергу успадковують усі 13 ролей. 12 моделей уже коштували ~20 хвилин у прогоні 09.08 | живий каталог 2026-08-15: 413 → family-ranked 246 → `rankModelsForRole` 197; `select count(*) from llm_role_chains` = 0 | черга обрізається до `openRouterModelAttemptCap()` у плані (БД відображає рантайм) **і** захисно в реєстрі при читанні `llm_provider_models` — та таблиця пишеться і джобою, і вільним textarea в `/admin/providers`, тож жодне джерело не можна вважати cap-sized. Хвіст F3 лишився: топ-3 scored + family-tail, просто не безмежний. Перевірено на живому каталозі: 197 → **6** |
+| F4-bis | `scoreModelForRole` не застосовував `isEligibleModel`, тож `:batch`-варіанти були повноцінними кандидатами quality/$ (на 2026-08-15 — 4-те, 5-те і 7-ме місця). `:batch` відповідає лише через окремий Batch API і 404-ить на chat completions — саме він спалив шість слотів черги 2026-08-10 і був явно виключений у PR #212. Топ-3 був чистим випадково, не за побудовою | живий каталог: `openai/gpt-5.6-luna:batch`, `minimax/minimax-m3:batch`, `google/gemini-3.7-flash:batch` серед scored | `isEligibleModel` експортовано як `isEligibleOpenRouterModel` і застосовано в `scoreModelForRole` — scored-голова і family-хвіст тепер підкоряються одним правилам. Перевірено: у застосованій черзі 0 `:batch`/`:free` |
+| kill-switch | При `OPENROUTER_RERANK_APPLY=off` план усе одно повертав `applied: true`, і рядок писався в БД, хоча `replace_llm_provider_models` не викликався. Наступного дня `loadCurrentApply` брав цей фантом за базу quality-drop guard — ламалось рівно в тій аварії, заради якої switch і зроблений | код-рев'ю + новий регресійний тест | `applyEnabled` прокинуто **в** `planOpenRouterRerank`, а не застосовано після нього; новий `skip_reason = 'apply_disabled'` (міграція `20260815160000` ще не в проді, тож CHECK розширено на місці), `/admin/providers` його рендерить |
+
+Решта фіксів R1–R4 перевірку пройшла. Зокрема підтверджено на прод-БД: тригер
+`moddatetime('updated_at')` на `weekly_digest_artifacts` реально існує (отже optimistic locking
+F13 працює), `save_weekly_digest_artifact` повертає `uuid` (отже post-upload QA справді
+запускається), `/admin/providers` читає `rankAudits ?? []` і `fillDailyCoverPrompt` повністю в
+`try/catch` (отже порядок «міграції → деплой» некритичний в обидва боки).
+
+Відоме й свідомо не змінене: `daily.auto_publish_judge` за quality/$ обирає модель з
+intelligence 37.8 при порозі 35 і доступних 63.1 — але ця роль **audit-only**, застосовується
+лише ранжування `weekly.master_writer`. І на **першому** прогоні `qualityDropBlocked(null, …)`
+= `false`, тобто guard-а немає за побудовою — тому apply вмикається не автоматично, а рішенням
+власника після кількох днів спостереження за audit-рядками (`OPENROUTER_RERANK_APPLY=off` до
+того). (source: живий каталог OpenRouter 2026-08-15)
 
 ## Related pages
 
