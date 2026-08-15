@@ -376,3 +376,66 @@ export function parseImageCriticResponse(
     repairDirective: passed ? undefined : parseRepair(parsed.repair),
   };
 }
+
+/** Stage 2 only runs if pixels already passed without seeing the story. */
+export function shouldRunStoryAwareStage(imageOnly: ContentSimCritique): boolean {
+  if (!imageOnly.passed) return false;
+  return !imageOnly.blockers.some((blocker) => blocker.code === 'critic_unavailable');
+}
+
+function uniqueBlockers(rows: ContentSimBlocker[]): ContentSimBlocker[] {
+  const out: ContentSimBlocker[] = [];
+  for (const row of rows) {
+    if (out.some((existing) => existing.code === row.code && existing.message === row.message)) {
+      continue;
+    }
+    out.push(row);
+  }
+  return out;
+}
+
+function mergeRepairDirectives(
+  imageOnly?: ContentSimRepairDirective,
+  storyAware?: ContentSimRepairDirective,
+): ContentSimRepairDirective | undefined {
+  if (!imageOnly && !storyAware) return undefined;
+  const patches = [...(imageOnly?.promptPatches ?? []), ...(storyAware?.promptPatches ?? [])];
+  const actions = [...(imageOnly?.suggestedActions ?? []), ...(storyAware?.suggestedActions ?? [])];
+  return {
+    promptPatches: patches.length ? patches : undefined,
+    rejectMetaphor: Boolean(imageOnly?.rejectMetaphor || storyAware?.rejectMetaphor),
+    sceneOverride: storyAware?.sceneOverride ?? imageOnly?.sceneOverride,
+    changeSeed: Boolean(imageOnly?.changeSeed || storyAware?.changeSeed),
+    suggestedActions: actions.length ? actions : undefined,
+  };
+}
+
+/**
+ * Image-only blockers always win. Story-aware scores cannot excuse baked text,
+ * anatomy, or dignity failures the first stage already saw without a headline.
+ */
+export function mergeTwoStageCritiques(
+  imageOnly: ContentSimCritique,
+  storyAware: ContentSimCritique,
+): ContentSimCritique {
+  const blockers = uniqueBlockers([...imageOnly.blockers, ...storyAware.blockers]);
+  const overall = imageOnly.passed
+    ? storyAware.scores.overall
+    : Math.min(imageOnly.scores.overall, storyAware.scores.overall);
+  const passed = imageOnly.passed && storyAware.passed;
+  const notes = [imageOnly.notes, storyAware.notes].filter(Boolean).join(' | ') || undefined;
+  return {
+    passed,
+    scores: {
+      ...storyAware.scores,
+      no_text: imageOnly.scores.no_text ?? storyAware.scores.no_text,
+      craft: imageOnly.scores.craft ?? storyAware.scores.craft,
+      overall,
+    },
+    blockers,
+    notes,
+    repairDirective: passed
+      ? undefined
+      : mergeRepairDirectives(imageOnly.repairDirective, storyAware.repairDirective),
+  };
+}

@@ -5,14 +5,17 @@
 
 import {
   buildImageCriticPrompt,
+  buildImageOnlyCriticPrompt,
   contentSimImageLoopEnabled,
   contentSimMaxImageRepairAttempts,
   contentSimMaxImageSpendUsd,
   contentSimScoreThreshold,
   contentSimVisionCriticEstimatedUsd,
   deterministicImageCritique,
+  mergeTwoStageCritiques,
   parseImageCriticResponse,
   runRepairLoop,
+  shouldRunStoryAwareStage,
   toContentSimArtifactMeta,
   type ContentSimArtifactMeta,
   type ContentSimCritique,
@@ -282,6 +285,85 @@ export function opaqueAbstractionCritique(
 interface CritiqueWithUsage {
   critique: ContentSimCritique;
   usage: Omit<WeeklyImageCostEvent, 'attempt' | 'variantIndex' | 'kind'> | null;
+  visionCalls: number;
+}
+
+function criticUnavailableResult(message: string): CritiqueWithUsage {
+  return {
+    critique: {
+      passed: false,
+      scores: { overall: 0 },
+      blockers: [
+        {
+          code: 'critic_unavailable',
+          message: `Vision provider unavailable: ${message.slice(0, 240)}`,
+          blocker: true,
+        },
+      ],
+      notes: 'A provider failure is a soft quality failure, not a failed story-image job.',
+      repairDirective: {
+        changeSeed: true,
+        suggestedActions: ['Retry vision review or inspect the three rendered variants manually.'],
+      },
+    },
+    usage: null,
+    visionCalls: 0,
+  };
+}
+
+function combineVisionUsage(
+  first: CritiqueWithUsage['usage'],
+  second: CritiqueWithUsage['usage'],
+): CritiqueWithUsage['usage'] {
+  if (!first) return second;
+  if (!second) return first;
+  return {
+    provider: second.provider,
+    model: second.model,
+    costUsd: first.costUsd + second.costUsd,
+    costSource:
+      first.costSource === 'reported' || second.costSource === 'reported'
+        ? 'reported'
+        : first.costSource,
+    promptTokens:
+      first.promptTokens != null || second.promptTokens != null
+        ? (first.promptTokens ?? 0) + (second.promptTokens ?? 0)
+        : null,
+    outputTokens:
+      first.outputTokens != null || second.outputTokens != null
+        ? (first.outputTokens ?? 0) + (second.outputTokens ?? 0)
+        : null,
+  };
+}
+
+async function callWeeklyVision(
+  prompt: string,
+  bytes: Buffer,
+  parseOptions: { requireStorySemantics?: boolean; requirePixelEvidence?: boolean },
+): Promise<CritiqueWithUsage> {
+  let result: Awaited<ReturnType<typeof generateWithVision>>;
+  try {
+    result = await generateWithVision('weekly.image_critic', {
+      prompt,
+      imageBytes: bytes,
+      mimeType: 'image/jpeg',
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return criticUnavailableResult(message);
+  }
+  return {
+    critique: parseImageCriticResponse(result.text, contentSimScoreThreshold(), parseOptions),
+    usage: {
+      provider: result.provider,
+      model: result.model,
+      costUsd: result.usage.costUsd ?? contentSimVisionCriticEstimatedUsd(),
+      costSource: result.usage.costUsd === null ? 'estimated' : result.usage.costSource,
+      promptTokens: result.usage.promptTokens,
+      outputTokens: result.usage.outputTokens,
+    },
+    visionCalls: 1,
+  };
 }
 
 async function critiqueWeeklyImageBytesWithUsage(
@@ -307,78 +389,50 @@ async function critiqueWeeklyImageBytesWithUsage(
     height: input.height,
     byteSize: input.bytes.length,
   });
-  if (deterministic && !deterministic.passed) return { critique: deterministic, usage: null };
+  if (deterministic && !deterministic.passed) {
+    return { critique: deterministic, usage: null, visionCalls: 0 };
+  }
 
   const opaque = opaqueAbstractionCritique(input.scene, ctx);
-  if (opaque) return { critique: opaque, usage: null };
+  if (opaque) return { critique: opaque, usage: null, visionCalls: 0 };
 
-  const prompt = buildImageCriticPrompt({
-    headline: ctx.headline,
-    summary: ctx.summary,
-    why: ctx.why,
-    practical: ctx.practical,
-    limitation: ctx.limitation,
-    takeaway: ctx.takeaway,
-    claimsExcerpt: ctx.claimsExcerpt,
-    editorialAngle: ctx.editorialAngle,
-    storyContext: input.storyContext,
-    meaning: input.meaning,
-    essence: input.essence,
-    mechanism: input.mechanism,
-    consequence: input.consequence,
-    visualThesis: input.visualThesis,
-    readerTest: input.readerTest,
-    metaphorTitle: input.metaphorTitle,
-    whyItFits: input.whyItFits,
-    scene: input.scene,
-    policyId: ctx.policyId,
-    scoreThreshold: contentSimScoreThreshold(),
-    siblingScenes: ctx.siblingScenes,
+  const imageOnly = await callWeeklyVision(buildImageOnlyCriticPrompt(), input.bytes, {
+    requireStorySemantics: false,
+    requirePixelEvidence: false,
   });
-  let result: Awaited<ReturnType<typeof generateWithVision>>;
-  try {
-    result = await generateWithVision('weekly.image_critic', {
-      prompt,
-      imageBytes: input.bytes,
-      mimeType: 'image/jpeg',
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      critique: {
-        passed: false,
-        scores: { overall: 0 },
-        blockers: [
-          {
-            code: 'critic_unavailable',
-            message: `Vision provider unavailable: ${message.slice(0, 240)}`,
-            blocker: true,
-          },
-        ],
-        notes: 'A provider failure is a soft quality failure, not a failed story-image job.',
-        repairDirective: {
-          changeSeed: true,
-          suggestedActions: [
-            'Retry vision review or inspect the three rendered variants manually.',
-          ],
-        },
-      },
-      usage: null,
-    };
-  }
-  return {
-    critique: parseImageCriticResponse(result.text, contentSimScoreThreshold(), {
-      requireStorySemantics: true,
-      requirePixelEvidence: true,
+  if (!shouldRunStoryAwareStage(imageOnly.critique)) return imageOnly;
+
+  const storyAware = await callWeeklyVision(
+    buildImageCriticPrompt({
+      headline: ctx.headline,
+      summary: ctx.summary,
+      why: ctx.why,
+      practical: ctx.practical,
+      limitation: ctx.limitation,
+      takeaway: ctx.takeaway,
+      claimsExcerpt: ctx.claimsExcerpt,
+      editorialAngle: ctx.editorialAngle,
+      storyContext: input.storyContext,
+      meaning: input.meaning,
+      essence: input.essence,
+      mechanism: input.mechanism,
+      consequence: input.consequence,
+      visualThesis: input.visualThesis,
+      readerTest: input.readerTest,
+      metaphorTitle: input.metaphorTitle,
+      whyItFits: input.whyItFits,
+      scene: input.scene,
+      policyId: ctx.policyId,
+      scoreThreshold: contentSimScoreThreshold(),
+      siblingScenes: ctx.siblingScenes,
     }),
-    usage: {
-      provider: result.provider,
-      model: result.model,
-      costUsd: result.usage.costUsd ?? contentSimVisionCriticEstimatedUsd(),
-      costSource: result.usage.costUsd === null ? 'estimated' : result.usage.costSource,
-      promptTokens: result.usage.promptTokens,
-      outputTokens: result.usage.outputTokens,
-    },
+    input.bytes,
+    { requireStorySemantics: true, requirePixelEvidence: true },
+  );
+  return {
+    critique: mergeTwoStageCritiques(imageOnly.critique, storyAware.critique),
+    usage: combineVisionUsage(imageOnly.usage, storyAware.usage),
+    visionCalls: imageOnly.visionCalls + storyAware.visionCalls,
   };
 }
 
@@ -445,7 +499,7 @@ export async function scoreAndPickVariants(
   const concepts = variantConceptsFor(candidate, buffers.length);
   if (buffers.length <= 1) {
     const scored = candidate.preCritique
-      ? { critique: candidate.preCritique, usage: null }
+      ? { critique: candidate.preCritique, usage: null, visionCalls: 0 }
       : await critiqueWeeklyImageBytesWithUsage(candidate, ctx);
     if (scored.usage) {
       await options.onCostEvent?.({
@@ -464,12 +518,13 @@ export async function scoreAndPickVariants(
       variantScores: [variantScoreFromCritique(0, scored.critique)],
       variantConcepts: [concept],
       visionCostUsd: scored.usage?.costUsd ?? 0,
-      visionCallCount: scored.usage ? 1 : 0,
+      visionCallCount: scored.visionCalls,
     };
   }
 
   const visionCost = contentSimVisionCriticEstimatedUsd();
-  const canScoreAll = options.remainingBudgetUsd >= visionCost * buffers.length;
+  const stagesPerVariant = 2;
+  const canScoreAll = options.remainingBudgetUsd >= visionCost * buffers.length * stagesPerVariant;
   const scores: VariantScoreMeta[] = [];
   const critiques: ContentSimCritique[] = [];
   let visionCostUsd = 0;
@@ -505,7 +560,7 @@ export async function scoreAndPickVariants(
         scores[index] = variantScoreFromCritique(index, result.critique);
         if (!result.usage) return;
         visionCostUsd += result.usage.costUsd;
-        visionCallCount += 1;
+        visionCallCount += result.visionCalls;
         await options.onCostEvent?.({
           attempt: options.attempt ?? 1,
           variantIndex: index,
@@ -568,7 +623,7 @@ export async function scoreAndPickVariants(
       scores.push(variantScoreFromCritique(index, result.critique));
       if (result.usage) {
         visionCostUsd += result.usage.costUsd;
-        visionCallCount += 1;
+        visionCallCount += result.visionCalls;
         await options.onCostEvent?.({
           attempt: options.attempt ?? 1,
           variantIndex: index,

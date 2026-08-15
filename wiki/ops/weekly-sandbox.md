@@ -134,7 +134,8 @@ captured pixels і придатна насамперед для rubric/backtest.
 
 Post-upload QA (M2) — це прод Visuals після ручного upload, не sandbox-прогін.
 D3 додає код `human_dignity_risk` у той самий critic; sandbox цього не ганяє.
-(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) M2/D3)
+E2 додає другий (story-aware) виклик лише в auto-циклі `render`, не в sandbox doctor.
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) M2/D3/E2)
 
 ## Related pages
 

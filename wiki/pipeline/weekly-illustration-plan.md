@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -887,6 +887,14 @@ PDF §8. Спершу image-only — без headline, без scene brief, без
 **Для post-upload QA (M2) перша стадія обовʼязкова**: критик не має знати, який промпт мав бути
 виконаний — інакше він оцінює намір, а не картинку.
 
+### E2 ✅ Зроблено 2026-08-15 — двостадійний критик
+
+Авто-цикл (`weekly-image` / `daily-image`) спершу ганяє `buildImageOnlyCriticPrompt`
+(без headline). Якщо пікселі не пройшли — story-aware **не** викликається. Інакше другий
+виклик — `buildImageCriticPrompt`. M2 лишається одним image-only проходом. Вага preflight
+без змін. Bake-off (A2) не перемикався.
+(source: `src/lib/content-sim/vision-critic.ts`, `src/lib/content-sim/adapters/weekly-image.ts`)
+
 ### E3. Promotion gate
 
 PDF §15 задавав пороги для автоматичної гілки. Для ручного режиму метрика інша — вона про
@@ -1214,6 +1222,7 @@ npm run pr:check
 | D3 | ✅ `fails on human_dignity_risk even with a high score`; upload попереджає «ризик гідності» |
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |
 | E1 | ✅ `owner verdict from admin lands on the prompt set and uploaded image metadata` |
+| E2 | ✅ `two-stage critique fails when image-only flags readable_text even if story-aware would pass`; M2 лишається image-only |
 
 Після кожної хвилі — `wiki/log.md` (append-only, нові записи **зверху**) + `wiki/index.md`.
 Кожна хвиля — окремий PR, `pr:check` перед push, ніколи не в `main` напряму.

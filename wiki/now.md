@@ -10,6 +10,11 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **E2 — двостадійний критик (2026-08-15).** Авто-цикл спершу image-only (без headline);
+  story-aware лише якщо пікселі пройшли. M2 upload лишається одним image-only проходом.
+  Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E2,
+  `src/lib/content-sim/adapters/weekly-image.ts`)
 - **E1 — owner-feedback contract (2026-08-15).** На кожному концепті Visuals: використано /
   з правками / відхилено + закриті `reasonTags`. Пишеться в `story_prompt_set` і поруч із
   `post_upload_qa`. Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.

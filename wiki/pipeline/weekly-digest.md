@@ -400,6 +400,11 @@ rejected` + закриті `reasonTags`. Пишеться в `story_prompt_set` 
 (source: `src/lib/weekly-digest/owner-feedback.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) E1)
 
+**E2 two-stage critic (2026-08-15):** у режимі `render` спочатку image-only (без headline),
+потім story-aware лише якщо пікселі пройшли. M2 не змінювався. Вага гейта без змін.
+(source: `src/lib/content-sim/adapters/weekly-image.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) E2)
+
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.

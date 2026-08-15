@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — E2: двостадійний критик
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E2.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/content-sim](pipeline/content-sim.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-sandbox](ops/weekly-sandbox.md), [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** image-only → (якщо pass) story-aware. M2 без змін. A2 bake-off не чіпали.
+
+**Тест:** `two-stage critique fails when image-only flags readable_text even if story-aware would pass`;
+`skips story-aware vision when image-only already failed`.
+
+**Не зроблено в цій хвилі:** E3 promotion gate.
+
 ## 2026-08-15 — E1: owner-feedback contract на концепт
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E1.

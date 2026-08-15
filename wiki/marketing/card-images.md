@@ -192,6 +192,11 @@ title/summary, не practical/takeaway. Метрика → `deterministic_techni
 (source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) E1,
 `src/lib/weekly-digest/owner-feedback.ts`)
 
+**E2 — двостадійний критик (2026-08-15):** image-only без headline, потім story-aware лише
+якщо пікселі пройшли. Upload QA лишається одним image-only проходом.
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) E2,
+`src/lib/content-sim/adapters/weekly-image.ts`)
+
 **P2 — Visuals copy/upload (2026-08-15):** артефакт `story_prompt_set` (текст, не в
 `PUBLIC_IMAGE_TYPES`) + картки Canonical / Midjourney / Negative і слот upload на вкладці
 Visuals.

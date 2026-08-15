@@ -118,6 +118,11 @@ children). News: critique fails. Upload: warning, not a preflight block.
 (source: [weekly-illustration-plan](weekly-illustration-plan.md) D3,
 `src/lib/content-sim/vision-critic.ts`)
 
+**E2 two-stage critic (2026-08-15):** auto loop runs image-only first (no headline). Story-aware
+runs only if pixels passed. M2 upload stays a single image-only pass.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) E2,
+`src/lib/content-sim/adapters/weekly-image.ts`)
+
 ## Related pages
 
 - [weekly-sandbox](../ops/weekly-sandbox.md)
