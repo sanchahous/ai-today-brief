@@ -2001,6 +2001,7 @@ function sceneBriefFromPitch(
       takeaway: story.takeaway,
       source,
       essence,
+      lens: pitch.lens ?? 'literal_context',
     }),
     essence: essence.essence,
     metaphorTitle: pitch.title,

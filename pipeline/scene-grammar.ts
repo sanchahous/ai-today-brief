@@ -3,7 +3,7 @@
  * (essence + title/summary), never practical/takeaway advice (C5.2) and never
  * the experimental V10 autoClaim cluster.
  */
-import type { SceneGrammar } from './card-image';
+import type { MetaphorLens, SceneGrammar } from './card-image';
 
 /** Claim-side essence only — advice fields live on the story, not here. */
 export interface SceneGrammarEssence {
@@ -26,6 +26,14 @@ export interface SceneGrammarInput {
   /** Jury/provider id, or `fallback` when source audit failed. */
   source?: string;
   essence?: SceneGrammarEssence;
+  /**
+   * Which of the story's three concepts this decision is for. The diagram
+   * grammar is capped to `mechanism` (R2.1 / F6): a metric anywhere in the
+   * claim used to push ALL THREE concepts to `deterministic_technical_hybrid`,
+   * leaving no cinematic option even though the owner explicitly wants
+   * variety across the three seats ("sometimes scene, sometimes diagram").
+   */
+  lens?: MetaphorLens | 'owner_direction';
 }
 
 export interface SceneGrammarSignals {
@@ -71,8 +79,15 @@ export function sceneGrammarSignals(input: SceneGrammarInput): SceneGrammarSigna
 
 export function selectSceneGrammar(input: SceneGrammarInput): SceneGrammar {
   if (input.source === 'fallback') return 'source_led_fallback';
+  if (input.lens !== 'mechanism') return 'cinematic_domain_scene';
   const signals = sceneGrammarSignals(input);
-  if (signals.hasExactMetric) return 'deterministic_technical_hybrid';
+  // Both signals route to the diagram grammar -- an exact metric (a
+  // comparison a diagram states directly) or a multi-step process (a
+  // sequence a diagram's arrows are naturally suited to). `requiresProcessGrammar`
+  // was computed but never consulted before this fix (C5.3 / F7).
+  if (signals.hasExactMetric || signals.requiresProcessGrammar) {
+    return 'deterministic_technical_hybrid';
+  }
   return 'cinematic_domain_scene';
 }
 
