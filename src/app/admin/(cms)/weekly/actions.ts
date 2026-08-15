@@ -126,32 +126,55 @@ function revalidateWeeklyAdmin(weeklyDigestId: string) {
   revalidatePath(`/admin/weekly/${weeklyDigestId}`);
 }
 
+/**
+ * A read-then-blind-UPDATE on a shared jsonb column can lose a concurrent
+ * writer's change (post-upload QA landing while an owner saves feedback,
+ * two feedback saves on different concept lenses back-to-back). This isn't
+ * a new artifact VERSION -- save_weekly_digest_artifact is the wrong tool
+ * for an in-place annotation -- so this closes the race with a plain
+ * optimistic-concurrency retry instead (R3.2 / F13): the UPDATE is
+ * conditioned on `updated_at` still matching what was just read, and a
+ * miss (0 rows affected) means someone else won the race, so a fresh read
+ * and merge is retried rather than silently overwriting their write.
+ */
+const OPTIMISTIC_UPDATE_MAX_ATTEMPTS = 3;
+
 async function persistPostUploadQa(
   artifactId: string,
   weeklyDigestId: string,
   qa: PostUploadQa,
 ) {
   const admin = getSupabaseAdmin();
-  const { data, error } = await admin
-    .from('weekly_digest_artifacts')
-    .select('metadata')
-    .eq('id', artifactId)
-    .maybeSingle();
-  if (error) {
-    console.error('[weekly-upload-qa] load metadata failed', error.message);
-    return;
-  }
-  const metadata = {
-    ...jsonRecord(data?.metadata),
-    post_upload_qa: qa as unknown as Json, // JSONB: PostUploadQa is a JSON object, not a Json union member.
-  } as Json;
-  const { error: updateError } = await admin
-    .from('weekly_digest_artifacts')
-    .update({ metadata })
-    .eq('id', artifactId);
-  if (updateError) {
-    console.error('[weekly-upload-qa] write metadata failed', updateError.message);
-    return;
+  for (let attempt = 0; attempt < OPTIMISTIC_UPDATE_MAX_ATTEMPTS; attempt++) {
+    const { data, error } = await admin
+      .from('weekly_digest_artifacts')
+      .select('metadata, updated_at')
+      .eq('id', artifactId)
+      .maybeSingle();
+    if (error) {
+      console.error('[weekly-upload-qa] load metadata failed', error.message);
+      return;
+    }
+    if (!data) return;
+    const metadata = {
+      ...jsonRecord(data.metadata),
+      post_upload_qa: qa as unknown as Json, // JSONB: PostUploadQa is a JSON object, not a Json union member.
+    } as Json;
+    const { data: updatedRows, error: updateError } = await admin
+      .from('weekly_digest_artifacts')
+      .update({ metadata })
+      .eq('id', artifactId)
+      .eq('updated_at', data.updated_at)
+      .select('id');
+    if (updateError) {
+      console.error('[weekly-upload-qa] write metadata failed', updateError.message);
+      return;
+    }
+    if (updatedRows && updatedRows.length > 0) break;
+    if (attempt === OPTIMISTIC_UPDATE_MAX_ATTEMPTS - 1) {
+      console.error('[weekly-upload-qa] write metadata failed', 'optimistic update conflict');
+      return;
+    }
   }
   if (qa.model || qa.cost_usd > 0) {
     await recordGenerationCost({
@@ -1917,9 +1940,15 @@ export async function ignorePostUploadQaAction(formData: FormData) {
     .from('weekly_digest_artifacts')
     .select('metadata, artifact_type')
     .eq('id', artifactId)
+    // R3.1 / F14: the digest id is a hidden form field, not re-derived from
+    // the artifact row -- without this filter a mismatched pair (stale form
+    // after switching digests, tampered request) would silently mutate an
+    // artifact on a DIFFERENT digest than the one the caller believes it's
+    // editing, and revalidate the wrong admin page.
+    .eq('weekly_digest_id', weeklyDigestId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) throw new Error('Artifact not found.');
+  if (!data) throw new Error('Artifact not found for this digest.');
   if (data.artifact_type !== 'story_image' && data.artifact_type !== 'cover') {
     throw new Error('Post-upload QA only applies to story images and covers.');
   }
@@ -1942,6 +1971,7 @@ export async function saveWeeklyOwnerFeedbackAction(formData: FormData) {
   });
   if (!entry) throw new Error('Choose used, used with edits, or rejected.');
   await persistOwnerFeedbackArtifacts({
+    weeklyDigestId,
     promptSetArtifactId,
     imageArtifactId,
     conceptLens,
@@ -1951,60 +1981,86 @@ export async function saveWeeklyOwnerFeedbackAction(formData: FormData) {
 }
 
 async function persistOwnerFeedbackArtifacts(input: {
+  weeklyDigestId: string;
   promptSetArtifactId: string;
   imageArtifactId: string;
   conceptLens: string;
   entry: OwnerConceptFeedback;
 }) {
   const admin = getSupabaseAdmin();
-  const { data: promptRow, error: promptError } = await admin
-    .from('weekly_digest_artifacts')
-    .select('content, artifact_type')
-    .eq('id', input.promptSetArtifactId)
-    .maybeSingle();
-  if (promptError) throw new Error(promptError.message);
-  if (!promptRow || promptRow.artifact_type !== 'story_prompt_set') {
-    throw new Error('Prompt set not found.');
+  // R3.2 / F13: two concept-lens verdicts saved back-to-back on the same
+  // prompt set is the realistic race here (three "Зберегти вердикт" clicks
+  // across a story's three cards); the retry keeps the second save from
+  // clobbering the first's owner_feedback entry.
+  let promptWritten = false;
+  for (let attempt = 0; attempt < OPTIMISTIC_UPDATE_MAX_ATTEMPTS; attempt++) {
+    const { data: promptRow, error: promptError } = await admin
+      .from('weekly_digest_artifacts')
+      .select('content, artifact_type, updated_at')
+      .eq('id', input.promptSetArtifactId)
+      // R3.1 / F14: same cross-digest guard as ignorePostUploadQaAction.
+      .eq('weekly_digest_id', input.weeklyDigestId)
+      .maybeSingle();
+    if (promptError) throw new Error(promptError.message);
+    if (!promptRow || promptRow.artifact_type !== 'story_prompt_set') {
+      throw new Error('Prompt set not found for this digest.');
+    }
+    const nextContent = applyOwnerFeedbackToPromptSet(
+      promptRow.content,
+      input.conceptLens,
+      input.entry,
+    );
+    const { data: updatedRows, error: contentError } = await admin
+      .from('weekly_digest_artifacts')
+      .update({
+        // JSONB: owner_feedback map is a JSON object, not a Json union member.
+        content: nextContent as unknown as Json,
+      })
+      .eq('id', input.promptSetArtifactId)
+      .eq('updated_at', promptRow.updated_at)
+      .select('id');
+    if (contentError) throw new Error(contentError.message);
+    if (updatedRows && updatedRows.length > 0) {
+      promptWritten = true;
+      break;
+    }
   }
-  const nextContent = applyOwnerFeedbackToPromptSet(
-    promptRow.content,
-    input.conceptLens,
-    input.entry,
-  );
-  const { error: contentError } = await admin
-    .from('weekly_digest_artifacts')
-    .update({
-      // JSONB: owner_feedback map is a JSON object, not a Json union member.
-      content: nextContent as unknown as Json,
-    })
-    .eq('id', input.promptSetArtifactId);
-  if (contentError) throw new Error(contentError.message);
+  if (!promptWritten) {
+    throw new Error('Prompt set changed while saving; reload and try again.');
+  }
   if (!input.imageArtifactId) return;
-  const { data: imageRow, error: imageError } = await admin
-    .from('weekly_digest_artifacts')
-    .select('metadata, artifact_type')
-    .eq('id', input.imageArtifactId)
-    .maybeSingle();
-  if (imageError) throw new Error(imageError.message);
-  if (
-    !imageRow ||
-    (imageRow.artifact_type !== 'story_image' && imageRow.artifact_type !== 'cover')
-  ) {
-    return;
+  for (let attempt = 0; attempt < OPTIMISTIC_UPDATE_MAX_ATTEMPTS; attempt++) {
+    const { data: imageRow, error: imageError } = await admin
+      .from('weekly_digest_artifacts')
+      .select('metadata, artifact_type, updated_at')
+      .eq('id', input.imageArtifactId)
+      .eq('weekly_digest_id', input.weeklyDigestId)
+      .maybeSingle();
+    if (imageError) throw new Error(imageError.message);
+    if (
+      !imageRow ||
+      (imageRow.artifact_type !== 'story_image' && imageRow.artifact_type !== 'cover')
+    ) {
+      return;
+    }
+    const nextMetadata = applyOwnerFeedbackToImageMetadata(
+      imageRow.metadata,
+      input.conceptLens,
+      input.entry,
+    );
+    const { data: updatedRows, error: metaError } = await admin
+      .from('weekly_digest_artifacts')
+      .update({
+        // JSONB: owner_feedback sits beside post_upload_qa.
+        metadata: nextMetadata as unknown as Json,
+      })
+      .eq('id', input.imageArtifactId)
+      .eq('updated_at', imageRow.updated_at)
+      .select('id');
+    if (metaError) throw new Error(metaError.message);
+    if (updatedRows && updatedRows.length > 0) return;
   }
-  const nextMetadata = applyOwnerFeedbackToImageMetadata(
-    imageRow.metadata,
-    input.conceptLens,
-    input.entry,
-  );
-  const { error: metaError } = await admin
-    .from('weekly_digest_artifacts')
-    .update({
-      // JSONB: owner_feedback sits beside post_upload_qa.
-      metadata: nextMetadata as unknown as Json,
-    })
-    .eq('id', input.imageArtifactId);
-  if (metaError) throw new Error(metaError.message);
+  throw new Error('Uploaded image changed while saving; reload and try again.');
 }
 
 // Kept as a separate export so the Release tab contract stays stable while
