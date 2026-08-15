@@ -10,7 +10,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5.1` and
-three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / P2 2026-08-15
+three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / P2 / M1 2026-08-15
 Last updated: 2026-08-15
 
 ---
@@ -159,9 +159,14 @@ natural-language промпт (субʼєкт першим) плюс Midjourney 
 
 **P2 — Visuals copy/upload (2026-08-15):** артефакт `story_prompt_set` (текст, не в
 `PUBLIC_IMAGE_TYPES`) + картки Canonical / Midjourney / Negative і слот upload на вкладці
-Visuals. Worker ще не пише сет (M1); UI порожній-безпечний.
-(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) P1/P2,
-`pipeline/prompt-export.ts`, `src/lib/weekly-digest/story-prompt-set.ts`)
+Visuals.
+
+**M1 — prompt_only (2026-08-15):** weekly `story_image` / `cover` за замовчуванням не кличуть
+FLUX (`WEEKLY_STORY_IMAGE_MODE=prompt_only`). Worker пише `story_prompt_set`; картинки новин
+на сайті лишаються на повній автогенерації. `render` повертає старий цикл без зміни деплою.
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) P1/P2/M1,
+`pipeline/prompt-export.ts`, `src/lib/weekly-digest/story-prompt-set.ts`,
+`src/lib/weekly-digest/story-prompt-job.ts`)
 
 **Reviewable render history (2026-08-12):** кожен image buffer з кожного repair round зберігається
 до approval як підписаний private preview із round, variant, concept lens/title, motif, scene та

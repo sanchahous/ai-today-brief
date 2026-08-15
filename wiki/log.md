@@ -6,6 +6,30 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — M1: weekly story/cover пишуть промпти, не рендерять FLUX
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M1.
+
+**Змінено:** [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[overview](overview.md), [open-questions](open-questions.md), [now](now.md), [index](index.md).
+
+**Код:** `WEEKLY_STORY_IMAGE_MODE=prompt_only` (дефолт; `render` — відкат). `generateStoryImage`
+без `source_url` і `generateCover` будують essence + концепти (`weeklyReportageSceneBriefs`),
+експортують `ManualImagePrompt` і зберігають `story_prompt_set`. Не викликають
+`generateWeeklyReportageIllustrations` / `runWeeklyImageSimLoop`. Ingest `source_url`
+лишається. `story_image` лишається на GitHub Actions. Композит (`visuals.ts`,
+`generateCoverDerivatives`) не чіпали.
+
+**Тест:** `story_image job in prompt_only mode writes a prompt set and never calls the image provider`;
+`story_image job with source_url still ingests the URL`.
+
+**Не зроблено в цій хвилі:** M2 (post-upload QA), M3 (preflight copy), перенесення
+`story_image` з Actions на Vercel.
+
 ## 2026-08-15 — P2: промпти живуть як `story_prompt_set` і копіюються з Visuals
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P2.

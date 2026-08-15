@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 → M2 → B3 → P3 → C → D → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 → B3 → P3 → C → D → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -436,7 +436,7 @@ notes:
 
 Артефакт `story_prompt_set` додано в CHECK; input-hash залежить від revision item так само, як
 `story_image`. Visuals показує картки концептів (Canonical / Midjourney / Negative) і слот
-upload в одній картці. Worker ще не пише артефакт — це **M1**; UI порожній, доки сета немає.
+upload в одній картці. Worker пише артефакт у **M1**.
 (source: `supabase/migrations/20260815120000_weekly_story_prompt_set.sql`,
 `src/components/admin/story-prompt-set-panel.tsx`)
 
@@ -500,6 +500,13 @@ Daily-адмінки не існує, тож доставка — тим сам�
 ---
 
 ## M. Ручний режим: вимкнути авто-рендер, прийняти файл
+
+### M1 ✅ Зроблено 2026-08-15 — weekly `story_image` більше не рендерить
+
+Дефолт `WEEKLY_STORY_IMAGE_MODE=prompt_only`. Без `source_url` джоба пише `story_prompt_set`
+і не викликає FLUX / vision loop. Cover — один концепт, один промпт. Ingest URL лишився.
+`story_image` лишається на GitHub Actions. (source: `src/lib/weekly-digest/story-prompt-job.ts`,
+`src/lib/weekly-digest/generation-worker.ts`, `.env.example`)
 
 ### M1. Weekly `story_image` більше не рендерить
 
@@ -1090,9 +1097,9 @@ npm run pr:check
 | B2 | на фікстурі з однією прийнятою лінзою повертається один бриф, не три; чотири названі тести зелені |
 | B3 | в адмінці видно `N/3 промпти готові` |
 | P1 | три `ManualImagePrompt` на story; negative завжди банить текст; тести `pipeline/prompt-export.test.ts` зелені |
-| P2 | ✅ схема приймає `story_prompt_set`; Visuals має кнопки копіювання + upload в одній картці; worker write — M1 |
+| P2 | ✅ схема приймає `story_prompt_set`; Visuals має кнопки копіювання + upload в одній картці; worker write — M1 ✅ |
 | P3 | після публікації daily в review-чаті лежить промпт обкладинки; `briefs.cover_prompt` заповнена |
-| M1 | прогін weekly не робить жодного image-виклику; `WEEKLY_STORY_IMAGE_MODE=render` повертає стару поведінку |
+| M1 | ✅ `prompt_only` пише `story_prompt_set` і не кличе image provider; `source_url` лишається ingest; `render` — відкат |
 | M2 | провальний QA **не** додає preflight-блокер; результат видно в картці story |
 | M3 | блокер `artifact_missing` веде до промпту, а не до кнопки Regenerate |
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |

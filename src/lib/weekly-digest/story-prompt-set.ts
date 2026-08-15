@@ -1,6 +1,6 @@
 /**
- * Parse and present weekly `story_prompt_set` artifacts. The worker writes them
- * in M1; Visuals must stay empty-safe until then.
+ * Parse and present weekly `story_prompt_set` artifacts. Visuals stays
+ * empty-safe when the worker has not written a set yet.
  */
 
 export const STORY_PROMPT_SET_TYPE = 'story_prompt_set' as const;

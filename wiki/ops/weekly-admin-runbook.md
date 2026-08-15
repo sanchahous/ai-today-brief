@@ -10,7 +10,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + P2 prompt cards 2026-08-15
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + M1 prompt_only 2026-08-15
 Last updated: 2026-08-15
 
 ---
@@ -157,8 +157,10 @@ Release preflight на Overview / Release покаже, що ще червоне
 
 На **Visuals** спочатку картка **Copy-ready prompts**: кнопки **Canonical / Midjourney /
 Negative**, стан слота (`очікує зображення` / `завантажено, on review` / `approved`) і
-**Upload a replacement** в тій самій картці. Промпти зʼявляться після того, як `story_image` job
-запише `story_prompt_set` (M1); upload уже працює. Semantic contract у **Illustration prompt**
+**Upload a replacement** в тій самій картці. Кнопка **Generate prompts** / **Generate cover
+prompt** пише `story_prompt_set` (`WEEKLY_STORY_IMAGE_MODE=prompt_only`) — без FLUX. Скопіюй
+промпт, згенеруй зображення у своєму інструменті, завантаж файл. Обкладинкові кропи для каналів
+далі складаються автоматично з approved cover. Semantic contract у **Illustration prompt**
 лишається для вже згенерованих/завантажених файлів:
 
 1. **Context** — чи видно, яка саме система/обʼєкт/подія змінилась, а не «будь-який AI».

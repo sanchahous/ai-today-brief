@@ -10,10 +10,18 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
-- **P2 — story_prompt_set + Visuals copy/upload (2026-08-15).** Новий artifact type
-  `story_prompt_set` (текст, не публічний). Visuals показує картки концептів з кнопками
-  Canonical / Midjourney / Negative і слот upload в одній картці. Worker ще не пише сет —
-  це M1; доти картки порожні, upload уже працює.
+- **M1 — weekly story/cover більше не рендерять FLUX (2026-08-15).** Дефолт
+  `WEEKLY_STORY_IMAGE_MODE=prompt_only`: `story_image` без `source_url` і `cover` пишуть
+  `story_prompt_set` (essence + концепти + `prompt-export`) і завершуються
+  `succeeded` + `needs_owner_review`. Гілка `source_url` лишається ingest. `render`
+  повертає старий FLUX + vision loop. `story_image` лишається на GitHub Actions.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін. Картинки **новин** далі на авто-FLUX.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M1,
+  `src/lib/weekly-digest/story-prompt-job.ts`, `src/lib/weekly-digest/generation-worker.ts`,
+  `.env.example`)
+- **P2 — story_prompt_set + Visuals copy/upload (2026-08-15).** Artifact type
+  `story_prompt_set` (текст, не публічний). Visuals: картки концептів Canonical /
+  Midjourney / Negative + слот upload. Worker пише сет у M1.
   (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P2,
   `supabase/migrations/20260815120000_weekly_story_prompt_set.sql`,
   `src/components/admin/story-prompt-set-panel.tsx`)

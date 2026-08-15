@@ -10,7 +10,7 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, 2026-08-10 fixes, weekly illustration P2 `story_prompt_set` 2026-08-15
+Actions run `31324873875`, PR #209, 2026-08-10 fixes, weekly illustration M1 `prompt_only` 2026-08-15
 Last updated: 2026-08-15
 
 ---
@@ -28,6 +28,7 @@ Video / Release).
 ## Feature flag
 
 `WEEKLY_CONTENT_STUDIO_V2` ∈ `{off, shadow, production}` (source: `.env.example`).
+Ілюстрації дайджесту: `WEEKLY_STORY_IMAGE_MODE=prompt_only` (дефолт) або `render`.
 
 | Режим | Поведінка |
 |---|---|
@@ -56,9 +57,11 @@ Hard spend-cap weekly master: `WEEKLY_MASTER_MAX_SPEND_USD` (default $4,
 `generation-worker.ts`) + kill-switch режиму `off` (source: PR #163, `.env.example`).
 Витрати пишуться в `generation_cost_events`, UI — `/admin/costs` (source: PR #169).
 
-Картинки weekly/story: Cloudflare **FLUX.2 klein** (`@cf/black-forest-labs/flux-2-klein-9b`),
-політика промпту `story-specific-editorial-v5-no-text` (без впеченого тексту в кадрі).
-(source: PR #169–#175, `pipeline/card-image.ts`, `generation-worker.ts`)
+Картинки **новин** на сайті: Cloudflare **FLUX.2 klein** (`@cf/black-forest-labs/flux-2-klein-9b`).
+Weekly story/cover за замовчуванням `WEEKLY_STORY_IMAGE_MODE=prompt_only`: worker пише
+`story_prompt_set` і не кличе FLUX; `render` повертає старий цикл. Політика планування
+концептів — `weekly-semantic-story-v5.1` (без впеченого тексту в кадрі).
+(source: PR #169–#175, `.env.example`, `pipeline/card-image.ts`, `generation-worker.ts`)
 
 ### Evidence grounding (writer + critic)
 
@@ -336,12 +339,21 @@ scene» зберігає її як concept 1, а concept 2–3 лишає нез
 `locale: neutral`, не в `PUBLIC_IMAGE_TYPES`) версіонується з ревізією. Input-hash залежить від
 revision item так само, як `story_image`. Visuals показує картки концептів з кнопками Canonical /
 Midjourney / Negative і слот upload в тій самій картці (стан: `очікує зображення` /
-`завантажено, on review` / `approved`). Worker ще не пише сет — це M1; UI порожній-безпечний.
+`завантажено, on review` / `approved`).
 (source: `supabase/migrations/20260815120000_weekly_story_prompt_set.sql`,
 `src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/story-prompt-set-panel.tsx`,
 [weekly-illustration-plan](weekly-illustration-plan.md) P2)
 
-**Content Sim (2026-08-11):** після FLUX `generateStoryImage` ганяє vision repair loop
+**M1 prompt_only (2026-08-15):** `generateStoryImage` без `source_url` і `generateCover` більше
+не викликають `generateWeeklyReportageIllustrations` / `runWeeklyImageSimLoop`. Джоба будує
+essence + концепти, експортує `ManualImagePrompt` і зберігає `story_prompt_set` зі статусом
+`succeeded` + `needs_owner_review`. Ingest `source_url` лишається. Прапорець
+`WEEKLY_STORY_IMAGE_MODE=prompt_only|render` (дефолт `prompt_only`). Транспорт `story_image`
+лишається GitHub Actions — не переносити в цьому PR.
+(source: `src/lib/weekly-digest/story-prompt-job.ts`, `generation-worker.ts`, `.env.example`,
+[weekly-illustration-plan](weekly-illustration-plan.md) M1)
+
+**Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.
 V4 critic звіряє pixels з original story, окремо gate-ить context/mechanism/consequence/

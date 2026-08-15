@@ -6,7 +6,7 @@ Summary: усе, що не має відповіді, суперечить са�
 Sources: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
 `.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04),
 `wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`
-Last updated: 2026-08-13
+Last updated: 2026-08-15
 
 ---
 
@@ -42,6 +42,8 @@ Cloudflare + X) у [overview](overview.md) §4 поруч із ledger. **Вла�
 ## 4. Weekly Content Studio v2 — коли `shadow → production`
 
 Прапорець `WEEKLY_CONTENT_STUDIO_V2=off`; передбачений шлях — три історичні випуски у `shadow`.
+Окремо (не це питання): `WEEKLY_STORY_IMAGE_MODE=prompt_only` — weekly story/cover не рендерять
+FLUX за замовчуванням; відкат = `render`. (source: `.env.example`, 2026-08-15)
 Сторінка [pipeline/weekly-digest](pipeline/weekly-digest.md) описує режим і spend-cap, але
 **числовий критерій** переходу в `production` (макс. $ / випуск + якісний чек-лист) ще не
 затверджений. (source: `.env.example`, `wiki/pipeline/weekly-digest.md`)

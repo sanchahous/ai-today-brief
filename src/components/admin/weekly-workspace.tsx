@@ -32,6 +32,7 @@ import {
   parseStoryPromptSetContent,
   storyImageSlotState,
 } from '@/lib/weekly-digest/story-prompt-set';
+import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
 
 function contentSimClearedFromMetadata(metadata: Json | null | undefined): boolean | undefined {
   const root = asRecord(metadata);
@@ -2886,6 +2887,12 @@ function VisualsPanel({
   const revision = workspace.revision;
   if (!revision) return <p className={`${PANEL} text-sm text-slate-400`}>No active revision.</p>;
   const cover = artifactFor(workspace.artifacts, 'cover', 'neutral');
+  const coverPromptArtifact = workspace.artifacts.find(
+    (artifact) =>
+      artifact.artifact_type === 'story_prompt_set' && artifact.slot_key === COVER_PROMPT_SLOT,
+  );
+  const coverPromptSet = parseStoryPromptSetContent(coverPromptArtifact?.content);
+  const coverSlot = storyImageSlotState(cover);
   const socialAssets = workspace.artifacts.filter(
     (artifact) =>
       artifact.artifact_type === 'social_asset' && artifact.mime_type?.startsWith('image/'),
@@ -2900,8 +2907,8 @@ function VisualsPanel({
               Weekly cover composition
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-slate-400">
-              The renderer composes motifs from the selected stories, then applies deterministic
-              typography and safe zones for every channel.
+              Copy the cover prompt, generate the image in your tool, then upload it here. Channel
+              crops still compose automatically from the approved cover.
             </p>
           </div>
           <form action={enqueueWeeklyGenerationAction}>
@@ -2911,7 +2918,7 @@ function VisualsPanel({
             <input type="hidden" name="locale" value="neutral" />
             <input type="hidden" name="slot_key" value="cover:neutral" />
             <ActionSubmitButton
-              idleLabel={cover ? 'Regenerate cover' : 'Generate cover'}
+              idleLabel={coverPromptSet ? 'Regenerate cover prompt' : 'Generate cover prompt'}
               pendingLabel="Queueing cover…"
               disabled={!canEdit}
               className={PRIMARY}
@@ -2927,23 +2934,20 @@ function VisualsPanel({
             label="Master cover"
             imagePreview
           />
-          <div className="grid content-start gap-3">
-            <div className={`${PANEL} text-sm text-slate-400`}>
-              <p className="font-bold text-white">Automatic checks</p>
-              <ul className="mt-3 grid gap-2">
-                <li>• resolution and file size</li>
-                <li>• text safe zones and contrast</li>
-                <li>• Cyrillic-capable embedded fonts</li>
-                <li>• required alt text and focal point</li>
-              </ul>
-            </div>
+          <StoryPromptSetPanel
+            itemId="cover"
+            prompts={coverPromptSet?.prompts ?? []}
+            policy={coverPromptSet?.policy ?? null}
+            generatedAt={coverPromptSet?.generatedAt ?? null}
+            slotState={coverSlot}
+          >
             <ReplacementAssetForm
               workspace={workspace}
               artifactType="cover"
               slotKey="cover:neutral"
               canEdit={canEdit}
             />
-          </div>
+          </StoryPromptSetPanel>
         </div>
       </section>
 
@@ -3010,7 +3014,7 @@ function VisualsPanel({
                       <input type="hidden" name="slot_key" value={slotKey} />
                       <input type="hidden" name="revision_item_id" value={item.id} />
                       <ActionSubmitButton
-                        idleLabel={artifact ? 'Regenerate' : 'Generate'}
+                        idleLabel={promptSet ? 'Regenerate prompts' : 'Generate prompts'}
                         pendingLabel="Queueing…"
                         disabled={!canEdit}
                         className={SECONDARY}
@@ -3020,7 +3024,7 @@ function VisualsPanel({
                 </div>
                 {job?.status === 'queued' ? (
                   <p className="rounded-xl border border-amber-400/20 bg-amber-400/6 px-3 py-2 text-xs text-amber-100">
-                    Queued — reload this tab after the job succeeds to see the new preview.
+                    Queued — reload this tab after the job succeeds to see the new prompts.
                   </p>
                 ) : null}
                 {job?.status === 'running' ? (

@@ -17,6 +17,13 @@ import type { Json } from '@/lib/database.types';
 import type { WeeklyResearchPack, WeeklyMasterBundle } from './content-studio';
 import type { WeeklyMasterRetryGuidance } from './editorial-llm';
 import type { SocialChannel, SocialLocale } from '@/lib/social/types';
+import type { WeeklyReportageSceneBriefResult } from '../../../pipeline/card-image';
+import { exportManualImagePrompts } from '../../../pipeline/prompt-export';
+import {
+  produceStoryPrompts,
+  resolveWeeklyStoryImageMode,
+  storyImageJobPath,
+} from './story-prompt-job';
 
 const SHORT_JOB_TYPES = ['research_pack', 'cover', 'pdf', 'social_asset', 'video_manifest'];
 
@@ -233,5 +240,66 @@ describe('masterInputStories (PR4 -- story angle join)', () => {
     } as unknown as Parameters<typeof masterInputStories>[0];
     const [story] = masterInputStories(context, [], new Map([['brief-1', 'should not apply']]));
     expect(story).not.toHaveProperty('angle');
+  });
+});
+
+describe('weekly story image prompt_only mode', () => {
+  const sceneInput = {
+    headline: 'CLI tools land on the command line',
+    summary: 'A plugin exposes server-side tools through a local command.',
+  };
+  const cfg = { geminiApiKey: '' };
+
+  function sceneBrief(
+    partial: Partial<WeeklyReportageSceneBriefResult> = {},
+  ): WeeklyReportageSceneBriefResult {
+    return {
+      scene:
+        'A brass adapter card being pushed into the expansion slot of a 1970s teleprinter terminal',
+      source: 'openrouter',
+      conceptLens: 'mechanism',
+      metaphorTitle: 'Teleprinter adapter',
+      storyContext: sceneInput.headline,
+      meaning: sceneInput.summary,
+      essence: sceneInput.headline,
+      mechanism: 'A CLI plugin exposes server-side tools through a local command.',
+      consequence: 'Developers invoke those tools from the command line.',
+      visualThesis: 'An adapter card connecting into a terminal lets the old system run new tools.',
+      readerTest: 'grasp: server-side tools now plug into the command line',
+      ...partial,
+    };
+  }
+
+  it('story_image job in prompt_only mode writes a prompt set and never calls the image provider', async () => {
+    const generateWeeklyReportageIllustrations = vi.fn();
+    const sceneBriefs = vi.fn(async () => [
+      sceneBrief({ conceptLens: 'literal_context', metaphorTitle: 'Literal' }),
+      sceneBrief({ conceptLens: 'mechanism', metaphorTitle: 'Mechanism' }),
+      sceneBrief({ conceptLens: 'consequence', metaphorTitle: 'Consequence' }),
+    ]);
+    const result = await produceStoryPrompts({
+      headline: sceneInput.headline,
+      sceneBriefs,
+      exportPrompts: exportManualImagePrompts,
+      sceneInput,
+      cfg,
+      policy: 'weekly-semantic-story-v5.1',
+      generatedAt: '2026-08-15T12:00:00.000Z',
+    });
+    expect(generateWeeklyReportageIllustrations).not.toHaveBeenCalled();
+    expect(sceneBriefs).toHaveBeenCalledWith(sceneInput, cfg, { count: 3 });
+    expect(result.content.prompts).toHaveLength(3);
+    expect(result.content.policy).toBe('weekly-semantic-story-v5.1');
+    expect(result.content.prompts[0]?.canonical).toMatch(/brass adapter card/i);
+    expect(result.content.prompts[0]?.midjourney).toContain('--ar 16:9');
+    expect(result.output).toEqual({ needs_owner_review: true, prompt_count: 3 });
+    expect(storyImageJobPath(null, 'prompt_only')).toBe('prompt_only');
+  });
+
+  it('story_image job with source_url still ingests the URL', () => {
+    expect(storyImageJobPath('https://cdn.example/story.jpg', 'prompt_only')).toBe('ingest_url');
+    expect(storyImageJobPath('https://cdn.example/story.jpg', 'render')).toBe('ingest_url');
+    expect(resolveWeeklyStoryImageMode(undefined)).toBe('prompt_only');
+    expect(resolveWeeklyStoryImageMode('render')).toBe('render');
   });
 });
