@@ -76,6 +76,16 @@ export async function encodeCardOrigin(bytes: Buffer): Promise<Buffer> {
 
 /** Safety cap so one invocation cannot walk an unbounded item table. */
 export const CARD_ORIGIN_REENCODE_MAX = 250;
+/**
+ * Explicit cap on the listing query itself (R4.1 / F17). Without this,
+ * PostgREST's own implicit row cap (commonly 1000) could silently truncate
+ * `items` below CARD_ORIGIN_REENCODE_MAX runs worth of rows, so `pending`/
+ * `skipped` would under-report how many legacy PNG origins actually remain
+ * -- a "done" backfill could still have thousands of un-migrated rows the
+ * job never saw. Generously above realistic volume (~180 news images/month
+ * -> a full year is ~2-3k rows).
+ */
+export const CARD_ORIGIN_REENCODE_QUERY_LIMIT = 5000;
 
 export type CardOriginReencodeItem = {
   id: string;
@@ -2813,6 +2823,7 @@ async function uploadCardImage(
 async function reencodeOneCardOrigin(
   db: PipelineDb,
   target: CardOriginReencodeTarget,
+  purgeOldPng: boolean,
 ): Promise<boolean> {
   const { data, error } = await db.storage.from(BUCKET).download(target.pngPath);
   if (!data) {
@@ -2836,6 +2847,13 @@ async function reencodeOneCardOrigin(
     });
     return false;
   }
+  // R4.1 / F16: default is keep-both, not delete-on-success. The old PNG
+  // may already be embedded in shared OG cards, cached by Telegram/LinkedIn
+  // unfurlers, or indexed by Google under its .png URL -- deleting it the
+  // moment the row switches to the new .jpg URL turns every one of those
+  // into a 404 with no way back. Purging is a deliberate, separate,
+  // explicitly-requested step once nothing still points at the PNG.
+  if (!purgeOldPng) return true;
   const { error: rmErr } = await db.storage.from(BUCKET).remove([target.pngPath]);
   if (rmErr) {
     logEvent('warn', 'publish', 'Card origin PNG cleanup failed', {
@@ -2849,17 +2867,25 @@ async function reencodeOneCardOrigin(
 /**
  * Re-encode existing PNG card origins to JPEG without calling an image model.
  * Idempotent: JPEG (and empty/rejected) URLs are skipped. Does not raise the
- * news image spend cap and does not regenerate pixels.
+ * news image spend cap and does not regenerate pixels. Keeps the old PNG in
+ * Storage by default -- pass `purgeOldPng: true` once nothing external still
+ * links to it (R4.1 / F16).
  */
 export async function reencodeStoredCardOrigins(
   db: PipelineDb,
-  opts: { dryRun?: boolean; limit?: number } = {},
+  opts: { dryRun?: boolean; limit?: number; purgeOldPng?: boolean } = {},
 ): Promise<ReencodeCardOriginsResult> {
   const { data: items, error } = await db
     .from('brief_items')
     .select('id, slug, card_image_url, review_status')
-    .not('card_image_url', 'is', null);
+    .not('card_image_url', 'is', null)
+    .limit(CARD_ORIGIN_REENCODE_QUERY_LIMIT);
   if (error) throw new Error(`[card-image] load origins failed: ${error.message}`);
+  if ((items?.length ?? 0) >= CARD_ORIGIN_REENCODE_QUERY_LIMIT) {
+    logEvent('warn', 'publish', 'Card origin listing hit its query limit -- counts may undercount', {
+      query_limit: CARD_ORIGIN_REENCODE_QUERY_LIMIT,
+    });
+  }
 
   const { targets, skipped } = selectCardOriginReencodeTargets(items ?? []);
   const { batch, deferred } = capReencodeBatch(targets, opts.limit);
@@ -2874,7 +2900,7 @@ export async function reencodeStoredCardOrigins(
   let reencoded = 0;
   let failed = 0;
   for (const target of batch) {
-    if (await reencodeOneCardOrigin(db, target)) reencoded++;
+    if (await reencodeOneCardOrigin(db, target, opts.purgeOldPng ?? false)) reencoded++;
     else failed++;
   }
   return { reencoded, skipped: skipped + deferred, failed, pending: deferred };

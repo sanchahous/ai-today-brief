@@ -452,24 +452,26 @@ describe('selectCardOriginReencodeTargets', () => {
 });
 
 describe('reencodeStoredCardOrigins', () => {
+  /** Matches the real query chain: .select(...).not(...).limit(...). */
+  function notWithLimit(data: unknown[]) {
+    return () => ({ limit: async () => ({ data, error: null }) });
+  }
+
   it('does not download or upload on dry-run', async () => {
     const download = vi.fn();
     const upload = vi.fn();
     const db = {
       from: () => ({
         select: () => ({
-          not: async () => ({
-            data: [
-              {
-                id: '1',
-                slug: 'foo',
-                card_image_url:
-                  'https://ref.supabase.co/storage/v1/object/public/card-images/foo.png',
-                review_status: 'approved',
-              },
-            ],
-            error: null,
-          }),
+          not: notWithLimit([
+            {
+              id: '1',
+              slug: 'foo',
+              card_image_url:
+                'https://ref.supabase.co/storage/v1/object/public/card-images/foo.png',
+              review_status: 'approved',
+            },
+          ]),
         }),
       }),
       storage: { from: () => ({ download, upload }) },
@@ -481,7 +483,7 @@ describe('reencodeStoredCardOrigins', () => {
     expect(upload).not.toHaveBeenCalled();
   });
 
-  it('uploads a JPEG origin, points the row at it, and removes the PNG', async () => {
+  it('uploads a JPEG origin, points the row at it, and keeps the PNG by default (R4.1 / F16)', async () => {
     const png = await renderFallbackEditorialIllustration({
       title: 'Google Cloud Releases Always-On Memory Agent Powered by Gemini Flash-Lite',
       summary: 'A background agent consolidates memory into SQLite instead of a RAG database.',
@@ -493,18 +495,15 @@ describe('reencodeStoredCardOrigins', () => {
     const db = {
       from: () => ({
         select: () => ({
-          not: async () => ({
-            data: [
-              {
-                id: 'item-1',
-                slug: 'memory-agent',
-                card_image_url:
-                  'https://ref.supabase.co/storage/v1/object/public/card-images/memory-agent.png?v=old',
-                review_status: 'approved',
-              },
-            ],
-            error: null,
-          }),
+          not: notWithLimit([
+            {
+              id: 'item-1',
+              slug: 'memory-agent',
+              card_image_url:
+                'https://ref.supabase.co/storage/v1/object/public/card-images/memory-agent.png?v=old',
+              review_status: 'approved',
+            },
+          ]),
         }),
         update: (row: { card_image_url: string }) => ({
           eq: async (_col: string, id: string) => {
@@ -540,6 +539,52 @@ describe('reencodeStoredCardOrigins', () => {
     expect(updates[0]?.id).toBe('item-1');
     expect(updates[0]?.url).toContain('memory-agent.jpg');
     expect(updates[0]?.url).toContain('?v=');
+    // The old PNG may still be embedded in shared OG cards, cached unfurls,
+    // or indexed URLs -- deleting it on success would 404 all of those.
+    expect(removed).toEqual([]);
+  });
+
+  it('removes the old PNG only when purgeOldPng is explicitly requested', async () => {
+    const png = await renderFallbackEditorialIllustration({
+      title: 'Google Cloud Releases Always-On Memory Agent Powered by Gemini Flash-Lite',
+      summary: 'A background agent consolidates memory into SQLite instead of a RAG database.',
+      seedKey: 'weekly-memory-agent',
+    });
+    const removed: string[][] = [];
+    const db = {
+      from: () => ({
+        select: () => ({
+          not: notWithLimit([
+            {
+              id: 'item-1',
+              slug: 'memory-agent',
+              card_image_url:
+                'https://ref.supabase.co/storage/v1/object/public/card-images/memory-agent.png?v=old',
+              review_status: 'approved',
+            },
+          ]),
+        }),
+        update: () => ({ eq: async () => ({ error: null }) }),
+      }),
+      storage: {
+        from: () => ({
+          download: async () => ({ data: new Blob([new Uint8Array(png)]), error: null }),
+          upload: async () => ({ error: null }),
+          getPublicUrl: (path: string) => ({
+            data: {
+              publicUrl: `https://ref.supabase.co/storage/v1/object/public/card-images/${path}`,
+            },
+          }),
+          remove: async (paths: string[]) => {
+            removed.push(paths);
+            return { error: null };
+          },
+        }),
+      },
+    } as unknown as PipelineDb; // test double: download/upload/remove + row update
+
+    const stats = await reencodeStoredCardOrigins(db, { purgeOldPng: true });
+    expect(stats).toEqual({ reencoded: 1, skipped: 0, failed: 0, pending: 0 });
     expect(removed).toEqual([['memory-agent.png']]);
   });
 
@@ -556,7 +601,7 @@ describe('reencodeStoredCardOrigins', () => {
     const db = {
       from: () => ({
         select: () => ({
-          not: async () => ({ data: rows, error: null }),
+          not: notWithLimit(rows),
         }),
       }),
       storage: { from: () => ({ download }) },

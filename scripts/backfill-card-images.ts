@@ -7,8 +7,11 @@
  *
  *   npx tsx scripts/backfill-card-images.ts            # all published briefs
  *   npx tsx scripts/backfill-card-images.ts <brief-slug>  # a single brief
- *   npx tsx scripts/backfill-card-images.ts --reencode-png [--dry-run]
- *     # PNG origins → JPEG, no image-model call (no Cloudflare required)
+ *   npx tsx scripts/backfill-card-images.ts --reencode-png [--dry-run] [--purge-old-png]
+ *     # PNG origins → JPEG, no image-model call (no Cloudflare required).
+ *     # Old PNGs are kept by default (R4.1) -- shared OG cards, cached
+ *     # unfurls, and indexed URLs may still point at them. Pass
+ *     # --purge-old-png only once nothing external still links to the .png.
  */
 import { readFileSync } from 'node:fs';
 import { createServiceClient } from '../pipeline/db';
@@ -38,8 +41,11 @@ async function main() {
   const slug = process.argv.slice(2).find((a) => !a.startsWith('--'));
 
   if (reencodePng) {
-    console.log(`reencoding PNG card origins${dryRun ? ' [dry-run]' : ''}…`);
-    const stats = await reencodeStoredCardOrigins(db, { dryRun });
+    const purgeOldPng = process.argv.includes('--purge-old-png');
+    console.log(
+      `reencoding PNG card origins${dryRun ? ' [dry-run]' : ''}${purgeOldPng ? ' [will delete old PNGs]' : ''}…`,
+    );
+    const stats = await reencodeStoredCardOrigins(db, { dryRun, purgeOldPng });
     console.log('DONE', stats);
     return;
   }

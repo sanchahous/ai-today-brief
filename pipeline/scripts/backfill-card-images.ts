@@ -4,11 +4,14 @@
  * Workers AI secrets to the daily job). Items published before that have a NULL
  * card_image_url and render the branded duotone OG fallback; this fills them in.
  * Usage: npx tsx --env-file=.env.local pipeline/scripts/backfill-card-images.ts [--dry-run]
- *        npx tsx --env-file=.env.local pipeline/scripts/backfill-card-images.ts --reencode-png [--dry-run]
+ *        npx tsx --env-file=.env.local pipeline/scripts/backfill-card-images.ts --reencode-png [--dry-run] [--purge-old-png]
  *
  * Idempotent: fillCardImages skips items that already have an image (or are
  * rejected), so re-running never regenerates or double-charges. `--reencode-png`
  * rewrites stored PNG origins to JPEG without an image-model call (no Cloudflare).
+ * The old PNG is kept in Storage by default (R4.1) -- shared OG cards, cached
+ * unfurls, and indexed URLs may still point at it. Pass `--purge-old-png` only
+ * once you've confirmed nothing external still links to the .png path.
  */
 import { loadPipelineConfig } from '../config';
 import { fillCardImages, reencodeStoredCardOrigins } from '../card-image';
@@ -51,8 +54,9 @@ async function main(): Promise<void> {
   const db = createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
   const reencodePng = process.argv.includes('--reencode-png');
   if (reencodePng) {
-    const stats = await reencodeStoredCardOrigins(db, { dryRun: config.dryRun });
-    logEvent('info', 'publish', 'Card origin reencode finished', stats);
+    const purgeOldPng = process.argv.includes('--purge-old-png');
+    const stats = await reencodeStoredCardOrigins(db, { dryRun: config.dryRun, purgeOldPng });
+    logEvent('info', 'publish', 'Card origin reencode finished', { ...stats, purgeOldPng });
     return;
   }
 
