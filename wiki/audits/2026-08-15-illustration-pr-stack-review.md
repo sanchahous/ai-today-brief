@@ -73,7 +73,11 @@ F22 (агрегація owner_feedback у окремий calibration-датас�
 - `e2e:check` (мапа affected-специфікацій, не повний Playwright): OK.
 - `wiki:check`: провалювався до цієї сторінки й супутніх правок (лічильник міграцій, застарілі
   `card-images`/`env-feature-flags`/`weekly-digest` watchers) — закрито в цьому ж коміті.
-- `build`: не запускався в межах цього ревʼю-проходу окремо від `pr:check`.
+- `build` (`next build`): чисто, 1130 сторінок згенеровано.
+
+**Повний `npm run pr:check` пройшов наскрізь, exit code 0** — підтверджено окремим прогоном
+після закриття wiki:check, з відсіченим exit code (`npm run pr:check > log 2>&1; echo $?`), не
+через візуальний перегляд хвоста логу.
 
 **Не перевірено:** повний Playwright e2e (`npm run e2e`) — цей репозиторій не має
 авторизованого сьюту для `/admin/weekly` (лише login-shell), той самий відомий розрив, що вже
