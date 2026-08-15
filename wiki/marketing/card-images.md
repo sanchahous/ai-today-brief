@@ -10,8 +10,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5.1` and
-three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / C1 / C2 / C3 2026-08-15,
-PR-stack review + fixes (`feat/weekly-illustration-fixes`) 2026-08-15
+three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / C1 / C2 / C3 + review fixes 2026-08-15
 Last updated: 2026-08-15
 
 ---

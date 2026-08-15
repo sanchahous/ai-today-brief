@@ -10,10 +10,12 @@ Last updated: 2026-08-15
 
 24 PR (`feat/weekly-scene-grammar-router` … `feat/weekly-card-origin-reencode`), кожен — одна
 хвиля [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md), стековані один на
-одному, кожен окремо пройшов `npm ci` у CI (не повний `pr:check` — див. F21 нижче). Дисципліна
-виконання висока: план дотримано буквально, заборони (не портувати V10 treatment, не рахувати
-регексами по story-тексту, не чіпати SVG-рендерери) дотримані. Знайдені дефекти — не відхилення
-від плану, а прогалини, яких план не міг передбачити на такому рівні деталізації.
+одному, кожен окремо пройшов `npm ci` у CI (не повний `pr:check` — див. F21 нижче)
+(source: `gh pr checks` live check 2026-08-15, `.github/workflows/e2e.yml`/`sonarqube.yml`).
+Дисципліна виконання висока: план дотримано буквально, заборони (не портувати V10 treatment,
+не рахувати регексами по story-тексту, не чіпати SVG-рендерери) дотримані (source: дифи PR
+#241–#264). Знайдені дефекти — не відхилення від плану, а прогалини, яких план не міг
+передбачити на такому рівні деталізації.
 
 Усі виправлення нижче зроблено на гілці `feat/weekly-illustration-fixes` (від вершини стека,
 `feat/weekly-card-origin-reencode`), 24 коміти, окремо по хвилях R1–R4.
@@ -62,6 +64,8 @@ F22 (агрегація owner_feedback у окремий calibration-датас�
 для <2 промптів).
 
 ## Живий `npm run pr:check` (2026-08-15, ця гілка)
+
+(source: живий прогін `npm run pr:check` на `feat/weekly-illustration-fixes` 2026-08-15)
 
 - `ci:check` (vitest + coverage): **1389/1389 тестів зелені**.
 - `typecheck`: чисто.
