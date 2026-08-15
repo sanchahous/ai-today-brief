@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — P3: промпт обкладинки daily після publish
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P3.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/guide](pipeline/guide.md), [pipeline/llm-providers](pipeline/llm-providers.md),
+[overview](overview.md), [now](now.md), [index](index.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md).
+
+**Код:** роль `daily.cover_scene`; `pipeline/daily-cover-prompt.ts` будує `ManualImagePrompt` з
+топ-3 заголовків + intro; колонка `briefs.cover_prompt jsonb`; `notifyReview` шле окреме
+`<pre>`-повідомлення. Авто-рендеру обкладинки немає.
+
+**Тест:** `daily cover prompt is built from the edition top stories, not from a single item`.
+
+**Не зроблено в цій хвилі:** C (грамматика як третій вимір). Міграцію треба застосувати на прод
+до першого запису колонки.
+
 ## 2026-08-15 — B3: Visuals показує N/3 промпти готові
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B3.

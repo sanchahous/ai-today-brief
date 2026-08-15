@@ -38,6 +38,7 @@ export const PROVIDER_ROLES = [
   'daily.verify',
   'daily.auto_publish_judge',
   'daily.card_image_scene',
+  'daily.cover_scene',
   'daily.image_critic',
   'weekly.master_writer',
   'weekly.master_critic',

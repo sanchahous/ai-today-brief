@@ -5,8 +5,8 @@ Summary: план і статус переходу від трьох окрем�
 Sources: owner session 2026-08-06/07, дослідження коду (Explore-агенти) + Plan-агент,
 `supabase/migrations/040_social_cms.sql` (Vault secret-патерн), план у
 `C:\Users\Oleksandr\.claude\plans\06-08-2026-12-32-oleksandr-kuzmenko-prancy-gizmo.md`,
-live dry-run `run-daily.ts` 2026-08-07
-Last updated: 2026-08-07
+live dry-run `run-daily.ts` 2026-08-07, daily cover scene role 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
@@ -55,6 +55,12 @@ https://build.nvidia.com/ — Kimi K3, DeepSeek V4, GLM 5.2 через OpenAI-с
 лише статус виконання, щоб не дублювати.
 
 ## Статус
+
+**P3 daily cover (2026-08-15).** Нова роль `daily.cover_scene` у `PROVIDER_ROLES` — один
+короткий виклик на випуск (топ-3 + intro), не `weekly.card_image_scene` і не
+`daily.card_image_scene`. Дефолтний ланцюжок той самий (OpenRouter → Gemini). Без порога
+якості: це не редакційний текст. (source: [weekly-illustration-plan](weekly-illustration-plan.md) P3,
+`pipeline/daily-cover-prompt.ts`)
 
 **Фаза 0 — виконано (2026-08-06).** Прибрано Gemini з дефолтної ротації:
 - Weekly (`src/lib/weekly-digest/editorial-llm.ts`'s `providerOrder()`): дефолт

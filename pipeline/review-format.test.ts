@@ -5,6 +5,7 @@ import {
   decoratedAfterDecision,
   escapeHtml,
   formatBatchHeader,
+  formatCoverPromptMessage,
   formatItemMessage,
   formatSourceHealthAlert,
   parseCallbackData,
@@ -213,5 +214,21 @@ describe('decoratedAfterDecision', () => {
     const out = decoratedAfterDecision('CARD', 'reject', 'too thin');
     expect(out).toContain('❌ <b>REJECTED</b>');
     expect(out).toContain('💬 too thin');
+  });
+});
+
+describe('formatCoverPromptMessage', () => {
+  it('puts canonical, midjourney and negative in pre blocks for one-tap copy', () => {
+    const html = formatCoverPromptMessage({
+      date: '2026-08-15',
+      title: 'Three-story tableau',
+      canonical: 'A newsroom table <with> artifacts.',
+      midjourney: 'newsroom table --ar 16:9 --style raw --no text',
+      negative: 'no text, no letters',
+    });
+    expect(html).toContain('ПРОМПТ ОБКЛАДИНКИ');
+    expect(html).toContain('<pre>A newsroom table &lt;with&gt; artifacts.</pre>');
+    expect(html).toContain('<pre>newsroom table --ar 16:9 --style raw --no text</pre>');
+    expect(html).toContain('<pre>no text, no letters</pre>');
   });
 });

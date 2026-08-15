@@ -275,6 +275,7 @@ export type Database = {
       };
       briefs: {
         Row: {
+          cover_prompt: Json | null;
           created_at: string | null;
           date: string;
           edition: number;
@@ -289,6 +290,7 @@ export type Database = {
           title_uk: string;
         };
         Insert: {
+          cover_prompt?: Json | null;
           created_at?: string | null;
           date: string;
           edition?: number;
@@ -303,6 +305,7 @@ export type Database = {
           title_uk: string;
         };
         Update: {
+          cover_prompt?: Json | null;
           created_at?: string | null;
           date?: string;
           edition?: number;

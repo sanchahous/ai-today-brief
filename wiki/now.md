@@ -10,6 +10,12 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **P3 — промпт обкладинки daily в review-чаті (2026-08-15).** Після publish пайплайн пише
+  `briefs.cover_prompt` (один виклик `daily.cover_scene` на випуск: топ-3 заголовки + intro) і
+  шле окреме Telegram-повідомлення з Canonical / Midjourney / Negative у `<pre>`. Картинку не
+  рендерить. Картинки **новин** лишаються авто-FLUX. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P3,
+  `pipeline/daily-cover-prompt.ts`, `pipeline/notify.ts`)
 - **B3 — N/3 промпти готові на Visuals (2026-08-15).** Біля кожної story: `2/3 промпти готові · немає consequence` (або `фолбек: mechanism`). Дані з `story_prompt_set` (лінзи + `sceneSource` журі) або з metadata `story_image` у режимі `render`. Cover не чіпали. Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
   (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B3,
   `src/lib/weekly-digest/story-prompt-set.ts`)

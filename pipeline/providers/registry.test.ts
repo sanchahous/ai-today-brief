@@ -19,6 +19,7 @@ import {
   generateWithRegistry,
   loadProviderRegistry,
   nimProvider,
+  PROVIDER_ROLES,
   RegistryExhaustedError,
   type ProviderRegistry,
   type ResolvedProvider,
@@ -66,6 +67,11 @@ const geminiEntry: ResolvedProvider = {
 };
 
 describe('generateWithRegistry', () => {
+  it('registers daily.cover_scene separately from per-item card and weekly scene roles', () => {
+    expect(PROVIDER_ROLES).toContain('daily.cover_scene');
+    expect(PROVIDER_ROLES).toContain('daily.card_image_scene');
+    expect(PROVIDER_ROLES).toContain('weekly.card_image_scene');
+  });
   it('returns the first successful provider in the chain', async () => {
     vi.mocked(generateWithCliProvider).mockResolvedValue(result({ provider: 'claude-cli' }));
     vi.mocked(generateWithHttpProviderChain).mockResolvedValue(result({ provider: 'openrouter' }));

@@ -20,6 +20,7 @@ import { summarize, type DraftBrief } from './summarize';
 import { reviseFlaggedItems, verifyClaims } from './verify';
 import { publish } from './publish';
 import { fillCardImages } from './card-image';
+import { fillDailyCoverPrompt } from './daily-cover-prompt';
 import { notifyReview } from './notify';
 import { createEmbedder, type EmbedFn } from './embeddings';
 import {
@@ -661,6 +662,18 @@ async function main(): Promise<void> {
     } catch (e) {
       logError('publish', 'fillCardImages failed (non-fatal)', e);
     }
+  }
+
+  // Edition cover prompt (best-effort). One LLM call for the pack, stored on
+  // briefs.cover_prompt and pushed as a separate Telegram message. Never renders.
+  if (result.itemCount > 0) {
+    t = Date.now();
+    const coverStatus = await fillDailyCoverPrompt(db, result.briefId);
+    logEvent('info', 'publish', 'Daily cover prompt', {
+      brief_id: result.briefId,
+      status: coverStatus,
+      duration_ms: Date.now() - t,
+    });
   }
 
   // ── Notify for review (optional) ─────────────────────────────────────────────

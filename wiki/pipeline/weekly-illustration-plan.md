@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 → C → D → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C → D → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -477,6 +477,15 @@ upload в одній картці. Worker пише артефакт у **M1**.
 
 **Готово коли:** власник відкриває Visuals, копіює промпт, генерує в себе, перетягує файл — і
 жодного разу не відкриває код чи БД.
+
+### P3 ✅ Зроблено 2026-08-15 — daily: промпт обкладинки випуску
+
+Після publish `fillDailyCoverPrompt` робить один виклик ролі `daily.cover_scene`
+(топ-3 заголовки + intro випуску, не одна новина) → `ManualImagePrompt` →
+`briefs.cover_prompt`. `notifyReview` шле окреме повідомлення в review-чат з
+Canonical / Midjourney / Negative у `<pre>`. Картинку не рендерить.
+(source: `pipeline/daily-cover-prompt.ts`, `pipeline/notify.ts`,
+`supabase/migrations/20260815140000_briefs_cover_prompt.sql`)
 
 ### P3. Daily: промпт обкладинки випуску
 
@@ -1116,7 +1125,7 @@ npm run pr:check
 | B3 | ✅ в адмінці видно `N/3 промпти готові`; тест `shows N/3 промпти готові when all three seats are present`
 | P1 | три `ManualImagePrompt` на story; negative завжди банить текст; тести `pipeline/prompt-export.test.ts` зелені |
 | P2 | ✅ схема приймає `story_prompt_set`; Visuals має кнопки копіювання + upload в одній картці; worker write — M1 ✅ |
-| P3 | після публікації daily в review-чаті лежить промпт обкладинки; `briefs.cover_prompt` заповнена |
+| P3 | ✅ після публікації daily в review-чаті лежить промпт обкладинки; `briefs.cover_prompt` заповнена; тест `daily cover prompt is built from the edition top stories, not from a single item` |
 | M1 | ✅ `prompt_only` пише `story_prompt_set` і не кличе image provider; `source_url` лишається ingest; `render` — відкат |
 | M2 | ✅ провальний QA **не** додає preflight-блокер; рядок у картці story |
 | M3 | ✅ блокер `artifact_missing` веде до промпту, а не до кнопки Regenerate |

@@ -15,15 +15,21 @@ import {
 import { sendMessage } from './telegram';
 import {
   formatBatchHeader,
+  formatCoverPromptMessage,
   formatItemMessage,
   reviewKeyboard,
   type ReviewChannel,
 } from './review-format';
 import { logEvent } from './log';
+import {
+  markCoverPromptNotified,
+  parseStoredCoverPrompt,
+} from './daily-cover-prompt';
 
 export interface NotifyResult {
   sent: number;
   failed: number;
+  coverSent: boolean;
 }
 
 export interface NotifyReviewOptions {
@@ -37,6 +43,39 @@ export interface NotifyReviewOptions {
   editorTopic?: string;
 }
 
+export async function notifyCoverPrompt(
+  db: PipelineDb,
+  token: string,
+  chatId: string,
+  briefId: string,
+  options: { resend?: boolean } = {},
+): Promise<boolean> {
+  const { data, error } = await db
+    .from('briefs')
+    .select('cover_prompt, date, edition')
+    .eq('id', briefId)
+    .maybeSingle();
+  if (error) {
+    logEvent('warn', 'notify', 'Daily cover prompt load failed', { error: error.message });
+    return false;
+  }
+  const stored = parseStoredCoverPrompt(data?.cover_prompt);
+  if (!stored) return false;
+  if (stored.notifiedAt && !options.resend) return false;
+  const html = formatCoverPromptMessage({
+    date: data?.date,
+    edition: data?.edition,
+    title: stored.title,
+    canonical: stored.canonical,
+    midjourney: stored.midjourney,
+    negative: stored.negative,
+  });
+  const msgId = await sendMessage(token, chatId, html);
+  if (msgId === null) return false;
+  await markCoverPromptNotified(db, briefId, stored);
+  return true;
+}
+
 export async function notifyReview(
   db: PipelineDb,
   token: string,
@@ -47,7 +86,8 @@ export async function notifyReview(
   const items = await getPendingReviewItems(db, briefId, { resend: options.resend });
   if (items.length === 0) {
     logEvent('info', 'notify', 'No pending items to push for review', { brief_id: briefId });
-    return { sent: 0, failed: 0 };
+    const coverSent = await notifyCoverPrompt(db, token, chatId, briefId, { resend: options.resend });
+    return { sent: 0, failed: 0, coverSent };
   }
 
   const meta = await getBriefMeta(db, briefId);
@@ -87,11 +127,13 @@ export async function notifyReview(
     sent++;
   }
 
+  const coverSent = await notifyCoverPrompt(db, token, chatId, briefId, { resend: options.resend });
   logEvent('info', 'notify', 'Review cards pushed to Telegram', {
     brief_id: briefId,
     sent,
     failed,
+    cover_sent: coverSent,
     total: items.length,
   });
-  return { sent, failed };
+  return { sent, failed, coverSent };
 }
