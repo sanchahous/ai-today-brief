@@ -10,7 +10,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5.1` and
-three-concept jury follow-up 2026-08-11, B1-fix craft-ban literal exception 2026-08-15
+three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 2026-08-15
 Last updated: 2026-08-15
 
 ---
@@ -153,6 +153,12 @@ head-noun setting / `subjectKind`), тож `single_slot_cabinet` і `single_shaf
 майстерні більше не проходять як різні концепції. (source:
 [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) B2, `pipeline/card-image.ts`)
 
+**P1 — промпт як продукт (2026-08-15):** `pipeline/prompt-export.ts` видає канонічний
+natural-language промпт (субʼєкт першим) плюс Midjourney і negative; текст у пікселях заборонений
+окремим реченням і в negative. Ще не підключено до Visuals — це P2.
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) P1,
+`pipeline/prompt-export.ts`)
+
 **Reviewable render history (2026-08-12):** кожен image buffer з кожного repair round зберігається
 до approval як підписаний private preview із round, variant, concept lens/title, motif, scene та
 per-variant score. Visuals показує всю generation history; owner promotion лишається можливим для
@@ -163,7 +169,7 @@ per-variant score. Visuals показує всю generation history; owner promo
 ## Related pages
 
 - [content-sim](../pipeline/content-sim.md)
-- [weekly-digest](../pipeline/weekly-digest.md)
+- [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md)
 - [overview](../overview.md) §4
 - [custom-social-delivery](custom-social-delivery.md)
 - [llm-providers](../pipeline/llm-providers.md)

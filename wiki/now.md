@@ -10,6 +10,11 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **P1 — промпт як продукт (2026-08-15).** `pipeline/prompt-export.ts` видає канонічний
+  промпт (субʼєкт першим) + Midjourney + negative без номерів версій моделей. Наступне — P2
+  (артефакт `story_prompt_set` і кнопки копіювання у Visuals).
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P1,
+  `pipeline/prompt-export.ts`)
 - **B2 — не три копії одного essence (2026-08-15).** Журі більше не добиває кількість
   фолбеками: 1–2 прийняті лінзи → 1–2 брифи; повний провал → один `fallback_essence`.
   `sibling_motif_family_reuse` ловить шафи/каруселі в одній майстерні як одну родину.

@@ -6,6 +6,20 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — P1: промпт став копійованим продуктом
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P1.
+
+**Змінено:** новий `pipeline/prompt-export.ts`; [marketing/card-images](marketing/card-images.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md), [now](now.md),
+[index](index.md).
+
+**Код:** `exportManualImagePrompt` перекладає `buildEditorialConceptPrompt` у канонічний
+natural-language (субʼєкт першим) + Midjourney `--ar 16:9 --style raw --no text` + negative з
+обовʼязковою забороною тексту. Грамматика схеми пише діаграму. Номерів версій у виході немає.
+
+**Не зроблено в цій хвилі:** P2 (зберігання + UI).
+
 ## 2026-08-15 — B2: журі більше не добиває три однакові фолбеки
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B2;
