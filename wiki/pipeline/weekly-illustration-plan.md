@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → B3 → P3 → C → D → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 → P3 → C → D → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -563,6 +563,11 @@ Visuals зʼявляються промпти.
 
 **Готово коли:** після завантаження власник за кілька секунд бачить або «QA чисто», або перелік
 проблем — і в обох випадках може йти далі.
+
+### M3 ✅ Зроблено 2026-08-15 — підказки preflight під новий процес
+
+`story_image.fixMissing` і `cover.fixMissing` ведуть до копіювання промпту й upload, не до
+Regenerate. Вага гейта не змінена. (source: `src/lib/weekly-digest/preflight.ts`)
 
 ### M3. Підказки preflight під новий процес
 
@@ -1108,7 +1113,7 @@ npm run pr:check
 | P3 | після публікації daily в review-чаті лежить промпт обкладинки; `briefs.cover_prompt` заповнена |
 | M1 | ✅ `prompt_only` пише `story_prompt_set` і не кличе image provider; `source_url` лишається ingest; `render` — відкат |
 | M2 | ✅ провальний QA **не** додає preflight-блокер; рядок у картці story |
-| M3 | блокер `artifact_missing` веде до промпту, а не до кнопки Regenerate |
+| M3 | ✅ блокер `artifact_missing` веде до промпту, а не до кнопки Regenerate |
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |
 | E1 | вердикт власника з адмінки потрапляє в calibration dataset без ручного перенесення |
 

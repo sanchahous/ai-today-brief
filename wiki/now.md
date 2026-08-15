@@ -10,6 +10,12 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **M3 — preflight веде до промпту, не до Regenerate (2026-08-15).**
+  `story_image` / `cover` `artifact_missing`: Visuals → скопіюй промпт → згенеруй у своєму
+  інструменті → завантаж файл. Вага гейта не змінена — зображення лишається обовʼязковим.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M3,
+  `src/lib/weekly-digest/preflight.ts`)
 - **M2 — post-upload QA попереджає, не блокує (2026-08-15).** Після upload story/cover
   `after()` ганяє image-only critic (без headline/scene) і пише `metadata.post_upload_qa`.
   Visuals: «QA чисто» або жовтий рядок + Ігнорувати / Замінити файл.

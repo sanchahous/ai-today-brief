@@ -6,6 +6,23 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — M3: preflight missing-image веде до промпту, не до Regenerate
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M3.
+
+**Змінено:** [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[now](now.md), [index](index.md).
+
+**Код:** `ARTIFACT_GATE_GUIDANCE.story_image.fixMissing` і `cover.fixMissing` — скопіюй промпт,
+згенеруй у своєму інструменті, завантаж файл. Вага гейта (`ARTIFACT_TYPE_ORDER`) не чіпали.
+
+**Тест:** `artifact_missing story_image and cover guidance points to the prompt, not Regenerate`.
+
+**Не зроблено в цій хвилі:** B3 (N/3 prompts ready), P3 (daily cover prompt).
+
 ## 2026-08-15 — M2: post-upload QA попереджає, не блокує реліз
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M2.

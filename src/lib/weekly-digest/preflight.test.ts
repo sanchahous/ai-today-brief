@@ -129,6 +129,26 @@ describe('Weekly Digest release preflight', () => {
     );
   });
 
+  it('artifact_missing story_image and cover guidance points to the prompt, not Regenerate', () => {
+    const input = completeInput();
+    input.artifacts = input.artifacts.filter(
+      (entry) => entry.artifactType !== 'story_image' && entry.artifactType !== 'cover',
+    );
+    const result = validateWeeklyDigestPreflight(input);
+    const storyFix = result.blockers.find(
+      (blocker) => blocker.code === 'artifact_missing' && blocker.slot.startsWith('story_image'),
+    )?.fix;
+    const coverFix = result.blockers.find(
+      (blocker) => blocker.code === 'artifact_missing' && blocker.slot === 'cover',
+    )?.fix;
+    expect(storyFix).toMatch(/copy a concept prompt/i);
+    expect(storyFix).toMatch(/upload/i);
+    expect(storyFix).not.toMatch(/Regenerate/i);
+    expect(coverFix).toMatch(/copy the cover prompt/i);
+    expect(coverFix).toMatch(/upload/i);
+    expect(coverFix).not.toMatch(/Regenerate/i);
+  });
+
   it.each([
     ['one', ['story-1']],
     ['two', ['story-1', 'story-2']],

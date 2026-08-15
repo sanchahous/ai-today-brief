@@ -330,12 +330,14 @@ const ARTIFACT_GATE_GUIDANCE: Record<WeeklyArtifactType, ArtifactGateGuidance> =
   },
   story_image: {
     tab: 'visuals',
-    fixMissing: 'Open Visuals → generate story images for selected stories → Approve each.',
+    fixMissing:
+      'Open Visuals → copy a concept prompt → generate it in your tool → upload the file into the story slot.',
     fixUnapproved: 'Open Visuals → find the story image still in review → Approve version.',
   },
   cover: {
     tab: 'visuals',
-    fixMissing: 'Open Visuals → generate the weekly cover → Approve the master cover.',
+    fixMissing:
+      'Open Visuals → copy the cover prompt → generate it in your tool → upload the file into the cover slot.',
     fixUnapproved: 'Open Visuals → review the cover → Approve version (owner).',
   },
   video_script: {

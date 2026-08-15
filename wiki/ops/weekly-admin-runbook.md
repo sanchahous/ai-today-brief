@@ -10,7 +10,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + M2 post-upload QA 2026-08-15
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + M3 preflight prompt copy 2026-08-15
 Last updated: 2026-08-15
 
 ---
@@ -216,6 +216,7 @@ Postpone не створює нову RPC — це той самий Pause → A
 | Master **failed**, score 8x, blockers | Critic / deterministic gate | Читай Master quality → retry |
 | Після retry знову `UNSUPPORTED_*` на деталі зі статті | Старий короткий excerpt / вузькі claims | Переконайся що packs **v3** з довгим excerpt; Approve знову |
 | Visuals/Social не з’являються | Master ще не succeeded | Спочатку зелений Research gate |
+| Release: немає story/cover | Файл не завантажено | Visuals → скопіюй промпт → згенеруй у своєму інструменті → upload. Не тисни Regenerate |
 | Release blocked на video | Немає Remotion pipeline / captions | Owner override лише для trial (див. preflight) |
 | PDF: сторінки радар-історій (4-7) виглядають скорочено (без картинки/панелей) | Так задумано з 2026-08-07 — повний розворот тепер лише для Top 3 | Нормально, не баг; деталі — [weekly-digest](../pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07) |
 
