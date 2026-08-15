@@ -1,6 +1,6 @@
 # Illustration PR-stack review (#241–#264) — findings і виправлення
 
-Summary: технічне ревʼю 24 PR (#241–#264), якими виконано `weekly-illustration-plan.md`, звірка з планом і кодом на `main`; знайдено 4 блокери, 8 дефектів якості, 4 безпекові/цілісні прогалини, 6 операційних — усі виправлені на гілці `feat/weekly-illustration-fixes`.
+Summary: технічне ревʼю 24 PR (#241–#264), якими виконано `weekly-illustration-plan.md`, звірка з планом і кодом на `main`; знайдено 4 блокери, 8 дефектів якості, 4 безпекові/цілісні прогалини, 7 операційних — усі виправлені на гілці `feat/weekly-illustration-fixes`, крім одного (F23), що потребує рішення власника про тестову інфраструктуру.
 Sources: дифи всіх 24 PR, `pipeline/card-image.ts`/`prompt-export.ts`/`scene-grammar.ts`/`concept-mapping-gate.ts`, `src/lib/weekly-digest/*`, `src/app/admin/(cms)/weekly/actions.ts`, RLS `supabase/migrations/001_initial_schema.sql`, `.github/workflows/*.yml`, live `npm run pr:check` 2026-08-15.
 Last updated: 2026-08-15
 
@@ -57,11 +57,14 @@ Last updated: 2026-08-15
 | F18 | Post-upload QA могла зависнути в «перевіряє…» назавжди без можливості повторити | `recheckPostUploadQaAction` + кнопка «Перевірити ще раз» |
 | F19 | `resolveWeeklyStoryImageMode` — строга рівність з `'render'`; `'RENDER'`/пробіли мовчки давали `prompt_only` | `.trim().toLowerCase()` перед порівнянням |
 | F21 | `e2e.yml`/`sonarqube.yml` тригеряться лише на `pull_request → main`; жоден із 24 PR не таргетив `main` напряму — реально відпрацював лише `npm ci` | Живий `npm run pr:check` прогнано локально на цій гілці (див. нижче) |
+| F22 | Вердикти власника (`owner_feedback`) накопичувались лише як JSONB на кожному артефакті окремо — жодного шляху зібрати їх у calibration dataset (мета E1) | `pipeline/scripts/export-owner-calibration.ts` (`npm run export:owner-calibration`) → `experiments/critic-ground-truth/owner-prompt-calibration.json` |
+| F24 | `distinctPromptsCheck`'s pass-лейбл жорстко писав «3 різні» навіть коли story мала 1–2 промпти (легітимна B2-деградація) — хибне підтвердження якості | Лейбл тепер показує реальну кількість (`status: 'pass'` лишився — «немає копій», не «3 різні», навмисна поведінка з наявного тесту) |
 
-Не зроблено окремо (низький пріоритет / вимагає ширшого рішення власника, не блокує):
-F22 (агрегація owner_feedback у окремий calibration-датасет), F23 (e2e на Visuals prompt-картки —
-у сьюті взагалі немає авторизованого Playwright для `/admin/weekly`), F24 (поріг «дистинктності»
-для <2 промптів).
+Не зроблено окремо (вимагає ширшого рішення власника про тестову інфраструктуру, не блокує):
+F23 — e2e на Visuals prompt-картки. У сьюті взагалі немає авторизованого Playwright для
+`/admin/*` (`e2e/admin-mobile.spec.ts` доходить лише до `/admin/login`, unauthenticated shell) і
+немає component-level React-тестів (React Testing Library не підключено). Це рішення про тестову
+інфраструктуру, не точковий фікс — задокументовано, не імпровізовано.
 
 ## Живий `npm run pr:check` (2026-08-15, ця гілка)
 
