@@ -1533,6 +1533,7 @@ describe('scene-brief registry wiring (Phase 2)', () => {
       {
         headline: 'Muse Code resumes unattended GPU work after crashes',
         summary: 'A replay-exact event log preserves completed steps for a 24-hour run.',
+        practical: 'Budget about 2 hours for the first run.',
       },
       { geminiApiKey: '', registry },
     );

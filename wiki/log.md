@@ -6,6 +6,23 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — C2: роутер грамматики від essence (без V10)
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C2.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[pipeline/weekly-digest](pipeline/weekly-digest.md),
+[now](now.md), [index](index.md).
+
+**Код:** `pipeline/scene-grammar.ts`. Метрика в title/summary/essence → схема. C5.2/C5.3
+тести зелені. V10 не імпортується.
+
+**Тест:** `an incidental duration in practical does not switch a domain story to the diagram grammar`;
+`a single mention of caching does not select the process grammar`.
+
+**Не зроблено в цій хвилі:** C3 (mapping gate), C5.4 (`inferRole`).
+
 ## 2026-08-15 — C0/C1: grammar на брифі, без моста autoClaim
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C0/C1.

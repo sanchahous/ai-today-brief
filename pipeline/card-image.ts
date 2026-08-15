@@ -29,6 +29,7 @@ import {
   type ProviderRegistry,
   type ProviderRole,
 } from './providers/registry';
+import { selectSceneGrammar } from './scene-grammar';
 
 const BUCKET = 'card-images';
 /**
@@ -681,10 +682,6 @@ export const SCENE_GRAMMARS = [
   'source_led_fallback',
 ] as const;
 export type SceneGrammar = (typeof SCENE_GRAMMARS)[number];
-
-export function sceneGrammarForSource(source: string): SceneGrammar {
-  return source === 'fallback' ? 'source_led_fallback' : 'cinematic_domain_scene';
-}
 
 /** Sibling story metaphors already committed in this digest (structural diversity). */
 export interface SiblingMetaphorHint {
@@ -1870,12 +1867,21 @@ function sceneBriefFromPitch(
   pitch: MetaphorPitch,
   essence: EditorialEssence,
   source: string,
+  story: WeeklyReportageSceneInput,
 ): WeeklyReportageSceneBriefResult {
   return {
     scene: flattenMetaphorPitch(pitch, essence),
     source,
     conceptLens: pitch.lens ?? 'literal_context',
-    grammar: sceneGrammarForSource(source),
+    grammar: selectSceneGrammar({
+      title: story.headline,
+      summary: story.summary,
+      why: story.why,
+      practical: story.practical,
+      takeaway: story.takeaway,
+      source,
+      essence,
+    }),
     essence: essence.essence,
     metaphorTitle: pitch.title,
     motifClass: pitch.motifClass,
@@ -2065,7 +2071,7 @@ export async function weeklyReportageSceneBriefs(
 
   if (accepted.length > 0) {
     return accepted
-      .map(({ pitch, source }) => sceneBriefFromPitch(pitch, essence, source))
+      .map(({ pitch, source }) => sceneBriefFromPitch(pitch, essence, source, input))
       .slice(0, count);
   }
   return [

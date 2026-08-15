@@ -10,10 +10,16 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **C2 — роутер грамматики від essence (2026-08-15).** Метрика в title/summary або claim
+  essence → `deterministic_technical_hybrid`. Duration у `practical` і `40%` у takeaway не
+  перемикають (C5.2). Один `caching` не є process grammar (C5.3); окремого process prompt немає.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C2,
+  `pipeline/scene-grammar.ts`)
 - **C1 — grammar на брифі журі (2026-08-15).** Прийняті лінзи: `cinematic_domain_scene`;
   fallback: `source_led_fallback`. `prompt-export` пише схему, якщо бриф уже має
-  `deterministic_technical_hybrid`. Роутер метрики (C2) ще ні. C0: моста `autoClaim` не буде —
-  C2 читатиме `EditorialEssence`. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  `deterministic_technical_hybrid`. Роутер метрики — C2 ✅. C0: моста `autoClaim` немає.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
   (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C0/C1,
   `pipeline/card-image.ts`, `pipeline/prompt-export.ts`)
 - **P3 — промпт обкладинки daily в review-чаті (2026-08-15).** Після publish пайплайн пише

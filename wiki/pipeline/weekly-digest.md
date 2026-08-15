@@ -371,6 +371,12 @@ image-only critic (`buildImageOnlyCriticPrompt`, без headline/scene) і пи�
 (source: `src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/weekly-workspace.tsx`,
 [weekly-illustration-plan](weekly-illustration-plan.md) B3)
 
+**C2 scene grammar (2026-08-15):** `pipeline/scene-grammar.ts` ставить
+`deterministic_technical_hybrid`, коли в title/summary або essence є точна метрика.
+`practical` / `takeaway` не скануються. Один `caching` не вмикає process grammar. V10 не
+імпортується. (source: `pipeline/scene-grammar.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) C2)
+
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.

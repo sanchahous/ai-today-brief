@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 → D → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 → D → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -611,7 +611,7 @@ Regenerate. Вага гейта не змінена. (source: `src/lib/weekly-di
 `autoClaim`; міст змусив би вигадувати `semantics.explanatoryRole` і `quantitativeFacts`
 регексом або ще одним LLM — та сама робота, плюс фейковий тип у прод-шляху.
 
-**C2 робитиме окремим PR:** новий модуль `pipeline/scene-grammar.ts` (без імпорту V10-кластера).
+**C2 ✅ 2026-08-15:** новий модуль `pipeline/scene-grammar.ts` (без імпорту V10-кластера).
 Вхід — `EditorialEssence` + `title`/`summary` (не practical/takeaway, див. C5.2). Вихід —
 `SceneGrammar`. Портувати лише ті сигнали, що змінюють **промпт** (метрика → схема).
 `visual-affordance-router-v10.ts` лишається експериментальним. C5.2 і C5.3 правити в новому
@@ -639,7 +639,7 @@ Regenerate. Вага гейта не змінена. (source: `src/lib/weekly-di
 `WeeklyReportageSceneBriefResult.grammar`: журі → `cinematic_domain_scene`, fallback →
 `source_led_fallback`. `exportManualImagePrompts` пише кожен бриф своєю грамматикою (схема —
 перелік елементів і стрілок, не фото). Наявні виклики без поля лишаються кінематографічними.
-Роутер метрики (C2) ще не підключений — hybrid зʼявляється лише якщо бриф уже має цю грамматику.
+Роутер метрики — C2 ✅ (`pipeline/scene-grammar.ts`).
 (source: `pipeline/card-image.ts`, `pipeline/prompt-export.ts`)
 
 ### C1. Ввести `grammar` поруч із `lens`
@@ -662,6 +662,16 @@ Regenerate. Вага гейта не змінена. (source: `src/lib/weekly-di
   (`gemini|community critique`, `deep work|sparring partner`). PDF §14 прямо вимагає
   «Affordance Router **без story-ID hacks**», і саме на цьому реалізація дала покриття 29%.
 - **Виправити при портуванні** — див. C5.
+
+### C2 ✅ Зроблено 2026-08-15 — роутер від essence, без V10
+
+`pipeline/scene-grammar.ts` (без імпорту V10-кластера). Вхід — essence + `title`/`summary`;
+`why` / `practical` / `takeaway` ігноруються (C5.2). Метрика в claim →
+`deterministic_technical_hybrid`. Процесна граматика не є четвертим режимом (C0: лише
+метрика → схема): два+ токени послідовності детектяться, промпт лишається кінематографічним.
+Один `caching` процес не вмикає (C5.3). Регекс `%` виправлено: V10 `\b` після `%` не ловив `82%`.
+Fallback source лишається `source_led_fallback`.
+(source: `pipeline/scene-grammar.ts`, `pipeline/scene-grammar.test.ts`)
 
 ### C3. Підключити mapping gate
 
@@ -721,7 +731,8 @@ return (
 
 **Тест:** `an incidental duration in practical does not switch a domain story to the diagram grammar`
 — фікстура з `practical: 'Budget about 2 hours for the first run.'` і без метрики в
-title/summary має лишитись на `cinematic_domain_scene`.
+title/summary має лишитись на `cinematic_domain_scene`. **Зелений 2026-08-15** у
+`pipeline/scene-grammar.test.ts`.
 
 #### C5.3 `requiresTemporalSequence` спрацьовує на одному слові
 
@@ -735,7 +746,8 @@ const hits = metricSourceText(story).match(
 return new Set(hits.map((h) => h.toLowerCase())).size >= 2;
 ```
 
-**Тест:** `a single mention of caching does not select the process grammar`.
+**Тест:** `a single mention of caching does not select the process grammar`. **Зелений 2026-08-15**
+у `pipeline/scene-grammar.test.ts`.
 
 #### C5.4 `inferRole` — `\b` звʼязується лише з крайніми гілками
 
@@ -1152,6 +1164,7 @@ npm run pr:check
 | M3 | ✅ блокер `artifact_missing` веде до промпту, а не до кнопки Regenerate |
 | C0 | ✅ рішення: без моста `autoClaim`; C2 — новий `pipeline/scene-grammar.ts` від `EditorialEssence` |
 | C1 | ✅ журі ставить `cinematic_domain_scene`, fallback — `source_led_fallback`; export читає `brief.grammar` |
+| C2 | ✅ метрика в title/summary/essence → схема; duration у practical не перемикає; один `caching` не є process grammar |
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |
 | E1 | вердикт власника з адмінки потрапляє в calibration dataset без ручного перенесення |
 
