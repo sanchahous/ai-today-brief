@@ -674,6 +674,18 @@ export const METAPHOR_LENSES: readonly MetaphorLens[] = [
   'consequence',
 ] as const;
 
+/** How the copy-ready prompt is written. Default keeps today's cinematic art director. */
+export const SCENE_GRAMMARS = [
+  'cinematic_domain_scene',
+  'deterministic_technical_hybrid',
+  'source_led_fallback',
+] as const;
+export type SceneGrammar = (typeof SCENE_GRAMMARS)[number];
+
+export function sceneGrammarForSource(source: string): SceneGrammar {
+  return source === 'fallback' ? 'source_led_fallback' : 'cinematic_domain_scene';
+}
+
 /** Sibling story metaphors already committed in this digest (structural diversity). */
 export interface SiblingMetaphorHint {
   motifClass?: string;
@@ -1836,6 +1848,7 @@ export async function extractEditorialEssence(
 
 export interface WeeklyReportageSceneBriefResult extends SceneBriefResult {
   conceptLens: MetaphorLens | 'owner_direction';
+  grammar?: SceneGrammar;
   essence?: string;
   metaphorTitle?: string;
   motifClass?: string;
@@ -1862,6 +1875,7 @@ function sceneBriefFromPitch(
     scene: flattenMetaphorPitch(pitch, essence),
     source,
     conceptLens: pitch.lens ?? 'literal_context',
+    grammar: sceneGrammarForSource(source),
     essence: essence.essence,
     metaphorTitle: pitch.title,
     motifClass: pitch.motifClass,
@@ -1895,6 +1909,7 @@ function fallbackSceneBrief(
     scene: scene.replace(/\s+/g, ' ').slice(0, 680),
     source: 'fallback',
     conceptLens: lens,
+    grammar: 'source_led_fallback',
     essence: essence.essence,
     metaphorTitle:
       lens === 'literal_context'
@@ -2212,6 +2227,7 @@ export async function generateWeeklyReportageIllustrations(
       scene,
       source: 'owner',
       conceptLens: 'owner_direction',
+      grammar: 'cinematic_domain_scene',
       essence: (semanticReference?.essence ?? input.headline) || 'story',
       metaphorTitle: 'Owner direction',
       motifClass: 'owner_direction',

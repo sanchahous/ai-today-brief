@@ -1549,6 +1549,7 @@ describe('scene-brief registry wiring (Phase 2)', () => {
       'recovered_kiln',
     ]);
     expect(concepts.every((concept) => concept.source === 'stub-jury')).toBe(true);
+    expect(concepts.every((concept) => concept.grammar === 'cinematic_domain_scene')).toBe(true);
   });
 
   it('does not emit three briefs built from one essence', async () => {
@@ -1562,6 +1563,7 @@ describe('scene-brief registry wiring (Phase 2)', () => {
     expect(concepts).toHaveLength(1);
     expect(concepts[0]?.source).toBe('fallback');
     expect(concepts[0]?.motifClass).toBe(FALLBACK_MOTIF_CLASS);
+    expect(concepts[0]?.grammar).toBe('source_led_fallback');
   });
 
   it('returns two distinct briefs rather than three near-identical ones', async () => {

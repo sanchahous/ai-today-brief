@@ -138,4 +138,25 @@ describe('exportManualImagePrompt', () => {
     expect(prompt.canonical.toLowerCase()).toMatch(/arrow/);
     expect(prompt.notes.some((note) => /diagram/i.test(note))).toBe(true);
   });
+
+  it('exportManualImagePrompts writes each brief grammar instead of one cinematic default', () => {
+    const prompts = exportManualImagePrompts(
+      [
+        brief({ grammar: 'cinematic_domain_scene' }),
+        brief({
+          grammar: 'deterministic_technical_hybrid',
+          scene: 'Boxes for CLI plugin, server tools, and local command with arrows between them',
+        }),
+        brief({ grammar: 'source_led_fallback' }),
+      ],
+      CLI_ESSENCE,
+    );
+    expect(prompts.map((row) => row.grammar)).toEqual([
+      'cinematic_domain_scene',
+      'deterministic_technical_hybrid',
+      'source_led_fallback',
+    ]);
+    expect(prompts[1]?.canonical.toLowerCase()).toMatch(/diagram/);
+    expect(prompts[2]?.canonical.toLowerCase()).toMatch(/source story/);
+  });
 });

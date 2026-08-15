@@ -7,17 +7,15 @@ import {
   accentToHex,
   buildEditorialConceptPrompt,
   negativePrompt,
+  SCENE_GRAMMARS,
   type EditorialEssence,
   type MetaphorLens,
+  type SceneGrammar,
   type WeeklyReportageSceneBriefResult,
 } from './card-image';
 
-export const IMAGE_GRAMMARS = [
-  'cinematic_domain_scene',
-  'deterministic_technical_hybrid',
-  'source_led_fallback',
-] as const;
-export type ImageGrammar = (typeof IMAGE_GRAMMARS)[number];
+export const IMAGE_GRAMMARS = SCENE_GRAMMARS;
+export type ImageGrammar = SceneGrammar;
 
 export const MANUAL_PROMPT_ASPECT = '16:9' as const;
 
@@ -49,7 +47,7 @@ export interface PromptExportInput {
 }
 
 export function exportManualImagePrompt(input: PromptExportInput): ManualImagePrompt {
-  const grammar = input.grammar ?? 'cinematic_domain_scene';
+  const grammar = input.grammar ?? input.brief.grammar ?? 'cinematic_domain_scene';
   const accent = input.accent?.trim() || 'cool cyan';
   const scene = collapseWs(input.brief.scene);
   const fluxPrompt = buildEditorialConceptPrompt(accent, scene);
@@ -75,7 +73,14 @@ export function exportManualImagePrompts(
   essence: EditorialEssence,
   accent?: string,
 ): ManualImagePrompt[] {
-  return briefs.map((brief) => exportManualImagePrompt({ brief, essence, accent }));
+  return briefs.map((brief) =>
+    exportManualImagePrompt({
+      brief,
+      essence,
+      accent,
+      grammar: brief.grammar ?? 'cinematic_domain_scene',
+    }),
+  );
 }
 
 function lensFromBrief(

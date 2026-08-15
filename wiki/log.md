@@ -6,6 +6,22 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — C0/C1: grammar на брифі, без моста autoClaim
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C0/C1.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** `WeeklyReportageSceneBriefResult.grammar`. Журі → `cinematic_domain_scene`, fallback →
+`source_led_fallback`. `exportManualImagePrompts` бере грамматику з брифа. C0: C2 буде
+`pipeline/scene-grammar.ts` від `EditorialEssence`, не порт `VisualAutoClaim`.
+
+**Тест:** `exportManualImagePrompts writes each brief grammar instead of one cinematic default`.
+
+**Не зроблено в цій хвилі:** C2 (роутер метрики → схема), C3, C5.
+
 ## 2026-08-15 — P3: промпт обкладинки daily після publish
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P3.

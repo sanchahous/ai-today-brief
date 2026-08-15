@@ -10,7 +10,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5.1` and
-three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / P2 / M1 / M2 2026-08-15
+three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / C1 2026-08-15
 Last updated: 2026-08-15
 
 ---
@@ -156,6 +156,13 @@ head-noun setting / `subjectKind`), тож `single_slot_cabinet` і `single_shaf
 **P1 — промпт як продукт (2026-08-15):** `pipeline/prompt-export.ts` видає канонічний
 natural-language промпт (субʼєкт першим) плюс Midjourney і negative; текст у пікселях заборонений
 окремим реченням і в negative.
+
+**C1 — grammar на брифі (2026-08-15):** `WeeklyReportageSceneBriefResult.grammar` поруч із лінзою.
+Журі лишає кінематографічний промпт; fallback пише `source_led_fallback`. Export читає поле з
+брифа, тож схема (`deterministic_technical_hybrid`) описує елементи й стрілки, не фото.
+Роутер «метрика → схема» — C2.
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) C1,
+`pipeline/card-image.ts`, `pipeline/prompt-export.ts`)
 
 **P2 — Visuals copy/upload (2026-08-15):** артефакт `story_prompt_set` (текст, не в
 `PUBLIC_IMAGE_TYPES`) + картки Canonical / Midjourney / Negative і слот upload на вкладці

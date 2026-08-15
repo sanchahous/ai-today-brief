@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C → D → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 → D → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -602,6 +602,25 @@ Regenerate. Вага гейта не змінена. (source: `src/lib/weekly-di
 Після 2026-08-15 грамматика визначає **як написаний промпт**: сцена, схема чи джерело-орієнтований
 кадр. Рендерера в цьому шарі більше немає.
 
+### C0 ✅ Оцінено 2026-08-15 — без моста `autoClaim`
+
+**Перевірено знову 2026-08-15** на гілці після P3: `grep` `autoClaim` / `visual-auto-claim` по
+`generation-worker.ts` і `card-image.ts` лишається порожнім.
+
+**Рішення:** не будувати міст `EditorialEssence → VisualAutoClaim`. Продакшн ніколи не створює
+`autoClaim`; міст змусив би вигадувати `semantics.explanatoryRole` і `quantitativeFacts`
+регексом або ще одним LLM — та сама робота, плюс фейковий тип у прод-шляху.
+
+**C2 робитиме окремим PR:** новий модуль `pipeline/scene-grammar.ts` (без імпорту V10-кластера).
+Вхід — `EditorialEssence` + `title`/`summary` (не practical/takeaway, див. C5.2). Вихід —
+`SceneGrammar`. Портувати лише ті сигнали, що змінюють **промпт** (метрика → схема).
+`visual-affordance-router-v10.ts` лишається експериментальним. C5.2 і C5.3 правити в новому
+модулі, не в V10. `inferRole` (C5.4) для трьох промпт-грамматик не потрібен, поки C2 не доведе
+зворотне. Обсяг: ~200 рядків + названі тести C5.2/C5.3.
+
+(source: grep 2026-08-15; `EditorialEssence` у `pipeline/card-image.ts`;
+`extractVisualAffordanceSignalsV10` у `visual-affordance-router-v10.ts`)
+
 ### C0 ⚠️ Передумова, якої ще немає: `autoClaim` у продакшн-шляху
 
 **Перевірено 2026-08-15:** `grep` по `generation-worker.ts` і `card-image.ts` на
@@ -613,13 +632,15 @@ Regenerate. Вага гейта не змінена. (source: `src/lib/weekly-di
 продакшн-story такої структури **не існує** — там є `EditorialEssence`
 (`card-image.ts:1100`, `1713`) з іншим контрактом.
 
-**Перед C2 потрібен окремий крок:** або міст `EditorialEssence → VisualAutoClaim`, або
-переписати сигнали під `essence`. **Обсяг цього кроку не оцінений** — його треба оцінити першим
-ділом, коли черга дійде до C, і не планувати C як «портування» до того.
+**Оцінка 2026-08-15 (вище):** міст відхилено; C2 — новий `pipeline/scene-grammar.ts` від essence.
 
-Це єдина частина плану без відповіді на питання «що саме змінити». Решта розділів виконувані як
-є. (source: `grep autoClaim` по `src/lib/weekly-digest/generation-worker.ts` і
-`pipeline/card-image.ts` 2026-08-15 — порожньо)
+### C1 ✅ Зроблено 2026-08-15 — `grammar` поруч із `lens`
+
+`WeeklyReportageSceneBriefResult.grammar`: журі → `cinematic_domain_scene`, fallback →
+`source_led_fallback`. `exportManualImagePrompts` пише кожен бриф своєю грамматикою (схема —
+перелік елементів і стрілок, не фото). Наявні виклики без поля лишаються кінематографічними.
+Роутер метрики (C2) ще не підключений — hybrid зʼявляється лише якщо бриф уже має цю грамматику.
+(source: `pipeline/card-image.ts`, `pipeline/prompt-export.ts`)
 
 ### C1. Ввести `grammar` поруч із `lens`
 
@@ -1129,6 +1150,8 @@ npm run pr:check
 | M1 | ✅ `prompt_only` пише `story_prompt_set` і не кличе image provider; `source_url` лишається ingest; `render` — відкат |
 | M2 | ✅ провальний QA **не** додає preflight-блокер; рядок у картці story |
 | M3 | ✅ блокер `artifact_missing` веде до промпту, а не до кнопки Regenerate |
+| C0 | ✅ рішення: без моста `autoClaim`; C2 — новий `pipeline/scene-grammar.ts` від `EditorialEssence` |
+| C1 | ✅ журі ставить `cinematic_domain_scene`, fallback — `source_led_fallback`; export читає `brief.grammar` |
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |
 | E1 | вердикт власника з адмінки потрапляє в calibration dataset без ручного перенесення |
 
