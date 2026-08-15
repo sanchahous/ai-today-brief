@@ -23,6 +23,8 @@ import {
   storyImageJobPath,
   storyPromptSlot,
 } from './story-prompt-job';
+import { parseStoryPromptSetContent } from './story-prompt-set';
+import type { SiblingMetaphorHint } from '../../../pipeline/card-image';
 import { storageBlob } from '@/lib/storage/binary';
 import { socialContentHash } from '@/lib/social/content-hash';
 import { findBlindCrossPosts } from '@/lib/social/quality';
@@ -2325,6 +2327,68 @@ function weeklyCardImageConfig() {
 type GenerationContext = Awaited<ReturnType<typeof loadGenerationContext>>;
 type GenerationItem = GenerationContext['items'][number];
 
+/** `story_image` metadata predates M1; still written by the `render`-mode escape hatch. */
+function siblingHintFromStoryImageMetadata(metadata: Json | null): SiblingMetaphorHint[] {
+  const meta = asRecord(metadata);
+  const scene = text(meta.scene) ?? text(meta.metaphor_title) ?? undefined;
+  if (!scene) return [];
+  const compositionRaw = text(meta.composition);
+  const composition: 'single' | 'dual_contrast' | undefined =
+    compositionRaw === 'dual_contrast' || compositionRaw === 'single' ? compositionRaw : undefined;
+  return [
+    {
+      motifClass: text(meta.motif_class) ?? undefined,
+      subjectKind: text(meta.subject_kind) ?? undefined,
+      composition,
+      sceneSummary: scene.slice(0, 180),
+    },
+  ];
+}
+
+/**
+ * In `prompt_only` mode (the default since M1) the worker never writes
+ * `story_image` metadata -- the concept/motif data lives on `story_prompt_set`
+ * instead. Reading only `story_image` here silently emptied cross-story
+ * diversification for every digest (R1.1 / F1).
+ */
+function siblingHintsFromPromptSet(content: Json | null): SiblingMetaphorHint[] {
+  const parsed = parseStoryPromptSetContent(content);
+  if (!parsed) return [];
+  return parsed.prompts.flatMap((prompt) => {
+    const sceneSummary = (prompt.scene || prompt.canonical || prompt.title || '').slice(0, 180);
+    if (!sceneSummary) return [];
+    const composition: 'single' | 'dual_contrast' | undefined =
+      prompt.composition === 'dual_contrast' || prompt.composition === 'single'
+        ? prompt.composition
+        : undefined;
+    return [
+      {
+        motifClass: prompt.motifClass ?? undefined,
+        subjectKind: prompt.subjectKind ?? undefined,
+        composition,
+        sceneSummary,
+      },
+    ];
+  });
+}
+
+/**
+ * Sibling hint for one other story's artifact -- `story_prompt_set` when the
+ * digest ran prompt_only (the default since M1), `story_image` metadata when
+ * it ran the `render` escape hatch. Exported so R1.1's fix (siblings must not
+ * silently go empty once prompt_only stopped writing story_image metadata)
+ * has direct unit coverage without standing up the full worker/DB context.
+ */
+export function siblingHintsFromStorySiblingArtifact(artifact: {
+  artifact_type: string;
+  content: Json | null;
+  metadata: Json | null;
+}): SiblingMetaphorHint[] {
+  return artifact.artifact_type === 'story_prompt_set'
+    ? siblingHintsFromPromptSet(artifact.content)
+    : siblingHintFromStoryImageMetadata(artifact.metadata);
+}
+
 async function storyImageSceneInput(
   job: ClaimedGenerationJob,
   item: GenerationItem,
@@ -2344,31 +2408,14 @@ async function storyImageSceneInput(
       .slice(0, 6)
       .join(' · ')
       .slice(0, 800) || undefined;
-  const siblingMetaphors = context.artifacts
-    .filter(
-      (artifact) =>
-        artifact.artifact_type === 'story_image' &&
-        artifact.revision_item_id &&
-        artifact.revision_item_id !== item.id,
-    )
-    .flatMap((artifact) => {
-      const meta = asRecord(artifact.metadata);
-      const scene = text(meta.scene) ?? text(meta.metaphor_title) ?? undefined;
-      if (!scene) return [];
-      const compositionRaw = text(meta.composition);
-      const composition: 'single' | 'dual_contrast' | undefined =
-        compositionRaw === 'dual_contrast' || compositionRaw === 'single'
-          ? compositionRaw
-          : undefined;
-      return [
-        {
-          motifClass: text(meta.motif_class) ?? undefined,
-          subjectKind: text(meta.subject_kind) ?? undefined,
-          composition,
-          sceneSummary: scene.slice(0, 180),
-        },
-      ];
-    })
+  const otherStoryArtifacts = context.artifacts.filter(
+    (artifact) =>
+      (artifact.artifact_type === 'story_image' || artifact.artifact_type === 'story_prompt_set') &&
+      artifact.revision_item_id &&
+      artifact.revision_item_id !== item.id,
+  );
+  const siblingMetaphors = otherStoryArtifacts
+    .flatMap((artifact) => siblingHintsFromStorySiblingArtifact(artifact))
     .slice(0, 6);
   const siblingScenes = siblingMetaphors.map((hint) => hint.sceneSummary);
   return {

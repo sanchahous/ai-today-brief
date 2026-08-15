@@ -122,6 +122,9 @@ describe('produceStoryPrompts', () => {
         ...(exportPrompts.mock.results[0]?.value[0] ?? {}),
         sceneSource: 'openrouter',
         motifClass: null,
+        scene: 'A brass adapter card being pushed into a teleprinter terminal',
+        subjectKind: null,
+        composition: null,
       },
     ]);
     expect(result.output).toEqual({ needs_owner_review: true, prompt_count: 1 });
@@ -193,23 +196,31 @@ describe('produceStoryPrompts', () => {
     expect(result.output.prompt_count).toBe(1);
   });
 
-  it('throws when every brief fails the mapping gate', async () => {
-    await expect(
-      produceStoryPrompts({
-        headline: sceneInput.headline,
-        sceneBriefs: async () => [
-          sceneBrief({
-            storyAnchor: '',
-            visibleMechanism: '',
-            visibleConsequence: '',
-          }),
-        ],
-        exportPrompts: () => [],
-        sceneInput,
-        cfg: { geminiApiKey: '' },
-        policy: 'weekly-semantic-story-v5.1',
-        count: 1,
-      }),
-    ).rejects.toThrow(/mapping gate/i);
+  it('a total mapping-gate wipeout writes an empty prompt set with reasons instead of throwing', async () => {
+    const exportPrompts = vi.fn(() => []);
+    const result = await produceStoryPrompts({
+      headline: sceneInput.headline,
+      sceneBriefs: async () => [
+        sceneBrief({
+          storyAnchor: '',
+          visibleMechanism: '',
+          visibleConsequence: '',
+        }),
+      ],
+      exportPrompts,
+      sceneInput,
+      cfg: { geminiApiKey: '' },
+      policy: 'weekly-semantic-story-v5.1',
+      count: 1,
+    });
+    expect(exportPrompts).not.toHaveBeenCalled();
+    expect(result.content.prompts).toEqual([]);
+    expect(result.content.mapping_gate_issues.length).toBeGreaterThan(0);
+    expect(result.content.mapping_gate_issues).toContain('missing_visible_action');
+    expect(result.output).toEqual({
+      needs_owner_review: true,
+      prompt_count: 0,
+      mapping_gate_issues: result.content.mapping_gate_issues,
+    });
   });
 });

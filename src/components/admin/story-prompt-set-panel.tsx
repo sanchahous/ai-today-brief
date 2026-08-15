@@ -36,6 +36,7 @@ export function StoryPromptSetPanel({
   promptSetArtifactId,
   imageArtifactId,
   ownerFeedback = {},
+  mappingGateIssues = [],
   canEdit = false,
   children,
 }: {
@@ -50,6 +51,8 @@ export function StoryPromptSetPanel({
   promptSetArtifactId?: string | null;
   imageArtifactId?: string | null;
   ownerFeedback?: OwnerFeedbackMap;
+  /** Why every concept failed the mapping gate, when `prompts` is empty (R1.2). */
+  mappingGateIssues?: string[];
   canEdit?: boolean;
   children?: ReactNode;
 }) {
@@ -82,9 +85,24 @@ export function StoryPromptSetPanel({
         </p>
       ) : null}
       {prompts.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-sm text-slate-500">
-          Prompts appear after the story illustration job succeeds. You can still upload an image
-          now.
+        <p
+          className="rounded-xl border border-dashed border-white/15 px-3 py-4 text-sm text-slate-500"
+          data-testid="story-prompt-set-empty"
+        >
+          {mappingGateIssues.length > 0 ? (
+            <>
+              Every concept failed the mapping gate:{' '}
+              <span className="text-slate-300">
+                {mappingGateIssues.map((issue) => issue.replaceAll('_', ' ')).join(', ')}
+              </span>
+              . You can still upload an image now.
+            </>
+          ) : (
+            <>
+              Prompts appear after the story illustration job succeeds. You can still upload an
+              image now.
+            </>
+          )}
         </p>
       ) : (
         <div className="grid gap-3">

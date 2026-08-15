@@ -97,13 +97,35 @@ export function briefsPassingMappingGate<T extends MappingGateBrief>(
   briefs: readonly T[],
   essence: MappingGateEssence = {},
 ): T[] {
+  return mappingGateReport(briefs, essence).accepted;
+}
+
+export interface MappingGateReport<T> {
+  accepted: T[];
+  /** Deduped union of issues across every rejected brief; empty when all pass. */
+  issues: MappingGateIssue[];
+}
+
+/**
+ * Same acceptance rule as `briefsPassingMappingGate`, plus the aggregated
+ * rejection reasons so a caller whose whole batch fails can report why
+ * instead of throwing blind.
+ */
+export function mappingGateReport<T extends MappingGateBrief>(
+  briefs: readonly T[],
+  essence: MappingGateEssence = {},
+): MappingGateReport<T> {
   const accepted: T[] = [];
+  const issues = new Set<MappingGateIssue>();
   for (const brief of briefs) {
-    if (validateConceptMapping(propositionFromBrief(brief, essence)).passed) {
+    const result = validateConceptMapping(propositionFromBrief(brief, essence));
+    if (result.passed) {
       accepted.push(brief);
+    } else {
+      for (const issue of result.issues) issues.add(issue);
     }
   }
-  return accepted;
+  return { accepted, issues: [...issues] };
 }
 
 function derivedMappings(

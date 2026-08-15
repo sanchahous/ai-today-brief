@@ -8,7 +8,7 @@ import type {
   WeeklyReportageSceneBriefResult,
   WeeklyReportageSceneInput,
 } from '../../../pipeline/card-image';
-import { briefsPassingMappingGate } from '../../../pipeline/concept-mapping-gate';
+import { mappingGateReport, type MappingGateIssue } from '../../../pipeline/concept-mapping-gate';
 import type { ManualImagePrompt } from '../../../pipeline/prompt-export';
 
 export const WEEKLY_STORY_IMAGE_MODES = ['prompt_only', 'render'] as const;
@@ -40,20 +40,32 @@ export function storyImageJobPath(
 export type StoredStoryPrompt = ManualImagePrompt & {
   sceneSource?: string | null;
   motifClass?: string | null;
+  /**
+   * Sibling-diversification fields (R1.1): the raw scene blob plus subject
+   * kind / composition, so other stories in the same digest can build
+   * `SiblingMetaphorHint`s from `story_prompt_set` now that prompt_only mode
+   * never writes a `story_image` artifact with scene metadata.
+   */
+  scene?: string | null;
+  subjectKind?: string | null;
+  composition?: string | null;
 };
 
 export interface StoryPromptSetPayload {
   prompts: StoredStoryPrompt[];
   policy: string;
   generated_at: string;
+  /** Why every brief failed the mapping gate, when `prompts` is empty (R1.2). */
+  mapping_gate_issues: MappingGateIssue[];
 }
 
 export function storyPromptSetArtifactContent(
   prompts: StoredStoryPrompt[],
   policy: string,
   generatedAt = new Date().toISOString(),
+  mappingGateIssues: MappingGateIssue[] = [],
 ): StoryPromptSetPayload {
-  return { prompts, policy, generated_at: generatedAt };
+  return { prompts, policy, generated_at: generatedAt, mapping_gate_issues: mappingGateIssues };
 }
 
 export function essenceFromBrief(
@@ -94,7 +106,7 @@ export async function produceStoryPrompts(input: {
   generatedAt?: string;
 }): Promise<{
   content: StoryPromptSetPayload;
-  output: { needs_owner_review: true; prompt_count: number };
+  output: { needs_owner_review: true; prompt_count: number; mapping_gate_issues?: string[] };
 }> {
   const count = input.count ?? 3;
   const briefs = await input.sceneBriefs(input.sceneInput, input.cfg, { count });
@@ -102,11 +114,16 @@ export async function produceStoryPrompts(input: {
     throw new Error('Illustration prompt job produced no scene briefs.');
   }
   const essence = essenceFromBrief(briefs[0], input.headline);
-  const accepted = briefsPassingMappingGate(briefs, essence);
+  const { accepted, issues } = mappingGateReport(briefs, essence);
   if (!accepted.length) {
-    throw new Error(
-      'Illustration prompt job produced no scene briefs that passed the mapping gate.',
-    );
+    // A total mapping-gate wipeout is a real, reachable state (a weak
+    // fallback essence can fail its own gate) -- not a job crash. Persist an
+    // empty prompt set with the reasons so Visuals shows "0/3" instead of a
+    // retried, permanently-red job (R1.2 / F2).
+    return {
+      content: storyPromptSetArtifactContent([], input.policy, input.generatedAt, issues),
+      output: { needs_owner_review: true, prompt_count: 0, mapping_gate_issues: issues },
+    };
   }
   const prompts = input.exportPrompts(accepted, essence, input.accent).map((prompt, index) => {
     const brief = accepted[index];
@@ -114,6 +131,9 @@ export async function produceStoryPrompts(input: {
       ...prompt,
       sceneSource: brief?.source ?? null,
       motifClass: brief?.motifClass ?? null,
+      scene: brief?.scene ?? null,
+      subjectKind: brief?.subjectKind ?? null,
+      composition: brief?.composition ?? null,
     };
   });
   return {

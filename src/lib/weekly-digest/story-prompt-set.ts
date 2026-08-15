@@ -34,6 +34,13 @@ export interface StoryPromptCard {
   /** Jury `source`; `fallback` means this seat used fallback_essence. */
   sceneSource?: string | null;
   motifClass?: string | null;
+  /**
+   * Raw scene blob / subject kind / composition, carried through for
+   * cross-story sibling diversification (R1.1) -- not shown in the copy UI.
+   */
+  scene?: string | null;
+  subjectKind?: string | null;
+  composition?: string | null;
 }
 
 export interface StoryPromptSetContent {
@@ -41,6 +48,8 @@ export interface StoryPromptSetContent {
   policy: string | null;
   generatedAt: string | null;
   ownerFeedback: OwnerFeedbackMap;
+  /** Why every concept failed the mapping gate, when `prompts` is empty (R1.2). */
+  mappingGateIssues: string[];
 }
 
 export interface StoryPromptCopyTarget {
@@ -92,7 +101,20 @@ function parsePromptCard(value: unknown): StoryPromptCard | null {
     notes: parseNotes(value.notes),
     sceneSource: asTrimmedString(value.sceneSource) ?? asTrimmedString(value.scene_source),
     motifClass: asTrimmedString(value.motifClass) ?? asTrimmedString(value.motif_class),
+    scene: asTrimmedString(value.scene),
+    subjectKind: asTrimmedString(value.subjectKind) ?? asTrimmedString(value.subject_kind),
+    composition: asTrimmedString(value.composition),
   };
+}
+
+function parseMappingGateIssues(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const issues: string[] = [];
+  for (const entry of value) {
+    const issue = asTrimmedString(entry);
+    if (issue) issues.push(issue);
+  }
+  return issues;
 }
 
 /** `null` = not a prompt set (missing or malformed). Empty `prompts` is valid. */
@@ -108,6 +130,7 @@ export function parseStoryPromptSetContent(value: unknown): StoryPromptSetConten
     policy: asTrimmedString(value.policy),
     generatedAt: asTrimmedString(value.generated_at),
     ownerFeedback: ownerFeedbackFromPromptSet(value),
+    mappingGateIssues: parseMappingGateIssues(value.mapping_gate_issues),
   };
 }
 

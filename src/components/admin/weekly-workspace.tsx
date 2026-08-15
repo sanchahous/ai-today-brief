@@ -3013,6 +3013,7 @@ function VisualsPanel({
               ...ownerFeedbackFromImageMetadata(cover?.metadata),
               ...coverPromptSet?.ownerFeedback,
             }}
+            mappingGateIssues={coverPromptSet?.mappingGateIssues ?? []}
             canEdit={canEdit}
           >
             <ReplacementAssetForm
@@ -3146,6 +3147,7 @@ function VisualsPanel({
                     ...ownerFeedbackFromImageMetadata(artifact?.metadata),
                     ...promptSet?.ownerFeedback,
                   }}
+                  mappingGateIssues={promptSet?.mappingGateIssues ?? []}
                   canEdit={canEdit}
                 >
                   <ReplacementAssetForm

@@ -32,6 +32,7 @@ describe('parseStoryPromptSetContent', () => {
       policy: null,
       generatedAt: null,
       ownerFeedback: {},
+      mappingGateIssues: [],
     });
   });
 
@@ -80,6 +81,30 @@ describe('parseStoryPromptSetContent', () => {
       prompts: [prompt(), { title: 'broken' }, prompt({ canonical: '  ' })],
     });
     expect(parsed?.prompts).toHaveLength(1);
+  });
+
+  it('carries scene/subjectKind/composition and mapping_gate_issues for sibling diversification (R1.1/R1.2)', () => {
+    const parsed = parseStoryPromptSetContent({
+      prompts: [
+        prompt({
+          scene: 'A brass adapter card seats into a teleprinter expansion slot',
+          subjectKind: 'object',
+          composition: 'single',
+        }),
+      ],
+      mapping_gate_issues: ['missing_visible_outcome', 'incomplete_mapping'],
+    });
+    expect(parsed?.prompts[0]?.scene).toBe(
+      'A brass adapter card seats into a teleprinter expansion slot',
+    );
+    expect(parsed?.prompts[0]?.subjectKind).toBe('object');
+    expect(parsed?.prompts[0]?.composition).toBe('single');
+    expect(parsed?.mappingGateIssues).toEqual(['missing_visible_outcome', 'incomplete_mapping']);
+  });
+
+  it('an empty prompt set with no mapping_gate_issues field parses to an empty array', () => {
+    const parsed = parseStoryPromptSetContent({ prompts: [] });
+    expect(parsed?.mappingGateIssues).toEqual([]);
   });
 });
 

@@ -11,6 +11,7 @@ import {
   masterInputStories,
   masterRunStateFromOutput,
   runWeeklyDigestGenerationJobs,
+  siblingHintsFromStorySiblingArtifact,
 } from './generation-worker';
 import { computeMasterPlanHash } from './master-engine';
 import type { Json } from '@/lib/database.types';
@@ -304,5 +305,80 @@ describe('weekly story image prompt_only mode', () => {
     expect(storyImageJobPath('https://cdn.example/story.jpg', 'render')).toBe('ingest_url');
     expect(resolveWeeklyStoryImageMode(undefined)).toBe('prompt_only');
     expect(resolveWeeklyStoryImageMode('render')).toBe('render');
+  });
+});
+
+describe('siblingHintsFromStorySiblingArtifact (R1.1 -- cross-story diversification)', () => {
+  it('builds a sibling hint from another story’s story_prompt_set (the prompt_only default)', () => {
+    const hints = siblingHintsFromStorySiblingArtifact({
+      artifact_type: 'story_prompt_set',
+      content: {
+        prompts: [
+          {
+            conceptLens: 'mechanism',
+            grammar: 'cinematic_domain_scene',
+            title: 'Single Slot Tool Cabinet',
+            canonical: 'A single slot tool cabinet holding one command flag.',
+            midjourney: 'a single slot tool cabinet --ar 16:9 --style raw --no text',
+            negative: 'no text',
+            aspectRatio: '16:9',
+            notes: [],
+            motifClass: 'single_slot_cabinet',
+            subjectKind: 'object',
+            composition: 'single',
+            scene: 'A single slot tool cabinet in a workshop, one open bay',
+          },
+        ],
+      } as unknown as Json,
+      metadata: null,
+    });
+    expect(hints).toHaveLength(1);
+    expect(hints[0]).toMatchObject({
+      motifClass: 'single_slot_cabinet',
+      subjectKind: 'object',
+      composition: 'single',
+      sceneSummary: 'A single slot tool cabinet in a workshop, one open bay',
+    });
+  });
+
+  it('an artifact with an empty story_prompt_set (mapping-gate wipeout) contributes no hints', () => {
+    const hints = siblingHintsFromStorySiblingArtifact({
+      artifact_type: 'story_prompt_set',
+      content: { prompts: [], mapping_gate_issues: ['missing_visible_outcome'] } as unknown as Json,
+      metadata: null,
+    });
+    expect(hints).toEqual([]);
+  });
+
+  it('falls back to story_image metadata for a render-mode sibling', () => {
+    const hints = siblingHintsFromStorySiblingArtifact({
+      artifact_type: 'story_image',
+      content: null,
+      metadata: {
+        scene: 'A clay golem guarding a sealed journal in a vault',
+        motif_class: 'anthropomorphic_guardian',
+        subject_kind: 'character',
+        composition: 'dual_contrast',
+      } as unknown as Json,
+    });
+    expect(hints).toHaveLength(1);
+    expect(hints[0]).toMatchObject({
+      motifClass: 'anthropomorphic_guardian',
+      subjectKind: 'character',
+      composition: 'dual_contrast',
+    });
+  });
+
+  it('a manual-upload story_image (no scene metadata) contributes no hint', () => {
+    const hints = siblingHintsFromStorySiblingArtifact({
+      artifact_type: 'story_image',
+      content: null,
+      metadata: {
+        source: 'manual_upload',
+        original_name: 'story.jpg',
+        sha256: 'deadbeef',
+      } as unknown as Json,
+    });
+    expect(hints).toEqual([]);
   });
 });
