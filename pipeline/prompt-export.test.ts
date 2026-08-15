@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
+import { buildEditorialConceptPrompt } from './card-image';
 import type { EditorialEssence, WeeklyReportageSceneBriefResult } from './card-image';
-import { exportManualImagePrompt, exportManualImagePrompts, type ImageGrammar } from './prompt-export';
+import {
+  clauseSafeTake,
+  exportManualImagePrompt,
+  exportManualImagePrompts,
+  FLUX_CRAFT_SPLIT,
+  type ImageGrammar,
+} from './prompt-export';
 
 /** Production `prompt-export.ts` must not contain these literals (F5). */
 const MODEL_VERSION_TOKEN = /sonnet-5|gpt-5|gemini-3\.[0-9]|--v\s*\d/i;
@@ -156,5 +163,68 @@ describe('exportManualImagePrompt', () => {
     ]);
     expect(prompts[1]?.canonical.toLowerCase()).toMatch(/diagram/);
     expect(prompts[2]?.canonical.toLowerCase()).toMatch(/source story/);
+  });
+
+  it('the FLUX craft-split marker survives a real buildEditorialConceptPrompt call (R2.4 / F10)', () => {
+    // Guards against a card-image.ts prompt-format change silently
+    // degrading translateFluxToCanonical to firstSentence() -- if
+    // buildEditorialConceptPrompt's output stops containing this literal,
+    // this test fails loudly instead of the canonical prompt quietly losing
+    // its light/lens/accent extraction with no error anywhere.
+    const realFluxPrompt = buildEditorialConceptPrompt(
+      'muted teal',
+      'A brass adapter card being pushed into a teleprinter terminal expansion slot',
+    );
+    expect(realFluxPrompt).toContain(FLUX_CRAFT_SPLIT);
+  });
+
+  it('canonical prompt length stays within the plan reference range (R2.4 / F11)', () => {
+    const longScene = [
+      'A brass adapter card being pushed into the expansion slot of a 1970s teleprinter terminal',
+      'the contact strip catches a hard rim light while the slot interior stays in shadow',
+      'so the act of connection is the brightest thing in the picture',
+      'matte industrial plastics, worn enamel, fine dust in a shaft of window light',
+      'the visible cause is the card seating fully home, the visible result is the old system running new tools',
+    ].join(', ');
+    const prompt = exportManualImagePrompt({
+      brief: brief({ scene: longScene }),
+      essence: CLI_ESSENCE,
+      grammar: 'cinematic_domain_scene',
+    });
+    const wordCount = prompt.canonical.split(/\s+/).filter(Boolean).length;
+    // The plan's worked reference (P1) is ~60-120 words; allow headroom for
+    // the fixed light/lens/no-text boilerplate sentences without letting a
+    // regression silently balloon or collapse the canonical prompt.
+    expect(wordCount).toBeGreaterThanOrEqual(40);
+    expect(wordCount).toBeLessThanOrEqual(160);
+  });
+
+});
+
+describe('clauseSafeTake (R2.4 / F11)', () => {
+  it('returns text under the budget unchanged', () => {
+    expect(clauseSafeTake('a short scene description', 20)).toBe('a short scene description');
+  });
+
+  it('cuts at the last complete clause instead of mid-phrase', () => {
+    const text = 'one two three four five, six seven eight nine ten, eleven twelve thirteen';
+    // A hard cut at 8 words lands mid "nine ten" clause (words 6-9 of the
+    // middle clause); the clause-safe cut backs up to the comma after "five"
+    // instead of handing back a scene description that trails off mid-idea.
+    expect(clauseSafeTake(text, 8)).toBe('one two three four five');
+  });
+
+  it('falls back to the hard word cut when there is no nearby clause boundary', () => {
+    const text = 'one two three four five six seven eight nine ten eleven twelve';
+    expect(clauseSafeTake(text, 8)).toBe('one two three four five six seven eight');
+  });
+
+  it('does not over-shorten when the only comma is too close to the start', () => {
+    const text = 'lead, ' + Array.from({ length: 20 }, (_, i) => `word${i}`).join(' ');
+    // The comma sits at word 1 of a 20-word budget -- backing up there would
+    // throw away almost the whole scene. The 40%-of-length guard should
+    // reject that and keep the hard cut instead.
+    const result = clauseSafeTake(text, 15);
+    expect(result.split(' ')).toHaveLength(15);
   });
 });
