@@ -144,6 +144,22 @@ describe('exportManualImagePrompt', () => {
     expect(prompt.notes.some((note) => /diagram/i.test(note))).toBe(true);
   });
 
+  it('preserves owner_direction as its own conceptLens instead of collapsing it into literal_context (R2.5 / F12)', () => {
+    const prompt = exportManualImagePrompt({
+      brief: brief({ conceptLens: 'owner_direction' }),
+      essence: CLI_ESSENCE,
+    });
+    expect(prompt.conceptLens).toBe('owner_direction');
+  });
+
+  it('falls back to the "Owner direction" title only when the brief has no metaphorTitle', () => {
+    const prompt = exportManualImagePrompt({
+      brief: brief({ conceptLens: 'owner_direction', metaphorTitle: undefined }),
+      essence: CLI_ESSENCE,
+    });
+    expect(prompt.title).toBe('Owner direction');
+  });
+
   it('exportManualImagePrompts writes each brief grammar instead of one cinematic default', () => {
     const prompts = exportManualImagePrompts(
       [

@@ -2244,10 +2244,12 @@ export function buildWeeklyPrompt(accent: string, scene: string): string {
   return buildEditorialConceptPrompt(accent, scene);
 }
 
-export interface WeeklyReportageIllustrationInput extends WeeklyReportageSceneInput {
-  accent?: string;
-  /** No job.id here on purpose -- stable across regenerations. */
-  seedBase: string;
+/**
+ * Fields `weeklyReportageConcepts` needs to plan a story's concept list --
+ * no render-only fields (`seedBase`/`accent`/`renderDirective`) required, so
+ * the prompt_only path (R2.5 / F5) can build concepts without a FLUX seed.
+ */
+export interface WeeklyReportageConceptsInput extends WeeklyReportageSceneInput {
   /** Owner-edited scene text is kept as concept one; alternatives remain independent. */
   sceneOverride?: string;
   /** Distinguishes a human scene edit from a critic-authored replacement. */
@@ -2256,10 +2258,16 @@ export interface WeeklyReportageIllustrationInput extends WeeklyReportageSceneIn
   rejectedScenes?: string[];
   /** Batch critique for the next concept jury, not for direct FLUX injection. */
   repairFeedback?: string[];
-  /** Vision-critic instruction applied to the actual next FLUX request. */
-  renderDirective?: string;
   /** Defaults to 3. */
   variantCount?: number;
+}
+
+export interface WeeklyReportageIllustrationInput extends WeeklyReportageConceptsInput {
+  accent?: string;
+  /** No job.id here on purpose -- stable across regenerations. */
+  seedBase: string;
+  /** Vision-critic instruction applied to the actual next FLUX request. */
+  renderDirective?: string;
 }
 
 export interface WeeklyReportageIllustrationResult {
@@ -2307,11 +2315,19 @@ export interface WeeklyReportageGeneratedVariant extends GeneratedImageResult {
   visibleConsequence?: string;
 }
 
-/** Generates one render for each of three independent editorial concepts. */
-export async function generateWeeklyReportageIllustrations(
-  input: WeeklyReportageIllustrationInput,
+/**
+ * Builds a story's concept list -- either the owner's supplied scene kept as
+ * concept one plus independent jury alternatives, or a full jury pass.
+ * Shared by the render path (`generateWeeklyReportageIllustrations`) and the
+ * prompt_only path (`produceStoryPrompts`, R2.5 / F5): before this extraction
+ * an owner-typed "Edit direction" scene only ever reached FLUX -- prompt_only
+ * mode dropped it silently, since it called `weeklyReportageSceneBriefs`
+ * directly and never saw `sceneOverride` at all.
+ */
+export async function weeklyReportageConcepts(
+  input: WeeklyReportageConceptsInput,
   cfg: CardImageConfig,
-): Promise<WeeklyReportageIllustrationResult | null> {
+): Promise<WeeklyReportageSceneBriefResult[]> {
   const suppliedOverride = input.sceneOverride?.trim();
   const override =
     suppliedOverride && input.sceneOverrideSource !== 'critic_repair'
@@ -2324,7 +2340,6 @@ export async function generateWeeklyReportageIllustrations(
       : []),
   ];
   const count = Math.max(1, Math.min(3, input.variantCount ?? 3));
-  let concepts: WeeklyReportageSceneBriefResult[];
   if (override) {
     const scene = cleanSceneText(override);
     const alternatives =
@@ -2412,14 +2427,21 @@ export async function generateWeeklyReportageIllustrations(
         errors: ownerErrors,
       });
     }
-    concepts = [ownerConcept, ...alternatives].slice(0, count);
-  } else {
-    concepts = await weeklyReportageSceneBriefs(input, cfg, {
-      count,
-      avoidScenes: rejectedScenes,
-      repairFeedback: input.repairFeedback,
-    });
+    return [ownerConcept, ...alternatives].slice(0, count);
   }
+  return weeklyReportageSceneBriefs(input, cfg, {
+    count,
+    avoidScenes: rejectedScenes,
+    repairFeedback: input.repairFeedback,
+  });
+}
+
+/** Generates one render for each of three independent editorial concepts. */
+export async function generateWeeklyReportageIllustrations(
+  input: WeeklyReportageIllustrationInput,
+  cfg: CardImageConfig,
+): Promise<WeeklyReportageIllustrationResult | null> {
+  const concepts = await weeklyReportageConcepts(input, cfg);
   const negative = negativePrompt();
   const generatedVariants = await Promise.all(
     concepts.map(async (concept, index) => {

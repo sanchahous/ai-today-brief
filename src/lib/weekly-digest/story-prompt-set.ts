@@ -177,6 +177,16 @@ function isStoryPromptSeat(value: string): value is StoryPromptSeat {
   return STORY_PROMPT_SEATS.some((seat) => seat === value);
 }
 
+/**
+ * `owner_direction` fills the same seat position `literal_context` would
+ * (the "Edit direction" flow explicitly excludes literal_context from the
+ * jury alternatives, R2.5 / F5/F12) -- for seat-counting purposes only.
+ * `conceptLens` itself is never rewritten; calibration keeps the real label.
+ */
+function seatFor(lens: string): string {
+  return lens === 'owner_direction' ? 'literal_context' : lens;
+}
+
 function recordFromUnknown(value: unknown): Record<string, unknown> {
   return isRecord(value) ? value : {};
 }
@@ -229,7 +239,9 @@ export function storyPromptReadiness(
   }));
   const rows = fromPrompts.length > 0 ? fromPrompts : lensesFromImageMetadata(imageMetadata);
   const present = new Set(
-    rows.map((row) => row.lens).filter((lens): lens is StoryPromptSeat => isStoryPromptSeat(lens)),
+    rows
+      .map((row) => seatFor(row.lens))
+      .filter((lens): lens is StoryPromptSeat => isStoryPromptSeat(lens)),
   );
   const missingLenses = STORY_PROMPT_SEATS.filter((seat) => !present.has(seat));
   const fallbackLenses = [

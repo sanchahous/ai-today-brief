@@ -36,7 +36,15 @@ export const FLUX_CRAFT_SPLIT = '. One instantly readable cause-and-effect momen
 const CANONICAL_SCENE_WORD_BUDGET = 70;
 
 export interface ManualImagePrompt {
-  conceptLens: MetaphorLens;
+  /**
+   * `owner_direction` is preserved, not collapsed into `literal_context`
+   * (R2.5 / F12): the owner-feedback calibration dataset (E1) is keyed by
+   * this field, and mislabeling an owner-typed scene as a jury-proposed
+   * `literal_context` concept mixes two different signals -- whether the
+   * jury's literal-context proposal was good, and whether the owner's own
+   * override worked, are not the same question.
+   */
+  conceptLens: MetaphorLens | 'owner_direction';
   grammar: ImageGrammar;
   title: string;
   canonical: string;
@@ -92,14 +100,15 @@ export function exportManualImagePrompts(
 
 function lensFromBrief(
   lens: WeeklyReportageSceneBriefResult['conceptLens'],
-): MetaphorLens {
-  if (lens === 'mechanism' || lens === 'consequence') return lens;
+): MetaphorLens | 'owner_direction' {
+  if (lens === 'mechanism' || lens === 'consequence' || lens === 'owner_direction') return lens;
   return 'literal_context';
 }
 
-function titleFromLens(lens: MetaphorLens): string {
+function titleFromLens(lens: MetaphorLens | 'owner_direction'): string {
   if (lens === 'mechanism') return 'Visible mechanism';
   if (lens === 'consequence') return 'Visible consequence';
+  if (lens === 'owner_direction') return 'Owner direction';
   return 'Literal context';
 }
 

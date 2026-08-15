@@ -2445,6 +2445,13 @@ async function storyImageSceneInput(
     researchRisks: researchPack?.risks.slice(0, 4).join(' · ').slice(0, 400) || undefined,
     avoidSubjects: siblingScenes.length ? siblingScenes : undefined,
     siblingMetaphors: siblingMetaphors.length ? siblingMetaphors : undefined,
+    // R2.5 / F5: the "Edit direction" form (Visuals) always submits
+    // scene_override on a story_image job regardless of render mode; before
+    // this, prompt_only mode read it into a local and then never used it --
+    // produceStoryPrompts only calls weeklyReportageConcepts (which honors
+    // it) when it's present here.
+    sceneOverride: text(asRecord(job.input).scene_override) ?? undefined,
+    sceneOverrideSource: 'owner' as const,
   };
 }
 
@@ -2461,12 +2468,14 @@ async function writeStoryImagePromptSet(
     progressTotal: 100,
     message: 'Building copy-ready illustration prompts',
   });
-  const { weeklyReportageSceneBriefs, WEEKLY_PROMPT_POLICY } = await lazyCardImage();
+  const { weeklyReportageSceneBriefs, weeklyReportageConcepts, WEEKLY_PROMPT_POLICY } =
+    await lazyCardImage();
   const { exportManualImagePrompts } = await lazyPromptExport();
   const sceneInput = await storyImageSceneInput(job, item, context);
   const produced = await produceStoryPrompts({
     headline: item.title_en,
     sceneBriefs: weeklyReportageSceneBriefs,
+    buildConcepts: weeklyReportageConcepts,
     exportPrompts: exportManualImagePrompts,
     sceneInput,
     cfg: weeklyCardImageConfig(),
@@ -2484,6 +2493,7 @@ async function writeStoryImagePromptSet(
       prompts: produced.content.prompts as unknown as Json,
       policy: produced.content.policy,
       generated_at: produced.content.generated_at,
+      mapping_gate_issues: produced.content.mapping_gate_issues,
     },
     metadata: {
       source_kind: 'prompt_only',
@@ -2534,6 +2544,7 @@ async function writeCoverPromptSet(job: ClaimedGenerationJob) {
       prompts: produced.content.prompts as unknown as Json,
       policy: produced.content.policy,
       generated_at: produced.content.generated_at,
+      mapping_gate_issues: produced.content.mapping_gate_issues,
     },
     metadata: {
       source_kind: 'prompt_only',

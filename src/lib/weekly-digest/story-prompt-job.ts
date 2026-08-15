@@ -5,6 +5,7 @@
 import type {
   CardImageConfig,
   EditorialEssence,
+  WeeklyReportageConceptsInput,
   WeeklyReportageSceneBriefResult,
   WeeklyReportageSceneInput,
 } from '../../../pipeline/card-image';
@@ -96,12 +97,26 @@ export async function produceStoryPrompts(input: {
     cfg: CardImageConfig,
     options: { count: number },
   ) => Promise<WeeklyReportageSceneBriefResult[]>;
+  /**
+   * Used instead of `sceneBriefs` when `sceneInput.sceneOverride` is set --
+   * builds the owner's typed scene as concept one plus independent jury
+   * alternatives (R2.5 / F5). Before this, an owner "Edit direction" scene
+   * was silently dropped in prompt_only mode: `produceStoryPrompts` only
+   * ever called `sceneBriefs`/`weeklyReportageSceneBriefs`, which has no
+   * sceneOverride handling -- that only ever lived in
+   * `generateWeeklyReportageIllustrations`, the FLUX-rendering function
+   * prompt_only mode doesn't call.
+   */
+  buildConcepts?: (
+    conceptsInput: WeeklyReportageConceptsInput,
+    cfg: CardImageConfig,
+  ) => Promise<WeeklyReportageSceneBriefResult[]>;
   exportPrompts: (
     briefs: readonly WeeklyReportageSceneBriefResult[],
     essence: EditorialEssence,
     accent?: string,
   ) => ManualImagePrompt[];
-  sceneInput: WeeklyReportageSceneInput;
+  sceneInput: WeeklyReportageConceptsInput;
   cfg: CardImageConfig;
   policy: string;
   count?: number;
@@ -112,7 +127,11 @@ export async function produceStoryPrompts(input: {
   output: { needs_owner_review: true; prompt_count: number; mapping_gate_issues?: string[] };
 }> {
   const count = input.count ?? 3;
-  const briefs = await input.sceneBriefs(input.sceneInput, input.cfg, { count });
+  const hasOwnerScene = Boolean(input.sceneInput.sceneOverride?.trim());
+  const briefs =
+    hasOwnerScene && input.buildConcepts
+      ? await input.buildConcepts({ ...input.sceneInput, variantCount: count }, input.cfg)
+      : await input.sceneBriefs(input.sceneInput, input.cfg, { count });
   if (!briefs.length) {
     throw new Error('Illustration prompt job produced no scene briefs.');
   }

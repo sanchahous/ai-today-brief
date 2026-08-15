@@ -193,6 +193,19 @@ describe('storyPromptReadiness', () => {
     expect(result.detail).toContain('немає mechanism, consequence');
   });
 
+  it('owner_direction fills the literal_context seat for readiness counting (R2.5 / F5/F12)', () => {
+    // The "Edit direction" flow labels the owner's concept `owner_direction`
+    // (not `literal_context`, R2.5 / F12) so calibration can tell them apart,
+    // but it still occupies concept-one's position in the three-seat UI.
+    const result = storyPromptReadiness([
+      { conceptLens: 'owner_direction', grammar: 'cinematic_domain_scene' },
+      { conceptLens: 'mechanism', grammar: 'source_led' },
+      { conceptLens: 'consequence', grammar: 'source_led' },
+    ]);
+    expect(result.label).toBe('3/3 промпти готові');
+    expect(result.missingLenses).toEqual([]);
+  });
+
   it('reads concept_lens and scene_source from story_image metadata when prompts are empty', () => {
     const result = storyPromptReadiness([], {
       variant_concepts: [

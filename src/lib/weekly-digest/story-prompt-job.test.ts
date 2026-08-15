@@ -225,4 +225,71 @@ describe('produceStoryPrompts', () => {
       mapping_gate_issues: result.content.mapping_gate_issues,
     });
   });
+
+  it('calls buildConcepts instead of sceneBriefs when the owner supplied a scene override (R2.5 / F5)', async () => {
+    const sceneBriefs = vi.fn(async () => [sceneBrief()]);
+    const buildConcepts = vi.fn(async () => [
+      sceneBrief({ conceptLens: 'owner_direction', source: 'owner', motifClass: 'owner_direction' }),
+      sceneBrief({ conceptLens: 'mechanism' }),
+    ]);
+    const exportPrompts = vi.fn((briefs: readonly WeeklyReportageSceneBriefResult[]) =>
+      briefs.map((brief) => ({
+        conceptLens: brief.conceptLens,
+        grammar: 'cinematic_domain_scene' as const,
+        title: brief.metaphorTitle ?? 'Concept',
+        canonical: brief.scene,
+        midjourney: `${brief.scene} --ar 16:9`,
+        negative: 'no text',
+        aspectRatio: '16:9' as const,
+        notes: [],
+      })),
+    );
+    const overrideSceneInput = { ...sceneInput, sceneOverride: 'A brass adapter card, owner-typed' };
+    const result = await produceStoryPrompts({
+      headline: sceneInput.headline,
+      sceneBriefs,
+      buildConcepts,
+      exportPrompts,
+      sceneInput: overrideSceneInput,
+      cfg: { geminiApiKey: '' },
+      policy: 'weekly-semantic-story-v5.1',
+      count: 2,
+    });
+    expect(sceneBriefs).not.toHaveBeenCalled();
+    expect(buildConcepts).toHaveBeenCalledWith(
+      { ...overrideSceneInput, variantCount: 2 },
+      { geminiApiKey: '' },
+    );
+    expect(result.content.prompts.map((prompt) => prompt.conceptLens)).toEqual([
+      'owner_direction',
+      'mechanism',
+    ]);
+    expect(result.content.prompts[0]?.sceneSource).toBe('owner');
+  });
+
+  it('falls back to sceneBriefs when a scene override is supplied but no buildConcepts function is wired', async () => {
+    const sceneBriefs = vi.fn(async () => [sceneBrief()]);
+    const result = await produceStoryPrompts({
+      headline: sceneInput.headline,
+      sceneBriefs,
+      exportPrompts: () => [
+        {
+          conceptLens: 'mechanism',
+          grammar: 'cinematic_domain_scene',
+          title: 'Teleprinter adapter',
+          canonical: 'A brass adapter card being pushed into a teleprinter terminal.',
+          midjourney: 'a brass adapter card --ar 16:9',
+          negative: 'no text',
+          aspectRatio: '16:9',
+          notes: [],
+        },
+      ],
+      sceneInput: { ...sceneInput, sceneOverride: 'ignored without buildConcepts' },
+      cfg: { geminiApiKey: '' },
+      policy: 'weekly-semantic-story-v5.1',
+      count: 1,
+    });
+    expect(sceneBriefs).toHaveBeenCalled();
+    expect(result.output.prompt_count).toBe(1);
+  });
 });
