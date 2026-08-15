@@ -28,7 +28,7 @@ import { CODEX_CLI_CONFIG } from './cli/codex';
 import { generateWithGemini, type GeminiProviderConfig } from './gemini-provider';
 import { ProviderUnavailableError, type ProviderCallResult } from './types';
 import type { OpenRouterResponseValidator } from '../openrouter-brief-json';
-import { resolveOpenRouterModelQueue } from '../openrouter-models';
+import { openRouterModelAttemptCap, resolveOpenRouterModelQueue } from '../openrouter-models';
 import { logEvent } from '../log';
 import type { PipelineDb } from '../db';
 
@@ -38,6 +38,7 @@ export const PROVIDER_ROLES = [
   'daily.verify',
   'daily.auto_publish_judge',
   'daily.card_image_scene',
+  'daily.cover_scene',
   'daily.image_critic',
   'weekly.master_writer',
   'weekly.master_critic',
@@ -248,23 +249,55 @@ async function resolveDbProvider(
   return null;
 }
 
-/** Reads llm_role_chains + llm_providers + llm_provider_models and resolves each saved chain into ResolvedProvider[]. */
-async function loadDbRoleChains(
-  db: PipelineDb,
-  env: RegistryEnv,
-): Promise<Map<ProviderRole, ResolvedProvider[]>> {
-  const [{ data: chains }, { data: providers }, { data: models }] = await Promise.all([
-    db.from('llm_role_chains').select('*'),
-    db.from('llm_providers').select('*').eq('enabled', true),
-    db.from('llm_provider_models').select('*').eq('enabled', true).order('rank'),
-  ]);
+type DbRegistrySnapshot = {
+  chains: Map<ProviderRole, ResolvedProvider[]>;
+  modelsByProvider: Map<string, string[]>;
+};
 
+function modelsByProviderFromRows(
+  models: { provider_id: string; model_id: string }[] | null,
+): Map<string, string[]> {
   const modelsByProvider = new Map<string, string[]>();
   for (const model of models ?? []) {
     const list = modelsByProvider.get(model.provider_id) ?? [];
     list.push(model.model_id);
     modelsByProvider.set(model.provider_id, list);
   }
+  return modelsByProvider;
+}
+
+/**
+ * Stored OpenRouter ids skip the 411-model catalog fetch. Empty tables still
+ * live-rank so a fresh environment can bootstrap before the daily job runs.
+ *
+ * The stored list gets the SAME `OPENROUTER_MAX_MODEL_ATTEMPTS` ceiling the
+ * live path applies. Without it the DB became a way to smuggle an unbounded
+ * queue past the cap -- `generateWithOpenRouterChain` walks every entry on
+ * failure, and `llm_provider_models` is writable both by the daily rerank job
+ * and by the free-text `/admin/providers` textarea, so neither source can be
+ * assumed to be cap-sized.
+ */
+async function resolveOpenRouterDefaultQueue(
+  openRouterKey: string,
+  env: RegistryEnv,
+  storedIds: string[],
+): Promise<string[]> {
+  if (storedIds.length > 0) return storedIds.slice(0, openRouterModelAttemptCap(env));
+  return resolveOpenRouterModelQueue(openRouterKey, env);
+}
+
+/** Reads llm_role_chains + llm_providers + llm_provider_models and resolves each saved chain into ResolvedProvider[]. */
+async function loadDbRegistrySnapshot(
+  db: PipelineDb,
+  env: RegistryEnv,
+): Promise<DbRegistrySnapshot> {
+  const [{ data: chains }, { data: providers }, { data: models }] = await Promise.all([
+    db.from('llm_role_chains').select('*'),
+    db.from('llm_providers').select('*').eq('enabled', true),
+    db.from('llm_provider_models').select('*').eq('enabled', true).order('rank'),
+  ]);
+
+  const modelsByProvider = modelsByProviderFromRows(models);
   const providerById = new Map((providers ?? []).map((row) => [row.id, row]));
   const geminiKey = env.GEMINI_API_KEY?.trim();
 
@@ -309,7 +342,7 @@ async function loadDbRoleChains(
     }
     result.set(row.role as ProviderRole, resolved);
   }
-  return result;
+  return { chains: result, modelsByProvider };
 }
 
 /**
@@ -322,12 +355,10 @@ async function loadDbRoleChains(
  * that call site's own requirements -- the registry itself has no opinion on
  * what belongs in a chain.
  *
- * Async because the OpenRouter entry in `defaultChain` needs a real,
- * live-fetched model queue -- `HttpProviderConfig.modelQueue` must be
- * non-empty (an empty array is a valid-but-empty queue to
- * generateWithOpenRouterChain, not "please live-rank one"), so this resolves
- * one via resolveOpenRouterModelQueue rather than leaving that footgun for
- * callers who don't supply their own roleOverrides chain.
+ * Async because the OpenRouter entry in `defaultChain` needs a non-empty
+ * model queue (`HttpProviderConfig.modelQueue` empty is a valid-but-empty
+ * queue, not "please live-rank"). Stored `llm_provider_models` for
+ * `openrouter` win (daily F3 job); otherwise one live catalog fetch.
  */
 export async function loadProviderRegistry(
   env: RegistryEnv = process.env,
@@ -337,14 +368,35 @@ export async function loadProviderRegistry(
   const openRouterKey = resolveOpenRouterKey(env);
   const geminiKey = env.GEMINI_API_KEY?.trim();
 
+  // Same reasoning as the catalog catch below: a DB read failure should
+  // degrade to "no DB override this call", not crash registry construction.
+  let dbChains: Map<ProviderRole, ResolvedProvider[]> | null = null;
+  let storedOpenRouterIds: string[] = [];
+  if (db) {
+    try {
+      const snapshot = await loadDbRegistrySnapshot(db, env);
+      dbChains = snapshot.chains;
+      storedOpenRouterIds = snapshot.modelsByProvider.get('openrouter') ?? [];
+    } catch (error) {
+      logEvent(
+        'warn',
+        'llm-providers',
+        'Loading DB-configured role chains failed -- continuing with the env-only default chain',
+        { error: error instanceof Error ? error.message : String(error) },
+      );
+    }
+  }
+
   const defaultChain: ResolvedProvider[] = [];
   if (openRouterKey) {
-    // A transient catalog outage (rate limit, network blip) must not take
-    // down the whole registry -- every role that also has Gemini, or a DB
-    // chain, should still work. Treat it the same as "OpenRouter
-    // unconfigured" for defaultChain purposes: log and move on.
+    // A transient catalog outage must not take down the whole registry —
+    // Gemini or a DB chain should still work. Stored ids skip the fetch.
     try {
-      const modelQueue = await resolveOpenRouterModelQueue(openRouterKey, env);
+      const modelQueue = await resolveOpenRouterDefaultQueue(
+        openRouterKey,
+        env,
+        storedOpenRouterIds,
+      );
       if (modelQueue.length > 0) {
         defaultChain.push({
           entry: { kind: 'http', id: 'openrouter' },
@@ -362,24 +414,6 @@ export async function loadProviderRegistry(
   }
   if (geminiKey) {
     defaultChain.push({ entry: { kind: 'gemini', id: 'gemini' }, gemini: { apiKey: geminiKey } });
-  }
-
-  // Same reasoning as above: a DB read failure (network blip against
-  // Supabase) should degrade to "no DB override this call", not crash
-  // registry construction and every role that would otherwise resolve fine
-  // from defaultChain alone.
-  let dbChains: Map<ProviderRole, ResolvedProvider[]> | null = null;
-  if (db) {
-    try {
-      dbChains = await loadDbRoleChains(db, env);
-    } catch (error) {
-      logEvent(
-        'warn',
-        'llm-providers',
-        'Loading DB-configured role chains failed -- continuing with the env-only default chain',
-        { error: error instanceof Error ? error.message : String(error) },
-      );
-    }
   }
 
   return {

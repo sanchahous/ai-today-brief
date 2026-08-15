@@ -275,6 +275,7 @@ export type Database = {
       };
       briefs: {
         Row: {
+          cover_prompt: Json | null;
           created_at: string | null;
           date: string;
           edition: number;
@@ -289,6 +290,7 @@ export type Database = {
           title_uk: string;
         };
         Insert: {
+          cover_prompt?: Json | null;
           created_at?: string | null;
           date: string;
           edition?: number;
@@ -303,6 +305,7 @@ export type Database = {
           title_uk: string;
         };
         Update: {
+          cover_prompt?: Json | null;
           created_at?: string | null;
           date?: string;
           edition?: number;
@@ -810,6 +813,36 @@ export type Database = {
           scope: string;
           step_key?: string | null;
           weekly_digest_id?: string | null;
+        }
+      >;
+      llm_model_rank_audit: CmsTable<
+        {
+          applied: boolean;
+          axis: string;
+          id: number;
+          model_id: string | null;
+          previous_model_id: string | null;
+          previous_quality_index: number | null;
+          price_per_m: number | null;
+          quality_index: number | null;
+          ranked_at: string;
+          role: string;
+          score: number | null;
+          skip_reason: string | null;
+        },
+        {
+          applied?: boolean;
+          axis: string;
+          id?: number;
+          model_id?: string | null;
+          previous_model_id?: string | null;
+          previous_quality_index?: number | null;
+          price_per_m?: number | null;
+          quality_index?: number | null;
+          ranked_at?: string;
+          role: string;
+          score?: number | null;
+          skip_reason?: string | null;
         }
       >;
       llm_providers: CmsTable<

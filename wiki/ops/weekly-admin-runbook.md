@@ -10,8 +10,8 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner + restore error fix 2026-08-10, Postpone release feature 2026-08-10
-Last updated: 2026-08-13
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
@@ -155,8 +155,34 @@ Release preflight на Overview / Release покаже, що ще червоне
 факт про весь agentic AI. Якщо Top 3 не мають чесного спільного зв'язку, не вимагай umbrella-
 тему — краще прямо назвати три новини.
 
-На **Visuals** (policy `weekly-semantic-story-v5.1`) відкрий **Illustration prompt** і прочитай
-semantic contract до approval:
+На **Visuals** біля заголовка кожної story рядок `N/3 промпти готові` (наприклад
+`2/3 промпти готові · немає consequence` або `фолбек: mechanism`) — це сигнал, що журі не
+зібрало три різні підходи, **до** того як витрачати час на слабкий промпт. Над сіткою story —
+рядок **гейт промптів** (E3): чи ≥60% концептів прийнятні з 1–2 спроби, чи немає misleading
+у прийнятих, чи ≤10 хв на story, чи промпти різні. Червоний/жовтий рядок **не** блокує
+Release. Далі картка
+**Copy-ready prompts**: кнопки **Canonical / Midjourney /
+Negative**, стан слота (`очікує зображення` / `завантажено, on review` / `approved`) і
+**Upload a replacement** в тій самій картці. Кнопка **Generate prompts** / **Generate cover
+prompt** пише `story_prompt_set` (`WEEKLY_STORY_IMAGE_MODE=prompt_only`) — без FLUX. Скопіюй
+промпт, згенеруй зображення у своєму інструменті, завантаж файл. Обкладинкові кропи для каналів
+далі складаються автоматично з approved cover. Після upload за кілька секунд зʼявиться
+**QA чисто** або жовтий рядок на кшталт «QA: впечений текст (2 місця)» з **Ігнорувати** /
+**Замінити файл**. Під жовтим рядком — порада: впечений текст → inpaint/crop (не
+перегенеровувати кадр); поламана геометрія → той самий промпт; хибна теза → інший концепт.
+Рядок **QA: ризик гідності** означає принизливу сцену з людиною — замініть файл, не ігноруйте
+легковажно. Провальний QA **не** блокує реліз. Якщо рядок завис на «QA перевіряє…» (виклик не
+завершився) або показує помилку — кнопка **Перевірити ще раз** (2026-08-15, review-фікс)
+перезапускає перевірку на вже завантаженому файлі без повторного upload. Під кожним концептом — вердикт
+**використано / з правками / відхилено** і теги причини; **Зберегти вердикт** пише пару
+промпт→результат у `story_prompt_set` і в metadata завантаженого файлу. Це не гейт релізу.
+QA після upload — **один** image-only прохід (без headline). У режимі `render` критик двостадійний:
+спочатку пікселі, потім claim. Яка модель зараз пише master — дивись `/admin/providers`
+секцію **Model ranking** (добовий OpenRouter rerank, F3), не Visuals.
+Скільки коштують новини vs промпти+QA — `/admin/costs` секція **Illustration budget** (G),
+з ledger, не з лімітів політики.
+Semantic contract у **Illustration prompt**
+лишається для вже згенерованих/завантажених файлів:
 
 1. **Context** — чи видно, яка саме система/обʼєкт/подія змінилась, а не «будь-який AI».
 2. **Mechanism** — чи причина/процес фізично видимі, а не існують лише в описі prompt.
@@ -167,8 +193,8 @@ semantic contract до approval:
 Chip `semantic` — мінімум із context/mechanism/consequence/instant-comprehension, а не середнє:
 високий `craft` не компенсує відсутній сенс. `needs_human_review` означає: переглянь blockers і
 prompt history; Approve override використовуй лише якщо очима підтверджуєш усі чотири пункти.
-(source: `src/components/admin/weekly-workspace.tsx`, `src/lib/content-sim/vision-critic.ts`,
-`pipeline/card-image.ts`)
+(source: `src/components/admin/weekly-workspace.tsx`, `src/components/admin/story-prompt-set-panel.tsx`,
+`src/lib/content-sim/vision-critic.ts`, `pipeline/card-image.ts`)
 
 > **Не плутай з experimental V10:** V10 contact sheet — окремий owner-review артефакт, не
 > вкладка production **Visuals**. Його automated score може підказати, що перевірити, але не
@@ -209,6 +235,7 @@ Postpone не створює нову RPC — це той самий Pause → A
 | Master **failed**, score 8x, blockers | Critic / deterministic gate | Читай Master quality → retry |
 | Після retry знову `UNSUPPORTED_*` на деталі зі статті | Старий короткий excerpt / вузькі claims | Переконайся що packs **v3** з довгим excerpt; Approve знову |
 | Visuals/Social не з’являються | Master ще не succeeded | Спочатку зелений Research gate |
+| Release: немає story/cover | Файл не завантажено | Visuals → скопіюй промпт → згенеруй у своєму інструменті → upload. Не тисни Regenerate |
 | Release blocked на video | Немає Remotion pipeline / captions | Owner override лише для trial (див. preflight) |
 | PDF: сторінки радар-історій (4-7) виглядають скорочено (без картинки/панелей) | Так задумано з 2026-08-07 — повний розворот тепер лише для Top 3 | Нормально, не баг; деталі — [weekly-digest](../pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07) |
 

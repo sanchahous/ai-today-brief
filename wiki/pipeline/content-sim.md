@@ -5,8 +5,9 @@ batch critic → один decisive re-plan → pass або human review з escal
 гейтиться цим.
 Sources: `src/lib/content-sim/`, `pipeline/providers/vision.ts`, `pipeline/scripts/content-sim.ts`,
 `.github/workflows/content-sim.yml`, план Content Sim Backtest 2026-08-11,
-owner prompt review + `weekly-semantic-story-v5.1` concept-diversity repair follow-up 2026-08-12
-Last updated: 2026-08-11
+owner prompt review + `weekly-semantic-story-v5.1` concept-diversity repair follow-up 2026-08-12,
+weekly illustration M2 post-upload QA 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
@@ -26,6 +27,7 @@ weekly story images перед релізом.
 | CLI | `npm run content-sim` | `capture` / `run` / `gates` / `hypothesis` |
 | Release gate | `preflight.ts` code `simulation_not_passed` | блок без pass або human override |
 | Admin | Visuals ArtifactCard | escalation panel + Approve записує `human_override` |
+| Post-upload QA (M2) | `uploadWeeklyArtifactAction` → `buildImageOnlyCriticPrompt` | advisory `metadata.post_upload_qa`; **не** пише `content_sim`, реліз не блокує |
 
 Adapters: `weekly-master` (делегує `weekly:sandbox`), `weekly-image`, `daily-brief`, `daily-image`.
 (source: `src/lib/content-sim/`, `pipeline/scripts/content-sim.ts`)
@@ -105,6 +107,34 @@ npm run content-sim -- hypothesis --baseline quality.json --run artifacts/_local
 
 Див. `.env.example` секцію Content simulation (`CONTENT_SIM_*`).
 `CONTENT_SIM_IMAGE_LOOP=off` вимикає vision loop (один generate без critic).
+
+**M2 post-upload (2026-08-15):** ручний upload story/cover запускає один image-only critic
+(`buildImageOnlyCriticPrompt` — без headline і scene brief) і пише `metadata.post_upload_qa`.
+Це не `content_sim` і не `simulation_not_passed`. (source: [weekly-illustration-plan](weekly-illustration-plan.md) M2,
+`src/lib/weekly-digest/post-upload-qa.ts`)
+
+**D3 human_dignity_risk (2026-08-15):** critic flags degrading depictions of people (especially
+children). News: critique fails. Upload: warning, not a preflight block.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) D3,
+`src/lib/content-sim/vision-critic.ts`)
+
+**E2 two-stage critic (2026-08-15):** auto loop runs image-only first (no headline). Story-aware
+runs only if pixels passed. M2 upload stays a single image-only pass.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) E2,
+`src/lib/content-sim/adapters/weekly-image.ts`)
+
+**E3 prompt promotion (2026-08-15):** Visuals digest line scores prompt quality from owner
+verdicts. It does not write `content_sim` and does not add `simulation_not_passed`. News
+score floor stays overall ≥ 80.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) E3,
+`src/lib/weekly-digest/prompt-promotion-gate.ts`)
+
+**A2 critic bake-off (2026-08-15):** Actions `31879588071` scored three OpenRouter vision
+models against owner verdicts v6. All three had `Kept the good = 0/1`. Production stays on
+`google/gemini-2.5-flash`; `CONTENT_SIM_VISION_OPENROUTER_MODEL` was not changed. Positive
+set is n=1. Harness reads top-level `headline` from visual-compiler manifests.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) A2,
+`experiments/critic-bakeoff/2026-08-15/`, `src/lib/content-sim/bakeoff-manifest.ts`)
 
 ## Related pages
 

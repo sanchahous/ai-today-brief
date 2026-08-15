@@ -4,6 +4,7 @@ import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { HookCandidatePicker } from '@/components/admin/hook-candidate-picker';
 import { SocialCharCount } from '@/components/admin/social-char-count';
 import { StatusPill } from '@/components/admin/status-pill';
+import { StoryPromptSetPanel } from '@/components/admin/story-prompt-set-panel';
 import { WeeklyGenerationJobsLive } from '@/components/admin/weekly-generation-jobs-live';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
@@ -27,6 +28,23 @@ import {
   validateWeeklyDigestPreflight,
 } from '@/lib/weekly-digest/preflight';
 import { contentSimGateCleared, type ContentSimArtifactMeta } from '@/lib/content-sim';
+import {
+  parseStoryPromptSetContent,
+  storyImageSlotState,
+  storyPromptReadiness,
+} from '@/lib/weekly-digest/story-prompt-set';
+import { ownerFeedbackFromImageMetadata } from '@/lib/weekly-digest/owner-feedback';
+import {
+  evaluatePromptPromotionGate,
+  promptPromotionStoriesFromArtifacts,
+} from '@/lib/weekly-digest/prompt-promotion-gate';
+import {
+  adviceForPostUploadQa,
+  parsePostUploadQa,
+  formatPostUploadQaLine,
+  postUploadQaNeedsWarning,
+} from '@/lib/weekly-digest/post-upload-qa';
+import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
 
 function contentSimClearedFromMetadata(metadata: Json | null | undefined): boolean | undefined {
   const root = asRecord(metadata);
@@ -54,6 +72,8 @@ import {
   startWeeklyContentStudioAction,
   toggleWeeklySocialAction,
   uploadWeeklyArtifactAction,
+  ignorePostUploadQaAction,
+  recheckPostUploadQaAction,
 } from '@/app/admin/(cms)/weekly/actions';
 
 export const WEEKLY_WORKSPACE_TABS = [
@@ -108,6 +128,7 @@ const SECONDARY =
 const DANGER =
   'min-h-11 rounded-xl border border-red-400/30 bg-red-400/8 px-4 text-sm font-bold text-red-200 transition hover:bg-red-400/15';
 
+/** Release-gate types only. `story_prompt_set` is text and is not a preflight artifact. */
 const ARTIFACT_TYPES = new Set<WeeklyArtifactType>([
   'research_pack',
   'content_quality_report',
@@ -349,6 +370,12 @@ function artifactFor(
       (locale === undefined || artifact.locale === locale) &&
       (revisionItemId === undefined || artifact.revision_item_id === revisionItemId),
   );
+}
+
+function promptPromotionClass(result: { passed: boolean; ready: boolean }): string {
+  if (result.passed) return 'text-cyan-100/90';
+  if (result.ready) return 'text-amber-100/90';
+  return 'text-slate-400';
 }
 
 /** Most recent job for a Visuals/PDF slot (jobs are ordered newest-first in admin data). */
@@ -837,6 +864,9 @@ function ArtifactCard({
     : Array.isArray(contentSimEscalation.suggested_actions)
       ? contentSimEscalation.suggested_actions
       : [];
+  const postUploadQa = parsePostUploadQa(artifact.metadata);
+  const postUploadQaLine = postUploadQa ? formatPostUploadQaLine(postUploadQa) : null;
+  const postUploadAdvice = postUploadQa ? adviceForPostUploadQa(postUploadQa) : [];
 
   return (
     <article className="rounded-2xl border border-white/10 bg-black/10 p-4">
@@ -1190,6 +1220,61 @@ function ArtifactCard({
               ),
             )}
           </ul>
+        </div>
+      ) : null}
+
+      {postUploadQaLine ? (
+        <div
+          className={
+            postUploadQaNeedsWarning(postUploadQa)
+              ? 'mt-4 rounded-xl border border-amber-300/25 bg-amber-300/8 p-3 text-xs text-amber-50'
+              : 'mt-4 rounded-xl border border-white/10 bg-white/4 p-3 text-xs text-slate-300'
+          }
+        >
+          <p className="font-bold">{postUploadQaLine}</p>
+          {postUploadAdvice.length > 0 ? (
+            <ul className="mt-2 grid gap-1 text-amber-100/90">
+              {postUploadAdvice.map((row) => (
+                <li key={row.kind}>
+                  {row.do} {row.dont}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {postUploadQaNeedsWarning(postUploadQa) ? (
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              {canReview ? (
+                <form action={ignorePostUploadQaAction}>
+                  <input type="hidden" name="weekly_digest_id" value={digestId} />
+                  <input type="hidden" name="artifact_id" value={artifact.id} />
+                  <button
+                    type="submit"
+                    className="font-bold text-amber-100 underline decoration-amber-100/40 underline-offset-2"
+                  >
+                    Ігнорувати
+                  </button>
+                </form>
+              ) : null}
+              <span className="text-amber-100/80">Замінити файл — форма upload на цій картці.</span>
+            </div>
+          ) : null}
+          {canReview && (postUploadQa?.pending || postUploadQa?.error) ? (
+            <form action={recheckPostUploadQaAction} className="mt-2">
+              <input type="hidden" name="weekly_digest_id" value={digestId} />
+              <input type="hidden" name="artifact_id" value={artifact.id} />
+              <button
+                type="submit"
+                className="font-bold text-cyan-100 underline decoration-cyan-100/40 underline-offset-2"
+              >
+                Перевірити ще раз
+              </button>
+              {postUploadQa?.pending ? (
+                <span className="ml-2 text-slate-500">
+                  Якщо перевірка не завершилась — натисни, щоб запустити її знову.
+                </span>
+              ) : null}
+            </form>
+          ) : null}
         </div>
       ) : null}
 
@@ -2817,6 +2902,7 @@ function ReplacementAssetForm({
             required
             accept={artifactType === 'pdf' ? 'application/pdf' : 'image/*'}
             disabled={!canEdit}
+            data-testid={artifactType === 'story_image' ? 'story-image-upload-file' : undefined}
             className={`${FIELD} file:mr-3 file:rounded-lg file:border-0 file:bg-[#47e4d3]/10 file:px-3 file:py-1 file:font-bold file:text-[#47e4d3]`}
           />
         </label>
@@ -2879,6 +2965,18 @@ function VisualsPanel({
   const revision = workspace.revision;
   if (!revision) return <p className={`${PANEL} text-sm text-slate-400`}>No active revision.</p>;
   const cover = artifactFor(workspace.artifacts, 'cover', 'neutral');
+  const coverPromptArtifact = workspace.artifacts.find(
+    (artifact) =>
+      artifact.artifact_type === 'story_prompt_set' && artifact.slot_key === COVER_PROMPT_SLOT,
+  );
+  const coverPromptSet = parseStoryPromptSetContent(coverPromptArtifact?.content);
+  const coverSlot = storyImageSlotState(cover);
+  const promptPromotion = evaluatePromptPromotionGate(
+    promptPromotionStoriesFromArtifacts({
+      storyIds: workspace.items.map((item) => item.id),
+      artifacts: workspace.artifacts,
+    }),
+  );
   const socialAssets = workspace.artifacts.filter(
     (artifact) =>
       artifact.artifact_type === 'social_asset' && artifact.mime_type?.startsWith('image/'),
@@ -2893,8 +2991,8 @@ function VisualsPanel({
               Weekly cover composition
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-slate-400">
-              The renderer composes motifs from the selected stories, then applies deterministic
-              typography and safe zones for every channel.
+              Copy the cover prompt, generate the image in your tool, then upload it here. Channel
+              crops still compose automatically from the approved cover.
             </p>
           </div>
           <form action={enqueueWeeklyGenerationAction}>
@@ -2904,7 +3002,7 @@ function VisualsPanel({
             <input type="hidden" name="locale" value="neutral" />
             <input type="hidden" name="slot_key" value="cover:neutral" />
             <ActionSubmitButton
-              idleLabel={cover ? 'Regenerate cover' : 'Generate cover'}
+              idleLabel={coverPromptSet ? 'Regenerate cover prompt' : 'Generate cover prompt'}
               pendingLabel="Queueing cover…"
               disabled={!canEdit}
               className={PRIMARY}
@@ -2920,23 +3018,29 @@ function VisualsPanel({
             label="Master cover"
             imagePreview
           />
-          <div className="grid content-start gap-3">
-            <div className={`${PANEL} text-sm text-slate-400`}>
-              <p className="font-bold text-white">Automatic checks</p>
-              <ul className="mt-3 grid gap-2">
-                <li>• resolution and file size</li>
-                <li>• text safe zones and contrast</li>
-                <li>• Cyrillic-capable embedded fonts</li>
-                <li>• required alt text and focal point</li>
-              </ul>
-            </div>
+          <StoryPromptSetPanel
+            itemId="cover"
+            prompts={coverPromptSet?.prompts ?? []}
+            policy={coverPromptSet?.policy ?? null}
+            generatedAt={coverPromptSet?.generatedAt ?? null}
+            slotState={coverSlot}
+            weeklyDigestId={workspace.digest.id}
+            promptSetArtifactId={coverPromptArtifact?.id}
+            imageArtifactId={cover?.id}
+            ownerFeedback={{
+              ...ownerFeedbackFromImageMetadata(cover?.metadata),
+              ...coverPromptSet?.ownerFeedback,
+            }}
+            mappingGateIssues={coverPromptSet?.mappingGateIssues ?? []}
+            canEdit={canEdit}
+          >
             <ReplacementAssetForm
               workspace={workspace}
               artifactType="cover"
               slotKey="cover:neutral"
               canEdit={canEdit}
             />
-          </div>
+          </StoryPromptSetPanel>
         </div>
       </section>
 
@@ -2947,13 +3051,33 @@ function VisualsPanel({
               Story illustrations
             </h2>
             <p className="mt-2 text-sm text-slate-400">
-              Each visual must depict the corresponding news item, not generic AI decoration.
+              Copy a concept, generate the image in your tool, then upload it on the same card.
+              Each visual must depict that news item, not generic AI decoration.
+            </p>
+            <p
+              className={`mt-2 text-xs font-bold ${promptPromotionClass(promptPromotion)}`}
+              data-testid="prompt-promotion-gate"
+            >
+              {promptPromotion.label}
+              {promptPromotion.detail ? ` · ${promptPromotion.detail}` : ''}
             </p>
           </div>
         </div>
         <div className="mt-4 grid gap-5 xl:grid-cols-2">
           {workspace.items.map((item) => {
             const artifact = artifactFor(workspace.artifacts, 'story_image', undefined, item.id);
+            const promptArtifact = artifactFor(
+              workspace.artifacts,
+              'story_prompt_set',
+              undefined,
+              item.id,
+            );
+            const promptSet = parseStoryPromptSetContent(promptArtifact?.content);
+            const promptReadiness = storyPromptReadiness(
+              promptSet?.prompts ?? [],
+              artifact?.metadata,
+            );
+            const imageSlot = storyImageSlotState(artifact);
             const slotKey = `story-image:${item.id}`;
             const job = latestJobForSlot(workspace.generationJobs, 'story_image', {
               revisionItemId: item.id,
@@ -2981,9 +3105,18 @@ function VisualsPanel({
             return (
               <div key={item.id} className="grid content-start gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm font-bold text-white">
-                    {item.rank}. {item.title_en}
-                  </p>
+                  <div>
+                    <p className="text-sm font-bold text-white">
+                      {item.rank}. {item.title_en}
+                    </p>
+                    <p
+                      className="mt-1 text-xs text-slate-400"
+                      data-testid="story-prompt-readiness"
+                    >
+                      {promptReadiness.label}
+                      {promptReadiness.detail ? ` · ${promptReadiness.detail}` : ''}
+                    </p>
+                  </div>
                   <div className="flex flex-wrap items-center gap-2">
                     {job ? <StatusPill value={job.status} /> : null}
                     <form action={enqueueWeeklyGenerationAction}>
@@ -2994,7 +3127,7 @@ function VisualsPanel({
                       <input type="hidden" name="slot_key" value={slotKey} />
                       <input type="hidden" name="revision_item_id" value={item.id} />
                       <ActionSubmitButton
-                        idleLabel={artifact ? 'Regenerate' : 'Generate'}
+                        idleLabel={promptSet ? 'Regenerate prompts' : 'Generate prompts'}
                         pendingLabel="Queueing…"
                         disabled={!canEdit}
                         className={SECONDARY}
@@ -3004,7 +3137,7 @@ function VisualsPanel({
                 </div>
                 {job?.status === 'queued' ? (
                   <p className="rounded-xl border border-amber-400/20 bg-amber-400/6 px-3 py-2 text-xs text-amber-100">
-                    Queued — reload this tab after the job succeeds to see the new preview.
+                    Queued — reload this tab after the job succeeds to see the new prompts.
                   </p>
                 ) : null}
                 {job?.status === 'running' ? (
@@ -3017,6 +3150,32 @@ function VisualsPanel({
                     {job.last_error}
                   </p>
                 ) : null}
+                <StoryPromptSetPanel
+                  itemId={item.id}
+                  prompts={promptSet?.prompts ?? []}
+                  policy={promptSet?.policy ?? null}
+                  generatedAt={promptSet?.generatedAt ?? null}
+                  slotState={imageSlot}
+                  readinessLabel={promptReadiness.label}
+                  readinessDetail={promptReadiness.detail}
+                  weeklyDigestId={workspace.digest.id}
+                  promptSetArtifactId={promptArtifact?.id}
+                  imageArtifactId={artifact?.id}
+                  ownerFeedback={{
+                    ...ownerFeedbackFromImageMetadata(artifact?.metadata),
+                    ...promptSet?.ownerFeedback,
+                  }}
+                  mappingGateIssues={promptSet?.mappingGateIssues ?? []}
+                  canEdit={canEdit}
+                >
+                  <ReplacementAssetForm
+                    workspace={workspace}
+                    artifactType="story_image"
+                    slotKey={slotKey}
+                    revisionItemId={item.id}
+                    canEdit={canEdit}
+                  />
+                </StoryPromptSetPanel>
                 <ArtifactCard
                   digestId={workspace.digest.id}
                   artifact={artifact}
@@ -3031,13 +3190,6 @@ function VisualsPanel({
                     slotKey,
                     costSummary,
                   }}
-                />
-                <ReplacementAssetForm
-                  workspace={workspace}
-                  artifactType="story_image"
-                  slotKey={slotKey}
-                  revisionItemId={item.id}
-                  canEdit={canEdit}
                 />
               </div>
             );

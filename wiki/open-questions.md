@@ -6,7 +6,7 @@ Summary: усе, що не має відповіді, суперечить са�
 Sources: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
 `.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04),
 `wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`
-Last updated: 2026-08-13
+Last updated: 2026-08-15
 
 ---
 
@@ -27,6 +27,11 @@ Last updated: 2026-08-13
 і event-ledger `generation_cost_events` + UI `/admin/costs` (PR #169), але не зведений
 фактичний рахунок провайдерів за місяць. (source: `.env.example`, PR #169)
 
+**G (2026-08-15):** `/admin/costs` тепер показує кошики ілюстрацій з ledger (новини / weekly
+API / промпти+QA). Це **не** закриває питання — інвойсів провайдерів усе ще немає, і weekly
+master LLM у ці кошики навмисно не входить.
+(source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G)
+
 **Закривається:** зафіксовано фактичні витрати за місяць (Vercel + Supabase + Gemini/OpenRouter +
 Cloudflare + X) у [overview](overview.md) §4 поруч із ledger. **Власник рішення:** власник продукту.
 
@@ -42,6 +47,8 @@ Cloudflare + X) у [overview](overview.md) §4 поруч із ledger. **Вла�
 ## 4. Weekly Content Studio v2 — коли `shadow → production`
 
 Прапорець `WEEKLY_CONTENT_STUDIO_V2=off`; передбачений шлях — три історичні випуски у `shadow`.
+Окремо (не це питання): `WEEKLY_STORY_IMAGE_MODE=prompt_only` — weekly story/cover не рендерять
+FLUX за замовчуванням; відкат = `render`. (source: `.env.example`, 2026-08-15)
 Сторінка [pipeline/weekly-digest](pipeline/weekly-digest.md) описує режим і spend-cap, але
 **числовий критерій** переходу в `production` (макс. $ / випуск + якісний чек-лист) ще не
 затверджений. (source: `.env.example`, `wiki/pipeline/weekly-digest.md`)

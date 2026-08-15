@@ -11,12 +11,20 @@ import {
   masterInputStories,
   masterRunStateFromOutput,
   runWeeklyDigestGenerationJobs,
+  siblingHintsFromStorySiblingArtifact,
 } from './generation-worker';
 import { computeMasterPlanHash } from './master-engine';
 import type { Json } from '@/lib/database.types';
 import type { WeeklyResearchPack, WeeklyMasterBundle } from './content-studio';
 import type { WeeklyMasterRetryGuidance } from './editorial-llm';
 import type { SocialChannel, SocialLocale } from '@/lib/social/types';
+import type { WeeklyReportageSceneBriefResult } from '../../../pipeline/card-image';
+import { exportManualImagePrompts } from '../../../pipeline/prompt-export';
+import {
+  produceStoryPrompts,
+  resolveWeeklyStoryImageMode,
+  storyImageJobPath,
+} from './story-prompt-job';
 
 const SHORT_JOB_TYPES = ['research_pack', 'cover', 'pdf', 'social_asset', 'video_manifest'];
 
@@ -233,5 +241,151 @@ describe('masterInputStories (PR4 -- story angle join)', () => {
     } as unknown as Parameters<typeof masterInputStories>[0];
     const [story] = masterInputStories(context, [], new Map([['brief-1', 'should not apply']]));
     expect(story).not.toHaveProperty('angle');
+  });
+});
+
+describe('weekly story image prompt_only mode', () => {
+  const sceneInput = {
+    headline: 'CLI tools land on the command line',
+    summary: 'A plugin exposes server-side tools through a local command.',
+  };
+  const cfg = { geminiApiKey: '' };
+
+  function sceneBrief(
+    partial: Partial<WeeklyReportageSceneBriefResult> = {},
+  ): WeeklyReportageSceneBriefResult {
+    return {
+      scene:
+        'A brass adapter card being pushed into the expansion slot of a 1970s teleprinter terminal',
+      source: 'openrouter',
+      conceptLens: 'mechanism',
+      metaphorTitle: 'Teleprinter adapter',
+      storyContext: sceneInput.headline,
+      meaning: sceneInput.summary,
+      essence: sceneInput.headline,
+      mechanism: 'A CLI plugin exposes server-side tools through a local command.',
+      consequence: 'Developers invoke those tools from the command line.',
+      visualThesis: 'An adapter card connecting into a terminal lets the old system run new tools.',
+      readerTest: 'grasp: server-side tools now plug into the command line',
+      storyAnchor: 'a brass adapter card in a teleprinter slot',
+      visibleMechanism: 'the card connecting server tools into the local command',
+      visibleConsequence: 'the old terminal runs the new tools',
+      ...partial,
+    };
+  }
+
+  it('story_image job in prompt_only mode writes a prompt set and never calls the image provider', async () => {
+    const generateWeeklyReportageIllustrations = vi.fn();
+    const sceneBriefs = vi.fn(async () => [
+      sceneBrief({ conceptLens: 'literal_context', metaphorTitle: 'Literal' }),
+      sceneBrief({ conceptLens: 'mechanism', metaphorTitle: 'Mechanism' }),
+      sceneBrief({ conceptLens: 'consequence', metaphorTitle: 'Consequence' }),
+    ]);
+    const result = await produceStoryPrompts({
+      headline: sceneInput.headline,
+      sceneBriefs,
+      exportPrompts: exportManualImagePrompts,
+      sceneInput,
+      cfg,
+      policy: 'weekly-semantic-story-v5.1',
+      generatedAt: '2026-08-15T12:00:00.000Z',
+    });
+    expect(generateWeeklyReportageIllustrations).not.toHaveBeenCalled();
+    expect(sceneBriefs).toHaveBeenCalledWith(sceneInput, cfg, { count: 3 });
+    expect(result.content.prompts).toHaveLength(3);
+    expect(result.content.policy).toBe('weekly-semantic-story-v5.1');
+    expect(result.content.prompts[0]?.canonical).toMatch(/brass adapter card/i);
+    expect(result.content.prompts[0]?.midjourney).toContain('--ar 16:9');
+    expect(result.output).toEqual({ needs_owner_review: true, prompt_count: 3 });
+    expect(storyImageJobPath(null, 'prompt_only')).toBe('prompt_only');
+  });
+
+  it('story_image job with source_url still ingests the URL', () => {
+    expect(storyImageJobPath('https://cdn.example/story.jpg', 'prompt_only')).toBe('ingest_url');
+    expect(storyImageJobPath('https://cdn.example/story.jpg', 'render')).toBe('ingest_url');
+    expect(resolveWeeklyStoryImageMode(undefined)).toBe('prompt_only');
+    expect(resolveWeeklyStoryImageMode('render')).toBe('render');
+  });
+});
+
+describe('siblingHintsFromStorySiblingArtifact (R1.1 -- cross-story diversification)', () => {
+  it('builds a sibling hint from another story’s story_prompt_set (the prompt_only default)', () => {
+    const hints = siblingHintsFromStorySiblingArtifact({
+      artifact_type: 'story_prompt_set',
+      content: {
+        prompts: [
+          {
+            conceptLens: 'mechanism',
+            grammar: 'cinematic_domain_scene',
+            title: 'Single Slot Tool Cabinet',
+            canonical: 'A single slot tool cabinet holding one command flag.',
+            midjourney: 'a single slot tool cabinet --ar 16:9 --style raw --no text',
+            negative: 'no text',
+            aspectRatio: '16:9',
+            notes: [],
+            motifClass: 'single_slot_cabinet',
+            subjectKind: 'object',
+            composition: 'single',
+            scene: 'A single slot tool cabinet in a workshop, one open bay',
+            subject: 'a single slot tool cabinet',
+            setting: 'workshop bench',
+          },
+        ],
+      } as unknown as Json,
+      metadata: null,
+    });
+    expect(hints).toHaveLength(1);
+    expect(hints[0]).toMatchObject({
+      motifClass: 'single_slot_cabinet',
+      subjectKind: 'object',
+      composition: 'single',
+      sceneSummary: 'A single slot tool cabinet in a workshop, one open bay',
+      // R2.3 / F9: subject/setting must survive the round trip, or
+      // motifFamilyKey falls back to sceneSummary/'' for every cross-story
+      // sibling and family matching never fires across stories.
+      subject: 'a single slot tool cabinet',
+      setting: 'workshop bench',
+    });
+  });
+
+  it('an artifact with an empty story_prompt_set (mapping-gate wipeout) contributes no hints', () => {
+    const hints = siblingHintsFromStorySiblingArtifact({
+      artifact_type: 'story_prompt_set',
+      content: { prompts: [], mapping_gate_issues: ['missing_visible_outcome'] } as unknown as Json,
+      metadata: null,
+    });
+    expect(hints).toEqual([]);
+  });
+
+  it('falls back to story_image metadata for a render-mode sibling', () => {
+    const hints = siblingHintsFromStorySiblingArtifact({
+      artifact_type: 'story_image',
+      content: null,
+      metadata: {
+        scene: 'A clay golem guarding a sealed journal in a vault',
+        motif_class: 'anthropomorphic_guardian',
+        subject_kind: 'character',
+        composition: 'dual_contrast',
+      } as unknown as Json,
+    });
+    expect(hints).toHaveLength(1);
+    expect(hints[0]).toMatchObject({
+      motifClass: 'anthropomorphic_guardian',
+      subjectKind: 'character',
+      composition: 'dual_contrast',
+    });
+  });
+
+  it('a manual-upload story_image (no scene metadata) contributes no hint', () => {
+    const hints = siblingHintsFromStorySiblingArtifact({
+      artifact_type: 'story_image',
+      content: null,
+      metadata: {
+        source: 'manual_upload',
+        original_name: 'story.jpg',
+        sha256: 'deadbeef',
+      } as unknown as Json,
+    });
+    expect(hints).toEqual([]);
   });
 });

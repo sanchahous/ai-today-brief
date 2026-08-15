@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import {
   aggregateGenerationCosts,
+  illustrationBudgetFromLedger,
   listGenerationCosts,
 } from '@/lib/generation-costs';
 import { serverEpochMs } from '@/lib/server-clock';
@@ -35,6 +36,24 @@ function formatWhen(iso: string) {
   }).format(new Date(iso));
 }
 
+function IllustrationBudgetCard({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#151b20] p-5">
+      <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+      <p className="mt-2 text-xs leading-5 text-slate-500">{hint}</p>
+    </div>
+  );
+}
+
 export default async function CostsPage({
   searchParams,
 }: {
@@ -60,6 +79,7 @@ export default async function CostsPage({
   const kindRows = Object.entries(totals.byKind).sort((a, b) => b[1] - a[1]);
   const providerRows = Object.entries(totals.byProvider).sort((a, b) => b[1] - a[1]);
   const modelRows = Object.entries(totals.byModel).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  const illustration = illustrationBudgetFromLedger(events);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -101,6 +121,34 @@ export default async function CostsPage({
             <p className="mt-2 text-2xl font-bold text-white">{value}</p>
           </div>
         ))}
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-bold tracking-wide text-slate-400 uppercase">
+          Illustration budget
+        </h2>
+        <p className="mt-1 max-w-3xl text-sm text-slate-500">
+          Split from this window&apos;s <span className="text-slate-300">generation_cost_events</span>
+          , not from policy caps. Weekly master / social / video LLM is excluded. Digest pixels
+          stay owner-manual in <span className="text-slate-300">prompt_only</span>.
+        </p>
+        <div className="mt-3 grid gap-3 lg:grid-cols-3">
+          <IllustrationBudgetCard
+            label="News images (auto)"
+            value={formatUsd(illustration.newsImagesUsd)}
+            hint="One file per story; thumb and full share it. Target ~$1.73–2.70/mo."
+          />
+          <IllustrationBudgetCard
+            label="Digest images (API)"
+            value={formatUsd(illustration.weeklyImagesUsd)}
+            hint="Should stay $0 in prompt_only — owner generates off-account."
+          />
+          <IllustrationBudgetCard
+            label="Prompts + QA"
+            value={formatUsd(illustration.promptAndQaUsd)}
+            hint="Daily cover director + post-upload critic. Target <$0.10/mo."
+          />
+        </div>
       </section>
 
       <section className="mt-8 grid gap-4 lg:grid-cols-3">

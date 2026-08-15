@@ -10,8 +10,8 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, 2026-08-10 fixes, parallel enqueue/worker update and owner prompt review + `weekly-semantic-story-v5` 2026-08-11
-Last updated: 2026-08-13
+Actions run `31324873875`, PR #209, 2026-08-10 fixes, weekly illustration B3 prompt readiness 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
@@ -28,6 +28,7 @@ Video / Release).
 ## Feature flag
 
 `WEEKLY_CONTENT_STUDIO_V2` ∈ `{off, shadow, production}` (source: `.env.example`).
+Ілюстрації дайджесту: `WEEKLY_STORY_IMAGE_MODE=prompt_only` (дефолт) або `render`.
 
 | Режим | Поведінка |
 |---|---|
@@ -38,6 +39,13 @@ Video / Release).
 Станом на **2026-08-04** у `.env.example` стоїть **`off`**. Перед `production` потрібні три
 історичні випуски у `shadow` + вартісні метрики з `/admin/costs`.
 (source: `.env.example`, [open-questions](../open-questions.md) #4)
+
+**Review-фікс 2026-08-15 (`feat/weekly-illustration-fixes`):** `resolveWeeklyStoryImageMode`
+тепер `.trim().toLowerCase()` перед звіркою з `render` — раніше `RENDER`/пробіли мовчки давали
+`prompt_only`. Новий env-кілл-свіч `OPENROUTER_RERANK_APPLY=off` для щоденного rerank-джоба
+(F3) — без нього застосування нового ранжування можна лише вимкнути редагуванням коду.
+(source: [audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md),
+`.env.example`)
 
 ## Пайплайн генерації
 
@@ -56,9 +64,11 @@ Hard spend-cap weekly master: `WEEKLY_MASTER_MAX_SPEND_USD` (default $4,
 `generation-worker.ts`) + kill-switch режиму `off` (source: PR #163, `.env.example`).
 Витрати пишуться в `generation_cost_events`, UI — `/admin/costs` (source: PR #169).
 
-Картинки weekly/story: Cloudflare **FLUX.2 klein** (`@cf/black-forest-labs/flux-2-klein-9b`),
-політика промпту `story-specific-editorial-v5-no-text` (без впеченого тексту в кадрі).
-(source: PR #169–#175, `pipeline/card-image.ts`, `generation-worker.ts`)
+Картинки **новин** на сайті: Cloudflare **FLUX.2 klein** (`@cf/black-forest-labs/flux-2-klein-9b`).
+Weekly story/cover за замовчуванням `WEEKLY_STORY_IMAGE_MODE=prompt_only`: worker пише
+`story_prompt_set` і не кличе FLUX; `render` повертає старий цикл. Політика планування
+концептів — `weekly-semantic-story-v5.1` (без впеченого тексту в кадрі).
+(source: PR #169–#175, `.env.example`, `pipeline/card-image.ts`, `generation-worker.ts`)
 
 ### Evidence grounding (writer + critic)
 
@@ -332,7 +342,108 @@ concept title/lens. Primary badge `auto-picked` / `owner-promoted`; promotion п
 scene» зберігає її як concept 1, а concept 2–3 лишає незалежними; використовується наявний
 `enqueueWeeklyGenerationAction`, нового job type не знадобилось.
 
-**Content Sim (2026-08-11):** після FLUX `generateStoryImage` ганяє vision repair loop
+**P2 prompt cards (2026-08-15):** окремий artifact type `story_prompt_set` (текст,
+`locale: neutral`, не в `PUBLIC_IMAGE_TYPES`) версіонується з ревізією. Input-hash залежить від
+revision item так само, як `story_image`. Visuals показує картки концептів з кнопками Canonical /
+Midjourney / Negative і слот upload в тій самій картці (стан: `очікує зображення` /
+`завантажено, on review` / `approved`).
+(source: `supabase/migrations/20260815120000_weekly_story_prompt_set.sql`,
+`src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/story-prompt-set-panel.tsx`,
+[weekly-illustration-plan](weekly-illustration-plan.md) P2)
+
+**M1 prompt_only (2026-08-15):** `generateStoryImage` без `source_url` і `generateCover` більше
+не викликають `generateWeeklyReportageIllustrations` / `runWeeklyImageSimLoop`. Джоба будує
+essence + концепти, експортує `ManualImagePrompt` і зберігає `story_prompt_set` зі статусом
+`succeeded` + `needs_owner_review`. Ingest `source_url` лишається. Прапорець
+`WEEKLY_STORY_IMAGE_MODE=prompt_only|render` (дефолт `prompt_only`). Транспорт `story_image`
+лишається GitHub Actions — не переносити в цьому PR.
+(source: `src/lib/weekly-digest/story-prompt-job.ts`, `generation-worker.ts`, `.env.example`,
+[weekly-illustration-plan](weekly-illustration-plan.md) M1)
+
+**M2 post-upload QA (2026-08-15):** після ручного upload story/cover `after()` викликає
+image-only critic (`buildImageOnlyCriticPrompt`, без headline/scene) і пише
+`metadata.post_upload_qa`. `content_sim` не заповнюється, тож `simulation_not_passed` не
+спрацьовує. Visuals: «QA чисто» або жовтий рядок + Ігнорувати / Замінити файл.
+(source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) M2)
+
+**M3 preflight copy (2026-08-15):** `artifact_missing` для `story_image` / `cover` каже скопіювати
+промпт, згенерувати в своєму інструменті й завантажити файл — не «Regenerate». Вага гейта
+без змін. (source: `src/lib/weekly-digest/preflight.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) M3)
+
+**B3 prompt readiness (2026-08-15):** Visuals біля кожної story показує `N/3 промпти готові`
+і деталь `немає consequence` / `фолбек: mechanism`, якщо журі не заповнило три лінзи або
+віддало `fallback_essence`. Cover не в цій хвилі. Вага гейта без змін.
+(source: `src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/weekly-workspace.tsx`,
+[weekly-illustration-plan](weekly-illustration-plan.md) B3)
+
+**C2 scene grammar (2026-08-15):** `pipeline/scene-grammar.ts` ставить
+`deterministic_technical_hybrid`, коли в title/summary або essence є точна метрика.
+`practical` / `takeaway` не скануються. Один `caching` не вмикає process grammar. V10 не
+імпортується. (source: `pipeline/scene-grammar.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) C2)
+
+**C3 mapping gate (2026-08-15):** `produceStoryPrompts` не пише в `story_prompt_set` концепт
+без таблиці context/action/outcome. `visibleElementId`, не підпис; порожній `semanticProps`
+не проходить вакуумно. Вага preflight без змін.
+(source: `pipeline/concept-mapping-gate.ts`, `src/lib/weekly-digest/story-prompt-job.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) C3)
+
+**D2 post-upload advice (2026-08-15):** QA після upload радить власнику (inpaint / той самий
+промпт / інший концепт), не патчить промпт і не перегенеровує. Авто-repair лишається на
+новинах. Вага preflight без змін.
+(source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/components/admin/weekly-workspace.tsx`,
+[weekly-illustration-plan](weekly-illustration-plan.md) D2)
+
+**D3 human_dignity_risk (2026-08-15):** critic ловить принизливі сцени з людьми. На новинах —
+fail; на upload — попередження «ризик гідності», не preflight. Вага гейта без змін.
+(source: `src/lib/content-sim/vision-critic.ts`, `src/lib/weekly-digest/post-upload-qa.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) D3)
+
+**E1 owner-feedback (2026-08-15):** на кожному концепті Visuals — `used | used_with_edits |
+rejected` + закриті `reasonTags`. Пишеться в `story_prompt_set` і в `metadata.owner_feedback`
+завантаженого файлу. Вага preflight без змін.
+(source: `src/lib/weekly-digest/owner-feedback.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) E1)
+
+**E2 two-stage critic (2026-08-15):** у режимі `render` спочатку image-only (без headline),
+потім story-aware лише якщо пікселі пройшли. M2 не змінювався. Вага гейта без змін.
+(source: `src/lib/content-sim/adapters/weekly-image.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) E2)
+
+**E3 prompt promotion (2026-08-15):** Visuals показує `гейт промптів` з ≥60% прийнятних
+концептів (`used` / `used_with_edits`), 0 misleading у прийнятих, ≤10 хв/story і перевірку
+B2 «не три копії». Це не preflight-код і не змінює `WEEKLY_CONTENT_STUDIO_V2=off`.
+Пороги новин без змін.
+(source: `src/lib/weekly-digest/prompt-promotion-gate.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) E3)
+
+**F3 OpenRouter rerank (2026-08-15):** добовий job пише `llm_model_rank_audit` і може оновити
+чергу `openrouter` (топ-3 `weekly.master_writer`) лише якщо якість не впала >5 пунктів.
+Це не Visuals і не змінює `WEEKLY_CONTENT_STUDIO_V2=off`. Картинки дайджесту лишаються ручними.
+(source: `pipeline/providers/model-rerank.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) F3)
+
+**G illustration budget (2026-08-15):** `/admin/costs` ділить новини / weekly image API /
+промпти+QA з `generation_cost_events`. Weekly image API очікується $0 у `prompt_only`.
+`CONTENT_SIM_MAX_IMAGE_SPEND_USD` лишається 0.2 (новини). Це не змінює
+`WEEKLY_CONTENT_STUDIO_V2=off`.
+(source: `src/lib/generation-costs.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) G)
+
+**A2 critic bake-off (2026-08-15):** vision-модель не перемикали (`google/gemini-2.5-flash`).
+Усі три кандидати дали `Kept the good = 0/1`. Це не змінює `WEEKLY_CONTENT_STUDIO_V2=off`.
+Картинки дайджесту лишаються ручними.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) A2,
+`experiments/critic-bakeoff/2026-08-15/`)
+
+**F5 no pinned generation ids (2026-08-15):** прод не тримає `sonnet-5` / `gpt-5` /
+`gemini-3.x` поза тестами. Це не змінює `WEEKLY_CONTENT_STUDIO_V2=off`.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) F5,
+`pipeline/model-version-pin.test.ts`)
+
+**Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.
 V4 critic звіряє pixels з original story, окремо gate-ить context/mechanism/consequence/

@@ -64,7 +64,7 @@ function priorityScore(modelId: string, priorities: string[]): number {
   return priorities.length + 100;
 }
 
-/** `gemini-3.5-flash` → 3.05; higher = newer, including two-digit minors. */
+/** `gemini-{major}.{minor}-…` → major + minor/100; higher = newer. */
 export function parseGeminiVersionScore(modelId: string): number | null {
   const match = /gemini-(\d+)(?:\.(\d+))?/i.exec(modelId);
   if (!match) return null;

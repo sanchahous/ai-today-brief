@@ -2,13 +2,192 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…13, Content Sim plan 2026-08-11,
-experimental Visual Affordance V10 owner review 2026-08-13
-Last updated: 2026-08-13
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…15, Content Sim plan 2026-08-11,
+experimental Visual Affordance V10 owner review 2026-08-13, weekly illustration B1-fix 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
 ## Стан репозиторію
+
+- **Пре-мерж перевірка стека #241–#265 проти живих систем (2026-08-15) — три фікси самі були
+  дефектні, виправлено.** Перед мержем у `main` фікси R1–R4 перевірено не тестами, а прод-БД і
+  живим каталогом OpenRouter. Знайдено: (1) `revoke select (cover_prompt)` — **no-op**, бо
+  `anon`/`authenticated` тримають *табличний* `SELECT` на `briefs`, а колонковий REVOKE від
+  нього не віднімає (доведено пробою на прод-Postgres у транзакції з відкатом); супутній
+  SQL-тест стверджував протилежне і впав би, якби CI його запускав — CI SQL-тести не запускає
+  взагалі; (2) виправлення «не обрізати чергу» стало перекорекцією — `rankModelsForRole` дає
+  **197 id** на реальному каталозі (413 моделей), реєстр віддавав їх у `modelQueue` без стелі
+  `OPENROUTER_MAX_MODEL_ATTEMPTS` (=6), а `llm_role_chains` у проді порожній, тож усі 13 ролей
+  успадкували б 197-модельну ротацію (12 моделей уже коштували ~20 хв 09.08); (3)
+  `scoreModelForRole` не застосовував `isEligibleModel`, тож `:batch`-варіанти (404 на chat
+  completions, спалили 6 слотів 10.08) були повноцінними кандидатами quality/$; (4) kill-switch
+  `OPENROUTER_RERANK_APPLY=off` писав `applied=true` без запису в чергу, отруюючи базу
+  quality-drop guard наступного дня. Усе виправлено, 197 → **6**, `:batch`/`:free` у черзі
+  немає, `skip_reason='apply_disabled'` рендериться в `/admin/providers`. Деталі —
+  [audits/2026-08-15-illustration-pr-stack-review § Пре-мерж перевірка](audits/2026-08-15-illustration-pr-stack-review.md#пре-мерж-перевірка-самих-фіксів-2026-08-15-друга-ітерація).
+  **Перед мержем:** 4 міграції `20260815*` у проді ще немає; `OPENROUTER_RERANK_APPLY=off`
+  ставиться до мержу, бо на першому прогоні `qualityDropBlocked(null, …)` = `false` — guard-а
+  немає за побудовою. Також: `e2e.yml`/`sonarqube.yml` тригеряться лише на `pull_request → main`,
+  тож перецілення PR #265 на `main` — єдиний спосіб, щоб Playwright і Sonar уперше побачили ці
+  12.5k рядків.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-15, живий каталог OpenRouter
+  2026-08-15, `pipeline/providers/model-rerank.ts`, `model-scoring.ts`, `registry.ts`,
+  `supabase/migrations/20260815180000_briefs_cover_prompt_column_privacy.sql`)
+
+- **Review 24 PR ілюстраційного стека + виправлення на гілці `feat/weekly-illustration-fixes`
+  (2026-08-15) — завершено.** Технічне ревʼю PR #241–#264 (усі хвилі
+  [weekly-illustration-plan](pipeline/weekly-illustration-plan.md)) знайшло 4 блокери,
+  8 дефектів якості, 4 безпекові/цілісні прогалини й 7 операційних — 22 виправлено, 1 (F23,
+  e2e для Visuals prompt-карток) задокументовано без фіксу, бо потребує рішення власника про
+  тестову інфраструктуру (авторизованого Playwright для `/admin/*` у репо взагалі немає).
+  Ключове: крос-story диверсифікація ілюстрацій мовчки відмирала після M1 (siblings читались
+  лише з метаданих `story_image`, яку prompt_only-режим більше не пише); grammar-cap на всі
+  3 концепти замість одного при появі метрики в новині; owner-feedback/QA дії не звіряли
+  `weekly_digest_id` з реальним власником артефакту; daily rerank обрізав спільну чергу
+  OpenRouter для ВСІХ ролей до 3 моделей одного writer'а; новий
+  `pipeline/scripts/export-owner-calibration.ts` збирає вердикти власника в один датасет
+  (раніше не збирались ніде). `npm run pr:check` живий наскрізь — exit code 0. Деталі —
+  [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md).
+  **Гілка ще не змержена** — 27 фіксувальних+doc-комітів поверх вершини стека
+  (`feat/weekly-card-origin-reencode`), чекає на власника: чи мержити основний стек спочатку.
+  (source: [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md))
+- **Origin JPEG новинних карток (2026-08-15).** Нові `brief_items.card_image_url`
+  пишуться як `${slug}.jpg` 1280×720 q82 (`encodeCardOrigin`). Історичні PNG —
+  `npx tsx scripts/backfill-card-images.ts --reencode-png` (спочатку `--dry-run`),
+  без FLUX. Loader і модель новин без змін. Картинки дайджесту ручні.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [ops/vercel-image-quota](ops/vercel-image-quota.md),
+  [marketing/card-images](marketing/card-images.md), `pipeline/card-image.ts`)
+- **F5 — без пінів версії моделі в прод-коді (2026-08-15).** `pipeline/` і `src/` поза тестами
+  не містять `sonnet-5` / `gpt-5` / `gemini-3.x`. Вибір іде з живого каталогу. Vision-модель
+  A2 не перемикали. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F5,
+  `pipeline/model-version-pin.test.ts`)
+- **A2 — bake-off vision-критика (2026-08-15).** Actions `31879588071`: усі три моделі
+  `Kept the good = 0/1` (зарубали єдину owner-схвалену картку). `claude-sonnet-5` unfit.
+  `gemini-3.1-pro-preview` ще й пропустив reject. Модель **не** перемикали — лишаємось на
+  `google/gemini-2.5-flash`. Позитив n=1. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) A2,
+  `experiments/critic-bakeoff/2026-08-15/`)
+- **G — бюджет ілюстрацій з ledger (2026-08-15).** `/admin/costs` ділить новини / weekly API /
+  промпти+QA з `generation_cost_events`, не з лімітів політики. Weekly image API має бути $0
+  у `prompt_only`. `CONTENT_SIM_MAX_IMAGE_SPEND_USD=0.2` не піднімається. `WEEKLY_CONTENT_STUDIO_V2=off`
+  без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G,
+  `src/lib/generation-costs.ts`)
+- **F3 — добовий rerank OpenRouter (2026-08-15).** Job раз на добу пише `llm_model_rank_audit`
+  і оновлює чергу `openrouter` топ-3 `weekly.master_writer`, якщо якість не впала >5 пунктів.
+  Live-каталог на кожен виклик не ходиться. `/admin/providers` показує latest pick на роль.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F3,
+  `pipeline/providers/model-rerank.ts`)
+- **F2 — scoreModelForRole (2026-08-15).** Текстові моделі: бал = quality / $/M за віссю ролі.
+  Floor 40 на `weekly.master_writer`. Модель з intelligence 14.2 @ $0.01/M не в ланцюжку.
+  Топ-3 + family-хвіст. Добовий job — F3. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F2,
+  `pipeline/providers/model-scoring.ts`)
+- **E3 — promotion gate промптів (2026-08-15).** Visuals: ≥60% концептів прийнятні з 1–2
+  спроби (`used` / `used_with_edits`), 0 misleading у прийнятих, ≤10 хв на story, 3 різні
+  промпти (B2). Не блокує реліз. Пороги новин без змін.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E3,
+  `src/lib/weekly-digest/prompt-promotion-gate.ts`)
+- **E2 — двостадійний критик (2026-08-15).** Авто-цикл спершу image-only (без headline);
+  story-aware лише якщо пікселі пройшли. M2 upload лишається одним image-only проходом.
+  Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E2,
+  `src/lib/content-sim/adapters/weekly-image.ts`)
+- **E1 — owner-feedback contract (2026-08-15).** На кожному концепті Visuals: використано /
+  з правками / відхилено + закриті `reasonTags`. Пишеться в `story_prompt_set` і поруч із
+  `post_upload_qa`. Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E1,
+  `src/lib/weekly-digest/owner-feedback.ts`)
+- **D3 — етичний блокер `human_dignity_risk` (2026-08-15).** Критик ловить принизливі
+  сцени (напр. робот тримає дитину за голову): на новинах — fail, на upload — попередження
+  «ризик гідності». Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) D3,
+  `src/lib/content-sim/vision-critic.ts`)
+- **D2 — QA радить, не ремонтує (2026-08-15).** Після upload Visuals показує do/dont:
+  впечений текст → inpaint/crop, не перегенеровувати; геометрія → той самий промпт;
+  хибна теза → інший концепт. Авто-repair лишається лише на новинах. Вага гейта без змін.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) D2,
+  `src/lib/weekly-digest/post-upload-qa.ts`)
+- **C3 — mapping gate перед промптом (2026-08-15).** Концепт без таблиці
+  source → visible object → outcome не потрапляє в `story_prompt_set`.
+  `visibleElementId` (не підпис); порожній `semanticProps` не проходить вакуумно.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C3,
+  `pipeline/concept-mapping-gate.ts`, `src/lib/weekly-digest/story-prompt-job.ts`)
+- **C2 — роутер грамматики від essence (2026-08-15).** Метрика в title/summary або claim
+  essence → `deterministic_technical_hybrid`. Duration у `practical` і `40%` у takeaway не
+  перемикають (C5.2). Один `caching` не є process grammar (C5.3); окремого process prompt немає.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C2,
+  `pipeline/scene-grammar.ts`)
+- **C1 — grammar на брифі журі (2026-08-15).** Прийняті лінзи: `cinematic_domain_scene`;
+  fallback: `source_led_fallback`. `prompt-export` пише схему, якщо бриф уже має
+  `deterministic_technical_hybrid`. Роутер метрики — C2 ✅. C0: моста `autoClaim` немає.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C0/C1,
+  `pipeline/card-image.ts`, `pipeline/prompt-export.ts`)
+- **P3 — промпт обкладинки daily в review-чаті (2026-08-15).** Після publish пайплайн пише
+  `briefs.cover_prompt` (один виклик `daily.cover_scene` на випуск: топ-3 заголовки + intro) і
+  шле окреме Telegram-повідомлення з Canonical / Midjourney / Negative у `<pre>`. Картинку не
+  рендерить. Картинки **новин** лишаються авто-FLUX. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P3,
+  `pipeline/daily-cover-prompt.ts`, `pipeline/notify.ts`)
+- **B3 — N/3 промпти готові на Visuals (2026-08-15).** Біля кожної story: `2/3 промпти готові · немає consequence` (або `фолбек: mechanism`). Дані з `story_prompt_set` (лінзи + `sceneSource` журі) або з metadata `story_image` у режимі `render`. Cover не чіпали. Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B3,
+  `src/lib/weekly-digest/story-prompt-set.ts`)
+- **M3 — preflight веде до промпту, не до Regenerate (2026-08-15).**
+  `story_image` / `cover` `artifact_missing`: Visuals → скопіюй промпт → згенеруй у своєму
+  інструменті → завантаж файл. Вага гейта не змінена — зображення лишається обовʼязковим.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M3,
+  `src/lib/weekly-digest/preflight.ts`)
+- **M2 — post-upload QA попереджає, не блокує (2026-08-15).** Після upload story/cover
+  `after()` ганяє image-only critic (без headline/scene) і пише `metadata.post_upload_qa`.
+  Visuals: «QA чисто» або жовтий рядок + Ігнорувати / Замінити файл.
+  `contentSimCleared` для ручних файлів лишається `undefined` — `simulation_not_passed` не
+  спрацьовує. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M2,
+  `src/lib/weekly-digest/post-upload-qa.ts`, `src/app/admin/(cms)/weekly/actions.ts`)
+- **M1 — weekly story/cover більше не рендерять FLUX (2026-08-15).** Дефолт
+  `WEEKLY_STORY_IMAGE_MODE=prompt_only`: `story_image` без `source_url` і `cover` пишуть
+  `story_prompt_set` (essence + концепти + `prompt-export`) і завершуються
+  `succeeded` + `needs_owner_review`. Гілка `source_url` лишається ingest. `render`
+  повертає старий FLUX + vision loop. `story_image` лишається на GitHub Actions.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін. Картинки **новин** далі на авто-FLUX.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M1,
+  `src/lib/weekly-digest/story-prompt-job.ts`, `src/lib/weekly-digest/generation-worker.ts`,
+  `.env.example`)
+- **P2 — story_prompt_set + Visuals copy/upload (2026-08-15).** Artifact type
+  `story_prompt_set` (текст, не публічний). Visuals: картки концептів Canonical /
+  Midjourney / Negative + слот upload. Worker пише сет у M1.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P2,
+  `supabase/migrations/20260815120000_weekly_story_prompt_set.sql`,
+  `src/components/admin/story-prompt-set-panel.tsx`)
+- **P1 — промпт як продукт (2026-08-15).** `pipeline/prompt-export.ts` видає канонічний
+  промпт (субʼєкт першим) + Midjourney + negative без номерів версій моделей. P2 підключив
+  це до Visuals.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P1,
+  `pipeline/prompt-export.ts`)
+- **B2 — не три копії одного essence (2026-08-15).** Журі більше не добиває кількість
+  фолбеками: 1–2 прийняті лінзи → 1–2 брифи; повний провал → один `fallback_essence`.
+  `sibling_motif_family_reuse` ловить шафи/каруселі в одній майстерні як одну родину.
+  Наступне за планом — P1 (промпт як продукт).
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B2,
+  `pipeline/card-image.ts`)
+- **B1-fix craft-ban literal exception (2026-08-15).** `validateMetaphorPitch` більше не
+  відхиляє pitch за словом зі списку craft-cliché, якщо це слово вже є в новині
+  (`storyContext` / `mechanism` / entities). Голий `terminal` дозволений і коли джерело каже
+  `command line` / `CLI` — інакше story про командний рядок неможливо було описати, усі три
+  лінзи падали в fallback. `terminal window` і `glowing brain` лишаються забороненими навіть
+  на CLI-новині. Наступне за планом — B2 (не добивати кількість трьома однаковими фолбеками).
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B1-fix,
+  `pipeline/card-image.ts`, `experiments/jury-blockers/2026-08-digest-843975a8.md`)
 
 - **Переоцінка виправленим харнесом — перевага V10 не підтвердилась (2026-08-13).** Ті самі
   пікселі, той самий суддя `google/gemini-2.5-flash`, змінені лише правила оцінювання:

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import type { PipelineDb } from './db';
 import { loadProviderRegistry } from './providers/registry';
 import {
   buildPrompt,
@@ -11,6 +12,9 @@ import {
   accentToHex,
   extractWeeklyStoryEntities,
   flattenMetaphorPitch,
+  FALLBACK_MOTIF_CLASS,
+  headNoun,
+  motifFamilyKey,
   parseEditorialEssence,
   parseMetaphorPitches,
   parseWeeklySceneSpec,
@@ -22,7 +26,15 @@ import {
   pitchRenderableBlob,
   type EditorialEssence,
   WEEKLY_PROMPT_POLICY,
+  CARD_ORIGIN_CONTENT_TYPE,
+  CARD_ORIGIN_JPEG_QUALITY,
+  CARD_ORIGIN_REENCODE_MAX,
   DEFAULT_CF_IMAGE_MODEL,
+  cardOriginStoragePath,
+  encodeCardOrigin,
+  pngCardOriginPath,
+  reencodeStoredCardOrigins,
+  selectCardOriginReencodeTargets,
   estimateCloudflareImageCostUsd,
   fallbackIllustrationMotif,
   fallbackScene,
@@ -344,6 +356,264 @@ describe('renderFallbackEditorialIllustration', () => {
   });
 });
 
+describe('encodeCardOrigin', () => {
+  const jpegMagic = Buffer.from([0xff, 0xd8, 0xff]);
+
+  async function photographicLikePng(): Promise<Buffer> {
+    const raw = Buffer.alloc(IMG_W * IMG_H * 3);
+    for (let y = 0; y < IMG_H; y++) {
+      for (let x = 0; x < IMG_W; x++) {
+        const i = (y * IMG_W + x) * 3;
+        raw[i] = 90 + Math.round(Math.sin(x / 18) * 40 + Math.sin(y / 27) * 30);
+        raw[i + 1] = 70 + Math.round(Math.sin((x + y) / 22) * 35);
+        raw[i + 2] = 50 + Math.round(Math.cos(x / 31) * 25 + Math.sin(y / 14) * 20);
+      }
+    }
+    return sharp(raw, { raw: { width: IMG_W, height: IMG_H, channels: 3 } }).png().toBuffer();
+  }
+
+  it('stores news-card origins as JPEG under the item slug, not PNG', () => {
+    expect(cardOriginStoragePath('alibaba-open-sources-qwen3-8')).toBe(
+      'alibaba-open-sources-qwen3-8.jpg',
+    );
+    expect(CARD_ORIGIN_CONTENT_TYPE).toBe('image/jpeg');
+    expect(CARD_ORIGIN_JPEG_QUALITY).toBe(82);
+  });
+
+  it('encodes a 16:9 raster as a JPEG well under the 488 KB PNG origin', async () => {
+    const png = await renderFallbackEditorialIllustration({
+      title: 'Google Cloud Releases Always-On Memory Agent Powered by Gemini Flash-Lite',
+      summary: 'A background agent consolidates memory into SQLite instead of a RAG database.',
+      seedKey: 'weekly-memory-agent',
+    });
+    const jpeg = await encodeCardOrigin(png);
+    expect(jpeg.subarray(0, 3).equals(jpegMagic)).toBe(true);
+    await expect(sharp(jpeg).metadata()).resolves.toMatchObject({
+      format: 'jpeg',
+      width: IMG_W,
+      height: IMG_H,
+    });
+    expect(jpeg.length).toBeLessThan(200_000);
+  });
+
+  it('compresses a photographic-like 16:9 raster well below a PNG of the same pixels', async () => {
+    const png = await photographicLikePng();
+    const jpeg = await encodeCardOrigin(png);
+    expect(jpeg.length).toBeLessThan(200_000);
+    expect(jpeg.length).toBeLessThan(png.length);
+  });
+
+  it('covers off-size rasters (Pollinations 1216×640) onto the 16:9 origin', async () => {
+    const offSize = await sharp({
+      create: {
+        width: 1216,
+        height: 640,
+        channels: 3,
+        background: { r: 18, g: 32, b: 48 },
+      },
+    })
+      .png()
+      .toBuffer();
+    const jpeg = await encodeCardOrigin(offSize);
+    await expect(sharp(jpeg).metadata()).resolves.toMatchObject({
+      format: 'jpeg',
+      width: IMG_W,
+      height: IMG_H,
+    });
+  });
+
+  it('rejects bytes that are not an image', async () => {
+    await expect(encodeCardOrigin(Buffer.from('not-an-image'))).rejects.toThrow();
+  });
+});
+
+describe('selectCardOriginReencodeTargets', () => {
+  const pngUrl =
+    'https://ref.supabase.co/storage/v1/object/public/card-images/foo.png?v=93ed3afb5c';
+  const jpgUrl =
+    'https://ref.supabase.co/storage/v1/object/public/card-images/foo.jpg?v=93ed3afb5c';
+
+  it('reads the PNG filename from a public Storage URL and ignores JPEG', () => {
+    expect(pngCardOriginPath(pngUrl)).toBe('foo.png');
+    expect(pngCardOriginPath(jpgUrl)).toBeNull();
+    expect(pngCardOriginPath('not a url /bar.png')).toBe('bar.png');
+  });
+
+  it('selects PNG origins and skips JPEG, rejected, and empty rows', () => {
+    const { targets, skipped } = selectCardOriginReencodeTargets([
+      { id: '1', slug: 'foo', card_image_url: pngUrl, review_status: 'approved' },
+      { id: '2', slug: 'bar', card_image_url: jpgUrl, review_status: 'approved' },
+      { id: '3', slug: 'baz', card_image_url: pngUrl, review_status: 'rejected' },
+      { id: '4', slug: null, card_image_url: pngUrl, review_status: 'approved' },
+    ]);
+    expect(targets).toEqual([{ id: '1', slug: 'foo', pngPath: 'foo.png' }]);
+    expect(skipped).toBe(3);
+  });
+});
+
+describe('reencodeStoredCardOrigins', () => {
+  /** Matches the real query chain: .select(...).not(...).limit(...). */
+  function notWithLimit(data: unknown[]) {
+    return () => ({ limit: async () => ({ data, error: null }) });
+  }
+
+  it('does not download or upload on dry-run', async () => {
+    const download = vi.fn();
+    const upload = vi.fn();
+    const db = {
+      from: () => ({
+        select: () => ({
+          not: notWithLimit([
+            {
+              id: '1',
+              slug: 'foo',
+              card_image_url:
+                'https://ref.supabase.co/storage/v1/object/public/card-images/foo.png',
+              review_status: 'approved',
+            },
+          ]),
+        }),
+      }),
+      storage: { from: () => ({ download, upload }) },
+    } as unknown as PipelineDb; // test double: item listing only
+
+    const stats = await reencodeStoredCardOrigins(db, { dryRun: true });
+    expect(stats).toEqual({ reencoded: 0, skipped: 0, failed: 0, pending: 1 });
+    expect(download).not.toHaveBeenCalled();
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('uploads a JPEG origin, points the row at it, and keeps the PNG by default (R4.1 / F16)', async () => {
+    const png = await renderFallbackEditorialIllustration({
+      title: 'Google Cloud Releases Always-On Memory Agent Powered by Gemini Flash-Lite',
+      summary: 'A background agent consolidates memory into SQLite instead of a RAG database.',
+      seedKey: 'weekly-memory-agent',
+    });
+    const uploaded: { path: string; type: string }[] = [];
+    const removed: string[][] = [];
+    const updates: { id: string; url: string }[] = [];
+    const db = {
+      from: () => ({
+        select: () => ({
+          not: notWithLimit([
+            {
+              id: 'item-1',
+              slug: 'memory-agent',
+              card_image_url:
+                'https://ref.supabase.co/storage/v1/object/public/card-images/memory-agent.png?v=old',
+              review_status: 'approved',
+            },
+          ]),
+        }),
+        update: (row: { card_image_url: string }) => ({
+          eq: async (_col: string, id: string) => {
+            updates.push({ id, url: row.card_image_url });
+            return { error: null };
+          },
+        }),
+      }),
+      storage: {
+        from: () => ({
+          download: async () => ({ data: new Blob([new Uint8Array(png)]), error: null }),
+          upload: async (path: string, _bytes: Buffer, opts: { contentType: string }) => {
+            uploaded.push({ path, type: opts.contentType });
+            return { error: null };
+          },
+          getPublicUrl: (path: string) => ({
+            data: {
+              publicUrl: `https://ref.supabase.co/storage/v1/object/public/card-images/${path}`,
+            },
+          }),
+          remove: async (paths: string[]) => {
+            removed.push(paths);
+            return { error: null };
+          },
+        }),
+      },
+    } as unknown as PipelineDb; // test double: download/upload/remove + row update
+
+    const stats = await reencodeStoredCardOrigins(db);
+    expect(stats).toEqual({ reencoded: 1, skipped: 0, failed: 0, pending: 0 });
+    expect(uploaded).toEqual([{ path: 'memory-agent.jpg', type: 'image/jpeg' }]);
+    expect(updates).toHaveLength(1);
+    expect(updates[0]?.id).toBe('item-1');
+    expect(updates[0]?.url).toContain('memory-agent.jpg');
+    expect(updates[0]?.url).toContain('?v=');
+    // The old PNG may still be embedded in shared OG cards, cached unfurls,
+    // or indexed URLs -- deleting it on success would 404 all of those.
+    expect(removed).toEqual([]);
+  });
+
+  it('removes the old PNG only when purgeOldPng is explicitly requested', async () => {
+    const png = await renderFallbackEditorialIllustration({
+      title: 'Google Cloud Releases Always-On Memory Agent Powered by Gemini Flash-Lite',
+      summary: 'A background agent consolidates memory into SQLite instead of a RAG database.',
+      seedKey: 'weekly-memory-agent',
+    });
+    const removed: string[][] = [];
+    const db = {
+      from: () => ({
+        select: () => ({
+          not: notWithLimit([
+            {
+              id: 'item-1',
+              slug: 'memory-agent',
+              card_image_url:
+                'https://ref.supabase.co/storage/v1/object/public/card-images/memory-agent.png?v=old',
+              review_status: 'approved',
+            },
+          ]),
+        }),
+        update: () => ({ eq: async () => ({ error: null }) }),
+      }),
+      storage: {
+        from: () => ({
+          download: async () => ({ data: new Blob([new Uint8Array(png)]), error: null }),
+          upload: async () => ({ error: null }),
+          getPublicUrl: (path: string) => ({
+            data: {
+              publicUrl: `https://ref.supabase.co/storage/v1/object/public/card-images/${path}`,
+            },
+          }),
+          remove: async (paths: string[]) => {
+            removed.push(paths);
+            return { error: null };
+          },
+        }),
+      },
+    } as unknown as PipelineDb; // test double: download/upload/remove + row update
+
+    const stats = await reencodeStoredCardOrigins(db, { purgeOldPng: true });
+    expect(stats).toEqual({ reencoded: 1, skipped: 0, failed: 0, pending: 0 });
+    expect(removed).toEqual([['memory-agent.png']]);
+  });
+
+  it('caps a run at CARD_ORIGIN_REENCODE_MAX and defers the rest', async () => {
+    expect(CARD_ORIGIN_REENCODE_MAX).toBe(250);
+    const pngUrl = 'https://ref.supabase.co/storage/v1/object/public/card-images/n.png';
+    const rows = Array.from({ length: 3 }, (_, i) => ({
+      id: String(i),
+      slug: `n-${i}`,
+      card_image_url: pngUrl,
+      review_status: 'approved',
+    }));
+    const download = vi.fn();
+    const db = {
+      from: () => ({
+        select: () => ({
+          not: notWithLimit(rows),
+        }),
+      }),
+      storage: { from: () => ({ download }) },
+    } as unknown as PipelineDb; // test double: dry-run listing + cap
+
+    const stats = await reencodeStoredCardOrigins(db, { dryRun: true, limit: 2 });
+    expect(stats.pending).toBe(2);
+    expect(stats.skipped).toBe(1);
+    expect(download).not.toHaveBeenCalled();
+  });
+});
+
 describe('sceneBrief', () => {
   it('returns the default scene without any network call when there is no context', async () => {
     const { scene, source } = await sceneBrief('', '', { geminiApiKey: 'unused' });
@@ -612,6 +882,96 @@ describe('weekly essence + metaphor gates', () => {
     expect(dualCap).toContain('dual_contrast_digest_cap');
   });
 
+  it('fallback briefs share a motif class so the sibling validator sees them as duplicates', () => {
+    const essence = semanticEssence({
+      essence: 'Server-side tools become usable from the command line.',
+      mustFeel: 'precise connection',
+      forbiddenCliches: [],
+      mechanism: 'A CLI plugin exposes server-side tools through a local command.',
+      readerTest: 'grasp: server-side tools now plug into the command line',
+    });
+    const fallbackPitch = {
+      title: 'Literal context',
+      subject: 'grounded tableau of the command-line plugin',
+      action: 'showing the mechanism at work',
+      setting: 'one continuous workshop',
+      props: ['adapter card'],
+      composition: 'single' as const,
+      whyItFits: 'Fallback lens preserving the approved semantic contract.',
+      motifClass: FALLBACK_MOTIF_CLASS,
+      subjectKind: 'environment' as const,
+    };
+    const duplicate = validateMetaphorPitch(fallbackPitch, essence, ['Claude', 'plugin'], [
+      {
+        motifClass: FALLBACK_MOTIF_CLASS,
+        subjectKind: 'process',
+        sceneSummary: 'exposed process cutaway of the same essence',
+      },
+    ]);
+    expect(duplicate).toContain('sibling_motif_class_reuse');
+  });
+
+  it('two motif classes from the same material and setting count as one family', () => {
+    expect(headNoun('tool cabinet')).toBe('cabinet');
+    expect(headNoun('workshop bench')).toBe('bench');
+    expect(headNoun('tool cabinets')).toBe('cabinet');
+    const cabinet = {
+      title: 'Single Slot Tool Cabinet',
+      subject: 'a single slot tool cabinet',
+      action: 'holding one command flag in the only open bay',
+      setting: 'workshop bench',
+      props: ['one brass flag'],
+      composition: 'single' as const,
+      whyItFits: 'One command flag is the only way into the tools.',
+      motifClass: 'single_slot_cabinet',
+      subjectKind: 'object' as const,
+      storyAnchor: 'one command flag in a single cabinet bay',
+      visibleMechanism: 'the flag seats into the only open cabinet slot',
+      visibleConsequence: 'every other tool stays locked behind the closed bays',
+    };
+    const carousel = {
+      title: 'Single Shaft Tool Carousel',
+      subject: 'a single shaft tool carousel',
+      action: 'turning every tool from one fragile axle',
+      setting: 'workshop bench',
+      props: ['one brass shaft'],
+      composition: 'single' as const,
+      whyItFits: 'One command flag is the only way into the tools.',
+      motifClass: 'single_shaft_carousel',
+      subjectKind: 'object' as const,
+      storyAnchor: 'one command flag turning the carousel shaft',
+      visibleMechanism: 'the shaft drives every tool from a single axle',
+      visibleConsequence: 'the whole rack fails when that one shaft snaps',
+    };
+    expect(motifFamilyKey(cabinet)).toEqual(['cabinet', 'bench', 'object']);
+    expect(motifFamilyKey(carousel)).toEqual(['carousel', 'bench', 'object']);
+    const family = validateMetaphorPitch(
+      carousel,
+      semanticEssence({
+        storyContext: 'A CLI plugin exposes server-side tools through one command flag.',
+        essence: 'One command flag is the only way into the tools.',
+        mustFeel: 'fragility',
+        forbiddenCliches: [],
+        mechanism: 'A single command flag drives every attached tool.',
+        consequence: 'If that flag fails, the whole tool rack is unusable.',
+        visualThesis: 'One shaft or slot holds every tool on a workshop bench.',
+        readerTest: 'grasp: one command flag is a single point of failure',
+      }),
+      ['command flag', 'plugin'],
+      [
+        {
+          motifClass: cabinet.motifClass,
+          subjectKind: cabinet.subjectKind,
+          sceneSummary: `${cabinet.subject} ${cabinet.setting}`,
+          subject: cabinet.subject,
+          setting: cabinet.setting,
+        },
+      ],
+    );
+    expect(family).toContain('sibling_motif_family_reuse');
+    expect(family).not.toContain('sibling_motif_class_reuse');
+  });
+
   it('rejects diamond-vs-grinder when mechanism is an event log', () => {
     const errors = validateMetaphorPitch(
       {
@@ -818,6 +1178,133 @@ describe('weekly essence + metaphor gates', () => {
     expect(validateWeeklySceneSpec(bad, ['Codex', '3D game']).length).toBeGreaterThan(0);
   });
 
+  it('a command-line story may use the word terminal for a physical object', () => {
+    const errors = validateMetaphorPitch(
+      {
+        title: 'Teleprinter adapter',
+        subject: 'a brass adapter card being pushed into a 1970s teleprinter terminal',
+        action: 'the card is half inserted into the expansion slot',
+        setting: 'one continuous workshop bench in window light',
+        props: ['worn enamel housing', 'contact strip'],
+        composition: 'single',
+        whyItFits: 'Server-side tools now connect through the command line.',
+        motifClass: 'adapter_cartridge',
+        subjectKind: 'object',
+        storyAnchor: 'Claude server-side tools arriving as a command-line plugin',
+        visibleMechanism:
+          'a brass adapter card seats into the teleprinter terminal expansion slot',
+        visibleConsequence: 'the old command line can now run the newly connected tools',
+      },
+      semanticEssence({
+        storyContext:
+          "Simon Willison's llm-anthropic plugin brings Claude server-side tools to the command line.",
+        meaning: 'Tools that lived on the server now run from a local CLI.',
+        essence: 'Server-side tools become usable from the command line.',
+        mustFeel: 'precise connection',
+        forbiddenCliches: [],
+        mechanism: 'A CLI plugin exposes server-side tools through a local command.',
+        consequence: 'Developers invoke those tools from the command line without a separate service.',
+        visualThesis:
+          'A brass adapter card connecting into a teleprinter terminal lets the old system run new tools.',
+        readerTest: 'grasp: server-side tools now plug into the command line',
+      }),
+      ['Claude', 'plugin', 'command line'],
+    );
+    expect(errors).not.toContain('banned UI, collage, or stock-metaphor language');
+    expect(errors).toEqual([]);
+  });
+
+  it('still rejects UI collage language when the story is literally about a terminal', () => {
+    const windowShot = validateMetaphorPitch(
+      {
+        title: 'Terminal window',
+        subject: 'a glowing terminal window with npx output',
+        action: 'showing split-screen IDE chrome',
+        setting: 'office desk',
+        props: ['readable UI'],
+        composition: 'single',
+        whyItFits: 'The plugin exposes server-side tools on the command line.',
+        motifClass: 'terminal_window_ui',
+        subjectKind: 'object',
+        storyAnchor: 'Claude server-side tools in a command-line plugin',
+        visibleMechanism: 'npx output fills a terminal window on the desk',
+        visibleConsequence: 'the developer reads the command line from the screen',
+      },
+      semanticEssence({
+        storyContext:
+          "Simon Willison's llm-anthropic plugin brings Claude server-side tools to the command line.",
+        essence: 'Server-side tools become usable from the command line.',
+        mustFeel: 'precise connection',
+        forbiddenCliches: [],
+        mechanism: 'A CLI plugin exposes server-side tools through a local command.',
+        readerTest: 'grasp: server-side tools now plug into the command line',
+      }),
+      ['Claude', 'plugin', 'command line'],
+    );
+    expect(windowShot).toContain('banned UI, collage, or stock-metaphor language');
+
+    const sludgeOnCli = validateMetaphorPitch(
+      {
+        title: 'Glowing brain',
+        subject: 'a glowing brain above a cracked padlock',
+        action: 'floating over comic panel collage',
+        setting: 'void',
+        props: ['neural-network mesh'],
+        composition: 'single',
+        whyItFits: 'The plugin exposes server-side tools on the command line.',
+        motifClass: 'glowing_brain',
+        subjectKind: 'object',
+        storyAnchor: 'Claude server-side tools in a command-line plugin',
+        visibleMechanism: 'a glowing brain unlocks the cracked padlock',
+        visibleConsequence: 'the command line tools spill out as holograms',
+      },
+      semanticEssence({
+        storyContext:
+          "Simon Willison's llm-anthropic plugin brings Claude server-side tools to the command line.",
+        essence: 'Server-side tools become usable from the command line.',
+        mustFeel: 'precise connection',
+        forbiddenCliches: [],
+        mechanism: 'A CLI plugin exposes server-side tools through a local command.',
+        readerTest: 'grasp: server-side tools now plug into the command line',
+      }),
+      ['Claude', 'plugin', 'command line'],
+    );
+    expect(sludgeOnCli).toContain('banned UI, collage, or stock-metaphor language');
+  });
+
+  it('still rejects a literal dashboard screenshot even when the news itself is about a dashboard (R2.2 / F8)', () => {
+    // Unlike `terminal`, `dashboard` has no legitimate non-screen reading --
+    // a news story literally about "the new dashboard" must not unlock a
+    // literal on-screen prop, or the ban stops doing its one job (no baked
+    // gibberish text) on exactly the stories where it matters most.
+    const errors = validateMetaphorPitch(
+      {
+        title: 'New dashboard',
+        subject: 'a glowing analytics dashboard filling the frame',
+        action: 'showing live charts update on screen',
+        setting: 'office monitor',
+        props: ['dashboard widgets'],
+        composition: 'single',
+        whyItFits: 'The company shipped a new dashboard for usage metrics.',
+        motifClass: 'dashboard_screenshot',
+        subjectKind: 'object',
+        storyAnchor: 'the company shipping a new analytics dashboard',
+        visibleMechanism: 'the dashboard renders live usage charts',
+        visibleConsequence: 'the team reads the dashboard to spot regressions',
+      },
+      semanticEssence({
+        storyContext: 'Acme ships a new dashboard for real-time usage metrics.',
+        essence: 'A new dashboard surfaces usage metrics live.',
+        mustFeel: 'clarity',
+        forbiddenCliches: [],
+        mechanism: 'The dashboard aggregates events into live charts.',
+        readerTest: 'grasp: the new dashboard shows usage live',
+      }),
+      ['Acme', 'dashboard', 'usage metrics'],
+    );
+    expect(errors).toContain('banned UI, collage, or stock-metaphor language');
+  });
+
   it('rejects polished but opaque data-flow machinery when it is not literal news context', () => {
     const errors = validateMetaphorPitch(
       {
@@ -980,7 +1467,7 @@ describe('generateWeeklyReportageIllustrations', () => {
     });
   }
 
-  it('keeps an owner direction as concept one and renders two independent alternatives', async () => {
+  it('keeps an owner direction as concept one and does not pad missing lenses with copies', async () => {
     const sentPrompts: string[] = [];
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
@@ -1004,21 +1491,20 @@ describe('generateWeeklyReportageIllustrations', () => {
 
     expect(result?.sceneSource).toBe('owner');
     expect(result?.scene).toContain('chat bubble');
-    expect(result?.variants).toHaveLength(3);
+    expect(result?.variants).toHaveLength(2);
     expect(result?.variants.map((variant) => variant.conceptLens)).toEqual([
       'owner_direction',
       'mechanism',
-      'consequence',
     ]);
-    expect(new Set(result?.variants.map((variant) => variant.scene)).size).toBe(3);
-    expect(new Set(sentPrompts).size).toBe(3);
+    expect(new Set(result?.variants.map((variant) => variant.scene)).size).toBe(2);
+    expect(new Set(sentPrompts).size).toBe(2);
     const kleinCalls = vi
       .mocked(globalThis.fetch)
       .mock.calls.filter((call) => String(call[0]).includes('flux-2-klein-9b'));
-    expect(kleinCalls).toHaveLength(3);
+    expect(kleinCalls).toHaveLength(2);
   });
 
-  it('renders literal context, mechanism, and consequence as separate concepts', async () => {
+  it('emits one fallback concept when the jury cannot plan distinct lenses', async () => {
     const sentPrompts: string[] = [];
     globalThis.fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       if (!String(input).includes('flux-2-klein-9b')) {
@@ -1039,16 +1525,13 @@ describe('generateWeeklyReportageIllustrations', () => {
       { geminiApiKey: '', cloudflareAccountId: 'acct', cloudflareApiToken: 'token' },
     );
 
-    expect(result?.variants.map((variant) => variant.conceptLens)).toEqual([
-      'literal_context',
-      'mechanism',
-      'consequence',
-    ]);
-    expect(new Set(result?.variants.map((variant) => variant.scene)).size).toBe(3);
-    expect(new Set(sentPrompts).size).toBe(3);
+    expect(result?.variants).toHaveLength(1);
+    expect(result?.variants[0]?.conceptLens).toBe('literal_context');
+    expect(result?.variants[0]?.motifClass).toBe(FALLBACK_MOTIF_CLASS);
+    expect(sentPrompts).toHaveLength(1);
   });
 
-  it('renders the three independent concepts concurrently', async () => {
+  it('renders planned concepts concurrently', async () => {
     let active = 0;
     let peak = 0;
     let release!: () => void;
@@ -1063,7 +1546,7 @@ describe('generateWeeklyReportageIllustrations', () => {
       if (!String(input).includes('flux-2-klein-9b')) return new Response('fail', { status: 500 });
       active += 1;
       peak = Math.max(peak, active);
-      if (active === 3) allStarted();
+      if (active === 2) allStarted();
       await gate;
       active -= 1;
       return jsonImageResponse();
@@ -1080,7 +1563,7 @@ describe('generateWeeklyReportageIllustrations', () => {
       { geminiApiKey: 'unused', cloudflareAccountId: 'acct', cloudflareApiToken: 'token' },
     );
     await started;
-    expect(peak).toBe(3);
+    expect(peak).toBe(2);
     release();
     await expect(pending).resolves.toMatchObject({ variants: expect.any(Array) });
   });
@@ -1146,15 +1629,10 @@ describe('generateWeeklyReportageIllustrations', () => {
       { geminiApiKey: '', cloudflareAccountId: 'acct', cloudflareApiToken: 'token' },
     );
 
-    expect(result?.variants.map((variant) => variant.conceptLens)).toEqual([
-      'literal_context',
-      'mechanism',
-      'consequence',
-    ]);
-    expect(result?.variants.every((variant) => variant.sceneSource !== 'critic_repair')).toBe(true);
-    expect(result?.variants.every((variant) => variant.conceptLens !== 'owner_direction')).toBe(
-      true,
-    );
+    expect(result?.variants).toHaveLength(1);
+    expect(result?.variants[0]?.conceptLens).toBe('literal_context');
+    expect(result?.variants[0]?.sceneSource).not.toBe('critic_repair');
+    expect(result?.variants[0]?.conceptLens).not.toBe('owner_direction');
     expect(sentPrompts.every((prompt) => !prompt.includes('Repair requirement:'))).toBe(true);
   });
 
@@ -1355,6 +1833,7 @@ describe('scene-brief registry wiring (Phase 2)', () => {
       {
         headline: 'Muse Code resumes unattended GPU work after crashes',
         summary: 'A replay-exact event log preserves completed steps for a 24-hour run.',
+        practical: 'Budget about 2 hours for the first run.',
       },
       { geminiApiKey: '', registry },
     );
@@ -1371,5 +1850,118 @@ describe('scene-brief registry wiring (Phase 2)', () => {
       'recovered_kiln',
     ]);
     expect(concepts.every((concept) => concept.source === 'stub-jury')).toBe(true);
+    expect(concepts.every((concept) => concept.grammar === 'cinematic_domain_scene')).toBe(true);
+  });
+
+  it('does not emit three briefs built from one essence', async () => {
+    const concepts = await weeklyReportageSceneBriefs(
+      {
+        headline: 'Critical CVE lets attackers breach the server',
+        summary: 'Attackers exploit a flaw in the runtime.',
+      },
+      { geminiApiKey: '', registry: { chainForRole: () => [] } },
+    );
+    expect(concepts).toHaveLength(1);
+    expect(concepts[0]?.source).toBe('fallback');
+    expect(concepts[0]?.motifClass).toBe(FALLBACK_MOTIF_CLASS);
+    expect(concepts[0]?.grammar).toBe('source_led_fallback');
+  });
+
+  it('returns two distinct briefs rather than three near-identical ones', async () => {
+    process.env[FAKE_CLI_ENV_VAR] = 'token';
+    const essenceJson = JSON.stringify({
+      context: 'Muse Code runs unattended kernel work and resumes after crashes.',
+      meaning: 'Long agent work becomes recoverable instead of disposable.',
+      essence: 'A durable checkpoint trail lets unattended work survive interruption.',
+      mechanism: 'A replay-exact event log resumes the agent from its last completed action.',
+      consequence: 'A long GPU optimization run can continue overnight after a crash.',
+      visual_thesis: 'Physical checkpoints restart interrupted work and carry it to completion.',
+      reader_test: 'See interruption, exact restart, and completed overnight work.',
+      must_feel: 'durable progress',
+      forbidden_cliches: ['person at laptop desk'],
+    });
+    const twoMetaphors = JSON.stringify({
+      metaphors: [
+        {
+          lens: 'literal_context',
+          title: 'Night workshop',
+          subject: 'an unattended automaton tending a half-finished precision mold',
+          story_anchor: 'night automaton beside one unfinished metal mold',
+          visible_mechanism: 'breadcrumb pegs restart the same interrupted carving',
+          visible_consequence: 'the mold finishes before the workshop lights return',
+          action: 'resuming the interrupted cut from one fixed peg',
+          setting: 'silent metal workshop before dawn',
+          props: ['checkpoint pegs', 'unfinished mold'],
+          composition: 'single',
+          motif_class: 'night_mold_workshop',
+          subject_kind: 'character',
+          why_it_fits:
+            'The unattended craft resumes at an exact checkpoint instead of restarting.',
+        },
+        {
+          lens: 'mechanism',
+          title: 'Rewinding loom',
+          subject: 'a loom rewinding one snapped thread to the last intact knot',
+          story_anchor: 'one complex woven pattern halted at a snapped thread',
+          visible_mechanism: 'colored knots guide the shuttle back to the exact break',
+          visible_consequence: 'the shuttle resumes weaving without unmaking completed cloth',
+          action: 'restarting from the final intact knot',
+          setting: 'bright textile repair floor',
+          props: ['colored knots', 'single shuttle'],
+          composition: 'single',
+          motif_class: 'checkpoint_loom',
+          subject_kind: 'process',
+          why_it_fits:
+            'The knots preserve completed steps and make an exact resume physically visible.',
+        },
+      ],
+    });
+    const replies = [essenceJson, twoMetaphors, twoMetaphors];
+    let call = 0;
+    const registry = {
+      chainForRole: () => [
+        {
+          entry: { kind: 'cli' as const, id: 'stub-jury' },
+          cli: {
+            id: 'stub-jury',
+            binary: 'stub',
+            authEnvVar: FAKE_CLI_ENV_VAR,
+            buildArgs: () => [],
+            parseEnvelope: (stdout: string) => ({ text: stdout, model: 'stub', costUsd: 0 }),
+            spawnFn: async () => ({
+              stdout: replies[call++] ?? '',
+              stderr: '',
+              exitCode: 0,
+              spawnError: null,
+            }),
+          },
+        },
+      ],
+    };
+
+    const concepts = await weeklyReportageSceneBriefs(
+      {
+        headline: 'Muse Code resumes unattended GPU work after crashes',
+        summary: 'A replay-exact event log preserves completed steps for a 24-hour run.',
+      },
+      { geminiApiKey: '', registry },
+    );
+
+    expect(concepts).toHaveLength(2);
+    expect(concepts.map((concept) => concept.conceptLens)).toEqual([
+      'literal_context',
+      'mechanism',
+    ]);
+    expect(concepts.every((concept) => concept.source === 'stub-jury')).toBe(true);
+    expect(concepts.every((concept) => concept.motifClass !== FALLBACK_MOTIF_CLASS)).toBe(true);
+    // R2.3 / F9: subject/setting must reach the brief result -- this is what
+    // generation-worker.ts now persists on story_prompt_set so the NEXT
+    // story's cross-digest sibling check has a real subject/setting to match
+    // against, instead of falling back to sceneSummary/''.
+    expect(concepts[0]?.subject).toBe(
+      'an unattended automaton tending a half-finished precision mold',
+    );
+    expect(concepts[0]?.setting).toBe('silent metal workshop before dawn');
+    expect(concepts[1]?.subject).toBe('a loom rewinding one snapped thread to the last intact knot');
   });
 });

@@ -16,6 +16,15 @@ import {
 } from './generation-control';
 import type { WeeklyPdfInput } from './pdf';
 import type { WeeklyVisualInput, WeeklyVisualLocale } from './visuals';
+import {
+  COVER_PROMPT_SLOT,
+  produceStoryPrompts,
+  resolveWeeklyStoryImageMode,
+  storyImageJobPath,
+  storyPromptSlot,
+} from './story-prompt-job';
+import { parseStoryPromptSetContent } from './story-prompt-set';
+import type { SiblingMetaphorHint } from '../../../pipeline/card-image';
 import { storageBlob } from '@/lib/storage/binary';
 import { socialContentHash } from '@/lib/social/content-hash';
 import { findBlindCrossPosts } from '@/lib/social/quality';
@@ -100,6 +109,10 @@ function lazyVisuals() {
 let cardImagePromise: Promise<typeof import('../../../pipeline/card-image')> | null = null;
 function lazyCardImage() {
   return (cardImagePromise ??= import('../../../pipeline/card-image'));
+}
+let promptExportPromise: Promise<typeof import('../../../pipeline/prompt-export')> | null = null;
+function lazyPromptExport() {
+  return (promptExportPromise ??= import('../../../pipeline/prompt-export'));
 }
 let linkedinDocumentPromise: Promise<typeof import('./linkedin-document')> | null = null;
 function lazyLinkedinDocument() {
@@ -2297,6 +2310,258 @@ function snapshotImage(value: Json) {
   );
 }
 
+function weeklyCardImageConfig() {
+  return {
+    geminiApiKey: process.env.GEMINI_API_KEY?.trim() ?? '',
+    geminiImageModel: process.env.GEMINI_IMAGE_MODEL?.trim(),
+    geminiModel: process.env.GEMINI_MODEL?.trim(),
+    openRouterApiKey:
+      process.env.OPEN_ROUTER_API_KEY?.trim() ?? process.env.OPENROUTER_API_KEY?.trim(),
+    cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID?.trim(),
+    cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN?.trim(),
+    cloudflareImageModel: process.env.CLOUDFLARE_IMAGE_MODEL?.trim(),
+    db: getSupabaseAdmin(),
+  };
+}
+
+type GenerationContext = Awaited<ReturnType<typeof loadGenerationContext>>;
+type GenerationItem = GenerationContext['items'][number];
+
+/** `story_image` metadata predates M1; still written by the `render`-mode escape hatch. */
+function siblingHintFromStoryImageMetadata(metadata: Json | null): SiblingMetaphorHint[] {
+  const meta = asRecord(metadata);
+  const scene = text(meta.scene) ?? text(meta.metaphor_title) ?? undefined;
+  if (!scene) return [];
+  const compositionRaw = text(meta.composition);
+  const composition: 'single' | 'dual_contrast' | undefined =
+    compositionRaw === 'dual_contrast' || compositionRaw === 'single' ? compositionRaw : undefined;
+  return [
+    {
+      motifClass: text(meta.motif_class) ?? undefined,
+      subjectKind: text(meta.subject_kind) ?? undefined,
+      composition,
+      sceneSummary: scene.slice(0, 180),
+    },
+  ];
+}
+
+/**
+ * In `prompt_only` mode (the default since M1) the worker never writes
+ * `story_image` metadata -- the concept/motif data lives on `story_prompt_set`
+ * instead. Reading only `story_image` here silently emptied cross-story
+ * diversification for every digest (R1.1 / F1).
+ */
+function siblingHintsFromPromptSet(content: Json | null): SiblingMetaphorHint[] {
+  const parsed = parseStoryPromptSetContent(content);
+  if (!parsed) return [];
+  return parsed.prompts.flatMap((prompt) => {
+    const sceneSummary = (prompt.scene || prompt.canonical || prompt.title || '').slice(0, 180);
+    if (!sceneSummary) return [];
+    const composition: 'single' | 'dual_contrast' | undefined =
+      prompt.composition === 'dual_contrast' || prompt.composition === 'single'
+        ? prompt.composition
+        : undefined;
+    return [
+      {
+        motifClass: prompt.motifClass ?? undefined,
+        subjectKind: prompt.subjectKind ?? undefined,
+        composition,
+        sceneSummary,
+        // R2.3 / F9: without these, motifFamilyKey falls back to
+        // `sceneSummary` as the subject and `''` as the setting for every
+        // cross-story sibling, which almost never overlaps a fresh pitch's
+        // own subject/setting head nouns -- family matching silently never
+        // fired across stories. Threaded through from the accepted pitch.
+        subject: prompt.subject ?? undefined,
+        setting: prompt.setting ?? undefined,
+      },
+    ];
+  });
+}
+
+/**
+ * Sibling hint for one other story's artifact -- `story_prompt_set` when the
+ * digest ran prompt_only (the default since M1), `story_image` metadata when
+ * it ran the `render` escape hatch. Exported so R1.1's fix (siblings must not
+ * silently go empty once prompt_only stopped writing story_image metadata)
+ * has direct unit coverage without standing up the full worker/DB context.
+ */
+export function siblingHintsFromStorySiblingArtifact(artifact: {
+  artifact_type: string;
+  content: Json | null;
+  metadata: Json | null;
+}): SiblingMetaphorHint[] {
+  return artifact.artifact_type === 'story_prompt_set'
+    ? siblingHintsFromPromptSet(artifact.content)
+    : siblingHintFromStoryImageMetadata(artifact.metadata);
+}
+
+async function storyImageSceneInput(
+  job: ClaimedGenerationJob,
+  item: GenerationItem,
+  context: GenerationContext,
+) {
+  const contentStudio = asRecord(asRecord(item.source_snapshot).content_studio);
+  const directions = await loadStoryDirections(job.weekly_digest_id);
+  const editorialAngle = item.brief_item_id ? directions.get(item.brief_item_id) : undefined;
+  const researchPack = researchPacksFromContext(context).find(
+    ({ artifact }) => artifact.revision_item_id === item.id,
+  )?.pack;
+  const claimsExcerpt =
+    (
+      researchPack?.claims.map((claim) => claim.text) ??
+      approvedFactsForItem(item).map((claim) => claim.text)
+    )
+      .slice(0, 6)
+      .join(' · ')
+      .slice(0, 800) || undefined;
+  const otherStoryArtifacts = context.artifacts.filter(
+    (artifact) =>
+      (artifact.artifact_type === 'story_image' || artifact.artifact_type === 'story_prompt_set') &&
+      artifact.revision_item_id &&
+      artifact.revision_item_id !== item.id,
+  );
+  const siblingMetaphors = otherStoryArtifacts
+    .flatMap((artifact) => siblingHintsFromStorySiblingArtifact(artifact))
+    .slice(0, 6);
+  const siblingScenes = siblingMetaphors.map((hint) => hint.sceneSummary);
+  return {
+    headline: item.title_en,
+    summary: item.summary_en,
+    bodyExcerpt: item.body_en?.slice(0, 600),
+    editorsView: text(contentStudio.editors_view_en) ?? undefined,
+    editorialAngle,
+    why: item.why_en ?? undefined,
+    practical: item.practical_en ?? undefined,
+    limitation: text(contentStudio.limitation_en) ?? undefined,
+    takeaway: item.takeaway_en ?? undefined,
+    claimsExcerpt,
+    researchContext: researchPack?.context.slice(0, 4).join(' · ').slice(0, 600) || undefined,
+    researchLimitations:
+      [...(researchPack?.limitations ?? []), ...(researchPack?.contradictions ?? [])]
+        .slice(0, 4)
+        .join(' · ')
+        .slice(0, 500) || undefined,
+    researchRisks: researchPack?.risks.slice(0, 4).join(' · ').slice(0, 400) || undefined,
+    avoidSubjects: siblingScenes.length ? siblingScenes : undefined,
+    siblingMetaphors: siblingMetaphors.length ? siblingMetaphors : undefined,
+    // R2.5 / F5: the "Edit direction" form (Visuals) always submits
+    // scene_override on a story_image job regardless of render mode; before
+    // this, prompt_only mode read it into a local and then never used it --
+    // produceStoryPrompts only calls weeklyReportageConcepts (which honors
+    // it) when it's present here.
+    sceneOverride: text(asRecord(job.input).scene_override) ?? undefined,
+    sceneOverrideSource: 'owner' as const,
+  };
+}
+
+async function writeStoryImagePromptSet(
+  job: ClaimedGenerationJob,
+  tracker: GenerationAttemptTracker,
+  item: GenerationItem,
+  context: GenerationContext,
+) {
+  await tracker.event({
+    type: 'stage_started',
+    step: 'prompts',
+    progressCurrent: 20,
+    progressTotal: 100,
+    message: 'Building copy-ready illustration prompts',
+  });
+  const { weeklyReportageSceneBriefs, weeklyReportageConcepts, WEEKLY_PROMPT_POLICY } =
+    await lazyCardImage();
+  const { exportManualImagePrompts } = await lazyPromptExport();
+  const sceneInput = await storyImageSceneInput(job, item, context);
+  const produced = await produceStoryPrompts({
+    headline: item.title_en,
+    sceneBriefs: weeklyReportageSceneBriefs,
+    buildConcepts: weeklyReportageConcepts,
+    exportPrompts: exportManualImagePrompts,
+    sceneInput,
+    cfg: weeklyCardImageConfig(),
+    policy: WEEKLY_PROMPT_POLICY,
+  });
+  const artifactId = await saveGeneratedArtifact({
+    weeklyDigestId: job.weekly_digest_id,
+    revisionId: job.revision_id,
+    revisionItemId: item.id,
+    artifactType: 'story_prompt_set',
+    locale: 'neutral',
+    slotKey: storyPromptSlot(item.id),
+    content: {
+      // JSONB column: ManualImagePrompt[] is a JSON array, not a Json union member.
+      prompts: produced.content.prompts as unknown as Json,
+      policy: produced.content.policy,
+      generated_at: produced.content.generated_at,
+      mapping_gate_issues: produced.content.mapping_gate_issues,
+    },
+    metadata: {
+      source_kind: 'prompt_only',
+      prompt_policy: produced.content.policy,
+    },
+  });
+  return {
+    artifactId,
+    output: {
+      ...produced.output,
+      artifact_type: 'story_prompt_set',
+      slot_key: storyPromptSlot(item.id),
+    },
+  };
+}
+
+async function writeCoverPromptSet(job: ClaimedGenerationJob) {
+  const context = await loadGenerationContext(job);
+  const headline = context.revision.title_en?.trim() || 'Weekly AI Digest';
+  const topTitles = context.items
+    .slice(0, 3)
+    .map((item) => item.title_en)
+    .filter(Boolean)
+    .join(' · ');
+  const { weeklyReportageSceneBriefs, WEEKLY_PROMPT_POLICY } = await lazyCardImage();
+  const { exportManualImagePrompts } = await lazyPromptExport();
+  const produced = await produceStoryPrompts({
+    headline,
+    sceneBriefs: weeklyReportageSceneBriefs,
+    exportPrompts: exportManualImagePrompts,
+    sceneInput: {
+      headline,
+      summary: topTitles || context.revision.intro_en || headline,
+      why: context.revision.intro_en ?? undefined,
+    },
+    cfg: weeklyCardImageConfig(),
+    policy: WEEKLY_PROMPT_POLICY,
+    count: 1,
+  });
+  const artifactId = await saveGeneratedArtifact({
+    weeklyDigestId: job.weekly_digest_id,
+    revisionId: job.revision_id,
+    artifactType: 'story_prompt_set',
+    locale: 'neutral',
+    slotKey: COVER_PROMPT_SLOT,
+    content: {
+      // JSONB column: ManualImagePrompt[] is a JSON array, not a Json union member.
+      prompts: produced.content.prompts as unknown as Json,
+      policy: produced.content.policy,
+      generated_at: produced.content.generated_at,
+      mapping_gate_issues: produced.content.mapping_gate_issues,
+    },
+    metadata: {
+      source_kind: 'prompt_only',
+      prompt_policy: produced.content.policy,
+      cover: true,
+    },
+  });
+  return {
+    artifactId,
+    output: {
+      ...produced.output,
+      artifact_type: 'story_prompt_set',
+      slot_key: COVER_PROMPT_SLOT,
+    },
+  };
+}
+
 async function generatePdf(job: ClaimedGenerationJob) {
   const context = await loadGenerationContext(job);
   const input = asRecord(job.input);
@@ -2494,14 +2759,6 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
   let contentSimMeta: import('@/lib/content-sim').ContentSimArtifactMeta | null = null;
   let needsHumanReview = false;
 
-  await tracker.event({
-    type: 'stage_started',
-    step: 'generate',
-    progressCurrent: 5,
-    progressTotal: 100,
-    message: 'Building the semantic contract, rendering variants and running vision review',
-  });
-
   if (requestedSourceUrl?.startsWith('http')) {
     const response = await fetch(requestedSourceUrl, {
       signal: AbortSignal.timeout(15_000),
@@ -2510,7 +2767,16 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
     source = Buffer.from(await response.arrayBuffer());
     sourceUrl = requestedSourceUrl;
     sourceKind = 'editor_url';
+  } else if (storyImageJobPath(null, resolveWeeklyStoryImageMode()) === 'prompt_only') {
+    return writeStoryImagePromptSet(job, tracker, item, context);
   } else {
+    await tracker.event({
+      type: 'stage_started',
+      step: 'generate',
+      progressCurrent: 5,
+      progressTotal: 100,
+      message: 'Building the semantic contract, rendering variants and running vision review',
+    });
     const { generateWeeklyReportageIllustrations, WEEKLY_PROMPT_POLICY } = await lazyCardImage();
     const { runWeeklyImageSimLoop } = await import('@/lib/content-sim/adapters/weekly-image');
     promptPolicy = WEEKLY_PROMPT_POLICY;
@@ -2976,6 +3242,9 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
 }
 
 async function generateCover(job: ClaimedGenerationJob) {
+  if (resolveWeeklyStoryImageMode() === 'prompt_only') {
+    return writeCoverPromptSet(job);
+  }
   const context = await loadGenerationContext(job);
   const input = asRecord(job.input);
   const localeValue = text(input.locale);

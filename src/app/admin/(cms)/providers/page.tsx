@@ -2,6 +2,7 @@ import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { PROVIDER_ROLES } from '../../../../../pipeline/providers/registry';
+import { latestAuditsByRole } from '../../../../../pipeline/providers/model-rerank';
 import {
   deleteLlmProviderAction,
   storeLlmProviderSecretAction,
@@ -23,6 +24,81 @@ const SECONDARY =
 const DANGER =
   'min-h-11 rounded-xl border border-red-400/30 bg-red-400/8 px-4 text-sm font-bold text-red-200 transition hover:bg-red-400/15';
 
+type RankAuditRow = {
+  applied: boolean;
+  axis: string;
+  model_id: string | null;
+  previous_model_id: string | null;
+  previous_quality_index: number | null;
+  price_per_m: number | null;
+  quality_index: number | null;
+  ranked_at: string;
+  role: string;
+  score: number | null;
+  skip_reason: string | null;
+};
+
+function rankingStatusText(row: RankAuditRow): string {
+  if (row.applied) return 'Applied to the OpenRouter queue';
+  if (row.skip_reason === 'quality_drop') {
+    return 'Not applied: quality dropped — current queue kept';
+  }
+  if (row.skip_reason === 'no_candidate') return 'Not applied: no scored candidate';
+  if (row.skip_reason === 'apply_disabled') {
+    return 'Not applied: OPENROUTER_RERANK_APPLY=off — ranking recorded only';
+  }
+  return 'Recorded (informational — queue is writer-scoped)';
+}
+
+function formatAuditNumber(value: number | null, digits: number): string {
+  if (value === null || !Number.isFinite(value)) return '—';
+  return value.toFixed(digits);
+}
+
+function formatRankedAt(iso: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'UTC',
+  }).format(new Date(iso));
+}
+
+function ModelRankingRow({ role, row }: { role: string; row: RankAuditRow | undefined }) {
+  if (!row) {
+    return (
+      <tr className="border-b border-white/5">
+        <td className="py-2.5 pr-3 font-mono text-xs text-white">{role}</td>
+        <td className="py-2.5 pr-3 text-slate-500" colSpan={6}>
+          No ranking yet
+        </td>
+      </tr>
+    );
+  }
+  return (
+    <tr className="border-b border-white/5 align-top">
+      <td className="py-2.5 pr-3 font-mono text-xs text-white">{role}</td>
+      <td className="py-2.5 pr-3 font-mono text-xs break-all">
+        {row.model_id ?? '—'}
+        {row.skip_reason === 'quality_drop' && row.previous_model_id ? (
+          <span className="mt-1 block text-amber-200/90">
+            was {row.previous_model_id} ({formatAuditNumber(row.previous_quality_index, 1)})
+          </span>
+        ) : null}
+      </td>
+      <td className="py-2.5 pr-3 tabular-nums">{formatAuditNumber(row.score, 2)}</td>
+      <td className="py-2.5 pr-3 tabular-nums">{formatAuditNumber(row.price_per_m, 2)}</td>
+      <td className="py-2.5 pr-3 tabular-nums">
+        {formatAuditNumber(row.quality_index, 1)}
+        <span className="ml-1 text-xs text-slate-500">{row.axis}</span>
+      </td>
+      <td className="py-2.5 pr-3 whitespace-nowrap text-xs text-slate-400">
+        {formatRankedAt(row.ranked_at)}
+      </td>
+      <td className="py-2.5 text-xs text-slate-400">{rankingStatusText(row)}</td>
+    </tr>
+  );
+}
+
 export default async function ProvidersPage({
   searchParams,
 }: {
@@ -35,11 +111,20 @@ export default async function ProvidersPage({
   const admin = getSupabaseAdmin();
   const query = await searchParams;
   const errorMessage = Array.isArray(query.error) ? query.error[0] : query.error;
-  const [{ data: providers }, { data: models }, { data: roleChains }] = await Promise.all([
-    admin.from('llm_providers').select('*').order('id'),
-    admin.from('llm_provider_models').select('*').order('provider_id').order('rank'),
-    admin.from('llm_role_chains').select('*'),
-  ]);
+  const [{ data: providers }, { data: models }, { data: roleChains }, { data: rankAudits }] =
+    await Promise.all([
+      admin.from('llm_providers').select('*').order('id'),
+      admin.from('llm_provider_models').select('*').order('provider_id').order('rank'),
+      admin.from('llm_role_chains').select('*'),
+      admin
+        .from('llm_model_rank_audit')
+        .select(
+          'role, model_id, score, price_per_m, quality_index, axis, ranked_at, applied, skip_reason, previous_model_id, previous_quality_index',
+        )
+        .order('ranked_at', { ascending: false })
+        .limit(200),
+    ]);
+  const latestRankByRole = latestAuditsByRole(rankAudits ?? []);
 
   const modelsByProvider = new Map<string, string[]>();
   for (const model of models ?? []) {
@@ -73,6 +158,35 @@ export default async function ProvidersPage({
         registry, and a saved role chain below overrides the built-in default the moment you save
         it. See wiki/pipeline/llm-providers.md for exactly which call sites are migrated.
       </p>
+
+      <section className="mt-7">
+        <h2 className="text-lg font-bold text-white">Model ranking</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Daily OpenRouter quality-per-dollar job. The shared OpenRouter queue updates only from
+          weekly.master_writer, and only when the new winner is not noticeably weaker than the last
+          applied pick (5 intelligence points). Digest images stay owner-manual.
+        </p>
+        <div className={`${PANEL} mt-3 overflow-x-auto`}>
+          <table className="w-full min-w-[40rem] text-left text-sm text-slate-300">
+            <thead>
+              <tr className="border-b border-white/10 text-xs tracking-wide text-slate-500 uppercase">
+                <th className="py-2 pr-3 font-semibold">Role</th>
+                <th className="py-2 pr-3 font-semibold">Model</th>
+                <th className="py-2 pr-3 font-semibold">Score</th>
+                <th className="py-2 pr-3 font-semibold">$/M</th>
+                <th className="py-2 pr-3 font-semibold">Quality</th>
+                <th className="py-2 pr-3 font-semibold">Date</th>
+                <th className="py-2 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PROVIDER_ROLES.map((role) => (
+                <ModelRankingRow key={role} role={role} row={latestRankByRole.get(role)} />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       <section className="mt-7 grid gap-4">
         <h2 className="text-lg font-bold text-white">Providers</h2>

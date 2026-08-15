@@ -5,8 +5,8 @@ Summary: план і статус переходу від трьох окрем�
 Sources: owner session 2026-08-06/07, дослідження коду (Explore-агенти) + Plan-агент,
 `supabase/migrations/040_social_cms.sql` (Vault secret-патерн), план у
 `C:\Users\Oleksandr\.claude\plans\06-08-2026-12-32-oleksandr-kuzmenko-prancy-gizmo.md`,
-live dry-run `run-daily.ts` 2026-08-07
-Last updated: 2026-08-07
+live dry-run `run-daily.ts` 2026-08-07, daily cover scene role 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
@@ -55,6 +55,55 @@ https://build.nvidia.com/ — Kimi K3, DeepSeek V4, GLM 5.2 через OpenAI-с
 лише статус виконання, щоб не дублювати.
 
 ## Статус
+
+**F3 daily rerank (2026-08-15).** Job `rerank-openrouter-models` раз на добу тягне каталог,
+пише `llm_model_rank_audit` на кожну роль і оновлює `llm_provider_models` для `openrouter`
+ранжуванням `weekly.master_writer` (топ-3 за quality/$ плюс family-fallback хвіст), якщо
+якість не впала більше ніж на 5 пунктів. Live-каталог на кожен LLM-виклик не ходиться:
+збережена черга пропускає fetch. UI — `/admin/providers` секція Model ranking.
+Image-абстракції немає (F4).
+
+Черга обрізається до `OPENROUTER_MAX_MODEL_ATTEMPTS` (дефолт 6) **і в плані, і в реєстрі при
+читанні**. Без цього ранжування давало **197 id** на реальному каталозі (413 моделей), а
+`generateWithOpenRouterChain` обходить чергу цілком на кожному падінні — при порожньому
+`llm_role_chains` (стан прода) цю чергу успадковують усі 13 ролей.
+`llm_provider_models` пишеться і джобою, і вільним textarea в `/admin/providers`, тому стеля
+стоїть на обох кінцях, а не лише в джобі.
+
+Kill-switch `OPENROUTER_RERANK_APPLY=off` пише audit-рядки, але з `applied=false` і
+`skip_reason='apply_disabled'` — рядок вимкненого прогону **не може** стати базою quality-drop
+guard наступної доби. На **першому** прогоні бази немає взагалі (`currentApply = null` →
+`qualityDropBlocked` = `false`), тож apply вмикає власник після кількох діб спостереження, а не
+cron за замовчуванням.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) F3,
+[audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md),
+живий каталог OpenRouter 2026-08-15)
+
+**F5 no pinned generation ids (2026-08-15).** Прод `pipeline/` і `src/` не містять
+`sonnet-5` / `gpt-5` / `gemini-3.x` поза тестами. Черги беруться з каталогу
+(`DEFAULT_MODEL_PRIORITY` — family і `-latest`). Vision-модель A2 не перемикали.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) F5,
+`pipeline/model-version-pin.test.ts`)
+
+**F2 model scoring (2026-08-15).** `pipeline/providers/model-scoring.ts` рахує якість на долар
+з живих `pricing` і `benchmarks.artificial_analysis` (окрема вісь на роль). Floor:
+`weekly.master_writer` / `weekly.master_critic` 40, `daily.summarize` 25. Ланцюжок = топ-3
+за балом, далі family-fallback з `rankOpenRouterModelIds`. Модель без індексу на осі —
+не кандидат (хвіст); нижче floor — взагалі не в ланцюжку. `daily.cover_scene` без floor
+(як P3). Добовий запис у `llm_provider_models` і UI — F3.
+
+Scored-голова підкоряється тому самому `isEligibleOpenRouterModel`, що й family-хвіст: `:batch`
+(відповідає лише через окремий Batch API, 404 на chat completions — спалив шість слотів черги
+2026-08-10) і `:free` (жорсткі per-minute ліміти) не є кандидатами quality/$, хоч би якою
+дешевою була ціна. Без цього на каталозі 2026-08-15 три `:batch`-варіанти стояли в scored-топ-10.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) F2,
+[audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md))
+
+**P3 daily cover (2026-08-15).** Нова роль `daily.cover_scene` у `PROVIDER_ROLES` — один
+короткий виклик на випуск (топ-3 + intro), не `weekly.card_image_scene` і не
+`daily.card_image_scene`. Дефолтний ланцюжок той самий (OpenRouter → Gemini). Без порога
+якості: це не редакційний текст. (source: [weekly-illustration-plan](weekly-illustration-plan.md) P3,
+`pipeline/daily-cover-prompt.ts`)
 
 **Фаза 0 — виконано (2026-08-06).** Прибрано Gemini з дефолтної ротації:
 - Weekly (`src/lib/weekly-digest/editorial-llm.ts`'s `providerOrder()`): дефолт

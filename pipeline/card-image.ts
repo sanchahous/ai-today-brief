@@ -3,8 +3,9 @@
  * a unique editorial illustration that actually fits the story: a tiny text-model
  * call turns the headline + summary into a CONCRETE on-topic scene (no "glowing
  * brain" clichés), which becomes the dominant subject of a light brand-styled
- * prompt accented by the item's category colour. The image is stored in the
- * `card-images` Storage bucket and recorded on `brief_items.card_image_url`.
+ * prompt accented by the item's category colour. The origin is encoded as a
+ * 1280×720 JPEG (`encodeCardOrigin`) in the `card-images` Storage bucket and
+ * recorded on `brief_items.card_image_url`.
  *
  * Generation never blocks the brief and degrades gracefully down a quality ladder:
  *   1. Gemini "Nano Banana Pro" (gemini-3-pro-image) — best context-fit; opt-in
@@ -29,6 +30,7 @@ import {
   type ProviderRegistry,
   type ProviderRole,
 } from './providers/registry';
+import { selectSceneGrammar } from './scene-grammar';
 
 const BUCKET = 'card-images';
 /**
@@ -44,6 +46,118 @@ const FALLBACK_ACCENT = '#5bc9f0';
 /** 16:9 render size; crops cleanly to the 1200×630 OG card and the 92px feed thumb. */
 export const IMG_W = 1280;
 export const IMG_H = 720;
+/**
+ * Stored news-card origin. JPEG (not WebP) so OG crawlers can read the file
+ * without a transform. q82 lands well under the ~488 KB PNG origins that
+ * forced a resize on every view (2026-08-14 Vercel quota incident).
+ */
+export const CARD_ORIGIN_JPEG_QUALITY = 82;
+export const CARD_ORIGIN_CONTENT_TYPE = 'image/jpeg';
+/** Flatten alpha onto the fallback illustration backdrop (`#071019`). */
+const CARD_ORIGIN_FLAT_BG = { r: 7, g: 16, b: 25 };
+
+export function cardOriginStoragePath(slug: string): string {
+  return `${slug}.jpg`;
+}
+
+/** Resize/cover to 16:9, flatten transparency, encode as a compact JPEG origin. */
+export async function encodeCardOrigin(bytes: Buffer): Promise<Buffer> {
+  return sharp(bytes)
+    .rotate()
+    .resize(IMG_W, IMG_H, { fit: 'cover', position: 'centre' })
+    .flatten({ background: CARD_ORIGIN_FLAT_BG })
+    .jpeg({
+      quality: CARD_ORIGIN_JPEG_QUALITY,
+      mozjpeg: true,
+      progressive: true,
+    })
+    .toBuffer();
+}
+
+/** Safety cap so one invocation cannot walk an unbounded item table. */
+export const CARD_ORIGIN_REENCODE_MAX = 250;
+/**
+ * Explicit cap on the listing query itself (R4.1 / F17). Without this,
+ * PostgREST's own implicit row cap (commonly 1000) could silently truncate
+ * `items` below CARD_ORIGIN_REENCODE_MAX runs worth of rows, so `pending`/
+ * `skipped` would under-report how many legacy PNG origins actually remain
+ * -- a "done" backfill could still have thousands of un-migrated rows the
+ * job never saw. Generously above realistic volume (~180 news images/month
+ * -> a full year is ~2-3k rows).
+ */
+export const CARD_ORIGIN_REENCODE_QUERY_LIMIT = 5000;
+
+export type CardOriginReencodeItem = {
+  id: string;
+  slug: string | null;
+  card_image_url: string | null;
+  review_status: string | null;
+};
+
+export type CardOriginReencodeTarget = {
+  id: string;
+  slug: string;
+  pngPath: string;
+};
+
+export type ReencodeCardOriginsResult = {
+  reencoded: number;
+  skipped: number;
+  failed: number;
+  pending: number;
+};
+
+/** Filename in the card-images bucket when the public URL is still a PNG origin. */
+export function pngCardOriginPath(url: string): string | null {
+  let pathname = url;
+  try {
+    pathname = new URL(url).pathname;
+  } catch {
+    const q = url.indexOf('?');
+    if (q >= 0) pathname = url.slice(0, q);
+  }
+  while (pathname.length > 1 && pathname.endsWith('/')) {
+    pathname = pathname.slice(0, -1);
+  }
+  const slash = pathname.lastIndexOf('/');
+  const name = slash >= 0 ? pathname.slice(slash + 1) : pathname;
+  if (name.length <= 4) return null;
+  const ext = name.slice(-4).toLowerCase();
+  if (ext !== '.png') return null;
+  return name;
+}
+
+function cardOriginReencodeTarget(
+  item: CardOriginReencodeItem,
+): CardOriginReencodeTarget | null {
+  if (!item.slug || item.review_status === 'rejected' || !item.card_image_url) return null;
+  const pngPath = pngCardOriginPath(item.card_image_url);
+  if (!pngPath) return null;
+  return { id: item.id, slug: item.slug, pngPath };
+}
+
+export function selectCardOriginReencodeTargets(
+  items: readonly CardOriginReencodeItem[],
+): { targets: CardOriginReencodeTarget[]; skipped: number } {
+  const targets: CardOriginReencodeTarget[] = [];
+  let skipped = 0;
+  for (const item of items) {
+    const target = cardOriginReencodeTarget(item);
+    if (target) targets.push(target);
+    else skipped++;
+  }
+  return { targets, skipped };
+}
+
+function capReencodeBatch(
+  targets: CardOriginReencodeTarget[],
+  limit: number | undefined,
+): { batch: CardOriginReencodeTarget[]; deferred: number } {
+  const cap = Math.min(limit ?? CARD_ORIGIN_REENCODE_MAX, CARD_ORIGIN_REENCODE_MAX);
+  const batch = targets.slice(0, cap);
+  return { batch, deferred: targets.length - batch.length };
+}
+
 /** CF klein Unit Pricing defaults — overridable via env. */
 const DEFAULT_USD_FIRST_MP = 0.015;
 const DEFAULT_USD_NEXT_MP = 0.002;
@@ -674,12 +788,23 @@ export const METAPHOR_LENSES: readonly MetaphorLens[] = [
   'consequence',
 ] as const;
 
+/** How the copy-ready prompt is written. Default keeps today's cinematic art director. */
+export const SCENE_GRAMMARS = [
+  'cinematic_domain_scene',
+  'deterministic_technical_hybrid',
+  'source_led_fallback',
+] as const;
+export type SceneGrammar = (typeof SCENE_GRAMMARS)[number];
+
 /** Sibling story metaphors already committed in this digest (structural diversity). */
 export interface SiblingMetaphorHint {
   motifClass?: string;
   subjectKind?: string;
   composition?: 'single' | 'dual_contrast';
   sceneSummary: string;
+  /** Used by motif-family matching; optional on older sibling rows. */
+  subject?: string;
+  setting?: string;
 }
 
 export interface WeeklyReportageSceneInput {
@@ -770,6 +895,9 @@ export interface WeeklyEditorialFrame {
 /** Token Jaccard threshold for sibling scene echo (0–1). */
 export const SIBLING_SCENE_ECHO_THRESHOLD = 0.45;
 
+/** Shared by every last-resort fallback so the sibling validator sees them as copies. */
+export const FALLBACK_MOTIF_CLASS = 'fallback_essence';
+
 /** Compatibility shape for older tests; prefer MetaphorPitch. */
 export interface WeeklyReportageSceneSpec {
   subject: string;
@@ -779,9 +907,57 @@ export interface WeeklyReportageSceneSpec {
   mustInclude: string[];
 }
 
-/** Hard bans: readable UI, AI sludge stock, comic collage. */
-const WEEKLY_CRAFT_BANNED =
-  /\b(npx\b|terminal(?:\s+window)?|ide\b|vs\s*code|dashboard|taskbar|browser chrome|title bar|readable (?:ui|text|screen|code)|gibberish|glowing brain|cracked padlock|robotic arms?|coin towers?|finger pointing|pointing at (?:the )?screen|neural[-\s]?network mesh|comic panel|collage|split[-\s]?screen)\b/i;
+/**
+ * UI / stock-metaphor clichés. `terminal window` stays banned even on CLI
+ * news — that is the UI shot the original list was written to stop. Bare
+ * `terminal` is the ONE term on this list with a legitimate non-screen
+ * reading (a physical teleprinter/expansion-port terminal), so it alone is
+ * waived when the story itself is about a command line / CLI / terminal
+ * (B1-fix).
+ *
+ * Every other term here (dashboard, IDE, taskbar, browser chrome, readable
+ * UI/text/screen/code, glowing brain, collage, ...) has no such double
+ * meaning — it always names an on-screen UI or a stock-metaphor prop, so a
+ * literal-source exception for them would waive the ban exactly when it
+ * matters most: a news story that is literally about that product (e.g. "the
+ * new dashboard") would unlock a literal screenshot-style prompt, which is
+ * the same baked-gibberish-text channel (`Clodfire`, `PFfort`) B1 diagnosed
+ * in the first place. R2.2 / F8 narrows the literal exception this
+ * function grants back down to that one term — every other pattern here is
+ * an unconditional ban, as it was before B1-fix.
+ */
+const WEEKLY_CRAFT_TERMINAL_WINDOW = /\bterminal\s+window\b/i;
+const WEEKLY_CRAFT_BARE_TERMINAL = /\bterminal\b/i;
+const COMMAND_LINE_STORY = /\b(?:command[-\s]?line|cli|terminal)\b/i;
+const WEEKLY_CRAFT_BANNED_OTHER = [
+  /\bnpx\b/i,
+  /\bide\b/i,
+  /\bvs\s*code\b/i,
+  /\bdashboard\b/i,
+  /\btaskbar\b/i,
+  /\bbrowser chrome\b/i,
+  /\btitle bar\b/i,
+  /\breadable (?:ui|text|screen|code)\b/i,
+  /\bgibberish\b/i,
+  /\bglowing brain\b/i,
+  /\bcracked padlock\b/i,
+  /\brobotic arms?\b/i,
+  /\bcoin towers?\b/i,
+  /\bfinger pointing\b/i,
+  /\bpointing at (?:the )?screen\b/i,
+  /\bneural[-\s]?network mesh\b/i,
+  /\bcomic panel\b/i,
+  /\bcollage\b/i,
+  /\bsplit[-\s]?screen\b/i,
+] as const;
+
+function pitchUsesNonLiteralCraftLanguage(flat: string, literalSource: string): boolean {
+  if (WEEKLY_CRAFT_TERMINAL_WINDOW.test(flat)) return true;
+  if (WEEKLY_CRAFT_BARE_TERMINAL.test(flat) && !COMMAND_LINE_STORY.test(literalSource)) {
+    return true;
+  }
+  return WEEKLY_CRAFT_BANNED_OTHER.some((pattern) => pattern.test(flat));
+}
 
 /** Paper/transcript heaps that klein renders as melted AI sludge. */
 const WEEKLY_SLUDGE_BANNED =
@@ -985,6 +1161,58 @@ function parseMetaphorLens(
 }
 
 /** Significant tokens for sibling scene echo (Jaccard). */
+const HEAD_NOUN_STOP = new Set([
+  'a',
+  'an',
+  'the',
+  'and',
+  'or',
+  'of',
+  'in',
+  'on',
+  'at',
+  'to',
+  'for',
+  'with',
+  'from',
+  'into',
+  'over',
+  'under',
+  'vs',
+  'versus',
+]);
+
+function stripSimplePlural(token: string): string {
+  if (token.length >= 5 && token.endsWith('es')) return token.slice(0, -2);
+  if (token.length >= 4 && token.endsWith('s') && !token.endsWith('ss')) return token.slice(0, -1);
+  return token;
+}
+
+/** Last significant lexeme of a phrase; simple -s/-es plural fold, no stemming. */
+export function headNoun(phrase: string): string {
+  const tokens = phrase
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length >= 3 && !HEAD_NOUN_STOP.has(token));
+  const last = tokens[tokens.length - 1] ?? '';
+  return last ? stripSimplePlural(last) : '';
+}
+
+/** Subject head noun, setting head noun, subjectKind — family if ≥2 positions match. */
+export function motifFamilyKey(
+  pitch: Pick<MetaphorPitch, 'subject' | 'setting' | 'subjectKind'>,
+): [string, string, string] {
+  return [headNoun(pitch.subject), headNoun(pitch.setting), pitch.subjectKind];
+}
+
+function familyKeyOverlap(a: [string, string, string], b: [string, string, string]): number {
+  let matched = 0;
+  if (a[0] && a[0] === b[0]) matched += 1;
+  if (a[1] && a[1] === b[1]) matched += 1;
+  if (a[2] && a[2] === b[2]) matched += 1;
+  return matched;
+}
+
 export function tokenizeSceneForEcho(text: string): Set<string> {
   const stop = new Set([
     'a',
@@ -1344,7 +1572,8 @@ export function validateMetaphorPitch(
   if (!pitch.motifClass || pitch.motifClass.length < 3) {
     errors.push('motif_class missing or too short');
   }
-  if (WEEKLY_CRAFT_BANNED.test(flat)) {
+  const literalSource = [essence.storyContext, essence.mechanism, ...requiredEntities].join(' ');
+  if (pitchUsesNonLiteralCraftLanguage(flat, literalSource)) {
     errors.push('banned UI, collage, or stock-metaphor language');
   }
   if (WEEKLY_SLUDGE_BANNED.test(flat)) {
@@ -1353,7 +1582,6 @@ export function validateMetaphorPitch(
   if (WEEKLY_MOTION_BLUR_BANNED.test(flat)) {
     errors.push('banned high-speed / motion-blur language (causes smeared FLUX artifacts)');
   }
-  const literalSource = [essence.storyContext, essence.mechanism, ...requiredEntities].join(' ');
   if (WEEKLY_OPAQUE_ABSTRACTION.test(flat) && !WEEKLY_OPAQUE_ABSTRACTION.test(literalSource)) {
     errors.push('opaque_abstraction_not_literal_to_story');
   }
@@ -1407,6 +1635,18 @@ export function validateMetaphorPitch(
   const motif = pitch.motifClass.toLowerCase();
   if (siblings.some((s) => s.motifClass && s.motifClass.toLowerCase() === motif)) {
     errors.push('sibling_motif_class_reuse');
+  }
+  const pitchFamily = motifFamilyKey(pitch);
+  for (const sibling of siblings) {
+    const siblingFamily = motifFamilyKey({
+      subject: sibling.subject ?? sibling.sceneSummary,
+      setting: sibling.setting ?? '',
+      subjectKind: parseSubjectKind(sibling.subjectKind),
+    });
+    if (familyKeyOverlap(pitchFamily, siblingFamily) >= 2) {
+      errors.push('sibling_motif_family_reuse');
+      break;
+    }
   }
   const pitchTokens = tokenizeSceneForEcho(pitchRenderableBlob(pitch));
   for (const sibling of siblings) {
@@ -1728,6 +1968,7 @@ export async function extractEditorialEssence(
 
 export interface WeeklyReportageSceneBriefResult extends SceneBriefResult {
   conceptLens: MetaphorLens | 'owner_direction';
+  grammar?: SceneGrammar;
   essence?: string;
   metaphorTitle?: string;
   motifClass?: string;
@@ -1743,17 +1984,35 @@ export interface WeeklyReportageSceneBriefResult extends SceneBriefResult {
   storyAnchor?: string;
   visibleMechanism?: string;
   visibleConsequence?: string;
+  /**
+   * Head phrases for cross-story `motifFamilyKey` matching (R2.3 / F9).
+   * Undefined on fallback briefs -- they already share `FALLBACK_MOTIF_CLASS`
+   * so exact-motif matching catches them without needing a family key.
+   */
+  subject?: string;
+  setting?: string;
 }
 
 function sceneBriefFromPitch(
   pitch: MetaphorPitch,
   essence: EditorialEssence,
   source: string,
+  story: WeeklyReportageSceneInput,
 ): WeeklyReportageSceneBriefResult {
   return {
     scene: flattenMetaphorPitch(pitch, essence),
     source,
     conceptLens: pitch.lens ?? 'literal_context',
+    grammar: selectSceneGrammar({
+      title: story.headline,
+      summary: story.summary,
+      why: story.why,
+      practical: story.practical,
+      takeaway: story.takeaway,
+      source,
+      essence,
+      lens: pitch.lens ?? 'literal_context',
+    }),
     essence: essence.essence,
     metaphorTitle: pitch.title,
     motifClass: pitch.motifClass,
@@ -1769,6 +2028,8 @@ function sceneBriefFromPitch(
     storyAnchor: pitch.storyAnchor,
     visibleMechanism: pitch.visibleMechanism,
     visibleConsequence: pitch.visibleConsequence,
+    subject: pitch.subject,
+    setting: pitch.setting,
   };
 }
 
@@ -1787,6 +2048,7 @@ function fallbackSceneBrief(
     scene: scene.replace(/\s+/g, ' ').slice(0, 680),
     source: 'fallback',
     conceptLens: lens,
+    grammar: 'source_led_fallback',
     essence: essence.essence,
     metaphorTitle:
       lens === 'literal_context'
@@ -1794,7 +2056,7 @@ function fallbackSceneBrief(
         : lens === 'mechanism'
           ? 'Visible mechanism'
           : 'Visible consequence',
-    motifClass: `fallback_${lens}`,
+    motifClass: FALLBACK_MOTIF_CLASS,
     subjectKind: lens === 'mechanism' ? 'process' : 'environment',
     composition: 'single',
     storyContext: essence.storyContext,
@@ -1851,7 +2113,13 @@ export async function weeklyReportageSceneBriefs(
       ? weeklySemanticFallbackScene(essence)
       : weeklyFallbackScene(ctx, entities);
   if (!ctx) {
-    return targetLenses.map((lens) => fallbackSceneBrief(lens, baseFallbackScene, essence));
+    return [
+      fallbackSceneBrief(
+        targetLenses[0] ?? 'literal_context',
+        baseFallbackScene,
+        essence,
+      ),
+    ];
   }
 
   const accepted: Array<{ pitch: MetaphorPitch; source: string }> = [];
@@ -1898,6 +2166,8 @@ export async function weeklyReportageSceneBriefs(
           subjectKind: prior.subjectKind,
           composition: prior.composition,
           sceneSummary: flattenMetaphorPitch(prior, essence),
+          subject: prior.subject,
+          setting: prior.setting,
         }));
         const errors = validateMetaphorPitch(pitch, essence, entities, [
           ...externalSiblings,
@@ -1932,13 +2202,18 @@ export async function weeklyReportageSceneBriefs(
     }
   }
 
-  const briefs = targetLenses.map((lens) => {
-    const match = accepted.find(({ pitch }) => pitch.lens === lens);
-    return match
-      ? sceneBriefFromPitch(match.pitch, essence, match.source)
-      : fallbackSceneBrief(lens, baseFallbackScene, essence);
-  });
-  return briefs.slice(0, count);
+  if (accepted.length > 0) {
+    return accepted
+      .map(({ pitch, source }) => sceneBriefFromPitch(pitch, essence, source, input))
+      .slice(0, count);
+  }
+  return [
+    fallbackSceneBrief(
+      targetLenses[0] ?? 'literal_context',
+      baseFallbackScene,
+      essence,
+    ),
+  ].slice(0, count);
 }
 
 /** Compatibility wrapper for callers that need one scene only. */
@@ -1979,10 +2254,12 @@ export function buildWeeklyPrompt(accent: string, scene: string): string {
   return buildEditorialConceptPrompt(accent, scene);
 }
 
-export interface WeeklyReportageIllustrationInput extends WeeklyReportageSceneInput {
-  accent?: string;
-  /** No job.id here on purpose -- stable across regenerations. */
-  seedBase: string;
+/**
+ * Fields `weeklyReportageConcepts` needs to plan a story's concept list --
+ * no render-only fields (`seedBase`/`accent`/`renderDirective`) required, so
+ * the prompt_only path (R2.5 / F5) can build concepts without a FLUX seed.
+ */
+export interface WeeklyReportageConceptsInput extends WeeklyReportageSceneInput {
   /** Owner-edited scene text is kept as concept one; alternatives remain independent. */
   sceneOverride?: string;
   /** Distinguishes a human scene edit from a critic-authored replacement. */
@@ -1991,10 +2268,16 @@ export interface WeeklyReportageIllustrationInput extends WeeklyReportageSceneIn
   rejectedScenes?: string[];
   /** Batch critique for the next concept jury, not for direct FLUX injection. */
   repairFeedback?: string[];
-  /** Vision-critic instruction applied to the actual next FLUX request. */
-  renderDirective?: string;
   /** Defaults to 3. */
   variantCount?: number;
+}
+
+export interface WeeklyReportageIllustrationInput extends WeeklyReportageConceptsInput {
+  accent?: string;
+  /** No job.id here on purpose -- stable across regenerations. */
+  seedBase: string;
+  /** Vision-critic instruction applied to the actual next FLUX request. */
+  renderDirective?: string;
 }
 
 export interface WeeklyReportageIllustrationResult {
@@ -2042,11 +2325,19 @@ export interface WeeklyReportageGeneratedVariant extends GeneratedImageResult {
   visibleConsequence?: string;
 }
 
-/** Generates one render for each of three independent editorial concepts. */
-export async function generateWeeklyReportageIllustrations(
-  input: WeeklyReportageIllustrationInput,
+/**
+ * Builds a story's concept list -- either the owner's supplied scene kept as
+ * concept one plus independent jury alternatives, or a full jury pass.
+ * Shared by the render path (`generateWeeklyReportageIllustrations`) and the
+ * prompt_only path (`produceStoryPrompts`, R2.5 / F5): before this extraction
+ * an owner-typed "Edit direction" scene only ever reached FLUX -- prompt_only
+ * mode dropped it silently, since it called `weeklyReportageSceneBriefs`
+ * directly and never saw `sceneOverride` at all.
+ */
+export async function weeklyReportageConcepts(
+  input: WeeklyReportageConceptsInput,
   cfg: CardImageConfig,
-): Promise<WeeklyReportageIllustrationResult | null> {
+): Promise<WeeklyReportageSceneBriefResult[]> {
   const suppliedOverride = input.sceneOverride?.trim();
   const override =
     suppliedOverride && input.sceneOverrideSource !== 'critic_repair'
@@ -2059,7 +2350,6 @@ export async function generateWeeklyReportageIllustrations(
       : []),
   ];
   const count = Math.max(1, Math.min(3, input.variantCount ?? 3));
-  let concepts: WeeklyReportageSceneBriefResult[];
   if (override) {
     const scene = cleanSceneText(override);
     const alternatives =
@@ -2091,6 +2381,7 @@ export async function generateWeeklyReportageIllustrations(
       scene,
       source: 'owner',
       conceptLens: 'owner_direction',
+      grammar: 'cinematic_domain_scene',
       essence: (semanticReference?.essence ?? input.headline) || 'story',
       metaphorTitle: 'Owner direction',
       motifClass: 'owner_direction',
@@ -2146,14 +2437,21 @@ export async function generateWeeklyReportageIllustrations(
         errors: ownerErrors,
       });
     }
-    concepts = [ownerConcept, ...alternatives].slice(0, count);
-  } else {
-    concepts = await weeklyReportageSceneBriefs(input, cfg, {
-      count,
-      avoidScenes: rejectedScenes,
-      repairFeedback: input.repairFeedback,
-    });
+    return [ownerConcept, ...alternatives].slice(0, count);
   }
+  return weeklyReportageSceneBriefs(input, cfg, {
+    count,
+    avoidScenes: rejectedScenes,
+    repairFeedback: input.repairFeedback,
+  });
+}
+
+/** Generates one render for each of three independent editorial concepts. */
+export async function generateWeeklyReportageIllustrations(
+  input: WeeklyReportageIllustrationInput,
+  cfg: CardImageConfig,
+): Promise<WeeklyReportageIllustrationResult | null> {
+  const concepts = await weeklyReportageConcepts(input, cfg);
   const negative = negativePrompt();
   const generatedVariants = await Promise.all(
     concepts.map(async (concept, index) => {
@@ -2493,19 +2791,119 @@ async function generatePollinations(
   }
 }
 
-async function uploadCardImage(db: PipelineDb, slug: string, png: Buffer): Promise<string | null> {
-  const path = `${slug}.png`;
+async function uploadCardImage(
+  db: PipelineDb,
+  slug: string,
+  bytes: Buffer,
+): Promise<string | null> {
+  let origin: Buffer;
+  try {
+    origin = await encodeCardOrigin(bytes);
+  } catch (error) {
+    logEvent('warn', 'publish', 'Card image encode failed', {
+      slug,
+      ...serializeErrorDetails(error),
+    });
+    return null;
+  }
+  const path = cardOriginStoragePath(slug);
   const { error } = await db.storage
     .from(BUCKET)
-    .upload(path, png, { contentType: 'image/png', upsert: true });
+    .upload(path, origin, { contentType: CARD_ORIGIN_CONTENT_TYPE, upsert: true });
   if (error) {
     logEvent('warn', 'publish', 'Card image upload failed', { slug, error: error.message });
     return null;
   }
   // Content-hash version query so regenerating the same path busts the
   // image/CDN cache (the public URL is stable; the ?v changes with the bytes).
-  const version = createHash('sha1').update(png).digest('hex').slice(0, 10);
+  const version = createHash('sha1').update(origin).digest('hex').slice(0, 10);
   return `${db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl}?v=${version}`;
+}
+
+async function reencodeOneCardOrigin(
+  db: PipelineDb,
+  target: CardOriginReencodeTarget,
+  purgeOldPng: boolean,
+): Promise<boolean> {
+  const { data, error } = await db.storage.from(BUCKET).download(target.pngPath);
+  if (!data) {
+    logEvent('warn', 'publish', 'Card origin download failed', {
+      slug: target.slug,
+      error: error?.message ?? 'empty',
+    });
+    return false;
+  }
+  const bytes = Buffer.from(await data.arrayBuffer());
+  const url = await uploadCardImage(db, target.slug, bytes);
+  if (!url) return false;
+  const { error: updErr } = await db
+    .from('brief_items')
+    .update({ card_image_url: url })
+    .eq('id', target.id);
+  if (updErr) {
+    logEvent('warn', 'publish', 'Card origin url update failed', {
+      slug: target.slug,
+      error: updErr.message,
+    });
+    return false;
+  }
+  // R4.1 / F16: default is keep-both, not delete-on-success. The old PNG
+  // may already be embedded in shared OG cards, cached by Telegram/LinkedIn
+  // unfurlers, or indexed by Google under its .png URL -- deleting it the
+  // moment the row switches to the new .jpg URL turns every one of those
+  // into a 404 with no way back. Purging is a deliberate, separate,
+  // explicitly-requested step once nothing still points at the PNG.
+  if (!purgeOldPng) return true;
+  const { error: rmErr } = await db.storage.from(BUCKET).remove([target.pngPath]);
+  if (rmErr) {
+    logEvent('warn', 'publish', 'Card origin PNG cleanup failed', {
+      slug: target.slug,
+      error: rmErr.message,
+    });
+  }
+  return true;
+}
+
+/**
+ * Re-encode existing PNG card origins to JPEG without calling an image model.
+ * Idempotent: JPEG (and empty/rejected) URLs are skipped. Does not raise the
+ * news image spend cap and does not regenerate pixels. Keeps the old PNG in
+ * Storage by default -- pass `purgeOldPng: true` once nothing external still
+ * links to it (R4.1 / F16).
+ */
+export async function reencodeStoredCardOrigins(
+  db: PipelineDb,
+  opts: { dryRun?: boolean; limit?: number; purgeOldPng?: boolean } = {},
+): Promise<ReencodeCardOriginsResult> {
+  const { data: items, error } = await db
+    .from('brief_items')
+    .select('id, slug, card_image_url, review_status')
+    .not('card_image_url', 'is', null)
+    .limit(CARD_ORIGIN_REENCODE_QUERY_LIMIT);
+  if (error) throw new Error(`[card-image] load origins failed: ${error.message}`);
+  if ((items?.length ?? 0) >= CARD_ORIGIN_REENCODE_QUERY_LIMIT) {
+    logEvent('warn', 'publish', 'Card origin listing hit its query limit -- counts may undercount', {
+      query_limit: CARD_ORIGIN_REENCODE_QUERY_LIMIT,
+    });
+  }
+
+  const { targets, skipped } = selectCardOriginReencodeTargets(items ?? []);
+  const { batch, deferred } = capReencodeBatch(targets, opts.limit);
+  if (opts.dryRun) {
+    logEvent('info', 'publish', 'Card origin reencode dry-run', {
+      pending: batch.length,
+      skipped: skipped + deferred,
+    });
+    return { reencoded: 0, skipped: skipped + deferred, failed: 0, pending: batch.length };
+  }
+
+  let reencoded = 0;
+  let failed = 0;
+  for (const target of batch) {
+    if (await reencodeOneCardOrigin(db, target, opts.purgeOldPng ?? false)) reencoded++;
+    else failed++;
+  }
+  return { reencoded, skipped: skipped + deferred, failed, pending: deferred };
 }
 
 /** Map any hex accent colour to a prompt-friendly colour word via its hue. */

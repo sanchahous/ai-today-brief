@@ -5,13 +5,41 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/edito
 `src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`, owner content-quality
 audit 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK `claimIds` parser fix 2026-08-10
 (Actions run `31367921173`), quantified length-repair fix + newer-draft banner 2026-08-10,
-Postpone release feature 2026-08-10, experimental Visual Affordance V10 owner review 2026-08-13
-Last updated: 2026-08-13
+Postpone release feature 2026-08-10, experimental Visual Affordance V10 owner review 2026-08-13,
+weekly illustration P3 daily cover prompt 2026-08-15
+Last updated: 2026-08-15
 
+---
 
 `weekly-editorial-v2` replaces the old `impact → recency → daily rank` sort used
 for weekly digests. Its purpose is to produce an explainable, evidence-backed
 shortlist for an editor, not to publish an algorithmic verdict.
+
+> **Scope note (2026-08-15):** Visuals copy-ready prompt cards (`story_prompt_set`), M1
+> `WEEKLY_STORY_IMAGE_MODE=prompt_only`, M2 post-upload QA, M3 preflight copy and B3
+> `N/3 промпти готові` do not change
+> `weekly-editorial-v2` candidates, weights, diversity constraints, approval state or release
+> eligibility. Images remain required for release; only the missing-image hint and Visuals
+> readiness line changed. P3 (daily cover prompt) is the daily pipeline, not this selector.
+> D2 post-upload advice is Visuals copy only — it does not change release eligibility.
+> D3 `human_dignity_risk` is critic/QA copy only — it does not change this selector.
+> E1 owner-feedback is Visuals calibration copy only — it does not change this selector.
+> E2 two-stage critic is the vision loop, not this selector.
+> E3 prompt-promotion readout is Visuals calibration only — it does not change this selector
+> or release eligibility.
+> F3 OpenRouter daily ranking writes `llm_model_rank_audit` / `llm_provider_models` and does
+> not change this selector.
+> G illustration budget is `/admin/costs` ledger split only — it does not change this selector.
+> F5 strips pinned generation ids from production code — it does not change this selector.
+> (source: [weekly-illustration-plan](weekly-illustration-plan.md) P2/M3/B3/P3/D2/D3/E1/E2/E3/F3/G/F5)
+
+> **Scope note (2026-08-15):** the `feat/weekly-illustration-fixes` review-fix branch
+> (siblings-diversification, mapping-gate soft-fail, OpenRouter rerank queue-truncation fix,
+> grammar cap to one concept, craft-ban exception narrowing, owner scene-override plumbing,
+> cross-digest write ownership checks) touches `story_prompt_set` generation and Visuals only —
+> it does not change `weekly-editorial-v2` candidates, weights, diversity constraints, approval
+> state or release eligibility.
+> (source: [audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md))
 
 > **Scope note (2026-08-13):** experimental Visual Affordance V10 evaluates visual explanations
 > for three selected stories only. It does not alter `weekly-editorial-v2` candidates, weights,

@@ -188,9 +188,10 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix → B2 → P1 → P2 → M1 → M2 → B3 → P3 → C → D → E
-A2, F, G — незалежні, можна паралельно
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅ → F3 ✅ → G ✅ → A2 ✅ → F5 ✅
 ```
+
+Дотичний пункт G2 (origin JPEG новинних карток) закрито окремим PR після F5 — не нумерована хвиля.
 
 **B1 виконано** (причина знайдена). B1-fix і B2 йдуть першими, бо від них залежить якість
 промптів — а промпт тепер і є продукт. P1/P2 без них випустять три однакові промпти.
@@ -204,21 +205,25 @@ M (ручний режим) можна робити паралельно з B, �
 
 Виправлено хибне твердження у wiki про те, що продакшн не брав участі в порівнянні.
 
-### A2. Прогнати bake-off критика
+### A2 ✅ Зроблено 2026-08-15 — bake-off критика
 
-Актуальність після 2026-08-15 **знижена, але не нульова**: критик далі працює на новинах і
-стає post-upload QA (розділ M2). Не робити цього першим.
+Критику порівняно на owner-вердиктах v6 (Actions
+[`31879588071`](https://github.com/sanchahous/ai-today-brief/actions/runs/31879588071)).
+Перший диспатч на `main` (`31879216723`) хибний: скрипт читав `story.title`, v6-маніфест має
+`headline`, API не викликався.
 
-- **Передумова знята:** PR #236 змержено в `main` 2026-08-15 (`e689211`) — воркфлоу готовий до
-  запуску.
-- **Дія:** `gh workflow run vision-critic-bakeoff.yml --repo sanchahous/ai-today-brief --ref main`
-- **Що читати:** колонки `Rejected the bad` і **`Kept the good`** разом. Якщо
-  `claude-sonnet-5` дає `Kept the good = 0/1` — він заріже єдину картку, яку власник схвалив,
-  і **не годиться**; лишаємось на `gemini-2.5-flash`.
-- **Не робити:** не перемикати `CONTENT_SIM_VISION_OPENROUTER_MODEL` автоматично. Це рішення
-  власника.
-- **Обмеження, яке треба назвати у звіті:** позитив рівно один (n=1). Тест може дискваліфікувати
-  модель, але не підтвердити.
+| Model | Rejected the bad | Kept the good | Cost |
+|---|---:|---:|---:|
+| `google/gemini-2.5-flash` | 6/6 | 0/1 | $0.0894 |
+| `anthropic/claude-sonnet-5` | 6/6 | 0/1 | $0.7612 |
+| `google/gemini-3.1-pro-preview` | 5/6 | 0/1 | $1.0714 |
+
+Усі три зарубали єдину owner-схвалену картку. За правилом специфікації `claude-sonnet-5`
+з `Kept the good = 0/1` **не годиться**. `gemini-3.1-pro-preview` ще й пропустив reject.
+`CONTENT_SIM_VISION_OPENROUTER_MODEL` **не** перемикали — лишаємось на `google/gemini-2.5-flash`.
+Позитив n=1: тест дискваліфікує, не підтверджує. Картинки дайджесту лишаються ручними.
+(source: `experiments/critic-bakeoff/2026-08-15/`,
+`src/lib/content-sim/bakeoff-manifest.ts`)
 
 ### A3 ✅ Зроблено 2026-08-14 — і результат змінює B
 
@@ -294,79 +299,50 @@ consequence/Developer pressing one TERMINAL button
 **Не рахуй блокери наївним split по комі** — `banned UI, collage, or stock-metaphor language`
 це один рядок із комами всередині, і split роздуває його у три позиції.
 
-### B1-fix. Дати craft-забороні поправку «не буквально про цю новину»
+### B1-fix ✅ Зроблено 2026-08-15 — craft-заборона з поправкою «не буквально про цю новину»
 
-Правильний патерн уже є в цьому ж файлі, рядком нижче (`:1356`):
+`validateMetaphorPitch` більше не валить pitch за `WEEKLY_CRAFT_BANNED`, якщо заборонений
+термін уже є в `storyContext` / `mechanism` / required entities. Голий `terminal`
+додатково дозволений, коли джерело говорить про `command line` / `CLI` — інакше CLI-story
+все одно падала б, бо новини пишуть «command line», а pitch — «terminal expansion port».
+`terminal window` і решта UI-кліше лишаються забороненими навіть на CLI-новині (виняток
+потерміновий). `WEEKLY_SLUDGE_BANNED` не чіпали.
 
-```ts
-const literalSource = [essence.storyContext, essence.mechanism, ...requiredEntities].join(' ');
-if (WEEKLY_OPAQUE_ABSTRACTION.test(flat) && !WEEKLY_OPAQUE_ABSTRACTION.test(literalSource)) {
-  errors.push('opaque_abstraction_not_literal_to_story');
-}
-```
+**Тест:** `a command-line story may use the word terminal for a physical object` — зелений.
+Контроль: CLI-story з `terminal window` / `glowing brain` / collage все одно відхиляється.
 
-`WEEKLY_CRAFT_BANNED` (`:1347`) такої поправки не має. Дати їй ту саму — і **підняти
-обчислення `literalSource` вище**, до цієї перевірки:
+Наступне — **B2** (не добивати кількість трьома однаковими фолбеками).
 
-```ts
-// перенести на початок, до першої заборони
-const literalSource = [essence.storyContext, essence.mechanism, ...requiredEntities].join(' ');
+Історичний патерн (opaque abstraction) скопійовано потерміново, а не як один regex на весь
+grab-bag: інакше CLI-новина з словом `terminal` у контексті відкривала б і `glowing brain`.
+`WEEKLY_SLUDGE_BANNED` не чіпали — story про друк/документообіг може мати право на стос паперу,
+але без даних цього кроку немає.
 
-if (WEEKLY_CRAFT_BANNED.test(flat) && !WEEKLY_CRAFT_BANNED.test(literalSource)) {
-  errors.push('banned UI, collage, or stock-metaphor language');
-}
-```
+**Жива перевірка ще відкрита:** «планування Story 6 дає три лінзи з `openrouter`» — це критерій
+на реальному випуску, не юніт-тест. Юніт-гейт зелений.
 
-Те саме варто розглянути для `WEEKLY_SLUDGE_BANNED` (`:787`) — story про друк/документообіг
-має право на стос паперу, — але це окремий крок і без даних його не роби.
+### B2 ✅ Зроблено 2026-08-15 — не добивати кількість трьома копіями
 
-**Тест:** `a command-line story may use the word terminal for a physical object` — фікстура з
-`essence.storyContext` про command line і pitch «brass adapter card into a teleprinter terminal»
-не відхиляється.
+- Фолбеки мають спільний `motifClass: fallback_essence` (не `fallback_${lens}`).
+- Якщо лінза не отримала pitch, вона **не** додається як перефразування: журі з 1–2
+  прийнятими лінзами повертає 1–2 брифи. Повний провал → один fallback, не три.
+- `motifFamilyKey` + `sibling_motif_family_reuse`: збіг ≥2 з head-noun subject / head-noun
+  setting / `subjectKind`. `workshop bench` → `bench` (остання значуща лексема, як у прозі
+  специфікації).
+- Пункт «фолбек з іншої грамматики» лишається на **C** — грамматики ще немає в продакшн-шляху.
 
-**Готово коли:** планування Story 6 дає три лінзи з `openrouter`, а не `fallback`, і три
-різні родини мотивів.
+**Тести зелені:** `does not emit three briefs built from one essence`,
+`fallback briefs share a motif class so the sibling validator sees them as duplicates`,
+`returns two distinct briefs rather than three near-identical ones`,
+`two motif classes from the same material and setting count as one family`.
 
-### B2. Прибрати тиху деградацію в три копії
+Наступне — **P1** (канонічний промпт + похідні синтаксиси).
 
-**Не починати без B1.** Три речі робляться в будь-якому разі:
+### B3 ✅ Зроблено 2026-08-15 — деградація видима в адмінці
 
-1. **`pipeline/card-image.ts:1797`** — прибрати `motifClass: fallback_${lens}`. Фолбеки мають
-   ділити один `motifClass` (напр. `fallback_essence`), щоб валідатор бачив їх як однакові,
-   якими вони і є.
-2. **`:1939`** — краще **два справді різні** варіанти, ніж три однакові. Якщо лінза не отримала
-   pitch, вона не має додавати перефразування. Повертати менше брифів, а не добивати кількість.
-3. **`:1780-1785`** — якщо фолбек усе-таки потрібен, він має братись **з іншої грамматики**
-   (див. C), а не бути іншим описом того самого `essence`.
-
-Плюс дефект із A3 — **родина мотивів, а не рядок `motifClass`**. Нових полів у контракті не
-треба, `MetaphorPitch` (`:735-754`) уже має все потрібне:
-
-```ts
-// нова функція поруч із tokenizeSceneForEcho (:988)
-export function motifFamilyKey(pitch: MetaphorPitch): [string, string, string] {
-  return [
-    headNoun(pitch.subject),   // останній іменник фрази: "tool cabinet" -> cabinet
-    headNoun(pitch.setting),   // "workshop bench" -> workshop
-    pitch.subjectKind,
-  ];
-}
-```
-
-**Критерій дубліката: збіг ≥2 позицій із трьох.** `Single Slot Tool Cabinet` у майстерні і
-`Single Shaft Tool Carousel` у майстерні збігаються за `setting` і `subjectKind` → одна родина →
-другий відхиляється як `sibling_motif_family_reuse`. `headNoun` — остання значуща лексема без
-стоп-слів, без стемінгу: множина зводиться простим правилом `-s/-es`, глибша морфологія не
-потрібна й не виправдана.
-
-**Тести (`pipeline/card-image.test.ts`):**
-- `does not emit three briefs built from one essence`
-- `fallback briefs share a motif class so the sibling validator sees them as duplicates`
-- `returns two distinct briefs rather than three near-identical ones`
-- `two motif classes from the same material and setting count as one family`
-
-**Готово коли:** на фікстурі, де журі приймає лише одну лінзу, функція повертає **один** бриф,
-а не три; тест на однаковість motifClass проходить; тест на родину мотивів проходить.
+Visuals біля кожної story показує `N/3 промпти готові` і, якщо бракує лінз або журі
+віддало `fallback_essence`, які саме. Cover не в цій хвилі. Вага гейта не змінена.
+(source: `src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/weekly-workspace.tsx`)
 
 ### B3. Зробити деградацію видимою в адмінці
 
@@ -385,7 +361,12 @@ export function motifFamilyKey(pitch: MetaphorPitch): [string, string, string] {
 Досі промпт був внутрішнім артефактом, який ніхто не читав. Тепер це **єдиний вихід системи**
 для дайджестів. Він має бути придатний до копіювання в чужий інструмент без правок.
 
-### P1. Формат: один канонічний промпт + похідні синтаксиси
+### P1 ✅ Зроблено 2026-08-15 — формат: один канонічний промпт + похідні синтаксиси
+
+`pipeline/prompt-export.ts` перекладає `buildEditorialConceptPrompt` у `ManualImagePrompt`:
+субʼєкт першим реченням, Midjourney `--ar 16:9 --style raw --no text`, negative завжди банить
+текст/літери/лого. Грамматика `deterministic_technical_hybrid` пише схему, не фото.
+Номерів версій моделей у виході немає. Наступне — **P2** ✅ (артефакт + UI копіювання).
 
 **Рішення власника:** канонічний natural-language промпт плюс автоматично похідні форми.
 (source: рішення власника 2026-08-15)
@@ -462,6 +443,14 @@ notes:
 **Готово коли:** три концепти story дають три `ManualImagePrompt`, і жоден із них не потребує
 ручного редагування перед вставкою в інструмент.
 
+### P2 ✅ Зроблено 2026-08-15 — де промпти живуть і як їх бачить власник
+
+Артефакт `story_prompt_set` додано в CHECK; input-hash залежить від revision item так само, як
+`story_image`. Visuals показує картки концептів (Canonical / Midjourney / Negative) і слот
+upload в одній картці. Worker пише артефакт у **M1**.
+(source: `supabase/migrations/20260815120000_weekly_story_prompt_set.sql`,
+`src/components/admin/story-prompt-set-panel.tsx`)
+
 ### P2. Де промпти живуть і як їх бачить власник
 
 **Зберігання — новий artifact type `story_prompt_set`.**
@@ -494,6 +483,15 @@ notes:
 **Готово коли:** власник відкриває Visuals, копіює промпт, генерує в себе, перетягує файл — і
 жодного разу не відкриває код чи БД.
 
+### P3 ✅ Зроблено 2026-08-15 — daily: промпт обкладинки випуску
+
+Після publish `fillDailyCoverPrompt` робить один виклик ролі `daily.cover_scene`
+(топ-3 заголовки + intro випуску, не одна новина) → `ManualImagePrompt` →
+`briefs.cover_prompt`. `notifyReview` шле окреме повідомлення в review-чат з
+Canonical / Midjourney / Negative у `<pre>`. Картинку не рендерить.
+(source: `pipeline/daily-cover-prompt.ts`, `pipeline/notify.ts`,
+`supabase/migrations/20260815140000_briefs_cover_prompt.sql`)
+
 ### P3. Daily: промпт обкладинки випуску
 
 Daily-адмінки не існує, тож доставка — тим самим каналом, яким уже йде review.
@@ -523,6 +521,13 @@ Daily-адмінки не існує, тож доставка — тим сам�
 
 ## M. Ручний режим: вимкнути авто-рендер, прийняти файл
 
+### M1 ✅ Зроблено 2026-08-15 — weekly `story_image` більше не рендерить
+
+Дефолт `WEEKLY_STORY_IMAGE_MODE=prompt_only`. Без `source_url` джоба пише `story_prompt_set`
+і не викликає FLUX / vision loop. Cover — один концепт, один промпт. Ingest URL лишився.
+`story_image` лишається на GitHub Actions. (source: `src/lib/weekly-digest/story-prompt-job.ts`,
+`src/lib/weekly-digest/generation-worker.ts`, `.env.example`)
+
 ### M1. Weekly `story_image` більше не рендерить
 
 - **Файл:** `src/lib/weekly-digest/generation-worker.ts`, `generateStoryImage` (`:2429`).
@@ -549,6 +554,13 @@ Daily-адмінки не існує, тож доставка — тим сам�
 **Готово коли:** прогін weekly не робить жодного виклику до Cloudflare/OpenRouter-image, а у
 Visuals зʼявляються промпти.
 
+### M2 ✅ Зроблено 2026-08-15 — post-upload QA попереджає, не блокує
+
+Після ручного upload story/cover `after()` ганяє image-only critic і пише
+`metadata.post_upload_qa`. Preflight `contentSimCleared` не чіпається. Visuals показує
+«QA чисто» або жовтий рядок з Ігнорувати / Замінити файл.
+(source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/app/admin/(cms)/weekly/actions.ts`)
+
 ### M2. Post-upload QA — попереджає, не блокує
 
 **Рішення власника:** завантажене зображення один раз перевіряється, попередження показується,
@@ -572,6 +584,11 @@ Visuals зʼявляються промпти.
 **Готово коли:** після завантаження власник за кілька секунд бачить або «QA чисто», або перелік
 проблем — і в обох випадках може йти далі.
 
+### M3 ✅ Зроблено 2026-08-15 — підказки preflight під новий процес
+
+`story_image.fixMissing` і `cover.fixMissing` ведуть до копіювання промпту й upload, не до
+Regenerate. Вага гейта не змінена. (source: `src/lib/weekly-digest/preflight.ts`)
+
 ### M3. Підказки preflight під новий процес
 
 - **Файл:** `src/lib/weekly-digest/preflight.ts`, `ARTIFACT_GATE_GUIDANCE` (`:331`).
@@ -590,6 +607,25 @@ Visuals зʼявляються промпти.
 Після 2026-08-15 грамматика визначає **як написаний промпт**: сцена, схема чи джерело-орієнтований
 кадр. Рендерера в цьому шарі більше немає.
 
+### C0 ✅ Оцінено 2026-08-15 — без моста `autoClaim`
+
+**Перевірено знову 2026-08-15** на гілці після P3: `grep` `autoClaim` / `visual-auto-claim` по
+`generation-worker.ts` і `card-image.ts` лишається порожнім.
+
+**Рішення:** не будувати міст `EditorialEssence → VisualAutoClaim`. Продакшн ніколи не створює
+`autoClaim`; міст змусив би вигадувати `semantics.explanatoryRole` і `quantitativeFacts`
+регексом або ще одним LLM — та сама робота, плюс фейковий тип у прод-шляху.
+
+**C2 ✅ 2026-08-15:** новий модуль `pipeline/scene-grammar.ts` (без імпорту V10-кластера).
+Вхід — `EditorialEssence` + `title`/`summary` (не practical/takeaway, див. C5.2). Вихід —
+`SceneGrammar`. Портувати лише ті сигнали, що змінюють **промпт** (метрика → схема).
+`visual-affordance-router-v10.ts` лишається експериментальним. C5.2 і C5.3 правити в новому
+модулі, не в V10. `inferRole` (C5.4) для трьох промпт-грамматик не потрібен, поки C2 не доведе
+зворотне. Обсяг: ~200 рядків + названі тести C5.2/C5.3.
+
+(source: grep 2026-08-15; `EditorialEssence` у `pipeline/card-image.ts`;
+`extractVisualAffordanceSignalsV10` у `visual-affordance-router-v10.ts`)
+
 ### C0 ⚠️ Передумова, якої ще немає: `autoClaim` у продакшн-шляху
 
 **Перевірено 2026-08-15:** `grep` по `generation-worker.ts` і `card-image.ts` на
@@ -601,13 +637,15 @@ Visuals зʼявляються промпти.
 продакшн-story такої структури **не існує** — там є `EditorialEssence`
 (`card-image.ts:1100`, `1713`) з іншим контрактом.
 
-**Перед C2 потрібен окремий крок:** або міст `EditorialEssence → VisualAutoClaim`, або
-переписати сигнали під `essence`. **Обсяг цього кроку не оцінений** — його треба оцінити першим
-ділом, коли черга дійде до C, і не планувати C як «портування» до того.
+**Оцінка 2026-08-15 (вище):** міст відхилено; C2 — новий `pipeline/scene-grammar.ts` від essence.
 
-Це єдина частина плану без відповіді на питання «що саме змінити». Решта розділів виконувані як
-є. (source: `grep autoClaim` по `src/lib/weekly-digest/generation-worker.ts` і
-`pipeline/card-image.ts` 2026-08-15 — порожньо)
+### C1 ✅ Зроблено 2026-08-15 — `grammar` поруч із `lens`
+
+`WeeklyReportageSceneBriefResult.grammar`: журі → `cinematic_domain_scene`, fallback →
+`source_led_fallback`. `exportManualImagePrompts` пише кожен бриф своєю грамматикою (схема —
+перелік елементів і стрілок, не фото). Наявні виклики без поля лишаються кінематографічними.
+Роутер метрики — C2 ✅ (`pipeline/scene-grammar.ts`).
+(source: `pipeline/card-image.ts`, `pipeline/prompt-export.ts`)
 
 ### C1. Ввести `grammar` поруч із `lens`
 
@@ -630,6 +668,16 @@ Visuals зʼявляються промпти.
   «Affordance Router **без story-ID hacks**», і саме на цьому реалізація дала покриття 29%.
 - **Виправити при портуванні** — див. C5.
 
+### C2 ✅ Зроблено 2026-08-15 — роутер від essence, без V10
+
+`pipeline/scene-grammar.ts` (без імпорту V10-кластера). Вхід — essence + `title`/`summary`;
+`why` / `practical` / `takeaway` ігноруються (C5.2). Метрика в claim →
+`deterministic_technical_hybrid`. Процесна граматика не є четвертим режимом (C0: лише
+метрика → схема): два+ токени послідовності детектяться, промпт лишається кінематографічним.
+Один `caching` процес не вмикає (C5.3). Регекс `%` виправлено: V10 `\b` після `%` не ловив `82%`.
+Fallback source лишається `source_led_fallback`.
+(source: `pipeline/scene-grammar.ts`, `pipeline/scene-grammar.test.ts`)
+
 ### C3. Підключити mapping gate
 
 `validateVisualPropositionV10` (`visual-affordance-router-v10.ts:468`) — це і є §6 PDF
@@ -641,6 +689,15 @@ Visuals зʼявляються промпти.
 `semanticProps[].id` з `mappings[].visibleElement` — два вільнотекстові поля без спільного
 контракту. Додати `visibleElementId` і зворотну перевірку; порожній `semanticProps: []` не має
 проходити вакуумно.
+
+### C3 ✅ Зроблено 2026-08-15 — mapping gate перед `story_prompt_set`
+
+`pipeline/concept-mapping-gate.ts` (без імпорту V10). Перед `produceStoryPrompts` експортує
+промпт, бриф мусить мати таблицю context/action/outcome з `visibleElementId`. Порожній
+`semanticProps: []` падає (`empty_semantic_props`); звірка йде по id, не по підпису
+`visibleElement`; зворотна перевірка — `unmapped_visible_element`. Бриф без visible outcome
+не потрапляє в сет; якщо всі провалились — джоба падає, порожній сет не пишеться.
+(source: `pipeline/concept-mapping-gate.ts`, `src/lib/weekly-digest/story-prompt-job.ts`)
 
 ### C4 ⛔ Виведено зі scope (2026-08-15)
 
@@ -688,7 +745,8 @@ return (
 
 **Тест:** `an incidental duration in practical does not switch a domain story to the diagram grammar`
 — фікстура з `practical: 'Budget about 2 hours for the first run.'` і без метрики в
-title/summary має лишитись на `cinematic_domain_scene`.
+title/summary має лишитись на `cinematic_domain_scene`. **Зелений 2026-08-15** у
+`pipeline/scene-grammar.test.ts`.
 
 #### C5.3 `requiresTemporalSequence` спрацьовує на одному слові
 
@@ -702,7 +760,8 @@ const hits = metricSourceText(story).match(
 return new Set(hits.map((h) => h.toLowerCase())).size >= 2;
 ```
 
-**Тест:** `a single mention of caching does not select the process grammar`.
+**Тест:** `a single mention of caching does not select the process grammar`. **Зелений 2026-08-15**
+у `pipeline/scene-grammar.test.ts`.
 
 #### C5.4 `inferRole` — `\b` звʼязується лише з крайніми гілками
 
@@ -744,7 +803,16 @@ return new Set(hits.map((h) => h.toLowerCase())).size >= 2;
   `PFfort`; Story 6 — нісенітні підписи на комутаторі. Генератор власника має ту саму слабкість,
   тому вимога переїжджає в промпт, а не зникає.
 
-**Тест:** `every exported negative prompt bans text` (уже в P1).
+**Тест:** `every exported negative prompt bans text` (уже в P1 як
+`negative prompt always bans text, letters and logos`). **Зелений 2026-08-15** у P1;
+QA-попередження `readable_text` — M2.
+
+### D1 ✅ Підтверджено 2026-08-15 — промпт + post-upload QA
+
+Negative завжди містить `no text, no letters, no logos, no watermarks, no UI`; canonical каже,
+що підписи додаються окремим шаром. Після upload `readable_text` показується як попередження,
+не як preflight. SVG-шар зі scope (C4).
+(source: `pipeline/prompt-export.ts`, `src/lib/weekly-digest/post-upload-qa.ts`, P1/M2)
 
 ### D2. Repair на рівні дефекту — тепер порада, не дія
 
@@ -761,12 +829,27 @@ PDF §10, і §2 називає це головним історичним ур�
 
 Для **новин** (авто-гілка) repair-цикл лишається кодом і працює як раніше.
 
+### D2 ✅ Зроблено 2026-08-15 — порада власнику, не авто-дія
+
+`adviceForPostUploadQa` мапить коди критика на чотири поради (впечений текст → inpaint/crop;
+геометрія → той самий промпт; sequence → лише цей кадр; хибна теза → інший концепт). Visuals
+показує `do` / `dont`. `reviewUploadedImage` не пише `repair` / `prompt_patches` і не
+перегенеровує. Вага preflight без змін.
+(source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/components/admin/weekly-workspace.tsx`)
+
 ### D3. Етичний блокер
 
 Story 5: робот тримає малу дитину за голову. У `IMAGE_CRITIC_BLOCKER_CODES`
 (`src/lib/content-sim/vision-critic.ts:10`) немає коду для такого. Додати
 (напр. `human_dignity_risk`) і згадати в промпті критика. Працює в обох гілках — на новинах як
 блокер, на завантаженнях як попередження (M2).
+
+### D3 ✅ Зроблено 2026-08-15 — `human_dignity_risk`
+
+Код у `IMAGE_CRITIC_BLOCKER_CODES` і в обох промптах критика (story-aware + image-only).
+На новинах будь-який blocker валить critique (`passed: false`). На upload — попередження
+«ризик гідності» і порада взяти інший концепт. Вага preflight без змін.
+(source: `src/lib/content-sim/vision-critic.ts`, `src/lib/weekly-digest/post-upload-qa.ts`)
 
 ---
 
@@ -790,6 +873,16 @@ PDF §14.1. В адмінці до кожного **концепту** (не д�
 `experiments/critic-ground-truth/owner-verdicts-v6.json` вручну. Вони мають накопичуватись самі
 і ставати calibration dataset для роутера і для критика.
 
+### E1 ✅ Зроблено 2026-08-15 — owner-feedback contract
+
+У Visuals на кожному концепті: `used | used_with_edits | rejected` + закритий список
+`reasonTags`. Запис іде в `story_prompt_set.content.owner_feedback` і дзеркалиться в
+`metadata.owner_feedback` завантаженого файлу (поруч із `post_upload_qa`). Snapshot
+`canonical` лишається в записі, тож перегенерація промптів не стирає judged prompt.
+Вага preflight без змін. Немає ручного копіювання в `experiments/`.
+(source: `src/lib/weekly-digest/owner-feedback.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
+`src/components/admin/story-prompt-set-panel.tsx`)
+
 ### E2. Двостадійний критик
 
 PDF §8. Спершу image-only — без headline, без scene brief, без labels: буквальні обʼєкти, дії,
@@ -798,6 +891,14 @@ PDF §8. Спершу image-only — без headline, без scene brief, без
 
 **Для post-upload QA (M2) перша стадія обовʼязкова**: критик не має знати, який промпт мав бути
 виконаний — інакше він оцінює намір, а не картинку.
+
+### E2 ✅ Зроблено 2026-08-15 — двостадійний критик
+
+Авто-цикл (`weekly-image` / `daily-image`) спершу ганяє `buildImageOnlyCriticPrompt`
+(без headline). Якщо пікселі не пройшли — story-aware **не** викликається. Інакше другий
+виклик — `buildImageCriticPrompt`. M2 лишається одним image-only проходом. Вага preflight
+без змін. Bake-off (A2 ✅) модель не перемикав.
+(source: `src/lib/content-sim/vision-critic.ts`, `src/lib/content-sim/adapters/weekly-image.ts`)
 
 ### E3. Promotion gate
 
@@ -811,6 +912,17 @@ PDF §15 задавав пороги для автоматичної гілки.
 
 Без цього наступна зміна знову буде «здається, краще». Порогів для **новин** це не стосується —
 там лишається стара рубрика.
+
+### E3 ✅ Зроблено 2026-08-15 — promotion gate якості промптів
+
+Visuals показує digest-рядок `гейт промптів: пройдено` / `N/4` / `чекає вердиктів`.
+Рахунок з `owner_feedback` + `story_prompt_set` + timestamps upload:
+`used` / `used_with_edits` = прийнятно з 1–2 спроби; `labels_carry_claim` або
+`readable_text` на `used` = misleading у прийнятих; час = від `generated_at` до першого
+прийнятого вердикту (або upload); три однакові canonical або три `fallback_essence` = fail.
+**Не** preflight-блокер. Пороги новин (overall ≥ 80) без змін.
+(source: `src/lib/weekly-digest/prompt-promotion-gate.ts`,
+`src/components/admin/weekly-workspace.tsx`)
 
 ---
 
@@ -917,19 +1029,33 @@ scoreModelForRole(model, role):
 - **Результат — ланцюжок, не одна модель.** Реєстр уже працює ланцюжками (`llm_role_chains`);
   брати топ-3 за балом, а не єдиного переможця.
 
-### F3. Оновлення і аудит
+### F2 ✅ Зроблено 2026-08-15 — scoreModelForRole
 
-- **Кадансу «щоразу» не робити.** Каталог — 411 моделей; тягнути його на кожен виклик означає
-  повторити помилку, яку вже фіксили у Фазі 2 реєстру (кожна чернетка окремо била живий
-  каталог). Використати наявний `createRegistryLoader` — один резолв на прогін.
-- **Оновлювати раз на добу** окремим job (`schedule` + `workflow_dispatch`), який перераховує
-  бали й записує в `llm_provider_models`. Знижки живуть днями, не хвилинами.
-- **Записувати рішення.** Кожне переранжування пише рядок: роль → обрана модель → бал → ціна →
-  індекс якості → дата. Без цього неможливо відповісти на питання «чому сьогодні пише інша
-  модель». Показати в `/admin/providers`.
-- **Захист від тихої деградації:** якщо новий переможець має якість помітно нижчу за поточного,
-  не перемикатись автоматично — позначити в адмінці й лишити рішення власнику. Дешевша модель,
-  що псує випуск, коштує дорожче за зекономлені центи.
+`pipeline/providers/model-scoring.ts`: вісь якості від ролі, floor 40 для
+`weekly.master_writer` / `weekly.master_critic` і 25 для `daily.summarize`, ціна =
+зважений prompt/completion × 1e6, бал = quality / price. Немає бенчмарка на осі → не
+кандидат; нижче floor (включно з 14.2 @ $0.01/M) **не** в ланцюжку навіть хвостом.
+`rankModelsForRole` = топ-3 за балом, далі family-fallback `rankOpenRouterModelIds`.
+Добовий job і `/admin/providers` — F3 ✅. Image-абстракції немає (F4).
+(source: `pipeline/providers/model-scoring.ts`)
+
+### F3 ✅ Зроблено 2026-08-15 — добове оновлення і аудит
+
+- Каталог **не** тягнеться на кожен LLM-виклик. `createRegistryLoader` — один резолв на прогін;
+  якщо в `llm_provider_models` уже є черга `openrouter`, live-fetch пропускається.
+- Job `.github/workflows/rerank-openrouter-models.yml` (`04:00 UTC` + `workflow_dispatch`)
+  один раз тягне каталог, рахує бали (`planOpenRouterRerank`) і пише append-only
+  `llm_model_rank_audit` (роль → модель → бал → $/M → індекс → дата). Чергу
+  `llm_provider_models` для `openrouter` оновлює **лише** топ-3 `weekly.master_writer`
+  (найвищий editorial floor; таблиця моделей — provider-scoped, не per-role).
+- Захист від тихої деградації: якщо якість нового переможця нижча за останній
+  **застосований** pick більше ніж на **5** пунктів intelligence, черга не змінюється
+  (`applied=false`, `skip_reason=quality_drop`). Поріг 5 — `(assumption)` зі специфікації
+  «помітно нижча». Власник лишає поточну чергу або править model IDs вручну в
+  `/admin/providers`; наступний job знову не перезапише, поки drop тримається.
+- UI: секція **Model ranking** на `/admin/providers` — latest audit на кожну роль.
+  Картинки дайджесту лишаються ручними (F4 не будується).
+(source: `pipeline/providers/model-rerank.ts`, `pipeline/scripts/rerank-openrouter-models.ts`)
 
 ### F4. Зображення і відео — межа після 2026-08-15
 
@@ -946,19 +1072,28 @@ scoreModelForRole(model, role):
 квартал. **Не будуй абстракцію під це** — після 2026-08-15 вона обслуговувала б одну гілку з
 одним провайдером.
 
-### F5. Готово коли
+### F5 ✅ Зроблено 2026-08-15 — без пінів версії в прод-коді
 
-- для ролей із порогом працює `scoreModelForRole`, і тест доводить, що модель із
-  `intelligence_index` 14.2 і ціною $0.01 **не** обирається для `weekly.master_writer`;
-- у коді немає жодного номера версії моделі:
-  `grep -rE "sonnet-5|gpt-5|gemini-3\.[0-9]" pipeline/ src/` порожній поза тестами й фікстурами;
-- добовий job оновлює `llm_provider_models` і пише аудит-рядок на кожну роль;
-- `/admin/providers` показує обрану модель для кожної ролі з балом і датою;
-- `wiki/pipeline/llm-providers.md` оновлено — там живе опис реєстру.
+`grep -rE "sonnet-5|gpt-5|gemini-3\.[0-9]" pipeline/ src/` порожній поза `*.test.ts`.
+Прод більше не тримає конкретні generation id: коментарі узагальнені, `MODEL_VERSION_TOKEN`
+лише в тесті промптів, trend-entity `gpt` шукає ChatGPT/OpenAI без номера, `entityKeyForTool`
+згортає `gpt-{digit}…` на ключ `gpt`. Тест
+`production pipeline/ and src/ do not pin sonnet-5, gpt-5, or gemini-3.x ids`.
+Вибір моделей лишається з живого каталогу (`DEFAULT_MODEL_PRIORITY` — family/`-latest`).
+`CONTENT_SIM_VISION_OPENROUTER_MODEL` не чіпали. F4 не будується. Картинки дайджесту
+ручні.
+(source: `pipeline/model-version-pin.test.ts`, `src/lib/trend-index.ts`)
 
 ---
 
-## G. Розподіл бюджету після переходу на ручні картинки
+## G ✅ Зроблено 2026-08-15 — розподіл бюджету після переходу на ручні картинки
+
+`/admin/costs` показує три кошики з `generation_cost_events`, не з лімітів політики:
+новини (авто) · weekly image API (очікується $0 у `prompt_only`) · промпти+QA.
+Master/social/video LLM у кошики не входять. Daily cover prompt і post-upload QA
+пишуться в ledger. `CONTENT_SIM_MAX_IMAGE_SPEND_USD` лишається 0.2 і жорстко
+затискається — weekly його не піднімає. Картинки дайджесту лишаються ручними.
+(source: `src/lib/generation-costs.ts`, рішення власника 2026-08-15)
 
 Розділ [F](#f-динамічний-вибір-моделі-за-ціною-і-якістю) вирішує *як обирати модель*; цей —
 *куди взагалі вкладати гроші*. Рішення 2026-08-15 переносить weekly-зображення з рахунка API на
@@ -995,10 +1130,10 @@ scoreModelForRole(model, role):
 Новини показуються у слоті 92 px у списку — якість топової моделі там ніхто не побачить.
 Цільова автоматична витрата на зображення: **$1.73–2.70/міс.**
 
-**Дотичний відкритий пункт новинної гілки:** origin-файли карток важать ~488 КБ PNG, і це
-компенсується ресайзом на кожному показі (`src/lib/image-loader.ts` через Supabase transform).
-Правильніше зменшувати їх у `pipeline/card-image.ts` при генерації. Деталі —
-[ops/vercel-image-quota](../ops/vercel-image-quota.md).
+**Дотичний пункт новинної гілки (закрито 2026-08-15):** origin карток кодується в
+`encodeCardOrigin` як JPEG 1280×720 q82 (`${slug}.jpg`) перед upload. Історичні PNG —
+`npx tsx scripts/backfill-card-images.ts --reencode-png` (без виклику моделі). Модель новин
+не змінювали. Деталі — [ops/vercel-image-quota](../ops/vercel-image-quota.md).
 
 **Що скасовується рішенням 2026-08-15:**
 
@@ -1106,19 +1241,33 @@ npm run pr:check
 
 | Хвиля | Як переконатись |
 |---|---|
-| A2 | звіт bake-off містить `Kept the good`; рішення про модель **не** застосоване автоматично |
+| A2 | ✅ звіт містить `Kept the good`; усі моделі 0/1 ship; `CONTENT_SIM_VISION_OPENROUTER_MODEL` не змінений |
 | B1 | `experiments/jury-blockers/2026-08-digest-843975a8.md` із реальним розподілом блокерів |
-| B1-fix | тест `a command-line story may use the word terminal for a physical object` зелений; планування story про CLI не падає у fallback |
-| B2 | на фікстурі з однією прийнятою лінзою повертається один бриф, не три; тест на родину мотивів зелений |
-| B3 | в адмінці видно `N/3 промпти готові` |
-| P1 | три `ManualImagePrompt` на story; жоден не потребує ручного редагування; negative завжди банить текст |
-| P2 | у Visuals є три кнопки копіювання і слот upload в одній картці; артефакт `story_prompt_set` пишеться |
-| P3 | після публікації daily в review-чаті лежить промпт обкладинки; `briefs.cover_prompt` заповнена |
-| M1 | прогін weekly не робить жодного image-виклику; `WEEKLY_STORY_IMAGE_MODE=render` повертає стару поведінку |
-| M2 | провальний QA **не** додає preflight-блокер; результат видно в картці story |
-| M3 | блокер `artifact_missing` веде до промпту, а не до кнопки Regenerate |
+| B1-fix | тест `a command-line story may use the word terminal for a physical object` зелений; контроль UI-кліше на CLI-story теж зелений; живе планування Story 6 ще не прогнано |
+| B2 | на фікстурі з однією прийнятою лінзою повертається один бриф, не три; чотири названі тести зелені |
+| B3 | ✅ в адмінці видно `N/3 промпти готові`; тест `shows N/3 промпти готові when all three seats are present`
+| P1 | три `ManualImagePrompt` на story; negative завжди банить текст; тести `pipeline/prompt-export.test.ts` зелені |
+| P2 | ✅ схема приймає `story_prompt_set`; Visuals має кнопки копіювання + upload в одній картці; worker write — M1 ✅ |
+| P3 | ✅ після публікації daily в review-чаті лежить промпт обкладинки; `briefs.cover_prompt` заповнена; тест `daily cover prompt is built from the edition top stories, not from a single item` |
+| M1 | ✅ `prompt_only` пише `story_prompt_set` і не кличе image provider; `source_url` лишається ingest; `render` — відкат |
+| M2 | ✅ провальний QA **не** додає preflight-блокер; рядок у картці story |
+| M3 | ✅ блокер `artifact_missing` веде до промпту, а не до кнопки Regenerate |
+| C0 | ✅ рішення: без моста `autoClaim`; C2 — новий `pipeline/scene-grammar.ts` від `EditorialEssence` |
+| C1 | ✅ журі ставить `cinematic_domain_scene`, fallback — `source_led_fallback`; export читає `brief.grammar` |
+| C2 | ✅ метрика в title/summary/essence → схема; duration у practical не перемикає; один `caching` не є process grammar |
+| C3 | ✅ `empty semanticProps do not vacuously pass`; id ≠ label; концепт без visible outcome не в `story_prompt_set` |
+| D1 | ✅ negative банить текст (P1); `readable_text` — попередження після upload (M2) |
+| D2 | ✅ `baked text QA advises inpaint not a full regenerate`; Visuals показує do/dont; без auto-repair |
+| D3 | ✅ `fails on human_dignity_risk even with a high score`; upload попереджає «ризик гідності» |
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |
-| E1 | вердикт власника з адмінки потрапляє в calibration dataset без ручного перенесення |
+| E1 | ✅ `owner verdict from admin lands on the prompt set and uploaded image metadata` |
+| E2 | ✅ `two-stage critique fails when image-only flags readable_text even if story-aware would pass`; M2 лишається image-only |
+| E3 | ✅ `promotion gate passes when 60% of concepts are acceptable on the first or second owner attempt`; `prompt promotion gate fails on misleading accepted concepts without blocking release preflight` |
+| F2 | ✅ `a model with intelligence_index 14.2 at $0.01 is not chosen for weekly.master_writer` |
+| F3 | ✅ `does not apply a cheaper winner when quality drops below the current pick`; `writes an audit row per role with score price and quality` |
+| G | ✅ `illustration budget uses ledger events not policy spend caps`; `does not treat weekly master LLM as illustration API spend`; cap новин лишається 0.2 |
+| F5 | ✅ `production pipeline/ and src/ do not pin sonnet-5, gpt-5, or gemini-3.x ids` |
+| G2 origin | ✅ JPEG magic + 1280×720 + size < 200 KB; path `${slug}.jpg`; `--reencode-png` без моделі |
 
 Після кожної хвилі — `wiki/log.md` (append-only, нові записи **зверху**) + `wiki/index.md`.
 Кожна хвиля — окремий PR, `pr:check` перед push, ніколи не в `main` напряму.

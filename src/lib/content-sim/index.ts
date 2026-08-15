@@ -30,10 +30,14 @@ export {
 export { deterministicImageCritique, type DeterministicImageInput } from './deterministic-image';
 export {
   buildImageCriticPrompt,
+  buildImageOnlyCriticPrompt,
   extractJsonObject,
   parseImageCriticResponse,
   clampOverallByNewsLegibility,
   newsLegibilityThreshold,
   IMAGE_CRITIC_BLOCKER_CODES,
+  IMAGE_ONLY_CRITIC_BLOCKER_CODES,
   NEWS_LEGIBILITY_MIN,
+  mergeTwoStageCritiques,
+  shouldRunStoryAwareStage,
 } from './vision-critic';

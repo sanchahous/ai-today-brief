@@ -6,6 +6,503 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — Пре-мерж перевірка самих фіксів: три з них були дефектні
+
+**Джерело:** прод-Supabase `mdiqfatpqczwqghwttpm` (grants, тригери, `list_migrations`), живий
+каталог OpenRouter 2026-08-15, `gh pr checks` по всіх 25 PR стека, локальний `npm run pr:check`.
+
+**Змінено:** [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md)
+(розділ «Пре-мерж перевірка самих фіксів»), [now](now.md).
+
+**Коригує запис нижче** — не спростовує його, а додає: фікси R1–R4 перевірено не лише тестами,
+а проти живих систем, і три виявились такими, що не працюють.
+
+**Код:** (1) `20260815180000` переписано — `revoke select (col)` є no-op проти табличного
+granta, тепер `revoke select` + колонковий `grant` на 12 публічних колонок плюс self-verifying
+`do $$` блок усередині міграції; (2) чергу OpenRouter обрізано до `OPENROUTER_MAX_MODEL_ATTEMPTS`
+у плані rerank і захисно в реєстрі (на живому каталозі 197 → 6); (3) `isEligibleOpenRouterModel`
+експортовано й застосовано в `scoreModelForRole` — `:batch`/`:free` більше не кандидати
+quality/$; (4) `applyEnabled` прокинуто в `planOpenRouterRerank` + новий
+`skip_reason='apply_disabled'`, щоб kill-switch не писав фантомний `applied=true` як базу
+quality-drop guard наступного дня.
+
+**Тест:** 106 тестів у `pipeline/providers/` + `openrouter-models` зелені (нових — 7); повний
+`npm run pr:check` прогнано наскрізь із відсіченим exit code. Обидві правки БД перевірено
+дров-раном на прод-Postgres у транзакції з відкатом — прод не змінювався.
+
+**Не зроблено:** `daily.auto_publish_judge` за quality/$ обирає intelligence 37.8 при порозі 35 —
+роль audit-only, застосовується лише ранжування `weekly.master_writer`; на першому прогоні
+guard-а немає за побудовою (`currentApply = null`), тому apply вмикає власник вручну після
+спостереження, а не cron за замовчуванням.
+
+## 2026-08-15 — Review 24 PR (#241–#264) і виправлення на `feat/weekly-illustration-fixes`
+
+**Джерело:** [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md) — повний список.
+
+**Змінено:** [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md)
+(нова), [index](index.md), [now](now.md), [marketing/card-images](marketing/card-images.md),
+[overview](overview.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md), [open-questions](open-questions.md).
+
+**Код:** 4 блокери (крос-story diversification мертва після M1; mapping gate кидав exception
+замість «0/3»; daily rerank обрізав спільну чергу OpenRouter до 3 моделей для всіх ролей;
+`QUALITY_FLOOR` без порога для 10 з 13 ролей), 8 якість (грамматика діаграми на всі 3 концепти
+замість одного; B1-fix винятковував увесь UI-список, не лише `terminal`; motif-family matching
+не працював крос-story; `prompt-export.ts` мовчки деградує при дрейфі формату + різав фразу
+посеред слова; owner scene override ігнорувався в prompt_only), 4 безпека/цілісність
+(cross-digest запис в owner-feedback/QA діях; read-modify-write без захисту від гонки;
+`briefs.cover_prompt` читається anon; workflow без `permissions:`), 6 операційних (видалення
+старого PNG на reencode; SELECT без `.limit()`; QA без retry; строге порівняння режиму env).
+
+**Тест:** живий `npm run pr:check` — 1389/1389 тестів, typecheck/lint/e2e:check чисті,
+wiki:check закрито цим самим комітом.
+
+**Не зроблено (окремі, нижчий пріоритет):** агрегація owner_feedback у calibration dataset,
+e2e для Visuals prompt-карток (немає авторизованого Playwright-сьюту на `/admin/weekly`),
+поріг «дистинктності» для <2 промптів.
+
+## 2026-08-15 — reencode історичних PNG карток без FLUX
+
+**Джерело:** [ops/vercel-image-quota](ops/vercel-image-quota.md);
+[marketing/card-images](marketing/card-images.md).
+
+**Змінено:** [marketing/card-images](marketing/card-images.md),
+[ops/vercel-image-quota](ops/vercel-image-quota.md), [overview](overview.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[now](now.md), [index](index.md).
+
+**Код:** `reencodeStoredCardOrigins` — download PNG → `encodeCardOrigin` → `${slug}.jpg` →
+прибрати PNG. `--reencode-png` / `--dry-run`. Немає виклику моделі, `--force` не чіпали.
+`WEEKLY_CONTENT_STUDIO_V2=off` без змін. Живий прогін по прод-бакету в цій хвилі не запускали.
+
+**Тест:** `uploads a JPEG origin, points the row at it, and removes the PNG`.
+
+**Не зроблено в цій хвилі:** live `--reencode-png` на проді; квота Supabase transform
+`(needs verification)`; F4.
+
+## 2026-08-15 — origin JPEG новинних карток (G2 follow-up)
+
+**Джерело:** [ops/vercel-image-quota](ops/vercel-image-quota.md);
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G2.
+
+**Змінено:** [ops/vercel-image-quota](ops/vercel-image-quota.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[now](now.md), [index](index.md).
+
+**Код:** `encodeCardOrigin` перед upload — 1280×720 JPEG q82, `${slug}.jpg`.
+Модель новин не змінювали. Немає автогенерації картинок дайджесту. F4 не будується.
+`WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+
+**Тест:** `encodes a 16:9 raster as a JPEG well under the 488 KB PNG origin`.
+
+**Не зроблено в цій хвилі:** backfill історичних PNG; квота Supabase transform
+`(needs verification)`; F4.
+
+## 2026-08-15 — F5: без пінів версії моделі в прод-коді
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F5.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/llm-providers](pipeline/llm-providers.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[now](now.md), [index](index.md).
+
+**Код:** прод `pipeline/` / `src/` без `sonnet-5` / `gpt-5` / `gemini-3.x` поза тестами.
+Trend `gpt` без номера покоління. Немає image-абстракції (F4). Vision-модель не чіпали.
+
+**Тест:** `production pipeline/ and src/ do not pin sonnet-5, gpt-5, or gemini-3.x ids`.
+
+**Не зроблено в цій хвилі:** F4, стискання origin PNG
+([ops/vercel-image-quota](ops/vercel-image-quota.md)).
+
+## 2026-08-15 — A2: bake-off vision-критика
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) A2;
+Actions [`31879588071`](https://github.com/sanchahous/ai-today-brief/actions/runs/31879588071).
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/content-sim](pipeline/content-sim.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-sandbox](ops/weekly-sandbox.md), [marketing/card-images](marketing/card-images.md),
+[now](now.md), [index](index.md).
+
+**Код:** харнес читає `headline` з visual-compiler маніфесту (`bakeoff-manifest.ts`).
+`CONTENT_SIM_VISION_OPENROUTER_MODEL` не змінений — лишаємось на `google/gemini-2.5-flash`.
+Немає автогенерації картинок дайджесту.
+
+**Тест:** `uses top-level headline when story is missing`.
+
+**Звіт:** `experiments/critic-bakeoff/2026-08-15/` — усі три моделі `Kept the good = 0/1`;
+`claude-sonnet-5` unfit; позитив n=1.
+
+**Не зроблено в цій хвилі:** F5 grep номерів версій, стискання origin PNG
+([ops/vercel-image-quota](ops/vercel-image-quota.md)).
+
+## 2026-08-15 — G: бюджет ілюстрацій з ledger
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/weekly-digest](pipeline/weekly-digest.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md), [overview](overview.md),
+[open-questions](open-questions.md), [now](now.md), [index](index.md).
+
+**Код:** `illustrationBudgetFromLedger` + секція Illustration budget на `/admin/costs`.
+Daily cover prompt і post-upload QA пишуться в `generation_cost_events`. Cap 0.2 не піднято.
+Немає автогенерації картинок дайджесту і image-абстракції (F4).
+
+**Тест:** `illustration budget uses ledger events not policy spend caps`;
+`does not treat weekly master LLM as illustration API spend`.
+
+**Не зроблено в цій хвилі:** A2, F5 grep номерів версій, стискання origin PNG
+([ops/vercel-image-quota](ops/vercel-image-quota.md)).
+
+## 2026-08-15 — F3: добовий OpenRouter rerank + аудит
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F3.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/llm-providers](pipeline/llm-providers.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md), [index](index.md).
+
+**Код:** `llm_model_rank_audit` + `planOpenRouterRerank` + daily workflow. Черга `openrouter`
+оновлюється топ-3 writer, якщо якість не впала >5. Адмінка показує latest audit на роль.
+Немає image-абстракції (F4).
+
+**Тест:** `does not apply a cheaper winner when quality drops below the current pick`;
+`writes an audit row per role with score price and quality`.
+
+**Не зроблено в цій хвилі:** F4, F5 grep номерів версій, G, A2.
+
+## 2026-08-15 — F2: scoreModelForRole (якість / ціна)
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F2.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/llm-providers](pipeline/llm-providers.md), [now](now.md), [index](index.md).
+
+**Код:** `pipeline/providers/model-scoring.ts` — floor + quality/price, топ-3, family-хвіст.
+Немає добового job (F3) і image-абстракції (F4).
+
+**Тест:** `a model with intelligence_index 14.2 at $0.01 is not chosen for weekly.master_writer`.
+
+**Не зроблено в цій хвилі:** F3 (добове оновлення + аудит у `/admin/providers`), G, A2.
+
+## 2026-08-15 — E3: promotion gate якості промптів
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E3.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/content-sim](pipeline/content-sim.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-sandbox](ops/weekly-sandbox.md), [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** Visuals рядок з ≥60% прийнятних / 0 misleading / ≤10 хв / 3 різні.
+Не preflight. Пороги новин без змін.
+
+**Тест:** `promotion gate passes when 60% of concepts are acceptable on the first or second owner attempt`;
+`prompt promotion gate fails on misleading accepted concepts without blocking release preflight`.
+
+**Не зроблено в цій хвилі:** F (динамічний вибір моделі), G (бюджет), A2 bake-off.
+
+## 2026-08-15 — E2: двостадійний критик
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E2.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/content-sim](pipeline/content-sim.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-sandbox](ops/weekly-sandbox.md), [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** image-only → (якщо pass) story-aware. M2 без змін. A2 bake-off не чіпали.
+
+**Тест:** `two-stage critique fails when image-only flags readable_text even if story-aware would pass`;
+`skips story-aware vision when image-only already failed`.
+
+**Не зроблено в цій хвилі:** E3 promotion gate.
+
+## 2026-08-15 — E1: owner-feedback contract на концепт
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E1.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/weekly-digest](pipeline/weekly-digest.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** `owner-feedback.ts` + форма на картці концепту. Вердикт у `story_prompt_set` і в
+`metadata.owner_feedback` upload. Snapshot `canonical`. Немає auto-export у `experiments/`.
+
+**Тест:** `owner verdict from admin lands on the prompt set and uploaded image metadata`.
+
+**Не зроблено в цій хвилі:** E2 двостадійний критик.
+
+## 2026-08-15 — D3: human_dignity_risk у критику
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) D3.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/content-sim](pipeline/content-sim.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-sandbox](ops/weekly-sandbox.md), [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** `human_dignity_risk` у `IMAGE_CRITIC_BLOCKER_CODES` і в обох critic prompt-ах.
+Upload: «ризик гідності». Новини: critique `passed: false`.
+
+**Тест:** `fails on human_dignity_risk even with a high score`.
+
+**Не зроблено в цій хвилі:** E1 owner-feedback contract.
+
+## 2026-08-15 — D2: QA-порада власнику замість auto-repair
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) D2.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/weekly-digest](pipeline/weekly-digest.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** `adviceForPostUploadQa` у `post-upload-qa.ts`. Visuals показує do/dont. Немає
+`prompt_patches` на upload. Новини лишаються на старому repair-циклі.
+
+**Тест:** `baked text QA advises inpaint not a full regenerate`;
+`false thesis QA advises switching concept not patching labels`.
+
+**Не зроблено в цій хвилі:** D3 (`human_dignity_risk`).
+
+## 2026-08-15 — C3: mapping gate перед story_prompt_set
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C3.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[pipeline/weekly-digest](pipeline/weekly-digest.md),
+[now](now.md), [index](index.md).
+
+**Код:** `pipeline/concept-mapping-gate.ts`. `produceStoryPrompts` відсікає брифи без таблиці
+context/action/outcome. Id, не label. Порожній `semanticProps` — fail. V10 не імпортується.
+
+**Тест:** `empty semanticProps do not vacuously pass the mapping gate`;
+`unmapped_semantic_prop matches visibleElementId not visibleElement labels`;
+`a concept missing visible outcome does not enter the prompt set`.
+
+**Не зроблено в цій хвилі:** C5.4 (`inferRole`); D (truth in pixels).
+
+## 2026-08-15 — C2: роутер грамматики від essence (без V10)
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C2.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[pipeline/weekly-digest](pipeline/weekly-digest.md),
+[now](now.md), [index](index.md).
+
+**Код:** `pipeline/scene-grammar.ts`. Метрика в title/summary/essence → схема. C5.2/C5.3
+тести зелені. V10 не імпортується.
+
+**Тест:** `an incidental duration in practical does not switch a domain story to the diagram grammar`;
+`a single mention of caching does not select the process grammar`.
+
+**Не зроблено в цій хвилі:** C3 (mapping gate), C5.4 (`inferRole`).
+
+## 2026-08-15 — C0/C1: grammar на брифі, без моста autoClaim
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) C0/C1.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** `WeeklyReportageSceneBriefResult.grammar`. Журі → `cinematic_domain_scene`, fallback →
+`source_led_fallback`. `exportManualImagePrompts` бере грамматику з брифа. C0: C2 буде
+`pipeline/scene-grammar.ts` від `EditorialEssence`, не порт `VisualAutoClaim`.
+
+**Тест:** `exportManualImagePrompts writes each brief grammar instead of one cinematic default`.
+
+**Не зроблено в цій хвилі:** C2 (роутер метрики → схема), C3, C5.
+
+## 2026-08-15 — P3: промпт обкладинки daily після publish
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P3.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/guide](pipeline/guide.md), [pipeline/llm-providers](pipeline/llm-providers.md),
+[overview](overview.md), [now](now.md), [index](index.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md).
+
+**Код:** роль `daily.cover_scene`; `pipeline/daily-cover-prompt.ts` будує `ManualImagePrompt` з
+топ-3 заголовків + intro; колонка `briefs.cover_prompt jsonb`; `notifyReview` шле окреме
+`<pre>`-повідомлення. Авто-рендеру обкладинки немає.
+
+**Тест:** `daily cover prompt is built from the edition top stories, not from a single item`.
+
+**Не зроблено в цій хвилі:** C (грамматика як третій вимір). Міграцію треба застосувати на прод
+до першого запису колонки.
+
+## 2026-08-15 — B3: Visuals показує N/3 промпти готові
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B3.
+
+**Змінено:** [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[now](now.md), [index](index.md).
+
+**Код:** `storyPromptReadiness` — три місця журі `literal_context` / `mechanism` /
+`consequence`. Рядок біля story на Visuals. `produceStoryPrompts` штампує `sceneSource` /
+`motifClass` з брифів, бо `prompt-export` не несе `scene_source`. Cover і вага гейта без змін.
+
+**Тест:** `shows N/3 промпти готові when all three seats are present`.
+
+**Не зроблено в цій хвилі:** P3 (daily cover prompt).
+
+## 2026-08-15 — M3: preflight missing-image веде до промпту, не до Regenerate
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M3.
+
+**Змінено:** [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[now](now.md), [index](index.md).
+
+**Код:** `ARTIFACT_GATE_GUIDANCE.story_image.fixMissing` і `cover.fixMissing` — скопіюй промпт,
+згенеруй у своєму інструменті, завантаж файл. Вага гейта (`ARTIFACT_TYPE_ORDER`) не чіпали.
+
+**Тест:** `artifact_missing story_image and cover guidance points to the prompt, not Regenerate`.
+
+**Не зроблено в цій хвилі:** B3 (N/3 prompts ready), P3 (daily cover prompt).
+
+## 2026-08-15 — M2: post-upload QA попереджає, не блокує реліз
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M2.
+
+**Змінено:** [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md),
+[pipeline/content-sim](pipeline/content-sim.md),
+[ops/weekly-sandbox](ops/weekly-sandbox.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[now](now.md), [index](index.md).
+
+**Код:** після `save_weekly_digest_artifact` upload story/cover планує `after()` з
+`buildImageOnlyCriticPrompt` (без headline/scene). Результат — `metadata.post_upload_qa`.
+Не пише `content_sim`. Ігнорувати ховає попередження.
+
+**Тест:** `a failing post-upload QA does not add a preflight blocker`.
+
+**Не зроблено в цій хвилі:** M3 (preflight copy), двостадійний critic у prod render (E2).
+
+## 2026-08-15 — M1: weekly story/cover пишуть промпти, не рендерять FLUX
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) M1.
+
+**Змінено:** [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[overview](overview.md), [open-questions](open-questions.md), [now](now.md), [index](index.md).
+
+**Код:** `WEEKLY_STORY_IMAGE_MODE=prompt_only` (дефолт; `render` — відкат). `generateStoryImage`
+без `source_url` і `generateCover` будують essence + концепти (`weeklyReportageSceneBriefs`),
+експортують `ManualImagePrompt` і зберігають `story_prompt_set`. Не викликають
+`generateWeeklyReportageIllustrations` / `runWeeklyImageSimLoop`. Ingest `source_url`
+лишається. `story_image` лишається на GitHub Actions. Композит (`visuals.ts`,
+`generateCoverDerivatives`) не чіпали.
+
+**Тест:** `story_image job in prompt_only mode writes a prompt set and never calls the image provider`;
+`story_image job with source_url still ingests the URL`.
+
+**Не зроблено в цій хвилі:** M2 (post-upload QA), M3 (preflight copy), перенесення
+`story_image` з Actions на Vercel.
+
+## 2026-08-15 — P2: промпти живуть як `story_prompt_set` і копіюються з Visuals
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P2.
+
+**Змінено:** [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md), [now](now.md),
+[index](index.md).
+
+**Код:** міграція `20260815120000_weekly_story_prompt_set.sql` додає CHECK `story_prompt_set`
+і рахує input-hash як у `story_image` (revision item). Visuals: картки концептів + Canonical /
+Midjourney / Negative + слот upload в одній картці. Не в `PUBLIC_IMAGE_TYPES`. Worker не пише
+сет у цій хвилі (M1).
+
+**Тест:** `a ready story_prompt_set exposes three copy payloads and an upload slot`;
+`after a story_image is ready the slot state is uploaded, on review`. Authenticated Playwright
+на `/admin/weekly` у сьюті немає (лише login shell) — контракт покрито unit-тестами +
+`data-testid`.
+
+**Не зроблено в цій хвилі:** M1 (worker пише сет, без FLUX).
+
+## 2026-08-15 — P1: промпт став копійованим продуктом
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P1.
+
+**Змінено:** новий `pipeline/prompt-export.ts`; [marketing/card-images](marketing/card-images.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md), [now](now.md),
+[index](index.md).
+
+**Код:** `exportManualImagePrompt` перекладає `buildEditorialConceptPrompt` у канонічний
+natural-language (субʼєкт першим) + Midjourney `--ar 16:9 --style raw --no text` + negative з
+обовʼязковою забороною тексту. Грамматика схеми пише діаграму. Номерів версій у виході немає.
+
+**Не зроблено в цій хвилі:** P2 (зберігання + UI).
+
+## 2026-08-15 — B2: журі більше не добиває три однакові фолбеки
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B2;
+`pipeline/card-image.ts`.
+
+**Змінено:** [marketing/card-images](marketing/card-images.md), [overview](overview.md) §4,
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md), [now](now.md),
+[index](index.md).
+
+**Код:** `weeklyReportageSceneBriefs` повертає лише прийняті лінзи (або один `fallback_essence`);
+фолбеки більше не маскують копії різними `fallback_${lens}`; `motifFamilyKey` відхиляє
+ pitched-дублікати однієї родини (`sibling_motif_family_reuse`). Пункт «фолбек з іншої
+грамматики» відкладено до C.
+
+**Не зроблено в цій хвилі (окремі PR):** P1 і далі за порядком плану.
+
+## 2026-08-15 — B1-fix: craft-заборона більше не валить предмет самої новини
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B1-fix;
+`experiments/jury-blockers/2026-08-digest-843975a8.md`; `pipeline/card-image.ts`.
+
+**Змінено:** [marketing/card-images](marketing/card-images.md), [overview](overview.md) §4,
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md), [now](now.md),
+[index](index.md).
+
+**Код:** `validateMetaphorPitch` рахує craft-cliché потерміново. Голий `terminal` дозволений,
+коли `storyContext` / `mechanism` / entities говорять про `command line` / `CLI` / `terminal`.
+`terminal window`, `npx`, `glowing brain`, collage лишаються забороненими навіть на CLI-новині.
+`WEEKLY_SLUDGE_BANNED` не чіпали.
+
+**Тест:** `a command-line story may use the word terminal for a physical object`. Контроль —
+CLI-story з UI-кліше все одно відхиляється.
+
+**Не зроблено в цій хвилі (окремі PR):** B2 і далі за порядком плану.
+
 ## 2026-08-15 — Картинки дайджестів переходять на ручну генерацію
 
 **Джерело:** рішення власника 2026-08-15; інспекція коду

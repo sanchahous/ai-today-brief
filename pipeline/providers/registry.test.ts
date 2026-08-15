@@ -9,7 +9,13 @@ vi.mock('./cli-provider', async (importOriginal) => {
   return { ...actual, generateWithCliProvider: vi.fn() };
 });
 vi.mock('./gemini-provider', () => ({ generateWithGemini: vi.fn() }));
-vi.mock('../openrouter-models', () => ({ resolveOpenRouterModelQueue: vi.fn() }));
+vi.mock('../openrouter-models', () => ({
+  resolveOpenRouterModelQueue: vi.fn(),
+  openRouterModelAttemptCap: (env: { OPENROUTER_MAX_MODEL_ATTEMPTS?: string } = {}) => {
+    const parsed = Number.parseInt(env.OPENROUTER_MAX_MODEL_ATTEMPTS ?? '6', 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 6;
+  },
+}));
 
 import { generateWithHttpProviderChain } from './http-provider';
 import { generateWithCliProvider } from './cli-provider';
@@ -19,6 +25,7 @@ import {
   generateWithRegistry,
   loadProviderRegistry,
   nimProvider,
+  PROVIDER_ROLES,
   RegistryExhaustedError,
   type ProviderRegistry,
   type ResolvedProvider,
@@ -66,6 +73,11 @@ const geminiEntry: ResolvedProvider = {
 };
 
 describe('generateWithRegistry', () => {
+  it('registers daily.cover_scene separately from per-item card and weekly scene roles', () => {
+    expect(PROVIDER_ROLES).toContain('daily.cover_scene');
+    expect(PROVIDER_ROLES).toContain('daily.card_image_scene');
+    expect(PROVIDER_ROLES).toContain('weekly.card_image_scene');
+  });
   it('returns the first successful provider in the chain', async () => {
     vi.mocked(generateWithCliProvider).mockResolvedValue(result({ provider: 'claude-cli' }));
     vi.mocked(generateWithHttpProviderChain).mockResolvedValue(result({ provider: 'openrouter' }));
@@ -317,6 +329,72 @@ describe('loadProviderRegistry with a db (Phase 1b)', () => {
 
     expect(registry.chainForRole('daily.summarize')).toHaveLength(1);
     expect(registry.chainForRole('daily.summarize')[0]?.entry.id).toBe('openrouter');
+  });
+
+  it('uses stored OpenRouter models instead of a live catalog fetch', async () => {
+    const db = fakeDb({
+      llm_role_chains: [],
+      llm_providers: [
+        {
+          id: 'openrouter',
+          kind: 'http',
+          enabled: true,
+          base_url: 'https://openrouter.ai/api/v1',
+          extra_headers: {},
+          reports_cost: true,
+        },
+      ],
+      llm_provider_models: [
+        { provider_id: 'openrouter', model_id: 'vendor/stored-a', rank: 0, enabled: true },
+        { provider_id: 'openrouter', model_id: 'vendor/stored-b', rank: 1, enabled: true },
+      ],
+    });
+
+    const registry = await loadProviderRegistry({ OPEN_ROUTER_API_KEY: 'or-key' }, {}, db);
+    const chain = registry.chainForRole('daily.summarize');
+
+    expect(resolveOpenRouterModelQueue).not.toHaveBeenCalled();
+    expect(chain).toHaveLength(1);
+    expect(chain[0]?.http?.modelQueue).toEqual(['vendor/stored-a', 'vendor/stored-b']);
+  });
+
+  it('caps a stored OpenRouter queue at OPENROUTER_MAX_MODEL_ATTEMPTS', async () => {
+    // llm_provider_models is writable by the daily rerank job AND by the free
+    // text area on /admin/providers, so the runtime cannot assume it is already
+    // cap-sized -- generateWithOpenRouterChain walks every entry on failure.
+    const db = fakeDb({
+      llm_role_chains: [],
+      llm_providers: [
+        {
+          id: 'openrouter',
+          kind: 'http',
+          enabled: true,
+          base_url: 'https://openrouter.ai/api/v1',
+          extra_headers: {},
+          reports_cost: true,
+        },
+      ],
+      llm_provider_models: Array.from({ length: 40 }, (_, index) => ({
+        provider_id: 'openrouter',
+        model_id: `vendor/stored-${index}`,
+        rank: index,
+        enabled: true,
+      })),
+    });
+
+    const registry = await loadProviderRegistry(
+      { OPEN_ROUTER_API_KEY: 'or-key', OPENROUTER_MAX_MODEL_ATTEMPTS: '4' },
+      {},
+      db,
+    );
+    const chain = registry.chainForRole('daily.summarize');
+
+    expect(chain[0]?.http?.modelQueue).toEqual([
+      'vendor/stored-0',
+      'vendor/stored-1',
+      'vendor/stored-2',
+      'vendor/stored-3',
+    ]);
   });
 
   it('lets an explicit roleOverride win over a saved DB chain', async () => {

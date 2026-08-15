@@ -8,13 +8,16 @@ import { readFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   buildImageCriticPrompt,
+  buildImageOnlyCriticPrompt,
   contentSimMaxImageRepairAttempts,
   contentSimMaxImageSpendUsd,
   contentSimScoreThreshold,
   contentSimVisionCriticEstimatedUsd,
   deterministicImageCritique,
+  mergeTwoStageCritiques,
   parseImageCriticResponse,
   runRepairLoop,
+  shouldRunStoryAwareStage,
   type ContentSimQualityReport,
 } from '@/lib/content-sim';
 import { generateWithVision } from '../../../../pipeline/providers/vision';
@@ -85,18 +88,30 @@ export async function runDailyImageFixtureSim(
         byteSize: bytes.length,
       }),
     critique: async (artifact) => {
-      const prompt = buildImageCriticPrompt({
-        headline: fixture.headline,
-        scene: artifact.scene,
-        policyId: fixture.policyId ?? 'story-specific-editorial-v5-no-text',
-        scoreThreshold: contentSimScoreThreshold(),
-      });
-      const result = await generateWithVision('daily.image_critic', {
-        prompt,
+      const imageOnlyResult = await generateWithVision('daily.image_critic', {
+        prompt: buildImageOnlyCriticPrompt(),
         imageBytes: artifact.bytes,
         mimeType: 'image/jpeg',
       });
-      return parseImageCriticResponse(result.text, contentSimScoreThreshold());
+      const imageOnly = parseImageCriticResponse(imageOnlyResult.text, contentSimScoreThreshold(), {
+        requireStorySemantics: false,
+        requirePixelEvidence: false,
+      });
+      if (!shouldRunStoryAwareStage(imageOnly)) return imageOnly;
+      const storyResult = await generateWithVision('daily.image_critic', {
+        prompt: buildImageCriticPrompt({
+          headline: fixture.headline,
+          scene: artifact.scene,
+          policyId: fixture.policyId ?? 'story-specific-editorial-v5-no-text',
+          scoreThreshold: contentSimScoreThreshold(),
+        }),
+        imageBytes: artifact.bytes,
+        mimeType: 'image/jpeg',
+      });
+      return mergeTwoStageCritiques(
+        imageOnly,
+        parseImageCriticResponse(storyResult.text, contentSimScoreThreshold()),
+      );
     },
   });
 

@@ -236,3 +236,28 @@ export function decoratedAfterDecision(
   const reason = action === 'reject' && comment ? `\n💬 ${escapeHtml(comment)}` : '';
   return `${head}${reason}\n\n${original}`;
 }
+
+/** Separate review-chat card: copy-ready edition cover prompt, no approve buttons. */
+export function formatCoverPromptMessage(input: {
+  date?: string | null;
+  edition?: number | null;
+  title: string;
+  canonical: string;
+  midjourney: string;
+  negative: string;
+}): string {
+  const lines = ['━━━━━━━━━━━━━━━━━', '🖼 <b>ПРОМПТ ОБКЛАДИНКИ</b>'];
+  if (input.date) lines.push(`📅 ${escapeHtml(input.date)}`);
+  if (input.edition && input.edition > 1) lines.push(`📦 Пак <b>${input.edition}</b>`);
+  lines.push(
+    `<b>${escapeHtml(input.title)}</b>`,
+    '',
+    '<b>Canonical</b>',
+    `<pre>${escapeHtml(input.canonical)}</pre>`,
+    '<b>Midjourney</b>',
+    `<pre>${escapeHtml(input.midjourney)}</pre>`,
+    '<b>Negative</b>',
+    `<pre>${escapeHtml(input.negative)}</pre>`,
+  );
+  return lines.join('\n');
+}

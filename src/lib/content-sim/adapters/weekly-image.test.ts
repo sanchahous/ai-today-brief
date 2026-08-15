@@ -38,6 +38,34 @@ const pixelEvidence = {
   headline_pairing: 'The combined anchor, cause, and result distinguish this headline.',
 };
 
+const estimatedUsage = {
+  promptTokens: 1,
+  outputTokens: 1,
+  costUsd: null as number | null,
+  costSource: 'estimated' as const,
+};
+
+function visionJson(payload: unknown) {
+  return {
+    text: JSON.stringify(payload),
+    provider: 'gemini',
+    model: 'vision',
+    usage: estimatedUsage,
+  };
+}
+
+function passingImageOnlyVision() {
+  return visionJson({
+    overall: 90,
+    dimensions: { no_text: 90, craft: 90, brand_safe: 90, news_legibility: 90 },
+    blockers: [],
+  });
+}
+
+function isImageOnlyPrompt(prompt: string) {
+  return prompt.includes('pixel defects only');
+}
+
 function baseCandidate(overrides?: Partial<WeeklyImageSimCandidate>): WeeklyImageSimCandidate {
   return {
     bytes: Buffer.alloc(1200, 1),
@@ -132,12 +160,7 @@ describe('pickBestVariantIndex', () => {
 });
 
 describe('scoreAndPickVariants', () => {
-  const usage = {
-    promptTokens: 1,
-    outputTokens: 1,
-    costUsd: null as number | null,
-    costSource: 'estimated' as const,
-  };
+  const usage = estimatedUsage;
 
   it('visions all variants and promotes the best pass as primary', async () => {
     const variantConcepts = [
@@ -166,40 +189,32 @@ describe('scoreAndPickVariants', () => {
         metaphorTitle: 'Changed outcome',
       },
     ];
-    mockedVision
-      .mockResolvedValueOnce({
-        text: JSON.stringify({
+    mockedVision.mockImplementation(async (_role, args) => {
+      const prompt = String(args.prompt);
+      if (isImageOnlyPrompt(prompt)) return passingImageOnlyVision();
+      if (prompt.includes(variantConcepts[0]!.scene)) {
+        return visionJson({
           overall: 70,
           dimensions: semanticDimensions(70),
           pixel_evidence: pixelEvidence,
           blockers: [{ code: 'decorative_second_beat', message: 'mood only', region: 'right' }],
-        }),
-        provider: 'gemini',
-        model: 'vision',
-        usage,
-      })
-      .mockResolvedValueOnce({
-        text: JSON.stringify({
+        });
+      }
+      if (prompt.includes(variantConcepts[1]!.scene)) {
+        return visionJson({
           overall: 91,
           dimensions: semanticDimensions(91),
           pixel_evidence: pixelEvidence,
           blockers: [],
-        }),
-        provider: 'gemini',
-        model: 'vision',
-        usage,
-      })
-      .mockResolvedValueOnce({
-        text: JSON.stringify({
-          overall: 85,
-          dimensions: semanticDimensions(85),
-          pixel_evidence: pixelEvidence,
-          blockers: [{ code: 'sibling_echo', message: 'rhymes', region: 'full' }],
-        }),
-        provider: 'gemini',
-        model: 'vision',
-        usage,
+        });
+      }
+      return visionJson({
+        overall: 85,
+        dimensions: semanticDimensions(85),
+        pixel_evidence: pixelEvidence,
+        blockers: [{ code: 'sibling_echo', message: 'rhymes', region: 'full' }],
       });
+    });
 
     const picked = await scoreAndPickVariants(
       baseCandidate({ variantConcepts }),
@@ -211,11 +226,16 @@ describe('scoreAndPickVariants', () => {
       { remainingBudgetUsd: 5 },
     );
 
-    expect(mockedVision).toHaveBeenCalledTimes(3);
+    expect(mockedVision).toHaveBeenCalledTimes(6);
     const prompts = mockedVision.mock.calls.map((call) => String(call[1].prompt));
-    expect(prompts[0]).toContain(variantConcepts[0]!.scene);
-    expect(prompts[1]).toContain(variantConcepts[1]!.scene);
-    expect(prompts[2]).toContain(variantConcepts[2]!.scene);
+    const imageOnlyPrompts = prompts.filter((prompt) => isImageOnlyPrompt(prompt));
+    const storyPrompts = prompts.filter((prompt) => !isImageOnlyPrompt(prompt));
+    expect(imageOnlyPrompts).toHaveLength(3);
+    expect(storyPrompts).toHaveLength(3);
+    expect(imageOnlyPrompts[0]).not.toMatch(/Headline:/);
+    expect(storyPrompts.some((prompt) => prompt.includes(variantConcepts[0]!.scene))).toBe(true);
+    expect(storyPrompts.some((prompt) => prompt.includes(variantConcepts[1]!.scene))).toBe(true);
+    expect(storyPrompts.some((prompt) => prompt.includes(variantConcepts[2]!.scene))).toBe(true);
     expect(picked.bytes.equals(Buffer.alloc(800, 2))).toBe(true);
     expect(picked.conceptLens).toBe('mechanism');
     expect(picked.scene).toBe(variantConcepts[1]!.scene);
@@ -242,23 +262,20 @@ describe('scoreAndPickVariants', () => {
     const started = new Promise<void>((done) => {
       allStarted = done;
     });
-    mockedVision.mockImplementation(async () => {
+    mockedVision.mockImplementation(async (_role, args) => {
+      const prompt = String(args.prompt);
+      if (isImageOnlyPrompt(prompt)) return passingImageOnlyVision();
       active += 1;
       peak = Math.max(peak, active);
-      if (active === 3) allStarted();
+      if (peak === 3) allStarted();
       await gate;
       active -= 1;
-      return {
-        text: JSON.stringify({
-          overall: 86,
-          dimensions: semanticDimensions(86),
-          pixel_evidence: pixelEvidence,
-          blockers: [],
-        }),
-        provider: 'gemini',
-        model: 'vision',
-        usage,
-      };
+      return visionJson({
+        overall: 86,
+        dimensions: semanticDimensions(86),
+        pixel_evidence: pixelEvidence,
+        blockers: [],
+      });
     });
     const costs: number[] = [];
     const pending = scoreAndPickVariants(
@@ -275,7 +292,7 @@ describe('scoreAndPickVariants', () => {
     expect(peak).toBe(3);
     release();
     await pending;
-    expect(costs).toEqual([0.01, 0.01, 0.01]);
+    expect(costs).toEqual([0.02, 0.02, 0.02]);
   });
 
   it('visions only the largest buffer when budget is tight', async () => {
@@ -300,7 +317,7 @@ describe('scoreAndPickVariants', () => {
       { remainingBudgetUsd: 0.01 },
     );
 
-    expect(mockedVision).toHaveBeenCalledTimes(1);
+    expect(mockedVision).toHaveBeenCalledTimes(2);
     expect(picked.bytes.equals(Buffer.alloc(2000, 3))).toBe(true);
     expect(picked.variantScores?.some((s) => s.blockers.includes('budget_skip'))).toBe(true);
   });
@@ -324,7 +341,7 @@ describe('scoreAndPickVariants', () => {
       { remainingBudgetUsd: 1 },
     );
 
-    expect(mockedVision).toHaveBeenCalledTimes(1);
+    expect(mockedVision).toHaveBeenCalledTimes(2);
     expect(picked.variantScores).toEqual([
       {
         index: 0,
@@ -340,6 +357,27 @@ describe('scoreAndPickVariants', () => {
         semantic_min: 86,
       },
     ]);
+  });
+
+  it('skips story-aware vision when image-only already failed', async () => {
+    mockedVision.mockResolvedValue(
+      visionJson({
+        overall: 20,
+        dimensions: { no_text: 5, craft: 40, brand_safe: 40, news_legibility: 20 },
+        blockers: [{ code: 'readable_text', message: 'Letters on a sign', region: 'left' }],
+      }),
+    );
+    const picked = await scoreAndPickVariants(
+      baseCandidate({ alternateBuffers: [] }),
+      { headline: 'Energy story', policyId: 'weekly-semantic-story-v5.1' },
+      { remainingBudgetUsd: 1 },
+    );
+    expect(mockedVision).toHaveBeenCalledTimes(1);
+    expect(String(mockedVision.mock.calls[0]?.[1]?.prompt)).toContain('pixel defects only');
+    expect(picked.preCritique?.passed).toBe(false);
+    expect(
+      picked.preCritique?.blockers.some((blocker) => blocker.code === 'readable_text'),
+    ).toBe(true);
   });
 
   it('rejects generic tube machinery before spending on vision', async () => {
@@ -390,13 +428,15 @@ describe('runWeeklyImageSimLoop history', () => {
         costSource: 'estimated' as const,
       },
     });
-    mockedVision
-      .mockResolvedValueOnce(critique(40, 'off_news'))
-      .mockResolvedValueOnce(critique(40, 'off_news'))
-      .mockResolvedValueOnce(critique(40, 'off_news'))
-      .mockResolvedValueOnce(critique(90))
-      .mockResolvedValueOnce(critique(90))
-      .mockResolvedValueOnce(critique(90));
+    let remainingStoryFails = 3;
+    mockedVision.mockImplementation(async (_role, args) => {
+      if (isImageOnlyPrompt(String(args.prompt))) return passingImageOnlyVision();
+      if (remainingStoryFails > 0) {
+        remainingStoryFails -= 1;
+        return critique(40, 'off_news');
+      }
+      return critique(90);
+    });
 
     let calls = 0;
     const result = await runWeeklyImageSimLoop({

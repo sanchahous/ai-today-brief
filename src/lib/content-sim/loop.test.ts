@@ -13,10 +13,14 @@ import {
 import { runRepairLoop } from './loop';
 import {
   buildImageCriticPrompt,
+  buildImageOnlyCriticPrompt,
   clampOverallByNewsLegibility,
   extractJsonObject,
+  IMAGE_CRITIC_BLOCKER_CODES,
+  mergeTwoStageCritiques,
   newsLegibilityThreshold,
   parseImageCriticResponse,
+  shouldRunStoryAwareStage,
 } from './vision-critic';
 import type { ContentSimCritique } from './types';
 
@@ -214,6 +218,25 @@ describe('parseImageCriticResponse', () => {
     );
     expect(critique.passed).toBe(false);
     expect(critique.repairDirective?.promptPatches?.[0]).toContain('no text');
+  });
+
+  it('fails on human_dignity_risk even with a high score', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 95,
+        dimensions: { news_legibility: 90, craft: 90, brand_safe: 20 },
+        blockers: [
+          {
+            code: 'human_dignity_risk',
+            message: 'A machine grips a child by the head',
+            region: 'center',
+          },
+        ],
+      }),
+      80,
+    );
+    expect(critique.passed).toBe(false);
+    expect(critique.blockers.some((blocker) => blocker.code === 'human_dignity_risk')).toBe(true);
   });
 
   it('parses physics and decorative-beat blocker codes', () => {
@@ -445,5 +468,74 @@ describe('buildImageCriticPrompt', () => {
     expect(prompt).toContain('What changed? How? So what?');
     expect(prompt).toContain('missing_consequence');
     expect(prompt).toContain('extra electricity becomes waste heat');
+    expect(prompt).toContain('human_dignity_risk');
+    expect(IMAGE_CRITIC_BLOCKER_CODES).toContain('human_dignity_risk');
+  });
+
+  it('image-only critic prompt omits headline and scene brief', () => {
+    const prompt = buildImageOnlyCriticPrompt();
+    expect(prompt).toContain('pixel defects only');
+    expect(prompt).toContain('readable_text');
+    expect(prompt).toContain('human_dignity_risk');
+    expect(prompt).not.toMatch(/Headline:/);
+    expect(prompt).not.toMatch(/SOURCE STORY/);
+    expect(prompt).not.toMatch(/Scene brief:/);
+    expect(prompt).not.toMatch(/GENERATED SEMANTIC CONTRACT/);
+  });
+});
+
+describe('two-stage critic', () => {
+  it('two-stage critique fails when image-only flags readable_text even if story-aware would pass', () => {
+    const imageOnly: ContentSimCritique = {
+      passed: false,
+      scores: { overall: 40, no_text: 10, craft: 80 },
+      blockers: [{ code: 'readable_text', message: 'Letters on a sign', blocker: true }],
+    };
+    const storyAware: ContentSimCritique = {
+      passed: true,
+      scores: { overall: 95, news_legibility: 90, context_fidelity: 90 },
+      blockers: [],
+    };
+    expect(shouldRunStoryAwareStage(imageOnly)).toBe(false);
+    const merged = mergeTwoStageCritiques(imageOnly, storyAware);
+    expect(merged.passed).toBe(false);
+    expect(merged.blockers.some((blocker) => blocker.code === 'readable_text')).toBe(true);
+    expect(merged.scores.overall).toBe(40);
+    expect(merged.scores.no_text).toBe(10);
+  });
+
+  it('keeps the story-aware overall when pixels already passed', () => {
+    const merged = mergeTwoStageCritiques(
+      {
+        passed: true,
+        scores: { overall: 90, no_text: 92, craft: 88 },
+        blockers: [],
+      },
+      {
+        passed: true,
+        scores: { overall: 91, news_legibility: 90 },
+        blockers: [],
+      },
+    );
+    expect(merged.passed).toBe(true);
+    expect(merged.scores.overall).toBe(91);
+    expect(merged.scores.no_text).toBe(92);
+  });
+
+  it('story-aware critic does not run when image-only already failed', () => {
+    expect(
+      shouldRunStoryAwareStage({
+        passed: true,
+        scores: { overall: 90 },
+        blockers: [],
+      }),
+    ).toBe(true);
+    expect(
+      shouldRunStoryAwareStage({
+        passed: false,
+        scores: { overall: 20 },
+        blockers: [{ code: 'readable_text', message: 'logo', blocker: true }],
+      }),
+    ).toBe(false);
   });
 });

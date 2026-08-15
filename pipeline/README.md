@@ -52,6 +52,7 @@ holds the Supabase **service_role** key and is **never imported under `src/`**.
 | `summarize.ts` | Gemini structured-JSON editor → bilingual brief | excluded (LLM IO) |
 | `publish.ts` | Idempotent draft write composition | excluded (IO) |
 | `db.ts` | Service-role client + queries (incl. `matchRelevantItem`, `storeItemEmbeddings`) | excluded (IO) |
+| `daily-cover-prompt.ts` | Edition cover `ManualImagePrompt` via `daily.cover_scene`; writes `briefs.cover_prompt` | ✅ |
 | `log.ts` | Structured JSON logs | excluded |
 
 ---

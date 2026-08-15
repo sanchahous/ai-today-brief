@@ -1,0 +1,2025 @@
+{
+  "models": [
+    "google/gemini-2.5-flash",
+    "anthropic/claude-sonnet-5",
+    "google/gemini-3.1-pro-preview"
+  ],
+  "samples": 3,
+  "groundTruth": "Owner review of the visual-compiler-v6 targeted A/B, transcribed from the owner's annotated contact sheet 2026-08-14 and confirmed in chat.",
+  "perModel": [
+    {
+      "model": "google/gemini-2.5-flash",
+      "rejectCaught": 6,
+      "rejectTotal": 6,
+      "shipKept": 0,
+      "shipTotal": 1,
+      "flagged": 0,
+      "flagTotal": 2,
+      "insufficient": 0,
+      "worstOverallSpread": 10,
+      "errors": 0,
+      "reportedCostUsd": 0.08944235,
+      "perKey": [
+        {
+          "key": "1-current",
+          "ownerVerdict": "defect",
+          "criticVerdict": "fail",
+          "agrees": null,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 55,
+          "overallSpread": 0,
+          "blockerUnion": [
+            "off_news",
+            "ambiguous_visual_story",
+            "opaque_abstraction",
+            "missing_consequence"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "1-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 5,
+          "overallSpread": 10,
+          "blockerUnion": [
+            "off_news",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence",
+            "opaque_abstraction"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "2-current",
+          "ownerVerdict": "ship",
+          "criticVerdict": "fail",
+          "agrees": false,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 55,
+          "overallSpread": 0,
+          "blockerUnion": [
+            "off_news",
+            "opaque_abstraction",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "2-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 35,
+          "overallSpread": 0,
+          "blockerUnion": [
+            "opaque_abstraction",
+            "off_news",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence",
+            "ambiguous_visual_story"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "4-current",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 65,
+          "overallSpread": 10,
+          "blockerUnion": [
+            "off_news",
+            "opaque_abstraction",
+            "missing_mechanism",
+            "missing_consequence",
+            "missing_context"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "4-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 65,
+          "overallSpread": 0,
+          "blockerUnion": [
+            "off_news",
+            "opaque_abstraction",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "6-current",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 35,
+          "overallSpread": 0,
+          "blockerUnion": [
+            "readable_text",
+            "off_news",
+            "missing_mechanism",
+            "missing_context",
+            "opaque_abstraction",
+            "ambiguous_visual_story"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "6-compiler",
+          "ownerVerdict": "defect",
+          "criticVerdict": "fail",
+          "agrees": null,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 55,
+          "overallSpread": 5,
+          "blockerUnion": [
+            "opaque_abstraction",
+            "off_news"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "7-current",
+          "ownerVerdict": "defect",
+          "criticVerdict": "fail",
+          "agrees": null,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 65,
+          "overallSpread": 5,
+          "blockerUnion": [
+            "ambiguous_visual_story",
+            "off_news",
+            "opaque_abstraction"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "7-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 35,
+          "overallSpread": 0,
+          "blockerUnion": [
+            "off_news",
+            "opaque_abstraction",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence"
+          ],
+          "errors": 0
+        }
+      ]
+    },
+    {
+      "model": "anthropic/claude-sonnet-5",
+      "rejectCaught": 6,
+      "rejectTotal": 6,
+      "shipKept": 0,
+      "shipTotal": 1,
+      "flagged": 1,
+      "flagTotal": 2,
+      "insufficient": 0,
+      "worstOverallSpread": 10,
+      "errors": 0,
+      "reportedCostUsd": 0.761162,
+      "perKey": [
+        {
+          "key": "1-current",
+          "ownerVerdict": "defect",
+          "criticVerdict": "fail",
+          "agrees": null,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 15,
+          "overallSpread": 0,
+          "blockerUnion": [
+            "off_news",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence",
+            "opaque_abstraction",
+            "ambiguous_visual_story"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "1-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 7,
+          "overallSpread": 1,
+          "blockerUnion": [
+            "off_news",
+            "wrong_subject",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence",
+            "ambiguous_visual_story",
+            "opaque_abstraction"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "2-current",
+          "ownerVerdict": "ship",
+          "criticVerdict": "fail",
+          "agrees": false,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 25,
+          "overallSpread": 5,
+          "blockerUnion": [
+            "off_news",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence",
+            "opaque_abstraction",
+            "off_metaphor",
+            "ambiguous_visual_story"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "2-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 15,
+          "overallSpread": 0,
+          "blockerUnion": [
+            "off_news",
+            "opaque_abstraction",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence",
+            "ambiguous_visual_story"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "4-current",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 2,
+          "totalSamples": 3,
+          "medianOverall": 25,
+          "overallSpread": 4,
+          "blockerUnion": [
+            "off_news",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence",
+            "opaque_abstraction",
+            "ambiguous_visual_story"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "4-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 25,
+          "overallSpread": 10,
+          "blockerUnion": [
+            "off_news",
+            "opaque_abstraction",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence",
+            "ambiguous_visual_story"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "6-current",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 22,
+          "overallSpread": 10,
+          "blockerUnion": [
+            "readable_text",
+            "missing_mechanism",
+            "off_news",
+            "opaque_abstraction",
+            "missing_context"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "6-compiler",
+          "ownerVerdict": "defect",
+          "criticVerdict": "fail",
+          "agrees": null,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 33,
+          "overallSpread": 4,
+          "blockerUnion": [
+            "opaque_abstraction",
+            "missing_context",
+            "missing_mechanism",
+            "ambiguous_visual_story",
+            "off_news"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "7-current",
+          "ownerVerdict": "defect",
+          "criticVerdict": "fail",
+          "agrees": null,
+          "validSamples": 2,
+          "totalSamples": 3,
+          "medianOverall": 37.5,
+          "overallSpread": 5,
+          "blockerUnion": [
+            "readable_text",
+            "banned_cliche",
+            "off_news",
+            "missing_mechanism",
+            "missing_context"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "7-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 20,
+          "overallSpread": 10,
+          "blockerUnion": [
+            "readable_text",
+            "off_news",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence",
+            "opaque_abstraction",
+            "off_metaphor",
+            "ui_chrome"
+          ],
+          "errors": 0
+        }
+      ]
+    },
+    {
+      "model": "google/gemini-3.1-pro-preview",
+      "rejectCaught": 5,
+      "rejectTotal": 6,
+      "shipKept": 0,
+      "shipTotal": 1,
+      "flagged": 0,
+      "flagTotal": 2,
+      "insufficient": 0,
+      "worstOverallSpread": 38,
+      "errors": 0,
+      "reportedCostUsd": 1.0713599999999999,
+      "perKey": [
+        {
+          "key": "1-current",
+          "ownerVerdict": "defect",
+          "criticVerdict": "fail",
+          "agrees": null,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 25,
+          "overallSpread": 10,
+          "blockerUnion": [
+            "low_quality",
+            "prop_use_mismatch",
+            "off_news",
+            "missing_consequence",
+            "opaque_abstraction",
+            "missing_context"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "1-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 15,
+          "overallSpread": 10,
+          "blockerUnion": [
+            "off_news",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence",
+            "off_metaphor",
+            "prop_use_mismatch",
+            "semantic_evidence_missing"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "2-current",
+          "ownerVerdict": "ship",
+          "criticVerdict": "fail",
+          "agrees": false,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 40,
+          "overallSpread": 15,
+          "blockerUnion": [
+            "readable_text",
+            "prop_use_mismatch",
+            "ambiguous_visual_story",
+            "low_quality"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "2-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 15,
+          "overallSpread": 0,
+          "blockerUnion": [
+            "ui_chrome",
+            "opaque_abstraction",
+            "off_news",
+            "collage_panels",
+            "missing_context"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "4-current",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 45,
+          "overallSpread": 15,
+          "blockerUnion": [
+            "ambiguous_visual_story",
+            "missing_consequence",
+            "off_news"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "4-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "pass",
+          "agrees": false,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 88,
+          "overallSpread": 38,
+          "blockerUnion": [
+            "off_news",
+            "missing_context"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "6-current",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 20,
+          "overallSpread": 20,
+          "blockerUnion": [
+            "readable_text",
+            "missing_mechanism",
+            "low_quality"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "6-compiler",
+          "ownerVerdict": "defect",
+          "criticVerdict": "fail",
+          "agrees": null,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 30,
+          "overallSpread": 10,
+          "blockerUnion": [
+            "collage_panels",
+            "opaque_abstraction",
+            "off_news",
+            "missing_mechanism",
+            "missing_context"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "7-current",
+          "ownerVerdict": "defect",
+          "criticVerdict": "fail",
+          "agrees": null,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 45,
+          "overallSpread": 5,
+          "blockerUnion": [
+            "low_quality",
+            "prop_use_mismatch",
+            "missing_mechanism",
+            "ambiguous_visual_story"
+          ],
+          "errors": 0
+        },
+        {
+          "key": "7-compiler",
+          "ownerVerdict": "reject",
+          "criticVerdict": "fail",
+          "agrees": true,
+          "validSamples": 3,
+          "totalSamples": 3,
+          "medianOverall": 30,
+          "overallSpread": 30,
+          "blockerUnion": [
+            "ui_chrome",
+            "ambiguous_visual_story",
+            "brand_unsafe",
+            "off_news",
+            "readable_text",
+            "missing_context",
+            "missing_mechanism",
+            "missing_consequence"
+          ],
+          "errors": 0
+        }
+      ]
+    }
+  ],
+  "observations": [
+    {
+      "key": "1-current",
+      "verdict": "defect",
+      "model": "google/gemini-2.5-flash",
+      "sample": 1,
+      "passed": false,
+      "overall": 55,
+      "blockers": [
+        "off_news",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0028965
+    },
+    {
+      "key": "1-current",
+      "verdict": "defect",
+      "model": "google/gemini-2.5-flash",
+      "sample": 2,
+      "passed": false,
+      "overall": 55,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0029715
+    },
+    {
+      "key": "1-current",
+      "verdict": "defect",
+      "model": "google/gemini-2.5-flash",
+      "sample": 3,
+      "passed": false,
+      "overall": 55,
+      "blockers": [
+        "off_news",
+        "ambiguous_visual_story",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.00251333
+    },
+    {
+      "key": "1-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 1,
+      "passed": false,
+      "overall": 5,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.003104
+    },
+    {
+      "key": "1-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 2,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.00259083
+    },
+    {
+      "key": "1-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 3,
+      "passed": false,
+      "overall": 5,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.003154
+    },
+    {
+      "key": "2-current",
+      "verdict": "ship",
+      "model": "google/gemini-2.5-flash",
+      "sample": 1,
+      "passed": false,
+      "overall": 55,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.00287553
+    },
+    {
+      "key": "2-current",
+      "verdict": "ship",
+      "model": "google/gemini-2.5-flash",
+      "sample": 2,
+      "passed": false,
+      "overall": 55,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.00319553
+    },
+    {
+      "key": "2-current",
+      "verdict": "ship",
+      "model": "google/gemini-2.5-flash",
+      "sample": 3,
+      "passed": false,
+      "overall": 55,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.00296303
+    },
+    {
+      "key": "2-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 1,
+      "passed": false,
+      "overall": 35,
+      "blockers": [
+        "opaque_abstraction",
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0036387
+    },
+    {
+      "key": "2-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 2,
+      "passed": false,
+      "overall": 35,
+      "blockers": [
+        "opaque_abstraction",
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0038662
+    },
+    {
+      "key": "2-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 3,
+      "passed": false,
+      "overall": 35,
+      "blockers": [
+        "opaque_abstraction",
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.00304803
+    },
+    {
+      "key": "4-current",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 1,
+      "passed": false,
+      "overall": 65,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0033368
+    },
+    {
+      "key": "4-current",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 2,
+      "passed": false,
+      "overall": 65,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.00228336
+    },
+    {
+      "key": "4-current",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 3,
+      "passed": false,
+      "overall": 55,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.00276336
+    },
+    {
+      "key": "4-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 1,
+      "passed": false,
+      "overall": 65,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0034593
+    },
+    {
+      "key": "4-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 2,
+      "passed": false,
+      "overall": 65,
+      "blockers": [
+        "opaque_abstraction",
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0034568
+    },
+    {
+      "key": "4-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 3,
+      "passed": false,
+      "overall": 65,
+      "blockers": [],
+      "parseFailed": false,
+      "costUsd": 0.00222836
+    },
+    {
+      "key": "6-current",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 1,
+      "passed": false,
+      "overall": 35,
+      "blockers": [
+        "readable_text",
+        "off_news",
+        "missing_mechanism",
+        "missing_context",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0033965
+    },
+    {
+      "key": "6-current",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 2,
+      "passed": false,
+      "overall": 35,
+      "blockers": [
+        "readable_text",
+        "off_news",
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.00269878
+    },
+    {
+      "key": "6-current",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 3,
+      "passed": false,
+      "overall": 35,
+      "blockers": [
+        "readable_text",
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.00303128
+    },
+    {
+      "key": "6-compiler",
+      "verdict": "defect",
+      "model": "google/gemini-2.5-flash",
+      "sample": 1,
+      "passed": false,
+      "overall": 55,
+      "blockers": [
+        "opaque_abstraction",
+        "off_news"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.002934
+    },
+    {
+      "key": "6-compiler",
+      "verdict": "defect",
+      "model": "google/gemini-2.5-flash",
+      "sample": 2,
+      "passed": false,
+      "overall": 60,
+      "blockers": [
+        "opaque_abstraction",
+        "off_news"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.00239583
+    },
+    {
+      "key": "6-compiler",
+      "verdict": "defect",
+      "model": "google/gemini-2.5-flash",
+      "sample": 3,
+      "passed": false,
+      "overall": 55,
+      "blockers": [
+        "opaque_abstraction",
+        "off_news"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0028715
+    },
+    {
+      "key": "7-current",
+      "verdict": "defect",
+      "model": "google/gemini-2.5-flash",
+      "sample": 1,
+      "passed": false,
+      "overall": 70,
+      "blockers": [
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0024803
+    },
+    {
+      "key": "7-current",
+      "verdict": "defect",
+      "model": "google/gemini-2.5-flash",
+      "sample": 2,
+      "passed": false,
+      "overall": 65,
+      "blockers": [
+        "ambiguous_visual_story",
+        "off_news"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0026078
+    },
+    {
+      "key": "7-current",
+      "verdict": "defect",
+      "model": "google/gemini-2.5-flash",
+      "sample": 3,
+      "passed": false,
+      "overall": 65,
+      "blockers": [
+        "ambiguous_visual_story",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0027853
+    },
+    {
+      "key": "7-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 1,
+      "passed": false,
+      "overall": 35,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0035303
+    },
+    {
+      "key": "7-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 2,
+      "passed": false,
+      "overall": 35,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0030753
+    },
+    {
+      "key": "7-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-2.5-flash",
+      "sample": 3,
+      "passed": false,
+      "overall": 35,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0032903
+    },
+    {
+      "key": "1-current",
+      "verdict": "defect",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 1,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.029416
+    },
+    {
+      "key": "1-current",
+      "verdict": "defect",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 2,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.023446
+    },
+    {
+      "key": "1-current",
+      "verdict": "defect",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 3,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.028376
+    },
+    {
+      "key": "1-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 1,
+      "passed": false,
+      "overall": 7,
+      "blockers": [
+        "off_news",
+        "wrong_subject",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.019886
+    },
+    {
+      "key": "1-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 2,
+      "passed": false,
+      "overall": 6,
+      "blockers": [
+        "off_news",
+        "wrong_subject",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.021636
+    },
+    {
+      "key": "1-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 3,
+      "passed": false,
+      "overall": 7,
+      "blockers": [
+        "off_news",
+        "wrong_subject",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.021316
+    },
+    {
+      "key": "2-current",
+      "verdict": "ship",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 1,
+      "passed": false,
+      "overall": 25,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.023586
+    },
+    {
+      "key": "2-current",
+      "verdict": "ship",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 2,
+      "passed": false,
+      "overall": 30,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction",
+        "off_metaphor"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.024126
+    },
+    {
+      "key": "2-current",
+      "verdict": "ship",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 3,
+      "passed": false,
+      "overall": 25,
+      "blockers": [
+        "off_news",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.035096
+    },
+    {
+      "key": "2-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 1,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.026466
+    },
+    {
+      "key": "2-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 2,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "opaque_abstraction",
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.023996
+    },
+    {
+      "key": "2-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 3,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "opaque_abstraction",
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.025256
+    },
+    {
+      "key": "4-current",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 1,
+      "passed": false,
+      "overall": 0,
+      "blockers": [
+        "critic_parse_error"
+      ],
+      "parseFailed": true,
+      "costUsd": 0.02333
+    },
+    {
+      "key": "4-current",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 2,
+      "passed": false,
+      "overall": 23,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.03882
+    },
+    {
+      "key": "4-current",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 3,
+      "passed": false,
+      "overall": 27,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "ambiguous_visual_story",
+        "opaque_abstraction",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.03297
+    },
+    {
+      "key": "4-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 1,
+      "passed": false,
+      "overall": 20,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02879
+    },
+    {
+      "key": "4-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 2,
+      "passed": false,
+      "overall": 30,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02452
+    },
+    {
+      "key": "4-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 3,
+      "passed": false,
+      "overall": 25,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02227
+    },
+    {
+      "key": "6-current",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 1,
+      "passed": false,
+      "overall": 22,
+      "blockers": [
+        "readable_text",
+        "missing_mechanism",
+        "off_news",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02093
+    },
+    {
+      "key": "6-current",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 2,
+      "passed": false,
+      "overall": 32,
+      "blockers": [
+        "readable_text",
+        "missing_mechanism",
+        "opaque_abstraction",
+        "off_news"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02294
+    },
+    {
+      "key": "6-current",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 3,
+      "passed": false,
+      "overall": 22,
+      "blockers": [
+        "readable_text",
+        "missing_mechanism",
+        "missing_context",
+        "off_news"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02199
+    },
+    {
+      "key": "6-compiler",
+      "verdict": "defect",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 1,
+      "passed": false,
+      "overall": 30,
+      "blockers": [
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02164
+    },
+    {
+      "key": "6-compiler",
+      "verdict": "defect",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 2,
+      "passed": false,
+      "overall": 34,
+      "blockers": [
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0227
+    },
+    {
+      "key": "6-compiler",
+      "verdict": "defect",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 3,
+      "passed": false,
+      "overall": 33,
+      "blockers": [
+        "opaque_abstraction",
+        "missing_context",
+        "missing_mechanism",
+        "off_news"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02101
+    },
+    {
+      "key": "7-current",
+      "verdict": "defect",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 1,
+      "passed": false,
+      "overall": 0,
+      "blockers": [
+        "critic_parse_error"
+      ],
+      "parseFailed": true,
+      "costUsd": 0.02027
+    },
+    {
+      "key": "7-current",
+      "verdict": "defect",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 2,
+      "passed": false,
+      "overall": 40,
+      "blockers": [
+        "readable_text",
+        "banned_cliche",
+        "off_news",
+        "missing_mechanism",
+        "missing_context"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02316
+    },
+    {
+      "key": "7-current",
+      "verdict": "defect",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 3,
+      "passed": false,
+      "overall": 35,
+      "blockers": [
+        "banned_cliche",
+        "missing_context",
+        "off_news",
+        "readable_text"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02992
+    },
+    {
+      "key": "7-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 1,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "readable_text",
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "opaque_abstraction",
+        "off_metaphor"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02453
+    },
+    {
+      "key": "7-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 2,
+      "passed": false,
+      "overall": 25,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence",
+        "readable_text"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.0292
+    },
+    {
+      "key": "7-compiler",
+      "verdict": "reject",
+      "model": "anthropic/claude-sonnet-5",
+      "sample": 3,
+      "passed": false,
+      "overall": 20,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "ui_chrome",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02957
+    },
+    {
+      "key": "1-current",
+      "verdict": "defect",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 1,
+      "passed": false,
+      "overall": 35,
+      "blockers": [
+        "low_quality",
+        "prop_use_mismatch",
+        "off_news",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.038364
+    },
+    {
+      "key": "1-current",
+      "verdict": "defect",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 2,
+      "passed": false,
+      "overall": 25,
+      "blockers": [
+        "off_news",
+        "opaque_abstraction",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.044436
+    },
+    {
+      "key": "1-current",
+      "verdict": "defect",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 3,
+      "passed": false,
+      "overall": 25,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_consequence",
+        "low_quality"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.039072
+    },
+    {
+      "key": "1-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 1,
+      "passed": false,
+      "overall": 25,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.038448
+    },
+    {
+      "key": "1-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 2,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "off_news",
+        "off_metaphor",
+        "missing_context",
+        "missing_mechanism",
+        "prop_use_mismatch"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.027996
+    },
+    {
+      "key": "1-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 3,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "off_news",
+        "missing_context",
+        "semantic_evidence_missing",
+        "prop_use_mismatch"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.027852
+    },
+    {
+      "key": "2-current",
+      "verdict": "ship",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 1,
+      "passed": false,
+      "overall": 40,
+      "blockers": [
+        "readable_text",
+        "prop_use_mismatch",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.036394
+    },
+    {
+      "key": "2-current",
+      "verdict": "ship",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 2,
+      "passed": false,
+      "overall": 45,
+      "blockers": [
+        "readable_text",
+        "prop_use_mismatch"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.047278
+    },
+    {
+      "key": "2-current",
+      "verdict": "ship",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 3,
+      "passed": false,
+      "overall": 30,
+      "blockers": [
+        "low_quality",
+        "ambiguous_visual_story",
+        "readable_text"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.035854
+    },
+    {
+      "key": "2-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 1,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "ui_chrome",
+        "opaque_abstraction",
+        "off_news"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.03403
+    },
+    {
+      "key": "2-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 2,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "collage_panels",
+        "ui_chrome",
+        "opaque_abstraction",
+        "off_news",
+        "missing_context"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.029098
+    },
+    {
+      "key": "2-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 3,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "ui_chrome",
+        "opaque_abstraction",
+        "off_news"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.038326
+    },
+    {
+      "key": "4-current",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 1,
+      "passed": false,
+      "overall": 45,
+      "blockers": [
+        "ambiguous_visual_story",
+        "missing_consequence",
+        "off_news"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.03941
+    },
+    {
+      "key": "4-current",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 2,
+      "passed": false,
+      "overall": 60,
+      "blockers": [
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.03785
+    },
+    {
+      "key": "4-current",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 3,
+      "passed": false,
+      "overall": 45,
+      "blockers": [
+        "ambiguous_visual_story",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.041918
+    },
+    {
+      "key": "4-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 1,
+      "passed": false,
+      "overall": 50,
+      "blockers": [
+        "off_news",
+        "missing_context"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.036206
+    },
+    {
+      "key": "4-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 2,
+      "passed": true,
+      "overall": 88,
+      "blockers": [],
+      "parseFailed": false,
+      "costUsd": 0.02735
+    },
+    {
+      "key": "4-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 3,
+      "passed": true,
+      "overall": 88,
+      "blockers": [],
+      "parseFailed": false,
+      "costUsd": 0.02657
+    },
+    {
+      "key": "6-current",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 1,
+      "passed": false,
+      "overall": 20,
+      "blockers": [
+        "readable_text",
+        "missing_mechanism"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.035616
+    },
+    {
+      "key": "6-current",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 2,
+      "passed": false,
+      "overall": 0,
+      "blockers": [
+        "readable_text",
+        "low_quality",
+        "missing_mechanism"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.02928
+    },
+    {
+      "key": "6-current",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 3,
+      "passed": false,
+      "overall": 20,
+      "blockers": [
+        "readable_text",
+        "missing_mechanism",
+        "low_quality"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.03012
+    },
+    {
+      "key": "6-compiler",
+      "verdict": "defect",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 1,
+      "passed": false,
+      "overall": 20,
+      "blockers": [
+        "collage_panels",
+        "opaque_abstraction",
+        "off_news"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.026676
+    },
+    {
+      "key": "6-compiler",
+      "verdict": "defect",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 2,
+      "passed": false,
+      "overall": 30,
+      "blockers": [
+        "collage_panels",
+        "opaque_abstraction",
+        "missing_mechanism",
+        "missing_context"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.03186
+    },
+    {
+      "key": "6-compiler",
+      "verdict": "defect",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 3,
+      "passed": false,
+      "overall": 30,
+      "blockers": [
+        "collage_panels",
+        "opaque_abstraction"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.028584
+    },
+    {
+      "key": "7-current",
+      "verdict": "defect",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 1,
+      "passed": false,
+      "overall": 45,
+      "blockers": [
+        "low_quality",
+        "prop_use_mismatch",
+        "missing_mechanism"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.036268
+    },
+    {
+      "key": "7-current",
+      "verdict": "defect",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 2,
+      "passed": false,
+      "overall": 40,
+      "blockers": [
+        "low_quality"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.038152
+    },
+    {
+      "key": "7-current",
+      "verdict": "defect",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 3,
+      "passed": false,
+      "overall": 45,
+      "blockers": [
+        "missing_mechanism",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.036628
+    },
+    {
+      "key": "7-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 1,
+      "passed": false,
+      "overall": 45,
+      "blockers": [
+        "ui_chrome",
+        "ambiguous_visual_story"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.036604
+    },
+    {
+      "key": "7-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 2,
+      "passed": false,
+      "overall": 30,
+      "blockers": [
+        "ui_chrome",
+        "brand_unsafe",
+        "off_news",
+        "readable_text"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.04786
+    },
+    {
+      "key": "7-compiler",
+      "verdict": "reject",
+      "model": "google/gemini-3.1-pro-preview",
+      "sample": 3,
+      "passed": false,
+      "overall": 15,
+      "blockers": [
+        "ui_chrome",
+        "brand_unsafe",
+        "off_news",
+        "missing_context",
+        "missing_mechanism",
+        "missing_consequence"
+      ],
+      "parseFailed": false,
+      "costUsd": 0.04726
+    }
+  ]
+}

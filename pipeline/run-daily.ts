@@ -20,6 +20,7 @@ import { summarize, type DraftBrief } from './summarize';
 import { reviseFlaggedItems, verifyClaims } from './verify';
 import { publish } from './publish';
 import { fillCardImages } from './card-image';
+import { fillDailyCoverPrompt } from './daily-cover-prompt';
 import { notifyReview } from './notify';
 import { createEmbedder, type EmbedFn } from './embeddings';
 import {
@@ -132,7 +133,7 @@ async function main(): Promise<void> {
   });
   const runMeta = { cycle: cycleIndex, schedule_attempt: scheduleAttempt };
   // OpenRouter is only called after Gemini exhausts retries; enable whenever the key
-  // is set so early cron slots don't hard-fail on transient 503s from gemini-3.5-flash.
+  // is set so early cron slots don't hard-fail on transient 503s from the primary Gemini model.
   const openRouterKey = config.openRouterApiKey;
   const geminiAttempts = geminiMaxAttemptsForSlot(scheduleAttempt);
 
@@ -661,6 +662,18 @@ async function main(): Promise<void> {
     } catch (e) {
       logError('publish', 'fillCardImages failed (non-fatal)', e);
     }
+  }
+
+  // Edition cover prompt (best-effort). One LLM call for the pack, stored on
+  // briefs.cover_prompt and pushed as a separate Telegram message. Never renders.
+  if (result.itemCount > 0) {
+    t = Date.now();
+    const coverStatus = await fillDailyCoverPrompt(db, result.briefId);
+    logEvent('info', 'publish', 'Daily cover prompt', {
+      brief_id: result.briefId,
+      status: coverStatus,
+      duration_ms: Date.now() - t,
+    });
   }
 
   // ── Notify for review (optional) ─────────────────────────────────────────────

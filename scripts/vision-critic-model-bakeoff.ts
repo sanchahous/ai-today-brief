@@ -32,6 +32,10 @@ import { join, resolve } from 'node:path';
 
 import { generateWithVision } from '../pipeline/providers/vision';
 import {
+  criticHeadlineFromManifestRow,
+  type BakeoffManifestRow,
+} from '../src/lib/content-sim/bakeoff-manifest';
+import {
   buildImageCriticPrompt,
   parseImageCriticResponse,
   type ImageCriticBlockerCode,
@@ -72,17 +76,7 @@ interface GroundTruthFile {
   items: GroundTruthItem[];
 }
 
-interface ManifestRow {
-  rank: number;
-  headline?: string;
-  story: {
-    title: string;
-    summary?: string;
-    why?: string | null;
-    practical?: string | null;
-    takeaway?: string | null;
-  };
-}
+type ManifestRow = BakeoffManifestRow;
 
 interface Observation {
   key: string;
@@ -98,12 +92,16 @@ interface Observation {
 }
 
 function promptFor(row: ManifestRow): string {
+  const headline = criticHeadlineFromManifestRow(row);
+  if (!headline) {
+    throw new Error(`manifest row rank ${row.rank} has no headline or story.title`);
+  }
   return buildImageCriticPrompt({
-    headline: row.story.title,
-    summary: row.story.summary ?? undefined,
-    why: row.story.why ?? undefined,
-    practical: row.story.practical ?? undefined,
-    takeaway: row.story.takeaway ?? undefined,
+    headline,
+    summary: row.story?.summary ?? undefined,
+    why: row.story?.why ?? undefined,
+    practical: row.story?.practical ?? undefined,
+    takeaway: row.story?.takeaway ?? undefined,
     policyId: 'weekly-semantic-story-v5.1',
   });
 }
@@ -118,13 +116,19 @@ async function observe(
   const base = { key, verdict: item.verdict, model, sample };
   try {
     const imageBytes = await readFile(join(PACKAGE_DIR, item.image));
-    const result = await generateWithVision('weekly.image_critic', {
-      prompt: promptFor(row),
-      imageBytes,
-      mimeType: 'image/jpeg',
-      openRouterModel: model,
-      timeoutMs: 120_000,
-    });
+    // Per-model override is OpenRouter-only. Gemini would ignore it and score
+    // every arm identically — same reason the workflow withholds GEMINI_API_KEY.
+    const result = await generateWithVision(
+      'weekly.image_critic',
+      {
+        prompt: promptFor(row),
+        imageBytes,
+        mimeType: 'image/jpeg',
+        openRouterModel: model,
+        timeoutMs: 120_000,
+      },
+      { ...process.env, GEMINI_API_KEY: undefined },
+    );
     const critique = parseImageCriticResponse(result.text);
     return {
       ...base,
@@ -173,6 +177,10 @@ async function main(): Promise<void> {
       const row = rowByRank.get(item.rank);
       if (!row) {
         console.warn(`[bakeoff] no manifest row for rank ${item.rank}; skipping ${item.image}`);
+        continue;
+      }
+      if (!criticHeadlineFromManifestRow(row)) {
+        console.warn(`[bakeoff] rank ${item.rank} has no headline; skipping ${item.image}`);
         continue;
       }
       for (let sample = 1; sample <= SAMPLES; sample += 1) {
@@ -326,6 +334,11 @@ async function main(): Promise<void> {
   ];
   await writeFile(join(OUT_DIR, 'bakeoff-report.md'), `${lines.join('\n')}\n`);
   console.log(`\n[bakeoff] wrote ${join(OUT_DIR, 'bakeoff-report.md')}`);
+  const errorCount = observations.filter((observation) => observation.error).length;
+  if (observations.length > 0 && errorCount === observations.length) {
+    console.error('[bakeoff] every sample errored; not a valid model comparison');
+    process.exitCode = 1;
+  }
   for (const entry of perModel) {
     console.log(
       `[bakeoff] ${entry.model}: rejected ${entry.rejectCaught}/${entry.rejectTotal}, ` +
