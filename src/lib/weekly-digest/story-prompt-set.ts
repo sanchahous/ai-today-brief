@@ -3,6 +3,11 @@
  * empty-safe when the worker has not written a set yet.
  */
 
+import {
+  ownerFeedbackFromPromptSet,
+  type OwnerFeedbackMap,
+} from './owner-feedback';
+
 export const STORY_PROMPT_SET_TYPE = 'story_prompt_set' as const;
 
 export const STORY_PROMPT_COPY_KINDS = ['canonical', 'midjourney', 'negative'] as const;
@@ -35,6 +40,7 @@ export interface StoryPromptSetContent {
   prompts: StoryPromptCard[];
   policy: string | null;
   generatedAt: string | null;
+  ownerFeedback: OwnerFeedbackMap;
 }
 
 export interface StoryPromptCopyTarget {
@@ -101,6 +107,7 @@ export function parseStoryPromptSetContent(value: unknown): StoryPromptSetConten
     prompts,
     policy: asTrimmedString(value.policy),
     generatedAt: asTrimmedString(value.generated_at),
+    ownerFeedback: ownerFeedbackFromPromptSet(value),
   };
 }
 

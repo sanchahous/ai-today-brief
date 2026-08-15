@@ -33,6 +33,7 @@ import {
   storyImageSlotState,
   storyPromptReadiness,
 } from '@/lib/weekly-digest/story-prompt-set';
+import { ownerFeedbackFromImageMetadata } from '@/lib/weekly-digest/owner-feedback';
 import {
   adviceForPostUploadQa,
   parsePostUploadQa,
@@ -2989,6 +2990,14 @@ function VisualsPanel({
             policy={coverPromptSet?.policy ?? null}
             generatedAt={coverPromptSet?.generatedAt ?? null}
             slotState={coverSlot}
+            weeklyDigestId={workspace.digest.id}
+            promptSetArtifactId={coverPromptArtifact?.id}
+            imageArtifactId={cover?.id}
+            ownerFeedback={{
+              ...ownerFeedbackFromImageMetadata(cover?.metadata),
+              ...coverPromptSet?.ownerFeedback,
+            }}
+            canEdit={canEdit}
           >
             <ReplacementAssetForm
               workspace={workspace}
@@ -3107,6 +3116,14 @@ function VisualsPanel({
                   slotState={imageSlot}
                   readinessLabel={promptReadiness.label}
                   readinessDetail={promptReadiness.detail}
+                  weeklyDigestId={workspace.digest.id}
+                  promptSetArtifactId={promptArtifact?.id}
+                  imageArtifactId={artifact?.id}
+                  ownerFeedback={{
+                    ...ownerFeedbackFromImageMetadata(artifact?.metadata),
+                    ...promptSet?.ownerFeedback,
+                  }}
+                  canEdit={canEdit}
                 >
                   <ReplacementAssetForm
                     workspace={workspace}

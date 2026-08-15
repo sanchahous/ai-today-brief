@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — E1: owner-feedback contract на концепт
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E1.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/weekly-digest](pipeline/weekly-digest.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** `owner-feedback.ts` + форма на картці концепту. Вердикт у `story_prompt_set` і в
+`metadata.owner_feedback` upload. Snapshot `canonical`. Немає auto-export у `experiments/`.
+
+**Тест:** `owner verdict from admin lands on the prompt set and uploaded image metadata`.
+
+**Не зроблено в цій хвилі:** E2 двостадійний критик.
+
 ## 2026-08-15 — D3: human_dignity_risk у критику
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) D3.

@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -868,6 +868,16 @@ PDF §14.1. В адмінці до кожного **концепту** (не д�
 `experiments/critic-ground-truth/owner-verdicts-v6.json` вручну. Вони мають накопичуватись самі
 і ставати calibration dataset для роутера і для критика.
 
+### E1 ✅ Зроблено 2026-08-15 — owner-feedback contract
+
+У Visuals на кожному концепті: `used | used_with_edits | rejected` + закритий список
+`reasonTags`. Запис іде в `story_prompt_set.content.owner_feedback` і дзеркалиться в
+`metadata.owner_feedback` завантаженого файлу (поруч із `post_upload_qa`). Snapshot
+`canonical` лишається в записі, тож перегенерація промптів не стирає judged prompt.
+Вага preflight без змін. Немає ручного копіювання в `experiments/`.
+(source: `src/lib/weekly-digest/owner-feedback.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
+`src/components/admin/story-prompt-set-panel.tsx`)
+
 ### E2. Двостадійний критик
 
 PDF §8. Спершу image-only — без headline, без scene brief, без labels: буквальні обʼєкти, дії,
@@ -1203,7 +1213,7 @@ npm run pr:check
 | D2 | ✅ `baked text QA advises inpaint not a full regenerate`; Visuals показує do/dont; без auto-repair |
 | D3 | ✅ `fails on human_dignity_risk even with a high score`; upload попереджає «ризик гідності» |
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |
-| E1 | вердикт власника з адмінки потрапляє в calibration dataset без ручного перенесення |
+| E1 | ✅ `owner verdict from admin lands on the prompt set and uploaded image metadata` |
 
 Після кожної хвилі — `wiki/log.md` (append-only, нові записи **зверху**) + `wiki/index.md`.
 Кожна хвиля — окремий PR, `pr:check` перед push, ніколи не в `main` напряму.

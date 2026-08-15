@@ -31,6 +31,7 @@ describe('parseStoryPromptSetContent', () => {
       prompts: [],
       policy: null,
       generatedAt: null,
+      ownerFeedback: {},
     });
   });
 
@@ -54,6 +55,24 @@ describe('parseStoryPromptSetContent', () => {
     expect(kinds.filter((kind) => kind === 'negative')).toHaveLength(3);
     expect(storyImageSlotState(undefined)).toBe('waiting');
     expect(STORY_IMAGE_SLOT_LABEL.waiting).toBe('очікує зображення');
+    expect(parsed?.ownerFeedback).toEqual({});
+  });
+
+  it('reads owner_feedback stored next to the copy-ready prompts', () => {
+    const parsed = parseStoryPromptSetContent({
+      prompts: [prompt({ conceptLens: 'mechanism' })],
+      owner_feedback: {
+        mechanism: {
+          verdict: 'used_with_edits',
+          reasonTags: ['good_concept_bad_execution', 'bogus'],
+          recordedAt: '2026-08-15T12:00:00.000Z',
+          promptTitle: 'Teleprinter adapter',
+          canonical: 'A brass adapter card being pushed into a teleprinter terminal.',
+        },
+      },
+    });
+    expect(parsed?.ownerFeedback.mechanism?.verdict).toBe('used_with_edits');
+    expect(parsed?.ownerFeedback.mechanism?.reasonTags).toEqual(['good_concept_bad_execution']);
   });
 
   it('drops prompt rows that are missing a copy-ready field', () => {

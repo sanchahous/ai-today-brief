@@ -394,6 +394,12 @@ fail; на upload — попередження «ризик гідності», 
 (source: `src/lib/content-sim/vision-critic.ts`, `src/lib/weekly-digest/post-upload-qa.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) D3)
 
+**E1 owner-feedback (2026-08-15):** на кожному концепті Visuals — `used | used_with_edits |
+rejected` + закриті `reasonTags`. Пишеться в `story_prompt_set` і в `metadata.owner_feedback`
+завантаженого файлу. Вага preflight без змін.
+(source: `src/lib/weekly-digest/owner-feedback.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) E1)
+
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.

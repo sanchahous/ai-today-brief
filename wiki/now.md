@@ -10,6 +10,11 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **E1 — owner-feedback contract (2026-08-15).** На кожному концепті Visuals: використано /
+  з правками / відхилено + закриті `reasonTags`. Пишеться в `story_prompt_set` і поруч із
+  `post_upload_qa`. Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E1,
+  `src/lib/weekly-digest/owner-feedback.ts`)
 - **D3 — етичний блокер `human_dignity_risk` (2026-08-15).** Критик ловить принизливі
   сцени (напр. робот тримає дитину за голову): на новинах — fail, на upload — попередження
   «ризик гідності». Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.

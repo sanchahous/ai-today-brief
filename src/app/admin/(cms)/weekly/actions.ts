@@ -33,6 +33,15 @@ import {
   type PostUploadQa,
 } from '@/lib/weekly-digest/post-upload-qa';
 import { reviewUploadedImage } from '@/lib/weekly-digest/run-post-upload-qa';
+import {
+  applyOwnerFeedbackToImageMetadata,
+  applyOwnerFeedbackToPromptSet,
+  mergeOwnerFeedbackOntoImageMetadata,
+  ownerFeedbackFromPromptSet,
+  recordOwnerConceptFeedback,
+  type OwnerConceptFeedback,
+} from '@/lib/weekly-digest/owner-feedback';
+import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
 
 function requiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -144,6 +153,52 @@ async function persistPostUploadQa(
     return;
   }
   revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+async function loadPromptSetOwnerFeedback(input: {
+  weeklyDigestId: string;
+  revisionId: string;
+  artifactType: string;
+  revisionItemId: string | null;
+}) {
+  if (input.artifactType === 'cover') {
+    return fetchPromptSetOwnerFeedback({
+      weeklyDigestId: input.weeklyDigestId,
+      revisionId: input.revisionId,
+      slotKey: COVER_PROMPT_SLOT,
+    });
+  }
+  if (input.artifactType === 'story_image' && input.revisionItemId) {
+    return fetchPromptSetOwnerFeedback({
+      weeklyDigestId: input.weeklyDigestId,
+      revisionId: input.revisionId,
+      revisionItemId: input.revisionItemId,
+    });
+  }
+  return {};
+}
+
+async function fetchPromptSetOwnerFeedback(input: {
+  weeklyDigestId: string;
+  revisionId: string;
+  slotKey?: string;
+  revisionItemId?: string;
+}) {
+  const admin = getSupabaseAdmin();
+  let query = admin
+    .from('weekly_digest_artifacts')
+    .select('content')
+    .eq('weekly_digest_id', input.weeklyDigestId)
+    .eq('revision_id', input.revisionId)
+    .eq('artifact_type', 'story_prompt_set');
+  if (input.slotKey) query = query.eq('slot_key', input.slotKey);
+  if (input.revisionItemId) query = query.eq('revision_item_id', input.revisionItemId);
+  const { data, error } = await query.maybeSingle();
+  if (error) {
+    console.error('[weekly-owner-feedback] load prompt set failed', error.message);
+    return {};
+  }
+  return ownerFeedbackFromPromptSet(data?.content);
 }
 
 function schedulePostUploadQa(input: {
@@ -1789,6 +1844,23 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
   if (storedBytes.length !== bytes.length || !storedBytes.equals(bytes)) {
     throw new Error('Upload verification failed: stored bytes do not match the selected file.');
   }
+  const uploadMetadata = mergeOwnerFeedbackOntoImageMetadata(
+    {
+      source: 'manual_upload',
+      original_name: fileValue.name,
+      focal_point: optionalString(formData, 'focal_point') || null,
+      sha256,
+      ...(artifactType === 'story_image' || artifactType === 'cover'
+        ? { post_upload_qa: POST_UPLOAD_QA_PENDING }
+        : {}),
+    },
+    await loadPromptSetOwnerFeedback({
+      weeklyDigestId,
+      revisionId,
+      artifactType,
+      revisionItemId: revisionItemId || null,
+    }),
+  );
   const db = await getSupabaseServer();
   const { data: artifactId, error } = await db.rpc('save_weekly_digest_artifact', {
     p_weekly_digest_id: weeklyDigestId,
@@ -1810,15 +1882,7 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
     p_width: width,
     p_height: height,
     p_byte_size: bytes.length,
-    p_metadata: {
-      source: 'manual_upload',
-      original_name: fileValue.name,
-      focal_point: optionalString(formData, 'focal_point') || null,
-      sha256,
-      ...(artifactType === 'story_image' || artifactType === 'cover'
-        ? { post_upload_qa: POST_UPLOAD_QA_PENDING }
-        : {}),
-    } as Json,
+    p_metadata: uploadMetadata as unknown as Json, // JSONB: upload meta + optional owner_feedback map.
   });
   if (error) throw new Error(error.message);
   if (
@@ -1848,6 +1912,85 @@ export async function ignorePostUploadQaAction(formData: FormData) {
   const current = parsePostUploadQa(data.metadata);
   if (!current) throw new Error('No post-upload QA to ignore.');
   await persistPostUploadQa(artifactId, weeklyDigestId, ignorePostUploadQa(current));
+}
+
+export async function saveWeeklyOwnerFeedbackAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const promptSetArtifactId = requiredString(formData, 'prompt_set_artifact_id');
+  const imageArtifactId = optionalString(formData, 'image_artifact_id');
+  const conceptLens = requiredString(formData, 'concept_lens');
+  const entry = recordOwnerConceptFeedback({
+    verdict: requiredString(formData, 'verdict'),
+    reasonTags: alignedStrings(formData, 'reason_tag').filter(Boolean),
+    promptTitle: optionalString(formData, 'prompt_title'),
+    canonical: optionalString(formData, 'canonical'),
+  });
+  if (!entry) throw new Error('Choose used, used with edits, or rejected.');
+  await persistOwnerFeedbackArtifacts({
+    promptSetArtifactId,
+    imageArtifactId,
+    conceptLens,
+    entry,
+  });
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+async function persistOwnerFeedbackArtifacts(input: {
+  promptSetArtifactId: string;
+  imageArtifactId: string;
+  conceptLens: string;
+  entry: OwnerConceptFeedback;
+}) {
+  const admin = getSupabaseAdmin();
+  const { data: promptRow, error: promptError } = await admin
+    .from('weekly_digest_artifacts')
+    .select('content, artifact_type')
+    .eq('id', input.promptSetArtifactId)
+    .maybeSingle();
+  if (promptError) throw new Error(promptError.message);
+  if (!promptRow || promptRow.artifact_type !== 'story_prompt_set') {
+    throw new Error('Prompt set not found.');
+  }
+  const nextContent = applyOwnerFeedbackToPromptSet(
+    promptRow.content,
+    input.conceptLens,
+    input.entry,
+  );
+  const { error: contentError } = await admin
+    .from('weekly_digest_artifacts')
+    .update({
+      // JSONB: owner_feedback map is a JSON object, not a Json union member.
+      content: nextContent as unknown as Json,
+    })
+    .eq('id', input.promptSetArtifactId);
+  if (contentError) throw new Error(contentError.message);
+  if (!input.imageArtifactId) return;
+  const { data: imageRow, error: imageError } = await admin
+    .from('weekly_digest_artifacts')
+    .select('metadata, artifact_type')
+    .eq('id', input.imageArtifactId)
+    .maybeSingle();
+  if (imageError) throw new Error(imageError.message);
+  if (
+    !imageRow ||
+    (imageRow.artifact_type !== 'story_image' && imageRow.artifact_type !== 'cover')
+  ) {
+    return;
+  }
+  const nextMetadata = applyOwnerFeedbackToImageMetadata(
+    imageRow.metadata,
+    input.conceptLens,
+    input.entry,
+  );
+  const { error: metaError } = await admin
+    .from('weekly_digest_artifacts')
+    .update({
+      // JSONB: owner_feedback sits beside post_upload_qa.
+      metadata: nextMetadata as unknown as Json,
+    })
+    .eq('id', input.imageArtifactId);
+  if (metaError) throw new Error(metaError.message);
 }
 
 // Kept as a separate export so the Release tab contract stays stable while
