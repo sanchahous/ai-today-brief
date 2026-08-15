@@ -133,7 +133,7 @@ async function main(): Promise<void> {
   });
   const runMeta = { cycle: cycleIndex, schedule_attempt: scheduleAttempt };
   // OpenRouter is only called after Gemini exhausts retries; enable whenever the key
-  // is set so early cron slots don't hard-fail on transient 503s from gemini-3.5-flash.
+  // is set so early cron slots don't hard-fail on transient 503s from the primary Gemini model.
   const openRouterKey = config.openRouterApiKey;
   const geminiAttempts = geminiMaxAttemptsForSlot(scheduleAttempt);
 

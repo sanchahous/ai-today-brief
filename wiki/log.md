@@ -6,6 +6,22 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — F5: без пінів версії моделі в прод-коді
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F5.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/llm-providers](pipeline/llm-providers.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[now](now.md), [index](index.md).
+
+**Код:** прод `pipeline/` / `src/` без `sonnet-5` / `gpt-5` / `gemini-3.x` поза тестами.
+Trend `gpt` без номера покоління. Немає image-абстракції (F4). Vision-модель не чіпали.
+
+**Тест:** `production pipeline/ and src/ do not pin sonnet-5, gpt-5, or gemini-3.x ids`.
+
+**Не зроблено в цій хвилі:** F4, стискання origin PNG
+([ops/vercel-image-quota](ops/vercel-image-quota.md)).
+
 ## 2026-08-15 — A2: bake-off vision-критика
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) A2;

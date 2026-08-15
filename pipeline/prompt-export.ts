@@ -19,9 +19,6 @@ export type ImageGrammar = SceneGrammar;
 
 export const MANUAL_PROMPT_ASPECT = '16:9' as const;
 
-/** Flagged in tests so exported prompts never pin a model version. */
-export const MODEL_VERSION_TOKEN = /sonnet-5|gpt-5|gemini-3\.[0-9]|--v\s*\d/i;
-
 const NO_TEXT_OVERLAY =
   'Labels and captions are added later in a separate layer — the image itself carries no writing of any kind.';
 const MIDJOURNEY_NO_TEXT = '--no text, letters, logos, watermarks, UI';

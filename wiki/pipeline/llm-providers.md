@@ -63,6 +63,12 @@ https://build.nvidia.com/ — Kimi K3, DeepSeek V4, GLM 5.2 через OpenAI-с
 секція Model ranking. Image-абстракції немає (F4).
 (source: [weekly-illustration-plan](weekly-illustration-plan.md) F3)
 
+**F5 no pinned generation ids (2026-08-15).** Прод `pipeline/` і `src/` не містять
+`sonnet-5` / `gpt-5` / `gemini-3.x` поза тестами. Черги беруться з каталогу
+(`DEFAULT_MODEL_PRIORITY` — family і `-latest`). Vision-модель A2 не перемикали.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) F5,
+`pipeline/model-version-pin.test.ts`)
+
 **F2 model scoring (2026-08-15).** `pipeline/providers/model-scoring.ts` рахує якість на долар
 з живих `pricing` і `benchmarks.artificial_analysis` (окрема вісь на роль). Floor:
 `weekly.master_writer` / `weekly.master_critic` 40, `daily.summarize` 25. Ланцюжок = топ-3

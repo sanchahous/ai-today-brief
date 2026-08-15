@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅ → F3 ✅ → G ✅ → A2 ✅
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅ → F3 ✅ → G ✅ → A2 ✅ → F5 ✅
 ```
 
 **B1 виконано** (причина знайдена). B1-fix і B2 йдуть першими, бо від них залежить якість
@@ -1070,17 +1070,17 @@ scoreModelForRole(model, role):
 квартал. **Не будуй абстракцію під це** — після 2026-08-15 вона обслуговувала б одну гілку з
 одним провайдером.
 
-### F5. Готово коли
+### F5 ✅ Зроблено 2026-08-15 — без пінів версії в прод-коді
 
-- для ролей із порогом працює `scoreModelForRole`, і тест доводить, що модель із
-  `intelligence_index` 14.2 і ціною $0.01 **не** обирається для `weekly.master_writer`
-  — **F2 ✅**;
-- у коді немає жодного номера версії моделі:
-  `grep -rE "sonnet-5|gpt-5|gemini-3\.[0-9]" pipeline/ src/` порожній поза тестами й фікстурами
-  — лишається F5 cleanup (не ця хвиля);
-- добовий job оновлює `llm_provider_models` і пише аудит-рядок на кожну роль — **F3 ✅**;
-- `/admin/providers` показує обрану модель для кожної ролі з балом і датою — **F3 ✅**;
-- `wiki/pipeline/llm-providers.md` оновлено — там живе опис реєстру.
+`grep -rE "sonnet-5|gpt-5|gemini-3\.[0-9]" pipeline/ src/` порожній поза `*.test.ts`.
+Прод більше не тримає конкретні generation id: коментарі узагальнені, `MODEL_VERSION_TOKEN`
+лише в тесті промптів, trend-entity `gpt` шукає ChatGPT/OpenAI без номера, `entityKeyForTool`
+згортає `gpt-{digit}…` на ключ `gpt`. Тест
+`production pipeline/ and src/ do not pin sonnet-5, gpt-5, or gemini-3.x ids`.
+Вибір моделей лишається з живого каталогу (`DEFAULT_MODEL_PRIORITY` — family/`-latest`).
+`CONTENT_SIM_VISION_OPENROUTER_MODEL` не чіпали. F4 не будується. Картинки дайджесту
+ручні.
+(source: `pipeline/model-version-pin.test.ts`, `src/lib/trend-index.ts`)
 
 ---
 
@@ -1263,7 +1263,8 @@ npm run pr:check
 | E3 | ✅ `promotion gate passes when 60% of concepts are acceptable on the first or second owner attempt`; `prompt promotion gate fails on misleading accepted concepts without blocking release preflight` |
 | F2 | ✅ `a model with intelligence_index 14.2 at $0.01 is not chosen for weekly.master_writer` |
 | F3 | ✅ `does not apply a cheaper winner when quality drops below the current pick`; `writes an audit row per role with score price and quality` |
-| G | ✅ `illustration budget uses ledger events not policy spend caps`; `does not treat weekly master LLM as illustration API spend`; cap новин лишається 0.2 | |
+| G | ✅ `illustration budget uses ledger events not policy spend caps`; `does not treat weekly master LLM as illustration API spend`; cap новин лишається 0.2 |
+| F5 | ✅ `production pipeline/ and src/ do not pin sonnet-5, gpt-5, or gemini-3.x ids` |
 
 Після кожної хвилі — `wiki/log.md` (append-only, нові записи **зверху**) + `wiki/index.md`.
 Кожна хвиля — окремий PR, `pr:check` перед push, ніколи не в `main` напряму.

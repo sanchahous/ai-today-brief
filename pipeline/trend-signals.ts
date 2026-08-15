@@ -45,7 +45,7 @@ export const TREND_ENTITIES: readonly TrendEntity[] = [
   { key: 'a2a', query: '"agent2agent" OR "a2a protocol"', lifecycle: 'flat' },
   { key: 'agents-md', query: '"agents.md"', lifecycle: 'flat' },
   { key: 'cursor', query: '"cursor" (AI OR "code editor" OR anysphere)', lifecycle: 'flat' },
-  { key: 'gpt', query: '"gpt-5"', lifecycle: 'flat' },
+  { key: 'gpt', query: '"chatgpt" OR "openai gpt"', lifecycle: 'flat' },
   { key: 'grok', query: '"grok" (xai OR AI OR model)', lifecycle: 'flat' },
   { key: 'deepseek', query: '"deepseek"', lifecycle: 'flat' },
   { key: 'crewai', query: '"crewai"', lifecycle: 'flat' },

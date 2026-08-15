@@ -18,8 +18,6 @@ import { getSupabase } from '@/lib/supabase';
  * entity key is broader than a literal slug of the tool name.
  */
 const ENTITY_ALIASES: Record<string, string> = {
-  'gpt-5': 'gpt',
-  'gpt-5.5': 'gpt',
   chatgpt: 'gpt',
   openai: 'gpt',
   'model context protocol': 'mcp',
@@ -35,6 +33,8 @@ const ENTITY_ALIASES: Record<string, string> = {
 /** Normalize a tool name to the trend-entity key used in `entity_trend_signals`. */
 export function entityKeyForTool(name: string): string {
   const norm = name.trim().toLowerCase();
+  // Numbered GPT releases collapse onto the `gpt` entity without pinning a generation.
+  if (/^gpt-\d/.test(norm)) return 'gpt';
   return ENTITY_ALIASES[norm] ?? norm.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 

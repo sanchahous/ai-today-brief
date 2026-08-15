@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { EditorialEssence, WeeklyReportageSceneBriefResult } from './card-image';
-import {
-  MODEL_VERSION_TOKEN,
-  exportManualImagePrompt,
-  exportManualImagePrompts,
-  type ImageGrammar,
-} from './prompt-export';
+import { exportManualImagePrompt, exportManualImagePrompts, type ImageGrammar } from './prompt-export';
+
+/** Production `prompt-export.ts` must not contain these literals (F5). */
+const MODEL_VERSION_TOKEN = /sonnet-5|gpt-5|gemini-3\.[0-9]|--v\s*\d/i;
 
 const CLI_ESSENCE: EditorialEssence = {
   storyContext:

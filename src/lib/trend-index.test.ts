@@ -19,6 +19,7 @@ describe('entityKeyForTool', () => {
 
   it('maps known aliases onto the broader tracked entity', () => {
     expect(entityKeyForTool('GPT-5')).toBe('gpt');
+    expect(entityKeyForTool('GPT-5.5')).toBe('gpt');
     expect(entityKeyForTool('ChatGPT')).toBe('gpt');
     expect(entityKeyForTool('Model Context Protocol')).toBe('mcp');
     expect(entityKeyForTool('vibe coding')).toBe('ai-coding');

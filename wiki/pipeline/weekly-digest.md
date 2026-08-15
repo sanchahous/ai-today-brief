@@ -431,6 +431,11 @@ B2 «не три копії». Це не preflight-код і не змінює `
 (source: [weekly-illustration-plan](weekly-illustration-plan.md) A2,
 `experiments/critic-bakeoff/2026-08-15/`)
 
+**F5 no pinned generation ids (2026-08-15):** прод не тримає `sonnet-5` / `gpt-5` /
+`gemini-3.x` поза тестами. Це не змінює `WEEKLY_CONTENT_STUDIO_V2=off`.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) F5,
+`pipeline/model-version-pin.test.ts`)
+
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.

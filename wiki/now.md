@@ -10,6 +10,11 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **F5 — без пінів версії моделі в прод-коді (2026-08-15).** `pipeline/` і `src/` поза тестами
+  не містять `sonnet-5` / `gpt-5` / `gemini-3.x`. Вибір іде з живого каталогу. Vision-модель
+  A2 не перемикали. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F5,
+  `pipeline/model-version-pin.test.ts`)
 - **A2 — bake-off vision-критика (2026-08-15).** Actions `31879588071`: усі три моделі
   `Kept the good = 0/1` (зарубали єдину owner-схвалену картку). `claude-sonnet-5` unfit.
   `gemini-3.1-pro-preview` ще й пропустив reject. Модель **не** перемикали — лишаємось на
