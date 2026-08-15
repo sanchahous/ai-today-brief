@@ -202,6 +202,11 @@ title/summary, не practical/takeaway. Метрика → `deterministic_techni
 (source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) E3,
 `src/lib/weekly-digest/prompt-promotion-gate.ts`)
 
+**A2 — bake-off критика (2026-08-15):** `CONTENT_SIM_VISION_OPENROUTER_MODEL` лишається
+`google/gemini-2.5-flash`. Усі три моделі в прогоні `31879588071` дали `Kept the good = 0/1`.
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) A2,
+`experiments/critic-bakeoff/2026-08-15/`)
+
 **P2 — Visuals copy/upload (2026-08-15):** артефакт `story_prompt_set` (текст, не в
 `PUBLIC_IMAGE_TYPES`) + картки Canonical / Midjourney / Negative і слот upload на вкладці
 Visuals.

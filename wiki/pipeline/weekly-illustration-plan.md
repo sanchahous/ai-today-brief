@@ -188,8 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅ → F3 ✅ → G ✅
-A2 — незалежна, можна паралельно
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅ → F3 ✅ → G ✅ → A2 ✅
 ```
 
 **B1 виконано** (причина знайдена). B1-fix і B2 йдуть першими, бо від них залежить якість
@@ -204,21 +203,25 @@ M (ручний режим) можна робити паралельно з B, �
 
 Виправлено хибне твердження у wiki про те, що продакшн не брав участі в порівнянні.
 
-### A2. Прогнати bake-off критика
+### A2 ✅ Зроблено 2026-08-15 — bake-off критика
 
-Актуальність після 2026-08-15 **знижена, але не нульова**: критик далі працює на новинах і
-стає post-upload QA (розділ M2). Не робити цього першим.
+Критику порівняно на owner-вердиктах v6 (Actions
+[`31879588071`](https://github.com/sanchahous/ai-today-brief/actions/runs/31879588071)).
+Перший диспатч на `main` (`31879216723`) хибний: скрипт читав `story.title`, v6-маніфест має
+`headline`, API не викликався.
 
-- **Передумова знята:** PR #236 змержено в `main` 2026-08-15 (`e689211`) — воркфлоу готовий до
-  запуску.
-- **Дія:** `gh workflow run vision-critic-bakeoff.yml --repo sanchahous/ai-today-brief --ref main`
-- **Що читати:** колонки `Rejected the bad` і **`Kept the good`** разом. Якщо
-  `claude-sonnet-5` дає `Kept the good = 0/1` — він заріже єдину картку, яку власник схвалив,
-  і **не годиться**; лишаємось на `gemini-2.5-flash`.
-- **Не робити:** не перемикати `CONTENT_SIM_VISION_OPENROUTER_MODEL` автоматично. Це рішення
-  власника.
-- **Обмеження, яке треба назвати у звіті:** позитив рівно один (n=1). Тест може дискваліфікувати
-  модель, але не підтвердити.
+| Model | Rejected the bad | Kept the good | Cost |
+|---|---:|---:|---:|
+| `google/gemini-2.5-flash` | 6/6 | 0/1 | $0.0894 |
+| `anthropic/claude-sonnet-5` | 6/6 | 0/1 | $0.7612 |
+| `google/gemini-3.1-pro-preview` | 5/6 | 0/1 | $1.0714 |
+
+Усі три зарубали єдину owner-схвалену картку. За правилом специфікації `claude-sonnet-5`
+з `Kept the good = 0/1` **не годиться**. `gemini-3.1-pro-preview` ще й пропустив reject.
+`CONTENT_SIM_VISION_OPENROUTER_MODEL` **не** перемикали — лишаємось на `google/gemini-2.5-flash`.
+Позитив n=1: тест дискваліфікує, не підтверджує. Картинки дайджесту лишаються ручними.
+(source: `experiments/critic-bakeoff/2026-08-15/`,
+`src/lib/content-sim/bakeoff-manifest.ts`)
 
 ### A3 ✅ Зроблено 2026-08-14 — і результат змінює B
 
@@ -892,7 +895,7 @@ PDF §8. Спершу image-only — без headline, без scene brief, без
 Авто-цикл (`weekly-image` / `daily-image`) спершу ганяє `buildImageOnlyCriticPrompt`
 (без headline). Якщо пікселі не пройшли — story-aware **не** викликається. Інакше другий
 виклик — `buildImageCriticPrompt`. M2 лишається одним image-only проходом. Вага preflight
-без змін. Bake-off (A2) не перемикався.
+без змін. Bake-off (A2 ✅) модель не перемикав.
 (source: `src/lib/content-sim/vision-critic.ts`, `src/lib/content-sim/adapters/weekly-image.ts`)
 
 ### E3. Promotion gate
@@ -1236,7 +1239,7 @@ npm run pr:check
 
 | Хвиля | Як переконатись |
 |---|---|
-| A2 | звіт bake-off містить `Kept the good`; рішення про модель **не** застосоване автоматично |
+| A2 | ✅ звіт містить `Kept the good`; усі моделі 0/1 ship; `CONTENT_SIM_VISION_OPENROUTER_MODEL` не змінений |
 | B1 | `experiments/jury-blockers/2026-08-digest-843975a8.md` із реальним розподілом блокерів |
 | B1-fix | тест `a command-line story may use the word terminal for a physical object` зелений; контроль UI-кліше на CLI-story теж зелений; живе планування Story 6 ще не прогнано |
 | B2 | на фікстурі з однією прийнятою лінзою повертається один бриф, не три; чотири названі тести зелені |

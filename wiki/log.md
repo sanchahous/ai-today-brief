@@ -6,6 +6,28 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — A2: bake-off vision-критика
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) A2;
+Actions [`31879588071`](https://github.com/sanchahous/ai-today-brief/actions/runs/31879588071).
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/content-sim](pipeline/content-sim.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-sandbox](ops/weekly-sandbox.md), [marketing/card-images](marketing/card-images.md),
+[now](now.md), [index](index.md).
+
+**Код:** харнес читає `headline` з visual-compiler маніфесту (`bakeoff-manifest.ts`).
+`CONTENT_SIM_VISION_OPENROUTER_MODEL` не змінений — лишаємось на `google/gemini-2.5-flash`.
+Немає автогенерації картинок дайджесту.
+
+**Тест:** `uses top-level headline when story is missing`.
+
+**Звіт:** `experiments/critic-bakeoff/2026-08-15/` — усі три моделі `Kept the good = 0/1`;
+`claude-sonnet-5` unfit; позитив n=1.
+
+**Не зроблено в цій хвилі:** F5 grep номерів версій, стискання origin PNG
+([ops/vercel-image-quota](ops/vercel-image-quota.md)).
+
 ## 2026-08-15 — G: бюджет ілюстрацій з ledger
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G.

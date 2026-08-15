@@ -129,6 +129,13 @@ score floor stays overall ≥ 80.
 (source: [weekly-illustration-plan](weekly-illustration-plan.md) E3,
 `src/lib/weekly-digest/prompt-promotion-gate.ts`)
 
+**A2 critic bake-off (2026-08-15):** Actions `31879588071` scored three OpenRouter vision
+models against owner verdicts v6. All three had `Kept the good = 0/1`. Production stays on
+`google/gemini-2.5-flash`; `CONTENT_SIM_VISION_OPENROUTER_MODEL` was not changed. Positive
+set is n=1. Harness reads top-level `headline` from visual-compiler manifests.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) A2,
+`experiments/critic-bakeoff/2026-08-15/`, `src/lib/content-sim/bakeoff-manifest.ts`)
+
 ## Related pages
 
 - [weekly-sandbox](../ops/weekly-sandbox.md)

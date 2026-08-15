@@ -10,6 +10,12 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **A2 — bake-off vision-критика (2026-08-15).** Actions `31879588071`: усі три моделі
+  `Kept the good = 0/1` (зарубали єдину owner-схвалену картку). `claude-sonnet-5` unfit.
+  `gemini-3.1-pro-preview` ще й пропустив reject. Модель **не** перемикали — лишаємось на
+  `google/gemini-2.5-flash`. Позитив n=1. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) A2,
+  `experiments/critic-bakeoff/2026-08-15/`)
 - **G — бюджет ілюстрацій з ledger (2026-08-15).** `/admin/costs` ділить новини / weekly API /
   промпти+QA з `generation_cost_events`, не з лімітів політики. Weekly image API має бути $0
   у `prompt_only`. `CONTENT_SIM_MAX_IMAGE_SPEND_USD=0.2` не піднімається. `WEEKLY_CONTENT_STUDIO_V2=off`

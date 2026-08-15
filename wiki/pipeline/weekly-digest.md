@@ -425,6 +425,12 @@ B2 «не три копії». Це не preflight-код і не змінює `
 (source: `src/lib/generation-costs.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) G)
 
+**A2 critic bake-off (2026-08-15):** vision-модель не перемикали (`google/gemini-2.5-flash`).
+Усі три кандидати дали `Kept the good = 0/1`. Це не змінює `WEEKLY_CONTENT_STUDIO_V2=off`.
+Картинки дайджесту лишаються ручними.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) A2,
+`experiments/critic-bakeoff/2026-08-15/`)
+
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.

@@ -136,7 +136,9 @@ Post-upload QA (M2) — це прод Visuals після ручного upload, 
 D3 додає код `human_dignity_risk` у той самий critic; sandbox цього не ганяє.
 E2 додає другий (story-aware) виклик лише в auto-циклі `render`, не в sandbox doctor.
 E3 рахує якість промптів у прод Visuals; sandbox цього не ганяє.
-(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) M2/D3/E2/E3)
+A2 bake-off порівнює OpenRouter vision-моделі офлайн; sandbox цього не ганяє і модель
+критика не перемикає.
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) M2/D3/E2/E3/A2)
 
 ## Related pages
 
