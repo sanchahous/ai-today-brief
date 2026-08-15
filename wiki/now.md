@@ -10,9 +10,16 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **P2 — story_prompt_set + Visuals copy/upload (2026-08-15).** Новий artifact type
+  `story_prompt_set` (текст, не публічний). Visuals показує картки концептів з кнопками
+  Canonical / Midjourney / Negative і слот upload в одній картці. Worker ще не пише сет —
+  це M1; доти картки порожні, upload уже працює.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P2,
+  `supabase/migrations/20260815120000_weekly_story_prompt_set.sql`,
+  `src/components/admin/story-prompt-set-panel.tsx`)
 - **P1 — промпт як продукт (2026-08-15).** `pipeline/prompt-export.ts` видає канонічний
-  промпт (субʼєкт першим) + Midjourney + negative без номерів версій моделей. Наступне — P2
-  (артефакт `story_prompt_set` і кнопки копіювання у Visuals).
+  промпт (субʼєкт першим) + Midjourney + negative без номерів версій моделей. P2 підключив
+  це до Visuals.
   (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P1,
   `pipeline/prompt-export.ts`)
 - **B2 — не три копії одного essence (2026-08-15).** Журі більше не добиває кількість

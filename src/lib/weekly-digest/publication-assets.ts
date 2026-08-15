@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { storageBlob } from '@/lib/storage/binary';
 
 const PUBLIC_BUCKET = 'social-assets';
+// story_prompt_set is copy-ready text and must never be promoted as a public image.
 const PUBLIC_IMAGE_TYPES = new Set(['cover', 'story_image', 'social_asset', 'thumbnail']);
 
 function safeName(path: string, mimeType: string | null) {

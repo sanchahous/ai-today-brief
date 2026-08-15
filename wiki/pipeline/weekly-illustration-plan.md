@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 → M1 → M2 → B3 → P3 → C → D → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 → M2 → B3 → P3 → C → D → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -355,7 +355,7 @@ grab-bag: інакше CLI-новина з словом `terminal` у конте
 `pipeline/prompt-export.ts` перекладає `buildEditorialConceptPrompt` у `ManualImagePrompt`:
 субʼєкт першим реченням, Midjourney `--ar 16:9 --style raw --no text`, negative завжди банить
 текст/літери/лого. Грамматика `deterministic_technical_hybrid` пише схему, не фото.
-Номерів версій моделей у виході немає. Наступне — **P2** (артефакт + UI копіювання).
+Номерів версій моделей у виході немає. Наступне — **P2** ✅ (артефакт + UI копіювання).
 
 **Рішення власника:** канонічний natural-language промпт плюс автоматично похідні форми.
 (source: рішення власника 2026-08-15)
@@ -431,6 +431,14 @@ notes:
 
 **Готово коли:** три концепти story дають три `ManualImagePrompt`, і жоден із них не потребує
 ручного редагування перед вставкою в інструмент.
+
+### P2 ✅ Зроблено 2026-08-15 — де промпти живуть і як їх бачить власник
+
+Артефакт `story_prompt_set` додано в CHECK; input-hash залежить від revision item так само, як
+`story_image`. Visuals показує картки концептів (Canonical / Midjourney / Negative) і слот
+upload в одній картці. Worker ще не пише артефакт — це **M1**; UI порожній, доки сета немає.
+(source: `supabase/migrations/20260815120000_weekly_story_prompt_set.sql`,
+`src/components/admin/story-prompt-set-panel.tsx`)
 
 ### P2. Де промпти живуть і як їх бачить власник
 
@@ -1082,7 +1090,7 @@ npm run pr:check
 | B2 | на фікстурі з однією прийнятою лінзою повертається один бриф, не три; чотири названі тести зелені |
 | B3 | в адмінці видно `N/3 промпти готові` |
 | P1 | три `ManualImagePrompt` на story; negative завжди банить текст; тести `pipeline/prompt-export.test.ts` зелені |
-| P2 | у Visuals є три кнопки копіювання і слот upload в одній картці; артефакт `story_prompt_set` пишеться |
+| P2 | ✅ схема приймає `story_prompt_set`; Visuals має кнопки копіювання + upload в одній картці; worker write — M1 |
 | P3 | після публікації daily в review-чаті лежить промпт обкладинки; `briefs.cover_prompt` заповнена |
 | M1 | прогін weekly не робить жодного image-виклику; `WEEKLY_STORY_IMAGE_MODE=render` повертає стару поведінку |
 | M2 | провальний QA **не** додає preflight-блокер; результат видно в картці story |

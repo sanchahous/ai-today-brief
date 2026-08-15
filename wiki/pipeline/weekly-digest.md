@@ -10,8 +10,8 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, 2026-08-10 fixes, parallel enqueue/worker update and owner prompt review + `weekly-semantic-story-v5` 2026-08-11
-Last updated: 2026-08-13
+Actions run `31324873875`, PR #209, 2026-08-10 fixes, weekly illustration P2 `story_prompt_set` 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
@@ -331,6 +331,15 @@ concept title/lens. Primary badge `auto-picked` / `owner-promoted`; promotion п
 обраної концепції разом із файлом. Редагована сцена (`scene_override`) + «Regenerate with this
 scene» зберігає її як concept 1, а concept 2–3 лишає незалежними; використовується наявний
 `enqueueWeeklyGenerationAction`, нового job type не знадобилось.
+
+**P2 prompt cards (2026-08-15):** окремий artifact type `story_prompt_set` (текст,
+`locale: neutral`, не в `PUBLIC_IMAGE_TYPES`) версіонується з ревізією. Input-hash залежить від
+revision item так само, як `story_image`. Visuals показує картки концептів з кнопками Canonical /
+Midjourney / Negative і слот upload в тій самій картці (стан: `очікує зображення` /
+`завантажено, on review` / `approved`). Worker ще не пише сет — це M1; UI порожній-безпечний.
+(source: `supabase/migrations/20260815120000_weekly_story_prompt_set.sql`,
+`src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/story-prompt-set-panel.tsx`,
+[weekly-illustration-plan](weekly-illustration-plan.md) P2)
 
 **Content Sim (2026-08-11):** після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`

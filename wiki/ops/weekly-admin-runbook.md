@@ -10,8 +10,8 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner + restore error fix 2026-08-10, Postpone release feature 2026-08-10
-Last updated: 2026-08-13
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + P2 prompt cards 2026-08-15
+Last updated: 2026-08-15
 
 ---
 
@@ -155,8 +155,11 @@ Release preflight на Overview / Release покаже, що ще червоне
 факт про весь agentic AI. Якщо Top 3 не мають чесного спільного зв'язку, не вимагай umbrella-
 тему — краще прямо назвати три новини.
 
-На **Visuals** (policy `weekly-semantic-story-v5.1`) відкрий **Illustration prompt** і прочитай
-semantic contract до approval:
+На **Visuals** спочатку картка **Copy-ready prompts**: кнопки **Canonical / Midjourney /
+Negative**, стан слота (`очікує зображення` / `завантажено, on review` / `approved`) і
+**Upload a replacement** в тій самій картці. Промпти зʼявляться після того, як `story_image` job
+запише `story_prompt_set` (M1); upload уже працює. Semantic contract у **Illustration prompt**
+лишається для вже згенерованих/завантажених файлів:
 
 1. **Context** — чи видно, яка саме система/обʼєкт/подія змінилась, а не «будь-який AI».
 2. **Mechanism** — чи причина/процес фізично видимі, а не існують лише в описі prompt.
@@ -167,8 +170,8 @@ semantic contract до approval:
 Chip `semantic` — мінімум із context/mechanism/consequence/instant-comprehension, а не середнє:
 високий `craft` не компенсує відсутній сенс. `needs_human_review` означає: переглянь blockers і
 prompt history; Approve override використовуй лише якщо очима підтверджуєш усі чотири пункти.
-(source: `src/components/admin/weekly-workspace.tsx`, `src/lib/content-sim/vision-critic.ts`,
-`pipeline/card-image.ts`)
+(source: `src/components/admin/weekly-workspace.tsx`, `src/components/admin/story-prompt-set-panel.tsx`,
+`src/lib/content-sim/vision-critic.ts`, `pipeline/card-image.ts`)
 
 > **Не плутай з experimental V10:** V10 contact sheet — окремий owner-review артефакт, не
 > вкладка production **Visuals**. Його automated score може підказати, що перевірити, але не

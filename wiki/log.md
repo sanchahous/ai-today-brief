@@ -6,6 +6,29 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — P2: промпти живуть як `story_prompt_set` і копіюються з Visuals
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P2.
+
+**Змінено:** [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md), [now](now.md),
+[index](index.md).
+
+**Код:** міграція `20260815120000_weekly_story_prompt_set.sql` додає CHECK `story_prompt_set`
+і рахує input-hash як у `story_image` (revision item). Visuals: картки концептів + Canonical /
+Midjourney / Negative + слот upload в одній картці. Не в `PUBLIC_IMAGE_TYPES`. Worker не пише
+сет у цій хвилі (M1).
+
+**Тест:** `a ready story_prompt_set exposes three copy payloads and an upload slot`;
+`after a story_image is ready the slot state is uploaded, on review`. Authenticated Playwright
+на `/admin/weekly` у сьюті немає (лише login shell) — контракт покрито unit-тестами +
+`data-testid`.
+
+**Не зроблено в цій хвилі:** M1 (worker пише сет, без FLUX).
+
 ## 2026-08-15 — P1: промпт став копійованим продуктом
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P1.

@@ -4,6 +4,7 @@ import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { HookCandidatePicker } from '@/components/admin/hook-candidate-picker';
 import { SocialCharCount } from '@/components/admin/social-char-count';
 import { StatusPill } from '@/components/admin/status-pill';
+import { StoryPromptSetPanel } from '@/components/admin/story-prompt-set-panel';
 import { WeeklyGenerationJobsLive } from '@/components/admin/weekly-generation-jobs-live';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
@@ -27,6 +28,10 @@ import {
   validateWeeklyDigestPreflight,
 } from '@/lib/weekly-digest/preflight';
 import { contentSimGateCleared, type ContentSimArtifactMeta } from '@/lib/content-sim';
+import {
+  parseStoryPromptSetContent,
+  storyImageSlotState,
+} from '@/lib/weekly-digest/story-prompt-set';
 
 function contentSimClearedFromMetadata(metadata: Json | null | undefined): boolean | undefined {
   const root = asRecord(metadata);
@@ -108,6 +113,7 @@ const SECONDARY =
 const DANGER =
   'min-h-11 rounded-xl border border-red-400/30 bg-red-400/8 px-4 text-sm font-bold text-red-200 transition hover:bg-red-400/15';
 
+/** Release-gate types only. `story_prompt_set` is text and is not a preflight artifact. */
 const ARTIFACT_TYPES = new Set<WeeklyArtifactType>([
   'research_pack',
   'content_quality_report',
@@ -2817,6 +2823,7 @@ function ReplacementAssetForm({
             required
             accept={artifactType === 'pdf' ? 'application/pdf' : 'image/*'}
             disabled={!canEdit}
+            data-testid={artifactType === 'story_image' ? 'story-image-upload-file' : undefined}
             className={`${FIELD} file:mr-3 file:rounded-lg file:border-0 file:bg-[#47e4d3]/10 file:px-3 file:py-1 file:font-bold file:text-[#47e4d3]`}
           />
         </label>
@@ -2947,13 +2954,22 @@ function VisualsPanel({
               Story illustrations
             </h2>
             <p className="mt-2 text-sm text-slate-400">
-              Each visual must depict the corresponding news item, not generic AI decoration.
+              Copy a concept, generate the image in your tool, then upload it on the same card.
+              Each visual must depict that news item, not generic AI decoration.
             </p>
           </div>
         </div>
         <div className="mt-4 grid gap-5 xl:grid-cols-2">
           {workspace.items.map((item) => {
             const artifact = artifactFor(workspace.artifacts, 'story_image', undefined, item.id);
+            const promptArtifact = artifactFor(
+              workspace.artifacts,
+              'story_prompt_set',
+              undefined,
+              item.id,
+            );
+            const promptSet = parseStoryPromptSetContent(promptArtifact?.content);
+            const imageSlot = storyImageSlotState(artifact);
             const slotKey = `story-image:${item.id}`;
             const job = latestJobForSlot(workspace.generationJobs, 'story_image', {
               revisionItemId: item.id,
@@ -3017,6 +3033,21 @@ function VisualsPanel({
                     {job.last_error}
                   </p>
                 ) : null}
+                <StoryPromptSetPanel
+                  itemId={item.id}
+                  prompts={promptSet?.prompts ?? []}
+                  policy={promptSet?.policy ?? null}
+                  generatedAt={promptSet?.generatedAt ?? null}
+                  slotState={imageSlot}
+                >
+                  <ReplacementAssetForm
+                    workspace={workspace}
+                    artifactType="story_image"
+                    slotKey={slotKey}
+                    revisionItemId={item.id}
+                    canEdit={canEdit}
+                  />
+                </StoryPromptSetPanel>
                 <ArtifactCard
                   digestId={workspace.digest.id}
                   artifact={artifact}
@@ -3031,13 +3062,6 @@ function VisualsPanel({
                     slotKey,
                     costSummary,
                   }}
-                />
-                <ReplacementAssetForm
-                  workspace={workspace}
-                  artifactType="story_image"
-                  slotKey={slotKey}
-                  revisionItemId={item.id}
-                  canEdit={canEdit}
                 />
               </div>
             );
