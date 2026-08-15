@@ -1,0 +1,60 @@
+name: Rerank OpenRouter models
+
+on:
+  schedule:
+    # 04:00 UTC — before the first daily pipeline slot (05:00 UTC / 08:00 Kyiv).
+    # Discounts last days, not minutes; one catalog fetch per day.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Plan only — print the ranking, do not write'
+        type: boolean
+        default: false
+
+concurrency:
+  group: rerank-openrouter-models
+  cancel-in-progress: false
+
+jobs:
+  rerank:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rerank OpenRouter models
+        env:
+          SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+          SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+        run: |
+          ARGS=""
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            ARGS="--dry-run"
+          fi
+          npx tsx pipeline/scripts/rerank-openrouter-models.ts $ARGS
+
+      - name: Alert on failure
+        if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_REVIEW_CHAT_ID: ${{ secrets.TELEGRAM_REVIEW_CHAT_ID }}
+        run: |
+          [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_REVIEW_CHAT_ID" ] && exit 0
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          curl -sS --max-time 15 -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_REVIEW_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "disable_web_page_preview=true" \
+            --data-urlencode "text=⚠️ <b>OpenRouter rerank FAILED</b> 🔗 ${RUN_URL}" \
+            || true

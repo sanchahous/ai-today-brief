@@ -188,8 +188,8 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅
-A2, F3, G — незалежні, можна паралельно
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅ → F3 ✅
+A2, G — незалежні, можна паралельно
 ```
 
 **B1 виконано** (причина знайдена). B1-fix і B2 йдуть першими, бо від них залежить якість
@@ -1031,22 +1031,26 @@ scoreModelForRole(model, role):
 зважений prompt/completion × 1e6, бал = quality / price. Немає бенчмарка на осі → не
 кандидат; нижче floor (включно з 14.2 @ $0.01/M) **не** в ланцюжку навіть хвостом.
 `rankModelsForRole` = топ-3 за балом, далі family-fallback `rankOpenRouterModelIds`.
-Добовий job і `/admin/providers` — F3. Image-абстракції немає (F4).
+Добовий job і `/admin/providers` — F3 ✅. Image-абстракції немає (F4).
 (source: `pipeline/providers/model-scoring.ts`)
 
-### F3. Оновлення і аудит
+### F3 ✅ Зроблено 2026-08-15 — добове оновлення і аудит
 
-- **Кадансу «щоразу» не робити.** Каталог — 411 моделей; тягнути його на кожен виклик означає
-  повторити помилку, яку вже фіксили у Фазі 2 реєстру (кожна чернетка окремо била живий
-  каталог). Використати наявний `createRegistryLoader` — один резолв на прогін.
-- **Оновлювати раз на добу** окремим job (`schedule` + `workflow_dispatch`), який перераховує
-  бали й записує в `llm_provider_models`. Знижки живуть днями, не хвилинами.
-- **Записувати рішення.** Кожне переранжування пише рядок: роль → обрана модель → бал → ціна →
-  індекс якості → дата. Без цього неможливо відповісти на питання «чому сьогодні пише інша
-  модель». Показати в `/admin/providers`.
-- **Захист від тихої деградації:** якщо новий переможець має якість помітно нижчу за поточного,
-  не перемикатись автоматично — позначити в адмінці й лишити рішення власнику. Дешевша модель,
-  що псує випуск, коштує дорожче за зекономлені центи.
+- Каталог **не** тягнеться на кожен LLM-виклик. `createRegistryLoader` — один резолв на прогін;
+  якщо в `llm_provider_models` уже є черга `openrouter`, live-fetch пропускається.
+- Job `.github/workflows/rerank-openrouter-models.yml` (`04:00 UTC` + `workflow_dispatch`)
+  один раз тягне каталог, рахує бали (`planOpenRouterRerank`) і пише append-only
+  `llm_model_rank_audit` (роль → модель → бал → $/M → індекс → дата). Чергу
+  `llm_provider_models` для `openrouter` оновлює **лише** топ-3 `weekly.master_writer`
+  (найвищий editorial floor; таблиця моделей — provider-scoped, не per-role).
+- Захист від тихої деградації: якщо якість нового переможця нижча за останній
+  **застосований** pick більше ніж на **5** пунктів intelligence, черга не змінюється
+  (`applied=false`, `skip_reason=quality_drop`). Поріг 5 — `(assumption)` зі специфікації
+  «помітно нижча». Власник лишає поточну чергу або править model IDs вручну в
+  `/admin/providers`; наступний job знову не перезапише, поки drop тримається.
+- UI: секція **Model ranking** на `/admin/providers` — latest audit на кожну роль.
+  Картинки дайджесту лишаються ручними (F4 не будується).
+(source: `pipeline/providers/model-rerank.ts`, `pipeline/scripts/rerank-openrouter-models.ts`)
 
 ### F4. Зображення і відео — межа після 2026-08-15
 
@@ -1069,9 +1073,10 @@ scoreModelForRole(model, role):
   `intelligence_index` 14.2 і ціною $0.01 **не** обирається для `weekly.master_writer`
   — **F2 ✅**;
 - у коді немає жодного номера версії моделі:
-  `grep -rE "sonnet-5|gpt-5|gemini-3\.[0-9]" pipeline/ src/` порожній поза тестами й фікстурами;
-- добовий job оновлює `llm_provider_models` і пише аудит-рядок на кожну роль;
-- `/admin/providers` показує обрану модель для кожної ролі з балом і датою;
+  `grep -rE "sonnet-5|gpt-5|gemini-3\.[0-9]" pipeline/ src/` порожній поза тестами й фікстурами
+  — лишається F5 cleanup (не ця хвиля);
+- добовий job оновлює `llm_provider_models` і пише аудит-рядок на кожну роль — **F3 ✅**;
+- `/admin/providers` показує обрану модель для кожної ролі з балом і датою — **F3 ✅**;
 - `wiki/pipeline/llm-providers.md` оновлено — там живе опис реєстру.
 
 ---
@@ -1247,6 +1252,7 @@ npm run pr:check
 | E2 | ✅ `two-stage critique fails when image-only flags readable_text even if story-aware would pass`; M2 лишається image-only |
 | E3 | ✅ `promotion gate passes when 60% of concepts are acceptable on the first or second owner attempt`; `prompt promotion gate fails on misleading accepted concepts without blocking release preflight` |
 | F2 | ✅ `a model with intelligence_index 14.2 at $0.01 is not chosen for weekly.master_writer` |
+| F3 | ✅ `does not apply a cheaper winner when quality drops below the current pick`; `writes an audit row per role with score price and quality` | |
 
 Після кожної хвилі — `wiki/log.md` (append-only, нові записи **зверху**) + `wiki/index.md`.
 Кожна хвиля — окремий PR, `pr:check` перед push, ніколи не в `main` напряму.

@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — F3: добовий OpenRouter rerank + аудит
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F3.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/llm-providers](pipeline/llm-providers.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md), [index](index.md).
+
+**Код:** `llm_model_rank_audit` + `planOpenRouterRerank` + daily workflow. Черга `openrouter`
+оновлюється топ-3 writer, якщо якість не впала >5. Адмінка показує latest audit на роль.
+Немає image-абстракції (F4).
+
+**Тест:** `does not apply a cheaper winner when quality drops below the current pick`;
+`writes an audit row per role with score price and quality`.
+
+**Не зроблено в цій хвилі:** F4, F5 grep номерів версій, G, A2.
+
 ## 2026-08-15 — F2: scoreModelForRole (якість / ціна)
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F2.

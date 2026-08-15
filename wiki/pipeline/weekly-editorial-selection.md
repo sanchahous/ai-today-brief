@@ -27,7 +27,9 @@ shortlist for an editor, not to publish an algorithmic verdict.
 > E2 two-stage critic is the vision loop, not this selector.
 > E3 prompt-promotion readout is Visuals calibration only — it does not change this selector
 > or release eligibility.
-> (source: [weekly-illustration-plan](weekly-illustration-plan.md) P2/M3/B3/P3/D2/D3/E1/E2/E3)
+> F3 OpenRouter daily ranking writes `llm_model_rank_audit` / `llm_provider_models` and does
+> not change this selector.
+> (source: [weekly-illustration-plan](weekly-illustration-plan.md) P2/M3/B3/P3/D2/D3/E1/E2/E3/F3)
 
 > **Scope note (2026-08-13):** experimental Visual Affordance V10 evaluates visual explanations
 > for three selected stories only. It does not alter `weekly-editorial-v2` candidates, weights,

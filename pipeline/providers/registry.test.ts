@@ -325,6 +325,33 @@ describe('loadProviderRegistry with a db (Phase 1b)', () => {
     expect(registry.chainForRole('daily.summarize')[0]?.entry.id).toBe('openrouter');
   });
 
+  it('uses stored OpenRouter models instead of a live catalog fetch', async () => {
+    const db = fakeDb({
+      llm_role_chains: [],
+      llm_providers: [
+        {
+          id: 'openrouter',
+          kind: 'http',
+          enabled: true,
+          base_url: 'https://openrouter.ai/api/v1',
+          extra_headers: {},
+          reports_cost: true,
+        },
+      ],
+      llm_provider_models: [
+        { provider_id: 'openrouter', model_id: 'vendor/stored-a', rank: 0, enabled: true },
+        { provider_id: 'openrouter', model_id: 'vendor/stored-b', rank: 1, enabled: true },
+      ],
+    });
+
+    const registry = await loadProviderRegistry({ OPEN_ROUTER_API_KEY: 'or-key' }, {}, db);
+    const chain = registry.chainForRole('daily.summarize');
+
+    expect(resolveOpenRouterModelQueue).not.toHaveBeenCalled();
+    expect(chain).toHaveLength(1);
+    expect(chain[0]?.http?.modelQueue).toEqual(['vendor/stored-a', 'vendor/stored-b']);
+  });
+
   it('lets an explicit roleOverride win over a saved DB chain', async () => {
     const override: ResolvedProvider[] = [cliEntry];
     const db = fakeDb({

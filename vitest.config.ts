@@ -53,6 +53,7 @@ export default defineConfig({
         'pipeline/scripts/weekly-doctor.ts',
         'pipeline/scripts/weekly-master-sandbox.ts',
         'pipeline/scripts/content-sim.ts',
+        'pipeline/scripts/rerank-openrouter-models.ts',
         'pipeline/publish.ts',
         'pipeline/summarize.ts',
         'pipeline/db.ts',

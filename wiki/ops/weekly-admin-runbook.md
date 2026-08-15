@@ -175,7 +175,9 @@ prompt** пише `story_prompt_set` (`WEEKLY_STORY_IMAGE_MODE=prompt_only`) —
 **використано / з правками / відхилено** і теги причини; **Зберегти вердикт** пише пару
 промпт→результат у `story_prompt_set` і в metadata завантаженого файлу. Це не гейт релізу.
 QA після upload — **один** image-only прохід (без headline). У режимі `render` критик двостадійний:
-спочатку пікселі, потім claim. Semantic contract у **Illustration prompt**
+спочатку пікселі, потім claim. Яка модель зараз пише master — дивись `/admin/providers`
+секцію **Model ranking** (добовий OpenRouter rerank, F3), не Visuals.
+Semantic contract у **Illustration prompt**
 лишається для вже згенерованих/завантажених файлів:
 
 1. **Context** — чи видно, яка саме система/обʼєкт/подія змінилась, а не «будь-який AI».

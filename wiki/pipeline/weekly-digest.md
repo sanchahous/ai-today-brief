@@ -412,6 +412,12 @@ B2 «не три копії». Це не preflight-код і не змінює `
 (source: `src/lib/weekly-digest/prompt-promotion-gate.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) E3)
 
+**F3 OpenRouter rerank (2026-08-15):** добовий job пише `llm_model_rank_audit` і може оновити
+чергу `openrouter` (топ-3 `weekly.master_writer`) лише якщо якість не впала >5 пунктів.
+Це не Visuals і не змінює `WEEKLY_CONTENT_STUDIO_V2=off`. Картинки дайджесту лишаються ручними.
+(source: `pipeline/providers/model-rerank.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) F3)
+
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.

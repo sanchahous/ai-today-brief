@@ -39,7 +39,7 @@ Last updated: 2026-08-15
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
-| 📋 `architecture/data-model.md` | Схема Supabase, RLS, ~78 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
+| 📋 `architecture/data-model.md` | Схема Supabase, RLS, ~79 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
 
@@ -57,7 +57,7 @@ Last updated: 2026-08-15
 | ✅ [pipeline/weekly-master-failures](pipeline/weekly-master-failures.md) | Розбір збоїв `editorial_master` 09.08: 7 причин (таймаут CLI, tool-use, reasoning-сліпий stall-детектор, зелений прогін на провалі, фолбек, JSON-преамбула, відсутня UK/revise-драбина) | Actions runs + live sandbox 2026-08-09 |
 | ✅ [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) | Ітеративний рушій `editorial_master`: посегментний запис із чекпоїнтом на кожен сегмент, точковий ремонт поля замість перегенерації, якість більше не валить джобу | `master-engine.ts` / `master-segments.ts` / `master-repair.ts`, owner session 2026-08-09 |
 | ✅ [pipeline/content-sim](pipeline/content-sim.md) | Симуляція/бектест: per-concept 2×3 parallel vision loop, structural gates, advisory semantic planning, escalation, release gate | `pipeline/card-image.ts`, `src/lib/content-sim`, 2026-08-12 |
-| ✅ [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) | Виконавча специфікація ілюстрацій після рішення 2026-08-15. B1-fix … E3, F2 зроблено 2026-08-15 | owner review живого випуску 2026-08-14 + рішення власника 2026-08-15 + `AI_Today_Brief_Visual_Algorithm_Plan.pdf` |
+| ✅ [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) | Виконавча специфікація ілюстрацій після рішення 2026-08-15. B1-fix … E3, F2, F3 зроблено 2026-08-15 | owner review живого випуску 2026-08-14 + рішення власника 2026-08-15 + `AI_Today_Brief_Visual_Algorithm_Plan.pdf` |
 | ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | Межа відео-pipeline | колишній `docs/VIDEO-PIPELINE-BOUNDARY.md` |
 | ✅ [pipeline/llm-providers](pipeline/llm-providers.md) | Уніфікований реєстр LLM-провайдерів (у розробці): навіщо, ключові знахідки, статус фаз | owner session 2026-08-06 |
 

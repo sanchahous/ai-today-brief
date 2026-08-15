@@ -56,6 +56,13 @@ https://build.nvidia.com/ — Kimi K3, DeepSeek V4, GLM 5.2 через OpenAI-с
 
 ## Статус
 
+**F3 daily rerank (2026-08-15).** Job `rerank-openrouter-models` раз на добу тягне каталог,
+пише `llm_model_rank_audit` на кожну роль і оновлює `llm_provider_models` для `openrouter`
+топ-3 `weekly.master_writer`, якщо якість не впала більше ніж на 5 пунктів. Live-каталог
+на кожен LLM-виклик не ходиться: збережена черга пропускає fetch. UI — `/admin/providers`
+секція Model ranking. Image-абстракції немає (F4).
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) F3)
+
 **F2 model scoring (2026-08-15).** `pipeline/providers/model-scoring.ts` рахує якість на долар
 з живих `pricing` і `benchmarks.artificial_analysis` (окрема вісь на роль). Floor:
 `weekly.master_writer` / `weekly.master_critic` 40, `daily.summarize` 25. Ланцюжок = топ-3

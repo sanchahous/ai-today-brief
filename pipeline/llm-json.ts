@@ -91,8 +91,9 @@ export interface JsonRoleCallOptions {
   /**
    * Pre-resolved registry, reused instead of building a fresh one. Pass it
    * when a single run fires this repeatedly (auto-publish sweeps a week of
-   * drafts): loadProviderRegistry does a live OpenRouter catalog fetch plus
-   * three Supabase reads, and neither is cached. See createRegistryLoader.
+   * drafts): loadProviderRegistry may live-fetch the OpenRouter catalog (skipped
+   * when llm_provider_models already has an openrouter queue) plus three
+   * Supabase reads, and neither is cached. See createRegistryLoader.
    */
   registry?: ProviderRegistry;
 }

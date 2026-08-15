@@ -10,6 +10,12 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **F3 — добовий rerank OpenRouter (2026-08-15).** Job раз на добу пише `llm_model_rank_audit`
+  і оновлює чергу `openrouter` топ-3 `weekly.master_writer`, якщо якість не впала >5 пунктів.
+  Live-каталог на кожен виклик не ходиться. `/admin/providers` показує latest pick на роль.
+  `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F3,
+  `pipeline/providers/model-rerank.ts`)
 - **F2 — scoreModelForRole (2026-08-15).** Текстові моделі: бал = quality / $/M за віссю ролі.
   Floor 40 на `weekly.master_writer`. Модель з intelligence 14.2 @ $0.01/M не в ланцюжку.
   Топ-3 + family-хвіст. Добовий job — F3. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
