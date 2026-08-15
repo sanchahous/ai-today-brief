@@ -253,10 +253,27 @@ async function loadEdition(db: PipelineDb, briefId: string): Promise<{
   };
 }
 
-async function defaultGenerate(db: PipelineDb): Promise<CoverSceneGenerate> {
+async function defaultGenerate(db: PipelineDb, briefId: string): Promise<CoverSceneGenerate> {
   const registry = await loadProviderRegistry(process.env, {}, db);
   return async (role, prompt) => {
     const result = await generateWithRegistry(role, prompt, registry);
+    const { error } = await db.from('generation_cost_events').insert({
+      scope: 'daily',
+      kind: 'llm',
+      provider: result.provider,
+      model: result.model,
+      cost_usd: result.usage.costUsd ?? 0,
+      cost_source: result.usage.costSource,
+      prompt_tokens: result.usage.promptTokens,
+      output_tokens: result.usage.outputTokens,
+      step_key: DAILY_COVER_SCENE_ROLE,
+      metadata: { brief_id: briefId },
+    });
+    if (error) {
+      logEvent('warn', 'publish', 'Daily cover prompt cost ledger write failed', {
+        error: error.message,
+      });
+    }
     return { text: result.text, provider: result.provider };
   };
 }
@@ -274,7 +291,7 @@ export async function fillDailyCoverPrompt(
     if (!loaded) return 'failed';
     if (loaded.existing) return 'skipped';
     if (loaded.edition.headlines.length === 0) return 'skipped';
-    const generate = deps.generate ?? (await defaultGenerate(db));
+    const generate = deps.generate ?? (await defaultGenerate(db, briefId));
     const stored = await buildDailyCoverPrompt({
       edition: loaded.edition,
       generate,

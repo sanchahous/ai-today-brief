@@ -6,6 +6,26 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — G: бюджет ілюстрацій з ledger
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/weekly-digest](pipeline/weekly-digest.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md), [overview](overview.md),
+[open-questions](open-questions.md), [now](now.md), [index](index.md).
+
+**Код:** `illustrationBudgetFromLedger` + секція Illustration budget на `/admin/costs`.
+Daily cover prompt і post-upload QA пишуться в `generation_cost_events`. Cap 0.2 не піднято.
+Немає автогенерації картинок дайджесту і image-абстракції (F4).
+
+**Тест:** `illustration budget uses ledger events not policy spend caps`;
+`does not treat weekly master LLM as illustration API spend`.
+
+**Не зроблено в цій хвилі:** A2, F5 grep номерів версій, стискання origin PNG
+([ops/vercel-image-quota](ops/vercel-image-quota.md)).
+
 ## 2026-08-15 — F3: добовий OpenRouter rerank + аудит
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F3.

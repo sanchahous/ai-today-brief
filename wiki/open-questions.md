@@ -27,6 +27,11 @@ Last updated: 2026-08-15
 і event-ledger `generation_cost_events` + UI `/admin/costs` (PR #169), але не зведений
 фактичний рахунок провайдерів за місяць. (source: `.env.example`, PR #169)
 
+**G (2026-08-15):** `/admin/costs` тепер показує кошики ілюстрацій з ledger (новини / weekly
+API / промпти+QA). Це **не** закриває питання — інвойсів провайдерів усе ще немає, і weekly
+master LLM у ці кошики навмисно не входить.
+(source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G)
+
 **Закривається:** зафіксовано фактичні витрати за місяць (Vercel + Supabase + Gemini/OpenRouter +
 Cloudflare + X) у [overview](overview.md) §4 поруч із ledger. **Власник рішення:** власник продукту.
 

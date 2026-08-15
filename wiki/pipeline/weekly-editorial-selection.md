@@ -29,7 +29,8 @@ shortlist for an editor, not to publish an algorithmic verdict.
 > or release eligibility.
 > F3 OpenRouter daily ranking writes `llm_model_rank_audit` / `llm_provider_models` and does
 > not change this selector.
-> (source: [weekly-illustration-plan](weekly-illustration-plan.md) P2/M3/B3/P3/D2/D3/E1/E2/E3/F3)
+> G illustration budget is `/admin/costs` ledger split only — it does not change this selector.
+> (source: [weekly-illustration-plan](weekly-illustration-plan.md) P2/M3/B3/P3/D2/D3/E1/E2/E3/F3/G)
 
 > **Scope note (2026-08-13):** experimental Visual Affordance V10 evaluates visual explanations
 > for three selected stories only. It does not alter `weekly-editorial-v2` candidates, weights,

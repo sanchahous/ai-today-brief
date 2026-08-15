@@ -188,8 +188,8 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅ → F3 ✅
-A2, G — незалежні, можна паралельно
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅ → F3 ✅ → G ✅
+A2 — незалежна, можна паралельно
 ```
 
 **B1 виконано** (причина знайдена). B1-fix і B2 йдуть першими, бо від них залежить якість
@@ -1081,7 +1081,14 @@ scoreModelForRole(model, role):
 
 ---
 
-## G. Розподіл бюджету після переходу на ручні картинки
+## G ✅ Зроблено 2026-08-15 — розподіл бюджету після переходу на ручні картинки
+
+`/admin/costs` показує три кошики з `generation_cost_events`, не з лімітів політики:
+новини (авто) · weekly image API (очікується $0 у `prompt_only`) · промпти+QA.
+Master/social/video LLM у кошики не входять. Daily cover prompt і post-upload QA
+пишуться в ledger. `CONTENT_SIM_MAX_IMAGE_SPEND_USD` лишається 0.2 і жорстко
+затискається — weekly його не піднімає. Картинки дайджесту лишаються ручними.
+(source: `src/lib/generation-costs.ts`, рішення власника 2026-08-15)
 
 Розділ [F](#f-динамічний-вибір-моделі-за-ціною-і-якістю) вирішує *як обирати модель*; цей —
 *куди взагалі вкладати гроші*. Рішення 2026-08-15 переносить weekly-зображення з рахунка API на
@@ -1252,7 +1259,8 @@ npm run pr:check
 | E2 | ✅ `two-stage critique fails when image-only flags readable_text even if story-aware would pass`; M2 лишається image-only |
 | E3 | ✅ `promotion gate passes when 60% of concepts are acceptable on the first or second owner attempt`; `prompt promotion gate fails on misleading accepted concepts without blocking release preflight` |
 | F2 | ✅ `a model with intelligence_index 14.2 at $0.01 is not chosen for weekly.master_writer` |
-| F3 | ✅ `does not apply a cheaper winner when quality drops below the current pick`; `writes an audit row per role with score price and quality` | |
+| F3 | ✅ `does not apply a cheaper winner when quality drops below the current pick`; `writes an audit row per role with score price and quality` |
+| G | ✅ `illustration budget uses ledger events not policy spend caps`; `does not treat weekly master LLM as illustration API spend`; cap новин лишається 0.2 | |
 
 Після кожної хвилі — `wiki/log.md` (append-only, нові записи **зверху**) + `wiki/index.md`.
 Кожна хвиля — окремий PR, `pr:check` перед push, ніколи не в `main` напряму.

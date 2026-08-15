@@ -10,6 +10,12 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **G — бюджет ілюстрацій з ledger (2026-08-15).** `/admin/costs` ділить новини / weekly API /
+  промпти+QA з `generation_cost_events`, не з лімітів політики. Weekly image API має бути $0
+  у `prompt_only`. `CONTENT_SIM_MAX_IMAGE_SPEND_USD=0.2` не піднімається. `WEEKLY_CONTENT_STUDIO_V2=off`
+  без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G,
+  `src/lib/generation-costs.ts`)
 - **F3 — добовий rerank OpenRouter (2026-08-15).** Job раз на добу пише `llm_model_rank_audit`
   і оновлює чергу `openrouter` топ-3 `weekly.master_writer`, якщо якість не впала >5 пунктів.
   Live-каталог на кожен виклик не ходиться. `/admin/providers` показує latest pick на роль.

@@ -73,11 +73,17 @@ LemonSqueezy відкладено, спонсорство «через email с�
 | X (Twitter) постинг | hard cap **≤ €10/міс** у БД; резервація `X_POST_ESTIMATED_COST_EUR=0.40` на пост | `.env.example` |
 | Weekly master LLM | оцінка $3/M input, $15/M output; kill-switch `WEEKLY_CONTENT_STUDIO_V2=off`; hard cap `WEEKLY_MASTER_MAX_SPEND_USD` (default $4) | `.env.example`, PR #163, `generation-worker.ts` |
 | Social writer/critic LLM | оцінка $0.3/M input, $1/M output | `.env.example` |
-| Cost ledger | таблиця `generation_cost_events` + UI `/admin/costs` (оцінки/reported, не рахунок провайдера) | PR #169 |
+| Cost ledger | таблиця `generation_cost_events` + UI `/admin/costs` (оцінки/reported, не рахунок провайдера). **G (2026-08-15):** секція Illustration budget ділить новини / weekly API / промпти+QA з ledger, не з лімітів політики | PR #169, [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G |
 | Хостинг/БД | Vercel + Supabase | `.cursor/rules/00-core.mdc` |
 
 > ⚠️ Є ledger оцінок у БД, але **фактичний місячний рахунок** провайдерів у wiki ще не зведений.
 > Див. [open-questions](open-questions.md) #2.
+>
+> **Ілюстрації після 2026-08-15 (G, plan not invoice):** новини авто **~$1.73–2.70/міс**
+> (FLUX.2 klein / дешевша модель; мініатюра і повне — один файл); weekly+daily обкладинки —
+> руки власника (**$0 API** у `prompt_only`); промпти+QA **<$0.10/міс**. Не піднімати
+> `CONTENT_SIM_MAX_IMAGE_SPEND_USD` (лишається 0.2, лише новини). Відео лишається найдорожчою
+> статтею. (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G)
 
 ## 5. Жорсткі обмеження (не обговорюються без явного рішення)
 

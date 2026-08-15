@@ -59,6 +59,79 @@ function safeCost(value: number): number {
   return Math.round(value * 1_000_000) / 1_000_000;
 }
 
+/** Ledger buckets for illustration spend after 2026-08-15 (wiki G). */
+export const ILLUSTRATION_BUDGET_BUCKETS = ['newsImages', 'weeklyImages', 'promptAndQa'] as const;
+export type IllustrationBudgetBucket = (typeof ILLUSTRATION_BUDGET_BUCKETS)[number];
+
+export interface IllustrationBudget {
+  newsImagesUsd: number;
+  weeklyImagesUsd: number;
+  promptAndQaUsd: number;
+}
+
+function eventCostUsd(cost: number | string): number {
+  return safeCost(typeof cost === 'string' ? Number(cost) : cost);
+}
+
+function isPromptAndQaStep(stepKey: string): boolean {
+  return (
+    stepKey === 'daily.cover_scene' ||
+    stepKey === 'post_upload_qa' ||
+    stepKey.includes('cover_scene') ||
+    stepKey.includes('vision') ||
+    stepKey.includes('story_image') ||
+    stepKey.includes('card_image')
+  );
+}
+
+/**
+ * Classifies one ledger row. Master/social/video LLM is not illustration spend.
+ * Policy caps are never consulted — only the event's recorded USD.
+ */
+export function illustrationBudgetBucket(event: {
+  kind: string;
+  scope: string;
+  step_key?: string | null;
+}): IllustrationBudgetBucket | null {
+  if (event.kind === 'image') {
+    if (event.scope === 'weekly') return 'weeklyImages';
+    if (event.scope === 'daily' || event.scope === 'image') return 'newsImages';
+    return null;
+  }
+  if (event.kind !== 'llm') return null;
+  const step = event.step_key ?? '';
+  if (event.scope === 'daily' && isPromptAndQaStep(step)) return 'promptAndQa';
+  if (event.scope === 'weekly' && isPromptAndQaStep(step)) return 'promptAndQa';
+  return null;
+}
+
+export function illustrationBudgetFromLedger(
+  events: Array<{
+    cost_usd: number | string;
+    kind: string;
+    scope: string;
+    step_key?: string | null;
+  }>,
+): IllustrationBudget {
+  const budget: IllustrationBudget = {
+    newsImagesUsd: 0,
+    weeklyImagesUsd: 0,
+    promptAndQaUsd: 0,
+  };
+  for (const event of events) {
+    const bucket = illustrationBudgetBucket(event);
+    if (!bucket) continue;
+    const cost = eventCostUsd(event.cost_usd);
+    if (bucket === 'newsImages') budget.newsImagesUsd = safeCost(budget.newsImagesUsd + cost);
+    else if (bucket === 'weeklyImages') {
+      budget.weeklyImagesUsd = safeCost(budget.weeklyImagesUsd + cost);
+    } else {
+      budget.promptAndQaUsd = safeCost(budget.promptAndQaUsd + cost);
+    }
+  }
+  return budget;
+}
+
 /**
  * Persist one generation spend row. Best-effort: logs a warning and does not
  * throw — generation must not fail because the ledger write failed.

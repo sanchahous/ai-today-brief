@@ -8,6 +8,7 @@ import sharp from 'sharp';
 import type { Json } from '@/lib/database.types';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { recordGenerationCost } from '@/lib/generation-costs';
 import { storageBlob } from '@/lib/storage/binary';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { updateVariantAction } from '@/app/admin/actions';
@@ -151,6 +152,19 @@ async function persistPostUploadQa(
   if (updateError) {
     console.error('[weekly-upload-qa] write metadata failed', updateError.message);
     return;
+  }
+  if (qa.model || qa.cost_usd > 0) {
+    await recordGenerationCost({
+      scope: 'weekly',
+      kind: 'llm',
+      provider: 'vision',
+      model: qa.model ?? 'weekly.image_critic',
+      costUsd: qa.cost_usd,
+      costSource: 'estimated',
+      weeklyDigestId,
+      artifactId,
+      stepKey: 'post_upload_qa',
+    });
   }
   revalidateWeeklyAdmin(weeklyDigestId);
 }

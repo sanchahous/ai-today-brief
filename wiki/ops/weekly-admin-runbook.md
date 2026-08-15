@@ -177,6 +177,8 @@ prompt** пише `story_prompt_set` (`WEEKLY_STORY_IMAGE_MODE=prompt_only`) —
 QA після upload — **один** image-only прохід (без headline). У режимі `render` критик двостадійний:
 спочатку пікселі, потім claim. Яка модель зараз пише master — дивись `/admin/providers`
 секцію **Model ranking** (добовий OpenRouter rerank, F3), не Visuals.
+Скільки коштують новини vs промпти+QA — `/admin/costs` секція **Illustration budget** (G),
+з ledger, не з лімітів політики.
 Semantic contract у **Illustration prompt**
 лишається для вже згенерованих/завантажених файлів:
 

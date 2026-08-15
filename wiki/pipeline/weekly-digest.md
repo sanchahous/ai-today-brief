@@ -418,6 +418,13 @@ B2 «не три копії». Це не preflight-код і не змінює `
 (source: `pipeline/providers/model-rerank.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) F3)
 
+**G illustration budget (2026-08-15):** `/admin/costs` ділить новини / weekly image API /
+промпти+QA з `generation_cost_events`. Weekly image API очікується $0 у `prompt_only`.
+`CONTENT_SIM_MAX_IMAGE_SPEND_USD` лишається 0.2 (новини). Це не змінює
+`WEEKLY_CONTENT_STUDIO_V2=off`.
+(source: `src/lib/generation-costs.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) G)
+
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.
