@@ -6,6 +6,34 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — Ілюстраційний стек #241–#265 у `main` + прод-міграції
+
+**Джерело:** PR [#265](https://github.com/sanchahous/ai-today-brief/pull/265) (merge-коміт
+`294fe4e`), `gh pr checks` / `gh run list` live check, прод-Supabase `mdiqfatpqczwqghwttpm`,
+https://aitodaybrief.com live check.
+
+**Змінено:** [now](now.md).
+
+**Код:** увесь стек (#241–#264 + два раунди review-фіксів) змержено merge-комітом, 99 файлів,
++12962/−509. PR перецілено на `main`, бо `e2e.yml`/`sonarqube.yml` тригеряться лише на
+`pull_request → main` і за 24 стековані PR не відпрацювали жодного разу. Перецілення саме по
+собі їх не запускає — подія `edited` поза `opened/synchronize/reopened`, знадобився
+close+reopen. #241 закрився автоматично, #242–#264 закриті вручну, 24 гілки видалено.
+
+**Прод:** 4 міграції `20260815*` застосовано (`weekly_story_prompt_set`, `briefs_cover_prompt`,
+`llm_model_rank_audit`, `briefs_cover_prompt_column_privacy`). Repo variable
+`OPENROUTER_RERANK_APPLY=off` виставлено до мержу.
+
+**Тест:** перший в історії цього коду прогін — Playwright smoke **pass 14m55s**, SonarQube
+**pass 3m11s**, Deps integrity pass, Vercel pass. Пост-деплой: `set local role anon` →
+`PACK_COLUMNS`-select віддає рядки, `cover_prompt` → `insufficient_privilege`; `get_advisors`
+без нових зауважень; живий сайт (`/`, `/uk/news`, `/uk/digests`) віддає контент, 0
+console-помилок.
+
+**Лишається:** живий weekly-прогін (siblings diversification, owner scene override, post-upload
+QA recheck) — потрібен реальний випуск; рішення власника, чи вмикати
+`OPENROUTER_RERANK_APPLY`, після кількох діб audit-рядків.
+
 ## 2026-08-15 — Пре-мерж перевірка самих фіксів: три з них були дефектні
 
 **Джерело:** прод-Supabase `mdiqfatpqczwqghwttpm` (grants, тригери, `list_migrations`), живий

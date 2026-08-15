@@ -26,14 +26,36 @@ Last updated: 2026-08-15
   quality-drop guard наступного дня. Усе виправлено, 197 → **6**, `:batch`/`:free` у черзі
   немає, `skip_reason='apply_disabled'` рендериться в `/admin/providers`. Деталі —
   [audits/2026-08-15-illustration-pr-stack-review § Пре-мерж перевірка](audits/2026-08-15-illustration-pr-stack-review.md#пре-мерж-перевірка-самих-фіксів-2026-08-15-друга-ітерація).
-  **Перед мержем:** 4 міграції `20260815*` у проді ще немає; `OPENROUTER_RERANK_APPLY=off`
-  ставиться до мержу, бо на першому прогоні `qualityDropBlocked(null, …)` = `false` — guard-а
-  немає за побудовою. Також: `e2e.yml`/`sonarqube.yml` тригеряться лише на `pull_request → main`,
-  тож перецілення PR #265 на `main` — єдиний спосіб, щоб Playwright і Sonar уперше побачили ці
-  12.5k рядків.
   (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-15, живий каталог OpenRouter
   2026-08-15, `pipeline/providers/model-rerank.ts`, `model-scoring.ts`, `registry.ts`,
   `supabase/migrations/20260815180000_briefs_cover_prompt_column_privacy.sql`)
+
+- **Увесь ілюстраційний стек змержено в `main` 2026-08-15** — PR
+  [#265](https://github.com/sanchahous/ai-today-brief/pull/265), merge-коміт `294fe4e`,
+  99 файлів, +12962/−509. PR перецілено з вершини стека на `main`, бо `e2e.yml`/`sonarqube.yml`
+  тригеряться лише на `pull_request → main` і за 24 стековані PR **жодного разу не відпрацювали** —
+  реально ганявся тільки `npm ci`. Перецілення само по собі їх не запускає (подія `edited` не
+  входить у `opened/synchronize/reopened`) — знадобилось close+reopen. Результат першого
+  прогону: **Playwright smoke pass (14m55s), SonarQube pass (3m11s)**, Deps integrity pass,
+  Vercel pass. PR #241 закрився автоматично, #242–#264 закриті вручну з посиланням, 24 гілки
+  видалено.
+
+  **Стан прода після мержу:** усі 4 міграції `20260815*` застосовано і перевірено
+  (`anon`/`authenticated` більше не читають `briefs.cover_prompt`, публічні колонки й
+  `service_role` не постраждали — перевірено запитом під `set local role anon`: реальний
+  `PACK_COLUMNS`-select віддає рядки, `cover_prompt` дає `insufficient_privilege`).
+  `get_advisors` нових зауважень не дав. Живий сайт віддає контент без console-помилок.
+  Repo Actions variable `OPENROUTER_RERANK_APPLY=off` виставлено **до** мержу — cron
+  `0 4 * * *` писатиме audit-рядки в `/admin/providers`, але черги не змінюватиме, доки власник
+  не подивиться кілька діб і не вимкне switch сам.
+
+  **Що це змінює операційно:** `WEEKLY_STORY_IMAGE_MODE=prompt_only` тепер дефолт, а preflight
+  на `story_image`/`cover` лишається **жорстким** блокером — жоден weekly не вийде, поки власник
+  не згенерує і не завантажить картинки вручну. Це задум PR #240, але це нова обовʼязкова ручна
+  робота перед кожним релізом.
+  (source: `gh pr checks 265` / `gh run list` live check 2026-08-15, прод-Supabase
+  `list_migrations` + `get_advisors` після застосування, https://aitodaybrief.com live check
+  2026-08-15)
 
 - **Review 24 PR ілюстраційного стека + виправлення на гілці `feat/weekly-illustration-fixes`
   (2026-08-15) — завершено.** Технічне ревʼю PR #241–#264 (усі хвилі
