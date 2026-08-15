@@ -10,7 +10,8 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5.1` and
-three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / C1 / C2 / C3 2026-08-15
+three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / C1 / C2 / C3 2026-08-15,
+PR-stack review + fixes (`feat/weekly-illustration-fixes`) 2026-08-15
 Last updated: 2026-08-15
 
 ---
@@ -234,6 +235,16 @@ FLUX (`WEEKLY_STORY_IMAGE_MODE=prompt_only`). Worker пише `story_prompt_set`
 (source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) P1/P2/M1/M2,
 `pipeline/prompt-export.ts`, `src/lib/weekly-digest/story-prompt-set.ts`,
 `src/lib/weekly-digest/story-prompt-job.ts`, `src/lib/weekly-digest/post-upload-qa.ts`)
+
+**Review PR-стека #241–#264 і виправлення (2026-08-15, гілка `feat/weekly-illustration-fixes`):**
+серед знайденого й виправленого щодо цієї сторінки — B1-fix's literal-source виняток
+винятковував увесь список `WEEKLY_CRAFT_BANNED_OTHER`, а не лише `terminal` (новина про
+dashboard могла відкрити буквальний скріншот); grammar cap тепер на лінзу `mechanism`, а не на
+всі три концепти (metric у заголовку раніше робив усі три діаграмою); `motifFamilyKey` для
+крос-story siblings тепер отримує реальні `subject`/`setting` замість `sceneSummary`-фолбеку;
+owner-scene-override («Edit direction») тепер працює і в prompt_only-режимі, не лише в render;
+`reencodeOneCardOrigin` більше не видаляє старий PNG за замовчуванням. Повний список —
+[audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md).
 
 **Reviewable render history (2026-08-12):** кожен image buffer з кожного repair round зберігається
 до approval як підписаний private preview із round, variant, concept lens/title, motif, scene та

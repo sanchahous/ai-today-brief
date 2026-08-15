@@ -6,6 +6,33 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — Review 24 PR (#241–#264) і виправлення на `feat/weekly-illustration-fixes`
+
+**Джерело:** [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md) — повний список.
+
+**Змінено:** [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md)
+(нова), [index](index.md), [now](now.md), [marketing/card-images](marketing/card-images.md),
+[overview](overview.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[ops/weekly-admin-runbook](ops/weekly-admin-runbook.md), [open-questions](open-questions.md).
+
+**Код:** 4 блокери (крос-story diversification мертва після M1; mapping gate кидав exception
+замість «0/3»; daily rerank обрізав спільну чергу OpenRouter до 3 моделей для всіх ролей;
+`QUALITY_FLOOR` без порога для 10 з 13 ролей), 8 якість (грамматика діаграми на всі 3 концепти
+замість одного; B1-fix винятковував увесь UI-список, не лише `terminal`; motif-family matching
+не працював крос-story; `prompt-export.ts` мовчки деградує при дрейфі формату + різав фразу
+посеред слова; owner scene override ігнорувався в prompt_only), 4 безпека/цілісність
+(cross-digest запис в owner-feedback/QA діях; read-modify-write без захисту від гонки;
+`briefs.cover_prompt` читається anon; workflow без `permissions:`), 6 операційних (видалення
+старого PNG на reencode; SELECT без `.limit()`; QA без retry; строге порівняння режиму env).
+
+**Тест:** живий `npm run pr:check` — 1389/1389 тестів, typecheck/lint/e2e:check чисті,
+wiki:check закрито цим самим комітом.
+
+**Не зроблено (окремі, нижчий пріоритет):** агрегація owner_feedback у calibration dataset,
+e2e для Visuals prompt-карток (немає авторизованого Playwright-сьюту на `/admin/weekly`),
+поріг «дистинктності» для <2 промптів.
+
 ## 2026-08-15 — reencode історичних PNG карток без FLUX
 
 **Джерело:** [ops/vercel-image-quota](ops/vercel-image-quota.md);

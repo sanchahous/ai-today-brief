@@ -33,6 +33,14 @@ shortlist for an editor, not to publish an algorithmic verdict.
 > F5 strips pinned generation ids from production code — it does not change this selector.
 > (source: [weekly-illustration-plan](weekly-illustration-plan.md) P2/M3/B3/P3/D2/D3/E1/E2/E3/F3/G/F5)
 
+> **Scope note (2026-08-15):** the `feat/weekly-illustration-fixes` review-fix branch
+> (siblings-diversification, mapping-gate soft-fail, OpenRouter rerank queue-truncation fix,
+> grammar cap to one concept, craft-ban exception narrowing, owner scene-override plumbing,
+> cross-digest write ownership checks) touches `story_prompt_set` generation and Visuals only —
+> it does not change `weekly-editorial-v2` candidates, weights, diversity constraints, approval
+> state or release eligibility.
+> (source: [audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md))
+
 > **Scope note (2026-08-13):** experimental Visual Affordance V10 evaluates visual explanations
 > for three selected stories only. It does not alter `weekly-editorial-v2` candidates, weights,
 > diversity constraints, approval state or release eligibility.

@@ -40,6 +40,13 @@ Video / Release).
 історичні випуски у `shadow` + вартісні метрики з `/admin/costs`.
 (source: `.env.example`, [open-questions](../open-questions.md) #4)
 
+**Review-фікс 2026-08-15 (`feat/weekly-illustration-fixes`):** `resolveWeeklyStoryImageMode`
+тепер `.trim().toLowerCase()` перед звіркою з `render` — раніше `RENDER`/пробіли мовчки давали
+`prompt_only`. Новий env-кілл-свіч `OPENROUTER_RERANK_APPLY=off` для щоденного rerank-джоба
+(F3) — без нього застосування нового ранжування можна лише вимкнути редагуванням коду.
+(source: [audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md),
+`.env.example`)
+
 ## Пайплайн генерації
 
 Черга `weekly_digest_generation_jobs` + claim RPC. Типовий порядок:
