@@ -27,7 +27,11 @@ export function storyPromptSlot(revisionItemId: string): string {
 export function resolveWeeklyStoryImageMode(
   raw: string | undefined = process.env.WEEKLY_STORY_IMAGE_MODE,
 ): WeeklyStoryImageMode {
-  return raw === 'render' ? 'render' : 'prompt_only';
+  // R4.2 / F19: trim+lowercase before comparing, so an env value set as
+  // "RENDER" or " render " (copy-paste from a doc, trailing newline in a
+  // .env file) doesn't silently fall through to prompt_only -- the opposite
+  // of what the operator typed.
+  return raw?.trim().toLowerCase() === 'render' ? 'render' : 'prompt_only';
 }
 
 export function storyImageJobPath(

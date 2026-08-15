@@ -45,6 +45,14 @@ describe('resolveWeeklyStoryImageMode', () => {
     expect(resolveWeeklyStoryImageMode('PROMPT_ONLY')).toBe('prompt_only');
     expect(resolveWeeklyStoryImageMode('render')).toBe('render');
   });
+
+  it('trims and lowercases before comparing, so RENDER / " render " still switch modes (R4.2 / F19)', () => {
+    expect(resolveWeeklyStoryImageMode('RENDER')).toBe('render');
+    expect(resolveWeeklyStoryImageMode('Render')).toBe('render');
+    expect(resolveWeeklyStoryImageMode(' render')).toBe('render');
+    expect(resolveWeeklyStoryImageMode('render ')).toBe('render');
+    expect(resolveWeeklyStoryImageMode('render\n')).toBe('render');
+  });
 });
 
 describe('storyImageJobPath', () => {

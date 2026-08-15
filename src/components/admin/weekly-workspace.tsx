@@ -73,6 +73,7 @@ import {
   toggleWeeklySocialAction,
   uploadWeeklyArtifactAction,
   ignorePostUploadQaAction,
+  recheckPostUploadQaAction,
 } from '@/app/admin/(cms)/weekly/actions';
 
 export const WEEKLY_WORKSPACE_TABS = [
@@ -1256,6 +1257,23 @@ function ArtifactCard({
               ) : null}
               <span className="text-amber-100/80">Замінити файл — форма upload на цій картці.</span>
             </div>
+          ) : null}
+          {canReview && (postUploadQa?.pending || postUploadQa?.error) ? (
+            <form action={recheckPostUploadQaAction} className="mt-2">
+              <input type="hidden" name="weekly_digest_id" value={digestId} />
+              <input type="hidden" name="artifact_id" value={artifact.id} />
+              <button
+                type="submit"
+                className="font-bold text-cyan-100 underline decoration-cyan-100/40 underline-offset-2"
+              >
+                Перевірити ще раз
+              </button>
+              {postUploadQa?.pending ? (
+                <span className="ml-2 text-slate-500">
+                  Якщо перевірка не завершилась — натисни, щоб запустити її знову.
+                </span>
+              ) : null}
+            </form>
           ) : null}
         </div>
       ) : null}

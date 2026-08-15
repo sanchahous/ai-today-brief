@@ -1957,6 +1957,59 @@ export async function ignorePostUploadQaAction(formData: FormData) {
   await persistPostUploadQa(artifactId, weeklyDigestId, ignorePostUploadQa(current));
 }
 
+/**
+ * Re-runs post-upload QA on the file already in Storage (R4.2 / F18). The
+ * `after()` call scheduled at upload time has no retry affordance -- if it
+ * never lands (function timeout, transient provider failure), the metadata
+ * stays `{pending: true}` forever with no way to ask again short of
+ * re-uploading the same file. This re-downloads the stored bytes and
+ * schedules a fresh check without touching the artifact content itself.
+ */
+export async function recheckPostUploadQaAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const artifactId = requiredString(formData, 'artifact_id');
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const admin = getSupabaseAdmin();
+  const { data, error } = await admin
+    .from('weekly_digest_artifacts')
+    .select('storage_bucket, storage_path, mime_type, artifact_type')
+    .eq('id', artifactId)
+    .eq('weekly_digest_id', weeklyDigestId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Artifact not found for this digest.');
+  if (data.artifact_type !== 'story_image' && data.artifact_type !== 'cover') {
+    throw new Error('Post-upload QA only applies to story images and covers.');
+  }
+  if (!data.storage_bucket || !data.storage_path) {
+    throw new Error('No stored file to re-check.');
+  }
+  const { data: stored, error: downloadError } = await admin.storage
+    .from(data.storage_bucket)
+    .download(data.storage_path);
+  if (downloadError || !stored) {
+    throw new Error(downloadError?.message ?? 'Could not download the stored file to re-check.');
+  }
+  const bytes = Buffer.from(await stored.arrayBuffer());
+  // Marks pending again immediately (same shape uploadWeeklyArtifactAction
+  // writes) so Visuals shows "QA перевіряє…" right away instead of the old,
+  // possibly-stuck state until the async check completes.
+  await persistPostUploadQa(artifactId, weeklyDigestId, {
+    pending: true,
+    blockers: [],
+    scores: {},
+    model: null,
+    cost_usd: 0,
+    checked_at: null,
+  });
+  schedulePostUploadQa({
+    artifactId,
+    weeklyDigestId,
+    bytes,
+    mimeType: data.mime_type ?? 'image/jpeg',
+  });
+}
+
 export async function saveWeeklyOwnerFeedbackAction(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
