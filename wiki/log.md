@@ -6,6 +6,20 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — F2: scoreModelForRole (якість / ціна)
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F2.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/llm-providers](pipeline/llm-providers.md), [now](now.md), [index](index.md).
+
+**Код:** `pipeline/providers/model-scoring.ts` — floor + quality/price, топ-3, family-хвіст.
+Немає добового job (F3) і image-абстракції (F4).
+
+**Тест:** `a model with intelligence_index 14.2 at $0.01 is not chosen for weekly.master_writer`.
+
+**Не зроблено в цій хвилі:** F3 (добове оновлення + аудит у `/admin/providers`), G, A2.
+
 ## 2026-08-15 — E3: promotion gate якості промптів
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) E3.

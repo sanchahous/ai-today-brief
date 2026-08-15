@@ -56,6 +56,14 @@ https://build.nvidia.com/ — Kimi K3, DeepSeek V4, GLM 5.2 через OpenAI-с
 
 ## Статус
 
+**F2 model scoring (2026-08-15).** `pipeline/providers/model-scoring.ts` рахує якість на долар
+з живих `pricing` і `benchmarks.artificial_analysis` (окрема вісь на роль). Floor:
+`weekly.master_writer` / `weekly.master_critic` 40, `daily.summarize` 25. Ланцюжок = топ-3
+за балом, далі family-fallback з `rankOpenRouterModelIds`. Модель без індексу на осі —
+не кандидат (хвіст); нижче floor — взагалі не в ланцюжку. `daily.cover_scene` без floor
+(як P3). Добовий запис у `llm_provider_models` і UI — F3.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) F2)
+
 **P3 daily cover (2026-08-15).** Нова роль `daily.cover_scene` у `PROVIDER_ROLES` — один
 короткий виклик на випуск (топ-3 + intro), не `weekly.card_image_scene` і не
 `daily.card_image_scene`. Дефолтний ланцюжок той самий (OpenRouter → Gemini). Без порога

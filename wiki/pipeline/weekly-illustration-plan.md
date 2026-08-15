@@ -188,8 +188,8 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅
-A2, F, G — незалежні, можна паралельно
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅
+A2, F3, G — незалежні, можна паралельно
 ```
 
 **B1 виконано** (причина знайдена). B1-fix і B2 йдуть першими, бо від них залежить якість
@@ -1024,6 +1024,16 @@ scoreModelForRole(model, role):
 - **Результат — ланцюжок, не одна модель.** Реєстр уже працює ланцюжками (`llm_role_chains`);
   брати топ-3 за балом, а не єдиного переможця.
 
+### F2 ✅ Зроблено 2026-08-15 — scoreModelForRole
+
+`pipeline/providers/model-scoring.ts`: вісь якості від ролі, floor 40 для
+`weekly.master_writer` / `weekly.master_critic` і 25 для `daily.summarize`, ціна =
+зважений prompt/completion × 1e6, бал = quality / price. Немає бенчмарка на осі → не
+кандидат; нижче floor (включно з 14.2 @ $0.01/M) **не** в ланцюжку навіть хвостом.
+`rankModelsForRole` = топ-3 за балом, далі family-fallback `rankOpenRouterModelIds`.
+Добовий job і `/admin/providers` — F3. Image-абстракції немає (F4).
+(source: `pipeline/providers/model-scoring.ts`)
+
 ### F3. Оновлення і аудит
 
 - **Кадансу «щоразу» не робити.** Каталог — 411 моделей; тягнути його на кожен виклик означає
@@ -1056,7 +1066,8 @@ scoreModelForRole(model, role):
 ### F5. Готово коли
 
 - для ролей із порогом працює `scoreModelForRole`, і тест доводить, що модель із
-  `intelligence_index` 14.2 і ціною $0.01 **не** обирається для `weekly.master_writer`;
+  `intelligence_index` 14.2 і ціною $0.01 **не** обирається для `weekly.master_writer`
+  — **F2 ✅**;
 - у коді немає жодного номера версії моделі:
   `grep -rE "sonnet-5|gpt-5|gemini-3\.[0-9]" pipeline/ src/` порожній поза тестами й фікстурами;
 - добовий job оновлює `llm_provider_models` і пише аудит-рядок на кожну роль;
@@ -1235,6 +1246,7 @@ npm run pr:check
 | E1 | ✅ `owner verdict from admin lands on the prompt set and uploaded image metadata` |
 | E2 | ✅ `two-stage critique fails when image-only flags readable_text even if story-aware would pass`; M2 лишається image-only |
 | E3 | ✅ `promotion gate passes when 60% of concepts are acceptable on the first or second owner attempt`; `prompt promotion gate fails on misleading accepted concepts without blocking release preflight` |
+| F2 | ✅ `a model with intelligence_index 14.2 at $0.01 is not chosen for weekly.master_writer` |
 
 Після кожної хвилі — `wiki/log.md` (append-only, нові записи **зверху**) + `wiki/index.md`.
 Кожна хвиля — окремий PR, `pr:check` перед push, ніколи не в `main` напряму.

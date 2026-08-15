@@ -10,6 +10,11 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **F2 — scoreModelForRole (2026-08-15).** Текстові моделі: бал = quality / $/M за віссю ролі.
+  Floor 40 на `weekly.master_writer`. Модель з intelligence 14.2 @ $0.01/M не в ланцюжку.
+  Топ-3 + family-хвіст. Добовий job — F3. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) F2,
+  `pipeline/providers/model-scoring.ts`)
 - **E3 — promotion gate промптів (2026-08-15).** Visuals: ≥60% концептів прийнятні з 1–2
   спроби (`used` / `used_with_edits`), 0 misleading у прийнятих, ≤10 хв на story, 3 різні
   промпти (B2). Не блокує реліз. Пороги новин без змін.
