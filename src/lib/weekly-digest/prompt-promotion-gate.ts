@@ -203,12 +203,21 @@ function distinctPromptsCheck(stories: readonly PromptPromotionStoryInput[]): Pr
   if (withPrompts.length === 0) {
     return { id: 'distinct_prompts', status: 'incomplete', label: 'немає промптів' };
   }
+  // A story with fewer than 3 seats (B2 legitimately couldn't diversify)
+  // still passes here -- "pass" means "no duplicate canonicals found", not
+  // "the jury hit the 3-seat target" (that is B3's separate N/3 readiness
+  // signal). What was wrong (R4.4 / F24) is the label: it always claimed
+  // "3 різні" even when only 1-2 prompts actually existed, misreporting the
+  // true count under a status the owner reads as a quality confirmation.
+  let minCount = Number.POSITIVE_INFINITY;
   for (const story of withPrompts) {
     if (!promptSetIsDistinct(story.prompts)) {
       return { id: 'distinct_prompts', status: 'fail', label: 'копії промптів' };
     }
+    minCount = Math.min(minCount, story.prompts.length);
   }
-  return { id: 'distinct_prompts', status: 'pass', label: '3 різні' };
+  const label = minCount >= 3 ? '3 різні' : `${minCount} без копій`;
+  return { id: 'distinct_prompts', status: 'pass', label };
 }
 
 function qaCodesFromMetadata(metadata: unknown): string[] {

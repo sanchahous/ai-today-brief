@@ -223,11 +223,15 @@ describe('prompt promotion gate', () => {
 
     const oneSeat = [prompt({ conceptLens: 'mechanism' })];
     expect(promptSetIsDistinct(oneSeat)).toBe(true);
-    expect(
-      evaluatePromptPromotionGate([story({ prompts: oneSeat })]).checks.find(
-        (check) => check.id === 'distinct_prompts',
-      )?.status,
-    ).toBe('pass');
+    const oneSeatCheck = evaluatePromptPromotionGate([story({ prompts: oneSeat })]).checks.find(
+      (check) => check.id === 'distinct_prompts',
+    );
+    expect(oneSeatCheck?.status).toBe('pass');
+    // R4.4 / F24: the label used to hardcode "3 різні" regardless of the
+    // actual count -- a single-seat B2 story read as a false quality
+    // confirmation. "pass" still means "no duplicate canonicals", the
+    // count is now honest.
+    expect(oneSeatCheck?.label).toBe('1 без копій');
 
     const threeFallbacks = [
       prompt({
