@@ -12,6 +12,12 @@ on:
         type: boolean
         default: false
 
+# Least-privilege GITHUB_TOKEN (R3.4 / F20): checkout + npx tsx only, no
+# repo write, no PR/issue access. Matches dependabot-automerge.yml /
+# vision-critic-bakeoff.yml / visual-experiment.yml's explicit blocks.
+permissions:
+  contents: read
+
 concurrency:
   group: rerank-openrouter-models
   cancel-in-progress: false
