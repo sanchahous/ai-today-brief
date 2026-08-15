@@ -389,6 +389,11 @@ image-only critic (`buildImageOnlyCriticPrompt`, без headline/scene) і пи�
 (source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/components/admin/weekly-workspace.tsx`,
 [weekly-illustration-plan](weekly-illustration-plan.md) D2)
 
+**D3 human_dignity_risk (2026-08-15):** critic ловить принизливі сцени з людьми. На новинах —
+fail; на upload — попередження «ризик гідності», не preflight. Вага гейта без змін.
+(source: `src/lib/content-sim/vision-critic.ts`, `src/lib/weekly-digest/post-upload-qa.ts`,
+[weekly-illustration-plan](weekly-illustration-plan.md) D3)
+
 **Content Sim (2026-08-11):** у режимі `render` після FLUX `generateStoryImage` ганяє vision repair loop
 (hard cap 2 rounds, `CONTENT_SIM_*`) і пише `metadata.content_sim`. Preflight код `simulation_not_passed`
 блокує реліз, доки sim не passed або owner Approve не поставить `human_override`.

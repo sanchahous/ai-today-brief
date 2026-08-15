@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — D3: human_dignity_risk у критику
+
+**Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) D3.
+
+**Змінено:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[pipeline/content-sim](pipeline/content-sim.md), [pipeline/weekly-digest](pipeline/weekly-digest.md),
+[ops/weekly-sandbox](ops/weekly-sandbox.md), [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[marketing/card-images](marketing/card-images.md), [overview](overview.md),
+[now](now.md), [index](index.md).
+
+**Код:** `human_dignity_risk` у `IMAGE_CRITIC_BLOCKER_CODES` і в обох critic prompt-ах.
+Upload: «ризик гідності». Новини: critique `passed: false`.
+
+**Тест:** `fails on human_dignity_risk even with a high score`.
+
+**Не зроблено в цій хвилі:** E1 owner-feedback contract.
+
 ## 2026-08-15 — D2: QA-порада власнику замість auto-repair
 
 **Джерело:** [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) D2.

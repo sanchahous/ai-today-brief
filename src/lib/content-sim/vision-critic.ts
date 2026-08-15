@@ -20,6 +20,7 @@ export const IMAGE_CRITIC_BLOCKER_CODES = [
   'ambiguous_visual_story',
   'melted_motion',
   'brand_unsafe',
+  'human_dignity_risk',
   'low_quality',
   'wrong_subject',
   'impossible_orientation',
@@ -31,6 +32,27 @@ export const IMAGE_CRITIC_BLOCKER_CODES = [
 ] as const;
 
 export type ImageCriticBlockerCode = (typeof IMAGE_CRITIC_BLOCKER_CODES)[number];
+
+/** Pixel-only upload QA: craft/ethics codes, no story-semantic codes. */
+export const IMAGE_ONLY_CRITIC_BLOCKER_CODES = [
+  'readable_text',
+  'ui_chrome',
+  'collage_panels',
+  'banned_cliche',
+  'melted_motion',
+  'brand_unsafe',
+  'low_quality',
+  'impossible_orientation',
+  'prop_use_mismatch',
+  'human_dignity_risk',
+] as const satisfies readonly ImageCriticBlockerCode[];
+
+function blockingCodesLine(codes: readonly string[]): string {
+  return `Blocking codes (use exactly): ${codes.join(' | ')}.`;
+}
+
+const HUMAN_DIGNITY_RISK_HINT =
+  'human_dignity_risk: a person, especially a child, depicted as harmed, dominated, or used as a prop (for example a robot gripping a child by the head).';
 
 /** Floor for news_legibility when CONTENT_SIM_SCORE_THRESHOLD is lower. */
 export const NEWS_LEGIBILITY_MIN = 75;
@@ -87,7 +109,7 @@ export function buildImageCriticPrompt(input: {
     semanticStory
       ? `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, context_fidelity >= ${newsFloor}, mechanism_legibility >= ${newsFloor}, consequence_legibility >= ${newsFloor}, instant_comprehension >= ${newsFloor}, AND no blocking issues.`
       : `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, AND no blocking issues.`,
-    'Blocking codes (use exactly): readable_text | ui_chrome | collage_panels | banned_cliche | off_metaphor | off_news | missing_context | missing_mechanism | missing_consequence | ambiguous_visual_story | melted_motion | brand_unsafe | low_quality | wrong_subject | impossible_orientation | prop_use_mismatch | decorative_second_beat | sibling_echo | opaque_abstraction | semantic_evidence_missing.',
+    blockingCodesLine(IMAGE_CRITIC_BLOCKER_CODES),
     'banned_cliche includes: terminal/IDE screens, paper-heap sludge, generic desk without a conceptual prop.',
     'opaque_abstraction includes generic pneumatic tubes, canisters, switchboards, patch cables, pipework, or glowing data streams used merely to mean software/data flow when those objects are not literal news context.',
     'Editorial fidelity (news first):',
@@ -109,6 +131,7 @@ export function buildImageCriticPrompt(input: {
     '- prop_use_mismatch: grip, posture, or object use that a human would not do this way.',
     '- decorative_second_beat: second half of a dual/contrast frame that does not argue the essence (ballerinas, props that are mood-only).',
     '- sibling_echo: composition/subject rhymes with a sibling scene listed below.',
+    `- ${HUMAN_DIGNITY_RISK_HINT}`,
     '',
     'SOURCE STORY (authority):',
     `Headline: ${input.headline}`,
@@ -158,9 +181,10 @@ export function buildImageOnlyCriticPrompt(): string {
     'You are checking an uploaded editorial illustration for pixel defects only.',
     'Do not infer a news story. Do not assume a prompt, headline, scene brief, or labels.',
     'Judge only what is visible in the attached image.',
-    'Blocking codes (use exactly): readable_text | ui_chrome | collage_panels | banned_cliche | melted_motion | brand_unsafe | low_quality | impossible_orientation | prop_use_mismatch.',
+    blockingCodesLine(IMAGE_ONLY_CRITIC_BLOCKER_CODES),
     'readable_text: letters, logos, watermarks, captions, UI chrome, or any writing baked into the pixels.',
     'banned_cliche: terminal/IDE screens, collage, glowing brain, generic paper-heap sludge.',
+    HUMAN_DIGNITY_RISK_HINT,
     'Count distinct readable-text regions in blockers (one blocker per region).',
     'Do not score context, mechanism, consequence, or headline pairing — those axes are not applicable.',
     '',

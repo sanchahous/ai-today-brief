@@ -22,7 +22,8 @@ shortlist for an editor, not to publish an algorithmic verdict.
 > eligibility. Images remain required for release; only the missing-image hint and Visuals
 > readiness line changed. P3 (daily cover prompt) is the daily pipeline, not this selector.
 > D2 post-upload advice is Visuals copy only — it does not change release eligibility.
-> (source: [weekly-illustration-plan](weekly-illustration-plan.md) P2/M3/B3/P3/D2)
+> D3 `human_dignity_risk` is critic/QA copy only — it does not change this selector.
+> (source: [weekly-illustration-plan](weekly-illustration-plan.md) P2/M3/B3/P3/D2/D3)
 
 > **Scope note (2026-08-13):** experimental Visual Affordance V10 evaluates visual explanations
 > for three selected stories only. It does not alter `weekly-editorial-v2` candidates, weights,

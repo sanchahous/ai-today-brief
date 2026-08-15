@@ -10,6 +10,11 @@ Last updated: 2026-08-15
 
 ## Стан репозиторію
 
+- **D3 — етичний блокер `human_dignity_risk` (2026-08-15).** Критик ловить принизливі
+  сцени (напр. робот тримає дитину за голову): на новинах — fail, на upload — попередження
+  «ризик гідності». Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
+  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) D3,
+  `src/lib/content-sim/vision-critic.ts`)
 - **D2 — QA радить, не ремонтує (2026-08-15).** Після upload Visuals показує do/dont:
   впечений текст → inpaint/crop, не перегенеровувати; геометрія → той самий промпт;
   хибна теза → інший концепт. Авто-repair лишається лише на новинах. Вага гейта без змін.

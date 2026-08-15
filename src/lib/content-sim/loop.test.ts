@@ -16,6 +16,7 @@ import {
   buildImageOnlyCriticPrompt,
   clampOverallByNewsLegibility,
   extractJsonObject,
+  IMAGE_CRITIC_BLOCKER_CODES,
   newsLegibilityThreshold,
   parseImageCriticResponse,
 } from './vision-critic';
@@ -215,6 +216,25 @@ describe('parseImageCriticResponse', () => {
     );
     expect(critique.passed).toBe(false);
     expect(critique.repairDirective?.promptPatches?.[0]).toContain('no text');
+  });
+
+  it('fails on human_dignity_risk even with a high score', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 95,
+        dimensions: { news_legibility: 90, craft: 90, brand_safe: 20 },
+        blockers: [
+          {
+            code: 'human_dignity_risk',
+            message: 'A machine grips a child by the head',
+            region: 'center',
+          },
+        ],
+      }),
+      80,
+    );
+    expect(critique.passed).toBe(false);
+    expect(critique.blockers.some((blocker) => blocker.code === 'human_dignity_risk')).toBe(true);
   });
 
   it('parses physics and decorative-beat blocker codes', () => {
@@ -446,12 +466,15 @@ describe('buildImageCriticPrompt', () => {
     expect(prompt).toContain('What changed? How? So what?');
     expect(prompt).toContain('missing_consequence');
     expect(prompt).toContain('extra electricity becomes waste heat');
+    expect(prompt).toContain('human_dignity_risk');
+    expect(IMAGE_CRITIC_BLOCKER_CODES).toContain('human_dignity_risk');
   });
 
   it('image-only critic prompt omits headline and scene brief', () => {
     const prompt = buildImageOnlyCriticPrompt();
     expect(prompt).toContain('pixel defects only');
     expect(prompt).toContain('readable_text');
+    expect(prompt).toContain('human_dignity_risk');
     expect(prompt).not.toMatch(/Headline:/);
     expect(prompt).not.toMatch(/SOURCE STORY/);
     expect(prompt).not.toMatch(/Scene brief:/);

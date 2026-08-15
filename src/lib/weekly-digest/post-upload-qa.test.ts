@@ -30,6 +30,27 @@ describe('post-upload QA presentation', () => {
     expect(formatPostUploadQaLine({ ...failedQa, blockers: [] })).toBe('QA чисто');
   });
 
+  it('human dignity QA warns and advises switching concept', () => {
+    const qa = {
+      ...failedQa,
+      blockers: [
+        {
+          code: 'human_dignity_risk',
+          message: 'A machine grips a child by the head',
+          blocker: true,
+        },
+      ],
+    };
+    expect(formatPostUploadQaLine(qa)).toBe('QA: ризик гідності');
+    expect(postUploadQaNeedsWarning(qa)).toBe(true);
+    expect(adviceForPostUploadQa(qa)).toEqual([
+      expect.objectContaining({
+        kind: 'false_thesis',
+        do: 'Візьми інший концепт із трьох.',
+      }),
+    ]);
+  });
+
   it('baked text QA advises inpaint not a full regenerate', () => {
     const advice = adviceForPostUploadQa(failedQa);
     expect(advice).toEqual([

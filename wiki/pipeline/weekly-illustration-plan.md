@@ -188,7 +188,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 → E
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E
 A2, F, G — незалежні, можна паралельно
 ```
 
@@ -839,6 +839,13 @@ Story 5: робот тримає малу дитину за голову. У `IM
 (напр. `human_dignity_risk`) і згадати в промпті критика. Працює в обох гілках — на новинах як
 блокер, на завантаженнях як попередження (M2).
 
+### D3 ✅ Зроблено 2026-08-15 — `human_dignity_risk`
+
+Код у `IMAGE_CRITIC_BLOCKER_CODES` і в обох промптах критика (story-aware + image-only).
+На новинах будь-який blocker валить critique (`passed: false`). На upload — попередження
+«ризик гідності» і порада взяти інший концепт. Вага preflight без змін.
+(source: `src/lib/content-sim/vision-critic.ts`, `src/lib/weekly-digest/post-upload-qa.ts`)
+
 ---
 
 ## E. Калібрування
@@ -1194,6 +1201,7 @@ npm run pr:check
 | C3 | ✅ `empty semanticProps do not vacuously pass`; id ≠ label; концепт без visible outcome не в `story_prompt_set` |
 | D1 | ✅ negative банить текст (P1); `readable_text` — попередження після upload (M2) |
 | D2 | ✅ `baked text QA advises inpaint not a full regenerate`; Visuals показує do/dont; без auto-repair |
+| D3 | ✅ `fails on human_dignity_risk even with a high score`; upload попереджає «ризик гідності» |
 | C | story з метрикою дає промпт у грамматиці схеми, і це видно власнику |
 | E1 | вердикт власника з адмінки потрапляє в calibration dataset без ручного перенесення |
 

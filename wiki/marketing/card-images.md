@@ -182,6 +182,11 @@ title/summary, не practical/takeaway. Метрика → `deterministic_techni
 (source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) D2,
 `src/lib/weekly-digest/post-upload-qa.ts`)
 
+**D3 — human_dignity_risk (2026-08-15):** критик банить принизливі сцени з людьми; на upload —
+попередження «ризик гідності».
+(source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) D3,
+`src/lib/content-sim/vision-critic.ts`)
+
 **P2 — Visuals copy/upload (2026-08-15):** артефакт `story_prompt_set` (текст, не в
 `PUBLIC_IMAGE_TYPES`) + картки Canonical / Midjourney / Negative і слот upload на вкладці
 Visuals.

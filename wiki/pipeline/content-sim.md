@@ -113,6 +113,11 @@ npm run content-sim -- hypothesis --baseline quality.json --run artifacts/_local
 Це не `content_sim` і не `simulation_not_passed`. (source: [weekly-illustration-plan](weekly-illustration-plan.md) M2,
 `src/lib/weekly-digest/post-upload-qa.ts`)
 
+**D3 human_dignity_risk (2026-08-15):** critic flags degrading depictions of people (especially
+children). News: critique fails. Upload: warning, not a preflight block.
+(source: [weekly-illustration-plan](weekly-illustration-plan.md) D3,
+`src/lib/content-sim/vision-critic.ts`)
+
 ## Related pages
 
 - [weekly-sandbox](../ops/weekly-sandbox.md)

@@ -29,6 +29,7 @@ const BLOCKER_LABEL_UK: Record<string, string> = {
   banned_cliche: 'кліше',
   melted_motion: 'розмитий рух',
   brand_unsafe: 'небезпечно для бренду',
+  human_dignity_risk: 'ризик гідності',
   low_quality: 'низька якість',
   impossible_orientation: 'перевернутий обʼєкт',
   prop_use_mismatch: 'неприродна дія',
@@ -189,7 +190,8 @@ export function adviceKindForBlockerCode(code: string): PostUploadAdviceKind | n
     code === 'wrong_subject' ||
     code === 'opaque_abstraction' ||
     code === 'semantic_evidence_missing' ||
-    code === 'decorative_second_beat'
+    code === 'decorative_second_beat' ||
+    code === 'human_dignity_risk'
   ) {
     return 'false_thesis';
   }
