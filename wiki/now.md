@@ -11,16 +11,20 @@ Last updated: 2026-08-15
 ## Стан репозиторію
 
 - **Review 24 PR ілюстраційного стека + виправлення на гілці `feat/weekly-illustration-fixes`
-  (2026-08-15).** Технічне ревʼю PR #241–#264 (усі хвилі
+  (2026-08-15) — завершено.** Технічне ревʼю PR #241–#264 (усі хвилі
   [weekly-illustration-plan](pipeline/weekly-illustration-plan.md)) знайшло 4 блокери,
-  8 дефектів якості, 4 безпекові/цілісні прогалини й 6 операційних — усі виправлено. Ключове:
-  крос-story диверсифікація ілюстрацій мовчки відмирала після M1 (siblings читались лише з
-  метаданих `story_image`, яку prompt_only-режим більше не пише); grammar-cap на всі 3 концепти
-  замість одного при появі метрики в новині; owner-feedback/QA дії не звіряли `weekly_digest_id`
-  з реальним власником артефакту; daily rerank обрізав спільну чергу OpenRouter для ВСІХ ролей
-  до 3 моделей одного writer'а. `npm run pr:check` живий — 1389/1389, typecheck/lint/e2e:check
-  чисті. Деталі — [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md).
-  **Гілка ще не змержена** — 24 фіксувальних коміти поверх вершини стека
+  8 дефектів якості, 4 безпекові/цілісні прогалини й 7 операційних — 22 виправлено, 1 (F23,
+  e2e для Visuals prompt-карток) задокументовано без фіксу, бо потребує рішення власника про
+  тестову інфраструктуру (авторизованого Playwright для `/admin/*` у репо взагалі немає).
+  Ключове: крос-story диверсифікація ілюстрацій мовчки відмирала після M1 (siblings читались
+  лише з метаданих `story_image`, яку prompt_only-режим більше не пише); grammar-cap на всі
+  3 концепти замість одного при появі метрики в новині; owner-feedback/QA дії не звіряли
+  `weekly_digest_id` з реальним власником артефакту; daily rerank обрізав спільну чергу
+  OpenRouter для ВСІХ ролей до 3 моделей одного writer'а; новий
+  `pipeline/scripts/export-owner-calibration.ts` збирає вердикти власника в один датасет
+  (раніше не збирались ніде). `npm run pr:check` живий наскрізь — exit code 0. Деталі —
+  [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md).
+  **Гілка ще не змержена** — 27 фіксувальних+doc-комітів поверх вершини стека
   (`feat/weekly-card-origin-reencode`), чекає на власника: чи мержити основний стек спочатку.
   (source: [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md))
 - **Origin JPEG новинних карток (2026-08-15).** Нові `brief_items.card_image_url`
