@@ -4,14 +4,14 @@
  * Workers AI secrets to the daily job). Items published before that have a NULL
  * card_image_url and render the branded duotone OG fallback; this fills them in.
  * Usage: npx tsx --env-file=.env.local pipeline/scripts/backfill-card-images.ts [--dry-run]
+ *        npx tsx --env-file=.env.local pipeline/scripts/backfill-card-images.ts --reencode-png [--dry-run]
  *
  * Idempotent: fillCardImages skips items that already have an image (or are
- * rejected), so re-running never regenerates or double-charges. Generation is
- * free (Cloudflare FLUX → Pollinations fallback). Requires the Cloudflare creds
- * (CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN); without them it no-ops.
+ * rejected), so re-running never regenerates or double-charges. `--reencode-png`
+ * rewrites stored PNG origins to JPEG without an image-model call (no Cloudflare).
  */
 import { loadPipelineConfig } from '../config';
-import { fillCardImages } from '../card-image';
+import { fillCardImages, reencodeStoredCardOrigins } from '../card-image';
 import { createServiceClient, type PipelineDb } from '../db';
 import { logError, logEvent } from '../log';
 
@@ -48,11 +48,18 @@ async function briefsMissingCardImages(db: PipelineDb): Promise<string[]> {
 
 async function main(): Promise<void> {
   const config = loadPipelineConfig();
+  const db = createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
+  const reencodePng = process.argv.includes('--reencode-png');
+  if (reencodePng) {
+    const stats = await reencodeStoredCardOrigins(db, { dryRun: config.dryRun });
+    logEvent('info', 'publish', 'Card origin reencode finished', stats);
+    return;
+  }
+
   if (!config.cloudflareAccountId || !config.cloudflareApiToken) {
     logEvent('warn', 'publish', 'Card-image backfill skipped — Cloudflare creds unset');
     return;
   }
-  const db = createServiceClient(config.supabaseUrl, config.supabaseServiceKey);
 
   const briefIds = await briefsMissingCardImages(db);
   logEvent('info', 'publish', 'Card-image backfill started', { briefs: briefIds.length });

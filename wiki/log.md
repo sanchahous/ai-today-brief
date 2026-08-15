@@ -6,6 +6,25 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-15
 
+## 2026-08-15 — reencode історичних PNG карток без FLUX
+
+**Джерело:** [ops/vercel-image-quota](ops/vercel-image-quota.md);
+[marketing/card-images](marketing/card-images.md).
+
+**Змінено:** [marketing/card-images](marketing/card-images.md),
+[ops/vercel-image-quota](ops/vercel-image-quota.md), [overview](overview.md),
+[pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[now](now.md), [index](index.md).
+
+**Код:** `reencodeStoredCardOrigins` — download PNG → `encodeCardOrigin` → `${slug}.jpg` →
+прибрати PNG. `--reencode-png` / `--dry-run`. Немає виклику моделі, `--force` не чіпали.
+`WEEKLY_CONTENT_STUDIO_V2=off` без змін. Живий прогін по прод-бакету в цій хвилі не запускали.
+
+**Тест:** `uploads a JPEG origin, points the row at it, and removes the PNG`.
+
+**Не зроблено в цій хвилі:** live `--reencode-png` на проді; квота Supabase transform
+`(needs verification)`; F4.
+
 ## 2026-08-15 — origin JPEG новинних карток (G2 follow-up)
 
 **Джерело:** [ops/vercel-image-quota](ops/vercel-image-quota.md);

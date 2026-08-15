@@ -74,6 +74,80 @@ export async function encodeCardOrigin(bytes: Buffer): Promise<Buffer> {
     .toBuffer();
 }
 
+/** Safety cap so one invocation cannot walk an unbounded item table. */
+export const CARD_ORIGIN_REENCODE_MAX = 250;
+
+export type CardOriginReencodeItem = {
+  id: string;
+  slug: string | null;
+  card_image_url: string | null;
+  review_status: string | null;
+};
+
+export type CardOriginReencodeTarget = {
+  id: string;
+  slug: string;
+  pngPath: string;
+};
+
+export type ReencodeCardOriginsResult = {
+  reencoded: number;
+  skipped: number;
+  failed: number;
+  pending: number;
+};
+
+/** Filename in the card-images bucket when the public URL is still a PNG origin. */
+export function pngCardOriginPath(url: string): string | null {
+  let pathname = url;
+  try {
+    pathname = new URL(url).pathname;
+  } catch {
+    const q = url.indexOf('?');
+    if (q >= 0) pathname = url.slice(0, q);
+  }
+  while (pathname.length > 1 && pathname.endsWith('/')) {
+    pathname = pathname.slice(0, -1);
+  }
+  const slash = pathname.lastIndexOf('/');
+  const name = slash >= 0 ? pathname.slice(slash + 1) : pathname;
+  if (name.length <= 4) return null;
+  const ext = name.slice(-4).toLowerCase();
+  if (ext !== '.png') return null;
+  return name;
+}
+
+function cardOriginReencodeTarget(
+  item: CardOriginReencodeItem,
+): CardOriginReencodeTarget | null {
+  if (!item.slug || item.review_status === 'rejected' || !item.card_image_url) return null;
+  const pngPath = pngCardOriginPath(item.card_image_url);
+  if (!pngPath) return null;
+  return { id: item.id, slug: item.slug, pngPath };
+}
+
+export function selectCardOriginReencodeTargets(
+  items: readonly CardOriginReencodeItem[],
+): { targets: CardOriginReencodeTarget[]; skipped: number } {
+  const targets: CardOriginReencodeTarget[] = [];
+  let skipped = 0;
+  for (const item of items) {
+    const target = cardOriginReencodeTarget(item);
+    if (target) targets.push(target);
+    else skipped++;
+  }
+  return { targets, skipped };
+}
+
+function capReencodeBatch(
+  targets: CardOriginReencodeTarget[],
+  limit: number | undefined,
+): { batch: CardOriginReencodeTarget[]; deferred: number } {
+  const cap = Math.min(limit ?? CARD_ORIGIN_REENCODE_MAX, CARD_ORIGIN_REENCODE_MAX);
+  const batch = targets.slice(0, cap);
+  return { batch, deferred: targets.length - batch.length };
+}
+
 /** CF klein Unit Pricing defaults — overridable via env. */
 const DEFAULT_USD_FIRST_MP = 0.015;
 const DEFAULT_USD_NEXT_MP = 0.002;
@@ -2692,6 +2766,76 @@ async function uploadCardImage(
   // image/CDN cache (the public URL is stable; the ?v changes with the bytes).
   const version = createHash('sha1').update(origin).digest('hex').slice(0, 10);
   return `${db.storage.from(BUCKET).getPublicUrl(path).data.publicUrl}?v=${version}`;
+}
+
+async function reencodeOneCardOrigin(
+  db: PipelineDb,
+  target: CardOriginReencodeTarget,
+): Promise<boolean> {
+  const { data, error } = await db.storage.from(BUCKET).download(target.pngPath);
+  if (!data) {
+    logEvent('warn', 'publish', 'Card origin download failed', {
+      slug: target.slug,
+      error: error?.message ?? 'empty',
+    });
+    return false;
+  }
+  const bytes = Buffer.from(await data.arrayBuffer());
+  const url = await uploadCardImage(db, target.slug, bytes);
+  if (!url) return false;
+  const { error: updErr } = await db
+    .from('brief_items')
+    .update({ card_image_url: url })
+    .eq('id', target.id);
+  if (updErr) {
+    logEvent('warn', 'publish', 'Card origin url update failed', {
+      slug: target.slug,
+      error: updErr.message,
+    });
+    return false;
+  }
+  const { error: rmErr } = await db.storage.from(BUCKET).remove([target.pngPath]);
+  if (rmErr) {
+    logEvent('warn', 'publish', 'Card origin PNG cleanup failed', {
+      slug: target.slug,
+      error: rmErr.message,
+    });
+  }
+  return true;
+}
+
+/**
+ * Re-encode existing PNG card origins to JPEG without calling an image model.
+ * Idempotent: JPEG (and empty/rejected) URLs are skipped. Does not raise the
+ * news image spend cap and does not regenerate pixels.
+ */
+export async function reencodeStoredCardOrigins(
+  db: PipelineDb,
+  opts: { dryRun?: boolean; limit?: number } = {},
+): Promise<ReencodeCardOriginsResult> {
+  const { data: items, error } = await db
+    .from('brief_items')
+    .select('id, slug, card_image_url, review_status')
+    .not('card_image_url', 'is', null);
+  if (error) throw new Error(`[card-image] load origins failed: ${error.message}`);
+
+  const { targets, skipped } = selectCardOriginReencodeTargets(items ?? []);
+  const { batch, deferred } = capReencodeBatch(targets, opts.limit);
+  if (opts.dryRun) {
+    logEvent('info', 'publish', 'Card origin reencode dry-run', {
+      pending: batch.length,
+      skipped: skipped + deferred,
+    });
+    return { reencoded: 0, skipped: skipped + deferred, failed: 0, pending: batch.length };
+  }
+
+  let reencoded = 0;
+  let failed = 0;
+  for (const target of batch) {
+    if (await reencodeOneCardOrigin(db, target)) reencoded++;
+    else failed++;
+  }
+  return { reencoded, skipped: skipped + deferred, failed, pending: deferred };
 }
 
 /** Map any hex accent colour to a prompt-friendly colour word via its hue. */

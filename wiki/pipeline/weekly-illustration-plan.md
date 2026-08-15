@@ -1131,9 +1131,9 @@ Master/social/video LLM у кошики не входять. Daily cover prompt 
 Цільова автоматична витрата на зображення: **$1.73–2.70/міс.**
 
 **Дотичний пункт новинної гілки (закрито 2026-08-15):** origin карток кодується в
-`encodeCardOrigin` як JPEG 1280×720 q82 (`${slug}.jpg`) перед upload. Модель новин
-не змінювали; backfill історичних PNG — окрема ops-дія (ідемпотентний skip). Деталі —
-[ops/vercel-image-quota](../ops/vercel-image-quota.md).
+`encodeCardOrigin` як JPEG 1280×720 q82 (`${slug}.jpg`) перед upload. Історичні PNG —
+`npx tsx scripts/backfill-card-images.ts --reencode-png` (без виклику моделі). Модель новин
+не змінювали. Деталі — [ops/vercel-image-quota](../ops/vercel-image-quota.md).
 
 **Що скасовується рішенням 2026-08-15:**
 
@@ -1267,7 +1267,7 @@ npm run pr:check
 | F3 | ✅ `does not apply a cheaper winner when quality drops below the current pick`; `writes an audit row per role with score price and quality` |
 | G | ✅ `illustration budget uses ledger events not policy spend caps`; `does not treat weekly master LLM as illustration API spend`; cap новин лишається 0.2 |
 | F5 | ✅ `production pipeline/ and src/ do not pin sonnet-5, gpt-5, or gemini-3.x ids` |
-| G2 origin | ✅ JPEG magic + 1280×720 + size < 200 KB; path `${slug}.jpg`; модель новин не змінена |
+| G2 origin | ✅ JPEG magic + 1280×720 + size < 200 KB; path `${slug}.jpg`; `--reencode-png` без моделі |
 
 Після кожної хвилі — `wiki/log.md` (append-only, нові записи **зверху**) + `wiki/index.md`.
 Кожна хвиля — окремий PR, `pr:check` перед push, ніколи не в `main` напряму.

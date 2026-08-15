@@ -71,7 +71,7 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    public `card-images` bucket → `brief_items.card_image_url`. JPEG, not WebP,
    so OG crawlers can read the origin without a transform. Idempotent skip
    leaves existing `.png` (~488 KB from the 2026-08-14 incident) until
-   force/backfill. Weekly artifacts keep their own storage paths + prompt
+   `--reencode-png` (no FLUX). Weekly artifacts keep their own storage paths + prompt
    metadata. (source: [ops/vercel-image-quota](../ops/vercel-image-quota.md),
    `pipeline/card-image.ts`)
 5. **Render** — `opengraph-image.tsx` (Satori) composites the brand overlay for
@@ -97,9 +97,17 @@ Unset account/token → generation step skipped; branded duotone fallback render
 ## Backfill
 
 ```
-npx tsx scripts/backfill-card-images.ts            # all published briefs
+npx tsx scripts/backfill-card-images.ts            # all published briefs (FLUX, missing only)
 npx tsx scripts/backfill-card-images.ts <brief-slug>  # one brief
+npx tsx scripts/backfill-card-images.ts --reencode-png --dry-run
+npx tsx scripts/backfill-card-images.ts --reencode-png
 ```
+
+`--reencode-png` downloads existing PNG origins, runs `encodeCardOrigin`, writes
+`${slug}.jpg`, updates `card_image_url`, then removes the PNG. **No image-model
+call** and no Cloudflare key. Idempotent: JPEG URLs are skipped. Cap 250/run
+(`CARD_ORIGIN_REENCODE_MAX`). Do not use `--force` for this — that regenerates
+pixels via FLUX. (source: `pipeline/card-image.ts`, 2026-08-15)
 
 ## Verify a render offline
 

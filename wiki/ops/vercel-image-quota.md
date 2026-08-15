@@ -70,8 +70,9 @@ Cache-buster `?v=<hash>` зі збереженого URL має вижити, т
 Нові картки новин пишуться як `${slug}.jpg` (`image/jpeg`, 1280×720, q82 mozjpeg)
 через `encodeCardOrigin` у `pipeline/card-image.ts` — до upload, на всіх щаблях
 драбини (FLUX / Pollinations / fallback). JPEG, не WebP, бо OG-кrawlerи слабше
-читають WebP. Ідемпотентний skip лишає вже збережені `.png` (~488 КБ) до
-force/backfill; модель новин і loader не змінювали. Мініатюра і повне — як і раніше
+читають WebP. Ідемпотентний skip лишає вже збережені `.png` (~488 КБ), поки не
+запустити `--reencode-png` (без FLUX): `npx tsx scripts/backfill-card-images.ts --reencode-png`.
+Модель новин і loader не змінювали. Мініатюра і повне — як і раніше
 один файл. (source: `pipeline/card-image.ts`, [marketing/card-images](../marketing/card-images.md))
 
 ## Що лишається відкритим

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import sharp from 'sharp';
+import type { PipelineDb } from './db';
 import { loadProviderRegistry } from './providers/registry';
 import {
   buildPrompt,
@@ -27,9 +28,13 @@ import {
   WEEKLY_PROMPT_POLICY,
   CARD_ORIGIN_CONTENT_TYPE,
   CARD_ORIGIN_JPEG_QUALITY,
+  CARD_ORIGIN_REENCODE_MAX,
   DEFAULT_CF_IMAGE_MODEL,
   cardOriginStoragePath,
   encodeCardOrigin,
+  pngCardOriginPath,
+  reencodeStoredCardOrigins,
+  selectCardOriginReencodeTargets,
   estimateCloudflareImageCostUsd,
   fallbackIllustrationMotif,
   fallbackScene,
@@ -419,6 +424,148 @@ describe('encodeCardOrigin', () => {
 
   it('rejects bytes that are not an image', async () => {
     await expect(encodeCardOrigin(Buffer.from('not-an-image'))).rejects.toThrow();
+  });
+});
+
+describe('selectCardOriginReencodeTargets', () => {
+  const pngUrl =
+    'https://ref.supabase.co/storage/v1/object/public/card-images/foo.png?v=93ed3afb5c';
+  const jpgUrl =
+    'https://ref.supabase.co/storage/v1/object/public/card-images/foo.jpg?v=93ed3afb5c';
+
+  it('reads the PNG filename from a public Storage URL and ignores JPEG', () => {
+    expect(pngCardOriginPath(pngUrl)).toBe('foo.png');
+    expect(pngCardOriginPath(jpgUrl)).toBeNull();
+    expect(pngCardOriginPath('not a url /bar.png')).toBe('bar.png');
+  });
+
+  it('selects PNG origins and skips JPEG, rejected, and empty rows', () => {
+    const { targets, skipped } = selectCardOriginReencodeTargets([
+      { id: '1', slug: 'foo', card_image_url: pngUrl, review_status: 'approved' },
+      { id: '2', slug: 'bar', card_image_url: jpgUrl, review_status: 'approved' },
+      { id: '3', slug: 'baz', card_image_url: pngUrl, review_status: 'rejected' },
+      { id: '4', slug: null, card_image_url: pngUrl, review_status: 'approved' },
+    ]);
+    expect(targets).toEqual([{ id: '1', slug: 'foo', pngPath: 'foo.png' }]);
+    expect(skipped).toBe(3);
+  });
+});
+
+describe('reencodeStoredCardOrigins', () => {
+  it('does not download or upload on dry-run', async () => {
+    const download = vi.fn();
+    const upload = vi.fn();
+    const db = {
+      from: () => ({
+        select: () => ({
+          not: async () => ({
+            data: [
+              {
+                id: '1',
+                slug: 'foo',
+                card_image_url:
+                  'https://ref.supabase.co/storage/v1/object/public/card-images/foo.png',
+                review_status: 'approved',
+              },
+            ],
+            error: null,
+          }),
+        }),
+      }),
+      storage: { from: () => ({ download, upload }) },
+    } as unknown as PipelineDb; // test double: item listing only
+
+    const stats = await reencodeStoredCardOrigins(db, { dryRun: true });
+    expect(stats).toEqual({ reencoded: 0, skipped: 0, failed: 0, pending: 1 });
+    expect(download).not.toHaveBeenCalled();
+    expect(upload).not.toHaveBeenCalled();
+  });
+
+  it('uploads a JPEG origin, points the row at it, and removes the PNG', async () => {
+    const png = await renderFallbackEditorialIllustration({
+      title: 'Google Cloud Releases Always-On Memory Agent Powered by Gemini Flash-Lite',
+      summary: 'A background agent consolidates memory into SQLite instead of a RAG database.',
+      seedKey: 'weekly-memory-agent',
+    });
+    const uploaded: { path: string; type: string }[] = [];
+    const removed: string[][] = [];
+    const updates: { id: string; url: string }[] = [];
+    const db = {
+      from: () => ({
+        select: () => ({
+          not: async () => ({
+            data: [
+              {
+                id: 'item-1',
+                slug: 'memory-agent',
+                card_image_url:
+                  'https://ref.supabase.co/storage/v1/object/public/card-images/memory-agent.png?v=old',
+                review_status: 'approved',
+              },
+            ],
+            error: null,
+          }),
+        }),
+        update: (row: { card_image_url: string }) => ({
+          eq: async (_col: string, id: string) => {
+            updates.push({ id, url: row.card_image_url });
+            return { error: null };
+          },
+        }),
+      }),
+      storage: {
+        from: () => ({
+          download: async () => ({ data: new Blob([new Uint8Array(png)]), error: null }),
+          upload: async (path: string, _bytes: Buffer, opts: { contentType: string }) => {
+            uploaded.push({ path, type: opts.contentType });
+            return { error: null };
+          },
+          getPublicUrl: (path: string) => ({
+            data: {
+              publicUrl: `https://ref.supabase.co/storage/v1/object/public/card-images/${path}`,
+            },
+          }),
+          remove: async (paths: string[]) => {
+            removed.push(paths);
+            return { error: null };
+          },
+        }),
+      },
+    } as unknown as PipelineDb; // test double: download/upload/remove + row update
+
+    const stats = await reencodeStoredCardOrigins(db);
+    expect(stats).toEqual({ reencoded: 1, skipped: 0, failed: 0, pending: 0 });
+    expect(uploaded).toEqual([{ path: 'memory-agent.jpg', type: 'image/jpeg' }]);
+    expect(updates).toHaveLength(1);
+    expect(updates[0]?.id).toBe('item-1');
+    expect(updates[0]?.url).toContain('memory-agent.jpg');
+    expect(updates[0]?.url).toContain('?v=');
+    expect(removed).toEqual([['memory-agent.png']]);
+  });
+
+  it('caps a run at CARD_ORIGIN_REENCODE_MAX and defers the rest', async () => {
+    expect(CARD_ORIGIN_REENCODE_MAX).toBe(250);
+    const pngUrl = 'https://ref.supabase.co/storage/v1/object/public/card-images/n.png';
+    const rows = Array.from({ length: 3 }, (_, i) => ({
+      id: String(i),
+      slug: `n-${i}`,
+      card_image_url: pngUrl,
+      review_status: 'approved',
+    }));
+    const download = vi.fn();
+    const db = {
+      from: () => ({
+        select: () => ({
+          not: async () => ({ data: rows, error: null }),
+        }),
+      }),
+      storage: { from: () => ({ download }) },
+    } as unknown as PipelineDb; // test double: dry-run listing + cap
+
+    const stats = await reencodeStoredCardOrigins(db, { dryRun: true, limit: 2 });
+    expect(stats.pending).toBe(2);
+    expect(stats.skipped).toBe(1);
+    expect(download).not.toHaveBeenCalled();
   });
 });
 
