@@ -9,6 +9,7 @@ import {
   startWeeklyContentStudio,
   weeklyContentStudioMode,
 } from '@/lib/weekly-digest/orchestrator';
+import { seedStoryContent } from '@/lib/weekly-digest/seed-content';
 import {
   buildDigestSelectionContext,
   citationUrlsFromUnknown,
@@ -70,6 +71,18 @@ interface SourceItem {
   citations?: Json | null;
   card_image_url: string | null;
   review_status: string;
+  // Long-form daily copy — only loaded for the weekly range, where it seeds the
+  // story body / practical example / takeaway (see `seedStoryContent`).
+  body_md_en?: string | null;
+  body_md_uk?: string | null;
+  deep_dive_en?: string | null;
+  deep_dive_uk?: string | null;
+  takeaways_en?: Json | null;
+  takeaways_uk?: Json | null;
+  action_items_en?: Json | null;
+  action_items_uk?: Json | null;
+  when_to_use_en?: Json | null;
+  when_to_use_uk?: Json | null;
 }
 
 interface SourceArticle {
@@ -77,7 +90,6 @@ interface SourceArticle {
   source_name: string;
   url: string;
   composite_score: number | null;
-  score_authority: number | null;
   score_cross_source: number | null;
   score_breadth: number | null;
   score_version: number | null;
@@ -659,7 +671,7 @@ async function loadApprovedRange(startDate: string, endDate: string) {
   const { data: itemRows, error: itemError } = await supabase
     .from('brief_items')
     .select(
-      'id,brief_id,article_id,canonical_item_id,rank,slug,impact_level,category_slug,title_en,title_uk,summary_en,summary_uk,why_matters_en,why_matters_uk,social_hook_en,social_hook_uk,facts_en,facts_uk,citations,card_image_url,review_status',
+      'id,brief_id,article_id,canonical_item_id,rank,slug,impact_level,category_slug,title_en,title_uk,summary_en,summary_uk,why_matters_en,why_matters_uk,social_hook_en,social_hook_uk,facts_en,facts_uk,citations,card_image_url,review_status,body_md_en,body_md_uk,deep_dive_en,deep_dive_uk,takeaways_en,takeaways_uk,action_items_en,action_items_uk,when_to_use_en,when_to_use_uk',
     )
     .in(
       'brief_id',
@@ -674,7 +686,7 @@ async function loadApprovedRange(startDate: string, endDate: string) {
   const { data: articleRows, error: articleError } = await supabase
     .from('articles')
     .select(
-      'id,source_name,url,composite_score,score_authority,score_cross_source,score_breadth,score_version,cluster_id,mentions_count',
+      'id,source_name,url,composite_score,score_cross_source,score_breadth,score_version,cluster_id,mentions_count',
     )
     .in('id', articleIds);
   if (articleError) throw new Error(`[social-composer] weekly articles: ${articleError.message}`);
@@ -719,7 +731,6 @@ function weeklyCandidates(
         sourceName: article.source_name,
         sourceUrl: article.url,
         compositeScore: article.composite_score,
-        authorityScore: article.score_authority,
         crossSourceScore: article.score_cross_source,
         breadthScore: article.score_breadth,
         scoreVersion: article.score_version,
@@ -873,6 +884,8 @@ export async function composeWeeklySocial(
   const { error: itemError } = await supabase.from('weekly_digest_items').insert(
     selected.map((item, index) => {
       const scored = scoreByItemId.get(item.id);
+      const seedEn = seedStoryContent(item, 'en');
+      const seedUk = seedStoryContent(item, 'uk');
       const snapshot = {
         title_en: item.title_en,
         title_uk: item.title_uk,
@@ -880,12 +893,12 @@ export async function composeWeeklySocial(
         summary_uk: item.summary_uk,
         why_en: item.why_matters_en,
         why_uk: item.why_matters_uk,
-        body_en: item.summary_en,
-        body_uk: item.summary_uk,
-        practical_en: null,
-        practical_uk: null,
-        takeaway_en: item.why_matters_en,
-        takeaway_uk: item.why_matters_uk,
+        body_en: seedEn.body,
+        body_uk: seedUk.body,
+        practical_en: seedEn.practical,
+        practical_uk: seedUk.practical,
+        takeaway_en: seedEn.takeaway,
+        takeaway_uk: seedUk.takeaway,
         facts_en: item.facts_en,
         facts_uk: item.facts_uk,
         placement: placementForRank(index + 1),

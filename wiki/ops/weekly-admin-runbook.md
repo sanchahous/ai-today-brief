@@ -10,8 +10,8 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15
-Last updated: 2026-08-15
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15, seed-контент історій + `weekly-editorial-v3` 2026-08-16
+Last updated: 2026-08-16
 
 ---
 
@@ -43,6 +43,18 @@ Overview показує preflight blockers з лінком на вкладку. 
 1. Відбери **Top 3** + **3–4 Radar** (разом 6–7).
 2. **Save stories**.
 3. Без збереженого набору Content Studio не стартує.
+
+**Що змінилось 2026-08-16.** Історія більше не приходить із порожніми полями: `Повний
+текст` тепер береться з `body_md` щоденного айтема (Markdown), `Практичний приклад` — з
+`action_items` (або `when_to_use`), `Висновок` — з `takeaways`. Раніше composer писав
+`body = Короткий опис` і `Висновок = Чому це важливо`, тож із пʼяти полів реально
+заповнені були два. Якщо поле лишилось порожнім — у щоденного айтема справді не було
+такого блоку; це сигнал дописати вручну, а не збій. Кандидатів тепер відбирає
+`weekly-editorial-v3`: свіжість усередині тижня майже не важить, а «баланс категорій»
+став штрафом, а не викиданням — у панелі кандидатів видно `diversity_penalty` і
+`adjusted_score`.
+(source: [weekly-digest § Seed-контент історій](../pipeline/weekly-digest.md#seed-контент-історій-2026-08-16),
+[weekly-editorial-selection § Що змінила v3](../pipeline/weekly-editorial-selection.md#що-змінила-v3-2026-08-16))
 
 ### 2. Research (критичний human gate)
 

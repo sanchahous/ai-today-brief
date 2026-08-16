@@ -8,6 +8,7 @@
  */
 
 import { escapeHtml } from './review-format';
+import { hostOf, isDiscussionHost, publisherAuthority } from './source-authority';
 
 export interface DigestCandidate {
   id: string;
@@ -31,7 +32,6 @@ export interface DigestCandidate {
   sourceName: string;
   sourceUrl: string;
   compositeScore: number | null;
-  authorityScore: number | null;
   crossSourceScore: number | null;
   breadthScore: number | null;
   scoreVersion: number | null;
@@ -39,7 +39,7 @@ export interface DigestCandidate {
   mentionsCount: number;
 }
 
-export const WEEKLY_SELECTION_VERSION = 'weekly-editorial-v2';
+export const WEEKLY_SELECTION_VERSION = 'weekly-editorial-v3';
 export const WEEKLY_RATIONALE_VERSION = 'weekly-rationale-v1';
 
 export type DigestRejectionReason =
@@ -66,6 +66,10 @@ export interface ScoredDigestCandidate {
   score: number;
   breakdown: DigestScoreBreakdown;
   reasons: string[];
+  /** Diversity price this story paid at the moment it was picked (0 when free). */
+  diversityPenalty: number;
+  /** `score − diversityPenalty`: what selection actually compared. */
+  adjustedScore: number;
 }
 
 export interface EditorialDigestSelection {
@@ -85,7 +89,7 @@ export interface EditorialSelectionOptions {
 export type DigestCandidateSelectionStatus = 'selected' | 'eligible_not_selected' | 'rejected';
 
 export type DigestCandidateExclusionReason =
-  DigestRejectionReason | 'event_cluster_covered' | 'category_balance' | 'digest_capacity';
+  DigestRejectionReason | 'event_cluster_covered' | 'diversity_penalty' | 'digest_capacity';
 
 export interface DigestSelectionCandidateSnapshot {
   brief_item_id: string;
@@ -102,6 +106,10 @@ export interface DigestSelectionCandidateSnapshot {
   status: DigestCandidateSelectionStatus;
   selected_rank: number | null;
   score: number | null;
+  /** Points the diversity rules charged this story; `null` before scoring. */
+  diversity_penalty: number | null;
+  /** The number selection compared — raw score minus the diversity price. */
+  adjusted_score: number | null;
   breakdown: DigestScoreBreakdown | null;
   selection_reasons: string[];
   exclusion_reasons: DigestCandidateExclusionReason[];
@@ -141,11 +149,52 @@ export interface DigestSelectionContext {
 }
 
 const CURRENT_SCORE_VERSION = 2;
+
+/**
+ * A 100-point editorial budget, so the admin breakdown stays readable:
+ *
+ *   35 editorial impact  — the daily editor's high / medium / low call
+ *   25 evidence          — WHO published it, plus how well the story is documented
+ *   13 corroboration     — does anyone independent attest to it
+ *   10 upstream rank     — the daily composite score
+ *   10 audience fit      — category value to a dev / AI-engineering reader
+ *    5 daily priority    — the story's position inside its own brief
+ *    5 recency           — flat inside the digest week, see RECENCY_* below
+ *
+ * Impact is deliberately the largest single term, but it only has three values:
+ * inside one tier it separates nothing, so every other component has to carry
+ * real signal. That is why evidence reads publisher authority instead of field
+ * completeness and why recency no longer spreads across the week.
+ */
 const IMPACT_POINTS: Record<'high' | 'medium' | 'low', number> = {
   high: 35,
   medium: 23,
   low: 8,
 };
+/** Evidence: publisher authority dominates, documentation depth tops it up. */
+const EVIDENCE_AUTHORITY_POINTS = 16;
+const EVIDENCE_MAX_FACT_POINTS = 5;
+const EVIDENCE_MAX_CITATION_POINTS = 4;
+/** Corroboration: coverage signals first, then independent documentation. */
+const CORROBORATION_CROSS_SOURCE_POINTS = 7;
+const CORROBORATION_BREADTH_POINTS = 3;
+const CORROBORATION_INDEPENDENT_HOST_POINTS = 1.5;
+const CORROBORATION_MAX_INDEPENDENT_HOSTS = 2;
+/**
+ * Recency inside a weekly review is not an editorial argument: every story in
+ * the digest is "this week", so Saturday must not outrank Monday on the date
+ * alone. In-window stories share a plateau with a ≤1-point tiebreak; the real
+ * decay only starts once a story falls outside the window at all.
+ */
+const RECENCY_POINTS = 5;
+const RECENCY_WINDOW_DAYS = 7;
+const RECENCY_IN_WINDOW_SPREAD = 1;
+/**
+ * What each story beyond the free per-category / per-source / per-day allowance
+ * costs. Tuned so a clearly stronger story (roughly 5+ points on the 100-point
+ * budget) still outranks variety, while near-ties yield to it.
+ */
+const DIVERSITY_PENALTY_POINTS = { category: 5, source: 4, day: 3 };
 const AUDIENCE_FIT_POINTS: Record<string, number> = {
   'agents-and-mcp': 10,
   'tools-and-releases': 10,
@@ -230,11 +279,27 @@ function rejectionReasons(candidate: DigestCandidate): DigestRejectionReason[] {
 }
 
 function sourceKey(candidate: DigestCandidate): string {
-  try {
-    return new URL(candidate.sourceUrl).hostname.toLowerCase().replace(/^www\./, '');
-  } catch {
-    return candidate.sourceName.trim().toLowerCase() || 'unknown';
+  return hostOf(candidate.sourceUrl) ?? (candidate.sourceName.trim().toLowerCase() || 'unknown');
+}
+
+/**
+ * Citation hosts that are neither the story's own domain nor a discussion
+ * thread — i.e. somebody else documented this. The HN/Reddit permalink the
+ * story was found through is not a second source and never counts here.
+ */
+function independentCitationHosts(candidate: DigestCandidate): number {
+  const ownHost = hostOf(candidate.sourceUrl);
+  const hosts = new Set<string>();
+  for (const url of candidate.citationUrls) {
+    const host = hostOf(url);
+    if (!host || host === ownHost || isDiscussionHost(host)) continue;
+    hosts.add(host);
   }
+  return hosts.size;
+}
+
+function round1(value: number): number {
+  return Math.round(value * 10) / 10;
 }
 
 function roundedAverage(values: number[]): number {
@@ -242,6 +307,12 @@ function roundedAverage(values: number[]): number {
   return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
 }
 
+/**
+ * Why an eligible story is not in the digest. `diversity_penalty` means it lost
+ * on the adjusted score after paying for a repeated category / source / day —
+ * the price is in `diversity_penalty` on the snapshot, so a reviewer can see
+ * exactly how close the call was instead of just "capped".
+ */
 function exclusionReasonsForEligibleCandidate(
   scored: ScoredDigestCandidate,
   selected: ScoredDigestCandidate[],
@@ -256,16 +327,7 @@ function exclusionReasonsForEligibleCandidate(
   ) {
     return ['event_cluster_covered'];
   }
-  const category = candidate.category_slug ?? 'other';
-  if (
-    selected.filter(
-      ({ candidate: selectedCandidate }) =>
-        (selectedCandidate.category_slug ?? 'other') === category,
-    ).length >= 2
-  ) {
-    return ['category_balance'];
-  }
-  return ['digest_capacity'];
+  return scored.diversityPenalty > 0 ? ['diversity_penalty'] : ['digest_capacity'];
 }
 
 /**
@@ -308,6 +370,8 @@ export function buildDigestSelectionContext(
       status,
       selected_rank: rank,
       score: scored?.score ?? null,
+      diversity_penalty: scored?.diversityPenalty ?? null,
+      adjusted_score: scored?.adjustedScore ?? null,
       breakdown: scored?.breakdown ?? null,
       selection_reasons: scored?.reasons ?? [],
       exclusion_reasons:
@@ -371,11 +435,13 @@ export function buildDigestSelectionContext(
     `${metrics.categoryCount} категорій із ${metrics.sourceCount} доменів джерел`,
   ];
   const tradeoffs_en =
-    `${metrics.eligibleNotSelectedCount} eligible stories remained outside the digest because of ` +
-    `the seven-story limit, event deduplication, or category balance.`;
+    `${metrics.eligibleNotSelectedCount} eligible stories remained outside the digest: they lost on ` +
+    `the adjusted score after the diversity price for a repeated category, source or day, or they ` +
+    `covered an event already in the digest. Nothing is dropped by a cap — every exclusion has a number.`;
   const tradeoffs_uk =
-    `Поза дайджестом залишилося придатних новин: ${metrics.eligibleNotSelectedCount}. Причини: ліміт у сім позицій, ` +
-    `дедуплікацію подій або баланс категорій.`;
+    `Поза дайджестом залишилося придатних новин: ${metrics.eligibleNotSelectedCount}. Вони програли за ` +
+    `скоригованим балом після штрафу за повтор категорії, джерела чи дня — або описували подію, яка вже ` +
+    `є в дайджесті. Жорсткого капу немає: за кожним виключенням стоїть число.`;
 
   return {
     rationale: {
@@ -408,23 +474,44 @@ export function buildDigestSelectionContext(
   };
 }
 
+/**
+ * Days from the story's brief date to the end of the digest week, then the
+ * flat-inside-the-window curve described at RECENCY_POINTS.
+ */
+function recencyPoints(date: string, weekEnd: string): number {
+  const ageDays = Math.max(
+    0,
+    (Date.parse(`${weekEnd}T00:00:00Z`) - Date.parse(`${date}T00:00:00Z`)) / 86_400_000,
+  );
+  const plateau = RECENCY_POINTS - RECENCY_IN_WINDOW_SPREAD;
+  if (ageDays <= RECENCY_WINDOW_DAYS) {
+    return plateau + RECENCY_IN_WINDOW_SPREAD * (1 - ageDays / RECENCY_WINDOW_DAYS);
+  }
+  return plateau * clamp01(1 - (ageDays - RECENCY_WINDOW_DAYS) / RECENCY_WINDOW_DAYS);
+}
+
 function scoreCandidate(candidate: DigestCandidate, weekEnd: string): ScoredDigestCandidate {
   const impact = candidate.impact_level as keyof typeof IMPACT_POINTS;
   const editorialImpact = IMPACT_POINTS[impact] ?? 0;
-  const citationPoints = Math.min(8, 5 + candidate.citationUrls.length);
+  // Publisher, not feed: `articles.score_authority` is the trust of whichever
+  // feed surfaced the link, so a personal blog found on Hacker News used to
+  // score exactly like the vendor's own release note.
+  const authority = publisherAuthority(candidate.sourceName, candidate.sourceUrl);
   const bilingualFactCount = Math.min(candidate.factsEnCount, candidate.factsUkCount);
-  const factPoints = Math.min(4, bilingualFactCount + 1);
-  const evidence = citationPoints + factPoints + clamp01(candidate.authorityScore) * 8;
+  const evidence =
+    authority * EVIDENCE_AUTHORITY_POINTS +
+    Math.min(EVIDENCE_MAX_FACT_POINTS, bilingualFactCount) +
+    Math.min(EVIDENCE_MAX_CITATION_POINTS, candidate.citationUrls.length);
+  const independentHosts = independentCitationHosts(candidate);
   const corroboration =
-    clamp01(candidate.crossSourceScore) * 10 + clamp01(candidate.breadthScore) * 5;
+    clamp01(candidate.crossSourceScore) * CORROBORATION_CROSS_SOURCE_POINTS +
+    clamp01(candidate.breadthScore) * CORROBORATION_BREADTH_POINTS +
+    Math.min(CORROBORATION_MAX_INDEPENDENT_HOSTS, independentHosts) *
+      CORROBORATION_INDEPENDENT_HOST_POINTS;
   const upstreamRank = clamp01(candidate.compositeScore) * 10;
   const audienceFit = AUDIENCE_FIT_POINTS[candidate.category_slug ?? ''] ?? 6;
   const dailyPriority = clamp01((11 - candidate.rank) / 10) * 5;
-  const ageDays = Math.max(
-    0,
-    (Date.parse(`${weekEnd}T00:00:00Z`) - Date.parse(`${candidate.date}T00:00:00Z`)) / 86_400_000,
-  );
-  const recency = clamp01(1 - ageDays / 7) * 5;
+  const recency = recencyPoints(candidate.date, weekEnd);
   const breakdown = {
     editorialImpact,
     evidence,
@@ -437,10 +524,12 @@ function scoreCandidate(candidate: DigestCandidate, weekEnd: string): ScoredDige
   const score = Object.values(breakdown).reduce((sum, value) => sum + value, 0);
   const reasons = [
     impact === 'high' ? 'high editorial impact' : null,
-    (candidate.authorityScore ?? 0) >= 0.9 ? 'high-authority source' : null,
+    authority >= 0.9 ? 'first-party or peer-reviewed publisher' : null,
+    authority <= 0.45 ? 'single-author or social post' : null,
     (candidate.crossSourceScore ?? 0) > 0 || candidate.mentionsCount > 1
       ? 'corroborated across sources'
       : null,
+    independentHosts > 0 ? 'cites an independent source' : null,
     bilingualFactCount >= 3 && candidate.citationUrls.length >= 1
       ? 'strong evidence package'
       : null,
@@ -448,11 +537,13 @@ function scoreCandidate(candidate: DigestCandidate, weekEnd: string): ScoredDige
   ].filter((reason): reason is string => Boolean(reason));
   return {
     candidate,
-    score: Math.round(score * 10) / 10,
+    score: round1(score),
     breakdown: Object.fromEntries(
-      Object.entries(breakdown).map(([key, value]) => [key, Math.round(value * 10) / 10]),
+      Object.entries(breakdown).map(([key, value]) => [key, round1(value)]),
     ) as unknown as DigestScoreBreakdown,
     reasons,
+    diversityPenalty: 0,
+    adjustedScore: round1(score),
   };
 }
 
@@ -465,17 +556,27 @@ function compareScored(a: ScoredDigestCandidate, b: ScoredDigestCandidate): numb
 
 /**
  * Editorial weekly selection: trust gates first, explainable scoring second,
- * diversity constraints last. Source/day caps are soft so a sparse week can
- * still ship; event and category caps stay hard to prevent repetitive digests.
+ * diversity priced in last.
+ *
+ * Diversity is a price, not a wall. The previous build dropped every candidate
+ * over a cap, so a story several points stronger than the one that shipped
+ * could disappear with no way to weigh the trade — one 2026-08-16 run cut items
+ * at 68.1 and 67.4 while keeping 63.9. Now each story beyond the free allowance
+ * for its category / source / day costs points and competes on the adjusted
+ * score: a dominant story can still buy its way in, a marginal one yields to
+ * variety, and the price paid is recorded per candidate. Same-event dedup stays
+ * hard — that is deduplication, not balance.
  */
 export function selectEditorialDigestItems(
   candidates: DigestCandidate[],
   options: EditorialSelectionOptions = {},
 ): EditorialDigestSelection {
   const max = options.max ?? 7;
-  const perCategoryCap = options.perCategoryCap ?? 2;
-  const perSourceCap = options.perSourceCap ?? 2;
-  const perDayCap = options.perDayCap ?? 2;
+  const allowance = {
+    category: options.perCategoryCap ?? 2,
+    source: options.perSourceCap ?? 2,
+    day: options.perDayCap ?? 2,
+  };
   const rejected: EditorialDigestSelection['rejected'] = [];
   const accepted: DigestCandidate[] = [];
   for (const candidate of candidates) {
@@ -489,42 +590,71 @@ export function selectEditorialDigestItems(
       .map((candidate) => candidate.date)
       .sort()
       .at(-1) ?? '1970-01-01';
-  const eligible = accepted
+  const scoredPool = accepted
     .map((candidate) => scoreCandidate(candidate, weekEnd))
     .sort(compareScored);
   const selected: ScoredDigestCandidate[] = [];
-  const selectedIds = new Set<string>();
+  const priced = new Map<string, ScoredDigestCandidate>();
   const clusterIds = new Set<string>();
-  const categoryCount = new Map<string, number>();
-  const sourceCount = new Map<string, number>();
-  const dayCount = new Map<string, number>();
+  const taken = {
+    category: new Map<string, number>(),
+    source: new Map<string, number>(),
+    day: new Map<string, number>(),
+  };
 
-  const passes = [
-    { sourceCap: perSourceCap, dayCap: perDayCap },
-    { sourceCap: perSourceCap, dayCap: Number.POSITIVE_INFINITY },
-    { sourceCap: Number.POSITIVE_INFINITY, dayCap: Number.POSITIVE_INFINITY },
-  ];
-  for (const pass of passes) {
-    for (const scored of eligible) {
+  const overAllowance = (used: number, free: number) => Math.max(0, used - free + 1);
+  const diversityPenalty = (candidate: DigestCandidate): number =>
+    overAllowance(taken.category.get(candidate.category_slug ?? 'other') ?? 0, allowance.category) *
+      DIVERSITY_PENALTY_POINTS.category +
+    overAllowance(taken.source.get(sourceKey(candidate)) ?? 0, allowance.source) *
+      DIVERSITY_PENALTY_POINTS.source +
+    overAllowance(taken.day.get(candidate.date) ?? 0, allowance.day) *
+      DIVERSITY_PENALTY_POINTS.day;
+
+  // Greedy max-marginal pick: a penalty depends on what is already in the
+  // digest, so the pool is re-ranked after every pick. `scoredPool` is
+  // pre-sorted and the comparison is strict `>`, so ties keep that order and
+  // the result stays deterministic for a given input.
+  while (selected.length < max) {
+    let best: { scored: ScoredDigestCandidate; penalty: number; adjusted: number } | null = null;
+    for (const scored of scoredPool) {
       const candidate = scored.candidate;
-      if (selectedIds.has(candidate.id)) continue;
-      const cluster = candidate.clusterId ?? `article:${candidate.articleId}`;
-      const category = candidate.category_slug ?? 'other';
-      const source = sourceKey(candidate);
-      if (clusterIds.has(cluster)) continue;
-      if ((categoryCount.get(category) ?? 0) >= perCategoryCap) continue;
-      if ((sourceCount.get(source) ?? 0) >= pass.sourceCap) continue;
-      if ((dayCount.get(candidate.date) ?? 0) >= pass.dayCap) continue;
-      selected.push(scored);
-      selectedIds.add(candidate.id);
-      clusterIds.add(cluster);
-      categoryCount.set(category, (categoryCount.get(category) ?? 0) + 1);
-      sourceCount.set(source, (sourceCount.get(source) ?? 0) + 1);
-      dayCount.set(candidate.date, (dayCount.get(candidate.date) ?? 0) + 1);
-      if (selected.length >= max) break;
+      if (priced.has(candidate.id)) continue;
+      if (clusterIds.has(candidate.clusterId ?? `article:${candidate.articleId}`)) continue;
+      const penalty = diversityPenalty(candidate);
+      const adjusted = scored.score - penalty;
+      if (!best || adjusted > best.adjusted) best = { scored, penalty, adjusted };
     }
-    if (selected.length >= max) break;
+    if (!best) break;
+    const candidate = best.scored.candidate;
+    const picked = {
+      ...best.scored,
+      diversityPenalty: round1(best.penalty),
+      adjustedScore: round1(best.adjusted),
+    };
+    selected.push(picked);
+    priced.set(candidate.id, picked);
+    clusterIds.add(candidate.clusterId ?? `article:${candidate.articleId}`);
+    taken.category.set(
+      candidate.category_slug ?? 'other',
+      (taken.category.get(candidate.category_slug ?? 'other') ?? 0) + 1,
+    );
+    taken.source.set(sourceKey(candidate), (taken.source.get(sourceKey(candidate)) ?? 0) + 1);
+    taken.day.set(candidate.date, (taken.day.get(candidate.date) ?? 0) + 1);
   }
+
+  // Everything left over is priced against the finished digest, so review can
+  // read "lost by 0.8 after a 5-point category price" rather than "capped".
+  const eligible = scoredPool.map((scored) => {
+    const pickedEntry = priced.get(scored.candidate.id);
+    if (pickedEntry) return pickedEntry;
+    const penalty = diversityPenalty(scored.candidate);
+    return {
+      ...scored,
+      diversityPenalty: round1(penalty),
+      adjustedScore: round1(scored.score - penalty),
+    };
+  });
 
   return { version: WEEKLY_SELECTION_VERSION, selected, eligible, rejected };
 }

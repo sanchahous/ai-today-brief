@@ -6,14 +6,17 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/edito
 audit 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK `claimIds` parser fix 2026-08-10
 (Actions run `31367921173`), quantified length-repair fix + newer-draft banner 2026-08-10,
 Postpone release feature 2026-08-10, experimental Visual Affordance V10 owner review 2026-08-13,
-weekly illustration P3 daily cover prompt 2026-08-15
-Last updated: 2026-08-15
+weekly illustration P3 daily cover prompt 2026-08-15, owner selection audit + `weekly-editorial-v3`
+2026-08-16 (`pipeline/weekly-digest.ts`, `pipeline/source-authority.ts`,
+`src/lib/weekly-digest/seed-content.ts`, прод-прогін `05cc4e6a-a709-44ca-b56a-382f21c40292`)
+Last updated: 2026-08-16
 
 ---
 
-`weekly-editorial-v2` replaces the old `impact → recency → daily rank` sort used
-for weekly digests. Its purpose is to produce an explainable, evidence-backed
-shortlist for an editor, not to publish an algorithmic verdict.
+`weekly-editorial-v3` (раніше `-v2`) replaces the old `impact → recency → daily rank`
+sort used for weekly digests. Its purpose is to produce an explainable,
+evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
+Що саме змінила v3 і чому — [нижче](#що-змінила-v3-2026-08-16).
 
 > **Scope note (2026-08-15):** Visuals copy-ready prompt cards (`story_prompt_set`), M1
 > `WEEKLY_STORY_IMAGE_MODE=prompt_only`, M2 post-upload QA, M3 preflight copy and B3
@@ -80,26 +83,81 @@ editor still opens the primary source before approval.
 | Component | Points | Purpose |
 | --- | ---: | --- |
 | Editorial impact | 35 | Prefer material changes over novelty or virality |
-| Evidence and authority | 20 | Reward citations, bilingual facts, and trusted sources |
-| Corroboration | 15 | Reward independent coverage and source breadth |
+| Evidence and authority | 25 | Publisher authority (16) + bilingual facts (5) + citation depth (4) |
+| Corroboration | 13 | Cross-source (7) + breadth (3) + independent citation hosts (3) |
 | Upstream rank | 10 | Preserve the normalized daily pipeline signal |
 | Builder audience fit | 10 | Prefer practical AI engineering value |
 | Daily editorial priority | 5 | Use the item's rank within its daily brief |
-| Recency | 5 | Break close calls without letting the last day dominate the week |
+| Recency | 5 | Flat inside the digest week; ≤1 point separates Monday from Saturday |
 
 The score is deterministic and rounded to one decimal. Every selected item's
 component breakdown is stored in `weekly_digest_items.snapshot.editorial_selection`.
 
-## Diversity constraints
+**Authority means the publisher, not the feed.** `articles.score_authority` is
+`sourceTrust(source_name)` — the trust of whatever feed surfaced the link — so a
+personal blog found on Hacker News carried the same 0.9 as the vendor's own
+release note. Weekly scoring calls `publisherAuthority(source_name, url)`
+(`pipeline/source-authority.ts`): for an aggregator feed the destination host
+decides (first-party lab 1.0 · preprint/standards 0.9 · code hosting 0.85 ·
+known engineering author 0.8 · trade press 0.7 · unknown company domain 0.6 ·
+hosted blog platform 0.45 · social post 0.35); for a publisher feed the feed name
+stays authoritative and a known host may only lift it. The daily composite in
+`rank.ts` is unchanged — it still uses the feed-level table.
+(source: `pipeline/source-authority.ts`, `pipeline/weekly-digest.ts`)
 
-- one item per event cluster;
-- at most two items per category;
-- initially at most two items per source domain;
-- initially at most two items per brief date.
+## Diversity is a price, not a wall
 
-Source and day limits are relaxed only when needed to fill the digest. Event and
-category limits remain hard. This keeps sparse weeks shippable without allowing
-one event or one theme to dominate.
+- one item per event cluster — **hard** (that is deduplication, not balance);
+- free allowance of two items per category, per source domain and per brief date;
+- every item beyond an allowance pays **−5 category / −4 source / −3 day**, and
+  competes on the adjusted score.
+
+Selection is a greedy max-marginal pick: after each choice the pool is re-priced
+and re-ranked. A story that is clearly stronger buys its way past the allowance;
+a near-tie yields to variety. Both `diversity_penalty` and `adjusted_score` are
+stored per candidate, so review reads «програв 0.8 після 5-балного штрафу за
+категорію» instead of the previous silent «capped».
+(source: `pipeline/weekly-digest.ts`)
+
+## Що змінила v3 (2026-08-16)
+
+Аудит власника на прод-прогоні `05cc4e6a-a709-44ca-b56a-382f21c40292` (тиждень
+2026-08-09…15, 27 кандидатів → 22 eligible → 7) знайшов три дефекти відбору. Усі три
+підтверджені на живій БД до фіксу.
+
+**1. Свіжість вирішувала замість якості.** `editorialImpact` — константа 35 для
+кожного `high`, а таких серед eligible було 10, тож усередині тіру вона не
+розрізняла нічого. Найбільший розкид у решті балів давала `recency` (1.4 → 5.0),
+тому в тижневому огляді дата фактично сортувала топ: bearblog-допис про контест
+(67.3 за новою шкалою) обійшов IBM ALTK-Evolve. Тепер усі новини всередині вікна
+ділять плато, а різниця понеділок↔субота ≤ 1 бала; спад починається лише за межами
+семиденного вікна. На тому самому пулі `recency` селекції тепер 4.4–4.9 замість
+1.4–5.0. (source: прод-`weekly_digest_selection_runs` live check 2026-08-16)
+
+**2. `category_balance` видаляв, а не штрафував.** Кап відсіював historії з 68.1 і
+67.4, лишаючи в дайджесті 63.9 — тобто коштував 4.2 бала якості без жодного сліду в
+даних. Дефолтний `perDayCap` робив те саме тихо: сім обраних розкладались рівно
+2+2+2+1 по днях, тож 67.4 насправді впав на денному капі, а звіт показував
+`category_balance`. Замінено на штраф (див. вище); у бектесті новина, яку кап
+видаляв, повертається в дайджест на 7-й позиції, заплативши 3 бала.
+
+**3. `evidence` міряв заповненість полів, `corroboration` був вимкнений.**
+`evidence = 5 + citations` (стеля 8) `+ facts + 1` (стеля 4) `+ authority×8` давало
+14.4–18.0 на весь тиждень, і 17.2 однаково для Hacker News і для особистого блогу —
+бо authority брався з назви фіду. Після фіксу розкид 7.6 → 22.0 (медіана 14.6) на
+тому самому пулі. `corroboration` був 0 у 21 з 22 айтемів, бо читав лише
+`score_cross_source`/`score_breadth`, які в проді мертві (середнє `mentions_count`
+≈ 1). Тепер він додатково рахує **незалежні** хости цитат — не власний домен новини
+й не тред HN/Reddit/X, з якого її взяли. Це підіймає покриття з 1/22 до 3/33: сигнал
+більше не вимкнений структурно, але дані все ще рідкісні, тому бюджет компонента
+зменшено 15 → 13 на користь `evidence`. Реальне лікування — крос-джерельне
+звʼязування на етапі `fetch`, це окрема робота.
+> ⚠️ (needs verification) Гіпотеза: доки `mentions_count ≈ 1`, будь-який
+> corroboration-компонент лишатиметься рідкісним. Див. [overview](../overview.md) §7 #6.
+
+**Наслідок для контенту.** Ці зміни стосуються лише `selectEditorialDigestItems`.
+Порожні поля історій виправлено окремо — див.
+[weekly-digest § Seed-контент історій](weekly-digest.md#seed-контент-історій-2026-08-16).
 
 ## Editorial review
 

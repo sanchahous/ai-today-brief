@@ -32,9 +32,10 @@ function cand(over: Partial<DigestCandidate> = {}): DigestCandidate {
     factsEnCount: 3,
     factsUkCount: 3,
     sourceName: 'Official source',
-    sourceUrl: `https://example.com/${itemSlug}`,
+    // Distinct host per item so the per-source diversity price only appears in
+    // the tests that deliberately reuse a host.
+    sourceUrl: `https://${itemSlug}.example.com/story`,
     compositeScore: 0.5,
-    authorityScore: 1,
     crossSourceScore: 0,
     breadthScore: 0,
     scoreVersion: 2,
@@ -45,28 +46,31 @@ function cand(over: Partial<DigestCandidate> = {}): DigestCandidate {
 }
 
 describe('selectDigestItems', () => {
-  it('puts high impact first and caps per category', () => {
+  it('puts high impact first and prices repeated categories', () => {
     const out = selectDigestItems(
       [
-        cand({ itemSlug: 'a', impact_level: 'low' }), // 3rd in tools category — capped
+        cand({ itemSlug: 'a', impact_level: 'low' }),
         cand({ itemSlug: 'b', impact_level: 'high' }),
         cand({ itemSlug: 'c', impact_level: 'high' }),
-        cand({ itemSlug: 'd', impact_level: 'high' }), // also capped (same category)
+        cand({ itemSlug: 'd', impact_level: 'high' }), // 3rd in tools — pays, does not vanish
         cand({ itemSlug: 'e', impact_level: 'medium', category_slug: 'agents-and-mcp' }),
       ],
       7,
       2,
     );
-    expect(out.map((o) => o.itemSlug)).toEqual(['b', 'c', 'e']);
+    // The two free tools slots go first, then the third tools story still beats
+    // a much weaker one after paying the diversity price; low impact ranks last.
+    expect(out.map((o) => o.itemSlug)).toEqual(['b', 'c', 'd', 'e', 'a']);
   });
 
-  it('breaks impact ties by freshness then rank', () => {
+  it('does not let one day inside the week outrank a stronger daily pick', () => {
     const out = selectDigestItems([
-      cand({ itemSlug: 'older', date: '2026-06-08', category_slug: 'a' }),
-      cand({ itemSlug: 'newer', date: '2026-06-10', category_slug: 'b' }),
-      cand({ itemSlug: 'newer-r2', date: '2026-06-10', rank: 2, category_slug: 'c' }),
+      cand({ itemSlug: 'older-rank-1', date: '2026-06-08', category_slug: 'a' }),
+      cand({ itemSlug: 'newest-rank-3', date: '2026-06-10', rank: 3, category_slug: 'c' }),
     ]);
-    expect(out.map((o) => o.itemSlug)).toEqual(['newer', 'newer-r2', 'older']);
+    // Two days of freshness is worth <0.3 points inside the digest week, so the
+    // better daily rank wins even though the other story is newer.
+    expect(out.map((o) => o.itemSlug)).toEqual(['older-rank-1', 'newest-rank-3']);
   });
 
   it('honours the max size', () => {
@@ -105,7 +109,6 @@ describe('selectDigestItems', () => {
         impact_level: 'high',
         date: '2026-06-08',
         compositeScore: 0.42,
-        authorityScore: 1,
       }),
       cand({
         itemSlug: 'viral-gadget',
@@ -123,22 +126,148 @@ describe('selectDigestItems', () => {
     expect(result.selected[0]?.score).toBeGreaterThan(result.selected[1]?.score ?? 0);
   });
 
-  it('deduplicates an event and keeps no more than two stories per category', () => {
+  it('deduplicates an event but only prices a repeated category', () => {
     const result = selectEditorialDigestItems([
       cand({ itemSlug: 'event-primary', clusterId: 'same-event', impact_level: 'high' }),
       cand({ itemSlug: 'event-copy', clusterId: 'same-event', impact_level: 'high', rank: 2 }),
       cand({ itemSlug: 'tools-2', impact_level: 'high', rank: 3 }),
       cand({ itemSlug: 'tools-3', impact_level: 'high', rank: 4 }),
-      cand({ itemSlug: 'models', category_slug: 'models-and-research' }),
+      cand({ itemSlug: 'models', category_slug: 'models-and-research', date: '2026-06-09' }),
     ]);
 
     const selected = result.selected.map(({ candidate }) => candidate.itemSlug);
+    // Same-event dedup stays hard: that is deduplication, not balance.
     expect(selected).toContain('event-primary');
     expect(selected).not.toContain('event-copy');
-    expect(
-      selected.filter((slug) => slug.startsWith('tools') || slug === 'event-primary'),
-    ).toHaveLength(2);
-    expect(selected).toContain('models');
+    // The third tools story ships, but the snapshot records what it cost:
+    // 5 for the repeated category plus 3 for the third story of the same day.
+    expect(selected).toContain('tools-3');
+    expect(result.selected.find(({ candidate }) => candidate.itemSlug === 'tools-3')).toMatchObject({
+      diversityPenalty: 8,
+    });
+    expect(result.selected.find(({ candidate }) => candidate.itemSlug === 'models')).toMatchObject({
+      diversityPenalty: 0,
+    });
+  });
+
+  it('keeps a clearly stronger story that a category cap used to delete', () => {
+    const result = selectEditorialDigestItems(
+      [
+        cand({ itemSlug: 'opt-1', impact_level: 'high', category_slug: 'optimization' }),
+        cand({ itemSlug: 'opt-2', impact_level: 'high', category_slug: 'optimization', rank: 2 }),
+        // Third optimization story, but high impact and a first-party publisher.
+        cand({
+          itemSlug: 'opt-3-strong',
+          impact_level: 'high',
+          category_slug: 'optimization',
+          sourceName: 'Hacker News',
+          sourceUrl: 'https://openai.com/index/ultrafast',
+          rank: 2,
+        }),
+        // Fresh category, but medium impact on a social post.
+        cand({
+          itemSlug: 'weak-but-diverse',
+          impact_level: 'medium',
+          category_slug: 'creative-ai',
+          sourceName: 'Mastodon',
+          sourceUrl: 'https://mastodon.social/@dev/1',
+          rank: 6,
+        }),
+      ],
+      { max: 3 },
+    );
+
+    const selected = result.selected.map(({ candidate }) => candidate.itemSlug);
+    expect(selected).toContain('opt-3-strong');
+    expect(selected).not.toContain('weak-but-diverse');
+  });
+
+  it('yields to variety when the capped story is only marginally better', () => {
+    const result = selectEditorialDigestItems(
+      [
+        cand({ itemSlug: 'opt-1', impact_level: 'high', category_slug: 'optimization' }),
+        cand({ itemSlug: 'opt-2', impact_level: 'high', category_slug: 'optimization', rank: 2 }),
+        // A third optimization story two points ahead of the alternative is not
+        // worth the repeat; the diversity price decides it.
+        cand({ itemSlug: 'opt-3', impact_level: 'high', category_slug: 'optimization', rank: 3 }),
+        cand({
+          itemSlug: 'other-category',
+          impact_level: 'high',
+          category_slug: 'agents-and-mcp',
+          rank: 5,
+        }),
+      ],
+      { max: 3 },
+    );
+
+    expect(result.selected.map(({ candidate }) => candidate.itemSlug)).toEqual([
+      'opt-1',
+      'opt-2',
+      'other-category',
+    ]);
+  });
+
+  it('scores the publisher, not the aggregator that surfaced it', () => {
+    const result = selectEditorialDigestItems([
+      cand({
+        itemSlug: 'personal-blog',
+        impact_level: 'high',
+        sourceName: 'Hacker News',
+        sourceUrl: 'https://sankalp.bearblog.dev/232x-kernel/',
+        category_slug: 'optimization',
+      }),
+      cand({
+        itemSlug: 'lab-release',
+        impact_level: 'high',
+        sourceName: 'Hugging Face Blog',
+        sourceUrl: 'https://huggingface.co/blog/altk-evolve',
+        category_slug: 'optimization',
+      }),
+    ]);
+
+    const byslug = new Map(result.eligible.map((scored) => [scored.candidate.itemSlug, scored]));
+    // Both used to score 17.2 evidence: one inherited Hacker News' 0.9 trust.
+    expect(byslug.get('lab-release')!.breakdown.evidence).toBeGreaterThan(
+      byslug.get('personal-blog')!.breakdown.evidence + 5,
+    );
+    expect(result.selected[0]?.candidate.itemSlug).toBe('lab-release');
+  });
+
+  it('keeps freshness inside the week to a sub-point tiebreak', () => {
+    const result = selectEditorialDigestItems([
+      cand({ itemSlug: 'saturday', date: '2026-06-13', category_slug: 'a' }),
+      cand({ itemSlug: 'monday', date: '2026-06-08', category_slug: 'b' }),
+    ]);
+    const recency = Object.fromEntries(
+      result.eligible.map((scored) => [scored.candidate.itemSlug, scored.breakdown.recency]),
+    );
+
+    expect(recency.saturday).toBe(5);
+    expect(recency.saturday - recency.monday).toBeLessThanOrEqual(1);
+  });
+
+  it('counts independent citations as corroboration and discussion links as none', () => {
+    const result = selectEditorialDigestItems([
+      cand({
+        itemSlug: 'independent',
+        citationUrls: ['https://gowers.wordpress.com/post', 'https://arxiv.org/abs/2601.01'],
+        sourceUrl: 'https://gowers.wordpress.com/post',
+      }),
+      cand({
+        itemSlug: 'thread-only',
+        citationUrls: [
+          'https://sankalp.bearblog.dev/post',
+          'https://news.ycombinator.com/item?id=1',
+        ],
+        sourceUrl: 'https://sankalp.bearblog.dev/post',
+      }),
+    ]);
+    const corroboration = Object.fromEntries(
+      result.eligible.map((scored) => [scored.candidate.itemSlug, scored.breakdown.corroboration]),
+    );
+
+    expect(corroboration.independent).toBe(1.5);
+    expect(corroboration['thread-only']).toBe(0);
   });
 });
 
@@ -156,7 +285,7 @@ describe('buildDigestSelectionContext', () => {
       cand({ itemSlug: 'extra-tool', category_slug: 'tools-and-releases', rank: 3 }),
       cand({ itemSlug: 'category-capped', category_slug: 'tools-and-releases', rank: 4 }),
       cand({ itemSlug: 'blocked', citationUrls: [] }),
-    ]);
+    ], { max: 3 });
 
     const context = buildDigestSelectionContext(selection);
 
@@ -177,7 +306,8 @@ describe('buildDigestSelectionContext', () => {
         expect.objectContaining({
           brief_item_id: 'category-capped',
           status: 'eligible_not_selected',
-          exclusion_reasons: ['category_balance'],
+          exclusion_reasons: ['diversity_penalty'],
+          diversity_penalty: 11,
         }),
         expect.objectContaining({
           brief_item_id: 'blocked',
