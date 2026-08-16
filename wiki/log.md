@@ -6,6 +6,45 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-16
 
+## 2026-08-16 — Research pack: corroboration з ingest-корпусу
+
+**Джерело:** прод-паки `ai-weekly-2026-08-09` rev.2 (`independent_source_count=0` на 3/3
+Feature); прод-`articles` (NVIDIA + HF card + ModelScope для Qwen 2.4T, різні
+`cluster_id`); [now](now.md) owner session 2026-08-16.
+
+**Змінено:** [weekly-digest](pipeline/weekly-digest.md) (§ Corpus corroboration),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md).
+
+**Код (гілка `fix/weekly-research-corpus-corroboration`):** `pipeline/page-url.ts` —
+канонічний URL; `pipeline/story-identity.ts` — conservative same-event match;
+`research.ts` + `generation-worker.ts` — корпус за вікно тижня; `fetch.ts` — дедуп
+slash/www/UTM; `editorial-llm.ts` — атрибуція чисел, коли немає corroborating excerpt.
+
+**Не зроблено:** крос-джерельне звʼязування на daily `rank` (`mentions_count ≈ 1`) —
+окремий L2 з bump `SCORE_VERSION`.
+
+---
+
+## 2026-08-16 — Editor swap у `ai-weekly-2026-08-09`: Needle → Anthropic 60 субагентів
+
+**Джерело:** власник на Research tab, рішення лишити Top 3 і замінити rank 6 до апрувів;
+прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-16.
+
+**Змінено:** [now](now.md). Код репозиторію не змінювався.
+
+**Прод:** нова активна ревізія №3 `5b1aa70f-3ef1-48a7-b96d-2377876443ab` через
+`rebuild_weekly_digest_selection` (reason `editor_swap:needle2->anthropic-60-subagents`).
+Anthropic `96b2cec4` на rank 6, seed 5/5 полів з daily item, джерело TechCrunch,
+`diversity_penalty=8` у знімку. Needle прибрано. Selection run
+`969b9ae2` (`weekly-editorial-v3+editor-swap`) позначає Anthropic `selected`, Needle
+`editor_replaced`. Три `research_pack` + `editorial_master` поставлені в чергу на нову
+ревізію; waiting-master на rev.2 скасовано.
+
+**Не зроблено:** апруви паків (ще `queued`). Крос-джерельне підтвердження не чіпали.
+
+---
+
 ## 2026-08-16 — Мовчазний суддя авто-публікації + кнопка перезбору відбору
 
 **Джерело:** прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-16 (`pipeline_runs`

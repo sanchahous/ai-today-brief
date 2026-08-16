@@ -4,6 +4,11 @@ import type { Json } from '@/lib/database.types';
 import { extractMainText, extractOgImage, isGenericOgImage } from '../../../pipeline/enrich';
 import { fetchWithRetry } from '../../../pipeline/sources/http';
 import {
+  type CorpusArticle,
+  researchCorroborationCandidates,
+} from '../../../pipeline/story-identity';
+import { canonicalPageUrl } from '../../../pipeline/page-url';
+import {
   canonicalSourceName,
   placementForRank,
   sourceNameMatchesDomain,
@@ -37,17 +42,11 @@ function asRecord(value: Json | null | undefined): Record<string, Json | undefin
 }
 
 function cleanUrl(value: string) {
-  const url = new URL(value);
-  if (url.protocol !== 'https:' || url.username || url.password) {
+  const canonical = canonicalPageUrl(value);
+  if (!canonical?.startsWith('https://')) {
     throw new Error('Research sources must use a credential-free HTTPS URL.');
   }
-  for (const key of [...url.searchParams.keys()]) {
-    if (/^utm_/i.test(key) || ['eicker.news', 'fbclid', 'gclid'].includes(key.toLowerCase())) {
-      url.searchParams.delete(key);
-    }
-  }
-  url.hash = '';
-  return url.toString();
+  return canonical;
 }
 
 function sourceRows(value: Json): Array<{ name: string; url: string }> {
@@ -209,19 +208,24 @@ export async function buildWeeklyResearchPack(input: {
   digestId: string;
   revisionId: string;
   item: ResearchItem;
+  corpus?: readonly CorpusArticle[];
 }): Promise<WeeklyResearchPack> {
   const selectedSources = sourceRows(input.item.sources);
   const primary = selectedSources[0];
   if (!primary) throw new Error('Top 3 research requires a valid primary HTTPS source.');
   const primaryEvidence = await fetchEvidence(primary.url, true);
-  const candidateUrls = [
-    ...selectedSources.slice(1).map((source) => source.url),
-    ...snapshotCitationUrls(input.item.source_snapshot),
-  ].filter((url, index, all) => all.indexOf(url) === index && url !== primary.url);
-  const primaryDomain = new URL(primary.url).hostname.replace(/^www\./, '');
-  const independent = candidateUrls.filter((url) => {
-    const hostname = new URL(url).hostname.replace(/^www\./, '');
-    return hostname !== primaryDomain && !hostname.endsWith(`.${primaryDomain}`);
+  const snapshot = asRecord(input.item.source_snapshot);
+  const editorial = asRecord(snapshot.editorial_selection);
+  const clusterId = typeof editorial.cluster_id === 'string' ? editorial.cluster_id : null;
+  const independent = researchCorroborationCandidates({
+    primaryUrl: primary.url,
+    primaryTitle: input.item.title_en,
+    primaryClusterId: clusterId,
+    listedUrls: [
+      ...selectedSources.slice(1).map((source) => source.url),
+      ...snapshotCitationUrls(input.item.source_snapshot),
+    ],
+    corpus: input.corpus ?? [],
   });
   const settled = await Promise.allSettled(
     independent.slice(0, 4).map((url) => fetchEvidence(url, false)),
@@ -257,8 +261,11 @@ export async function buildWeeklyResearchPack(input: {
     limitations: corroboratingSources.length
       ? [
           'Corroborating pages provide context; claims remain anchored to the approved primary source.',
+          'Extra pages may come from the ingest corpus, not only from the daily citation list.',
         ]
-      : ['No independent corroborating page was available in the approved citation set.'],
+      : [
+          'No independent corroborating page was available in the approved citation set or the ingest corpus.',
+        ],
     risks,
     researchedAt: new Date().toISOString(),
   };

@@ -27,6 +27,16 @@ describe('trustedWeeklyResearchSources', () => {
     ).toEqual([{ name: 'GitHub', url: 'https://github.com/openai/codex' }]);
   });
 
+  it('strips a trailing slash so slash-variants of the same page collapse', () => {
+    expect(
+      trustedWeeklyResearchSources({
+        articleUrl: 'https://openai.com/index/previewing-ultrafast/',
+        revisionSources: [{ url: 'https://www.openai.com/index/previewing-ultrafast?utm_source=hn' }],
+        citations: [],
+      }),
+    ).toEqual([{ name: 'OpenAI', url: 'https://openai.com/index/previewing-ultrafast' }]);
+  });
+
   it('drops unsafe or non-HTTPS citation candidates', () => {
     expect(
       trustedWeeklyResearchSources({

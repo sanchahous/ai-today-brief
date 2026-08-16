@@ -10,7 +10,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15, seed-контент історій + `weekly-editorial-v3` 2026-08-16
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15, seed-контент історій + `weekly-editorial-v3` 2026-08-16, research corpus corroboration 2026-08-16
 Last updated: 2026-08-16
 
 ---
@@ -68,11 +68,17 @@ Overview показує preflight blockers з лінком на вкладку. 
 
 1. **Start / retry Content Studio** — ставить `research_pack` ×3 і `editorial_master` у чергу.
 2. Дочекайся трьох packs **ready** (Generation jobs: succeeded).
-3. На **кожній** Feature-картці: **Approve version** (owner, AAL2).
-4. Лічильник **Approved research** має стати **3/3**.
-5. Лише тоді `editorial_master` переходить у **queued** і одразу отримує один GitHub Actions
+3. На **кожній** Feature-картці прочитай excerpt і `independent_source_count`. `0` не
+   означає зіпсований пак: звіти first-party (опитування HF про власні завантаження)
+   часто не мають другого видавця. Якщо пак таки знайшов іншу сторінку в корпусі —
+   перевір, що це той самий реліз, а не сусідня модель. Тред HN не рахується
+   підтвердженням. Числа з єдиного джерела в майбутній статті мають читатись як
+   «за даними X», не як незалежний факт.
+4. На **кожній** Feature-картці: **Approve version** (owner, AAL2).
+5. Лічильник **Approved research** має стати **3/3**.
+6. Лише тоді `editorial_master` переходить у **queued** і одразу отримує один GitHub Actions
    worker (cron ~кожні **5 хв** лишається safety-dispatcher).
-6. Коли з’явиться **Master quality**:
+7. Коли з’явиться **Master quality**:
    - **джоба більше не падає через якість.** Якщо рушій не зміг закрити всі перевірки, він
      зберігає випуск як неактивну draft-ревізію, завершується `succeeded` і показує
      **Needs your review** із переліком `unresolved` — це задача на редагування, не збій
