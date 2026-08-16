@@ -1,7 +1,12 @@
 import 'server-only';
 
 import type { Json } from '@/lib/database.types';
-import { extractMainText, extractOgImage, isGenericOgImage } from '../../../pipeline/enrich';
+import {
+  decodeEntities,
+  extractMainText,
+  extractOgImage,
+  isGenericOgImage,
+} from '../../../pipeline/enrich';
 import { fetchWithRetry } from '../../../pipeline/sources/http';
 import {
   type CorpusArticle,
@@ -24,6 +29,12 @@ const FETCH_HEADERS = {
   Accept: 'text/html,application/xhtml+xml',
 };
 const MAX_HTML_CHARS = 600_000;
+const PRIMARY_EXCERPT_MIN_CHARS = 160;
+const HTML_HEAD_CHARS = 50_000;
+
+/** PostgREST default max-rows is 1000; the week window is larger than that. */
+export const RESEARCH_CORPUS_PAGE_SIZE = 1000;
+export const RESEARCH_CORPUS_MAX_PAGES = 8;
 
 interface ResearchItem {
   id: string;
@@ -172,6 +183,39 @@ function claimKind(text: string): ResearchClaim['kind'] {
   return 'fact';
 }
 
+function firstHeadCapture(html: string, patterns: readonly RegExp[]): string | null {
+  const head = html.slice(0, HTML_HEAD_CHARS);
+  for (const pattern of patterns) {
+    const match = head.match(pattern);
+    const value = match?.[1] ? decodeEntities(match[1]).trim() : '';
+    if (value) return value;
+  }
+  return null;
+}
+
+/**
+ * Hugging Face / ModelScope model cards are JS shells: extractMainText finds
+ * no 40-char prose lines, but <title> + meta description still identify the
+ * artifact. Primary sources stay on the 160-char article-text bar.
+ */
+export function corroboratingExcerptFromHtml(html: string, maxChars: number): string | null {
+  const main = extractMainText(html, maxChars);
+  if (main && main.length >= PRIMARY_EXCERPT_MIN_CHARS) return main;
+  const title = firstHeadCapture(html, [/<title>([^<]{1,200})<\/title>/i]);
+  const description = firstHeadCapture(html, [
+    /<meta[^>]+name=["']description["'][^>]*content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]*name=["']description["']/i,
+    /<meta[^>]+property=["']og:description["'][^>]*content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]*property=["']og:description["']/i,
+  ]);
+  const parts: string[] = [];
+  if (title) parts.push(title);
+  if (description && description !== title) parts.push(description);
+  if (parts.length === 0) return null;
+  const combined = parts.join('\n\n');
+  return combined.length > maxChars ? `${combined.slice(0, maxChars)}…` : combined;
+}
+
 async function fetchEvidence(url: string, primary: boolean): Promise<ResearchEvidence> {
   const response = await fetchWithRetry(
     url,
@@ -187,9 +231,14 @@ async function fetchEvidence(url: string, primary: boolean): Promise<ResearchEvi
     throw new Error(`Research source is not readable text: ${url}`);
   }
   const html = (await response.text()).slice(0, MAX_HTML_CHARS);
-  const extracted = extractMainText(html, WEEKLY_RESEARCH_EXCERPT_MAX_CHARS);
-  if (!extracted || extracted.length < 160) {
+  const extracted = primary
+    ? extractMainText(html, WEEKLY_RESEARCH_EXCERPT_MAX_CHARS)
+    : corroboratingExcerptFromHtml(html, WEEKLY_RESEARCH_EXCERPT_MAX_CHARS);
+  if (primary && (!extracted || extracted.length < PRIMARY_EXCERPT_MIN_CHARS)) {
     throw new Error(`Research source did not expose enough article text: ${url}`);
+  }
+  if (!extracted) {
+    throw new Error(`Research source did not expose a title or description: ${url}`);
   }
   const candidateImage = extractOgImage(html);
   const ogImage = candidateImage && !isGenericOgImage(candidateImage) ? candidateImage : null;

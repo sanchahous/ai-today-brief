@@ -11,14 +11,14 @@ Last updated: 2026-08-16
 
 ## Стан репозиторію
 
-- **Research pack шукає підтвердження в корпусі `articles` (2026-08-16), гілка
-  `fix/weekly-research-corpus-corroboration`.** Прапорець `no_independent_corroboration`
-  на Top 3 `ai-weekly-2026-08-09` був чесний для цитат (1 URL = primary), але нечесний
-  для корпусу: NVIDIA-блог про Qwen3.8 2.4T і HF-картка `huggingface.co/Qwen/Qwen3.8-2.4T-A95B`
-  мали однаковий `fetched_at` і різні `cluster_id`. Пак тепер підхоплює sibling за
-  ідентифікатором моделі / `cluster_id` / канонічним URL; HN-тред не рахується.
-  Fetch дедупить trailing slash. Daily `mentions_count` не чіпали.
-  (source: `pipeline/story-identity.ts`, прод-`articles` live check 2026-08-16)
+- **Research pack шукає підтвердження в корпусі `articles` (2026-08-16), follow-up
+  `fix/weekly-research-spa-and-page`.** #268 змерджено (`7584d4f`), прод READY.
+  Перезбір трьох Feature-паків на `ai-weekly-2026-08-09` rev.3 прогнав уже новий
+  limitations-текст («or the ingest corpus»), але `independent_source_count` лишився
+  **0/3**. Корінь: PostgREST max-rows 1000 при 2440 статтях у вікні + JS-картки HF/
+  ModelScope без 160 символів прози. Не натискати Rebuild selection.
+  (source: прод-`articles` count 2026-08-16, pack artifacts `2301b650` / `1ce6801c` /
+  `812586fa`, live GET HF+ModelScope extractMainText=0)
 
 - **Прод-випуск `ai-weekly-2026-08-09` — ручна заміна Radar (2026-08-16, ~13:10 Kyiv).**
   Ревізія **№3** (`5b1aa70f`), статус `in_review`. Needle 2 (rank 6, `cactuscompute.com`)
