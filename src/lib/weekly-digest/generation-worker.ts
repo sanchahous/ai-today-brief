@@ -72,6 +72,8 @@ import { generateWeeklyVideoScript } from './video-script-llm';
 import {
   buildWeeklyResearchPack,
   isWeeklyResearchPack,
+  RESEARCH_CORPUS_MAX_PAGES,
+  RESEARCH_CORPUS_PAGE_SIZE,
   trustedWeeklyResearchSources,
 } from './research';
 import { corroborationWindow, type CorpusArticle } from '../../../pipeline/story-identity';
@@ -587,19 +589,28 @@ async function loadResearchCorpus(
 ): Promise<CorpusArticle[]> {
   if (!weekStart || !weekEnd) return [];
   const window = corroborationWindow(weekStart, weekEnd);
-  const { data, error } = await getSupabaseAdmin()
-    .from('articles')
-    .select('url, title, cluster_id')
-    .gte('published_at', window.from)
-    .lt('published_at', window.toExclusive);
-  if (error) {
-    console.warn(`[weekly-research] ingest corpus lookup failed: ${error.message}`);
-    return [];
-  }
   const corpus: CorpusArticle[] = [];
-  for (const row of data ?? []) {
-    if (!row.url || !row.title) continue;
-    corpus.push({ url: row.url, title: row.title, clusterId: row.cluster_id });
+  const db = getSupabaseAdmin();
+  for (let page = 0; page < RESEARCH_CORPUS_MAX_PAGES; page += 1) {
+    const from = page * RESEARCH_CORPUS_PAGE_SIZE;
+    const to = from + RESEARCH_CORPUS_PAGE_SIZE - 1;
+    const { data, error } = await db
+      .from('articles')
+      .select('url, title, cluster_id')
+      .gte('published_at', window.from)
+      .lt('published_at', window.toExclusive)
+      .order('published_at', { ascending: false })
+      .range(from, to);
+    if (error) {
+      console.warn(`[weekly-research] ingest corpus lookup failed: ${error.message}`);
+      return corpus;
+    }
+    const rows = data ?? [];
+    for (const row of rows) {
+      if (!row.url || !row.title) continue;
+      corpus.push({ url: row.url, title: row.title, clusterId: row.cluster_id });
+    }
+    if (rows.length < RESEARCH_CORPUS_PAGE_SIZE) break;
   }
   return corpus;
 }

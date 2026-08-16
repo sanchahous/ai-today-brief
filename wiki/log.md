@@ -6,6 +6,25 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-16
 
+## 2026-08-16 — Research pack: PostgREST 1000 + SPA model cards
+
+**Джерело:** перезбір паків `ai-weekly-2026-08-09` rev.3 після #268 (jobs
+`b9fd05b0` / `60a62216` / `84645b6f` succeeded, `independent_source_count` лишився 0);
+`select count(*)` у вікні corroboration = 2440; live GET HF/ModelScope
+`extractMainText` = 0 при HTTP 200.
+
+**Змінено:** [weekly-digest](pipeline/weekly-digest.md) (§ Corpus corroboration),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md).
+
+**Код (гілка `fix/weekly-research-spa-and-page`):** `generation-worker.ts` гортає
+`articles` сторінками по 1000; `research.ts` для не-primary бере title + meta
+description, якщо немає article prose.
+
+**Не зроблено:** апруви паків; Rebuild selection. IBM ALTK і звіт HF надалі чесні 0,
+якщо в корпусі немає другого видавця.
+
+---
+
 ## 2026-08-16 — Daily rank: ownership щоденного тулу + кластер угоди Cursor
 
 **Джерело:** власник (SpaceX закрила поглинання Cursor за $60B 14.08, сайт мовчав);

@@ -145,8 +145,16 @@ URL з промпту, тож набір майже завжди = primary → �
 `huggingface.co/Qwen/Qwen3.8-2.4T-A95B` і ModelScope; звіт HF і ALTK-Evolve лишаються 0 —
 у корпусі немає другого видавця, і це чесний нуль. Тред HN у цитатах більше не фетчиться
 як «підтвердження».
+
+Після мерджу #268 перезбір паків на rev.3 лишив Qwen на `independent_source_count=0`.
+Дві причини, обидві підтверджені наживо 2026-08-16: (1) `select` без `.range()` ріже
+PostgREST default **1000** рядків, а у вікні 09–15.08 ± padding було **2440** `articles`
+(HF-картка — рядок 1551 за `published_at`); (2) картки HF/ModelScope — JS-оболонки,
+`extractMainText` дає 0 символів при HTTP 200, і пак відкидав їх як «немає тексту».
+Корпус тепер гортає сторінки по 1000 (до 8), а для **не-primary** сторінки досить
+`<title>` + meta description.
 (source: `pipeline/story-identity.ts`, `pipeline/page-url.ts`, `src/lib/weekly-digest/research.ts`,
-прод-`articles` live check 2026-08-16)
+прод-`articles` live check 2026-08-16, rebuild packs rev.3 2026-08-16)
 
 Writer: якщо `corroboratingExcerpts` порожній, кожне число в історії має бути атрибутоване
 primary (`according to NVIDIA`, `self-reported`). Це не гейт апруву пака.
