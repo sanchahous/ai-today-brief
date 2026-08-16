@@ -4,19 +4,17 @@ import { randomUUID } from 'node:crypto';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { canonicalSourceName, placementForRank } from '@/lib/weekly-digest/content-studio';
 import {
   startWeeklyContentStudio,
   weeklyContentStudioMode,
 } from '@/lib/weekly-digest/orchestrator';
-import { seedStoryContent } from '@/lib/weekly-digest/seed-content';
+import {
+  weeklyCandidates,
+  weeklyStorySnapshot,
+} from '@/lib/weekly-digest/selection-snapshot';
 import {
   buildDigestSelectionContext,
-  citationUrlsFromUnknown,
-  factCountFromUnknown,
   selectEditorialDigestItems,
-  WEEKLY_SELECTION_VERSION,
-  type DigestCandidate,
 } from '../../../pipeline/weekly-digest';
 import { renderSocialAssets } from './assets';
 import { socialContentHash } from './content-hash';
@@ -654,7 +652,12 @@ export async function composeDailySocial(
   return { createdPackageIds, skipped };
 }
 
-async function loadApprovedRange(startDate: string, endDate: string) {
+/**
+ * The week's approved daily items plus their article telemetry — the single
+ * input of weekly selection. Exported so the admin "rebuild selection" action
+ * reads exactly what the scheduled composer reads.
+ */
+export async function loadApprovedRange(startDate: string, endDate: string) {
   const supabase = getSupabaseAdmin();
   const { data: briefRows, error: briefError } = await supabase
     .from('briefs')
@@ -697,49 +700,6 @@ async function loadApprovedRange(startDate: string, endDate: string) {
   };
 }
 
-function weeklyCandidates(
-  items: SourceItem[],
-  briefs: SourceBrief[],
-  articles: SourceArticle[],
-): DigestCandidate[] {
-  const dateByBrief = new Map(briefs.map((brief) => [brief.id, brief.date]));
-  const briefById = new Map(briefs.map((brief) => [brief.id, brief]));
-  const articleById = new Map(articles.map((article) => [article.id, article]));
-  return items.flatMap((item) => {
-    const article = item.article_id ? articleById.get(item.article_id) : undefined;
-    const brief = briefById.get(item.brief_id);
-    if (!article || !brief || !item.slug || !item.article_id) return [];
-    return [
-      {
-        id: item.id,
-        articleId: item.article_id,
-        canonicalItemId: item.canonical_item_id ?? null,
-        title_en: text(item.title_en),
-        title_uk: text(item.title_uk),
-        summary_en: text(item.summary_en),
-        summary_uk: text(item.summary_uk),
-        why_matters_en: text(item.why_matters_en),
-        why_matters_uk: text(item.why_matters_uk),
-        impact_level: item.impact_level,
-        category_slug: item.category_slug,
-        itemSlug: item.slug,
-        date: dateByBrief.get(item.brief_id) ?? '',
-        rank: item.rank,
-        citationUrls: citationUrlsFromUnknown(item.citations),
-        factsEnCount: factCountFromUnknown(item.facts_en),
-        factsUkCount: factCountFromUnknown(item.facts_uk),
-        sourceName: article.source_name,
-        sourceUrl: article.url,
-        compositeScore: article.composite_score,
-        crossSourceScore: article.score_cross_source,
-        breadthScore: article.score_breadth,
-        scoreVersion: article.score_version,
-        clusterId: article.cluster_id,
-        mentionsCount: article.mentions_count ?? 1,
-      },
-    ];
-  });
-}
 
 export async function composeWeeklySocial(
   triggerDate: string,
@@ -878,56 +838,21 @@ export async function composeWeeklySocial(
   }
 
   await supabase.from('weekly_digest_items').delete().eq('weekly_digest_id', digest.id);
-  const dateByBrief = new Map(briefs.map((brief) => [brief.id, brief.date]));
   const briefById = new Map(briefs.map((brief) => [brief.id, brief]));
   const scoreByItemId = new Map(selection.selected.map((scored) => [scored.candidate.id, scored]));
   const { error: itemError } = await supabase.from('weekly_digest_items').insert(
-    selected.map((item, index) => {
-      const scored = scoreByItemId.get(item.id);
-      const seedEn = seedStoryContent(item, 'en');
-      const seedUk = seedStoryContent(item, 'uk');
-      const snapshot = {
-        title_en: item.title_en,
-        title_uk: item.title_uk,
-        summary_en: item.summary_en,
-        summary_uk: item.summary_uk,
-        why_en: item.why_matters_en,
-        why_uk: item.why_matters_uk,
-        body_en: seedEn.body,
-        body_uk: seedUk.body,
-        practical_en: seedEn.practical,
-        practical_uk: seedUk.practical,
-        takeaway_en: seedEn.takeaway,
-        takeaway_uk: seedUk.takeaway,
-        facts_en: item.facts_en,
-        facts_uk: item.facts_uk,
-        placement: placementForRank(index + 1),
-        item_slug: item.slug,
-        brief_slug: briefById.get(item.brief_id)?.slug ?? null,
-        brief_date: dateByBrief.get(item.brief_id) ?? null,
-        card_image_url: item.card_image_url,
-        editorial_selection: scored
-          ? {
-              version: WEEKLY_SELECTION_VERSION,
-              score: scored.score,
-              breakdown: scored.breakdown,
-              reasons: scored.reasons,
-              source_name: canonicalSourceName(scored.candidate.sourceUrl),
-              source_url: scored.candidate.sourceUrl,
-              cluster_id: scored.candidate.clusterId,
-              impact_level: scored.candidate.impact_level,
-              category_slug: scored.candidate.category_slug,
-              citation_urls: scored.candidate.citationUrls,
-            }
-          : null,
-      } as unknown as Json;
-      return {
-        weekly_digest_id: digest.id,
-        brief_item_id: item.id,
+    selected.map((item, index) => ({
+      weekly_digest_id: digest.id,
+      brief_item_id: item.id,
+      rank: index + 1,
+      snapshot: weeklyStorySnapshot({
+        item,
+        scored: scoreByItemId.get(item.id),
         rank: index + 1,
-        snapshot,
-      };
-    }),
+        briefSlug: briefById.get(item.brief_id)?.slug ?? null,
+        briefDate: briefById.get(item.brief_id)?.date ?? null,
+      }),
+    })),
   );
   if (itemError) throw new Error(`[social-composer] weekly items: ${itemError.message}`);
   const { data: revisionId, error: revisionError } = await supabase.rpc(

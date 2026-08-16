@@ -11,6 +11,39 @@ Last updated: 2026-08-16
 
 ## Стан репозиторію
 
+- **Суддя авто-публікації мовчки не працював 8 ночей — виправлено (2026-08-16), гілка
+  `fix/auto-publish-silent-judge`.** `pipeline_runs` вісім ранів поспіль (08-08…15) писав
+  `status='ok'`, `error=NULL`, `{action:'left_draft', approved:0, rejected:0,
+  judge_unavailable:false}`, а випуски не виходили. **Корінь не той, що здавався:** суддя
+  не падав — він відповідав правильно (`{"ref":0,"verdict":"approve","confidence":0.86,…}`),
+  але **без конверта `{results:[…]}`**, а парсер читав тільки `obj.results` → порожній масив
+  → кожен айтем ішов у `continue // no coverage` → нуль рішень без винятку. Другий,
+  незалежний дефект: `logPipelineRun` писав `status:'ok'` **безумовно**, `error` не
+  заповнювався ніколи. Виправлено: (1) парсер читає 5 варіантів конверта + голий масив +
+  голий обʼєкт; (2) `judgeResponseIssue` як семантичний валідатор у провайдерному ланцюжку —
+  нечитабельна відповідь **перемикає модель**; (3) непорожній бриф із 0 рішень = `action:'error'`;
+  (4) `status='failed'` + `error` (значення `'error'` неможливе — `pipeline_runs_status_check`
+  дозволяє лише `ok/failed/skipped`); (5) Telegram-алерт із сирою причиною; (6) щоденний пінг
+  «N брифів чекають рев'ю»; (7) CLI виходить кодом 1, тож Actions-ран червоніє.
+  **Перевірено наживо** на досі залиплому брифі `9deed7d1` (08-08 пак 2): до фіксу
+  `left_draft approved=0 rejected=0`, після — `published approved=1`. Ціна дефекту: 20
+  матеріалів довелось схвалювати вручну 16.08. Деталі —
+  [audits/2026-08-16-auto-publish-silent-judge](audits/2026-08-16-auto-publish-silent-judge.md).
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-16, пряма проба судді,
+  `pipeline/auto-publish.ts`, `pipeline/llm-json.ts`)
+
+- **Кнопка «Rebuild selection» (2026-08-16).** Overview → owner-only перезбір відбору
+  поточним селектором по тому самому тижню + seed історій з денних айтемів; нова активна
+  ревізія через новий RPC `rebuild_weekly_digest_selection` (міграція `20260816120000`,
+  **застосована до прода 2026-08-16**, `service_role` only, перевірена викликом у транзакції
+  з відкатом). Руйнівна за задумом: `in_review` + скидання всіх апрувів; стара ревізія
+  лишається і відновлюється через Restore. Перевірено наскрізь на **тестовому** випуску
+  `ai-weekly-test-2026-07-24` (34 кандидати → 24 eligible → 7, ревізія 3, 4 нові / 4 вибули,
+  усі 5 полів заповнені у всіх 7 історіях). Прод-випуск `6cbcf0b3` **не чіпав** — його
+  перезбирає власник кнопкою.
+  (source: `src/lib/weekly-digest/rebuild-selection.ts`,
+  `supabase/migrations/20260816120000_weekly_rebuild_selection.sql`, live run 2026-08-16)
+
 - **Weekly відбір `weekly-editorial-v3` + seed-контент історій — гілка
   `fix/weekly-selection-and-seed-content` (2026-08-16), PR ще не відкрито.** Аудит власника
   на прод-прогоні `05cc4e6a-a709-44ca-b56a-382f21c40292` (тиждень 09–15.08) знайшов чотири

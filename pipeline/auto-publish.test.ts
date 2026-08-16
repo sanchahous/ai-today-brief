@@ -17,6 +17,10 @@ import {
   isStaleBeforeWindow,
   isWithinAutoPublishWindow,
   parseJudgeVerdicts,
+  judgeResponseIssue,
+  judgeSilenceError,
+  formatJudgeFailureAlert,
+  formatPendingReviewPing,
   type JudgeVerdict,
   type ReviewHistoryRow,
 } from './auto-publish';
@@ -158,21 +162,90 @@ describe('parseJudgeVerdicts', () => {
       results: [{ ref: 0, verdict: 'approve', confidence: 0.9, reason: 'strong story' }],
     });
     const out = parseJudgeVerdicts(text, new Set([0]));
-    expect(out).toEqual([{ ref: 0, verdict: 'approve', confidence: 0.9, reason: 'strong story' }]);
+    expect(out.verdicts).toEqual([
+      { ref: 0, verdict: 'approve', confidence: 0.9, reason: 'strong story' },
+    ]);
   });
 
-  it('drops refs outside the valid set', () => {
+  it('reads a bare verdict object — the shape that silenced eight nightly runs', () => {
+    // Verbatim production response for brief 9deed7d1 (2026-08-08 pack 2),
+    // rejected as empty on eight consecutive nights because the code only
+    // looked at `obj.results`.
+    const text = JSON.stringify({
+      ref: 0,
+      verdict: 'approve',
+      confidence: 0.86,
+      reason: 'Broad security and privacy risks in popular AI IDEs.',
+    });
+    const out = parseJudgeVerdicts(text, new Set([0]));
+    expect(out.verdicts).toHaveLength(1);
+    expect(out.verdicts[0]).toMatchObject({ ref: 0, verdict: 'approve' });
+    expect(judgeResponseIssue(text, new Set([0]))).toBeNull();
+  });
+
+  it('reads a bare array and the alternative envelope keys', () => {
+    const bareArray = JSON.stringify([{ ref: 0, verdict: 'reject', confidence: 0.7, reason: '' }]);
+    expect(parseJudgeVerdicts(bareArray, new Set([0])).verdicts).toHaveLength(1);
+    const altKey = JSON.stringify({
+      verdicts: [{ ref: 0, verdict: 'approve', confidence: 0.7, reason: '' }],
+    });
+    expect(parseJudgeVerdicts(altKey, new Set([0])).verdicts).toHaveLength(1);
+  });
+
+  it('drops refs outside the valid set but still reports what came back', () => {
     const text = JSON.stringify({ results: [{ ref: 5, verdict: 'approve', confidence: 0.9, reason: '' }] });
-    expect(parseJudgeVerdicts(text, new Set([0]))).toEqual([]);
+    expect(parseJudgeVerdicts(text, new Set([0]))).toEqual({ verdicts: [], returned: 1 });
   });
 
   it('drops entries with an invalid verdict', () => {
     const text = JSON.stringify({ results: [{ ref: 0, verdict: 'maybe', confidence: 0.9, reason: '' }] });
-    expect(parseJudgeVerdicts(text, new Set([0]))).toEqual([]);
+    expect(parseJudgeVerdicts(text, new Set([0])).verdicts).toEqual([]);
   });
 
   it('throws on malformed JSON — callers treat this as total judge failure', () => {
     expect(() => parseJudgeVerdicts('not json', new Set([0]))).toThrow();
+  });
+});
+
+describe('judgeResponseIssue', () => {
+  it('reports an unreadable envelope instead of returning nothing', () => {
+    const issue = judgeResponseIssue(JSON.stringify({ ok: true }), new Set([0]));
+    expect(issue).toContain('no verdicts in a readable shape');
+  });
+
+  it('reports verdicts that cover no requested item', () => {
+    const text = JSON.stringify({ results: [{ ref: 9, verdict: 'approve', confidence: 1, reason: '' }] });
+    expect(judgeResponseIssue(text, new Set([0, 1]))).toContain('none usable for refs 0..1');
+  });
+
+  it('reports invalid JSON', () => {
+    expect(judgeResponseIssue('nope', new Set([0]))).toContain('not valid JSON');
+  });
+});
+
+describe('judgeSilenceError', () => {
+  it('treats a non-empty brief with no decisions as a failure', () => {
+    expect(
+      judgeSilenceError({ pendingCount: 3, approved: 0, rejected: 0, judgeError: null }),
+    ).toContain('decided nothing on 3 pending item(s)');
+  });
+
+  it('keeps the judge reason when there is one', () => {
+    expect(
+      judgeSilenceError({ pendingCount: 3, approved: 0, rejected: 0, judgeError: 'chain exhausted' }),
+    ).toBe('chain exhausted');
+  });
+
+  it('still surfaces a judge error on a brief that published on earlier approvals', () => {
+    expect(
+      judgeSilenceError({ pendingCount: 2, approved: 1, rejected: 0, judgeError: 'bad envelope' }),
+    ).toBe('bad envelope');
+  });
+
+  it('stays silent on a genuinely empty brief', () => {
+    expect(
+      judgeSilenceError({ pendingCount: 0, approved: 0, rejected: 0, judgeError: null }),
+    ).toBeNull();
   });
 });
 
@@ -367,5 +440,45 @@ describe('formatAutoPublishSummary', () => {
 describe('formatStaleDraftsNote', () => {
   it('mentions the count', () => {
     expect(formatStaleDraftsNote(3)).toContain('3 застарілих');
+  });
+});
+
+describe('formatJudgeFailureAlert', () => {
+  it('carries the raw provider reason so the cause is visible in the alert', () => {
+    const text = formatJudgeFailureAlert([
+      { date: '2026-08-08', edition: 2, pending: 1, reason: 'judge returned no verdicts' },
+    ]);
+    expect(text).toContain('суддя не відпрацював');
+    expect(text).toContain('2026-08-08');
+    expect(text).toContain('judge returned no verdicts');
+  });
+
+  it('escapes HTML in the raw reason', () => {
+    const text = formatJudgeFailureAlert([
+      { date: '2026-08-08', edition: 1, pending: 1, reason: '<script>x</script>' },
+    ]);
+    expect(text).not.toContain('<script>');
+    expect(text).toContain('&lt;script&gt;');
+  });
+});
+
+describe('formatPendingReviewPing', () => {
+  it('reports the backlog waiting for a person', () => {
+    const text = formatPendingReviewPing([
+      { date: '2026-08-08', edition: 2, pending: 1 },
+      { date: '2026-08-09', edition: 1, pending: 5 },
+    ]);
+    expect(text).toContain("Чекають рев'ю: 2 бриф(ів)");
+    expect(text).toContain('6 матеріал(ів)');
+    expect(text).toContain('пак 2');
+  });
+
+  it('truncates a long backlog', () => {
+    const briefs = Array.from({ length: 12 }, (_, i) => ({
+      date: `2026-08-${String(i + 1).padStart(2, '0')}`,
+      edition: 1,
+      pending: 1,
+    }));
+    expect(formatPendingReviewPing(briefs)).toContain('і ще 2');
   });
 });
