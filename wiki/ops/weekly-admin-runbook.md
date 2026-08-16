@@ -10,7 +10,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15, seed-контент історій + `weekly-editorial-v3` 2026-08-16, research corpus corroboration 2026-08-16
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15, seed-контент історій + `weekly-editorial-v3` 2026-08-16, research corpus corroboration 2026-08-16, Start / retry Content Studio after succeeded jobs 2026-08-16
 Last updated: 2026-08-16
 
 ---
@@ -66,7 +66,12 @@ Overview показує preflight blockers з лінком на вкладку. 
 
 ### 2. Research (критичний human gate)
 
-1. **Start / retry Content Studio** — ставить `research_pack` ×3 і `editorial_master` у чергу.
+1. **Start / retry Content Studio** — ставить `research_pack` ×3 і `editorial_master` у
+   чергу. Якщо паки на цій ревізії вже `succeeded`, кнопка ставить **нові** jobs
+   (`:retry:{uuid}`), а не мовчки повертає старі рядки. In-flight слоти не дублює.
+   Waiting master лишається на місці — після Approve нових паків він сам зрушить.
+   Старі succeeded jobs лишаються в історії. Не плутати з **Regenerate master**.
+   (source: [weekly-digest § Start / retry](../pipeline/weekly-digest.md#content-studio-retry-after-succeeded-jobs-2026-08-16))
 2. Дочекайся трьох packs **ready** (Generation jobs: succeeded).
 3. На **кожній** Feature-картці прочитай excerpt і `independent_source_count`. `0` не
    означає зіпсований пак: звіти first-party (опитування HF про власні завантаження)

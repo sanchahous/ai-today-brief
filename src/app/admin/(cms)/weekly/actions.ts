@@ -23,7 +23,7 @@ import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial
 import { backendForGenerationJob } from '@/lib/weekly-digest/generation-control';
 import { dispatchQueuedWeeklyGenerationJob } from '@/lib/weekly-digest/github-dispatch';
 import {
-  startWeeklyContentStudio,
+  retryWeeklyContentStudio,
   weeklyContentStudioMode,
 } from '@/lib/weekly-digest/orchestrator';
 import { validateWeeklyVideoResultManifest } from '@/lib/weekly-digest/video';
@@ -1798,7 +1798,9 @@ export async function startWeeklyContentStudioAction(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const revisionId = requiredString(formData, 'revision_id');
-  await startWeeklyContentStudio(weeklyDigestId, revisionId);
+  // Owner retry after succeeded packs must mint new jobs; the composer path
+  // (`startWeeklyContentStudio`) keeps the stable idempotency key.
+  await retryWeeklyContentStudio(weeklyDigestId, revisionId);
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
