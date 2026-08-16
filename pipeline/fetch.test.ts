@@ -33,6 +33,20 @@ describe('prepareArticles', () => {
     expect(out.map((a) => a.url)).toEqual(['https://example.com/a', 'https://example.com/c']);
   });
 
+  it('treats a trailing slash and www as the same page', () => {
+    const out = prepareArticles([
+      article({
+        url: 'https://openai.com/index/previewing-ultrafast/',
+        title: 'HN slash',
+      }),
+      article({
+        url: 'https://www.openai.com/index/previewing-ultrafast?utm_source=rss',
+        title: 'RSS no slash',
+      }),
+    ]);
+    expect(out.map((a) => a.url)).toEqual(['https://openai.com/index/previewing-ultrafast']);
+  });
+
   it('normalizes source names onto their canonical labels', () => {
     const out = prepareArticles([
       article({ url: 'https://example.com/a', source_name: 'HackerNews' }),

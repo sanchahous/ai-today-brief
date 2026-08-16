@@ -8,7 +8,8 @@ audit 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK `claimIds` parser
 Postpone release feature 2026-08-10, experimental Visual Affordance V10 owner review 2026-08-13,
 weekly illustration P3 daily cover prompt 2026-08-15, owner selection audit + `weekly-editorial-v3`
 2026-08-16 (`pipeline/weekly-digest.ts`, `pipeline/source-authority.ts`,
-`src/lib/weekly-digest/seed-content.ts`, прод-прогін `05cc4e6a-a709-44ca-b56a-382f21c40292`)
+`src/lib/weekly-digest/seed-content.ts`, прод-прогін `05cc4e6a-a709-44ca-b56a-382f21c40292`),
+research corpus corroboration 2026-08-16 (`pipeline/story-identity.ts`)
 Last updated: 2026-08-16
 
 ---
@@ -150,10 +151,12 @@ stored per candidate, so review reads «програв 0.8 після 5-балн
 ≈ 1). Тепер він додатково рахує **незалежні** хости цитат — не власний домен новини
 й не тред HN/Reddit/X, з якого її взяли. Це підіймає покриття з 1/22 до 3/33: сигнал
 більше не вимкнений структурно, але дані все ще рідкісні, тому бюджет компонента
-зменшено 15 → 13 на користь `evidence`. Реальне лікування — крос-джерельне
-звʼязування на етапі `fetch`, це окрема робота.
+зменшено 15 → 13 на користь `evidence`. Daily `mentions_count ≈ 1` лишається окремою
+роботою (кластеризація на `fetch`/`rank` проти rolling window). Research-паки Top 3
+з 2026-08-16 шукають sibling-сторінки вже в таблиці `articles` — це інший лічильник,
+див. [weekly-digest § Corpus corroboration](weekly-digest.md#corpus-corroboration-in-research-packs-2026-08-16).
 > ⚠️ (needs verification) Гіпотеза: доки `mentions_count ≈ 1`, будь-який
-> corroboration-компонент лишатиметься рідкісним. Див. [overview](../overview.md) §7 #6.
+> **selection**-corroboration лишатиметься рідкісним. Див. [overview](../overview.md) §7 #6.
 
 **Наслідок для контенту.** Ці зміни стосуються лише `selectEditorialDigestItems`.
 Порожні поля історій виправлено окремо — див.

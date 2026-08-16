@@ -18,6 +18,7 @@
 
 import type { Candidate } from './rank';
 import { isPublishedWithinRollingWindow } from './rolling-window';
+import { canonicalPageUrl, pageIdentityKey } from './page-url';
 import { canonicalSourceName } from './source-names';
 import { logEvent } from './log';
 import type { FetchedArticle } from './sources/http';
@@ -34,9 +35,11 @@ export function prepareArticles(input: FetchedArticle[]): FetchedArticle[] {
   const out: FetchedArticle[] = [];
   for (const a of input) {
     if (!a.url || !a.title || !a.url.startsWith('http')) continue;
-    if (seen.has(a.url)) continue;
-    seen.add(a.url);
-    out.push({ ...a, source_name: canonicalSourceName(a.source_name) });
+    const canonical = canonicalPageUrl(a.url);
+    const identity = canonical ? pageIdentityKey(canonical) : null;
+    if (!canonical || !identity || seen.has(identity)) continue;
+    seen.add(identity);
+    out.push({ ...a, url: canonical, source_name: canonicalSourceName(a.source_name) });
   }
   return out;
 }

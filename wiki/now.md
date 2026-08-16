@@ -4,12 +4,31 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…16, Content Sim plan 2026-08-11,
 experimental Visual Affordance V10 owner review 2026-08-13, weekly illustration B1-fix 2026-08-15,
-owner weekly selection/content audit 2026-08-16
+owner weekly selection/content audit 2026-08-16, research corpus corroboration 2026-08-16
 Last updated: 2026-08-16
 
 ---
 
 ## Стан репозиторію
+
+- **Research pack шукає підтвердження в корпусі `articles` (2026-08-16), гілка
+  `fix/weekly-research-corpus-corroboration`.** Прапорець `no_independent_corroboration`
+  на Top 3 `ai-weekly-2026-08-09` був чесний для цитат (1 URL = primary), але нечесний
+  для корпусу: NVIDIA-блог про Qwen3.8 2.4T і HF-картка `huggingface.co/Qwen/Qwen3.8-2.4T-A95B`
+  мали однаковий `fetched_at` і різні `cluster_id`. Пак тепер підхоплює sibling за
+  ідентифікатором моделі / `cluster_id` / канонічним URL; HN-тред не рахується.
+  Fetch дедупить trailing slash. Daily `mentions_count` не чіпали.
+  (source: `pipeline/story-identity.ts`, прод-`articles` live check 2026-08-16)
+
+- **Прод-випуск `ai-weekly-2026-08-09` — ручна заміна Radar (2026-08-16, ~13:10 Kyiv).**
+  Ревізія **№3** (`5b1aa70f`), статус `in_review`. Needle 2 (rank 6, `cactuscompute.com`)
+  замінено на Anthropic 60-subagent / Lean (`96b2cec4`, TechCrunch, штраф різноманіття 8
+  лишився в знімку). Top 3 без змін. Стара ревізія №2 (`e922c928`) на місці — Restore
+  працює. Research packs і master переставлені в чергу на нову ревізію (паки rev.2 не
+  переносяться: input_hash рахує всі 7 історій). Не натискати **Rebuild selection** —
+  алгоритм знову викине Anthropic штрафом.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-16,
+  `weekly_digest_revisions.revision_number=3`, `weekly_digest_revision_items`)
 
 - **Суддя авто-публікації мовчки не працював 8 ночей — виправлено (2026-08-16), гілка
   `fix/auto-publish-silent-judge`.** `pipeline_runs` вісім ранів поспіль (08-08…15) писав

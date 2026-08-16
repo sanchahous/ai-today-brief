@@ -74,6 +74,7 @@ import {
   isWeeklyResearchPack,
   trustedWeeklyResearchSources,
 } from './research';
+import { corroborationWindow, type CorpusArticle } from '../../../pipeline/story-identity';
 import { adaptWeeklySocialChannel, type WeeklySocialAdaptation } from './social-adapter';
 import type { WeeklyImageIterationPreview } from '@/lib/content-sim/adapters/weekly-image';
 
@@ -580,6 +581,29 @@ function approvedFactsForItem(item: {
     }));
 }
 
+async function loadResearchCorpus(
+  weekStart: string | null | undefined,
+  weekEnd: string | null | undefined,
+): Promise<CorpusArticle[]> {
+  if (!weekStart || !weekEnd) return [];
+  const window = corroborationWindow(weekStart, weekEnd);
+  const { data, error } = await getSupabaseAdmin()
+    .from('articles')
+    .select('url, title, cluster_id')
+    .gte('published_at', window.from)
+    .lt('published_at', window.toExclusive);
+  if (error) {
+    console.warn(`[weekly-research] ingest corpus lookup failed: ${error.message}`);
+    return [];
+  }
+  const corpus: CorpusArticle[] = [];
+  for (const row of data ?? []) {
+    if (!row.url || !row.title) continue;
+    corpus.push({ url: row.url, title: row.title, clusterId: row.cluster_id });
+  }
+  return corpus;
+}
+
 async function generateResearchPack(job: ClaimedGenerationJob) {
   contentStudioJobMode(job);
   const context = await loadGenerationContext(job);
@@ -593,6 +617,7 @@ async function generateResearchPack(job: ClaimedGenerationJob) {
     digestId: job.weekly_digest_id,
     revisionId: job.revision_id,
     item,
+    corpus: await loadResearchCorpus(context.digest.week_start, context.digest.week_end),
   });
   const artifactId = await saveGeneratedArtifact({
     weeklyDigestId: job.weekly_digest_id,

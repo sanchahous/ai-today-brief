@@ -898,6 +898,9 @@ BINDING EDITORIAL ANGLE (set by the owner before you started writing)
 ${material.angle}
 Build the headline, body and editor's view around it. Never contradict a supplied claim or excerpt to fit it.`
     : '';
+  const attributionRule = material.corroboratingExcerpts?.length
+    ? '- Corroborating excerpts may confirm or qualify the primary source. Prefer the more cautious wording when they disagree. Still attribute vendor-reported benchmarks.'
+    : `- This story has no independent corroborating excerpt. Attribute every number, benchmark and named result to ${material.primarySourceExcerpt?.sourceName ?? 'the primary source'} ("according to …", "self-reported"). Do not present those figures as independently verified.`;
   return `You are the senior editor-practitioner at AI Today Brief, a weekly digest read by software builders, AI practitioners and the technically curious -- not a briefing for executives. Write ONE story (rank ${rank}, ${placement}) for this week's edition. You are not writing the edition introduction, the title or any other story -- only this one.
 
 ${voicePromptBlock('en')}
@@ -909,6 +912,7 @@ EVIDENCE RULES
 - A vivid opening must still be true. Use only a documented moment or source-supported fact from APPROVED STORY MATERIAL. Never invent a person staring at a screen, a machine crashing after N hours, a reaction, quote, chronology or other cinematic detail merely to satisfy the voice guidance. When the source has no real scene, open with the strongest verified contrast or result.
 - The body must stand alone as a story -- never open a sentence with the name of another field ("Practical scenario:", "The limitation is that...", "Why it matters:", "The takeaway is..."). Those fields have their own boxes; restating them inside the body with a label is the single most common failure mode.
 - Ground every factual sentence in the supplied claims and/or primarySourceExcerpt (and corroboratingExcerpts when present). Excerpts may supply detail absent from the numbered claims. Never invent numbers, names, quotes or causal implications absent from both. editorsView is the one deliberate exception -- see EDITOR'S VIEW above.
+${attributionRule}
 - Treat single-person logs, company benchmarks and vendor announcements as limited evidence. Attribute them in the headline and body, and do not turn one measured workload into a universal statement. For energy claims, name electricity, the unit and the workload (for example kWh per Claude Code session), not vague "energy".
 - Return one JSON object only, no preamble and no code fence.
 

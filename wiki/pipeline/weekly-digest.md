@@ -2,15 +2,10 @@
 
 Summary: як працює weekly-дайджест у проді: оркестрація, ревізії, артефакти, вартісні
 гейти, admin UX і поточний статус розкатки.
-Sources: `.env.example`, PR #160–#163, #167–#175, #177, #189, `src/lib/weekly-digest/**`,
-`supabase/migrations/20260804090000_weekly_digest_revision_stability.sql`, `supabase/migrations/20260806150000_weekly_video_script_job.sql`,
-`supabase/migrations/20260806140000_weekly_digest_story_directions.sql`,
-live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189, змержено
-2026-08-07), PDF page-cap fix (гілка `fix/weekly-pdf-page-cap`, 2026-08-07), admin
-mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
-`supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
-owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, 2026-08-10 fixes, B3 prompt readiness 2026-08-15, owner content audit + `src/lib/weekly-digest/seed-content.ts` 2026-08-16 (прод-дайджест `6cbcf0b3` live check)
+Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
+`supabase/migrations/20260804*`–`20260809*`, live checks 2026-08-04…16,
+editorial-voice overhaul, PDF page-cap, admin mobile-responsive,
+owner content audit + seed-content 2026-08-16, research corpus corroboration 2026-08-16
 Last updated: 2026-08-16
 
 ---
@@ -129,6 +124,39 @@ Structured claims (`summary_en` + `facts_en`) залишаються обов’
 `primarySourceExcerpt` / corroborating excerpts. Деталь, яка є в excerpt, але відсутня в
 numbered claims, **не** має валитись як `UNSUPPORTED_*`.
 (source: `editorial-llm.ts`, `research.ts`, `content-studio.ts`)
+
+### Corpus corroboration in research packs (2026-08-16)
+
+`independent_source_count` на Feature-паку — це не бал селекції v3. Пак фетчить до двох
+незалежних сторінок і кладе їх у `corroboratingSources`. До цього фіксу кандидатами були
+лише `sources[1+]` і `citation_urls` щоденного айтема. Summarize має право цитувати тільки
+URL з промпту, тож набір майже завжди = primary → прапорець `no_independent_corroboration`
+на всіх трьох Feature цього тижня, навіть коли в `articles` уже лежала картка моделі.
+
+Тепер `buildWeeklyResearchPack` додає сторінки з ingest-корпусу за вікно тижня ± кілька
+днів (`corroborationWindow`), якщо вони:
+
+- інший видавець (не той самий хост і не discussion HN/Reddit/X/Lobsters);
+- той самий `cluster_id`, **або** спільний розпізнавальний ідентифікатор (model card
+  `org/model`, GitHub `owner/repo`, CVE, slug із цифрою ≥12 символів, наприклад
+  `qwen3-8-2-4t-a95b`).
+
+На прод-даних тижня 09–15.08 NVIDIA-блог про Qwen3.8 2.4T знаходить
+`huggingface.co/Qwen/Qwen3.8-2.4T-A95B` і ModelScope; звіт HF і ALTK-Evolve лишаються 0 —
+у корпусі немає другого видавця, і це чесний нуль. Тред HN у цитатах більше не фетчиться
+як «підтвердження».
+(source: `pipeline/story-identity.ts`, `pipeline/page-url.ts`, `src/lib/weekly-digest/research.ts`,
+прод-`articles` live check 2026-08-16)
+
+Writer: якщо `corroboratingExcerpts` порожній, кожне число в історії має бути атрибутоване
+primary (`according to NVIDIA`, `self-reported`). Це не гейт апруву пака.
+(source: `editorial-llm.ts` `storySegmentPrompt`)
+
+Fetch на етапі `prepareArticles` тепер дедупить за канонічним URL (без `www`, UTM, trailing
+slash). Це прибирає дубль на кшталт `…/previewing-ultrafast` vs `…/ultrafast/`. **Не**
+клеїть різні URL однієї події і **не** оживає daily `mentions_count` — це лишається L2
+кластеризацією на `fetch`/`rank`.
+(source: `pipeline/fetch.ts`, [weekly-editorial-selection](weekly-editorial-selection.md))
 
 ## Durable generation control plane (implementation 2026-08-09)
 
