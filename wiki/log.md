@@ -6,6 +6,28 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-16
 
+## 2026-08-16 — Daily rank: ownership щоденного тулу + кластер угоди Cursor
+
+**Джерело:** власник (SpaceX закрила поглинання Cursor за $60B 14.08, сайт мовчав);
+прод-`articles` live check 2026-08-16 (блог Cursor HN 98, TechCrunch close score 0.14,
+Reuters announce 16.06 HN 1019); [now](now.md).
+
+**Змінено:** [guide](pipeline/guide.md) §3, [weekly-digest](pipeline/weekly-digest.md)
+(кластер на daily rank), [weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[now](now.md).
+
+**Код (гілка `feat/reader-tool-lifecycle-news`):** `pipeline/reader-tools.ts` — тули
+читача, ownership, false-positive дедупу, stale URL; `rank.ts` — виняток demotion +
+кластер за сутностями/`storyIdentityKeys`; `summarize.ts` — промпт; `select.ts` /
+`run-daily.ts` — `genre_floor` і `skipped_pool_titles`; `custom-research.ts` —
+не брати primary з `/2024/` у 2026. `SCORE_VERSION` не бампили.
+
+**Не зроблено:** розширення rolling window >24h (вечірній TechCrunch усе одно не
+побачить ранковий блог наступного дня); разовий cleanup червневого хибного айтема
+`$60M clarifies rumors`.
+
+---
+
 ## 2026-08-16 — Research pack: corroboration з ingest-корпусу
 
 **Джерело:** прод-паки `ai-weekly-2026-08-09` rev.2 (`independent_source_count=0` на 3/3

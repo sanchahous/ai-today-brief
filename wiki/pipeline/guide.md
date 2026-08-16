@@ -2,7 +2,7 @@
 
 Summary: Власникський гайд pipeline: fetch → rank → summarize → publish.
 Sources: none (analysis)
-Last updated: 2026-08-15
+Last updated: 2026-08-16
 
 
 > Цей документ — для тебе, не для розробників. Мета: щоб жодне повідомлення
@@ -91,14 +91,25 @@ flowchart TD
 | **0.55** | VentureBeat, MarkTechPost, YouTube, X, Threads, **The Verge** (демоутнуто: 33 зібрано / 0 опубліковано), **Bluesky** |
 | **0.60** | усе невідоме |
 
-Два спецправила:
+Спецправила:
 - **Official-floor:** блоги рівня 1.00 отримують velocity мінімум 0.5 — щоб
   реліз Anthropic не програвав шумному треду, поки його ще не розігнали.
 - **Анти-клікбейт:** «you won't believe», «X says…» тощо ріжуть скор до 70%.
+- **Жанр (M&A / funding / hires):** заголовок про IPO, раунд, позов, «$60 billion»
+  множить скор на 0.5, щоб бізнес-драма не забивала playbook. **Виняток:** зміна
+  власника щоденного тулу читача (Cursor, Claude Code, Codex, Copilot, Gemini CLI)
+  — «Cursor is now a part of SpaceX» не штрафується. Анонс угоди і закриття через
+  місяці — різні новини.
+- **Кластер однієї події:** не лише схожі заголовки. Офіційний блог Cursor і
+  TechCrunch «bought Cursor for $60B» склеюються, якщо в обох є дві спільні
+  сутності (cursor+spacex) і лексика ownership. Інакше `mentions_count` лишається 1
+  і 22% ваги cross-source мертві.
 
 Після скорингу: поріг 0.15 → максимум 2 новини на тему → максимум 5 «холодних
 одинаків» (нуль engagement, одне джерело — захист від медіа-шуму) → топ-16 у
-пул для LLM-редактора.
+пул для LLM-редактора. У `pipeline_runs.meta` етапу `rank` пишуться `genre_floor`
+(заголовки, які штраф посадив під поріг) і `pool_dropped`. Якщо редактор вибрав
+0 айтемів — `summarize.meta.skipped_pool_titles`.
 
 > 📊 З цього тижня скор кожної статті зберігається в базі
 > (`articles.composite_score`). Через місяць даних зможемо перевірити, які

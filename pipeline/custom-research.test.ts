@@ -4,6 +4,7 @@ import {
   dedupeSourcesByUrl,
   htmlToExcerpt,
   parseResearchResult,
+  rehomeStalePrimary,
   toFetchedArticle,
   toPoolItem,
   withResearchSchema,
@@ -46,6 +47,7 @@ describe('buildResearchPrompt', () => {
     expect(prompt).toContain('https://nvidia.com/blog/x');
     expect(prompt).toContain('USER-PROVIDED URL');
     expect(prompt).toContain('at least 3 independent sources');
+    expect(prompt).toContain('more than one calendar year old');
   });
 
   it('asks for primary source when no url', () => {
@@ -81,6 +83,71 @@ describe('parseResearchResult', () => {
         'fallback',
       ),
     ).toThrow('at least 2 sources');
+  });
+
+  it('rehomes a 2024 TechCrunch primary onto a fresh source', () => {
+    const stale =
+      'https://techcrunch.com/2024/08/23/cursor-the-ai-powered-code-editor-raises-60m-series-a-at-400m-valuation/';
+    const fresh = 'https://cursor.com/blog/joining-spacex';
+    const result = parseResearchResult(
+      JSON.stringify({
+        ...MULTI_SOURCE_JSON,
+        title: 'Anysphere clarifies acquisition rumors',
+        url: stale,
+        source_name: 'TechCrunch',
+        sources: [
+          {
+            title: '2024 Series A',
+            url: stale,
+            source_name: 'TechCrunch',
+            key_facts: 'Old round.',
+          },
+          {
+            title: 'Cursor is now a part of SpaceX',
+            url: fresh,
+            source_name: 'Cursor',
+            key_facts: 'Deal closed.',
+          },
+        ],
+      }),
+      'fallback',
+      new Date('2026-08-16T00:00:00Z'),
+    );
+    expect(result.url).toBe(fresh);
+    expect(result.source_name).toBe('Cursor');
+  });
+});
+
+describe('rehomeStalePrimary', () => {
+  it('throws when every source URL is stale', () => {
+    expect(() =>
+      rehomeStalePrimary(
+        {
+          title: 'Old',
+          url: 'https://techcrunch.com/2024/01/01/old/',
+          source_name: 'TechCrunch',
+          source_url: 'https://techcrunch.com',
+          published_at: '2024-01-01T00:00:00Z',
+          synthesis_notes: 'x',
+          excerpt: 'x',
+          sources: [
+            {
+              title: 'a',
+              url: 'https://example.com/2023/old-a',
+              source_name: 'A',
+              excerpt: 'a',
+            },
+            {
+              title: 'b',
+              url: 'https://example.com/2024/old-b',
+              source_name: 'B',
+              excerpt: 'b',
+            },
+          ],
+        },
+        new Date('2026-08-16T00:00:00Z'),
+      ),
+    ).toThrow('stale');
   });
 });
 

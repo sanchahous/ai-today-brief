@@ -715,6 +715,30 @@ export async function matchRelevantItem(
   return row ?? null;
 }
 
+/** Title + URL + brief date for a cosine hit — used to reject same-product false dups. */
+export async function briefItemDedupContext(
+  db: PipelineDb,
+  briefItemId: string,
+): Promise<{ title: string; url: string; date: string } | null> {
+  const { data, error } = await db
+    .from('brief_items')
+    .select('title_en, briefs(date), articles(url)')
+    .eq('id', briefItemId)
+    .maybeSingle();
+  if (error) throw new Error(`[db] briefItemDedupContext failed: ${error.message}`);
+  if (!data?.title_en) return null;
+  const briefs = data.briefs as { date: string } | { date: string }[] | null;
+  const articles = data.articles as { url: string | null } | { url: string | null }[] | null;
+  const briefRow = Array.isArray(briefs) ? briefs[0] : briefs;
+  const articleRow = Array.isArray(articles) ? articles[0] : articles;
+  if (!briefRow?.date) return null;
+  return {
+    title: data.title_en,
+    url: articleRow?.url ?? '',
+    date: briefRow.date,
+  };
+}
+
 /**
  * Embed the English titles of a brief's items and upsert them into
  * `brief_item_embeddings` so future runs can do cross-day semantic dedup.

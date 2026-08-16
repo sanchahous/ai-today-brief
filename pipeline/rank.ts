@@ -1,7 +1,8 @@
 /**
  * Stage 2 — Rank (public / topical-authority tuned, not audience-of-one).
  *
- * Same-event coverage is clustered (fuzzy title match), then each cluster gets
+ * Same-event coverage is clustered (fuzzy title match, story-identity keys, or
+ * daily-tool ownership with two shared entities), then each cluster gets
  * a composite score in [0, 1] from six normalized signals (weights sum to 1):
  *
  *   0.30 · velocity      — engagement per hour since publication (what's hot now)
@@ -15,12 +16,17 @@
  * `minScore` floor downstream is interpretable. Clickbait / pure-punditry AND
  * off-niche "news genre" stories (funding, personnel, legal, celebrity) are demoted
  * — the loudest AI stories on HN/X are business drama, which wins on velocity and
- * crowds out the practical tools the reader actually wants. Topic + category are
- * attached for the diversity cap and storage; the LLM editor curates after.
+ * crowds out the practical tools the reader actually wants. Ownership changes of
+ * the reader's daily tools (Cursor, Claude Code, Codex, …) are exempt: those
+ * change next week's workflow, so they must not fall under the M&A floor.
+ * Topic + category are attached for the diversity cap and storage; the LLM
+ * editor curates after.
  */
 
 import { createHash } from 'node:crypto';
+import { isReaderToolOwnershipChange, sameOwnershipEvent } from './reader-tools';
 import { sourceTrust } from './source-authority';
+import { identitiesOverlap, storyIdentityKeys } from './story-identity';
 import { titlesSimilar } from './text';
 import { categoryForTitle, detectTopic, type CategorySlug } from './topics';
 
@@ -167,9 +173,22 @@ const NEWS_GENRE_PATTERNS: Array<[RegExp, number]> = [
 
 /** Multiplicative penalty in [0, 0.5] for off-niche business/personnel/legal/celebrity news. */
 export function newsGenreDemotion(title: string): number {
+  // Cursor/Claude Code/Codex ownership changes are playbook, not newswire.
+  if (isReaderToolOwnershipChange(title)) return 0;
   let demotion = 0;
   for (const [re, d] of NEWS_GENRE_PATTERNS) if (re.test(title)) demotion = Math.max(demotion, d);
   return demotion;
+}
+
+/**
+ * True when genre/clickbait demotion pushed a cluster under `minScore` that
+ * would otherwise have made the pool. Logged so M&A floors are visible.
+ */
+export function wasHeldDownByGenre(title: string, score: number, minScore: number): boolean {
+  const demotion = Math.max(clickbaitDemotion(title), newsGenreDemotion(title));
+  if (demotion <= 0 || demotion >= 1) return false;
+  const base = score / (1 - demotion);
+  return score < minScore && base >= minScore;
 }
 
 // ─── Cluster scoring ─────────────────────────────────────────────────────────
@@ -256,6 +275,15 @@ function scoreCluster(cluster: Candidate[], nowMs: number): RankedEntry {
 
 // ─── Clustering + source diversity ───────────────────────────────────────────
 
+function sameEventCoverage(a: Candidate, b: Candidate): boolean {
+  if (titlesSimilar(a.title, b.title)) return true;
+  if (sameOwnershipEvent(a.title, b.title)) return true;
+  return identitiesOverlap(
+    storyIdentityKeys(a.title, a.url),
+    storyIdentityKeys(b.title, b.url),
+  );
+}
+
 function clusterByTitleSimilarity(items: Candidate[]): Candidate[][] {
   const clusters: Candidate[][] = [];
   const assigned = new Set<string>();
@@ -266,10 +294,9 @@ function clusterByTitleSimilarity(items: Candidate[]): Candidate[][] {
     assigned.add(a.id);
     for (const b of items) {
       if (assigned.has(b.id)) continue;
-      if (titlesSimilar(a.title, b.title)) {
-        cluster.push(b);
-        assigned.add(b.id);
-      }
+      if (!sameEventCoverage(a, b)) continue;
+      cluster.push(b);
+      assigned.add(b.id);
     }
     clusters.push(cluster);
   }
