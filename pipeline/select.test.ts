@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dropKnownUrls, selectPool } from './select';
+import { dropKnownUrls, selectPool, selectPoolWithReasons } from './select';
 import type { RankedEntry } from './rank';
 import type { CategorySlug } from './topics';
 
@@ -48,6 +48,14 @@ describe('selectPool', () => {
   it('drops entries under the score floor', () => {
     const pool = selectPool([entry(0.1, 'claude', 'a')], opts);
     expect(pool).toHaveLength(0);
+  });
+
+  it('records min_score drops with the headline', () => {
+    const { pool, dropped } = selectPoolWithReasons([entry(0.1, 'claude', 'a')], opts);
+    expect(pool).toHaveLength(0);
+    expect(dropped).toEqual([
+      expect.objectContaining({ url: 'a', reason: 'min_score' }),
+    ]);
   });
 
   it('caps how many items share a topic', () => {

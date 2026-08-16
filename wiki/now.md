@@ -4,7 +4,8 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…16, Content Sim plan 2026-08-11,
 experimental Visual Affordance V10 owner review 2026-08-13, weekly illustration B1-fix 2026-08-15,
-owner weekly selection/content audit 2026-08-16, research corpus corroboration 2026-08-16
+owner weekly selection/content audit 2026-08-16, research corpus corroboration 2026-08-16,
+reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16
 Last updated: 2026-08-16
 
 ---
@@ -12,13 +13,25 @@ Last updated: 2026-08-16
 ## Стан репозиторію
 
 - **Research pack шукає підтвердження в корпусі `articles` (2026-08-16), follow-up
-  `fix/weekly-research-spa-and-page`.** #268 змерджено (`7584d4f`), прод READY.
+  `fix/weekly-research-spa-and-page` (#270).** #268 змерджено (`7584d4f`), прод READY.
   Перезбір трьох Feature-паків на `ai-weekly-2026-08-09` rev.3 прогнав уже новий
   limitations-текст («or the ingest corpus»), але `independent_source_count` лишився
   **0/3**. Корінь: PostgREST max-rows 1000 при 2440 статтях у вікні + JS-картки HF/
   ModelScope без 160 символів прози. Не натискати Rebuild selection.
   (source: прод-`articles` count 2026-08-16, pack artifacts `2301b650` / `1ce6801c` /
   `812586fa`, live GET HF+ModelScope extractMainText=0)
+
+- **Daily rank більше не дропає угоду про щоденний тул (2026-08-16), #269.** SpaceX→Cursor
+  $60B close (14–15.08) fetch бачив (офіційний блог HN 98, TechCrunch, Engadget), але
+  **жоден** рядок не став `brief_item`: жанровий штраф ×0.5 посадив «$60 billion» під
+  `minScore` 0.15, кластер не склеївся (Jaccard 0.28 при порозі 0.6), LLM-промпт казав
+  DROP all M&A, а червневий custom-бриф з URL **2024** («$60M, спростовує чутки») міг
+  труїти семантичний дедуп. Фікс: виняток ownership для Cursor/Claude Code/Codex/…;
+  кластер за двома спільними сутностями; cosine-hit ігнорується, якщо це інша подія
+  або close через >14 днів після announce; custom-research не бере primary зі шляхом
+  `/2024/` у 2026. `SCORE_VERSION` лишається 2 (ваги/нормалізація ті самі).
+  (source: прод-`articles` live check 2026-08-16, `pipeline/reader-tools.ts`,
+  [guide §3](pipeline/guide.md))
 
 - **Прод-випуск `ai-weekly-2026-08-09` — ручна заміна Radar (2026-08-16, ~13:10 Kyiv).**
   Ревізія **№3** (`5b1aa70f`), статус `in_review`. Needle 2 (rank 6, `cactuscompute.com`)

@@ -151,8 +151,9 @@ stored per candidate, so review reads «програв 0.8 після 5-балн
 ≈ 1). Тепер він додатково рахує **незалежні** хости цитат — не власний домен новини
 й не тред HN/Reddit/X, з якого її взяли. Це підіймає покриття з 1/22 до 3/33: сигнал
 більше не вимкнений структурно, але дані все ще рідкісні, тому бюджет компонента
-зменшено 15 → 13 на користь `evidence`. Daily `mentions_count ≈ 1` лишається окремою
-роботою (кластеризація на `fetch`/`rank` проти rolling window). Research-паки Top 3
+зменшено 15 → 13 на користь `evidence`. Daily rank з 2026-08-16 клеїть ownership-події
+(дві спільні сутності) і `storyIdentityKeys`; історичні рядки з `mentions_count ≈ 1`
+лишаються, поки їх не перескорять. Research-паки Top 3
 з 2026-08-16 шукають sibling-сторінки вже в таблиці `articles` — це інший лічильник,
 див. [weekly-digest § Corpus corroboration](weekly-digest.md#corpus-corroboration-in-research-packs-2026-08-16).
 > ⚠️ (needs verification) Гіпотеза: доки `mentions_count ≈ 1`, будь-який

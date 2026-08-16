@@ -8,6 +8,7 @@ import {
   scoreComponents,
   SCORE_VERSION,
   sourceTrust,
+  wasHeldDownByGenre,
   WEIGHTS,
   type Candidate,
 } from './rank';
@@ -99,13 +100,20 @@ describe('newsGenreDemotion', () => {
     expect(newsGenreDemotion("Amazon shelves Sam Altman biopic 'Artificial'")).toBe(0.5);
   });
 
-  it('leaves practical tools, releases and monetisation items alone', () => {
+  it('leaves practical tools, releases, monetisation, and daily-tool ownership alone', () => {
     expect(newsGenreDemotion('Headroom compresses LLM inputs by 60–95%')).toBe(0);
     expect(newsGenreDemotion('Moonshot AI releases Kimi Code K2.7 open-source model')).toBe(0);
     expect(newsGenreDemotion('OpenRouter upgrades free tier to 1,000 requests/day')).toBe(0);
     expect(newsGenreDemotion('Microsoft open-sources MarkItDown to convert Office files')).toBe(0);
     expect(newsGenreDemotion('How I make $5k/month shipping AI side-projects')).toBe(0);
     expect(newsGenreDemotion('TimesFM: a pretrained foundation model for time-series')).toBe(0);
+    expect(newsGenreDemotion('Cursor is now a part of SpaceX')).toBe(0);
+    expect(newsGenreDemotion('SpaceX just bought Cursor for $60 billion')).toBe(0);
+    expect(newsGenreDemotion('SpaceX officially closes its Cursor acquisition')).toBe(0);
+  });
+
+  it('still demotes funding that only name-drops a daily tool', () => {
+    expect(newsGenreDemotion('Anysphere raises $60M as Cursor clarifies plans')).toBe(0.5);
   });
 });
 
@@ -225,5 +233,60 @@ describe('rankCandidates', () => {
     });
     const { ranked } = rankCandidates([weak], 0.9, NOW);
     expect(ranked).toHaveLength(0);
+  });
+
+  it('clusters Cursor/SpaceX ownership coverage that titlesSimilar would miss', () => {
+    const items = [
+      candidate({
+        id: 'blog',
+        url: 'https://cursor.com/blog/joining-spacex',
+        title: 'Cursor is now a part of SpaceX',
+        hn_score: 98,
+      }),
+      candidate({
+        id: 'tc',
+        url: 'https://techcrunch.com/2026/08/15/spacex-officially-closes-its-cursor-acquisition/',
+        title: 'SpaceX just bought Cursor for $60 billion',
+        source_name: 'TechCrunch',
+        hn_score: null,
+      }),
+      candidate({
+        id: 'gadget',
+        url: 'https://www.engadget.com/spacex-cursor',
+        title: 'SpaceX has acquired coding AI startup Cursor',
+        hn_score: 4,
+      }),
+    ];
+    const { ranked, clusters } = rankCandidates(items, 0, NOW);
+    expect(clusters).toBe(1);
+    expect(ranked).toHaveLength(1);
+    expect(ranked[0]!.mentions).toBe(3);
+    expect(ranked[0]!.lead.id).toBe('blog');
+    expect(ranked[0]!.score).toBeGreaterThan(0.15);
+  });
+
+  it('does not cluster a Cursor 0day with the SpaceX acquisition', () => {
+    const items = [
+      candidate({
+        id: 'deal',
+        url: 'https://cursor.com/blog/joining-spacex',
+        title: 'Cursor is now a part of SpaceX',
+      }),
+      candidate({
+        id: 'cve',
+        url: 'https://example.com/cursor-0day',
+        title: 'Cursor 0day Executes Arbitrary Code via Workspace git.exe',
+      }),
+    ];
+    const { clusters } = rankCandidates(items, 0, NOW);
+    expect(clusters).toBe(2);
+  });
+});
+
+describe('wasHeldDownByGenre', () => {
+  it('flags a demoted headline that would have cleared minScore', () => {
+    expect(wasHeldDownByGenre('Anthropic files confidential S-1 for IPO', 0.12, 0.15)).toBe(true);
+    expect(wasHeldDownByGenre('Cursor is now a part of SpaceX', 0.12, 0.15)).toBe(false);
+    expect(wasHeldDownByGenre('Anthropic files confidential S-1 for IPO', 0.4, 0.15)).toBe(false);
   });
 });
