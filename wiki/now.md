@@ -2,13 +2,82 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…15, Content Sim plan 2026-08-11,
-experimental Visual Affordance V10 owner review 2026-08-13, weekly illustration B1-fix 2026-08-15
-Last updated: 2026-08-15
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…16, Content Sim plan 2026-08-11,
+experimental Visual Affordance V10 owner review 2026-08-13, weekly illustration B1-fix 2026-08-15,
+owner weekly selection/content audit 2026-08-16
+Last updated: 2026-08-16
 
 ---
 
 ## Стан репозиторію
+
+- **Суддя авто-публікації мовчки не працював 8 ночей — виправлено (2026-08-16), гілка
+  `fix/auto-publish-silent-judge`.** `pipeline_runs` вісім ранів поспіль (08-08…15) писав
+  `status='ok'`, `error=NULL`, `{action:'left_draft', approved:0, rejected:0,
+  judge_unavailable:false}`, а випуски не виходили. **Корінь не той, що здавався:** суддя
+  не падав — він відповідав правильно (`{"ref":0,"verdict":"approve","confidence":0.86,…}`),
+  але **без конверта `{results:[…]}`**, а парсер читав тільки `obj.results` → порожній масив
+  → кожен айтем ішов у `continue // no coverage` → нуль рішень без винятку. Другий,
+  незалежний дефект: `logPipelineRun` писав `status:'ok'` **безумовно**, `error` не
+  заповнювався ніколи. Виправлено: (1) парсер читає 5 варіантів конверта + голий масив +
+  голий обʼєкт; (2) `judgeResponseIssue` як семантичний валідатор у провайдерному ланцюжку —
+  нечитабельна відповідь **перемикає модель**; (3) непорожній бриф із 0 рішень = `action:'error'`;
+  (4) `status='failed'` + `error` (значення `'error'` неможливе — `pipeline_runs_status_check`
+  дозволяє лише `ok/failed/skipped`); (5) Telegram-алерт із сирою причиною; (6) щоденний пінг
+  «N брифів чекають рев'ю»; (7) CLI виходить кодом 1, тож Actions-ран червоніє.
+  **Перевірено наживо** на досі залиплому брифі `9deed7d1` (08-08 пак 2): до фіксу
+  `left_draft approved=0 rejected=0`, після — `published approved=1`. Ціна дефекту: 20
+  матеріалів довелось схвалювати вручну 16.08. Деталі —
+  [audits/2026-08-16-auto-publish-silent-judge](audits/2026-08-16-auto-publish-silent-judge.md).
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-16, пряма проба судді,
+  `pipeline/auto-publish.ts`, `pipeline/llm-json.ts`)
+
+- **Кнопка «Rebuild selection» (2026-08-16).** Overview → owner-only перезбір відбору
+  поточним селектором по тому самому тижню + seed історій з денних айтемів; нова активна
+  ревізія через новий RPC `rebuild_weekly_digest_selection` (міграція `20260816120000`,
+  **застосована до прода 2026-08-16**, `service_role` only, перевірена викликом у транзакції
+  з відкатом). Руйнівна за задумом: `in_review` + скидання всіх апрувів; стара ревізія
+  лишається і відновлюється через Restore. Перевірено наскрізь на **тестовому** випуску
+  `ai-weekly-test-2026-07-24` (34 кандидати → 24 eligible → 7, ревізія 3, 4 нові / 4 вибули,
+  усі 5 полів заповнені у всіх 7 історіях). Прод-випуск `6cbcf0b3` **не чіпав** — його
+  перезбирає власник кнопкою.
+  (source: `src/lib/weekly-digest/rebuild-selection.ts`,
+  `supabase/migrations/20260816120000_weekly_rebuild_selection.sql`, live run 2026-08-16)
+
+- **Weekly відбір `weekly-editorial-v3` + seed-контент історій — гілка
+  `fix/weekly-selection-and-seed-content` (2026-08-16), PR ще не відкрито.** Аудит власника
+  на прод-прогоні `05cc4e6a-a709-44ca-b56a-382f21c40292` (тиждень 09–15.08) знайшов чотири
+  реальні дефекти, усі підтверджені на живій БД до фіксу:
+  (1) **свіжість вирішувала замість якості** — `editorialImpact` константа 35 для кожного з
+  10 `high`, тож усередині тіру не розрізняла нічого, а найбільший розкид давала `recency`
+  (1.4 → 5.0); bearblog-допис обходив IBM ALTK-Evolve просто за датою. Тепер вікно тижня —
+  плато, різниця понеділок↔субота ≤ 1 бала (на тому ж пулі 4.4–4.9);
+  (2) **`category_balance` видаляв, а не штрафував** — кап різав 68.1 і 67.4, лишаючи 63.9;
+  `perDayCap` робив те саме тихо (обрані розкладались рівно 2+2+2+1 по днях). Замінено на
+  штраф −5 категорія / −4 джерело / −3 день і greedy max-marginal вибір; у бектесті новина,
+  яку кап видаляв, повертається в дайджест 7-ю позицією, заплативши 3 бала. `diversity_penalty`
+  і `adjusted_score` тепер зберігаються по кожному кандидату;
+  (3) **`evidence` міряв заповненість полів** — 17.2 однаково в Hacker News і в особистого
+  блогу, бо authority брався з назви **фіду**. Новий `pipeline/source-authority.ts` рахує
+  authority **видавця** (для агрегатора — за хостом призначення): розкид evidence 7.6 → 22.0
+  замість 14.4 → 18.0. `corroboration` (0 у 21 з 22) додатково рахує незалежні хости цитат,
+  не рахуючи тред HN/Reddit/X — 3/33 замість 1/22; бюджет компонента 15 → 13. Повне лікування
+  (крос-джерельне звʼязування на `fetch`) лишається окремою роботою: `mentions_count ≈ 1`;
+  (4) **контент-генерація**: з `WEEKLY_CONTENT_STUDIO_V2=off` composer писав заглушку
+  `body = summary`, `takeaway = why_matters`, `practical = null` — у прод-дайджесті
+  `6cbcf0b3-187d-4d7d-9eb9-66bdff1c72d4` це 7/7 історій із двома заповненими полями з пʼяти.
+  Причина не в LLM: щоденний айтем **уже** мав `body_md` (305–1553 симв.), `takeaways`,
+  `action_items`, `when_to_use` — composer просто не вибирав ці колонки. Новий
+  `src/lib/weekly-digest/seed-content.ts` мапить їх; replay проти прод-даних дає 5/5
+  заповнених полів без дублів. Модуль нічого не генерує — переносить уже схвалений текст,
+  порожнє лишає порожнім.
+  1419 тестів зелені, `wiki:check` чистий. **Фікси діють на нові дайджести** — наявні
+  ревізії імутабельні, поточний випуск треба перескладати або дописувати руками.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-16 —
+  `weekly_digest_selection_runs`, `weekly_digest_revision_items`, `articles.score_authority`;
+  бектест `selectEditorialDigestItems` на реальному пулі 2026-08-16;
+  [weekly-editorial-selection § Що змінила v3](pipeline/weekly-editorial-selection.md#що-змінила-v3-2026-08-16),
+  [weekly-digest § Seed-контент історій](pipeline/weekly-digest.md#seed-контент-історій-2026-08-16))
 
 - **Пре-мерж перевірка стека #241–#265 проти живих систем (2026-08-15) — три фікси самі були
   дефектні, виправлено.** Перед мержем у `main` фікси R1–R4 перевірено не тестами, а прод-БД і

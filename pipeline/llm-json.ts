@@ -28,13 +28,21 @@ import type { GeminiResponseSchema, LlmUsage } from './summarize';
  * Lenient validator for the HTTP lane: callers guard the parsed shape
  * downstream (their own result parsers), so syntactic JSON is enough here —
  * a parse failure advances the chain to the next model.
+ *
+ * `validateSemantic` lets a caller add its own "is this answer usable at all"
+ * check to the same gate, so a model that returns well-formed JSON in a shape
+ * the caller cannot read costs a model switch instead of silently producing
+ * nothing (see auto-publish.ts's judge).
  */
-const validateGenericJson: OpenRouterResponseValidator = (_modelId, rawText, finishReason) => {
-  if (finishReason === 'length') throw new SyntaxError('[llm-json] truncated completion');
-  const text = rawText.trim();
-  JSON.parse(text);
-  return text;
-};
+function buildJsonValidator(validateSemantic?: (text: string) => void): OpenRouterResponseValidator {
+  return (_modelId, rawText, finishReason) => {
+    if (finishReason === 'length') throw new SyntaxError('[llm-json] truncated completion');
+    const text = rawText.trim();
+    JSON.parse(text);
+    validateSemantic?.(text);
+    return text;
+  };
+}
 
 /** Per-call Gemini settings the registry's `dispatch()` has no channel for — they ride on the chain entry instead. */
 export interface GeminiCallConfig {
@@ -96,6 +104,14 @@ export interface JsonRoleCallOptions {
    * Supabase reads, and neither is cached. See createRegistryLoader.
    */
   registry?: ProviderRegistry;
+  /**
+   * Caller-supplied "can I actually use this answer" check. Throw to reject.
+   * Inside the HTTP lane it runs per model, so the chain fails over to the next
+   * model; it is re-run on the winning text afterwards to cover the lanes that
+   * take no validator (gemini, cli), where the only remedy left is to surface a
+   * real error instead of handing back an unusable answer.
+   */
+  validateSemantic?: (text: string) => void;
 }
 
 /**
@@ -120,8 +136,9 @@ export async function generateJsonWithFallback(
     base,
   );
   const result = await generateWithRegistry(options.role, options.prompt, registry, {
-    validateResponse: validateGenericJson,
+    validateResponse: buildJsonValidator(options.validateSemantic),
   });
+  options.validateSemantic?.(result.text.trim());
   return {
     text: result.text,
     model: `${result.provider}:${result.model}`,

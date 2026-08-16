@@ -5,7 +5,10 @@ const BASE_URL = process.env.HEADER_LAYOUT_BASE_URL ?? 'http://127.0.0.1:3000';
 
 async function gotoHeaderLayoutPage(page: import('@playwright/test').Page) {
   await page.goto(`${BASE_URL}/uk/news`, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('heading', { name: /news|новини/i })).toBeVisible({ timeout: 30_000 });
+  // Level 1 only — story headlines containing "news" also match the name regex.
+  await expect(page.getByRole('heading', { level: 1, name: /news|новини/i })).toBeVisible({
+    timeout: 30_000,
+  });
 }
 
 test.describe('Header layout', () => {

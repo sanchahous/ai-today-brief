@@ -33,6 +33,7 @@ import {
   POST_UPLOAD_QA_PENDING,
   type PostUploadQa,
 } from '@/lib/weekly-digest/post-upload-qa';
+import { rebuildWeeklySelection } from '@/lib/weekly-digest/rebuild-selection';
 import { reviewUploadedImage } from '@/lib/weekly-digest/run-post-upload-qa';
 import {
   applyOwnerFeedbackToImageMetadata,
@@ -1766,6 +1767,31 @@ export async function restoreWeeklyDigestRevisionAction(formData: FormData) {
   });
   if (error) redirectWeeklyRevisionRestoreError(weeklyDigestId, error.message);
   revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+/**
+ * Re-runs story selection for this digest against the current selector and
+ * mints a new active revision. Owner-only and destructive by design: the
+ * digest returns to `in_review` and every downstream approval is cleared,
+ * because a different story set invalidates the research, article and images
+ * attached to the previous revision.
+ */
+export async function rebuildWeeklySelectionAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  let result;
+  try {
+    result = await rebuildWeeklySelection(weeklyDigestId);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'The selection could not be rebuilt.';
+    redirectWeeklyRevisionRestoreError(weeklyDigestId, message);
+  }
+  revalidateWeeklyAdmin(weeklyDigestId);
+  redirect(
+    `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=overview&rebuilt=${encodeURIComponent(
+      `${result.selectedCount}:${result.addedCount}:${result.removedCount}`,
+    )}`,
+  );
 }
 
 export async function startWeeklyContentStudioAction(formData: FormData) {

@@ -2188,6 +2188,15 @@ export type Database = {
         Args: { p_social_post_id: string };
         Returns: Database['public']['Tables']['social_posts']['Row'];
       };
+      rebuild_weekly_digest_selection: {
+        Args: {
+          p_items: Json;
+          p_reason?: string;
+          p_selection_run_id?: string;
+          p_weekly_digest_id: string;
+        };
+        Returns: string;
+      };
       revert_weekly_digest_revision: {
         Args: {
           p_reason: string;

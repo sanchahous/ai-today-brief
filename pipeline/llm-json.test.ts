@@ -119,6 +119,49 @@ describe('generateJsonWithFallback (Phase 6a/6b: registry migration)', () => {
       expect.anything(),
     );
   });
+
+  // An answer the caller cannot use is a model problem: the validator handed to
+  // the HTTP lane must reject it so the chain moves to the next model, instead
+  // of the caller silently receiving zero usable results (auto-publish judge,
+  // 2026-08-08..15).
+  it('passes the caller semantic check into the per-model validator', async () => {
+    vi.mocked(generateWithRegistry).mockResolvedValueOnce(success);
+    const validateSemantic = vi.fn((text: string) => {
+      if (!text.includes('usable')) throw new Error('unusable answer');
+    });
+
+    await expect(
+      generateJsonWithFallback({
+        role: 'daily.auto_publish_judge',
+        prompt: 'prompt',
+        schema: SAMPLE_SCHEMA,
+        geminiApiKey: 'g-key',
+        registry: { chainForRole: () => [] },
+        validateSemantic,
+      }),
+    ).rejects.toThrow('unusable answer');
+
+    const options = vi.mocked(generateWithRegistry).mock.calls[0]![3] as {
+      validateResponse: (m: string, t: string, f: string | null) => string;
+    };
+    expect(() => options.validateResponse('m', '{"ok":true}', null)).toThrow('unusable answer');
+    expect(() => options.validateResponse('m', '{"usable":true}', null)).not.toThrow();
+  });
+
+  it('accepts a response the semantic check approves', async () => {
+    vi.mocked(generateWithRegistry).mockResolvedValueOnce(success);
+
+    const result = await generateJsonWithFallback({
+      role: 'daily.auto_publish_judge',
+      prompt: 'prompt',
+      schema: SAMPLE_SCHEMA,
+      geminiApiKey: 'g-key',
+      registry: { chainForRole: () => [] },
+      validateSemantic: () => undefined,
+    });
+
+    expect(result.text).toBe('{"ok":true}');
+  });
 });
 
 describe('createRegistryLoader (Phase 6b)', () => {

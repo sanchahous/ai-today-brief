@@ -262,12 +262,37 @@ interface RawJudgeResult {
   reason?: unknown;
 }
 
+/** Keys different models have used for the results array. */
+const JUDGE_RESULT_KEYS = ['results', 'items', 'verdicts', 'decisions', 'data'] as const;
+
+/**
+ * The prompt asks for `{ results: [...] }`, but a model that answers correctly
+ * in every other respect may skip the envelope — a single-item batch commonly
+ * comes back as one bare verdict object. Reading only `obj.results` turned such
+ * an answer into an empty array with no error, which is exactly how eight
+ * consecutive nightly runs (2026-08-08…15) reported `ok` while deciding nothing.
+ */
+function judgeResultArray(parsed: unknown): RawJudgeResult[] {
+  if (Array.isArray(parsed)) return parsed as RawJudgeResult[];
+  if (!parsed || typeof parsed !== 'object') return [];
+  const obj = parsed as Record<string, unknown>;
+  for (const key of JUDGE_RESULT_KEYS) {
+    if (Array.isArray(obj[key])) return obj[key] as RawJudgeResult[];
+  }
+  if ('verdict' in obj || 'ref' in obj) return [obj as RawJudgeResult];
+  return [];
+}
+
+export interface JudgeParseResult {
+  verdicts: JudgeVerdict[];
+  /** Entries the model returned, before ref/verdict filtering. */
+  returned: number;
+}
+
 /** Throws on malformed JSON — callers treat that as total judge failure (fail-closed). */
-export function parseJudgeVerdicts(text: string, validRefs: Set<number>): JudgeVerdict[] {
-  const parsed: unknown = JSON.parse(text);
-  const obj = (parsed ?? {}) as Record<string, unknown>;
-  const results = Array.isArray(obj.results) ? (obj.results as RawJudgeResult[]) : [];
-  const out: JudgeVerdict[] = [];
+export function parseJudgeVerdicts(text: string, validRefs: Set<number>): JudgeParseResult {
+  const results = judgeResultArray(JSON.parse(text));
+  const verdicts: JudgeVerdict[] = [];
   for (const r of results) {
     const ref = typeof r.ref === 'number' ? r.ref : Number(r.ref);
     if (!validRefs.has(ref)) continue;
@@ -275,14 +300,41 @@ export function parseJudgeVerdicts(text: string, validRefs: Set<number>): JudgeV
     if (!verdict) continue;
     const confidence = typeof r.confidence === 'number' ? r.confidence : Number(r.confidence);
     if (!Number.isFinite(confidence)) continue;
-    out.push({
+    verdicts.push({
       ref,
       verdict,
       confidence: Math.min(1, Math.max(0, confidence)),
       reason: typeof r.reason === 'string' ? r.reason : '',
     });
   }
-  return out;
+  return { verdicts, returned: results.length };
+}
+
+/** Longest excerpt of an unusable response worth carrying into a log or alert. */
+const JUDGE_EXCERPT_CHARS = 240;
+
+/**
+ * Why this judge response cannot be used, or `null` when it can. Wired into the
+ * provider chain as a semantic validator, so a model that answers in a shape we
+ * cannot read is treated like any other model failure — the chain moves on to
+ * the next model instead of the answer being dropped in silence.
+ */
+export function judgeResponseIssue(text: string, validRefs: Set<number>): string | null {
+  let parsed: JudgeParseResult;
+  try {
+    parsed = parseJudgeVerdicts(text, validRefs);
+  } catch (e) {
+    return `judge response is not valid JSON (${e instanceof Error ? e.message : String(e)}): ${text.slice(0, JUDGE_EXCERPT_CHARS)}`;
+  }
+  if (parsed.verdicts.length > 0) return null;
+  if (parsed.returned === 0) {
+    return `judge returned no verdicts in a readable shape: ${text.slice(0, JUDGE_EXCERPT_CHARS)}`;
+  }
+  const refs = [...validRefs].sort((a, b) => a - b);
+  return (
+    `judge returned ${parsed.returned} entr${parsed.returned === 1 ? 'y' : 'ies'}, none usable for refs ` +
+    `${refs[0]}..${refs.at(-1)}: ${text.slice(0, JUDGE_EXCERPT_CHARS)}`
+  );
 }
 
 // ─── Pure: calibration to the owner's historical approve rate ─────────────
@@ -403,6 +455,45 @@ export function formatStaleDraftsNote(count: number): string {
   return `🤖 <b>Авто-публікація</b>: ${count} застарілих чернеток поза тижневим вікном — без змін (новини вже неактуальні).`;
 }
 
+/**
+ * Loud alert for a judge that produced nothing usable. Deliberately carries the
+ * raw provider message: the eight silent nights of 2026-08 cost more than an
+ * ugly notification ever will.
+ */
+export function formatJudgeFailureAlert(
+  failures: Array<{ date: string; edition: number; pending: number; reason: string }>,
+): string {
+  const lines = [
+    '🚨 <b>Авто-публікація: суддя не відпрацював</b>',
+    '',
+    `Брифів без жодного рішення: <b>${failures.length}</b>. Матеріали лишились на розгляді.`,
+    '',
+  ];
+  for (const f of failures) {
+    const packLine = f.edition > 1 ? ` (пак ${f.edition})` : '';
+    lines.push(`• <b>${escHtml(f.date)}</b>${packLine} — ${f.pending} на розгляді`);
+    lines.push(`  <code>${escHtml(f.reason.slice(0, 300))}</code>`);
+  }
+  return lines.join('\n');
+}
+
+/** Daily human-gate ping: what is still waiting for a person. */
+export function formatPendingReviewPing(briefs: PendingReviewBrief[]): string {
+  const total = briefs.reduce((sum, b) => sum + b.pending, 0);
+  const lines = [
+    `📋 <b>Чекають рев'ю: ${briefs.length} бриф(ів)</b>, ${total} матеріал(ів)`,
+    '',
+    ...briefs
+      .slice(0, 10)
+      .map(
+        (b) =>
+          `• ${escHtml(b.date)}${b.edition > 1 ? ` (пак ${b.edition})` : ''} — ${b.pending} на розгляді`,
+      ),
+  ];
+  if (briefs.length > 10) lines.push(`…і ще ${briefs.length - 10}`);
+  return lines.join('\n');
+}
+
 // ─── Integration: DB + LLM + Telegram + revalidate + IndexNow ─────────────
 
 export interface AutoPublishOptions {
@@ -420,14 +511,49 @@ export interface DraftOutcome {
   approved: number;
   rejected: number;
   hardRejected: number;
+  /** Items still pending after the sweep because no verdict covered them. */
+  unjudged: number;
   judgeUnavailable: boolean;
+  /**
+   * Raw reason the judge produced nothing usable for this draft. Non-null is
+   * always a run-level failure, even when the brief published on previously
+   * approved items — a triage pass that decided nothing is never a success.
+   */
+  judgeError?: string;
   error?: string;
 }
 
 export interface AutoPublishResult {
   windowDrafts: number;
   staleDrafts: number;
+  /** Draft briefs still holding at least one pending item after the sweep. */
+  awaitingReview: PendingReviewBrief[];
   outcomes: DraftOutcome[];
+}
+
+export interface PendingReviewBrief {
+  date: string;
+  edition: number;
+  pending: number;
+}
+
+/**
+ * A non-empty brief that ends a sweep with nothing approved and nothing
+ * rejected has not been triaged — it has failed quietly. `judgeError` carries
+ * the reason when the judge itself reported one.
+ */
+export function judgeSilenceError(params: {
+  pendingCount: number;
+  approved: number;
+  rejected: number;
+  judgeError: string | null;
+}): string | null {
+  if (params.pendingCount === 0) return null;
+  if (params.approved + params.rejected > 0) return params.judgeError;
+  return (
+    params.judgeError ??
+    `judge decided nothing on ${params.pendingCount} pending item(s) and reported no error`
+  );
 }
 
 /* v8 ignore start -- integration: DB/LLM/Telegram/network IO; helpers above are unit-tested */
@@ -656,7 +782,9 @@ async function processDraft(
   let approvedThisRun = 0;
   let rejectedThisRun = 0;
   let hardRejected = 0;
+  let unjudged = 0;
   let judgeUnavailable = false;
+  let judgeError: string | null = null;
 
   if (pending.length > 0) {
     const hardRejects: Array<{ item: PendingItemRow; comment: string }> = [];
@@ -694,6 +822,7 @@ async function processDraft(
           why_matters_en: item.why_matters_en,
         }));
         const prompt = buildJudgePrompt(profile, candidates);
+        const validRefs = new Set(candidates.map((c) => c.ref));
         const { text, model } = await generateJsonWithFallback({
           role: 'daily.auto_publish_judge',
           prompt,
@@ -702,15 +831,25 @@ async function processDraft(
           geminiMaxAttempts: 2,
           openRouterApiKey: config.openRouterApiKey,
           registry: await loadRegistry(),
+          // An answer we cannot read is a model problem: reject it here so the
+          // chain fails over to the next model rather than returning zero
+          // verdicts that the loop below would skip one by one.
+          validateSemantic: (candidateText) => {
+            const issue = judgeResponseIssue(candidateText, validRefs);
+            if (issue) throw new Error(issue);
+          },
         });
-        const rawVerdicts = parseJudgeVerdicts(text, new Set(candidates.map((c) => c.ref)));
+        const { verdicts: rawVerdicts } = parseJudgeVerdicts(text, validRefs);
         const calibrated = calibrateVerdicts(rawVerdicts, profile.approveRate);
         const calibratedByRef = new Map(calibrated.map((c) => [c.ref, c]));
 
         for (let ref = 0; ref < needsJudge.length; ref++) {
           const item = needsJudge[ref]!;
           const verdict = calibratedByRef.get(ref);
-          if (!verdict) continue; // no coverage from the model — leave pending
+          if (!verdict) {
+            unjudged++; // no coverage from the model — leave pending, but count it
+            continue;
+          }
           if (dryRun) {
             if (verdict.approve) approvedThisRun++;
             else rejectedThisRun++;
@@ -725,6 +864,8 @@ async function processDraft(
         }
       } catch (e) {
         judgeUnavailable = true;
+        unjudged += needsJudge.length;
+        judgeError = e instanceof Error ? e.message : String(e);
         logError('auto_publish', 'Judge unavailable — leaving remaining pending items untouched', e, {
           brief_id: draft.id,
           pending: needsJudge.length,
@@ -733,6 +874,18 @@ async function processDraft(
     }
   }
 
+  const silenceError = judgeSilenceError({
+    pendingCount: pending.length,
+    approved: approvedThisRun,
+    rejected: rejectedThisRun,
+    judgeError,
+  });
+  if (silenceError && !judgeError) {
+    logError('auto_publish', 'Judge decided nothing on a non-empty brief', new Error(silenceError), {
+      brief_id: draft.id,
+      pending: pending.length,
+    });
+  }
   const totalApproved = existingApproved + approvedThisRun;
   const title = draft.title_uk ?? draft.title_en ?? '–';
   // 0 pending + 0 approved is a true no-op (nothing to decide, nothing to report) —
@@ -759,11 +912,15 @@ async function processDraft(
       briefId: draft.id,
       date: draft.date,
       edition: draft.edition,
-      action: isSilentNoOp ? 'no_pending_no_approved' : 'left_draft',
+      // Nothing decided on a non-empty brief is a failure, not a quiet
+      // "left as a draft" — that reading is what hid the judge for eight nights.
+      action: isSilentNoOp ? 'no_pending_no_approved' : silenceError ? 'error' : 'left_draft',
       approved: approvedThisRun,
       rejected: rejectedThisRun,
       hardRejected,
+      unjudged,
       judgeUnavailable,
+      judgeError: silenceError ?? undefined,
     };
   }
 
@@ -776,7 +933,9 @@ async function processDraft(
       approved: approvedThisRun,
       rejected: rejectedThisRun,
       hardRejected,
+      unjudged,
       judgeUnavailable,
+      judgeError: silenceError ?? undefined,
     };
   }
 
@@ -806,7 +965,9 @@ async function processDraft(
     approved: approvedThisRun,
     rejected: rejectedThisRun,
     hardRejected,
+    unjudged,
     judgeUnavailable,
+    judgeError: silenceError ?? undefined,
   };
 }
 
@@ -839,7 +1000,7 @@ export async function runAutoPublish(
       status: 'skipped',
       durationMs: Date.now() - started,
     });
-    return { windowDrafts: 0, staleDrafts: 0, outcomes: [] };
+    return { windowDrafts: 0, staleDrafts: 0, awaitingReview: [], outcomes: [] };
   }
 
   const { count: staleCount, error: staleErr } = await db
@@ -879,6 +1040,7 @@ export async function runAutoPublish(
         approved: 0,
         rejected: 0,
         hardRejected: 0,
+        unjudged: 0,
         judgeUnavailable: false,
         error: e instanceof Error ? e.message : String(e),
       });
@@ -889,14 +1051,42 @@ export async function runAutoPublish(
     await sendMessage(chat.token, chat.chatId, formatStaleDraftsNote(staleCount ?? 0));
   }
 
+  // Judge failures are alerted before anything else: this is the notification
+  // whose absence let a broken judge run unnoticed for eight nights.
+  const judgeFailures = outcomes.flatMap((o) =>
+    o.judgeError
+      ? [{ date: o.date, edition: o.edition, pending: o.unjudged, reason: o.judgeError }]
+      : [],
+  );
+  if (!options.dryRun && judgeFailures.length > 0 && chat) {
+    await sendMessage(chat.token, chat.chatId, formatJudgeFailureAlert(judgeFailures));
+  }
+
+  const awaitingReview = await loadBriefsAwaitingReview(db);
+  if (!options.dryRun && awaitingReview.length > 0 && chat) {
+    await sendMessage(chat.token, chat.chatId, formatPendingReviewPing(awaitingReview));
+  }
+
+  const failedOutcomes = outcomes.filter((o) => o.action === 'error' || o.error || o.judgeError);
+  const runError = failedOutcomes.length
+    ? failedOutcomes
+        .map((o) => `${o.date} pack ${o.edition}: ${o.error ?? o.judgeError ?? 'failed'}`)
+        .join(' | ')
+    : undefined;
+
   await logPipelineRun(db, {
     date: logDate,
     stage: 'auto_publish',
-    status: 'ok',
+    // `failed` is the only non-ok terminal value pipeline_runs.status accepts
+    // (ok | failed | skipped), so a judge that decided nothing lands here and
+    // stops being indistinguishable from a clean sweep.
+    status: runError ? 'failed' : 'ok',
+    error: runError,
     durationMs: Date.now() - started,
     meta: {
       window_drafts: windowDrafts.length,
       stale_drafts: staleCount ?? 0,
+      awaiting_review: awaitingReview.length,
       outcomes: outcomes.map((o) => ({
         brief_id: o.briefId,
         date: o.date,
@@ -905,12 +1095,50 @@ export async function runAutoPublish(
         approved: o.approved,
         rejected: o.rejected,
         hard_rejected: o.hardRejected,
+        unjudged: o.unjudged,
         judge_unavailable: o.judgeUnavailable,
+        judge_error: o.judgeError ?? null,
       })),
       dry_run: options.dryRun,
     },
   });
 
-  return { windowDrafts: windowDrafts.length, staleDrafts: staleCount ?? 0, outcomes };
+  return {
+    windowDrafts: windowDrafts.length,
+    staleDrafts: staleCount ?? 0,
+    awaitingReview,
+    outcomes,
+  };
+}
+
+/**
+ * Draft briefs still holding at least one pending item — the human gate's
+ * backlog, reported every night regardless of what the judge did.
+ */
+async function loadBriefsAwaitingReview(db: PipelineDb): Promise<PendingReviewBrief[]> {
+  const { data, error } = await db
+    .from('brief_items')
+    .select('brief_id, briefs!inner(date, edition, status)')
+    .eq('review_status', 'pending')
+    .eq('briefs.status', 'draft');
+  if (error) {
+    logError('auto_publish', 'Awaiting-review count failed (non-fatal)', error);
+    return [];
+  }
+  const byBrief = new Map<string, PendingReviewBrief>();
+  for (const row of (data ?? []) as unknown as Array<{
+    brief_id: string;
+    briefs: { date: string; edition: number } | null;
+  }>) {
+    if (!row.briefs) continue;
+    const entry = byBrief.get(row.brief_id) ?? {
+      date: row.briefs.date,
+      edition: row.briefs.edition,
+      pending: 0,
+    };
+    entry.pending++;
+    byBrief.set(row.brief_id, entry);
+  }
+  return [...byBrief.values()].sort((a, b) => a.date.localeCompare(b.date) || a.edition - b.edition);
 }
 /* v8 ignore end */

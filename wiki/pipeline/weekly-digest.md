@@ -10,8 +10,8 @@ live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189,
 mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
 owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, 2026-08-10 fixes, weekly illustration B3 prompt readiness 2026-08-15
-Last updated: 2026-08-15
+Actions run `31324873875`, PR #209, 2026-08-10 fixes, B3 prompt readiness 2026-08-15, owner content audit + `src/lib/weekly-digest/seed-content.ts` 2026-08-16 (прод-дайджест `6cbcf0b3` live check)
+Last updated: 2026-08-16
 
 ---
 
@@ -46,6 +46,57 @@ Video / Release).
 (F3) — без нього застосування нового ранжування можна лише вимкнути редагуванням коду.
 (source: [audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md),
 `.env.example`)
+
+## Seed-контент історій (2026-08-16)
+
+Коли `WEEKLY_CONTENT_STUDIO_V2=off` (поточний дефолт), master-writer не запускається —
+і власник редагує рівно те, що записав composer. А composer записував заглушку:
+`body = summary`, `takeaway = why_matters`, `practical = null`. У прод-дайджесті
+`6cbcf0b3-187d-4d7d-9eb9-66bdff1c72d4` це давало **7/7 історій, де «Повний текст»
+дослівно дорівнював «Короткому опису», «Висновок» — «Чому це важливо», а «Практичний
+приклад» порожній**: 2 заповнені поля з 5, з них 2 — дублікати.
+(source: прод-`weekly_digest_revision_items` live check 2026-08-16)
+
+Причина не в LLM: щоденний айтем **уже** містив потрібний текст, а composer просто не
+вибирав ці колонки. `seedStoryContent` тепер мапить їх:
+
+| Поле weekly-історії | Джерело в `brief_items` | Фолбек |
+|---|---|---|
+| `body_*` | `body_md_*` (Markdown, рендериться `MarkdownBody`) | `deep_dive_*` → `summary_*` |
+| `practical_*` | `action_items_*` (до 2) | `when_to_use_*` з двомовним лід-іном → `null` |
+| `takeaway_*` | `takeaways_*` (до 3) | `null` |
+
+Модуль **нічого не генерує** — лише переносить уже схвалений людиною текст. Поля без
+джерела лишаються `null`, щоб власник дописав їх сам, а не бачив копію сусіднього поля.
+На тих самих 7 історіях фікс дає 5/5 заповнених полів без жодного дубля: `body` 271–1324
+символи замість 187–308, `practical` 91–199, `takeaway` 163–317.
+(source: `src/lib/weekly-digest/seed-content.ts`, `src/lib/social/composer.ts`, live seed
+replay проти прод-даних 2026-08-16)
+
+> Фікс застосовується до **нових** дайджестів. Уже створені ревізії імутабельні —
+> існуючий випуск треба або перескладати, або дописувати руками.
+
+## Перезбір відбору (2026-08-16)
+
+Відбір історій робився **один раз**, при створенні дайджесту. Випуск, зібраний старим
+селектором або до того, як денний бриф того ж тижня пройшов рев'ю, лишався замороженим
+назавжди. Кнопка **Rebuild selection** (Overview, лише owner) ганяє поточний селектор по
+тому самому тижню і мінтить нову активну ревізію.
+
+- RPC `rebuild_weekly_digest_selection` (міграція `20260816120000`, `service_role` only).
+  Ані `initialize_weekly_digest_revision_from_legacy` (працює лише коли `active_revision_id`
+  порожній), ані `create_service_weekly_digest_revision` (вимагає готової двомовної статті:
+  editor note, key takeaways, непорожні practical/takeaway на **кожній** історії) для цього
+  не годяться — перезібраний відбір це seed-стадія.
+- Логіка відбору спільна з нічним composer'ом (`selection-snapshot.ts`) — дві копії
+  розійшлись би, і кнопка почала б обирати не те, що обирає джоба.
+- **Руйнівна за задумом:** статус повертається в `in_review`, усі апрува (research, article,
+  зображення, соц) скидаються — інший набір історій їх більше не описує. Попередня ревізія
+  лишається в списку і відновлюється через Restore.
+- Перевірено наскрізь на тестовому випуску `ai-weekly-test-2026-07-24`: 34 кандидати → 24
+  eligible → 7 обраних, ревізія 3, 4 нові історії / 4 вибули, у всіх 7 усі поля різні й
+  заповнені (`body` 681–1329 символів, `practical` 144–241).
+  (source: live run 2026-08-16, прод-Supabase `mdiqfatpqczwqghwttpm`)
 
 ## Пайплайн генерації
 

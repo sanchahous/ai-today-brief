@@ -64,7 +64,6 @@ async function main(): Promise<void> {
       source_name: string;
       url: string;
       composite_score: number | null;
-      score_authority: number | null;
       score_cross_source: number | null;
       score_breadth: number | null;
       score_version: number | null;
@@ -76,7 +75,7 @@ async function main(): Promise<void> {
     const { data: articles, error: aErr } = await db
       .from('articles')
       .select(
-        'id,source_name,url,composite_score,score_authority,score_cross_source,score_breadth,score_version,cluster_id,mentions_count',
+        'id,source_name,url,composite_score,score_cross_source,score_breadth,score_version,cluster_id,mentions_count',
       )
       .in('id', articleIds);
     if (aErr) throw new Error(`weekly-digest articles: ${aErr.message}`);
@@ -109,7 +108,6 @@ async function main(): Promise<void> {
       sourceName: article.source_name,
       sourceUrl: article.url,
       compositeScore: article.composite_score,
-      authorityScore: article.score_authority,
       crossSourceScore: article.score_cross_source,
       breadthScore: article.score_breadth,
       scoreVersion: article.score_version,

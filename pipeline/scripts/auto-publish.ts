@@ -39,6 +39,7 @@ async function main(): Promise<void> {
   logEvent('info', 'auto_publish', 'Auto-publish sweep complete', {
     window_drafts: result.windowDrafts,
     stale_drafts: result.staleDrafts,
+    awaiting_review: result.awaitingReview.length,
     dry_run: options.dryRun,
   });
 
@@ -46,9 +47,23 @@ async function main(): Promise<void> {
     console.log(
       `${outcome.date} pack ${outcome.edition}: ${outcome.action} — approved=${outcome.approved} rejected=${outcome.rejected}` +
         (outcome.hardRejected > 0 ? ` (hard=${outcome.hardRejected})` : '') +
+        (outcome.unjudged > 0 ? ` unjudged=${outcome.unjudged}` : '') +
         (outcome.judgeUnavailable ? ' [judge unavailable]' : '') +
+        (outcome.judgeError ? ` [judge: ${outcome.judgeError}]` : '') +
         (outcome.error ? ` [error: ${outcome.error}]` : ''),
     );
+  }
+
+  // A silent judge used to leave the workflow green. Exit non-zero so the
+  // GitHub Actions run is red as well, not just the pipeline_runs row.
+  const failed = result.outcomes.filter((o) => o.action === 'error' || o.error || o.judgeError);
+  if (failed.length > 0) {
+    logError(
+      'auto_publish',
+      'Auto-publish sweep finished with failures',
+      new Error(failed.map((o) => `${o.date}: ${o.judgeError ?? o.error}`).join(' | ')),
+    );
+    process.exitCode = 1;
   }
 }
 

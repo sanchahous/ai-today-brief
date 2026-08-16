@@ -60,6 +60,7 @@ import {
   enqueueWeeklyGenerationAction,
   pauseWeeklyDigestAction,
   postponeWeeklyDigestAction,
+  rebuildWeeklySelectionAction,
   restoreWeeklyDigestRevisionAction,
   resumeWeeklyThreadsSequenceAction,
   reviewWeeklyArtifactAction,
@@ -1346,11 +1347,13 @@ function OverviewPanel({
   blockers,
   progress,
   canEdit,
+  canRebuildSelection,
 }: {
   workspace: WeeklyDigestWorkspace;
   blockers: ReturnType<typeof validateWeeklyDigestPreflight>['blockers'];
   progress: number;
   canEdit: boolean;
+  canRebuildSelection: boolean;
 }) {
   const unresolvedArtifacts = workspace.artifacts.filter(
     (artifact) => artifact.review_status === 'changes_requested',
@@ -1569,6 +1572,41 @@ function OverviewPanel({
               ? 'This test follows the same Monday review timing, but the database prevents any public publication.'
               : 'Monday is part of the review window. Editors can revise and re-approve until the automated 15:45 Kyiv preflight; publication begins at 16:00.'}
           </p>
+        </section>
+
+        <section className={PANEL} aria-labelledby="rebuild-heading">
+          <h2 id="rebuild-heading" className="text-lg font-bold text-white">
+            Rebuild selection
+          </h2>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Re-runs story selection over this editorial week with the current selector and seeds
+            each story from its daily item. Use it when the week gained approved stories after this
+            digest was composed, or after the selection rules changed.
+          </p>
+          {canRebuildSelection && canRestoreRevision ? (
+            <form action={rebuildWeeklySelectionAction} className="mt-4 grid gap-3">
+              <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+              <p className="rounded-xl border border-amber-400/25 bg-amber-400/8 p-3 text-xs leading-5 text-amber-100">
+                This replaces the active version. The digest returns to <b>in review</b> and every
+                approval — research, article, images, social — is cleared, because a different story
+                set no longer matches them. The current version stays in the list and can be
+                restored.
+              </p>
+              <div>
+                <ActionSubmitButton
+                  idleLabel="Rebuild selection"
+                  pendingLabel="Rebuilding…"
+                  className={SECONDARY}
+                />
+              </div>
+            </form>
+          ) : (
+            <p className="mt-4 text-sm text-slate-500">
+              {canRebuildSelection
+                ? 'This edition can no longer be edited.'
+                : 'Owner session required.'}
+            </p>
+          )}
         </section>
 
         <section className={PANEL} aria-labelledby="versions-heading">
@@ -4852,6 +4890,7 @@ export function WeeklyWorkspace({
           blockers={preflight.blockers}
           progress={progress}
           canEdit={canEdit}
+          canRebuildSelection={session.role === 'owner'}
         />
       ) : null}
       {activeTab === 'stories' ? <StoriesPanel workspace={workspace} canEdit={canEdit} /> : null}

@@ -4,7 +4,76 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-15
+Last updated: 2026-08-16
+
+## 2026-08-16 — Мовчазний суддя авто-публікації + кнопка перезбору відбору
+
+**Джерело:** прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-16 (`pipeline_runs`
+stage=`auto_publish` за 8 ранів, `item_reviews`, `brief_items`); пряма проба судді на брифі
+`9deed7d1-d426-46fd-9b9b-9a802bf9d945`; живий `auto-publish --dry-run` до і після фіксу.
+
+**Змінено:** [audits/2026-08-16-auto-publish-silent-judge](audits/2026-08-16-auto-publish-silent-judge.md)
+(нова), [weekly-digest](pipeline/weekly-digest.md), [weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[index](index.md), [now](now.md).
+
+**Код (гілка `fix/auto-publish-silent-judge`):** `pipeline/auto-publish.ts` — парсер конвертів
+(+ `returned`), `judgeResponseIssue`, `judgeSilenceError`, `formatJudgeFailureAlert`,
+`formatPendingReviewPing`, `status='failed'` + `error` у `pipeline_runs`, облік `unjudged`;
+`pipeline/llm-json.ts` — `validateSemantic` у ланцюжку провайдерів (перемикає модель на
+непридатній відповіді); `pipeline/scripts/auto-publish.ts` — exit code 1;
+`src/lib/weekly-digest/rebuild-selection.ts` + `selection-snapshot.ts` (спільний із composer)
++ `rebuildWeeklySelectionAction` + кнопка в Overview;
+`supabase/migrations/20260816120000_weekly_rebuild_selection.sql`.
+
+**Перевірено:** дефект відтворено на живій БД **до** фіксу (`left_draft approved=0 rejected=0`,
+`error=NULL`); модель відповідала правильно, але без конверта `{results:[…]}`. Після фіксу той
+самий бриф дає `published approved=1`. RPC перевірено викликом у транзакції з відкатом на
+прод-дайджесті `6cbcf0b3`; повний rebuild — наживо на **тестовому** `ai-weekly-test-2026-07-24`
+(ревізія 3, 7 історій, 4 нові / 4 вибули). 1434 unit-тести, `tsc`/`eslint`/`wiki:check` зелені.
+
+**Прод:** міграція `20260816120000` застосована; функція `security definer`, грант лише
+`service_role` (`anon`/`authenticated` не мають). Прод-випуск `6cbcf0b3` не перезбирався —
+це рішення власника через кнопку.
+
+**Не зроблено:** `pipeline_runs.status='error'` (як просив власник) неможливий без міграції —
+`pipeline_runs_status_check` дозволяє `ok/failed/skipped`; використано `failed`. Семантичний
+валідатор перемикає модель лише в HTTP-смузі; `gemini`/`cli` валідатора не приймають, там та
+сама перевірка дає чесну помилку після виклику.
+
+---
+
+## 2026-08-16 — Weekly відбір `weekly-editorial-v3` + seed-контент історій
+
+**Джерело:** аудит власника прод-прогону `05cc4e6a-a709-44ca-b56a-382f21c40292` (тиждень
+09–15.08); прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-16
+(`weekly_digest_selection_runs`, `weekly_digest_revision_items`, `articles.score_authority`);
+бектест `selectEditorialDigestItems` на реальному пулі.
+
+**Змінено:** [weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-digest](pipeline/weekly-digest.md), [weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[now](now.md).
+
+**Код (гілка `fix/weekly-selection-and-seed-content`):** новий `pipeline/source-authority.ts`
+(таблиця feed-trust переїхала з `rank.ts` без зміни поведінки daily + `publisherAuthority` за
+хостом призначення); `pipeline/weekly-digest.ts` — плато `recency` всередині тижня, evidence на
+authority видавця, corroboration за незалежними хостами цитат, diversity як штраф замість капу,
+greedy max-marginal вибір, `diversity_penalty`/`adjusted_score` у знімку кандидата;
+`src/lib/weekly-digest/seed-content.ts` + composer — seed історій із `body_md`/`takeaways`/
+`action_items`/`when_to_use` щоденного айтема.
+
+**Перевірено:** усі чотири дефекти відтворені на живій БД **до** фіксу (7/7 історій із
+`body = summary` і `takeaway = why`, кап на 68.1/67.4 проти обраних 63.9, evidence 17.2 однаково
+для HN і bearblog, corroboration 0 у 21/22). Після фіксу на тому самому пулі: recency 4.4–4.9
+(було 1.4–5.0), evidence 7.6–22.0 (було 14.4–18.0), corroboration > 0 у 3/33 (було 1/22),
+викинута капом новина повертається 7-ю позицією, IBM ALTK-Evolve (76.1) обходить bearblog (67.3).
+Seed-replay проти прод-даних — 5/5 полів без дублів у всіх 7 історіях. 1419 unit-тестів,
+`tsc`/`eslint`/`wiki:check` зелені.
+
+**Не зроблено:** наявні ревізії імутабельні — прод-дайджест `6cbcf0b3` лишається з порожніми
+полями, доки власник не перескладе випуск. Крос-джерельне звʼязування на етапі `fetch`
+(`mentions_count ≈ 1`) — окрема робота.
+
+---
 
 ## 2026-08-15 — Ілюстраційний стек #241–#265 у `main` + прод-міграції
 
