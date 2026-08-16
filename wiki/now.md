@@ -5,12 +5,26 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…16, Content Sim plan 2026-08-11,
 experimental Visual Affordance V10 owner review 2026-08-13, weekly illustration B1-fix 2026-08-15,
 owner weekly selection/content audit 2026-08-16, research corpus corroboration 2026-08-16,
-reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16
+reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16,
+Start / retry Content Studio silent no-op 2026-08-16
 Last updated: 2026-08-16
 
 ---
 
 ## Стан репозиторію
+
+- **Кнопка Start / retry Content Studio знову ставить паки після succeeded (2026-08-16),
+  гілка `fix/weekly-content-studio-retry`.** Живий клік 16.08 12:46 UTC на
+  `ai-weekly-2026-08-09` rev.3 записав `generation_queued`, але RPC повернув уже
+  `succeeded`/`waiting` рядки: ключ
+  `weekly-content-studio-v2.1:{digest}:{rev}:research:{item}` незмінний, а
+  `queue_weekly_digest_generation_job` скидає лише `failed`/`cancelled`. Кнопка тепер
+  викликає `retryWeeklyContentStudio`: нові jobs з `:retry:{uuid}`, in-flight слоти
+  пропускає, waiting `editorial_master` не дублює. Composer лишає стабільний ключ.
+  Після деплою натиснути кнопку на rev.3 — **не** Rebuild selection. Треба знову
+  Approve трьох паків.
+  (source: прод `weekly_digest_generation_jobs` live check 2026-08-16 12:46 UTC,
+  `src/lib/weekly-digest/orchestrator.ts`)
 
 - **Research pack шукає підтвердження в корпусі `articles` (2026-08-16), follow-up
   `fix/weekly-research-spa-and-page` (#270).** #268 змерджено (`7584d4f`), прод READY.

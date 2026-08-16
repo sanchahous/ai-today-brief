@@ -6,6 +6,25 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-16
 
+## 2026-08-16 — Start / retry Content Studio після succeeded jobs
+
+**Джерело:** клік власника 16.08 12:46 UTC на `ai-weekly-2026-08-09` rev.3
+(`5b1aa70f`); `weekly_digest_release_events.generation_queued` на вже
+`succeeded`/`waiting` jobs; [now](now.md).
+
+**Змінено:** [weekly-digest](pipeline/weekly-digest.md) (§ Start / retry),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md), [now](now.md).
+
+**Код (гілка `fix/weekly-content-studio-retry`):** `retryWeeklyContentStudio` ставить
+нові `research_pack` з `:retry:{uuid}`, якщо слот не in-flight; waiting master
+не дублюється. Composer лишає `startWeeklyContentStudio` зі стабільним ключем.
+
+**Не зроблено:** прод-перезбір паків (чекає деплою + клік власника); апруви паків;
+Rebuild selection.
+
+---
+
 ## 2026-08-16 — Research pack: PostgREST 1000 + SPA model cards
 
 **Джерело:** перезбір паків `ai-weekly-2026-08-09` rev.3 після #268 (jobs

@@ -5,7 +5,8 @@ Summary: як працює weekly-дайджест у проді: оркестр
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
 `supabase/migrations/20260804*`–`20260809*`, live checks 2026-08-04…16,
 editorial-voice overhaul, PDF page-cap, admin mobile-responsive,
-owner content audit + seed-content 2026-08-16, research corpus corroboration 2026-08-16
+owner content audit + seed-content 2026-08-16, research corpus corroboration 2026-08-16,
+Start / retry Content Studio after succeeded jobs 2026-08-16
 Last updated: 2026-08-16
 
 ---
@@ -258,10 +259,31 @@ configured budget rather than invented precision.
 `src/lib/weekly-digest/generation-control.ts`)
 
 Studio version **`weekly-content-studio-v2.1`** + research schema **`weekly-research-v3`** +
-master prompt **`weekly-master-v7`**: після деплою **Start / retry Content Studio** ставить
-нові `research_pack` jobs (нові idempotency keys) → треба знову Approve Top 3 → тоді master.
+master prompt **`weekly-master-v7`**. Бамп версії студії змінює стабільний ключ composer-старту;
+кнопка **Start / retry** більше не залежить від бампу — див. нижче.
 (source: `WEEKLY_CONTENT_STUDIO_VERSION`, `WEEKLY_RESEARCH_SCHEMA_VERSION`,
 `WEEKLY_MASTER_SPEC_VERSION`)
+
+### Content Studio retry after succeeded jobs (2026-08-16)
+
+Composer (`startWeeklyContentStudio`) ставить `research_pack` ×3 і `editorial_master` зі
+стабільним ключем `weekly-content-studio-v2.1:{digest}:{revision}:research:{item}` /
+`…:master`. RPC `queue_weekly_digest_generation_job` на конфлікті скидає лише
+`failed`/`cancelled`; для `succeeded` / `waiting` / `queued` / `running` повертає старий
+рядок. Тому другий клік кнопки після успішного пака був тихим no-op: 16.08 12:46 UTC на
+`ai-weekly-2026-08-09` rev.3 (`5b1aa70f`) з'явились `generation_queued` events, але jobs
+лишились `succeeded` / `waiting`. Per-job Retry теж не бере `succeeded`
+(`retry_weekly_digest_generation_job`).
+
+Адмін-кнопка тепер викликає `retryWeeklyContentStudio`: якщо слот Top 3 уже in-flight
+(`waiting`/`queued`/`dispatching`/`running`/`retry_scheduled`) — пропускає; інакше ставить
+новий рядок з `:retry:{uuid}`. Waiting `editorial_master` на цій ревізії не дублюється —
+він далі чекає 3 owner-approved packs. Succeeded master тут не переставляється (це кнопка
+**Regenerate master**). Після нового пака треба знову Approve Top 3. Історія старих jobs
+лишається.
+(source: прод `weekly_digest_generation_jobs` live check 2026-08-16 12:46 UTC,
+`src/lib/weekly-digest/orchestrator.ts`, `src/lib/weekly-digest/content-studio-queue.ts`,
+`src/app/admin/(cms)/weekly/actions.ts`)
 
 ### Content-quality hardening (`weekly-master-v7`, 2026-08-09)
 

@@ -4,7 +4,8 @@ Summary: головний зміст усієї wiki. Кожен рядок — 
 для будь-якого питання: спершу читаємо цей файл, потім релевантні сторінки.
 Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery fix
 2026-08-10, story-image rollout deduplication і three-concept illustration jury 2026-08-11,
-experimental Visual Affordance V10 owner review 2026-08-13, illustration B1-fix 2026-08-15
+experimental Visual Affordance V10 owner review 2026-08-13, illustration B1-fix 2026-08-15,
+Start / retry Content Studio after succeeded jobs 2026-08-16
 Last updated: 2026-08-16
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·

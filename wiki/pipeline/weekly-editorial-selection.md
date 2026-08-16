@@ -9,7 +9,8 @@ Postpone release feature 2026-08-10, experimental Visual Affordance V10 owner re
 weekly illustration P3 daily cover prompt 2026-08-15, owner selection audit + `weekly-editorial-v3`
 2026-08-16 (`pipeline/weekly-digest.ts`, `pipeline/source-authority.ts`,
 `src/lib/weekly-digest/seed-content.ts`, прод-прогін `05cc4e6a-a709-44ca-b56a-382f21c40292`),
-research corpus corroboration 2026-08-16 (`pipeline/story-identity.ts`)
+research corpus corroboration 2026-08-16 (`pipeline/story-identity.ts`),
+Start / retry Content Studio after succeeded jobs 2026-08-16
 Last updated: 2026-08-16
 
 ---
@@ -156,6 +157,10 @@ stored per candidate, so review reads «програв 0.8 після 5-балн
 лишаються, поки їх не перескорять. Research-паки Top 3
 з 2026-08-16 шукають sibling-сторінки вже в таблиці `articles` — це інший лічильник,
 див. [weekly-digest § Corpus corroboration](weekly-digest.md#corpus-corroboration-in-research-packs-2026-08-16).
+Retry Content Studio після `succeeded` паків (2026-08-16) ставить нові `research_pack`
+jobs; він не змінює кандидатів, ваги чи diversity `weekly-editorial-v3`.
+(source: `src/lib/weekly-digest/orchestrator.ts`,
+[weekly-digest § Start / retry](weekly-digest.md#content-studio-retry-after-succeeded-jobs-2026-08-16))
 > ⚠️ (needs verification) Гіпотеза: доки `mentions_count ≈ 1`, будь-який
 > **selection**-corroboration лишатиметься рідкісним. Див. [overview](../overview.md) §7 #6.
 
