@@ -47,6 +47,15 @@ describe('buildReaderProfileBlock', () => {
     expect(block).toContain('MCP');
     expect(block).toContain('Does NOT want');
   });
+
+  it('keeps daily-tool ownership in scope and still drops generic M&A', () => {
+    const block = buildReaderProfileBlock();
+    expect(block).toContain('EXCEPT when the deal changes a daily tool');
+    expect(block).toContain('Cursor');
+    expect(block).toContain('DISTINCT items');
+    const p = buildPrompt(pool, [], 6);
+    expect(p).toContain('daily-tool acquisition or close');
+  });
 });
 
 describe('buildPrompt', () => {

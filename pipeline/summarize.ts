@@ -416,6 +416,12 @@ Gemini and similar agentic IDEs. Wants concrete, actionable intelligence on:
 
 Does NOT want (these are NEWSWIRE noise, not a playbook — drop them even when viral):
   • company business: funding rounds, IPOs, valuations, M&A, earnings, stock
+    EXCEPT when the deal changes a daily tool the reader already uses
+    (Cursor, Claude Code, Codex, Copilot, Gemini CLI, Claude, ChatGPT):
+    an acquisition, close, shutdown, or owner change of THAT tool is in-scope.
+    Write the workflow consequence (lock-in, models, privacy, pricing), not the
+    deal size. An announce ("agrees to buy") and a close months later are
+    DISTINCT items — do not drop the close as a repeat of the announce.
   • executive hires & departures, org-chart drama
   • lawsuits, regulation, policy, geopolitics, export bans
   • AI-celebrity / entertainment stories (biopics, who-said-what)
@@ -486,11 +492,14 @@ YOUR JOB — a strict editor: every item must earn its place, but ship the FULL 
 4. Drop low value: pure punditry ("X says…"), clickbait, thin listicles, opinion without facts.
 5. PRACTICAL TEST — this brief is a PLAYBOOK, not a newswire. Keep an item ONLY if a working
    developer can DO something with it within a week: try a tool, run a command, adopt a
-   technique, cut token cost or spend, learn a concrete skill, or grab an opportunity
-   (free credits, a cert, a job). If the single honest takeaway is "be aware this happened"
-   — funding, hires, lawsuits, valuations, industry drama, scary-research curiosities — DROP it,
-   no matter how viral. The CANDIDATES are ranked partly by virality, which over-weights exactly
-   this drama; actively correct for it and favour the usable item over the loud one.
+   technique, cut token cost or spend, learn a concrete skill, grab an opportunity
+   (free credits, a cert, a job), OR adjust a daily tool because its owner, pricing,
+   ToS or availability just changed (Cursor / Claude Code / Codex / Copilot / Gemini CLI).
+   If the single honest takeaway is "be aware this happened" — funding of an unrelated
+   company, hires, lawsuits, valuations, industry drama, scary-research curiosities — DROP it,
+   no matter how viral. Do NOT drop a daily-tool acquisition or close: the takeaway is
+   "what changes in the IDE next week". The CANDIDATES are ranked partly by virality, which
+   over-weights drama; actively correct for it and favour the usable item over the loud one.
 6. Use the READER PROFILE above to filter for relevance — skip stories the reader
    explicitly does not want, even if they are technically about AI.
 7. From what remains, keep EVERY item that is genuinely new, distinct, and passes the

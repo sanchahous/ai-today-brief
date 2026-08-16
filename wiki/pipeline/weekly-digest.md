@@ -153,10 +153,13 @@ primary (`according to NVIDIA`, `self-reported`). Це не гейт апрув�
 (source: `editorial-llm.ts` `storySegmentPrompt`)
 
 Fetch на етапі `prepareArticles` тепер дедупить за канонічним URL (без `www`, UTM, trailing
-slash). Це прибирає дубль на кшталт `…/previewing-ultrafast` vs `…/ultrafast/`. **Не**
-клеїть різні URL однієї події і **не** оживає daily `mentions_count` — це лишається L2
-кластеризацією на `fetch`/`rank`.
-(source: `pipeline/fetch.ts`, [weekly-editorial-selection](weekly-editorial-selection.md))
+slash). Це прибирає дубль на кшталт `…/previewing-ultrafast` vs `…/ultrafast/`. Daily rank
+з 2026-08-16 додатково клеїть **ownership однієї події** (дві спільні сутності + лексика
+угоди) і `storyIdentityKeys`, тож офіційний пост Cursor і TechCrunch close більше не
+роз’їжджаються на `mentions_count = 1`. Решта різних URL без identity/ownership лишається
+окремими кластерами.
+(source: `pipeline/rank.ts`, `pipeline/reader-tools.ts`, `pipeline/fetch.ts`,
+[weekly-editorial-selection](weekly-editorial-selection.md))
 
 ## Durable generation control plane (implementation 2026-08-09)
 
