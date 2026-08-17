@@ -2759,3 +2759,21 @@ paid vision. При `rejectMetaphor` critic direction і patches ідуть у c
 storage з round/variant/concept/score labels і доступний у Visuals до approval. Approve прибирає
 review-only files та gallery metadata, залишаючи selected primary; artifact/review rows
 залишаються для audit.
+## 2026-08-17 — GitHub Actions dispatch 503 не ламає CMS
+
+**Джерело:** Vercel production runtime error `2087663833` (2026-08-17 15:37 UTC), production
+`weekly_digest_generation_jobs`, `src/lib/weekly-digest/github-dispatch.ts`.
+
+**Виявлено:** після створення linked `social_copy` retry GitHub Actions повернув HTTP 503. Job
+вже був durable `dispatching`, але server action пробросила відповідь API як Server Components
+render error, тому mobile CMS показала opaque React #441 і повторний клік міг створити ризик
+дублювання.
+
+**Змінено:** dispatcher робить до трьох коротких повторних спроб для 408/429/5xx і transport
+errors. Коли підтвердження так і не надійшло, зберігає fenced lease для штатного database
+recovery та повертає UI без RSC crash; non-transient 4xx/configuration errors не замовчуються.
+
+**Перевірено:** `github-dispatch.test.ts` — 7/7, включно з 503 → success та exhausted-503
+класифікацією.
+
+---
