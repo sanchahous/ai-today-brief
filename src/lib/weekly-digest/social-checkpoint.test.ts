@@ -37,6 +37,20 @@ function adaptation(channel: SocialChannel): WeeklySocialAdaptation {
       fallbackUsed: false,
       usage: { promptTokens: 1, outputTokens: 1, estimatedCostUsd: 0.01 },
     },
+    qualityReport: {
+      blocking: [],
+      warnings: [],
+      checkedAt: '2026-08-17T12:00:00.000Z',
+      critic: {
+        score: 100,
+        flags: [],
+        platformFitScore: 100,
+        platformFlags: [],
+        originalityScore: 100,
+        originalityFlags: [],
+        auditedAt: '2026-08-17T12:00:00.000Z',
+      },
+    },
   } as WeeklySocialAdaptation;
 }
 
@@ -99,6 +113,46 @@ describe('socialCopyCheckpointFromOutput', () => {
       adaptations: { x: adaptation('x') },
     } as unknown as Json;
     expect(socialCopyCheckpointFromOutput(output, inputHash)).toBeNull();
+  });
+
+  it('does not restore blocker-filled copy as completed channel work', () => {
+    const blocked = adaptation('telegram');
+    blocked.qualityReport!.blocking.push({ code: 'critic_flag', message: 'Unsupported claim.' });
+    const output = socialCopyCheckpointOutput(
+      checkpoint({ adaptations: { telegram: blocked, x: adaptation('x') } }),
+    ) as unknown as Json;
+
+    expect(socialCopyCheckpointFromOutput(output, inputHash)?.adaptations).toEqual({
+      x: adaptation('x'),
+    });
+  });
+
+  it('invalidates rendered Instagram slides when Instagram copy needs repair', () => {
+    const blockedInstagram = adaptation('instagram');
+    blockedInstagram.qualityReport!.blocking.push({
+      code: 'platform_fit',
+      message: 'Carousel contract failed.',
+    });
+    const output = socialCopyCheckpointOutput(
+      checkpoint({
+        adaptations: { instagram: blockedInstagram },
+        instagramAssets: [
+          {
+            artifactId: 'slide-1',
+            storagePath: 'slide-1.jpg',
+            slideIndex: 1,
+            width: 1080,
+            height: 1350,
+            bytes: 123,
+            mimeType: 'image/jpeg',
+          },
+        ],
+      }),
+    ) as unknown as Json;
+
+    const restored = socialCopyCheckpointFromOutput(output, inputHash);
+    expect(restored?.adaptations).toEqual({});
+    expect(restored?.instagramAssets).toEqual([]);
   });
 });
 

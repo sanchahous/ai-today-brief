@@ -1609,7 +1609,8 @@ function masterStoriesFromRevision(
       persistedStories.find((story) => text(story.revisionItemId) === item.id) ??
       persistedStories[index] ??
       {};
-    const fromStored = (field: string, fallback: string) => firstNonEmptyText(stored[field], fallback) ?? '';
+    const fromStored = (field: string, fallback: string) =>
+      firstNonEmptyText(stored[field], fallback) ?? '';
     const headline = fromStored('headline', localized(item.title_en, item.title_uk));
     const summary = fromStored('summary', localized(item.summary_en, item.summary_uk));
     return {
@@ -1636,8 +1637,7 @@ function masterArticleFromArtifact(
   locale: 'en' | 'uk',
 ): WeeklyArticleMaster {
   const content = asRecord(artifact.content);
-  const localizedRevision = (en: string | null, uk: string | null) =>
-    locale === 'uk' ? uk : en;
+  const localizedRevision = (en: string | null, uk: string | null) => (locale === 'uk' ? uk : en);
   const artifactTakeaways = [content.keyTakeaways, content.key_takeaways]
     .map((value) => stringArray(value))
     .find((value) => value.length > 0);
@@ -2041,6 +2041,40 @@ export function computeSocialCopyCheckpointHash(input: {
     .digest('hex');
 }
 
+/** The writer and independent critic receive the same owner-approved article snapshot. */
+export function weeklySocialArticleFacts(
+  bundle: WeeklyMasterBundle,
+  locale: SocialLocale,
+): string[] {
+  const article = locale === 'uk' ? bundle.uk : bundle.en;
+  return [
+    ...new Set(
+      [
+        article.title,
+        article.standfirst,
+        article.theme,
+        article.intro,
+        article.editorNote,
+        ...article.keyTakeaways,
+        article.conclusion,
+        ...article.stories.flatMap((story) => [
+          story.headline,
+          story.summary,
+          story.hook,
+          story.body,
+          story.why,
+          story.practical,
+          story.limitation,
+          story.takeaway,
+          story.editorsView,
+        ]),
+      ]
+        .map((fact) => fact?.trim())
+        .filter((fact): fact is string => Boolean(fact)),
+    ),
+  ];
+}
+
 async function loadSocialCopyCheckpoint(
   job: ClaimedGenerationJob,
   expectedHash: string,
@@ -2145,14 +2179,30 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
   const context = await loadGenerationContext(job);
   const bundle = masterBundleFromArtifacts(context);
   const locales = await localeMap();
-  const sourceFacts = context.items
-    .flatMap((item) => [
-      item.title_en,
-      item.summary_en,
-      item.why_en ?? '',
-      ...approvedFactsForItem(item).map((claim) => claim.text),
-    ])
-    .filter(Boolean);
+  const approvedClaimFacts = context.items.flatMap((item) =>
+    approvedFactsForItem(item).map((claim) => claim.text),
+  );
+  const sourceFactsByLocale: Record<SocialLocale, string[]> = {
+    en: [
+      ...new Set(
+        [
+          ...weeklySocialArticleFacts(bundle, 'en'),
+          ...context.items.flatMap((item) => [item.title_en, item.summary_en, item.why_en ?? '']),
+          ...approvedClaimFacts,
+        ].filter(Boolean),
+      ),
+    ],
+    uk: [
+      ...new Set(
+        [
+          ...weeklySocialArticleFacts(bundle, 'uk'),
+          ...context.items.flatMap((item) => [item.title_uk, item.summary_uk, item.why_uk ?? '']),
+          ...approvedClaimFacts,
+        ].filter(Boolean),
+      ),
+    ],
+  };
+  const sourceFacts = [...new Set([...sourceFactsByLocale.en, ...sourceFactsByLocale.uk])];
   const checkpointHash = computeSocialCopyCheckpointHash({ bundle, sourceFacts, locales });
   const restored = await loadSocialCopyCheckpoint(job, checkpointHash);
   const checkpointSourceJobIds = [...new Set([job.id, ...(restored?.sourceJobIds ?? [])])];
@@ -2198,8 +2248,15 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
   for (const channel of SOCIAL_CHANNELS) {
     const cached = checkpoint.adaptations[channel];
     if (cached) {
-      adaptations.push(cached);
-      continue;
+      const duplicateIssues = findBlindCrossPosts([...adaptations, cached]).get(channel) ?? [];
+      if (duplicateIssues.length === 0) {
+        adaptations.push(cached);
+        continue;
+      }
+      // Preserve clean earlier channels and regenerate only the later copy
+      // that violates channel differentiation.
+      delete checkpoint.adaptations[channel];
+      if (channel === 'instagram') checkpoint.instagramAssets = [];
     }
     const locale = locales.get(channel)!;
     const completedChannels = adaptations.length;
@@ -2223,13 +2280,14 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       bundle,
       trackedUrl,
       scheduledFor: nextWeeklyScheduledForChannel(channel, context.digest.week_end, new Date()),
-      sourceFacts,
+      sourceFacts: sourceFactsByLocale[locale],
       assets,
       altText:
         locale === 'uk'
           ? `Обкладинка тижневого дайджесту: ${bundle.uk.title}`
           : `Weekly Digest cover: ${bundle.en.title}`,
       db: getSupabaseAdmin(),
+      avoidCopies: adaptations.filter((draft) => draft.locale === locale),
     });
     adaptations.push(adaptation);
     checkpoint.adaptations[channel] = adaptation;
@@ -2305,6 +2363,16 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
         },
       });
     }
+  }
+  const unresolvedChannels = adaptations.flatMap((adaptation) => {
+    const blocking = adaptation.qualityReport?.blocking ?? [];
+    const duplicates = findBlindCrossPosts(adaptations).get(adaptation.channel) ?? [];
+    return blocking.length || duplicates.length ? [adaptation.channel] : [];
+  });
+  if (unresolvedChannels.length > 0) {
+    throw new Error(
+      `[weekly-generation] social approval boundary rejected: ${unresolvedChannels.join(', ')}`,
+    );
   }
   // Signed URLs are intentionally not the durable part of a channel
   // checkpoint. Refresh them from current artifacts before persistence so a
@@ -2416,11 +2484,11 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
   const db = getSupabaseAdmin();
   const generationVersion = `social-v3:${job.revision_id}`;
   const sourceBriefItemId = context.items[0]?.brief_item_id ?? null;
-  let socialPackage: { id: string } | null = null;
+  let socialPackage: { id: string; status: string } | null = null;
   if (checkpoint.socialPackageId) {
     const { data, error } = await db
       .from('social_packages')
-      .select('id')
+      .select('id,status')
       .eq('id', checkpoint.socialPackageId)
       .eq('weekly_digest_id', job.weekly_digest_id)
       .eq('weekly_digest_revision_id', job.revision_id)
@@ -2433,7 +2501,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
   if (!socialPackage) {
     let existingPackageQuery = db
       .from('social_packages')
-      .select('id')
+      .select('id,status')
       .eq('kind', 'weekly_digest')
       .eq('source_date', context.digest.week_end)
       .eq('generation_version', generationVersion)
@@ -2465,12 +2533,27 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
         title: bundle.en.title,
         generation_version: generationVersion,
       })
-      .select('id')
+      .select('id,status')
       .single();
     if (error || !data) {
       throw new Error(`[weekly-generation] social package: ${error?.message ?? 'missing'}`);
     }
     socialPackage = data;
+  }
+  const editablePackageStatuses = new Set(['draft', 'in_review', 'changes_requested', 'failed']);
+  if (!editablePackageStatuses.has(socialPackage.status)) {
+    throw new Error(
+      `[weekly-generation] refusing to replace ${socialPackage.status} social package ${socialPackage.id}`,
+    );
+  }
+  if (socialPackage.status !== 'draft') {
+    const { error } = await db
+      .from('social_packages')
+      .update({ status: 'draft' })
+      .eq('id', socialPackage.id)
+      .eq('status', socialPackage.status);
+    if (error) throw new Error(`[weekly-generation] social package reopen: ${error.message}`);
+    socialPackage.status = 'draft';
   }
   checkpoint.socialPackageId = socialPackage.id;
   await saveSocialCopyCheckpoint(tracker, checkpoint, 'package', 90);
@@ -2536,6 +2619,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
   type PersistedPost = {
     id: string;
     channel: string;
+    status: string;
     locale: string | null;
     format: string | null;
     post_text: string | null;
@@ -2546,9 +2630,36 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
     content_version: number;
   };
   const postSelection =
-    'id,channel,locale,format,post_text,content_parts,first_comment,quality_report,content_hash,content_version';
+    'id,channel,status,locale,format,post_text,content_parts,first_comment,quality_report,content_hash,content_version';
+  const editablePostStatuses = new Set(['draft', 'in_review', 'changes_requested', 'failed']);
+  const rowAtVersion = (
+    row: (typeof rows)[number],
+    draft: WeeklySocialAdaptation,
+    contentVersion: number,
+  ) => {
+    const contentHash = socialContentHash({
+      channel: draft.channel,
+      locale: draft.locale,
+      format: draft.format,
+      text: draft.text,
+      contentParts: draft.contentParts,
+      firstComment: draft.firstComment,
+      assets: draft.assets,
+      altText: draft.altText,
+      scheduledFor: draft.scheduledFor,
+      contentVersion,
+    });
+    return {
+      ...row,
+      content_version: contentVersion,
+      content_hash: contentHash,
+      idempotency_key: `${socialPackage.id}:${draft.channel}:${contentHash.slice(0, 16)}`,
+    };
+  };
   const posts: PersistedPost[] = [];
-  for (const [index, row] of rows.entries()) {
+  for (const [index, initialRow] of rows.entries()) {
+    const draft = adaptations[index]!;
+    let row = initialRow;
     let post: PersistedPost | null = null;
     const checkpointPostId = checkpoint.postIds[row.channel];
     if (checkpointPostId) {
@@ -2563,6 +2674,48 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
         throw new Error(`[weekly-generation] ${row.channel} post checkpoint: ${error.message}`);
       }
       post = data as PersistedPost | null;
+    }
+    if (post) {
+      if (!editablePostStatuses.has(post.status)) {
+        throw new Error(
+          `[weekly-generation] refusing to replace ${post.status} ${row.channel} post ${post.id}`,
+        );
+      }
+      const currentVersion = Math.max(1, post.content_version ?? 1);
+      const sameVersionRow = rowAtVersion(row, draft, currentVersion);
+      const reportChanged =
+        JSON.stringify(post.quality_report) !== JSON.stringify(sameVersionRow.quality_report);
+      const contentChanged = post.content_hash !== sameVersionRow.content_hash;
+      if (contentChanged || reportChanged) {
+        row = rowAtVersion(row, draft, currentVersion + 1);
+        const { data, error } = await db
+          .from('social_posts')
+          .update(row)
+          .eq('id', post.id)
+          .eq('package_id', socialPackage.id)
+          .select(postSelection)
+          .single();
+        if (error || !data) {
+          throw new Error(
+            `[weekly-generation] ${row.channel} social repair: ${error?.message ?? 'missing'}`,
+          );
+        }
+        post = data as PersistedPost;
+        checkpoint.reviewedPostIds = checkpoint.reviewedPostIds.filter((id) => id !== post!.id);
+      } else if (post.status !== 'draft' && post.status !== 'in_review') {
+        const { data, error } = await db
+          .from('social_posts')
+          .update({ status: 'draft' })
+          .eq('id', post.id)
+          .select(postSelection)
+          .single();
+        if (error || !data) {
+          throw new Error(
+            `[weekly-generation] ${row.channel} social reopen: ${error?.message ?? 'missing'}`,
+          );
+        }
+        post = data as PersistedPost;
+      }
     }
     if (!post) {
       const { data, error } = await db
@@ -2590,23 +2743,24 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
     }
 
     checkpoint.postIds[row.channel] = post.id;
-    let generatedReviewExists = checkpoint.reviewedPostIds.includes(post.id);
-    if (!generatedReviewExists) {
-      let generatedReviewQuery = db
-        .from('social_post_reviews')
-        .select('id')
-        .eq('social_post_id', post.id)
-        .eq('action', 'generated')
-        .eq('content_version', post.content_version);
-      generatedReviewQuery = post.content_hash
-        ? generatedReviewQuery.eq('content_hash', post.content_hash)
-        : generatedReviewQuery.is('content_hash', null);
-      const { data, error } = await generatedReviewQuery.limit(1).maybeSingle();
-      if (error) {
-        throw new Error(`[weekly-generation] ${row.channel} review lookup: ${error.message}`);
-      }
-      generatedReviewExists = Boolean(data);
+    let generatedReviewQuery = db
+      .from('social_post_reviews')
+      .select('id')
+      .eq('social_post_id', post.id)
+      .eq('action', 'generated')
+      .eq('content_version', post.content_version);
+    generatedReviewQuery = post.content_hash
+      ? generatedReviewQuery.eq('content_hash', post.content_hash)
+      : generatedReviewQuery.is('content_hash', null);
+    const { data: generatedReview, error: generatedReviewError } = await generatedReviewQuery
+      .limit(1)
+      .maybeSingle();
+    if (generatedReviewError) {
+      throw new Error(
+        `[weekly-generation] ${row.channel} review lookup: ${generatedReviewError.message}`,
+      );
     }
+    const generatedReviewExists = Boolean(generatedReview);
     if (!generatedReviewExists) {
       const { error } = await db.from('social_post_reviews').insert({
         social_post_id: post.id,
@@ -2633,6 +2787,17 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       checkpoint,
       'posts',
       Math.round(90 + ((index + 1) / rows.length) * 9),
+    );
+  }
+  const unreadyPosts = posts.filter((post) => {
+    const report = asRecord(post.quality_report);
+    return !Array.isArray(report.blocking) || report.blocking.length > 0;
+  });
+  if (unreadyPosts.length > 0) {
+    throw new Error(
+      `[weekly-generation] refusing to expose blocker-filled social review: ${unreadyPosts
+        .map((post) => post.channel)
+        .join(', ')}`,
     );
   }
   const [{ error: postsReadyError }, { error: packageReadyError }] = await Promise.all([
@@ -2666,12 +2831,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
     output: {
       social_package_id: socialPackage.id,
       post_ids: posts.map((post) => post.id),
-      blocked_channels: posts
-        .filter((post) => {
-          const report = asRecord(post.quality_report);
-          return Array.isArray(report.blocking) && report.blocking.length > 0;
-        })
-        .map((post) => post.channel),
+      blocked_channels: [],
     },
   };
 }
@@ -3628,8 +3788,13 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
     progressTotal: 100,
     message: 'Saving the selected illustration and alternate variants',
   });
-  const { encodeSiteWebp, SITE_IMAGE_CONTENT_TYPE, SITE_IMAGE_EXTENSION, STORY_IMAGE_HEIGHT, STORY_IMAGE_WIDTH } =
-    await import('@/lib/encode-site-image');
+  const {
+    encodeSiteWebp,
+    SITE_IMAGE_CONTENT_TYPE,
+    SITE_IMAGE_EXTENSION,
+    STORY_IMAGE_HEIGHT,
+    STORY_IMAGE_WIDTH,
+  } = await import('@/lib/encode-site-image');
   const processImage = (buffer: Buffer) =>
     encodeSiteWebp(buffer, {
       width: STORY_IMAGE_WIDTH,

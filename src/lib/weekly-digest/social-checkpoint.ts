@@ -44,7 +44,14 @@ function adaptationsFrom(value: unknown): Partial<Record<SocialChannel, WeeklySo
   return Object.fromEntries(
     SOCIAL_CHANNELS.flatMap((channel) => {
       const adaptation = record(candidate[channel]);
-      return adaptation.channel === channel && typeof adaptation.text === 'string'
+      const quality = record(adaptation.qualityReport);
+      const critic = record(quality.critic);
+      const approvalReady =
+        Array.isArray(quality.blocking) &&
+        quality.blocking.length === 0 &&
+        typeof critic.auditedAt === 'string' &&
+        Boolean(critic.auditedAt);
+      return adaptation.channel === channel && typeof adaptation.text === 'string' && approvalReady
         ? [[channel, candidate[channel] as WeeklySocialAdaptation] as const]
         : [];
     }),
@@ -104,12 +111,15 @@ export function socialCopyCheckpointFromOutput(
   ) {
     const tokens = tokensFrom(stored.tokens);
     if (!tokens) return null;
+    const adaptations = adaptationsFrom(stored.adaptations);
     return {
       schemaVersion: SOCIAL_COPY_CHECKPOINT_SCHEMA_VERSION,
       inputHash: expectedHash,
       tokens,
-      adaptations: adaptationsFrom(stored.adaptations),
-      instagramAssets: instagramAssetsFrom(stored.instagramAssets),
+      adaptations,
+      // Carousel images are derived from the Instagram copy. If that copy did
+      // not pass the approval boundary, its downstream assets are stale too.
+      instagramAssets: adaptations.instagram ? instagramAssetsFrom(stored.instagramAssets) : [],
       linkedinDocumentArtifactId:
         typeof stored.linkedinDocumentArtifactId === 'string'
           ? stored.linkedinDocumentArtifactId

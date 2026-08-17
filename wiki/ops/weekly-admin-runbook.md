@@ -254,8 +254,17 @@ prompt history; Approve override використовуй лише якщо оч
 
 У **Social** натисни **Generate social package** (або **Regenerate social package**, якщо вже є
 failed package). Це ставить **один** `social_copy` job для Telegram, Facebook, X, Threads,
-LinkedIn та Instagram — не шість незалежних кліків. Дочекайся `succeeded`, відкрий картку кожного
-каналу, за потреби відредагуй і натисни **Save & approve** для її потрібної locale.
+LinkedIn та Instagram — не шість незалежних кліків. Дочекайся `succeeded`: до `in_review` тепер
+доходить лише повний пакет без blocking checks. Картка показує `Ready for review · no blockers`;
+переглянь текст, за потреби відредагуй і натисни **Save & approve** для потрібної locale.
+
+Якщо конкретний канал не проходить critic/platform/originality gate, worker сам перевіряє інші
+кандидати й робить до трьох точкових repair rounds. Уже чисті канали записані в checkpoint і не
+генеруються повторно. Job, який вичерпав repair, лишається failed/draft і не вивантажує проблемну
+копію на owner approval. Для старих пакетів diagnostics показані компактним amber статусом;
+детальний список відкривається через **Quality checks**, але не дублюється червоною стіною.
+(source: `src/lib/weekly-digest/social-adapter.ts`,
+`src/lib/weekly-digest/social-checkpoint.ts`, `src/components/admin/weekly-workspace.tsx`)
 
 Якщо job впав після ~90% з `Cannot read properties of undefined (reading 'map')`, не переписуй
 шість постів: це був несумісний normalized article artifact на LinkedIn document step, а не

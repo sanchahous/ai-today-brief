@@ -6,6 +6,31 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-17
 
+## 2026-08-17 — Approval-ready Social repair boundary
+
+**Джерело:** owner screenshot Social tab; production package
+`612df95c-9c67-4db8-8f4b-209584d9ed68` / `social_posts` quality reports;
+`src/lib/weekly-digest/social-adapter.ts`, `generation-worker.ts`, `social-checkpoint.ts`.
+
+**Виявлено:** всі шість posts стояли `in_review` із 3–12 blockers. Worker запускав quality
+audit, але persistence наприкінці безумовно переводив `draft` у `in_review`. Critic отримував
+Instagram/Threads без contract markers; all-zero/no-flags template проходив parser; writer і
+critic мали різні fact snapshots. UI двічі розгортав ті самі blockers червоними списками.
+
+**Змінено:** до трьох bounded writer repair rounds із послідовним audit кандидатів; нативна
+serialization; спільний approved fact snapshot; fail-closed rejection невалідного critic output;
+cross-post repair; checkpoints приймають лише blocker-free channels. Existing editable posts
+ремонтуються in place з новою content version/review, а package переходить у `in_review` лише
+коли всі шість reports clean. Social UI показує green readiness, а legacy diagnostics — у
+згорнутому amber блоці.
+
+**Wiki:** оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md), [index](index.md).
+
+**Перевірки на момент запису:** targeted Vitest 39/39, `npm run typecheck`, `git diff --check`
+green; production recovery чекає merge/deploy.
+
 ## 2026-08-17 — LinkedIn native-document 7-page overflow recovery
 
 **Джерело:** production `social_copy` jobs

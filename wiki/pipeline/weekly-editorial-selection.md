@@ -40,9 +40,10 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > retries an already-created worker request and keeps an unconfirmed lease fenced; it does not
 > change this selector's candidates, weights, ranks, diversity, or approval state.
 > (source: `src/lib/weekly-digest/github-dispatch.ts`)
-> Staged social-copy checkpoints (2026-08-17) are downstream persistence only: linked retries
-> reuse writer/critic, Instagram, LinkedIn and saved post stages for the same approved source
-> hash; they do not change candidates, weights, ranks, diversity, or editorial approval state.
+> Staged social-copy checkpoints and the approval-ready Social boundary (2026-08-17) are
+> downstream persistence/quality controls: linked retries reuse only blocker-free channel copy,
+> while failed channels are repaired against the same approved article. They do not change
+> candidates, weights, ranks, diversity, or editorial approval state.
 > (source: `src/lib/weekly-digest/social-checkpoint.ts`,
 > `src/lib/weekly-digest/generation-worker.ts`)
 > LinkedIn 7-page bounds (2026-08-17) clip only presentation copy inside fixed native-document

@@ -1805,8 +1805,8 @@ function ResearchPanel({
           <li>
             Click <span className="font-semibold text-white">Start / retry Content Studio</span> —
             generates the three research packs, or queues new jobs if the previous ones already
-            succeeded. In-flight jobs and a waiting master are left in place. You must Approve
-            the new packs again.
+            succeeded. In-flight jobs and a waiting master are left in place. You must Approve the
+            new packs again.
           </li>
           <li>
             When each pack shows <span className="font-semibold text-white">ready</span> /{' '}
@@ -2184,7 +2184,9 @@ function ResearchPanel({
                 className={SECONDARY}
               />
             ) : (
-              <p className="text-xs text-slate-500">Owner or editor session required to attach it.</p>
+              <p className="text-xs text-slate-500">
+                Owner or editor session required to attach it.
+              </p>
             )}
           </form>
         </section>
@@ -3128,8 +3130,8 @@ function VisualsPanel({
               Story illustrations
             </h2>
             <p className="mt-2 text-sm text-slate-400">
-              Copy a concept, generate the image in your tool, then upload it on the same card.
-              Each visual must depict that news item, not generic AI decoration.
+              Copy a concept, generate the image in your tool, then upload it on the same card. Each
+              visual must depict that news item, not generic AI decoration.
             </p>
             <p
               className={`mt-2 text-xs font-bold ${promptPromotionClass(promptPromotion)}`}
@@ -3186,10 +3188,7 @@ function VisualsPanel({
                     <p className="text-sm font-bold text-white">
                       {item.rank}. {item.title_en}
                     </p>
-                    <p
-                      className="mt-1 text-xs text-slate-400"
-                      data-testid="story-prompt-readiness"
-                    >
+                    <p className="mt-1 text-xs text-slate-400" data-testid="story-prompt-readiness">
                       {promptReadiness.label}
                       {promptReadiness.detail ? ` · ${promptReadiness.detail}` : ''}
                     </p>
@@ -3485,23 +3484,18 @@ function SocialPanel({
               {!enabled ? <StatusPill value="paused" /> : null}
             </div>
             {hasQualityBlockers ? (
-              <div className="mt-4 rounded-xl border border-red-400/30 bg-red-400/10 p-3">
-                <p className="text-sm font-bold text-red-100">
-                  {quality.blocking} quality blocker
-                  {quality.blocking === 1 ? '' : 's'} — Save & approve is disabled until fixed.
+              <div
+                className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/6 px-3 py-2.5"
+                role="status"
+              >
+                <p className="text-sm font-semibold text-amber-100">
+                  Generation repair needed · {quality.blocking} check
+                  {quality.blocking === 1 ? '' : 's'}
                 </p>
-                <ul className="mt-2 grid gap-1 text-xs leading-5 text-red-100/90">
-                  {quality.items
-                    .filter((item) => item.blocking)
-                    .map((item) => (
-                      <li key={`banner-${item.key}`}>
-                        • {item.message}
-                        {item.code === 'schedule_past'
-                          ? ' Set Scheduled time in Kyiv to a future slot, then Save draft.'
-                          : null}
-                      </li>
-                    ))}
-                </ul>
+                <p className="mt-1 text-xs leading-5 text-slate-400">
+                  This draft is held outside approval until the channel passes validation. Technical
+                  details are collapsed under Quality checks.
+                </p>
               </div>
             ) : null}
             {channel === 'threads' && post.status === 'needs_reconciliation' ? (
@@ -3899,44 +3893,55 @@ function SocialPanel({
                 </div>
 
                 <div className="rounded-xl border border-white/10 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-white">Quality checks</p>
-                    <span
-                      className={
-                        quality.blocking
-                          ? 'text-xs font-bold text-red-300'
-                          : 'text-xs font-bold text-emerald-300'
-                      }
-                    >
-                      {quality.blocking} blockers · {quality.warnings} warnings
-                    </span>
-                  </div>
                   {quality.items.length ? (
-                    <ul className="mt-3 grid gap-2 text-xs leading-5 text-slate-400">
-                      {quality.items.map((item) => (
-                        <li
-                          key={item.key}
-                          className={`rounded-lg border p-2.5 ${
-                            item.blocking
-                              ? 'border-red-400/25 bg-red-400/8 text-red-100'
-                              : 'border-white/8 text-slate-400'
-                          }`}
+                    <details>
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-bold text-white marker:content-none">
+                        <span>Quality checks</span>
+                        <span
+                          className={
+                            quality.blocking
+                              ? 'text-xs font-semibold text-amber-200'
+                              : 'text-xs font-semibold text-slate-400'
+                          }
                         >
-                          <p>
-                            {item.blocking ? 'Blocker: ' : '• '}
-                            {item.message}
-                          </p>
-                          {item.span ? (
-                            <p className="mt-1 text-red-200">Exact span: “{item.span}”</p>
-                          ) : null}
-                          {item.suggestedFix ? (
-                            <p className="mt-1 text-cyan-200">Suggested fix: {item.suggestedFix}</p>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
+                          {quality.blocking
+                            ? `${quality.blocking} repair checks`
+                            : `${quality.warnings} notes`}
+                        </span>
+                      </summary>
+                      <ul className="mt-3 grid gap-2 text-xs leading-5 text-slate-400">
+                        {quality.items.map((item) => (
+                          <li
+                            key={item.key}
+                            className={`rounded-lg border p-2.5 ${
+                              item.blocking
+                                ? 'border-amber-300/20 bg-amber-300/5 text-amber-50'
+                                : 'border-white/8 text-slate-400'
+                            }`}
+                          >
+                            <p>
+                              {item.blocking ? 'Repair check: ' : '• '}
+                              {item.message}
+                            </p>
+                            {item.span ? (
+                              <p className="mt-1 text-amber-100">Exact span: “{item.span}”</p>
+                            ) : null}
+                            {item.suggestedFix ? (
+                              <p className="mt-1 text-cyan-200">
+                                Suggested fix: {item.suggestedFix}
+                              </p>
+                            ) : null}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
                   ) : (
-                    <p className="mt-3 text-xs text-slate-500">No reported quality issues.</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-bold text-white">Quality checks</p>
+                      <span className="text-xs font-semibold text-emerald-300">
+                        Ready for review · no blockers
+                      </span>
+                    </div>
                   )}
                 </div>
 
