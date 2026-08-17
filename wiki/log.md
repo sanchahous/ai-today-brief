@@ -4,7 +4,31 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-16
+Last updated: 2026-08-17
+
+## 2026-08-17 — Master quality report carry-over при Restore
+
+**Джерело:** прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-17 (`weekly_digests`,
+`weekly_digest_revisions`, `weekly_digest_artifacts`, `weekly_digest_generation_jobs`,
+`weekly_digest_release_events` на `6cbcf0b3-187d-4d7d-9eb9-66bdff1c72d4`); власник побачив
+«Master quality report is missing» після успішного `editorial_master`.
+
+**Змінено:** [weekly-digest § Master quality report carry-over при Restore](pipeline/weekly-digest.md#master-quality-report-carry-over-при-restore-2026-08-17)
+(нова секція), [weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md).
+
+**Код (гілка `fix/weekly-quality-report-carryover`):**
+`src/lib/weekly-digest/quality-report-carryover.ts` (новий) —
+`findOrphanedQualityReport` / `carryOverOrphanedQualityReport`, обидва через RPC
+`save_weekly_digest_artifact` (не raw `UPDATE` — `revision_id` immutable, перевірено наживо);
+`src/lib/weekly-digest/admin-data.ts` — нове поле `workspace.orphanedQualityReport`;
+`src/app/admin/(cms)/weekly/actions.ts` — `restoreWeeklyDigestRevisionAction` викликає
+carry-over автоматично після успішного `revert_weekly_digest_revision`, нова
+`carryOverWeeklyQualityReportAction`; `src/components/admin/weekly-workspace.tsx` — Research
+tab показує окрему панель «found on an earlier version» + кнопку **Attach this report to the
+current version**, коли активна ревізія не має свого звіту, але осиротілий існує.
+
+**Не зроблено:** PR ще не відкрито; UI-верифікація в браузері не пройдена (subst-drive `next
+dev` глюк середовища).
 
 ## 2026-08-16 — Мовчазний суддя авто-публікації + кнопка перезбору відбору
 

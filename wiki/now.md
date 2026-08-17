@@ -2,10 +2,10 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…16, Content Sim plan 2026-08-11,
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…17, Content Sim plan 2026-08-11,
 experimental Visual Affordance V10 owner review 2026-08-13, weekly illustration B1-fix 2026-08-15,
-owner weekly selection/content audit 2026-08-16
-Last updated: 2026-08-16
+owner weekly selection/content audit 2026-08-16, Master quality carry-over live incident 2026-08-17
+Last updated: 2026-08-17
 
 ---
 
@@ -552,6 +552,35 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 (source: live check Vercel dashboard 2026-08-04)
 
 ## Активна робота
+
+−10. **Master quality report губився після Restore — гілка
+`fix/weekly-quality-report-carryover`, PR ще не відкрито.** Власник побачив на випуску
+`6cbcf0b3-187d-4d7d-9eb9-66bdff1c72d4` (Attempt 1, `succeeded`): «Master quality report is
+missing», хоча `editorial_master` реально відпрацював. Живий розбір прод-Supabase
+(`mdiqfatpqczwqghwttpm`) показав справжню причину: критик не зійшовся (82/100, 1 unresolved),
+воркер зберіг звіт на ревізії 3 (активній на старті job) і окремо створив draft-ревізію 4 з
+тим самим текстом; власник відновив ревізію 4 через **Restore this version** — а
+`revert_weekly_digest_revision` лише перемикає `active_revision_id`, артефактів не чіпає, тож
+звіт лишився сиротою на вже неактивній ревізії 3. Перша спроба фіксу — прямий `UPDATE
+revision_id` через Supabase MCP — впала: `revision_id` в `weekly_digest_artifacts` навмисно
+**immutable** (`guard_weekly_digest_artifact_write`), і окремо не було сесії з потрібною
+роллю для прямого SQL. Правильний фікс — новий
+[quality-report-carryover.ts](../src/lib/weekly-digest/quality-report-carryover.ts): вставляє
+свіжу копію звіту на активну ревізію тим самим RPC, яким пише воркер
+(`save_weekly_digest_artifact`), не мутуючи старий рядок. Підключено в **Restore this
+version** автоматично (best-effort, закриває проблему для майбутніх non-converged циклів) і
+окремою кнопкою **Attach this report to the current version** на Research tab — рендериться
+лише коли `workspace.orphanedQualityReport` реально знаходить осиротілий звіт (для дайджестів,
+відновлених ще до фіксу, включно з `6cbcf0b3`). Approve лишається окремим кроком людини.
+`tsc`/`eslint`/`vitest` (preflight/content-studio/generation-control/prompt-promotion-gate,
+78 тестів) зелені; UI-верифікація в браузері не зроблена — той самий subst-drive `next dev`
+глюк середовища. Деталі —
+[weekly-digest § Master quality report carry-over при Restore](pipeline/weekly-digest.md#master-quality-report-carry-over-при-restore-2026-08-17),
+[weekly-admin-runbook § Research](ops/weekly-admin-runbook.md#2-research-критичний-human-gate).
+(source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-17,
+`src/lib/weekly-digest/quality-report-carryover.ts`,
+`src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`,
+owner session 2026-08-17)
 
 −9. **Postpone release — гілка `feat/weekly-postpone-release`, PR ще не відкрито.** Власник
 попросив ручний спосіб переносити реліз, бо не завжди встигає. `schedule_weekly_digest`

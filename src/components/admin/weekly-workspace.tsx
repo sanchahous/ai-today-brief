@@ -54,6 +54,7 @@ function contentSimClearedFromMetadata(metadata: Json | null | undefined): boole
 }
 import {
   approveWeeklyDigestAction,
+  carryOverWeeklyQualityReportAction,
   commentWeeklyArtifactAction,
   commentWeeklySocialAction,
   dispatchWeeklyMasterCliAction,
@@ -1726,6 +1727,8 @@ function ResearchPanel({
   const features = workspace.items.filter((item) => item.rank <= 3);
   const quality = artifactFor(workspace.artifacts, 'content_quality_report', 'neutral');
   const qualityContent = asRecord(quality?.content);
+  const orphanedQuality = workspace.orphanedQualityReport;
+  const orphanedQualityContent = asRecord(orphanedQuality?.content);
   const qualityIssues = Array.isArray(qualityContent.issues)
     ? qualityContent.issues.filter(
         (value): value is Json =>
@@ -2148,6 +2151,40 @@ function ResearchPanel({
             reviews={workspace.artifactReviews}
             canReview={canReview && quality.revision_id === workspace.revision?.id}
           />
+        </section>
+      ) : orphanedQuality ? (
+        <section
+          className={`${PANEL} border-cyan-300/25 bg-cyan-300/[.03]`}
+          aria-labelledby="quality-orphaned-heading"
+        >
+          <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">
+            Independent audit · found on an earlier version
+          </p>
+          <h3 id="quality-orphaned-heading" className="mt-1 text-lg font-bold text-white">
+            Master quality ·{' '}
+            {typeof orphanedQualityContent.score === 'number' ? orphanedQualityContent.score : 0}
+            /100
+          </h3>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            <code>editorial_master</code> already scored this content — the report just never
+            followed when this version became active. That happens when a run doesn&apos;t fully
+            converge (saved for review as a draft) and the draft is later restored from{' '}
+            <span className="font-semibold text-white">Editorial versions</span>: restoring only
+            switches which version is active, it doesn&apos;t move the report. Nothing was lost —
+            attach the existing report to review and approve it here.
+          </p>
+          <form action={carryOverWeeklyQualityReportAction} className="mt-4">
+            <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+            {canReview ? (
+              <ActionSubmitButton
+                idleLabel="Attach this report to the current version"
+                pendingLabel="Attaching…"
+                className={SECONDARY}
+              />
+            ) : (
+              <p className="text-xs text-slate-500">Owner or editor session required to attach it.</p>
+            )}
+          </form>
         </section>
       ) : (
         <section className={PANEL} aria-labelledby="quality-missing-heading">

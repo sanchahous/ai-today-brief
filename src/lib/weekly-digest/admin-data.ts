@@ -3,6 +3,7 @@ import 'server-only';
 import { cache } from 'react';
 import type { Database, Json } from '@/lib/database.types';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { findOrphanedQualityReport } from './quality-report-carryover';
 
 type Tables = Database['public']['Tables'];
 type Row<Name extends keyof Tables> = Tables[Name]['Row'];
@@ -30,6 +31,13 @@ export interface WeeklyDigestWorkspace {
   revisions: WeeklyRevisionAdminRow[];
   items: WeeklyRevisionItemAdminRow[];
   artifacts: WeeklyArtifactAdminRow[];
+  /**
+   * A `content_quality_report` left behind on a revision that is no longer
+   * active — typically because a non-converged `editorial_master` draft was
+   * later restored (see quality-report-carryover.ts). Null when the active
+   * revision already has its own report, or none exists anywhere yet.
+   */
+  orphanedQualityReport: WeeklyArtifactAdminRow | null;
   artifactReviews: WeeklyArtifactReviewAdminRow[];
   generationJobs: WeeklyGenerationJobAdminRow[];
   generationAttempts: WeeklyGenerationAttemptAdminRow[];
@@ -269,30 +277,34 @@ export const getWeeklyDigestWorkspace = cache(
     const revision =
       revisions.find((candidate) => candidate.id === digest.active_revision_id) ?? null;
 
-    const [itemsResult, artifactsResult, socialPostsResult] = await Promise.all([
-      revision
-        ? db
-            .from('weekly_digest_revision_items')
-            .select('*')
-            .eq('revision_id', revision.id)
-            .order('rank')
-        : Promise.resolve({ data: [] as WeeklyRevisionItemAdminRow[], error: null }),
-      revision
-        ? db
-            .from('weekly_digest_artifacts')
-            .select('*')
-            .eq('revision_id', revision.id)
-            .eq('is_current', true)
-            .order('slot_key')
-        : Promise.resolve({ data: [] as WeeklyArtifactAdminRow[], error: null }),
-      socialPackage
-        ? db
-            .from('social_posts')
-            .select('*')
-            .eq('package_id', socialPackage.id)
-            .order('scheduled_for')
-        : Promise.resolve({ data: [] as WeeklySocialPostAdminRow[], error: null }),
-    ]);
+    const [itemsResult, artifactsResult, socialPostsResult, orphanedQualityReport] =
+      await Promise.all([
+        revision
+          ? db
+              .from('weekly_digest_revision_items')
+              .select('*')
+              .eq('revision_id', revision.id)
+              .order('rank')
+          : Promise.resolve({ data: [] as WeeklyRevisionItemAdminRow[], error: null }),
+        revision
+          ? db
+              .from('weekly_digest_artifacts')
+              .select('*')
+              .eq('revision_id', revision.id)
+              .eq('is_current', true)
+              .order('slot_key')
+          : Promise.resolve({ data: [] as WeeklyArtifactAdminRow[], error: null }),
+        socialPackage
+          ? db
+              .from('social_posts')
+              .select('*')
+              .eq('package_id', socialPackage.id)
+              .order('scheduled_for')
+          : Promise.resolve({ data: [] as WeeklySocialPostAdminRow[], error: null }),
+        revision
+          ? findOrphanedQualityReport(db, digest.id, revision.id)
+          : Promise.resolve(null as WeeklyArtifactAdminRow | null),
+      ]);
 
     const items = assertQuery('revision items', itemsResult);
     const activeArtifacts = assertQuery('artifacts', artifactsResult);
@@ -337,6 +349,7 @@ export const getWeeklyDigestWorkspace = cache(
       revisions,
       items,
       artifacts,
+      orphanedQualityReport,
       artifactReviews: assertQuery('artifact reviews', reviewsResult),
       generationJobs,
       generationAttempts,

@@ -646,6 +646,63 @@ banned-opener ranking, originality blocking/non-blocking, originality-flag surfa
 (source: `supabase/migrations/20260804090000_weekly_digest_revision_stability.sql`, PR #177,
 live check 2026-08-04)
 
+## Master quality report carry-over при Restore (2026-08-17)
+
+`content_quality_report` не бере участі в carry-forward-за-input_hash вище — його пише
+`editorial_master` один раз, прив'язаним до конкретної ревізії, і `revision_id` в
+`weekly_digest_artifacts` навмисно **immutable** (`guard_weekly_digest_artifact_write`
+кидає «Artifact identity and dependency fields are immutable» на будь-який `UPDATE`
+`revision_id`). Це зіткнулось із non-converged-гілкою `editorial_master`
+([weekly-master-engine](weekly-master-engine.md)): коли критик не закриває всі перевірки,
+воркер (1) пише `content_quality_report` на **ревізію, активну на старті job**, (2) окремим
+викликом мінтить **draft**-ревізію з тим самим текстом через `create_service_weekly_digest_revision_draft`
+— ця RPC копіює лише `weekly_digest_revisions`/`weekly_digest_revision_items`, жодних
+артефактів, і навмисно не чіпає `active_revision_id` (коментар у самій функції: «this draft
+does not touch it»). Job завершується `succeeded` — задум, не баг:
+«Needs your review» — це редакційна задача, не інфраструктурний збій.
+
+Якщо власник потім натискає **Restore this version** на цій draft-ревізії
+(Overview → Editorial versions), `revert_weekly_digest_revision` лише перемикає
+`active_revision_id` — жодних змін у `weekly_digest_artifacts`. Звіт критика лишається
+на щойно-неактивній ревізії; Research tab фільтрує артефакти строго по активній ревізії
+(`admin-data.ts` — `.eq('revision_id', revision.id)`), тож `artifactFor(..., 'content_quality_report', ...)`
+повертає `undefined`, і панель показує «Master quality report is missing», хоч
+`editorial_master` реально відпрацював і має score.
+
+**Живо відтворено й полагоджено 17.08 на випуску `6cbcf0b3-187d-4d7d-9eb9-66bdff1c72d4`:**
+критик не зійшовся (82/100, 1 unresolved check) на ревізії 3, draft-ревізія 4 створена,
+власник відновив ревізію 4 через Restore — звіт лишився на ревізії 3. Перевірено прямими
+запитами до прод-Supabase (`mdiqfatpqczwqghwttpm`): `weekly_digest_artifacts.revision_id`
+для звіту не дорівнював `weekly_digests.active_revision_id`; `guard_weekly_digest_artifact_write`
+підтвердив блокування `UPDATE revision_id` наживо (спроба прямого фіксу впала на
+`Owner or editor session required` / immutability guard).
+
+**Фікс:** новий `src/lib/weekly-digest/quality-report-carryover.ts` —
+`carryOverOrphanedQualityReport(db, weeklyDigestId)` шукає `content_quality_report` з
+`is_current=true`, що не належить активній ревізії, і **вставляє свіжу копію** на активну
+ревізію тим самим RPC, яким пише воркер (`save_weekly_digest_artifact`, `review_status:
+'in_review'` — Approve все одно окремий крок людини). Не мутує старий рядок — обходить
+immutability навмисно, а не в обхід гейту.
+
+Підключено у два місця:
+
+1. **Автоматично** — `restoreWeeklyDigestRevisionAction` викликає carry-over одразу після
+   успішного `revert_weekly_digest_revision`, best-effort (помилка тут логується, не ламає
+   вже виконаний Restore). Закриває проблему для всіх майбутніх non-converged-циклів — Restore
+   сам підвозить звіт, окремий клік не потрібен.
+2. **Вручну** — `carryOverWeeklyQualityReportAction` + кнопка **Attach this report to the
+   current version** на Research tab, але тільки коли `workspace.orphanedQualityReport`
+   (нове поле в `getWeeklyDigestWorkspace`) знаходить осиротілий звіт: панель тоді показує
+   не generic «Approve packs → Start Content Studio», а «Independent audit · found on an
+   earlier version» зі score і поясненням чому. Потрібно для дайджестів, відновлених ще до
+   цього фіксу (автоматичний виклик у Restore не діє заднім числом), і як видимий fallback,
+   якщо автоматичний carry-over колись мовчки no-op-не.
+
+(source: `src/lib/weekly-digest/quality-report-carryover.ts`,
+`src/lib/weekly-digest/admin-data.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
+`src/components/admin/weekly-workspace.tsx`, live check прод-Supabase
+`mdiqfatpqczwqghwttpm` 2026-08-17)
+
 ## Поточний редакційний стан (live)
 
 `ai-weekly-2026-07-27` (`in_review`): `artifact_stale = 0`. Залишилися реальні blockers —
