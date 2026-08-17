@@ -53,6 +53,10 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > Writer candidate-serialization validation is likewise a downstream social provider-fallback
 > boundary and does not alter selected stories or their editorial weights.
 > (source: `src/lib/weekly-digest/social-adapter.ts`)
+> Social critic score/flag alignment is also downstream: factual and platform observations are
+> warnings when their dimension passes 85, and blockers only below that threshold. It does not
+> alter selected stories, ranks, diversity, or owner editorial approval.
+> (source: `src/lib/weekly-digest/social-adapter.ts`, production run `32062624113`)
 > (source: `src/lib/weekly-digest/social-checkpoint.ts`,
 > `src/lib/weekly-digest/generation-worker.ts`)
 > LinkedIn 7-page bounds (2026-08-17) clip only presentation copy inside fixed native-document

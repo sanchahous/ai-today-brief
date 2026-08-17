@@ -224,11 +224,12 @@ export class SocialCopyQualityError extends Error {
   constructor(
     readonly channel: SocialChannel,
     readonly blockerCodes: string[],
+    readonly blockerMessages: string[] = [],
   ) {
     super(
       `${channel} social copy did not pass its approval boundary after bounded repair: ${[
         ...new Set(blockerCodes),
-      ].join(', ')}`,
+      ].join(', ')}${blockerMessages.length > 0 ? `. Details: ${blockerMessages.join(' | ')}` : ''}`,
     );
     this.name = 'SocialCopyQualityError';
   }
@@ -368,6 +369,19 @@ ${copyForAudit(draft)}`;
         span: criticSpan(flag, auditedCopy),
         suggestedFix: "Rewrite the flagged phrase in this channel's own voice.",
       }));
+      const factualFlags = critic.value.flags.map((flag) => ({
+        code: 'critic_flag',
+        message: flag,
+        span: criticSpan(flag, auditedCopy),
+        suggestedFix: 'Remove or rewrite this claim using only an approved fact.',
+      }));
+      const platformFlags = (critic.value.platformFlags ?? []).map((flag) => ({
+        code: 'platform_flag',
+        message: flag,
+        suggestedFix: `Rewrite the copy against the ${input.channel} channel contract.`,
+      }));
+      const factualPassed = critic.value.score >= 85;
+      const platformPassed = platformFitScore >= 85;
       const duplicateIssues =
         findBlindCrossPosts([...(input.avoidCopies ?? []), draft]).get(input.channel) ?? [];
       const qualityReport: QualityReport = {
@@ -394,6 +408,8 @@ ${copyForAudit(draft)}`;
         },
         warnings: [
           ...base.warnings,
+          ...(factualPassed ? factualFlags : []),
+          ...(platformPassed ? platformFlags : []),
           ...(typeof critic.value.originalityScore === 'number' &&
           critic.value.originalityScore >= 70
             ? originalityFlags
@@ -402,7 +418,7 @@ ${copyForAudit(draft)}`;
         blocking: [
           ...base.blocking,
           ...duplicateIssues,
-          ...(platformFitScore < 85
+          ...(!platformPassed
             ? [
                 {
                   code: 'platform_fit',
@@ -410,18 +426,9 @@ ${copyForAudit(draft)}`;
                 },
               ]
             : []),
-          ...critic.value.flags.map((flag) => ({
-            code: 'critic_flag',
-            message: flag,
-            span: criticSpan(flag, auditedCopy),
-            suggestedFix: 'Remove or rewrite this claim using only an approved fact.',
-          })),
-          ...(critic.value.platformFlags ?? []).map((flag) => ({
-            code: 'platform_flag',
-            message: flag,
-            suggestedFix: `Rewrite the copy against the ${input.channel} channel contract.`,
-          })),
-          ...(critic.value.score < 85
+          ...(!factualPassed ? factualFlags : []),
+          ...(!platformPassed ? platformFlags : []),
+          ...(!factualPassed
             ? [
                 {
                   code: 'critic_score',
@@ -479,5 +486,6 @@ ${copyForAudit(draft)}`;
   throw new SocialCopyQualityError(
     input.channel,
     lastFailed?.qualityReport?.blocking.map((issue) => issue.code) ?? ['unknown_quality_failure'],
+    lastFailed?.qualityReport?.blocking.map((issue) => issue.message) ?? [],
   );
 }

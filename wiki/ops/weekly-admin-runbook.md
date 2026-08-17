@@ -270,6 +270,13 @@ candidate; social provider має 60-секундний absolute ceiling **на 
 `src/lib/weekly-digest/social-checkpoint.ts`, `src/components/admin/weekly-workspace.tsx`,
 `.github/workflows/weekly-master-cli-worker.yml`, `src/lib/social/llm-router.ts`)
 
+Critic observation не є автоматичним blocker: factual і platform dimension блокують лише коли
+відповідний score нижче 85. При score 85+ точний flag лишається warning для редактора, а картка
+може перейти в clean `in_review`. Якщо bounded repair усе ж вичерпано нижче порога, Timeline
+показує `quality_gate` і точний текст blocker, а linked retry відновлює вже чисті канали.
+(source: `src/lib/weekly-digest/social-adapter.ts`,
+`src/lib/weekly-digest/generation-control.ts`, production run `32062624113`)
+
 Якщо Timeline показує `deepseek-v4-pro` до social-ranked queue попри відсутність
 `social.writer`/`social.critic` у `/admin/providers`, це старий phantom override: registry default
 було помилково прийнято за owner chain і OpenRouter викликався двічі. Після routing fix writer

@@ -43,6 +43,11 @@ describe('Weekly generation control helpers', () => {
 
   it('does not automatically retry validation, quality, or quota failures', () => {
     expect(classifyGenerationFailure('Master quality gate failed').retryable).toBe(false);
+    expect(
+      classifyGenerationFailure(
+        'threads social copy did not pass its approval boundary after bounded repair: critic_score',
+      ),
+    ).toMatchObject({ code: 'quality_gate', retryable: false });
     expect(classifyGenerationFailure('schema validation failed').code).toBe('validation');
     expect(classifyGenerationFailure('provider quota exhausted').code).toBe('quota');
     expect(

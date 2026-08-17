@@ -6,6 +6,28 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-17
 
+## 2026-08-17 — Social critic flags aligned with approval scores
+
+**Джерело:** production job `dc11b12f-58db-4944-8284-e3d646153e4c`, Actions run
+`32062624113`; `src/lib/weekly-digest/social-adapter.ts`,
+`src/lib/weekly-digest/generation-control.ts`.
+
+**Виявлено:** Telegram і X успішно записались у durable checkpoints. Threads пройшов три
+writer/critic repair rounds і впав з єдиним кодом `critic_flag`, без `critic_score` або
+`platform_fit`. Отже critic dimension мав прохідний score 85+, але будь-який explanatory flag
+окремо трактувався як blocker; заявлений score threshold фактично не керував approval boundary.
+
+**Змінено:** factual/platform flags при прохідному dimension score стають editor warnings;
+нижче 85 вони разом зі score лишаються blockers і запускають bounded repair. Quality exhaustion
+класифікується як `quality_gate`, а terminal message містить точні blocker details замість одного
+opaque code.
+
+**Перевірено:** targeted social adapter + generation control tests — 23/23; typecheck green.
+
+**Wiki:** оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md), [index](index.md).
+
 ## 2026-08-17 — Social malformed candidate response uses model fallback
 
 **Джерело:** production job `36ff3a56-f9e4-46eb-be83-bc92cedf3026`, Actions run
