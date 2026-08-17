@@ -277,6 +277,12 @@ Critic observation не є автоматичним blocker: factual і platform
 (source: `src/lib/weekly-digest/social-adapter.ts`,
 `src/lib/weekly-digest/generation-control.ts`, production run `32062624113`)
 
+Під час першого recovery старого package worker може не мати `checkpoint.postIds`, хоча
+`social_posts` уже існують. Він знаходить такий post за `package_id + channel`, пропускає його
+через той самий versioned repair/update, створює matching `generated` review, а потім виконує
+фінальний zero-blocker guard. Тому старі червоні reports не мають пережити clean regeneration.
+(source: `src/lib/weekly-digest/generation-worker.ts`, production run `32063924268`)
+
 Якщо Timeline показує `deepseek-v4-pro` до social-ranked queue попри відсутність
 `social.writer`/`social.critic` у `/admin/providers`, це старий phantom override: registry default
 було помилково прийнято за owner chain і OpenRouter викликався двічі. Після routing fix writer

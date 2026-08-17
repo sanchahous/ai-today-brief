@@ -57,6 +57,10 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > warnings when their dimension passes 85, and blockers only below that threshold. It does not
 > alter selected stories, ranks, diversity, or owner editorial approval.
 > (source: `src/lib/weekly-digest/social-adapter.ts`, production run `32062624113`)
+> Legacy Social post repair ordering is downstream persistence only: it updates an existing
+> package/channel row with the already accepted adaptation before the final review guard and does
+> not change selected stories, weights, evidence, or approval state.
+> (source: `src/lib/weekly-digest/generation-worker.ts`, production run `32063924268`)
 > (source: `src/lib/weekly-digest/social-checkpoint.ts`,
 > `src/lib/weekly-digest/generation-worker.ts`)
 > LinkedIn 7-page bounds (2026-08-17) clip only presentation copy inside fixed native-document

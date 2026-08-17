@@ -2168,6 +2168,18 @@ async function reusableLinkedinDocumentArtifact(input: {
   return artifact?.storage_bucket === PRIVATE_BUCKET && artifact.storage_path ? artifact.id : null;
 }
 
+export async function resolveSocialPostForRepair<T>(input: {
+  checkpointPostId?: string;
+  findCheckpointPost: (id: string) => Promise<T | null>;
+  findExistingPost: () => Promise<T | null>;
+}): Promise<T | null> {
+  if (input.checkpointPostId) {
+    const checkpointPost = await input.findCheckpointPost(input.checkpointPostId);
+    if (checkpointPost) return checkpointPost;
+  }
+  return input.findExistingPost();
+}
+
 async function generateSocialCopy(job: ClaimedGenerationJob, tracker: GenerationAttemptTracker) {
   await tracker.event({
     type: 'step_started',
@@ -2660,21 +2672,39 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
   for (const [index, initialRow] of rows.entries()) {
     const draft = adaptations[index]!;
     let row = initialRow;
-    let post: PersistedPost | null = null;
     const checkpointPostId = checkpoint.postIds[row.channel];
-    if (checkpointPostId) {
-      const { data, error } = await db
-        .from('social_posts')
-        .select(postSelection)
-        .eq('id', checkpointPostId)
-        .eq('package_id', socialPackage.id)
-        .eq('channel', row.channel)
-        .maybeSingle();
-      if (error) {
-        throw new Error(`[weekly-generation] ${row.channel} post checkpoint: ${error.message}`);
-      }
-      post = data as PersistedPost | null;
-    }
+    let post = await resolveSocialPostForRepair<PersistedPost>({
+      checkpointPostId,
+      findCheckpointPost: async (id) => {
+        const { data, error } = await db
+          .from('social_posts')
+          .select(postSelection)
+          .eq('id', id)
+          .eq('package_id', socialPackage.id)
+          .eq('channel', row.channel)
+          .maybeSingle();
+        if (error) {
+          throw new Error(`[weekly-generation] ${row.channel} post checkpoint: ${error.message}`);
+        }
+        return data as PersistedPost | null;
+      },
+      findExistingPost: async () => {
+        const { data, error } = await db
+          .from('social_posts')
+          .select(postSelection)
+          .eq('package_id', socialPackage.id)
+          .eq('channel', row.channel)
+          .maybeSingle();
+        if (error) {
+          throw new Error(`[weekly-generation] ${row.channel} post lookup: ${error.message}`);
+        }
+        return data as PersistedPost | null;
+      },
+    });
+    // Both checkpoint-addressed and legacy package/channel posts must pass
+    // through the same repair/update branch. Previously the fallback lookup
+    // happened after this block, so every legacy blocker-filled post escaped
+    // the clean replacement and failed the final approval guard.
     if (post) {
       if (!editablePostStatuses.has(post.status)) {
         throw new Error(
@@ -2716,17 +2746,6 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
         }
         post = data as PersistedPost;
       }
-    }
-    if (!post) {
-      const { data, error } = await db
-        .from('social_posts')
-        .select(postSelection)
-        .eq('package_id', socialPackage.id)
-        .eq('channel', row.channel)
-        .maybeSingle();
-      if (error)
-        throw new Error(`[weekly-generation] ${row.channel} post lookup: ${error.message}`);
-      post = data as PersistedPost | null;
     }
     if (!post) {
       const { data, error } = await db
