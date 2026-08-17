@@ -72,8 +72,11 @@ const STAGES: Record<string, readonly GenerationStage[]> = {
   ],
   social_copy: [
     { key: 'prepare', label: 'Preparing social source', weight: 5 },
-    { key: 'channels', label: 'Writing channel variants', weight: 85 },
-    { key: 'persist', label: 'Saving social package', weight: 10 },
+    { key: 'channels', label: 'Writing channel variants', weight: 60 },
+    { key: 'instagram', label: 'Building Instagram carousel', weight: 12 },
+    { key: 'linkedin', label: 'Building LinkedIn document', weight: 8 },
+    { key: 'package', label: 'Saving social package', weight: 5 },
+    { key: 'posts', label: 'Saving channel posts', weight: 10 },
   ],
   video_script: [
     { key: 'prepare', label: 'Preparing article source', weight: 10 },

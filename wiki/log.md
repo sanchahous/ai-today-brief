@@ -6,6 +6,34 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-17
 
+## 2026-08-17 — Staged social-copy checkpoints across linked retries
+
+**Джерело:** `src/lib/weekly-digest/generation-worker.ts`,
+`src/lib/weekly-digest/social-checkpoint.ts`, `generation-control.ts`; прод-Supabase
+`mdiqfatpqczwqghwttpm` read-only check 2026-08-17 (`weekly_digest_generation_jobs.output`,
+`retry_of_job_id`, `weekly_digest_artifacts`, `social_packages`, `social_posts`,
+`social_post_reviews`).
+
+**Виявлено:** старий per-channel checkpoint справді зберігав legacy
+`socialCopyCheckpointHash` / `tokens` / `adaptations`, але `loadSocialCopyCheckpoint` читав лише
+поточний job ID. **Create linked retry** створює child із порожнім output, тому він повторював
+усі шість дорогих writer/critic pairs; Instagram, LinkedIn document, package і posts також не
+мали спільного versioned resume state.
+
+**Змінено:** versioned `social_copy_checkpoint` сумісно читає legacy v1, обходить
+`retry_of_job_id` chain і вибирає найдальший валідний state лише для того самого
+digest/revision/input hash. Checkpoints пишуться після кожного channel result, кожного
+Instagram slide artifact, LinkedIn PDF, draft package та кожного post + immutable generated
+review. Package/posts стають `in_review` тільки після повного persist; signed URLs
+перевидаються, stable DB/storage artifacts не генеруються повторно.
+
+**Wiki:** оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md), [index](index.md).
+
+**Перевірки на момент запису:** targeted Vitest 39/39, `npm run typecheck`, scoped ESLint,
+read-only production schema/query check — green.
+
 ## 2026-08-17 — Social package LinkedIn document recovery
 
 **Джерело:** production `weekly_digest_generation_jobs` / `weekly_digest_generation_attempts` /

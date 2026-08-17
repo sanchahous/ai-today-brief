@@ -8,12 +8,26 @@ owner weekly selection/content audit 2026-08-16, Master quality carry-over live 
 owner weekly selection/content audit 2026-08-16, research corpus corroboration 2026-08-16,
 reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16,
 Start / retry Content Studio silent no-op 2026-08-16, site WebP delivery 2026-08-17
-social package LinkedIn recovery incident 2026-08-17, GitHub workflow-dispatch 503 incident 2026-08-17
+social package LinkedIn recovery incident 2026-08-17, GitHub workflow-dispatch 503 incident
+2026-08-17, staged social-copy recovery 2026-08-17
 Last updated: 2026-08-17
 
 ---
 
 ## Стан репозиторію
+
+- **`social_copy` відновлюється поетапно через linked retry (2026-08-17), гілка
+  `codex/social-step-checkpoints`.** Legacy job уже зберігав шість channel adaptations, але
+  child читав лише власний `output`, тому ручний retry повторював усі writer/critic calls.
+  Versioned state тепер проходить `retry_of_job_id` chain і зберігає окремо channel results,
+  кожен Instagram slide, LinkedIn document, draft package та кожен post/generated review.
+  Source hash не дає відновити copy на іншу approved revision; expiring signed URLs
+  перевидаються без повторного render. Read-only prod query підтвердив legacy output keys і
+  наявні durable social/artifact tables; нова міграція не потрібна. Тести: targeted 39/39,
+  typecheck і scoped ESLint зелені.
+  (source: `src/lib/weekly-digest/social-checkpoint.ts`,
+  `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/generation-control.ts`,
+  прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-17)
 
 - **Linked social retry не має валити CMS при GitHub 503 (2026-08-17), гілка
   `codex/fix-gh-dispatch-503`.** Після створення durable child `social_copy`

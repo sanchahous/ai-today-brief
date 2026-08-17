@@ -23,6 +23,19 @@ describe('Weekly generation control helpers', () => {
     );
   });
 
+  it('exposes every resumable social persistence stage with a complete weight', () => {
+    const stages = stageManifest('social_copy');
+    expect(stages.map((stage) => stage.key)).toEqual([
+      'prepare',
+      'channels',
+      'instagram',
+      'linkedin',
+      'package',
+      'posts',
+    ]);
+    expect(stages.reduce((sum, stage) => sum + stage.weight, 0)).toBe(100);
+  });
+
   it('keeps progress monotonic and bounded', () => {
     expect(clampMonotonicProgress(42, 38)).toBe(42);
     expect(clampMonotonicProgress(42, 118)).toBe(100);
