@@ -16,6 +16,17 @@ Last updated: 2026-08-17
 
 ## Стан репозиторію
 
+- **Social router reliability follow-up (2026-08-17), гілка
+  `codex/social-router-reliable-fallback`.** Bounded run `32059830080` швидко показав точний
+  routing failure: default registry chain помилково виконувався як owner override з
+  `deepseek-v4-pro`, потім social DeepSeek не дав first token за 30 s, а Qwen повернув HTTP 429;
+  OpenAI mini був поза cap=2. Router тепер визнає лише реально збережений role chain і ставить
+  current OpenAI mini writer lane першою, з bounded provider tail. Live probe з production DB і
+  prompt 63 147 chars завершився через 1 507 ms (`first_token=921 ms`, no fallback). Повне
+  social-provider exhaustion тепер retryable `provider_exhausted`, а не terminal `unknown`.
+  (source: production Actions run `32059830080`, `src/lib/social/llm-router.ts`,
+  `src/lib/weekly-digest/generation-control.ts`)
+
 - **Social provider ladder bounded end-to-end (2026-08-17), гілка
   `codex/social-bounded-reasoning`.** Другий production recovery
   `1d255a95-d410-479e-9a6b-06d703dbee0d` лишався на Telegram без channel checkpoint понад

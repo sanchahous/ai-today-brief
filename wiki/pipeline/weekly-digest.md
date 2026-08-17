@@ -335,13 +335,22 @@ candidate кожного round, а не всі три: це дає не біль
 не більше двох моделей на writer/critic call, 4 096/2 048 output tokens і `reasoning.effort=low`;
 це обмежує worst-case provider ladder, а не лише одну його сходинку. Перший 180-секундний
 hotfix виявився недостатнім саме тому, що queue могла послідовно витратити цей ceiling тричі.
+Після live run `32059830080` router також більше не трактує registry default як owner DB override:
+override існує лише за реально збереженого `social.writer` / `social.critic` chain. Writer queue
+починається зі швидкої current OpenAI mini lane; DeepSeek/Qwen лишаються bounded fallback після
+зафіксованих first-token timeout / HTTP 429. Live probe з production DB і prompt 63 147 chars
+пройшов на `~openai/gpt-mini-latest`: first token 921 ms, complete 1 507 ms, без fallback.
+Якщо всі social providers усе ж тимчасово недоступні, failure класифікується як retryable
+`provider_exhausted`; control plane робить backoff і відновлює вже збережені канали замість
+terminal `unknown` та нового ручного кола.
 12-хвилинний editorial-master ceiling для інших job types не змінено. У checkpoint потрапляє
 лише канал із
 порожнім `blocking`; пройдений канал не генерується знову при наступному recovery.
 (source: `src/lib/weekly-digest/social-adapter.ts`,
 `src/lib/weekly-digest/social-checkpoint.ts`, `.github/workflows/weekly-master-cli-worker.yml`,
-`src/lib/social/llm-router.ts`, `social-adapter.test.ts`, `llm-router.test.ts`; production runs
-`32054964740` / `32057477211` latency checks 2026-08-17)
+`src/lib/social/llm-router.ts`, `src/lib/weekly-digest/generation-control.ts`,
+`social-adapter.test.ts`, `llm-router.test.ts`; production runs
+`32054964740` / `32057477211` / `32059830080` та production-DB live routing probe 2026-08-17)
 
 Writer і critic тепер бачать один owner-approved fact snapshot із повного article master, а
 Instagram/Threads аудіюються з нативними `<SLIDE>` / `<CAPTION>` / `<PART>` markers. Непояснений

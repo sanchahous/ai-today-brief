@@ -6,6 +6,31 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-17
 
+## 2026-08-17 — Social router: true override + reliable writer lane
+
+**Джерело:** production job `02ad5e59-1888-4202-9b71-b6b9a93de03f`, Actions run
+`32059830080`; `src/lib/social/llm-router.ts`.
+
+**Виявлено:** bounded retry завершився за 2:23 з точною provider історією. Registry default
+`deepseek-v4-pro` помилково запускався як «owner-configured» HTTP override, хоча production
+`llm_role_chains` порожня; після нього social-ranked DeepSeek не дав first token за 30 s, а Qwen
+повернув HTTP 429. Cap=2 не допустив до швидкої OpenAI mini lane.
+
+**Змінено:** DB override тепер вимагає фактичний non-empty `social.writer` / `social.critic`
+chain і приймає лише provider IDs із нього; default registry більше не дублює OpenRouter call.
+Writer ranking ставить current OpenAI mini lane першою, а Anthropic/DeepSeek/Qwen лишає bounded
+fallback. Critic ranking не змінено.
+
+**Перевірено:** live probe через production DB з prompt 63 147 chars вибрав
+`~openai/gpt-mini-latest`, отримав first token за 921 ms і валідний JSON за 1 507 ms без fallback.
+
+**Recovery:** `All configured social LLM providers failed` тепер класифікується retryable
+`provider_exhausted`; control plane робить backoff і не вимагає ще одного ручного linked retry.
+
+**Wiki:** оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md), [index](index.md).
+
 ## 2026-08-17 — Social provider ladder bounded end-to-end
 
 **Джерело:** production job `1d255a95-d410-479e-9a6b-06d703dbee0d`, Actions run
