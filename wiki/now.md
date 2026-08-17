@@ -609,8 +609,9 @@ output-overwrite checkpoint-баг editorial_master вже полагоджен�
 
 ## Активна робота
 
-−10. **Master quality report губився після Restore — гілка
-`fix/weekly-quality-report-carryover`, PR ще не відкрито.** Власник побачив на випуску
+−10. **Master quality report губився після Restore — змержено в `main` 2026-08-17, PR
+[#275](https://github.com/sanchahous/ai-today-brief/pull/275) (`f137c39`).** Власник побачив
+на випуску
 `6cbcf0b3-187d-4d7d-9eb9-66bdff1c72d4` (Attempt 1, `succeeded`): «Master quality report is
 missing», хоча `editorial_master` реально відпрацював. Живий розбір прод-Supabase
 (`mdiqfatpqczwqghwttpm`) показав справжню причину: критик не зійшовся (82/100, 1 unresolved),

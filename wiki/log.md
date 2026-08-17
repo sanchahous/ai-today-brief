@@ -16,7 +16,7 @@ Last updated: 2026-08-17
 **Змінено:** [weekly-digest § Master quality report carry-over при Restore](pipeline/weekly-digest.md#master-quality-report-carry-over-при-restore-2026-08-17)
 (нова секція), [weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md).
 
-**Код (гілка `fix/weekly-quality-report-carryover`):**
+**Код (гілка `fix/weekly-quality-report-carryover`, змержено в `main` як `f137c39`):**
 `src/lib/weekly-digest/quality-report-carryover.ts` (новий) —
 `findOrphanedQualityReport` / `carryOverOrphanedQualityReport`, обидва через RPC
 `save_weekly_digest_artifact` (не raw `UPDATE` — `revision_id` immutable, перевірено наживо);
@@ -27,8 +27,11 @@ carry-over автоматично після успішного `revert_weekly_d
 tab показує окрему панель «found on an earlier version» + кнопку **Attach this report to the
 current version**, коли активна ревізія не має свого звіту, але осиротілий існує.
 
-**Не зроблено:** PR ще не відкрито; UI-верифікація в браузері не пройдена (subst-drive `next
-dev` глюк середовища).
+**PR:** [#275](https://github.com/sanchahous/ai-today-brief/pull/275), змержено в `main` 2026-08-17.
+
+**Не зроблено:** UI-верифікація в браузері не пройдена (subst-drive `next dev` глюк
+середовища).
+
 ## 2026-08-17 — Site images WebP
 
 **Джерело:** запит власника після upload 7 story-картинок на `ai-weekly-2026-08-09`;
