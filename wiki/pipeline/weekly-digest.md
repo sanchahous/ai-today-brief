@@ -346,6 +346,14 @@ terminal `unknown` та нового ручного кола.
 Writer candidate serialization (`2–3` variants через `<CANDIDATE>` або supported separator)
 тепер перевіряється всередині provider response validator. Тому malformed repair response
 від однієї моделі переходить на наступну модель тієї ж queue, а не завершує весь channel job.
+Factual/platform critic зауваження тепер підпорядковуються власним score-порогам: при
+`score >= 85` або `platformFitScore >= 85` вони зберігаються як warning, а не blocker; нижче
+85 точний flag і score залишаються blocking та запускають repair. Раніше будь-який flag блокував
+навіть прохідний score, тому production Threads вичерпав три repair rounds лише з
+`critic_flag`, без `critic_score` чи `platform_fit`. Quality exhaustion також отримує явний
+`quality_gate` code і зберігає точні blocker messages у terminal diagnostic.
+(source: `src/lib/weekly-digest/social-adapter.ts`,
+`src/lib/weekly-digest/generation-control.ts`, production run `32062624113`)
 12-хвилинний editorial-master ceiling для інших job types не змінено. У checkpoint потрапляє
 лише канал із
 порожнім `blocking`; пройдений канал не генерується знову при наступному recovery.

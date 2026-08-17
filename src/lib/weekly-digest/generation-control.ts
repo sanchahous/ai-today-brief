@@ -182,7 +182,11 @@ export function classifyGenerationFailure(message: string): GenerationFailure {
       nextAction: 'The social job will retry with backoff and reuse every saved channel.',
     };
   }
-  if (/quality gate|quality.*(?:failed|block)|dimension.*score/.test(normalized)) {
+  if (
+    /quality gate|quality.*(?:failed|block)|dimension.*score|did not pass.*approval boundary/.test(
+      normalized,
+    )
+  ) {
     return {
       code: 'quality_gate',
       retryable: false,

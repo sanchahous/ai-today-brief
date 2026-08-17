@@ -54,6 +54,15 @@ Last updated: 2026-08-17
   (source: production job `ee0d727e-6e43-48be-b147-d759c25717a7`, Actions run `32054964740`,
   `.github/workflows/weekly-master-cli-worker.yml`, `src/lib/weekly-digest/social-adapter.ts`)
 
+- **Social critic flags поважають score boundary (2026-08-17), гілка
+  `codex/social-critic-threshold`.** Production recovery зберіг Telegram і X checkpoints, але
+  Threads тричі ремонтувався й завершився лише з `critic_flag`, без `critic_score` або
+  `platform_fit`: будь-яке critic-зауваження помилково блокувало навіть dimension score 85+.
+  Passing factual/platform flags тепер warnings; blocking і repair лишаються тільки для score
+  нижче 85. Terminal quality exhaustion має code `quality_gate` і точні blocker messages.
+  (source: production job `dc11b12f-58db-4944-8284-e3d646153e4c`, Actions run `32062624113`,
+  `src/lib/weekly-digest/social-adapter.ts`, `src/lib/weekly-digest/generation-control.ts`)
+
 - **Social approval boundary ремонтує канал до owner review (2026-08-17), гілка
   `codex/social-approval-ready`.** Production package був `in_review`, хоча всі 6 posts мали
   3–12 blocking checks: worker зберігав audit, але безумовно піднімав `draft → in_review`.

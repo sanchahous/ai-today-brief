@@ -198,6 +198,30 @@ describe('adaptWeeklySocialChannel', () => {
     );
   });
 
+  it('keeps factual and platform observations as warnings when both dimensions pass', async () => {
+    vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
+      role === 'writer'
+        ? writerResult()
+        : criticResult({
+            score: 90,
+            flags: ['Tighten the factual compression'],
+            platformFitScore: 88,
+            platformFlags: ['The ending could be more native'],
+          }),
+    );
+
+    const result = await adaptWeeklySocialChannel(baseInput());
+
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.qualityReport!.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'critic_flag' }),
+        expect.objectContaining({ code: 'platform_flag' }),
+      ]),
+    );
+    expect(result.qualityReport!.repairRounds).toBe(0);
+  });
+
   it('fails closed after bounded repair instead of returning blocker-filled copy', async () => {
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
       role === 'writer'
@@ -205,9 +229,9 @@ describe('adaptWeeklySocialChannel', () => {
         : criticResult({ score: 60, flags: ['Unsupported claim'] }),
     );
 
-    await expect(adaptWeeklySocialChannel(baseInput())).rejects.toBeInstanceOf(
-      SocialCopyQualityError,
-    );
+    const result = adaptWeeklySocialChannel(baseInput());
+    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
+    await expect(result).rejects.toThrow('Unsupported claim');
     expect(
       vi.mocked(generateSocialJson).mock.calls.filter(([role]) => role === 'writer'),
     ).toHaveLength(3);
