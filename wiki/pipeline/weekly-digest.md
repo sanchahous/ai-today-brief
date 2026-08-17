@@ -331,13 +331,17 @@ Quality audit раніше був лише діагностикою: worker зб
 writer повертає кілька кандидатів, невдалий раунд отримує точні причини для переписування,
 максимум три writer rounds. Після live latency check critic аудіює найсильніший deterministic
 candidate кожного round, а не всі три: це дає не більше трьох writer/critic pairs на канал.
-`social_copy` має окремий OpenRouter ceiling 180 s (first token 45 s, idle 30 s);
+`social_copy` має окремий **per-model** OpenRouter ceiling 60 s (first token 30 s, idle 20 s),
+не більше двох моделей на writer/critic call, 4 096/2 048 output tokens і `reasoning.effort=low`;
+це обмежує worst-case provider ladder, а не лише одну його сходинку. Перший 180-секундний
+hotfix виявився недостатнім саме тому, що queue могла послідовно витратити цей ceiling тричі.
 12-хвилинний editorial-master ceiling для інших job types не змінено. У checkpoint потрапляє
 лише канал із
 порожнім `blocking`; пройдений канал не генерується знову при наступному recovery.
 (source: `src/lib/weekly-digest/social-adapter.ts`,
 `src/lib/weekly-digest/social-checkpoint.ts`, `.github/workflows/weekly-master-cli-worker.yml`,
-`social-adapter.test.ts`; production run `32054964740` latency check 2026-08-17)
+`src/lib/social/llm-router.ts`, `social-adapter.test.ts`, `llm-router.test.ts`; production runs
+`32054964740` / `32057477211` latency checks 2026-08-17)
 
 Writer і critic тепер бачать один owner-approved fact snapshot із повного article master, а
 Instagram/Threads аудіюються з нативними `<SLIDE>` / `<CAPTION>` / `<PART>` markers. Непояснений

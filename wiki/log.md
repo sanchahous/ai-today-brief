@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-17
 
+## 2026-08-17 — Social provider ladder bounded end-to-end
+
+**Джерело:** production job `1d255a95-d410-479e-9a6b-06d703dbee0d`, Actions run
+`32057477211`; `src/lib/social/llm-router.ts`,
+`.github/workflows/weekly-master-cli-worker.yml`.
+
+**Виявлено:** перший latency hotfix обмежив один OpenRouter stream до 180 секунд, але не всю
+model queue. Writer і critic могли кожен послідовно пройти три моделі в кожному з трьох repair
+rounds; live Telegram тому не мав channel checkpoint понад 13 хв попри здоровий heartbeat.
+
+**Змінено:** social-only budget тепер 30 s first token / 20 s idle / 60 s absolute **на модель**,
+максимум дві моделі на call. Writer/critic надсилають `reasoning.effort=low`, приховують reasoning
+із відповіді та мають 4 096 / 2 048 output tokens. Editorial jobs зберігають 90/45/720 s.
+
+**Wiki:** оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md), [index](index.md).
+
 ## 2026-08-17 — Social provider latency budget
 
 **Джерело:** production job `ee0d727e-6e43-48be-b147-d759c25717a7`, Actions run
