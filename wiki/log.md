@@ -6,6 +6,27 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-17
 
+## 2026-08-17 — Existing Social posts enter the clean repair branch
+
+**Джерело:** production job `606d0463-d479-49a3-828a-cf48232b8dff`, Actions run
+`32063924268`; `src/lib/weekly-digest/generation-worker.ts`.
+
+**Виявлено:** staged recovery підтвердив 2/6 restore, довів усі 6 adaptations до clean
+checkpoints, зберіг 8 Instagram assets, LinkedIn document і package. На posts 92% фінальний guard
+відхилив усі канали, бо БД все ще містила legacy blocker-filled reports. Якщо
+`checkpoint.postIds[channel]` був порожній, fallback lookup за package/channel виконувався вже
+після repair/update branch; знайдений existing post додавався до guard без оновлення.
+
+**Змінено:** checkpoint і package/channel lookup завершуються перед спільним editable-post
+repair branch. Legacy row тепер отримує clean content/report, новий content version/hash і
+matching immutable generated review до фінального zero-blocker guard.
+
+**Перевірено:** targeted generation-worker tests — 25/25; typecheck green.
+
+**Wiki:** оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md), [index](index.md).
+
 ## 2026-08-17 — Social critic flags aligned with approval scores
 
 **Джерело:** production job `dc11b12f-58db-4944-8284-e3d646153e4c`, Actions run

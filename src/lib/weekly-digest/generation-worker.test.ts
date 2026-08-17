@@ -11,6 +11,7 @@ import {
   masterBundleFromArtifacts,
   masterInputStories,
   masterRunStateFromOutput,
+  resolveSocialPostForRepair,
   runWeeklyDigestGenerationJobs,
   siblingHintsFromStorySiblingArtifact,
 } from './generation-worker';
@@ -156,6 +157,35 @@ describe('computeSocialCopyCheckpointHash', () => {
       locales: new Map([['x', 'uk']]) as Map<SocialChannel, SocialLocale>,
     });
     expect(a).not.toBe(b);
+  });
+});
+
+describe('resolveSocialPostForRepair', () => {
+  it('returns a legacy package/channel post when no checkpoint post id exists', async () => {
+    const findCheckpointPost = vi.fn();
+    const existing = { id: 'legacy-post', blockerCount: 10 };
+    const findExistingPost = vi.fn(async () => existing);
+
+    await expect(
+      resolveSocialPostForRepair({ findCheckpointPost, findExistingPost }),
+    ).resolves.toBe(existing);
+    expect(findCheckpointPost).not.toHaveBeenCalled();
+    expect(findExistingPost).toHaveBeenCalledOnce();
+  });
+
+  it('prefers the checkpoint-addressed post without doing a fallback lookup', async () => {
+    const checkpoint = { id: 'checkpoint-post' };
+    const findCheckpointPost = vi.fn(async () => checkpoint);
+    const findExistingPost = vi.fn(async () => ({ id: 'legacy-post' }));
+
+    await expect(
+      resolveSocialPostForRepair({
+        checkpointPostId: checkpoint.id,
+        findCheckpointPost,
+        findExistingPost,
+      }),
+    ).resolves.toBe(checkpoint);
+    expect(findExistingPost).not.toHaveBeenCalled();
   });
 });
 

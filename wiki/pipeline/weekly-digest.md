@@ -354,6 +354,13 @@ Factual/platform critic зауваження тепер підпорядкову
 `quality_gate` code і зберігає точні blocker messages у terminal diagnostic.
 (source: `src/lib/weekly-digest/social-adapter.ts`,
 `src/lib/weekly-digest/generation-control.ts`, production run `32062624113`)
+Existing legacy posts тепер знаходяться до repair/update branch незалежно від того, чи вже є
+`checkpoint.postIds[channel]`. Це дає першому staged recovery замінити старі blocker-filled
+`quality_report` clean versioned content, створити matching `generated` review і лише після цього
+відкрити package для review. Раніше package/channel fallback lookup стояв після update branch,
+тому шість знайдених legacy posts лишалися незмінними й фінальний guard закономірно відмовлявся
+показувати їх owner'у, хоча всі 6 clean adaptations уже були checkpointed.
+(source: `src/lib/weekly-digest/generation-worker.ts`, production run `32063924268`)
 12-хвилинний editorial-master ceiling для інших job types не змінено. У checkpoint потрапляє
 лише канал із
 порожнім `blocking`; пройдений канал не генерується знову при наступному recovery.

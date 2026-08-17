@@ -63,6 +63,15 @@ Last updated: 2026-08-17
   (source: production job `dc11b12f-58db-4944-8284-e3d646153e4c`, Actions run `32062624113`,
   `src/lib/weekly-digest/social-adapter.ts`, `src/lib/weekly-digest/generation-control.ts`)
 
+- **Legacy Social posts проходять repair до фінального guard (2026-08-17), гілка
+  `codex/social-existing-post-repair`.** Recovery `606d0463…` успішно відновив 2/6, довів усі
+  6/6 channels до clean checkpoints, створив 8 Instagram assets, LinkedIn document і package,
+  але на 92% guard побачив старі reports у всіх posts. Причина: fallback lookup за
+  `package_id + channel` виконувався після update branch, тож existing post знаходився, але не
+  ремонтувався. Lookup тепер передує спільному versioned update; додано regression helper tests.
+  (source: production job `606d0463-d479-49a3-828a-cf48232b8dff`, Actions run `32063924268`,
+  `src/lib/weekly-digest/generation-worker.ts`, `generation-worker.test.ts`)
+
 - **Social approval boundary ремонтує канал до owner review (2026-08-17), гілка
   `codex/social-approval-ready`.** Production package був `in_review`, хоча всі 6 posts мали
   3–12 blocking checks: worker зберігав audit, але безумовно піднімав `draft → in_review`.
