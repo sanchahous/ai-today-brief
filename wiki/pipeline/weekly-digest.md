@@ -8,7 +8,7 @@ editorial-voice overhaul, PDF page-cap, admin mobile-responsive,
 owner content audit + seed-content 2026-08-16, research corpus corroboration 2026-08-16,
 Start / retry Content Studio after succeeded jobs 2026-08-16, social package LinkedIn recovery
 2026-08-17, GitHub dispatch 503 recovery 2026-08-17, staged social-copy recovery and
-approval-ready Social boundary 2026-08-17
+approval-ready Social boundary, clean Social job-history presentation 2026-08-17
 Last updated: 2026-08-17
 
 ---
@@ -387,6 +387,13 @@ blockers`; legacy diagnostics лишаються доступними в зго�
 червоної стіни.
 (source: `src/lib/weekly-digest/generation-worker.ts`,
 `src/components/admin/weekly-workspace.tsx`)
+
+Generation jobs на Social tab також відділяє актуальний стан від діагностичної історії: поки є
+non-terminal `social_copy`, видно його; інакше видно тільки найновіший terminal result. Старі
+linked attempts зберігаються під нейтральним згорнутим `Previous generation attempts` і не
+виглядають як чинні blocker-и owner review. На інших вкладках повна таблиця не змінена.
+(source: `src/components/admin/weekly-generation-jobs-live.tsx`,
+`src/lib/weekly-digest/generation-job-visibility.ts`)
 
 ### GitHub Actions dispatch 503 recovery (2026-08-17)
 

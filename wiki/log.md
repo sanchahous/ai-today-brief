@@ -6,6 +6,25 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-17
 
+## 2026-08-17 — Social review separates current success from failed history
+
+**Джерело:** production job `df663262-1481-4f31-af0b-35d21e42caa7`, Actions run
+`32065312557`; `src/components/admin/weekly-generation-jobs-live.tsx`;
+`src/lib/weekly-digest/generation-job-visibility.ts`.
+
+**Виявлено:** final recovery уже завершився `succeeded`, а package і всі шість posts були clean
+`in_review` з нульовими blockers. Проте Social tab продовжував рендерити повну таблицю старих
+linked jobs, тому десять terminal `FAILED` виглядали як чинні проблеми та візуально перекривали
+готовий до approval стан.
+
+**Змінено:** Social показує всі non-terminal jobs, а коли їх немає — лише найновіший terminal
+result. Superseded attempts лишаються доступними під нейтральним згорнутим `Previous generation
+attempts`; retry controls і червона error presentation старих runs не займають основний екран.
+Інші weekly tabs зберігають повну job table.
+
+**Перевірено:** unit regression 3/3, TypeScript та scoped ESLint green; production package
+`612df95c-9c67-4db8-8f4b-209584d9ed68` лишається `in_review`, без автоматичного approve.
+
 ## 2026-08-17 — Existing Social posts enter the clean repair branch
 
 **Джерело:** production job `606d0463-d479-49a3-828a-cf48232b8dff`, Actions run

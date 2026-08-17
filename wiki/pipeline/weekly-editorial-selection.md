@@ -61,6 +61,11 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > package/channel row with the already accepted adaptation before the final review guard and does
 > not change selected stories, weights, evidence, or approval state.
 > (source: `src/lib/weekly-digest/generation-worker.ts`, production run `32063924268`)
+> Collapsed Social generation history is downstream admin presentation only: superseded linked
+> attempts remain available for diagnostics but do not change candidates, ranks, evidence or
+> approval state.
+> (source: `src/components/admin/weekly-generation-jobs-live.tsx`,
+> `src/lib/weekly-digest/generation-job-visibility.ts`)
 > (source: `src/lib/weekly-digest/social-checkpoint.ts`,
 > `src/lib/weekly-digest/generation-worker.ts`)
 > LinkedIn 7-page bounds (2026-08-17) clip only presentation copy inside fixed native-document

@@ -258,6 +258,12 @@ LinkedIn та Instagram — не шість незалежних кліків. �
 доходить лише повний пакет без blocking checks. Картка показує `Ready for review · no blockers`;
 переглянь текст, за потреби відредагуй і натисни **Save & approve** для потрібної locale.
 
+У **Generation jobs** актуальний Social run показаний окремо. Попередні linked attempts згорнуті
+під **Previous generation attempts**: вони лишаються аудит-трейлом, але їхній старий `failed` не
+є поточним blocker-ом і не потребує ще одного retry, якщо актуальний run уже `succeeded`.
+(source: `src/components/admin/weekly-generation-jobs-live.tsx`,
+`src/lib/weekly-digest/generation-job-visibility.ts`)
+
 Якщо конкретний канал не проходить critic/platform/originality gate, worker сам перевіряє інші
 кандидати й робить до трьох точкових repair rounds. На кожному round аудіюється один найсильніший
 candidate; social provider має 60-секундний absolute ceiling **на модель**, максимум дві моделі

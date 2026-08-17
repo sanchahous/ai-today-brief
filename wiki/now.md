@@ -10,11 +10,23 @@ reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16,
 Start / retry Content Studio silent no-op 2026-08-16, site WebP delivery 2026-08-17
 social package LinkedIn recovery incident 2026-08-17, GitHub workflow-dispatch 503 incident,
 staged social-copy recovery, LinkedIn 7-page overflow and approval-ready Social repair 2026-08-17
+clean Social job-history presentation and successful six-channel recovery 2026-08-17
 Last updated: 2026-08-17
 
 ---
 
 ## Стан репозиторію
+
+- **Social package clean і готовий до owner approval (2026-08-17), гілка
+  `codex/clean-social-job-history`.** Final linked recovery
+  `df663262-1481-4f31-af0b-35d21e42caa7` / Actions `32065312557` завершився `succeeded`: package
+  та всі шість posts мають `in_review`, нуль blockers, versioned generated reviews збігаються з
+  current content hashes. Старі failed attempts більше не заповнюють активну Social-вкладку:
+  поточний/останній run лишається видимим, а superseded історія згорнута в нейтральний
+  diagnostics block. Інші workspace tabs не змінені.
+  (source: production DB live check 2026-08-17, Actions run `32065312557`,
+  `src/components/admin/weekly-generation-jobs-live.tsx`,
+  `src/lib/weekly-digest/generation-job-visibility.ts`)
 
 - **Malformed Social writer response falls through in-provider (2026-08-17), гілка
   `codex/social-candidate-fallback`.** Production run `32061374498` підтвердив здоровий routing:
@@ -79,7 +91,8 @@ Last updated: 2026-08-17
   аудит. Тепер bounded candidate/repair loop зберігає тільки blocker-free adaptations, checkpoint
   відкидає старі blocked results, writer/critic мають той самий approved fact snapshot, а post
   repair версіонується in place. UI показує clean readiness; legacy details згорнуті в amber.
-  Targeted tests 39/39 і typecheck green; production recovery/verification чекають deploy.
+  Final production recovery `df663262…` / Actions `32065312557` пройшов `succeeded`; package і
+  всі шість posts — clean `in_review`, без автоматичного approve.
   (source: `src/lib/weekly-digest/social-adapter.ts`,
   `src/lib/weekly-digest/social-checkpoint.ts`, `src/lib/weekly-digest/generation-worker.ts`,
   `src/components/admin/weekly-workspace.tsx`, production `social_posts` live check 2026-08-17)
