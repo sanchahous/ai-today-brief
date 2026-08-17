@@ -148,7 +148,7 @@ describe('adaptWeeklySocialChannel', () => {
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) => {
       if (role === 'writer') return writerResult();
       criticCalls += 1;
-      return criticCalls <= 2
+      return criticCalls === 1
         ? criticResult({
             originalityScore: 40,
             originalityFlags: ['Generic framing in the opener'],
@@ -160,7 +160,7 @@ describe('adaptWeeklySocialChannel', () => {
 
     expect(result.qualityReport!.blocking).toEqual([]);
     expect(result.qualityReport!.repairRounds).toBe(1);
-    expect(result.qualityReport!.auditedCandidates).toBe(3);
+    expect(result.qualityReport!.auditedCandidates).toBe(2);
   });
 
   it('does not block on originality when the critic scores it above the floor', async () => {

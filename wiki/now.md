@@ -16,6 +16,15 @@ Last updated: 2026-08-17
 
 ## Стан репозиторію
 
+- **Social provider budget follow-up (2026-08-17), гілка
+  `codex/social-provider-budget`.** Перший live recovery на approval-ready boundary лишався на
+  Telegram без checkpoint понад 12 хв: social call успадкував 720 s editorial-master ceiling,
+  а adapter міг аудіювати до дев'яти кандидатів. Для `social_copy` ceiling тепер 180 s / first
+  token 45 s / idle 30 s; кожен із максимум трьох repair rounds аудіює один найкращий candidate.
+  Інші job types не змінені.
+  (source: production job `ee0d727e-6e43-48be-b147-d759c25717a7`, Actions run `32054964740`,
+  `.github/workflows/weekly-master-cli-worker.yml`, `src/lib/weekly-digest/social-adapter.ts`)
+
 - **Social approval boundary ремонтує канал до owner review (2026-08-17), гілка
   `codex/social-approval-ready`.** Production package був `in_review`, хоча всі 6 posts мали
   3–12 blocking checks: worker зберігав audit, але безумовно піднімав `draft → in_review`.

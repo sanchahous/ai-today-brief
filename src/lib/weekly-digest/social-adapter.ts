@@ -306,7 +306,10 @@ export async function adaptWeeklySocialChannel(input: {
       .sort((left, right) => right.score - left.score);
     const failedThisRound: WeeklySocialAdaptation[] = [];
 
-    for (const selected of ranked) {
+    // Audit the strongest deterministic candidate once per round. Auditing all
+    // three before asking the writer to repair multiplied slow reasoning-model
+    // latency by nine in the worst case without improving the repair signal.
+    for (const selected of ranked.slice(0, 1)) {
       const firstComment = input.channel === 'x' ? input.trackedUrl : writer.value.firstComment;
       const unpacked = unpackCandidate(input.channel, selected.candidate, firstComment);
       const draft: SocialDraft = {

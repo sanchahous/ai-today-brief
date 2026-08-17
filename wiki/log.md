@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-17
 
+## 2026-08-17 — Social provider latency budget
+
+**Джерело:** production job `ee0d727e-6e43-48be-b147-d759c25717a7`, Actions run
+`32054964740`; `.github/workflows/weekly-master-cli-worker.yml`,
+`src/lib/weekly-digest/social-adapter.ts`.
+
+**Виявлено:** approval-ready recovery залишався на першому Telegram call понад 12 хв без
+channel checkpoint. Social adapter успадкував 720 s OpenRouter ceiling великого editorial master
+і в worst case міг аудіювати три candidates у кожному з трьох repair rounds.
+
+**Змінено:** для `social_copy` streaming budget = 45 s first token / 30 s idle / 180 s absolute;
+інші jobs лишають 90/45/720 s. Кожен repair round незалежно аудіює один найсильніший
+deterministic candidate, тому максимум — три writer/critic pairs на канал, а не дев'ять.
+
+**Wiki:** оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md), [index](index.md).
+
 ## 2026-08-17 — Approval-ready Social repair boundary
 
 **Джерело:** owner screenshot Social tab; production package
