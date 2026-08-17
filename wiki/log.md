@@ -4,7 +4,23 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-16
+Last updated: 2026-08-17
+
+## 2026-08-17 — Site images WebP
+
+**Джерело:** запит власника після upload 7 story-картинок на `ai-weekly-2026-08-09`;
+перевірка origin у прод-Storage (JPEG 1600×900) і коду `uploadWeeklyArtifactAction` /
+`encodeCardOrigin` / `opengraph-image.tsx` (Satori не декодує WebP).
+
+**Змінено:** [now](now.md), [overview](overview.md), [marketing/card-images](marketing/card-images.md),
+[ops/vercel-image-quota](ops/vercel-image-quota.md), [weekly-digest](pipeline/weekly-digest.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md), [index](index.md).
+
+**Код (гілка `feat/site-webp-origins`):** `src/lib/encode-site-image.ts` — WebP 1600×900 q82
+для weekly `story_image`; loader `format=webp`; cover / news-card origin / social JPEG
+без змін.
 
 ## 2026-08-16 — Start / retry Content Studio після succeeded jobs
 

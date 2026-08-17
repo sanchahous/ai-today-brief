@@ -13,6 +13,7 @@ describe('imageLoader', () => {
     expect(out).not.toContain('/storage/v1/object/public/');
     expect(out).toContain('width=184');
     expect(out).toContain('quality=75');
+    expect(out).toContain('format=webp');
   });
 
   it('transforms JPEG card origins the same way as legacy PNG paths', () => {
@@ -20,6 +21,7 @@ describe('imageLoader', () => {
     expect(out).toContain('/storage/v1/render/image/public/card-images/');
     expect(out).toContain('.jpg');
     expect(out).toContain('width=184');
+    expect(out).toContain('format=webp');
   });
 
   it('preserves the cache-busting query already on the stored URL', () => {
@@ -29,6 +31,7 @@ describe('imageLoader', () => {
 
   it('defaults quality when Next does not supply one', () => {
     expect(imageLoader({ src: SUPABASE_CARD, width: 96 })).toContain('quality=75');
+    expect(imageLoader({ src: SUPABASE_CARD, width: 96 })).toContain('format=webp');
   });
 
   it('never rewrites publisher hero images', () => {

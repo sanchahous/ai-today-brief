@@ -6,12 +6,21 @@ Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…16, Content Sim p
 experimental Visual Affordance V10 owner review 2026-08-13, weekly illustration B1-fix 2026-08-15,
 owner weekly selection/content audit 2026-08-16, research corpus corroboration 2026-08-16,
 reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16,
-Start / retry Content Studio silent no-op 2026-08-16
-Last updated: 2026-08-16
+Start / retry Content Studio silent no-op 2026-08-16, site WebP delivery 2026-08-17
+Last updated: 2026-08-17
 
 ---
 
 ## Стан репозиторію
+
+- **Site images → WebP (2026-08-17), гілка `feat/site-webp-origins`.** Браузер на сайті
+  отримує WebP через `image-loader` (`format=webp` на Supabase transform), навіть якщо
+  origin у бакеті JPEG. Нові weekly `story_image` (Visuals upload і render-persist)
+  пишуться як WebP 1600×900 q82. **Не** чіпали origin новинних карток і weekly cover —
+  це `og:image` / Satori, які WebP не декодують; Instagram/social лишаються JPEG.
+  Уже завантажені 7 JPEG на `ai-weekly-2026-08-09` на сайті теж підуть як WebP після
+  деплою, без повторного upload. (source: `src/lib/encode-site-image.ts`,
+  `src/lib/image-loader.ts`, [ops/vercel-image-quota](ops/vercel-image-quota.md))
 
 - **Кнопка Start / retry Content Studio знову ставить паки після succeeded (2026-08-16),
   гілка `fix/weekly-content-studio-retry`.** Живий клік 16.08 12:46 UTC на

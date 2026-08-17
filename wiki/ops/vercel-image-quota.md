@@ -5,9 +5,9 @@ Image Optimization, а не генерація. Оптимізатор Vercel з
 ресайзить наші картки через Supabase Storage.
 Sources: live check `https://aitodaybrief.com/_next/image?…` 2026-08-14 (HTTP 402,
 `X-Vercel-Error: OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED`); `next.config.ts`;
-`src/lib/image-loader.ts`; `pipeline/card-image.ts` origin JPEG 2026-08-15;
+`src/lib/image-loader.ts` (site delivery WebP, 2026-08-17); `pipeline/card-image.ts` origin JPEG 2026-08-15;
 owner report 2026-08-14.
-Last updated: 2026-08-15
+Last updated: 2026-08-17
 
 ---
 
@@ -45,8 +45,10 @@ X-Vercel-Error: OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED
 Loader розрізняє два типи зображень, бо вони потребують різного:
 
 1. **Наші картки в публічному бакеті Supabase.** Supabase Storage вміє ресайзити сам через
-   `storage/v1/render/image/public/…?width=&quality=`. Loader переписує шлях з
-   `object/public` на `render/image/public` і додає ширину, яку просить Next.
+   `storage/v1/render/image/public/…?width=&quality=&format=webp`. Loader переписує шлях з
+   `object/public` на `render/image/public`, додає ширину, яку просить Next, і просить **WebP**.
+   Origin у бакеті може лишатись JPEG (новинні картки / weekly cover — OG і Satori не читають
+   WebP); браузер на сайті все одно отримує WebP.
 2. **Hero-зображення з `og:image` чужих видань.** Живуть на довільних хостах (саме тому в
    конфігу `remotePatterns: '**'`), трансформувати їх ми не можемо — проходять без змін.
 
@@ -69,11 +71,22 @@ Cache-buster `?v=<hash>` зі збереженого URL має вижити, т
 
 Нові картки новин пишуться як `${slug}.jpg` (`image/jpeg`, 1280×720, q82 mozjpeg)
 через `encodeCardOrigin` у `pipeline/card-image.ts` — до upload, на всіх щаблях
-драбини (FLUX / Pollinations / fallback). JPEG, не WebP, бо OG-кrawlerи слабше
-читають WebP. Ідемпотентний skip лишає вже збережені `.png` (~488 КБ), поки не
-запустити `--reencode-png` (без FLUX): `npx tsx scripts/backfill-card-images.ts --reencode-png`.
-Модель новин і loader не змінювали. Мініатюра і повне — як і раніше
-один файл. (source: `pipeline/card-image.ts`, [marketing/card-images](../marketing/card-images.md))
+драбини (FLUX / Pollinations / fallback). JPEG, не WebP, бо `opengraph-image.tsx`
+(Satori) і OG-кrawlerи не декодують WebP. Ідемпотентний skip лишає вже збережені
+`.png` (~488 КБ), поки не запустити `--reencode-png` (без FLUX):
+`npx tsx scripts/backfill-card-images.ts --reencode-png`.
+Модель новин без змін. Мініатюра і повне — як і раніше один файл.
+(source: `pipeline/card-image.ts`, [marketing/card-images](../marketing/card-images.md))
+
+## Site delivery WebP (2026-08-17)
+
+Loader додає `format=webp` до кожного Supabase transform. Weekly `story_image`
+(ручний upload і render-persist) пише origin як WebP 1600×900 q82
+(`src/lib/encode-site-image.ts`). Cover, social/IG, thumbnail і новині картки
+лишаються JPEG origin. Уже завантажені JPEG story-файли на сайті теж віддаються
+як WebP через transform — переupload не обовʼязковий.
+(source: `src/lib/image-loader.ts`, `src/lib/encode-site-image.ts`,
+`src/app/admin/(cms)/weekly/actions.ts`)
 
 ## Що лишається відкритим
 

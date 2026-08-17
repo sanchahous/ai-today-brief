@@ -11,9 +11,10 @@
  *
  *   1. Our own card images in the public Supabase bucket. Supabase Storage can
  *      resize these itself via `render/image/public/...`, which returns a
- *      width-appropriate JPEG — 24 KB against the 488 KB PNG origin for a
+ *      width-appropriate WebP — far smaller than the JPEG/PNG origin for a
  *      184 px slot. That is the right transform for a 92 px thumbnail and it
- *      costs no Vercel quota.
+ *      costs no Vercel quota. Origins may still be JPEG (news cards / weekly
+ *      cover) so OG crawlers and Satori can read the file without a transform.
  *   2. Hero images taken from the source articles' `og:image`. Those live on
  *      arbitrary publisher hosts (see `remotePatterns` in next.config.ts) and
  *      cannot be transformed by us, so they pass through untouched.
@@ -59,5 +60,6 @@ export default function imageLoader({ src, width, quality }: ImageLoaderArgs): s
   url.pathname = url.pathname.replace(SUPABASE_PUBLIC_OBJECT, SUPABASE_PUBLIC_RENDER);
   url.searchParams.set('width', String(Math.round(width)));
   url.searchParams.set('quality', String(quality ?? 75));
+  url.searchParams.set('format', 'webp');
   return url.toString();
 }

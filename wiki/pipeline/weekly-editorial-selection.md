@@ -11,7 +11,7 @@ weekly illustration P3 daily cover prompt 2026-08-15, owner selection audit + `w
 `src/lib/weekly-digest/seed-content.ts`, прод-прогін `05cc4e6a-a709-44ca-b56a-382f21c40292`),
 research corpus corroboration 2026-08-16 (`pipeline/story-identity.ts`),
 Start / retry Content Studio after succeeded jobs 2026-08-16
-Last updated: 2026-08-16
+Last updated: 2026-08-17
 
 ---
 
@@ -32,6 +32,8 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > E2 two-stage critic is the vision loop, not this selector.
 > E3 prompt-promotion readout is Visuals calibration only — it does not change this selector
 > or release eligibility.
+> Site WebP encoding (2026-08-17) changes `story_image` persist/upload and the public
+> image loader only — it does not change this selector.
 > F3 OpenRouter daily ranking writes `llm_model_rank_audit` / `llm_provider_models` and does
 > not change this selector.
 > G illustration budget is `/admin/costs` ledger split only — it does not change this selector.
