@@ -267,6 +267,11 @@ LinkedIn PDF, package або четвертому post — наступний li
 кроку. Fresh generation потрібна лише коли змінився approved article/revision або locale map,
 бо тоді source hash навмисно не збігається.
 
+Помилка `LinkedIn document rendered 8 pages; expected 7` — це не провал каналів і не привід
+знову запускати writer/critic. Вона означає, що довгий editorial copy переповнив фіксований
+7-page native document. Після deploy layout-bounds fix створи один linked retry: checkpoint
+відновить 6/6 adaptations та Instagram slides і повторить LinkedIn render із bounded regions.
+
 Якщо після **Create linked retry** з'явився `Minified React error #441` із ref `2087663833`, не
 натискай retry вдруге: child уже створено. Це зафіксований HTTP 503 GitHub на dispatch, а не
 провал writer-а. Онови сторінку й стеж за тим самим child job; dispatcher має короткі повторні
@@ -311,6 +316,7 @@ Postpone не створює нову RPC — це той самий Pause → A
 | Після retry знову `UNSUPPORTED_*` на деталі зі статті | Старий короткий excerpt / вузькі claims | Переконайся що packs **v3** з довгим excerpt; Approve знову |
 | Visuals/Social не з’являються | Master ще не succeeded | Спочатку зелений Research gate |
 | `social_copy` terminal failed після Instagram, `undefined.map` | Normalized article artifact не мав `stories` для LinkedIn document | Дочекайся деплою social recovery, потім **Create linked retry**; не генеруй шість каналів окремо |
+| `social_copy` terminal failed на `rendered 8 pages; expected 7` | Довгий editorial copy переповнив LinkedIn PDF | Після deploy 7-page bounds створи **один** linked retry; він відновить збережені канали й слайди |
 | Linked `social_copy` retry знову показує `channels` від 0% | Немає валідного checkpoint для поточного approved source hash | Перевір, чи не змінилась revision/locale map; якщо ні — дивись `checkpoint_restored`/`checkpoint_saved` у Timeline |
 | Release: немає story/cover | Файл не завантажено | Visuals → скопіюй промпт → згенеруй у своєму інструменті → upload. Не тисни Regenerate |
 | Release blocked на video | Немає Remotion pipeline / captions | Owner override лише для trial (див. preflight) |

@@ -278,6 +278,20 @@ Linked manual retry як і раніше створює окремий job, то
 2026-08-17; `src/lib/weekly-digest/generation-worker.ts`,
 `src/lib/weekly-digest/linkedin-document.ts`, `generation-worker.test.ts`)
 
+Два наступні linked jobs (`f39b2429…`, `d716aaef…`) уже пройшли hydration, але terminal-failed
+на наступному детермінованому гейті: `LinkedIn document rendered 8 pages; expected 7.` Live
+метрики показали production-sized copy, якої не було у фікстурі: standfirst 1018 символів
+проти 101 у тесті, takeaways до 205, story fields до 278 і source URL до 130 символів. PDFKit
+автоматично створював восьму сторінку при overflow, а фінальний page-count guard правильно
+відхиляв файл. Renderer тепер задає bounded/ellipsis regions для cover, Top 3, Radar, next-week
+і sources; на sources видно компактний host, але link веде на повний URL. Gate лишається рівно
+7 сторінок. Regression test рендерить довгі production-shaped поля і перевіряє фактичну
+кількість сторінок через PDF preview.
+(source: production jobs `f39b2429-63b1-4e08-82f9-fa496fa34840`,
+`d716aaef-f902-430f-b811-1f496852dd0c`, Actions runs `32043513443` / `32044207908`,
+read-only production length metrics 2026-08-17; `src/lib/weekly-digest/linkedin-document.ts`,
+`linkedin-document.test.ts`)
+
 ### Staged social-copy checkpoints across linked retries (2026-08-17)
 
 Старий `social_copy` checkpoint зберігав `tokens` і готові channel adaptations після кожного

@@ -6,6 +6,26 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-17
 
+## 2026-08-17 — LinkedIn native-document 7-page overflow recovery
+
+**Джерело:** production `social_copy` jobs
+`f39b2429-63b1-4e08-82f9-fa496fa34840` / `d716aaef-f902-430f-b811-1f496852dd0c`,
+Actions runs `32043513443` / `32044207908`; read-only content-length query;
+`src/lib/weekly-digest/linkedin-document.ts`.
+
+**Виявлено:** обидва linked retries уже пройшли normalized-article hydration і зберегли 6/6
+channel adaptations, але впали на `LinkedIn document rendered 8 pages; expected 7.` PDFKit
+автоматично додавав сторінку при overflow. Production standfirst має 1018 символів (тестовий —
+101), takeaways до 205, story fields до 278, source URL до 130 символів.
+
+**Змінено:** усі variable-copy regions семисторінкового документа мають bounded height та
+ellipsis; Radar, next-week і sources ділять доступну висоту детерміновано. Source label
+компактний, але лишається link на повний URL. Page-count gate не послаблено.
+
+**Перевірка:** regression fixture з production-sized copy + коротка фікстура рендерять фактичні
+7 сторінок; targeted LinkedIn/worker Vitest — 25/25. Після merge staged checkpoint recovery має
+повторити лише LinkedIn і наступні durable кроки, без шести нових writer/critic calls.
+
 ## 2026-08-17 — Staged social-copy checkpoints across linked retries
 
 **Джерело:** `src/lib/weekly-digest/generation-worker.ts`,

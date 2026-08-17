@@ -3,7 +3,8 @@
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
 Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 `pipeline/weekly-digest.ts`, owner audits / production runs 2026-08-09…17,
-[weekly-digest](weekly-digest.md), staged social-copy recovery 2026-08-17.
+[weekly-digest](weekly-digest.md), staged social-copy recovery and LinkedIn 7-page bounds
+2026-08-17.
 Last updated: 2026-08-17
 
 ---
@@ -44,6 +45,10 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > hash; they do not change candidates, weights, ranks, diversity, or editorial approval state.
 > (source: `src/lib/weekly-digest/social-checkpoint.ts`,
 > `src/lib/weekly-digest/generation-worker.ts`)
+> LinkedIn 7-page bounds (2026-08-17) clip only presentation copy inside fixed native-document
+> regions while preserving clickable source URLs; they do not change selected stories, ranks,
+> evidence, article artifacts or approval state.
+> (source: `src/lib/weekly-digest/linkedin-document.ts`)
 > (source: [weekly-illustration-plan](weekly-illustration-plan.md) P2/M3/B3/P3/D2/D3/E1/E2/E3/F3/G/F5)
 
 > **Scope note (2026-08-15):** the `feat/weekly-illustration-fixes` review-fix branch
