@@ -43,7 +43,7 @@ const CHANNEL_CONTRACT: Record<SocialChannel, string> = {
     'English carousel of 7–9 slides. Separate slide text with <SLIDE>, then write <CAPTION> and a caption that adds context instead of repeating slide headlines. No URL and at most 5 hashtags.',
 };
 
-function parseWriter(raw: string) {
+export function parseWeeklySocialWriter(raw: string) {
   const match = raw.match(/\{[\s\S]*\}/)?.[0];
   if (!match) throw new SyntaxError('Writer returned no JSON object.');
   const value = JSON.parse(match) as { angle?: unknown; text?: unknown; firstComment?: unknown };
@@ -53,6 +53,11 @@ function parseWriter(raw: string) {
   if (typeof value.text !== 'string' || !value.text.trim()) {
     throw new SyntaxError('Writer text is missing.');
   }
+  // This is part of the provider response contract, not a post-generation
+  // workflow concern. Keeping it inside the validator lets the OpenRouter
+  // model queue reject one malformed response and continue to the next model
+  // without terminating the whole channel/job.
+  candidatesFromText(value.text);
   return {
     angle: value.angle.trim(),
     text: value.text.trim(),
@@ -293,9 +298,14 @@ export async function adaptWeeklySocialChannel(input: {
   let lastFailed: WeeklySocialAdaptation | null = null;
 
   for (let round = 0; round < 3; round += 1) {
-    const writer = await generateSocialJson('writer', promptFor(input, repair), parseWriter, {
-      db: input.db,
-    });
+    const writer = await generateSocialJson(
+      'writer',
+      promptFor(input, repair),
+      parseWeeklySocialWriter,
+      {
+        db: input.db,
+      },
+    );
     writerUsage = usageTotal(writerUsage, writer.usage);
     const hookCandidates = candidatesFromText(writer.value.text);
     const ranked = hookCandidates

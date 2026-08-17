@@ -343,14 +343,18 @@ override існує лише за реально збереженого `social.
 Якщо всі social providers усе ж тимчасово недоступні, failure класифікується як retryable
 `provider_exhausted`; control plane робить backoff і відновлює вже збережені канали замість
 terminal `unknown` та нового ручного кола.
+Writer candidate serialization (`2–3` variants через `<CANDIDATE>` або supported separator)
+тепер перевіряється всередині provider response validator. Тому malformed repair response
+від однієї моделі переходить на наступну модель тієї ж queue, а не завершує весь channel job.
 12-хвилинний editorial-master ceiling для інших job types не змінено. У checkpoint потрапляє
 лише канал із
 порожнім `blocking`; пройдений канал не генерується знову при наступному recovery.
 (source: `src/lib/weekly-digest/social-adapter.ts`,
 `src/lib/weekly-digest/social-checkpoint.ts`, `.github/workflows/weekly-master-cli-worker.yml`,
 `src/lib/social/llm-router.ts`, `src/lib/weekly-digest/generation-control.ts`,
-`social-adapter.test.ts`, `llm-router.test.ts`; production runs
-`32054964740` / `32057477211` / `32059830080` та production-DB live routing probe 2026-08-17)
+`src/lib/weekly-digest/social-adapter.ts`, `social-adapter.test.ts`, `llm-router.test.ts`;
+production runs `32054964740` / `32057477211` / `32059830080` / `32061374498` та
+production-DB live routing probe 2026-08-17)
 
 Writer і critic тепер бачать один owner-approved fact snapshot із повного article master, а
 Instagram/Threads аудіюються з нативними `<SLIDE>` / `<CAPTION>` / `<PART>` markers. Непояснений

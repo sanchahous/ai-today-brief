@@ -280,6 +280,10 @@ candidate; social provider має 60-секундний absolute ceiling **на 
 job отримує retryable `provider_exhausted`, backoff і продовжує зі своїх channel checkpoints.
 (source: `src/lib/weekly-digest/generation-control.ts`)
 
+Malformed writer JSON без `2–3` варіантів `<CANDIDATE>` більше не потребує ручного retry:
+response validator відхиляє лише цю відповідь і продовжує на наступній моделі в bounded queue.
+(source: `src/lib/weekly-digest/social-adapter.ts`, production run `32061374498`)
+
 Якщо job впав після ~90% з `Cannot read properties of undefined (reading 'map')`, не переписуй
 шість постів: це був несумісний normalized article artifact на LinkedIn document step, а не
 provider failure. Після деплою фіксу натисни **Create linked retry** на terminal `social_copy`

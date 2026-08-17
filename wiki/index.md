@@ -8,7 +8,7 @@ experimental Visual Affordance V10 owner review 2026-08-13, illustration B1-fix 
 Start / retry Content Studio after succeeded jobs 2026-08-16,
 social package LinkedIn recovery, GitHub dispatch 503 recovery, staged social checkpoints,
 LinkedIn 7-page overflow bounds, approval-ready Social repair, bounded social provider ladder та
-reliable social routing 2026-08-17
+reliable social routing/candidate fallback 2026-08-17
 Last updated: 2026-08-17
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·

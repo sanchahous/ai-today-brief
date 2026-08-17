@@ -8,6 +8,7 @@ import { generateSocialJson } from '@/lib/social/llm-router';
 import {
   adaptWeeklySocialChannel,
   parseWeeklySocialCritic,
+  parseWeeklySocialWriter,
   SocialCopyQualityError,
 } from './social-adapter';
 import type { WeeklyMasterBundle } from './content-studio';
@@ -244,6 +245,24 @@ describe('adaptWeeklySocialChannel', () => {
     const criticCall = vi.mocked(generateSocialJson).mock.calls.find(([role]) => role === 'critic');
     expect(criticCall?.[1]).toContain('<SLIDE>Slide 1');
     expect(criticCall?.[1]).toContain('<CAPTION>Anthropic shipped');
+  });
+});
+
+describe('parseWeeklySocialWriter', () => {
+  it('accepts a writer response with multiple explicit candidates', () => {
+    expect(
+      parseWeeklySocialWriter(
+        '{"angle":"Concrete angle","text":"First hook<CANDIDATE>Second hook","firstComment":""}',
+      ),
+    ).toMatchObject({ angle: 'Concrete angle' });
+  });
+
+  it('rejects a single candidate inside provider validation so the model queue can continue', () => {
+    expect(() =>
+      parseWeeklySocialWriter(
+        '{"angle":"Concrete angle","text":"Only one hook","firstComment":""}',
+      ),
+    ).toThrow('Writer must return 2–3 hook candidates');
   });
 });
 
