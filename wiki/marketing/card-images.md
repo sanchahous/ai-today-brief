@@ -11,7 +11,7 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5.1` and
 three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / C1 / C2 / C3 + review fixes 2026-08-15
-Last updated: 2026-08-15
+Last updated: 2026-08-17
 
 ---
 
@@ -69,13 +69,16 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
 4. **Store** — `encodeCardOrigin` cover-resize to 1280×720, flatten alpha onto
    `#071019`, JPEG q82 mozjpeg progressive → `${slug}.jpg` (`image/jpeg`) in the
    public `card-images` bucket → `brief_items.card_image_url`. JPEG, not WebP,
-   so OG crawlers can read the origin without a transform. Idempotent skip
-   leaves existing `.png` (~488 KB from the 2026-08-14 incident) until
-   `--reencode-png` (no FLUX). Weekly artifacts keep their own storage paths + prompt
-   metadata. (source: [ops/vercel-image-quota](../ops/vercel-image-quota.md),
-   `pipeline/card-image.ts`)
+   so OG crawlers and Satori (`opengraph-image.tsx`) can read the origin without a
+   transform. The public site still requests `format=webp` from Supabase Storage
+   (`src/lib/image-loader.ts`). Idempotent skip leaves existing `.png` (~488 KB
+   from the 2026-08-14 incident) until `--reencode-png` (no FLUX). Weekly
+   **story** figures (`story_image`) are stored as WebP 1600×900 q82
+   (`encodeSiteWebp`); weekly **cover** stays JPEG because it is the digest
+   `og:image`. Social/IG crops stay JPEG. (source: [ops/vercel-image-quota](../ops/vercel-image-quota.md),
+   `pipeline/card-image.ts`, `src/lib/encode-site-image.ts`)
 5. **Render** — `opengraph-image.tsx` (Satori) composites the brand overlay for
-   OG/share; listings / heroes use `next/image`.
+   OG/share; listings / heroes use `next/image` → WebP via the loader.
 
 Daily generation runs **once, post-publish** (`pipeline/card-image.ts` from
 `pipeline/run-daily.ts`) and is idempotent. Estimated image spend can land in

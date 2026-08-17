@@ -362,6 +362,46 @@ describe('storySegmentPrompt', () => {
     });
     expect(prompt).toContain('Never invent a person staring at a screen');
     expect(prompt).toContain('never open a sentence with the name of another field');
+    expect(prompt).toContain('no independent corroborating excerpt');
+  });
+
+  it('names the primary publisher when the pack has no corroborating excerpt', () => {
+    const [withSource] = approvedStoryPromptMaterial([storyWithPrimaryExcerpt()]);
+    const prompt = storySegmentPrompt({
+      material: withSource!,
+      placement: 'feature',
+      rank: 2,
+      alreadyWritten: [],
+      guidance: [],
+    });
+    expect(prompt).toContain('Attribute every number, benchmark and named result to Anthropic');
+  });
+
+  it('asks the writer to prefer cautious wording when a corroborating excerpt is present', () => {
+    const withCorroboration = storyWithPrimaryExcerpt();
+    withCorroboration.research = {
+      ...withCorroboration.research!,
+      corroboratingSources: [
+        {
+          url: 'https://example.org/independent',
+          sourceName: 'Example',
+          domain: 'example.org',
+          primary: false,
+          extractedText: 'An independent write-up of the same release.',
+          ogImage: null,
+        },
+      ],
+    };
+    const [material] = approvedStoryPromptMaterial([withCorroboration]);
+    const prompt = storySegmentPrompt({
+      material: material!,
+      placement: 'feature',
+      rank: 2,
+      alreadyWritten: [],
+      guidance: [],
+    });
+    expect(prompt).toContain('Corroborating excerpts may confirm or qualify the primary source');
+    expect(prompt).not.toContain('no independent corroborating excerpt');
   });
 });
 

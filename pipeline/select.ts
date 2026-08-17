@@ -44,6 +44,29 @@ export function isColdSingleton(entry: RankedEntry): boolean {
   );
 }
 
+export interface PoolDrop {
+  title: string;
+  url: string;
+  score: number;
+  reason: 'min_score' | 'topic_cap' | 'cold_singleton';
+}
+
+export interface PoolSelection {
+  pool: PoolItem[];
+  dropped: PoolDrop[];
+}
+
+function toPoolItem(entry: RankedEntry, ref: number): PoolItem {
+  return {
+    ref,
+    title: entry.lead.title,
+    url: entry.lead.url,
+    source: entry.lead.source_name,
+    topic: entry.topic,
+    category: entry.category,
+  };
+}
+
 /**
  * Exact cross-day guard: drop candidates whose URL already backs a recent
  * brief item. Refs are re-numbered so the editor sees contiguous 1..N.
@@ -54,17 +77,42 @@ export function dropKnownUrls(pool: PoolItem[], knownUrls: ReadonlySet<string>):
     .map((item, i) => ({ ...item, ref: i + 1 }));
 }
 
-export function selectPool(ranked: RankedEntry[], opts: PoolOptions): PoolItem[] {
+export function selectPoolWithReasons(ranked: RankedEntry[], opts: PoolOptions): PoolSelection {
   const topicCounts: Record<string, number> = {};
   const pooled: RankedEntry[] = [];
+  const dropped: PoolDrop[] = [];
   let coldSingletons = 0;
 
   for (const entry of ranked) {
-    if (entry.score < opts.minScore) continue;
+    if (entry.score < opts.minScore) {
+      dropped.push({
+        title: entry.lead.title,
+        url: entry.lead.url,
+        score: entry.score,
+        reason: 'min_score',
+      });
+      continue;
+    }
     const count = topicCounts[entry.topic] ?? 0;
-    if (count >= opts.perTopicCap) continue;
+    if (count >= opts.perTopicCap) {
+      dropped.push({
+        title: entry.lead.title,
+        url: entry.lead.url,
+        score: entry.score,
+        reason: 'topic_cap',
+      });
+      continue;
+    }
     if (isColdSingleton(entry)) {
-      if (coldSingletons >= opts.maxColdSingletons) continue;
+      if (coldSingletons >= opts.maxColdSingletons) {
+        dropped.push({
+          title: entry.lead.title,
+          url: entry.lead.url,
+          score: entry.score,
+          reason: 'cold_singleton',
+        });
+        continue;
+      }
       coldSingletons++;
     }
     topicCounts[entry.topic] = count + 1;
@@ -72,12 +120,12 @@ export function selectPool(ranked: RankedEntry[], opts: PoolOptions): PoolItem[]
     if (pooled.length >= opts.poolSize) break;
   }
 
-  return pooled.map((entry, i) => ({
-    ref: i + 1,
-    title: entry.lead.title,
-    url: entry.lead.url,
-    source: entry.lead.source_name,
-    topic: entry.topic,
-    category: entry.category,
-  }));
+  return {
+    pool: pooled.map((entry, i) => toPoolItem(entry, i + 1)),
+    dropped,
+  };
+}
+
+export function selectPool(ranked: RankedEntry[], opts: PoolOptions): PoolItem[] {
+  return selectPoolWithReasons(ranked, opts).pool;
 }

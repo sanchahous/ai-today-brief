@@ -8,8 +8,10 @@ audit 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK `claimIds` parser
 Postpone release feature 2026-08-10, experimental Visual Affordance V10 owner review 2026-08-13,
 weekly illustration P3 daily cover prompt 2026-08-15, owner selection audit + `weekly-editorial-v3`
 2026-08-16 (`pipeline/weekly-digest.ts`, `pipeline/source-authority.ts`,
-`src/lib/weekly-digest/seed-content.ts`, прод-прогін `05cc4e6a-a709-44ca-b56a-382f21c40292`)
-Last updated: 2026-08-16
+`src/lib/weekly-digest/seed-content.ts`, прод-прогін `05cc4e6a-a709-44ca-b56a-382f21c40292`),
+research corpus corroboration 2026-08-16 (`pipeline/story-identity.ts`),
+Start / retry Content Studio after succeeded jobs 2026-08-16
+Last updated: 2026-08-17
 
 ---
 
@@ -30,6 +32,8 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > E2 two-stage critic is the vision loop, not this selector.
 > E3 prompt-promotion readout is Visuals calibration only — it does not change this selector
 > or release eligibility.
+> Site WebP encoding (2026-08-17) changes `story_image` persist/upload and the public
+> image loader only — it does not change this selector.
 > F3 OpenRouter daily ranking writes `llm_model_rank_audit` / `llm_provider_models` and does
 > not change this selector.
 > G illustration budget is `/admin/costs` ledger split only — it does not change this selector.
@@ -150,10 +154,17 @@ stored per candidate, so review reads «програв 0.8 після 5-балн
 ≈ 1). Тепер він додатково рахує **незалежні** хости цитат — не власний домен новини
 й не тред HN/Reddit/X, з якого її взяли. Це підіймає покриття з 1/22 до 3/33: сигнал
 більше не вимкнений структурно, але дані все ще рідкісні, тому бюджет компонента
-зменшено 15 → 13 на користь `evidence`. Реальне лікування — крос-джерельне
-звʼязування на етапі `fetch`, це окрема робота.
+зменшено 15 → 13 на користь `evidence`. Daily rank з 2026-08-16 клеїть ownership-події
+(дві спільні сутності) і `storyIdentityKeys`; історичні рядки з `mentions_count ≈ 1`
+лишаються, поки їх не перескорять. Research-паки Top 3
+з 2026-08-16 шукають sibling-сторінки вже в таблиці `articles` — це інший лічильник,
+див. [weekly-digest § Corpus corroboration](weekly-digest.md#corpus-corroboration-in-research-packs-2026-08-16).
+Retry Content Studio після `succeeded` паків (2026-08-16) ставить нові `research_pack`
+jobs; він не змінює кандидатів, ваги чи diversity `weekly-editorial-v3`.
+(source: `src/lib/weekly-digest/orchestrator.ts`,
+[weekly-digest § Start / retry](weekly-digest.md#content-studio-retry-after-succeeded-jobs-2026-08-16))
 > ⚠️ (needs verification) Гіпотеза: доки `mentions_count ≈ 1`, будь-який
-> corroboration-компонент лишатиметься рідкісним. Див. [overview](../overview.md) §7 #6.
+> **selection**-corroboration лишатиметься рідкісним. Див. [overview](../overview.md) §7 #6.
 
 **Наслідок для контенту.** Ці зміни стосуються лише `selectEditorialDigestItems`.
 Порожні поля історій виправлено окремо — див.

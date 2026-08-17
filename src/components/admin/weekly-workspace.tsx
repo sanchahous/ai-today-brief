@@ -1804,7 +1804,9 @@ function ResearchPanel({
         <ol className="mt-4 list-decimal space-y-2 rounded-xl border border-white/8 bg-black/15 px-5 py-4 pl-9 text-sm leading-6 text-slate-300">
           <li>
             Click <span className="font-semibold text-white">Start / retry Content Studio</span> —
-            generates (or regenerates) the three research packs.
+            generates the three research packs, or queues new jobs if the previous ones already
+            succeeded. In-flight jobs and a waiting master are left in place. You must Approve
+            the new packs again.
           </li>
           <li>
             When each pack shows <span className="font-semibold text-white">ready</span> /{' '}

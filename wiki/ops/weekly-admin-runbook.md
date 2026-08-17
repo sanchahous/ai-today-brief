@@ -10,8 +10,8 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15, seed-контент історій + `weekly-editorial-v3` 2026-08-16
-Last updated: 2026-08-16
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15, seed-контент історій + `weekly-editorial-v3` 2026-08-16, research corpus corroboration 2026-08-16, Start / retry Content Studio after succeeded jobs 2026-08-16
+Last updated: 2026-08-17
 
 ---
 
@@ -66,13 +66,26 @@ Overview показує preflight blockers з лінком на вкладку. 
 
 ### 2. Research (критичний human gate)
 
-1. **Start / retry Content Studio** — ставить `research_pack` ×3 і `editorial_master` у чергу.
+1. **Start / retry Content Studio** — ставить `research_pack` ×3 і `editorial_master` у
+   чергу. Якщо паки на цій ревізії вже `succeeded`, кнопка ставить **нові** jobs
+   (`:retry:{uuid}`), а не мовчки повертає старі рядки. In-flight слоти не дублює.
+   Waiting master лишається на місці — після Approve нових паків він сам зрушить.
+   Старі succeeded jobs лишаються в історії. Не плутати з **Regenerate master**.
+   (source: [weekly-digest § Start / retry](../pipeline/weekly-digest.md#content-studio-retry-after-succeeded-jobs-2026-08-16))
 2. Дочекайся трьох packs **ready** (Generation jobs: succeeded).
-3. На **кожній** Feature-картці: **Approve version** (owner, AAL2).
-4. Лічильник **Approved research** має стати **3/3**.
-5. Лише тоді `editorial_master` переходить у **queued** і одразу отримує один GitHub Actions
+3. На **кожній** Feature-картці прочитай excerpt і `independent_source_count`. `0` не
+   означає зіпсований пак: звіти first-party (опитування HF про власні завантаження)
+   часто не мають другого видавця. Якщо пак таки знайшов іншу сторінку в корпусі —
+   перевір, що це той самий реліз, а не сусідня модель. Тред HN не рахується
+   підтвердженням. Картка моделі на HF/ModelScope може дати короткий excerpt
+   (title + description), не повний README — цього досить, щоб порахувати
+   незалежну сторінку. Числа з єдиного джерела в майбутній статті мають читатись як
+   «за даними X», не як незалежний факт.
+4. На **кожній** Feature-картці: **Approve version** (owner, AAL2).
+5. Лічильник **Approved research** має стати **3/3**.
+6. Лише тоді `editorial_master` переходить у **queued** і одразу отримує один GitHub Actions
    worker (cron ~кожні **5 хв** лишається safety-dispatcher).
-6. Коли з’явиться **Master quality**:
+7. Коли з’явиться **Master quality**:
    - **джоба більше не падає через якість.** Якщо рушій не зміг закрити всі перевірки, він
      зберігає випуск як неактивну draft-ревізію, завершується `succeeded` і показує
      **Needs your review** із переліком `unresolved` — це задача на редагування, не збій
@@ -203,7 +216,10 @@ Release. Далі картка
 Negative**, стан слота (`очікує зображення` / `завантажено, on review` / `approved`) і
 **Upload a replacement** в тій самій картці. Кнопка **Generate prompts** / **Generate cover
 prompt** пише `story_prompt_set` (`WEEKLY_STORY_IMAGE_MODE=prompt_only`) — без FLUX. Скопіюй
-промпт, згенеруй зображення у своєму інструменті, завантаж файл. Обкладинкові кропи для каналів
+промпт, згенеруй зображення у своєму інструменті, завантаж файл. Upload `story_image`
+з 2026-08-17 пише **WebP** 1600×900 (не сирий PNG і не JPEG). Cover лишається JPEG —
+вона є `og:image` дайджесту. На сайті `next/image` і так просить WebP у Supabase.
+Обкладинкові кропи для каналів
 далі складаються автоматично з approved cover. Після upload за кілька секунд зʼявиться
 **QA чисто** або жовтий рядок на кшталт «QA: впечений текст (2 місця)» з **Ігнорувати** /
 **Замінити файл**. Під жовтим рядком — порада: впечений текст → inpaint/crop (не

@@ -29,6 +29,120 @@ current version**, коли активна ревізія не має свого
 
 **Не зроблено:** PR ще не відкрито; UI-верифікація в браузері не пройдена (subst-drive `next
 dev` глюк середовища).
+## 2026-08-17 — Site images WebP
+
+**Джерело:** запит власника після upload 7 story-картинок на `ai-weekly-2026-08-09`;
+перевірка origin у прод-Storage (JPEG 1600×900) і коду `uploadWeeklyArtifactAction` /
+`encodeCardOrigin` / `opengraph-image.tsx` (Satori не декодує WebP).
+
+**Змінено:** [now](now.md), [overview](overview.md), [marketing/card-images](marketing/card-images.md),
+[ops/vercel-image-quota](ops/vercel-image-quota.md), [weekly-digest](pipeline/weekly-digest.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md), [index](index.md).
+
+**Код (гілка `feat/site-webp-origins`):** `src/lib/encode-site-image.ts` — WebP 1600×900 q82
+для weekly `story_image`; loader `format=webp`; cover / news-card origin / social JPEG
+без змін.
+
+## 2026-08-16 — Start / retry Content Studio після succeeded jobs
+
+**Джерело:** клік власника 16.08 12:46 UTC на `ai-weekly-2026-08-09` rev.3
+(`5b1aa70f`); `weekly_digest_release_events.generation_queued` на вже
+`succeeded`/`waiting` jobs; [now](now.md).
+
+**Змінено:** [weekly-digest](pipeline/weekly-digest.md) (§ Start / retry),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md), [now](now.md).
+
+**Код (гілка `fix/weekly-content-studio-retry`):** `retryWeeklyContentStudio` ставить
+нові `research_pack` з `:retry:{uuid}`, якщо слот не in-flight; waiting master
+не дублюється. Composer лишає `startWeeklyContentStudio` зі стабільним ключем.
+
+**Не зроблено:** прод-перезбір паків (чекає деплою + клік власника); апруви паків;
+Rebuild selection.
+
+---
+
+## 2026-08-16 — Research pack: PostgREST 1000 + SPA model cards
+
+**Джерело:** перезбір паків `ai-weekly-2026-08-09` rev.3 після #268 (jobs
+`b9fd05b0` / `60a62216` / `84645b6f` succeeded, `independent_source_count` лишився 0);
+`select count(*)` у вікні corroboration = 2440; live GET HF/ModelScope
+`extractMainText` = 0 при HTTP 200.
+
+**Змінено:** [weekly-digest](pipeline/weekly-digest.md) (§ Corpus corroboration),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md).
+
+**Код (гілка `fix/weekly-research-spa-and-page`):** `generation-worker.ts` гортає
+`articles` сторінками по 1000; `research.ts` для не-primary бере title + meta
+description, якщо немає article prose.
+
+**Не зроблено:** апруви паків; Rebuild selection. IBM ALTK і звіт HF надалі чесні 0,
+якщо в корпусі немає другого видавця.
+
+---
+
+## 2026-08-16 — Daily rank: ownership щоденного тулу + кластер угоди Cursor
+
+**Джерело:** власник (SpaceX закрила поглинання Cursor за $60B 14.08, сайт мовчав);
+прод-`articles` live check 2026-08-16 (блог Cursor HN 98, TechCrunch close score 0.14,
+Reuters announce 16.06 HN 1019); [now](now.md).
+
+**Змінено:** [guide](pipeline/guide.md) §3, [weekly-digest](pipeline/weekly-digest.md)
+(кластер на daily rank), [weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[now](now.md).
+
+**Код (гілка `feat/reader-tool-lifecycle-news`):** `pipeline/reader-tools.ts` — тули
+читача, ownership, false-positive дедупу, stale URL; `rank.ts` — виняток demotion +
+кластер за сутностями/`storyIdentityKeys`; `summarize.ts` — промпт; `select.ts` /
+`run-daily.ts` — `genre_floor` і `skipped_pool_titles`; `custom-research.ts` —
+не брати primary з `/2024/` у 2026. `SCORE_VERSION` не бампили.
+
+**Не зроблено:** розширення rolling window >24h (вечірній TechCrunch усе одно не
+побачить ранковий блог наступного дня); разовий cleanup червневого хибного айтема
+`$60M clarifies rumors`.
+
+---
+
+## 2026-08-16 — Research pack: corroboration з ingest-корпусу
+
+**Джерело:** прод-паки `ai-weekly-2026-08-09` rev.2 (`independent_source_count=0` на 3/3
+Feature); прод-`articles` (NVIDIA + HF card + ModelScope для Qwen 2.4T, різні
+`cluster_id`); [now](now.md) owner session 2026-08-16.
+
+**Змінено:** [weekly-digest](pipeline/weekly-digest.md) (§ Corpus corroboration),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md).
+
+**Код (гілка `fix/weekly-research-corpus-corroboration`):** `pipeline/page-url.ts` —
+канонічний URL; `pipeline/story-identity.ts` — conservative same-event match;
+`research.ts` + `generation-worker.ts` — корпус за вікно тижня; `fetch.ts` — дедуп
+slash/www/UTM; `editorial-llm.ts` — атрибуція чисел, коли немає corroborating excerpt.
+
+**Не зроблено:** крос-джерельне звʼязування на daily `rank` (`mentions_count ≈ 1`) —
+окремий L2 з bump `SCORE_VERSION`.
+
+---
+
+## 2026-08-16 — Editor swap у `ai-weekly-2026-08-09`: Needle → Anthropic 60 субагентів
+
+**Джерело:** власник на Research tab, рішення лишити Top 3 і замінити rank 6 до апрувів;
+прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-16.
+
+**Змінено:** [now](now.md). Код репозиторію не змінювався.
+
+**Прод:** нова активна ревізія №3 `5b1aa70f-3ef1-48a7-b96d-2377876443ab` через
+`rebuild_weekly_digest_selection` (reason `editor_swap:needle2->anthropic-60-subagents`).
+Anthropic `96b2cec4` на rank 6, seed 5/5 полів з daily item, джерело TechCrunch,
+`diversity_penalty=8` у знімку. Needle прибрано. Selection run
+`969b9ae2` (`weekly-editorial-v3+editor-swap`) позначає Anthropic `selected`, Needle
+`editor_replaced`. Три `research_pack` + `editorial_master` поставлені в чергу на нову
+ревізію; waiting-master на rev.2 скасовано.
+
+**Не зроблено:** апруви паків (ще `queued`). Крос-джерельне підтвердження не чіпали.
+
+---
 
 ## 2026-08-16 — Мовчазний суддя авто-публікації + кнопка перезбору відбору
 

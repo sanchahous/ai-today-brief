@@ -72,8 +72,11 @@ import { generateWeeklyVideoScript } from './video-script-llm';
 import {
   buildWeeklyResearchPack,
   isWeeklyResearchPack,
+  RESEARCH_CORPUS_MAX_PAGES,
+  RESEARCH_CORPUS_PAGE_SIZE,
   trustedWeeklyResearchSources,
 } from './research';
+import { corroborationWindow, type CorpusArticle } from '../../../pipeline/story-identity';
 import { adaptWeeklySocialChannel, type WeeklySocialAdaptation } from './social-adapter';
 import type { WeeklyImageIterationPreview } from '@/lib/content-sim/adapters/weekly-image';
 
@@ -580,6 +583,38 @@ function approvedFactsForItem(item: {
     }));
 }
 
+async function loadResearchCorpus(
+  weekStart: string | null | undefined,
+  weekEnd: string | null | undefined,
+): Promise<CorpusArticle[]> {
+  if (!weekStart || !weekEnd) return [];
+  const window = corroborationWindow(weekStart, weekEnd);
+  const corpus: CorpusArticle[] = [];
+  const db = getSupabaseAdmin();
+  for (let page = 0; page < RESEARCH_CORPUS_MAX_PAGES; page += 1) {
+    const from = page * RESEARCH_CORPUS_PAGE_SIZE;
+    const to = from + RESEARCH_CORPUS_PAGE_SIZE - 1;
+    const { data, error } = await db
+      .from('articles')
+      .select('url, title, cluster_id')
+      .gte('published_at', window.from)
+      .lt('published_at', window.toExclusive)
+      .order('published_at', { ascending: false })
+      .range(from, to);
+    if (error) {
+      console.warn(`[weekly-research] ingest corpus lookup failed: ${error.message}`);
+      return corpus;
+    }
+    const rows = data ?? [];
+    for (const row of rows) {
+      if (!row.url || !row.title) continue;
+      corpus.push({ url: row.url, title: row.title, clusterId: row.cluster_id });
+    }
+    if (rows.length < RESEARCH_CORPUS_PAGE_SIZE) break;
+  }
+  return corpus;
+}
+
 async function generateResearchPack(job: ClaimedGenerationJob) {
   contentStudioJobMode(job);
   const context = await loadGenerationContext(job);
@@ -593,6 +628,7 @@ async function generateResearchPack(job: ClaimedGenerationJob) {
     digestId: job.weekly_digest_id,
     revisionId: job.revision_id,
     item,
+    corpus: await loadResearchCorpus(context.digest.week_start, context.digest.week_end),
   });
   const artifactId = await saveGeneratedArtifact({
     weeklyDigestId: job.weekly_digest_id,
@@ -3062,24 +3098,25 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
     progressTotal: 100,
     message: 'Saving the selected illustration and alternate variants',
   });
-  const sharp = await lazySharp();
+  const { encodeSiteWebp, SITE_IMAGE_CONTENT_TYPE, SITE_IMAGE_EXTENSION, STORY_IMAGE_HEIGHT, STORY_IMAGE_WIDTH } =
+    await import('@/lib/encode-site-image');
   const processImage = (buffer: Buffer) =>
-    sharp(buffer)
-      .rotate()
-      .resize(1600, 900, { fit: 'cover', position: 'attention' })
-      .jpeg({ quality: 90, progressive: true })
-      .toBuffer();
+    encodeSiteWebp(buffer, {
+      width: STORY_IMAGE_WIDTH,
+      height: STORY_IMAGE_HEIGHT,
+      position: 'attention',
+    });
   const image = await processImage(source);
   const hash = createHash('sha256').update(image).digest('hex');
-  const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/${hash}-${job.id}.jpg`;
-  await uploadPrivate(path, image, 'image/jpeg');
+  const path = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/${hash}-${job.id}.${SITE_IMAGE_EXTENSION}`;
+  await uploadPrivate(path, image, SITE_IMAGE_CONTENT_TYPE);
 
   const previewPaths: string[] = [];
   for (const [index, buffer] of alternateBuffers.entries()) {
     const processed = await processImage(buffer);
     const altHash = createHash('sha256').update(processed).digest('hex');
-    const altPath = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/${altHash}-${job.id}-alt${index + 1}.jpg`;
-    await uploadPrivate(altPath, processed, 'image/jpeg');
+    const altPath = `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/${altHash}-${job.id}-alt${index + 1}.${SITE_IMAGE_EXTENSION}`;
+    await uploadPrivate(altPath, processed, SITE_IMAGE_CONTENT_TYPE);
     previewPaths.push(altPath);
   }
 
@@ -3090,8 +3127,8 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
     const previewHash = createHash('sha256').update(processed).digest('hex');
     const previewPath =
       `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/stories/${item.id}/` +
-      `${previewHash}-${job.id}-attempt${preview.attempt}-v${preview.variantIndex + 1}.jpg`;
-    await uploadPrivate(previewPath, processed, 'image/jpeg');
+      `${previewHash}-${job.id}-attempt${preview.attempt}-v${preview.variantIndex + 1}.${SITE_IMAGE_EXTENSION}`;
+    await uploadPrivate(previewPath, processed, SITE_IMAGE_CONTENT_TYPE);
     iterationPreviews.push({
       path: previewPath,
       attempt: preview.attempt,
@@ -3120,9 +3157,9 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
     locale: 'neutral',
     slotKey: `story-image:${item.id}`,
     storagePath: path,
-    mimeType: 'image/jpeg',
-    width: 1600,
-    height: 900,
+    mimeType: SITE_IMAGE_CONTENT_TYPE,
+    width: STORY_IMAGE_WIDTH,
+    height: STORY_IMAGE_HEIGHT,
     byteSize: image.length,
     content: {
       alt_en: text(input.alt_text) ?? item.title_en,

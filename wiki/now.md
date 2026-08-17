@@ -5,11 +5,67 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…17, Content Sim plan 2026-08-11,
 experimental Visual Affordance V10 owner review 2026-08-13, weekly illustration B1-fix 2026-08-15,
 owner weekly selection/content audit 2026-08-16, Master quality carry-over live incident 2026-08-17
+owner weekly selection/content audit 2026-08-16, research corpus corroboration 2026-08-16,
+reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16,
+Start / retry Content Studio silent no-op 2026-08-16, site WebP delivery 2026-08-17
 Last updated: 2026-08-17
 
 ---
 
 ## Стан репозиторію
+
+- **Site images → WebP (2026-08-17), гілка `feat/site-webp-origins`.** Браузер на сайті
+  отримує WebP через `image-loader` (`format=webp` на Supabase transform), навіть якщо
+  origin у бакеті JPEG. Нові weekly `story_image` (Visuals upload і render-persist)
+  пишуться як WebP 1600×900 q82. **Не** чіпали origin новинних карток і weekly cover —
+  це `og:image` / Satori, які WebP не декодують; Instagram/social лишаються JPEG.
+  Уже завантажені 7 JPEG на `ai-weekly-2026-08-09` на сайті теж підуть як WebP після
+  деплою, без повторного upload. (source: `src/lib/encode-site-image.ts`,
+  `src/lib/image-loader.ts`, [ops/vercel-image-quota](ops/vercel-image-quota.md))
+
+- **Кнопка Start / retry Content Studio знову ставить паки після succeeded (2026-08-16),
+  гілка `fix/weekly-content-studio-retry`.** Живий клік 16.08 12:46 UTC на
+  `ai-weekly-2026-08-09` rev.3 записав `generation_queued`, але RPC повернув уже
+  `succeeded`/`waiting` рядки: ключ
+  `weekly-content-studio-v2.1:{digest}:{rev}:research:{item}` незмінний, а
+  `queue_weekly_digest_generation_job` скидає лише `failed`/`cancelled`. Кнопка тепер
+  викликає `retryWeeklyContentStudio`: нові jobs з `:retry:{uuid}`, in-flight слоти
+  пропускає, waiting `editorial_master` не дублює. Composer лишає стабільний ключ.
+  Після деплою натиснути кнопку на rev.3 — **не** Rebuild selection. Треба знову
+  Approve трьох паків.
+  (source: прод `weekly_digest_generation_jobs` live check 2026-08-16 12:46 UTC,
+  `src/lib/weekly-digest/orchestrator.ts`)
+
+- **Research pack шукає підтвердження в корпусі `articles` (2026-08-16), follow-up
+  `fix/weekly-research-spa-and-page` (#270).** #268 змерджено (`7584d4f`), прод READY.
+  Перезбір трьох Feature-паків на `ai-weekly-2026-08-09` rev.3 прогнав уже новий
+  limitations-текст («or the ingest corpus»), але `independent_source_count` лишився
+  **0/3**. Корінь: PostgREST max-rows 1000 при 2440 статтях у вікні + JS-картки HF/
+  ModelScope без 160 символів прози. Не натискати Rebuild selection.
+  (source: прод-`articles` count 2026-08-16, pack artifacts `2301b650` / `1ce6801c` /
+  `812586fa`, live GET HF+ModelScope extractMainText=0)
+
+- **Daily rank більше не дропає угоду про щоденний тул (2026-08-16), #269.** SpaceX→Cursor
+  $60B close (14–15.08) fetch бачив (офіційний блог HN 98, TechCrunch, Engadget), але
+  **жоден** рядок не став `brief_item`: жанровий штраф ×0.5 посадив «$60 billion» під
+  `minScore` 0.15, кластер не склеївся (Jaccard 0.28 при порозі 0.6), LLM-промпт казав
+  DROP all M&A, а червневий custom-бриф з URL **2024** («$60M, спростовує чутки») міг
+  труїти семантичний дедуп. Фікс: виняток ownership для Cursor/Claude Code/Codex/…;
+  кластер за двома спільними сутностями; cosine-hit ігнорується, якщо це інша подія
+  або close через >14 днів після announce; custom-research не бере primary зі шляхом
+  `/2024/` у 2026. `SCORE_VERSION` лишається 2 (ваги/нормалізація ті самі).
+  (source: прод-`articles` live check 2026-08-16, `pipeline/reader-tools.ts`,
+  [guide §3](pipeline/guide.md))
+
+- **Прод-випуск `ai-weekly-2026-08-09` — ручна заміна Radar (2026-08-16, ~13:10 Kyiv).**
+  Ревізія **№3** (`5b1aa70f`), статус `in_review`. Needle 2 (rank 6, `cactuscompute.com`)
+  замінено на Anthropic 60-subagent / Lean (`96b2cec4`, TechCrunch, штраф різноманіття 8
+  лишився в знімку). Top 3 без змін. Стара ревізія №2 (`e922c928`) на місці — Restore
+  працює. Research packs і master переставлені в чергу на нову ревізію (паки rev.2 не
+  переносяться: input_hash рахує всі 7 історій). Не натискати **Rebuild selection** —
+  алгоритм знову викине Anthropic штрафом.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-16,
+  `weekly_digest_revisions.revision_number=3`, `weekly_digest_revision_items`)
 
 - **Суддя авто-публікації мовчки не працював 8 ночей — виправлено (2026-08-16), гілка
   `fix/auto-publish-silent-judge`.** `pipeline_runs` вісім ранів поспіль (08-08…15) писав

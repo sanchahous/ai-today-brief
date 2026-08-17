@@ -2,16 +2,12 @@
 
 Summary: як працює weekly-дайджест у проді: оркестрація, ревізії, артефакти, вартісні
 гейти, admin UX і поточний статус розкатки.
-Sources: `.env.example`, PR #160–#163, #167–#175, #177, #189, `src/lib/weekly-digest/**`,
-`supabase/migrations/20260804090000_weekly_digest_revision_stability.sql`, `supabase/migrations/20260806150000_weekly_video_script_job.sql`,
-`supabase/migrations/20260806140000_weekly_digest_story_directions.sql`,
-live check Supabase 2026-08-04 і 2026-08-07, editorial-voice overhaul (PR #189, змержено
-2026-08-07), PDF page-cap fix (гілка `fix/weekly-pdf-page-cap`, 2026-08-07), admin
-mobile-responsive fix (гілка `claude/admin-mobile-responsive-pfb65o`, 2026-08-08),
-`supabase/migrations/20260809060929_weekly_generation_control_plane.sql` (production DB applied 2026-08-09; application deployment pending),
-owner-approved reliability plan 2026-08-08, owner content-quality audit 2026-08-09,
-Actions run `31324873875`, PR #209, 2026-08-10 fixes, B3 prompt readiness 2026-08-15, owner content audit + `src/lib/weekly-digest/seed-content.ts` 2026-08-16 (прод-дайджест `6cbcf0b3` live check)
-Last updated: 2026-08-16
+Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
+`supabase/migrations/20260804*`–`20260809*`, live checks 2026-08-04…16,
+editorial-voice overhaul, PDF page-cap, admin mobile-responsive,
+owner content audit + seed-content 2026-08-16, research corpus corroboration 2026-08-16,
+Start / retry Content Studio after succeeded jobs 2026-08-16
+Last updated: 2026-08-17
 
 ---
 
@@ -130,6 +126,50 @@ Structured claims (`summary_en` + `facts_en`) залишаються обов’
 numbered claims, **не** має валитись як `UNSUPPORTED_*`.
 (source: `editorial-llm.ts`, `research.ts`, `content-studio.ts`)
 
+### Corpus corroboration in research packs (2026-08-16)
+
+`independent_source_count` на Feature-паку — це не бал селекції v3. Пак фетчить до двох
+незалежних сторінок і кладе їх у `corroboratingSources`. До цього фіксу кандидатами були
+лише `sources[1+]` і `citation_urls` щоденного айтема. Summarize має право цитувати тільки
+URL з промпту, тож набір майже завжди = primary → прапорець `no_independent_corroboration`
+на всіх трьох Feature цього тижня, навіть коли в `articles` уже лежала картка моделі.
+
+Тепер `buildWeeklyResearchPack` додає сторінки з ingest-корпусу за вікно тижня ± кілька
+днів (`corroborationWindow`), якщо вони:
+
+- інший видавець (не той самий хост і не discussion HN/Reddit/X/Lobsters);
+- той самий `cluster_id`, **або** спільний розпізнавальний ідентифікатор (model card
+  `org/model`, GitHub `owner/repo`, CVE, slug із цифрою ≥12 символів, наприклад
+  `qwen3-8-2-4t-a95b`).
+
+На прод-даних тижня 09–15.08 NVIDIA-блог про Qwen3.8 2.4T знаходить
+`huggingface.co/Qwen/Qwen3.8-2.4T-A95B` і ModelScope; звіт HF і ALTK-Evolve лишаються 0 —
+у корпусі немає другого видавця, і це чесний нуль. Тред HN у цитатах більше не фетчиться
+як «підтвердження».
+
+Після мерджу #268 перезбір паків на rev.3 лишив Qwen на `independent_source_count=0`.
+Дві причини, обидві підтверджені наживо 2026-08-16: (1) `select` без `.range()` ріже
+PostgREST default **1000** рядків, а у вікні 09–15.08 ± padding було **2440** `articles`
+(HF-картка — рядок 1551 за `published_at`); (2) картки HF/ModelScope — JS-оболонки,
+`extractMainText` дає 0 символів при HTTP 200, і пак відкидав їх як «немає тексту».
+Корпус тепер гортає сторінки по 1000 (до 8), а для **не-primary** сторінки досить
+`<title>` + meta description.
+(source: `pipeline/story-identity.ts`, `pipeline/page-url.ts`, `src/lib/weekly-digest/research.ts`,
+прод-`articles` live check 2026-08-16, rebuild packs rev.3 2026-08-16)
+
+Writer: якщо `corroboratingExcerpts` порожній, кожне число в історії має бути атрибутоване
+primary (`according to NVIDIA`, `self-reported`). Це не гейт апруву пака.
+(source: `editorial-llm.ts` `storySegmentPrompt`)
+
+Fetch на етапі `prepareArticles` тепер дедупить за канонічним URL (без `www`, UTM, trailing
+slash). Це прибирає дубль на кшталт `…/previewing-ultrafast` vs `…/ultrafast/`. Daily rank
+з 2026-08-16 додатково клеїть **ownership однієї події** (дві спільні сутності + лексика
+угоди) і `storyIdentityKeys`, тож офіційний пост Cursor і TechCrunch close більше не
+роз’їжджаються на `mentions_count = 1`. Решта різних URL без identity/ownership лишається
+окремими кластерами.
+(source: `pipeline/rank.ts`, `pipeline/reader-tools.ts`, `pipeline/fetch.ts`,
+[weekly-editorial-selection](weekly-editorial-selection.md))
+
 ## Durable generation control plane (implementation 2026-08-09)
 
 `weekly_digest_generation_jobs` is the logical job; each actual worker lease is an append-only
@@ -219,10 +259,31 @@ configured budget rather than invented precision.
 `src/lib/weekly-digest/generation-control.ts`)
 
 Studio version **`weekly-content-studio-v2.1`** + research schema **`weekly-research-v3`** +
-master prompt **`weekly-master-v7`**: після деплою **Start / retry Content Studio** ставить
-нові `research_pack` jobs (нові idempotency keys) → треба знову Approve Top 3 → тоді master.
+master prompt **`weekly-master-v7`**. Бамп версії студії змінює стабільний ключ composer-старту;
+кнопка **Start / retry** більше не залежить від бампу — див. нижче.
 (source: `WEEKLY_CONTENT_STUDIO_VERSION`, `WEEKLY_RESEARCH_SCHEMA_VERSION`,
 `WEEKLY_MASTER_SPEC_VERSION`)
+
+### Content Studio retry after succeeded jobs (2026-08-16)
+
+Composer (`startWeeklyContentStudio`) ставить `research_pack` ×3 і `editorial_master` зі
+стабільним ключем `weekly-content-studio-v2.1:{digest}:{revision}:research:{item}` /
+`…:master`. RPC `queue_weekly_digest_generation_job` на конфлікті скидає лише
+`failed`/`cancelled`; для `succeeded` / `waiting` / `queued` / `running` повертає старий
+рядок. Тому другий клік кнопки після успішного пака був тихим no-op: 16.08 12:46 UTC на
+`ai-weekly-2026-08-09` rev.3 (`5b1aa70f`) з'явились `generation_queued` events, але jobs
+лишились `succeeded` / `waiting`. Per-job Retry теж не бере `succeeded`
+(`retry_weekly_digest_generation_job`).
+
+Адмін-кнопка тепер викликає `retryWeeklyContentStudio`: якщо слот Top 3 уже in-flight
+(`waiting`/`queued`/`dispatching`/`running`/`retry_scheduled`) — пропускає; інакше ставить
+новий рядок з `:retry:{uuid}`. Waiting `editorial_master` на цій ревізії не дублюється —
+він далі чекає 3 owner-approved packs. Succeeded master тут не переставляється (це кнопка
+**Regenerate master**). Після нового пака треба знову Approve Top 3. Історія старих jobs
+лишається.
+(source: прод `weekly_digest_generation_jobs` live check 2026-08-16 12:46 UTC,
+`src/lib/weekly-digest/orchestrator.ts`, `src/lib/weekly-digest/content-studio-queue.ts`,
+`src/app/admin/(cms)/weekly/actions.ts`)
 
 ### Content-quality hardening (`weekly-master-v7`, 2026-08-09)
 
@@ -417,6 +478,12 @@ image-only critic (`buildImageOnlyCriticPrompt`, без headline/scene) і пи�
 спрацьовує. Visuals: «QA чисто» або жовтий рядок + Ігнорувати / Замінити файл.
 (source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) M2)
+
+**Site WebP (2026-08-17):** ручний upload і render-persist `story_image` пишуть origin як
+WebP 1600×900 q82 (`encodeSiteWebp`). Cover / social_asset / thumbnail лишаються JPEG
+(digest `og:image`, Instagram API, YouTube thumb). Публічний сайт просить `format=webp` у
+Supabase transform незалежно від origin. (source: `src/lib/encode-site-image.ts`,
+`src/lib/image-loader.ts`, `src/app/admin/(cms)/weekly/actions.ts`)
 
 **M3 preflight copy (2026-08-15):** `artifact_missing` для `story_image` / `cover` каже скопіювати
 промпт, згенерувати в своєму інструменті й завантажити файл — не «Regenerate». Вага гейта

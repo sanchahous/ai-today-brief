@@ -14,8 +14,8 @@ import { enrichPool, type EnrichedSource } from './enrich';
 import { collectArticles, toCandidate } from './fetch';
 import type { HttpProviderConfig } from './providers/http-provider';
 import { loadProviderRegistry, type ProviderRole } from './providers/registry';
-import { rankCandidates, SCORE_VERSION } from './rank';
-import { dropKnownUrls, isColdSingleton, selectPool } from './select';
+import { rankCandidates, SCORE_VERSION, wasHeldDownByGenre } from './rank';
+import { dropKnownUrls, isColdSingleton, selectPoolWithReasons } from './select';
 import { summarize, type DraftBrief } from './summarize';
 import { reviseFlaggedItems, verifyClaims } from './verify';
 import { publish } from './publish';
@@ -27,6 +27,7 @@ import {
   createServiceClient,
   logPipelineRun,
   matchRelevantItem,
+  briefItemDedupContext,
   recentItemUrls,
   recentPublishedTitles,
   storeItemEmbeddings,
@@ -48,6 +49,7 @@ import {
   resolveScheduleAttempt,
 } from './schedule';
 import { logError, logEvent } from './log';
+import { isEmbedFalsePositive } from './reader-tools';
 
 function printDryRun(brief: DraftBrief): void {
   const lines: string[] = [
@@ -213,12 +215,17 @@ async function main(): Promise<void> {
   // ── Rank ───────────────────────────────────────────────────────────────────
   t = Date.now();
   const ranking = rankCandidates(fetched.map(toCandidate));
-  const pool = selectPool(ranking.ranked, {
+  const selection = selectPoolWithReasons(ranking.ranked, {
     minScore: config.minScore,
     perTopicCap: config.perTopicCap,
     poolSize: config.poolSize,
     maxColdSingletons: config.maxColdSingletons,
   });
+  const pool = selection.pool;
+  const genreFloor = ranking.scored
+    .filter((e) => wasHeldDownByGenre(e.lead.title, e.score, config.minScore))
+    .map((e) => e.lead.title)
+    .slice(0, 12);
   await logStage(db, config.dryRun, {
     date,
     stage: 'rank',
@@ -230,6 +237,12 @@ async function main(): Promise<void> {
       ranked: ranking.ranked.length,
       pool: pool.length,
       cold_singletons_ranked: ranking.ranked.filter(isColdSingleton).length,
+      genre_floor: genreFloor,
+      pool_dropped: selection.dropped.slice(0, 12).map((d) => ({
+        reason: d.reason,
+        title: d.title,
+        score: Number(d.score.toFixed(4)),
+      })),
     },
   });
   logEvent('info', 'rank', 'Pool built', {
@@ -329,22 +342,44 @@ async function main(): Promise<void> {
     const vectors = await embed(embedBatch.map((c) => c.title));
     const kept = [];
     let dropped = 0;
+    let ignored = 0;
     for (let i = 0; i < embedBatch.length; i++) {
       const vec = vectors[i];
+      const item = embedBatch[i]!;
       if (!vec || vec.length === 0) {
-        kept.push(embedBatch[i]!);
+        kept.push(item);
         continue;
       }
       const match = await matchRelevantItem(db, vec, config.maxEmbedDistance, date).catch(() => null);
       if (match) {
+        const published = await briefItemDedupContext(db, match.brief_item_id).catch(() => null);
+        if (
+          published &&
+          isEmbedFalsePositive({
+            candidateTitle: item.title,
+            publishedTitle: published.title,
+            publishedDate: published.date,
+            candidateDate: date,
+          })
+        ) {
+          ignored++;
+          logEvent('info', 'dedup', 'Semantic match ignored (different event)', {
+            title: item.title,
+            matched_title: published.title,
+            distance: match.distance,
+          });
+          kept.push(item);
+          continue;
+        }
         dropped++;
         logEvent('info', 'dedup', 'Candidate dropped (semantic duplicate)', {
-          title: embedBatch[i]!.title,
+          title: item.title,
           distance: match.distance,
+          matched_title: published?.title ?? null,
         });
         continue;
       }
-      kept.push(embedBatch[i]!);
+      kept.push(item);
     }
     // Items beyond embedLimit (below the score cap) pass through unchanged.
     for (let i = embedBatch.length; i < urlFiltered.length; i++) kept.push(urlFiltered[i]!);
@@ -360,6 +395,7 @@ async function main(): Promise<void> {
         pool_in: urlFiltered.length,
         pool_out: dedupedPool.length,
         dropped,
+        ignored_false_positive: ignored,
         embedded: embedBatch.length,
       },
     });
@@ -436,6 +472,8 @@ async function main(): Promise<void> {
       ...runMeta,
       selected: brief.items.length,
       pool: pool.length,
+      skipped_pool_titles:
+        brief.items.length === 0 ? dedupedPool.map((p) => p.title).slice(0, 12) : [],
       model: providerModel,
       prompt_tokens: usage?.promptTokens ?? null,
       output_tokens: usage?.outputTokens ?? null,

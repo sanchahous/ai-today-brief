@@ -17,6 +17,7 @@ import type { PoolItem } from './select';
 import type { FetchedArticle } from './sources/http';
 import { categoryForTitle, detectTopic } from './topics';
 import { fetchWithRetry } from './sources/http';
+import { isStaleNewsUrl } from './reader-tools';
 
 export interface CustomSourceNote {
   title: string;
@@ -197,11 +198,17 @@ Return JSON only:
 Rules:
 - sources must include at least ${MIN_SOURCES} entries with distinct publishers.
 - Prefer official vendor blogs, docs, and reputable engineering press (not content farms).
+- Do not use an article whose URL path year is more than one calendar year old as the
+  primary source (a 2024 post in 2026 is the wrong event). Prefer a fresh official post.
 - If the topic mentions a free model/benchmark, include concrete names, numbers, license.
 - key_facts must be factual; no hype. synthesis_notes is for the editor — not publishable copy.`;
 }
 
-export function parseResearchResult(text: string, fallbackTopic: string): CustomResearchResult {
+export function parseResearchResult(
+  text: string,
+  fallbackTopic: string,
+  now = new Date(),
+): CustomResearchResult {
   const parsed: unknown = JSON.parse(text);
   const obj = (parsed ?? {}) as Record<string, unknown>;
   const title = asString(obj.title) || fallbackTopic;
@@ -227,7 +234,7 @@ export function parseResearchResult(text: string, fallbackTopic: string): Custom
     excerpt: s.key_facts || s.title,
   }));
 
-  return {
+  return rehomeStalePrimary({
     title,
     url,
     source_name,
@@ -236,7 +243,7 @@ export function parseResearchResult(text: string, fallbackTopic: string): Custom
     synthesis_notes,
     excerpt: synthesis_notes,
     sources,
-  };
+  }, now);
 }
 
 function mergeSourceExcerpt(keyFacts: string, pageText: string | null): string {
@@ -250,6 +257,26 @@ function mergeSourceExcerpt(keyFacts: string, pageText: string | null): string {
     parts.push(`Page excerpt:\n${clipped}`);
   }
   return parts.join('\n\n') || keyFacts;
+}
+
+/**
+ * If the model picked a year-old URL as primary (the June 2026 $60M-vs-$60B
+ * failure mode), swap in the first fresh source. Throws when every URL is stale.
+ */
+export function rehomeStalePrimary(
+  result: CustomResearchResult,
+  now = new Date(),
+): CustomResearchResult {
+  if (!isStaleNewsUrl(result.url, now)) return result;
+  const fresh = result.sources.find((s) => !isStaleNewsUrl(s.url, now));
+  if (!fresh) {
+    throw new Error('[custom-research] primary url is stale and no fresh source remains');
+  }
+  return {
+    ...result,
+    url: fresh.url,
+    source_name: fresh.source_name,
+  };
 }
 
 /* v8 ignore start -- network IO */
