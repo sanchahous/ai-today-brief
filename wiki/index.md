@@ -7,7 +7,7 @@ Sources: інвентаризація репозиторію (live check 2026-08
 experimental Visual Affordance V10 owner review 2026-08-13, illustration B1-fix 2026-08-15,
 Start / retry Content Studio after succeeded jobs 2026-08-16,
 social package LinkedIn recovery, GitHub dispatch 503 recovery, staged social checkpoints,
-LinkedIn 7-page overflow bounds та approval-ready Social repair 2026-08-17
+LinkedIn 7-page overflow bounds, approval-ready Social repair та social provider budget 2026-08-17
 Last updated: 2026-08-17
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·

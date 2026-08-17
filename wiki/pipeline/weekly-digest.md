@@ -328,11 +328,16 @@ artifact/social ledgers.
 Quality audit раніше був лише діагностикою: worker зберігав adaptation із `blocking[]`, а в кінці
 безумовно переводив усі `draft` posts/package у `in_review`. Тому власник отримував шість карток
 із червоними blockers замість матеріалу для рішення. Тепер кожен канал має bounded repair:
-writer повертає кілька кандидатів, critic аудіює їх по черзі, невдалий раунд отримує точні
-причини для переписування, максимум три writer rounds. У checkpoint потрапляє лише канал із
+writer повертає кілька кандидатів, невдалий раунд отримує точні причини для переписування,
+максимум три writer rounds. Після live latency check critic аудіює найсильніший deterministic
+candidate кожного round, а не всі три: це дає не більше трьох writer/critic pairs на канал.
+`social_copy` має окремий OpenRouter ceiling 180 s (first token 45 s, idle 30 s);
+12-хвилинний editorial-master ceiling для інших job types не змінено. У checkpoint потрапляє
+лише канал із
 порожнім `blocking`; пройдений канал не генерується знову при наступному recovery.
 (source: `src/lib/weekly-digest/social-adapter.ts`,
-`src/lib/weekly-digest/social-checkpoint.ts`, `social-adapter.test.ts`)
+`src/lib/weekly-digest/social-checkpoint.ts`, `.github/workflows/weekly-master-cli-worker.yml`,
+`social-adapter.test.ts`; production run `32054964740` latency check 2026-08-17)
 
 Writer і critic тепер бачать один owner-approved fact snapshot із повного article master, а
 Instagram/Threads аудіюються з нативними `<SLIDE>` / `<CAPTION>` / `<PART>` markers. Непояснений
