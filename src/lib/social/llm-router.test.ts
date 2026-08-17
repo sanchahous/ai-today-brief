@@ -63,6 +63,7 @@ describe('rankSocialOpenRouterModels', () => {
   const now = 1_784_000_000;
   const catalog = [
     model('~openai/gpt-latest', now - 1_000),
+    model('~openai/gpt-mini-latest', now - 900),
     model('openai/gpt-5.6-terra-pro', now - 450),
     model('openai/gpt-5.6-terra', now - 500),
     model('openai/gpt-5.5-terra', now - 10_000),
@@ -94,7 +95,7 @@ describe('rankSocialOpenRouterModels', () => {
 
   it('selects an efficient current model for the writer fallback', () => {
     const ranked = rankSocialOpenRouterModels(catalog, 'writer');
-    expect(ranked[0]).toBe('deepseek/deepseek-v4-flash');
+    expect(ranked[0]).toBe('~openai/gpt-mini-latest');
     expect(ranked).not.toContain('openai/gpt-4o');
   });
 });
@@ -300,7 +301,7 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
     });
 
     expect(vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.modelQueue).toEqual([
-      'deepseek/deepseek-v4-flash',
+      '~openai/gpt-mini-latest',
     ]);
   });
 
@@ -328,7 +329,18 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
           : [],
     });
     const fetchOpenRouterModelsMock = vi.fn();
-    const fakeDb = {} as never;
+    const fakeDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({
+              data: { chain: [{ kind: 'http', id: 'nim' }] },
+              error: null,
+            })),
+          })),
+        })),
+      })),
+    } as never;
 
     const result = await generateSocialJson(
       'critic',
@@ -357,5 +369,53 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
       max_tokens: 2_048,
       reasoning: { effort: 'low', exclude: true },
     });
+  });
+
+  it('does not mistake the registry default chain for an owner DB override', async () => {
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
+      text: '{"text":"ready"}',
+      provider: 'openrouter',
+      model: '~openai/gpt-mini-latest',
+      usage: null,
+    });
+    vi.mocked(loadProviderRegistry).mockResolvedValue({
+      chainForRole: () => [
+        {
+          entry: { kind: 'http', id: 'openrouter' },
+          http: {
+            id: 'openrouter',
+            apiKey: 'test-key',
+            baseUrl: 'https://openrouter.ai/api/v1',
+            modelQueue: ['deepseek/deepseek-v4-pro'],
+          },
+        },
+      ],
+    });
+    const fakeDb = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            maybeSingle: vi.fn(async () => ({ data: null, error: null })),
+          })),
+        })),
+      })),
+    } as never;
+
+    await generateSocialJson('writer', 'write', (raw) => JSON.parse(raw) as { text: string }, {
+      env: { SOCIAL_WRITER_PROVIDER_ORDER: 'openrouter', OPEN_ROUTER_API_KEY: 'test-key' },
+      deps: {
+        fetchOpenRouterModels: async () => [
+          catalogModel('~openai/gpt-mini-latest'),
+          catalogModel('deepseek/deepseek-v4-flash'),
+        ],
+      },
+      db: fakeDb,
+    });
+
+    expect(loadProviderRegistry).not.toHaveBeenCalled();
+    expect(vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.modelQueue).toEqual([
+      '~openai/gpt-mini-latest',
+      'deepseek/deepseek-v4-flash',
+    ]);
   });
 });

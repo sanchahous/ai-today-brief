@@ -13,6 +13,8 @@ export type GenerationFailureKind =
    * historical rows still classify.
    */
   | 'quality_gate'
+  /** Every social provider/model failed transiently; retry from saved channel checkpoints. */
+  | 'provider_exhausted'
   /** Ran out of run budget with durable segments saved; a retry continues. */
   | 'resumable'
   | 'cancelled'
@@ -171,6 +173,13 @@ export function classifyGenerationFailure(message: string): GenerationFailure {
       code: 'resumable',
       retryable: true,
       nextAction: 'A retry continues from the saved segments instead of starting over.',
+    };
+  }
+  if (/all configured social llm providers failed/.test(normalized)) {
+    return {
+      code: 'provider_exhausted',
+      retryable: true,
+      nextAction: 'The social job will retry with backoff and reuse every saved channel.',
     };
   }
   if (/quality gate|quality.*(?:failed|block)|dimension.*score/.test(normalized)) {

@@ -45,6 +45,11 @@ describe('Weekly generation control helpers', () => {
     expect(classifyGenerationFailure('Master quality gate failed').retryable).toBe(false);
     expect(classifyGenerationFailure('schema validation failed').code).toBe('validation');
     expect(classifyGenerationFailure('provider quota exhausted').code).toBe('quota');
+    expect(
+      classifyGenerationFailure(
+        'All configured social LLM providers failed -- openrouter: failed (request_failed)',
+      ),
+    ).toMatchObject({ code: 'provider_exhausted', retryable: true });
   });
 
   // A paused master run has every finished segment on the job row, so the

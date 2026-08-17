@@ -270,6 +270,16 @@ candidate; social provider має 60-секундний absolute ceiling **на 
 `src/lib/weekly-digest/social-checkpoint.ts`, `src/components/admin/weekly-workspace.tsx`,
 `.github/workflows/weekly-master-cli-worker.yml`, `src/lib/social/llm-router.ts`)
 
+Якщо Timeline показує `deepseek-v4-pro` до social-ranked queue попри відсутність
+`social.writer`/`social.critic` у `/admin/providers`, це старий phantom override: registry default
+було помилково прийнято за owner chain і OpenRouter викликався двічі. Після routing fix writer
+починає зі швидкої OpenAI mini lane; реальний owner override використовується лише коли роль
+збережена в БД. (source: `src/lib/social/llm-router.ts`, production run `32059830080`)
+
+Повне тимчасове вичерпання social provider ladder більше не завершується opaque `Code: unknown`:
+job отримує retryable `provider_exhausted`, backoff і продовжує зі своїх channel checkpoints.
+(source: `src/lib/weekly-digest/generation-control.ts`)
+
 Якщо job впав після ~90% з `Cannot read properties of undefined (reading 'map')`, не переписуй
 шість постів: це був несумісний normalized article artifact на LinkedIn document step, а не
 provider failure. Після деплою фіксу натисни **Create linked retry** на terminal `social_copy`

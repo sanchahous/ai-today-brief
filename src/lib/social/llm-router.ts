@@ -98,7 +98,11 @@ const GEMINI_SCHEMAS: Record<SocialLlmRole, GeminiResponseSchema> = {
 
 const OPENROUTER_PROVIDER_PRIORITY: Record<SocialLlmRole, readonly string[]> = {
   critic: ['openai', 'anthropic', 'deepseek', 'x-ai', 'qwen'],
-  writer: ['deepseek', 'qwen', 'openai', 'anthropic', 'x-ai'],
+  // Production 2026-08-17: both DeepSeek lanes missed the first-token budget
+  // and Qwen returned 429 before Telegram could save a checkpoint. Prefer the
+  // current efficient OpenAI lane for short social JSON; provider diversity
+  // remains available in the bounded tail.
+  writer: ['openai', 'anthropic', 'deepseek', 'qwen', 'x-ai'],
 };
 
 const MODEL_FRESHNESS_SECONDS = 400 * 24 * 60 * 60;
@@ -309,8 +313,25 @@ async function resolveSocialDbHttpProvider(
 ): Promise<HttpProviderConfig | null> {
   if (!db) return null;
   const providerRole: ProviderRole = role === 'critic' ? 'social.critic' : 'social.writer';
+  const { data: savedRole, error } = await db
+    .from('llm_role_chains')
+    .select('chain')
+    .eq('role', providerRole)
+    .maybeSingle();
+  if (error) throw new Error(`Could not read ${providerRole} provider override: ${error.message}`);
+  const rawChain = Array.isArray(savedRole?.chain) ? savedRole.chain : [];
+  const configuredIds = new Set(
+    rawChain.flatMap((entry) => {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
+      const id = (entry as Record<string, unknown>).id;
+      return typeof id === 'string' ? [id] : [];
+    }),
+  );
+  if (configuredIds.size === 0) return null;
   const registry = await loadProviderRegistry(process.env, {}, db);
-  const resolved = registry.chainForRole(providerRole).find((entry) => entry.entry.kind === 'http');
+  const resolved = registry
+    .chainForRole(providerRole)
+    .find((entry) => entry.entry.kind === 'http' && configuredIds.has(entry.entry.id));
   return resolved?.http ?? null;
 }
 

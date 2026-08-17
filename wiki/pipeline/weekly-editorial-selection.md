@@ -45,7 +45,8 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > while failed channels are repaired against the same approved article. They do not change
 > candidates, weights, ranks, diversity, or editorial approval state.
 > The social-only 60 s per-model OpenRouter ceiling, two-model call cap, low-reasoning request
-> and one-candidate-per-repair-round budget are downstream runtime controls;
+> OpenAI-first writer lane, true saved-role override check and one-candidate-per-repair-round
+> budget are downstream runtime controls;
 > editorial-master timeouts and this selector are unchanged.
 > (source: `.github/workflows/weekly-master-cli-worker.yml`,
 > `src/lib/weekly-digest/social-adapter.ts`, `src/lib/social/llm-router.ts`)
