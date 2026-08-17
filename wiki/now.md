@@ -8,11 +8,23 @@ owner weekly selection/content audit 2026-08-16, Master quality carry-over live 
 owner weekly selection/content audit 2026-08-16, research corpus corroboration 2026-08-16,
 reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16,
 Start / retry Content Studio silent no-op 2026-08-16, site WebP delivery 2026-08-17
+social package LinkedIn recovery incident 2026-08-17
 Last updated: 2026-08-17
 
 ---
 
 ## Стан репозиторію
+
+- **Social package падає після успішних шести каналів (2026-08-17), гілка
+  `codex/fix-social-linkedin-document`.** Production `social_copy` job пройшов writer/critic
+  для всіх шести каналів і зберіг 8 Instagram slides, але впав на старті LinkedIn document із
+  `Cannot read properties of undefined (reading 'map')`. Причина: approved `article` artifact
+  нормалізований (`editor_note`, `key_takeaways`) і не несе `stories`, а builder очікував
+  `bundle.en.stories`. Патч відновлює stories із active revision і приймає обидві форми
+  artifact; regression test відтворює production-shaped дані. Після мержу створити linked retry
+  для terminal job — не шість окремих channel jobs.
+  (source: production `weekly_digest_generation_jobs` / `weekly_digest_artifacts` live check
+  2026-08-17; `src/lib/weekly-digest/generation-worker.ts`)
 
 - **Site images → WebP (2026-08-17), гілка `feat/site-webp-origins`.** Браузер на сайті
   отримує WebP через `image-loader` (`format=webp` на Supabase transform), навіть якщо
