@@ -8,12 +8,22 @@ owner weekly selection/content audit 2026-08-16, Master quality carry-over live 
 owner weekly selection/content audit 2026-08-16, research corpus corroboration 2026-08-16,
 reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16,
 Start / retry Content Studio silent no-op 2026-08-16, site WebP delivery 2026-08-17
-social package LinkedIn recovery incident 2026-08-17
+social package LinkedIn recovery incident 2026-08-17, GitHub workflow-dispatch 503 incident 2026-08-17
 Last updated: 2026-08-17
 
 ---
 
 ## Стан репозиторію
+
+- **Linked social retry не має валити CMS при GitHub 503 (2026-08-17), гілка
+  `codex/fix-gh-dispatch-503`.** Після створення durable child `social_copy`
+  `f39b2429-63b1-4e08-82f9-fa496fa34840` GitHub Actions повернув 503; server action пробросила
+  його як Server Components render error, а mobile CMS показала React #441 / ref `2087663833`.
+  Dispatcher тепер тричі повторює 408/429/5xx або transport failure, а за непідтвердженої
+  доставки лишає той самий fenced lease для database recovery та повертає UI без crash. Це не
+  створює другий linked job.
+  (source: Vercel production runtime logs 2026-08-17 15:37 UTC;
+  production `weekly_digest_generation_jobs`; `src/lib/weekly-digest/github-dispatch.ts`)
 
 - **Social package падає після успішних шести каналів (2026-08-17), гілка
   `codex/fix-social-linkedin-document`.** Production `social_copy` job пройшов writer/critic

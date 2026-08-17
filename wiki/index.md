@@ -5,8 +5,8 @@ Summary: головний зміст усієї wiki. Кожен рядок — 
 Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery fix
 2026-08-10, story-image rollout deduplication і three-concept illustration jury 2026-08-11,
 experimental Visual Affordance V10 owner review 2026-08-13, illustration B1-fix 2026-08-15,
-Start / retry Content Studio after succeeded jobs 2026-08-16
-social package LinkedIn recovery 2026-08-17
+Start / retry Content Studio after succeeded jobs 2026-08-16,
+social package LinkedIn recovery та GitHub dispatch 503 recovery 2026-08-17
 Last updated: 2026-08-17
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
@@ -106,7 +106,7 @@ Last updated: 2026-08-17
 | ✅ [ops/vercel-image-quota](ops/vercel-image-quota.md) | Інцидент 402 на `/_next/image`, власний loader; origin JPEG карток; site delivery WebP | live check 2026-08-14, `next.config.ts`, `src/lib/image-loader.ts`, `pipeline/card-image.ts` |
 | ✅ [ops/owner-checklist](ops/owner-checklist.md) | Env-матриця, launch-блокери, go-live послідовність | колишній `docs/OWNER-CHECKLIST.md` |
 | ✅ [ops/social-cms-runbook](ops/social-cms-runbook.md) | Runbook соц-CMS | колишній `docs/SOCIAL-CMS-RUNBOOK.md` |
-| ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладки, social package, succeeded≠approved, stuck jobs, async images та idempotent retry | нове 2026-08-04, оновлено 2026-08-17 |
+| ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладки, social package, succeeded≠approved, stuck jobs, async images, idempotent retry і GitHub 503 recovery | нове 2026-08-04, оновлено 2026-08-17 |
 | ✅ [ops/weekly-sandbox](ops/weekly-sandbox.md) | `weekly:doctor` + `weekly:sandbox`: префлайт провайдерів і повний прогін master-флоу на прод-даних без записів у прод | нове 2026-08-09 |
 | ✅ [ops/services-portability](ops/services-portability.md) | Портативність сервісів | колишній `docs/SERVICES-PORTABILITY.md` |
 | ✅ [ops/reddit-compliance](ops/reddit-compliance.md) | Чому Reddit API вимкнено і що потрібно для вмикання | колишній `docs/REDDIT-COMPLIANCE.md` |

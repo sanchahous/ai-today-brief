@@ -7,7 +7,7 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
 editorial-voice overhaul, PDF page-cap, admin mobile-responsive,
 owner content audit + seed-content 2026-08-16, research corpus corroboration 2026-08-16,
 Start / retry Content Studio after succeeded jobs 2026-08-16, social package LinkedIn recovery
-2026-08-17
+2026-08-17, GitHub dispatch 503 recovery 2026-08-17
 Last updated: 2026-08-17
 
 ---
@@ -277,6 +277,22 @@ Linked manual retry як і раніше створює окремий job, то
 (source: production `weekly_digest_generation_jobs` / `weekly_digest_artifacts` incident
 2026-08-17; `src/lib/weekly-digest/generation-worker.ts`,
 `src/lib/weekly-digest/linkedin-document.ts`, `generation-worker.test.ts`)
+
+### GitHub Actions dispatch 503 recovery (2026-08-17)
+
+В о 15:37 UTC production `social_copy` linked retry вже був durable queued job, але GitHub
+повернув HTTP 503 на workflow dispatch; server action пробросила зовнішню помилку в Server
+Components render і CMS показала opaque React #441 (`digest: 2087663833`). Лізинг перед
+викликом GitHub лишається `dispatching`, бо за невизначеної доставки не можна одразу створювати
+другий workflow.
+
+`dispatchWeeklyMasterCliWorker` тепер робить до трьох спроб для 408/429/5xx і transport errors
+(300 ms, потім 900 ms). Якщо GitHub не підтвердив усі спроби, dispatcher повертає `false`, не
+ламає RSC-відповідь адмінки, а fenced job recovery лишається за штатним database reaper. Це не
+змінює editorial selection, не дублює child job і не витрачає attempt до фактичного старту runner.
+(source: Vercel runtime error `2087663833` 2026-08-17;
+`src/lib/weekly-digest/github-dispatch.ts`, `github-dispatch.test.ts`,
+`supabase/migrations/20260809060929_weekly_generation_control_plane.sql`)
 
 Studio version **`weekly-content-studio-v2.1`** + research schema **`weekly-research-v3`** +
 master prompt **`weekly-master-v7`**. Бамп версії студії змінює стабільний ключ composer-старту;

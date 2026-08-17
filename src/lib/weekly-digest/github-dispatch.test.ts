@@ -6,6 +6,7 @@ vi.mock('@/lib/supabase-admin', () => ({ getSupabaseAdmin: () => ({ rpc }) }));
 import {
   dispatchQueuedWeeklyGenerationJobs,
   dispatchWeeklyMasterCliWorker,
+  isRetryableGithubDispatchError,
 } from './github-dispatch';
 
 describe('dispatchWeeklyMasterCliWorker', () => {
@@ -122,5 +123,43 @@ describe('dispatchWeeklyMasterCliWorker', () => {
         fetchFn,
       }),
     ).rejects.toThrow('HTTP 404');
+  });
+
+  it('retries a transient GitHub response before succeeding', async () => {
+    process.env.GH_ACTIONS_DISPATCH_TOKEN = 'test-token';
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 503, text: async () => 'temporarily unavailable' })
+      .mockResolvedValueOnce({ ok: true, text: async () => '' });
+    const waitFn = vi.fn().mockResolvedValue(undefined);
+
+    await dispatchWeeklyMasterCliWorker({
+      jobId: 'job-1',
+      dispatchToken: 'dispatch-1',
+      weeklyDigestId: 'digest-1',
+      fetchFn,
+      waitFn,
+    });
+
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+    expect(waitFn).toHaveBeenCalledWith(300);
+  });
+
+  it('classifies exhausted transient errors so callers can leave the lease fenced', async () => {
+    process.env.GH_ACTIONS_DISPATCH_TOKEN = 'test-token';
+    const fetchFn = vi
+      .fn()
+      .mockResolvedValue({ ok: false, status: 503, text: async () => 'temporarily unavailable' });
+
+    await expect(
+      dispatchWeeklyMasterCliWorker({
+        jobId: 'job-1',
+        dispatchToken: 'dispatch-1',
+        weeklyDigestId: 'digest-1',
+        fetchFn,
+        waitFn: vi.fn().mockResolvedValue(undefined),
+      }),
+    ).rejects.toSatisfy(isRetryableGithubDispatchError);
+    expect(fetchFn).toHaveBeenCalledTimes(3);
   });
 });

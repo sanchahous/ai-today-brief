@@ -10,7 +10,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 (PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15, seed-контент історій + `weekly-editorial-v3` 2026-08-16, research corpus corroboration 2026-08-16, Start / retry Content Studio after succeeded jobs 2026-08-16
+engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15, seed-контент історій + `weekly-editorial-v3` 2026-08-16, research corpus corroboration 2026-08-16, Start / retry Content Studio after succeeded jobs 2026-08-16, GitHub dispatch 503 recovery 2026-08-17.
 Last updated: 2026-08-17
 
 ---
@@ -267,8 +267,15 @@ LinkedIn та Instagram — не шість незалежних кліків. �
 шість постів: це був несумісний normalized article artifact на LinkedIn document step, а не
 provider failure. Після деплою фіксу натисни **Create linked retry** на terminal `social_copy`
 job; retry має власний job history і знову пройде package flow.
+
+Якщо після **Create linked retry** з'явився `Minified React error #441` із ref `2087663833`, не
+натискай retry вдруге: child уже створено. Це зафіксований HTTP 503 GitHub на dispatch, а не
+провал writer-а. Онови сторінку й стеж за тим самим child job; dispatcher має короткі повторні
+спроби, а при непідтвердженій доставці лишає один fenced `dispatching` job для безпечного
+автоматичного recovery без дублювання workflow.
 (source: `src/components/admin/weekly-workspace.tsx`,
-`src/lib/weekly-digest/generation-worker.ts`, production incident 2026-08-17)
+`src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/github-dispatch.ts`,
+production incidents 2026-08-17)
 
 ### Release: approve → schedule → (за потреби) postpone → pause
 
