@@ -49,6 +49,7 @@ import {
   type OwnerConceptFeedback,
 } from '@/lib/weekly-digest/owner-feedback';
 import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
+import { carryOverOrphanedQualityReport } from '@/lib/weekly-digest/quality-report-carryover';
 
 function requiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -1771,6 +1772,58 @@ export async function restoreWeeklyDigestRevisionAction(formData: FormData) {
     p_reason: reason,
   });
   if (error) redirectWeeklyRevisionRestoreError(weeklyDigestId, error.message);
+  // Best-effort: a revision restored from editorial_master's non-converged
+  // draft path left its content_quality_report on the revision that just
+  // went inactive (see quality-report-carryover.ts). Heal that in the same
+  // click rather than stranding the owner on a "Master quality is missing"
+  // panel for content that was already scored. Restoring an ordinary earlier
+  // version with no orphaned report is a no-op here, and a failure must not
+  // hide the restore that already succeeded above.
+  try {
+    await carryOverOrphanedQualityReport(db, weeklyDigestId);
+  } catch (carryOverError) {
+    console.error('[restoreWeeklyDigestRevisionAction] quality report carry-over', carryOverError);
+  }
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+function redirectWeeklyQualityCarryOverError(weeklyDigestId: string, message: string): never {
+  redirect(
+    `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=research&save_error=${encodeURIComponent(message.slice(0, 500))}`,
+  );
+}
+
+/**
+ * Manual fallback for the same healing carryOverOrphanedQualityReport does
+ * automatically inside restoreWeeklyDigestRevisionAction — needed for any
+ * digest that was already restored before that automatic call existed, and
+ * as a visible recovery path if the automatic one ever silently no-ops.
+ * Surfaced only on the Research tab's "Master quality" panel, and only when
+ * workspace.orphanedQualityReport shows there is actually something to
+ * attach.
+ */
+export async function carryOverWeeklyQualityReportAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const db = await getSupabaseServer();
+  // redirect() throws internally, so it must never fire from inside this
+  // try -- a surrounding catch here would swallow that throw as if it were
+  // a real failure and redirect a second time with a useless message.
+  let result: Awaited<ReturnType<typeof carryOverOrphanedQualityReport>> | null = null;
+  let failureMessage: string | null = null;
+  try {
+    result = await carryOverOrphanedQualityReport(db, weeklyDigestId);
+  } catch (error) {
+    failureMessage =
+      error instanceof Error ? error.message : 'The quality report could not be attached.';
+  }
+  if (failureMessage) redirectWeeklyQualityCarryOverError(weeklyDigestId, failureMessage);
+  if (result?.status === 'nothing_to_carry') {
+    redirectWeeklyQualityCarryOverError(
+      weeklyDigestId,
+      'No earlier Master quality report was found to attach.',
+    );
+  }
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 

@@ -96,6 +96,24 @@ Overview показує preflight blockers з лінком на вкладку. 
      з'являється на кожній вкладці, коли є новіша ревізія за активну, з посиланням на Overview
      → Editorial versions. Там **Restore this version** на потрібній ревізії робить її
      активною — без цього кліку весь текст лишається невидимим редактору;
+   - **Restore більше не губить Master quality (2026-08-17).** До фіксу: `revert_weekly_digest_revision`
+     лише перемикає `active_revision_id`, артефакти не чіпає, тож звіт критика лишався
+     прикріпленим до ревізії, яка щойно стала неактивною — Research tab показував «Master
+     quality report is missing», хоч `editorial_master` реально відпрацював і вже мав score.
+     Живий приклад: випуск `6cbcf0b3` 16.08 — критик не зійшовся (82/100), зберіг звіт на
+     ревізії 3, створив draft-ревізію 4; власник відновив ревізію 4 через Restore, звіт лишився
+     сиротою на ревізії 3. Тепер **Restore автоматично підв'язує такий звіт до щойно активної
+     ревізії** (`carryOverOrphanedQualityReport`, той самий RPC `save_weekly_digest_artifact`,
+     яким пише воркер — не raw `UPDATE`: `revision_id` в `weekly_digest_artifacts` навмисно
+     `immutable`, чіпляє `guard_weekly_digest_artifact_write`). Якщо колись усе одно побачиш
+     «missing» після Restore (наприклад, випуск був відновлений ще до цього фіксу) — панель
+     сама покаже інший стан: **«Independent audit · found on an earlier version»** зі score і
+     кнопкою **Attach this report to the current version** замість generic інструкції «почни
+     з Approve packs». Approve все одно потрібен окремо — прикріплення лише робить звіт
+     видимим, не апрувить його.
+     (source: `src/lib/weekly-digest/quality-report-carryover.ts`,
+     `src/app/admin/(cms)/weekly/actions.ts` §`restoreWeeklyDigestRevisionAction` /
+     `carryOverWeeklyQualityReportAction`, live check прод-Supabase `mdiqfatpqczwqghwttpm` 2026-08-17)
    - **Restore/Save падали для кожного owner/editor до 2026-08-10 — це вже виправлено в
      прод-БД.** Реальна причина не в сесії: `create_weekly_digest_revision` і
      `revert_weekly_digest_revision` намагались писати в `weekly_digest_generation_jobs`, а
