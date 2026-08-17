@@ -529,7 +529,7 @@ export function validateWeeklyDigestPreflight(input: WeeklyPreflightInput): Week
         message: `${channel} social variant is missing.`,
         fix: socialFix(
           channel,
-          `enqueue social_copy / wait for generation → edit if needed → Save & approve (${locale.toUpperCase()} locale).`,
+          `Open Social → Generate social package / wait for generation → edit if needed → Save & approve (${locale.toUpperCase()} locale).`,
         ),
         tab: 'social',
       });

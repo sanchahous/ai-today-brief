@@ -3353,6 +3353,7 @@ function SocialPanel({
   canDisable: boolean;
   canSchedule: boolean;
 }) {
+  const revision = workspace.revision;
   const postsByChannel = new Map(workspace.socialPosts.map((post) => [post.channel, post]));
   const configuredLocales = new Map(
     workspace.localeMap
@@ -3376,9 +3377,30 @@ function SocialPanel({
             approval. Facts should represent the full edition.
           </p>
         </div>
-        <p className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-slate-400">
-          Times shown in Europe/Kyiv
-        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-slate-400">
+            Times shown in Europe/Kyiv
+          </p>
+          {revision ? (
+            <form action={enqueueWeeklyGenerationAction}>
+              <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+              <input type="hidden" name="revision_id" value={revision.id} />
+              <input type="hidden" name="job_type" value="social_copy" />
+              <input type="hidden" name="locale" value="neutral" />
+              <input type="hidden" name="slot_key" value="social-copy:neutral" />
+              <ActionSubmitButton
+                idleLabel={
+                  workspace.socialPosts.length > 0
+                    ? 'Regenerate social package'
+                    : 'Generate social package'
+                }
+                pendingLabel="Queueing social package…"
+                disabled={!canEdit}
+                className={PRIMARY}
+              />
+            </form>
+          ) : null}
+        </div>
       </div>
 
       {(
@@ -3396,8 +3418,8 @@ function SocialPanel({
                 <StatusPill value="failed" />
               </div>
               <p className="mt-2 text-sm text-red-200">
-                Required {locale.toUpperCase()} variant is missing. Regenerate the weekly social
-                package.
+                Required {locale.toUpperCase()} variant is missing. Use the social package button
+                above to generate all six channel variants.
               </p>
             </section>
           );
