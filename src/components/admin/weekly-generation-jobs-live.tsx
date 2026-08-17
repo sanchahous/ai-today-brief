@@ -9,6 +9,7 @@ import {
   retryWeeklyGenerationJobAction,
 } from '@/app/admin/(cms)/weekly/actions';
 import { estimateGenerationEta } from '@/lib/weekly-digest/generation-control';
+import { partitionGenerationJobsForDisplay } from '@/lib/weekly-digest/generation-job-visibility';
 
 interface GenerationJob {
   id: string;
@@ -262,8 +263,10 @@ export function WeeklyGenerationJobsLive({
     };
   }, [digestId]);
 
-  const allowed = useMemo(() => new Set(jobTypes), [jobTypes]);
-  const jobs = data.jobs.filter((job) => allowed.has(job.job_type));
+  const { current: jobs, history: jobHistory } = useMemo(
+    () => partitionGenerationJobsForDisplay(data.jobs, jobTypes),
+    [data.jobs, jobTypes],
+  );
   // A succeeded editorial_master job always mints and activates a *new*
   // revision (see createMasterRevision in generation-worker.ts), so the job
   // itself is permanently tied to the now-superseded revision it was queued
@@ -458,6 +461,38 @@ export function WeeklyGenerationJobsLive({
         <p className="py-6 text-center text-sm text-slate-500">
           No generation jobs for this tab yet.
         </p>
+      ) : null}
+      {jobHistory.length > 0 ? (
+        <details className="mt-4 rounded-xl border border-white/8 bg-black/10 px-4 py-3 text-xs text-slate-500">
+          <summary className="cursor-pointer font-semibold text-slate-400">
+            Previous generation attempts ({jobHistory.length})
+          </summary>
+          <p className="mt-2 leading-5">
+            Stored for diagnostics only. These attempts do not block the current Social review.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {jobHistory.map((job) => {
+              const attempt = liveAttempt(job, data.attempts);
+              return (
+                <li key={job.id} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span>{dateTime(job.finished_at ?? job.created_at)}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{job.status}</span>
+                  {attempt?.external_run_url ? (
+                    <a
+                      href={attempt.external_run_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[#47e4d3] underline underline-offset-2"
+                    >
+                      Open run
+                    </a>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </details>
       ) : null}
       <p className="mt-3 text-right text-xs text-slate-600">
         Live status refreshes every 5 seconds
