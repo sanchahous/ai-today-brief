@@ -1,16 +1,10 @@
 # Weekly editorial selection
 
 Summary: Правила тижневого editorial-відбору для weekly-дайджесту.
-Sources: `src/lib/weekly-digest/content-studio.ts`, `src/lib/weekly-digest/editorial-llm.ts`,
-`src/components/admin/weekly-workspace.tsx`, `src/app/globals.css`, owner content-quality
-audit 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK `claimIds` parser fix 2026-08-10
-(Actions run `31367921173`), quantified length-repair fix + newer-draft banner 2026-08-10,
-Postpone release feature 2026-08-10, experimental Visual Affordance V10 owner review 2026-08-13,
-weekly illustration P3 daily cover prompt 2026-08-15, owner selection audit + `weekly-editorial-v3`
-2026-08-16 (`pipeline/weekly-digest.ts`, `pipeline/source-authority.ts`,
-`src/lib/weekly-digest/seed-content.ts`, прод-прогін `05cc4e6a-a709-44ca-b56a-382f21c40292`),
-research corpus corroboration 2026-08-16 (`pipeline/story-identity.ts`),
-Start / retry Content Studio after succeeded jobs 2026-08-16; social package LinkedIn recovery 2026-08-17; GitHub dispatch 503 recovery 2026-08-17.
+Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
+`pipeline/weekly-digest.ts`, owner audits / production runs 2026-08-09…17,
+[weekly-digest](weekly-digest.md), staged social-copy recovery and LinkedIn 7-page bounds
+2026-08-17.
 Last updated: 2026-08-17
 
 ---
@@ -46,6 +40,15 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > retries an already-created worker request and keeps an unconfirmed lease fenced; it does not
 > change this selector's candidates, weights, ranks, diversity, or approval state.
 > (source: `src/lib/weekly-digest/github-dispatch.ts`)
+> Staged social-copy checkpoints (2026-08-17) are downstream persistence only: linked retries
+> reuse writer/critic, Instagram, LinkedIn and saved post stages for the same approved source
+> hash; they do not change candidates, weights, ranks, diversity, or editorial approval state.
+> (source: `src/lib/weekly-digest/social-checkpoint.ts`,
+> `src/lib/weekly-digest/generation-worker.ts`)
+> LinkedIn 7-page bounds (2026-08-17) clip only presentation copy inside fixed native-document
+> regions while preserving clickable source URLs; they do not change selected stories, ranks,
+> evidence, article artifacts or approval state.
+> (source: `src/lib/weekly-digest/linkedin-document.ts`)
 > (source: [weekly-illustration-plan](weekly-illustration-plan.md) P2/M3/B3/P3/D2/D3/E1/E2/E3/F3/G/F5)
 
 > **Scope note (2026-08-15):** the `feat/weekly-illustration-fixes` review-fix branch

@@ -8,12 +8,31 @@ owner weekly selection/content audit 2026-08-16, Master quality carry-over live 
 owner weekly selection/content audit 2026-08-16, research corpus corroboration 2026-08-16,
 reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16,
 Start / retry Content Studio silent no-op 2026-08-16, site WebP delivery 2026-08-17
-social package LinkedIn recovery incident 2026-08-17, GitHub workflow-dispatch 503 incident 2026-08-17
+social package LinkedIn recovery incident 2026-08-17, GitHub workflow-dispatch 503 incident,
+staged social-copy recovery and LinkedIn 7-page overflow incident 2026-08-17
 Last updated: 2026-08-17
 
 ---
 
 ## Стан репозиторію
+
+- **`social_copy` відновлюється поетапно через linked retry (2026-08-17), гілка
+  `codex/social-step-checkpoints`.** Legacy job уже зберігав шість channel adaptations, але
+  child читав лише власний `output`, тому ручний retry повторював усі writer/critic calls.
+  Versioned state тепер проходить `retry_of_job_id` chain і зберігає окремо channel results,
+  кожен Instagram slide, LinkedIn document, draft package та кожен post/generated review.
+  Source hash не дає відновити copy на іншу approved revision; expiring signed URLs
+  перевидаються без повторного render. Read-only prod query підтвердив legacy output keys і
+  наявні durable social/artifact tables; нова міграція не потрібна. Тести: targeted 39/39,
+  typecheck і scoped ESLint зелені. Два наступні live retries дійшли до LinkedIn render і
+  впали на `8 pages; expected 7`: production standfirst має 1018 символів, а старий тест — 101.
+  У цій самій гілці fixed-layout regions тепер мають bounded height/ellipsis, sources показують
+  compact host із повним clickable URL, а production-sized regression підтверджує рівно 7
+  сторінок. Цільові worker/PDF тести: 25/25.
+  (source: `src/lib/weekly-digest/social-checkpoint.ts`,
+  `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/generation-control.ts`,
+  `src/lib/weekly-digest/linkedin-document.ts`, прод-Supabase `mdiqfatpqczwqghwttpm` live check
+  2026-08-17, Actions runs `32043513443` / `32044207908`)
 
 - **Linked social retry не має валити CMS при GitHub 503 (2026-08-17), гілка
   `codex/fix-gh-dispatch-503`.** Після створення durable child `social_copy`

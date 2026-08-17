@@ -7,7 +7,7 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
 editorial-voice overhaul, PDF page-cap, admin mobile-responsive,
 owner content audit + seed-content 2026-08-16, research corpus corroboration 2026-08-16,
 Start / retry Content Studio after succeeded jobs 2026-08-16, social package LinkedIn recovery
-2026-08-17, GitHub dispatch 503 recovery 2026-08-17
+2026-08-17, GitHub dispatch 503 recovery 2026-08-17, staged social-copy recovery 2026-08-17
 Last updated: 2026-08-17
 
 ---
@@ -277,6 +277,50 @@ Linked manual retry як і раніше створює окремий job, то
 (source: production `weekly_digest_generation_jobs` / `weekly_digest_artifacts` incident
 2026-08-17; `src/lib/weekly-digest/generation-worker.ts`,
 `src/lib/weekly-digest/linkedin-document.ts`, `generation-worker.test.ts`)
+
+Два наступні linked jobs (`f39b2429…`, `d716aaef…`) уже пройшли hydration, але terminal-failed
+на наступному детермінованому гейті: `LinkedIn document rendered 8 pages; expected 7.` Live
+метрики показали production-sized copy, якої не було у фікстурі: standfirst 1018 символів
+проти 101 у тесті, takeaways до 205, story fields до 278 і source URL до 130 символів. PDFKit
+автоматично створював восьму сторінку при overflow, а фінальний page-count guard правильно
+відхиляв файл. Renderer тепер задає bounded/ellipsis regions для cover, Top 3, Radar, next-week
+і sources; на sources видно компактний host, але link веде на повний URL. Gate лишається рівно
+7 сторінок. Regression test рендерить довгі production-shaped поля і перевіряє фактичну
+кількість сторінок через PDF preview.
+(source: production jobs `f39b2429-63b1-4e08-82f9-fa496fa34840`,
+`d716aaef-f902-430f-b811-1f496852dd0c`, Actions runs `32043513443` / `32044207908`,
+read-only production length metrics 2026-08-17; `src/lib/weekly-digest/linkedin-document.ts`,
+`linkedin-document.test.ts`)
+
+### Staged social-copy checkpoints across linked retries (2026-08-17)
+
+Старий `social_copy` checkpoint зберігав `tokens` і готові channel adaptations після кожного
+writer/critic, але worker читав його лише з `output` поточного job. Manual **Create linked
+retry** створює новий рядок через `retry_of_job_id`, тому child не бачив parent output і знову
+платив за всі шість каналів. Live read-only SQL підтвердив legacy keys
+`socialCopyCheckpointHash` / `tokens` / `adaptations` у recent linked jobs.
+(source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-17;
+`src/lib/weekly-digest/generation-worker.ts`)
+
+Новий versioned `social_copy_checkpoint` обходить linked retry-chain, приймає legacy v1 state,
+перевіряє digest/revision + hash approved bilingual source і вибирає найдальший цілісний стан.
+Відновлений parent state одразу записується в child. Дорогий результат тепер фіксується до
+необов'язкових observability writes; зміна approved article або locale map змінює input hash і
+fail-closed забороняє домішувати старий copy до нового випуску.
+(source: `src/lib/weekly-digest/social-checkpoint.ts`,
+`src/lib/weekly-digest/generation-worker.ts`, `social-checkpoint.test.ts`)
+
+Durable межі тепер окремі: кожен із 6 channel writer+critic results → кожен із 7–9 Instagram
+slide artifacts → LinkedIn native-document artifact → `social_packages` draft → кожен
+`social_posts` row + immutable `generated` review. Stable artifact/package/post IDs лежать у
+checkpoint; при resume storage URLs перевидаються, а готові images/PDF/rows перевикористовуються.
+Package і posts переходять із `draft` у `in_review` лише після повного набору шести reviews.
+Нових таблиць або RPC не додано: state використовує fenced JSONB `job.output` і наявні durable
+artifact/social ledgers.
+(source: `src/lib/weekly-digest/generation-worker.ts`,
+`src/lib/weekly-digest/generation-control.ts`,
+`supabase/migrations/20260809060929_weekly_generation_control_plane.sql`,
+прод-Supabase `mdiqfatpqczwqghwttpm` schema check 2026-08-17)
 
 ### GitHub Actions dispatch 503 recovery (2026-08-17)
 

@@ -2,15 +2,9 @@
 
 Summary: покрокова інструкція для власника/редактора: що натискати у вкладках,
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
-Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/preflight.ts`,
-`claim_weekly_digest_generation_jobs` (editorial_master gate), live fail
-`ai-weekly-2026-07-27` 2026-08-04, [weekly-digest](../pipeline/weekly-digest.md),
-[editorial-voice](../pipeline/editorial-voice.md),
-`weekly_generation_control_plane` implementation 2026-08-09, `src/lib/weekly-digest/pdf.ts`
-(PDF page-cap fix, 2026-08-07), admin mobile-responsive fix (гілка
-`claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
-+ Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
-engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15, seed-контент історій + `weekly-editorial-v3` 2026-08-16, research corpus corroboration 2026-08-16, Start / retry Content Studio after succeeded jobs 2026-08-16, GitHub dispatch 503 recovery 2026-08-17.
+Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
+[weekly-digest](../pipeline/weekly-digest.md), production incidents / owner sessions
+2026-08-04…17, staged social-copy recovery 2026-08-17.
 Last updated: 2026-08-17
 
 ---
@@ -266,7 +260,17 @@ LinkedIn та Instagram — не шість незалежних кліків. �
 Якщо job впав після ~90% з `Cannot read properties of undefined (reading 'map')`, не переписуй
 шість постів: це був несумісний normalized article artifact на LinkedIn document step, а не
 provider failure. Після деплою фіксу натисни **Create linked retry** на terminal `social_copy`
-job; retry має власний job history і знову пройде package flow.
+job; retry має власний job history, але відновить уже готові writer/critic results та Instagram
+slides замість генерації шести каналів із нуля. Timeline покаже `checkpoint_restored`, а
+progress почнеться з останнього durable кроку. Якщо він знову впаде пізніше — наприклад на
+LinkedIn PDF, package або четвертому post — наступний linked retry так само продовжить із цього
+кроку. Fresh generation потрібна лише коли змінився approved article/revision або locale map,
+бо тоді source hash навмисно не збігається.
+
+Помилка `LinkedIn document rendered 8 pages; expected 7` — це не провал каналів і не привід
+знову запускати writer/critic. Вона означає, що довгий editorial copy переповнив фіксований
+7-page native document. Після deploy layout-bounds fix створи один linked retry: checkpoint
+відновить 6/6 adaptations та Instagram slides і повторить LinkedIn render із bounded regions.
 
 Якщо після **Create linked retry** з'явився `Minified React error #441` із ref `2087663833`, не
 натискай retry вдруге: child уже створено. Це зафіксований HTTP 503 GitHub на dispatch, а не
@@ -275,7 +279,8 @@ job; retry має власний job history і знову пройде package 
 автоматичного recovery без дублювання workflow.
 (source: `src/components/admin/weekly-workspace.tsx`,
 `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/github-dispatch.ts`,
-production incidents 2026-08-17)
+`src/lib/weekly-digest/social-checkpoint.ts`, production incidents + прод-Supabase
+`mdiqfatpqczwqghwttpm` live check 2026-08-17)
 
 ### Release: approve → schedule → (за потреби) postpone → pause
 
@@ -311,6 +316,8 @@ Postpone не створює нову RPC — це той самий Pause → A
 | Після retry знову `UNSUPPORTED_*` на деталі зі статті | Старий короткий excerpt / вузькі claims | Переконайся що packs **v3** з довгим excerpt; Approve знову |
 | Visuals/Social не з’являються | Master ще не succeeded | Спочатку зелений Research gate |
 | `social_copy` terminal failed після Instagram, `undefined.map` | Normalized article artifact не мав `stories` для LinkedIn document | Дочекайся деплою social recovery, потім **Create linked retry**; не генеруй шість каналів окремо |
+| `social_copy` terminal failed на `rendered 8 pages; expected 7` | Довгий editorial copy переповнив LinkedIn PDF | Після deploy 7-page bounds створи **один** linked retry; він відновить збережені канали й слайди |
+| Linked `social_copy` retry знову показує `channels` від 0% | Немає валідного checkpoint для поточного approved source hash | Перевір, чи не змінилась revision/locale map; якщо ні — дивись `checkpoint_restored`/`checkpoint_saved` у Timeline |
 | Release: немає story/cover | Файл не завантажено | Visuals → скопіюй промпт → згенеруй у своєму інструменті → upload. Не тисни Regenerate |
 | Release blocked на video | Немає Remotion pipeline / captions | Owner override лише для trial (див. preflight) |
 | PDF: сторінки радар-історій (4-7) виглядають скорочено (без картинки/панелей) | Так задумано з 2026-08-07 — повний розворот тепер лише для Top 3 | Нормально, не баг; деталі — [weekly-digest](../pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07) |
