@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-17
 
+## 2026-08-17 — Social malformed candidate response uses model fallback
+
+**Джерело:** production job `36ff3a56-f9e4-46eb-be83-bc92cedf3026`, Actions run
+`32061374498`; `src/lib/weekly-digest/social-adapter.ts`.
+
+**Виявлено:** reliable router відпрацював швидко (OpenAI mini writer ~6 s, Terra critic ~13 s),
+але другий repair writer повернув валідний JSON лише з одним текстом без `2–3` candidates.
+`candidatesFromText` викликався вже після завершення provider cascade, тому структурна помилка
+однієї моделі завершила всю job як terminal `unknown`.
+
+**Змінено:** candidate serialization перевіряється у `parseWeeklySocialWriter`, який є provider
+response validator. Malformed response тепер запускає наступну модель bounded queue в тій самій
+job. Додано прямі parser regressions на accepted multi-candidate і rejected single-candidate.
+
+**Wiki:** оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md), [index](index.md).
+
 ## 2026-08-17 — Social router: true override + reliable writer lane
 
 **Джерело:** production job `02ad5e59-1888-4202-9b71-b6b9a93de03f`, Actions run

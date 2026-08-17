@@ -50,6 +50,9 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > editorial-master timeouts and this selector are unchanged.
 > (source: `.github/workflows/weekly-master-cli-worker.yml`,
 > `src/lib/weekly-digest/social-adapter.ts`, `src/lib/social/llm-router.ts`)
+> Writer candidate-serialization validation is likewise a downstream social provider-fallback
+> boundary and does not alter selected stories or their editorial weights.
+> (source: `src/lib/weekly-digest/social-adapter.ts`)
 > (source: `src/lib/weekly-digest/social-checkpoint.ts`,
 > `src/lib/weekly-digest/generation-worker.ts`)
 > LinkedIn 7-page bounds (2026-08-17) clip only presentation copy inside fixed native-document
