@@ -3,7 +3,7 @@ import 'server-only';
 import type { PipelineDb } from '../../../pipeline/db';
 import { parseCritic } from '@/lib/social/critic';
 import { generateSocialJson } from '@/lib/social/llm-router';
-import { runQualityGate } from '@/lib/social/quality';
+import { findBlindCrossPosts, runQualityGate } from '@/lib/social/quality';
 import type {
   QualityReport,
   SocialAsset,
@@ -152,12 +152,94 @@ function criticSpan(flag: string, copy: string) {
   return quoted && copy.includes(quoted) ? quoted : undefined;
 }
 
-function promptFor(input: {
-  channel: SocialChannel;
-  locale: SocialLocale;
-  bundle: WeeklyMasterBundle;
-  trackedUrl: string;
-}) {
+export function parseWeeklySocialCritic(raw: string) {
+  const critic = parseCritic(raw);
+  const noDiagnostic =
+    critic.score === 0 &&
+    critic.flags.length === 0 &&
+    critic.platformFitScore === 0 &&
+    (critic.platformFlags?.length ?? 0) === 0 &&
+    critic.originalityScore === 0 &&
+    (critic.originalityFlags?.length ?? 0) === 0;
+  if (noDiagnostic) {
+    throw new SyntaxError('Critic echoed an empty zero-score template instead of an audit.');
+  }
+  if (critic.score < 85 && critic.flags.length === 0) {
+    throw new SyntaxError('Critic deducted factual points without an actionable factual flag.');
+  }
+  if (
+    typeof critic.platformFitScore === 'number' &&
+    critic.platformFitScore < 85 &&
+    (critic.platformFlags?.length ?? 0) === 0
+  ) {
+    throw new SyntaxError(
+      'Critic deducted platform-fit points without an actionable platform flag.',
+    );
+  }
+  if (
+    typeof critic.originalityScore === 'number' &&
+    critic.originalityScore < 70 &&
+    (critic.originalityFlags?.length ?? 0) === 0
+  ) {
+    throw new SyntaxError(
+      'Critic deducted originality points without an actionable originality flag.',
+    );
+  }
+  return critic;
+}
+
+function copyForAudit(draft: SocialDraft) {
+  if (draft.channel === 'instagram') {
+    return [
+      ...(draft.contentParts ?? []).map((part) => `<SLIDE>${part}`),
+      `<CAPTION>${draft.text}`,
+    ].join('\n');
+  }
+  if (draft.channel === 'threads') {
+    return (draft.contentParts ?? []).map((part) => `<PART>${part}`).join('\n');
+  }
+  if (draft.channel === 'x') {
+    return `ROOT POST\n${draft.text}\nFIRST COMMENT\n${draft.firstComment ?? ''}`;
+  }
+  return draft.text;
+}
+
+function usageTotal(
+  left: { promptTokens: number; outputTokens: number; estimatedCostUsd: number },
+  right: { promptTokens: number; outputTokens: number; estimatedCostUsd: number },
+) {
+  return {
+    promptTokens: left.promptTokens + right.promptTokens,
+    outputTokens: left.outputTokens + right.outputTokens,
+    estimatedCostUsd: left.estimatedCostUsd + right.estimatedCostUsd,
+  };
+}
+
+export class SocialCopyQualityError extends Error {
+  constructor(
+    readonly channel: SocialChannel,
+    readonly blockerCodes: string[],
+  ) {
+    super(
+      `${channel} social copy did not pass its approval boundary after bounded repair: ${[
+        ...new Set(blockerCodes),
+      ].join(', ')}`,
+    );
+    this.name = 'SocialCopyQualityError';
+  }
+}
+
+function promptFor(
+  input: {
+    channel: SocialChannel;
+    locale: SocialLocale;
+    bundle: WeeklyMasterBundle;
+    trackedUrl: string;
+    sourceFacts: string[];
+    avoidCopies?: SocialDraft[];
+  },
+  repair?: { copy: string; blockers: string[] },
+) {
   const article = input.locale === 'uk' ? input.bundle.uk : input.bundle.en;
   const voice = input.locale === 'uk' ? VOICE_UK : VOICE_EN;
   return `You are a senior social editor for AI Today Brief. Adapt the approved master into native ${input.channel} copy for builders, founders and AI decision-makers. Do not list all headlines. Do not truncate or use ellipses. Use only claim IDs and facts already present in the master.
@@ -167,6 +249,21 @@ ${voice}
 
 CHANNEL CONTRACT: ${CHANNEL_CONTRACT[input.channel]}
 TRACKED URL: ${input.trackedUrl}
+
+APPROVED FACT SNAPSHOT
+${input.sourceFacts.map((fact) => `- ${fact}`).join('\n')}
+
+${
+  input.avoidCopies?.length
+    ? `COPY ALREADY USED ON OTHER ${input.locale.toUpperCase()} CHANNELS — choose a materially different hook and structure:\n${input.avoidCopies.map(copyForAudit).join('\n---\n')}`
+    : ''
+}
+
+${
+  repair
+    ? `REPAIR REQUIRED\nThe prior candidate below failed automated approval. Rewrite the substance called out by every check; do not merely paraphrase it.\nChecks:\n${repair.blockers.map((blocker) => `- ${blocker}`).join('\n')}\nRejected copy:\n${repair.copy}`
+    : ''
+}
 
 First, read the approved article below and decide your own angle for this channel's audience -- the single most compelling entry point, not a recap of every headline. Write it as a short (3-8 word) label in "angle". Then create THREE hook candidates built on that angle that are genuinely different from each other in opening, tone or emphasis -- not the same sentence reworded. Never open with a generic AI-tell phrase ("in today's fast-moving AI landscape", "it's worth noting", "game-changer") or a leader-briefing frame ("for product and security leaders") -- open on the concrete fact or scene. Put all candidates inside the JSON "text" string and separate them with <CANDIDATE>. For Threads use <PART> inside each candidate. For Instagram use <SLIDE> and <CAPTION>. For X return the tracked URL in "firstComment"; for other channels put it only where the contract permits. Return strict JSON only: {"angle":"","text":"candidate 1<CANDIDATE>candidate 2<CANDIDATE>candidate 3","firstComment":""}.
 
@@ -183,128 +280,191 @@ export async function adaptWeeklySocialChannel(input: {
   sourceFacts: string[];
   assets?: SocialAsset[];
   altText?: string | null;
+  /** Same-locale adaptations already accepted for this package. */
+  avoidCopies?: SocialDraft[];
   /** Enables DB-driven role-chain overrides (owner-added HTTP providers via /admin/providers) for social.writer/social.critic. */
   db?: PipelineDb;
 }): Promise<WeeklySocialAdaptation> {
-  const writer = await generateSocialJson('writer', promptFor(input), parseWriter, { db: input.db });
-  const hookCandidates = candidatesFromText(writer.value.text);
-  const ranked = hookCandidates
-    .map((candidate) => ({
-      candidate,
-      score: scoreCandidate(input.channel, input.locale, candidate),
-    }))
-    .sort((left, right) => right.score - left.score);
-  const selected = ranked[0]!;
-  const firstComment = input.channel === 'x' ? input.trackedUrl : writer.value.firstComment;
-  const unpacked = unpackCandidate(input.channel, selected.candidate, firstComment);
-  const draft: SocialDraft = {
-    channel: input.channel,
-    locale: input.locale,
-    format: formatFor(input.channel),
-    text: unpacked.text,
-    contentParts: unpacked.contentParts,
-    firstComment: unpacked.firstComment,
-    assets: input.assets ?? [],
-    altText: input.altText ?? null,
-    scheduledFor: input.scheduledFor,
-    sourceApproved: true,
-    sourceFacts: input.sourceFacts,
-    sourceUrl: input.trackedUrl,
-  };
-  const base = runQualityGate(draft);
-  const criticPrompt = `Audit this social adaptation independently. First, compare it against ONLY the approved facts and flag unsupported numbers, names, quotes, causal implications or misleading compression. Second, audit it against the exact ${input.channel} contract: ${CHANNEL_CONTRACT[input.channel]}. Third, score how ORIGINAL and non-formulaic the copy reads -- would a reader who follows this beat recognize it as a distinct, specific take, or does it read like a generic AI-generated social post that could describe any AI news week? Flag any generic-AI-tell phrase or hedge you find. Score factual grounding, platform-native fit and originality separately from 0–100. Return JSON only: {"score":0,"flags":[],"platformFitScore":0,"platformFlags":[],"originalityScore":0,"originalityFlags":[]}.
+  const emptyUsage = { promptTokens: 0, outputTokens: 0, estimatedCostUsd: 0 };
+  let writerUsage = emptyUsage;
+  let criticUsage = emptyUsage;
+  let auditedCandidates = 0;
+  let repair: { copy: string; blockers: string[] } | undefined;
+  let lastFailed: WeeklySocialAdaptation | null = null;
+
+  for (let round = 0; round < 3; round += 1) {
+    const writer = await generateSocialJson('writer', promptFor(input, repair), parseWriter, {
+      db: input.db,
+    });
+    writerUsage = usageTotal(writerUsage, writer.usage);
+    const hookCandidates = candidatesFromText(writer.value.text);
+    const ranked = hookCandidates
+      .map((candidate) => ({
+        candidate,
+        score: scoreCandidate(input.channel, input.locale, candidate),
+      }))
+      .sort((left, right) => right.score - left.score);
+    const failedThisRound: WeeklySocialAdaptation[] = [];
+
+    for (const selected of ranked) {
+      const firstComment = input.channel === 'x' ? input.trackedUrl : writer.value.firstComment;
+      const unpacked = unpackCandidate(input.channel, selected.candidate, firstComment);
+      const draft: SocialDraft = {
+        channel: input.channel,
+        locale: input.locale,
+        format: formatFor(input.channel),
+        text: unpacked.text,
+        contentParts: unpacked.contentParts,
+        firstComment: unpacked.firstComment,
+        assets: input.assets ?? [],
+        altText: input.altText ?? null,
+        scheduledFor: input.scheduledFor,
+        sourceApproved: true,
+        sourceFacts: input.sourceFacts,
+        sourceUrl: input.trackedUrl,
+      };
+      const base = runQualityGate(draft);
+      const criticPrompt = `Audit this social adaptation independently. First, compare it against ONLY the approved facts and flag unsupported numbers, names, quotes, causal implications or misleading compression. Second, audit the native serialization below against the exact ${input.channel} contract: ${CHANNEL_CONTRACT[input.channel]}. Third, score how ORIGINAL and non-formulaic the copy reads. Score factual grounding, platform-native fit and originality separately from 0–100.
+
+Consistency rules:
+- Empty factual flags mean factual score 100; every deduction needs a precise flag.
+- Empty platform flags mean platform fit 100; every deduction needs a precise flag.
+- Empty originality flags mean originality 100; every deduction needs a precise flag.
+- Never echo an example or return unexplained zero scores.
+- Return strict JSON with these keys: score, flags, platformFitScore, platformFlags, originalityScore, originalityFlags.
 
 APPROVED FACTS
 ${input.sourceFacts.map((fact) => `- ${fact}`).join('\n')}
 
-COPY
-${[draft.text, ...unpacked.contentParts, draft.firstComment ?? ''].join('\n---\n')}`;
-  const critic = await generateSocialJson('critic', criticPrompt, parseCritic, {
-    excludeProviders: [writer.provider],
-    db: input.db,
-  });
-  const platformFitScore = Math.min(
-    selected.score,
-    critic.value.platformFitScore ?? selected.score,
-  );
-  const auditedCopy = [draft.text, ...unpacked.contentParts, draft.firstComment ?? ''].join('\n');
-  const qualityReport: QualityReport = {
-    ...base,
-    platformFitScore,
-    hookAngle: writer.value.angle,
-    hookCandidates,
-    writer: {
-      provider: writer.provider,
-      model: writer.model,
-      fallbackUsed: writer.fallbackUsed,
-      usage: writer.usage,
-    },
-    critic: {
-      ...critic.value,
-      provider: critic.provider,
-      model: critic.model,
-      fallbackUsed: critic.fallbackUsed,
-      attempts: critic.attempts,
-      auditedAt: new Date().toISOString(),
-      usage: critic.usage,
-    },
-    blocking: [
-      ...base.blocking,
-      ...(platformFitScore < 85
-        ? [
-            {
-              code: 'platform_fit',
-              message: `Platform-native fit ${platformFitScore}/100 is below 85/100.`,
-            },
-          ]
-        : []),
-      ...critic.value.flags.map((flag) => ({
-        code: 'critic_flag',
-        message: flag,
-        span: criticSpan(flag, auditedCopy),
-        suggestedFix: 'Remove or rewrite this claim using only an approved claim ID.',
-      })),
-      ...(critic.value.platformFlags ?? []).map((flag) => ({
-        code: 'platform_flag',
-        message: flag,
-        suggestedFix: `Rewrite the copy against the ${input.channel} channel contract.`,
-      })),
-      ...(critic.value.score < 85
-        ? [
-            {
-              code: 'critic_score',
-              message: `Independent factual critic scored this variant ${critic.value.score}/100; 85 is required.`,
-              suggestedFix: 'Rewrite the flagged compression and rerun the independent critic.',
-            },
-          ]
-        : []),
-      ...(typeof critic.value.originalityScore === 'number' && critic.value.originalityScore < 70
-        ? [
-            {
-              code: 'originality_score',
-              message: `Independent critic scored this variant ${critic.value.originalityScore}/100 for originality; 70 is required.`,
-              suggestedFix: 'Rewrite with a more specific, non-generic angle -- avoid AI-tell phrasing.',
-            },
-          ]
-        : []),
-      ...(critic.value.originalityFlags ?? []).map((flag) => ({
+NATIVE ${input.channel.toUpperCase()} COPY
+${copyForAudit(draft)}`;
+      const critic = await generateSocialJson('critic', criticPrompt, parseWeeklySocialCritic, {
+        excludeProviders: [writer.provider],
+        db: input.db,
+      });
+      auditedCandidates += 1;
+      criticUsage = usageTotal(criticUsage, critic.usage);
+      const platformFitScore = Math.min(
+        selected.score,
+        critic.value.platformFitScore ?? selected.score,
+      );
+      const auditedCopy = copyForAudit(draft);
+      const originalityFlags = (critic.value.originalityFlags ?? []).map((flag) => ({
         code: 'originality_flag',
         message: flag,
         span: criticSpan(flag, auditedCopy),
-        suggestedFix: 'Rewrite the flagged phrase in this channel\'s own voice.',
-      })),
-    ],
-  };
-  return {
-    ...draft,
-    hookAngle: writer.value.angle,
-    hookCandidates,
-    writer: {
-      provider: writer.provider,
-      model: writer.model,
-      fallbackUsed: writer.fallbackUsed,
-      usage: writer.usage,
-    },
-    qualityReport,
-  };
+        suggestedFix: "Rewrite the flagged phrase in this channel's own voice.",
+      }));
+      const duplicateIssues =
+        findBlindCrossPosts([...(input.avoidCopies ?? []), draft]).get(input.channel) ?? [];
+      const qualityReport: QualityReport = {
+        ...base,
+        platformFitScore,
+        hookAngle: writer.value.angle,
+        hookCandidates,
+        repairRounds: round,
+        auditedCandidates,
+        writer: {
+          provider: writer.provider,
+          model: writer.model,
+          fallbackUsed: writer.fallbackUsed,
+          usage: writerUsage,
+        },
+        critic: {
+          ...critic.value,
+          provider: critic.provider,
+          model: critic.model,
+          fallbackUsed: critic.fallbackUsed,
+          attempts: critic.attempts,
+          auditedAt: new Date().toISOString(),
+          usage: criticUsage,
+        },
+        warnings: [
+          ...base.warnings,
+          ...(typeof critic.value.originalityScore === 'number' &&
+          critic.value.originalityScore >= 70
+            ? originalityFlags
+            : []),
+        ],
+        blocking: [
+          ...base.blocking,
+          ...duplicateIssues,
+          ...(platformFitScore < 85
+            ? [
+                {
+                  code: 'platform_fit',
+                  message: `Platform-native fit ${platformFitScore}/100 is below 85/100.`,
+                },
+              ]
+            : []),
+          ...critic.value.flags.map((flag) => ({
+            code: 'critic_flag',
+            message: flag,
+            span: criticSpan(flag, auditedCopy),
+            suggestedFix: 'Remove or rewrite this claim using only an approved fact.',
+          })),
+          ...(critic.value.platformFlags ?? []).map((flag) => ({
+            code: 'platform_flag',
+            message: flag,
+            suggestedFix: `Rewrite the copy against the ${input.channel} channel contract.`,
+          })),
+          ...(critic.value.score < 85
+            ? [
+                {
+                  code: 'critic_score',
+                  message: `Independent factual critic scored this variant ${critic.value.score}/100; 85 is required.`,
+                  suggestedFix: 'Rewrite the flagged compression and rerun the independent critic.',
+                },
+              ]
+            : []),
+          ...(typeof critic.value.originalityScore === 'number' &&
+          critic.value.originalityScore < 70
+            ? [
+                {
+                  code: 'originality_score',
+                  message: `Independent critic scored this variant ${critic.value.originalityScore}/100 for originality; 70 is required.`,
+                  suggestedFix: 'Rewrite with a more specific, non-generic angle.',
+                },
+                ...originalityFlags,
+              ]
+            : []),
+        ],
+      };
+      const adaptation: WeeklySocialAdaptation = {
+        ...draft,
+        hookAngle: writer.value.angle,
+        hookCandidates,
+        writer: {
+          provider: writer.provider,
+          model: writer.model,
+          fallbackUsed: writer.fallbackUsed,
+          usage: writerUsage,
+        },
+        qualityReport,
+      };
+      if (qualityReport.blocking.length === 0) return adaptation;
+      failedThisRound.push(adaptation);
+    }
+
+    lastFailed =
+      failedThisRound.sort((left, right) => {
+        const blockerDelta =
+          left.qualityReport!.blocking.length - right.qualityReport!.blocking.length;
+        if (blockerDelta) return blockerDelta;
+        const leftScore = left.qualityReport!.critic?.score ?? 0;
+        const rightScore = right.qualityReport!.critic?.score ?? 0;
+        return rightScore - leftScore;
+      })[0] ?? null;
+    if (lastFailed) {
+      repair = {
+        copy: copyForAudit(lastFailed),
+        blockers: lastFailed.qualityReport!.blocking.map((issue) => issue.message),
+      };
+    }
+  }
+
+  throw new SocialCopyQualityError(
+    input.channel,
+    lastFailed?.qualityReport?.blocking.map((issue) => issue.code) ?? ['unknown_quality_failure'],
+  );
 }

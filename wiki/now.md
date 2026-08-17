@@ -9,12 +9,24 @@ owner weekly selection/content audit 2026-08-16, research corpus corroboration 2
 reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16,
 Start / retry Content Studio silent no-op 2026-08-16, site WebP delivery 2026-08-17
 social package LinkedIn recovery incident 2026-08-17, GitHub workflow-dispatch 503 incident,
-staged social-copy recovery and LinkedIn 7-page overflow incident 2026-08-17
+staged social-copy recovery, LinkedIn 7-page overflow and approval-ready Social repair 2026-08-17
 Last updated: 2026-08-17
 
 ---
 
 ## Стан репозиторію
+
+- **Social approval boundary ремонтує канал до owner review (2026-08-17), гілка
+  `codex/social-approval-ready`.** Production package був `in_review`, хоча всі 6 posts мали
+  3–12 blocking checks: worker зберігав audit, але безумовно піднімав `draft → in_review`.
+  Додатково critic бачив Instagram/Threads без нативних markers і приймав all-zero template як
+  аудит. Тепер bounded candidate/repair loop зберігає тільки blocker-free adaptations, checkpoint
+  відкидає старі blocked results, writer/critic мають той самий approved fact snapshot, а post
+  repair версіонується in place. UI показує clean readiness; legacy details згорнуті в amber.
+  Targeted tests 39/39 і typecheck green; production recovery/verification чекають deploy.
+  (source: `src/lib/weekly-digest/social-adapter.ts`,
+  `src/lib/weekly-digest/social-checkpoint.ts`, `src/lib/weekly-digest/generation-worker.ts`,
+  `src/components/admin/weekly-workspace.tsx`, production `social_posts` live check 2026-08-17)
 
 - **`social_copy` відновлюється поетапно через linked retry (2026-08-17), гілка
   `codex/social-step-checkpoints`.** Legacy job уже зберігав шість channel adaptations, але

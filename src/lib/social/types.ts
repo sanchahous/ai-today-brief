@@ -72,6 +72,10 @@ export interface QualityReport {
   platformFitScore?: number;
   hookAngle?: string;
   hookCandidates?: string[];
+  /** Number of bounded writer repair rounds used before the copy passed every gate. */
+  repairRounds?: number;
+  /** Number of distinct candidates independently audited for this saved adaptation. */
+  auditedCandidates?: number;
   writer?: {
     provider: 'gemini' | 'openrouter' | 'ollama';
     model: string;

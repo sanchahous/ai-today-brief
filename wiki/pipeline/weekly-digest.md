@@ -7,7 +7,8 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
 editorial-voice overhaul, PDF page-cap, admin mobile-responsive,
 owner content audit + seed-content 2026-08-16, research corpus corroboration 2026-08-16,
 Start / retry Content Studio after succeeded jobs 2026-08-16, social package LinkedIn recovery
-2026-08-17, GitHub dispatch 503 recovery 2026-08-17, staged social-copy recovery 2026-08-17
+2026-08-17, GitHub dispatch 503 recovery 2026-08-17, staged social-copy recovery and
+approval-ready Social boundary 2026-08-17
 Last updated: 2026-08-17
 
 ---
@@ -321,6 +322,34 @@ artifact/social ledgers.
 `src/lib/weekly-digest/generation-control.ts`,
 `supabase/migrations/20260809060929_weekly_generation_control_plane.sql`,
 прод-Supabase `mdiqfatpqczwqghwttpm` schema check 2026-08-17)
+
+### Approval-ready Social boundary (2026-08-17)
+
+Quality audit раніше був лише діагностикою: worker зберігав adaptation із `blocking[]`, а в кінці
+безумовно переводив усі `draft` posts/package у `in_review`. Тому власник отримував шість карток
+із червоними blockers замість матеріалу для рішення. Тепер кожен канал має bounded repair:
+writer повертає кілька кандидатів, critic аудіює їх по черзі, невдалий раунд отримує точні
+причини для переписування, максимум три writer rounds. У checkpoint потрапляє лише канал із
+порожнім `blocking`; пройдений канал не генерується знову при наступному recovery.
+(source: `src/lib/weekly-digest/social-adapter.ts`,
+`src/lib/weekly-digest/social-checkpoint.ts`, `social-adapter.test.ts`)
+
+Writer і critic тепер бачать один owner-approved fact snapshot із повного article master, а
+Instagram/Threads аудіюються з нативними `<SLIDE>` / `<CAPTION>` / `<PART>` markers. Непояснений
+zero-score JSON template від critic відхиляється як invalid response. Same-locale blind cross-post
+входить у той самий repair loop; originality observation лишається warning, якщо score уже
+проходить поріг. Після генерації worker ще раз fail-closed перевіряє всі шість reports і лише
+тоді переводить package/posts у `in_review`; blocker-filled cached adaptation не відновлюється.
+(source: `src/lib/weekly-digest/generation-worker.ts`,
+`src/lib/weekly-digest/social-adapter.ts`, `src/lib/social/quality.ts`)
+
+Під час repair існуючий editable post оновлюється in place з новими `content_version`,
+`content_hash`, idempotency key та immutable `generated` review. Approved/scheduled/posted post
+worker не перезаписує. У Social UI звичайний стан показує компактне `Ready for review · no
+blockers`; legacy diagnostics лишаються доступними в згорнутому amber `<details>`, без дубльованої
+червоної стіни.
+(source: `src/lib/weekly-digest/generation-worker.ts`,
+`src/components/admin/weekly-workspace.tsx`)
 
 ### GitHub Actions dispatch 503 recovery (2026-08-17)
 
@@ -879,6 +908,9 @@ immutability навмисно, а не в обхід гейту.
   Save більше не стирає writer / hook / platformFit у `quality_report`. Header-кнопка
   **Generate social package** ставить один `social_copy` job для всіх шести каналів;
   вона з'являється також коли попередній пакет впав, як **Regenerate social package**.
+  З 2026-08-17 `in_review` означає, що всі шість variants уже пройшли blocking gates;
+  clean card показує компактну готовність, а legacy repair diagnostics згорнуті й не
+  дублюються великим червоним списком.
   (source: `weekly-workspace.tsx`, `saveWeeklySocialAction`, `updateVariantAction`,
   `enqueueWeeklyGenerationAction`)
 - **Мобільна адаптивність `/admin`** (2026-08-08): нижня навігація (`AdminNav`) мала
