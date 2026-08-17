@@ -6,7 +6,7 @@ Summary: executor spec робіт над ілюстраціями дайджес
 Sources: рішення власника 2026-08-15; `AI_Today_Brief_Visual_Algorithm_Plan.pdf` (розбір V1–V10,
 поза репо); живий digest `843975a8-8c19-4eca-96a8-035f76eae3ab` з вердиктами власника 2026-08-14;
 інспекція коду 2026-08-15 (перелік файлів — у розділі «Джерела»); Actions run `31739283280`.
-Last updated: 2026-08-15
+Last updated: 2026-08-17
 
 ---
 
@@ -157,9 +157,10 @@ visual grammar найприродніше доводить одну core claim �
 ### Що вже існує для ручного режиму (не будуй заново)
 
 - **Ручний upload уже працює.** `uploadWeeklyArtifactAction`
-  (`src/app/admin/(cms)/weekly/actions.ts:1649`) приймає `cover`, `story_image`, `social_asset`,
-  `thumbnail`, `pdf`; ліміт 12 MB; `sharp` ресайзить у **1600×900** (`fit: 'cover'`, `focal_point`),
-  пише JPEG q91 progressive; зберігає alt / alt_en / alt_uk; верифікує байти після запису;
+  (`src/app/admin/(cms)/weekly/actions.ts`) приймає `cover`, `story_image`, `social_asset`,
+  `thumbnail`, `pdf`; ліміт 12 MB; `sharp` ресайзить `story_image` у **1600×900** WebP q82
+  (`encodeSiteWebp`, `fit: 'cover'`, `focal_point`); cover / social_asset / thumbnail лишаються
+  JPEG (cover = digest `og:image`, Instagram API не приймає WebP); зберігає alt / alt_en / alt_uk; верифікує байти після запису;
   ставить `generation_status: 'ready'`, `review_status: 'in_review'`,
   `metadata.source = 'manual_upload'`.
 - **UI для нього теж є** — форма «Upload a replacement» у Visuals

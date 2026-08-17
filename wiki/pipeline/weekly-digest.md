@@ -7,7 +7,7 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
 editorial-voice overhaul, PDF page-cap, admin mobile-responsive,
 owner content audit + seed-content 2026-08-16, research corpus corroboration 2026-08-16,
 Start / retry Content Studio after succeeded jobs 2026-08-16
-Last updated: 2026-08-16
+Last updated: 2026-08-17
 
 ---
 
@@ -478,6 +478,12 @@ image-only critic (`buildImageOnlyCriticPrompt`, без headline/scene) і пи�
 спрацьовує. Visuals: «QA чисто» або жовтий рядок + Ігнорувати / Замінити файл.
 (source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) M2)
+
+**Site WebP (2026-08-17):** ручний upload і render-persist `story_image` пишуть origin як
+WebP 1600×900 q82 (`encodeSiteWebp`). Cover / social_asset / thumbnail лишаються JPEG
+(digest `og:image`, Instagram API, YouTube thumb). Публічний сайт просить `format=webp` у
+Supabase transform незалежно від origin. (source: `src/lib/encode-site-image.ts`,
+`src/lib/image-loader.ts`, `src/app/admin/(cms)/weekly/actions.ts`)
 
 **M3 preflight copy (2026-08-15):** `artifact_missing` для `story_image` / `cover` каже скопіювати
 промпт, згенерувати в своєму інструменті й завантажити файл — не «Regenerate». Вага гейта

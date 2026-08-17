@@ -11,7 +11,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/pre
 `claude/admin-mobile-responsive-pfb65o`, 2026-08-08), `src/app/globals.css`, owner screenshot
 + Chrome layout measurement 2026-08-09, follow-up critic-recovery fix 2026-08-10, UK claimIds
 engine fix 2026-08-10 (run `31367921173`), newer-draft banner, Postpone + B3 prompt readiness 2026-08-15, seed-контент історій + `weekly-editorial-v3` 2026-08-16, research corpus corroboration 2026-08-16, Start / retry Content Studio after succeeded jobs 2026-08-16
-Last updated: 2026-08-16
+Last updated: 2026-08-17
 
 ---
 
@@ -198,7 +198,10 @@ Release. Далі картка
 Negative**, стан слота (`очікує зображення` / `завантажено, on review` / `approved`) і
 **Upload a replacement** в тій самій картці. Кнопка **Generate prompts** / **Generate cover
 prompt** пише `story_prompt_set` (`WEEKLY_STORY_IMAGE_MODE=prompt_only`) — без FLUX. Скопіюй
-промпт, згенеруй зображення у своєму інструменті, завантаж файл. Обкладинкові кропи для каналів
+промпт, згенеруй зображення у своєму інструменті, завантаж файл. Upload `story_image`
+з 2026-08-17 пише **WebP** 1600×900 (не сирий PNG і не JPEG). Cover лишається JPEG —
+вона є `og:image` дайджесту. На сайті `next/image` і так просить WebP у Supabase.
+Обкладинкові кропи для каналів
 далі складаються автоматично з approved cover. Після upload за кілька секунд зʼявиться
 **QA чисто** або жовтий рядок на кшталт «QA: впечений текст (2 місця)» з **Ігнорувати** /
 **Замінити файл**. Під жовтим рядком — порада: впечений текст → inpaint/crop (не

@@ -5,7 +5,9 @@
  * brain" clichés), which becomes the dominant subject of a light brand-styled
  * prompt accented by the item's category colour. The origin is encoded as a
  * 1280×720 JPEG (`encodeCardOrigin`) in the `card-images` Storage bucket and
- * recorded on `brief_items.card_image_url`.
+ * recorded on `brief_items.card_image_url`. The public site still serves WebP
+ * via the Supabase transform in `src/lib/image-loader.ts`; JPEG is the origin
+ * because `opengraph-image.tsx` (Satori) cannot decode WebP.
  *
  * Generation never blocks the brief and degrades gracefully down a quality ladder:
  *   1. Gemini "Nano Banana Pro" (gemini-3-pro-image) — best context-fit; opt-in
@@ -47,8 +49,9 @@ const FALLBACK_ACCENT = '#5bc9f0';
 export const IMG_W = 1280;
 export const IMG_H = 720;
 /**
- * Stored news-card origin. JPEG (not WebP) so OG crawlers can read the file
- * without a transform. q82 lands well under the ~488 KB PNG origins that
+ * Stored news-card origin. JPEG (not WebP) so OG crawlers and Satori can read
+ * the file without a transform. The site still requests `format=webp` from
+ * Supabase Storage. q82 lands well under the ~488 KB PNG origins that
  * forced a resize on every view (2026-08-14 Vercel quota incident).
  */
 export const CARD_ORIGIN_JPEG_QUALITY = 82;

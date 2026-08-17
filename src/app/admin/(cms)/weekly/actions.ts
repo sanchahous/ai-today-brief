@@ -9,6 +9,11 @@ import type { Json } from '@/lib/database.types';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { recordGenerationCost } from '@/lib/generation-costs';
+import {
+  encodeSiteWebp,
+  SITE_IMAGE_CONTENT_TYPE,
+  SITE_IMAGE_EXTENSION,
+} from '@/lib/encode-site-image';
 import { storageBlob } from '@/lib/storage/binary';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { updateVariantAction } from '@/app/admin/actions';
@@ -1847,7 +1852,7 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
     throw new Error('This artifact type cannot be uploaded. Final video remains on YouTube.');
   }
 
-  let bytes = Buffer.from(await fileValue.arrayBuffer());
+  let bytes: Buffer = Buffer.from(await fileValue.arrayBuffer());
   let mimeType: string;
   let width: number | null = null;
   let height: number | null = null;
@@ -1869,21 +1874,31 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
             }
           : { width: 1600, height: 900 };
     try {
-      bytes = await sharp(bytes)
-        .rotate()
-        .resize(dimensions.width, dimensions.height, {
-          fit: 'cover',
+      if (artifactType === 'story_image') {
+        bytes = await encodeSiteWebp(bytes, {
+          width: dimensions.width,
+          height: dimensions.height,
           position: focalPoint,
-        })
-        .jpeg({ quality: 91, progressive: true })
-        .toBuffer();
+        });
+        mimeType = SITE_IMAGE_CONTENT_TYPE;
+        extension = SITE_IMAGE_EXTENSION;
+      } else {
+        bytes = await sharp(bytes)
+          .rotate()
+          .resize(dimensions.width, dimensions.height, {
+            fit: 'cover',
+            position: focalPoint,
+          })
+          .jpeg({ quality: 91, progressive: true })
+          .toBuffer();
+        mimeType = 'image/jpeg';
+        extension = 'jpg';
+      }
     } catch {
       throw new Error('The replacement is not a supported image.');
     }
     width = dimensions.width;
     height = dimensions.height;
-    mimeType = 'image/jpeg';
-    extension = 'jpg';
   }
 
   const sha256 = createHash('sha256').update(bytes).digest('hex');
