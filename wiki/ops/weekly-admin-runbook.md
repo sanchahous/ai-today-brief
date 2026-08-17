@@ -260,14 +260,15 @@ LinkedIn та Instagram — не шість незалежних кліків. �
 
 Якщо конкретний канал не проходить critic/platform/originality gate, worker сам перевіряє інші
 кандидати й робить до трьох точкових repair rounds. На кожному round аудіюється один найсильніший
-candidate; social provider має 180-секундний absolute ceiling, тому один reasoning model не може
-зайняти весь worker budget. Уже чисті канали записані в checkpoint і не
+candidate; social provider має 60-секундний absolute ceiling **на модель**, максимум дві моделі
+на writer/critic call, а reasoning запитується в low mode. Це важливо: попередні
+180 секунд обмежували одну модель, але не всю послідовну queue. Уже чисті канали записані в checkpoint і не
 генеруються повторно. Job, який вичерпав repair, лишається failed/draft і не вивантажує проблемну
 копію на owner approval. Для старих пакетів diagnostics показані компактним amber статусом;
 детальний список відкривається через **Quality checks**, але не дублюється червоною стіною.
 (source: `src/lib/weekly-digest/social-adapter.ts`,
 `src/lib/weekly-digest/social-checkpoint.ts`, `src/components/admin/weekly-workspace.tsx`,
-`.github/workflows/weekly-master-cli-worker.yml`)
+`.github/workflows/weekly-master-cli-worker.yml`, `src/lib/social/llm-router.ts`)
 
 Якщо job впав після ~90% з `Cannot read properties of undefined (reading 'map')`, не переписуй
 шість постів: це був несумісний normalized article artifact на LinkedIn document step, а не

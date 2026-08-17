@@ -44,10 +44,11 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > downstream persistence/quality controls: linked retries reuse only blocker-free channel copy,
 > while failed channels are repaired against the same approved article. They do not change
 > candidates, weights, ranks, diversity, or editorial approval state.
-> The social-only 180 s OpenRouter ceiling and one-candidate-per-repair-round budget are
-> downstream runtime controls; editorial-master timeouts and this selector are unchanged.
+> The social-only 60 s per-model OpenRouter ceiling, two-model call cap, low-reasoning request
+> and one-candidate-per-repair-round budget are downstream runtime controls;
+> editorial-master timeouts and this selector are unchanged.
 > (source: `.github/workflows/weekly-master-cli-worker.yml`,
-> `src/lib/weekly-digest/social-adapter.ts`)
+> `src/lib/weekly-digest/social-adapter.ts`, `src/lib/social/llm-router.ts`)
 > (source: `src/lib/weekly-digest/social-checkpoint.ts`,
 > `src/lib/weekly-digest/generation-worker.ts`)
 > LinkedIn 7-page bounds (2026-08-17) clip only presentation copy inside fixed native-document

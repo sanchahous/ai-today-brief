@@ -96,9 +96,10 @@ jobs:
           # Social copy is short structured JSON, not an 8–12 minute editorial
           # master. Keep a slow reasoning model from consuming the entire
           # two-hour worker before a single channel checkpoint can be saved.
-          OPENROUTER_FIRST_TOKEN_MS: ${{ inputs.job_type == 'social_copy' && '45000' || '90000' }}
-          OPENROUTER_IDLE_MS: ${{ inputs.job_type == 'social_copy' && '30000' || '45000' }}
-          OPENROUTER_ABSOLUTE_CEILING_MS: ${{ inputs.job_type == 'social_copy' && '180000' || '720000' }}
+          OPENROUTER_FIRST_TOKEN_MS: ${{ inputs.job_type == 'social_copy' && '30000' || '90000' }}
+          OPENROUTER_IDLE_MS: ${{ inputs.job_type == 'social_copy' && '20000' || '45000' }}
+          OPENROUTER_ABSOLUTE_CEILING_MS: ${{ inputs.job_type == 'social_copy' && '60000' || '720000' }}
+          SOCIAL_OPENROUTER_MODEL_ATTEMPTS: ${{ inputs.job_type == 'social_copy' && '2' || '' }}
           # Stop starting new work with 25 minutes of the 120-minute job left,
           # so an over-running edition saves its segments and finishes cleanly
           # instead of being killed mid-write with nothing durable to resume.

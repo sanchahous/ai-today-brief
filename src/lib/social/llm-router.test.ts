@@ -266,6 +266,42 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
     expect(vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.modelQueue).toEqual([
       'deepseek/deepseek-v4-flash',
     ]);
+    expect(
+      vi
+        .mocked(generateWithOpenRouterChain)
+        .mock.calls[0]?.[1]?.extraBodyForModel?.('deepseek/deepseek-v4-flash'),
+    ).toEqual({
+      max_tokens: 4_096,
+      reasoning: { effort: 'low', exclude: true },
+    });
+  });
+
+  it('bounds the live social model queue and allows an explicit one-model budget', async () => {
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
+      text: '{"text":"ready"}',
+      provider: 'openrouter',
+      model: 'deepseek/deepseek-v4-flash',
+      usage: null,
+    });
+
+    await generateSocialJson('writer', 'write', (raw) => JSON.parse(raw) as { text: string }, {
+      env: {
+        SOCIAL_WRITER_PROVIDER_ORDER: 'openrouter',
+        SOCIAL_OPENROUTER_MODEL_ATTEMPTS: '1',
+        OPEN_ROUTER_API_KEY: 'test-key',
+      },
+      deps: {
+        fetchOpenRouterModels: async () => [
+          catalogModel('deepseek/deepseek-v4-flash'),
+          catalogModel('qwen/qwen3.7-flash'),
+          catalogModel('~openai/gpt-mini-latest'),
+        ],
+      },
+    });
+
+    expect(vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.modelQueue).toEqual([
+      'deepseek/deepseek-v4-flash',
+    ]);
   });
 
   it('routes through an owner-configured DB HTTP provider (e.g. NIM) for social.critic instead of the value-ranked default when db is supplied', async () => {
@@ -313,5 +349,13 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
     expect(vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.modelQueue).toEqual([
       'deepseek-ai/deepseek-v4-pro',
     ]);
+    expect(
+      vi
+        .mocked(generateWithOpenRouterChain)
+        .mock.calls[0]?.[1]?.extraBodyForModel?.('deepseek-ai/deepseek-v4-pro'),
+    ).toEqual({
+      max_tokens: 2_048,
+      reasoning: { effort: 'low', exclude: true },
+    });
   });
 });

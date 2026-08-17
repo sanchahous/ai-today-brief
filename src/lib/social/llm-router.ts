@@ -103,11 +103,19 @@ const OPENROUTER_PROVIDER_PRIORITY: Record<SocialLlmRole, readonly string[]> = {
 
 const MODEL_FRESHNESS_SECONDS = 400 * 24 * 60 * 60;
 
+function resolveSocialOpenRouterAttemptCap(env: SocialLlmEnv): number {
+  const parsed = Number.parseInt(env.SOCIAL_OPENROUTER_MODEL_ATTEMPTS ?? '2', 10);
+  return Number.isFinite(parsed) ? Math.min(3, Math.max(1, parsed)) : 2;
+}
+
 export class SocialLlmExhaustedError extends Error {
   constructor(readonly attempts: SocialLlmAttempt[]) {
     super(
       `All configured social LLM providers failed -- ${attempts
-        .map((a) => `${a.provider}${a.model ? `/${a.model}` : ''}: ${a.status}${a.reason ? ` (${a.reason})` : ''}`)
+        .map(
+          (a) =>
+            `${a.provider}${a.model ? `/${a.model}` : ''}: ${a.status}${a.reason ? ` (${a.reason})` : ''}`,
+        )
         .join(' | ')}`,
     );
     this.name = 'SocialLlmExhaustedError';
@@ -228,10 +236,28 @@ async function resolveSocialOpenRouterQueue(
   const allowed = new Set(ranked);
   const queue = (configured.length > 0 ? configured.filter((id) => allowed.has(id)) : ranked).slice(
     0,
-    3,
+    resolveSocialOpenRouterAttemptCap(env),
   );
   if (queue.length === 0) throw new Error('No current OpenRouter models satisfy the social role.');
   return queue;
+}
+
+function socialOpenRouterBody(role: SocialLlmRole, env: SocialLlmEnv) {
+  const fallbackMaxTokens = role === 'critic' ? 2_048 : 4_096;
+  const parsedMaxTokens = Number.parseInt(
+    role === 'critic'
+      ? (env.SOCIAL_CRITIC_OPENROUTER_MAX_TOKENS ?? '')
+      : (env.SOCIAL_WRITER_OPENROUTER_MAX_TOKENS ?? ''),
+    10,
+  );
+  return {
+    max_tokens:
+      Number.isFinite(parsedMaxTokens) && parsedMaxTokens > 0 ? parsedMaxTokens : fallbackMaxTokens,
+    // Social JSON is short. Low reasoning preserves the critic's independent
+    // analysis without letting hidden thinking consume an editorial-master
+    // token/time budget before a channel checkpoint can be saved.
+    reasoning: { effort: 'low', exclude: true },
+  };
 }
 
 function geminiApiKey(env: SocialLlmEnv): string | null {
@@ -306,7 +332,17 @@ async function generateOpenRouter<T>(
     // below instead of throwing, same as an unconfigured dbHttp (null)
     // already falls through.
     try {
-      const result = await generateWithHttpProviderChain(input.prompt, dbHttp, { validateResponse });
+      const result = await generateWithHttpProviderChain(
+        input.prompt,
+        {
+          ...dbHttp,
+          modelQueue: dbHttp.modelQueue.slice(0, resolveSocialOpenRouterAttemptCap(input.env)),
+        },
+        {
+          validateResponse,
+          extraBodyForModel: () => socialOpenRouterBody(input.role, input.env),
+        },
+      );
       return {
         text: result.text,
         model: result.model,
@@ -317,7 +353,11 @@ async function generateOpenRouter<T>(
         'warn',
         'social-llm',
         'Owner-configured OpenRouter provider failed -- falling back to the default OpenRouter path',
-        { role: input.role, provider: dbHttp.id, error: error instanceof Error ? error.message : String(error) },
+        {
+          role: input.role,
+          provider: dbHttp.id,
+          error: error instanceof Error ? error.message : String(error),
+        },
       );
     }
   }
@@ -328,7 +368,10 @@ async function generateOpenRouter<T>(
   const result = await generateWithHttpProviderChain(
     input.prompt,
     { id: 'openrouter', apiKey, modelQueue, ...OPENROUTER_HTTP_DEFAULTS },
-    { validateResponse },
+    {
+      validateResponse,
+      extraBodyForModel: () => socialOpenRouterBody(input.role, input.env),
+    },
   );
   return {
     text: result.text,

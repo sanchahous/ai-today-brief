@@ -16,6 +16,16 @@ Last updated: 2026-08-17
 
 ## Стан репозиторію
 
+- **Social provider ladder bounded end-to-end (2026-08-17), гілка
+  `codex/social-bounded-reasoning`.** Другий production recovery
+  `1d255a95-d410-479e-9a6b-06d703dbee0d` лишався на Telegram без channel checkpoint понад
+  13 хв. 180 s ceiling був per-model, тоді як кожен writer/critic call міг послідовно спробувати
+  три моделі, а repair — три rounds. Social call тепер має максимум дві моделі, 60 s/model,
+  30 s first token, 20 s idle, low reasoning і короткий role-specific output budget. Editorial
+  master не змінений.
+  (source: production Actions run `32057477211`, `src/lib/social/llm-router.ts`,
+  `.github/workflows/weekly-master-cli-worker.yml`)
+
 - **Social provider budget follow-up (2026-08-17), гілка
   `codex/social-provider-budget`.** Перший live recovery на approval-ready boundary лишався на
   Telegram без checkpoint понад 12 хв: social call успадкував 720 s editorial-master ceiling,
