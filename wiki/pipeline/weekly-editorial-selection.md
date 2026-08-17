@@ -10,7 +10,7 @@ weekly illustration P3 daily cover prompt 2026-08-15, owner selection audit + `w
 2026-08-16 (`pipeline/weekly-digest.ts`, `pipeline/source-authority.ts`,
 `src/lib/weekly-digest/seed-content.ts`, прод-прогін `05cc4e6a-a709-44ca-b56a-382f21c40292`),
 research corpus corroboration 2026-08-16 (`pipeline/story-identity.ts`),
-Start / retry Content Studio after succeeded jobs 2026-08-16
+Start / retry Content Studio after succeeded jobs 2026-08-16; social package LinkedIn recovery 2026-08-17
 Last updated: 2026-08-17
 
 ---
@@ -38,6 +38,10 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > not change this selector.
 > G illustration budget is `/admin/costs` ledger split only — it does not change this selector.
 > F5 strips pinned generation ids from production code — it does not change this selector.
+> Social package master-artifact hydration (2026-08-17) is downstream generation compatibility:
+> it rehydrates approved revision stories for social/LinkedIn rendering and does not change this
+> selector's candidates, weights, ranks, diversity, or approval state.
+> (source: `src/lib/weekly-digest/generation-worker.ts`)
 > (source: [weekly-illustration-plan](weekly-illustration-plan.md) P2/M3/B3/P3/D2/D3/E1/E2/E3/F3/G/F5)
 
 > **Scope note (2026-08-15):** the `feat/weekly-illustration-fixes` review-fix branch

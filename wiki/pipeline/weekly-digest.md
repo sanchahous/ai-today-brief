@@ -6,7 +6,8 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
 `supabase/migrations/20260804*`–`20260809*`, live checks 2026-08-04…16,
 editorial-voice overhaul, PDF page-cap, admin mobile-responsive,
 owner content audit + seed-content 2026-08-16, research corpus corroboration 2026-08-16,
-Start / retry Content Studio after succeeded jobs 2026-08-16
+Start / retry Content Studio after succeeded jobs 2026-08-16, social package LinkedIn recovery
+2026-08-17
 Last updated: 2026-08-17
 
 ---
@@ -257,6 +258,25 @@ configured budget rather than invented precision.
 (source: `src/components/admin/weekly-generation-jobs-live.tsx`,
 `src/app/api/admin/weekly/[id]/generation-status/route.ts`,
 `src/lib/weekly-digest/generation-control.ts`)
+
+### Social package + LinkedIn document recovery (2026-08-17)
+
+Один `social_copy` job генерує пакет для всіх шести каналів, а після канальних writer/critic
+calls збирає Instagram carousel і семисторінковий native LinkedIn document. 17.08 production job
+зберіг усі вісім Instagram slides, але впав одразу після них на
+`Cannot read properties of undefined (reading 'map')`: поточний `article` artifact має
+нормалізовані `editor_note` / `key_takeaways` і не містить `stories`, тоді як LinkedIn builder
+звертався до `bundle.en.stories.map`.
+
+`masterBundleFromArtifacts` тепер приймає обидві форми: статтєві metadata читає з artifact
+(включно зі snake_case полями), а stories безпечно відновлює з active
+`weekly_digest_revision_items`. Отже, social prompt і LinkedIn document отримують один повний
+master bundle; некоректний artifact дає точну validation-помилку, а не opaque `undefined.map`.
+Linked manual retry як і раніше створює окремий job, тому після деплою треба натиснути retry
+саме для terminal `social_copy` job.
+(source: production `weekly_digest_generation_jobs` / `weekly_digest_artifacts` incident
+2026-08-17; `src/lib/weekly-digest/generation-worker.ts`,
+`src/lib/weekly-digest/linkedin-document.ts`, `generation-worker.test.ts`)
 
 Studio version **`weekly-content-studio-v2.1`** + research schema **`weekly-research-v3`** +
 master prompt **`weekly-master-v7`**. Бамп версії студії змінює стабільний ключ composer-старту;
@@ -796,8 +816,11 @@ immutability навмисно, а не в обхід гейту.
   text / JSON); Destination URL автозаповнюється з clean weekly URL; Save & approve
   вимкнений при quality blockers (наприклад `schedule_past` — треба майбутній Kyiv
   час); помилки Save йдуть у `?tab=social&save_error=…` замість opaque server error;
-  Save більше не стирає writer / hook / platformFit у `quality_report`.
-  (source: `weekly-workspace.tsx`, `saveWeeklySocialAction`, `updateVariantAction`)
+  Save більше не стирає writer / hook / platformFit у `quality_report`. Header-кнопка
+  **Generate social package** ставить один `social_copy` job для всіх шести каналів;
+  вона з'являється також коли попередній пакет впав, як **Regenerate social package**.
+  (source: `weekly-workspace.tsx`, `saveWeeklySocialAction`, `updateVariantAction`,
+  `enqueueWeeklyGenerationAction`)
 - **Мобільна адаптивність `/admin`** (2026-08-08): нижня навігація (`AdminNav`) мала
   `grid-cols-7` на 8 пунктів — «Settings» сиротою переносився на непорахований другий
   рядок, що перекривав контент сторінки знизу; фікс — `grid-cols-4` (два рівні рядки) +

@@ -8,6 +8,7 @@ vi.mock('@/lib/supabase-admin', () => ({ getSupabaseAdmin: () => ({ rpc }) }));
 
 import {
   computeSocialCopyCheckpointHash,
+  masterBundleFromArtifacts,
   masterInputStories,
   masterRunStateFromOutput,
   runWeeklyDigestGenerationJobs,
@@ -155,6 +156,70 @@ describe('computeSocialCopyCheckpointHash', () => {
       locales: new Map([['x', 'uk']]) as Map<SocialChannel, SocialLocale>,
     });
     expect(a).not.toBe(b);
+  });
+});
+
+describe('masterBundleFromArtifacts', () => {
+  it('rehydrates normalized article artifacts from the active revision', () => {
+    const context = {
+      revision: {
+        title_en: 'Revision title',
+        title_uk: 'Назва ревізії',
+        intro_en: 'Revision intro',
+        intro_uk: 'Вступ ревізії',
+        editor_note_en: 'Revision editor note',
+        editor_note_uk: 'Нотатка редактора',
+        key_takeaways_en: ['Revision takeaway'],
+        key_takeaways_uk: ['Висновок ревізії'],
+      },
+      items: Array.from({ length: 7 }, (_, index) =>
+        revisionItem({
+          id: `item-${index + 1}`,
+          rank: index + 1,
+          body_en: `English body ${index + 1}`,
+          body_uk: `Український текст ${index + 1}`,
+          why_en: `English why ${index + 1}`,
+          why_uk: `Українське пояснення ${index + 1}`,
+          practical_en: `English practical ${index + 1}`,
+          practical_uk: `Український крок ${index + 1}`,
+          takeaway_en: `English takeaway ${index + 1}`,
+          takeaway_uk: `Український висновок ${index + 1}`,
+        }),
+      ),
+      artifacts: ['en', 'uk'].map((locale) => ({
+        artifact_type: 'article',
+        locale,
+        is_current: true,
+        content: {
+          title: `${locale} title`,
+          seoTitle: `${locale} SEO title`,
+          metaDescription: `${locale} meta description`,
+          ogTitle: `${locale} OG title`,
+          ogDescription: `${locale} OG description`,
+          standfirst: `${locale} standfirst`,
+          theme: `${locale} theme`,
+          intro: `${locale} intro`,
+          editor_note: `${locale} editor note`,
+          key_takeaways: [`${locale} takeaway`],
+          topics: ['AI'],
+          entities: ['Example'],
+          internalLinks: [{ anchor: 'AI', query: 'ai' }],
+        },
+      })),
+    } as unknown as Parameters<typeof masterBundleFromArtifacts>[0];
+
+    const bundle = masterBundleFromArtifacts(context);
+
+    expect(bundle.en.editorNote).toBe('en editor note');
+    expect(bundle.en.keyTakeaways).toEqual(['en takeaway']);
+    expect(bundle.en.conclusion).toBe('en editor note');
+    expect(bundle.en.stories).toHaveLength(7);
+    expect(bundle.en.stories[0]).toMatchObject({
+      revisionItemId: 'item-1',
+      placement: 'feature',
+      hook: 'Summary sentence.',
+    });
+    expect(bundle.en.stories[3]).toMatchObject({ revisionItemId: 'item-4', placement: 'radar' });
   });
 });
 

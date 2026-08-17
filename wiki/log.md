@@ -6,6 +6,28 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-17
 
+## 2026-08-17 — Social package LinkedIn document recovery
+
+**Джерело:** production `weekly_digest_generation_jobs` / `weekly_digest_generation_attempts` /
+`weekly_digest_generation_events` / `weekly_digest_artifacts` live check 2026-08-17;
+`src/lib/weekly-digest/generation-worker.ts`;
+`src/lib/weekly-digest/linkedin-document.ts`.
+
+**Виявлено:** `social_copy` job успішно завершив writer/critic для шести каналів і зберіг усі
+вісім Instagram carousel slides, але відразу після цього завершився terminal error
+`Cannot read properties of undefined (reading 'map')`. Current `article` artifact містив
+normalised `editor_note` / `key_takeaways` без `stories`; LinkedIn document викликав
+`bundle.en.stories.map`.
+
+**Змінено:** [weekly-digest](pipeline/weekly-digest.md) (§ Social package + LinkedIn document
+recovery), [weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md), [index](index.md).
+`masterBundleFromArtifacts` відновлює stories з активної revision і нормалізує metadata для
+social/LinkedIn consumers; regression test покриває production-shaped artifact.
+
+**Операційно:** після мержу фіксу terminal job треба відновити **Create linked retry**. Це один
+package job для шести каналів, не шість окремих генерацій.
+
 ## 2026-08-17 — Master quality report carry-over при Restore
 
 **Джерело:** прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-17 (`weekly_digests`,

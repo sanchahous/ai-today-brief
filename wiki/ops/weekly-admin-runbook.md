@@ -256,6 +256,20 @@ prompt history; Approve override використовуй лише якщо оч
 > `approve` / `local repair` / `rework` / `reject`.
 > (source: `experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/results/README.md`)
 
+### Social: один package job → шість карток
+
+У **Social** натисни **Generate social package** (або **Regenerate social package**, якщо вже є
+failed package). Це ставить **один** `social_copy` job для Telegram, Facebook, X, Threads,
+LinkedIn та Instagram — не шість незалежних кліків. Дочекайся `succeeded`, відкрий картку кожного
+каналу, за потреби відредагуй і натисни **Save & approve** для її потрібної locale.
+
+Якщо job впав після ~90% з `Cannot read properties of undefined (reading 'map')`, не переписуй
+шість постів: це був несумісний normalized article artifact на LinkedIn document step, а не
+provider failure. Після деплою фіксу натисни **Create linked retry** на terminal `social_copy`
+job; retry має власний job history і знову пройде package flow.
+(source: `src/components/admin/weekly-workspace.tsx`,
+`src/lib/weekly-digest/generation-worker.ts`, production incident 2026-08-17)
+
 ### Release: approve → schedule → (за потреби) postpone → pause
 
 Реліз завжди виходить рівно в понеділок 16:00 Kyiv — `schedule_weekly_digest` не приймає
@@ -289,6 +303,7 @@ Postpone не створює нову RPC — це той самий Pause → A
 | Master **failed**, score 8x, blockers | Critic / deterministic gate | Читай Master quality → retry |
 | Після retry знову `UNSUPPORTED_*` на деталі зі статті | Старий короткий excerpt / вузькі claims | Переконайся що packs **v3** з довгим excerpt; Approve знову |
 | Visuals/Social не з’являються | Master ще не succeeded | Спочатку зелений Research gate |
+| `social_copy` terminal failed після Instagram, `undefined.map` | Normalized article artifact не мав `stories` для LinkedIn document | Дочекайся деплою social recovery, потім **Create linked retry**; не генеруй шість каналів окремо |
 | Release: немає story/cover | Файл не завантажено | Visuals → скопіюй промпт → згенеруй у своєму інструменті → upload. Не тисни Regenerate |
 | Release blocked на video | Немає Remotion pipeline / captions | Owner override лише для trial (див. preflight) |
 | PDF: сторінки радар-історій (4-7) виглядають скорочено (без картинки/панелей) | Так задумано з 2026-08-07 — повний розворот тепер лише для Top 3 | Нормально, не баг; деталі — [weekly-digest](../pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07) |
