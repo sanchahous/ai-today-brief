@@ -4,7 +4,8 @@ Summary: покрокова інструкція для власника/ред�
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), production incidents / owner sessions
-2026-08-04…17, staged social-copy recovery 2026-08-17, Social tab channel-aware form 2026-08-18.
+2026-08-04…18, staged social-copy recovery 2026-08-17, Social tab channel-aware form 2026-08-18,
+approved-row Save workflow RPC 2026-08-18.
 Last updated: 2026-08-18
 
 ---
@@ -261,10 +262,15 @@ LinkedIn та Instagram — не шість незалежних кліків. �
 Форма тепер channel-aware: окремі CTA/Hashtags і raw JSON `asset_urls`/`content_parts` прибрані.
 Telegram/Facebook/LinkedIn — post copy; X — root + self-reply з tracked URL; Threads — 3–5
 частин (клік по hook оновлює всі parts, без `<PART>` у тексті); Instagram — caption і сім
-read-only слайдів. LinkedIn PDF показується як document, не як картинка. Save можна з warnings;
-**Save & approve** стоїть, якщо critic < 85, є asset blockers, або немає critic при
-`SOCIAL_CRITIC_REQUIRED`.
-(source: `src/lib/social/channel-form.ts`, `src/lib/social/quality.ts`)
+read-only слайдів. LinkedIn PDF показується як document, не як картинка. **Save draft** можна
+з warnings. Кнопка **Save & approve** в UI гаситься лише на structural `blocking`. Critic < 85
+— серверний відбій після save, не disabled кнопка. Повторний Save на вже `approved` каналі
+має йти через admin client (інакше «Social approval/schedule transitions require a workflow
+RPC»). Instagram слайди в формі не редагуються: обрізаний carousel —
+`npm run weekly:social:repair-copy -- --package-id <uuid> --apply`. Закрити апрув без MFA:
+`npm run weekly:social:approve -- --package-id <uuid> --apply` (не schedule і не publish).
+(source: `src/lib/social/channel-form.ts`, `src/lib/social/quality.ts`,
+`src/app/admin/(cms)/weekly/actions.ts`, `src/lib/weekly-digest/repair-social-copy.ts`)
 
 Якщо після деплою 2026-08-18 старий пакет усе ще показує PDF замість landscape image, **не**
 регенеруй шість каналів з нуля. Pause publishing → dry-run
@@ -274,6 +280,15 @@ Instagram JPEG, тоді `--apply`. Legacy 8-slide `content_parts` збираю�
 Скрипт лишає copy п'яти каналів, міняє image refs, регенерує Instagram spec/slides і повертає
 всі variants у `in_review` без auto-approve. Production apply не є частиною code PR.
 (source: `scripts/repair-weekly-social-package.ts`, `src/lib/weekly-digest/repair-social-package.ts`)
+
+Якщо media repair уже зроблено, а Facebook/Threads/Instagram падають на critic < 85
+(обрізані слайди, claims поза takeaways):
+
+`npm run weekly:social:repair-copy -- --package-id <uuid>` потім `--apply`.
+
+Він переписує лише ці три канали, перемальовує 7 Instagram JPEG і записує новий critic.
+Approve без MFA-сесії: `npm run weekly:social:approve -- --package-id <uuid> --apply`.
+(source: `scripts/repair-weekly-social-copy.ts`, `scripts/approve-weekly-social-package.ts`)
 
 У **Generation jobs** актуальний Social run показаний окремо. Попередні linked attempts згорнуті
 під **Previous generation attempts**: вони лишаються аудит-трейлом, але їхній старий `failed` не

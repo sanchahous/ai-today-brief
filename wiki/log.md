@@ -6,6 +6,22 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-18
 
+## 2026-08-18 — Social Save on approved posts + copy/approve CLI
+
+**Джерело:** owner UI «Social approval/schedule transitions require a workflow RPC» після
+успішного Instagram approve; production package `612df95c`.
+
+**Виявлено:** `saveWeeklySocialAction` писав `meta`/`url` через authenticated client.
+Тригер `guard_social_v2_owner_actions` вимагає workflow GUC, коли `status` лишається
+`approved`. Critic < 85 блокує approve на сервері; Instagram слайди read-only.
+
+**Змінено:** metadata Save йде через service-role admin client; `weekly:social:repair-copy`
+і `weekly:social:approve`. Production copy уже переписано, усі 6 каналів `approved`.
+
+**Не зроблено:** публікація постів (чекають published digest 2026-08-24).
+
+---
+
 ## 2026-08-18 — Production social repair applied on `612df95c`
 
 **Джерело:** `npm run weekly:social:repair -- --package-id 612df95c-9c67-4db8-8f4b-209584d9ed68 --apply`,
