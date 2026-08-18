@@ -6,6 +6,32 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-18
 
+## 2026-08-18 — Захист гілки `main` увімкнено
+
+**Джерело:** `gh api repos/.../branches/main/protection` (до: HTTP 404 «Branch not protected»),
+Actions runs `32112884552` / `32112674915`, `gh pr view 273 --json statusCheckRollup`,
+`gh api repos/.../actions/caches` — усе live check 2026-08-18.
+
+**Виявлено:** `main` не була захищена взагалі, через що два коментарі в репозиторії описували
+неіснуючий стан: `deps-integrity.yml` називав себе required-чеком, а `dependabot-automerge.yml`
+стверджував «Branch protection already gates the squash on required checks». Наслідок —
+auto-merge міг завести залежність у `main` без жодної зеленої перевірки.
+
+**Змінено:** після мержу PR #290 увімкнено protection: required = `Clean install (npm ci)` +
+`Playwright smoke` + `SonarQube Scan`, `strict=false`, без обов'язкових review (єдиний
+мейнтейнер не може апрувити власний PR), заборонено force-push і видалення гілки, лінійна
+історія, `enforce_admins=false`. Vercel навмисно не required. Деталі й обґрунтування кожного
+правила — [ops/github-actions-cost § 6](ops/github-actions-cost.md).
+
+**Перевірено:** `git push --dry-run` для перевірки protection **не годиться** — показує
+клієнтський прогноз, server-side перевірку не проганяє. Функціональний доказ дав dependabot-PR
+#273: усі три required-чеки зелені, `Playwright smoke` пройшов швидким шляхом за 10 с (усі
+важкі кроки `skipped`) — тобто перенесення фільтра шляхів усередину job справді не дає
+docs-only PR зависнути. Перший ран на `main` уперше записав кеші під `refs/heads/main`
+(Playwright 467 МБ, Next 80 МБ), тож PR тепер їх відновлюють.
+
+---
+
 ## 2026-08-18 — Аудит витрат GitHub Actions і перехід репо в public
 
 **Джерело:** GitHub REST live check 2026-08-18 (`/actions/runs`, `/actions/runs/{id}/timing`,
