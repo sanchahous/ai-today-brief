@@ -4,7 +4,34 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-17
+Last updated: 2026-08-18
+
+## 2026-08-18 — Аудит витрат GitHub Actions і перехід репо в public
+
+**Джерело:** GitHub REST live check 2026-08-18 (`/actions/runs`, `/actions/runs/{id}/timing`,
+`/actions/caches`, `gh pr list`, `secret-scanning/alerts`); `.github/workflows/e2e.yml`,
+`playwright.config.ts`.
+
+**Виявлено:** ≈3950 Actions-хвилин за 14 днів (≈8200/міс при 3000 включених). Розподіл:
+e2e 1558 (39%), weekly worker 803, SonarQube 422, Daily Pipeline 348, Deps integrity 237.
+Dependabot **не** винен — його automerge `skipped` і білиться в нуль. Драйвер — 120 PR за
+14 днів. Один e2e коштував 15 хв бо: 339 тестів × 3 движки серійно (`workers: 1`), білд без
+кешу `.next` (141–371 с) і кеш браузерів, що не влучав **жодного разу** — 467 МБ писалися під
+`refs/pull/N/merge`, невидимий іншим PR, звідки 24 записи / 10.6 ГБ при ліміті 10 ГБ.
+Поле `billable` в API цього репо повертає нулі — рахувалося з `run_duration_ms`.
+
+**Змінено:** створено [ops/github-actions-cost](ops/github-actions-cost.md). Власник перевів
+репозиторій у **public** (Actions на standard runners стали безкоштовні й безлімітні,
+`ubuntu-latest` 2 → 4 ядра), тому оптимізація перецілена з хвилин на час очікування PR:
+кеші розділено на restore-на-PR / save-на-main, повернуто `push: [main]` для прогріву кешів,
+доданий кеш `.next/cache`, `workers` 1 → 2, `timeout-minutes: 40` і Telegram-алерт на падіння
+в `main`. Увімкнено secret scanning + push protection. Частоту продуктових кронів не чіпали.
+
+**Перевірено:** `wiki:check` зелений, YAML парситься, `playwright test --list` → 339 тестів
+× 3 движки; історія — 856 комітів без жодного ключа, secret scanning дав 0 алертів. Розрахунок
+«~19 → ~9-10 хв» живим раном **не** підтверджений — це станеться на першому PR.
+
+---
 
 ## 2026-08-17 — Social provider latency budget
 

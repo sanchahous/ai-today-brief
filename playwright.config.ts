@@ -24,8 +24,14 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   // Cap local workers: the full 3-engine matrix with heavy click-through specs can
-  // thrash a dev machine and cascade into timeouts. CI stays serial.
-  workers: process.env.CI ? 1 : 4,
+  // thrash a dev machine and cascade into timeouts.
+  //
+  // CI ran serial because a private-repo runner is 2-core, and Playwright's own
+  // default (half the cores) is 1 there — two workers plus `next start` would have
+  // contended for the same two CPUs. The repo is public as of 2026-08-18, so
+  // ubuntu-latest is 4-core/16 GB and two workers fit alongside the server. This is
+  // what takes the ~11 min three-engine matrix down to roughly half.
+  workers: process.env.CI ? 2 : 4,
   reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : [['list']],
   use: {
     baseURL: 'http://127.0.0.1:3000',
