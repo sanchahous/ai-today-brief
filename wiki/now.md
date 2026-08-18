@@ -11,28 +11,20 @@ Last updated: 2026-08-18
 
 ## Стан репозиторію
 
-- **Немає рядка `video_manifest` після approved script (2026-08-18), гілка
-  `fix/weekly-video-script-stories`.** Наступний гейт `video_manifest:en`. Release
-  каже enqueue, Video tab мав лише Regenerate script і вічний напис «cannot
-  generate until this script is approved». У БД немає жодного `video_manifest`
-  job — companion з `queuePostMasterJobs` не пережив падіння/retry скрипта.
-  Фікс: кнопка **Generate manifest**, upsert companion після script success /
-  enqueue, підписи `weekly-video-v3`. Після деплою — Video → Generate manifest,
-  не регенерувати approved script.
+- **Немає рядка `video_manifest` після approved script (2026-08-18), PR #298.**
+  Наступний гейт `video_manifest:en`. Release каже enqueue, Video tab мав лише
+  Regenerate script і вічний напис «cannot generate until this script is
+  approved». Companion з `queuePostMasterJobs` не переїхав на активну
+  ревізію `3e955086`. Фікс: кнопка **Generate manifest**, upsert companion
+  після script success / enqueue, підписи `weekly-video-v3`. Після деплою —
+  Video → Generate manifest, не регенерувати approved script і не тиснути
+  Start Content Studio.
   (source: owner CMS 2026-08-18, `weekly-workspace.tsx`, `generation-worker.ts`)
 
-- **`video_script` падає на `undefined.map` (2026-08-18), гілка
-  `fix/weekly-video-script-stories`.** Production job `43b9fcf1…` на
-  `ai-weekly-2026-08-09` rev. `3e955086` прожив 1 с: GitHub Actions claimed →
-  «Starting video script provider call» → `Cannot read properties of undefined
-  (reading 'map')`, `Code: unknown`. Approved EN/UK `article` артефакти мають
-  `editor_note` / `key_takeaways` і **немає `stories`** (той самий normalized
-  shape, що валив LinkedIn 17.08). `generateVideoScript` кастив `content` як
-  `WeeklyArticleMaster` і йшов у `article.stories.map`. Фікс: той самий
-  `masterBundleFromArtifacts`, плюс `claimIds` / editorsView / discussion з
-  `source_snapshot.content_studio` (у проді Top 3 мають `W1-C1`…). Після деплою
-  — **Create linked retry** на terminal `video_script`. Не тиснути, доки фікс не
-  в `main`.
+- **`video_script` hydration на `main` (2026-08-18, #297).** Production job
+  `43b9fcf1…` на `ai-weekly-2026-08-09` rev. `3e955086` падав на
+  `undefined.map`. Скрипт уже approved; linked retry більше не потрібен.
+  Далі — Generate manifest з #298.
   (source: production job `43b9fcf1-e9ba-46b8-80a8-93d775cec8f0`, Actions
   heartbeat 2026-08-18 11:55 UTC, artifact `cfd41b17…`,
   `src/lib/weekly-digest/generation-worker.ts`,

@@ -364,7 +364,8 @@ LinkedIn PDF, package або четвертому post — наступний li
 `Cannot read properties of undefined (reading 'map')` і `Code: unknown`, це не збій
 провайдера: approved `article` artifact нормалізований і не несе `stories`. Не тисни
 retry, доки фікс hydration не в `main`. Після деплою — **Create linked retry** саме на
-terminal `video_script`.
+terminal `video_script`. Hydration уже в `main` (#297); якщо script approved —
+не регенеруй його.
 
 ### Video: script → Generate manifest → Approve v3
 
@@ -373,13 +374,13 @@ terminal `video_script`.
 3 approved Top 3 `story_image` і ready `cover`.
 
 Якщо рядка `video_manifest` **немає взагалі** (навіть `waiting`) — це не кеш. Типовий
-збій: перший `video_script` упав, а linked retry / **Regenerate script** відтворив лише
-скрипт. Release тоді каже «Open Video → enqueue video_manifest», але кнопки не було.
+збій: нова ревізія після Content Studio або retry `video_script` без companion.
+Release тоді каже «Open Video → enqueue video_manifest», але кнопки не було.
 
 Після деплою фіксу: вкладка **Video** → **Generate manifest** (активна лише коли script
-`approved`). Не регенеруй уже схвалений скрипт. Картка артефакту — **weekly-video-v3
-manifest** (не v2). Job може лишитись у `waiting` з `status_reason`, доки немає трьох
-approved story images і cover.
+`approved`). Не регенеруй уже схвалений скрипт і не тисни Start Content Studio.
+Картка артефакту — **weekly-video-v3 manifest** (не v2). Job може лишитись у
+`waiting` з `status_reason`, доки немає трьох approved story images і cover.
 
 Наступні `video_script` success і клік **Generate script** самі upsert-ять companion
 тим самим стабільним ключем.

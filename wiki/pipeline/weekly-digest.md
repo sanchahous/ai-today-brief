@@ -307,8 +307,8 @@ script is approved» лишався після Approve. У прод-БД для 
 (~11:54 UTC); linked retry о 13:15 записав скрипт і **не** поставив companion.
 
 Система розрахована на рядок із `queuePostMasterJobs` (стабільний ключ
-`weekly-content-studio-v2.1:{digest}:{revision}:video-manifest:en`). Паралельний
-post-master batch може втратити саме цей insert і не дати UI-відновлення.
+`weekly-content-studio-v2.1:{digest}:{revision}:video-manifest:en`). Нова ревізія
+після Content Studio або retry скрипта companion не копіює, а UI не мав кнопки.
 Тепер: кнопка **Generate manifest** (disabled до approved script); success
 `video_script` і enqueue script upsert-ять той самий ключ; підписи v2 →
 `weekly-video-v3`.
