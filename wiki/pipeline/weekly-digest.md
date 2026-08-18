@@ -856,6 +856,9 @@ approved story images + 3 brand cards; overflow layout є blocker, не обрі
 
 Запис лише з `--apply`. Не approve, не schedule і не вмикає publishing. Після apply всі
 variants лишаються `in_review` з `social_post_reviews.action = 'edited'` і `reviewer_id: null`.
+Legacy Instagram з 8 `content_parts` (старий clip-wrap carousel) мапиться на 7 слайдів: cover +
+3 story + comparison, caveat = передостанній, takeaway = останній; headline/body обрізаються
+під контракт 72/54/120, `<SLIDE>` hook blobs відкидаються.
 (source: `src/lib/social/asset-ref.ts`, `src/lib/social/channel-assets.ts`,
 `src/lib/weekly-digest/repair-social-package.ts`, `scripts/repair-weekly-social-package.ts`)
 

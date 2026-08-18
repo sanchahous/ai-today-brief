@@ -10,20 +10,18 @@ Last updated: 2026-08-18
 
 ## Стан репозиторію
 
-- **Social tab media + channel-aware editing (2026-08-18), гілка
-  `feat/social-tab-improvements`.** Реалізація executor-spec з PR #291: `artifactId` замість
-  7-денного signed URL, selector більше не бере LinkedIn PDF як картинку, Threads hook не
-  обрізає `<PART>`, Instagram — 7 JPEG 1080×1350 з виміряним layout (overflow = blocker),
-  спільний `buildWeeklySocialFactSnapshot` для generation і Save, channel-aware форма,
-  `npm run weekly:social:repair` (dry-run за замовчуванням). Production apply — окремий
-  owner step після deploy, не частина цього PR. Гілку синхронізовано з `main` після #293.
-  (source: `src/lib/social/asset-ref.ts`, `src/lib/social/channel-assets.ts`,
+- **Social tab media contract на `main` (2026-08-18, #294) + repair follow-up.** `artifactId`
+  замість 7-денного signed URL, selector не бере LinkedIn PDF як картинку, Instagram —
+  7 JPEG 1080×1350. Legacy 8-slide `content_parts` у `weekly:social:repair` мапляться на
+  7-slide spec (takeaway = останній слайд, headline/body під 72/54/120). Production apply
+  на пакет `612df95c-…` уже виконано; канали лишаються Disable, доки owner не Save & approve
+  і Re-enable.
+  (source: `src/lib/social/asset-ref.ts`, `src/lib/weekly-digest/repair-social-package.ts`,
   `src/lib/social/hook-candidate.ts`, `src/lib/weekly-digest/instagram-carousel-render.ts`,
   `scripts/repair-weekly-social-package.ts`)
 
 - **PDF weekly digest v3 на `main` (2026-08-18, #293).** Фіксована сітка `pdfkit-weekly-v3`,
   6–8 сторінок (типово 7), клікабельний зміст, сирий `body` більше не друкується в PDF.
-  Підтягнуто в цю гілку; не перетинається з Instagram carousel / LinkedIn document.
   (source: `src/lib/weekly-digest/pdf.ts`, PR #293)
 
 - **Social package clean і готовий до owner approval (2026-08-17), гілка

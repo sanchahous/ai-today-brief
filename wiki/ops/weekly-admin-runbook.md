@@ -269,9 +269,10 @@ read-only слайдів. LinkedIn PDF показується як document, н�
 Якщо після деплою 2026-08-18 старий пакет усе ще показує PDF замість landscape image, **не**
 регенеруй шість каналів з нуля. Pause publishing → dry-run
 `npm run weekly:social:repair -- --package-id <uuid>` → якщо план показує 5 image refs і 7
-Instagram JPEG, тоді `--apply`. Скрипт лишає copy п'яти каналів, міняє image refs, регенерує
-Instagram spec/slides і повертає всі variants у `in_review` без auto-approve. Production apply
-не є частиною code PR.
+Instagram JPEG, тоді `--apply`. Legacy 8-slide `content_parts` збираються в 7-slide spec:
+останній слайд = takeaway, передостанній = caveat, заголовки/body підганяються під 72/54/120.
+Скрипт лишає copy п'яти каналів, міняє image refs, регенерує Instagram spec/slides і повертає
+всі variants у `in_review` без auto-approve. Production apply не є частиною code PR.
 (source: `scripts/repair-weekly-social-package.ts`, `src/lib/weekly-digest/repair-social-package.ts`)
 
 У **Generation jobs** актуальний Social run показаний окремо. Попередні linked attempts згорнуті
