@@ -823,13 +823,20 @@ class InstagramPublisher implements SocialPublisher {
     const token = await oauthToken('instagram', 'META_PAGE_ACCESS_TOKEN');
     let containerId: string;
     if (post.assets.length === 1) {
+      const imageUrl = assetUrl(post);
+      if (!imageUrl) {
+        throw new SocialPublishError('Instagram is missing a resolved image URL.', 'permanent', 'asset_missing');
+      }
       containerId = await createInstagramContainer(accountId, token, {
-        image_url: post.assets[0].url,
+        image_url: imageUrl,
         caption: post.text,
       });
     } else {
       const children: string[] = [];
       for (const asset of post.assets.slice(0, 10)) {
+        if (!asset.url) {
+          throw new SocialPublishError('Instagram is missing a resolved image URL.', 'permanent', 'asset_missing');
+        }
         children.push(
           await createInstagramContainer(accountId, token, {
             image_url: asset.url,

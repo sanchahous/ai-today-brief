@@ -9,7 +9,8 @@ owner content audit + seed-content 2026-08-16, research corpus corroboration 202
 Start / retry Content Studio after succeeded jobs 2026-08-16, social package LinkedIn recovery
 2026-08-17, GitHub dispatch 503 recovery 2026-08-17, staged social-copy recovery and
 approval-ready Social boundary, clean Social job-history presentation 2026-08-17,
-owner PDF layout review 2026-08-18
+owner PDF layout review 2026-08-18,
+Social media contract / Instagram 7-slide renderer / repair CLI 2026-08-18
 Last updated: 2026-08-18
 
 ---
@@ -312,8 +313,8 @@ fail-closed забороняє домішувати старий copy до но�
 (source: `src/lib/weekly-digest/social-checkpoint.ts`,
 `src/lib/weekly-digest/generation-worker.ts`, `social-checkpoint.test.ts`)
 
-Durable межі тепер окремі: кожен із 6 channel writer+critic results → кожен із 7–9 Instagram
-slide artifacts → LinkedIn native-document artifact → `social_packages` draft → кожен
+Durable межі тепер окремі: кожен із 6 channel writer+critic results → рівно 7 Instagram
+slide artifacts (1080×1350 JPEG) → LinkedIn native-document artifact → `social_packages` draft → кожен
 `social_posts` row + immutable `generated` review. Stable artifact/package/post IDs лежать у
 checkpoint; при resume storage URLs перевидаються, а готові images/PDF/rows перевикористовуються.
 Package і posts переходять із `draft` у `in_review` лише після повного набору шести reviews.
@@ -372,8 +373,11 @@ Existing legacy posts тепер знаходяться до repair/update branc
 production runs `32054964740` / `32057477211` / `32059830080` / `32061374498` та
 production-DB live routing probe 2026-08-17)
 
-Writer і critic тепер бачать один owner-approved fact snapshot із повного article master, а
-Instagram/Threads аудіюються з нативними `<SLIDE>` / `<CAPTION>` / `<PART>` markers. Непояснений
+Writer і critic тепер бачать один owner-approved fact snapshot із повного article master
+(`buildWeeklySocialFactSnapshot`: article body + approved claims + item title/summary/why/practical).
+Threads аудіюється з усіх parts; Instagram — з caption і полів 7-slide spec; X — root + self-reply.
+Writer для Instagram використовує tagged contract `<COVER>` / `<STORY>` / `<COMPARISON>` /
+`<CAVEAT>` / `<TAKEAWAY>` / `<CAPTION>`. Непояснений
 zero-score JSON template від critic відхиляється як invalid response. Same-locale blind cross-post
 входить у той самий repair loop; originality observation лишається warning, якщо score уже
 проходить поріг. Після генерації worker ще раз fail-closed перевіряє всі шість reports і лише
@@ -832,10 +836,28 @@ writer-виклику, що пише 3 hook-кандидати: JSON-відпо�
 `platformFitScore`/`platformFlags`, тому **daily social-пайплайн не зачеплений** (його критик-
 промпт про ці поля не питає, парсер їх просто не бачить).
 
-Social tab: hook-кандидати тепер клікабельні (`HookCandidatePicker`,
-`src/components/admin/hook-candidate-picker.tsx`, `'use client'`) — клік підставляє обраний
-варіант у textarea "Post copy" напряму (через спільний `data-social-panel` предок, не React
-state, бо кандидати рендеряться в сусідньому `<aside>`, не всередині `<form>`).
+Social tab: hook-кандидати клікабельні (`HookCandidatePicker`) через `data-social-panel`.
+Threads candidate сплітиться за `<PART>` і атомарно заповнює 3–5 part fields без `slice` і без
+залишення маркера в visible copy. X оновлює лише root; tracked URL лишається в self-reply.
+Instagram hooks read-only — зміна angle потребує регенерації spec і семи JPEG.
+(source: `src/lib/social/hook-candidate.ts`, `src/components/admin/hook-candidate-picker.tsx`)
+
+### Social media contract і repair CLI (2026-08-18)
+
+Нові weekly image assets у `social_posts.asset_urls` зберігають `artifactId`; signed URL більше
+не є delivery contract. Admin loader і social worker резолвлять current/ready `image/*` на 60
+хвилин і **не** записують URL назад у БД. Selector спочатку фільтрує approved images, тому
+`linkedin-document:en` PDF ніколи не стає thumbnail. Instagram — hybrid carousel: cover + 3
+approved story images + 3 brand cards; overflow layout є blocker, не обрізання.
+
+Контрольований repair існуючого пакета (dry-run за замовчуванням):
+
+`npm run weekly:social:repair -- --package-id <uuid>`
+
+Запис лише з `--apply`. Не approve, не schedule і не вмикає publishing. Після apply всі
+variants лишаються `in_review` з `social_post_reviews.action = 'edited'` і `reviewer_id: null`.
+(source: `src/lib/social/asset-ref.ts`, `src/lib/social/channel-assets.ts`,
+`src/lib/weekly-digest/repair-social-package.ts`, `scripts/repair-weekly-social-package.ts`)
 
 Чистка: видалено мертвий `src/lib/weekly-digest/editorial-draft.ts` + тест (передував Content
 Studio v2, ніде не імпортувався). **`GENERIC_PRACTICAL_PATTERNS` НЕ видалено** — на відміну від
@@ -946,18 +968,18 @@ immutability навмисно, а не в обхід гейту.
   зараз стартує. Overview має короткий Editor playbook. Повний гайд —
   [weekly-admin-runbook](../ops/weekly-admin-runbook.md).
   (source: `weekly-workspace.tsx`, 2026-08-04)
-- **Social tab** (серп 2026): ілюстрації каналу показуються з `asset_urls` (не лише alt
-  text / JSON); Destination URL автозаповнюється з clean weekly URL; Save & approve
-  вимкнений при quality blockers (наприклад `schedule_past` — треба майбутній Kyiv
-  час); помилки Save йдуть у `?tab=social&save_error=…` замість opaque server error;
-  Save більше не стирає writer / hook / platformFit у `quality_report`. Header-кнопка
-  **Generate social package** ставить один `social_copy` job для всіх шести каналів;
-  вона з'являється також коли попередній пакет впав, як **Regenerate social package**.
-  З 2026-08-17 `in_review` означає, що всі шість variants уже пройшли blocking gates;
-  clean card показує компактну готовність, а legacy repair diagnostics згорнуті й не
-  дублюються великим червоним списком.
-  (source: `weekly-workspace.tsx`, `saveWeeklySocialAction`, `updateVariantAction`,
-  `enqueueWeeklyGenerationAction`)
+- **Social tab** (серп 2026, оновлено 2026-08-18): channel-aware форма замість універсальних
+  CTA/hashtags/raw JSON. Telegram/Facebook/LinkedIn редагують post copy; X — root + self-reply;
+  Threads — 3–5 part textareas; Instagram — caption і read-only 7-slide preview. Image assets
+  зберігають `artifactId` (не 7-денний signed URL). LinkedIn PDF лишається
+  `meta.document_artifact_id`, не thumbnail. Hook picker для Threads атомарно оновлює всі
+  parts і не обрізає `<PART>` blob. Save дозволений із warnings; Save & approve блокується
+  factual score <85, asset blockers і відсутнім critic, коли `SOCIAL_CRITIC_REQUIRED`.
+  Destination URL автозаповнюється з clean weekly URL; помилки Save йдуть у
+  `?tab=social&save_error=…`. Header-кнопка **Generate social package** ставить один
+  `social_copy` job для всіх шести каналів.
+  (source: `src/lib/social/channel-form.ts`, `src/lib/social/asset-ref.ts`,
+  `src/lib/social/hook-candidate.ts`, `weekly-workspace.tsx`, `saveWeeklySocialAction`)
 - **Мобільна адаптивність `/admin`** (2026-08-08): нижня навігація (`AdminNav`) мала
   `grid-cols-7` на 8 пунктів — «Settings» сиротою переносився на непорахований другий
   рядок, що перекривав контент сторінки знизу; фікс — `grid-cols-4` (два рівні рядки) +

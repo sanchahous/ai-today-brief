@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { QualityReport, SocialDraft } from './types';
-import { findBlindCrossPosts, mergePreservedQualityProvenance, runQualityGate } from './quality';
+import { findBlindCrossPosts, mergePreservedQualityProvenance, runQualityGate, socialApprovalBlockers } from './quality';
 
 function draft(overrides: Partial<SocialDraft> = {}): SocialDraft {
   return {
@@ -120,5 +120,73 @@ describe('social quality gate', () => {
     expect(merged.hookAngle).toBe('risk-of-agent-misconfig');
     expect(merged.hookCandidates).toEqual(['A', 'B']);
     expect(merged.critic?.score).toBe(92);
+  });
+
+  it('blocks missing MIME, missing dimensions, and stale private URLs', () => {
+    const missingMime = runQualityGate(
+      draft({
+        channel: 'telegram',
+        assets: [{ url: 'https://cdn.example/cover.jpg', width: 1200, height: 630 }],
+        altText: 'Weekly cover',
+      }),
+      new Date('2026-01-01T00:00:00Z'),
+    );
+    expect(missingMime.blocking.map((issue) => issue.code)).toContain('asset_format');
+
+    const missingDims = runQualityGate(
+      draft({
+        channel: 'telegram',
+        assets: [{ url: 'https://cdn.example/cover.jpg', mimeType: 'image/jpeg' }],
+        altText: 'Weekly cover',
+      }),
+      new Date('2026-01-01T00:00:00Z'),
+    );
+    expect(missingDims.blocking.map((issue) => issue.code)).toContain('asset_dimensions');
+
+    const stalePdf = runQualityGate(
+      draft({
+        channel: 'linkedin',
+        text: `${'A practical LinkedIn update for builders. '.repeat(10)} https://aitodaybrief.com/r/s/token`,
+        assets: [
+          {
+            url: 'https://example.supabase.co/storage/v1/object/sign/weekly-digest-private/doc.pdf?token=x',
+            width: 1200,
+            height: 630,
+            // Production JSONB stored application/pdf until repair; the gate must reject it.
+            mimeType: 'application/pdf',
+          } as unknown as SocialDraft['assets'][number],
+        ],
+        altText: 'LinkedIn document',
+      }),
+      new Date('2026-01-01T00:00:00Z'),
+    );
+    expect(stalePdf.blocking.map((issue) => issue.code)).toEqual(
+      expect.arrayContaining(['asset_format', 'asset_stale_url']),
+    );
+  });
+
+  it('blocks approval below critic 85 without blocking a warning-only save', () => {
+    const report: QualityReport = {
+      blocking: [],
+      warnings: [{ code: 'linkedin_short', message: 'short' }],
+      checkedAt: '2026-08-18T00:00:00.000Z',
+      critic: {
+        score: 80,
+        flags: ['Unsupported compression'],
+        provider: 'gemini',
+        model: 'flash',
+        auditedAt: '2026-08-18T00:00:00.000Z',
+      },
+    };
+    expect(report.blocking).toEqual([]);
+    expect(socialApprovalBlockers(report, { criticRequired: true }).map((issue) => issue.code)).toContain(
+      'critic_score',
+    );
+    expect(
+      socialApprovalBlockers(
+        { blocking: [], warnings: [], checkedAt: report.checkedAt },
+        { criticRequired: true },
+      ).map((issue) => issue.code),
+    ).toContain('critic_required');
   });
 });

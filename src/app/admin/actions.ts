@@ -10,8 +10,13 @@ import { getSupabaseServer } from '@/lib/supabase/server';
 import { composeDailySocial, composeWeeklySocial } from '@/lib/social/composer';
 import { socialContentHash } from '@/lib/social/content-hash';
 import { attachCriticReport } from '@/lib/social/critic';
+import { parsePersistedSocialAssetRefs, isSocialImageMime } from '@/lib/social/asset-ref';
+import { parseInstagramCarouselSpec } from '@/lib/social/instagram-carousel';
 import { generateSocialJson } from '@/lib/social/llm-router';
-import { mergePreservedQualityProvenance, runQualityGate } from '@/lib/social/quality';
+import {
+  mergePreservedQualityProvenance,
+  runQualityGate,
+} from '@/lib/social/quality';
 import {
   kyivWallClockToUtc,
   resolveCadenceSettings,
@@ -19,6 +24,7 @@ import {
 } from '@/lib/social/schedule';
 import { isSocialChannel, type SocialAsset, type SocialLocale } from '@/lib/social/types';
 import { isWeeklyItemReviewAction, isWeeklyReviewReasonCode } from '@/lib/social/weekly-review';
+import { buildWeeklySocialFactSnapshot } from '@/lib/weekly-digest/social-facts';
 
 function requiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -77,25 +83,14 @@ function isSunday(date: string) {
 }
 
 function parseAssets(value: Json): SocialAsset[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((entry) => {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
-    const row = entry as Record<string, Json | undefined>;
-    if (typeof row.url !== 'string') return [];
-    return [
-      {
-        url: row.url,
-        ...(typeof row.width === 'number' ? { width: row.width } : {}),
-        ...(typeof row.height === 'number' ? { height: row.height } : {}),
-        ...(typeof row.bytes === 'number' ? { bytes: row.bytes } : {}),
-        ...(row.mimeType === 'image/jpeg' ||
-        row.mimeType === 'image/png' ||
-        row.mimeType === 'image/webp'
-          ? { mimeType: row.mimeType }
-          : {}),
-      },
-    ];
-  });
+  return parsePersistedSocialAssetRefs(value).map((ref) => ({
+    artifactId: ref.artifactId,
+    url: ref.url,
+    width: ref.width,
+    height: ref.height,
+    bytes: ref.bytes,
+    mimeType: isSocialImageMime(ref.mimeType) ? ref.mimeType : undefined,
+  }));
 }
 
 function jsonFacts(value: Json | null) {
@@ -246,21 +241,29 @@ export async function updateVariantAction(formData: FormData) {
     ? await admin
         .from('weekly_digest_revision_items')
         .select(
-          'title_en,title_uk,summary_en,summary_uk,why_en,why_uk,practical_en,practical_uk,takeaway_en,takeaway_uk',
+          'id,title_en,title_uk,summary_en,summary_uk,why_en,why_uk,practical_en,practical_uk,takeaway_en,takeaway_uk,source_snapshot',
         )
         .eq('revision_id', weeklyRevisionId)
         .order('rank')
     : { data: null };
+  const { data: articleArtifacts } = weeklyRevisionId
+    ? await admin
+        .from('weekly_digest_artifacts')
+        .select('content,locale')
+        .eq('revision_id', weeklyRevisionId)
+        .eq('artifact_type', 'article')
+        .eq('is_current', true)
+    : { data: null };
+  const articleContent =
+    (articleArtifacts ?? []).find((artifact) => artifact.locale === locale)?.content ??
+    (articleArtifacts ?? []).find((artifact) => artifact.locale === 'en')?.content ??
+    null;
   const sourceFacts = weeklyItems?.length
-    ? weeklyItems.flatMap((weeklyItem) =>
-        [
-          locale === 'uk' ? weeklyItem.title_uk : weeklyItem.title_en,
-          locale === 'uk' ? weeklyItem.summary_uk : weeklyItem.summary_en,
-          locale === 'uk' ? weeklyItem.why_uk : weeklyItem.why_en,
-          locale === 'uk' ? weeklyItem.practical_uk : weeklyItem.practical_en,
-          locale === 'uk' ? weeklyItem.takeaway_uk : weeklyItem.takeaway_en,
-        ].filter((value): value is string => typeof value === 'string' && Boolean(value.trim())),
-      )
+    ? buildWeeklySocialFactSnapshot({
+        locale,
+        articleContent,
+        items: weeklyItems,
+      })
     : item
       ? [
           locale === 'uk' ? item.title_uk : item.title_en,
@@ -275,6 +278,11 @@ export async function updateVariantAction(formData: FormData) {
     socialPackage?.kind === 'weekly_digest'
       ? Boolean(weeklyItems?.length)
       : item?.review_status === 'approved' && brief?.status === 'published';
+  const instagramCarousel = parseInstagramCarouselSpec(
+    post.meta && typeof post.meta === 'object' && !Array.isArray(post.meta)
+      ? (post.meta as Record<string, unknown>).instagram_carousel
+      : null,
+  );
   const draft = {
     channel: post.channel,
     locale,
@@ -288,6 +296,10 @@ export async function updateVariantAction(formData: FormData) {
     sourceApproved,
     sourceFacts,
     sourceUrl: post.utm_url ?? post.url ?? '',
+    instagramCarousel,
+    currentRevisionItemIds: (weeklyItems ?? []).flatMap((item) =>
+      'id' in item && typeof item.id === 'string' ? [item.id] : [],
+    ),
   };
   const report = mergePreservedQualityProvenance(
     await attachCriticReport(draft, runQualityGate(draft), getSupabaseAdmin()),
@@ -305,6 +317,7 @@ export async function updateVariantAction(formData: FormData) {
     altText: draft.altText,
     scheduledFor: draft.scheduledFor,
     contentVersion: nextVersion,
+    instagramCarousel: draft.instagramCarousel,
   });
   const supabase = await getSupabaseServer();
   const { error } = await supabase.rpc('edit_weekly_social_post_v2', {

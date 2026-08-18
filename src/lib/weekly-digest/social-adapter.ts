@@ -1,7 +1,13 @@
 import 'server-only';
 
 import type { PipelineDb } from '../../../pipeline/db';
+import { channelNativeCopy } from '@/lib/social/channel-copy';
 import { parseCritic } from '@/lib/social/critic';
+import {
+  assembleInstagramCarouselSpec,
+  parseInstagramWriterCandidate,
+  readableInstagramParts,
+} from '@/lib/social/instagram-carousel';
 import { generateSocialJson } from '@/lib/social/llm-router';
 import { findBlindCrossPosts, runQualityGate } from '@/lib/social/quality';
 import type {
@@ -40,7 +46,7 @@ const CHANNEL_CONTRACT: Record<SocialChannel, string> = {
   linkedin:
     'English, 700–1200 characters. A self-contained insight for builders/leaders: tension, evidence, judgment, next decision. At most 3 hashtags and one URL.',
   instagram:
-    'English carousel of 7–9 slides. Separate slide text with <SLIDE>, then write <CAPTION> and a caption that adds context instead of repeating slide headlines. No URL and at most 5 hashtags.',
+    'English hybrid carousel of exactly 7 slides. Inside each candidate write <COVER>headline, three <STORY>headline||body, then <COMPARISON>headline||body, <CAVEAT>headline||body, <TAKEAWAY>headline||body, then <CAPTION>caption. Cover headline ≤72 characters; other headlines ≤54; bodies ≤120. Caption 180–800 characters, no URL, at most 5 hashtags.',
 };
 
 export function parseWeeklySocialWriter(raw: string) {
@@ -79,7 +85,16 @@ function candidatesFromText(text: string) {
   throw new SyntaxError('Writer must return 2–3 hook candidates separated by <CANDIDATE>.');
 }
 
-function unpackCandidate(channel: SocialChannel, candidate: string, firstComment: string | null) {
+function unpackCandidate(
+  channel: SocialChannel,
+  candidate: string,
+  firstComment: string | null,
+  instagram?: {
+    angle: string;
+    hookCandidates: [string, string, string];
+    storyRevisionItemIds: [string, string, string];
+  },
+) {
   if (channel === 'threads') {
     const parts = candidate
       .split(/\s*<PART>\s*/i)
@@ -88,12 +103,25 @@ function unpackCandidate(channel: SocialChannel, candidate: string, firstComment
     return { text: parts[0] ?? '', contentParts: parts, firstComment: null };
   }
   if (channel === 'instagram') {
-    const [slidesText = '', caption = ''] = candidate.split(/\s*<CAPTION>\s*/i, 2);
-    const parts = slidesText
-      .split(/\s*<SLIDE>\s*/i)
-      .map((part) => part.trim())
-      .filter(Boolean);
-    return { text: caption.trim(), contentParts: parts, firstComment: null };
+    if (!instagram) {
+      return { text: '', contentParts: [], firstComment: null };
+    }
+    const parsed = parseInstagramWriterCandidate(candidate);
+    if (!parsed) {
+      return { text: '', contentParts: [], firstComment: null };
+    }
+    const spec = assembleInstagramCarouselSpec({
+      angle: instagram.angle,
+      hookCandidates: instagram.hookCandidates,
+      parsed,
+      storyRevisionItemIds: instagram.storyRevisionItemIds,
+    });
+    return {
+      text: spec.caption,
+      contentParts: readableInstagramParts(spec),
+      firstComment: null,
+      instagramCarousel: spec,
+    };
   }
   if (channel === 'x') {
     return {
@@ -132,11 +160,7 @@ function scoreCandidate(channel: SocialChannel, locale: SocialLocale, candidate:
     if (!candidate.includes('?')) score -= 12;
   }
   if (channel === 'instagram') {
-    const slides = candidate
-      .split(/\s*<CAPTION>\s*/i)[0]!
-      .split(/\s*<SLIDE>\s*/i)
-      .filter((part) => part.trim());
-    if (slides.length < 7 || slides.length > 9) score -= 40;
+    if (!parseInstagramWriterCandidate(candidate)) score -= 40;
   }
   return Math.max(0, score);
 }
@@ -148,7 +172,7 @@ function formatFor(channel: SocialChannel) {
     threads: 'weekly_thread_3_5',
     x: 'weekly_thesis_self_reply',
     linkedin: 'weekly_editor_verdict',
-    instagram: 'weekly_carousel_7_9',
+    instagram: 'weekly_carousel_7',
   }[channel];
 }
 
@@ -194,19 +218,7 @@ export function parseWeeklySocialCritic(raw: string) {
 }
 
 function copyForAudit(draft: SocialDraft) {
-  if (draft.channel === 'instagram') {
-    return [
-      ...(draft.contentParts ?? []).map((part) => `<SLIDE>${part}`),
-      `<CAPTION>${draft.text}`,
-    ].join('\n');
-  }
-  if (draft.channel === 'threads') {
-    return (draft.contentParts ?? []).map((part) => `<PART>${part}`).join('\n');
-  }
-  if (draft.channel === 'x') {
-    return `ROOT POST\n${draft.text}\nFIRST COMMENT\n${draft.firstComment ?? ''}`;
-  }
-  return draft.text;
+  return channelNativeCopy(draft);
 }
 
 function usageTotal(
@@ -271,7 +283,7 @@ ${
     : ''
 }
 
-First, read the approved article below and decide your own angle for this channel's audience -- the single most compelling entry point, not a recap of every headline. Write it as a short (3-8 word) label in "angle". Then create THREE hook candidates built on that angle that are genuinely different from each other in opening, tone or emphasis -- not the same sentence reworded. Never open with a generic AI-tell phrase ("in today's fast-moving AI landscape", "it's worth noting", "game-changer") or a leader-briefing frame ("for product and security leaders") -- open on the concrete fact or scene. Put all candidates inside the JSON "text" string and separate them with <CANDIDATE>. For Threads use <PART> inside each candidate. For Instagram use <SLIDE> and <CAPTION>. For X return the tracked URL in "firstComment"; for other channels put it only where the contract permits. Return strict JSON only: {"angle":"","text":"candidate 1<CANDIDATE>candidate 2<CANDIDATE>candidate 3","firstComment":""}.
+First, read the approved article below and decide your own angle for this channel's audience -- the single most compelling entry point, not a recap of every headline. Write it as a short (3-8 word) label in "angle". Then create THREE hook candidates built on that angle that are genuinely different from each other in opening, tone or emphasis -- not the same sentence reworded. Never open with a generic AI-tell phrase ("in today's fast-moving AI landscape", "it's worth noting", "game-changer") or a leader-briefing frame ("for product and security leaders") -- open on the concrete fact or scene. Put all candidates inside the JSON "text" string and separate them with <CANDIDATE>. For Threads use <PART> inside each candidate. For Instagram use the tagged 7-slide contract inside each candidate. For X return the tracked URL in "firstComment"; for other channels put it only where the contract permits. Return strict JSON only: {"angle":"","text":"candidate 1<CANDIDATE>candidate 2<CANDIDATE>candidate 3","firstComment":""}.
 
 APPROVED ARTICLE
 ${JSON.stringify(article)}`;
@@ -286,6 +298,8 @@ export async function adaptWeeklySocialChannel(input: {
   sourceFacts: string[];
   assets?: SocialAsset[];
   altText?: string | null;
+  instagramStoryIds?: [string, string, string];
+  currentRevisionItemIds?: string[];
   /** Same-locale adaptations already accepted for this package. */
   avoidCopies?: SocialDraft[];
   /** Enables DB-driven role-chain overrides (owner-added HTTP providers via /admin/providers) for social.writer/social.critic. */
@@ -322,7 +336,16 @@ export async function adaptWeeklySocialChannel(input: {
     // latency by nine in the worst case without improving the repair signal.
     for (const selected of ranked.slice(0, 1)) {
       const firstComment = input.channel === 'x' ? input.trackedUrl : writer.value.firstComment;
-      const unpacked = unpackCandidate(input.channel, selected.candidate, firstComment);
+      const hookCandidatesTriple = [
+        hookCandidates[0] ?? selected.candidate,
+        hookCandidates[1] ?? selected.candidate,
+        hookCandidates[2] ?? selected.candidate,
+      ] as [string, string, string];
+      const unpacked = unpackCandidate(input.channel, selected.candidate, firstComment, {
+        angle: writer.value.angle,
+        hookCandidates: hookCandidatesTriple,
+        storyRevisionItemIds: input.instagramStoryIds ?? ['', '', ''],
+      });
       const draft: SocialDraft = {
         channel: input.channel,
         locale: input.locale,
@@ -336,6 +359,8 @@ export async function adaptWeeklySocialChannel(input: {
         sourceApproved: true,
         sourceFacts: input.sourceFacts,
         sourceUrl: input.trackedUrl,
+        instagramCarousel: unpacked.instagramCarousel,
+        currentRevisionItemIds: input.currentRevisionItemIds,
       };
       const base = runQualityGate(draft);
       const criticPrompt = `Audit this social adaptation independently. First, compare it against ONLY the approved facts and flag unsupported numbers, names, quotes, causal implications or misleading compression. Second, audit the native serialization below against the exact ${input.channel} contract: ${CHANNEL_CONTRACT[input.channel]}. Third, score how ORIGINAL and non-formulaic the copy reads. Score factual grounding, platform-native fit and originality separately from 0–100.

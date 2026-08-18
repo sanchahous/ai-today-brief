@@ -1,3 +1,6 @@
+import { isPrivateSignedStorageUrl, isSocialImageMime } from './asset-ref';
+import { instagramCarouselIssues } from './instagram-carousel';
+import { containsServiceMarkers, serviceMarkerIssueMessage } from './service-markers';
 import type { QualityIssue, QualityReport, SocialChannel, SocialDraft } from './types';
 
 interface ChannelRule {
@@ -92,9 +95,34 @@ function validateAsset(channel: SocialChannel, draft: SocialDraft, blocking: Qua
   }
 
   for (const asset of draft.assets) {
-    if (asset.mimeType && !['image/jpeg', 'image/png', 'image/webp'].includes(asset.mimeType)) {
+    if (!isSocialImageMime(asset.mimeType)) {
       blocking.push(
-        issue('asset_format', 'Only JPEG, PNG, and WebP assets are allowed.', 'asset_urls'),
+        issue(
+          'asset_format',
+          asset.mimeType
+            ? 'Only JPEG, PNG, and WebP assets are allowed.'
+            : 'Social assets must declare an image MIME type.',
+          'asset_urls',
+        ),
+      );
+    }
+    if (!asset.width || !asset.height || asset.width <= 0 || asset.height <= 0) {
+      blocking.push(
+        issue('asset_dimensions', 'Social assets must include positive width and height.', 'asset_urls'),
+      );
+    }
+    if (asset.url && isPrivateSignedStorageUrl(asset.url) && !asset.artifactId) {
+      blocking.push(
+        issue(
+          'asset_stale_url',
+          'Private weekly assets must persist artifactId; a signed URL alone is not a delivery contract.',
+          'asset_urls',
+        ),
+      );
+    }
+    if (!asset.artifactId && !asset.url) {
+      blocking.push(
+        issue('asset_missing', 'A social asset is missing both artifactId and a public URL.', 'asset_urls'),
       );
     }
     if (asset.bytes && asset.bytes > 10 * 1024 * 1024) {
@@ -174,6 +202,13 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
       ),
     );
   }
+  if (
+    containsServiceMarkers(text) ||
+    contentParts.some((part) => containsServiceMarkers(part)) ||
+    containsServiceMarkers(draft.firstComment ?? '')
+  ) {
+    blocking.push(issue('service_markers', serviceMarkerIssueMessage(), 'post_text'));
+  }
   if (/…|\.{3}/.test([text, ...contentParts].join(' '))) {
     blocking.push(
       issue(
@@ -210,7 +245,18 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
       );
     }
   }
-  if (draft.channel === 'instagram' && contentParts.length > 0) {
+  if (draft.channel === 'instagram' && draft.instagramCarousel) {
+    const specIssues = instagramCarouselIssues(
+      draft.instagramCarousel,
+      draft.currentRevisionItemIds ??
+        draft.instagramCarousel.slides.flatMap((slide) =>
+          slide.kind === 'story' ? [slide.revisionItemId] : [],
+        ),
+    );
+    for (const specIssue of specIssues) {
+      blocking.push(issue(specIssue.code, specIssue.message, 'content_parts'));
+    }
+  } else if (draft.channel === 'instagram' && contentParts.length > 0) {
     if (contentParts.length < 7 || contentParts.length > 9) {
       blocking.push(
         issue('instagram_slides', 'Instagram requires 7–9 carousel slide texts.', 'content_parts'),
@@ -270,6 +316,44 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
   }
 
   return { blocking, warnings, checkedAt: now.toISOString() };
+}
+
+function envEnabled(value: string | undefined) {
+  return ['1', 'true', 'yes', 'on'].includes(value?.trim().toLowerCase() ?? '');
+}
+
+/**
+ * Save is allowed with warnings. Approval is not: factual score, critic
+ * presence, and any remaining structural/asset blockers still gate publish.
+ */
+export function socialApprovalBlockers(
+  report: QualityReport,
+  options?: { criticRequired?: boolean },
+): QualityIssue[] {
+  const criticRequired =
+    options?.criticRequired ?? envEnabled(process.env.SOCIAL_CRITIC_REQUIRED);
+  const blockers = [...report.blocking];
+  const critic = report.critic;
+  if (!critic) {
+    if (criticRequired) {
+      blockers.push(
+        issue(
+          'critic_required',
+          'A successful current-generation critic audit is required before approval.',
+        ),
+      );
+    }
+    return blockers;
+  }
+  if (typeof critic.score === 'number' && critic.score < 85) {
+    blockers.push(
+      issue(
+        'critic_score',
+        `Independent factual critic scored this variant ${critic.score}/100; 85 is required.`,
+      ),
+    );
+  }
+  return blockers;
 }
 
 function normalized(text: string) {

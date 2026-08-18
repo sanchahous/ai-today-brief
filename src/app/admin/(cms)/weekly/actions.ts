@@ -18,6 +18,9 @@ import { storageBlob } from '@/lib/storage/binary';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { updateVariantAction } from '@/app/admin/actions';
 import { composeWeeklySocial } from '@/lib/social/composer';
+import { parseChannelSocialSave } from '@/lib/social/parse-social-save';
+import { socialApprovalBlockers } from '@/lib/social/quality';
+import { isSocialChannel, type QualityReport } from '@/lib/social/types';
 import {
   completedWeeklyRangeForTrigger,
   kyivWallClockToUtc,
@@ -1051,19 +1054,6 @@ function isNextRedirectError(error: unknown): boolean {
   );
 }
 
-function qualityBlockingMessages(value: Json | null | undefined): string[] {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
-  const blocking = (value as { blocking?: unknown }).blocking;
-  if (!Array.isArray(blocking)) return [];
-  return blocking.flatMap((entry) => {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
-    const row = entry as Record<string, unknown>;
-    if (typeof row.message === 'string' && row.message.trim()) return [row.message.trim()];
-    if (typeof row.code === 'string' && row.code.trim()) return [row.code.trim()];
-    return [];
-  });
-}
-
 export async function saveWeeklySocialAction(formData: FormData) {
   const intent = optionalString(formData, 'intent') || 'save';
   const session = await requireSocialAdmin({
@@ -1074,7 +1064,7 @@ export async function saveWeeklySocialAction(formData: FormData) {
   const admin = getSupabaseAdmin();
   const { data: post } = await admin
     .from('social_posts')
-    .select('package_id,channel,locale,meta,quality_report,publish_enabled,content_hash')
+    .select('package_id,channel,locale,meta,quality_report,publish_enabled,content_hash,content_parts')
     .eq('id', postId)
     .maybeSingle();
   if (
@@ -1098,19 +1088,31 @@ export async function saveWeeklySocialAction(formData: FormData) {
 
   const fail = (message: string): never => redirectWeeklySocialError(weeklyDigestId, message);
 
-  const cta = optionalString(formData, 'cta');
-  const hashtags = optionalString(formData, 'hashtags');
-  let postText = requiredString(formData, 'post_text');
-  for (const suffix of [cta, hashtags]) {
-    if (suffix && !postText.includes(suffix)) postText = `${postText}\n\n${suffix}`;
+  const channel = post.channel;
+  if (!isSocialChannel(channel)) {
+    fail('Unsupported social channel.');
+    return;
   }
-  const assetUrlsText = optionalString(formData, 'asset_urls_json');
-  let assetUrls: unknown[] | null = null;
-  try {
-    assetUrls = assetUrlsText ? jsonArray(assetUrlsText, 'Social assets') : null;
-  } catch (error) {
-    fail(error instanceof Error ? error.message : 'Social assets JSON is invalid.');
-  }
+  const threadParts = ['content_part_1', 'content_part_2', 'content_part_3', 'content_part_4', 'content_part_5']
+    .map((name) => optionalString(formData, name))
+    .filter(Boolean);
+  const parsed = parseChannelSocialSave({
+    channel,
+    postText: optionalString(formData, 'post_text'),
+    firstComment: optionalString(formData, 'first_comment'),
+    threadParts,
+    existingCarousel:
+      post.meta && typeof post.meta === 'object' && !Array.isArray(post.meta)
+        ? (post.meta as Record<string, unknown>).instagram_carousel
+        : null,
+    existingParts: Array.isArray(post.content_parts)
+      ? post.content_parts.filter((part): part is string => typeof part === 'string')
+      : [],
+  });
+  if (!parsed.ok) fail(parsed.message);
+  if (!parsed.ok) return;
+  const saved = parsed.fields;
+
   const url = optionalString(formData, 'url');
   const utmUrl = optionalString(formData, 'utm_url');
   const currentMeta =
@@ -1160,13 +1162,10 @@ export async function saveWeeklySocialAction(formData: FormData) {
   const { error: metadataError } = await userDb
     .from('social_posts')
     .update({
-      ...(assetUrls ? { asset_urls: assetUrls as Json } : {}),
       ...(url ? { url } : {}),
       ...(utmUrl ? { utm_url: utmUrl } : {}),
       meta: {
         ...currentMeta,
-        cta: cta || null,
-        hashtags: hashtags || null,
         ...(hookAngle ? { hook_angle: hookAngle } : {}),
         ...(hookCandidates ? { hook_candidates: hookCandidates } : {}),
         ...(writerMeta ? { writer: writerMeta } : {}),
@@ -1176,6 +1175,9 @@ export async function saveWeeklySocialAction(formData: FormData) {
               document_note: linkedinDocumentNote || null,
             }
           : {}),
+        ...(post.channel === 'instagram' && saved.instagramCarousel
+          ? { instagram_carousel: saved.instagramCarousel }
+          : {}),
       } as Json,
     })
     .eq('id', postId);
@@ -1183,9 +1185,9 @@ export async function saveWeeklySocialAction(formData: FormData) {
 
   const mapped = new FormData();
   mapped.set('id', postId);
-  mapped.set('post_text', postText);
-  mapped.set('first_comment', optionalString(formData, 'first_comment'));
-  mapped.set('content_parts_json', optionalString(formData, 'content_parts_json') || '[]');
+  mapped.set('post_text', saved.postText);
+  mapped.set('first_comment', saved.firstComment ?? '');
+  mapped.set('content_parts_json', JSON.stringify(saved.contentParts));
   mapped.set('alt_text', optionalString(formData, 'alt_text'));
   // updateVariantAction performs the single DST-aware Europe/Kyiv → UTC conversion.
   mapped.set('scheduled_for', requiredString(formData, 'scheduled_for_local'));
@@ -1202,7 +1204,13 @@ export async function saveWeeklySocialAction(formData: FormData) {
       .select('quality_report,publish_enabled,content_hash')
       .eq('id', postId)
       .maybeSingle();
-    const blockers = qualityBlockingMessages(refreshed?.quality_report);
+    const blockers = socialApprovalBlockers(
+      refreshed?.quality_report &&
+        typeof refreshed.quality_report === 'object' &&
+        !Array.isArray(refreshed.quality_report)
+        ? (refreshed.quality_report as unknown as QualityReport)
+        : { blocking: [], warnings: [], checkedAt: new Date().toISOString() },
+    ).map((issue) => issue.message);
     if (blockers.length > 0) {
       fail(`Cannot approve yet — fix quality blockers first: ${blockers.slice(0, 3).join(' · ')}`);
     }

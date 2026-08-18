@@ -2,6 +2,7 @@ import 'server-only';
 
 import type { PipelineDb } from '../../../pipeline/db';
 import { generateSocialJson } from './llm-router';
+import { channelNativeCopy } from './channel-copy';
 import type { QualityReport, SocialDraft } from './types';
 
 interface CriticResult {
@@ -120,10 +121,7 @@ TRACKED SOURCE URL (approved metadata):
 ${draft.sourceUrl}
 
 PROPOSED COPY:
-${draft.text}
-
-FIRST COMMENT:
-${draft.firstComment ?? ''}`;
+${channelNativeCopy(draft)}`;
 
   try {
     const result = await generateSocialJson('critic', prompt, parseCritic, { db });

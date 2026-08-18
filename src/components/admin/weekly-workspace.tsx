@@ -6,6 +6,9 @@ import { SocialCharCount } from '@/components/admin/social-char-count';
 import { StatusPill } from '@/components/admin/status-pill';
 import { StoryPromptSetPanel } from '@/components/admin/story-prompt-set-panel';
 import { WeeklyGenerationJobsLive } from '@/components/admin/weekly-generation-jobs-live';
+import { socialFormHas, socialCopyLimit, threadsPartLimit } from '@/lib/social/channel-form';
+import { parseInstagramCarouselSpec } from '@/lib/social/instagram-carousel';
+import type { SocialChannel } from '@/lib/social/types';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
@@ -444,15 +447,6 @@ function qualityReport(value: Json) {
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   return { blocking: blocking.length, warnings: warnings.length, items };
-}
-
-function socialAssetUrls(value: Json): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((entry) => {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
-    const url = asRecord(entry).url;
-    return typeof url === 'string' && url.startsWith('https://') ? [url] : [];
-  });
 }
 
 function cleanWeeklyDestinationUrl(locale: string, slug: string, utmUrl: string | null): string {
@@ -3331,12 +3325,12 @@ function VisualsPanel({
 }
 
 const SOCIAL_LIMITS: Record<string, number> = {
-  telegram: 4096,
-  facebook: 63206,
-  linkedin: 3000,
-  x: 280,
-  threads: 500,
-  instagram: 2200,
+  telegram: socialCopyLimit('telegram'),
+  facebook: socialCopyLimit('facebook'),
+  linkedin: socialCopyLimit('linkedin'),
+  x: socialCopyLimit('x'),
+  threads: socialCopyLimit('threads'),
+  instagram: socialCopyLimit('instagram'),
 };
 
 function SocialPanel({
@@ -3447,7 +3441,13 @@ function SocialPanel({
             : typeof critic.platformFitScore === 'number'
               ? critic.platformFitScore
               : null;
-        const assetPreviewUrls = socialAssetUrls(post.asset_urls);
+        const media = workspace.socialAssetPreviews[post.id] ?? { assets: [], blockers: [] };
+        const assetPreviewUrls = media.assets.map((asset) => asset.url);
+        const channelId = channel as SocialChannel;
+        const carousel = parseInstagramCarouselSpec(meta.instagram_carousel);
+        const threadParts = Array.isArray(post.content_parts)
+          ? post.content_parts.filter((part): part is string => typeof part === 'string')
+          : [];
         const destinationUrl =
           post.url || cleanWeeklyDestinationUrl(locale, workspace.digest.slug, post.utm_url);
         const hasQualityBlockers = quality.blocking > 0;
@@ -3472,6 +3472,7 @@ function SocialPanel({
             className={PANEL}
             aria-labelledby={`social-${channel}-heading`}
             data-social-panel={channel}
+            data-testid={`social-panel-${channel}`}
           >
             <div className="flex flex-wrap items-center gap-2">
               <h3 id={`social-${channel}-heading`} className="mr-auto text-lg font-bold text-white">
@@ -3524,49 +3525,53 @@ function SocialPanel({
                 <input type="hidden" name="channel" value={channel} />
                 <input type="hidden" name="locale" value={locale} />
                 <input type="hidden" name="time_zone" value="Europe/Kyiv" />
-                <label className={LABEL}>
-                  Post copy
-                  <textarea
-                    id={`social-post-text-${post.id}`}
-                    name="post_text"
-                    rows={8}
-                    required
-                    maxLength={SOCIAL_LIMITS[channel]}
-                    defaultValue={post.post_text ?? ''}
-                    disabled={!canEdit}
-                    className={TEXTAREA}
-                    aria-describedby={`social-${post.id}-limit`}
-                  />
-                  <SocialCharCount
-                    id={`social-${post.id}-limit`}
-                    textareaId={`social-post-text-${post.id}`}
-                    limit={SOCIAL_LIMITS[channel]}
-                    initialLength={(post.post_text ?? '').length}
-                  />
-                </label>
-                <div className="grid gap-4 md:grid-cols-2">
+                {socialFormHas(channelId, 'post_copy') || socialFormHas(channelId, 'caption') ? (
                   <label className={LABEL}>
-                    CTA
-                    <input
-                      name="cta"
-                      defaultValue={typeof meta.cta === 'string' ? meta.cta : ''}
+                    {socialFormHas(channelId, 'caption') ? 'Caption' : 'Post copy'}
+                    <textarea
+                      id={`social-post-text-${post.id}`}
+                      name="post_text"
+                      rows={socialFormHas(channelId, 'caption') ? 6 : 8}
+                      required
+                      maxLength={SOCIAL_LIMITS[channel]}
+                      defaultValue={post.post_text ?? ''}
                       disabled={!canEdit}
-                      className={FIELD}
+                      className={TEXTAREA}
+                      aria-describedby={`social-${post.id}-limit`}
+                      data-testid={`social-field-${socialFormHas(channelId, 'caption') ? 'caption' : 'post-copy'}`}
+                    />
+                    <SocialCharCount
+                      id={`social-${post.id}-limit`}
+                      textareaId={`social-post-text-${post.id}`}
+                      limit={SOCIAL_LIMITS[channel]}
+                      initialLength={(post.post_text ?? '').length}
                     />
                   </label>
-                  <label className={LABEL}>
-                    Hashtags
-                    <input
-                      name="hashtags"
-                      defaultValue={typeof meta.hashtags === 'string' ? meta.hashtags : ''}
-                      disabled={!canEdit}
-                      className={FIELD}
-                      placeholder="#AI #WeeklyDigest"
-                    />
-                  </label>
-                </div>
-                {channel === 'linkedin' ? (
-                  <div className="grid gap-4 rounded-xl border border-cyan-300/15 bg-cyan-300/5 p-4 md:grid-cols-2">
+                ) : null}
+                {socialFormHas(channelId, 'thread_parts') ? (
+                  <div className="grid gap-3" data-testid="social-field-thread-parts">
+                    <p className="text-sm font-semibold text-slate-200">Thread parts (3–5)</p>
+                    {[0, 1, 2, 3, 4].map((index) => (
+                      <label key={`${post.id}-part-${index}`} className={LABEL}>
+                        Part {index + 1}
+                        <textarea
+                          name={`content_part_${index + 1}`}
+                          rows={4}
+                          maxLength={threadsPartLimit()}
+                          defaultValue={threadParts[index] ?? ''}
+                          disabled={!canEdit}
+                          className={TEXTAREA}
+                          data-testid={`social-field-threads-part-${index + 1}`}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                ) : null}
+                {socialFormHas(channelId, 'linkedin_document') ? (
+                  <div
+                    className="grid gap-4 rounded-xl border border-cyan-300/15 bg-cyan-300/5 p-4 md:grid-cols-2"
+                    data-testid="social-linkedin-document"
+                  >
                     <label className={LABEL}>
                       Manual PDF/document status
                       <select
@@ -3607,71 +3612,88 @@ function SocialPanel({
                       >
                         Open generated 7-page document
                       </a>
-                    ) : null}
+                    ) : (
+                      <p className="self-end text-xs text-slate-500">
+                        LinkedIn PDF is a document attachment, not a channel image.
+                      </p>
+                    )}
                   </div>
                 ) : null}
-                <label className={LABEL}>
-                  First comment
-                  <textarea
-                    name="first_comment"
-                    rows={3}
-                    defaultValue={post.first_comment ?? ''}
-                    disabled={!canEdit}
-                    className={TEXTAREA}
-                  />
-                </label>
-                <label className={LABEL}>
-                  {channel === 'threads'
-                    ? 'Thread messages (JSON)'
-                    : channel === 'instagram'
-                      ? 'Carousel slides (JSON)'
-                      : channel === 'x'
-                        ? 'Root + self-reply (JSON)'
-                        : 'Content parts (JSON)'}
-                  <textarea
-                    name="content_parts_json"
-                    rows={channel === 'instagram' ? 10 : 6}
-                    spellCheck={false}
-                    defaultValue={jsonText(post.content_parts)}
-                    disabled={!canEdit}
-                    className={`${TEXTAREA} font-mono text-xs`}
-                  />
-                  <span className="text-xs font-normal text-slate-500">
-                    {channel === 'threads'
-                      ? '3–5 messages, each ≤500 characters.'
-                      : channel === 'instagram'
-                        ? '7–9 native slide texts; the caption stays above.'
-                        : channel === 'x'
-                          ? 'The first item is the root; the URL belongs in the self-reply.'
-                          : 'Optional structured parts used by previews, hashing and publishing.'}
-                  </span>
-                </label>
-                <div className="grid gap-4 md:grid-cols-2">
+                {socialFormHas(channelId, 'first_comment') ? (
                   <label className={LABEL}>
-                    Destination URL
-                    <input
-                      type="url"
-                      name="url"
-                      required
-                      defaultValue={destinationUrl}
+                    Self-reply
+                    <textarea
+                      name="first_comment"
+                      rows={3}
+                      defaultValue={post.first_comment ?? ''}
                       disabled={!canEdit}
-                      className={FIELD}
+                      className={TEXTAREA}
+                      data-testid="social-field-first-comment"
                     />
                     <span className="text-xs font-normal text-slate-500">
-                      Clean weekly page URL (no UTM). Tracked URL below keeps campaign params.
+                      Keep the tracked URL in this self-reply. The root post stays link-free.
                     </span>
                   </label>
-                  <label className={LABEL}>
-                    Tracked URL
-                    <input
-                      type="url"
-                      name="utm_url"
-                      defaultValue={post.utm_url ?? ''}
-                      disabled={!canEdit}
-                      className={FIELD}
-                    />
-                  </label>
-                </div>
+                ) : null}
+                {socialFormHas(channelId, 'carousel_preview') ? (
+                  <div
+                    className="rounded-xl border border-white/10 bg-black/20 p-3"
+                    data-testid="social-instagram-carousel"
+                  >
+                    <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">
+                      7-slide carousel (read-only)
+                    </p>
+                    {carousel ? (
+                      <ol className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {carousel.slides.map((slide, index) => (
+                          <li
+                            key={`${post.id}-slide-${index}`}
+                            className="rounded-lg border border-white/10 p-2 text-xs text-slate-400"
+                            data-testid={`social-instagram-slide-${index + 1}`}
+                          >
+                            <p className="font-bold text-slate-200">
+                              {index + 1}. {slide.kind}
+                            </p>
+                            <p className="mt-1 text-slate-300">{slide.headline}</p>
+                            {'body' in slide ? <p className="mt-1">{slide.body}</p> : null}
+                          </li>
+                        ))}
+                      </ol>
+                    ) : (
+                      <p className="mt-2 text-xs text-amber-100">
+                        Carousel spec is missing. Regenerate the social package.
+                      </p>
+                    )}
+                  </div>
+                ) : null}
+                {socialFormHas(channelId, 'destination') ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className={LABEL}>
+                      Destination URL
+                      <input
+                        type="url"
+                        name="url"
+                        required
+                        defaultValue={destinationUrl}
+                        disabled={!canEdit}
+                        className={FIELD}
+                      />
+                      <span className="text-xs font-normal text-slate-500">
+                        Clean weekly page URL (no UTM). Tracked URL below keeps campaign params.
+                      </span>
+                    </label>
+                    <label className={LABEL}>
+                      Tracked URL
+                      <input
+                        type="url"
+                        name="utm_url"
+                        defaultValue={post.utm_url ?? ''}
+                        disabled={!canEdit}
+                        className={FIELD}
+                      />
+                    </label>
+                  </div>
+                ) : null}
                 <label className={LABEL}>
                   Image alt text
                   <textarea
@@ -3683,56 +3705,58 @@ function SocialPanel({
                     className={TEXTAREA}
                   />
                 </label>
-                {assetPreviewUrls.length > 0 ? (
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                    <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">
-                      Channel illustrations ({assetPreviewUrls.length})
-                    </p>
+                <div
+                  className="rounded-xl border border-white/10 bg-black/20 p-3"
+                  data-testid="social-media-summary"
+                >
+                  <p className="text-xs font-bold tracking-wide text-slate-500 uppercase">
+                    Media summary
+                  </p>
+                  {media.blockers.length > 0 ? (
+                    <ul className="mt-2 grid gap-1 text-xs text-amber-100">
+                      {media.blockers.map((blocker) => (
+                        <li key={blocker.code}>{blocker.message}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {media.assets.length > 0 ? (
                     <div
-                      className={`mt-3 grid gap-2 ${assetPreviewUrls.length > 1 ? 'grid-cols-2' : ''}`}
+                      className={`mt-3 grid gap-2 ${media.assets.length > 1 ? 'grid-cols-2' : ''}`}
                     >
-                      {assetPreviewUrls.map((url, index) => (
-                        <a
-                          key={`${post.id}-asset-${index}`}
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block overflow-hidden rounded-lg border border-white/10"
+                      {media.assets.map((asset, index) => (
+                        <figure
+                          key={`${post.id}-asset-${asset.artifactId ?? index}`}
+                          className="overflow-hidden rounded-lg border border-white/10"
                         >
-                          <Image
-                            src={url}
-                            alt={
-                              post.alt_text
-                                ? `${post.alt_text}${assetPreviewUrls.length > 1 ? ` (${index + 1})` : ''}`
-                                : `Social asset ${index + 1} for ${channelLabel(channel)}`
-                            }
-                            width={channel === 'instagram' ? 540 : 600}
-                            height={channel === 'instagram' ? 675 : 315}
-                            className="h-auto w-full object-cover"
-                            sizes="(max-width: 1280px) 90vw, 28vw"
-                          />
-                        </a>
+                          <a href={asset.url} target="_blank" rel="noreferrer" className="block">
+                            <Image
+                              src={asset.url}
+                              alt={
+                                post.alt_text
+                                  ? `${post.alt_text}${media.assets.length > 1 ? ` (${index + 1})` : ''}`
+                                  : `Social asset ${index + 1} for ${channelLabel(channel)}`
+                              }
+                              width={channel === 'instagram' ? 540 : 600}
+                              height={channel === 'instagram' ? 675 : 315}
+                              className="h-auto w-full object-cover"
+                              sizes="(max-width: 1280px) 90vw, 28vw"
+                            />
+                          </a>
+                          <figcaption className="px-2 py-1.5 text-[11px] leading-4 text-slate-500">
+                            {[asset.slotKey ?? asset.artifactType, asset.mimeType, asset.width && asset.height ? `${asset.width}×${asset.height}` : null]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </figcaption>
+                        </figure>
                       ))}
                     </div>
-                  </div>
-                ) : (
-                  <p className="rounded-xl border border-amber-400/20 bg-amber-400/7 px-3 py-2 text-xs text-amber-100">
-                    No channel images yet. Generate Social assets on the Visuals tab, then
-                    regenerate social copy if assets stay empty.
-                  </p>
-                )}
-                <label className={LABEL}>
-                  Asset URLs (JSON)
-                  <textarea
-                    name="asset_urls_json"
-                    rows={4}
-                    required
-                    spellCheck={false}
-                    defaultValue={jsonText(post.asset_urls)}
-                    disabled={!canEdit}
-                    className={`${TEXTAREA} font-mono text-xs`}
-                  />
-                </label>
+                  ) : (
+                    <p className="mt-2 text-xs text-amber-100">
+                      No channel images yet. Generate Social assets on the Visuals tab, then
+                      regenerate social copy if assets stay empty.
+                    </p>
+                  )}
+                </div>
                 <label className={LABEL}>
                   Scheduled time in Kyiv
                   <input
@@ -3821,7 +3845,7 @@ function SocialPanel({
                     <div
                       className={`mt-4 grid gap-2 ${assetPreviewUrls.length > 1 ? 'grid-cols-2' : ''}`}
                     >
-                      {assetPreviewUrls.slice(0, 4).map((url, index) => (
+                      {assetPreviewUrls.slice(0, channel === 'instagram' ? 7 : 4).map((url, index) => (
                         <Image
                           key={`${post.id}-preview-${index}`}
                           src={url}
@@ -3889,7 +3913,7 @@ function SocialPanel({
                       <dd className="mt-1 text-slate-300">Builders, founders & AI leaders</dd>
                     </div>
                   </dl>
-                  <HookCandidatePicker candidates={hookCandidates} />
+                  <HookCandidatePicker channel={channelId} candidates={hookCandidates} />
                 </div>
 
                 <div className="rounded-xl border border-white/10 p-4">

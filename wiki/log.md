@@ -6,6 +6,23 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-18
 
+## 2026-08-18 — Social tab: media contract, channel-aware form, Instagram 7-slide renderer
+
+**Джерело:** executor-spec PR #291 / `wiki/audits/2026-08-18-social-tab-improvement-plan.md`
+(гілка `codex/social-tab-improvement-plan`); production Social package audit і owner screenshots
+2026-08-18.
+
+**Змінено:** `social_posts.asset_urls` зберігає `artifactId`; resolver підписує URL на 60 хв без
+запису в БД; selector відсікає PDF; Threads hook apply атомарний; Instagram hybrid carousel
+7×1080×1350 з measured layout; `buildWeeklySocialFactSnapshot` на generation і Save;
+channel-aware Social UI; CLI `npm run weekly:social:repair`. Оновлено
+[weekly-digest](pipeline/weekly-digest.md), [weekly-admin-runbook](ops/weekly-admin-runbook.md),
+[now](now.md).
+
+**Не зроблено в цьому PR:** production `--apply` repair живого пакета.
+
+---
+
 ## 2026-08-18 — Захист гілки `main` увімкнено
 
 **Джерело:** `gh api repos/.../branches/main/protection` (до: HTTP 404 «Branch not protected»),

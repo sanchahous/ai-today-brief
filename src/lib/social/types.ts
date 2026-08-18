@@ -1,4 +1,5 @@
 import type { Json } from '@/lib/database.types';
+import type { InstagramCarouselSpec } from './instagram-carousel';
 
 export const SOCIAL_CHANNELS = [
   'telegram',
@@ -25,12 +26,36 @@ export type SocialStatus =
 
 export type SocialLocale = 'uk' | 'en';
 
+export const SOCIAL_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+export type SocialImageMimeType = (typeof SOCIAL_IMAGE_MIME_TYPES)[number];
+
 export interface SocialAsset {
-  url: string;
+  url?: string;
+  artifactId?: string;
   width?: number;
   height?: number;
-  mimeType?: 'image/jpeg' | 'image/png' | 'image/webp';
+  mimeType?: SocialImageMimeType;
   bytes?: number;
+}
+
+export interface PersistedSocialAssetRef {
+  artifactId?: string;
+  url?: string;
+  width?: number;
+  height?: number;
+  mimeType?: string;
+  bytes?: number;
+}
+
+export interface ResolvedSocialAsset {
+  url: string;
+  artifactId?: string;
+  width?: number;
+  height?: number;
+  mimeType: string;
+  bytes?: number;
+  slotKey?: string;
+  artifactType?: string;
 }
 
 export interface QualityIssue {
@@ -102,6 +127,8 @@ export interface SocialDraft {
   sourceFacts: string[];
   sourceUrl: string;
   qualityReport?: QualityReport;
+  instagramCarousel?: InstagramCarouselSpec | null;
+  currentRevisionItemIds?: string[];
 }
 
 export interface SocialPostForDelivery {

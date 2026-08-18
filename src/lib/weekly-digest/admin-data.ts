@@ -4,6 +4,8 @@ import { cache } from 'react';
 import type { Database, Json } from '@/lib/database.types';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { findOrphanedQualityReport } from './quality-report-carryover';
+import { resolveSocialPostAssets } from '@/lib/social/asset-resolver-server';
+import type { QualityIssue, ResolvedSocialAsset } from '@/lib/social/types';
 
 type Tables = Database['public']['Tables'];
 type Row<Name extends keyof Tables> = Tables[Name]['Row'];
@@ -46,6 +48,10 @@ export interface WeeklyDigestWorkspace {
   releaseEvents: WeeklyReleaseEventAdminRow[];
   socialPackage: WeeklySocialPackageAdminRow | null;
   socialPosts: WeeklySocialPostAdminRow[];
+  socialAssetPreviews: Record<
+    string,
+    { assets: ResolvedSocialAsset[]; blockers: QualityIssue[] }
+  >;
   socialPostReviews: WeeklySocialPostReviewAdminRow[];
   localeMap: WeeklyLocaleMapAdminRow[];
   engagementEvents: WeeklyEngagementEventAdminRow[];
@@ -324,6 +330,11 @@ export const getWeeklyDigestWorkspace = cache(
       ...assertQuery('provenance research artifacts', provenanceArtifactsResult),
     ]);
     const socialPosts = assertQuery('social posts', socialPostsResult);
+    const socialAssetPreviews = Object.fromEntries(
+      await Promise.all(
+        socialPosts.map(async (post) => [post.id, await resolveSocialPostAssets(post.asset_urls)] as const),
+      ),
+    );
     const socialPostIds = socialPosts.map((post) => post.id);
     const socialReviewsResult =
       socialPostIds.length > 0
@@ -358,6 +369,7 @@ export const getWeeklyDigestWorkspace = cache(
       releaseEvents,
       socialPackage,
       socialPosts,
+      socialAssetPreviews,
       socialPostReviews: assertQuery('social post reviews', socialReviewsResult),
       localeMap,
       engagementEvents,
