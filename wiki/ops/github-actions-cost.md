@@ -168,9 +168,22 @@ dependabot-PR #273: після мержу #290 усі три required-чеки �
 
 ## 7. Відкрите
 
-- `dependabot_security_updates` вимкнено, а `git push` повідомляє про **3 відкриті
-  вразливості** (2 high, 1 moderate) на default-гілці — на public це безкоштовно, варто
-  ввімкнути. (needs verification — які саме пакети)
+**`dependabot_security_updates` увімкнено власником 2026-08-18** (разом із secret scanning і
+push protection — усі три перевірені читанням `security_and_analysis`). Три алерти на
+`main` лишаються відкритими, PR на них Dependabot ще не відкрив:
+
+| Severity | Пакет | Уразливо | Патч | Суть |
+|---|---|---|---|---|
+| high | `nanoid` | < 3.3.18 | 3.3.18 | нескінченний цикл у custom-генераторі при size = 0 |
+| high | `pdfjs-dist` | ≥ 5.6.83, < 6.2.108 | 6.2.108 | виконання довільного JS при відкритті зловмисного PDF |
+| medium | `postcss` | ≤ 8.5.22 | 8.5.23 | читання довільних `.map` через `sourceMappingURL`, коли `from` не заданий |
+
+`pdfjs-dist` заслуговує окремої уваги: репозиторій **рендерить** PDF (`weekly:pdf:sample`,
+LinkedIn document), і `pdfkit` уже стоїть на паузі в `.github/dependabot.yml` через BREAKING
+notes — тобто бамп потребує ручної перевірки, а не автомержу.
+(source: `gh api repos/.../dependabot/alerts` live check 2026-08-18)
+
+Решта відкритого:
 - Форків поки 0. Коли з'являться — треба вирішити, чи ганяти e2e на fork-PR: секретів вони не
   отримують (`NEXT_PUBLIC_SUPABASE_URL` буде порожній), тож впадуть без користі.
 
