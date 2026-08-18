@@ -10,7 +10,8 @@ Start / retry Content Studio after succeeded jobs 2026-08-16, social package Lin
 2026-08-17, GitHub dispatch 503 recovery 2026-08-17, staged social-copy recovery and
 approval-ready Social boundary, clean Social job-history presentation 2026-08-17,
 owner PDF layout review 2026-08-18,
-Social media contract / Instagram 7-slide renderer / repair CLI 2026-08-18
+Social media contract / Instagram 7-slide renderer / repair CLI 2026-08-18,
+video_script hydration from normalized article 2026-08-18
 Last updated: 2026-08-18
 
 ---
@@ -280,6 +281,27 @@ Linked manual retry як і раніше створює окремий job, то
 (source: production `weekly_digest_generation_jobs` / `weekly_digest_artifacts` incident
 2026-08-17; `src/lib/weekly-digest/generation-worker.ts`,
 `src/lib/weekly-digest/linkedin-document.ts`, `generation-worker.test.ts`)
+
+### Video script hydration from normalized article (2026-08-18)
+
+`video_script` стартує після approved EN article. 18.08 production job
+`43b9fcf1-e9ba-46b8-80a8-93d775cec8f0` на `ai-weekly-2026-08-09` упав за ~1 с на
+`Cannot read properties of undefined (reading 'map')` ще до LLM: воркер кастив
+`artifact.content` як `WeeklyArticleMaster`, а поточний article має той самий
+нормалізований shape, що вже ламав LinkedIn (`editor_note` / `key_takeaways`,
+без `stories`).
+
+`generateVideoScript` тепер бере `masterBundleFromArtifacts(context).en`.
+Stories збираються з `weekly_digest_revision_items`; `claimIds`, hook,
+limitation, editorsView і discussionQuestion — зі `source_snapshot.content_studio`,
+бо Shorts-валідатор вимагає `factIds ⊆ story.claimIds`. Порожній normalized
+article більше не дає opaque `Code: unknown`: `requireVideoScriptArticle`
+кидає точну помилку до `provider_call_started`. Після деплою — linked retry
+саме на terminal `video_script`; `video_manifest` лишається в `waiting`, доки
+script не approved.
+(source: production job `43b9fcf1…` / artifact `cfd41b17…` live check 2026-08-18;
+`src/lib/weekly-digest/generation-worker.ts`,
+`src/lib/weekly-digest/video-script-llm.ts`, `generation-worker.test.ts`)
 
 Два наступні linked jobs (`f39b2429…`, `d716aaef…`) уже пройшли hydration, але terminal-failed
 на наступному детермінованому гейті: `LinkedIn document rendered 8 pages; expected 7.` Live

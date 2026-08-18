@@ -75,7 +75,7 @@ import {
   type WeeklyMasterRunOutcome,
 } from './master-engine';
 import type { UnresolvedIssue } from './master-repair';
-import { generateWeeklyVideoScript } from './video-script-llm';
+import { generateWeeklyVideoScript, requireVideoScriptArticle } from './video-script-llm';
 import {
   buildWeeklyResearchPack,
   isWeeklyResearchPack,
@@ -1605,6 +1605,36 @@ function masterInternalLinks(value: Json | null | undefined) {
   });
 }
 
+function revisionStudio(item: { source_snapshot?: Json | null }) {
+  return asRecord(asRecord(item.source_snapshot).content_studio);
+}
+
+function revisionStudioText(
+  studio: Record<string, Json | undefined>,
+  locale: 'en' | 'uk',
+  enKey: string,
+  ukKey: string,
+) {
+  return firstNonEmptyText(locale === 'uk' ? studio[ukKey] : studio[enKey]) ?? '';
+}
+
+function revisionStoryClaimIds(
+  stored: Record<string, Json | undefined>,
+  studio: Record<string, Json | undefined>,
+  item: {
+    rank: number;
+    summary_en: string;
+    why_en: string | null;
+    source_snapshot: Json;
+  },
+) {
+  const fromStored = stringArray(stored.claimIds);
+  if (fromStored.length > 0) return fromStored;
+  const fromStudio = stringArray(studio.claim_ids);
+  if (fromStudio.length > 0) return fromStudio;
+  return approvedFactsForItem(item).map((claim) => claim.id);
+}
+
 function masterStoriesFromRevision(
   context: MasterBundleContext,
   locale: 'en' | 'uk',
@@ -1617,6 +1647,7 @@ function masterStoriesFromRevision(
       persistedStories.find((story) => text(story.revisionItemId) === item.id) ??
       persistedStories[index] ??
       {};
+    const studio = revisionStudio(item);
     const fromStored = (field: string, fallback: string) =>
       firstNonEmptyText(stored[field], fallback) ?? '';
     const headline = fromStored('headline', localized(item.title_en, item.title_uk));
@@ -1626,15 +1657,24 @@ function masterStoriesFromRevision(
       placement: placementForRank(item.rank),
       headline,
       summary,
-      hook: fromStored('hook', summary),
+      hook: fromStored('hook', revisionStudioText(studio, locale, 'hook_en', 'hook_uk') || summary),
       body: fromStored('body', localized(item.body_en, item.body_uk)),
       why: fromStored('why', localized(item.why_en, item.why_uk)),
       practical: fromStored('practical', localized(item.practical_en, item.practical_uk)),
-      limitation: fromStored('limitation', ''),
+      limitation: fromStored(
+        'limitation',
+        revisionStudioText(studio, locale, 'limitation_en', 'limitation_uk'),
+      ),
       takeaway: fromStored('takeaway', localized(item.takeaway_en, item.takeaway_uk)),
-      claimIds: stringArray(stored.claimIds),
-      editorsView: fromStored('editorsView', ''),
-      discussionQuestion: fromStored('discussionQuestion', ''),
+      claimIds: revisionStoryClaimIds(stored, studio, item),
+      editorsView: fromStored(
+        'editorsView',
+        revisionStudioText(studio, locale, 'editors_view_en', 'editors_view_uk'),
+      ),
+      discussionQuestion: fromStored(
+        'discussionQuestion',
+        revisionStudioText(studio, locale, 'discussion_en', 'discussion_uk'),
+      ),
     };
   });
 }
@@ -2826,7 +2866,12 @@ async function generateVideoScript(job: ClaimedGenerationJob, tracker: Generatio
   if (!articleEn) {
     throw new Error('Approve the current English article before generating the video script.');
   }
-  const article = articleEn.content as unknown as WeeklyArticleMaster;
+  // Approved article artifacts are often the normalized revision shape
+  // (editor_note / key_takeaways, no stories). Casting content as
+  // WeeklyArticleMaster then calling stories.map is the 2026-08-18
+  // production TypeError. Rehydrate and validate before the provider timer.
+  const article = masterBundleFromArtifacts(context).en;
+  requireVideoScriptArticle(article);
   const startedAt = Date.now();
   await tracker.event({
     type: 'provider_call_started',

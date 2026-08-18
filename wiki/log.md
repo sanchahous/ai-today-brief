@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-18
 
+## 2026-08-18 — video_script undefined.map on normalized article
+
+**Джерело:** production job `43b9fcf1-e9ba-46b8-80a8-93d775cec8f0` на
+`ai-weekly-2026-08-09` (heartbeat 2026-08-18 11:55 UTC), artifact `cfd41b17…`,
+owner CMS screenshot.
+
+**Виявлено:** `generateVideoScript` кастив approved `article.content` як
+`WeeklyArticleMaster`. У проді content keys = `editor_note` / `key_takeaways`,
+без `stories` → `article.stories.map` → `Code: unknown` за 1 с, до LLM.
+
+**Змінено:** video job читає `masterBundleFromArtifacts`; `claimIds` і editorial
+поля зі `source_snapshot.content_studio`; `requireVideoScriptArticle` валить
+точно до `provider_call_started`.
+
+**Не зроблено:** linked retry на проді — чекає merge/deploy.
+
+---
+
 ## 2026-08-18 — Production social repair applied on `612df95c`
 
 **Джерело:** `npm run weekly:social:repair -- --package-id 612df95c-9c67-4db8-8f4b-209584d9ed68 --apply`,

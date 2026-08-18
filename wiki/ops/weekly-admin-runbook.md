@@ -4,7 +4,8 @@ Summary: покрокова інструкція для власника/ред�
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), production incidents / owner sessions
-2026-08-04…17, staged social-copy recovery 2026-08-17, Social tab channel-aware form 2026-08-18.
+2026-08-04…18, staged social-copy recovery 2026-08-17, Social tab channel-aware form 2026-08-18,
+video_script undefined.map 2026-08-18.
 Last updated: 2026-08-18
 
 ---
@@ -344,6 +345,15 @@ LinkedIn PDF, package або четвертому post — наступний li
 `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/github-dispatch.ts`,
 `src/lib/weekly-digest/social-checkpoint.ts`, production incidents + прод-Supabase
 `mdiqfatpqczwqghwttpm` live check 2026-08-17)
+
+Якщо `video_script` впав на ~10% одразу після «Starting video script provider call» з
+`Cannot read properties of undefined (reading 'map')` і `Code: unknown`, це не збій
+провайдера: approved `article` artifact нормалізований і не несе `stories`. Не тисни
+retry, доки фікс hydration не в `main`. Після деплою — **Create linked retry** саме на
+terminal `video_script`; `video_manifest` сам зрушить з `waiting`, коли script буде
+approved. Той самий корневий дефект, що LinkedIn 17.08, тільки воркер кастив
+`content` напряму замість `masterBundleFromArtifacts`.
+(source: production job `43b9fcf1-e9ba-46b8-80a8-93d775cec8f0`, 2026-08-18 11:55 UTC)
 
 ### Release: approve → schedule → (за потреби) postpone → pause
 
