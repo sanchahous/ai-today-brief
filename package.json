@@ -41,6 +41,8 @@
     "weekly:doctor": "node --env-file-if-exists=.env.local --import tsx pipeline/scripts/weekly-doctor.ts",
     "weekly:sandbox": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx pipeline/scripts/weekly-master-sandbox.ts",
     "weekly:social:repair": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/repair-weekly-social-package.ts",
+    "weekly:social:repair-copy": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/repair-weekly-social-copy.ts",
+    "weekly:social:approve": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx scripts/approve-weekly-social-package.ts",
     "content-sim": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx pipeline/scripts/content-sim.ts",
     "pr:check": "npm run ci:check && npm run typecheck && npm run lint && npm run e2e:check && npm run wiki:check && npm run build",
     "e2e": "playwright test",

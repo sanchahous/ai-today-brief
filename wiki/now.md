@@ -28,12 +28,18 @@ Last updated: 2026-08-18
   `src/lib/weekly-digest/generation-worker.ts`,
   `src/lib/weekly-digest/video-script-llm.ts`)
 
+- **Social package `612df95c` approved (2026-08-18, #296).** Instagram owner апрувнув у UI;
+  повторний Save на `approved` падав: «Social approval/schedule transitions require a workflow RPC».
+  Решту каналів увімкнено й апрувнуто; package `approved`. Save metadata тепер іде через
+  admin client. Copy/approve CLI: `weekly:social:repair-copy`, `weekly:social:approve`.
+  Пости не публікуються, доки digest не `published` (слоти 2026-08-24).
+  (source: production live check 2026-08-18, `src/app/admin/(cms)/weekly/actions.ts`,
+  `scripts/repair-weekly-social-copy.ts`, `scripts/approve-weekly-social-package.ts`)
+
 - **Social tab media contract на `main` (2026-08-18, #294) + repair follow-up.** `artifactId`
   замість 7-денного signed URL, selector не бере LinkedIn PDF як картинку, Instagram —
   7 JPEG 1080×1350. Legacy 8-slide `content_parts` у `weekly:social:repair` мапляться на
-  7-slide spec (takeaway = останній слайд, headline/body під 72/54/120). Production apply
-  на пакет `612df95c-…` уже виконано; канали лишаються Disable, доки owner не Save & approve
-  і Re-enable.
+  7-slide spec (takeaway = останній слайд, headline/body під 72/54/120).
   (source: `src/lib/social/asset-ref.ts`, `src/lib/weekly-digest/repair-social-package.ts`,
   `src/lib/social/hook-candidate.ts`, `src/lib/weekly-digest/instagram-carousel-render.ts`,
   `scripts/repair-weekly-social-package.ts`)
