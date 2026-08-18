@@ -1,21 +1,15 @@
 name: SonarQube
 
 on:
-  # Sonar analyses TS/JS quality, so it only needs to run when code changes. Skip
-  # wiki/markdown/SQL-migration/workflow-only PRs (no code to scan). PR-only: the
-  # post-merge push to main re-scanned an identical tree (duplicate spend).
-  # NOTE: once Sonar is wired with SONAR_TOKEN, add `push: [main]` back so the main
-  # branch baseline updates — until then there is nothing to scan on main.
+  # NOTE ON `paths-ignore` (removed 2026-08-18): a workflow skipped by a path filter
+  # never reports a check at all, so a docs-only PR would sit forever on
+  # "Expected — waiting for status" once this is a required check on `main`. The
+  # filter therefore moved INSIDE the job — see the first step. PR-only: the
+  # post-merge push to main re-scanned an identical tree (duplicate work).
+  # NOTE: once the main-branch baseline matters, add `push: [main]` back.
   workflow_dispatch:
   pull_request:
     branches: [main]
-    paths-ignore:
-      - 'wiki/**'
-      - 'raw/**'
-      - 'artifacts/**'
-      - '**/*.md'
-      - 'supabase/migrations/**'
-      - '.github/**'
 
 concurrency:
   group: sonar-${{ github.event.pull_request.number || github.ref }}
@@ -25,37 +19,70 @@ jobs:
   sonar:
     name: SonarQube Scan
     runs-on: ubuntu-latest
-    # Scan only runs once SONAR_TOKEN is set (see step guard) — keeps CI green until Sonar is wired.
+    timeout-minutes: 20
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
+      # Sonar analyses TS/JS quality, so it only needs to run when code changes:
+      # skip wiki / markdown / SQL-migration / workflow-only PRs (nothing to scan).
+      # Unlike e2e this does NOT skip `pipeline/` — that is scanned code.
+      - name: Decide whether there is code to scan
+        id: scope
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Not a pull request — scanning."
+            exit 0
+          fi
+          FILES=$(gh api --paginate \
+            "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename')
+          echo "Changed files:"
+          echo "$FILES"
+          if printf '%s\n' "$FILES" | grep -qvE '^(wiki/|raw/|artifacts/|supabase/migrations/|\.github/)|\.md$'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "-> code changed, scanning."
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "-> docs/ops-only change, skipping the scan (this check still reports green)."
+          fi
+
       - name: Checkout
+        if: steps.scope.outputs.run == 'true'
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup Node
+        if: steps.scope.outputs.run == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
 
       - name: Install dependencies
+        if: steps.scope.outputs.run == 'true'
         run: npm ci
 
       - name: Unit tests + coverage (≥70% logic scope)
+        if: steps.scope.outputs.run == 'true'
         run: npm run verify:coverage
 
       - name: Build (integrity check)
+        if: steps.scope.outputs.run == 'true'
         run: npm run build
 
       - name: Sonar report (for agents)
-        if: env.SONAR_TOKEN != ''
+        if: steps.scope.outputs.run == 'true' && env.SONAR_TOKEN != ''
         run: npm run sonar:report -- --out sonar-report.md
         continue-on-error: true
 
       - name: Upload Sonar report artifact
-        if: env.SONAR_TOKEN != ''
+        if: steps.scope.outputs.run == 'true' && env.SONAR_TOKEN != ''
         uses: actions/upload-artifact@v7
         with:
           name: sonar-report
@@ -63,7 +90,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: SonarQube Scan
-        if: env.SONAR_TOKEN != ''
+        if: steps.scope.outputs.run == 'true' && env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@v8
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

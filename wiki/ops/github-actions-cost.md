@@ -93,20 +93,56 @@ e2e + sonar + deps-integrity. Тобто CI-профіль — це похідн
 - **`workers: 1 → 2`** у `playwright.config.ts` — два воркери вміщаються поруч із `next start`
   на 4 ядрах.
 - **`timeout-minutes: 40`** на e2e (стелі не було) + Telegram-алерт на падіння в `main`.
+- **`paths-ignore` перенесено з `on:` всередину job** (e2e і sonarqube). Причина не в
+  швидкості: workflow, пропущений фільтром шляхів, **не репортує чек узагалі**, тому
+  docs-only PR завис би назавжди на «Expected — waiting for status», щойно чек стане
+  required на `main`. Тепер workflow запускається завжди, першим кроком читає список файлів
+  з API (без checkout) і на нерелевантному PR завершується зеленим за ~10 с.
 - **Secret scanning + push protection увімкнено.** Історію перевірено окремо: 856 комітів,
   жодного ключа, `.env`/`.env.local` ніколи не трекались, скан дав **0 алертів**.
   (source: `gh api repos/.../secret-scanning/alerts` live check 2026-08-18)
+
+### Виміряний результат
+
+Перший живий ран після змін (PR #290, Actions run `32110561999`) — **455 с проти 1175 с**
+на попередньому PR #282, тобто **19.6 → 7.6 хв**:
+
+| Крок | Було | Стало |
+|---|---|---|
+| Run E2E tests | 655–678 с | **276 с** |
+| Build | 141–371 с | **59 с** |
+| Install Playwright browsers | 44–84 с | 95 с (кеш ще холодний) |
+
+Білд за 59 с при **холодному** кеші (`Restore` віддав 0 с — на `main` запису ще не було)
+емпірично підтверджує 4-ядерний раннер. Кеші почнуть віддавати після першого ж рану на
+`main`, що зніме ще ~95 с. (source: `/actions/runs/32110561999/jobs` live check 2026-08-18)
 
 Свідомо **не** чіпалося: частота продуктових кронів (`Daily Pipeline` 6/день —
 рішення PR #128 про свіжість брифу; `Weekly generation worker` — реальна LLM-генерація),
 `npm run build` у SonarQube (дублює Vercel preview build, але Sonar не на критичному шляху PR),
 `Deps integrity`.
 
-## 6. Відкрите
+## 6. Захист гілки `main`
 
-- Розрахунок «~19 хв → ~9-10 хв» **не виміряний живим раном** — підтвердиться першим PR, там
-  же видно буде, чи раннер справді 4-ядерний. (needs verification)
-- `dependabot_security_updates` вимкнено — на public безкоштовно, варто ввімкнути.
+До 2026-08-18 гілка `main` **не була захищена взагалі** — `GET /branches/main/protection`
+віддавав 404. Два місця в репозиторії спиралися на протилежне і були хибними:
+
+- `deps-integrity.yml` у шапці називає себе «suitable to mark as a required status check on
+  `main` so a broken lockfile can never merge» — required-чеком він не був;
+- `dependabot-automerge.yml` прямо стверджує «Branch protection already gates the squash on
+  required checks — enabling auto-merge is enough». Передумова хибна: без захисту
+  `gh pr merge --auto --squash` міг завести patch/minor-бамп у `main` без жодної зеленої
+  перевірки.
+
+Саме тому фільтр шляхів довелося перенести всередину job (§5): без цього required-чеки
+вішали б будь-який docs-only PR. (source: `gh api .../branches/main/protection` live check
+2026-08-18)
+
+## 7. Відкрите
+
+- `dependabot_security_updates` вимкнено, а `git push` повідомляє про **3 відкриті
+  вразливості** (2 high, 1 moderate) на default-гілці — на public це безкоштовно, варто
+  ввімкнути. (needs verification — які саме пакети)
 - Форків поки 0. Коли з'являться — треба вирішити, чи ганяти e2e на fork-PR: секретів вони не
   отримують (`NEXT_PUBLIC_SUPABASE_URL` буде порожній), тож впадуть без користі.
 
