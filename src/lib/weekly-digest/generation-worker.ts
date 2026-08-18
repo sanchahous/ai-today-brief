@@ -3388,9 +3388,13 @@ async function generatePdf(job: ClaimedGenerationJob) {
         text(asRecord(asRecord(item.source_snapshot).content_studio).version) ===
         WEEKLY_CONTENT_STUDIO_VERSION,
     );
-    if (contentStudioPdf && (document.length < 10 || document.length > 16)) {
+    // Cover, contents, one page per top-3 feature, one shared radar page, close.
+    // Six when an edition has no radar items, seven otherwise; the extra page of
+    // slack keeps the guard from failing on a layout tweak rather than on a
+    // regression. Editions used to run 14-21 pages, which readers do not finish.
+    if (contentStudioPdf && (document.length < 6 || document.length > 8)) {
       throw new Error(
-        `Content Studio PDF is ${document.length} pages; the approved A4 contract is 10–16 pages.`,
+        `Content Studio PDF is ${document.length} pages; the approved A4 contract is 6–8 pages.`,
       );
     }
     if (document.length > 40) {
