@@ -6,6 +6,26 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-18
 
+## 2026-08-18 — Video Save stored scenes array as narration_plan
+
+**Джерело:** production `video_script` v2 `4945648b…` на Revision 4
+(`ai-weekly-2026-08-09`); job `a8c9040f…` упав на «does not contain the v3
+script»; коригує запис «video_manifest companion missing» від 2026-08-18.
+
+**Виявлено:** вкладка Video рендерить Scene JSON з `narration_plan.scenes`.
+Save записував цей масив назад у `narration_plan`, стираючи title/hook/shorts.
+Після фрази о 16:46 Києва approved v2 став масивом з 7 сцен. Manifest job
+тому не стартував з валідним планом.
+
+**Змінено:** прод-артефакт відновлено (v1 object + v2 script/scenes);
+`video_manifest` succeeded → artifact `e7077c8f…` `weekly-video-v3`
+`in_review`. Save тепер мержить сцени на поточний generated plan.
+
+**Власник зараз:** Video → Approve weekly-video-v3. Не Save Video contract,
+доки фікс не в проді.
+
+---
+
 ## 2026-08-18 — video_manifest companion missing after script retry
 
 **Джерело:** owner CMS (Release `video_manifest:en`, Video tab без enqueue),

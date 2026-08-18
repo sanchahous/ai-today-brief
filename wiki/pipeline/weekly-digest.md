@@ -5,7 +5,8 @@ Summary: як працює weekly-дайджест у проді: оркестр
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
 `supabase/migrations/20260804*`–`20260809*`, live checks 2026-08-04…18,
 editorial-voice, PDF page-cap, seed-content, social recovery, PDF v3 / Social tab,
-video_script hydration and missing video_manifest companion 2026-08-18
+video_script hydration and missing video_manifest companion 2026-08-18,
+Video Save dropped v3 narration_plan 2026-08-18
 Last updated: 2026-08-18
 
 ---
@@ -315,6 +316,18 @@ script is approved» лишався після Approve. У прод-БД для 
 (source: owner CMS + `weekly_digest_generation_jobs` live check 2026-08-18;
 `src/components/admin/weekly-workspace.tsx`, `src/app/admin/(cms)/weekly/actions.ts`,
 `src/lib/weekly-digest/preflight.ts`)
+
+### Video Save dropped v3 plan (2026-08-18)
+
+Video tab Save постив Scene JSON (масив) у `content.narration_plan`. Воркер
+чекає об'єкт `{title, hook, narration, scenes, shorts}`. Owner phrase-fix
+на `ai-weekly-2026-08-09` v2 зробив `narration_plan` масивом з 7 сцен;
+`video_manifest` упав з «does not contain the v3 script». Прод-артефакт
+відновлено з v1 object + v2 script; job `a8c9040f…` succeeded →
+`e7077c8f…` `weekly-video-v3` `in_review`. Save тепер мержить сцени на
+поточний generated plan (`video-script-content.ts`).
+(source: production artifacts `e9dbd228…` / `4945648b…` / job `a8c9040f…`
+2026-08-18, `src/lib/weekly-digest/video-script-content.ts`)
 
 Два наступні linked jobs (`f39b2429…`, `d716aaef…`) уже пройшли hydration, але terminal-failed
 на наступному детермінованому гейті: `LinkedIn document rendered 8 pages; expected 7.` Live

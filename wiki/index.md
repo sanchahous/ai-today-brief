@@ -10,7 +10,8 @@ social package LinkedIn recovery, GitHub dispatch 503 recovery, staged social ch
 LinkedIn 7-page overflow bounds, approval-ready Social repair, bounded social provider ladder та
 reliable social routing/candidate fallback, clean Social job history 2026-08-17,
 Social tab media contract 2026-08-18, Social approved-row Save fix 2026-08-18,
-video_script hydration 2026-08-18, video_manifest companion enqueue 2026-08-18
+video_script hydration 2026-08-18, video_manifest companion enqueue 2026-08-18,
+video script Save dropped v3 plan 2026-08-18
 Last updated: 2026-08-18
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·

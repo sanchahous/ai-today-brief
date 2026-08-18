@@ -4,22 +4,27 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…18, Content Sim plan,
 weekly illustration B1-fix, Social package recovery 2026-08-17, Social tab implementation 2026-08-18,
-video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18
+video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18,
+video script Save dropped v3 plan 2026-08-18
 Last updated: 2026-08-18
 
 ---
 
 ## Стан репозиторію
 
+- **`video_manifest` зібрано (2026-08-18), чекає Approve.** Job
+  `a8c9040f…` → artifact `e7077c8f…` (`weekly-video-v3`, `in_review`) на
+  `ai-weekly-2026-08-09` / Revision 4. Власник: вкладка **Video** →
+  **Approve version** на манифесті. Не тиснути Save у Video contract (до
+  деплою save-plan фіксу), не регенерувати approved script, не Start
+  Content Studio. Save після правки фрази записав `narration_plan` як
+  масив сцен і воркер відхилив job; план відновлено з v1 + текст v2.
+  (source: prod jobs/artifacts 2026-08-18, `video-script-content.ts`)
+
 - **Немає рядка `video_manifest` після approved script (2026-08-18), PR #298.**
-  Наступний гейт `video_manifest:en`. Release каже enqueue, Video tab мав лише
-  Regenerate script і вічний напис «cannot generate until this script is
-  approved». Companion з `queuePostMasterJobs` не переїхав на активну
-  ревізію `3e955086`. Фікс: кнопка **Generate manifest**, upsert companion
-  після script success / enqueue, підписи `weekly-video-v3`. Після деплою —
-  Video → Generate manifest, не регенерувати approved script і не тиснути
-  Start Content Studio.
-  (source: owner CMS 2026-08-18, `weekly-workspace.tsx`, `generation-worker.ts`)
+  Кнопка **Generate manifest** і companion upsert — у `main`. На цьому
+  випуску рядок уже створено вручну й job succeeded; кнопка для наступних.
+  (source: PR #298, `weekly-workspace.tsx`)
 
 - **`video_script` hydration на `main` (2026-08-18, #297).** Production job
   `43b9fcf1…` на `ai-weekly-2026-08-09` rev. `3e955086` падав на
