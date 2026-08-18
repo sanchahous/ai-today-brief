@@ -61,6 +61,7 @@ import {
   type WeeklyResearchPack,
   type WeeklyVideoScript,
 } from './content-studio';
+import { videoScriptFromArtifactContent } from './video-script-content';
 import {
   type EditorialGenerationMetadata,
   type WeeklyMasterInputStory,
@@ -1830,11 +1831,11 @@ function videoScriptFromArtifacts(
       artifact.artifact_type === 'video_script' && artifact.locale === 'en' && artifact.is_current,
   );
   if (!videoScript) throw new Error('Approved video-script artifact is required.');
-  const narrationPlan = asRecord(videoScript.content).narration_plan;
-  if (!narrationPlan || typeof narrationPlan !== 'object' || Array.isArray(narrationPlan)) {
+  const parsed = videoScriptFromArtifactContent(videoScript.content);
+  if (!parsed) {
     throw new Error('Video script artifact does not contain the v3 script.');
   }
-  return narrationPlan as unknown as WeeklyVideoScript;
+  return parsed;
 }
 
 async function socialAssetsForChannel(

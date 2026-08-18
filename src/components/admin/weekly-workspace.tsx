@@ -12,6 +12,7 @@ import type { SocialChannel } from '@/lib/social/types';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
+import { scenesFromVideoScriptContent } from '@/lib/weekly-digest/video-script-content';
 import type {
   WeeklyArtifactAdminRow,
   WeeklyArtifactReviewAdminRow,
@@ -4206,11 +4207,9 @@ function VideoPanel({
 
   const scriptText = textFrom(script?.content, 'script', 'text', 'body');
   const manifestContent = asRecord(manifest?.content);
-  const scriptContent = asRecord(script?.content);
   const scenes =
     asRecord(manifestContent.longForm).scenes ??
-    asRecord(scriptContent.narration_plan).scenes ??
-    [];
+    scenesFromVideoScriptContent(script?.content);
   const scenesJson = jsonText(scenes, '[]');
   const captionsEnText = textFrom(captionsEn?.content, 'vtt', 'srt', 'text');
   const captionsUkText = textFrom(captionsUk?.content, 'vtt', 'srt', 'text');

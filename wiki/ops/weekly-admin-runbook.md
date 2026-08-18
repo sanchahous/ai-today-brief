@@ -5,7 +5,7 @@ Summary: покрокова інструкція для власника/ред�
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), production incidents / owner sessions
 2026-08-04…18, staged social-copy recovery 2026-08-17, Social tab channel-aware form 2026-08-18,
-approved-row Save workflow RPC 2026-08-18, video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18.
+approved-row Save workflow RPC 2026-08-18, video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18, Video Save dropped v3 plan 2026-08-18.
 Last updated: 2026-08-18
 
 ---
@@ -384,8 +384,15 @@ Release тоді каже «Open Video → enqueue video_manifest», але кн
 
 Наступні `video_script` success і клік **Generate script** самі upsert-ять companion
 тим самим стабільним ключем.
+
+**Save на Video contract** має лишати повний plan object (`title`, `hook`,
+`scenes`, `shorts`). Поле Scene JSON — лише масив сцен; якщо його записати
+як `narration_plan`, job `video_manifest` падає з «does not contain the v3
+script». Після правки фрази 18.08 саме це сталось на v2. До деплою фіксу
+не тисни Save на вже approved script — лише **Approve** манифесту.
 (source: production `weekly_digest_generation_jobs` live check owner 2026-08-18,
-`src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/generation-worker.ts`)
+`src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/generation-worker.ts`,
+`src/lib/weekly-digest/video-script-content.ts`)
 
 Той самий корневий дефект hydration, що LinkedIn 17.08, тільки воркер кастив
 `content` напряму замість `masterBundleFromArtifacts`.

@@ -29,6 +29,7 @@ import {
 } from '@/lib/social/schedule';
 import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial-validation';
 import { contentStudioVideoManifestKey } from '@/lib/weekly-digest/content-studio-queue';
+import { videoScriptFromArtifactContent } from '@/lib/weekly-digest/video-script-content';
 import { backendForGenerationJob } from '@/lib/weekly-digest/generation-control';
 import { dispatchQueuedWeeklyGenerationJob } from '@/lib/weekly-digest/github-dispatch';
 import {
@@ -899,6 +900,40 @@ function localKyivToIso(value: string) {
   return kyivWallClockToUtc(match[1], Number(match[2]), Number(match[3])).toISOString();
 }
 
+/**
+ * Video tab Save posts scenes JSON (an array). Persist that array as
+ * narration_plan and the worker cannot read shorts. Merge onto the current
+ * generated plan so a phrase edit does not drop the v3 object.
+ */
+async function videoScriptPlanFromSave(formData: FormData, script: string, scenes: string) {
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const revisionId = requiredString(formData, 'revision_id');
+  const admin = getSupabaseAdmin();
+  const { data, error } = await admin
+    .from('weekly_digest_artifacts')
+    .select('content')
+    .eq('weekly_digest_id', weeklyDigestId)
+    .eq('revision_id', revisionId)
+    .eq('artifact_type', 'video_script')
+    .eq('is_current', true)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  const parsedScenes = scenes ? parseJson(scenes, 'Scene structure') : undefined;
+  const merged = videoScriptFromArtifactContent(
+    {
+      ...(script ? { script } : {}),
+      ...(parsedScenes === undefined ? {} : { narration_plan: parsedScenes }),
+    },
+    jsonRecord(data?.content).narration_plan,
+  );
+  if (!merged) {
+    throw new Error(
+      'Scene structure must keep title, hook, scenes and shorts from the generated script. Saving scenes-only JSON drops the Ukrainian Shorts and blocks the video manifest.',
+    );
+  }
+  return merged;
+}
+
 export async function saveWeeklyVideoAction(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const script = optionalString(formData, 'script_en');
@@ -1005,13 +1040,15 @@ export async function saveWeeklyVideoAction(formData: FormData) {
   }
 
   if (script || scenes) {
+    const plan = await videoScriptPlanFromSave(formData, script, scenes);
     await persist({
       type: 'video_script',
       locale: 'en',
       slot: 'video-script:en',
       content: {
-        script,
-        ...(scenes ? { narration_plan: parseJson(scenes, 'Scene structure') } : {}),
+        script: plan.narration,
+        // WeeklyVideoScript is the JSONB plan the worker already persisted.
+        narration_plan: plan as unknown as Json,
       },
       metadata: { workflow_status: workflowStatus },
     });
