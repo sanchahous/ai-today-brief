@@ -5,7 +5,7 @@ Summary: покрокова інструкція для власника/ред�
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), production incidents / owner sessions
 2026-08-04…18, staged social-copy recovery 2026-08-17, Social tab channel-aware form 2026-08-18,
-approved-row Save workflow RPC 2026-08-18, video_script undefined.map 2026-08-18.
+approved-row Save workflow RPC 2026-08-18, video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18.
 Last updated: 2026-08-18
 
 ---
@@ -364,8 +364,30 @@ LinkedIn PDF, package або четвертому post — наступний li
 `Cannot read properties of undefined (reading 'map')` і `Code: unknown`, це не збій
 провайдера: approved `article` artifact нормалізований і не несе `stories`. Не тисни
 retry, доки фікс hydration не в `main`. Після деплою — **Create linked retry** саме на
-terminal `video_script`; `video_manifest` сам зрушить з `waiting`, коли script буде
-approved. Той самий корневий дефект, що LinkedIn 17.08, тільки воркер кастив
+terminal `video_script`. Hydration уже в `main` (#297); якщо script approved —
+не регенеруй його.
+
+### Video: script → Generate manifest → Approve v3
+
+`queuePostMasterJobs` ставить і `video_script`, і companion `video_manifest` (стабільний
+ключ `…:video-manifest:en`) у `waiting`. Claim зрушує манифест, коли є approved script,
+3 approved Top 3 `story_image` і ready `cover`.
+
+Якщо рядка `video_manifest` **немає взагалі** (навіть `waiting`) — це не кеш. Типовий
+збій: нова ревізія після Content Studio або retry `video_script` без companion.
+Release тоді каже «Open Video → enqueue video_manifest», але кнопки не було.
+
+Після деплою фіксу: вкладка **Video** → **Generate manifest** (активна лише коли script
+`approved`). Не регенеруй уже схвалений скрипт і не тисни Start Content Studio.
+Картка артефакту — **weekly-video-v3 manifest** (не v2). Job може лишитись у
+`waiting` з `status_reason`, доки немає трьох approved story images і cover.
+
+Наступні `video_script` success і клік **Generate script** самі upsert-ять companion
+тим самим стабільним ключем.
+(source: production `weekly_digest_generation_jobs` live check owner 2026-08-18,
+`src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/generation-worker.ts`)
+
+Той самий корневий дефект hydration, що LinkedIn 17.08, тільки воркер кастив
 `content` напряму замість `masterBundleFromArtifacts`.
 (source: production job `43b9fcf1-e9ba-46b8-80a8-93d775cec8f0`, 2026-08-18 11:55 UTC)
 
@@ -406,7 +428,8 @@ Postpone не створює нову RPC — це той самий Pause → A
 | `social_copy` terminal failed на `rendered 8 pages; expected 7` | Довгий editorial copy переповнив LinkedIn PDF | Після deploy 7-page bounds створи **один** linked retry; він відновить збережені канали й слайди |
 | Linked `social_copy` retry знову показує `channels` від 0% | Немає валідного checkpoint для поточного approved source hash | Перевір, чи не змінилась revision/locale map; якщо ні — дивись `checkpoint_restored`/`checkpoint_saved` у Timeline |
 | Release: немає story/cover | Файл не завантажено | Visuals → скопіюй промпт → згенеруй у своєму інструменті → upload. Не тисни Regenerate |
-| Release blocked на video | Немає Remotion pipeline / captions | Owner override лише для trial (див. preflight) |
+| Release: немає `video_manifest` job, хоча script approved | Companion-рядок ніколи не створився (падіння/retry `video_script` без post-master queue) | Video → **Generate manifest**. Не регенеруй скрипт |
+| Release blocked на video | Немає Remotion pipeline / captions, або манифест ще не Approve | Generate/Approve weekly-video-v3; Owner override лише для trial |
 | PDF: сторінки радар-історій (4-7) виглядають скорочено (без картинки/панелей) | Так задумано з 2026-08-07 — повний розворот тепер лише для Top 3 | Нормально, не баг; деталі — [weekly-digest](../pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07) |
 
 ## Master **failed** без зрозумілої причини — що робити (з 2026-08-09)

@@ -4214,9 +4214,9 @@ function VideoPanel({
   const scenesJson = jsonText(scenes, '[]');
   const captionsEnText = textFrom(captionsEn?.content, 'vtt', 'srt', 'text');
   const captionsUkText = textFrom(captionsUk?.content, 'vtt', 'srt', 'text');
-  const scriptJob = latestJobForSlot(workspace.generationJobs, 'video_script', {
-    slotKey: 'video-script:en',
-  });
+  const scriptJob = latestJobForSlot(workspace.generationJobs, 'video_script');
+  const manifestJob = latestJobForSlot(workspace.generationJobs, 'video_manifest');
+  const scriptApproved = script?.review_status === 'approved';
 
   return (
     <div className="grid gap-6">
@@ -4261,9 +4261,11 @@ function VideoPanel({
         </div>
         {script ? (
           <div className="w-full">
-            <p className="text-xs text-slate-500">
-              video_manifest cannot generate until this script is approved.
-            </p>
+            {!scriptApproved ? (
+              <p className="text-xs text-slate-500">
+                video_manifest cannot generate until this script is approved.
+              </p>
+            ) : null}
             <ArtifactReview
               digestId={workspace.digest.id}
               artifact={script}
@@ -4271,6 +4273,49 @@ function VideoPanel({
               canReview={canReview && script.revision_id === workspace.revision?.id}
             />
           </div>
+        ) : null}
+      </div>
+
+      <div className={`${PANEL} flex flex-wrap items-center justify-between gap-3`}>
+        <div>
+          <h3 className="text-lg font-bold text-white">weekly-video-v3 manifest</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Assembles the approved script, three approved Top 3 story images and a ready cover into
+            the HeyGen/YouTube handoff. If Generation jobs has no video_manifest row, enqueue it
+            here — the job waits until those gates pass.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {manifestJob ? <StatusPill value={manifestJob.status} /> : null}
+          <form action={enqueueWeeklyGenerationAction}>
+            <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+            <input type="hidden" name="revision_id" value={revision.id} />
+            <input type="hidden" name="job_type" value="video_manifest" />
+            <input type="hidden" name="locale" value="en" />
+            <input type="hidden" name="slot_key" value="video-manifest:en" />
+            <ActionSubmitButton
+              idleLabel={manifest ? 'Regenerate manifest' : 'Generate manifest'}
+              pendingLabel="Queueing manifest…"
+              disabled={!canEdit || !scriptApproved}
+              className={PRIMARY}
+            />
+          </form>
+        </div>
+        {!scriptApproved ? (
+          <p className="w-full text-xs text-slate-500">
+            Approve the English script above before enqueueing the manifest.
+          </p>
+        ) : null}
+        {manifestJob?.status === 'waiting' ? (
+          <p className="w-full text-xs text-slate-500">
+            {manifestJob.status_reason ||
+              'Waiting for an approved script, three approved Top 3 story images, and a ready cover.'}
+          </p>
+        ) : null}
+        {manifestJob?.last_error ? (
+          <p className="w-full rounded-xl border border-red-400/25 bg-red-400/8 px-3 py-2 text-xs whitespace-pre-wrap text-red-100">
+            {manifestJob.last_error}
+          </p>
         ) : null}
       </div>
 
@@ -4500,7 +4545,7 @@ function VideoPanel({
             artifact={manifest}
             reviews={workspace.artifactReviews}
             canReview={canReview}
-            label="weekly-video-v2 manifest"
+            label="weekly-video-v3 manifest"
           />
           <ArtifactCard
             digestId={workspace.digest.id}

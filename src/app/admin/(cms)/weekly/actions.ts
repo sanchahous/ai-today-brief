@@ -28,6 +28,7 @@ import {
   weeklyDigestTriggerDateForManualCreate,
 } from '@/lib/social/schedule';
 import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial-validation';
+import { contentStudioVideoManifestKey } from '@/lib/weekly-digest/content-studio-queue';
 import { backendForGenerationJob } from '@/lib/weekly-digest/generation-control';
 import { dispatchQueuedWeeklyGenerationJob } from '@/lib/weekly-digest/github-dispatch';
 import {
@@ -934,7 +935,7 @@ export async function saveWeeklyVideoAction(formData: FormData) {
       .eq('is_current', true)
       .maybeSingle();
     if (manifestError || !manifestArtifact || manifestArtifact.review_status !== 'approved') {
-      throw new Error('Approve the current weekly-video-v2 manifest before importing a result.');
+      throw new Error('Approve the current weekly-video-v3 manifest before importing a result.');
     }
     const manifestContent =
       manifestArtifact.content &&
@@ -1496,10 +1497,36 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
     p_input: input as Json,
   });
   if (error && !/duplicate|unique/i.test(error.message)) throw new Error(error.message);
+  if (jobType === 'video_script') {
+    await ensureVideoManifestCompanionJob(db, weeklyDigestId, revisionId);
+  }
   if (backendForGenerationJob(jobType) === 'github_actions' && queuedJob?.id) {
     await dispatchQueuedWeeklyGenerationJob(queuedJob.id);
   }
   revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+/**
+ * video_manifest is supposed to sit in `waiting` from post-master queue.
+ * Linked retry / Generate script does not recreate that row, so enqueueing
+ * the script also upserts the stable companion key.
+ */
+async function ensureVideoManifestCompanionJob(
+  db: Awaited<ReturnType<typeof getSupabaseServer>>,
+  weeklyDigestId: string,
+  revisionId: string,
+) {
+  const { error } = await db.rpc('queue_weekly_digest_generation_job', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_revision_id: revisionId,
+    p_job_type: 'video_manifest',
+    p_idempotency_key: contentStudioVideoManifestKey({
+      digestId: weeklyDigestId,
+      revisionId,
+    }),
+    p_input: { locale: 'en', slot_key: 'video-manifest:en' } as Json,
+  });
+  if (error && !/duplicate|unique/i.test(error.message)) throw new Error(error.message);
 }
 
 /**

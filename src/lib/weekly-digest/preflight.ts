@@ -349,7 +349,7 @@ const ARTIFACT_GATE_GUIDANCE: Record<WeeklyArtifactType, ArtifactGateGuidance> =
   video_manifest: {
     tab: 'video',
     fixMissing:
-      'Open Video → enqueue video_manifest (after the approved script) → Approve the weekly-video-v3 manifest.',
+      'Open Video → Generate manifest (after the approved script) → Approve the weekly-video-v3 manifest.',
     fixUnapproved: 'Open Video → review the weekly-video-v3 manifest → Approve version (owner).',
   },
   video_preview: {
@@ -613,7 +613,7 @@ export function validateWeeklyDigestPreflight(input: WeeklyPreflightInput): Week
   requireArtifact('pdf', { locale: 'uk', label: 'Ukrainian PDF' });
 
   requireArtifact('video_script', { locale: 'en', label: 'Approved English video script' });
-  requireArtifact('video_manifest', { locale: 'en', label: 'Approved weekly-video-v2 manifest' });
+  requireArtifact('video_manifest', { locale: 'en', label: 'Approved weekly-video-v3 manifest' });
   requireArtifact('video_final', { locale: 'en', label: 'Final YouTube video' });
   requireArtifact('captions', { locale: 'en', label: 'English captions' });
   requireArtifact('captions', { locale: 'uk', label: 'Ukrainian captions' });
