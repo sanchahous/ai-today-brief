@@ -4,6 +4,7 @@ import {
   contentStudioMasterKey,
   contentStudioResearchKey,
   contentStudioResearchRetryNonce,
+  contentStudioVideoManifestKey,
   isWeeklyGenerationInFlight,
   revisionItemIdFromJobInput,
   shouldEnqueueContentStudioMaster,
@@ -35,6 +36,14 @@ describe('contentStudioMasterKey', () => {
   it('matches the stable master key used on first start', () => {
     expect(contentStudioMasterKey({ digestId, revisionId })).toBe(
       `${WEEKLY_CONTENT_STUDIO_VERSION}:${digestId}:${revisionId}:master`,
+    );
+  });
+});
+
+describe('contentStudioVideoManifestKey', () => {
+  it('matches the post-master companion key so a missing waiting row can be repaired', () => {
+    expect(contentStudioVideoManifestKey({ digestId, revisionId })).toBe(
+      `${WEEKLY_CONTENT_STUDIO_VERSION}:${digestId}:${revisionId}:video-manifest:en`,
     );
   });
 });

@@ -6,6 +6,25 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-18
 
+## 2026-08-18 — video_manifest companion missing after script retry
+
+**Джерело:** owner CMS (Release `video_manifest:en`, Video tab без enqueue),
+`weekly_digest_generation_jobs` без рядка `video_manifest`; коригує запис
+«video_script undefined.map» від 2026-08-18.
+
+**Виявлено:** runbook очікував `waiting` companion з `queuePostMasterJobs`.
+Після падіння `video_script` о 11:54 UTC і успішного retry о 13:15 UTC рядка
+не було. UI показував «cannot generate until this script is approved» на вже
+approved script; preflight казав enqueue, кнопки не було; картка v2 vs v3.
+
+**Змінено:** Video → **Generate manifest**; companion upsert після script
+success/enqueue; підписи `weekly-video-v3`.
+
+**Не зроблено:** enqueue в прод до деплою — власник тисне Generate manifest
+після merge.
+
+---
+
 ## 2026-08-18 — video_script undefined.map on normalized article
 
 **Джерело:** production job `43b9fcf1-e9ba-46b8-80a8-93d775cec8f0` на

@@ -36,6 +36,14 @@ export function contentStudioMasterKey(params: {
   return `${WEEKLY_CONTENT_STUDIO_VERSION}:${params.digestId}:${params.revisionId}:master`;
 }
 
+/** Stable companion key from queuePostMasterJobs / video_script success. */
+export function contentStudioVideoManifestKey(params: {
+  digestId: string;
+  revisionId: string;
+}): string {
+  return `${WEEKLY_CONTENT_STUDIO_VERSION}:${params.digestId}:${params.revisionId}:video-manifest:en`;
+}
+
 export function revisionItemIdFromJobInput(input: unknown): string | null {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return null;
   const value = (input as { revision_item_id?: unknown }).revision_item_id;

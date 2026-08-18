@@ -3,14 +3,9 @@
 Summary: як працює weekly-дайджест у проді: оркестрація, ревізії, артефакти, вартісні
 гейти, admin UX і поточний статус розкатки.
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
-`supabase/migrations/20260804*`–`20260809*`, live checks 2026-08-04…16,
-editorial-voice overhaul, PDF page-cap, admin mobile-responsive,
-owner content audit + seed-content 2026-08-16, research corpus corroboration 2026-08-16,
-Start / retry Content Studio after succeeded jobs 2026-08-16, social package LinkedIn recovery
-2026-08-17, GitHub dispatch 503 recovery 2026-08-17, staged social-copy recovery and
-approval-ready Social boundary, clean Social job-history presentation 2026-08-17,
-owner PDF layout review / Social media contract / copy repair / approved-row Save 2026-08-18,
-video_script hydration from normalized article 2026-08-18
+`supabase/migrations/20260804*`–`20260809*`, live checks 2026-08-04…18,
+editorial-voice, PDF page-cap, seed-content, social recovery, PDF v3 / Social tab,
+video_script hydration and missing video_manifest companion 2026-08-18
 Last updated: 2026-08-18
 
 ---
@@ -296,11 +291,30 @@ limitation, editorsView і discussionQuestion — зі `source_snapshot.content_
 бо Shorts-валідатор вимагає `factIds ⊆ story.claimIds`. Порожній normalized
 article більше не дає opaque `Code: unknown`: `requireVideoScriptArticle`
 кидає точну помилку до `provider_call_started`. Після деплою — linked retry
-саме на terminal `video_script`; `video_manifest` лишається в `waiting`, доки
-script не approved.
+саме на terminal `video_script`. Companion `video_manifest` **не створюється
+самим script job до фіксу 2026-08-18**: якщо в `weekly_digest_generation_jobs`
+немає рядка, вкладка Video → **Generate manifest**.
 (source: production job `43b9fcf1…` / artifact `cfd41b17…` live check 2026-08-18;
 `src/lib/weekly-digest/generation-worker.ts`,
 `src/lib/weekly-digest/video-script-llm.ts`, `generation-worker.test.ts`)
+
+### Missing video_manifest companion after script retry (2026-08-18)
+
+Release preflight `video_manifest:en` казав «Open Video → enqueue video_manifest»,
+але Video tab мав лише **Regenerate script**. Напис «cannot generate until this
+script is approved» лишався після Approve. У прод-БД для випуску не було жодного
+рядка `video_manifest` — навіть `waiting`. Перший `video_script` упав на hydration
+(~11:54 UTC); linked retry о 13:15 записав скрипт і **не** поставив companion.
+
+Система розрахована на рядок із `queuePostMasterJobs` (стабільний ключ
+`weekly-content-studio-v2.1:{digest}:{revision}:video-manifest:en`). Паралельний
+post-master batch може втратити саме цей insert і не дати UI-відновлення.
+Тепер: кнопка **Generate manifest** (disabled до approved script); success
+`video_script` і enqueue script upsert-ять той самий ключ; підписи v2 →
+`weekly-video-v3`.
+(source: owner CMS + `weekly_digest_generation_jobs` live check 2026-08-18;
+`src/components/admin/weekly-workspace.tsx`, `src/app/admin/(cms)/weekly/actions.ts`,
+`src/lib/weekly-digest/preflight.ts`)
 
 Два наступні linked jobs (`f39b2429…`, `d716aaef…`) уже пройшли hydration, але terminal-failed
 на наступному детермінованому гейті: `LinkedIn document rendered 8 pages; expected 7.` Live
@@ -816,7 +830,9 @@ CLI-воркер (`run-weekly-master-cli-worker.ts`) дренує тепер і 
 `video_script` (обидва — $0 через Claude-підписку). Video-панель адмінки отримала кнопку
 «Generate script» (`enqueueWeeklyGenerationAction`, job_type `video_script`) + review-блок
 (`ArtifactReview`) — video_manifest не стартує, доки script не Approved (той самий гейт, що
-вже існував у claim RPC).
+вже існував у claim RPC). З 2026-08-18 панель також має **Generate manifest**, бо companion
+`waiting`-рядок може бути відсутній після retry скрипта — див.
+[Missing video_manifest companion](#missing-video_manifest-companion-after-script-retry-2026-08-18).
 
 **Не верифіковано наживо** — на відміну від PR3 (critic shadow-run) і PR5 (klein dry-run), ця
 зміна не мала окремого live-прогону в межах цієї сесії; покрито юніт-тестами

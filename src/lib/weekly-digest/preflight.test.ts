@@ -129,6 +129,19 @@ describe('Weekly Digest release preflight', () => {
     );
   });
 
+  it('video_manifest missing guidance names Generate manifest and weekly-video-v3', () => {
+    const input = completeInput();
+    input.artifacts = input.artifacts.filter((entry) => entry.artifactType !== 'video_manifest');
+    const result = validateWeeklyDigestPreflight(input);
+    const missing = result.blockers.find(
+      (blocker) => blocker.code === 'artifact_missing' && blocker.slot === 'video_manifest:en',
+    );
+    expect(missing?.message).toMatch(/weekly-video-v3/);
+    expect(missing?.fix).toMatch(/Generate manifest/i);
+    expect(missing?.fix).toMatch(/weekly-video-v3/);
+    expect(missing?.tab).toBe('video');
+  });
+
   it('artifact_missing story_image and cover guidance points to the prompt, not Regenerate', () => {
     const input = completeInput();
     input.artifacts = input.artifacts.filter(

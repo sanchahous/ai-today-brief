@@ -75,6 +75,7 @@ import {
   type WeeklyMasterRunOutcome,
 } from './master-engine';
 import type { UnresolvedIssue } from './master-repair';
+import { contentStudioVideoManifestKey } from './content-studio-queue';
 import { generateWeeklyVideoScript, requireVideoScriptArticle } from './video-script-llm';
 import {
   buildWeeklyResearchPack,
@@ -922,12 +923,50 @@ async function saveQualityReport(input: {
   return artifactId;
 }
 
+type QueuedGenerationJob = {
+  type: string;
+  key: string;
+  input: Record<string, Json | undefined>;
+  idempotencyKey?: string;
+};
+
+async function queueGenerationJob(
+  weeklyDigestId: string,
+  revisionId: string,
+  queued: QueuedGenerationJob,
+) {
+  const { error } = await rpcClient().rpc('queue_weekly_digest_generation_job', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_revision_id: revisionId,
+    p_job_type: queued.type,
+    p_idempotency_key:
+      queued.idempotencyKey ??
+      `${WEEKLY_CONTENT_STUDIO_VERSION}:${weeklyDigestId}:${revisionId}:${queued.key}`,
+    p_input: queued.input,
+  });
+  if (error && !/duplicate|unique/i.test(error.message)) {
+    throw new Error(`[weekly-generation] queue ${queued.key}: ${error.message}`);
+  }
+}
+
+async function queueVideoManifestCompanion(weeklyDigestId: string, revisionId: string) {
+  await queueGenerationJob(weeklyDigestId, revisionId, {
+    type: 'video_manifest',
+    key: 'video-manifest:en',
+    idempotencyKey: contentStudioVideoManifestKey({
+      digestId: weeklyDigestId,
+      revisionId,
+    }),
+    input: { locale: 'en', slot_key: 'video-manifest:en' },
+  });
+}
+
 async function queuePostMasterJobs(
   weeklyDigestId: string,
   revisionId: string,
   items: Array<{ id: string; title_en: string; title_uk: string }>,
 ) {
-  const jobs: Array<{ type: string; key: string; input: Record<string, Json | undefined> }> = [
+  const jobs: QueuedGenerationJob[] = [
     ...items.map((item) => ({
       type: 'story_image',
       key: `story-image:${item.id}`,
@@ -939,22 +978,25 @@ async function queuePostMasterJobs(
     })),
     { type: 'cover', key: 'cover:neutral', input: { locale: 'en', slot_key: 'cover:neutral' } },
     { type: 'social_copy', key: 'social-copy', input: { locale_map: 'database' } },
-    { type: 'video_script', key: 'video-script:en', input: { locale: 'en' } },
-    { type: 'video_manifest', key: 'video-manifest:en', input: { locale: 'en' } },
+    {
+      type: 'video_script',
+      key: 'video-script:en',
+      input: { locale: 'en', slot_key: 'video-script:en' },
+    },
+    {
+      type: 'video_manifest',
+      key: 'video-manifest:en',
+      idempotencyKey: contentStudioVideoManifestKey({
+        digestId: weeklyDigestId,
+        revisionId,
+      }),
+      input: { locale: 'en', slot_key: 'video-manifest:en' },
+    },
     { type: 'pdf', key: 'pdf:en', input: { locale: 'en', slot_key: 'pdf:en' } },
     { type: 'pdf', key: 'pdf:uk', input: { locale: 'uk', slot_key: 'pdf:uk' } },
   ];
   await mapWithConcurrency(jobs, jobs.length, async (queued) => {
-    const { error } = await rpcClient().rpc('queue_weekly_digest_generation_job', {
-      p_weekly_digest_id: weeklyDigestId,
-      p_revision_id: revisionId,
-      p_job_type: queued.type,
-      p_idempotency_key: `${WEEKLY_CONTENT_STUDIO_VERSION}:${weeklyDigestId}:${revisionId}:${queued.key}`,
-      p_input: queued.input,
-    });
-    if (error && !/duplicate|unique/i.test(error.message)) {
-      throw new Error(`[weekly-generation] queue ${queued.key}: ${error.message}`);
-    }
+    await queueGenerationJob(weeklyDigestId, revisionId, queued);
   });
 }
 
@@ -2939,6 +2981,10 @@ async function generateVideoScript(job: ClaimedGenerationJob, tracker: Generatio
       non_blocking_issues: issues.filter((issue) => !issue.blocker).length,
     },
   });
+  // Post-master queue can miss this companion (partial batch, or a later
+  // linked retry of video_script on a revision that never got the row).
+  // Stable key: waiting/queued stays put; failed resets; succeeded is reused.
+  await queueVideoManifestCompanion(job.weekly_digest_id, job.revision_id);
   return { artifactId, output: { video_script_artifact_id: artifactId } };
 }
 
