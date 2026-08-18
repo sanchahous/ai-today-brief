@@ -4,7 +4,28 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-17
+Last updated: 2026-08-18
+
+## 2026-08-18 — Social tab improvement executor-spec
+
+**Джерело:** owner review і скриншоти вкладки Social 2026-08-18; production Social package
+read-only audit; `src/lib/weekly-digest/generation-worker.ts`; `src/lib/social/quality.ts`;
+`src/lib/social/worker.ts`; `src/components/admin/hook-candidate-picker.tsx`.
+
+**Виявлено:** channel illustrations можуть вибрати LinkedIn PDF замість image; збережені signed
+URL можуть протермінуватись до delivery; Threads hook picker обрізає серіалізований `<PART>`
+candidate без синхронізації parts; Instagram renderer не вимірює реальні text bounds; manual
+factual review використовує неповний source snapshot.
+
+**Заплановано:** додано [executor-spec](audits/2026-08-18-social-tab-improvement-plan.md) для
+durable artifact references, channel-aware UI, атомарного Threads/X parsing, hybrid 7-slide
+Instagram, спільного factual snapshot і контрольованого repair поточного пакета. Product code,
+Supabase schema та production-дані цим documentation-only PR не змінюються.
+
+**Перевірка плану:** визначені data contracts, failure modes, approval policy, automated tests,
+production preconditions і acceptance criteria для наступного implementation PR.
+
+---
 
 ## 2026-08-17 — Social review separates current success from failed history
 

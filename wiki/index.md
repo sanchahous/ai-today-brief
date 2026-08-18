@@ -9,7 +9,7 @@ Start / retry Content Studio after succeeded jobs 2026-08-16,
 social package LinkedIn recovery, GitHub dispatch 503 recovery, staged social checkpoints,
 LinkedIn 7-page overflow bounds, approval-ready Social repair, bounded social provider ladder та
 reliable social routing/candidate fallback, clean Social job history 2026-08-17
-Last updated: 2026-08-17
+Last updated: 2026-08-18
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -123,6 +123,7 @@ Last updated: 2026-08-17
 | ✅ [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md) | Review PR #229 (Visual Affordance V10) + executor spec для Sonnet 5: не мерджити як є, v11 total-function + SceneSpec | PR #229, workflow `wf_40755980-8f7` |
 | ✅ [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md) | Review 24 PR (#241–#264, weekly-illustration-plan): 4 блокери + 8 якість + 4 безпека + 6 операційних, усі виправлені на `feat/weekly-illustration-fixes` | PR #241–#264 дифи, живий `npm run pr:check` 2026-08-15 |
 | ✅ [audits/2026-08-16-auto-publish-silent-judge](audits/2026-08-16-auto-publish-silent-judge.md) | Вісім ночей `status='ok'` без жодної публікації: суддя відповідав правильно, парсер читав тільки `obj.results`, а ран рапортував `ok` безумовно | прод-`pipeline_runs` + пряма проба судді 2026-08-16 |
+| ✅ [audits/2026-08-18-social-tab-improvement-plan](audits/2026-08-18-social-tab-improvement-plan.md) | Executor-spec для виправлення Social: durable image refs, channel-aware UI, Threads/X parsing, hybrid 7-slide Instagram, factual gate і controlled repair | owner review + скриншоти + production read-only audit 2026-08-18 |
 
 ## Decisions (ADR)
 
