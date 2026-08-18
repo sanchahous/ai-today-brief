@@ -6,6 +6,35 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-18
 
+## 2026-08-18 — Production social repair applied on `612df95c`
+
+**Джерело:** `npm run weekly:social:repair -- --package-id 612df95c-9c67-4db8-8f4b-209584d9ed68 --apply`,
+production SQL live check 2026-08-18.
+
+**Змінено:** 5 каналів отримали `artifactId` cover `a8bbf34e…` (`image/jpeg`); Instagram —
+`meta.instagram_carousel` на 7 слайдів і 7 нових JPEG 1080×1350. Усі 6 posts знову `in_review`,
+`publish_enabled=false`. Повторний dry-run — 0 mutations.
+
+**Не зроблено:** Re-enable / Save & approve — owner review в адмінці.
+
+---
+
+## 2026-08-18 — Social repair: 8-slide Instagram mapping before production apply
+
+**Джерело:** production package `612df95c-9c67-4db8-8f4b-209584d9ed68`, dry-run
+`weekly:social:repair` 2026-08-18.
+
+**Виявлено:** Disable publishing на 6 каналах пройшов (`publish_enabled=false`). Перший dry-run
+після паузи був `ok: true`, але Instagram spec з 8 абзаців клав цілі параграфи в `headline`
+(понад 72/54) і губив 8-й takeaway. `--apply` впав би на overflow.
+
+**Змінено:** `instagramSpecFromLegacyParts` мапить 8+ parts як cover / 3 story / comparison /
+caveat=передостанній / takeaway=останній і підганяє текст під контракт.
+
+**Не зроблено в цьому записі:** результат production `--apply` — окремий рядок після виконання.
+
+---
+
 ## 2026-08-18 — Social tab: media contract, channel-aware form, Instagram 7-slide renderer
 
 **Джерело:** executor-spec PR #291 / `wiki/audits/2026-08-18-social-tab-improvement-plan.md`

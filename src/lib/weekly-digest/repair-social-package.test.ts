@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { SocialSelectableArtifact } from '@/lib/social/channel-assets';
+import { instagramCarouselIssues } from '@/lib/social/instagram-carousel';
 import {
   buildRepairPatches,
+  instagramSpecFromLegacyParts,
   planWeeklySocialPackageRepair,
   type RepairSocialPackage,
   type RepairSocialPost,
@@ -177,6 +179,39 @@ describe('planWeeklySocialPackageRepair', () => {
     expect(again.mutations).toEqual([]);
     expect(again.imageRefChanges).toBe(0);
     expect(again.instagramJpegs).toBe(0);
+  });
+
+  it('rebuilds an 8-slide legacy package into a valid 7-slide spec', () => {
+    const caption =
+      "Hugging Face's Summer 2026 report puts hard numbers on something builders have felt for months: the open-weight frontier is being defined by who gives the most away, not who trains the biggest model. Add Qwen3.8's 95B-active MoE design and IBM's agent memory system matching ACE at one-seventh the token cost, and a pattern emerges — efficiency and openness are the actual competition now. Full breakdown at the link in bio. #OpenSourceAI #LLM #Qwen #AIInfrastructure #MachineLearning";
+    const spec = instagramSpecFromLegacyParts({
+      caption,
+      parts: [
+        "Zero out of 178. That's how many Chinese model releases above 20B parameters carried a non-commercial license this year, per Hugging Face's Summer 2026 report. Not a few. Zero.",
+        'Meanwhile US labs in the same size class: 41% custom terms, 30% no license declared at all. Only 29% ship Apache or MIT. The labs with the biggest open models are writing the loosest terms.',
+        'DeepSeek and Z.ai put 700B to 1.65T parameter models under plain MIT. The largest Chinese open model hit 2.78 trillion parameters this year. The US ceiling stayed under 130B in five of seven months.',
+        "Why give away the most expensive artifact in AI? Ecosystem gravity. Qwen derivatives on the Hub now top 150,000 — roughly 2.6x Meta's entire footprint. A permissive frontier model becomes a default developers stop reconsidering.",
+        "This week's Qwen3.8 release shows the playbook in action: 2.4 trillion parameters, but only 95 billion fire per token. MoE routing means it runs on standard vLLM or SGLang — not a hyperscaler's private cluster.",
+        'And it shipped with a full serving stack on day zero: weights on Hugging Face, five hosted API providers, 1M-token context, three reasoning depths. Not months later after the community reverse-engineers it.',
+        "One caveat: 1.5% of Hub repos capture 99.2% of downloads. Licenses only move markets at the top of that curve. But that's exactly where the permissive Chinese releases sit.",
+        'The builder takeaway: watch the license column as closely as the parameter count. The real race is whose permissive terms get embedded into downstream pipelines first.',
+      ],
+      storyIds: ['item-1', 'item-2', 'item-3'],
+      hookCandidates: [
+        'Zero out of 178.<SLIDE>Meanwhile US labs',
+        'Second blob<SLIDE>more',
+        'Third blob<CAPTION>caption',
+      ],
+    });
+    expect(spec).not.toBeNull();
+    if (!spec) return;
+    expect(instagramCarouselIssues(spec, ['item-1', 'item-2', 'item-3'])).toEqual([]);
+    expect(spec.slides[0].headline).toBe('Zero out of 178.');
+    expect(spec.slides[5].kind).toBe('caveat');
+    expect(spec.slides[5].headline.startsWith('One caveat')).toBe(true);
+    expect(spec.slides[6].kind).toBe('takeaway');
+    expect(spec.slides[6].headline.toLowerCase()).toContain('builder takeaway');
+    expect(spec.hookCandidates.some((candidate) => candidate.includes('<SLIDE>'))).toBe(false);
   });
 
   it('refuses to run while publishing is enabled', () => {

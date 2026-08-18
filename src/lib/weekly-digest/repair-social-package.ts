@@ -7,10 +7,12 @@ import {
 } from '@/lib/social/channel-assets';
 import { socialContentHash } from '@/lib/social/content-hash';
 import {
+  instagramCarouselIssues,
   parseInstagramCarouselSpec,
   readableInstagramParts,
   type InstagramCarouselSpec,
 } from '@/lib/social/instagram-carousel';
+import { containsServiceMarkers } from '@/lib/social/service-markers';
 import { isSocialChannel, SOCIAL_CHANNELS, type SocialAsset, type SocialChannel } from '@/lib/social/types';
 
 const IMAGE_CHANNELS = ['telegram', 'facebook', 'x', 'threads', 'linkedin'] as const;
@@ -129,6 +131,93 @@ function linkedinPdfArtifactId(artifacts: SocialSelectableArtifact[]): string | 
   return pdf?.id ?? null;
 }
 
+const COVER_HEADLINE_MAX = 72;
+const SLIDE_HEADLINE_MAX = 54;
+const SLIDE_BODY_MAX = 120;
+
+function normalizeSlideText(value: string) {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function trimToCharLimit(value: string, max: number) {
+  const text = normalizeSlideText(value);
+  if (text.length <= max) return text;
+  const slice = text.slice(0, max);
+  const breakAt = slice.lastIndexOf(' ');
+  let kept = (breakAt >= 12 ? slice.slice(0, breakAt) : slice).trim();
+  while (kept.length > 0 && /[.,;:!?-]$/u.test(kept)) {
+    kept = kept.slice(0, -1).trim();
+  }
+  return kept;
+}
+
+function firstSentenceEnd(text: string) {
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch !== '.' && ch !== '!' && ch !== '?') continue;
+    const next = text[i + 1];
+    if (next === undefined || next === ' ') return i + 1;
+  }
+  return -1;
+}
+
+function splitLegacySlide(part: string, headlineMax: number, bodyMax: number) {
+  const lines = part.split('\n').map((line) => line.trim()).filter(Boolean);
+  if (lines[0] && lines.length >= 2 && lines[0].length <= headlineMax) {
+    return {
+      headline: trimToCharLimit(lines[0], headlineMax),
+      body: trimToCharLimit(lines.slice(1).join(' '), bodyMax),
+    };
+  }
+  const text = normalizeSlideText(part);
+  const sentenceEnd = firstSentenceEnd(text);
+  const sentence = sentenceEnd > 0 ? text.slice(0, sentenceEnd).trim() : text;
+  const rest = sentenceEnd > 0 ? text.slice(sentenceEnd).trim() : '';
+  const headline = trimToCharLimit(sentence, headlineMax);
+  const bodySource = rest || text.slice(headline.length).trim() || text;
+  return {
+    headline,
+    body: trimToCharLimit(bodySource, bodyMax),
+  };
+}
+
+function mapLegacyCarouselParts(parts: string[]) {
+  if (parts.length < 7) return null;
+  const comparisonParts = parts.slice(4, parts.length - 2);
+  const cover = parts[0];
+  const storyOne = parts[1];
+  const storyTwo = parts[2];
+  const storyThree = parts[3];
+  const caveat = parts[parts.length - 2];
+  const takeaway = parts[parts.length - 1];
+  if (
+    !cover ||
+    !storyOne ||
+    !storyTwo ||
+    !storyThree ||
+    comparisonParts.length === 0 ||
+    !caveat ||
+    !takeaway
+  ) {
+    return null;
+  }
+  return {
+    cover,
+    stories: [storyOne, storyTwo, storyThree] as const,
+    comparison: comparisonParts.join(' '),
+    caveat,
+    takeaway,
+  };
+}
+
+function usableHookCandidates(value: [string, string, string] | undefined) {
+  if (!value) return undefined;
+  if (value.some((candidate) => containsServiceMarkers(candidate) || !candidate.trim())) {
+    return undefined;
+  }
+  return value;
+}
+
 export function instagramSpecFromLegacyParts(input: {
   caption: string;
   parts: string[];
@@ -136,23 +225,39 @@ export function instagramSpecFromLegacyParts(input: {
   angle?: string;
   hookCandidates?: [string, string, string];
 }): InstagramCarouselSpec | null {
-  if (input.parts.length < 7 || input.storyIds.some((id) => !id)) return null;
-  const split = (part: string) => {
-    const lines = part.split('\n').map((line) => line.trim()).filter(Boolean);
-    if (lines.length >= 2) return { headline: lines[0], body: lines.slice(1).join(' ') };
-    return { headline: part.trim(), body: part.trim() };
-  };
-  const cover = split(input.parts[0] ?? '');
-  const storyOne = split(input.parts[1] ?? '');
-  const storyTwo = split(input.parts[2] ?? '');
-  const storyThree = split(input.parts[3] ?? '');
-  const comparison = split(input.parts[4] ?? '');
-  const caveat = split(input.parts[5] ?? '');
-  const takeaway = split(input.parts[6] ?? '');
-  return {
+  if (input.storyIds.some((id) => !id)) return null;
+  const mapped = mapLegacyCarouselParts(input.parts);
+  if (!mapped) return null;
+  const cover = splitLegacySlide(mapped.cover, COVER_HEADLINE_MAX, SLIDE_BODY_MAX);
+  const storyOne = splitLegacySlide(mapped.stories[0], SLIDE_HEADLINE_MAX, SLIDE_BODY_MAX);
+  const storyTwo = splitLegacySlide(mapped.stories[1], SLIDE_HEADLINE_MAX, SLIDE_BODY_MAX);
+  const storyThree = splitLegacySlide(mapped.stories[2], SLIDE_HEADLINE_MAX, SLIDE_BODY_MAX);
+  const comparison = splitLegacySlide(mapped.comparison, SLIDE_HEADLINE_MAX, SLIDE_BODY_MAX);
+  const caveat = splitLegacySlide(mapped.caveat, SLIDE_HEADLINE_MAX, SLIDE_BODY_MAX);
+  const takeaway = splitLegacySlide(mapped.takeaway, SLIDE_HEADLINE_MAX, SLIDE_BODY_MAX);
+  if (
+    !cover.headline ||
+    !storyOne.headline ||
+    !storyOne.body ||
+    !storyTwo.headline ||
+    !storyTwo.body ||
+    !storyThree.headline ||
+    !storyThree.body ||
+    !comparison.headline ||
+    !comparison.body ||
+    !caveat.headline ||
+    !caveat.body ||
+    !takeaway.headline ||
+    !takeaway.body
+  ) {
+    return null;
+  }
+  const spec: InstagramCarouselSpec = {
     version: 1,
     angle: (input.angle ?? 'Weekly digest').trim(),
-    hookCandidates: input.hookCandidates ?? [cover.headline, storyOne.headline, storyTwo.headline],
+    hookCandidates:
+      usableHookCandidates(input.hookCandidates) ??
+      [cover.headline, storyOne.headline, storyTwo.headline],
     caption: input.caption.trim(),
     slides: [
       { kind: 'cover', headline: cover.headline },
@@ -179,6 +284,8 @@ export function instagramSpecFromLegacyParts(input: {
       { kind: 'takeaway', headline: takeaway.headline, body: takeaway.body },
     ],
   };
+  if (instagramCarouselIssues(spec, input.storyIds).length > 0) return null;
+  return spec;
 }
 
 function scheduleHint(post: RepairSocialPost, now: Date): RepairScheduleHint | null {
@@ -255,7 +362,9 @@ function instagramRepairSpec(
     angle: typeof meta.hook_angle === 'string' ? meta.hook_angle : undefined,
     hookCandidates: hooks.length === 3 ? [hooks[0], hooks[1], hooks[2]] : undefined,
   });
-  if (legacy) return { spec: legacy, reason: 'Build a v1 carousel spec from the stored 7 slide texts, then render JPEGs.' };
+  if (legacy) {
+    return { spec: legacy, reason: 'Build a v1 carousel spec from stored slide texts, then render JPEGs.' };
+  }
   return { spec: null, reason: 'Instagram has no carousel spec and cannot be reconstructed from stored parts.' };
 }
 
