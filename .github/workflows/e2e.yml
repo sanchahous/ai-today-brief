@@ -1,24 +1,32 @@
 name: E2E (Playwright)
 
 on:
-  # Playwright tests the built website, so it only needs to run on UI-affecting
-  # changes. Skip wiki/markdown/SQL/workflow-only AND pipeline-only PRs (the
-  # pipeline never renders the site). PR-only: the post-merge push to main re-tested
-  # an identical tree (squash merge), so it was pure duplicate spend — removed.
+  # NOTE ON `paths-ignore` (removed 2026-08-18): a workflow skipped by a path filter
+  # never reports a check at all, so a docs-only PR would sit forever on
+  # "Expected — waiting for status" once this is a required check on `main`. The
+  # filter therefore moved INSIDE the job: the workflow always runs and always
+  # reports, and on an irrelevant PR it finishes in ~10 s without checking out,
+  # installing or building anything.
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "wiki/**"
-      - "raw/**"
-      - "artifacts/**"
-      - "**/*.md"
-      - "supabase/migrations/**"
-      - ".github/**"
-      - "pipeline/**"
+
+  # Runs on main for ONE reason: caches. A cache written from a `refs/pull/N/merge`
+  # ref is invisible to every other PR, so while this workflow was PR-only each PR
+  # reinstalled 467 MB of browsers and rebuilt Next from cold — and each wrote its own
+  # cache entry, which is how the repo reached 24 entries / 10.6 GB against the 10 GB
+  # cap and started evicting the npm cache. Only this main run SAVES; PRs restore
+  # (see the cache/restore + cache/save split below). A post-merge signal on the
+  # squashed tree is the secondary benefit — at ~6.5 merges/day it also catches a
+  # regression that only appears once two PRs land together.
+  push:
+    branches: [main]
+
+  # Manual run — use before a release without waiting for a PR.
+  workflow_dispatch:
 
 # A new push to a PR supersedes the previous commit — cancel its in-flight run
 # instead of paying for an e2e against a commit that no longer matters. Keyed on the
-# PR number (falls back to ref) so isolation stays per-PR if a trigger is added later.
+# PR number (falls back to ref) so isolation stays per-PR.
 concurrency:
   group: e2e-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -27,6 +35,7 @@ jobs:
   e2e:
     name: Playwright smoke
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       # Reuse the existing pipeline credentials. The URL and anon key are safe
@@ -35,51 +44,112 @@ jobs:
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SCRAPPER_BASE_ANON_KEY }}
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
     steps:
+      # Playwright tests the built website, so it only needs to run on UI-affecting
+      # changes: skip wiki / markdown / SQL-migration / workflow-only AND pipeline-only
+      # PRs (the pipeline never renders the site). Reads the file list from the API
+      # rather than from a deep clone, so the skip path costs no checkout. Anything
+      # that is not a pull_request (main, manual dispatch) always runs.
+      - name: Decide whether the site changed
+        id: scope
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Not a pull request — running the full suite."
+            exit 0
+          fi
+          FILES=$(gh api --paginate \
+            "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
+            --jq '.[].filename')
+          echo "Changed files:"
+          echo "$FILES"
+          # A path is IRRELEVANT when it sits in a docs/ops zone or is any .md file.
+          # If even one changed path falls outside that set, the site may be affected.
+          if printf '%s\n' "$FILES" | grep -qvE '^(wiki/|raw/|artifacts/|supabase/migrations/|\.github/|pipeline/)|\.md$'; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "-> site-affecting change detected, running the suite."
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "-> docs/ops-only change, skipping the suite (this check still reports green)."
+          fi
+
       - name: Checkout
+        if: steps.scope.outputs.run == 'true'
         uses: actions/checkout@v7
 
       - name: Setup Node
+        if: steps.scope.outputs.run == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
 
       - name: Install dependencies
+        if: steps.scope.outputs.run == 'true'
         run: npm ci
 
-      # Cache the three browser engines (chromium/firefox/webkit) keyed on the
-      # installed Playwright version. Biggest win is repeated pushes within a PR;
-      # cross-PR reuse is partial since no run executes on main to prime a shared cache.
       - name: Resolve Playwright version
+        if: steps.scope.outputs.run == 'true'
         id: pw
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
 
-      - name: Cache Playwright browsers
+      # Restore-only on PRs. The matching save step runs on main alone, so a PR can
+      # never write a half-gigabyte entry under its own ref (the old behaviour that
+      # filled the 10 GB budget and meant nothing was ever reused).
+      - name: Restore Playwright browsers
+        if: steps.scope.outputs.run == 'true'
         id: pw-cache
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-          # On a version bump the exact key misses; fall back to the latest cached
-          # browser set so the install re-fetches only the delta. (cache-hit stays
-          # false on a restore-keys match, so the full install below still runs.)
-          restore-keys: |
-            playwright-${{ runner.os }}-
 
-      # Cache miss → full install (browser binaries + OS libs). Cache hit → only the
-      # system libs (fast apt), since the cached binaries still need them at launch.
+      # Exact hit → the binaries are present and correct; only the OS libs are still
+      # needed (fast apt). Miss → full install of all three engines.
       - name: Install Playwright browsers
-        if: steps.pw-cache.outputs.cache-hit != 'true'
+        if: steps.scope.outputs.run == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps
 
       - name: Install Playwright system deps (cache hit)
-        if: steps.pw-cache.outputs.cache-hit == 'true'
+        if: steps.scope.outputs.run == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps
 
+      - name: Save Playwright browsers
+        if: steps.scope.outputs.run == 'true' && github.ref == 'refs/heads/main' && steps.pw-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      # Next's incremental build cache — the build step measured 141–371 s from cold.
+      # Same restore-on-PR / save-on-main split. Scoped by lockfile so a dependency
+      # bump never reuses stale compilation output.
+      - name: Restore Next.js build cache
+        if: steps.scope.outputs.run == 'true'
+        id: next-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .next/cache
+          key: nextjs-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            nextjs-${{ hashFiles('package-lock.json') }}-
+
       - name: Build
+        if: steps.scope.outputs.run == 'true'
         run: npm run build
 
+      - name: Save Next.js build cache
+        if: steps.scope.outputs.run == 'true' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v6
+        with:
+          path: .next/cache
+          key: nextjs-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
+
       - name: Run E2E tests
+        if: steps.scope.outputs.run == 'true'
         run: npm run e2e
 
       - name: Upload Playwright report
@@ -89,3 +159,22 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+      # A failing PR run is visible in the checks list; a failing run on main is not
+      # attached to anything anyone is looking at. Best-effort — never changes the
+      # job conclusion.
+      - name: Alert review chat on main failure
+        if: failure() && github.event_name == 'push'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_REVIEW_CHAT_ID: ${{ secrets.TELEGRAM_REVIEW_CHAT_ID }}
+        run: |
+          [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_REVIEW_CHAT_ID" ] && exit 0
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          curl -sS --max-time 15 -X POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_REVIEW_CHAT_ID}" \
+            --data-urlencode "parse_mode=HTML" \
+            --data-urlencode "disable_web_page_preview=true" \
+            --data-urlencode "text=⚠️ <b>E2E on main FAILED</b> — регресія проїхала в main. 🔗 ${RUN_URL}" \
+            || true
