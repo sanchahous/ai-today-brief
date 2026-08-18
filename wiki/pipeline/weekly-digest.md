@@ -9,8 +9,7 @@ owner content audit + seed-content 2026-08-16, research corpus corroboration 202
 Start / retry Content Studio after succeeded jobs 2026-08-16, social package LinkedIn recovery
 2026-08-17, GitHub dispatch 503 recovery 2026-08-17, staged social-copy recovery and
 approval-ready Social boundary, clean Social job-history presentation 2026-08-17,
-owner PDF layout review 2026-08-18,
-Social media contract / Instagram 7-slide renderer / repair CLI 2026-08-18
+owner PDF layout review / Social media contract / copy repair / approved-row Save 2026-08-18
 Last updated: 2026-08-18
 
 ---
@@ -861,6 +860,17 @@ Legacy Instagram з 8 `content_parts` (старий clip-wrap carousel) мапи
 під контракт 72/54/120, `<SLIDE>` hook blobs відкидаються.
 (source: `src/lib/social/asset-ref.ts`, `src/lib/social/channel-assets.ts`,
 `src/lib/weekly-digest/repair-social-package.ts`, `scripts/repair-weekly-social-package.ts`)
+
+Окремий copy repair, якщо media вже полагоджено, а critic < 85 через обрізаний Instagram
+carousel або непідтверджені Facebook/Threads claims:
+
+`npm run weekly:social:repair-copy -- --package-id <uuid> [--apply]`
+
+Save metadata на вже `approved` weekly social post іде service-role admin client:
+authenticated UPDATE тригерить `guard_social_v2_owner_actions`. Owner AAL2 approve лишається
+RPC `approve_social_post`. Агент-complete path: `npm run weekly:social:approve`.
+(source: `src/lib/weekly-digest/repair-social-copy.ts`, `scripts/repair-weekly-social-copy.ts`,
+`src/app/admin/(cms)/weekly/actions.ts`, `scripts/approve-weekly-social-package.ts`)
 
 Чистка: видалено мертвий `src/lib/weekly-digest/editorial-draft.ts` + тест (передував Content
 Studio v2, ніде не імпортувався). **`GENERIC_PRACTICAL_PATTERNS` НЕ видалено** — на відміну від
