@@ -238,16 +238,22 @@ describe('adaptWeeklySocialChannel', () => {
   });
 
   it('audits Instagram in its native tagged serialization', async () => {
-    const slides = Array.from(
-      { length: 7 },
-      (_, index) => `Slide ${index + 1}: Anthropic shipped a concrete evaluation detail.`,
-    ).join('<SLIDE>');
     const caption =
       'Anthropic shipped a concrete evaluation workflow. The practical question is how teams use that approved signal before deployment, where smaller and testable decisions matter more than broad claims about the market.';
+    const candidate = [
+      '<COVER>Inspect agents before they ship',
+      '<STORY>Shipped eval||The approved report shows a concrete eval workflow.',
+      '<STORY>Narrower gate||Teams can test traces before a production rollout.',
+      '<STORY>Fewer assumptions||Demos no longer stand in for a measurable check.',
+      '<COMPARISON>Before vs after||Old reviews were narrative; the new eval is checkable.',
+      '<CAVEAT>Not automatic||It does not replace human review of high-risk agents.',
+      '<TAKEAWAY>Use the eval||Adopt the shipped eval before the next agent rollout.',
+      `<CAPTION>${caption}`,
+    ].join('');
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
       role === 'writer'
         ? writerResult({
-            text: `${slides}<CAPTION>${caption}<CANDIDATE>${slides}<CAPTION>${caption}`,
+            text: `${candidate}<CANDIDATE>${candidate}`,
           })
         : criticResult(),
     );
@@ -255,6 +261,8 @@ describe('adaptWeeklySocialChannel', () => {
     await adaptWeeklySocialChannel({
       ...baseInput(),
       channel: 'instagram',
+      instagramStoryIds: ['item-1', 'item-2', 'item-3'],
+      currentRevisionItemIds: ['item-1', 'item-2', 'item-3'],
       assets: [
         {
           url: 'https://example.com/cover.jpg',
@@ -267,8 +275,9 @@ describe('adaptWeeklySocialChannel', () => {
     });
 
     const criticCall = vi.mocked(generateSocialJson).mock.calls.find(([role]) => role === 'critic');
-    expect(criticCall?.[1]).toContain('<SLIDE>Slide 1');
-    expect(criticCall?.[1]).toContain('<CAPTION>Anthropic shipped');
+    expect(criticCall?.[1]).toContain('SLIDE 1 COVER');
+    expect(criticCall?.[1]).toContain('CAPTION');
+    expect(criticCall?.[1]).toContain('Anthropic shipped');
   });
 });
 

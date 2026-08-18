@@ -4,11 +4,12 @@ import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getSocialPublisher } from './providers';
+import { resolveSocialPostAssets } from './asset-resolver-server';
+import { isSocialImageMime } from './asset-ref';
 import { assessWeeklySocialSource } from './weekly-source-gate';
 import {
   isSocialChannel,
   SocialPublishError,
-  type SocialAsset,
   type SocialPostForDelivery,
 } from './types';
 
@@ -18,40 +19,26 @@ const RETRY_DELAYS_MS = [5 * 60_000, 30 * 60_000, 2 * 60 * 60_000] as const;
 
 type ClaimedPost = Awaited<ReturnType<typeof claimPosts>>[number];
 
-function parseAssets(value: Json): SocialAsset[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((entry) => {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return [];
-    const row = entry as Record<string, Json | undefined>;
-    if (typeof row.url !== 'string') return [];
-    return [
-      {
-        url: row.url,
-        ...(typeof row.width === 'number' ? { width: row.width } : {}),
-        ...(typeof row.height === 'number' ? { height: row.height } : {}),
-        ...(typeof row.bytes === 'number' ? { bytes: row.bytes } : {}),
-        ...(row.mimeType === 'image/jpeg' ||
-        row.mimeType === 'image/png' ||
-        row.mimeType === 'image/webp'
-          ? { mimeType: row.mimeType }
-          : {}),
-      },
-    ];
-  });
-}
-
 function parseContentParts(value: Json): string[] {
   return Array.isArray(value)
     ? value.filter((entry): entry is string => typeof entry === 'string' && Boolean(entry.trim()))
     : [];
 }
 
-function asDelivery(post: ClaimedPost): SocialPostForDelivery {
+async function asDelivery(post: ClaimedPost): Promise<SocialPostForDelivery> {
   if (!isSocialChannel(post.channel)) {
     throw new SocialPublishError(
       `Unsupported channel: ${post.channel}`,
       'permanent',
       'unsupported_channel',
+    );
+  }
+  const resolved = await resolveSocialPostAssets(post.asset_urls);
+  if (resolved.blockers.length > 0) {
+    throw new SocialPublishError(
+      resolved.blockers.map((blocker) => blocker.message).join(' '),
+      'permanent',
+      resolved.blockers[0]?.code ?? 'asset_missing',
     );
   }
   return {
@@ -60,7 +47,14 @@ function asDelivery(post: ClaimedPost): SocialPostForDelivery {
     text: post.post_text?.trim() ?? '',
     contentParts: parseContentParts(post.content_parts),
     firstComment: post.first_comment,
-    assets: parseAssets(post.asset_urls),
+    assets: resolved.assets.map((asset) => ({
+      url: asset.url,
+      artifactId: asset.artifactId,
+      width: asset.width,
+      height: asset.height,
+      mimeType: isSocialImageMime(asset.mimeType) ? asset.mimeType : undefined,
+      bytes: asset.bytes,
+    })),
     altText: post.alt_text,
     idempotencyKey: post.idempotency_key ?? `${post.id}:${post.content_hash ?? 'unversioned'}`,
     attempt: post.attempts,
@@ -365,7 +359,7 @@ async function alertCredentialWarnings() {
 async function deliverOne(post: ClaimedPost) {
   await startAttempt(post);
   try {
-    const delivery = asDelivery(post);
+    const delivery = await asDelivery(post);
     await assertSourcesStillApproved(post);
     if (delivery.channel === 'x') await reserveXBudget();
     const publisher = getSocialPublisher(delivery.channel);

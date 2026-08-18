@@ -26,6 +26,12 @@ import {
 import { parseStoryPromptSetContent } from './story-prompt-set';
 import type { SiblingMetaphorHint } from '../../../pipeline/card-image';
 import { storageBlob } from '@/lib/storage/binary';
+import {
+  selectInstagramCarouselSources,
+  selectedImageToAssetRef,
+  selectWeeklyChannelImage,
+  type SocialSelectableArtifact,
+} from '@/lib/social/channel-assets';
 import { socialContentHash } from '@/lib/social/content-hash';
 import { findBlindCrossPosts } from '@/lib/social/quality';
 import {
@@ -79,6 +85,8 @@ import {
 } from './research';
 import { corroborationWindow, type CorpusArticle } from '../../../pipeline/story-identity';
 import { adaptWeeklySocialChannel, type WeeklySocialAdaptation } from './social-adapter';
+import { buildWeeklySocialFactSnapshot } from './social-facts';
+import { renderWeeklyInstagramCarousel } from './instagram-carousel-render';
 import {
   SOCIAL_COPY_CHECKPOINT_SCHEMA_VERSION,
   socialCopyCheckpointFromOutput,
@@ -1751,67 +1759,88 @@ async function socialAssetsForChannel(
   context: Awaited<ReturnType<typeof loadGenerationContext>>,
   channel: SocialChannel,
 ): Promise<SocialAsset[]> {
-  const preferred =
-    context.artifacts.find((artifact) => {
-      if (!artifact.is_current || artifact.generation_status !== 'ready') return false;
-      if (channel === 'instagram') {
-        return (
-          artifact.artifact_type === 'social_asset' && /instagram|4x5/i.test(artifact.slot_key)
-        );
-      }
-      return (
-        artifact.artifact_type === 'social_asset' &&
-        /landscape|open.graph|linkedin|facebook|x/i.test(artifact.slot_key)
-      );
-    }) ??
-    context.artifacts.find(
-      (artifact) =>
-        artifact.artifact_type === 'cover' &&
-        artifact.is_current &&
-        artifact.generation_status === 'ready',
-    );
-  if (!preferred) return [];
-  const url = await signedArtifactUrl(preferred, 7 * 24 * 60 * 60);
-  if (!url) return [];
-  return [
-    {
-      url,
-      ...(preferred.width ? { width: preferred.width } : {}),
-      ...(preferred.height ? { height: preferred.height } : {}),
-      ...(preferred.byte_size ? { bytes: preferred.byte_size } : {}),
-      ...(preferred.mime_type === 'image/jpeg' ||
-      preferred.mime_type === 'image/png' ||
-      preferred.mime_type === 'image/webp'
-        ? { mimeType: preferred.mime_type }
-        : {}),
-    },
-  ];
+  if (channel === 'instagram') return [];
+  const selected = selectWeeklyChannelImage(
+    context.artifacts as SocialSelectableArtifact[],
+    channel,
+  );
+  if (!selected) return [];
+  return [selectedImageToAssetRef(selected)];
 }
 
-function escapeXml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;');
-}
-
-function slideLines(value: string, maxCharacters = 27) {
-  const words = value.replace(/\s+/g, ' ').trim().split(' ');
-  const lines: string[] = [];
-  let current = '';
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (candidate.length > maxCharacters && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = candidate;
-    }
+async function downloadArtifactBytes(artifact: {
+  storage_bucket: string | null;
+  storage_path: string | null;
+  external_url: string | null;
+}): Promise<Buffer | null> {
+  if (artifact.storage_bucket && artifact.storage_path) {
+    const { data, error } = await getSupabaseAdmin()
+      .storage.from(artifact.storage_bucket)
+      .download(artifact.storage_path);
+    if (error || !data) return null;
+    return Buffer.from(await data.arrayBuffer());
   }
-  if (current) lines.push(current);
-  return lines.slice(0, 10);
+  if (!artifact.external_url?.startsWith('http')) return null;
+  try {
+    const response = await fetch(artifact.external_url, { signal: AbortSignal.timeout(15_000) });
+    if (!response.ok) return null;
+    return Buffer.from(await response.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+async function persistInstagramSlide(input: {
+  job: ClaimedGenerationJob;
+  inputHash: string;
+  index: number;
+  jpeg: Buffer;
+  alt: string;
+}): Promise<{ asset: SocialAsset; checkpoint: SocialAssetCheckpoint }> {
+  const hash = createHash('sha256').update(input.jpeg).digest('hex');
+  const path =
+    `digests/${input.job.weekly_digest_id}/revisions/${input.job.revision_id}/social/instagram/` +
+    `${hash}-${input.job.id}/slide-${input.index}.jpg`;
+  await uploadPrivate(path, input.jpeg, 'image/jpeg');
+  const artifactId = await saveGeneratedArtifact({
+    weeklyDigestId: input.job.weekly_digest_id,
+    revisionId: input.job.revision_id,
+    artifactType: 'social_asset',
+    locale: 'en',
+    slotKey: `instagram-carousel:${input.index}:en`,
+    storagePath: path,
+    mimeType: 'image/jpeg',
+    width: 1080,
+    height: 1350,
+    byteSize: input.jpeg.length,
+    content: { alt: input.alt },
+    metadata: {
+      channel: 'instagram',
+      slide_index: input.index,
+      slide_count: 7,
+      source_job_id: input.job.id,
+      social_copy_input_hash: input.inputHash,
+      sha256: hash,
+    },
+  });
+  return {
+    asset: {
+      artifactId,
+      width: 1080,
+      height: 1350,
+      bytes: input.jpeg.length,
+      mimeType: 'image/jpeg',
+    },
+    checkpoint: {
+      artifactId,
+      storagePath: path,
+      slideIndex: input.index,
+      width: 1080,
+      height: 1350,
+      bytes: input.jpeg.length,
+      mimeType: 'image/jpeg',
+    },
+  };
 }
 
 async function renderInstagramCarousel(
@@ -1821,11 +1850,10 @@ async function renderInstagramCarousel(
   sourceJobIds: string[],
   savedCheckpoints: SocialAssetCheckpoint[],
   onCheckpoint: (assets: SocialAssetCheckpoint[]) => Promise<void>,
+  artifacts: SocialSelectableArtifact[],
 ): Promise<{ assets: SocialAsset[]; checkpoints: SocialAssetCheckpoint[] }> {
-  const parts = draft.contentParts ?? [];
-  if (parts.length < 7 || parts.length > 9 || !draft.assets[0]?.url) {
-    return { assets: draft.assets, checkpoints: savedCheckpoints };
-  }
+  const spec = draft.instagramCarousel;
+  if (!spec) return { assets: draft.assets, checkpoints: savedCheckpoints };
 
   const db = getSupabaseAdmin();
   const { data: artifactRows, error: artifactsError } = await db
@@ -1844,7 +1872,7 @@ async function renderInstagramCarousel(
   const recovered = new Map<number, { asset: SocialAsset; checkpoint: SocialAssetCheckpoint }>();
   for (const artifact of artifactRows ?? []) {
     const slideIndex = Number(artifact.slot_key.match(/^instagram-carousel:(\d+):en$/)?.[1]);
-    if (!Number.isInteger(slideIndex) || slideIndex < 1 || slideIndex > parts.length) continue;
+    if (!Number.isInteger(slideIndex) || slideIndex < 1 || slideIndex > 7) continue;
     const metadata = asRecord(artifact.metadata);
     const saved = savedByArtifactId.get(artifact.id);
     const belongsToCheckpoint = Boolean(saved && saved.slideIndex === slideIndex);
@@ -1861,12 +1889,10 @@ async function renderInstagramCarousel(
     ) {
       continue;
     }
-    const url = await signedArtifactUrl(artifact, 7 * 24 * 60 * 60);
-    if (!url) continue;
     const mimeType = artifact.mime_type as SocialAssetCheckpoint['mimeType'];
     recovered.set(slideIndex, {
       asset: {
-        url,
+        artifactId: artifact.id,
         width: artifact.width,
         height: artifact.height,
         bytes: artifact.byte_size,
@@ -1890,7 +1916,7 @@ async function renderInstagramCarousel(
         .sort((left, right) => left.slideIndex - right.slideIndex),
     );
   }
-  if (recovered.size === parts.length) {
+  if (recovered.size === 7) {
     return {
       assets: [...recovered.entries()]
         .sort(([left], [right]) => left - right)
@@ -1901,106 +1927,63 @@ async function renderInstagramCarousel(
     };
   }
 
-  const response = await fetch(draft.assets[0].url, { signal: AbortSignal.timeout(15_000) });
-  if (!response.ok) throw new Error(`Instagram carousel source returned ${response.status}.`);
-  const source = Buffer.from(await response.arrayBuffer());
-  const sharp = await lazySharp();
-  const background = await sharp(source)
-    .resize(1080, 1350, { fit: 'cover', position: 'attention' })
-    .modulate({ brightness: 0.3, saturation: 0.75 })
-    .blur(5)
-    .jpeg({ quality: 88 })
-    .toBuffer();
-  for (const [index, part] of parts.entries()) {
-    const slideIndex = index + 1;
-    if (recovered.has(slideIndex)) continue;
-    const lines = slideLines(part);
-    const lineHeight = lines.length > 7 ? 76 : 88;
-    const fontSize = lines.length > 7 ? 61 : 72;
-    const startY = Math.max(360, 690 - (lines.length * lineHeight) / 2);
-    const textSvg = `<svg width="1080" height="1350" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="0" width="1080" height="1350" fill="rgba(6,12,15,.35)"/>
-      <text x="76" y="104" fill="#f5f5f2" font-family="serif" font-size="44" font-weight="700">AI Today <tspan fill="#47e4d3">Brief</tspan></text>
-      <text x="1004" y="104" text-anchor="end" fill="#47e4d3" font-family="sans-serif" font-size="26" font-weight="800">${index + 1} / ${parts.length}</text>
-      <rect x="76" y="${startY - 78}" width="96" height="8" rx="4" fill="#47e4d3"/>
-      <text x="76" y="${startY}" fill="#f5f5f2" font-family="sans-serif" font-size="${fontSize}" font-weight="700">
-        ${lines.map((line, lineIndex) => `<tspan x="76" dy="${lineIndex === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`).join('')}
-      </text>
-      <text x="76" y="1265" fill="#9ba5aa" font-family="sans-serif" font-size="25">Weekly Digest · aitodaybrief.com</text>
-    </svg>`;
-    const image = await sharp(background)
-      .composite([{ input: Buffer.from(textSvg) }])
-      .jpeg({ quality: 91, progressive: true })
-      .toBuffer();
-    const hash = createHash('sha256').update(image).digest('hex');
-    const path =
-      `digests/${job.weekly_digest_id}/revisions/${job.revision_id}/social/instagram/` +
-      `${hash}-${job.id}/slide-${index + 1}.jpg`;
-    await uploadPrivate(path, image, 'image/jpeg');
-    const artifactId = await saveGeneratedArtifact({
-      weeklyDigestId: job.weekly_digest_id,
-      revisionId: job.revision_id,
-      artifactType: 'social_asset',
-      locale: 'en',
-      slotKey: `instagram-carousel:${index + 1}:en`,
-      storagePath: path,
-      mimeType: 'image/jpeg',
-      width: 1080,
-      height: 1350,
-      byteSize: image.length,
-      content: { alt: `Weekly Digest carousel slide ${index + 1}: ${part}` },
-      metadata: {
-        channel: 'instagram',
-        slide_index: index + 1,
-        slide_count: parts.length,
-        source_job_id: job.id,
-        social_copy_input_hash: inputHash,
-        sha256: hash,
-      },
-    });
-    const checkpoint: SocialAssetCheckpoint = {
-      artifactId,
-      storagePath: path,
-      slideIndex,
-      width: 1080,
-      height: 1350,
-      bytes: image.length,
-      mimeType: 'image/jpeg',
+  const sources = selectInstagramCarouselSources(artifacts);
+  if (!sources.ok) {
+    draft.qualityReport = {
+      ...draft.qualityReport!,
+      blocking: [...(draft.qualityReport?.blocking ?? []), sources.blocker],
     };
-    recovered.set(slideIndex, {
-      asset: {
-        url: '',
-        width: 1080,
-        height: 1350,
-        bytes: image.length,
-        mimeType: 'image/jpeg',
-      },
-      checkpoint,
+    return { assets: draft.assets, checkpoints: savedCheckpoints };
+  }
+  const coverRow = await db
+    .from('weekly_digest_artifacts')
+    .select('storage_bucket,storage_path,external_url')
+    .eq('id', sources.cover.artifactId)
+    .maybeSingle();
+  const coverBytes = coverRow.data ? await downloadArtifactBytes(coverRow.data) : null;
+  if (!coverBytes) return { assets: draft.assets, checkpoints: savedCheckpoints };
+  const storyImages: Array<{ revisionItemId: string; image: Buffer }> = [];
+  for (const story of sources.stories) {
+    const storyRow = await db
+      .from('weekly_digest_artifacts')
+      .select('storage_bucket,storage_path,external_url')
+      .eq('id', story.artifactId)
+      .maybeSingle();
+    const image = storyRow.data ? await downloadArtifactBytes(storyRow.data) : null;
+    if (!image || !story.revisionItemId) {
+      return { assets: draft.assets, checkpoints: savedCheckpoints };
+    }
+    storyImages.push({ revisionItemId: story.revisionItemId, image });
+  }
+
+  const rendered = await renderWeeklyInstagramCarousel({
+    spec,
+    cover: coverBytes,
+    stories: storyImages,
+  });
+  if (!rendered.ok) {
+    draft.qualityReport = {
+      ...draft.qualityReport!,
+      blocking: [...(draft.qualityReport?.blocking ?? []), ...rendered.blockers],
+    };
+    return { assets: draft.assets, checkpoints: savedCheckpoints };
+  }
+
+  for (const slide of rendered.slides) {
+    if (recovered.has(slide.index)) continue;
+    const persisted = await persistInstagramSlide({
+      job,
+      inputHash,
+      index: slide.index,
+      jpeg: slide.jpeg,
+      alt: `Weekly Digest carousel slide ${slide.index}: ${spec.slides[slide.index - 1]?.headline ?? 'carousel'}`,
     });
-    // save_weekly_digest_artifact is already durable. Record its stable ID
-    // before requesting an expiring signed URL so a signing outage does not
-    // cause the slide to be rendered and uploaded again.
+    recovered.set(slide.index, persisted);
     await onCheckpoint(
       [...recovered.values()]
         .map(({ checkpoint: saved }) => saved)
         .sort((left, right) => left.slideIndex - right.slideIndex),
     );
-    const { data: signed, error } = await db.storage
-      .from(PRIVATE_BUCKET)
-      .createSignedUrl(path, 7 * 24 * 60 * 60);
-    if (error || !signed?.signedUrl) {
-      throw new Error(`Instagram carousel slide ${index + 1} could not be signed.`);
-    }
-    recovered.set(slideIndex, {
-      checkpoint,
-      asset: {
-        url: signed.signedUrl,
-        width: 1080,
-        height: 1350,
-        bytes: image.length,
-        mimeType: 'image/jpeg',
-      },
-    });
   }
   return {
     assets: [...recovered.entries()]
@@ -2039,40 +2022,6 @@ export function computeSocialCopyCheckpointHash(input: {
       }),
     )
     .digest('hex');
-}
-
-/** The writer and independent critic receive the same owner-approved article snapshot. */
-export function weeklySocialArticleFacts(
-  bundle: WeeklyMasterBundle,
-  locale: SocialLocale,
-): string[] {
-  const article = locale === 'uk' ? bundle.uk : bundle.en;
-  return [
-    ...new Set(
-      [
-        article.title,
-        article.standfirst,
-        article.theme,
-        article.intro,
-        article.editorNote,
-        ...article.keyTakeaways,
-        article.conclusion,
-        ...article.stories.flatMap((story) => [
-          story.headline,
-          story.summary,
-          story.hook,
-          story.body,
-          story.why,
-          story.practical,
-          story.limitation,
-          story.takeaway,
-          story.editorsView,
-        ]),
-      ]
-        .map((fact) => fact?.trim())
-        .filter((fact): fact is string => Boolean(fact)),
-    ),
-  ];
 }
 
 async function loadSocialCopyCheckpoint(
@@ -2191,28 +2140,9 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
   const context = await loadGenerationContext(job);
   const bundle = masterBundleFromArtifacts(context);
   const locales = await localeMap();
-  const approvedClaimFacts = context.items.flatMap((item) =>
-    approvedFactsForItem(item).map((claim) => claim.text),
-  );
   const sourceFactsByLocale: Record<SocialLocale, string[]> = {
-    en: [
-      ...new Set(
-        [
-          ...weeklySocialArticleFacts(bundle, 'en'),
-          ...context.items.flatMap((item) => [item.title_en, item.summary_en, item.why_en ?? '']),
-          ...approvedClaimFacts,
-        ].filter(Boolean),
-      ),
-    ],
-    uk: [
-      ...new Set(
-        [
-          ...weeklySocialArticleFacts(bundle, 'uk'),
-          ...context.items.flatMap((item) => [item.title_uk, item.summary_uk, item.why_uk ?? '']),
-          ...approvedClaimFacts,
-        ].filter(Boolean),
-      ),
-    ],
+    en: buildWeeklySocialFactSnapshot({ locale: 'en', bundle, items: context.items }),
+    uk: buildWeeklySocialFactSnapshot({ locale: 'uk', bundle, items: context.items }),
   };
   const sourceFacts = [...new Set([...sourceFactsByLocale.en, ...sourceFactsByLocale.uk])];
   const checkpointHash = computeSocialCopyCheckpointHash({ bundle, sourceFacts, locales });
@@ -2285,6 +2215,12 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
     });
     const providerPipelineStartedAt = Date.now();
     const trackedUrl = new URL(`/r/s/${checkpoint.tokens[channel]}`, SITE_URL).toString();
+    const instagramSources = selectInstagramCarouselSources(
+      context.artifacts as SocialSelectableArtifact[],
+    );
+    if (channel === 'instagram' && !instagramSources.ok) {
+      throw new Error(`[weekly-generation] ${instagramSources.blocker.message}`);
+    }
     const assets = await socialAssetsForChannel(context, channel);
     const adaptation = await adaptWeeklySocialChannel({
       channel,
@@ -2300,6 +2236,16 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
           : `Weekly Digest cover: ${bundle.en.title}`,
       db: getSupabaseAdmin(),
       avoidCopies: adaptations.filter((draft) => draft.locale === locale),
+      currentRevisionItemIds: context.items.map((item) => item.id),
+      ...(channel === 'instagram' && instagramSources.ok
+        ? {
+            instagramStoryIds: [
+              instagramSources.stories[0].revisionItemId ?? '',
+              instagramSources.stories[1].revisionItemId ?? '',
+              instagramSources.stories[2].revisionItemId ?? '',
+            ] as [string, string, string],
+          }
+        : {}),
     });
     adaptations.push(adaptation);
     checkpoint.adaptations[channel] = adaptation;
@@ -2390,6 +2336,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
   // checkpoint. Refresh them from current artifacts before persistence so a
   // retry days later does not publish expired URLs from the saved LLM draft.
   for (const adaptation of adaptations) {
+    if (adaptation.channel === 'instagram') continue;
     adaptation.assets = await socialAssetsForChannel(context, adaptation.channel);
   }
   const instagram = adaptations.find((draft) => draft.channel === 'instagram');
@@ -2409,15 +2356,15 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       checkpoint.instagramAssets,
       async (assets) => {
         checkpoint.instagramAssets = assets;
-        const expected = instagram.contentParts?.length ?? 0;
-        const progress = expected ? Math.round(65 + (assets.length / expected) * 12) : 77;
+        const progress = Math.round(65 + (assets.length / 7) * 12);
         await saveSocialCopyCheckpoint(tracker, checkpoint, 'instagram', progress);
       },
+      context.artifacts as SocialSelectableArtifact[],
     );
     instagram.assets = rendered.assets;
     checkpoint.instagramAssets = rendered.checkpoints;
     await saveSocialCopyCheckpoint(tracker, checkpoint, 'instagram', 77);
-    if (instagram.assets.length !== (instagram.contentParts?.length ?? 0)) {
+    if (instagram.assets.length !== 7) {
       instagram.qualityReport = {
         ...instagram.qualityReport!,
         blocking: [
@@ -2586,6 +2533,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       altText: draft.altText,
       scheduledFor: draft.scheduledFor,
       contentVersion,
+      instagramCarousel: draft.instagramCarousel,
     });
     const destinationUrl = new URL(`/${draft.locale}/weekly/${context.digest.slug}`, SITE_URL);
     const publicUrl = new URL(destinationUrl.toString());
@@ -2625,6 +2573,9 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
               document_note: 'Seven-page native document generated from the approved master.',
             }
           : {}),
+        ...(draft.channel === 'instagram' && draft.instagramCarousel
+          ? { instagram_carousel: draft.instagramCarousel }
+          : {}),
       } as Json,
     };
   });
@@ -2660,6 +2611,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       altText: draft.altText,
       scheduledFor: draft.scheduledFor,
       contentVersion,
+      instagramCarousel: draft.instagramCarousel,
     });
     return {
       ...row,

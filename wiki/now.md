@@ -2,20 +2,29 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…17, Content Sim plan 2026-08-11,
-experimental Visual Affordance V10 owner review 2026-08-13, weekly illustration B1-fix 2026-08-15,
-owner weekly selection/content audit 2026-08-16, Master quality carry-over live incident 2026-08-17
-owner weekly selection/content audit 2026-08-16, research corpus corroboration 2026-08-16,
-reader-tool ownership miss (SpaceX/Cursor close) 2026-08-16,
-Start / retry Content Studio silent no-op 2026-08-16, site WebP delivery 2026-08-17
-social package LinkedIn recovery incident 2026-08-17, GitHub workflow-dispatch 503 incident,
-staged social-copy recovery, LinkedIn 7-page overflow and approval-ready Social repair 2026-08-17
-clean Social job-history presentation and successful six-channel recovery 2026-08-17
-Last updated: 2026-08-17
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…18, Content Sim plan,
+weekly illustration B1-fix, Social package recovery 2026-08-17, Social tab implementation 2026-08-18
+Last updated: 2026-08-18
 
 ---
 
 ## Стан репозиторію
+
+- **Social tab media + channel-aware editing (2026-08-18), гілка
+  `feat/social-tab-improvements`.** Реалізація executor-spec з PR #291: `artifactId` замість
+  7-денного signed URL, selector більше не бере LinkedIn PDF як картинку, Threads hook не
+  обрізає `<PART>`, Instagram — 7 JPEG 1080×1350 з виміряним layout (overflow = blocker),
+  спільний `buildWeeklySocialFactSnapshot` для generation і Save, channel-aware форма,
+  `npm run weekly:social:repair` (dry-run за замовчуванням). Production apply — окремий
+  owner step після deploy, не частина цього PR. Гілку синхронізовано з `main` після #293.
+  (source: `src/lib/social/asset-ref.ts`, `src/lib/social/channel-assets.ts`,
+  `src/lib/social/hook-candidate.ts`, `src/lib/weekly-digest/instagram-carousel-render.ts`,
+  `scripts/repair-weekly-social-package.ts`)
+
+- **PDF weekly digest v3 на `main` (2026-08-18, #293).** Фіксована сітка `pdfkit-weekly-v3`,
+  6–8 сторінок (типово 7), клікабельний зміст, сирий `body` більше не друкується в PDF.
+  Підтягнуто в цю гілку; не перетинається з Instagram carousel / LinkedIn document.
+  (source: `src/lib/weekly-digest/pdf.ts`, PR #293)
 
 - **Social package clean і готовий до owner approval (2026-08-17), гілка
   `codex/clean-social-job-history`.** Final linked recovery

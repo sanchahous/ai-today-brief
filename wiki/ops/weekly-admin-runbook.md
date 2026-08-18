@@ -4,8 +4,8 @@ Summary: покрокова інструкція для власника/ред�
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), production incidents / owner sessions
-2026-08-04…17, staged social-copy recovery 2026-08-17.
-Last updated: 2026-08-17
+2026-08-04…17, staged social-copy recovery 2026-08-17, Social tab channel-aware form 2026-08-18.
+Last updated: 2026-08-18
 
 ---
 
@@ -257,6 +257,22 @@ failed package). Це ставить **один** `social_copy` job для Teleg
 LinkedIn та Instagram — не шість незалежних кліків. Дочекайся `succeeded`: до `in_review` тепер
 доходить лише повний пакет без blocking checks. Картка показує `Ready for review · no blockers`;
 переглянь текст, за потреби відредагуй і натисни **Save & approve** для потрібної locale.
+
+Форма тепер channel-aware: окремі CTA/Hashtags і raw JSON `asset_urls`/`content_parts` прибрані.
+Telegram/Facebook/LinkedIn — post copy; X — root + self-reply з tracked URL; Threads — 3–5
+частин (клік по hook оновлює всі parts, без `<PART>` у тексті); Instagram — caption і сім
+read-only слайдів. LinkedIn PDF показується як document, не як картинка. Save можна з warnings;
+**Save & approve** стоїть, якщо critic < 85, є asset blockers, або немає critic при
+`SOCIAL_CRITIC_REQUIRED`.
+(source: `src/lib/social/channel-form.ts`, `src/lib/social/quality.ts`)
+
+Якщо після деплою 2026-08-18 старий пакет усе ще показує PDF замість landscape image, **не**
+регенеруй шість каналів з нуля. Pause publishing → dry-run
+`npm run weekly:social:repair -- --package-id <uuid>` → якщо план показує 5 image refs і 7
+Instagram JPEG, тоді `--apply`. Скрипт лишає copy п'яти каналів, міняє image refs, регенерує
+Instagram spec/slides і повертає всі variants у `in_review` без auto-approve. Production apply
+не є частиною code PR.
+(source: `scripts/repair-weekly-social-package.ts`, `src/lib/weekly-digest/repair-social-package.ts`)
 
 У **Generation jobs** актуальний Social run показаний окремо. Попередні linked attempts згорнуті
 під **Previous generation attempts**: вони лишаються аудит-трейлом, але їхній старий `failed` не

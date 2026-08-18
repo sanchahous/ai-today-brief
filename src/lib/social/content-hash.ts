@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import type { InstagramCarouselSpec } from './instagram-carousel';
 import type { SocialAsset, SocialChannel, SocialLocale } from './types';
 
 interface HashableSocialContent {
@@ -12,15 +13,17 @@ interface HashableSocialContent {
   altText?: string | null;
   scheduledFor: string;
   contentVersion: number;
+  instagramCarousel?: InstagramCarouselSpec | null;
 }
 
 function stableAssets(assets: SocialAsset[] = []) {
-  return assets.map(({ url, width, height, mimeType, bytes }) => ({
-    url,
-    width: width ?? null,
-    height: height ?? null,
-    mimeType: mimeType ?? null,
-    bytes: bytes ?? null,
+  return assets.map((asset) => ({
+    artifactId: asset.artifactId ?? null,
+    url: asset.artifactId ? null : (asset.url ?? null),
+    width: asset.width ?? null,
+    height: asset.height ?? null,
+    mimeType: asset.mimeType ?? null,
+    bytes: asset.bytes ?? null,
   }));
 }
 
@@ -36,6 +39,7 @@ export function socialContentHash(content: HashableSocialContent): string {
     altText: content.altText?.trim() || null,
     scheduledFor: new Date(content.scheduledFor).toISOString(),
     contentVersion: content.contentVersion,
+    instagramCarousel: content.instagramCarousel ?? null,
   });
   return createHash('sha256').update(canonical).digest('hex');
 }
