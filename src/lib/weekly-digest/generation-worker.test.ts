@@ -248,8 +248,89 @@ describe('masterBundleFromArtifacts', () => {
       revisionItemId: 'item-1',
       placement: 'feature',
       hook: 'Summary sentence.',
+      claimIds: ['W1-C1', 'W1-C2'],
     });
     expect(bundle.en.stories[3]).toMatchObject({ revisionItemId: 'item-4', placement: 'radar' });
+  });
+
+  it('restores claim IDs and editorial fields from the revision content_studio snapshot', () => {
+    const context = {
+      revision: {
+        title_en: 'Revision title',
+        title_uk: 'Назва ревізії',
+        intro_en: 'Revision intro',
+        intro_uk: 'Вступ ревізії',
+        editor_note_en: 'Revision editor note',
+        editor_note_uk: 'Нотатка редактора',
+        key_takeaways_en: ['Revision takeaway'],
+        key_takeaways_uk: ['Висновок ревізії'],
+      },
+      items: Array.from({ length: 7 }, (_, index) =>
+        revisionItem({
+          id: `item-${index + 1}`,
+          rank: index + 1,
+          body_en: `English body ${index + 1}`,
+          body_uk: `Український текст ${index + 1}`,
+          why_en: `English why ${index + 1}`,
+          why_uk: `Українське пояснення ${index + 1}`,
+          practical_en: `English practical ${index + 1}`,
+          practical_uk: `Український крок ${index + 1}`,
+          takeaway_en: `English takeaway ${index + 1}`,
+          takeaway_uk: `Український висновок ${index + 1}`,
+          source_snapshot: {
+            content_studio: {
+              hook_en: `Studio hook ${index + 1}`,
+              hook_uk: `Студійний хук ${index + 1}`,
+              limitation_en: `Studio limitation ${index + 1}`,
+              limitation_uk: `Студійне обмеження ${index + 1}`,
+              editors_view_en: `Studio editors view ${index + 1}`,
+              editors_view_uk: `Студійний погляд ${index + 1}`,
+              discussion_en: `Studio discussion ${index + 1}?`,
+              discussion_uk: `Студійне питання ${index + 1}?`,
+              claim_ids: [`W${index + 1}-C1`, `W${index + 1}-C2`],
+            },
+          },
+        }),
+      ),
+      artifacts: ['en', 'uk'].map((locale) => ({
+        artifact_type: 'article',
+        locale,
+        is_current: true,
+        content: {
+          title: `${locale} title`,
+          seoTitle: `${locale} SEO title`,
+          metaDescription: `${locale} meta description`,
+          ogTitle: `${locale} OG title`,
+          ogDescription: `${locale} OG description`,
+          standfirst: `${locale} standfirst`,
+          theme: `${locale} theme`,
+          intro: `${locale} intro`,
+          editor_note: `${locale} editor note`,
+          key_takeaways: [`${locale} takeaway`],
+          topics: ['AI'],
+          entities: ['Example'],
+          internalLinks: [{ anchor: 'AI', query: 'ai' }],
+        },
+      })),
+    } as unknown as Parameters<typeof masterBundleFromArtifacts>[0];
+
+    const bundle = masterBundleFromArtifacts(context);
+
+    expect(bundle.en.stories[0]).toMatchObject({
+      revisionItemId: 'item-1',
+      placement: 'feature',
+      hook: 'Studio hook 1',
+      limitation: 'Studio limitation 1',
+      editorsView: 'Studio editors view 1',
+      discussionQuestion: 'Studio discussion 1?',
+      claimIds: ['W1-C1', 'W1-C2'],
+    });
+    expect(bundle.uk.stories[2]).toMatchObject({
+      revisionItemId: 'item-3',
+      hook: 'Студійний хук 3',
+      editorsView: 'Студійний погляд 3',
+      claimIds: ['W3-C1', 'W3-C2'],
+    });
   });
 });
 

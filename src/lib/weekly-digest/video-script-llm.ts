@@ -169,6 +169,30 @@ ${JSON.stringify(material)}${guidanceBlock}`;
 
 const MAX_ATTEMPTS = 2;
 
+export function requireVideoScriptArticle(articleEn: WeeklyArticleMaster) {
+  if (!Array.isArray(articleEn.stories) || articleEn.stories.length === 0) {
+    throw new Error(
+      'Video script requires article stories. Rehydrate the approved article from the active revision before calling the writer.',
+    );
+  }
+  const features = articleEn.stories.filter((story) => story.placement === 'feature');
+  if (features.length !== 3) {
+    throw new Error(
+      `Video script needs exactly three feature stories; received ${features.length}.`,
+    );
+  }
+  if (features.some((story) => story.claimIds.length === 0)) {
+    throw new Error(
+      'Video script needs claim IDs on each Top 3 story so Shorts can ground factIds.',
+    );
+  }
+  return articleEn.stories.map((story) => ({
+    revisionItemId: story.revisionItemId,
+    placement: story.placement,
+    claimIds: story.claimIds,
+  }));
+}
+
 /**
  * Generates and deterministically validates the weekly video script,
  * retrying once (full regenerate, with the failed validator issues fed back
@@ -178,11 +202,7 @@ const MAX_ATTEMPTS = 2;
 export async function generateWeeklyVideoScript(
   articleEn: WeeklyArticleMaster,
 ): Promise<WeeklyVideoScriptGenerationResult> {
-  const expectedStories = articleEn.stories.map((story) => ({
-    revisionItemId: story.revisionItemId,
-    placement: story.placement,
-    claimIds: story.claimIds,
-  }));
+  const expectedStories = requireVideoScriptArticle(articleEn);
   let guidance: WeeklyQualityIssue[] = [];
   for (let attempt = 1; ; attempt += 1) {
     const result: ProviderResult<WeeklyVideoScript> = await generateFirstAvailable(

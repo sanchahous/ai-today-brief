@@ -21,7 +21,7 @@ vi.mock('../../../pipeline/claude-cli', () => ({
 }));
 
 import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summarize';
-import { generateWeeklyVideoScript } from './video-script-llm';
+import { generateWeeklyVideoScript, requireVideoScriptArticle } from './video-script-llm';
 import type { WeeklyArticleMaster } from './content-studio';
 
 afterEach(() => {
@@ -143,6 +143,21 @@ function validScriptPayload() {
 function mockWriterResponse(text: string) {
   return { text, provider: 'openrouter' as const, model: 'vendor/writer-model', usage: null };
 }
+
+describe('requireVideoScriptArticle', () => {
+  it('rejects a normalized article with no stories instead of throwing TypeError on map', () => {
+    const normalized = article();
+    // Production article artifacts store editor_note / key_takeaways and omit stories.
+    delete (normalized as { stories?: unknown }).stories;
+    expect(() => requireVideoScriptArticle(normalized)).toThrow(/requires article stories/);
+  });
+
+  it('rejects feature stories that have no claim IDs before any provider call', () => {
+    const emptyClaims = article();
+    emptyClaims.stories[0]!.claimIds = [];
+    expect(() => requireVideoScriptArticle(emptyClaims)).toThrow(/claim IDs/);
+  });
+});
 
 describe('generateWeeklyVideoScript', () => {
   it('parses a valid script, recomputing narration from the scene voiceovers rather than trusting the model', async () => {

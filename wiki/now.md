@@ -3,14 +3,32 @@
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…18, Content Sim plan,
-weekly illustration B1-fix, Social package recovery 2026-08-17, Social tab implementation 2026-08-18
+weekly illustration B1-fix, Social package recovery 2026-08-17, Social tab implementation 2026-08-18,
+video_script undefined.map 2026-08-18
 Last updated: 2026-08-18
 
 ---
 
 ## Стан репозиторію
 
-- **Social package `612df95c` approved (2026-08-18).** Instagram owner апрувнув у UI;
+- **`video_script` падає на `undefined.map` (2026-08-18), гілка
+  `fix/weekly-video-script-stories`.** Production job `43b9fcf1…` на
+  `ai-weekly-2026-08-09` rev. `3e955086` прожив 1 с: GitHub Actions claimed →
+  «Starting video script provider call» → `Cannot read properties of undefined
+  (reading 'map')`, `Code: unknown`. Approved EN/UK `article` артефакти мають
+  `editor_note` / `key_takeaways` і **немає `stories`** (той самий normalized
+  shape, що валив LinkedIn 17.08). `generateVideoScript` кастив `content` як
+  `WeeklyArticleMaster` і йшов у `article.stories.map`. Фікс: той самий
+  `masterBundleFromArtifacts`, плюс `claimIds` / editorsView / discussion з
+  `source_snapshot.content_studio` (у проді Top 3 мають `W1-C1`…). Після деплою
+  — **Create linked retry** на terminal `video_script`; `video_manifest` чекає
+  approved script. Не тиснути, доки фікс не в `main`.
+  (source: production job `43b9fcf1-e9ba-46b8-80a8-93d775cec8f0`, Actions
+  heartbeat 2026-08-18 11:55 UTC, artifact `cfd41b17…`,
+  `src/lib/weekly-digest/generation-worker.ts`,
+  `src/lib/weekly-digest/video-script-llm.ts`)
+
+- **Social package `612df95c` approved (2026-08-18, #296).** Instagram owner апрувнув у UI;
   повторний Save на `approved` падав: «Social approval/schedule transitions require a workflow RPC».
   Решту каналів увімкнено й апрувнуто; package `approved`. Save metadata тепер іде через
   admin client. Copy/approve CLI: `weekly:social:repair-copy`, `weekly:social:approve`.
