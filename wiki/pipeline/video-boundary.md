@@ -1,15 +1,18 @@
 # Video pipeline boundary
 
 Summary: Межа відповідальності video-pipeline відносно основного брифу.
-Sources: none (analysis)
-Last updated: 2026-07-23
+Sources: `src/lib/weekly-digest/video-shoot-pack.ts`, `src/components/admin/weekly-workspace.tsx`,
+owner session 2026-08-19, original ADR 2026-07-23
+Last updated: 2026-08-19
 
 ⚠️ The manifest schema example below (`weekly-video-v1`) is the original ADR draft and is
 **stale** — the live schema is `weekly-video-v3` (per-scene `revisionItemId`, WPS-validated
 scene durations). See [weekly-digest § PR6](weekly-digest.md#editorial-voice-overhaul-2026-08-06)
 for the current shape and `src/lib/weekly-digest/content-studio.ts`'s `WeeklyVideoScript`/
 `WeeklyVideoScene` types for the authoritative contract. The ownership split and rendering
-boundary decided here are unchanged.
+boundary decided here are unchanged except for **where the owner shoots**: the CMS Video tab
+is the shooting package; `ai-today-brief-video` only assembles dropped clips.
+(source: owner session 2026-08-19, `src/lib/weekly-digest/video-shoot-pack.ts`)
 
 Status: accepted and implemented
 
@@ -43,18 +46,21 @@ files must not be added to this web application.
 ### `ai-today-brief`
 
 - selects and stores the approved Weekly Digest;
+- writes and displays the **shooting package** on `/admin/weekly/[id]?tab=video`
+  (Hailuo/Krea i2v prompts, HeyGen avatar scripts, Remotion slot paths);
 - exposes or exports a versioned video input manifest;
 - stores video production status and the resulting YouTube ID/URL;
 - renders the YouTube embed or link on the public site.
+(source: `src/lib/weekly-digest/video-shoot-pack.ts`, 2026-08-19)
 
 ### `ai-today-brief-video`
 
 - accepts an approved digest manifest;
-- obtains or imports the HeyGen avatar narration;
-- downloads and validates story imagery;
-- composes and renders the digest with Remotion;
+- **assembles** owner-dropped clips (`public/broll/`, `public/avatar/`) with Edge TTS and Remotion;
+- does **not** own the shoot brief (no second copy of avatar scripts / i2v prompts as source of truth);
 - uploads the finished video to YouTube;
 - returns a result manifest to the website.
+(source: owner session 2026-08-19)
 
 ## Integration contract
 
@@ -131,3 +137,9 @@ should not be treated as the canonical master archive. For the MVP, keep the
 render inputs and manifest so a video can be reproduced. If preserving exact
 masters or paid HeyGen clips becomes important, store them in inexpensive
 object storage rather than in either Git repository.
+
+## Related pages
+
+- [weekly-digest](weekly-digest.md)
+- [ops/weekly-admin-runbook](../ops/weekly-admin-runbook.md)
+- [now](../now.md)

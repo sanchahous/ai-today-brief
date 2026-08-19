@@ -6,8 +6,9 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
 `supabase/migrations/20260804*`–`20260809*`, live checks 2026-08-04…18,
 editorial-voice, PDF page-cap, seed-content, social recovery, PDF v3 / Social tab,
 video_script hydration and missing video_manifest companion 2026-08-18,
-Video Save dropped v3 narration_plan 2026-08-18
-Last updated: 2026-08-18
+Video Save dropped v3 narration_plan 2026-08-18,
+Video shooting package in admin 2026-08-19
+Last updated: 2026-08-19
 
 ---
 
@@ -329,16 +330,26 @@ Video tab Save постив Scene JSON (масив) у `content.narration_plan`.
 (source: production artifacts `e9dbd228…` / `4945648b…` / job `a8c9040f…`
 2026-08-18, `src/lib/weekly-digest/video-script-content.ts`)
 
-### Video4 render ready, import waits for YouTube (2026-08-18)
+### Video shooting package lives in admin (2026-08-19)
+
+Власник знімає кліпи з вкладки **Video**, блок **Shooting package** — не з wiki
+`ai-today-brief-video`. Пакет рахується з `video_script` / `video_manifest` сцен
+(`buildVideoShootPack`): **Hailuo** (або Krea) для living b-roll, **HeyGen** для
+тексту губ на `anchor`/`outro`, слоти `public/broll|avatar/<digestId>/scene-XX.mp4`.
+Рендерер лише зводить покладені файли. JPEG стартового кадру — approved `story_image`
+з Visuals.
+(source: owner session 2026-08-19, `src/lib/weekly-digest/video-shoot-pack.ts`,
+`src/components/admin/VideoShootPackPanel.tsx`)
+
+### Video4: L0 не випуск; зйомка в Shooting package (2026-08-19)
 
 `video_script` v2 і `video_manifest` v1 (`weekly-video-v3`) на
-`ai-weekly-2026-08-09` / rev. `3e955086` — `approved`. Preflight-гейтів
-`video_final` / `captions:en` / `captions:uk` / `thumbnail` у проді немає:
-CMS не приймає MP4, лише `weekly-video-result-v2` з 11-символьним YouTube-id
-(`validateWeeklyVideoResultManifest`). Локальний рендер живе в
-`ai-today-brief-video` (`output/atb-weekly-2026-08-09.mp4`, 432с; shorts;
-VTT). Після paste JSON RPC поставить PDF EN/UK у `stale`.
-(source: прод-Supabase live check 2026-08-18,
+`ai-weekly-2026-08-09` / rev. `3e955086` — `approved`. CMS не приймає MP4,
+лише `weekly-video-result-v2` з 11-символьним YouTube-id. Локальний L0-рендер
+у `ai-today-brief-video` (`output/atb-weekly-2026-08-09.mp4`) — JPEG + TTS,
+не master. Власник знімає з **Shooting package** на Video-табі, рендерер зводить.
+Після paste result JSON RPC поставить PDF EN/UK у `stale`.
+(source: owner session 2026-08-19, прод-Supabase live check 2026-08-18,
 `src/lib/weekly-digest/video.ts`, `ai-today-brief-video/wiki/now.md`)
 
 Два наступні linked jobs (`f39b2429…`, `d716aaef…`) уже пройшли hydration, але terminal-failed

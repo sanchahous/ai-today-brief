@@ -9,8 +9,8 @@ Start / retry Content Studio after succeeded jobs 2026-08-16,
 social package LinkedIn recovery, GitHub dispatch 503 recovery, staged social checkpoints,
 LinkedIn 7-page overflow bounds, approval-ready Social repair, bounded social provider ladder та
 reliable social routing/candidate fallback, clean Social job history 2026-08-17,
-Social tab media contract 2026-08-18, Social approved-row Save fix 2026-08-18, video_script hydration 2026-08-18, video_manifest companion enqueue 2026-08-18, video script Save dropped v3 plan 2026-08-18, Video4 Remotion render 2026-08-18
-Last updated: 2026-08-18
+Social tab media contract 2026-08-18, Social approved-row Save fix 2026-08-18, video_script hydration 2026-08-18, video_manifest companion enqueue 2026-08-18, video script Save dropped v3 plan 2026-08-18, Video4 Remotion render 2026-08-18, Video shooting package in admin 2026-08-19
+Last updated: 2026-08-19
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -63,7 +63,7 @@ Last updated: 2026-08-18
 | ✅ [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) | Ітеративний рушій `editorial_master`: посегментний запис із чекпоїнтом на кожен сегмент, точковий ремонт поля замість перегенерації, якість більше не валить джобу | `master-engine.ts` / `master-segments.ts` / `master-repair.ts`, owner session 2026-08-09 |
 | ✅ [pipeline/content-sim](pipeline/content-sim.md) | Симуляція/бектест: per-concept 2×3 parallel vision loop, structural gates, advisory semantic planning, escalation, release gate | `pipeline/card-image.ts`, `src/lib/content-sim`, 2026-08-12 |
 | ✅ [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) | Виконавча специфікація ілюстрацій після рішення 2026-08-15. B1-fix … E3, F2, F3, G, A2, F5 зроблено 2026-08-15; origin JPEG новин — follow-up G2 | owner review живого випуску 2026-08-14 + рішення власника 2026-08-15 + `AI_Today_Brief_Visual_Algorithm_Plan.pdf` |
-| ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | Межа відео-pipeline | колишній `docs/VIDEO-PIPELINE-BOUNDARY.md` |
+| ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | CMS знімає (Shooting package); рендерер лише зводить |
 | ✅ [pipeline/llm-providers](pipeline/llm-providers.md) | Уніфікований реєстр LLM-провайдерів (у розробці): навіщо, ключові знахідки, статус фаз | owner session 2026-08-06 |
 
 ## SEO / AEO
