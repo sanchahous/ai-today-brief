@@ -390,9 +390,15 @@ Release тоді каже «Open Video → enqueue video_manifest», але кн
 як `narration_plan`, job `video_manifest` падає з «does not contain the v3
 script». Після правки фрази 18.08 саме це сталось на v2. До деплою фіксу
 не тисни Save на вже approved script — лише **Approve** манифесту.
+На `ai-weekly-2026-08-09` (rev. `3e955086`) script і `weekly-video-v3` уже
+`approved` (live check 2026-08-18). Далі не Save contract: рендер у
+`ai-today-brief-video`, заливка на YouTube, paste `weekly-video-result-v2`
+(поле Render result manifest) → Approve `video_final` / captions / thumbnail.
+PDF EN/UK після імпорту стануть `stale` — перезатвердити.
 (source: production `weekly_digest_generation_jobs` live check owner 2026-08-18,
 `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/generation-worker.ts`,
-`src/lib/weekly-digest/video-script-content.ts`)
+`src/lib/weekly-digest/video-script-content.ts`,
+`ai-today-brief-video/wiki/now.md`)
 
 Той самий корневий дефект hydration, що LinkedIn 17.08, тільки воркер кастив
 `content` напряму замість `masterBundleFromArtifacts`.
@@ -436,7 +442,7 @@ Postpone не створює нову RPC — це той самий Pause → A
 | Linked `social_copy` retry знову показує `channels` від 0% | Немає валідного checkpoint для поточного approved source hash | Перевір, чи не змінилась revision/locale map; якщо ні — дивись `checkpoint_restored`/`checkpoint_saved` у Timeline |
 | Release: немає story/cover | Файл не завантажено | Visuals → скопіюй промпт → згенеруй у своєму інструменті → upload. Не тисни Regenerate |
 | Release: немає `video_manifest` job, хоча script approved | Companion-рядок ніколи не створився (падіння/retry `video_script` без post-master queue) | Video → **Generate manifest**. Не регенеруй скрипт |
-| Release blocked на video | Немає Remotion pipeline / captions, або манифест ще не Approve | Generate/Approve weekly-video-v3; Owner override лише для trial |
+| Release blocked на video | Немає YouTube result (`video_final` / captions / thumbnail) | Залити MP4 з `ai-today-brief-video/output/`, зібрати `weekly-video-result-v2`, paste у Video; Owner override лише для trial |
 | PDF: сторінки радар-історій (4-7) виглядають скорочено (без картинки/панелей) | Так задумано з 2026-08-07 — повний розворот тепер лише для Top 3 | Нормально, не баг; деталі — [weekly-digest](../pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07) |
 
 ## Master **failed** без зрозумілої причини — що робити (з 2026-08-09)

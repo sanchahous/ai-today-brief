@@ -6,6 +6,29 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-18
 
+## 2026-08-18 — Video4 Remotion render готовий, імпорт чекає YouTube
+
+**Джерело:** owner CMS Video4 gates на `ai-weekly-2026-08-09` (Step 7 of 8);
+сесія `claude/video4-gates-completion-fc83e1` обірвалась на usage limit;
+прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-18.
+
+**Виявлено:** `video_script` v2 і `video_manifest` v1 (`weekly-video-v3`) уже
+`approved` на rev. `3e955086`. Гейти `video_final` / captions EN/UK /
+`thumbnail` закриваються лише `weekly-video-result-v2` з YouTube-id —
+окремого MP4-upload у CMS немає.
+
+**Змінено:** локальний рендер у `ai-today-brief-video` (гілка
+`feat/audio-motion-upgrade`): 16:9 432с, thumbnail, 3 UK shorts, VTT;
+скрипти `generate-captions.ts` / `build-result-manifest.ts`; wiki video-репо
+(`now`, `ops/render-runbook`, `architecture/remotion-compositions`).
+Попутно: `alignWords` після тире, десяткові в TTS, b-roll за
+`revisionItemId`, градієнт-щит `Sources:`, Windows `spawnSync` + `shell`.
+
+**Власник зараз:** залити `output/atb-weekly-2026-08-09.mp4` + thumbnail на
+YouTube, віддати 11-символьний id.
+
+---
+
 ## 2026-08-18 — Video Save stored scenes array as narration_plan
 
 **Джерело:** production `video_script` v2 `4945648b…` на Revision 4
