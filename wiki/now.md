@@ -5,21 +5,27 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…18, Content Sim plan,
 weekly illustration B1-fix, Social package recovery 2026-08-17, Social tab implementation 2026-08-18,
 video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18,
-video script Save dropped v3 plan 2026-08-18
+video script Save dropped v3 plan 2026-08-18, Video4 Remotion render 2026-08-18
 Last updated: 2026-08-18
 
 ---
 
 ## Стан репозиторію
 
-- **`video_manifest` зібрано (2026-08-18), чекає Approve.** Job
-  `a8c9040f…` → artifact `e7077c8f…` (`weekly-video-v3`, `in_review`) на
-  `ai-weekly-2026-08-09` / Revision 4. Власник: вкладка **Video** →
-  **Approve version** на манифесті. Не тиснути Save у Video contract (до
-  деплою save-plan фіксу), не регенерувати approved script, не Start
-  Content Studio. Save після правки фрази записав `narration_plan` як
-  масив сцен і воркер відхилив job; план відновлено з v1 + текст v2.
-  (source: prod jobs/artifacts 2026-08-18, `video-script-content.ts`)
+- **Video4: рендер готовий, гейти чекають YouTube (2026-08-18).**
+  `ai-weekly-2026-08-09` / rev. `3e955086`: `video_script` v2 і
+  `video_manifest` v1 (`weekly-video-v3`, `e7077c8f…`) обидва **approved**.
+  У `ai-today-brief-video` відрендерено 16:9 `atb-weekly-2026-08-09.mp4`
+  (432с / 7:12, 122 МБ, 1920×1080, аудіо mean −24.8 dB), thumbnail
+  1280×720, три UK shorts 9:16, VTT EN/UK (186 / 126 cue). Preflight
+  `video_final` / `captions:en` / `captions:uk` / `thumbnail` у проді
+  досі порожні — сайт приймає їх лише через `weekly-video-result-v2` з
+  реальним YouTube-id. Власник: залити MP4 + мініатюру, віддати id →
+  `npx tsx scripts/build-result-manifest.ts … --youtube-id=…` у video-репо
+  → вставити JSON у Video → Save → Approve чотирьох артефактів →
+  перезатвердити PDF EN/UK (стануть `stale` за RPC). Не Save Video
+  contract (крім result JSON), не регенерувати approved script.
+  (source: прод-Supabase live check 2026-08-18, `ai-today-brief-video/wiki/now.md`)
 
 - **Немає рядка `video_manifest` після approved script (2026-08-18), PR #298.**
   Кнопка **Generate manifest** і companion upsert — у `main`. На цьому

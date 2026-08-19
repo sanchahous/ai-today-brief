@@ -329,6 +329,18 @@ Video tab Save постив Scene JSON (масив) у `content.narration_plan`.
 (source: production artifacts `e9dbd228…` / `4945648b…` / job `a8c9040f…`
 2026-08-18, `src/lib/weekly-digest/video-script-content.ts`)
 
+### Video4 render ready, import waits for YouTube (2026-08-18)
+
+`video_script` v2 і `video_manifest` v1 (`weekly-video-v3`) на
+`ai-weekly-2026-08-09` / rev. `3e955086` — `approved`. Preflight-гейтів
+`video_final` / `captions:en` / `captions:uk` / `thumbnail` у проді немає:
+CMS не приймає MP4, лише `weekly-video-result-v2` з 11-символьним YouTube-id
+(`validateWeeklyVideoResultManifest`). Локальний рендер живе в
+`ai-today-brief-video` (`output/atb-weekly-2026-08-09.mp4`, 432с; shorts;
+VTT). Після paste JSON RPC поставить PDF EN/UK у `stale`.
+(source: прод-Supabase live check 2026-08-18,
+`src/lib/weekly-digest/video.ts`, `ai-today-brief-video/wiki/now.md`)
+
 Два наступні linked jobs (`f39b2429…`, `d716aaef…`) уже пройшли hydration, але terminal-failed
 на наступному детермінованому гейті: `LinkedIn document rendered 8 pages; expected 7.` Live
 метрики показали production-sized copy, якої не було у фікстурі: standfirst 1018 символів
