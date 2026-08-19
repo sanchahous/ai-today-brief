@@ -22,6 +22,7 @@ const LOGIC_INCLUDE = [
   'src/lib/settings-builder-rules.ts',
   'src/lib/tools-mentioned.ts',
   'src/lib/content-sim/**/*.ts',
+  'src/lib/weekly-digest/video-shoot-pack.ts',
   'pipeline/**/*.ts',
 ];
 

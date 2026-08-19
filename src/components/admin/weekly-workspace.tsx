@@ -5,6 +5,7 @@ import { HookCandidatePicker } from '@/components/admin/hook-candidate-picker';
 import { SocialCharCount } from '@/components/admin/social-char-count';
 import { StatusPill } from '@/components/admin/status-pill';
 import { StoryPromptSetPanel } from '@/components/admin/story-prompt-set-panel';
+import { VideoShootPackPanel } from '@/components/admin/VideoShootPackPanel';
 import { WeeklyGenerationJobsLive } from '@/components/admin/weekly-generation-jobs-live';
 import { socialFormHas, socialCopyLimit, threadsPartLimit } from '@/lib/social/channel-form';
 import { parseInstagramCarouselSpec } from '@/lib/social/instagram-carousel';
@@ -13,6 +14,7 @@ import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { scenesFromVideoScriptContent } from '@/lib/weekly-digest/video-script-content';
+import { buildVideoShootPack } from '@/lib/weekly-digest/video-shoot-pack';
 import type {
   WeeklyArtifactAdminRow,
   WeeklyArtifactReviewAdminRow,
@@ -4216,15 +4218,31 @@ function VideoPanel({
   const scriptJob = latestJobForSlot(workspace.generationJobs, 'video_script');
   const manifestJob = latestJobForSlot(workspace.generationJobs, 'video_manifest');
   const scriptApproved = script?.review_status === 'approved';
+  const stills = workspace.items.map((item) => {
+    const image = artifactFor(workspace.artifacts, 'story_image', undefined, item.id);
+    return {
+      revisionItemId: item.id,
+      title: item.title_en,
+      imageUrl: image?.external_url ?? null,
+      imageReady: image?.review_status === 'approved' && Boolean(image?.external_url),
+    };
+  });
+  const shootPack = buildVideoShootPack({
+    digestId: workspace.digest.id,
+    scenes,
+    stills,
+  });
 
   return (
     <div className="grid gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white">One assembled YouTube video</h2>
+          <h2 className="text-xl font-bold text-white">Shooting package, then one YouTube video</h2>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-            English narration combines HeyGen avatar scenes with illustrated news scenes. The public
-            player uses the same YouTube video on both locales and requires EN and UK captions.
+            This tab is the shoot brief: which service records each scene, the avatar script, and
+            the image-to-video prompt. Put the clips into <code>ai-today-brief-video</code> and
+            assemble there. The public player uses one YouTube URL plus EN and UK captions — no MP4
+            upload here.
           </p>
         </div>
         <span className="rounded-xl border border-cyan-300/20 bg-cyan-300/6 px-3 py-2 text-xs font-semibold text-cyan-100">
@@ -4316,6 +4334,18 @@ function VideoPanel({
             {manifestJob.last_error}
           </p>
         ) : null}
+      </div>
+
+      <div className={PANEL}>
+        <h3 className="text-lg font-bold text-white">Shooting package</h3>
+        <p className="mt-1 text-sm text-slate-500">
+          Derived from the approved script (and manifest scenes when present). Copy the prompt or
+          avatar text, generate in the named service, drop the file on the path shown. Assembly is
+          not done in this CMS.
+        </p>
+        <div className="mt-4">
+          <VideoShootPackPanel pack={shootPack} />
+        </div>
       </div>
 
       <form action={saveWeeklyVideoAction} className={PANEL}>

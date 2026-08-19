@@ -95,6 +95,12 @@
       "fromFile": "pipeline/card-image.ts",
       "regex": "WEEKLY_PROMPT_POLICY\\s*=\\s*'([^']+)'",
       "mustAppearIn": ["wiki/marketing/card-images.md", "wiki/pipeline/weekly-digest.md"]
+    },
+    {
+      "id": "video-shoot-i2v-service",
+      "fromFile": "src/lib/weekly-digest/video-shoot-pack.ts",
+      "regex": "name: '(Hailuo)'",
+      "mustAppearIn": ["wiki/pipeline/weekly-digest.md", "wiki/pipeline/video-boundary.md"]
     }
   ],
   "counts": [

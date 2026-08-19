@@ -4,7 +4,23 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-18
+Last updated: 2026-08-19
+
+## 2026-08-19 — Video shooting package в адмінці, рендерер лише зводить
+
+**Джерело:** рішення власника — пакет для зйомки має бути у Video-табі CMS, інакше балаган
+між двома репо.
+
+**Змінено:**
+- `src/lib/weekly-digest/video-shoot-pack.ts` — Hailuo/HeyGen jobs зі сцен
+- `src/components/admin/VideoShootPackPanel.tsx` — copy-paste в адмінці
+- `src/components/admin/weekly-workspace.tsx` — блок Shooting package
+- `wiki/pipeline/video-boundary.md`, `wiki/pipeline/weekly-digest.md`,
+  `wiki/ops/weekly-admin-runbook.md`, `wiki/now.md`
+
+**Власник зараз:** Video tab → Shooting package; кліпи класти в `ai-today-brief-video`.
+
+---
 
 ## 2026-08-18 — Video4 Remotion render готовий, імпорт чекає YouTube
 
