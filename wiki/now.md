@@ -6,12 +6,24 @@ Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…18, Content Sim p
 weekly illustration B1-fix, Social package recovery 2026-08-17, Social tab implementation 2026-08-18,
 video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18,
 video script Save dropped v3 plan 2026-08-18, Video4 Remotion render 2026-08-18,
-Video shooting package in admin 2026-08-19
-Last updated: 2026-08-19
+Video shooting package in admin 2026-08-19,
+Schedule release arbitrary date/time 2026-08-20
+Last updated: 2026-08-20
 
 ---
 
 ## Стан репозиторію
+
+- **Schedule release приймає будь-яку дату/час, не лише понеділок 16:00 (2026-08-20).**
+  Власник закінчив ревʼю поза стандартним вікном 15:45/16:00 Kyiv і не міг натиснути
+  Schedule release взагалі — `schedule_weekly_digest` кидав виняток на будь-яке інше
+  значення. Реліз-воркер уже був day-agnostic, тож досить було прибрати
+  isodow/hour/minute-перевірку з RPC; `preflight_at` лишається `release_at − 15 хв`, реліз
+  досі мусить бути в майбутньому, digest — `approved` із чистим preflight. Гілка
+  `claude/schedule-release-blocked-af27f0`, ще не змерджено — після мержу міграцію треба
+  застосувати до production Supabase окремо (owner action, не автодеплой звідси).
+  (source: `supabase/migrations/20260820121000_weekly_digest_arbitrary_release_time.sql`,
+  [weekly-digest](pipeline/weekly-digest.md), [weekly-admin-runbook](ops/weekly-admin-runbook.md))
 
 - **Video shooting package is the Video tab (2026-08-19).**
   Сценарій, тексти губ, i2v-промти і назва сервісу (Hailuo / HeyGen) показуються в

@@ -7,8 +7,9 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
 editorial-voice, PDF page-cap, seed-content, social recovery, PDF v3 / Social tab,
 video_script hydration and missing video_manifest companion 2026-08-18,
 Video Save dropped v3 narration_plan 2026-08-18,
-Video shooting package in admin 2026-08-19
-Last updated: 2026-08-19
+Video shooting package in admin 2026-08-19,
+Schedule release arbitrary date/time 2026-08-20
+Last updated: 2026-08-20
 
 ---
 
@@ -1132,6 +1133,20 @@ immutability навмисно, а не в обхід гейту.
   error banner says exactly which step failed.
   (source: `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`,
   owner request 2026-08-10)
+- **Schedule release: будь-яка дата/час, не лише понеділок 16:00** (2026-08-20): owner
+  закінчив ревʼю після довгої серії bugfix-сесій поза стандартним вікном 15:45/16:00 Kyiv і не
+  міг натиснути **Schedule release** взагалі — `schedule_weekly_digest` кидав `Weekly Digest
+  release must be Monday at 16:00 Europe/Kyiv` на будь-яке інше значення. Обидва інші RPC
+  релізного шляху (`run_due_weekly_digest_preflights`, `claim_due_weekly_digests`) уже day-agnostic
+  — просто звіряють `preflight_at`/`release_at` з `now()` — тож достатньо було прибрати
+  isodow/hour/minute-перевірку з `schedule_weekly_digest`; `preflight_at` лишається рівно
+  `release_at − 15 хв`, реліз досі мусить бути в майбутньому й digest досі мусить мати статус
+  `approved` із чистим preflight. Стандартний понеділковий каданс лишається дефолтом для
+  production-випуску, згенерованого в неділю (`period.ts`) — це послаблення лише знімає жорстку
+  заборону для ручного Schedule/emergency-релізу.
+  (source: `supabase/migrations/20260820121000_weekly_digest_arbitrary_release_time.sql`,
+  `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`,
+  `src/lib/weekly-digest/release-worker.ts`, owner request 2026-08-20)
 
 ## Fluid CPU / вартість (2026-08-04)
 

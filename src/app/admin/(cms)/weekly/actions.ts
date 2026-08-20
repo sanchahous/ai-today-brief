@@ -2403,7 +2403,7 @@ export async function scheduleWeeklyDigestAction(formData: FormData) {
   const releaseAt = localKyivToIso(requiredString(formData, 'release_at_local'));
   const preflightAt = localKyivToIso(requiredString(formData, 'preflight_at_local'));
   if (new Date(releaseAt).getTime() - new Date(preflightAt).getTime() !== 15 * 60_000) {
-    throw new Error('Preflight must be Monday 15:45, exactly 15 minutes before release.');
+    throw new Error('Preflight must be exactly 15 minutes before release.');
   }
   const db = await getSupabaseServer();
   const { error } = await db.rpc('schedule_weekly_digest', {
@@ -2445,12 +2445,13 @@ function redirectWeeklyReleaseError(weeklyDigestId: string, message: string): ne
 }
 
 /**
- * `schedule_weekly_digest` only accepts Monday 16:00 Europe/Kyiv and only
- * from `status = 'approved'` -- there is no direct "move the date" RPC, by
- * design (a scheduled edition is meant to require the same owner sign-off a
- * fresh schedule does). Shifting by whole weeks keeps the result on the same
- * weekday/time, calculated in the Kyiv calendar so DST transitions can never
- * shift the wall-clock hour.
+ * `schedule_weekly_digest` accepts any future release time, but only from
+ * `status = 'approved'` -- there is no direct "move the date" RPC, by design
+ * (a scheduled edition is meant to require the same owner sign-off a fresh
+ * schedule does). Postpone specifically shifts by whole weeks to keep the
+ * result on the same weekday/time, calculated in the Kyiv calendar so DST
+ * transitions can never shift the wall-clock hour; an owner who needs an
+ * arbitrary date/time instead uses Schedule release directly.
  */
 function addKyivWeeks(releaseAt: Date, weeks: number): string {
   const ymd = new Intl.DateTimeFormat('en-CA', {
