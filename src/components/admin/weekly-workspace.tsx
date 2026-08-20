@@ -3746,7 +3746,11 @@ function SocialPanel({
                             />
                           </a>
                           <figcaption className="px-2 py-1.5 text-[11px] leading-4 text-slate-500">
-                            {[asset.slotKey ?? asset.artifactType, asset.mimeType, asset.width && asset.height ? `${asset.width}×${asset.height}` : null]
+                            {[
+                              asset.slotKey ?? asset.artifactType,
+                              asset.mimeType,
+                              asset.width && asset.height ? `${asset.width}×${asset.height}` : null,
+                            ]
                               .filter(Boolean)
                               .join(' · ')}
                           </figcaption>
@@ -3848,21 +3852,23 @@ function SocialPanel({
                     <div
                       className={`mt-4 grid gap-2 ${assetPreviewUrls.length > 1 ? 'grid-cols-2' : ''}`}
                     >
-                      {assetPreviewUrls.slice(0, channel === 'instagram' ? 7 : 4).map((url, index) => (
-                        <Image
-                          key={`${post.id}-preview-${index}`}
-                          src={url}
-                          alt={
-                            post.alt_text
-                              ? `${post.alt_text}${assetPreviewUrls.length > 1 ? ` (${index + 1})` : ''}`
-                              : `Preview asset ${index + 1}`
-                          }
-                          width={channel === 'instagram' ? 270 : 300}
-                          height={channel === 'instagram' ? 338 : 160}
-                          className="h-auto w-full rounded-lg object-cover"
-                          sizes="(max-width: 1280px) 45vw, 14vw"
-                        />
-                      ))}
+                      {assetPreviewUrls
+                        .slice(0, channel === 'instagram' ? 7 : 4)
+                        .map((url, index) => (
+                          <Image
+                            key={`${post.id}-preview-${index}`}
+                            src={url}
+                            alt={
+                              post.alt_text
+                                ? `${post.alt_text}${assetPreviewUrls.length > 1 ? ` (${index + 1})` : ''}`
+                                : `Preview asset ${index + 1}`
+                            }
+                            width={channel === 'instagram' ? 270 : 300}
+                            height={channel === 'instagram' ? 338 : 160}
+                            className="h-auto w-full rounded-lg object-cover"
+                            sizes="(max-width: 1280px) 45vw, 14vw"
+                          />
+                        ))}
                     </div>
                   ) : null}
                 </div>
@@ -4210,8 +4216,7 @@ function VideoPanel({
   const scriptText = textFrom(script?.content, 'script', 'text', 'body');
   const manifestContent = asRecord(manifest?.content);
   const scenes =
-    asRecord(manifestContent.longForm).scenes ??
-    scenesFromVideoScriptContent(script?.content);
+    asRecord(manifestContent.longForm).scenes ?? scenesFromVideoScriptContent(script?.content);
   const scenesJson = jsonText(scenes, '[]');
   const captionsEnText = textFrom(captionsEn?.content, 'vtt', 'srt', 'text');
   const captionsUkText = textFrom(captionsUk?.content, 'vtt', 'srt', 'text');
@@ -4409,7 +4414,7 @@ function VideoPanel({
                 rows={12}
                 spellCheck={false}
                 defaultValue={captionsEnText}
-                disabled
+                disabled={!canEdit}
                 className={`${TEXTAREA} font-mono text-xs`}
               />
             </label>
@@ -4420,7 +4425,7 @@ function VideoPanel({
                 rows={12}
                 spellCheck={false}
                 defaultValue={captionsUkText}
-                disabled
+                disabled={!canEdit}
                 className={`${TEXTAREA} font-mono text-xs`}
               />
             </label>
@@ -4464,12 +4469,12 @@ function VideoPanel({
             <label className={LABEL}>
               Final YouTube URL
               <input
-                type="url"
+                type="text"
                 name="youtube_url"
                 defaultValue={finalVideo?.external_url ?? ''}
-                disabled
+                disabled={!canEdit}
                 className={FIELD}
-                placeholder="https://www.youtube.com/watch?v=…"
+                placeholder="https://www.youtube.com/watch?v=… (or just paste the 11-char video ID)"
               />
             </label>
             <label className={LABEL}>
@@ -4479,8 +4484,9 @@ function VideoPanel({
                 pattern="[A-Za-z0-9_-]{11}"
                 maxLength={11}
                 defaultValue={finalVideo?.provider_id ?? ''}
-                disabled
+                disabled={!canEdit}
                 className={FIELD}
+                placeholder="auto-filled from the URL if left blank"
               />
             </label>
           </div>
@@ -4491,58 +4497,70 @@ function VideoPanel({
                 type="url"
                 name="thumbnail_url"
                 defaultValue={thumbnail?.external_url ?? ''}
-                disabled
+                disabled={!canEdit}
                 className={FIELD}
+                placeholder="auto-filled from YouTube if left blank"
               />
             </label>
             <label className={LABEL}>
               Duration (seconds)
               <input
                 type="number"
-                min={1}
+                min={300}
+                max={600}
                 name="duration_seconds"
                 defaultValue={finalVideo?.duration_seconds ?? ''}
-                disabled
+                disabled={!canEdit}
                 className={FIELD}
               />
             </label>
           </div>
-          <label className={LABEL}>
-            Render result manifest (`weekly-video-result-v2` JSON)
-            <textarea
-              name="result_manifest_json"
-              rows={14}
-              spellCheck={false}
-              disabled={!canEdit}
-              className={`${TEXTAREA} font-mono text-xs`}
-              placeholder={JSON.stringify(
-                {
-                  schemaVersion: 'weekly-video-result-v2',
-                  digestId: workspace.digest.id,
-                  revisionId: revision.id,
-                  inputHash:
-                    textFrom(manifestContent as Json, 'inputHash') || '<approved inputHash>',
-                  youtube: {
-                    id: '<youtube-id>',
-                    url: 'https://www.youtube.com/watch?v=<youtube-id>',
-                    thumbnailUrl: 'https://…',
-                    durationSeconds: 420,
-                    publishedAt: '<ISO timestamp>',
+          <span className="text-xs font-normal text-slate-500">
+            Fill the YouTube URL/ID and duration above and save — the CMS auto-fills the thumbnail
+            and stamps it against the currently approved script. An approved `weekly-video-v3`
+            manifest for this revision is required first.
+          </span>
+          <details className="rounded-lg border border-white/5 bg-black/20 p-3">
+            <summary className="cursor-pointer text-xs font-bold text-slate-400">
+              Advanced: bulk import via JSON (optional, for automation)
+            </summary>
+            <label className={`${LABEL} mt-3`}>
+              Render result manifest (`weekly-video-result-v2` JSON)
+              <textarea
+                name="result_manifest_json"
+                rows={14}
+                spellCheck={false}
+                disabled={!canEdit}
+                className={`${TEXTAREA} font-mono text-xs`}
+                placeholder={JSON.stringify(
+                  {
+                    schemaVersion: 'weekly-video-result-v2',
+                    digestId: workspace.digest.id,
+                    revisionId: revision.id,
+                    inputHash:
+                      textFrom(manifestContent as Json, 'inputHash') || '<approved inputHash>',
+                    youtube: {
+                      id: '<youtube-id>',
+                      url: 'https://www.youtube.com/watch?v=<youtube-id>',
+                      thumbnailUrl: 'https://…',
+                      durationSeconds: 420,
+                      publishedAt: '<ISO timestamp>',
+                    },
+                    captions: [
+                      { locale: 'en', url: 'https://…/captions-en.vtt' },
+                      { locale: 'uk', url: 'https://…/captions-uk.vtt' },
+                    ],
                   },
-                  captions: [
-                    { locale: 'en', url: 'https://…/captions-en.vtt' },
-                    { locale: 'uk', url: 'https://…/captions-uk.vtt' },
-                  ],
-                },
-                null,
-                2,
-              )}
-            />
-            <span className="text-xs font-normal text-slate-500">
-              Final YouTube data is accepted only when digestId, revisionId and inputHash exactly
-              match the approved manifest.
-            </span>
-          </label>
+                  null,
+                  2,
+                )}
+              />
+              <span className="text-xs font-normal text-slate-500">
+                Only needed for scripted/automated imports. Leave blank and use the fields above for
+                a normal manual save.
+              </span>
+            </label>
+          </details>
           <div>
             <ActionSubmitButton
               idleLabel="Save video workspace"
