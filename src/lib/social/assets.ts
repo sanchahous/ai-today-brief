@@ -6,6 +6,7 @@ import { createCanvas, GlobalFonts, type SKRSContext2D } from '@napi-rs/canvas';
 import sharp, { type Sharp } from 'sharp';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { storageBlob } from '@/lib/storage/binary';
+import { toSupabaseRenderUrl } from '@/lib/image-loader';
 import type { SocialAsset, SocialChannel } from './types';
 
 const DEJAVU_DIRECTORY = join(process.cwd(), 'node_modules', 'dejavu-fonts-ttf', 'ttf');
@@ -88,16 +89,36 @@ function wrapCanvasText(context: SKRSContext2D, value: string, width: number) {
   });
 }
 
+// Widest slot any composite in this file draws a background into (single-image
+// cover at width 1200; multi-image panels are narrower fractions of it), so
+// fetching the origin at this width never leaves a panel short of pixels.
+const BACKGROUND_FETCH_WIDTH = 1200;
+
+// `renderSocialAssets` fan-out (one call per channel seed, up to three images
+// per daily_digest package) otherwise re-downloads the same source image
+// several times per run — this collapses concurrent requests for the same
+// URL into a single fetch. Keyed by the untransformed URL because that's what
+// every caller passes in.
+const backgroundCache = new Map<string, Promise<Buffer | null>>();
+
 async function loadBackground(url?: string | null): Promise<Buffer | null> {
   if (!url?.startsWith('http')) return null;
-  try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
-    if (!response.ok) return null;
-    const bytes = Buffer.from(await response.arrayBuffer());
-    return bytes.length > 1024 ? bytes : null;
-  } catch {
-    return null;
-  }
+  const cached = backgroundCache.get(url);
+  if (cached) return cached;
+
+  const promise = (async () => {
+    try {
+      const renderUrl = toSupabaseRenderUrl(url, BACKGROUND_FETCH_WIDTH, { quality: 82 });
+      const response = await fetch(renderUrl, { signal: AbortSignal.timeout(12_000) });
+      if (!response.ok) return null;
+      const bytes = Buffer.from(await response.arrayBuffer());
+      return bytes.length > 1024 ? bytes : null;
+    } catch {
+      return null;
+    }
+  })();
+  backgroundCache.set(url, promise);
+  return promise;
 }
 
 function overlaySvg(width: number, height: number) {
