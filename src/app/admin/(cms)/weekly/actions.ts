@@ -36,7 +36,10 @@ import {
   retryWeeklyContentStudio,
   weeklyContentStudioMode,
 } from '@/lib/weekly-digest/orchestrator';
-import { validateWeeklyVideoResultManifest } from '@/lib/weekly-digest/video';
+import {
+  normalizeYouTubeVideo,
+  validateWeeklyVideoResultManifest,
+} from '@/lib/weekly-digest/video';
 import {
   ignorePostUploadQa,
   parsePostUploadQa,
@@ -151,11 +154,7 @@ function revalidateWeeklyAdmin(weeklyDigestId: string) {
  */
 const OPTIMISTIC_UPDATE_MAX_ATTEMPTS = 3;
 
-async function persistPostUploadQa(
-  artifactId: string,
-  weeklyDigestId: string,
-  qa: PostUploadQa,
-) {
+async function persistPostUploadQa(artifactId: string, weeklyDigestId: string, qa: PostUploadQa) {
   const admin = getSupabaseAdmin();
   for (let attempt = 0; attempt < OPTIMISTIC_UPDATE_MAX_ATTEMPTS; attempt++) {
     const { data, error } = await admin
@@ -1026,17 +1025,105 @@ export async function saveWeeklyVideoAction(formData: FormData) {
     return;
   }
 
-  if (
-    youtubeUrl ||
-    suppliedVideoId ||
-    thumbnailUrl ||
-    captionsEn ||
-    captionsUk ||
-    durationSeconds
-  ) {
-    throw new Error(
-      'Final video, thumbnail and captions must be imported through a weekly-video-result-v2 manifest so the approved digest, revision and input hash can be verified.',
-    );
+  if (youtubeUrl || suppliedVideoId || thumbnailUrl || captionsEn || captionsUk) {
+    const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+    const revisionId = requiredString(formData, 'revision_id');
+    const admin = getSupabaseAdmin();
+    const { data: manifestArtifact, error: manifestError } = await admin
+      .from('weekly_digest_artifacts')
+      .select('content,review_status,is_current')
+      .eq('weekly_digest_id', weeklyDigestId)
+      .eq('revision_id', revisionId)
+      .eq('artifact_type', 'video_manifest')
+      .eq('slot_key', 'video-manifest:en')
+      .eq('is_current', true)
+      .maybeSingle();
+    if (manifestError || !manifestArtifact || manifestArtifact.review_status !== 'approved') {
+      throw new Error(
+        'Approve the current weekly-video-v3 manifest before saving the final video.',
+      );
+    }
+    const manifestContent =
+      manifestArtifact.content &&
+      typeof manifestArtifact.content === 'object' &&
+      !Array.isArray(manifestArtifact.content)
+        ? (manifestArtifact.content as Record<string, Json | undefined>)
+        : {};
+    const manifestInputHash =
+      typeof manifestContent.inputHash === 'string' ? manifestContent.inputHash : null;
+    const hashMeta = manifestInputHash ? { manifest_input_hash: manifestInputHash } : {};
+
+    if (youtubeUrl || suppliedVideoId) {
+      const normalized = normalizeYouTubeVideo(youtubeUrl || suppliedVideoId || '');
+      if (!normalized) {
+        throw new Error('Enter a valid YouTube URL or an 11-character video ID.');
+      }
+      if (
+        !durationSeconds ||
+        !Number.isInteger(durationSeconds) ||
+        durationSeconds < 300 ||
+        durationSeconds > 600
+      ) {
+        throw new Error('Weekly YouTube duration must be an integer between 300 and 600 seconds.');
+      }
+      const resolvedThumbnail =
+        thumbnailUrl && thumbnailUrl.startsWith('https://')
+          ? thumbnailUrl
+          : normalized.thumbnailUrl;
+      await persist({
+        type: 'video_final',
+        locale: 'en',
+        slot: 'video-final:en',
+        externalUrl: normalized.watchUrl,
+        provider: 'youtube',
+        providerId: normalized.videoId,
+        mimeType: 'text/html',
+        durationSeconds,
+        metadata: {
+          thumbnail_url: resolvedThumbnail,
+          published_at: new Date().toISOString(),
+          workflow_status: 'published',
+          audio_locale: 'en',
+          ...hashMeta,
+        },
+      });
+      await persist({
+        type: 'thumbnail',
+        locale: 'neutral',
+        slot: 'video-thumbnail',
+        externalUrl: resolvedThumbnail,
+        provider: 'youtube',
+        providerId: normalized.videoId,
+        mimeType: 'image/jpeg',
+        metadata: hashMeta,
+      });
+    } else if (thumbnailUrl) {
+      await persist({
+        type: 'thumbnail',
+        locale: 'neutral',
+        slot: 'video-thumbnail',
+        externalUrl: thumbnailUrl,
+        metadata: hashMeta,
+      });
+    }
+
+    for (const [locale, text] of [
+      ['en', captionsEn],
+      ['uk', captionsUk],
+    ] as const) {
+      if (!text) continue;
+      await persist({
+        type: 'captions',
+        locale,
+        slot: `captions:${locale}`,
+        content: { vtt: text, url: null },
+        mimeType: 'text/vtt',
+        metadata: hashMeta,
+      });
+    }
+
+    revalidateWeeklyAdmin(weeklyDigestId);
+    return;
   }
 
   if (script || scenes) {
@@ -1102,7 +1189,9 @@ export async function saveWeeklySocialAction(formData: FormData) {
   const admin = getSupabaseAdmin();
   const { data: post } = await admin
     .from('social_posts')
-    .select('package_id,channel,locale,meta,quality_report,publish_enabled,content_hash,content_parts')
+    .select(
+      'package_id,channel,locale,meta,quality_report,publish_enabled,content_hash,content_parts',
+    )
     .eq('id', postId)
     .maybeSingle();
   if (
@@ -1131,7 +1220,13 @@ export async function saveWeeklySocialAction(formData: FormData) {
     fail('Unsupported social channel.');
     return;
   }
-  const threadParts = ['content_part_1', 'content_part_2', 'content_part_3', 'content_part_4', 'content_part_5']
+  const threadParts = [
+    'content_part_1',
+    'content_part_2',
+    'content_part_3',
+    'content_part_4',
+    'content_part_5',
+  ]
     .map((name) => optionalString(formData, name))
     .filter(Boolean);
   const parsed = parseChannelSocialSave({
