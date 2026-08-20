@@ -19,11 +19,24 @@ Last updated: 2026-08-20
   Schedule release взагалі — `schedule_weekly_digest` кидав виняток на будь-яке інше
   значення. Реліз-воркер уже був day-agnostic, тож досить було прибрати
   isodow/hour/minute-перевірку з RPC; `preflight_at` лишається `release_at − 15 хв`, реліз
-  досі мусить бути в майбутньому, digest — `approved` із чистим preflight. Гілка
-  `claude/schedule-release-blocked-af27f0`, ще не змерджено — після мержу міграцію треба
-  застосувати до production Supabase окремо (owner action, не автодеплой звідси).
+  досі мусить бути в майбутньому, digest — `approved` із чистим preflight. PR
+  [#305](https://github.com/sanchahous/ai-today-brief/pull/305), ще не змерджено — обидва
+  фікси нижче вже застосовані напряму на production Supabase (owner request), незалежно від
+  мержу.
   (source: `supabase/migrations/20260820121000_weekly_digest_arbitrary_release_time.sql`,
   [weekly-digest](pipeline/weekly-digest.md), [weekly-admin-runbook](ops/weekly-admin-runbook.md))
+
+- **Approve був структурно недосяжний з 2026-07-23: threads en/uk розсинхрон (2026-08-20).**
+  Окремий, серйозніший баг — навіть після Monday-фіксу вище Approve падав на
+  нездоланному `social_variant_missing` для `threads`. SQL-копія матриці каналів у
+  `weekly_digest_preflight` досі вимагала `threads`+`en`, а `WEEKLY_SOCIAL_MATRIX` (реальне
+  джерело для генератора) ще у вихідному PR #162 змінили на `threads`+`uk` — SQL-копію забули
+  синхронізувати. Перевірено: **усі** threads-пости в проді мають `locale='uk'`, тобто жоден
+  випуск з 2026-07-23 не міг пройти Approve без ручного `weekly_digest_preflight_override`
+  на неоверрайдний код. Виправлено й застосовано на проді; `ai-weekly-2026-08-09` тепер
+  `scheduled` на 20.08.2026 13:30 Kyiv.
+  (source: `supabase/migrations/20260820123400_weekly_digest_preflight_threads_locale_fix.sql`,
+  [weekly-digest](pipeline/weekly-digest.md))
 
 - **Video shooting package is the Video tab (2026-08-19).**
   Сценарій, тексти губ, i2v-промти і назва сервісу (Hailuo / HeyGen) показуються в
