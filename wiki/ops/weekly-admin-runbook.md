@@ -6,8 +6,8 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`
 [weekly-digest](../pipeline/weekly-digest.md), production incidents / owner sessions
 2026-08-04…18, staged social-copy recovery 2026-08-17, Social tab channel-aware form 2026-08-18,
 approved-row Save workflow RPC 2026-08-18, video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18, Video Save dropped v3 plan 2026-08-18,
-Video shooting package in admin 2026-08-19.
-Last updated: 2026-08-19
+Video shooting package in admin 2026-08-19, arbitrary Schedule release date/time 2026-08-20.
+Last updated: 2026-08-20
 
 ---
 
@@ -407,13 +407,18 @@ production live check 2026-08-18,
 
 ### Release: approve → schedule → (за потреби) postpone → pause
 
-Реліз завжди виходить рівно в понеділок 16:00 Kyiv — `schedule_weekly_digest` не приймає
-жодного іншого дня/часу. Порядок кнопок на Release tab:
+Стандартний каданс — понеділок 16:00 Kyiv (так вираховуються дефолтні preflight/release для
+production-випуску, згенерованого в неділю). З 2026-08-20 `schedule_weekly_digest` приймає
+**будь-яку майбутню дату/час**, не лише понеділок — власник міг закінчити ревʼю поза вікном
+15:45/16:00 (довга серія фіксів багів) і не мав як запланувати реліз. Реліз-воркер уже був
+day-agnostic (крон кожні 5 хв просто звіряє `release_at <= now()`), тож послаблення торкнулось
+лише перевірки дня/часу в `schedule_weekly_digest`. Порядок кнопок на Release tab:
 
 1. **Approve active revision** — фіксує поточну ревізію й усі approved артефакти; ще не
    публікує.
 2. **Schedule release** — вводить дату/час у полях Preflight/Release (Kyiv); кнопка активна
-   лише коли статус `approved`. Preflight — завжди рівно на 15 хв раніше за Release.
+   лише коли статус `approved`. Preflight — завжди рівно на 15 хв раніше за Release, будь-яке
+   інше значення поля Preflight сервер відхилить ще до виклику RPC.
 3. **Postpone** (з 2026-08-10) — з'являється лише коли статус уже `scheduled`, тобто «я
    думав, що встигну, а не встигаю». Один клік: вибираєш 1–4 тижні, пишеш причину — і за
    лаштунками воркфлоу сам робить pause → re-approve (це реальна повторна перевірка preflight

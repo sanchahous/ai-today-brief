@@ -4678,12 +4678,13 @@ function ReleasePanel({
             <StatusPill value={digest.status} />
           </div>
           <div className="mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-300/6 p-4">
-            <p className="font-bold text-cyan-100">Monday remains an editorial day</p>
+            <p className="font-bold text-cyan-100">Editing freezes 15 minutes before release</p>
             <p className="mt-2 text-sm leading-6 text-cyan-100/75">
-              Review, text changes, media replacement and re-approval are allowed through 15:45
-              Europe/Kyiv. The automated preflight then freezes the scheduled revision for the 16:00
-              release. To change anything after 15:45, an owner pauses the edition, edits, runs
-              approval again and reschedules it.
+              Review, text changes, media replacement and re-approval stay open until 15 minutes
+              before the scheduled release time (the default cadence is Monday 15:45/16:00 Kyiv,
+              but any future date and time can be scheduled). The automated preflight then freezes
+              the scheduled revision. To change anything after that gate, an owner pauses the
+              edition, edits, runs approval again and reschedules it.
             </p>
           </div>
 

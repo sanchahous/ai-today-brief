@@ -4,7 +4,23 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-19
+Last updated: 2026-08-20
+
+## 2026-08-20 — Schedule release: будь-яка дата/час, не лише понеділок 16:00
+
+**Джерело:** власник закінчив ревʼю після довгої серії bugfix-сесій поза вікном 15:45/16:00
+Kyiv і не міг натиснути Schedule release взагалі — RPC відхиляла будь-яке значення, крім
+понеділка 16:00.
+
+**Змінено:**
+- `supabase/migrations/20260820121000_weekly_digest_arbitrary_release_time.sql` —
+  `schedule_weekly_digest` більше не перевіряє день/годину/хвилину, лише що реліз у майбутньому
+  і digest `approved` з чистим preflight; `preflight_at` лишається `release_at − 15 хв`
+- `src/app/admin/(cms)/weekly/actions.ts` — прибрано «Monday 15:45» з тексту помилки й
+  коментаря `addKyivWeeks`
+- `src/components/admin/weekly-workspace.tsx` — copy Release-панелі узагальнено (freeze «за 15
+  хв до релізу», а не фіксовані 15:45/16:00)
+- `wiki/pipeline/weekly-digest.md`, `wiki/ops/weekly-admin-runbook.md`
 
 ## 2026-08-19 — Video shooting package в адмінці, рендерер лише зводить
 
