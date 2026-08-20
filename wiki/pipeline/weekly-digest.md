@@ -1147,6 +1147,20 @@ immutability навмисно, а не в обхід гейту.
   (source: `supabase/migrations/20260820121000_weekly_digest_arbitrary_release_time.sql`,
   `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`,
   `src/lib/weekly-digest/release-worker.ts`, owner request 2026-08-20)
+- **Approve structurally unfixable since 2026-07-23: threads locale drift** (2026-08-20): the
+  Monday-only fix above didn't unblock the owner — Approve itself failed on a non-overridable
+  `social_variant_missing` blocker for `threads`. `weekly_digest_preflight` (SQL, added
+  2026-07-23) hardcodes its own copy of the channel→locale matrix and still required
+  `threads`+`en`; `WEEKLY_SOCIAL_MATRIX` in `src/lib/weekly-digest/preflight.ts` — what the
+  generator/composer actually follow — was changed to `threads`+`uk` in the same original PR,
+  but this SQL copy was never updated to match. Checked production `social_posts`: every
+  `threads` post the pipeline has ever generated is `locale='uk'`, so this specific blocker could
+  never clear for any edition, not just this one. `social_variant_missing` isn't in
+  `approve_weekly_digest`'s overridable-code list either, so there was no workaround short of a
+  schema fix. Realigned the SQL matrix to `threads`+`uk` to match the app's own source of truth.
+  (source: `supabase/migrations/20260820123400_weekly_digest_preflight_threads_locale_fix.sql`,
+  `src/lib/weekly-digest/preflight.ts`, live `social_posts` check 2026-08-20, owner request
+  2026-08-20)
 
 ## Fluid CPU / вартість (2026-08-04)
 

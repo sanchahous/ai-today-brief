@@ -6,6 +6,28 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-20
 
+## 2026-08-20 — Approve назавжди блокувався: threads EN/UK розсинхрон preflight vs генератора
+
+**Джерело:** owner не міг зробити Approve взагалі (окремо від Monday-фіксу вище); live preflight
+показав нездоланний блокер `social_variant_missing` на `threads`, який неможливо оверрайднути.
+
+**Корінь:** `weekly_digest_preflight` (SQL, доданий 2026-07-23 в `weekly_digest_v2`) хардкодить
+матрицю каналів/локалей inline і досі вимагав `threads`+`en`. `WEEKLY_SOCIAL_MATRIX` у
+`src/lib/weekly-digest/preflight.ts` — джерело, за яким реально працює генератор/композер — у
+тому ж PR змінили на `threads`+`uk`, але цю SQL-копію матриці забули оновити. Перевірив
+production `social_posts`: **усі** threads-пости, які коли-небудь згенерував пайплайн, мають
+`locale='uk'`. Тобто цей блокер не міг зникнути ніколи — структурно, для кожного випуску з
+2026-07-23, не лише для цього.
+
+**Змінено:**
+- `supabase/migrations/20260820123400_weekly_digest_preflight_threads_locale_fix.sql` —
+  `weekly_digest_preflight` тепер вимагає `threads`+`uk`, узгоджено з `WEEKLY_SOCIAL_MATRIX` і з
+  тим, що реально генерується
+- Застосовано напряму на production Supabase (owner request); live-check після фіксу:
+  `ready: true, blockers: []`
+- Approve + Schedule release виконано тут-таки для `ai-weekly-2026-08-09`
+  (release 20.08.2026 13:30 Kyiv)
+
 ## 2026-08-20 — Schedule release: будь-яка дата/час, не лише понеділок 16:00
 
 **Джерело:** власник закінчив ревʼю після довгої серії bugfix-сесій поза вікном 15:45/16:00
