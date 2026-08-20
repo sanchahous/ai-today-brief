@@ -36,6 +36,14 @@ export interface ImageLoaderArgs {
   quality?: number;
 }
 
+export interface SupabaseRenderOptions {
+  quality?: number;
+  /** 'origin' keeps the source format (JPEG stays JPEG) — required for any
+   * consumer that decodes the bytes itself instead of handing them to a
+   * browser <img>, since Satori/OG crawlers cannot decode WebP. */
+  format?: 'webp' | 'origin';
+}
+
 /**
  * True when the URL points at a public object in our own Supabase Storage.
  * Matched structurally rather than against a hardcoded project ref so a project
@@ -45,11 +53,21 @@ export function isSupabasePublicObject(src: string): boolean {
   return src.includes('.supabase.co') && src.includes(SUPABASE_PUBLIC_OBJECT);
 }
 
-export default function imageLoader({ src, width, quality }: ImageLoaderArgs): string {
+/**
+ * Rewrites a public Supabase Storage object URL to the `render/image`
+ * transform endpoint, preserving the `?v=<hash>` cache-buster. Returns `src`
+ * unchanged for non-Supabase URLs or widths beyond what the transform serves.
+ * Shared by the Next.js image loader and any server-side code that fetches
+ * card images directly (see wiki/ops/vercel-image-quota.md) so nothing bypasses
+ * the resize and re-downloads full-size origins.
+ */
+export function toSupabaseRenderUrl(
+  src: string,
+  width: number,
+  { quality = 75, format = 'webp' }: SupabaseRenderOptions = {},
+): string {
   if (!isSupabasePublicObject(src) || width > MAX_TRANSFORM_WIDTH) return src;
 
-  // The stored URL carries a `?v=<hash>` cache-buster that must survive, so
-  // rebuild the query rather than string-concatenating a second `?`.
   let url: URL;
   try {
     url = new URL(src);
@@ -59,7 +77,11 @@ export default function imageLoader({ src, width, quality }: ImageLoaderArgs): s
 
   url.pathname = url.pathname.replace(SUPABASE_PUBLIC_OBJECT, SUPABASE_PUBLIC_RENDER);
   url.searchParams.set('width', String(Math.round(width)));
-  url.searchParams.set('quality', String(quality ?? 75));
-  url.searchParams.set('format', 'webp');
+  url.searchParams.set('quality', String(quality));
+  url.searchParams.set('format', format);
   return url.toString();
+}
+
+export default function imageLoader({ src, width, quality }: ImageLoaderArgs): string {
+  return toSupabaseRenderUrl(src, width, { quality: quality ?? 75 });
 }

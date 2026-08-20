@@ -1,5 +1,6 @@
 import { ImageResponse } from 'next/og';
 import { duotoneDataUri, paletteFromCategory } from '@/lib/card/duotone';
+import { toSupabaseRenderUrl } from '@/lib/image-loader';
 import { getNewsItem } from '@/lib/items';
 import { isLang, SITE_NAME, SITE_URL } from '@/lib/site';
 
@@ -31,9 +32,11 @@ export default async function OgImage({
   const accent = detail?.categoryColor ?? '#f0c040';
   const slug = detail?.itemSlug ?? 'card';
 
-  const background =
-    detail?.cardImageUrl ??
-    duotoneDataUri({ seed: slug, palette: paletteFromCategory(accent) });
+  // format: 'origin' keeps JPEG as JPEG — Satori cannot decode WebP, so this
+  // must not go through the site's normal (webp) render path (image-loader.ts).
+  const background = detail?.cardImageUrl
+    ? toSupabaseRenderUrl(detail.cardImageUrl, size.width, { format: 'origin' })
+    : duotoneDataUri({ seed: slug, palette: paletteFromCategory(accent) });
 
   const dateLabel = detail?.briefDate
     ? new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
