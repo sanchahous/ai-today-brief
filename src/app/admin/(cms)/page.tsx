@@ -42,6 +42,7 @@ function toQueueItem(
     status: socialPackage.status,
     riskLevel: socialPackage.risk_level,
     kindLabel: socialPackage.kind.replaceAll('_', ' '),
+    kind: socialPackage.kind,
     sourceDate: socialPackage.source_date,
     channels: variants.map((post) => post.channel).join(', ') || 'No variants',
     blockers,

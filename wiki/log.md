@@ -6,6 +6,16 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-21
 
+## 2026-08-21 — Фільтр kind перед bulk cancel на Today
+
+**Джерело:** власник: масове виділення в списку може випадково скасувати weekly digest.
+
+**Змінено:**
+- `/admin` черга стартує на фільтрі **Daily**; чіпи All / Daily / Weekly / інші kind
+- **Select all** і чекбокси лише для видимих карток; при зміні фільтра приховане злітає з selection
+- Confirm окремо попереджає, якщо в виділенні є weekly
+- [ops/social-cms-runbook](ops/social-cms-runbook.md), [now](now.md)
+
 ## 2026-08-21 — Queue bulk cancel на Today
 
 **Джерело:** власник: cancel майбутніх постів лише всередині пакета, незручно зі списку.

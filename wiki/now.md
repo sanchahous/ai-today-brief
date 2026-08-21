@@ -16,10 +16,11 @@ Last updated: 2026-08-21
 ## Стан репозиторію
 
 - **Cancel future posts зі списку Today, з multi-select (2026-08-21).**
-  На `/admin` можна позначити кілька пакетів і скасувати майбутні пости однією
-  кнопкою (AAL2, confirm). Семантика та сама, що в редакторі пакета: posted /
-  publishing лишаються. (source: `src/components/admin/package-queue-list.tsx`,
-  [social-cms-runbook](ops/social-cms-runbook.md))
+  На `/admin` черга за замовчуванням показує **Daily**. Weekly (і інші kind)
+  ховаються, доки не обереш фільтр; **Select all** діє лише на видимі картки.
+  Confirm називає kind і окремо попереджає, якщо в виділенні є weekly digest.
+  (source: `src/components/admin/package-queue-list.tsx`,
+  `src/lib/social/package-queue.ts`, [social-cms-runbook](ops/social-cms-runbook.md))
 
 - **Schedule release приймає будь-яку дату/час, не лише понеділок 16:00 (2026-08-20).**
   Власник закінчив ревʼю поза стандартним вікном 15:45/16:00 Kyiv і не міг натиснути
