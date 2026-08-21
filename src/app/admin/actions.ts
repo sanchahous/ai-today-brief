@@ -13,15 +13,13 @@ import { attachCriticReport } from '@/lib/social/critic';
 import { parsePersistedSocialAssetRefs, isSocialImageMime } from '@/lib/social/asset-ref';
 import { parseInstagramCarouselSpec } from '@/lib/social/instagram-carousel';
 import { generateSocialJson } from '@/lib/social/llm-router';
-import {
-  mergePreservedQualityProvenance,
-  runQualityGate,
-} from '@/lib/social/quality';
+import { mergePreservedQualityProvenance, runQualityGate } from '@/lib/social/quality';
 import {
   kyivWallClockToUtc,
   resolveCadenceSettings,
   SOCIAL_TIME_ZONE,
 } from '@/lib/social/schedule';
+import { parseCancelPackageIds } from '@/lib/social/package-ids';
 import { isSocialChannel, type SocialAsset, type SocialLocale } from '@/lib/social/types';
 import { isWeeklyItemReviewAction, isWeeklyReviewReasonCode } from '@/lib/social/weekly-review';
 import { buildWeeklySocialFactSnapshot } from '@/lib/weekly-digest/social-facts';
@@ -575,36 +573,71 @@ export async function addressWeeklyDigestChangesAction(formData: FormData) {
   revalidatePath('/admin');
 }
 
-export async function cancelPackageAction(formData: FormData) {
-  const session = await requireSocialAdmin({ aal2: true });
-  const id = requiredString(formData, 'id');
+type CancellablePost = {
+  id: string;
+  package_id: string | null;
+  status: string;
+  channel: string;
+  scheduled_for: string | null;
+  content_version: number;
+  content_hash: string | null;
+};
+
+function cancelledReviewRow(post: CancellablePost, reviewerId: string) {
+  if (!post.package_id) return null;
+  return {
+    social_post_id: post.id,
+    package_id: post.package_id,
+    reviewer_id: reviewerId,
+    action: 'cancelled',
+    content_version: post.content_version,
+    content_hash: post.content_hash,
+    snapshot: {
+      status: post.status,
+      channel: post.channel,
+      scheduled_for: post.scheduled_for,
+    },
+  };
+}
+
+async function cancelPackagesByIds(ids: string[], reviewerId: string) {
   const admin = getSupabaseAdmin();
-  const { data: posts } = await admin
+  const { data: posts, error: loadError } = await admin
     .from('social_posts')
-    .select('*')
-    .eq('package_id', id)
+    .select('id,package_id,status,channel,scheduled_for,content_version,content_hash')
+    .in('package_id', ids)
     .not('status', 'in', '(posted,publishing)');
-  await admin
+  if (loadError) throw new Error(loadError.message);
+
+  const { error: postsError } = await admin
     .from('social_posts')
     .update({ status: 'cancelled', retry_after: null })
-    .eq('package_id', id)
+    .in('package_id', ids)
     .not('status', 'in', '(posted,publishing)');
-  await admin.from('social_packages').update({ status: 'cancelled' }).eq('id', id);
-  if (posts?.length) {
-    await admin.from('social_post_reviews').insert(
-      posts.map((post) => ({
-        social_post_id: post.id,
-        package_id: id,
-        reviewer_id: session.userId,
-        action: 'cancelled',
-        content_version: post.content_version,
-        content_hash: post.content_hash,
-        snapshot: { status: post.status, channel: post.channel, scheduled_for: post.scheduled_for },
-      })),
-    );
+  if (postsError) throw new Error(postsError.message);
+
+  const { error: packagesError } = await admin
+    .from('social_packages')
+    .update({ status: 'cancelled' })
+    .in('id', ids);
+  if (packagesError) throw new Error(packagesError.message);
+
+  const reviewRows = (posts ?? [])
+    .map((post) => cancelledReviewRow(post, reviewerId))
+    .filter((row) => row !== null);
+  if (reviewRows.length) {
+    const { error: reviewError } = await admin.from('social_post_reviews').insert(reviewRows);
+    if (reviewError) throw new Error(reviewError.message);
   }
+
   revalidatePath('/admin');
   revalidatePath('/admin/calendar');
+  for (const id of ids) revalidatePath(`/admin/packages/${id}`);
+}
+
+export async function cancelPackageAction(formData: FormData) {
+  const session = await requireSocialAdmin({ aal2: true });
+  await cancelPackagesByIds(parseCancelPackageIds(formData), session.userId);
 }
 
 export async function updateSettingsAction(formData: FormData) {
