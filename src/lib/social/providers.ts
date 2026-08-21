@@ -1,4 +1,5 @@
 import 'server-only';
+import { telegramRenderedLength, toTelegramHtml } from './telegram-format';
 
 import { randomBytes } from 'node:crypto';
 import { buildOAuth1Header, type OAuth1Credentials } from '../../../pipeline/social-repost';
@@ -178,7 +179,7 @@ class TelegramPublisher implements SocialPublisher {
   readonly channel = 'telegram' as const;
 
   validate(post: SocialPostForDelivery) {
-    if (!post.text.trim() || post.text.length > 4096) {
+    if (!post.text.trim() || telegramRenderedLength(post.text) > 4096) {
       throw new SocialPublishError(
         'Telegram text is empty or exceeds 4096 characters.',
         'permanent',
@@ -193,7 +194,7 @@ class TelegramPublisher implements SocialPublisher {
     const token = requiredFirst(['PUBLISHER_TELEGRAM_BOT_TOKEN', 'TELEGRAM_BOT_TOKEN']);
     const chatId = requiredFirst(['PUBLISHER_TELEGRAM_CHANNEL_ID', 'TELEGRAM_CHANNEL_ID']);
     const photo = assetUrl(post);
-    if (photo && post.text.length > 1024) {
+    if (photo && telegramRenderedLength(post.text) > 1024) {
       const photoResult = await providerJson(
         `https://api.telegram.org/bot${token}/sendPhoto`,
         {
@@ -219,7 +220,8 @@ class TelegramPublisher implements SocialPublisher {
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
               chat_id: chatId,
-              text: post.text,
+              text: toTelegramHtml(post.text),
+              parse_mode: 'HTML',
               link_preview_options: { is_disabled: true },
               reply_parameters: { message_id: photoId },
             }),
@@ -241,11 +243,21 @@ class TelegramPublisher implements SocialPublisher {
         );
       }
     }
-    const method = photo && post.text.length <= 1024 ? 'sendPhoto' : 'sendMessage';
+    const method = photo && telegramRenderedLength(post.text) <= 1024 ? 'sendPhoto' : 'sendMessage';
     const body =
       method === 'sendPhoto'
-        ? { chat_id: chatId, photo, caption: post.text }
-        : { chat_id: chatId, text: post.text, link_preview_options: { is_disabled: true } };
+        ? {
+            chat_id: chatId,
+            photo,
+            caption: toTelegramHtml(post.text),
+            parse_mode: 'HTML' as const,
+          }
+        : {
+            chat_id: chatId,
+            text: toTelegramHtml(post.text),
+            parse_mode: 'HTML' as const,
+            link_preview_options: { is_disabled: true },
+          };
     const result = await providerJson(
       `https://api.telegram.org/bot${token}/${method}`,
       {
@@ -652,6 +664,15 @@ class LinkedInPublisher implements SocialPublisher {
         'invalid_copy',
       );
     }
+    // The tracked link lives in the first comment so the post body stays free
+    // of an outbound URL, which LinkedIn demotes in page reach.
+    if (!post.firstComment?.trim()) {
+      throw new SocialPublishError(
+        'LinkedIn requires a first comment carrying the tracked URL.',
+        'permanent',
+        'invalid_reply',
+      );
+    }
   }
 
   async publish(post: SocialPostForDelivery): Promise<PublishReceipt> {
@@ -697,7 +718,44 @@ class LinkedInPublisher implements SocialPublisher {
         'ambiguous',
         'missing_external_id',
       );
-    return { externalId: id, providerMeta: { image } };
+
+    let commentId: string | null;
+    try {
+      const comment = await providerJson(
+        `https://api.linkedin.com/rest/socialActions/${encodeURIComponent(id)}/comments`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'LinkedIn-Version': version,
+            'X-Restli-Protocol-Version': '2.0.0',
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            actor: owner,
+            object: id,
+            message: { text: post.firstComment },
+          }),
+        },
+        { stage: 'publish' },
+      );
+      commentId = String(comment.id ?? comment.$URN ?? '') || null;
+    } catch (error) {
+      // The post is already live. Re-running delivery would duplicate it, so
+      // this always needs reconciliation rather than a retry -- same contract
+      // as a failed X self-reply.
+      throw new SocialPublishError(
+        `LinkedIn post ${id} published, but the tracked-link comment failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+        'ambiguous',
+        'partial_linkedin_comment',
+        {
+          cause: error,
+          providerMeta: { partial_sequence: true, post_id: id, comment_pending: true, image },
+        },
+      );
+    }
+
+    return { externalId: id, providerMeta: { image, comment_id: commentId } };
   }
 }
 

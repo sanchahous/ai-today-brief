@@ -1,6 +1,7 @@
 import { isPrivateSignedStorageUrl, isSocialImageMime } from './asset-ref';
 import { instagramCarouselIssues } from './instagram-carousel';
 import { containsServiceMarkers, serviceMarkerIssueMessage } from './service-markers';
+import { containsTelegramMarkup } from './telegram-format';
 import type { QualityIssue, QualityReport, SocialChannel, SocialDraft } from './types';
 
 interface ChannelRule {
@@ -44,7 +45,9 @@ export const CHANNEL_RULES: Record<SocialChannel, ChannelRule> = {
     maxHashtags: 3,
     maxEmoji: 3,
     requiresAltWithAsset: true,
-    rootUrlStrategy: 'one',
+    // The tracked link goes in the first comment: an outbound URL in the body
+    // measurably suppresses page reach, and the comment carries it for free.
+    rootUrlStrategy: 'none',
   },
   instagram: {
     maxChars: 2200,
@@ -209,6 +212,15 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
   ) {
     blocking.push(issue('service_markers', serviceMarkerIssueMessage(), 'post_text'));
   }
+  if (draft.channel !== 'telegram' && containsTelegramMarkup([text, ...contentParts].join('\n'))) {
+    blocking.push(
+      issue(
+        'raw_markup',
+        'Only Telegram renders rich text. Remove **, ` and ``` — every other channel prints them literally.',
+        'post_text',
+      ),
+    );
+  }
   if (/…|\.{3}/.test([text, ...contentParts].join(' '))) {
     blocking.push(
       issue(
@@ -272,6 +284,15 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
   if (draft.channel === 'x' && !(draft.firstComment ?? '').match(URL_RE)) {
     blocking.push(
       issue('x_reply_url', 'X requires the tracked URL in the self-reply.', 'first_comment'),
+    );
+  }
+  if (draft.channel === 'linkedin' && !(draft.firstComment ?? '').match(URL_RE)) {
+    blocking.push(
+      issue(
+        'linkedin_comment_url',
+        'LinkedIn requires the tracked URL in the first comment, not in the post body.',
+        'first_comment',
+      ),
     );
   }
 

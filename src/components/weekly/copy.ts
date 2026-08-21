@@ -8,6 +8,10 @@ export const WEEKLY_COPY: Record<
     contents: string;
     editorNote: string;
     keyTakeaways: string;
+    actionBoardEyebrow: string;
+    actionBoard: string;
+    actionBoardNote: string;
+    actionBoardJump: string;
     why: string;
     practical: string;
     takeaway: string;
@@ -34,6 +38,11 @@ export const WEEKLY_COPY: Record<
     contents: 'In this issue',
     editorNote: 'Editor’s note',
     keyTakeaways: 'What to remember this week',
+    actionBoardEyebrow: 'Start here',
+    actionBoard: 'What to put to work this week',
+    actionBoardNote:
+      'Concrete moves from this issue — the tool, the step, and what it costs you.',
+    actionBoardJump: 'Read the story',
     why: 'Why it matters',
     practical: 'Practical example',
     takeaway: 'The takeaway',
@@ -60,6 +69,11 @@ export const WEEKLY_COPY: Record<
     contents: 'У цьому випуску',
     editorNote: 'Слово редактора',
     keyTakeaways: 'Що варто запам’ятати цього тижня',
+    actionBoardEyebrow: 'Почніть звідси',
+    actionBoard: 'Що взяти в роботу цього тижня',
+    actionBoardNote:
+      'Конкретні кроки з цього випуску — інструмент, дія і чого вона вартує.',
+    actionBoardJump: 'Читати історію',
     why: 'Чому це важливо',
     practical: 'Практичний приклад',
     takeaway: 'Головний висновок',
