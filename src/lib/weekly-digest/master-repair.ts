@@ -113,6 +113,100 @@ export function readRepairValue(
   return null;
 }
 
+export interface AppliedLanguageFix {
+  locale: WeeklyLocale;
+  span: string;
+  replacement: string;
+  field?: string;
+}
+
+function isDirectLanguageReplacement(suggestedFix: string): boolean {
+  if (suggestedFix.length > 120) return false;
+  return !/^(rewrite|shorten|use |state |name |remove |adjust |expand |cut |переклад|замініть|використайте|виправте)/i.test(
+    suggestedFix,
+  );
+}
+
+function replaceSpanOnce(haystack: string, span: string, replacement: string): string | null {
+  const index = haystack.indexOf(span);
+  if (index < 0) return null;
+  return haystack.slice(0, index) + replacement + haystack.slice(index + span.length);
+}
+
+/**
+ * Applies critic `language_mechanics.suggestedFix` as a string replace when
+ * the span is present and the fix is a replacement, not an instruction.
+ * Short spans like «потокенно» are in scope — locateSpan's 12-char floor is
+ * for LLM repair addressing, not this mechanical pass.
+ */
+export function applyLanguageMechanicsFixes(
+  bundle: WeeklyMasterBundle,
+  issues: WeeklyQualityIssue[],
+): { bundle: WeeklyMasterBundle; applied: AppliedLanguageFix[] } {
+  let next = bundle;
+  const applied: AppliedLanguageFix[] = [];
+  for (const issue of issues) {
+    if (issue.code !== 'language_mechanics' || !issue.blocker) continue;
+    const span = issue.span?.trim();
+    const replacement = issue.suggestedFix?.trim();
+    if (!span || !replacement || !isDirectLanguageReplacement(replacement)) continue;
+    const locale = issue.locale;
+    if (locale !== 'en' && locale !== 'uk') continue;
+    const field = issue.field;
+    if (field && isRepairableField(field) && !isListRepairField(field)) {
+      const target: RepairTarget = {
+        locale,
+        revisionItemId: issue.revisionItemId ?? null,
+        field,
+      };
+      const current = readRepairValue(next, target);
+      if (typeof current === 'string') {
+        const updated = replaceSpanOnce(current, span, replacement);
+        if (updated) {
+          next = applyRepairValue(next, target, updated);
+          applied.push({ locale, span, replacement, field });
+          continue;
+        }
+      }
+    }
+    const located = locateLanguageSpan(next, span, locale);
+    if (!located) continue;
+    const current = readRepairValue(next, located);
+    if (typeof current !== 'string') continue;
+    const updated = replaceSpanOnce(current, span, replacement);
+    if (!updated) continue;
+    next = applyRepairValue(next, located, updated);
+    applied.push({ locale, span, replacement, field: located.field });
+  }
+  return { bundle: next, applied };
+}
+
+function locateLanguageSpan(
+  bundle: WeeklyMasterBundle,
+  span: string,
+  locale: WeeklyLocale,
+): RepairTarget | null {
+  const needle = span.trim();
+  if (!needle) return null;
+  const article = bundle[locale];
+  for (const field of MASTER_FRAME_FIELDS) {
+    if (!isRepairableField(field) || isListRepairField(field)) continue;
+    const value = article[field];
+    if (typeof value === 'string' && value.includes(needle)) {
+      return { locale, revisionItemId: null, field };
+    }
+  }
+  for (const story of article.stories) {
+    for (const field of MASTER_STORY_FIELDS) {
+      const value = story[field];
+      if (typeof value === 'string' && value.includes(needle)) {
+        return { locale, revisionItemId: story.revisionItemId, field };
+      }
+    }
+  }
+  return null;
+}
+
 /** Immutable splice: returns a new bundle with exactly one field replaced. */
 export function applyRepairValue(
   bundle: WeeklyMasterBundle,

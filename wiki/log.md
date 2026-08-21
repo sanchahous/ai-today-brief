@@ -6,6 +6,32 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-21
 
+## 2026-08-21 — Review-pass автопілота: атомарний Ship, гейти attest = гейтам owner-RPC
+
+**Джерело:** технічний аудит PR #311 (гілка `feat/weekly-release-autopilot`).
+
+**Змінено:**
+- [pipeline/weekly-digest](pipeline/weekly-digest.md) — hardening machine attestation: article
+  перевіряє quality report і в машинному шляху; соц-attest ідемпотентний, не чіпає
+  `publish_enabled`; use-block гейт = дієслово + конкретика; Ship — один RPC
+  `ship_weekly_digest`; події `attest_failed` у job timeline
+- [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) — рядок `attest_failed` у таблиці
+  статусів, уточнення про паузу каналу та use-block
+- [now](now.md)
+- Міграція `20260821170000_weekly_release_autopilot_ship_and_attest_hardening.sql`
+
+## 2026-08-21 — Weekly release autopilot після backtest 09–20.08
+
+**Джерело:** backtest релізу `ai-weekly-2026-08-09` (прод-БД + 87 merged PR 09–21.08).
+
+**Змінено:**
+- [audits/2026-08-21-weekly-digest-release-backtest](audits/2026-08-21-weekly-digest-release-backtest.md)
+- [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) — owner path: Hallucination board → 8 uploads → shooting+YouTube → Ship
+- [pipeline/weekly-digest](pipeline/weekly-digest.md) — machine attestation, hydrator, social slots від `release_at`
+- [pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md) — scope note: autopilot не змінює селектор
+- [now](now.md)
+- LinkedIn `612df95c` знову `scheduled` на 24.08 (відновлено content_hash після ручної правки)
+
 ## 2026-08-21 — Фільтр kind перед bulk cancel на Today
 
 **Джерело:** власник: масове виділення в списку може випадково скасувати weekly digest.

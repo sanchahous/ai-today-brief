@@ -67,6 +67,15 @@ describe('Weekly generation control helpers', () => {
     expect(paused).toMatchObject({ code: 'resumable', retryable: true });
   });
 
+  it('retries hydration map crashes and GitHub dispatch 503s', () => {
+    expect(
+      classifyGenerationFailure("Cannot read properties of undefined (reading 'map')"),
+    ).toMatchObject({ code: 'unknown', retryable: true });
+    expect(classifyGenerationFailure('GitHub dispatch returned 503')).toMatchObject({
+      retryable: true,
+    });
+  });
+
   it('retries transient network and timeout failures', () => {
     expect(classifyGenerationFailure('fetch failed: ECONNRESET').retryable).toBe(true);
     expect(classifyGenerationFailure('request timed out').code).toBe('timeout');
