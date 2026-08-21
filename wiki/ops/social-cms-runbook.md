@@ -276,12 +276,16 @@ as an emergency fallback with the CMS kill switch on.
 - The X budget reservation is atomic. Reaching the hard cap fails safely before
   another provider request.
 - To drop unpublished work without opening each package, use **Today** (`/admin`):
-  select one or more queue cards, then **Cancel future posts**. This is the same
-  AAL2 mutation as the package editor: non-posted, non-publishing variants become
-  `cancelled`, and the package is marked `cancelled`. Already posted or currently
-  publishing variants stay live. The queue lists at most 20 packages, and bulk
-  cancel uses that same cap. (source: `src/app/admin/(cms)/page.tsx`,
-  `src/lib/social/package-ids.ts`)
+  the queue defaults to the **Daily** filter. Choose **Weekly** or **All** only
+  when you intend to touch those packages, then select one or more visible cards
+  and press **Cancel future posts**. **Select all** covers the visible filter
+  only, so a Daily bulk cancel cannot include weekly digest packages. This is
+  the same AAL2 mutation as the package editor: non-posted, non-publishing
+  variants become `cancelled`, and the package is marked `cancelled`. Already
+  posted or currently publishing variants stay live. The confirm dialog names
+  the selected kinds and warns when a weekly digest is included. The queue
+  lists at most 20 packages, and bulk cancel uses that same cap. (source:
+  `src/app/admin/(cms)/page.tsx`, `src/lib/social/package-queue.ts`)
 
 ## 7. Acceptance smoke tests
 
