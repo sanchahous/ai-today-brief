@@ -41,7 +41,8 @@ import {
   type SocialChannel,
   type SocialLocale,
 } from '@/lib/social/types';
-import { nextWeeklyScheduledForChannel } from '@/lib/social/schedule';
+import { masterBundleFromArtifacts } from './master-bundle';
+import { canMachineAttest, socialCopyHasUseBlock } from './machine-attest';
 import {
   canonicalSourceName,
   contentFingerprint,
@@ -53,10 +54,8 @@ import {
   WEEKLY_CONTENT_STUDIO_VERSION,
   WEEKLY_VIDEO_MANIFEST_VERSION,
   WEEKLY_VIDEO_SCRIPT_SCHEMA_VERSION,
-  type WeeklyArticleMaster,
   type WeeklyContentQualityReport,
   type WeeklyMasterBundle,
-  type WeeklyMasterStory,
   type WeeklyQualityDimension,
   type WeeklyResearchPack,
   type WeeklyVideoScript,
@@ -77,6 +76,7 @@ import {
 } from './master-engine';
 import type { UnresolvedIssue } from './master-repair';
 import { contentStudioVideoManifestKey } from './content-studio-queue';
+import { nextWeeklyScheduledForChannel } from '@/lib/social/schedule';
 import { generateWeeklyVideoScript, requireVideoScriptArticle } from './video-script-llm';
 import {
   buildWeeklyResearchPack,
@@ -184,12 +184,6 @@ function asRecord(value: Json | null | undefined): Record<string, Json | undefin
 
 function text(value: Json | undefined) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
-
-function stringArray(value: Json | null | undefined) {
-  return Array.isArray(value)
-    ? value.filter((entry): entry is string => typeof entry === 'string' && Boolean(entry.trim()))
-    : [];
 }
 
 function safeMessage(error: unknown) {
@@ -445,6 +439,20 @@ async function saveGeneratedArtifact(input: {
   });
   if (error) throw new Error(`[weekly-generation] save artifact: ${error.message}`);
   if (typeof data !== 'string') throw new Error('Artifact RPC did not return an ID.');
+  if (
+    canMachineAttest({
+      artifactType: input.artifactType,
+      content: input.content,
+      metadata: input.metadata,
+    })
+  ) {
+    const attested = await rpcClient().rpc('machine_attest_weekly_digest_artifact', {
+      p_artifact_id: data,
+    });
+    if (attested.error) {
+      console.error('[weekly-generation] machine attest failed', attested.error.message);
+    }
+  }
   return data;
 }
 
@@ -876,6 +884,7 @@ async function saveQualityReport(input: {
    * against `job.revision_id`, so that second save must not record it again.
    */
   recordCost?: boolean;
+  languageFixes?: Array<{ locale: string; span: string; replacement: string; field?: string }>;
 }) {
   const artifactId = await saveGeneratedArtifact({
     weeklyDigestId: input.weeklyDigestId,
@@ -891,6 +900,7 @@ async function saveQualityReport(input: {
       score: input.report.score,
       prompt_version: input.generation.critic.promptVersion,
       generation: input.generation as unknown as Json,
+      language_fixes: (input.languageFixes ?? []) as unknown as Json,
       estimated_cost_usd: Object.values(input.generation).reduce(
         (sum, generation) => sum + generation.estimatedCostUsd,
         0,
@@ -1317,6 +1327,7 @@ async function generateEditorialMaster(
       passed: false,
       jobId: job.id,
       recordCost: false,
+      languageFixes: outcome.languageFixes,
     });
     const draft = await createMasterRevision({
       job,
@@ -1380,6 +1391,7 @@ async function generateEditorialMaster(
     passed: true,
     jobId: job.id,
     recordCost: false,
+    languageFixes: outcome.languageFixes,
   });
   await tracker.event({
     type: 'step_completed',
@@ -1608,213 +1620,7 @@ async function localeMap() {
   return map as Map<SocialChannel, SocialLocale>;
 }
 
-/**
- * Reads the approved bilingual article pair. No longer requires a
- * video_script artifact to exist -- video generation moved to its own job
- * (PR6), and generateSocialCopy (the other caller) never needed it in the
- * first place, so the old hard dependency just meant social copy silently
- * couldn't run until the video job happened to finish first.
- */
-type MasterBundleContext = Pick<
-  Awaited<ReturnType<typeof loadGenerationContext>>,
-  'artifacts' | 'items' | 'revision'
->;
-
-function firstNonEmptyText(...values: Array<Json | null | undefined>) {
-  for (const value of values) {
-    const resolved = text(value ?? undefined);
-    if (resolved) return resolved;
-  }
-  return null;
-}
-
-function requiredMasterText(
-  locale: 'en' | 'uk',
-  field: string,
-  ...values: Array<Json | null | undefined>
-) {
-  const resolved = firstNonEmptyText(...values);
-  if (resolved) return resolved;
-  throw new Error(`Approved ${locale.toUpperCase()} article is missing ${field}.`);
-}
-
-function masterInternalLinks(value: Json | null | undefined) {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((entry) => {
-    const link = asRecord(entry);
-    const anchor = text(link.anchor);
-    const query = text(link.query);
-    return anchor && query ? [{ anchor, query }] : [];
-  });
-}
-
-function revisionStudio(item: { source_snapshot?: Json | null }) {
-  return asRecord(asRecord(item.source_snapshot).content_studio);
-}
-
-function revisionStudioText(
-  studio: Record<string, Json | undefined>,
-  locale: 'en' | 'uk',
-  enKey: string,
-  ukKey: string,
-) {
-  return firstNonEmptyText(locale === 'uk' ? studio[ukKey] : studio[enKey]) ?? '';
-}
-
-function revisionStoryClaimIds(
-  stored: Record<string, Json | undefined>,
-  studio: Record<string, Json | undefined>,
-  item: {
-    rank: number;
-    summary_en: string;
-    why_en: string | null;
-    source_snapshot: Json;
-  },
-) {
-  const fromStored = stringArray(stored.claimIds);
-  if (fromStored.length > 0) return fromStored;
-  const fromStudio = stringArray(studio.claim_ids);
-  if (fromStudio.length > 0) return fromStudio;
-  return approvedFactsForItem(item).map((claim) => claim.id);
-}
-
-function masterStoriesFromRevision(
-  context: MasterBundleContext,
-  locale: 'en' | 'uk',
-  persisted: Json | null | undefined,
-): WeeklyMasterStory[] {
-  const persistedStories = Array.isArray(persisted) ? persisted.map(asRecord) : [];
-  const localized = (en: string | null, uk: string | null) => (locale === 'uk' ? uk : en) ?? '';
-  return context.items.map((item, index) => {
-    const stored =
-      persistedStories.find((story) => text(story.revisionItemId) === item.id) ??
-      persistedStories[index] ??
-      {};
-    const studio = revisionStudio(item);
-    const fromStored = (field: string, fallback: string) =>
-      firstNonEmptyText(stored[field], fallback) ?? '';
-    const headline = fromStored('headline', localized(item.title_en, item.title_uk));
-    const summary = fromStored('summary', localized(item.summary_en, item.summary_uk));
-    return {
-      revisionItemId: item.id,
-      placement: placementForRank(item.rank),
-      headline,
-      summary,
-      hook: fromStored('hook', revisionStudioText(studio, locale, 'hook_en', 'hook_uk') || summary),
-      body: fromStored('body', localized(item.body_en, item.body_uk)),
-      why: fromStored('why', localized(item.why_en, item.why_uk)),
-      practical: fromStored('practical', localized(item.practical_en, item.practical_uk)),
-      limitation: fromStored(
-        'limitation',
-        revisionStudioText(studio, locale, 'limitation_en', 'limitation_uk'),
-      ),
-      takeaway: fromStored('takeaway', localized(item.takeaway_en, item.takeaway_uk)),
-      claimIds: revisionStoryClaimIds(stored, studio, item),
-      editorsView: fromStored(
-        'editorsView',
-        revisionStudioText(studio, locale, 'editors_view_en', 'editors_view_uk'),
-      ),
-      discussionQuestion: fromStored(
-        'discussionQuestion',
-        revisionStudioText(studio, locale, 'discussion_en', 'discussion_uk'),
-      ),
-    };
-  });
-}
-
-function masterArticleFromArtifact(
-  context: MasterBundleContext,
-  artifact: MasterBundleContext['artifacts'][number],
-  locale: 'en' | 'uk',
-): WeeklyArticleMaster {
-  const content = asRecord(artifact.content);
-  const localizedRevision = (en: string | null, uk: string | null) => (locale === 'uk' ? uk : en);
-  const artifactTakeaways = [content.keyTakeaways, content.key_takeaways]
-    .map((value) => stringArray(value))
-    .find((value) => value.length > 0);
-  const keyTakeaways =
-    artifactTakeaways ??
-    stringArray(
-      locale === 'uk' ? context.revision.key_takeaways_uk : context.revision.key_takeaways_en,
-    );
-  if (!keyTakeaways.length) {
-    throw new Error(`Approved ${locale.toUpperCase()} article is missing key takeaways.`);
-  }
-  return {
-    locale,
-    title: requiredMasterText(
-      locale,
-      'title',
-      content.title,
-      localizedRevision(context.revision.title_en, context.revision.title_uk),
-    ),
-    seoTitle: requiredMasterText(locale, 'seoTitle', content.seoTitle, content.seo_title),
-    metaDescription: requiredMasterText(
-      locale,
-      'metaDescription',
-      content.metaDescription,
-      content.meta_description,
-    ),
-    ogTitle: requiredMasterText(locale, 'ogTitle', content.ogTitle, content.og_title),
-    ogDescription: requiredMasterText(
-      locale,
-      'ogDescription',
-      content.ogDescription,
-      content.og_description,
-    ),
-    standfirst: requiredMasterText(locale, 'standfirst', content.standfirst),
-    theme: requiredMasterText(locale, 'theme', content.theme),
-    intro: requiredMasterText(
-      locale,
-      'intro',
-      content.intro,
-      localizedRevision(context.revision.intro_en, context.revision.intro_uk),
-    ),
-    editorNote: requiredMasterText(
-      locale,
-      'editorNote',
-      content.editorNote,
-      content.editor_note,
-      localizedRevision(context.revision.editor_note_en, context.revision.editor_note_uk),
-    ),
-    keyTakeaways,
-    topics: stringArray(content.topics),
-    entities: stringArray(content.entities),
-    internalLinks: masterInternalLinks(content.internalLinks),
-    conclusion: requiredMasterText(
-      locale,
-      'conclusion',
-      content.conclusion,
-      content.editorNote,
-      content.editor_note,
-      localizedRevision(context.revision.editor_note_en, context.revision.editor_note_uk),
-    ),
-    stories: masterStoriesFromRevision(context, locale, content.stories),
-  };
-}
-
-/**
- * Article artifacts may be stored in either the rich Content Studio shape or
- * the normalized revision shape. Rehydrate stories from the active revision
- * so social and video jobs work with both representations.
- */
-export function masterBundleFromArtifacts(context: MasterBundleContext): WeeklyMasterBundle {
-  const articleEn = context.artifacts.find(
-    (artifact) =>
-      artifact.artifact_type === 'article' && artifact.locale === 'en' && artifact.is_current,
-  );
-  const articleUk = context.artifacts.find(
-    (artifact) =>
-      artifact.artifact_type === 'article' && artifact.locale === 'uk' && artifact.is_current,
-  );
-  if (!articleEn || !articleUk) {
-    throw new Error('Approved master article artifacts are required.');
-  }
-  return {
-    en: masterArticleFromArtifact(context, articleEn, 'en'),
-    uk: masterArticleFromArtifact(context, articleUk, 'uk'),
-  };
-}
+export { masterBundleFromArtifacts } from './master-bundle';
 
 /**
  * Reads the current, owner-approved video_script artifact for the video
@@ -2310,7 +2116,13 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       locale,
       bundle,
       trackedUrl,
-      scheduledFor: nextWeeklyScheduledForChannel(channel, context.digest.week_end, new Date()),
+      scheduledFor: nextWeeklyScheduledForChannel(
+        channel,
+        typeof context.digest.release_at === 'string' && context.digest.release_at
+          ? context.digest.release_at
+          : new Date().toISOString(),
+        new Date(),
+      ),
       sourceFacts: sourceFactsByLocale[locale],
       assets,
       altText:
@@ -2872,6 +2684,22 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
   if (packageReadyError) {
     throw new Error(`[weekly-generation] social package ready: ${packageReadyError.message}`);
   }
+  for (const post of posts) {
+    const report = asRecord(post.quality_report);
+    const critic = asRecord(report.critic);
+    const score = typeof critic.score === 'number' ? critic.score : 0;
+    if (score < 85) continue;
+    if (!socialCopyHasUseBlock(typeof post.post_text === 'string' ? post.post_text : '')) continue;
+    const attested = await rpcClient().rpc('machine_attest_weekly_social_post', {
+      p_social_post_id: post.id,
+    });
+    if (attested.error) {
+      console.error(
+        `[weekly-generation] ${post.channel} machine attest failed`,
+        attested.error.message,
+      );
+    }
+  }
   await saveSocialCopyCheckpoint(tracker, checkpoint, 'posts', 100);
   await tracker.event({
     type: 'step_completed',
@@ -3356,8 +3184,6 @@ async function generatePdf(job: ClaimedGenerationJob) {
   const input = asRecord(job.input);
   const locale = text(input.locale);
   if (locale !== 'en' && locale !== 'uk') throw new Error('PDF locale must be en or uk.');
-  const localized = (en: string | null, uk: string | null) =>
-    locale === 'uk' ? (uk ?? '') : (en ?? '');
   const artifactByStory = new Map(
     context.artifacts
       .filter((artifact) => artifact.artifact_type === 'story_image' && artifact.revision_item_id)
@@ -3379,40 +3205,39 @@ async function generatePdf(job: ClaimedGenerationJob) {
       }),
     ),
   ]);
+  const article = masterBundleFromArtifacts(context)[locale];
   const pdfInput: WeeklyPdfInput = {
     locale,
     issueLabel:
       locale === 'uk'
         ? `Випуск ${context.revision.revision_number}`
         : `Issue ${context.revision.revision_number}`,
-    title: localized(context.revision.title_en, context.revision.title_uk),
-    intro: localized(context.revision.intro_en, context.revision.intro_uk),
-    editorNote: localized(context.revision.editor_note_en, context.revision.editor_note_uk),
+    title: article.title,
+    intro: article.intro,
+    editorNote: article.editorNote,
     weekStart: context.digest.week_start,
     weekEnd: context.digest.week_end,
     webUrl: `${SITE_URL}/${locale}/weekly/${context.digest.slug}`,
     videoUrl: videoArtifact?.external_url ?? null,
     coverImageUrl,
-    keyTakeaways: stringArray(
-      locale === 'uk' ? context.revision.key_takeaways_uk : context.revision.key_takeaways_en,
-    ),
-    stories: context.items.map((item, index) => {
-      const source = sourceFromJson(item.sources);
-      const studio = asRecord(asRecord(item.source_snapshot).content_studio);
+    keyTakeaways: article.keyTakeaways,
+    stories: article.stories.map((story, index) => {
+      const item = context.items.find((row) => row.id === story.revisionItemId) ?? context.items[index];
+      const source = sourceFromJson(item?.sources);
       return {
-        rank: item.rank,
-        title: localized(item.title_en, item.title_uk),
-        summary: localized(item.summary_en, item.summary_uk),
-        body: localized(item.body_en, item.body_uk),
-        why: localized(item.why_en, item.why_uk),
-        practical: localized(item.practical_en, item.practical_uk),
-        takeaway: localized(item.takeaway_en, item.takeaway_uk),
-        limitation: localized(text(studio.limitation_en), text(studio.limitation_uk)),
+        rank: item?.rank ?? index + 1,
+        title: story.headline,
+        summary: story.summary,
+        body: story.body,
+        why: story.why,
+        practical: story.practical,
+        takeaway: story.takeaway,
+        limitation: story.limitation,
         sourceName: source.name,
         sourceUrl: source.url,
-        eventDate: item.event_date,
+        eventDate: item?.event_date ?? null,
         imageUrl: storyImageUrls[index],
-        imageAlt: localized(item.title_en, item.title_uk),
+        imageAlt: story.headline,
       };
     }),
   };

@@ -5,7 +5,7 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 `pipeline/weekly-digest.ts`, owner audits / production runs 2026-08-09…17,
 [weekly-digest](weekly-digest.md), staged social-copy recovery and LinkedIn 7-page bounds
 2026-08-17.
-Last updated: 2026-08-17
+Last updated: 2026-08-21
 
 ---
 
@@ -35,6 +35,9 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 > Social package master-artifact hydration (2026-08-17) is downstream generation compatibility:
 > it rehydrates approved revision stories for social/LinkedIn rendering and does not change this
 > selector's candidates, weights, ranks, diversity, or approval state.
+> Weekly release autopilot (2026-08-21) machine-attests green `research_pack` /
+> article / pdf / social / script artifacts and adds a Hallucination board; it does not
+> change this selector's candidates, weights, ranks, or diversity.
 > (source: `src/lib/weekly-digest/generation-worker.ts`)
 > GitHub dispatch 503 recovery (2026-08-17) is control-plane transport resilience only: it
 > retries an already-created worker request and keeps an unconfirmed lease fenced; it does not

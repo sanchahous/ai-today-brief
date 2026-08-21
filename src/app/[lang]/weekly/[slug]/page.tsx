@@ -15,7 +15,13 @@ import {
   getWeeklyDigest,
   type WeeklyDigestView,
 } from '@/lib/digests';
+import { clipToMaxChars } from '@/lib/weekly-digest/clip-text';
 import { markdownToPlainText } from '@/lib/markdown';
+import {
+  weeklyFaqFromDigest,
+  weeklyMetaDescription,
+  weeklyMetricsFromItems,
+} from '@/lib/weekly-digest/weekly-geo';
 import { authorNode, publisherNode } from '@/lib/schema';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 
@@ -28,13 +34,7 @@ export async function generateStaticParams() {
 }
 
 function descriptionFor(digest: WeeklyDigestView) {
-  return (
-    digest.metaDescription ||
-    digest.standfirst ||
-    digest.intro ||
-    digest.items[0]?.summary ||
-    digest.title
-  );
+  return weeklyMetaDescription(digest);
 }
 
 function absoluteUrl(url: string) {
@@ -72,7 +72,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     },
     openGraph: {
       title: digest.ogTitle,
-      description: digest.ogDescription,
+      description: clipToMaxChars(digest.ogDescription || description, 200),
       type: 'article',
       url: `${SITE_URL}${path}`,
       siteName: SITE_NAME,
@@ -94,7 +94,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
     twitter: {
       card: 'summary_large_image',
       title: digest.ogTitle,
-      description: digest.ogDescription,
+      description: clipToMaxChars(digest.ogDescription || description, 200),
       images: image ? [image] : undefined,
     },
   };
@@ -139,11 +139,14 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
     })),
   );
 
+  const faq = weeklyFaqFromDigest(digest);
+  const metrics = weeklyMetricsFromItems(digest.items);
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
       {
-        '@type': 'Article',
+        '@type': 'NewsArticle',
         headline: digest.title,
         description: descriptionFor(digest),
         articleBody,
@@ -159,6 +162,18 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
         ...(citations.length ? { citation: citations } : {}),
         ...(digest.video ? { video: { '@id': `${SITE_URL}${pagePath}#video` } } : {}),
       },
+      ...(faq.length
+        ? [
+            {
+              '@type': 'FAQPage',
+              mainEntity: faq.map((entry) => ({
+                '@type': 'Question',
+                name: entry.question,
+                acceptedAnswer: { '@type': 'Answer', text: entry.answer },
+              })),
+            },
+          ]
+        : []),
       ...(digest.video
         ? [
             {
@@ -244,6 +259,63 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
             ) : null}
 
             <WeeklyActionBoard items={digest.items} lang={lang} />
+
+            {faq.length ? (
+              <section aria-labelledby="weekly-faq-title" className="mt-8">
+                <h2 id="weekly-faq-title" className="text-2xl">
+                  {copy.faq}
+                </h2>
+                <dl className="mt-5 grid gap-4">
+                  {faq.map((entry) => (
+                    <div
+                      key={entry.question}
+                      className="border-border bg-surface rounded-card border p-4"
+                    >
+                      <dt className="font-semibold">{entry.question}</dt>
+                      <dd className="text-muted mt-2 leading-7">{entry.answer}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ) : null}
+
+            {metrics.length ? (
+              <section aria-labelledby="weekly-metrics-title" className="mt-8">
+                <h2 id="weekly-metrics-title" className="text-2xl">
+                  {copy.metrics}
+                </h2>
+                <div className="mt-5 overflow-x-auto">
+                  <table className="w-full min-w-[28rem] text-left text-sm">
+                    <thead className="text-faint text-xs tracking-wide uppercase">
+                      <tr>
+                        <th className="border-border-soft border-b py-2 pr-3">
+                          {lang === 'uk' ? 'Мітка' : 'Label'}
+                        </th>
+                        <th className="border-border-soft border-b py-2 pr-3">
+                          {lang === 'uk' ? 'Значення' : 'Value'}
+                        </th>
+                        <th className="border-border-soft border-b py-2">
+                          {lang === 'uk' ? 'Історія' : 'Story'}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {metrics.map((row) => (
+                        <tr key={`${row.value}:${row.storyTitle}`}>
+                          <td className="border-border-soft border-b py-2 pr-3">{row.label}</td>
+                          <td className="border-border-soft border-b py-2 pr-3 font-semibold">
+                            {row.value}
+                          </td>
+                          <td className="border-border-soft text-muted border-b py-2">
+                            {row.storyTitle}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            ) : null}
 
             {digest.editorNote ? (
               <section

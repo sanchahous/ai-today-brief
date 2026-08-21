@@ -2222,6 +2222,18 @@ export type Database = {
         };
         Returns: string;
       };
+      machine_attest_weekly_digest_artifact: {
+        Args: { p_artifact_id: string };
+        Returns: string | null;
+      };
+      machine_attest_weekly_social_post: {
+        Args: { p_social_post_id: string };
+        Returns: Database['public']['Tables']['social_posts']['Row'];
+      };
+      weekly_quality_content_has_blockers: {
+        Args: { p_content: Json };
+        Returns: boolean;
+      };
       run_due_weekly_digest_preflights: {
         Args: { p_limit?: number };
         Returns: Database['public']['Tables']['weekly_digests']['Row'][];

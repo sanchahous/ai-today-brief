@@ -58,6 +58,12 @@ import {
 } from '@/lib/weekly-digest/owner-feedback';
 import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
 import { carryOverOrphanedQualityReport } from '@/lib/weekly-digest/quality-report-carryover';
+import {
+  canApproveQualityOrArticle,
+  canMachineAttest,
+  qualityReportForbidsApprove,
+} from '@/lib/weekly-digest/machine-attest';
+import { buildHallucinationBoard } from '@/lib/weekly-digest/hallucination-board';
 
 function requiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -159,7 +165,7 @@ async function persistPostUploadQa(artifactId: string, weeklyDigestId: string, q
   for (let attempt = 0; attempt < OPTIMISTIC_UPDATE_MAX_ATTEMPTS; attempt++) {
     const { data, error } = await admin
       .from('weekly_digest_artifacts')
-      .select('metadata, updated_at')
+      .select('metadata, updated_at, artifact_type')
       .eq('id', artifactId)
       .maybeSingle();
     if (error) {
@@ -181,7 +187,22 @@ async function persistPostUploadQa(artifactId: string, weeklyDigestId: string, q
       console.error('[weekly-upload-qa] write metadata failed', updateError.message);
       return;
     }
-    if (updatedRows && updatedRows.length > 0) break;
+    if (updatedRows && updatedRows.length > 0) {
+      if (
+        canMachineAttest({
+          artifactType: data.artifact_type,
+          metadata: metadata,
+        })
+      ) {
+        const attested = await admin.rpc('machine_attest_weekly_digest_artifact', {
+          p_artifact_id: artifactId,
+        });
+        if (attested.error) {
+          console.error('[weekly-upload-qa] machine attest failed', attested.error.message);
+        }
+      }
+      break;
+    }
     if (attempt === OPTIMISTIC_UPDATE_MAX_ATTEMPTS - 1) {
       console.error('[weekly-upload-qa] write metadata failed', 'optimistic update conflict');
       return;
@@ -714,7 +735,9 @@ export async function reviewWeeklyArtifactAction(formData: FormData) {
   const admin = getSupabaseAdmin();
   const { data: artifact } = await admin
     .from('weekly_digest_artifacts')
-    .select('weekly_digest_id,version,input_hash,is_current,artifact_type,metadata')
+    .select(
+      'weekly_digest_id,revision_id,version,input_hash,is_current,artifact_type,metadata,content',
+    )
     .eq('id', artifactId)
     .maybeSingle();
   if (
@@ -723,6 +746,25 @@ export async function reviewWeeklyArtifactAction(formData: FormData) {
     artifact.input_hash !== expectedHash
   ) {
     throw new Error('This artifact changed while it was being reviewed. Reload before approval.');
+  }
+  if (decision === 'approved') {
+    let qualityReportContent: unknown;
+    if (artifact.artifact_type === 'article') {
+      const { data: quality } = await admin
+        .from('weekly_digest_artifacts')
+        .select('content')
+        .eq('revision_id', artifact.revision_id)
+        .eq('artifact_type', 'content_quality_report')
+        .eq('is_current', true)
+        .maybeSingle();
+      qualityReportContent = quality?.content;
+    }
+    const gate = canApproveQualityOrArticle({
+      artifactType: artifact.artifact_type,
+      artifactContent: artifact.content,
+      qualityReportContent,
+    });
+    if (!gate.ok) throw new Error(gate.reason);
   }
   // Approving a failed content-sim image records an explicit human override so
   // release preflight can clear simulation_not_passed.
@@ -2394,6 +2436,67 @@ export async function approveWeeklyDigestAction(formData: FormData) {
     p_override_reason: overrideReason || null,
   });
   if (error) throw new Error(error.message);
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+/**
+ * Single human gate after the hallucination board: approve + schedule
+ * release_at = now + 15 minutes (preflight is the same instant).
+ */
+export async function shipWeeklyDigestAction(formData: FormData) {
+  await requireSocialAdmin({ aal2: true, roles: ['owner'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const admin = getSupabaseAdmin();
+  const { data: digest, error: digestError } = await admin
+    .from('weekly_digests')
+    .select('id,active_revision_id,status')
+    .eq('id', weeklyDigestId)
+    .maybeSingle();
+  if (digestError) throw new Error(digestError.message);
+  if (!digest?.active_revision_id) throw new Error('The digest has no active revision.');
+  const { data: quality } = await admin
+    .from('weekly_digest_artifacts')
+    .select('content')
+    .eq('revision_id', digest.active_revision_id)
+    .eq('artifact_type', 'content_quality_report')
+    .eq('is_current', true)
+    .maybeSingle();
+  if (qualityReportForbidsApprove(quality?.content)) {
+    throw new Error('Cannot ship while the quality report still has blocking issues.');
+  }
+  const { data: items } = await admin
+    .from('weekly_digest_revision_items')
+    .select('id,rank,title_en,title_uk')
+    .eq('revision_id', digest.active_revision_id)
+    .order('rank');
+  const { data: artifacts } = await admin
+    .from('weekly_digest_artifacts')
+    .select(
+      'artifact_type,locale,is_current,review_status,generation_status,storage_path,external_url,content,metadata,revision_item_id',
+    )
+    .eq('revision_id', digest.active_revision_id)
+    .eq('is_current', true);
+  const board = buildHallucinationBoard({
+    items: items ?? [],
+    artifacts: artifacts ?? [],
+  });
+  if (!board.canShip) {
+    throw new Error('Cannot ship while the hallucination board still has unresolved blockers.');
+  }
+  const db = await getSupabaseServer();
+  if (digest.status !== 'approved' && digest.status !== 'scheduled') {
+    const { error: approveError } = await db.rpc('approve_weekly_digest', {
+      p_weekly_digest_id: weeklyDigestId,
+      p_override_reason: null,
+    });
+    if (approveError) throw new Error(approveError.message);
+  }
+  const releaseAt = new Date(Date.now() + 15 * 60_000).toISOString();
+  const { error: scheduleError } = await db.rpc('schedule_weekly_digest', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_release_at: releaseAt,
+  });
+  if (scheduleError) throw new Error(scheduleError.message);
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 

@@ -5,6 +5,7 @@ import {
   editorialQualityFailures,
   criticVerdictLooksUnreliable,
   editorialQualityPasses,
+  enforceMetadataMaxChars,
   resolveWeeklyContentStudioMode,
   sourceNameMatchesDomain,
   validateMasterBundle,
@@ -333,6 +334,15 @@ describe('Weekly Content Studio hard gates', () => {
         }),
       ]),
     );
+  });
+
+  it('clips overlong metadata when writing, not only when checking', () => {
+    const value = bundle();
+    value.en.metaDescription = 'A'.repeat(400);
+    value.uk.ogTitle = 'B'.repeat(200);
+    const clipped = enforceMetadataMaxChars(value);
+    expect(clipped.en.metaDescription).toHaveLength(160);
+    expect(clipped.uk.ogTitle).toHaveLength(70);
   });
 
   it('blocks untranslated or malformed residue in Ukrainian copy', () => {

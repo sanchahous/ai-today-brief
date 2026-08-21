@@ -19,6 +19,8 @@ export const WEEKLY_COPY: Record<
     editorsView: string;
     editorsViewNote: string;
     discuss: string;
+    faq: string;
+    metrics: string;
     source: string;
     watch: string;
     videoTitle: string;
@@ -50,6 +52,8 @@ export const WEEKLY_COPY: Record<
     editorsView: "Editor's view",
     editorsViewNote: 'Our read — not established by the sources above.',
     discuss: 'Worth discussing',
+    faq: 'Questions this issue answers',
+    metrics: 'Numbers this week',
     source: 'Primary source',
     watch: 'Watch the weekly briefing',
     videoTitle: 'This week in AI — video briefing',
@@ -81,6 +85,8 @@ export const WEEKLY_COPY: Record<
     editorsView: 'Погляд редакції',
     editorsViewNote: 'Наша думка — не підтверджена джерелами вище.',
     discuss: 'Варто подискутувати',
+    faq: 'Питання, на які відповідає цей випуск',
+    metrics: 'Цифри тижня',
     source: 'Першоджерело',
     watch: 'Дивитися тижневий брифінг',
     videoTitle: 'Цей тиждень в AI — відеобрифінг',

@@ -15,6 +15,8 @@ import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { scenesFromVideoScriptContent } from '@/lib/weekly-digest/video-script-content';
 import { buildVideoShootPack } from '@/lib/weekly-digest/video-shoot-pack';
+import { buildHallucinationBoard } from '@/lib/weekly-digest/hallucination-board';
+import { qualityReportForbidsApprove } from '@/lib/weekly-digest/machine-attest';
 import type {
   WeeklyArtifactAdminRow,
   WeeklyArtifactReviewAdminRow,
@@ -78,6 +80,7 @@ import {
   scheduleWeeklyDigestAction,
   selectWeeklyArtifactVariantAction,
   startWeeklyContentStudioAction,
+  shipWeeklyDigestAction,
   toggleWeeklySocialAction,
   uploadWeeklyArtifactAction,
   ignorePostUploadQaAction,
@@ -622,6 +625,13 @@ function ArtifactReview({
               placeholder="What is approved, or what needs to change?"
             />
           </label>
+          {artifact.artifact_type === 'content_quality_report' &&
+          qualityReportForbidsApprove(artifact.content) ? (
+            <p className="text-sm text-rose-200">
+              Approve is blocked until language and other blocking issues are empty. The machine
+              will retry repairs; use Request changes if the remaining items are editorial.
+            </p>
+          ) : null}
           <div className="flex flex-wrap gap-2">
             <ActionSubmitButton
               name="decision"
@@ -629,6 +639,10 @@ function ArtifactReview({
               idleLabel="Approve version"
               pendingLabel="Approving…"
               className={PRIMARY}
+              disabled={
+                artifact.artifact_type === 'content_quality_report' &&
+                qualityReportForbidsApprove(artifact.content)
+              }
             />
             <ActionSubmitButton
               name="decision"
@@ -1340,6 +1354,160 @@ function ArtifactCard({
   );
 }
 
+function HallucinationBoardPanel({
+  workspace,
+  canShip,
+}: {
+  workspace: WeeklyDigestWorkspace;
+  canShip: boolean;
+}) {
+  const videoFinal = workspace.artifacts.find(
+    (artifact) => artifact.artifact_type === 'video_final' && artifact.is_current,
+  );
+  const qualityArtifact = workspace.artifacts.find(
+    (artifact) => artifact.artifact_type === 'content_quality_report' && artifact.is_current,
+  );
+  const board = buildHallucinationBoard({
+    items: workspace.items.map((item) => ({
+      id: item.id,
+      rank: item.rank,
+      title_en: item.title_en,
+      title_uk: item.title_uk,
+    })),
+    artifacts: workspace.artifacts,
+    videoYoutubeId: videoFinal?.external_url ?? videoFinal?.provider_id,
+  });
+
+  return (
+    <section className={PANEL} aria-labelledby="hallucination-board-heading">
+      <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">Release review</p>
+      <h2 id="hallucination-board-heading" className="mt-1 text-lg font-bold text-white">
+        Hallucination board
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-slate-400">
+        Claims must map to a source URL. Unresolved blockers block Ship. Waiting-on-you is
+        uploads and the YouTube id — not Approve clicks.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
+          <p className="text-xs font-bold text-slate-500 uppercase">Claims</p>
+          <p className="mt-1 text-2xl font-bold text-white">{board.claims.length}</p>
+        </div>
+        <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
+          <p className="text-xs font-bold text-slate-500 uppercase">Language fixes</p>
+          <p className="mt-1 text-2xl font-bold text-white">{board.languageFixes.length}</p>
+        </div>
+        <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
+          <p className="text-xs font-bold text-slate-500 uppercase">Blockers</p>
+          <p className="mt-1 text-2xl font-bold text-white">{board.unresolvedBlockers.length}</p>
+        </div>
+        <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
+          <p className="text-xs font-bold text-slate-500 uppercase">EN/UK numeric</p>
+          <p className="mt-1 text-2xl font-bold text-white">{board.numericParityIssues.length}</p>
+        </div>
+      </div>
+      {board.waitingOnOwner.length ? (
+        <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-amber-100">
+          {board.waitingOnOwner.map((item) => (
+            <li key={`${item.kind}:${item.label}`}>{item.label}</li>
+          ))}
+        </ul>
+      ) : null}
+      {board.languageFixes.length ? (
+        <details className="mt-4 text-sm text-slate-400">
+          <summary className="font-semibold text-slate-200">Auto-applied language fixes</summary>
+          <ul className="mt-2 space-y-1">
+            {board.languageFixes.map((fix) => (
+              <li key={`${fix.locale}:${fix.span}`}>
+                {fix.locale.toUpperCase()}: «{fix.span}» → «{fix.replacement}»
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
+      {board.claims.length ? (
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[36rem] text-left text-xs">
+            <thead className="font-bold tracking-wide text-slate-500 uppercase">
+              <tr>
+                <th className="pb-2">Claim</th>
+                <th className="pb-2">Story</th>
+                <th className="pb-2">Sources</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/8">
+              {board.claims.slice(0, 24).map((claim) => (
+                <tr key={claim.claimId}>
+                  <td className="py-2 pr-3 text-slate-200">
+                    <span className="font-mono text-[0.7rem] text-slate-500">{claim.claimId}</span>
+                    <span className="mt-1 block">{claim.text}</span>
+                  </td>
+                  <td className="py-2 pr-3 text-slate-400">{claim.storyHeadline}</td>
+                  <td className="py-2 text-slate-400">
+                    {claim.sourceUrls.length ? claim.sourceUrls.join(', ') : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-slate-500">Research packs are not on this revision yet.</p>
+      )}
+      {board.unresolvedBlockers.length ? (
+        <ul className="mt-4 space-y-1 text-sm text-rose-200">
+          {board.unresolvedBlockers.map((issue) => (
+            <li key={`${issue.code}:${issue.span ?? issue.message}`}>
+              {issue.code}
+              {issue.span ? `: «${issue.span}»` : ` — ${issue.message}`}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {canShip ? (
+        <div className="mt-5 grid gap-4">
+          <form action={shipWeeklyDigestAction}>
+            <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+            <ActionSubmitButton
+              idleLabel="Ship (approve + schedule in 15 min)"
+              pendingLabel="Shipping…"
+              disabled={!board.canShip}
+              className={PRIMARY}
+            />
+          </form>
+          {qualityArtifact ? (
+            <form action={reviewWeeklyArtifactAction} className="grid gap-2">
+              <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+              <input type="hidden" name="artifact_id" value={qualityArtifact.id} />
+              <input type="hidden" name="artifact_version" value={qualityArtifact.version} />
+              <input type="hidden" name="artifact_input_hash" value={qualityArtifact.input_hash} />
+              <label className={LABEL}>
+                Request repair on claims
+                <textarea
+                  name="note"
+                  rows={2}
+                  minLength={10}
+                  maxLength={2000}
+                  required
+                  className={TEXTAREA}
+                  placeholder="Repair claims X, Y — what is invented or ungrounded?"
+                />
+              </label>
+              <ActionSubmitButton
+                name="decision"
+                value="changes_requested"
+                idleLabel="Request repair"
+                pendingLabel="Sending…"
+                className={SECONDARY}
+              />
+            </form>
+          ) : null}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function OverviewPanel({
   workspace,
   blockers,
@@ -1410,14 +1578,20 @@ function OverviewPanel({
               Save.
             </li>
             <li>
-              <span className="font-semibold text-white">Research</span> — Start Content Studio →
-              wait packs ready → <span className="font-semibold text-white">Approve</span> all 3
-              packs (succeeded ≠ approved) → wait <code>editorial_master</code> → Approve Master
-              quality.
+              <span className="font-semibold text-white">Research → Article → Social → PDF →
+              Script</span>{' '}
+              run without Approve when gates pass. Watch the job strip; retryable failures
+              re-queue themselves.
             </li>
             <li>
-              Then Article → Visuals → Social → PDF → Video → Release, approving each artifact the
-              preflight lists.
+              <span className="font-semibold text-white">Visuals</span> — copy prompts, generate
+              outside, upload 8 files. <span className="font-semibold text-white">Video</span> —
+              shooting package, Remotion, paste YouTube id.
+            </li>
+            <li>
+              <span className="font-semibold text-white">Hallucination board</span> then one AAL2{' '}
+              <span className="font-semibold text-white">Ship</span>. Approve version stays as
+              override only.
             </li>
           </ol>
           <p className="mt-3 text-xs leading-5 text-slate-500">
@@ -1425,6 +1599,8 @@ function OverviewPanel({
             <code className="text-slate-400">wiki/ops/weekly-admin-runbook.md</code> in the repo.
           </p>
         </section>
+
+        <HallucinationBoardPanel workspace={workspace} canShip={false} />
 
         <section className={PANEL} aria-labelledby="readiness-heading">
           <div className="flex flex-wrap items-end justify-between gap-4">
@@ -4670,6 +4846,7 @@ function ReleasePanel({
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,.75fr)]">
       <div className="grid content-start gap-5">
+        <HallucinationBoardPanel workspace={workspace} canShip={canOwnRelease} />
         <section className={PANEL} aria-labelledby="release-gate-heading">
           <div className="flex flex-wrap items-center gap-2">
             <h2 id="release-gate-heading" className="mr-auto text-xl font-bold text-white">

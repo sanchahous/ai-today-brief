@@ -220,11 +220,24 @@ export function classifyGenerationFailure(message: string): GenerationFailure {
   ) {
     return { code: 'network', retryable: true, nextAction: 'The job will retry with backoff.' };
   }
-  if (/cancelled|canceled/.test(normalized)) {
+  if (
+    /cancelled|canceled/.test(normalized)
+  ) {
     return {
       code: 'cancelled',
       retryable: false,
       nextAction: 'Create a manual retry if work should continue.',
+    };
+  }
+  if (
+    /reading ['"]map['"]/.test(normalized) ||
+    /cannot read propert/.test(normalized) ||
+    /github.?dispatch/.test(normalized)
+  ) {
+    return {
+      code: 'unknown',
+      retryable: true,
+      nextAction: 'The job will retry from the last checkpoint.',
     };
   }
   return {
