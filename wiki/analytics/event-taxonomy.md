@@ -21,7 +21,7 @@ key events), а ця — **подієву таксономію коду**. До�
    а не переписуванням Server Component на `'use client'` — обгортки ловлять `onClickCapture`
    навколо server-renderених лінків.
 
-## Каталог подій, доданих 2026-08-21
+## Каталог подій, доданих 2026-08-21 (source: `src/components/analytics/*`, код-ревʼю 2026-08-21)
 
 | Подія | Де стріляє | Параметри | Призначення |
 |---|---|---|---|
@@ -43,7 +43,7 @@ key events), а ця — **подієву таксономію коду**. До�
 `newsletter_impression → newsletter_form_start → newsletter_subscribe (key event)` —
 плюс `newsletter_submit_error` як окрема точка втрати. Раніше вимірювався лише фінальний крок
 (41 показів → 8 стартів → 1 підписка станом на 2026-07-01 —
-[source: audits/2026-07-01-seo-organic](../audits/2026-07-01-seo-organic.md)); тепер видно,
+[source: audits/2026-07-01-seo-organic](../audits/2026-07-01-seo-organic.md) §5); тепер видно,
 де саме губляться читачі.
 
 ## Що лишилось поза цим заходом
