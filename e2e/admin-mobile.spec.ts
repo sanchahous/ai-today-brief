@@ -19,8 +19,10 @@ test.describe('Mobile social CMS entry', () => {
 
       const manifestHref = await page.locator('link[rel="manifest"]').getAttribute('href');
       expect(manifestHref).toBeTruthy();
+      // Manifest describes the public product since 2026-08-21 (B7 of the SEO
+      // audit): no CMS branding, no /admin start_url.
       const manifest = await (await context.request.get(manifestHref!)).json();
-      expect(manifest.start_url).toBe('/admin');
+      expect(manifest.start_url).toBe('/en');
       expect(manifest.display).toBe('standalone');
     });
   }
