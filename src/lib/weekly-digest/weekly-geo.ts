@@ -29,7 +29,7 @@ export interface WeeklyMetricRow {
 }
 
 const METRIC_PATTERN =
-  /\b(\d+(?:[.,]\d+)?\s*(?:B|T|%|x|×|billion|trillion|млрд|млн)|0\s+of\s+\d+|\d+\s+of\s+\d+|\d+–\d+%|\d+×)\b/giu;
+  /\b(\d+(?:[.,]\d+)?\s*(?:B|T|%|x|×|billion|trillion|млрд|млн)|0\s+of\s+\d+|\d+\s+of\s+\d+|\d+[–-]\d+(?:[.,]\d+)?\s*%?|\d+×)\b/giu;
 
 export function weeklyMetaDescription(digest: WeeklyGeoDigest): string {
   const raw =
@@ -47,7 +47,8 @@ export function weeklyFaqFromDigest(digest: WeeklyGeoDigest): WeeklyFaqEntry[] {
     if (item.rank > 3) continue;
     const question = item.discussionQuestion.trim();
     if (!question) continue;
-    const answer = (item.takeaway || item.summary || item.why).trim();
+    // Google recommends short FAQ answers; long ones bloat the FAQPage JSON-LD.
+    const answer = clipToMaxChars(item.takeaway || item.summary || item.why, 300);
     if (!answer) continue;
     entries.push({ question, answer });
   }

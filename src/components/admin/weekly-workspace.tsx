@@ -1375,7 +1375,7 @@ function HallucinationBoardPanel({
       title_uk: item.title_uk,
     })),
     artifacts: workspace.artifacts,
-    videoYoutubeId: videoFinal?.external_url ?? videoFinal?.provider_id,
+    videoYoutubeId: videoFinal?.provider_id ?? videoFinal?.external_url ?? null,
   });
 
   return (
@@ -1385,8 +1385,8 @@ function HallucinationBoardPanel({
         Hallucination board
       </h2>
       <p className="mt-2 text-sm leading-6 text-slate-400">
-        Claims must map to a source URL. Unresolved blockers block Ship. Waiting-on-you is
-        uploads and the YouTube id — not Approve clicks.
+        Review each claim against its source URL — a missing URL is your editorial call, not an
+        automatic block. Unresolved blockers and the waiting list below do block Ship.
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-white/8 bg-white/[.025] p-3">
@@ -1409,7 +1409,7 @@ function HallucinationBoardPanel({
       {board.waitingOnOwner.length ? (
         <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-amber-100">
           {board.waitingOnOwner.map((item) => (
-            <li key={`${item.kind}:${item.label}`}>{item.label}</li>
+            <li key={`${item.kind}:${item.slotKey ?? item.label}`}>{item.label}</li>
           ))}
         </ul>
       ) : null}
@@ -1466,15 +1466,20 @@ function HallucinationBoardPanel({
       ) : null}
       {canShip ? (
         <div className="mt-5 grid gap-4">
-          <form action={shipWeeklyDigestAction}>
-            <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
-            <ActionSubmitButton
-              idleLabel="Ship (approve + schedule in 15 min)"
-              pendingLabel="Shipping…"
-              disabled={!board.canShip}
-              className={PRIMARY}
-            />
-          </form>
+          {board.canShip ? (
+            <form action={shipWeeklyDigestAction}>
+              <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+              <ActionSubmitButton
+                idleLabel="Ship (approve + schedule in 15 min)"
+                pendingLabel="Shipping…"
+                className={PRIMARY}
+              />
+            </form>
+          ) : (
+            <p className="text-sm text-amber-100">
+              Ship unlocks when the waiting list above is empty and no blocker remains.
+            </p>
+          )}
           {qualityArtifact ? (
             <form action={reviewWeeklyArtifactAction} className="grid gap-2">
               <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />

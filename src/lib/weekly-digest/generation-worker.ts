@@ -176,6 +176,19 @@ function rpcClient() {
   return getSupabaseAdmin() as unknown as UntypedRpcClient;
 }
 
+/**
+ * Social slots anchor to the release instant. A silent "now" fallback here
+ * scheduled posts for the generation day while the digest was still
+ * unscheduled, and release preflight then failed on `scheduled_for <
+ * release_at` — fail loudly at generation time instead.
+ */
+function weeklyScheduleAnchor(releaseAt: Json | undefined): string {
+  if (typeof releaseAt === 'string' && releaseAt.trim()) return releaseAt;
+  throw new Error(
+    '[weekly-generation] release_at is not set; schedule the weekly release before generating social copy.',
+  );
+}
+
 function asRecord(value: Json | null | undefined): Record<string, Json | undefined> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, Json | undefined>)
@@ -398,6 +411,32 @@ async function uploadPrivate(
   }
 }
 
+/**
+ * A failed machine attestation leaves the artifact in `in_review` forever —
+ * the autopilot's silent failure mode. Record it on the job timeline so the
+ * owner sees "why is this still waiting for me" instead of a green run.
+ */
+async function recordAttestFailure(
+  tracker: GenerationAttemptTracker | null,
+  subject: string,
+  message: string,
+) {
+  console.error(`[weekly-generation] ${subject} machine attest failed`, message);
+  if (!tracker) return;
+  try {
+    await tracker.event({
+      type: 'attest_failed',
+      level: 'warning',
+      message: `Machine attest failed for ${subject}: ${message}`.slice(0, 2000),
+    });
+  } catch (error) {
+    console.error(
+      '[weekly-generation] attest failure event not recorded',
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+
 async function saveGeneratedArtifact(input: {
   weeklyDigestId: string;
   revisionId: string;
@@ -450,7 +489,7 @@ async function saveGeneratedArtifact(input: {
       p_artifact_id: data,
     });
     if (attested.error) {
-      console.error('[weekly-generation] machine attest failed', attested.error.message);
+      await recordAttestFailure(null, `${input.artifactType} ${input.slotKey}`, attested.error.message);
     }
   }
   return data;
@@ -2118,9 +2157,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       trackedUrl,
       scheduledFor: nextWeeklyScheduledForChannel(
         channel,
-        typeof context.digest.release_at === 'string' && context.digest.release_at
-          ? context.digest.release_at
-          : new Date().toISOString(),
+        weeklyScheduleAnchor(context.digest.release_at),
         new Date(),
       ),
       sourceFacts: sourceFactsByLocale[locale],
@@ -2694,10 +2731,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       p_social_post_id: post.id,
     });
     if (attested.error) {
-      console.error(
-        `[weekly-generation] ${post.channel} machine attest failed`,
-        attested.error.message,
-      );
+      await recordAttestFailure(tracker, `${post.channel} post`, attested.error.message);
     }
   }
   await saveSocialCopyCheckpoint(tracker, checkpoint, 'posts', 100);

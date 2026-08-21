@@ -71,4 +71,10 @@ describe('machine attest gates', () => {
     );
     expect(socialCopyHasUseBlock('A model shipped.')).toBe(false);
   });
+
+  it('does not attest a stat-only post that names no action', () => {
+    expect(
+      socialCopyHasUseBlock('Qwen3.8 shipped with 95B active parameters, not the 2.4T headline.'),
+    ).toBe(false);
+  });
 });

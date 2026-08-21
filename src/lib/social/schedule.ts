@@ -177,7 +177,9 @@ const WEEKLY_TIMES: Record<SocialChannel, { hour: number; minute: number }> = {
 function kyivCalendarDate(instantOrDate: string): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(instantOrDate)) return instantOrDate;
   const instant = new Date(instantOrDate);
-  if (Number.isNaN(instant.getTime())) return instantOrDate.slice(0, 10);
+  if (Number.isNaN(instant.getTime())) {
+    throw new Error(`Invalid weekly schedule anchor: ${instantOrDate}`);
+  }
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: SOCIAL_TIME_ZONE,
     year: 'numeric',

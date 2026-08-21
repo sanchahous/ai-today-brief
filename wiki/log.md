@@ -6,6 +6,20 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-21
 
+## 2026-08-21 — Review-pass автопілота: атомарний Ship, гейти attest = гейтам owner-RPC
+
+**Джерело:** технічний аудит PR #311 (гілка `feat/weekly-release-autopilot`).
+
+**Змінено:**
+- [pipeline/weekly-digest](pipeline/weekly-digest.md) — hardening machine attestation: article
+  перевіряє quality report і в машинному шляху; соц-attest ідемпотентний, не чіпає
+  `publish_enabled`; use-block гейт = дієслово + конкретика; Ship — один RPC
+  `ship_weekly_digest`; події `attest_failed` у job timeline
+- [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) — рядок `attest_failed` у таблиці
+  статусів, уточнення про паузу каналу та use-block
+- [now](now.md)
+- Міграція `20260821170000_weekly_release_autopilot_ship_and_attest_hardening.sql`
+
 ## 2026-08-21 — Weekly release autopilot після backtest 09–20.08
 
 **Джерело:** backtest релізу `ai-weekly-2026-08-09` (прод-БД + 87 merged PR 09–21.08).

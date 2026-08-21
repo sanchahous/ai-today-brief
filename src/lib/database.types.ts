@@ -2230,6 +2230,10 @@ export type Database = {
         Args: { p_social_post_id: string };
         Returns: Database['public']['Tables']['social_posts']['Row'];
       };
+      ship_weekly_digest: {
+        Args: { p_weekly_digest_id: string };
+        Returns: Database['public']['Tables']['weekly_digests']['Row'];
+      };
       weekly_quality_content_has_blockers: {
         Args: { p_content: Json };
         Returns: boolean;

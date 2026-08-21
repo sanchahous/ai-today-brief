@@ -16,9 +16,10 @@ Last updated: 2026-08-21
 | Статус | Що це означає | Що робити тобі |
 |---|---|---|
 | Job **succeeded** + `machine_attested` | Система прийняла артефакт | Нічого; дивись Hallucination board |
-| Quality **blockers > 0** | Approve **заборонений** | Чекай auto language-fix / Resume master |
+| Job timeline: **`attest_failed`** | Авто-attest не пройшов, артефакт застряг у `in_review` | Approve version вручну після перевірки або Create linked retry |
+| Quality **blockers > 0** | Approve **заборонений** (і людині, і машині) | Чекай auto language-fix / Resume master |
 | Visuals **prompt ready** | Треба зовнішня генерація + upload | Copy prompt → gen → upload |
-| Hallucination board **can Ship** | Немає unresolved blockers | Один AAL2 **Ship** |
+| Hallucination board **can Ship** | Немає blockers і waiting-список порожній (ті самі слоти, що й preflight) | Один AAL2 **Ship** |
 | Job **succeeded** + **Needs your review** | Рушій вичерпав ремонт, лишились невирішені перевірки; текст збережено як **неактивна draft-ревізія** | Читай `unresolved` у стрічці → Overview → Editorial versions → правити вручну або **Resume saved master** |
 | Job **failed**, код **`resumable`** | Скінчився бюджет часу, не дописано сегмент або critic недоступний; усі готові сегменти збережено | **Resume saved master** — уже написані історії не оплачуються вдруге |
 | Job **failed** + **Resume saved master** | Є збережені сегменти (навіть частково) | Натисни **Resume saved master**, не generic retry |
@@ -258,7 +259,10 @@ prompt history; Approve override використовуй лише якщо оч
 1. **Кожен пост мусить містити дію.** Контракт каналів тепер вимагає блок практики: назва
    інструменту або налаштування, крок і ціна/межа. Пост, після якого читач не знає, що
    спробувати, — не готовий, навіть якщо всі числа правильні. Матеріал беруть із поля
-   **Practical** відповідної історії, не вигадують.
+   **Practical** відповідної історії, не вигадують. Авто-attest (без кліку) проходить лише
+   пост із critic ≥ 85 **і** справжнім use-block: дієслово дії + конкретика (цифра або
+   inline-код). Голий заголовок із числом гейт не проходить — такий пост чекає на ручний
+   Save & approve.
 2. **Telegram рендерить розмітку.** `**жирний**` і `` `назва прапорця` `` там працюють
    (`parse_mode: HTML`). **У решті пʼяти каналів ці маркери заборонені** — гейт блокує їх
    кодом `raw_markup`, бо вони друкуються сирими.
@@ -269,7 +273,9 @@ prompt history; Approve override використовуй лише якщо оч
    можна, бо пост уже опублікований.
 
 Пам'ятай: **будь-яка правка копії після апруву скидає апрув** і повертає картку в
-`in_review` (`guard_social_content_approval`). Це не баг — так і задумано.
+`in_review` (`guard_social_content_approval`). Це не баг — так і задумано. Machine-attest
+не вмикає `publish_enabled`: якщо канал на паузі, attest лише апрувить текст, публікація
+лишиться вимкненою.
 
 ### Social: один package job → шість карток
 

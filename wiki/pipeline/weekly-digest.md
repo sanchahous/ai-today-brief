@@ -143,13 +143,24 @@ replay проти прод-даних 2026-08-16)
    зовнішній Remotion (owner)
 6. import `video_final` + captions + thumbnail
 
-**Machine attestation (2026-08-21).** Worker після `save_weekly_digest_artifact(..., in_review)`
-кличе `machine_attest_weekly_digest_artifact` (лише `service_role`), якщо тип у allow-list і
-гейті зелені. Owner Approve quality/article з blocking issues **заборонений** у RPC
-(`23514`). Соцслоти: `nextWeeklyScheduledForChannel` від `release_at` (будь-який день),
-не наступний понеділок після `week_end`. Єдиний human gate — Hallucination board → Ship.
+**Machine attestation (2026-08-21, hardening 2026-08-21).** Worker після
+`save_weekly_digest_artifact(..., in_review)` кличе `machine_attest_weekly_digest_artifact`
+(лише `service_role`), якщо тип у allow-list і гейті зелені. Гейти машинного шляху
+ідентичні людському: research_pack без hallucination-прапора; quality report без blocker і з
+`passed: true`; **article — лише коли поточний quality report ревізії без blockers**
+(однакова перевірка в owner-RPC `23514` і в attest). Збій attest пишеться в job timeline як
+подія `attest_failed`, а не тільки в консоль. Соцслоти: `nextWeeklyScheduledForChannel` від
+`release_at` (будь-який день), не наступний понеділок після `week_end`; без `release_at`
+соц-джоба падає одразу, а не планує пости на день генерації. `machine_attest_weekly_social_post`
+ідемпотентний (вже approved пост — no-op) і **не** вмикає `publish_enabled` назад. Авто-attest
+соцпоста вимагає critic ≥ 85 **і** практичний use-block: дієслово дії + конкретика (цифра або
+inline-код), голе число гейт не проходить. Єдиний human gate — Hallucination board → Ship:
+`ship_weekly_digest` робить approve + schedule(`now()+15min`) в одній транзакції й повертає
+реальні preflight-блокери в помилці; board рахує `canShip` за тими самими required-слотами,
+що й SQL preflight.
 (source: [2026-08-21-weekly-digest-release-backtest](../audits/2026-08-21-weekly-digest-release-backtest.md),
-`src/lib/weekly-digest/machine-attest.ts`)
+`src/lib/weekly-digest/machine-attest.ts`,
+`supabase/migrations/20260821170000_weekly_release_autopilot_ship_and_attest_hardening.sql`)
 
 Hard spend-cap weekly master: `WEEKLY_MASTER_MAX_SPEND_USD` (default $4,
 `generation-worker.ts`) + kill-switch режиму `off` (source: PR #163, `.env.example`).

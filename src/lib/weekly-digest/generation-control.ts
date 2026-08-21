@@ -220,9 +220,7 @@ export function classifyGenerationFailure(message: string): GenerationFailure {
   ) {
     return { code: 'network', retryable: true, nextAction: 'The job will retry with backoff.' };
   }
-  if (
-    /cancelled|canceled/.test(normalized)
-  ) {
+  if (/cancelled|canceled/.test(normalized)) {
     return {
       code: 'cancelled',
       retryable: false,

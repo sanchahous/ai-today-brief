@@ -76,14 +76,21 @@ function postUploadQaForbidsImageAttest(metadata: unknown): boolean {
   });
 }
 
+const ACTION_VERB = /\b(?:try|use|run|set|enable|install|check|measure|pilot|deploy)\b/i;
+const UK_ACTION_VERB = /(?:спроб|запуст|увімкн|перевір|постав|вимір|пілот)/iu;
+
+/**
+ * A post is machine-attestable only when it names an action AND grounds it in
+ * something concrete (a figure or an inline tool/flag). A bare number — the
+ * headline stat every news post has — must not satisfy the practical-use
+ * contract on its own.
+ */
 export function socialCopyHasUseBlock(text: string): boolean {
   const trimmed = text.trim();
   if (trimmed.length < 40) return false;
-  return (
-    /\b(?:try|use|run|set|enable|install|check|measure|pilot|deploy)\b/i.test(trimmed) ||
-    /(?:спроб|запуст|увімкн|перевір|постав|вимір|пілот)/iu.test(trimmed) ||
-    /\d/.test(trimmed)
-  );
+  const namesAnAction = ACTION_VERB.test(trimmed) || UK_ACTION_VERB.test(trimmed);
+  const grounded = /\d/.test(trimmed) || /`[^`]+`/.test(trimmed);
+  return namesAnAction && grounded;
 }
 
 export function canMachineAttest(input: {
@@ -133,23 +140,6 @@ export function canApproveQualityOrArticle(input: {
     return { ok: true };
   }
   return { ok: true };
-}
-
-export function isRetryableGenerationFailure(code: string, message: string): boolean {
-  const normalized = message.toLowerCase();
-  if (code === 'provider_exhausted' || code === 'network' || code === 'timeout' || code === 'resumable') {
-    return true;
-  }
-  if (code === 'rate_limit') return true;
-  if (
-    /reading ['"]map['"]/.test(normalized) ||
-    /cannot read propert/.test(normalized) ||
-    /\b503\b/.test(normalized) ||
-    /github.?dispatch/.test(normalized)
-  ) {
-    return true;
-  }
-  return false;
 }
 
 /** Shape used by the critic JSON so tests can assert the production fail mode. */

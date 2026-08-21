@@ -23,6 +23,10 @@ Last updated: 2026-08-21
   до quality; meta ≤160 на записі. Owner path: Hallucination board → 8 uploadів →
   shooting+YouTube → Ship. Соцслоти від `release_at`, не «наступний понеділок».
   GEO на сторінці: `NewsArticle` + FAQ + таблиця метрик.
+  Review-pass того ж дня: attest-гейти SQL = гейтам owner-RPC (article теж перевіряє
+  quality report), соц-attest ідемпотентний і не чіпає `publish_enabled`, Ship —
+  атомарний RPC `ship_weekly_digest`, збої attest видимі в timeline (`attest_failed`),
+  board `canShip` рахується за required-слотами preflight.
   (source: [audits/2026-08-21-weekly-digest-release-backtest](audits/2026-08-21-weekly-digest-release-backtest.md),
   [weekly-admin-runbook](ops/weekly-admin-runbook.md))
 

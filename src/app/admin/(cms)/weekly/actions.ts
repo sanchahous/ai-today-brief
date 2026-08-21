@@ -148,6 +148,32 @@ function revalidateWeeklyAdmin(weeklyDigestId: string) {
 }
 
 /**
+ * Release RPCs embed the preflight blocker list as a JSON array in the error
+ * text ("Ship blocked by preflight: [{...}]"). Show the messages, not raw JSON.
+ */
+function formatPreflightError(message: string): string {
+  const start = message.indexOf('[{');
+  const end = message.lastIndexOf('}]');
+  if (start < 0 || end <= start) return message;
+  try {
+    const blockers = JSON.parse(message.slice(start, end + 1)) as Array<{
+      code?: unknown;
+      message?: unknown;
+    }>;
+    const parts = blockers
+      .map((blocker) =>
+        typeof blocker.message === 'string' && blocker.message.trim()
+          ? blocker.message.trim()
+          : String(blocker.code ?? 'unknown blocker'),
+      )
+      .slice(0, 5);
+    return parts.length ? `${message.slice(0, start).trim()} — ${parts.join('; ')}` : message;
+  } catch {
+    return message;
+  }
+}
+
+/**
  * A read-then-blind-UPDATE on a shared jsonb column can lose a concurrent
  * writer's change (post-upload QA landing while an owner saves feedback,
  * two feedback saves on different concept lenses back-to-back). This isn't
@@ -199,6 +225,17 @@ async function persistPostUploadQa(artifactId: string, weeklyDigestId: string, q
         });
         if (attested.error) {
           console.error('[weekly-upload-qa] machine attest failed', attested.error.message);
+          // The artifact is now stuck in `in_review` with no visible reason —
+          // surface it on the release timeline the owner actually reads.
+          await admin.from('weekly_digest_release_events').insert({
+            weekly_digest_id: weeklyDigestId,
+            revision_id: null,
+            event_type: 'attest_failed',
+            payload: {
+              artifact_id: artifactId,
+              error: attested.error.message,
+            } as Json,
+          });
         }
       }
       break;
@@ -2472,7 +2509,7 @@ export async function shipWeeklyDigestAction(formData: FormData) {
   const { data: artifacts } = await admin
     .from('weekly_digest_artifacts')
     .select(
-      'artifact_type,locale,is_current,review_status,generation_status,storage_path,external_url,content,metadata,revision_item_id',
+      'artifact_type,locale,is_current,review_status,generation_status,storage_path,external_url,provider_id,content,metadata,revision_item_id',
     )
     .eq('revision_id', digest.active_revision_id)
     .eq('is_current', true);
@@ -2481,22 +2518,21 @@ export async function shipWeeklyDigestAction(formData: FormData) {
     artifacts: artifacts ?? [],
   });
   if (!board.canShip) {
-    throw new Error('Cannot ship while the hallucination board still has unresolved blockers.');
+    const waiting = board.waitingOnOwner.map((item) => item.label).slice(0, 5).join('; ');
+    throw new Error(
+      `Cannot ship while the hallucination board still has unresolved blockers: ${waiting}`,
+    );
   }
+  // Approve + schedule in one transaction: the two-RPC version left the
+  // digest in `approved` limbo when the schedule call failed, and surfaced
+  // the override-reason message instead of the real preflight blockers.
   const db = await getSupabaseServer();
-  if (digest.status !== 'approved' && digest.status !== 'scheduled') {
-    const { error: approveError } = await db.rpc('approve_weekly_digest', {
-      p_weekly_digest_id: weeklyDigestId,
-      p_override_reason: null,
-    });
-    if (approveError) throw new Error(approveError.message);
-  }
-  const releaseAt = new Date(Date.now() + 15 * 60_000).toISOString();
-  const { error: scheduleError } = await db.rpc('schedule_weekly_digest', {
+  const { error: shipError } = await db.rpc('ship_weekly_digest', {
     p_weekly_digest_id: weeklyDigestId,
-    p_release_at: releaseAt,
   });
-  if (scheduleError) throw new Error(scheduleError.message);
+  if (shipError) {
+    throw new Error(formatPreflightError(shipError.message));
+  }
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
