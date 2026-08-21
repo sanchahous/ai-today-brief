@@ -4,9 +4,24 @@ import { useId, useState, type FormEvent } from 'react';
 import Link from 'next/link';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { StatusPill } from '@/components/admin/status-pill';
+import {
+  cancelConfirmMessage,
+  countByKind,
+  countSelectedKind,
+  filterQueueByKind,
+  hiddenWeeklyHint,
+  keepVisibleSelection,
+  kindFiltersPresent,
+  packageKindLabel,
+  PACKAGE_KIND_LABELS,
+  selectAllLabel,
+  selectionKindSummary,
+  type QueueKindFilter,
+} from '@/lib/social/package-queue';
 
 export type PackageQueueItem = {
   id: string;
+  kind: string;
   title: string;
   status: string;
   riskLevel: string;
@@ -30,9 +45,51 @@ function cancelIdleLabel(count: number) {
   return `Cancel ${count} packages`;
 }
 
-function cancelConfirmMessage(count: number) {
-  const noun = count === 1 ? 'package' : 'packages';
-  return `Cancel future posts in ${count} ${noun}? Posted and currently publishing variants stay live.`;
+function PackageKindFilters({
+  filter,
+  kinds,
+  counts,
+  total,
+  onChange,
+}: {
+  filter: QueueKindFilter;
+  kinds: ReturnType<typeof kindFiltersPresent>;
+  counts: Map<string, number>;
+  total: number;
+  onChange: (next: QueueKindFilter) => void;
+}) {
+  const options: Array<{ id: QueueKindFilter; label: string; count: number }> = [
+    { id: 'all', label: 'All', count: total },
+    ...kinds.map((kind) => ({
+      id: kind,
+      label: PACKAGE_KIND_LABELS[kind],
+      count: counts.get(kind) ?? 0,
+    })),
+  ];
+
+  return (
+    <div role="group" aria-label="Filter packages by kind" className="flex flex-wrap gap-2">
+      {options.map((option) => {
+        const active = filter === option.id;
+        return (
+          <button
+            key={option.id}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(option.id)}
+            className={`min-h-11 rounded-full border px-3 text-sm font-semibold transition ${
+              active
+                ? 'border-[#47e4d3] bg-[#47e4d3]/15 text-[#47e4d3]'
+                : 'border-white/15 text-slate-300 hover:border-white/30 hover:text-white'
+            }`}
+          >
+            {option.label}
+            <span className="ml-1.5 text-xs tabular-nums opacity-70">{option.count}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export function PackageQueueList({
@@ -43,58 +100,97 @@ export function PackageQueueList({
   cancelAction: (formData: FormData) => Promise<void>;
 }) {
   const selectAllId = useId();
+  const [filter, setFilter] = useState<QueueKindFilter>('daily_digest');
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const kinds = kindFiltersPresent(packages);
+  const kindCounts = countByKind(packages);
+  const visible = filterQueueByKind(packages, filter);
+  const visibleIds = visible.map((item) => item.id);
   const selectedCount = selected.size;
-  const allSelected = packages.length > 0 && selectedCount === packages.length;
-  const someSelected = selectedCount > 0 && !allSelected;
+  const allSelected = visible.length > 0 && visibleIds.every((id) => selected.has(id));
+  const someSelected = visible.length > 0 && selectedCount > 0 && !allSelected;
+  const weeklyHint = hiddenWeeklyHint(filter, kindCounts.get('weekly_digest') ?? 0);
+
+  function changeFilter(next: QueueKindFilter) {
+    setFilter(next);
+    setSelected((current) =>
+      keepVisibleSelection(
+        current,
+        filterQueueByKind(packages, next).map((item) => item.id),
+      ),
+    );
+  }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     if (selectedCount === 0) {
       event.preventDefault();
       return;
     }
-    if (!window.confirm(cancelConfirmMessage(selectedCount))) {
-      event.preventDefault();
-    }
+    const message = cancelConfirmMessage({
+      count: selectedCount,
+      kindSummary: selectionKindSummary(packages, selected),
+      weeklyCount: countSelectedKind(packages, selected, 'weekly_digest'),
+    });
+    if (!window.confirm(message)) event.preventDefault();
   }
 
   return (
     <form action={cancelAction} onSubmit={onSubmit}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-bold text-white">Packages</h2>
-        <div className="flex flex-wrap items-center gap-3">
-          <label
-            htmlFor={selectAllId}
-            className="flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-300"
-          >
-            <input
-              id={selectAllId}
-              type="checkbox"
-              className="size-5 accent-[#47e4d3]"
-              checked={allSelected}
-              ref={(el) => {
-                if (el) el.indeterminate = someSelected;
-              }}
-              onChange={() => {
-                setSelected(allSelected ? new Set() : new Set(packages.map((item) => item.id)));
-              }}
-            />
-            Select all
-          </label>
-          <p className="text-xs text-slate-500" aria-live="polite">
-            {selectedCount === 0 ? 'None selected' : `${selectedCount} selected`}
-          </p>
-          <ActionSubmitButton
-            idleLabel={cancelIdleLabel(selectedCount)}
-            pendingLabel="Cancelling posts…"
-            disabled={selectedCount === 0}
-            className="min-h-11 rounded-xl border border-red-400/30 px-4 text-sm font-bold text-red-200"
+        <PackageKindFilters
+          filter={filter}
+          kinds={kinds}
+          counts={kindCounts}
+          total={packages.length}
+          onChange={changeFilter}
+        />
+      </div>
+      <p className="mt-2 text-xs text-slate-500">
+        Filter first, then select. Select all only covers the visible kind, so a Daily bulk cancel
+        cannot take Weekly with it.
+        {weeklyHint}
+      </p>
+
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
+        <label
+          htmlFor={selectAllId}
+          className="flex min-h-11 items-center gap-2 text-sm font-semibold text-slate-300"
+        >
+          <input
+            id={selectAllId}
+            type="checkbox"
+            className="size-5 accent-[#47e4d3]"
+            checked={allSelected}
+            disabled={visible.length === 0}
+            ref={(el) => {
+              if (el) el.indeterminate = someSelected;
+            }}
+            onChange={() => {
+              setSelected(allSelected ? new Set() : new Set(visibleIds));
+            }}
           />
-        </div>
+          {selectAllLabel(filter)}
+        </label>
+        <p className="text-xs text-slate-500" aria-live="polite">
+          {selectedCount === 0 ? 'None selected' : `${selectedCount} selected`}
+        </p>
+        <ActionSubmitButton
+          idleLabel={cancelIdleLabel(selectedCount)}
+          pendingLabel="Cancelling posts…"
+          disabled={selectedCount === 0}
+          className="min-h-11 rounded-xl border border-red-400/30 px-4 text-sm font-bold text-red-200"
+        />
       </div>
 
       <div className="mt-4 grid gap-4">
-        {packages.map((item) => {
+        {visible.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/15 p-8 text-center text-sm text-slate-400">
+            No {packageKindLabel(filter).toLowerCase()} packages in this queue. Switch filter to see
+            the rest before selecting.
+          </div>
+        ) : null}
+        {visible.map((item) => {
           const isSelected = selected.has(item.id);
           return (
             <div
