@@ -7,7 +7,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`
 2026-08-04…18, staged social-copy recovery 2026-08-17, Social tab channel-aware form 2026-08-18,
 approved-row Save workflow RPC 2026-08-18, video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18, Video Save dropped v3 plan 2026-08-18,
 Video shooting package in admin 2026-08-19, arbitrary Schedule release date/time 2026-08-20.
-Last updated: 2026-08-20
+Last updated: 2026-08-21
 
 ---
 
@@ -251,6 +251,26 @@ prompt history; Approve override використовуй лише якщо оч
 > натискає Approve і не змінює digest, Supabase чи реліз. Для експерименту дай окремий verdict
 > `approve` / `local repair` / `rework` / `reject`.
 > (source: `experiments/visual-affordance-v10/targeted-v6-owner-outcome-repair/results/README.md`)
+
+### Social: що змінилось 2026-08-21
+
+Три речі, які редактор побачить одразу:
+
+1. **Кожен пост мусить містити дію.** Контракт каналів тепер вимагає блок практики: назва
+   інструменту або налаштування, крок і ціна/межа. Пост, після якого читач не знає, що
+   спробувати, — не готовий, навіть якщо всі числа правильні. Матеріал беруть із поля
+   **Practical** відповідної історії, не вигадують.
+2. **Telegram рендерить розмітку.** `**жирний**` і `` `назва прапорця` `` там працюють
+   (`parse_mode: HTML`). **У решті пʼяти каналів ці маркери заборонені** — гейт блокує їх
+   кодом `raw_markup`, бо вони друкуються сирими.
+3. **LinkedIn: лінка в тілі більше немає.** Трекований URL іде в поле **First comment** —
+   гейт блокує URL у тілі (`root_url`) і порожній коментар (`linkedin_comment_url`).
+   Коментар постить автоматика одразу після поста; якщо він упаде, пост лишиться живим, а
+   доставка піде в `needs_reconciliation` з кодом `partial_linkedin_comment` — ретраїти не
+   можна, бо пост уже опублікований.
+
+Пам'ятай: **будь-яка правка копії після апруву скидає апрув** і повертає картку в
+`in_review` (`guard_social_content_approval`). Це не баг — так і задумано.
 
 ### Social: один package job → шість карток
 

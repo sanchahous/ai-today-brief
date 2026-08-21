@@ -9,7 +9,7 @@ video_script hydration and missing video_manifest companion 2026-08-18,
 Video Save dropped v3 narration_plan 2026-08-18,
 Video shooting package in admin 2026-08-19,
 Schedule release arbitrary date/time 2026-08-20
-Last updated: 2026-08-20
+Last updated: 2026-08-21
 
 ---
 
@@ -44,6 +44,36 @@ Video / Release).
 (F3) — без нього застосування нового ранжування можна лише вимкнути редагуванням коду.
 (source: [audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md),
 `.env.example`)
+
+## Соц-копія: практика замість переказу (2026-08-21)
+
+Розбір релізу `ai-weekly-2026-08-09` показав, що всі шість постів переказували новину й не
+давали читачеві дії. Причина була не в моделі: у кожної історії вже заповнене `practical_*`
+(107–269 символів конкретики), і `buildWeeklySocialFactSnapshot`
+(`src/lib/weekly-digest/social-facts.ts`) **уже передавав його письменнику** в `sourceFacts`.
+Промпт цього ніколи не просив — він складався майже з самих заборон, а критик оцінював
+факти, платформну відповідність і оригінальність, але не корисність.
+
+Змінено в `src/lib/weekly-digest/social-adapter.ts`:
+
+- **`CHANNEL_CONTRACT`** тепер вимагає верстки (порожній рядок між блоками; LinkedIn — одне
+  речення на рядок) і **обовʼязкового блока практики** в усіх шести каналах: назва
+  інструменту/моделі/прапорця + крок + ціна або межа. Контракт підставляється **і** в промпт
+  письменника, **і** в промпт критика, тому критик аудитує практику під `platformFlags` без
+  зміни `parseWeeklySocialCritic` чи схеми `quality_report`.
+- **Промпт письменника** отримав блок `WHAT THIS COPY MUST GIVE THE READER` — першу
+  позитивну вимогу замість чергової заборони, з прямою вказівкою будувати копію на
+  `practical_*`, а не переказувати заголовок.
+- **Telegram** дістав дозвіл на `**bold**` і backticks (єдиний канал, що рендерить рich text
+  — див. `src/lib/social/telegram-format.ts`); у решті пʼяти ті самі маркери блокує гейт
+  кодом `raw_markup`.
+- **LinkedIn** більше не має URL у тілі: `rootUrlStrategy` → `'none'`, трекований лінк іде
+  в `firstComment`, який автопостить провайдер.
+
+Повна матриця верстки, лімітів і шаблонів —
+[marketing/omni-channel-publishing-matrix](../marketing/omni-channel-publishing-matrix.md).
+(source: прод-`social_posts` package `612df95c` + `weekly_digest_revision_items` live check
+2026-08-21)
 
 ## Seed-контент історій (2026-08-16)
 
