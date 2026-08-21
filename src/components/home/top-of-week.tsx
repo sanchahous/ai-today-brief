@@ -20,7 +20,7 @@ function formatDate(date: string, lang: Lang): string {
   }).format(d);
 }
 
-/** `/en/news/models/gpt-5-launch` → `gpt-5-launch`; non-item hrefs → null. */
+/** `/en/news/models/claude-opus-launch` → `claude-opus-launch`; non-item hrefs → null. */
 function itemSlugFromHref(href: string): string | undefined {
   const parts = href.split('/').filter(Boolean);
   return parts.length >= 4 ? (parts[parts.length - 1] ?? undefined) : undefined;
