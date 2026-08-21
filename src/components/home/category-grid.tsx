@@ -6,6 +6,7 @@ import type { HomeCategory } from '@/lib/home';
 import { ArrowRight, CategoryGlyph } from '@/components/icons';
 import { Reveal } from '@/components/reveal';
 import { SectionHead } from '@/components/home/section-head';
+import { CategoryHubClickTracker } from '@/components/analytics/home-click-trackers';
 
 export function CategoryGrid({ lang, categories }: { lang: Lang; categories: HomeCategory[] }) {
   if (categories.length === 0) return null;
@@ -99,13 +100,15 @@ function CategoryCard({
         )}
 
         <div className="mt-auto flex items-center justify-between gap-2">
-          <Link
-            href={`/${lang}/category/${category.slug}`}
-            className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex items-center gap-1.5 border px-4 py-2 text-sm font-semibold transition-colors"
-          >
-            {ctaLabel}
-            <ArrowRight size={16} />
-          </Link>
+          <CategoryHubClickTracker slug={category.slug} lang={lang}>
+            <Link
+              href={`/${lang}/category/${category.slug}`}
+              className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex items-center gap-1.5 border px-4 py-2 text-sm font-semibold transition-colors"
+            >
+              {ctaLabel}
+              <ArrowRight size={16} />
+            </Link>
+          </CategoryHubClickTracker>
           {category.count > 0 && (
             <span className="text-faint text-xs whitespace-nowrap">
               {category.count} {articlesLabel}

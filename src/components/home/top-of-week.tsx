@@ -9,6 +9,7 @@ import { Reveal } from '@/components/reveal';
 import { SectionHead } from '@/components/home/section-head';
 import { CategoryBadge } from '@/components/home/category-badge';
 import { SponsorCard } from '@/components/home/sponsor-card';
+import { WeeklyTopClickTracker } from '@/components/analytics/home-click-trackers';
 
 function formatDate(date: string, lang: Lang): string {
   const d = date.length === 10 ? new Date(`${date}T00:00:00`) : new Date(date);
@@ -17,6 +18,12 @@ function formatDate(date: string, lang: Lang): string {
     month: 'short',
     year: 'numeric',
   }).format(d);
+}
+
+/** `/en/news/models/gpt-5-launch` → `gpt-5-launch`; non-item hrefs → null. */
+function itemSlugFromHref(href: string): string | undefined {
+  const parts = href.split('/').filter(Boolean);
+  return parts.length >= 4 ? (parts[parts.length - 1] ?? undefined) : undefined;
 }
 
 export function TopOfWeek({
@@ -56,12 +63,27 @@ export function TopOfWeek({
 
       <div className="mt-7 grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         <Reveal>
-          <FeaturedCard lang={lang} item={featured} />
+          <WeeklyTopClickTracker
+            slot="featured"
+            target={{
+              id: featured.id,
+              slug: itemSlugFromHref(featured.href),
+              lang,
+            }}
+          >
+            <FeaturedCard lang={lang} item={featured} />
+          </WeeklyTopClickTracker>
         </Reveal>
         <div className="grid content-start gap-3">
           {secondary.map((it, i) => (
             <Reveal key={it.id} delayMs={i * 70}>
-              <SecondaryRow lang={lang} item={it} rank={i + 2} />
+              <WeeklyTopClickTracker
+                slot="secondary"
+                rank={i + 2}
+                target={{ id: it.id, slug: itemSlugFromHref(it.href), lang }}
+              >
+                <SecondaryRow lang={lang} item={it} rank={i + 2} />
+              </WeeklyTopClickTracker>
             </Reveal>
           ))}
           <Reveal delayMs={secondary.length * 70}>

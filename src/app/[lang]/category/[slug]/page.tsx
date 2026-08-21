@@ -6,6 +6,7 @@ import { getCategoryHub, getCategoryPaths } from '@/lib/categories';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { CategoryHeader } from '@/components/category-header';
 import { PostFeed } from '@/components/post-feed';
+import { HubViewTracker } from '@/components/analytics/hub-view-tracker';
 
 // 24 h: category hubs reshuffle only when new items publish; a day-stale order
 // is fine for SEO hubs and saves the bot-driven ISR writes a 1 h window cost.
@@ -79,6 +80,7 @@ export default async function CategoryPage({ params }: { params: Promise<Params>
 
   return (
     <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
+      <HubViewTracker hubType="category" slug={slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getDigestArchive } from '@/lib/digests';
 import { isLang, SITE_URL, type Lang } from '@/lib/site';
+import { HubViewTracker } from '@/components/analytics/hub-view-tracker';
 
 export const revalidate = 3600;
 
@@ -39,6 +40,7 @@ export default async function DigestsPage({ params }: { params: Promise<{ lang: 
   const entries = await getDigestArchive(lang);
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:py-16">
+      <HubViewTracker hubType="digests" slug="digests" />
       <p className="text-accent text-sm font-bold tracking-[.16em] uppercase">
         {lang === 'uk' ? 'Дайджести' : 'Digests'}
       </p>

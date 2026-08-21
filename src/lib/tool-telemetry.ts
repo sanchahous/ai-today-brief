@@ -10,7 +10,6 @@ export const TOOL_EVENTS = {
   settingsRuleTriggered: 'tool_settings_rule_triggered',
   claudeMdGenerate: 'tool_claude_md_generate',
   claudeMdCopy: 'tool_claude_md_copy',
-  claudeMdLintRuleTriggered: 'tool_claude_md_lint_rule_triggered',
 } as const;
 
 export type ToolEventName = (typeof TOOL_EVENTS)[keyof typeof TOOL_EVENTS];

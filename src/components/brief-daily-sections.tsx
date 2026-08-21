@@ -6,6 +6,7 @@ import type { Lang } from '@/lib/site';
 import { CategoryBadge } from '@/components/home/category-badge';
 import { Reveal } from '@/components/reveal';
 import { ArrowRight } from '@/components/icons';
+import { WeeklyTopClickTracker } from '@/components/analytics/home-click-trackers';
 
 export function BriefDailySections({
   lang,
@@ -78,28 +79,33 @@ function BriefItemRow({
   return (
     <Reveal delayMs={displayIndex * 50}>
       <li>
-        <Link
-          href={href}
-          className="card-hover rounded-card border-border bg-surface flex cursor-pointer gap-4 border p-4 no-underline transition sm:p-5"
+        <WeeklyTopClickTracker
+          slot="featured"
+          target={{ id: item.id, slug: item.slug ?? undefined, lang }}
         >
-          <span
-            aria-hidden
-            className="text-faint font-serif min-w-[30px] text-[1.6rem] leading-none font-bold"
+          <Link
+            href={href}
+            className="card-hover rounded-card border-border bg-surface flex cursor-pointer gap-4 border p-4 no-underline transition sm:p-5"
           >
-            {displayIndex + 1}
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="mb-2">
-              <CategoryBadge name={item.categoryName} color={item.categoryColor} />
-            </div>
-            <h3 className="mb-2 text-[1.15rem] leading-snug text-[color:inherit]">{item.title}</h3>
-            <p className="text-muted mb-2 text-[0.92rem] leading-relaxed">{item.summary}</p>
-            <span className="text-accent inline-flex items-center gap-1 text-[0.8rem] font-semibold">
-              {openFull}
-              <ArrowRight size={14} />
+            <span
+              aria-hidden
+              className="text-faint font-serif min-w-[30px] text-[1.6rem] leading-none font-bold"
+            >
+              {displayIndex + 1}
             </span>
-          </div>
-        </Link>
+            <div className="min-w-0 flex-1">
+              <div className="mb-2">
+                <CategoryBadge name={item.categoryName} color={item.categoryColor} />
+              </div>
+              <h3 className="mb-2 text-[1.15rem] leading-snug text-[color:inherit]">{item.title}</h3>
+              <p className="text-muted mb-2 text-[0.92rem] leading-relaxed">{item.summary}</p>
+              <span className="text-accent inline-flex items-center gap-1 text-[0.8rem] font-semibold">
+                {openFull}
+                <ArrowRight size={14} />
+              </span>
+            </div>
+          </Link>
+        </WeeklyTopClickTracker>
       </li>
     </Reveal>
   );

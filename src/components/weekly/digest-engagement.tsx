@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import type { Lang } from '@/lib/site';
+import { trackEvent } from '@/lib/analytics-client';
 import {
   rememberWeeklyAttribution,
   weeklyDigestSessionKey,
@@ -28,6 +29,14 @@ export function DigestEngagement({
       const key = `${eventType}:${storyId ?? ''}`;
       if (seen.has(key)) return;
       seen.add(key);
+      // GA4 mirror: the Supabase channel stays the source of truth for the
+      // release dashboard; this makes the same funnel visible in GA4 reports.
+      trackEvent(eventType, {
+        digest_id: digestId,
+        revision_id: revisionId,
+        ...(storyId ? { story_slug: storyId } : {}),
+        ...(channel ? { channel } : {}),
+      });
       void fetch('/api/weekly/engagement', {
         method: 'POST',
         keepalive: true,

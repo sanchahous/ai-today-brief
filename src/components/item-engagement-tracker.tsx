@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { trackItemEvent, type ItemTarget } from '@/lib/analytics-client';
+import { useEngagedDwell } from '@/hooks/use-engaged-dwell';
 
 /** True only for an http(s) link whose host differs from the current page's. */
 export function isExternalLink(href: string, base: string): boolean {
@@ -31,6 +32,8 @@ export function ItemEngagementTracker({
   slug: string;
   lang: string;
 }) {
+  useEngagedDwell({ id, slug, lang });
+
   useEffect(() => {
     const target: ItemTarget = { id, slug, lang };
     const seen = new Set<string>();

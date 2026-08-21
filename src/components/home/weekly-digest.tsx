@@ -5,6 +5,7 @@ import { LiteYouTube } from '@/components/weekly/lite-youtube';
 import { WEEKLY_COPY } from '@/components/weekly/copy';
 import type { WeeklyDigestHomeView } from '@/lib/digests';
 import type { Lang } from '@/lib/site';
+import { DigestCardClickTracker } from '@/components/analytics/home-click-trackers';
 
 function formatDate(value: string, lang: Lang) {
   return new Intl.DateTimeFormat(lang === 'uk' ? 'uk-UA' : 'en-US', {
@@ -75,48 +76,56 @@ export function WeeklyDigestBlock({
             ) : null}
 
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link
-                href={href}
-                className="bg-accent text-on-accent rounded-pill inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold no-underline"
-              >
-                {copy.readFull}
-                <ArrowRight size={16} />
-              </Link>
-              {digest.hasPdf ? (
-                <a
-                  href={`${href}/download`}
-                  className="border-border text-text hover:border-accent hover:text-accent rounded-pill border px-5 py-3 text-sm font-semibold no-underline transition-colors"
+              <DigestCardClickTracker method="read" digestSlug={digest.slug}>
+                <Link
+                  href={href}
+                  className="bg-accent text-on-accent rounded-pill inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold no-underline"
                 >
-                  {copy.downloadPdf}
-                </a>
+                  {copy.readFull}
+                  <ArrowRight size={16} />
+                </Link>
+              </DigestCardClickTracker>
+              {digest.hasPdf ? (
+                <DigestCardClickTracker method="pdf" digestSlug={digest.slug}>
+                  <a
+                    href={`${href}/download`}
+                    className="border-border text-text hover:border-accent hover:text-accent rounded-pill border px-5 py-3 text-sm font-semibold no-underline transition-colors"
+                  >
+                    {copy.downloadPdf}
+                  </a>
+                </DigestCardClickTracker>
               ) : null}
             </div>
           </div>
 
           {digest.cover ? (
-            <Link
-              href={href}
-              aria-label={copy.readFull}
-              className="border-border rounded-card relative block aspect-[1200/630] overflow-hidden border"
-            >
-              <Image
-                src={digest.cover.url}
-                alt={digest.cover.alt}
-                fill
-                sizes="(max-width: 1023px) 100vw, 480px"
-                className="object-cover transition-transform duration-300 hover:scale-[1.015]"
-              />
-            </Link>
+            <DigestCardClickTracker method="cover" digestSlug={digest.slug}>
+              <Link
+                href={href}
+                aria-label={copy.readFull}
+                className="border-border rounded-card relative block aspect-[1200/630] overflow-hidden border"
+              >
+                <Image
+                  src={digest.cover.url}
+                  alt={digest.cover.alt}
+                  fill
+                  sizes="(max-width: 1023px) 100vw, 480px"
+                  className="object-cover transition-transform duration-300 hover:scale-[1.015]"
+                />
+              </Link>
+            </DigestCardClickTracker>
           ) : (
-            <Link
-              href={href}
-              aria-label={copy.readFull}
-              className="border-border rounded-card block aspect-[1200/630] border"
-              style={{
-                background:
-                  'radial-gradient(90% 100% at 85% 5%, rgba(71,228,211,.18), transparent 60%), var(--surface-2)',
-              }}
-            />
+            <DigestCardClickTracker method="cover" digestSlug={digest.slug}>
+              <Link
+                href={href}
+                aria-label={copy.readFull}
+                className="border-border rounded-card block aspect-[1200/630] border"
+                style={{
+                  background:
+                    'radial-gradient(90% 100% at 85% 5%, rgba(71,228,211,.18), transparent 60%), var(--surface-2)',
+                }}
+              />
+            </DigestCardClickTracker>
           )}
         </div>
 

@@ -9,6 +9,7 @@ import { ConceptHeader } from '@/components/concept-header';
 import { ConceptHubBody } from '@/components/concept-hub-body';
 import { ConceptOtherChips } from '@/components/concept-other-chips';
 import { PostFeed } from '@/components/post-feed';
+import { HubViewTracker } from '@/components/analytics/hub-view-tracker';
 
 // 24 h: concept hubs are evergreen and change only via the backfill workflow.
 export const revalidate = 86400;
@@ -90,6 +91,7 @@ export default async function ConceptHubPage({ params }: { params: Promise<Param
 
   return (
     <div className="mx-auto w-full max-w-[1160px] flex-1 px-6 py-10">
+      <HubViewTracker hubType="concept" slug={slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
