@@ -1,8 +1,8 @@
 # AI Today Brief Social CMS runbook
 
 Summary: Runbook соц-CMS: хвилі підключення destination-ів.
-Sources: none (analysis)
-Last updated: 2026-07-24
+Sources: none (analysis), `src/app/admin/(cms)/page.tsx`, `src/app/admin/actions.ts`
+Last updated: 2026-08-21
 
 
 The CMS is deliberately safe on first deploy: migration `040_social_cms.sql`
@@ -275,6 +275,13 @@ as an emergency fallback with the CMS kill switch on.
 - Permanent auth failures leave the package intact and raise an account warning.
 - The X budget reservation is atomic. Reaching the hard cap fails safely before
   another provider request.
+- To drop unpublished work without opening each package, use **Today** (`/admin`):
+  select one or more queue cards, then **Cancel future posts**. This is the same
+  AAL2 mutation as the package editor: non-posted, non-publishing variants become
+  `cancelled`, and the package is marked `cancelled`. Already posted or currently
+  publishing variants stay live. The queue lists at most 20 packages, and bulk
+  cancel uses that same cap. (source: `src/app/admin/(cms)/page.tsx`,
+  `src/lib/social/package-ids.ts`)
 
 ## 7. Acceptance smoke tests
 

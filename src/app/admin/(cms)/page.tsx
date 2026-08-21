@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
-import { StatusPill } from '@/components/admin/status-pill';
+import { PackageQueueList, type PackageQueueItem } from '@/components/admin/package-queue-list';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { serverEpochMs } from '@/lib/server-clock';
-import { generateTodayAction } from '../actions';
+import { cancelPackageAction, generateTodayAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +15,37 @@ function qualityCounts(value: unknown) {
   return {
     blocking: Array.isArray(report.blocking) ? report.blocking.length : 0,
     warnings: Array.isArray(report.warnings) ? report.warnings.length : 0,
+  };
+}
+
+function toQueueItem(
+  socialPackage: {
+    id: string;
+    title: string;
+    status: string;
+    risk_level: string;
+    kind: string;
+    source_date: string | null;
+  },
+  variants: Array<{ channel: string; quality_report: unknown }>,
+): PackageQueueItem {
+  let blockers = 0;
+  let warnings = 0;
+  for (const post of variants) {
+    const counts = qualityCounts(post.quality_report);
+    blockers += counts.blocking;
+    warnings += counts.warnings;
+  }
+  return {
+    id: socialPackage.id,
+    title: socialPackage.title,
+    status: socialPackage.status,
+    riskLevel: socialPackage.risk_level,
+    kindLabel: socialPackage.kind.replaceAll('_', ' '),
+    sourceDate: socialPackage.source_date,
+    channels: variants.map((post) => post.channel).join(', ') || 'No variants',
+    blockers,
+    warnings,
   };
 }
 
@@ -114,52 +145,22 @@ export default async function AdminTodayPage() {
       ) : null}
 
       <section className="mt-8">
-        <h2 className="text-lg font-bold text-white">Packages</h2>
-        <div className="mt-4 grid gap-4">
-          {(packages ?? []).map((socialPackage) => {
-            const variants = postsByPackage.get(socialPackage.id) ?? [];
-            const blockers = variants.reduce(
-              (sum, post) => sum + qualityCounts(post.quality_report).blocking,
-              0,
-            );
-            const warnings = variants.reduce(
-              (sum, post) => sum + qualityCounts(post.quality_report).warnings,
-              0,
-            );
-            return (
-              <Link
-                key={socialPackage.id}
-                href={`/admin/packages/${socialPackage.id}`}
-                className="rounded-2xl border border-white/10 bg-[#151b20] p-4 transition hover:border-[#47e4d3]/50 sm:p-5"
-              >
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusPill value={socialPackage.risk_level} />
-                  <StatusPill value={socialPackage.status} />
-                  <span className="ml-auto text-xs text-slate-500">
-                    {socialPackage.source_date}
-                  </span>
-                </div>
-                <h3 className="mt-3 text-lg font-bold text-white">{socialPackage.title}</h3>
-                <p className="mt-1 text-sm text-slate-400 capitalize">
-                  {socialPackage.kind.replaceAll('_', ' ')} ·{' '}
-                  {variants.map((post) => post.channel).join(', ') || 'No variants'}
-                </p>
-                <div className="mt-4 flex gap-4 text-xs font-semibold">
-                  <span className={blockers ? 'text-red-300' : 'text-emerald-300'}>
-                    {blockers} blockers
-                  </span>
-                  <span className="text-amber-200">{warnings} warnings</span>
-                </div>
-              </Link>
-            );
-          })}
-          {(packages ?? []).length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-white/15 p-8 text-center text-sm text-slate-400">
+        {(packages ?? []).length === 0 ? (
+          <>
+            <h2 className="text-lg font-bold text-white">Packages</h2>
+            <div className="mt-4 rounded-2xl border border-dashed border-white/15 p-8 text-center text-sm text-slate-400">
               Nothing is waiting. Generate today’s packages after the brief is published and
               approved.
             </div>
-          ) : null}
-        </div>
+          </>
+        ) : (
+          <PackageQueueList
+            cancelAction={cancelPackageAction}
+            packages={(packages ?? []).map((socialPackage) =>
+              toQueueItem(socialPackage, postsByPackage.get(socialPackage.id) ?? []),
+            )}
+          />
+        )}
       </section>
     </div>
   );

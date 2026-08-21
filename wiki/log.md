@@ -4,7 +4,17 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-20
+Last updated: 2026-08-21
+
+## 2026-08-21 — Queue bulk cancel на Today
+
+**Джерело:** власник: cancel майбутніх постів лише всередині пакета, незручно зі списку.
+
+**Змінено:**
+- `/admin` (Today): чекбокси на картках пакетів, Select all, одна кнопка
+  **Cancel future posts** (AAL2, confirm)
+- `cancelPackageAction` приймає кілька `package_id` або один `id` (редактор пакета)
+- [ops/social-cms-runbook](ops/social-cms-runbook.md), [now](now.md)
 
 ## 2026-08-20 — Approve назавжди блокувався: threads EN/UK розсинхрон preflight vs генератора
 
