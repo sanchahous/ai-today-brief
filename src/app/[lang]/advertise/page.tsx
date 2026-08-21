@@ -13,6 +13,7 @@ import { AdvertiseInquiryCta } from '@/components/advertise-inquiry-cta';
 import { CheckIcon } from '@/components/icons';
 import { breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { Reveal } from '@/components/reveal';
+import { socialMeta } from '@/lib/seo';
 
 export const revalidate = 86400;
 
@@ -37,6 +38,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en/advertise`,
       },
     },
+    ...socialMeta({ title: p.title, description: p.lead, path: `/${l}/advertise`, lang: l }),
   };
 }
 

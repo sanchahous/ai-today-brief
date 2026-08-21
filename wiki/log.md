@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-21
 
+## 2026-08-21 — Повне покриття GA4 + SEO hardening (гілка feat/ga4-coverage-and-seo-hardening)
+
+**Джерело:** запит власника на глибокий аудит GA4-покриття і SEO з повною реалізацією знахідок.
+
+**Змінено:**
+- Аналітика: каталог подій `src/lib/analytics-events.ts`; трекінг кліків домашньої
+  (top-of-week, weekly-блок, категорії, hero), айтемів брифів, hub_view, дзеркало weekly
+  engagement у GA4, engagement гайдів, воронка підписки (impression/start/error),
+  social_profile_click, dwell 30 с. → [analytics/event-taxonomy](analytics/event-taxonomy.md)
+  (нова), [analytics/ga4-gsc](analytics/ga4-gsc.md) (оновлено)
+- SEO: og:image/twitter скрізь (`src/lib/seo.ts` + кореневий opengraph-image), revalidate
+  хабів при публікації + чесні changeFrequency, дедуп JSON-LD (концепти/тулзи), похідні
+  описи хабів/брифів, proxy без hard-503, `/rss-uk.xml` + per-lang alternate + llms.txt,
+  публічний manifest, self-canonical /news?page=N, автолінки концептів, lastmod trust +
+  weekly dateModified, security headers → [seo/on-site-audit-2026-08-21](seo/on-site-audit-2026-08-21.md)
+  (нова), [seo/aeo-strategy](seo/aeo-strategy.md) (нова)
+- [index](index.md): seo/aeo-strategy ✅, analytics/event-taxonomy ✅
+
 ## 2026-08-21 — Фільтр kind перед bulk cancel на Today
 
 **Джерело:** власник: масове виділення в списку може випадково скасувати weekly digest.

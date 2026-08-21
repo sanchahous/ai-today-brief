@@ -15,6 +15,15 @@ Last updated: 2026-08-21
 
 ## Стан репозиторію
 
+- **GA4 coverage + SEO hardening на гілці `feat/ga4-coverage-and-seo-hardening`, PR готується (2026-08-21).**
+  Аналітика: закриті прогалини подій (домашня, хаби, брифи, дайджести, воронка підписки,
+  dwell) — каталог у [analytics/event-taxonomy](analytics/event-taxonomy.md). SEO: 11 фіксів
+  on-site аудиту (og:image, свіжість хабів, дедуп схеми, RSS UK, manifest, canonical
+  пагінації, автолінки концептів, security headers) —
+  [seo/on-site-audit-2026-08-21](seo/on-site-audit-2026-08-21.md). Після мержу: звірити
+  GA4-property (пункт 3 «Чекає на власника») і подивитись перші дані нових подій.
+  (source: код-ревʼю 2026-08-21, гілка `feat/ga4-coverage-and-seo-hardening`)
+
 - **Соц-копія тепер зобовʼязана давати дію; Telegram рендерить розмітку; LinkedIn-лінк
   переїхав у 1-й коментар (2026-08-21).** Розбір релізу `ai-weekly-2026-08-09` проти прод-БД
   показав, що «сухість» постів — не стиль, а відсутній блок: `practical_*` заповнене в усіх

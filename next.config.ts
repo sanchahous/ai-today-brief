@@ -78,6 +78,22 @@ const CANONICAL_ITEM_REDIRECTS: ReadonlyArray<{ src: string; dst: string }> = [
 ];
 
 const nextConfig: NextConfig = {
+  // Baseline hardening for every response. Kept minimal on purpose: no CSP
+  // yet (inline JSON-LD + GA/GTM need a nonce rollout of its own), and
+  // X-Frame-Options is omitted in favour of the frame-ancestors-less default
+  // until an embed use-case demands one.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-DNS-Prefetch-Control', value: 'on' },
+        ],
+      },
+    ];
+  },
   experimental: {
     // Authenticated CMS uploads are validated again in the Server Action and
     // capped at 12 MB; multipart overhead requires a little extra headroom.

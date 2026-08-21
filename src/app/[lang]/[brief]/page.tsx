@@ -5,6 +5,7 @@ import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { getDailyBriefBySlug, getBriefPaths } from '@/lib/briefs';
 import { getConceptNameIndex, getConcepts, type ConceptSummary } from '@/lib/concepts';
+import { socialMeta } from '@/lib/seo';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { AiDisclosureNote } from '@/components/ai-disclosure-note';
 import { BriefDailySections } from '@/components/brief-daily-sections';
@@ -28,9 +29,13 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const b = await getDailyBriefBySlug(brief, lang);
   if (!b) return {};
   const path = `/${lang}/${b.canonicalSlug}`;
+  // intro → first item summary → title. A real sentence beats an empty or
+  // duplicated-brand description for SERP snippets and social cards.
+  const description =
+    b.intro?.trim() || b.allItems[0]?.summary.trim() || `${b.title || b.date} — ${SITE_NAME}`;
   return {
     title: b.title || b.date,
-    description: b.intro ?? undefined,
+    description,
     alternates: {
       canonical: `${SITE_URL}${path}`,
       languages: {
@@ -39,6 +44,13 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en/${b.canonicalSlug}`,
       },
     },
+    ...socialMeta({
+      title: b.title || b.date,
+      description,
+      path,
+      lang,
+      type: 'article',
+    }),
   };
 }
 

@@ -4,6 +4,7 @@ import { ToolCard } from '@/components/tools/tool-card';
 import { TOOLS } from '@/content/tools';
 import { getStrings } from '@/lib/i18n';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
+import { socialMeta } from '@/lib/seo';
 
 export const revalidate = 86400;
 
@@ -24,6 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en/tools`,
       },
     },
+    ...socialMeta({ title: t.toolsPage.title, description: t.toolsPage.lede, path: `/${l}/tools`, lang: l }),
   };
 }
 

@@ -2,9 +2,9 @@ import { buildRssFeed } from '@/lib/rss-feed';
 
 export const revalidate = 1800;
 
-/** English RSS feed — the primary edition. */
+/** Ukrainian RSS feed — the secondary edition, for UK-first readers. */
 export async function GET() {
-  const xml = await buildRssFeed('en');
+  const xml = await buildRssFeed('uk');
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/rss+xml; charset=utf-8',

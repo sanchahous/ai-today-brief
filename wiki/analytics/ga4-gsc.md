@@ -61,6 +61,10 @@ aitodaybrief.com
 - ✅ Інструментація коду повна — 16+ подій течуть (див. `src/lib/analytics-client.ts`
   і виклики `trackEvent` по компонентах). Нічого дотрекувати не потрібно.
 
+> **Оновлено 2026-08-21:** покриття подій розширено (хаби, топ-новини, дайджести, воронка
+> підписки, dwell) — повний каталог див.
+> [event-taxonomy](event-taxonomy.md). Ця сторінка лишається довідником інфраструктури.
+
 ## Залишилось зробити (одноразово)
 
 - [ ] **`sponsor_inquiry_click` → key event.** Подія ще жодного разу не надходила,
@@ -87,3 +91,9 @@ aitodaybrief.com
   (розділ 2 — виправлені цифри; 6.1 — як розплутали властивості).
 - SEO-фікси того ж дня: PR #76 (lastmod, brief→concept чипи, publisher.logo,
   canonical-fallback, пагінація sitemap, title головної).
+- [event-taxonomy](event-taxonomy.md) — каталог подій коду (оновлено 2026-08-21).
+
+## Related pages
+
+- [event-taxonomy](event-taxonomy.md)
+- [../seo/on-site-audit-2026-08-21](../seo/on-site-audit-2026-08-21.md)

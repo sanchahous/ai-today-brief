@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { ClaimedWeeklyDigest, WeeklyReleaseDependencies } from './release-worker';
 import { preflightBlockersFromRpc, releaseDueWeeklyDigests } from './release-worker';
+import { TOP_CATEGORY_SLUGS } from '@/lib/category-meta';
+import { revalidatePathsForPublish } from '@/lib/revalidate-site';
 
 function dependencies(
   claimed: ClaimedWeeklyDigest[],
@@ -55,13 +57,23 @@ describe('Weekly Digest release worker', () => {
     ]);
     expect(deps.calls.filter(([kind]) => kind === 'revalidate')).toEqual(
       [
+        '/',
         '/en',
-        '/uk',
+        '/en/news',
         '/en/digests',
+        '/en/concepts',
+        ...TOP_CATEGORY_SLUGS.map((slug) => `/en/category/${slug}`),
+        '/sitemap.xml',
+        '/news-sitemap.xml',
+        '/rss.xml',
+        '/uk',
+        '/uk/news',
         '/uk/digests',
+        '/uk/concepts',
+        ...TOP_CATEGORY_SLUGS.map((slug) => `/uk/category/${slug}`),
+        '/rss-uk.xml',
         '/en/weekly/ai-weekly-2026-07-05',
         '/uk/weekly/ai-weekly-2026-07-05',
-        '/sitemap.xml',
       ].map((path) => ['revalidate', path]),
     );
   });
@@ -146,7 +158,12 @@ describe('Weekly Digest release worker', () => {
     });
     expect(deps.value.finish).toHaveBeenCalledTimes(1);
     expect(deps.value.finish).toHaveBeenCalledWith(dueDigest.id, true, null);
-    expect(deps.value.revalidate).toHaveBeenCalledTimes(7);
+    expect(deps.value.revalidate).toHaveBeenCalledTimes(
+      revalidatePathsForPublish([
+        '/en/weekly/ai-weekly-2026-07-05',
+        '/uk/weekly/ai-weekly-2026-07-05',
+      ]).length,
+    );
   });
 
   it('normalizes an invalid claim limit without bypassing the database cap', async () => {

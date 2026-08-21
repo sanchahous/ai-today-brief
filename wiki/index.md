@@ -9,7 +9,8 @@ Start / retry Content Studio after succeeded jobs 2026-08-16,
 social package LinkedIn recovery, GitHub dispatch 503 recovery, staged social checkpoints,
 LinkedIn 7-page overflow bounds, approval-ready Social repair, bounded social provider ladder та
 reliable social routing/candidate fallback, clean Social job history 2026-08-17,
-Social tab media contract 2026-08-18, Social approved-row Save fix 2026-08-18, video_script hydration 2026-08-18, video_manifest companion enqueue 2026-08-18, video script Save dropped v3 plan 2026-08-18, Video4 Remotion render 2026-08-18, Video shooting package in admin 2026-08-19
+Social tab media contract 2026-08-18, Social approved-row Save fix 2026-08-18, video_script hydration 2026-08-18, video_manifest companion enqueue 2026-08-18, video script Save dropped v3 plan 2026-08-18, Video4 Remotion render 2026-08-18, Video shooting package in admin 2026-08-19,
+GA4 coverage + SEO hardening audit 2026-08-21
 Last updated: 2026-08-21
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
@@ -71,13 +72,15 @@ Last updated: 2026-08-21
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | 📋 `seo/indexation.md` | 232 «Виявлено — не проіндексовано», IndexNow, Bing/AEO, off-site чек-лист | `audits/2026-07-01-seo-organic.md` |
-| 📋 `seo/aeo-strategy.md` | Structure-for-extraction, JSON-LD, `llms.txt`, entity-graph | `.cursor/rules/00-core.mdc` §SEO/AEO + `strategy/master-roadmap.md` L3 |
+| ✅ [seo/on-site-audit-2026-08-21](seo/on-site-audit-2026-08-21.md) | On-site аудит: 11 прогалин (og:image, свіжість хабів, подвійна схема, описи, RSS UK, manifest, proxy-503, canonical пагінації, внутрішні лінки концептів, lastmod, security headers) — усі виправлені | код-ревʼю 2026-08-21 |
+| ✅ [seo/aeo-strategy](seo/aeo-strategy.md) | Стратегія Answer Engine Optimization: механізми extraction на сайті, правила контенту, як міряти цитованість | `.cursor/rules/00-core.mdc` §SEO/AEO + `strategy/master-roadmap.md` L3 |
 
 ## Analytics
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | GA4 property, GTM, key events, retention, **пастка двох властивостей** | колишній `docs/ANALYTICS.md` |
+| ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
 
 ## Marketing
 

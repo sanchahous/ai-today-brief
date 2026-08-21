@@ -4,7 +4,6 @@ import {
   SITE_TAGLINE,
   EDITOR_NAME,
   CONTACT_EMAIL,
-  RSS_URL,
 } from '@/lib/site';
 
 export const revalidate = 86400;
@@ -42,7 +41,8 @@ export async function GET() {
 - Guides: ${SITE_URL}/uk/guides
 
 ## Feeds
-- RSS: ${RSS_URL}
+- RSS (English): ${SITE_URL}/rss.xml
+- RSS (Ukrainian): ${SITE_URL}/rss-uk.xml
 - Sitemap: ${SITE_URL}/sitemap.xml
 - News sitemap: ${SITE_URL}/news-sitemap.xml
 

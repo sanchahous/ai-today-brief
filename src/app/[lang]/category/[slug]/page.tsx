@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { getCategoryHub, getCategoryPaths } from '@/lib/categories';
+import { categoryMeta } from '@/lib/category-meta';
+import { socialMeta } from '@/lib/seo';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { CategoryHeader } from '@/components/category-header';
 import { PostFeed } from '@/components/post-feed';
@@ -24,9 +26,14 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   const hub = await getCategoryHub(slug, lang);
   if (!hub) return {};
   const path = `/${lang}/category/${slug}`;
+  // DB description first; the curated tagline is a real sentence, unlike the
+  // bare "Name — Brand" fallback.
+  const description =
+    hub.description ||
+    `${categoryMeta(slug).tagline[lang]} — ${SITE_NAME}`;
   return {
     title: hub.name,
-    description: hub.description || `${hub.name} — ${SITE_NAME}`,
+    description,
     alternates: {
       canonical: `${SITE_URL}${path}`,
       languages: {
@@ -35,6 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en/category/${slug}`,
       },
     },
+    ...socialMeta({ title: hub.name, description, path, lang }),
   };
 }
 

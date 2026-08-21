@@ -98,7 +98,9 @@ export async function proxy(request: NextRequest) {
     const lang = weeklyMatch[1] as Lang;
     const availability = await publishedWeeklyAvailability(decodeURIComponent(weeklyMatch[2]));
     if (availability === 'unpublished') return weeklyStatusPage(lang, 404);
-    if (availability === 'unavailable') return weeklyStatusPage(lang, 503);
+    // 'unavailable' (DB/network failure) must NOT hard-503: the page itself is
+    // ISR-cached and likely fine. Fall through to next() and let the cached
+    // render serve — a transient outage then never deindexes live URLs.
   }
   let response =
     pathname === '/'

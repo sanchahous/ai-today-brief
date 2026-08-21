@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { getDigestArchive } from '@/lib/digests';
 import { isLang, SITE_URL, type Lang } from '@/lib/site';
 import { HubViewTracker } from '@/components/analytics/hub-view-tracker';
+import { socialMeta } from '@/lib/seo';
 
 export const revalidate = 3600;
 
@@ -31,6 +32,7 @@ export async function generateMetadata({
         'x-default': `${SITE_URL}/en/digests`,
       },
     },
+    ...socialMeta({ title, description, path: `/${locale}/digests`, lang: locale }),
   };
 }
 

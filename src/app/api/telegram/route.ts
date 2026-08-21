@@ -24,6 +24,7 @@ import { formatCustomNewsError, parseCustomCommand } from '@/lib/telegram-custom
 import { LANGS, SITE_URL } from '@/lib/site';
 import { indexNowConfigured, submitToIndexNow } from '@/lib/indexnow';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { revalidateSiteSurfaces } from '@/lib/revalidate-site';
 import {
   approvedBanner,
   buildRejectPrompt,
@@ -163,10 +164,9 @@ async function maybeSendSummary(
   await sendMsg(chatId, text, Object.keys(keyboard).length ? { reply_markup: keyboard } : {});
 }
 
-/** Revalidate the public site after publish. */
+/** Revalidate the public site after publish (home, news, hubs, sitemaps). */
 async function revalidateSite(): Promise<void> {
-  const paths = ['/', '/en', '/uk', '/en/news', '/uk/news', '/sitemap.xml', '/rss.xml', '/news-sitemap.xml'];
-  for (const p of paths) revalidatePath(p);
+  revalidateSiteSurfaces();
 }
 
 /**
