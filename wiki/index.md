@@ -89,6 +89,7 @@ Last updated: 2026-08-21
 | ✅ [marketing/social-launch](marketing/social-launch.md) | Запуск соцканалів | колишній `docs/marketing/SOCIAL-LAUNCH.md` |
 | ✅ [marketing/card-images](marketing/card-images.md) | Daily cards + weekly semantic illustration v5.1; news-card origin JPEG; site delivery WebP; weekly story_image origin WebP | `pipeline/card-image.ts`, `src/lib/encode-site-image.ts`, owner review + smoke renders 2026-08-12 |
 | ✅ [marketing/custom-social-delivery](marketing/custom-social-delivery.md) | Кастомна соц-доставка | колишній `docs/marketing/CUSTOM-SOCIAL-DELIVERY.md` |
+| ✅ [marketing/omni-channel-publishing-matrix](marketing/omni-channel-publishing-matrix.md) | Верстка weekly digest під 6 соцканалів: блоки-примітиви з обовʼязковим `USE`, ліміти, лінки/хештеги, чек-лист; розбір релізу 20.08 | `src/lib/social/quality.ts`, `social-adapter.ts`, `social-facts.ts`, `r/s/[token]/route.ts`, прод-розбір 2026-08-21 |
 
 ## Product
 

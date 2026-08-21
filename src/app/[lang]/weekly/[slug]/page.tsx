@@ -7,6 +7,7 @@ import { LiteYouTube } from '@/components/weekly/lite-youtube';
 import { WEEKLY_COPY } from '@/components/weekly/copy';
 import { DigestEngagement } from '@/components/weekly/digest-engagement';
 import { WeeklyHero } from '@/components/weekly/weekly-hero';
+import { WeeklyActionBoard } from '@/components/weekly/weekly-action-board';
 import { WeeklyStory } from '@/components/weekly/weekly-story';
 import { WeeklyToc } from '@/components/weekly/weekly-toc';
 import {
@@ -220,10 +221,34 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
           </aside>
 
           <div id="stories" className="min-w-0 scroll-mt-[calc(var(--header-h)+2rem)]">
+            {digest.video ? (
+              <section
+                aria-labelledby="weekly-video-title"
+                data-digest-event="video_play"
+                className="mb-10"
+              >
+                <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
+                  {copy.watch}
+                </p>
+                <h2 id="weekly-video-title" className="mt-2 text-2xl sm:text-3xl">
+                  {copy.videoTitle}
+                </h2>
+                <p className="text-muted mt-2 mb-5 max-w-2xl leading-7">{copy.videoDescription}</p>
+                <LiteYouTube
+                  videoId={digest.video.youtubeId}
+                  thumbnailUrl={digest.video.thumbnailUrl}
+                  title={copy.videoTitle}
+                  lang={lang}
+                />
+              </section>
+            ) : null}
+
+            <WeeklyActionBoard items={digest.items} lang={lang} />
+
             {digest.editorNote ? (
               <section
                 aria-labelledby="editor-note-title"
-                className="border-border bg-surface rounded-card border p-6 sm:p-8"
+                className="border-border bg-surface rounded-card mt-8 border p-6 sm:p-8"
               >
                 <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
                   {copy.editorNote}
@@ -266,28 +291,6 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
                 <WeeklyStory key={item.id} item={item} lang={lang} />
               ))}
             </div>
-
-            {digest.video ? (
-              <section
-                aria-labelledby="weekly-video-title"
-                data-digest-event="video_play"
-                className="border-border-soft mt-12 border-t pt-10"
-              >
-                <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
-                  {copy.watch}
-                </p>
-                <h2 id="weekly-video-title" className="mt-2 text-2xl sm:text-3xl">
-                  {copy.videoTitle}
-                </h2>
-                <p className="text-muted mt-2 mb-5 max-w-2xl leading-7">{copy.videoDescription}</p>
-                <LiteYouTube
-                  videoId={digest.video.youtubeId}
-                  thumbnailUrl={digest.video.thumbnailUrl}
-                  title={copy.videoTitle}
-                  lang={lang}
-                />
-              </section>
-            ) : null}
 
             <nav
               aria-label={`${copy.previous} / ${copy.next}`}

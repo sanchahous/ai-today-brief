@@ -32,7 +32,10 @@ function post(
       channel === 'x'
         ? 'A link-free AI engineering update for builders.'
         : 'A useful AI engineering update for builders with practical context.',
-    firstComment: channel === 'x' ? 'Read: https://aitodaybrief.com/r/s/test' : null,
+    firstComment:
+      channel === 'x' || channel === 'linkedin'
+        ? 'Read: https://aitodaybrief.com/r/s/test'
+        : null,
     assets: [],
     altText: null,
     idempotencyKey: 'idempotency',
@@ -188,19 +191,70 @@ describe('social provider contracts', () => {
   });
 
   it('sends a LinkedIn organization post with version headers', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      json(
-        {},
-        {
-          status: 201,
-          headers: { 'content-type': 'application/json', 'x-restli-id': 'urn:li:share:1' },
-        },
-      ),
-    );
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        json(
+          {},
+          {
+            status: 201,
+            headers: { 'content-type': 'application/json', 'x-restli-id': 'urn:li:share:1' },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(json({ id: 'urn:li:comment:9' }, { status: 201 }));
     const receipt = await getSocialPublisher('linkedin').publish(post('linkedin'));
     expect(receipt.externalId).toBe('urn:li:share:1');
     const headers = fetchMock.mock.calls[0][1]?.headers as Record<string, string>;
     expect(headers['LinkedIn-Version']).toBe('202607');
+    expect(receipt.providerMeta).toMatchObject({ comment_id: 'urn:li:comment:9' });
+  });
+
+  it('posts the tracked link as a LinkedIn first comment on the published post', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        json(
+          {},
+          {
+            status: 201,
+            headers: { 'content-type': 'application/json', 'x-restli-id': 'urn:li:share:1' },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(json({ id: 'urn:li:comment:9' }, { status: 201 }));
+    await getSocialPublisher('linkedin').publish(post('linkedin'));
+    const [url, init] = fetchMock.mock.calls[1];
+    expect(String(url)).toContain('/socialActions/urn%3Ali%3Ashare%3A1/comments');
+    expect(JSON.parse(String(init?.body))).toMatchObject({
+      object: 'urn:li:share:1',
+      message: { text: 'Read: https://aitodaybrief.com/r/s/test' },
+    });
+  });
+
+  it('needs reconciliation when the LinkedIn post lands but its comment fails', async () => {
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        json(
+          {},
+          {
+            status: 201,
+            headers: { 'content-type': 'application/json', 'x-restli-id': 'urn:li:share:1' },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(json({ error: 'nope' }, { status: 400 }));
+    await expect(getSocialPublisher('linkedin').publish(post('linkedin'))).rejects.toMatchObject({
+      kind: 'ambiguous',
+      code: 'partial_linkedin_comment',
+      providerMeta: { partial_sequence: true, post_id: 'urn:li:share:1', comment_pending: true },
+    } satisfies Partial<SocialPublishError>);
+  });
+
+  it('refuses a LinkedIn post whose tracked link is missing from the first comment', async () => {
+    expect(() =>
+      getSocialPublisher('linkedin').validate?.(post('linkedin', { firstComment: null })),
+    ).toThrow(/first comment/i);
   });
 
   it('publishes Facebook to the configured Page feed', async () => {

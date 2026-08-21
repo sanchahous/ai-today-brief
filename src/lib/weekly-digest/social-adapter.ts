@@ -37,16 +37,16 @@ export interface WeeklySocialAdaptation extends SocialDraft {
 
 const CHANNEL_CONTRACT: Record<SocialChannel, string> = {
   telegram:
-    'Ukrainian, 900–1600 characters. Strong lead, Top 3 with a short consequence, radar in one block, one CTA and exactly one URL.',
+    'Ukrainian, 900–1600 characters. Separate every block with a blank line; never run blocks together on consecutive lines. Telegram is the only channel that renders rich text: use **bold** for the one number that matters and `backticks` for tool, flag or command names. Never use these markers on any other channel. Strong lead, Top 3 with a short consequence, radar in one block, one CTA and exactly one URL. At least one block must name a model, tool, endpoint or setting the reader can try this week, the concrete step to try it, and its cost, limit or caveat.',
   facebook:
-    'Ukrainian, 700–1400 characters. One human narrative line, 2–3 conclusions, one meaningful question and exactly one URL.',
+    'Ukrainian, 700–1400 characters. Blank line between paragraphs. One human narrative line, 2–3 conclusions, one meaningful question and exactly one URL. Name at least one tool, model or setting the reader can act on, with the trade-off that comes with it.',
   threads:
-    'Ukrainian sequence of 3–5 messages, each at most 500 characters. Thesis → evidence → consequence → genuine question. Separate messages with <PART>. Put the URL only in the final part.',
-  x: 'English root post, 180–260 characters, one thesis and one strong fact, no URL. The tracked URL goes only in firstComment.',
+    'Ukrainian sequence of 3–5 messages, each at most 500 characters. Thesis → evidence → what to try → genuine question. Separate messages with <PART>. Put the URL only in the final part. One part must be a concrete thing to try, naming the tool or setting and the step, not a restatement of the news.',
+  x: 'English root post, 180–260 characters, one thesis and one strong fact, no URL. The tracked URL goes only in firstComment, and firstComment must carry a second fact or the practical step alongside the link — never a bare URL.',
   linkedin:
-    'English, 700–1200 characters. A self-contained insight for builders/leaders: tension, evidence, judgment, next decision. At most 3 hashtags and one URL.',
+    'English, 700–1200 characters. Break lines aggressively: one sentence or short block per line, blank line between blocks, never a single dense paragraph. A self-contained insight for builders/leaders: tension, evidence, judgment, what to do about it, next decision. One block must be a concrete action naming the tool, serving path, flag or setting, plus its cost or limit. At most 3 hashtags. The post body must contain no URL at all; the tracked URL goes in firstComment, which should read as a real first comment rather than a bare link.',
   instagram:
-    'English hybrid carousel of exactly 7 slides. Inside each candidate write <COVER>headline, three <STORY>headline||body, then <COMPARISON>headline||body, <CAVEAT>headline||body, <TAKEAWAY>headline||body, then <CAPTION>caption. Cover headline ≤72 characters; other headlines ≤54; bodies ≤120. Caption 180–800 characters, no URL, at most 5 hashtags.',
+    'English hybrid carousel of exactly 7 slides. Inside each candidate write <COVER>headline, three <STORY>headline||body, then <COMPARISON>headline||body, <CAVEAT>headline||body, <TAKEAWAY>headline||body, then <CAPTION>caption. Cover headline ≤72 characters; other headlines ≤54; bodies ≤120. Caption 180–800 characters, no URL, at most 5 hashtags. The takeaway slide must state a concrete action with a named tool, serving path or setting — not a summary of the week.',
 };
 
 export function parseWeeklySocialWriter(raw: string) {
@@ -268,6 +268,9 @@ ${voice}
 CHANNEL CONTRACT: ${CHANNEL_CONTRACT[input.channel]}
 TRACKED URL: ${input.trackedUrl}
 
+WHAT THIS COPY MUST GIVE THE READER
+Reporting the news accurately is the floor, not the goal. Every adaptation must leave the reader holding something they can act on this week: a named model, tool, endpoint, flag, threshold or licence term, the concrete step to use it, and the cost, limit or failure mode attached to it. When the fact snapshot carries a practical example for a story -- who would run this, on what stack, at what price -- build the copy on that example instead of restating the headline. Prefer facts that describe what a team can now do over facts that only describe what happened. A post that a reader finishes without knowing what to try, change or check fails this contract even when every number in it is correct.
+
 APPROVED FACT SNAPSHOT
 ${input.sourceFacts.map((fact) => `- ${fact}`).join('\n')}
 
@@ -283,7 +286,7 @@ ${
     : ''
 }
 
-First, read the approved article below and decide your own angle for this channel's audience -- the single most compelling entry point, not a recap of every headline. Write it as a short (3-8 word) label in "angle". Then create THREE hook candidates built on that angle that are genuinely different from each other in opening, tone or emphasis -- not the same sentence reworded. Never open with a generic AI-tell phrase ("in today's fast-moving AI landscape", "it's worth noting", "game-changer") or a leader-briefing frame ("for product and security leaders") -- open on the concrete fact or scene. Put all candidates inside the JSON "text" string and separate them with <CANDIDATE>. For Threads use <PART> inside each candidate. For Instagram use the tagged 7-slide contract inside each candidate. For X return the tracked URL in "firstComment"; for other channels put it only where the contract permits. Return strict JSON only: {"angle":"","text":"candidate 1<CANDIDATE>candidate 2<CANDIDATE>candidate 3","firstComment":""}.
+First, read the approved article below and decide your own angle for this channel's audience -- the single most compelling entry point, not a recap of every headline. Write it as a short (3-8 word) label in "angle". Then create THREE hook candidates built on that angle that are genuinely different from each other in opening, tone or emphasis -- not the same sentence reworded. Never open with a generic AI-tell phrase ("in today's fast-moving AI landscape", "it's worth noting", "game-changer") or a leader-briefing frame ("for product and security leaders") -- open on the concrete fact or scene. Put all candidates inside the JSON "text" string and separate them with <CANDIDATE>. For Threads use <PART> inside each candidate. For Instagram use the tagged 7-slide contract inside each candidate. For X and LinkedIn return the tracked URL in "firstComment"; for other channels put it only where the contract permits. Return strict JSON only: {"angle":"","text":"candidate 1<CANDIDATE>candidate 2<CANDIDATE>candidate 3","firstComment":""}.
 
 APPROVED ARTICLE
 ${JSON.stringify(article)}`;
