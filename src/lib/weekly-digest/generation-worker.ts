@@ -858,17 +858,33 @@ function dimensionGuidanceFromReport(
  * which is the documented mechanism behind "retries get blander." The
  * latest critic verdict is a complete, self-consistent picture of what's
  * currently wrong -- that's the only guidance a fresh attempt needs.
+ *
+ * `beforeCreatedAt` (set only when this attempt is resuming from a saved
+ * checkpoint) excludes reports written at or after that moment. Without it,
+ * resuming a `succeeded`/`needs_owner_review` job -- the case this feature
+ * exists for -- picks up the report that job *itself* just wrote about its
+ * own draft, changes the plan hash relative to what that job started with,
+ * and makes the checkpoint permanently unresumable the instant it finishes:
+ * confirmed live 2026-08-22 on weekly_digest_id
+ * 71af784b-3c89-47f8-bc38-e3eae4def2a7 (job 411aba45's own report, incl. a
+ * below-floor `naturalness` dimension, invalidated resuming 411aba45 itself).
+ * Bounding by the source job's `created_at` recovers whatever guidance was
+ * actually active when that job computed its own plan hash, since only one
+ * master job runs per revision at a time.
  */
-async function priorMasterRetryGuidance(revisionId: string): Promise<WeeklyMasterRetryGuidance[]> {
+export async function priorMasterRetryGuidance(
+  revisionId: string,
+  beforeCreatedAt?: string,
+): Promise<WeeklyMasterRetryGuidance[]> {
   const db = getSupabaseAdmin();
-  const { data, error } = await db
+  let query = db
     .from('weekly_digest_artifacts')
     .select('content,created_at')
     .eq('revision_id', revisionId)
     .eq('artifact_type', 'content_quality_report')
-    .eq('slot_key', 'content-quality:master')
-    .order('created_at', { ascending: false })
-    .limit(1);
+    .eq('slot_key', 'content-quality:master');
+  if (beforeCreatedAt) query = query.lt('created_at', beforeCreatedAt);
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(1);
   if (error) throw new Error(`[weekly-generation] retry guidance lookup: ${error.message}`);
 
   const latest = data?.[0];
@@ -1117,18 +1133,21 @@ async function loadOwnMasterRunState(jobId: string, planHash: string) {
  * Accepts any terminal prior state, not just `failed`. A run that stopped
  * short on unresolved quality items now finishes as `succeeded` (see
  * generateEditorialMaster below), and that is precisely the case an owner
- * most wants to resume from.
+ * most wants to resume from -- so this fetch happens *before* retry guidance
+ * is computed: `createdAt` lets the caller exclude the source job's own
+ * quality report from that guidance (see `priorMasterRetryGuidance`), which
+ * is what makes resuming a `needs_owner_review` job -- the primary reason
+ * this button exists -- actually reusable instead of self-invalidating.
  */
-async function loadMasterResumeState(
+async function fetchMasterResumeSource(
   job: ClaimedGenerationJob,
-  planHash: string,
-): Promise<{ state: MasterRunState; sourceJobId: string } | null> {
+): Promise<{ id: string; createdAt: string; output: Json | null } | null> {
   const sourceJobId = text(asRecord(job.input).resume_from_job_id);
   if (!sourceJobId) return null;
   const db = getSupabaseAdmin();
   const { data, error } = await db
     .from('weekly_digest_generation_jobs')
-    .select('id,weekly_digest_id,revision_id,job_type,status,output')
+    .select('id,weekly_digest_id,revision_id,job_type,status,output,created_at')
     .eq('id', sourceJobId)
     .maybeSingle();
   if (error) throw new Error(`[weekly-generation] master resume lookup: ${error.message}`);
@@ -1141,7 +1160,19 @@ async function loadMasterResumeState(
   ) {
     throw new Error('Master resume source must be a finished master job for this digest revision.');
   }
-  const state = masterRunStateFromOutput(data.output, planHash);
+  return { id: data.id, createdAt: data.created_at, output: data.output };
+}
+
+/**
+ * Checks the resume source's saved state against the plan the current
+ * attempt actually computed (research packs + bounded retry guidance -- see
+ * `fetchMasterResumeSource` and `priorMasterRetryGuidance`).
+ */
+export function resolveMasterResumeState(
+  source: { id: string; output: Json | null },
+  planHash: string,
+): { state: MasterRunState; sourceJobId: string } {
+  const state = masterRunStateFromOutput(source.output, planHash);
   if (!state) {
     throw new Error(
       'Master resume source has no saved state for the current research packs — start a fresh master instead.',
@@ -1154,7 +1185,7 @@ async function loadMasterResumeState(
   // remove.
   return {
     state: { ...state, criticRounds: 0, repairAttempts: {}, unresolved: [] },
-    sourceJobId,
+    sourceJobId: source.id,
   };
 }
 
@@ -1255,10 +1286,11 @@ async function generateEditorialMaster(
   const directionsByBriefItemId = await loadStoryDirections(job.weekly_digest_id);
   const sourceStories = masterInputStories(context, approvedResearch, directionsByBriefItemId);
   const researchPacks = approvedResearch.map(({ pack }) => pack);
-  const retryGuidance = await priorMasterRetryGuidance(job.revision_id);
+  const resumeSource = await fetchMasterResumeSource(job);
+  const retryGuidance = await priorMasterRetryGuidance(job.revision_id, resumeSource?.createdAt);
   const planHash = computeMasterPlanHash(researchPacks, retryGuidance);
 
-  const resume = await loadMasterResumeState(job, planHash);
+  const resume = resumeSource ? resolveMasterResumeState(resumeSource, planHash) : null;
   const state = (await loadOwnMasterRunState(job.id, planHash)) ?? resume?.state ?? null;
   if (state) {
     await tracker.event({

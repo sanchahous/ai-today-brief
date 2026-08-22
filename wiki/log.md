@@ -6,6 +6,41 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-22
 
+## 2026-08-22 — Follow-up: Resume saved master самозаперечувала власний checkpoint
+
+**Джерело:** власник запитав, чи пофіксено проблему editorial_master «в цілому» після
+першого фіксу (нижче). Перевірка показала — ні: навіть без «Create linked retry», кнопка
+**Resume saved master** сама по собі майже гарантовано падає для джоб з `needs_owner_review`.
+
+**Знайдено:** `priorMasterRetryGuidance(revisionId)` бере останній `content_quality_report`
+по ревізії без винятку для звіту, який щойно написала сама джоба-джерело. На проді:
+звіт `411aba45` (та сама SUCCEEDED job з попереднього запису) містить вимір
+`naturalness: 55` (поріг `NATURALNESS_PARITY_MIN_SCORE=80`) → непорожня retry guidance →
+`planHash` при резюме відрізняється від `planHash`, з яким `411aba45` стартувала (тоді на
+ревізії взагалі не було жодного звіту). Джоба інвалідує власний checkpoint саме в момент,
+коли дописує фінальний звіт про себе — рівно той кейс, який код називає «precisely the case
+an owner most wants to resume from».
+
+**Змінено** (`src/lib/weekly-digest/generation-worker.ts`):
+- `priorMasterRetryGuidance` приймає `beforeCreatedAt` — при резюме межа береться з
+  `created_at` job'и-джерела
+- `loadMasterResumeState` розбито на `fetchMasterResumeSource` (fetch + валідація, тепер
+  повертає й `created_at`) + `resolveMasterResumeState` (перевірка стану проти planHash) —
+  `created_at` потрібен **до** розрахунку `retryGuidance`, тож порядок кроків у
+  `generateEditorialMaster` змінено
+- Тести: `resolveMasterResumeState` (чисте резюме + помилка «no saved state»),
+  `priorMasterRetryGuidance` (межа застосовується при резюме / не застосовується на
+  свіжому ран / `naturalness`-вимір генерує guidance) — `generation-worker.test.ts`,
+  +5 тестів (31/31 у файлі)
+- [pipeline/weekly-digest § Глибша причина](pipeline/weekly-digest.md#глибша-причина-priormasterretryguidance-самозаперечувала-власний-checkpoint-2026-08-22)
+
+**Перевірено на проді (read-only):** запит з межею `411aba45.created_at` повертає 0 звітів —
+той самий порожній набір, що бачила сама джоба о 08:28:20, коли рахувала власний `planHash`.
+
+**Не зроблено:** це зміна лише в app-коді (TypeScript), не в SQL — деплоїться звичайним
+Vercel-пайплайном при мержі PR, на відміну від міграції з попереднього запису її не можна
+застосувати напряму до прода з цієї сесії.
+
 ## 2026-08-22 — editorial_master «Create linked retry» нескінченно повторював мертвий resume
 
 **Джерело:** власник повідомив «джоби editorial_master фейляться» зі скріншотом

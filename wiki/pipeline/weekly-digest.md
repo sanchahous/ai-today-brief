@@ -1316,6 +1316,38 @@ has no saved state for the current research packs — start a fresh master inste
 `weekly_digest_generation_jobs` для `71af784b-3c89-47f8-bc38-e3eae4def2a7`,
 `src/lib/weekly-digest/generation-control.ts`, `generation-control.test.ts`)
 
+### Глибша причина: `priorMasterRetryGuidance` самозаперечувала власний checkpoint (2026-08-22)
+
+Одного фіксу вище було замало для кореня: **Resume saved master** — кнопка саме для
+`succeeded`-з-`needs_owner_review` джоб («precisely the case an owner most wants to resume
+from», коментар у коді) — майже гарантовано падала з тим самим «no saved state» навіть без
+жодного «Create linked retry». Причина: `priorMasterRetryGuidance(revisionId)` бере
+**останній** `content_quality_report` по ревізії без винятку для звіту, який щойно написала
+сама джоба, яку резюмують. Перевірено на живих даних: звіт `411aba45` містить вимір
+`naturalness: 55` (поріг `NATURALNESS_PARITY_MIN_SCORE=80`, `content-studio.ts`) →
+`dimensionGuidanceFromReport` повертає непорожню guidance → `planHash` при спробі резюме
+відрізняється від `planHash`, з яким `411aba45` стартував (тоді на ревізії не було жодного
+звіту — `retryGuidance=[]`). Тобто джоба інвалідує власний checkpoint у момент, коли дописує
+фінальний звіт про себе.
+
+**Фікс:** `priorMasterRetryGuidance` приймає `beforeCreatedAt` — при резюме межа береться з
+`created_at` job'и-джерела (`fetchMasterResumeSource`, раніше `loadMasterResumeState`,
+розбито на fetch + `resolveMasterResumeState`, бо тепер потрібен `created_at` **до**
+розрахунку `retryGuidance`/`planHash`, а не після). Один master-job на ревізію одночасно
+(перевіряється в іншому місці), тож межа по `created_at` джерела точно відновлює guidance,
+яку та джоба бачила на власному старті. Перевірено на проді: запит з межею `411aba45.created_at`
+повертає 0 звітів — той самий порожній набір, що бачила сама `411aba45` о 08:28.
+Тести: `resolveMasterResumeState` (чисте резюме + «no saved state»),
+`priorMasterRetryGuidance` (межа застосовується при резюме, не застосовується на свіжому
+ран, `naturalness`-вимір справді генерує guidance) — `generation-worker.test.ts`.
+Цей фікс — лише в app-коді (`src/lib/weekly-digest/generation-worker.ts`), деплоїться
+звичайним Vercel-пайплайном при мержі, на відміну від SQL-міграції вище його не можна
+застосувати напряму до прода.
+(source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-22 —
+`weekly_digest_artifacts.content` для ревізії `c4aea013-e7f6-4769-94dd-099a399d51b2`,
+`src/lib/weekly-digest/generation-worker.ts`, `generation-worker.test.ts`,
+`src/lib/weekly-digest/content-studio.ts`)
+
 ## PDF page-count contract violation — фікс (2026-08-07)
 
 ⚠️ Виправлення попереднього запису вище: page-count contract violation **не** був гіпотетичним
