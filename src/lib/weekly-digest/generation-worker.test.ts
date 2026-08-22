@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const rpc = vi.fn(async (_fn: string, _args: Record<string, unknown>) => ({
   data: [] as unknown[],
@@ -7,15 +7,17 @@ const rpc = vi.fn(async (_fn: string, _args: Record<string, unknown>) => ({
 // Default no-op chain so tests that don't touch `.from(...)` (most of this
 // file) are unaffected; priorMasterRetryGuidance tests below override this
 // per-test with mockReturnValueOnce.
-const from = vi.fn(() => {
+function defaultFromChain(_table?: string) {
   const chain: Record<string, unknown> = {};
   const self = () => chain;
   chain.select = self;
   chain.eq = self;
   chain.order = self;
   chain.limit = () => Promise.resolve({ data: [], error: null });
+  chain.maybeSingle = () => Promise.resolve({ data: null, error: null });
   return chain;
-});
+}
+const from = vi.fn(defaultFromChain);
 vi.mock('@/lib/supabase-admin', () => ({ getSupabaseAdmin: () => ({ rpc, from }) }));
 
 import {
@@ -23,6 +25,7 @@ import {
   masterBundleFromArtifacts,
   masterInputStories,
   masterRunStateFromOutput,
+  masterResumeGuidanceBoundary,
   priorMasterRetryGuidance,
   resolveMasterResumeState,
   resolveSocialPostForRepair,
@@ -211,6 +214,77 @@ describe('priorMasterRetryGuidance', () => {
     ]);
     const guidance = await priorMasterRetryGuidance('revision-1');
     expect(guidance.some((entry) => entry.code.includes('naturalness'))).toBe(true);
+  });
+});
+
+describe('masterResumeGuidanceBoundary', () => {
+  beforeEach(() => from.mockClear());
+  afterEach(() => from.mockImplementation(defaultFromChain));
+
+  function stubJobLookup(rows: Record<string, { input: unknown; created_at: string } | null>) {
+    from.mockImplementation((table?: string) => {
+      if (table !== 'weekly_digest_generation_jobs') {
+        const chain: Record<string, unknown> = {};
+        const self = () => chain;
+        chain.select = self;
+        chain.eq = self;
+        chain.order = self;
+        chain.limit = () => Promise.resolve({ data: [], error: null });
+        return chain;
+      }
+      const chain: Record<string, unknown> = {};
+      let byId: string | undefined;
+      chain.select = () => chain;
+      chain.eq = (_col: string, value: string) => {
+        byId = value;
+        return chain;
+      };
+      chain.maybeSingle = () => Promise.resolve({ data: byId ? (rows[byId] ?? null) : null, error: null });
+      return chain;
+    });
+  }
+
+  // The exact case reproduced live 2026-08-22 on weekly_digest_id
+  // 71af784b-3c89-47f8-bc38-e3eae4def2a7: resuming job 411aba45 (a fresh
+  // run, no resume_from_job_id) succeeded once bounded guidance shipped, but
+  // resuming its child 7bf3974d (created via that first resume) immediately
+  // failed again with resume_source_stale, because bounding by 7bf3974d's
+  // own created_at pulled in a report 411aba45 never saw. This test is the
+  // regression guard for that second bug.
+  it('walks a chained resume back to the original (non-resume) writer', async () => {
+    stubJobLookup({
+      'source-7bf3974d': {
+        input: { resume_from_job_id: 'root-411aba45' },
+        created_at: '2026-08-22T10:11:15.000Z',
+      },
+      'root-411aba45': { input: {}, created_at: '2026-08-22T08:28:19.000Z' },
+    });
+    const boundary = await masterResumeGuidanceBoundary({
+      createdAt: '2026-08-22T10:11:15.000Z',
+      input: { resume_from_job_id: 'root-411aba45' } as unknown as Json,
+    });
+    expect(boundary).toBe('2026-08-22T08:28:19.000Z');
+  });
+
+  it('uses the source own created_at when it is not itself a resume', async () => {
+    const boundary = await masterResumeGuidanceBoundary({
+      createdAt: '2026-08-22T08:28:19.000Z',
+      input: {} as unknown as Json,
+    });
+    expect(boundary).toBe('2026-08-22T08:28:19.000Z');
+    expect(from).not.toHaveBeenCalled();
+  });
+
+  it('walks more than one hop', async () => {
+    stubJobLookup({
+      'mid-2': { input: { resume_from_job_id: 'root-1' }, created_at: '2026-08-22T09:00:00.000Z' },
+      'root-1': { input: {}, created_at: '2026-08-22T07:00:00.000Z' },
+    });
+    const boundary = await masterResumeGuidanceBoundary({
+      createdAt: '2026-08-22T10:00:00.000Z',
+      input: { resume_from_job_id: 'mid-2' } as unknown as Json,
+    });
+    expect(boundary).toBe('2026-08-22T07:00:00.000Z');
   });
 });
 

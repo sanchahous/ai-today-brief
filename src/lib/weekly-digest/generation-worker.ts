@@ -1134,20 +1134,21 @@ async function loadOwnMasterRunState(jobId: string, planHash: string) {
  * short on unresolved quality items now finishes as `succeeded` (see
  * generateEditorialMaster below), and that is precisely the case an owner
  * most wants to resume from -- so this fetch happens *before* retry guidance
- * is computed: `createdAt` lets the caller exclude the source job's own
- * quality report from that guidance (see `priorMasterRetryGuidance`), which
- * is what makes resuming a `needs_owner_review` job -- the primary reason
- * this button exists -- actually reusable instead of self-invalidating.
+ * is computed: `createdAt`/`input` let the caller exclude the source job's
+ * own quality report from that guidance (see `priorMasterRetryGuidance` and
+ * `masterResumeGuidanceBoundary`), which is what makes resuming a
+ * `needs_owner_review` job -- the primary reason this button exists --
+ * actually reusable instead of self-invalidating.
  */
 async function fetchMasterResumeSource(
   job: ClaimedGenerationJob,
-): Promise<{ id: string; createdAt: string; output: Json | null } | null> {
+): Promise<{ id: string; createdAt: string; input: Json | null; output: Json | null } | null> {
   const sourceJobId = text(asRecord(job.input).resume_from_job_id);
   if (!sourceJobId) return null;
   const db = getSupabaseAdmin();
   const { data, error } = await db
     .from('weekly_digest_generation_jobs')
-    .select('id,weekly_digest_id,revision_id,job_type,status,output,created_at')
+    .select('id,weekly_digest_id,revision_id,job_type,status,output,input,created_at')
     .eq('id', sourceJobId)
     .maybeSingle();
   if (error) throw new Error(`[weekly-generation] master resume lookup: ${error.message}`);
@@ -1160,7 +1161,46 @@ async function fetchMasterResumeSource(
   ) {
     throw new Error('Master resume source must be a finished master job for this digest revision.');
   }
-  return { id: data.id, createdAt: data.created_at, output: data.output };
+  return { id: data.id, createdAt: data.created_at, input: data.input, output: data.output };
+}
+
+/**
+ * A resume only ever carries its segments forward unchanged from whoever
+ * originally *wrote* them -- a fresh (non-resume) master run -- even across
+ * a chain of several resume attempts. So the retry-guidance boundary must
+ * stay pinned to that original writer's `created_at`, not to the immediate
+ * resume source's, or a second resume (resuming a job that was itself a
+ * resume) recomputes guidance the segments' actual writer never saw and
+ * self-invalidates exactly like the unbounded query did.
+ *
+ * Confirmed live 2026-08-22 on weekly_digest_id
+ * 71af784b-3c89-47f8-bc38-e3eae4def2a7: resuming job 411aba45 (a fresh run)
+ * from job 7bf3974d worked once this boundary shipped -- but resuming
+ * 7bf3974d itself (which had `resume_from_job_id: 411aba45`) immediately
+ * failed again with `resume_source_stale`, because bounding by 7bf3974d's
+ * own `created_at` included a report 411aba45 never saw. Walking to the
+ * root (411aba45) fixes it.
+ */
+export async function masterResumeGuidanceBoundary(source: {
+  createdAt: string;
+  input: Json | null;
+}): Promise<string> {
+  let parentId = text(asRecord(source.input).resume_from_job_id);
+  if (!parentId) return source.createdAt;
+  const db = getSupabaseAdmin();
+  for (let hop = 0; hop < 10; hop++) {
+    const { data, error } = await db
+      .from('weekly_digest_generation_jobs')
+      .select('input,created_at')
+      .eq('id', parentId)
+      .maybeSingle();
+    if (error) throw new Error(`[weekly-generation] resume chain lookup: ${error.message}`);
+    if (!data) return source.createdAt;
+    const grandparentId = text(asRecord(data.input).resume_from_job_id);
+    if (!grandparentId) return data.created_at;
+    parentId = grandparentId;
+  }
+  throw new Error('[weekly-generation] master resume chain is too deep (possible cycle)');
 }
 
 /**
@@ -1287,7 +1327,10 @@ async function generateEditorialMaster(
   const sourceStories = masterInputStories(context, approvedResearch, directionsByBriefItemId);
   const researchPacks = approvedResearch.map(({ pack }) => pack);
   const resumeSource = await fetchMasterResumeSource(job);
-  const retryGuidance = await priorMasterRetryGuidance(job.revision_id, resumeSource?.createdAt);
+  const guidanceBoundary = resumeSource
+    ? await masterResumeGuidanceBoundary(resumeSource)
+    : undefined;
+  const retryGuidance = await priorMasterRetryGuidance(job.revision_id, guidanceBoundary);
   const planHash = computeMasterPlanHash(researchPacks, retryGuidance);
 
   const resume = resumeSource ? resolveMasterResumeState(resumeSource, planHash) : null;

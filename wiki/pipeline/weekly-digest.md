@@ -1348,6 +1348,35 @@ from», коментар у коді) — майже гарантовано па
 `src/lib/weekly-digest/generation-worker.ts`, `generation-worker.test.ts`,
 `src/lib/weekly-digest/content-studio.ts`)
 
+### Третій шар: ланцюжковий resume досі self-invalidated (2026-08-22, живе відтворення)
+
+PR #313 змержено 10:05:58 UTC (включно з фіксом вище). Живий тест на
+`71af784b-3c89-47f8-bc38-e3eae4def2a7` одразу після мержу, за запитом власника «розберись як
+мене рухати реліз»: **Resume saved master** на `411aba45` (fresh-run джоба, без власного
+`resume_from_job_id`) — **спрацював** (створив job `7bf3974d`, 10:11–10:21 UTC), підтвердивши
+фікс вище наживо. Але наступний **Resume saved master** на самій `7bf3974d` (у якої
+`input.resume_from_job_id = 411aba45` — вона сама була резюме) — **одразу впав знову**, тепер
+із `failure_code=resume_source_stale` (сам код класифікації підтвердив: новий код живий, але
+`planHash` усе одно розійшовся).
+
+**Причина:** межа `beforeCreatedAt` бралась з `created_at` **безпосереднього** resume-джерела
+(`7bf3974d`, 10:11:15 UTC) — це включило звіт `027da857` (09:21:40, ДО 10:11:15), якого джоба
+`7bf3974d` **сама** не бачила при своєму старті (її власна межа була `created_at` кореня
+`411aba45` = 08:28:19, тобто вона бачила 0 звітів). Сегменти проходять крізь увесь ланцюжок
+resume незмінними від оригінального автора — тож і межа guidance мусить лишатись прив'язаною
+до кореня ланцюжка, не до найближчого resume-джерела.
+
+**Фікс:** `masterResumeGuidanceBoundary` проходить `resume_from_job_id` до кореня (джоби без
+власного `resume_from_job_id`, макс. 10 хопів) і бере `created_at` саме кореня.
+`fetchMasterResumeSource` тепер вибирає й `input` (потрібен для проходу ланцюжка). Тести:
+3 нові у `generation-worker.test.ts` (одно-хоповий resume, багато-хоповий, і non-resume
+джерело без зайвого DB-виклику) — 34/34 у файлі.
+Гілка `claude/editorial-master-chained-resume-fix` (від актуального `main`, попередня
+`claude/editorial-master-admin-jobs-af3509` вже змержена як #313).
+(source: живе відтворення 22.08 на проді через адмінку — `resumeWeeklyMasterFromCheckpointAction`
+двічі клацнуто вручну під час діагностики за запитом власника, прод-Supabase
+`mdiqfatpqczwqghwttpm` `weekly_digest_generation_jobs` live check, `generation-worker.ts`)
+
 ## PDF page-count contract violation — фікс (2026-08-07)
 
 ⚠️ Виправлення попереднього запису вище: page-count contract violation **не** був гіпотетичним
