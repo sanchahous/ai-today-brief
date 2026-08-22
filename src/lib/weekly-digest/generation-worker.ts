@@ -53,6 +53,7 @@ import {
   resolveWeeklyContentStudioMode,
   sourceNameMatchesDomain,
   WEEKLY_CONTENT_STUDIO_VERSION,
+  WEEKLY_MASTER_SPEC_VERSION,
   WEEKLY_VIDEO_MANIFEST_VERSION,
   WEEKLY_VIDEO_SCRIPT_SCHEMA_VERSION,
   type WeeklyContentQualityReport,
@@ -73,6 +74,7 @@ import {
   computeMasterPlanHash,
   reusableMasterRunState,
   runWeeklyMaster,
+  seedMasterRunStateFromBundle,
   type MasterRunState,
   type WeeklyMasterRunOutcome,
 } from './master-engine';
@@ -1163,6 +1165,59 @@ async function assertWithinMasterBudget(revisionId: string) {
  */
 const MASTER_STATE_KEY = 'master_run_state';
 
+function revisionHasMasterArticles(
+  artifacts: Array<{ artifact_type: string; locale: string | null; is_current?: boolean }>,
+) {
+  const current = (locale: 'en' | 'uk') =>
+    artifacts.some(
+      (artifact) =>
+        artifact.artifact_type === 'article' &&
+        artifact.locale === locale &&
+        artifact.is_current !== false,
+    );
+  return current('en') && current('uk');
+}
+
+function workingCopyWriterMetadata(
+  artifacts: Array<{
+    artifact_type: string;
+    locale: string | null;
+    provider?: string | null;
+    provider_id?: string | null;
+  }>,
+): EditorialGenerationMetadata {
+  const article = artifacts.find(
+    (row) => row.artifact_type === 'article' && row.locale === 'en',
+  );
+  const providerRaw = article?.provider?.trim() ?? '';
+  const provider =
+    providerRaw === 'claude-cli' || providerRaw === 'gemini' || providerRaw === 'openrouter'
+      ? providerRaw
+      : 'openrouter';
+  return {
+    provider,
+    model: article?.provider_id?.trim() || 'working-copy',
+    promptTokens: 0,
+    outputTokens: 0,
+    estimatedCostUsd: 0,
+    costSource: 'estimated',
+    promptVersion: WEEKLY_MASTER_SPEC_VERSION,
+  };
+}
+
+function tryWorkingCopyMasterBundle(
+  context: Awaited<ReturnType<typeof loadGenerationContext>>,
+): WeeklyMasterBundle | null {
+  if (!revisionHasMasterArticles(context.artifacts)) return null;
+  try {
+    return masterBundleFromArtifacts(context);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`[weekly-generation] working copy could not be loaded as master segments: ${message}`);
+    return null;
+  }
+}
+
 export function masterRunStateFromOutput(
   value: Json | null | undefined,
   planHash: string,
@@ -1395,15 +1450,39 @@ async function generateEditorialMaster(
   const planHash = computeMasterPlanHash(researchPacks, retryGuidance);
 
   const resume = resumeSource ? resolveMasterResumeState(resumeSource, planHash) : null;
-  const state = (await loadOwnMasterRunState(job.id, planHash)) ?? resume?.state ?? null;
+  let state = (await loadOwnMasterRunState(job.id, planHash)) ?? resume?.state ?? null;
+  let reuseSource: 'checkpoint' | 'working_copy' | null = state ? 'checkpoint' : null;
+  if (!state) {
+    const workingCopy = tryWorkingCopyMasterBundle(context);
+    if (workingCopy) {
+      state = seedMasterRunStateFromBundle({
+        bundle: workingCopy,
+        stories: sourceStories.map((story) => ({
+          revisionItemId: story.revisionItemId,
+          placement: story.placement,
+          rank: story.rank,
+        })),
+        planHash,
+        metadata: workingCopyWriterMetadata(context.artifacts),
+      });
+      reuseSource = 'working_copy';
+    }
+  }
   if (state) {
     await tracker.event({
       type: 'checkpoint_reused',
       step: 'prepare',
       progressCurrent: 4,
       progressTotal: 100,
-      message: `Reusing ${Object.keys(state.segments).length} saved editorial segment(s)`,
-      ...(resume ? { metadata: { resume_source_job_id: resume.sourceJobId } } : {}),
+      message:
+        reuseSource === 'working_copy'
+          ? `Reusing working copy (${Object.keys(state.segments).length} segments) — not rewriting the edition`
+          : `Reusing ${Object.keys(state.segments).length} saved editorial segment(s)`,
+      ...(resume
+        ? { metadata: { resume_source_job_id: resume.sourceJobId } }
+        : reuseSource === 'working_copy'
+          ? { metadata: { source: 'working_copy' } }
+          : {}),
     });
   }
 

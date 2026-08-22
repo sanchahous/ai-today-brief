@@ -36,6 +36,7 @@ import {
   computeMasterPlanHash,
   reusableMasterRunState,
   runWeeklyMaster,
+  seedMasterRunStateFromBundle,
   type MasterRunState,
 } from './master-engine';
 import { masterSegmentKey } from './master-segments';
@@ -264,6 +265,39 @@ describe('segmented writing', () => {
       state: { ...first.state, criticRounds: 0 },
     });
     expect(log.kinds.filter((kind) => kind !== 'critic' && kind !== 'repair')).toHaveLength(0);
+  });
+
+  it('does not rewrite an existing working copy when seeded from the current article', async () => {
+    mockRouter();
+    const first = await runWeeklyMaster({ stories: STORIES, researchPacks: RESEARCH });
+    if (first.status !== 'complete') throw new Error('expected a complete run');
+
+    const guidance = [
+      { code: 'trust_attribution', message: 'Name the source inline.', blocker: false },
+    ];
+    const planHash = computeMasterPlanHash(RESEARCH, guidance);
+    const seeded = seedMasterRunStateFromBundle({
+      bundle: first.bundle,
+      stories: STORIES.map((story) => ({
+        revisionItemId: story.revisionItemId,
+        placement: story.placement,
+        rank: story.rank,
+      })),
+      planHash,
+      metadata: first.generation.english,
+    });
+    expect(Object.keys(seeded.segments)).toHaveLength(14);
+
+    vi.mocked(generateWithOpenRouterChain).mockClear();
+    const log = mockRouter();
+    await runWeeklyMaster({
+      stories: STORIES,
+      researchPacks: RESEARCH,
+      retryGuidance: guidance,
+      state: seeded,
+    });
+    expect(log.kinds.filter((kind) => kind !== 'critic' && kind !== 'repair')).toHaveLength(0);
+    expect(log.kinds.filter((kind) => kind === 'critic').length).toBeGreaterThan(0);
   });
 
   it('returns a resumable incomplete outcome when a segment cannot be written at all', async () => {

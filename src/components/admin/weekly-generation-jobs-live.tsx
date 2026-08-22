@@ -426,9 +426,9 @@ export function WeeklyGenerationJobsLive({
                       />
                       <p className="mt-1 text-slate-500">
                         Same as <span className="font-semibold">Fix remaining issues</span> on
-                        Master quality: copies each Top 3 story&apos;s last approved research onto
-                        this revision, then runs the writer/critic loop again using the latest
-                        quality report as guidance, billed on top of this revision&apos;s spend cap.
+                        Master quality: copies approved research onto this revision, then critic
+                        and field-repair the current article. Already-written copy is not paid
+                        for again.
                       </p>
                     </form>
                   ) : null}

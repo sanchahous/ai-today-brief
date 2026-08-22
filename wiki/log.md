@@ -6,6 +6,21 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-22
 
+## 2026-08-22 — Fix remaining issues переписував робочу копію з нуля
+
+**Джерело:** власник — 35% за 17 хв, «він заново все проходить? уже ж було так багато
+ревізій». Live check: job `0fcb0b04`, 35% `ukrainian`, DeepSeek flash, `input` лише
+`{mode:production}`, без `resume_from_job_id`.
+
+**Корінь:** кнопка = `regenerateWeeklyMasterAction` = новий writer на 14 сегментів.
+Resume не підходить: persist пише нову ревізію, а `fetchMasterResumeSource` вимагає
+ту саму `revision_id`. `planHash` ще й входить у новий quality report.
+
+**Зроблено:** джобу cancelled. `seedMasterRunStateFromBundle` наливає сегменти з
+поточного article; writer пропускається, якщо EN+UK уже є.
+(source: owner session 2026-08-22, прод job `0fcb0b04`,
+[pipeline/weekly-digest](pipeline/weekly-digest.md#fix-remaining-issues-на-master-quality-2026-08-22))
+
 ## 2026-08-22 — Critic не повторює ту саму модель у ревізіях
 
 **Джерело:** власник — критик має оцінювати різними моделями; повтор тієї самої

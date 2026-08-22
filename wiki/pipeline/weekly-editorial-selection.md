@@ -358,9 +358,9 @@ superseded.
 
 ## Межа з Fix remaining issues на Master quality (2026-08-22)
 
-Відбір не змінювався. Кнопка на панелі Research лише перезапускає writer/critic на **вже**
-approved Top 3 research packs і поточному quality report; shortlist, rank і claims не
-перераховуються. Неблокуючі warnings (`story_length`, `trust_attribution`) тепер потрапляють
+Відбір не змінювався. Кнопка на панелі Research більше **не** переписує статтю: бере
+робочу копію й ганяє critic/repair на вже approved Top 3 research packs і поточному
+quality report; shortlist, rank і claims не перераховуються. Неблокуючі warnings (`story_length`, `trust_attribution`) тепер потрапляють
 у retry guidance разом із below-floor dimensions — це інструкція до моделі, не зміна відбору.
 Critic-ротація (інша модель на нову ревізію / наступний раунд) теж не змінює відбір.
 (source: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/generation-worker.ts`)

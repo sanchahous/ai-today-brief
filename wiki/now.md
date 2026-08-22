@@ -10,8 +10,19 @@ Last updated: 2026-08-22
 
 ## Стан репозиторію
 
-- **Critic більше не повторює ту саму модель у ревізіях (2026-08-22), гілка
-  `fix/weekly-pre-critic-hang`.** Власник попросив, щоб оцінку кожної нової ревізії
+- **Fix remaining issues переписував статтю з нуля (2026-08-22), гілка
+  `fix/weekly-fix-remaining-reuse-copy`.** Після мержу #318 власник знову натиснув
+  кнопку і за 17 хв побачив 35% на `ukrainian` / DeepSeek flash. Це **не** ремонт:
+  кнопка ставила новий `editorial_master` без resume, а resume все одно не бачить
+  робочу копію (persist мінтить нову ревізію). Джобу `0fcb0b04` (Actions
+  `32589243669`) зупинено. Код тепер сідає сегменти з EN+UK article на активній
+  ревізії й пропускає 14 writer-викликів — critic + field repair на наявному тексті.
+  Робоча копія лишається `64170ec0`.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-22,
+  [weekly-digest](pipeline/weekly-digest.md#fix-remaining-issues-на-master-quality-2026-08-22))
+
+- **Critic більше не повторює ту саму модель у ревізіях (2026-08-22), змержено як
+  [#318](https://github.com/sanchahous/ai-today-brief/pull/318).** Власник попросив, щоб оцінку кожної нової ревізії
   (і кожного critic-раунду всередині джоби) робила **інша** модель — повторний
   той самий critic не має сенсу. До цього драбина завжди брала перший незалежний
   слот і найдешевший OpenRouter-кандидат поза vendor письменника. Тепер unused

@@ -42,6 +42,7 @@ import {
 } from './editorial-llm';
 import {
   assembleArticle,
+  frameFromArticle,
   masterSegmentKey,
   masterSegmentLabel,
   masterSegmentPlan,
@@ -184,6 +185,42 @@ export function emptyMasterRunState(planHash: string): MasterRunState {
     unresolved: [],
     calls: { english: [], ukrainian: [], critic: [] },
   };
+}
+
+/**
+ * Hydrate run state from an edition that already exists (the working copy).
+ * Fix remaining issues used to ignore this and pay for 14 new writer calls;
+ * the engine already knows how to skip written keys, so the missing piece
+ * was stuffing those keys from the article instead of from a same-revision
+ * resume checkpoint (which a succeeded job never leaves on the new revision).
+ */
+export function seedMasterRunStateFromBundle(input: {
+  bundle: WeeklyMasterBundle;
+  stories: Array<{ revisionItemId: string; placement: 'feature' | 'radar'; rank: number }>;
+  planHash: string;
+  metadata: EditorialGenerationMetadata;
+}): MasterRunState {
+  const state = emptyMasterRunState(input.planHash);
+  const storiesByLocale = {
+    en: new Map(input.bundle.en.stories.map((story) => [story.revisionItemId, story])),
+    uk: new Map(input.bundle.uk.stories.map((story) => [story.revisionItemId, story])),
+  };
+  for (const segment of masterSegmentPlan(input.stories)) {
+    const key = masterSegmentKey(segment);
+    if (segment.kind === 'frame') {
+      const article = segment.locale === 'en' ? input.bundle.en : input.bundle.uk;
+      if (!article.title.trim()) continue;
+      state.segments[key] = { value: frameFromArticle(article), metadata: input.metadata };
+      continue;
+    }
+    const story = storiesByLocale[segment.locale].get(segment.revisionItemId);
+    if (!story?.body) continue;
+    const { revisionItemId: _revisionItemId, placement: _placement, ...value } = story;
+    state.segments[key] = { value, metadata: input.metadata };
+  }
+  state.calls.english = [input.metadata];
+  state.calls.ukrainian = [input.metadata];
+  return state;
 }
 
 /**

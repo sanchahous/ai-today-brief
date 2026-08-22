@@ -1975,11 +1975,10 @@ function MasterQualityRepairCta({
         <input type="hidden" name="revision_id" value={revisionId} />
         <p className="text-sm font-bold text-cyan-50">Fix remaining issues</p>
         <p className="mt-1 text-xs leading-5 text-slate-400">
-          Re-runs the writer/critic loop using this report as guidance (low scores, amber
-          warnings, and blockers). Research packs are reused. The new draft becomes the working
-          copy and counts against this revision&apos;s spend cap. The{' '}
-          <span className="italic">Fix:</span> lines above are instructions for that pass, not
-          one-click patches.
+          Re-runs critic and field repair on the current article, using this
+          report as guidance. Research packs stay. The edition is not rewritten
+          from scratch. The new draft becomes the working copy and counts
+          against this revision&apos;s spend cap.
         </p>
         <div className="mt-3">
           <ActionSubmitButton
