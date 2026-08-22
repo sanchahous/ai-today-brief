@@ -425,9 +425,10 @@ export function WeeklyGenerationJobsLive({
                         className="min-h-9 rounded-lg border border-[#47e4d3]/40 px-3 text-xs font-bold text-[#47e4d3] transition hover:bg-[#47e4d3]/10"
                       />
                       <p className="mt-1 text-slate-500">
-                        Copies each Top 3 story&apos;s last approved research onto this revision,
-                        then runs the writer/critic loop again, billed on top of this
-                        revision&apos;s spend cap.
+                        Same as <span className="font-semibold">Fix remaining issues</span> on
+                        Master quality: copies each Top 3 story&apos;s last approved research onto
+                        this revision, then runs the writer/critic loop again using the latest
+                        quality report as guidance, billed on top of this revision&apos;s spend cap.
                       </p>
                     </form>
                   ) : null}

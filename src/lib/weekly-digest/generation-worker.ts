@@ -804,7 +804,13 @@ export function masterInputStories(
   });
 }
 
-function blockerGuidanceFromReport(
+/**
+ * Every coded critic issue on the latest report, including non-blocking
+ * warnings. Blockers-only used to starve regenerate of `story_length` /
+ * `trust_attribution` instructions — the owner-facing Fix remaining issues
+ * CTA is that regenerate.
+ */
+function issueGuidanceFromReport(
   report: { content: Json } | undefined,
 ): WeeklyMasterRetryGuidance[] {
   const issues = asRecord(report?.content).issues;
@@ -813,7 +819,7 @@ function blockerGuidanceFromReport(
     const row = asRecord(entry);
     const code = text(row.code);
     const message = text(row.message);
-    if (row.blocker !== true || !code || !message) return [];
+    if (!code || !message) return [];
     const locale = text(row.locale);
     return [
       {
@@ -830,11 +836,11 @@ function blockerGuidanceFromReport(
 
 /**
  * A low dimension score (e.g. naturalness/parity below their floor) is not a
- * `blocker` issue, so `blockerGuidanceFromReport` never sees it -- a retry
+ * coded `issues[]` row, so `issueGuidanceFromReport` never sees it -- a retry
  * after that kind of failure had no instruction to act on and just re-rolled
  * the same prompt. Mirrors `editorialQualityRetryGuidance` (content-studio.ts)
  * but parses the loosely-typed JSON `content` column the way
- * `blockerGuidanceFromReport` does, instead of assuming a validated report.
+ * `issueGuidanceFromReport` does, instead of assuming a validated report.
  */
 function dimensionGuidanceFromReport(
   report: { content: Json } | undefined,
@@ -894,7 +900,13 @@ export async function priorMasterRetryGuidance(
 
   const latest = data?.[0];
   if (!latest) return [];
-  return [...blockerGuidanceFromReport(latest), ...dimensionGuidanceFromReport(latest)];
+  // Warnings (blocker !== true) used to be dropped, so a regenerate after
+  // story_length / trust_attribution notes had no instruction to expand or
+  // name the source. The owner-facing "Fix remaining issues" CTA is that
+  // regenerate: the latest report is a complete picture, so non-blocking
+  // issues belong in guidance too. Resume still bounds by beforeCreatedAt,
+  // so including warnings does not invalidate a checkpoint that never saw them.
+  return [...issueGuidanceFromReport(latest), ...dimensionGuidanceFromReport(latest)];
 }
 
 /**

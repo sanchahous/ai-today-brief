@@ -6,6 +6,21 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-22
 
+## 2026-08-22 — Fix remaining issues на Master quality
+
+**Джерело:** власник на Research tab бачив бали (naturalness 55, trust 74) і жовті ворнінги
+(`story_length`, `trust_attribution`) з текстом `Fix: …`, але не бачив кнопки, яка б віддала
+ці знахідки моделі.
+
+**Що змінено:**
+- Кнопка **Fix remaining issues** під картками Master quality (owner) →
+  `regenerateWeeklyMasterAction` (той самий шлях, що **Regenerate master** у таблиці jobs)
+- Retry guidance тепер включає неблокуючі issues, не лише blockers + below-floor dimensions
+- `qualityContentNeedsRepair` ховає кнопку, коли звіт уже чистий
+- Оновлено [weekly-digest](pipeline/weekly-digest.md),
+  [weekly-admin-runbook](ops/weekly-admin-runbook.md),
+  [weekly-editorial-selection](pipeline/weekly-editorial-selection.md), [now](now.md)
+
 ## 2026-08-22 — Робоча копія weekly = остання ревізія
 
 **Джерело:** власник на `/admin/weekly` (випуск 16 Aug – 22 Aug 2026) не розумів, навіщо

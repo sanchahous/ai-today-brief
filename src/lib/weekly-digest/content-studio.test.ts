@@ -6,6 +6,8 @@ import {
   criticVerdictLooksUnreliable,
   editorialQualityPasses,
   enforceMetadataMaxChars,
+  qualityContentNeedsRepair,
+  qualityReportNeedsRepair,
   resolveWeeklyContentStudioMode,
   sourceNameMatchesDomain,
   validateMasterBundle,
@@ -213,6 +215,67 @@ describe('Weekly Content Studio hard gates', () => {
     expect(failures).toHaveLength(1);
     expect(failures[0]).toContain('naturalness');
     expect(failures[0]).toContain('79/100');
+  });
+
+  it('offers Fix remaining issues for warnings and below-floor scores, not a clean gate', () => {
+    const passing: WeeklyContentQualityReport = {
+      schemaVersion: 'weekly-quality-v2',
+      score: 90,
+      dimensions: [
+        { name: 'engagement', score: 90, note: 'clear' },
+        { name: 'voice', score: 90, note: 'clear' },
+        { name: 'clarity', score: 90, note: 'clear' },
+        { name: 'trust', score: 90, note: 'grounded' },
+        { name: 'usefulness', score: 90, note: 'specific' },
+        { name: 'naturalness', score: 88, note: 'reads native' },
+        { name: 'parity', score: 90, note: 'aligned' },
+      ],
+      issues: [],
+      factualFlags: [],
+      approvedClaimIds: ['claim-1'],
+      checkedAt: '2026-08-22T00:00:00.000Z',
+    };
+    expect(qualityReportNeedsRepair(passing)).toBe(false);
+    expect(
+      qualityReportNeedsRepair({
+        ...passing,
+        issues: [
+          {
+            code: 'story_length',
+            message: 'Feature body is 370 words.',
+            blocker: false,
+            suggestedFix: 'Expand the current 370-word body by at least 30 words.',
+          },
+        ],
+      }),
+    ).toBe(true);
+    expect(
+      qualityReportNeedsRepair({
+        ...passing,
+        dimensions: passing.dimensions.map((dimension) =>
+          dimension.name === 'naturalness'
+            ? { ...dimension, score: 55, note: 'agreement error in the date phrase' }
+            : dimension,
+        ),
+      }),
+    ).toBe(true);
+    expect(
+      qualityReportNeedsRepair({
+        ...passing,
+        dimensions: passing.dimensions.map((dimension) =>
+          dimension.name === 'trust' ? { ...dimension, score: 74 } : dimension,
+        ),
+      }),
+    ).toBe(true);
+    expect(qualityContentNeedsRepair(passing)).toBe(false);
+    expect(
+      qualityContentNeedsRepair({
+        score: 78,
+        issues: [{ code: 'trust_attribution', message: 'Name the audit', blocker: false }],
+        dimensions: [{ name: 'naturalness', score: 55, note: 'grammar' }],
+      }),
+    ).toBe(true);
+    expect(qualityContentNeedsRepair(null)).toBe(false);
   });
 
   it('requires editorsView and discussionQuestion on feature stories', () => {

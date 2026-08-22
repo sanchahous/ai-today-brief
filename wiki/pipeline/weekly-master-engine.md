@@ -176,8 +176,10 @@ UK 3696 замість 2000–3000). `reason: attempts_exhausted` — ремон
 
 ## Що це НЕ змінює
 
-- **Людина твердить publish.** Неактивна draft-ревізія на огляд — це посилення людського гейту,
-  не обхід (source: [overview](../overview.md) §5.1).
+- **Людина твердить publish.** Quality blockers лишаються гейтом Ship; текст після master —
+  робоча копія. Кнопка **Fix remaining issues** на Master quality запускає ще один
+  writer/critic з поточним звітом як guidance, не тихий in-place patch рядків `Fix:`.
+  (source: [overview](../overview.md) §5.1, owner session 2026-08-22)
 - Редакційні стандарти v7 (заборона вигаданих сцен, ban на мітки полів у body, правила доказів,
   калібрування критика) перенесені в посегментні промпти **дослівно** — змінився розмір одиниці,
   а не планка (source: `editorial-llm.ts`).

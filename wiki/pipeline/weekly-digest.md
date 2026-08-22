@@ -1274,6 +1274,24 @@ Quality rejection від **2026-08-22** пише article artifacts і quality re
 `master_draft_revision_id` — тоді в UI є **Use latest version**.
 (source: `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/master-persist.ts`)
 
+### Fix remaining issues на Master quality (2026-08-22)
+
+Панель Research показувала бали й жовті картки з текстом `Fix: …`, але **немає** per-card
+Apply. Авторемонт (`master-repair.ts`) уже вичерпав спроби всередині джоби; `suggestedFix`
+застосовується лише до `language_mechanics` з короткою заміною, не до «Expand the body…» /
+«Name the audit…». Повторний прохід жив як **Regenerate master** у таблиці Generation jobs
+під панеллю — його легко не побачити.
+
+**Фікс UX:** кнопка **Fix remaining issues** стоїть під картками (owner). Це той самий
+`regenerateWeeklyMasterAction`: копіює approved research на активну ревізію, ставить
+`editorial_master`, guidance = останній `content_quality_report`. Від 2026-08-22 guidance
+включає **і неблокуючі** issues (`story_length`, `trust_attribution`), не лише `blocker === true`
+і below-floor dimensions. **Resume saved master** не використовується з цієї кнопки: після
+persist джоба на старій ревізії, а resume свідомо ігнорує звіт, який щойно написала сама джоба.
+(source: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/content-studio.ts`
+`qualityContentNeedsRepair`, `generation-worker.ts` `issueGuidanceFromReport`, owner session
+2026-08-22)
+
 ## `retry_weekly_digest_generation_job` копіював мертвий `resume_from_job_id` — фікс (2026-08-22)
 
 Живий прод-репро на `weekly_digest_id=71af784b-3c89-47f8-bc38-e3eae4def2a7`: job `c471563f`

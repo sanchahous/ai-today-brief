@@ -5,7 +5,7 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 `pipeline/weekly-digest.ts`, owner audits / production runs 2026-08-09…17,
 [weekly-digest](weekly-digest.md), staged social-copy recovery and LinkedIn 7-page bounds
 2026-08-17.
-Last updated: 2026-08-21
+Last updated: 2026-08-22
 
 ---
 
@@ -355,6 +355,14 @@ selection score і не міняє порядок stories. (source: `src/lib/wee
 superseded.
 (source: `src/lib/weekly-digest/generation-control.ts`,
 `supabase/migrations/20260811183201_weekly_story_image_async_worker.sql`)
+
+## Межа з Fix remaining issues на Master quality (2026-08-22)
+
+Відбір не змінювався. Кнопка на панелі Research лише перезапускає writer/critic на **вже**
+approved Top 3 research packs і поточному quality report; shortlist, rank і claims не
+перераховуються. Неблокуючі warnings (`story_length`, `trust_attribution`) тепер потрапляють
+у retry guidance разом із below-floor dimensions — це інструкція до моделі, не зміна відбору.
+(source: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/generation-worker.ts`)
 
 ## Related pages
 

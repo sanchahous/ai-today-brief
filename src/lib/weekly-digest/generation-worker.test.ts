@@ -215,6 +215,36 @@ describe('priorMasterRetryGuidance', () => {
     const guidance = await priorMasterRetryGuidance('revision-1');
     expect(guidance.some((entry) => entry.code.includes('naturalness'))).toBe(true);
   });
+
+  it('includes non-blocking quality warnings so Fix remaining issues can act on them', async () => {
+    stubReportQuery([
+      {
+        created_at: '2026-08-22T12:00:00.000Z',
+        content: {
+          dimensions: [],
+          issues: [
+            {
+              code: 'story_length',
+              message: 'Feature body is 370 words (target 400–650).',
+              blocker: false,
+              suggestedFix: 'Expand the current 370-word body by at least 30 words.',
+              revisionItemId: 'item-1',
+              field: 'body',
+            },
+            {
+              code: 'trust_attribution',
+              message: 'A load-bearing MCP exposure claim lacks an inline named source.',
+              blocker: false,
+              suggestedFix: "Name the audit or report inline, e.g. 'An audit by … found…'",
+            },
+          ],
+        },
+      },
+    ]);
+    const guidance = await priorMasterRetryGuidance('revision-1');
+    expect(guidance.map((entry) => entry.code)).toEqual(['story_length', 'trust_attribution']);
+    expect(guidance[0]?.suggestedFix).toContain('Expand the current 370-word body');
+  });
 });
 
 describe('masterResumeGuidanceBoundary', () => {

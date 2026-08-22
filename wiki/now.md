@@ -10,8 +10,21 @@ Last updated: 2026-08-22
 
 ## Стан репозиторію
 
-- **Робоча копія weekly = остання ревізія (2026-08-22), гілка
-  `feat/weekly-latest-revision-active`.** Власник на випуску 16–22 Aug бачив Revision 4
+- **Fix remaining issues на Master quality (2026-08-22), гілка
+  `feat/weekly-quality-fix-cta`.** Власник на Research бачив бали (naturalness 55,
+  trust 74) і жовті `story_length` / `trust_attribution` з текстом `Fix: …`, але **немає**
+  кнопки Apply. Це було передбачено лише як інструкція: авторемонт уже вичерпав спроби
+  всередині `editorial_master`; повторний прохід жив як **Regenerate master** у таблиці
+  jobs (легко пропустити). Тепер кнопка **Fix remaining issues** стоїть під картками й
+  викликає той самий regenerate: research reused, guidance з поточного звіту (включно з
+  неблокуючими warnings), нова чернетка = робоча копія. **Resume saved master** з цього
+  місця не запускається.
+  (source: owner session 2026-08-22, `src/components/admin/weekly-workspace.tsx`,
+  [weekly-admin-runbook](ops/weekly-admin-runbook.md),
+  [weekly-digest](pipeline/weekly-digest.md#fix-remaining-issues-на-master-quality-2026-08-22))
+
+- **Робоча копія weekly = остання ревізія (2026-08-22), змержено в `main` як
+  [#315](https://github.com/sanchahous/ai-today-brief/pull/315).** Власник на випуску 16–22 Aug бачив Revision 4
   (AUTO-DRAFT, 78/100) і мусив Restore, тоді як Article tab тримав першу ревізію. Це був
   навмисний human-gate на non-converged master, не випадковий збій — і він щоразу плутав.
   Тепер `editorial_master` завжди активує свій вихід; quality blockers лишаються гейтом

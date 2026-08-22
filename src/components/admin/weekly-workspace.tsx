@@ -57,6 +57,7 @@ import {
   editorialVersionRole,
   type EditorialVersionRole,
 } from '@/lib/weekly-digest/master-persist';
+import { qualityContentNeedsRepair } from '@/lib/weekly-digest/content-studio';
 import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
 
 function contentSimClearedFromMetadata(metadata: Json | null | undefined): boolean | undefined {
@@ -76,6 +77,7 @@ import {
   postponeWeeklyDigestAction,
   rebuildWeeklySelectionAction,
   restoreWeeklyDigestRevisionAction,
+  regenerateWeeklyMasterAction,
   useLatestWeeklyDigestRevisionAction,
   resumeWeeklyThreadsSequenceAction,
   reviewWeeklyArtifactAction,
@@ -634,8 +636,9 @@ function ArtifactReview({
           {artifact.artifact_type === 'content_quality_report' &&
           qualityReportForbidsApprove(artifact.content) ? (
             <p className="text-sm text-rose-200">
-              Approve is blocked until language and other blocking issues are empty. The machine
-              will retry repairs; use Request changes if the remaining items are editorial.
+              Approve is blocked until language and other blocking issues are empty. Click{' '}
+              <span className="font-semibold">Fix remaining issues</span> above to run another
+              writer/critic pass, or Request changes if the remaining items are editorial.
             </p>
           ) : null}
           <div className="flex flex-wrap gap-2">
@@ -1940,6 +1943,64 @@ function EditorialVersionCard({
   );
 }
 
+function MasterQualityRepairCta({
+  digestId,
+  revisionId,
+  canReview,
+  canEdit,
+  masterBusy,
+}: {
+  digestId: string;
+  revisionId: string | null;
+  canReview: boolean;
+  canEdit: boolean;
+  masterBusy: boolean;
+}) {
+  if (!revisionId) return null;
+  if (masterBusy) {
+    return (
+      <p className="mt-4 text-sm leading-6 text-slate-400">
+        A writer/critic pass is already running. Wait for it to finish — this panel will refresh
+        with the new scores.
+      </p>
+    );
+  }
+  if (canReview) {
+    return (
+      <form
+        action={regenerateWeeklyMasterAction}
+        className="mt-4 rounded-xl border border-cyan-400/25 bg-cyan-400/8 p-4"
+      >
+        <input type="hidden" name="weekly_digest_id" value={digestId} />
+        <input type="hidden" name="revision_id" value={revisionId} />
+        <p className="text-sm font-bold text-cyan-50">Fix remaining issues</p>
+        <p className="mt-1 text-xs leading-5 text-slate-400">
+          Re-runs the writer/critic loop using this report as guidance (low scores, amber
+          warnings, and blockers). Research packs are reused. The new draft becomes the working
+          copy and counts against this revision&apos;s spend cap. The{' '}
+          <span className="italic">Fix:</span> lines above are instructions for that pass, not
+          one-click patches.
+        </p>
+        <div className="mt-3">
+          <ActionSubmitButton
+            idleLabel="Fix remaining issues"
+            pendingLabel="Queueing writer/critic…"
+            className={PRIMARY}
+          />
+        </div>
+      </form>
+    );
+  }
+  if (canEdit) {
+    return (
+      <p className="mt-4 text-sm leading-6 text-slate-500">
+        Owner can queue another writer/critic pass from this report (Fix remaining issues).
+      </p>
+    );
+  }
+  return null;
+}
+
 function ResearchPanel({
   workspace,
   canEdit,
@@ -1984,6 +2045,12 @@ function ResearchPanel({
   const masterWaitingOnPackApprovals =
     editorialMasterJob?.status === 'queued' && readyResearch === 3 && approvedResearch < 3;
   const masterRunnable = editorialMasterJob?.status === 'queued' && approvedResearch === 3;
+  const masterBusy = workspace.generationJobs.some(
+    (job) =>
+      job.job_type === 'editorial_master' &&
+      (job.status === 'dispatching' || job.status === 'running'),
+  );
+  const qualityNeedsRepair = qualityContentNeedsRepair(quality?.content);
 
   return (
     <div className="grid gap-5">
@@ -2044,7 +2111,9 @@ function ResearchPanel({
             GitHub Actions worker (the five-minute cron remains a safety dispatcher).
           </li>
           <li>
-            Review Master quality below → fix blockers via retry if needed →{' '}
+            Review Master quality below → click{' '}
+            <span className="font-semibold text-white">Fix remaining issues</span> if scores or
+            warnings remain →{' '}
             <span className="font-semibold text-white">Approve version</span> on the quality report.
           </li>
         </ol>
@@ -2366,12 +2435,27 @@ function ResearchPanel({
                 </div>
               );
             })}
-            {qualityIssues.length === 0 ? (
+            {qualityIssues.length === 0 && !qualityNeedsRepair ? (
               <p className="rounded-xl border border-emerald-400/20 bg-emerald-400/6 p-4 text-sm text-emerald-100">
                 No editorial or factual issues reported.
               </p>
             ) : null}
+            {qualityIssues.length === 0 && qualityNeedsRepair ? (
+              <p className="rounded-xl border border-amber-400/20 bg-amber-400/6 p-4 text-sm text-amber-100">
+                No coded issue cards, but one or more scores are below the quality floor. Fix
+                remaining issues re-runs writer/critic with those notes as guidance.
+              </p>
+            ) : null}
           </div>
+          {qualityNeedsRepair ? (
+            <MasterQualityRepairCta
+              digestId={workspace.digest.id}
+              revisionId={workspace.revision?.id ?? null}
+              canReview={canReview && quality.revision_id === workspace.revision?.id}
+              canEdit={canEdit}
+              masterBusy={masterBusy}
+            />
+          ) : null}
           <ArtifactReview
             digestId={workspace.digest.id}
             artifact={quality}
