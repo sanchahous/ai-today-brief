@@ -39,7 +39,10 @@ import {
   masterRetryGuidancePrompt,
   approvedStoryPromptMaterial,
   criticApprovedEvidence,
+  criticOpenRouterExclusionTiers,
   criticPrompt,
+  criticProviderLadder,
+  editorialModelVendor,
   openRouterModelVendor,
   parseRepairedValue,
   parseStorySegment,
@@ -109,6 +112,32 @@ describe('premiumOpenRouterModels', () => {
     expect(openRouterModelVendor('openai/gpt-current')).toBe('openai');
   });
 
+  it('drops previously used critic model ids from the OpenRouter queue', () => {
+    expect(
+      premiumOpenRouterModels(
+        [
+          {
+            id: 'vendor/already-used',
+            created: 2,
+            context_length: 128_000,
+            architecture: { modality: 'text' },
+            pricing: { prompt: '0.000001', completion: '0.000006' },
+            benchmarks: { artificial_analysis: { intelligence_index: 55 } },
+          },
+          {
+            id: 'other/fresh',
+            created: 1,
+            context_length: 128_000,
+            architecture: { modality: 'text' },
+            pricing: { prompt: '0.000002', completion: '0.00001' },
+            benchmarks: { artificial_analysis: { intelligence_index: 55 } },
+          },
+        ],
+        { configuredModels: [], excludeModels: ['vendor/already-used'] },
+      ),
+    ).toEqual(['other/fresh']);
+  });
+
   it('prefers the cheaper of two models that both clear the quality floor', () => {
     expect(
       premiumOpenRouterModels([
@@ -149,6 +178,60 @@ describe('premiumOpenRouterModels', () => {
         },
       ]),
     ).toEqual(['vendor/adequate']);
+  });
+});
+
+describe('criticProviderLadder', () => {
+  const order = ['claude-cli', 'openrouter', 'gemini'] as const;
+
+  it('puts unused independent slots ahead of the writer slot and used slots last', () => {
+    expect(criticProviderLadder('openrouter', ['claude-cli'], [...order])).toEqual([
+      'gemini',
+      'openrouter',
+      'claude-cli',
+    ]);
+  });
+
+  it('keeps claude-cli first when nothing has scored this edition yet', () => {
+    expect(criticProviderLadder('openrouter', [], [...order])).toEqual([
+      'claude-cli',
+      'gemini',
+      'openrouter',
+    ]);
+  });
+
+  it('retries OpenRouter for a fresh model before reusing claude-cli', () => {
+    expect(
+      criticProviderLadder('openrouter', ['claude-cli', 'openrouter'], [...order]),
+    ).toEqual(['gemini', 'openrouter', 'claude-cli']);
+  });
+});
+
+describe('criticOpenRouterExclusionTiers', () => {
+  it('relaxes from prior critic vendors down to writer-only exclusion', () => {
+    const tiers = criticOpenRouterExclusionTiers(
+      { provider: 'openrouter', model: 'deepseek/v4' },
+      [
+        { provider: 'claude-cli', model: 'claude-opus' },
+        { provider: 'openrouter', model: 'z-ai/glm' },
+      ],
+    );
+    expect(tiers[0]).toEqual({
+      excludeVendors: ['deepseek', 'anthropic', 'z-ai'],
+      excludeModels: ['deepseek/v4', 'claude-opus', 'z-ai/glm'],
+    });
+    expect(tiers[1]).toEqual({
+      excludeVendors: ['deepseek'],
+      excludeModels: ['deepseek/v4', 'claude-opus', 'z-ai/glm'],
+    });
+    expect(tiers[2]).toEqual({
+      excludeVendors: ['deepseek'],
+      excludeModels: ['deepseek/v4'],
+    });
+  });
+
+  it('maps gemini to the google vendor', () => {
+    expect(editorialModelVendor({ provider: 'gemini', model: 'gemini-pro' })).toBe('google');
   });
 });
 

@@ -4,7 +4,7 @@ Summary: Правила тижневого editorial-відбору для weekl
 Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 `pipeline/weekly-digest.ts`, owner audits / production runs 2026-08-09…17,
 [weekly-digest](weekly-digest.md), staged social-copy recovery and LinkedIn 7-page bounds
-2026-08-17.
+2026-08-17, pre-critic hang 2026-08-22, critic model rotation 2026-08-22.
 Last updated: 2026-08-22
 
 ---
@@ -362,6 +362,7 @@ superseded.
 approved Top 3 research packs і поточному quality report; shortlist, rank і claims не
 перераховуються. Неблокуючі warnings (`story_length`, `trust_attribution`) тепер потрапляють
 у retry guidance разом із below-floor dimensions — це інструкція до моделі, не зміна відбору.
+Critic-ротація (інша модель на нову ревізію / наступний раунд) теж не змінює відбір.
 (source: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/generation-worker.ts`)
 
 ## Related pages

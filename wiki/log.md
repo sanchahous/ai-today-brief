@@ -6,6 +6,45 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-22
 
+## 2026-08-22 — Critic не повторює ту саму модель у ревізіях
+
+**Джерело:** власник — критик має оцінювати різними моделями; повтор тієї самої
+в наступній ревізії не має сенсу.
+
+**Корінь:** `generateIndependentCritic` брав перший незалежний provider-слот і
+найдешевший OpenRouter-кандидат поза vendor письменника. Кожен **Fix remaining
+issues** / critic-раунд знову потрапляв на ту саму модель.
+
+**Що змінено** (та сама гілка `fix/weekly-pre-critic-hang`):
+- `criticProviderLadder` — unused independent слоти першими, використані в кінці;
+- `criticOpenRouterExclusionTiers` — спершу vendor+id усіх попередніх критиків,
+  потім послаблює, щоб порожній каталог не валив джобу;
+- `priorMasterCritics` читає `generation_cost_events` цього дайджесту
+  (`step_key=critic`); раунди всередині джоби беруться з `state.calls.critic`.
+
+113 тестів editorial-llm / master-engine / generation-worker / openrouter-value
+зелені.
+(source: owner session 2026-08-22,
+[pipeline/weekly-digest](pipeline/weekly-digest.md#critic-не-повторює-ту-саму-модель-у-ревізіях-2026-08-22))
+
+## 2026-08-22 — Pre-critic hang: Fix remaining issues застряг до критика
+
+**Джерело:** власник зупинив завислу задачу; прод job `e4135c6d-cc35-49e2-99d6-502376d06832`
+(digest `71af784b`, Actions `32584262752`), live check 22.08 ~17:20 UTC.
+
+**Що сталось:** це був не critic. Після кліку **Fix remaining issues** воркер переписав
+EN+UK (DeepSeek flash), на 16:45 UTC детермінований гейт знайшов 13 блокерів, і pre-critic
+раунд почав LLM-ремонт полів. Один UK `body` тримав виклик 18 хв. Heartbeat живий, дедлайн
+95 хв — з боку системи «не зависло», з боку власника — так.
+
+**Корінь:** (1) після `applyLanguageMechanicsFixes` план ремонту брав **оригінальний** список
+issues, тож уже сплайсені `language_mechanics` ішли повним переписом поля; (2) будь-який EN
+body-repair ставив у чергу UK-counterpart, навіть для `template_leak`; (3) pre-critic не
+обмежувався blockers.
+
+**Зроблено зараз:** джобу `cancelled` у БД + Actions (без retry). Код на гілці
+`fix/weekly-pre-critic-hang`. Робоча копія не змінена — ревізія `64170ec0`.
+
 ## 2026-08-22 — `naturalness` застрягав на 55 через 5+ ревізій — фікс
 
 **Джерело:** власник — «5 ревізій а naturalness так і залишився 55. Тобі не здається що тут є

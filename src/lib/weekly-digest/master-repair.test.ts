@@ -7,6 +7,7 @@ import {
   readRepairValue,
   repairTargetKey,
   spanCandidatesFrom,
+  repairNeedsUkrainianReadaptation,
   ukrainianCounterpart,
 } from './master-repair';
 import type {
@@ -295,5 +296,25 @@ describe('ukrainianCounterpart', () => {
     expect(
       ukrainianCounterpart({ locale: 'uk', revisionItemId: 'item-1', field: 'body' }),
     ).toBeNull();
+  });
+});
+
+describe('repairNeedsUkrainianReadaptation', () => {
+  it('skips counterpart rewrites for splice-class language defects', () => {
+    expect(
+      repairNeedsUkrainianReadaptation([{ code: 'template_leak:label_opener_takeaway' }]),
+    ).toBe(false);
+    expect(repairNeedsUkrainianReadaptation([{ code: 'language_mechanics' }])).toBe(false);
+    expect(repairNeedsUkrainianReadaptation([{ code: 'uk_language_residue' }])).toBe(false);
+  });
+
+  it('still re-adapts Ukrainian when the English repair can change facts', () => {
+    expect(repairNeedsUkrainianReadaptation([{ code: 'engagement_structure' }])).toBe(true);
+    expect(
+      repairNeedsUkrainianReadaptation([
+        { code: 'template_leak:label_opener_takeaway' },
+        { code: 'story_length' },
+      ]),
+    ).toBe(true);
   });
 });

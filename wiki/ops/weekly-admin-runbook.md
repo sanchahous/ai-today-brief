@@ -4,7 +4,7 @@ Summary: покрокова інструкція для власника/ред�
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…22,
-latest revision is the working copy 2026-08-22
+latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22
 Last updated: 2026-08-22
 
 ---
@@ -18,6 +18,7 @@ Last updated: 2026-08-22
 | Quality **blockers > 0** | Approve **заборонений** (і людині, і машині) | Чекай auto language-fix / Resume master |
 | Visuals **prompt ready** | Треба зовнішня генерація + upload | Copy prompt → gen → upload |
 | Hallucination board **can Ship** | Немає blockers і waiting-список порожній (ті самі слоти, що й preflight) | Один AAL2 **Ship** |
+| Job **running** на 60–70% (`revisions` / Pre-critic) довше ~20 хв на одному полі | Pre-critic LLM-переписує body (часто UK counterpart після EN template-leak); критик ще не стартував | Не чекай 95 хв. Зупини джобу (cancelled, не retry) і не тисни **Fix remaining issues**, поки не змерджено фікс pre-critic hang 2026-08-22 |
 | Job **succeeded** + **Needs your review** | Рушій вичерпав ремонт, лишились невирішені перевірки; **текст уже є робочою копією** (Article tab) | Читай `unresolved` → прав статтю або **Resume saved master**. Ship лишається заблокованим, доки перевірки не зникнуть |
 | Job **failed**, код **`resumable`** | Скінчився бюджет часу, не дописано сегмент або critic недоступний; усі готові сегменти збережено | **Resume saved master** — уже написані історії не оплачуються вдруге |
 | Job **failed** + **Resume saved master** | Є збережені сегменти (навіть частково) | Натисни **Resume saved master**, не generic retry |
@@ -503,7 +504,9 @@ Postpone не створює нову RPC — це той самий Pause → A
    валідним JSON від CLI також відновлюється автоматично.
 5. Якщо доступна **Resume saved master**, job має збережені сегменти (кнопка показує скільки).
    Вона створює окремий linked job на тій самій active revision, пропускає вже написані історії
-   й дає критику та ремонту свіжий бюджет раундів. Дочекайся нового critic verdict; uniform
+   й дає критику та ремонту свіжий бюджет раундів. Новий прохід **не** бере ту саму
+   critic-модель, що вже ставила бал цій редакції — драбина крутить unused слот /
+   unused OpenRouter id. Дочекайся нового critic verdict; uniform
    90/100 лишається некаліброваним вердиктом — рушій сам переоцінює його наступним раундом,
    і це не привід обходити перевірку.
 6. **Needs your review** ≠ провал. Текст є, він пройшов усі можливі автоматичні ремонти, і

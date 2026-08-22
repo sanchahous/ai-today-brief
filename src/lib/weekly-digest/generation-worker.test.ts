@@ -27,6 +27,7 @@ import {
   masterRunStateFromOutput,
   masterResumeGuidanceBoundary,
   priorMasterRetryGuidance,
+  priorMasterCritics,
   resolveMasterResumeState,
   resolveSocialPostForRepair,
   runWeeklyDigestGenerationJobs,
@@ -244,6 +245,45 @@ describe('priorMasterRetryGuidance', () => {
     const guidance = await priorMasterRetryGuidance('revision-1');
     expect(guidance.map((entry) => entry.code)).toEqual(['story_length', 'trust_attribution']);
     expect(guidance[0]?.suggestedFix).toContain('Expand the current 370-word body');
+  });
+});
+
+describe('priorMasterCritics', () => {
+  beforeEach(() => from.mockClear());
+
+  it('returns unique critic models from the cost ledger, newest first', async () => {
+    const eqs: Array<[string, string]> = [];
+    const chain: Record<string, unknown> = {};
+    const self = () => chain;
+    chain.select = self;
+    chain.eq = (column: string, value: string) => {
+      eqs.push([column, value]);
+      return chain;
+    };
+    chain.order = self;
+    chain.limit = () =>
+      Promise.resolve({
+        data: [
+          { provider: 'openrouter', model: 'vendor-b/critic-2' },
+          { provider: 'claude-cli', model: 'claude-opus' },
+          { provider: 'openrouter', model: 'vendor-b/critic-2' },
+          { provider: 'nim', model: 'owner/custom' },
+        ],
+        error: null,
+      });
+    from.mockReturnValueOnce(chain);
+
+    const critics = await priorMasterCritics('digest-1');
+    expect(eqs).toEqual([
+      ['weekly_digest_id', 'digest-1'],
+      ['kind', 'llm'],
+      ['step_key', 'critic'],
+    ]);
+    expect(critics).toEqual([
+      { provider: 'openrouter', model: 'vendor-b/critic-2' },
+      { provider: 'claude-cli', model: 'claude-opus' },
+      { provider: 'openrouter', model: 'owner/custom' },
+    ]);
   });
 });
 

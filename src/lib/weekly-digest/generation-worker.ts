@@ -64,6 +64,7 @@ import {
 import { videoScriptFromArtifactContent } from './video-script-content';
 import {
   type EditorialGenerationMetadata,
+  type EditorialModelRef,
   type WeeklyMasterInputStory,
   type WeeklyMasterProviderStep,
   type WeeklyMasterRetryGuidance,
@@ -909,6 +910,48 @@ export async function priorMasterRetryGuidance(
   return [...issueGuidanceFromReport(latest), ...dimensionGuidanceFromReport(latest)];
 }
 
+const PRIOR_CRITIC_HISTORY_LIMIT = 40;
+
+function isEditorialProvider(value: string): value is EditorialModelRef['provider'] {
+  return value === 'openrouter' || value === 'claude-cli' || value === 'gemini';
+}
+
+/**
+ * Models that already scored this digest as `weekly.master_critic`. Used so a
+ * later revision (Fix remaining issues / regenerate) starts on a different
+ * critic than the ones that already stamped naturalness/trust on this copy.
+ * Cost-ledger rows survive cancelled jobs; quality artifacts only exist after
+ * persist, so the ledger is the complete history.
+ */
+export async function priorMasterCritics(weeklyDigestId: string): Promise<EditorialModelRef[]> {
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('generation_cost_events')
+    .select('provider, model')
+    .eq('weekly_digest_id', weeklyDigestId)
+    .eq('kind', 'llm')
+    .eq('step_key', 'critic')
+    .order('created_at', { ascending: false })
+    .limit(PRIOR_CRITIC_HISTORY_LIMIT);
+  if (error) throw new Error(`[weekly-generation] prior critic lookup: ${error.message}`);
+
+  const seen = new Set<string>();
+  const critics: EditorialModelRef[] = [];
+  for (const row of data ?? []) {
+    const provider = typeof row.provider === 'string' ? row.provider.trim() : '';
+    const model = typeof row.model === 'string' ? row.model.trim() : '';
+    if (!provider || !model) continue;
+    const key = `${provider.toLowerCase()}:${model.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    critics.push({
+      provider: isEditorialProvider(provider) ? provider : 'openrouter',
+      model,
+    });
+  }
+  return critics;
+}
+
 /**
  * Read-only assembly of exactly what `generateEditorialMaster` feeds the LLM,
  * without claiming a job, opening a lease, writing an event or touching the
@@ -927,6 +970,7 @@ export async function loadMasterGenerationInput(input: {
   stories: WeeklyMasterInputStory[];
   researchPacks: WeeklyResearchPack[];
   retryGuidance: WeeklyMasterRetryGuidance[];
+  priorCritics: EditorialModelRef[];
 }> {
   const context = await loadGenerationContext({
     weekly_digest_id: input.weeklyDigestId,
@@ -939,6 +983,7 @@ export async function loadMasterGenerationInput(input: {
     stories: masterInputStories(context, approvedResearch, directions),
     researchPacks: approvedResearch.map(({ pack }) => pack),
     retryGuidance: await priorMasterRetryGuidance(input.revisionId),
+    priorCritics: await priorMasterCritics(input.weeklyDigestId),
   };
 }
 
@@ -1346,6 +1391,7 @@ async function generateEditorialMaster(
     ? await masterResumeGuidanceBoundary(resumeSource)
     : undefined;
   const retryGuidance = await priorMasterRetryGuidance(job.revision_id, guidanceBoundary);
+  const priorCritics = await priorMasterCritics(job.weekly_digest_id);
   const planHash = computeMasterPlanHash(researchPacks, retryGuidance);
 
   const resume = resumeSource ? resolveMasterResumeState(resumeSource, planHash) : null;
@@ -1365,6 +1411,7 @@ async function generateEditorialMaster(
     stories: sourceStories,
     researchPacks,
     retryGuidance,
+    priorCritics,
     state,
     deadlineAt: masterRunDeadline(),
     // Lets an owner-configured /admin/providers chain for weekly.master_writer

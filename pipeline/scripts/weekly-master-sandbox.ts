@@ -38,6 +38,7 @@ import {
   type WeeklyResearchPack,
 } from '../../src/lib/weekly-digest/content-studio';
 import type {
+  EditorialModelRef,
   WeeklyMasterInputStory,
   WeeklyMasterProviderStep,
   WeeklyMasterRetryGuidance,
@@ -58,6 +59,7 @@ interface SandboxFixture {
   stories: WeeklyMasterInputStory[];
   researchPacks: WeeklyResearchPack[];
   retryGuidance: WeeklyMasterRetryGuidance[];
+  priorCritics?: EditorialModelRef[];
 }
 
 function flag(name: string): string | undefined {
@@ -179,6 +181,7 @@ async function run(): Promise<void> {
     stories: fixture.stories,
     researchPacks: fixture.researchPacks,
     retryGuidance: fixture.retryGuidance,
+    priorCritics: fixture.priorCritics,
     state: resumeState,
     hooks: {
       // The local stand-in for the production checkpoint. Killing the run at
