@@ -148,6 +148,28 @@ describe('weekly release graph (ai-weekly-2026-08-09 shapes)', () => {
     expect(bundle.uk.stories[0]?.body).not.toContain('потокенно');
   });
 
+  it('does not splice a critic instruction quoting candidate replacements into the article', () => {
+    // Live case, 2026-08-22: the critic wrote the infinitive "Замінити" (not
+    // the imperative "замініть" the old prefix blacklist knew), so the whole
+    // instruction sentence -- guillemets, alternatives and all -- landed in
+    // the published body as if it were the replacement text.
+    const withCaseStudy = bundleWithUkBody();
+    withCaseStudy.uk.stories[0]!.body = 'Команда описала це За case study OpenAI детально.';
+    const { bundle, applied } = applyLanguageMechanicsFixes(withCaseStudy, [
+      {
+        code: 'language_mechanics',
+        message: 'Untranslated English phrase.',
+        blocker: true,
+        locale: 'uk',
+        field: 'body',
+        span: 'За case study OpenAI',
+        suggestedFix: 'Замінити на «За кейс-стаді OpenAI» або «За звітом OpenAI про клієнта»',
+      },
+    ]);
+    expect(applied).toHaveLength(0);
+    expect(bundle.uk.stories[0]?.body).toBe('Команда описала це За case study OpenAI детально.');
+  });
+
   it('does not persist a scenes array as narration_plan', () => {
     expect(
       videoScriptFromArtifactContent({

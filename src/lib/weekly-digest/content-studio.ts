@@ -652,6 +652,98 @@ function numericParityIssues(bundle: WeeklyMasterBundle): WeeklyQualityIssue[] {
   return issues;
 }
 
+/**
+ * Latin letters visually identical (or near-identical) to a Cyrillic letter
+ * -- the homoglyph set a model most often drops into an otherwise-Ukrainian
+ * word. Live case (2026-08-22): a Latin "e" typed where "е" belongs pinned
+ * `naturalness` at 55 for a revision the critic otherwise scored 90 across
+ * every other dimension ("наймeншим" instead of "найменшим"). Mapping only
+ * characters with a true visual twin keeps this from ever touching a
+ * genuine mixed-script token like "Claude-подібний".
+ */
+const LATIN_TO_CYRILLIC_HOMOGLYPH: Record<string, string> = {
+  a: 'а',
+  e: 'е',
+  i: 'і',
+  o: 'о',
+  p: 'р',
+  c: 'с',
+  x: 'х',
+  y: 'у',
+  A: 'А',
+  B: 'В',
+  E: 'Е',
+  H: 'Н',
+  I: 'І',
+  K: 'К',
+  M: 'М',
+  O: 'О',
+  P: 'Р',
+  C: 'С',
+  T: 'Т',
+  X: 'Х',
+  Y: 'У',
+};
+
+const CYRILLIC_LETTER_RE = /[Ѐ-ӿ]/;
+const PURE_CYRILLIC_WORD_RE = /^[Ѐ-ӿ'’-]+$/u;
+/** A "word" for homoglyph purposes: letters plus the punctuation that legitimately sits inside one (apostrophe, hyphen). */
+const HOMOGLYPH_WORD_RE = /[\p{L}'’-]+/gu;
+
+/**
+ * A word that already contains a Cyrillic letter, and turns fully Cyrillic
+ * once every homoglyph in it is swapped, is a corrupted Ukrainian word, not
+ * a deliberate mixed-script token: a real product name in Latin script
+ * (e.g. "iOS", "Alibaba") has no Cyrillic letters to begin with, and a
+ * genuine compound like "Claude-подібний" keeps un-mappable Latin letters
+ * (l, d, u...) after the swap, which fails the "fully Cyrillic" check below.
+ */
+function homoglyphFixFor(word: string): string | null {
+  if (!CYRILLIC_LETTER_RE.test(word)) return null;
+  let swappedAny = false;
+  const fixed = [...word]
+    .map((character) => {
+      const swap = LATIN_TO_CYRILLIC_HOMOGLYPH[character];
+      if (!swap) return character;
+      swappedAny = true;
+      return swap;
+    })
+    .join('');
+  if (!swappedAny || !PURE_CYRILLIC_WORD_RE.test(fixed)) return null;
+  return fixed;
+}
+
+/**
+ * Deterministic, zero-cost catch for a Latin look-alike character spliced
+ * into a Cyrillic word -- generation noise the critic only sometimes
+ * notices, and that `UKRAINIAN_LANGUAGE_RESIDUE` cannot catch (it matches
+ * whole known-bad words, not single wrong characters). Coded
+ * `language_mechanics` with a literal `suggestedFix` so it flows through the
+ * same free mechanical splice as a critic-found language error, instead of
+ * costing a full-field LLM rewrite for what is always exactly one character.
+ */
+function homoglyphIssues(article: WeeklyArticleMaster): WeeklyQualityIssue[] {
+  const issues: WeeklyQualityIssue[] = [];
+  for (const textField of articleTextFields(article)) {
+    for (const match of textField.value.matchAll(HOMOGLYPH_WORD_RE)) {
+      const word = match[0];
+      const fixed = homoglyphFixFor(word);
+      if (!fixed) continue;
+      issues.push({
+        code: 'language_mechanics',
+        message: `Ukrainian word "${word}" contains a Latin look-alike character instead of its Cyrillic counterpart.`,
+        blocker: true,
+        locale: 'uk',
+        field: textField.field,
+        ...(textField.revisionItemId ? { revisionItemId: textField.revisionItemId } : {}),
+        span: word,
+        suggestedFix: fixed,
+      });
+    }
+  }
+  return issues;
+}
+
 function ukrainianLanguageIssues(article: WeeklyArticleMaster): WeeklyQualityIssue[] {
   const issues: WeeklyQualityIssue[] = [];
   for (const textField of articleTextFields(article)) {
@@ -938,11 +1030,36 @@ export function validateMasterBundle(
       suggestedFix: 'Adapt the prose while preserving story order and exact claim ID arrays.',
     });
   }
+  // `editors_view_missing` above only requires the block on feature stories,
+  // so a radar story picking one up in just one locale slipped past every
+  // per-locale check -- the exact structure drift a live critic flagged at
+  // `parity: 75` on 2026-08-22 (EN radar W5/W6/W7 empty, UK radar W5/W6/W7
+  // carrying substantive commentary). Whichever locale skips it, both must
+  // agree.
+  for (const itemId of itemIds) {
+    const enStory = bundle.en.stories.find((story) => story.revisionItemId === itemId);
+    const ukStory = bundle.uk.stories.find((story) => story.revisionItemId === itemId);
+    if (!enStory || !ukStory) continue;
+    const enHasView = Boolean(enStory.editorsView.trim());
+    const ukHasView = Boolean(ukStory.editorsView.trim());
+    if (enHasView === ukHasView) continue;
+    const missingLocale: WeeklyLocale = enHasView ? 'uk' : 'en';
+    issues.push({
+      code: 'editors_view_locale_mismatch',
+      message: `The ${missingLocale.toUpperCase()} article has no editorsView for this story while the other locale does -- both locales must carry the same speculation block, or neither should.`,
+      blocker: true,
+      locale: missingLocale,
+      revisionItemId: itemId,
+      field: 'editorsView',
+      suggestedFix: `Adapt the other locale's editorsView speculation into ${missingLocale.toUpperCase()} for this story (60-110 words, in this story's own voice).`,
+    });
+  }
   issues.push(...detectTemplateLeaks(bundle));
   issues.push(...promptCopyIssues(bundle));
   issues.push(...metadataQualityIssues(bundle));
   issues.push(...ambiguousEnergyClaimIssues(bundle));
   issues.push(...ukrainianLanguageIssues(bundle.uk));
+  issues.push(...homoglyphIssues(bundle.uk));
   issues.push(...numericParityIssues(bundle));
   issues.push(...editorNoteClaimIssues(bundle));
   return issues;
@@ -1228,6 +1345,46 @@ export function editorialQualityFailures(report: WeeklyContentQualityReport): st
 
 export function editorialQualityPasses(report: WeeklyContentQualityReport) {
   return editorialQualityFailures(report).length === 0;
+}
+
+/**
+ * `naturalness` is pinned at 55 by the rubric whenever a `language_mechanics`
+ * blocker exists (see CRITIC_RUBRIC in editorial-llm.ts: "a single objective
+ * language error caps naturalness at 55"). Once the mechanical splice pass
+ * (applyLanguageMechanicsFixes) has spliced in every such blocker's own
+ * verbatim replacement and none remain in the report, the cap it explains no
+ * longer holds -- but only a fresh critic call can say the copy is
+ * *excellent*, so this raises the score to exactly the pass floor, never
+ * higher, and only when the fix pass actually touched Ukrainian copy this
+ * round and no other issue in the report still targets `naturalness`.
+ *
+ * Without this, a mechanically-fixed typo left the stale pre-fix score in
+ * place: the owner saw "naturalness 55" on a draft whose only cited defect
+ * had already been repaired, `Fix remaining issues` had nothing left to
+ * fix, and each regenerate produced a fresh single-word error that repeated
+ * the same stuck-at-55 outcome (five straight revisions, 2026-08-16..22).
+ */
+export function liftNaturalnessCapAfterLanguageFixes(
+  report: WeeklyContentQualityReport,
+  fixedLocales: ReadonlySet<WeeklyLocale>,
+): WeeklyContentQualityReport {
+  if (!fixedLocales.has('uk')) return report;
+  const stillBlocked = report.issues.some(
+    (issue) => issue.code === 'language_mechanics' && issue.blocker && issue.locale === 'uk',
+  );
+  if (stillBlocked) return report;
+  return {
+    ...report,
+    dimensions: report.dimensions.map((dimension) =>
+      dimension.name === 'naturalness' && dimension.score < NATURALNESS_PARITY_MIN_SCORE
+        ? {
+            ...dimension,
+            score: NATURALNESS_PARITY_MIN_SCORE,
+            note: `${dimension.note} (language_mechanics blocker mechanically fixed; score lifted to the pass floor pending the next critic pass.)`,
+          }
+        : dimension,
+    ),
+  };
 }
 
 /**

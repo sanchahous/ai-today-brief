@@ -120,11 +120,27 @@ export interface AppliedLanguageFix {
   field?: string;
 }
 
+/**
+ * Blacklisting instruction verbs is fragile -- the critic wrote "Замінити на
+ * «X» або «Y»" (infinitive "to replace") on 2026-08-22 and the old prefix
+ * check only knew the imperative "замініть" ("replace!"), so the whole
+ * instruction sentence, quote marks and all, got spliced into the article as
+ * if it were the replacement text. Any quoted alternative is itself a strong
+ * signal of "here are candidate replacements", never of "this is the literal
+ * replacement" (a literal replacement is raw target-language prose that
+ * never needs to quote itself). Pairing that with a broader, non-anchored
+ * instruction-verb scan catches the phrasing this class of mistake actually
+ * uses, in either language, without hand-enumerating every verb form.
+ */
+const LANGUAGE_FIX_INSTRUCTION_MARKER_RE =
+  /\b(rewrite|shorten|adjust|expand|cut|replace(?:s|d)?\s+with|use\s|state\s|name\s|remove\s|переклад(?:іть|и)?|замін(?:и(?:ти)?|іть)|локалізуйте|використайте|виправте|скоротіть|додайте|видаліть)\b/iu;
+
 function isDirectLanguageReplacement(suggestedFix: string): boolean {
   if (suggestedFix.length > 120) return false;
-  return !/^(rewrite|shorten|use |state |name |remove |adjust |expand |cut |переклад|замініть|використайте|виправте)/i.test(
-    suggestedFix,
-  );
+  // Guillemets/curly quotes wrap a candidate the critic is proposing, not
+  // text meant to be spliced in verbatim -- a real replacement is bare prose.
+  if (/[«»"“”]/u.test(suggestedFix)) return false;
+  return !LANGUAGE_FIX_INSTRUCTION_MARKER_RE.test(suggestedFix);
 }
 
 function replaceSpanOnce(haystack: string, span: string, replacement: string): string | null {
@@ -289,7 +305,13 @@ const DIMENSION_FALLBACK_FIELDS: Record<string, MasterStoryField[]> = {
   clarity: ['body'],
   trust: ['body'],
   usefulness: ['practical'],
-  naturalness: ['body'],
+  // Wider than the other dimensions on purpose: naturalness/language errors
+  // observed live have landed in `hook` and `summary` as often as `body`
+  // (e.g. the 2026-08-22 "наймeншим" typo was in `hook`), and this fallback
+  // only fires once a vague low-score complaint has no field or locatable
+  // span of its own -- narrowing it to `body` alone silently rewrote the
+  // wrong field while the actual error stayed untouched.
+  naturalness: ['hook', 'body', 'summary'],
   parity: ['body'],
 };
 

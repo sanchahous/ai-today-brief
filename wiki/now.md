@@ -10,6 +10,26 @@ Last updated: 2026-08-22
 
 ## Стан репозиторію
 
+- **`naturalness` застрягав на 55 через 5+ ревізій — фікс (2026-08-22), гілка
+  `claude/naturalness-score-stagnation-722e9c`, PR ще не відкрито.** Власник помітив, що
+  5 регенерацій поспіль лишали `naturalness: 55` на Research-панелі, і запитав, чи це
+  недороблений функціонал. Live check прод-Supabase підтвердив: так — мех-фікс
+  (`applyLanguageMechanicsFixes`) спліcував виправлення в текст, але не перераховував
+  `quality.dimensions`, тож виправлений текст усе одно провалював гейт власним застарілим
+  балом; `isDirectLanguageReplacement` мав blacklist дієслівних форм («замініть»), а критик
+  писав інфінітив («Замінити на «X» або «Y»»), тож ціла інструкція з лапками спліcувалась у
+  статтю; мех-пас узагалі не запускався всередині critic-циклу, тож кожна дрібна помилка йшла
+  повним LLM-переписом поля — звідки й whack-a-mole (6 різних помилок за 6 год, score
+  82 → 70). Додано детермінований homoglyph-скан (латинська `e` в кириличному слові — живий
+  кейс `наймeншим`), `liftNaturalnessCapAfterLanguageFixes` (піднімає бал до порогу проходження
+  після підтвердженого фіксу), мех-пас усередині кожного critic-раунду, whitelist для
+  `isDirectLanguageReplacement`, і новий `editors_view_locale_mismatch` чек. Overall critic
+  `score` навмисно не перераховується — інші реальні проблеми далі коректно гейтять review.
+  537/537 тестів weekly-digest, `tsc`/`eslint`/`wiki:sync` чисті. **Не задеплоєно, потребує
+  PR і мержу** — цей запуск ще не отримає фікс, наступний регенерейт після мержу отримає.
+  (source: owner session 2026-08-22, прод-Supabase `mdiqfatpqczwqghwttpm` live check,
+  [weekly-digest](pipeline/weekly-digest.md#naturalness-застрягав-на-55-через-5-ревізій--фікс-2026-08-22))
+
 - **Fix remaining issues на Master quality (2026-08-22), гілка
   `feat/weekly-quality-fix-cta`.** Власник на Research бачив бали (naturalness 55,
   trust 74) і жовті `story_length` / `trust_attribution` з текстом `Fix: …`, але **немає**

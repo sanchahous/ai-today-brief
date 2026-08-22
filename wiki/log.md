@@ -6,6 +6,40 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-22
 
+## 2026-08-22 — `naturalness` застрягав на 55 через 5+ ревізій — фікс
+
+**Джерело:** власник — «5 ревізій а naturalness так і залишився 55. Тобі не здається що тут є
+недопрацьований функціонал який не може якісно зробити naturalness?», плюс живий приклад
+(«наймeншим» з латинською `e` в UK-хуку). Live check прод-Supabase (`mdiqfatpqczwqghwttpm`, 7
+`content_quality_report` за 16–22.08) підтвердив структурний дефект, не одиничний збій.
+
+**Знайдено:** (1) мех-фікс `applyLanguageMechanicsFixes` спліcував виправлення в текст, але
+не перераховував `quality.dimensions` — виправлений текст усе одно провалював гейт власним
+застарілим `naturalness: 55`; (2) `isDirectLanguageReplacement` мав blacklist дієслівних форм
+(«замініть») замість whitelist — критиковий інфінітив «Замінити на «X» або «Y»» пройшов
+перевірку і спліcувався в статтю разом із лапками; (3) мех-пас узагалі не запускався
+всередині critic-циклу — кожен `language_mechanics` issue йшов повним LLM-переписом усього
+поля, звідки й whack-a-mole (6 різних помилок за 6 годин, той самий `naturalness: 55`, score
+82 → 70).
+
+**Що змінено** (гілка `claude/naturalness-score-stagnation-722e9c`):
+- новий детермінований homoglyph-скан (`content-studio.ts` `homoglyphIssues`) ловить латинську
+  літеру-двійника в кириличному слові до першого critic-виклику;
+- `liftNaturalnessCapAfterLanguageFixes` піднімає `naturalness` до порогу проходження (80,
+  не вище) щойно всі `language_mechanics`-блокери locale=uk мех-пас закрив;
+- мех-пас тепер запускається щоразу після critic-виклику, до планування ремонту раунду, не
+  лише один раз після виходу з циклу;
+- `isDirectLanguageReplacement` — whitelist (лапки «»/"" = інструкція, не буквальний фікс);
+- `editors_view_locale_mismatch` — новий детермінований кросс-locale чек (пояснює живий
+  `parity: 75`, EN radar W5–W7 порожні, UK — ні);
+- `DIMENSION_FALLBACK_FIELDS.naturalness` розширено `['body']` → `['hook', 'body', 'summary']`.
+
+Overall critic `score` навмисно не перераховується (власна холістична оцінка критика, не
+середнє по вимірах) — інші реальні проблеми (`article_length`, `trust`) далі коректно гейтять
+review. 537/537 тестів `weekly-digest`, `tsc --noEmit` і `eslint` чисті, `wiki:sync` без drift.
+(source: owner session 2026-08-22, прод-Supabase `mdiqfatpqczwqghwttpm` live check,
+[pipeline/weekly-digest § naturalness застрягав на 55](pipeline/weekly-digest.md#naturalness-застрягав-на-55-через-5-ревізій--фікс-2026-08-22))
+
 ## 2026-08-22 — Fix remaining issues на Master quality
 
 **Джерело:** власник на Research tab бачив бали (naturalness 55, trust 74) і жовті ворнінги
