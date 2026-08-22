@@ -2,19 +2,25 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…18, Content Sim plan,
-weekly illustration B1-fix, Social package recovery 2026-08-17, Social tab implementation 2026-08-18,
-video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18,
-video script Save dropped v3 plan 2026-08-18, Video4 Remotion render 2026-08-18,
-Video shooting package in admin 2026-08-19,
-Schedule release arbitrary date/time 2026-08-20,
-queue bulk cancel 2026-08-21,
-editorial_master manual retry loop 2026-08-22
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…22, Content Sim,
+Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22
 Last updated: 2026-08-22
 
 ---
 
 ## Стан репозиторію
+
+- **Робоча копія weekly = остання ревізія (2026-08-22), гілка
+  `feat/weekly-latest-revision-active`.** Власник на випуску 16–22 Aug бачив Revision 4
+  (AUTO-DRAFT, 78/100) і мусив Restore, тоді як Article tab тримав першу ревізію. Це був
+  навмисний human-gate на non-converged master, не випадковий збій — і він щоразу плутав.
+  Тепер `editorial_master` завжди активує свій вихід; quality blockers лишаються гейтом
+  Ship, не видимості тексту. Для вже згенерованих неактивних drafts — один клік
+  **Use latest version** на банері (без поля «why restore»). **Go back to this version**
+  лишається undo на старіші ревізії.
+  (source: owner session 2026-08-22, `src/lib/weekly-digest/master-persist.ts`,
+  [weekly-admin-runbook](ops/weekly-admin-runbook.md),
+  [weekly-digest](pipeline/weekly-digest.md))
 
 - **editorial_master «Create linked retry» нескінченно повторював мертвий resume (2026-08-22),
   гілка `claude/editorial-master-admin-jobs-af3509`.** Власник повідомив про FAILED job'и в

@@ -6,6 +6,7 @@ import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { recordGenerationCost } from '@/lib/generation-costs';
 import { alertWeeklyDigestIssue } from './alerts';
+import { MASTER_REVISION_RPC, masterPersistDecision } from './master-persist';
 import {
   classifyGenerationFailure,
   LONG_RUNNING_GENERATION_JOB_TYPES,
@@ -489,7 +490,11 @@ async function saveGeneratedArtifact(input: {
       p_artifact_id: data,
     });
     if (attested.error) {
-      await recordAttestFailure(null, `${input.artifactType} ${input.slotKey}`, attested.error.message);
+      await recordAttestFailure(
+        null,
+        `${input.artifactType} ${input.slotKey}`,
+        attested.error.message,
+      );
     }
   }
   return data;
@@ -933,10 +938,8 @@ async function saveQualityReport(input: {
   passed: boolean;
   jobId?: string;
   /**
-   * The gate-failure path saves this same report a second time, against a
-   * draft revision, purely so the draft carries its own visible explanation
-   * in the admin UI — the LLM spend it describes was already recorded once,
-   * against `job.revision_id`, so that second save must not record it again.
+   * Master persist already recorded critic spend against the run; a second
+   * save (historical draft carry-over, or a re-attach) must not double-count.
    */
   recordCost?: boolean;
   languageFixes?: Array<{ locale: string; span: string; replacement: string; field?: string }>;
@@ -1425,45 +1428,42 @@ async function generateEditorialMaster(
     message: `Editorial critic finished at ${quality.score}/100`,
   });
 
-  if (!converged) {
-    // The edition is imperfect, not lost. Everything the models produced is
-    // real, paid-for copy that the repair loop already improved as far as it
-    // could; the remaining items are judgment calls for the owner. Saving it
-    // as an inactive draft and finishing the job as *succeeded* is the whole
-    // point of this path: an unresolved quality item is a review task, not an
-    // infrastructure failure, and it must never again burn a 30-minute run
-    // and leave nothing behind.
-    const qualityArtifactId = await saveQualityReport({
-      weeklyDigestId: job.weekly_digest_id,
-      revisionId: job.revision_id,
-      report: quality,
-      generation: outcome.generation,
-      passed: false,
-      jobId: job.id,
-      recordCost: false,
-      languageFixes: outcome.languageFixes,
-    });
-    const draft = await createMasterRevision({
-      job,
-      context,
-      result: outcome,
-      requestedMode,
-      approvedResearch,
-      rpcName: 'create_service_weekly_digest_revision_draft',
-      persistArticleArtifacts: false,
-      // Truncated to 120 chars by the RPC and shown as-is on the revision
-      // card (weekly-workspace.tsx).
-      reason: `Needs review: ${quality.score}/100, ${unresolved.length} unresolved check(s)`,
-    });
+  // Remaining quality items are a review task, not a reason to hide the
+  // copy. Both paths mint and *activate* the new revision so Article/Video
+  // tabs show the latest text; Ship stays blocked until those checks clear.
+  const persist = masterPersistDecision({
+    converged,
+    score: quality.score,
+    unresolvedCount: unresolved.length,
+  });
+  const created = await createMasterRevision({
+    job,
+    context,
+    result: outcome,
+    requestedMode,
+    approvedResearch,
+    reason: persist.reason,
+  });
+  const qualityArtifactId = await saveQualityReport({
+    weeklyDigestId: job.weekly_digest_id,
+    revisionId: created.revisionId,
+    report: quality,
+    generation: outcome.generation,
+    passed: persist.qualityPassed,
+    jobId: job.id,
+    recordCost: false,
+    languageFixes: outcome.languageFixes,
+  });
+  if (persist.needsOwnerReview) {
     await tracker.event({
       type: 'quality_review_required',
       level: 'warning',
       step: 'persist',
       progressCurrent: 98,
       progressTotal: 100,
-      message: `Saved for owner review: ${unresolved.length} unresolved check(s) — ${unresolvedSummary(unresolved)}`,
+      message: `Saved as the working version: ${unresolved.length} unresolved check(s) — ${unresolvedSummary(unresolved)}`,
       metadata: {
-        draft_revision_id: draft.revisionId,
+        new_revision_id: created.revisionId,
         quality_artifact_id: qualityArtifactId,
         unresolved: unresolved as unknown as Json,
       },
@@ -1471,50 +1471,20 @@ async function generateEditorialMaster(
     await alertWeeklyDigestIssue({
       weeklyDigestId: job.weekly_digest_id,
       phase: 'generation',
-      message: `Weekly master saved as a draft revision for review: ${quality.score}/100 with ${unresolved.length} unresolved check(s).`,
+      message: `Weekly master is the working version and needs review: ${quality.score}/100 with ${unresolved.length} unresolved check(s).`,
     });
-    return {
-      artifactId: null,
-      output: {
-        [MASTER_STATE_KEY]: outcome.state as unknown as Json,
-        master_draft_revision_id: draft.revisionId,
-        quality_artifact_id: qualityArtifactId,
-        quality_score: quality.score,
-        quality_passed: false,
-        needs_owner_review: true,
-        unresolved_issues: unresolved as unknown as Json,
-      },
-    };
+  } else {
+    await tracker.event({
+      type: 'step_completed',
+      step: 'persist',
+      progressCurrent: 98,
+      progressTotal: 100,
+      message: 'Revision and quality report saved',
+    });
   }
-
-  const created = await createMasterRevision({
-    job,
-    context,
-    result: outcome,
-    requestedMode,
-    approvedResearch,
-    rpcName: 'create_service_weekly_digest_revision',
-    persistArticleArtifacts: true,
-    reason: 'weekly_content_studio_v2_master',
-  });
-  const qualityArtifactId = await saveQualityReport({
-    weeklyDigestId: job.weekly_digest_id,
-    revisionId: created.revisionId,
-    report: quality,
-    generation: outcome.generation,
-    passed: true,
-    jobId: job.id,
-    recordCost: false,
-    languageFixes: outcome.languageFixes,
-  });
-  await tracker.event({
-    type: 'step_completed',
-    step: 'persist',
-    progressCurrent: 98,
-    progressTotal: 100,
-    message: 'Revision and quality report saved',
-  });
-  await queuePostMasterJobs(job.weekly_digest_id, created.revisionId, created.newItems);
+  if (persist.queuePostMasterJobs) {
+    await queuePostMasterJobs(job.weekly_digest_id, created.revisionId, created.newItems);
+  }
   return {
     artifactId: null,
     output: {
@@ -1523,22 +1493,17 @@ async function generateEditorialMaster(
       article_artifact_ids: created.articleArtifactIds,
       quality_artifact_id: qualityArtifactId,
       quality_score: quality.score,
-      quality_passed: true,
-      needs_owner_review: false,
+      quality_passed: persist.qualityPassed,
+      needs_owner_review: persist.needsOwnerReview,
+      ...(persist.needsOwnerReview ? { unresolved_issues: unresolved as unknown as Json } : {}),
     },
   };
 }
 
 /**
- * Shared by the success path (activates immediately, via
- * create_service_weekly_digest_revision) and the gate-failure path
- * (create_service_weekly_digest_revision_draft, never touches
- * active_revision_id): builds the revision-items payload, creates the
- * revision, rebases the generated bundle onto the new item IDs, and saves
- * the article artifacts against it (video_script is generated separately,
- * as its own job -- see generateVideoScript below). Callers still handle
- * their own quality-report save (the two paths use different revisionId/
- * passed/recordCost combinations) and, on success, queuePostMasterJobs.
+ * Mints an immutable revision from the generated bundle and makes it the
+ * working copy (`create_service_weekly_digest_revision`). Article artifacts
+ * are saved on that new active revision; video_script is a separate job.
  */
 async function createMasterRevision(params: {
   job: ClaimedGenerationJob;
@@ -1546,20 +1511,9 @@ async function createMasterRevision(params: {
   result: Extract<WeeklyMasterRunOutcome, { status: 'complete' }>;
   requestedMode: ReturnType<typeof contentStudioJobMode>;
   approvedResearch: ReturnType<typeof researchPacksFromContext>;
-  rpcName: 'create_service_weekly_digest_revision' | 'create_service_weekly_digest_revision_draft';
-  persistArticleArtifacts: boolean;
   reason: string;
 }) {
-  const {
-    job,
-    context,
-    result,
-    requestedMode,
-    approvedResearch,
-    rpcName,
-    persistArticleArtifacts,
-    reason,
-  } = params;
+  const { job, context, result, requestedMode, approvedResearch, reason } = params;
   const enById = new Map(result.bundle.en.stories.map((story) => [story.revisionItemId, story]));
   const ukById = new Map(result.bundle.uk.stories.map((story) => [story.revisionItemId, story]));
   const researchById = new Map(
@@ -1609,7 +1563,7 @@ async function createMasterRevision(params: {
       },
     };
   });
-  const { data: newRevisionId, error } = await rpcClient().rpc(rpcName, {
+  const { data: newRevisionId, error } = await rpcClient().rpc(MASTER_REVISION_RPC, {
     p_weekly_digest_id: job.weekly_digest_id,
     p_title_en: result.bundle.en.title,
     p_title_uk: result.bundle.uk.title,
@@ -1626,12 +1580,6 @@ async function createMasterRevision(params: {
     throw new Error(
       `[weekly-generation] create master revision: ${error?.message ?? 'missing revision ID'}`,
     );
-  }
-  // Artifacts are deliberately active-revision-only. A quality-rejected
-  // revision remains inactive for owner review, so attaching EN/UK artifacts
-  // here would turn an editorial rejection into an infrastructure failure.
-  if (!persistArticleArtifacts) {
-    return { revisionId: newRevisionId, articleArtifactIds: [], newItems: [] };
   }
   const db = getSupabaseAdmin();
   const { data: newItems, error: newItemsError } = await db
@@ -3331,7 +3279,8 @@ async function generatePdf(job: ClaimedGenerationJob) {
     coverImageUrl,
     keyTakeaways: article.keyTakeaways,
     stories: article.stories.map((story, index) => {
-      const item = context.items.find((row) => row.id === story.revisionItemId) ?? context.items[index];
+      const item =
+        context.items.find((row) => row.id === story.revisionItemId) ?? context.items[index];
       const source = sourceFromJson(item?.sources);
       return {
         rank: item?.rank ?? index + 1,

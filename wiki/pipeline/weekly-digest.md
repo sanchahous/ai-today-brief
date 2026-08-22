@@ -2,15 +2,9 @@
 
 Summary: як працює weekly-дайджест у проді: оркестрація, ревізії, артефакти, вартісні
 гейти, admin UX і поточний статус розкатки.
-Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`,
-`supabase/migrations/20260804*`–`20260809*`, live checks 2026-08-04…18,
-editorial-voice, PDF page-cap, seed-content, social recovery, PDF v3 / Social tab,
-video_script hydration and missing video_manifest companion 2026-08-18,
-Video Save dropped v3 narration_plan 2026-08-18,
-Video shooting package in admin 2026-08-19,
-Schedule release arbitrary date/time 2026-08-20,
-weekly release autopilot 2026-08-21,
-manual retry drops stale resume pointer 2026-08-22
+Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live checks 2026-08-04…22,
+editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
+latest revision is the working copy 2026-08-22
 Last updated: 2026-08-22
 
 ---
@@ -1033,6 +1027,12 @@ live check 2026-08-04)
 
 ## Master quality report carry-over при Restore (2026-08-17)
 
+> Від **2026-08-22** non-converged `editorial_master` активує нову ревізію і пише
+> `content_quality_report` одразу на неї. Секція нижче — історичний шлях і recovery для
+> draft-ревізій, згенерованих раніше (наприклад випуск 16–22 Aug 2026). Один клік
+> **Use latest version** на банері робить таку ревізію робочою копією і підтягує звіт.
+> (source: `src/lib/weekly-digest/master-persist.ts`, `generation-worker.ts`)
+
 `content_quality_report` не бере участі в carry-forward-за-input_hash вище — його пише
 `editorial_master` один раз, прив'язаним до конкретної ревізії, і `revision_id` в
 `weekly_digest_artifacts` навмисно **immutable** (`guard_weekly_digest_artifact_write`
@@ -1099,7 +1099,11 @@ immutability навмисно, а не в обхід гейту.
 - Jobs на Overview згруповані по табах workspace (PR #170)
 - Немає 5s auto-`router.refresh` blink під час queued jobs (PR #173)
 - Preview URL version-bust після regen visuals (PR #172)
-- Restore earlier version — Overview → Editorial versions (PR #177)
+- Restore earlier version — Overview → Editorial versions (PR #177). Від 2026-08-22
+  **Use latest version** (без причини) перемикає на найновішу невикористану ревізію;
+  **Go back to this version** з причиною — лише undo на старішу. Нові master-прогони
+  самі активують свій вихід, Restore більше не потрібен «щоб побачити останній текст».
+  (source: `src/lib/weekly-digest/master-persist.ts`, `weekly-workspace.tsx`)
   - **Release preflight blockers** (Overview + Release): згруповані по секціях релізного
   шляху (Stories → Research → Article → Visuals → Social → PDF → Video), з `Step N of 8`,
   нумерацією всередині секції і лінком на вкладку. Приклад: `content_quality_report` —
@@ -1143,34 +1147,15 @@ immutability навмисно, а не в обхід гейту.
   всередині власних `overflow-x-auto` контейнерів.
   (source: `src/app/globals.css`, `src/components/admin/weekly-workspace.tsx`, owner screenshot
   + Chrome layout measurement 2026-08-09)
-- **«Newer draft available» banner + readable restore errors** (2026-08-10): the Article tab
-  always rendered the **active** revision, with no indicator when a newer, usually better,
-  auto-generated draft existed — the owner spent real time reading and reacting to a stale
-  revision (`ai-weekly-2026-08-02`'s Revision 2, written before any v7 quality gate existed)
-  while three later revisions sat unreviewed. `NewerDraftBanner` now renders on every tab
-  whenever `workspace.revisions[0]` (newest by `created_at`) is not the active revision, with
-  the draft's own "never became active" reason and a link straight to Editorial versions.
-  Separately, `restoreWeeklyDigestRevisionAction` used a bare `throw` on any RPC error, which
-  Next.js renders as an opaque digest-only production error (`Minified React error #441`) — a
-  live click on **Restore this version** hit exactly this. ⚠️ First diagnosed (wrongly) as a
-  transient session race; the owner confirmed the failure was consistent, and the real cause
-  was a genuine `42501: permission denied for table weekly_digest_generation_jobs` —
-  `create_weekly_digest_revision` ("Save") and `revert_weekly_digest_revision` ("Restore") are
-  both `security invoker` and UPDATE that table directly, which `authenticated` has never had
-  write access to (SELECT-only since 2026-07-23; Postgres checks table privilege before the
-  WHERE clause, so even zero matching rows still fails). This hit every owner/editor call, not
-  a rare edge case — production history shows exactly one successful human Save, ever.
-  **Fixed in production the same day**: both functions moved to `security definer`
-  (`supabase/migrations/20260810160000_weekly_revision_rpc_security_definer.sql`), matching
-  the pattern this table's other writers (`retry_weekly_digest_generation_job`,
-  `claim_weekly_digest_generation_jobs_v2`) already use; the internal `has_social_role` check
-  is unchanged, so authorization is not weakened. Verified in a rolled-back transaction before
-  applying. The action still redirects with `?save_error=…` instead of a bare throw, so any
-  future failure shows its real message instead of a bare "Ref: …".
-  (source: `src/components/admin/weekly-workspace.tsx`,
-  `src/app/admin/(cms)/weekly/actions.ts`, live incident + Supabase/Vercel log read 2026-08-10,
-  `set local role authenticated` reproduction 2026-08-10, production migration
-  `20260810160000_weekly_revision_rpc_security_definer.sql` applied 2026-08-10)
+- **«Newer draft available» banner + readable restore errors** (2026-08-10; CTA оновлено
+  2026-08-22): Article tab always rendered the **active** revision. Historically a
+  non-converged master left the latest text inactive, so the owner read stale seed copy.
+  From 2026-08-22 new master output **is** the working copy; the banner remains for leftover
+  drafts and intentional go-backs, with a one-click **Use latest version**. The 2026-08-10
+  incident (`Minified React error #441` on Restore) was `42501` on
+  `weekly_digest_generation_jobs` — both revision RPCs are `security definer` since then.
+  (source: `src/components/admin/weekly-workspace.tsx`, `src/app/admin/(cms)/weekly/actions.ts`,
+  `src/lib/weekly-digest/master-persist.ts`, live incident 2026-08-10)
 - **Postpone release** (2026-08-10): `schedule_weekly_digest` only accepts Monday 16:00
   Europe/Kyiv and only from `status = 'approved'` — there was no way to move an
   already-`scheduled` release without three separate manual steps (Pause, write a reason;
@@ -1257,7 +1242,7 @@ pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інв
 | Вихід | Стан джоби | Що бачить власник |
 |---|---|---|
 | gate пройдено | `succeeded` | активна ревізія + quality report, як раніше |
-| лишились невирішені перевірки | **`succeeded`** з `needs_owner_review: true` | неактивна draft-ревізія + `unresolved_issues` у стрічці |
+| лишились невирішені перевірки | **`succeeded`** з `needs_owner_review: true` | **робоча (активна) ревізія** + `unresolved_issues` у стрічці; visuals/social/PDF не ставляться, доки власник не розбере перевірки. До 2026-08-22 це була неактивна draft-ревізія |
 | бюджет часу / сегмент не дописано / critic недоступний | `failed`, код **`resumable`** (retryable) | «N/14 сегментів збережено», повтор продовжує |
 
 Провал якості більше **не** робить джобу `failed`: блокер спершу проходить цикл точкового
@@ -1281,12 +1266,13 @@ editorial provider failed» після ~40 хв на нуль результат
 Повний розбір — [weekly-master-engine § Перший живий прогін](weekly-master-engine.md#перший-живий-прогін--2026-08-10-знайшов-реальну-регресію).
 (source: Actions runs `31367921173`/`31371078952`, `src/lib/weekly-digest/editorial-llm.ts`)
 
-Quality rejection як і раніше не пише article artifacts у неактивну draft revision:
-`save_weekly_digest_artifact` навмисно приймає лише active revision. Draft зберігає поля master
-для review, а quality report лишається на чинній активній ревізії; job output фіксує
-`master_draft_revision_id`, `quality_artifact_id` і `unresolved_issues`.
-(source: `src/lib/weekly-digest/generation-worker.ts`,
-`supabase/migrations/20260723095458_weekly_digest_v2.sql`)
+Quality rejection від **2026-08-22** пише article artifacts і quality report на **щойно
+активовану** ревізію (`create_service_weekly_digest_revision`). Старий шлях
+`create_service_weekly_digest_revision_draft` більше не викликається: він лишав текст
+невидимим на Article tab. Job output фіксує `new_revision_id`, `quality_artifact_id`,
+`needs_owner_review` і `unresolved_issues`. Історичні job-и можуть ще мати
+`master_draft_revision_id` — тоді в UI є **Use latest version**.
+(source: `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/master-persist.ts`)
 
 ## `retry_weekly_digest_generation_job` копіював мертвий `resume_from_job_id` — фікс (2026-08-22)
 

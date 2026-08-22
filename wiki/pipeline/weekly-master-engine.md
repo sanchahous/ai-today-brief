@@ -3,11 +3,8 @@
 Summary: як `editorial_master` тепер працює — сегментований запис, точковий ремонт
 поля замість перегенерації і принцип «якість ніколи не валить джобу».
 Sources: `src/lib/weekly-digest/master-engine.ts`, `master-segments.ts`, `master-repair.ts`,
-`editorial-llm.ts`, `generation-worker.ts`, `generation-control.ts`,
-[weekly-master-failures](weekly-master-failures.md), рішення власника 2026-08-09,
-Actions runs `31367921173`/`31371078952` (перший живий прогін), `pipeline/openrouter-models.ts`,
-`content-studio.ts` (quantified length-repair fix), live incident 2026-08-10
-Last updated: 2026-08-10
+`editorial-llm.ts`, `generation-worker.ts`, `master-persist.ts`, owner UX 2026-08-22
+Last updated: 2026-08-22
 
 ---
 
@@ -82,7 +79,7 @@ Last updated: 2026-08-10
 | Вихід | Що робить воркер |
 |---|---|
 | `complete` + `converged: true` | активна ревізія, як раніше; `quality_passed: true` |
-| `complete` + `converged: false` | **неактивна draft-ревізія** + звіт + `unresolved_issues`, джоба завершується **`succeeded`** із `needs_owner_review: true` |
+| `complete` + `converged: false` | **активна ревізія** (робоча копія) + звіт + `unresolved_issues`, джоба **`succeeded`** із `needs_owner_review: true`. Visuals/social/PDF не ставляться в чергу, доки власник не розбере перевірки. (До 2026-08-22 це була неактивна draft-ревізія — власник мав Restore, щоб побачити текст.) |
 | `incomplete` | сегменти збережені, джоба падає з кодом `resumable` (`retryable: true`) — повтор **продовжує**, а не починається спочатку |
 
 Кожен `unresolved`-запис несе причину: `unmappable`, `attempts_exhausted`, `repair_failed`,

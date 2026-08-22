@@ -3,11 +3,9 @@
 Summary: покрокова інструкція для власника/редактора: що натискати у вкладках,
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
-[weekly-digest](../pipeline/weekly-digest.md), production incidents / owner sessions
-2026-08-04…18, staged social-copy recovery 2026-08-17, Social tab channel-aware form 2026-08-18,
-approved-row Save workflow RPC 2026-08-18, video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18, Video Save dropped v3 plan 2026-08-18,
-Video shooting package in admin 2026-08-19, arbitrary Schedule release date/time 2026-08-20, weekly release autopilot 2026-08-21.
-Last updated: 2026-08-21
+[weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…22,
+latest revision is the working copy 2026-08-22
+Last updated: 2026-08-22
 
 ---
 
@@ -20,7 +18,7 @@ Last updated: 2026-08-21
 | Quality **blockers > 0** | Approve **заборонений** (і людині, і машині) | Чекай auto language-fix / Resume master |
 | Visuals **prompt ready** | Треба зовнішня генерація + upload | Copy prompt → gen → upload |
 | Hallucination board **can Ship** | Немає blockers і waiting-список порожній (ті самі слоти, що й preflight) | Один AAL2 **Ship** |
-| Job **succeeded** + **Needs your review** | Рушій вичерпав ремонт, лишились невирішені перевірки; текст збережено як **неактивна draft-ревізія** | Читай `unresolved` у стрічці → Overview → Editorial versions → правити вручну або **Resume saved master** |
+| Job **succeeded** + **Needs your review** | Рушій вичерпав ремонт, лишились невирішені перевірки; **текст уже є робочою копією** (Article tab) | Читай `unresolved` → прав статтю або **Resume saved master**. Ship лишається заблокованим, доки перевірки не зникнуть |
 | Job **failed**, код **`resumable`** | Скінчився бюджет часу, не дописано сегмент або critic недоступний; усі готові сегменти збережено | **Resume saved master** — уже написані історії не оплачуються вдруге |
 | Job **failed** + **Resume saved master** | Є збережені сегменти (навіть частково) | Натисни **Resume saved master**, не generic retry |
 | Job **failed** без Resume | Немає жодного збереженого сегмента або інший тип збою | Читай причину → doctor/sandbox → linked retry лише після діагностики |
@@ -49,7 +47,7 @@ Overview показує preflight blockers і Hallucination board. Іди зве
 активну ревізію. Тисни, коли тиждень отримав схвалені новини вже після створення випуску
 або коли змінились правила відбору. **Скидає всі апрува** (research, article, зображення,
 соц) і повертає випуск у `in_review` — інший набір історій їх більше не описує. Стару
-ревізію не видаляє: вона лишається в Editorial versions і відновлюється через Restore.
+ревізію не видаляє: вона лишається в Editorial versions і повертається кнопкою **Go back to this version**.
 Якщо випуск уже `scheduled` і минув 15:45 Kyiv — спершу Pause.
 
 **Що змінилось 2026-08-16.** Історія більше не приходить із порожніми полями: `Повний
@@ -83,15 +81,16 @@ Overview показує preflight blockers і Hallucination board. Іди зве
    (cron ~кожні **5 хв** лишається safety-dispatcher).
 6. Коли з’явиться **Master quality**:
    - **джоба більше не падає через якість.** Якщо рушій не зміг закрити всі перевірки, він
-     зберігає випуск як неактивну draft-ревізію, завершується `succeeded` і показує
+     зберігає випуск як **робочу (активну) ревізію**, завершується `succeeded` і показує
      **Needs your review** із переліком `unresolved` — це задача на редагування, не збій
      інфраструктури (source: [weekly-master-engine](../pipeline/weekly-master-engine.md));
-   - **ця draft-ревізія НЕ стає активною сама.** Approve research не має до цього стосунку —
-     то окремий гейт, який лише дозволяє почати писати. Article tab за замовчуванням показує
-     активну ревізію, а не найновішу; з 2026-08-10 жовтий банер «Newer draft available»
-     з'являється на кожній вкладці, коли є новіша ревізія за активну, з посиланням на Overview
-     → Editorial versions. Там **Restore this version** на потрібній ревізії робить її
-     активною — без цього кліку весь текст лишається невидимим редактору;
+   - **від 2026-08-22 остання ревізія і є робочою копією.** Раніше non-converged прогін
+     лишав нову ревізію неактивною, і Article tab показував старий seed, доки власник не
+     натискав Restore — це виглядало як баг. Тепер `editorial_master` завжди активує свій
+     вихід. Quality blockers лишаються гейтом для Ship, не для «чи видно текст». Кнопка
+     **Use latest version** (банер + Editorial versions) потрібна лише для **старих**
+     неактивних draft-ревізій, згенерованих до цього фіксу, або якщо ти свідомо відкотився
+     на ранішу версію. **Go back to this version** — це undo, не шлях «увімкнути останнє»;
    - **Restore більше не губить Master quality (2026-08-17).** До фіксу: `revert_weekly_digest_revision`
      лише перемикає `active_revision_id`, артефакти не чіпає, тож звіт критика лишався
      прикріпленим до ревізії, яка щойно стала неактивною — Research tab показував «Master

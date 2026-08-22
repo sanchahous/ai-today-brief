@@ -57,6 +57,7 @@ import {
   type OwnerConceptFeedback,
 } from '@/lib/weekly-digest/owner-feedback';
 import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
+import { USE_LATEST_REVISION_REASON } from '@/lib/weekly-digest/master-persist';
 import { carryOverOrphanedQualityReport } from '@/lib/weekly-digest/quality-report-carryover';
 import {
   canApproveQualityOrArticle,
@@ -1992,17 +1993,48 @@ function redirectWeeklyRevisionRestoreError(weeklyDigestId: string, message: str
   );
 }
 
-// Lets an editor undo a revision without understanding the revision chain:
-// "restore this version" is exactly the create_weekly_digest_revision write
-// path, replayed against an earlier revision's content.
-//
-// Errors redirect with `save_error` (the same banner every other revision
-// action uses) rather than throwing: a bare throw from a Server Action
-// renders as an opaque, digest-only production error with no readable
-// message -- exactly what happened live when this RPC's own role check
-// 403'd (live incident 2026-08-10, despite the caller genuinely holding an
-// enabled owner row -- see wiki/ops/weekly-admin-runbook.md). The owner
-// could not tell what failed; a redirect with the real message tells them.
+async function revertWeeklyDigestRevision(input: {
+  weeklyDigestId: string;
+  targetRevisionId: string;
+  reason: string;
+}) {
+  const db = await getSupabaseServer();
+  const { error } = await db.rpc('revert_weekly_digest_revision', {
+    p_weekly_digest_id: input.weeklyDigestId,
+    p_target_revision_id: input.targetRevisionId,
+    p_reason: input.reason,
+  });
+  if (error) redirectWeeklyRevisionRestoreError(input.weeklyDigestId, error.message);
+  // Best-effort: historical inactive drafts left content_quality_report on
+  // the revision that just went inactive (quality-report-carryover.ts).
+  // New master runs attach the report to the activated revision themselves.
+  try {
+    await carryOverOrphanedQualityReport(db, input.weeklyDigestId);
+  } catch (carryOverError) {
+    console.error('[revertWeeklyDigestRevision] quality report carry-over', carryOverError);
+  }
+  revalidateWeeklyAdmin(input.weeklyDigestId);
+}
+
+/**
+ * One-click switch to the newest unused revision. No typed reason: this is
+ * the expected "make the latest work the working copy" action, not an undo.
+ * Errors redirect with `save_error` rather than throwing — a bare throw
+ * from a Server Action renders as Minified React error #441 (live 2026-08-10).
+ */
+export async function useLatestWeeklyDigestRevisionAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const targetRevisionId = requiredString(formData, 'target_revision_id');
+  await revertWeeklyDigestRevision({
+    weeklyDigestId,
+    targetRevisionId,
+    reason: USE_LATEST_REVISION_REASON,
+  });
+}
+
+// Go back to an earlier revision. Requires a reason because this is an undo,
+// not the default "use latest" path.
 export async function restoreWeeklyDigestRevisionAction(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
@@ -2011,29 +2043,14 @@ export async function restoreWeeklyDigestRevisionAction(formData: FormData) {
   if (reason.length < 10 || reason.length > 500) {
     redirectWeeklyRevisionRestoreError(
       weeklyDigestId,
-      'A 10 to 500 character reason is required to restore a version.',
+      'A 10 to 500 character reason is required to go back to an earlier version.',
     );
   }
-  const db = await getSupabaseServer();
-  const { error } = await db.rpc('revert_weekly_digest_revision', {
-    p_weekly_digest_id: weeklyDigestId,
-    p_target_revision_id: targetRevisionId,
-    p_reason: reason,
+  await revertWeeklyDigestRevision({
+    weeklyDigestId,
+    targetRevisionId,
+    reason,
   });
-  if (error) redirectWeeklyRevisionRestoreError(weeklyDigestId, error.message);
-  // Best-effort: a revision restored from editorial_master's non-converged
-  // draft path left its content_quality_report on the revision that just
-  // went inactive (see quality-report-carryover.ts). Heal that in the same
-  // click rather than stranding the owner on a "Master quality is missing"
-  // panel for content that was already scored. Restoring an ordinary earlier
-  // version with no orphaned report is a no-op here, and a failure must not
-  // hide the restore that already succeeded above.
-  try {
-    await carryOverOrphanedQualityReport(db, weeklyDigestId);
-  } catch (carryOverError) {
-    console.error('[restoreWeeklyDigestRevisionAction] quality report carry-over', carryOverError);
-  }
-  revalidateWeeklyAdmin(weeklyDigestId);
 }
 
 function redirectWeeklyQualityCarryOverError(weeklyDigestId: string, message: string): never {
@@ -2518,7 +2535,10 @@ export async function shipWeeklyDigestAction(formData: FormData) {
     artifacts: artifacts ?? [],
   });
   if (!board.canShip) {
-    const waiting = board.waitingOnOwner.map((item) => item.label).slice(0, 5).join('; ');
+    const waiting = board.waitingOnOwner
+      .map((item) => item.label)
+      .slice(0, 5)
+      .join('; ');
     throw new Error(
       `Cannot ship while the hallucination board still has unresolved blockers: ${waiting}`,
     );
