@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { SITE_NAME, SITE_URL, SOCIALS, isLang, type Lang } from '@/lib/site';
+import { socialMeta } from '@/lib/seo';
 import { authorNode, PERSON_ID } from '@/lib/schema';
 import { getHomeData } from '@/lib/home';
 import { getLatestWeeklyDigest } from '@/lib/digests';
@@ -43,6 +44,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en`,
       },
     },
+    ...socialMeta({
+      title: `${SITE_NAME} — ${l === 'uk' ? 'AI-новини для розробників за 5 хвилин на день' : 'AI news for developers in 5 minutes a day'}`,
+      description: HOME_DESCRIPTION[l],
+      path: `/${l}`,
+      lang: l,
+    }),
   };
 }
 

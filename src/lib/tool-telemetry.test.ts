@@ -13,7 +13,6 @@ describe('tool telemetry scaffolding', () => {
       settingsRuleTriggered: 'tool_settings_rule_triggered',
       claudeMdGenerate: 'tool_claude_md_generate',
       claudeMdCopy: 'tool_claude_md_copy',
-      claudeMdLintRuleTriggered: 'tool_claude_md_lint_rule_triggered',
     });
   });
 

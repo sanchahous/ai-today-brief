@@ -29,7 +29,9 @@ export async function generateMetadata({
         uk: `${SITE_URL}/uk`,
         'x-default': `${SITE_URL}/en`,
       },
-      types: { 'application/rss+xml': `${SITE_URL}/rss.xml` },
+      types: {
+        'application/rss+xml': `${SITE_URL}${l === 'uk' ? '/rss-uk.xml' : '/rss.xml'}`,
+      },
     },
   };
 }

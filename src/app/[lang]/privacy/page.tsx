@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { isLang, SITE_URL, type Lang } from '@/lib/site';
 import { LEGAL_DOCS } from '@/lib/legal';
 import { LegalDocView } from '@/components/legal-doc';
+import { socialMeta } from '@/lib/seo';
 
 export const revalidate = 86400;
 
@@ -11,8 +12,10 @@ type Params = { lang: string };
 export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { lang } = await params;
   const l: Lang = isLang(lang) ? lang : 'en';
+  const doc = LEGAL_DOCS.privacy;
   return {
-    title: LEGAL_DOCS.privacy.title[l],
+    title: doc.title[l],
+    description: doc.intro[l],
     alternates: {
       canonical: `${SITE_URL}/${l}/privacy`,
       languages: {
@@ -21,6 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en/privacy`,
       },
     },
+    ...socialMeta({ title: doc.title[l], description: doc.intro[l], path: `/${l}/privacy`, lang: l }),
   };
 }
 

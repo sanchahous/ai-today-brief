@@ -5,6 +5,7 @@ import type { HomeCategory } from '@/lib/home';
 import { ArrowRight } from '@/components/icons';
 import { HeroSearch } from '@/components/home/hero-search';
 import { CategoryMixBar } from '@/components/home/category-mix-bar';
+import { HeroCtaClickTracker } from '@/components/analytics/home-click-trackers';
 
 /**
  * First screen: product positioning + integrated archive search + headline
@@ -58,19 +59,23 @@ export function HomeHero({
         <p className="text-muted mt-5 max-w-2xl text-lg leading-relaxed">{t.heroSubtitle}</p>
 
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link
-            href={`/${lang}/news`}
-            className="rounded-pill bg-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-on-accent"
-          >
-            {t.ctaPrimary}
-            <ArrowRight size={16} />
-          </Link>
-          <a
-            href="#week"
-            className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex items-center border px-5 py-3 text-sm font-semibold transition-colors"
-          >
-            {t.ctaSecondary}
-          </a>
+          <HeroCtaClickTracker target="news">
+            <Link
+              href={`/${lang}/news`}
+              className="rounded-pill bg-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold text-on-accent"
+            >
+              {t.ctaPrimary}
+              <ArrowRight size={16} />
+            </Link>
+          </HeroCtaClickTracker>
+          <HeroCtaClickTracker target="week">
+            <a
+              href="#week"
+              className="rounded-pill border-border text-text hover:border-accent hover:text-accent inline-flex items-center border px-5 py-3 text-sm font-semibold transition-colors"
+            >
+              {t.ctaSecondary}
+            </a>
+          </HeroCtaClickTracker>
         </div>
 
         <div className="mt-8 max-w-2xl">

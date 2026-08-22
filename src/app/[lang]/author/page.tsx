@@ -14,6 +14,7 @@ import {
 } from '@/lib/site';
 import { authorNode, publisherNode, PERSON_ID } from '@/lib/schema';
 import { getStrings } from '@/lib/i18n';
+import { socialMeta } from '@/lib/seo';
 
 export const revalidate = 86400;
 
@@ -58,6 +59,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en/author`,
       },
     },
+    ...socialMeta({
+      title: `${EDITOR_NAME} — ${EDITOR_ROLE[l]}`,
+      description: COPY[l].metaDescription,
+      path: `/${l}/author`,
+      lang: l,
+    }),
   };
 }
 

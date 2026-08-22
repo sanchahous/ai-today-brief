@@ -7,6 +7,8 @@ import { MarkdownBody } from '@/components/markdown-body';
 import { getStrings } from '@/lib/i18n';
 import { EDITOR_NAME, isLang, LANGS, SITE_URL, type Lang } from '@/lib/site';
 import { authorNode, publisherNode } from '@/lib/schema';
+import { socialMeta } from '@/lib/seo';
+import { PageEngagementTracker } from '@/components/analytics/page-engagement-tracker';
 
 export const revalidate = 86400;
 
@@ -39,6 +41,14 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       url: `${SITE_URL}/${lang}/guides/${slug}`,
       modifiedTime: guide.lastVerified,
     },
+    ...socialMeta({
+      title: guide.title[lang],
+      description: guide.description[lang],
+      path: `/${lang}/guides/${slug}`,
+      lang,
+      type: 'article',
+      modifiedTime: guide.lastVerified,
+    }),
   };
 }
 
@@ -83,6 +93,7 @@ export default async function GuidePage({ params }: { params: Promise<Params> })
 
   return (
     <div className="mx-auto w-full max-w-[760px] flex-1 px-6 py-10">
+      <PageEngagementTracker pageType="guide" slug={slug} lang={lang} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

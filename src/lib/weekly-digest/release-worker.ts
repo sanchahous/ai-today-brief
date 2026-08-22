@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { alertWeeklyDigestIssue } from './alerts';
 import { isWeeklyDigestReleaseDue } from './period';
 import { promoteWeeklyDigestPublicAssets } from './publication-assets';
+import { revalidatePathsForPublish } from '@/lib/revalidate-site';
 
 export interface ClaimedWeeklyDigest {
   id: string;
@@ -158,15 +159,10 @@ export function preflightBlockersFromRpc(value: unknown): unknown[] {
 
 function publishedPaths(slug: string) {
   const safeSlug = encodeURIComponent(slug);
-  return [
-    '/en',
-    '/uk',
-    '/en/digests',
-    '/uk/digests',
+  return revalidatePathsForPublish([
     `/en/weekly/${safeSlug}`,
     `/uk/weekly/${safeSlug}`,
-    '/sitemap.xml',
-  ];
+  ]);
 }
 
 async function finishFailure(

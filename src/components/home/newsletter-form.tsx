@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight } from '@/components/icons';
 import { trackEvent } from '@/lib/analytics-client';
+import {
+  newsletterFunnelParams,
+  shouldCountNewsletterImpression,
+} from '@/lib/analytics-events';
 import type { Lang } from '@/lib/site';
 import { reportWeeklySignup } from '@/lib/weekly-digest/attribution-client';
 
@@ -32,6 +36,22 @@ export function NewsletterForm({
     'idle',
   );
   const [errorMsg, setErrorMsg] = useState('');
+
+  const funnelParams = newsletterFunnelParams(placement, lang);
+  const startedRef = useRef(false);
+
+  useEffect(() => {
+    if (shouldCountNewsletterImpression(placement)) {
+      trackEvent('newsletter_impression', funnelParams);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- placement/lang are static per mount
+  }, [placement]);
+
+  const markStarted = () => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    trackEvent('newsletter_form_start', funnelParams);
+  };
 
   if (status === 'done') {
     return (
@@ -70,6 +90,7 @@ export function NewsletterForm({
           if (!res.ok) {
             setStatus('error');
             setErrorMsg(failed);
+            trackEvent('newsletter_submit_error', { ...funnelParams, http_status: res.status });
             return;
           }
           setStatus('done');
@@ -78,6 +99,7 @@ export function NewsletterForm({
         } catch {
           setStatus('error');
           setErrorMsg(failed);
+          trackEvent('newsletter_submit_error', { ...funnelParams, http_status: 0 });
         }
       }}
       className="flex max-w-md flex-wrap gap-2"
@@ -87,6 +109,7 @@ export function NewsletterForm({
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
+        onFocus={markStarted}
         placeholder={placeholder}
         aria-label={placeholder}
         className="bg-bg border-border text-text rounded-pill focus-visible:border-accent flex-1 basis-56 border px-4 py-3 text-sm outline-none"
@@ -94,6 +117,7 @@ export function NewsletterForm({
       <button
         type="submit"
         disabled={status === 'loading'}
+        onClick={markStarted}
         className="rounded-pill bg-accent text-on-accent inline-flex items-center gap-2 px-5 py-3 text-sm font-semibold disabled:opacity-70"
       >
         {button}

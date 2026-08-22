@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { getSubscribeSampleItems } from '@/lib/subscribe-page';
+import { socialMeta } from '@/lib/seo';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 import { FaqSection } from '@/components/home/faq-section';
@@ -30,6 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en/subscribe`,
       },
     },
+    ...socialMeta({ title: p.title, description: p.lead, path: `/${l}/subscribe`, lang: l }),
   };
 }
 

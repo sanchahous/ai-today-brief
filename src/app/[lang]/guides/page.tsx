@@ -5,6 +5,8 @@ import { GUIDES } from '@/content/guides';
 import { getStrings } from '@/lib/i18n';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { ArrowRight } from '@/components/icons';
+import { HubViewTracker } from '@/components/analytics/hub-view-tracker';
+import { socialMeta } from '@/lib/seo';
 
 export const revalidate = 86400;
 
@@ -25,6 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en/guides`,
       },
     },
+    ...socialMeta({ title: t.guidesTitle, description: t.guidesLede, path: `/${l}/guides`, lang: l }),
   };
 }
 
@@ -52,6 +55,7 @@ export default async function GuidesPage({ params }: { params: Promise<Params> }
 
   return (
     <div className="mx-auto w-full max-w-[760px] flex-1 px-6 py-12">
+      <HubViewTracker hubType="guides" slug="guides" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

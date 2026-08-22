@@ -697,7 +697,16 @@ const getWeeklyDigestCached = cache(
         lang === 'uk' ? revision.key_takeaways_uk : revision.key_takeaways_en,
       ),
       publishedAt: digest.published_at,
-      modifiedAt: revision.created_at || digest.updated_at,
+      // Latest of: revision creation, digest row update (post-release edits),
+      // and artifact updates — so dateModified never goes backwards.
+      modifiedAt: [
+        revision.created_at,
+        'updated_at' in digest ? digest.updated_at : undefined,
+        ...artifacts.map((a) => a.updated_at),
+      ]
+        .filter((v): v is string => Boolean(v))
+        .sort()
+        .at(-1) ?? revision.created_at,
       cover,
       hasPdf,
       video,
@@ -882,9 +891,14 @@ export async function getWeeklySitemapEntries() {
   const db = typed as unknown as SupabaseClient;
   const { data } = await db
     .from('weekly_digests')
-    .select('slug,published_at,week_start')
+    .select('slug,published_at,week_start,updated_at')
     .eq('status', 'published');
   return (
-    (data as Array<{ slug: string; published_at: string | null; week_start: string }> | null) ?? []
+    (data as Array<{
+      slug: string;
+      published_at: string | null;
+      week_start: string;
+      updated_at: string;
+    }> | null) ?? []
   );
 }

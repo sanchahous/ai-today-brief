@@ -130,6 +130,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       entries.push({
         url: `${SITE_URL}/${lang}/${brief.slug}`,
         lastModified: brief.lastModified,
+        // A brief is fixed at publish (only editor-take edits afterwards), so
+        // it does not change daily the way the home/news index does.
         changeFrequency: 'weekly',
         priority: 0.75,
         alternates: langAlternates(`/${brief.slug}`),
@@ -138,8 +140,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const digest of weeklyDigests) {
       entries.push({
         url: `${SITE_URL}/${lang}/weekly/${digest.slug}`,
-        lastModified: digest.published_at ?? digest.week_start,
-        changeFrequency: 'weekly',
+        // updated_at moves when an edition is corrected after release — the
+        // honest lastmod; published_at alone would hide post-release edits.
+        lastModified:
+          digest.updated_at && digest.updated_at > (digest.published_at ?? '')
+            ? digest.updated_at
+            : (digest.published_at ?? digest.week_start),
+        // Weekly editions are frozen after release; 'monthly' reflects how
+        // rarely their content actually changes (vs the archive's daily churn).
+        changeFrequency: 'monthly',
         priority: 0.72,
         alternates: langAlternates(`/weekly/${digest.slug}`),
       });
@@ -147,6 +156,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const path of TRUST_PATHS) {
       entries.push({
         url: `${SITE_URL}/${lang}/${path}`,
+        // Trust pages have no per-row timestamp; the newest guide/tool
+        // verification date is the closest honest proxy for their last edit.
+        lastModified: latestGuide ?? latestTool,
         changeFrequency: path === 'privacy' || path === 'terms' ? 'monthly' : 'weekly',
         priority: path === 'subscribe' || path === 'advertise' ? 0.5 : 0.4,
         alternates: langAlternates(`/${path}`),
@@ -168,7 +180,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entries.push({
       url: `${SITE_URL}/${p.lang}/news/${p.category}/${p.item}`,
       lastModified: p.lastModified,
-      changeFrequency: 'monthly',
+      // Item pages are fixed at publish — 'yearly' is the honest signal; the
+      // lastmod timestamp carries the actual freshness.
+      changeFrequency: 'yearly',
       priority: 0.7,
       alternates: langAlternates(`/news/${p.category}/${p.item}`),
     });

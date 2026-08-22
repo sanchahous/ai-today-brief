@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { isLang, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
 import { getNewsPageData, searchNewsItems } from '@/lib/news';
+import { socialMeta } from '@/lib/seo';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { Byline } from '@/components/byline';
 import { Reveal } from '@/components/reveal';
@@ -22,21 +23,26 @@ export async function generateMetadata({
   searchParams: Promise<Search>;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const { q } = await searchParams;
+  const { q, page } = await searchParams;
   const l: Lang = isLang(lang) ? lang : 'en';
   const t = getStrings(l).news;
   const path = `/${l}/news`;
+  // Paginated views keep their own self-canonical (page=2 is a distinct,
+  // crawlable view); page=1 collapses to the clean path. Search results stay
+  // out of the index entirely.
+  const suffix = page && page !== '1' ? `?page=${encodeURIComponent(page)}` : '';
   return {
     title: t.title,
     description: t.lead,
     alternates: {
-      canonical: `${SITE_URL}${path}`,
+      canonical: `${SITE_URL}${path}${suffix}`,
       languages: {
-        en: `${SITE_URL}/en/news`,
-        uk: `${SITE_URL}/uk/news`,
-        'x-default': `${SITE_URL}/en/news`,
+        en: `${SITE_URL}/en/news${suffix}`,
+        uk: `${SITE_URL}/uk/news${suffix}`,
+        'x-default': `${SITE_URL}/en/news${suffix}`,
       },
     },
+    ...socialMeta({ title: t.title, description: t.lead, path, lang: l }),
     ...(q ? { robots: { index: false, follow: true } } : {}),
   };
 }

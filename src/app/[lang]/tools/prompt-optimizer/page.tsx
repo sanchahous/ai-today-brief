@@ -6,6 +6,7 @@ import { RuleCatalog } from '@/components/tools/rule-catalog';
 import { getTool } from '@/content/tools';
 import { getStrings } from '@/lib/i18n';
 import { isLang, LANGS, SITE_NAME, SITE_URL, type Lang } from '@/lib/site';
+import { socialMeta } from '@/lib/seo';
 
 export const revalidate = 86400;
 
@@ -37,6 +38,12 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
       type: 'website',
       url: `${SITE_URL}/${lang}/tools/prompt-optimizer`,
     },
+    ...socialMeta({
+      title: tool.title[lang],
+      description: tool.description[lang],
+      path: `/${lang}/tools/prompt-optimizer`,
+      lang,
+    }),
   };
 }
 
@@ -58,6 +65,9 @@ export default async function PromptOptimizerPage({ params }: { params: Promise<
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
+      // One node per page: the tool IS a WebApplication; article-style fields
+      // (dateModified, lede) fold into it instead of a second TechArticle
+      // claiming the same URL.
       {
         '@type': 'WebApplication',
         name: tool.title[lang],
@@ -67,16 +77,7 @@ export default async function PromptOptimizerPage({ params }: { params: Promise<
         isAccessibleForFree: true,
         inLanguage: lang,
         url: `${SITE_URL}/${lang}/tools/prompt-optimizer`,
-        publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
-      },
-      {
-        '@type': 'TechArticle',
-        headline: tool.title[lang],
-        description: tool.lede[lang],
         dateModified: tool.lastVerified,
-        inLanguage: lang,
-        isAccessibleForFree: true,
-        url: `${SITE_URL}/${lang}/tools/prompt-optimizer`,
         publisher: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
         mainEntityOfPage: `${SITE_URL}/${lang}/tools/prompt-optimizer`,
       },
