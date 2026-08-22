@@ -6,6 +6,37 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-22
 
+## 2026-08-22 — editorial_master «Create linked retry» нескінченно повторював мертвий resume
+
+**Джерело:** власник повідомив «джоби editorial_master фейляться» зі скріншотом
+`/admin/weekly/71af784b-3c89-47f8-bc38-e3eae4def2a7?tab=research` — два FAILED job'и поспіль,
+`Code: unknown`. Підтверджено на прод-Supabase `mdiqfatpqczwqghwttpm`.
+
+**Знайдено:** job `c471563f` (**Resume saved master** → `411aba45`) впав на `prepare`, бо
+`priorMasterRetryGuidance` підхопив свіжий `content_quality_report`, який щойно записав сам
+`411aba45` — `planHash` змінився, checkpoint не reusable (очікувано, `master-engine.ts`).
+Власник натиснув **Create linked retry**: RPC `retry_weekly_digest_generation_job` копіював
+`input` без змін, тож новий job `299e2c6c` успадкував той самий мертвий
+`resume_from_job_id` і впав ідентично 3 хв по тому — джоба структурно не могла пройти цей крок,
+кожен наступний ручний retry повторював би те саме нескінченно.
+
+**Змінено:**
+- `supabase/migrations/20260822130000_weekly_manual_retry_drops_stale_resume.sql`:
+  `retry_weekly_digest_generation_job` вставляє `v_source.input - 'resume_from_job_id'` замість
+  `v_source.input` — лінкований retry стартує свіжий master-ран, а не мертвий resume
+- `src/lib/weekly-digest/generation-control.ts`: новий код `resume_source_stale` у
+  `classifyGenerationFailure` з порадою «Regenerate master» замість дефолтного «create a manual
+  retry» (та порада відтворювала провал)
+- [pipeline/weekly-digest § retry_weekly_digest_generation_job](pipeline/weekly-digest.md#retry_weekly_digest_generation_job-копіював-мертвий-resume_from_job_id--фікс-2026-08-22)
+- Тести: `generation-control.test.ts` (класифікатор), `supabase/tests/20260822130000_…sql`
+  (структурний, як і решта тестів на цю RPC — CI їх не запускає, `npm run pr:check` +
+  типчек зелені локально)
+
+**Не зроблено:** міграцію не застосовано до прод-Supabase з цієї сесії (потрібне явне
+підтвердження власника — зміна RPC на проді). Два вже завислі FAILED job'и (`c471563f`,
+`299e2c6c`) термінальні й нічого не блокують; після мержу/застосування фіксу власник може
+натиснути **Regenerate master** на ревізії, щоб отримати чистий прогін.
+
 ## 2026-08-22 — Прибрано другий GA4 ID: GTM-контейнер GTM-5S6TXPG5 видалено з коду
 
 **Джерело:** власник помітив «різні GA4 ID». Розбір: на живій сторінці підвантажувались

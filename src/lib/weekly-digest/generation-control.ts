@@ -17,6 +17,14 @@ export type GenerationFailureKind =
   | 'provider_exhausted'
   /** Ran out of run budget with durable segments saved; a retry continues. */
   | 'resumable'
+  /**
+   * An explicit "Resume saved master" pointed at a checkpoint that no longer
+   * matches the current research packs / retry guidance. A plain retry of
+   * this job cannot succeed (it fails at `prepare`, before any provider
+   * call, and would repeat identically) -- the caller must start a fresh
+   * master run instead.
+   */
+  | 'resume_source_stale'
   | 'cancelled'
   | 'unknown';
 
@@ -173,6 +181,21 @@ export function classifyGenerationFailure(message: string): GenerationFailure {
       code: 'resumable',
       retryable: true,
       nextAction: 'A retry continues from the saved segments instead of starting over.',
+    };
+  }
+  // Checked before the generic validation bucket: this is a specific,
+  // named failure ("start a fresh master instead") whose remedy is the
+  // opposite of the default unknown-failure advice below -- a manual retry
+  // of *this* job copies the same stale resume pointer and fails again
+  // identically (confirmed live 2026-08-22 on weekly_digest_id
+  // 71af784b-3c89-47f8-bc38-e3eae4def2a7: two manual retries in a row, same
+  // failure, ~3 minutes apart).
+  if (/master resume source has no saved state/.test(normalized)) {
+    return {
+      code: 'resume_source_stale',
+      retryable: false,
+      nextAction:
+        'The saved checkpoint no longer matches the current research packs. Use "Regenerate master", not "Create linked retry" -- retrying this job repeats the same failure.',
     };
   }
   if (/all configured social llm providers failed/.test(normalized)) {

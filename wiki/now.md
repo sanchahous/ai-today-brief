@@ -8,12 +8,33 @@ video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-
 video script Save dropped v3 plan 2026-08-18, Video4 Remotion render 2026-08-18,
 Video shooting package in admin 2026-08-19,
 Schedule release arbitrary date/time 2026-08-20,
-queue bulk cancel 2026-08-21
-Last updated: 2026-08-21
+queue bulk cancel 2026-08-21,
+editorial_master manual retry loop 2026-08-22
+Last updated: 2026-08-22
 
 ---
 
 ## Стан репозиторію
+
+- **editorial_master «Create linked retry» нескінченно повторював мертвий resume (2026-08-22),
+  гілка `claude/editorial-master-admin-jobs-af3509`.** Власник повідомив про FAILED job'и в
+  `/admin/weekly/71af784b-3c89-47f8-bc38-e3eae4def2a7`. Прод-Supabase live check підтвердив: job
+  `c471563f` (**Resume saved master** → `411aba45`) впав на `prepare`, бо
+  `priorMasterRetryGuidance` підхопив свіжий `content_quality_report`, який щойно записав сам
+  `411aba45` — очікуваний planHash-мисматч. Але **Create linked retry** на цьому job'і RPC
+  `retry_weekly_digest_generation_job` копіював `input` без змін, тож дочірній job `299e2c6c`
+  успадкував той самий мертвий `resume_from_job_id` і впав ідентично 3 хв по тому — нескінченний
+  цикл, кожен наступний ручний retry повторював би те саме. Фікс: RPC вставляє
+  `v_source.input - 'resume_from_job_id'`, лінкований retry стартує свіжий master-ран (як
+  **Regenerate master**); новий код `resume_source_stale` у `classifyGenerationFailure` замість
+  `unknown` з порадою «create a manual retry» (та порада відтворювала провал). Міграцію **не**
+  застосовано до прода з цієї сесії — потребує підтвердження власника. Два завислі FAILED job'и
+  термінальні, нічого не блокують; owner path: після мержу/застосування натиснути **Regenerate
+  master**.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-22,
+  [pipeline/weekly-digest § retry_weekly_digest_generation_job](pipeline/weekly-digest.md#retry_weekly_digest_generation_job-копіював-мертвий-resume_from_job_id--фікс-2026-08-22),
+  `supabase/migrations/20260822130000_weekly_manual_retry_drops_stale_resume.sql`,
+  `src/lib/weekly-digest/generation-control.ts`)
 
 - **Weekly release autopilot (2026-08-21).** Backtest `ai-weekly-2026-08-09` показав:
   сайт вийшов на день +5, соц на +9, не через visuals, а через ~28 Approve і
