@@ -5,7 +5,7 @@ Summary: як працює weekly-дайджест у проді: оркестр
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live checks 2026-08-04…22,
 editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 latest revision is the working copy 2026-08-22, pre-critic hang 2026-08-22,
-critic model rotation 2026-08-22
+critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22
 Last updated: 2026-08-22
 
 ---
@@ -1315,11 +1315,20 @@ Apply. Авторемонт (`master-repair.ts`) уже вичерпав спр�
 `regenerateWeeklyMasterAction`: копіює approved research на активну ревізію, ставить
 `editorial_master`, guidance = останній `content_quality_report`. Від 2026-08-22 guidance
 включає **і неблокуючі** issues (`story_length`, `trust_attribution`), не лише `blocker === true`
-і below-floor dimensions. **Resume saved master** не використовується з цієї кнопки: після
-persist джоба на старій ревізії, а resume свідомо ігнорує звіт, який щойно написала сама джоба.
-(source: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/content-studio.ts`
-`qualityContentNeedsRepair`, `generation-worker.ts` `issueGuidanceFromReport`, owner session
-2026-08-22)
+і below-floor dimensions.
+
+**Follow-up 2026-08-22 (live job `0fcb0b04`):** кнопка все одно ставила **новий**
+`editorial_master` без `resume_from_job_id`. Resume вимагає ту саму `revision_id`, а persist
+завжди мінтить **нову** ревізію — тож 14 сегментів робочої копії були невидимі, і прогін
+з нуля писав EN+UK (35% / Ukrainian / DeepSeek flash за ~20 хв). `planHash` також входить
+у retry guidance, тому навіть checkpoint попередньої джоби відкидався.
+
+Тепер, якщо на активній ревізії вже є EN+UK `article`, воркер сідає `seedMasterRunStateFromBundle`
+і **пропускає writer**. Лишаються pre-critic blockers, critic (інша модель) і точковий ремонт
+полів зі звіту. Перший master на ревізії без статті як і раніше пише з нуля.
+(source: `src/lib/weekly-digest/master-engine.ts` `seedMasterRunStateFromBundle`,
+`generation-worker.ts` `tryWorkingCopyMasterBundle`, прод job `0fcb0b04` live check 2026-08-22,
+owner session 2026-08-22)
 
 ## `retry_weekly_digest_generation_job` копіював мертвий `resume_from_job_id` — фікс (2026-08-22)
 

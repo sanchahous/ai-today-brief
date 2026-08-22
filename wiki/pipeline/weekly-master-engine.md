@@ -110,7 +110,15 @@ Last updated: 2026-08-22
 яка вже ставила оцінку цій копії (`criticProviderLadder` + `priorMasterCritics`). Writer
 vendor лишається виключеним. Якщо unused-пул порожній, виключення послаблюються — джоба
 не падає через ротацію.
-(source: `src/lib/weekly-digest/editorial-llm.ts`, `.env.example`, `.github/workflows/weekly-master-cli-worker.yml`)
+
+**Fix remaining issues (2026-08-22):** якщо на активній ревізії вже є EN+UK article,
+`seedMasterRunStateFromBundle` наливає 14 сегментів з робочої копії. Writer-цикл
+пропускається; лишаються deterministic pre-critic, critic і точковий ремонт. Resume
+з попередньої джоби тут не працює — persist завжди мінтить нову `revision_id`.
+(source: `src/lib/weekly-digest/master-engine.ts` `seedMasterRunStateFromBundle`,
+owner session 2026-08-22)
+
+(source: `.env.example`, `.github/workflows/weekly-master-cli-worker.yml`)
 
 ## Прозорість
 
