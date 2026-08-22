@@ -519,6 +519,28 @@ export function ukrainianCounterpart(target: RepairTarget): RepairTarget | null 
 }
 
 /**
+ * Language-local defects the Ukrainian validator already catches on its own
+ * copy. Re-adapting the whole UK field from English because we stripped
+ * "The takeaway is" or spliced a homoglyph is how pre-critic hung for 18
+ * minutes on a single body (live 2026-08-22, DeepSeek flash).
+ */
+function isLocalLanguageRepairCode(code: string): boolean {
+  return (
+    code === 'language_mechanics' ||
+    code === 'uk_language_residue' ||
+    code === 'parity_readaptation' ||
+    code.startsWith('template_leak:')
+  );
+}
+
+/** False → do not queue a Ukrainian counterpart rewrite for this English task. */
+export function repairNeedsUkrainianReadaptation(
+  issues: ReadonlyArray<{ code: string }>,
+): boolean {
+  return issues.some((issue) => !isLocalLanguageRepairCode(issue.code));
+}
+
+/**
  * Fields where an English change makes the Ukrainian copy factually stale.
  *
  * Deliberately excludes `claimIds` (copied structurally, never re-adapted),

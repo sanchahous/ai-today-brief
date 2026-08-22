@@ -4,7 +4,8 @@ Summary: як працює weekly-дайджест у проді: оркестр
 гейти, admin UX і поточний статус розкатки.
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live checks 2026-08-04…22,
 editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
-latest revision is the working copy 2026-08-22
+latest revision is the working copy 2026-08-22, pre-critic hang 2026-08-22,
+critic model rotation 2026-08-22
 Last updated: 2026-08-22
 
 ---
@@ -569,6 +570,11 @@ Composer (`startWeeklyContentStudio`) ставить `research_pack` ×3 і `edi
 voice exemplar дослівно став англійським вступом, а український writer переклав його разом із
 вигаданими деталями. Master також пройшов із однаковими 90/100 по всіх семи вимірах попри
 очевидні орфографічні, граматичні та локалізаційні помилки.
+
+> 2026-08-22 follow-up: pre-critic раунд після мех-сплайсу **перескановує** бандл і не
+> ставить UK-counterpart на `template_leak` / `language_mechanics` — інакше «Fix remaining
+> issues» зависав на LLM-переписі UK body (~18 хв, DeepSeek flash) ще до першого critic-виклику.
+> (source: job `e4135c6d`, Actions `32584262752`, `master-engine.ts` / `master-repair.ts`)
 
 `weekly-master-v7` прибирає повні exemplars із prompt, забороняє непідтверджені сцени й додає
 детерміновані blockers до LLM-критика:
@@ -1255,6 +1261,29 @@ pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інв
 14 уже збережених сегментів. Джоба завершується retryable `resumable`; **Resume saved master**
 повторює лише оцінювання/наступні ремонти на тому самому durable тексті. (source:
 `src/lib/weekly-digest/master-engine.ts`, follow-up critic-recovery fix 2026-08-10)
+
+### Critic не повторює ту саму модель у ревізіях (2026-08-22)
+
+До цього `generateIndependentCritic` завжди брав **перший** незалежний слот
+(`claude-cli`, якщо writer був OpenRouter) і найдешевший OpenRouter-кандидат поза
+vendor письменника. Пʼять регенерацій підряд отримували того самого критика — той
+самий `naturalness: 55` не мав другого погляду.
+
+Тепер:
+
+- кожен critic-раунд усередині джоби виключає моделі з `state.calls.critic`;
+- кожна нова ревізія дайджесту виключає моделі з `generation_cost_events`
+  (`step_key=critic`) цього `weekly_digest_id`;
+- слоти провайдерів крутяться так само: unused independent → unused writer slot →
+  уже використані як last resort;
+- OpenRouter-черга спершу прибирає і vendor, і id уже використаних критиків, потім
+  послаблює виключення (спочатку vendor-фільтр, потім лише writer), щоб порожній
+  каталог **не** валив джобу.
+
+Writer vendor як і раніше не оцінює власний текст.
+(source: `src/lib/weekly-digest/editorial-llm.ts` `criticProviderLadder` /
+`criticOpenRouterExclusionTiers`, `generation-worker.ts` `priorMasterCritics`,
+owner session 2026-08-22)
 
 **Перший живий прогін нового рушія** (Actions run `31367921173`, 2026-08-10) знайшов реальну
 регресію: UK-промпт наказує моделі не повертати `claimIds` (їх копіює складальник з EN), але

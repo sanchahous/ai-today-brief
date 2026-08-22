@@ -109,6 +109,29 @@ describe('rankOpenRouterModelsByValue', () => {
     expect(ids[0]).toBe('openai/gpt-cheap');
   });
 
+  it('excludes exact model ids even when the vendor would otherwise rank', () => {
+    const ranked = rankOpenRouterModelsByValue(
+      [
+        model({
+          id: 'vendor/already-used',
+          benchmarks: { artificial_analysis: { intelligence_index: 90 } },
+        }),
+        model({
+          id: 'vendor/fresh',
+          pricing: { prompt: '0.000002', completion: '0.00001' },
+          benchmarks: { artificial_analysis: { intelligence_index: 90 } },
+        }),
+      ],
+      {
+        promptTokens: 1000,
+        completionTokens: 1000,
+        minQualityIndex: 0,
+        excludeModels: ['Vendor/Already-Used'],
+      },
+    );
+    expect(ranked.map((entry) => entry.id)).toEqual(['vendor/fresh']);
+  });
+
   it('excludes free-tier, image/audio/embedding, and vendor-excluded models', () => {
     const ranked = rankOpenRouterModelsByValue(
       [

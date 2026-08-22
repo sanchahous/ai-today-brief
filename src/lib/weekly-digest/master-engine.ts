@@ -34,6 +34,7 @@ import {
   ukrainianFramePrompt,
   ukrainianStorySegmentPrompt,
   type EditorialGenerationMetadata,
+  type EditorialModelRef,
   type FramePromptStory,
   type WeeklyMasterInputStory,
   type WeeklyMasterProviderStep,
@@ -54,6 +55,7 @@ import {
   isListRepairField,
   planRepairTasks,
   readRepairValue,
+  repairNeedsUkrainianReadaptation,
   repairTargetKey,
   ukrainianCounterpart,
   type AppliedLanguageFix,
@@ -124,6 +126,12 @@ export interface WeeklyMasterRunInput {
   stories: WeeklyMasterInputStory[];
   researchPacks: WeeklyResearchPack[];
   retryGuidance?: WeeklyMasterRetryGuidance[];
+  /**
+   * Critic models that already scored this digest (earlier revisions).
+   * Combined with this run's own `state.calls.critic` so a later round
+   * never starts on the same model when another unused one exists.
+   */
+  priorCritics?: EditorialModelRef[];
   state?: MasterRunState | null;
   db?: PipelineDb;
   /** Epoch ms after which the run stops starting new work and saves what it has. */
@@ -515,7 +523,11 @@ export async function runWeeklyMaster(
       seen.add(key);
       queue.push(task);
       const counterpart = ukrainianCounterpart(task.target);
-      if (counterpart && !seen.has(repairTargetKey(counterpart))) {
+      if (
+        counterpart &&
+        repairNeedsUkrainianReadaptation(task.issues) &&
+        !seen.has(repairTargetKey(counterpart))
+      ) {
         seen.add(repairTargetKey(counterpart));
         queue.push({
           target: counterpart,
@@ -607,9 +619,15 @@ export async function runWeeklyMaster(
   let deterministicUnresolved: UnresolvedIssue[] = [];
   bundle = enforceMetadataMaxChars(bundle);
   for (let round = 1; round <= maxDeterministicRounds(); round += 1) {
-    const issues = validateMasterBundle(bundle, input.researchPacks, expectedStories);
-    const languagePass = applyLanguageMechanicsFixes(bundle, issues);
+    const scanned = validateMasterBundle(bundle, input.researchPacks, expectedStories);
+    const languagePass = applyLanguageMechanicsFixes(bundle, scanned);
     bundle = languagePass.bundle;
+    // Re-scan after a splice: the previous list still names the typo we just
+    // fixed, and sending it to planRepairTasks paid for a full-field LLM
+    // rewrite of a body the mechanical pass had already corrected.
+    const issues = languagePass.applied.length
+      ? validateMasterBundle(bundle, input.researchPacks, expectedStories)
+      : scanned;
     const blocking = issues.filter((issue) => issue.blocker);
     if (!blocking.length) {
       deterministicUnresolved = [];
@@ -625,8 +643,12 @@ export async function runWeeklyMaster(
     );
     const { tasks, unmapped } = planRepairTasks(
       bundle,
-      { issues, factualFlags: [] },
-      { featureIds, exhaustedTargetKeys: exhaustedTargets(state) },
+      { issues: blocking, factualFlags: [] },
+      {
+        featureIds,
+        exhaustedTargetKeys: exhaustedTargets(state),
+        includeNonBlocking: false,
+      },
     );
     if (!tasks.length) {
       deterministicUnresolved = unmapped;
@@ -664,7 +686,9 @@ export async function runWeeklyMaster(
     let critic: Awaited<ReturnType<typeof generateIndependentCritic>>;
     try {
       critic = await call('critic', `Editorial critic round ${round}`, percent, () =>
-        generateIndependentCritic(writerMetadata, criticPrompt(bundle, input.stories), input.db),
+        generateIndependentCritic(writerMetadata, criticPrompt(bundle, input.stories), input.db, {
+          avoidCritics: [...(input.priorCritics ?? []), ...state.calls.critic],
+        }),
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

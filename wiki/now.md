@@ -10,8 +10,34 @@ Last updated: 2026-08-22
 
 ## Стан репозиторію
 
-- **`naturalness` застрягав на 55 через 5+ ревізій — фікс (2026-08-22), гілка
-  `claude/naturalness-score-stagnation-722e9c`, PR ще не відкрито.** Власник помітив, що
+- **Critic більше не повторює ту саму модель у ревізіях (2026-08-22), гілка
+  `fix/weekly-pre-critic-hang`.** Власник попросив, щоб оцінку кожної нової ревізії
+  (і кожного critic-раунду всередині джоби) робила **інша** модель — повторний
+  той самий critic не має сенсу. До цього драбина завжди брала перший незалежний
+  слот і найдешевший OpenRouter-кандидат поза vendor письменника. Тепер unused
+  слот / unused model id ідуть першими; історія береться з `generation_cost_events`
+  (`step_key=critic`) цього дайджесту плюс `state.calls.critic` поточного прогону.
+  Якщо unused-пул порожній, виключення послаблюються — джоба не падає.
+  (source: `src/lib/weekly-digest/editorial-llm.ts`, `generation-worker.ts`
+  `priorMasterCritics`, [weekly-digest](pipeline/weekly-digest.md#critic-не-повторює-ту-саму-модель-у-ревізіях-2026-08-22))
+
+- **Pre-critic hang на `Fix remaining issues` (2026-08-22), гілка
+  `fix/weekly-pre-critic-hang`.** Власник зупинив джобу `e4135c6d` (Actions
+  `32584262752`): годину на 67%, крок `revisions`, **критик ще не стартував**. Після
+  повного rewrite DeepSeek flash `validateMasterBundle` знайшов 13 блокерів
+  (`template_leak:label_opener_takeaway`, `uk_language_residue`, `language_mechanics`);
+  мех-сплайс їх частково закрив, але план ремонту брав **старий** список issues і
+  LLM-переписував цілі body, а кожен EN body тягнув UK-counterpart (~18 хв на один
+  UK body). Зупинено в БД (`cancelled`) і в Actions, щоб reaper не підняв retry.
+  Робоча копія лишається ревізія `64170ec0` зі звітом 15:34 UTC (score 70,
+  naturalness 55 уже після сплайсу `найменшим` — той прогін був **до** мержу #317).
+  Фікс: перескан після мех-пассу, pre-critic лише blockers, counterpart лише коли
+  ремонт може змінити факти.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-22,
+  [weekly-master-engine](pipeline/weekly-master-engine.md))
+
+- **`naturalness` застрягав на 55 через 5+ ревізій — фікс змержено як
+  [#317](https://github.com/sanchahous/ai-today-brief/pull/317).** Власник помітив, що
   5 регенерацій поспіль лишали `naturalness: 55` на Research-панелі, і запитав, чи це
   недороблений функціонал. Live check прод-Supabase підтвердив: так — мех-фікс
   (`applyLanguageMechanicsFixes`) спліcував виправлення в текст, але не перераховував
@@ -25,13 +51,13 @@ Last updated: 2026-08-22
   після підтвердженого фіксу), мех-пас усередині кожного critic-раунду, whitelist для
   `isDirectLanguageReplacement`, і новий `editors_view_locale_mismatch` чек. Overall critic
   `score` навмисно не перераховується — інші реальні проблеми далі коректно гейтять review.
-  537/537 тестів weekly-digest, `tsc`/`eslint`/`wiki:sync` чисті. **Не задеплоєно, потребує
-  PR і мержу** — цей запуск ще не отримає фікс, наступний регенерейт після мержу отримає.
+  Змержено в `main` як #317. Перший прогін після мержу (`e4135c6d`) завис у pre-critic
+  **до** критика — див. пункт вище.
   (source: owner session 2026-08-22, прод-Supabase `mdiqfatpqczwqghwttpm` live check,
   [weekly-digest](pipeline/weekly-digest.md#naturalness-застрягав-на-55-через-5-ревізій--фікс-2026-08-22))
 
-- **Fix remaining issues на Master quality (2026-08-22), гілка
-  `feat/weekly-quality-fix-cta`.** Власник на Research бачив бали (naturalness 55,
+- **Fix remaining issues на Master quality (2026-08-22), змержено як
+  [#316](https://github.com/sanchahous/ai-today-brief/pull/316).** Власник на Research бачив бали (naturalness 55,
   trust 74) і жовті `story_length` / `trust_attribution` з текстом `Fix: …`, але **немає**
   кнопки Apply. Це було передбачено лише як інструкція: авторемонт уже вичерпав спроби
   всередині `editorial_master`; повторний прохід жив як **Regenerate master** у таблиці

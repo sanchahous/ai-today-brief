@@ -143,6 +143,7 @@ interface RouterHandlers {
 interface RouterLog {
   prompts: string[];
   kinds: string[];
+  criticQueues: string[][];
 }
 
 function promptKind(prompt: string): string {
@@ -155,29 +156,35 @@ function promptKind(prompt: string): string {
 }
 
 function mockRouter(handlers: RouterHandlers = {}): RouterLog {
-  const log: RouterLog = { prompts: [], kinds: [] };
+  const log: RouterLog = { prompts: [], kinds: [], criticQueues: [] };
   const counts: Record<string, number> = {};
-  vi.mocked(generateWithOpenRouterChain).mockImplementation(async (prompt: string) => {
-    const kind = promptKind(prompt);
-    counts[kind] = (counts[kind] ?? 0) + 1;
-    log.prompts.push(prompt);
-    log.kinds.push(kind);
-    const text =
-      kind === 'critic'
-        ? (handlers.critic?.(counts[kind]!) ?? criticJson())
-        : kind === 'repair'
-          ? (handlers.repair?.(prompt, counts[kind]!) ?? JSON.stringify({ value: 'Repaired value.' }))
-          : kind.endsWith('frame')
-            ? frameJson()
-            : (handlers.story?.(prompt, counts[kind]!) ??
-              storyJson({}, claimIdFor(prompt), isRadarPrompt(prompt) ? 100 : 430));
-    return {
-      text,
-      provider: 'openrouter',
-      model: kind === 'critic' ? 'vendor/critic-model' : 'other-vendor/writer-model',
-      usage: kind === 'critic' ? CRITIC_USAGE : WRITE_USAGE,
-    };
-  });
+  vi.mocked(generateWithOpenRouterChain).mockImplementation(
+    async (prompt: string, options?: { modelQueue?: string[] }) => {
+      const kind = promptKind(prompt);
+      counts[kind] = (counts[kind] ?? 0) + 1;
+      log.prompts.push(prompt);
+      log.kinds.push(kind);
+      const text =
+        kind === 'critic'
+          ? (handlers.critic?.(counts[kind]!) ?? criticJson())
+          : kind === 'repair'
+            ? (handlers.repair?.(prompt, counts[kind]!) ?? JSON.stringify({ value: 'Repaired value.' }))
+            : kind.endsWith('frame')
+              ? frameJson()
+              : (handlers.story?.(prompt, counts[kind]!) ??
+                storyJson({}, claimIdFor(prompt), isRadarPrompt(prompt) ? 100 : 430));
+      if (kind === 'critic') log.criticQueues.push(options?.modelQueue ?? []);
+      return {
+        text,
+        provider: 'openrouter',
+        model:
+          kind === 'critic'
+            ? (options?.modelQueue?.[0] ?? 'vendor/critic-model')
+            : 'other-vendor/writer-model',
+        usage: kind === 'critic' ? CRITIC_USAGE : WRITE_USAGE,
+      };
+    },
+  );
   return log;
 }
 
@@ -394,6 +401,54 @@ describe('targeted repair', () => {
     expect(repairPrompts[1]).toContain('ENGLISH COUNTERPART');
     // A whole-locale re-adaptation is exactly what this replaces.
     expect(log.kinds.filter((kind) => kind === 'uk-story')).toHaveLength(6);
+  });
+
+  it('splices a Ukrainian homoglyph before the critic instead of LLM-rewriting the field', async () => {
+    const latinE = '\u0065';
+    const log = mockRouter({
+      story: (prompt) => {
+        if (promptKind(prompt) === 'uk-story' && claimIdFor(prompt) === 'claim-1') {
+          return storyJson(
+            { hook: `Розрив між найм${latinE}ншим флагманом і найбільшими моделями зростає.` },
+            'claim-1',
+            430,
+          );
+        }
+        return storyJson({}, claimIdFor(prompt), isRadarPrompt(prompt) ? 100 : 430);
+      },
+    });
+
+    const outcome = await runWeeklyMaster({ stories: STORIES, researchPacks: RESEARCH });
+
+    if (outcome.status !== 'complete') throw new Error('expected a complete run');
+    expect(log.kinds.filter((kind) => kind === 'repair')).toEqual([]);
+    expect(outcome.bundle.uk.stories[0]!.hook).toContain('найменшим');
+    expect(outcome.bundle.uk.stories[0]!.hook).not.toContain(`найм${latinE}ншим`);
+  });
+
+  it('does not re-adapt the Ukrainian body after an English template-leak strip', async () => {
+    const log = mockRouter({
+      story: (prompt) => {
+        if (promptKind(prompt) === 'en-story' && claimIdFor(prompt) === 'claim-1') {
+          return storyJson(
+            { body: `${body(430)} The takeaway here is that isolation must be enforced.` },
+            'claim-1',
+            430,
+          );
+        }
+        return storyJson({}, claimIdFor(prompt), isRadarPrompt(prompt) ? 100 : 430);
+      },
+      repair: () =>
+        JSON.stringify({
+          value: `${body(430)} Isolation must be enforced at the boundary.`,
+        }),
+    });
+
+    await runWeeklyMaster({ stories: STORIES, researchPacks: RESEARCH });
+
+    const repairPrompts = log.prompts.filter((_, index) => log.kinds[index] === 'repair');
+    expect(repairPrompts.length).toBeGreaterThanOrEqual(1);
+    expect(repairPrompts.some((prompt) => prompt.includes('ENGLISH COUNTERPART'))).toBe(false);
   });
 
   it('repairs a factual flag instead of refusing to touch the edition', async () => {
@@ -650,5 +705,58 @@ describe('reusableMasterRunState', () => {
     expect(reusableMasterRunState({ version: 'weekly-master-run-v2', planHash: 'other', segments: {} }, planHash)).toBeNull();
     expect(reusableMasterRunState({ version: 'old', planHash, segments: {} }, planHash)).toBeNull();
     expect(reusableMasterRunState(null, planHash)).toBeNull();
+  });
+});
+
+describe('critic model rotation', () => {
+  function catalogEntry(id: string, promptRate: string) {
+    return {
+      id,
+      context_length: 128_000,
+      architecture: { modality: 'text' as const },
+      pricing: { prompt: promptRate, completion: '0.000006' },
+      benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+    };
+  }
+
+  it('does not reuse a prior revision critic, and rotates again on the next round', async () => {
+    vi.mocked(fetchOpenRouterModels).mockResolvedValue([
+      catalogEntry('other-vendor/writer-model', '0.0000005'),
+      catalogEntry('vendor-a/critic-1', '0.000001'),
+      catalogEntry('vendor-b/critic-2', '0.000002'),
+      catalogEntry('vendor-c/critic-3', '0.000003'),
+    ]);
+    const log = mockRouter({
+      critic: (callIndex) =>
+        callIndex === 1
+          ? criticJson({
+              score: 70,
+              issues: [
+                {
+                  code: 'usefulness_generic',
+                  message: 'The practical example could attach to any story.',
+                  blocker: true,
+                  locale: 'en',
+                  revisionItemId: 'item-2',
+                  field: 'practical',
+                  suggestedFix: 'Name a concrete actor and observable result.',
+                },
+              ],
+            })
+          : criticJson(),
+      repair: () => JSON.stringify({ value: 'A payments team routed one staging queue through it.' }),
+    });
+
+    const outcome = await runWeeklyMaster({
+      stories: STORIES,
+      researchPacks: RESEARCH,
+      priorCritics: [{ provider: 'openrouter', model: 'vendor-a/critic-1' }],
+    });
+
+    if (outcome.status !== 'complete') throw new Error('expected a complete run');
+    expect(log.criticQueues.length).toBeGreaterThanOrEqual(2);
+    expect(log.criticQueues[0]).toEqual(['vendor-b/critic-2']);
+    expect(log.criticQueues[1]).toEqual(['vendor-c/critic-3']);
+    expect(outcome.generation.critic.model).toBe('vendor-c/critic-3');
   });
 });

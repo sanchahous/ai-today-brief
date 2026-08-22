@@ -3,7 +3,8 @@
 Summary: як `editorial_master` тепер працює — сегментований запис, точковий ремонт
 поля замість перегенерації і принцип «якість ніколи не валить джобу».
 Sources: `src/lib/weekly-digest/master-engine.ts`, `master-segments.ts`, `master-repair.ts`,
-`editorial-llm.ts`, `generation-worker.ts`, `master-persist.ts`, owner UX 2026-08-22
+`editorial-llm.ts`, `generation-worker.ts`, `master-persist.ts`, owner UX 2026-08-22,
+critic model rotation 2026-08-22
 Last updated: 2026-08-22
 
 ---
@@ -61,14 +62,20 @@ Last updated: 2026-08-22
 Промпт короткий (одиниці тисяч символів проти ~53 000 у старого письменника), відповідь — сотні
 токенів. Раунд ремонту коштує секунди й частки цента, тому ітерувати до збіжності дешево.
 
-Після правки EN-поля автоматично ставиться в чергу **переадаптація того самого поля** українською
-(`ukrainianCounterpart`) — паритет тримається без переписування всієї локалі.
+Після правки EN-поля, **якщо ремонт може змінити факти** (не `template_leak` /
+`language_mechanics` / `uk_language_residue`), ставиться в чергу **переадаптація того самого
+поля** українською (`ukrainianCounterpart` + `repairNeedsUkrainianReadaptation`). Мовний
+сплайс не тягне повний UK-body rewrite — live hang 2026-08-22: один UK body на DeepSeek flash
+тримав джобу 18 хв у pre-critic, до першого виклику критика.
 
 ### 3. Безкоштовний детермінований раунд перед критиком
 
 До першого платного виклику критика рушій ганяє `validateMasterBundle` і лагодить **блокуючі**
 детерміновані проблеми (довжина метаданих, template-leaks, `numeric_parity`, українські мовні
-залишки, `generic_practical`, відсутній `editorsView`). Приблизно половина блокерів, які колись
+залишки, `generic_practical`, відсутній `editorsView`). Після мех-сплайсу (`applyLanguageMechanicsFixes`)
+бандл **перескановується** — інакше той самий `language_mechanics` issue, уже виправлений,
+ішов у `planRepairTasks` як повний LLM-перепис поля. Неблокуючі warnings (`story_length`,
+`article_length`) у цей раунд **не** входять. Приблизно половина блокерів, які колись
 валили випуск, вирішуються тут за центи — критик більше не витрачає пʼять хвилин на відхилення
 чернетки через те, що вже знав регулярний вираз.
 
@@ -99,7 +106,11 @@ Last updated: 2026-08-22
 | `WEEKLY_MASTER_MAX_REPAIRS_PER_ROUND` | 12 | полів за раунд |
 | `WEEKLY_MASTER_DEADLINE_MS` | 95 хв (в Actions — 5 700 000 мс) | загальний час прогону |
 
-(source: `.env.example`, `.github/workflows/weekly-master-cli-worker.yml`)
+Кожен critic-раунд і кожна нова ревізія того самого дайджесту **не стартують** на моделі,
+яка вже ставила оцінку цій копії (`criticProviderLadder` + `priorMasterCritics`). Writer
+vendor лишається виключеним. Якщо unused-пул порожній, виключення послаблюються — джоба
+не падає через ротацію.
+(source: `src/lib/weekly-digest/editorial-llm.ts`, `.env.example`, `.github/workflows/weekly-master-cli-worker.yml`)
 
 ## Прозорість
 

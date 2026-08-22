@@ -81,6 +81,9 @@ export interface EditorialGenerationMetadata {
   promptVersion: string;
 }
 
+/** Provider + model id of one editorial call — writer or a prior critic. */
+export type EditorialModelRef = Pick<EditorialGenerationMetadata, 'provider' | 'model'>;
+
 export interface WeeklyMasterRetryGuidance {
   code: string;
   message: string;
@@ -468,7 +471,7 @@ function masterMinQualityIndex() {
  */
 export function premiumOpenRouterModels(
   models: OpenRouterModelRecord[],
-  options: { configuredModels?: string[]; excludeVendors?: string[] } = {},
+  options: { configuredModels?: string[]; excludeVendors?: string[]; excludeModels?: string[] } = {},
 ) {
   const configured =
     options.configuredModels ??
@@ -481,6 +484,7 @@ export function premiumOpenRouterModels(
     completionTokens: MASTER_COMPLETION_TOKENS_ESTIMATE,
     minQualityIndex: masterMinQualityIndex(),
     excludeVendors: options.excludeVendors,
+    excludeModels: options.excludeModels,
     configuredModels: configured.length ? configured : undefined,
   });
   // A full master response is large. Retrying another OpenRouter model inside
@@ -546,12 +550,21 @@ async function resolveWeeklyDbHttpProvider(
   return resolved?.http ?? null;
 }
 
+function remainingModelQueue(queue: string[], excludeModels?: string[]) {
+  const blocked = new Set(
+    (excludeModels ?? []).map((id) => id.trim().toLowerCase()).filter(Boolean),
+  );
+  if (blocked.size === 0) return queue;
+  return queue.filter((id) => !blocked.has(id.trim().toLowerCase()));
+}
+
 async function generateOpenRouter<T>(
   prompt: string,
   parse: (raw: string) => T,
   options: {
     configuredModels?: string[];
     excludeVendors?: string[];
+    excludeModels?: string[];
     /** weekly.master_writer | weekly.master_critic -- which role's DB chain to check for an owner override. */
     role?: ProviderRole;
     db?: PipelineDb;
@@ -564,13 +577,18 @@ async function generateOpenRouter<T>(
   };
 
   const dbHttp = options.role ? await resolveWeeklyDbHttpProvider(options.role, options.db) : null;
-  if (dbHttp) {
+  const dbQueue = dbHttp ? remainingModelQueue(dbHttp.modelQueue, options.excludeModels) : [];
+  if (dbHttp && dbQueue.length) {
     // An owner-configured provider failing mid-call must not take down the
     // whole editorial generation -- fall through to the normal value-ranked
     // OpenRouter ladder below instead of throwing, same as an unconfigured
     // dbHttp (null) already falls through.
     try {
-      const result = await generateWithHttpProviderChain(prompt, dbHttp, { validateResponse });
+      const result = await generateWithHttpProviderChain(
+        prompt,
+        { ...dbHttp, modelQueue: dbQueue },
+        { validateResponse },
+      );
       return toOpenRouterResult(result, parse(result.text), prompt.length);
     } catch (error) {
       logEvent(
@@ -716,55 +734,139 @@ function configuredCriticOpenRouterModels() {
     .filter(Boolean);
 }
 
+export function editorialModelVendor(ref: EditorialModelRef): string {
+  if (ref.provider === 'claude-cli') return 'anthropic';
+  if (ref.provider === 'gemini') return 'google';
+  return openRouterModelVendor(ref.model);
+}
+
+function uniqueNormalized(values: string[]) {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const value of values) {
+    const trimmed = value.trim();
+    const key = trimmed.toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(trimmed);
+  }
+  return out;
+}
+
 /**
- * The critic must not be the model that wrote the copy. `writer` is the
- * metadata of whichever call produced the English prose, so the ladder can
- * both prefer a different provider slot and, when it has to fall back to
- * OpenRouter, exclude the writer's own vendor.
+ * Unused independent slots first, then the writer's own unused slot, then
+ * already-used slots as last resort. A second critic round (or a new
+ * revision of the same digest) must not start on the same provider that
+ * already scored the copy when another unused slot still exists.
+ *
+ * OpenRouter is a catalog, not a single model — it is never marked "used"
+ * at slot level, or a previous GLM critic would push us back onto Claude
+ * before trying GPT/Kimi/etc.
  */
-export async function generateIndependentCritic(
-  writer: Pick<EditorialGenerationMetadata, 'provider' | 'model'>,
+export function criticProviderLadder(
+  writerProvider: string,
+  usedCriticProviders: readonly string[],
+  order: EditorialProvider[] = providerOrder(),
+): EditorialProvider[] {
+  const writer = writerProvider.trim().toLowerCase();
+  const usedSlots = new Set(
+    usedCriticProviders
+      .map((provider) => provider.trim().toLowerCase())
+      .filter((provider) => provider !== 'openrouter'),
+  );
+  const unusedIndependent = order.filter(
+    (provider) => provider !== writer && !usedSlots.has(provider),
+  );
+  const unusedWriter = order.filter((provider) => provider === writer && !usedSlots.has(provider));
+  const usedIndependent = order.filter((provider) => provider !== writer && usedSlots.has(provider));
+  const usedWriter = order.filter((provider) => provider === writer && usedSlots.has(provider));
+  return [...unusedIndependent, ...unusedWriter, ...usedIndependent, ...usedWriter];
+}
+
+/**
+ * Tightest exclusion first: skip every vendor/model that already wrote or
+ * scored this edition. Each later tier relaxes so an empty catalog never
+ * fails the job — writer independence is the only exclusion that survives.
+ */
+export function criticOpenRouterExclusionTiers(
+  writer: EditorialModelRef,
+  priorCritics: readonly EditorialModelRef[],
+): Array<{ excludeVendors: string[]; excludeModels: string[] }> {
+  const writerVendor = editorialModelVendor(writer);
+  const writerModel = writer.model.trim();
+  const priorModels = uniqueNormalized(priorCritics.map((entry) => entry.model));
+  const priorVendors = uniqueNormalized(priorCritics.map((entry) => editorialModelVendor(entry)));
+  const allModels = uniqueNormalized([writerModel, ...priorModels]);
+  const allVendors = uniqueNormalized([writerVendor, ...priorVendors]);
+  return [
+    { excludeVendors: allVendors, excludeModels: allModels },
+    { excludeVendors: [writerVendor], excludeModels: allModels },
+    { excludeVendors: [writerVendor], excludeModels: writerModel ? [writerModel] : [] },
+  ];
+}
+
+function isNoEligibleOpenRouterModelError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('No premium OpenRouter editorial model is available');
+}
+
+async function generateOpenRouterCritic(
   prompt: string,
+  writer: EditorialModelRef,
+  priorCritics: readonly EditorialModelRef[],
   db?: PipelineDb,
 ) {
-  let primaryError: unknown;
-  const independentProvider = providerOrder().find((provider) => provider !== writer.provider);
-  if (independentProvider) {
+  const configured = configuredCriticOpenRouterModels();
+  let lastError: unknown;
+  for (const tier of criticOpenRouterExclusionTiers(writer, priorCritics)) {
     try {
-      return await generateWithProvider(
-        independentProvider,
-        prompt,
-        parseCritic,
-        'weekly.master_critic',
+      return await generateOpenRouter(prompt, parseCritic, {
+        configuredModels: configured,
+        excludeVendors: tier.excludeVendors,
+        excludeModels: tier.excludeModels,
+        role: 'weekly.master_critic',
         db,
-      );
+      });
     } catch (error) {
-      primaryError = error;
+      lastError = error;
+      if (!isNoEligibleOpenRouterModelError(error)) throw error;
     }
   }
+  if (lastError instanceof Error) throw lastError;
+  throw new Error('No premium OpenRouter editorial model is available.');
+}
 
-  const writerVendor =
-    writer.provider === 'openrouter'
-      ? openRouterModelVendor(writer.model)
-      : writer.provider === 'claude-cli'
-        ? 'anthropic'
-        : 'google';
-  try {
-    return await generateOpenRouter(prompt, parseCritic, {
-      configuredModels: configuredCriticOpenRouterModels(),
-      excludeVendors: [writerVendor],
-      role: 'weekly.master_critic',
-      db,
-    });
-  } catch (fallbackError) {
-    const primaryMessage =
-      primaryError instanceof Error ? primaryError.message : 'independent provider unavailable';
-    const fallbackMessage =
-      fallbackError instanceof Error ? fallbackError.message : 'critic fallback unavailable';
-    throw new Error(
-      `No independent premium editorial critic is available: ${primaryMessage}; ${fallbackMessage}`,
-    );
+/**
+ * The critic must not be the model that wrote the copy, and must not reuse a
+ * model that already scored this edition (earlier critic rounds, or earlier
+ * revisions of the same digest). Provider slots rotate the same way.
+ */
+export async function generateIndependentCritic(
+  writer: EditorialModelRef,
+  prompt: string,
+  db?: PipelineDb,
+  options?: { avoidCritics?: EditorialModelRef[] },
+) {
+  const prior = options?.avoidCritics ?? [];
+  const failures: string[] = [];
+  for (const provider of criticProviderLadder(
+    writer.provider,
+    prior.map((entry) => entry.provider),
+  )) {
+    try {
+      if (provider === 'openrouter') {
+        return await generateOpenRouterCritic(prompt, writer, prior, db);
+      }
+      return await generateWithProvider(provider, prompt, parseCritic, 'weekly.master_critic', db);
+    } catch (error) {
+      failures.push(`${provider}: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
+  throw new Error(
+    failures.length
+      ? `No independent premium editorial critic is available: ${failures.join('; ')}`
+      : 'No independent premium editorial critic is available.',
+  );
 }
 
 /**

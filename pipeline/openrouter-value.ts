@@ -64,6 +64,8 @@ export type RankOpenRouterModelsOptions = {
   /** Vendors (openrouter id prefix, e.g. "openai") allowed through without a benchmark score. */
   trustedVendorsWithoutBenchmark?: string[];
   excludeVendors?: string[];
+  /** Exact OpenRouter model ids to skip (case-insensitive). */
+  excludeModels?: string[];
   configuredModels?: string[];
 };
 
@@ -86,6 +88,9 @@ export function rankOpenRouterModelsByValue(
   const excludedVendors = new Set(
     (options.excludeVendors ?? []).map((vendor) => vendor.trim().toLowerCase()).filter(Boolean),
   );
+  const excludedModels = new Set(
+    (options.excludeModels ?? []).map((id) => id.trim().toLowerCase()).filter(Boolean),
+  );
   const trustedVendors = new Set(
     (options.trustedVendorsWithoutBenchmark ?? [])
       .map((vendor) => vendor.trim().toLowerCase())
@@ -98,6 +103,7 @@ export function rankOpenRouterModelsByValue(
     const id = model.id;
     const lower = id.toLowerCase();
     if (configured.size > 0 && !configured.has(id)) continue;
+    if (excludedModels.has(id.toLowerCase())) continue;
     if (excludedVendors.has(vendorOf(id))) continue;
     if (BASE_EXCLUDED_ID_PATTERN.test(lower)) continue;
     if (model.expiration_date) continue;
