@@ -174,6 +174,20 @@ const WEEKLY_TIMES: Record<SocialChannel, { hour: number; minute: number }> = {
   facebook: { hour: 19, minute: 30 },
 };
 
+function kyivCalendarDate(instantOrDate: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(instantOrDate)) return instantOrDate;
+  const instant = new Date(instantOrDate);
+  if (Number.isNaN(instant.getTime())) {
+    throw new Error(`Invalid weekly schedule anchor: ${instantOrDate}`);
+  }
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: SOCIAL_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(instant);
+}
+
 export function nextWeeklyScheduledForChannel(
   channel: SocialChannel,
   anchorDate: string,
@@ -187,15 +201,10 @@ export function nextWeeklyScheduledForChannel(
     month: '2-digit',
     day: '2-digit',
   }).format(now);
-  const firstDate = anchorDate < today ? today : anchorDate;
+  const anchor = kyivCalendarDate(anchorDate);
+  const firstDate = anchor < today ? today : anchor;
   for (let offset = 0; offset < 14; offset += 1) {
     const date = addCalendarDays(firstDate, offset);
-    const noon = kyivWallClockToUtc(date, 12, 0);
-    const weekday = new Intl.DateTimeFormat('en-US', {
-      timeZone: SOCIAL_TIME_ZONE,
-      weekday: 'short',
-    }).format(noon);
-    if (weekday !== 'Mon') continue;
     const slot = kyivWallClockToUtc(date, time.hour, time.minute);
     if (slot.getTime() > now.getTime() + 5 * 60_000) return slot.toISOString();
   }

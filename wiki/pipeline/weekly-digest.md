@@ -8,7 +8,8 @@ editorial-voice, PDF page-cap, seed-content, social recovery, PDF v3 / Social ta
 video_script hydration and missing video_manifest companion 2026-08-18,
 Video Save dropped v3 narration_plan 2026-08-18,
 Video shooting package in admin 2026-08-19,
-Schedule release arbitrary date/time 2026-08-20
+Schedule release arbitrary date/time 2026-08-20,
+weekly release autopilot 2026-08-21
 Last updated: 2026-08-21
 
 ---
@@ -130,14 +131,36 @@ replay проти прод-даних 2026-08-16)
 
 Черга `weekly_digest_generation_jobs` + claim RPC. Типовий порядок:
 
-1. `research_pack` (top-3) → owner approve
+1. `research_pack` (top-3) → **machine attest** (owner override лишається)
 2. `editorial_master` (OpenRouter writer models / Gemini / опційно Claude CLI через GitHub Actions)
+   → language `suggestedFix` auto-apply; meta clipped to `METADATA_MAX_CHARS`; quality
+   **не** апрувиться, поки є blocker
 3. незалежні `story_image` (після bilingual `article`) запускаються паралельно → `cover`
-4. `social_copy` / `pdf` / `video_script` (після approved `article` — окремий job, PR6, той самий
-   Claude CLI → OpenRouter → Gemini ladder)
-5. `video_manifest` (після approved `video_script` + 3 approved `story_image` + `cover`) →
-   зовнішній Remotion
+   (`prompt_only` + owner upload; QA без dignity/misleading → auto-approve image)
+4. `social_copy` / `pdf` / `video_script` (після attested `article`) — hydrator
+   `loadWeeklyStoriesForDownstream` читає і нормалізований article без `stories`
+5. `video_manifest` (після attested `video_script` + 3 uploaded `story_image` + `cover`) →
+   зовнішній Remotion (owner)
 6. import `video_final` + captions + thumbnail
+
+**Machine attestation (2026-08-21, hardening 2026-08-21).** Worker після
+`save_weekly_digest_artifact(..., in_review)` кличе `machine_attest_weekly_digest_artifact`
+(лише `service_role`), якщо тип у allow-list і гейті зелені. Гейти машинного шляху
+ідентичні людському: research_pack без hallucination-прапора; quality report без blocker і з
+`passed: true`; **article — лише коли поточний quality report ревізії без blockers**
+(однакова перевірка в owner-RPC `23514` і в attest). Збій attest пишеться в job timeline як
+подія `attest_failed`, а не тільки в консоль. Соцслоти: `nextWeeklyScheduledForChannel` від
+`release_at` (будь-який день), не наступний понеділок після `week_end`; без `release_at`
+соц-джоба падає одразу, а не планує пости на день генерації. `machine_attest_weekly_social_post`
+ідемпотентний (вже approved пост — no-op) і **не** вмикає `publish_enabled` назад. Авто-attest
+соцпоста вимагає critic ≥ 85 **і** практичний use-block: дієслово дії + конкретика (цифра або
+inline-код), голе число гейт не проходить. Єдиний human gate — Hallucination board → Ship:
+`ship_weekly_digest` робить approve + schedule(`now()+15min`) в одній транзакції й повертає
+реальні preflight-блокери в помилці; board рахує `canShip` за тими самими required-слотами,
+що й SQL preflight.
+(source: [2026-08-21-weekly-digest-release-backtest](../audits/2026-08-21-weekly-digest-release-backtest.md),
+`src/lib/weekly-digest/machine-attest.ts`,
+`supabase/migrations/20260821170000_weekly_release_autopilot_ship_and_attest_hardening.sql`)
 
 Hard spend-cap weekly master: `WEEKLY_MASTER_MAX_SPEND_USD` (default $4,
 `generation-worker.ts`) + kill-switch режиму `off` (source: PR #163, `.env.example`).

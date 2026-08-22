@@ -15,6 +15,21 @@ Last updated: 2026-08-21
 
 ## Стан репозиторію
 
+- **Weekly release autopilot (2026-08-21).** Backtest `ai-weekly-2026-08-09` показав:
+  сайт вийшов на день +5, соц на +9, не через visuals, а через ~28 Approve і
+  роз’їзд контрактів. Пайплайн тепер **machine-attest** артефакти з `gates_passed`
+  (packs / quality лише без blocker / article / pdf / social / script / manifest);
+  Approve з blocking `language_mechanics` заборонений; `suggestedFix` застосовується
+  до quality; meta ≤160 на записі. Owner path: Hallucination board → 8 uploadів →
+  shooting+YouTube → Ship. Соцслоти від `release_at`, не «наступний понеділок».
+  GEO на сторінці: `NewsArticle` + FAQ + таблиця метрик.
+  Review-pass того ж дня: attest-гейти SQL = гейтам owner-RPC (article теж перевіряє
+  quality report), соц-attest ідемпотентний і не чіпає `publish_enabled`, Ship —
+  атомарний RPC `ship_weekly_digest`, збої attest видимі в timeline (`attest_failed`),
+  board `canShip` рахується за required-слотами preflight.
+  (source: [audits/2026-08-21-weekly-digest-release-backtest](audits/2026-08-21-weekly-digest-release-backtest.md),
+  [weekly-admin-runbook](ops/weekly-admin-runbook.md))
+
 - **GA4 coverage + SEO hardening на гілці `feat/ga4-coverage-and-seo-hardening`, PR
   [#312](https://github.com/sanchahous/ai-today-brief/pull/312), + фікс другого GA4 ID (2026-08-21/22).**
   Аналітика: закриті прогалини подій (домашня, хаби, брифи, дайджести, воронка підписки,
@@ -38,8 +53,8 @@ Last updated: 2026-08-21
   під героєм і **відео перенесено з кінця статті на початок**.
   **Не перевірено наживо:** скрапер Facebook (Sharing Debugger після деплою) і рендер
   розмітки в Telegram (поточна копія її не містить — перший чесний тест на випуску 23.08).
-  Прод-рядок LinkedIn пакета `612df95c` виправлено вручну під нову політику; гард відкликав
-  апрув і повернув його в `in_review` — потребує повторного Approve власником.
+  LinkedIn пакету `612df95c` після ручної правки 21.08 знову `scheduled` на 24.08 16:10 Kyiv
+  (відновлено `content_hash`, approval_version=content_version).
   (source: [marketing/omni-channel-publishing-matrix](marketing/omni-channel-publishing-matrix.md),
   прод-`social_posts` / `social_click_events` live check 2026-08-21)
 

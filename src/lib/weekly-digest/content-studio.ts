@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { clipToMaxChars } from './clip-text';
 import { bannedPhrasesFor, exemplarFor } from './editorial-voice';
 
 export const WEEKLY_CONTENT_STUDIO_VERSION = 'weekly-content-studio-v2.1';
@@ -363,12 +364,30 @@ export function detectTemplateLeaks(bundle: WeeklyMasterBundle): WeeklyQualityIs
   return issues;
 }
 
-const METADATA_MAX_CHARS = {
+export const METADATA_MAX_CHARS = {
   seoTitle: 65,
   metaDescription: 160,
   ogTitle: 70,
   ogDescription: 200,
 } as const;
+
+function clipArticleMetadata(article: WeeklyArticleMaster): WeeklyArticleMaster {
+  return {
+    ...article,
+    seoTitle: clipToMaxChars(article.seoTitle, METADATA_MAX_CHARS.seoTitle),
+    metaDescription: clipToMaxChars(article.metaDescription, METADATA_MAX_CHARS.metaDescription),
+    ogTitle: clipToMaxChars(article.ogTitle, METADATA_MAX_CHARS.ogTitle),
+    ogDescription: clipToMaxChars(article.ogDescription, METADATA_MAX_CHARS.ogDescription),
+  };
+}
+
+/** Hard-enforces meta/OG budgets on write, not only in the quality checker. */
+export function enforceMetadataMaxChars(bundle: WeeklyMasterBundle): WeeklyMasterBundle {
+  return {
+    en: clipArticleMetadata(bundle.en),
+    uk: clipArticleMetadata(bundle.uk),
+  };
+}
 
 const ABSTRACT_EDITION_TITLE_PATTERNS: Record<WeeklyLocale, RegExp[]> = {
   en: [/\bthe agentic shift\b/i, /\b(?:the )?new era of\b/i, /\bthe future of\b/i],

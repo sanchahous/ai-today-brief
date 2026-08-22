@@ -6,6 +6,7 @@ import {
   criticVerdictLooksUnreliable,
   editorialQualityFailures,
   editorialQualityRetryGuidance,
+  enforceMetadataMaxChars,
   validateMasterBundle,
   WEEKLY_MASTER_SPEC_VERSION,
   type WeeklyArticleMaster,
@@ -46,6 +47,7 @@ import {
   type MasterSegment,
 } from './master-segments';
 import {
+  applyLanguageMechanicsFixes,
   applyRepairValue,
   describeRepairTarget,
   isListRepairField,
@@ -53,6 +55,7 @@ import {
   readRepairValue,
   repairTargetKey,
   ukrainianCounterpart,
+  type AppliedLanguageFix,
   type RepairTarget,
   type RepairTask,
   type UnresolvedIssue,
@@ -135,6 +138,7 @@ export type WeeklyMasterRunOutcome =
       /** True when the quality gate passes with nothing unresolved. */
       converged: boolean;
       unresolved: UnresolvedIssue[];
+      languageFixes: AppliedLanguageFix[];
       generation: {
         english: EditorialGenerationMetadata;
         ukrainian: EditorialGenerationMetadata;
@@ -567,8 +571,11 @@ export async function runWeeklyMaster(
   // critic never spends five minutes rejecting a draft over something a
   // regular expression already knew about.
   let deterministicUnresolved: UnresolvedIssue[] = [];
+  bundle = enforceMetadataMaxChars(bundle);
   for (let round = 1; round <= maxDeterministicRounds(); round += 1) {
     const issues = validateMasterBundle(bundle, input.researchPacks, expectedStories);
+    const languagePass = applyLanguageMechanicsFixes(bundle, issues);
+    bundle = languagePass.bundle;
     const blocking = issues.filter((issue) => issue.blocker);
     if (!blocking.length) {
       deterministicUnresolved = [];
@@ -734,18 +741,27 @@ export async function runWeeklyMaster(
     };
   }
 
-  const remainingFailures = editorialQualityFailures(quality);
-  const converged = remainingFailures.length === 0;
+  bundle = enforceMetadataMaxChars(bundle);
+  const language = applyLanguageMechanicsFixes(bundle, quality.issues);
+  bundle = language.bundle;
+  const appliedSpans = new Set(language.applied.map((fix) => `${fix.locale}:${fix.span}`));
+  quality = {
+    ...quality,
+    issues: quality.issues.filter((issue) => {
+      if (issue.code !== 'language_mechanics' || !issue.blocker || !issue.span || !issue.locale) {
+        return true;
+      }
+      return !appliedSpans.has(`${issue.locale}:${issue.span}`);
+    }),
+  };
+  const remainingFailuresAfterLanguage = editorialQualityFailures(quality);
+  const converged = remainingFailuresAfterLanguage.length === 0;
   const unresolved = dedupeUnresolved([
     ...deterministicUnresolved,
     ...criticUnresolved,
-    // A gate that still fails must always hand the owner something to read.
-    // The loop can exit with an empty list (e.g. the last round was spent
-    // re-scoring an unreliable verdict), and "needs review, 0 items" would be
-    // the same uninformative dead end this refactor exists to remove.
     ...(converged
       ? []
-      : remainingFailures.map((failure) => ({
+      : remainingFailuresAfterLanguage.map((failure) => ({
           code: 'quality_gate',
           message: failure,
           blocker: true,
@@ -767,6 +783,7 @@ export async function runWeeklyMaster(
     quality,
     converged,
     unresolved,
+    languageFixes: language.applied,
     generation: {
       english: accumulate(state.calls.english),
       ukrainian: accumulate(state.calls.ukrainian),

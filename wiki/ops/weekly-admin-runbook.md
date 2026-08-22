@@ -6,7 +6,7 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`
 [weekly-digest](../pipeline/weekly-digest.md), production incidents / owner sessions
 2026-08-04…18, staged social-copy recovery 2026-08-17, Social tab channel-aware form 2026-08-18,
 approved-row Save workflow RPC 2026-08-18, video_script undefined.map 2026-08-18, missing video_manifest companion 2026-08-18, Video Save dropped v3 plan 2026-08-18,
-Video shooting package in admin 2026-08-19, arbitrary Schedule release date/time 2026-08-20.
+Video shooting package in admin 2026-08-19, arbitrary Schedule release date/time 2026-08-20, weekly release autopilot 2026-08-21.
 Last updated: 2026-08-21
 
 ---
@@ -15,24 +15,28 @@ Last updated: 2026-08-21
 
 | Статус | Що це означає | Що робити тобі |
 |---|---|---|
-| Job **succeeded** / pack **ready** | Система **згенерувала** артефакт | Переглянути → **Approve version** |
-| Review **in_review** | Чекає людського апруву | **Approve** або Request changes |
-| Review **approved** | Можна йти далі по пайплайну | Нічого, наступний крок |
-| Job **queued** + packs не approved | Worker **свідомо не стартує** master | Approve усі 3 Top packs |
+| Job **succeeded** + `machine_attested` | Система прийняла артефакт | Нічого; дивись Hallucination board |
+| Job timeline: **`attest_failed`** | Авто-attest не пройшов, артефакт застряг у `in_review` | Approve version вручну після перевірки або Create linked retry |
+| Quality **blockers > 0** | Approve **заборонений** (і людині, і машині) | Чекай auto language-fix / Resume master |
+| Visuals **prompt ready** | Треба зовнішня генерація + upload | Copy prompt → gen → upload |
+| Hallucination board **can Ship** | Немає blockers і waiting-список порожній (ті самі слоти, що й preflight) | Один AAL2 **Ship** |
 | Job **succeeded** + **Needs your review** | Рушій вичерпав ремонт, лишились невирішені перевірки; текст збережено як **неактивна draft-ревізія** | Читай `unresolved` у стрічці → Overview → Editorial versions → правити вручну або **Resume saved master** |
 | Job **failed**, код **`resumable`** | Скінчився бюджет часу, не дописано сегмент або critic недоступний; усі готові сегменти збережено | **Resume saved master** — уже написані історії не оплачуються вдруге |
 | Job **failed** + **Resume saved master** | Є збережені сегменти (навіть частково) | Натисни **Resume saved master**, не generic retry |
 | Job **failed** без Resume | Немає жодного збереженого сегмента або інший тип збою | Читай причину → doctor/sandbox → linked retry лише після діагностики |
 
-**Succeeded ≠ approved.** Це найчастіша причина «чому master у черзі».
+**Твій шлях випуску:** (1) Hallucination board, (2) 8 uploadів, (3) shooting + YouTube,
+(4) Ship. Не клікай Research/Article/PDF/Social/Script, якщо `gates_passed`.
+Кнопки Approve лишаються як override. Quality з blockers **не можна** апрувити.
 
 ## Шлях випуску (зліва направо)
 
 ```
-Stories → Research → Article → Visuals → Social → PDF → Video → Release
+Stories → Research (auto) → Article (auto) → Visuals (you upload) → Social (auto) → PDF (auto) → Video (you shoot) → Release (Hallucination board → Ship)
 ```
 
-Overview показує preflight blockers з лінком на вкладку. Іди зверху вниз.
+Overview показує preflight blockers і Hallucination board. Іди зверху вниз лише якщо
+машина зупинилась.
 
 ### 1. Stories
 
@@ -60,28 +64,24 @@ Overview показує preflight blockers з лінком на вкладку. 
 (source: [weekly-digest § Seed-контент історій](../pipeline/weekly-digest.md#seed-контент-історій-2026-08-16),
 [weekly-editorial-selection § Що змінила v3](../pipeline/weekly-editorial-selection.md#що-змінила-v3-2026-08-16))
 
-### 2. Research (критичний human gate)
+### 2. Research (машина; дивись Hallucination board)
 
 1. **Start / retry Content Studio** — ставить `research_pack` ×3 і `editorial_master` у
    чергу. Якщо паки на цій ревізії вже `succeeded`, кнопка ставить **нові** jobs
    (`:retry:{uuid}`), а не мовчки повертає старі рядки. In-flight слоти не дублює.
-   Waiting master лишається на місці — після Approve нових паків він сам зрушить.
+   Waiting master зрушить сам, коли три паки **machine-attested** (без твоїх Approve).
    Старі succeeded jobs лишаються в історії. Не плутати з **Regenerate master**.
-   (source: [weekly-digest § Start / retry](../pipeline/weekly-digest.md#content-studio-retry-after-succeeded-jobs-2026-08-16))
-2. Дочекайся трьох packs **ready** (Generation jobs: succeeded).
-3. На **кожній** Feature-картці прочитай excerpt і `independent_source_count`. `0` не
-   означає зіпсований пак: звіти first-party (опитування HF про власні завантаження)
-   часто не мають другого видавця. Якщо пак таки знайшов іншу сторінку в корпусі —
-   перевір, що це той самий реліз, а не сусідня модель. Тред HN не рахується
-   підтвердженням. Картка моделі на HF/ModelScope може дати короткий excerpt
-   (title + description), не повний README — цього досить, щоб порахувати
-   незалежну сторінку. Числа з єдиного джерела в майбутній статті мають читатись як
-   «за даними X», не як незалежний факт.
-4. На **кожній** Feature-картці: **Approve version** (owner, AAL2).
-5. Лічильник **Approved research** має стати **3/3**.
-6. Лише тоді `editorial_master` переходить у **queued** і одразу отримує один GitHub Actions
-   worker (cron ~кожні **5 хв** лишається safety-dispatcher).
-7. Коли з’явиться **Master quality**:
+   (source: [weekly-digest § Start / retry](../pipeline/weekly-digest.md#content-studio-retry-after-succeeded-jobs-2026-08-16),
+   [release autopilot](../audits/2026-08-21-weekly-digest-release-backtest.md))
+2. Дочекайся трьох packs **ready** (Generation jobs: succeeded). Approve version лишається
+   як override, якщо хочеш відхилити пак.
+3. На **кожній** Feature-картці за бажанням прочитай excerpt і `independent_source_count`.
+   `0` не означає зіпсований пак: звіти first-party часто не мають другого видавця.
+   Фінальна перевірка claims→URL — на Hallucination board, не 3× Approve.
+4. Лічильник **Approved research** має стати **3/3** після machine attest.
+5. Тоді `editorial_master` переходить у **queued** і отримує GitHub Actions worker
+   (cron ~кожні **5 хв** лишається safety-dispatcher).
+6. Коли з’явиться **Master quality**:
    - **джоба більше не падає через якість.** Якщо рушій не зміг закрити всі перевірки, він
      зберігає випуск як неактивну draft-ревізію, завершується `succeeded` і показує
      **Needs your review** із переліком `unresolved` — це задача на редагування, не збій
@@ -259,7 +259,10 @@ prompt history; Approve override використовуй лише якщо оч
 1. **Кожен пост мусить містити дію.** Контракт каналів тепер вимагає блок практики: назва
    інструменту або налаштування, крок і ціна/межа. Пост, після якого читач не знає, що
    спробувати, — не готовий, навіть якщо всі числа правильні. Матеріал беруть із поля
-   **Practical** відповідної історії, не вигадують.
+   **Practical** відповідної історії, не вигадують. Авто-attest (без кліку) проходить лише
+   пост із critic ≥ 85 **і** справжнім use-block: дієслово дії + конкретика (цифра або
+   inline-код). Голий заголовок із числом гейт не проходить — такий пост чекає на ручний
+   Save & approve.
 2. **Telegram рендерить розмітку.** `**жирний**` і `` `назва прапорця` `` там працюють
    (`parse_mode: HTML`). **У решті пʼяти каналів ці маркери заборонені** — гейт блокує їх
    кодом `raw_markup`, бо вони друкуються сирими.
@@ -270,7 +273,9 @@ prompt history; Approve override використовуй лише якщо оч
    можна, бо пост уже опублікований.
 
 Пам'ятай: **будь-яка правка копії після апруву скидає апрув** і повертає картку в
-`in_review` (`guard_social_content_approval`). Це не баг — так і задумано.
+`in_review` (`guard_social_content_approval`). Це не баг — так і задумано. Machine-attest
+не вмикає `publish_enabled`: якщо канал на паузі, attest лише апрувить текст, публікація
+лишиться вимкненою.
 
 ### Social: один package job → шість карток
 
@@ -458,7 +463,7 @@ Postpone не створює нову RPC — це той самий Pause → A
 
 | Симптом | Ймовірна причина | Дія |
 |---|---|---|
-| `editorial_master` **queued**, packs succeeded | Packs ще **in_review** | Approve 3/3 |
+| `editorial_master` **queued**, packs succeeded | Packs ще **in_review** (attest не пройшов) | Hallucination board / job error; Approve лише override |
 | Spinner на queued master | UI раніше крутив навіть коли gate блокує | Шукай банер «Waiting for pack approvals» |
 | Master **failed**, score 8x, blockers | Critic / deterministic gate | Читай Master quality → retry |
 | Після retry знову `UNSUPPORTED_*` на деталі зі статті | Старий короткий excerpt / вузькі claims | Переконайся що packs **v3** з довгим excerpt; Approve знову |

@@ -1,13 +1,7 @@
 import type { SocialChannel, SocialLocale } from '@/lib/social/types';
+import { WEEKLY_SOCIAL_MATRIX } from './social-matrix';
 
-export const WEEKLY_SOCIAL_MATRIX = {
-  telegram: 'uk',
-  facebook: 'uk',
-  x: 'en',
-  threads: 'uk',
-  linkedin: 'en',
-  instagram: 'en',
-} as const satisfies Record<SocialChannel, SocialLocale>;
+export { WEEKLY_SOCIAL_MATRIX } from './social-matrix';
 
 /** Workspace tab the editor should open to clear a preflight blocker. */
 export type WeeklyPreflightTab =
