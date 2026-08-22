@@ -6,6 +6,32 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-22
 
+## 2026-08-22 — Другий follow-up: ланцюжковий resume досі self-invalidated (живе відтворення)
+
+**Джерело:** власник попросив підключитись в адмінку й розібратись, як рухати конкретний
+реліз (`/admin/weekly/71af784b-…`). Живий тест обох фіксів вище на цьому релізі.
+
+**Знайдено:** **Resume saved master** на fresh-run джобі `411aba45` спрацював (job `7bf3974d`)
+— перший follow-up-фікс підтверджено наживо. Але **Resume saved master** на самій `7bf3974d`
+(яка була резюме `411aba45`) одразу впав знову — `failure_code=resume_source_stale`. Причина:
+`beforeCreatedAt` бралась з `created_at` найближчого resume-джерела, а не кореня ланцюжка;
+`7bf3974d`'s власна межа (при її старті) була `created_at` кореня `411aba45`, тож два запити
+бачили різні набори звітів → `planHash` розійшовся.
+
+**Змінено** (`src/lib/weekly-digest/generation-worker.ts`):
+- `masterResumeGuidanceBoundary` — проходить `resume_from_job_id` до кореня (макс. 10 хопів),
+  бере `created_at` кореня, а не найближчого джерела
+- `fetchMasterResumeSource` вибирає `input` (потрібен для проходу ланцюжка)
+- Тести: 3 нові (одно-хоповий, багато-хоповий, non-resume без зайвого DB-виклику) —
+  `generation-worker.test.ts`, 34/34 у файлі
+- [pipeline/weekly-digest § Третій шар](pipeline/weekly-digest.md#третій-шар-ланцюжковий-resume-досі-self-invalidated-2026-08-22-живе-відтворення)
+
+**Не зроблено:** гілка `claude/editorial-master-chained-resume-fix` ще не в PR (попередня
+`claude/editorial-master-admin-jobs-af3509` вже змержена як #313, тож новий фікс піднято на
+новій гілці від актуального `main`). Два реальні прод-job'и (`c457f984` — впав, і сам `7bf3974d`
+— succeeded-з-needs_owner_review) лишаються на релізі власника; після мержу натиснути
+**Resume saved master** ще раз на `7bf3974d`.
+
 ## 2026-08-22 — Follow-up: Resume saved master самозаперечувала власний checkpoint
 
 **Джерело:** власник запитав, чи пофіксено проблему editorial_master «в цілому» після
