@@ -6,6 +6,24 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-22
 
+## 2026-08-22 — Робоча копія weekly = остання ревізія
+
+**Джерело:** власник на `/admin/weekly` (випуск 16 Aug – 22 Aug 2026) не розумів, навіщо
+Restore останньої AUTO-DRAFT ревізії, якщо саме в ній останні правки, а активною лишалась
+перша.
+
+**Що змінено:**
+- `editorial_master` після будь-якого `complete` активує нову ревізію
+  (`create_service_weekly_digest_revision`), пише article + quality report на неї;
+  `create_service_weekly_digest_revision_draft` більше не викликається
+- Quality blockers лишаються гейтом для Ship; visuals/social/PDF не ставляться в чергу,
+  поки є `needs_owner_review`
+- Адмінка: **Use latest version** (один клік) для вже існуючих неактивних drafts;
+  **Go back to this version** — undo зі причиною
+- Оновлено [weekly-digest](pipeline/weekly-digest.md),
+  [weekly-master-engine](pipeline/weekly-master-engine.md),
+  [weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md)
+
 ## 2026-08-22 — Другий follow-up: ланцюжковий resume досі self-invalidated (живе відтворення)
 
 **Джерело:** власник попросив підключитись в адмінку й розібратись, як рухати конкретний

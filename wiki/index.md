@@ -2,16 +2,10 @@
 
 Summary: головний зміст усієї wiki. Кожен рядок — одна сторінка + один рядок опису. Точка входу
 для будь-якого питання: спершу читаємо цей файл, потім релевантні сторінки.
-Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery fix
-2026-08-10, story-image rollout deduplication і three-concept illustration jury 2026-08-11,
-experimental Visual Affordance V10 owner review 2026-08-13, illustration B1-fix 2026-08-15,
-Start / retry Content Studio after succeeded jobs 2026-08-16,
-social package LinkedIn recovery, GitHub dispatch 503 recovery, staged social checkpoints,
-LinkedIn 7-page overflow bounds, approval-ready Social repair, bounded social provider ladder та
-reliable social routing/candidate fallback, clean Social job history 2026-08-17,
-Social tab media contract 2026-08-18, Social approved-row Save fix 2026-08-18, video_script hydration 2026-08-18, video_manifest companion enqueue 2026-08-18, video script Save dropped v3 plan 2026-08-18, Video4 Remotion render 2026-08-18, Video shooting package in admin 2026-08-19,
-GA4 coverage + SEO hardening audit 2026-08-21
-Last updated: 2026-08-21
+Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery 2026-08-10,
+story-image / Visual Affordance / illustration B1-fix 2026-08-11…15, Social/PDF/Video 2026-08-17…19,
+GA4 + SEO 2026-08-21, latest weekly revision is the working copy 2026-08-22
+Last updated: 2026-08-22
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -61,7 +55,7 @@ Last updated: 2026-08-21
 | ✅ [pipeline/weekly-digest](pipeline/weekly-digest.md) | Weekly Content Studio v2, durable workers, Social `artifactId` media contract, 7-slide Instagram carousel, PDF v3 fixed-grid 7 pages, linked-retry social checkpoints, score-aligned critic warnings, versioned legacy-post repair, grounded copy/approve CLI, bounded 7-page LinkedIn document, video_script hydration from normalized article, Generate manifest recovery, semantic story images v5.1, spend ledger і admin UX | `.env.example` + PR #160–#177/#208/#209/#222/#293 + `social-adapter.ts` + `generation-worker.ts` + `linkedin-document.ts` + `pdf.ts` |
 | ✅ [pipeline/editorial-voice](pipeline/editorial-voice.md) | Редакційний голос weekly-дайджесту: prompt-leak захист, contrast-pairs, мовні й banned-phrase гейти, `numeric_parity` EN↔UK | `editorial-voice.ts`, owner sessions 2026-08-06/09 |
 | ✅ [pipeline/weekly-master-failures](pipeline/weekly-master-failures.md) | Розбір збоїв `editorial_master` 09.08: 7 причин (таймаут CLI, tool-use, reasoning-сліпий stall-детектор, зелений прогін на провалі, фолбек, JSON-преамбула, відсутня UK/revise-драбина) | Actions runs + live sandbox 2026-08-09 |
-| ✅ [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) | Ітеративний рушій `editorial_master`: посегментний запис із чекпоїнтом на кожен сегмент, точковий ремонт поля замість перегенерації, якість більше не валить джобу | `master-engine.ts` / `master-segments.ts` / `master-repair.ts`, owner session 2026-08-09 |
+| ✅ [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) | Ітеративний рушій `editorial_master`: посегментний запис, точковий ремонт поля, якість більше не валить джобу; від 2026-08-22 non-converged вихід одразу стає робочою копією | `master-engine.ts` / `master-persist.ts`, owner session 2026-08-09 / 2026-08-22 |
 | ✅ [pipeline/content-sim](pipeline/content-sim.md) | Симуляція/бектест: per-concept 2×3 parallel vision loop, structural gates, advisory semantic planning, escalation, release gate | `pipeline/card-image.ts`, `src/lib/content-sim`, 2026-08-12 |
 | ✅ [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) | Виконавча специфікація ілюстрацій після рішення 2026-08-15. B1-fix … E3, F2, F3, G, A2, F5 зроблено 2026-08-15; origin JPEG новин — follow-up G2 | owner review живого випуску 2026-08-14 + рішення власника 2026-08-15 + `AI_Today_Brief_Visual_Algorithm_Plan.pdf` |
 | ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | CMS знімає (Shooting package); рендерер лише зводить |
@@ -113,7 +107,7 @@ Last updated: 2026-08-21
 | ✅ [ops/vercel-image-quota](ops/vercel-image-quota.md) | Інцидент 402 на `/_next/image`, власний loader; origin JPEG карток; site delivery WebP | live check 2026-08-14, `next.config.ts`, `src/lib/image-loader.ts`, `pipeline/card-image.ts` |
 | ✅ [ops/owner-checklist](ops/owner-checklist.md) | Env-матриця, launch-блокери, go-live послідовність | колишній `docs/OWNER-CHECKLIST.md` |
 | ✅ [ops/social-cms-runbook](ops/social-cms-runbook.md) | Runbook соц-CMS | колишній `docs/SOCIAL-CMS-RUNBOOK.md` |
-| ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладки, blocker-free social approval, clean job history, staged resume, LinkedIn 7-page overflow, stuck jobs, Generate manifest, GitHub 503 recovery | нове 2026-08-04, оновлено 2026-08-18 |
+| ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладки, робоча копія = остання ревізія, blocker-free social approval, stuck jobs | нове 2026-08-04, оновлено 2026-08-22 |
 | ✅ [ops/weekly-sandbox](ops/weekly-sandbox.md) | `weekly:doctor` + `weekly:sandbox`: префлайт провайдерів і повний прогін master-флоу на прод-даних без записів у прод | нове 2026-08-09 |
 | ✅ [ops/services-portability](ops/services-portability.md) | Портативність сервісів | колишній `docs/SERVICES-PORTABILITY.md` |
 | ✅ [ops/reddit-compliance](ops/reddit-compliance.md) | Чому Reddit API вимкнено і що потрібно для вмикання | колишній `docs/REDDIT-COMPLIANCE.md` |

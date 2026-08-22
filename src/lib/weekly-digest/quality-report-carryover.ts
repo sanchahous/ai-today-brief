@@ -1,16 +1,14 @@
 /**
- * `editorial_master`'s gate-failure path saves `content_quality_report`
- * against the revision that was active *when the job started*, then mints a
- * separate draft revision with the same editorial content (generation-worker.ts,
- * createMasterRevision). If the owner later restores that draft to active
- * (Overview > Editorial versions > Restore this version), the report stays
- * attached to the revision that just went inactive: `revert_weekly_digest_revision`
- * only flips `active_revision_id`, it never touches `weekly_digest_artifacts`.
- * The Research tab then shows "Master quality report is missing" even though
- * editorial_master already ran and scored this exact content — `revision_id`
- * is immutable on artifacts (guard_weekly_digest_artifact_write), so the fix
- * is to insert a fresh copy on the now-active revision via the same RPC the
- * worker itself uses, not to rewrite the orphaned row.
+ * Historical path (before 2026-08-22): a non-converged editorial_master saved
+ * `content_quality_report` on the revision active at job start, then minted a
+ * separate inactive draft. Switching that draft to active
+ * (`revert_weekly_digest_revision`) only flips `active_revision_id`, so the
+ * report stayed on the revision that just went inactive.
+ *
+ * New runs attach the report to the activated revision themselves. This helper
+ * remains for those older drafts (and as a visible recovery if carry-over
+ * ever no-ops): insert a fresh copy via `save_weekly_digest_artifact` rather
+ * than mutating `revision_id` (`guard_weekly_digest_artifact_write`).
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';

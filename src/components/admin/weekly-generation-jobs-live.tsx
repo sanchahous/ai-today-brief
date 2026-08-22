@@ -192,10 +192,11 @@ function savedMasterSegments(job: GenerationJob): number {
 }
 
 /**
- * The edition generated, but the repair loop could not clear every check, so
- * it was saved as an inactive draft revision for the owner instead of failing
- * the job. Distinct from a failure on purpose: the copy exists and is waiting
- * on a human, not on another 30-minute run.
+ * The edition generated, but the repair loop could not clear every check.
+ * Saved as the working copy with needs_owner_review instead of failing the
+ * job. Distinct from a failure on purpose: the copy exists and is waiting
+ * on a human, not on another 30-minute run. Historical jobs may still point
+ * at an inactive draft (`master_draft_revision_id`); those need Use latest.
  */
 function needsOwnerReview(job: GenerationJob): boolean {
   return jobOutput(job)?.needs_owner_review === true;
@@ -379,9 +380,9 @@ export function WeeklyGenerationJobsLive({
                   ) : null}
                   {needsOwnerReview(job) ? (
                     <p className="mt-1 text-amber-200">
-                      Needs your review: {unresolvedCount(job)} check(s) the repair loop could not
-                      clear. The edition was saved as an inactive draft under Overview → Editorial
-                      versions.
+                      {typeof jobOutput(job)?.master_draft_revision_id === 'string'
+                        ? `Needs your review: ${unresolvedCount(job)} check(s). The latest text is not the working copy yet — click Use latest version on the banner.`
+                        : `Needs your review: ${unresolvedCount(job)} check(s) the repair loop could not clear. This is now the working copy — open Article. Ship stays blocked until those checks are cleared.`}
                     </p>
                   ) : null}
                   {job.status === 'failed' && !savedMasterSegments(job) ? (

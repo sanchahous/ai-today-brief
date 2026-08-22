@@ -24,6 +24,7 @@ import type {
   WeeklyGenerationAttemptAdminRow,
   WeeklyGenerationEventAdminRow,
   WeeklyGenerationJobAdminRow,
+  WeeklyRevisionAdminRow,
 } from '@/lib/weekly-digest/admin-data';
 import {
   WEEKLY_SOCIAL_MATRIX,
@@ -52,6 +53,10 @@ import {
   formatPostUploadQaLine,
   postUploadQaNeedsWarning,
 } from '@/lib/weekly-digest/post-upload-qa';
+import {
+  editorialVersionRole,
+  type EditorialVersionRole,
+} from '@/lib/weekly-digest/master-persist';
 import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
 
 function contentSimClearedFromMetadata(metadata: Json | null | undefined): boolean | undefined {
@@ -71,6 +76,7 @@ import {
   postponeWeeklyDigestAction,
   rebuildWeeklySelectionAction,
   restoreWeeklyDigestRevisionAction,
+  useLatestWeeklyDigestRevisionAction,
   resumeWeeklyThreadsSequenceAction,
   reviewWeeklyArtifactAction,
   saveWeeklyRevisionAction,
@@ -1583,10 +1589,11 @@ function OverviewPanel({
               Save.
             </li>
             <li>
-              <span className="font-semibold text-white">Research → Article → Social → PDF →
-              Script</span>{' '}
-              run without Approve when gates pass. Watch the job strip; retryable failures
-              re-queue themselves.
+              <span className="font-semibold text-white">
+                Research → Article → Social → PDF → Script
+              </span>{' '}
+              run without Approve when gates pass. Watch the job strip; retryable failures re-queue
+              themselves.
             </li>
             <li>
               <span className="font-semibold text-white">Visuals</span> — copy prompts, generate
@@ -1793,77 +1800,25 @@ function OverviewPanel({
             Editorial versions
           </h2>
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            Real content edits create a new immutable version. Identical saves keep the current
-            version and its approvals. Restoring an earlier version makes it active again without
-            inventing a new revision number.
+            The working copy is the latest generated or saved version. Older versions stay here so
+            you can go back. Identical saves keep the current version and its approvals.
           </p>
           {workspace.revisions.length ? (
             <ul className="mt-4 grid gap-3">
-              {workspace.revisions.map((revision) => {
-                const isActive = revision.id === workspace.digest.active_revision_id;
-                const draftEvent = workspace.releaseEvents.find(
-                  (event) =>
-                    event.revision_id === revision.id &&
-                    event.event_type === 'draft_revision_created',
-                );
-                const draftReason = draftEvent ? textFrom(draftEvent.payload, 'reason') : null;
-                return (
-                  <li
-                    key={revision.id}
-                    className="rounded-xl border border-white/8 bg-white/[.025] p-3"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-bold text-white">
-                        Revision {revision.revision_number}
-                      </p>
-                      {isActive ? (
-                        <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-200 uppercase">
-                          Active
-                        </span>
-                      ) : draftReason ? (
-                        <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-amber-200 uppercase">
-                          Auto-draft
-                        </span>
-                      ) : null}
-                      <span className="text-xs text-slate-500">
-                        {kyivDateTime(revision.created_at)}
-                      </span>
-                    </div>
-                    <p className="mt-1 truncate text-sm text-slate-300">{revision.title_en}</p>
-                    {draftReason ? (
-                      <p className="mt-1 text-xs text-amber-200/80">
-                        Never became active — {draftReason}. Review the article/video content before
-                        restoring.
-                      </p>
-                    ) : null}
-                    {canRestoreRevision && !isActive ? (
-                      <form action={restoreWeeklyDigestRevisionAction} className="mt-3 grid gap-3">
-                        <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
-                        <input type="hidden" name="target_revision_id" value={revision.id} />
-                        <label className={LABEL}>
-                          Why restore this version?
-                          <textarea
-                            name="reason"
-                            rows={2}
-                            required
-                            minLength={10}
-                            maxLength={500}
-                            className={TEXTAREA}
-                            placeholder="Undo accidental Save, recover carried artifacts, etc."
-                          />
-                        </label>
-                        <div>
-                          <ActionSubmitButton
-                            idleLabel="Restore this version"
-                            pendingLabel="Restoring…"
-                            className={SECONDARY}
-                          />
-                        </div>
-                      </form>
-                    ) : null}
-                  </li>
-                );
-              })}
+              {workspace.revisions.map((revision) => (
+                <EditorialVersionCard
+                  key={revision.id}
+                  digestId={workspace.digest.id}
+                  revision={revision}
+                  role={editorialVersionRole({
+                    revisionId: revision.id,
+                    activeRevisionId: workspace.digest.active_revision_id,
+                    latestRevisionId: workspace.revisions[0]?.id ?? null,
+                  })}
+                  draftReason={draftReasonForRevision(workspace, revision.id)}
+                  canRestore={canRestoreRevision}
+                />
+              ))}
             </ul>
           ) : (
             <p className="mt-4 text-sm text-slate-500">No editorial versions yet.</p>
@@ -1890,6 +1845,98 @@ function OverviewPanel({
         </section>
       </aside>
     </div>
+  );
+}
+
+function draftReasonForRevision(
+  workspace: WeeklyDigestWorkspace,
+  revisionId: string,
+): string | null {
+  const draftEvent = workspace.releaseEvents.find(
+    (event) => event.revision_id === revisionId && event.event_type === 'draft_revision_created',
+  );
+  return draftEvent ? textFrom(draftEvent.payload, 'reason') : null;
+}
+
+function EditorialVersionCard({
+  digestId,
+  revision,
+  role,
+  draftReason,
+  canRestore,
+}: {
+  digestId: string;
+  revision: WeeklyRevisionAdminRow;
+  role: EditorialVersionRole;
+  draftReason: string | null;
+  canRestore: boolean;
+}) {
+  const borderClass =
+    role === 'active'
+      ? 'border-emerald-400/30 bg-emerald-400/[.04]'
+      : role === 'latest-unused'
+        ? 'border-amber-400/30 bg-amber-400/[.06]'
+        : 'border-white/8 bg-white/[.025]';
+  return (
+    <li className={`rounded-xl border p-3 ${borderClass}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-sm font-bold text-white">Revision {revision.revision_number}</p>
+        {role === 'active' ? (
+          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-200 uppercase">
+            Working copy
+          </span>
+        ) : null}
+        {role === 'latest-unused' ? (
+          <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-amber-200 uppercase">
+            Latest — not in use
+          </span>
+        ) : null}
+        <span className="text-xs text-slate-500">{kyivDateTime(revision.created_at)}</span>
+      </div>
+      <p className="mt-1 truncate text-sm text-slate-300">{revision.title_en}</p>
+      {role === 'latest-unused' ? (
+        <p className="mt-1 text-xs text-amber-200/80">
+          {draftReason ? `${draftReason}. ` : ''}
+          Article and other tabs still show the working copy until you switch.
+        </p>
+      ) : null}
+      {canRestore && role === 'latest-unused' ? (
+        <form action={useLatestWeeklyDigestRevisionAction} className="mt-3">
+          <input type="hidden" name="weekly_digest_id" value={digestId} />
+          <input type="hidden" name="target_revision_id" value={revision.id} />
+          <ActionSubmitButton
+            idleLabel="Use this version"
+            pendingLabel="Switching…"
+            className={PRIMARY}
+          />
+        </form>
+      ) : null}
+      {canRestore && role === 'earlier' ? (
+        <form action={restoreWeeklyDigestRevisionAction} className="mt-3 grid gap-3">
+          <input type="hidden" name="weekly_digest_id" value={digestId} />
+          <input type="hidden" name="target_revision_id" value={revision.id} />
+          <label className={LABEL}>
+            Why go back to this version?
+            <textarea
+              name="reason"
+              rows={2}
+              required
+              minLength={10}
+              maxLength={500}
+              className={TEXTAREA}
+              placeholder="Undo a bad Save, recover an earlier story set, etc."
+            />
+          </label>
+          <div>
+            <ActionSubmitButton
+              idleLabel="Go back to this version"
+              pendingLabel="Switching…"
+              className={SECONDARY}
+            />
+          </div>
+        </form>
+      ) : null}
+    </li>
   );
 }
 
@@ -2346,12 +2393,9 @@ function ResearchPanel({
             /100
           </h3>
           <p className="mt-3 text-sm leading-6 text-slate-400">
-            <code>editorial_master</code> already scored this content — the report just never
-            followed when this version became active. That happens when a run doesn&apos;t fully
-            converge (saved for review as a draft) and the draft is later restored from{' '}
-            <span className="font-semibold text-white">Editorial versions</span>: restoring only
-            switches which version is active, it doesn&apos;t move the report. Nothing was lost —
-            attach the existing report to review and approve it here.
+            <code>editorial_master</code> already scored this content — the report stayed on the
+            previous working copy when this version was switched in. Nothing was lost. Attach the
+            existing report here to review and approve it.
           </p>
           <form action={carryOverWeeklyQualityReportAction} className="mt-4">
             <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
@@ -4863,10 +4907,10 @@ function ReleasePanel({
             <p className="font-bold text-cyan-100">Editing freezes 15 minutes before release</p>
             <p className="mt-2 text-sm leading-6 text-cyan-100/75">
               Review, text changes, media replacement and re-approval stay open until 15 minutes
-              before the scheduled release time (the default cadence is Monday 15:45/16:00 Kyiv,
-              but any future date and time can be scheduled). The automated preflight then freezes
-              the scheduled revision. To change anything after that gate, an owner pauses the
-              edition, edits, runs approval again and reschedules it.
+              before the scheduled release time (the default cadence is Monday 15:45/16:00 Kyiv, but
+              any future date and time can be scheduled). The automated preflight then freezes the
+              scheduled revision. To change anything after that gate, an owner pauses the edition,
+              edits, runs approval again and reschedules it.
             </p>
           </div>
 
@@ -5132,40 +5176,58 @@ function ReleasePanel({
 }
 
 /**
- * The active revision is not always the newest one: `editorial_master`
- * creates a fresh draft revision whenever a run does not fully converge, and
- * nothing promotes it automatically -- that is a deliberate human gate, not a
- * bug (see wiki/pipeline/weekly-master-engine.md). Without this banner an
- * editor on any tab has no way to tell the article they are reading was
- * superseded by a later, usually better, AI attempt.
+ * Tabs always render the working copy (`active_revision_id`). This banner is
+ * for leftover unused latest revisions — historical inactive drafts, or after
+ * an intentional go-back. New master runs activate themselves, so this should
+ * be rare.
  */
-function NewerDraftBanner({ workspace }: { workspace: WeeklyDigestWorkspace }) {
+function NewerDraftBanner({
+  workspace,
+  canEdit,
+}: {
+  workspace: WeeklyDigestWorkspace;
+  canEdit: boolean;
+}) {
   const latest = workspace.revisions[0];
   if (!latest || latest.id === workspace.digest.active_revision_id) return null;
   const active = workspace.revisions.find(
     (revision) => revision.id === workspace.digest.active_revision_id,
   );
-  const draftEvent = workspace.releaseEvents.find(
-    (event) => event.revision_id === latest.id && event.event_type === 'draft_revision_created',
-  );
-  const draftReason = draftEvent ? textFrom(draftEvent.payload, 'reason') : '';
+  const draftReason = draftReasonForRevision(workspace, latest.id);
+  const canSwitch =
+    canEdit &&
+    workspace.digest.status !== 'publishing' &&
+    workspace.digest.status !== 'published' &&
+    workspace.digest.status !== 'cancelled';
   return (
-    <section className="mb-6 rounded-2xl border border-cyan-300/30 bg-cyan-300/8 p-4 text-sm text-cyan-100">
+    <section className="mb-6 rounded-2xl border border-amber-300/30 bg-amber-300/8 p-4 text-sm text-amber-100">
       <p className="font-bold">
-        Newer draft available — Revision {latest.revision_number}
+        Latest version is not the working copy — Revision {latest.revision_number}
         {latest.title_en ? `: ${latest.title_en}` : ''}
       </p>
-      <p className="mt-1 leading-6 text-cyan-100/80">
+      <p className="mt-1 leading-6 text-amber-100/80">
         {draftReason ? `${draftReason}. ` : ''}
-        The active version shown below is Revision {active?.revision_number ?? '?'}, not the latest
-        AI attempt.
+        Tabs below still show Revision {active?.revision_number ?? '?'}. Use the latest version
+        unless you went back on purpose.
       </p>
-      <Link
-        href={`/admin/weekly/${workspace.digest.id}?tab=overview#versions-heading`}
-        className="mt-2 inline-block font-semibold text-cyan-100 underline underline-offset-2"
-      >
-        Review Editorial versions →
-      </Link>
+      {canSwitch ? (
+        <form action={useLatestWeeklyDigestRevisionAction} className="mt-3">
+          <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+          <input type="hidden" name="target_revision_id" value={latest.id} />
+          <ActionSubmitButton
+            idleLabel="Use latest version"
+            pendingLabel="Switching…"
+            className={PRIMARY}
+          />
+        </form>
+      ) : (
+        <Link
+          href={`/admin/weekly/${workspace.digest.id}?tab=overview#versions-heading`}
+          className="mt-2 inline-block font-semibold text-amber-100 underline underline-offset-2"
+        >
+          Review Editorial versions →
+        </Link>
+      )}
     </section>
   );
 }
@@ -5248,7 +5310,7 @@ export function WeeklyWorkspace({
           </p>
         </section>
       ) : null}
-      <NewerDraftBanner workspace={workspace} />
+      <NewerDraftBanner workspace={workspace} canEdit={canEdit} />
       {activeTab === 'overview' ? (
         <OverviewPanel
           workspace={workspace}

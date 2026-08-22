@@ -8,8 +8,8 @@ export type GenerationFailureKind =
   | 'validation'
   /**
    * Legacy only. The editorial master no longer fails on quality: an edition
-   * the repair loop cannot fully fix is saved as an inactive draft revision
-   * and the job finishes as `succeeded` with `needs_owner_review`. Kept so
+   * the repair loop cannot fully fix is saved as the working revision and
+   * the job finishes as `succeeded` with `needs_owner_review`. Kept so
    * historical rows still classify.
    */
   | 'quality_gate'
