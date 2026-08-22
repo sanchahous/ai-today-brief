@@ -1241,7 +1241,9 @@ export function editorialQualityPasses(report: WeeklyContentQualityReport) {
  * left locale-less.
  */
 export function editorialQualityRetryGuidance(
-  report: Pick<WeeklyContentQualityReport, 'dimensions'>,
+  report: {
+    dimensions: ReadonlyArray<Pick<WeeklyQualityDimension, 'name' | 'score' | 'note'>>;
+  },
 ): Array<{ code: string; message: string; locale?: 'uk' }> {
   const guidance: Array<{ code: string; message: string; locale?: 'uk' }> = [];
   for (const dimension of report.dimensions) {
@@ -1257,4 +1259,70 @@ export function editorialQualityRetryGuidance(
     });
   }
   return guidance;
+}
+
+function isQualityDimensionName(value: unknown): value is WeeklyQualityDimension['name'] {
+  return (
+    value === 'engagement' ||
+    value === 'voice' ||
+    value === 'clarity' ||
+    value === 'trust' ||
+    value === 'usefulness' ||
+    value === 'naturalness' ||
+    value === 'parity'
+  );
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Whether the Master quality panel should offer **Fix remaining issues**.
+ * True for any coded issue (blocker or warning), a below-floor dimension,
+ * an overall score under the gate, or leftover factual flags. Warnings such
+ * as `story_length` are not Ship blockers, but they are exactly the work
+ * the owner asked the writer to do from the amber cards.
+ */
+export function qualityReportNeedsRepair(
+  report: {
+    issues: readonly unknown[];
+    dimensions: ReadonlyArray<Pick<WeeklyQualityDimension, 'name' | 'score' | 'note'>>;
+    score?: number;
+    factualFlags?: readonly string[];
+  },
+): boolean {
+  if (report.issues.length > 0) return true;
+  if ((report.factualFlags ?? []).length > 0) return true;
+  if (typeof report.score === 'number' && report.score < OVERALL_MIN_SCORE) return true;
+  return editorialQualityRetryGuidance(report).length > 0;
+}
+
+/** Loose JSONB `content` from `content_quality_report` artifacts. */
+export function qualityContentNeedsRepair(content: unknown): boolean {
+  if (!isPlainObject(content)) return false;
+  const rawIssues = Array.isArray(content.issues) ? content.issues : [];
+  const factualFlags = Array.isArray(content.factualFlags)
+    ? content.factualFlags.filter((flag): flag is string => typeof flag === 'string')
+    : [];
+  const score = typeof content.score === 'number' ? content.score : undefined;
+  const dimensions: WeeklyQualityDimension[] = [];
+  if (Array.isArray(content.dimensions)) {
+    for (const entry of content.dimensions) {
+      if (!isPlainObject(entry) || !isQualityDimensionName(entry.name)) continue;
+      const dimScore = Number(entry.score);
+      if (!Number.isFinite(dimScore)) continue;
+      dimensions.push({
+        name: entry.name,
+        score: dimScore,
+        note: typeof entry.note === 'string' ? entry.note : '',
+      });
+    }
+  }
+  return qualityReportNeedsRepair({
+    issues: rawIssues,
+    dimensions,
+    factualFlags,
+    ...(score !== undefined ? { score } : {}),
+  });
 }

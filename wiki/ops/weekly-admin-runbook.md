@@ -117,11 +117,19 @@ Overview показує preflight blockers і Hallucination board. Іди зве
      (`supabase/migrations/20260810160000_weekly_revision_rpc_security_definer.sql`),
      застосовано до прод-БД. Якщо все одно бачиш помилку на Restore/Save після 2026-08-10 —
      це вже щось інше, дивись реальний текст у червоному банері (більше не opaque `Ref: …`);
-   - якщо джоба показує **Resume saved master** → натисни її: уже написані сегменти не
-     пишуться повторно, critic і раунди ремонту стартують заново; це також правильний шлях після
-     недоступного critic-а, не тисни поруч generic retry;
-   - якщо **Resume saved master** немає → діагностуй blocker, далі Start/retry за потреби;
-   - жовті length warnings часто не блокують Approve, якщо score/gate ок;
+   - **Fix remaining issues (2026-08-22)** на панелі Master quality. Рядки `Fix:` у жовтих
+     картках — це інструкції для writer/critic, не кнопки. Авторемонт уже відпрацював усередині
+     `editorial_master`; те, що лишилось (низький naturalness/trust, `story_length`,
+     `trust_attribution`) потребує **нового проходу**. Кнопка стоїть під картками й викликає той
+     самий `regenerateWeeklyMasterAction`, що й **Regenerate master** у таблиці Generation jobs
+     (її легко пропустити). Research packs копіюються, guidance береться з поточного звіту
+     (включно з **неблокуючими** warnings), нова чернетка стає робочою копією, spend cap рахується.
+     **Resume saved master** тут зазвичай неправильний шлях: після `succeeded` джоба прив’язана
+     до старої ревізії, а resume навмисно **не** бачить свіжий звіт. Не Approve quality, поки
+     блокери не зникли; жовті length warnings самі по собі Approve не блокують, але кнопка їх
+     теж віддає в guidance;
+   - якщо джоба показує **Resume saved master** після `failed`/`resumable` (не дописано сегмент /
+     critic недоступний) → натисни її: уже написані сегменти не пишуться повторно;
    - з 2026-08-06 сюди можуть потрапити нові блокери `editors_view_missing` /
      `discussion_question_missing` (тільки для трьох головних історій) і
      `template_leak:*` (мітка поля, вшита в тіло статті — «Practical scenario:»,
