@@ -4,7 +4,26 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-21
+Last updated: 2026-08-22
+
+## 2026-08-22 — Прибрано другий GA4 ID: GTM-контейнер GTM-5S6TXPG5 видалено з коду
+
+**Джерело:** власник помітив «різні GA4 ID». Розбір: на живій сторінці підвантажувались
+обидва теги — прямий gtag `G-5R89X6Q5D4` і контейнер `GTM-5S6TXPG5`. Завантажив JS
+контейнера з googletagmanager.com: у конфігурації `"tags":[]` і жодного
+GA4-destination/`G-…` всередині — **контейнер порожній**, нічого не збирав, лише додавав
+другий ідентифікатор і мережевий запит на кожну сторінку. Документована ідея «GTM шле
+page_view» не відповідала дійсності — page_view шле наш код (SPA-роутер).
+
+**Змінено:**
+- Видалено `src/components/google-tag-manager.tsx`, його монтування в `layout.tsx`;
+  `GTM_ID`/`gtmConfigured`/`tagsConfigured` з `analytics-config.ts`; env
+  `NEXT_PUBLIC_GTM_ID` з `.env.example`
+- Consent-defaults тепер гейтяться на `analyticsConfigured`
+- [analytics/ga4-gsc](analytics/ga4-gsc.md): архітектура переписана — один тег gtag;
+  чек-лист звірки property 540467725 залишено відкритим (власник)
+- ⚠️ Власнику: можна видалити `NEXT_PUBLIC_GTM_ID` зі Vercel; контейнер GTM-5S6TXPG5 в
+  Google не чіпати до звірки property (пункт 3 «Чекає на власника»)
 
 ## 2026-08-21 — Повне покриття GA4 + SEO hardening (гілка feat/ga4-coverage-and-seo-hardening)
 

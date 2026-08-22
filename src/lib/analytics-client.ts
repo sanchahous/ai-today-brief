@@ -1,6 +1,6 @@
 'use client';
 
-import { analyticsConfigured, tagsConfigured } from '@/lib/analytics-config';
+import { analyticsConfigured } from '@/lib/analytics-config';
 import { CONSENT_STORAGE_KEY, parseConsentJson, type ConsentState } from '@/lib/consent';
 
 export type ParamValue = string | number | boolean | null | undefined;
@@ -52,7 +52,7 @@ export function setUserProperties(props: Record<string, ParamValue>): void {
 }
 
 export function applyConsentToGtag(consent: Pick<ConsentState, 'analytics' | 'ads'>): void {
-  if (!tagsConfigured || !gtagReady()) return;
+  if (!analyticsConfigured || !gtagReady()) return;
   window.gtag?.('consent', 'update', {
     analytics_storage: consent.analytics ? 'granted' : 'denied',
     ad_storage: consent.ads ? 'granted' : 'denied',
