@@ -9,8 +9,9 @@ video_script hydration and missing video_manifest companion 2026-08-18,
 Video Save dropped v3 narration_plan 2026-08-18,
 Video shooting package in admin 2026-08-19,
 Schedule release arbitrary date/time 2026-08-20,
-weekly release autopilot 2026-08-21
-Last updated: 2026-08-21
+weekly release autopilot 2026-08-21,
+manual retry drops stale resume pointer 2026-08-22
+Last updated: 2026-08-22
 
 ---
 
@@ -1286,6 +1287,66 @@ Quality rejection як і раніше не пише article artifacts у неа
 `master_draft_revision_id`, `quality_artifact_id` і `unresolved_issues`.
 (source: `src/lib/weekly-digest/generation-worker.ts`,
 `supabase/migrations/20260723095458_weekly_digest_v2.sql`)
+
+## `retry_weekly_digest_generation_job` копіював мертвий `resume_from_job_id` — фікс (2026-08-22)
+
+Живий прод-репро на `weekly_digest_id=71af784b-3c89-47f8-bc38-e3eae4def2a7`: job `c471563f`
+(**Resume saved master** від `resumeWeeklyMasterFromCheckpointAction`, `input.resume_from_job_id`
+на успішний-але-`needs_owner_review` job `411aba45`) впав на `prepare` з «Master resume source
+has no saved state for the current research packs — start a fresh master instead» —
+`priorMasterRetryGuidance` підхопив свіжий `content_quality_report`, який сам `411aba45` щойно
+записав, `planHash` змінився, checkpoint більше не reusable (це очікувано, `master-engine.ts`).
+Проблема — власник натиснув **Create linked retry** на `c471563f`: RPC
+`retry_weekly_digest_generation_job` копіював `v_source.input` **без змін**, тобто новий job
+`299e2c6c` успадкував той самий мертвий `resume_from_job_id` і впав ідентично 3 хв по тому,
+теж на `prepare`, `failure_code=unknown`. Кожен наступний «Create linked retry» повторював би те
+саме нескінченно — джоба структурно не могла коли-небудь пройти цей крок.
+
+Причина класифікації `unknown`: `classifyGenerationFailure` не мала гілки для цього повідомлення,
+падала у дефолтний фолбек з порадою «create a manual retry» — саме та дія, що відтворює провал.
+
+**Фікс** (`supabase/migrations/20260822130000_weekly_manual_retry_drops_stale_resume.sql`):
+`retry_weekly_digest_generation_job` тепер вставляє `v_source.input - 'resume_from_job_id'` —
+лінкований retry такого job'а стартує свіжий master-ран (як **Regenerate master**), а не
+переграє той самий мертвий resume-покажчик. `resume_from_job_id` пишеться лише
+`resumeWeeklyMasterFromCheckpointAction` (виключно для `editorial_master`), тож видалення ключа
+безпечне для решти job types. Додано код `resume_source_stale` у `classifyGenerationFailure`
+(`generation-control.ts`) з правильною порадою («Regenerate master», не retry).
+(source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-22 —
+`weekly_digest_generation_jobs` для `71af784b-3c89-47f8-bc38-e3eae4def2a7`,
+`src/lib/weekly-digest/generation-control.ts`, `generation-control.test.ts`)
+
+### Глибша причина: `priorMasterRetryGuidance` самозаперечувала власний checkpoint (2026-08-22)
+
+Одного фіксу вище було замало для кореня: **Resume saved master** — кнопка саме для
+`succeeded`-з-`needs_owner_review` джоб («precisely the case an owner most wants to resume
+from», коментар у коді) — майже гарантовано падала з тим самим «no saved state» навіть без
+жодного «Create linked retry». Причина: `priorMasterRetryGuidance(revisionId)` бере
+**останній** `content_quality_report` по ревізії без винятку для звіту, який щойно написала
+сама джоба, яку резюмують. Перевірено на живих даних: звіт `411aba45` містить вимір
+`naturalness: 55` (поріг `NATURALNESS_PARITY_MIN_SCORE=80`, `content-studio.ts`) →
+`dimensionGuidanceFromReport` повертає непорожню guidance → `planHash` при спробі резюме
+відрізняється від `planHash`, з яким `411aba45` стартував (тоді на ревізії не було жодного
+звіту — `retryGuidance=[]`). Тобто джоба інвалідує власний checkpoint у момент, коли дописує
+фінальний звіт про себе.
+
+**Фікс:** `priorMasterRetryGuidance` приймає `beforeCreatedAt` — при резюме межа береться з
+`created_at` job'и-джерела (`fetchMasterResumeSource`, раніше `loadMasterResumeState`,
+розбито на fetch + `resolveMasterResumeState`, бо тепер потрібен `created_at` **до**
+розрахунку `retryGuidance`/`planHash`, а не після). Один master-job на ревізію одночасно
+(перевіряється в іншому місці), тож межа по `created_at` джерела точно відновлює guidance,
+яку та джоба бачила на власному старті. Перевірено на проді: запит з межею `411aba45.created_at`
+повертає 0 звітів — той самий порожній набір, що бачила сама `411aba45` о 08:28.
+Тести: `resolveMasterResumeState` (чисте резюме + «no saved state»),
+`priorMasterRetryGuidance` (межа застосовується при резюме, не застосовується на свіжому
+ран, `naturalness`-вимір справді генерує guidance) — `generation-worker.test.ts`.
+Цей фікс — лише в app-коді (`src/lib/weekly-digest/generation-worker.ts`), деплоїться
+звичайним Vercel-пайплайном при мержі, на відміну від SQL-міграції вище його не можна
+застосувати напряму до прода.
+(source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-22 —
+`weekly_digest_artifacts.content` для ревізії `c4aea013-e7f6-4769-94dd-099a399d51b2`,
+`src/lib/weekly-digest/generation-worker.ts`, `generation-worker.test.ts`,
+`src/lib/weekly-digest/content-studio.ts`)
 
 ## PDF page-count contract violation — фікс (2026-08-07)
 

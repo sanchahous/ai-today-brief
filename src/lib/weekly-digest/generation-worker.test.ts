@@ -4,13 +4,27 @@ const rpc = vi.fn(async (_fn: string, _args: Record<string, unknown>) => ({
   data: [] as unknown[],
   error: null as { message: string } | null,
 }));
-vi.mock('@/lib/supabase-admin', () => ({ getSupabaseAdmin: () => ({ rpc }) }));
+// Default no-op chain so tests that don't touch `.from(...)` (most of this
+// file) are unaffected; priorMasterRetryGuidance tests below override this
+// per-test with mockReturnValueOnce.
+const from = vi.fn(() => {
+  const chain: Record<string, unknown> = {};
+  const self = () => chain;
+  chain.select = self;
+  chain.eq = self;
+  chain.order = self;
+  chain.limit = () => Promise.resolve({ data: [], error: null });
+  return chain;
+});
+vi.mock('@/lib/supabase-admin', () => ({ getSupabaseAdmin: () => ({ rpc, from }) }));
 
 import {
   computeSocialCopyCheckpointHash,
   masterBundleFromArtifacts,
   masterInputStories,
   masterRunStateFromOutput,
+  priorMasterRetryGuidance,
+  resolveMasterResumeState,
   resolveSocialPostForRepair,
   runWeeklyDigestGenerationJobs,
   siblingHintsFromStorySiblingArtifact,
@@ -110,6 +124,93 @@ describe('masterRunStateFromOutput', () => {
 
   it('returns null for an output that has no saved state at all', () => {
     expect(masterRunStateFromOutput({ quality_score: 90 } as unknown as Json, planHash)).toBeNull();
+  });
+});
+
+describe('resolveMasterResumeState', () => {
+  const planHash = computeMasterPlanHash([pack()], []);
+  const resumableOutput = {
+    master_run_state: {
+      version: 'weekly-master-run-v2',
+      planHash,
+      segments: { 'en:story:item-1': { value: { body: 'x' }, metadata: {} } },
+      repairs: [],
+      repairAttempts: { 'stale-target': 2 },
+      criticRounds: 3,
+      quality: null,
+      unresolved: [{ code: 'stale', reason: 'stale' }],
+      calls: { english: [], ukrainian: [], critic: [] },
+    },
+  } as unknown as Json;
+
+  it('resets critic budget so a resumed run gets a fresh repair pass', () => {
+    const resolved = resolveMasterResumeState({ id: 'source-1', output: resumableOutput }, planHash);
+    expect(resolved.sourceJobId).toBe('source-1');
+    expect(resolved.state.criticRounds).toBe(0);
+    expect(resolved.state.repairAttempts).toEqual({});
+    expect(resolved.state.unresolved).toEqual([]);
+    expect(resolved.state.segments).toHaveProperty('en:story:item-1');
+  });
+
+  // The exact failure this codebase hit live 2026-08-22: a "Create linked
+  // retry" of this failure must not blindly retry the same resume (fixed
+  // separately in retry_weekly_digest_generation_job) -- but the message
+  // itself, and its non-null-state trigger, must keep pointing owners at
+  // "Regenerate master" via classifyGenerationFailure's resume_source_stale.
+  it('throws a named error when the source has no state for the current plan', () => {
+    expect(() =>
+      resolveMasterResumeState({ id: 'source-1', output: { retryable: true } as unknown as Json }, planHash),
+    ).toThrow(/Master resume source has no saved state/);
+  });
+});
+
+describe('priorMasterRetryGuidance', () => {
+  beforeEach(() => from.mockClear());
+
+  function stubReportQuery(rows: Array<{ content: unknown; created_at: string }>) {
+    const calls: { lt?: unknown[] } = {};
+    const chain: Record<string, unknown> = {};
+    const self = () => chain;
+    chain.select = self;
+    chain.eq = self;
+    chain.lt = (...args: unknown[]) => {
+      calls.lt = args;
+      return chain;
+    };
+    chain.order = self;
+    chain.limit = () => Promise.resolve({ data: rows, error: null });
+    from.mockReturnValueOnce(chain);
+    return calls;
+  }
+
+  // The bug this guards: resuming a `needs_owner_review` master job picked up
+  // that job's *own* just-written quality report as "latest guidance," which
+  // changed the plan hash relative to what the job started with and made its
+  // checkpoint permanently unresumable the instant it finished (live
+  // 2026-08-22, weekly_digest_id 71af784b-3c89-47f8-bc38-e3eae4def2a7, job
+  // 411aba45). Bounding the query to reports written before the resume
+  // source started recovers the guidance that job actually saw.
+  it('excludes reports at/after the resume source job when a bound is given', async () => {
+    const calls = stubReportQuery([]);
+    await priorMasterRetryGuidance('revision-1', '2026-08-22T09:26:00.000Z');
+    expect(calls.lt).toEqual(['created_at', '2026-08-22T09:26:00.000Z']);
+  });
+
+  it('does not bound the query for a fresh, non-resume run', async () => {
+    const calls = stubReportQuery([]);
+    await priorMasterRetryGuidance('revision-1');
+    expect(calls.lt).toBeUndefined();
+  });
+
+  it('turns a below-floor dimension score into retry guidance', async () => {
+    stubReportQuery([
+      {
+        created_at: '2026-08-22T09:21:40.000Z',
+        content: { dimensions: [{ name: 'naturalness', score: 55 }], issues: [] },
+      },
+    ]);
+    const guidance = await priorMasterRetryGuidance('revision-1');
+    expect(guidance.some((entry) => entry.code.includes('naturalness'))).toBe(true);
   });
 });
 

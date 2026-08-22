@@ -6,6 +6,72 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-22
 
+## 2026-08-22 — Follow-up: Resume saved master самозаперечувала власний checkpoint
+
+**Джерело:** власник запитав, чи пофіксено проблему editorial_master «в цілому» після
+першого фіксу (нижче). Перевірка показала — ні: навіть без «Create linked retry», кнопка
+**Resume saved master** сама по собі майже гарантовано падає для джоб з `needs_owner_review`.
+
+**Знайдено:** `priorMasterRetryGuidance(revisionId)` бере останній `content_quality_report`
+по ревізії без винятку для звіту, який щойно написала сама джоба-джерело. На проді:
+звіт `411aba45` (та сама SUCCEEDED job з попереднього запису) містить вимір
+`naturalness: 55` (поріг `NATURALNESS_PARITY_MIN_SCORE=80`) → непорожня retry guidance →
+`planHash` при резюме відрізняється від `planHash`, з яким `411aba45` стартувала (тоді на
+ревізії взагалі не було жодного звіту). Джоба інвалідує власний checkpoint саме в момент,
+коли дописує фінальний звіт про себе — рівно той кейс, який код називає «precisely the case
+an owner most wants to resume from».
+
+**Змінено** (`src/lib/weekly-digest/generation-worker.ts`):
+- `priorMasterRetryGuidance` приймає `beforeCreatedAt` — при резюме межа береться з
+  `created_at` job'и-джерела
+- `loadMasterResumeState` розбито на `fetchMasterResumeSource` (fetch + валідація, тепер
+  повертає й `created_at`) + `resolveMasterResumeState` (перевірка стану проти planHash) —
+  `created_at` потрібен **до** розрахунку `retryGuidance`, тож порядок кроків у
+  `generateEditorialMaster` змінено
+- Тести: `resolveMasterResumeState` (чисте резюме + помилка «no saved state»),
+  `priorMasterRetryGuidance` (межа застосовується при резюме / не застосовується на
+  свіжому ран / `naturalness`-вимір генерує guidance) — `generation-worker.test.ts`,
+  +5 тестів (31/31 у файлі)
+- [pipeline/weekly-digest § Глибша причина](pipeline/weekly-digest.md#глибша-причина-priormasterretryguidance-самозаперечувала-власний-checkpoint-2026-08-22)
+
+**Перевірено на проді (read-only):** запит з межею `411aba45.created_at` повертає 0 звітів —
+той самий порожній набір, що бачила сама джоба о 08:28:20, коли рахувала власний `planHash`.
+
+**Не зроблено:** це зміна лише в app-коді (TypeScript), не в SQL — деплоїться звичайним
+Vercel-пайплайном при мержі PR, на відміну від міграції з попереднього запису її не можна
+застосувати напряму до прода з цієї сесії.
+
+## 2026-08-22 — editorial_master «Create linked retry» нескінченно повторював мертвий resume
+
+**Джерело:** власник повідомив «джоби editorial_master фейляться» зі скріншотом
+`/admin/weekly/71af784b-3c89-47f8-bc38-e3eae4def2a7?tab=research` — два FAILED job'и поспіль,
+`Code: unknown`. Підтверджено на прод-Supabase `mdiqfatpqczwqghwttpm`.
+
+**Знайдено:** job `c471563f` (**Resume saved master** → `411aba45`) впав на `prepare`, бо
+`priorMasterRetryGuidance` підхопив свіжий `content_quality_report`, який щойно записав сам
+`411aba45` — `planHash` змінився, checkpoint не reusable (очікувано, `master-engine.ts`).
+Власник натиснув **Create linked retry**: RPC `retry_weekly_digest_generation_job` копіював
+`input` без змін, тож новий job `299e2c6c` успадкував той самий мертвий
+`resume_from_job_id` і впав ідентично 3 хв по тому — джоба структурно не могла пройти цей крок,
+кожен наступний ручний retry повторював би те саме нескінченно.
+
+**Змінено:**
+- `supabase/migrations/20260822130000_weekly_manual_retry_drops_stale_resume.sql`:
+  `retry_weekly_digest_generation_job` вставляє `v_source.input - 'resume_from_job_id'` замість
+  `v_source.input` — лінкований retry стартує свіжий master-ран, а не мертвий resume
+- `src/lib/weekly-digest/generation-control.ts`: новий код `resume_source_stale` у
+  `classifyGenerationFailure` з порадою «Regenerate master» замість дефолтного «create a manual
+  retry» (та порада відтворювала провал)
+- [pipeline/weekly-digest § retry_weekly_digest_generation_job](pipeline/weekly-digest.md#retry_weekly_digest_generation_job-копіював-мертвий-resume_from_job_id--фікс-2026-08-22)
+- Тести: `generation-control.test.ts` (класифікатор), `supabase/tests/20260822130000_…sql`
+  (структурний, як і решта тестів на цю RPC — CI їх не запускає, `npm run pr:check` +
+  типчек зелені локально)
+
+**Не зроблено:** міграцію не застосовано до прод-Supabase з цієї сесії (потрібне явне
+підтвердження власника — зміна RPC на проді). Два вже завислі FAILED job'и (`c471563f`,
+`299e2c6c`) термінальні й нічого не блокують; після мержу/застосування фіксу власник може
+натиснути **Regenerate master** на ревізії, щоб отримати чистий прогін.
+
 ## 2026-08-22 — Прибрано другий GA4 ID: GTM-контейнер GTM-5S6TXPG5 видалено з коду
 
 **Джерело:** власник помітив «різні GA4 ID». Розбір: на живій сторінці підвантажувались

@@ -67,6 +67,19 @@ describe('Weekly generation control helpers', () => {
     expect(paused).toMatchObject({ code: 'resumable', retryable: true });
   });
 
+  // A stale resume pointer is a named, non-retryable failure whose remedy is
+  // "Regenerate master" -- it must not fall into the generic unknown bucket,
+  // whose default advice ("create a manual retry") reproduces this exact
+  // failure (see the retry_weekly_digest_generation_job migration that drops
+  // resume_from_job_id on manual retry).
+  it('classifies a stale master resume pointer as non-retryable with its own remedy', () => {
+    const stale = classifyGenerationFailure(
+      'Master resume source has no saved state for the current research packs — start a fresh master instead.',
+    );
+    expect(stale).toMatchObject({ code: 'resume_source_stale', retryable: false });
+    expect(stale.nextAction).toMatch(/Regenerate master/);
+  });
+
   it('retries hydration map crashes and GitHub dispatch 503s', () => {
     expect(
       classifyGenerationFailure("Cannot read properties of undefined (reading 'map')"),
