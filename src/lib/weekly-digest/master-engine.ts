@@ -7,6 +7,7 @@ import {
   editorialQualityFailures,
   editorialQualityRetryGuidance,
   enforceMetadataMaxChars,
+  liftNaturalnessCapAfterLanguageFixes,
   validateMasterBundle,
   WEEKLY_MASTER_SPEC_VERSION,
   type WeeklyArticleMaster,
@@ -276,6 +277,39 @@ function storySegmentValue(record: SegmentRecord | undefined): StorySegmentValue
 function frameSegmentValue(record: SegmentRecord | undefined): MasterFrame | null {
   const value = record?.value as MasterFrame | undefined;
   return value && typeof value.title === 'string' ? value : null;
+}
+
+/**
+ * Splices in every mechanically-fixable `language_mechanics` blocker (a
+ * verbatim critic-quoted span with a literal replacement, not an
+ * instruction) and, when that clears every such blocker for Ukrainian,
+ * lifts the `naturalness` cap that blocker was pinning at 55 -- see
+ * `liftNaturalnessCapAfterLanguageFixes` for why that lift is safe.
+ *
+ * Applied both mid-critic-round (before this round's own repair planning,
+ * so a single-typo miss can converge on this round instead of paying for a
+ * full-field LLM rewrite) and once more after the loop exits, since the
+ * final round never gets a repair pass of its own (see the `round ===
+ * maxCriticRounds()` branch below).
+ */
+function applyMechanicalLanguageFixes(
+  bundle: WeeklyMasterBundle,
+  quality: WeeklyContentQualityReport,
+): { bundle: WeeklyMasterBundle; quality: WeeklyContentQualityReport; applied: AppliedLanguageFix[] } {
+  const language = applyLanguageMechanicsFixes(bundle, quality.issues);
+  const appliedSpans = new Set(language.applied.map((fix) => `${fix.locale}:${fix.span}`));
+  const withIssuesResolved: WeeklyContentQualityReport = {
+    ...quality,
+    issues: quality.issues.filter((issue) => {
+      if (issue.code !== 'language_mechanics' || !issue.blocker || !issue.span || !issue.locale) {
+        return true;
+      }
+      return !appliedSpans.has(`${issue.locale}:${issue.span}`);
+    }),
+  };
+  const fixedLocales = new Set(language.applied.map((fix) => fix.locale));
+  const relifted = liftNaturalnessCapAfterLanguageFixes(withIssuesResolved, fixedLocales);
+  return { bundle: language.bundle, quality: relifted, applied: language.applied };
 }
 
 /**
@@ -612,6 +646,7 @@ export async function runWeeklyMaster(
 
   let quality = state.quality;
   let criticUnresolved: UnresolvedIssue[] = [];
+  const languageFixes: AppliedLanguageFix[] = [];
   // Only used to pick a critic from a different provider/vendor than the
   // writer. Every path above guarantees the English frame exists by now; the
   // fallbacks keep a missing one from throwing an opaque property error here.
@@ -660,6 +695,16 @@ export async function runWeeklyMaster(
       approvedClaimIds,
       checkedAt: new Date().toISOString(),
     };
+    // A verbatim language_mechanics fix is free and precise where an LLM
+    // field rewrite is neither -- splicing it in before this round's own
+    // repair planning runs means an edition whose only problem was one typo
+    // converges on this round instead of paying for (and risking) a
+    // full-field rewrite that can just as easily introduce a new error.
+    bundle = enforceMetadataMaxChars(bundle);
+    const mechanicalFix = applyMechanicalLanguageFixes(bundle, quality);
+    bundle = mechanicalFix.bundle;
+    quality = mechanicalFix.quality;
+    languageFixes.push(...mechanicalFix.applied);
     state.quality = quality;
     state.criticRounds = round;
     await saveState({
@@ -742,18 +787,10 @@ export async function runWeeklyMaster(
   }
 
   bundle = enforceMetadataMaxChars(bundle);
-  const language = applyLanguageMechanicsFixes(bundle, quality.issues);
-  bundle = language.bundle;
-  const appliedSpans = new Set(language.applied.map((fix) => `${fix.locale}:${fix.span}`));
-  quality = {
-    ...quality,
-    issues: quality.issues.filter((issue) => {
-      if (issue.code !== 'language_mechanics' || !issue.blocker || !issue.span || !issue.locale) {
-        return true;
-      }
-      return !appliedSpans.has(`${issue.locale}:${issue.span}`);
-    }),
-  };
+  const finalMechanicalFix = applyMechanicalLanguageFixes(bundle, quality);
+  bundle = finalMechanicalFix.bundle;
+  quality = finalMechanicalFix.quality;
+  languageFixes.push(...finalMechanicalFix.applied);
   const remainingFailuresAfterLanguage = editorialQualityFailures(quality);
   const converged = remainingFailuresAfterLanguage.length === 0;
   const unresolved = dedupeUnresolved([
@@ -783,7 +820,7 @@ export async function runWeeklyMaster(
     quality,
     converged,
     unresolved,
-    languageFixes: language.applied,
+    languageFixes,
     generation: {
       english: accumulate(state.calls.english),
       ukrainian: accumulate(state.calls.ukrainian),

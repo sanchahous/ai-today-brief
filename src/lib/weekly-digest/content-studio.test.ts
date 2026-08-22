@@ -6,6 +6,7 @@ import {
   criticVerdictLooksUnreliable,
   editorialQualityPasses,
   enforceMetadataMaxChars,
+  liftNaturalnessCapAfterLanguageFixes,
   qualityContentNeedsRepair,
   qualityReportNeedsRepair,
   resolveWeeklyContentStudioMode,
@@ -135,6 +136,26 @@ describe('Weekly Content Studio hard gates', () => {
     );
   });
 
+  it('blocks an editorsView block present in one locale but not the other, for either placement', () => {
+    const value = bundle();
+    // Structure drift observed live on 2026-08-22: a radar story (no
+    // editorsView requirement in either locale) picked one up in UK only.
+    value.en.stories[0]!.placement = 'radar';
+    value.uk.stories[0]!.placement = 'radar';
+    value.en.stories[0]!.editorsView = '';
+    value.uk.stories[0]!.editorsView = 'editorial reasoning '.repeat(10);
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        code: 'editors_view_locale_mismatch',
+        blocker: true,
+        locale: 'en',
+        revisionItemId: itemId,
+        field: 'editorsView',
+      }),
+    );
+  });
+
   it('blocks duplicate or extra stories and claims borrowed from another story', () => {
     const value = bundle();
     value.en.stories.push({
@@ -186,6 +207,59 @@ describe('Weekly Content Studio hard gates', () => {
     expect(editorialQualityPasses(report)).toBe(false);
     report.dimensions.find((dimension) => dimension.name === 'naturalness')!.score = 80;
     expect(editorialQualityPasses(report)).toBe(true);
+  });
+
+  it('lifts the naturalness cap once its language_mechanics blocker is mechanically fixed', () => {
+    // Reproduces the 2026-08-22 stuck-at-55 bug: a mechanical splice fixed
+    // the objective error, but with nothing re-scoring the dimension the
+    // owner saw naturalness 55 forever regardless of how many times the
+    // edition was regenerated.
+    const report: WeeklyContentQualityReport = {
+      schemaVersion: 'weekly-quality-v2',
+      score: 70,
+      dimensions: [
+        { name: 'engagement', score: 90, note: 'clear' },
+        { name: 'voice', score: 90, note: 'clear' },
+        { name: 'clarity', score: 90, note: 'clear' },
+        { name: 'trust', score: 75, note: 'mostly attributed' },
+        { name: 'usefulness', score: 90, note: 'specific' },
+        {
+          name: 'naturalness',
+          score: 55,
+          note: 'Objective script error in Ukrainian hook: "наймeншим" uses Latin \'e\'.',
+        },
+        { name: 'parity', score: 75, note: 'structure drift' },
+      ],
+      issues: [
+        {
+          code: 'language_mechanics',
+          message: 'Latin look-alike character.',
+          blocker: true,
+          locale: 'uk',
+          field: 'hook',
+          span: 'наймeншим',
+          suggestedFix: 'найменшим',
+        },
+      ],
+      factualFlags: [],
+      approvedClaimIds: ['claim-1'],
+      checkedAt: '2026-08-22T00:00:00.000Z',
+    };
+    // Not yet fixed this pass -- nothing to lift.
+    expect(liftNaturalnessCapAfterLanguageFixes(report, new Set())).toEqual(report);
+
+    // Fixed, but the blocker is still listed (e.g. a second language_mechanics
+    // issue remains) -- still nothing to lift.
+    expect(liftNaturalnessCapAfterLanguageFixes(report, new Set(['uk']))).toEqual(report);
+
+    const resolved: WeeklyContentQualityReport = { ...report, issues: [] };
+    const lifted = liftNaturalnessCapAfterLanguageFixes(resolved, new Set(['uk']));
+    expect(lifted.dimensions.find((dimension) => dimension.name === 'naturalness')!.score).toBe(
+      80,
+    );
+    // Other dimensions, including the still-genuinely-low parity, are untouched.
+    expect(lifted.dimensions.find((dimension) => dimension.name === 'parity')!.score).toBe(75);
+    expect(lifted.dimensions.find((dimension) => dimension.name === 'trust')!.score).toBe(75);
   });
 
   it('names the specific failing dimension instead of only the overall score', () => {
@@ -447,6 +521,33 @@ describe('Weekly Content Studio hard gates', () => {
     const issues = validateMasterBundle(value, [research]);
     expect(issues).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ code: 'uk_language_residue' })]),
+    );
+  });
+
+  it('blocks a Latin look-alike character spliced into a Cyrillic word, with a literal fix', () => {
+    // Live case, 2026-08-22: "наймeншим" (Latin "e") instead of "найменшим".
+    const value = bundle();
+    value.uk.stories[0]!.hook = 'Розрив між наймeншим флагманом і найбільшими моделями зростає.';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toContainEqual(
+      expect.objectContaining({
+        code: 'language_mechanics',
+        blocker: true,
+        locale: 'uk',
+        field: 'hook',
+        span: 'наймeншим',
+        suggestedFix: 'найменшим',
+      }),
+    );
+  });
+
+  it('does not flag a genuine mixed-script token (a Latin product name inside Cyrillic prose)', () => {
+    const value = bundle();
+    value.uk.stories[0]!.body =
+      'Alibaba випустила Qwen3.8, і тепер Claude-подібний асистент працює швидше.';
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'language_mechanics' })]),
     );
   });
 
