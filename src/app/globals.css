@@ -63,7 +63,7 @@
   --accent: #8a6508;
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.05);
   --shadow-pop: 0 6px 24px rgba(0, 0, 0, 0.1);
-  --on-accent: #141414;
+  --on-accent: #ffffff;
 }
 
 @layer base {
@@ -158,6 +158,25 @@
 
 .site-header-shell {
   background: var(--bg);
+}
+
+/* Weekly cover art stays whole behind the full-width title. This scrim creates
+   reliable text contrast in both themes without cropping the illustration. */
+.weekly-hero-scrim {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--bg) 98%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 93%, transparent) 42%,
+      color-mix(in srgb, var(--bg) 70%, transparent) 74%,
+      color-mix(in srgb, var(--bg) 64%, transparent) 100%
+    ),
+    linear-gradient(0deg, color-mix(in srgb, var(--bg) 88%, transparent) 0%, transparent 54%),
+    radial-gradient(
+      100% 120% at 100% 0%,
+      color-mix(in srgb, var(--accent) 16%, transparent),
+      transparent 58%
+    );
 }
 
 @supports (background: color-mix(in srgb, black 50%, transparent)) {

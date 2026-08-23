@@ -14,8 +14,10 @@ function formatDate(value: string, lang: Lang) {
 
 export function WeeklyHero({ digest, lang }: { digest: WeeklyDigestView; lang: Lang }) {
   const copy = WEEKLY_COPY[lang];
+  const description = digest.standfirst || digest.intro;
+
   return (
-    <header className="border-border-soft border-b pb-8">
+    <header className="border-border-soft border-b pb-10">
       <Link
         href={`/${lang}/digests`}
         className="text-accent inline-flex text-sm font-semibold no-underline hover:underline"
@@ -23,63 +25,73 @@ export function WeeklyHero({ digest, lang }: { digest: WeeklyDigestView; lang: L
         ← {copy.allDigests}
       </Link>
 
-      <div className="mt-6 grid items-start gap-7 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,.85fr)] lg:gap-9">
-        <div>
+      <section className="rounded-card border-border bg-surface relative isolate mt-6 overflow-hidden border shadow-[var(--shadow-pop)]">
+        {digest.cover ? (
+          <Image
+            aria-hidden
+            src={digest.cover.url}
+            alt=""
+            fill
+            loading="eager"
+            sizes="(max-width: 1199px) 100vw, 1160px"
+            className="object-contain object-bottom opacity-55 sm:object-right-bottom sm:opacity-70"
+          />
+        ) : null}
+
+        <div aria-hidden className="weekly-hero-scrim absolute inset-0" />
+
+        <div className="relative z-10 flex min-h-[22rem] flex-col px-6 py-9 sm:min-h-[26rem] sm:px-10 sm:py-12 lg:px-14 lg:py-16">
           <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
             {copy.eyebrow}
           </p>
-          <h1 className="mt-3 max-w-4xl text-[clamp(2rem,2.7vw,2.75rem)] leading-[1.06] text-balance">
+          <h1 className="text-text mt-3 w-full text-[clamp(1.85rem,3.1vw,3rem)] leading-[1.04]">
             {digest.title}
           </h1>
-          {digest.standfirst || digest.intro ? (
-            <p className="text-muted mt-4 max-w-3xl text-base leading-7 sm:text-lg sm:leading-8">
-              {digest.standfirst ?? digest.intro}
-            </p>
+          {digest.cover ? <span className="sr-only">{digest.cover.alt}</span> : null}
+
+          {description ? (
+            <details className="border-border group mt-6 w-full border-t pt-4">
+              <summary className="border-border bg-surface text-text hover:border-accent hover:text-accent rounded-pill inline-flex list-none items-center gap-2 border px-4 py-2.5 text-sm font-semibold transition-colors [&::-webkit-details-marker]:hidden">
+                <span className="group-open:hidden">{copy.showMore}</span>
+                <span className="hidden group-open:inline">{copy.showLess}</span>
+                <span
+                  aria-hidden
+                  className="text-lg leading-none transition-transform group-open:rotate-45"
+                >
+                  +
+                </span>
+              </summary>
+              <p className="text-muted mt-4 w-full text-base leading-7 sm:text-lg sm:leading-8">
+                {description}
+              </p>
+            </details>
           ) : null}
-          <p className="text-faint mt-4 text-sm">
-            {copy.period}: {formatDate(digest.weekStart, lang)} — {formatDate(digest.weekEnd, lang)}
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            {digest.hasPdf ? (
+
+          <div className="mt-auto pt-7">
+            <p className="text-muted text-sm">
+              {copy.period}: {formatDate(digest.weekStart, lang)} —{' '}
+              {formatDate(digest.weekEnd, lang)}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              {digest.hasPdf ? (
+                <a
+                  href={`/${lang}/weekly/${digest.slug}/download`}
+                  data-digest-event="pdf_download"
+                  className="bg-accent text-on-accent rounded-pill px-5 py-3 text-sm font-semibold no-underline"
+                >
+                  {copy.downloadPdf}
+                </a>
+              ) : null}
               <a
-                href={`/${lang}/weekly/${digest.slug}/download`}
-                data-digest-event="pdf_download"
-                className="bg-accent text-on-accent rounded-pill px-5 py-3 text-sm font-semibold no-underline"
+                href="#stories"
+                className="border-border bg-surface text-text hover:border-accent hover:text-accent rounded-pill border px-5 py-3 text-sm font-semibold no-underline transition-colors"
               >
-                {copy.downloadPdf}
+                {copy.contents}
               </a>
-            ) : null}
-            <a
-              href="#stories"
-              className="border-border text-text hover:border-accent hover:text-accent rounded-pill border px-5 py-3 text-sm font-semibold no-underline transition-colors"
-            >
-              {copy.contents}
-            </a>
+            </div>
           </div>
         </div>
-
-        {digest.cover ? (
-          <figure className="border-border bg-surface rounded-card relative m-0 aspect-video overflow-hidden border shadow-[var(--shadow-card)] lg:mt-1">
-            <Image
-              src={digest.cover.url}
-              alt={digest.cover.alt}
-              fill
-              priority
-              sizes="(max-width: 1023px) 100vw, 520px"
-              className="object-contain"
-            />
-          </figure>
-        ) : (
-          <div
-            aria-hidden
-            className="border-border rounded-card aspect-video border"
-            style={{
-              background:
-                'radial-gradient(100% 120% at 90% 0%, rgba(240,192,64,.24), transparent 55%), var(--surface)',
-            }}
-          />
-        )}
-      </div>
+      </section>
     </header>
   );
 }
