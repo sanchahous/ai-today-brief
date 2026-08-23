@@ -102,6 +102,28 @@ describe('parseStoryPromptSetContent', () => {
     expect(parsed?.mappingGateIssues).toEqual(['missing_visible_outcome', 'incomplete_mapping']);
   });
 
+  it('reads the semantic contract kept with a primary prompt for story-aware QA', () => {
+    const parsed = parseStoryPromptSetContent({
+      prompts: [prompt()],
+      semantic_contract: {
+        story_context: 'A local gateway removes credentials before an AI request leaves the machine.',
+        mechanism: 'The gateway separates private fields from the outgoing request.',
+        consequence: 'The provider receives a clean request.',
+        visual_thesis: 'A local filter visibly separates secrets from one clean request.',
+      },
+    });
+
+    expect(parsed?.semanticContract).toEqual({
+      storyContext: 'A local gateway removes credentials before an AI request leaves the machine.',
+      mechanism: 'The gateway separates private fields from the outgoing request.',
+      consequence: 'The provider receives a clean request.',
+      visualThesis: 'A local filter visibly separates secrets from one clean request.',
+      meaning: undefined,
+      essence: undefined,
+      readerTest: undefined,
+    });
+  });
+
   it('an empty prompt set with no mapping_gate_issues field parses to an empty array', () => {
     const parsed = parseStoryPromptSetContent({ prompts: [] });
     expect(parsed?.mappingGateIssues).toEqual([]);
@@ -163,10 +185,10 @@ describe('storyPromptReadiness', () => {
     expect(result.missingLenses).toEqual(['consequence']);
   });
 
-  it('shows 0/3 промпти готові with no prompts and no image metadata', () => {
+  it('shows a missing primary direction with no prompts and no image metadata', () => {
     const result = storyPromptReadiness([]);
-    expect(result.label).toBe('0/3 промпти готові');
-    expect(result.detail).toBe('немає literal_context, mechanism, consequence');
+    expect(result.label).toBe('0/1 основний промпт готовий');
+    expect(result.detail).toBe('');
   });
 
   it('flags source_led_fallback lenses in the detail line', () => {
@@ -188,9 +210,8 @@ describe('storyPromptReadiness', () => {
         motifClass: 'fallback_essence',
       },
     ]);
-    expect(result.label).toBe('1/3 промпти готові');
+    expect(result.label).toBe('1/1 основний промпт готовий');
     expect(result.detail).toContain('фолбек: literal context');
-    expect(result.detail).toContain('немає mechanism, consequence');
   });
 
   it('owner_direction fills the literal_context seat for readiness counting (R2.5 / F5/F12)', () => {

@@ -371,6 +371,16 @@ export const METADATA_MAX_CHARS = {
   ogDescription: 200,
 } as const;
 
+/**
+ * The public hero shares a page with a visual, so it needs a distinct reading
+ * budget from SEO metadata. These are gates, not silent truncation: an editor
+ * must preserve the issue's actual hook while shortening the copy.
+ */
+export const WEEKLY_HERO_COPY_MAX_CHARS = {
+  title: 112,
+  standfirst: 360,
+} as const;
+
 function clipArticleMetadata(article: WeeklyArticleMaster): WeeklyArticleMaster {
   return {
     ...article,
@@ -458,6 +468,22 @@ function metadataQualityIssues(bundle: WeeklyMasterBundle): WeeklyQualityIssue[]
   const issues: WeeklyQualityIssue[] = [];
   for (const locale of ['en', 'uk'] as const) {
     const article = bundle[locale];
+    for (const field of ['title', 'standfirst'] as const) {
+      const maximum = WEEKLY_HERO_COPY_MAX_CHARS[field];
+      const value = article[field];
+      if ([...value].length <= maximum) continue;
+      issues.push({
+        code: 'hero_copy_length',
+        message: `${field} is ${[...value].length} characters; public hero maximum is ${maximum}.`,
+        blocker: true,
+        locale,
+        field,
+        suggestedFix:
+          field === 'title'
+            ? `Rewrite the issue title to ${maximum} characters or fewer around one concrete editorial hook.`
+            : `Rewrite the standfirst to ${maximum} characters or fewer; keep the strongest news value and move supporting context into the intro.`,
+      });
+    }
     for (const [field, maximum] of Object.entries(METADATA_MAX_CHARS) as Array<
       [keyof typeof METADATA_MAX_CHARS, number]
     >) {

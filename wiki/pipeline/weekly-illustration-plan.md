@@ -6,7 +6,7 @@ Summary: executor spec робіт над ілюстраціями дайджес
 Sources: рішення власника 2026-08-15; `AI_Today_Brief_Visual_Algorithm_Plan.pdf` (розбір V1–V10,
 поза репо); живий digest `843975a8-8c19-4eca-96a8-035f76eae3ab` з вердиктами власника 2026-08-14;
 інспекція коду 2026-08-15 (перелік файлів — у розділі «Джерела»); Actions run `31739283280`.
-Last updated: 2026-08-17
+Last updated: 2026-08-23
 
 ---
 
@@ -189,7 +189,7 @@ visual grammar найприродніше доводить одну core claim �
 ## Порядок
 
 ```
-B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅ → F3 ✅ → G ✅ → A2 ✅ → F5 ✅
+B1-fix ✅ → B2 ✅ → P1 ✅ → P2 ✅ → M1 ✅ → M2 ✅ → M3 ✅ → B3 ✅ → P3 ✅ → C0 ✅ → C1 ✅ → C2 ✅ → C3 ✅ → D1 ✅ → D2 ✅ → D3 ✅ → E1 ✅ → E2 ✅ → E3 ✅ → F2 ✅ → F3 ✅ → G ✅ → A2 ✅ → F5 ✅ → **P6 ✅ 2026-08-23**
 ```
 
 Дотичний пункт G2 (origin JPEG новинних карток) закрито окремим PR після F5 — не нумерована хвиля.
@@ -368,6 +368,20 @@ Visuals біля кожної story показує `N/3 промпти гото�
 субʼєкт першим реченням, Midjourney `--ar 16:9 --style raw --no text`, negative завжди банить
 текст/літери/лого. Грамматика `deterministic_technical_hybrid` пише схему, не фото.
 Номерів версій моделей у виході немає. Наступне — **P2** ✅ (артефакт + UI копіювання).
+
+### P6 ✅ Зроблено 2026-08-23 — Prompt-as-Code + різні шаблони на три seats
+
+Живий digest `71af784b-…` показав, що P1-canonical зливає planning-поля і essence-прозу в рядок
+для моделі, а три лінзи лишаються одним darkroom. P6:
+
+- 6-block assembler (`pipeline/image-prompt-library/assemble.ts`);
+- 5 шаблонів з [awesome-gpt-image-2](https://github.com/freestylefly/awesome-gpt-image-2) (MIT, без галереї);
+- детермінований router lens→template; один `templateId` на трійку заборонений;
+- `renderableScene` без `the story-specific anchor is`;
+- policy **`weekly-semantic-story-v6`**.
+
+Текст у пікселях лишається D1. Деталі — [image-prompt-library](image-prompt-library.md).
+(source: owner session 2026-08-23)
 
 **Рішення власника:** канонічний natural-language промпт плюс автоматично похідні форми.
 (source: рішення власника 2026-08-15)
@@ -1248,6 +1262,7 @@ npm run pr:check
 | B2 | на фікстурі з однією прийнятою лінзою повертається один бриф, не три; чотири названі тести зелені |
 | B3 | ✅ в адмінці видно `N/3 промпти готові`; тест `shows N/3 промпти готові when all three seats are present`
 | P1 | три `ManualImagePrompt` на story; negative завжди банить текст; тести `pipeline/prompt-export.test.ts` зелені |
+| P6 | фікстура sun-printing×2 падає на `sibling_subject_head_reuse`; diagram canonical не містить `Teams should audit`; policy `weekly-semantic-story-v6` |
 | P2 | ✅ схема приймає `story_prompt_set`; Visuals має кнопки копіювання + upload в одній картці; worker write — M1 ✅ |
 | P3 | ✅ після публікації daily в review-чаті лежить промпт обкладинки; `briefs.cover_prompt` заповнена; тест `daily cover prompt is built from the edition top stories, not from a single item` |
 | M1 | ✅ `prompt_only` пише `story_prompt_set` і не кличе image provider; `source_url` лишається ingest; `render` — відкат |
@@ -1275,6 +1290,31 @@ npm run pr:check
 
 ---
 
+## Superseding review follow-up — 2026-08-23
+
+Цей розділ не переписує історичні хвилі B3/P1/M2 вище. Він замінює їхній **поточний**
+owner-facing контракт після review plan+implementation та відповідей власника. (source: owner session 2026-08-23; [gpt-image-prompt-plan-review](../audits/2026-08-23-gpt-image-prompt-plan-review.md))
+
+1. `prompt_only` і production `render` формують один primary cause-and-effect кандидат, не три
+   варіанти для ручної лотереї. Rejection дає repair brief наступної спроби; multi-seat лишився
+   лише low-level/offline experiment. Старі `N/3` artifacts сумісні, нові показують `1/1 основний
+   промпт готовий`. (source: `src/lib/weekly-digest/story-prompt-job.ts`; `src/lib/weekly-digest/story-prompt-set.ts`; `src/lib/weekly-digest/generation-worker.ts`)
+2. Cross-digest template reuse більше не blocker: пʼять template IDs не можуть бути глобально
+   унікальними для 18+ slots. Унікальність template працює лише в одному intentional multi-seat
+   batch; scene/motif diversity лишається. (source: `pipeline/image-prompt-library/route.ts`; `pipeline/card-image.ts`)
+3. Primary scene має передавати `actor/system → physical change → grounded consequence`; no-text,
+   no-fake-UI, no-mascot-robot та information budget — default. Exact label — лише external
+   deterministic overlay як останній засіб. (source: `pipeline/image-prompt-library/templates.ts`; `pipeline/image-prompt-library/assemble.ts`)
+4. M2 upload QA для story став двостадійним, але advisory для ручного release: clean pixel pass →
+   story-aware semantic pass; cover лишається pixel-only. `ambiguous_visual_story` не блокує
+   preflight, але не дає показати безпідставне «QA чисто»; відсутній semantic pass або active QA
+   blocker fail-closed для machine attestation. (source: `src/lib/weekly-digest/run-post-upload-qa.ts`; `src/lib/weekly-digest/post-upload-qa.ts`; `src/lib/weekly-digest/machine-attest.ts`)
+5. Acceptance тепер включає 2-second pair-claim test, safe-frame/no-crop та weekly reading order,
+   а не лише кількість різних prompts. Holdout 20–30 реальних stories потрібен до будь-якого
+   твердження про retention або автоматичний quality gain. (source: owner session 2026-08-23; `src/lib/encode-site-image.test.ts`; [gpt-image-prompt-plan-review](../audits/2026-08-23-gpt-image-prompt-plan-review.md))
+
+---
+
 ## Джерела
 
 - Рішення власника 2026-08-15 — картинки дайджестів вручну, промпти автоматично, новини без змін
@@ -1293,6 +1333,7 @@ npm run pr:check
 
 - [pipeline/weekly-digest](weekly-digest.md) — як влаштований weekly-пайплайн загалом
 - [pipeline/content-sim](content-sim.md) — vision-критик і гейти
+- [pipeline/image-prompt-library](image-prompt-library.md) — Prompt-as-Code v6 / P6
 - [marketing/card-images](../marketing/card-images.md) — політика ілюстрацій
 - [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](../audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md) — review експерименту V10
 - [open-questions](../open-questions.md) — відкриті питання

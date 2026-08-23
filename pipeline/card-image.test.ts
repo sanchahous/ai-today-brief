@@ -12,6 +12,7 @@ import {
   accentToHex,
   extractWeeklyStoryEntities,
   flattenMetaphorPitch,
+  planningNotes,
   FALLBACK_MOTIF_CLASS,
   headNoun,
   motifFamilyKey,
@@ -760,9 +761,14 @@ describe('weekly essence + metaphor gates', () => {
     expect(pitches[0]?.visibleMechanism).toMatch(/QA inspection/i);
     expect(pitches[0]?.visibleConsequence).toMatch(/unfinished/i);
     expect(flattenMetaphorPitch(pitches[0]!).toLowerCase()).toContain('spatial divide');
-    expect(flattenMetaphorPitch(pitches[0]!)).toContain(
+    expect(flattenMetaphorPitch(pitches[0]!)).toContain('hiding unfinished props behind a curtain');
+    expect(flattenMetaphorPitch(pitches[0]!)).not.toMatch(/story-specific anchor is/i);
+    expect(flattenMetaphorPitch(pitches[0]!)).not.toMatch(/visible cause is/i);
+    expect(flattenMetaphorPitch(pitches[0]!)).not.toContain(
       'unfinished missing-texture props exposed behind the curtain',
     );
+    expect(planningNotes(pitches[0]!).join(' ')).toMatch(/story anchor/i);
+    expect(planningNotes(pitches[0]!).join(' ')).toMatch(/QA only/i);
   });
 
   it('assigns the three independent concept lenses, including a retry subset fallback', () => {
@@ -970,6 +976,56 @@ describe('weekly essence + metaphor gates', () => {
     );
     expect(family).toContain('sibling_motif_family_reuse');
     expect(family).not.toContain('sibling_motif_class_reuse');
+  });
+
+  it('rejects two sun-printing frames as the same subject (live weekly collapse)', () => {
+    const press = {
+      title: 'The Issue Behind the Press',
+      subject: 'A sun-printing frame exposing one large glass negative',
+      action: 'exposing every fresh sheet from the same negative',
+      setting: 'sun-printing workshop with an empty cached-print tray',
+      props: ['76-tick log', 'empty tray'],
+      composition: 'single' as const,
+      whyItFits: 'Every request writes the same prefix at full price.',
+      motifClass: 'issue_behind_the_press',
+      subjectKind: 'object' as const,
+      templateId: 'infographic-engine' as const,
+      storyAnchor: 'One glass tool-chain negative',
+      visibleMechanism: 'Each sheet gets a full exposure from the same negative',
+      visibleConsequence: 'The cached-print tray stays empty',
+    };
+    const duplicate = {
+      ...press,
+      title: 'Full Exposure, No Print Cache',
+      motifClass: 'full_exposure_no_print_cache',
+    };
+    const errors = validateMetaphorPitch(
+      duplicate,
+      semanticEssence({
+        storyContext: 'A large stable instruction prefix is retransmitted on every request.',
+        essence: 'Cache writes dominate token cost.',
+        mustFeel: 'waste',
+        forbiddenCliches: [],
+        mechanism: 'Repeated transmission of a large instruction prefix as cache-write tokens.',
+        consequence: 'Teams should audit per-turn token usage; the 85% figure is telemetry.',
+        visualThesis: 'The same negative exposes every sheet; the print cache stays empty.',
+        readerTest: 'grasp: every request pays to rewrite a stable prefix',
+      }),
+      ['cache', 'prefix'],
+      [
+        {
+          motifClass: press.motifClass,
+          subjectKind: press.subjectKind,
+          sceneSummary: `${press.subject} ${press.setting}`,
+          subject: press.subject,
+          setting: press.setting,
+          action: press.action,
+          templateId: press.templateId,
+        },
+      ],
+    );
+    expect(errors).toContain('sibling_subject_head_reuse');
+    expect(errors).not.toContain('sibling_template_reuse');
   });
 
   it('rejects diamond-vs-grinder when mechanism is an event log', () => {
@@ -1401,6 +1457,9 @@ describe('weekly essence + metaphor gates', () => {
 
     expect(scene).toContain('chain of electricity meters');
     expect(scene).toContain('Repeated model calls and tool retries');
+    expect(scene).not.toContain('the literal story context is');
+    expect(scene).not.toContain('show the physical causal process clearly');
+    expect(scene).not.toContain('make its grounded result unmistakable');
     expect(scene).not.toContain('single symbolic object under a hard editorial spotlight');
   });
 
@@ -1447,7 +1506,7 @@ describe('buildWeeklyPrompt / buildEditorialConceptPrompt', () => {
   });
 
   it('exports the editorial-concept prompt policy id', () => {
-    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-semantic-story-v5.1');
+    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-semantic-story-v6');
   });
 });
 
@@ -1739,6 +1798,81 @@ describe('scene-brief registry wiring (Phase 2)', () => {
     );
     expect(seenRoles.length).toBeGreaterThanOrEqual(1);
     expect(seenRoles.every((role) => role === 'weekly.card_image_scene')).toBe(true);
+  });
+
+  it('briefs a one-card run as a causal primary direction, not a three-seat lottery', async () => {
+    process.env[FAKE_CLI_ENV_VAR] = 'token';
+    const prompts: string[] = [];
+    const replies = [
+      JSON.stringify({
+        context: 'A local request gateway removes credentials before an AI provider receives a request.',
+        meaning: 'Developers can keep secrets out of provider traffic.',
+        essence: 'A local filter removes private credentials before a model request leaves the machine.',
+        mechanism: 'The gateway separates credential fields from the outgoing request.',
+        consequence: 'The provider receives a usable request without the private credentials.',
+        visual_thesis: 'A local filter separates private credentials from a clean outgoing request.',
+        reader_test: 'See a local gateway remove secrets before the request leaves.',
+        must_feel: 'calm control',
+        forbidden_cliches: ['robot guard', 'dashboard'],
+      }),
+      JSON.stringify({
+        metaphors: [
+          {
+            lens: 'literal_context',
+            title: 'Local request filter',
+            subject: 'a compact local request gateway with one request card passing through',
+            story_anchor: 'the local request gateway beside an outbound provider connection',
+            visible_mechanism: 'a filter separates private credential fields before the request exits',
+            visible_consequence: 'the outbound request leaves clean while the private fields stay local',
+            action: 'separating private fields from an outgoing request',
+            setting: 'a quiet developer workstation with physical network hardware',
+            props: ['one request card', 'sealed local tray'],
+            composition: 'single',
+            motif_class: 'local_request_filter',
+            subject_kind: 'object',
+            why_it_fits: 'The gateway physically shows the credential-removal step and the clean result.',
+          },
+        ],
+      }),
+    ];
+    let call = 0;
+    const registry = {
+      chainForRole: () => [
+        {
+          entry: { kind: 'cli' as const, id: 'stub-primary' },
+          cli: {
+            id: 'stub-primary',
+            binary: 'stub',
+            authEnvVar: FAKE_CLI_ENV_VAR,
+            buildArgs: (prompt: string) => {
+              prompts.push(prompt);
+              return [];
+            },
+            parseEnvelope: (stdout: string) => ({ text: stdout, model: 'stub', costUsd: 0 }),
+            spawnFn: async () => ({
+              stdout: replies[call++]!,
+              stderr: '',
+              exitCode: 0,
+              spawnError: null,
+            }),
+          },
+        },
+      ],
+    };
+
+    const concepts = await weeklyReportageSceneBriefs(
+      {
+        headline: 'PrivAiTe removes credentials before model requests leave a developer machine',
+        summary: 'A local proxy strips personal data and account details from API traffic.',
+      },
+      { geminiApiKey: '', registry },
+      { count: 1 },
+    );
+
+    expect(concepts).toHaveLength(1);
+    expect(prompts[1]).toContain('single-direction editorial director');
+    expect(prompts[1]).toContain('one connected, literal cause-and-effect scene');
+    expect(prompts[1]).not.toContain('three-seat concept jury');
   });
 
   it('keeps three structurally distinct analogies instead of collapsing to semantic fallbacks', async () => {

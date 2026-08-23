@@ -47,7 +47,11 @@ import {
   type PostUploadQa,
 } from '@/lib/weekly-digest/post-upload-qa';
 import { rebuildWeeklySelection } from '@/lib/weekly-digest/rebuild-selection';
-import { reviewUploadedImage } from '@/lib/weekly-digest/run-post-upload-qa';
+import {
+  reviewUploadedImage,
+  type PostUploadQaStoryContext,
+} from '@/lib/weekly-digest/run-post-upload-qa';
+import { parseStoryPromptSetContent } from '@/lib/weekly-digest/story-prompt-set';
 import {
   applyOwnerFeedbackToImageMetadata,
   applyOwnerFeedbackToPromptSet,
@@ -75,6 +79,11 @@ function requiredString(formData: FormData, key: string) {
 function optionalString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function trimmedOrUndefined(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed || undefined;
 }
 
 /**
@@ -308,27 +317,101 @@ async function fetchPromptSetOwnerFeedback(input: {
   return ownerFeedbackFromPromptSet(data?.content);
 }
 
+async function loadPostUploadQaStoryContext(input: {
+  weeklyDigestId: string;
+  revisionId: string;
+  revisionItemId: string | null;
+  artifactType: string;
+}): Promise<PostUploadQaStoryContext | undefined> {
+  // A cover explains the issue as a whole; the precise three-second semantic
+  // check belongs to a story image, where one primary direction has one
+  // authoritative source story. Covers keep the existing pixel-only QA.
+  if (input.artifactType !== 'story_image') return undefined;
+  if (!input.revisionItemId) {
+    throw new Error('Story-aware QA requires a revision item.');
+  }
+  const admin = getSupabaseAdmin();
+  const [itemResult, promptResult] = await Promise.all([
+    admin
+      .from('weekly_digest_revision_items')
+      .select('title_en,summary_en,why_en,practical_en,takeaway_en,source_snapshot')
+      .eq('id', input.revisionItemId)
+      .eq('revision_id', input.revisionId)
+      .maybeSingle(),
+    admin
+      .from('weekly_digest_artifacts')
+      .select('content')
+      .eq('weekly_digest_id', input.weeklyDigestId)
+      .eq('revision_id', input.revisionId)
+      .eq('revision_item_id', input.revisionItemId)
+      .eq('artifact_type', 'story_prompt_set')
+      .eq('is_current', true)
+      .maybeSingle(),
+  ]);
+  if (itemResult.error || !itemResult.data) {
+    const reason = itemResult.error?.message ?? 'story revision item was not found';
+    console.error('[weekly-upload-qa] load story context failed', reason);
+    throw new Error(`Story-aware QA context unavailable: ${reason}`);
+  }
+  if (promptResult.error) {
+    console.error('[weekly-upload-qa] load prompt context failed', promptResult.error.message);
+  }
+  const promptSet = parseStoryPromptSetContent(promptResult.data?.content);
+  const primary = promptSet?.prompts[0];
+  const contract = promptSet?.semanticContract;
+  const contentStudio = jsonRecord(jsonRecord(itemResult.data.source_snapshot).content_studio);
+  return {
+    headline: itemResult.data.title_en,
+    summary: trimmedOrUndefined(itemResult.data.summary_en),
+    why: trimmedOrUndefined(itemResult.data.why_en),
+    practical: trimmedOrUndefined(itemResult.data.practical_en),
+    limitation:
+      typeof contentStudio.limitation_en === 'string'
+        ? trimmedOrUndefined(contentStudio.limitation_en)
+        : undefined,
+    takeaway: trimmedOrUndefined(itemResult.data.takeaway_en),
+    storyContext: contract?.storyContext,
+    meaning: contract?.meaning,
+    essence: contract?.essence,
+    mechanism: contract?.mechanism,
+    consequence: contract?.consequence,
+    visualThesis: contract?.visualThesis,
+    readerTest: contract?.readerTest,
+    scene: primary?.scene ?? primary?.canonical,
+    policyId: promptSet?.policy ?? 'weekly-semantic-story-v6',
+  };
+}
+
 function schedulePostUploadQa(input: {
   artifactId: string;
   weeklyDigestId: string;
+  revisionId: string;
+  revisionItemId: string | null;
+  artifactType: string;
   bytes: Buffer;
   mimeType: string;
 }) {
-  after(() =>
-    reviewUploadedImage({ bytes: input.bytes, mimeType: input.mimeType })
-      .then((qa) => persistPostUploadQa(input.artifactId, input.weeklyDigestId, qa))
-      .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
-        return persistPostUploadQa(input.artifactId, input.weeklyDigestId, {
-          blockers: [],
-          scores: {},
-          model: null,
-          cost_usd: 0,
-          checked_at: new Date().toISOString(),
-          error: message.slice(0, 240),
-        });
-      }),
-  );
+  after(async () => {
+    try {
+      const storyContext = await loadPostUploadQaStoryContext(input);
+      const qa = await reviewUploadedImage({
+        bytes: input.bytes,
+        mimeType: input.mimeType,
+        storyContext,
+      });
+      await persistPostUploadQa(input.artifactId, input.weeklyDigestId, qa);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await persistPostUploadQa(input.artifactId, input.weeklyDigestId, {
+        blockers: [],
+        scores: {},
+        model: null,
+        cost_usd: 0,
+        checked_at: new Date().toISOString(),
+        error: message.slice(0, 240),
+      });
+    }
+  });
 }
 
 function weeklyRevisionTab(formData: FormData) {
@@ -2205,9 +2288,14 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
         bytes = await sharp(bytes)
           .rotate()
           .resize(dimensions.width, dimensions.height, {
-            fit: 'cover',
+            // Covers may arrive in a source aspect ratio that does not match
+            // the public 16:9 hero. Preserve the editorial subject on a
+            // branded canvas rather than silently crop it during upload.
+            fit: artifactType === 'cover' ? 'contain' : 'cover',
             position: focalPoint,
+            background: { r: 16, g: 20, b: 24 },
           })
+          .flatten({ background: { r: 16, g: 20, b: 24 } })
           .jpeg({ quality: 91, progressive: true })
           .toBuffer();
         mimeType = 'image/jpeg';
@@ -2288,7 +2376,15 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
     (artifactType === 'story_image' || artifactType === 'cover') &&
     typeof artifactId === 'string'
   ) {
-    schedulePostUploadQa({ artifactId, weeklyDigestId, bytes, mimeType });
+    schedulePostUploadQa({
+      artifactId,
+      weeklyDigestId,
+      revisionId,
+      revisionItemId: revisionItemId || null,
+      artifactType,
+      bytes,
+      mimeType,
+    });
   }
   revalidateWeeklyAdmin(weeklyDigestId);
 }
@@ -2334,7 +2430,7 @@ export async function recheckPostUploadQaAction(formData: FormData) {
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from('weekly_digest_artifacts')
-    .select('storage_bucket, storage_path, mime_type, artifact_type')
+    .select('storage_bucket, storage_path, mime_type, artifact_type, revision_id, revision_item_id')
     .eq('id', artifactId)
     .eq('weekly_digest_id', weeklyDigestId)
     .maybeSingle();
@@ -2367,6 +2463,9 @@ export async function recheckPostUploadQaAction(formData: FormData) {
   schedulePostUploadQa({
     artifactId,
     weeklyDigestId,
+    revisionId: data.revision_id,
+    revisionItemId: data.revision_item_id,
+    artifactType: data.artifact_type,
     bytes,
     mimeType: data.mime_type ?? 'image/jpeg',
   });

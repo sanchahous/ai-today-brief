@@ -15,7 +15,7 @@ function formatDate(value: string, lang: Lang) {
 export function WeeklyHero({ digest, lang }: { digest: WeeklyDigestView; lang: Lang }) {
   const copy = WEEKLY_COPY[lang];
   return (
-    <header className="border-border-soft border-b pb-10">
+    <header className="border-border-soft border-b pb-8">
       <Link
         href={`/${lang}/digests`}
         className="text-accent inline-flex text-sm font-semibold no-underline hover:underline"
@@ -23,21 +23,23 @@ export function WeeklyHero({ digest, lang }: { digest: WeeklyDigestView; lang: L
         ← {copy.allDigests}
       </Link>
 
-      <div className="mt-7 grid items-end gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,.78fr)]">
+      <div className="mt-6 grid items-start gap-7 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,.85fr)] lg:gap-9">
         <div>
           <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
             {copy.eyebrow}
           </p>
-          <h1 className="mt-3 text-[clamp(2.25rem,6vw,4.5rem)] leading-[1.02]">{digest.title}</h1>
+          <h1 className="mt-3 max-w-4xl text-[clamp(2rem,2.7vw,2.75rem)] leading-[1.06] text-balance">
+            {digest.title}
+          </h1>
           {digest.standfirst || digest.intro ? (
-            <p className="text-muted mt-5 max-w-3xl text-lg leading-8 sm:text-xl">
+            <p className="text-muted mt-4 max-w-3xl text-base leading-7 sm:text-lg sm:leading-8">
               {digest.standfirst ?? digest.intro}
             </p>
           ) : null}
-          <p className="text-faint mt-5 text-sm">
+          <p className="text-faint mt-4 text-sm">
             {copy.period}: {formatDate(digest.weekStart, lang)} — {formatDate(digest.weekEnd, lang)}
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-wrap gap-3">
             {digest.hasPdf ? (
               <a
                 href={`/${lang}/weekly/${digest.slug}/download`}
@@ -57,20 +59,20 @@ export function WeeklyHero({ digest, lang }: { digest: WeeklyDigestView; lang: L
         </div>
 
         {digest.cover ? (
-          <figure className="border-border rounded-card relative m-0 aspect-[1200/630] overflow-hidden border shadow-[var(--shadow-card)]">
+          <figure className="border-border bg-surface rounded-card relative m-0 aspect-video overflow-hidden border shadow-[var(--shadow-card)] lg:mt-1">
             <Image
               src={digest.cover.url}
               alt={digest.cover.alt}
               fill
               priority
               sizes="(max-width: 1023px) 100vw, 520px"
-              className="object-cover"
+              className="object-contain"
             />
           </figure>
         ) : (
           <div
             aria-hidden
-            className="border-border rounded-card aspect-[1200/630] border"
+            className="border-border rounded-card aspect-video border"
             style={{
               background:
                 'radial-gradient(100% 120% at 90% 0%, rgba(240,192,64,.24), transparent 55%), var(--surface)',

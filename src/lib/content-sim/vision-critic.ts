@@ -105,12 +105,12 @@ export function buildImageCriticPrompt(input: {
     : '';
   return [
     'You are the art director QA for AI Today Brief.',
-    `Policy: ${input.policyId ?? 'weekly-semantic-story-v5.1'} (no readable text, no UI chrome, no comic panels/collage).`,
+    `Policy: ${input.policyId ?? 'weekly-semantic-story-v6'} (no readable text, no UI chrome, no comic panels/collage).`,
     semanticStory
       ? `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, context_fidelity >= ${newsFloor}, mechanism_legibility >= ${newsFloor}, consequence_legibility >= ${newsFloor}, instant_comprehension >= ${newsFloor}, AND no blocking issues.`
       : `Score overall 0–100. Pass only if overall >= ${threshold}, news_legibility >= ${newsFloor}, AND no blocking issues.`,
     blockingCodesLine(IMAGE_CRITIC_BLOCKER_CODES),
-    'banned_cliche includes: terminal/IDE screens, paper-heap sludge, generic desk without a conceptual prop.',
+    'banned_cliche includes: terminal/IDE screens, paper-heap sludge, generic desk without a conceptual prop, mascot/cute humanoid robots unless literal robotic hardware is the news subject.',
     'opaque_abstraction includes generic pneumatic tubes, canisters, switchboards, patch cables, pipework, or glowing data streams used merely to mean software/data flow when those objects are not literal news context.',
     'Editorial fidelity (news first):',
     '- Treat SOURCE STORY below as truth. Treat the generated semantic contract and scene brief as hypotheses to verify against it.',
@@ -183,7 +183,7 @@ export function buildImageOnlyCriticPrompt(): string {
     'Judge only what is visible in the attached image.',
     blockingCodesLine(IMAGE_ONLY_CRITIC_BLOCKER_CODES),
     'readable_text: letters, logos, watermarks, captions, UI chrome, or any writing baked into the pixels.',
-    'banned_cliche: terminal/IDE screens, collage, glowing brain, generic paper-heap sludge.',
+    'banned_cliche: terminal/IDE screens, collage, glowing brain, generic paper-heap sludge, mascot/cute humanoid robots unless literal robotic hardware is the news subject.',
     HUMAN_DIGNITY_RISK_HINT,
     'Count distinct readable-text regions in blockers (one blocker per region).',
     'Do not score context, mechanism, consequence, or headline pairing — those axes are not applicable.',

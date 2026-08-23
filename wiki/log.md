@@ -4,7 +4,97 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-22
+Last updated: 2026-08-23
+
+## 2026-08-23 — Корекція primary render і fail-closed semantic QA
+
+**Джерело:** завершальний adversarial review реалізації Prompt-as-Code v6 після owner-відповідей
+про один «правильний» результат і скріни дешевих robot/UI-кліше.
+
+**Корекція:** production `render`, як і `prompt_only`, тепер запитує `variantCount: 1`;
+відхилення vision формує repair brief наступної спроби, а не три кандидати для ручної лотереї.
+`routeSeatTemplates` та batch harness лишаються тільки offline/історичною можливістю. Для
+ручного `story_image` відсутній `revision_item`, нечитабельний/відсутній QA payload, помилка
+завантаження story context або `story_checked !== true` тепер fail-closed для machine attestation.
+Ручний редакторський release не блокується. Другий critic бачить approved counterweight;
+обидва critic-prompts явно відсікають mascot/cute humanoid robots, якщо робот не є буквальним
+предметом новини. Після живого візуального перегляду legacy long title hero також стиснуто:
+на desktop title і 16:9 cover входять в екран поруч, без обрізання повного title.
+
+**Перевірено:** `npm run test` — 186 файлів / 1704 тести; `npm run build` (включно з TypeScript),
+`git diff --check` і `npm run wiki:check` зелені. Full ESLint — 0 errors / 10 warnings у
+неповʼязаних pre-existing файлах; wiki-lint — 0 errors / 4 pre-existing warnings. Browser route
+check підтвердив видимий cover, `object-fit: contain`, відсутній framework overlay/console errors
+і `#story-2` + `aria-current="location"` після click.
+(source: локальна verification 2026-08-23)
+
+**Wiki:** коригує попередній запис цього ж дня; оновлено
+[content-sim](pipeline/content-sim.md), [weekly-digest](pipeline/weekly-digest.md),
+[image-prompt-library](pipeline/image-prompt-library.md), [card-images](marketing/card-images.md),
+[weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [weekly-sandbox](ops/weekly-sandbox.md),
+[overview](overview.md), [now](now.md), [index](index.md) і
+[gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md).
+(source: owner session 2026-08-23; `src/lib/weekly-digest/generation-worker.ts`;
+`src/lib/weekly-digest/machine-attest.ts`; `src/lib/content-sim/vision-critic.ts`)
+
+## 2026-08-23 — Review primary illustration / semantic QA / weekly reading path
+
+**Джерело:** відповіді власника й скріни weekly `ai-weekly-2026-08-09`: cheap robots,
+фейковий UI, псевдотекст, component soup, silent crop, гігантський hero і sidebar без active
+стану. Власник обрав один «правильний» primary результат із ручним переглядом, а не три
+альтернативи для вибору.
+
+**Корінь:** v6 покращив assembly, але тримав three-seat UX, мав математично недосяжний глобальний
+template reuse gate (пʼять templates на весь digest), fallback planning-prose, image-only upload QA
+і `object-cover` у pipeline/UI. Додатковий adversarial review знайшов, що semantic QA blocker міг
+не потрапити в legacy auto-attest allow-list і тому автоматично схвалити файл.
+
+**Зроблено:** `prompt_only` дає один 6-block primary cause-and-effect prompt; templates обмежують
+інформаційний бюджет і ban fake UI/robots; semantic contract зберігається поруч із prompt і дає
+clean story upload другий story-aware advisory pass. Будь-який active post-upload QA blocker
+залишає картинку на owner review. Weekly image encode/UI використовують safe `contain` frame,
+hero top-align, stories ідуть раніше за допоміжні блоки, ToC має active scroll/hash state; master
+отримав length gate для hero copy.
+
+**Перевірено:** `npm run test` — 186 файлів / 1700 тестів; `npm run typecheck`, targeted ESLint,
+`git diff --check` і `npm run wiki:check` зелені. Browser route check підтвердив `object-contain`,
+story ordering і `aria-current` для `#story-2`; повний site build ще не є твердженням у цьому записі.
+(source: локальна verification 2026-08-23)
+
+**Wiki:** новий [gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md);
+оновлено [image-prompt-library](pipeline/image-prompt-library.md),
+[weekly-digest](pipeline/weekly-digest.md), [card-images](marketing/card-images.md),
+[weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [content-sim](pipeline/content-sim.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md), [weekly-sandbox](ops/weekly-sandbox.md),
+[overview](overview.md), [now](now.md), [index](index.md).
+(source: owner session 2026-08-23; `pipeline/card-image.ts`; `src/lib/weekly-digest/run-post-upload-qa.ts`; `src/lib/weekly-digest/machine-attest.ts`; `src/components/weekly/weekly-toc.tsx`)
+
+## 2026-08-23 — Prompt-as-Code v6 (awesome-gpt-image-2, без галереї)
+
+**Джерело:** власник ігнорував згенеровані weekly-промпти й писав свої з новини;
+живий digest `71af784b-3c89-47f8-bc38-e3eae4def2a7` (вкладка Visuals): два
+sun-printing кадри + diagram з `essence.mechanism` / `Teams should audit`.
+Upstream: [awesome-gpt-image-2](https://github.com/freestylefly/awesome-gpt-image-2) (MIT).
+
+**Корінь:** `flattenMetaphorPitch` зліплював planning-поля в рядок для моделі;
+`composeDiagramCanonical` вставляв editorial-прозу; журі просило кожну лінзу
+показати повний causal mini-story; один FLUX-craft на всі seats.
+
+**Зроблено:** `pipeline/image-prompt-library/` (5 шаблонів, 6-block assembler,
+NOTICE MIT); `flattenMetaphorPitch` = лише renderable; policy
+**`weekly-semantic-story-v6`**; Visuals бейдж шаблону; daily cover і news cards
+через той самий асемблер (news без `infographic-engine`); house skill
+`.agents/skills/gpt-image-2-editorial`. Текст у пікселях лишається D1.
+
+**Wiki:** нова [image-prompt-library](pipeline/image-prompt-library.md); оновлено
+[card-images](marketing/card-images.md), [weekly-digest](pipeline/weekly-digest.md),
+[weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P6,
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [overview](overview.md),
+[now](now.md), [content-sim](pipeline/content-sim.md), [index](index.md).
 
 ## 2026-08-22 — Fix remaining issues переписував робочу копію з нуля
 

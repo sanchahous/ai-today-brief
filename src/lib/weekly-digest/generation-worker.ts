@@ -105,6 +105,8 @@ import type { WeeklyImageIterationPreview } from '@/lib/content-sim/adapters/wee
 
 const PRIVATE_BUCKET = 'weekly-digest-private';
 const MAX_JOBS = 10;
+/** One explanation first; a rejected render gets a repaired retry, not a choice set. */
+export const WEEKLY_STORY_RENDER_VARIANT_COUNT = 1;
 
 // This module backs /api/internal/weekly/generate, polled every 5 minutes,
 // 24/7, by a Supabase pg_cron safety dispatcher. A separate database reaper
@@ -1186,9 +1188,7 @@ function workingCopyWriterMetadata(
     provider_id?: string | null;
   }>,
 ): EditorialGenerationMetadata {
-  const article = artifacts.find(
-    (row) => row.artifact_type === 'article' && row.locale === 'en',
-  );
+  const article = artifacts.find((row) => row.artifact_type === 'article' && row.locale === 'en');
   const providerRaw = article?.provider?.trim() ?? '';
   const provider =
     providerRaw === 'claude-cli' || providerRaw === 'gemini' || providerRaw === 'openrouter'
@@ -1213,7 +1213,9 @@ function tryWorkingCopyMasterBundle(
     return masterBundleFromArtifacts(context);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.warn(`[weekly-generation] working copy could not be loaded as master segments: ${message}`);
+    console.warn(
+      `[weekly-generation] working copy could not be loaded as master segments: ${message}`,
+    );
     return null;
   }
 }
@@ -3186,6 +3188,8 @@ function siblingHintsFromPromptSet(content: Json | null): SiblingMetaphorHint[] 
         // fired across stories. Threaded through from the accepted pitch.
         subject: prompt.subject ?? undefined,
         setting: prompt.setting ?? undefined,
+        action: prompt.action ?? undefined,
+        templateId: prompt.templateId ?? undefined,
       },
     ];
   });
@@ -3292,6 +3296,10 @@ async function writeStoryImagePromptSet(
     sceneInput,
     cfg: weeklyCardImageConfig(),
     policy: WEEKLY_PROMPT_POLICY,
+    // Every production path starts with one primary direction. Render mode
+    // feeds a vision rejection into a repaired retry instead of producing a
+    // hidden three-card lottery for automatic selection.
+    count: 1,
   });
   const artifactId = await saveGeneratedArtifact({
     weeklyDigestId: job.weekly_digest_id,
@@ -3306,6 +3314,7 @@ async function writeStoryImagePromptSet(
       policy: produced.content.policy,
       generated_at: produced.content.generated_at,
       mapping_gate_issues: produced.content.mapping_gate_issues,
+      semantic_contract: produced.content.semantic_contract as unknown as Json,
     },
     metadata: {
       source_kind: 'prompt_only',
@@ -3357,6 +3366,7 @@ async function writeCoverPromptSet(job: ClaimedGenerationJob) {
       policy: produced.content.policy,
       generated_at: produced.content.generated_at,
       mapping_gate_issues: produced.content.mapping_gate_issues,
+      semantic_contract: produced.content.semantic_contract as unknown as Json,
     },
     metadata: {
       source_kind: 'prompt_only',
@@ -3515,7 +3525,7 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
   let source: Buffer;
   let sourceKind = 'generated';
   let sourceUrl: string | null = null;
-  let promptPolicy = 'weekly-semantic-story-v5.1';
+  let promptPolicy = 'weekly-semantic-story-v6';
   let imageMeta: {
     provider: string;
     model: string;
@@ -3589,7 +3599,8 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
       step: 'generate',
       progressCurrent: 5,
       progressTotal: 100,
-      message: 'Building the semantic contract, rendering variants and running vision review',
+      message:
+        'Building the semantic contract, rendering the primary candidate and running vision review',
     });
     const { generateWeeklyReportageIllustrations, WEEKLY_PROMPT_POLICY } = await lazyCardImage();
     const { runWeeklyImageSimLoop } = await import('@/lib/content-sim/adapters/weekly-image');
@@ -3697,7 +3708,10 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
             rejectedScenes: rejectedScene ? [rejectedScene] : undefined,
             repairFeedback: planningFeedback.length ? planningFeedback : undefined,
             renderDirective: promptSuffix || undefined,
-            variantCount: 3,
+            // Production optimizes for one semantically correct editorial image.
+            // Rejection feeds a repaired retry, rather than making the owner
+            // compare three weakly different candidates from the same brief.
+            variantCount: WEEKLY_STORY_RENDER_VARIANT_COUNT,
           },
           {
             geminiApiKey: process.env.GEMINI_API_KEY?.trim() ?? '',
@@ -3874,7 +3888,7 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
     model: imageMeta?.model,
     progressCurrent: 90,
     progressTotal: 100,
-    message: 'Saving the selected illustration and alternate variants',
+    message: 'Saving the primary illustration and retained review history',
   });
   const {
     encodeSiteWebp,

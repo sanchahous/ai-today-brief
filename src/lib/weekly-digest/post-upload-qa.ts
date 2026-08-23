@@ -18,6 +18,8 @@ export interface PostUploadQa {
   model: string | null;
   cost_usd: number;
   checked_at: string | null;
+  /** A second, story-aware vision pass ran after the pixel-only pass. */
+  story_checked?: boolean;
   ignored?: boolean;
   error?: string;
 }
@@ -33,6 +35,16 @@ const BLOCKER_LABEL_UK: Record<string, string> = {
   low_quality: 'низька якість',
   impossible_orientation: 'перевернутий обʼєкт',
   prop_use_mismatch: 'неприродна дія',
+  off_metaphor: 'хибна метафора',
+  off_news: 'не передає цю новину',
+  missing_context: 'немає контексту новини',
+  missing_mechanism: 'не видно механізму',
+  missing_consequence: 'не видно наслідку',
+  ambiguous_visual_story: 'сенс не зчитується одразу',
+  wrong_subject: 'хибний головний обʼєкт',
+  opaque_abstraction: 'непрозора абстракція',
+  semantic_evidence_missing: 'немає видимого доказу сенсу',
+  decorative_second_beat: 'декоративний зайвий елемент',
 };
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -86,6 +98,7 @@ export function parsePostUploadQa(metadata: unknown): PostUploadQa | null {
     model: str(row.model) ?? null,
     cost_usd: num(row.cost_usd) ?? 0,
     checked_at: str(row.checked_at) ?? null,
+    story_checked: row.story_checked === true,
     ignored: row.ignored === true,
     error: str(row.error),
   };
@@ -117,7 +130,9 @@ export function formatPostUploadQaLine(qa: PostUploadQa): string {
   if (qa.ignored) return 'QA: проігноровано';
   if (qa.error) return 'QA: перевірку не вдалось завершити';
   const active = qa.blockers.filter((entry) => entry.blocker);
-  if (active.length === 0) return 'QA чисто';
+  if (active.length === 0) {
+    return qa.story_checked ? 'QA чисто · зміст зчитується' : 'QA чисто';
+  }
   const textCount = active.filter((entry) => entry.code === 'readable_text').length;
   if (textCount > 0 && textCount === active.length) {
     if (textCount === 1) return 'QA: впечений текст';
@@ -162,7 +177,7 @@ const ADVICE_COPY: Record<PostUploadAdviceKind, Omit<PostUploadAdvice, 'kind'>> 
     dont: 'Не перегенеровуй усі кадри.',
   },
   false_thesis: {
-    do: 'Візьми інший концепт із трьох.',
+    do: 'Уточни primary direction і перегенеруй кадр.',
     dont: 'Не патч лейблами.',
   },
 };

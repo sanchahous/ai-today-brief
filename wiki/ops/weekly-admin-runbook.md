@@ -5,7 +5,7 @@ Summary: покрокова інструкція для власника/ред�
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…22,
 latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22
-Last updated: 2026-08-22
+Last updated: 2026-08-23
 
 ---
 
@@ -210,14 +210,12 @@ Release preflight на Overview / Release покаже, що ще червоне
 факт про весь agentic AI. Якщо Top 3 не мають чесного спільного зв'язку, не вимагай umbrella-
 тему — краще прямо назвати три новини.
 
-На **Visuals** біля заголовка кожної story рядок `N/3 промпти готові` (наприклад
-`2/3 промпти готові · немає consequence` або `фолбек: mechanism`) — це сигнал, що журі не
-зібрало три різні підходи, **до** того як витрачати час на слабкий промпт. Над сіткою story —
-рядок **гейт промптів** (E3): чи ≥60% концептів прийнятні з 1–2 спроби, чи немає misleading
-у прийнятих, чи ≤10 хв на story, чи промпти різні. Червоний/жовтий рядок **не** блокує
-Release. Далі картка
-**Copy-ready prompts**: кнопки **Canonical / Midjourney /
-Negative**, стан слота (`очікує зображення` / `завантажено, on review` / `approved`) і
+На **Visuals** біля заголовка нової story рядок `1/1 основний промпт готовий`; якщо він зібраний
+через fallback, це явно видно як `фолбек: …`. Старі revision artifacts із трьома prompts можуть
+і далі показувати історичний `N/3` стан, але не є ціллю для нової генерації. Над сіткою story —
+рядок **гейт промптів** (E3); він лишається advisory і не блокує Release. Далі картка
+**Primary illustration direction**: кнопки **Canonical / Midjourney /
+Negative**, бейдж шаблону (`realistic photography` / `infographic engine` / …) поруч із lens, стан слота (`очікує зображення` / `завантажено, on review` / `approved`) і
 **Upload a replacement** в тій самій картці. Кнопка **Generate prompts** / **Generate cover
 prompt** пише `story_prompt_set` (`WEEKLY_STORY_IMAGE_MODE=prompt_only`) — без FLUX. Скопіюй
 промпт, згенеруй зображення у своєму інструменті, завантаж файл. Upload `story_image`
@@ -227,15 +225,20 @@ prompt** пише `story_prompt_set` (`WEEKLY_STORY_IMAGE_MODE=prompt_only`) —
 далі складаються автоматично з approved cover. Після upload за кілька секунд зʼявиться
 **QA чисто** або жовтий рядок на кшталт «QA: впечений текст (2 місця)» з **Ігнорувати** /
 **Замінити файл**. Під жовтим рядком — порада: впечений текст → inpaint/crop (не
-перегенеровувати кадр); поламана геометрія → той самий промпт; хибна теза → інший концепт.
+перегенеровувати кадр); поламана геометрія → той самий промпт; хибна теза → уточнити primary
+direction і перегенерувати кадр.
 Рядок **QA: ризик гідності** означає принизливу сцену з людиною — замініть файл, не ігноруйте
 легковажно. Провальний QA **не** блокує реліз. Якщо рядок завис на «QA перевіряє…» (виклик не
 завершився) або показує помилку — кнопка **Перевірити ще раз** (2026-08-15, review-фікс)
 перезапускає перевірку на вже завантаженому файлі без повторного upload. Під кожним концептом — вердикт
 **використано / з правками / відхилено** і теги причини; **Зберегти вердикт** пише пару
 промпт→результат у `story_prompt_set` і в metadata завантаженого файлу. Це не гейт релізу.
-QA після upload — **один** image-only прохід (без headline). У режимі `render` критик двостадійний:
-спочатку пікселі, потім claim. Яка модель зараз пише master — дивись `/admin/providers`
+QA після upload для cover — **один** image-only прохід. Для story clean pixel-only кадр проходить
+другий story-aware прохід: headline + approved fields + counterweight + semantic contract + primary
+scene. Він попереджає про `ambiguous_visual_story`, але не блокує ручний Release. Якщо semantic
+прохід не завершився або є active QA blocker, файл не machine-attest-иться й лишається на ручному
+review. У режимі `render` critic також двостадійний: спочатку пікселі, потім claim. Яка модель зараз
+пише master — дивись `/admin/providers`
 секцію **Model ranking** (добовий OpenRouter rerank, F3), не Visuals.
 Скільки коштують новини vs промпти+QA — `/admin/costs` секція **Illustration budget** (G),
 з ledger, не з лімітів політики.
@@ -556,6 +559,7 @@ Grid-форма й картки на будь-якій вкладці не ма�
 ## Related pages
 
 - [weekly-digest](../pipeline/weekly-digest.md) — техніка Content Studio, версії, spend-cap
+- [image-prompt-library](../pipeline/image-prompt-library.md) — copy-ready промпти v6, бейдж шаблону
 - [weekly-editorial-selection](../pipeline/weekly-editorial-selection.md) — відбір історій
 - [social-cms-runbook](social-cms-runbook.md) — cron / secrets для generate worker
 - [owner-checklist](owner-checklist.md) — env і launch-блокери

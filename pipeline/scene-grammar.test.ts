@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   requiresProcessGrammar,
   selectSceneGrammar,
+  templateIdForSceneGrammar,
   uniqueProcessTokens,
   type SceneGrammarEssence,
   type SceneGrammarInput,
@@ -168,5 +169,28 @@ describe('selectSceneGrammar for the mechanism lens (R2.1 / F6 -- at most one di
         }),
       ),
     ).toBe('source_led_fallback');
+  });
+});
+
+describe('templateIdForSceneGrammar (grammar ↔ Prompt-as-Code template)', () => {
+  it('maps hybrid mechanism grammar to infographic-engine', () => {
+    expect(
+      templateIdForSceneGrammar(
+        domainStory({
+          title: 'Inference cost dropped 82% after the routing change',
+          summary: 'The same model now spends less per completed task.',
+          practical: '',
+          takeaway: '',
+          why: '',
+          lens: 'mechanism',
+        }),
+      ),
+    ).toBe('infographic-engine');
+  });
+
+  it('does not give literal_context the infographic template', () => {
+    expect(templateIdForSceneGrammar(domainStory({ lens: 'literal_context' }))).not.toBe(
+      'infographic-engine',
+    );
   });
 });

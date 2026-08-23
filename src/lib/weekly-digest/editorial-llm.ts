@@ -23,6 +23,7 @@ import { loadProviderRegistry, type ProviderRole } from '../../../pipeline/provi
 import type { ProviderCallResult } from '../../../pipeline/providers/types';
 import {
   WEEKLY_MASTER_SPEC_VERSION,
+  WEEKLY_HERO_COPY_MAX_CHARS,
   type WeeklyMasterBundle,
   type WeeklyMasterStory,
   type WeeklyPlacement,
@@ -1054,8 +1055,8 @@ ${voicePromptBlock('en')}
 
 FRAME CONTRACT
 - Establish one honest throughline from the three feature stories. Use a thematic umbrella only when the stories actually support a real connection; otherwise frame the edition transparently around the three concrete developments instead of forcing a vague idea onto unrelated stories.
-- title: makes the Top 3 legible on first read by naming concrete actors, products or results. Never an umbrella label such as "The Agentic Shift" or "The Future of AI", and never a bare list of categories.
-- standfirst: about ${targets.standfirst} words, opening on the edition's strongest news value. Never "A weekly digest..." boilerplate.
+- title: makes the Top 3 legible on first read by naming concrete actors, products or results, at most ${WEEKLY_HERO_COPY_MAX_CHARS.title} characters. Never an umbrella label such as "The Agentic Shift" or "The Future of AI", and never a bare list of categories.
+- standfirst: about ${targets.standfirst} words, at most ${WEEKLY_HERO_COPY_MAX_CHARS.standfirst} characters, opening on the edition's strongest news value. Never "A weekly digest..." boilerplate.
 - intro: about ${targets.intro} words of continuous prose that earns the reader's next minute.
 - editorNote: about ${targets.editorNote} words. It may say the edition uses cited primary sources and separately labeled editorial analysis. It must NOT claim original research -- this edition is a synthesis of external primary sources.
 - conclusion: about ${targets.conclusion} words. Land the throughline; do not restate every story in turn.
