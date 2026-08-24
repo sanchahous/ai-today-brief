@@ -92,6 +92,27 @@ const nextConfig: NextConfig = {
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
         ],
       },
+      {
+        // The news index reads `searchParams` (q / category / page), which is a
+        // Next 16 runtime API: the route renders dynamically on every request
+        // and its `export const revalidate` is ignored, so Next emits
+        // `private, no-cache, no-store` and the CDN never stores it. Measured
+        // 2026-08-24: /en/news 343 KB and /uk/news 390 KB, both
+        // `X-Vercel-Cache: MISS` on every hit while every other hub was a HIT
+        // — the single largest consumer of the 10 GB Fast Origin Transfer
+        // allowance. The page is public and derives only from the URL, so a
+        // short shared-cache lifetime is safe. Five minutes keeps the editorial
+        // delay after a publish small (the publish flow's `revalidatePath`
+        // cannot purge a dynamic route) while collapsing origin fetches to a
+        // handful per hour per PoP.
+        source: '/:lang(en|uk)/news',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=3600',
+          },
+        ],
+      },
     ];
   },
   experimental: {
@@ -136,6 +157,17 @@ const nextConfig: NextConfig = {
     // publisher images through untouched. See wiki/ops/vercel-image-quota.md.
     loader: 'custom',
     loaderFile: './src/lib/image-loader.ts',
+    // Next's default ladder emits 16 candidate widths, and every one of them
+    // becomes a full Supabase transform URL inside `srcSet`. Measured on
+    // /en/news 2026-08-24: 40 KB of the 343 KB response was `srcSet` alone.
+    // Nothing on this site is rendered wider than the weekly hero, so the
+    // 2048/3840 rungs only ever cost bytes. This ladder still covers 2x DPR
+    // for every real slot: 384 px cards, ~720 px article body, 1080/1920 hero.
+    // 1200 stays: the daily and weekly heroes declare a 1160 px slot, and without
+    // that rung their 1x candidate would jump to 1920 — a bigger file, not a
+    // smaller one.
+    deviceSizes: [640, 828, 1080, 1200, 1920],
+    imageSizes: [64, 96, 128, 256, 384],
   },
   async redirects() {
     return [

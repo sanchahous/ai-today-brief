@@ -8,7 +8,12 @@ import { getCategoryPaths } from '@/lib/categories';
 import { getBriefSitemapEntries } from '@/lib/briefs';
 import { getWeeklySitemapEntries } from '@/lib/digests';
 
-export const revalidate = 3600;
+// 1316 URLs / 943 KB as of 2026-08-24. Regenerating that hourly cost ~22 MB a
+// day of origin transfer for a file that only changes when content publishes,
+// and the publish flow already revalidates it on demand. Six hours is the
+// timed fallback, not the freshness guarantee. `news-sitemap.xml` keeps its
+// one-hour cadence because Google News needs it.
+export const revalidate = 21600;
 
 const TRUST_PATHS = [
   'about',
