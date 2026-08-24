@@ -32,7 +32,7 @@ export function WeeklyActionBoard({
     <section
       aria-labelledby="weekly-actions-title"
       data-digest-event="action_board_view"
-      className="border-accent/35 bg-surface rounded-card border border-l-4 p-6 sm:p-8"
+      className="border-accent/35 bg-surface rounded-card mt-12 border border-l-4 p-6 sm:p-8"
     >
       <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
         {copy.actionBoardEyebrow}

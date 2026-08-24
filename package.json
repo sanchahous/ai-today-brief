@@ -33,6 +33,7 @@
     "export:owner-calibration": "tsx pipeline/scripts/export-owner-calibration.ts",
     "indexnow:backfill": "tsx pipeline/scripts/indexnow-backfill.ts",
     "auto:publish": "tsx pipeline/scripts/auto-publish.ts",
+    "daily:visual:finalize": "node --conditions=react-server --env-file-if-exists=.env.local --import tsx pipeline/scripts/daily-visual-finalizer.ts",
     "social:shadow": "node --conditions=react-server --import tsx scripts/social-shadow.ts",
     "social:asset:sample": "node --conditions=react-server --import tsx scripts/render-social-asset-sample.ts",
     "weekly:pdf:sample": "node --conditions=react-server --import tsx scripts/render-weekly-pdf-sample.ts",

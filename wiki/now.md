@@ -2,13 +2,45 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…22, Content Sim,
-Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22
-Last updated: 2026-08-22
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…23, Content Sim,
+Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22,
+Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24
+Last updated: 2026-08-24
 
 ---
 
 ## Стан репозиторію
+
+- **Daily visual workflow + safe weekly visual refresh (2026-08-24), PR #320 worktree
+  `claude/gpt-image-prompt-plan-review-2ffff7`.** Daily тепер має бути реальним production
+  visual asset, а не Telegram prompt: frozen daily snapshot після 20:00 Kyiv, одна issue-level
+  `display_title` + private `visual_thesis`, GPT Image 2 primary/optional repair, semantic QA,
+  manual source/editor replacement, шість native social drafts і privacy-safe qualified exposure
+  telemetry. Monthly cap $5 fail-closed для paid calls; новини лишають existing automatic image
+  provider, але з causal prompt. Published weekly не змінюється: **Create visual refresh draft**
+  створює private working revision, де можна задати короткий hero/PDF `display_title`, internal
+  visual direction, staged replacement cover/story assets і після QA/AAL2 owner review застосувати
+  лише явно вибрані pixels як нові artifact versions source revision. Public SEO/OG/text/PDF/social
+  і `published_revision_id` лишаються immutable, а anonymous renderer не бачить prompt/QA/provenance
+  metadata. Перед rollout потрібні deploy міграцій і configured provider credentials/spend alert;
+  backfill старих daily/news не виконується автоматично.
+  (source: owner session 2026-08-23/24; [daily-visual-workflow](pipeline/daily-visual-workflow.md);
+  `pipeline/card-image.ts`; `supabase/migrations/20260824100000_daily_visual_workflow.sql`)
+
+- **Review промптів і weekly experience (2026-08-23), робоча копія для
+  `claude/gpt-image-prompt-plan-review-2ffff7`.** Owner-скріни дайджесту
+  `71af784b-3c89-47f8-bc38-e3eae4def2a7` підтвердили три незалежні дефекти: planning-prose
+  та три lottery concepts замість одного пояснювального primary prompt, semantic mismatch після
+  upload без надійного owner warning, і crop/layout, що ховав зміст картинки й Story 1. Тепер
+  `prompt_only` і production `render` беруть один 6-block cause-and-effect кандидат
+  (`weekly-semantic-story-v6`), планування не потрапляє у renderable fields, clean story upload має
+  другий story-aware QA pass і жоден active QA blocker або відсутній semantic pass не
+  auto-attest-иться. Public weekly показує 16:9 safe-frame і поруч на desktop compact title +
+  top-aligned cover, stories перед допоміжними блоками та active ToC. Після merge: перегенерувати лише
+  `story_prompt_set` на цьому дайджесті, згенерувати/завантажити один primary кадр і перевірити
+  його у Visuals; master rewrite не потрібен.
+  (source: owner session 2026-08-23; [gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md);
+  `pipeline/card-image.ts`; `src/lib/weekly-digest/run-post-upload-qa.ts`)
 
 - **Fix remaining issues переписував статтю з нуля (2026-08-22), гілка
   `fix/weekly-fix-remaining-reuse-copy`.** Після мержу #318 власник знову натиснув
@@ -645,9 +677,10 @@ Last updated: 2026-08-22
   рендерить. Картинки **новин** лишаються авто-FLUX. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
   (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P3,
   `pipeline/daily-cover-prompt.ts`, `pipeline/notify.ts`)
-- **B3 — N/3 промпти готові на Visuals (2026-08-15).** Біля кожної story: `2/3 промпти готові · немає consequence` (або `фолбек: mechanism`). Дані з `story_prompt_set` (лінзи + `sceneSource` журі) або з metadata `story_image` у режимі `render`. Cover не чіпали. Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
-  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B3,
-  `src/lib/weekly-digest/story-prompt-set.ts`)
+- **B3 — prompt readiness на Visuals (superseded 2026-08-23).** Нова `prompt_only` story показує
+  `1/1 основний промпт готовий` і, за потреби, `фолбек: …`. Історичний `N/3` лишається лише для
+  старих multi-prompt artifacts або explicit `render` experiment. Вага release gate без змін.
+  (source: `src/lib/weekly-digest/story-prompt-set.ts`; [gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md))
 - **M3 — preflight веде до промпту, не до Regenerate (2026-08-15).**
   `story_image` / `cover` `artifact_missing`: Visuals → скопіюй промпт → згенеруй у своєму
   інструменті → завантаж файл. Вага гейта не змінена — зображення лишається обовʼязковим.

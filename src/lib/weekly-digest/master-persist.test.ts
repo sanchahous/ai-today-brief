@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   editorialVersionRole,
   MASTER_REVISION_RPC,
+  MASTER_VISUAL_DIRECTION_REVISION_RPC,
   masterPersistDecision,
   USE_LATEST_REVISION_REASON,
 } from './master-persist';
@@ -23,6 +24,9 @@ describe('masterPersistDecision', () => {
     expect(decision.queuePostMasterJobs).toBe(false);
     expect(decision.reason).toBe('Needs review: 78/100, 1 unresolved check(s)');
     expect(MASTER_REVISION_RPC).toBe('create_service_weekly_digest_revision');
+    expect(MASTER_VISUAL_DIRECTION_REVISION_RPC).toBe(
+      'create_service_weekly_digest_revision_with_visual_direction',
+    );
   });
 });
 

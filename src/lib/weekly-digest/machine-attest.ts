@@ -14,14 +14,6 @@ export const MACHINE_ATTEST_ARTIFACT_TYPES = [
 
 export type MachineAttestArtifactType = (typeof MACHINE_ATTEST_ARTIFACT_TYPES)[number];
 
-const DIGNITY_OR_MISLEADING_QA = new Set([
-  'human_dignity_risk',
-  'brand_unsafe',
-  'off_news',
-  'wrong_subject',
-  'false_thesis',
-]);
-
 export function qualityReportBlockingIssues(content: unknown): WeeklyQualityIssue[] {
   if (!content || typeof content !== 'object' || Array.isArray(content)) return [];
   const issues = (content as { issues?: unknown }).issues;
@@ -60,19 +52,34 @@ export function researchPackHasHallucinatedCorroboration(content: unknown): bool
   });
 }
 
-function postUploadQaForbidsImageAttest(metadata: unknown): boolean {
+function postUploadQaForbidsImageAttest(
+  metadata: unknown,
+  options: { requireStoryChecked?: boolean } = {},
+): boolean {
   if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return true;
   const qa = (metadata as Record<string, unknown>).post_upload_qa;
   if (!qa || typeof qa !== 'object' || Array.isArray(qa)) return true;
-  const row = qa as { pending?: unknown; error?: unknown; blockers?: unknown };
+  const row = qa as {
+    pending?: unknown;
+    error?: unknown;
+    blockers?: unknown;
+    story_checked?: unknown;
+  };
   if (row.pending === true) return true;
   if (typeof row.error === 'string' && row.error.trim()) return true;
-  if (!Array.isArray(row.blockers)) return false;
+  // A story image must have passed both the pixel and source-story stages.
+  // A missing revision item used to silently turn this into pixel-only QA,
+  // which could then machine-attest a semantically unrelated illustration.
+  if (options.requireStoryChecked && row.story_checked !== true) return true;
+  // A malformed/partial QA payload is not evidence that the image is clean.
+  if (!Array.isArray(row.blockers)) return true;
   return row.blockers.some((entry) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return false;
-    const blocker = entry as { code?: unknown; blocker?: unknown };
-    if (blocker.blocker === false) return false;
-    return typeof blocker.code === 'string' && DIGNITY_OR_MISLEADING_QA.has(blocker.code);
+    // A manual upload stays in owner review whenever the critic found any
+    // active problem. Restricting this to a small legacy code allow-list let
+    // semantic failures such as `missing_mechanism` auto-approve the image.
+    const blocker = entry as { blocker?: unknown };
+    return blocker.blocker !== false;
   });
 }
 
@@ -109,7 +116,9 @@ export function canMachineAttest(input: {
     return metadataFlag(input.metadata, 'passed');
   }
   if (input.artifactType === 'story_image' || input.artifactType === 'cover') {
-    return !postUploadQaForbidsImageAttest(input.metadata);
+    return !postUploadQaForbidsImageAttest(input.metadata, {
+      requireStoryChecked: input.artifactType === 'story_image',
+    });
   }
   return true;
 }

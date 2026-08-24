@@ -46,7 +46,7 @@ describe('post-upload QA presentation', () => {
     expect(adviceForPostUploadQa(qa)).toEqual([
       expect.objectContaining({
         kind: 'false_thesis',
-        do: 'Візьми інший концепт із трьох.',
+        do: 'Уточни primary direction і перегенеруй кадр.',
       }),
     ]);
   });
@@ -97,7 +97,7 @@ describe('post-upload QA presentation', () => {
     expect(advice).toEqual([
       expect.objectContaining({
         kind: 'false_thesis',
-        do: 'Візьми інший концепт із трьох.',
+        do: 'Уточни primary direction і перегенеруй кадр.',
         dont: 'Не патч лейблами.',
       }),
     ]);
@@ -151,5 +151,167 @@ describe('reviewUploadedImage', () => {
     expect(qa.cost_usd).toBe(0.0005);
     expect(qa).not.toHaveProperty('repair');
     expect(qa).not.toHaveProperty('prompt_patches');
+  });
+
+  it('runs a second, story-aware pass for a clean primary illustration', async () => {
+    const generateVision = vi.fn(async (_role: string, input: { prompt: string }) => {
+      if (input.prompt.includes('pixel defects only')) {
+        return {
+          text: JSON.stringify({
+            overall: 92,
+            dimensions: { no_text: 96, craft: 89, brand_safe: 92, news_legibility: 90 },
+            blockers: [],
+            notes: 'clean pixels',
+          }),
+          provider: 'gemini',
+          model: 'pixel-vision',
+          usage: {
+            costUsd: 0.0005,
+            costSource: 'reported',
+            promptTokens: 10,
+            completionTokens: 10,
+          },
+        };
+      }
+      expect(input.prompt).toContain('SOURCE STORY (authority):');
+      expect(input.prompt).toContain('PrivAiTe removes credentials');
+      expect(input.prompt).toContain('Mechanism that must be visible:');
+      expect(input.prompt).toContain('The proxy does not catch every credential pattern.');
+      return {
+        text: JSON.stringify({
+          overall: 90,
+          dimensions: {
+            no_text: 96,
+            craft: 89,
+            brand_safe: 92,
+            news_legibility: 88,
+            context_fidelity: 86,
+            mechanism_legibility: 87,
+            consequence_legibility: 86,
+            instant_comprehension: 85,
+          },
+          blockers: [],
+          pixel_evidence: {
+            context: 'local gateway next to the developer machine',
+            mechanism: 'private fields are held back by the gateway',
+            consequence: 'one clean request exits the gateway',
+            headline_pairing: 'the credential filter is visible before the outbound request',
+          },
+          notes: 'the causal chain is legible',
+        }),
+        provider: 'gemini',
+        model: 'story-vision',
+        usage: { costUsd: 0.0005, costSource: 'reported', promptTokens: 10, completionTokens: 10 },
+      };
+    });
+
+    const qa = await reviewUploadedImage({
+      bytes: Buffer.from('fake-jpeg'),
+      generateVision: generateVision as never,
+      now: '2026-08-15T12:00:00.000Z',
+      storyContext: {
+        headline: 'PrivAiTe removes credentials before model requests leave a developer machine',
+        summary: 'A local proxy strips personal data and account details from API traffic.',
+        mechanism: 'The gateway separates private fields from the outgoing request.',
+        consequence: 'The provider receives one clean request without the private credentials.',
+        limitation: 'The proxy does not catch every credential pattern.',
+        visualThesis: 'A local filter visibly separates secrets from one clean request.',
+        policyId: 'weekly-semantic-story-v6',
+      },
+    });
+
+    expect(generateVision).toHaveBeenCalledTimes(2);
+    expect(qa.story_checked).toBe(true);
+    expect(qa.blockers).toEqual([]);
+    expect(qa.cost_usd).toBe(0.001);
+    expect(qa.model).toBe('pixel-vision → story-vision');
+    expect(formatPostUploadQaLine(qa)).toBe('QA чисто · зміст зчитується');
+  });
+
+  it('turns a low semantic score without a model blocker into an owner warning', async () => {
+    let call = 0;
+    const generateVision = vi.fn(async () => {
+      call += 1;
+      const imageOnly = call === 1;
+      return {
+        text: JSON.stringify(
+          imageOnly
+            ? {
+                overall: 92,
+                dimensions: { no_text: 96, craft: 89, brand_safe: 92, news_legibility: 90 },
+                blockers: [],
+              }
+            : {
+                overall: 92,
+                dimensions: {
+                  no_text: 96,
+                  craft: 89,
+                  brand_safe: 92,
+                  news_legibility: 90,
+                  context_fidelity: 88,
+                  mechanism_legibility: 48,
+                  consequence_legibility: 86,
+                  instant_comprehension: 70,
+                },
+                blockers: [],
+                pixel_evidence: {
+                  context: 'a machine',
+                  mechanism: 'a vague glowing flow',
+                  consequence: 'a finished request',
+                  headline_pairing: 'not specific enough',
+                },
+              },
+        ),
+        provider: 'gemini',
+        model: 'test-vision',
+        usage: { costUsd: 0.0005, costSource: 'reported', promptTokens: 10, completionTokens: 10 },
+      };
+    });
+
+    const qa = await reviewUploadedImage({
+      bytes: Buffer.from('fake-jpeg'),
+      generateVision: generateVision as never,
+      storyContext: {
+        headline: 'A source-specific AI story',
+        summary: 'One exact mechanism changes the result.',
+        policyId: 'weekly-semantic-story-v6',
+      },
+    });
+
+    expect(qa.blockers).toEqual([
+      expect.objectContaining({ code: 'ambiguous_visual_story', blocker: true }),
+    ]);
+    expect(adviceForPostUploadQa(qa)).toEqual([expect.objectContaining({ kind: 'false_thesis' })]);
+  });
+
+  it('records a story-aware critic outage as an error instead of a clean semantic pass', async () => {
+    let call = 0;
+    const generateVision = vi.fn(async () => {
+      call += 1;
+      if (call === 2) throw new Error('story critic unavailable');
+      return {
+        text: JSON.stringify({
+          overall: 92,
+          dimensions: { no_text: 96, craft: 89, brand_safe: 92, news_legibility: 90 },
+          blockers: [],
+        }),
+        provider: 'gemini',
+        model: 'pixel-vision',
+        usage: { costUsd: 0.0005, costSource: 'reported', promptTokens: 10, completionTokens: 10 },
+      };
+    });
+
+    const qa = await reviewUploadedImage({
+      bytes: Buffer.from('fake-jpeg'),
+      generateVision: generateVision as never,
+      storyContext: {
+        headline: 'A story that requires semantic QA',
+        policyId: 'weekly-semantic-story-v6',
+      },
+    });
+
+    expect(qa.story_checked).toBe(false);
+    expect(qa.error).toMatch(/Story-aware QA unavailable/i);
+    expect(formatPostUploadQaLine(qa)).toBe('QA: перевірку не вдалось завершити');
   });
 });

@@ -23,10 +23,14 @@ export interface VisionGenerateInput {
   geminiModel?: string;
   /** Prefer this OpenRouter model id when using OpenRouter. */
   openRouterModel?: string;
+  /** A hard response ceiling for budgeted single-attempt callers. */
+  maxOutputTokens?: number;
   timeoutMs?: number;
 }
 
-function resolveOpenRouterKey(env: Record<string, string | undefined> = process.env): string | undefined {
+function resolveOpenRouterKey(
+  env: Record<string, string | undefined> = process.env,
+): string | undefined {
   return env.OPEN_ROUTER_API_KEY?.trim() || env.OPENROUTER_API_KEY?.trim() || undefined;
 }
 
@@ -62,6 +66,7 @@ async function generateGeminiVision(
         generationConfig: {
           temperature: 0.2,
           responseMimeType: 'application/json',
+          maxOutputTokens: input.maxOutputTokens,
         },
       }),
       signal: AbortSignal.timeout(input.timeoutMs ?? 60_000),
@@ -110,6 +115,7 @@ async function generateOpenRouterVision(
     body: JSON.stringify({
       model,
       temperature: 0.2,
+      max_tokens: input.maxOutputTokens,
       messages: [
         {
           role: 'user',
@@ -187,4 +193,36 @@ export async function generateWithVision(
     throw new ProviderUnavailableError('vision', errors.join(' | '));
   }
   throw new Error(`[vision] every provider failed for role '${_role}' -- ${errors.join(' | ')}`);
+}
+
+const DAILY_VISUAL_BUDGETED_VISION_GEMINI_MODEL = 'gemini-2.5-flash';
+const DAILY_VISUAL_BUDGETED_VISION_OPENROUTER_MODEL = 'google/gemini-2.5-flash';
+const DAILY_VISUAL_BUDGETED_VISION_MAX_OUTPUT_TOKENS = 900;
+
+/**
+ * Daily automatic publishing uses exactly one vision provider request per QA
+ * stage. Unlike generateWithVision, this function never falls through from a
+ * potentially billed failed Gemini request to OpenRouter (or vice versa).
+ */
+export async function generateWithVisionSingleAttempt(
+  role: VisionProviderRole,
+  input: VisionGenerateInput,
+  env: Record<string, string | undefined> = process.env,
+): Promise<ProviderCallResult> {
+  const geminiKey = env.GEMINI_API_KEY?.trim();
+  const openRouterKey = resolveOpenRouterKey(env);
+  const boundedInput: VisionGenerateInput = {
+    ...input,
+    geminiModel: DAILY_VISUAL_BUDGETED_VISION_GEMINI_MODEL,
+    openRouterModel: DAILY_VISUAL_BUDGETED_VISION_OPENROUTER_MODEL,
+    maxOutputTokens: DAILY_VISUAL_BUDGETED_VISION_MAX_OUTPUT_TOKENS,
+  };
+  // OpenRouter is first only as a configuration choice: it reports usage.cost
+  // when successful. A failure ends this stage; it is not a fallback ladder.
+  if (openRouterKey) return generateOpenRouterVision(boundedInput, openRouterKey);
+  if (geminiKey) return generateGeminiVision(boundedInput, geminiKey);
+  throw new ProviderUnavailableError(
+    `daily-single-vision:${role}`,
+    'OPEN_ROUTER_API_KEY/OPENROUTER_API_KEY or GEMINI_API_KEY is not set',
+  );
 }

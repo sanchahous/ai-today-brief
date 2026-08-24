@@ -5,7 +5,7 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 `pipeline/weekly-digest.ts`, owner audits / production runs 2026-08-09…17,
 [weekly-digest](weekly-digest.md), staged social-copy recovery and LinkedIn 7-page bounds
 2026-08-17, pre-critic hang 2026-08-22, critic model rotation 2026-08-22.
-Last updated: 2026-08-22
+Last updated: 2026-08-23
 
 ---
 
@@ -16,7 +16,7 @@ evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 
 > **Scope note (2026-08-15):** Visuals copy-ready prompt cards (`story_prompt_set`), M1
 > `WEEKLY_STORY_IMAGE_MODE=prompt_only`, M2 post-upload QA, M3 preflight copy and B3
-> `N/3 промпти готові` do not change
+> primary-prompt readiness do not change
 > `weekly-editorial-v2` candidates, weights, diversity constraints, approval state or release
 > eligibility. Images remain required for release; only the missing-image hint and Visuals
 > readiness line changed. P3 (daily cover prompt) is the daily pipeline, not this selector.
@@ -338,6 +338,15 @@ critic-а лишається fail-closed: resume не перетворює не�
 на **вже** approved research/artifacts, не переоцінює відбір заново. (source:
 `src/app/admin/(cms)/weekly/actions.ts`)
 
+## Межа з Prompt-as-Code v6 (2026-08-23)
+
+Shortlist/rank/diversity відбору не змінювались. `weekly-semantic-story-v6` (2026-08-23) лише
+міняє, **як** пишуться copy-ready промпти після approved master: один primary cause-and-effect
+candidate у `prompt_only` і production `render`; rejection є repair feedback наступної спроби.
+Seat orthogonality лишається лише low-level/offline capability. Відбір, research packs і порядок
+stories не торкаються.
+(source: `pipeline/image-prompt-library/`; [image-prompt-library](image-prompt-library.md); `src/lib/weekly-digest/story-prompt-job.ts`)
+
 ## Межа з semantic illustration v5 (2026-08-11)
 
 Shortlist/rank/diversity відбору не змінювались. `weekly-semantic-story-v5.1` починає роботу вже
@@ -368,5 +377,6 @@ Critic-ротація (інша модель на нову ревізію / на
 ## Related pages
 
 - [weekly-digest](weekly-digest.md) — Content Studio v2, ревізії, spend-cap, admin UX
+- [image-prompt-library](image-prompt-library.md) — Prompt-as-Code v6, межа з відбором
 - [editorial-voice](editorial-voice.md) — редакційний голос після відбору
 - [video-boundary](video-boundary.md)

@@ -6,6 +6,7 @@ import type { EditorialEssence, WeeklyReportageSceneBriefResult } from './card-i
 import type { PipelineDb } from './db';
 import { logEvent } from './log';
 import { exportManualImagePrompt, type ManualImagePrompt } from './prompt-export';
+import { isImagePromptTemplateId } from './image-prompt-library/templates';
 import {
   generateWithRegistry,
   loadProviderRegistry,
@@ -68,7 +69,7 @@ export function buildDailyCoverSceneInstruction(edition: DailyCoverEdition): str
     'The image must make the shared tension of these top stories readable in one tableau.',
     'Name a concrete focal subject, setting, and action. No text, letters, logos, or real faces.',
     'Reply with JSON only:',
-    '{"title":"short concept name","scene":"18-40 word tableau","mechanism":"visible cause","consequence":"visible outcome","visualThesis":"what a reader grasps in 3 seconds"}',
+    '{"title":"short concept name","subject":"focal object","action":"visible verb phrase","setting":"place and time","scene":"18-40 word tableau","mechanism":"visible cause","consequence":"visible outcome","visualThesis":"what a reader grasps in 3 seconds"}',
     '',
     `Edition title: ${edition.title.trim() || 'Daily AI brief'}`,
     `Edition intro: ${edition.intro.trim() || 'No intro.'}`,
@@ -126,6 +127,8 @@ function sceneBriefFromDirector(
     scene,
     source,
     conceptLens: 'literal_context',
+    grammar: 'cinematic_domain_scene',
+    templateId: 'scene-storytelling',
     essence: essence.essence,
     metaphorTitle: asTrimmedString(parsed?.title) ?? 'Edition cover',
     storyContext: essence.storyContext,
@@ -136,6 +139,9 @@ function sceneBriefFromDirector(
     readerTest: essence.readerTest,
     visibleMechanism: asTrimmedString(parsed?.mechanism) ?? essence.mechanism,
     visibleConsequence: asTrimmedString(parsed?.consequence) ?? essence.consequence,
+    subject: asTrimmedString(parsed?.subject) ?? scene,
+    action: asTrimmedString(parsed?.action) ?? undefined,
+    setting: asTrimmedString(parsed?.setting) ?? undefined,
   };
 }
 
@@ -153,6 +159,7 @@ export function parseStoredCoverPrompt(value: unknown): StoredDailyCoverPrompt |
     : [];
   const lens = asTrimmedString(value.conceptLens);
   const grammar = asTrimmedString(value.grammar);
+  const templateRaw = asTrimmedString(value.templateId);
   return {
     conceptLens:
       lens === 'mechanism' || lens === 'consequence' ? lens : 'literal_context',
@@ -160,6 +167,7 @@ export function parseStoredCoverPrompt(value: unknown): StoredDailyCoverPrompt |
       grammar === 'source_led_fallback' || grammar === 'deterministic_technical_hybrid'
         ? grammar
         : 'cinematic_domain_scene',
+    templateId: templateRaw && isImagePromptTemplateId(templateRaw) ? templateRaw : 'scene-storytelling',
     title: asTrimmedString(value.title) ?? 'Edition cover',
     canonical,
     midjourney,
@@ -177,6 +185,7 @@ export function storedCoverPromptToJson(stored: StoredDailyCoverPrompt): Json {
   return {
     conceptLens: stored.conceptLens,
     grammar: stored.grammar,
+    templateId: stored.templateId,
     title: stored.title,
     canonical: stored.canonical,
     midjourney: stored.midjourney,

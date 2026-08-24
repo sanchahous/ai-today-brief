@@ -5,8 +5,8 @@ Summary: як прогнати `editorial_master` локально на реал
 Sources: `pipeline/scripts/weekly-master-sandbox.ts`, `pipeline/scripts/weekly-doctor.ts`,
 live sandbox-прогони 2026-08-09 на фікстурі `ai-weekly-2026-08-02`,
 content-sim / illustration overhaul 2026-08-11, semantic illustration v5,
-weekly illustration M2 post-upload QA 2026-08-15
-Last updated: 2026-08-15
+weekly illustration M2 post-upload QA 2026-08-15, Prompt-as-Code v6 2026-08-23
+Last updated: 2026-08-23
 
 ---
 
@@ -98,7 +98,8 @@ npm run weekly:sandbox -- gates --fixture <path> --run artifacts/_local/weekly-s
 лишається діагностикою правил, а не єдиним захистом.
 
 Для images використовуй окремий `npm run content-sim -- run --adapter weekly-image --fixture …`.
-Policy `weekly-semantic-story-v5.1` вимагає у fixture original summary/why/practical/limitation/
+Політика планування з 2026-08-23 — `weekly-semantic-story-v6` (fixture без `policyId`
+бере цей id). Semantic-поля ті самі, що у v5.1: original summary/why/practical/limitation/
 takeaway/claims і generated context/meaning/mechanism/consequence/visual thesis. Critic має
 повернути всі чотири semantic scores; відсутній score fail-closed дорівнює 0. Repair directive у
 prod застосовується до наступного FLUX render, тоді як offline fixture повторно оцінює ті самі
@@ -134,7 +135,11 @@ captured pixels і придатна насамперед для rubric/backtest.
 
 Post-upload QA (M2) — це прод Visuals після ручного upload, не sandbox-прогін.
 D3 додає код `human_dignity_risk` у той самий critic; sandbox цього не ганяє.
-E2 додає другий (story-aware) виклик лише в auto-циклі `render`, не в sandbox doctor.
+E2 додає другий story-aware виклик у `render` і після clean `prompt_only` story upload;
+cover лишається image-only, а sandbox doctor цього не ганяє. Для ручної story-картинки пропущений
+semantic pass або active QA blocker fail-closed лише для machine attestation, не для рішення
+редактора про release.
+(source: `src/lib/weekly-digest/run-post-upload-qa.ts`; `src/app/admin/(cms)/weekly/actions.ts`; `src/lib/weekly-digest/machine-attest.ts`)
 E3 рахує якість промптів у прод Visuals; sandbox цього не ганяє.
 A2 bake-off порівнює OpenRouter vision-моделі офлайн; sandbox цього не ганяє і модель
 критика не перемикає.

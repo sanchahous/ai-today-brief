@@ -39,7 +39,7 @@ export function WeeklyDigestBlock({
             'radial-gradient(100% 140% at 100% 0%, rgba(240,192,64,.17), transparent 55%), var(--surface)',
         }}
       >
-        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(340px,.9fr)]">
+        <div className="grid items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(340px,.9fr)]">
           <div>
             <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
               {copy.eyebrow}
@@ -103,14 +103,14 @@ export function WeeklyDigestBlock({
               <Link
                 href={href}
                 aria-label={copy.readFull}
-                className="border-border rounded-card relative block aspect-[1200/630] overflow-hidden border"
+                className="border-border bg-surface rounded-card relative block min-h-[14rem] self-stretch overflow-hidden border sm:min-h-[16rem]"
               >
                 <Image
                   src={digest.cover.url}
                   alt={digest.cover.alt}
                   fill
                   sizes="(max-width: 1023px) 100vw, 480px"
-                  className="object-cover transition-transform duration-300 hover:scale-[1.015]"
+                  className="object-contain transition-transform duration-300 hover:scale-[1.015]"
                 />
               </Link>
             </DigestCardClickTracker>
@@ -119,7 +119,7 @@ export function WeeklyDigestBlock({
               <Link
                 href={href}
                 aria-label={copy.readFull}
-                className="border-border rounded-card block aspect-[1200/630] border"
+                className="border-border rounded-card block min-h-[14rem] self-stretch border sm:min-h-[16rem]"
                 style={{
                   background:
                     'radial-gradient(90% 100% at 85% 5%, rgba(71,228,211,.18), transparent 60%), var(--surface-2)',

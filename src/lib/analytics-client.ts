@@ -2,6 +2,10 @@
 
 import { analyticsConfigured } from '@/lib/analytics-config';
 import { CONSENT_STORAGE_KEY, parseConsentJson, type ConsentState } from '@/lib/consent';
+import type {
+  DailyVisualEntrySource,
+  DailyVisualEngagementEvent,
+} from '@/lib/daily-visual-engagement';
 
 export type ParamValue = string | number | boolean | null | undefined;
 export type Params = Record<string, ParamValue>;
@@ -78,8 +82,14 @@ export function trackEvent(event: string, params: Params = {}): void {
 
 /** Path of the first-party per-item beacon endpoint (see src/app/api/ev/route.ts). */
 const EVENT_BEACON_PATH = '/api/ev';
+const DAILY_VISUAL_EVENT_BEACON_PATH = '/api/daily/visual-engagement';
 
 export type ItemTarget = { id?: string; slug?: string; lang?: string };
+export type DailyVisualTarget = {
+  visualSetId: string;
+  candidateId: string;
+  lang: 'en' | 'uk';
+};
 
 /**
  * Per-item interaction — fires the GA4 event (unchanged taxonomy) AND a first-party
@@ -102,10 +112,52 @@ function sendItemBeacon(type: string, target: ItemTarget, params: Params): void 
   const raw = params.value ?? params.percent;
   const value = typeof raw === 'number' && Number.isFinite(raw) ? raw : undefined;
   try {
-    const payload = JSON.stringify({ id: target.id, slug: target.slug, type, lang: target.lang, value });
+    const payload = JSON.stringify({
+      id: target.id,
+      slug: target.slug,
+      type,
+      lang: target.lang,
+      value,
+    });
     navigator.sendBeacon(EVENT_BEACON_PATH, payload);
   } catch {
     /* telemetry must never break the page */
+  }
+}
+
+/**
+ * Fixed daily-cover exposure and outcome events. The payload intentionally
+ * contains content IDs and two coarse buckets only — never a URL, referrer,
+ * pointer or durable browser identifier. The server derives the existing
+ * rotating hash.
+ */
+export function trackDailyVisualEngagement(
+  eventType: DailyVisualEngagementEvent,
+  target: DailyVisualTarget,
+  entrySource: DailyVisualEntrySource,
+): void {
+  if (!target.visualSetId || !target.candidateId || !hasAnalyticsConsent()) return;
+  const params = {
+    daily_visual_set_id: target.visualSetId,
+    daily_visual_candidate_id: target.candidateId,
+    entry_source: entrySource,
+    lang: target.lang,
+  };
+  trackEvent(eventType, params);
+  if (typeof navigator === 'undefined' || typeof navigator.sendBeacon !== 'function') return;
+  try {
+    navigator.sendBeacon(
+      DAILY_VISUAL_EVENT_BEACON_PATH,
+      JSON.stringify({
+        eventType,
+        dailyVisualSetId: target.visualSetId,
+        candidateId: target.candidateId,
+        entrySource,
+        lang: target.lang,
+      }),
+    );
+  } catch {
+    /* telemetry must never break the reader's page */
   }
 }
 
@@ -118,12 +170,7 @@ export function trackPageView(path: string, lang: string): void {
 }
 
 /** Fire `search` with optional precomputed results; otherwise fetches total from /api/search. */
-export function trackSearch(
-  query: string,
-  source: string,
-  lang: string,
-  results?: number,
-): void {
+export function trackSearch(query: string, source: string, lang: string, results?: number): void {
   const q = query.trim();
   if (!q) return;
 

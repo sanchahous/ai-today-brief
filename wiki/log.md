@@ -4,7 +4,182 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-22
+Last updated: 2026-08-24
+
+## 2026-08-24 — Корекція safe visual refresh і bounded daily recovery
+
+**Джерело:** owner рішення 2026-08-24, adversarial SQL/RLS review, isolated PostgreSQL 16.15
+behavioral smoke та targeted TypeScript/Vitest checks у worktree
+`claude/gpt-image-prompt-plan-review-2ffff7`.
+
+**Коригує запис від 2026-08-24 «Daily cover production asset, safe visual refresh і
+social/analytics fences»:** private weekly refresh більше не є лише `prompt-only` робочою копією.
+Після private upload → post-upload QA → owner review AAL2 обирає точні staged cover/story assets.
+Server action byte-verify копіює їх у content-addressed immutable `social-assets` path, а одна
+fenced транзакція створює versioned pixels у вже published revision. Canonical text, SEO/OG, PDF,
+social package і `published_revision_id` не рухаються; public reader не отримує prompt, thesis,
+QA або private provenance metadata. Старий direction hash, duplicate/foreign IDs, mutable storage
+reference чи slot collision відхиляються до public DB write. (source:
+`supabase/migrations/20260824150000_weekly_visual_refresh_staged_assets.sql`;
+`supabase/migrations/20260824160000_weekly_public_artifact_metadata_privacy.sql`;
+`src/app/admin/(cms)/weekly/actions.ts`; `src/lib/digests.ts`)
+
+**Daily recovery:** якщо звичайний daily direction не створив жодного AI candidate, owner+AAL2
+може один раз запустити attempt `1`: direction + primary + два QA, без repair (максимум $0.084;
+разом із normal day не більше $0.158). First fallback і його ledger не переписуються та ніколи не
+стають automatic choice. Якщо GitHub dispatch не дійшов після durable queue, кнопка повторює лише
+dispatch того самого frozen historical date без нової reservation/paid attempt. (source:
+`supabase/migrations/20260824170000_daily_visual_direction_retry.sql`;
+`pipeline/daily-visual-finalizer.ts`; `src/lib/daily-visual/retry-state.ts`)
+
+**Перевірено:** isolated PostgreSQL smoke застосував 241500 і його behavioral test без error;
+`npm run pr:check` пройшов (205 test files / 1810 tests, coverage gate, TypeScript, ESLint без
+errors, e2e-map, wiki sync/lint і production build). (source: local verification 2026-08-24)
+
+## 2026-08-24 — Фінальна race-верифікація weekly visual refresh
+
+**Джерело:** adversarial code review + isolated PostgreSQL 16.15 smoke 2026-08-24.
+
+**Корекція:** direction update тепер під тим самим порядком lock, що й strict writer, скасовує
+`waiting/queued/dispatching/running/retry_scheduled/failed` jobs, завершує running attempts і
+позначає current prompt-set stale. Старий worker мусить збігтися з актуальним
+`visual_refresh_revision_hash` як під час save, так і перед claim; static SQL test більше не
+залежить від того, чи `pg_get_functiondef` зберіг умову з префіксом `and`.
+(source: `supabase/migrations/20260824130000_weekly_visual_refresh_draft.sql`;
+`supabase/migrations/20260824140000_weekly_visual_direction_persistence.sql`;
+`supabase/tests/20260824130000_weekly_visual_refresh_draft.sql`)
+
+**Перевірено:** на isolated PostgreSQL 16.15 обидві migration застосувалися без error; static
+tests 241300/241400 пройшли. Seed із running cover і dispatching story дав два cancelled jobs,
+два cancelled attempts, два `job_cancelled` events, stale prompt-set та чотири свіжі queued
+hash-fenced jobs; strict save зі старим hash повернув `SQLSTATE 55000`, а old-hash job не
+claim-нувся. (source: isolated PostgreSQL smoke 2026-08-24)
+
+## 2026-08-24 — Daily cover production asset, safe visual refresh і social/analytics fences
+
+**Джерело:** owner діалог 23–24.08: один «правильний» causal visual, daily як site/social asset,
+не як Telegram prompt; $5/month; manual choice не змінює live delivery; published weekly не
+редагується в місці.
+
+**Зроблено:** daily finalizer бере frozen snapshot після 20:00 Kyiv, створює один GPT Image 2
+primary + максимум один repair, зберігає fallback лише для явного owner choice і normalizes master
+в 1600×900 `contain`. Direction/image/QA paid calls резервуються до виконання під DB cap $5;
+unknown billing fail-closed. Lease/claim і direction hash не дають застарілому worker змішати
+старий кадр з новою тезою. Manual replacement дозволяє тільки official asset або editor upload і
+пише selection history. (source: owner session 2026-08-24;
+`pipeline/daily-visual-finalizer.ts`; `pipeline/daily-visual-contract.ts`;
+`supabase/migrations/20260824100000_daily_visual_workflow.sql`)
+
+**Social/analytics:** після activation daily composer готує 6 native drafts (UK Telegram/Facebook/
+Threads; EN X/LinkedIn/Instagram 5-slide carousel). Identity package містить master fingerprint;
+при зміні candidate mutable sibling posts замінюються, а publishing/posted/reconciliation не
+торкаються. Server atomic gate записує outcome тільки після matching qualified impression; raw
+URL/referrer/cursor/gaze не зберігаються. (source: `src/lib/social/daily-visual-composer.ts`;
+`src/lib/social/daily-visual-assets.ts`; `src/app/api/daily/visual-engagement/route.ts`;
+`supabase/migrations/20260824120000_daily_visual_engagement.sql`)
+
+**Weekly/UI:** master може запропонувати localized reader-facing `display_title` і private
+`visual_thesis`; canonical SEO/OG/list title лишається без змін. Для published digest є only
+private prompt-only visual refresh draft. Hero date/title тепер входять одразу, intro/standfirst
+відкривається лише через «Показати більше», а master показується повністю через contain/min-height.
+(source: `src/lib/weekly-digest/editorial-llm.ts`; `src/lib/weekly-digest/visual-refresh.ts`;
+`src/components/weekly/weekly-hero.tsx`; `src/components/daily/daily-hero.tsx`)
+
+**Wiki:** додано [daily-visual-workflow](pipeline/daily-visual-workflow.md); оновлено
+[gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [card-images](marketing/card-images.md),
+[weekly-digest](pipeline/weekly-digest.md), [now](now.md) та [index](index.md). (source: worktree
+`claude/gpt-image-prompt-plan-review-2ffff7`)
+
+## 2026-08-23 — Корекція primary render і fail-closed semantic QA
+
+**Джерело:** завершальний adversarial review реалізації Prompt-as-Code v6 після owner-відповідей
+про один «правильний» результат і скріни дешевих robot/UI-кліше.
+
+**Корекція:** production `render`, як і `prompt_only`, тепер запитує `variantCount: 1`;
+відхилення vision формує repair brief наступної спроби, а не три кандидати для ручної лотереї.
+`routeSeatTemplates` та batch harness лишаються тільки offline/історичною можливістю. Для
+ручного `story_image` відсутній `revision_item`, нечитабельний/відсутній QA payload, помилка
+завантаження story context або `story_checked !== true` тепер fail-closed для machine attestation.
+Ручний редакторський release не блокується. Другий critic бачить approved counterweight;
+обидва critic-prompts явно відсікають mascot/cute humanoid robots, якщо робот не є буквальним
+предметом новини. Після живого візуального перегляду legacy long title hero також стиснуто:
+на desktop title і 16:9 cover входять в екран поруч, без обрізання повного title.
+
+**Перевірено:** `npm run test` — 186 файлів / 1704 тести; `npm run build` (включно з TypeScript),
+`git diff --check` і `npm run wiki:check` зелені. Full ESLint — 0 errors / 10 warnings у
+неповʼязаних pre-existing файлах; wiki-lint — 0 errors / 4 pre-existing warnings. Browser route
+check підтвердив видимий cover, `object-fit: contain`, відсутній framework overlay/console errors
+і `#story-2` + `aria-current="location"` після click.
+(source: локальна verification 2026-08-23)
+
+**Wiki:** коригує попередній запис цього ж дня; оновлено
+[content-sim](pipeline/content-sim.md), [weekly-digest](pipeline/weekly-digest.md),
+[image-prompt-library](pipeline/image-prompt-library.md), [card-images](marketing/card-images.md),
+[weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [weekly-sandbox](ops/weekly-sandbox.md),
+[overview](overview.md), [now](now.md), [index](index.md) і
+[gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md).
+(source: owner session 2026-08-23; `src/lib/weekly-digest/generation-worker.ts`;
+`src/lib/weekly-digest/machine-attest.ts`; `src/lib/content-sim/vision-critic.ts`)
+
+## 2026-08-23 — Review primary illustration / semantic QA / weekly reading path
+
+**Джерело:** відповіді власника й скріни weekly `ai-weekly-2026-08-09`: cheap robots,
+фейковий UI, псевдотекст, component soup, silent crop, гігантський hero і sidebar без active
+стану. Власник обрав один «правильний» primary результат із ручним переглядом, а не три
+альтернативи для вибору.
+
+**Корінь:** v6 покращив assembly, але тримав three-seat UX, мав математично недосяжний глобальний
+template reuse gate (пʼять templates на весь digest), fallback planning-prose, image-only upload QA
+і `object-cover` у pipeline/UI. Додатковий adversarial review знайшов, що semantic QA blocker міг
+не потрапити в legacy auto-attest allow-list і тому автоматично схвалити файл.
+
+**Зроблено:** `prompt_only` дає один 6-block primary cause-and-effect prompt; templates обмежують
+інформаційний бюджет і ban fake UI/robots; semantic contract зберігається поруч із prompt і дає
+clean story upload другий story-aware advisory pass. Будь-який active post-upload QA blocker
+залишає картинку на owner review. Weekly image encode/UI використовують safe `contain` frame,
+hero top-align, stories ідуть раніше за допоміжні блоки, ToC має active scroll/hash state; master
+отримав length gate для hero copy.
+
+**Перевірено:** `npm run test` — 186 файлів / 1700 тестів; `npm run typecheck`, targeted ESLint,
+`git diff --check` і `npm run wiki:check` зелені. Browser route check підтвердив `object-contain`,
+story ordering і `aria-current` для `#story-2`; повний site build ще не є твердженням у цьому записі.
+(source: локальна verification 2026-08-23)
+
+**Wiki:** новий [gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md);
+оновлено [image-prompt-library](pipeline/image-prompt-library.md),
+[weekly-digest](pipeline/weekly-digest.md), [card-images](marketing/card-images.md),
+[weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [content-sim](pipeline/content-sim.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md), [weekly-sandbox](ops/weekly-sandbox.md),
+[overview](overview.md), [now](now.md), [index](index.md).
+(source: owner session 2026-08-23; `pipeline/card-image.ts`; `src/lib/weekly-digest/run-post-upload-qa.ts`; `src/lib/weekly-digest/machine-attest.ts`; `src/components/weekly/weekly-toc.tsx`)
+
+## 2026-08-23 — Prompt-as-Code v6 (awesome-gpt-image-2, без галереї)
+
+**Джерело:** власник ігнорував згенеровані weekly-промпти й писав свої з новини;
+живий digest `71af784b-3c89-47f8-bc38-e3eae4def2a7` (вкладка Visuals): два
+sun-printing кадри + diagram з `essence.mechanism` / `Teams should audit`.
+Upstream: [awesome-gpt-image-2](https://github.com/freestylefly/awesome-gpt-image-2) (MIT).
+
+**Корінь:** `flattenMetaphorPitch` зліплював planning-поля в рядок для моделі;
+`composeDiagramCanonical` вставляв editorial-прозу; журі просило кожну лінзу
+показати повний causal mini-story; один FLUX-craft на всі seats.
+
+**Зроблено:** `pipeline/image-prompt-library/` (5 шаблонів, 6-block assembler,
+NOTICE MIT); `flattenMetaphorPitch` = лише renderable; policy
+**`weekly-semantic-story-v6`**; Visuals бейдж шаблону; daily cover і news cards
+через той самий асемблер (news без `infographic-engine`); house skill
+`.agents/skills/gpt-image-2-editorial`. Текст у пікселях лишається D1.
+
+**Wiki:** нова [image-prompt-library](pipeline/image-prompt-library.md); оновлено
+[card-images](marketing/card-images.md), [weekly-digest](pipeline/weekly-digest.md),
+[weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P6,
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [overview](overview.md),
+[now](now.md), [content-sim](pipeline/content-sim.md), [index](index.md).
 
 ## 2026-08-22 — Fix remaining issues переписував робочу копію з нуля
 

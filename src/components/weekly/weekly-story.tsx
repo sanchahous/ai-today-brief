@@ -56,13 +56,13 @@ export function WeeklyStory({ item, lang }: { item: WeeklyDigestItemView; lang: 
       </div>
 
       {item.image ? (
-        <figure className="border-border rounded-card relative mt-7 aspect-video overflow-hidden border">
+        <figure className="border-border bg-surface rounded-card relative mt-7 aspect-video overflow-hidden border">
           <Image
             src={item.image.url}
             alt={item.image.alt}
             fill
             sizes="(max-width: 900px) 100vw, 760px"
-            className="object-cover"
+            className="object-contain"
           />
         </figure>
       ) : null}

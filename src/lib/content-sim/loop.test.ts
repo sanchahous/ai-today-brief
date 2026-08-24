@@ -469,6 +469,7 @@ describe('buildImageCriticPrompt', () => {
     expect(prompt).toContain('missing_consequence');
     expect(prompt).toContain('extra electricity becomes waste heat');
     expect(prompt).toContain('human_dignity_risk');
+    expect(prompt).toMatch(/mascot\/cute humanoid robots/i);
     expect(IMAGE_CRITIC_BLOCKER_CODES).toContain('human_dignity_risk');
   });
 
@@ -477,6 +478,7 @@ describe('buildImageCriticPrompt', () => {
     expect(prompt).toContain('pixel defects only');
     expect(prompt).toContain('readable_text');
     expect(prompt).toContain('human_dignity_risk');
+    expect(prompt).toMatch(/mascot\/cute humanoid robots/i);
     expect(prompt).not.toMatch(/Headline:/);
     expect(prompt).not.toMatch(/SOURCE STORY/);
     expect(prompt).not.toMatch(/Scene brief:/);

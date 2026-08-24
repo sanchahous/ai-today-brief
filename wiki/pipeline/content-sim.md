@@ -5,9 +5,9 @@ batch critic → один decisive re-plan → pass або human review з escal
 гейтиться цим.
 Sources: `src/lib/content-sim/`, `pipeline/providers/vision.ts`, `pipeline/scripts/content-sim.ts`,
 `.github/workflows/content-sim.yml`, план Content Sim Backtest 2026-08-11,
-owner prompt review + `weekly-semantic-story-v5.1` concept-diversity repair follow-up 2026-08-12,
+owner prompt review + `weekly-semantic-story-v6` Prompt-as-Code follow-up 2026-08-23,
 weekly illustration M2 post-upload QA 2026-08-15
-Last updated: 2026-08-15
+Last updated: 2026-08-23
 
 ---
 
@@ -31,6 +31,13 @@ weekly story images перед релізом.
 
 Adapters: `weekly-master` (делегує `weekly:sandbox`), `weekly-image`, `daily-brief`, `daily-image`.
 (source: `src/lib/content-sim/`, `pipeline/scripts/content-sim.ts`)
+
+**Поточний production contract (2026-08-23):** `generation-worker` передає в weekly `render`
+`variantCount: 1`. Тобто кожен раунд створює один primary candidate; vision rejection повертає
+repair brief наступного раунду, а не вибирає «найкращу» картинку з трьох. Описані нижче batch/three-
+concept механізми лишаються здатністю offline harness і читанням історичних artifacts, не
+owner-facing production UX. (source: `src/lib/weekly-digest/generation-worker.ts`; owner session
+2026-08-23)
 
 ## Image loop
 
@@ -86,6 +93,12 @@ render/vision split. Старі aggregate events показуються окре
 (source: `src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/admin-data.ts`,
 `src/components/admin/weekly-workspace.tsx`)
 
+**Policy default (2026-08-23):** vision critic і weekly-image fixture без явного
+`policyId` підставляють **`weekly-semantic-story-v6`**. Планування seats і copy-ready
+збір — [image-prompt-library](image-prompt-library.md); цей harness як і раніше
+оцінює пікселі, не пише промпт.
+(source: `src/lib/content-sim/vision-critic.ts`, `adapters/weekly-image-fixture.ts`)
+
 ## CLI
 
 ```bash
@@ -108,20 +121,23 @@ npm run content-sim -- hypothesis --baseline quality.json --run artifacts/_local
 Див. `.env.example` секцію Content simulation (`CONTENT_SIM_*`).
 `CONTENT_SIM_IMAGE_LOOP=off` вимикає vision loop (один generate без critic).
 
-**M2 post-upload (2026-08-15):** ручний upload story/cover запускає один image-only critic
-(`buildImageOnlyCriticPrompt` — без headline і scene brief) і пише `metadata.post_upload_qa`.
-Це не `content_sim` і не `simulation_not_passed`. (source: [weekly-illustration-plan](weekly-illustration-plan.md) M2,
-`src/lib/weekly-digest/post-upload-qa.ts`)
+**M2 post-upload (superseded 2026-08-23):** ручний upload cover запускає один image-only critic.
+Ручний `story_image` після clean pixels запускає другий story-aware critic з headline, approved
+story fields (включно з counterweight), semantic contract і primary scene; semantic failure —
+advisory warning, не auto-repair і не release blocker. Це не `content_sim` і не
+`simulation_not_passed`; але missing story-aware pass або active QA blocker fail-closed для
+machine attestation. Critic також відсікає mascot/cute humanoid robots, якщо робот не є буквальним
+предметом новини. (source: `src/lib/weekly-digest/run-post-upload-qa.ts`; `src/lib/weekly-digest/post-upload-qa.ts`; `src/app/admin/(cms)/weekly/actions.ts`; `src/lib/weekly-digest/machine-attest.ts`; `src/lib/content-sim/vision-critic.ts`)
 
 **D3 human_dignity_risk (2026-08-15):** critic flags degrading depictions of people (especially
 children). News: critique fails. Upload: warning, not a preflight block.
 (source: [weekly-illustration-plan](weekly-illustration-plan.md) D3,
 `src/lib/content-sim/vision-critic.ts`)
 
-**E2 two-stage critic (2026-08-15):** auto loop runs image-only first (no headline). Story-aware
-runs only if pixels passed. M2 upload stays a single image-only pass.
-(source: [weekly-illustration-plan](weekly-illustration-plan.md) E2,
-`src/lib/content-sim/adapters/weekly-image.ts`)
+**E2 two-stage critic (2026-08-23):** auto loop runs image-only first (no headline), then
+story-aware only if pixels passed. Prompt-only upload now follows the same ordering for a story,
+but never writes a `content_sim` decision; cover remains pixel-only because it represents the whole
+issue rather than one source story. (source: `src/lib/content-sim/adapters/weekly-image.ts`; `src/lib/weekly-digest/run-post-upload-qa.ts`)
 
 **E3 prompt promotion (2026-08-15):** Visuals digest line scores prompt quality from owner
 verdicts. It does not write `content_sim` and does not add `simulation_not_passed`. News
@@ -140,6 +156,7 @@ set is n=1. Harness reads top-level `headline` from visual-compiler manifests.
 
 - [weekly-sandbox](../ops/weekly-sandbox.md)
 - [card-images](../marketing/card-images.md)
+- [image-prompt-library](image-prompt-library.md)
 - [weekly-digest](weekly-digest.md)
 - [weekly-master-engine](weekly-master-engine.md)
 - [llm-providers](llm-providers.md)

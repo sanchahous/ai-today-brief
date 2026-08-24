@@ -40,17 +40,19 @@ function brief(partial: Partial<WeeklyReportageSceneBriefResult>): WeeklyReporta
 }
 
 describe('exportManualImagePrompt', () => {
-  it('canonical prompt leads with the subject, not with the style', () => {
+  it('canonical prompt leads with the task and the subject, not with the style', () => {
     const prompt = exportManualImagePrompt({
       brief: brief({}),
       essence: CLI_ESSENCE,
       accent: 'muted teal',
       grammar: 'cinematic_domain_scene',
     });
-    const lead = prompt.canonical.slice(0, 80).toLowerCase();
-    expect(lead.startsWith('a brass adapter card')).toBe(true);
+    const lead = prompt.canonical.slice(0, 120).toLowerCase();
+    expect(lead.startsWith('task:')).toBe(true);
+    expect(lead).toContain('brass adapter card');
     expect(lead).not.toMatch(/^(editorial|photoreal|illustration|cinematic|technical diagram)\b/);
     expect(prompt.canonical).toMatch(/no writing of any kind/i);
+    expect(prompt.templateId).toBeTruthy();
   });
 
   it('midjourney line carries the aspect ratio and the no-text flag', () => {
@@ -132,16 +134,17 @@ describe('exportManualImagePrompt', () => {
     }
   });
 
-  it('diagram grammar describes elements and arrows instead of a photograph', () => {
+  it('technical hybrid uses one quiet causal comparison instead of a labeled diagram', () => {
     const prompt = exportManualImagePrompt({
       brief: brief({}),
       essence: CLI_ESSENCE,
       grammar: 'deterministic_technical_hybrid',
     });
     expect(prompt.grammar).toBe('deterministic_technical_hybrid');
-    expect(prompt.canonical.toLowerCase()).toMatch(/diagram/);
-    expect(prompt.canonical.toLowerCase()).toMatch(/arrow/);
-    expect(prompt.notes.some((note) => /diagram/i.test(note))).toBe(true);
+    expect(prompt.canonical.toLowerCase()).toMatch(/technical editorial comparison/);
+    expect(prompt.canonical.toLowerCase()).toMatch(/unlabelled causal connector/);
+    expect(prompt.canonical.toLowerCase()).not.toMatch(/\bdiagram\b|\barrow\b/);
+    expect(prompt.notes.some((note) => /deterministic overlay/i.test(note))).toBe(true);
   });
 
   it('preserves owner_direction as its own conceptLens instead of collapsing it into literal_context (R2.5 / F12)', () => {
@@ -177,7 +180,7 @@ describe('exportManualImagePrompt', () => {
       'deterministic_technical_hybrid',
       'source_led_fallback',
     ]);
-    expect(prompts[1]?.canonical.toLowerCase()).toMatch(/diagram/);
+    expect(prompts[1]?.canonical.toLowerCase()).toMatch(/technical editorial comparison/);
     expect(prompts[2]?.canonical.toLowerCase()).toMatch(/source story/);
   });
 
@@ -212,7 +215,9 @@ describe('exportManualImagePrompt', () => {
     // the fixed light/lens/no-text boilerplate sentences without letting a
     // regression silently balloon or collapse the canonical prompt.
     expect(wordCount).toBeGreaterThanOrEqual(40);
-    expect(wordCount).toBeLessThanOrEqual(160);
+    expect(wordCount).toBeLessThanOrEqual(220);
+    expect(prompt.canonical).not.toMatch(/visible cause is/i);
+    expect(prompt.canonical).not.toMatch(/visible result is/i);
   });
 
 });

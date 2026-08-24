@@ -1,4 +1,8 @@
 import { isPrivateSignedStorageUrl, isSocialImageMime } from './asset-ref';
+import {
+  dailyVisualInstagramCarouselIssues,
+  type DailyVisualInstagramCarouselSpec,
+} from './daily-visual-carousel';
 import { instagramCarouselIssues } from './instagram-carousel';
 import { containsServiceMarkers, serviceMarkerIssueMessage } from './service-markers';
 import { containsTelegramMarkup } from './telegram-format';
@@ -75,6 +79,12 @@ const CYRILLIC_RE = /[\u0400-\u04ff]/g;
 const LATIN_RE = /[a-z]/gi;
 const FORBIDDEN_CHAR_RE =
   /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/u;
+
+function isDailyVisualInstagramCarousel(
+  value: NonNullable<SocialDraft['instagramCarousel']>,
+): value is DailyVisualInstagramCarouselSpec {
+  return 'kind' in value && value.kind === 'daily_visual';
+}
 
 function issue(
   code: string,
@@ -257,14 +267,17 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
       );
     }
   }
-  if (draft.channel === 'instagram' && draft.instagramCarousel) {
-    const specIssues = instagramCarouselIssues(
-      draft.instagramCarousel,
-      draft.currentRevisionItemIds ??
-        draft.instagramCarousel.slides.flatMap((slide) =>
-          slide.kind === 'story' ? [slide.revisionItemId] : [],
-        ),
-    );
+  const instagramCarousel = draft.instagramCarousel;
+  if (draft.channel === 'instagram' && instagramCarousel) {
+    const specIssues = isDailyVisualInstagramCarousel(instagramCarousel)
+      ? dailyVisualInstagramCarouselIssues(instagramCarousel)
+      : instagramCarouselIssues(
+          instagramCarousel,
+          draft.currentRevisionItemIds ??
+            instagramCarousel.slides.flatMap((slide) =>
+              slide.kind === 'story' ? [slide.revisionItemId] : [],
+            ),
+        );
     for (const specIssue of specIssues) {
       blocking.push(issue(specIssue.code, specIssue.message, 'content_parts'));
     }

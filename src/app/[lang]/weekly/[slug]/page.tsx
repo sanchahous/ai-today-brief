@@ -236,11 +236,17 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
           </aside>
 
           <div id="stories" className="min-w-0 scroll-mt-[calc(var(--header-h)+2rem)]">
+            <div className="grid gap-12">
+              {digest.items.map((item) => (
+                <WeeklyStory key={item.id} item={item} lang={lang} />
+              ))}
+            </div>
+
             {digest.video ? (
               <section
                 aria-labelledby="weekly-video-title"
                 data-digest-event="video_play"
-                className="mb-10"
+                className="mt-12 mb-10"
               >
                 <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
                   {copy.watch}
@@ -357,12 +363,6 @@ export default async function WeeklyDigestPage({ params }: { params: Promise<Par
                 </ol>
               </section>
             ) : null}
-
-            <div className="mt-10 grid gap-12">
-              {digest.items.map((item) => (
-                <WeeklyStory key={item.id} item={item} lang={lang} />
-              ))}
-            </div>
 
             <nav
               aria-label={`${copy.previous} / ${copy.next}`}

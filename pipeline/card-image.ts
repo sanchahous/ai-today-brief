@@ -25,6 +25,13 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import type { PipelineDb } from './db';
+import { assembleFluxCardPrompt } from './image-prompt-library/assemble';
+import { routeSeatTemplates, routeTemplate } from './image-prompt-library/route';
+import type { ImagePromptTemplateId } from './image-prompt-library/templates';
+import {
+  headNoun as promptHeadNoun,
+  stripPlanningPhrases,
+} from './image-prompt-library/text';
 import { logEvent, serializeErrorDetails } from './log';
 import {
   generateWithRegistry,
@@ -296,8 +303,9 @@ export async function generateEditorialIllustration(
   cfg: CardImageConfig,
 ): Promise<GeneratedImageResult | null> {
   const { scene, source: sceneSource } = await sceneBrief(input.title, input.summary, cfg);
-  const positive = buildPrompt(input.accent?.trim() || 'cool cyan', scene);
-  const negative = negativePrompt();
+  const storyContext = [input.title, input.summary].filter(Boolean).join('. ');
+  const positive = buildPrompt(input.accent?.trim() || 'cool cyan', scene, storyContext);
+  const negative = negativePrompt(storyContext);
   const generated = await generateImage(positive, negative, cfg, seedFromString(input.seedKey));
   if (generated) {
     return {
@@ -426,40 +434,143 @@ async function loadCategoryColors(db: PipelineDb): Promise<Map<string, string | 
  * Never ask for "space for a headline" — FLUX paints gibberish mastheads when
  * prompted that way. Typography is added later in layout, never baked into pixels.
  */
-export function buildPrompt(accent: string, scene: string): string {
-  return (
-    `Premium editorial illustration, pure visual storytelling only — no typography in the image. ` +
-    `One strong focal subject, clear narrative metaphor, tasteful depth of field and confident ` +
-    `directional lighting, ${accent} as the signature accent woven through the palette, a refined ` +
-    `modern atmosphere with real texture and craft — not flat, not a generic stock render. ` +
-    `Keep the top and bottom calm and empty for later layout compositing; leave those bands blank ` +
-    `(do not paint titles, mastheads, captions, subtitles, or any lettering there). ` +
-    `Absolutely no text, no words, no letters, no numbers, no glyphs, no logos, no watermark, ` +
-    `no title bar, no newspaper headline, no UI chrome, no readable screens, no frame, no border. ` +
-    `Scene: ${scene} Wide 16:9 horizontal composition, edge-to-edge full-bleed.`
-  );
+export function buildPrompt(accent: string, scene: string, storyContext = ''): string {
+  const safeScene = prepareNewsCardScene(scene, storyContext);
+  const roboticsRule = isPhysicalRoboticsStory(storyContext)
+    ? 'If physical robotics is factual to this story, show only the actual hardware as the one subject.'
+    : 'Never depict humanoid robots, androids, robot mascots, or robotic arms.';
+  return `${assembleFluxCardPrompt(accent, safeScene)} ` +
+    `Causal composition: one dominant subject performs one visible action and produces one readable ` +
+    `outcome in the same connected physical moment. Keep the subject, action, and outcome inside the ` +
+    `central 78% of frame width and central 64% of frame height; use only atmospheric background ` +
+    `outside that safe area. No fake UI, dashboard, screen, code panel, terminal, document, chart, ` +
+    `collage, split panel, information-card pile, or card-soup. ${roboticsRule} ` +
+    `Never generate text, letters, numbers, labels, logos, or gibberish.`;
 }
 
 /**
  * Negative keywords for models that accept them (e.g. flux-1-schnell spillover).
  * FLUX.2 klein on Workers AI has no negative_prompt — rely on {@link buildPrompt}.
  */
-export function negativePrompt(): string {
+export function negativePrompt(storyContext = ''): string {
+  const roboticsNegative = isPhysicalRoboticsStory(storyContext)
+    ? ''
+    : 'humanoid robot, android, robot mascot, robotic arms, ';
   return (
     `text, words, letters, typography, numbers, glyphs, caption, subtitle, masthead, title bar, ` +
     `headline, newspaper headline, magazine cover text, watermark, signature, logo, brand mark, ` +
-    `UI, interface, buttons, readable screen text, frame, border, collage, split panels, ` +
-    `glowing brain, human brain, brain, neural-network mesh, circuit board, generic glowing orb, ` +
-    `floating sphere, abstract blob, anonymous server aisle, lone laptop on desk, ` +
-    `generic data-center corridor, stock server room, interchangeable tech stock, ` +
-    `low quality, blurry, jpeg artifacts, distorted, deformed, ` +
-    `extra fingers, extra limbs, cluttered, busy, stock-photo look`
+    `UI, interface, buttons, readable screen text, fake screen, dashboard, code panel, terminal, ` +
+    `document, chart, frame, border, collage, split panels, information-card pile, card-soup, ` +
+    `${roboticsNegative}glowing brain, human brain, brain, neural-network mesh, circuit board, ` +
+    `generic glowing orb, floating sphere, abstract blob, anonymous server aisle, lone laptop on desk, ` +
+    `generic data-center corridor, stock server room, interchangeable tech stock, generated gibberish, ` +
+    `low quality, blurry, jpeg artifacts, distorted, deformed, extra fingers, extra limbs, cluttered, ` +
+    `busy, stock-photo look`
   );
 }
 
+const DEFAULT_NEWS_CARD_SCENE =
+  'a single precision routing gate on a quiet workstation closes a clean signal path, one channel ' +
+  'activates while surrounding channels remain still, soft side light';
+
+// The weekly concept path has its own semantic planner. Keep its legacy empty-input
+// default isolated from the stricter causal fallback used by news cards above.
 const DEFAULT_SCENE =
   'a sleek developer workstation in a dark studio, sharp focus on a mechanical keyboard and ' +
   'softly floating translucent code panels, warm key light';
+
+const CARD_SCENE_PLANNING_LABELS = [
+  'the story-specific anchor is',
+  'the visible cause is',
+  'the visible result is',
+  'the literal story context is',
+  'show the physical causal process clearly:',
+  'make its grounded result unmistakable:',
+  'one causal moment showing',
+] as const;
+
+const CARD_SCENE_FIELD_LABEL =
+  /\b(?:subject|action|outcome|result|scene|setting|cause|visual thesis)\s*:\s*/giu;
+
+const PHYSICAL_ROBOTICS_PATTERN =
+  /\b(?:physical robotics?|robotic arms?|humanoid robots?|industrial robots?|warehouse robots?|robot hardware|autonomous (?:vehicle|drone))\b/iu;
+
+const FORBIDDEN_NEWS_SCENE_PATTERN =
+  /\b(?:fake ui|dashboard|interface|screen|code panel|terminal|ide|document|chart|collage|split panel|moodboard|information card|card-soup|card soup)\b/iu;
+
+const ROBOTIC_SCENE_PATTERN = /\b(?:humanoid|android|robot(?:s|ic|ics)?|robot mascot)\b/iu;
+
+/** Physical robotics is allowed only when it is the literal subject of the news. */
+export function isPhysicalRoboticsStory(text: string): boolean {
+  return PHYSICAL_ROBOTICS_PATTERN.test(text);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function removeNewsCardPlanningLabels(value: string): string {
+  let cleaned = value;
+  for (const label of CARD_SCENE_PLANNING_LABELS) {
+    cleaned = cleaned.replace(new RegExp(`\\b${escapeRegExp(label)}\\s*`, 'giu'), '');
+  }
+  return cleaned.replace(CARD_SCENE_FIELD_LABEL, '');
+}
+
+function causalSceneFromStructuredOutput(value: string): string | null {
+  const cleaned = value
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  if (!cleaned.startsWith('{')) return null;
+  try {
+    const parsed: unknown = JSON.parse(cleaned);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const record = parsed as Record<string, unknown>;
+    const scene = record.scene ?? record.frame ?? record.description;
+    if (typeof scene === 'string' && scene.trim()) return scene;
+    const subject = record.subject;
+    const action = record.action;
+    const outcome = record.outcome ?? record.result;
+    if (
+      typeof subject !== 'string' ||
+      typeof action !== 'string' ||
+      typeof outcome !== 'string' ||
+      !subject.trim() ||
+      !action.trim() ||
+      !outcome.trim()
+    ) {
+      return null;
+    }
+    return `${subject}, ${action}, ${outcome}`;
+  } catch {
+    return null;
+  }
+}
+
+function hasForbiddenNewsSceneObject(scene: string, storyContext: string): boolean {
+  if (FORBIDDEN_NEWS_SCENE_PATTERN.test(scene)) return true;
+  return !isPhysicalRoboticsStory(storyContext) && ROBOTIC_SCENE_PATTERN.test(scene);
+}
+
+/**
+ * Removes director/planning labels before they can become literal pixels. If a
+ * model still asks for a prohibited UI or a generic robot, use the causal
+ * keyword fallback rather than forwarding a visibly wrong scene to FLUX.
+ */
+export function prepareNewsCardScene(scene: string, storyContext = ''): string {
+  const sceneWithoutPlanning = causalSceneFromStructuredOutput(scene) ?? cleanSceneText(scene);
+  const cleaned = removeNewsCardPlanningLabels(sceneWithoutPlanning)
+    .replaceAll('|', ', ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[,;:\-\s]+|[,;:\-\s]+$/g, '')
+    .trim();
+  if (!cleaned) return storyContext ? fallbackScene(storyContext) : DEFAULT_NEWS_CARD_SCENE;
+  if (storyContext && hasForbiddenNewsSceneObject(cleaned, storyContext)) {
+    return fallbackScene(storyContext);
+  }
+  return cleaned;
+}
 
 type FallbackIllustrationMotif =
   | 'memory'
@@ -739,33 +850,44 @@ async function runArtDirectorLadder(
   return null;
 }
 
+/**
+ * The director reasons through one causal claim, then returns only a renderable
+ * scene. Keeping the claim structure in the director call (not the image
+ * prompt) prevents its labels and arrows from becoming generated text.
+ */
+export function buildNewsCardSceneInstruction(title: string, summary: string): string {
+  return (
+    `You are the art director for a developer-focused technology magazine. Read this news item. ` +
+    `First derive the primary claim privately in this exact causal order: SUBJECT -> ACTION -> OUTCOME. ` +
+    `Do not output those labels or your reasoning. Translate it into ONE connected editorial moment: one ` +
+    `concrete dominant subject performs one visible action and the outcome is physically legible in the ` +
+    `same frame. The image must explain what changed and why it matters without a caption. ` +
+    `Keep the causal evidence inside the central 78% of width and central 64% of height; only atmosphere ` +
+    `belongs outside that safe area. Use at most two supporting objects. Prefer a literal, grounded scene ` +
+    `over an abstract metaphor, generic technology stock, or a collection of symbols. ` +
+    `Do not show humanoid robots, androids, robot mascots, or robotic arms unless this item is literally ` +
+    `about physical robotics hardware. Ban fake UI, dashboards, screens, code panels, terminals, documents, ` +
+    `charts, split panels, collages, information-card piles, and card-soup. Ban glowing brains, generic ` +
+    `orbs, circuit-board wallpaper, anonymous server aisles, and lone laptops. No text, letters, numbers, ` +
+    `logos, labels, watermarks, or gibberish. ` +
+    `Return only ONE vivid 18-32 word scene phrase with concrete nouns; not a sentence, plan, caption, or ` +
+    `list. Mention lighting or camera only after the causal core.\n\nHeadline: "${title}"\nSummary: "${summary}"`
+  );
+}
+
 export async function sceneBrief(
   title: string,
   summary: string,
   cfg: CardImageConfig,
 ): Promise<SceneBriefResult> {
   const ctx = [title, summary].filter(Boolean).join('. ').trim();
-  if (!ctx) return { scene: DEFAULT_SCENE, source: 'fallback' };
-  const instruction =
-    `You are the art director for a developer-focused technology magazine. Read this news item and ` +
-    `describe ONE concrete cover illustration a reader instantly connects to THIS specific story. ` +
-    `Name the distinctive news claim in visual form; avoid interchangeable tech stock. ` +
-    `Invent a UNIQUE narrative metaphor for THIS claim — what sets it apart from neighbouring ` +
-    `AI-security or model-launch stories — as a tangible focal subject + setting + action. ` +
-    `Good claim-specific examples: an agent figure breaking out of a cracked glass sandbox cage toward ` +
-    `glowing external network routes (egress / misconfig escape); a shattered cryptographic seal or ` +
-    `cracked padlock over dark circuitry (cryptanalysis); interlocking precision machinery for tooling; ` +
-    `cooperating robotic arms for multi-agent orchestration; an MRI lightbox for medical imaging; ` +
-    `stacked translucent coins for funding; a product unveiled on a reveal stage for a launch. ` +
-    `STRICTLY AVOID default stock unless the story is literally about those objects as the main claim: ` +
-    `anonymous server aisle, lone laptop on a desk, generic data-center corridor, anonymous rack row. ` +
-    `Also ban: a glowing brain, glowing orb or core, neural-network mesh, generic circuit board, vague ` +
-    `abstract "AI" blob. No text, letters, numbers, logos, brand marks or recognisable real faces. ` +
-    `If a document or screen appears, keep it blank or abstract — never readable writing. ` +
-    `Answer with ONE vivid phrase, 18-32 words, concrete nouns, a single focal subject, not a full ` +
-    `sentence.\n\nHeadline: "${title}"\nSummary: "${summary}"`;
-  const result = await runArtDirectorLadder(instruction, 'daily.card_image_scene', cfg);
-  if (result) return { scene: result.text, source: result.source };
+  if (!ctx) return { scene: DEFAULT_NEWS_CARD_SCENE, source: 'fallback' };
+  const result = await runArtDirectorLadder(
+    buildNewsCardSceneInstruction(title, summary),
+    'daily.card_image_scene',
+    cfg,
+  );
+  if (result) return { scene: prepareNewsCardScene(result.text, ctx), source: result.source };
   return { scene: fallbackScene(ctx), source: 'fallback' };
 }
 
@@ -779,7 +901,7 @@ export async function sceneBrief(
 // ---------------------------------------------------------------------------
 
 /** Stored on story_image artifacts; bump when house-style / gates change. */
-export const WEEKLY_PROMPT_POLICY = 'weekly-semantic-story-v5.1';
+export const WEEKLY_PROMPT_POLICY = 'weekly-semantic-story-v6';
 
 /** Open vocabulary motif label from the metaphor director (snake_case). */
 export type MetaphorSubjectKind = 'object' | 'process' | 'environment' | 'character';
@@ -808,6 +930,8 @@ export interface SiblingMetaphorHint {
   /** Used by motif-family matching; optional on older sibling rows. */
   subject?: string;
   setting?: string;
+  action?: string;
+  templateId?: string;
 }
 
 export interface WeeklyReportageSceneInput {
@@ -879,6 +1003,12 @@ export interface MetaphorPitch {
   visibleMechanism?: string;
   /** Physical result/stake visible in the rendered scene. */
   visibleConsequence?: string;
+  /** Deterministic Prompt-as-Code template; stamped by the router, not the LLM. */
+  templateId?: ImagePromptTemplateId;
+  layout?: string;
+  materials?: string;
+  lighting?: string;
+  camera?: string;
 }
 
 /** Validated frame ready to flatten into a FLUX scene phrase. */
@@ -1163,42 +1293,9 @@ function parseMetaphorLens(
   return fallbackLenses[fallbackIndex % fallbackLenses.length] ?? 'literal_context';
 }
 
-/** Significant tokens for sibling scene echo (Jaccard). */
-const HEAD_NOUN_STOP = new Set([
-  'a',
-  'an',
-  'the',
-  'and',
-  'or',
-  'of',
-  'in',
-  'on',
-  'at',
-  'to',
-  'for',
-  'with',
-  'from',
-  'into',
-  'over',
-  'under',
-  'vs',
-  'versus',
-]);
-
-function stripSimplePlural(token: string): string {
-  if (token.length >= 5 && token.endsWith('es')) return token.slice(0, -2);
-  if (token.length >= 4 && token.endsWith('s') && !token.endsWith('ss')) return token.slice(0, -1);
-  return token;
-}
-
 /** Last significant lexeme of a phrase; simple -s/-es plural fold, no stemming. */
 export function headNoun(phrase: string): string {
-  const tokens = phrase
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((token) => token.length >= 3 && !HEAD_NOUN_STOP.has(token));
-  const last = tokens[tokens.length - 1] ?? '';
-  return last ? stripSimplePlural(last) : '';
+  return promptHeadNoun(phrase);
 }
 
 /** Subject head noun, setting head noun, subjectKind — family if ≥2 positions match. */
@@ -1475,15 +1572,16 @@ export function parseMetaphorPitches(
         (typeof record.visible_consequence === 'string' && record.visible_consequence.trim()) ||
         (typeof record.visibleConsequence === 'string' && record.visibleConsequence.trim()) ||
         undefined,
+      layout: typeof record.layout === 'string' ? record.layout.trim() : undefined,
+      materials: typeof record.materials === 'string' ? record.materials.trim() : undefined,
+      lighting: typeof record.lighting === 'string' ? record.lighting.trim() : undefined,
+      camera: typeof record.camera === 'string' ? record.camera.trim() : undefined,
     });
   }
   return pitches.slice(0, 3);
 }
 
-export function flattenMetaphorPitch(
-  pitch: MetaphorPitch,
-  semantic?: EditorialEssence | string,
-): string {
+export function renderableScene(pitch: MetaphorPitch): string {
   const clip = (value: string, max: number): string => {
     const clean = value.replace(/\s+/g, ' ').trim();
     if (clean.length <= max) return clean;
@@ -1498,26 +1596,44 @@ export function flattenMetaphorPitch(
     pitch.composition === 'dual_contrast'
       ? 'one continuous photograph with a clear causal spatial divide, not a collage'
       : '';
-  const fallbackEssence = typeof semantic === 'string' ? semantic : semantic?.visualThesis;
   const scene = [
     clip(pitch.subject, 140),
-    pitch.storyAnchor ? `the story-specific anchor is ${clip(pitch.storyAnchor, 120)}` : '',
-    pitch.visibleMechanism
-      ? `the visible cause is ${clip(pitch.visibleMechanism, 170)}`
-      : clip(pitch.action, 140),
-    pitch.visibleConsequence ? `the visible result is ${clip(pitch.visibleConsequence, 170)}` : '',
+    clip(pitch.action, 140),
     clip(pitch.setting, 90),
     props ? `with ${clip(props, 90)}` : '',
     dualNote,
-    !pitch.visibleConsequence && fallbackEssence
-      ? `one causal moment showing ${clip(fallbackEssence, 160)}`
-      : '',
   ]
     .filter(Boolean)
     .join(', ')
     .replace(/\s+/g, ' ')
     .trim();
   return clip(scene, 800);
+}
+
+export function planningNotes(pitch: MetaphorPitch): string[] {
+  const notes: string[] = [];
+  if (pitch.storyAnchor?.trim()) {
+    notes.push(`Story anchor (overlay/QA only): ${pitch.storyAnchor.trim()}`);
+  }
+  if (pitch.visibleMechanism?.trim()) {
+    notes.push(`Visible mechanism (overlay/QA only): ${pitch.visibleMechanism.trim()}`);
+  }
+  if (pitch.visibleConsequence?.trim()) {
+    notes.push(`Visible consequence (overlay/QA only): ${pitch.visibleConsequence.trim()}`);
+  }
+  return notes;
+}
+
+export function flattenMetaphorPitch(
+  pitch: MetaphorPitch,
+  _semantic?: EditorialEssence | string,
+): string {
+  return renderableScene(pitch);
+}
+
+/** Only fields that reach the image model; rationale text must never satisfy a visual gate. */
+export function pitchVisualBlob(pitch: MetaphorPitch): string {
+  return [pitch.subject, pitch.action, pitch.setting, ...pitch.props].join(' ');
 }
 
 export function parseWeeklySceneSpec(raw: string): WeeklyReportageSceneSpec | null {
@@ -1639,6 +1755,22 @@ export function validateMetaphorPitch(
   if (siblings.some((s) => s.motifClass && s.motifClass.toLowerCase() === motif)) {
     errors.push('sibling_motif_class_reuse');
   }
+  const pitchHead = headNoun(pitch.subject);
+  for (const sibling of siblings) {
+    const siblingSubject = sibling.subject ?? '';
+    if (pitchHead && pitchHead === headNoun(siblingSubject)) {
+      errors.push('sibling_subject_head_reuse');
+      break;
+    }
+    const subjectOverlap = jaccardTokenOverlap(
+      tokenizeSceneForEcho(pitch.subject),
+      tokenizeSceneForEcho(siblingSubject),
+    );
+    if (siblingSubject && subjectOverlap >= SIBLING_SCENE_ECHO_THRESHOLD) {
+      errors.push('sibling_subject_head_reuse');
+      break;
+    }
+  }
   const pitchFamily = motifFamilyKey(pitch);
   for (const sibling of siblings) {
     const siblingFamily = motifFamilyKey({
@@ -1651,9 +1783,12 @@ export function validateMetaphorPitch(
       break;
     }
   }
-  const pitchTokens = tokenizeSceneForEcho(pitchRenderableBlob(pitch));
+  const pitchTokens = tokenizeSceneForEcho(pitchVisualBlob(pitch));
   for (const sibling of siblings) {
-    const overlap = jaccardTokenOverlap(pitchTokens, tokenizeSceneForEcho(sibling.sceneSummary));
+    const siblingVisual = [sibling.subject, sibling.action, sibling.setting, sibling.sceneSummary]
+      .filter(Boolean)
+      .join(' ');
+    const overlap = jaccardTokenOverlap(pitchTokens, tokenizeSceneForEcho(siblingVisual));
     if (overlap >= SIBLING_SCENE_ECHO_THRESHOLD) {
       errors.push('sibling_scene_echo');
       break;
@@ -1780,9 +1915,9 @@ export function weeklySemanticFallbackScene(essence: EditorialEssence): string {
       .replace(/[“”"]/g, '');
   return [
     withoutLabelInvitations(essence.visualThesis).slice(0, 240),
-    `the literal story context is ${essence.storyContext.slice(0, 150)}`,
-    `show the physical causal process clearly: ${essence.mechanism.slice(0, 150)}`,
-    `make its grounded result unmistakable: ${essence.consequence.slice(0, 150)}`,
+    `inside ${withoutLabelInvitations(essence.storyContext).slice(0, 150)}`,
+    `with ${withoutLabelInvitations(essence.mechanism).slice(0, 150)} visibly in motion`,
+    `ending in ${withoutLabelInvitations(essence.consequence).slice(0, 150)}`,
     'one continuous physical scene with no symbolic mystery',
   ]
     .filter(Boolean)
@@ -1842,31 +1977,65 @@ function buildMetaphorInstruction(
   desiredLenses: readonly MetaphorLens[] = METAPHOR_LENSES,
   avoidScenes: readonly string[] = [],
   repairFeedback: readonly string[] = [],
+  templateByLens: Partial<Record<MetaphorLens, ImagePromptTemplateId>> = {},
 ): string {
   const retry = priorErrors?.length
     ? `\nPrevious pitches failed: ${priorErrors.join('; ')}. Propose corrected metaphors.\n`
     : '';
+  const isPrimaryDirection = desiredLenses.length === 1;
+  const seatLines = desiredLenses.map((lens) => {
+    const template = templateByLens[lens] ?? 'realistic-photography';
+    if (lens === 'literal_context') {
+      if (isPrimaryDirection) {
+        return (
+          `primary direction uses template "${template}": one connected, literal cause-and-effect scene. ` +
+          `Show the recognizable actor/system in context, its actual physical change, and one grounded result in the same composition. ` +
+          `Do NOT replace the mechanism with an allegory or split the meaning into panels. Fill subject, action, setting, lighting, camera.`
+        );
+      }
+      return (
+        `literal_context uses template "${template}": a reportage moment of who/what/where changed. ` +
+        `Do NOT encode the mechanism as allegory. Fill subject, action, setting, lighting, camera.`
+      );
+    }
+    if (lens === 'mechanism') {
+      return (
+        `mechanism uses template "${template}": how the change works, in a different visual language ` +
+        `(a single cutaway or causal contrast — never letters, UI panels, or a dashboard). Fill subject, action, setting, layout.`
+      );
+    }
+    return (
+      `consequence uses template "${template}": the stake, harm, trade-off, or uncertainty in a ` +
+      `different place with a different verb. Do NOT recap the mechanism tableau.`
+    );
+  });
+  const primaryDirection =
+    isPrimaryDirection
+      ? 'This is the single primary direction. Fuse context, mechanism, and outcome into one calm cause-and-effect scene; do not distribute them across panels or props. '
+      : '';
+  const directorRole =
+    isPrimaryDirection
+      ? 'single-direction editorial director'
+      : 'three-seat concept jury';
+  const workflow =
+    isPrimaryDirection
+      ? 'Build one complete, immediately legible scene in the assigned template. '
+      : 'Work as independent art directors filling assigned Prompt-as-Code templates, not as three renderers of one composition. ';
+  const diversityRule =
+    desiredLenses.length > 1
+      ? 'The scenes must differ in subject, motif_class, setting, physical action, AND template -- changing camera angle, color, seed, prop placement, or scale does NOT create a new concept. '
+      : '';
   return (
-    `You are a three-seat concept jury for a weekly AI/engineering digest. Work as independent ` +
-    `art directors, not as three renderers of one composition. Return exactly one structurally ` +
-    `different physical scene for each requested lens: ${desiredLenses.join(', ')}. ` +
-    `literal_context prioritizes who/what changed; mechanism prioritizes how the change works; ` +
-    `consequence prioritizes the benefit, harm, trade-off, or uncertainty. Every scene must still ` +
-    `communicate the complete causal mini-story: a ` +
-    `story-specific anchor, the visible mechanism acting on it, and the visible consequence. ` +
-    `CRITICAL: why_it_fits is only rationale and is NOT sent to the image model. Therefore every ` +
-    `fact required to understand the story must also appear concretely in story_anchor, ` +
-    `visible_mechanism, visible_consequence, subject, action, setting, or props. Reuse the distinctive ` +
-    `concrete nouns from the mechanism and consequence so fidelity can be checked. The story_anchor ` +
-    `must visibly identify the source situation using at least two distinctive, depictable CONTEXT ` +
-    `nouns; a proper product name, logo, or printed label does not count as visual grounding. ` +
-    `Do not substitute a topic-only battery, meter, cog, pump, cloud, or light. Keep subject and ` +
-    `story_anchor under 14 words, visible_mechanism under 20 words, and visible_consequence under 18 words. ` +
-    `Prefer concrete OBJECTS, PROCESSES, or ENVIRONMENTS that argue the essence. ` +
+    `You are a ${directorRole} for a weekly AI/engineering digest. ${workflow}` +
+    `Return exactly one structurally different physical scene for each requested lens. ` +
+    `${seatLines.join(' ')} ${primaryDirection}${diversityRule}` +
+    `CRITICAL: why_it_fits, story_anchor, visible_mechanism, and visible_consequence are QA notes ` +
+    `and are NOT sent to the image model. Subject, action, and setting must be depictable objects ` +
+    `and verbs only — never the phrases "the story-specific anchor is" or "the visible cause is". ` +
+    `Keep subject and story_anchor under 14 words, visible_mechanism under 20 words, and visible_consequence under 18 words. ` +
+    `Prefer concrete OBJECTS, PROCESSES, or ENVIRONMENTS. ` +
     `When the news is about tutoring, evaluation, help, or another human interaction, a CHARACTER ` +
     `is often the clearest literal anchor; do not abstract the people away merely to satisfy variety. ` +
-    `The three scenes must differ in subject, motif_class, setting, and physical action -- changing ` +
-    `camera angle, color, seed, prop placement, or scale does NOT create a new concept. ` +
     `Do NOT default to recurring performance-stage tableaux, personified guardians, or archival-book ` +
     `symbols. Invent a fresh motif_class grounded in this source story each time. ` +
     `Never encode generic software/data flow as pneumatic tubes, canisters, telephone switchboards, ` +
@@ -1876,11 +2045,11 @@ function buildMetaphorInstruction(
     `why_it_fits as ONE continuous photograph with a spatial divide -- ` +
     `never collage, never a decorative second beat that does not argue the essence. ` +
     `At most one dual_contrast per digest (see sibling metaphors). Screens if any stay blank unmarked glow. ` +
-    `No quoted labels, printed words, logos, readable UI, or real celebrity faces. ` +
+    `No quoted labels, printed words, logos, readable UI, dashboard cards, mascot robots, or real celebrity faces unless the story is literally about them. ` +
     `Reply with ONLY JSON: {"metaphors":[{"lens":"literal_context|mechanism|consequence","title":"","subject":"",` +
     `"story_anchor":"specific visible story anchor","visible_mechanism":"physical cause/process",` +
     `"visible_consequence":"physical benefit/harm/trade-off/uncertainty","action":"","setting":"",` +
-    `"props":[],"composition":"single|dual_contrast","motif_class":"snake_case_label",` +
+    `"lighting":"","camera":"","layout":"","props":[],"composition":"single|dual_contrast","motif_class":"snake_case_label",` +
     `"subject_kind":"object|process|environment|character","why_it_fits":""}]}.\n\n` +
     `Context: "${essence.storyContext}"\nMeaning: "${essence.meaning}"\n` +
     `Essence: "${essence.essence}"\nMechanism that MUST be visible: "${essence.mechanism}"\n` +
@@ -1945,8 +2114,8 @@ function scoreMetaphorPitch(
   for (const sibling of siblings) {
     if (sibling.motifClass && sibling.motifClass.toLowerCase() === motif) score -= 4;
     const overlap = jaccardTokenOverlap(
-      tokenizeSceneForEcho(renderable),
-      tokenizeSceneForEcho(sibling.sceneSummary),
+      tokenizeSceneForEcho(pitchVisualBlob(pitch)),
+      tokenizeSceneForEcho([sibling.subject, sibling.action, sibling.setting, sibling.sceneSummary].filter(Boolean).join(' ')),
     );
     if (overlap >= SIBLING_SCENE_ECHO_THRESHOLD) score -= 3;
   }
@@ -1994,6 +2163,12 @@ export interface WeeklyReportageSceneBriefResult extends SceneBriefResult {
    */
   subject?: string;
   setting?: string;
+  action?: string;
+  templateId?: ImagePromptTemplateId;
+  layout?: string;
+  materials?: string;
+  lighting?: string;
+  camera?: string;
 }
 
 function sceneBriefFromPitch(
@@ -2001,11 +2176,13 @@ function sceneBriefFromPitch(
   essence: EditorialEssence,
   source: string,
   story: WeeklyReportageSceneInput,
+  templateId: ImagePromptTemplateId,
 ): WeeklyReportageSceneBriefResult {
+  const lens = pitch.lens ?? 'literal_context';
   return {
-    scene: flattenMetaphorPitch(pitch, essence),
+    scene: renderableScene(pitch),
     source,
-    conceptLens: pitch.lens ?? 'literal_context',
+    conceptLens: lens,
     grammar: selectSceneGrammar({
       title: story.headline,
       summary: story.summary,
@@ -2014,7 +2191,7 @@ function sceneBriefFromPitch(
       takeaway: story.takeaway,
       source,
       essence,
-      lens: pitch.lens ?? 'literal_context',
+      lens,
     }),
     essence: essence.essence,
     metaphorTitle: pitch.title,
@@ -2033,6 +2210,12 @@ function sceneBriefFromPitch(
     visibleConsequence: pitch.visibleConsequence,
     subject: pitch.subject,
     setting: pitch.setting,
+    action: pitch.action,
+    templateId,
+    layout: pitch.layout,
+    materials: pitch.materials,
+    lighting: pitch.lighting,
+    camera: pitch.camera,
   };
 }
 
@@ -2040,13 +2223,30 @@ function fallbackSceneBrief(
   lens: MetaphorLens,
   baseScene: string,
   essence: EditorialEssence,
+  templateId: ImagePromptTemplateId,
 ): WeeklyReportageSceneBriefResult {
+  const renderable = (value: string, limit: number) =>
+    stripPlanningPhrases(value)
+      .replace(
+        /^(?:Grounded real-world tableau|Exposed process cutaway with boxes and arrows|Wide outcome-led environment)\.\s*/i,
+        '',
+      )
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, limit);
+  const cleanBaseScene = renderable(baseScene, 680);
   const scene =
     lens === 'literal_context'
-      ? `Grounded real-world tableau centered on ${essence.storyContext}; ${essence.mechanism} visibly acts on that specific actor or system and physically produces ${essence.consequence}. ${baseScene}`
+      ? `Grounded real-world tableau. ${cleanBaseScene}`
       : lens === 'mechanism'
-        ? `Exposed process cutaway centered on ${essence.mechanism}; a concrete anchor from ${essence.storyContext} enters the cause-and-effect process and visibly emerges with ${essence.consequence}. Do not reuse the literal tableau.`
-        : `Wide outcome-led environment centered on ${essence.consequence}; physical traces lead back to ${essence.mechanism} acting on a recognizable anchor from ${essence.storyContext}. No cutaway and no reuse of the literal tableau.`;
+        ? `Exposed physical process cutaway. ${cleanBaseScene}`
+        : `Wide outcome-led environment. ${cleanBaseScene}`;
+  const action =
+    lens === 'literal_context'
+      ? renderable(essence.mechanism, 140)
+      : lens === 'mechanism'
+        ? renderable(essence.visualThesis, 140)
+        : renderable(essence.consequence, 140);
   return {
     scene: scene.replace(/\s+/g, ' ').slice(0, 680),
     source: 'fallback',
@@ -2072,13 +2272,24 @@ function fallbackSceneBrief(
     storyAnchor: essence.storyContext,
     visibleMechanism: essence.mechanism,
     visibleConsequence: essence.consequence,
+    subject: renderable(
+      lens === 'consequence' ? essence.consequence : essence.visualThesis || cleanBaseScene,
+      140,
+    ),
+    setting: renderable(
+      lens === 'consequence' ? `${essence.storyContext}, aftermath environment` : essence.storyContext,
+      140,
+    ),
+    action,
+    templateId,
   };
 }
 
 /**
- * One factual semantic contract → three orthogonal visual concepts. The model
- * returns a literal-context, mechanism, and consequence treatment in one call;
- * validation then enforces different motifs/scenes before any image spend.
+ * One factual semantic contract → one primary scene or up to three orthogonal
+ * visual concepts. Multi-concept render experiments use literal-context,
+ * mechanism, and consequence treatments; prompt-only defaults to one primary
+ * scene that has to make all three layers legible together.
  */
 export async function weeklyReportageSceneBriefs(
   input: WeeklyReportageSceneInput,
@@ -2088,6 +2299,7 @@ export async function weeklyReportageSceneBriefs(
     excludedLenses?: readonly MetaphorLens[];
     avoidScenes?: readonly string[];
     repairFeedback?: readonly string[];
+    occupiedTemplates?: readonly ImagePromptTemplateId[];
   } = {},
 ): Promise<WeeklyReportageSceneBriefResult[]> {
   const count = Math.max(1, Math.min(3, options.count ?? 3));
@@ -2115,12 +2327,39 @@ export async function weeklyReportageSceneBriefs(
     : essenceResult
       ? weeklySemanticFallbackScene(essence)
       : weeklyFallbackScene(ctx, entities);
+  const grammarByLens = Object.fromEntries(
+    targetLenses.map((lens) => [
+      lens,
+      selectSceneGrammar({
+        title: input.headline,
+        summary: input.summary,
+        why: input.why,
+        practical: input.practical,
+        takeaway: input.takeaway,
+        source: essenceResult?.source,
+        essence,
+        lens,
+      }),
+    ]),
+  ) as Partial<Record<MetaphorLens, SceneGrammar>>;
+  const templateByLens = routeSeatTemplates({
+    lenses: targetLenses,
+    grammarByLens,
+    source: essenceResult?.source,
+    headline: input.headline,
+    summary: input.summary,
+    occupied: options.occupiedTemplates,
+  });
+  const fallbackTemplate =
+    templateByLens[targetLenses[0] ?? 'literal_context'] ??
+    routeTemplate({ lens: targetLenses[0] ?? 'literal_context', source: 'fallback' });
   if (!ctx) {
     return [
       fallbackSceneBrief(
         targetLenses[0] ?? 'literal_context',
         baseFallbackScene,
         essence,
+        fallbackTemplate,
       ),
     ];
   }
@@ -2145,6 +2384,7 @@ export async function weeklyReportageSceneBriefs(
         missingLenses,
         options.avoidScenes,
         options.repairFeedback,
+        templateByLens,
       ),
       'weekly.card_image_scene',
       cfg,
@@ -2164,13 +2404,16 @@ export async function weeklyReportageSceneBriefs(
     for (const lens of missingLenses) {
       const candidates = ranked.filter((pitch) => pitch.lens === lens && !used.has(pitch));
       for (const pitch of candidates) {
+        pitch.templateId = templateByLens[lens];
         const acceptedHints: SiblingMetaphorHint[] = accepted.map(({ pitch: prior }) => ({
           motifClass: prior.motifClass,
           subjectKind: prior.subjectKind,
           composition: prior.composition,
-          sceneSummary: flattenMetaphorPitch(prior, essence),
+          sceneSummary: renderableScene(prior),
           subject: prior.subject,
           setting: prior.setting,
+          action: prior.action,
+          templateId: prior.templateId,
         }));
         const errors = validateMetaphorPitch(pitch, essence, entities, [
           ...externalSiblings,
@@ -2207,7 +2450,17 @@ export async function weeklyReportageSceneBriefs(
 
   if (accepted.length > 0) {
     return accepted
-      .map(({ pitch, source }) => sceneBriefFromPitch(pitch, essence, source, input))
+      .map(({ pitch, source }) =>
+        sceneBriefFromPitch(
+          pitch,
+          essence,
+          source,
+          input,
+          pitch.templateId ??
+            templateByLens[pitch.lens ?? 'literal_context'] ??
+            'realistic-photography',
+        ),
+      )
       .slice(0, count);
   }
   return [
@@ -2215,6 +2468,7 @@ export async function weeklyReportageSceneBriefs(
       targetLenses[0] ?? 'literal_context',
       baseFallbackScene,
       essence,
+      fallbackTemplate,
     ),
   ].slice(0, count);
 }
@@ -2326,6 +2580,7 @@ export interface WeeklyReportageGeneratedVariant extends GeneratedImageResult {
   storyAnchor?: string;
   visibleMechanism?: string;
   visibleConsequence?: string;
+  templateId?: ImagePromptTemplateId;
 }
 
 /**
@@ -2355,6 +2610,7 @@ export async function weeklyReportageConcepts(
   const count = Math.max(1, Math.min(3, input.variantCount ?? 3));
   if (override) {
     const scene = cleanSceneText(override);
+    const ownerTemplate = routeTemplate({ lens: 'owner_direction' });
     const alternatives =
       count > 1
         ? await weeklyReportageSceneBriefs(input, cfg, {
@@ -2362,6 +2618,7 @@ export async function weeklyReportageConcepts(
             excludedLenses: ['literal_context'],
             avoidScenes: [scene, ...rejectedScenes],
             repairFeedback: input.repairFeedback,
+            occupiedTemplates: [ownerTemplate],
           })
         : [];
     const semanticReference = alternatives[0];
@@ -2402,6 +2659,8 @@ export async function weeklyReportageConcepts(
       storyAnchor: scene,
       visibleMechanism: scene,
       visibleConsequence: scene,
+      subject: scene.slice(0, 140),
+      templateId: ownerTemplate,
     };
     const ownerErrors = validateMetaphorPitch(
       {
@@ -2492,6 +2751,7 @@ export async function generateWeeklyReportageIllustrations(
         storyAnchor: concept.storyAnchor,
         visibleMechanism: concept.visibleMechanism,
         visibleConsequence: concept.visibleConsequence,
+        templateId: concept.templateId,
       };
     }),
   );
@@ -2534,8 +2794,8 @@ export function fallbackScene(text: string): string {
     (has('network') && has('isolat', 'external', 'misconfig', 'egress'))
   ) {
     return (
-      'an autonomous agent figure breaking through a cracked glass sandbox cage toward glowing ' +
-      'external network routes, shards of the isolation barrier mid-air'
+      'a sealed glass sandbox wall fractures as one untrusted connection reaches a distant network ' +
+      'port, the breached isolation boundary plainly visible'
     );
   }
   // Cryptanalysis / cipher strength — before "claude" / model-launch stock.
@@ -2543,25 +2803,58 @@ export function fallbackScene(text: string): string {
     has('cryptanalys', 'cryptograph', 'cipher', 'encryption', 'decrypt', 'key strength', 'mythos')
   ) {
     return (
-      'a cracked cryptographic seal and shattered padlock over dark circuitry, shards catching a ' +
-      'hard rim light'
+      'a hardened cipher mechanism splits along one precise fracture as a key-shaped beam reaches ' +
+      'the newly exposed inner path, hard rim light'
     );
   }
   if (has('security', 'vulnerab', 'exploit', 'breach', 'cve', 'malware', 'attack'))
-    return 'a cracked metallic padlock over a dark server panel, shards catching a hard rim light';
+    return (
+      'a compromised metadata token crosses a trusted toolchain gate and opens a direct path toward ' +
+      'a protected key compartment, the altered route visibly dangerous'
+    );
+  if (has('memory', 'rag', 'retriev', 'embedding', 'sqlite', 'context')) {
+    return (
+      'a compact rule ledger releases only a few relevant metal tabs into a working tray while a tall ' +
+      'archive stays closed, showing selective memory'
+    );
+  }
+  if (has('mixture-of-experts', 'mixture of experts', 'moe', 'active parameter', 'active params')) {
+    return (
+      'one input token passes through a fine routing gate, engaging only a small cluster of expert ' +
+      'modules while the larger lattice remains dormant'
+    );
+  }
   if (has('fund', 'raise', 'valuation', 'investment', 'revenue', 'ipo', 'billion'))
-    return 'tall stacked translucent coin towers with streams of light flowing between them on a dark desk';
+    return (
+      'one capital stream fills a newly connected compute module, making a previously dark production ' +
+      'line visibly ready to run'
+    );
   if (has('agent', 'mcp', 'orchestr', 'workflow', 'autonom'))
-    return 'several precise robotic arms cooperating around a glowing modular workbench in a dark lab';
+    return (
+      'a physical routing switchyard directs three task pucks along one connected rail into a finished ' +
+      'assembly, showing coordinated work without a controller figure'
+    );
   if (has('model', 'launch', 'release', 'gpt', 'claude', 'gemini', 'llama', 'benchmark'))
-    return 'a sleek matte device unveiled under a single spotlight on a dark reveal stage';
+    return (
+      'a newly opened modular compute engine sends one finished output through its active core while ' +
+      'the larger structure stays quiet, controlled studio light'
+    );
   if (has('local', 'on-device', 'offline', 'privacy', 'gemma', 'llm'))
-    return 'a laptop on a wooden desk glowing in a dim room, soft particles rising from the screen';
+    return (
+      'a compact local gateway removes private signal tokens before one clean request leaves through ' +
+      'an external connection, calm side light'
+    );
   if (has('token', 'cost', 'cheap', 'efficien', 'speed', 'latency', 'optimiz'))
-    return 'a precision gauge and flowing light ribbons through a sleek metal channel on a dark surface';
+    return (
+      'a narrow stream of compute tokens passes through a fine routing valve, few modules engage and ' +
+      'the output exits at full speed'
+    );
   if (has('image', 'video', 'medical', 'scan', 'mri', 'vision', 'creative', 'art'))
-    return 'a backlit radiology lightbox displaying abstract luminous scans in a dark studio';
-  return DEFAULT_SCENE;
+    return (
+      'a translucent medical scan film is lifted into a focused light wall, one critical region becomes ' +
+      'clear while the surrounding film remains subdued'
+    );
+  return DEFAULT_NEWS_CARD_SCENE;
 }
 
 /** Quality ladder: Gemini image → Cloudflare FLUX.2 (default) → schnell → Pollinations. */

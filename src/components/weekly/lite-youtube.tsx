@@ -53,6 +53,10 @@ export function LiteYouTube({
             src={thumbnailUrl}
             alt=""
             fill
+            // The site loader only transforms Supabase objects. YouTube's
+            // CDN URL has no width parameter, so bypass it instead of logging
+            // a Next Image loader contract warning on every weekly page.
+            unoptimized
             priority={priority}
             sizes="(max-width: 768px) 100vw, 960px"
             className="object-cover transition duration-300 group-hover:scale-[1.015]"

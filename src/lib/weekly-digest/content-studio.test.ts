@@ -473,6 +473,29 @@ describe('Weekly Content Studio hard gates', () => {
     );
   });
 
+  it('blocks a hero title or standfirst that would bury the first story', () => {
+    const value = bundle();
+    value.uk.title = 'Qwen, IBM, ліцензії та всі інші теми цього тижня '.repeat(3);
+    value.uk.standfirst = 'Найважливіший контекст випуску '.repeat(20);
+    const issues = validateMasterBundle(value, [research]);
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: 'hero_copy_length',
+          blocker: true,
+          locale: 'uk',
+          field: 'title',
+        }),
+        expect.objectContaining({
+          code: 'hero_copy_length',
+          blocker: true,
+          locale: 'uk',
+          field: 'standfirst',
+        }),
+      ]),
+    );
+  });
+
   it('clips overlong metadata when writing, not only when checking', () => {
     const value = bundle();
     value.en.metaDescription = 'A'.repeat(400);

@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { generateWithVision, isVisionProviderRole } from './vision';
+import {
+  generateWithVision,
+  generateWithVisionSingleAttempt,
+  isVisionProviderRole,
+} from './vision';
 import { ProviderUnavailableError } from './types';
 
 afterEach(() => {
@@ -68,5 +72,47 @@ describe('generateWithVision', () => {
     );
     expect(result.provider).toBe('openrouter');
     expect(result.usage.costSource).toBe('reported');
+  });
+});
+
+describe('generateWithVisionSingleAttempt', () => {
+  it('does not charge a second provider after the selected OpenRouter request fails', async () => {
+    const fetchMock = vi.fn(async (_url: string, _request?: RequestInit) => ({
+      ok: false,
+      status: 503,
+      text: async () => 'busy',
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      generateWithVisionSingleAttempt(
+        'daily.image_critic',
+        { prompt: 'rate', imageBytes: Buffer.from('x') },
+        { OPEN_ROUTER_API_KEY: 'or', GEMINI_API_KEY: 'g' },
+      ),
+    ).rejects.toThrow('OpenRouter vision HTTP 503');
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('openrouter.ai');
+  });
+
+  it('caps the selected vision response before its one request starts', async () => {
+    const fetchMock = vi.fn(async (_url: string, _request?: RequestInit) => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: '{"overall":90,"blockers":[]}' } }],
+        usage: { prompt_tokens: 1, completion_tokens: 2, cost: 0.001 },
+      }),
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await generateWithVisionSingleAttempt(
+      'daily.image_critic',
+      { prompt: 'rate', imageBytes: Buffer.from('x') },
+      { OPEN_ROUTER_API_KEY: 'or' },
+    );
+
+    const [, request] = fetchMock.mock.calls[0] as [string, RequestInit | undefined];
+    expect(JSON.parse(String(request?.body))).toMatchObject({ max_tokens: 900 });
   });
 });

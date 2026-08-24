@@ -6,6 +6,7 @@ import {
   getKyivCycleIndex,
   getKyivMinutesOfDay,
   getKyivScheduleAttemptSlot,
+  getEditorialDateKyiv,
   getPipelineDateKyiv,
   parseScheduleAttemptFlag,
   resolveScheduleAttempt,
@@ -49,6 +50,20 @@ describe('getPipelineDateKyiv', () => {
     const nearMidnight = new Date('2026-05-28T22:00:00.000Z');
     const kyivDate = getPipelineDateKyiv(nearMidnight);
     expect(kyivDate).toBe('2026-05-29');
+  });
+});
+
+describe('getEditorialDateKyiv', () => {
+  it('keeps the same edition at 19:59 and moves to tomorrow at 20:00 in EEST', () => {
+    expect(getEditorialDateKyiv(new Date('2026-06-09T16:59:00.000Z'))).toBe('2026-06-09');
+    expect(getEditorialDateKyiv(new Date('2026-06-09T17:00:00.000Z'))).toBe('2026-06-10');
+    expect(getPipelineDateKyiv(new Date('2026-06-09T17:00:00.000Z'))).toBe('2026-06-09');
+  });
+
+  it('keeps the same edition at 19:59 and moves to tomorrow at 20:00 in EET', () => {
+    expect(getEditorialDateKyiv(new Date('2026-01-09T17:59:00.000Z'))).toBe('2026-01-09');
+    expect(getEditorialDateKyiv(new Date('2026-01-09T18:00:00.000Z'))).toBe('2026-01-10');
+    expect(getPipelineDateKyiv(new Date('2026-01-09T18:00:00.000Z'))).toBe('2026-01-09');
   });
 });
 

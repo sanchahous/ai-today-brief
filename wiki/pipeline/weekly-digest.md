@@ -5,8 +5,9 @@ Summary: як працює weekly-дайджест у проді: оркестр
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live checks 2026-08-04…22,
 editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 latest revision is the working copy 2026-08-22, pre-critic hang 2026-08-22,
-critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22
-Last updated: 2026-08-22
+critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22,
+image prompt library v6 2026-08-23, owner visual-direction contract 2026-08-24
+Last updated: 2026-08-24
 
 ---
 
@@ -19,6 +20,30 @@ Video / Release).
 
 Відбір кандидатів — окрема сторінка [weekly-editorial-selection](weekly-editorial-selection.md).
 Межа відео-рендеру — [video-boundary](video-boundary.md).
+
+## Короткий hero title і safe refresh published edition (2026-08-24)
+
+Master frame може запропонувати два локалізовані поля понад canonical article title:
+`display_title` — коротка reader-facing теза для hero/PDF cover, і `visual_thesis` — internal
+causal direction для no-text cover prompt та QA. UK є редакційною адаптацією, не literal
+translation; canonical title лишається єдиним для SEO, Open Graph і digest listing.
+(source: owner session 2026-08-24; `src/lib/weekly-digest/editorial-llm.ts`;
+`src/lib/weekly-digest/display-title.ts`)
+
+Published revision не редагується для покращення visuals. Owner AAL2 створює private active
+`visual_refresh` draft, який переносить approved text/PDF/unchanged assets як provenance і queues
+лише prompt-only cover + story jobs. Direction у цьому draft можна змінити; direction hash fence
+не дозволяє in-flight старій job записати prompt після нової правки або застосувати застарілий
+staged image. Після QA/review owner явно обирає лише потрібні private cover/story assets: сервер
+копіює та byte-verify їх у незмінний public key, а одна транзакція створює нові версії відповідних
+artifact slots у **наявній** published revision. Canonical текст, SEO, Open Graph, PDF, social
+package та `published_revision_id` не змінюються. Public reader не читає metadata/prompt/QA або
+private provenance; доступні лише дозволені поля артефакту й public-safe alt content. (source:
+owner session 2026-08-24; `supabase/migrations/20260824130000_weekly_visual_refresh_draft.sql`;
+`supabase/migrations/20260824140000_weekly_visual_direction_persistence.sql`;
+`supabase/migrations/20260824150000_weekly_visual_refresh_staged_assets.sql`;
+`supabase/migrations/20260824160000_weekly_public_artifact_metadata_privacy.sql`;
+`src/lib/weekly-digest/visual-refresh.ts`; `src/app/admin/(cms)/weekly/actions.ts`)
 
 ## Feature flag
 
@@ -41,6 +66,28 @@ Video / Release).
 (F3) — без нього застосування нового ранжування можна лише вимкнути редагуванням коду.
 (source: [audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md),
 `.env.example`)
+
+## Поточний контракт primary illustration (2026-08-23)
+
+У `prompt_only` кожна story отримує **один primary prompt**, а не три owner-facing альтернативи.
+Він має звести context, mechanism і consequence до одного cause-and-effect кадру; headline називає
+факт, картинка робить видимою зміну. У production `render` теж бере один кандидат: vision rejection
+стає конкретним repair brief наступної спроби, не автоматичним вибором із трьох. Старі artifacts з
+трьома prompt cards читаються для сумісності, але нові показують `1/1 основний промпт готовий`.
+(source: `src/lib/weekly-digest/story-prompt-job.ts`; `src/lib/weekly-digest/generation-worker.ts`; `src/lib/weekly-digest/story-prompt-set.ts`)
+
+Після ручного upload `story_image` проходить pixel-only QA, а чистий кадр — ще й story-aware QA з
+headline, approved story fields, counterweight, semantic contract і primary scene. Результат
+advisory-only для ручного release: він не встановлює `content_sim`, але низький semantic score без
+model blocker стає видимим `ambiguous_visual_story`. Водночас без завершеного story-aware pass або
+за наявності будь-якого active QA blocker файл не може бути **machine-attested**; це fail-closed,
+не примусова заборона редактору. Cover лишається pixel-only, бо не має однієї authoritative story.
+(source: `src/lib/weekly-digest/run-post-upload-qa.ts`; `src/app/admin/(cms)/weekly/actions.ts`; `src/lib/weekly-digest/post-upload-qa.ts`; `src/lib/weekly-digest/machine-attest.ts`)
+
+Public weekly показує hero cover у 16:9 safe frame без тихого crop; на desktop compact title і cover
+починаються поруч, а stories стоять перед video/action blocks. Sidebar має scrollspy. Новий master
+має пройти hard editorial budget: title ≤112, standfirst ≤360 символів; це gate, а не silent
+truncation. (source: `src/components/weekly/weekly-hero.tsx`; `src/components/weekly/weekly-story.tsx`; `src/app/[lang]/weekly/[slug]/page.tsx`; `src/components/weekly/weekly-toc.tsx`; `src/lib/weekly-digest/content-studio.ts`)
 
 ## Соц-копія: практика замість переказу (2026-08-21)
 
@@ -132,7 +179,7 @@ replay проти прод-даних 2026-08-16)
    → language `suggestedFix` auto-apply; meta clipped to `METADATA_MAX_CHARS`; quality
    **не** апрувиться, поки є blocker
 3. незалежні `story_image` (після bilingual `article`) запускаються паралельно → `cover`
-   (`prompt_only` + owner upload; QA без dignity/misleading → auto-approve image)
+   (`prompt_only` + owner upload; QA попереджає, але не auto-approve image)
 4. `social_copy` / `pdf` / `video_script` (після attested `article`) — hydrator
    `loadWeeklyStoriesForDownstream` читає і нормалізований article без `stories`
 5. `video_manifest` (після attested `video_script` + 3 uploaded `story_image` + `cover`) →
@@ -163,10 +210,11 @@ Hard spend-cap weekly master: `WEEKLY_MASTER_MAX_SPEND_USD` (default $4,
 Витрати пишуться в `generation_cost_events`, UI — `/admin/costs` (source: PR #169).
 
 Картинки **новин** на сайті: Cloudflare **FLUX.2 klein** (`@cf/black-forest-labs/flux-2-klein-9b`).
-Weekly story/cover за замовчуванням `WEEKLY_STORY_IMAGE_MODE=prompt_only`: worker пише
-`story_prompt_set` і не кличе FLUX; `render` повертає старий цикл. Політика планування
-концептів — `weekly-semantic-story-v5.1` (без впеченого тексту в кадрі).
-(source: PR #169–#175, `.env.example`, `pipeline/card-image.ts`, `generation-worker.ts`)
+Weekly story/cover за замовчуванням `WEEKLY_STORY_IMAGE_MODE=prompt_only`: worker пише один
+primary `story_prompt_set` і не кличе FLUX; `render` повертає multi-concept цикл. Політика
+планування — `weekly-semantic-story-v6` (Prompt-as-Code, без впеченого тексту в кадрі).
+(source: PR #169–#175, `.env.example`, `pipeline/card-image.ts`, `generation-worker.ts`,
+[image-prompt-library](image-prompt-library.md))
 
 ### Evidence grounding (writer + critic)
 
@@ -704,7 +752,10 @@ contract → three-lens concept jury** (два LLM-кроки на ролі `wee
 Контекст: title+summary+body excerpt+`why`+practical+limitation+takeaway+editorsView+
 `editorialAngle`+approved research claims/context/risks+sibling metaphors. Top 3 беруть claims із
 approved `research_pack`; fallback серіалізує `.text`, а не обʼєкти. Seed без `job.id`.
-`metadata.prompt_policy` = **`weekly-semantic-story-v5.1`** (v4 був one-scene/three-seed policy).
+`metadata.prompt_policy` = **`weekly-semantic-story-v6`**; у `prompt_only` v6 тепер формує
+одну primary cause-and-effect сцену, тоді як multi-seat лишився для experimental render.
+Copy-ready canonical збирає
+[image-prompt-library](image-prompt-library.md) 6 блоками.
 Validator рахує semantic gates лише за `story_anchor` / `visible_mechanism` /
 `visible_consequence` та іншими renderable fields; `why_it_fits` лишається rationale і не може
 сам виконати `mechanism_not_visible`. `story_anchor` мусить містити actor/system із context, не лише
@@ -747,19 +798,19 @@ Midjourney / Negative і слот upload в тій самій картці (ст
 `src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/story-prompt-set-panel.tsx`,
 [weekly-illustration-plan](weekly-illustration-plan.md) P2)
 
-**M1 prompt_only (2026-08-15):** `generateStoryImage` без `source_url` і `generateCover` більше
+**M1 prompt_only (superseded 2026-08-23):** `generateStoryImage` без `source_url` і `generateCover` більше
 не викликають `generateWeeklyReportageIllustrations` / `runWeeklyImageSimLoop`. Джоба будує
-essence + концепти, експортує `ManualImagePrompt` і зберігає `story_prompt_set` зі статусом
+essence + **один primary concept**, експортує `ManualImagePrompt` і зберігає `story_prompt_set` зі статусом
 `succeeded` + `needs_owner_review`. Ingest `source_url` лишається. Прапорець
 `WEEKLY_STORY_IMAGE_MODE=prompt_only|render` (дефолт `prompt_only`). Транспорт `story_image`
 лишається GitHub Actions — не переносити в цьому PR.
 (source: `src/lib/weekly-digest/story-prompt-job.ts`, `generation-worker.ts`, `.env.example`,
 [weekly-illustration-plan](weekly-illustration-plan.md) M1)
 
-**M2 post-upload QA (2026-08-15):** після ручного upload story/cover `after()` викликає
-image-only critic (`buildImageOnlyCriticPrompt`, без headline/scene) і пише
-`metadata.post_upload_qa`. `content_sim` не заповнюється, тож `simulation_not_passed` не
-спрацьовує. Visuals: «QA чисто» або жовтий рядок + Ігнорувати / Замінити файл.
+**M2 post-upload QA (superseded 2026-08-23):** після ручного upload story/cover `after()` викликає
+image-only critic; для clean `story_image` він додає story-aware pass із headline/semantic contract.
+`content_sim` не заповнюється, тож `simulation_not_passed` не спрацьовує. Visuals: «QA чисто ·
+зміст зчитується» або жовтий advisory рядок + Ігнорувати / Замінити файл.
 (source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) M2)
 
@@ -774,9 +825,9 @@ Supabase transform незалежно від origin. (source: `src/lib/encode-si
 без змін. (source: `src/lib/weekly-digest/preflight.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) M3)
 
-**B3 prompt readiness (2026-08-15):** Visuals біля кожної story показує `N/3 промпти готові`
-і деталь `немає consequence` / `фолбек: mechanism`, якщо журі не заповнило три лінзи або
-віддало `fallback_essence`. Cover не в цій хвилі. Вага гейта без змін.
+**B3 prompt readiness (superseded 2026-08-23):** Visuals біля нової story показує
+`1/1 основний промпт готовий`; fallback все ще явно маркується. Історичний multi-prompt artifact
+зберігає `N/3` display для чесного перегляду старої ревізії. Вага release gate без змін.
 (source: `src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/weekly-workspace.tsx`,
 [weekly-illustration-plan](weekly-illustration-plan.md) B3)
 
@@ -1613,5 +1664,6 @@ standfirst, 3×4200 + 4×850 body) — 7 сторінок, обидві лока
 - [video-boundary](video-boundary.md)
 - [weekly-admin-runbook](../ops/weekly-admin-runbook.md)
 - [card-images](../marketing/card-images.md)
+- [image-prompt-library](image-prompt-library.md)
 - [open-questions](../open-questions.md)
 - [now](../now.md)

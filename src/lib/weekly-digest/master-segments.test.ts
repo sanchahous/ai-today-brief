@@ -126,8 +126,22 @@ describe('assembleArticle', () => {
   });
 
   it('round-trips through frameFromArticle', () => {
-    const stories = new Map(ORDER.map((entry) => [entry.revisionItemId, story(entry.revisionItemId)]));
+    const stories = new Map(
+      ORDER.map((entry) => [entry.revisionItemId, story(entry.revisionItemId)]),
+    );
     expect(frameFromArticle(assembleArticle('uk', frame(), stories, ORDER))).toEqual(frame());
+  });
+
+  it('preserves optional localized visual direction through resume-safe frame assembly', () => {
+    const stories = new Map(
+      ORDER.map((entry) => [entry.revisionItemId, story(entry.revisionItemId)]),
+    );
+    const direction = {
+      ...frame(),
+      displayTitle: 'Efficiency and openness, not brute scale',
+      visualThesis: 'Sparse activation makes a huge open model useful beyond hyperscaler clusters.',
+    };
+    expect(frameFromArticle(assembleArticle('en', direction, stories, ORDER))).toEqual(direction);
   });
 });
 

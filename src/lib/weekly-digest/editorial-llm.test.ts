@@ -43,7 +43,9 @@ import {
   criticPrompt,
   criticProviderLadder,
   editorialModelVendor,
+  frameSegmentPrompt,
   openRouterModelVendor,
+  parseFrameSegment,
   parseRepairedValue,
   parseStorySegment,
   premiumGeminiEditorialModels,
@@ -51,6 +53,7 @@ import {
   repairFieldPrompt,
   splitMasterRetryGuidance,
   storySegmentPrompt,
+  ukrainianFramePrompt,
   type WeeklyMasterInputStory,
   type WeeklyMasterRetryGuidance,
 } from './editorial-llm';
@@ -201,21 +204,20 @@ describe('criticProviderLadder', () => {
   });
 
   it('retries OpenRouter for a fresh model before reusing claude-cli', () => {
-    expect(
-      criticProviderLadder('openrouter', ['claude-cli', 'openrouter'], [...order]),
-    ).toEqual(['gemini', 'openrouter', 'claude-cli']);
+    expect(criticProviderLadder('openrouter', ['claude-cli', 'openrouter'], [...order])).toEqual([
+      'gemini',
+      'openrouter',
+      'claude-cli',
+    ]);
   });
 });
 
 describe('criticOpenRouterExclusionTiers', () => {
   it('relaxes from prior critic vendors down to writer-only exclusion', () => {
-    const tiers = criticOpenRouterExclusionTiers(
-      { provider: 'openrouter', model: 'deepseek/v4' },
-      [
-        { provider: 'claude-cli', model: 'claude-opus' },
-        { provider: 'openrouter', model: 'z-ai/glm' },
-      ],
-    );
+    const tiers = criticOpenRouterExclusionTiers({ provider: 'openrouter', model: 'deepseek/v4' }, [
+      { provider: 'claude-cli', model: 'claude-opus' },
+      { provider: 'openrouter', model: 'z-ai/glm' },
+    ]);
     expect(tiers[0]).toEqual({
       excludeVendors: ['deepseek', 'anthropic', 'z-ai'],
       excludeModels: ['deepseek/v4', 'claude-opus', 'z-ai/glm'],
@@ -541,6 +543,65 @@ describe('parseStorySegment', () => {
     const noClaimIds = JSON.parse(response);
     delete noClaimIds.story.claimIds;
     expect(parseStorySegment(JSON.stringify(noClaimIds), ['claim-1'], false).claimIds).toEqual([]);
+  });
+});
+
+describe('weekly visual direction frame fields', () => {
+  const frameResponse = JSON.stringify({
+    frame: {
+      title: 'Alibaba opens Qwen while efficiency changes the race',
+      displayTitle: 'Efficiency and openness, not brute scale',
+      visualThesis:
+        'Sparse activation turns a giant open model into a practical tool outside hyperscaler clusters.',
+      seoTitle: 'Qwen release changes the AI efficiency race',
+      metaDescription: 'A concise weekly framing for the edition.',
+      ogTitle: 'AI efficiency and openness',
+      ogDescription: 'A concise social description for the edition.',
+      standfirst: 'A useful weekly opening sentence.',
+      theme: 'Efficient open AI',
+      intro: 'The finished frame gives readers a concrete throughline.',
+      editorNote: 'This edition synthesizes cited primary sources.',
+      keyTakeaways: ['Sparse activation changes deployment economics.'],
+      topics: ['Open models'],
+      entities: ['Alibaba'],
+      internalLinks: [{ anchor: 'Mixture of experts', query: 'mixture of experts' }],
+      conclusion: 'Readers can now compare capability with usable efficiency.',
+    },
+  });
+
+  it('keeps display title and visual thesis separate from canonical frame copy', () => {
+    expect(parseFrameSegment(frameResponse)).toMatchObject({
+      title: 'Alibaba opens Qwen while efficiency changes the race',
+      displayTitle: 'Efficiency and openness, not brute scale',
+      visualThesis:
+        'Sparse activation turns a giant open model into a practical tool outside hyperscaler clusters.',
+    });
+  });
+
+  it('instructs English and Ukrainian writers to localize, not mechanically translate, direction', () => {
+    const english = parseFrameSegment(frameResponse);
+    expect(
+      frameSegmentPrompt(
+        [
+          {
+            rank: 1,
+            placement: 'feature',
+            headline: 'Qwen release',
+            hook: 'Open weights',
+            why: 'Deployment becomes practical',
+            takeaway: 'Efficiency matters',
+          },
+        ],
+        [],
+      ),
+    ).toContain('displayTitle: 8-96 characters');
+    const ukrainian = ukrainianFramePrompt({
+      english,
+      stories: [{ rank: 1, headline: 'Реліз Qwen', takeaway: 'Ефективність важлива' }],
+      guidance: [],
+    });
+    expect(ukrainian).toContain('не перекладайте англійський рядок буквально');
+    expect(ukrainian).toContain('не перекладайте дослівно');
   });
 });
 
