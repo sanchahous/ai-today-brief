@@ -3898,6 +3898,23 @@ trigger-функцією: її викликає лише trigger зміни visu
 
 ---
 
+## 2026-08-24 — Vercel: знайдено джерело Fast Origin Transfer
+
+Vercel попередив про 100% ліміту Fast Origin Transfer (10 ГБ) з ризиком авто-паузи. Живий
+замір заголовків показав, що /en/news (343 КБ) і /uk/news (390 КБ) — єдині маршрути з
+`x-vercel-cache: MISS` на кожен запит, тоді як усі інші хаби, item-сторінки й головна дають HIT.
+Причина: сторінка робить `await searchParams`, а це runtime API Next 16 — маршрут стає
+динамічним і `revalidate = 3600` ігнорується.
+
+Зроблено: CDN-кеш `s-maxage=300, stale-while-revalidate=3600` для `/:lang(en|uk)/news`,
+коротша драбина `deviceSizes`/`imageSizes` (40 КБ з 343 КБ припадало на `srcSet`; рунг 1200
+збережено, бо heroes мають слот 1160 px), і `sitemap.xml` з 1 год на 6 год (1316 URL, 943 КБ,
+~22 МБ/добу origin transfer). Попередження про Image Optimization — залишок квоти, вигорілої до
+14.08: у HTML прода нуль входжень `/_next/image`, трансформацій ми більше не робимо.
+
+Свідомо не чіпали клієнтський payload на 100 items: після кешування він майже не впливає на
+білінг, це окрема CWV-задача. (source: листи Vercel 2026-08-24; live check 2026-08-24;
+[vercel-origin-transfer](ops/vercel-origin-transfer.md); `next.config.ts`; `src/app/sitemap.ts`)
 ## 2026-08-24 — Daily visual: bounded dynamic OpenRouter image route
 
 Daily renderer більше не залежить від окремого `OPENAI_API_KEY`: він використовує вже наявний
