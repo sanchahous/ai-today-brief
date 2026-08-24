@@ -4,12 +4,28 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…23, Content Sim,
 Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22,
-Prompt-as-Code v6 2026-08-23
-Last updated: 2026-08-23
+Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24
+Last updated: 2026-08-24
 
 ---
 
 ## Стан репозиторію
+
+- **Daily visual workflow + safe weekly visual refresh (2026-08-24), PR #320 worktree
+  `claude/gpt-image-prompt-plan-review-2ffff7`.** Daily тепер має бути реальним production
+  visual asset, а не Telegram prompt: frozen daily snapshot після 20:00 Kyiv, одна issue-level
+  `display_title` + private `visual_thesis`, GPT Image 2 primary/optional repair, semantic QA,
+  manual source/editor replacement, шість native social drafts і privacy-safe qualified exposure
+  telemetry. Monthly cap $5 fail-closed для paid calls; новини лишають existing automatic image
+  provider, але з causal prompt. Published weekly не змінюється: **Create visual refresh draft**
+  створює private working revision, де можна задати короткий hero/PDF `display_title`, internal
+  visual direction, staged replacement cover/story assets і після QA/AAL2 owner review застосувати
+  лише явно вибрані pixels як нові artifact versions source revision. Public SEO/OG/text/PDF/social
+  і `published_revision_id` лишаються immutable, а anonymous renderer не бачить prompt/QA/provenance
+  metadata. Перед rollout потрібні deploy міграцій і configured provider credentials/spend alert;
+  backfill старих daily/news не виконується автоматично.
+  (source: owner session 2026-08-23/24; [daily-visual-workflow](pipeline/daily-visual-workflow.md);
+  `pipeline/card-image.ts`; `supabase/migrations/20260824100000_daily_visual_workflow.sql`)
 
 - **Review промптів і weekly experience (2026-08-23), робоча копія для
   `claude/gpt-image-prompt-plan-review-2ffff7`.** Owner-скріни дайджесту

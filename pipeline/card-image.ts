@@ -303,8 +303,9 @@ export async function generateEditorialIllustration(
   cfg: CardImageConfig,
 ): Promise<GeneratedImageResult | null> {
   const { scene, source: sceneSource } = await sceneBrief(input.title, input.summary, cfg);
-  const positive = buildPrompt(input.accent?.trim() || 'cool cyan', scene);
-  const negative = negativePrompt();
+  const storyContext = [input.title, input.summary].filter(Boolean).join('. ');
+  const positive = buildPrompt(input.accent?.trim() || 'cool cyan', scene, storyContext);
+  const negative = negativePrompt(storyContext);
   const generated = await generateImage(positive, negative, cfg, seedFromString(input.seedKey));
   if (generated) {
     return {
@@ -433,30 +434,143 @@ async function loadCategoryColors(db: PipelineDb): Promise<Map<string, string | 
  * Never ask for "space for a headline" — FLUX paints gibberish mastheads when
  * prompted that way. Typography is added later in layout, never baked into pixels.
  */
-export function buildPrompt(accent: string, scene: string): string {
-  return assembleFluxCardPrompt(accent, scene);
+export function buildPrompt(accent: string, scene: string, storyContext = ''): string {
+  const safeScene = prepareNewsCardScene(scene, storyContext);
+  const roboticsRule = isPhysicalRoboticsStory(storyContext)
+    ? 'If physical robotics is factual to this story, show only the actual hardware as the one subject.'
+    : 'Never depict humanoid robots, androids, robot mascots, or robotic arms.';
+  return `${assembleFluxCardPrompt(accent, safeScene)} ` +
+    `Causal composition: one dominant subject performs one visible action and produces one readable ` +
+    `outcome in the same connected physical moment. Keep the subject, action, and outcome inside the ` +
+    `central 78% of frame width and central 64% of frame height; use only atmospheric background ` +
+    `outside that safe area. No fake UI, dashboard, screen, code panel, terminal, document, chart, ` +
+    `collage, split panel, information-card pile, or card-soup. ${roboticsRule} ` +
+    `Never generate text, letters, numbers, labels, logos, or gibberish.`;
 }
 
 /**
  * Negative keywords for models that accept them (e.g. flux-1-schnell spillover).
  * FLUX.2 klein on Workers AI has no negative_prompt — rely on {@link buildPrompt}.
  */
-export function negativePrompt(): string {
+export function negativePrompt(storyContext = ''): string {
+  const roboticsNegative = isPhysicalRoboticsStory(storyContext)
+    ? ''
+    : 'humanoid robot, android, robot mascot, robotic arms, ';
   return (
     `text, words, letters, typography, numbers, glyphs, caption, subtitle, masthead, title bar, ` +
     `headline, newspaper headline, magazine cover text, watermark, signature, logo, brand mark, ` +
-    `UI, interface, buttons, readable screen text, frame, border, collage, split panels, ` +
-    `glowing brain, human brain, brain, neural-network mesh, circuit board, generic glowing orb, ` +
-    `floating sphere, abstract blob, anonymous server aisle, lone laptop on desk, ` +
-    `generic data-center corridor, stock server room, interchangeable tech stock, ` +
-    `low quality, blurry, jpeg artifacts, distorted, deformed, ` +
-    `extra fingers, extra limbs, cluttered, busy, stock-photo look`
+    `UI, interface, buttons, readable screen text, fake screen, dashboard, code panel, terminal, ` +
+    `document, chart, frame, border, collage, split panels, information-card pile, card-soup, ` +
+    `${roboticsNegative}glowing brain, human brain, brain, neural-network mesh, circuit board, ` +
+    `generic glowing orb, floating sphere, abstract blob, anonymous server aisle, lone laptop on desk, ` +
+    `generic data-center corridor, stock server room, interchangeable tech stock, generated gibberish, ` +
+    `low quality, blurry, jpeg artifacts, distorted, deformed, extra fingers, extra limbs, cluttered, ` +
+    `busy, stock-photo look`
   );
 }
 
+const DEFAULT_NEWS_CARD_SCENE =
+  'a single precision routing gate on a quiet workstation closes a clean signal path, one channel ' +
+  'activates while surrounding channels remain still, soft side light';
+
+// The weekly concept path has its own semantic planner. Keep its legacy empty-input
+// default isolated from the stricter causal fallback used by news cards above.
 const DEFAULT_SCENE =
   'a sleek developer workstation in a dark studio, sharp focus on a mechanical keyboard and ' +
   'softly floating translucent code panels, warm key light';
+
+const CARD_SCENE_PLANNING_LABELS = [
+  'the story-specific anchor is',
+  'the visible cause is',
+  'the visible result is',
+  'the literal story context is',
+  'show the physical causal process clearly:',
+  'make its grounded result unmistakable:',
+  'one causal moment showing',
+] as const;
+
+const CARD_SCENE_FIELD_LABEL =
+  /\b(?:subject|action|outcome|result|scene|setting|cause|visual thesis)\s*:\s*/giu;
+
+const PHYSICAL_ROBOTICS_PATTERN =
+  /\b(?:physical robotics?|robotic arms?|humanoid robots?|industrial robots?|warehouse robots?|robot hardware|autonomous (?:vehicle|drone))\b/iu;
+
+const FORBIDDEN_NEWS_SCENE_PATTERN =
+  /\b(?:fake ui|dashboard|interface|screen|code panel|terminal|ide|document|chart|collage|split panel|moodboard|information card|card-soup|card soup)\b/iu;
+
+const ROBOTIC_SCENE_PATTERN = /\b(?:humanoid|android|robot(?:s|ic|ics)?|robot mascot)\b/iu;
+
+/** Physical robotics is allowed only when it is the literal subject of the news. */
+export function isPhysicalRoboticsStory(text: string): boolean {
+  return PHYSICAL_ROBOTICS_PATTERN.test(text);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function removeNewsCardPlanningLabels(value: string): string {
+  let cleaned = value;
+  for (const label of CARD_SCENE_PLANNING_LABELS) {
+    cleaned = cleaned.replace(new RegExp(`\\b${escapeRegExp(label)}\\s*`, 'giu'), '');
+  }
+  return cleaned.replace(CARD_SCENE_FIELD_LABEL, '');
+}
+
+function causalSceneFromStructuredOutput(value: string): string | null {
+  const cleaned = value
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  if (!cleaned.startsWith('{')) return null;
+  try {
+    const parsed: unknown = JSON.parse(cleaned);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    const record = parsed as Record<string, unknown>;
+    const scene = record.scene ?? record.frame ?? record.description;
+    if (typeof scene === 'string' && scene.trim()) return scene;
+    const subject = record.subject;
+    const action = record.action;
+    const outcome = record.outcome ?? record.result;
+    if (
+      typeof subject !== 'string' ||
+      typeof action !== 'string' ||
+      typeof outcome !== 'string' ||
+      !subject.trim() ||
+      !action.trim() ||
+      !outcome.trim()
+    ) {
+      return null;
+    }
+    return `${subject}, ${action}, ${outcome}`;
+  } catch {
+    return null;
+  }
+}
+
+function hasForbiddenNewsSceneObject(scene: string, storyContext: string): boolean {
+  if (FORBIDDEN_NEWS_SCENE_PATTERN.test(scene)) return true;
+  return !isPhysicalRoboticsStory(storyContext) && ROBOTIC_SCENE_PATTERN.test(scene);
+}
+
+/**
+ * Removes director/planning labels before they can become literal pixels. If a
+ * model still asks for a prohibited UI or a generic robot, use the causal
+ * keyword fallback rather than forwarding a visibly wrong scene to FLUX.
+ */
+export function prepareNewsCardScene(scene: string, storyContext = ''): string {
+  const sceneWithoutPlanning = causalSceneFromStructuredOutput(scene) ?? cleanSceneText(scene);
+  const cleaned = removeNewsCardPlanningLabels(sceneWithoutPlanning)
+    .replaceAll('|', ', ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[,;:\-\s]+|[,;:\-\s]+$/g, '')
+    .trim();
+  if (!cleaned) return storyContext ? fallbackScene(storyContext) : DEFAULT_NEWS_CARD_SCENE;
+  if (storyContext && hasForbiddenNewsSceneObject(cleaned, storyContext)) {
+    return fallbackScene(storyContext);
+  }
+  return cleaned;
+}
 
 type FallbackIllustrationMotif =
   | 'memory'
@@ -736,34 +850,44 @@ async function runArtDirectorLadder(
   return null;
 }
 
+/**
+ * The director reasons through one causal claim, then returns only a renderable
+ * scene. Keeping the claim structure in the director call (not the image
+ * prompt) prevents its labels and arrows from becoming generated text.
+ */
+export function buildNewsCardSceneInstruction(title: string, summary: string): string {
+  return (
+    `You are the art director for a developer-focused technology magazine. Read this news item. ` +
+    `First derive the primary claim privately in this exact causal order: SUBJECT -> ACTION -> OUTCOME. ` +
+    `Do not output those labels or your reasoning. Translate it into ONE connected editorial moment: one ` +
+    `concrete dominant subject performs one visible action and the outcome is physically legible in the ` +
+    `same frame. The image must explain what changed and why it matters without a caption. ` +
+    `Keep the causal evidence inside the central 78% of width and central 64% of height; only atmosphere ` +
+    `belongs outside that safe area. Use at most two supporting objects. Prefer a literal, grounded scene ` +
+    `over an abstract metaphor, generic technology stock, or a collection of symbols. ` +
+    `Do not show humanoid robots, androids, robot mascots, or robotic arms unless this item is literally ` +
+    `about physical robotics hardware. Ban fake UI, dashboards, screens, code panels, terminals, documents, ` +
+    `charts, split panels, collages, information-card piles, and card-soup. Ban glowing brains, generic ` +
+    `orbs, circuit-board wallpaper, anonymous server aisles, and lone laptops. No text, letters, numbers, ` +
+    `logos, labels, watermarks, or gibberish. ` +
+    `Return only ONE vivid 18-32 word scene phrase with concrete nouns; not a sentence, plan, caption, or ` +
+    `list. Mention lighting or camera only after the causal core.\n\nHeadline: "${title}"\nSummary: "${summary}"`
+  );
+}
+
 export async function sceneBrief(
   title: string,
   summary: string,
   cfg: CardImageConfig,
 ): Promise<SceneBriefResult> {
   const ctx = [title, summary].filter(Boolean).join('. ').trim();
-  if (!ctx) return { scene: DEFAULT_SCENE, source: 'fallback' };
-  const instruction =
-    `You are the art director for a developer-focused technology magazine. Read this news item and ` +
-    `describe ONE concrete cover illustration a reader instantly connects to THIS specific story. ` +
-    `Name the distinctive news claim in visual form; avoid interchangeable tech stock. ` +
-    `Invent a UNIQUE narrative metaphor for THIS claim — what sets it apart from neighbouring ` +
-    `AI-security or model-launch stories — as a tangible focal subject + setting + action, with ` +
-    `named lighting and a named camera. ` +
-    `Good claim-specific examples: an agent figure breaking out of a cracked glass sandbox cage toward ` +
-    `glowing external network routes (egress / misconfig escape); a shattered cryptographic seal or ` +
-    `cracked padlock over dark circuitry (cryptanalysis); interlocking precision machinery for tooling; ` +
-    `cooperating robotic arms for multi-agent orchestration; an MRI lightbox for medical imaging; ` +
-    `stacked translucent coins for funding; a product unveiled on a reveal stage for a launch. ` +
-    `STRICTLY AVOID default stock unless the story is literally about those objects as the main claim: ` +
-    `anonymous server aisle, lone laptop on a desk, generic data-center corridor, anonymous rack row. ` +
-    `Also ban: a glowing brain, glowing orb or core, neural-network mesh, generic circuit board, vague ` +
-    `abstract "AI" blob. No text, letters, numbers, logos, brand marks or recognisable real faces. ` +
-    `If a document or screen appears, keep it blank or abstract — never readable writing. ` +
-    `Answer with ONE vivid phrase, 18-32 words, concrete nouns, a single focal subject, not a full ` +
-    `sentence.\n\nHeadline: "${title}"\nSummary: "${summary}"`;
-  const result = await runArtDirectorLadder(instruction, 'daily.card_image_scene', cfg);
-  if (result) return { scene: result.text, source: result.source };
+  if (!ctx) return { scene: DEFAULT_NEWS_CARD_SCENE, source: 'fallback' };
+  const result = await runArtDirectorLadder(
+    buildNewsCardSceneInstruction(title, summary),
+    'daily.card_image_scene',
+    cfg,
+  );
+  if (result) return { scene: prepareNewsCardScene(result.text, ctx), source: result.source };
   return { scene: fallbackScene(ctx), source: 'fallback' };
 }
 
@@ -2670,8 +2794,8 @@ export function fallbackScene(text: string): string {
     (has('network') && has('isolat', 'external', 'misconfig', 'egress'))
   ) {
     return (
-      'an autonomous agent figure breaking through a cracked glass sandbox cage toward glowing ' +
-      'external network routes, shards of the isolation barrier mid-air'
+      'a sealed glass sandbox wall fractures as one untrusted connection reaches a distant network ' +
+      'port, the breached isolation boundary plainly visible'
     );
   }
   // Cryptanalysis / cipher strength — before "claude" / model-launch stock.
@@ -2679,25 +2803,58 @@ export function fallbackScene(text: string): string {
     has('cryptanalys', 'cryptograph', 'cipher', 'encryption', 'decrypt', 'key strength', 'mythos')
   ) {
     return (
-      'a cracked cryptographic seal and shattered padlock over dark circuitry, shards catching a ' +
-      'hard rim light'
+      'a hardened cipher mechanism splits along one precise fracture as a key-shaped beam reaches ' +
+      'the newly exposed inner path, hard rim light'
     );
   }
   if (has('security', 'vulnerab', 'exploit', 'breach', 'cve', 'malware', 'attack'))
-    return 'a cracked metallic padlock over a dark server panel, shards catching a hard rim light';
+    return (
+      'a compromised metadata token crosses a trusted toolchain gate and opens a direct path toward ' +
+      'a protected key compartment, the altered route visibly dangerous'
+    );
+  if (has('memory', 'rag', 'retriev', 'embedding', 'sqlite', 'context')) {
+    return (
+      'a compact rule ledger releases only a few relevant metal tabs into a working tray while a tall ' +
+      'archive stays closed, showing selective memory'
+    );
+  }
+  if (has('mixture-of-experts', 'mixture of experts', 'moe', 'active parameter', 'active params')) {
+    return (
+      'one input token passes through a fine routing gate, engaging only a small cluster of expert ' +
+      'modules while the larger lattice remains dormant'
+    );
+  }
   if (has('fund', 'raise', 'valuation', 'investment', 'revenue', 'ipo', 'billion'))
-    return 'tall stacked translucent coin towers with streams of light flowing between them on a dark desk';
+    return (
+      'one capital stream fills a newly connected compute module, making a previously dark production ' +
+      'line visibly ready to run'
+    );
   if (has('agent', 'mcp', 'orchestr', 'workflow', 'autonom'))
-    return 'several precise robotic arms cooperating around a glowing modular workbench in a dark lab';
+    return (
+      'a physical routing switchyard directs three task pucks along one connected rail into a finished ' +
+      'assembly, showing coordinated work without a controller figure'
+    );
   if (has('model', 'launch', 'release', 'gpt', 'claude', 'gemini', 'llama', 'benchmark'))
-    return 'a sleek matte device unveiled under a single spotlight on a dark reveal stage';
+    return (
+      'a newly opened modular compute engine sends one finished output through its active core while ' +
+      'the larger structure stays quiet, controlled studio light'
+    );
   if (has('local', 'on-device', 'offline', 'privacy', 'gemma', 'llm'))
-    return 'a laptop on a wooden desk glowing in a dim room, soft particles rising from the screen';
+    return (
+      'a compact local gateway removes private signal tokens before one clean request leaves through ' +
+      'an external connection, calm side light'
+    );
   if (has('token', 'cost', 'cheap', 'efficien', 'speed', 'latency', 'optimiz'))
-    return 'a precision gauge and flowing light ribbons through a sleek metal channel on a dark surface';
+    return (
+      'a narrow stream of compute tokens passes through a fine routing valve, few modules engage and ' +
+      'the output exits at full speed'
+    );
   if (has('image', 'video', 'medical', 'scan', 'mri', 'vision', 'creative', 'art'))
-    return 'a backlit radiology lightbox displaying abstract luminous scans in a dark studio';
-  return DEFAULT_SCENE;
+    return (
+      'a translucent medical scan film is lifted into a focused light wall, one critical region becomes ' +
+      'clear while the surrounding film remains subdued'
+    );
+  return DEFAULT_NEWS_CARD_SCENE;
 }
 
 /** Quality ladder: Gemini image → Cloudflare FLUX.2 (default) → schnell → Pollinations. */

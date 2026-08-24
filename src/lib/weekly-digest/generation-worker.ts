@@ -6,7 +6,12 @@ import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { recordGenerationCost } from '@/lib/generation-costs';
 import { alertWeeklyDigestIssue } from './alerts';
-import { MASTER_REVISION_RPC, masterPersistDecision } from './master-persist';
+import { localizedWeeklyDisplayTitle } from './display-title';
+import {
+  MASTER_REVISION_RPC,
+  MASTER_VISUAL_DIRECTION_REVISION_RPC,
+  masterPersistDecision,
+} from './master-persist';
 import {
   classifyGenerationFailure,
   LONG_RUNNING_GENERATION_JOB_TYPES,
@@ -24,6 +29,8 @@ import {
   storyImageJobPath,
   storyPromptSlot,
 } from './story-prompt-job';
+import { isWeeklyVisualRefreshPromptJob } from './visual-refresh';
+import { weeklyVisualDirectionFromArticles } from './visual-direction';
 import { parseStoryPromptSetContent } from './story-prompt-set';
 import type { SiblingMetaphorHint } from '../../../pipeline/card-image';
 import { storageBlob } from '@/lib/storage/binary';
@@ -34,6 +41,7 @@ import {
   type SocialSelectableArtifact,
 } from '@/lib/social/channel-assets';
 import { socialContentHash } from '@/lib/social/content-hash';
+import type { InstagramCarouselSpec } from '@/lib/social/instagram-carousel';
 import { findBlindCrossPosts } from '@/lib/social/quality';
 import {
   SOCIAL_CHANNELS,
@@ -460,29 +468,71 @@ async function saveGeneratedArtifact(input: {
   height?: number | null;
   byteSize?: number | null;
   metadata?: Record<string, Json | undefined>;
+  /**
+   * Published visual-refresh drafts can persist only prompt text through the
+   * narrow RPC below. This is intentionally separate from the generic writer,
+   * whose normal lifecycle side effects would reopen a published digest.
+   */
+  visualRefreshPromptOnly?: boolean;
+  /** Immutable content hash from the queued refresh job; fences stale workers. */
+  visualRefreshRevisionHash?: string | null;
 }) {
-  const { data, error } = await rpcClient().rpc('save_weekly_digest_artifact', {
-    p_weekly_digest_id: input.weeklyDigestId,
-    p_revision_id: input.revisionId,
-    p_revision_item_id: input.revisionItemId ?? null,
-    p_artifact_type: input.artifactType,
-    p_locale: input.locale,
-    p_slot_key: input.slotKey,
-    p_generation_status: 'ready',
-    p_review_status: 'in_review',
-    p_content: input.content ?? {},
-    p_storage_bucket: input.storagePath ? PRIVATE_BUCKET : null,
-    p_storage_path: input.storagePath ?? null,
-    p_external_url: input.externalUrl ?? null,
-    p_provider: input.provider ?? null,
-    p_provider_id: input.providerId ?? null,
-    p_mime_type: input.mimeType ?? null,
-    p_width: input.width ?? null,
-    p_height: input.height ?? null,
-    p_byte_size: input.byteSize ?? null,
-    p_metadata: input.metadata ?? {},
-  });
-  if (error) throw new Error(`[weekly-generation] save artifact: ${error.message}`);
+  const visualRefreshPromptOnly = input.visualRefreshPromptOnly === true;
+  if (
+    visualRefreshPromptOnly &&
+    (input.artifactType !== 'story_prompt_set' ||
+      input.locale !== 'neutral' ||
+      input.storagePath != null ||
+      input.externalUrl != null ||
+      input.provider != null ||
+      input.providerId != null ||
+      input.mimeType != null ||
+      input.width != null ||
+      input.height != null ||
+      input.byteSize != null)
+  ) {
+    throw new Error('A visual refresh may persist only a neutral text prompt set.');
+  }
+  if (visualRefreshPromptOnly && !input.visualRefreshRevisionHash?.trim()) {
+    throw new Error('A visual refresh prompt job is missing its revision hash.');
+  }
+  const result = visualRefreshPromptOnly
+    ? await rpcClient().rpc('save_weekly_visual_refresh_prompt_artifact_with_direction_hash', {
+        p_weekly_digest_id: input.weeklyDigestId,
+        p_revision_id: input.revisionId,
+        p_revision_item_id: input.revisionItemId ?? null,
+        p_slot_key: input.slotKey,
+        p_visual_refresh_revision_hash: input.visualRefreshRevisionHash,
+        p_content: (input.content ?? {}) as Json,
+        p_metadata: (input.metadata ?? {}) as Json,
+      })
+    : await rpcClient().rpc('save_weekly_digest_artifact', {
+        p_weekly_digest_id: input.weeklyDigestId,
+        p_revision_id: input.revisionId,
+        p_revision_item_id: input.revisionItemId ?? null,
+        p_artifact_type: input.artifactType,
+        p_locale: input.locale,
+        p_slot_key: input.slotKey,
+        p_generation_status: 'ready',
+        p_review_status: 'in_review',
+        p_content: input.content ?? {},
+        p_storage_bucket: input.storagePath ? PRIVATE_BUCKET : null,
+        p_storage_path: input.storagePath ?? null,
+        p_external_url: input.externalUrl ?? null,
+        p_provider: input.provider ?? null,
+        p_provider_id: input.providerId ?? null,
+        p_mime_type: input.mimeType ?? null,
+        p_width: input.width ?? null,
+        p_height: input.height ?? null,
+        p_byte_size: input.byteSize ?? null,
+        p_metadata: input.metadata ?? {},
+      });
+  if (result.error) {
+    throw new Error(
+      `[weekly-generation] save ${visualRefreshPromptOnly ? 'visual refresh prompt' : 'artifact'}: ${result.error.message}`,
+    );
+  }
+  const { data } = result;
   if (typeof data !== 'string') throw new Error('Artifact RPC did not return an ID.');
   if (
     canMachineAttest({
@@ -1703,7 +1753,8 @@ async function createMasterRevision(params: {
       },
     };
   });
-  const { data: newRevisionId, error } = await rpcClient().rpc(MASTER_REVISION_RPC, {
+  const visualDirection = weeklyVisualDirectionFromArticles(result.bundle);
+  const masterRevisionArgs = {
     p_weekly_digest_id: job.weekly_digest_id,
     p_title_en: result.bundle.en.title,
     p_title_uk: result.bundle.uk.title,
@@ -1715,7 +1766,16 @@ async function createMasterRevision(params: {
     p_key_takeaways_uk: result.bundle.uk.keyTakeaways,
     p_items: nextItems,
     p_reason: reason,
-  });
+  };
+  const { data: newRevisionId, error } = visualDirection
+    ? await rpcClient().rpc(MASTER_VISUAL_DIRECTION_REVISION_RPC, {
+        ...masterRevisionArgs,
+        p_display_title_en: visualDirection.displayTitleEn,
+        p_display_title_uk: visualDirection.displayTitleUk,
+        p_visual_thesis_en: visualDirection.visualThesisEn,
+        p_visual_thesis_uk: visualDirection.visualThesisUk,
+      })
+    : await rpcClient().rpc(MASTER_REVISION_RPC, masterRevisionArgs);
   if (error || typeof newRevisionId !== 'string') {
     throw new Error(
       `[weekly-generation] create master revision: ${error?.message ?? 'missing revision ID'}`,
@@ -1934,6 +1994,12 @@ async function persistInstagramSlide(input: {
   };
 }
 
+function isWeeklyInstagramCarouselSpec(
+  spec: NonNullable<WeeklySocialAdaptation['instagramCarousel']>,
+): spec is InstagramCarouselSpec {
+  return !('kind' in spec && spec.kind === 'daily_visual');
+}
+
 async function renderInstagramCarousel(
   job: ClaimedGenerationJob,
   draft: WeeklySocialAdaptation,
@@ -1945,6 +2011,9 @@ async function renderInstagramCarousel(
 ): Promise<{ assets: SocialAsset[]; checkpoints: SocialAssetCheckpoint[] }> {
   const spec = draft.instagramCarousel;
   if (!spec) return { assets: draft.assets, checkpoints: savedCheckpoints };
+  if (!isWeeklyInstagramCarouselSpec(spec)) {
+    throw new Error('A daily visual carousel cannot enter the weekly social rendering workflow.');
+  }
 
   const db = getSupabaseAdmin();
   const { data: artifactRows, error: artifactsError } = await db
@@ -3277,6 +3346,10 @@ async function writeStoryImagePromptSet(
   item: GenerationItem,
   context: GenerationContext,
 ) {
+  const visualRefreshPromptOnly = isWeeklyVisualRefreshPromptJob(job.input);
+  const visualRefreshRevisionHash = visualRefreshPromptOnly
+    ? text(asRecord(job.input).visual_refresh_revision_hash)
+    : null;
   await tracker.event({
     type: 'stage_started',
     step: 'prompts',
@@ -3317,9 +3390,12 @@ async function writeStoryImagePromptSet(
       semantic_contract: produced.content.semantic_contract as unknown as Json,
     },
     metadata: {
-      source_kind: 'prompt_only',
+      source_kind: visualRefreshPromptOnly ? 'visual_refresh_prompt_only' : 'prompt_only',
       prompt_policy: produced.content.policy,
+      ...(visualRefreshPromptOnly ? { visual_refresh: true, prompt_only: true } : {}),
     },
+    visualRefreshPromptOnly,
+    visualRefreshRevisionHash,
   });
   return {
     artifactId,
@@ -3333,7 +3409,15 @@ async function writeStoryImagePromptSet(
 
 async function writeCoverPromptSet(job: ClaimedGenerationJob) {
   const context = await loadGenerationContext(job);
-  const headline = context.revision.title_en?.trim() || 'Weekly AI Digest';
+  const visualRefreshPromptOnly = isWeeklyVisualRefreshPromptJob(job.input);
+  const visualRefreshRevisionHash = visualRefreshPromptOnly
+    ? text(asRecord(job.input).visual_refresh_revision_hash)
+    : null;
+  const headline =
+    context.revision.display_title_en?.trim() ||
+    context.revision.title_en?.trim() ||
+    'Weekly AI Digest';
+  const visualThesis = context.revision.visual_thesis_en?.trim() || undefined;
   const topTitles = context.items
     .slice(0, 3)
     .map((item) => item.title_en)
@@ -3347,8 +3431,8 @@ async function writeCoverPromptSet(job: ClaimedGenerationJob) {
     exportPrompts: exportManualImagePrompts,
     sceneInput: {
       headline,
-      summary: topTitles || context.revision.intro_en || headline,
-      why: context.revision.intro_en ?? undefined,
+      summary: visualThesis || topTitles || context.revision.intro_en || headline,
+      why: visualThesis || context.revision.intro_en || undefined,
     },
     cfg: weeklyCardImageConfig(),
     policy: WEEKLY_PROMPT_POLICY,
@@ -3369,10 +3453,13 @@ async function writeCoverPromptSet(job: ClaimedGenerationJob) {
       semantic_contract: produced.content.semantic_contract as unknown as Json,
     },
     metadata: {
-      source_kind: 'prompt_only',
+      source_kind: visualRefreshPromptOnly ? 'visual_refresh_prompt_only' : 'prompt_only',
       prompt_policy: produced.content.policy,
       cover: true,
+      ...(visualRefreshPromptOnly ? { visual_refresh: true, prompt_only: true } : {}),
     },
+    visualRefreshPromptOnly,
+    visualRefreshRevisionHash,
   });
   return {
     artifactId,
@@ -3417,7 +3504,7 @@ async function generatePdf(job: ClaimedGenerationJob) {
       locale === 'uk'
         ? `Випуск ${context.revision.revision_number}`
         : `Issue ${context.revision.revision_number}`,
-    title: article.title,
+    title: localizedWeeklyDisplayTitle(locale, context.revision),
     intro: article.intro,
     editorNote: article.editorNote,
     weekStart: context.digest.week_start,
@@ -3583,6 +3670,11 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
   let contentSimMeta: import('@/lib/content-sim').ContentSimArtifactMeta | null = null;
   let needsHumanReview = false;
 
+  // A visual-refresh job is a hard prompt-only fence even when an unexpected
+  // source_url or a globally enabled render mode reaches the worker.
+  if (isWeeklyVisualRefreshPromptJob(job.input)) {
+    return writeStoryImagePromptSet(job, tracker, item, context);
+  }
   if (requestedSourceUrl?.startsWith('http')) {
     const response = await fetch(requestedSourceUrl, {
       signal: AbortSignal.timeout(15_000),
@@ -4076,7 +4168,10 @@ async function generateStoryImage(job: ClaimedGenerationJob, tracker: Generation
 }
 
 async function generateCover(job: ClaimedGenerationJob) {
-  if (resolveWeeklyStoryImageMode() === 'prompt_only') {
+  if (
+    isWeeklyVisualRefreshPromptJob(job.input) ||
+    resolveWeeklyStoryImageMode() === 'prompt_only'
+  ) {
     return writeCoverPromptSet(job);
   }
   const context = await loadGenerationContext(job);

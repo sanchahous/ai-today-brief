@@ -1,18 +1,31 @@
 import type { SocialChannel } from './types';
 import {
-  instagramSpecAuditText,
-  type InstagramCarouselSpec,
-} from './instagram-carousel';
+  dailyVisualInstagramAuditText,
+  type DailyVisualInstagramCarouselSpec,
+} from './daily-visual-carousel';
+import { instagramSpecAuditText, type InstagramCarouselSpec } from './instagram-carousel';
+
+type InstagramSocialSpec = InstagramCarouselSpec | DailyVisualInstagramCarouselSpec;
+
+function isDailyVisualInstagramSpec(
+  value: InstagramSocialSpec,
+): value is DailyVisualInstagramCarouselSpec {
+  return 'kind' in value && value.kind === 'daily_visual';
+}
 
 export function channelNativeCopy(input: {
   channel: SocialChannel;
   text: string;
   contentParts?: string[];
   firstComment?: string | null;
-  instagramCarousel?: InstagramCarouselSpec | null;
+  instagramCarousel?: InstagramSocialSpec | null;
 }) {
   if (input.channel === 'instagram') {
-    if (input.instagramCarousel) return instagramSpecAuditText(input.instagramCarousel);
+    if (input.instagramCarousel) {
+      return isDailyVisualInstagramSpec(input.instagramCarousel)
+        ? dailyVisualInstagramAuditText(input.instagramCarousel)
+        : instagramSpecAuditText(input.instagramCarousel);
+    }
     return [
       ...(input.contentParts ?? []).map((part) => `SLIDE\n${part}`),
       `CAPTION\n${input.text}`,

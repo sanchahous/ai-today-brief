@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import type { DailyVisualInstagramCarouselSpec } from './daily-visual-carousel';
 import type { InstagramCarouselSpec } from './instagram-carousel';
 import type { SocialAsset, SocialChannel, SocialLocale } from './types';
 
@@ -13,7 +14,7 @@ interface HashableSocialContent {
   altText?: string | null;
   scheduledFor: string;
   contentVersion: number;
-  instagramCarousel?: InstagramCarouselSpec | null;
+  instagramCarousel?: InstagramCarouselSpec | DailyVisualInstagramCarouselSpec | null;
 }
 
 function stableAssets(assets: SocialAsset[] = []) {

@@ -79,6 +79,14 @@ export interface WeeklyMasterStory {
 export interface WeeklyArticleMaster {
   locale: WeeklyLocale;
   title: string;
+  /**
+   * Reader-facing hero/PDF title. It is intentionally separate from the
+   * canonical title, which remains the SEO, Open Graph, and listing truth.
+   * Optional so an interrupted/legacy master can still be resumed.
+   */
+  displayTitle?: string;
+  /** Internal causal direction for visual prompts; never a public copy field. */
+  visualThesis?: string;
   seoTitle: string;
   metaDescription: string;
   ogTitle: string;
@@ -551,9 +559,7 @@ function ambiguousEnergyClaimIssues(bundle: WeeklyMasterBundle): WeeklyQualityIs
     const fields = articleTextFields(bundle[locale]);
     const hasConcreteUnitAnywhere = fields.some((textField) =>
       locale === 'en'
-        ? /\b(?:electricity|electrical|kwh|watt-hours?|power consumption)\b/i.test(
-            textField.value,
-          )
+        ? /\b(?:electricity|electrical|kwh|watt-hours?|power consumption)\b/i.test(textField.value)
         : /(?:електроенергі|кВт|Вт·?год|ват-год)/iu.test(textField.value),
     );
     if (hasConcreteUnitAnywhere) continue;
@@ -1423,11 +1429,9 @@ export function liftNaturalnessCapAfterLanguageFixes(
  * five (hook/clarity/trust/usefulness/structure) are English/structural and
  * left locale-less.
  */
-export function editorialQualityRetryGuidance(
-  report: {
-    dimensions: ReadonlyArray<Pick<WeeklyQualityDimension, 'name' | 'score' | 'note'>>;
-  },
-): Array<{ code: string; message: string; locale?: 'uk' }> {
+export function editorialQualityRetryGuidance(report: {
+  dimensions: ReadonlyArray<Pick<WeeklyQualityDimension, 'name' | 'score' | 'note'>>;
+}): Array<{ code: string; message: string; locale?: 'uk' }> {
   const guidance: Array<{ code: string; message: string; locale?: 'uk' }> = [];
   for (const dimension of report.dimensions) {
     const isTranslationDimension = dimension.name === 'naturalness' || dimension.name === 'parity';
@@ -1467,14 +1471,12 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * as `story_length` are not Ship blockers, but they are exactly the work
  * the owner asked the writer to do from the amber cards.
  */
-export function qualityReportNeedsRepair(
-  report: {
-    issues: readonly unknown[];
-    dimensions: ReadonlyArray<Pick<WeeklyQualityDimension, 'name' | 'score' | 'note'>>;
-    score?: number;
-    factualFlags?: readonly string[];
-  },
-): boolean {
+export function qualityReportNeedsRepair(report: {
+  issues: readonly unknown[];
+  dimensions: ReadonlyArray<Pick<WeeklyQualityDimension, 'name' | 'score' | 'note'>>;
+  score?: number;
+  factualFlags?: readonly string[];
+}): boolean {
   if (report.issues.length > 0) return true;
   if ((report.factualFlags ?? []).length > 0) return true;
   if (typeof report.score === 'number' && report.score < OVERALL_MIN_SCORE) return true;

@@ -20,6 +20,7 @@ import { appendFileSync } from 'node:fs';
 
 const KYIV_CYCLE_HOURS = 2;
 const KYIV_CYCLES_PER_DAY = 12;
+const KYIV_EDITORIAL_CUTOFF_MINUTES = 20 * 60;
 
 function kyivMinutesOfDay(now) {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -47,6 +48,18 @@ function kyivDate(now) {
   }).format(now);
 }
 
+function addCalendarDays(date, days) {
+  const [year, month, day] = date.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+
+// Mirrors getEditorialDateKyiv in pipeline/schedule.ts. This guard cannot
+// import TypeScript before npm ci, so keep the cutoff rule in sync by hand.
+function editorialDateKyiv(now) {
+  const date = kyivDate(now);
+  return kyivMinutesOfDay(now) >= KYIV_EDITORIAL_CUTOFF_MINUTES ? addCalendarDays(date, 1) : date;
+}
+
 function setSkip(value) {
   const out = process.env.GITHUB_OUTPUT;
   if (out) appendFileSync(out, `skip=${value}\n`);
@@ -62,7 +75,7 @@ async function main() {
   }
 
   const now = new Date();
-  const date = kyivDate(now);
+  const date = editorialDateKyiv(now);
   const cycle = kyivCycleIndex(now);
 
   // PostgREST jsonb containment (@>) — same filter as

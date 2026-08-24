@@ -1,0 +1,53 @@
+name: Daily visual finalizer
+
+on:
+  schedule:
+    # `auto-publish.yml` begins at 22:05 UTC and has a 15-minute ceiling.
+    # The first run leaves a buffer; the second is an idempotent safety retry
+    # for delayed GitHub cron delivery. The database worker owns the per-date
+    # lease, so schedules must never be relied on for mutual exclusion.
+    - cron: "35 22 * * *"
+    - cron: "20 23 * * *"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Editorial date to finalize (YYYY-MM-DD). Leave blank for the prior Kyiv calendar day."
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: daily-visual-finalizer
+  cancel-in-progress: false
+
+jobs:
+  finalize:
+    name: Finalize daily visual
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run daily visual finalizer
+        env:
+          SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+          SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPEN_ROUTER_API_KEY: ${{ secrets.OPEN_ROUTER_API_KEY }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+        run: |
+          ARGS=""
+          if [[ -n "${{ inputs.date }}" ]]; then
+            ARGS="--date ${{ inputs.date }}"
+          fi
+          node --conditions=react-server --import tsx pipeline/scripts/daily-visual-finalizer.ts $ARGS

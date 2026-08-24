@@ -10,8 +10,8 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v6` Prompt-as-Code
-library 2026-08-23
-Last updated: 2026-08-23
+library 2026-08-23, owner decision on daily production cover 2026-08-24
+Last updated: 2026-08-24
 
 ---
 
@@ -84,6 +84,13 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
 Daily generation runs **once, post-publish** (`pipeline/card-image.ts` from
 `pipeline/run-daily.ts`) and is idempotent. Estimated image spend can land in
 `generation_cost_events` (see `/admin/costs`).
+
+Цей абзац описує **news-card** images. Він не є daily digest cover: з 2026-08-24 daily cover має
+окремий production workflow з однією тезою, GPT Image 2, bounded $5/month spend, semantic QA,
+manual source/editor choice і шість social draft’ів. News cards лишаються на наявному automatic
+provider/publish flow; їх покращено causal prompt policy без нового ручного gate. Деталі —
+[daily-visual-workflow](../pipeline/daily-visual-workflow.md). (source: owner session 2026-08-24;
+`pipeline/card-image.ts`; `pipeline/daily-visual-finalizer.ts`)
 
 ## Current weekly acceptance rule (2026-08-23)
 

@@ -10,6 +10,7 @@ import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { AiDisclosureNote } from '@/components/ai-disclosure-note';
 import { BriefDailySections } from '@/components/brief-daily-sections';
 import { ConceptOtherChips } from '@/components/concept-other-chips';
+import { DailyHero } from '@/components/daily/daily-hero';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 import { ArrowRight } from '@/components/icons';
 
@@ -33,6 +34,13 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
   // duplicated-brand description for SERP snippets and social cards.
   const description =
     b.intro?.trim() || b.allItems[0]?.summary.trim() || `${b.title || b.date} — ${SITE_NAME}`;
+  const social = socialMeta({
+    title: b.title || b.date,
+    description,
+    path,
+    lang,
+    type: 'article',
+  });
   return {
     title: b.title || b.date,
     description,
@@ -44,13 +52,23 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
         'x-default': `${SITE_URL}/en/${b.canonicalSlug}`,
       },
     },
-    ...socialMeta({
-      title: b.title || b.date,
-      description,
-      path,
-      lang,
-      type: 'article',
-    }),
+    ...social,
+    ...(b.visual
+      ? {
+          openGraph: {
+            ...social.openGraph,
+            images: [
+              {
+                url: b.visual.publicUrl,
+                width: b.visual.width,
+                height: b.visual.height,
+                alt: b.visual.alt,
+              },
+            ],
+          },
+          twitter: { ...social.twitter, images: [b.visual.publicUrl] },
+        }
+      : {}),
   };
 }
 
@@ -137,16 +155,11 @@ export default async function BriefPage({ params }: { params: Promise<Params> })
 
       <Breadcrumbs items={crumbs} />
 
-      <header className="mb-8 max-w-[760px]">
-        <p className="text-accent m-0 mb-2 text-xs font-bold tracking-[0.14em] uppercase">{dateStr}</p>
-        <h1 className="mb-3 text-[clamp(1.9rem,4.5vw,2.8rem)] leading-[1.12]">
-          {b.title || t.todaysBrief}
-        </h1>
-        {b.intro && (
-          <p className="text-muted m-0 mb-4 text-[1.05rem] leading-relaxed">{b.intro}</p>
-        )}
+      <DailyHero brief={b} lang={lang} dateLabel={dateStr} />
+
+      <div className="mb-8">
         <AiDisclosureNote lang={lang} />
-      </header>
+      </div>
 
       <BriefDailySections lang={lang} packs={b.packs} totalItems={b.allItems.length} />
 

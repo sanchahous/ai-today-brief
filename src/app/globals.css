@@ -179,6 +179,40 @@
     );
 }
 
+/* Daily masters are normalized with contain, so this mask protects the title
+   without ever turning the art into a cropped background. */
+.daily-hero-scrim {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(15, 15, 15, 0.98) 0%,
+      rgba(15, 15, 15, 0.92) 43%,
+      rgba(15, 15, 15, 0.68) 76%,
+      rgba(15, 15, 15, 0.56) 100%
+    ),
+    linear-gradient(0deg, rgba(15, 15, 15, 0.88) 0%, transparent 58%);
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--bg) 98%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 92%, transparent) 43%,
+      color-mix(in srgb, var(--bg) 68%, transparent) 76%,
+      color-mix(in srgb, var(--bg) 56%, transparent) 100%
+    ),
+    linear-gradient(0deg, color-mix(in srgb, var(--bg) 88%, transparent) 0%, transparent 58%);
+}
+
+@media (max-width: 639px) {
+  .daily-hero-scrim {
+    background:
+      linear-gradient(180deg, rgba(15, 15, 15, 0.95) 0%, transparent 48%),
+      linear-gradient(0deg, rgba(15, 15, 15, 0.86) 0%, transparent 62%);
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--bg) 95%, transparent) 0%, transparent 48%),
+      linear-gradient(0deg, color-mix(in srgb, var(--bg) 86%, transparent) 0%, transparent 62%);
+  }
+}
+
 @supports (background: color-mix(in srgb, black 50%, transparent)) {
   .site-header-shell {
     background: color-mix(in srgb, var(--bg) 96%, transparent);

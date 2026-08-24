@@ -95,13 +95,21 @@ export default async function AdminTodayPage() {
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">Your approval queue</h1>
           <p className="mt-2 text-sm text-slate-400">Review the day’s package in 3–5 minutes.</p>
         </div>
-        <form action={generateTodayAction}>
-          <ActionSubmitButton
-            idleLabel="Generate today"
-            pendingLabel="Generating today…"
-            className="min-h-11 rounded-xl bg-[#47e4d3] px-4 text-sm font-bold text-[#0a2321] hover:bg-[#70eee1]"
-          />
-        </form>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href="/admin/daily-visuals"
+            className="min-h-11 rounded-xl border border-white/15 px-4 py-3 text-sm font-bold text-slate-200 transition hover:border-white/30 hover:text-white"
+          >
+            Daily visuals
+          </Link>
+          <form action={generateTodayAction}>
+            <ActionSubmitButton
+              idleLabel="Generate today"
+              pendingLabel="Generating today…"
+              className="min-h-11 rounded-xl bg-[#47e4d3] px-4 text-sm font-bold text-[#0a2321] hover:bg-[#70eee1]"
+            />
+          </form>
+        </div>
       </div>
 
       <section aria-label="System state" className="mt-6 grid gap-3 sm:grid-cols-3">

@@ -2,7 +2,7 @@
 
 Summary: ревʼю Prompt-as-Code v6 і weekly UI після owner-скрінів. Критерій якості — заголовок і зображення разом пояснюють одну причинно-наслідкову зміну за 2–3 секунди; код переведено на один primary candidate, fail-closed semantic auto-attestation і safe-frame показ зображень.
 Sources: owner session і скріни weekly `ai-weekly-2026-08-09` 2026-08-23; `pipeline/card-image.ts`; `pipeline/image-prompt-library/**`; `src/lib/weekly-digest/**`; `src/components/weekly/**`; локальна browser-перевірка 2026-08-23.
-Last updated: 2026-08-23
+Last updated: 2026-08-24
 
 ---
 
@@ -59,9 +59,45 @@ video/action і активний `#story-2` після click/scroll без conso
 
 Це ще не доказ покращення retention або генеративної якості в проді. Потрібен holdout із 20–30 реальних історій: blind description по pixels, оцінка `headline + image` проти v5.1 і owner verdict із причиною reject. Vision critic — корисний сигнал, але не незалежний суддя й не має отримати право автоматично обирати або публікувати. (source: owner session 2026-08-23; `src/lib/weekly-digest/run-post-upload-qa.ts`)
 
-## Відкрите продуктове рішення
+## Рішення owner і продовження реалізації — 2026-08-24
 
-Для справді стабільного hero потрібне окреме поле `display_title` (орієнтир: 2–4 рядки) поруч із повним SEO/title. Поточний hard gate у 112 символів запобігає новим екстремальним випадкам, але не дає редактору незалежно керувати SEO-заголовком і першою екранною композицією. Це schema/editorial-contract рішення, тому його не внесено без явного рішення власника. (source: `src/lib/weekly-digest/content-studio.ts`; owner screenshots 2026-08-23)
+Власник підтвердив окремий localized `display_title` для hero і PDF, але не для canonical SEO,
+Open Graph або списків. LLM пропонує EN і UK як редакційні адаптації; поруч є internal
+`visual_thesis` для cover prompt та QA. Обидва поля редагуються в normal weekly draft. Для вже
+published edition кнопка створює private `visual refresh draft`, а не мутує published revision:
+вона переносить затверджені text/PDF/unchanged assets як provenance і queues тільки prompt-only
+cover/story jobs. Після private upload → QA → approve owner AAL2 обирає точні staged asset IDs;
+server action копіює та byte-verify pixels у immutable public key, а транзакція версіонує лише
+відповідні public cover/story slots. Public metadata/prompt/QA не доступні anonymous reader;
+canonical text, SEO, OG, PDF, social package і `published_revision_id` лишаються без змін.
+(source: owner session 2026-08-24;
+`supabase/migrations/20260824110000_weekly_revision_display_title_visual_thesis.sql`;
+`supabase/migrations/20260824130000_weekly_visual_refresh_draft.sql`;
+`supabase/migrations/20260824150000_weekly_visual_refresh_staged_assets.sql`;
+`supabase/migrations/20260824160000_weekly_public_artifact_metadata_privacy.sql`;
+`src/lib/weekly-digest/visual-refresh.ts`)
+
+Паралельно daily cover стає actual site/social asset, а не ручним Telegram prompt. Він бере одну
+issue-level thesis, один 16:9 master і один primary render з максимум одним repair; official
+source/UI image або editor upload лишаються ручними альтернативами. Після QA створюються native
+drafts для Telegram/Facebook/Threads (UK) і X/LinkedIn/Instagram carousel (EN), без daily PDF;
+auto-posting відкладено до окремого channel setup. (source: owner session 2026-08-24;
+[daily-visual-workflow](../pipeline/daily-visual-workflow.md))
+
+Попередня «2–3 секунди» не є literal gaze requirement. Для production telemetry використано
+кваліфікований exposure ≥50% in viewport + active tab + 1 cumulative second, з 3s/8s milestones
+і privacy-safe outcome attribution; це технічний поріг для порівняння креативів, а не доказ
+retention. (source: owner session 2026-08-24;
+`src/lib/daily-visual-engagement.ts`; [daily-visual-workflow](../pipeline/daily-visual-workflow.md))
+
+Після adversarial review закрито дві race-умови private weekly refresh: direction update під
+lock скасовує всі unfinished старі jobs/attempts і робить current prompt-set stale, а worker
+зобовʼязаний збігтися з актуальним direction hash перед save або claim. Ізольований PostgreSQL
+16.15 smoke підтвердив: два старі jobs та два attempts стають cancelled, створюються чотири
+нові hash-fenced jobs, old hash дістає `SQLSTATE 55000` і не може claim-нути queued job.
+(source: `supabase/migrations/20260824130000_weekly_visual_refresh_draft.sql`;
+`supabase/migrations/20260824140000_weekly_visual_direction_persistence.sql`;
+isolated PostgreSQL smoke 2026-08-24)
 
 ## Related pages
 

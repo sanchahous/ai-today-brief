@@ -6,8 +6,8 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live c
 editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 latest revision is the working copy 2026-08-22, pre-critic hang 2026-08-22,
 critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22,
-image prompt library v6 2026-08-23
-Last updated: 2026-08-23
+image prompt library v6 2026-08-23, owner visual-direction contract 2026-08-24
+Last updated: 2026-08-24
 
 ---
 
@@ -20,6 +20,30 @@ Video / Release).
 
 Відбір кандидатів — окрема сторінка [weekly-editorial-selection](weekly-editorial-selection.md).
 Межа відео-рендеру — [video-boundary](video-boundary.md).
+
+## Короткий hero title і safe refresh published edition (2026-08-24)
+
+Master frame може запропонувати два локалізовані поля понад canonical article title:
+`display_title` — коротка reader-facing теза для hero/PDF cover, і `visual_thesis` — internal
+causal direction для no-text cover prompt та QA. UK є редакційною адаптацією, не literal
+translation; canonical title лишається єдиним для SEO, Open Graph і digest listing.
+(source: owner session 2026-08-24; `src/lib/weekly-digest/editorial-llm.ts`;
+`src/lib/weekly-digest/display-title.ts`)
+
+Published revision не редагується для покращення visuals. Owner AAL2 створює private active
+`visual_refresh` draft, який переносить approved text/PDF/unchanged assets як provenance і queues
+лише prompt-only cover + story jobs. Direction у цьому draft можна змінити; direction hash fence
+не дозволяє in-flight старій job записати prompt після нової правки або застосувати застарілий
+staged image. Після QA/review owner явно обирає лише потрібні private cover/story assets: сервер
+копіює та byte-verify їх у незмінний public key, а одна транзакція створює нові версії відповідних
+artifact slots у **наявній** published revision. Canonical текст, SEO, Open Graph, PDF, social
+package та `published_revision_id` не змінюються. Public reader не читає metadata/prompt/QA або
+private provenance; доступні лише дозволені поля артефакту й public-safe alt content. (source:
+owner session 2026-08-24; `supabase/migrations/20260824130000_weekly_visual_refresh_draft.sql`;
+`supabase/migrations/20260824140000_weekly_visual_direction_persistence.sql`;
+`supabase/migrations/20260824150000_weekly_visual_refresh_staged_assets.sql`;
+`supabase/migrations/20260824160000_weekly_public_artifact_metadata_privacy.sql`;
+`src/lib/weekly-digest/visual-refresh.ts`; `src/app/admin/(cms)/weekly/actions.ts`)
 
 ## Feature flag
 

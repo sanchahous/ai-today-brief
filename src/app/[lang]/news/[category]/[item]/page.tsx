@@ -137,10 +137,12 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
     ? markdownToPlainText(detail.bodyMd)
     : detail.deepDive || detail.summary;
 
-  // Prefer the generated brand card (always present) over the raw source image.
+  // The article itself shows the original full-frame visual. The branded card is
+  // reserved for social/structured-data surfaces, where the typography overlay is
+  // intentional rather than competing with the page's real HTML headline.
   const heroImage = detail.cardImageUrl ?? detail.imageUrl;
-  // The full branded card (illustration + masthead + headline + wordmark),
-  // rendered by opengraph-image.tsx in this segment — used as the article cover.
+  // The branded card (illustration + masthead + headline + wordmark), rendered by
+  // opengraph-image.tsx in this segment, remains the share/structured-data image.
   const brandCard = `${pagePath}/opengraph-image`;
 
   const jsonLd = {
@@ -197,9 +199,10 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
           <CategoryBadge name={detail.categoryName} color={detail.categoryColor} size="md" />
         </div>
 
-        {/* The branded cover card below carries the visible headline; keep a
-            real h1 for SEO + screen readers without duplicating it on screen. */}
-        <h1 className="sr-only">{detail.title}</h1>
+        <header className="mb-5">
+          <h1 className="text-[clamp(2rem,5vw,3.4rem)] leading-[1.08]">{detail.title}</h1>
+          <p className="text-muted mt-4 text-[1.08rem] leading-8">{detail.summary}</p>
+        </header>
 
         <div className="text-faint mb-4 flex flex-wrap items-center gap-2 text-[0.82rem]">
           {detail.sourceName && <span>{detail.sourceName}</span>}
@@ -234,14 +237,14 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         <Reveal>
           <div className="mb-6">
             {heroImage ? (
-              <figure className="border-border relative m-0 aspect-[1200/630] overflow-hidden rounded-xl border">
+              <figure className="border-border bg-surface relative m-0 aspect-video min-h-[14rem] overflow-hidden rounded-xl border sm:min-h-[20rem]">
                 <Image
-                  src={brandCard}
+                  src={heroImage}
                   alt={detail.title}
                   fill
-                  priority
+                  preload
                   sizes="(max-width: 760px) 100vw, 760px"
-                  className="object-cover"
+                  className="object-contain"
                 />
               </figure>
             ) : (
@@ -256,8 +259,6 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
             )}
           </div>
         </Reveal>
-
-        <p className="mb-5 text-[1.1rem] leading-[1.7]">{detail.summary}</p>
 
         {videoId && (
           <div className="border-border relative mb-6 aspect-video overflow-hidden rounded-xl border">

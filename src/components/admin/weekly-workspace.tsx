@@ -59,6 +59,7 @@ import {
 } from '@/lib/weekly-digest/master-persist';
 import { qualityContentNeedsRepair } from '@/lib/weekly-digest/content-studio';
 import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
+import { isWeeklyVisualRefreshStagedAsset } from '@/lib/weekly-digest/visual-refresh';
 
 function contentSimClearedFromMetadata(metadata: Json | null | undefined): boolean | undefined {
   const root = asRecord(metadata);
@@ -68,9 +69,11 @@ function contentSimClearedFromMetadata(metadata: Json | null | undefined): boole
 }
 import {
   approveWeeklyDigestAction,
+  applyWeeklyVisualRefreshAssetsAction,
   carryOverWeeklyQualityReportAction,
   commentWeeklyArtifactAction,
   commentWeeklySocialAction,
+  createWeeklyVisualRefreshDraftAction,
   dispatchWeeklyMasterCliAction,
   enqueueWeeklyGenerationAction,
   pauseWeeklyDigestAction,
@@ -82,6 +85,7 @@ import {
   resumeWeeklyThreadsSequenceAction,
   reviewWeeklyArtifactAction,
   saveWeeklyRevisionAction,
+  saveWeeklyVisualRefreshDirectionAction,
   saveWeeklySocialAction,
   saveWeeklyStoryDirectionAction,
   saveWeeklyVideoAction,
@@ -1528,12 +1532,14 @@ function OverviewPanel({
   progress,
   canEdit,
   canRebuildSelection,
+  canCreateVisualRefresh,
 }: {
   workspace: WeeklyDigestWorkspace;
   blockers: ReturnType<typeof validateWeeklyDigestPreflight>['blockers'];
   progress: number;
   canEdit: boolean;
   canRebuildSelection: boolean;
+  canCreateVisualRefresh: boolean;
 }) {
   const unresolvedArtifacts = workspace.artifacts.filter(
     (artifact) => artifact.review_status === 'changes_requested',
@@ -1614,6 +1620,46 @@ function OverviewPanel({
             <code className="text-slate-400">wiki/ops/weekly-admin-runbook.md</code> in the repo.
           </p>
         </section>
+
+        {workspace.digest.status === 'published' ? (
+          <section className={PANEL} aria-labelledby="visual-refresh-heading">
+            <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">
+              Post-publication visual refresh
+            </p>
+            <h2 id="visual-refresh-heading" className="mt-1 text-lg font-bold text-white">
+              Prepare a visual refresh without touching the live edition
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-300">
+              Creates a private working revision from the published copy, carries approved text, PDF
+              and unchanged image provenance, and queues a cover prompt plus one story prompt per
+              item. New cover/story files stay private for QA and review; only an explicit later
+              apply can replace selected public pixels.
+            </p>
+            {workspace.revision?.visual_refresh_source_revision_id ? (
+              <p className="mt-3 rounded-lg border border-cyan-300/20 bg-cyan-300/5 px-3 py-2 text-xs text-cyan-100">
+                A private visual-refresh draft is already active. Edit its direction, regenerate
+                prompts and stage replacements; the public revision remains unchanged until you
+                explicitly apply approved images.
+              </p>
+            ) : null}
+            <form action={createWeeklyVisualRefreshDraftAction} className="mt-4">
+              <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+              <ActionSubmitButton
+                idleLabel={
+                  workspace.revision?.visual_refresh_source_revision_id
+                    ? 'Open visual refresh draft'
+                    : 'Create visual refresh draft'
+                }
+                pendingLabel="Creating private draft…"
+                disabled={!canCreateVisualRefresh}
+                className={PRIMARY}
+              />
+            </form>
+            {!canCreateVisualRefresh ? (
+              <p className="mt-2 text-xs text-slate-500">Requires an AAL2 owner session.</p>
+            ) : null}
+          </section>
+        ) : null}
 
         <HallucinationBoardPanel workspace={workspace} canShip={false} />
 
@@ -1975,10 +2021,9 @@ function MasterQualityRepairCta({
         <input type="hidden" name="revision_id" value={revisionId} />
         <p className="text-sm font-bold text-cyan-50">Fix remaining issues</p>
         <p className="mt-1 text-xs leading-5 text-slate-400">
-          Re-runs critic and field repair on the current article, using this
-          report as guidance. Research packs stay. The edition is not rewritten
-          from scratch. The new draft becomes the working copy and counts
-          against this revision&apos;s spend cap.
+          Re-runs critic and field repair on the current article, using this report as guidance.
+          Research packs stay. The edition is not rewritten from scratch. The new draft becomes the
+          working copy and counts against this revision&apos;s spend cap.
         </p>
         <div className="mt-3">
           <ActionSubmitButton
@@ -2112,8 +2157,8 @@ function ResearchPanel({
           <li>
             Review Master quality below → click{' '}
             <span className="font-semibold text-white">Fix remaining issues</span> if scores or
-            warnings remain →{' '}
-            <span className="font-semibold text-white">Approve version</span> on the quality report.
+            warnings remain → <span className="font-semibold text-white">Approve version</span> on
+            the quality report.
           </li>
         </ol>
 
@@ -2805,14 +2850,125 @@ function StoriesPanel({
   );
 }
 
+function VisualDirectionFields({
+  revision,
+  locale,
+  canEdit,
+  required,
+}: {
+  revision: WeeklyRevisionAdminRow;
+  locale: 'en' | 'uk';
+  canEdit: boolean;
+  required: boolean;
+}) {
+  const english = locale === 'en';
+  const displayTitle = english ? revision.display_title_en : revision.display_title_uk;
+  const visualThesis = english ? revision.visual_thesis_en : revision.visual_thesis_uk;
+  return (
+    <>
+      <label className={LABEL}>
+        {english ? 'Hero / PDF display title' : 'Короткий заголовок для hero / PDF'}
+        <input
+          name={`display_title_${locale}`}
+          minLength={8}
+          maxLength={96}
+          required={required}
+          defaultValue={displayTitle ?? ''}
+          disabled={!canEdit}
+          className={FIELD}
+        />
+        <span className="text-xs font-normal text-slate-500">
+          {english
+            ? 'Reader-facing only in the hero and PDF cover · 8–96 characters. SEO, Open Graph and lists keep the edition title.'
+            : 'Видимий читачеві лише в hero та PDF-обкладинці · 8–96 символів. SEO, Open Graph і списки лишають назву випуску.'}
+        </span>
+      </label>
+      <label className={LABEL}>
+        {english ? 'Internal visual thesis' : 'Внутрішня візуальна теза'}
+        <textarea
+          name={`visual_thesis_${locale}`}
+          rows={3}
+          minLength={16}
+          maxLength={360}
+          required={required}
+          defaultValue={visualThesis ?? ''}
+          disabled={!canEdit}
+          className={TEXTAREA}
+        />
+        <span className="text-xs font-normal text-slate-500">
+          {english
+            ? 'Private causal direction for the no-text cover prompt · 16–360 characters. It never appears to readers.'
+            : 'Приватний причинно-наслідковий напрям для no-text промпта обкладинки · 16–360 символів. Читачі його не бачать.'}
+        </span>
+      </label>
+    </>
+  );
+}
+
+function VisualRefreshDirectionPanel({
+  workspace,
+  revision,
+  canEdit,
+}: {
+  workspace: WeeklyDigestWorkspace;
+  revision: WeeklyRevisionAdminRow;
+  canEdit: boolean;
+}) {
+  return (
+    <section className={PANEL} aria-labelledby="visual-refresh-direction-heading">
+      <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">
+        Private visual-refresh draft
+      </p>
+      <h2 id="visual-refresh-direction-heading" className="mt-1 text-xl font-bold text-white">
+        Edit the direction, then regenerate no-text prompts
+      </h2>
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+        The published edition, SEO title, Open Graph and reader copy stay locked. Saving this
+        private direction records an audit event and queues fresh prompt-only cover and story jobs;
+        it never renders, uploads or replaces public pixels.
+      </p>
+      <form action={saveWeeklyVisualRefreshDirectionAction} className="mt-6 grid gap-6">
+        <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+        <input type="hidden" name="revision_id" value={revision.id} />
+        <input type="hidden" name="edit_scope" value="article" />
+        <div className="grid gap-6 xl:grid-cols-2">
+          <fieldset className="grid content-start gap-4">
+            <legend className="mb-1 text-xs font-bold tracking-[.14em] text-[#47e4d3] uppercase">
+              English direction
+            </legend>
+            <VisualDirectionFields revision={revision} locale="en" canEdit={canEdit} required />
+          </fieldset>
+          <fieldset className="grid content-start gap-4">
+            <legend className="mb-1 text-xs font-bold tracking-[.14em] text-[#47e4d3] uppercase">
+              Український напрям
+            </legend>
+            <VisualDirectionFields revision={revision} locale="uk" canEdit={canEdit} required />
+          </fieldset>
+        </div>
+        <ActionSubmitButton
+          idleLabel="Save direction and regenerate prompts"
+          pendingLabel="Saving private direction…"
+          disabled={!canEdit}
+          className={PRIMARY}
+        />
+        {!canEdit ? (
+          <p className="text-xs text-slate-500">Requires an AAL2 owner session.</p>
+        ) : null}
+      </form>
+    </section>
+  );
+}
+
 function ArticlePanel({
   workspace,
   canEdit,
   canReview,
+  canRefreshVisualDirection,
 }: {
   workspace: WeeklyDigestWorkspace;
   canEdit: boolean;
   canReview: boolean;
+  canRefreshVisualDirection: boolean;
 }) {
   const revision = workspace.revision;
   if (!revision) {
@@ -2822,6 +2978,56 @@ function ArticlePanel({
   const articleUk = artifactFor(workspace.artifacts, 'article', 'uk');
   const articleEnContent = asRecord(articleEn?.content);
   const articleUkContent = asRecord(articleUk?.content);
+  const isVisualRefreshDraft = Boolean(revision.visual_refresh_source_revision_id);
+
+  if (isVisualRefreshDraft) {
+    return (
+      <div className="grid gap-5">
+        <VisualRefreshDirectionPanel
+          workspace={workspace}
+          revision={revision}
+          canEdit={canRefreshVisualDirection}
+        />
+        <section aria-labelledby="article-build-heading">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 id="article-build-heading" className="text-lg font-bold text-white">
+                Published landing articles
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Carried reader copy remains read-only in this prompt-only refresh. Review only the
+                new visual direction and prompts.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-4 xl:grid-cols-2">
+            <ArtifactCard
+              digestId={workspace.digest.id}
+              artifact={articleEn}
+              reviews={workspace.artifactReviews}
+              canReview={false}
+              label="English landing article"
+            />
+            <ArtifactCard
+              digestId={workspace.digest.id}
+              artifact={articleUk}
+              reviews={workspace.artifactReviews}
+              canReview={false}
+              label="Ukrainian landing article"
+            />
+          </div>
+        </section>
+        <GenerationJobsSection
+          digestId={workspace.digest.id}
+          revisionId={workspace.revision?.id ?? null}
+          jobs={workspace.generationJobs}
+          attempts={workspace.generationAttempts}
+          events={workspace.generationEvents}
+          tab="article"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-5">
@@ -2860,6 +3066,12 @@ function ArticlePanel({
                 className={FIELD}
               />
             </label>
+            <VisualDirectionFields
+              revision={revision}
+              locale="en"
+              canEdit={canEdit}
+              required={false}
+            />
             <label className={LABEL}>
               SEO title
               <input
@@ -3040,6 +3252,12 @@ function ArticlePanel({
                 className={FIELD}
               />
             </label>
+            <VisualDirectionFields
+              revision={revision}
+              locale="uk"
+              canEdit={canEdit}
+              required={false}
+            />
             <label className={LABEL}>
               SEO-заголовок
               <input
@@ -3341,14 +3559,36 @@ function VisualsPanel({
   workspace,
   canEdit,
   canReview,
+  canRefreshVisuals,
 }: {
   workspace: WeeklyDigestWorkspace;
   canEdit: boolean;
   canReview: boolean;
+  canRefreshVisuals: boolean;
 }) {
   const revision = workspace.revision;
   if (!revision) return <p className={`${PANEL} text-sm text-slate-400`}>No active revision.</p>;
+  const isVisualRefreshDraft = Boolean(revision.visual_refresh_source_revision_id);
+  const canChangeVisuals = canEdit && (!isVisualRefreshDraft || canRefreshVisuals);
+  // Carried images are provenance-only in this lane. A review decision belongs
+  // only to a newly staged replacement, never to a historical public asset.
+  // Staged refresh pixels can alter an already-published edition, so the UI
+  // must mirror the owner+AAL2 review gate enforced by the RPC. Ordinary
+  // draft assets retain the existing editor-review affordance.
+  const canReviewVisuals = canReview && (!isVisualRefreshDraft || canRefreshVisuals);
   const cover = artifactFor(workspace.artifacts, 'cover', 'neutral');
+  const coverIsStaged = isWeeklyVisualRefreshStagedAsset(cover?.metadata);
+  const stagedVisualAssets = isVisualRefreshDraft
+    ? workspace.artifacts.filter(
+        (artifact) =>
+          (artifact.artifact_type === 'cover' || artifact.artifact_type === 'story_image') &&
+          artifact.is_current &&
+          isWeeklyVisualRefreshStagedAsset(artifact.metadata),
+      )
+    : [];
+  const approvedStagedVisualAssets = stagedVisualAssets.filter(
+    (artifact) => artifact.generation_status === 'ready' && artifact.review_status === 'approved',
+  );
   const coverPromptArtifact = workspace.artifacts.find(
     (artifact) =>
       artifact.artifact_type === 'story_prompt_set' && artifact.slot_key === COVER_PROMPT_SLOT,
@@ -3368,6 +3608,79 @@ function VisualsPanel({
 
   return (
     <div className="grid gap-7">
+      {isVisualRefreshDraft ? (
+        <section className="rounded-2xl border border-cyan-300/20 bg-cyan-300/5 p-4 text-sm text-cyan-100">
+          <p className="font-bold">Private staged visual refresh</p>
+          <p className="mt-1 leading-6 text-cyan-100/80">
+            Regenerate no-text prompts, then upload a private replacement for the cover or an
+            individual story. Each new file goes through QA and owner review first. The live edition
+            remains unchanged until you explicitly apply selected approved images below.
+          </p>
+          <p className="mt-2 text-xs leading-5 text-cyan-100/70">
+            Applying images changes only the public cover/story pixels. It never changes published
+            text, SEO or Open Graph titles, PDF, or existing social materials.
+          </p>
+          {!canRefreshVisuals ? (
+            <p className="mt-2 text-xs text-cyan-100/70">
+              Prompt regeneration, private uploads, review approval and application require an AAL2
+              owner session.
+            </p>
+          ) : null}
+          {stagedVisualAssets.length > 0 ? (
+            <form action={applyWeeklyVisualRefreshAssetsAction} className="mt-4 grid gap-3">
+              <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+              <input type="hidden" name="revision_id" value={revision.id} />
+              <fieldset className="grid gap-2">
+                <legend className="text-xs font-bold tracking-wide text-cyan-100 uppercase">
+                  Select approved images to apply
+                </legend>
+                {stagedVisualAssets.map((artifact) => {
+                  const isApproved =
+                    artifact.generation_status === 'ready' && artifact.review_status === 'approved';
+                  const item = artifact.revision_item_id
+                    ? workspace.items.find(
+                        (candidate) => candidate.id === artifact.revision_item_id,
+                      )
+                    : null;
+                  const label =
+                    artifact.artifact_type === 'cover'
+                      ? 'Weekly cover'
+                      : `Story ${item?.rank ?? 'image'}`;
+                  return (
+                    <label
+                      key={artifact.id}
+                      className="flex items-center gap-2 rounded-lg border border-cyan-200/15 bg-black/10 px-3 py-2 text-xs"
+                    >
+                      <input
+                        type="checkbox"
+                        name="staged_artifact_id"
+                        value={artifact.id}
+                        defaultChecked={isApproved}
+                        disabled={!isApproved || !canRefreshVisuals}
+                      />
+                      <span className="font-semibold text-cyan-50">{label}</span>
+                      <span className="ml-auto text-cyan-100/70">
+                        {isApproved ? 'approved' : artifact.review_status}
+                      </span>
+                    </label>
+                  );
+                })}
+              </fieldset>
+              <ActionSubmitButton
+                idleLabel={`Apply selected approved image${approvedStagedVisualAssets.length === 1 ? '' : 's'} to public edition`}
+                pendingLabel="Applying reviewed images…"
+                disabled={!canRefreshVisuals || approvedStagedVisualAssets.length === 0}
+                className={PRIMARY}
+              />
+              {approvedStagedVisualAssets.length === 0 ? (
+                <p className="text-xs text-cyan-100/70">
+                  New uploads stay private until QA succeeds and an owner approves them.
+                </p>
+              ) : null}
+            </form>
+          ) : null}
+        </section>
+      ) : null}
       <section aria-labelledby="cover-heading">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -3388,7 +3701,7 @@ function VisualsPanel({
             <ActionSubmitButton
               idleLabel={coverPromptSet ? 'Regenerate cover prompt' : 'Generate cover prompt'}
               pendingLabel="Queueing cover…"
-              disabled={!canEdit}
+              disabled={!canChangeVisuals}
               className={PRIMARY}
             />
           </form>
@@ -3398,7 +3711,7 @@ function VisualsPanel({
             digestId={workspace.digest.id}
             artifact={cover}
             reviews={workspace.artifactReviews}
-            canReview={canReview}
+            canReview={canReviewVisuals && (!isVisualRefreshDraft || coverIsStaged)}
             label="Master cover"
             imagePreview
           />
@@ -3416,13 +3729,13 @@ function VisualsPanel({
               ...coverPromptSet?.ownerFeedback,
             }}
             mappingGateIssues={coverPromptSet?.mappingGateIssues ?? []}
-            canEdit={canEdit}
+            canEdit={canChangeVisuals}
           >
             <ReplacementAssetForm
               workspace={workspace}
               artifactType="cover"
               slotKey="cover:neutral"
-              canEdit={canEdit}
+              canEdit={canChangeVisuals}
             />
           </StoryPromptSetPanel>
         </div>
@@ -3463,6 +3776,7 @@ function VisualsPanel({
             );
             const imageSlot = storyImageSlotState(artifact);
             const slotKey = `story-image:${item.id}`;
+            const artifactIsStaged = isWeeklyVisualRefreshStagedAsset(artifact?.metadata);
             const job = latestJobForSlot(workspace.generationJobs, 'story_image', {
               revisionItemId: item.id,
             });
@@ -3510,7 +3824,7 @@ function VisualsPanel({
                       <ActionSubmitButton
                         idleLabel={promptSet ? 'Regenerate prompts' : 'Generate prompts'}
                         pendingLabel="Queueing…"
-                        disabled={!canEdit}
+                        disabled={!canChangeVisuals}
                         className={SECONDARY}
                       />
                     </form>
@@ -3547,30 +3861,34 @@ function VisualsPanel({
                     ...promptSet?.ownerFeedback,
                   }}
                   mappingGateIssues={promptSet?.mappingGateIssues ?? []}
-                  canEdit={canEdit}
+                  canEdit={canChangeVisuals}
                 >
                   <ReplacementAssetForm
                     workspace={workspace}
                     artifactType="story_image"
                     slotKey={slotKey}
                     revisionItemId={item.id}
-                    canEdit={canEdit}
+                    canEdit={canChangeVisuals}
                   />
                 </StoryPromptSetPanel>
                 <ArtifactCard
                   digestId={workspace.digest.id}
                   artifact={artifact}
                   reviews={workspace.artifactReviews}
-                  canReview={canReview}
+                  canReview={canReviewVisuals && (!isVisualRefreshDraft || artifactIsStaged)}
                   label={`Story ${item.rank} illustration`}
                   imagePreview
-                  variantSelection={{
-                    canEdit,
-                    revisionId: revision.id,
-                    revisionItemId: item.id,
-                    slotKey,
-                    costSummary,
-                  }}
+                  variantSelection={
+                    isVisualRefreshDraft
+                      ? undefined
+                      : {
+                          canEdit,
+                          revisionId: revision.id,
+                          revisionItemId: item.id,
+                          slotKey,
+                          costSummary,
+                        }
+                  }
                 />
               </div>
             );
@@ -3588,19 +3906,21 @@ function VisualsPanel({
               Open Graph, feed and story crops are generated from the approved master cover.
             </p>
           </div>
-          <form action={enqueueWeeklyGenerationAction}>
-            <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
-            <input type="hidden" name="revision_id" value={revision.id} />
-            <input type="hidden" name="job_type" value="social_asset" />
-            <input type="hidden" name="locale" value="neutral" />
-            <input type="hidden" name="slot_key" value="social-assets:neutral" />
-            <ActionSubmitButton
-              idleLabel="Generate all derivatives"
-              pendingLabel="Queueing assets…"
-              disabled={!canEdit || cover?.review_status !== 'approved'}
-              className={SECONDARY}
-            />
-          </form>
+          {!isVisualRefreshDraft ? (
+            <form action={enqueueWeeklyGenerationAction}>
+              <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+              <input type="hidden" name="revision_id" value={revision.id} />
+              <input type="hidden" name="job_type" value="social_asset" />
+              <input type="hidden" name="locale" value="neutral" />
+              <input type="hidden" name="slot_key" value="social-assets:neutral" />
+              <ActionSubmitButton
+                idleLabel="Generate all derivatives"
+                pendingLabel="Queueing assets…"
+                disabled={!canEdit || cover?.review_status !== 'approved'}
+                className={SECONDARY}
+              />
+            </form>
+          ) : null}
         </div>
         {socialAssets.length > 0 ? (
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -3610,7 +3930,7 @@ function VisualsPanel({
                 digestId={workspace.digest.id}
                 artifact={artifact}
                 reviews={workspace.artifactReviews}
-                canReview={canReview}
+                canReview={canReviewVisuals}
                 label={textFrom(artifact.metadata, 'format') || artifact.slot_key}
                 imagePreview
               />
@@ -5401,6 +5721,7 @@ export function WeeklyWorkspace({
           progress={progress}
           canEdit={canEdit}
           canRebuildSelection={session.role === 'owner'}
+          canCreateVisualRefresh={canOwnRelease}
         />
       ) : null}
       {activeTab === 'stories' ? <StoriesPanel workspace={workspace} canEdit={canEdit} /> : null}
@@ -5408,10 +5729,20 @@ export function WeeklyWorkspace({
         <ResearchPanel workspace={workspace} canEdit={canEdit} canReview={canReview} />
       ) : null}
       {activeTab === 'article' ? (
-        <ArticlePanel workspace={workspace} canEdit={canEdit} canReview={canReview} />
+        <ArticlePanel
+          workspace={workspace}
+          canEdit={canEdit}
+          canReview={canReview}
+          canRefreshVisualDirection={canOwnRelease}
+        />
       ) : null}
       {activeTab === 'visuals' ? (
-        <VisualsPanel workspace={workspace} canEdit={canEdit} canReview={canReview} />
+        <VisualsPanel
+          workspace={workspace}
+          canEdit={canEdit}
+          canReview={canReview}
+          canRefreshVisuals={canOwnRelease}
+        />
       ) : null}
       {activeTab === 'social' ? (
         <SocialPanel

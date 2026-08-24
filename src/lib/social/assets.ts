@@ -34,7 +34,14 @@ export interface SocialAssetRenderOptions {
   titleSize?: number;
   maxChars?: number;
   maxLines?: number;
+  /** Optional deterministic supporting copy for an explanatory social slide. */
+  body?: string;
+  bodySize?: number;
+  bodyMaxChars?: number;
+  bodyMaxLines?: number;
   footer?: string;
+  /** `contain` preserves the complete editorial master; use it for derivatives. */
+  backgroundFit?: 'cover' | 'contain';
 }
 
 function splitLines(value: string, maxChars: number, maxLines: number) {
@@ -101,7 +108,7 @@ const BACKGROUND_FETCH_WIDTH = 1200;
 // every caller passes in.
 const backgroundCache = new Map<string, Promise<Buffer | null>>();
 
-async function loadBackground(url?: string | null): Promise<Buffer | null> {
+export async function loadSocialBackground(url?: string | null): Promise<Buffer | null> {
   if (!url?.startsWith('http')) return null;
   const cached = backgroundCache.get(url);
   if (cached) return cached;
@@ -179,9 +186,13 @@ export async function renderSocialAssetImage(
   const titleSize = options?.titleSize ?? Math.round(width * 0.052);
   const lineHeight = Math.round(titleSize * 1.12);
   const lines = splitLines(title, options?.maxChars ?? 31, options?.maxLines ?? 4);
+  const bodySize = options?.bodySize ?? Math.max(22, Math.round(width * 0.027));
+  const bodyLines = options?.body?.trim()
+    ? splitLines(options.body, options.bodyMaxChars ?? 48, options.bodyMaxLines ?? 5)
+    : [];
   const contentLeft = Math.round(width * 0.075);
   const contentWidth = Math.round(width * 0.85);
-  const [eyebrowLayer, titleLayer, footerLayer] = await Promise.all([
+  const [eyebrowLayer, titleLayer, bodyLayer, footerLayer] = await Promise.all([
     textLayer({
       text: eyebrow.toUpperCase(),
       width: contentWidth,
@@ -197,6 +208,15 @@ export async function renderSocialAssetImage(
       bold: true,
       spacing: Math.max(0, lineHeight - titleSize),
     }),
+    bodyLines.length
+      ? textLayer({
+          text: bodyLines.join('\n'),
+          width: contentWidth,
+          size: bodySize,
+          color: '#d4dde1',
+          spacing: Math.round(bodySize * 0.16),
+        })
+      : null,
     options?.footer
       ? textLayer({
           text: options.footer,
@@ -207,11 +227,16 @@ export async function renderSocialAssetImage(
       : null,
   ]);
   const titleMetadata = await sharp(titleLayer).metadata();
+  const bodyMetadata = bodyLayer ? await sharp(bodyLayer).metadata() : null;
   const footerTop = height - 67;
+  const bodyHeight = bodyMetadata?.height ?? 0;
+  const titleHeight = titleMetadata.height ?? lineHeight * lines.length;
+  const stackedHeight = titleHeight + (bodyLayer ? Math.round(height * 0.025) + bodyHeight : 0);
   const titleTop = Math.max(
     Math.round(height * 0.23),
-    footerTop - 26 - (titleMetadata.height ?? lineHeight * lines.length),
+    footerTop - 26 - stackedHeight,
   );
+  const bodyTop = titleTop + titleHeight + Math.round(height * 0.025);
   const backgrounds = Array.isArray(background)
     ? background.slice(0, 3)
     : background
@@ -220,7 +245,11 @@ export async function renderSocialAssetImage(
   let base: Sharp;
   if (backgrounds.length <= 1) {
     base = backgrounds[0]
-      ? sharp(backgrounds[0]).resize(width, height, { fit: 'cover', position: 'attention' })
+      ? sharp(backgrounds[0]).resize(width, height, {
+          fit: options?.backgroundFit ?? 'cover',
+          position: 'attention',
+          background: BRAND_DARK,
+        })
       : sharp({
           create: {
             width,
@@ -292,13 +321,19 @@ export async function renderSocialAssetImage(
         left: contentLeft,
       },
       { input: titleLayer, top: Math.max(0, titleTop), left: contentLeft },
+      ...(bodyLayer ? [{ input: bodyLayer, top: Math.max(0, bodyTop), left: contentLeft }] : []),
       ...(footerLayer ? [{ input: footerLayer, top: footerTop, left: contentLeft }] : []),
     ])
     .jpeg({ quality: 88, progressive: true })
     .toBuffer();
 }
 
-async function uploadImmutable(path: string, jpeg: Buffer, width: number, height: number) {
+export async function uploadImmutableSocialAsset(
+  path: string,
+  jpeg: Buffer,
+  width: number,
+  height: number,
+) {
   const supabase = getSupabaseAdmin();
   const { error } = await supabase.storage
     .from(BUCKET)
@@ -351,7 +386,7 @@ export async function renderSocialAssets(source: AssetSource): Promise<SocialAss
     source.sourceImageUrls?.filter((value): value is string =>
       Boolean(value?.startsWith('http')),
     ) ?? (source.sourceImageUrl ? [source.sourceImageUrl] : []);
-  const loadedBackgrounds = await Promise.all(imageUrls.slice(0, 3).map(loadBackground));
+  const loadedBackgrounds = await Promise.all(imageUrls.slice(0, 3).map(loadSocialBackground));
   const background = loadedBackgrounds.filter((image) => image !== null);
   const version = versionKey(source);
   const prefix = `${source.packageId}/${source.channel}/${version}`;
@@ -369,7 +404,14 @@ export async function renderSocialAssets(source: AssetSource): Promise<SocialAss
         footer: 'aitodaybrief.com',
       },
     );
-    return [await uploadImmutable(`${prefix}/cover-${width}x${height}.jpg`, jpeg, width, height)];
+    return [
+      await uploadImmutableSocialAsset(
+        `${prefix}/cover-${width}x${height}.jpg`,
+        jpeg,
+        width,
+        height,
+      ),
+    ];
   }
 
   const width = 1080;
@@ -401,7 +443,7 @@ export async function renderSocialAssets(source: AssetSource): Promise<SocialAss
       },
     );
     assets.push(
-      await uploadImmutable(
+      await uploadImmutableSocialAsset(
         `${prefix}/slide-${String(index + 1).padStart(2, '0')}.jpg`,
         jpeg,
         width,

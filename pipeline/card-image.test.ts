@@ -4,6 +4,7 @@ import type { PipelineDb } from './db';
 import { loadProviderRegistry } from './providers/registry';
 import {
   buildPrompt,
+  buildNewsCardSceneInstruction,
   buildWeeklyPrompt,
   buildEditorialConceptPrompt,
   buildWeeklyContextBlock,
@@ -44,9 +45,11 @@ import {
   hueName,
   IMG_H,
   IMG_W,
+  isPhysicalRoboticsStory,
   isFlux2MultipartModel,
   megapixelsForDimensions,
   negativePrompt,
+  prepareNewsCardScene,
   renderFallbackEditorialIllustration,
   sceneBrief,
   SCHNELL_MODEL,
@@ -275,9 +278,13 @@ describe('seedFromString', () => {
 
 describe('buildPrompt', () => {
   it('makes the story scene dominant, with a light brand thread + accent', () => {
-    const prompt = buildPrompt('violet purple', 'a cracked padlock over a server rack');
+    const prompt = buildPrompt(
+      'violet purple',
+      'a compromised metadata token crosses a trusted toolchain gate toward a protected key compartment',
+      'Pillar Security finds a supply-chain attack that changes MCP tool metadata before SSH keys are exposed.',
+    );
     expect(prompt).toContain('violet purple');
-    expect(prompt).toContain('a cracked padlock over a server rack');
+    expect(prompt).toContain('a compromised metadata token crosses a trusted toolchain gate');
     expect(prompt).toContain('editorial');
     expect(prompt).toMatch(/no text/i);
     expect(prompt).toContain('16:9');
@@ -285,7 +292,53 @@ describe('buildPrompt', () => {
     expect(prompt.toLowerCase()).not.toContain('overlaid headline');
     expect(prompt.toLowerCase()).toContain('no typography');
     // The scene leads (placed after the brand thread), so it is not buried.
-    expect(prompt.indexOf('cracked padlock')).toBeGreaterThan(prompt.indexOf('editorial'));
+    expect(prompt.indexOf('compromised metadata token')).toBeGreaterThan(prompt.indexOf('editorial'));
+    expect(prompt).toContain('one dominant subject performs one visible action');
+    expect(prompt).toContain('central 78% of frame width');
+    expect(prompt).toContain('central 64% of frame height');
+    expect(prompt).toContain('No fake UI, dashboard, screen, code panel');
+    expect(prompt).toContain('Never depict humanoid robots');
+  });
+
+  it('removes planning labels before they can leak into fallback image pixels', () => {
+    const scene =
+      'The story-specific anchor is one local gateway, the visible cause is it removes credential tokens, ' +
+      'the visible result is one clean request leaving the machine';
+    const prompt = buildPrompt(
+      'teal',
+      scene,
+      'PrivAiTe removes credentials before a model request leaves a developer machine.',
+    );
+
+    expect(prepareNewsCardScene(scene)).toContain('one local gateway');
+    expect(prompt.toLowerCase()).not.toContain('the story-specific anchor is');
+    expect(prompt.toLowerCase()).not.toContain('the visible cause is');
+    expect(prompt.toLowerCase()).not.toContain('the visible result is');
+    expect(prompt).toContain('one clean request leaving the machine');
+  });
+
+  it('turns an accidental causal JSON plan into one renderable scene without field names', () => {
+    const scene = prepareNewsCardScene(
+      '{"subject":"one local gateway","action":"removes credential tokens","outcome":"a clean request leaves the machine"}',
+    );
+
+    expect(scene).toBe(
+      'one local gateway, removes credential tokens, a clean request leaves the machine',
+    );
+    expect(scene).not.toMatch(/subject|action|outcome|{|}/i);
+  });
+
+  it('replaces a prohibited robot-and-screen scene with the story-shaped causal fallback', () => {
+    const story =
+      'Alibaba released Qwen3.8, a mixture-of-experts model with 2.4T total parameters and 95B active per token.';
+    const safe = prepareNewsCardScene(
+      'a humanoid robot points at a glowing code panel on a dashboard',
+      story,
+    );
+
+    expect(safe).toContain('routing gate');
+    expect(safe).toContain('small cluster of expert modules');
+    expect(safe.toLowerCase()).not.toMatch(/robot|dashboard|screen|panel/);
   });
 });
 
@@ -299,18 +352,49 @@ describe('negativePrompt', () => {
     expect(neg).toContain('headline');
     expect(neg).toContain('anonymous server aisle');
     expect(neg).toContain('lone laptop on desk');
+    expect(neg).toContain('humanoid robot');
+    expect(neg).toContain('code panel');
+    expect(neg).toContain('card-soup');
+  });
+
+  it('keeps physical robots available only for literal robotics stories', () => {
+    const roboticsStory = 'Warehouse robotic arms sort physical packages on a factory line.';
+    expect(isPhysicalRoboticsStory(roboticsStory)).toBe(true);
+    expect(negativePrompt(roboticsStory)).not.toContain('humanoid robot');
+    expect(negativePrompt('An AI agent schedules tasks')).toContain('humanoid robot');
   });
 });
 
 describe('fallbackScene', () => {
-  it('picks a concrete, on-topic scene for every keyword category', () => {
-    expect(fallbackScene('Critical CVE lets attackers breach the server')).toContain('padlock');
-    expect(fallbackScene('Startup raises $200 billion in funding round')).toContain('coin');
-    expect(fallbackScene('New MCP agent orchestrates multi-step workflows')).toContain('robotic');
-    expect(fallbackScene('GPT-5 model launch benchmark results')).toContain('stage');
-    expect(fallbackScene('Run Gemma 4 as a local on-device LLM offline')).toContain('laptop');
-    expect(fallbackScene('Cut token cost and latency with this optimization')).toContain('gauge');
-    expect(fallbackScene('AI medical scan and MRI vision analysis')).toContain('lightbox');
+  it('explains a MoE model release through sparse activation rather than a launch stage', () => {
+    const scene = fallbackScene(
+      'Alibaba released Qwen3.8, a mixture-of-experts model with 2.4T parameters but only 95B active per token.',
+    );
+    expect(scene).toContain('routing gate');
+    expect(scene).toContain('small cluster of expert modules');
+    expect(scene).toContain('larger lattice remains dormant');
+    expect(scene.toLowerCase()).not.toContain('stage');
+    expect(scene.toLowerCase()).not.toMatch(/robot|screen|panel/);
+  });
+
+  it('explains agent memory through selective recall rather than a robot or dashboard', () => {
+    const scene = fallbackScene(
+      'IBM releases agent memory that selects useful rules instead of loading the full archive, cutting inference tokens.',
+    );
+    expect(scene).toContain('compact rule ledger');
+    expect(scene).toContain('few relevant metal tabs');
+    expect(scene).toContain('tall archive stays closed');
+    expect(scene.toLowerCase()).not.toMatch(/robot|dashboard|screen|panel/);
+  });
+
+  it('explains a cybersecurity attack as an altered trusted path, not a padlock cliché', () => {
+    const scene = fallbackScene(
+      'Pillar Security found Deadbugz changing MCP tool metadata to steal SSH keys after trusted calls.',
+    );
+    expect(scene).toContain('compromised metadata token');
+    expect(scene).toContain('trusted toolchain gate');
+    expect(scene).toContain('protected key compartment');
+    expect(scene.toLowerCase()).not.toMatch(/padlock|robot|screen|panel/);
   });
 
   it('uses isolation-breakout metaphor for network misconfig / post-mortem stories', () => {
@@ -323,11 +407,11 @@ describe('fallbackScene', () => {
     expect(postMortem.toLowerCase()).not.toContain('reveal stage');
   });
 
-  it('prefers cryptographic seal over model-launch stage for Mythos cryptanalysis', () => {
+  it('prefers a causal cipher fracture over a model-launch stage for Mythos cryptanalysis', () => {
     const mythos = fallbackScene(
       'Claude Mythos Preview: Early access model shows unexpected cryptanalysis capabilities',
     );
-    expect(mythos.toLowerCase()).toMatch(/padlock|cryptographic seal/);
+    expect(mythos.toLowerCase()).toContain('cipher mechanism');
     expect(mythos.toLowerCase()).not.toContain('reveal stage');
   });
 
@@ -620,6 +704,20 @@ describe('sceneBrief', () => {
     const { scene, source } = await sceneBrief('', '', { geminiApiKey: 'unused' });
     expect(scene).toContain('workstation');
     expect(source).toBe('fallback');
+  });
+
+  it('directs the scene model to derive one causal claim without rendering its planning labels', () => {
+    const instruction = buildNewsCardSceneInstruction(
+      'Alibaba opens Qwen3.8 weights with 2.4T total parameters and 95B active per token.',
+      'The mixture-of-experts router makes a much larger open model practical to run.',
+    );
+    expect(instruction).toContain('SUBJECT -> ACTION -> OUTCOME');
+    expect(instruction).toContain('one concrete dominant subject performs one visible action');
+    expect(instruction).toContain('central 78% of width');
+    expect(instruction).toContain('central 64% of height');
+    expect(instruction).toContain('Do not output those labels or your reasoning');
+    expect(instruction).toContain('Ban fake UI, dashboards, screens, code panels');
+    expect(instruction).toContain('unless this item is literally about physical robotics hardware');
   });
 });
 

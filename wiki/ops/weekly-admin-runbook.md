@@ -3,9 +3,9 @@
 Summary: покрокова інструкція для власника/редактора: що натискати у вкладках,
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
-[weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…22,
+[weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…24,
 latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22
-Last updated: 2026-08-23
+Last updated: 2026-08-24
 
 ---
 
@@ -188,6 +188,29 @@ Manual **Retry** тепер ідемпотентний: повторний кл�
 ще раз і перевір partial unique guard з migration `20260811185251`. (source:
 `supabase/migrations/20260811185251_weekly_manual_retry_idempotency.sql`)
 
+### Published weekly: safe visual refresh (2026-08-24)
+
+Якщо weekly вже **published**, не редагуй його revision і не перезавантажуй live cover. На
+Overview натисни **Create visual refresh draft** (потрібен owner + AAL2). Це створює private
+working revision з approved text/PDF/unchanged asset provenance, а public `published_revision_id`,
+SEO, Open Graph і пікселі лишаються незмінними. (source: owner session 2026-08-24;
+`supabase/migrations/20260824130000_weekly_visual_refresh_draft.sql`)
+
+У private draft введи або відредагуй усі чотири поля: EN/UK **Hero / PDF display title** і EN/UK
+**Internal visual thesis**, потім натисни **Save direction and regenerate prompts**. Поля —
+редакційні адаптації, не literal translation: title має дати короткий insight для читача, thesis
+має описати один causal no-text cover. Ця дія queues тільки нові prompt-only cover/story jobs.
+
+На **Visuals** можна завантажити тільки replacement cover/story image у private staging lane.
+Спершу дочекайся post-upload QA і явно **Approve** потрібні assets, потім на **Visuals** обери саме
+ці approved images та натисни **Apply selected approved images to public edition**. Публічна дія
+доступна лише owner + AAL2: вона копіює й byte-verify файл в immutable public storage, створює
+versioned public artifact і записує audit mapping. Ні canonical текст, ні SEO/OG, ні PDF, ні
+наявні social materials не зміняться; для іншого кадру створи новий refresh або заміни private
+asset до apply. (source: owner session 2026-08-24;
+`supabase/migrations/20260824150000_weekly_visual_refresh_staged_assets.sql`;
+`src/components/admin/weekly-workspace.tsx`; `src/app/admin/(cms)/weekly/actions.ts`)
+
 ### 3–7. Article → … → Release
 
 На кожній вкладці: дочекайся generation **ready** → переглянь → **Approve**.
@@ -195,8 +218,12 @@ Release preflight на Overview / Release покаже, що ще червоне
 
 На Article:
 
-- **Short intro under the headline (standfirst)** / **Короткий вступ під заголовком** — 1–2
-  речення, які видно читачеві одразу під заголовком;
+- **Hero / PDF display title** — коротка читацька теза лише для public hero і PDF cover; canonical
+  title далі є єдиною назвою для SEO, Open Graph і списків;
+- **Internal visual thesis** — private causal direction для no-text cover prompt/QA, не читачевий
+  текст;
+- **Short intro under the headline (standfirst)** / **Короткий вступ під заголовком** — повний
+  intro/standfirst на public hero не з’являється до натискання «Показати більше»;
 - **Search result title/summary** — рекомендований текст для пошукового preview;
 - **Social sharing title/summary (Open Graph)** — заголовок і опис картки при поширенні посилання
   у соцмережах та месенджерах. Open Graph — назва стандарту metadata, не окремий формат статті.

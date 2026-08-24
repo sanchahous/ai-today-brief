@@ -49,11 +49,28 @@ interface PackRow {
   published_at: string | null;
 }
 
+interface DailyVisualPublicationRow {
+  daily_visual_set_id: string;
+  candidate_id: string;
+  public_url: string;
+  width: number;
+  height: number;
+  alt_en: string;
+  alt_uk: string;
+  display_title_en: string;
+  display_title_uk: string;
+}
+
 const ITEM_COLUMNS =
   'id, rank, category_slug, slug, title_en, title_uk, summary_en, summary_uk, why_matters_en, why_matters_uk, tools_mentioned';
 
 const PACK_COLUMNS =
   'id, date, slug, edition, title_en, title_uk, intro_en, intro_uk, published_at';
+
+// This is deliberately the public projection only. Public brief pages must
+// never infer a URL from the private candidate/set tables.
+const DAILY_VISUAL_PUBLICATION_COLUMNS =
+  'daily_visual_set_id, candidate_id, public_url, width, height, alt_en, alt_uk, display_title_en, display_title_uk';
 
 function toCard(
   lang: Lang,
@@ -90,8 +107,19 @@ export interface DailyBriefView {
   canonicalSlug: string;
   title: string;
   intro: string | null;
+  visual: DailyVisualPublication | null;
   packs: BriefPackSection[];
   allItems: BriefItemCard[];
+}
+
+export interface DailyVisualPublication {
+  visualSetId: string;
+  candidateId: string;
+  publicUrl: string;
+  width: number;
+  height: number;
+  alt: string;
+  displayTitle: string;
 }
 
 export interface BriefSummary {
@@ -101,6 +129,47 @@ export interface BriefSummary {
   title: string;
   intro: string | null;
   items: BriefItemCard[];
+}
+
+function isPublicHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Localize and validate the reader-safe projection. The writer publishes this
+ * row atomically only after visual QA; the public page does not inspect a
+ * candidate, a storage path, or any other private workflow state.
+ */
+export function dailyVisualPublicationFromRow(
+  lang: Lang,
+  row: DailyVisualPublicationRow | null | undefined,
+): DailyVisualPublication | null {
+  if (
+    !row ||
+    !row.daily_visual_set_id ||
+    !row.candidate_id ||
+    !isPublicHttpsUrl(row.public_url) ||
+    row.width <= 0 ||
+    row.height <= 0
+  ) {
+    return null;
+  }
+  const displayTitle = pick(lang, row.display_title_en, row.display_title_uk);
+  const alt = pick(lang, row.alt_en, row.alt_uk);
+  if (!displayTitle || !alt) return null;
+  return {
+    visualSetId: row.daily_visual_set_id,
+    candidateId: row.candidate_id,
+    publicUrl: row.public_url,
+    width: row.width,
+    height: row.height,
+    alt,
+    displayTitle,
+  };
 }
 
 /** Eyebrow for pack 2+ sections — "Update · 6:30 PM" / "Оновлення · 18:30". */
@@ -166,12 +235,19 @@ export async function getDailyBriefBySlug(slug: string, lang: Lang): Promise<Dai
     .maybeSingle();
   if (error || !anchor?.slug) return null;
 
-  const { data: packsRaw } = await supabase
-    .from('briefs')
-    .select(PACK_COLUMNS)
-    .eq('date', anchor.date)
-    .eq('status', 'published')
-    .order('edition', { ascending: true });
+  const [{ data: packsRaw }, { data: visualRow, error: visualError }] = await Promise.all([
+    supabase
+      .from('briefs')
+      .select(PACK_COLUMNS)
+      .eq('date', anchor.date)
+      .eq('status', 'published')
+      .order('edition', { ascending: true }),
+    supabase
+      .from('daily_visual_publications')
+      .select(DAILY_VISUAL_PUBLICATION_COLUMNS)
+      .eq('editorial_date', anchor.date)
+      .maybeSingle(),
+  ]);
 
   const packs = (packsRaw ?? []) as PackRow[];
   const lead = packs.find((p) => p.edition === 1) ?? packs[0];
@@ -185,6 +261,7 @@ export async function getDailyBriefBySlug(slug: string, lang: Lang): Promise<Dai
     canonicalSlug: lead.slug,
     title: pick(lang, lead.title_en, lead.title_uk),
     intro: pick(lang, lead.intro_en, lead.intro_uk) || null,
+    visual: visualError ? null : dailyVisualPublicationFromRow(lang, visualRow),
     packs: sections,
     allItems,
   };

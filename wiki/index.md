@@ -5,8 +5,8 @@ Summary: головний зміст усієї wiki. Кожен рядок — 
 Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery 2026-08-10,
 story-image / Visual Affordance / illustration B1-fix 2026-08-11…15, Social/PDF/Video 2026-08-17…19,
 GA4 + SEO 2026-08-21, latest weekly revision is the working copy 2026-08-22,
-Prompt-as-Code v6 2026-08-23
-Last updated: 2026-08-23
+Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24
+Last updated: 2026-08-24
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -40,7 +40,7 @@ Last updated: 2026-08-23
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
-| 📋 `architecture/data-model.md` | Схема Supabase, RLS, ~86 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
+| 📋 `architecture/data-model.md` | Схема Supabase, RLS, 94 міграції, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
 
@@ -60,6 +60,7 @@ Last updated: 2026-08-23
 | ✅ [pipeline/content-sim](pipeline/content-sim.md) | Симуляція/бектест: historical batch harness, production one-candidate repair loop, structural gates, semantic QA, escalation, release gate | `pipeline/card-image.ts`, `src/lib/content-sim`, 2026-08-23 |
 | ✅ [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) | Виконавча специфікація ілюстрацій після рішення 2026-08-15. B1-fix … E3, F2, F3, G, A2, F5 зроблено 2026-08-15; P6 Prompt-as-Code 2026-08-23; origin JPEG новин — follow-up G2 | owner review живого випуску 2026-08-14 + рішення власника 2026-08-15 + `AI_Today_Brief_Visual_Algorithm_Plan.pdf` |
 | ✅ [pipeline/image-prompt-library](pipeline/image-prompt-library.md) | Prompt-as-Code: 6 блоків + 5 шаблонів з awesome-gpt-image-2, політика `weekly-semantic-story-v6`, без тексту в пікселях | `pipeline/image-prompt-library/`, owner session 2026-08-23 |
+| ✅ [pipeline/daily-visual-workflow](pipeline/daily-visual-workflow.md) | Daily cover як production asset: frozen input, GPT Image 2 + $5 application cap, semantic QA/manual choice, 6 social drafts, privacy-safe exposure telemetry | `pipeline/daily-visual-finalizer.ts`, owner session 2026-08-23/24 |
 | ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | CMS знімає (Shooting package); рендерер лише зводить |
 | ✅ [pipeline/llm-providers](pipeline/llm-providers.md) | Уніфікований реєстр LLM-провайдерів (у розробці): навіщо, ключові знахідки, статус фаз | owner session 2026-08-06 |
 
@@ -126,7 +127,7 @@ Last updated: 2026-08-23
 | ✅ [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md) | Review 24 PR (#241–#264, weekly-illustration-plan): 4 блокери + 8 якість + 4 безпека + 6 операційних, усі виправлені на `feat/weekly-illustration-fixes` | PR #241–#264 дифи, живий `npm run pr:check` 2026-08-15 |
 | ✅ [audits/2026-08-16-auto-publish-silent-judge](audits/2026-08-16-auto-publish-silent-judge.md) | Вісім ночей `status='ok'` без жодної публікації: суддя відповідав правильно, парсер читав тільки `obj.results`, а ран рапортував `ok` безумовно | прод-`pipeline_runs` + пряма проба судді 2026-08-16 |
 | ✅ [audits/2026-08-21-weekly-digest-release-backtest](audits/2026-08-21-weekly-digest-release-backtest.md) | Backtest `ai-weekly-2026-08-09`: 5 днів затримки через 28 Approve + hotfix-ланцюг, не через visuals; машина випуску з одним hallucination gate | прод-БД 2026-08-21 + `gh pr list` 09–21.08 |
-| ✅ [audits/2026-08-23-gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md) | Review Prompt-as-Code/weekly UI: один primary candidate, fail-closed semantic auto-attestation, safe-frame і reading order; 6 ризиків плану та наступний holdout | owner-скріни + код-ревʼю + локальна browser-перевірка 2026-08-23 |
+| ✅ [audits/2026-08-23-gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md) | Review Prompt-as-Code/weekly UI: один primary candidate, safe-frame, localized display title і hash-fenced private staging → explicit versioned visual apply без зміни published text/SEO/PDF/social | owner-скріни + код-ревʼю + локальна browser/SQL-перевірка 2026-08-23/24 |
 
 ## Decisions (ADR)
 

@@ -22,7 +22,7 @@ import { logError, logEvent } from './log';
 import { notifyReview } from './notify';
 import { loadProviderRegistry } from './providers/registry';
 import { publish } from './publish';
-import { getPipelineDateKyiv } from './schedule';
+import { getEditorialDateKyiv } from './schedule';
 import { summarizeEditorPick } from './summarize';
 
 export interface CustomNewsOptions {
@@ -95,7 +95,9 @@ export async function runCustomNews(
     };
   }
 
-  const date = getPipelineDateKyiv();
+  // After the 20:00 Kyiv editorial cutoff, manual stories deliberately join
+  // tomorrow's daily rather than reopening a completed visual package.
+  const date = getEditorialDateKyiv();
   const fetched = toFetchedArticle(research);
   const poolItem = toPoolItem(research);
 
