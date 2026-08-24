@@ -3875,3 +3875,25 @@ vitest по `src/lib/social`, `src/lib/weekly-digest`, `src/components` — **59
 (`**`, backticks) немає в жодному, тож нове блокування `raw_markup` нічого не ламає.
 
 ---
+
+## 2026-08-24 — Закрито RPC-поверхню weekly refresh і hot path daily analytics
+
+**Джерело:** production Supabase Security Advisor після rollout PR #320.
+
+`invalidate_weekly_visual_refresh_staged_assets()` є внутрішньою `SECURITY DEFINER`
+trigger-функцією: її викликає лише trigger зміни visual direction, а не HTTP RPC.
+`machine_attest_weekly_digest_artifact()` змінює review state лише від `service_role`, але
+після перестворення функції теж успадкувала PostgreSQL `PUBLIC EXECUTE`. Міграція
+`20260824180000_revoke_weekly_visual_refresh_trigger_execute.sql` відкликає зайві grants для
+обох функцій; attester отримує вузький `service_role EXECUTE`, а trigger не має API-grant.
+Це прибирає непотрібну публічну RPC-поверхню без зміни редакційного потоку.
+
+Окрема міграція `20260824181000_daily_visual_publication_set_index.sql` додає унікальний
+індекс для одного public projection на frozen daily visual set. Він прибирає `Seq Scan` у
+гарячому lookup endpoint аналітики daily і водночас фіксує на рівні БД уже наявний контракт
+даних. Решту рекомендацій індексатора не додавали: перевірка production query plans не
+показала для них hot path. (source: Supabase Security + Performance Advisor live checks
+2026-08-24; `supabase/migrations/20260824180000_revoke_weekly_visual_refresh_trigger_execute.sql`;
+`supabase/migrations/20260824181000_daily_visual_publication_set_index.sql`)
+
+---
