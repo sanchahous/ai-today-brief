@@ -25,8 +25,14 @@ import {
 import {
   DailyVisualImageError,
   generateDailyVisualImage,
+  parseDailyVisualImageRoute,
+  resolveDailyVisualImageRoute,
+  withDailyVisualImageRouteWinner,
+  winningDailyVisualImageModelRoute,
+  type DailyVisualImageModelRoute,
+  type DailyVisualImageRoute,
   type DailyVisualRenderedImage,
-} from './daily-visual-openai';
+} from './daily-visual-openrouter';
 import { critiqueDailyVisualCandidate, type DailyVisualQaResult } from './daily-visual-qa';
 import {
   DAILY_VISUAL_MASTER_HEIGHT,
@@ -80,7 +86,14 @@ export interface DailyVisualFinalizationResult {
 
 export interface DailyVisualFinalizerDependencies {
   generateDirection?: (prompt: string) => Promise<ProviderCallResult>;
-  generateImage?: (prompt: string) => Promise<DailyVisualRenderedImage>;
+  generateImage?: (
+    prompt: string,
+    route: DailyVisualImageModelRoute,
+  ) => Promise<DailyVisualRenderedImage>;
+  resolveImageRoute?: (input: {
+    currentChampion: DailyVisualImageModelRoute | null;
+    rejectedModelIds: ReadonlySet<string>;
+  }) => Promise<DailyVisualImageRoute>;
   critique?: (input: {
     bytes: Buffer;
     mimeType: string;
@@ -212,8 +225,12 @@ async function defaultDirectionGenerator(prompt: string): Promise<ProviderCallRe
 
 type StoredDailyVisualDirection =
   | { state: 'missing' }
-  | { state: 'generated'; direction: DailyVisualDirection }
-  | { state: 'fallback'; direction: DailyVisualDirection }
+  | {
+      state: 'generated';
+      direction: DailyVisualDirection;
+      imageRoute: DailyVisualImageRoute | null;
+    }
+  | { state: 'fallback'; direction: DailyVisualDirection; imageRoute: null }
   | { state: 'malformed' };
 
 /**
@@ -226,10 +243,15 @@ export function parseStoredDailyVisualDirection(value: unknown): StoredDailyVisu
   if (!value || typeof value !== 'object' || Array.isArray(value)) return { state: 'malformed' };
   const direction = parseDailyVisualDirection(JSON.stringify(value));
   if (!direction) return { state: 'malformed' };
-  const source = (value as Record<string, unknown>).daily_visual_direction_source;
+  const stored = value as Record<string, unknown>;
+  const source = stored.daily_visual_direction_source;
+  const rawRoute = stored.daily_visual_image_route;
+  const imageRoute =
+    rawRoute === undefined || rawRoute === null ? null : parseDailyVisualImageRoute(rawRoute);
+  if (rawRoute !== undefined && rawRoute !== null && !imageRoute) return { state: 'malformed' };
   return source === 'fallback'
-    ? { state: 'fallback', direction }
-    : { state: 'generated', direction };
+    ? { state: 'fallback', direction, imageRoute: null }
+    : { state: 'generated', direction, imageRoute };
 }
 
 async function loadStoredDailyVisualDirection(
@@ -243,6 +265,96 @@ async function loadStoredDailyVisualDirection(
     .maybeSingle();
   if (error) throw new Error(`[daily-visual] load stored direction: ${error.message}`);
   return parseStoredDailyVisualDirection(data?.direction);
+}
+
+type DailyVisualImageRouteHistory = {
+  currentChampion: DailyVisualImageModelRoute | null;
+  rejectedModelIds: Set<string>;
+};
+
+function openRouterImageRoutingConfigured(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return Boolean(env.OPEN_ROUTER_API_KEY?.trim() || env.OPENROUTER_API_KEY?.trim());
+}
+
+/**
+ * Only an already active visual may define the next day's champion. A canary
+ * that failed and was repaired is remembered, so the same model is not billed
+ * again every day merely because it remains in the live catalog.
+ */
+export function collectDailyVisualImageRouteHistory(
+  rows: readonly { direction: unknown }[],
+): DailyVisualImageRouteHistory {
+  let currentChampion: DailyVisualImageModelRoute | null = null;
+  const rejectedModelIds = new Set<string>();
+  for (const row of rows) {
+    const direction = row.direction;
+    if (!direction || typeof direction !== 'object' || Array.isArray(direction)) continue;
+    const route = parseDailyVisualImageRoute(
+      (direction as Record<string, unknown>).daily_visual_image_route,
+    );
+    if (!route) continue;
+    // A repair that wins a canary is evidence against the new model and
+    // restores the previous champion. A routine fallback for the established
+    // champion is only a one-day recovery, never an accidental global switch.
+    if (route.strategy === 'canary' && route.winner === 'repair') {
+      rejectedModelIds.add(route.primary.model);
+    }
+    if (!currentChampion) {
+      currentChampion =
+        route.strategy === 'champion' ? route.primary : winningDailyVisualImageModelRoute(route);
+    }
+  }
+  return { currentChampion, rejectedModelIds };
+}
+
+async function loadDailyVisualImageRouteHistory(
+  db: PipelineDb,
+): Promise<DailyVisualImageRouteHistory> {
+  const { data, error } = await db
+    .from('daily_visual_sets')
+    .select('direction')
+    .eq('status', 'active')
+    .order('editorial_date', { ascending: false })
+    .limit(60);
+  if (error) throw new Error(`[daily-visual] load image route history: ${error.message}`);
+
+  return collectDailyVisualImageRouteHistory((data ?? []) as { direction: unknown }[]);
+}
+
+async function resolveFreshDailyVisualImageRoute(
+  db: PipelineDb,
+  dependencies: DailyVisualFinalizerDependencies,
+): Promise<DailyVisualImageRoute> {
+  if (dependencies.resolveImageRoute) {
+    return dependencies.resolveImageRoute({ currentChampion: null, rejectedModelIds: new Set() });
+  }
+  if (!openRouterImageRoutingConfigured()) {
+    throw new Error('OPEN_ROUTER_API_KEY is not configured for daily image routing.');
+  }
+
+  let history: DailyVisualImageRouteHistory;
+  try {
+    history = await loadDailyVisualImageRouteHistory(db);
+  } catch (error) {
+    // We cannot tell an actual first daily from a read outage here. Do not
+    // silently treat a possibly established champion as absent and promote a
+    // fresh catalog model without the intended canary rollback path.
+    logEvent(
+      'warn',
+      'daily-visual',
+      'Image route history was unavailable; refusing route selection',
+      {
+        error: error instanceof Error ? error.message : String(error),
+      },
+    );
+    throw new Error('Daily image route history is unavailable.');
+  }
+  return resolveDailyVisualImageRoute({
+    currentChampion: history.currentChampion,
+    rejectedModelIds: history.rejectedModelIds,
+  });
 }
 
 async function writeWorkerSetState(
@@ -283,11 +395,13 @@ async function updateDirection(
     claimToken: string;
     direction: DailyVisualDirection;
     source?: 'generated' | 'fallback';
+    imageRoute?: DailyVisualImageRoute;
   },
 ): Promise<void> {
   const storedDirection = {
     ...input.direction,
     daily_visual_direction_source: input.source ?? 'generated',
+    ...(input.imageRoute ? { daily_visual_image_route: input.imageRoute } : {}),
   };
   await writeWorkerSetState(db, {
     visualSetId: input.visualSetId,
@@ -334,6 +448,17 @@ async function reserveBudget(
   });
   if (error) throw new Error(`[daily-visual] reserve budget: ${error.message}`);
   const row = data?.[0];
+  if (row?.reason === 'reservation_exists' && typeof row.reservation_id === 'string') {
+    const wasQuarantined = await quarantineExistingBudgetReservation(db, row.reservation_id);
+    return {
+      reservationId: row.reservation_id,
+      granted: false,
+      // A process can die immediately after reservation, before it has bytes
+      // or a provider response to persist. Do not retry that paid slot: keep
+      // the conservative reservation visible for ledger reconciliation.
+      reason: wasQuarantined ? 'existing_reservation_held_for_reconcile' : 'reservation_exists',
+    };
+  }
   return row
     ? {
         reservationId: row.reservation_id,
@@ -341,6 +466,31 @@ async function reserveBudget(
         reason: row.reason,
       }
     : { reservationId: null, granted: false, reason: 'empty_budget_response' };
+}
+
+/**
+ * A duplicate reservation can mean the previous worker died after its provider
+ * request was dispatched, but before it persisted any recoverable output. A
+ * fresh worker must never make another paid request for that slot. `held` keeps
+ * its maximum cost in the monthly ledger until an operator reconciles it.
+ */
+async function quarantineExistingBudgetReservation(
+  db: PipelineDb,
+  reservationId: string,
+): Promise<boolean> {
+  // This must be one atomic transition, not a read followed by `settleBudget`:
+  // a lease-expired worker can finish the same slot between those calls. The
+  // SQL function locks the reservation and returns false when it was already
+  // settled, which is still a no-render outcome for this retry.
+  const { data, error } = await db.rpc('settle_daily_visual_budget', {
+    p_reservation_id: reservationId,
+    p_status: 'held_for_reconcile',
+    p_actual_cost_micro_usd: null,
+  });
+  if (error) {
+    throw new Error(`[daily-visual] quarantine existing budget reservation: ${error.message}`);
+  }
+  return data === true;
 }
 
 async function settleBudget(
@@ -403,6 +553,57 @@ async function settleProviderBudget(
     };
   }
   if (reportedCostMicroUsd > maxCostMicroUsd) {
+    await settleBudget(db, reservationId, 'held_for_reconcile');
+    return {
+      status: 'held_for_reconcile',
+      accountedCostMicroUsd: maxCostMicroUsd,
+      providerPriceExceededReservation: true,
+    };
+  }
+  await settleBudget(db, reservationId, 'committed', reportedCostMicroUsd);
+  return {
+    status: 'committed',
+    accountedCostMicroUsd: reportedCostMicroUsd,
+    providerPriceExceededReservation: false,
+  };
+}
+
+function reportedRenderedImageCostMicroUsd(rendered: DailyVisualRenderedImage): number | null {
+  const costUsd = rendered.usage.costUsd;
+  if (
+    rendered.usage.costSource !== 'reported' ||
+    typeof costUsd !== 'number' ||
+    !Number.isFinite(costUsd) ||
+    costUsd < 0
+  ) {
+    return null;
+  }
+  const microUsd = Math.ceil(costUsd * 1_000_000);
+  return Number.isSafeInteger(microUsd) ? microUsd : null;
+}
+
+/**
+ * OpenRouter reports a completed image's exact cost. We commit it only when it
+ * agrees with both the hard ledger reservation and the frozen endpoint price;
+ * an unexpected amount remains held for reconciliation and cannot auto-publish.
+ */
+async function settleRenderedImageBudget(
+  db: PipelineDb,
+  reservationId: string,
+  rendered: DailyVisualRenderedImage,
+  route: DailyVisualImageModelRoute,
+  maxCostMicroUsd: number,
+): Promise<DailyVisualProviderBudgetSettlement> {
+  const reportedCostMicroUsd = reportedRenderedImageCostMicroUsd(rendered);
+  if (reportedCostMicroUsd === null) {
+    await settleBudget(db, reservationId, 'held_for_reconcile');
+    return {
+      status: 'held_for_reconcile',
+      accountedCostMicroUsd: maxCostMicroUsd,
+      providerPriceExceededReservation: false,
+    };
+  }
+  if (reportedCostMicroUsd > maxCostMicroUsd || reportedCostMicroUsd > route.fixedCostMicroUsd) {
     await settleBudget(db, reservationId, 'held_for_reconcile');
     return {
       status: 'held_for_reconcile',
@@ -525,27 +726,31 @@ async function logImageCost(
     kind: DailyVisualCandidateKind;
     candidateId: string;
     reservationId: string;
-    reservedCostMicroUsd: number;
-    reservationStatus: 'committed' | 'held_for_reconcile';
+    rendered: DailyVisualRenderedImage;
+    route: DailyVisualImageModelRoute;
+    settlement: DailyVisualProviderBudgetSettlement;
   },
 ): Promise<void> {
   const { error } = await db.from('generation_cost_events').insert({
     scope: 'daily',
     kind: 'image',
-    provider: 'openai',
-    model: 'gpt-image-2',
-    // The Images API does not return a billable amount. Conservatively record
-    // the locked maximum, the same value that protects the $5 monthly cap.
-    cost_usd: microsToUsd(input.reservedCostMicroUsd),
-    cost_source: 'estimated',
+    provider: input.rendered.provider,
+    model: input.rendered.model,
+    cost_usd: microsToUsd(input.settlement.accountedCostMicroUsd),
+    cost_source: input.settlement.status === 'committed' ? 'reported' : 'estimated',
     step_key: `daily.visual_${input.kind}`,
     metadata: {
       editorial_date: input.editorialDate,
       daily_visual_set_id: input.visualSetId,
       candidate_id: input.candidateId,
       reservation_id: input.reservationId,
-      reservation_cap_micro_usd: input.reservedCostMicroUsd,
-      reservation_status: input.reservationStatus,
+      reservation_cap_micro_usd: dailyVisualBudgetStepMaxCost(input.kind),
+      reservation_status: input.settlement.status,
+      route_model: input.route.model,
+      route_provider: input.route.provider,
+      route_fixed_cost_micro_usd: input.route.fixedCostMicroUsd,
+      provider_cost_source: input.rendered.usage.costSource,
+      provider_price_exceeded_reservation: input.settlement.providerPriceExceededReservation,
     },
   });
   if (error) {
@@ -566,6 +771,50 @@ type CandidateRenderResult =
   | { kind: 'budget_unavailable'; reason: string }
   | { kind: 'render_failed'; reason: string };
 
+/**
+ * A private candidate can survive a process crash between Storage persistence
+ * and budget settlement. Reusing those bytes without this ledger check would
+ * let an unknown-cost image skip the exact-cost gate on the next worker run.
+ * A persisted candidate proves the provider call got far enough to produce
+ * bytes, so a stranded `reserved` slot is first made reconcilable rather than
+ * permanently consuming the monthly cap.
+ */
+async function hasCommittedReusableImageReservation(
+  db: PipelineDb,
+  input: {
+    visualSetId: string;
+    kind: DailyVisualCandidateKind;
+    attempt: number;
+    route: DailyVisualImageModelRoute;
+  },
+): Promise<boolean> {
+  const { data, error } = await db
+    .from('daily_visual_budget_reservations')
+    .select('id,status,actual_cost_micro_usd,max_cost_micro_usd')
+    .eq('daily_visual_set_id', input.visualSetId)
+    .eq('candidate_kind', input.kind)
+    .eq('attempt_number', input.attempt)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`[daily-visual] load reusable image reservation: ${error.message}`);
+  }
+  if (data?.status === 'reserved' && data.id) {
+    // This is intentionally not a release: Storage has a completed model
+    // output, but we cannot prove its exact charge after the crash window.
+    await settleBudget(db, data.id, 'held_for_reconcile');
+    return false;
+  }
+  const actual = data?.actual_cost_micro_usd;
+  return (
+    data?.status === 'committed' &&
+    data.max_cost_micro_usd === dailyVisualBudgetStepMaxCost(input.kind) &&
+    typeof actual === 'number' &&
+    Number.isSafeInteger(actual) &&
+    actual >= 0 &&
+    actual <= input.route.fixedCostMicroUsd
+  );
+}
+
 async function renderOrReuseCandidate(
   db: PipelineDb,
   input: {
@@ -575,7 +824,11 @@ async function renderOrReuseCandidate(
     attempt: number;
     prompt: string;
     parentCandidateId?: string | null;
-    generateImage: (prompt: string) => Promise<DailyVisualRenderedImage>;
+    route: DailyVisualImageModelRoute;
+    generateImage: (
+      prompt: string,
+      route: DailyVisualImageModelRoute,
+    ) => Promise<DailyVisualRenderedImage>;
   },
 ): Promise<CandidateRenderResult> {
   const prior = await findPrivateDailyVisualCandidate(
@@ -585,6 +838,15 @@ async function renderOrReuseCandidate(
     input.attempt,
   );
   if (prior) {
+    const isCostAttested = await hasCommittedReusableImageReservation(db, {
+      visualSetId: input.visualSetId,
+      kind: input.kind,
+      attempt: input.attempt,
+      route: input.route,
+    });
+    if (!isCostAttested) {
+      return { kind: 'render_failed', reason: 'persisted_image_cost_unattested' };
+    }
     return {
       kind: 'ready',
       candidate: prior,
@@ -605,7 +867,7 @@ async function renderOrReuseCandidate(
 
   let rendered: DailyVisualRenderedImage;
   try {
-    rendered = await input.generateImage(input.prompt);
+    rendered = await input.generateImage(input.prompt, input.route);
   } catch (error) {
     await settleBudget(
       db,
@@ -642,19 +904,35 @@ async function renderOrReuseCandidate(
     };
   }
 
-  // GPT Image does not return a billable amount. A successful image is still
-  // a successful candidate, but its full declared maximum stays reserved
-  // until reconciliation instead of being falsely recorded as a known price.
-  await settleBudget(db, reservation.reservationId, 'held_for_reconcile');
+  const settlement = await settleRenderedImageBudget(
+    db,
+    reservation.reservationId,
+    rendered,
+    input.route,
+    dailyVisualBudgetStepMaxCost(input.kind),
+  );
   await logImageCost(db, {
     editorialDate: input.editorialDate,
     visualSetId: input.visualSetId,
     kind: input.kind,
     candidateId: candidate.id,
     reservationId: reservation.reservationId,
-    reservedCostMicroUsd: dailyVisualBudgetStepMaxCost(input.kind),
-    reservationStatus: 'held_for_reconcile',
+    rendered,
+    route: input.route,
+    settlement,
   });
+  if (settlement.providerPriceExceededReservation) {
+    return {
+      kind: 'render_failed',
+      reason: 'provider_reported_image_price_exceeded_frozen_route',
+    };
+  }
+  if (settlement.status !== 'committed') {
+    return {
+      kind: 'render_failed',
+      reason: 'provider_reported_image_cost_unavailable',
+    };
+  }
   return {
     kind: 'ready',
     candidate,
@@ -960,7 +1238,7 @@ export async function finalizeDailyVisual(
   const generateDirection =
     dependencies.generateDirection ?? ((prompt) => defaultDirectionGenerator(prompt));
   const generateImage =
-    dependencies.generateImage ?? ((prompt) => generateDailyVisualImage(prompt));
+    dependencies.generateImage ?? ((prompt, route) => generateDailyVisualImage(prompt, route));
   const composeSocial = dependencies.composeSocial ?? composeDailyVisualSocialPackage;
   const revalidate = dependencies.revalidate ?? defaultRevalidate;
 
@@ -1029,13 +1307,61 @@ export async function finalizeDailyVisual(
         reason: 'direction_unavailable_or_malformed',
       });
     }
-    if (storedDirection.state === 'missing' || isDirectionRetry) {
+    let imageRoute =
+      !isDirectionRetry && storedDirection.state === 'generated'
+        ? storedDirection.imageRoute
+        : null;
+    if (!imageRoute) {
+      // Persist the editorial contract before any network-based route
+      // discovery. A safe route outage must still leave the branded fallback
+      // and manual source replacement activatable with real display titles.
       await updateDirection(db, {
         visualSetId,
         jobId,
         claimToken,
         direction,
         source: 'generated',
+      });
+      const existingPrimary = await findPrivateDailyVisualCandidate(
+        db,
+        visualSetId,
+        'ai_primary',
+        automaticAttempt,
+      );
+      if (existingPrimary) {
+        // A historical candidate made before route snapshots cannot safely be
+        // repaired with a newly discovered model. Keep it private for review.
+        return needsChoice(db, {
+          jobId,
+          claimToken,
+          editorialDate,
+          visualSetId,
+          reason: 'unfrozen_image_route_for_existing_candidate',
+        });
+      }
+      try {
+        imageRoute = await resolveFreshDailyVisualImageRoute(db, dependencies);
+      } catch (error) {
+        logEvent('warn', 'daily-visual', 'Image route could not be resolved', {
+          editorial_date: editorialDate,
+          daily_visual_set_id: visualSetId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return needsChoice(db, {
+          jobId,
+          claimToken,
+          editorialDate,
+          visualSetId,
+          reason: 'image_route_unavailable',
+        });
+      }
+      await updateDirection(db, {
+        visualSetId,
+        jobId,
+        claimToken,
+        direction,
+        source: 'generated',
+        imageRoute,
       });
     }
 
@@ -1045,66 +1371,79 @@ export async function finalizeDailyVisual(
       kind: 'ai_primary',
       attempt: automaticAttempt,
       prompt: buildDailyVisualImagePrompt(direction),
+      route: imageRoute.primary,
       generateImage,
     });
-    if (primary.kind !== 'ready') {
+    if (primary.kind === 'budget_unavailable') {
       return needsChoice(db, {
         jobId,
         claimToken,
         editorialDate,
         visualSetId,
-        reason:
-          primary.kind === 'budget_unavailable'
-            ? `budget:${primary.reason}`
-            : `primary:${primary.reason}`,
+        reason: `budget:${primary.reason}`,
       });
     }
-    await setLatestAiCandidate(db, {
-      visualSetId,
-      jobId,
-      claimToken,
-      candidateId: primary.candidate.id,
-    });
-    const primaryQa = await critiqueCandidateWithBudget(db, {
-      editorialDate,
-      visualSetId,
-      attempt: automaticAttempt,
-      bytes: primary.bytes,
-      direction,
-      snapshot,
-      critique: dependencies.critique,
-    });
-    await recordQa(db, primary.candidate.id, primaryQa);
-    if (primaryQa.passed) {
-      await publishCandidate(db, {
-        editorialDate,
+    let repairPatches: readonly string[] = [];
+    let repairParentCandidateId: string | null = null;
+    if (primary.kind === 'ready') {
+      await setLatestAiCandidate(db, {
         visualSetId,
         jobId,
         claimToken,
-        snapshot,
-        direction,
-        candidate: primary.candidate,
-        composeSocial,
-        revalidate,
+        candidateId: primary.candidate.id,
       });
-      return {
-        status: 'activated',
+      const primaryQa = await critiqueCandidateWithBudget(db, {
         editorialDate,
         visualSetId,
-        reason: isDirectionRetry
-          ? primary.reused
-            ? 'reused_direction_retry_primary_passed'
-            : 'direction_retry_primary_passed'
-          : primary.reused
-            ? 'reused_primary_passed'
-            : 'primary_passed',
-        activeCandidateId: primary.candidate.id,
-      };
+        attempt: automaticAttempt,
+        bytes: primary.bytes,
+        direction,
+        snapshot,
+        critique: dependencies.critique,
+      });
+      await recordQa(db, primary.candidate.id, primaryQa);
+      if (primaryQa.passed) {
+        await updateDirection(db, {
+          visualSetId,
+          jobId,
+          claimToken,
+          direction,
+          source: 'generated',
+          imageRoute: withDailyVisualImageRouteWinner(imageRoute, 'primary'),
+        });
+        await publishCandidate(db, {
+          editorialDate,
+          visualSetId,
+          jobId,
+          claimToken,
+          snapshot,
+          direction,
+          candidate: primary.candidate,
+          composeSocial,
+          revalidate,
+        });
+        return {
+          status: 'activated',
+          editorialDate,
+          visualSetId,
+          reason: isDirectionRetry
+            ? primary.reused
+              ? 'reused_direction_retry_primary_passed'
+              : 'direction_retry_primary_passed'
+            : primary.reused
+              ? 'reused_primary_passed'
+              : 'primary_passed',
+          activeCandidateId: primary.candidate.id,
+        };
+      }
+      repairPatches = primaryQa.repairPatches;
+      repairParentCandidateId = primary.candidate.id;
     }
 
     // The owner recovery budget deliberately has no repair slot. A failed
-    // fresh primary remains private beside the original fallback for an
-    // explicit editorial choice; it can never make the fallback public.
+    // fresh primary (including a render that could not be cost-attested)
+    // remains private beside the original fallback for an explicit editorial
+    // choice; it can never make the fallback public.
     if (isDirectionRetry) {
       return needsChoice(db, {
         jobId,
@@ -1120,8 +1459,11 @@ export async function finalizeDailyVisual(
       visualSetId,
       kind: 'ai_repair',
       attempt: 1,
-      prompt: buildDailyVisualRepairPrompt(direction, primaryQa.repairPatches),
-      parentCandidateId: primary.candidate.id,
+      // A canary that never rendered still gets one bounded, frozen champion
+      // route. It is the outage fallback as well as the semantic repair path.
+      prompt: buildDailyVisualRepairPrompt(direction, repairPatches),
+      parentCandidateId: repairParentCandidateId,
+      route: imageRoute.repair,
       generateImage,
     });
     if (repair.kind !== 'ready') {
@@ -1161,6 +1503,14 @@ export async function finalizeDailyVisual(
         reason: 'primary_and_repair_failed_semantic_qa',
       });
     }
+    await updateDirection(db, {
+      visualSetId,
+      jobId,
+      claimToken,
+      direction,
+      source: 'generated',
+      imageRoute: withDailyVisualImageRouteWinner(imageRoute, 'repair'),
+    });
     await publishCandidate(db, {
       editorialDate,
       visualSetId,

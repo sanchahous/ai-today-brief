@@ -86,11 +86,12 @@ Daily generation runs **once, post-publish** (`pipeline/card-image.ts` from
 `generation_cost_events` (see `/admin/costs`).
 
 Цей абзац описує **news-card** images. Він не є daily digest cover: з 2026-08-24 daily cover має
-окремий production workflow з однією тезою, GPT Image 2, bounded $5/month spend, semantic QA,
-manual source/editor choice і шість social draft’ів. News cards лишаються на наявному automatic
-provider/publish flow; їх покращено causal prompt policy без нового ручного gate. Деталі —
-[daily-visual-workflow](../pipeline/daily-visual-workflow.md). (source: owner session 2026-08-24;
-`pipeline/card-image.ts`; `pipeline/daily-visual-finalizer.ts`)
+окремий production workflow з однією тезою, pinned dynamic OpenRouter Image route, bounded
+$5/month spend, semantic QA, manual source/editor choice і шість social draft’ів. News cards
+лишаються на наявному automatic provider/publish flow; їх покращено causal prompt policy без
+нового ручного gate. Деталі — [daily-visual-workflow](../pipeline/daily-visual-workflow.md).
+(source: owner session 2026-08-24; `pipeline/card-image.ts`;
+`pipeline/daily-visual-finalizer.ts`; `pipeline/daily-visual-openrouter.ts`)
 
 ## Current weekly acceptance rule (2026-08-23)
 
