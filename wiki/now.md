@@ -19,7 +19,10 @@ Last updated: 2026-08-24
   telemetry. **Уточнення 2026-08-24:** renderer переходить на dedicated OpenRouter Image API:
   frozen route (model + pinned provider + resolution + fixed endpoint price) перед paid call,
   exact `usage.cost` settlement і dynamic Seedream/Qwen canary → QA → champion замість
-  непрозорого `auto`/`latest`. Monthly cap $5 fail-closed для paid calls; новини лишають existing automatic image
+  непрозорого `auto`/`latest`
+  ([PR #323](https://github.com/sanchahous/ai-today-brief/pull/323), гілка `codex/daily-visual-openrouter`,
+  live-перевірено проти каталогу OpenRouter 2026-08-24: bootstrap Seedream 5.0 Pro 1K $0.045 +
+  Qwen Image 3 Pro 1K $0.040 repair). Monthly cap $5 fail-closed для paid calls; новини лишають existing automatic image
   provider, але з causal prompt. Published weekly не змінюється: **Create visual refresh draft**
   створює private working revision, де можна задати короткий hero/PDF `display_title`, internal
   visual direction, staged replacement cover/story assets і після QA/AAL2 owner review застосувати
