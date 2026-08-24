@@ -83,7 +83,7 @@ export function MobileSearchModal({ lang }: { lang: Lang }) {
     const trimmed = value.trim();
     trackSearch(trimmed, 'modal', lang);
     inputRef.current?.blur(); // dismiss keyboard before the scroll-restore unlock
-    router.push(trimmed ? `/${lang}/news?q=${encodeURIComponent(trimmed)}` : `/${lang}/news`);
+    router.push(trimmed ? `/${lang}/news/search?q=${encodeURIComponent(trimmed)}` : `/${lang}/news`);
     closeSearch();
   }
 

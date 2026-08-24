@@ -76,7 +76,7 @@ async function buildTrending(lang: Lang, items: HomeItem[]): Promise<TrendingTop
       return {
         name,
         mentions,
-        href: slug ? `/${lang}/concepts/${slug}` : `/${lang}/news?q=${encodeURIComponent(name)}`,
+        href: slug ? `/${lang}/concepts/${slug}` : `/${lang}/news/search?q=${encodeURIComponent(name)}`,
       };
     })
     .sort((a, b) => b.mentions - a.mentions)

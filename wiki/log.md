@@ -3952,3 +3952,26 @@ provider request, ані назавжди залишити slot у generic `rese
 `supabase/migrations/20260824100000_daily_visual_workflow.sql`)
 
 ---
+
+## 2026-08-24 — Vercel: заголовок кешу не спрацював, /news переведено на статику
+
+Фікс із попереднього запису (Cache-Control через headers()) **на проді не працює**: /en/news далі
+віддавав private, no-cache, no-store і X-Vercel-Cache: MISS. Next перекриває цей заголовок для
+динамічно відрендереного маршруту. Мертве правило прибрано.
+
+Справжній фікс: /[lang]/news більше не читає searchParams і став prerendered (build-маркер
+● SSG замість ƒ Dynamic, Cache-Control: s-maxage=3600, x-nextjs-prerender: 1), а пошук переїхав
+на власний динамічний маршрут /[lang]/news/search — noindex, follow, канонікал на /news, ті самі
+server-side результати. Усі 9 внутрішніх ?q=-посилань переведено, старі ловить 308-редірект.
+Перевірено на локальному production-білді: хаб віддає 13 карток і 100 посилань у HTML, пошук
+дає 68 результатів на «cursor», перехід за trending-посиланням і повторний пошук працюють.
+
+Записано також три способи лишити ?q= на статичному хабі, які НЕ працюють у prod-білді
+(Suspense з тим самим компонентом у fallback, React-контекст, читання window.location.search),
+щоб наступного разу не заходити на це коло. Штатний механізм — Cache Components, окрема
+міграція. Скорочення стрічки 100 → 40 заміряно (−21% en / −24% uk) і визнано непотрібним після
+переходу на статику. (source: live check прода 2026-08-24; production-білд локально;
+[vercel-origin-transfer](ops/vercel-origin-transfer.md); next.config.ts;
+src/app/[lang]/news/search/page.tsx)
+
+---
