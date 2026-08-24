@@ -3897,3 +3897,41 @@ trigger-функцією: її викликає лише trigger зміни visu
 `supabase/migrations/20260824181000_daily_visual_publication_set_index.sql`)
 
 ---
+
+## 2026-08-24 — Daily visual: bounded dynamic OpenRouter image route
+
+Daily renderer більше не залежить від окремого `OPENAI_API_KEY`: він використовує вже наявний
+`OPEN_ROUTER_API_KEY` і dedicated Image API. До першого paid render worker зберігає приватний
+route snapshot з конкретними model, provider endpoint, 16:9 resolution і fixed endpoint price;
+retry читає саме цей snapshot, а не поточний catalog.
+
+Новий eligible stable Pro Seedream/Qwen release може пройти як canary primary лише через existing
+semantic QA; Lite не є automatic upgrade. Якщо canary не рендериться або не проходить, repair
+використовує frozen champion; якщо repair активувався, невдалий canary не перезапускається щодня.
+Ціна без `variant` трактується як base tier endpoint, а не як ціна будь-якої resolution, тому
+вищий tier без іменованого variant не проходить у route. Catalog outage, зниклий champion, один
+route або незафіксована додаткова ціна тепер fail-closed,
+без hard-coded paid fallback. `provider.max_price.image` блокує request до dispatch при зміні ціни,
+а `usage.cost` completed response комітиться точно лише коли він не перевищує frozen price та
+reservation; інакше candidate лишається private. Retry не обійде цей gate після crash: existing
+bytes мусять мати committed exact reservation. Routine fallback established champion не змінює
+global champion; лише canary pass/rollback впливає на наступний route. (source: owner decision
+2026-08-24;
+[OpenRouter Image Generation API](https://openrouter.ai/docs/guides/overview/multimodal/image-generation);
+ [OpenRouter Provider Routing](https://openrouter.ai/docs/guides/routing/provider-selection);
+`pipeline/daily-visual-openrouter.ts`; `pipeline/daily-visual-finalizer.ts`)
+
+---
+
+## 2026-08-24 — Daily visual: crash-safe duplicate reservation quarantine
+
+Повторний worker, який бачить exact `reservation_exists`, не може ані повторно відправити paid
+provider request, ані назавжди залишити slot у generic `reserved`: він атомарно переводить його в
+`held_for_reconcile`. Якщо race означає, що інший worker уже settle-нув row, повтор однаково
+зупиняється на manual choice без render. Це консервативно зберігає потенційну вартість у $5 ledger
+до owner reconciliation, замість допускати непідтверджений другий charge. Regression test покриває
+обидва outcomes SQL row lock (`true` і already-settled `false`). (source:
+`pipeline/daily-visual-finalizer.ts`; `pipeline/daily-visual-finalizer.test.ts`;
+`supabase/migrations/20260824100000_daily_visual_workflow.sql`)
+
+---

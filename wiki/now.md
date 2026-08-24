@@ -14,9 +14,15 @@ Last updated: 2026-08-24
 - **Daily visual workflow + safe weekly visual refresh (2026-08-24), PR #320 worktree
   `claude/gpt-image-prompt-plan-review-2ffff7`.** Daily тепер має бути реальним production
   visual asset, а не Telegram prompt: frozen daily snapshot після 20:00 Kyiv, одна issue-level
-  `display_title` + private `visual_thesis`, GPT Image 2 primary/optional repair, semantic QA,
+  `display_title` + private `visual_thesis`, OpenRouter Image primary/optional repair, semantic QA,
   manual source/editor replacement, шість native social drafts і privacy-safe qualified exposure
-  telemetry. Monthly cap $5 fail-closed для paid calls; новини лишають existing automatic image
+  telemetry. **Уточнення 2026-08-24:** renderer переходить на dedicated OpenRouter Image API:
+  frozen route (model + pinned provider + resolution + fixed endpoint price) перед paid call,
+  exact `usage.cost` settlement і dynamic Seedream/Qwen canary → QA → champion замість
+  непрозорого `auto`/`latest`
+  ([PR #323](https://github.com/sanchahous/ai-today-brief/pull/323), гілка `codex/daily-visual-openrouter`,
+  live-перевірено проти каталогу OpenRouter 2026-08-24: bootstrap Seedream 5.0 Pro 1K $0.045 +
+  Qwen Image 3 Pro 1K $0.040 repair). Monthly cap $5 fail-closed для paid calls; новини лишають existing automatic image
   provider, але з causal prompt. Published weekly не змінюється: **Create visual refresh draft**
   створює private working revision, де можна задати короткий hero/PDF `display_title`, internal
   visual direction, staged replacement cover/story assets і після QA/AAL2 owner review застосувати

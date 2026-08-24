@@ -4,7 +4,7 @@ Summary: production-контур daily cover: одна редакційна те
 перевірка сенсу → шість готових social draft’ів. Сторінка потрібна редактору й розробнику для
 безпечної заміни кадру без зміни вже опублікованого контенту.
 Sources: owner session 2026-08-23/24; `pipeline/daily-visual-finalizer.ts`;
-`pipeline/daily-visual-contract.ts`; `pipeline/daily-visual-qa.ts`;
+`pipeline/daily-visual-contract.ts`; `pipeline/daily-visual-openrouter.ts`; `pipeline/daily-visual-qa.ts`;
 `src/lib/social/daily-visual-composer.ts`; `supabase/migrations/20260824100000_daily_visual_workflow.sql`
 Last updated: 2026-08-24
 
@@ -39,12 +39,43 @@ daily, без позначки «застаріле». Finalizer створює 
 
 ## Рендер, QA і витрати
 
-Автоматична спроба використовує GPT Image 2 для **одного** master-кадру, нормалізованого до
-1600×900 через `contain`; за semantic failure можливий один repair, а branded fallback зберігається
-тільки як ручний варіант і ніколи не активується мовчки. Картинка проходить deterministic,
-image-only і story-aware semantic QA; лише успішний primary може активуватися автоматично.
-(source: `pipeline/daily-visual-openai.ts`; `pipeline/daily-visual-storage.ts`;
+Автоматична спроба використовує dedicated OpenRouter Image API для **одного** master-кадру,
+нормалізованого до 1600×900 через `contain`; за semantic failure можливий один repair, а branded
+fallback зберігається тільки як ручний варіант і ніколи не активується мовчки. Картинка проходить
+deterministic, image-only і story-aware semantic QA; автоматично може активуватися лише route,
+що пройшов усі гейти — primary або один pinned repair. (source:
+`pipeline/daily-visual-openrouter.ts`; `pipeline/daily-visual-storage.ts`;
 `pipeline/daily-visual-qa.ts`; `pipeline/daily-visual-finalizer.ts`)
+
+### Dynamic route без непрозорого auto-router
+
+У worker не використовується `openrouter/auto`, `~latest` або provider fallback. Перед першим
+paid render він читає Image Models API і per-endpoint records, допускає тільки stable
+Pro `bytedance-seed/seedream-*` та `qwen/qwen-image-*` з native `16:9`, `n=1`, конкретним
+`provider_tag` і доведеним all-in fixed output price не більшою за $0.05. Token, megapixel,
+per-request та text-input billing відсікаються; optional input-image line допустима лише тому, що
+daily payload не містить input references. Ціна без `variant` означає найдешевший declared
+tier конкретного endpoint (у Seedream 5.0 Pro це 1K за $0.045, тоді як 2K названо окремим
+`high_resolution`), тому вона приймається лише для base tier; вищий tier без власного іменованого
+variant не має доведеної ціни і відкидається. У JSONB direction зберігається private frozen
+`daily_visual_image_route`: model, pinned provider, resolution, expected price, catalog hash,
+primary/repair і eventual winner. Кожен request також несе OpenRouter `provider.max_price.image`,
+тому зміна ціни блокує dispatch ще до provider call. Тому retry ніколи не переходить на модель,
+яка з'явилася після першої спроби. (source: [OpenRouter Image Generation API](https://openrouter.ai/docs/guides/overview/multimodal/image-generation);
+ [OpenRouter Provider Routing](https://openrouter.ai/docs/guides/routing/provider-selection);
+`pipeline/daily-visual-openrouter.ts`; `pipeline/daily-visual-finalizer.ts`)
+
+Перший live route надає пріоритет Seedream 5.0 Pro у 1K/16:9 ($0.045) з незалежним Qwen Image 3
+Pro у 1K/16:9 ($0.040) repair, але **немає** hard-coded paid fallback: якщо каталог, champion
+або друга independent route не можна перевірити, worker зупиняється на manual choice. Нове Pro
+покоління Seedream або пізніше доданий Qwen може стати **canary primary**; Lite та інші
+same-generation SKU не є автоматичним upgrade. Canary має пройти повний QA. Якщо він не
+рендериться або не проходить QA, repair іде через frozen champion; якщо repair активувався,
+canary model потрапляє у private reject history і не оплачується знову щодня. Якщо canary
+пройшов, він стає winner/champion наступного active set. Repair established champion — це
+одноразове відновлення, а не непомітна зміна global champion. Це baseline safety gate, не дорогий
+paired aesthetic benchmark двох full renders на кожен день. (source:
+`pipeline/daily-visual-openrouter.ts`; `pipeline/daily-visual-finalizer.ts`)
 
 Якщо direction не дійшов навіть до AI candidate, owner з AAL2 має рівно один bounded recovery:
 нова direction, один primary і обидва QA без repair (максимум $0.084). Він не переписує перший
@@ -59,6 +90,20 @@ reservation чи нової paid спроби. (source:
 проходи); 31 такий день = $4.898. Невідома або неоднозначна фактична ціна не звільняє резерв:
 вона лишається `held_for_reconcile`, тому система fail-closed замість тихо виходити за бюджет.
 (source: owner decision 2026-08-24; `pipeline/daily-visual-contract.ts`;
+`pipeline/daily-visual-finalizer.ts`; `supabase/migrations/20260824100000_daily_visual_workflow.sql`)
+
+Для completed OpenRouter image response worker звіряє `usage.cost` із frozen endpoint price і
+атомарно переводить exact sum з reservation у committed ledger. Відсутня, недостовірна або більша
+за frozen price сума лишає повну reservation `held_for_reconcile`; такий rendered candidate лишається
+лише private для owner review і не допускається до automatic publication. (source:
+[OpenRouter Image Generation API](https://openrouter.ai/docs/guides/overview/multimodal/image-generation);
+`pipeline/daily-visual-openrouter.ts`; `pipeline/daily-visual-finalizer.ts`)
+
+Якщо worker впав після reservation — навіть **до** появи Storage candidate — retry знаходить той
+самий exact slot за `set + step + attempt`, але не робить другого provider call. `reserved` він
+атомарно переводить у `held_for_reconcile`; якщо інший worker уже його settle-нув, повтор так само
+зупиняється без render. Лише `committed` сума в межах frozen route може перейти до QA; reserved,
+held або відсутня reservation залишає bytes private і не обходить cost gate. (source:
 `pipeline/daily-visual-finalizer.ts`; `supabase/migrations/20260824100000_daily_visual_workflow.sql`)
 
 Це application-side budget fence: перед викликом система не дозволить зарезервувати наступний

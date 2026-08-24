@@ -6,7 +6,7 @@ Sources: `wiki/strategy/startup-plan.md`, `wiki/strategy/master-roadmap.md`, `wi
 `wiki/audits/2026-06-12-analytics-gsc.md`, `wiki/analytics/ga4-gsc.md`, `wiki/pipeline/guide.md`,
 `wiki/ops/owner-checklist.md`, `.cursor/rules/00-core.mdc`, `.env.example`, `package.json`,
 live check git/PR 2026-08-04, editorial quality overhaul PR5 (гілка `feat/weekly-editorial-voice`, 2026-08-06)
-Last updated: 2026-08-23
+Last updated: 2026-08-24
 
 ---
 
@@ -75,6 +75,16 @@ LemonSqueezy відкладено, спонсорство «через email с�
 | Social writer/critic LLM | оцінка $0.3/M input, $1/M output | `.env.example` |
 | Cost ledger | таблиця `generation_cost_events` + UI `/admin/costs` (оцінки/reported, не рахунок провайдера). **G (2026-08-15):** секція Illustration budget ділить новини / weekly API / промпти+QA з ledger, не з лімітів політики | PR #169, [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) G |
 | Хостинг/БД | Vercel + Supabase | `.cursor/rules/00-core.mdc` |
+
+**Актуалізація daily visual (2026-08-24):** фрагмент таблиці вище про P3 `cover_prompt` уже
+застарів. Daily після cutoff тепер створює real 16:9 production asset через dedicated OpenRouter
+Image API, але має той самий DB hard cap $5/місяць. Router не викликає `auto`/`latest`: він
+фіксує eligible stable Seedream/Qwen model, provider endpoint, resolution і fixed price до render,
+записує route у private direction та використовує `usage.cost` для exact committed ledger.
+Новий compatible vendor release спершу є canary і стає champion лише після semantic QA; site news
+cards лишаються на Cloudflare FLUX.2 klein. (source: owner decision 2026-08-24;
+[daily-visual-workflow](pipeline/daily-visual-workflow.md);
+`pipeline/daily-visual-openrouter.ts`; `pipeline/daily-visual-finalizer.ts`)
 
 **Актуалізація weekly illustrations (2026-08-23):** попередній three-seat опис у таблиці вище
 лишається історією multi-concept/offline experiment. Поточні `prompt_only` і production `render`
