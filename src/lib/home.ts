@@ -291,7 +291,7 @@ async function buildTrending(
         topic: {
           name,
           mentions,
-          href: slug ? `/${lang}/concepts/${slug}` : `/${lang}/news?q=${encodeURIComponent(name)}`,
+          href: slug ? `/${lang}/concepts/${slug}` : `/${lang}/news/search?q=${encodeURIComponent(name)}`,
           rising: isRising(risingScore),
         },
         trend: blendTrend(mentions, risingScore ?? 0),

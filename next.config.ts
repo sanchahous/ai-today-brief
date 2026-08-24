@@ -92,27 +92,6 @@ const nextConfig: NextConfig = {
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
         ],
       },
-      {
-        // The news index reads `searchParams` (q / category / page), which is a
-        // Next 16 runtime API: the route renders dynamically on every request
-        // and its `export const revalidate` is ignored, so Next emits
-        // `private, no-cache, no-store` and the CDN never stores it. Measured
-        // 2026-08-24: /en/news 343 KB and /uk/news 390 KB, both
-        // `X-Vercel-Cache: MISS` on every hit while every other hub was a HIT
-        // — the single largest consumer of the 10 GB Fast Origin Transfer
-        // allowance. The page is public and derives only from the URL, so a
-        // short shared-cache lifetime is safe. Five minutes keeps the editorial
-        // delay after a publish small (the publish flow's `revalidatePath`
-        // cannot purge a dynamic route) while collapsing origin fetches to a
-        // handful per hour per PoP.
-        source: '/:lang(en|uk)/news',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, s-maxage=300, stale-while-revalidate=3600',
-          },
-        ],
-      },
     ];
   },
   experimental: {
@@ -171,6 +150,17 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      {
+        // Search moved off the news hub so the hub could go back to being
+        // prerendered — reading `searchParams` there is what made it render
+        // per request and stopped the CDN from caching it. Every link on the
+        // site now points at the new route; this keeps external and already
+        // shared `?q=` links alive. Next forwards the query string itself.
+        source: '/:lang(en|uk)/news',
+        has: [{ type: 'query', key: 'q' }],
+        destination: '/:lang/news/search',
+        permanent: true,
+      },
       {
         // Brief + item slugs were renamed after Google had already discovered
         // the original URL (GSC 404 of 2026-06-12).

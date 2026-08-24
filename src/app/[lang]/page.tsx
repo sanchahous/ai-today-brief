@@ -84,7 +84,7 @@ export default async function Home({ params }: { params: Promise<Params> }) {
           '@type': 'SearchAction',
           target: {
             '@type': 'EntryPoint',
-            urlTemplate: `${SITE_URL}/${lang}/news?q={search_term_string}`,
+            urlTemplate: `${SITE_URL}/${lang}/news/search?q={search_term_string}`,
           },
           'query-input': 'required name=search_term_string',
         },

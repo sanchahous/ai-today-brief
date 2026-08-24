@@ -123,7 +123,7 @@ export function SearchPreviewDropdown({
 
   function seeAll() {
     trackSearch(trimmed, seeAllSource, lang, total);
-    router.push(`/${lang}/news?q=${encodeURIComponent(trimmed)}`);
+    router.push(`/${lang}/news/search?q=${encodeURIComponent(trimmed)}`);
     onNavigate();
   }
 

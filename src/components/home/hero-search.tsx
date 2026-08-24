@@ -16,7 +16,7 @@ export const POPULAR: Record<Lang, string[]> = {
 };
 
 /**
- * Hero search with live preview dropdown; submit or "see all" opens /news?q=….
+ * Hero search with live preview dropdown; submit or "see all" opens /news/search?q=….
  */
 export function HeroSearch({
   lang,
@@ -61,7 +61,7 @@ export function HeroSearch({
   function go(value: string, source: 'hero' | 'popular') {
     const trimmed = value.trim();
     trackSearch(trimmed, source, lang);
-    router.push(trimmed ? `/${lang}/news?q=${encodeURIComponent(trimmed)}` : `/${lang}/news`);
+    router.push(trimmed ? `/${lang}/news/search?q=${encodeURIComponent(trimmed)}` : `/${lang}/news`);
     setQuery('');
     setOpen(false);
   }

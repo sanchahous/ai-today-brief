@@ -108,7 +108,7 @@ Last updated: 2026-08-24
 |---|---|---|
 | ✅ [ops/mcp](ops/mcp.md) | MCP-сервери: chrome-devtools, apify, supabase, ahrefs, vercel | нове |
 | ✅ [ops/vercel-image-quota](ops/vercel-image-quota.md) | Інцидент 402 на `/_next/image`, власний loader; origin JPEG карток; site delivery WebP | live check 2026-08-14, `next.config.ts`, `src/lib/image-loader.ts`, `pipeline/card-image.ts` |
-| ✅ [ops/vercel-origin-transfer](ops/vercel-origin-transfer.md) | Fast Origin Transfer 100%: /news динамічна через searchParams і ніколи не кешується; CDN-кеш, коротший srcSet, рідший sitemap; image-квота — фантом | нове 2026-08-24, live check заголовків |
+| ✅ [ops/vercel-origin-transfer](ops/vercel-origin-transfer.md) | Fast Origin Transfer 100%: /news була динамічна через searchParams і ніколи не кешувалась; заголовок Cache-Control не рятує — хаб зроблено prerendered, пошук винесено на /news/search; три способи, що не працюють | нове 2026-08-24, live check заголовків прода |
 | ✅ [ops/owner-checklist](ops/owner-checklist.md) | Env-матриця, launch-блокери, go-live послідовність | колишній `docs/OWNER-CHECKLIST.md` |
 | ✅ [ops/social-cms-runbook](ops/social-cms-runbook.md) | Runbook соц-CMS | колишній `docs/SOCIAL-CMS-RUNBOOK.md` |
 | ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладки, робоча копія = остання ревізія, **Fix remaining issues** на Master quality, blocker-free social approval, stuck jobs | нове 2026-08-04, оновлено 2026-08-22 |
