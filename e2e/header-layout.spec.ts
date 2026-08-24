@@ -67,7 +67,9 @@ test.describe('Header layout', () => {
       await input.fill('agent');
       await expect(input).toHaveValue('agent');
       await input.press('Enter');
-      await expect(page).toHaveURL(/\/uk\/news\?q=agent$/);
+      // Search has its own route so the news hub can stay prerendered — see
+      // wiki/ops/vercel-origin-transfer.md.
+      await expect(page).toHaveURL(/\/uk\/news\/search\?q=agent$/);
     });
   }
 });
