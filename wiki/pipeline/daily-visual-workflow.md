@@ -5,8 +5,9 @@ Summary: production-контур daily cover: одна редакційна те
 безпечної заміни кадру без зміни вже опублікованого контенту.
 Sources: owner session 2026-08-23/24; `pipeline/daily-visual-finalizer.ts`;
 `pipeline/daily-visual-contract.ts`; `pipeline/daily-visual-openrouter.ts`; `pipeline/daily-visual-qa.ts`;
-`src/lib/social/daily-visual-composer.ts`; `supabase/migrations/20260824100000_daily_visual_workflow.sql`
-Last updated: 2026-08-24
+`src/lib/social/daily-visual-composer.ts`; `supabase/migrations/20260824100000_daily_visual_workflow.sql`,
+first nightly run 2026-08-25
+Last updated: 2026-08-25
 
 ---
 
@@ -43,7 +44,11 @@ daily, без позначки «застаріле». Finalizer створює 
 нормалізованого до 1600×900 через `contain`; за semantic failure можливий один repair, а branded
 fallback зберігається тільки як ручний варіант і ніколи не активується мовчки. Картинка проходить
 deterministic, image-only і story-aware semantic QA; автоматично може активуватися лише route,
-що пройшов усі гейти — primary або один pinned repair. (source:
+що пройшов усі гейти — primary або один pinned repair. Image-only critic з 2026-08-25 має
+явно ставити бали 0–100 і **не** гейтить `news_legibility` (цей floor лишається для
+story-aware). Likert 0–1 / 1–5, які Flash віддав на першому nightly `2026-08-24`, rescale-яться,
+інакше чистий кадр з notes «No pixel defects» падає на fake `news_legibility: 1`.
+(source: прод-Supabase live check 2026-08-25; `src/lib/content-sim/vision-critic.ts`;
 `pipeline/daily-visual-openrouter.ts`; `pipeline/daily-visual-storage.ts`;
 `pipeline/daily-visual-qa.ts`; `pipeline/daily-visual-finalizer.ts`)
 

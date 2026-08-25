@@ -4,12 +4,28 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…23, Content Sim,
 Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22,
-Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24
-Last updated: 2026-08-24
+Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
+first nightly daily visual QA 2026-08-25
+Last updated: 2026-08-25
 
 ---
 
 ## Стан репозиторію
+
+- **Перший nightly daily visual (2026-08-25).** Set `2026-08-24`
+  (`acc50caa-dbaf-45bc-958d-c194d32ed57a`) дійшов до `needs_visual_choice`. Seedream 5.0 Pro
+  primary і Qwen Image 3 Pro repair записались (1600×900 WebP), бюджетні reservation
+  `committed` з `actual_cost` (direction $0.000926, primary $0.045, repair $0.040, два QA
+  по $0.000863). Image-only Gemini Flash написав «No pixel defects found», але поставив
+  `overall`/`news_legibility` як 1 або 5 замість 0–100; парсер далі вимагав
+  `news_legibility >= 75`, тож обидва кандидати впали з
+  `primary_and_repair_failed_semantic_qa` і story-aware QA навіть не стартував. Фікс:
+  image-only промпт вимагає шкалу 0–100 і більше не містить `news_legibility`; парсер
+  rescale-ить 0–1 / 1–5 і не гейтить pixel-only по news floor. 24 Aug лишається на ручний
+  вибір у `/admin/daily-visuals` — нічний джоб той самий set не перегенерує.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25,
+  Actions `32787092116`; `src/lib/content-sim/vision-critic.ts`;
+  [daily-visual-workflow](pipeline/daily-visual-workflow.md))
 
 - **Daily visual workflow + safe weekly visual refresh (2026-08-24), PR #320 worktree
   `claude/gpt-image-prompt-plan-review-2ffff7`.** Daily тепер має бути реальним production

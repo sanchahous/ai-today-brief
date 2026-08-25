@@ -10,8 +10,8 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
 Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v6` Prompt-as-Code
-library 2026-08-23, owner decision on daily production cover 2026-08-24
-Last updated: 2026-08-24
+library 2026-08-23, daily production cover 2026-08-24, image-only QA Likert 2026-08-25
+Last updated: 2026-08-25
 
 ---
 
@@ -233,9 +233,10 @@ title/summary, не practical/takeaway. Метрика → `deterministic_techni
 `src/lib/weekly-digest/owner-feedback.ts`)
 
 **E2 — двостадійний критик (2026-08-15):** image-only без headline, потім story-aware лише
-якщо пікселі пройшли. Upload QA лишається одним image-only проходом.
+якщо пікселі пройшли. Image-only з 2026-08-25 рахує 0–100 і не гейтить `news_legibility`;
+Likert 0–1 / 1–5 rescale-иться. Upload QA для clean `story_image` далі має story-aware pass.
 (source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) E2,
-`src/lib/content-sim/adapters/weekly-image.ts`)
+`src/lib/content-sim/adapters/weekly-image.ts`; `src/lib/content-sim/vision-critic.ts`)
 
 **E3 — promotion gate промптів (2026-08-15):** Visuals рахує ≥60% прийнятних з 1–2 спроби,
 0 misleading, ≤10 хв/story, 3 різні промпти. Не блокує реліз. Пороги **новин** без змін.
