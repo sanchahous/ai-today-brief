@@ -4,7 +4,20 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-24
+Last updated: 2026-08-25
+
+## 2026-08-25 — Weekly Video: #441 на Approve і waiting stills, не скрипт
+
+**Джерело:** owner session 2026-08-25 (Video tab, digest `71af784b-3c89-47f8-bc38-e3eae4def2a7`),
+прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25.
+
+`video_script` на активній ревізії вже `approved`; `video_manifest` лишається `waiting`
+через 0/3 approved Top 3 `story_image` (cover теж відсутній). Повторний Approve скрипта не
+є гейтом. Review / comment / save video / enqueue кидали голий Server Action throw →
+`Minified React error #441`. Код тепер редіректить на `?tab=…&save_error=…` (тоді ж вкладка),
+ховає Approve version на вже approved артефактах і на Video показує лінк на Visuals.
+(source: `src/app/admin/(cms)/weekly/actions.ts`; `src/lib/weekly-digest/workspace-tab.ts`;
+`src/components/admin/weekly-workspace.tsx`)
 
 ## 2026-08-24 — Корекція safe visual refresh і bounded daily recovery
 

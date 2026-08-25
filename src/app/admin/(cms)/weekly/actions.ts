@@ -36,7 +36,15 @@ import {
 import { contentStudioVideoManifestKey } from '@/lib/weekly-digest/content-studio-queue';
 import { videoScriptFromArtifactContent } from '@/lib/weekly-digest/video-script-content';
 import { backendForGenerationJob } from '@/lib/weekly-digest/generation-control';
-import { dispatchQueuedWeeklyGenerationJob } from '@/lib/weekly-digest/github-dispatch';
+import {
+  dispatchQueuedWeeklyGenerationJob,
+  isRetryableGithubDispatchError,
+} from '@/lib/weekly-digest/github-dispatch';
+import {
+  weeklyWorkspaceTabForJobType,
+  weeklyWorkspaceTabFromFormValue,
+  type WeeklyWorkspaceErrorTab,
+} from '@/lib/weekly-digest/workspace-tab';
 import {
   retryWeeklyContentStudio,
   weeklyContentStudioMode,
@@ -447,6 +455,39 @@ function redirectWeeklyVisualsError(weeklyDigestId: string, message: string): ne
   redirect(
     `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=visuals&save_error=${encodeURIComponent(message.slice(0, 500))}`,
   );
+}
+
+function isNextRedirectError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'digest' in error &&
+    typeof (error as { digest: unknown }).digest === 'string' &&
+    (error as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+  );
+}
+
+function redirectWeeklyWorkspaceError(
+  weeklyDigestId: string,
+  tab: WeeklyWorkspaceErrorTab,
+  message: string,
+): never {
+  redirect(
+    `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=${tab}&save_error=${encodeURIComponent(message.slice(0, 500))}`,
+  );
+}
+
+function failWeeklyWorkspace(
+  weeklyDigestId: string,
+  tab: WeeklyWorkspaceErrorTab,
+  error: unknown,
+): never {
+  if (isNextRedirectError(error)) throw error;
+  const message = error instanceof Error ? error.message : String(error);
+  if (!weeklyDigestId) {
+    throw error instanceof Error ? error : new Error(message);
+  }
+  redirectWeeklyWorkspaceError(weeklyDigestId, tab, message);
 }
 
 async function isVisualRefreshAssetRevision(weeklyDigestId: string, revisionId: string) {
@@ -945,6 +986,16 @@ async function pruneApprovedStoryImagePreviews(artifactId: string) {
 }
 
 export async function reviewWeeklyArtifactAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const tab = weeklyWorkspaceTabFromFormValue(optionalString(formData, 'workspace_tab'));
+  try {
+    await reviewWeeklyArtifact(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, tab, error);
+  }
+}
+
+async function reviewWeeklyArtifact(formData: FormData) {
   const decision = requiredString(formData, 'decision');
   const roles = decision === 'approved' ? (['owner'] as const) : (['owner', 'editor'] as const);
   await requireSocialAdmin({ roles });
@@ -1067,6 +1118,16 @@ export async function reviewWeeklyArtifactAction(formData: FormData) {
 }
 
 export async function commentWeeklyArtifactAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const tab = weeklyWorkspaceTabFromFormValue(optionalString(formData, 'workspace_tab'));
+  try {
+    await commentWeeklyArtifact(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, tab, error);
+  }
+}
+
+async function commentWeeklyArtifact(formData: FormData) {
   await requireSocialAdmin();
   const artifactId = requiredString(formData, 'artifact_id');
   const note = requiredString(formData, 'note');
@@ -1209,6 +1270,15 @@ async function videoScriptPlanFromSave(formData: FormData, script: string, scene
 }
 
 export async function saveWeeklyVideoAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  try {
+    await saveWeeklyVideo(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, 'video', error);
+  }
+}
+
+async function saveWeeklyVideo(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const script = optionalString(formData, 'script_en');
   const scenes = optionalString(formData, 'scenes_json');
@@ -1441,16 +1511,6 @@ export async function saveWeeklyVideoAction(formData: FormData) {
 function redirectWeeklySocialError(weeklyDigestId: string, message: string): never {
   redirect(
     `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=social&save_error=${encodeURIComponent(message.slice(0, 500))}`,
-  );
-}
-
-function isNextRedirectError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'digest' in error &&
-    typeof (error as { digest: unknown }).digest === 'string' &&
-    (error as { digest: string }).digest.startsWith('NEXT_REDIRECT')
   );
 }
 
@@ -1860,6 +1920,16 @@ export async function selectWeeklyArtifactVariantAction(formData: FormData) {
 }
 
 export async function enqueueWeeklyGenerationAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const tab = weeklyWorkspaceTabForJobType(optionalString(formData, 'job_type'));
+  try {
+    await enqueueWeeklyGeneration(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, tab, error);
+  }
+}
+
+async function enqueueWeeklyGeneration(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const revisionId = requiredString(formData, 'revision_id');
@@ -1938,7 +2008,18 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
     await ensureVideoManifestCompanionJob(db, weeklyDigestId, revisionId);
   }
   if (backendForGenerationJob(jobType) === 'github_actions' && queuedJob?.id) {
-    await dispatchQueuedWeeklyGenerationJob(queuedJob.id);
+    try {
+      await dispatchQueuedWeeklyGenerationJob(queuedJob.id);
+    } catch (dispatchError) {
+      if (isRetryableGithubDispatchError(dispatchError)) {
+        console.error(
+          '[weekly-generation] GitHub dispatch deferred after enqueue',
+          dispatchError instanceof Error ? dispatchError.message : String(dispatchError),
+        );
+      } else {
+        throw dispatchError;
+      }
+    }
   }
   revalidateWeeklyAdmin(weeklyDigestId);
 }
