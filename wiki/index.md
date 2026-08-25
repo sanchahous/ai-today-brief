@@ -5,8 +5,9 @@ Summary: головний зміст усієї wiki. Кожен рядок — 
 Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery 2026-08-10,
 story-image / Visual Affordance / illustration B1-fix 2026-08-11…15, Social/PDF/Video 2026-08-17…19,
 GA4 + SEO 2026-08-21, latest weekly revision is the working copy 2026-08-22,
-Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24
-Last updated: 2026-08-24
+Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
+weekly Video tab #441 2026-08-25
+Last updated: 2026-08-25
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).

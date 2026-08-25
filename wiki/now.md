@@ -2,14 +2,27 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…23, Content Sim,
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…25, Content Sim,
 Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22,
-Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24
-Last updated: 2026-08-24
+Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
+weekly Video tab #441 2026-08-25
+Last updated: 2026-08-25
 
 ---
 
 ## Стан репозиторію
+
+- **Weekly Video: Approve дає React #441, манифест чекає stills (2026-08-25), гілка
+  `fix/weekly-video-approve-441`.** На `ai-weekly-2026-08-16` (`71af784b-3c89-47f8-bc38-e3eae4def2a7`)
+  `video_script` уже `approved`; `video_manifest` у `waiting` з
+  «Waiting for approved Top 3 story images: 0/3» — на ревізії немає `story_image`/`cover`.
+  Повторний Approve скрипта не зрушує job. Голий throw із review/save/enqueue Server Action
+  рендерився як `Minified React error #441`; тепер редірект на ту саму вкладку з `?save_error=…`,
+  кнопка Approve version ховається коли артефакт уже `approved`, а Video-панель лінкує на
+  Visuals. Наступний крок власника: Visuals → згенерувати/залити й затвердити 3 Top 3 stills
+  (+ ready cover), не регенерувати скрипт.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25;
+  [weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
 
 - **Daily visual workflow + safe weekly visual refresh (2026-08-24), PR #320 worktree
   `claude/gpt-image-prompt-plan-review-2ffff7`.** Daily тепер має бути реальним production

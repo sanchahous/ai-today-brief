@@ -3,9 +3,9 @@
 Summary: покрокова інструкція для власника/редактора: що натискати у вкладках,
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
-[weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…24,
+[weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…25,
 latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22
-Last updated: 2026-08-24
+Last updated: 2026-08-25
 
 ---
 
@@ -445,6 +445,16 @@ Release тоді каже «Open Video → enqueue video_manifest», але кн
 `approved`). Не регенеруй уже схвалений скрипт і не тисни Start Content Studio.
 Картка артефакту — **weekly-video-v3 manifest** (не v2). Job може лишитись у
 `waiting` з `status_reason`, доки немає трьох approved story images і cover.
+
+Якщо причина `Waiting for approved Top 3 story images: 0/3`, скрипт **уже**
+approved. Не тисни Approve version на скрипті ще раз і не Save video workspace —
+це не зрушує job. Відкрий **Visuals**, згенеруй/залий три Top 3 stills, Approve
+кожен, потім ready cover. Після деплою фіксу 2026-08-25 Video саме так і напише
+й дасть лінк; Approve на вже approved артефакті сховано. Якщо Save/Approve/enqueue
+падає, має з’явитись рожевий банер `save_error` на тій самій вкладці, не
+`Minified React error #441`.
+(source: owner session 2026-08-25, прод-Supabase live check 2026-08-25,
+[weekly-digest](../pipeline/weekly-digest.md#video-tab-441-і-waiting-stills-2026-08-25))
 
 Наступні `video_script` success і клік **Generate script** самі upsert-ять companion
 тим самим стабільним ключем.
