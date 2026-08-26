@@ -13,16 +13,20 @@ Last updated: 2026-08-26
 
 ## Стан репозиторію
 
-- **Visuals upload: Something broke / unexpected response (2026-08-26), PR
-  [#329](https://github.com/sanchahous/ai-today-brief/pull/329).** На
-  `ai-weekly-2026-08-16` (`71af784b-3c89-47f8-bc38-e3eae4def2a7`) manual upload не
-  створював Storage object: Server Action POST через Vercel Hobby (~4.5 MB body) падав
-  до Function → opaque Next error. Форма Visuals тепер стискає image >3.5 MB у браузері
-  (константи розміру без sharp у клієнтському бандлі); `proxyClientMaxBodySize` = 13mb;
-  помилки на картці / `save_error`. До деплою: заливай JPEG/WebP <3.5 MB. Далі: 3 Top 3
-  stills + cover → Approve → Video manifest.
-  (source: live check 2026-08-26; [weekly-digest](pipeline/weekly-digest.md);
-  [weekly-admin-runbook](ops/weekly-admin-runbook.md))
+- **Visuals upload: permission denied → фікс на прод-БД (2026-08-26).** Після #329
+  upload доходив до RPC, але `weekly_digest_artifact_input_hash` валив
+  `permission denied for table weekly_digest_revisions` (column revoke
+  `visual_thesis_*` + `select revision.*` під invoker). Міграція
+  `20260826120000_weekly_artifact_input_hash_column_privs` уже на проді —
+  **можна знову заливати stills** на `ai-weekly-2026-08-16`. Далі: 3 Top 3 + cover →
+  Approve → Video manifest.
+  (source: прод live check 2026-08-26; [weekly-digest](pipeline/weekly-digest.md))
+
+- **Visuals upload body cap (2026-08-26), змержено як
+  [#329](https://github.com/sanchahous/ai-today-brief/pull/329).** Великі PNG раніше
+  не доходили до Function (~4.5 MB Hobby). Форма стискає >3.5 MB → JPEG 1600×900;
+  `proxyClientMaxBodySize` = 13mb.
+  (source: [weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
 
 - **Перший nightly daily visual (2026-08-25), змержено як
   [#327](https://github.com/sanchahous/ai-today-brief/pull/327).** Set `2026-08-24`
