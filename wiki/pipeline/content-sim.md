@@ -6,8 +6,8 @@ batch critic → один decisive re-plan → pass або human review з escal
 Sources: `src/lib/content-sim/`, `pipeline/providers/vision.ts`, `pipeline/scripts/content-sim.ts`,
 `.github/workflows/content-sim.yml`, план Content Sim Backtest 2026-08-11,
 owner prompt review + `weekly-semantic-story-v6` Prompt-as-Code follow-up 2026-08-23,
-weekly illustration M2 post-upload QA 2026-08-15
-Last updated: 2026-08-23
+weekly illustration M2 post-upload QA 2026-08-15, first nightly daily visual QA 2026-08-25
+Last updated: 2026-08-25
 
 ---
 
@@ -137,7 +137,12 @@ children). News: critique fails. Upload: warning, not a preflight block.
 **E2 two-stage critic (2026-08-23):** auto loop runs image-only first (no headline), then
 story-aware only if pixels passed. Prompt-only upload now follows the same ordering for a story,
 but never writes a `content_sim` decision; cover remains pixel-only because it represents the whole
-issue rather than one source story. (source: `src/lib/content-sim/adapters/weekly-image.ts`; `src/lib/weekly-digest/run-post-upload-qa.ts`)
+issue rather than one source story. **2026-08-25:** image-only must score 0–100 and must not gate
+on `news_legibility` (that axis is story-aware only). Likert 0–1 / 1–5 answers are rescaled;
+a fake `news_legibility: 1` no longer blocks a clean pixel pass. First production miss: daily
+`2026-08-24` primary+repair both failed image-only despite «No pixel defects found».
+(source: `src/lib/content-sim/adapters/weekly-image.ts`; `src/lib/weekly-digest/run-post-upload-qa.ts`;
+`src/lib/content-sim/vision-critic.ts`; прод-Supabase live check 2026-08-25)
 
 **E3 prompt promotion (2026-08-15):** Visuals digest line scores prompt quality from owner
 verdicts. It does not write `content_sim` and does not add `simulation_not_passed`. News

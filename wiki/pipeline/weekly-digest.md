@@ -7,7 +7,8 @@ editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 latest revision is the working copy 2026-08-22, pre-critic hang 2026-08-22,
 critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22,
 image prompt library v6 2026-08-23, owner visual-direction contract 2026-08-24,
-Video tab #441 / waiting stills 2026-08-25, Visuals upload body cap 2026-08-26
+image-only QA Likert rescale 2026-08-25, Video tab #441 / waiting stills 2026-08-25,
+Visuals upload body cap 2026-08-26
 Last updated: 2026-08-26
 
 ---
@@ -894,8 +895,9 @@ rejected` + закриті `reasonTags`. Пишеться в `story_prompt_set` 
 [weekly-illustration-plan](weekly-illustration-plan.md) E1)
 
 **E2 two-stage critic (2026-08-15):** у режимі `render` спочатку image-only (без headline),
-потім story-aware лише якщо пікселі пройшли. M2 не змінювався. Вага гейта без змін.
-(source: `src/lib/content-sim/adapters/weekly-image.ts`,
+потім story-aware лише якщо пікселі пройшли. З 2026-08-25 image-only не гейтить
+`news_legibility` і rescale-ить Likert 0–1 / 1–5 у 0–100. M2 не змінювався. Вага гейта без змін.
+(source: `src/lib/content-sim/adapters/weekly-image.ts`, `src/lib/content-sim/vision-critic.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) E2)
 
 **E3 prompt promotion (2026-08-15):** Visuals показує `гейт промптів` з ≥60% прийнятних

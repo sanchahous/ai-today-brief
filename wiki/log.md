@@ -23,6 +23,19 @@ sharp — розмір canvas для стиснення в `admin-upload-limits.
 `src/lib/weekly-digest/admin-upload-limits.ts`; `next.config.ts`;
 [weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
 
+## 2026-08-25 — Image-only QA більше не валить чисті кадри шкалою 1/5
+
+**Джерело:** прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25, Actions
+`32787092116` (Daily visual finalizer, editorial date 2026-08-24).
+
+Перший nightly daily visual намалював primary (Seedream 5.0 Pro) і repair (Qwen Image 3 Pro),
+settled spend як `committed`, але set зупинився на `needs_visual_choice`. Image-only
+`google/gemini-2.5-flash` написав «No pixel defects found», проте віддав бали 1 (0–1) і 5
+(1–5). Промпт не казав «0–100» і все одно просив `news_legibility`; парсер гейтив
+`news_legibility >= 75` навіть при `requireStorySemantics: false`. Код: шкала в промпті,
+без `news_legibility` у image-only JSON, Likert rescale, pixel-only pass без news floor.
+(source: `src/lib/content-sim/vision-critic.ts`; `pipeline/daily-visual-qa.ts`)
+
 ## 2026-08-25 — Weekly Video: #441 на Approve і waiting stills, не скрипт
 
 **Джерело:** owner session 2026-08-25 (Video tab, digest `71af784b-3c89-47f8-bc38-e3eae4def2a7`),

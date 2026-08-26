@@ -152,4 +152,37 @@ describe('critiqueDailyVisualCandidate', () => {
     expect(prompts[1]!.length).toBeLessThan(20_000);
     expect(prompts[1]).toContain('…');
   });
+
+  it('lets a Likert image-only verdict reach story-aware QA', async () => {
+    const responses = [
+      JSON.stringify({
+        overall: 1,
+        dimensions: { no_text: 1, craft: 1, brand_safe: 1, news_legibility: 1 },
+        blockers: [],
+        notes: 'No pixel defects found. The image is clear and well-composed.',
+      }),
+      passingSemantic,
+    ];
+    const result = await critiqueDailyVisualCandidate(
+      {
+        bytes: Buffer.alloc(80_000, 1),
+        mimeType: 'image/webp',
+        width: 1600,
+        height: 900,
+        direction,
+        snapshot,
+      },
+      {
+        generateVision: async () => ({
+          text: responses.shift() ?? '',
+          provider: 'openrouter',
+          model: 'google/gemini-2.5-flash',
+          usage: { promptTokens: 1, outputTokens: 1, costUsd: null, costSource: 'estimated' },
+        }),
+      },
+    );
+    expect(result.passed).toBe(true);
+    expect(result.stages.map((stage) => stage.stage)).toEqual(['image_only', 'story_semantic']);
+    expect(result.stages[0]?.outcome).toBe('passed');
+  });
 });
