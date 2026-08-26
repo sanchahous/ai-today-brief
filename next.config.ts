@@ -97,6 +97,10 @@ const nextConfig: NextConfig = {
   experimental: {
     // Authenticated CMS uploads are validated again in the Server Action and
     // capped at 12 MB; multipart overhead requires a little extra headroom.
+    // `proxy.ts` buffers admin POSTs separately — without this, bodies over the
+    // default 10 MB are silently truncated and Server Actions return HTML
+    // ("An unexpected response was received from the server").
+    proxyClientMaxBodySize: '13mb',
     serverActions: {
       bodySizeLimit: '13mb',
     },

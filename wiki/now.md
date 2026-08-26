@@ -2,15 +2,25 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…25, Content Sim,
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…26, Content Sim,
 Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22,
 Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
-weekly Video tab #441 2026-08-25
-Last updated: 2026-08-25
+weekly Video tab #441 2026-08-25, Visuals upload body cap 2026-08-26
+Last updated: 2026-08-26
 
 ---
 
 ## Стан репозиторію
+
+- **Visuals upload: Something broke / unexpected response (2026-08-26), гілка
+  `fix/weekly-video-approve-441`.** На
+  `ai-weekly-2026-08-16` (`71af784b-3c89-47f8-bc38-e3eae4def2a7`) manual upload не
+  створював Storage object: Server Action POST через Vercel Hobby (~4.5 MB body) падав
+  до Function → opaque Next error. Форма Visuals тепер стискає image >3.5 MB у браузері;
+  `proxyClientMaxBodySize` = 13mb; помилки на картці / `save_error`. До деплою: заливай
+  JPEG/WebP <3.5 MB. Далі: 3 Top 3 stills + cover → Approve → Video manifest.
+  (source: live check 2026-08-26; [weekly-digest](pipeline/weekly-digest.md);
+  [weekly-admin-runbook](ops/weekly-admin-runbook.md))
 
 - **Weekly Video: Approve дає React #441, манифест чекає stills (2026-08-25), гілка
   `fix/weekly-video-approve-441`.** На `ai-weekly-2026-08-16` (`71af784b-3c89-47f8-bc38-e3eae4def2a7`)

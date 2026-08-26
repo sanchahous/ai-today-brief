@@ -4,7 +4,23 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-25
+Last updated: 2026-08-26
+
+## 2026-08-26 — Visuals upload: Vercel body cap → Something broke
+
+**Джерело:** owner session 2026-08-26 (Visuals tab, digest
+`71af784b-3c89-47f8-bc38-e3eae4def2a7`), прод-Supabase/Vercel live check 2026-08-26.
+
+Manual story/cover upload показував admin error boundary `Something broke` /
+`An unexpected response was received from the server`. У Storage і
+`weekly_digest_artifacts` не зʼявилось жодного `story_image`/`cover` — POST не
+доходив до Server Action (Vercel Hobby request body ~4.5 MB; великі PNG з
+генераторів). Код: клієнтське стиснення >3.5 MB → JPEG 1600×900 перед POST;
+`proxyClientMaxBodySize` узгоджено з `serverActions.bodySizeLimit`; помилки на
+картці upload замість opaque boundary.
+(source: `src/components/admin/weekly-replacement-upload-form.tsx`;
+`src/lib/weekly-digest/admin-upload-limits.ts`; `next.config.ts`;
+[weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
 
 ## 2026-08-25 — Weekly Video: #441 на Approve і waiting stills, не скрипт
 

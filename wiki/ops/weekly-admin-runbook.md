@@ -5,7 +5,7 @@ Summary: покрокова інструкція для власника/ред�
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…25,
 latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22
-Last updated: 2026-08-25
+Last updated: 2026-08-26
 
 ---
 
@@ -248,7 +248,11 @@ prompt** пише `story_prompt_set` (`WEEKLY_STORY_IMAGE_MODE=prompt_only`) —
 промпт, згенеруй зображення у своєму інструменті, завантаж файл. Upload `story_image`
 з 2026-08-17 пише **WebP** 1600×900 (не сирий PNG і не JPEG). Cover лишається JPEG —
 вона є `og:image` дайджесту. На сайті `next/image` і так просить WebP у Supabase.
-Обкладинкові кропи для каналів
+**Upload body (2026-08-26):** Server Action іде через Vercel Hobby (~4.5 MB body). Великі
+PNG/JPEG з генераторів давали opaque `Something broke` / `An unexpected response was
+received from the server` і **не** створювали рядок у Storage. Форма Visuals тепер стискає
+картинки >3.5 MB у браузері до JPEG 1600×900 перед POST; помилку показує на картці, а не
+через error boundary. PDF лишається жорстко <3.5 MB. Обкладинкові кропи для каналів
 далі складаються автоматично з approved cover. Після upload за кілька секунд зʼявиться
 **QA чисто** або жовтий рядок на кшталт «QA: впечений текст (2 місця)» з **Ігнорувати** /
 **Замінити файл**. Під жовтим рядком — порада: впечений текст → inpaint/crop (не
@@ -520,6 +524,7 @@ Postpone не створює нову RPC — це той самий Pause → A
 | `social_copy` terminal failed на `rendered 8 pages; expected 7` | Довгий editorial copy переповнив LinkedIn PDF | Після deploy 7-page bounds створи **один** linked retry; він відновить збережені канали й слайди |
 | Linked `social_copy` retry знову показує `channels` від 0% | Немає валідного checkpoint для поточного approved source hash | Перевір, чи не змінилась revision/locale map; якщо ні — дивись `checkpoint_restored`/`checkpoint_saved` у Timeline |
 | Release: немає story/cover | Файл не завантажено | Visuals → скопіюй промпт → згенеруй у своєму інструменті → upload. Не тисни Regenerate |
+| Visuals upload: `Something broke` / unexpected response | Тіло POST > ~4.5 MB (Vercel Hobby) або truncated proxy body | Після деплою 2026-08-26 форма стискає image сама; до деплою — JPEG/WebP <3.5 MB. PDF стисни окремо |
 | Release: немає `video_manifest` job, хоча script approved | Companion-рядок ніколи не створився (падіння/retry `video_script` без post-master queue) | Video → **Generate manifest**. Не регенеруй скрипт |
 | Release blocked на video | Немає living clips / YouTube result | Video → **Shooting package** → кліпи в `ai-today-brief-video` → звести → `weekly-video-result-v2`. Не заливати L0 JPEG+TTS з `output/`. Owner override лише для trial |
 | PDF: сторінки радар-історій (4-7) виглядають скорочено (без картинки/панелей) | Так задумано з 2026-08-07 — повний розворот тепер лише для Top 3 | Нормально, не баг; деталі — [weekly-digest](../pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07) |

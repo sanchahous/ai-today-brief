@@ -12,6 +12,9 @@ import { getWeeklyDigestWorkspace } from '@/lib/weekly-digest/admin-data';
 import { serverEpochMs } from '@/lib/server-clock';
 
 export const dynamic = 'force-dynamic';
+// Sharp encode + Storage upload/verify on Visuals uploads can exceed the
+// Hobby default; keep the page on the same Function as the Server Action.
+export const maxDuration = 60;
 
 function isWorkspaceTab(value: string | undefined): value is WeeklyWorkspaceTab {
   return WEEKLY_WORKSPACE_TABS.some((tab) => tab.id === value);

@@ -7,6 +7,7 @@ import { StatusPill } from '@/components/admin/status-pill';
 import { StoryPromptSetPanel } from '@/components/admin/story-prompt-set-panel';
 import { VideoShootPackPanel } from '@/components/admin/VideoShootPackPanel';
 import { WeeklyGenerationJobsLive } from '@/components/admin/weekly-generation-jobs-live';
+import { WeeklyReplacementUploadForm } from '@/components/admin/weekly-replacement-upload-form';
 import { socialFormHas, socialCopyLimit, threadsPartLimit } from '@/lib/social/channel-form';
 import { parseInstagramCarouselSpec } from '@/lib/social/instagram-carousel';
 import type { SocialChannel } from '@/lib/social/types';
@@ -95,7 +96,6 @@ import {
   startWeeklyContentStudioAction,
   shipWeeklyDigestAction,
   toggleWeeklySocialAction,
-  uploadWeeklyArtifactAction,
   ignorePostUploadQaAction,
   recheckPostUploadQaAction,
 } from '@/app/admin/(cms)/weekly/actions';
@@ -3496,73 +3496,15 @@ function ReplacementAssetForm({
 }) {
   if (!workspace.revision) return null;
   return (
-    <div className="grid gap-3 rounded-xl border border-white/10 bg-black/10 p-3">
-      <form action={uploadWeeklyArtifactAction} className="grid gap-3">
-        <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
-        <input type="hidden" name="revision_id" value={workspace.revision.id} />
-        <input type="hidden" name="artifact_type" value={artifactType} />
-        <input type="hidden" name="locale" value={locale} />
-        <input type="hidden" name="slot_key" value={slotKey} />
-        {revisionItemId ? (
-          <input type="hidden" name="revision_item_id" value={revisionItemId} />
-        ) : null}
-        <p className="text-sm font-bold text-slate-300">Upload a replacement</p>
-        <label className={LABEL}>
-          File
-          <input
-            type="file"
-            name="file"
-            required
-            accept={artifactType === 'pdf' ? 'application/pdf' : 'image/*'}
-            disabled={!canEdit}
-            data-testid={artifactType === 'story_image' ? 'story-image-upload-file' : undefined}
-            className={`${FIELD} file:mr-3 file:rounded-lg file:border-0 file:bg-[#47e4d3]/10 file:px-3 file:py-1 file:font-bold file:text-[#47e4d3]`}
-          />
-        </label>
-        <label className={LABEL}>
-          Alt text
-          <textarea
-            name="alt_text"
-            rows={2}
-            required={artifactType !== 'pdf'}
-            disabled={!canEdit}
-            className={TEXTAREA}
-          />
-        </label>
-        {artifactType !== 'pdf' ? (
-          <label className={LABEL}>
-            Focal point
-            <select
-              name="focal_point"
-              defaultValue="attention"
-              disabled={!canEdit}
-              className={FIELD}
-            >
-              <option value="attention">Automatic attention</option>
-              <option value="centre">Centre</option>
-              <option value="north">Top</option>
-              <option value="south">Bottom</option>
-              <option value="west">Left</option>
-              <option value="east">Right</option>
-            </select>
-          </label>
-        ) : null}
-        <ActionSubmitButton
-          idleLabel="Upload and stage replacement"
-          pendingLabel="Uploading replacement…"
-          disabled={!canEdit}
-          className={SECONDARY}
-        />
-      </form>
-
-      <details className="border-t border-white/8 pt-3">
-        <summary className="text-xs font-bold text-slate-400">Need a remote file?</summary>
-        <p className="mt-3 text-xs leading-5 text-slate-500">
-          Download the file first, then upload it here. Direct URL import is intentionally disabled
-          so the review pipeline can verify the exact bytes, MIME type, dimensions, and PDF file.
-        </p>
-      </details>
-    </div>
+    <WeeklyReplacementUploadForm
+      weeklyDigestId={workspace.digest.id}
+      revisionId={workspace.revision.id}
+      artifactType={artifactType}
+      slotKey={slotKey}
+      canEdit={canEdit}
+      revisionItemId={revisionItemId}
+      locale={locale}
+    />
   );
 }
 
