@@ -4005,3 +4005,19 @@ server-side результати. Усі 9 внутрішніх ?q=-посила
 src/app/[lang]/news/search/page.tsx)
 
 ---
+
+## 2026-08-24 — Vercel: фікс origin transfer підтверджено на проді
+
+Після мержу #325 перевірено на живому Vercel, а не лише на локальному білді: /en/news віддає
+X-Vercel-Cache: PRERENDER на першому запиті й HIT на повторному, /uk/news — PRERENDER,
+Cache-Control більше не private/no-store. /en/news?q=cursor дає 308 на /en/news/search?q=cursor,
+сама сторінка пошуку — 200 з noindex, follow, канонікалом на хаб і робочими результатами.
+Вміст хабу в HTML не постраждав: 13 карток і 100 посилань. Клік по trending-посиланню з хабу
+soft-навігує на /news/search і дає 80 результатів.
+
+Тобто дві найважчі сторінки сайту більше не доходять до origin на кожен запит — причина
+вичерпання Fast Origin Transfer усунена. Скільки це дасть у ГБ, буде видно на наступному циклі
+білінгу. (source: live check прода 2026-08-24 після деплою #325;
+[vercel-origin-transfer](ops/vercel-origin-transfer.md))
+
+---
