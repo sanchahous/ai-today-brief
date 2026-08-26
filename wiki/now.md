@@ -2,17 +2,30 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…25, Content Sim,
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…26, Content Sim,
 Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22,
 Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
-first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25
-Last updated: 2026-08-25
+first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
+Visuals upload body cap 2026-08-26
+Last updated: 2026-08-26
 
 ---
 
 ## Стан репозиторію
 
-- **Перший nightly daily visual (2026-08-25).** Set `2026-08-24`
+- **Visuals upload: Something broke / unexpected response (2026-08-26), PR
+  [#329](https://github.com/sanchahous/ai-today-brief/pull/329).** На
+  `ai-weekly-2026-08-16` (`71af784b-3c89-47f8-bc38-e3eae4def2a7`) manual upload не
+  створював Storage object: Server Action POST через Vercel Hobby (~4.5 MB body) падав
+  до Function → opaque Next error. Форма Visuals тепер стискає image >3.5 MB у браузері
+  (константи розміру без sharp у клієнтському бандлі); `proxyClientMaxBodySize` = 13mb;
+  помилки на картці / `save_error`. До деплою: заливай JPEG/WebP <3.5 MB. Далі: 3 Top 3
+  stills + cover → Approve → Video manifest.
+  (source: live check 2026-08-26; [weekly-digest](pipeline/weekly-digest.md);
+  [weekly-admin-runbook](ops/weekly-admin-runbook.md))
+
+- **Перший nightly daily visual (2026-08-25), змержено як
+  [#327](https://github.com/sanchahous/ai-today-brief/pull/327).** Set `2026-08-24`
   (`acc50caa-dbaf-45bc-958d-c194d32ed57a`) дійшов до `needs_visual_choice`. Seedream 5.0 Pro
   primary і Qwen Image 3 Pro repair записались (1600×900 WebP), бюджетні reservation
   `committed` з `actual_cost` (direction $0.000926, primary $0.045, repair $0.040, два QA

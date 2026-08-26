@@ -41,6 +41,10 @@ import {
   isRetryableGithubDispatchError,
 } from '@/lib/weekly-digest/github-dispatch';
 import {
+  WEEKLY_ARTIFACT_UPLOAD_MAX_BYTES,
+} from '@/lib/weekly-digest/admin-upload-limits';
+import {
+  weeklyWorkspaceTabForArtifactType,
   weeklyWorkspaceTabForJobType,
   weeklyWorkspaceTabFromFormValue,
   type WeeklyWorkspaceErrorTab,
@@ -2494,6 +2498,20 @@ export async function retryWeeklyGenerationJobAction(formData: FormData) {
 }
 
 export async function uploadWeeklyArtifactAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const artifactTypeHint = optionalString(formData, 'artifact_type');
+  try {
+    await uploadWeeklyArtifact(formData);
+  } catch (error) {
+    failWeeklyWorkspace(
+      weeklyDigestId,
+      weeklyWorkspaceTabForArtifactType(artifactTypeHint || 'story_image'),
+      error,
+    );
+  }
+}
+
+async function uploadWeeklyArtifact(formData: FormData) {
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const revisionId = requiredString(formData, 'revision_id');
   const isVisualRefresh = await isVisualRefreshAssetRevision(weeklyDigestId, revisionId);
@@ -2512,7 +2530,9 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
   if (!(fileValue instanceof File) || fileValue.size === 0) {
     throw new Error('Select a replacement file.');
   }
-  if (fileValue.size > 12 * 1024 * 1024) throw new Error('Replacement files are limited to 12 MB.');
+  if (fileValue.size > WEEKLY_ARTIFACT_UPLOAD_MAX_BYTES) {
+    throw new Error('Replacement files are limited to 12 MB.');
+  }
   if (!['cover', 'story_image', 'social_asset', 'thumbnail', 'pdf'].includes(artifactType)) {
     throw new Error('This artifact type cannot be uploaded. Final video remains on YouTube.');
   }
