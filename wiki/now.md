@@ -16,9 +16,10 @@ Last updated: 2026-08-26
   `fix/weekly-video-approve-441`.** На
   `ai-weekly-2026-08-16` (`71af784b-3c89-47f8-bc38-e3eae4def2a7`) manual upload не
   створював Storage object: Server Action POST через Vercel Hobby (~4.5 MB body) падав
-  до Function → opaque Next error. Форма Visuals тепер стискає image >3.5 MB у браузері;
-  `proxyClientMaxBodySize` = 13mb; помилки на картці / `save_error`. До деплою: заливай
-  JPEG/WebP <3.5 MB. Далі: 3 Top 3 stills + cover → Approve → Video manifest.
+  до Function → opaque Next error. формa Visuals тепер стискає image >3.5 MB у браузері (константи розміру без sharp у
+  клієнтському бандлі); `proxyClientMaxBodySize` = 13mb; помилки на картці / `save_error`.
+  До деплою: заливай JPEG/WebP <3.5 MB. Далі: 3 Top 3 stills + cover → Approve → Video
+  manifest.
   (source: live check 2026-08-26; [weekly-digest](pipeline/weekly-digest.md);
   [weekly-admin-runbook](ops/weekly-admin-runbook.md))
 

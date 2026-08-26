@@ -252,7 +252,8 @@ prompt** пише `story_prompt_set` (`WEEKLY_STORY_IMAGE_MODE=prompt_only`) —
 PNG/JPEG з генераторів давали opaque `Something broke` / `An unexpected response was
 received from the server` і **не** створювали рядок у Storage. Форма Visuals тепер стискає
 картинки >3.5 MB у браузері до JPEG 1600×900 перед POST; помилку показує на картці, а не
-через error boundary. PDF лишається жорстко <3.5 MB. Обкладинкові кропи для каналів
+через error boundary. Розмір прев’ю для стиснення береться з `admin-upload-limits` (без
+імпорту sharp у клієнт). PDF лишається жорстко <3.5 MB. Обкладинкові кропи для каналів
 далі складаються автоматично з approved cover. Після upload за кілька секунд зʼявиться
 **QA чисто** або жовтий рядок на кшталт «QA: впечений текст (2 місця)» з **Ігнорувати** /
 **Замінити файл**. Під жовтим рядком — порада: впечений текст → inpaint/crop (не

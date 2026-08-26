@@ -17,7 +17,8 @@ Manual story/cover upload показував admin error boundary `Something bro
 доходив до Server Action (Vercel Hobby request body ~4.5 MB; великі PNG з
 генераторів). Код: клієнтське стиснення >3.5 MB → JPEG 1600×900 перед POST;
 `proxyClientMaxBodySize` узгоджено з `serverActions.bodySizeLimit`; помилки на
-картці upload замість opaque boundary.
+картці upload замість opaque boundary. Client form не імпортує `encode-site-image`/
+sharp — розмір canvas для стиснення в `admin-upload-limits.ts`.
 (source: `src/components/admin/weekly-replacement-upload-form.tsx`;
 `src/lib/weekly-digest/admin-upload-limits.ts`; `next.config.ts`;
 [weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))

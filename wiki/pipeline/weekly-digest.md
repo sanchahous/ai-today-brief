@@ -19,7 +19,9 @@ cap is ~4.5 MB. Oversized generator PNGs never reached the Function (no Storage 
 opaque Next error `An unexpected response was received from the server` → admin
 `Something broke`). Fix: client compress >3.5 MB images to JPEG 1600×900 before POST;
 `proxyClientMaxBodySize` aligned with `serverActions.bodySizeLimit` (13mb); action errors
-redirect/`save_error` or stay on-card. PDF must already be under 3.5 MB.
+redirect/`save_error` or stay on-card. PDF must already be under 3.5 MB. Client form must
+not import `encode-site-image` (sharp) — preview size constants live in
+`admin-upload-limits.ts`.
 (source: `src/components/admin/weekly-replacement-upload-form.tsx`;
 `src/lib/weekly-digest/admin-upload-limits.ts`; `next.config.ts`; prod check digest
 `71af784b-3c89-47f8-bc38-e3eae4def2a7` 2026-08-26)
