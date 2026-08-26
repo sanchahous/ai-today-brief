@@ -7,7 +7,7 @@ editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 latest revision is the working copy 2026-08-22, pre-critic hang 2026-08-22,
 critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22,
 image prompt library v6 2026-08-23, owner visual-direction contract 2026-08-24,
-image-only QA Likert rescale 2026-08-25
+image-only QA Likert rescale 2026-08-25, Video tab #441 / waiting stills 2026-08-25
 Last updated: 2026-08-25
 
 ---
@@ -45,6 +45,24 @@ owner session 2026-08-24; `supabase/migrations/20260824130000_weekly_visual_refr
 `supabase/migrations/20260824150000_weekly_visual_refresh_staged_assets.sql`;
 `supabase/migrations/20260824160000_weekly_public_artifact_metadata_privacy.sql`;
 `src/lib/weekly-digest/visual-refresh.ts`; `src/app/admin/(cms)/weekly/actions.ts`)
+
+## Video tab: #441 і waiting stills (2026-08-25)
+
+Approve / comment / Save video workspace / enqueue на Video більше не кидають голий
+Server Action throw (`Minified React error #441`). Помилка редіректить на
+`/admin/weekly/[id]?tab=video&save_error=…` (той самий банер, що Restore / Social).
+`workspace_tab` валідується allow-list, не з довільного query. Кнопка **Approve version**
+ховається, коли `review_status` уже `approved`.
+(source: `src/lib/weekly-digest/workspace-tab.ts`; `src/app/admin/(cms)/weekly/actions.ts`;
+`src/components/admin/weekly-workspace.tsx`; той самий патерн, що Restore 2026-08-10)
+
+Job `video_manifest` у `waiting` з `Waiting for approved Top 3 story images: 0/3` означає:
+скрипт уже approved. Claim чекає 3 approved Top 3 `story_image` + ready `cover`. Повторний
+Approve скрипта job не зрушує. Наступний крок — вкладка **Visuals**, не Video.
+На `ai-weekly-2026-08-16` (digest `71af784b-3c89-47f8-bc38-e3eae4def2a7`, rev.
+`f996067f-0ce9-4330-a1d0-b954a0a17d39`) скрипт був `approved`, stills/cover відсутні
+(source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25;
+`weekly_generation_waiting_reason` у `supabase/migrations/20260809060929_weekly_generation_control_plane.sql`).
 
 ## Feature flag
 

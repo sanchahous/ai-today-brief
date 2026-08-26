@@ -19,6 +19,19 @@ settled spend як `committed`, але set зупинився на `needs_visual
 без `news_legibility` у image-only JSON, Likert rescale, pixel-only pass без news floor.
 (source: `src/lib/content-sim/vision-critic.ts`; `pipeline/daily-visual-qa.ts`)
 
+## 2026-08-25 — Weekly Video: #441 на Approve і waiting stills, не скрипт
+
+**Джерело:** owner session 2026-08-25 (Video tab, digest `71af784b-3c89-47f8-bc38-e3eae4def2a7`),
+прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25.
+
+`video_script` на активній ревізії вже `approved`; `video_manifest` лишається `waiting`
+через 0/3 approved Top 3 `story_image` (cover теж відсутній). Повторний Approve скрипта не
+є гейтом. Review / comment / save video / enqueue кидали голий Server Action throw →
+`Minified React error #441`. Код тепер редіректить на `?tab=…&save_error=…` (тоді ж вкладка),
+ховає Approve version на вже approved артефактах і на Video показує лінк на Visuals.
+(source: `src/app/admin/(cms)/weekly/actions.ts`; `src/lib/weekly-digest/workspace-tab.ts`;
+`src/components/admin/weekly-workspace.tsx`)
+
 ## 2026-08-24 — Корекція safe visual refresh і bounded daily recovery
 
 **Джерело:** owner рішення 2026-08-24, adversarial SQL/RLS review, isolated PostgreSQL 16.15
@@ -3986,5 +3999,21 @@ server-side результати. Усі 9 внутрішніх ?q=-посила
 переходу на статику. (source: live check прода 2026-08-24; production-білд локально;
 [vercel-origin-transfer](ops/vercel-origin-transfer.md); next.config.ts;
 src/app/[lang]/news/search/page.tsx)
+
+---
+
+## 2026-08-24 — Vercel: фікс origin transfer підтверджено на проді
+
+Після мержу #325 перевірено на живому Vercel, а не лише на локальному білді: /en/news віддає
+X-Vercel-Cache: PRERENDER на першому запиті й HIT на повторному, /uk/news — PRERENDER,
+Cache-Control більше не private/no-store. /en/news?q=cursor дає 308 на /en/news/search?q=cursor,
+сама сторінка пошуку — 200 з noindex, follow, канонікалом на хаб і робочими результатами.
+Вміст хабу в HTML не постраждав: 13 карток і 100 посилань. Клік по trending-посиланню з хабу
+soft-навігує на /news/search і дає 80 результатів.
+
+Тобто дві найважчі сторінки сайту більше не доходять до origin на кожен запит — причина
+вичерпання Fast Origin Transfer усунена. Скільки це дасть у ГБ, буде видно на наступному циклі
+білінгу. (source: live check прода 2026-08-24 після деплою #325;
+[vercel-origin-transfer](ops/vercel-origin-transfer.md))
 
 ---

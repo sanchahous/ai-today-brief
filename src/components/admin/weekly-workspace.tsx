@@ -57,6 +57,7 @@ import {
   editorialVersionRole,
   type EditorialVersionRole,
 } from '@/lib/weekly-digest/master-persist';
+import { weeklyWorkspaceTabForArtifactType } from '@/lib/weekly-digest/workspace-tab';
 import { qualityContentNeedsRepair } from '@/lib/weekly-digest/content-studio';
 import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
 import { isWeeklyVisualRefreshStagedAsset } from '@/lib/weekly-digest/visual-refresh';
@@ -593,6 +594,8 @@ function ArtifactReview({
   canReview: boolean;
 }) {
   const history = latestReviews(reviews, artifact.id);
+  const alreadyApproved = artifact.review_status === 'approved';
+  const workspaceTab = weeklyWorkspaceTabForArtifactType(artifact.artifact_type);
 
   return (
     <div className="mt-4 border-t border-white/8 pt-4">
@@ -624,6 +627,7 @@ function ArtifactReview({
       {canReview ? (
         <form action={reviewWeeklyArtifactAction} className="grid gap-3">
           <input type="hidden" name="weekly_digest_id" value={digestId} />
+          <input type="hidden" name="workspace_tab" value={workspaceTab} />
           <input type="hidden" name="artifact_id" value={artifact.id} />
           <input type="hidden" name="artifact_version" value={artifact.version} />
           <input type="hidden" name="artifact_input_hash" value={artifact.input_hash} />
@@ -646,17 +650,21 @@ function ArtifactReview({
             </p>
           ) : null}
           <div className="flex flex-wrap gap-2">
-            <ActionSubmitButton
-              name="decision"
-              value="approved"
-              idleLabel="Approve version"
-              pendingLabel="Approving…"
-              className={PRIMARY}
-              disabled={
-                artifact.artifact_type === 'content_quality_report' &&
-                qualityReportForbidsApprove(artifact.content)
-              }
-            />
+            {alreadyApproved ? (
+              <p className="self-center text-xs font-semibold text-emerald-200">Approved</p>
+            ) : (
+              <ActionSubmitButton
+                name="decision"
+                value="approved"
+                idleLabel="Approve version"
+                pendingLabel="Approving…"
+                className={PRIMARY}
+                disabled={
+                  artifact.artifact_type === 'content_quality_report' &&
+                  qualityReportForbidsApprove(artifact.content)
+                }
+              />
+            )}
             <ActionSubmitButton
               name="decision"
               value="changes_requested"
@@ -673,6 +681,8 @@ function ArtifactReview({
         </p>
       )}
       <form action={commentWeeklyArtifactAction} className="mt-4 grid gap-2">
+        <input type="hidden" name="weekly_digest_id" value={digestId} />
+        <input type="hidden" name="workspace_tab" value={workspaceTab} />
         <input type="hidden" name="artifact_id" value={artifact.id} />
         <label className={LABEL}>
           Add comment
@@ -1496,6 +1506,7 @@ function HallucinationBoardPanel({
           {qualityArtifact ? (
             <form action={reviewWeeklyArtifactAction} className="grid gap-2">
               <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+              <input type="hidden" name="workspace_tab" value={canShip ? 'release' : 'overview'} />
               <input type="hidden" name="artifact_id" value={qualityArtifact.id} />
               <input type="hidden" name="artifact_version" value={qualityArtifact.version} />
               <input type="hidden" name="artifact_input_hash" value={qualityArtifact.input_hash} />
@@ -4818,6 +4829,23 @@ function PdfPanel({
   );
 }
 
+/** Same gate as `weekly_generation_waiting_reason` for `video_manifest`. */
+function approvedTop3StoryImageCount(workspace: WeeklyDigestWorkspace) {
+  let count = 0;
+  for (const item of workspace.items) {
+    if (item.rank > 3) continue;
+    const image = artifactFor(workspace.artifacts, 'story_image', undefined, item.id);
+    if (image?.generation_status === 'ready' && image.review_status === 'approved') {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function currentCoverIsReady(workspace: WeeklyDigestWorkspace) {
+  return artifactFor(workspace.artifacts, 'cover')?.generation_status === 'ready';
+}
+
 function VideoPanel({
   workspace,
   canEdit,
@@ -4851,6 +4879,8 @@ function VideoPanel({
   const scriptJob = latestJobForSlot(workspace.generationJobs, 'video_script');
   const manifestJob = latestJobForSlot(workspace.generationJobs, 'video_manifest');
   const scriptApproved = script?.review_status === 'approved';
+  const approvedTop3Images = approvedTop3StoryImageCount(workspace);
+  const coverReady = currentCoverIsReady(workspace);
   const stills = workspace.items.map((item) => {
     const image = artifactFor(workspace.artifacts, 'story_image', undefined, item.id);
     return {
@@ -4911,11 +4941,16 @@ function VideoPanel({
         </div>
         {script ? (
           <div className="w-full">
-            {!scriptApproved ? (
+            {scriptApproved ? (
+              <p className="text-xs text-emerald-200/90">
+                Script is already approved. Manifest generation does not wait on another Approve
+                here.
+              </p>
+            ) : (
               <p className="text-xs text-slate-500">
                 video_manifest cannot generate until this script is approved.
               </p>
-            ) : null}
+            )}
             <ArtifactReview
               digestId={workspace.digest.id}
               artifact={script}
@@ -4957,10 +4992,39 @@ function VideoPanel({
           </p>
         ) : null}
         {manifestJob?.status === 'waiting' ? (
-          <p className="w-full text-xs text-slate-500">
-            {manifestJob.status_reason ||
-              'Waiting for an approved script, three approved Top 3 story images, and a ready cover.'}
-          </p>
+          <div className="w-full rounded-xl border border-amber-400/25 bg-amber-400/8 px-3 py-3 text-sm text-amber-50">
+            <p>
+              {manifestJob.status_reason ||
+                'Waiting for an approved script, three approved Top 3 story images, and a ready cover.'}
+            </p>
+            {approvedTop3Images < 3 ? (
+              <p className="mt-2 text-xs leading-5 text-amber-100/90">
+                Approved Top 3 story images: {approvedTop3Images}/3.{' '}
+                <Link
+                  href={`/admin/weekly/${workspace.digest.id}?tab=visuals`}
+                  prefetch={false}
+                  className="font-semibold text-amber-50 underline decoration-amber-100/50 underline-offset-2"
+                >
+                  Open Visuals
+                </Link>{' '}
+                to generate or upload those stills, then Approve version on each image. Approving
+                the script again will not unblock this job.
+              </p>
+            ) : null}
+            {approvedTop3Images === 3 && !coverReady ? (
+              <p className="mt-2 text-xs leading-5 text-amber-100/90">
+                Top 3 stills are approved. The cover is not ready yet — generate or upload it on{' '}
+                <Link
+                  href={`/admin/weekly/${workspace.digest.id}?tab=visuals`}
+                  prefetch={false}
+                  className="font-semibold text-amber-50 underline decoration-amber-100/50 underline-offset-2"
+                >
+                  Visuals
+                </Link>
+                .
+              </p>
+            ) : null}
+          </div>
         ) : null}
         {manifestJob?.last_error ? (
           <p className="w-full rounded-xl border border-red-400/25 bg-red-400/8 px-3 py-2 text-xs whitespace-pre-wrap text-red-100">
@@ -4989,6 +5053,9 @@ function VideoPanel({
             <h3 className="text-lg font-bold text-white">Video contract</h3>
             <p className="mt-1 text-sm text-slate-500">
               Changing the script after rendering starts makes the video artifacts stale.
+              {scriptApproved
+                ? ' The script is already approved — Save here writes a new version that must be re-approved, and it will not generate the waiting manifest.'
+                : ''}
             </p>
           </div>
           <label className="grid gap-1 text-xs font-bold text-slate-400">
