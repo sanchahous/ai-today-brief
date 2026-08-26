@@ -4,11 +4,18 @@ import {
   humanizeWeeklyUploadError,
   WEEKLY_ARTIFACT_UPLOAD_MAX_BYTES,
   WEEKLY_ARTIFACT_UPLOAD_SAFE_BODY_BYTES,
+  WEEKLY_UPLOAD_PREVIEW_HEIGHT,
+  WEEKLY_UPLOAD_PREVIEW_WIDTH,
   weeklyUploadExceedsServerLimit,
   weeklyUploadNeedsClientCompress,
 } from './admin-upload-limits';
 
 describe('admin-upload-limits', () => {
+  it('keeps the client preview canvas aligned with the site story size', () => {
+    expect(WEEKLY_UPLOAD_PREVIEW_WIDTH).toBe(1600);
+    expect(WEEKLY_UPLOAD_PREVIEW_HEIGHT).toBe(900);
+  });
+
   it('flags bodies that would hit the Vercel request-body cap', () => {
     expect(weeklyUploadNeedsClientCompress(WEEKLY_ARTIFACT_UPLOAD_SAFE_BODY_BYTES)).toBe(false);
     expect(weeklyUploadNeedsClientCompress(WEEKLY_ARTIFACT_UPLOAD_SAFE_BODY_BYTES + 1)).toBe(true);

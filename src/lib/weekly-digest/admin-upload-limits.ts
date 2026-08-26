@@ -8,6 +8,10 @@
  * admin UI must stay under the platform body budget (with multipart overhead).
  */
 
+/** Match `encode-site-image` story canvas — kept here so client code never imports sharp. */
+export const WEEKLY_UPLOAD_PREVIEW_WIDTH = 1600;
+export const WEEKLY_UPLOAD_PREVIEW_HEIGHT = 900;
+
 /** Server Action validation ceiling (after the request already arrived). */
 export const WEEKLY_ARTIFACT_UPLOAD_MAX_BYTES = 12 * 1024 * 1024;
 

@@ -8,10 +8,11 @@ import {
   humanizeWeeklyUploadError,
   WEEKLY_ARTIFACT_UPLOAD_MAX_BYTES,
   WEEKLY_ARTIFACT_UPLOAD_SAFE_BODY_BYTES,
+  WEEKLY_UPLOAD_PREVIEW_HEIGHT,
+  WEEKLY_UPLOAD_PREVIEW_WIDTH,
   weeklyUploadExceedsServerLimit,
   weeklyUploadNeedsClientCompress,
 } from '@/lib/weekly-digest/admin-upload-limits';
-import { STORY_IMAGE_HEIGHT, STORY_IMAGE_WIDTH } from '@/lib/encode-site-image';
 
 const FIELD =
   'min-h-11 w-full rounded-xl border border-white/12 bg-black/20 px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:border-[#47e4d3] focus:outline-none';
@@ -31,8 +32,8 @@ async function compressImageForWeeklyUpload(file: File): Promise<File> {
   const bitmap = await createImageBitmap(file);
   try {
     const canvas = document.createElement('canvas');
-    canvas.width = STORY_IMAGE_WIDTH;
-    canvas.height = STORY_IMAGE_HEIGHT;
+    canvas.width = WEEKLY_UPLOAD_PREVIEW_WIDTH;
+    canvas.height = WEEKLY_UPLOAD_PREVIEW_HEIGHT;
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Could not prepare a browser canvas for image compression.');
     context.fillStyle = '#101418';
