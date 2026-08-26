@@ -126,14 +126,32 @@ Googlebot плюс GPTBot, PerplexityBot і ClaudeBot, яких robots.txt пу�
 перезавантаження. Це ніколи не було краулабельним видом — `Pagination` малює `<button>`, а не
 `<a>`, тож жодне посилання на другу сторінку не існує (source: `src/components/pagination.tsx`).
 
+## Підтверджено на проді (2026-08-24, після мержу #325)
+
+| Перевірка | Результат |
+|---|---|
+| `/en/news` перший запит | `X-Vercel-Cache: PRERENDER`, `Cache-Control: public, max-age=0, must-revalidate` |
+| `/en/news` повторний запит | `X-Vercel-Cache: HIT` |
+| `/uk/news` | `X-Vercel-Cache: PRERENDER` |
+| `/en/news?q=cursor` | `308` → `/en/news/search?q=cursor` |
+| `/en/news/search?q=cursor` | 200, `<meta name="robots" content="noindex, follow">`, канонікал на `/en/news`, 17 різних cursor-матеріалів у результатах |
+| вміст хабу | 13 `<article>`, 100 посилань на матеріали, 330 569 Б |
+| клік по trending-посиланню на хабі | soft-nav на `/en/news/search?q=Claude`, 80 результатів |
+
+Це те саме місце, де провалилась перша спроба, тому перевірено окремо і саме на живому Vercel, а
+не лише на локальному білді. Ключова відмінність від стану до #325: заголовок більше не
+`private, no-cache, no-store`, і сторінка не доходить до origin на кожен запит
+(source: live check прода 2026-08-24 після деплою #325).
+
+`X-Robots-Tag` на `/news/search` навмисно немає: маршрут динамічний, тож `noindex` ставить
+власна `generateMetadata` тегом у HTML, а не правило в `next.config.ts`.
+
 ## Чого перевірка не покрила
 
 Vercel MCP на плані Hobby не дає ані агрегатів runtime-логів (403), ані Web Analytics (404), тому
 розкладу трансферу по маршрутах від самого Vercel немає — висновок побудований на заголовках
-кешу й розмірах відповідей (source: live check MCP 2026-08-24). Після деплою треба переконатися,
-що `/en/news` справді віддає `x-vercel-cache: HIT` або `PRERENDER`, а `/en/news?q=…` — 308 на
-`/en/news/search`. Локально обидва підтверджені на production-білді; на Vercel це варто
-перевірити ще раз, бо саме тут попередня спроба й провалилась.
+кешу й розмірах відповідей (source: live check MCP 2026-08-24). Скільки саме ГБ це віддає за
+місяць, буде видно лише на наступному циклі білінгу.
 
 ## Related pages
 
