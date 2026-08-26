@@ -177,6 +177,7 @@ export function buildImageCriticPrompt(input: {
 
 /** Pixel-only QA: no headline, scene brief, or intended prompt (illustration plan E2 / M2). */
 export function buildImageOnlyCriticPrompt(): string {
+  const threshold = contentSimScoreThreshold();
   return [
     'You are checking an uploaded editorial illustration for pixel defects only.',
     'Do not infer a news story. Do not assume a prompt, headline, scene brief, or labels.',
@@ -186,12 +187,14 @@ export function buildImageOnlyCriticPrompt(): string {
     'banned_cliche: terminal/IDE screens, collage, glowing brain, generic paper-heap sludge, mascot/cute humanoid robots unless literal robotic hardware is the news subject.',
     HUMAN_DIGNITY_RISK_HINT,
     'Count distinct readable-text regions in blockers (one blocker per region).',
-    'Do not score context, mechanism, consequence, or headline pairing — those axes are not applicable.',
+    `Score overall, no_text, craft, and brand_safe on a 0–100 scale. Never use 0–1 or 1–5.`,
+    `Pass only if overall >= ${threshold} and blockers is empty.`,
+    'Do not score news_legibility, context, mechanism, consequence, or headline pairing — those axes are not applicable.',
     '',
     'Inspect the attached image. Reply with ONLY JSON:',
     '{',
     '  "overall": number,',
-    '  "dimensions": { "no_text": number, "craft": number, "brand_safe": number, "news_legibility": number },',
+    '  "dimensions": { "no_text": number, "craft": number, "brand_safe": number },',
     '  "blockers": [{ "code": string, "message": string, "region": string }],',
     '  "notes": string',
     '}',
@@ -291,6 +294,81 @@ function criticParseFailure(reason: string): ContentSimCritique {
   };
 }
 
+/** Flash often answers 0–1 or 1–5 when the schema only says `number`. */
+type CriticScoreBand = 1 | 5 | 100;
+
+function criticScoreBand(value: number): CriticScoreBand {
+  if (value <= 1) return 1;
+  if (value <= 5) return 5;
+  return 100;
+}
+
+function toHundredPointScale(value: number, band: CriticScoreBand): number {
+  if (band === 1) return Math.round(value * 100);
+  if (band === 5) return Math.round((value / 5) * 100);
+  return value;
+}
+
+function optionalNum(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function imageOnlyAxisScore(raw: unknown, overallRaw: number, overallHundred: number): number {
+  const value = optionalNum(raw);
+  if (value === undefined) return overallHundred;
+  if (criticScoreBand(value) !== criticScoreBand(overallRaw)) return overallHundred;
+  return toHundredPointScale(value, criticScoreBand(overallRaw));
+}
+
+function parseImageOnlyCritique(
+  parsed: Record<string, unknown>,
+  dimensions: Record<string, unknown>,
+  rawOverall: number,
+  blockers: ContentSimBlocker[],
+  scoreThreshold: number,
+): ContentSimCritique {
+  const overall = toHundredPointScale(rawOverall, criticScoreBand(rawOverall));
+  const noText = imageOnlyAxisScore(dimensions.no_text, rawOverall, overall);
+  const craft = imageOnlyAxisScore(dimensions.craft, rawOverall, overall);
+  const brandSafe = imageOnlyAxisScore(dimensions.brand_safe, rawOverall, overall);
+  const passed = blockers.length === 0 && overall >= scoreThreshold;
+  return {
+    passed,
+    scores: {
+      overall,
+      no_text: noText,
+      craft,
+      brand_safe: brandSafe,
+      news_legibility: overall,
+      metaphor_fit: overall,
+      context_fidelity: overall,
+      mechanism_legibility: overall,
+      consequence_legibility: overall,
+      instant_comprehension: overall,
+      semantic_min: overall,
+    },
+    blockers,
+    notes: str(parsed.notes),
+    repairDirective: passed ? undefined : parseRepair(parsed.repair),
+  };
+}
+
+function appendMissingPixelEvidence(
+  parsed: Record<string, unknown>,
+  blockers: ContentSimBlocker[],
+): void {
+  const evidence = asRecord(parsed.pixel_evidence);
+  const missingEvidence = ['context', 'mechanism', 'consequence', 'headline_pairing'].filter(
+    (key) => !str(evidence[key]),
+  );
+  if (missingEvidence.length === 0) return;
+  blockers.push({
+    code: 'semantic_evidence_missing',
+    message: `Vision scores lack visible-pixel evidence for: ${missingEvidence.join(', ')}.`,
+    blocker: true,
+  });
+}
+
 export function parseImageCriticResponse(
   text: string,
   scoreThreshold = contentSimScoreThreshold(),
@@ -311,6 +389,13 @@ export function parseImageCriticResponse(
   }
   const dimensions = asRecord(parsed.dimensions);
   const rawOverall = num(parsed.overall, num(dimensions.overall, 0));
+  const blockers = parseBlockers(parsed.blockers);
+  if (options.requirePixelEvidence) {
+    appendMissingPixelEvidence(parsed, blockers);
+  }
+  if (options.requireStorySemantics === false) {
+    return parseImageOnlyCritique(parsed, dimensions, rawOverall, blockers, scoreThreshold);
+  }
   const newsLegibility = num(dimensions.news_legibility, rawOverall);
   const semanticFallback = options.requireStorySemantics ? 0 : rawOverall;
   const contextFidelity = num(dimensions.context_fidelity, semanticFallback);
@@ -327,20 +412,6 @@ export function parseImageCriticResponse(
   const overall = options.requireStorySemantics
     ? Math.min(newsClamped, semanticMin + 5)
     : newsClamped;
-  const blockers = parseBlockers(parsed.blockers);
-  if (options.requirePixelEvidence) {
-    const evidence = asRecord(parsed.pixel_evidence);
-    const missingEvidence = ['context', 'mechanism', 'consequence', 'headline_pairing'].filter(
-      (key) => !str(evidence[key]),
-    );
-    if (missingEvidence.length > 0) {
-      blockers.push({
-        code: 'semantic_evidence_missing',
-        message: `Vision scores lack visible-pixel evidence for: ${missingEvidence.join(', ')}.`,
-        blocker: true,
-      });
-    }
-  }
   const scores = {
     overall,
     metaphor_fit: num(dimensions.metaphor_fit, overall),

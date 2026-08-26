@@ -5,22 +5,38 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…25, Content Sim,
 Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22,
 Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
-weekly Video tab #441 2026-08-25
+first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25
 Last updated: 2026-08-25
 
 ---
 
 ## Стан репозиторію
 
-- **Weekly Video: Approve дає React #441, манифест чекає stills (2026-08-25), гілка
-  `fix/weekly-video-approve-441`.** На `ai-weekly-2026-08-16` (`71af784b-3c89-47f8-bc38-e3eae4def2a7`)
-  `video_script` уже `approved`; `video_manifest` у `waiting` з
-  «Waiting for approved Top 3 story images: 0/3» — на ревізії немає `story_image`/`cover`.
-  Повторний Approve скрипта не зрушує job. Голий throw із review/save/enqueue Server Action
-  рендерився як `Minified React error #441`; тепер редірект на ту саму вкладку з `?save_error=…`,
-  кнопка Approve version ховається коли артефакт уже `approved`, а Video-панель лінкує на
-  Visuals. Наступний крок власника: Visuals → згенерувати/залити й затвердити 3 Top 3 stills
-  (+ ready cover), не регенерувати скрипт.
+- **Перший nightly daily visual (2026-08-25).** Set `2026-08-24`
+  (`acc50caa-dbaf-45bc-958d-c194d32ed57a`) дійшов до `needs_visual_choice`. Seedream 5.0 Pro
+  primary і Qwen Image 3 Pro repair записались (1600×900 WebP), бюджетні reservation
+  `committed` з `actual_cost` (direction $0.000926, primary $0.045, repair $0.040, два QA
+  по $0.000863). Image-only Gemini Flash написав «No pixel defects found», але поставив
+  `overall`/`news_legibility` як 1 або 5 замість 0–100; парсер далі вимагав
+  `news_legibility >= 75`, тож обидва кандидати впали з
+  `primary_and_repair_failed_semantic_qa` і story-aware QA навіть не стартував. Фікс:
+  image-only промпт вимагає шкалу 0–100 і більше не містить `news_legibility`; парсер
+  rescale-ить 0–1 / 1–5 і не гейтить pixel-only по news floor. 24 Aug лишається на ручний
+  вибір у `/admin/daily-visuals` — нічний джоб той самий set не перегенерує.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25,
+  Actions `32787092116`; `src/lib/content-sim/vision-critic.ts`;
+  [daily-visual-workflow](pipeline/daily-visual-workflow.md))
+
+- **Weekly Video: Approve дає React #441, манифест чекає stills (2026-08-25), змержено як
+  [#328](https://github.com/sanchahous/ai-today-brief/pull/328).** На `ai-weekly-2026-08-16`
+  (`71af784b-3c89-47f8-bc38-e3eae4def2a7`) `video_script` уже `approved`; `video_manifest` у
+  `waiting` з «Waiting for approved Top 3 story images: 0/3» — на ревізії немає
+  `story_image`/`cover`. Повторний Approve скрипта не зрушує job. Голий throw із
+  review/save/enqueue Server Action рендерився як `Minified React error #441`; тепер
+  редірект на ту саму вкладку з `?save_error=…`, кнопка Approve version ховається коли
+  артефакт уже `approved`, а Video-панель лінкує на Visuals. Наступний крок власника:
+  Visuals → згенерувати/залити й затвердити 3 Top 3 stills (+ ready cover), не
+  регенерувати скрипт.
   (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25;
   [weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
 
