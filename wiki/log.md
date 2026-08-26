@@ -6,6 +6,20 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-26
 
+## 2026-08-26 — Visuals upload: permission denied for weekly_digest_revisions
+
+**Джерело:** owner session 2026-08-26 (після merge #329), прод-Supabase
+`mdiqfatpqczwqghwttpm` live check 2026-08-26.
+
+Body-cap фікс дійшов до Server Action, але `save_weekly_digest_artifact` падав у
+`weekly_digest_artifact_input_hash`: `select revision.*` під `security invoker`
+після column-level revoke `visual_thesis_*` → `42501 permission denied for table
+weekly_digest_revisions`. Нічого не зʼявилось у Storage artifacts. Фікс: функція
+`security definer` + явний SELECT публічних колонок; md5 payload незмінний
+(smoke authenticated = service_role). Міграцію застосовано на прод одразу.
+(source: `supabase/migrations/20260826120000_weekly_artifact_input_hash_column_privs.sql`;
+[weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
+
 ## 2026-08-26 — Visuals upload: Vercel body cap → Something broke
 
 **Джерело:** owner session 2026-08-26 (Visuals tab, digest

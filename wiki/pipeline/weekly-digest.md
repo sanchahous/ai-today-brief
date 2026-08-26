@@ -8,10 +8,21 @@ latest revision is the working copy 2026-08-22, pre-critic hang 2026-08-22,
 critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22,
 image prompt library v6 2026-08-23, owner visual-direction contract 2026-08-24,
 image-only QA Likert rescale 2026-08-25, Video tab #441 / waiting stills 2026-08-25,
-Visuals upload body cap 2026-08-26
+Visuals upload body cap 2026-08-26, artifact input_hash column privs 2026-08-26
 Last updated: 2026-08-26
 
 ---
+
+## Visuals upload: permission denied on revisions (2026-08-26)
+
+After the body-cap fix, owner upload reached `save_weekly_digest_artifact` but failed
+inside `weekly_digest_artifact_input_hash`: `select revision.*` under `security invoker`
+requires SELECT on every column of `weekly_digest_revisions`, including private
+`visual_thesis_*` revoked in `20260824110000` → `42501 permission denied for table
+weekly_digest_revisions` (no artifact row). Fix: `security definer` + explicit public
+columns; md5 payload unchanged. Applied to prod immediately.
+(source: `supabase/migrations/20260826120000_weekly_artifact_input_hash_column_privs.sql`;
+prod live check digest `71af784b-3c89-47f8-bc38-e3eae4def2a7` 2026-08-26)
 
 ## Visuals upload body cap (2026-08-26)
 
