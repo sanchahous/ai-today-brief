@@ -4048,3 +4048,23 @@ soft-навігує на /news/search і дає 80 результатів.
 [vercel-origin-transfer](ops/vercel-origin-transfer.md))
 
 ---
+
+## 2026-08-28 — Video tab: duration bound розширено + auto-fetch з YouTube
+
+Owner не міг зберегти в адмінці валідне 313-секундне відео — `saveWeeklyVideo` кидав
+`Weekly YouTube duration must be an integer between 300 and 600 seconds.` Сам діапазон
+300–600с (5–10 хв) блокером не був (313с усередині нього); справжня причина — поле
+**Duration (seconds)** було суто ручним, без жодної підказки при порожньому значенні:
+`optionalNumber()` повертає `null`, і це падає в ту саму загальну помилку діапазону
+незалежно від того, чи поле порожнє, чи там нецілий рядок, чи справді число поза межами.
+
+Два коміти в одній гілці: (1) розширено діапазон до 200–1200с (ціле число, форма правила
+не змінена) у server action, у валідаторі `weekly-video-result-v2` та в `min`/`max` поля
+форми; (2) додано `fetchYouTubeDurationSeconds()` — коли поле лишили порожнім, server
+action тепер сам витягує `"lengthSeconds":"(\d+)"` із публічної `watch?v=`-сторінки (без
+YouTube Data API ключа) і використовує це значення; ручне введення й далі має пріоритет
+як override. (source: owner report 2026-08-28; PR #331;
+[weekly-digest § Video tab: duration bound widened + auto-fetch](pipeline/weekly-digest.md#video-tab-duration-bound-widened--auto-fetch-2026-08-28);
+`src/app/admin/(cms)/weekly/actions.ts`; `src/lib/weekly-digest/video.ts`)
+
+---

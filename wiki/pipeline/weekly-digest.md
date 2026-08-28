@@ -8,12 +8,32 @@ latest revision is the working copy 2026-08-22, pre-critic hang 2026-08-22,
 critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22,
 image prompt library v6 2026-08-23, owner visual-direction contract 2026-08-24,
 image-only QA Likert rescale 2026-08-25, Video tab #441 / waiting stills 2026-08-25,
-Visuals upload body cap 2026-08-26, artifact input_hash column privs 2026-08-26
-Last updated: 2026-08-26
+Visuals upload body cap 2026-08-26, artifact input_hash column privs 2026-08-26,
+Video tab duration bound + auto-fetch 2026-08-28
+Last updated: 2026-08-28
 
 ---
 
-## Visuals upload: permission denied on revisions (2026-08-26)
+## Video tab: duration bound widened + auto-fetch (2026-08-28)
+
+Owner couldn't save a valid 313s YouTube video from the Video tab — `saveWeeklyVideo`
+threw `Weekly YouTube duration must be an integer between 300 and 600 seconds.` The
+300–600s (5–10 min) window itself wasn't the blocker (313s is inside it); the real
+failure mode was the **Duration (seconds)** field being manual-only with no client or
+server hint when left blank — `optionalNumber()` returns `null`, which trips the same
+generic range error regardless of whether the field was empty, non-integer, or genuinely
+out of range (source: `src/app/admin/(cms)/weekly/actions.ts`, `src/lib/weekly-digest/video.ts`).
+
+Two changes, same branch:
+
+1. Widened the accepted range to 200–1200s (integer, unchanged rule shape) in both the
+   admin-form save path and the `weekly-video-result-v2` manifest validator, plus the
+   form's `min`/`max` (source: PR #331).
+2. Added `fetchYouTubeDurationSeconds()` — when the field is left blank, the server
+   action now scrapes `"lengthSeconds":"(\d+)"` out of the public `watch?v=` page (no
+   YouTube Data API key needed) and uses that instead of requiring manual entry; a
+   value the operator does type is still respected as an override (source:
+   `src/lib/weekly-digest/video.ts`).
 
 After the body-cap fix, owner upload reached `save_weekly_digest_artifact` but failed
 inside `weekly_digest_artifact_input_hash`: `select revision.*` under `security invoker`
