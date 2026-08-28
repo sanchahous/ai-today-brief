@@ -80,8 +80,18 @@ rejected body is not stored on the job; the critic separately scored 75 for bold
 (`радар`/`radar`, so locative `радарі` hits). A missing Radar *word* is no longer a hard block
 when Топ 3 already has its own block — the original incident was radar-present / Top-3-missing.
 Critic `USE`/bold-target stays critic-only.
-(source: prod-Supabase job `3f8a1db2-883e-41c7-84de-d834ac50ac24` 2026-08-28 14:35 UTC;
-GitHub Actions run `33180626567`; `src/lib/weekly-digest/social-adapter.ts`)
+
+**Same evening — writer JSON without `<CANDIDATE>`.** Later linked retries never reached the
+block-structure gate. OpenRouter often returns one complete `text` field; the parser treated
+that as malformed (`Writer must return 2–3 hook candidates`), skipped to the next model, and
+that model pasted Threads `<PART>` markers into Telegram (`service_markers`,
+`paragraph_breaks_required`, `platform_fit` 58). `candidatesFromText` now accepts a single
+non-empty body as one candidate. The Telegram `CHANNEL_CONTRACT` forbids `<PART>` / `<SLIDE>` /
+`<CAPTION>`. A `queued` retry is unsafe: production's 5-minute dispatcher on `main` claimed
+`25075de7` within minutes (run `33183383191`). Fence as `dispatching` and start the worker
+with `--ref` on the fix branch.
+(source: prod-Supabase job `25075de7-214b-43a2-9260-c4283b778eb7` 2026-08-28 15:07 UTC;
+GitHub Actions run `33183383191`; `src/lib/weekly-digest/social-adapter.ts`)
 
 ---
 
