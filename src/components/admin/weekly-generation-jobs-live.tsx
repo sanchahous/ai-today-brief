@@ -207,6 +207,16 @@ function unresolvedCount(job: GenerationJob): number {
   return Array.isArray(unresolved) ? unresolved.length : 0;
 }
 
+/** A job in one of these states will change on its own soon; worth polling fast for. */
+function isActiveGenerationJob(status: string) {
+  return (
+    status === 'queued' ||
+    status === 'dispatching' ||
+    status === 'running' ||
+    status === 'retry_scheduled'
+  );
+}
+
 export function WeeklyGenerationJobsLive({
   digestId,
   revisionId,
@@ -231,19 +241,35 @@ export function WeeklyGenerationJobsLive({
   });
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const cursor = useRef(data.cursor);
+  const jobTypesKey = jobTypes.join(',');
 
+  // Polling cadence tracks whether anything is actually in flight: 5s while a
+  // job for this tab is queued/running, 30s once everything is terminal. The
+  // prior unconditional 5s interval kept hammering
+  // generation-status (and, through it, Supabase) forever on tabs left open
+  // long after their jobs finished.
   useEffect(() => {
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let lastKnownJobs = initialJobs;
+    const scheduleNext = () => {
+      if (cancelled) return;
+      const delayMs = lastKnownJobs.some((job) => isActiveGenerationJob(job.status))
+        ? 5_000
+        : 30_000;
+      timer = setTimeout(() => void refresh(), delayMs);
+    };
     const refresh = async () => {
       try {
         const response = await fetch(
-          `/api/admin/weekly/${encodeURIComponent(digestId)}/generation-status?after=${cursor.current}`,
+          `/api/admin/weekly/${encodeURIComponent(digestId)}/generation-status?after=${cursor.current}&jobTypes=${encodeURIComponent(jobTypesKey)}`,
           { cache: 'no-store', credentials: 'same-origin' },
         );
         if (!response.ok) return;
         const payload = (await response.json()) as StatusPayload;
         if (cancelled) return;
         cursor.current = payload.cursor;
+        lastKnownJobs = payload.jobs;
         setData((current) => ({
           jobs: payload.jobs,
           attempts: payload.attempts,
@@ -254,15 +280,21 @@ export function WeeklyGenerationJobsLive({
         setLastUpdatedAt(new Date().getTime());
       } catch {
         // The durable server-rendered snapshot remains visible during a transient poll failure.
+      } finally {
+        scheduleNext();
       }
     };
     void refresh();
-    const timer = setInterval(() => void refresh(), 5_000);
     return () => {
       cancelled = true;
-      clearInterval(timer);
+      if (timer) clearTimeout(timer);
     };
-  }, [digestId]);
+    // initialJobs seeds the first schedule check only; every refresh past
+    // that reads lastKnownJobs from the live response instead. Depending on
+    // it would restart the whole polling loop (and its cadence) on every
+    // parent re-render, which defeats the point of backing off when idle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [digestId, jobTypesKey]);
 
   const { current: jobs, history: jobHistory } = useMemo(
     () => partitionGenerationJobsForDisplay(data.jobs, jobTypes),

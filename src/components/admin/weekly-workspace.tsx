@@ -254,9 +254,22 @@ function GenerationJobsSection({
   events: WeeklyGenerationEventAdminRow[];
   tab: WeeklyWorkspaceTab;
 }) {
-  if (GENERATION_JOB_TYPES_BY_TAB[tab].length === 0) return null;
+  const tabJobTypes = GENERATION_JOB_TYPES_BY_TAB[tab];
+  if (tabJobTypes.length === 0) return null;
 
   const headingId = `jobs-${tab}-heading`;
+  // Every one of the 6 tabs that render this section received the digest's
+  // *entire* jobs/attempts/events history unfiltered, even though each tab
+  // only ever displays one or two job_types. On a busy digest that pushed the
+  // per-tab RSC payload to ~1.3 MB (vs ~80 KB for a tab without this section)
+  // and froze the browser while it parsed/hydrated the duplicate data on
+  // every tab click. Scoping to this tab's job_types before it ever reaches
+  // the client component fixes that at the source.
+  const allowedJobTypes = new Set(tabJobTypes);
+  const scopedJobs = jobs.filter((job) => allowedJobTypes.has(job.job_type));
+  const scopedJobIds = new Set(scopedJobs.map((job) => job.id));
+  const scopedAttempts = attempts.filter((attempt) => scopedJobIds.has(attempt.job_id));
+  const scopedEvents = events.filter((event) => scopedJobIds.has(event.job_id));
 
   return (
     <section className={PANEL} aria-labelledby={headingId}>
@@ -264,17 +277,15 @@ function GenerationJobsSection({
         <h2 id={headingId} className="text-lg font-bold text-white">
           Generation jobs
         </h2>
-        <span className="text-xs font-semibold text-slate-500">
-          {GENERATION_JOB_TYPES_BY_TAB[tab].join(' · ')}
-        </span>
+        <span className="text-xs font-semibold text-slate-500">{tabJobTypes.join(' · ')}</span>
       </div>
       <WeeklyGenerationJobsLive
         digestId={digestId}
         revisionId={revisionId}
-        jobTypes={GENERATION_JOB_TYPES_BY_TAB[tab]}
-        initialJobs={jobs}
-        initialAttempts={attempts}
-        initialEvents={events}
+        jobTypes={tabJobTypes}
+        initialJobs={scopedJobs}
+        initialAttempts={scopedAttempts}
+        initialEvents={scopedEvents}
       />
     </section>
   );
