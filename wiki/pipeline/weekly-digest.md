@@ -9,8 +9,54 @@ critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-
 image prompt library v6 2026-08-23, owner visual-direction contract 2026-08-24,
 image-only QA Likert rescale 2026-08-25, Video tab #441 / waiting stills 2026-08-25,
 Visuals upload body cap 2026-08-26, artifact input_hash column privs 2026-08-26,
-Generation jobs panel payload/polling fix 2026-08-28, Video tab duration bound + auto-fetch 2026-08-28
+Generation jobs panel payload/polling fix 2026-08-28, Video tab duration bound + auto-fetch 2026-08-28,
+social copy channel-contract deterministic gate 2026-08-28
 Last updated: 2026-08-28
+
+---
+
+## Social copy: channel-contract format rules were critic-only, no deterministic gate (2026-08-28)
+
+Owner-reported production `social_copy` job (`channels` step, `router/auto` backend, heartbeat
+28.08 13:14 Kyiv) terminated `quality_gate` after bounded repair on Telegram:
+`platform_fit` 68/100, ~1700 chars against the 900–1600 contract, no `**bold**` on the key
+number, `cache-write` named but not wrapped in `` `backticks` ``.
+
+Root cause, confirmed against [Approval-ready Social boundary](#approval-ready-social-boundary-2026-08-17)
+and [omni-channel-publishing-matrix](../marketing/omni-channel-publishing-matrix.md) §7: every
+`CHANNEL_CONTRACT` format rule — contract character range, Telegram bold/backticks, and the
+blank-line-between-blocks rule added 2026-08-21 for Telegram/Facebook/LinkedIn — was prose the
+independent critic was merely *asked* to notice, with zero deterministic backstop. The character
+range already forced `platformFitScore` below 85 via `Math.min` in `scoreCandidate`, but the
+repair prompt only ever saw the generic `Platform-native fit N/100 is below 85/100.` line unless
+the critic itself happened to add a `platformFlags` entry that round. Bold/backticks/blank-lines
+had no check at all: if the critic's own `platformFitScore` passed with an empty `platformFlags`
+array (valid per its own consistency rule), the defect could ship undetected. Same failure shape
+as [naturalness stuck at 55](#naturalness-застрягав-на-55-через-5-ревізій--фікс-2026-08-22) — a
+mechanically checkable defect gated by a non-deterministic judge, and the same root cause the
+20.08 release already hit once for LinkedIn/Telegram line breaks (0 blank lines each time) before
+that incident was patched with contract *prose* rather than a code check.
+
+Fix in `channelContractIssues()` (`social-adapter.ts`): checks, in code, the contract character
+range for telegram/facebook/x/linkedin, Telegram bold+backticks presence, blank-line separation
+for telegram/facebook/linkedin, and LinkedIn's "never a single dense paragraph" rule (no
+blank-line-delimited block over 400 chars). Every violation becomes a named blocking issue
+(`channel_length`, `telegram_bold_required`, `telegram_backticks_required`,
+`paragraph_breaks_required`, `linkedin_dense_paragraph`) regardless of what the critic reports,
+so every repair-round prompt names the exact defect instead of a generic score. `scoreCandidate`
+penalizes the same defects, so hook ranking already prefers a compliant candidate before the
+critic ever runs. Separately, `CHANNEL_CONTRACT` for telegram/facebook/linkedin now explicitly
+invites one small icon or emoji to head the practical/action block (mirroring the 🛠️/📉 pattern in
+the omni-channel-matrix templates) — previously no contract mentioned emoji at all, only
+`CHANNEL_RULES.maxEmoji` capped them, so the writer had no signal that they were welcome.
+
+Deliberately left critic-only: the `USE`-block practical-content requirement (name + step +
+cost/limit) stays judged by the critic under `platformFitScore`, per the open question already
+logged in omni-channel-publishing-matrix §9 — whether a claim is genuinely actionable is an
+editorial judgment call, not a regex-checkable defect the way length/markup/blank-lines are.
+(source: owner-reported production `social_copy` job failure 2026-08-28 13:14 Kyiv;
+`src/lib/weekly-digest/social-adapter.ts`, `src/lib/social/telegram-format.ts`,
+`src/lib/weekly-digest/social-adapter.test.ts`, `src/lib/social/telegram-format.test.ts`)
 
 ---
 

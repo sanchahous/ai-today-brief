@@ -6,12 +6,34 @@ Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…26, Content Sim,
 Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22,
 Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
-Visuals upload body cap 2026-08-26, admin weekly workspace hang fix 2026-08-28
+Visuals upload body cap 2026-08-26, admin weekly workspace hang fix 2026-08-28,
+social copy channel-contract deterministic gate 2026-08-28
 Last updated: 2026-08-28
 
 ---
 
 ## Стан репозиторію
+
+- **Social copy: Telegram bold/backticks/довжина і верстка (порожній рядок між блоками) для
+  Telegram/Facebook/LinkedIn тепер гейтяться детерміновано, не лише критиком (2026-08-28), гілка
+  `claude/telegram-social-copy-approval-9de597`.** Прод-джоба `social_copy` впала `quality_gate`
+  на Telegram після вичерпаних 3 раундів ремонту: `platform_fit` 68/100, ~1700 симв. проти
+  контрактних 900–1600, без `**bold**`, `cache-write` без `` `backticks` ``. Корінь — увесь
+  `CHANNEL_CONTRACT` (довжина, bold/backticks, порожній рядок між блоками, доданий 21.08 для
+  Telegram/Facebook/LinkedIn) був прозою, яку лише **просили** незалежного критика помітити;
+  довжина вже підважувала `platformFitScore` через `scoreCandidate`, але конкретна причина
+  потрапляла в repair-промпт лише якщо критик сам додав її в `platformFlags` того раунду —
+  bold/backticks/порожні рядки не перевірялися взагалі. Той самий корінь, що вже раз ламав
+  LinkedIn і Telegram 20.08 (0 порожніх рядків в обох) — тоді пофіксили промптом, не кодом.
+  Тепер `channelContractIssues()` перевіряє все це в коді й завжди додає іменований blocking
+  issue незалежно від критика; `CHANNEL_CONTRACT` для трьох каналів також вперше явно запрошує
+  одну іконку/емодзі на заголовок практичного блоку (раніше емодзі не згадувались у промпті
+  взагалі, лише `maxEmoji`-стеля). `USE`-блок (чи практика справді практична) навмисно лишається
+  судженням критика — це редакційна, не механічна перевірка.
+  (source: owner-reported production job failure 2026-08-28 13:14 Kyiv;
+  [weekly-digest § Social copy: channel-contract format rules](pipeline/weekly-digest.md#social-copy-channel-contract-format-rules-were-critic-only-no-deterministic-gate-2026-08-28),
+  [omni-channel-publishing-matrix §7](marketing/omni-channel-publishing-matrix.md#7-конформанс-що-вже-змінено-в-коді-що-лишається);
+  `src/lib/weekly-digest/social-adapter.ts`, `src/lib/social/telegram-format.ts`)
 
 - **Адмінка «зависає» на Weekly Digest — знайдено і виправлено (2026-08-28).** Власник
   повідомив: сайт і адмінка дуже довго вантажаться, терміново. Публічний сайт і

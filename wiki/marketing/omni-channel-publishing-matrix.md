@@ -7,8 +7,9 @@ Sources: `src/lib/social/quality.ts` (`CHANNEL_RULES`), `src/lib/social/provider
 `src/lib/social/instagram-carousel.ts`, `src/lib/weekly-digest/social-adapter.ts`
 (`CHANNEL_CONTRACT`), `src/lib/weekly-digest/social-facts.ts`,
 `src/app/r/s/[token]/route.ts`, `src/lib/weekly-digest/preflight.ts`
-(`WEEKLY_SOCIAL_MATRIX`), прод-розбір релізу `ai-weekly-2026-08-09` 2026-08-21
-Last updated: 2026-08-21
+(`WEEKLY_SOCIAL_MATRIX`), прод-розбір релізу `ai-weekly-2026-08-09` 2026-08-21,
+deterministic contract gate 2026-08-28
+Last updated: 2026-08-28
 
 ---
 
@@ -360,12 +361,28 @@ Full weekly breakdown — link in bio.
 | `providers.ts` → `LinkedInPublisher` | після публікації постить `firstComment` через `/rest/socialActions/{urn}/comments`; збій = `partial_linkedin_comment` (`ambiguous`, під реконсиляцію, без ретраю) | Автопостинг лінка 1-м коментарем — той самий контракт, що в X self-reply |
 | `weekly-action-board.tsx` (новий) + `weekly/[slug]/page.tsx` | блок «Що взяти в роботу цього тижня» одразу під героєм; відео перенесено з кінця статті на початок колонки | Рівень випуску, якого бракувало: 3–5 дій із `practical_*`, кожна з якорем на свою історію |
 
+**Змінено 2026-08-28.** Рядок «критик тепер аудитує це під `platformFlags`» вище описував увесь
+захист верстки станом на 21.08 — і саме тому Telegram знову зламався 28.08 (68/100 platform-fit,
+~1700 симв. без `**bold**` і без `` `backticks` ``): вимоги були прозою в промпті, критик міг їх
+просто не помітити в конкретному раунді, і жоден код це не перевіряв. `channelContractIssues()`
+у `social-adapter.ts` тепер детерміновано перевіряє: контрактний діапазон символів
+(telegram/facebook/x/linkedin), Telegram bold+backticks, порожній рядок між блоками
+(telegram/facebook/linkedin) і LinkedIn «не один щільний абзац» (жоден блок між порожніми
+рядками не довший за 400 символів). Кожне порушення — іменований blocking issue незалежно від
+того, що сказав критик, тож промпт ремонту щоразу називає точний дефект. `CHANNEL_CONTRACT` для
+telegram/facebook/linkedin тепер прямо запрошує одну невелику іконку/емодзі на заголовок
+практичного блоку (той самий 🛠️/📉 патерн, що й у шаблонах §6.1 нижче) — до цього емодзі в
+промпті не згадувались жодного разу, лише `CHANNEL_RULES.maxEmoji` ставив стелю.
+(source: `src/lib/weekly-digest/social-adapter.ts`, `src/lib/weekly-digest/social-adapter.test.ts`;
+[weekly-digest § Social copy: channel-contract format rules](../pipeline/weekly-digest.md#social-copy-channel-contract-format-rules-were-critic-only-no-deterministic-gate-2026-08-28))
+
 **Лишається** (потребує рішення власника):
 
 | # | Правило | Що каже код | Статус |
 |---|---|---|---|
 | 1 | Instagram: 5–8 хештегів | caption ≤5 (`instagram_caption_hashtags`) | ❌ однорядкова правка ліміту, якщо редакція наполягає |
 | 2 | LinkedIn: 4 емодзі у зразку ТЗ | `maxEmoji: 3` | ⚠️ рішення редакції, не баг. Шаблон використовує 2 |
+| 3 | `USE`-блок: чи справді практичний, чи просто згаданий інструмент | аудитує лише критик через `platformFitScore`, §9 | ⚠️ навмисно залишено судженням критика — це редакційна, не механічна перевірка |
 
 > ⚠️ **Не перевірено наживо.** Фікс `/r/s/` типізується і проходить тести, але поведінку
 > скрапера Facebook звідси перевірити неможливо. Після деплою прогнати URL через

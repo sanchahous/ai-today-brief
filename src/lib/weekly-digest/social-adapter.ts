@@ -10,6 +10,7 @@ import {
 } from '@/lib/social/instagram-carousel';
 import { generateSocialJson } from '@/lib/social/llm-router';
 import { findBlindCrossPosts, runQualityGate } from '@/lib/social/quality';
+import { containsTelegramBold, containsTelegramInlineCode } from '@/lib/social/telegram-format';
 import type {
   QualityReport,
   SocialAsset,
@@ -37,17 +38,114 @@ export interface WeeklySocialAdaptation extends SocialDraft {
 
 const CHANNEL_CONTRACT: Record<SocialChannel, string> = {
   telegram:
-    'Ukrainian, 900–1600 characters. Separate every block with a blank line; never run blocks together on consecutive lines. Telegram is the only channel that renders rich text: use **bold** for the one number that matters and `backticks` for tool, flag or command names. Never use these markers on any other channel. Strong lead, Top 3 with a short consequence, radar in one block, one CTA and exactly one URL. At least one block must name a model, tool, endpoint or setting the reader can try this week, the concrete step to try it, and its cost, limit or caveat.',
+    'Ukrainian, 900–1600 characters. Separate every block with a blank line; never run blocks together on consecutive lines. Telegram is the only channel that renders rich text: use **bold** for the one number that matters and `backticks` for tool, flag or command names. Never use these markers on any other channel. Strong lead, Top 3 with a short consequence, radar in one block, one CTA and exactly one URL. At least one block must name a model, tool, endpoint or setting the reader can try this week, the concrete step to try it, and its cost, limit or caveat. One small icon or emoji may head the practical block and the radar block for scannability (stay inside the channel emoji budget); never one per line.',
   facebook:
-    'Ukrainian, 700–1400 characters. Blank line between paragraphs. One human narrative line, 2–3 conclusions, one meaningful question and exactly one URL. Name at least one tool, model or setting the reader can act on, with the trade-off that comes with it.',
+    'Ukrainian, 700–1400 characters. Blank line between paragraphs. One human narrative line, 2–3 conclusions, one meaningful question and exactly one URL. Name at least one tool, model or setting the reader can act on, with the trade-off that comes with it. One small icon or emoji may head the practical block for scannability; never one per line.',
   threads:
     'Ukrainian sequence of 3–5 messages, each at most 500 characters. Thesis → evidence → what to try → genuine question. Separate messages with <PART>. Put the URL only in the final part. One part must be a concrete thing to try, naming the tool or setting and the step, not a restatement of the news.',
   x: 'English root post, 180–260 characters, one thesis and one strong fact, no URL. The tracked URL goes only in firstComment, and firstComment must carry a second fact or the practical step alongside the link — never a bare URL.',
   linkedin:
-    'English, 700–1200 characters. Break lines aggressively: one sentence or short block per line, blank line between blocks, never a single dense paragraph. A self-contained insight for builders/leaders: tension, evidence, judgment, what to do about it, next decision. One block must be a concrete action naming the tool, serving path, flag or setting, plus its cost or limit. At most 3 hashtags. The post body must contain no URL at all; the tracked URL goes in firstComment, which should read as a real first comment rather than a bare link.',
+    'English, 700–1200 characters. Break lines aggressively: one sentence or short block per line, blank line between blocks, never a single dense paragraph. A self-contained insight for builders/leaders: tension, evidence, judgment, what to do about it, next decision. One block must be a concrete action naming the tool, serving path, flag or setting, plus its cost or limit. At most 3 hashtags. The post body must contain no URL at all; the tracked URL goes in firstComment, which should read as a real first comment rather than a bare link. One small icon or emoji may head the practical-action block for scannability; never one per line.',
   instagram:
     'English hybrid carousel of exactly 7 slides. Inside each candidate write <COVER>headline, three <STORY>headline||body, then <COMPARISON>headline||body, <CAVEAT>headline||body, <TAKEAWAY>headline||body, then <CAPTION>caption. Cover headline ≤72 characters; other headlines ≤54; bodies ≤120. Caption 180–800 characters, no URL, at most 5 hashtags. The takeaway slide must state a concrete action with a named tool, serving path or setting — not a summary of the week.',
 };
+
+/**
+ * Contract character ranges, shared between candidate ranking and the
+ * deterministic blocking check below. Narrower than `CHANNEL_RULES` in
+ * `@/lib/social/quality`, which enforces each platform's hard technical limit
+ * (e.g. Telegram's 4096-char message cap) — this is the editorial range this
+ * writer/critic loop is actually contracted to hit.
+ */
+const CONTRACT_CHAR_RANGE: Partial<Record<SocialChannel, [number, number]>> = {
+  telegram: [900, 1_600],
+  facebook: [700, 1_400],
+  x: [180, 260],
+  linkedin: [700, 1_200],
+};
+
+/** Channels whose CHANNEL_CONTRACT explicitly requires a blank line between blocks. */
+const REQUIRES_PARAGRAPH_BREAKS: ReadonlySet<SocialChannel> = new Set([
+  'telegram',
+  'facebook',
+  'linkedin',
+]);
+
+/** True once the text has at least one real blank-line break, not just a single `\n`. */
+function hasParagraphBreaks(text: string) {
+  return /\n[ \t]*\n/.test(text.trim());
+}
+
+/** Length of the longest blank-line-delimited block, for the LinkedIn dense-paragraph check. */
+function longestParagraphBlock(text: string) {
+  return text
+    .split(/\n[ \t]*\n/)
+    .map((block) => block.trim())
+    .filter(Boolean)
+    .reduce((max, block) => Math.max(max, block.length), 0);
+}
+
+/** LinkedIn contract: "never a single dense paragraph." A block over this reads as one. */
+const LINKEDIN_MAX_BLOCK_CHARS = 400;
+
+/**
+ * Mechanically checkable slice of CHANNEL_CONTRACT. A prior incident shipped
+ * Telegram copy that was 1700+ characters with no bold span and no backticked
+ * tool name; an earlier one shipped Telegram and LinkedIn copy with single
+ * `\n` line breaks instead of the required blank line, so blocks visually ran
+ * together ("1495 chars, 9 line breaks, 0 blank lines"). In both cases the
+ * critic LLM was only asked to *notice* the defect, and noticing is not
+ * guaranteed every round, so violations survived all three bounded repair
+ * rounds. Checking them in code guarantees every round's repair prompt names
+ * the exact defect, instead of depending on the critic catching it by luck.
+ */
+function channelContractIssues(channel: SocialChannel, candidate: string) {
+  const issues: { code: string; message: string; suggestedFix: string }[] = [];
+  const range = CONTRACT_CHAR_RANGE[channel];
+  if (range && (candidate.length < range[0] || candidate.length > range[1])) {
+    issues.push({
+      code: 'channel_length',
+      message: `${channel} copy must be ${range[0]}–${range[1]} characters counting the tracked URL; found ${candidate.length}.`,
+      suggestedFix: `Rewrite so the final text, including the URL, lands inside ${range[0]}–${range[1]} characters.`,
+    });
+  }
+  if (REQUIRES_PARAGRAPH_BREAKS.has(channel) && !hasParagraphBreaks(candidate)) {
+    issues.push({
+      code: 'paragraph_breaks_required',
+      message:
+        'No blank line found between blocks; the contract requires a blank line, not a single line break, between every block.',
+      suggestedFix: 'Insert a blank line (an empty line) between every block instead of a single line break.',
+    });
+  }
+  if (channel === 'linkedin') {
+    const longest = longestParagraphBlock(candidate);
+    if (longest > LINKEDIN_MAX_BLOCK_CHARS) {
+      issues.push({
+        code: 'linkedin_dense_paragraph',
+        message: `One block is ${longest} characters with no line break inside it; the contract requires one sentence or short block per line, never a single dense paragraph.`,
+        suggestedFix: 'Break that block into shorter one-sentence lines separated by blank lines.',
+      });
+    }
+  }
+  if (channel === 'telegram') {
+    if (!containsTelegramBold(candidate)) {
+      issues.push({
+        code: 'telegram_bold_required',
+        message: 'No **bold** span found; the contract requires bolding the one number that matters.',
+        suggestedFix: 'Wrap the single most important number in **bold**.',
+      });
+    }
+    if (!containsTelegramInlineCode(candidate)) {
+      issues.push({
+        code: 'telegram_backticks_required',
+        message:
+          'No `backticked` span found; the contract requires wrapping every tool, flag or command name in backticks.',
+        suggestedFix: 'Wrap every tool, flag, endpoint or command name mentioned in the copy in `backticks`.',
+      });
+    }
+  }
+  return issues;
+}
 
 export function parseWeeklySocialWriter(raw: string) {
   const match = raw.match(/\{[\s\S]*\}/)?.[0];
@@ -145,14 +243,16 @@ function scoreCandidate(channel: SocialChannel, locale: SocialLocale, candidate:
   for (const rule of bannedPhrasesFor(locale)) {
     if (rule.pattern.test(candidate)) score -= 15;
   }
-  const characterRange: Partial<Record<SocialChannel, [number, number]>> = {
-    telegram: [900, 1_600],
-    facebook: [700, 1_400],
-    x: [180, 260],
-    linkedin: [700, 1_200],
-  };
-  const range = characterRange[channel];
+  const range = CONTRACT_CHAR_RANGE[channel];
   if (range && (candidate.length < range[0] || candidate.length > range[1])) score -= 40;
+  if (REQUIRES_PARAGRAPH_BREAKS.has(channel) && !hasParagraphBreaks(candidate)) score -= 30;
+  if (channel === 'linkedin' && longestParagraphBlock(candidate) > LINKEDIN_MAX_BLOCK_CHARS) {
+    score -= 20;
+  }
+  if (channel === 'telegram') {
+    if (!containsTelegramBold(candidate)) score -= 20;
+    if (!containsTelegramInlineCode(candidate)) score -= 20;
+  }
   if (channel === 'threads') {
     const parts = candidate.split(/\s*<PART>\s*/i).filter((part) => part.trim());
     if (parts.length < 3 || parts.length > 5) score -= 40;
@@ -412,6 +512,9 @@ ${copyForAudit(draft)}`;
       const platformPassed = platformFitScore >= 85;
       const duplicateIssues =
         findBlindCrossPosts([...(input.avoidCopies ?? []), draft]).get(input.channel) ?? [];
+      const contractIssues = channelContractIssues(input.channel, draft.text).map(
+        (contractIssue) => ({ ...contractIssue, field: 'post_text' as const }),
+      );
       const qualityReport: QualityReport = {
         ...base,
         platformFitScore,
@@ -446,6 +549,7 @@ ${copyForAudit(draft)}`;
         blocking: [
           ...base.blocking,
           ...duplicateIssues,
+          ...contractIssues,
           ...(!platformPassed
             ? [
                 {
