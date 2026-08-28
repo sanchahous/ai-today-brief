@@ -22,6 +22,35 @@ async function photographicPng(width: number, height: number): Promise<Buffer> {
   return sharp(raw, { raw: { width, height, channels: 3 } }).png().toBuffer();
 }
 
+async function edgeAnchoredPng(): Promise<Buffer> {
+  return sharp({
+    create: {
+      width: 400,
+      height: 300,
+      channels: 3,
+      background: { r: 90, g: 90, b: 90 },
+    },
+  })
+    .composite([
+      {
+        input: {
+          create: { width: 16, height: 300, channels: 3, background: { r: 230, g: 20, b: 20 } },
+        },
+        left: 0,
+        top: 0,
+      },
+      {
+        input: {
+          create: { width: 16, height: 300, channels: 3, background: { r: 20, g: 210, b: 20 } },
+        },
+        left: 384,
+        top: 0,
+      },
+    ])
+    .png()
+    .toBuffer();
+}
+
 describe('encodeSiteWebp', () => {
   it('stores weekly story origins as WebP at the 16:9 site size', () => {
     expect(SITE_IMAGE_CONTENT_TYPE).toBe('image/webp');
@@ -31,7 +60,7 @@ describe('encodeSiteWebp', () => {
     expect(STORY_IMAGE_HEIGHT).toBe(900);
   });
 
-  it('encodes a raster as WebP at the requested cover size', async () => {
+  it('encodes a raster as WebP at the requested site canvas', async () => {
     const png = await photographicPng(1920, 1080);
     const webp = await encodeSiteWebp(png, {
       width: STORY_IMAGE_WIDTH,
@@ -45,6 +74,23 @@ describe('encodeSiteWebp', () => {
       height: STORY_IMAGE_HEIGHT,
     });
     expect(webp.length).toBeLessThan(png.length);
+  });
+
+  it('keeps meaningful edge anchors from a non-16:9 source instead of cover-cropping them', async () => {
+    const webp = await encodeSiteWebp(await edgeAnchoredPng(), {
+      width: STORY_IMAGE_WIDTH,
+      height: STORY_IMAGE_HEIGHT,
+    });
+    const { data, info } = await sharp(webp).raw().toBuffer({ resolveWithObject: true });
+    const pixel = (x: number, y: number) => {
+      const index = (y * info.width + x) * info.channels;
+      return [...data.subarray(index, index + info.channels)];
+    };
+
+    const leftAnchor = pixel(220, 450);
+    const rightAnchor = pixel(1380, 450);
+    expect(leftAnchor[0]).toBeGreaterThan(leftAnchor[1] * 2);
+    expect(rightAnchor[1]).toBeGreaterThan(rightAnchor[0] * 2);
   });
 
   it('rejects bytes that are not an image', async () => {

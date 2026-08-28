@@ -60,9 +60,9 @@ export function StoryPromptSetPanel({
     <div className={`grid gap-4 ${PANEL}`} data-testid="story-prompt-set" data-item-id={itemId}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="font-bold text-white">Copy-ready prompts</h3>
+          <h3 className="font-bold text-white">Primary illustration direction</h3>
           <p className="mt-1 text-xs text-slate-400">
-            Copy a concept, generate the image in your tool, then upload it here.
+            Copy the primary prompt, generate one image in your tool, then upload it here.
           </p>
           {readinessLabel ? (
             <p className="mt-2 text-xs font-bold text-cyan-100/90">
@@ -164,8 +164,10 @@ function PromptCard({
           {index + 1}. {prompt.title}
         </p>
         <p className="mt-1 text-xs text-slate-400">
-          {prompt.conceptLens.replaceAll('_', ' ')} · {prompt.grammar.replaceAll('_', ' ')} ·{' '}
-          {prompt.aspectRatio}
+          {prompt.conceptLens.replaceAll('_', ' ')}
+          {prompt.templateId ? ` · ${prompt.templateId.replaceAll('-', ' ')}` : ''}
+          {' · '}
+          {prompt.grammar.replaceAll('_', ' ')} · {prompt.aspectRatio}
         </p>
       </div>
       {prompt.notes.length ? (

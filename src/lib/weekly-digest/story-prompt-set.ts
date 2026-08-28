@@ -25,6 +25,7 @@ export const STORY_IMAGE_SLOT_LABEL: Record<StoryImageSlotState, string> = {
 export interface StoryPromptCard {
   conceptLens: string;
   grammar: string;
+  templateId?: string | null;
   title: string;
   canonical: string;
   midjourney: string;
@@ -44,6 +45,21 @@ export interface StoryPromptCard {
   /** Head phrases for cross-story motif-family matching (R2.3 / F9). */
   subject?: string | null;
   setting?: string | null;
+  action?: string | null;
+}
+
+/**
+ * Render-independent semantic contract kept beside the copy-ready prompt.
+ * It lets post-upload QA check the actual story rather than only pixel craft.
+ */
+export interface StoryPromptSemanticContract {
+  storyContext?: string;
+  meaning?: string;
+  essence?: string;
+  mechanism?: string;
+  consequence?: string;
+  visualThesis?: string;
+  readerTest?: string;
 }
 
 export interface StoryPromptSetContent {
@@ -53,6 +69,7 @@ export interface StoryPromptSetContent {
   ownerFeedback: OwnerFeedbackMap;
   /** Why every concept failed the mapping gate, when `prompts` is empty (R1.2). */
   mappingGateIssues: string[];
+  semanticContract?: StoryPromptSemanticContract;
 }
 
 export interface StoryPromptCopyTarget {
@@ -96,6 +113,7 @@ function parsePromptCard(value: unknown): StoryPromptCard | null {
   return {
     conceptLens: asTrimmedString(value.conceptLens) ?? 'literal_context',
     grammar: asTrimmedString(value.grammar) ?? 'cinematic_domain_scene',
+    templateId: asTrimmedString(value.templateId) ?? asTrimmedString(value.template_id),
     title: asTrimmedString(value.title) ?? 'Concept',
     canonical,
     midjourney,
@@ -109,6 +127,7 @@ function parsePromptCard(value: unknown): StoryPromptCard | null {
     composition: asTrimmedString(value.composition),
     subject: asTrimmedString(value.subject),
     setting: asTrimmedString(value.setting),
+    action: asTrimmedString(value.action),
   };
 }
 
@@ -122,6 +141,20 @@ function parseMappingGateIssues(value: unknown): string[] {
   return issues;
 }
 
+function parseSemanticContract(value: unknown): StoryPromptSemanticContract | undefined {
+  if (!isRecord(value)) return undefined;
+  const contract: StoryPromptSemanticContract = {
+    storyContext: asTrimmedString(value.story_context) ?? asTrimmedString(value.storyContext) ?? undefined,
+    meaning: asTrimmedString(value.meaning) ?? undefined,
+    essence: asTrimmedString(value.essence) ?? undefined,
+    mechanism: asTrimmedString(value.mechanism) ?? undefined,
+    consequence: asTrimmedString(value.consequence) ?? undefined,
+    visualThesis: asTrimmedString(value.visual_thesis) ?? asTrimmedString(value.visualThesis) ?? undefined,
+    readerTest: asTrimmedString(value.reader_test) ?? asTrimmedString(value.readerTest) ?? undefined,
+  };
+  return Object.values(contract).some(Boolean) ? contract : undefined;
+}
+
 /** `null` = not a prompt set (missing or malformed). Empty `prompts` is valid. */
 export function parseStoryPromptSetContent(value: unknown): StoryPromptSetContent | null {
   if (!isRecord(value) || !Array.isArray(value.prompts)) return null;
@@ -130,12 +163,14 @@ export function parseStoryPromptSetContent(value: unknown): StoryPromptSetConten
     const card = parsePromptCard(entry);
     if (card) prompts.push(card);
   }
+  const semanticContract = parseSemanticContract(value.semantic_contract ?? value.semanticContract);
   return {
     prompts,
     policy: asTrimmedString(value.policy),
     generatedAt: asTrimmedString(value.generated_at),
     ownerFeedback: ownerFeedbackFromPromptSet(value),
     mappingGateIssues: parseMappingGateIssues(value.mapping_gate_issues),
+    ...(semanticContract ? { semanticContract } : {}),
   };
 }
 
@@ -238,6 +273,24 @@ export function storyPromptReadiness(
     fallback: promptIsFallback(prompt),
   }));
   const rows = fromPrompts.length > 0 ? fromPrompts : lensesFromImageMetadata(imageMetadata);
+  // New prompt-only runs deliberately expose a single primary direction. Keep
+  // the older three-seat readiness display only for existing multi-prompt
+  // artifacts, so owners are not told that a complete primary direction is
+  // somehow "1/3 ready".
+  if (rows.length <= 1) {
+    const fallbackLenses = [
+      ...new Set(rows.filter((row) => row.fallback).map((row) => row.lens.replaceAll('_', ' '))),
+    ];
+    const ready = rows.length === 1 ? 1 : 0;
+    return {
+      ready,
+      total: 1,
+      missingLenses: [],
+      fallbackLenses,
+      label: `${ready}/1 основний промпт готовий`,
+      detail: fallbackLenses.length > 0 ? `фолбек: ${fallbackLenses.join(', ')}` : '',
+    };
+  }
   const present = new Set(
     rows
       .map((row) => seatFor(row.lens))
@@ -264,4 +317,3 @@ export function storyPromptReadiness(
     detail: parts.join(' · '),
   };
 }
-

@@ -105,6 +105,7 @@ describe('produceStoryPrompts', () => {
       {
         conceptLens: 'mechanism',
         grammar: 'cinematic_domain_scene',
+        templateId: 'concept-breakdown',
         title: 'Teleprinter adapter',
         canonical: 'A brass adapter card being pushed into a teleprinter terminal.',
         midjourney: 'a brass adapter card --ar 16:9 --style raw --no text',
@@ -135,9 +136,42 @@ describe('produceStoryPrompts', () => {
         composition: null,
         subject: null,
         setting: null,
+        action: null,
       },
     ]);
     expect(result.output).toEqual({ needs_owner_review: true, prompt_count: 1 });
+    expect(result.content.semantic_contract).toEqual(
+      expect.objectContaining({
+        storyContext: sceneInput.headline,
+        mechanism: 'A CLI plugin exposes server-side tools through a local command.',
+      }),
+    );
+  });
+
+  it('defaults to one primary direction when a caller does not set a count', async () => {
+    const sceneBriefs = vi.fn(async () => [sceneBrief()]);
+    await produceStoryPrompts({
+      headline: sceneInput.headline,
+      sceneBriefs,
+      exportPrompts: () => [
+        {
+          conceptLens: 'mechanism',
+          grammar: 'cinematic_domain_scene',
+          templateId: 'concept-breakdown',
+          title: 'Teleprinter adapter',
+          canonical: 'A brass adapter card being pushed into a teleprinter terminal.',
+          midjourney: 'a brass adapter card --ar 16:9 --style raw --no text',
+          negative: 'no text, no letters',
+          aspectRatio: '16:9',
+          notes: [],
+        },
+      ],
+      sceneInput,
+      cfg: { geminiApiKey: '' },
+      policy: 'weekly-semantic-story-v6',
+    });
+
+    expect(sceneBriefs).toHaveBeenCalledWith(sceneInput, { geminiApiKey: '' }, { count: 1 });
   });
 
   it('stamps jury fallback source onto the stored prompt set', async () => {
@@ -154,6 +188,7 @@ describe('produceStoryPrompts', () => {
         {
           conceptLens: 'literal_context',
           grammar: 'cinematic_domain_scene',
+          templateId: 'realistic-photography',
           title: 'Literal context',
           canonical: 'A grounded tableau.',
           midjourney: 'a grounded tableau --ar 16:9 --style raw --no text',
@@ -176,6 +211,7 @@ describe('produceStoryPrompts', () => {
       briefs.map((brief) => ({
         conceptLens: brief.conceptLens === 'owner_direction' ? 'literal_context' : brief.conceptLens,
         grammar: 'cinematic_domain_scene' as const,
+        templateId: brief.templateId ?? 'realistic-photography',
         title: brief.metaphorTitle ?? 'Concept',
         canonical: brief.scene,
         midjourney: `${brief.scene} --ar 16:9`,
@@ -244,6 +280,7 @@ describe('produceStoryPrompts', () => {
       briefs.map((brief) => ({
         conceptLens: brief.conceptLens,
         grammar: 'cinematic_domain_scene' as const,
+        templateId: brief.templateId ?? 'realistic-photography',
         title: brief.metaphorTitle ?? 'Concept',
         canonical: brief.scene,
         midjourney: `${brief.scene} --ar 16:9`,
@@ -284,6 +321,7 @@ describe('produceStoryPrompts', () => {
         {
           conceptLens: 'mechanism',
           grammar: 'cinematic_domain_scene',
+          templateId: 'concept-breakdown',
           title: 'Teleprinter adapter',
           canonical: 'A brass adapter card being pushed into a teleprinter terminal.',
           midjourney: 'a brass adapter card --ar 16:9',

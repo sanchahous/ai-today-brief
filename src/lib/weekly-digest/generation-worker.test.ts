@@ -32,6 +32,7 @@ import {
   resolveSocialPostForRepair,
   runWeeklyDigestGenerationJobs,
   siblingHintsFromStorySiblingArtifact,
+  WEEKLY_STORY_RENDER_VARIANT_COUNT,
 } from './generation-worker';
 import { computeMasterPlanHash } from './master-engine';
 import type { Json } from '@/lib/database.types';
@@ -47,6 +48,12 @@ import {
 } from './story-prompt-job';
 
 const SHORT_JOB_TYPES = ['research_pack', 'cover', 'pdf', 'social_asset', 'video_manifest'];
+
+describe('weekly story image render contract', () => {
+  it('starts every production render attempt with one primary candidate', () => {
+    expect(WEEKLY_STORY_RENDER_VARIANT_COUNT).toBe(1);
+  });
+});
 
 function pack(overrides: Partial<WeeklyResearchPack> = {}): WeeklyResearchPack {
   return {
@@ -148,7 +155,10 @@ describe('resolveMasterResumeState', () => {
   } as unknown as Json;
 
   it('resets critic budget so a resumed run gets a fresh repair pass', () => {
-    const resolved = resolveMasterResumeState({ id: 'source-1', output: resumableOutput }, planHash);
+    const resolved = resolveMasterResumeState(
+      { id: 'source-1', output: resumableOutput },
+      planHash,
+    );
     expect(resolved.sourceJobId).toBe('source-1');
     expect(resolved.state.criticRounds).toBe(0);
     expect(resolved.state.repairAttempts).toEqual({});
@@ -163,7 +173,10 @@ describe('resolveMasterResumeState', () => {
   // "Regenerate master" via classifyGenerationFailure's resume_source_stale.
   it('throws a named error when the source has no state for the current plan', () => {
     expect(() =>
-      resolveMasterResumeState({ id: 'source-1', output: { retryable: true } as unknown as Json }, planHash),
+      resolveMasterResumeState(
+        { id: 'source-1', output: { retryable: true } as unknown as Json },
+        planHash,
+      ),
     ).toThrow(/Master resume source has no saved state/);
   });
 });
@@ -309,7 +322,8 @@ describe('masterResumeGuidanceBoundary', () => {
         byId = value;
         return chain;
       };
-      chain.maybeSingle = () => Promise.resolve({ data: byId ? (rows[byId] ?? null) : null, error: null });
+      chain.maybeSingle = () =>
+        Promise.resolve({ data: byId ? (rows[byId] ?? null) : null, error: null });
       return chain;
     });
   }
@@ -697,27 +711,29 @@ describe('weekly story image prompt_only mode', () => {
 
   it('story_image job in prompt_only mode writes a prompt set and never calls the image provider', async () => {
     const generateWeeklyReportageIllustrations = vi.fn();
-    const sceneBriefs = vi.fn(async () => [
-      sceneBrief({ conceptLens: 'literal_context', metaphorTitle: 'Literal' }),
-      sceneBrief({ conceptLens: 'mechanism', metaphorTitle: 'Mechanism' }),
-      sceneBrief({ conceptLens: 'consequence', metaphorTitle: 'Consequence' }),
-    ]);
+    const sceneBriefs = vi.fn(async (_input, _config, options: { count: number }) =>
+      [
+        sceneBrief({ conceptLens: 'literal_context', metaphorTitle: 'Literal' }),
+        sceneBrief({ conceptLens: 'mechanism', metaphorTitle: 'Mechanism' }),
+        sceneBrief({ conceptLens: 'consequence', metaphorTitle: 'Consequence' }),
+      ].slice(0, options.count),
+    );
     const result = await produceStoryPrompts({
       headline: sceneInput.headline,
       sceneBriefs,
       exportPrompts: exportManualImagePrompts,
       sceneInput,
       cfg,
-      policy: 'weekly-semantic-story-v5.1',
+      policy: 'weekly-semantic-story-v6',
       generatedAt: '2026-08-15T12:00:00.000Z',
     });
     expect(generateWeeklyReportageIllustrations).not.toHaveBeenCalled();
-    expect(sceneBriefs).toHaveBeenCalledWith(sceneInput, cfg, { count: 3 });
-    expect(result.content.prompts).toHaveLength(3);
-    expect(result.content.policy).toBe('weekly-semantic-story-v5.1');
+    expect(sceneBriefs).toHaveBeenCalledWith(sceneInput, cfg, { count: 1 });
+    expect(result.content.prompts).toHaveLength(1);
+    expect(result.content.policy).toBe('weekly-semantic-story-v6');
     expect(result.content.prompts[0]?.canonical).toMatch(/brass adapter card/i);
     expect(result.content.prompts[0]?.midjourney).toContain('--ar 16:9');
-    expect(result.output).toEqual({ needs_owner_review: true, prompt_count: 3 });
+    expect(result.output).toEqual({ needs_owner_review: true, prompt_count: 1 });
     expect(storyImageJobPath(null, 'prompt_only')).toBe('prompt_only');
   });
 

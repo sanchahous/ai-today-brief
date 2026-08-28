@@ -248,6 +248,14 @@ describe('renderWeeklyDigestPdf', () => {
     expect(dense(pages[1] ?? [])).toContain('Insidethisedition');
   });
 
+  it('prints the supplied concise display title on the PDF cover', async () => {
+    const displayTitle = 'Efficiency, not scale';
+    const pages = await readPages(
+      await renderWeeklyDigestPdf({ ...fixture('en', 3), title: displayTitle }),
+    );
+    expect(dense(pages[0] ?? [])).toContain('Efficiency,notscale');
+  });
+
   it('never lets content cross the footer rule', async () => {
     const pages = await readPages(await renderWeeklyDigestPdf(fixture('en', 7)));
     pages.slice(1).forEach((items, index) => {

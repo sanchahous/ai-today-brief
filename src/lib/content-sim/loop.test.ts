@@ -220,6 +220,66 @@ describe('parseImageCriticResponse', () => {
     expect(critique.repairDirective?.promptPatches?.[0]).toContain('no text');
   });
 
+  it('image-only 0–1 scores with no pixel defects pass after rescale', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 1,
+        dimensions: { no_text: 1, craft: 1, brand_safe: 1, news_legibility: 1 },
+        blockers: [],
+        notes: 'No pixel defects found. The image is clear and well-composed.',
+      }),
+      80,
+      { requireStorySemantics: false },
+    );
+    expect(critique.passed).toBe(true);
+    expect(critique.scores.overall).toBe(100);
+    expect(critique.scores.news_legibility).toBe(100);
+  });
+
+  it('image-only 1–5 overall ignores N/A dimension 1 and still passes', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 5,
+        dimensions: { no_text: 1, craft: 1, brand_safe: 1, news_legibility: 1 },
+        blockers: [],
+        notes: 'No pixel defects found. The image is clear and well-composed.',
+      }),
+      80,
+      { requireStorySemantics: false },
+    );
+    expect(critique.passed).toBe(true);
+    expect(critique.scores.overall).toBe(100);
+    expect(critique.scores.no_text).toBe(100);
+  });
+
+  it('image-only still fails blockers after a 0–1 rescale', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 1,
+        dimensions: { no_text: 1, craft: 1, brand_safe: 1 },
+        blockers: [{ code: 'readable_text', message: 'logo', region: 'corner' }],
+      }),
+      80,
+      { requireStorySemantics: false },
+    );
+    expect(critique.passed).toBe(false);
+    expect(critique.blockers[0]?.code).toBe('readable_text');
+  });
+
+  it('image-only 0–100 scores still pass without rescale', () => {
+    const critique = parseImageCriticResponse(
+      JSON.stringify({
+        overall: 92,
+        dimensions: { no_text: 95, craft: 90, brand_safe: 92 },
+        blockers: [],
+      }),
+      80,
+      { requireStorySemantics: false },
+    );
+    expect(critique.passed).toBe(true);
+    expect(critique.scores.overall).toBe(92);
+  });
+
   it('fails on human_dignity_risk even with a high score', () => {
     const critique = parseImageCriticResponse(
       JSON.stringify({
@@ -469,6 +529,7 @@ describe('buildImageCriticPrompt', () => {
     expect(prompt).toContain('missing_consequence');
     expect(prompt).toContain('extra electricity becomes waste heat');
     expect(prompt).toContain('human_dignity_risk');
+    expect(prompt).toMatch(/mascot\/cute humanoid robots/i);
     expect(IMAGE_CRITIC_BLOCKER_CODES).toContain('human_dignity_risk');
   });
 
@@ -477,10 +538,13 @@ describe('buildImageCriticPrompt', () => {
     expect(prompt).toContain('pixel defects only');
     expect(prompt).toContain('readable_text');
     expect(prompt).toContain('human_dignity_risk');
+    expect(prompt).toContain('0–100');
+    expect(prompt).toMatch(/mascot\/cute humanoid robots/i);
     expect(prompt).not.toMatch(/Headline:/);
     expect(prompt).not.toMatch(/SOURCE STORY/);
     expect(prompt).not.toMatch(/Scene brief:/);
     expect(prompt).not.toMatch(/GENERATED SEMANTIC CONTRACT/);
+    expect(prompt).not.toContain('"news_legibility"');
   });
 });
 

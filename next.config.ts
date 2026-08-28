@@ -97,6 +97,10 @@ const nextConfig: NextConfig = {
   experimental: {
     // Authenticated CMS uploads are validated again in the Server Action and
     // capped at 12 MB; multipart overhead requires a little extra headroom.
+    // `proxy.ts` buffers admin POSTs separately — without this, bodies over the
+    // default 10 MB are silently truncated and Server Actions return HTML
+    // ("An unexpected response was received from the server").
+    proxyClientMaxBodySize: '13mb',
     serverActions: {
       bodySizeLimit: '13mb',
     },
@@ -136,9 +140,31 @@ const nextConfig: NextConfig = {
     // publisher images through untouched. See wiki/ops/vercel-image-quota.md.
     loader: 'custom',
     loaderFile: './src/lib/image-loader.ts',
+    // Next's default ladder emits 16 candidate widths, and every one of them
+    // becomes a full Supabase transform URL inside `srcSet`. Measured on
+    // /en/news 2026-08-24: 40 KB of the 343 KB response was `srcSet` alone.
+    // Nothing on this site is rendered wider than the weekly hero, so the
+    // 2048/3840 rungs only ever cost bytes. This ladder still covers 2x DPR
+    // for every real slot: 384 px cards, ~720 px article body, 1080/1920 hero.
+    // 1200 stays: the daily and weekly heroes declare a 1160 px slot, and without
+    // that rung their 1x candidate would jump to 1920 — a bigger file, not a
+    // smaller one.
+    deviceSizes: [640, 828, 1080, 1200, 1920],
+    imageSizes: [64, 96, 128, 256, 384],
   },
   async redirects() {
     return [
+      {
+        // Search moved off the news hub so the hub could go back to being
+        // prerendered — reading `searchParams` there is what made it render
+        // per request and stopped the CDN from caching it. Every link on the
+        // site now points at the new route; this keeps external and already
+        // shared `?q=` links alive. Next forwards the query string itself.
+        source: '/:lang(en|uk)/news',
+        has: [{ type: 'query', key: 'q' }],
+        destination: '/:lang/news/search',
+        permanent: true,
+      },
       {
         // Brief + item slugs were renamed after Google had already discovered
         // the original URL (GSC 404 of 2026-06-12).

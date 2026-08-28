@@ -5,10 +5,96 @@ Summary: як працює weekly-дайджест у проді: оркестр
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live checks 2026-08-04…22,
 editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 latest revision is the working copy 2026-08-22, pre-critic hang 2026-08-22,
-critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22
-Last updated: 2026-08-22
+critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22,
+image prompt library v6 2026-08-23, owner visual-direction contract 2026-08-24,
+image-only QA Likert rescale 2026-08-25, Video tab #441 / waiting stills 2026-08-25,
+Visuals upload body cap 2026-08-26, artifact input_hash column privs 2026-08-26,
+Generation jobs panel payload/polling fix 2026-08-28, Video tab duration bound + auto-fetch 2026-08-28
+Last updated: 2026-08-28
 
 ---
+
+## Generation jobs panel: ~1.3 MB unfiltered payload on 6 tabs, unconditional 5s poll (2026-08-28)
+
+Owner reported the whole site and admin "loading very slowly, urgent." Public site and
+`/admin/login` measured fast from an external browser (LCP 258 ms, TTFB 29 ms) and prod-Supabase
+was healthy (no long queries, no pool exhaustion) — the report didn't reproduce until checked
+live inside the owner's own logged-in Chrome session on `/admin/weekly/[id]`. Clicking the
+Weekly Digest tab froze the renderer for 30+ seconds (`Page.captureScreenshot` timed out).
+Measuring the RSC payload per tab found Research/Article/Visuals/Social/PDF/Video each ~1.28–1.43 MB,
+versus ~76–127 KB for Overview/Stories/Release — a real ~15x gap, not a false signal.
+
+Root cause in `GenerationJobsSection` ([weekly-workspace.tsx](../../src/components/admin/weekly-workspace.tsx)):
+it rendered `WeeklyGenerationJobsLive` on those 6 tabs with the digest's **entire, unfiltered**
+`jobs`/`attempts`/`events` arrays — `GENERATION_JOB_TYPES_BY_TAB[tab]` was only used to *label* the
+panel and to filter client-side for display, never to scope what was fetched or serialized. Every
+tab therefore shipped and hydrated the same full generation-event history regardless of which
+job types that tab actually cares about. The same unfiltered shape was polled every 5 seconds
+forever by [weekly-generation-jobs-live.tsx](../../src/components/admin/weekly-generation-jobs-live.tsx)
+via [generation-status/route.ts](../../src/app/api/admin/weekly/[id]/generation-status/route.ts)
+(up to 50 jobs + 150 attempts + 200 events + a 250-job/750-attempt cross-digest ETA sample), even
+on a fully published edition nobody was actively generating anything for — that route also
+returns a hard `503` on any transient Supabase error, and a `503` was observed live on `_rsc`
+tab-navigation requests during this session.
+
+Fix: `GenerationJobsSection` now filters `jobs` by `GENERATION_JOB_TYPES_BY_TAB[tab]` and derives
+`attempts`/`events` from the surviving job ids before ever passing them to the client component;
+`generation-status` accepts a `jobTypes` query param and applies the same filter server-side
+(cascades to attempts/events via scoped `job_id`s, and to the historical ETA sample too). The
+5-second `setInterval` was replaced with a self-rescheduling poll that runs every 5s only while a
+job for that tab is `queued`/`dispatching`/`running`/`retry_scheduled`, backing off to 30s once
+everything is terminal.
+(source: live check via owner's authenticated Chrome session 2026-08-28 — direct RSC-payload
+measurement per tab, `Page.captureScreenshot` timeout during a real tab click, `503` observed on
+`_rsc` navigation; `src/components/admin/weekly-workspace.tsx`;
+`src/components/admin/weekly-generation-jobs-live.tsx`;
+`src/app/api/admin/weekly/[id]/generation-status/route.ts`)
+
+## Video tab: duration bound widened + auto-fetch (2026-08-28)
+
+Owner couldn't save a valid 313s YouTube video from the Video tab — `saveWeeklyVideo`
+threw `Weekly YouTube duration must be an integer between 300 and 600 seconds.` The
+300–600s (5–10 min) window itself wasn't the blocker (313s is inside it); the real
+failure mode was the **Duration (seconds)** field being manual-only with no client or
+server hint when left blank — `optionalNumber()` returns `null`, which trips the same
+generic range error regardless of whether the field was empty, non-integer, or genuinely
+out of range (source: `src/app/admin/(cms)/weekly/actions.ts`, `src/lib/weekly-digest/video.ts`).
+
+Two changes, same branch:
+
+1. Widened the accepted range to 200–1200s (integer, unchanged rule shape) in both the
+   admin-form save path and the `weekly-video-result-v2` manifest validator, plus the
+   form's `min`/`max` (source: PR #331).
+2. Added `fetchYouTubeDurationSeconds()` — when the field is left blank, the server
+   action now scrapes `"lengthSeconds":"(\d+)"` out of the public `watch?v=` page (no
+   YouTube Data API key needed) and uses that instead of requiring manual entry; a
+   value the operator does type is still respected as an override (source:
+   `src/lib/weekly-digest/video.ts`).
+
+## Visuals upload: permission denied on revisions (2026-08-26)
+
+After the body-cap fix, owner upload reached `save_weekly_digest_artifact` but failed
+inside `weekly_digest_artifact_input_hash`: `select revision.*` under `security invoker`
+requires SELECT on every column of `weekly_digest_revisions`, including private
+`visual_thesis_*` revoked in `20260824110000` → `42501 permission denied for table
+weekly_digest_revisions` (no artifact row). Fix: `security definer` + explicit public
+columns; md5 payload unchanged. Applied to prod immediately.
+(source: `supabase/migrations/20260826120000_weekly_artifact_input_hash_column_privs.sql`;
+prod live check digest `71af784b-3c89-47f8-bc38-e3eae4def2a7` 2026-08-26)
+
+## Visuals upload body cap (2026-08-26)
+
+Manual cover/story upload is a Server Action on Vercel Hobby: the platform request-body
+cap is ~4.5 MB. Oversized generator PNGs never reached the Function (no Storage object,
+opaque Next error `An unexpected response was received from the server` → admin
+`Something broke`). Fix: client compress >3.5 MB images to JPEG 1600×900 before POST;
+`proxyClientMaxBodySize` aligned with `serverActions.bodySizeLimit` (13mb); action errors
+redirect/`save_error` or stay on-card. PDF must already be under 3.5 MB. Client form must
+not import `encode-site-image` (sharp) — preview size constants live in
+`admin-upload-limits.ts`.
+(source: `src/components/admin/weekly-replacement-upload-form.tsx`;
+`src/lib/weekly-digest/admin-upload-limits.ts`; `next.config.ts`; prod check digest
+`71af784b-3c89-47f8-bc38-e3eae4def2a7` 2026-08-26)
 
 ## Що це
 
@@ -19,6 +105,48 @@ Video / Release).
 
 Відбір кандидатів — окрема сторінка [weekly-editorial-selection](weekly-editorial-selection.md).
 Межа відео-рендеру — [video-boundary](video-boundary.md).
+
+## Короткий hero title і safe refresh published edition (2026-08-24)
+
+Master frame може запропонувати два локалізовані поля понад canonical article title:
+`display_title` — коротка reader-facing теза для hero/PDF cover, і `visual_thesis` — internal
+causal direction для no-text cover prompt та QA. UK є редакційною адаптацією, не literal
+translation; canonical title лишається єдиним для SEO, Open Graph і digest listing.
+(source: owner session 2026-08-24; `src/lib/weekly-digest/editorial-llm.ts`;
+`src/lib/weekly-digest/display-title.ts`)
+
+Published revision не редагується для покращення visuals. Owner AAL2 створює private active
+`visual_refresh` draft, який переносить approved text/PDF/unchanged assets як provenance і queues
+лише prompt-only cover + story jobs. Direction у цьому draft можна змінити; direction hash fence
+не дозволяє in-flight старій job записати prompt після нової правки або застосувати застарілий
+staged image. Після QA/review owner явно обирає лише потрібні private cover/story assets: сервер
+копіює та byte-verify їх у незмінний public key, а одна транзакція створює нові версії відповідних
+artifact slots у **наявній** published revision. Canonical текст, SEO, Open Graph, PDF, social
+package та `published_revision_id` не змінюються. Public reader не читає metadata/prompt/QA або
+private provenance; доступні лише дозволені поля артефакту й public-safe alt content. (source:
+owner session 2026-08-24; `supabase/migrations/20260824130000_weekly_visual_refresh_draft.sql`;
+`supabase/migrations/20260824140000_weekly_visual_direction_persistence.sql`;
+`supabase/migrations/20260824150000_weekly_visual_refresh_staged_assets.sql`;
+`supabase/migrations/20260824160000_weekly_public_artifact_metadata_privacy.sql`;
+`src/lib/weekly-digest/visual-refresh.ts`; `src/app/admin/(cms)/weekly/actions.ts`)
+
+## Video tab: #441 і waiting stills (2026-08-25)
+
+Approve / comment / Save video workspace / enqueue на Video більше не кидають голий
+Server Action throw (`Minified React error #441`). Помилка редіректить на
+`/admin/weekly/[id]?tab=video&save_error=…` (той самий банер, що Restore / Social).
+`workspace_tab` валідується allow-list, не з довільного query. Кнопка **Approve version**
+ховається, коли `review_status` уже `approved`.
+(source: `src/lib/weekly-digest/workspace-tab.ts`; `src/app/admin/(cms)/weekly/actions.ts`;
+`src/components/admin/weekly-workspace.tsx`; той самий патерн, що Restore 2026-08-10)
+
+Job `video_manifest` у `waiting` з `Waiting for approved Top 3 story images: 0/3` означає:
+скрипт уже approved. Claim чекає 3 approved Top 3 `story_image` + ready `cover`. Повторний
+Approve скрипта job не зрушує. Наступний крок — вкладка **Visuals**, не Video.
+На `ai-weekly-2026-08-16` (digest `71af784b-3c89-47f8-bc38-e3eae4def2a7`, rev.
+`f996067f-0ce9-4330-a1d0-b954a0a17d39`) скрипт був `approved`, stills/cover відсутні
+(source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25;
+`weekly_generation_waiting_reason` у `supabase/migrations/20260809060929_weekly_generation_control_plane.sql`).
 
 ## Feature flag
 
@@ -41,6 +169,28 @@ Video / Release).
 (F3) — без нього застосування нового ранжування можна лише вимкнути редагуванням коду.
 (source: [audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md),
 `.env.example`)
+
+## Поточний контракт primary illustration (2026-08-23)
+
+У `prompt_only` кожна story отримує **один primary prompt**, а не три owner-facing альтернативи.
+Він має звести context, mechanism і consequence до одного cause-and-effect кадру; headline називає
+факт, картинка робить видимою зміну. У production `render` теж бере один кандидат: vision rejection
+стає конкретним repair brief наступної спроби, не автоматичним вибором із трьох. Старі artifacts з
+трьома prompt cards читаються для сумісності, але нові показують `1/1 основний промпт готовий`.
+(source: `src/lib/weekly-digest/story-prompt-job.ts`; `src/lib/weekly-digest/generation-worker.ts`; `src/lib/weekly-digest/story-prompt-set.ts`)
+
+Після ручного upload `story_image` проходить pixel-only QA, а чистий кадр — ще й story-aware QA з
+headline, approved story fields, counterweight, semantic contract і primary scene. Результат
+advisory-only для ручного release: він не встановлює `content_sim`, але низький semantic score без
+model blocker стає видимим `ambiguous_visual_story`. Водночас без завершеного story-aware pass або
+за наявності будь-якого active QA blocker файл не може бути **machine-attested**; це fail-closed,
+не примусова заборона редактору. Cover лишається pixel-only, бо не має однієї authoritative story.
+(source: `src/lib/weekly-digest/run-post-upload-qa.ts`; `src/app/admin/(cms)/weekly/actions.ts`; `src/lib/weekly-digest/post-upload-qa.ts`; `src/lib/weekly-digest/machine-attest.ts`)
+
+Public weekly показує hero cover у 16:9 safe frame без тихого crop; на desktop compact title і cover
+починаються поруч, а stories стоять перед video/action blocks. Sidebar має scrollspy. Новий master
+має пройти hard editorial budget: title ≤112, standfirst ≤360 символів; це gate, а не silent
+truncation. (source: `src/components/weekly/weekly-hero.tsx`; `src/components/weekly/weekly-story.tsx`; `src/app/[lang]/weekly/[slug]/page.tsx`; `src/components/weekly/weekly-toc.tsx`; `src/lib/weekly-digest/content-studio.ts`)
 
 ## Соц-копія: практика замість переказу (2026-08-21)
 
@@ -132,7 +282,7 @@ replay проти прод-даних 2026-08-16)
    → language `suggestedFix` auto-apply; meta clipped to `METADATA_MAX_CHARS`; quality
    **не** апрувиться, поки є blocker
 3. незалежні `story_image` (після bilingual `article`) запускаються паралельно → `cover`
-   (`prompt_only` + owner upload; QA без dignity/misleading → auto-approve image)
+   (`prompt_only` + owner upload; QA попереджає, але не auto-approve image)
 4. `social_copy` / `pdf` / `video_script` (після attested `article`) — hydrator
    `loadWeeklyStoriesForDownstream` читає і нормалізований article без `stories`
 5. `video_manifest` (після attested `video_script` + 3 uploaded `story_image` + `cover`) →
@@ -163,10 +313,11 @@ Hard spend-cap weekly master: `WEEKLY_MASTER_MAX_SPEND_USD` (default $4,
 Витрати пишуться в `generation_cost_events`, UI — `/admin/costs` (source: PR #169).
 
 Картинки **новин** на сайті: Cloudflare **FLUX.2 klein** (`@cf/black-forest-labs/flux-2-klein-9b`).
-Weekly story/cover за замовчуванням `WEEKLY_STORY_IMAGE_MODE=prompt_only`: worker пише
-`story_prompt_set` і не кличе FLUX; `render` повертає старий цикл. Політика планування
-концептів — `weekly-semantic-story-v5.1` (без впеченого тексту в кадрі).
-(source: PR #169–#175, `.env.example`, `pipeline/card-image.ts`, `generation-worker.ts`)
+Weekly story/cover за замовчуванням `WEEKLY_STORY_IMAGE_MODE=prompt_only`: worker пише один
+primary `story_prompt_set` і не кличе FLUX; `render` повертає multi-concept цикл. Політика
+планування — `weekly-semantic-story-v6` (Prompt-as-Code, без впеченого тексту в кадрі).
+(source: PR #169–#175, `.env.example`, `pipeline/card-image.ts`, `generation-worker.ts`,
+[image-prompt-library](image-prompt-library.md))
 
 ### Evidence grounding (writer + critic)
 
@@ -704,7 +855,10 @@ contract → three-lens concept jury** (два LLM-кроки на ролі `wee
 Контекст: title+summary+body excerpt+`why`+practical+limitation+takeaway+editorsView+
 `editorialAngle`+approved research claims/context/risks+sibling metaphors. Top 3 беруть claims із
 approved `research_pack`; fallback серіалізує `.text`, а не обʼєкти. Seed без `job.id`.
-`metadata.prompt_policy` = **`weekly-semantic-story-v5.1`** (v4 був one-scene/three-seed policy).
+`metadata.prompt_policy` = **`weekly-semantic-story-v6`**; у `prompt_only` v6 тепер формує
+одну primary cause-and-effect сцену, тоді як multi-seat лишився для experimental render.
+Copy-ready canonical збирає
+[image-prompt-library](image-prompt-library.md) 6 блоками.
 Validator рахує semantic gates лише за `story_anchor` / `visible_mechanism` /
 `visible_consequence` та іншими renderable fields; `why_it_fits` лишається rationale і не може
 сам виконати `mechanism_not_visible`. `story_anchor` мусить містити actor/system із context, не лише
@@ -747,19 +901,19 @@ Midjourney / Negative і слот upload в тій самій картці (ст
 `src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/story-prompt-set-panel.tsx`,
 [weekly-illustration-plan](weekly-illustration-plan.md) P2)
 
-**M1 prompt_only (2026-08-15):** `generateStoryImage` без `source_url` і `generateCover` більше
+**M1 prompt_only (superseded 2026-08-23):** `generateStoryImage` без `source_url` і `generateCover` більше
 не викликають `generateWeeklyReportageIllustrations` / `runWeeklyImageSimLoop`. Джоба будує
-essence + концепти, експортує `ManualImagePrompt` і зберігає `story_prompt_set` зі статусом
+essence + **один primary concept**, експортує `ManualImagePrompt` і зберігає `story_prompt_set` зі статусом
 `succeeded` + `needs_owner_review`. Ingest `source_url` лишається. Прапорець
 `WEEKLY_STORY_IMAGE_MODE=prompt_only|render` (дефолт `prompt_only`). Транспорт `story_image`
 лишається GitHub Actions — не переносити в цьому PR.
 (source: `src/lib/weekly-digest/story-prompt-job.ts`, `generation-worker.ts`, `.env.example`,
 [weekly-illustration-plan](weekly-illustration-plan.md) M1)
 
-**M2 post-upload QA (2026-08-15):** після ручного upload story/cover `after()` викликає
-image-only critic (`buildImageOnlyCriticPrompt`, без headline/scene) і пише
-`metadata.post_upload_qa`. `content_sim` не заповнюється, тож `simulation_not_passed` не
-спрацьовує. Visuals: «QA чисто» або жовтий рядок + Ігнорувати / Замінити файл.
+**M2 post-upload QA (superseded 2026-08-23):** після ручного upload story/cover `after()` викликає
+image-only critic; для clean `story_image` він додає story-aware pass із headline/semantic contract.
+`content_sim` не заповнюється, тож `simulation_not_passed` не спрацьовує. Visuals: «QA чисто ·
+зміст зчитується» або жовтий advisory рядок + Ігнорувати / Замінити файл.
 (source: `src/lib/weekly-digest/post-upload-qa.ts`, `src/app/admin/(cms)/weekly/actions.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) M2)
 
@@ -774,9 +928,9 @@ Supabase transform незалежно від origin. (source: `src/lib/encode-si
 без змін. (source: `src/lib/weekly-digest/preflight.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) M3)
 
-**B3 prompt readiness (2026-08-15):** Visuals біля кожної story показує `N/3 промпти готові`
-і деталь `немає consequence` / `фолбек: mechanism`, якщо журі не заповнило три лінзи або
-віддало `fallback_essence`. Cover не в цій хвилі. Вага гейта без змін.
+**B3 prompt readiness (superseded 2026-08-23):** Visuals біля нової story показує
+`1/1 основний промпт готовий`; fallback все ще явно маркується. Історичний multi-prompt artifact
+зберігає `N/3` display для чесного перегляду старої ревізії. Вага release gate без змін.
 (source: `src/lib/weekly-digest/story-prompt-set.ts`, `src/components/admin/weekly-workspace.tsx`,
 [weekly-illustration-plan](weekly-illustration-plan.md) B3)
 
@@ -810,8 +964,9 @@ rejected` + закриті `reasonTags`. Пишеться в `story_prompt_set` 
 [weekly-illustration-plan](weekly-illustration-plan.md) E1)
 
 **E2 two-stage critic (2026-08-15):** у режимі `render` спочатку image-only (без headline),
-потім story-aware лише якщо пікселі пройшли. M2 не змінювався. Вага гейта без змін.
-(source: `src/lib/content-sim/adapters/weekly-image.ts`,
+потім story-aware лише якщо пікселі пройшли. З 2026-08-25 image-only не гейтить
+`news_legibility` і rescale-ить Likert 0–1 / 1–5 у 0–100. M2 не змінювався. Вага гейта без змін.
+(source: `src/lib/content-sim/adapters/weekly-image.ts`, `src/lib/content-sim/vision-critic.ts`,
 [weekly-illustration-plan](weekly-illustration-plan.md) E2)
 
 **E3 prompt promotion (2026-08-15):** Visuals показує `гейт промптів` з ≥60% прийнятних
@@ -1613,5 +1768,6 @@ standfirst, 3×4200 + 4×850 body) — 7 сторінок, обидві лока
 - [video-boundary](video-boundary.md)
 - [weekly-admin-runbook](../ops/weekly-admin-runbook.md)
 - [card-images](../marketing/card-images.md)
+- [image-prompt-library](image-prompt-library.md)
 - [open-questions](../open-questions.md)
 - [now](../now.md)

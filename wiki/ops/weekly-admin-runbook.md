@@ -3,9 +3,9 @@
 Summary: покрокова інструкція для власника/редактора: що натискати у вкладках,
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
-[weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…22,
+[weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…25,
 latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22
-Last updated: 2026-08-22
+Last updated: 2026-08-26
 
 ---
 
@@ -188,6 +188,29 @@ Manual **Retry** тепер ідемпотентний: повторний кл�
 ще раз і перевір partial unique guard з migration `20260811185251`. (source:
 `supabase/migrations/20260811185251_weekly_manual_retry_idempotency.sql`)
 
+### Published weekly: safe visual refresh (2026-08-24)
+
+Якщо weekly вже **published**, не редагуй його revision і не перезавантажуй live cover. На
+Overview натисни **Create visual refresh draft** (потрібен owner + AAL2). Це створює private
+working revision з approved text/PDF/unchanged asset provenance, а public `published_revision_id`,
+SEO, Open Graph і пікселі лишаються незмінними. (source: owner session 2026-08-24;
+`supabase/migrations/20260824130000_weekly_visual_refresh_draft.sql`)
+
+У private draft введи або відредагуй усі чотири поля: EN/UK **Hero / PDF display title** і EN/UK
+**Internal visual thesis**, потім натисни **Save direction and regenerate prompts**. Поля —
+редакційні адаптації, не literal translation: title має дати короткий insight для читача, thesis
+має описати один causal no-text cover. Ця дія queues тільки нові prompt-only cover/story jobs.
+
+На **Visuals** можна завантажити тільки replacement cover/story image у private staging lane.
+Спершу дочекайся post-upload QA і явно **Approve** потрібні assets, потім на **Visuals** обери саме
+ці approved images та натисни **Apply selected approved images to public edition**. Публічна дія
+доступна лише owner + AAL2: вона копіює й byte-verify файл в immutable public storage, створює
+versioned public artifact і записує audit mapping. Ні canonical текст, ні SEO/OG, ні PDF, ні
+наявні social materials не зміняться; для іншого кадру створи новий refresh або заміни private
+asset до apply. (source: owner session 2026-08-24;
+`supabase/migrations/20260824150000_weekly_visual_refresh_staged_assets.sql`;
+`src/components/admin/weekly-workspace.tsx`; `src/app/admin/(cms)/weekly/actions.ts`)
+
 ### 3–7. Article → … → Release
 
 На кожній вкладці: дочекайся generation **ready** → переглянь → **Approve**.
@@ -195,8 +218,12 @@ Release preflight на Overview / Release покаже, що ще червоне
 
 На Article:
 
-- **Short intro under the headline (standfirst)** / **Короткий вступ під заголовком** — 1–2
-  речення, які видно читачеві одразу під заголовком;
+- **Hero / PDF display title** — коротка читацька теза лише для public hero і PDF cover; canonical
+  title далі є єдиною назвою для SEO, Open Graph і списків;
+- **Internal visual thesis** — private causal direction для no-text cover prompt/QA, не читачевий
+  текст;
+- **Short intro under the headline (standfirst)** / **Короткий вступ під заголовком** — повний
+  intro/standfirst на public hero не з’являється до натискання «Показати більше»;
 - **Search result title/summary** — рекомендований текст для пошукового preview;
 - **Social sharing title/summary (Open Graph)** — заголовок і опис картки при поширенні посилання
   у соцмережах та месенджерах. Open Graph — назва стандарту metadata, не окремий формат статті.
@@ -210,32 +237,40 @@ Release preflight на Overview / Release покаже, що ще червоне
 факт про весь agentic AI. Якщо Top 3 не мають чесного спільного зв'язку, не вимагай umbrella-
 тему — краще прямо назвати три новини.
 
-На **Visuals** біля заголовка кожної story рядок `N/3 промпти готові` (наприклад
-`2/3 промпти готові · немає consequence` або `фолбек: mechanism`) — це сигнал, що журі не
-зібрало три різні підходи, **до** того як витрачати час на слабкий промпт. Над сіткою story —
-рядок **гейт промптів** (E3): чи ≥60% концептів прийнятні з 1–2 спроби, чи немає misleading
-у прийнятих, чи ≤10 хв на story, чи промпти різні. Червоний/жовтий рядок **не** блокує
-Release. Далі картка
-**Copy-ready prompts**: кнопки **Canonical / Midjourney /
-Negative**, стан слота (`очікує зображення` / `завантажено, on review` / `approved`) і
+На **Visuals** біля заголовка нової story рядок `1/1 основний промпт готовий`; якщо він зібраний
+через fallback, це явно видно як `фолбек: …`. Старі revision artifacts із трьома prompts можуть
+і далі показувати історичний `N/3` стан, але не є ціллю для нової генерації. Над сіткою story —
+рядок **гейт промптів** (E3); він лишається advisory і не блокує Release. Далі картка
+**Primary illustration direction**: кнопки **Canonical / Midjourney /
+Negative**, бейдж шаблону (`realistic photography` / `infographic engine` / …) поруч із lens, стан слота (`очікує зображення` / `завантажено, on review` / `approved`) і
 **Upload a replacement** в тій самій картці. Кнопка **Generate prompts** / **Generate cover
 prompt** пише `story_prompt_set` (`WEEKLY_STORY_IMAGE_MODE=prompt_only`) — без FLUX. Скопіюй
 промпт, згенеруй зображення у своєму інструменті, завантаж файл. Upload `story_image`
 з 2026-08-17 пише **WebP** 1600×900 (не сирий PNG і не JPEG). Cover лишається JPEG —
 вона є `og:image` дайджесту. На сайті `next/image` і так просить WebP у Supabase.
-Обкладинкові кропи для каналів
+**Upload body (2026-08-26):** Server Action іде через Vercel Hobby (~4.5 MB body). Великі
+PNG/JPEG з генераторів давали opaque `Something broke` / `An unexpected response was
+received from the server` і **не** створювали рядок у Storage. Форма Visuals тепер стискає
+картинки >3.5 MB у браузері до JPEG 1600×900 перед POST; помилку показує на картці, а не
+через error boundary. Розмір прев’ю для стиснення береться з `admin-upload-limits` (без
+імпорту sharp у клієнт). PDF лишається жорстко <3.5 MB. Обкладинкові кропи для каналів
 далі складаються автоматично з approved cover. Після upload за кілька секунд зʼявиться
 **QA чисто** або жовтий рядок на кшталт «QA: впечений текст (2 місця)» з **Ігнорувати** /
 **Замінити файл**. Під жовтим рядком — порада: впечений текст → inpaint/crop (не
-перегенеровувати кадр); поламана геометрія → той самий промпт; хибна теза → інший концепт.
+перегенеровувати кадр); поламана геометрія → той самий промпт; хибна теза → уточнити primary
+direction і перегенерувати кадр.
 Рядок **QA: ризик гідності** означає принизливу сцену з людиною — замініть файл, не ігноруйте
 легковажно. Провальний QA **не** блокує реліз. Якщо рядок завис на «QA перевіряє…» (виклик не
 завершився) або показує помилку — кнопка **Перевірити ще раз** (2026-08-15, review-фікс)
 перезапускає перевірку на вже завантаженому файлі без повторного upload. Під кожним концептом — вердикт
 **використано / з правками / відхилено** і теги причини; **Зберегти вердикт** пише пару
 промпт→результат у `story_prompt_set` і в metadata завантаженого файлу. Це не гейт релізу.
-QA після upload — **один** image-only прохід (без headline). У режимі `render` критик двостадійний:
-спочатку пікселі, потім claim. Яка модель зараз пише master — дивись `/admin/providers`
+QA після upload для cover — **один** image-only прохід. Для story clean pixel-only кадр проходить
+другий story-aware прохід: headline + approved fields + counterweight + semantic contract + primary
+scene. Він попереджає про `ambiguous_visual_story`, але не блокує ручний Release. Якщо semantic
+прохід не завершився або є active QA blocker, файл не machine-attest-иться й лишається на ручному
+review. У режимі `render` critic також двостадійний: спочатку пікселі, потім claim. Яка модель зараз
+пише master — дивись `/admin/providers`
 секцію **Model ranking** (добовий OpenRouter rerank, F3), не Visuals.
 Скільки коштують новини vs промпти+QA — `/admin/costs` секція **Illustration budget** (G),
 з ledger, не з лімітів політики.
@@ -416,6 +451,16 @@ Release тоді каже «Open Video → enqueue video_manifest», але кн
 Картка артефакту — **weekly-video-v3 manifest** (не v2). Job може лишитись у
 `waiting` з `status_reason`, доки немає трьох approved story images і cover.
 
+Якщо причина `Waiting for approved Top 3 story images: 0/3`, скрипт **уже**
+approved. Не тисни Approve version на скрипті ще раз і не Save video workspace —
+це не зрушує job. Відкрий **Visuals**, згенеруй/залий три Top 3 stills, Approve
+кожен, потім ready cover. Після деплою фіксу 2026-08-25 Video саме так і напише
+й дасть лінк; Approve на вже approved артефакті сховано. Якщо Save/Approve/enqueue
+падає, має з’явитись рожевий банер `save_error` на тій самій вкладці, не
+`Minified React error #441`.
+(source: owner session 2026-08-25, прод-Supabase live check 2026-08-25,
+[weekly-digest](../pipeline/weekly-digest.md#video-tab-441-і-waiting-stills-2026-08-25))
+
 Наступні `video_script` success і клік **Generate script** самі upsert-ять companion
 тим самим стабільним ключем.
 
@@ -480,6 +525,8 @@ Postpone не створює нову RPC — це той самий Pause → A
 | `social_copy` terminal failed на `rendered 8 pages; expected 7` | Довгий editorial copy переповнив LinkedIn PDF | Після deploy 7-page bounds створи **один** linked retry; він відновить збережені канали й слайди |
 | Linked `social_copy` retry знову показує `channels` від 0% | Немає валідного checkpoint для поточного approved source hash | Перевір, чи не змінилась revision/locale map; якщо ні — дивись `checkpoint_restored`/`checkpoint_saved` у Timeline |
 | Release: немає story/cover | Файл не завантажено | Visuals → скопіюй промпт → згенеруй у своєму інструменті → upload. Не тисни Regenerate |
+| Visuals upload: `permission denied for table weekly_digest_revisions` | `weekly_digest_artifact_input_hash` робив `select revision.*` під invoker після column revoke `visual_thesis_*` | Міграція `20260826120000` уже на проді (2026-08-26) — retry upload |
+| Visuals upload: `Something broke` / unexpected response | Тіло POST > ~4.5 MB (Vercel Hobby) або truncated proxy body | Форма стискає image >3.5 MB сама (#329). PDF стисни окремо |
 | Release: немає `video_manifest` job, хоча script approved | Companion-рядок ніколи не створився (падіння/retry `video_script` без post-master queue) | Video → **Generate manifest**. Не регенеруй скрипт |
 | Release blocked на video | Немає living clips / YouTube result | Video → **Shooting package** → кліпи в `ai-today-brief-video` → звести → `weekly-video-result-v2`. Не заливати L0 JPEG+TTS з `output/`. Owner override лише для trial |
 | PDF: сторінки радар-історій (4-7) виглядають скорочено (без картинки/панелей) | Так задумано з 2026-08-07 — повний розворот тепер лише для Top 3 | Нормально, не баг; деталі — [weekly-digest](../pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07) |
@@ -556,6 +603,7 @@ Grid-форма й картки на будь-якій вкладці не ма�
 ## Related pages
 
 - [weekly-digest](../pipeline/weekly-digest.md) — техніка Content Studio, версії, spend-cap
+- [image-prompt-library](../pipeline/image-prompt-library.md) — copy-ready промпти v6, бейдж шаблону
 - [weekly-editorial-selection](../pipeline/weekly-editorial-selection.md) — відбір історій
 - [social-cms-runbook](social-cms-runbook.md) — cron / secrets для generate worker
 - [owner-checklist](owner-checklist.md) — env і launch-блокери

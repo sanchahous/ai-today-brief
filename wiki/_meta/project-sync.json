@@ -23,7 +23,16 @@
     {
       "id": "card-images",
       "paths": ["pipeline/card-image.ts", "pipeline/card-image.test.ts"],
-      "wikiPages": ["marketing/card-images.md", "overview.md"]
+      "wikiPages": ["marketing/card-images.md", "overview.md", "pipeline/image-prompt-library.md"]
+    },
+    {
+      "id": "image-prompt-library",
+      "paths": ["pipeline/image-prompt-library"],
+      "wikiPages": [
+        "pipeline/image-prompt-library.md",
+        "marketing/card-images.md",
+        "pipeline/weekly-digest.md"
+      ]
     },
     {
       "id": "content-sim",

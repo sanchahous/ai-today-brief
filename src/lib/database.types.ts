@@ -815,6 +815,270 @@ export type Database = {
           weekly_digest_id?: string | null;
         }
       >;
+      daily_visual_sets: CmsTable<
+        {
+          active_candidate_id: string | null;
+          created_at: string;
+          direction: Json | null;
+          display_title_en: string | null;
+          display_title_uk: string | null;
+          editorial_date: string;
+          fallback_candidate_id: string | null;
+          id: string;
+          latest_ai_candidate_id: string | null;
+          lead_brief_id: string | null;
+          overlay_stat_en: string | null;
+          overlay_stat_uk: string | null;
+          source_hash: string;
+          source_snapshot: Json;
+          status: string;
+          updated_at: string;
+          visual_thesis_en: string | null;
+          visual_thesis_uk: string | null;
+        },
+        {
+          active_candidate_id?: string | null;
+          created_at?: string;
+          direction?: Json | null;
+          display_title_en?: string | null;
+          display_title_uk?: string | null;
+          editorial_date: string;
+          fallback_candidate_id?: string | null;
+          id?: string;
+          latest_ai_candidate_id?: string | null;
+          lead_brief_id?: string | null;
+          overlay_stat_en?: string | null;
+          overlay_stat_uk?: string | null;
+          source_hash: string;
+          source_snapshot: Json;
+          status?: string;
+          updated_at?: string;
+          visual_thesis_en?: string | null;
+          visual_thesis_uk?: string | null;
+        }
+      >;
+      daily_visual_candidates: CmsTable<
+        {
+          attempt_number: number;
+          byte_size: number;
+          candidate_kind: string;
+          created_at: string;
+          daily_visual_set_id: string;
+          height: number;
+          id: string;
+          mime_type: string;
+          model: string | null;
+          parent_candidate_id: string | null;
+          prompt: string | null;
+          prompt_hash: string | null;
+          provider: string | null;
+          rights_note: string | null;
+          sha256: string;
+          source_url: string | null;
+          storage_bucket: string;
+          storage_path: string;
+          width: number;
+        },
+        {
+          attempt_number?: number;
+          byte_size: number;
+          candidate_kind: string;
+          created_at?: string;
+          daily_visual_set_id: string;
+          height: number;
+          id?: string;
+          mime_type: string;
+          model?: string | null;
+          parent_candidate_id?: string | null;
+          prompt?: string | null;
+          prompt_hash?: string | null;
+          provider?: string | null;
+          rights_note?: string | null;
+          sha256: string;
+          source_url?: string | null;
+          storage_bucket: string;
+          storage_path: string;
+          width: number;
+        }
+      >;
+      daily_visual_engagement_events: CmsTable<
+        {
+          candidate_id: string;
+          daily_visual_set_id: string;
+          entry_source: string;
+          event_type: string;
+          id: number;
+          lang: string;
+          occurred_at: string;
+          session_hash: string;
+        },
+        {
+          candidate_id: string;
+          daily_visual_set_id: string;
+          entry_source: string;
+          event_type: string;
+          id?: never;
+          lang: string;
+          occurred_at?: string;
+          session_hash: string;
+        }
+      >;
+      daily_visual_candidate_qa: CmsTable<
+        {
+          candidate_id: string;
+          created_at: string;
+          id: string;
+          model: string | null;
+          outcome: string;
+          provider: string | null;
+          report: Json;
+          stage: string;
+        },
+        {
+          candidate_id: string;
+          created_at?: string;
+          id?: string;
+          model?: string | null;
+          outcome: string;
+          provider?: string | null;
+          report: Json;
+          stage: string;
+        }
+      >;
+      daily_visual_selection_events: CmsTable<
+        {
+          actor_id: string | null;
+          actor_kind: string;
+          candidate_id: string;
+          created_at: string;
+          daily_visual_set_id: string;
+          id: number;
+          reason: string | null;
+          selection_kind: string;
+        },
+        {
+          actor_id?: string | null;
+          actor_kind: string;
+          candidate_id: string;
+          created_at?: string;
+          daily_visual_set_id: string;
+          id?: never;
+          reason?: string | null;
+          selection_kind: string;
+        }
+      >;
+      daily_visual_jobs: CmsTable<
+        {
+          attempt_count: number;
+          claim_token: string | null;
+          claimed_at: string | null;
+          created_at: string;
+          daily_visual_set_id: string;
+          id: string;
+          last_error: string | null;
+          lease_expires_at: string | null;
+          retry_count: number;
+          retry_mode: string | null;
+          retry_requested_at: string | null;
+          retry_requested_by: string | null;
+          retry_source_direction: Json | null;
+          source_hash: string;
+          status: string;
+          updated_at: string;
+        },
+        {
+          attempt_count?: number;
+          claim_token?: string | null;
+          claimed_at?: string | null;
+          created_at?: string;
+          daily_visual_set_id: string;
+          id?: string;
+          last_error?: string | null;
+          lease_expires_at?: string | null;
+          retry_count?: number;
+          retry_mode?: string | null;
+          retry_requested_at?: string | null;
+          retry_requested_by?: string | null;
+          retry_source_direction?: Json | null;
+          source_hash: string;
+          status?: string;
+          updated_at?: string;
+        }
+      >;
+      daily_visual_budget_months: CmsTable<
+        {
+          cap_micro_usd: number;
+          committed_micro_usd: number;
+          created_at: string;
+          month_start: string;
+          reserved_micro_usd: number;
+          updated_at: string;
+        },
+        {
+          cap_micro_usd?: number;
+          committed_micro_usd?: number;
+          created_at?: string;
+          month_start: string;
+          reserved_micro_usd?: number;
+          updated_at?: string;
+        }
+      >;
+      daily_visual_budget_reservations: CmsTable<
+        {
+          actual_cost_micro_usd: number | null;
+          attempt_number: number;
+          candidate_kind: string;
+          created_at: string;
+          daily_visual_set_id: string;
+          id: string;
+          max_cost_micro_usd: number;
+          month_start: string;
+          settled_at: string | null;
+          status: string;
+        },
+        {
+          actual_cost_micro_usd?: number | null;
+          attempt_number: number;
+          candidate_kind: string;
+          created_at?: string;
+          daily_visual_set_id: string;
+          id?: string;
+          max_cost_micro_usd: number;
+          month_start: string;
+          settled_at?: string | null;
+          status?: string;
+        }
+      >;
+      daily_visual_publications: CmsTable<
+        {
+          alt_en: string;
+          alt_uk: string;
+          candidate_id: string;
+          created_at: string;
+          daily_visual_set_id: string;
+          display_title_en: string;
+          display_title_uk: string;
+          editorial_date: string;
+          height: number;
+          public_url: string;
+          updated_at: string;
+          width: number;
+        },
+        {
+          alt_en: string;
+          alt_uk: string;
+          candidate_id: string;
+          created_at?: string;
+          daily_visual_set_id: string;
+          display_title_en: string;
+          display_title_uk: string;
+          editorial_date: string;
+          height: number;
+          public_url: string;
+          updated_at?: string;
+          width: number;
+        }
+      >;
       llm_model_rank_audit: CmsTable<
         {
           applied: boolean;
@@ -1430,6 +1694,44 @@ export type Database = {
           width?: number | null;
         }
       >;
+      weekly_visual_refresh_asset_promotions: CmsTable<
+        {
+          id: string;
+          promoted_at: string;
+          promoted_by: string | null;
+          public_byte_sha256: string;
+          public_storage_bucket: string;
+          public_storage_path: string;
+          published_artifact_id: string;
+          published_slot_key: string;
+          published_version: number;
+          refresh_revision_id: string;
+          source_revision_id: string;
+          staged_artifact_id: string;
+          staged_direction_hash: string;
+          staged_input_hash: string;
+          staged_version: number;
+          weekly_digest_id: string;
+        },
+        {
+          id?: string;
+          promoted_at?: string;
+          promoted_by?: string | null;
+          public_byte_sha256: string;
+          public_storage_bucket: string;
+          public_storage_path: string;
+          published_artifact_id: string;
+          published_slot_key: string;
+          published_version: number;
+          refresh_revision_id: string;
+          source_revision_id: string;
+          staged_artifact_id: string;
+          staged_direction_hash: string;
+          staged_input_hash: string;
+          staged_version: number;
+          weekly_digest_id: string;
+        }
+      >;
       weekly_digest_generation_jobs: CmsTable<
         {
           artifact_id: string | null;
@@ -1761,6 +2063,8 @@ export type Database = {
           content_hash: string;
           created_at: string;
           created_by: string | null;
+          display_title_en: string | null;
+          display_title_uk: string | null;
           editor_note_en: string | null;
           editor_note_uk: string | null;
           id: string;
@@ -1772,12 +2076,17 @@ export type Database = {
           selection_run_id: string | null;
           title_en: string;
           title_uk: string;
+          visual_refresh_source_revision_id: string | null;
+          visual_thesis_en: string | null;
+          visual_thesis_uk: string | null;
           weekly_digest_id: string;
         },
         {
           content_hash: string;
           created_at?: string;
           created_by?: string | null;
+          display_title_en?: string | null;
+          display_title_uk?: string | null;
           editor_note_en?: string | null;
           editor_note_uk?: string | null;
           id?: string;
@@ -1789,6 +2098,9 @@ export type Database = {
           selection_run_id?: string | null;
           title_en: string;
           title_uk: string;
+          visual_refresh_source_revision_id?: string | null;
+          visual_thesis_en?: string | null;
+          visual_thesis_uk?: string | null;
           weekly_digest_id: string;
         }
       >;
@@ -2057,6 +2369,23 @@ export type Database = {
         Args: { p_package_id: string };
         Returns: boolean;
       };
+      activate_daily_visual_candidate: {
+        Args: {
+          p_actor_id?: string | null;
+          p_actor_kind?: string;
+          p_alt_en: string;
+          p_alt_uk: string;
+          p_candidate_id: string;
+          p_daily_visual_set_id: string;
+          p_height: number;
+          p_public_url: string;
+          p_reason?: string | null;
+          p_selection_kind: string;
+          p_width: number;
+          p_claim_token?: string | null;
+        };
+        Returns: boolean;
+      };
       approve_social_post: {
         Args: { p_social_post_id: string };
         Returns: Database['public']['Tables']['social_posts']['Row'];
@@ -2076,6 +2405,22 @@ export type Database = {
           p_stale_after?: string;
         };
         Returns: Database['public']['Tables']['weekly_digest_generation_jobs']['Row'][];
+      };
+      begin_daily_visual_finalization: {
+        Args: {
+          p_editorial_date: string;
+          p_lead_brief_id: string;
+          p_source_hash: string;
+          p_source_snapshot: Json;
+        };
+        Returns: {
+          claim_token: string | null;
+          daily_visual_job_id: string | null;
+          daily_visual_set_id: string | null;
+          reason: string;
+          retry_mode: string | null;
+          should_run: boolean;
+        }[];
       };
       comment_weekly_digest_artifact: {
         Args: { p_artifact_id: string; p_note: string };
@@ -2098,6 +2443,49 @@ export type Database = {
           p_title_uk: string;
           p_weekly_digest_id: string;
         };
+        Returns: string;
+      };
+      create_weekly_digest_revision_with_visual_direction: {
+        Args: {
+          p_display_title_en: string;
+          p_display_title_uk: string;
+          p_editor_note_en: string | null;
+          p_editor_note_uk: string | null;
+          p_intro_en: string | null;
+          p_intro_uk: string | null;
+          p_items: Json;
+          p_key_takeaways_en: Json;
+          p_key_takeaways_uk: Json;
+          p_title_en: string;
+          p_title_uk: string;
+          p_visual_thesis_en: string;
+          p_visual_thesis_uk: string;
+          p_weekly_digest_id: string;
+        };
+        Returns: string;
+      };
+      create_service_weekly_digest_revision_with_visual_direction: {
+        Args: {
+          p_display_title_en: string;
+          p_display_title_uk: string;
+          p_editor_note_en: string;
+          p_editor_note_uk: string;
+          p_intro_en: string | null;
+          p_intro_uk: string | null;
+          p_items: Json;
+          p_key_takeaways_en: Json;
+          p_key_takeaways_uk: Json;
+          p_reason?: string;
+          p_title_en: string;
+          p_title_uk: string;
+          p_visual_thesis_en: string;
+          p_visual_thesis_uk: string;
+          p_weekly_digest_id: string;
+        };
+        Returns: string;
+      };
+      create_weekly_visual_refresh_draft: {
+        Args: { p_weekly_digest_id: string };
         Returns: string;
       };
       edit_social_post: {
@@ -2153,9 +2541,58 @@ export type Database = {
         };
         Returns: Database['public']['Tables']['weekly_digest_generation_jobs']['Row'];
       };
+      finish_daily_visual_job: {
+        Args: {
+          p_claim_token: string;
+          p_error?: string | null;
+          p_job_id: string;
+          p_status: string;
+        };
+        Returns: boolean;
+      };
+      write_daily_visual_worker_set_state: {
+        Args: {
+          p_candidate_id?: string | null;
+          p_claim_token: string;
+          p_daily_visual_set_id: string;
+          p_direction?: Json | null;
+          p_display_title_en?: string | null;
+          p_display_title_uk?: string | null;
+          p_job_id: string;
+          p_mutation: string;
+          p_overlay_stat_en?: string | null;
+          p_overlay_stat_uk?: string | null;
+          p_visual_thesis_en?: string | null;
+          p_visual_thesis_uk?: string | null;
+        };
+        Returns: boolean;
+      };
       retry_weekly_digest_generation_job: {
         Args: { p_job_id: string };
         Returns: Database['public']['Tables']['weekly_digest_generation_jobs']['Row'];
+      };
+      reconcile_held_daily_visual_budget: {
+        Args: {
+          p_actual_cost_micro_usd?: number | null;
+          p_reservation_id: string;
+          p_status: string;
+        };
+        Returns: boolean;
+      };
+      request_daily_visual_direction_retry: {
+        Args: { p_daily_visual_set_id: string };
+        Returns: string | null;
+      };
+      record_daily_visual_engagement: {
+        Args: {
+          p_candidate_id: string;
+          p_daily_visual_set_id: string;
+          p_entry_source: string;
+          p_event_type: string;
+          p_lang: string;
+          p_session_hash: string;
+        };
+        Returns: boolean;
       };
       finish_weekly_digest_release: {
         Args: {
@@ -2180,9 +2617,47 @@ export type Database = {
         };
         Returns: Database['public']['Tables']['weekly_digest_generation_jobs']['Row'];
       };
+      queue_weekly_visual_refresh_prompt_job: {
+        Args: {
+          p_idempotency_key?: string | null;
+          p_job_type: string;
+          p_revision_id: string;
+          p_revision_item_id?: string | null;
+          p_weekly_digest_id: string;
+        };
+        Returns: Database['public']['Tables']['weekly_digest_generation_jobs']['Row'];
+      };
+      promote_weekly_visual_refresh_assets: {
+        Args: {
+          p_public_assets: Json;
+          p_revision_id: string;
+          p_staged_artifact_ids: string[];
+          p_weekly_digest_id: string;
+        };
+        Returns: {
+          published_artifact_id: string;
+          slot_key: string;
+          staged_artifact_id: string;
+          version: number;
+        }[];
+      };
       reconcile_stale_social_posts: {
         Args: Record<PropertyKey, never>;
         Returns: number;
+      };
+      reserve_daily_visual_budget: {
+        Args: {
+          p_attempt_number: number;
+          p_candidate_kind: string;
+          p_daily_visual_set_id: string;
+          p_editorial_date: string;
+          p_max_cost_micro_usd: number;
+        };
+        Returns: {
+          granted: boolean;
+          reason: string;
+          reservation_id: string | null;
+        }[];
       };
       resume_weekly_threads_sequence: {
         Args: { p_social_post_id: string };
@@ -2207,6 +2682,14 @@ export type Database = {
       };
       reserve_x_budget: {
         Args: { p_amount: number };
+        Returns: boolean;
+      };
+      settle_daily_visual_budget: {
+        Args: {
+          p_actual_cost_micro_usd?: number | null;
+          p_reservation_id: string;
+          p_status: string;
+        };
         Returns: boolean;
       };
       record_green_delivery_success: {
@@ -2275,6 +2758,48 @@ export type Database = {
         };
         Returns: string;
       };
+      save_weekly_visual_refresh_prompt_artifact: {
+        Args: {
+          p_content?: Json;
+          p_metadata?: Json;
+          p_revision_id: string;
+          p_revision_item_id?: string | null;
+          p_slot_key?: string | null;
+          p_weekly_digest_id: string;
+        };
+        Returns: string;
+      };
+      save_weekly_visual_refresh_prompt_artifact_with_direction_hash: {
+        Args: {
+          p_content: Json;
+          p_metadata: Json;
+          p_revision_id: string;
+          p_revision_item_id: string | null;
+          p_slot_key: string;
+          p_visual_refresh_revision_hash: string;
+          p_weekly_digest_id: string;
+        };
+        Returns: string;
+      };
+      save_weekly_visual_refresh_staged_asset: {
+        Args: {
+          p_artifact_type: string;
+          p_byte_size: number;
+          p_content: Json;
+          p_height: number;
+          p_locale: string;
+          p_metadata: Json;
+          p_mime_type: string;
+          p_revision_id: string;
+          p_revision_item_id: string | null;
+          p_slot_key: string;
+          p_storage_bucket: string;
+          p_storage_path: string;
+          p_weekly_digest_id: string;
+          p_width: number;
+        };
+        Returns: string;
+      };
       schedule_weekly_digest: {
         Args: { p_release_at: string; p_weekly_digest_id: string };
         Returns: Database['public']['Tables']['weekly_digests']['Row'];
@@ -2297,6 +2822,17 @@ export type Database = {
           p_locale: string;
           p_revision_id: string;
           p_revision_item_id?: string | null;
+        };
+        Returns: string;
+      };
+      update_weekly_visual_refresh_direction: {
+        Args: {
+          p_display_title_en: string;
+          p_display_title_uk: string;
+          p_revision_id: string;
+          p_visual_thesis_en: string;
+          p_visual_thesis_uk: string;
+          p_weekly_digest_id: string;
         };
         Returns: string;
       };

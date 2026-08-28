@@ -51,7 +51,7 @@ export function HeaderSearchField({
     e.preventDefault();
     const trimmed = (inputRef.current?.value ?? query).trim();
     trackSearch(trimmed, variant, lang);
-    router.push(trimmed ? `/${lang}/news?q=${encodeURIComponent(trimmed)}` : `/${lang}/news`);
+    router.push(trimmed ? `/${lang}/news/search?q=${encodeURIComponent(trimmed)}` : `/${lang}/news`);
     setQuery('');
     setOpen(false);
   }

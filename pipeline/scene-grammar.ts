@@ -2,8 +2,13 @@
  * Prompt grammar for weekly illustration briefs. Reads the editorial claim
  * (essence + title/summary), never practical/takeaway advice (C5.2) and never
  * the experimental V10 autoClaim cluster.
+ *
+ * Grammar (diagram vs scene) is this module. Visual language (`templateId`)
+ * is `routeTemplate` — keep the two coupled via {@link templateIdForSceneGrammar}.
  */
 import type { MetaphorLens, SceneGrammar } from './card-image';
+import { routeTemplate } from './image-prompt-library/route';
+import type { ImagePromptTemplateId } from './image-prompt-library/templates';
 
 /** Claim-side essence only — advice fields live on the story, not here. */
 export interface SceneGrammarEssence {
@@ -89,6 +94,22 @@ export function selectSceneGrammar(input: SceneGrammarInput): SceneGrammar {
     return 'deterministic_technical_hybrid';
   }
   return 'cinematic_domain_scene';
+}
+
+/** Map grammar + lens onto a Prompt-as-Code template (unique vs `occupied`). */
+export function templateIdForSceneGrammar(
+  input: SceneGrammarInput,
+  occupied: readonly ImagePromptTemplateId[] = [],
+): ImagePromptTemplateId {
+  const grammar = selectSceneGrammar(input);
+  return routeTemplate({
+    lens: input.lens ?? 'literal_context',
+    grammar,
+    source: input.source,
+    headline: input.title,
+    summary: input.summary,
+    occupied,
+  });
 }
 
 function hasExactMetric(input: SceneGrammarInput, metricText: string): boolean {

@@ -129,11 +129,18 @@ describe('trackItemEvent', () => {
   it('fires GA4 (with id as post_id) and a beacon to /api/ev', async () => {
     const mod = await import('@/lib/analytics-client');
     mod.trackItemEvent('post_expand', { id: 'abc', lang: 'en' }, { category: 'agents' });
-    expect(gtag).toHaveBeenCalledWith('event', 'post_expand', { category: 'agents', post_id: 'abc' });
+    expect(gtag).toHaveBeenCalledWith('event', 'post_expand', {
+      category: 'agents',
+      post_id: 'abc',
+    });
     expect(sendBeacon).toHaveBeenCalledTimes(1);
     const [path, payload] = sendBeacon.mock.calls[0]!;
     expect(path).toBe('/api/ev');
-    expect(JSON.parse(payload as string)).toMatchObject({ id: 'abc', type: 'post_expand', lang: 'en' });
+    expect(JSON.parse(payload as string)).toMatchObject({
+      id: 'abc',
+      type: 'post_expand',
+      lang: 'en',
+    });
   });
 
   it('does not beacon (or GA4) after analytics opt-out', async () => {
@@ -158,5 +165,67 @@ describe('trackItemEvent', () => {
     mod.trackItemEvent('scroll_90', { slug: 's' }, { percent: 90 });
     const payload = JSON.parse(sendBeacon.mock.calls[0]![1] as string);
     expect(payload).toMatchObject({ slug: 's', type: 'scroll_90', value: 90 });
+  });
+
+  it('sends a consent-gated daily visual milestone without a browser identifier', async () => {
+    const mod = await import('@/lib/analytics-client');
+    mod.trackDailyVisualEngagement(
+      'visual_exposure_3s',
+      {
+        visualSetId: '11111111-1111-4111-8111-111111111111',
+        candidateId: '22222222-2222-4222-8222-222222222222',
+        lang: 'uk',
+      },
+      'scrolled',
+    );
+    const [path, rawPayload] = sendBeacon.mock.calls[0]!;
+    const payload = JSON.parse(rawPayload as string) as Record<string, unknown>;
+    expect(path).toBe('/api/daily/visual-engagement');
+    expect(payload).toEqual({
+      eventType: 'visual_exposure_3s',
+      dailyVisualSetId: '11111111-1111-4111-8111-111111111111',
+      candidateId: '22222222-2222-4222-8222-222222222222',
+      entrySource: 'scrolled',
+      lang: 'uk',
+    });
+
+    storage.set(
+      CONSENT_STORAGE_KEY,
+      JSON.stringify({ analytics: false, ads: false, updatedAt: '2026-01-01T00:00:00.000Z' }),
+    );
+    sendBeacon.mockClear();
+    mod.trackDailyVisualEngagement(
+      'visual_impression',
+      {
+        visualSetId: '11111111-1111-4111-8111-111111111111',
+        candidateId: '22222222-2222-4222-8222-222222222222',
+        lang: 'uk',
+      },
+      'entry_hero',
+    );
+    expect(sendBeacon).not.toHaveBeenCalled();
+  });
+
+  it('sends a qualified daily visual outcome with the same minimal payload', async () => {
+    const mod = await import('@/lib/analytics-client');
+    mod.trackDailyVisualEngagement(
+      'signup_click',
+      {
+        visualSetId: '11111111-1111-4111-8111-111111111111',
+        candidateId: '22222222-2222-4222-8222-222222222222',
+        lang: 'en',
+      },
+      'entry_hero',
+    );
+
+    const [path, rawPayload] = sendBeacon.mock.calls[0]!;
+    expect(path).toBe('/api/daily/visual-engagement');
+    expect(JSON.parse(rawPayload as string)).toEqual({
+      eventType: 'signup_click',
+      dailyVisualSetId: '11111111-1111-4111-8111-111111111111',
+      candidateId: '22222222-2222-4222-8222-222222222222',
+      entrySource: 'entry_hero',
+      lang: 'en',
+    });
   });
 });

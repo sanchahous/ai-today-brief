@@ -32,6 +32,8 @@ export const WEEKLY_COPY: Record<
     latestTitle: string;
     latestSubtitle: string;
     period: string;
+    showMore: string;
+    showLess: string;
   }
 > = {
   en: {
@@ -66,6 +68,8 @@ export const WEEKLY_COPY: Record<
     latestSubtitle:
       'The most important shifts, with practical context for people who build with AI.',
     period: 'Week',
+    showMore: 'Show more',
+    showLess: 'Show less',
   },
   uk: {
     eyebrow: 'Тижневий дайджест',
@@ -99,5 +103,7 @@ export const WEEKLY_COPY: Record<
     latestTitle: 'Тижневий AI-дайджест',
     latestSubtitle: 'Найважливіші зміни тижня з практичним контекстом для тих, хто будує з AI.',
     period: 'Тиждень',
+    showMore: 'Показати більше',
+    showLess: 'Згорнути',
   },
 };

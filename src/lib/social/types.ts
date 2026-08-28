@@ -1,4 +1,5 @@
 import type { Json } from '@/lib/database.types';
+import type { DailyVisualInstagramCarouselSpec } from './daily-visual-carousel';
 import type { InstagramCarouselSpec } from './instagram-carousel';
 
 export const SOCIAL_CHANNELS = [
@@ -127,7 +128,7 @@ export interface SocialDraft {
   sourceFacts: string[];
   sourceUrl: string;
   qualityReport?: QualityReport;
-  instagramCarousel?: InstagramCarouselSpec | null;
+  instagramCarousel?: InstagramCarouselSpec | DailyVisualInstagramCarouselSpec | null;
   currentRevisionItemIds?: string[];
 }
 

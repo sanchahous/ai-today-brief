@@ -18,6 +18,8 @@ export const KYIV_SCHEDULE_ATTEMPTS = 4 as const;
 export const KYIV_CYCLES_PER_DAY = 12 as const;
 export const KYIV_CYCLE_HOURS = 2;
 export const KYIV_SLOT_INTERVAL_MINUTES = 30;
+/** A daily editorial edition closes at 20:00 Europe/Kyiv. */
+export const KYIV_EDITORIAL_CUTOFF_MINUTES = 20 * 60;
 
 // ─── Time helpers ─────────────────────────────────────────────────────────────
 
@@ -31,6 +33,12 @@ export function getPipelineDateKyiv(now: Date = new Date()): string {
   }).format(now);
 }
 
+function addCalendarDays(date: string, days: number): string {
+  const [year, month, day] = date.split('-').map(Number) as [number, number, number];
+  const value = new Date(Date.UTC(year, month - 1, day + days));
+  return value.toISOString().slice(0, 10);
+}
+
 /** Minutes since midnight in Europe/Kyiv. */
 export function getKyivMinutesOfDay(now: Date = new Date()): number {
   const parts = new Intl.DateTimeFormat('en-GB', {
@@ -42,6 +50,19 @@ export function getKyivMinutesOfDay(now: Date = new Date()): number {
   const hour = Number(parts.find((p) => p.type === 'hour')?.value ?? '0');
   const minute = Number(parts.find((p) => p.type === 'minute')?.value ?? '0');
   return hour * 60 + minute;
+}
+
+/**
+ * Editorial date for daily intake. At 20:00 Kyiv sharp, incoming material
+ * belongs to the next daily edition even though the civil calendar has not
+ * changed yet. Keep `getPipelineDateKyiv` for calendar-based consumers such
+ * as the midnight auto-publish window.
+ */
+export function getEditorialDateKyiv(now: Date = new Date()): string {
+  const date = getPipelineDateKyiv(now);
+  return getKyivMinutesOfDay(now) >= KYIV_EDITORIAL_CUTOFF_MINUTES
+    ? addCalendarDays(date, 1)
+    : date;
 }
 
 // ─── 4 h progón + 30 min slots ───────────────────────────────────────────────

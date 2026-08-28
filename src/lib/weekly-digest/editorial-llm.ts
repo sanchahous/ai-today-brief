@@ -23,6 +23,7 @@ import { loadProviderRegistry, type ProviderRole } from '../../../pipeline/provi
 import type { ProviderCallResult } from '../../../pipeline/providers/types';
 import {
   WEEKLY_MASTER_SPEC_VERSION,
+  WEEKLY_HERO_COPY_MAX_CHARS,
   type WeeklyMasterBundle,
   type WeeklyMasterStory,
   type WeeklyPlacement,
@@ -287,9 +288,9 @@ export function parseStorySegment(
   requireClaimIds = true,
 ): Omit<WeeklyMasterStory, 'revisionItemId' | 'placement'> {
   const row = parseJsonObject(raw);
-  const story = (row.story && typeof row.story === 'object' && !Array.isArray(row.story)
-    ? row.story
-    : row) as Record<string, unknown>;
+  const story = (
+    row.story && typeof row.story === 'object' && !Array.isArray(row.story) ? row.story : row
+  ) as Record<string, unknown>;
   const approved = new Set(approvedClaimIds);
   const claimIds = requireClaimIds
     ? stringArray(story.claimIds, 'story.claimIds').filter((id) => approved.has(id))
@@ -316,15 +317,19 @@ export function parseStorySegment(
 /** The article-level fields, written once per locale after every story exists. */
 export function parseFrameSegment(raw: string): MasterFrame {
   const row = parseJsonObject(raw);
-  const frame = (row.frame && typeof row.frame === 'object' && !Array.isArray(row.frame)
-    ? row.frame
-    : row) as Record<string, unknown>;
+  const frame = (
+    row.frame && typeof row.frame === 'object' && !Array.isArray(row.frame) ? row.frame : row
+  ) as Record<string, unknown>;
   const links = recordArray(frame.internalLinks, 'internalLinks').map((link) => ({
     anchor: requiredString(link, 'anchor'),
     query: requiredString(link, 'query'),
   }));
   return {
     title: requiredString(frame, 'title'),
+    displayTitle:
+      typeof frame.displayTitle === 'string' ? frame.displayTitle.trim() || undefined : undefined,
+    visualThesis:
+      typeof frame.visualThesis === 'string' ? frame.visualThesis.trim() || undefined : undefined,
     seoTitle: requiredString(frame, 'seoTitle'),
     metaDescription: requiredString(frame, 'metaDescription'),
     ogTitle: requiredString(frame, 'ogTitle'),
@@ -471,7 +476,11 @@ function masterMinQualityIndex() {
  */
 export function premiumOpenRouterModels(
   models: OpenRouterModelRecord[],
-  options: { configuredModels?: string[]; excludeVendors?: string[]; excludeModels?: string[] } = {},
+  options: {
+    configuredModels?: string[];
+    excludeVendors?: string[];
+    excludeModels?: string[];
+  } = {},
 ) {
   const configured =
     options.configuredModels ??
@@ -778,7 +787,9 @@ export function criticProviderLadder(
     (provider) => provider !== writer && !usedSlots.has(provider),
   );
   const unusedWriter = order.filter((provider) => provider === writer && !usedSlots.has(provider));
-  const usedIndependent = order.filter((provider) => provider !== writer && usedSlots.has(provider));
+  const usedIndependent = order.filter(
+    (provider) => provider !== writer && usedSlots.has(provider),
+  );
   const usedWriter = order.filter((provider) => provider === writer && usedSlots.has(provider));
   return [...unusedIndependent, ...unusedWriter, ...usedIndependent, ...usedWriter];
 }
@@ -1054,8 +1065,10 @@ ${voicePromptBlock('en')}
 
 FRAME CONTRACT
 - Establish one honest throughline from the three feature stories. Use a thematic umbrella only when the stories actually support a real connection; otherwise frame the edition transparently around the three concrete developments instead of forcing a vague idea onto unrelated stories.
-- title: makes the Top 3 legible on first read by naming concrete actors, products or results. Never an umbrella label such as "The Agentic Shift" or "The Future of AI", and never a bare list of categories.
-- standfirst: about ${targets.standfirst} words, opening on the edition's strongest news value. Never "A weekly digest..." boilerplate.
+- title: makes the Top 3 legible on first read by naming concrete actors, products or results, at most ${WEEKLY_HERO_COPY_MAX_CHARS.title} characters. Never an umbrella label such as "The Agentic Shift" or "The Future of AI", and never a bare list of categories.
+- displayTitle: 8-96 characters. This is a short, reader-facing editorial thesis for the hero and PDF cover only, not SEO, Open Graph, or a list title. State the most useful issue-level insight a reader can carry away after two seconds; do not try to name every story.
+- visualThesis: 16-360 characters. This is INTERNAL visual direction, never reader-facing prose. State one concrete causal story (what changed -> why it matters) that a single no-text cover image can depict. Do not ask the image model for labels, fake UI, logos, or a collage.
+- standfirst: about ${targets.standfirst} words, at most ${WEEKLY_HERO_COPY_MAX_CHARS.standfirst} characters, opening on the edition's strongest news value. Never "A weekly digest..." boilerplate.
 - intro: about ${targets.intro} words of continuous prose that earns the reader's next minute.
 - editorNote: about ${targets.editorNote} words. It may say the edition uses cited primary sources and separately labeled editorial analysis. It must NOT claim original research -- this edition is a synthesis of external primary sources.
 - conclusion: about ${targets.conclusion} words. Land the throughline; do not restate every story in turn.
@@ -1067,7 +1080,7 @@ FRAME CONTRACT
 - Return one JSON object only, no preamble and no code fence.
 
 JSON SHAPE
-{"frame":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":""}}
+{"frame":{"title":"","displayTitle":"","visualThesis":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":""}}
 
 STORIES IN THIS EDITION
 ${JSON.stringify(stories)}${masterRetryGuidancePrompt(guidance)}`;
@@ -1124,12 +1137,14 @@ ${UKRAINIAN_ADAPTATION_RULES}
 - Ті самі жорсткі межі, що й англійською: seoTitle <=65 символів; metaDescription <=160; ogTitle <=70; ogDescription <=200. Рахуйте символи.
 - standfirst починається з новини, а не зі «Щотижневий дайджест».
 - title називає конкретних дійових осіб, продукти або результати, а не абстрактну мітку на кшталт «Зсув до агентів».
+- displayTitle має 8-96 символів і є короткою редакційною тезою лише для hero та PDF-обкладинки, не для SEO/Open Graph/списків. Сформулюйте його природно українською, а не перекладайте англійський рядок буквально.
+- visualThesis має 16-360 символів і є ВНУТРІШНІМ напрямом для no-text обкладинки: одна конкретна причинно-наслідкова історія «що змінилося -> чому це важливо». Переповідайте його українською самостійно, зберігши фактичне ядро, а не перекладайте дослівно. Це не читабельний підпис і не інструкція намалювати UI, логотипи, текст або колаж.
 - editorNote може описувати цитовані першоджерела та окремо позначений редакційний аналіз, але ніколи не вводить твердження про «оригінальні дослідження».
 - Побудуйте ту саму наскрізну логіку, що й англійський оригінал. Не вигадуйте спільну «велику тему», якщо її немає в оригіналі.
 - Поверніть лише один JSON-обʼєкт, без преамбули й без огорожі коду.
 
 JSON SHAPE
-{"frame":{"title":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":""}}
+{"frame":{"title":"","displayTitle":"","visualThesis":"","seoTitle":"","metaDescription":"","ogTitle":"","ogDescription":"","standfirst":"","theme":"","intro":"","editorNote":"","keyTakeaways":[""],"topics":[""],"entities":[""],"internalLinks":[{"anchor":"","query":""}],"conclusion":""}}
 
 АНГЛІЙСЬКА РАМКА
 ${JSON.stringify(input.english)}
@@ -1160,7 +1175,7 @@ const REPAIR_FIELD_CONTRACT: Record<string, string> = {
     "60-110 words of clearly-labeled editorial speculation in the editor's own voice, extending the story rather than summarizing it, ending on a real open tension.",
   discussionQuestion:
     'One closing question a thoughtful reader could genuinely disagree about. Not rhetorical.',
-  claimIds: 'Ids from this story\'s approved claims array only. At least one.',
+  claimIds: "Ids from this story's approved claims array only. At least one.",
   title:
     'Names concrete actors, products or results from the Top 3. Never an umbrella label or a list of categories.',
   seoTitle: 'At most 65 characters.',
@@ -1168,7 +1183,7 @@ const REPAIR_FIELD_CONTRACT: Record<string, string> = {
   ogTitle: 'At most 70 characters.',
   ogDescription: 'At most 200 characters.',
   standfirst:
-    "Opens on the edition's strongest news value in about 30 words. Never \"A weekly digest...\" boilerplate.",
+    'Opens on the edition\'s strongest news value in about 30 words. Never "A weekly digest..." boilerplate.',
   theme: "A short internal label for this edition's throughline.",
   intro: "About 150 words of continuous prose that earns the reader's next minute.",
   editorNote:

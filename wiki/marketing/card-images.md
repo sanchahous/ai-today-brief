@@ -1,6 +1,6 @@
 # Card images — per-item AI brand cards
 
-Summary: Генерація карток/OG і weekly story-ілюстрацій: FLUX.2, fallback, no-text policy, cost ledger.
+Summary: Генерація карток/OG і weekly story-ілюстрацій: FLUX.2, один primary weekly prompt, no-text policy, advisory semantic QA і cost ledger.
 Sources: `pipeline/card-image.ts`, `.env.example`, PR #169–#175, editorial quality overhaul PR5
 (гілка `feat/weekly-editorial-voice`, 2026-08-06), LLM provider registry Phase 2
 (гілка `feat/llm-provider-registry`, 2026-08-06), post-merge review PR #191 (2026-08-07),
@@ -9,9 +9,9 @@ BFL FLUX.2 prompting + JSON structured prompting (live check 2026-08-10),
 `feat/weekly-editorial-concept-v1` (2026-08-10),
 `feat/weekly-editorial-concept-v2` (2026-08-11 illustration overhaul),
 `feat/weekly-editorial-concept-v3` (2026-08-11 mechanism fidelity),
-Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v5.1` and
-three-concept jury follow-up 2026-08-11, B1-fix / B2 / P1 / C1 / C2 / C3 + review fixes 2026-08-15
-Last updated: 2026-08-17
+Content Sim vision loop 2026-08-11, owner prompt review + `weekly-semantic-story-v6` Prompt-as-Code
+library 2026-08-23, daily production cover 2026-08-24, image-only QA Likert 2026-08-25
+Last updated: 2026-08-25
 
 ---
 
@@ -35,9 +35,13 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    (source: `pipeline/card-image.ts`'s `runArtDirectorLadder`, PR #191)
 2. **Prompt** — cinematic house style + category accent (daily). **Weekly is a
    separate semantic house style** (`pipeline/card-image.ts`'s `weeklyReportageSceneBrief` +
-   `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-semantic-story-v5.1`**
-   as of 2026-08-11): **approved source → context → meaning → mechanism → consequence → causal
-   visual metaphor**. `generation-worker.ts` передає не лише headline/summary: `why`, practical,
+   `buildEditorialConceptPrompt` / `buildWeeklyPrompt`, policy id **`weekly-semantic-story-v6`**
+   as of 2026-08-23): **approved source → context → meaning → mechanism → consequence**, then a
+   deterministic template router (`literal_context` → photo/scene, `mechanism` → infographic or
+   breakdown, `consequence` → scene/illustration) and a six-block Prompt-as-Code assembler.
+   Canonical більше не зливає `essence.mechanism` у рядок для моделі. Деталі —
+   [image-prompt-library](../pipeline/image-prompt-library.md).
+   `generation-worker.ts` передає не лише headline/summary: `why`, practical,
    limitation, takeaway, editor inference, owner angle, approved research claims/context/risks.
    Essence director мусить відділити факт від inference і не вигадувати downstream outcome;
    metaphor director повертає `story_anchor`, `visible_mechanism`, `visible_consequence`.
@@ -47,17 +51,14 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    тому generic battery/cog/pump, що показує лише тему, не проходить. Якщо обидва metaphor rounds
    провалились, fallback будується з semantic contract/visual thesis, а не з generic spotlight;
    literal label invitations на кшталт `"model" slot` прибираються із semantic fallback до FLUX.
-   Один shared semantic contract подається в **three-seat concept jury**, який за один structured
-   LLM call створює три окремі сценарії: `literal_context`, `mechanism`, `consequence`. Кожен має
-   інші subject, motif, setting і physical action; зміна camera/color/seed/prop placement/scale
-   не вважається новою концепцією. Якщо owner редагує scene вручну, вона лишається concept 1, а
-   concept 2–3 плануються незалежно й мають не повторювати owner direction. Subject-first prompt
-   ставить causal mini-story до стилю й більше не інʼєктить `facade versus backstage` у кожен
-   `dual_contrast`. Structural sibling gates v2/v3
-   (`motif_class`, scene echo, character/dual caps) лишились. **Content Sim scores each concept
-   against its own scene/prompt** й auto-picks primary; `metadata.variant_scores` має semantic
-   minimum + craft, `metadata.variant_concepts` зберігає aligned concept metadata, а Visuals показує
-   три назви/лінзи/сцени. `scene_override` лишається escape hatch.
+   У `prompt_only` shared semantic contract подається одному **primary editorial director**:
+   він повертає одну connected cause-and-effect scene з actor/system, видимою дією та grounded
+   result. Subject-first prompt ставить causal mini-story до стилю; planning rationale не може
+   потрапити в canonical. Якщо owner редагує scene вручну, вона стає primary direction.
+   Structural sibling gates (`motif_class`, scene echo, character/dual caps) лишились для
+   справжніх multi-concept render batches. **Content Sim scores each concept against its own
+   scene/prompt** лише у `render`; `prompt_only` не показує власнику три лотерейні картки.
+   `scene_override` лишається escape hatch.
    Daily keeps `story-specific-editorial-v5-no-text`.
    (source: PR #174–#175, PR5 2026-08-06, reportage-v2 / editorial-concept-v1 2026-08-10,
    illustration overhaul v2 + fidelity v3 2026-08-11)
@@ -73,8 +74,8 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
    transform. The public site still requests `format=webp` from Supabase Storage
    (`src/lib/image-loader.ts`). Idempotent skip leaves existing `.png` (~488 KB
    from the 2026-08-14 incident) until `--reencode-png` (no FLUX). Weekly
-   **story** figures (`story_image`) are stored as WebP 1600×900 q82
-   (`encodeSiteWebp`); weekly **cover** stays JPEG because it is the digest
+   **story** figures (`story_image`) are stored as WebP 1600×900 q82 on a branded
+   `contain` canvas, so a non-16:9 source is not silently cover-cropped; weekly **cover** stays JPEG because it is the digest
    `og:image`. Social/IG crops stay JPEG. (source: [ops/vercel-image-quota](../ops/vercel-image-quota.md),
    `pipeline/card-image.ts`, `src/lib/encode-site-image.ts`)
 5. **Render** — `opengraph-image.tsx` (Satori) composites the brand overlay for
@@ -83,6 +84,28 @@ Cloudflare Workers AI path with a stricter editorial prompt policy.
 Daily generation runs **once, post-publish** (`pipeline/card-image.ts` from
 `pipeline/run-daily.ts`) and is idempotent. Estimated image spend can land in
 `generation_cost_events` (see `/admin/costs`).
+
+Цей абзац описує **news-card** images. Він не є daily digest cover: з 2026-08-24 daily cover має
+окремий production workflow з однією тезою, pinned dynamic OpenRouter Image route, bounded
+$5/month spend, semantic QA, manual source/editor choice і шість social draft’ів. News cards
+лишаються на наявному automatic provider/publish flow; їх покращено causal prompt policy без
+нового ручного gate. Деталі — [daily-visual-workflow](../pipeline/daily-visual-workflow.md).
+(source: owner session 2026-08-24; `pipeline/card-image.ts`;
+`pipeline/daily-visual-finalizer.ts`; `pipeline/daily-visual-openrouter.ts`)
+
+## Current weekly acceptance rule (2026-08-23)
+
+For a new weekly prompt the desired primary image is not a compressed visual version of every
+fact. Together with the headline it must make one `actor/system → visible change → grounded
+consequence` readable in roughly 2–3 seconds. Text, labels and diagrams stay absent by default;
+one deterministic overlay is a last-resort clarification, never a substitute for scene clarity.
+(source: owner session 2026-08-23; `pipeline/card-image.ts`; `pipeline/image-prompt-library/templates.ts`)
+
+After manual upload, a story gets pixel QA and, only when the pixels are clean, a second
+story-aware semantic pass, including the approved counterweight when one exists. It is an owner
+warning rather than a release blocker; model certainty does not replace editorial review. A missing
+story-aware pass or any active QA blocker does, however, fail closed for machine attestation.
+(source: `src/lib/weekly-digest/run-post-upload-qa.ts`; `src/lib/weekly-digest/post-upload-qa.ts`; `src/lib/weekly-digest/machine-attest.ts`)
 
 ## Env
 
@@ -210,9 +233,10 @@ title/summary, не practical/takeaway. Метрика → `deterministic_techni
 `src/lib/weekly-digest/owner-feedback.ts`)
 
 **E2 — двостадійний критик (2026-08-15):** image-only без headline, потім story-aware лише
-якщо пікселі пройшли. Upload QA лишається одним image-only проходом.
+якщо пікселі пройшли. Image-only з 2026-08-25 рахує 0–100 і не гейтить `news_legibility`;
+Likert 0–1 / 1–5 rescale-иться. Upload QA для clean `story_image` далі має story-aware pass.
 (source: [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md) E2,
-`src/lib/content-sim/adapters/weekly-image.ts`)
+`src/lib/content-sim/adapters/weekly-image.ts`; `src/lib/content-sim/vision-critic.ts`)
 
 **E3 — promotion gate промптів (2026-08-15):** Visuals рахує ≥60% прийнятних з 1–2 спроби,
 0 misleading, ≤10 хв/story, 3 різні промпти. Не блокує реліз. Пороги **новин** без змін.
@@ -259,6 +283,7 @@ per-variant score. Visuals показує всю generation history; owner promo
 
 - [content-sim](../pipeline/content-sim.md)
 - [weekly-illustration-plan](../pipeline/weekly-illustration-plan.md)
+- [image-prompt-library](../pipeline/image-prompt-library.md)
 - [overview](../overview.md) §4
 - [custom-social-delivery](custom-social-delivery.md)
 - [llm-providers](../pipeline/llm-providers.md)

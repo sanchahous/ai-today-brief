@@ -4,6 +4,7 @@ import type { PipelineDb } from './db';
 import { loadProviderRegistry } from './providers/registry';
 import {
   buildPrompt,
+  buildNewsCardSceneInstruction,
   buildWeeklyPrompt,
   buildEditorialConceptPrompt,
   buildWeeklyContextBlock,
@@ -12,6 +13,7 @@ import {
   accentToHex,
   extractWeeklyStoryEntities,
   flattenMetaphorPitch,
+  planningNotes,
   FALLBACK_MOTIF_CLASS,
   headNoun,
   motifFamilyKey,
@@ -43,9 +45,11 @@ import {
   hueName,
   IMG_H,
   IMG_W,
+  isPhysicalRoboticsStory,
   isFlux2MultipartModel,
   megapixelsForDimensions,
   negativePrompt,
+  prepareNewsCardScene,
   renderFallbackEditorialIllustration,
   sceneBrief,
   SCHNELL_MODEL,
@@ -274,9 +278,13 @@ describe('seedFromString', () => {
 
 describe('buildPrompt', () => {
   it('makes the story scene dominant, with a light brand thread + accent', () => {
-    const prompt = buildPrompt('violet purple', 'a cracked padlock over a server rack');
+    const prompt = buildPrompt(
+      'violet purple',
+      'a compromised metadata token crosses a trusted toolchain gate toward a protected key compartment',
+      'Pillar Security finds a supply-chain attack that changes MCP tool metadata before SSH keys are exposed.',
+    );
     expect(prompt).toContain('violet purple');
-    expect(prompt).toContain('a cracked padlock over a server rack');
+    expect(prompt).toContain('a compromised metadata token crosses a trusted toolchain gate');
     expect(prompt).toContain('editorial');
     expect(prompt).toMatch(/no text/i);
     expect(prompt).toContain('16:9');
@@ -284,7 +292,53 @@ describe('buildPrompt', () => {
     expect(prompt.toLowerCase()).not.toContain('overlaid headline');
     expect(prompt.toLowerCase()).toContain('no typography');
     // The scene leads (placed after the brand thread), so it is not buried.
-    expect(prompt.indexOf('cracked padlock')).toBeGreaterThan(prompt.indexOf('editorial'));
+    expect(prompt.indexOf('compromised metadata token')).toBeGreaterThan(prompt.indexOf('editorial'));
+    expect(prompt).toContain('one dominant subject performs one visible action');
+    expect(prompt).toContain('central 78% of frame width');
+    expect(prompt).toContain('central 64% of frame height');
+    expect(prompt).toContain('No fake UI, dashboard, screen, code panel');
+    expect(prompt).toContain('Never depict humanoid robots');
+  });
+
+  it('removes planning labels before they can leak into fallback image pixels', () => {
+    const scene =
+      'The story-specific anchor is one local gateway, the visible cause is it removes credential tokens, ' +
+      'the visible result is one clean request leaving the machine';
+    const prompt = buildPrompt(
+      'teal',
+      scene,
+      'PrivAiTe removes credentials before a model request leaves a developer machine.',
+    );
+
+    expect(prepareNewsCardScene(scene)).toContain('one local gateway');
+    expect(prompt.toLowerCase()).not.toContain('the story-specific anchor is');
+    expect(prompt.toLowerCase()).not.toContain('the visible cause is');
+    expect(prompt.toLowerCase()).not.toContain('the visible result is');
+    expect(prompt).toContain('one clean request leaving the machine');
+  });
+
+  it('turns an accidental causal JSON plan into one renderable scene without field names', () => {
+    const scene = prepareNewsCardScene(
+      '{"subject":"one local gateway","action":"removes credential tokens","outcome":"a clean request leaves the machine"}',
+    );
+
+    expect(scene).toBe(
+      'one local gateway, removes credential tokens, a clean request leaves the machine',
+    );
+    expect(scene).not.toMatch(/subject|action|outcome|{|}/i);
+  });
+
+  it('replaces a prohibited robot-and-screen scene with the story-shaped causal fallback', () => {
+    const story =
+      'Alibaba released Qwen3.8, a mixture-of-experts model with 2.4T total parameters and 95B active per token.';
+    const safe = prepareNewsCardScene(
+      'a humanoid robot points at a glowing code panel on a dashboard',
+      story,
+    );
+
+    expect(safe).toContain('routing gate');
+    expect(safe).toContain('small cluster of expert modules');
+    expect(safe.toLowerCase()).not.toMatch(/robot|dashboard|screen|panel/);
   });
 });
 
@@ -298,18 +352,49 @@ describe('negativePrompt', () => {
     expect(neg).toContain('headline');
     expect(neg).toContain('anonymous server aisle');
     expect(neg).toContain('lone laptop on desk');
+    expect(neg).toContain('humanoid robot');
+    expect(neg).toContain('code panel');
+    expect(neg).toContain('card-soup');
+  });
+
+  it('keeps physical robots available only for literal robotics stories', () => {
+    const roboticsStory = 'Warehouse robotic arms sort physical packages on a factory line.';
+    expect(isPhysicalRoboticsStory(roboticsStory)).toBe(true);
+    expect(negativePrompt(roboticsStory)).not.toContain('humanoid robot');
+    expect(negativePrompt('An AI agent schedules tasks')).toContain('humanoid robot');
   });
 });
 
 describe('fallbackScene', () => {
-  it('picks a concrete, on-topic scene for every keyword category', () => {
-    expect(fallbackScene('Critical CVE lets attackers breach the server')).toContain('padlock');
-    expect(fallbackScene('Startup raises $200 billion in funding round')).toContain('coin');
-    expect(fallbackScene('New MCP agent orchestrates multi-step workflows')).toContain('robotic');
-    expect(fallbackScene('GPT-5 model launch benchmark results')).toContain('stage');
-    expect(fallbackScene('Run Gemma 4 as a local on-device LLM offline')).toContain('laptop');
-    expect(fallbackScene('Cut token cost and latency with this optimization')).toContain('gauge');
-    expect(fallbackScene('AI medical scan and MRI vision analysis')).toContain('lightbox');
+  it('explains a MoE model release through sparse activation rather than a launch stage', () => {
+    const scene = fallbackScene(
+      'Alibaba released Qwen3.8, a mixture-of-experts model with 2.4T parameters but only 95B active per token.',
+    );
+    expect(scene).toContain('routing gate');
+    expect(scene).toContain('small cluster of expert modules');
+    expect(scene).toContain('larger lattice remains dormant');
+    expect(scene.toLowerCase()).not.toContain('stage');
+    expect(scene.toLowerCase()).not.toMatch(/robot|screen|panel/);
+  });
+
+  it('explains agent memory through selective recall rather than a robot or dashboard', () => {
+    const scene = fallbackScene(
+      'IBM releases agent memory that selects useful rules instead of loading the full archive, cutting inference tokens.',
+    );
+    expect(scene).toContain('compact rule ledger');
+    expect(scene).toContain('few relevant metal tabs');
+    expect(scene).toContain('tall archive stays closed');
+    expect(scene.toLowerCase()).not.toMatch(/robot|dashboard|screen|panel/);
+  });
+
+  it('explains a cybersecurity attack as an altered trusted path, not a padlock cliché', () => {
+    const scene = fallbackScene(
+      'Pillar Security found Deadbugz changing MCP tool metadata to steal SSH keys after trusted calls.',
+    );
+    expect(scene).toContain('compromised metadata token');
+    expect(scene).toContain('trusted toolchain gate');
+    expect(scene).toContain('protected key compartment');
+    expect(scene.toLowerCase()).not.toMatch(/padlock|robot|screen|panel/);
   });
 
   it('uses isolation-breakout metaphor for network misconfig / post-mortem stories', () => {
@@ -322,11 +407,11 @@ describe('fallbackScene', () => {
     expect(postMortem.toLowerCase()).not.toContain('reveal stage');
   });
 
-  it('prefers cryptographic seal over model-launch stage for Mythos cryptanalysis', () => {
+  it('prefers a causal cipher fracture over a model-launch stage for Mythos cryptanalysis', () => {
     const mythos = fallbackScene(
       'Claude Mythos Preview: Early access model shows unexpected cryptanalysis capabilities',
     );
-    expect(mythos.toLowerCase()).toMatch(/padlock|cryptographic seal/);
+    expect(mythos.toLowerCase()).toContain('cipher mechanism');
     expect(mythos.toLowerCase()).not.toContain('reveal stage');
   });
 
@@ -620,6 +705,20 @@ describe('sceneBrief', () => {
     expect(scene).toContain('workstation');
     expect(source).toBe('fallback');
   });
+
+  it('directs the scene model to derive one causal claim without rendering its planning labels', () => {
+    const instruction = buildNewsCardSceneInstruction(
+      'Alibaba opens Qwen3.8 weights with 2.4T total parameters and 95B active per token.',
+      'The mixture-of-experts router makes a much larger open model practical to run.',
+    );
+    expect(instruction).toContain('SUBJECT -> ACTION -> OUTCOME');
+    expect(instruction).toContain('one concrete dominant subject performs one visible action');
+    expect(instruction).toContain('central 78% of width');
+    expect(instruction).toContain('central 64% of height');
+    expect(instruction).toContain('Do not output those labels or your reasoning');
+    expect(instruction).toContain('Ban fake UI, dashboards, screens, code panels');
+    expect(instruction).toContain('unless this item is literally about physical robotics hardware');
+  });
 });
 
 // --- Weekly Digest editorial-concept illustrations (essence → metaphor) ---
@@ -760,9 +859,14 @@ describe('weekly essence + metaphor gates', () => {
     expect(pitches[0]?.visibleMechanism).toMatch(/QA inspection/i);
     expect(pitches[0]?.visibleConsequence).toMatch(/unfinished/i);
     expect(flattenMetaphorPitch(pitches[0]!).toLowerCase()).toContain('spatial divide');
-    expect(flattenMetaphorPitch(pitches[0]!)).toContain(
+    expect(flattenMetaphorPitch(pitches[0]!)).toContain('hiding unfinished props behind a curtain');
+    expect(flattenMetaphorPitch(pitches[0]!)).not.toMatch(/story-specific anchor is/i);
+    expect(flattenMetaphorPitch(pitches[0]!)).not.toMatch(/visible cause is/i);
+    expect(flattenMetaphorPitch(pitches[0]!)).not.toContain(
       'unfinished missing-texture props exposed behind the curtain',
     );
+    expect(planningNotes(pitches[0]!).join(' ')).toMatch(/story anchor/i);
+    expect(planningNotes(pitches[0]!).join(' ')).toMatch(/QA only/i);
   });
 
   it('assigns the three independent concept lenses, including a retry subset fallback', () => {
@@ -970,6 +1074,56 @@ describe('weekly essence + metaphor gates', () => {
     );
     expect(family).toContain('sibling_motif_family_reuse');
     expect(family).not.toContain('sibling_motif_class_reuse');
+  });
+
+  it('rejects two sun-printing frames as the same subject (live weekly collapse)', () => {
+    const press = {
+      title: 'The Issue Behind the Press',
+      subject: 'A sun-printing frame exposing one large glass negative',
+      action: 'exposing every fresh sheet from the same negative',
+      setting: 'sun-printing workshop with an empty cached-print tray',
+      props: ['76-tick log', 'empty tray'],
+      composition: 'single' as const,
+      whyItFits: 'Every request writes the same prefix at full price.',
+      motifClass: 'issue_behind_the_press',
+      subjectKind: 'object' as const,
+      templateId: 'infographic-engine' as const,
+      storyAnchor: 'One glass tool-chain negative',
+      visibleMechanism: 'Each sheet gets a full exposure from the same negative',
+      visibleConsequence: 'The cached-print tray stays empty',
+    };
+    const duplicate = {
+      ...press,
+      title: 'Full Exposure, No Print Cache',
+      motifClass: 'full_exposure_no_print_cache',
+    };
+    const errors = validateMetaphorPitch(
+      duplicate,
+      semanticEssence({
+        storyContext: 'A large stable instruction prefix is retransmitted on every request.',
+        essence: 'Cache writes dominate token cost.',
+        mustFeel: 'waste',
+        forbiddenCliches: [],
+        mechanism: 'Repeated transmission of a large instruction prefix as cache-write tokens.',
+        consequence: 'Teams should audit per-turn token usage; the 85% figure is telemetry.',
+        visualThesis: 'The same negative exposes every sheet; the print cache stays empty.',
+        readerTest: 'grasp: every request pays to rewrite a stable prefix',
+      }),
+      ['cache', 'prefix'],
+      [
+        {
+          motifClass: press.motifClass,
+          subjectKind: press.subjectKind,
+          sceneSummary: `${press.subject} ${press.setting}`,
+          subject: press.subject,
+          setting: press.setting,
+          action: press.action,
+          templateId: press.templateId,
+        },
+      ],
+    );
+    expect(errors).toContain('sibling_subject_head_reuse');
+    expect(errors).not.toContain('sibling_template_reuse');
   });
 
   it('rejects diamond-vs-grinder when mechanism is an event log', () => {
@@ -1401,6 +1555,9 @@ describe('weekly essence + metaphor gates', () => {
 
     expect(scene).toContain('chain of electricity meters');
     expect(scene).toContain('Repeated model calls and tool retries');
+    expect(scene).not.toContain('the literal story context is');
+    expect(scene).not.toContain('show the physical causal process clearly');
+    expect(scene).not.toContain('make its grounded result unmistakable');
     expect(scene).not.toContain('single symbolic object under a hard editorial spotlight');
   });
 
@@ -1447,7 +1604,7 @@ describe('buildWeeklyPrompt / buildEditorialConceptPrompt', () => {
   });
 
   it('exports the editorial-concept prompt policy id', () => {
-    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-semantic-story-v5.1');
+    expect(WEEKLY_PROMPT_POLICY).toBe('weekly-semantic-story-v6');
   });
 });
 
@@ -1739,6 +1896,81 @@ describe('scene-brief registry wiring (Phase 2)', () => {
     );
     expect(seenRoles.length).toBeGreaterThanOrEqual(1);
     expect(seenRoles.every((role) => role === 'weekly.card_image_scene')).toBe(true);
+  });
+
+  it('briefs a one-card run as a causal primary direction, not a three-seat lottery', async () => {
+    process.env[FAKE_CLI_ENV_VAR] = 'token';
+    const prompts: string[] = [];
+    const replies = [
+      JSON.stringify({
+        context: 'A local request gateway removes credentials before an AI provider receives a request.',
+        meaning: 'Developers can keep secrets out of provider traffic.',
+        essence: 'A local filter removes private credentials before a model request leaves the machine.',
+        mechanism: 'The gateway separates credential fields from the outgoing request.',
+        consequence: 'The provider receives a usable request without the private credentials.',
+        visual_thesis: 'A local filter separates private credentials from a clean outgoing request.',
+        reader_test: 'See a local gateway remove secrets before the request leaves.',
+        must_feel: 'calm control',
+        forbidden_cliches: ['robot guard', 'dashboard'],
+      }),
+      JSON.stringify({
+        metaphors: [
+          {
+            lens: 'literal_context',
+            title: 'Local request filter',
+            subject: 'a compact local request gateway with one request card passing through',
+            story_anchor: 'the local request gateway beside an outbound provider connection',
+            visible_mechanism: 'a filter separates private credential fields before the request exits',
+            visible_consequence: 'the outbound request leaves clean while the private fields stay local',
+            action: 'separating private fields from an outgoing request',
+            setting: 'a quiet developer workstation with physical network hardware',
+            props: ['one request card', 'sealed local tray'],
+            composition: 'single',
+            motif_class: 'local_request_filter',
+            subject_kind: 'object',
+            why_it_fits: 'The gateway physically shows the credential-removal step and the clean result.',
+          },
+        ],
+      }),
+    ];
+    let call = 0;
+    const registry = {
+      chainForRole: () => [
+        {
+          entry: { kind: 'cli' as const, id: 'stub-primary' },
+          cli: {
+            id: 'stub-primary',
+            binary: 'stub',
+            authEnvVar: FAKE_CLI_ENV_VAR,
+            buildArgs: (prompt: string) => {
+              prompts.push(prompt);
+              return [];
+            },
+            parseEnvelope: (stdout: string) => ({ text: stdout, model: 'stub', costUsd: 0 }),
+            spawnFn: async () => ({
+              stdout: replies[call++]!,
+              stderr: '',
+              exitCode: 0,
+              spawnError: null,
+            }),
+          },
+        },
+      ],
+    };
+
+    const concepts = await weeklyReportageSceneBriefs(
+      {
+        headline: 'PrivAiTe removes credentials before model requests leave a developer machine',
+        summary: 'A local proxy strips personal data and account details from API traffic.',
+      },
+      { geminiApiKey: '', registry },
+      { count: 1 },
+    );
+
+    expect(concepts).toHaveLength(1);
+    expect(prompts[1]).toContain('single-direction editorial director');
+    expect(prompts[1]).toContain('one connected, literal cause-and-effect scene');
+    expect(prompts[1]).not.toContain('three-seat concept jury');
   });
 
   it('keeps three structurally distinct analogies instead of collapsing to semantic fallbacks', async () => {

@@ -6,30 +6,6 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-28
 
-## 2026-08-28 — Коригує три записи від 2026-08-23: зняті мертві wiki-посилання
-
-**Джерело:** `npm run wiki:check --strict` падав 5 помилками «бите посилання» на чистому
-`main`, незалежно від будь-якої іншої роботи — виявлено при підготовці PR #334.
-
-**Корекція:** три записи нижче («Корекція primary render...», «Review primary illustration...»,
-«Prompt-as-Code v6...») посилались на `pipeline/image-prompt-library.md` і
-`audits/2026-08-23-gpt-image-prompt-plan-review.md` як на wiki-посилання. Обидві сторінки були
-написані в тій сесії, але **ніколи не закомічені** (`git ls-files` — нуль збігів); лишились
-лише як untracked файли на диску разом із ~20 незакомічених змін у продакшн-коді
-(`pipeline/card-image.ts`, `src/lib/weekly-digest/*.ts` та інші — весь Prompt-as-Code v6).
-Того дня `wiki:check` проходив зелено, бо untracked файли на диску тимчасово задовольняли
-лінтер — але сам факт коміту цих сторінок так і не стався.
-
-У трьох записах нижче посилання-в-квадратних-дужках на ці дві назви замінено на звичайний
-inline-код (без квадратних дужок і круглих дужок з розширенням) — сам текст записів не
-змінено, лише синтаксис, щоб лінтер не шукав неіснуючий файл. Коли Prompt-as-Code v6 буде
-доведено до коміту (typecheck/lint/тести на всій незакомієченій роботі, не лише вікі), ці
-дві сторінки треба закомітити і повернути справжні wiki-посилання.
-
-**Не зроблено навмисно:** не комітив самі сторінки чи супутній код — це чужа незавершена
-робота (owner рішення 2026-08-28: «тільки вікі-лінк», не брати на себе непротестований код).
-(source: owner session 2026-08-28)
-
 ## 2026-08-28 — Консолідація трьох відео-папок в один репозиторій
 
 **Джерело:** запит власника — `E:\ATBvideobrief`, `E:\domains\ai-today-brief-video` і цей
@@ -83,6 +59,168 @@ inline-код (без квадратних дужок і круглих дужо
 ~300 МБ голосу/кліпів/музики закомітились напряму в історію. Той самий клас багу міг би
 повторитись і надалі без фіксу `.gitignore`.
 
+## 2026-08-28 — Admin weekly workspace hang: unfiltered generation-jobs payload + unconditional 5s poll
+
+**Джерело:** owner report "терміново, все дуже довго вантажиться" 2026-08-28, live check під
+authenticated Chrome-сесією власника (Claude in Chrome).
+
+Публічний сайт і `/admin/login` виявились швидкими ззовні (LCP 258 мс, TTFB 29 мс), прод-Supabase
+здоровий — проблема не відтворювалась, доки не зайшли в адмінку під реальною сесією власника й не
+поклацали вкладки `/admin/weekly/[id]`. Клік на Weekly Digest заморозив рендерер на 30+ секунд
+(`Page.captureScreenshot` timeout). Виміряний RSC-payload: Research/Article/Visuals/Social/PDF/Video
+по ~1.3 МБ проти ~80 КБ на Overview/Stories/Release. Причина: `GenerationJobsSection` передавала в
+`WeeklyGenerationJobsLive` увесь нефільтрований `jobs`/`attempts`/`events` випуску на всіх 6 вкладках
+замість тільки job-типів цієї вкладки; той самий необмежений набір опитувався кожні 5 секунд
+назавжди навіть на давно опублікованих випусках через `generation-status` API. Фікс: фільтрація за
+`job_type` на сервері (в компоненті і в API-роуті) + адаптивний polling 5с/30с залежно від того, чи
+є активна job.
+(source: `src/components/admin/weekly-workspace.tsx`,
+`src/components/admin/weekly-generation-jobs-live.tsx`,
+`src/app/api/admin/weekly/[id]/generation-status/route.ts`;
+[weekly-digest](pipeline/weekly-digest.md); [now](now.md))
+
+## 2026-08-26 — Visuals upload: permission denied for weekly_digest_revisions
+
+**Джерело:** owner session 2026-08-26 (після merge #329), прод-Supabase
+`mdiqfatpqczwqghwttpm` live check 2026-08-26.
+
+Body-cap фікс дійшов до Server Action, але `save_weekly_digest_artifact` падав у
+`weekly_digest_artifact_input_hash`: `select revision.*` під `security invoker`
+після column-level revoke `visual_thesis_*` → `42501 permission denied for table
+weekly_digest_revisions`. Нічого не зʼявилось у Storage artifacts. Фікс: функція
+`security definer` + явний SELECT публічних колонок; md5 payload незмінний
+(smoke authenticated = service_role). Міграцію застосовано на прод одразу.
+(source: `supabase/migrations/20260826120000_weekly_artifact_input_hash_column_privs.sql`;
+[weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
+
+## 2026-08-26 — Visuals upload: Vercel body cap → Something broke
+
+**Джерело:** owner session 2026-08-26 (Visuals tab, digest
+`71af784b-3c89-47f8-bc38-e3eae4def2a7`), прод-Supabase/Vercel live check 2026-08-26.
+
+Manual story/cover upload показував admin error boundary `Something broke` /
+`An unexpected response was received from the server`. У Storage і
+`weekly_digest_artifacts` не зʼявилось жодного `story_image`/`cover` — POST не
+доходив до Server Action (Vercel Hobby request body ~4.5 MB; великі PNG з
+генераторів). Код: клієнтське стиснення >3.5 MB → JPEG 1600×900 перед POST;
+`proxyClientMaxBodySize` узгоджено з `serverActions.bodySizeLimit`; помилки на
+картці upload замість opaque boundary. Client form не імпортує `encode-site-image`/
+sharp — розмір canvas для стиснення в `admin-upload-limits.ts`.
+(source: `src/components/admin/weekly-replacement-upload-form.tsx`;
+`src/lib/weekly-digest/admin-upload-limits.ts`; `next.config.ts`;
+[weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
+
+## 2026-08-25 — Image-only QA більше не валить чисті кадри шкалою 1/5
+
+**Джерело:** прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25, Actions
+`32787092116` (Daily visual finalizer, editorial date 2026-08-24).
+
+Перший nightly daily visual намалював primary (Seedream 5.0 Pro) і repair (Qwen Image 3 Pro),
+settled spend як `committed`, але set зупинився на `needs_visual_choice`. Image-only
+`google/gemini-2.5-flash` написав «No pixel defects found», проте віддав бали 1 (0–1) і 5
+(1–5). Промпт не казав «0–100» і все одно просив `news_legibility`; парсер гейтив
+`news_legibility >= 75` навіть при `requireStorySemantics: false`. Код: шкала в промпті,
+без `news_legibility` у image-only JSON, Likert rescale, pixel-only pass без news floor.
+(source: `src/lib/content-sim/vision-critic.ts`; `pipeline/daily-visual-qa.ts`)
+
+## 2026-08-25 — Weekly Video: #441 на Approve і waiting stills, не скрипт
+
+**Джерело:** owner session 2026-08-25 (Video tab, digest `71af784b-3c89-47f8-bc38-e3eae4def2a7`),
+прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25.
+
+`video_script` на активній ревізії вже `approved`; `video_manifest` лишається `waiting`
+через 0/3 approved Top 3 `story_image` (cover теж відсутній). Повторний Approve скрипта не
+є гейтом. Review / comment / save video / enqueue кидали голий Server Action throw →
+`Minified React error #441`. Код тепер редіректить на `?tab=…&save_error=…` (тоді ж вкладка),
+ховає Approve version на вже approved артефактах і на Video показує лінк на Visuals.
+(source: `src/app/admin/(cms)/weekly/actions.ts`; `src/lib/weekly-digest/workspace-tab.ts`;
+`src/components/admin/weekly-workspace.tsx`)
+
+## 2026-08-24 — Корекція safe visual refresh і bounded daily recovery
+
+**Джерело:** owner рішення 2026-08-24, adversarial SQL/RLS review, isolated PostgreSQL 16.15
+behavioral smoke та targeted TypeScript/Vitest checks у worktree
+`claude/gpt-image-prompt-plan-review-2ffff7`.
+
+**Коригує запис від 2026-08-24 «Daily cover production asset, safe visual refresh і
+social/analytics fences»:** private weekly refresh більше не є лише `prompt-only` робочою копією.
+Після private upload → post-upload QA → owner review AAL2 обирає точні staged cover/story assets.
+Server action byte-verify копіює їх у content-addressed immutable `social-assets` path, а одна
+fenced транзакція створює versioned pixels у вже published revision. Canonical text, SEO/OG, PDF,
+social package і `published_revision_id` не рухаються; public reader не отримує prompt, thesis,
+QA або private provenance metadata. Старий direction hash, duplicate/foreign IDs, mutable storage
+reference чи slot collision відхиляються до public DB write. (source:
+`supabase/migrations/20260824150000_weekly_visual_refresh_staged_assets.sql`;
+`supabase/migrations/20260824160000_weekly_public_artifact_metadata_privacy.sql`;
+`src/app/admin/(cms)/weekly/actions.ts`; `src/lib/digests.ts`)
+
+**Daily recovery:** якщо звичайний daily direction не створив жодного AI candidate, owner+AAL2
+може один раз запустити attempt `1`: direction + primary + два QA, без repair (максимум $0.084;
+разом із normal day не більше $0.158). First fallback і його ledger не переписуються та ніколи не
+стають automatic choice. Якщо GitHub dispatch не дійшов після durable queue, кнопка повторює лише
+dispatch того самого frozen historical date без нової reservation/paid attempt. (source:
+`supabase/migrations/20260824170000_daily_visual_direction_retry.sql`;
+`pipeline/daily-visual-finalizer.ts`; `src/lib/daily-visual/retry-state.ts`)
+
+**Перевірено:** isolated PostgreSQL smoke застосував 241500 і його behavioral test без error;
+`npm run pr:check` пройшов (205 test files / 1810 tests, coverage gate, TypeScript, ESLint без
+errors, e2e-map, wiki sync/lint і production build). (source: local verification 2026-08-24)
+
+## 2026-08-24 — Фінальна race-верифікація weekly visual refresh
+
+**Джерело:** adversarial code review + isolated PostgreSQL 16.15 smoke 2026-08-24.
+
+**Корекція:** direction update тепер під тим самим порядком lock, що й strict writer, скасовує
+`waiting/queued/dispatching/running/retry_scheduled/failed` jobs, завершує running attempts і
+позначає current prompt-set stale. Старий worker мусить збігтися з актуальним
+`visual_refresh_revision_hash` як під час save, так і перед claim; static SQL test більше не
+залежить від того, чи `pg_get_functiondef` зберіг умову з префіксом `and`.
+(source: `supabase/migrations/20260824130000_weekly_visual_refresh_draft.sql`;
+`supabase/migrations/20260824140000_weekly_visual_direction_persistence.sql`;
+`supabase/tests/20260824130000_weekly_visual_refresh_draft.sql`)
+
+**Перевірено:** на isolated PostgreSQL 16.15 обидві migration застосувалися без error; static
+tests 241300/241400 пройшли. Seed із running cover і dispatching story дав два cancelled jobs,
+два cancelled attempts, два `job_cancelled` events, stale prompt-set та чотири свіжі queued
+hash-fenced jobs; strict save зі старим hash повернув `SQLSTATE 55000`, а old-hash job не
+claim-нувся. (source: isolated PostgreSQL smoke 2026-08-24)
+
+## 2026-08-24 — Daily cover production asset, safe visual refresh і social/analytics fences
+
+**Джерело:** owner діалог 23–24.08: один «правильний» causal visual, daily як site/social asset,
+не як Telegram prompt; $5/month; manual choice не змінює live delivery; published weekly не
+редагується в місці.
+
+**Зроблено:** daily finalizer бере frozen snapshot після 20:00 Kyiv, створює один GPT Image 2
+primary + максимум один repair, зберігає fallback лише для явного owner choice і normalizes master
+в 1600×900 `contain`. Direction/image/QA paid calls резервуються до виконання під DB cap $5;
+unknown billing fail-closed. Lease/claim і direction hash не дають застарілому worker змішати
+старий кадр з новою тезою. Manual replacement дозволяє тільки official asset або editor upload і
+пише selection history. (source: owner session 2026-08-24;
+`pipeline/daily-visual-finalizer.ts`; `pipeline/daily-visual-contract.ts`;
+`supabase/migrations/20260824100000_daily_visual_workflow.sql`)
+
+**Social/analytics:** після activation daily composer готує 6 native drafts (UK Telegram/Facebook/
+Threads; EN X/LinkedIn/Instagram 5-slide carousel). Identity package містить master fingerprint;
+при зміні candidate mutable sibling posts замінюються, а publishing/posted/reconciliation не
+торкаються. Server atomic gate записує outcome тільки після matching qualified impression; raw
+URL/referrer/cursor/gaze не зберігаються. (source: `src/lib/social/daily-visual-composer.ts`;
+`src/lib/social/daily-visual-assets.ts`; `src/app/api/daily/visual-engagement/route.ts`;
+`supabase/migrations/20260824120000_daily_visual_engagement.sql`)
+
+**Weekly/UI:** master може запропонувати localized reader-facing `display_title` і private
+`visual_thesis`; canonical SEO/OG/list title лишається без змін. Для published digest є only
+private prompt-only visual refresh draft. Hero date/title тепер входять одразу, intro/standfirst
+відкривається лише через «Показати більше», а master показується повністю через contain/min-height.
+(source: `src/lib/weekly-digest/editorial-llm.ts`; `src/lib/weekly-digest/visual-refresh.ts`;
+`src/components/weekly/weekly-hero.tsx`; `src/components/daily/daily-hero.tsx`)
+
+**Wiki:** додано [daily-visual-workflow](pipeline/daily-visual-workflow.md); оновлено
+[gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [card-images](marketing/card-images.md),
+[weekly-digest](pipeline/weekly-digest.md), [now](now.md) та [index](index.md). (source: worktree
+`claude/gpt-image-prompt-plan-review-2ffff7`)
+
 ## 2026-08-23 — Корекція primary render і fail-closed semantic QA
 
 **Джерело:** завершальний adversarial review реалізації Prompt-as-Code v6 після owner-відповідей
@@ -107,14 +245,12 @@ check підтвердив видимий cover, `object-fit: contain`, відс
 
 **Wiki:** коригує попередній запис цього ж дня; оновлено
 [content-sim](pipeline/content-sim.md), [weekly-digest](pipeline/weekly-digest.md),
-`pipeline/image-prompt-library.md` (не закомічено — див. коригувальний запис 2026-08-28),
-[card-images](marketing/card-images.md),
+[image-prompt-library](pipeline/image-prompt-library.md), [card-images](marketing/card-images.md),
 [weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
 [weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
 [weekly-admin-runbook](ops/weekly-admin-runbook.md), [weekly-sandbox](ops/weekly-sandbox.md),
 [overview](overview.md), [now](now.md), [index](index.md) і
-`audits/2026-08-23-gpt-image-prompt-plan-review.md` (не закомічено — див. коригувальний
-запис 2026-08-28).
+[gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md).
 (source: owner session 2026-08-23; `src/lib/weekly-digest/generation-worker.ts`;
 `src/lib/weekly-digest/machine-attest.ts`; `src/lib/content-sim/vision-critic.ts`)
 
@@ -142,8 +278,8 @@ hero top-align, stories ідуть раніше за допоміжні блок
 story ordering і `aria-current` для `#story-2`; повний site build ще не є твердженням у цьому записі.
 (source: локальна verification 2026-08-23)
 
-**Wiki:** новий `audits/2026-08-23-gpt-image-prompt-plan-review.md` (не закомічено — див.
-коригувальний запис 2026-08-28); оновлено `pipeline/image-prompt-library.md` (те саме),
+**Wiki:** новий [gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md);
+оновлено [image-prompt-library](pipeline/image-prompt-library.md),
 [weekly-digest](pipeline/weekly-digest.md), [card-images](marketing/card-images.md),
 [weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
 [weekly-admin-runbook](ops/weekly-admin-runbook.md), [content-sim](pipeline/content-sim.md),
@@ -168,8 +304,8 @@ NOTICE MIT); `flattenMetaphorPitch` = лише renderable; policy
 через той самий асемблер (news без `infographic-engine`); house skill
 `.agents/skills/gpt-image-2-editorial`. Текст у пікселях лишається D1.
 
-**Wiki:** нова `pipeline/image-prompt-library.md` (не закомічено — див. коригувальний запис
-2026-08-28); оновлено [card-images](marketing/card-images.md), [weekly-digest](pipeline/weekly-digest.md),
+**Wiki:** нова [image-prompt-library](pipeline/image-prompt-library.md); оновлено
+[card-images](marketing/card-images.md), [weekly-digest](pipeline/weekly-digest.md),
 [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P6,
 [weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
 [weekly-admin-runbook](ops/weekly-admin-runbook.md), [overview](overview.md),
@@ -3867,5 +4003,141 @@ vitest по `src/lib/social`, `src/lib/weekly-digest`, `src/components` — **59
 апрувне його заново — саме та поведінка, яку описує runbook для правки копії після апруву.
 Тіло: 996 → 930 символів, 0 URL, 2 хештеги. Інші пʼять рядків не чіпались; розмітки
 (`**`, backticks) немає в жодному, тож нове блокування `raw_markup` нічого не ламає.
+
+---
+
+## 2026-08-24 — Закрито RPC-поверхню weekly refresh і hot path daily analytics
+
+**Джерело:** production Supabase Security Advisor після rollout PR #320.
+
+`invalidate_weekly_visual_refresh_staged_assets()` є внутрішньою `SECURITY DEFINER`
+trigger-функцією: її викликає лише trigger зміни visual direction, а не HTTP RPC.
+`machine_attest_weekly_digest_artifact()` змінює review state лише від `service_role`, але
+після перестворення функції теж успадкувала PostgreSQL `PUBLIC EXECUTE`. Міграція
+`20260824180000_revoke_weekly_visual_refresh_trigger_execute.sql` відкликає зайві grants для
+обох функцій; attester отримує вузький `service_role EXECUTE`, а trigger не має API-grant.
+Це прибирає непотрібну публічну RPC-поверхню без зміни редакційного потоку.
+
+Окрема міграція `20260824181000_daily_visual_publication_set_index.sql` додає унікальний
+індекс для одного public projection на frozen daily visual set. Він прибирає `Seq Scan` у
+гарячому lookup endpoint аналітики daily і водночас фіксує на рівні БД уже наявний контракт
+даних. Решту рекомендацій індексатора не додавали: перевірка production query plans не
+показала для них hot path. (source: Supabase Security + Performance Advisor live checks
+2026-08-24; `supabase/migrations/20260824180000_revoke_weekly_visual_refresh_trigger_execute.sql`;
+`supabase/migrations/20260824181000_daily_visual_publication_set_index.sql`)
+
+---
+
+## 2026-08-24 — Vercel: знайдено джерело Fast Origin Transfer
+
+Vercel попередив про 100% ліміту Fast Origin Transfer (10 ГБ) з ризиком авто-паузи. Живий
+замір заголовків показав, що /en/news (343 КБ) і /uk/news (390 КБ) — єдині маршрути з
+`x-vercel-cache: MISS` на кожен запит, тоді як усі інші хаби, item-сторінки й головна дають HIT.
+Причина: сторінка робить `await searchParams`, а це runtime API Next 16 — маршрут стає
+динамічним і `revalidate = 3600` ігнорується.
+
+Зроблено: CDN-кеш `s-maxage=300, stale-while-revalidate=3600` для `/:lang(en|uk)/news`,
+коротша драбина `deviceSizes`/`imageSizes` (40 КБ з 343 КБ припадало на `srcSet`; рунг 1200
+збережено, бо heroes мають слот 1160 px), і `sitemap.xml` з 1 год на 6 год (1316 URL, 943 КБ,
+~22 МБ/добу origin transfer). Попередження про Image Optimization — залишок квоти, вигорілої до
+14.08: у HTML прода нуль входжень `/_next/image`, трансформацій ми більше не робимо.
+
+Свідомо не чіпали клієнтський payload на 100 items: після кешування він майже не впливає на
+білінг, це окрема CWV-задача. (source: листи Vercel 2026-08-24; live check 2026-08-24;
+[vercel-origin-transfer](ops/vercel-origin-transfer.md); `next.config.ts`; `src/app/sitemap.ts`)
+## 2026-08-24 — Daily visual: bounded dynamic OpenRouter image route
+
+Daily renderer більше не залежить від окремого `OPENAI_API_KEY`: він використовує вже наявний
+`OPEN_ROUTER_API_KEY` і dedicated Image API. До першого paid render worker зберігає приватний
+route snapshot з конкретними model, provider endpoint, 16:9 resolution і fixed endpoint price;
+retry читає саме цей snapshot, а не поточний catalog.
+
+Новий eligible stable Pro Seedream/Qwen release може пройти як canary primary лише через existing
+semantic QA; Lite не є automatic upgrade. Якщо canary не рендериться або не проходить, repair
+використовує frozen champion; якщо repair активувався, невдалий canary не перезапускається щодня.
+Ціна без `variant` трактується як base tier endpoint, а не як ціна будь-якої resolution, тому
+вищий tier без іменованого variant не проходить у route. Catalog outage, зниклий champion, один
+route або незафіксована додаткова ціна тепер fail-closed,
+без hard-coded paid fallback. `provider.max_price.image` блокує request до dispatch при зміні ціни,
+а `usage.cost` completed response комітиться точно лише коли він не перевищує frozen price та
+reservation; інакше candidate лишається private. Retry не обійде цей gate після crash: existing
+bytes мусять мати committed exact reservation. Routine fallback established champion не змінює
+global champion; лише canary pass/rollback впливає на наступний route. (source: owner decision
+2026-08-24;
+[OpenRouter Image Generation API](https://openrouter.ai/docs/guides/overview/multimodal/image-generation);
+ [OpenRouter Provider Routing](https://openrouter.ai/docs/guides/routing/provider-selection);
+`pipeline/daily-visual-openrouter.ts`; `pipeline/daily-visual-finalizer.ts`)
+
+---
+
+## 2026-08-24 — Daily visual: crash-safe duplicate reservation quarantine
+
+Повторний worker, який бачить exact `reservation_exists`, не може ані повторно відправити paid
+provider request, ані назавжди залишити slot у generic `reserved`: він атомарно переводить його в
+`held_for_reconcile`. Якщо race означає, що інший worker уже settle-нув row, повтор однаково
+зупиняється на manual choice без render. Це консервативно зберігає потенційну вартість у $5 ledger
+до owner reconciliation, замість допускати непідтверджений другий charge. Regression test покриває
+обидва outcomes SQL row lock (`true` і already-settled `false`). (source:
+`pipeline/daily-visual-finalizer.ts`; `pipeline/daily-visual-finalizer.test.ts`;
+`supabase/migrations/20260824100000_daily_visual_workflow.sql`)
+
+---
+
+## 2026-08-24 — Vercel: заголовок кешу не спрацював, /news переведено на статику
+
+Фікс із попереднього запису (Cache-Control через headers()) **на проді не працює**: /en/news далі
+віддавав private, no-cache, no-store і X-Vercel-Cache: MISS. Next перекриває цей заголовок для
+динамічно відрендереного маршруту. Мертве правило прибрано.
+
+Справжній фікс: /[lang]/news більше не читає searchParams і став prerendered (build-маркер
+● SSG замість ƒ Dynamic, Cache-Control: s-maxage=3600, x-nextjs-prerender: 1), а пошук переїхав
+на власний динамічний маршрут /[lang]/news/search — noindex, follow, канонікал на /news, ті самі
+server-side результати. Усі 9 внутрішніх ?q=-посилань переведено, старі ловить 308-редірект.
+Перевірено на локальному production-білді: хаб віддає 13 карток і 100 посилань у HTML, пошук
+дає 68 результатів на «cursor», перехід за trending-посиланням і повторний пошук працюють.
+
+Записано також три способи лишити ?q= на статичному хабі, які НЕ працюють у prod-білді
+(Suspense з тим самим компонентом у fallback, React-контекст, читання window.location.search),
+щоб наступного разу не заходити на це коло. Штатний механізм — Cache Components, окрема
+міграція. Скорочення стрічки 100 → 40 заміряно (−21% en / −24% uk) і визнано непотрібним після
+переходу на статику. (source: live check прода 2026-08-24; production-білд локально;
+[vercel-origin-transfer](ops/vercel-origin-transfer.md); next.config.ts;
+src/app/[lang]/news/search/page.tsx)
+
+---
+
+## 2026-08-24 — Vercel: фікс origin transfer підтверджено на проді
+
+Після мержу #325 перевірено на живому Vercel, а не лише на локальному білді: /en/news віддає
+X-Vercel-Cache: PRERENDER на першому запиті й HIT на повторному, /uk/news — PRERENDER,
+Cache-Control більше не private/no-store. /en/news?q=cursor дає 308 на /en/news/search?q=cursor,
+сама сторінка пошуку — 200 з noindex, follow, канонікалом на хаб і робочими результатами.
+Вміст хабу в HTML не постраждав: 13 карток і 100 посилань. Клік по trending-посиланню з хабу
+soft-навігує на /news/search і дає 80 результатів.
+
+Тобто дві найважчі сторінки сайту більше не доходять до origin на кожен запит — причина
+вичерпання Fast Origin Transfer усунена. Скільки це дасть у ГБ, буде видно на наступному циклі
+білінгу. (source: live check прода 2026-08-24 після деплою #325;
+[vercel-origin-transfer](ops/vercel-origin-transfer.md))
+
+---
+
+## 2026-08-28 — Video tab: duration bound розширено + auto-fetch з YouTube
+
+Owner не міг зберегти в адмінці валідне 313-секундне відео — `saveWeeklyVideo` кидав
+`Weekly YouTube duration must be an integer between 300 and 600 seconds.` Сам діапазон
+300–600с (5–10 хв) блокером не був (313с усередині нього); справжня причина — поле
+**Duration (seconds)** було суто ручним, без жодної підказки при порожньому значенні:
+`optionalNumber()` повертає `null`, і це падає в ту саму загальну помилку діапазону
+незалежно від того, чи поле порожнє, чи там нецілий рядок, чи справді число поза межами.
+
+Два коміти в одній гілці: (1) розширено діапазон до 200–1200с (ціле число, форма правила
+не змінена) у server action, у валідаторі `weekly-video-result-v2` та в `min`/`max` поля
+форми; (2) додано `fetchYouTubeDurationSeconds()` — коли поле лишили порожнім, server
+action тепер сам витягує `"lengthSeconds":"(\d+)"` із публічної `watch?v=`-сторінки (без
+YouTube Data API ключа) і використовує це значення; ручне введення й далі має пріоритет
+як override. (source: owner report 2026-08-28; PR #331;
+[weekly-digest § Video tab: duration bound widened + auto-fetch](pipeline/weekly-digest.md#video-tab-duration-bound-widened--auto-fetch-2026-08-28);
+`src/app/admin/(cms)/weekly/actions.ts`; `src/lib/weekly-digest/video.ts`)
 
 ---

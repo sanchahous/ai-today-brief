@@ -5,6 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Json } from '@/lib/database.types';
 import { getSupabase } from '@/lib/supabase';
 import { LANGS, type Lang } from '@/lib/site';
+import { weeklyRevisionTitlePresentation } from '@/lib/weekly-digest/display-title';
 import { normalizeYouTubeVideo } from '@/lib/weekly-digest/video';
 
 interface WeeklySnapshot {
@@ -41,6 +42,8 @@ interface WeeklyRevisionRow {
   revision_number: number;
   title_en: string;
   title_uk: string;
+  display_title_en: string | null;
+  display_title_uk: string | null;
   intro_en: string | null;
   intro_uk: string | null;
   editor_note_en: string | null;
@@ -91,7 +94,6 @@ interface WeeklyArtifactRow {
   height: number | null;
   duration_seconds: number | null;
   content: Json | null;
-  metadata: Json | null;
   published_at: string | null;
   updated_at: string;
 }
@@ -173,6 +175,8 @@ export interface WeeklyDigestView {
   slug: string;
   weekStart: string;
   weekEnd: string;
+  /** Concise, locale-specific title for the hero only; canonical title stays below. */
+  displayTitle: string;
   title: string;
   seoTitle: string;
   metaDescription: string;
@@ -418,17 +422,14 @@ function imageFromArtifact(
   const url = artifactUrl(db, artifact);
   if (!url) return null;
   const content = asRecord(artifact.content);
-  const metadata = asRecord(artifact.metadata);
   return {
     url,
     alt:
       stringValue(content[lang === 'uk' ? 'alt_uk' : 'alt_en']) ??
       stringValue(content.alt) ??
-      stringValue(metadata[lang === 'uk' ? 'alt_uk' : 'alt_en']) ??
-      stringValue(metadata.alt) ??
       fallbackAlt,
-    width: artifact.width ?? numberValue(metadata.width) ?? 1200,
-    height: artifact.height ?? numberValue(metadata.height) ?? 630,
+    width: artifact.width ?? 1200,
+    height: artifact.height ?? 630,
   };
 }
 
@@ -444,23 +445,18 @@ function videoFromArtifacts(
   if (!youtubeUrl) return null;
   const normalizedVideo = normalizeYouTubeVideo(youtubeUrl);
   if (!normalizedVideo) return null;
-  const metadata = asRecord(artifact.metadata);
   const youtubeId = normalizedVideo.videoId;
   const thumbnailArtifact = localizedArtifact(artifacts, 'thumbnail', lang);
   const thumbnailUrl =
     (thumbnailArtifact ? artifactUrl(db, thumbnailArtifact) : null) ??
     httpUrl(stringValue(content.thumbnail_url)) ??
-    httpUrl(stringValue(metadata.thumbnail_url)) ??
     normalizedVideo.thumbnailUrl;
   return {
     youtubeUrl: normalizedVideo.watchUrl,
     youtubeId,
     thumbnailUrl,
-    durationSeconds:
-      artifact.duration_seconds ??
-      numberValue(content.duration_seconds) ??
-      numberValue(metadata.duration_seconds),
-    uploadedAt: stringValue(metadata.uploaded_at) ?? artifact.published_at,
+    durationSeconds: artifact.duration_seconds ?? numberValue(content.duration_seconds),
+    uploadedAt: artifact.published_at,
   };
 }
 
@@ -496,7 +492,7 @@ async function readPublishedRevision(
   const { data } = await db
     .from('weekly_digest_revisions')
     .select(
-      'id,weekly_digest_id,revision_number,title_en,title_uk,intro_en,intro_uk,editor_note_en,editor_note_uk,key_takeaways_en,key_takeaways_uk,created_at',
+      'id,weekly_digest_id,revision_number,title_en,title_uk,display_title_en,display_title_uk,intro_en,intro_uk,editor_note_en,editor_note_uk,key_takeaways_en,key_takeaways_uk,created_at',
     )
     .eq('id', revisionId)
     .maybeSingle();
@@ -511,7 +507,7 @@ async function readPublishedArtifacts(
   const { data, error } = await db
     .from('weekly_digest_artifacts')
     .select(
-      'id,weekly_digest_id,revision_id,revision_item_id,artifact_type,locale,slot_key,is_current,generation_status,review_status,external_url,storage_bucket,storage_path,provider_id,width,height,duration_seconds,content,metadata,published_at,updated_at',
+      'id,weekly_digest_id,revision_id,revision_item_id,artifact_type,locale,slot_key,is_current,generation_status,review_status,external_url,storage_bucket,storage_path,width,height,duration_seconds,content,published_at,updated_at',
     )
     .eq('weekly_digest_id', digestId)
     .eq('revision_id', revisionId)
@@ -587,6 +583,7 @@ async function readLegacyDigest(
     slug: digest.slug,
     weekStart: digest.week_start,
     weekEnd: addDays(digest.week_start, 6),
+    displayTitle: pick(lang, digest.title_en, digest.title_uk),
     title: pick(lang, digest.title_en, digest.title_uk),
     seoTitle: pick(lang, digest.title_en, digest.title_uk),
     metaDescription: pick(lang, digest.intro_en, digest.intro_uk),
@@ -636,7 +633,7 @@ const getWeeklyDigestCached = cache(
     ]);
     if (!revision || revisionItems.error || !artifacts) return null;
 
-    const title = pick(lang, revision.title_en, revision.title_uk);
+    const { canonicalTitle: title, displayTitle } = weeklyRevisionTitlePresentation(lang, revision);
     const rows = (revisionItems.data as WeeklyRevisionItemRow[] | null) ?? [];
     const items = rows.map((item): WeeklyDigestItemView => {
       const itemTitle = pick(lang, item.title_en, item.title_uk);
@@ -681,6 +678,7 @@ const getWeeklyDigestCached = cache(
       slug: digest.slug,
       weekStart: digest.week_start,
       weekEnd: digest.week_end ?? addDays(digest.week_start, 6),
+      displayTitle,
       title,
       seoTitle: article.seoTitle ?? title,
       metaDescription: article.metaDescription ?? article.standfirst ?? intro ?? title,
@@ -699,14 +697,15 @@ const getWeeklyDigestCached = cache(
       publishedAt: digest.published_at,
       // Latest of: revision creation, digest row update (post-release edits),
       // and artifact updates — so dateModified never goes backwards.
-      modifiedAt: [
-        revision.created_at,
-        'updated_at' in digest ? digest.updated_at : undefined,
-        ...artifacts.map((a) => a.updated_at),
-      ]
-        .filter((v): v is string => Boolean(v))
-        .sort()
-        .at(-1) ?? revision.created_at,
+      modifiedAt:
+        [
+          revision.created_at,
+          'updated_at' in digest ? digest.updated_at : undefined,
+          ...artifacts.map((a) => a.updated_at),
+        ]
+          .filter((v): v is string => Boolean(v))
+          .sort()
+          .at(-1) ?? revision.created_at,
       cover,
       hasPdf,
       video,

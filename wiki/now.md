@@ -2,8 +2,11 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…22, Content Sim,
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…26, Content Sim,
 Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22,
+Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
+first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
+Visuals upload body cap 2026-08-26, admin weekly workspace hang fix 2026-08-28,
 консолідація трьох відео-папок в один репозиторій 2026-08-28
 Last updated: 2026-08-28
 
@@ -38,6 +41,101 @@ Last updated: 2026-08-28
   після підтвердженого копіювання. Деталі й повна мапа перенесених сторінок —
   [pipeline/video-boundary](pipeline/video-boundary.md).
   (source: dedup-звірка + robocopy 2026-08-28, `git filter-repo` на `ai-today-brief-video`)
+
+- **Адмінка «зависає» на Weekly Digest — знайдено і виправлено (2026-08-28).** Власник
+  повідомив: сайт і адмінка дуже довго вантажаться, терміново. Публічний сайт і
+  `/admin/login` виявились швидкими ззовні; причину знайдено лише зайшовши в адмінку під
+  реальною авторизованою сесією власника (Claude in Chrome) і покликавши по вкладках
+  `/admin/weekly/[id]` — клік на Weekly Digest заморозив рендерер на 30+ секунд. Причина:
+  6 із 9 вкладок (Research/Article/Visuals/Social/PDF/Video) віддавали ~1.3 МБ RSC-payload
+  замість ~80 КБ, бо `GenerationJobsSection` передавала в `WeeklyGenerationJobsLive` **весь**
+  нефільтрований jobs/attempts/events випуску, а не тільки job-типи цієї вкладки; той самий
+  необмежений набір ще й опитувався кожні 5 секунд назавжди, навіть на давно опублікованих
+  випусках. Фікс: фільтрація за job_type і на сервері (`weekly-workspace.tsx`), і в
+  `generation-status` API, плюс адаптивний polling — 5с тільки поки щось активне, інакше 30с.
+  (source: live check під owner-сесією 2026-08-28;
+  [weekly-digest § Generation jobs panel](pipeline/weekly-digest.md#generation-jobs-panel-13-мб-нефільтрований-payload-на-6-вкладках-безумовний-5s-poll-2026-08-28))
+
+- **Visuals upload: permission denied → фікс на прод-БД (2026-08-26).** Після #329
+  upload доходив до RPC, але `weekly_digest_artifact_input_hash` валив
+  `permission denied for table weekly_digest_revisions` (column revoke
+  `visual_thesis_*` + `select revision.*` під invoker). Міграція
+  `20260826120000_weekly_artifact_input_hash_column_privs` уже на проді —
+  **можна знову заливати stills** на `ai-weekly-2026-08-16`. Далі: 3 Top 3 + cover →
+  Approve → Video manifest.
+  (source: прод live check 2026-08-26; [weekly-digest](pipeline/weekly-digest.md))
+
+- **Visuals upload body cap (2026-08-26), змержено як
+  [#329](https://github.com/sanchahous/ai-today-brief/pull/329).** Великі PNG раніше
+  не доходили до Function (~4.5 MB Hobby). Форма стискає >3.5 MB → JPEG 1600×900;
+  `proxyClientMaxBodySize` = 13mb.
+  (source: [weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
+
+- **Перший nightly daily visual (2026-08-25), змержено як
+  [#327](https://github.com/sanchahous/ai-today-brief/pull/327).** Set `2026-08-24`
+  (`acc50caa-dbaf-45bc-958d-c194d32ed57a`) дійшов до `needs_visual_choice`. Seedream 5.0 Pro
+  primary і Qwen Image 3 Pro repair записались (1600×900 WebP), бюджетні reservation
+  `committed` з `actual_cost` (direction $0.000926, primary $0.045, repair $0.040, два QA
+  по $0.000863). Image-only Gemini Flash написав «No pixel defects found», але поставив
+  `overall`/`news_legibility` як 1 або 5 замість 0–100; парсер далі вимагав
+  `news_legibility >= 75`, тож обидва кандидати впали з
+  `primary_and_repair_failed_semantic_qa` і story-aware QA навіть не стартував. Фікс:
+  image-only промпт вимагає шкалу 0–100 і більше не містить `news_legibility`; парсер
+  rescale-ить 0–1 / 1–5 і не гейтить pixel-only по news floor. 24 Aug лишається на ручний
+  вибір у `/admin/daily-visuals` — нічний джоб той самий set не перегенерує.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25,
+  Actions `32787092116`; `src/lib/content-sim/vision-critic.ts`;
+  [daily-visual-workflow](pipeline/daily-visual-workflow.md))
+
+- **Weekly Video: Approve дає React #441, манифест чекає stills (2026-08-25), змержено як
+  [#328](https://github.com/sanchahous/ai-today-brief/pull/328).** На `ai-weekly-2026-08-16`
+  (`71af784b-3c89-47f8-bc38-e3eae4def2a7`) `video_script` уже `approved`; `video_manifest` у
+  `waiting` з «Waiting for approved Top 3 story images: 0/3» — на ревізії немає
+  `story_image`/`cover`. Повторний Approve скрипта не зрушує job. Голий throw із
+  review/save/enqueue Server Action рендерився як `Minified React error #441`; тепер
+  редірект на ту саму вкладку з `?save_error=…`, кнопка Approve version ховається коли
+  артефакт уже `approved`, а Video-панель лінкує на Visuals. Наступний крок власника:
+  Visuals → згенерувати/залити й затвердити 3 Top 3 stills (+ ready cover), не
+  регенерувати скрипт.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` live check 2026-08-25;
+  [weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
+
+- **Daily visual workflow + safe weekly visual refresh (2026-08-24), PR #320 worktree
+  `claude/gpt-image-prompt-plan-review-2ffff7`.** Daily тепер має бути реальним production
+  visual asset, а не Telegram prompt: frozen daily snapshot після 20:00 Kyiv, одна issue-level
+  `display_title` + private `visual_thesis`, OpenRouter Image primary/optional repair, semantic QA,
+  manual source/editor replacement, шість native social drafts і privacy-safe qualified exposure
+  telemetry. **Уточнення 2026-08-24:** renderer переходить на dedicated OpenRouter Image API:
+  frozen route (model + pinned provider + resolution + fixed endpoint price) перед paid call,
+  exact `usage.cost` settlement і dynamic Seedream/Qwen canary → QA → champion замість
+  непрозорого `auto`/`latest`
+  ([PR #323](https://github.com/sanchahous/ai-today-brief/pull/323), гілка `codex/daily-visual-openrouter`,
+  live-перевірено проти каталогу OpenRouter 2026-08-24: bootstrap Seedream 5.0 Pro 1K $0.045 +
+  Qwen Image 3 Pro 1K $0.040 repair). Monthly cap $5 fail-closed для paid calls; новини лишають existing automatic image
+  provider, але з causal prompt. Published weekly не змінюється: **Create visual refresh draft**
+  створює private working revision, де можна задати короткий hero/PDF `display_title`, internal
+  visual direction, staged replacement cover/story assets і після QA/AAL2 owner review застосувати
+  лише явно вибрані pixels як нові artifact versions source revision. Public SEO/OG/text/PDF/social
+  і `published_revision_id` лишаються immutable, а anonymous renderer не бачить prompt/QA/provenance
+  metadata. Перед rollout потрібні deploy міграцій і configured provider credentials/spend alert;
+  backfill старих daily/news не виконується автоматично.
+  (source: owner session 2026-08-23/24; [daily-visual-workflow](pipeline/daily-visual-workflow.md);
+  `pipeline/card-image.ts`; `supabase/migrations/20260824100000_daily_visual_workflow.sql`)
+
+- **Review промптів і weekly experience (2026-08-23), робоча копія для
+  `claude/gpt-image-prompt-plan-review-2ffff7`.** Owner-скріни дайджесту
+  `71af784b-3c89-47f8-bc38-e3eae4def2a7` підтвердили три незалежні дефекти: planning-prose
+  та три lottery concepts замість одного пояснювального primary prompt, semantic mismatch після
+  upload без надійного owner warning, і crop/layout, що ховав зміст картинки й Story 1. Тепер
+  `prompt_only` і production `render` беруть один 6-block cause-and-effect кандидат
+  (`weekly-semantic-story-v6`), планування не потрапляє у renderable fields, clean story upload має
+  другий story-aware QA pass і жоден active QA blocker або відсутній semantic pass не
+  auto-attest-иться. Public weekly показує 16:9 safe-frame і поруч на desktop compact title +
+  top-aligned cover, stories перед допоміжними блоками та active ToC. Після merge: перегенерувати лише
+  `story_prompt_set` на цьому дайджесті, згенерувати/завантажити один primary кадр і перевірити
+  його у Visuals; master rewrite не потрібен.
+  (source: owner session 2026-08-23; [gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md);
+  `pipeline/card-image.ts`; `src/lib/weekly-digest/run-post-upload-qa.ts`)
 
 - **Fix remaining issues переписував статтю з нуля (2026-08-22), гілка
   `fix/weekly-fix-remaining-reuse-copy`.** Після мержу #318 власник знову натиснув
@@ -674,9 +772,10 @@ Last updated: 2026-08-28
   рендерить. Картинки **новин** лишаються авто-FLUX. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
   (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P3,
   `pipeline/daily-cover-prompt.ts`, `pipeline/notify.ts`)
-- **B3 — N/3 промпти готові на Visuals (2026-08-15).** Біля кожної story: `2/3 промпти готові · немає consequence` (або `фолбек: mechanism`). Дані з `story_prompt_set` (лінзи + `sceneSource` журі) або з metadata `story_image` у режимі `render`. Cover не чіпали. Вага гейта без змін. `WEEKLY_CONTENT_STUDIO_V2=off` без змін.
-  (source: [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) B3,
-  `src/lib/weekly-digest/story-prompt-set.ts`)
+- **B3 — prompt readiness на Visuals (superseded 2026-08-23).** Нова `prompt_only` story показує
+  `1/1 основний промпт готовий` і, за потреби, `фолбек: …`. Історичний `N/3` лишається лише для
+  старих multi-prompt artifacts або explicit `render` experiment. Вага release gate без змін.
+  (source: `src/lib/weekly-digest/story-prompt-set.ts`; [gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md))
 - **M3 — preflight веде до промпту, не до Regenerate (2026-08-15).**
   `story_image` / `cover` `artifact_missing`: Visuals → скопіюй промпт → згенеруй у своєму
   інструменті → завантаж файл. Вага гейта не змінена — зображення лишається обовʼязковим.

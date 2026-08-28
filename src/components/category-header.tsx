@@ -37,7 +37,7 @@ export function CategoryHeader({ lang, hub }: { lang: Lang; hub: CategoryHubView
             {hub.subtopics.map((st) => (
               <Link
                 key={st}
-                href={`/${lang}/news?q=${encodeURIComponent(st)}`}
+                href={`/${lang}/news/search?q=${encodeURIComponent(st)}`}
                 className="cat-chip rounded-pill bg-surface text-text hover:border-accent border px-3 py-1 text-[0.8rem] no-underline transition"
                 style={catStyle}
               >

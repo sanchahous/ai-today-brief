@@ -19,13 +19,19 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   const { id } = await context.params;
   if (!UUID.test(id)) return NextResponse.json({ error: 'invalid_digest_id' }, { status: 400 });
   const after = eventCursor(request.nextUrl.searchParams.get('after'));
+  const jobTypes = (request.nextUrl.searchParams.get('jobTypes') ?? '')
+    .split(',')
+    .map((type) => type.trim())
+    .filter(Boolean);
   const db = getSupabaseAdmin();
-  const jobsResult = await db
+  let jobsQuery = db
     .from('weekly_digest_generation_jobs')
     .select('*')
     .eq('weekly_digest_id', id)
     .order('created_at', { ascending: false })
     .limit(50);
+  if (jobTypes.length > 0) jobsQuery = jobsQuery.in('job_type', jobTypes);
+  const jobsResult = await jobsQuery;
   if (jobsResult.error) {
     return NextResponse.json({ error: 'generation_status_unavailable' }, { status: 503 });
   }
@@ -47,12 +53,14 @@ export async function GET(request: NextRequest, context: { params: Promise<{ id:
   // A small cross-digest success sample lets the panel render a p50–p95 ETA
   // for the same job/provider/model without making a client request for every
   // row. It contains only timestamps and model identity, never prompts/text.
-  const historicalJobsResult = await db
+  let historicalJobsQuery = db
     .from('weekly_digest_generation_jobs')
     .select('id,job_type')
     .eq('status', 'succeeded')
     .order('finished_at', { ascending: false })
     .limit(250);
+  if (jobTypes.length > 0) historicalJobsQuery = historicalJobsQuery.in('job_type', jobTypes);
+  const historicalJobsResult = await historicalJobsQuery;
   const historicalJobIds = (historicalJobsResult.data ?? []).map((job) => job.id);
   const historicalJobTypes = new Map(
     (historicalJobsResult.data ?? []).map((job) => [job.id, job.job_type]),

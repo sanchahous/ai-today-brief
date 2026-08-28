@@ -26,8 +26,12 @@ export async function encodeSiteWebp(
   return sharp(bytes)
     .rotate()
     .resize(options.width, options.height, {
-      fit: 'cover',
+      // A weekly illustration's semantic anchor can sit near an edge. Keeping
+      // the whole source on a branded 16:9 canvas is safer than silently
+      // discarding it with a second crop after the image model has composed it.
+      fit: 'contain',
       position: options.position ?? 'attention',
+      background: SITE_IMAGE_FLAT_BG,
     })
     .flatten({ background: SITE_IMAGE_FLAT_BG })
     .webp({ quality: SITE_IMAGE_QUALITY, effort: 4 })

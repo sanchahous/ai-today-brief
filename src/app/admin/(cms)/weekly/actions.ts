@@ -9,6 +9,7 @@ import type { Json } from '@/lib/database.types';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { recordGenerationCost } from '@/lib/generation-costs';
+import { revalidateSiteSurfaces } from '@/lib/revalidate-site';
 import {
   encodeSiteWebp,
   SITE_IMAGE_CONTENT_TYPE,
@@ -28,15 +29,32 @@ import {
   weeklyDigestTriggerDateForManualCreate,
 } from '@/lib/social/schedule';
 import { weeklyRevisionContentErrorMessage } from '@/lib/weekly-digest/editorial-validation';
+import {
+  weeklyVisualDirection,
+  weeklyVisualDirectionErrorMessage,
+} from '@/lib/weekly-digest/visual-direction';
 import { contentStudioVideoManifestKey } from '@/lib/weekly-digest/content-studio-queue';
 import { videoScriptFromArtifactContent } from '@/lib/weekly-digest/video-script-content';
 import { backendForGenerationJob } from '@/lib/weekly-digest/generation-control';
-import { dispatchQueuedWeeklyGenerationJob } from '@/lib/weekly-digest/github-dispatch';
+import {
+  dispatchQueuedWeeklyGenerationJob,
+  isRetryableGithubDispatchError,
+} from '@/lib/weekly-digest/github-dispatch';
+import {
+  WEEKLY_ARTIFACT_UPLOAD_MAX_BYTES,
+} from '@/lib/weekly-digest/admin-upload-limits';
+import {
+  weeklyWorkspaceTabForArtifactType,
+  weeklyWorkspaceTabForJobType,
+  weeklyWorkspaceTabFromFormValue,
+  type WeeklyWorkspaceErrorTab,
+} from '@/lib/weekly-digest/workspace-tab';
 import {
   retryWeeklyContentStudio,
   weeklyContentStudioMode,
 } from '@/lib/weekly-digest/orchestrator';
 import {
+  fetchYouTubeDurationSeconds,
   normalizeYouTubeVideo,
   validateWeeklyVideoResultManifest,
 } from '@/lib/weekly-digest/video';
@@ -47,7 +65,11 @@ import {
   type PostUploadQa,
 } from '@/lib/weekly-digest/post-upload-qa';
 import { rebuildWeeklySelection } from '@/lib/weekly-digest/rebuild-selection';
-import { reviewUploadedImage } from '@/lib/weekly-digest/run-post-upload-qa';
+import {
+  reviewUploadedImage,
+  type PostUploadQaStoryContext,
+} from '@/lib/weekly-digest/run-post-upload-qa';
+import { parseStoryPromptSetContent } from '@/lib/weekly-digest/story-prompt-set';
 import {
   applyOwnerFeedbackToImageMetadata,
   applyOwnerFeedbackToPromptSet,
@@ -57,6 +79,11 @@ import {
   type OwnerConceptFeedback,
 } from '@/lib/weekly-digest/owner-feedback';
 import { COVER_PROMPT_SLOT } from '@/lib/weekly-digest/story-prompt-job';
+import {
+  isWeeklyVisualRefreshPromptJobType,
+  isWeeklyVisualRefreshRevision,
+  weeklyVisualRefreshDirectionHref,
+} from '@/lib/weekly-digest/visual-refresh';
 import { USE_LATEST_REVISION_REASON } from '@/lib/weekly-digest/master-persist';
 import { carryOverOrphanedQualityReport } from '@/lib/weekly-digest/quality-report-carryover';
 import {
@@ -65,6 +92,10 @@ import {
   qualityReportForbidsApprove,
 } from '@/lib/weekly-digest/machine-attest';
 import { buildHallucinationBoard } from '@/lib/weekly-digest/hallucination-board';
+import {
+  VISUAL_REFRESH_PUBLIC_ASSET_BUCKET,
+  weeklyVisualRefreshPublicAssetPath,
+} from '@/lib/weekly-digest/visual-refresh-public-path';
 
 function requiredString(formData: FormData, key: string) {
   const value = formData.get(key);
@@ -75,6 +106,11 @@ function requiredString(formData: FormData, key: string) {
 function optionalString(formData: FormData, key: string) {
   const value = formData.get(key);
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function trimmedOrUndefined(value: string | null | undefined) {
+  const trimmed = value?.trim();
+  return trimmed || undefined;
 }
 
 /**
@@ -308,27 +344,101 @@ async function fetchPromptSetOwnerFeedback(input: {
   return ownerFeedbackFromPromptSet(data?.content);
 }
 
+async function loadPostUploadQaStoryContext(input: {
+  weeklyDigestId: string;
+  revisionId: string;
+  revisionItemId: string | null;
+  artifactType: string;
+}): Promise<PostUploadQaStoryContext | undefined> {
+  // A cover explains the issue as a whole; the precise three-second semantic
+  // check belongs to a story image, where one primary direction has one
+  // authoritative source story. Covers keep the existing pixel-only QA.
+  if (input.artifactType !== 'story_image') return undefined;
+  if (!input.revisionItemId) {
+    throw new Error('Story-aware QA requires a revision item.');
+  }
+  const admin = getSupabaseAdmin();
+  const [itemResult, promptResult] = await Promise.all([
+    admin
+      .from('weekly_digest_revision_items')
+      .select('title_en,summary_en,why_en,practical_en,takeaway_en,source_snapshot')
+      .eq('id', input.revisionItemId)
+      .eq('revision_id', input.revisionId)
+      .maybeSingle(),
+    admin
+      .from('weekly_digest_artifacts')
+      .select('content')
+      .eq('weekly_digest_id', input.weeklyDigestId)
+      .eq('revision_id', input.revisionId)
+      .eq('revision_item_id', input.revisionItemId)
+      .eq('artifact_type', 'story_prompt_set')
+      .eq('is_current', true)
+      .maybeSingle(),
+  ]);
+  if (itemResult.error || !itemResult.data) {
+    const reason = itemResult.error?.message ?? 'story revision item was not found';
+    console.error('[weekly-upload-qa] load story context failed', reason);
+    throw new Error(`Story-aware QA context unavailable: ${reason}`);
+  }
+  if (promptResult.error) {
+    console.error('[weekly-upload-qa] load prompt context failed', promptResult.error.message);
+  }
+  const promptSet = parseStoryPromptSetContent(promptResult.data?.content);
+  const primary = promptSet?.prompts[0];
+  const contract = promptSet?.semanticContract;
+  const contentStudio = jsonRecord(jsonRecord(itemResult.data.source_snapshot).content_studio);
+  return {
+    headline: itemResult.data.title_en,
+    summary: trimmedOrUndefined(itemResult.data.summary_en),
+    why: trimmedOrUndefined(itemResult.data.why_en),
+    practical: trimmedOrUndefined(itemResult.data.practical_en),
+    limitation:
+      typeof contentStudio.limitation_en === 'string'
+        ? trimmedOrUndefined(contentStudio.limitation_en)
+        : undefined,
+    takeaway: trimmedOrUndefined(itemResult.data.takeaway_en),
+    storyContext: contract?.storyContext,
+    meaning: contract?.meaning,
+    essence: contract?.essence,
+    mechanism: contract?.mechanism,
+    consequence: contract?.consequence,
+    visualThesis: contract?.visualThesis,
+    readerTest: contract?.readerTest,
+    scene: primary?.scene ?? primary?.canonical,
+    policyId: promptSet?.policy ?? 'weekly-semantic-story-v6',
+  };
+}
+
 function schedulePostUploadQa(input: {
   artifactId: string;
   weeklyDigestId: string;
+  revisionId: string;
+  revisionItemId: string | null;
+  artifactType: string;
   bytes: Buffer;
   mimeType: string;
 }) {
-  after(() =>
-    reviewUploadedImage({ bytes: input.bytes, mimeType: input.mimeType })
-      .then((qa) => persistPostUploadQa(input.artifactId, input.weeklyDigestId, qa))
-      .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : String(error);
-        return persistPostUploadQa(input.artifactId, input.weeklyDigestId, {
-          blockers: [],
-          scores: {},
-          model: null,
-          cost_usd: 0,
-          checked_at: new Date().toISOString(),
-          error: message.slice(0, 240),
-        });
-      }),
-  );
+  after(async () => {
+    try {
+      const storyContext = await loadPostUploadQaStoryContext(input);
+      const qa = await reviewUploadedImage({
+        bytes: input.bytes,
+        mimeType: input.mimeType,
+        storyContext,
+      });
+      await persistPostUploadQa(input.artifactId, input.weeklyDigestId, qa);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      await persistPostUploadQa(input.artifactId, input.weeklyDigestId, {
+        blockers: [],
+        scores: {},
+        model: null,
+        cost_usd: 0,
+        checked_at: new Date().toISOString(),
+        error: message.slice(0, 240),
+      });
+    }
+  });
 }
 
 function weeklyRevisionTab(formData: FormData) {
@@ -350,6 +460,64 @@ function redirectWeeklyVisualsError(weeklyDigestId: string, message: string): ne
   redirect(
     `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=visuals&save_error=${encodeURIComponent(message.slice(0, 500))}`,
   );
+}
+
+function isNextRedirectError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'digest' in error &&
+    typeof (error as { digest: unknown }).digest === 'string' &&
+    (error as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+  );
+}
+
+function redirectWeeklyWorkspaceError(
+  weeklyDigestId: string,
+  tab: WeeklyWorkspaceErrorTab,
+  message: string,
+): never {
+  redirect(
+    `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=${tab}&save_error=${encodeURIComponent(message.slice(0, 500))}`,
+  );
+}
+
+function failWeeklyWorkspace(
+  weeklyDigestId: string,
+  tab: WeeklyWorkspaceErrorTab,
+  error: unknown,
+): never {
+  if (isNextRedirectError(error)) throw error;
+  const message = error instanceof Error ? error.message : String(error);
+  if (!weeklyDigestId) {
+    throw error instanceof Error ? error : new Error(message);
+  }
+  redirectWeeklyWorkspaceError(weeklyDigestId, tab, message);
+}
+
+async function isVisualRefreshAssetRevision(weeklyDigestId: string, revisionId: string) {
+  const { data, error } = await getSupabaseAdmin()
+    .from('weekly_digest_revisions')
+    .select('visual_refresh_source_revision_id')
+    .eq('id', revisionId)
+    .eq('weekly_digest_id', weeklyDigestId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('The selected Weekly Digest revision was not found.');
+  return isWeeklyVisualRefreshRevision(data);
+}
+
+/**
+ * Most asset mutations still cannot target a private visual-refresh draft:
+ * the sole exception is the dedicated upload/apply path below, which stages
+ * image bytes privately and never edits the published revision in place.
+ */
+async function rejectVisualRefreshAssetMutation(weeklyDigestId: string, revisionId: string) {
+  if (await isVisualRefreshAssetRevision(weeklyDigestId, revisionId)) {
+    throw new Error(
+      'Use the staged visual-refresh upload and apply controls for this private revision.',
+    );
+  }
 }
 
 function kyivDate(now = new Date()) {
@@ -573,6 +741,25 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
   const takeawaysUk = formData.has('key_takeaways_uk')
     ? takeaways(optionalString(formData, 'key_takeaways_uk'))
     : revision.key_takeaways_uk;
+  const visualDirectionInput = {
+    displayTitleEn: formData.has('display_title_en')
+      ? optionalString(formData, 'display_title_en')
+      : revision.display_title_en,
+    displayTitleUk: formData.has('display_title_uk')
+      ? optionalString(formData, 'display_title_uk')
+      : revision.display_title_uk,
+    visualThesisEn: formData.has('visual_thesis_en')
+      ? optionalString(formData, 'visual_thesis_en')
+      : revision.visual_thesis_en,
+    visualThesisUk: formData.has('visual_thesis_uk')
+      ? optionalString(formData, 'visual_thesis_uk')
+      : revision.visual_thesis_uk,
+  };
+  const visualDirectionError = weeklyVisualDirectionErrorMessage(visualDirectionInput);
+  if (visualDirectionError) {
+    redirectWeeklyRevisionContentError(weeklyDigestId, formData, visualDirectionError);
+  }
+  const visualDirection = weeklyVisualDirection(visualDirectionInput);
   const articleExtras = (locale: 'en' | 'uk') => {
     const existing = currentArticle(locale);
     const value = (field: string, fallback = '') =>
@@ -631,7 +818,7 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
   }
 
   const db = await getSupabaseServer();
-  const { data: newRevisionId, error } = await db.rpc('create_weekly_digest_revision', {
+  const revisionArgs = {
     p_weekly_digest_id: weeklyDigestId,
     p_title_en: titleEn,
     p_title_uk: titleUk,
@@ -642,7 +829,16 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
     p_key_takeaways_en: takeawaysEn as Json,
     p_key_takeaways_uk: takeawaysUk as Json,
     p_items: nextItems as unknown as Json,
-  });
+  };
+  const { data: newRevisionId, error } = visualDirection
+    ? await db.rpc('create_weekly_digest_revision_with_visual_direction', {
+        ...revisionArgs,
+        p_display_title_en: visualDirection.displayTitleEn,
+        p_display_title_uk: visualDirection.displayTitleUk,
+        p_visual_thesis_en: visualDirection.visualThesisEn,
+        p_visual_thesis_uk: visualDirection.visualThesisUk,
+      })
+    : await db.rpc('create_weekly_digest_revision', revisionArgs);
   if (error) throw new Error(error.message);
   if (typeof newRevisionId !== 'string') {
     throw new Error('The new Weekly Digest revision ID was not returned.');
@@ -682,6 +878,44 @@ export async function saveWeeklyRevisionAction(formData: FormData) {
     });
     if (articleError) throw new Error(articleError.message);
   }
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+/**
+ * Published weekly text remains immutable. This is the sole editor action
+ * that may alter direction on its active private visual-refresh draft; the
+ * RPC re-checks AAL2 ownership, published provenance, and queues fresh
+ * prompt-only jobs in one transaction.
+ */
+export async function saveWeeklyVisualRefreshDirectionAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner'], aal2: true });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const revisionId = requiredString(formData, 'revision_id');
+  const input = {
+    displayTitleEn: optionalString(formData, 'display_title_en'),
+    displayTitleUk: optionalString(formData, 'display_title_uk'),
+    visualThesisEn: optionalString(formData, 'visual_thesis_en'),
+    visualThesisUk: optionalString(formData, 'visual_thesis_uk'),
+  };
+  const validationError = weeklyVisualDirectionErrorMessage(input);
+  const direction = weeklyVisualDirection(input);
+  if (validationError || !direction) {
+    redirectWeeklyRevisionContentError(
+      weeklyDigestId,
+      formData,
+      validationError ?? 'A visual refresh needs all four localized direction fields.',
+    );
+  }
+  const db = await getSupabaseServer();
+  const { error } = await db.rpc('update_weekly_visual_refresh_direction', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_revision_id: revisionId,
+    p_display_title_en: direction.displayTitleEn,
+    p_display_title_uk: direction.displayTitleUk,
+    p_visual_thesis_en: direction.visualThesisEn,
+    p_visual_thesis_uk: direction.visualThesisUk,
+  });
+  if (error) throw new Error(error.message);
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
@@ -757,6 +991,16 @@ async function pruneApprovedStoryImagePreviews(artifactId: string) {
 }
 
 export async function reviewWeeklyArtifactAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const tab = weeklyWorkspaceTabFromFormValue(optionalString(formData, 'workspace_tab'));
+  try {
+    await reviewWeeklyArtifact(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, tab, error);
+  }
+}
+
+async function reviewWeeklyArtifact(formData: FormData) {
   const decision = requiredString(formData, 'decision');
   const roles = decision === 'approved' ? (['owner'] as const) : (['owner', 'editor'] as const);
   await requireSocialAdmin({ roles });
@@ -784,6 +1028,13 @@ export async function reviewWeeklyArtifactAction(formData: FormData) {
     artifact.input_hash !== expectedHash
   ) {
     throw new Error('This artifact changed while it was being reviewed. Reload before approval.');
+  }
+  if (await isVisualRefreshAssetRevision(artifact.weekly_digest_id, artifact.revision_id)) {
+    // The normal review RPC is intentionally reusable, but a private visual
+    // refresh is a publication-adjacent capability: both approval *and*
+    // requests for changes require the same AAL2 owner session as staging and
+    // applying pixels. The database repeats this check before changing state.
+    await requireSocialAdmin({ aal2: true, roles: ['owner'] });
   }
   if (decision === 'approved') {
     let qualityReportContent: unknown;
@@ -872,6 +1123,16 @@ export async function reviewWeeklyArtifactAction(formData: FormData) {
 }
 
 export async function commentWeeklyArtifactAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const tab = weeklyWorkspaceTabFromFormValue(optionalString(formData, 'workspace_tab'));
+  try {
+    await commentWeeklyArtifact(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, tab, error);
+  }
+}
+
+async function commentWeeklyArtifact(formData: FormData) {
   await requireSocialAdmin();
   const artifactId = requiredString(formData, 'artifact_id');
   const note = requiredString(formData, 'note');
@@ -1014,6 +1275,15 @@ async function videoScriptPlanFromSave(formData: FormData, script: string, scene
 }
 
 export async function saveWeeklyVideoAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  try {
+    await saveWeeklyVideo(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, 'video', error);
+  }
+}
+
+async function saveWeeklyVideo(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const script = optionalString(formData, 'script_en');
   const scenes = optionalString(formData, 'scenes_json');
@@ -1138,13 +1408,21 @@ export async function saveWeeklyVideoAction(formData: FormData) {
       if (!normalized) {
         throw new Error('Enter a valid YouTube URL or an 11-character video ID.');
       }
+      const durationWasEntered = durationSeconds !== null;
+      const resolvedDuration = durationWasEntered
+        ? durationSeconds
+        : await fetchYouTubeDurationSeconds(normalized.videoId);
       if (
-        !durationSeconds ||
-        !Number.isInteger(durationSeconds) ||
-        durationSeconds < 300 ||
-        durationSeconds > 600
+        !resolvedDuration ||
+        !Number.isInteger(resolvedDuration) ||
+        resolvedDuration < 200 ||
+        resolvedDuration > 1200
       ) {
-        throw new Error('Weekly YouTube duration must be an integer between 300 and 600 seconds.');
+        throw new Error(
+          durationWasEntered
+            ? 'Weekly YouTube duration must be an integer between 200 and 1200 seconds.'
+            : "Couldn't auto-detect this video's duration from YouTube — enter it manually in the Duration (seconds) field.",
+        );
       }
       const resolvedThumbnail =
         thumbnailUrl && thumbnailUrl.startsWith('https://')
@@ -1158,7 +1436,7 @@ export async function saveWeeklyVideoAction(formData: FormData) {
         provider: 'youtube',
         providerId: normalized.videoId,
         mimeType: 'text/html',
-        durationSeconds,
+        durationSeconds: resolvedDuration,
         metadata: {
           thumbnail_url: resolvedThumbnail,
           published_at: new Date().toISOString(),
@@ -1246,16 +1524,6 @@ export async function saveWeeklyVideoAction(formData: FormData) {
 function redirectWeeklySocialError(weeklyDigestId: string, message: string): never {
   redirect(
     `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=social&save_error=${encodeURIComponent(message.slice(0, 500))}`,
-  );
-}
-
-function isNextRedirectError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'digest' in error &&
-    typeof (error as { digest: unknown }).digest === 'string' &&
-    (error as { digest: string }).digest.startsWith('NEXT_REDIRECT')
   );
 }
 
@@ -1568,6 +1836,8 @@ export async function selectWeeklyArtifactVariantAction(formData: FormData) {
   const variantPath = requiredString(formData, 'variant_path');
   const fail = (message: string): never => redirectWeeklyVisualsError(weeklyDigestId, message);
 
+  await rejectVisualRefreshAssetMutation(weeklyDigestId, revisionId);
+
   const admin = getSupabaseAdmin();
   const { data: artifact } = await admin
     .from('weekly_digest_artifacts')
@@ -1663,6 +1933,16 @@ export async function selectWeeklyArtifactVariantAction(formData: FormData) {
 }
 
 export async function enqueueWeeklyGenerationAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const tab = weeklyWorkspaceTabForJobType(optionalString(formData, 'job_type'));
+  try {
+    await enqueueWeeklyGeneration(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, tab, error);
+  }
+}
+
+async function enqueueWeeklyGeneration(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const revisionId = requiredString(formData, 'revision_id');
@@ -1683,6 +1963,34 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
   const locale = optionalString(formData, 'locale') || 'neutral';
   const revisionItemId = optionalString(formData, 'revision_item_id');
   const requestKey = optionalString(formData, 'request_key') || randomUUID();
+  const admin = getSupabaseAdmin();
+  const { data: targetRevision, error: targetRevisionError } = await admin
+    .from('weekly_digest_revisions')
+    .select('visual_refresh_source_revision_id')
+    .eq('id', revisionId)
+    .eq('weekly_digest_id', weeklyDigestId)
+    .maybeSingle();
+  if (targetRevisionError) throw new Error(targetRevisionError.message);
+  if (targetRevision && isWeeklyVisualRefreshRevision(targetRevision)) {
+    await requireSocialAdmin({ roles: ['owner'], aal2: true });
+    if (!isWeeklyVisualRefreshPromptJobType(jobType)) {
+      throw new Error('A visual refresh draft can queue only cover or story prompt jobs.');
+    }
+    const db = await getSupabaseServer();
+    const { data: queuedJob, error } = await db.rpc('queue_weekly_visual_refresh_prompt_job', {
+      p_weekly_digest_id: weeklyDigestId,
+      p_revision_id: revisionId,
+      p_job_type: jobType,
+      p_revision_item_id: jobType === 'story_image' ? revisionItemId || null : null,
+      p_idempotency_key: `weekly:visual-refresh:${weeklyDigestId}:${revisionId}:${jobType}:${revisionItemId || 'cover'}:${requestKey}`,
+    });
+    if (error && !/duplicate|unique/i.test(error.message)) throw new Error(error.message);
+    if (backendForGenerationJob(jobType) === 'github_actions' && queuedJob?.id) {
+      await dispatchQueuedWeeklyGenerationJob(queuedJob.id);
+    }
+    revalidateWeeklyAdmin(weeklyDigestId);
+    return;
+  }
   const contentStudioMode = ['research_pack', 'editorial_master'].includes(jobType)
     ? weeklyContentStudioMode()
     : null;
@@ -1713,9 +2021,55 @@ export async function enqueueWeeklyGenerationAction(formData: FormData) {
     await ensureVideoManifestCompanionJob(db, weeklyDigestId, revisionId);
   }
   if (backendForGenerationJob(jobType) === 'github_actions' && queuedJob?.id) {
-    await dispatchQueuedWeeklyGenerationJob(queuedJob.id);
+    try {
+      await dispatchQueuedWeeklyGenerationJob(queuedJob.id);
+    } catch (dispatchError) {
+      if (isRetryableGithubDispatchError(dispatchError)) {
+        console.error(
+          '[weekly-generation] GitHub dispatch deferred after enqueue',
+          dispatchError instanceof Error ? dispatchError.message : String(dispatchError),
+        );
+      } else {
+        throw dispatchError;
+      }
+    }
   }
   revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+/**
+ * A published Weekly Digest is never edited in place. This RPC creates and
+ * activates a private, prompt-only working revision; public readers keep the
+ * immutable `published_revision_id` until a future explicit release flow.
+ */
+export async function createWeeklyVisualRefreshDraftAction(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner'], aal2: true });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const db = await getSupabaseServer();
+  const { data: revisionId, error } = await db.rpc('create_weekly_visual_refresh_draft', {
+    p_weekly_digest_id: weeklyDigestId,
+  });
+  if (error) throw new Error(error.message);
+  if (typeof revisionId !== 'string' || !revisionId) {
+    throw new Error('Visual refresh draft RPC did not return a revision ID.');
+  }
+
+  // story_image uses the dedicated GitHub worker. Cover is a short Vercel
+  // prompt job; it remains queued for the normal worker poll.
+  const { data: storyJobs, error: storyJobsError } = await getSupabaseAdmin()
+    .from('weekly_digest_generation_jobs')
+    .select('id')
+    .eq('weekly_digest_id', weeklyDigestId)
+    .eq('revision_id', revisionId)
+    .eq('job_type', 'story_image')
+    .eq('status', 'queued');
+  if (storyJobsError) throw new Error(storyJobsError.message);
+  for (const job of storyJobs ?? []) {
+    await dispatchQueuedWeeklyGenerationJob(job.id);
+  }
+
+  revalidateWeeklyAdmin(weeklyDigestId);
+  redirect(weeklyVisualRefreshDirectionHref({ weeklyDigestId, revisionId }));
 }
 
 /**
@@ -2153,9 +2507,28 @@ export async function retryWeeklyGenerationJobAction(formData: FormData) {
 }
 
 export async function uploadWeeklyArtifactAction(formData: FormData) {
-  await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const artifactTypeHint = optionalString(formData, 'artifact_type');
+  try {
+    await uploadWeeklyArtifact(formData);
+  } catch (error) {
+    failWeeklyWorkspace(
+      weeklyDigestId,
+      weeklyWorkspaceTabForArtifactType(artifactTypeHint || 'story_image'),
+      error,
+    );
+  }
+}
+
+async function uploadWeeklyArtifact(formData: FormData) {
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const revisionId = requiredString(formData, 'revision_id');
+  const isVisualRefresh = await isVisualRefreshAssetRevision(weeklyDigestId, revisionId);
+  if (isVisualRefresh) {
+    await requireSocialAdmin({ aal2: true, roles: ['owner'] });
+  } else {
+    await requireSocialAdmin({ roles: ['owner', 'editor'] });
+  }
   const artifactType = requiredString(formData, 'artifact_type');
   const slotKey = requiredString(formData, 'slot_key');
   const localeValue = optionalString(formData, 'locale') || 'neutral';
@@ -2166,9 +2539,20 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
   if (!(fileValue instanceof File) || fileValue.size === 0) {
     throw new Error('Select a replacement file.');
   }
-  if (fileValue.size > 12 * 1024 * 1024) throw new Error('Replacement files are limited to 12 MB.');
+  if (fileValue.size > WEEKLY_ARTIFACT_UPLOAD_MAX_BYTES) {
+    throw new Error('Replacement files are limited to 12 MB.');
+  }
   if (!['cover', 'story_image', 'social_asset', 'thumbnail', 'pdf'].includes(artifactType)) {
     throw new Error('This artifact type cannot be uploaded. Final video remains on YouTube.');
+  }
+  if (
+    isVisualRefresh &&
+    (artifactType !== 'cover' || revisionItemId || locale !== 'neutral') &&
+    (artifactType !== 'story_image' || !revisionItemId || locale !== 'neutral')
+  ) {
+    throw new Error(
+      'A visual refresh may stage only a neutral cover or one neutral story illustration.',
+    );
   }
 
   let bytes: Buffer = Buffer.from(await fileValue.arrayBuffer());
@@ -2205,9 +2589,14 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
         bytes = await sharp(bytes)
           .rotate()
           .resize(dimensions.width, dimensions.height, {
-            fit: 'cover',
+            // Covers may arrive in a source aspect ratio that does not match
+            // the public 16:9 hero. Preserve the editorial subject on a
+            // branded canvas rather than silently crop it during upload.
+            fit: artifactType === 'cover' ? 'contain' : 'cover',
             position: focalPoint,
+            background: { r: 16, g: 20, b: 24 },
           })
+          .flatten({ background: { r: 16, g: 20, b: 24 } })
           .jpeg({ quality: 91, progressive: true })
           .toBuffer();
         mimeType = 'image/jpeg';
@@ -2261,36 +2650,307 @@ export async function uploadWeeklyArtifactAction(formData: FormData) {
     }),
   );
   const db = await getSupabaseServer();
-  const { data: artifactId, error } = await db.rpc('save_weekly_digest_artifact', {
-    p_weekly_digest_id: weeklyDigestId,
-    p_revision_id: revisionId,
-    p_revision_item_id: revisionItemId || null,
-    p_artifact_type: artifactType,
-    p_locale: locale,
-    p_slot_key: slotKey,
-    p_generation_status: 'ready',
-    p_review_status: 'in_review',
-    p_content: {
-      alt: optionalString(formData, 'alt_text') || null,
-      alt_en: optionalString(formData, 'alt_text_en') || null,
-      alt_uk: optionalString(formData, 'alt_text_uk') || null,
-    } as Json,
-    p_storage_bucket: 'weekly-digest-private',
-    p_storage_path: path,
-    p_mime_type: mimeType,
-    p_width: width,
-    p_height: height,
-    p_byte_size: bytes.length,
-    p_metadata: uploadMetadata as unknown as Json, // JSONB: upload meta + optional owner_feedback map.
-  });
+  const content = {
+    alt: optionalString(formData, 'alt_text') || null,
+    alt_en: optionalString(formData, 'alt_text_en') || null,
+    alt_uk: optionalString(formData, 'alt_text_uk') || null,
+  } as Json;
+  const { data: artifactId, error } = isVisualRefresh
+    ? await db.rpc('save_weekly_visual_refresh_staged_asset', {
+        p_weekly_digest_id: weeklyDigestId,
+        p_revision_id: revisionId,
+        p_revision_item_id: revisionItemId || null,
+        p_artifact_type: artifactType,
+        p_locale: locale,
+        p_slot_key: slotKey,
+        p_content: content,
+        p_storage_bucket: 'weekly-digest-private',
+        p_storage_path: path,
+        p_mime_type: mimeType,
+        p_width: width ?? 0,
+        p_height: height ?? 0,
+        p_byte_size: bytes.length,
+        p_metadata: uploadMetadata as unknown as Json,
+      })
+    : await db.rpc('save_weekly_digest_artifact', {
+        p_weekly_digest_id: weeklyDigestId,
+        p_revision_id: revisionId,
+        p_revision_item_id: revisionItemId || null,
+        p_artifact_type: artifactType,
+        p_locale: locale,
+        p_slot_key: slotKey,
+        p_generation_status: 'ready',
+        p_review_status: 'in_review',
+        p_content: content,
+        p_storage_bucket: 'weekly-digest-private',
+        p_storage_path: path,
+        p_mime_type: mimeType,
+        p_width: width,
+        p_height: height,
+        p_byte_size: bytes.length,
+        p_metadata: uploadMetadata as unknown as Json, // JSONB: upload meta + optional owner_feedback map.
+      });
   if (error) throw new Error(error.message);
   if (
     (artifactType === 'story_image' || artifactType === 'cover') &&
     typeof artifactId === 'string'
   ) {
-    schedulePostUploadQa({ artifactId, weeklyDigestId, bytes, mimeType });
+    schedulePostUploadQa({
+      artifactId,
+      weeklyDigestId,
+      revisionId,
+      revisionItemId: revisionItemId || null,
+      artifactType,
+      bytes,
+      mimeType,
+    });
   }
   revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function selectedStagedArtifactIds(formData: FormData) {
+  const ids = formData
+    .getAll('staged_artifact_id')
+    .filter((value): value is string => typeof value === 'string')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (ids.length === 0) throw new Error('Select at least one approved staged image to apply.');
+  if (ids.some((id) => !UUID_PATTERN.test(id))) {
+    throw new Error('A selected staged image identifier is invalid. Reload and try again.');
+  }
+  if (new Set(ids).size !== ids.length) {
+    throw new Error('A staged image may be selected only once. Reload and try again.');
+  }
+  return ids;
+}
+
+type VisualRefreshStagedCopy = {
+  id: string;
+  artifact_type: string;
+  locale: string;
+  slot_key: string;
+  version: number;
+  input_hash: string;
+  is_current: boolean;
+  generation_status: string;
+  review_status: string;
+  revision_item_id: string | null;
+  storage_bucket: string | null;
+  storage_path: string | null;
+  mime_type: string | null;
+  byte_size: number | null;
+  metadata: Json | null;
+};
+
+/**
+ * Avoid creating an otherwise harmless, but public, immutable orphan before
+ * the promotion RPC has a chance to reject an invalid selection. The RPC
+ * repeats every one of these checks under row locks; this is deliberately a
+ * pre-copy reduction of public surface, not the authorization boundary.
+ */
+function assertVisualRefreshStagedCopyEligible(
+  weeklyDigestId: string,
+  refreshRevisionId: string,
+  artifact: VisualRefreshStagedCopy,
+) {
+  const metadata = jsonRecord(artifact.metadata);
+  const expectedSlot =
+    artifact.artifact_type === 'cover'
+      ? artifact.revision_item_id === null
+        ? 'cover:neutral'
+        : null
+      : artifact.artifact_type === 'story_image' && artifact.revision_item_id
+        ? `story-image:${artifact.revision_item_id}`
+        : null;
+  const expectedPrivatePrefix = `digests/${weeklyDigestId}/revisions/${refreshRevisionId}/uploads/binary-v2/${artifact.artifact_type}/`;
+  if (
+    (artifact.artifact_type !== 'cover' && artifact.artifact_type !== 'story_image') ||
+    artifact.locale !== 'neutral' ||
+    !artifact.is_current ||
+    artifact.generation_status !== 'ready' ||
+    artifact.review_status !== 'approved' ||
+    !expectedSlot ||
+    artifact.slot_key !== expectedSlot ||
+    metadata.visual_refresh_asset_staged !== true ||
+    typeof metadata.visual_refresh_direction_hash !== 'string' ||
+    !metadata.visual_refresh_direction_hash.trim() ||
+    artifact.storage_bucket !== 'weekly-digest-private' ||
+    !artifact.storage_path?.startsWith(expectedPrivatePrefix) ||
+    !artifact.mime_type ||
+    !['image/jpeg', 'image/png', 'image/webp'].includes(artifact.mime_type) ||
+    !Number.isSafeInteger(artifact.version) ||
+    artifact.version < 1 ||
+    !/^[0-9a-f]{32}$/i.test(artifact.input_hash) ||
+    typeof artifact.byte_size !== 'number' ||
+    !Number.isSafeInteger(artifact.byte_size) ||
+    artifact.byte_size < 1
+  ) {
+    throw new Error(
+      'A selected image is no longer an approved staged visual-refresh asset. Reload and review it again.',
+    );
+  }
+}
+
+async function copyVerifiedVisualRefreshStagedAsset(
+  weeklyDigestId: string,
+  refreshRevisionId: string,
+  artifact: VisualRefreshStagedCopy,
+) {
+  assertVisualRefreshStagedCopyEligible(weeklyDigestId, refreshRevisionId, artifact);
+  if (
+    artifact.storage_bucket !== 'weekly-digest-private' ||
+    !artifact.storage_path ||
+    !artifact.mime_type ||
+    !['image/jpeg', 'image/png', 'image/webp'].includes(artifact.mime_type)
+  ) {
+    throw new Error(
+      'A selected staged image has no valid private source. Reload and review it again.',
+    );
+  }
+  const admin = getSupabaseAdmin();
+  const { data: source, error: downloadError } = await admin.storage
+    .from(artifact.storage_bucket)
+    .download(artifact.storage_path);
+  if (downloadError || !source) {
+    throw new Error(
+      `Could not read staged image ${artifact.id}: ${downloadError?.message ?? 'empty file'}`,
+    );
+  }
+  const bytes = Buffer.from(await source.arrayBuffer());
+  if (artifact.byte_size !== null && artifact.byte_size !== bytes.length) {
+    throw new Error('The staged image size changed after review. Upload and review it again.');
+  }
+  const byteSha256 = createHash('sha256').update(bytes).digest('hex');
+  const metadataSha256 = jsonRecord(artifact.metadata).sha256;
+  if (typeof metadataSha256 !== 'string' || metadataSha256.toLowerCase() !== byteSha256) {
+    throw new Error(
+      'The staged image bytes no longer match their reviewed checksum. Upload it again.',
+    );
+  }
+  const publicPath = weeklyVisualRefreshPublicAssetPath({
+    weeklyDigestId,
+    refreshRevisionId,
+    stagedArtifactId: artifact.id,
+    stagedVersion: artifact.version,
+    stagedInputHash: artifact.input_hash,
+    byteSha256,
+    sourcePath: artifact.storage_path,
+    mimeType: artifact.mime_type,
+  });
+  const { error: uploadError } = await admin.storage
+    .from(VISUAL_REFRESH_PUBLIC_ASSET_BUCKET)
+    .upload(publicPath, storageBlob(bytes, artifact.mime_type), {
+      contentType: artifact.mime_type,
+      cacheControl: '31536000, immutable',
+      upsert: false,
+    });
+  if (uploadError && !/already exists|duplicate/i.test(uploadError.message)) {
+    throw new Error(
+      `Could not stage immutable public image ${artifact.id}: ${uploadError.message}`,
+    );
+  }
+  const { data: stored, error: verifyError } = await admin.storage
+    .from(VISUAL_REFRESH_PUBLIC_ASSET_BUCKET)
+    .download(publicPath);
+  if (verifyError || !stored) {
+    throw new Error(
+      `Could not verify immutable public image ${artifact.id}: ${verifyError?.message ?? 'empty file'}`,
+    );
+  }
+  const storedBytes = Buffer.from(await stored.arrayBuffer());
+  if (storedBytes.length !== bytes.length || !storedBytes.equals(bytes)) {
+    throw new Error(`Immutable public image ${artifact.id} failed byte verification.`);
+  }
+  return {
+    staged_artifact_id: artifact.id,
+    storage_bucket: VISUAL_REFRESH_PUBLIC_ASSET_BUCKET,
+    storage_path: publicPath,
+    byte_sha256: byteSha256,
+  };
+}
+
+/**
+ * Apply selected private visual-refresh pixels without ever mutating the
+ * published revision itself. Public Storage copy/verification happens before
+ * the RPC because Storage cannot join PostgreSQL's transaction; the RPC then
+ * rechecks every staged ID, hash and public object and atomically versions the
+ * actual published cover/story slots.
+ */
+export async function applyWeeklyVisualRefreshAssetsAction(formData: FormData) {
+  await requireSocialAdmin({ aal2: true, roles: ['owner'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const revisionId = requiredString(formData, 'revision_id');
+  const stagedArtifactIds = selectedStagedArtifactIds(formData);
+  const admin = getSupabaseAdmin();
+  const [{ data: digest, error: digestError }, { data: artifacts, error: artifactError }] =
+    await Promise.all([
+      admin
+        .from('weekly_digests')
+        .select('slug,status,active_revision_id,published_revision_id')
+        .eq('id', weeklyDigestId)
+        .maybeSingle(),
+      admin
+        .from('weekly_digest_artifacts')
+        .select(
+          'id,artifact_type,locale,slot_key,version,input_hash,is_current,generation_status,review_status,revision_item_id,storage_bucket,storage_path,mime_type,byte_size,metadata',
+        )
+        .eq('weekly_digest_id', weeklyDigestId)
+        .eq('revision_id', revisionId)
+        .in('id', stagedArtifactIds),
+    ]);
+  if (digestError) throw new Error(digestError.message);
+  if (
+    !digest ||
+    digest.status !== 'published' ||
+    digest.active_revision_id !== revisionId ||
+    !digest.published_revision_id
+  ) {
+    throw new Error(
+      'This private visual refresh is no longer the active draft for a published Weekly.',
+    );
+  }
+  if (artifactError) throw new Error(artifactError.message);
+  if (!artifacts || artifacts.length !== stagedArtifactIds.length) {
+    throw new Error(
+      'One or more selected staged images no longer belong to this refresh. Reload first.',
+    );
+  }
+
+  const artifactsById = new Map(artifacts.map((artifact) => [artifact.id, artifact]));
+  const orderedArtifacts = stagedArtifactIds.map((id) => artifactsById.get(id));
+  if (orderedArtifacts.some((artifact) => !artifact)) {
+    throw new Error('One or more selected staged images could not be loaded. Reload first.');
+  }
+  const publicAssets = [] as Array<{
+    staged_artifact_id: string;
+    storage_bucket: string;
+    storage_path: string;
+    byte_sha256: string;
+  }>;
+  for (const artifact of orderedArtifacts) {
+    publicAssets.push(
+      await copyVerifiedVisualRefreshStagedAsset(
+        weeklyDigestId,
+        revisionId,
+        artifact as VisualRefreshStagedCopy,
+      ),
+    );
+  }
+
+  const db = await getSupabaseServer();
+  const { error } = await db.rpc('promote_weekly_visual_refresh_assets', {
+    p_weekly_digest_id: weeklyDigestId,
+    p_revision_id: revisionId,
+    p_staged_artifact_ids: stagedArtifactIds,
+    p_public_assets: publicAssets as unknown as Json,
+  });
+  if (error) throw new Error(error.message);
+
+  revalidateWeeklyAdmin(weeklyDigestId);
+  const safeSlug = encodeURIComponent(digest.slug);
+  revalidateSiteSurfaces([`/en/weekly/${safeSlug}`, `/uk/weekly/${safeSlug}`]);
 }
 
 export async function ignorePostUploadQaAction(formData: FormData) {
@@ -2300,7 +2960,7 @@ export async function ignorePostUploadQaAction(formData: FormData) {
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from('weekly_digest_artifacts')
-    .select('metadata, artifact_type')
+    .select('metadata, artifact_type, revision_id')
     .eq('id', artifactId)
     // R3.1 / F14: the digest id is a hidden form field, not re-derived from
     // the artifact row -- without this filter a mismatched pair (stale form
@@ -2313,6 +2973,13 @@ export async function ignorePostUploadQaAction(formData: FormData) {
   if (!data) throw new Error('Artifact not found for this digest.');
   if (data.artifact_type !== 'story_image' && data.artifact_type !== 'cover') {
     throw new Error('Post-upload QA only applies to story images and covers.');
+  }
+  if (await isVisualRefreshAssetRevision(weeklyDigestId, data.revision_id)) {
+    // Ignoring an automated finding on a staged replacement is part of the
+    // same publication-adjacent review decision as approval/apply. The
+    // service-role QA writer may persist evidence, but an editor cannot waive
+    // it on a private visual refresh.
+    await requireSocialAdmin({ aal2: true, roles: ['owner'] });
   }
   const current = parsePostUploadQa(data.metadata);
   if (!current) throw new Error('No post-upload QA to ignore.');
@@ -2334,7 +3001,7 @@ export async function recheckPostUploadQaAction(formData: FormData) {
   const admin = getSupabaseAdmin();
   const { data, error } = await admin
     .from('weekly_digest_artifacts')
-    .select('storage_bucket, storage_path, mime_type, artifact_type')
+    .select('storage_bucket, storage_path, mime_type, artifact_type, revision_id, revision_item_id')
     .eq('id', artifactId)
     .eq('weekly_digest_id', weeklyDigestId)
     .maybeSingle();
@@ -2342,6 +3009,9 @@ export async function recheckPostUploadQaAction(formData: FormData) {
   if (!data) throw new Error('Artifact not found for this digest.');
   if (data.artifact_type !== 'story_image' && data.artifact_type !== 'cover') {
     throw new Error('Post-upload QA only applies to story images and covers.');
+  }
+  if (await isVisualRefreshAssetRevision(weeklyDigestId, data.revision_id)) {
+    await requireSocialAdmin({ aal2: true, roles: ['owner'] });
   }
   if (!data.storage_bucket || !data.storage_path) {
     throw new Error('No stored file to re-check.');
@@ -2367,6 +3037,9 @@ export async function recheckPostUploadQaAction(formData: FormData) {
   schedulePostUploadQa({
     artifactId,
     weeklyDigestId,
+    revisionId: data.revision_id,
+    revisionItemId: data.revision_item_id,
+    artifactType: data.artifact_type,
     bytes,
     mimeType: data.mime_type ?? 'image/jpeg',
   });

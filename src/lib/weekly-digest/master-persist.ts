@@ -9,6 +9,8 @@
  */
 
 export const MASTER_REVISION_RPC = 'create_service_weekly_digest_revision' as const;
+export const MASTER_VISUAL_DIRECTION_REVISION_RPC =
+  'create_service_weekly_digest_revision_with_visual_direction' as const;
 
 /** Satisfies revert_weekly_digest_revision's 10–500 character reason check. */
 export const USE_LATEST_REVISION_REASON =

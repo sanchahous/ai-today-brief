@@ -11,6 +11,7 @@ import type {
 } from '../../../pipeline/card-image';
 import { mappingGateReport, type MappingGateIssue } from '../../../pipeline/concept-mapping-gate';
 import type { ManualImagePrompt } from '../../../pipeline/prompt-export';
+import type { StoryPromptSemanticContract } from './story-prompt-set';
 
 export const WEEKLY_STORY_IMAGE_MODES = ['prompt_only', 'render'] as const;
 export type WeeklyStoryImageMode = (typeof WEEKLY_STORY_IMAGE_MODES)[number];
@@ -57,6 +58,7 @@ export type StoredStoryPrompt = ManualImagePrompt & {
   /** Head phrases for cross-story motif-family matching (R2.3 / F9). */
   subject?: string | null;
   setting?: string | null;
+  action?: string | null;
 };
 
 export interface StoryPromptSetPayload {
@@ -65,6 +67,19 @@ export interface StoryPromptSetPayload {
   generated_at: string;
   /** Why every brief failed the mapping gate, when `prompts` is empty (R1.2). */
   mapping_gate_issues: MappingGateIssue[];
+  semantic_contract?: StoryPromptSemanticContract;
+}
+
+function semanticContractFromEssence(essence: EditorialEssence): StoryPromptSemanticContract {
+  return {
+    storyContext: essence.storyContext,
+    meaning: essence.meaning,
+    essence: essence.essence,
+    mechanism: essence.mechanism,
+    consequence: essence.consequence,
+    visualThesis: essence.visualThesis,
+    readerTest: essence.readerTest,
+  };
 }
 
 export function storyPromptSetArtifactContent(
@@ -72,8 +87,15 @@ export function storyPromptSetArtifactContent(
   policy: string,
   generatedAt = new Date().toISOString(),
   mappingGateIssues: MappingGateIssue[] = [],
+  essence?: EditorialEssence,
 ): StoryPromptSetPayload {
-  return { prompts, policy, generated_at: generatedAt, mapping_gate_issues: mappingGateIssues };
+  return {
+    prompts,
+    policy,
+    generated_at: generatedAt,
+    mapping_gate_issues: mappingGateIssues,
+    ...(essence ? { semantic_contract: semanticContractFromEssence(essence) } : {}),
+  };
 }
 
 export function essenceFromBrief(
@@ -130,7 +152,10 @@ export async function produceStoryPrompts(input: {
   content: StoryPromptSetPayload;
   output: { needs_owner_review: true; prompt_count: number; mapping_gate_issues?: string[] };
 }> {
-  const count = input.count ?? 3;
+  // The owner-facing default is one verified primary direction. Callers that
+  // deliberately run the automatic render/vision experiment still opt into a
+  // multi-concept batch explicitly.
+  const count = input.count ?? 1;
   const hasOwnerScene = Boolean(input.sceneInput.sceneOverride?.trim());
   const briefs =
     hasOwnerScene && input.buildConcepts
@@ -147,7 +172,7 @@ export async function produceStoryPrompts(input: {
     // empty prompt set with the reasons so Visuals shows "0/3" instead of a
     // retried, permanently-red job (R1.2 / F2).
     return {
-      content: storyPromptSetArtifactContent([], input.policy, input.generatedAt, issues),
+      content: storyPromptSetArtifactContent([], input.policy, input.generatedAt, issues, essence),
       output: { needs_owner_review: true, prompt_count: 0, mapping_gate_issues: issues },
     };
   }
@@ -162,10 +187,11 @@ export async function produceStoryPrompts(input: {
       composition: brief?.composition ?? null,
       subject: brief?.subject ?? null,
       setting: brief?.setting ?? null,
+      action: brief?.action ?? null,
     };
   });
   return {
-    content: storyPromptSetArtifactContent(prompts, input.policy, input.generatedAt),
+    content: storyPromptSetArtifactContent(prompts, input.policy, input.generatedAt, [], essence),
     output: { needs_owner_review: true, prompt_count: prompts.length },
   };
 }
