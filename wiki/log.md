@@ -6,6 +6,21 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-28
 
+## 2026-08-28 — Social copy: single-candidate writer + fence (коригує live retry вище)
+
+Після `3f8a1db2` наступні linked retry падали ще до гейта верстки: OpenRouter writer повертав
+валідний JSON з одним `text` (без `<CANDIDATE>`), валідатор кидав
+`Writer must return 2–3 hook candidates`, черга йшла далі і пізніші моделі вставляли
+Threads-маркери `<PART>` у Telegram (`service_markers` + `paragraph_breaks_required`).
+Прод-диспетчер на `main` перехопив queued `25075de7` (Actions `33183383191`) на коді без
+цього follow-up. Фікс: `candidatesFromText` приймає один непустий `text`; Telegram-контракт
+явно забороняє `<PART>`/`<SLIDE>`/`<CAPTION>`. Retry треба створювати вже як `dispatching`
+і запускати `weekly-master-cli-worker` з `--ref` гілки фіксу.
+(source: прод-Supabase job `25075de7-214b-43a2-9260-c4283b778eb7` 2026-08-28 15:07 UTC;
+GitHub Actions `33183383191`; `src/lib/weekly-digest/social-adapter.ts`)
+
+---
+
 ## 2026-08-28 — Social copy: live retry `3f8a1db2` (коригує запис про block-structure вище)
 
 Linked retry `3f8a1db2` на гілці фіксу (воркер `33180626567`, 14:32–14:35 UTC) підтвердив, що

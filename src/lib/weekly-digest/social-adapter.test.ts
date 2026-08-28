@@ -614,12 +614,12 @@ describe('parseWeeklySocialWriter', () => {
     ).toMatchObject({ angle: 'Concrete angle' });
   });
 
-  it('rejects a single candidate inside provider validation so the model queue can continue', () => {
-    expect(() =>
+  it('accepts a single complete text body when the writer omitted <CANDIDATE>', () => {
+    expect(
       parseWeeklySocialWriter(
         '{"angle":"Concrete angle","text":"Only one hook","firstComment":""}',
       ),
-    ).toThrow('Writer must return 2–3 hook candidates');
+    ).toMatchObject({ angle: 'Concrete angle', text: 'Only one hook' });
   });
 });
 
