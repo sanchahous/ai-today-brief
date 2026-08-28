@@ -20,7 +20,8 @@ Last updated: 2026-08-28
   `a59e5332` знову впав на Telegram (1789 символів, немає `**bold**`, `platform_fit` 2/100)
   і обрізав решту каналів. Тепер Telegram механічно отримує bold + стискання до 900–1600,
   а все, що лишилось після 3 раундів ремонту, іде в `warnings`; job `succeeded`, пости
-  `in_review`. Ship / coded article blockers не змінювались.
+  `in_review`. Якщо на поточній ревізії немає 3 approved story image — Instagram
+  пропускається, інші канали все одно зберігаються. Ship / coded article blockers не змінювались.
   (source: owner session 2026-08-28; [weekly-digest](pipeline/weekly-digest.md))
 
 - **Weekly Fixes & blockers + warnings не тримають socials (2026-08-28), гілка

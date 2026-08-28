@@ -6,6 +6,15 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-28
 
+## 2026-08-28 — Social copy: Instagram skip якщо немає 3 story image на поточній ревізії (коригує запис вище)
+
+Retry `373f2eeb` уже зберіг Telegram/X/Threads/LinkedIn, потім упав: на активній ревізії
+`8ddce639` є лише approved cover; сім story image лишились на superseded `f996067f`.
+Воркер більше не кидає terminal error — пропускає Instagram і дописує Facebook + пакет.
+(source: prod job `373f2eeb-41c4-4d80-839f-15d14e50a277`; run `33193017124`)
+
+---
+
 ## 2026-08-28 — Social copy: critic `{type,text}` більше не валить провайдерів (коригує запис вище)
 
 Той самий retry `373f2eeb` уже не впав на Telegram quality gate — впав на критику:

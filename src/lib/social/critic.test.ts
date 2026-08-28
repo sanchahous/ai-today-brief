@@ -18,6 +18,11 @@ describe('parseCritic', () => {
       score: 94,
       flags: ['The causal line overreaches the approved facts.'],
     });
+    expect(
+      parseCritic(
+        '{"score":90,"flags":[{"type":"missing_attribution","detail":"Qualify the 6.7M figure as a single session."}]}',
+      ).flags,
+    ).toEqual(['Qualify the 6.7M figure as a single session.']);
   });
 
   it('rejects invalid output so the router can try a fallback', () => {

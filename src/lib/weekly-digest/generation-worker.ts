@@ -2349,7 +2349,16 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       context.artifacts as SocialSelectableArtifact[],
     );
     if (channel === 'instagram' && !instagramSources.ok) {
-      throw new Error(`[weekly-generation] ${instagramSources.blocker.message}`);
+      await tracker.event({
+        type: 'step_started',
+        step: 'channels',
+        level: 'warning',
+        progressCurrent: channelProgress,
+        progressTotal: 100,
+        message: `Skipping Instagram: ${instagramSources.blocker.message}`,
+        metadata: { channel, skipped: true, reason: instagramSources.blocker.code },
+      });
+      continue;
     }
     const assets = await socialAssetsForChannel(context, channel);
     const adaptation = await adaptWeeklySocialChannel({

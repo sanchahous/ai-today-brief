@@ -556,7 +556,7 @@ Postpone не створює нову RPC — це той самий Pause → A
 | Master **failed**, score 8x, blockers | Critic / deterministic gate | Читай Master quality → retry |
 | Після retry знову `UNSUPPORTED_*` на деталі зі статті | Старий короткий excerpt / вузькі claims | Переконайся що packs **v3** з довгим excerpt; Approve знову |
 | Visuals/Social не з’являються | Master ще не succeeded | Спочатку зелений Research gate |
-| `social_copy` **succeeded**, на Social жовті картки (довжина/bold/Топ 3) | Writer не влучив у контракт за 3 раунди; з 2026-08-28 це **warnings**, не `quality_gate` | Читай копію на вкладці Social і Approve/правиш руками. Не регенеруй master |
+| `social_copy` **succeeded**, немає Instagram | Story image лишились на попередній ревізії; воркер більше не валить пакет | Social tab: 5 каналів. Instagram — після upload/копії картинок на поточну ревізію |
 | `social_copy` terminal failed після Instagram, `undefined.map` | Normalized article artifact не мав `stories` для LinkedIn document | Дочекайся деплою social recovery, потім **Create linked retry**; не генеруй шість каналів окремо |
 | `social_copy` terminal failed на `rendered 8 pages; expected 7` | Довгий editorial copy переповнив LinkedIn PDF | Після deploy 7-page bounds створи **один** linked retry; він відновить збережені канали й слайди |
 | Linked `social_copy` retry знову показує `channels` від 0% | Немає валідного checkpoint для поточного approved source hash | Перевір, чи не змінилась revision/locale map; якщо ні — дивись `checkpoint_restored`/`checkpoint_saved` у Timeline |

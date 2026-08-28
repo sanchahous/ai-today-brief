@@ -100,7 +100,9 @@ bounded repair are **warnings for the Social tab**, not a terminal job. The adap
 mechanically bolds one number and squeezes Telegram into 900–1600, then
 `releaseSocialCopyForReview()` moves leftover contract/critic issues into `warnings` and
 clears `blocking`. The worker does the same for cross-channel duplicates. Ship / coded
-article blockers are unchanged.
+article blockers are unchanged. If the current revision has no three approved story
+images (they still sit on the superseded revision), Instagram is **skipped** so Telegram /
+X / Threads / LinkedIn / Facebook can persist; Instagram is not a terminal job failure.
 (source: owner session 2026-08-28; prod job `a59e5332-4805-42a9-ba47-2bacbda1ed72`;
 GitHub Actions run `33191200683`; `src/lib/weekly-digest/social-adapter.ts`,
 `src/lib/weekly-digest/generation-worker.ts`)

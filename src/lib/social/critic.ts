@@ -22,7 +22,7 @@ function coerceCriticFlag(flag: unknown): string | null {
   }
   if (!flag || typeof flag !== 'object' || Array.isArray(flag)) return null;
   const record = flag as Record<string, unknown>;
-  for (const key of ['text', 'message', 'flag', 'reason']) {
+  for (const key of ['text', 'message', 'detail', 'flag', 'reason']) {
     const value = record[key];
     if (typeof value === 'string' && value.trim()) return value.trim();
   }

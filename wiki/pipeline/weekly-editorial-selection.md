@@ -388,7 +388,8 @@ warnings більше не є причиною не ставити Visuals/Socia
 
 Відбір не змінювався. `social_copy` більше не падає термінальним `quality_gate` на
 Telegram/інших каналах після bounded repair: лишок контракту йде в warnings, пости
-відкриваються в `in_review`. Це оркестрація пакета, не shortlist/rank/claims.
+відкриваються в `in_review`. Відсутні Instagram story image на поточній ревізії більше не
+валять увесь пакет. Це оркестрація пакета, не shortlist/rank/claims.
 (source: `src/lib/weekly-digest/social-adapter.ts`, owner session 2026-08-28)
 
 ## Related pages
