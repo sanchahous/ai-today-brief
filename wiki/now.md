@@ -39,6 +39,12 @@ Last updated: 2026-08-28
   порушення — іменований blocking issue в repair-промпті. Живий retry `3f8a1db2` показав, що
   якір `^Радар` over-block: слово «Радар» більше не є hard-block, якщо Топ 3 вже окремий;
   перший рядок матчиться як substring (`На радарі` теж). `USE` лишається судженням критика.
+  Живі retry після цього: writer часто віддає один JSON `text` без `<CANDIDATE>` — валідатор
+  це відкидав і черга доходила до моделей, які ліпили Threads-маркери `<PART>` у Telegram.
+  Тепер один повний `text` приймається як єдиний кандидат; контракт Telegram явно забороняє
+  `<PART>`/`<SLIDE>`/`<CAPTION>`. Прод-диспетчер на `main` встиг перехопити queued retry
+  `25075de7` (run `33183383191`) на старому коді — нові retry треба одразу ставити
+  `dispatching` і ганяти воркер з `--ref` гілки, не через `queued`.
   (source: прод-Supabase `mdiqfatpqczwqghwttpm` job `f5453cae-307c-439e-ba5e-9db891eb095d` live
   check 2026-08-28 12:42 UTC;
   [weekly-digest § Social copy follow-up](pipeline/weekly-digest.md#social-copy-channel-contract-format-rules-were-critic-only-no-deterministic-gate-2026-08-28);
