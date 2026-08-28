@@ -5143,8 +5143,8 @@ function VideoPanel({
               Duration (seconds)
               <input
                 type="number"
-                min={300}
-                max={600}
+                min={200}
+                max={1200}
                 name="duration_seconds"
                 defaultValue={finalVideo?.duration_seconds ?? ''}
                 disabled={!canEdit}

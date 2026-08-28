@@ -1410,10 +1410,10 @@ async function saveWeeklyVideo(formData: FormData) {
       if (
         !durationSeconds ||
         !Number.isInteger(durationSeconds) ||
-        durationSeconds < 300 ||
-        durationSeconds > 600
+        durationSeconds < 200 ||
+        durationSeconds > 1200
       ) {
-        throw new Error('Weekly YouTube duration must be an integer between 300 and 600 seconds.');
+        throw new Error('Weekly YouTube duration must be an integer between 200 and 1200 seconds.');
       }
       const resolvedThumbnail =
         thumbnailUrl && thumbnailUrl.startsWith('https://')
