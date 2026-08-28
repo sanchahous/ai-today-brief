@@ -6,6 +6,23 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-28
 
+## 2026-08-28 — Social copy: після ремонту немає термінальних quality-блокерів
+
+Власник: «ніяких блокерів». Після мержу #338 Production уже був на `907a261`, але linked
+retry `a59e5332` (GitHub `33191200683`) знову впав `quality_gate` на Telegram — 1789
+символів проти 900–1600, без `**bold**`, `platform_fit` 2/100 — і інші п’ять каналів
+навіть не стартували.
+
+Той самий патерн, що вже зробили для editorial master: після bounded repair лишок іде в
+`warnings`, job `succeeded`, людина дивиться Social tab. Механічний нормалізатор Telegram
+ставить `**bold**` на перше число і стискає текст у контрактний діапазон; `blocking`
+очищається через `releaseSocialCopyForReview()`. Ship і coded article blockers не
+ослаблені.
+(source: owner session 2026-08-28; prod job `a59e5332-4805-42a9-ba47-2bacbda1ed72`;
+[weekly-digest](pipeline/weekly-digest.md); `src/lib/weekly-digest/social-adapter.ts`)
+
+---
+
 ## 2026-08-28 — Weekly: warnings не блокують socials; Approve фінальний; вкладка Fixes & blockers
 
 Власник заапрувив Research/quality з жовтими картками (`story_length`, `trust_attribution`,

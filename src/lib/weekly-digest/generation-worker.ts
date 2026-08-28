@@ -101,7 +101,11 @@ import {
   trustedWeeklyResearchSources,
 } from './research';
 import { corroborationWindow, type CorpusArticle } from '../../../pipeline/story-identity';
-import { adaptWeeklySocialChannel, type WeeklySocialAdaptation } from './social-adapter';
+import {
+  adaptWeeklySocialChannel,
+  releaseSocialCopyForReview,
+  type WeeklySocialAdaptation,
+} from './social-adapter';
 import { buildWeeklySocialFactSnapshot } from './social-facts';
 import { renderWeeklyInstagramCarousel } from './instagram-carousel-render';
 import {
@@ -2452,15 +2456,10 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       });
     }
   }
-  const unresolvedChannels = adaptations.flatMap((adaptation) => {
-    const blocking = adaptation.qualityReport?.blocking ?? [];
+  for (const adaptation of adaptations) {
+    if (!adaptation.qualityReport) continue;
     const duplicates = findBlindCrossPosts(adaptations).get(adaptation.channel) ?? [];
-    return blocking.length || duplicates.length ? [adaptation.channel] : [];
-  });
-  if (unresolvedChannels.length > 0) {
-    throw new Error(
-      `[weekly-generation] social approval boundary rejected: ${unresolvedChannels.join(', ')}`,
-    );
+    adaptation.qualityReport = releaseSocialCopyForReview(adaptation.qualityReport, duplicates);
   }
   // Signed URLs are intentionally not the durable part of a channel
   // checkpoint. Refresh them from current artifacts before persistence so a
