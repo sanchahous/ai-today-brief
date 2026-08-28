@@ -36,13 +36,16 @@ Last updated: 2026-08-28
   `overview.md`/`now.md`/`open-questions.md`/`log.md`/`index.md` цього репо (репо-мета,
   унікальний операційний зміст влито в `wiki/now.md` головного репо).
 - `wiki/now.md`, `wiki/index.md` — новий запис і рядки для всіх перенесених сторінок.
-- `raw/_local/video/atbvideobrief/` — 130 файлів, повна копія `E:\ATBvideobrief` (robocopy,
-  406 МБ).
-- `raw/_local/video/from-video-repo-git-history/` — 139 файлів, копія `19-08-2026/` +
-  `public/26-08-2026/` + `public/episodes/26-08-2026/` з `ai-today-brief-video` до
-  `git filter-repo` (473 МБ). Обидва джерела дедуп-звірені по імені+розміру файлу і залишені
-  окремо (без «розумного» злиття один-в-один) — майже все в `ATBvideobrief` унікальне, а
-  video-репо мало власні дрібні правки супутніх текстових файлів.
+- `raw/_local/video/` — спершу скопійовано окремо повну копію `E:\ATBvideobrief` (130
+  файлів, 406 МБ, robocopy) і копію `19-08-2026/` + `public/26-08-2026/` +
+  `public/episodes/26-08-2026/` з `ai-today-brief-video` до `git filter-repo` (139 файлів,
+  473 МБ) — 269 файлів, 881 МБ разом, дедуп-звірені по імені+розміру. Потім злито в одну
+  плоску структуру по датах (`19-08-2026/`, `26-08-2026/`, `intro/`) і очищено від дублів по
+  SHA-1: 128 з 269 файлів були байт-у-байт копіями (видалені), 18 текстових супутніх файлів
+  замінено фінальними версіями з робочої копії video-репо замість чернеток з `ATBvideobrief`,
+  `actual/current_weekly.pdf` виявився дублем `weekly-journal-en.pdf` (папка `actual/`
+  прибрана). Результат — 123 унікальні файли, 386 МБ. Повний журнал злиття —
+  `raw/_local/video/_dedup-manifest.txt`.
 - `artifacts/_local/video-masters/atb-episode-26-08.mp4` — 156 МБ, промастерений фінальний
   рендер епізоду 26-08 (owner session 2026-08-27).
 - `ai-today-brief-video`: видалено `wiki/`, `raw/`, `artifacts/`, `19-08-2026/`,
