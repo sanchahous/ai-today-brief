@@ -8,7 +8,7 @@ Sources: `src/lib/social/quality.ts` (`CHANNEL_RULES`), `src/lib/social/provider
 (`CHANNEL_CONTRACT`), `src/lib/weekly-digest/social-facts.ts`,
 `src/app/r/s/[token]/route.ts`, `src/lib/weekly-digest/preflight.ts`
 (`WEEKLY_SOCIAL_MATRIX`), прод-розбір релізу `ai-weekly-2026-08-09` 2026-08-21,
-deterministic contract gate 2026-08-28
+deterministic contract gate 2026-08-28, Telegram Топ 3/Радар/CTA gate 2026-08-28
 Last updated: 2026-08-28
 
 ---
@@ -375,6 +375,15 @@ telegram/facebook/linkedin тепер прямо запрошує одну не�
 промпті не згадувались жодного разу, лише `CHANNEL_RULES.maxEmoji` ставив стелю.
 (source: `src/lib/weekly-digest/social-adapter.ts`, `src/lib/weekly-digest/social-adapter.test.ts`;
 [weekly-digest § Social copy: channel-contract format rules](../pipeline/weekly-digest.md#social-copy-channel-contract-format-rules-were-critic-only-no-deterministic-gate-2026-08-28))
+
+**Follow-up 2026-08-28, той самий день.** Linked retry `f5453cae` після #335 підтвердив
+довжину/bold/backticks, але впав на структурі: три головні новини сиділи в «📡 Радар», CTA був
+злитий з аналітикою. Лічити ≥4 абзаци недостатньо. Код тепер вимагає окремий перший рядок
+Топ 3 / Top 3, окремий перший рядок Радар / Radar, і короткий останній блок з URL (≤180
+символів). Коди: `telegram_block_structure`, `telegram_top3_block_required`,
+`telegram_radar_block_required`, `telegram_top3_radar_merged`, `telegram_cta_merged`.
+(source: прод-Supabase job `f5453cae-307c-439e-ba5e-9db891eb095d` 2026-08-28 12:42 UTC;
+`src/lib/weekly-digest/social-adapter.ts`)
 
 **Лишається** (потребує рішення власника):
 

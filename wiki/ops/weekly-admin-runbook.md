@@ -4,8 +4,9 @@ Summary: покрокова інструкція для власника/ред�
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…25,
-latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22
-Last updated: 2026-08-26
+latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22,
+Telegram block-structure gate 2026-08-28
+Last updated: 2026-08-28
 
 ---
 
@@ -521,6 +522,7 @@ Postpone не створює нову RPC — це той самий Pause → A
 | Master **failed**, score 8x, blockers | Critic / deterministic gate | Читай Master quality → retry |
 | Після retry знову `UNSUPPORTED_*` на деталі зі статті | Старий короткий excerpt / вузькі claims | Переконайся що packs **v3** з довгим excerpt; Approve знову |
 | Visuals/Social не з’являються | Master ще не succeeded | Спочатку зелений Research gate |
+| `social_copy` terminal failed на Telegram `quality_gate`, «Топ 3» всередині Радару / CTA злитий з аналітикою | Контрактні 4 блоки були прозою; #335 гейтив лише довжину/bold/backticks | Після деплою block-structure gate — **Create linked retry**. Не Approve руками зламану копію |
 | `social_copy` terminal failed після Instagram, `undefined.map` | Normalized article artifact не мав `stories` для LinkedIn document | Дочекайся деплою social recovery, потім **Create linked retry**; не генеруй шість каналів окремо |
 | `social_copy` terminal failed на `rendered 8 pages; expected 7` | Довгий editorial copy переповнив LinkedIn PDF | Після deploy 7-page bounds створи **один** linked retry; він відновить збережені канали й слайди |
 | Linked `social_copy` retry знову показує `channels` від 0% | Немає валідного checkpoint для поточного approved source hash | Перевір, чи не змінилась revision/locale map; якщо ні — дивись `checkpoint_restored`/`checkpoint_saved` у Timeline |

@@ -10,7 +10,7 @@ image prompt library v6 2026-08-23, owner visual-direction contract 2026-08-24,
 image-only QA Likert rescale 2026-08-25, Video tab #441 / waiting stills 2026-08-25,
 Visuals upload body cap 2026-08-26, artifact input_hash column privs 2026-08-26,
 Generation jobs panel payload/polling fix 2026-08-28, Video tab duration bound + auto-fetch 2026-08-28,
-social copy channel-contract deterministic gate 2026-08-28
+social copy channel-contract gate + Telegram Топ 3/Радар/CTA follow-up 2026-08-28
 Last updated: 2026-08-28
 
 ---
@@ -57,6 +57,31 @@ editorial judgment call, not a regex-checkable defect the way length/markup/blan
 (source: owner-reported production `social_copy` job failure 2026-08-28 13:14 Kyiv;
 `src/lib/weekly-digest/social-adapter.ts`, `src/lib/social/telegram-format.ts`,
 `src/lib/weekly-digest/social-adapter.test.ts`, `src/lib/social/telegram-format.test.ts`)
+
+**Follow-up the same day — labels and CTA, not just a block count.** The linked retry of the
+`13:14` job (`f5453cae`, run after the fix above shipped) confirmed the fix: length, bold and
+backticks no longer appear in the failure at all, and `platform_fit` rose 68 → 78. But it still
+failed `quality_gate`. The `last_error` is specific: no separate «Топ 3» block — the three lead
+stories sat inside «📡 Радар» — and the CTA was folded into the closing analysis. A raw
+`TELEGRAM_MIN_BLOCKS = 4` count would not have caught that: the live copy could already have had
+four-plus paragraphs. `telegramStructureIssues()` now checks, in code: at least four
+blank-line-delimited blocks; a block whose first line is Топ 3 / Top 3 (leading emoji allowed);
+a *different* block whose first line is Радар / Radar; and a short last block that holds the URL
+(`TELEGRAM_MAX_CTA_BLOCK_CHARS = 180`). Named codes: `telegram_block_structure`,
+`telegram_top3_block_required`, `telegram_radar_block_required`, `telegram_top3_radar_merged`,
+`telegram_cta_merged`. `scoreCandidate` penalizes any of them. `USE` (is the practical step
+actually practical) stays critic-only.
+
+**Live retry the same afternoon (`3f8a1db2`, 14:35 UTC).** The gate fired as designed, then
+over-blocked: `telegram_radar_block_required` meant "first line must start with Радар/Radar",
+which also misses the locative «На радарі» and any unlabeled remaining-signals block. The
+rejected body is not stored on the job; the critic separately scored 75 for bolding the word
+«нуль» instead of a digit. Radar is now matched as a substring of the first line
+(`радар`/`radar`, so locative `радарі` hits). A missing Radar *word* is no longer a hard block
+when Топ 3 already has its own block — the original incident was radar-present / Top-3-missing.
+Critic `USE`/bold-target stays critic-only.
+(source: prod-Supabase job `3f8a1db2-883e-41c7-84de-d834ac50ac24` 2026-08-28 14:35 UTC;
+GitHub Actions run `33180626567`; `src/lib/weekly-digest/social-adapter.ts`)
 
 ---
 

@@ -38,7 +38,7 @@ export interface WeeklySocialAdaptation extends SocialDraft {
 
 const CHANNEL_CONTRACT: Record<SocialChannel, string> = {
   telegram:
-    'Ukrainian, 900–1600 characters. Separate every block with a blank line; never run blocks together on consecutive lines. Telegram is the only channel that renders rich text: use **bold** for the one number that matters and `backticks` for tool, flag or command names. Never use these markers on any other channel. Strong lead, Top 3 with a short consequence, radar in one block, one CTA and exactly one URL. At least one block must name a model, tool, endpoint or setting the reader can try this week, the concrete step to try it, and its cost, limit or caveat. One small icon or emoji may head the practical block and the radar block for scannability (stay inside the channel emoji budget); never one per line.',
+    'Ukrainian, 900–1600 characters. Separate every block with a blank line; never run blocks together on consecutive lines. Telegram is the only channel that renders rich text: use **bold** for the one number that matters and `backticks` for tool, flag or command names. Never use these markers on any other channel. Four labeled blocks, each its own blank-line-delimited paragraph, never merged: (1) a strong lead, (2) a block whose first line is Топ 3 / Top 3 with a short consequence for each of the three stories — never dump those three into Радар, (3) a separate block whose first line is Радар / Radar for the remaining signals, (4) a short standalone CTA line with exactly one URL and nothing else — never fold the URL into the closing analysis. At least one block must name a model, tool, endpoint or setting the reader can try this week, the concrete step to try it, and its cost, limit or caveat. One small icon or emoji may head the practical block and the radar block for scannability (stay inside the channel emoji budget); never one per line.',
   facebook:
     'Ukrainian, 700–1400 characters. Blank line between paragraphs. One human narrative line, 2–3 conclusions, one meaningful question and exactly one URL. Name at least one tool, model or setting the reader can act on, with the trade-off that comes with it. One small icon or emoji may head the practical block for scannability; never one per line.',
   threads:
@@ -76,17 +76,112 @@ function hasParagraphBreaks(text: string) {
   return /\n[ \t]*\n/.test(text.trim());
 }
 
-/** Length of the longest blank-line-delimited block, for the LinkedIn dense-paragraph check. */
-function longestParagraphBlock(text: string) {
+function paragraphBlocks(text: string) {
   return text
     .split(/\n[ \t]*\n/)
     .map((block) => block.trim())
-    .filter(Boolean)
-    .reduce((max, block) => Math.max(max, block.length), 0);
+    .filter(Boolean);
+}
+
+/** Length of the longest blank-line-delimited block, for the LinkedIn dense-paragraph check. */
+function longestParagraphBlock(text: string) {
+  return paragraphBlocks(text).reduce((max, block) => Math.max(max, block.length), 0);
 }
 
 /** LinkedIn contract: "never a single dense paragraph." A block over this reads as one. */
 const LINKEDIN_MAX_BLOCK_CHARS = 400;
+
+/**
+ * Telegram contract names four distinct blocks (lead, Top 3, radar, CTA).
+ * A count below this means at least two were merged into one paragraph.
+ * Count alone is not enough: a production retry had 4+ paragraphs and still
+ * dumped the three lead stories into «📡 Радар» with the URL folded into
+ * the closing analysis. Label and CTA checks below catch that shape.
+ */
+const TELEGRAM_MIN_BLOCKS = 4;
+
+/** A standalone Telegram CTA is one short last line, not a paragraph + URL. */
+const TELEGRAM_MAX_CTA_BLOCK_CHARS = 180;
+
+/** Strip a leading emoji/bullet so "📡 Радар" and "• Топ 3" still match. */
+function telegramBlockFirstLine(block: string) {
+  const firstLine = block.split('\n')[0]?.trim() ?? '';
+  return firstLine.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+}
+
+function isTelegramTop3Block(block: string) {
+  // First line may be "Топ 3:", "📡 Top 3", "Головне · Топ 3" — the label
+  // does not have to be the very first token after the emoji strip.
+  return /(?:топ[\s-]*3|top[\s-]*3)\b/iu.test(telegramBlockFirstLine(block));
+}
+
+function isTelegramRadarBlock(block: string) {
+  // Ukrainian locative "На радарі" must match; anchoring at ^ missed the
+  // live retry that labeled the section that way and still failed the gate.
+  return /(?:радар|radar)\b/iu.test(telegramBlockFirstLine(block));
+}
+
+function blockHasRadarLabel(block: string) {
+  return /(?:^|\s)(?:радар|radar)\b/iu.test(block);
+}
+
+function telegramUrlBlockIndex(blocks: string[]) {
+  return blocks.findIndex((block) => /https?:\/\//i.test(block));
+}
+
+function telegramStructureIssues(candidate: string) {
+  const issues: { code: string; message: string; suggestedFix: string }[] = [];
+  const blocks = paragraphBlocks(candidate);
+  if (blocks.length < TELEGRAM_MIN_BLOCKS) {
+    issues.push({
+      code: 'telegram_block_structure',
+      message: `Only ${blocks.length} blank-line-delimited block(s) found; the contract requires four separate blocks -- lead, Top 3, radar, CTA -- and at least two of them are merged together.`,
+      suggestedFix:
+        'Split the copy into four separate blank-line-delimited blocks: lead, Top 3, radar, and a standalone CTA with the URL. Never combine two of these into one paragraph.',
+    });
+  }
+
+  const top3Index = blocks.findIndex(isTelegramTop3Block);
+  const radarIndex = blocks.findIndex(isTelegramRadarBlock);
+  if (top3Index < 0) {
+    issues.push({
+      code: 'telegram_top3_block_required',
+      message:
+        'No blank-line-delimited block starts with Топ 3 / Top 3; the three lead stories were likely folded into another section (often Радар).',
+      suggestedFix:
+        'Give the three lead stories their own block whose first line is Топ 3, separate from Радар, with a short consequence for each.',
+    });
+  }
+
+  const top3Block = top3Index >= 0 ? blocks[top3Index] : undefined;
+  const mergedOnSameHeading = top3Index >= 0 && radarIndex >= 0 && top3Index === radarIndex;
+  const radarLabelInsideTop3 = top3Index >= 0 && radarIndex < 0 && Boolean(top3Block && blockHasRadarLabel(top3Block));
+  if (mergedOnSameHeading || radarLabelInsideTop3) {
+    issues.push({
+      code: 'telegram_top3_radar_merged',
+      message:
+        'Топ 3 and Радар share one block; the contract requires them as two blank-line-delimited sections.',
+      suggestedFix: 'Split Топ 3 and Радар into two blocks separated by a blank line. Do not put the three lead stories under Радар.',
+    });
+  }
+
+  const urlIndex = telegramUrlBlockIndex(blocks);
+  if (urlIndex >= 0) {
+    const cta = blocks[urlIndex] ?? '';
+    const notLast = urlIndex !== blocks.length - 1;
+    const tooLong = cta.length > TELEGRAM_MAX_CTA_BLOCK_CHARS;
+    if (notLast || tooLong) {
+      issues.push({
+        code: 'telegram_cta_merged',
+        message: notLast
+          ? 'The URL is not in the final block; the CTA must be a short last block of its own.'
+          : `The last block is ${cta.length} characters and contains the URL; the CTA is folded into analysis instead of standing alone.`,
+        suggestedFix: 'Move the URL into a short last block (one CTA line, no analysis).',
+      });
+    }
+  }
+  return issues;
+}
 
 /**
  * Mechanically checkable slice of CHANNEL_CONTRACT. A prior incident shipped
@@ -143,6 +238,7 @@ function channelContractIssues(channel: SocialChannel, candidate: string) {
         suggestedFix: 'Wrap every tool, flag, endpoint or command name mentioned in the copy in `backticks`.',
       });
     }
+    issues.push(...telegramStructureIssues(candidate));
   }
   return issues;
 }
@@ -252,6 +348,7 @@ function scoreCandidate(channel: SocialChannel, locale: SocialLocale, candidate:
   if (channel === 'telegram') {
     if (!containsTelegramBold(candidate)) score -= 20;
     if (!containsTelegramInlineCode(candidate)) score -= 20;
+    if (telegramStructureIssues(candidate).length > 0) score -= 25;
   }
   if (channel === 'threads') {
     const parts = candidate.split(/\s*<PART>\s*/i).filter((part) => part.trim());
