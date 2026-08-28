@@ -6,6 +6,21 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-28
 
+## 2026-08-28 — Weekly: warnings не блокують socials; Approve фінальний; вкладка Fixes & blockers
+
+Власник заапрувив Research/quality з жовтими картками (`story_length`, `trust_attribution`,
+довжина статті ~3 045), система проігнорувала Approve і тримала Social, поки крутився
+зайвий writer/critic pass.
+
+Код: `masterPersistDecision` більше не ставить `queuePostMasterJobs: false` на
+warnings/low scores — лише на coded `blocker: true`. Approve quality ідемпотентно
+ставить post-master. Нова вкладка **Fixes & blockers** (`?tab=fixes`) — одна machine-дія.
+**Fix remaining issues** з Research і retry/resume/regenerate з таблиці jobs прибрані.
+(source: `src/lib/weekly-digest/master-persist.ts`, `repair-queue.ts`,
+`src/components/admin/weekly-workspace.tsx`, owner session 2026-08-28)
+
+---
+
 ## 2026-08-28 — Social copy: live retry `3f8a1db2` (коригує запис про block-structure вище)
 
 Linked retry `3f8a1db2` на гілці фіксу (воркер `33180626567`, 14:32–14:35 UTC) підтвердив, що

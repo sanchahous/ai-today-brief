@@ -27,6 +27,12 @@ export function masterPersistDecision(input: {
   converged: boolean;
   score: number;
   unresolvedCount: number;
+  /**
+   * True only for coded `issues[].blocker === true`. Warnings
+   * (`story_length`, `trust_attribution`, slightly over-long articles) and
+   * below-floor critic dimensions must not hold visuals/social/PDF.
+   */
+  hasBlockingIssues?: boolean;
 }): MasterPersistDecision {
   if (input.converged) {
     return {
@@ -40,10 +46,10 @@ export function masterPersistDecision(input: {
     reason: `Needs review: ${input.score}/100, ${input.unresolvedCount} unresolved check(s)`,
     qualityPassed: false,
     needsOwnerReview: true,
-    // Visuals/social/PDF wait until the owner has looked at the remaining
-    // checks — those jobs still run against whatever is active, so starting
-    // them here would burn spend on copy that is about to be edited.
-    queuePostMasterJobs: false,
+    // Owner review is for Ship / optional polish. Downstream generation
+    // proceeds unless a real blocking issue remains — warnings are not a
+    // reason to stall socials.
+    queuePostMasterJobs: input.hasBlockingIssues !== true,
   };
 }
 

@@ -1465,11 +1465,12 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Whether the Master quality panel should offer **Fix remaining issues**.
+ * Whether leftover quality notes remain for the owner to read. Amber
+ * warnings and below-floor scores are optional polish — they must not
+ * hold Social/Visuals/PDF or force another writer/critic pass.
  * True for any coded issue (blocker or warning), a below-floor dimension,
- * an overall score under the gate, or leftover factual flags. Warnings such
- * as `story_length` are not Ship blockers, but they are exactly the work
- * the owner asked the writer to do from the amber cards.
+ * an overall score under the gate, or leftover factual flags. This flags
+ * optional polish on the Research panel; it is not a pipeline or Approve gate.
  */
 export function qualityReportNeedsRepair(report: {
   issues: readonly unknown[];

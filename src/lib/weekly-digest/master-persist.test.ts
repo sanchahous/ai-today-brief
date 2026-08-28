@@ -21,7 +21,7 @@ describe('masterPersistDecision', () => {
     const decision = masterPersistDecision({ converged: false, score: 78, unresolvedCount: 1 });
     expect(decision.qualityPassed).toBe(false);
     expect(decision.needsOwnerReview).toBe(true);
-    expect(decision.queuePostMasterJobs).toBe(false);
+    expect(decision.queuePostMasterJobs).toBe(true);
     expect(decision.reason).toBe('Needs review: 78/100, 1 unresolved check(s)');
     expect(MASTER_REVISION_RPC).toBe('create_service_weekly_digest_revision');
     expect(MASTER_VISUAL_DIRECTION_REVISION_RPC).toBe(
@@ -66,5 +66,28 @@ describe('USE_LATEST_REVISION_REASON', () => {
   it('meets the restore RPC length gate so one-click switch does not bounce', () => {
     expect(USE_LATEST_REVISION_REASON.length).toBeGreaterThanOrEqual(10);
     expect(USE_LATEST_REVISION_REASON.length).toBeLessThanOrEqual(500);
+  });
+});
+
+describe('masterPersistDecision post-master queue', () => {
+  it('still queues visuals/social/PDF when only warnings or low scores remain', () => {
+    const decision = masterPersistDecision({
+      converged: false,
+      score: 78,
+      unresolvedCount: 4,
+      hasBlockingIssues: false,
+    });
+    expect(decision.queuePostMasterJobs).toBe(true);
+    expect(decision.needsOwnerReview).toBe(true);
+  });
+
+  it('holds visuals/social/PDF while a coded blocker remains', () => {
+    const decision = masterPersistDecision({
+      converged: false,
+      score: 78,
+      unresolvedCount: 1,
+      hasBlockingIssues: true,
+    });
+    expect(decision.queuePostMasterJobs).toBe(false);
   });
 });

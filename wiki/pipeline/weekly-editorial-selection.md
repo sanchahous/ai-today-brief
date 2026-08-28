@@ -5,8 +5,8 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 `pipeline/weekly-digest.ts`, owner audits / production runs 2026-08-09…17,
 [weekly-digest](weekly-digest.md), staged social-copy recovery and LinkedIn 7-page bounds
 2026-08-17, pre-critic hang 2026-08-22, critic model rotation 2026-08-22,
-Visuals upload body-cap sync 2026-08-26.
-Last updated: 2026-08-26
+Visuals upload body-cap sync 2026-08-26, Fixes & blockers 2026-08-28.
+Last updated: 2026-08-28
 
 ---
 
@@ -374,6 +374,14 @@ quality report; shortlist, rank і claims не перераховуються. �
 у retry guidance разом із below-floor dimensions — це інструкція до моделі, не зміна відбору.
 Critic-ротація (інша модель на нову ревізію / наступний раунд) теж не змінює відбір.
 (source: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/generation-worker.ts`)
+
+## Межа з Fixes & blockers / warnings не тримають socials (2026-08-28)
+
+Відбір не змінювався. Змінився лише post-master оркестратор і admin UX: жовті quality
+warnings більше не є причиною не ставити Visuals/Social/PDF і не є причиною нового
+`editorial_master`. Approve на quality — фінальне рішення людини, не підказка, яку
+система може проігнорувати. Shortlist, rank і claims як і раніше не перераховуються.
+(source: `src/lib/weekly-digest/master-persist.ts`, `repair-queue.ts`, owner session 2026-08-28)
 
 ## Related pages
 

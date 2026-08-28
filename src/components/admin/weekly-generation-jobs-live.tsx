@@ -2,12 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StatusPill } from '@/components/admin/status-pill';
-import { ActionSubmitButton } from '@/components/admin/action-submit-button';
-import {
-  regenerateWeeklyMasterAction,
-  resumeWeeklyMasterFromCheckpointAction,
-  retryWeeklyGenerationJobAction,
-} from '@/app/admin/(cms)/weekly/actions';
 import { estimateGenerationEta } from '@/lib/weekly-digest/generation-control';
 import { partitionGenerationJobsForDisplay } from '@/lib/weekly-digest/generation-job-visibility';
 
@@ -176,22 +170,6 @@ function jobOutput(job: GenerationJob): Record<string, unknown> | null {
 }
 
 /**
- * A resumable run state (master-engine.ts) on a finished job. Unlike the old
- * whole-locale checkpoint this can be partial — nine of fourteen segments is
- * still worth resuming — so the check is "any saved segment", not "both
- * locales complete".
- */
-function savedMasterSegments(job: GenerationJob): number {
-  if (job.job_type !== 'editorial_master') return 0;
-  if (!['failed', 'cancelled', 'succeeded'].includes(job.status)) return 0;
-  const state = jobOutput(job)?.master_run_state;
-  if (!state || typeof state !== 'object' || Array.isArray(state)) return 0;
-  const segments = (state as Record<string, unknown>).segments;
-  if (!segments || typeof segments !== 'object' || Array.isArray(segments)) return 0;
-  return Object.keys(segments).length;
-}
-
-/**
  * The edition generated, but the repair loop could not clear every check.
  * Saved as the working copy with needs_owner_review instead of failing the
  * job. Distinct from a failure on purpose: the copy exists and is waiting
@@ -219,14 +197,13 @@ function isActiveGenerationJob(status: string) {
 
 export function WeeklyGenerationJobsLive({
   digestId,
-  revisionId,
   jobTypes,
   initialJobs,
   initialAttempts,
   initialEvents,
 }: {
   digestId: string;
-  revisionId: string | null;
+  revisionId?: string | null;
   jobTypes: readonly string[];
   initialJobs: GenerationJob[];
   initialAttempts: GenerationAttempt[];
@@ -300,27 +277,6 @@ export function WeeklyGenerationJobsLive({
     () => partitionGenerationJobsForDisplay(data.jobs, jobTypes),
     [data.jobs, jobTypes],
   );
-  // A succeeded editorial_master job always mints and activates a *new*
-  // revision (see createMasterRevision in generation-worker.ts), so the job
-  // itself is permanently tied to the now-superseded revision it was queued
-  // against -- job.revision_id === the active revision is never true again
-  // after success. "Regenerate" therefore targets the most recent
-  // editorial_master job regardless of its stored revision_id, not a
-  // revision-id match. Only 'dispatching'/'running' block it -- those mean a
-  // worker is actively on the job right now; every other state (including
-  // 'waiting', which just means research hasn't been copied onto this
-  // revision yet) is safe to click, since regenerateWeeklyMasterAction
-  // reuses that same job instead of piling up a duplicate.
-  const latestEditorialMasterJobId = useMemo(() => {
-    const masterJobs = data.jobs.filter(
-      (job) =>
-        job.job_type === 'editorial_master' && !['dispatching', 'running'].includes(job.status),
-    );
-    if (masterJobs.length === 0) return null;
-    return masterJobs.reduce((latest, job) =>
-      new Date(job.created_at).getTime() > new Date(latest.created_at).getTime() ? job : latest,
-    ).id;
-  }, [data.jobs]);
 
   return (
     <div className="mt-4 overflow-x-auto">
@@ -414,55 +370,20 @@ export function WeeklyGenerationJobsLive({
                     <p className="mt-1 text-amber-200">
                       {typeof jobOutput(job)?.master_draft_revision_id === 'string'
                         ? `Needs your review: ${unresolvedCount(job)} check(s). The latest text is not the working copy yet — click Use latest version on the banner.`
-                        : `Needs your review: ${unresolvedCount(job)} check(s) the repair loop could not clear. This is now the working copy — open Article. Ship stays blocked until those checks are cleared.`}
+                        : `Needs your review: ${unresolvedCount(job)} check(s) the repair loop could not clear. This is now the working copy — open Article. Warnings do not block Social, Visuals or PDF. Ship stays blocked only for coded blockers.`}
                     </p>
                   ) : null}
-                  {job.status === 'failed' && !savedMasterSegments(job) ? (
-                    <form action={retryWeeklyGenerationJobAction} className="mt-2">
-                      <input type="hidden" name="weekly_digest_id" value={digestId} />
-                      <input type="hidden" name="job_id" value={job.id} />
-                      <button
-                        type="submit"
-                        className="min-h-9 rounded-lg border border-[#47e4d3]/40 px-3 text-xs font-bold text-[#47e4d3] transition hover:bg-[#47e4d3]/10"
+                  {job.status === 'failed' ? (
+                    <p className="mt-2 text-slate-500">
+                      Retry lives on{' '}
+                      <a
+                        href={`/admin/weekly/${encodeURIComponent(digestId)}?tab=fixes`}
+                        className="font-semibold text-[#47e4d3] underline underline-offset-2"
                       >
-                        Create linked retry
-                      </button>
-                    </form>
-                  ) : null}
-                  {savedMasterSegments(job) > 0 ? (
-                    <form action={resumeWeeklyMasterFromCheckpointAction} className="mt-2">
-                      <input type="hidden" name="weekly_digest_id" value={digestId} />
-                      <input type="hidden" name="source_job_id" value={job.id} />
-                      <ActionSubmitButton
-                        idleLabel="Resume saved master"
-                        pendingLabel="Queueing saved segments…"
-                        className="min-h-9 rounded-lg border border-[#47e4d3]/40 px-3 text-xs font-bold text-[#47e4d3] transition hover:bg-[#47e4d3]/10"
-                      />
-                      <p className="mt-1 text-slate-500">
-                        Continues from {savedMasterSegments(job)} saved segment(s) — already-written
-                        stories are not paid for again, and the critic and repair rounds start
-                        fresh.
-                      </p>
-                    </form>
-                  ) : null}
-                  {job.job_type === 'editorial_master' &&
-                  revisionId &&
-                  job.id === latestEditorialMasterJobId ? (
-                    <form action={regenerateWeeklyMasterAction} className="mt-2">
-                      <input type="hidden" name="weekly_digest_id" value={digestId} />
-                      <input type="hidden" name="revision_id" value={revisionId} />
-                      <ActionSubmitButton
-                        idleLabel="Regenerate master"
-                        pendingLabel="Copying research…"
-                        className="min-h-9 rounded-lg border border-[#47e4d3]/40 px-3 text-xs font-bold text-[#47e4d3] transition hover:bg-[#47e4d3]/10"
-                      />
-                      <p className="mt-1 text-slate-500">
-                        Same as <span className="font-semibold">Fix remaining issues</span> on
-                        Master quality: copies approved research onto this revision, then critic
-                        and field-repair the current article. Already-written copy is not paid
-                        for again.
-                      </p>
-                    </form>
+                        Fixes &amp; blockers
+                      </a>
+                      . This table is status only.
+                    </p>
                   ) : null}
                   {job.last_error && job.status !== 'failed' ? (
                     <p className="mt-1 whitespace-pre-wrap text-red-200">{job.last_error}</p>

@@ -3,9 +3,9 @@
 Summary: покрокова інструкція для власника/редактора: що натискати у вкладках,
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
-[weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…25,
+[weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…28,
 latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22,
-Telegram block-structure gate 2026-08-28
+Telegram block-structure gate 2026-08-28, Fixes & blockers + warnings do not hold socials 2026-08-28
 Last updated: 2026-08-28
 
 ---
@@ -15,19 +15,43 @@ Last updated: 2026-08-28
 | Статус | Що це означає | Що робити тобі |
 |---|---|---|
 | Job **succeeded** + `machine_attested` | Система прийняла артефакт | Нічого; дивись Hallucination board |
-| Job timeline: **`attest_failed`** | Авто-attest не пройшов, артефакт застряг у `in_review` | Approve version вручну після перевірки або Create linked retry |
-| Quality **blockers > 0** | Approve **заборонений** (і людині, і машині) | Чекай auto language-fix / Resume master |
+| Job timeline: **`attest_failed`** | Авто-attest не пройшов, артефакт застряг у `in_review` | Approve version вручну після перевірки або **Fixes & blockers** |
+| Quality **blockers > 0** (червоні картки, `blocker: true`) | Approve **заборонений** (і людині, і машині) | **Fixes & blockers** — одна кнопка. Жовті warnings сюди не належать |
 | Visuals **prompt ready** | Треба зовнішня генерація + upload | Copy prompt → gen → upload |
 | Hallucination board **can Ship** | Немає blockers і waiting-список порожній (ті самі слоти, що й preflight) | Один AAL2 **Ship** |
-| Job **running** на ~35% (`english` / `ukrainian`) після **Fix remaining issues** | До фіксу reuse 2026-08-22 кнопка переписувала 14 сегментів з нуля | Не чекай годину. Зупини джобу. Після мержу reuse кнопка має стрибати до critic (~70%) за хвилини |
-| Job **succeeded** + **Needs your review** | Рушій вичерпав ремонт, лишились невирішені перевірки; **текст уже є робочою копією** (Article tab) | Читай `unresolved` → прав статтю або **Resume saved master**. Ship лишається заблокованим, доки перевірки не зникнуть |
-| Job **failed**, код **`resumable`** | Скінчився бюджет часу, не дописано сегмент або critic недоступний; усі готові сегменти збережено | **Resume saved master** — уже написані історії не оплачуються вдруге |
-| Job **failed** + **Resume saved master** | Є збережені сегменти (навіть частково) | Натисни **Resume saved master**, не generic retry |
-| Job **failed** без Resume | Немає жодного збереженого сегмента або інший тип збою | Читай причину → doctor/sandbox → linked retry лише після діагностики |
+| Job **running** на ~35% (`english` / `ukrainian`) після зайвого regenerate | До фіксу reuse 2026-08-22 кнопка переписувала 14 сегментів з нуля | Не чекай годину. Зупини джобу. Після мержу reuse стрибає до critic (~70%) за хвилини |
+| Job **succeeded** + **Needs your review** | Рушій вичерпав ремонт; лишились **warnings** або scores нижче floor; **текст уже є робочою копією** | **Approve** = рішення прийнято. Social/Visuals/PDF **не чекають** жовтих карток. Ship блокують лише coded blockers |
+| Job **failed**, код **`resumable`** | Скінчився бюджет часу, не дописано сегмент або critic недоступний; усі готові сегменти збережено | **Fixes & blockers** → Resume saved master |
+| Job **failed** + збережені сегменти | Є checkpoint | **Fixes & blockers**, не generic retry на таблиці jobs |
+| Job **failed** без checkpoint | Немає жодного збереженого сегмента або інший тип збою | **Fixes & blockers** покаже Retry; doctor/sandbox лише після діагностики |
 
 **Твій шлях випуску:** (1) Hallucination board, (2) 8 uploadів, (3) shooting + YouTube,
-(4) Ship. Не клікай Research/Article/PDF/Social/Script, якщо `gates_passed`.
-Кнопки Approve лишаються як override. Quality з blockers **не можна** апрувити.
+(4) Ship. Machine-repair — тільки вкладка **Fixes & blockers** (одна кнопка). Не клікай
+Research/Article/PDF/Social/Script «полагодити джобу», якщо `gates_passed`.
+Кнопки Approve на доменних вкладках лишаються як рішення людини. Quality з **coded blockers**
+**не можна** апрувити. Жовті `story_length` / `trust_attribution` / трохи задовгий article
+Approve **не** блокують і **не** тримають socials.
+
+## Fixes & blockers (2026-08-28)
+
+Одна вкладка одразу після Overview. Система сама обирає **поточну** machine-дію
+(чекати in-flight / resume checkpoint / regenerate лише для stale або coded blockers /
+retry failed job / **Start visuals, social and PDF** якщо master уже є, а компаньйони
+ніколи не ставились). Людські кроки (Approve packs, upload, YouTube) — список
+«You still need to…» з посиланням на вкладку, **без** кнопки Fix.
+
+- **Approve на Master quality — фінальне.** Наступний writer/critic pass не стартує, щоб
+  «добити» жовті картки. Якщо quality уже `approved`, regenerate відхиляється.
+- **Warnings не є pipeline-гейтом.** Persist після `editorial_master` ставить
+  social/visuals/PDF/video, якщо немає `issues[].blocker === true`. Approve теж
+  ідемпотентно ставить ту саму чергу (діра до 2026-08-28: non-converged master
+  `queuePostMasterJobs: false`, і Approve не доставляв компаньйонів).
+- Retry / Resume / Regenerate **прибрані** з таблиці Generation jobs і з Research
+  (**Fix remaining issues** більше немає). Voluntary Generate/Regenerate зелених
+  артефактів на Social/PDF/Visuals лишається.
+
+(source: `src/lib/weekly-digest/repair-queue.ts`, `master-persist.ts`,
+`src/app/admin/(cms)/weekly/actions.ts`, owner session 2026-08-28)
 
 ## Шлях випуску (зліва направо)
 
@@ -119,7 +143,13 @@ Overview показує preflight blockers і Hallucination board. Іди зве
      (`supabase/migrations/20260810160000_weekly_revision_rpc_security_definer.sql`),
      застосовано до прод-БД. Якщо все одно бачиш помилку на Restore/Save після 2026-08-10 —
      це вже щось інше, дивись реальний текст у червоному банері (більше не opaque `Ref: …`);
-   - **Fix remaining issues (2026-08-22)** на панелі Master quality. Рядки `Fix:` у жовтих
+   - **Fix remaining issues більше немає (2026-08-28).** До цього жовті картки
+     (`story_length`, `trust_attribution`, article 3045 vs 3000) виглядали як гейт,
+     кнопка на Research запускала новий master, а Approve ігнорувався. Тепер
+     machine-repair лише на **Fixes & blockers**; warnings не тримають socials;
+     Approve — фінальне рішення. Історичний текст нижче про кнопку 2026-08-22
+     лишається як пояснення, *чому* вона колись з’явилась, не як інструкція.
+   - **Fix remaining issues (2026-08-22, замінено 28.08)** стояла під картками (owner). Рядки `Fix:` у жовтих
      картках — це інструкції для writer/critic, не кнопки. Авторемонт уже відпрацював усередині
      `editorial_master`; те, що лишилось (низький naturalness/trust, `story_length`,
      `trust_attribution`) потребує **нового проходу**. Кнопка стоїть під картками й викликає той
@@ -142,7 +172,10 @@ Overview показує preflight blockers і Hallucination board. Іди зве
      заява про «original research». Не апрувити звіт із механічними однаковими 90/100 — це
      ознака некаліброваного critic verdict, а не доказ якості;
    - **Approve version** на quality report.
-7. Після успішного master з’являться Article EN/UK і підуть Visuals/Social/PDF/Video jobs.
+7. Після успішного master з’являться Article EN/UK. Visuals/Social/PDF/Video jobs
+   ставляться **одразу**, якщо немає coded blockers (`issues[].blocker === true`).
+   Жовті warnings і `needs_owner_review` не тримають цю чергу. Approve на quality
+   теж ідемпотентно ставить компаньйонів, якщо persist колись їх пропустив.
 
 Довгі master/social/video/**story image** jobs завжди показують конкретний GitHub run; короткі
 deterministic jobs лишаються на Vercel. Не потрібно вручну вибирати worker. Різні story images

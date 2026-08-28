@@ -87,7 +87,10 @@ import {
   type WeeklyMasterRunOutcome,
 } from './master-engine';
 import type { UnresolvedIssue } from './master-repair';
-import { contentStudioVideoManifestKey } from './content-studio-queue';
+import {
+  contentStudioVideoManifestKey,
+  queuePostMasterJobs,
+} from './content-studio-queue';
 import { nextWeeklyScheduledForChannel } from '@/lib/social/schedule';
 import { generateWeeklyVideoScript, requireVideoScriptArticle } from './video-script-llm';
 import {
@@ -1141,45 +1144,6 @@ async function queueVideoManifestCompanion(weeklyDigestId: string, revisionId: s
   });
 }
 
-async function queuePostMasterJobs(
-  weeklyDigestId: string,
-  revisionId: string,
-  items: Array<{ id: string; title_en: string; title_uk: string }>,
-) {
-  const jobs: QueuedGenerationJob[] = [
-    ...items.map((item) => ({
-      type: 'story_image',
-      key: `story-image:${item.id}`,
-      input: {
-        revision_item_id: item.id,
-        alt_text: item.title_en,
-        alt_text_uk: item.title_uk,
-      },
-    })),
-    { type: 'cover', key: 'cover:neutral', input: { locale: 'en', slot_key: 'cover:neutral' } },
-    { type: 'social_copy', key: 'social-copy', input: { locale_map: 'database' } },
-    {
-      type: 'video_script',
-      key: 'video-script:en',
-      input: { locale: 'en', slot_key: 'video-script:en' },
-    },
-    {
-      type: 'video_manifest',
-      key: 'video-manifest:en',
-      idempotencyKey: contentStudioVideoManifestKey({
-        digestId: weeklyDigestId,
-        revisionId,
-      }),
-      input: { locale: 'en', slot_key: 'video-manifest:en' },
-    },
-    { type: 'pdf', key: 'pdf:en', input: { locale: 'en', slot_key: 'pdf:en' } },
-    { type: 'pdf', key: 'pdf:uk', input: { locale: 'uk', slot_key: 'pdf:uk' } },
-  ];
-  await mapWithConcurrency(jobs, jobs.length, async (queued) => {
-    await queueGenerationJob(weeklyDigestId, revisionId, queued);
-  });
-}
-
 // Target is $3/digest; $4 is the hard stop enforced below.
 const DEFAULT_WEEKLY_MASTER_MAX_SPEND_USD = 4;
 
@@ -1619,12 +1583,14 @@ async function generateEditorialMaster(
   });
 
   // Remaining quality items are a review task, not a reason to hide the
-  // copy. Both paths mint and *activate* the new revision so Article/Video
-  // tabs show the latest text; Ship stays blocked until those checks clear.
+  // copy or hold Social/Visuals/PDF. Coded `blocker: true` issues still
+  // hold the post-master queue; warnings and below-floor scores do not.
+  // Ship stays blocked until coded blockers clear or the owner Approves.
   const persist = masterPersistDecision({
     converged,
     score: quality.score,
     unresolvedCount: unresolved.length,
+    hasBlockingIssues: quality.issues.some((issue) => issue.blocker),
   });
   const created = await createMasterRevision({
     job,

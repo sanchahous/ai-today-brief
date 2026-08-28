@@ -33,7 +33,10 @@ import {
   weeklyVisualDirection,
   weeklyVisualDirectionErrorMessage,
 } from '@/lib/weekly-digest/visual-direction';
-import { contentStudioVideoManifestKey } from '@/lib/weekly-digest/content-studio-queue';
+import {
+  contentStudioVideoManifestKey,
+  queuePostMasterJobs,
+} from '@/lib/weekly-digest/content-studio-queue';
 import { videoScriptFromArtifactContent } from '@/lib/weekly-digest/video-script-content';
 import { backendForGenerationJob } from '@/lib/weekly-digest/generation-control';
 import {
@@ -493,6 +496,17 @@ function failWeeklyWorkspace(
     throw error instanceof Error ? error : new Error(message);
   }
   redirectWeeklyWorkspaceError(weeklyDigestId, tab, message);
+}
+
+async function queuePostMasterJobsForRevision(weeklyDigestId: string, revisionId: string) {
+  const admin = getSupabaseAdmin();
+  const { data: items, error } = await admin
+    .from('weekly_digest_revision_items')
+    .select('id,title_en,title_uk')
+    .eq('revision_id', revisionId)
+    .order('rank');
+  if (error) throw new Error(error.message);
+  await queuePostMasterJobs(weeklyDigestId, revisionId, items ?? []);
 }
 
 async function isVisualRefreshAssetRevision(weeklyDigestId: string, revisionId: string) {
@@ -1099,6 +1113,16 @@ async function reviewWeeklyArtifact(formData: FormData) {
   // safety cron. A dispatch failure is non-destructive: the job stays queued
   // and the cron dispatcher will try again.
   if (decision === 'approved') {
+    if (artifact.artifact_type === 'content_quality_report') {
+      try {
+        await queuePostMasterJobsForRevision(artifact.weekly_digest_id, artifact.revision_id);
+      } catch (queueError) {
+        console.error(
+          '[weekly-generation] post-master queue after quality approve failed',
+          queueError instanceof Error ? queueError.message : String(queueError),
+        );
+      }
+    }
     const controlDb = admin as unknown as {
       rpc: (name: string) => Promise<{ data: unknown; error: { message: string } | null }>;
     };
@@ -2110,6 +2134,16 @@ async function ensureVideoManifestCompanionJob(
  * review_status='approved' for a real owner session, never service_role.
  */
 export async function regenerateWeeklyMasterAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const tab = weeklyWorkspaceTabFromFormValue(optionalString(formData, 'workspace_tab') || 'fixes');
+  try {
+    await regenerateWeeklyMaster(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, tab, error);
+  }
+}
+
+async function regenerateWeeklyMaster(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const revisionId = requiredString(formData, 'revision_id');
@@ -2118,6 +2152,20 @@ export async function regenerateWeeklyMasterAction(formData: FormData) {
     throw new Error('WEEKLY_CONTENT_STUDIO_V2 is off. Enable shadow or production mode first.');
   }
   const db = await getSupabaseServer();
+  const { data: approvedQuality, error: qualityError } = await db
+    .from('weekly_digest_artifacts')
+    .select('id')
+    .eq('revision_id', revisionId)
+    .eq('artifact_type', 'content_quality_report')
+    .eq('is_current', true)
+    .eq('review_status', 'approved')
+    .maybeSingle();
+  if (qualityError) throw new Error(qualityError.message);
+  if (approvedQuality) {
+    throw new Error(
+      'Master quality is already approved. That decision stands. Warnings do not require another writer/critic pass. Open Fixes & blockers to start visuals, social and PDF if they never queued.',
+    );
+  }
 
   const { data: items, error: itemsError } = await db
     .from('weekly_digest_revision_items')
@@ -2260,6 +2308,16 @@ export async function regenerateWeeklyMasterAction(formData: FormData) {
  * otherwise re-run the expensive EN and UK writers.
  */
 export async function resumeWeeklyMasterFromCheckpointAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const tab = weeklyWorkspaceTabFromFormValue(optionalString(formData, 'workspace_tab') || 'fixes');
+  try {
+    await resumeWeeklyMasterFromCheckpoint(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, tab, error);
+  }
+}
+
+async function resumeWeeklyMasterFromCheckpoint(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const sourceJobId = requiredString(formData, 'source_job_id');
@@ -2492,6 +2550,16 @@ export async function dispatchWeeklyMasterCliAction(formData: FormData) {
 }
 
 export async function retryWeeklyGenerationJobAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const tab = weeklyWorkspaceTabFromFormValue(optionalString(formData, 'workspace_tab') || 'fixes');
+  try {
+    await retryWeeklyGenerationJob(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, tab, error);
+  }
+}
+
+async function retryWeeklyGenerationJob(formData: FormData) {
   await requireSocialAdmin({ roles: ['owner', 'editor'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
   const jobId = requiredString(formData, 'job_id');
@@ -2502,6 +2570,47 @@ export async function retryWeeklyGenerationJobAction(formData: FormData) {
   if (error) throw new Error(error.message);
   if (retryJob.execution_backend === 'github_actions') {
     await dispatchQueuedWeeklyGenerationJob(retryJob.id);
+  }
+  revalidateWeeklyAdmin(weeklyDigestId);
+}
+
+export async function ensureWeeklyPostMasterJobsAction(formData: FormData) {
+  const weeklyDigestId = optionalString(formData, 'weekly_digest_id');
+  const tab = weeklyWorkspaceTabFromFormValue(optionalString(formData, 'workspace_tab') || 'fixes');
+  try {
+    await ensureWeeklyPostMasterJobs(formData);
+  } catch (error) {
+    failWeeklyWorkspace(weeklyDigestId, tab, error);
+  }
+}
+
+async function ensureWeeklyPostMasterJobs(formData: FormData) {
+  await requireSocialAdmin({ roles: ['owner'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const revisionId = requiredString(formData, 'revision_id');
+  const admin = getSupabaseAdmin();
+  const { data: quality, error: qualityError } = await admin
+    .from('weekly_digest_artifacts')
+    .select('content,review_status')
+    .eq('revision_id', revisionId)
+    .eq('artifact_type', 'content_quality_report')
+    .eq('is_current', true)
+    .maybeSingle();
+  if (qualityError) throw new Error(qualityError.message);
+  const approved = quality?.review_status === 'approved';
+  if (!approved && qualityReportForbidsApprove(quality?.content)) {
+    throw new Error(
+      'Coded quality blockers remain. Approve Master quality to proceed, or open Fixes & blockers for a writer/critic pass. Warnings never block this queue.',
+    );
+  }
+  await queuePostMasterJobsForRevision(weeklyDigestId, revisionId);
+  try {
+    await dispatchQueuedWeeklyGenerationJob();
+  } catch (dispatchError) {
+    console.error(
+      '[weekly-generation] immediate GitHub dispatch failed',
+      dispatchError instanceof Error ? dispatchError.message : String(dispatchError),
+    );
   }
   revalidateWeeklyAdmin(weeklyDigestId);
 }

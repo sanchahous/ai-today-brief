@@ -9,6 +9,10 @@ import {
 } from '@/components/admin/weekly-workspace';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { getWeeklyDigestWorkspace } from '@/lib/weekly-digest/admin-data';
+import {
+  isWeeklyMachineRepairAction,
+  resolveWeeklyRepairQueueFromWorkspace,
+} from '@/lib/weekly-digest/repair-queue';
 import { serverEpochMs } from '@/lib/server-clock';
 
 export const dynamic = 'force-dynamic';
@@ -56,6 +60,8 @@ export default async function WeeklyDigestWorkspacePage({
   const requestedTab = Array.isArray(query.tab) ? query.tab[0] : query.tab;
   const saveError = Array.isArray(query.save_error) ? query.save_error[0] : query.save_error;
   const activeTab = isWorkspaceTab(requestedTab) ? requestedTab : 'overview';
+  const repairQueue = resolveWeeklyRepairQueueFromWorkspace(workspace);
+  const fixesNeedsAction = isWeeklyMachineRepairAction(repairQueue.current?.kind);
   const revisionNumber = workspace.revision?.revision_number ?? null;
   const preflightAt = workspace.digest.preflight_at
     ? new Date(workspace.digest.preflight_at).getTime()
@@ -144,6 +150,11 @@ export default async function WeeklyDigestWorkspacePage({
                 }`}
               >
                 {tab.label}
+                {tab.id === 'fixes' && fixesNeedsAction ? (
+                  <span className="ml-2 rounded-full bg-[#08211f] px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#47e4d3] uppercase">
+                    Action
+                  </span>
+                ) : null}
               </Link>
             ))}
           </div>

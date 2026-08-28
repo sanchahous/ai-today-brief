@@ -6,6 +6,7 @@
  */
 export const WEEKLY_WORKSPACE_ERROR_TABS = [
   'overview',
+  'fixes',
   'stories',
   'research',
   'article',
