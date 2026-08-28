@@ -54,6 +54,7 @@ import {
   weeklyContentStudioMode,
 } from '@/lib/weekly-digest/orchestrator';
 import {
+  fetchYouTubeDurationSeconds,
   normalizeYouTubeVideo,
   validateWeeklyVideoResultManifest,
 } from '@/lib/weekly-digest/video';
@@ -1407,13 +1408,21 @@ async function saveWeeklyVideo(formData: FormData) {
       if (!normalized) {
         throw new Error('Enter a valid YouTube URL or an 11-character video ID.');
       }
+      const durationWasEntered = durationSeconds !== null;
+      const resolvedDuration = durationWasEntered
+        ? durationSeconds
+        : await fetchYouTubeDurationSeconds(normalized.videoId);
       if (
-        !durationSeconds ||
-        !Number.isInteger(durationSeconds) ||
-        durationSeconds < 200 ||
-        durationSeconds > 1200
+        !resolvedDuration ||
+        !Number.isInteger(resolvedDuration) ||
+        resolvedDuration < 200 ||
+        resolvedDuration > 1200
       ) {
-        throw new Error('Weekly YouTube duration must be an integer between 200 and 1200 seconds.');
+        throw new Error(
+          durationWasEntered
+            ? 'Weekly YouTube duration must be an integer between 200 and 1200 seconds.'
+            : "Couldn't auto-detect this video's duration from YouTube — enter it manually in the Duration (seconds) field.",
+        );
       }
       const resolvedThumbnail =
         thumbnailUrl && thumbnailUrl.startsWith('https://')
@@ -1427,7 +1436,7 @@ async function saveWeeklyVideo(formData: FormData) {
         provider: 'youtube',
         providerId: normalized.videoId,
         mimeType: 'text/html',
-        durationSeconds,
+        durationSeconds: resolvedDuration,
         metadata: {
           thumbnail_url: resolvedThumbnail,
           published_at: new Date().toISOString(),

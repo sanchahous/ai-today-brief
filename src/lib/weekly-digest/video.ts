@@ -60,6 +60,30 @@ export function isValidYouTubeVideo(value: string) {
   return parseYouTubeVideoId(value) !== null;
 }
 
+/**
+ * The admin form has no YouTube Data API key wired in, so operators had to
+ * type the duration by hand — a step they routinely skipped, which surfaced
+ * as a confusing "must be between X and Y seconds" error on a perfectly
+ * valid video. Scraping `lengthSeconds` out of the public watch page avoids
+ * needing an API key while still leaving the field editable as an override.
+ */
+export async function fetchYouTubeDurationSeconds(videoId: string): Promise<number | null> {
+  try {
+    const res = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ai-today-brief-admin/1.0)' },
+      signal: AbortSignal.timeout(8_000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const match = html.match(/"lengthSeconds":"(\d+)"/);
+    if (!match) return null;
+    const seconds = Number(match[1]);
+    return Number.isInteger(seconds) && seconds > 0 ? seconds : null;
+  } catch {
+    return null;
+  }
+}
+
 export interface WeeklyVideoResultManifest {
   schemaVersion: 'weekly-video-result-v2';
   digestId: string;

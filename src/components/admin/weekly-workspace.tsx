@@ -5151,7 +5151,7 @@ function VideoPanel({
               />
             </label>
             <label className={LABEL}>
-              Duration (seconds)
+              Duration (seconds, optional)
               <input
                 type="number"
                 min={200}
@@ -5160,13 +5160,15 @@ function VideoPanel({
                 defaultValue={finalVideo?.duration_seconds ?? ''}
                 disabled={!canEdit}
                 className={FIELD}
+                placeholder="auto-detected from YouTube if left blank"
               />
             </label>
           </div>
           <span className="text-xs font-normal text-slate-500">
-            Fill the YouTube URL/ID and duration above and save — the CMS auto-fills the thumbnail
-            and stamps it against the currently approved script. An approved `weekly-video-v3`
-            manifest for this revision is required first.
+            Fill the YouTube URL/ID above and save — the CMS auto-fills the thumbnail, auto-detects
+            the duration from YouTube if you leave that field blank, and stamps it against the
+            currently approved script. An approved `weekly-video-v3` manifest for this revision is
+            required first.
           </span>
           <details className="rounded-lg border border-white/5 bg-black/20 p-3">
             <summary className="cursor-pointer text-xs font-bold text-slate-400">
