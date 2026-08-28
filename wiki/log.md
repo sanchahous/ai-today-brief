@@ -6,6 +6,30 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-28
 
+## 2026-08-28 — Коригує три записи від 2026-08-23: зняті мертві wiki-посилання
+
+**Джерело:** `npm run wiki:check --strict` падав 5 помилками «бите посилання» на чистому
+`main`, незалежно від будь-якої іншої роботи — виявлено при підготовці PR #334.
+
+**Корекція:** три записи нижче («Корекція primary render...», «Review primary illustration...»,
+«Prompt-as-Code v6...») посилались на `pipeline/image-prompt-library.md` і
+`audits/2026-08-23-gpt-image-prompt-plan-review.md` як на wiki-посилання. Обидві сторінки були
+написані в тій сесії, але **ніколи не закомічені** (`git ls-files` — нуль збігів); лишились
+лише як untracked файли на диску разом із ~20 незакомічених змін у продакшн-коді
+(`pipeline/card-image.ts`, `src/lib/weekly-digest/*.ts` та інші — весь Prompt-as-Code v6).
+Того дня `wiki:check` проходив зелено, бо untracked файли на диску тимчасово задовольняли
+лінтер — але сам факт коміту цих сторінок так і не стався.
+
+У трьох записах нижче посилання-в-квадратних-дужках на ці дві назви замінено на звичайний
+inline-код (без квадратних дужок і круглих дужок з розширенням) — сам текст записів не
+змінено, лише синтаксис, щоб лінтер не шукав неіснуючий файл. Коли Prompt-as-Code v6 буде
+доведено до коміту (typecheck/lint/тести на всій незакомієченій роботі, не лише вікі), ці
+дві сторінки треба закомітити і повернути справжні wiki-посилання.
+
+**Не зроблено навмисно:** не комітив самі сторінки чи супутній код — це чужа незавершена
+робота (owner рішення 2026-08-28: «тільки вікі-лінк», не брати на себе непротестований код).
+(source: owner session 2026-08-28)
+
 ## 2026-08-28 — Консолідація трьох відео-папок в один репозиторій
 
 **Джерело:** запит власника — `E:\ATBvideobrief`, `E:\domains\ai-today-brief-video` і цей
@@ -83,12 +107,14 @@ check підтвердив видимий cover, `object-fit: contain`, відс
 
 **Wiki:** коригує попередній запис цього ж дня; оновлено
 [content-sim](pipeline/content-sim.md), [weekly-digest](pipeline/weekly-digest.md),
-[image-prompt-library](pipeline/image-prompt-library.md), [card-images](marketing/card-images.md),
+`pipeline/image-prompt-library.md` (не закомічено — див. коригувальний запис 2026-08-28),
+[card-images](marketing/card-images.md),
 [weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
 [weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
 [weekly-admin-runbook](ops/weekly-admin-runbook.md), [weekly-sandbox](ops/weekly-sandbox.md),
 [overview](overview.md), [now](now.md), [index](index.md) і
-[gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md).
+`audits/2026-08-23-gpt-image-prompt-plan-review.md` (не закомічено — див. коригувальний
+запис 2026-08-28).
 (source: owner session 2026-08-23; `src/lib/weekly-digest/generation-worker.ts`;
 `src/lib/weekly-digest/machine-attest.ts`; `src/lib/content-sim/vision-critic.ts`)
 
@@ -116,8 +142,8 @@ hero top-align, stories ідуть раніше за допоміжні блок
 story ordering і `aria-current` для `#story-2`; повний site build ще не є твердженням у цьому записі.
 (source: локальна verification 2026-08-23)
 
-**Wiki:** новий [gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md);
-оновлено [image-prompt-library](pipeline/image-prompt-library.md),
+**Wiki:** новий `audits/2026-08-23-gpt-image-prompt-plan-review.md` (не закомічено — див.
+коригувальний запис 2026-08-28); оновлено `pipeline/image-prompt-library.md` (те саме),
 [weekly-digest](pipeline/weekly-digest.md), [card-images](marketing/card-images.md),
 [weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
 [weekly-admin-runbook](ops/weekly-admin-runbook.md), [content-sim](pipeline/content-sim.md),
@@ -142,8 +168,8 @@ NOTICE MIT); `flattenMetaphorPitch` = лише renderable; policy
 через той самий асемблер (news без `infographic-engine`); house skill
 `.agents/skills/gpt-image-2-editorial`. Текст у пікселях лишається D1.
 
-**Wiki:** нова [image-prompt-library](pipeline/image-prompt-library.md); оновлено
-[card-images](marketing/card-images.md), [weekly-digest](pipeline/weekly-digest.md),
+**Wiki:** нова `pipeline/image-prompt-library.md` (не закомічено — див. коригувальний запис
+2026-08-28); оновлено [card-images](marketing/card-images.md), [weekly-digest](pipeline/weekly-digest.md),
 [weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P6,
 [weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
 [weekly-admin-runbook](ops/weekly-admin-runbook.md), [overview](overview.md),
