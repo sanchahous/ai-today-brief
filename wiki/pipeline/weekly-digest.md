@@ -8,10 +8,47 @@ latest revision is the working copy 2026-08-22, pre-critic hang 2026-08-22,
 critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22,
 image prompt library v6 2026-08-23, owner visual-direction contract 2026-08-24,
 image-only QA Likert rescale 2026-08-25, Video tab #441 / waiting stills 2026-08-25,
-Visuals upload body cap 2026-08-26, artifact input_hash column privs 2026-08-26
-Last updated: 2026-08-26
+Visuals upload body cap 2026-08-26, artifact input_hash column privs 2026-08-26,
+Generation jobs panel payload/polling fix 2026-08-28
+Last updated: 2026-08-28
 
 ---
+
+## Generation jobs panel: ~1.3 MB unfiltered payload on 6 tabs, unconditional 5s poll (2026-08-28)
+
+Owner reported the whole site and admin "loading very slowly, urgent." Public site and
+`/admin/login` measured fast from an external browser (LCP 258 ms, TTFB 29 ms) and prod-Supabase
+was healthy (no long queries, no pool exhaustion) — the report didn't reproduce until checked
+live inside the owner's own logged-in Chrome session on `/admin/weekly/[id]`. Clicking the
+Weekly Digest tab froze the renderer for 30+ seconds (`Page.captureScreenshot` timed out).
+Measuring the RSC payload per tab found Research/Article/Visuals/Social/PDF/Video each ~1.28–1.43 MB,
+versus ~76–127 KB for Overview/Stories/Release — a real ~15x gap, not a false signal.
+
+Root cause in `GenerationJobsSection` ([weekly-workspace.tsx](../../src/components/admin/weekly-workspace.tsx)):
+it rendered `WeeklyGenerationJobsLive` on those 6 tabs with the digest's **entire, unfiltered**
+`jobs`/`attempts`/`events` arrays — `GENERATION_JOB_TYPES_BY_TAB[tab]` was only used to *label* the
+panel and to filter client-side for display, never to scope what was fetched or serialized. Every
+tab therefore shipped and hydrated the same full generation-event history regardless of which
+job types that tab actually cares about. The same unfiltered shape was polled every 5 seconds
+forever by [weekly-generation-jobs-live.tsx](../../src/components/admin/weekly-generation-jobs-live.tsx)
+via [generation-status/route.ts](../../src/app/api/admin/weekly/[id]/generation-status/route.ts)
+(up to 50 jobs + 150 attempts + 200 events + a 250-job/750-attempt cross-digest ETA sample), even
+on a fully published edition nobody was actively generating anything for — that route also
+returns a hard `503` on any transient Supabase error, and a `503` was observed live on `_rsc`
+tab-navigation requests during this session.
+
+Fix: `GenerationJobsSection` now filters `jobs` by `GENERATION_JOB_TYPES_BY_TAB[tab]` and derives
+`attempts`/`events` from the surviving job ids before ever passing them to the client component;
+`generation-status` accepts a `jobTypes` query param and applies the same filter server-side
+(cascades to attempts/events via scoped `job_id`s, and to the historical ETA sample too). The
+5-second `setInterval` was replaced with a self-rescheduling poll that runs every 5s only while a
+job for that tab is `queued`/`dispatching`/`running`/`retry_scheduled`, backing off to 30s once
+everything is terminal.
+(source: live check via owner's authenticated Chrome session 2026-08-28 — direct RSC-payload
+measurement per tab, `Page.captureScreenshot` timeout during a real tab click, `503` observed on
+`_rsc` navigation; `src/components/admin/weekly-workspace.tsx`;
+`src/components/admin/weekly-generation-jobs-live.tsx`;
+`src/app/api/admin/weekly/[id]/generation-status/route.ts`)
 
 ## Visuals upload: permission denied on revisions (2026-08-26)
 

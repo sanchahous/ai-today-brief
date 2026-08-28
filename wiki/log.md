@@ -4,7 +4,27 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-26
+Last updated: 2026-08-28
+
+## 2026-08-28 — Admin weekly workspace hang: unfiltered generation-jobs payload + unconditional 5s poll
+
+**Джерело:** owner report "терміново, все дуже довго вантажиться" 2026-08-28, live check під
+authenticated Chrome-сесією власника (Claude in Chrome).
+
+Публічний сайт і `/admin/login` виявились швидкими ззовні (LCP 258 мс, TTFB 29 мс), прод-Supabase
+здоровий — проблема не відтворювалась, доки не зайшли в адмінку під реальною сесією власника й не
+поклацали вкладки `/admin/weekly/[id]`. Клік на Weekly Digest заморозив рендерер на 30+ секунд
+(`Page.captureScreenshot` timeout). Виміряний RSC-payload: Research/Article/Visuals/Social/PDF/Video
+по ~1.3 МБ проти ~80 КБ на Overview/Stories/Release. Причина: `GenerationJobsSection` передавала в
+`WeeklyGenerationJobsLive` увесь нефільтрований `jobs`/`attempts`/`events` випуску на всіх 6 вкладках
+замість тільки job-типів цієї вкладки; той самий необмежений набір опитувався кожні 5 секунд
+назавжди навіть на давно опублікованих випусках через `generation-status` API. Фікс: фільтрація за
+`job_type` на сервері (в компоненті і в API-роуті) + адаптивний polling 5с/30с залежно від того, чи
+є активна job.
+(source: `src/components/admin/weekly-workspace.tsx`,
+`src/components/admin/weekly-generation-jobs-live.tsx`,
+`src/app/api/admin/weekly/[id]/generation-status/route.ts`;
+[weekly-digest](pipeline/weekly-digest.md); [now](now.md))
 
 ## 2026-08-26 — Visuals upload: permission denied for weekly_digest_revisions
 
