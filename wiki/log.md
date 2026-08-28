@@ -6,6 +6,59 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-28
 
+## 2026-08-28 — Консолідація трьох відео-папок в один репозиторій
+
+**Джерело:** запит власника — `E:\ATBvideobrief`, `E:\domains\ai-today-brief-video` і цей
+репозиторій частково дублювали дані про відео-виробництво; власник втратив орієнтацію
+(«ходжу по папках і хаотично шукаю дані»). Grill-me: 4 уточнювальні питання перед виконанням
+(git-історія video-репо, місце зберігання медіа, доля готових рендерів, порядок дій), усі
+підтверджено рекомендованими варіантами.
+
+**Змінено:**
+- `wiki/pipeline/video-boundary.md` — оновлено Ownership/Media retention, додано розділ про
+  консолідацію 2026-08-28 і git-конвенцію (`main` = актуальний стан).
+- Нові сторінки (перенесено з `ai-today-brief-video/wiki`, адаптовано посилання під нову
+  структуру): `wiki/pipeline/video-remotion-compositions.md`,
+  `wiki/pipeline/video-production-workflow.md` (злито з `production-workflow.md` +
+  `ops/creator-materials-guide.md` + колишнім `E:\ATBvideobrief\26-08-2026\ПОЧНИ-ТУТ.md`),
+  `wiki/pipeline/video-script.md`, `wiki/pipeline/video-avatar-and-voice.md`,
+  `wiki/pipeline/video-motion-broll.md`, `wiki/pipeline/video-youtube-delivery.md`,
+  `wiki/ops/video-render-runbook.md`, `wiki/ops/video-weekly-checklist.md`,
+  `wiki/product/video-editorial-format.md` (злито з `editorial-format.md` +
+  `strategy/quality-bar.md`), `wiki/research/2026-08-05-professional-ai-video-guide.md`.
+- **Свідомо не перенесено** (застаріле/дублікат, а не втрачене — повний вміст лишається в
+  локальному бекапі `E:\domains\_backup\ai-today-brief-video-pre-filter-repo-2026-08-28\`
+  до `git filter-repo`): `decisions/2026-07-23-video-pipeline-boundary.md` (само зазначало
+  себе як дзеркало, канон — тут же), `architecture/agentic-workflow.md` (дублював чотиризонну
+  структуру головного репо; git-конвенція перенесена в `video-boundary.md`),
+  `ops/video4-living-scenes.md` і `ops/video4-operator-pack.md` (архівні знімки одного
+  конкретного дайджесту `ai-weekly-2026-08-09`, самі позначали себе як «канон переїхав у CMS»),
+  `overview.md`/`now.md`/`open-questions.md`/`log.md`/`index.md` цього репо (репо-мета,
+  унікальний операційний зміст влито в `wiki/now.md` головного репо).
+- `wiki/now.md`, `wiki/index.md` — новий запис і рядки для всіх перенесених сторінок.
+- `raw/_local/video/` — спершу скопійовано окремо повну копію `E:\ATBvideobrief` (130
+  файлів, 406 МБ, robocopy) і копію `19-08-2026/` + `public/26-08-2026/` +
+  `public/episodes/26-08-2026/` з `ai-today-brief-video` до `git filter-repo` (139 файлів,
+  473 МБ) — 269 файлів, 881 МБ разом, дедуп-звірені по імені+розміру. Потім злито в одну
+  плоску структуру по датах (`19-08-2026/`, `26-08-2026/`, `intro/`) і очищено від дублів по
+  SHA-1: 128 з 269 файлів були байт-у-байт копіями (видалені), 18 текстових супутніх файлів
+  замінено фінальними версіями з робочої копії video-репо замість чернеток з `ATBvideobrief`,
+  `actual/current_weekly.pdf` виявився дублем `weekly-journal-en.pdf` (папка `actual/`
+  прибрана). Результат — 123 унікальні файли, 386 МБ. Повний журнал злиття —
+  `raw/_local/video/_dedup-manifest.txt`.
+- `artifacts/_local/video-masters/atb-episode-26-08.mp4` — 156 МБ, промастерений фінальний
+  рендер епізоду 26-08 (owner session 2026-08-27).
+- `ai-today-brief-video`: видалено `wiki/`, `raw/`, `artifacts/`, `19-08-2026/`,
+  `.cursor/rules/00-wiki.mdc`; виправлено `.gitignore` (вкладені датовані підпапки під
+  `public/` тепер справді ігноруються); `CLAUDE.md`/`AGENTS.md` спрощено до вказівника на цей
+  репозиторій; git-історію переписано `git filter-repo`.
+- `E:\ATBvideobrief` видалено повністю після підтвердженого копіювання.
+
+**Нотатка:** причина 314 МБ `.git` у video-репо — прогалина в `.gitignore`: правило
+`public/avatar/` не покривало вкладені датовані підпапки (`public/26-08-2026/avatar/`), тож
+~300 МБ голосу/кліпів/музики закомітились напряму в історію. Той самий клас багу міг би
+повторитись і надалі без фіксу `.gitignore`.
+
 ## 2026-08-28 — Admin weekly workspace hang: unfiltered generation-jobs payload + unconditional 5s poll
 
 **Джерело:** owner report "терміново, все дуже довго вантажиться" 2026-08-28, live check під
