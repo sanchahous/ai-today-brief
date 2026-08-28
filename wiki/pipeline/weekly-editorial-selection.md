@@ -5,7 +5,8 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 `pipeline/weekly-digest.ts`, owner audits / production runs 2026-08-09…17,
 [weekly-digest](weekly-digest.md), staged social-copy recovery and LinkedIn 7-page bounds
 2026-08-17, pre-critic hang 2026-08-22, critic model rotation 2026-08-22,
-Visuals upload body-cap sync 2026-08-26, Fixes & blockers 2026-08-28.
+Visuals upload body-cap sync 2026-08-26, Fixes & blockers 2026-08-28,
+social copy fail-open 2026-08-28.
 Last updated: 2026-08-28
 
 ---
@@ -382,6 +383,14 @@ warnings більше не є причиною не ставити Visuals/Socia
 `editorial_master`. Approve на quality — фінальне рішення людини, не підказка, яку
 система може проігнорувати. Shortlist, rank і claims як і раніше не перераховуються.
 (source: `src/lib/weekly-digest/master-persist.ts`, `repair-queue.ts`, owner session 2026-08-28)
+
+## Межа з social copy fail-open (2026-08-28)
+
+Відбір не змінювався. `social_copy` більше не падає термінальним `quality_gate` на
+Telegram/інших каналах після bounded repair: лишок контракту йде в warnings, пости
+відкриваються в `in_review`. Відсутні Instagram story image на поточній ревізії більше не
+валять увесь пакет. Це оркестрація пакета, не shortlist/rank/claims.
+(source: `src/lib/weekly-digest/social-adapter.ts`, owner session 2026-08-28)
 
 ## Related pages
 

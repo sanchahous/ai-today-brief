@@ -15,6 +15,26 @@ interface CriticResult {
   originalityFlags?: string[];
 }
 
+function coerceCriticFlag(flag: unknown): string | null {
+  if (typeof flag === 'string') {
+    const text = flag.trim();
+    return text || null;
+  }
+  if (!flag || typeof flag !== 'object' || Array.isArray(flag)) return null;
+  const record = flag as Record<string, unknown>;
+  for (const key of ['text', 'message', 'detail', 'flag', 'reason']) {
+    const value = record[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+/** Live critics sometimes return `{type,text}` objects instead of strings. */
+function coerceCriticFlags(value: unknown): string[] | null {
+  if (!Array.isArray(value)) return null;
+  return value.map(coerceCriticFlag).filter((flag): flag is string => Boolean(flag));
+}
+
 export function parseCritic(raw: string): CriticResult {
   const json = raw.match(/\{[\s\S]*\}/)?.[0];
   if (!json) throw new SyntaxError('Critic returned no JSON object.');
@@ -30,7 +50,8 @@ export function parseCritic(raw: string): CriticResult {
     if (typeof value.score !== 'number' || !Number.isFinite(value.score)) {
       throw new SyntaxError('Critic score is missing.');
     }
-    if (!Array.isArray(value.flags) || value.flags.some((flag) => typeof flag !== 'string')) {
+    const flags = coerceCriticFlags(value.flags);
+    if (!flags) {
       throw new SyntaxError('Critic flags are invalid.');
     }
     if (
@@ -39,11 +60,9 @@ export function parseCritic(raw: string): CriticResult {
     ) {
       throw new SyntaxError('Critic platform fit score is invalid.');
     }
-    if (
-      value.platformFlags !== undefined &&
-      (!Array.isArray(value.platformFlags) ||
-        value.platformFlags.some((flag) => typeof flag !== 'string'))
-    ) {
+    const platformFlags =
+      value.platformFlags === undefined ? undefined : coerceCriticFlags(value.platformFlags);
+    if (value.platformFlags !== undefined && !platformFlags) {
       throw new SyntaxError('Critic platform flags are invalid.');
     }
     if (
@@ -52,39 +71,28 @@ export function parseCritic(raw: string): CriticResult {
     ) {
       throw new SyntaxError('Critic originality score is invalid.');
     }
-    if (
-      value.originalityFlags !== undefined &&
-      (!Array.isArray(value.originalityFlags) ||
-        value.originalityFlags.some((flag) => typeof flag !== 'string'))
-    ) {
+    const originalityFlags =
+      value.originalityFlags === undefined ? undefined : coerceCriticFlags(value.originalityFlags);
+    if (value.originalityFlags !== undefined && !originalityFlags) {
       throw new SyntaxError('Critic originality flags are invalid.');
     }
     return {
       score: Math.max(0, Math.min(100, value.score)),
-      flags: value.flags
-        .map((flag) => flag.trim())
-        .filter(Boolean)
-        .slice(0, 8),
+      flags: flags.slice(0, 8),
       ...(typeof value.platformFitScore === 'number'
         ? { platformFitScore: Math.max(0, Math.min(100, value.platformFitScore)) }
         : {}),
-      ...(Array.isArray(value.platformFlags)
+      ...(platformFlags
         ? {
-            platformFlags: value.platformFlags
-              .map((flag) => flag.trim())
-              .filter(Boolean)
-              .slice(0, 8),
+            platformFlags: platformFlags.slice(0, 8),
           }
         : {}),
       ...(typeof value.originalityScore === 'number'
         ? { originalityScore: Math.max(0, Math.min(100, value.originalityScore)) }
         : {}),
-      ...(Array.isArray(value.originalityFlags)
+      ...(originalityFlags
         ? {
-            originalityFlags: value.originalityFlags
-              .map((flag) => flag.trim())
-              .filter(Boolean)
-              .slice(0, 8),
+            originalityFlags: originalityFlags.slice(0, 8),
           }
         : {}),
     };

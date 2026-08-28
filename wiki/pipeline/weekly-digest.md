@@ -5,7 +5,7 @@ Summary: як працює weekly-дайджест у проді: оркестр
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live checks 2026-08-04…22,
 editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 working-copy UX 2026-08-22, image prompt library v6 2026-08-23, daily visual 2026-08-24…25,
-Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract 2026-08-28,
+Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract + fail-open 2026-08-28,
 Fixes & blockers + warnings do not hold socials 2026-08-28
 Last updated: 2026-08-28
 
@@ -88,6 +88,24 @@ non-empty body as one candidate. The Telegram `CHANNEL_CONTRACT` forbids `<PART>
 with `--ref` on the fix branch.
 (source: prod-Supabase job `25075de7-214b-43a2-9260-c4283b778eb7` 2026-08-28 15:07 UTC;
 GitHub Actions run `33183383191`; `src/lib/weekly-digest/social-adapter.ts`)
+
+**Same night — no terminal social quality blockers (owner: «ніяких блокерів»).** Linked retry
+`a59e5332` (run `33191200683`, after #338 was already on Production) still died on Telegram
+`quality_gate` after three repair rounds: 1789 characters vs 900–1600, no `**bold**`,
+`platform_fit` 2/100. Because Telegram is the first channel, the other five never ran.
+The editorial-master path already fail-opens (`succeeded` + warnings); social still threw
+`SocialCopyQualityError` and the worker also refused the package if any channel had
+`blocking.length > 0`. Same owner rule as Master quality warnings: remaining issues after
+bounded repair are **warnings for the Social tab**, not a terminal job. The adapter now
+mechanically bolds one number and squeezes Telegram into 900–1600, then
+`releaseSocialCopyForReview()` moves leftover contract/critic issues into `warnings` and
+clears `blocking`. The worker does the same for cross-channel duplicates. Ship / coded
+article blockers are unchanged. If the current revision has no three approved story
+images (they still sit on the superseded revision), Instagram is **skipped** so Telegram /
+X / Threads / LinkedIn / Facebook can persist; Instagram is not a terminal job failure.
+(source: owner session 2026-08-28; prod job `a59e5332-4805-42a9-ba47-2bacbda1ed72`;
+GitHub Actions run `33191200683`; `src/lib/weekly-digest/social-adapter.ts`,
+`src/lib/weekly-digest/generation-worker.ts`)
 
 ---
 

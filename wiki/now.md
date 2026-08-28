@@ -7,14 +7,22 @@ Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 
 Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 Visuals upload body cap 2026-08-26, admin weekly workspace hang fix 2026-08-28,
-social copy channel-contract + Telegram Топ 3/Радар/CTA gate 2026-08-28,
-Fixes & blockers + warnings do not hold socials 2026-08-28,
+social copy channel-contract + fail-open warnings 2026-08-28, Fixes & blockers 2026-08-28,
 консолідація трьох відео-папок в один репозиторій 2026-08-28
 Last updated: 2026-08-28
 
 ---
 
 ## Стан репозиторію
+
+- **Social copy: після bounded repair немає термінального quality-гейти (2026-08-28), гілка
+  `feat/social-copy-no-quality-blockers`.** Власник: «ніяких блокерів». Linked retry
+  `a59e5332` знову впав на Telegram (1789 символів, немає `**bold**`, `platform_fit` 2/100)
+  і обрізав решту каналів. Тепер Telegram механічно отримує bold + стискання до 900–1600,
+  а все, що лишилось після 3 раундів ремонту, іде в `warnings`; job `succeeded`, пости
+  `in_review`. Якщо на поточній ревізії немає 3 approved story image — Instagram
+  пропускається, інші канали все одно зберігаються. Ship / coded article blockers не змінювались.
+  (source: owner session 2026-08-28; [weekly-digest](pipeline/weekly-digest.md))
 
 - **Weekly Fixes & blockers + warnings не тримають socials (2026-08-28), гілка
   `feat/weekly-fixes-blockers-tab`.** Жовті картки Master quality (`story_length`,

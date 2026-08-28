@@ -6,6 +6,43 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-28
 
+## 2026-08-28 — Social copy: Instagram skip якщо немає 3 story image на поточній ревізії (коригує запис вище)
+
+Retry `373f2eeb` уже зберіг Telegram/X/Threads/LinkedIn, потім упав: на активній ревізії
+`8ddce639` є лише approved cover; сім story image лишились на superseded `f996067f`.
+Воркер більше не кидає terminal error — пропускає Instagram і дописує Facebook + пакет.
+(source: prod job `373f2eeb-41c4-4d80-839f-15d14e50a277`; run `33193017124`)
+
+---
+
+## 2026-08-28 — Social copy: critic `{type,text}` більше не валить провайдерів (коригує запис вище)
+
+Той самий retry `373f2eeb` уже не впав на Telegram quality gate — впав на критику:
+OpenRouter повернув `flags` як масив об’єктів `{type,text}` (`Critic flags are invalid`),
+наступна модель обрізала JSON, і job став `provider_exhausted`. Письменник копію вже мав.
+Тепер `parseCritic` витягує `text`/`message` з таких об’єктів; якщо всі critic-провайдери
+впали, адаптер лишає writer-копію і пропускає аудит (owner review на вкладці Social).
+(source: GitHub Actions run `33192562453`; `src/lib/social/critic.ts`)
+
+---
+
+## 2026-08-28 — Social copy: після ремонту немає термінальних quality-блокерів
+
+Власник: «ніяких блокерів». Після мержу #338 Production уже був на `907a261`, але linked
+retry `a59e5332` (GitHub `33191200683`) знову впав `quality_gate` на Telegram — 1789
+символів проти 900–1600, без `**bold**`, `platform_fit` 2/100 — і інші п’ять каналів
+навіть не стартували.
+
+Той самий патерн, що вже зробили для editorial master: після bounded repair лишок іде в
+`warnings`, job `succeeded`, людина дивиться Social tab. Механічний нормалізатор Telegram
+ставить `**bold**` на перше число і стискає текст у контрактний діапазон; `blocking`
+очищається через `releaseSocialCopyForReview()`. Ship і coded article blockers не
+ослаблені.
+(source: owner session 2026-08-28; prod job `a59e5332-4805-42a9-ba47-2bacbda1ed72`;
+[weekly-digest](pipeline/weekly-digest.md); `src/lib/weekly-digest/social-adapter.ts`)
+
+---
+
 ## 2026-08-28 — Weekly: warnings не блокують socials; Approve фінальний; вкладка Fixes & blockers
 
 Власник заапрувив Research/quality з жовтими картками (`story_length`, `trust_attribution`,

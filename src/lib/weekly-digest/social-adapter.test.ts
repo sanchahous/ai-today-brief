@@ -7,9 +7,9 @@ vi.mock('@/lib/social/llm-router', () => ({
 import { generateSocialJson } from '@/lib/social/llm-router';
 import {
   adaptWeeklySocialChannel,
+  normalizeTelegramCandidate,
   parseWeeklySocialCritic,
   parseWeeklySocialWriter,
-  SocialCopyQualityError,
 } from './social-adapter';
 import type { WeeklyMasterBundle } from './content-studio';
 
@@ -224,6 +224,18 @@ describe('adaptWeeklySocialChannel', () => {
     vi.clearAllMocks();
   });
 
+  it('keeps writer copy when every critic provider is exhausted', async () => {
+    vi.mocked(generateSocialJson).mockImplementation(async (role: string) => {
+      if (role === 'writer') return writerResult();
+      throw new Error('All configured social LLM providers failed');
+    });
+
+    const result = await adaptWeeklySocialChannel(baseInput());
+
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.text.length).toBeGreaterThan(40);
+  });
+
   it("takes the hook angle from the writer's own JSON, not from a caller-supplied input", async () => {
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
       role === 'writer' ? writerResult({ angle: 'A self-generated angle' }) : criticResult(),
@@ -326,16 +338,20 @@ describe('adaptWeeklySocialChannel', () => {
     expect(result.qualityReport!.repairRounds).toBe(0);
   });
 
-  it('fails closed after bounded repair instead of returning blocker-filled copy', async () => {
+  it('releases the best candidate for owner review after bounded repair instead of failing the job', async () => {
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
       role === 'writer'
         ? writerResult()
         : criticResult({ score: 60, flags: ['Unsupported claim'] }),
     );
 
-    const result = adaptWeeklySocialChannel(baseInput());
-    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
-    await expect(result).rejects.toThrow('Unsupported claim');
+    const result = await adaptWeeklySocialChannel(baseInput());
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.qualityReport!.warnings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'critic_flag', message: 'Unsupported claim' }),
+      ]),
+    );
     expect(
       vi.mocked(generateSocialJson).mock.calls.filter(([role]) => role === 'writer'),
     ).toHaveLength(3);
@@ -410,7 +426,7 @@ describe('adaptWeeklySocialChannel', () => {
     expect(result.qualityReport!.blocking).toEqual([]);
   });
 
-  it('rejects Telegram copy with no bold span even when the critic scores it clean', async () => {
+  it('bolds the first number on Telegram copy that arrived without a **span**', async () => {
     const candidate = telegramCandidate({ bold: false });
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
       role === 'writer'
@@ -418,13 +434,13 @@ describe('adaptWeeklySocialChannel', () => {
         : criticResult(),
     );
 
-    const result = adaptWeeklySocialChannel(telegramInput());
+    const result = await adaptWeeklySocialChannel(telegramInput());
 
-    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
-    await expect(result).rejects.toMatchObject({ blockerCodes: expect.arrayContaining(['telegram_bold_required']) });
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.text).toContain('**97%**');
   });
 
-  it('rejects Telegram copy with no backticked tool name even when the critic scores it clean', async () => {
+  it('keeps a missing Telegram backtick as a warning after bounded repair so the job can continue', async () => {
     const candidate = telegramCandidate({ code: false });
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
       role === 'writer'
@@ -432,15 +448,15 @@ describe('adaptWeeklySocialChannel', () => {
         : criticResult(),
     );
 
-    const result = adaptWeeklySocialChannel(telegramInput());
+    const result = await adaptWeeklySocialChannel(telegramInput());
 
-    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
-    await expect(result).rejects.toMatchObject({
-      blockerCodes: expect.arrayContaining(['telegram_backticks_required']),
-    });
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.qualityReport!.warnings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'telegram_backticks_required' })]),
+    );
   });
 
-  it('rejects Telegram copy outside the 900-1600 contract range even when the critic scores it clean', async () => {
+  it('squeezes over-length Telegram copy into the 900-1600 contract before the critic gate', async () => {
     const tooLong = telegramCandidate({ targetLength: 1_900 });
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
       role === 'writer'
@@ -448,26 +464,25 @@ describe('adaptWeeklySocialChannel', () => {
         : criticResult(),
     );
 
-    const result = adaptWeeklySocialChannel(telegramInput());
+    const result = await adaptWeeklySocialChannel(telegramInput());
 
-    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
-    await expect(result).rejects.toMatchObject({
-      blockerCodes: expect.arrayContaining(['channel_length']),
-    });
+    expect(result.text.length).toBeGreaterThanOrEqual(900);
+    expect(result.text.length).toBeLessThanOrEqual(1_600);
+    expect(result.qualityReport!.blocking).toEqual([]);
   });
 
-  it('rejects Telegram copy that merges Top 3 and radar into fewer than four blocks even when the critic scores it clean', async () => {
+  it('keeps merged Telegram Top 3/radar blocks as a warning after bounded repair', async () => {
     const merged = telegramCandidate({ blocks: 2 });
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
       role === 'writer' ? writerResult({ text: `${merged}<CANDIDATE>${merged}` }) : criticResult(),
     );
 
-    const result = adaptWeeklySocialChannel(telegramInput());
+    const result = await adaptWeeklySocialChannel(telegramInput());
 
-    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
-    await expect(result).rejects.toMatchObject({
-      blockerCodes: expect.arrayContaining(['telegram_block_structure']),
-    });
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.qualityReport!.warnings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'telegram_block_structure' })]),
+    );
   });
 
   it('rejects Telegram copy that dumps the three lead stories into Радар even when there are four blocks', async () => {
@@ -488,12 +503,12 @@ describe('adaptWeeklySocialChannel', () => {
       role === 'writer' ? writerResult({ text: `${candidate}<CANDIDATE>${candidate}` }) : criticResult(),
     );
 
-    const result = adaptWeeklySocialChannel(telegramInput());
+    const result = await adaptWeeklySocialChannel(telegramInput());
 
-    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
-    await expect(result).rejects.toMatchObject({
-      blockerCodes: expect.arrayContaining(['telegram_top3_block_required']),
-    });
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.qualityReport!.warnings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'telegram_top3_block_required' })]),
+    );
   });
 
   it('rejects Telegram copy whose URL sits inside a long analysis block instead of a short CTA', async () => {
@@ -507,12 +522,12 @@ describe('adaptWeeklySocialChannel', () => {
       role === 'writer' ? writerResult({ text: `${mergedCta}<CANDIDATE>${mergedCta}` }) : criticResult(),
     );
 
-    const result = adaptWeeklySocialChannel(telegramInput());
+    const result = await adaptWeeklySocialChannel(telegramInput());
 
-    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
-    await expect(result).rejects.toMatchObject({
-      blockerCodes: expect.arrayContaining(['telegram_cta_merged']),
-    });
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.qualityReport!.warnings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'telegram_cta_merged' })]),
+    );
   });
 
   it('rejects Telegram copy whose blocks are joined by a single line break instead of a blank line', async () => {
@@ -521,12 +536,12 @@ describe('adaptWeeklySocialChannel', () => {
       role === 'writer' ? writerResult({ text: `${glued}<CANDIDATE>${glued}` }) : criticResult(),
     );
 
-    const result = adaptWeeklySocialChannel(telegramInput());
+    const result = await adaptWeeklySocialChannel(telegramInput());
 
-    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
-    await expect(result).rejects.toMatchObject({
-      blockerCodes: expect.arrayContaining(['paragraph_breaks_required']),
-    });
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.qualityReport!.warnings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'paragraph_breaks_required' })]),
+    );
   });
 
   it('accepts Facebook copy with a blank line between every block', async () => {
@@ -548,12 +563,12 @@ describe('adaptWeeklySocialChannel', () => {
       role === 'writer' ? writerResult({ text: `${glued}<CANDIDATE>${glued}` }) : criticResult(),
     );
 
-    const result = adaptWeeklySocialChannel(facebookInput());
+    const result = await adaptWeeklySocialChannel(facebookInput());
 
-    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
-    await expect(result).rejects.toMatchObject({
-      blockerCodes: expect.arrayContaining(['paragraph_breaks_required']),
-    });
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.qualityReport!.warnings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'paragraph_breaks_required' })]),
+    );
   });
 
   it('accepts LinkedIn copy with a blank line between every short block', async () => {
@@ -580,12 +595,12 @@ describe('adaptWeeklySocialChannel', () => {
         : criticResult(),
     );
 
-    const result = adaptWeeklySocialChannel(linkedinInput());
+    const result = await adaptWeeklySocialChannel(linkedinInput());
 
-    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
-    await expect(result).rejects.toMatchObject({
-      blockerCodes: expect.arrayContaining(['paragraph_breaks_required']),
-    });
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.qualityReport!.warnings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'paragraph_breaks_required' })]),
+    );
   });
 
   it('rejects LinkedIn copy with blank lines but one block that is a single dense paragraph', async () => {
@@ -596,12 +611,29 @@ describe('adaptWeeklySocialChannel', () => {
         : criticResult(),
     );
 
-    const result = adaptWeeklySocialChannel(linkedinInput());
+    const result = await adaptWeeklySocialChannel(linkedinInput());
 
-    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
-    await expect(result).rejects.toMatchObject({
-      blockerCodes: expect.arrayContaining(['linkedin_dense_paragraph']),
-    });
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.qualityReport!.warnings).toEqual(
+      expect.arrayContaining([expect.objectContaining({ code: 'linkedin_dense_paragraph' })]),
+    );
+  });
+});
+
+describe('normalizeTelegramCandidate', () => {
+  it('wraps the first percent in bold and squeezes past 1600 characters', () => {
+    const raw = telegramCandidate({ bold: false, targetLength: 1_900 });
+    expect(raw.includes('**')).toBe(false);
+    expect(raw.length).toBeGreaterThan(1_600);
+    const normalized = normalizeTelegramCandidate(raw);
+    expect(normalized).toContain('**97%**');
+    expect(normalized.length).toBeGreaterThanOrEqual(900);
+    expect(normalized.length).toBeLessThanOrEqual(1_600);
+  });
+
+  it('strips Threads <PART> markers that do not belong on Telegram', () => {
+    const withPart = `${telegramCandidate()}<PART>leftover`;
+    expect(normalizeTelegramCandidate(withPart)).not.toMatch(/<PART>/i);
   });
 });
 
