@@ -6,6 +6,17 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-28
 
+## 2026-08-28 — Social copy: critic `{type,text}` більше не валить провайдерів (коригує запис вище)
+
+Той самий retry `373f2eeb` уже не впав на Telegram quality gate — впав на критику:
+OpenRouter повернув `flags` як масив об’єктів `{type,text}` (`Critic flags are invalid`),
+наступна модель обрізала JSON, і job став `provider_exhausted`. Письменник копію вже мав.
+Тепер `parseCritic` витягує `text`/`message` з таких об’єктів; якщо всі critic-провайдери
+впали, адаптер лишає writer-копію і пропускає аудит (owner review на вкладці Social).
+(source: GitHub Actions run `33192562453`; `src/lib/social/critic.ts`)
+
+---
+
 ## 2026-08-28 — Social copy: після ремонту немає термінальних quality-блокерів
 
 Власник: «ніяких блокерів». Після мержу #338 Production уже був на `907a261`, але linked

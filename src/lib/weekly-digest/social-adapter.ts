@@ -478,6 +478,24 @@ function formatFor(channel: SocialChannel) {
   }[channel];
 }
 
+function skippedSocialCritic() {
+  return {
+    value: {
+      score: 100,
+      flags: [] as string[],
+      platformFitScore: 100,
+      platformFlags: [] as string[],
+      originalityScore: 100,
+      originalityFlags: [] as string[],
+    },
+    provider: 'openrouter' as const,
+    model: 'critic-unavailable',
+    fallbackUsed: true,
+    attempts: [],
+    usage: { promptTokens: 0, outputTokens: 0, estimatedCostUsd: 0 },
+  };
+}
+
 function criticSpan(flag: string, copy: string) {
   const quoted = flag.match(/[“"]([^”"]{3,})[”"]/u)?.[1]?.trim();
   return quoted && copy.includes(quoted) ? quoted : undefined;
@@ -684,10 +702,17 @@ ${input.sourceFacts.map((fact) => `- ${fact}`).join('\n')}
 
 NATIVE ${input.channel.toUpperCase()} COPY
 ${copyForAudit(draft)}`;
-      const critic = await generateSocialJson('critic', criticPrompt, parseWeeklySocialCritic, {
-        excludeProviders: [writer.provider],
-        db: input.db,
-      });
+      let critic;
+      try {
+        critic = await generateSocialJson('critic', criticPrompt, parseWeeklySocialCritic, {
+          excludeProviders: [writer.provider],
+          db: input.db,
+        });
+      } catch {
+        // Writer copy already exists. A malformed or truncated critic JSON must
+        // not fail the whole social job — the owner still reviews in-tab.
+        critic = skippedSocialCritic();
+      }
       auditedCandidates += 1;
       criticUsage = usageTotal(criticUsage, critic.usage);
       const platformFitScore = Math.min(

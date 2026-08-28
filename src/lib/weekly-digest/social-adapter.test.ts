@@ -224,6 +224,18 @@ describe('adaptWeeklySocialChannel', () => {
     vi.clearAllMocks();
   });
 
+  it('keeps writer copy when every critic provider is exhausted', async () => {
+    vi.mocked(generateSocialJson).mockImplementation(async (role: string) => {
+      if (role === 'writer') return writerResult();
+      throw new Error('All configured social LLM providers failed');
+    });
+
+    const result = await adaptWeeklySocialChannel(baseInput());
+
+    expect(result.qualityReport!.blocking).toEqual([]);
+    expect(result.text.length).toBeGreaterThan(40);
+  });
+
   it("takes the hook angle from the writer's own JSON, not from a caller-supplied input", async () => {
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
       role === 'writer' ? writerResult({ angle: 'A self-generated angle' }) : criticResult(),
