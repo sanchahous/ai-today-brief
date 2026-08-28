@@ -24,8 +24,9 @@ Last updated: 2026-08-28
   недостатньо: прод-копія могла мати 4+ абзаци і все одно злити секції. `telegramStructureIssues()`
   тепер вимагає (1) ≥4 блоки, (2) окремий блок, чий перший рядок — Топ 3 / Top 3, (3) інший блок,
   чий перший рядок — Радар / Radar, (4) короткий останній блок з URL (≤180 символів). Кожне
-  порушення — іменований blocking issue в repair-промпті. `USE` (чи практика справді практична)
-  лишається судженням критика.
+  порушення — іменований blocking issue в repair-промпті. Живий retry `3f8a1db2` показав, що
+  якір `^Радар` over-block: слово «Радар» більше не є hard-block, якщо Топ 3 вже окремий;
+  перший рядок матчиться як substring (`На радарі` теж). `USE` лишається судженням критика.
   (source: прод-Supabase `mdiqfatpqczwqghwttpm` job `f5453cae-307c-439e-ba5e-9db891eb095d` live
   check 2026-08-28 12:42 UTC;
   [weekly-digest § Social copy follow-up](pipeline/weekly-digest.md#social-copy-channel-contract-format-rules-were-critic-only-no-deterministic-gate-2026-08-28);

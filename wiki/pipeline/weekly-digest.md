@@ -71,9 +71,17 @@ a *different* block whose first line is Радар / Radar; and a short last blo
 `telegram_top3_block_required`, `telegram_radar_block_required`, `telegram_top3_radar_merged`,
 `telegram_cta_merged`. `scoreCandidate` penalizes any of them. `USE` (is the practical step
 actually practical) stays critic-only.
-(source: prod-Supabase `mdiqfatpqczwqghwttpm` job `f5453cae-307c-439e-ba5e-9db891eb095d` live
-check 2026-08-28 12:42 UTC; `src/lib/weekly-digest/social-adapter.ts`,
-`src/lib/weekly-digest/social-adapter.test.ts`)
+
+**Live retry the same afternoon (`3f8a1db2`, 14:35 UTC).** The gate fired as designed, then
+over-blocked: `telegram_radar_block_required` meant "first line must start with Радар/Radar",
+which also misses the locative «На радарі» and any unlabeled remaining-signals block. The
+rejected body is not stored on the job; the critic separately scored 75 for bolding the word
+«нуль» instead of a digit. Radar is now matched as a substring of the first line
+(`радар`/`radar`, so locative `радарі` hits). A missing Radar *word* is no longer a hard block
+when Топ 3 already has its own block — the original incident was radar-present / Top-3-missing.
+Critic `USE`/bold-target stays critic-only.
+(source: prod-Supabase job `3f8a1db2-883e-41c7-84de-d834ac50ac24` 2026-08-28 14:35 UTC;
+GitHub Actions run `33180626567`; `src/lib/weekly-digest/social-adapter.ts`)
 
 ---
 

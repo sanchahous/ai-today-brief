@@ -397,6 +397,19 @@ describe('adaptWeeklySocialChannel', () => {
     expect(result.qualityReport!.blocking).toEqual([]);
   });
 
+  it('accepts Telegram copy whose radar block is headed На радарі rather than a bare Radar label', async () => {
+    const candidate = telegramCandidate().replace(/^Radar:/m, 'На радарі:');
+    vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
+      role === 'writer'
+        ? writerResult({ text: `${candidate}<CANDIDATE>${candidate}` })
+        : criticResult(),
+    );
+
+    const result = await adaptWeeklySocialChannel(telegramInput());
+
+    expect(result.qualityReport!.blocking).toEqual([]);
+  });
+
   it('rejects Telegram copy with no bold span even when the critic scores it clean', async () => {
     const candidate = telegramCandidate({ bold: false });
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>

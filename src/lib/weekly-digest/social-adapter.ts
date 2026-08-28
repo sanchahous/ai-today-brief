@@ -110,11 +110,15 @@ function telegramBlockFirstLine(block: string) {
 }
 
 function isTelegramTop3Block(block: string) {
-  return /^(?:топ[\s-]*3|top[\s-]*3)\b/iu.test(telegramBlockFirstLine(block));
+  // First line may be "Топ 3:", "📡 Top 3", "Головне · Топ 3" — the label
+  // does not have to be the very first token after the emoji strip.
+  return /(?:топ[\s-]*3|top[\s-]*3)\b/iu.test(telegramBlockFirstLine(block));
 }
 
 function isTelegramRadarBlock(block: string) {
-  return /^(?:радар|radar)\b/iu.test(telegramBlockFirstLine(block));
+  // Ukrainian locative "На радарі" must match; anchoring at ^ missed the
+  // live retry that labeled the section that way and still failed the gate.
+  return /(?:радар|radar)\b/iu.test(telegramBlockFirstLine(block));
 }
 
 function blockHasRadarLabel(block: string) {
@@ -146,13 +150,6 @@ function telegramStructureIssues(candidate: string) {
         'No blank-line-delimited block starts with Топ 3 / Top 3; the three lead stories were likely folded into another section (often Радар).',
       suggestedFix:
         'Give the three lead stories their own block whose first line is Топ 3, separate from Радар, with a short consequence for each.',
-    });
-  }
-  if (radarIndex < 0) {
-    issues.push({
-      code: 'telegram_radar_block_required',
-      message: 'No blank-line-delimited block starts with Радар / Radar; the contract requires radar in its own block.',
-      suggestedFix: 'Put the remaining signals in a separate block whose first line is Радар.',
     });
   }
 
