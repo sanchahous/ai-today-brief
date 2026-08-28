@@ -7,7 +7,7 @@ Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 
 Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 Visuals upload body cap 2026-08-26, admin weekly workspace hang fix 2026-08-28,
-social copy channel-contract deterministic gate 2026-08-28,
+social copy channel-contract + Telegram Топ 3/Радар/CTA gate 2026-08-28,
 консолідація трьох відео-папок в один репозиторій 2026-08-28
 Last updated: 2026-08-28
 
@@ -15,9 +15,25 @@ Last updated: 2026-08-28
 
 ## Стан репозиторію
 
+- **Social copy: Telegram block-structure (Топ 3 / Радар / CTA) — той самий патерн, сильніший
+  гейт (2026-08-28), гілка `claude/telegram-social-copy-block-structure-fix`.** PR #335
+  (bold/backticks/довжина/верстка) змержено о 12:26 UTC; linked retry `f5453cae` (12:42 UTC)
+  підтвердив фікс — довжина/bold/backticks зникли зі скарг, `platform_fit` 68→78 — але впав
+  знову: критик побачив три головні новини всередині блоку «📡 Радар» (окремого «Топ 3» не було)
+  і CTA, злитий з аналітичним підсумком. Лічити порожні рядки (`TELEGRAM_MIN_BLOCKS = 4`)
+  недостатньо: прод-копія могла мати 4+ абзаци і все одно злити секції. `telegramStructureIssues()`
+  тепер вимагає (1) ≥4 блоки, (2) окремий блок, чий перший рядок — Топ 3 / Top 3, (3) інший блок,
+  чий перший рядок — Радар / Radar, (4) короткий останній блок з URL (≤180 символів). Кожне
+  порушення — іменований blocking issue в repair-промпті. `USE` (чи практика справді практична)
+  лишається судженням критика.
+  (source: прод-Supabase `mdiqfatpqczwqghwttpm` job `f5453cae-307c-439e-ba5e-9db891eb095d` live
+  check 2026-08-28 12:42 UTC;
+  [weekly-digest § Social copy follow-up](pipeline/weekly-digest.md#social-copy-channel-contract-format-rules-were-critic-only-no-deterministic-gate-2026-08-28);
+  `src/lib/weekly-digest/social-adapter.ts`)
+
 - **Social copy: Telegram bold/backticks/довжина і верстка (порожній рядок між блоками) для
-  Telegram/Facebook/LinkedIn тепер гейтяться детерміновано, не лише критиком (2026-08-28), гілка
-  `claude/telegram-social-copy-approval-9de597`.** Прод-джоба `social_copy` впала `quality_gate`
+  Telegram/Facebook/LinkedIn тепер гейтяться детерміновано, не лише критиком (2026-08-28), змержено
+  як [#335](https://github.com/sanchahous/ai-today-brief/pull/335).** Прод-джоба `social_copy` впала `quality_gate`
   на Telegram після вичерпаних 3 раундів ремонту: `platform_fit` 68/100, ~1700 симв. проти
   контрактних 900–1600, без `**bold**`, `cache-write` без `` `backticks` ``. Корінь — увесь
   `CHANNEL_CONTRACT` (довжина, bold/backticks, порожній рядок між блоками, доданий 21.08 для

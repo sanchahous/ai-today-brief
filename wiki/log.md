@@ -6,6 +6,31 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-28
 
+## 2026-08-28 — Social copy: Telegram block-structure follow-up (Топ 3 / Радар / CTA)
+
+PR #335 (детермінований гейт для довжини/bold/backticks/верстки Telegram/Facebook/LinkedIn)
+змержено о 12:26 UTC. О 12:42 UTC linked retry `f5453cae` того самого джоба підтвердив: усі три
+виправлені дефекти зникли зі скарг критика, `platform_fit` піднявся з 68 до 78 — але job усе одно
+впав `quality_gate`. Нова причина (з `last_error`): «Відсутній окремий блок «Топ 3»… Блок «📡 Радар»
+містить три новини» і «CTA об’єднано з підсумковим аналітичним блоком». Та сама діра, що й раніше
+цього дня: вимога була прозою в `CHANNEL_CONTRACT`, без коду.
+
+Самого `TELEGRAM_MIN_BLOCKS = 4` недостатньо — прод-копія могла мати 4+ абзаци і все одно злити
+секції. `telegramStructureIssues()` у `social-adapter.ts` тепер перевіряє: ≥4 порожніх-рядкових
+блоки; окремий блок, чий перший рядок — Топ 3 / Top 3 (емодзі-префікс дозволений); інший блок,
+чий перший рядок — Радар / Radar; короткий останній блок з URL (≤180 символів, код
+`telegram_cta_merged`). `scoreCandidate` штрафує будь-яке з цих порушень. `USE` (ціна/ліміт)
+навмисно лишається судженням критика.
+
+Тести: `blocks: 2` → `telegram_block_structure`; 4 блоки з «📡 Радар» без «Топ 3» →
+`telegram_top3_block_required`; довгий останній блок з URL → `telegram_cta_merged`. Фікстура
+`telegramCandidate()` паддить контент-блок, не CTA.
+(source: прод-Supabase `mdiqfatpqczwqghwttpm` job `f5453cae-307c-439e-ba5e-9db891eb095d` live
+check 2026-08-28 12:42 UTC; `src/lib/weekly-digest/social-adapter.ts`,
+`src/lib/weekly-digest/social-adapter.test.ts`)
+
+---
+
 ## 2026-08-28 — Консолідація трьох відео-папок в один репозиторій
 
 **Джерело:** запит власника — `E:\ATBvideobrief`, `E:\domains\ai-today-brief-video` і цей

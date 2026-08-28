@@ -78,27 +78,42 @@ function xCandidate(opening: string) {
 }
 
 /**
- * Builds Telegram copy whose length and bold/backtick markers can be
- * toggled independently, so each contract requirement can be tested in
- * isolation from the others.
+ * Builds Telegram copy whose length, bold/backtick markers, and block count
+ * can be toggled independently, so each contract requirement can be tested
+ * in isolation from the others. Defaults to the required four separate
+ * blocks (lead, Top 3, radar, CTA).
  */
 function telegramCandidate(
-  overrides: { bold?: boolean; code?: boolean; targetLength?: number } = {},
+  overrides: { bold?: boolean; code?: boolean; targetLength?: number; blocks?: number } = {},
 ) {
   const bold = overrides.bold ?? true;
   const code = overrides.code ?? true;
   const targetLength = overrides.targetLength ?? 1100;
+  const blockCount = overrides.blocks ?? 4;
   const boldSpan = bold ? '**97%**' : '97%';
   const codeSpan = code ? '`agent-eval`' : 'agent-eval';
   const url = 'https://aitodaybrief.com/r/s/token';
-  const lead = `Anthropic shipped a concrete evaluation harness for agent behavior this week. Teams can run ${codeSpan} against their own tool-calling agent before the next release and compare the ${boldSpan} catch rate against their own traces, not the vendor benchmark, because coverage varies by tool surface. `;
+  const pieces = [
+    `Anthropic shipped a concrete evaluation harness for agent behavior this week, and the ${boldSpan} catch rate is the number worth remembering.`,
+    `Top 3: the harness itself, a new open benchmark for tool-use safety, and a routing change that cuts inference cost for agentic workloads.`,
+    `Radar: teams can run ${codeSpan} against their own tool-calling agent before the next release and compare the catch rate against their own traces, not the vendor benchmark, because coverage varies by tool surface.`,
+    `Read more: ${url}`,
+  ];
+  const kept = Math.min(Math.max(1, blockCount), pieces.length);
+  const blocks = pieces.slice(0, kept);
+  // Merge any remaining pieces into the last kept block instead of dropping
+  // them, so every fact (and the URL) survives even at a low block count --
+  // this mirrors the production defect (blocks merged), not missing content.
+  blocks[kept - 1] = [blocks[kept - 1], ...pieces.slice(kept)].join(' ');
   const filler =
-    'It keeps a steady operational cadence across the week without repeating the same claim twice, since this padding only holds the paragraph inside the target character range for the test fixture. ';
-  let text = lead;
-  while (text.length + url.length < targetLength) {
-    text += filler;
+    'It keeps a steady operational cadence across the week without repeating the same claim twice, since this padding only holds the paragraph inside the target character range for the test fixture.';
+  // Pad a content block, never the CTA -- a long last block with the URL is
+  // itself a contract violation (CTA merged into analysis).
+  const padIndex = Math.min(2, kept - 1);
+  while (blocks.reduce((sum, block) => sum + block.length, 0) < targetLength) {
+    blocks[padIndex] += ` ${filler}`;
   }
-  return `${text}\n\nRead more: ${url}`;
+  return blocks.join('\n\n');
 }
 
 function telegramInput() {
@@ -425,6 +440,65 @@ describe('adaptWeeklySocialChannel', () => {
     await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
     await expect(result).rejects.toMatchObject({
       blockerCodes: expect.arrayContaining(['channel_length']),
+    });
+  });
+
+  it('rejects Telegram copy that merges Top 3 and radar into fewer than four blocks even when the critic scores it clean', async () => {
+    const merged = telegramCandidate({ blocks: 2 });
+    vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
+      role === 'writer' ? writerResult({ text: `${merged}<CANDIDATE>${merged}` }) : criticResult(),
+    );
+
+    const result = adaptWeeklySocialChannel(telegramInput());
+
+    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
+    await expect(result).rejects.toMatchObject({
+      blockerCodes: expect.arrayContaining(['telegram_block_structure']),
+    });
+  });
+
+  it('rejects Telegram copy that dumps the three lead stories into Радар even when there are four blocks', async () => {
+    const url = 'https://aitodaybrief.com/r/s/token';
+    const blocks = [
+      'Anthropic shipped a concrete evaluation harness for agent behavior this week, and the **97%** catch rate is the number worth remembering.',
+      'Try it this week: run `agent-eval` against your own tool-calling agent before the next release and compare the catch rate against your traces, not the vendor benchmark.',
+      '📡 Радар: the harness itself, a new open benchmark for tool-use safety, and a routing change that cuts inference cost — three lead stories sitting where radar should be.',
+      `Read more: ${url}`,
+    ];
+    const filler =
+      'Coverage varies by tool surface, so keep the comparison on your own traces rather than the advertised number.';
+    while (blocks.reduce((sum, block) => sum + block.length, 0) < 1100) {
+      blocks[1] += ` ${filler}`;
+    }
+    const candidate = blocks.join('\n\n');
+    vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
+      role === 'writer' ? writerResult({ text: `${candidate}<CANDIDATE>${candidate}` }) : criticResult(),
+    );
+
+    const result = adaptWeeklySocialChannel(telegramInput());
+
+    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
+    await expect(result).rejects.toMatchObject({
+      blockerCodes: expect.arrayContaining(['telegram_top3_block_required']),
+    });
+  });
+
+  it('rejects Telegram copy whose URL sits inside a long analysis block instead of a short CTA', async () => {
+    const blocks = telegramCandidate().split('\n\n');
+    const urlBlock = blocks[blocks.length - 1] ?? '';
+    const analysis =
+      'If you only watch parameter counts you will miss the operational point: coverage, routing cost and the licence term decide whether the harness is usable this week, and that reading has to stay in the analysis rather than in the CTA.';
+    blocks[blocks.length - 1] = `${analysis} ${urlBlock}`;
+    const mergedCta = blocks.join('\n\n');
+    vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
+      role === 'writer' ? writerResult({ text: `${mergedCta}<CANDIDATE>${mergedCta}` }) : criticResult(),
+    );
+
+    const result = adaptWeeklySocialChannel(telegramInput());
+
+    await expect(result).rejects.toBeInstanceOf(SocialCopyQualityError);
+    await expect(result).rejects.toMatchObject({
+      blockerCodes: expect.arrayContaining(['telegram_cta_merged']),
     });
   });
 
