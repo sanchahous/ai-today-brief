@@ -4141,3 +4141,53 @@ YouTube Data API ключа) і використовує це значення; 
 `src/app/admin/(cms)/weekly/actions.ts`; `src/lib/weekly-digest/video.ts`)
 
 ---
+
+## 2026-08-28 — Social copy: канал-контракт (довжина, bold/backticks, верстка) тепер гейтиться детерміновано
+
+Owner-повідомлена прод-джоба `social_copy` впала терміналом `quality_gate` на Telegram після
+вичерпаних 3 раундів bounded repair: `platform_fit` 68/100, ~1700 симв. проти контрактних
+900–1600, жодного `**bold**`, `cache-write` без `` `backticks` ``.
+
+Корінь: усі механічно перевірювані вимоги `CHANNEL_CONTRACT` (символьний діапазон; Telegram
+bold+backticks; порожній рядок між блоками, доданий 21.08 для Telegram/Facebook/LinkedIn) були
+лише прозою в промпті — незалежний critic мав їх **помітити**, а не гарантовано зловити.
+Довжина вже впливала на `platformFitScore` через `scoreCandidate`, але repair-промпт бачив лише
+загальне «Platform-native fit N/100», а не точну причину, якщо критик сам не додав її у
+`platformFlags` того раунду. Bold/backticks/порожні рядки взагалі не мали коду — якщо критик
+пройшов з порожнім `platformFlags`, дефект міг проскочити непоміченим. Той самий корінь, що вже
+раз ламав верстку LinkedIn і Telegram 20.08 (0 порожніх рядків в обох) і був тоді закритий
+прозою в промпті, а не кодом.
+
+Зміни в `src/lib/weekly-digest/social-adapter.ts`:
+
+1. `channelContractIssues()` — нова функція: детерміновано перевіряє символьний діапазон
+   контракту (telegram/facebook/x/linkedin), наявність `**bold**` і `` `backticks` `` для
+   Telegram, порожній рядок між блоками (telegram/facebook/linkedin) і LinkedIn «не один щільний
+   абзац» (жоден блок між порожніми рядками не довший за 400 символів). Кожне порушення —
+   іменований blocking issue (`channel_length`, `telegram_bold_required`,
+   `telegram_backticks_required`, `paragraph_breaks_required`, `linkedin_dense_paragraph`)
+   незалежно від того, що сказав критик — тож repair-промпт щоразу називає точний дефект.
+2. `scoreCandidate` тепер штрафує ті самі дефекти — ранжування хуків одразу віддає перевагу
+   контрактному варіанту, ще до критика.
+3. `CHANNEL_CONTRACT` для telegram/facebook/linkedin вперше явно запрошує одну іконку/емодзі на
+   заголовок практичного блоку (патерн 🛠️/📉 з шаблонів omni-channel-matrix) — до цього емодзі в
+   промпті не згадувались, лише `CHANNEL_RULES.maxEmoji` ставив стелю.
+4. `src/lib/social/telegram-format.ts` — `containsTelegramBold`/`containsTelegramInlineCode`
+   виділені в окремі перевірки (`containsTelegramMarkup` тепер їх композиція).
+
+Навмисно не чіпали: `USE`-блок (чи практика справді практична) лишається судженням критика через
+`platformFitScore` — це редакційна оцінка, не механічна перевірка, як і зафіксовано у відкритому
+питанні omni-channel-publishing-matrix §9.
+
+Тести: 6 нових у `telegram-format.test.ts` + `social-adapter.test.ts` (bold/backticks/довжина
+для Telegram; порожній рядок для Telegram/Facebook/LinkedIn; щільний абзац для LinkedIn — кожен
+у ізоляції, плюс «приймає коректну копію»). `tsc --noEmit`, `eslint`, і весь
+`src/lib/social` + `src/lib/weekly-digest` (701/717, залишок — існуючий, не повʼязаний збій
+через відсутній пакет шрифтів `dejavu-fonts-ttf` у цьому worktree) — зелені.
+(source: owner-reported production job failure 2026-08-28 13:14 Kyiv;
+[weekly-digest § Social copy: channel-contract format rules](pipeline/weekly-digest.md#social-copy-channel-contract-format-rules-were-critic-only-no-deterministic-gate-2026-08-28),
+[omni-channel-publishing-matrix §7](marketing/omni-channel-publishing-matrix.md#7-конформанс-що-вже-змінено-в-коді-що-лишається);
+`src/lib/weekly-digest/social-adapter.ts`, `src/lib/social/telegram-format.ts`,
+`src/lib/weekly-digest/social-adapter.test.ts`, `src/lib/social/telegram-format.test.ts`)
+
+---

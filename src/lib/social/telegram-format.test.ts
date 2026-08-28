@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  containsTelegramBold,
+  containsTelegramInlineCode,
   containsTelegramMarkup,
   escapeTelegramHtml,
   telegramRenderedLength,
@@ -43,5 +45,16 @@ describe('telegram formatting', () => {
     expect(containsTelegramMarkup(text)).toBe(true);
     expect(containsTelegramMarkup(text)).toBe(true);
     expect(containsTelegramMarkup('plain copy with no markers')).toBe(false);
+  });
+
+  it('distinguishes bold from inline code, repeatably', () => {
+    expect(containsTelegramBold('Only **95 billion** fire per token')).toBe(true);
+    expect(containsTelegramBold('Only **95 billion** fire per token')).toBe(true);
+    expect(containsTelegramBold('Run `agent-eval` before you ship')).toBe(false);
+
+    expect(containsTelegramInlineCode('Run `agent-eval` before you ship')).toBe(true);
+    expect(containsTelegramInlineCode('Run `agent-eval` before you ship')).toBe(true);
+    expect(containsTelegramInlineCode('Only **95 billion** fire per token')).toBe(false);
+    expect(containsTelegramInlineCode('run:\n```bash\nvllm serve qwen\n```')).toBe(true);
   });
 });

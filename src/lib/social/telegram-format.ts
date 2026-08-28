@@ -48,10 +48,14 @@ export function telegramRenderedLength(text: string) {
  * and `RegExp.test` on a global pattern advances `lastIndex`, so sharing them
  * here would make every second call on the same string return false.
  */
+export function containsTelegramBold(text: string) {
+  return new RegExp(BOLD.source).test(text);
+}
+
+export function containsTelegramInlineCode(text: string) {
+  return new RegExp(INLINE_CODE.source).test(text) || text.includes('```');
+}
+
 export function containsTelegramMarkup(text: string) {
-  return (
-    new RegExp(BOLD.source).test(text) ||
-    new RegExp(INLINE_CODE.source).test(text) ||
-    text.includes('```')
-  );
+  return containsTelegramBold(text) || containsTelegramInlineCode(text);
 }
