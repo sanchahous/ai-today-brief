@@ -8,12 +8,24 @@ Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 Visuals upload body cap 2026-08-26, admin weekly workspace hang fix 2026-08-28,
 social copy channel-contract + Telegram Топ 3/Радар/CTA gate 2026-08-28,
+Fixes & blockers + warnings do not hold socials 2026-08-28,
 консолідація трьох відео-папок в один репозиторій 2026-08-28
 Last updated: 2026-08-28
 
 ---
 
 ## Стан репозиторію
+
+- **Weekly Fixes & blockers + warnings не тримають socials (2026-08-28), гілка
+  `feat/weekly-fixes-blockers-tab`.** Жовті картки Master quality (`story_length`,
+  `trust_attribution`, article трохи понад 3 000 слів) більше не є pipeline-гейтом:
+  persist після `editorial_master` ставить Visuals/Social/PDF, якщо немає
+  `issues[].blocker === true`; Approve quality — фінальне рішення і теж ставить ту
+  саму чергу. Нова вкладка **Fixes & blockers** (одразу після Overview) має одну
+  machine-кнопку; **Fix remaining issues** / retry / resume / regenerate прибрані з
+  Research і з таблиці jobs. Coded blockers і Ship не ослаблені.
+  (source: owner session 2026-08-28; [weekly-digest](pipeline/weekly-digest.md);
+  [weekly-admin-runbook](ops/weekly-admin-runbook.md))
 
 - **Social copy: Telegram block-structure (Топ 3 / Радар / CTA) — той самий патерн, сильніший
   гейт (2026-08-28), гілка `claude/telegram-social-copy-block-structure-fix`.** PR #335

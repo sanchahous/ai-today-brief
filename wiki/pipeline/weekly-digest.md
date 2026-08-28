@@ -4,13 +4,9 @@ Summary: як працює weekly-дайджест у проді: оркестр
 гейти, admin UX і поточний статус розкатки.
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live checks 2026-08-04…22,
 editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
-latest revision is the working copy 2026-08-22, pre-critic hang 2026-08-22,
-critic model rotation 2026-08-22, Fix remaining issues reuses working copy 2026-08-22,
-image prompt library v6 2026-08-23, owner visual-direction contract 2026-08-24,
-image-only QA Likert rescale 2026-08-25, Video tab #441 / waiting stills 2026-08-25,
-Visuals upload body cap 2026-08-26, artifact input_hash column privs 2026-08-26,
-Generation jobs panel payload/polling fix 2026-08-28, Video tab duration bound + auto-fetch 2026-08-28,
-social copy channel-contract gate + Telegram Топ 3/Радар/CTA follow-up 2026-08-28
+working-copy UX 2026-08-22, image prompt library v6 2026-08-23, daily visual 2026-08-24…25,
+Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract 2026-08-28,
+Fixes & blockers + warnings do not hold socials 2026-08-28
 Last updated: 2026-08-28
 
 ---
@@ -1484,7 +1480,7 @@ pdfkit `Helvetica.afm` ENOENT (окрема підозра з тієї ж інв
 | Вихід | Стан джоби | Що бачить власник |
 |---|---|---|
 | gate пройдено | `succeeded` | активна ревізія + quality report, як раніше |
-| лишились невирішені перевірки | **`succeeded`** з `needs_owner_review: true` | **робоча (активна) ревізія** + `unresolved_issues` у стрічці; visuals/social/PDF не ставляться, доки власник не розбере перевірки. До 2026-08-22 це була неактивна draft-ревізія |
+| лишились невирішені перевірки | **`succeeded`** з `needs_owner_review: true` | **робоча (активна) ревізія** + `unresolved_issues` у стрічці; visuals/social/PDF ставляться, якщо немає coded `blocker: true`. До 2026-08-28 non-converged прогін **не** ставив компаньйонів. До 2026-08-22 це була неактивна draft-ревізія |
 | бюджет часу / сегмент не дописано / critic недоступний | `failed`, код **`resumable`** (retryable) | «N/14 сегментів збережено», повтор продовжує |
 
 Провал якості більше **не** робить джобу `failed`: блокер спершу проходить цикл точкового
@@ -1565,6 +1561,31 @@ Apply. Авторемонт (`master-repair.ts`) уже вичерпав спр�
 (source: `src/lib/weekly-digest/master-engine.ts` `seedMasterRunStateFromBundle`,
 `generation-worker.ts` `tryWorkingCopyMasterBundle`, прод job `0fcb0b04` live check 2026-08-22,
 owner session 2026-08-22)
+
+### Warnings і Approve більше не тримають socials (2026-08-28)
+
+Два збої в одному випуску: жовті картки (`story_length` 379 vs 400, EN master 3045 vs 3000,
+`trust_attribution`) виглядали як гейт; власник Approve-ив Research/quality, а система
+все одно ставила новий `editorial_master` («Fix remaining issues») і не ставила `social_copy`.
+
+Корінь:
+
+1. `masterPersistDecision` ставив `queuePostMasterJobs: false` для будь-якого
+   `converged === false`. `converged` — це порожній список `editorialQualityFailures`,
+   тобто **і** coded blockers, **і** dimension floors (naturalness 80 / trust 75 /
+   overall 85). Warnings-only звіт тримав Visuals/Social/PDF.
+2. `reviewWeeklyArtifactAction` на Approve quality **не** викликав
+   `queuePostMasterJobs`, тож навіть легальний Approve (гейт дивиться лише
+   `blocker === true`) не доставляв компаньйонів.
+3. UI пропонував **Fix remaining issues**, коли `qualityContentNeedsRepair` був true
+   для **будь-якого** issue, включно з warnings.
+
+Фікс: persist ставить post-master, якщо немає `issues[].blocker`; Approve quality теж
+ідемпотентно ставить ту саму чергу; вкладка **Fixes & blockers** має одну machine-кнопку;
+warnings ніколи не стають «regenerate master»; уже `approved` quality відхиляє regenerate.
+Ship як і раніше дивиться лише coded blockers (`qualityReportBlockingIssues`).
+(source: `src/lib/weekly-digest/master-persist.ts`, `repair-queue.ts`,
+`src/app/admin/(cms)/weekly/actions.ts`, owner session 2026-08-28)
 
 ## `retry_weekly_digest_generation_job` копіював мертвий `resume_from_job_id` — фікс (2026-08-22)
 

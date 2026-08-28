@@ -309,7 +309,7 @@ const ARTIFACT_GATE_GUIDANCE: Record<WeeklyArtifactType, ArtifactGateGuidance> =
     fixMissing:
       'Open Research → approve all 3 Top research packs → Start / retry Content Studio. When editorial_master succeeds, Master quality appears on that tab — Approve it (owner).',
     fixUnapproved:
-      'Open Research → scroll to Master quality → fix blocking critic issues (retry Content Studio if needed) → Approve version (owner).',
+      'Open Research → Approve Master quality if only warnings remain. Coded (red) blockers go to Fixes & blockers. Warnings never block Social.',
   },
   article: {
     tab: 'article',

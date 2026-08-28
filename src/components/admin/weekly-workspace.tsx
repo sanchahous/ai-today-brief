@@ -18,6 +18,13 @@ import { scenesFromVideoScriptContent } from '@/lib/weekly-digest/video-script-c
 import { buildVideoShootPack } from '@/lib/weekly-digest/video-shoot-pack';
 import { buildHallucinationBoard } from '@/lib/weekly-digest/hallucination-board';
 import { qualityReportForbidsApprove } from '@/lib/weekly-digest/machine-attest';
+import {
+  resolveWeeklyRepairQueueFromWorkspace,
+  WEEKLY_FIXES_JOB_TYPES,
+  type WeeklyHumanWait,
+  type WeeklyMachineRepair,
+  type WeeklyRepairQueue,
+} from '@/lib/weekly-digest/repair-queue';
 import type {
   WeeklyArtifactAdminRow,
   WeeklyArtifactReviewAdminRow,
@@ -78,13 +85,16 @@ import {
   createWeeklyVisualRefreshDraftAction,
   dispatchWeeklyMasterCliAction,
   enqueueWeeklyGenerationAction,
+  ensureWeeklyPostMasterJobsAction,
   pauseWeeklyDigestAction,
   postponeWeeklyDigestAction,
   rebuildWeeklySelectionAction,
   restoreWeeklyDigestRevisionAction,
   regenerateWeeklyMasterAction,
   useLatestWeeklyDigestRevisionAction,
+  resumeWeeklyMasterFromCheckpointAction,
   resumeWeeklyThreadsSequenceAction,
+  retryWeeklyGenerationJobAction,
   reviewWeeklyArtifactAction,
   saveWeeklyRevisionAction,
   saveWeeklyVisualRefreshDirectionAction,
@@ -102,6 +112,7 @@ import {
 
 export const WEEKLY_WORKSPACE_TABS = [
   { id: 'overview', label: 'Overview' },
+  { id: 'fixes', label: 'Fixes & blockers' },
   { id: 'stories', label: 'Stories' },
   { id: 'research', label: 'Research' },
   { id: 'article', label: 'Article UK / EN' },
@@ -117,6 +128,7 @@ export type WeeklyWorkspaceTab = (typeof WEEKLY_WORKSPACE_TABS)[number]['id'];
 /** Job types shown on each workspace tab (Overview keeps a summary only). */
 const GENERATION_JOB_TYPES_BY_TAB: Record<WeeklyWorkspaceTab, readonly string[]> = {
   overview: [],
+  fixes: WEEKLY_FIXES_JOB_TYPES,
   stories: [],
   research: ['research_pack', 'editorial_master'],
   article: ['editorial_master'],
@@ -300,6 +312,7 @@ function GenerationJobsOverviewSummary({
 }) {
   const byTab = new Map<WeeklyWorkspaceTab, { total: number; active: number; failed: number }>();
   for (const tab of WEEKLY_WORKSPACE_TABS) {
+    if (tab.id === 'fixes') continue;
     if (GENERATION_JOB_TYPES_BY_TAB[tab.id].length === 0) continue;
     byTab.set(tab.id, { total: 0, active: 0, failed: 0 });
   }
@@ -655,9 +668,9 @@ function ArtifactReview({
           {artifact.artifact_type === 'content_quality_report' &&
           qualityReportForbidsApprove(artifact.content) ? (
             <p className="text-sm text-rose-200">
-              Approve is blocked until language and other blocking issues are empty. Click{' '}
-              <span className="font-semibold">Fix remaining issues</span> above to run another
-              writer/critic pass, or Request changes if the remaining items are editorial.
+              Approve is blocked until coded blockers are empty. Open{' '}
+              <span className="font-semibold">Fixes & blockers</span> for the one machine action,
+              or Request changes if the remaining items are editorial. Warnings never block Approve.
             </p>
           ) : null}
           <div className="flex flex-wrap gap-2">
@@ -2011,60 +2024,167 @@ function EditorialVersionCard({
   );
 }
 
-function MasterQualityRepairCta({
+function repairActionLabel(repair: WeeklyMachineRepair): { idle: string; pending: string } {
+  if (repair.kind === 'regenerate_master') {
+    return { idle: 'Regenerate master', pending: 'Queueing writer/critic…' };
+  }
+  if (repair.kind === 'resume_master') {
+    return { idle: 'Resume saved master', pending: 'Queueing saved segments…' };
+  }
+  if (repair.kind === 'queue_post_master') {
+    return { idle: 'Start visuals, social and PDF', pending: 'Queueing studio jobs…' };
+  }
+  return {
+    idle: `Retry ${repair.jobType ?? 'job'}`,
+    pending: 'Queueing retry…',
+  };
+}
+
+function RepairActionForm({
   digestId,
   revisionId,
+  repair,
   canReview,
-  canEdit,
-  masterBusy,
 }: {
   digestId: string;
   revisionId: string | null;
+  repair: WeeklyMachineRepair;
   canReview: boolean;
-  canEdit: boolean;
-  masterBusy: boolean;
 }) {
-  if (!revisionId) return null;
-  if (masterBusy) {
+  if (repair.kind === 'wait') return null;
+  if (!canReview && repair.kind !== 'retry_job') {
     return (
-      <p className="mt-4 text-sm leading-6 text-slate-400">
-        A writer/critic pass is already running. Wait for it to finish — this panel will refresh
-        with the new scores.
-      </p>
+      <p className="mt-3 text-sm text-slate-500">Owner can run this repair from this tab.</p>
     );
   }
-  if (canReview) {
+  const labels = repairActionLabel(repair);
+  if (repair.kind === 'regenerate_master') {
+    if (!revisionId) return null;
     return (
-      <form
-        action={regenerateWeeklyMasterAction}
-        className="mt-4 rounded-xl border border-cyan-400/25 bg-cyan-400/8 p-4"
-      >
+      <form action={regenerateWeeklyMasterAction} className="mt-4">
         <input type="hidden" name="weekly_digest_id" value={digestId} />
         <input type="hidden" name="revision_id" value={revisionId} />
-        <p className="text-sm font-bold text-cyan-50">Fix remaining issues</p>
-        <p className="mt-1 text-xs leading-5 text-slate-400">
-          Re-runs critic and field repair on the current article, using this report as guidance.
-          Research packs stay. The edition is not rewritten from scratch. The new draft becomes the
-          working copy and counts against this revision&apos;s spend cap.
-        </p>
-        <div className="mt-3">
-          <ActionSubmitButton
-            idleLabel="Fix remaining issues"
-            pendingLabel="Queueing writer/critic…"
-            className={PRIMARY}
-          />
-        </div>
+        <input type="hidden" name="workspace_tab" value="fixes" />
+        <ActionSubmitButton idleLabel={labels.idle} pendingLabel={labels.pending} className={PRIMARY} />
       </form>
     );
   }
-  if (canEdit) {
+  if (repair.kind === 'resume_master' && repair.sourceJobId) {
     return (
-      <p className="mt-4 text-sm leading-6 text-slate-500">
-        Owner can queue another writer/critic pass from this report (Fix remaining issues).
-      </p>
+      <form action={resumeWeeklyMasterFromCheckpointAction} className="mt-4">
+        <input type="hidden" name="weekly_digest_id" value={digestId} />
+        <input type="hidden" name="source_job_id" value={repair.sourceJobId} />
+        <input type="hidden" name="workspace_tab" value="fixes" />
+        <ActionSubmitButton idleLabel={labels.idle} pendingLabel={labels.pending} className={PRIMARY} />
+      </form>
+    );
+  }
+  if (repair.kind === 'retry_job' && repair.jobId) {
+    return (
+      <form action={retryWeeklyGenerationJobAction} className="mt-4">
+        <input type="hidden" name="weekly_digest_id" value={digestId} />
+        <input type="hidden" name="job_id" value={repair.jobId} />
+        <input type="hidden" name="workspace_tab" value="fixes" />
+        <ActionSubmitButton idleLabel={labels.idle} pendingLabel={labels.pending} className={PRIMARY} />
+      </form>
+    );
+  }
+  if (repair.kind === 'queue_post_master' && revisionId) {
+    return (
+      <form action={ensureWeeklyPostMasterJobsAction} className="mt-4">
+        <input type="hidden" name="weekly_digest_id" value={digestId} />
+        <input type="hidden" name="revision_id" value={revisionId} />
+        <input type="hidden" name="workspace_tab" value="fixes" />
+        <ActionSubmitButton idleLabel={labels.idle} pendingLabel={labels.pending} className={PRIMARY} />
+      </form>
     );
   }
   return null;
+}
+
+function HumanWaitList({ digestId, human }: { digestId: string; human: WeeklyHumanWait[] }) {
+  if (human.length === 0) return null;
+  return (
+    <section className={PANEL} aria-labelledby="fixes-human-heading">
+      <h2 id="fixes-human-heading" className="text-lg font-bold text-white">
+        You still need to…
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-slate-400">
+        These are owner steps on the domain tabs. They never hide behind the machine Fix button.
+      </p>
+      <ul className="mt-4 grid gap-2">
+        {human.map((item) => (
+          <li
+            key={`${item.tab}:${item.label}`}
+            className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/8 bg-black/15 px-4 py-3"
+          >
+            <p className="text-sm text-slate-200">{item.label}</p>
+            <a
+              href={`/admin/weekly/${encodeURIComponent(digestId)}?tab=${item.tab}`}
+              className="text-xs font-bold text-cyan-300 underline hover:text-cyan-200"
+            >
+              Open {item.tab} →
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function FixesPanel({
+  workspace,
+  queue,
+  canReview,
+}: {
+  workspace: WeeklyDigestWorkspace;
+  queue: WeeklyRepairQueue;
+  canReview: boolean;
+}) {
+  const current = queue.current;
+  return (
+    <div className="grid gap-5">
+      <section className={PANEL} aria-labelledby="fixes-current-heading">
+        <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">
+          One machine action
+        </p>
+        <h2 id="fixes-current-heading" className="mt-1 text-xl font-bold text-white">
+          Fixes &amp; blockers
+        </h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+          Warnings such as story length or missing inline attribution do not block Social, Visuals
+          or PDF. An Approve on Master quality is final — the system will not start another
+          writer/critic pass to chase leftover amber cards.
+        </p>
+        {current ? (
+          <div className="mt-4 rounded-xl border border-cyan-400/25 bg-cyan-400/8 p-4">
+            <p className="text-sm font-bold text-cyan-50">{current.title}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-300">{current.detail}</p>
+            <RepairActionForm
+              digestId={workspace.digest.id}
+              revisionId={workspace.revision?.id ?? null}
+              repair={current}
+              canReview={canReview}
+            />
+          </div>
+        ) : (
+          <p className="mt-4 rounded-xl border border-emerald-400/20 bg-emerald-400/6 p-4 text-sm text-emerald-100">
+            No machine repair is waiting. Finish any owner steps below, then continue on the domain
+            tabs.
+          </p>
+        )}
+      </section>
+      <HumanWaitList digestId={workspace.digest.id} human={queue.human} />
+      <GenerationJobsSection
+        digestId={workspace.digest.id}
+        revisionId={workspace.revision?.id ?? null}
+        jobs={workspace.generationJobs}
+        attempts={workspace.generationAttempts}
+        events={workspace.generationEvents}
+        tab="fixes"
+      />
+    </div>
+  );
 }
 
 function ResearchPanel({
@@ -2177,10 +2297,11 @@ function ResearchPanel({
             GitHub Actions worker (the five-minute cron remains a safety dispatcher).
           </li>
           <li>
-            Review Master quality below → click{' '}
-            <span className="font-semibold text-white">Fix remaining issues</span> if scores or
-            warnings remain → <span className="font-semibold text-white">Approve version</span> on
-            the quality report.
+            Review Master quality below. Amber cards are notes, not pipeline gates — they do not
+            block Social, Visuals or PDF. Click{' '}
+            <span className="font-semibold text-white">Approve version</span> when you accept the
+            working copy. That decision is final. If a coded blocker remains, open{' '}
+            <span className="font-semibold text-white">Fixes &amp; blockers</span>.
           </li>
         </ol>
 
@@ -2508,20 +2629,30 @@ function ResearchPanel({
             ) : null}
             {qualityIssues.length === 0 && qualityNeedsRepair ? (
               <p className="rounded-xl border border-amber-400/20 bg-amber-400/6 p-4 text-sm text-amber-100">
-                No coded issue cards, but one or more scores are below the quality floor. Fix
-                remaining issues re-runs writer/critic with those notes as guidance.
+                No coded issue cards, but one or more scores are below the quality floor. That is
+                optional polish. It does not block Social, Visuals or PDF, and it does not require
+                another writer/critic pass.
               </p>
             ) : null}
           </div>
-          {qualityNeedsRepair ? (
-            <MasterQualityRepairCta
-              digestId={workspace.digest.id}
-              revisionId={workspace.revision?.id ?? null}
-              canReview={canReview && quality.revision_id === workspace.revision?.id}
-              canEdit={canEdit}
-              masterBusy={masterBusy}
-            />
-          ) : null}
+          {quality.review_status !== 'approved' ? (
+            <p className="mt-4 text-sm leading-6 text-slate-400">
+              Approve below accepts this working copy, including leftover warnings. The system will
+              not start another master to chase amber cards. Coded blockers (red) still need{' '}
+              <a
+                href={`/admin/weekly/${encodeURIComponent(workspace.digest.id)}?tab=fixes`}
+                className="font-semibold text-cyan-300 underline hover:text-cyan-200"
+              >
+                Fixes &amp; blockers
+              </a>
+              .
+            </p>
+          ) : (
+            <p className="mt-4 text-sm leading-6 text-emerald-200">
+              Master quality is approved. That decision stands. Downstream generation must not wait
+              on leftover warnings.
+            </p>
+          )}
           <ArtifactReview
             digestId={workspace.digest.id}
             artifact={quality}
@@ -5744,6 +5875,13 @@ export function WeeklyWorkspace({
           canEdit={canEdit}
           canRebuildSelection={session.role === 'owner'}
           canCreateVisualRefresh={canOwnRelease}
+        />
+      ) : null}
+      {activeTab === 'fixes' ? (
+        <FixesPanel
+          workspace={workspace}
+          queue={resolveWeeklyRepairQueueFromWorkspace(workspace)}
+          canReview={canReview}
         />
       ) : null}
       {activeTab === 'stories' ? <StoriesPanel workspace={workspace} canEdit={canEdit} /> : null}

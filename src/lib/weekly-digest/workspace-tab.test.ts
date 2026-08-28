@@ -30,6 +30,7 @@ describe('weekly workspace error tabs', () => {
   it('keeps the same tab ids as the weekly workspace nav', () => {
     expect(WEEKLY_WORKSPACE_ERROR_TABS).toEqual([
       'overview',
+      'fixes',
       'stories',
       'research',
       'article',

@@ -83,3 +83,70 @@ export function shouldEnqueueContentStudioMaster(statuses: string[]): boolean {
   if (statuses.some((status) => status === 'succeeded')) return false;
   return true;
 }
+
+type PostMasterItem = { id: string; title_en: string | null; title_uk: string | null };
+
+/**
+ * Visuals, social, PDF and video jobs that follow a finished editorial_master.
+ * Idempotent: duplicate queue keys are ignored so Approve can safely re-call.
+ */
+export async function queuePostMasterJobs(
+  weeklyDigestId: string,
+  revisionId: string,
+  items: PostMasterItem[],
+): Promise<void> {
+  const { getSupabaseAdmin } = await import('@/lib/supabase-admin');
+  const db = getSupabaseAdmin();
+  const jobs: Array<{
+    type: string;
+    key: string;
+    input: Record<string, string>;
+    idempotencyKey?: string;
+  }> = [
+    ...items.map((item) => ({
+      type: 'story_image',
+      key: `story-image:${item.id}`,
+      input: {
+        revision_item_id: item.id,
+        alt_text: item.title_en ?? '',
+        alt_text_uk: item.title_uk ?? '',
+      },
+    })),
+    { type: 'cover', key: 'cover:neutral', input: { locale: 'en', slot_key: 'cover:neutral' } },
+    { type: 'social_copy', key: 'social-copy', input: { locale_map: 'database' } },
+    {
+      type: 'video_script',
+      key: 'video-script:en',
+      input: { locale: 'en', slot_key: 'video-script:en' },
+    },
+    {
+      type: 'video_manifest',
+      key: 'video-manifest:en',
+      idempotencyKey: contentStudioVideoManifestKey({
+        digestId: weeklyDigestId,
+        revisionId,
+      }),
+      input: { locale: 'en', slot_key: 'video-manifest:en' },
+    },
+    { type: 'pdf', key: 'pdf:en', input: { locale: 'en', slot_key: 'pdf:en' } },
+    { type: 'pdf', key: 'pdf:uk', input: { locale: 'uk', slot_key: 'pdf:uk' } },
+  ];
+  const results = await Promise.all(
+    jobs.map((queued) =>
+      db.rpc('queue_weekly_digest_generation_job', {
+        p_weekly_digest_id: weeklyDigestId,
+        p_revision_id: revisionId,
+        p_job_type: queued.type,
+        p_idempotency_key:
+          queued.idempotencyKey ??
+          `${WEEKLY_CONTENT_STUDIO_VERSION}:${weeklyDigestId}:${revisionId}:${queued.key}`,
+        p_input: queued.input,
+      }),
+    ),
+  );
+  for (const { error } of results) {
+    if (error && !/duplicate|unique/i.test(error.message)) {
+      throw new Error(`[weekly-generation] queue post-master: ${error.message}`);
+    }
+  }
+}
