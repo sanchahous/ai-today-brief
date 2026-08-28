@@ -38,7 +38,7 @@ export interface WeeklySocialAdaptation extends SocialDraft {
 
 const CHANNEL_CONTRACT: Record<SocialChannel, string> = {
   telegram:
-    'Ukrainian, 900–1600 characters. Separate every block with a blank line; never run blocks together on consecutive lines. Telegram is the only channel that renders rich text: use **bold** for the one number that matters and `backticks` for tool, flag or command names. Never use these markers on any other channel. Four labeled blocks, each its own blank-line-delimited paragraph, never merged: (1) a strong lead, (2) a block whose first line is Топ 3 / Top 3 with a short consequence for each of the three stories — never dump those three into Радар, (3) a separate block whose first line is Радар / Radar for the remaining signals, (4) a short standalone CTA line with exactly one URL and nothing else — never fold the URL into the closing analysis. At least one block must name a model, tool, endpoint or setting the reader can try this week, the concrete step to try it, and its cost, limit or caveat. One small icon or emoji may head the practical block and the radar block for scannability (stay inside the channel emoji budget); never one per line.',
+    'Ukrainian, 900–1600 characters. Separate every block with a blank line; never run blocks together on consecutive lines. Never write <PART>, <SLIDE> or <CAPTION> here — those markers belong to Threads and Instagram; Telegram uses a blank line only. Telegram is the only channel that renders rich text: use **bold** for the one number that matters and `backticks` for tool, flag or command names. Never use these markers on any other channel. Four labeled blocks, each its own blank-line-delimited paragraph, never merged: (1) a strong lead, (2) a block whose first line is Топ 3 / Top 3 with a short consequence for each of the three stories — never dump those three into Радар, (3) a separate block whose first line is Радар / Radar for the remaining signals, (4) a short standalone CTA line with exactly one URL and nothing else — never fold the URL into the closing analysis. At least one block must name a model, tool, endpoint or setting the reader can try this week, the concrete step to try it, and its cost, limit or caveat. One small icon or emoji may head the practical block and the radar block for scannability (stay inside the channel emoji budget); never one per line.',
   facebook:
     'Ukrainian, 700–1400 characters. Blank line between paragraphs. One human narrative line, 2–3 conclusions, one meaningful question and exactly one URL. Name at least one tool, model or setting the reader can act on, with the trade-off that comes with it. One small icon or emoji may head the practical block for scannability; never one per line.',
   threads:
@@ -253,10 +253,10 @@ export function parseWeeklySocialWriter(raw: string) {
   if (typeof value.text !== 'string' || !value.text.trim()) {
     throw new SyntaxError('Writer text is missing.');
   }
-  // This is part of the provider response contract, not a post-generation
-  // workflow concern. Keeping it inside the validator lets the OpenRouter
-  // model queue reject one malformed response and continue to the next model
-  // without terminating the whole channel/job.
+  // Reject empty/unparseable text so the OpenRouter model queue can continue.
+  // A single complete `text` body is valid: live writers often omit <CANDIDATE>
+  // and returning that as malformed burned the queue, after which later models
+  // pasted Threads <PART> markers onto Telegram.
   candidatesFromText(value.text);
   return {
     angle: value.angle.trim(),
@@ -276,7 +276,8 @@ function candidatesFromText(text: string) {
     .map((candidate) => candidate.trim())
     .filter(Boolean);
   if (blocks.length >= 2) return blocks.slice(0, 3);
-  throw new SyntaxError('Writer must return 2–3 hook candidates separated by <CANDIDATE>.');
+  if (marked.length === 1) return marked;
+  throw new SyntaxError('Writer text is empty after candidate split.');
 }
 
 function unpackCandidate(
