@@ -120,8 +120,8 @@ export function validateWeeklyVideoResultManifest(
   const thumbnailUrl = requiredManifestString(youtubeRow, 'thumbnailUrl');
   if (!thumbnailUrl.startsWith('https://')) throw new Error('Video thumbnail URL must use HTTPS.');
   const durationSeconds = Number(youtubeRow.durationSeconds);
-  if (!Number.isInteger(durationSeconds) || durationSeconds < 300 || durationSeconds > 600) {
-    throw new Error('Weekly YouTube duration must be between 300 and 600 seconds.');
+  if (!Number.isInteger(durationSeconds) || durationSeconds < 200 || durationSeconds > 1200) {
+    throw new Error('Weekly YouTube duration must be between 200 and 1200 seconds.');
   }
   const publishedAt = requiredManifestString(youtubeRow, 'publishedAt');
   if (!Number.isFinite(Date.parse(publishedAt))) throw new Error('Video publishedAt is invalid.');
