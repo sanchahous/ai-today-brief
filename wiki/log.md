@@ -4,7 +4,147 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-22
+Last updated: 2026-08-28
+
+## 2026-08-28 — Консолідація трьох відео-папок в один репозиторій
+
+**Джерело:** запит власника — `E:\ATBvideobrief`, `E:\domains\ai-today-brief-video` і цей
+репозиторій частково дублювали дані про відео-виробництво; власник втратив орієнтацію
+(«ходжу по папках і хаотично шукаю дані»). Grill-me: 4 уточнювальні питання перед виконанням
+(git-історія video-репо, місце зберігання медіа, доля готових рендерів, порядок дій), усі
+підтверджено рекомендованими варіантами.
+
+**Змінено:**
+- `wiki/pipeline/video-boundary.md` — оновлено Ownership/Media retention, додано розділ про
+  консолідацію 2026-08-28 і git-конвенцію (`main` = актуальний стан).
+- Нові сторінки (перенесено з `ai-today-brief-video/wiki`, адаптовано посилання під нову
+  структуру): `wiki/pipeline/video-remotion-compositions.md`,
+  `wiki/pipeline/video-production-workflow.md` (злито з `production-workflow.md` +
+  `ops/creator-materials-guide.md` + колишнім `E:\ATBvideobrief\26-08-2026\ПОЧНИ-ТУТ.md`),
+  `wiki/pipeline/video-script.md`, `wiki/pipeline/video-avatar-and-voice.md`,
+  `wiki/pipeline/video-motion-broll.md`, `wiki/pipeline/video-youtube-delivery.md`,
+  `wiki/ops/video-render-runbook.md`, `wiki/ops/video-weekly-checklist.md`,
+  `wiki/product/video-editorial-format.md` (злито з `editorial-format.md` +
+  `strategy/quality-bar.md`), `wiki/research/2026-08-05-professional-ai-video-guide.md`.
+- **Свідомо не перенесено** (застаріле/дублікат, а не втрачене — повний вміст лишається в
+  локальному бекапі `E:\domains\_backup\ai-today-brief-video-pre-filter-repo-2026-08-28\`
+  до `git filter-repo`): `decisions/2026-07-23-video-pipeline-boundary.md` (само зазначало
+  себе як дзеркало, канон — тут же), `architecture/agentic-workflow.md` (дублював чотиризонну
+  структуру головного репо; git-конвенція перенесена в `video-boundary.md`),
+  `ops/video4-living-scenes.md` і `ops/video4-operator-pack.md` (архівні знімки одного
+  конкретного дайджесту `ai-weekly-2026-08-09`, самі позначали себе як «канон переїхав у CMS»),
+  `overview.md`/`now.md`/`open-questions.md`/`log.md`/`index.md` цього репо (репо-мета,
+  унікальний операційний зміст влито в `wiki/now.md` головного репо).
+- `wiki/now.md`, `wiki/index.md` — новий запис і рядки для всіх перенесених сторінок.
+- `raw/_local/video/atbvideobrief/` — 130 файлів, повна копія `E:\ATBvideobrief` (robocopy,
+  406 МБ).
+- `raw/_local/video/from-video-repo-git-history/` — 139 файлів, копія `19-08-2026/` +
+  `public/26-08-2026/` + `public/episodes/26-08-2026/` з `ai-today-brief-video` до
+  `git filter-repo` (473 МБ). Обидва джерела дедуп-звірені по імені+розміру файлу і залишені
+  окремо (без «розумного» злиття один-в-один) — майже все в `ATBvideobrief` унікальне, а
+  video-репо мало власні дрібні правки супутніх текстових файлів.
+- `artifacts/_local/video-masters/atb-episode-26-08.mp4` — 156 МБ, промастерений фінальний
+  рендер епізоду 26-08 (owner session 2026-08-27).
+- `ai-today-brief-video`: видалено `wiki/`, `raw/`, `artifacts/`, `19-08-2026/`,
+  `.cursor/rules/00-wiki.mdc`; виправлено `.gitignore` (вкладені датовані підпапки під
+  `public/` тепер справді ігноруються); `CLAUDE.md`/`AGENTS.md` спрощено до вказівника на цей
+  репозиторій; git-історію переписано `git filter-repo`.
+- `E:\ATBvideobrief` видалено повністю після підтвердженого копіювання.
+
+**Нотатка:** причина 314 МБ `.git` у video-репо — прогалина в `.gitignore`: правило
+`public/avatar/` не покривало вкладені датовані підпапки (`public/26-08-2026/avatar/`), тож
+~300 МБ голосу/кліпів/музики закомітились напряму в історію. Той самий клас багу міг би
+повторитись і надалі без фіксу `.gitignore`.
+
+## 2026-08-23 — Корекція primary render і fail-closed semantic QA
+
+**Джерело:** завершальний adversarial review реалізації Prompt-as-Code v6 після owner-відповідей
+про один «правильний» результат і скріни дешевих robot/UI-кліше.
+
+**Корекція:** production `render`, як і `prompt_only`, тепер запитує `variantCount: 1`;
+відхилення vision формує repair brief наступної спроби, а не три кандидати для ручної лотереї.
+`routeSeatTemplates` та batch harness лишаються тільки offline/історичною можливістю. Для
+ручного `story_image` відсутній `revision_item`, нечитабельний/відсутній QA payload, помилка
+завантаження story context або `story_checked !== true` тепер fail-closed для machine attestation.
+Ручний редакторський release не блокується. Другий critic бачить approved counterweight;
+обидва critic-prompts явно відсікають mascot/cute humanoid robots, якщо робот не є буквальним
+предметом новини. Після живого візуального перегляду legacy long title hero також стиснуто:
+на desktop title і 16:9 cover входять в екран поруч, без обрізання повного title.
+
+**Перевірено:** `npm run test` — 186 файлів / 1704 тести; `npm run build` (включно з TypeScript),
+`git diff --check` і `npm run wiki:check` зелені. Full ESLint — 0 errors / 10 warnings у
+неповʼязаних pre-existing файлах; wiki-lint — 0 errors / 4 pre-existing warnings. Browser route
+check підтвердив видимий cover, `object-fit: contain`, відсутній framework overlay/console errors
+і `#story-2` + `aria-current="location"` після click.
+(source: локальна verification 2026-08-23)
+
+**Wiki:** коригує попередній запис цього ж дня; оновлено
+[content-sim](pipeline/content-sim.md), [weekly-digest](pipeline/weekly-digest.md),
+[image-prompt-library](pipeline/image-prompt-library.md), [card-images](marketing/card-images.md),
+[weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [weekly-sandbox](ops/weekly-sandbox.md),
+[overview](overview.md), [now](now.md), [index](index.md) і
+[gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md).
+(source: owner session 2026-08-23; `src/lib/weekly-digest/generation-worker.ts`;
+`src/lib/weekly-digest/machine-attest.ts`; `src/lib/content-sim/vision-critic.ts`)
+
+## 2026-08-23 — Review primary illustration / semantic QA / weekly reading path
+
+**Джерело:** відповіді власника й скріни weekly `ai-weekly-2026-08-09`: cheap robots,
+фейковий UI, псевдотекст, component soup, silent crop, гігантський hero і sidebar без active
+стану. Власник обрав один «правильний» primary результат із ручним переглядом, а не три
+альтернативи для вибору.
+
+**Корінь:** v6 покращив assembly, але тримав three-seat UX, мав математично недосяжний глобальний
+template reuse gate (пʼять templates на весь digest), fallback planning-prose, image-only upload QA
+і `object-cover` у pipeline/UI. Додатковий adversarial review знайшов, що semantic QA blocker міг
+не потрапити в legacy auto-attest allow-list і тому автоматично схвалити файл.
+
+**Зроблено:** `prompt_only` дає один 6-block primary cause-and-effect prompt; templates обмежують
+інформаційний бюджет і ban fake UI/robots; semantic contract зберігається поруч із prompt і дає
+clean story upload другий story-aware advisory pass. Будь-який active post-upload QA blocker
+залишає картинку на owner review. Weekly image encode/UI використовують safe `contain` frame,
+hero top-align, stories ідуть раніше за допоміжні блоки, ToC має active scroll/hash state; master
+отримав length gate для hero copy.
+
+**Перевірено:** `npm run test` — 186 файлів / 1700 тестів; `npm run typecheck`, targeted ESLint,
+`git diff --check` і `npm run wiki:check` зелені. Browser route check підтвердив `object-contain`,
+story ordering і `aria-current` для `#story-2`; повний site build ще не є твердженням у цьому записі.
+(source: локальна verification 2026-08-23)
+
+**Wiki:** новий [gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md);
+оновлено [image-prompt-library](pipeline/image-prompt-library.md),
+[weekly-digest](pipeline/weekly-digest.md), [card-images](marketing/card-images.md),
+[weekly-illustration-plan](pipeline/weekly-illustration-plan.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [content-sim](pipeline/content-sim.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md), [weekly-sandbox](ops/weekly-sandbox.md),
+[overview](overview.md), [now](now.md), [index](index.md).
+(source: owner session 2026-08-23; `pipeline/card-image.ts`; `src/lib/weekly-digest/run-post-upload-qa.ts`; `src/lib/weekly-digest/machine-attest.ts`; `src/components/weekly/weekly-toc.tsx`)
+
+## 2026-08-23 — Prompt-as-Code v6 (awesome-gpt-image-2, без галереї)
+
+**Джерело:** власник ігнорував згенеровані weekly-промпти й писав свої з новини;
+живий digest `71af784b-3c89-47f8-bc38-e3eae4def2a7` (вкладка Visuals): два
+sun-printing кадри + diagram з `essence.mechanism` / `Teams should audit`.
+Upstream: [awesome-gpt-image-2](https://github.com/freestylefly/awesome-gpt-image-2) (MIT).
+
+**Корінь:** `flattenMetaphorPitch` зліплював planning-поля в рядок для моделі;
+`composeDiagramCanonical` вставляв editorial-прозу; журі просило кожну лінзу
+показати повний causal mini-story; один FLUX-craft на всі seats.
+
+**Зроблено:** `pipeline/image-prompt-library/` (5 шаблонів, 6-block assembler,
+NOTICE MIT); `flattenMetaphorPitch` = лише renderable; policy
+**`weekly-semantic-story-v6`**; Visuals бейдж шаблону; daily cover і news cards
+через той самий асемблер (news без `infographic-engine`); house skill
+`.agents/skills/gpt-image-2-editorial`. Текст у пікселях лишається D1.
+
+**Wiki:** нова [image-prompt-library](pipeline/image-prompt-library.md); оновлено
+[card-images](marketing/card-images.md), [weekly-digest](pipeline/weekly-digest.md),
+[weekly-illustration-plan](pipeline/weekly-illustration-plan.md) P6,
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [overview](overview.md),
+[now](now.md), [content-sim](pipeline/content-sim.md), [index](index.md).
 
 ## 2026-08-22 — Fix remaining issues переписував робочу копію з нуля
 

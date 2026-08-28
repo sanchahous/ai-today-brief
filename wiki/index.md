@@ -4,8 +4,9 @@ Summary: головний зміст усієї wiki. Кожен рядок — 
 для будь-якого питання: спершу читаємо цей файл, потім релевантні сторінки.
 Sources: інвентаризація репозиторію (live check 2026-08-04), follow-up critic-recovery 2026-08-10,
 story-image / Visual Affordance / illustration B1-fix 2026-08-11…15, Social/PDF/Video 2026-08-17…19,
-GA4 + SEO 2026-08-21, latest weekly revision is the working copy 2026-08-22
-Last updated: 2026-08-22
+GA4 + SEO 2026-08-21, latest weekly revision is the working copy 2026-08-22,
+консолідація трьох відео-папок в один репозиторій 2026-08-28
+Last updated: 2026-08-28
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -58,7 +59,13 @@ Last updated: 2026-08-22
 | ✅ [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) | Ітеративний рушій `editorial_master`: посегментний запис, точковий ремонт поля; Fix remaining issues наливає сегменти з робочої копії й не переписує 14 writer-викликів; critic крутить модель між раундами | `master-engine.ts` / `master-persist.ts` / `master-repair.ts` / `editorial-llm.ts`, owner session 2026-08-09 / 2026-08-22 |
 | ✅ [pipeline/content-sim](pipeline/content-sim.md) | Симуляція/бектест: per-concept 2×3 parallel vision loop, structural gates, advisory semantic planning, escalation, release gate | `pipeline/card-image.ts`, `src/lib/content-sim`, 2026-08-12 |
 | ✅ [pipeline/weekly-illustration-plan](pipeline/weekly-illustration-plan.md) | Виконавча специфікація ілюстрацій після рішення 2026-08-15. B1-fix … E3, F2, F3, G, A2, F5 зроблено 2026-08-15; origin JPEG новин — follow-up G2 | owner review живого випуску 2026-08-14 + рішення власника 2026-08-15 + `AI_Today_Brief_Visual_Algorithm_Plan.pdf` |
-| ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | CMS знімає (Shooting package); рендерер лише зводить |
+| ✅ [pipeline/video-boundary](pipeline/video-boundary.md) | CMS знімає (Shooting package); рендерер лише зводить; консолідація трьох відео-папок в один репозиторій 2026-08-28 |
+| ✅ [pipeline/video-remotion-compositions](pipeline/video-remotion-compositions.md) | Композиції `ai-today-brief-video` (AtbWeeklyYouTube/Shorts/Thumbnail/AtbEpisode), схема маніфесту v2/v3 | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
+| ✅ [pipeline/video-production-workflow](pipeline/video-production-workflow.md) | Два флоу монтажу: маніфест-driven weekly і creator-driven епізод (робоча директорія, структура папок) | перенесено й злито (`ПОЧНИ-ТУТ.md` + `creator-materials-guide.md` + `production-workflow.md`) 2026-08-28 |
+| ✅ [pipeline/video-script](pipeline/video-script.md) | Граматика сцен `weekly-video-v3`, WPS-гейт, Shorts | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
+| ✅ [pipeline/video-avatar-and-voice](pipeline/video-avatar-and-voice.md) | Edge TTS, PiP-аватар, сервіси HeyGen/Vidnoz/D-ID | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
+| ✅ [pipeline/video-motion-broll](pipeline/video-motion-broll.md) | Living B-roll: i2v-сервіси, промт-рецепт, слоти | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
+| ✅ [pipeline/video-youtube-delivery](pipeline/video-youtube-delivery.md) | YouTube як доставка, не архів; Shorts-воронка | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
 | ✅ [pipeline/llm-providers](pipeline/llm-providers.md) | Уніфікований реєстр LLM-провайдерів (у розробці): навіщо, ключові знахідки, статус фаз | owner session 2026-08-06 |
 
 ## SEO / AEO
@@ -98,6 +105,7 @@ Last updated: 2026-08-22
 | ✅ [product/responsive-crossbrowser-reference](product/responsive-crossbrowser-reference.md) | Повний референс responsive-аудиту | колишній `docs/product/…FULL-REFERENCE` |
 | ✅ [product/benchmark-protocol](product/benchmark-protocol.md) | Протокол ATB-бенчмарку | колишній `docs/benchmark/PROTOCOL.md` |
 | ✅ [product/benchmark-epic-spec](product/benchmark-epic-spec.md) | Epic-спека бенчмарк-інфри | колишній `docs/benchmark/epic-spec.md` |
+| ✅ [product/video-editorial-format](product/video-editorial-format.md) | Редакційна планка weekly-відео: «репортаж, не слайдшоу», вісім принципів | перенесено й злито (`editorial-format.md` + `quality-bar.md`) з `ai-today-brief-video/wiki` 2026-08-28 |
 
 ## Ops
 
@@ -112,6 +120,8 @@ Last updated: 2026-08-22
 | ✅ [ops/services-portability](ops/services-portability.md) | Портативність сервісів | колишній `docs/SERVICES-PORTABILITY.md` |
 | ✅ [ops/reddit-compliance](ops/reddit-compliance.md) | Чому Reddit API вимкнено і що потрібно для вмикання | колишній `docs/REDDIT-COMPLIANCE.md` |
 | ✅ [ops/github-actions-cost](ops/github-actions-cost.md) | Профіль витрат CI: хто палив Actions-хвилини, чому e2e коштував 15 хв, що змінив перехід у public | нове 2026-08-18, GitHub REST live check |
+| ✅ [ops/video-render-runbook](ops/video-render-runbook.md) | Точні команди рендеру/озвучки/субтитрів/result-маніфесту в `ai-today-brief-video` | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
+| ✅ [ops/video-weekly-checklist](ops/video-weekly-checklist.md) | Тижневий чеклист випуску weekly-відео, крок за кроком | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
 
 ## Audits
 
@@ -133,7 +143,11 @@ Last updated: 2026-08-22
 
 ## Research
 
-Порожньо. Сюди йдуть summary-сторінки, згенеровані з `raw/` за
+| Сторінка | Про що | Звідки |
+|---|---|---|
+| ✅ [research/2026-08-05-professional-ai-video-guide](research/2026-08-05-professional-ai-video-guide.md) | Гайд ціна/якість AI-відео: діагноз німого слайдшоу, драбина L0–L3, i2v/аватар сервіси | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
+
+Інше — сюди йдуть summary-сторінки, згенеровані з `raw/` за
 [ingest-workflow](architecture/agentic-workflow.md#ingest).
 
 ---
