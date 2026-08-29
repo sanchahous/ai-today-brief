@@ -3271,7 +3271,9 @@ export async function approveWeeklyDigestAction(formData: FormData) {
     p_weekly_digest_id: weeklyDigestId,
     p_override_reason: overrideReason || null,
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    redirectWeeklyReleaseError(weeklyDigestId, formatPreflightError(error.message));
+  }
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
@@ -3288,8 +3290,10 @@ export async function shipWeeklyDigestAction(formData: FormData) {
     .select('id,active_revision_id,status')
     .eq('id', weeklyDigestId)
     .maybeSingle();
-  if (digestError) throw new Error(digestError.message);
-  if (!digest?.active_revision_id) throw new Error('The digest has no active revision.');
+  if (digestError) redirectWeeklyReleaseError(weeklyDigestId, digestError.message);
+  if (!digest?.active_revision_id) {
+    redirectWeeklyReleaseError(weeklyDigestId, 'The digest has no active revision.');
+  }
   const { data: quality } = await admin
     .from('weekly_digest_artifacts')
     .select('content')
@@ -3298,7 +3302,10 @@ export async function shipWeeklyDigestAction(formData: FormData) {
     .eq('is_current', true)
     .maybeSingle();
   if (qualityReportForbidsApprove(quality?.content)) {
-    throw new Error('Cannot ship while the quality report still has blocking issues.');
+    redirectWeeklyReleaseError(
+      weeklyDigestId,
+      'Cannot ship while the quality report still has blocking issues.',
+    );
   }
   const { data: items } = await admin
     .from('weekly_digest_revision_items')
@@ -3321,7 +3328,8 @@ export async function shipWeeklyDigestAction(formData: FormData) {
       .map((item) => item.label)
       .slice(0, 5)
       .join('; ');
-    throw new Error(
+    redirectWeeklyReleaseError(
+      weeklyDigestId,
       `Cannot ship while the hallucination board still has unresolved blockers: ${waiting}`,
     );
   }
@@ -3333,7 +3341,7 @@ export async function shipWeeklyDigestAction(formData: FormData) {
     p_weekly_digest_id: weeklyDigestId,
   });
   if (shipError) {
-    throw new Error(formatPreflightError(shipError.message));
+    redirectWeeklyReleaseError(weeklyDigestId, formatPreflightError(shipError.message));
   }
   revalidateWeeklyAdmin(weeklyDigestId);
 }
@@ -3344,14 +3352,14 @@ export async function scheduleWeeklyDigestAction(formData: FormData) {
   const releaseAt = localKyivToIso(requiredString(formData, 'release_at_local'));
   const preflightAt = localKyivToIso(requiredString(formData, 'preflight_at_local'));
   if (new Date(releaseAt).getTime() - new Date(preflightAt).getTime() !== 15 * 60_000) {
-    throw new Error('Preflight must be exactly 15 minutes before release.');
+    redirectWeeklyReleaseError(weeklyDigestId, 'Preflight must be exactly 15 minutes before release.');
   }
   const db = await getSupabaseServer();
   const { error } = await db.rpc('schedule_weekly_digest', {
     p_weekly_digest_id: weeklyDigestId,
     p_release_at: releaseAt,
   });
-  if (error) throw new Error(error.message);
+  if (error) redirectWeeklyReleaseError(weeklyDigestId, formatPreflightError(error.message));
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
@@ -3361,9 +3369,11 @@ export async function pauseWeeklyDigestAction(formData: FormData) {
   const intent = requiredString(formData, 'intent');
   const reason = requiredString(formData, 'reason');
   if (reason.length < 10 || reason.length > 500) {
-    throw new Error('Pause/resume reason must contain 10 to 500 characters.');
+    redirectWeeklyReleaseError(weeklyDigestId, 'Pause/resume reason must contain 10 to 500 characters.');
   }
-  if (intent !== 'pause' && intent !== 'resume') throw new Error('Invalid release control.');
+  if (intent !== 'pause' && intent !== 'resume') {
+    redirectWeeklyReleaseError(weeklyDigestId, 'Invalid release control.');
+  }
   const db = await getSupabaseServer();
   const { error } =
     intent === 'pause'
@@ -3375,10 +3385,14 @@ export async function pauseWeeklyDigestAction(formData: FormData) {
           p_weekly_digest_id: weeklyDigestId,
           p_override_reason: null,
         });
-  if (error) throw new Error(error.message);
+  if (error) redirectWeeklyReleaseError(weeklyDigestId, formatPreflightError(error.message));
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
+/**
+ * Surface the real RPC/preflight text on the Release tab. A bare throw from a
+ * Server Action renders as Minified React error #441 (live 2026-08-28).
+ */
 function redirectWeeklyReleaseError(weeklyDigestId: string, message: string): never {
   redirect(
     `/admin/weekly/${encodeURIComponent(weeklyDigestId)}?tab=release&save_error=${encodeURIComponent(message.slice(0, 500))}`,

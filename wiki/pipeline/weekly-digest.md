@@ -6,10 +6,27 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live c
 editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 working-copy UX 2026-08-22, image prompt library v6 2026-08-23, daily visual 2026-08-24…25,
 Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract + fail-open 2026-08-28,
-Fixes & blockers + warnings do not hold socials 2026-08-28, topic-based slug on publish 2026-08-29
+Fixes & blockers + warnings do not hold socials 2026-08-28, topic-based slug on publish 2026-08-29, revision Stage 0 2026-08-29
 Last updated: 2026-08-29
 
 ---
+
+## Revision Stage 0: carry-forward on the master path (2026-08-29)
+
+Automated `editorial_master` used `create_service_weekly_digest_revision` /
+`…_with_visual_direction`, which hardcoded `carried_artifact_count: 0`. Manual Save
+already copied artifacts whose `input_hash` still matched. After
+`20260829130000_weekly_revision_stage0_carry_forward.sql` both service RPCs call
+`carry_forward_weekly_digest_revision_artifacts`. Cover replacement no longer
+`auto_revoked` social *copy* and remaps `asset_urls.artifactId` onto the new current
+row. `preflight_override` rebinds onto the new revision for slots that were carried.
+Approve hidden because `revision_id` mismatch now shows an amber banner. Preflight
+splits `social_variant_not_ready` (text) from `social_assets_stale`. Release
+**Current blockers** is the live `weekly_digest_preflight` payload. Approve/Ship/
+Schedule/Pause redirect with `save_error` instead of throwing `#441`.
+`npm run migrations:check` compares origin/main to prod `schema_migrations`.
+(source: [audits/2026-08-29-weekly-digest-revision-architecture-review](../audits/2026-08-29-weekly-digest-revision-architecture-review.md),
+`supabase/migrations/20260829130000_weekly_revision_stage0_carry_forward.sql`)
 
 ## Публічний slug тепер тематичний, не лише дата (2026-08-29)
 

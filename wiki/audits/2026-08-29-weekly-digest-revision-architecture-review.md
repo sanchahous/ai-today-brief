@@ -8,7 +8,7 @@ Sources: живий реліз `71af784b-3c89-47f8-bc38-e3eae4def2a7` 28-29.08.2
 пряма робота з прод-Supabase `mdiqfatpqczwqghwttpm`), Explore-агент по коду 29.08.2026
 (повний обхід `supabase/migrations/*.sql`, `weekly-workspace.tsx`, `actions.ts`),
 [weekly-digest](../pipeline/weekly-digest.md), [weekly-admin-runbook](../ops/weekly-admin-runbook.md),
-[log 2026-08-28](../log.md)
+[log 2026-08-28](../log.md), гілка `feat/weekly-revision-stage-0` 2026-08-29
 Last updated: 2026-08-29
 
 ---
@@ -129,26 +129,46 @@ story-selection checkbox, visual-refresh provenance).
 
 ### Етап 0 — до наступного релізу, малий ризик, б'є прямо по причинах цього релізу
 
-- [ ] **A1 (найвищий пріоритет).** Портувати generic carry-forward INSERT з
+- [x] **A1 (найвищий пріоритет).** Портувати generic carry-forward INSERT з
       `create_weekly_digest_revision` (`20260810160000_weekly_revision_rpc_security_definer.sql:419-487`)
       у `create_service_weekly_digest_revision`
       (`20260724093000_weekly_digest_editorial_revision_service.sql`), і в
       `..._with_visual_direction`-варіант обох функцій. Замінити хардкоджений
       `'carried_artifact_count', 0` на реальний підрахунок скопійованих рядків.
       Це одна SQL-міграція, закриває головну причину зникнення PDF/відео/мініатюри.
-- [ ] **A2.** Звузити dependency-map у `weekly_digest_artifact_input_hash` так, щоб
+      **Зроблено 2026-08-29:** `carry_forward_weekly_digest_revision_artifacts` + виклик
+      з обох service RPC (`20260829130000_weekly_revision_stage0_carry_forward.sql`).
+      Ручний `create_weekly_digest_revision_with_visual_direction` уже мав carry-forward.
+- [x] **A2.** Звузити dependency-map у `weekly_digest_artifact_input_hash` так, щоб
       зміна `cover:*` інвалідовувала лише артефакти, які фізично включають пікселі
       cover (PDF), а не текстове затвердження `social_posts`. Розділити на дві
       незалежні умови: «текст підтверджено» і «asset-посилання актуальне».
-- [ ] **B4.** Прибрати голий `throw` у `approveWeeklyDigestAction` / `shipWeeklyDigestAction`
+      **Зроблено 2026-08-29:** хеш і CTE й далі stale-мають PDF/`social_asset` (пікселі).
+      `save_weekly_digest_artifact` більше не пише `auto_revoked` на соцкопію;
+      `artifactId` у `social_posts.asset_urls` переписується на новий current рядок
+      (без bump `content_version`). Preflight окремо гейтить `social_variant_not_ready`
+      (текст) і `social_assets_stale` (порожні `asset_urls` / не-current id).
+- [x] **A3.** `preflight_override` не злітає на новій ревізії, якщо слот, який обходили,
+      перенесли (hash match). Trigger `rebind_weekly_digest_preflight_override` переписує
+      `revision_id` і викидає лише blockers з `invalidated_slots`.
+- [x] **A4.** Кнопка Approve більше не зникає мовчки: якщо `artifact.revision_id` ≠
+      active revision, жовтий банер пояснює, що артефакт на старій working copy.
+- [x] **B4.** Прибрати голий `throw` у `approveWeeklyDigestAction` / `shipWeeklyDigestAction`
       (і перевірити інші дії в тому ж файлі на той самий патерн) — показувати
       справжній текст помилки з RPC замість generic React-краху.
-- [ ] **B3.** Release-вкладка викликає живий `weekly_digest_preflight()` при відкритті
+      **Зроблено 2026-08-29:** Approve / Ship / Schedule / Pause редіректять на
+      `?tab=release&save_error=` через уже наявний `redirectWeeklyReleaseError`.
+- [x] **B3.** Release-вкладка викликає живий `weekly_digest_preflight()` при відкритті
       (або перед кожним Approve/Ship), а не показує окремо порахований client-side
       лічильник блокерів.
-- [ ] **B1.** Легкий CI/pr:check крок: звірити список міграцій у `supabase/migrations/`
+      **Зроблено 2026-08-29:** workspace вантажить RPC у `getWeeklyDigestWorkspace`;
+      Current blockers показує live-список, не client-side `validateWeeklyDigestPreflight`.
+- [x] **B1.** Легкий CI/pr:check крок: звірити список міграцій у `supabase/migrations/`
       проти `list_migrations` прод-проєкту, зафейлити якщо є розбіжність.
-- [x] **B2.** LinkedIn `first_comment` додано в `CHANNEL_FIELDS` — вже в цьому PR
+      **Зроблено 2026-08-29:** `list_applied_schema_migrations` (service_role) +
+      `npm run migrations:check` у `pr:check` і workflow `migrations-drift.yml`.
+      Порівнює **origin/main** із прод, тож нова міграція в PR не валить гейт.
+- [x] **B2.** LinkedIn `first_comment` додано в `CHANNEL_FIELDS` — змержено в #340
       (`src/lib/social/channel-form.ts`).
 
 ### Етап 1 — окремий проєкт, не для цього PR

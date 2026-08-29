@@ -2523,6 +2523,10 @@ export type Database = {
         Args: { p_roles: string[] };
         Returns: boolean;
       };
+      list_applied_schema_migrations: {
+        Args: Record<PropertyKey, never>;
+        Returns: { version: string }[];
+      };
       initialize_weekly_digest_revision_from_legacy: {
         Args: { p_weekly_digest_id: string };
         Returns: string;

@@ -8,7 +8,7 @@ GA4 + SEO 2026-08-21, latest weekly revision is the working copy 2026-08-22,
 Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація трьох відео-папок в один репозиторій 2026-08-28,
-weekly digest topic-based slug on publish 2026-08-29
+weekly digest topic-based slug on publish 2026-08-29,
 weekly digest revision architecture review 2026-08-29
 Last updated: 2026-08-29
 
@@ -44,7 +44,7 @@ Last updated: 2026-08-29
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
-| 📋 `architecture/data-model.md` | Схема Supabase, RLS, 98 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
+| 📋 `architecture/data-model.md` | Схема Supabase, RLS, 99 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
 
@@ -57,7 +57,7 @@ Last updated: 2026-08-29
 | ✅ [pipeline/trend-engine-backtest](pipeline/trend-engine-backtest.md) | Результати бектесту trend-index | колишній `docs/TREND-ENGINE-BACKTEST-FINDINGS.md` |
 | ✅ [pipeline/instrumentation-plan](pipeline/instrumentation-plan.md) | Пакет телеметрії PR-I1/I2/I3 (міграції 032/033/034) | колишній `docs/INSTRUMENTATION-PR-PLAN.md` |
 | ✅ [pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md) | Редакційний відбір weekly-дайджесту й fail-closed quality boundary | колишній `docs/weekly-editorial-selection.md` + `content-studio.ts` |
-| ✅ [pipeline/weekly-digest](pipeline/weekly-digest.md) | Weekly Content Studio v2, durable workers, Social `artifactId` media contract, 7-slide Instagram carousel, PDF v3 fixed-grid 7 pages, linked-retry social checkpoints, score-aligned critic warnings, versioned legacy-post repair, grounded copy/approve CLI, bounded 7-page LinkedIn document, video_script hydration from normalized article, Generate manifest recovery, semantic story images v6, spend ledger і admin UX, social remaining issues are warnings not a terminal job | `.env.example` + PR #160–#177/#208/#209/#222/#293 + `social-adapter.ts` + `generation-worker.ts` + `linkedin-document.ts` + `pdf.ts` |
+| ✅ [pipeline/weekly-digest](pipeline/weekly-digest.md) | Weekly Content Studio v2, durable workers, Social `artifactId` media contract, 7-slide Instagram carousel, PDF v3 fixed-grid 7 pages, linked-retry social checkpoints, score-aligned critic warnings, versioned legacy-post repair, grounded copy/approve CLI, bounded 7-page LinkedIn document, video_script hydration from normalized article, Generate manifest recovery, semantic story images v6, spend ledger і admin UX, social remaining issues are warnings not a terminal job, тематичний slug на publish, Етап 0 ревізій (carry-forward / live preflight) | `.env.example` + PR #160–#177/#208/#209/#222/#293 + `social-adapter.ts` + `generation-worker.ts` + `linkedin-document.ts` + `pdf.ts` |
 | ✅ [pipeline/editorial-voice](pipeline/editorial-voice.md) | Редакційний голос weekly-дайджесту: prompt-leak захист, contrast-pairs, мовні й banned-phrase гейти, `numeric_parity` EN↔UK | `editorial-voice.ts`, owner sessions 2026-08-06/09 |
 | ✅ [pipeline/weekly-master-failures](pipeline/weekly-master-failures.md) | Розбір збоїв `editorial_master` 09.08: 7 причин (таймаут CLI, tool-use, reasoning-сліпий stall-детектор, зелений прогін на провалі, фолбек, JSON-преамбула, відсутня UK/revise-драбина) | Actions runs + live sandbox 2026-08-09 |
 | ✅ [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) | Ітеративний рушій `editorial_master`: посегментний запис, точковий ремонт поля; regenerate на Fixes лише для coded blockers / stale checkpoint, не для жовтих warnings | `master-engine.ts` / `master-persist.ts` / `master-repair.ts` / `editorial-llm.ts`, owner session 2026-08-09 / 2026-08-22 / 2026-08-28 |
@@ -122,7 +122,7 @@ Last updated: 2026-08-29
 | ✅ [ops/vercel-origin-transfer](ops/vercel-origin-transfer.md) | Fast Origin Transfer 100%: /news була динамічна через searchParams і ніколи не кешувалась; заголовок Cache-Control не рятує — хаб зроблено prerendered, пошук винесено на /news/search; три способи, що не працюють | нове 2026-08-24, live check заголовків прода |
 | ✅ [ops/owner-checklist](ops/owner-checklist.md) | Env-матриця, launch-блокери, go-live послідовність | колишній `docs/OWNER-CHECKLIST.md` |
 | ✅ [ops/social-cms-runbook](ops/social-cms-runbook.md) | Runbook соц-CMS | колишній `docs/SOCIAL-CMS-RUNBOOK.md` |
-| ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладка **Fixes & blockers**, Approve на quality фінальний, жовті warnings не тримають socials, blocker-free Ship, відсутня `ship_weekly_digest` міграція на проді, carry-forward гап PDF/video/thumbnail, preflight UI≠RPC розбіжність, LinkedIn `first_comment` баг форми, cover-upload каскадно скидає social approvals | нове 2026-08-04, оновлено 2026-08-28 |
+| ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладка **Fixes & blockers**, Approve на quality фінальний, жовті warnings не тримають socials, blocker-free Ship, Етап 0 ревізій (carry-forward на service path, live preflight, cover більше не auto-revoke соцкопію) | нове 2026-08-04, оновлено 2026-08-29 |
 | ✅ [ops/weekly-sandbox](ops/weekly-sandbox.md) | `weekly:doctor` + `weekly:sandbox`: префлайт провайдерів і повний прогін master-флоу на прод-даних без записів у прод | нове 2026-08-09 |
 | ✅ [ops/services-portability](ops/services-portability.md) | Портативність сервісів | колишній `docs/SERVICES-PORTABILITY.md` |
 | ✅ [ops/reddit-compliance](ops/reddit-compliance.md) | Чому Reddit API вимкнено і що потрібно для вмикання | колишній `docs/REDDIT-COMPLIANCE.md` |
@@ -142,7 +142,7 @@ Last updated: 2026-08-29
 | ✅ [audits/2026-08-16-auto-publish-silent-judge](audits/2026-08-16-auto-publish-silent-judge.md) | Вісім ночей `status='ok'` без жодної публікації: суддя відповідав правильно, парсер читав тільки `obj.results`, а ран рапортував `ok` безумовно | прод-`pipeline_runs` + пряма проба судді 2026-08-16 |
 | ✅ [audits/2026-08-21-weekly-digest-release-backtest](audits/2026-08-21-weekly-digest-release-backtest.md) | Backtest `ai-weekly-2026-08-09`: 5 днів затримки через 28 Approve + hotfix-ланцюг, не через visuals; машина випуску з одним hallucination gate | прод-БД 2026-08-21 + `gh pr list` 09–21.08 |
 | ✅ [audits/2026-08-23-gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md) | Review Prompt-as-Code/weekly UI: один primary candidate, safe-frame, localized display title і hash-fenced private staging → explicit versioned visual apply без зміни published text/SEO/PDF/social | owner-скріни + код-ревʼю + локальна browser/SQL-перевірка 2026-08-23/24 |
-| ✅ [audits/2026-08-29-weekly-digest-revision-architecture-review](audits/2026-08-29-weekly-digest-revision-architecture-review.md) | Чому реліз 28-29.08 знову зламався: два шляхи створення ревізії (лише один переносить артефакти), надто грубий dependency-hash, preflight UI≠RPC, голий throw; чи можна прибрати ревізії (ні цілком, так частково) + план Етап 0/Етап 1 | живий реліз 28-29.08.2026 + Explore-агент по коду |
+| ✅ [audits/2026-08-29-weekly-digest-revision-architecture-review](audits/2026-08-29-weekly-digest-revision-architecture-review.md) | Чому реліз 28-29.08 знову зламався + план Етап 0/Етап 1; **Етап 0 реалізовано** (carry-forward, split text/asset, live preflight, save_error замість #441, CI drift check) | живий реліз 28-29.08.2026 + гілка `feat/weekly-revision-stage-0` |
 
 ## Decisions (ADR)
 

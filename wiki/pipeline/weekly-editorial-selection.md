@@ -6,8 +6,8 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 [weekly-digest](weekly-digest.md), staged social-copy recovery and LinkedIn 7-page bounds
 2026-08-17, pre-critic hang 2026-08-22, critic model rotation 2026-08-22,
 Visuals upload body-cap sync 2026-08-26, Fixes & blockers 2026-08-28,
-social copy fail-open 2026-08-28.
-Last updated: 2026-08-28
+social copy fail-open 2026-08-28, revision Stage 0 2026-08-29.
+Last updated: 2026-08-29
 
 ---
 
@@ -16,6 +16,10 @@ sort used for weekly digests. Its purpose is to produce an explainable,
 evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 Що саме змінила v3 і чому — [нижче](#що-змінила-v3-2026-08-16).
 
+> **Scope note (2026-08-29):** revision Stage 0 (carry-forward on service RPCs, live
+> `weekly_digest_preflight`, cover no longer auto-revokes social copy, migration drift
+> check) does not change this selector, weights, diversity constraints, approval state
+> or release eligibility of candidates.
 > **Scope note (2026-08-15):** Visuals copy-ready prompt cards (`story_prompt_set`), M1
 > `WEEKLY_STORY_IMAGE_MODE=prompt_only`, M2 post-upload QA, M3 preflight copy and B3
 > primary-prompt readiness do not change
