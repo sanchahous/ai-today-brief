@@ -6,7 +6,9 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`
 [weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…28,
 latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22,
 Telegram block-structure gate 2026-08-28, Fixes & blockers + warnings do not hold socials 2026-08-28,
-social remaining issues are warnings 2026-08-28
+social remaining issues are warnings 2026-08-28, missing `ship_weekly_digest` migration +
+carry-forward gaps + LinkedIn first_comment form bug + cover-upload cascade + WebVTT
+fallback, live release of `ai-weekly-2026-08-16` 2026-08-28
 Last updated: 2026-08-28
 
 ---
@@ -350,6 +352,19 @@ prompt history; Approve override використовуй лише якщо оч
    доставка піде в `needs_reconciliation` з кодом `partial_linkedin_comment` — ретраїти не
    можна, бо пост уже опублікований.
 
+**Баг форми (знайдено й виправлено 2026-08-28):** `SOCIAL_FIELDS_BY_CHANNEL` у
+`channel-form.ts` для `linkedin` не мав `'first_comment'` у списку полів (для `x` —
+мав), тож картка LinkedIn у Social-табі просто не рендерила текстове поле, куди можна
+вписати трекований URL — гейт `linkedin_comment_url` блокував Approve, а виправити
+через UI було неможливо. Один owner-схвалений випуск обійшли прямим SQL-записом
+(`first_comment`, перерахований `content_hash` через ту саму canonical-JSON+SHA-256
+формулу з `content-hash.ts`, `quality_report.blocking = []`), дзеркалячи існуючий
+`scripts/approve-weekly-social-package.ts`. Код-фікс — один рядок, додати
+`'first_comment'` до масиву `linkedin` у `CHANNEL_FIELDS`, той самий порядок полів,
+що вже працює на `x`. (source: `src/lib/social/channel-form.ts`,
+`src/lib/social/quality.ts`, `src/lib/social/content-hash.ts`,
+`scripts/approve-weekly-social-package.ts`, owner session 2026-08-28)
+
 Пам'ятай: **будь-яка правка копії після апруву скидає апрув** і повертає картку в
 `in_review` (`guard_social_content_approval`). Це не баг — так і задумано. Machine-attest
 не вмикає `publish_enabled`: якщо канал на паузі, attest лише апрувить текст, публікація
@@ -518,6 +533,52 @@ production live check 2026-08-18,
 `content` напряму замість `masterBundleFromArtifacts`.
 (source: production job `43b9fcf1-e9ba-46b8-80a8-93d775cec8f0`, 2026-08-18 11:55 UTC)
 
+### PDF/video/thumbnail «зникають» на новій ревізії — carry-forward гап (2026-08-28)
+
+`create_service_weekly_digest_revision` переносить артефакти на нову ревізію лише коли
+`input_hash` збігається (`weekly_digest_artifact_input_hash`, лог у
+`carried_artifact_count`). Для `content_quality_report` є окремий recovery-helper
+(`quality-report-carryover.ts`), а для `pdf:*`/`video-final:*`/`thumbnail`/`captions:*`
+такого шляху немає — і `video_final`/`thumbnail` взагалі ніколи не ставляться в чергу
+автоматично (`content-studio-queue.ts`: лише `pdf:en`/`pdf:uk`/`cover:neutral`/
+`social_copy`/`video_script`/`video_manifest` — ручні слоти пропускаються мовчки). Якщо
+`carried_artifact_count: 0` на щойно створеній ревізії — Release-таб покаже ці слоти як
+`missing`, хоча контент насправді був готовий на попередній ревізії. Фікс: перегенерувати
+PDF EN/UK на вкладці PDF, і вручну ввести YouTube URL/duration на вкладці Video ще раз —
+carry-forward тут не спрацює сам.
+
+### Preflight в UI vs `weekly_digest_preflight()` — можуть розійтись (2026-08-28)
+
+Клієнтський «Current blockers: 0» на Release-табі — це кешований client-side рахунок,
+не живий виклик SQL-функції. Перед Approve/Ship завжди звіряй напряму:
+`select public.weekly_digest_preflight('<digest_id>')`. Живий приклад 28.08: UI показував
+0 blockers, а функція реально повертала `pdf:en`/`pdf:uk` як `artifact_stale`
+(«Approve version» на вже застарілому PDF не оновлює `input_hash` — потрібна справжня
+регенерація) і LinkedIn `content_hash IS NULL` (форма для цього каналу зберігала пост без
+хешу через баг вище). Клік Approve/Ship на розбіжному стані падає з `Minified React
+error #441` — той самий симптом, що й відсутня міграція вище, інша причина.
+
+### Заміна master cover каскадно скидає всі апруви соцпостів (2026-08-28)
+
+**Upload a replacement** на Visuals → Master cover створює новий `cover:neutral`
+artifact і тригерить asset-relink: усі 6 `social_posts` (контент не змінюється) летять
+назад у `in_review`/`approval_version: null` з аудит-записом `auto_revoked` («Weekly
+visual dependency cover:neutral was replaced»), а PDF EN/UK знову стають `stale`. Це не
+баг, а навмисний guard (пости несуть посилання на конкретний артефакт cover, і old asset
+id мав би бути invalid) — але після заміни cover потрібен повний повторний прохід:
+regenerate PDF, re-approve всі 6 каналів (Save & approve на кожному; `content_hash`/
+`first_comment`/текст лишаються тими самими, змінюється лише `status`/`approval_version`).
+
+### Субтитри без YouTube auto-caption fallback: WebVTT зі скрипту (2026-08-28)
+
+Якщо YouTube API повертає порожній `timedtext` (нема auto-caption для щойно
+завантаженого відео) — жодного «почекай і спробуй знову» немає, YouTube просто не
+згенерував їх для цього відео. Робочий fallback: пропорційне масштабування відомого
+`video_script` тексту під фактичну тривалість (word-level greedy line-packing, потім
+floor-then-rescale усіх тривалостей рівно до вікна — без цього накопичується дрейф і
+рядки перекриваються). Перевіряти обов'язково скриптом (0 overlaps, точний end time),
+не візуально — WebVTT-файл на сотню cues людина не звіряє оком надійно.
+
 ### Release: approve → schedule → (за потреби) postpone → pause
 
 Стандартний каданс — понеділок 16:00 Kyiv (так вираховуються дефолтні preflight/release для
@@ -546,6 +607,50 @@ day-agnostic (крон кожні 5 хв просто звіряє `release_at <
 Postpone не створює нову RPC — це той самий Pause → Approve → Schedule, які вже існували,
 просто в один клік з правильно порахованою датою (наступний понеділок 16:00, DST-safe).
 (source: `src/app/admin/(cms)/weekly/actions.ts`, `src/components/admin/weekly-workspace.tsx`)
+
+### Ship: `Minified React error #441` = відсутня міграція, не тимчасовий глюк (2026-08-28)
+
+Кнопка **Ship (approve + schedule in 15 min)** на Release-табі викликає RPC
+`public.ship_weekly_digest(uuid)` — одну атомарну транзакцію approve+schedule з
+міграції `20260821170000_weekly_release_autopilot_ship_and_attest_hardening.sql`.
+28.08 ця міграція виявилась **не застосованою** до прод-Supabase (`mdiqfatpqczwqghwttpm`):
+`list_migrations` зупинявся на `20260821134545_weekly_release_autopilot_preflight`,
+а `170000_ship_and_attest_hardening` (той самий день, +2 год) у списку не було. Наслідок:
+клік Ship висів на «Shipping…», тоді падав з `Minified React error #441` — бо
+`shipWeeklyDigestAction` робить bare `throw new Error(error.message)`, а PostgREST
+повертав `404 PGRST202` («could not find function … in schema cache»), тобто функції
+просто не існувало. `weekly_digest_preflight` при цьому працював і показував 0 blockers —
+UI Release-таба виглядав повністю готовим, це збивало з пантелику.
+
+**Діагностика:** `select … from pg_proc where proname = 'ship_weekly_digest'` — порожньо;
+Supabase log query на `source = 'edge_logs'` з фільтром `event_message ilike
+'%ship_weekly_digest%'` показує точний `POST | 404 | rest/v1/rpc/ship_weekly_digest`
+з `proxy_status: PostgREST; error=PGRST202`. Живий `weekly_digests.status` лишається
+`in_review`/`approved` без нового рядка в `weekly_digest_release_events` — уся
+транзакція відкочується, побічних ефектів немає.
+
+**Фікс:** застосувати файл міграції з репо as-is через `apply_migration` (лише
+`create or replace function` × 3 + `grant`/`revoke`, без деструктивних DDL). Після
+цього Ship відпрацював з першої спроби: `weekly_digests.status → scheduled`,
+`social_posts`/`social_packages` для approved+`publish_enabled` каналів → `scheduled`,
+`release_at = now() + 15 min`. Урок: `list_migrations` — джерело правди, чи міграція
+реально на проді, `git log` цього не показує. Перевіряй перед тим, як довіряти
+React-помилці #441 конкретній причині з попереднього інциденту (§ social_copy Timeline
+вище) — код однаковий (bare throw), причина щоразу різна.
+(source: `supabase/migrations/20260821170000_weekly_release_autopilot_ship_and_attest_hardening.sql`,
+`src/app/admin/(cms)/weekly/actions.ts` §`shipWeeklyDigestAction`, live Supabase
+`edge_logs`/`postgres_logs` query + `list_migrations` 2026-08-28)
+
+### Ship-flow автоматика теж не публікує в соцмережі напряму (2026-08-28)
+
+`ship_weekly_digest` переводить `social_posts` у статус `scheduled`, але фактичну
+доставку на Instagram/Facebook/X/LinkedIn/Threads/Telegram виконує окремий publish
+worker, і на цьому проєкті **API-ключі каналів не підключені** — тому scheduled пости
+не публікуються самі, і `release_at` цифрового дайджесту (коли стаття стає публічною)
+відокремлена від per-post `scheduled_for` (кожен канал має власний час публікації,
+розкиданий по наступному дню, не «зараз»). Ручна публікація в кожну соцмережу
+(реальний Chrome-профіль власника, per-platform) лишається окремим кроком навіть
+після Ship — саме так і задумано на цьому проєкті, не тимчасовий workaround.
 
 ## Типові «чому не їде»
 

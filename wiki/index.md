@@ -9,6 +9,7 @@ Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація трьох відео-папок в один репозиторій 2026-08-28,
 weekly digest topic-based slug on publish 2026-08-29
+weekly digest revision architecture review 2026-08-29
 Last updated: 2026-08-29
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
@@ -121,7 +122,7 @@ Last updated: 2026-08-29
 | ✅ [ops/vercel-origin-transfer](ops/vercel-origin-transfer.md) | Fast Origin Transfer 100%: /news була динамічна через searchParams і ніколи не кешувалась; заголовок Cache-Control не рятує — хаб зроблено prerendered, пошук винесено на /news/search; три способи, що не працюють | нове 2026-08-24, live check заголовків прода |
 | ✅ [ops/owner-checklist](ops/owner-checklist.md) | Env-матриця, launch-блокери, go-live послідовність | колишній `docs/OWNER-CHECKLIST.md` |
 | ✅ [ops/social-cms-runbook](ops/social-cms-runbook.md) | Runbook соц-CMS | колишній `docs/SOCIAL-CMS-RUNBOOK.md` |
-| ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладка **Fixes & blockers**, Approve на quality фінальний, жовті warnings не тримають socials, blocker-free Ship | нове 2026-08-04, оновлено 2026-08-28 |
+| ✅ [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md) | Як вести weekly у `/admin/weekly`: вкладка **Fixes & blockers**, Approve на quality фінальний, жовті warnings не тримають socials, blocker-free Ship, відсутня `ship_weekly_digest` міграція на проді, carry-forward гап PDF/video/thumbnail, preflight UI≠RPC розбіжність, LinkedIn `first_comment` баг форми, cover-upload каскадно скидає social approvals | нове 2026-08-04, оновлено 2026-08-28 |
 | ✅ [ops/weekly-sandbox](ops/weekly-sandbox.md) | `weekly:doctor` + `weekly:sandbox`: префлайт провайдерів і повний прогін master-флоу на прод-даних без записів у прод | нове 2026-08-09 |
 | ✅ [ops/services-portability](ops/services-portability.md) | Портативність сервісів | колишній `docs/SERVICES-PORTABILITY.md` |
 | ✅ [ops/reddit-compliance](ops/reddit-compliance.md) | Чому Reddit API вимкнено і що потрібно для вмикання | колишній `docs/REDDIT-COMPLIANCE.md` |
@@ -141,6 +142,7 @@ Last updated: 2026-08-29
 | ✅ [audits/2026-08-16-auto-publish-silent-judge](audits/2026-08-16-auto-publish-silent-judge.md) | Вісім ночей `status='ok'` без жодної публікації: суддя відповідав правильно, парсер читав тільки `obj.results`, а ран рапортував `ok` безумовно | прод-`pipeline_runs` + пряма проба судді 2026-08-16 |
 | ✅ [audits/2026-08-21-weekly-digest-release-backtest](audits/2026-08-21-weekly-digest-release-backtest.md) | Backtest `ai-weekly-2026-08-09`: 5 днів затримки через 28 Approve + hotfix-ланцюг, не через visuals; машина випуску з одним hallucination gate | прод-БД 2026-08-21 + `gh pr list` 09–21.08 |
 | ✅ [audits/2026-08-23-gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md) | Review Prompt-as-Code/weekly UI: один primary candidate, safe-frame, localized display title і hash-fenced private staging → explicit versioned visual apply без зміни published text/SEO/PDF/social | owner-скріни + код-ревʼю + локальна browser/SQL-перевірка 2026-08-23/24 |
+| ✅ [audits/2026-08-29-weekly-digest-revision-architecture-review](audits/2026-08-29-weekly-digest-revision-architecture-review.md) | Чому реліз 28-29.08 знову зламався: два шляхи створення ревізії (лише один переносить артефакти), надто грубий dependency-hash, preflight UI≠RPC, голий throw; чи можна прибрати ревізії (ні цілком, так частково) + план Етап 0/Етап 1 | живий реліз 28-29.08.2026 + Explore-агент по коду |
 
 ## Decisions (ADR)
 

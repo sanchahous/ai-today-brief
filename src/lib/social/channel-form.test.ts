@@ -12,7 +12,7 @@ describe('channel-aware social form', () => {
     ]);
     expect(socialFormFields('facebook')).toEqual(socialFormFields('telegram'));
     expect(socialFormHas('linkedin', 'linkedin_document')).toBe(true);
-    expect(socialFormHas('linkedin', 'first_comment')).toBe(false);
+    expect(socialFormHas('linkedin', 'first_comment')).toBe(true);
     expect(socialFormHas('x', 'first_comment')).toBe(true);
     expect(socialFormHas('x', 'thread_parts')).toBe(false);
     expect(socialFormHas('threads', 'thread_parts')).toBe(true);

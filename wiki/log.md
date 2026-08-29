@@ -23,6 +23,78 @@ Last updated: 2026-08-29
 [weekly-digest § Публічний slug тепер тематичний](pipeline/weekly-digest.md#публічний-slug-тепер-тематичний-не-лише-дата-2026-08-29).
 (source: `supabase/migrations/20260829120000_weekly_digest_topic_slug_on_publish.sql`,
 owner session 2026-08-29)
+## 2026-08-29 — Архітектурний review ревізій weekly digest + план на наступний реліз
+
+Власник після релізу 28-29.08: «адмінка концептуально і структурно неправильна, дані
+зникають в релізах, постійно вилазять баги» — попросив розібрати причини і подивитись,
+чи можна прибрати ревізії. Explore-агент обійшов увесь `supabase/migrations/*.sql` +
+`weekly-workspace.tsx` + `actions.ts`.
+
+Головна знахідка: два RPC створюють нову ревізію (`create_weekly_digest_revision` —
+ручний Save, generic carry-forward за `input_hash`; `create_service_weekly_digest_revision` —
+автоматичний шлях після кожного прогону `editorial_master`) — і лише перший реально
+переносить артефакти. Другий хардкодить `'carried_artifact_count', 0` у коді. Оскільки
+автоматичний шлях — основний повсякденний тригер, кожна регенерація статті обнуляла
+геть усі артефакти (PDF/відео/мініатюра), не лише «непідтримувані типи», як записано
+в runbook 28.08. Друга знахідка: `weekly_digest_artifact_input_hash` рахує залежності
+занадто грубо — заміна cover інвалідує текстове затвердження соцпостів, хоча текст від
+пікселів не залежить. Третя: fича multi-revision browsing («Go back to this version»)
+за всю історію проєкту використана людиною рівно один раз, відколи — нуль (дані з
+security-definer міграції 10.08) — підтверджує репліку власника, що ревізії не
+використовуються.
+
+Висновок: повністю прибрати таблицю ревізій — ні для цього релізу (11 таблиць з FK,
+~20 RPC, 10 UI-фіч зав'язані). Але реальну вимогу «завжди найновіша версія без ручного
+дошивання» — досяжна окремим кроком. Записано двоетапний план: Етап 0 (до наступного
+релізу — портувати carry-forward у автоматичний шлях, звузити dependency-hash,
+прибрати голі throw, live preflight на Release-вкладці, CI-чек дрейфу міграцій,
+LinkedIn `first_comment` вже виправлено) і Етап 1 (окремий проєкт — справжнє
+спрощення моделі ревізій, після того як Етап 0 підтвердить себе).
+
+Деталі, точні цитати коду й повний чек-лист —
+[audits/2026-08-29-weekly-digest-revision-architecture-review](audits/2026-08-29-weekly-digest-revision-architecture-review.md).
+(source: owner session 2026-08-29, Explore-агент по коду 2026-08-29,
+живий реліз `71af784b-3c89-47f8-bc38-e3eae4def2a7` 2026-08-28/29)
+
+---
+
+## 2026-08-28 — Реліз `ai-weekly-2026-08-16`: відсутня `ship_weekly_digest` міграція на проді, carry-forward гапи, LinkedIn form bug, cover-cascade
+
+Повний реліз-цикл випуску (digest `71af784b-3c89-47f8-bc38-e3eae4def2a7`, revision 7)
+у `/admin/weekly`, потім вручну в 6 соцканалів (Instagram/Facebook/X/LinkedIn/Threads
+через реальний Chrome власника, Telegram окремо). По дорозі знайдено й виправлено:
+
+1. **PDF/video/thumbnail «зникли» на новій ревізії** — carry-forward helper є лише для
+   `content_quality_report`, `video_final`/`thumbnail` взагалі не ставляться в чергу
+   автоматично. Фікс: регенерація PDF EN/UK, ручне повторне введення YouTube URL/duration.
+2. **YouTube auto-caption недоступні** — fallback: WebVTT зі скрипту, пропорційне
+   масштабування (word-level packing + floor-then-rescale), перевірено скриптом на
+   overlaps/точний кінець вікна.
+3. **LinkedIn `first_comment` баг форми** — `channel-form.ts` не мав цього поля в
+   `CHANNEL_FIELDS.linkedin` (на відміну від `x`), тож картка не рендерила поле для
+   трекованого URL, і Approve падав на `linkedin_comment_url` без можливості полагодити
+   через UI. Один випуск обійшли owner-схваленим прямим SQL-записом (`first_comment` +
+   перерахований `content_hash` через `content-hash.ts` формулу), дзеркалячи
+   `scripts/approve-weekly-social-package.ts`. Код-фікс застосовано в цій сесії:
+   `src/lib/social/channel-form.ts` (`+ 'first_comment'` до `linkedin`), потребує PR.
+4. **Preflight UI ≠ `weekly_digest_preflight()` RPC** — клієнтський «0 blockers»
+   розійшовся з реальним SQL-станом (PDF `artifact_stale`, LinkedIn `content_hash NULL`);
+   Approve на розбіжному стані падав `Minified React error #441`.
+5. **Заміна master cover каскадно скидає всі 6 social approvals** — навмисний guard
+   (asset-relink), не баг; після кожної заміни cover потрібен повний повторний прохід
+   approve.
+6. **Кнопка Ship падала `#441` через відсутню міграцію на проді** — `ship_weekly_digest`
+   RPC не існував у прод-БД (`20260821170000_weekly_release_autopilot_ship_and_attest_hardening.sql`
+   ніколи не була застосована; `list_migrations` це підтвердив, `edge_logs` показали
+   `404 PGRST202`). Застосовано міграцію as-is через `apply_migration` — чиста
+   `create or replace function`, без деструктивних DDL. Після цього Ship відпрацював:
+   digest → `scheduled`, усі 6 `social_posts` → `scheduled`.
+7. Automated publish worker на цьому проєкті **не має підключених API-ключів
+   каналів** — scheduled soc-пости самі не публікуються; ручна публікація в кожну
+   мережу лишається окремим кроком і після Ship.
+
+Деталі й точні SQL/лог-запити — [ops/weekly-admin-runbook](ops/weekly-admin-runbook.md).
+(source: owner session 2026-08-28, live Supabase `mdiqfatpqczwqghwttpm`)
 
 ---
 
