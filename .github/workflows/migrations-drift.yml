@@ -1,0 +1,42 @@
+name: Prod migration drift
+
+# Catches the 2026-08-28 class of bug: a migration is on main (and in the
+# repo) but was never applied to prod, so RPCs 404 at Ship time.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: migrations-drift-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: origin/main vs prod schema_migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      SCRAPPER_BASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
+      SCRAPPER_SERVICE_KEY: ${{ secrets.SCRAPPER_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Fetch origin/main
+        run: git fetch origin main --depth=1
+
+      - name: Compare migrations
+        run: npm run migrations:check

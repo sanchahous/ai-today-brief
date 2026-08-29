@@ -73,15 +73,18 @@ export interface WeeklyPreflightBlocker {
     | 'stories_count'
     | 'artifact_missing'
     | 'artifact_not_approved'
+    | 'artifact_stale'
     | 'simulation_not_passed'
     | 'social_missing'
     | 'social_duplicate'
     | 'social_unexpected'
     | 'social_locale'
     | 'social_not_approved'
+    | 'social_assets_stale'
     | 'social_manual_document'
     | 'social_disabled_owner'
-    | 'social_disabled_reason';
+    | 'social_disabled_reason'
+    | 'release_not_ready';
   slot: string;
   message: string;
   /** Concrete next step for the editor. */
@@ -188,6 +191,7 @@ const SOCIAL_CODE_ORDER: Partial<Record<WeeklyPreflightBlocker['code'], number>>
   social_disabled_owner: 50,
   social_disabled_reason: 60,
   social_not_approved: 70,
+  social_assets_stale: 75,
   social_manual_document: 80,
 };
 

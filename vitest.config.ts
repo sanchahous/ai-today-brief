@@ -14,6 +14,7 @@ const LOGIC_INCLUDE = [
   'src/lib/analytics-client.ts',
   'src/lib/preferred-lang.ts',
   'src/lib/indexnow.ts',
+  'src/lib/supabase-migration-drift.ts',
   'src/lib/telegram-custom.ts',
   'src/lib/facts-visual.ts',
   'src/lib/prompt-lint.ts',
@@ -23,6 +24,8 @@ const LOGIC_INCLUDE = [
   'src/lib/tools-mentioned.ts',
   'src/lib/content-sim/**/*.ts',
   'src/lib/weekly-digest/video-shoot-pack.ts',
+  'src/lib/weekly-digest/live-preflight.ts',
+  'src/lib/weekly-digest/artifact-review-gate.ts',
   'pipeline/**/*.ts',
 ];
 

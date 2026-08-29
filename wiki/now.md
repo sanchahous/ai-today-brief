@@ -8,12 +8,24 @@ Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 Visuals upload body cap 2026-08-26, admin weekly workspace hang fix 2026-08-28,
 social copy channel-contract + fail-open warnings 2026-08-28, Fixes & blockers 2026-08-28,
-консолідація трьох відео-папок в один репозиторій 2026-08-28
-Last updated: 2026-08-28
+консолідація трьох відео-папок в один репозиторій 2026-08-28,
+revision Stage 0 (carry-forward / live preflight) 2026-08-29
+Last updated: 2026-08-29
 
 ---
 
 ## Стан репозиторію
+
+- **Weekly digest Етап 0 ревізій (2026-08-29), гілка `feat/weekly-revision-stage-0`.**
+  A1: service RPC після `editorial_master` копіюють артефакти з тим самим
+  `input_hash`. A2: cover не auto-revoke текст і переписує `artifactId` у
+  `asset_urls`. A3: `preflight_override` переїжджає на нову ревізію для
+  перенесених слотів. A4: Approve на старій ревізії показує банер, не зникає.
+  Release — живий `weekly_digest_preflight`; Approve/Ship — `save_error` замість
+  `#441`. `npm run migrations:check` ловить дрейф origin/main vs prod. Етап 1 —
+  окремий проєкт.
+  (source: [audits/2026-08-29-weekly-digest-revision-architecture-review](audits/2026-08-29-weekly-digest-revision-architecture-review.md);
+  [weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
 
 - **Social copy: після bounded repair немає термінального quality-гейти (2026-08-28), гілка
   `feat/social-copy-no-quality-blockers`.** Власник: «ніяких блокерів». Linked retry

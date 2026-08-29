@@ -8,8 +8,8 @@ latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22
 Telegram block-structure gate 2026-08-28, Fixes & blockers + warnings do not hold socials 2026-08-28,
 social remaining issues are warnings 2026-08-28, missing `ship_weekly_digest` migration +
 carry-forward gaps + LinkedIn first_comment form bug + cover-upload cascade + WebVTT
-fallback, live release of `ai-weekly-2026-08-16` 2026-08-28
-Last updated: 2026-08-28
+fallback, live release of `ai-weekly-2026-08-16` 2026-08-28, revision Stage 0 2026-08-29
+Last updated: 2026-08-29
 
 ---
 
@@ -535,39 +535,43 @@ production live check 2026-08-18,
 
 ### PDF/video/thumbnail «зникають» на новій ревізії — carry-forward гап (2026-08-28)
 
-`create_service_weekly_digest_revision` переносить артефакти на нову ревізію лише коли
-`input_hash` збігається (`weekly_digest_artifact_input_hash`, лог у
-`carried_artifact_count`). Для `content_quality_report` є окремий recovery-helper
-(`quality-report-carryover.ts`), а для `pdf:*`/`video-final:*`/`thumbnail`/`captions:*`
-такого шляху немає — і `video_final`/`thumbnail` взагалі ніколи не ставляться в чергу
-автоматично (`content-studio-queue.ts`: лише `pdf:en`/`pdf:uk`/`cover:neutral`/
-`social_copy`/`video_script`/`video_manifest` — ручні слоти пропускаються мовчки). Якщо
-`carried_artifact_count: 0` на щойно створеній ревізії — Release-таб покаже ці слоти як
-`missing`, хоча контент насправді був готовий на попередній ревізії. Фікс: перегенерувати
-PDF EN/UK на вкладці PDF, і вручну ввести YouTube URL/duration на вкладці Video ще раз —
-carry-forward тут не спрацює сам.
+**Статус 2026-08-29 (Етап 0):** автоматичний шлях більше не хардкодить
+`carried_artifact_count: 0`. Обидва service RPC викликають
+`carry_forward_weekly_digest_revision_artifacts` — той самий generic `input_hash`
+INSERT, що й ручний Save. Артефакти, чий хеш не збігся (текст статті змінився),
+й далі не переносяться; тоді regenerate PDF / ввести YouTube лишається ручним
+кроком. `video_final`/`thumbnail` як і раніше не ставляться в чергу автоматично.
+(source: `supabase/migrations/20260829120000_weekly_revision_stage0_carry_forward.sql`)
+
+До фіксу: `create_service_weekly_digest_revision` переносив артефакти на нову ревізію
+лише коли `input_hash` збігається, але **тіло функції не викликало INSERT взагалі**.
+Для `content_quality_report` є окремий recovery-helper (`quality-report-carryover.ts`).
+Якщо на старій ревізії (до міграції) `carried_artifact_count: 0` — Release-таб
+покаже слоти як `missing`. Фікс тоді: перегенерувати PDF EN/UK, вручну ввести YouTube
+URL/duration.
 
 ### Preflight в UI vs `weekly_digest_preflight()` — можуть розійтись (2026-08-28)
 
-Клієнтський «Current blockers: 0» на Release-табі — це кешований client-side рахунок,
-не живий виклик SQL-функції. Перед Approve/Ship завжди звіряй напряму:
-`select public.weekly_digest_preflight('<digest_id>')`. Живий приклад 28.08: UI показував
-0 blockers, а функція реально повертала `pdf:en`/`pdf:uk` як `artifact_stale`
-(«Approve version» на вже застарілому PDF не оновлює `input_hash` — потрібна справжня
-регенерація) і LinkedIn `content_hash IS NULL` (форма для цього каналу зберігала пост без
-хешу через баг вище). Клік Approve/Ship на розбіжному стані падає з `Minified React
-error #441` — той самий симптом, що й відсутня міграція вище, інша причина.
+**Статус 2026-08-29:** вкладка Release читає живий `weekly_digest_preflight` з
+workspace (підпис «Live weekly_digest_preflight»). Client-side
+`validateWeeklyDigestPreflight` лишається fallback, якщо RPC впав.
+Approve/Ship/Schedule/Pause більше не кидають голий `throw` — текст RPC потрапляє
+в банер `save_error` (не `Minified React error #441`).
+
+До фіксу клієнтський «Current blockers: 0» міг розійтись із SQL (`artifact_stale`,
+LinkedIn `content_hash IS NULL`). Перед Approve на старих деплоях звіряй
+`select public.weekly_digest_preflight('<digest_id>')`.
 
 ### Заміна master cover каскадно скидає всі апруви соцпостів (2026-08-28)
 
-**Upload a replacement** на Visuals → Master cover створює новий `cover:neutral`
-artifact і тригерить asset-relink: усі 6 `social_posts` (контент не змінюється) летять
-назад у `in_review`/`approval_version: null` з аудит-записом `auto_revoked` («Weekly
-visual dependency cover:neutral was replaced»), а PDF EN/UK знову стають `stale`. Це не
-баг, а навмисний guard (пости несуть посилання на конкретний артефакт cover, і old asset
-id мав би бути invalid) — але після заміни cover потрібен повний повторний прохід:
-regenerate PDF, re-approve всі 6 каналів (Save & approve на кожному; `content_hash`/
-`first_comment`/текст лишаються тими самими, змінюється лише `status`/`approval_version`).
+**Статус 2026-08-29:** заміна cover **не** пише `auto_revoked` і не скидає
+`social_posts.status`. `artifactId` у `asset_urls` переписується на новий current
+cover/story image (без повторного Save & approve тексту). PDF і `social_asset`
+як і раніше стають `stale` (пікселі) — regenerate PDF лишається. Instagram carousel
+у `meta` цей relink не чіпає.
+
+До фіксу **Upload a replacement** ставив усі 6 постів у `in_review` з
+`auto_revoked`.
 
 ### Субтитри без YouTube auto-caption fallback: WebVTT зі скрипту (2026-08-28)
 

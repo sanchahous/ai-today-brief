@@ -6,6 +6,11 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { findOrphanedQualityReport } from './quality-report-carryover';
 import { resolveSocialPostAssets } from '@/lib/social/asset-resolver-server';
 import type { QualityIssue, ResolvedSocialAsset } from '@/lib/social/types';
+import {
+  livePreflightUnavailable,
+  parseLiveWeeklyPreflight,
+  type LiveWeeklyPreflight,
+} from './live-preflight';
 
 type Tables = Database['public']['Tables'];
 type Row<Name extends keyof Tables> = Tables[Name]['Row'];
@@ -56,6 +61,12 @@ export interface WeeklyDigestWorkspace {
   localeMap: WeeklyLocaleMapAdminRow[];
   engagementEvents: WeeklyEngagementEventAdminRow[];
   storyDirections: WeeklyStoryDirectionAdminRow[];
+  /**
+   * Result of `weekly_digest_preflight` for the loaded digest. Release uses
+   * this instead of the client-side approximation, which cannot see hash
+   * mismatch / NULL content_hash.
+   */
+  livePreflight: LiveWeeklyPreflight;
 }
 
 function assertQuery<T>(
@@ -187,6 +198,7 @@ export const getWeeklyDigestWorkspace = cache(
       localeMapResult,
       engagementResult,
       storyDirectionsResult,
+      preflightResult,
     ] = await Promise.all([
       db
         .from('weekly_digest_revisions')
@@ -237,6 +249,7 @@ export const getWeeklyDigestWorkspace = cache(
         .order('occurred_at', { ascending: false })
         .limit(500),
       db.from('weekly_digest_story_directions').select('*').eq('weekly_digest_id', digest.id),
+      db.rpc('weekly_digest_preflight', { p_weekly_digest_id: digest.id }),
     ]);
 
     const revisions = assertQuery('revisions', revisionsResult);
@@ -247,6 +260,9 @@ export const getWeeklyDigestWorkspace = cache(
     // than 500ing the whole workspace over an additive, optional feature --
     // "no angles saved" degrades identically to "table not migrated yet."
     const storyDirections = storyDirectionsResult.error ? [] : (storyDirectionsResult.data ?? []);
+    const livePreflight = preflightResult.error
+      ? livePreflightUnavailable(preflightResult.error.message)
+      : parseLiveWeeklyPreflight(preflightResult.data);
     const localeMap = assertQuery('weekly locale map', localeMapResult);
     const engagementEvents = assertQuery('weekly engagement events', engagementResult);
     if (packageResult.error) {
@@ -374,6 +390,7 @@ export const getWeeklyDigestWorkspace = cache(
       localeMap,
       engagementEvents,
       storyDirections,
+      livePreflight,
     };
   },
 );

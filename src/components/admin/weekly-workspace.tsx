@@ -44,6 +44,7 @@ import {
   type WeeklyPreflightTab,
   validateWeeklyDigestPreflight,
 } from '@/lib/weekly-digest/preflight';
+import { artifactReviewGate } from '@/lib/weekly-digest/artifact-review-gate';
 import { contentSimGateCleared, type ContentSimArtifactMeta } from '@/lib/content-sim';
 import {
   parseStoryPromptSetContent,
@@ -611,15 +612,22 @@ function ArtifactReview({
   artifact,
   reviews,
   canReview,
+  activeRevisionId,
 }: {
   digestId: string;
   artifact: WeeklyArtifactAdminRow;
   reviews: WeeklyArtifactReviewAdminRow[];
   canReview: boolean;
+  activeRevisionId?: string | null;
 }) {
   const history = latestReviews(reviews, artifact.id);
   const alreadyApproved = artifact.review_status === 'approved';
   const workspaceTab = weeklyWorkspaceTabForArtifactType(artifact.artifact_type);
+  const reviewGate = artifactReviewGate({
+    canReview,
+    artifactRevisionId: artifact.revision_id,
+    activeRevisionId,
+  });
 
   return (
     <div className="mt-4 border-t border-white/8 pt-4">
@@ -648,7 +656,7 @@ function ArtifactReview({
         </details>
       ) : null}
 
-      {canReview ? (
+      {reviewGate === 'ready' ? (
         <form action={reviewWeeklyArtifactAction} className="grid gap-3">
           <input type="hidden" name="weekly_digest_id" value={digestId} />
           <input type="hidden" name="workspace_tab" value={workspaceTab} />
@@ -698,6 +706,12 @@ function ArtifactReview({
             />
           </div>
         </form>
+      ) : reviewGate === 'stale_revision' ? (
+        <p className="rounded-xl border border-amber-400/25 bg-amber-400/8 p-3 text-sm text-amber-100">
+          Approve is hidden because this artifact belongs to an earlier working copy. Regenerate it
+          on the current version (or attach a carried report) — the button is not missing because
+          you lack permission.
+        </p>
       ) : (
         <p className="text-xs text-slate-500">
           Artifact decisions require an owner. Editors can revise the source content, and analysts
@@ -733,6 +747,7 @@ function ArtifactCard({
   label,
   imagePreview = false,
   variantSelection,
+  activeRevisionId,
 }: {
   digestId: string;
   artifact: WeeklyArtifactAdminRow | undefined;
@@ -740,6 +755,7 @@ function ArtifactCard({
   canReview: boolean;
   label: string;
   imagePreview?: boolean;
+  activeRevisionId?: string | null;
   /**
    * story_image only (PR5): enables the variant thumbnail strip (promote an
    * alternate render to primary) and the "edit scene, regenerate" form.
@@ -1396,6 +1412,7 @@ function ArtifactCard({
         artifact={artifact}
         reviews={reviews}
         canReview={canReview}
+        activeRevisionId={activeRevisionId}
       />
     </article>
   );
@@ -2535,7 +2552,8 @@ function ResearchPanel({
                   digestId={workspace.digest.id}
                   artifact={artifact}
                   reviews={workspace.artifactReviews}
-                  canReview={canReview && artifact.revision_id === workspace.revision?.id}
+                  canReview={canReview}
+                  activeRevisionId={workspace.revision?.id}
                 />
               </>
             ) : (
@@ -2657,7 +2675,8 @@ function ResearchPanel({
             digestId={workspace.digest.id}
             artifact={quality}
             reviews={workspace.artifactReviews}
-            canReview={canReview && quality.revision_id === workspace.revision?.id}
+            canReview={canReview}
+            activeRevisionId={workspace.revision?.id}
           />
         </section>
       ) : orphanedQuality ? (
@@ -3158,6 +3177,7 @@ function ArticlePanel({
               digestId={workspace.digest.id}
               artifact={articleEn}
               reviews={workspace.artifactReviews}
+              activeRevisionId={workspace.revision?.id}
               canReview={false}
               label="English landing article"
             />
@@ -3165,6 +3185,7 @@ function ArticlePanel({
               digestId={workspace.digest.id}
               artifact={articleUk}
               reviews={workspace.artifactReviews}
+              activeRevisionId={workspace.revision?.id}
               canReview={false}
               label="Ukrainian landing article"
             />
@@ -3596,6 +3617,7 @@ function ArticlePanel({
             digestId={workspace.digest.id}
             artifact={articleEn}
             reviews={workspace.artifactReviews}
+            activeRevisionId={workspace.revision?.id}
             canReview={canReview}
             label="English landing article"
           />
@@ -3603,6 +3625,7 @@ function ArticlePanel({
             digestId={workspace.digest.id}
             artifact={articleUk}
             reviews={workspace.artifactReviews}
+            activeRevisionId={workspace.revision?.id}
             canReview={canReview}
             label="Ukrainian landing article"
           />
@@ -3806,6 +3829,7 @@ function VisualsPanel({
             digestId={workspace.digest.id}
             artifact={cover}
             reviews={workspace.artifactReviews}
+            activeRevisionId={workspace.revision?.id}
             canReview={canReviewVisuals && (!isVisualRefreshDraft || coverIsStaged)}
             label="Master cover"
             imagePreview
@@ -3970,6 +3994,7 @@ function VisualsPanel({
                   digestId={workspace.digest.id}
                   artifact={artifact}
                   reviews={workspace.artifactReviews}
+                  activeRevisionId={workspace.revision?.id}
                   canReview={canReviewVisuals && (!isVisualRefreshDraft || artifactIsStaged)}
                   label={`Story ${item.rank} illustration`}
                   imagePreview
@@ -4025,6 +4050,7 @@ function VisualsPanel({
                 digestId={workspace.digest.id}
                 artifact={artifact}
                 reviews={workspace.artifactReviews}
+                activeRevisionId={workspace.revision?.id}
                 canReview={canReviewVisuals}
                 label={textFrom(artifact.metadata, 'format') || artifact.slot_key}
                 imagePreview
@@ -4859,6 +4885,7 @@ function PdfPanel({
                 digestId={workspace.digest.id}
                 artifact={artifact}
                 reviews={workspace.artifactReviews}
+                activeRevisionId={workspace.revision?.id}
                 canReview={canReview}
                 label={`${locale.toUpperCase()} A4 edition`}
               />
@@ -5039,7 +5066,8 @@ function VideoPanel({
               digestId={workspace.digest.id}
               artifact={script}
               reviews={workspace.artifactReviews}
-              canReview={canReview && script.revision_id === workspace.revision?.id}
+              canReview={canReview}
+              activeRevisionId={workspace.revision?.id}
             />
           </div>
         ) : null}
@@ -5365,6 +5393,7 @@ function VideoPanel({
             digestId={workspace.digest.id}
             artifact={script}
             reviews={workspace.artifactReviews}
+            activeRevisionId={workspace.revision?.id}
             canReview={canReview}
             label="English script"
           />
@@ -5372,6 +5401,7 @@ function VideoPanel({
             digestId={workspace.digest.id}
             artifact={manifest}
             reviews={workspace.artifactReviews}
+            activeRevisionId={workspace.revision?.id}
             canReview={canReview}
             label="weekly-video-v3 manifest"
           />
@@ -5379,6 +5409,7 @@ function VideoPanel({
             digestId={workspace.digest.id}
             artifact={finalVideo}
             reviews={workspace.artifactReviews}
+            activeRevisionId={workspace.revision?.id}
             canReview={canReview}
             label="Final YouTube video"
           />
@@ -5386,6 +5417,7 @@ function VideoPanel({
             digestId={workspace.digest.id}
             artifact={captionsEn}
             reviews={workspace.artifactReviews}
+            activeRevisionId={workspace.revision?.id}
             canReview={canReview}
             label="English captions"
           />
@@ -5393,6 +5425,7 @@ function VideoPanel({
             digestId={workspace.digest.id}
             artifact={captionsUk}
             reviews={workspace.artifactReviews}
+            activeRevisionId={workspace.revision?.id}
             canReview={canReview}
             label="Ukrainian captions"
           />
@@ -5400,6 +5433,7 @@ function VideoPanel({
             digestId={workspace.digest.id}
             artifact={thumbnail}
             reviews={workspace.artifactReviews}
+            activeRevisionId={workspace.revision?.id}
             canReview={canReview}
             label="Video thumbnail"
             imagePreview
@@ -5408,6 +5442,7 @@ function VideoPanel({
             digestId={workspace.digest.id}
             artifact={heygenPreview}
             reviews={workspace.artifactReviews}
+            activeRevisionId={workspace.revision?.id}
             canReview={canReview}
             label="HeyGen preview"
           />
@@ -5415,6 +5450,7 @@ function VideoPanel({
             digestId={workspace.digest.id}
             artifact={graphicsPreview}
             reviews={workspace.artifactReviews}
+            activeRevisionId={workspace.revision?.id}
             canReview={canReview}
             label="Graphics preview"
           />
@@ -5682,6 +5718,18 @@ function ReleasePanel({
             </h2>
             <span className="text-2xl font-bold text-white">{blockers.length}</span>
           </div>
+          <p className="mt-2 text-xs text-slate-500">
+            Live <code>weekly_digest_preflight</code>
+            {workspace.livePreflight.checkedAt
+              ? ` · ${kyivDateTime(workspace.livePreflight.checkedAt)}`
+              : null}
+          </p>
+          {workspace.livePreflight.error ? (
+            <p className="mt-3 rounded-xl border border-amber-400/25 bg-amber-400/8 p-3 text-sm text-amber-100">
+              Live preflight could not run ({workspace.livePreflight.error}). Showing the
+              client-side estimate — Approve/Ship still use the RPC and may disagree.
+            </p>
+          ) : null}
           {blockers.length ? (
             <div className="mt-4">
               <PreflightBlockerList
@@ -5848,8 +5896,10 @@ export function WeeklyWorkspace({
     ),
   );
   const preflight = validateWeeklyDigestPreflight({ storyIds, artifacts, social, localeMap });
+  const live = workspace.livePreflight;
+  const displayBlockers = live.error ? preflight.blockers : live.blockers;
   const requiredSlots = 15 + storyIds.length + Object.keys(WEEKLY_SOCIAL_MATRIX).length;
-  const blockedSlots = new Set(preflight.blockers.map((blocker) => blocker.slot)).size;
+  const blockedSlots = new Set(displayBlockers.map((blocker) => blocker.slot)).size;
   const progress = Math.max(
     0,
     Math.min(100, Math.round(((requiredSlots - blockedSlots) / requiredSlots) * 100)),
@@ -5870,7 +5920,7 @@ export function WeeklyWorkspace({
       {activeTab === 'overview' ? (
         <OverviewPanel
           workspace={workspace}
-          blockers={preflight.blockers}
+          blockers={displayBlockers}
           progress={progress}
           canEdit={canEdit}
           canRebuildSelection={session.role === 'owner'}
@@ -5922,7 +5972,7 @@ export function WeeklyWorkspace({
       {activeTab === 'release' ? (
         <ReleasePanel
           workspace={workspace}
-          blockers={preflight.blockers}
+          blockers={displayBlockers}
           canOwnRelease={canOwnRelease}
         />
       ) : null}

@@ -6,6 +6,28 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-29
 
+## 2026-08-29 — Етап 0: A3/A4 + auto-relink cover (доповнює запис вище)
+
+A3: trigger `rebind_weekly_digest_preflight_override` лишає owner override на новій
+ревізії, якщо слот не в `invalidated_slots`. A4: ArtifactReview показує банер, коли
+артефакт на старій working copy. A2 доповнено: `save_weekly_digest_artifact`
+переписує `asset_urls.artifactId` без revoke тексту (`app.weekly_digest_social_asset_relink`).
+(source: `supabase/migrations/20260829120000_weekly_revision_stage0_carry_forward.sql`,
+`src/lib/weekly-digest/artifact-review-gate.ts`)
+
+## 2026-08-29 — Етап 0 ревізій weekly digest реалізовано
+
+Гілка `feat/weekly-revision-stage-0` від PR #340. Міграція
+`20260829120000_weekly_revision_stage0_carry_forward.sql`: helper
+`carry_forward_weekly_digest_revision_artifacts` у обох service RPC; cover більше не
+auto-revoke соцкопію; preflight розділяє `social_variant_not_ready` і
+`social_assets_stale`; `list_applied_schema_migrations` для CI. Admin: live preflight
+на Release, `save_error` замість throw на Approve/Ship/Schedule/Pause.
+`npm run migrations:check` у `pr:check` і workflow `migrations-drift.yml`.
+Чек-лист Етапу 0 у аудиті — усі `[x]`. Етап 1 не робили.
+(source: `supabase/migrations/20260829120000_weekly_revision_stage0_carry_forward.sql`,
+`src/lib/weekly-digest/live-preflight.ts`, `src/lib/supabase-migration-drift.ts`)
+
 ## 2026-08-29 — Архітектурний review ревізій weekly digest + план на наступний реліз
 
 Власник після релізу 28-29.08: «адмінка концептуально і структурно неправильна, дані
