@@ -6,27 +6,51 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-29
 
+## 2026-08-29 — Етап 0: restamp міграції після колізії з #341
+
+Коригує записи Етапу 0 нижче. #341 зайняв `20260829120000` (topic slug, уже на
+прод). Етап 0 перейменовано на `20260829130000_weekly_revision_stage0_carry_forward.sql`.
+(source: merge `origin/main` into `feat/weekly-revision-stage-0`, PR #342)
+
 ## 2026-08-29 — Етап 0: A3/A4 + auto-relink cover (доповнює запис вище)
 
 A3: trigger `rebind_weekly_digest_preflight_override` лишає owner override на новій
 ревізії, якщо слот не в `invalidated_slots`. A4: ArtifactReview показує банер, коли
 артефакт на старій working copy. A2 доповнено: `save_weekly_digest_artifact`
 переписує `asset_urls.artifactId` без revoke тексту (`app.weekly_digest_social_asset_relink`).
-(source: `supabase/migrations/20260829120000_weekly_revision_stage0_carry_forward.sql`,
+(source: `supabase/migrations/20260829130000_weekly_revision_stage0_carry_forward.sql`,
 `src/lib/weekly-digest/artifact-review-gate.ts`)
 
 ## 2026-08-29 — Етап 0 ревізій weekly digest реалізовано
 
 Гілка `feat/weekly-revision-stage-0` від PR #340. Міграція
-`20260829120000_weekly_revision_stage0_carry_forward.sql`: helper
+`20260829130000_weekly_revision_stage0_carry_forward.sql`: helper
 `carry_forward_weekly_digest_revision_artifacts` у обох service RPC; cover більше не
 auto-revoke соцкопію; preflight розділяє `social_variant_not_ready` і
 `social_assets_stale`; `list_applied_schema_migrations` для CI. Admin: live preflight
 на Release, `save_error` замість throw на Approve/Ship/Schedule/Pause.
 `npm run migrations:check` у `pr:check` і workflow `migrations-drift.yml`.
 Чек-лист Етапу 0 у аудиті — усі `[x]`. Етап 1 не робили.
-(source: `supabase/migrations/20260829120000_weekly_revision_stage0_carry_forward.sql`,
+(source: `supabase/migrations/20260829130000_weekly_revision_stage0_carry_forward.sql`,
 `src/lib/weekly-digest/live-preflight.ts`, `src/lib/supabase-migration-drift.ts`)
+
+## 2026-08-29 — Публічний slug weekly digest тепер тематичний, не лише дата
+
+Власник побачив трекований лінк `/r/s/{uuid}` у соцпості й запитав, чому URL випуску —
+набір символів; зʼясувалось, що це навмисний click-tracking редирект (окрема сутність),
+а справжня канонічна сторінка вже мала людський slug — але лише дата
+(`ai-weekly-2026-08-16`), без жодного слова про тему випуску. Причина: slug
+присвоюється в `composer.ts` у момент створення дайджесту, задовго до появи заголовка.
+
+Рішення власника: правити тільки для нових випусків наперед (старі URL не чіпати — вже
+в Google), slug генерувати автоматично з заголовка. Реалізовано в
+`finish_weekly_digest_release` (єдина функція, що ставить `status='published'`
+незалежно від шляху — ручний Ship чи `release_at`-воркер): якщо поточний slug ще
+збігається з авто-паттерном `ai-weekly(-test)?-YYYY-MM-DD`, переписує на
+`{транслітерований-заголовок}-YYYY-MM-DD`. Деталі —
+[weekly-digest § Публічний slug тепер тематичний](pipeline/weekly-digest.md#публічний-slug-тепер-тематичний-не-лише-дата-2026-08-29).
+(source: `supabase/migrations/20260829120000_weekly_digest_topic_slug_on_publish.sql`,
+owner session 2026-08-29)
 
 ## 2026-08-29 — Архітектурний review ревізій weekly digest + план на наступний реліз
 

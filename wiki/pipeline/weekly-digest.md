@@ -6,7 +6,7 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live c
 editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 working-copy UX 2026-08-22, image prompt library v6 2026-08-23, daily visual 2026-08-24…25,
 Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract + fail-open 2026-08-28,
-Fixes & blockers + warnings do not hold socials 2026-08-28, revision Stage 0 2026-08-29
+Fixes & blockers + warnings do not hold socials 2026-08-28, topic-based slug on publish 2026-08-29, revision Stage 0 2026-08-29
 Last updated: 2026-08-29
 
 ---
@@ -16,7 +16,7 @@ Last updated: 2026-08-29
 Automated `editorial_master` used `create_service_weekly_digest_revision` /
 `…_with_visual_direction`, which hardcoded `carried_artifact_count: 0`. Manual Save
 already copied artifacts whose `input_hash` still matched. After
-`20260829120000_weekly_revision_stage0_carry_forward.sql` both service RPCs call
+`20260829130000_weekly_revision_stage0_carry_forward.sql` both service RPCs call
 `carry_forward_weekly_digest_revision_artifacts`. Cover replacement no longer
 `auto_revoked` social *copy* and remaps `asset_urls.artifactId` onto the new current
 row. `preflight_override` rebinds onto the new revision for slots that were carried.
@@ -26,7 +26,27 @@ splits `social_variant_not_ready` (text) from `social_assets_stale`. Release
 Schedule/Pause redirect with `save_error` instead of throwing `#441`.
 `npm run migrations:check` compares origin/main to prod `schema_migrations`.
 (source: [audits/2026-08-29-weekly-digest-revision-architecture-review](../audits/2026-08-29-weekly-digest-revision-architecture-review.md),
-`supabase/migrations/20260829120000_weekly_revision_stage0_carry_forward.sql`)
+`supabase/migrations/20260829130000_weekly_revision_stage0_carry_forward.sql`)
+
+## Публічний slug тепер тематичний, не лише дата (2026-08-29)
+
+Власник помітив, що трекований лінк у соцпостах веде через `/r/s/[token]` (це навмисний
+click-tracking редирект, окрема тема) — і по дорозі звернув увагу, що сама канонічна
+сторінка випуску має slug `ai-weekly-2026-08-16` — лише дата, без жодного слова про те,
+про що випуск. Причина: slug присвоюється в `src/lib/social/composer.ts:760` у момент
+**створення** дайджесту, задовго до того, як з'являється заголовок — тож раніше він
+фізично не міг бути змістовним.
+
+Фікс, за рішенням власника (застосовується лише до **нових** випусків, старі URL не
+чіпаються — вони вже в Google і вже розшарені): `finish_weekly_digest_release` —
+єдина функція, яка ставить `status = 'published'`, незалежно від того, чи випуск дійшов
+туди через ручний Ship, чи через `release_at`-воркер — тепер, якщо поточний slug усе ще
+збігається з авто-згенерованим паттерном `ai-weekly(-test)?-YYYY-MM-DD`, перезаписує
+його на `{transliterated-title}-YYYY-MM-DD` (заголовок EN, до 60 символів, обрізаний по
+межі слова, з захисним циклом на колізію). Slug, встановлений якимось іншим шляхом,
+не чіпається.
+(source: `supabase/migrations/20260829120000_weekly_digest_topic_slug_on_publish.sql`,
+owner session 2026-08-29)
 
 ## Social copy: channel-contract format rules were critic-only, no deterministic gate (2026-08-28)
 

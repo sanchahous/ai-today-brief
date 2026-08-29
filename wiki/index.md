@@ -8,6 +8,7 @@ GA4 + SEO 2026-08-21, latest weekly revision is the working copy 2026-08-22,
 Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація трьох відео-папок в один репозиторій 2026-08-28,
+weekly digest topic-based slug on publish 2026-08-29,
 weekly digest revision architecture review 2026-08-29
 Last updated: 2026-08-29
 
@@ -43,7 +44,7 @@ Last updated: 2026-08-29
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
-| 📋 `architecture/data-model.md` | Схема Supabase, RLS, 98 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
+| 📋 `architecture/data-model.md` | Схема Supabase, RLS, 99 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
 
@@ -56,7 +57,7 @@ Last updated: 2026-08-29
 | ✅ [pipeline/trend-engine-backtest](pipeline/trend-engine-backtest.md) | Результати бектесту trend-index | колишній `docs/TREND-ENGINE-BACKTEST-FINDINGS.md` |
 | ✅ [pipeline/instrumentation-plan](pipeline/instrumentation-plan.md) | Пакет телеметрії PR-I1/I2/I3 (міграції 032/033/034) | колишній `docs/INSTRUMENTATION-PR-PLAN.md` |
 | ✅ [pipeline/weekly-editorial-selection](pipeline/weekly-editorial-selection.md) | Редакційний відбір weekly-дайджесту й fail-closed quality boundary | колишній `docs/weekly-editorial-selection.md` + `content-studio.ts` |
-| ✅ [pipeline/weekly-digest](pipeline/weekly-digest.md) | Weekly Content Studio v2, durable workers, Social `artifactId` media contract, 7-slide Instagram carousel, PDF v3 fixed-grid 7 pages, linked-retry social checkpoints, score-aligned critic warnings, versioned legacy-post repair, grounded copy/approve CLI, bounded 7-page LinkedIn document, video_script hydration from normalized article, Generate manifest recovery, semantic story images v6, spend ledger і admin UX, social remaining issues are warnings not a terminal job, Етап 0 ревізій (carry-forward / live preflight) | `.env.example` + PR #160–#177/#208/#209/#222/#293 + `social-adapter.ts` + `generation-worker.ts` + `linkedin-document.ts` + `pdf.ts` |
+| ✅ [pipeline/weekly-digest](pipeline/weekly-digest.md) | Weekly Content Studio v2, durable workers, Social `artifactId` media contract, 7-slide Instagram carousel, PDF v3 fixed-grid 7 pages, linked-retry social checkpoints, score-aligned critic warnings, versioned legacy-post repair, grounded copy/approve CLI, bounded 7-page LinkedIn document, video_script hydration from normalized article, Generate manifest recovery, semantic story images v6, spend ledger і admin UX, social remaining issues are warnings not a terminal job, тематичний slug на publish, Етап 0 ревізій (carry-forward / live preflight) | `.env.example` + PR #160–#177/#208/#209/#222/#293 + `social-adapter.ts` + `generation-worker.ts` + `linkedin-document.ts` + `pdf.ts` |
 | ✅ [pipeline/editorial-voice](pipeline/editorial-voice.md) | Редакційний голос weekly-дайджесту: prompt-leak захист, contrast-pairs, мовні й banned-phrase гейти, `numeric_parity` EN↔UK | `editorial-voice.ts`, owner sessions 2026-08-06/09 |
 | ✅ [pipeline/weekly-master-failures](pipeline/weekly-master-failures.md) | Розбір збоїв `editorial_master` 09.08: 7 причин (таймаут CLI, tool-use, reasoning-сліпий stall-детектор, зелений прогін на провалі, фолбек, JSON-преамбула, відсутня UK/revise-драбина) | Actions runs + live sandbox 2026-08-09 |
 | ✅ [pipeline/weekly-master-engine](pipeline/weekly-master-engine.md) | Ітеративний рушій `editorial_master`: посегментний запис, точковий ремонт поля; regenerate на Fixes лише для coded blockers / stale checkpoint, не для жовтих warnings | `master-engine.ts` / `master-persist.ts` / `master-repair.ts` / `editorial-llm.ts`, owner session 2026-08-09 / 2026-08-22 / 2026-08-28 |

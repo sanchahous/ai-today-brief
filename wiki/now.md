@@ -9,7 +9,8 @@ first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 Visuals upload body cap 2026-08-26, admin weekly workspace hang fix 2026-08-28,
 social copy channel-contract + fail-open warnings 2026-08-28, Fixes & blockers 2026-08-28,
 консолідація трьох відео-папок в один репозиторій 2026-08-28,
-revision Stage 0 (carry-forward / live preflight) 2026-08-29
+revision Stage 0 (carry-forward / live preflight) 2026-08-29,
+topic-based weekly slug on publish 2026-08-29
 Last updated: 2026-08-29
 
 ---
@@ -22,10 +23,16 @@ Last updated: 2026-08-29
   `asset_urls`. A3: `preflight_override` переїжджає на нову ревізію для
   перенесених слотів. A4: Approve на старій ревізії показує банер, не зникає.
   Release — живий `weekly_digest_preflight`; Approve/Ship — `save_error` замість
-  `#441`. `npm run migrations:check` ловить дрейф origin/main vs prod. Етап 1 —
-  окремий проєкт.
+  `#441`. `npm run migrations:check` ловить дрейф origin/main vs prod. Міграція
+  `20260829130000` (не `20260829120000` — той слот зайняв #341 topic slug).
+  Етап 1 — окремий проєкт.
   (source: [audits/2026-08-29-weekly-digest-revision-architecture-review](audits/2026-08-29-weekly-digest-revision-architecture-review.md);
   [weekly-digest](pipeline/weekly-digest.md); [weekly-admin-runbook](ops/weekly-admin-runbook.md))
+
+- **Публічний slug weekly тепер тематичний (2026-08-29), змержено як [#341](https://github.com/sanchahous/ai-today-brief/pull/341).**
+  `finish_weekly_digest_release` переписує placeholder `ai-weekly(-test)?-YYYY-MM-DD`
+  на `{title}-YYYY-MM-DD` лише для нових публікацій. Старі URL не чіпаються.
+  (source: [weekly-digest](pipeline/weekly-digest.md))
 
 - **Social copy: після bounded repair немає термінального quality-гейти (2026-08-28), гілка
   `feat/social-copy-no-quality-blockers`.** Власник: «ніяких блокерів». Linked retry

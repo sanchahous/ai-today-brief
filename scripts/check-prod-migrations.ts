@@ -10,7 +10,7 @@ import {
   migrationFilenameToVersion,
 } from '../src/lib/supabase-migration-drift';
 
-const DRIFT_RPC = '20260829120000';
+const DRIFT_RPC = '20260829130000';
 
 function mainFilenamesFromGit(): string[] | null {
   try {
@@ -56,7 +56,7 @@ async function main() {
     );
     if (looksLikeMissingRpc(error.message) && !mainHasInventory) {
       console.info(
-        '[migrations:check] skip — list_applied_schema_migrations is not on prod yet (apply 20260829120000 after merge)',
+        '[migrations:check] skip — list_applied_schema_migrations is not on prod yet (apply 20260829130000 after merge)',
       );
       return;
     }

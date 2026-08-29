@@ -541,7 +541,7 @@ production live check 2026-08-18,
 INSERT, що й ручний Save. Артефакти, чий хеш не збігся (текст статті змінився),
 й далі не переносяться; тоді regenerate PDF / ввести YouTube лишається ручним
 кроком. `video_final`/`thumbnail` як і раніше не ставляться в чергу автоматично.
-(source: `supabase/migrations/20260829120000_weekly_revision_stage0_carry_forward.sql`)
+(source: `supabase/migrations/20260829130000_weekly_revision_stage0_carry_forward.sql`)
 
 До фіксу: `create_service_weekly_digest_revision` переносив артефакти на нову ревізію
 лише коли `input_hash` збігається, але **тіло функції не викликало INSERT взагалі**.

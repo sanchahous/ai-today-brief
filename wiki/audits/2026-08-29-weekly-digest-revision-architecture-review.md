@@ -137,7 +137,7 @@ story-selection checkbox, visual-refresh provenance).
       `'carried_artifact_count', 0` на реальний підрахунок скопійованих рядків.
       Це одна SQL-міграція, закриває головну причину зникнення PDF/відео/мініатюри.
       **Зроблено 2026-08-29:** `carry_forward_weekly_digest_revision_artifacts` + виклик
-      з обох service RPC (`20260829120000_weekly_revision_stage0_carry_forward.sql`).
+      з обох service RPC (`20260829130000_weekly_revision_stage0_carry_forward.sql`).
       Ручний `create_weekly_digest_revision_with_visual_direction` уже мав carry-forward.
 - [x] **A2.** Звузити dependency-map у `weekly_digest_artifact_input_hash` так, щоб
       зміна `cover:*` інвалідовувала лише артефакти, які фізично включають пікселі
@@ -168,7 +168,7 @@ story-selection checkbox, visual-refresh provenance).
       **Зроблено 2026-08-29:** `list_applied_schema_migrations` (service_role) +
       `npm run migrations:check` у `pr:check` і workflow `migrations-drift.yml`.
       Порівнює **origin/main** із прод, тож нова міграція в PR не валить гейт.
-- [x] **B2.** LinkedIn `first_comment` додано в `CHANNEL_FIELDS` — вже в цьому PR
+- [x] **B2.** LinkedIn `first_comment` додано в `CHANNEL_FIELDS` — змержено в #340
       (`src/lib/social/channel-form.ts`).
 
 ### Етап 1 — окремий проєкт, не для цього PR
