@@ -6,10 +6,30 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live c
 editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 working-copy UX 2026-08-22, image prompt library v6 2026-08-23, daily visual 2026-08-24…25,
 Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract + fail-open 2026-08-28,
-Fixes & blockers + warnings do not hold socials 2026-08-28
-Last updated: 2026-08-28
+Fixes & blockers + warnings do not hold socials 2026-08-28, topic-based slug on publish 2026-08-29
+Last updated: 2026-08-29
 
 ---
+
+## Публічний slug тепер тематичний, не лише дата (2026-08-29)
+
+Власник помітив, що трекований лінк у соцпостах веде через `/r/s/[token]` (це навмисний
+click-tracking редирект, окрема тема) — і по дорозі звернув увагу, що сама канонічна
+сторінка випуску має slug `ai-weekly-2026-08-16` — лише дата, без жодного слова про те,
+про що випуск. Причина: slug присвоюється в `src/lib/social/composer.ts:760` у момент
+**створення** дайджесту, задовго до того, як з'являється заголовок — тож раніше він
+фізично не міг бути змістовним.
+
+Фікс, за рішенням власника (застосовується лише до **нових** випусків, старі URL не
+чіпаються — вони вже в Google і вже розшарені): `finish_weekly_digest_release` —
+єдина функція, яка ставить `status = 'published'`, незалежно від того, чи випуск дійшов
+туди через ручний Ship, чи через `release_at`-воркер — тепер, якщо поточний slug усе ще
+збігається з авто-згенерованим паттерном `ai-weekly(-test)?-YYYY-MM-DD`, перезаписує
+його на `{transliterated-title}-YYYY-MM-DD` (заголовок EN, до 60 символів, обрізаний по
+межі слова, з захисним циклом на колізію). Slug, встановлений якимось іншим шляхом,
+не чіпається.
+(source: `supabase/migrations/20260829120000_weekly_digest_topic_slug_on_publish.sql`,
+owner session 2026-08-29)
 
 ## Social copy: channel-contract format rules were critic-only, no deterministic gate (2026-08-28)
 
