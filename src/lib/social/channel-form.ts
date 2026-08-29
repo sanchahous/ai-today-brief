@@ -16,7 +16,7 @@ export type SocialFormField =
 const CHANNEL_FIELDS: Record<SocialChannel, readonly SocialFormField[]> = {
   telegram: ['post_copy', 'destination', 'alt', 'schedule', 'media_summary'],
   facebook: ['post_copy', 'destination', 'alt', 'schedule', 'media_summary'],
-  linkedin: ['post_copy', 'destination', 'alt', 'schedule', 'linkedin_document', 'media_summary'],
+  linkedin: ['post_copy', 'first_comment', 'destination', 'alt', 'schedule', 'linkedin_document', 'media_summary'],
   x: ['post_copy', 'first_comment', 'destination', 'alt', 'schedule', 'media_summary'],
   threads: ['thread_parts', 'destination', 'alt', 'schedule', 'media_summary'],
   instagram: ['caption', 'carousel_preview', 'alt', 'schedule', 'media_summary'],
