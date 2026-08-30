@@ -11,18 +11,44 @@ social copy channel-contract + fail-open warnings 2026-08-28, Fixes & blockers 2
 консолідація трьох відео-папок в один репозиторій 2026-08-28,
 revision Stage 0 (carry-forward / live preflight) 2026-08-29,
 topic-based weekly slug + OpenRouter spend leak 2026-08-29
-Last updated: 2026-08-29
+Last updated: 2026-08-30
 
 ---
 
 ## Стан репозиторію
 
-- **⚠️ Кошти OpenRouter вичерпано (2026-08-30).** `api/v1/credits`: куплено $50, витрачено $50.14.
-  Потрібне поповнення, інакше платні лінії стануть. Безкоштовний ярус ще **не** реалізований —
-  код виключає `:free` цілком, і це виявилось помилковим рішенням: реальний ліміт для нашого
-  акаунта — 1000 запитів/добу (не 50, бо куплено >$10), тобто вп'ятеро більше за найгірший день.
-  `z-ai/glm-5.2:free` має AA 52.6 — сильніше за нашу платну deepseek-лінію (42.1).
-  (source: [research/2026-08-30-openrouter-routing-api §9](research/2026-08-30-openrouter-routing-api.md))
+- **Вибір моделей OpenRouter переписано (2026-08-30), гілка `feat/openrouter-catalog-selection` поверх #343.**
+  Сім кроків з [research/2026-08-30-openrouter-routing-api §12](research/2026-08-30-openrouter-routing-api.md):
+  кандидати з `?category=<роль>&sort=<вісь>-high-to-low`; один ранкер
+  `rankModelsForRole` (якість під стелею, tie-break ціна, одна модель на родину,
+  без allowlist); аліаси `~` виключені; ціна з `input_cache_read` і виміряним
+  hit rate **18.2%** (`OPENROUTER_CACHE_HIT_RATE=0.182`); `:free` нарівні з
+  нижчим quality floor (`OPENROUTER_FREE_QUALITY_FLOOR_DELTA=5`) і без ділення
+  на нуль; провайдер — `provider.sort: "price"` + `preferred_max_latency`
+  (`OPENROUTER_PROVIDER_MAX_LATENCY_S=15`) і uptime floor
+  (`OPENROUTER_PROVIDER_UPTIME_FLOOR=0.99`), не суфікс `:floor`;
+  `pricing.overrides` лише warning. Лімітер 20 req/min на всі `:free`
+  (резерв 2 слоти). Стеля **$1.5 blended/M** однакова для social
+  (`SOCIAL_LLM_MAX_PRICE_PER_MILLION=1.5`) і weekly/daily/custom
+  (`OPENROUTER_MAX_PRICE_PER_MILLION=1.5`). `:free` від стелі звільнені.
+  `OPENROUTER_MODEL_PRIORITY` більше не читається.
+  (source: [research/2026-08-30-openrouter-routing-api §12](research/2026-08-30-openrouter-routing-api.md);
+  `pipeline/providers/model-scoring.ts`)
+
+- **Рахунок OpenRouter поповнено (2026-08-30 вечір).** `GET /api/v1/credits`:
+  куплено $60, витрачено $50.16, залишок **$9.84**. Платні лінії знову доступні.
+  Сухий прогін каталогу (без `chat/completions`, лише list + ранкер) на 384 моделі:
+  `fable` і аліаси `~` у чергах немає. Живі капи: social 2, weekly 1, daily 6.
+  **Social writer/critic:** `meta/muse-spark-1.2` (AA 56.8, $1.37/M) →
+  `google/gemini-3.7-flash` (56, $0.94/M). Далі в родинах: deepseek-v4-pro,
+  `z-ai/glm-5.2:free` (52.6), gpt-5.6-luna, qwen3.8. **Weekly writer (cap=1):**
+  лише `z-ai/glm-5.2:free` — mix 0.2/0.8 викидає muse/gemini flash за стелю $1.5;
+  наступна платна родина була б `openai/gpt-5.6-luna` ($0.99/M). **Weekly critic
+  (cap=1):** `deepseek/deepseek-v4-pro-0813` (53.2, $1.26/M). **Daily summarize/
+  verify:** deepseek-v4-pro → glm-5.2:free → gpt-5.6-luna → qwen3.8 →
+  minimax-m3:free → mimo-v2.5-pro.
+  (source: живий `api/v1/credits` + `fetchOpenRouterCatalogForRole` 2026-08-30 15:12 UTC;
+  [research/2026-08-30-openrouter-routing-api §12](research/2026-08-30-openrouter-routing-api.md))
 
 - **OpenRouter spend leak виправлено (2026-08-29), гілка `claude/openrouter-activity-investigation-1d5a53`.**
   Рахунок $9.16 за дві доби (+2137%) при власному ledger ~$1.3. Чотири дефекти:

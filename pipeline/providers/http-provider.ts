@@ -20,6 +20,7 @@ import {
   type OpenRouterResponseValidator,
 } from '../openrouter-brief-json';
 import type { ProviderCallResult } from './types';
+import { openRouterPriceRouting } from '../openrouter-provider-routing';
 
 export interface HttpProviderConfig {
   /** Stable id: 'openrouter' | 'nim' | an owner-defined slug. Used in logs and the cost ledger. */
@@ -32,6 +33,14 @@ export interface HttpProviderConfig {
   extraHeaders?: Record<string, string>;
   /** OpenRouter reports usage.cost; a bare OpenAI-compatible endpoint like NIM does not. */
   reportsCost?: boolean;
+  /**
+   * When false, skip `provider.sort: "price"` even if `id` is `openrouter`.
+   * NIM and other catalog-less HTTP providers never set this.
+   */
+  routeOpenRouterProvider?: boolean;
+  /** Low-uptime provider slugs to ignore. Empty = sort by price with no ignore list. */
+  openRouterIgnoreProviders?: readonly string[];
+  openRouterMaxLatencyS?: number;
 }
 
 /** OpenRouter's own defaults — passing this reproduces generateWithOpenRouterChain's exact current behavior. */
@@ -49,6 +58,28 @@ export const NIM_HTTP_DEFAULTS = {
   baseUrl: 'https://integrate.api.nvidia.com/v1',
   reportsCost: false,
 } as const;
+
+function mergeOpenRouterProviderBody(
+  cfg: HttpProviderConfig,
+  callerExtra: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (cfg.id !== 'openrouter' || cfg.routeOpenRouterProvider === false) return callerExtra;
+  const routing = openRouterPriceRouting({
+    ignore: cfg.openRouterIgnoreProviders,
+    maxLatencyS: cfg.openRouterMaxLatencyS,
+  });
+  const callerProvider =
+    callerExtra &&
+    typeof callerExtra.provider === 'object' &&
+    callerExtra.provider !== null &&
+    !Array.isArray(callerExtra.provider)
+      ? (callerExtra.provider as Record<string, unknown>)
+      : {};
+  return {
+    ...callerExtra,
+    provider: { ...routing, ...callerProvider },
+  };
+}
 
 function chatCompletionsUrl(baseUrl: string): string {
   return `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
@@ -94,7 +125,10 @@ export async function generateWithHttpProviderChain(
   // buildChatBody's result -- also fixed, or this override would have been
   // silently discarded there.
   const extraBodyForModel = (modelId: string, attempt: number) => {
-    const callerExtra = options?.extraBodyForModel?.(modelId, attempt);
+    const callerExtra = mergeOpenRouterProviderBody(
+      cfg,
+      options?.extraBodyForModel?.(modelId, attempt),
+    );
     return reportsCost ? callerExtra : { ...callerExtra, usage: undefined };
   };
   const result = await generateWithOpenRouterChain(prompt, {

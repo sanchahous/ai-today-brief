@@ -6,8 +6,9 @@ Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live c
 editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 working-copy UX 2026-08-22, image prompt library v6 2026-08-23, daily visual 2026-08-24…25,
 Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract + fail-open 2026-08-28,
-Fixes & blockers + warnings do not hold socials 2026-08-28, topic-based slug on publish 2026-08-29, revision Stage 0 2026-08-29
-Last updated: 2026-08-29
+Fixes & blockers + warnings do not hold socials 2026-08-28, topic-based slug on publish 2026-08-29, revision Stage 0 2026-08-29,
+каталожний вибір моделей OpenRouter 2026-08-30
+Last updated: 2026-08-30
 
 ---
 
@@ -27,6 +28,26 @@ Schedule/Pause redirect with `save_error` instead of throwing `#441`.
 `npm run migrations:check` compares origin/main to prod `schema_migrations`.
 (source: [audits/2026-08-29-weekly-digest-revision-architecture-review](../audits/2026-08-29-weekly-digest-revision-architecture-review.md),
 `supabase/migrations/20260829130000_weekly_revision_stage0_carry_forward.sql`)
+
+## Каталожний вибір OpenRouter-моделей (2026-08-30)
+
+Weekly master більше не ранжує за name-heuristics / `DEFAULT_MODEL_PRIORITY`.
+`premiumOpenRouterModels` викликає спільний `rankModelsForRole` (`weekly.master_writer`):
+якість під floor 40, tie-break ціна, одна модель на родину, аліаси `~` і unbenchmarked
+поза чергою. Кандидати — `?category=technology&sort=intelligence-high-to-low` union
+sort-only. Per-M стеля **$1.5** (`OPENROUTER_MAX_PRICE_PER_MILLION=1.5`), та сама
+цифра що `SOCIAL_LLM_MAX_PRICE_PER_MILLION`. Зверху лишаються
+`WEEKLY_MASTER_MAX_SPEND_USD` і `DAILY_GENERATION_BUDGET_USD`. Кеш: `OPENROUTER_CACHE_HIT_RATE=0.182`.
+`:free` може увійти в чергу; ланцюг пропускає слот, якщо лімітер 20 req/min повний.
+Провайдер: `provider.sort: "price"` + `OPENROUTER_PROVIDER_UPTIME_FLOOR=0.99` +
+`OPENROUTER_PROVIDER_MAX_LATENCY_S=15`. Це не змінює `WEEKLY_CONTENT_STUDIO_V2=off`.
+Живий каталог 2026-08-30 15:12 UTC (без completions): при дефолтному
+`WEEKLY_MASTER_OPENROUTER_CANDIDATES=1` writer бере лише `z-ai/glm-5.2:free` (AA 52.6);
+muse-spark / gemini-3.7-flash не проходять weekly mix 0.2/0.8 під $1.5. Critic — 
+`deepseek/deepseek-v4-pro-0813` ($1.26/M). Питання cap=1 —
+[open-questions §9](../open-questions.md).
+(source: [research/2026-08-30-openrouter-routing-api §12](../research/2026-08-30-openrouter-routing-api.md),
+`.env.example`, `src/lib/weekly-digest/editorial-llm.ts`, live catalog 2026-08-30)
 
 ## Публічний slug тепер тематичний, не лише дата (2026-08-29)
 

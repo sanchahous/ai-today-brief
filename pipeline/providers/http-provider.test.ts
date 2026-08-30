@@ -220,7 +220,33 @@ describe('generateWithHttpProviderChain', () => {
 
     const call = vi.mocked(generateWithOpenRouterChain).mock.calls[0]!;
     const extraBody = call[1]?.extraBodyForModel?.('m', 1);
-    expect(extraBody).toBeUndefined();
+    expect(extraBody).toMatchObject({
+      provider: {
+        sort: 'price',
+        allow_fallbacks: true,
+        require_parameters: true,
+        preferred_max_latency: 15,
+      },
+    });
+    expect(extraBody).not.toHaveProperty('usage');
+    expect(JSON.stringify(extraBody)).not.toContain('usage');
+  });
+
+  it('does not attach OpenRouter provider routing to a catalog-less HTTP provider', async () => {
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue(mockChainResult());
+
+    await generateWithHttpProviderChain('prompt', {
+      id: 'nim',
+      apiKey: 'k',
+      modelQueue: ['m'],
+      ...NIM_HTTP_DEFAULTS,
+    });
+
+    const extraBody = vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.extraBodyForModel?.(
+      'm',
+      1,
+    );
+    expect(extraBody).not.toHaveProperty('provider');
   });
 
   it('preserves a caller-supplied extraBodyForModel alongside the usage suppression', async () => {

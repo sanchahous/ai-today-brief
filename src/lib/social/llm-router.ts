@@ -4,11 +4,12 @@ import { SchemaType } from '@google/generative-ai';
 import type { PipelineDb } from '../../../pipeline/db';
 import { resolveGeminiModelQueue } from '../../../pipeline/gemini-models';
 import { logEvent } from '../../../pipeline/log';
+import type { OpenRouterModelRecord } from '../../../pipeline/openrouter-models';
 import {
-  fetchOpenRouterModels,
-  isUnstableOpenRouterModelId,
-  type OpenRouterModelRecord,
-} from '../../../pipeline/openrouter-models';
+  effectivePricePerM,
+  fetchOpenRouterCatalogForRole,
+  rankModelsForRole,
+} from '../../../pipeline/providers/model-scoring';
 import {
   OpenRouterIncompleteJsonError,
   type OpenRouterResponseValidator,
@@ -104,61 +105,20 @@ const GEMINI_SCHEMAS: Record<SocialLlmRole, GeminiResponseSchema> = {
   },
 };
 
-const OPENROUTER_PROVIDER_PRIORITY: Record<SocialLlmRole, readonly string[]> = {
-  critic: ['openai', 'anthropic', 'deepseek', 'x-ai', 'qwen'],
-  // Production 2026-08-17: both DeepSeek lanes missed the first-token budget
-  // and Qwen returned 429 before Telegram could save a checkpoint. Prefer the
-  // current efficient OpenAI lane for short social JSON; provider diversity
-  // remains available in the bounded tail.
-  writer: ['openai', 'anthropic', 'deepseek', 'qwen', 'x-ai'],
-};
-
-const MODEL_FRESHNESS_SECONDS = 400 * 24 * 60 * 60;
-
-/**
- * Social calls are prompt-heavy — the whole digest plus the channel contract
- * and the repair history go in, a few hundred tokens of JSON come out (live
- * ledger 2026-08-28: ~50k prompt vs ~1-6k completion) — so the blended rate a
- * model actually costs us is dominated by its input price.
- */
-const SOCIAL_TOKEN_MIX = { prompt: 0.9, completion: 0.1 } as const;
-
 /**
  * Blended USD/M above which a model may not enter a social queue at all.
- *
- * The ranking below had no price term whatsoever: `openRouterRoleScore` gave
- * every `~*-latest` alias a flat -10 000 and then broke ties on `created`. For
- * the anthropic lane that made `~anthropic/claude-fable-latest` ($10/M in,
- * $50/M out — $14.00/M blended) beat `~anthropic/claude-sonnet-latest`
- * ($2.80/M blended) by 0.0037 points of timestamp, so the single most
- * expensive text model in the catalog became the standing writer fallback.
- * Twelve calls on 2026-08-28 cost $4.66 — 51% of a $9.16 two-day bill — while
- * the ledger booked one of them at $0.0149.
- *
- * $1.50 is an owner decision (2026-08-29), tighter than the $3.50 that merely
- * excluded the frontier tier. It keeps the efficient writer lanes (the OpenAI
- * mini alias at $1.13, the Anthropic small alias at $1.40, deepseek and qwen
- * flash lanes near $0.04) and deliberately also drops the two lanes the critic
- * used to lead with — the standard OpenAI audit lane ($3.00) and the Anthropic
- * mid tier ($2.80). The critic therefore runs on cheaper families; that is a
- * quality trade the owner accepted, not an oversight. See
- * wiki/audits/2026-08-29-openrouter-spend-leak.md for the per-model table —
- * deliberately not repeated here, because pinning model versions in production
- * source is what the F5 grep forbids.
+ * Shared with the unified ranker (`DEFAULT_MAX_PRICE_PER_MILLION`).
  */
 export const DEFAULT_SOCIAL_MAX_PRICE_PER_MILLION = 1.5;
 
 /**
  * Blended USD per million tokens from the live catalog, or null when the model
- * does not publish both rates. Null is treated as ineligible, not as free: an
- * unpriced model is exactly the case we cannot afford to guess at.
+ * does not publish both rates. Null is treated as ineligible, not as free.
+ * Cache-hit adjustment is off here so the helper stays a pure sticker-price
+ * check; ranking uses `effectivePricePerM` with the measured hit rate.
  */
 export function socialBlendedPricePerMillion(model: OpenRouterModelRecord): number | null {
-  const prompt = Number(model.pricing?.prompt);
-  const completion = Number(model.pricing?.completion);
-  if (!Number.isFinite(prompt) || !Number.isFinite(completion)) return null;
-  if (prompt < 0 || completion < 0) return null;
-  return (prompt * SOCIAL_TOKEN_MIX.prompt + completion * SOCIAL_TOKEN_MIX.completion) * 1_000_000;
+  return effectivePricePerM(model, 'social.writer', 0);
 }
 
 export function resolveSocialMaxPricePerMillion(env: SocialLlmEnv = process.env): number {
@@ -271,92 +231,23 @@ export function resolveSocialProviderOrder(
   return [...new Set(order)];
 }
 
-function providerFromModelId(modelId: string): string {
-  return modelId.replace(/^~/, '').split('/')[0]?.toLowerCase() ?? '';
-}
-
-function hasJsonOutput(model: OpenRouterModelRecord): boolean {
-  const supported = model.supported_parameters;
-  return (
-    !supported || supported.includes('structured_outputs') || supported.includes('response_format')
-  );
-}
-
-function isSocialTextModel(model: OpenRouterModelRecord): boolean {
-  const lower = model.id.toLowerCase();
-  if (lower.includes(':free') || isUnstableOpenRouterModelId(model.id)) return false;
-  if (model.expiration_date) return false;
-  if (/image|vision|audio|embedding|moderation|coder|code-/.test(lower)) return false;
-  if ((model.context_length ?? 32_000) < 32_000) return false;
-  if (!(model.architecture?.modality ?? 'text').includes('text')) return false;
-  return hasJsonOutput(model);
-}
-
-function openRouterRoleScore(model: OpenRouterModelRecord, role: SocialLlmRole): number {
-  const id = model.id.toLowerCase();
-  let score = -(model.created ?? 0) / 1_000_000;
-  if (id.startsWith('~') && id.endsWith('-latest')) score -= 10_000;
-  // Price is a real tie-breaker, not decoration. Scaled so it decides between
-  // siblings inside one provider family (the case the alias bonus used to
-  // settle on a timestamp fraction) without overriding the role bands below.
-  score += (socialBlendedPricePerMillion(model) ?? 0) * 100;
-
-  if (role === 'critic') {
-    if (/(^|[-/])(pro|max|opus|sonnet)([-/.]|$)/.test(id)) score -= 800;
-    if (/mini|flash|lite|small/.test(id)) score += 1_500;
-  } else {
-    if (/mini|flash|lite|plus/.test(id)) score -= 700;
-    if (/opus|sol-pro|ultra/.test(id)) score += 1_000;
-  }
-  return score;
-}
-
-function latestStandardTerra(models: OpenRouterModelRecord[]): OpenRouterModelRecord | undefined {
-  return models
-    .filter((model) => /^openai\/gpt-[0-9]+(?:\.[0-9]+)?-terra$/i.test(model.id))
-    .sort((left, right) => (right.created ?? 0) - (left.created ?? 0))[0];
+function socialProviderRole(role: SocialLlmRole): ProviderRole {
+  return role === 'critic' ? 'social.critic' : 'social.writer';
 }
 
 /**
- * Build a diverse, current OpenRouter queue: one model per provider family.
- * This avoids a "fallback" that merely retries an older release of the same
- * model and gives the critic genuine family independence.
+ * Social queue: the shared catalog ranker, JSON required, one model per family.
  */
 export function rankSocialOpenRouterModels(
   models: OpenRouterModelRecord[],
   role: SocialLlmRole,
   maxPricePerMillion: number = DEFAULT_SOCIAL_MAX_PRICE_PER_MILLION,
 ): string[] {
-  const providerPriority = OPENROUTER_PROVIDER_PRIORITY[role];
-  const eligible = models.filter((model) => {
-    if (!isSocialTextModel(model) || !providerPriority.includes(providerFromModelId(model.id))) {
-      return false;
-    }
-    const price = socialBlendedPricePerMillion(model);
-    return price !== null && price <= maxPricePerMillion;
+  return rankModelsForRole(models, socialProviderRole(role), {
+    maxPricePerMillion,
+    requireJson: true,
+    familyDiversity: true,
   });
-  const newestCreated = Math.max(0, ...eligible.map((model) => model.created ?? 0));
-  const current =
-    newestCreated > 0
-      ? eligible.filter(
-          (model) => !model.created || newestCreated - model.created <= MODEL_FRESHNESS_SECONDS,
-        )
-      : eligible;
-
-  const queue: string[] = [];
-  for (const provider of providerPriority) {
-    const providerModels = current.filter((model) => providerFromModelId(model.id) === provider);
-    // Editorial audits use the balanced Terra lane, never the top-cost Sol
-    // alias or Terra Pro. If standard Terra is absent, skip OpenAI entirely.
-    const best =
-      role === 'critic' && provider === 'openai'
-        ? latestStandardTerra(providerModels)
-        : providerModels.sort(
-            (left, right) => openRouterRoleScore(left, role) - openRouterRoleScore(right, role),
-          )[0];
-    if (best) queue.push(best.id);
-  }
-  return queue;
 }
 
 async function resolveSocialOpenRouterQueue(
@@ -459,7 +350,7 @@ async function generateGemini<T>(input: ProviderInput<T>): Promise<ProviderOutpu
 /**
  * An owner-configured HTTP provider for this role (e.g. a promo like NVIDIA
  * NIM, added via /admin/providers) takes over entirely -- its own model
- * list, no live-catalog ranking (rankSocialOpenRouterModels needs
+ * list, no live-catalog ranking (rankModelsForRole needs
  * OpenRouter's own benchmark/pricing fields, which a catalog-less provider
  * doesn't have -- see wiki/pipeline/llm-providers.md). Null when no `db` was
  * supplied or nothing is configured for this role.
@@ -682,7 +573,9 @@ export async function generateSocialJson<T>(
   const env = options.env ?? process.env;
   const deps = options.deps ?? {};
   const attempts: SocialLlmAttempt[] = [];
-  const fetchModels = deps.fetchOpenRouterModels ?? ((key: string) => fetchOpenRouterModels(key));
+  const fetchModels =
+    deps.fetchOpenRouterModels ??
+    ((key: string) => fetchOpenRouterCatalogForRole(key, socialProviderRole(role)));
   const fetchFn = deps.fetchFn ?? fetch;
 
   const excluded = new Set(options.excludeProviders ?? []);

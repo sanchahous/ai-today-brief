@@ -4,7 +4,48 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-29
+Last updated: 2026-08-30
+
+## 2026-08-30 — OpenRouter поповнено; сухий прогін черг
+
+Власник: рахунок поповнено. `GET /api/v1/credits` 15:12 UTC: куплено $60,
+витрачено $50.16, залишок $9.84. Коригує «кошти вичерпано» в [now](now.md) і
+попередження в
+[research/2026-08-30-openrouter-routing-api §9](research/2026-08-30-openrouter-routing-api.md).
+Сухий прогін (каталог + `rankModelsForRole`, без `chat/completions`):
+`fable`/`~` немає. Social (cap 2) — `meta/muse-spark-1.2` → `google/gemini-3.7-flash`.
+Weekly writer (cap 1) — лише `z-ai/glm-5.2:free` (mix 0.2/0.8 відсікає дорожчі
+за completion моделі). Weekly critic (cap 1) — `deepseek/deepseek-v4-pro-0813`.
+Daily (cap 6) — deepseek-v4-pro → glm-5.2:free → gpt-5.6-luna → qwen3.8 →
+minimax-m3:free → mimo-v2.5-pro.
+(source: живий `api/v1/credits` + `fetchOpenRouterCatalogForRole` 2026-08-30)
+
+## 2026-08-30 — Стеля $1.5/M також на weekly/daily
+
+Власник: ту саму per-M стелю, що на social. `resolveMaxPricePerMillion` тепер
+дефолтить **1.5** для всіх ролей; weekly/daily читають
+`OPENROUTER_MAX_PRICE_PER_MILLION=1.5`. `:free` як і раніше без стелі.
+Зверху лишаються `WEEKLY_MASTER_MAX_SPEND_USD` і `DAILY_GENERATION_BUDGET_USD`.
+(source: owner session 2026-08-30, `.env.example`, `pipeline/providers/model-scoring.ts`)
+
+## 2026-08-30 — Каталожний вибір моделей OpenRouter (план §12)
+
+Реалізовано сім кроків з
+[research/2026-08-30-openrouter-routing-api §12](research/2026-08-30-openrouter-routing-api.md)
+на гілці `feat/openrouter-catalog-selection` поверх #343. Прибрано name-heuristics
+(`OPENROUTER_PROVIDER_PRIORITY`, `DEFAULT_MODEL_PRIORITY`, тири, `-pro`, аліаси `~`,
+бан `:free`). Один ранкер `rankModelsForRole`: якість під стелею, tie-break ціна,
+різноманіття родин без allowlist, unbenchmarked не в черзі. Чесна ціна з
+`input_cache_read` і `OPENROUTER_CACHE_HIT_RATE=0.182`. `:free` нарівні з
+`OPENROUTER_FREE_QUALITY_FLOOR_DELTA=5` і лімітером 20 req/min. Провайдер —
+`provider.sort: "price"` + latency/uptime, не суфікс `:floor`.
+`pricing.overrides` — warning. Env: `OPENROUTER_CACHE_HIT_RATE`,
+`OPENROUTER_FREE_QUALITY_FLOOR_DELTA`, `OPENROUTER_PROVIDER_UPTIME_FLOOR`,
+`OPENROUTER_PROVIDER_MAX_LATENCY_S`, `OPENROUTER_MAX_PRICE_PER_MILLION=1.5`
+(та сама стеля, що `SOCIAL_LLM_MAX_PRICE_PER_MILLION`).
+`OPENROUTER_MODEL_PRIORITY` більше не читається.
+(source: `pipeline/providers/model-scoring.ts`, `src/lib/social/llm-router.ts`,
+`src/lib/weekly-digest/editorial-llm.ts`, `.env.example`)
 
 ## 2026-08-29 — Етап 0: restamp міграції після колізії з #341
 

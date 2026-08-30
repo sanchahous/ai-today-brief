@@ -5,15 +5,18 @@ Summary: план і статус переходу від трьох окрем�
 Sources: owner session 2026-08-06/07, дослідження коду (Explore-агенти) + Plan-агент,
 `supabase/migrations/040_social_cms.sql` (Vault secret-патерн), план у
 `C:\Users\Oleksandr\.claude\plans\06-08-2026-12-32-oleksandr-kuzmenko-prancy-gizmo.md`,
-live dry-run `run-daily.ts` 2026-08-07, daily cover scene role 2026-08-15
-Last updated: 2026-08-15
+live dry-run `run-daily.ts` 2026-08-07, daily cover scene role 2026-08-15,
+каталожний ранкер 2026-08-30
+Last updated: 2026-08-30
 
 ---
 
-> **2026-08-30:** перевірений фактаж API OpenRouter (категорії, `sort`, per-provider `/endpoints`,
-> дисконти, суфікси) і пропозиція дворівневого вибору моделі/провайдера — у
-> [research/2026-08-30-openrouter-routing-api](../research/2026-08-30-openrouter-routing-api.md).
-> Пропозиція **не ухвалена**, обговорення триває.
+> **2026-08-30:** план з
+> [research/2026-08-30-openrouter-routing-api §12](../research/2026-08-30-openrouter-routing-api.md)
+> **реалізовано**. Кандидати з `?category=` + `?sort=`, один ранкер
+> `rankModelsForRole` (якість під стелею), `:free` у черзі з лімітером 20/хв,
+> провайдер `sort: "price"` без суфікса `:floor`. Name-heuristics і
+> `DEFAULT_MODEL_PRIORITY` видалені.
 
 ## Навіщо
 
@@ -84,25 +87,34 @@ cron за замовчуванням.
 [audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md),
 живий каталог OpenRouter 2026-08-15)
 
-**F5 no pinned generation ids (2026-08-15).** Прод `pipeline/` і `src/` не містять
-`sonnet-5` / `gpt-5` / `gemini-3.x` поза тестами. Черги беруться з каталогу
-(`DEFAULT_MODEL_PRIORITY` — family і `-latest`). Vision-модель A2 не перемикали.
+**F5 no pinned generation ids (2026-08-15, оновлено 2026-08-30).** Прод `pipeline/` і `src/` не містять
+`sonnet-5` / `gpt-5` / `gemini-3.x` поза тестами. Черги беруться з живого каталогу
+(`rankModelsForRole` — якість під стелею, одна модель на родину, без allowlist і без
+`DEFAULT_MODEL_PRIORITY`). Vision-модель A2 не перемикали.
 (source: [weekly-illustration-plan](weekly-illustration-plan.md) F5,
-`pipeline/model-version-pin.test.ts`)
+`pipeline/model-version-pin.test.ts`,
+[research/2026-08-30-openrouter-routing-api §12](../research/2026-08-30-openrouter-routing-api.md))
 
-**F2 model scoring (2026-08-15).** `pipeline/providers/model-scoring.ts` рахує якість на долар
-з живих `pricing` і `benchmarks.artificial_analysis` (окрема вісь на роль). Floor:
-`weekly.master_writer` / `weekly.master_critic` 40, `daily.summarize` 25. Ланцюжок = топ-3
-за балом, далі family-fallback з `rankOpenRouterModelIds`. Модель без індексу на осі —
-не кандидат (хвіст); нижче floor — взагалі не в ланцюжку. `daily.cover_scene` без floor
-(як P3). Добовий запис у `llm_provider_models` і UI — F3.
+**F2 model scoring (2026-08-15, оновлено 2026-08-30).** `pipeline/providers/model-scoring.ts`
+ранжує за Artificial Analysis на осі ролі: **спочатку якість, потім ціна** під опційною
+стелею USD/M. Floor: `weekly.master_writer` / `weekly.master_critic` 40,
+`daily.summarize` 25, `social.writer` 20, `social.critic` 30. Модель без індексу на осі
+не кандидат. Family-хвіст з `rankOpenRouterModelIds` **прибрано**. `:free` — кандидат
+(нижчий floor на `OPENROUTER_FREE_QUALITY_FLOOR_DELTA=5`, score = quality, без ділення
+на нуль); спільний лімітер 20 req/min. Аліаси `~` ніколи не кандидати.
 
-Scored-голова підкоряється тому самому `isEligibleOpenRouterModel`, що й family-хвіст: `:batch`
-(відповідає лише через окремий Batch API, 404 на chat completions — спалив шість слотів черги
-2026-08-10) і `:free` (жорсткі per-minute ліміти) не є кандидатами quality/$, хоч би якою
-дешевою була ціна. Без цього на каталозі 2026-08-15 три `:batch`-варіанти стояли в scored-топ-10.
+Scored-голова підкоряється `isEligibleOpenRouterModel`: `:batch` (відповідає лише через
+окремий Batch API, 404 на chat completions — спалив шість слотів черги 2026-08-10)
+лишається виключеним. Бан `:free` з 2026-08-15 знято 2026-08-30.
+
+Живий знімок 2026-08-30 15:12 UTC (каталог, без completions): social cap 2 —
+`meta/muse-spark-1.2` ($1.37/M) + `google/gemini-3.7-flash` ($0.94/M); weekly writer
+cap 1 — `z-ai/glm-5.2:free`; weekly critic — `deepseek/deepseek-v4-pro-0813` ($1.26/M);
+daily cap 6 починається з deepseek-v4-pro → glm-5.2:free → gpt-5.6-luna.
 (source: [weekly-illustration-plan](weekly-illustration-plan.md) F2,
-[audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md))
+[audits/2026-08-15-illustration-pr-stack-review](../audits/2026-08-15-illustration-pr-stack-review.md),
+[research/2026-08-30-openrouter-routing-api §12](../research/2026-08-30-openrouter-routing-api.md),
+live `api/v1/credits` + catalog 2026-08-30)
 
 **P3 daily cover (2026-08-15).** Нова роль `daily.cover_scene` у `PROVIDER_ROLES` — один
 короткий виклик на випуск (топ-3 + intro), не `weekly.card_image_scene` і не

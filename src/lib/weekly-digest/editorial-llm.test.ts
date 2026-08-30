@@ -1,25 +1,29 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../../pipeline/openrouter-models', () => ({
-  fetchOpenRouterModels: vi.fn().mockResolvedValue([
-    {
-      id: 'vendor/critic-model',
-      context_length: 128_000,
-      architecture: { modality: 'text' },
-      pricing: { prompt: '0.000001', completion: '0.000006' },
-      benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-    },
-    {
-      // A distinct vendor so the independent critic's OpenRouter fallback
-      // (which excludes the writer's vendor) still has a model to pick.
-      id: 'other-vendor/writer-model',
-      context_length: 128_000,
-      architecture: { modality: 'text' },
-      pricing: { prompt: '0.000001', completion: '0.000006' },
-      benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-    },
-  ]),
-}));
+vi.mock('../../../pipeline/openrouter-models', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../pipeline/openrouter-models')>();
+  return {
+    ...actual,
+    fetchOpenRouterModels: vi.fn().mockResolvedValue([
+      {
+        id: 'vendor/critic-model',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.0000003', completion: '0.000001' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+      },
+      {
+        // A distinct vendor so the independent critic's OpenRouter fallback
+        // (which excludes the writer's vendor) still has a model to pick.
+        id: 'other-vendor/writer-model',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.0000003', completion: '0.000001' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+      },
+    ]),
+  };
+});
 
 vi.mock('../../../pipeline/openrouter-summarize', () => ({
   generateWithOpenRouterChain: vi.fn(),
@@ -73,7 +77,7 @@ describe('premiumOpenRouterModels', () => {
           created: 2,
           context_length: 128_000,
           architecture: { modality: 'text' },
-          pricing: { prompt: '0.000001', completion: '0.000006' },
+          pricing: { prompt: '0.0000003', completion: '0.000001' },
           benchmarks: { artificial_analysis: { intelligence_index: 55 } },
         },
         {
@@ -81,7 +85,7 @@ describe('premiumOpenRouterModels', () => {
           created: 1,
           context_length: 128_000,
           architecture: { modality: 'text' },
-          pricing: { prompt: '0.000002', completion: '0.00001' },
+          pricing: { prompt: '0.0000004', completion: '0.0000012' },
           benchmarks: { artificial_analysis: { intelligence_index: 55 } },
         },
       ]),
@@ -97,7 +101,7 @@ describe('premiumOpenRouterModels', () => {
             created: 3,
             context_length: 128_000,
             architecture: { modality: 'text' },
-            pricing: { prompt: '0.000001', completion: '0.000006' },
+            pricing: { prompt: '0.0000003', completion: '0.000001' },
             benchmarks: { artificial_analysis: { intelligence_index: 80 } },
           },
           {
@@ -105,7 +109,7 @@ describe('premiumOpenRouterModels', () => {
             created: 2,
             context_length: 128_000,
             architecture: { modality: 'text' },
-            pricing: { prompt: '0.000002', completion: '0.00001' },
+            pricing: { prompt: '0.0000004', completion: '0.0000012' },
             benchmarks: { artificial_analysis: { intelligence_index: 55 } },
           },
         ],
@@ -124,7 +128,7 @@ describe('premiumOpenRouterModels', () => {
             created: 2,
             context_length: 128_000,
             architecture: { modality: 'text' },
-            pricing: { prompt: '0.000001', completion: '0.000006' },
+            pricing: { prompt: '0.0000003', completion: '0.000001' },
             benchmarks: { artificial_analysis: { intelligence_index: 55 } },
           },
           {
@@ -132,7 +136,7 @@ describe('premiumOpenRouterModels', () => {
             created: 1,
             context_length: 128_000,
             architecture: { modality: 'text' },
-            pricing: { prompt: '0.000002', completion: '0.00001' },
+            pricing: { prompt: '0.0000004', completion: '0.0000012' },
             benchmarks: { artificial_analysis: { intelligence_index: 55 } },
           },
         ],
@@ -141,25 +145,46 @@ describe('premiumOpenRouterModels', () => {
     ).toEqual(['other/fresh']);
   });
 
-  it('prefers the cheaper of two models that both clear the quality floor', () => {
+  it('prefers higher quality when two models both clear the floor', () => {
     expect(
       premiumOpenRouterModels([
         {
-          id: 'vendor/cheap-adequate',
+          id: 'vendor-a/cheap-adequate',
           context_length: 128_000,
           architecture: { modality: 'text' },
-          pricing: { prompt: '0.000001', completion: '0.000006' },
+          pricing: { prompt: '0.0000003', completion: '0.000001' },
           benchmarks: { artificial_analysis: { intelligence_index: 55 } },
         },
         {
-          id: 'vendor/expensive-flagship',
+          id: 'vendor-b/expensive-flagship',
           context_length: 128_000,
           architecture: { modality: 'text' },
-          pricing: { prompt: '0.000015', completion: '0.000075' },
+          pricing: { prompt: '0.0000004', completion: '0.0000012' },
           benchmarks: { artificial_analysis: { intelligence_index: 85 } },
         },
       ]),
-    ).toEqual(['vendor/cheap-adequate']);
+    ).toEqual(['vendor-b/expensive-flagship']);
+  });
+
+  it('prefers the cheaper model when quality ties', () => {
+    expect(
+      premiumOpenRouterModels([
+        {
+          id: 'vendor-a/cheap-adequate',
+          context_length: 128_000,
+          architecture: { modality: 'text' },
+          pricing: { prompt: '0.0000003', completion: '0.000001' },
+          benchmarks: { artificial_analysis: { intelligence_index: 55 } },
+        },
+        {
+          id: 'vendor-b/expensive-same-score',
+          context_length: 128_000,
+          architecture: { modality: 'text' },
+          pricing: { prompt: '0.0000004', completion: '0.0000012' },
+          benchmarks: { artificial_analysis: { intelligence_index: 55 } },
+        },
+      ]),
+    ).toEqual(['vendor-a/cheap-adequate']);
   });
 
   it('excludes models below the quality floor even when cheapest', () => {
@@ -176,11 +201,32 @@ describe('premiumOpenRouterModels', () => {
           id: 'vendor/adequate',
           context_length: 128_000,
           architecture: { modality: 'text' },
-          pricing: { prompt: '0.000001', completion: '0.000006' },
+          pricing: { prompt: '0.0000003', completion: '0.000001' },
           benchmarks: { artificial_analysis: { intelligence_index: 55 } },
         },
       ]),
     ).toEqual(['vendor/adequate']);
+  });
+
+  it('drops a weekly model above the blended $1.50 ceiling even when quality is higher', () => {
+    expect(
+      premiumOpenRouterModels([
+        {
+          id: 'vendor-a/in-ceiling',
+          context_length: 128_000,
+          architecture: { modality: 'text' },
+          pricing: { prompt: '0.0000003', completion: '0.000001' },
+          benchmarks: { artificial_analysis: { intelligence_index: 55 } },
+        },
+        {
+          id: 'vendor-b/over-ceiling',
+          context_length: 128_000,
+          architecture: { modality: 'text' },
+          pricing: { prompt: '0.000015', completion: '0.000075' },
+          benchmarks: { artificial_analysis: { intelligence_index: 85 } },
+        },
+      ]),
+    ).toEqual(['vendor-a/in-ceiling']);
   });
 });
 

@@ -5,7 +5,8 @@
  */
 
 import { logError, logEvent, serializeErrorDetails } from './log';
-import { resolveOpenRouterModelQueue } from './openrouter-models';
+import { isFreeOpenRouterModel, resolveOpenRouterModelQueue } from './openrouter-models';
+import { consumeFreeModelSlot } from './openrouter-free-limiter';
 import {
   OpenRouterStallError,
   resolveOpenRouterAdaptiveTimeouts,
@@ -298,6 +299,14 @@ export async function generateWithOpenRouterChain(
 
   for (let i = 0; i < queue.length; i++) {
     const modelId = queue[i]!;
+    if (isFreeOpenRouterModel(modelId) && !consumeFreeModelSlot()) {
+      logEvent('warn', 'summarize', 'OpenRouter free-model rate limit — skipping to next', {
+        model: modelId,
+        attempt: i + 1,
+        queue_length: queue.length,
+      });
+      continue;
+    }
     const modelAttempt = (modelAttempts.get(modelId) ?? 0) + 1;
     modelAttempts.set(modelId, modelAttempt);
     logEvent('info', 'summarize', 'OpenRouter trying model', {

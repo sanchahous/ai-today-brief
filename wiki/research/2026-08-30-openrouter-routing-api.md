@@ -3,7 +3,7 @@
 Summary: перевірений живими запитами перелік того, що API OpenRouter дає для вибору моделі й
 провайдера (категорії, сортування, per-provider ціни, дисконти, кеш-тарифи, суфікси), і чому
 сортування за дисконтом обирає дорожче. Окремо — безкоштовний ярус, який ми виключили
-помилково, і рішення власника від 2026-08-30.
+помилково, рішення власника від 2026-08-30, і **реалізація плану §12** того ж дня.
 Sources: живі запити до `https://openrouter.ai/api/v1/*` 2026-08-30 (каталог 396 моделей),
 живі тестові виклики `chat/completions` (сумарно $0.0000079), docs
 `openrouter.ai/docs/features/model-routing` і `/provider-routing`, сторінка `openrouter.ai/models`,
@@ -196,11 +196,17 @@ quality-floor клієнтськи. `marketing` для social, `technology` / `a
 
 ## 9. Безкоштовні моделі — ми їх виключили помилково
 
-⚠️ **Стан рахунку на 2026-08-30:** `GET /api/v1/credits` → `total_credits: 50`,
-`total_usage: 50.14`. Кошти **вичерпано**. Це не гіпотетичний сценарій — це поточний стан.
-(source: живий `api/v1/credits` 2026-08-30)
+⚠️ **Стан рахунку на 2026-08-30 ранок:** `GET /api/v1/credits` → `total_credits: 50`,
+`total_usage: 50.14`. Кошти були **вичерпані**.
+(source: живий `api/v1/credits` 2026-08-30 ранок)
+
+**Коригує вечір 2026-08-30:** після поповнення `total_credits: 60`, `total_usage: 50.16`,
+залишок **$9.84**. (source: живий `api/v1/credits` 2026-08-30 15:12 UTC)
 
 ### Що каже код зараз
+
+> Нижче — стан **до** реалізації §12 (ранок 2026-08-30). Після мержу гілки
+> `feat/openrouter-catalog-selection` бан `:free` знято; див. §12 і [now](../now.md).
 
 Обидва фільтри викидають безкоштовні моделі повністю:
 
@@ -327,6 +333,15 @@ Allowlist родин має піти разом із `DEFAULT_MODEL_PRIORITY` і
 
 ## 12. План робіт — сім кроків
 
+**Статус: реалізовано 2026-08-30** на гілці `feat/openrouter-catalog-selection`
+(поверх spend-leak #343). Код: `pipeline/providers/model-scoring.ts`,
+`pipeline/openrouter-models.ts`, `pipeline/openrouter-free-limiter.ts`,
+`pipeline/openrouter-provider-routing.ts`, `src/lib/social/llm-router.ts`,
+`src/lib/weekly-digest/editorial-llm.ts`. Env — `.env.example`
+(`OPENROUTER_CACHE_HIT_RATE=0.182`, `OPENROUTER_FREE_QUALITY_FLOOR_DELTA=5`,
+`OPENROUTER_PROVIDER_UPTIME_FLOOR=0.99`, `OPENROUTER_PROVIDER_MAX_LATENCY_S=15`,
+`OPENROUTER_MAX_PRICE_PER_MILLION=1.5`).
+
 Затверджено власником 2026-08-30. Читабельна версія:
 https://claude.ai/code/artifact/dc29256b-77f4-4941-a78d-b6a1710c4650
 
@@ -358,7 +373,8 @@ https://claude.ai/code/artifact/dc29256b-77f4-4941-a78d-b6a1710c4650
 різноманіття; квота обрала б слабшу безкоштовну лише заради пропорції — повернути її одна зміна);
 Auto Router не беремо; дисконт як вісь сортування не беремо.
 
-**Перевірка:** черги до/після на живому каталозі без викликів моделей; один дайджест наскрізь із
+**Перевірка:** черги на живому каталозі **зроблені** 2026-08-30 15:12 UTC (без `chat/completions`,
+384 моделі, fable/`~` поза чергою — див. [now](../now.md)). Лишається: один дайджест наскрізь із
 порівнянням вартості, часу і якості тексту очима; ledger уже правдивий, тож цифри порівнянні.
 
 ## Related pages

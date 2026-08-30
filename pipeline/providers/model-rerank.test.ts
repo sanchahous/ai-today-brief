@@ -21,7 +21,7 @@ function model(partial: Partial<OpenRouterModelRecord> & { id: string }): OpenRo
   return {
     context_length: 128_000,
     architecture: { modality: 'text' },
-    pricing: perMillion(1, 3),
+    pricing: perMillion(0.3, 1),
     ...partial,
   };
 }
@@ -29,24 +29,24 @@ function model(partial: Partial<OpenRouterModelRecord> & { id: string }): OpenRo
 function editorialCatalog(): OpenRouterModelRecord[] {
   return [
     model({
-      id: 'vendor/editorial-writer',
-      pricing: perMillion(0.5, 2),
+      id: 'vendor-a/editorial-writer',
+      pricing: perMillion(0.3, 1),
       benchmarks: {
         artificial_analysis: { intelligence_index: 55, agentic_index: 50 },
       },
     }),
     model({
-      id: 'vendor/second-writer',
-      pricing: perMillion(0.8, 3),
+      id: 'vendor-b/second-writer',
+      pricing: perMillion(0.4, 1.2),
       benchmarks: { artificial_analysis: { intelligence_index: 48 } },
     }),
     model({
-      id: 'vendor/third-writer',
-      pricing: perMillion(1, 4),
+      id: 'vendor-c/third-writer',
+      pricing: perMillion(0.5, 1.4),
       benchmarks: { artificial_analysis: { intelligence_index: 44 } },
     }),
     model({
-      id: 'vendor/cheap-weak',
+      id: 'vendor-d/cheap-weak',
       pricing: perMillion(0.01, 0.03),
       benchmarks: { artificial_analysis: { intelligence_index: 14.2 } },
     }),
@@ -54,24 +54,24 @@ function editorialCatalog(): OpenRouterModelRecord[] {
 }
 
 describe('planOpenRouterRerank', () => {
-  it('does not apply a cheaper winner when quality drops below the current pick', () => {
-    const cheaper = model({
-      id: 'vendor/cheaper-ok',
+  it('does not apply a winner when quality drops below the current pick', () => {
+    const onlyLower = model({
+      id: 'vendor-e/lower-ok',
       pricing: perMillion(0.05, 0.15),
       benchmarks: { artificial_analysis: { intelligence_index: 42 } },
     });
     const plan = planOpenRouterRerank({
-      catalog: [...editorialCatalog(), cheaper],
-      currentApply: { modelId: 'vendor/editorial-writer', qualityIndex: 55 },
+      catalog: [onlyLower],
+      currentApply: { modelId: 'vendor-a/editorial-writer', qualityIndex: 55 },
     });
 
     const writer = plan.audits.find((row) => row.role === RANK_APPLY_ROLE);
     expect(QUALITY_DROP_BLOCK).toBe(5);
-    expect(writer?.modelId).toBe('vendor/cheaper-ok');
+    expect(writer?.modelId).toBe('vendor-e/lower-ok');
     expect(writer?.qualityIndex).toBe(42);
     expect(writer?.applied).toBe(false);
     expect(writer?.skipReason).toBe('quality_drop');
-    expect(writer?.previousModelId).toBe('vendor/editorial-writer');
+    expect(writer?.previousModelId).toBe('vendor-a/editorial-writer');
     expect(writer?.previousQualityIndex).toBe(55);
     expect(plan.apply).toBe(false);
     expect(plan.openRouterModelIds).toEqual([]);
@@ -85,16 +85,16 @@ describe('planOpenRouterRerank', () => {
 
     expect(plan.audits.map((row) => row.role)).toEqual([...PROVIDER_ROLES]);
     const writer = plan.audits.find((row) => row.role === RANK_APPLY_ROLE);
-    expect(writer?.modelId).toBe('vendor/editorial-writer');
+    expect(writer?.modelId).toBe('vendor-a/editorial-writer');
     expect(writer?.score).toBeGreaterThan(0);
     expect(writer?.pricePerM).toBeGreaterThan(0);
     expect(writer?.qualityIndex).toBe(55);
     expect(writer?.applied).toBe(true);
     expect(plan.apply).toBe(true);
     expect(plan.openRouterModelIds).toEqual([
-      'vendor/editorial-writer',
-      'vendor/second-writer',
-      'vendor/third-writer',
+      'vendor-a/editorial-writer',
+      'vendor-b/second-writer',
+      'vendor-c/third-writer',
     ]);
 
     const withNumbers = plan.audits.filter((row) => row.axis === 'intelligence');
@@ -107,27 +107,22 @@ describe('planOpenRouterRerank', () => {
 
   it('applies when the quality drop is within the block threshold', () => {
     const near = model({
-      id: 'vendor/near-current',
+      id: 'vendor-e/near-current',
       pricing: perMillion(0.4, 1.6),
       benchmarks: { artificial_analysis: { intelligence_index: 51 } },
     });
     const plan = planOpenRouterRerank({
-      catalog: [near, ...editorialCatalog()],
-      currentApply: { modelId: 'vendor/editorial-writer', qualityIndex: 55 },
+      catalog: [near],
+      currentApply: { modelId: 'vendor-a/editorial-writer', qualityIndex: 55 },
     });
     expect(qualityDropBlocked(55, 51)).toBe(false);
     expect(plan.apply).toBe(true);
-    expect(plan.openRouterModelIds[0]).toBe('vendor/near-current');
+    expect(plan.openRouterModelIds[0]).toBe('vendor-e/near-current');
   });
 
-  it('keeps a family-ranked tail past the top-3 scored leaders (R1.3 / F3)', () => {
-    // A larger catalog: 3 scored leaders above the weekly.master_writer floor
-    // plus several more eligible-but-unscored/lower models that only the
-    // family-ranked tail would surface. Every role that falls through to the
-    // shared default OpenRouter queue needs that tail for fallback resilience
-    // -- slicing to 3 here previously threw it away for the whole registry.
+  it('does not pad the queue with unbenchmarked family-tail ids', () => {
     const extras = Array.from({ length: 6 }, (_, i) =>
-      model({ id: `vendor/extra-${i}`, pricing: perMillion(2, 6) }),
+      model({ id: `extra-${i}/model`, pricing: perMillion(2, 6) }),
     );
     const plan = planOpenRouterRerank({
       catalog: [...editorialCatalog(), ...extras],
@@ -135,22 +130,24 @@ describe('planOpenRouterRerank', () => {
       queueCap: 20,
     });
     expect(plan.apply).toBe(true);
-    expect(plan.openRouterModelIds.length).toBeGreaterThan(3);
+    expect(plan.openRouterModelIds).toEqual([
+      'vendor-a/editorial-writer',
+      'vendor-b/second-writer',
+      'vendor-c/third-writer',
+    ]);
     for (const extra of extras) {
-      expect(plan.openRouterModelIds).toContain(extra.id);
+      expect(plan.openRouterModelIds).not.toContain(extra.id);
     }
-    // The intelligence_index 14.2 model stays excluded even in the tail --
-    // the floor blocks it everywhere, not just from the scored leaders.
-    expect(plan.openRouterModelIds).not.toContain('vendor/cheap-weak');
+    expect(plan.openRouterModelIds).not.toContain('vendor-d/cheap-weak');
   });
 
   it('truncates the applied queue to the attempt cap', () => {
-    // The tail must exist, but not without end: the runtime walks every entry
-    // on failure and all 13 roles share this queue while llm_role_chains is
-    // empty, so the untruncated ranking (~197 ids on the real catalog) would
-    // turn one bad model family into an hours-long rotation.
-    const extras = Array.from({ length: 30 }, (_, i) =>
-      model({ id: `vendor/extra-${i}`, pricing: perMillion(2, 6) }),
+    const extras = Array.from({ length: 8 }, (_, i) =>
+      model({
+        id: `extra-${i}/writer`,
+        pricing: perMillion(0.3, 1),
+        benchmarks: { artificial_analysis: { intelligence_index: 41 + i } },
+      }),
     );
     const plan = planOpenRouterRerank({
       catalog: [...editorialCatalog(), ...extras],
@@ -158,8 +155,7 @@ describe('planOpenRouterRerank', () => {
       queueCap: 6,
     });
     expect(plan.openRouterModelIds).toHaveLength(6);
-    // The scored winner still leads it.
-    expect(plan.openRouterModelIds[0]).toBe('vendor/editorial-writer');
+    expect(plan.openRouterModelIds[0]).toBe('vendor-a/editorial-writer');
   });
 
   it('records the winner without claiming it was applied when the kill-switch is off', () => {
@@ -169,18 +165,14 @@ describe('planOpenRouterRerank', () => {
       applyEnabled: false,
     });
     const writer = plan.audits.find((row) => row.role === 'weekly.master_writer');
-    expect(writer?.modelId).toBe('vendor/editorial-writer');
+    expect(writer?.modelId).toBe('vendor-a/editorial-writer');
     expect(writer?.applied).toBe(false);
     expect(writer?.skipReason).toBe('apply_disabled');
     expect(plan.apply).toBe(false);
-    // Nothing is written, so nothing may be planned for writing either.
     expect(plan.openRouterModelIds).toEqual([]);
   });
 
-  it('never lets a disabled run become the next run\'s quality baseline', () => {
-    // loadCurrentApply reads the newest applied=true row. If the disabled run
-    // had recorded applied=true, tomorrow's guard would compare against a model
-    // that never entered the queue.
+  it("never lets a disabled run become the next run's quality baseline", () => {
     const disabled = planOpenRouterRerank({
       catalog: editorialCatalog(),
       currentApply: null,

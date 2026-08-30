@@ -5,6 +5,7 @@ import {
   resolveOpenRouterMaxTokens,
   parseChatCompletionUsage,
 } from './openrouter-summarize';
+import { consumeFreeModelSlot, resetFreeModelRateLimiter } from './openrouter-free-limiter';
 import { OpenRouterLimitError, OpenRouterLimitKind } from './openrouter-errors';
 import { OpenRouterStallError } from './openrouter-adaptive';
 import { OpenRouterIncompleteJsonError } from './openrouter-brief-json';
@@ -189,15 +190,23 @@ describe('generateWithOpenRouterChain', () => {
     ).rejects.toThrow(/credit/i);
   });
 
-  it('uses first model from queue only (does not re-call after success)', async () => {
-    mockCallModel.mockResolvedValue(VALID_JSON);
-    await generateWithOpenRouterChain('prompt', {
+  it('skips a :free model when the account-wide 20/min limiter is full', async () => {
+    resetFreeModelRateLimiter();
+    const now = Date.now();
+    while (consumeFreeModelSlot(now)) {
+      /* fill the window */
+    }
+
+    mockCallModel.mockResolvedValueOnce(VALID_JSON);
+    const result = await generateWithOpenRouterChain('prompt', {
       apiKey: 'sk-test',
-      modelQueue: ['m1', 'm2', 'm3'],
+      modelQueue: ['vendor/model:free', 'vendor/paid'],
       callModel: mockCallModel,
     });
+    expect(result.model).toBe('vendor/paid');
     expect(mockCallModel).toHaveBeenCalledTimes(1);
-    expect(mockCallModel).toHaveBeenCalledWith('sk-test', 'm1', 'prompt', 1);
+    expect(mockCallModel).toHaveBeenCalledWith('sk-test', 'vendor/paid', 'prompt', 1);
+    resetFreeModelRateLimiter();
   });
 });
 

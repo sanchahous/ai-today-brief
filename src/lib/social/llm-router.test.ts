@@ -49,6 +49,18 @@ function model(
   };
 }
 
+function scored(
+  id: string,
+  intelligence: number,
+  created: number,
+  overrides: Partial<OpenRouterModelRecord> = {},
+): OpenRouterModelRecord {
+  return model(id, created, {
+    benchmarks: { artificial_analysis: { intelligence_index: intelligence } },
+    ...overrides,
+  });
+}
+
 describe('resolveSocialProviderOrder', () => {
   it('defaults to openrouter first for both roles -- gemini dropped from rotation (2026-08-06)', () => {
     expect(resolveSocialProviderOrder('writer', {})).toEqual(['openrouter', 'ollama']);
@@ -73,40 +85,45 @@ describe('resolveSocialProviderOrder', () => {
 describe('rankSocialOpenRouterModels', () => {
   const now = 1_784_000_000;
   const catalog = [
-    model('~openai/gpt-latest', now - 1_000),
-    model('~openai/gpt-mini-latest', now - 900),
-    model('openai/gpt-5.6-terra-pro', now - 450),
-    model('openai/gpt-5.6-terra', now - 500),
-    model('openai/gpt-5.5-terra', now - 10_000),
-    model('openai/gpt-4o', now - 50_000_000),
-    model('~anthropic/claude-sonnet-latest', now - 2_000),
-    model('deepseek/deepseek-v4-pro', now - 3_000),
-    model('deepseek/deepseek-v4-flash', now - 2_900),
-    model('qwen/qwen3.7-max', now - 2_800),
-    model('vendor/model:free', now - 100),
-    model('openai/gpt-coder-latest', now - 50),
+    scored('~openai/gpt-latest', 60, now - 1_000),
+    scored('~openai/gpt-mini-latest', 55, now - 900),
+    scored('openai/gpt-5.6-terra-pro', 45, now - 450),
+    scored('openai/gpt-5.6-terra', 48, now - 500),
+    scored('openai/gpt-5.5-terra', 40, now - 10_000),
+    scored('openai/gpt-4o', 15, now - 50_000_000),
+    scored('~anthropic/claude-sonnet-latest', 50, now - 2_000),
+    scored('anthropic/claude-sonnet-4.5', 42, now - 2_100),
+    scored('deepseek/deepseek-v4-pro', 38, now - 3_000),
+    scored('deepseek/deepseek-v4-flash', 36, now - 2_900),
+    scored('qwen/qwen3.7-max', 35, now - 2_800),
+    scored('vendor/model:free', 32, now - 100, { pricing: priced(0, 0) }),
+    scored('openai/gpt-coder-latest', 25, now - 50),
   ];
 
-  it('builds a current, provider-diverse critic queue', () => {
+  it('builds a quality-ranked, family-diverse critic queue and drops aliases', () => {
     expect(rankSocialOpenRouterModels(catalog, 'critic')).toEqual([
       'openai/gpt-5.6-terra',
-      '~anthropic/claude-sonnet-latest',
+      'anthropic/claude-sonnet-4.5',
       'deepseek/deepseek-v4-pro',
       'qwen/qwen3.7-max',
+      'vendor/model:free',
     ]);
   });
 
-  it('skips OpenAI instead of falling back to Sol when standard Terra is absent', () => {
-    const withoutTerra = catalog.filter((entry) => !/-terra$/.test(entry.id));
-    const ranked = rankSocialOpenRouterModels(withoutTerra, 'critic');
-    expect(ranked[0]).toBe('~anthropic/claude-sonnet-latest');
-    expect(ranked).not.toContain('~openai/gpt-latest');
+  it('does not fall back to an OpenAI alias when the scored OpenAI ids are gone', () => {
+    const withoutOpenai = catalog.filter(
+      (entry) => !entry.id.replace(/^~/, '').startsWith('openai/'),
+    );
+    const ranked = rankSocialOpenRouterModels(withoutOpenai, 'critic');
+    expect(ranked[0]).toBe('anthropic/claude-sonnet-4.5');
+    expect(ranked.some((id) => id.startsWith('~'))).toBe(false);
     expect(ranked.some((id) => id.includes('sol'))).toBe(false);
   });
 
-  it('selects an efficient current model for the writer fallback', () => {
+  it('selects the highest-quality in-ceiling model for the writer, not a ~alias', () => {
     const ranked = rankSocialOpenRouterModels(catalog, 'writer');
-    expect(ranked[0]).toBe('~openai/gpt-mini-latest');
+    expect(ranked[0]).toBe('openai/gpt-5.6-terra');
+    expect(ranked).not.toContain('~openai/gpt-mini-latest');
     expect(ranked).not.toContain('openai/gpt-4o');
   });
 
@@ -117,35 +134,33 @@ describe('rankSocialOpenRouterModels', () => {
   it('keeps the priciest frontier alias out of the queue entirely', () => {
     const withFable = [
       ...catalog,
-      model('~anthropic/claude-fable-latest', now - 100, { pricing: priced(10, 50) }),
+      scored('~anthropic/claude-fable-latest', 70, now - 100, { pricing: priced(10, 50) }),
     ];
 
     for (const role of ['writer', 'critic'] as const) {
       const ranked = rankSocialOpenRouterModels(withFable, role);
       expect(ranked).not.toContain('~anthropic/claude-fable-latest');
-      expect(ranked).toContain('~anthropic/claude-sonnet-latest');
+      expect(ranked).toContain('anthropic/claude-sonnet-4.5');
     }
   });
 
-  it('prefers the cheaper sibling when two models tie on every other signal', () => {
-    // Same family, same `created`, same role band -- only price separates them.
-    // This is the tie the old ranker settled on a timestamp fraction.
+  it('prefers the cheaper sibling when two models tie on quality', () => {
     const twins = [
-      model('deepseek/deepseek-v4-pro', now - 3_000, { pricing: priced(2.0, 6.0) }),
-      model('deepseek/deepseek-v4.1-pro', now - 3_000, { pricing: priced(0.2, 0.6) }),
+      scored('deepseek/deepseek-v4-pro', 40, now - 3_000, { pricing: priced(2.0, 6.0) }),
+      scored('deepseek/deepseek-v4.1-pro', 40, now - 3_000, { pricing: priced(0.2, 0.6) }),
     ];
     expect(rankSocialOpenRouterModels(twins, 'critic')).toEqual(['deepseek/deepseek-v4.1-pro']);
   });
 
   it('drops a model that publishes no price rather than assuming it is free', () => {
-    const unpriced = [model('deepseek/deepseek-v4-pro', now - 3_000, { pricing: undefined })];
+    const unpriced = [scored('deepseek/deepseek-v4-pro', 40, now - 3_000, { pricing: undefined })];
     expect(rankSocialOpenRouterModels(unpriced, 'writer')).toEqual([]);
   });
 
   it('honours an owner-set ceiling', () => {
-    // Every catalog fixture blends to $0.60/M, so a $0.40 ceiling clears them all.
+    // Every paid catalog fixture blends to $0.60/M, so a $0.40 ceiling clears them all.
     const ranked = rankSocialOpenRouterModels(catalog, 'critic', 0.4);
-    expect(ranked).toEqual([]);
+    expect(ranked).toEqual(['vendor/model:free']);
     expect(resolveSocialMaxPricePerMillion({ SOCIAL_LLM_MAX_PRICE_PER_MILLION: '1.25' })).toBe(1.25);
     expect(resolveSocialMaxPricePerMillion({})).toBe(DEFAULT_SOCIAL_MAX_PRICE_PER_MILLION);
     expect(resolveSocialMaxPricePerMillion({ SOCIAL_LLM_MAX_PRICE_PER_MILLION: 'nonsense' })).toBe(
@@ -223,7 +238,7 @@ describe('generateSocialJson', () => {
           gemini: vi.fn(async () => ({ text: '{}', model: 'gemini-3.5-flash' })),
           openrouter: vi.fn(async () => ({
             text: '{"text":"ready"}',
-            model: '~openai/gpt-mini-latest',
+            model: 'deepseek/deepseek-v4-flash',
           })),
         } as never,
       },
@@ -305,7 +320,7 @@ describe('generateSocialJson cost accounting', () => {
   });
 
   const catalog = [
-    model('~openai/gpt-mini-latest', 1_784_000_000, { pricing: priced(0.75, 4.5) }),
+    scored('deepseek/deepseek-v4-flash', 40, 1_784_000_000, { pricing: priced(0.75, 4.5) }),
   ];
 
   const run = (env: Record<string, string | undefined> = {}) =>
@@ -325,7 +340,7 @@ describe('generateSocialJson cost accounting', () => {
     vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
       text: '{"text":"ready"}',
       provider: 'openrouter',
-      model: '~openai/gpt-mini-latest',
+      model: 'deepseek/deepseek-v4-flash',
       usage: { promptTokens: 52_324, completionTokens: 1_857, totalTokens: 54_181, costUsd: 0.0475 },
       discardedUsage: [
         { promptTokens: 29_661, completionTokens: 4_096, totalTokens: 33_757, costUsd: 0.5014 },
@@ -343,7 +358,7 @@ describe('generateSocialJson cost accounting', () => {
     vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
       text: '{"text":"ready"}',
       provider: 'openrouter',
-      model: '~openai/gpt-mini-latest',
+      model: 'deepseek/deepseek-v4-flash',
       usage: null,
       discardedUsage: [],
     });
@@ -363,17 +378,10 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
     vi.mocked(loadProviderRegistry).mockClear();
   });
 
-  const catalogModel = (id: string): OpenRouterModelRecord => ({
-    id,
-    created: 1_784_000_000,
-    context_length: 128_000,
-    supported_parameters: ['response_format', 'structured_outputs'],
-    architecture: { modality: 'text->text' },
-    expiration_date: null,
-    pricing: priced(0.5, 1.5),
-  });
+  const catalogModel = (id: string, intelligence = 40): OpenRouterModelRecord =>
+    scored(id, intelligence, 1_784_000_000);
 
-  it('routes the default (no db) writer call through the value-ranked queue, never touching the DB registry', async () => {
+  it('routes the default (no db) writer call through the catalog-ranked queue, never touching the DB registry', async () => {
     vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
       text: '{"text":"ready"}',
       provider: 'openrouter',
@@ -401,9 +409,10 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
       vi
         .mocked(generateWithOpenRouterChain)
         .mock.calls[0]?.[1]?.extraBodyForModel?.('deepseek/deepseek-v4-flash', 1),
-    ).toEqual({
+    ).toMatchObject({
       max_tokens: 8_192,
       reasoning: { effort: 'low', exclude: true },
+      provider: { sort: 'price' },
     });
     // A cut-off answer re-queues the same model with room to finish rather
     // than dropping to the next, pricier one.
@@ -433,15 +442,15 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
       },
       deps: {
         fetchOpenRouterModels: async () => [
-          catalogModel('deepseek/deepseek-v4-flash'),
-          catalogModel('qwen/qwen3.7-flash'),
-          catalogModel('~openai/gpt-mini-latest'),
+          catalogModel('deepseek/deepseek-v4-flash', 50),
+          catalogModel('qwen/qwen3.7-flash', 40),
+          catalogModel('~openai/gpt-mini-latest', 99),
         ],
       },
     });
 
     expect(vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.modelQueue).toEqual([
-      '~openai/gpt-mini-latest',
+      'deepseek/deepseek-v4-flash',
     ]);
   });
 
@@ -505,17 +514,22 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
       vi
         .mocked(generateWithOpenRouterChain)
         .mock.calls[0]?.[1]?.extraBodyForModel?.('deepseek-ai/deepseek-v4-pro', 1),
-    ).toEqual({
+    ).toMatchObject({
       max_tokens: 6_144,
       reasoning: { effort: 'low', exclude: true },
     });
+    expect(
+      vi
+        .mocked(generateWithOpenRouterChain)
+        .mock.calls[0]?.[1]?.extraBodyForModel?.('deepseek-ai/deepseek-v4-pro', 1),
+    ).not.toHaveProperty('provider');
   });
 
   it('does not mistake the registry default chain for an owner DB override', async () => {
     vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
       text: '{"text":"ready"}',
       provider: 'openrouter',
-      model: '~openai/gpt-mini-latest',
+      model: 'deepseek/deepseek-v4-flash',
       usage: null,
     });
     vi.mocked(loadProviderRegistry).mockResolvedValue({
@@ -545,8 +559,8 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
       env: { SOCIAL_WRITER_PROVIDER_ORDER: 'openrouter', OPEN_ROUTER_API_KEY: 'test-key' },
       deps: {
         fetchOpenRouterModels: async () => [
-          catalogModel('~openai/gpt-mini-latest'),
-          catalogModel('deepseek/deepseek-v4-flash'),
+          catalogModel('~openai/gpt-mini-latest', 99),
+          catalogModel('deepseek/deepseek-v4-flash', 40),
         ],
       },
       db: fakeDb,
@@ -554,7 +568,6 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
 
     expect(loadProviderRegistry).not.toHaveBeenCalled();
     expect(vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.modelQueue).toEqual([
-      '~openai/gpt-mini-latest',
       'deepseek/deepseek-v4-flash',
     ]);
   });

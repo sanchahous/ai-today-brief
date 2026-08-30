@@ -7,10 +7,9 @@ story-image / Visual Affordance / illustration B1-fix 2026-08-11…15, Social/PD
 GA4 + SEO 2026-08-21, latest weekly revision is the working copy 2026-08-22,
 Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
-консолідація трьох відео-папок в один репозиторій 2026-08-28,
-weekly digest topic-based slug on publish 2026-08-29,
-weekly digest revision architecture review 2026-08-29
-Last updated: 2026-08-29
+консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
+каталожний вибір OpenRouter + живий сухий прогін черг 2026-08-30
+Last updated: 2026-08-30
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -156,7 +155,7 @@ Last updated: 2026-08-29
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [research/2026-08-05-professional-ai-video-guide](research/2026-08-05-professional-ai-video-guide.md) | Гайд ціна/якість AI-відео: діагноз німого слайдшоу, драбина L0–L3, i2v/аватар сервіси | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
-| ✅ [research/2026-08-30-openrouter-routing-api](research/2026-08-30-openrouter-routing-api.md) | Перевірений живими запитами API-фактаж OpenRouter: категорії, повний enum `sort`, per-provider `/endpoints` з `discount`/uptime/кеш-тарифами, суфікси `:floor`/`:nitro`/`:exacto`; чому сортування за дисконтом обирає дорожче; **пропозиція** дворівневого вибору (не ухвалена) | живі запити до `api/v1/*` + тестові виклики 2026-08-30 |
+| ✅ [research/2026-08-30-openrouter-routing-api](research/2026-08-30-openrouter-routing-api.md) | Перевірений живими запитами API-фактаж OpenRouter + **реалізований** план §12: каталожний ранкер, `:free` у черзі, `provider.sort: price` замість `:floor`; сухий прогін черг 2026-08-30 | живі запити до `api/v1/*` + код + catalog dry-run 2026-08-30 |
 
 Інше — сюди йдуть summary-сторінки, згенеровані з `raw/` за
 [ingest-workflow](architecture/agentic-workflow.md#ingest).
