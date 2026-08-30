@@ -169,11 +169,14 @@ export async function recordGenerationCost(input: RecordGenerationCostInput): Pr
  * a new revision starts the count at zero. On 2026-08-28 that let 190
  * OpenRouter calls / $8.74 through against a $4 "cap".
  *
- * $5 is a starting figure, not a measured one — the owner should set
- * DAILY_GENERATION_BUDGET_USD to whatever a normal weekly-digest day actually
- * costs once the ledger has run truthful for a full cycle.
+ * $1 is the owner's chosen ceiling (2026-08-30), deliberately tight. It is
+ * below what several past weekly-digest days already booked -- 2026-08-11 was
+ * $2.68 of metered spend and 2026-08-22 $1.53, and those are the understated
+ * pre-fix numbers -- so a digest day is expected to trip it. That is the point:
+ * the owner would rather a run stop and ask than discover the bill afterwards.
+ * Raise DAILY_GENERATION_BUDGET_USD for a release day, or per environment.
  */
-export const DEFAULT_DAILY_GENERATION_BUDGET_USD = 5;
+export const DEFAULT_DAILY_GENERATION_BUDGET_USD = 1;
 
 export function resolveDailyGenerationBudgetUsd(
   env: Record<string, string | undefined> = process.env,

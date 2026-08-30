@@ -25,6 +25,13 @@ export type GenerationFailureKind =
    * master run instead.
    */
   | 'resume_source_stale'
+  /**
+   * The rolling 24h generation budget was already spent when this job tried to
+   * start. Nothing ran and nothing was billed -- the breaker throws before the
+   * first provider call -- so a retry cannot help until the window rolls or the
+   * owner raises the ceiling.
+   */
+  | 'budget_exceeded'
   | 'cancelled'
   | 'unknown';
 
@@ -196,6 +203,16 @@ export function classifyGenerationFailure(message: string): GenerationFailure {
       retryable: false,
       nextAction:
         'The saved checkpoint no longer matches the current research packs. Use "Regenerate master", not "Create linked retry" -- retrying this job repeats the same failure.',
+    };
+  }
+  // Checked before the quota bucket below: this is our own ceiling, not the
+  // provider's, and the remedy is a config change rather than a billing fix.
+  if (/metered generation spend in the last 24h/.test(normalized)) {
+    return {
+      code: 'budget_exceeded',
+      retryable: false,
+      nextAction:
+        'The 24h generation budget is spent. Nothing was billed for this job. Wait for the window to roll, or raise DAILY_GENERATION_BUDGET_USD and retry manually.',
     };
   }
   if (/all configured social llm providers failed/.test(normalized)) {

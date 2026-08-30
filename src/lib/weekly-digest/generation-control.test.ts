@@ -144,3 +144,25 @@ describe('Weekly generation control helpers', () => {
     await expect(run).resolves.toEqual(['one', 'two', 'three']);
   });
 });
+
+describe('classifyGenerationFailure — generation budget', () => {
+  // The $1 ceiling (2026-08-30) is tight enough that this fires in normal
+  // operation, so it must not land in the `unknown` bucket: nothing was
+  // billed, and retrying before the window rolls just repeats the refusal.
+  const message =
+    '[generation-costs] Refusing social_copy: $1.24 of metered generation spend in the last 24h is at or over the $1.00 ceiling. Raise DAILY_GENERATION_BUDGET_USD to continue.';
+
+  it('names the budget as its own failure and does not retry', () => {
+    const failure = classifyGenerationFailure(message);
+    expect(failure.code).toBe('budget_exceeded');
+    expect(failure.retryable).toBe(false);
+    expect(failure.nextAction).toContain('DAILY_GENERATION_BUDGET_USD');
+  });
+
+  it('is not mistaken for a provider quota or billing failure', () => {
+    expect(classifyGenerationFailure(message).code).not.toBe('quota');
+    expect(classifyGenerationFailure('insufficient credits on the provider account').code).toBe(
+      'quota',
+    );
+  });
+});

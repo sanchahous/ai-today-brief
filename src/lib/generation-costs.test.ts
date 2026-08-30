@@ -36,6 +36,10 @@ describe('meteredSpendUsd', () => {
 });
 
 describe('resolveDailyGenerationBudgetUsd', () => {
+  it('defaults to the owner-set $1 ceiling', () => {
+    expect(DEFAULT_DAILY_GENERATION_BUDGET_USD).toBe(1);
+  });
+
   it('reads an owner override and falls back on anything unusable', () => {
     expect(resolveDailyGenerationBudgetUsd({ DAILY_GENERATION_BUDGET_USD: '1.5' })).toBe(1.5);
     for (const raw of [undefined, '', 'abc', '0', '-2']) {
