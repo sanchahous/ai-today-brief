@@ -21,13 +21,9 @@ export const OPENROUTER_PROVIDER_ID = 'openrouter';
  * llm_provider_models is provider-scoped, not role-scoped: every role that
  * falls through to `defaultChain` (no admin-configured `llm_role_chains` row)
  * shares this one queue. The daily job picks its *ordering* from
- * weekly.master_writer's ranking (highest editorial floor), but writes the
- * FULL `rankModelsForRole` result -- scored leaders plus the family-ranked
- * tail -- not just the top few ids. Truncating to only the top scored
- * entries here previously shrank every other role's fallback chain from the
- * full family-ranked catalog down to 3 ids chosen for an unrelated role's
- * price/quality tradeoff, which is exactly the kind of silent, shared-queue
- * degradation this job is supposed to guard against (R1.3 / F3).
+ * weekly.master_writer's ranking (highest editorial floor). Unbenchmarked
+ * models no longer fill a family tail — a concrete model has a score and a
+ * price (2026-08-30 catalog ranker). The attempt cap still applies.
  */
 export const RANK_APPLY_ROLE: ProviderRole = 'weekly.master_writer';
 
@@ -69,18 +65,7 @@ export interface CurrentApplyPick {
 export interface RerankPlan {
   audits: RoleRankAudit[];
   /**
-   * Scored leaders (quality/$ for RANK_APPLY_ROLE) followed by the family-ranked
-   * tail, so every role sharing the default OpenRouter queue keeps a real
-   * fallback chain rather than 3 ids picked for one unrelated role (F3).
-   *
-   * Truncated to `openRouterModelAttemptCap()` -- the same ceiling the live
-   * path has always applied. Writing the *whole* ranking here looked like
-   * "more resilience" but is the opposite: `generateWithOpenRouterChain` walks
-   * the entire queue on failure, `llm_role_chains` is empty in production so
-   * all 13 roles inherit this one queue, and the untruncated ranking is ~197
-   * ids against a real catalog -- a 33x increase in worst-case attempts for a
-   * pipeline that already lost ~20 minutes to a 12-model rotation.
-   *
+   * Ranked ids for RANK_APPLY_ROLE, one family each, truncated to the attempt cap.
    * Empty when the job must not switch.
    */
   openRouterModelIds: string[];

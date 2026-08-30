@@ -5,6 +5,7 @@ import {
   resolveOpenRouterMaxTokens,
   parseChatCompletionUsage,
 } from './openrouter-summarize';
+import { consumeFreeModelSlot, resetFreeModelRateLimiter } from './openrouter-free-limiter';
 import { OpenRouterLimitError, OpenRouterLimitKind } from './openrouter-errors';
 import { OpenRouterStallError } from './openrouter-adaptive';
 import { OpenRouterIncompleteJsonError } from './openrouter-brief-json';
@@ -189,14 +190,110 @@ describe('generateWithOpenRouterChain', () => {
     ).rejects.toThrow(/credit/i);
   });
 
-  it('uses first model from queue only (does not re-call after success)', async () => {
-    mockCallModel.mockResolvedValue(VALID_JSON);
-    await generateWithOpenRouterChain('prompt', {
+  it('skips a :free model when the account-wide 20/min limiter is full', async () => {
+    resetFreeModelRateLimiter();
+    const now = Date.now();
+    while (consumeFreeModelSlot(now)) {
+      /* fill the window */
+    }
+
+    mockCallModel.mockResolvedValueOnce(VALID_JSON);
+    const result = await generateWithOpenRouterChain('prompt', {
       apiKey: 'sk-test',
-      modelQueue: ['m1', 'm2', 'm3'],
+      modelQueue: ['vendor/model:free', 'vendor/paid'],
       callModel: mockCallModel,
     });
+    expect(result.model).toBe('vendor/paid');
     expect(mockCallModel).toHaveBeenCalledTimes(1);
-    expect(mockCallModel).toHaveBeenCalledWith('sk-test', 'm1', 'prompt');
+    expect(mockCallModel).toHaveBeenCalledWith('sk-test', 'vendor/paid', 'prompt', 1);
+    resetFreeModelRateLimiter();
+  });
+});
+
+describe('generateWithOpenRouterChain truncation retry', () => {
+  // Regression: a cut-off answer used to drop the queue onto the next model.
+  // On 2026-08-28 a writer call was cut off for $0.025 and the fallback that
+  // caught it cost $0.34 for the same prompt.
+  const truncated = (modelId: string) =>
+    new OpenRouterIncompleteJsonError(modelId, 120, 'truncated', 'length');
+
+  it('retries the same model once with a wider budget before advancing', async () => {
+    const seen: Array<{ model: string; attempt: number }> = [];
+    const callModel = vi.fn(async (_k: string, model: string, _p: string, attempt = 1) => {
+      seen.push({ model, attempt });
+      if (model === 'm1' && attempt === 1) throw truncated('m1');
+      return '{"ok":true}';
+    });
+
+    const result = await generateWithOpenRouterChain('prompt', {
+      apiKey: 'sk-test',
+      modelQueue: ['m1', 'm2'],
+      callModel,
+      validateResponse: (_m, text) => text,
+      extraBodyForModel: (_m, attempt) => ({ max_tokens: attempt > 1 ? 8_192 : 4_096 }),
+      retryTruncatedOnce: true,
+    });
+
+    expect(seen).toEqual([
+      { model: 'm1', attempt: 1 },
+      { model: 'm1', attempt: 2 },
+    ]);
+    expect(result.model).toBe('m1');
+  });
+
+  it('advances to the next model when the wider retry is also cut off', async () => {
+    const seen: string[] = [];
+    const callModel = vi.fn(async (_k: string, model: string, _p: string, attempt = 1) => {
+      seen.push(`${model}#${attempt}`);
+      if (model === 'm1') throw truncated('m1');
+      return '{"ok":true}';
+    });
+
+    const result = await generateWithOpenRouterChain('prompt', {
+      apiKey: 'sk-test',
+      modelQueue: ['m1', 'm2'],
+      callModel,
+      validateResponse: (_m, text) => text,
+      retryTruncatedOnce: true,
+    });
+
+    expect(seen).toEqual(['m1#1', 'm1#2', 'm2#1']);
+    expect(result.model).toBe('m2');
+  });
+
+  it('does not retry when the caller has not opted in', async () => {
+    const seen: string[] = [];
+    const callModel = vi.fn(async (_k: string, model: string, _p: string, attempt = 1) => {
+      seen.push(`${model}#${attempt}`);
+      if (model === 'm1') throw truncated('m1');
+      return '{"ok":true}';
+    });
+
+    await generateWithOpenRouterChain('prompt', {
+      apiKey: 'sk-test',
+      modelQueue: ['m1', 'm2'],
+      callModel,
+      validateResponse: (_m, text) => text,
+    });
+
+    expect(seen).toEqual(['m1#1', 'm2#1']);
+  });
+
+  it('never mutates the queue array it was handed', async () => {
+    const queue = ['m1', 'm2'];
+    const callModel = vi.fn(async (_k: string, model: string, _p: string, attempt = 1) => {
+      if (model === 'm1' && attempt === 1) throw truncated('m1');
+      return '{"ok":true}';
+    });
+
+    await generateWithOpenRouterChain('prompt', {
+      apiKey: 'sk-test',
+      modelQueue: queue,
+      callModel,
+      validateResponse: (_m, text) => text,
+      retryTruncatedOnce: true,
+    });
+
+    expect(queue).toEqual(['m1', 'm2']);
   });
 });

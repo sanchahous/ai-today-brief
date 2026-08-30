@@ -7,10 +7,9 @@ story-image / Visual Affordance / illustration B1-fix 2026-08-11…15, Social/PD
 GA4 + SEO 2026-08-21, latest weekly revision is the working copy 2026-08-22,
 Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
-консолідація трьох відео-папок в один репозиторій 2026-08-28,
-weekly digest topic-based slug on publish 2026-08-29,
-weekly digest revision architecture review 2026-08-29
-Last updated: 2026-08-29
+консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
+каталожний вибір OpenRouter + живий сухий прогін черг 2026-08-30
+Last updated: 2026-08-30
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -44,7 +43,7 @@ Last updated: 2026-08-29
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
-| 📋 `architecture/data-model.md` | Схема Supabase, RLS, 99 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
+| 📋 `architecture/data-model.md` | Схема Supabase, RLS, 100 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
 
@@ -143,6 +142,7 @@ Last updated: 2026-08-29
 | ✅ [audits/2026-08-21-weekly-digest-release-backtest](audits/2026-08-21-weekly-digest-release-backtest.md) | Backtest `ai-weekly-2026-08-09`: 5 днів затримки через 28 Approve + hotfix-ланцюг, не через visuals; машина випуску з одним hallucination gate | прод-БД 2026-08-21 + `gh pr list` 09–21.08 |
 | ✅ [audits/2026-08-23-gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md) | Review Prompt-as-Code/weekly UI: один primary candidate, safe-frame, localized display title і hash-fenced private staging → explicit versioned visual apply без зміни published text/SEO/PDF/social | owner-скріни + код-ревʼю + локальна browser/SQL-перевірка 2026-08-23/24 |
 | ✅ [audits/2026-08-29-weekly-digest-revision-architecture-review](audits/2026-08-29-weekly-digest-revision-architecture-review.md) | Чому реліз 28-29.08 знову зламався + план Етап 0/Етап 1; **Етап 0 реалізовано** (carry-forward, split text/asset, live preflight, save_error замість #441, CI drift check) | живий реліз 28-29.08.2026 + гілка `feat/weekly-revision-stage-0` |
+| ✅ [audits/2026-08-29-openrouter-spend-leak](audits/2026-08-29-openrouter-spend-leak.md) | Рахунок OpenRouter $9.16/2 доби при ledger $1.3: social-ранжування без ціни вивело Fable ($14/M) у чергу writer-а (51% рахунку), відкинуті спроби не обліковувались, ставки вигадані, кап $4 не глобальний — усі чотири виправлені | експорт OpenRouter Activity + прод `generation_cost_events` + живий каталог 2026-08-29 |
 
 ## Decisions (ADR)
 
@@ -155,6 +155,7 @@ Last updated: 2026-08-29
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [research/2026-08-05-professional-ai-video-guide](research/2026-08-05-professional-ai-video-guide.md) | Гайд ціна/якість AI-відео: діагноз німого слайдшоу, драбина L0–L3, i2v/аватар сервіси | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
+| ✅ [research/2026-08-30-openrouter-routing-api](research/2026-08-30-openrouter-routing-api.md) | Перевірений живими запитами API-фактаж OpenRouter + **реалізований** план §12: каталожний ранкер, `:free` у черзі, `provider.sort: price` замість `:floor`; сухий прогін черг 2026-08-30 | живі запити до `api/v1/*` + код + catalog dry-run 2026-08-30 |
 
 Інше — сюди йдуть summary-сторінки, згенеровані з `raw/` за
 [ingest-workflow](architecture/agentic-workflow.md#ingest).

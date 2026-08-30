@@ -5,14 +5,12 @@ import type { PipelineDb } from '../../../pipeline/db';
 import { resolveGeminiModelQueue } from '../../../pipeline/gemini-models';
 import { logEvent } from '../../../pipeline/log';
 import type { OpenRouterResponseValidator } from '../../../pipeline/openrouter-brief-json';
+import { type OpenRouterModelRecord } from '../../../pipeline/openrouter-models';
+import { minimalReasoningEffort } from '../../../pipeline/openrouter-value';
 import {
-  fetchOpenRouterModels,
-  type OpenRouterModelRecord,
-} from '../../../pipeline/openrouter-models';
-import {
-  rankOpenRouterModelsByValue,
-  minimalReasoningEffort,
-} from '../../../pipeline/openrouter-value';
+  fetchOpenRouterCatalogForRole,
+  rankModelsForRole,
+} from '../../../pipeline/providers/model-scoring';
 import { generateWithClaudeCli } from '../../../pipeline/claude-cli';
 import {
   generateWithHttpProviderChain,
@@ -458,10 +456,6 @@ export function openRouterModelVendor(modelId: string) {
  * clears this bar changes as the OpenRouter catalog and pricing shift.
  */
 const DEFAULT_MIN_QUALITY_INDEX = 40;
-// Sized from observed real usage of the weekly EN/UK master write (see PR
-// history) — used only to rank candidates by projected cost, not billed.
-const MASTER_PROMPT_TOKENS_ESTIMATE = 12_000;
-const MASTER_COMPLETION_TOKENS_ESTIMATE = 20_000;
 
 function masterMinQualityIndex() {
   const parsed = Number(process.env.WEEKLY_MASTER_MIN_QUALITY_INDEX);
@@ -469,10 +463,9 @@ function masterMinQualityIndex() {
 }
 
 /**
- * Ranks eligible OpenRouter models by projected cost for the master's typical
- * token profile, cheapest first, among models clearing the quality floor.
- * No model id is hardcoded — a temporarily discounted or newly released
- * model is picked up automatically the next time the catalog is fetched.
+ * Ranks eligible OpenRouter models by quality under the role floor, cheapest
+ * as a tie-break. No model id is hardcoded — a newly released model is picked
+ * up the next time the catalog is fetched.
  */
 export function premiumOpenRouterModels(
   models: OpenRouterModelRecord[],
@@ -488,13 +481,13 @@ export function premiumOpenRouterModels(
       .split(',')
       .map((value) => value.trim())
       .filter(Boolean);
-  const ranked = rankOpenRouterModelsByValue(models, {
-    promptTokens: MASTER_PROMPT_TOKENS_ESTIMATE,
-    completionTokens: MASTER_COMPLETION_TOKENS_ESTIMATE,
-    minQualityIndex: masterMinQualityIndex(),
-    excludeVendors: options.excludeVendors,
-    excludeModels: options.excludeModels,
-    configuredModels: configured.length ? configured : undefined,
+  const ranked = rankModelsForRole(models, 'weekly.master_writer', {
+    requireJson: true,
+    familyDiversity: true,
+    excludeIds: options.excludeModels,
+    excludeFamilies: options.excludeVendors,
+    configuredIds: configured.length ? configured : undefined,
+    qualityFloor: masterMinQualityIndex(),
   });
   // A full master response is large. Retrying another OpenRouter model inside
   // the same request can consume the entire 300-second function budget, so
@@ -507,7 +500,7 @@ export function premiumOpenRouterModels(
   // article whose opening brace carried one stray quote (`{"article":{"`),
   // failed JSON.parse, and had nothing to fall back to. That path sets
   // WEEKLY_MASTER_OPENROUTER_CANDIDATES so a second model gets a turn.
-  return ranked.slice(0, masterOpenRouterCandidates()).map((candidate) => candidate.id);
+  return ranked.slice(0, masterOpenRouterCandidates());
 }
 
 function masterOpenRouterCandidates() {
@@ -515,7 +508,7 @@ function masterOpenRouterCandidates() {
   return Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 1;
 }
 
-/** Wraps a registry ProviderCallResult in this file's own ProviderResult<T> shape (shared by both the DB-override and the default value-ranked OpenRouter path below). */
+/** Wraps a registry ProviderCallResult in this file's own ProviderResult<T> shape (shared by both the DB-override and the default catalog-ranked OpenRouter path below). */
 function toOpenRouterResult<T>(
   result: ProviderCallResult,
   value: T,
@@ -544,10 +537,10 @@ function toOpenRouterResult<T>(
  * Looks up an owner-configured HTTP provider for this role via
  * /admin/providers (e.g. a promo like NVIDIA NIM) — null when no `db` was
  * supplied or nothing is configured, in which case generateOpenRouter falls
- * through to its normal value-ranked OpenRouter path below. An owner-added
+ * through to its catalog-ranked OpenRouter path below. An owner-added
  * provider's model list is theirs to manage (no live catalog/benchmark data
  * exists for a provider like NIM, see wiki/pipeline/llm-providers.md), so
- * premiumOpenRouterModels' value-ranking is intentionally not applied here.
+ * premiumOpenRouterModels' catalog ranking is intentionally not applied here.
  */
 async function resolveWeeklyDbHttpProvider(
   role: ProviderRole,
@@ -589,7 +582,7 @@ async function generateOpenRouter<T>(
   const dbQueue = dbHttp ? remainingModelQueue(dbHttp.modelQueue, options.excludeModels) : [];
   if (dbHttp && dbQueue.length) {
     // An owner-configured provider failing mid-call must not take down the
-    // whole editorial generation -- fall through to the normal value-ranked
+    // whole editorial generation -- fall through to the catalog-ranked
     // OpenRouter ladder below instead of throwing, same as an unconfigured
     // dbHttp (null) already falls through.
     try {
@@ -603,7 +596,7 @@ async function generateOpenRouter<T>(
       logEvent(
         'warn',
         'weekly-editorial',
-        'Owner-configured OpenRouter provider failed -- falling back to the default value-ranked OpenRouter path',
+        'Owner-configured OpenRouter provider failed -- falling back to the default catalog-ranked OpenRouter path',
         {
           role: options.role,
           provider: dbHttp.id,
@@ -615,7 +608,7 @@ async function generateOpenRouter<T>(
 
   const apiKey = process.env.OPEN_ROUTER_API_KEY?.trim() || process.env.OPENROUTER_API_KEY?.trim();
   if (!apiKey) throw new Error('UNCONFIGURED:OPEN_ROUTER_API_KEY');
-  const models = await fetchOpenRouterModels(apiKey);
+  const models = await fetchOpenRouterCatalogForRole(apiKey, 'weekly.master_writer');
   const queue = premiumOpenRouterModels(models, options);
   if (!queue.length) throw new Error('No premium OpenRouter editorial model is available.');
   // `extraBodyForModel` is a per-model hook, but this used to compute one

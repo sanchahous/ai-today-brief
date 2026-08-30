@@ -65,14 +65,19 @@ async function main() {
   }
 
   const rows = Array.isArray(data) ? data : [];
-  const prodVersions = rows.flatMap((row) => {
-    if (!row || typeof row !== 'object') return [];
+  const prodVersions: string[] = [];
+  const prodNames: string[] = [];
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
     const version = (row as { version?: unknown }).version;
-    return typeof version === 'string' && version ? [version] : [];
-  });
+    const name = (row as { name?: unknown }).name;
+    if (typeof version === 'string' && version) prodVersions.push(version);
+    if (typeof name === 'string' && name) prodNames.push(name);
+  }
   const missing = findMainMigrationsMissingOnProd({
     mainFilenames,
     prodVersions,
+    prodNames,
   });
   if (missing.length > 0) {
     console.error('[migrations:check] origin/main migrations missing on prod:');

@@ -9,13 +9,13 @@ vi.mock('./cli-provider', async (importOriginal) => {
   return { ...actual, generateWithCliProvider: vi.fn() };
 });
 vi.mock('./gemini-provider', () => ({ generateWithGemini: vi.fn() }));
-vi.mock('../openrouter-models', () => ({
-  resolveOpenRouterModelQueue: vi.fn(),
-  openRouterModelAttemptCap: (env: { OPENROUTER_MAX_MODEL_ATTEMPTS?: string } = {}) => {
-    const parsed = Number.parseInt(env.OPENROUTER_MAX_MODEL_ATTEMPTS ?? '6', 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : 6;
-  },
-}));
+vi.mock('../openrouter-models', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../openrouter-models')>();
+  return {
+    ...actual,
+    resolveOpenRouterModelQueue: vi.fn(),
+  };
+});
 
 import { generateWithHttpProviderChain } from './http-provider';
 import { generateWithCliProvider } from './cli-provider';

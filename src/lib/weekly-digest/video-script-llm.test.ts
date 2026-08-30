@@ -1,16 +1,20 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../../pipeline/openrouter-models', () => ({
-  fetchOpenRouterModels: vi.fn().mockResolvedValue([
-    {
-      id: 'vendor/writer-model',
-      context_length: 128_000,
-      architecture: { modality: 'text' },
-      pricing: { prompt: '0.000001', completion: '0.000006' },
-      benchmarks: { artificial_analysis: { intelligence_index: 60 } },
-    },
-  ]),
-}));
+vi.mock('../../../pipeline/openrouter-models', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../pipeline/openrouter-models')>();
+  return {
+    ...actual,
+    fetchOpenRouterModels: vi.fn().mockResolvedValue([
+      {
+        id: 'vendor/writer-model',
+        context_length: 128_000,
+        architecture: { modality: 'text' },
+        pricing: { prompt: '0.0000003', completion: '0.000001' },
+        benchmarks: { artificial_analysis: { intelligence_index: 60 } },
+      },
+    ]),
+  };
+});
 
 vi.mock('../../../pipeline/openrouter-summarize', () => ({
   generateWithOpenRouterChain: vi.fn(),

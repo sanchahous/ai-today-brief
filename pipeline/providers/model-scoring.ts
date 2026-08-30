@@ -1,12 +1,22 @@
 /**
- * Role-aware OpenRouter model scoring: quality per dollar from live catalog
- * prices and Artificial Analysis indexes. Discounts are already in `pricing`;
- * models below the role floor (e.g. a 14.2 index at $0.01/M) are not candidates.
+ * One OpenRouter ranker for every role: quality under a price ceiling, from
+ * the live catalog, with family diversity and no name-based allowlist.
+ *
+ * Replaces rankSocialOpenRouterModels' family list / ~*-latest bonus and the
+ * DEFAULT_MODEL_PRIORITY tail that used to follow the quality/$ head.
+ *
+ * @see wiki/research/2026-08-30-openrouter-routing-api.md §12
  */
 
+import { logEvent } from '../log';
 import {
+  fetchOpenRouterModels,
   isEligibleOpenRouterModel,
-  rankOpenRouterModelIds,
+  isFreeOpenRouterModel,
+  isOpenRouterAliasId,
+  modelHasPriceOverrides,
+  openRouterModelFamily,
+  openRouterModelSupportsJson,
   type OpenRouterModelRecord,
 } from '../openrouter-models';
 import type { ProviderRole } from './registry';
@@ -31,17 +41,26 @@ export const QUALITY_AXIS = {
 } as const satisfies Record<ProviderRole, QualityAxis>;
 
 /**
- * Below this index the model is not a candidate, however cheap it is (F4 fix:
- * this used to be a `Partial` covering 3 of 13 roles, so the other 10 --
- * including `daily.auto_publish_judge` and `daily.verify` -- had NO floor and
- * "quality / price" alone will always pick the cheapest model above zero,
- * which is exactly the `ling-2.6-flash` (intelligence_index 14.2) trap the
- * plan warns about (F0). Every role now gets an explicit floor, tiered by
- * how much a bad pick costs: highest for the two editorial-text roles that
- * ship unreviewed prose, next for judge/critic roles that gate quality,
- * lowest for creative scene-brief roles where flair matters more than raw
- * intelligence but a near-zero-competence model is still not acceptable.
+ * OpenRouter `?category=` values that match how we actually use each role.
+ * Combined with `?sort=<axis>-high-to-low` this is the candidate source;
+ * our ceiling and floor still run client-side.
  */
+export const ROLE_CATALOG_CATEGORY = {
+  'daily.summarize': 'technology',
+  'daily.verify': 'technology',
+  'daily.auto_publish_judge': 'technology',
+  'daily.card_image_scene': 'technology',
+  'daily.cover_scene': 'technology',
+  'daily.image_critic': 'technology',
+  'weekly.master_writer': 'technology',
+  'weekly.master_critic': 'technology',
+  'weekly.card_image_scene': 'technology',
+  'weekly.image_critic': 'technology',
+  'social.writer': 'marketing',
+  'social.critic': 'marketing',
+  custom_research: 'academia',
+} as const satisfies Record<ProviderRole, string>;
+
 export const QUALITY_FLOOR = {
   'daily.summarize': 25,
   'daily.verify': 30,
@@ -65,17 +84,42 @@ export const DEFAULT_TOKEN_MIX: TokenMix = { prompt: 0.5, completion: 0.5 };
 export const TOKEN_MIX: Partial<Record<ProviderRole, TokenMix>> = {
   'weekly.master_writer': { prompt: 0.2, completion: 0.8 },
   'weekly.image_critic': { prompt: 0.8, completion: 0.2 },
+  // Social is prompt-heavy (live ledger 2026-08-28: ~50k prompt vs ~1–6k completion).
+  'social.writer': { prompt: 0.9, completion: 0.1 },
+  'social.critic': { prompt: 0.9, completion: 0.1 },
 };
 
-export const ROLE_SCORED_CHAIN_CAP = 3;
+/** Measured critic cache-hit share on 2026-08-28 (spend-leak audit). Not an assumption. */
+export const DEFAULT_CACHE_HIT_RATE = 0.182;
+
+/** Free models may sit this many AA points below the paid floor. */
+export const DEFAULT_FREE_QUALITY_FLOOR_DELTA = 5;
+
+/** Default blended USD/M ceiling — same number the owner set for social. */
+export const DEFAULT_MAX_PRICE_PER_MILLION = 1.5;
 
 export interface ModelRoleScore {
   id: string;
+  /** quality / price for paid models; quality itself for free (never divide by zero). */
   score: number;
   quality: number;
   pricePerM: number;
   axis: QualityAxis;
+  free: boolean;
 }
+
+export type RankModelsForRoleOptions = {
+  maxPricePerMillion?: number;
+  cacheHitRate?: number;
+  freeQualityFloorDelta?: number;
+  excludeIds?: readonly string[];
+  excludeFamilies?: readonly string[];
+  configuredIds?: readonly string[];
+  requireJson?: boolean;
+  familyDiversity?: boolean;
+  /** Override the role's QUALITY_FLOOR (paid). Free models still subtract the delta. */
+  qualityFloor?: number;
+};
 
 function parsePerTokenPrice(raw: string | undefined): number | null {
   if (typeof raw !== 'string' || !raw.trim()) return null;
@@ -85,6 +129,10 @@ function parsePerTokenPrice(raw: string | undefined): number | null {
 
 export function tokenMixForRole(role: ProviderRole): TokenMix {
   return TOKEN_MIX[role] ?? DEFAULT_TOKEN_MIX;
+}
+
+export function catalogSortForRole(role: ProviderRole): string {
+  return `${QUALITY_AXIS[role]}-high-to-low`;
 }
 
 export function qualityIndexForAxis(
@@ -105,93 +153,199 @@ export function qualityIndexForAxis(
   return typeof raw === 'number' && Number.isFinite(raw) ? raw : null;
 }
 
-export function effectivePricePerM(model: OpenRouterModelRecord, role: ProviderRole): number | null {
+export function resolveCacheHitRate(
+  env: { OPENROUTER_CACHE_HIT_RATE?: string; [key: string]: string | undefined } = process.env,
+): number {
+  const parsed = Number(env.OPENROUTER_CACHE_HIT_RATE);
+  if (!Number.isFinite(parsed) || parsed < 0 || parsed > 1) return DEFAULT_CACHE_HIT_RATE;
+  return parsed;
+}
+
+export function resolveFreeQualityFloorDelta(
+  env: {
+    OPENROUTER_FREE_QUALITY_FLOOR_DELTA?: string;
+    [key: string]: string | undefined;
+  } = process.env,
+): number {
+  const parsed = Number(env.OPENROUTER_FREE_QUALITY_FLOOR_DELTA);
+  if (!Number.isFinite(parsed) || parsed < 0) return DEFAULT_FREE_QUALITY_FLOOR_DELTA;
+  return parsed;
+}
+
+export function resolveMaxPricePerMillion(
+  role: ProviderRole,
+  env: {
+    SOCIAL_LLM_MAX_PRICE_PER_MILLION?: string;
+    OPENROUTER_MAX_PRICE_PER_MILLION?: string;
+    [key: string]: string | undefined;
+  } = process.env,
+): number {
+  if (role === 'social.writer' || role === 'social.critic') {
+    const social = Number(env.SOCIAL_LLM_MAX_PRICE_PER_MILLION);
+    if (Number.isFinite(social) && social > 0) return social;
+    return DEFAULT_MAX_PRICE_PER_MILLION;
+  }
+  const parsed = Number(env.OPENROUTER_MAX_PRICE_PER_MILLION);
+  if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  return DEFAULT_MAX_PRICE_PER_MILLION;
+}
+
+export function effectivePricePerM(
+  model: OpenRouterModelRecord,
+  role: ProviderRole,
+  cacheHitRate: number = resolveCacheHitRate(),
+): number | null {
   const prompt = parsePerTokenPrice(model.pricing?.prompt);
   const completion = parsePerTokenPrice(model.pricing?.completion);
-  if (prompt === null || completion === null) return null;
+  const free = isFreeOpenRouterModel(model.id);
+  if (prompt === null || completion === null) {
+    if (free) return 0;
+    return null;
+  }
   const mix = tokenMixForRole(role);
-  const perToken = prompt * mix.prompt + completion * mix.completion;
-  return perToken * 1_000_000;
+  const cacheRead = parsePerTokenPrice(model.pricing?.input_cache_read);
+  const hit =
+    cacheRead !== null && cacheRead < prompt && cacheHitRate > 0
+      ? cacheHitRate
+      : 0;
+  const effectivePrompt = prompt * (1 - hit) + (cacheRead ?? prompt) * hit;
+  return (effectivePrompt * mix.prompt + completion * mix.completion) * 1_000_000;
+}
+
+function qualityFloorFor(role: ProviderRole, free: boolean, delta: number, override?: number): number {
+  const paid = override ?? QUALITY_FLOOR[role];
+  if (!free) return paid;
+  return Math.max(0, paid - delta);
 }
 
 export function scoreModelForRole(
   model: OpenRouterModelRecord,
   role: ProviderRole,
+  options: RankModelsForRoleOptions = {},
 ): ModelRoleScore | null {
-  // The family ranking (rankOpenRouterModelIds) filters these out, but the
-  // quality/$ head used to be built straight from the raw catalog -- so a
-  // `:batch` id (chat-completions 404) or a `:free` id (severe per-minute
-  // limits) could lead the queue purely by being cheap. Scored leaders and the
-  // family-ranked tail must obey the same eligibility rules.
   if (!isEligibleOpenRouterModel(model)) return null;
+  if (options.requireJson !== false && !openRouterModelSupportsJson(model)) return null;
   const axis = QUALITY_AXIS[role];
   const quality = qualityIndexForAxis(model, axis);
   if (quality === null) return null;
-  const floor = QUALITY_FLOOR[role];
-  if (floor !== undefined && quality < floor) return null;
-  const pricePerM = effectivePricePerM(model, role);
-  if (pricePerM === null || pricePerM <= 0) return null;
+  const free = isFreeOpenRouterModel(model.id);
+  const delta = options.freeQualityFloorDelta ?? resolveFreeQualityFloorDelta();
+  if (quality < qualityFloorFor(role, free, delta, options.qualityFloor)) return null;
+  const pricePerM = effectivePricePerM(model, role, options.cacheHitRate ?? resolveCacheHitRate());
+  if (pricePerM === null) return null;
+  const ceiling = options.maxPricePerMillion ?? resolveMaxPricePerMillion(role);
+  if (!free && pricePerM > ceiling) return null;
   return {
     id: model.id,
-    score: quality / pricePerM,
+    score: free || pricePerM === 0 ? quality : quality / pricePerM,
     quality,
     pricePerM,
     axis,
+    free,
   };
 }
 
-function compareScored(left: ModelRoleScore, right: ModelRoleScore): number {
-  if (right.score !== left.score) return right.score - left.score;
+function compareByMerit(left: ModelRoleScore, right: ModelRoleScore): number {
+  if (right.quality !== left.quality) return right.quality - left.quality;
+  if (left.pricePerM !== right.pricePerM) return left.pricePerM - right.pricePerM;
   return left.id.localeCompare(right.id);
+}
+
+function blockedIdSet(ids: readonly string[] | undefined): Set<string> {
+  return new Set((ids ?? []).map((id) => id.trim().toLowerCase()).filter(Boolean));
+}
+
+function blockedFamilySet(families: readonly string[] | undefined): Set<string> {
+  return new Set((families ?? []).map((id) => id.trim().toLowerCase()).filter(Boolean));
+}
+
+export function warnPricingOverrides(models: readonly OpenRouterModelRecord[]): void {
+  for (const model of models) {
+    if (!modelHasPriceOverrides(model)) continue;
+    logEvent('warn', 'openrouter', 'OpenRouter model publishes stepped pricing.overrides', {
+      model: model.id,
+    });
+  }
 }
 
 export function scoredModelsForRole(
   models: readonly OpenRouterModelRecord[],
   role: ProviderRole,
+  options: RankModelsForRoleOptions = {},
 ): ModelRoleScore[] {
+  const configured = options.configuredIds?.filter(Boolean) ?? [];
+  const configuredSet = configured.length > 0 ? new Set(configured) : null;
   const scored: ModelRoleScore[] = [];
   for (const model of models) {
-    const row = scoreModelForRole(model, role);
+    if (configuredSet && !configuredSet.has(model.id)) continue;
+    const row = scoreModelForRole(model, role, options);
     if (!row) continue;
     scored.push(row);
   }
-  return scored.sort(compareScored);
+  return scored.sort(compareByMerit);
 }
 
 /**
- * Top-3 by quality-per-dollar, then the existing family ranking as a tail.
- * Unbenchmarked models never lead a role that has a quality floor.
+ * Rank by quality under the price ceiling, one model per family.
+ * Unbenchmarked models never enter: a concrete model has a score and a price.
  */
-function isBelowQualityFloor(model: OpenRouterModelRecord, role: ProviderRole): boolean {
-  const floor = QUALITY_FLOOR[role];
-  if (floor === undefined) return false;
-  const quality = qualityIndexForAxis(model, QUALITY_AXIS[role]);
-  if (quality === null) return false;
-  return quality < floor;
-}
-
 export function rankModelsForRole(
   models: OpenRouterModelRecord[],
   role: ProviderRole,
-  familyRank: (catalog: OpenRouterModelRecord[]) => string[] = rankOpenRouterModelIds,
+  options: RankModelsForRoleOptions = {},
 ): string[] {
-  const scored = scoredModelsForRole(models, role);
-  const chain: string[] = [];
-  const seen = new Set<string>();
+  warnPricingOverrides(models);
+  const scored = scoredModelsForRole(models, role, options);
+  const excludedIds = blockedIdSet(options.excludeIds);
+  const excludedFamilies = blockedFamilySet(options.excludeFamilies);
+  const diversity = options.familyDiversity !== false;
+  const queue: string[] = [];
+  const seenFamilies = new Set<string>();
   for (const row of scored) {
-    if (chain.length >= ROLE_SCORED_CHAIN_CAP) break;
-    if (seen.has(row.id)) continue;
-    seen.add(row.id);
-    chain.push(row.id);
+    if (excludedIds.has(row.id.toLowerCase())) continue;
+    const family = openRouterModelFamily(row.id);
+    if (excludedFamilies.has(family)) continue;
+    if (diversity) {
+      if (seenFamilies.has(family)) continue;
+      seenFamilies.add(family);
+    }
+    queue.push(row.id);
   }
-  const blocked = new Set<string>();
-  for (const model of models) {
-    if (isBelowQualityFloor(model, role)) blocked.add(model.id);
+  return queue;
+}
+
+function mergeCatalogs(
+  focused: OpenRouterModelRecord[],
+  rest: OpenRouterModelRecord[],
+): OpenRouterModelRecord[] {
+  const byId = new Map<string, OpenRouterModelRecord>();
+  for (const model of focused) {
+    if (isOpenRouterAliasId(model.id)) continue;
+    byId.set(model.id, model);
   }
-  for (const id of familyRank(models)) {
-    if (seen.has(id) || blocked.has(id)) continue;
-    seen.add(id);
-    chain.push(id);
+  for (const model of rest) {
+    if (isOpenRouterAliasId(model.id) || byId.has(model.id)) continue;
+    byId.set(model.id, model);
   }
-  return chain;
+  return [...byId.values()];
+}
+
+/**
+ * Candidate pool for a role: category+sort (the shortlist OpenRouter already
+ * ranks for that use) union sort-only (so a family like z-ai is not hidden
+ * just because it is outside the category's ~20).
+ */
+export async function fetchOpenRouterCatalogForRole(
+  apiKey: string,
+  role: ProviderRole,
+  fetchFn: typeof fetch = fetch,
+  timeoutMs = 60_000,
+): Promise<OpenRouterModelRecord[]> {
+  const sort = catalogSortForRole(role);
+  const category = ROLE_CATALOG_CATEGORY[role];
+  const [focused, byQuality] = await Promise.all([
+    fetchOpenRouterModels(apiKey, fetchFn, timeoutMs, { category, sort }),
+    fetchOpenRouterModels(apiKey, fetchFn, timeoutMs, { sort }),
+  ]);
+  return mergeCatalogs(focused, byQuality);
 }

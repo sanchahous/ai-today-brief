@@ -4,7 +4,56 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-08-29
+Last updated: 2026-08-30
+
+## 2026-08-30 — migrations:check звіряє name, не apply-clock
+
+`schema_migrations.version` часто є часом apply, не префіксом файлу.
+RPC `list_applied_schema_migrations` тепер повертає і `name`; гейт дивиться
+файли з `20260801000000`. Коригує хибні «усі міграції відсутні на prod».
+Лічильник у [index](index.md): 99 → 100 міграцій.
+(source: `src/lib/supabase-migration-drift.ts`, live prod 2026-08-30)
+
+## 2026-08-30 — OpenRouter поповнено; сухий прогін черг
+
+Власник: рахунок поповнено. `GET /api/v1/credits` 15:12 UTC: куплено $60,
+витрачено $50.16, залишок $9.84. Коригує «кошти вичерпано» в [now](now.md) і
+попередження в
+[research/2026-08-30-openrouter-routing-api §9](research/2026-08-30-openrouter-routing-api.md).
+Сухий прогін (каталог + `rankModelsForRole`, без `chat/completions`):
+`fable`/`~` немає. Social (cap 2) — `meta/muse-spark-1.2` → `google/gemini-3.7-flash`.
+Weekly writer (cap 1) — лише `z-ai/glm-5.2:free` (mix 0.2/0.8 відсікає дорожчі
+за completion моделі). Weekly critic (cap 1) — `deepseek/deepseek-v4-pro-0813`.
+Daily (cap 6) — deepseek-v4-pro → glm-5.2:free → gpt-5.6-luna → qwen3.8 →
+minimax-m3:free → mimo-v2.5-pro.
+(source: живий `api/v1/credits` + `fetchOpenRouterCatalogForRole` 2026-08-30)
+
+## 2026-08-30 — Стеля $1.5/M також на weekly/daily
+
+Власник: ту саму per-M стелю, що на social. `resolveMaxPricePerMillion` тепер
+дефолтить **1.5** для всіх ролей; weekly/daily читають
+`OPENROUTER_MAX_PRICE_PER_MILLION=1.5`. `:free` як і раніше без стелі.
+Зверху лишаються `WEEKLY_MASTER_MAX_SPEND_USD` і `DAILY_GENERATION_BUDGET_USD`.
+(source: owner session 2026-08-30, `.env.example`, `pipeline/providers/model-scoring.ts`)
+
+## 2026-08-30 — Каталожний вибір моделей OpenRouter (план §12)
+
+Реалізовано сім кроків з
+[research/2026-08-30-openrouter-routing-api §12](research/2026-08-30-openrouter-routing-api.md)
+на гілці `feat/openrouter-catalog-selection` поверх #343. Прибрано name-heuristics
+(`OPENROUTER_PROVIDER_PRIORITY`, `DEFAULT_MODEL_PRIORITY`, тири, `-pro`, аліаси `~`,
+бан `:free`). Один ранкер `rankModelsForRole`: якість під стелею, tie-break ціна,
+різноманіття родин без allowlist, unbenchmarked не в черзі. Чесна ціна з
+`input_cache_read` і `OPENROUTER_CACHE_HIT_RATE=0.182`. `:free` нарівні з
+`OPENROUTER_FREE_QUALITY_FLOOR_DELTA=5` і лімітером 20 req/min. Провайдер —
+`provider.sort: "price"` + latency/uptime, не суфікс `:floor`.
+`pricing.overrides` — warning. Env: `OPENROUTER_CACHE_HIT_RATE`,
+`OPENROUTER_FREE_QUALITY_FLOOR_DELTA`, `OPENROUTER_PROVIDER_UPTIME_FLOOR`,
+`OPENROUTER_PROVIDER_MAX_LATENCY_S`, `OPENROUTER_MAX_PRICE_PER_MILLION=1.5`
+(та сама стеля, що `SOCIAL_LLM_MAX_PRICE_PER_MILLION`).
+`OPENROUTER_MODEL_PRIORITY` більше не читається.
+(source: `pipeline/providers/model-scoring.ts`, `src/lib/social/llm-router.ts`,
+`src/lib/weekly-digest/editorial-llm.ts`, `.env.example`)
 
 ## 2026-08-29 — Етап 0: restamp міграції після колізії з #341
 
@@ -4419,5 +4468,259 @@ bold+backticks; порожній рядок між блоками, додани�
 [omni-channel-publishing-matrix §7](marketing/omni-channel-publishing-matrix.md#7-конформанс-що-вже-змінено-в-коді-що-лишається);
 `src/lib/weekly-digest/social-adapter.ts`, `src/lib/social/telegram-format.ts`,
 `src/lib/weekly-digest/social-adapter.test.ts`, `src/lib/social/telegram-format.test.ts`)
+
+---
+
+## 2026-08-29 — OpenRouter spend leak: $9.16 за дві доби, ledger бачив $1.3
+
+Джерело: `raw/_local/exports/openrouter_activity_2026-08-29.csv` (експорт OpenRouter Activity,
+249 викликів) + прод-Supabase `generation_cost_events` + живий каталог `api/v1/models`.
+
+Власник повідомив про аномальні витрати. Розбір показав **чотири незалежні дефекти**, не один:
+
+1. **Ранжування social не мало цінового терміна взагалі.** `openRouterRoleScore` давав кожному
+   `~*-latest` аліасу премію −10 000 і розводив нічию за `created`. У родині `anthropic`
+   `~anthropic/claude-fable-latest` ($10/M вхід, $50/M вихід) вигравав у
+   `~anthropic/claude-haiku-latest` ($1.40/M blended) на **0.0037 бала timestamp** — і став
+   штатним fallback-ом writer-а. 12 викликів = $4.66 = 51% рахунку за дві доби.
+2. **Оплачені, але відкинуті спроби не потрапляли в ledger.** `generateWithOpenRouterChain`
+   затирав usage невдалої спроби наступною ітерацією; OpenRouter виставляє рахунок за кожну.
+   28.08: OpenRouter 190 викликів / $8.74, ledger 35 подій / $0.65.
+3. **Вартість рахувалась за вигаданими ставками.** `generateSocialJson` ігнорував reported-cost
+   і перераховував із `prompt.length / 4` за $0.3/$1 за мільйон. Реально
+   `~openai/gpt-mini-latest` — $0.75/$4.50, Fable — $10/$50. Єдиний облікований виклик Fable
+   записано як $0.0149 замість ~$0.51 (у 34 рази менше).
+4. **Кап $4 не міг спрацювати.** `assertWithinMasterBudget` рахує лише артефакти однієї ревізії,
+   не бачить social і обнуляється на кожному retry, що відкриває нову ревізію.
+
+Виправлено: цінова стеля `SOCIAL_LLM_MAX_PRICE_PER_MILLION` (default 3.5 blended, вхід 9:1;
+модель без опублікованої ціни виключається, а не вважається безкоштовною) + ціна як
+tie-breaker; `discardedUsage` крізь `openrouter-summarize` → `http-provider` → `llm-router`;
+`socialUsage()` на reported-цифрах; глобальний запобіжник `assertDailyGenerationBudget`
+(ковзні 24 год по всьому ledger, крім `subscription`) у `runGenerationJob`.
+
+Перевірено відвантаженим кодом проти живого каталогу: лінія writer-а $14.00/M → $1.40/M,
+черга критика без змін. `npm run pr:check` зелений (1898 тестів; 14 нових).
+
+Не входило у фікс: **prompt caching** — `tokens_cached=0` у всіх 249 викликах при social-промпті
+на ~50 тис. токенів. Окремий важіль. `DAILY_GENERATION_BUDGET_USD=5` — стартова цифра, потребує
+калібрування за фактом через тиждень правдивого ledger.
+(source: [audits/2026-08-29-openrouter-spend-leak](audits/2026-08-29-openrouter-spend-leak.md);
+`src/lib/social/llm-router.ts`, `pipeline/openrouter-summarize.ts`,
+`pipeline/providers/http-provider.ts`, `src/lib/generation-costs.ts`,
+`src/lib/weekly-digest/generation-worker.ts`)
+
+---
+
+## 2026-08-29 — форензика 190 викликів + стеля $1.5 (продовження розбору вище)
+
+Власник поставив стелю `SOCIAL_LLM_MAX_PRICE_PER_MILLION=1.5` (замість запропонованої 3.5) і
+спитав, звідки 190 викликів за добу і чи є в проєкті баги.
+
+**Розклад 190 викликів (28.08):** 151 виклик / $8.34 (95% грошей) — це 12 джоб **одного**
+тижневого дайджесту: 11 × `social_copy` (5 cancelled, 4 failed, 2 succeeded; 10 — linked retry)
++ 1 `editorial_master`. Решта 39 / $0.40 — звичайний daily pipeline. Таймстемпи експорту й БД
+збігаються посекундно, тож атрибуція точна.
+
+**Обсяг на джобу — дизайн, не баг:** 6 каналів × до 3 раундів × (writer + critic), і кожен
+`generateSocialJson` обходить до 2 моделей ⇒ стеля 36 логічних / 72 оплачених виклики на джобу.
+Успішні джоби вклались у 6–7.
+
+**Знайдено два нові баги (НЕ виправлені):**
+1. `refusing to replace approved {channel} post` — гард у persist-фазі
+   (`generation-worker.ts:2801`), тобто **після** генерації всіх 6 каналів. Умова відома до
+   першого виклику LLM. Джоба `52f06dfc`: 3 спроби, 49 викликів, $1.82 — приречена з першої
+   секунди.
+2. Retry переплачує за вже згенеровані канали: `provider_exhausted` позначено `retryable: true`
+   з обіцянкою «reuse every saved channel», але спроби 1–2 відправили однакові промпти
+   (`in=22288` двічі, `in=13555` двічі). Кандидати: чекпоїнт не зберігся, або
+   `findBlindCrossPosts` видаляє збережені канали на кожному resume. (needs verification)
+
+Дрібніше: 7 викликів обірвались на `finish_reason=length` = $0.82 у нікуди, і саме truncation
+є тригером падіння черги на дорогу модель.
+
+**Виправлення попереднього запису:** твердження «`tokens_cached=0` у всіх 249 викликах» було
+хибним — воно зроблене з вибірки дорогих рядків Fable. Насправді автоматичний кеш працює:
+18.2% (469 893 з 2 579 711 вхідних токенів). Але чистий ефект ≈ нуль (−$0.0116): writer
+`gpt-5.4-mini` виграє −$0.30 при 34.8% попадань, критик `gpt-5.6-terra` **втрачає** +$0.29 при
+3.1%, Anthropic-моделі не кешуються взагалі (немає `cache_control`). Корінь — порядок блоків у
+`promptFor`: волатильні `REPAIR REQUIRED` / `COPY ALREADY USED` стоять посередині й виштовхують
+найбільший стабільний блок (`APPROVED ARTICLE`) за межі кешованого префікса.
+
+**Наслідок стелі $1.5** — крім Fable вона знімає й обидві провідні лінії критика
+(OpenAI-лінія $3.00, Anthropic mid $2.80). Критик тепер на haiku ($1.40) + deepseek-flash
+($0.04). Плюс `~anthropic/claude-haiku-latest` стає другою лінією writer-а і першою лінією
+критика одночасно, а `excludeProviders` розводить ролі лише на рівні провайдера, не моделі —
+можливий самоаудит. Лікується стелею per-role. `npm run pr:check` зелений.
+(source: [audits/2026-08-29-openrouter-spend-leak §6](audits/2026-08-29-openrouter-spend-leak.md);
+прод `weekly_digest_generation_jobs` / `weekly_digest_generation_attempts` live check 2026-08-29)
+
+---
+
+## 2026-08-30 — Фаза 1–2 фіксів + спростування гіпотези про retry
+
+Власник затвердив три правки з плану; стелю per-role свідомо відкладено («будемо переписувати
+принцип вибору моделі пізніше»).
+
+**1. Гард approved-поста перенесено на початок джоби.** `assertSocialCopyCanPersist` читає пакет
+і його пости **до першого виклику моделі** й падає одразу, називаючи всі блокери разом. Пошук
+пакета винесено в спільний `findSocialPackageForJob`, яким користуються і pre-flight, і persist —
+щоб дві перевірки не розʼїхались. Статуси зведено в один `EDITABLE_SOCIAL_STATUSES`.
+
+**2. Стелі `max_tokens` підняті, обрив більше не викидає слот.** Writer 4096 → **8192**, critic
+2048 → **6144**. Корінь був не в довжині відповіді: `max_tokens` покриває і reasoning, а
+`exclude: true` лише ховає його з відповіді — генерується й тарифікується він однаково. Один
+критик-виклик 28.08 віддав 2048 completion-токенів, з яких **2048 були reasoning, контенту нуль**.
+Додатково `generateWithOpenRouterChain` отримав `retryTruncatedOnce`: обірвану відповідь тепер
+повторює **та сама модель** із подвоєною стелею (`extraBodyForModel` тепер приймає `attempt`),
+замість падіння на наступну — дорожчу — модель. Обидва валідатори (social і http-provider) кидають
+типізований `OpenRouterIncompleteJsonError`, щоб чейн відрізняв «забракло місця» від «не та форма».
+
+**3. Блоки промптів переставлено під кешування.** Writer: стабільне (роль → VOICE → what-must-give
+→ факти → **APPROVED ARTICLE**) → канальний блок → інструкція → волатильні `COPY ALREADY USED` і
+`REPAIR REQUIRED` у самому кінці. Critic: канал і його контракт прибрані з першого речення (там
+вони робили 6 різних префіксів на 6 каналів) і винесені окремим блоком після `APPROVED FACTS`.
+Три нові тести пінять цей контракт: спільний префікс між раундами ремонту >90% і містить
+`APPROVED ARTICLE`; префікс між каналами містить статтю, але не канальний контракт.
+
+**Спростовано:** гіпотеза «retry переплачує за вже згенеровані канали» **не підтвердилась**. Події
+`weekly_digest_generation_events` показують коректне відновлення (`Resuming 2/6`, потім `4/6`);
+однакові промпти — це впалий канал, перегенерований після власного падіння, а не повторна оплата
+готового. Деталі — [audits §6.3](audits/2026-08-29-openrouter-spend-leak.md).
+
+`npm run pr:check` зелений: 1905 тестів (+7), 0 помилок lint/wiki.
+(source: прод `weekly_digest_generation_events` job `52f06dfc` live check 2026-08-30;
+`src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/social-adapter.ts`,
+`src/lib/social/llm-router.ts`, `pipeline/openrouter-summarize.ts`,
+`pipeline/providers/http-provider.ts`)
+
+---
+
+## 2026-08-30 — денний бюджет знижено до $1 + окремий клас відмови
+
+Власник: «daily бюджет до 1 долара робимо». `DEFAULT_DAILY_GENERATION_BUDGET_USD` 5 → **1**.
+
+Показано наслідок у цифрах перед зміною: межа $1 нижча за кілька минулих днів із weekly-дайджестом
+(11.08 — $2.68 metered, 22.08 — $1.53, 10.08 — $0.99, 04.08 — $0.94), і це занижені до-фіксові
+цифри. Звичайний день — $0.15–0.45, вільно. Тобто день випуску очікувано впиратиметься в межу;
+власник приймає це свідомо — краще зупинка з питанням, ніж рахунок постфактум.
+
+Оскільки тепер запобіжник спрацьовуватиме в нормальній роботі, додано окремий клас відмови
+`budget_exceeded` у `classifyGenerationFailure`: **non-retryable**, з прямою вказівкою («дочекатись
+вікна або підняти `DAILY_GENERATION_BUDGET_USD` і зробити ручний retry»). Без цього повідомлення
+падало в кошик `unknown`, а retry просто повторював би відмову. Перевірка стоїть **перед** гілкою
+`quota`, щоб наша власна межа не читалась як проблема білінгу провайдера. Нічого не тарифікується —
+breaker кидає помилку до першого виклику провайдера.
+(source: прод `generation_cost_events` metered-по-днях live check 2026-08-30;
+`src/lib/generation-costs.ts`, `src/lib/weekly-digest/generation-control.ts`)
+
+---
+
+## 2026-08-30 — зафіксовано API-фактаж OpenRouter для майбутнього переписування вибору моделі
+
+Власник розглядав дві порадні відповіді (Gemini) щодо динамічного роутингу і запропонував
+комбінацію «категорії + сортування за дисконтом». Усе перевірено живими запитами; результат —
+[research/2026-08-30-openrouter-routing-api](research/2026-08-30-openrouter-routing-api.md).
+
+**Підтверджено й доступно:** `?category=` (12 значень, ~20 моделей кожна, ранжовані за
+використанням, 400 на невалідному); повний enum `?sort=` з 12 значень, серед них
+`intelligence/coding/agentic-high-to-low` — **збігаються з нашими `QUALITY_AXIS`**;
+`?supported_parameters=structured_outputs` (297 моделей); `category`+`sort` комбінуються.
+Окремий ендпоінт `/api/v1/models/{author}/{slug}/endpoints` дає per-provider `pricing`
+(з полем `discount` і `input_cache_read`), `uptime_last_1d`, `latency`, `throughput`,
+`supports_implicit_caching` — розкид цін на одну модель до **6.5×**. Суфікси `:floor`, `:nitro`,
+`:exacto` перевірені живими викликами ($0.0000079 сумарно): `:floor` дав у **3.2× дешевше** за
+дефолтний роутинг на тій самій моделі.
+
+**Спростовано — сортувати за дисконтом не можна.** Знижка вже врахована в ціні: DigitalOcean
+($0.068/M, `discount: 0`) дешевший за StreamLake і Baidu ($0.080/M, `discount: 0.43`). На
+`deepseek-v4-pro-0813` вибір за максимальною знижкою коштував би на **70% дорожче** ($1.121 проти
+$0.660). А на наших first-party моделях (`gpt-5.4-mini`, `gpt-5.6-terra`, `claude-haiku-4.5`)
+дисконтних провайдерів **немає взагалі** — 0 із 20.
+
+**Виправлення власного твердження:** спершу я сказав, що `discount` в API немає. Це було хибно —
+я перевірив лише `/api/v1/models` (де його справді немає) і не перевірив `/endpoints`, де він є.
+Власник мав рацію, що дані доступні програмно.
+
+**Зафіксовано як хибне в порадах:** масиву `providers` у `/api/v1/models` не існує (є `top_provider`,
+один об'єкт); рядка `"% off"` у назвах провайдерів немає (дисконт — числове поле). Контекст порад
+(Next.js 15 + Vercel AI SDK + Agent SDK) до цього репозиторію не стосується.
+
+**Auto Router відхилено** для нашого випадку: `pricing: -1` (ціна невідома до виклику, наша стеля
+його відхилить), вибір за share of spend спільноти, `cost_tier` — смуга, а не долар; це конфліктує
+з `DAILY_GENERATION_BUDGET_USD=1`.
+
+Пропозиція дворівневого вибору (модель через `category`+`sort`, провайдер через `:floor` з
+відсіканням за uptime) записана в §8 як **не ухвалена** — власник: «поки не все, обговоримо ще».
+Код не змінювався.
+(source: [research/2026-08-30-openrouter-routing-api](research/2026-08-30-openrouter-routing-api.md);
+живі запити `openrouter.ai/api/v1/*` 2026-08-30)
+
+---
+
+## 2026-08-30 — безкоштовний ярус: виключення `:free` було помилкою + рішення власника
+
+Власник: «Ми ще не обговорили розгляд безкоштовних моделей. Особливо якщо у мене закінчились кошти…
+Ми не настільки багаті». Перевірка показала, що він має рацію двічі.
+
+**Кошти справді вичерпано.** `api/v1/credits` на 2026-08-30: куплено $50, витрачено $50.14.
+Це не гіпотеза, а поточний стан — потрібне поповнення.
+
+**Обґрунтування виключення `:free` хибне для нашого акаунта.** Код викидає всі безкоштовні
+моделі з коментарем «rate limits are too aggressive for production use». Реально: 20 запитів/хв,
+і 1000/добу для акаунтів, що купили ≥$10 (у нас $50, `is_free_tier: false`). Ліміт 50/добу, який
+малося на увазі, діє лише для акаунтів під $10. Наш найгірший день — 190 викликів, звичайний — 39.
+
+**Якість безкоштовних не мізерна.** 21 модель, 12 із бенчмарком. `z-ai/glm-5.2:free` — AA 52.6,
+256k контексту, підтримує JSON. Наша платна `deepseek/deepseek-v4-flash` — AA 42.1, найкраща
+платна лінія `openai/gpt-5.6-terra` — 56.6. Тобто безкоштовна модель сильніша за одну з наших
+платних. `nvidia/nemotron-3-ultra:free` входить у топ-5 моделей тижня по всьому OpenRouter.
+
+**Value leaders у проєкті вже є.** Опис цього рейтингу на сайті OpenRouter майже дослівно збігається
+з `pipeline/providers/model-scoring.ts` (Artificial Analysis / зважена ціна з перевагою input /
+поріг якості). Просто social до нього не звертається, а аліаси для нього не існують.
+
+**Рішення власника** зафіксовані в §11 дослідження: звести два ранкери в один — так; враховувати
+кеш-тарифи у стелі — так («спробуємо точно»); `:floor` з відсіканням за uptime — так;
+`pricing.overrides` — потім; безкоштовний ярус — додати окремим ярусом у хвості черги.
+Форма ярусу (тригер вмикання, окремий поріг якості) ще обговорюється. Код не змінювався.
+(source: живі `api/v1/credits`, `api/v1/key`, `api/v1/models` 2026-08-30;
+docs `openrouter.ai/docs/api-reference/limits`;
+[research/2026-08-30-openrouter-routing-api](research/2026-08-30-openrouter-routing-api.md))
+
+---
+
+## 2026-08-30 — затверджено план перебудови вибору моделі (7 кроків)
+
+Власник дав добро. План — §12 дослідження + артефакт
+https://claude.ai/code/artifact/dc29256b-77f4-4941-a78d-b6a1710c4650. Код ще не змінювався.
+
+**Знайдено під час обговорення — другий корінь тієї ж проблеми.** Власник спитав про модель
+«ox alpha» з рейтингу OpenRouter. Прямий виклик `stealth/ox-alpha` дав HTTP 404 з поясненням:
+це був cloaked-тест, і модель відкрито як `z-ai/glm-5.3-flash`. Вона має **AA 57.5 за $0.092/M**
+проти нашої критик-лінії `gpt-5.6-terra` з AA 56.6 за $3.00/M — **краща і дешевша в 33 рази**.
+
+Причина, чому система її не бачила: `OPENROUTER_PROVIDER_PRIORITY` — жорсткий список із п'яти
+родин (`openai, anthropic, deepseek, qwen, x-ai`). Родина `z-ai` до нього не входить. Список
+відкидає **225 моделей із 396** ще до будь-якої оцінки якості чи ціни. Серед пропущених також
+`google/gemini-3.7-flash` (AA 56, $1.05/M) і все сімейство gemini.
+
+Це той самий корінь, що й з аліасами: **вибір спирається на назви, а не на дані**.
+
+**План:** 1) кандидати з серверного каталогу через `?category=` + `?sort=`; 2) один ранкер замість
+двох; 3) прибрати аліаси; 4) врахувати кеш-тарифи в ціновій стелі; 5) безкоштовні нарівні з трохи
+нижчим порогом; 6) `:floor` + поріг аптайму для провайдера; 7) попередження про ступінчасту ціну.
+Видаляються `OPENROUTER_PROVIDER_PRIORITY`, `DEFAULT_MODEL_PRIORITY`, тири, патерни `-pro`,
+аліаси і фільтр `:free`.
+
+**Свідомо без квоти 50/50** — ранжуємо за якістю в межах стелі, безкоштовні беруть участь нарівні,
+а правило «writer ≠ critic» саме тягне другу модель з іншої цінової полиці. Жорсткий відсоток
+обрав би слабшу безкоштовну лише заради пропорції. Повернути квоту — одна зміна.
+
+**Застереження, зафіксовані як обов'язкові:** ділення на нуль при нульовій ціні в скорері;
+спільний ліміт 20 запитів/хв на акаунт; частина безкоштовних без JSON-виводу; ризик повільного
+провайдера від `:floor`.
+(source: живі `api/v1/models`, `api/v1/chat/completions` 2026-08-30;
+[research/2026-08-30-openrouter-routing-api §10a, §12](research/2026-08-30-openrouter-routing-api.md))
 
 ---

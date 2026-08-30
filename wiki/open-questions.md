@@ -6,7 +6,7 @@ Summary: усе, що не має відповіді, суперечить са�
 Sources: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
 `.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04),
 `wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`
-Last updated: 2026-08-15
+Last updated: 2026-08-30
 
 ---
 
@@ -23,7 +23,10 @@ Last updated: 2026-08-15
 
 ## 2. Реальні місячні витрати проєкту невідомі
 
-У репозиторії є **параметри оцінки** (`WEEKLY_LLM_*`, `SOCIAL_LLM_*`, `CLOUDFLARE_IMAGE_USD_*`)
+У репозиторії є **параметри оцінки** (`WEEKLY_LLM_*`, `SOCIAL_LLM_*`, `CLOUDFLARE_IMAGE_USD_*`,
+`OPENROUTER_CACHE_HIT_RATE=0.182`, `OPENROUTER_FREE_QUALITY_FLOOR_DELTA`,
+`OPENROUTER_PROVIDER_UPTIME_FLOOR`, `OPENROUTER_PROVIDER_MAX_LATENCY_S`,
+`OPENROUTER_MAX_PRICE_PER_MILLION=1.5`)
 і event-ledger `generation_cost_events` + UI `/admin/costs` (PR #169), але не зведений
 фактичний рахунок провайдерів за місяць. (source: `.env.example`, PR #169)
 
@@ -134,6 +137,21 @@ preference» для Visual Affordance V10. Пакет
 [now](now.md). **Власник рішення:** власник продукту.
 
 </details>
+
+## 9. Weekly OpenRouter writer: cap=1 лишає лише `:free`
+
+Живий каталог 2026-08-30 15:12 UTC: при `WEEKLY_MASTER_OPENROUTER_CANDIDATES=1` (дефолт)
+`weekly.master_writer` бере **лише** `z-ai/glm-5.2:free` (AA 52.6). Моделі з вищою якістю
+на social-mix (`meta/muse-spark-1.2` 56.8, `google/gemini-3.7-flash` 56.0) не проходять
+weekly mix prompt 0.2 / completion 0.8 під стелю $1.5/M. Платний запас існує
+(`openai/gpt-5.6-luna` 52.3 / $0.99/M), але при cap=1 до нього не дійдуть, якщо glm
+відмовить (лімітер 20/хв, JSON, мережа) — тоді фолбек на наступний **провайдер**, не на
+наступну платну модель OpenRouter.
+(source: live `rankModelsForRole` 2026-08-30, `.env.example`,
+[weekly-digest](pipeline/weekly-digest.md))
+
+**Закривається:** власник лишає free-first **або** піднімає `WEEKLY_MASTER_OPENROUTER_CANDIDATES`
+до 2 (glm + luna) і записує рішення сюди. **Власник рішення:** власник продукту.
 
 ## Related pages
 

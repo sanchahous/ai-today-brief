@@ -15,8 +15,12 @@
  */
 
 import { generateWithOpenRouterChain } from '../openrouter-summarize';
-import type { OpenRouterResponseValidator } from '../openrouter-brief-json';
+import {
+  OpenRouterIncompleteJsonError,
+  type OpenRouterResponseValidator,
+} from '../openrouter-brief-json';
 import type { ProviderCallResult } from './types';
+import { openRouterPriceRouting } from '../openrouter-provider-routing';
 
 export interface HttpProviderConfig {
   /** Stable id: 'openrouter' | 'nim' | an owner-defined slug. Used in logs and the cost ledger. */
@@ -29,6 +33,14 @@ export interface HttpProviderConfig {
   extraHeaders?: Record<string, string>;
   /** OpenRouter reports usage.cost; a bare OpenAI-compatible endpoint like NIM does not. */
   reportsCost?: boolean;
+  /**
+   * When false, skip `provider.sort: "price"` even if `id` is `openrouter`.
+   * NIM and other catalog-less HTTP providers never set this.
+   */
+  routeOpenRouterProvider?: boolean;
+  /** Low-uptime provider slugs to ignore. Empty = sort by price with no ignore list. */
+  openRouterIgnoreProviders?: readonly string[];
+  openRouterMaxLatencyS?: number;
 }
 
 /** OpenRouter's own defaults — passing this reproduces generateWithOpenRouterChain's exact current behavior. */
@@ -47,13 +59,44 @@ export const NIM_HTTP_DEFAULTS = {
   reportsCost: false,
 } as const;
 
+function mergeOpenRouterProviderBody(
+  cfg: HttpProviderConfig,
+  callerExtra: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (cfg.id !== 'openrouter' || cfg.routeOpenRouterProvider === false) return callerExtra;
+  const routing = openRouterPriceRouting({
+    ignore: cfg.openRouterIgnoreProviders,
+    maxLatencyS: cfg.openRouterMaxLatencyS,
+  });
+  const callerProvider =
+    callerExtra &&
+    typeof callerExtra.provider === 'object' &&
+    callerExtra.provider !== null &&
+    !Array.isArray(callerExtra.provider)
+      ? (callerExtra.provider as Record<string, unknown>)
+      : {};
+  return {
+    ...callerExtra,
+    provider: { ...routing, ...callerProvider },
+  };
+}
+
 function chatCompletionsUrl(baseUrl: string): string {
   return `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
 }
 
 /** Generic pass-through validator: no domain JSON shape assumed, unlike OpenRouter's brief-JSON default. */
-const passthroughValidator: OpenRouterResponseValidator = (_modelId, rawText, finishReason) => {
-  if (finishReason === 'length') throw new SyntaxError('[http-provider] truncated completion');
+const passthroughValidator: OpenRouterResponseValidator = (modelId, rawText, finishReason) => {
+  // Typed rather than a bare SyntaxError so the chain can tell "ran out of
+  // room" (retry this model wider) from "wrong shape" (try another model).
+  if (finishReason === 'length') {
+    throw new OpenRouterIncompleteJsonError(
+      modelId,
+      rawText.length,
+      'truncated completion',
+      finishReason,
+    );
+  }
   return rawText.trim();
 };
 
@@ -63,7 +106,9 @@ export async function generateWithHttpProviderChain(
   cfg: HttpProviderConfig,
   options?: {
     validateResponse?: OpenRouterResponseValidator;
-    extraBodyForModel?: (modelId: string) => Record<string, unknown> | undefined;
+    extraBodyForModel?: (modelId: string, attempt: number) => Record<string, unknown> | undefined;
+    /** Retry a model once with a wider ceiling when its answer was cut off. */
+    retryTruncatedOnce?: boolean;
   },
 ): Promise<ProviderCallResult> {
   const reportsCost = cfg.reportsCost ?? false;
@@ -79,8 +124,11 @@ export async function generateWithHttpProviderChain(
   // used to re-add `usage: { include: true }` a second time independently of
   // buildChatBody's result -- also fixed, or this override would have been
   // silently discarded there.
-  const extraBodyForModel = (modelId: string) => {
-    const callerExtra = options?.extraBodyForModel?.(modelId);
+  const extraBodyForModel = (modelId: string, attempt: number) => {
+    const callerExtra = mergeOpenRouterProviderBody(
+      cfg,
+      options?.extraBodyForModel?.(modelId, attempt),
+    );
     return reportsCost ? callerExtra : { ...callerExtra, usage: undefined };
   };
   const result = await generateWithOpenRouterChain(prompt, {
@@ -88,6 +136,7 @@ export async function generateWithHttpProviderChain(
     modelQueue: cfg.modelQueue,
     validateResponse: options?.validateResponse ?? passthroughValidator,
     extraBodyForModel,
+    retryTruncatedOnce: options?.retryTruncatedOnce ?? false,
     requestConfig: {
       url: chatCompletionsUrl(cfg.baseUrl),
       headers: cfg.extraHeaders,
@@ -103,5 +152,11 @@ export async function generateWithHttpProviderChain(
       costUsd: reportsCost ? (result.usage?.costUsd ?? null) : null,
       costSource: reportsCost && result.usage ? 'reported' : 'estimated',
     },
+    discarded: (result.discardedUsage ?? []).map((usage) => ({
+      promptTokens: usage.promptTokens,
+      outputTokens: usage.completionTokens,
+      costUsd: reportsCost ? usage.costUsd : null,
+      costSource: reportsCost ? ('reported' as const) : ('estimated' as const),
+    })),
   };
 }

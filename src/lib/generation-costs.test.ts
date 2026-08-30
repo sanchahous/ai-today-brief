@@ -1,8 +1,54 @@
 import { describe, expect, it } from 'vitest';
 import {
   aggregateGenerationCosts,
+  DEFAULT_DAILY_GENERATION_BUDGET_USD,
   illustrationBudgetFromLedger,
+  meteredSpendUsd,
+  resolveDailyGenerationBudgetUsd,
 } from './generation-costs';
+
+describe('meteredSpendUsd', () => {
+  it('sums real money and ignores subscription work', () => {
+    expect(
+      meteredSpendUsd([
+        { cost_usd: 0.41, cost_source: 'reported' },
+        { cost_usd: '0.24', cost_source: 'reported' },
+        { cost_usd: 0.0149, cost_source: 'estimated' },
+        // Claude CLI draws down a plan allowance, not the OpenRouter balance.
+        { cost_usd: 0, cost_source: 'subscription' },
+      ]),
+    ).toBeCloseTo(0.6649, 6);
+  });
+
+  it('treats malformed costs as zero rather than NaN-poisoning the total', () => {
+    expect(
+      meteredSpendUsd([
+        { cost_usd: 0.5, cost_source: 'reported' },
+        { cost_usd: Number.NaN, cost_source: 'reported' },
+        { cost_usd: -3, cost_source: 'reported' },
+      ]),
+    ).toBe(0.5);
+  });
+
+  it('is empty-safe', () => {
+    expect(meteredSpendUsd([])).toBe(0);
+  });
+});
+
+describe('resolveDailyGenerationBudgetUsd', () => {
+  it('defaults to the owner-set $1 ceiling', () => {
+    expect(DEFAULT_DAILY_GENERATION_BUDGET_USD).toBe(1);
+  });
+
+  it('reads an owner override and falls back on anything unusable', () => {
+    expect(resolveDailyGenerationBudgetUsd({ DAILY_GENERATION_BUDGET_USD: '1.5' })).toBe(1.5);
+    for (const raw of [undefined, '', 'abc', '0', '-2']) {
+      expect(resolveDailyGenerationBudgetUsd({ DAILY_GENERATION_BUDGET_USD: raw })).toBe(
+        DEFAULT_DAILY_GENERATION_BUDGET_USD,
+      );
+    }
+  });
+});
 
 describe('aggregateGenerationCosts', () => {
   it('sums by kind, provider, scope and model', () => {

@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import {
-  classifyOpenRouterModelTier,
-  sortModelQueueByTier,
-  hasOpenRouterProPattern,
-  hasOpenRouterVersionPattern,
-  parseOpenRouterFamilyGeneration,
-  parseOpenRouterVersionScore,
-  openRouterPatternRankScore,
-  rankOpenRouterModelIds,
-  retainCurrentOpenRouterGenerations,
+  isEligibleOpenRouterModel,
+  isFreeOpenRouterModel,
+  isOpenRouterAliasId,
   isUnstableOpenRouterModelId,
+  modelHasPriceOverrides,
+  openRouterEndpointsUrl,
+  openRouterModelAttemptCap,
+  openRouterModelFamily,
+  openRouterModelSupportsJson,
+  openRouterModelsUrl,
   type OpenRouterModelRecord,
 } from './openrouter-models';
 
@@ -17,250 +17,104 @@ function makeModel(
   id: string,
   overrides: Partial<OpenRouterModelRecord> = {},
 ): OpenRouterModelRecord {
-  return { id, context_length: 128_000, ...overrides };
+  return { id, context_length: 128_000, architecture: { modality: 'text' }, ...overrides };
 }
 
-describe('classifyOpenRouterModelTier', () => {
-  it('classifies deepseek pro variants as deepseek_pro', () => {
-    expect(classifyOpenRouterModelTier('deepseek/deepseek-v4-pro')).toBe('deepseek_pro');
-    expect(classifyOpenRouterModelTier('deepseek/deepseek-v3.1')).toBe('deepseek_pro');
-    expect(classifyOpenRouterModelTier('deepseek/deepseek-r1')).toBe('deepseek_pro');
-    expect(classifyOpenRouterModelTier('deepseek/deepseek-prover-v2')).toBe('deepseek_pro');
+describe('openRouterModelsUrl', () => {
+  it('returns the bare catalog URL without a query', () => {
+    expect(openRouterModelsUrl()).toBe('https://openrouter.ai/api/v1/models');
   });
 
-  it('classifies deepseek-chat as deepseek_chat', () => {
-    expect(classifyOpenRouterModelTier('deepseek/deepseek-chat')).toBe('deepseek_chat');
-    expect(classifyOpenRouterModelTier('deepseek/deepseek-chat-v2.5')).toBe('deepseek_chat');
-  });
-
-  it('classifies qwen models as qwen', () => {
-    expect(classifyOpenRouterModelTier('qwen/qwen3-235b-a22b')).toBe('qwen');
-    expect(classifyOpenRouterModelTier('qwen/qwen-max')).toBe('qwen');
-    expect(classifyOpenRouterModelTier('qwen/qwen-plus')).toBe('qwen');
-  });
-
-  it('classifies other models as other', () => {
-    expect(classifyOpenRouterModelTier('openai/gpt-4o')).toBe('other');
-    expect(classifyOpenRouterModelTier('anthropic/claude-sonnet-4')).toBe('other');
-    expect(classifyOpenRouterModelTier('meta-llama/llama-3.3-70b-instruct')).toBe('other');
-  });
-});
-
-describe('sortModelQueueByTier', () => {
-  it('orders deepseek_pro → deepseek_chat → qwen → other', () => {
-    const input = [
-      'openai/gpt-4o',
-      'qwen/qwen3-235b',
-      'deepseek/deepseek-chat',
-      'deepseek/deepseek-v4-pro',
-    ];
-    const sorted = sortModelQueueByTier(input);
-    expect(sorted[0]).toBe('deepseek/deepseek-v4-pro');
-    expect(sorted[1]).toBe('deepseek/deepseek-chat');
-    expect(sorted[2]).toBe('qwen/qwen3-235b');
-    expect(sorted[3]).toBe('openai/gpt-4o');
-  });
-
-  it('deduplicates ids', () => {
-    const sorted = sortModelQueueByTier([
-      'deepseek/deepseek-v3',
-      'deepseek/deepseek-v3',
-      'deepseek/deepseek-v3',
-    ]);
-    expect(sorted).toHaveLength(1);
-  });
-
-  it('preserves within-tier order from input', () => {
-    const input = ['deepseek/deepseek-v3.1', 'deepseek/deepseek-v4-pro'];
-    const sorted = sortModelQueueByTier(input);
-    // both are deepseek_pro tier; input order preserved within tier
-    expect(sorted).toEqual(['deepseek/deepseek-v3.1', 'deepseek/deepseek-v4-pro']);
-  });
-});
-
-describe('hasOpenRouterProPattern', () => {
-  it('returns true for ids containing -pro', () => {
-    expect(hasOpenRouterProPattern('deepseek/deepseek-v4-pro')).toBe(true);
-    expect(hasOpenRouterProPattern('vendor/model-pro-v2')).toBe(true);
-  });
-
-  it('returns false without -pro', () => {
-    expect(hasOpenRouterProPattern('deepseek/deepseek-v3')).toBe(false);
-    expect(hasOpenRouterProPattern('deepseek/deepseek-chat')).toBe(false);
-  });
-});
-
-describe('hasOpenRouterVersionPattern', () => {
-  it('detects -vX.Y patterns', () => {
-    expect(hasOpenRouterVersionPattern('deepseek/deepseek-v3.1')).toBe(true);
-    expect(hasOpenRouterVersionPattern('vendor/model-v4')).toBe(true);
-    expect(hasOpenRouterVersionPattern('vendor/model-v10.2')).toBe(true);
-  });
-
-  it('returns false without version segment', () => {
-    expect(hasOpenRouterVersionPattern('deepseek/deepseek-pro')).toBe(false);
-    expect(hasOpenRouterVersionPattern('openai/gpt-4o')).toBe(false);
-  });
-});
-
-describe('parseOpenRouterVersionScore', () => {
-  it('parses major-only versions', () => {
-    expect(parseOpenRouterVersionScore('vendor/model-v4')).toBe(4.0);
-    expect(parseOpenRouterVersionScore('vendor/model-v10')).toBe(10.0);
-  });
-
-  it('parses major.minor versions', () => {
-    expect(parseOpenRouterVersionScore('vendor/model-v3.2')).toBeCloseTo(3.02);
-    expect(parseOpenRouterVersionScore('vendor/model-v3.1')).toBeCloseTo(3.01);
-  });
-
-  it('returns null when no version pattern', () => {
-    expect(parseOpenRouterVersionScore('vendor/model-pro')).toBeNull();
-    expect(parseOpenRouterVersionScore('openai/gpt-4o')).toBeNull();
-  });
-});
-
-describe('current OpenRouter generations', () => {
-  it('parses family versions across providers', () => {
-    expect(parseOpenRouterFamilyGeneration('deepseek/deepseek-v4-pro')).toMatchObject({
-      family: 'deepseek/deepseek',
-      major: 4,
-      version: 4,
-    });
-    expect(parseOpenRouterFamilyGeneration('qwen/qwen3.7-max')).toMatchObject({
-      family: 'qwen/qwen',
-      major: 3,
-      version: 3.7,
-    });
-    expect(parseOpenRouterFamilyGeneration('openai/gpt-5.6-sol')).toMatchObject({
-      family: 'openai/gpt',
-      major: 5,
-      version: 5.6,
-    });
-  });
-
-  it('removes previous majors and keeps moving latest aliases', () => {
-    const current = retainCurrentOpenRouterGenerations([
-      makeModel('deepseek/deepseek-v4-pro'),
-      makeModel('deepseek/deepseek-v3.2'),
-      makeModel('deepseek/deepseek-r1'),
-      makeModel('openai/gpt-5.6-sol'),
-      makeModel('openai/gpt-4o'),
-      makeModel('~openai/gpt-latest'),
-    ]).map((entry) => entry.id);
-    expect(current).toContain('deepseek/deepseek-v4-pro');
-    expect(current).not.toContain('deepseek/deepseek-v3.2');
-    expect(current).not.toContain('deepseek/deepseek-r1');
-    expect(current).not.toContain('openai/gpt-4o');
-    expect(current).toContain('~openai/gpt-latest');
-  });
-});
-
-describe('openRouterPatternRankScore', () => {
-  it('gives lower (better) score to -pro models', () => {
-    const proScore = openRouterPatternRankScore('deepseek/v4-pro');
-    const plainScore = openRouterPatternRankScore('deepseek/deepseek-chat');
-    expect(proScore).toBeLessThan(plainScore);
-  });
-
-  it('gives lower score to higher versioned models', () => {
-    const v4score = openRouterPatternRankScore('vendor/model-v4');
-    const v3score = openRouterPatternRankScore('vendor/model-v3');
-    expect(v4score).toBeLessThan(v3score);
-  });
-
-  it('penalizes distill variants', () => {
-    const distillScore = openRouterPatternRankScore('vendor/model-distill');
-    const normalScore = openRouterPatternRankScore('vendor/model-chat');
-    expect(distillScore).toBeGreaterThan(normalScore);
-  });
-});
-
-describe('isUnstableOpenRouterModelId', () => {
-  it('returns true for experimental/preview/beta ids', () => {
-    expect(isUnstableOpenRouterModelId('vendor/model-exp')).toBe(true);
-    expect(isUnstableOpenRouterModelId('vendor/model-preview')).toBe(true);
-    expect(isUnstableOpenRouterModelId('vendor/model-beta')).toBe(true);
-    expect(isUnstableOpenRouterModelId('vendor/experimental-v1')).toBe(true);
-  });
-
-  it('returns false for stable ids', () => {
-    expect(isUnstableOpenRouterModelId('deepseek/deepseek-v3')).toBe(false);
-    expect(isUnstableOpenRouterModelId('qwen/qwen-max')).toBe(false);
-  });
-});
-
-describe('rankOpenRouterModelIds', () => {
-  const models: OpenRouterModelRecord[] = [
-    makeModel('openai/gpt-4o'),
-    makeModel('qwen/qwen3-235b-a22b'),
-    makeModel('deepseek/deepseek-chat'),
-    makeModel('deepseek/deepseek-v4-pro'),
-    makeModel('deepseek/deepseek-v3.1'),
-    makeModel('meta-llama/llama-3.3-70b-instruct:free'),
-    makeModel('vendor/model-exp'),
-    makeModel('vendor/vision-pro'),
-    makeModel('deepseek/deepseek-r1'),
-  ];
-
-  it('filters out :free models', () => {
-    const ranked = rankOpenRouterModelIds(models);
-    expect(ranked).not.toContain('meta-llama/llama-3.3-70b-instruct:free');
-  });
-
-  it('filters out :batch models', () => {
-    const withBatch = [...models, makeModel('openai/gpt-5.6-luna:batch')];
-    const ranked = rankOpenRouterModelIds(withBatch);
-    expect(ranked).not.toContain('openai/gpt-5.6-luna:batch');
-  });
-
-  it('filters out experimental models', () => {
-    const ranked = rankOpenRouterModelIds(models);
-    expect(ranked).not.toContain('vendor/model-exp');
-  });
-
-  it('filters out distill models from production fallback', () => {
-    const ranked = rankOpenRouterModelIds(models);
-    expect(ranked).not.toContain('deepseek/deepseek-r1-distill-llama-70b');
-  });
-
-  it('filters out vision models', () => {
-    const ranked = rankOpenRouterModelIds(models);
-    expect(ranked).not.toContain('vendor/vision-pro');
-  });
-
-  it('places deepseek_pro models first', () => {
-    const ranked = rankOpenRouterModelIds(models);
-    const first = ranked[0]!;
-    const tier = classifyOpenRouterModelTier(first);
-    expect(tier).toBe('deepseek_pro');
-  });
-
-  it('places deepseek_pro models before qwen', () => {
-    const ranked = rankOpenRouterModelIds(models);
-    const qwenIdx = ranked.findIndex((id) => id.includes('qwen'));
-    const deepseekProIdx = ranked.findIndex(
-      (id) => classifyOpenRouterModelTier(id) === 'deepseek_pro',
+  it('appends category and sort without nested quantifiers', () => {
+    expect(
+      openRouterModelsUrl({ category: 'marketing', sort: 'intelligence-high-to-low' }),
+    ).toBe(
+      'https://openrouter.ai/api/v1/models?category=marketing&sort=intelligence-high-to-low',
     );
-    expect(deepseekProIdx).toBeLessThan(qwenIdx);
+  });
+});
+
+describe('openRouterEndpointsUrl', () => {
+  it('builds the per-model endpoints path', () => {
+    expect(openRouterEndpointsUrl('z-ai/glm-5.3-flash')).toBe(
+      'https://openrouter.ai/api/v1/models/z-ai/glm-5.3-flash/endpoints',
+    );
   });
 
-  it('filters out small context models (< 32k)', () => {
-    const smallCtx = [...models, makeModel('vendor/tiny-model', { context_length: 4096 })];
-    const ranked = rankOpenRouterModelIds(smallCtx);
-    expect(ranked).not.toContain('vendor/tiny-model');
+  it('rejects aliases and malformed ids', () => {
+    expect(openRouterEndpointsUrl('~openai/gpt-latest')).toBeNull();
+    expect(openRouterEndpointsUrl('no-slash')).toBeNull();
+  });
+});
+
+describe('isEligibleOpenRouterModel', () => {
+  it('keeps a current paid text model', () => {
+    expect(isEligibleOpenRouterModel(makeModel('z-ai/glm-5.3-flash'))).toBe(true);
   });
 
-  it('drops unversioned DeepSeek chat when the current numbered generation exists', () => {
-    const subset = [makeModel('deepseek/deepseek-chat'), makeModel('deepseek/deepseek-v4-pro')];
-    const ranked = rankOpenRouterModelIds(subset);
-    expect(ranked[0]).toBe('deepseek/deepseek-v4-pro');
-    expect(ranked).not.toContain('deepseek/deepseek-chat');
+  it('keeps :free models — the limiter and quality floor handle them', () => {
+    expect(isEligibleOpenRouterModel(makeModel('z-ai/glm-5.2:free'))).toBe(true);
   });
 
-  it('returns empty array when all models are filtered', () => {
-    const filtered = [makeModel('vendor/exp-model-exp'), makeModel('vendor/free-model:free')];
-    const ranked = rankOpenRouterModelIds(filtered);
-    expect(ranked).toHaveLength(0);
+  it('drops moving aliases, :batch, distill, vision, unstable, expired, tiny context', () => {
+    expect(isEligibleOpenRouterModel(makeModel('~openai/gpt-latest'))).toBe(false);
+    expect(isEligibleOpenRouterModel(makeModel('openai/gpt-5.6-luna:batch'))).toBe(false);
+    expect(isEligibleOpenRouterModel(makeModel('deepseek/deepseek-r1-distill-llama-70b'))).toBe(
+      false,
+    );
+    expect(isEligibleOpenRouterModel(makeModel('vendor/vision-pro'))).toBe(false);
+    expect(isEligibleOpenRouterModel(makeModel('vendor/model-exp'))).toBe(false);
+    expect(isEligibleOpenRouterModel(makeModel('vendor/ok', { expiration_date: '2026-01-01' }))).toBe(
+      false,
+    );
+    expect(isEligibleOpenRouterModel(makeModel('vendor/tiny', { context_length: 4096 }))).toBe(
+      false,
+    );
+  });
+});
+
+describe('id helpers', () => {
+  it('detects aliases, free models and families', () => {
+    expect(isOpenRouterAliasId('~anthropic/claude-fable-latest')).toBe(true);
+    expect(isOpenRouterAliasId('anthropic/claude-sonnet-4.5')).toBe(false);
+    expect(isFreeOpenRouterModel('z-ai/glm-5.2:free')).toBe(true);
+    expect(openRouterModelFamily('z-ai/glm-5.3-flash')).toBe('z-ai');
+    expect(openRouterModelFamily('~openai/gpt-latest')).toBe('openai');
+  });
+
+  it('treats missing supported_parameters as JSON-capable', () => {
+    expect(openRouterModelSupportsJson(makeModel('vendor/a'))).toBe(true);
+    expect(
+      openRouterModelSupportsJson(
+        makeModel('vendor/b', { supported_parameters: ['temperature'] }),
+      ),
+    ).toBe(false);
+    expect(
+      openRouterModelSupportsJson(
+        makeModel('vendor/c', { supported_parameters: ['structured_outputs'] }),
+      ),
+    ).toBe(true);
+  });
+
+  it('flags stepped pricing.overrides', () => {
+    expect(modelHasPriceOverrides(makeModel('vendor/a'))).toBe(false);
+    expect(
+      modelHasPriceOverrides(makeModel('vendor/b', { pricing: { overrides: [{ start: 272000 }] } })),
+    ).toBe(true);
+  });
+
+  it('still marks experimental ids unstable without flagging expensive', () => {
+    expect(isUnstableOpenRouterModelId('vendor/model-exp')).toBe(true);
+    expect(isUnstableOpenRouterModelId('vendor/exp-preview')).toBe(true);
+    expect(isUnstableOpenRouterModelId('deepseek/deepseek-v3')).toBe(false);
+    expect(isUnstableOpenRouterModelId('vendor-b/expensive-flagship')).toBe(false);
+  });
+});
+
+describe('openRouterModelAttemptCap', () => {
+  it('defaults to 6 and rejects non-positive values', () => {
+    expect(openRouterModelAttemptCap({})).toBe(6);
+    expect(openRouterModelAttemptCap({ OPENROUTER_MAX_MODEL_ATTEMPTS: '2' })).toBe(2);
+    expect(openRouterModelAttemptCap({ OPENROUTER_MAX_MODEL_ATTEMPTS: '0' })).toBe(6);
   });
 });

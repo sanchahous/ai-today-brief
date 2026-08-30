@@ -5,7 +5,7 @@ const OPENROUTER_CATALOG = [
     id: 'vendor/critic-model',
     context_length: 128_000,
     architecture: { modality: 'text' },
-    pricing: { prompt: '0.000001', completion: '0.000006' },
+    pricing: { prompt: '0.0000003', completion: '0.000001' },
     benchmarks: { artificial_analysis: { intelligence_index: 60 } },
   },
   {
@@ -14,12 +14,15 @@ const OPENROUTER_CATALOG = [
     id: 'other-vendor/writer-model',
     context_length: 128_000,
     architecture: { modality: 'text' },
-    pricing: { prompt: '0.000001', completion: '0.000006' },
+    pricing: { prompt: '0.0000003', completion: '0.000001' },
     benchmarks: { artificial_analysis: { intelligence_index: 60 } },
   },
 ];
 
-vi.mock('../../../pipeline/openrouter-models', () => ({ fetchOpenRouterModels: vi.fn() }));
+vi.mock('../../../pipeline/openrouter-models', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../pipeline/openrouter-models')>();
+  return { ...actual, fetchOpenRouterModels: vi.fn() };
+});
 vi.mock('../../../pipeline/openrouter-summarize', () => ({
   generateWithOpenRouterChain: vi.fn(),
 }));
@@ -748,7 +751,7 @@ describe('critic model rotation', () => {
       id,
       context_length: 128_000,
       architecture: { modality: 'text' as const },
-      pricing: { prompt: promptRate, completion: '0.000006' },
+      pricing: { prompt: promptRate, completion: '0.000001' },
       benchmarks: { artificial_analysis: { intelligence_index: 60 } },
     };
   }

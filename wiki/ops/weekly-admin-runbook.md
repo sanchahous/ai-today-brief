@@ -8,8 +8,9 @@ latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22
 Telegram block-structure gate 2026-08-28, Fixes & blockers + warnings do not hold socials 2026-08-28,
 social remaining issues are warnings 2026-08-28, missing `ship_weekly_digest` migration +
 carry-forward gaps + LinkedIn first_comment form bug + cover-upload cascade + WebVTT
-fallback, live release of `ai-weekly-2026-08-16` 2026-08-28, revision Stage 0 2026-08-29
-Last updated: 2026-08-29
+fallback, live release of `ai-weekly-2026-08-16` 2026-08-28, revision Stage 0 2026-08-29,
+каталожний вибір OpenRouter 2026-08-30
+Last updated: 2026-08-30
 
 ---
 
@@ -308,7 +309,8 @@ scene. Він попереджає про `ambiguous_visual_story`, але не 
 прохід не завершився або є active QA blocker, файл не machine-attest-иться й лишається на ручному
 review. У режимі `render` critic також двостадійний: спочатку пікселі, потім claim. Яка модель зараз
 пише master — дивись `/admin/providers`
-секцію **Model ranking** (добовий OpenRouter rerank, F3), не Visuals.
+секцію **Model ranking** (добовий OpenRouter rerank, F3; з 2026-08-30 черга —
+якість під стелею з живого каталогу, не name-heuristics), не Visuals.
 Скільки коштують новини vs промпти+QA — `/admin/costs` секція **Illustration budget** (G),
 з ledger, не з лімітів політики.
 Semantic contract у **Illustration prompt**

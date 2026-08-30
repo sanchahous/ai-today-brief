@@ -5,7 +5,8 @@
  */
 
 import { logError, logEvent, serializeErrorDetails } from './log';
-import { resolveOpenRouterModelQueue } from './openrouter-models';
+import { isFreeOpenRouterModel, resolveOpenRouterModelQueue } from './openrouter-models';
+import { consumeFreeModelSlot } from './openrouter-free-limiter';
 import {
   OpenRouterStallError,
   resolveOpenRouterAdaptiveTimeouts,
@@ -31,6 +32,18 @@ export type OpenRouterSummarizeResult = {
   model: string;
   /** Real billed cost from OpenRouter, when the provider reported it. */
   usage: OpenRouterUsage | null;
+  /**
+   * Billed usage from queue attempts whose output we threw away (rejected
+   * JSON, truncation, stall, rate limit). OpenRouter charges for those tokens
+   * exactly like a successful call, so leaving them out of the ledger is not
+   * a rounding error: on 2026-08-28 OpenRouter billed 190 calls / $8.74 while
+   * `generation_cost_events` recorded 35 / $0.65, because only the model that
+   * finally answered was ever booked. Callers must add these to the ledger.
+   *
+   * Optional only so existing test doubles of this result stay valid — the
+   * real chain below always sets it, empty array included.
+   */
+  discardedUsage?: OpenRouterUsage[];
 };
 
 export const OPENROUTER_CHAT_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -216,10 +229,25 @@ export async function generateWithOpenRouterChain(
     apiKey?: string;
     modelQueue?: string[];
     resolveQueue?: (key: string) => Promise<string[]>;
-    callModel?: (key: string, modelId: string, p: string) => Promise<string>;
+    callModel?: (key: string, modelId: string, p: string, attempt?: number) => Promise<string>;
     validateResponse?: OpenRouterResponseValidator;
-    /** Per-model extra request-body fields (e.g. `{ reasoning: { effort: 'low' } }`). */
-    extraBodyForModel?: (modelId: string) => Record<string, unknown> | undefined;
+    /**
+     * Per-model extra request-body fields (e.g. `{ reasoning: { effort: 'low' } }`).
+     * `attempt` is 1 for a model's first try and 2 when `retryTruncatedOnce`
+     * re-queues it after a cut-off answer, so the caller can widen its ceiling.
+     */
+    extraBodyForModel?: (modelId: string, attempt: number) => Record<string, unknown> | undefined;
+    /**
+     * When a model's answer is cut off by max_tokens, retry the SAME model once
+     * before dropping to the next one.
+     *
+     * Truncation used to burn the cheap model and then escalate: on 2026-08-28
+     * a writer call was cut off for $0.025 and the queue fell straight through
+     * to a $10/M model that cost $0.34 for the same prompt. Re-asking the model
+     * that was already working, with room to finish, is both cheaper and more
+     * likely to return the shape the validator wants.
+     */
+    retryTruncatedOnce?: boolean;
     /**
      * Points this OpenAI-compatible client at a different provider (e.g.
      * NVIDIA NIM) instead of OpenRouter. Omit both for OpenRouter's exact
@@ -233,46 +261,85 @@ export async function generateWithOpenRouterChain(
     throw new Error('[openrouter] OPEN_ROUTER_API_KEY is not set');
   }
 
-  const queue =
-    options.modelQueue ??
-    (await (options.resolveQueue ?? ((key) => resolveOpenRouterModelQueue(key)))(apiKey));
+  // Copied, never aliased: the truncation retry splices a repeat entry in and
+  // must not mutate the caller's array.
+  const queue = [
+    ...(options.modelQueue ??
+      (await (options.resolveQueue ?? ((key) => resolveOpenRouterModelQueue(key)))(apiKey))),
+  ];
 
   const validateResponse = options.validateResponse ?? validateOpenRouterBriefJson;
-  let lastUsage: OpenRouterUsage | null;
+  // Usage reported by the attempt currently in flight. Held in an array rather
+  // than a `let` because the only writer is the onUsage callback below:
+  // TypeScript cannot see a closure's assignment, so a plain `let` reset to
+  // `null` before the call stays narrowed to `null` inside the catch.
+  const attemptUsage: OpenRouterUsage[] = [];
   const callModel =
     options.callModel ??
     /* v8 ignore next */
-    ((key, modelId, p) =>
+    ((key, modelId, p, attempt = 1) =>
       callOpenRouterAdaptive(
         key,
         modelId,
         p,
         validateResponse,
         (usage) => {
-          lastUsage = usage;
+          attemptUsage.push(usage);
         },
-        options.extraBodyForModel?.(modelId),
+        options.extraBodyForModel?.(modelId, attempt),
         options.requestConfig,
       ));
 
   const attemptErrors: Array<Record<string, unknown>> = [];
+  const discardedUsage: OpenRouterUsage[] = [];
+  /** How many times each model id has been tried, for `extraBodyForModel`. */
+  const modelAttempts = new Map<string, number>();
   let lastError: unknown;
   const limitBackoffMs = resolveOpenRouterLimitBackoffMs();
 
   for (let i = 0; i < queue.length; i++) {
     const modelId = queue[i]!;
+    if (isFreeOpenRouterModel(modelId) && !consumeFreeModelSlot()) {
+      logEvent('warn', 'summarize', 'OpenRouter free-model rate limit — skipping to next', {
+        model: modelId,
+        attempt: i + 1,
+        queue_length: queue.length,
+      });
+      continue;
+    }
+    const modelAttempt = (modelAttempts.get(modelId) ?? 0) + 1;
+    modelAttempts.set(modelId, modelAttempt);
     logEvent('info', 'summarize', 'OpenRouter trying model', {
       model: modelId,
       attempt: i + 1,
+      model_attempt: modelAttempt,
       queue_length: queue.length,
       prompt_chars: prompt.length,
     });
     try {
-      lastUsage = null;
-      const text = await callModel(apiKey, modelId, prompt);
-      return { text, provider: 'openrouter', model: modelId, usage: lastUsage };
+      attemptUsage.length = 0;
+      const text = await callModel(apiKey, modelId, prompt, modelAttempt);
+      return {
+        text,
+        provider: 'openrouter',
+        model: modelId,
+        usage: attemptUsage.at(-1) ?? null,
+        discardedUsage,
+      };
     } catch (error) {
       lastError = error;
+      // The call was billed even though we are throwing its answer away —
+      // record it before the next attempt clears the slot.
+      const billed = attemptUsage.at(-1);
+      if (billed) {
+        discardedUsage.push(billed);
+        logEvent('warn', 'summarize', 'OpenRouter attempt billed but discarded', {
+          model: modelId,
+          index: i + 1,
+          cost_usd: billed.costUsd,
+          prompt_tokens: billed.promptTokens,
+        });
+      }
       const limitKind = isOpenRouterLimitError(error) ? error.kind : undefined;
       const incomplete = isOpenRouterIncompleteJsonError(error);
       const entry: Record<string, unknown> = {
@@ -289,6 +356,23 @@ export async function generateWithOpenRouterChain(
         entry.provider_code = error.providerCode;
       }
       attemptErrors.push(entry);
+
+      // Checked before the generic incomplete-JSON branch below: a cut-off
+      // answer means the model ran out of room, not that it is a bad model.
+      if (
+        options.retryTruncatedOnce &&
+        modelAttempt === 1 &&
+        isOpenRouterIncompleteJsonError(error) &&
+        error.finishReason === 'length'
+      ) {
+        queue.splice(i + 1, 0, modelId);
+        logEvent('warn', 'summarize', 'OpenRouter answer cut off — retrying same model wider', {
+          model: modelId,
+          index: i + 1,
+          response_chars: error.responseChars,
+        });
+        continue;
+      }
 
       if (isOpenRouterIncompleteJsonError(error)) {
         logEvent('warn', 'summarize', 'OpenRouter incomplete JSON — trying next model', {
@@ -334,6 +418,9 @@ export async function generateWithOpenRouterChain(
     models_tried: queue.length,
     attempt_history: attemptErrors,
     limit_hint: limitHint,
+    // Nothing usable came back, but every attempt above still went on the bill.
+    discarded_calls: discardedUsage.length,
+    discarded_cost_usd: discardedUsage.reduce((sum, usage) => sum + (usage.costUsd ?? 0), 0),
   });
 
   const base =
