@@ -156,6 +156,7 @@ Last updated: 2026-08-29
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [research/2026-08-05-professional-ai-video-guide](research/2026-08-05-professional-ai-video-guide.md) | Гайд ціна/якість AI-відео: діагноз німого слайдшоу, драбина L0–L3, i2v/аватар сервіси | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
+| ✅ [research/2026-08-30-openrouter-routing-api](research/2026-08-30-openrouter-routing-api.md) | Перевірений живими запитами API-фактаж OpenRouter: категорії, повний enum `sort`, per-provider `/endpoints` з `discount`/uptime/кеш-тарифами, суфікси `:floor`/`:nitro`/`:exacto`; чому сортування за дисконтом обирає дорожче; **пропозиція** дворівневого вибору (не ухвалена) | живі запити до `api/v1/*` + тестові виклики 2026-08-30 |
 
 Інше — сюди йдуть summary-сторінки, згенеровані з `raw/` за
 [ingest-workflow](architecture/agentic-workflow.md#ingest).
