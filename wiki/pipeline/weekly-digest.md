@@ -25,7 +25,9 @@ Approve hidden because `revision_id` mismatch now shows an amber banner. Preflig
 splits `social_variant_not_ready` (text) from `social_assets_stale`. Release
 **Current blockers** is the live `weekly_digest_preflight` payload. Approve/Ship/
 Schedule/Pause redirect with `save_error` instead of throwing `#441`.
-`npm run migrations:check` compares origin/main to prod `schema_migrations`.
+`npm run migrations:check` compares origin/main to prod `schema_migrations`
+by filename version **or** `name` slug — apply-clock versions do not match
+the `YYYYMMDDHHMMSS_` prefix. Watcher starts at `20260801000000`.
 (source: [audits/2026-08-29-weekly-digest-revision-architecture-review](../audits/2026-08-29-weekly-digest-revision-architecture-review.md),
 `supabase/migrations/20260829130000_weekly_revision_stage0_carry_forward.sql`)
 

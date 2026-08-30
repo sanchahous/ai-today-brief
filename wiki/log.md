@@ -6,6 +6,14 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-08-30
 
+## 2026-08-30 — migrations:check звіряє name, не apply-clock
+
+`schema_migrations.version` часто є часом apply, не префіксом файлу.
+RPC `list_applied_schema_migrations` тепер повертає і `name`; гейт дивиться
+файли з `20260801000000`. Коригує хибні «усі міграції відсутні на prod».
+Лічильник у [index](index.md): 99 → 100 міграцій.
+(source: `src/lib/supabase-migration-drift.ts`, live prod 2026-08-30)
+
 ## 2026-08-30 — OpenRouter поповнено; сухий прогін черг
 
 Власник: рахунок поповнено. `GET /api/v1/credits` 15:12 UTC: куплено $60,

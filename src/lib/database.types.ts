@@ -2525,7 +2525,7 @@ export type Database = {
       };
       list_applied_schema_migrations: {
         Args: Record<PropertyKey, never>;
-        Returns: { version: string }[];
+        Returns: { name: string; version: string }[];
       };
       initialize_weekly_digest_revision_from_legacy: {
         Args: { p_weekly_digest_id: string };
