@@ -580,13 +580,17 @@ function promptFor(
 ) {
   const article = input.locale === 'uk' ? input.bundle.uk : input.bundle.en;
   const voice = input.locale === 'uk' ? VOICE_UK : VOICE_EN;
-  return `You are a senior social editor for AI Today Brief. Adapt the approved master into native ${input.channel} copy for builders, founders and AI decision-makers. Do not list all headlines. Do not truncate or use ellipses. Use only claim IDs and facts already present in the master.
+  // Block order is load-bearing for prompt caching: providers reuse the
+  // computed prefix only up to the first byte that differs, so everything
+  // stable for the whole digest comes first, then the per-channel block, then
+  // the per-round volatile blocks. The previous order put REPAIR REQUIRED and
+  // COPY ALREADY USED in the middle, which pushed the single largest stable
+  // block -- the full article JSON -- outside the cacheable prefix on every
+  // repair round. See wiki/audits/2026-08-29-openrouter-spend-leak.md §6.4.
+  return `You are a senior social editor for AI Today Brief. Adapt the approved master into native social copy for builders, founders and AI decision-makers. Do not list all headlines. Do not truncate or use ellipses. Use only claim IDs and facts already present in the master.
 
 VOICE
 ${voice}
-
-CHANNEL CONTRACT: ${CHANNEL_CONTRACT[input.channel]}
-TRACKED URL: ${input.trackedUrl}
 
 WHAT THIS COPY MUST GIVE THE READER
 Reporting the news accurately is the floor, not the goal. Every adaptation must leave the reader holding something they can act on this week: a named model, tool, endpoint, flag, threshold or licence term, the concrete step to use it, and the cost, limit or failure mode attached to it. When the fact snapshot carries a practical example for a story -- who would run this, on what stack, at what price -- build the copy on that example instead of restating the headline. Prefer facts that describe what a team can now do over facts that only describe what happened. A post that a reader finishes without knowing what to try, change or check fails this contract even when every number in it is correct.
@@ -594,22 +598,23 @@ Reporting the news accurately is the floor, not the goal. Every adaptation must 
 APPROVED FACT SNAPSHOT
 ${input.sourceFacts.map((fact) => `- ${fact}`).join('\n')}
 
+APPROVED ARTICLE
+${JSON.stringify(article)}
+
+CHANNEL: ${input.channel}
+CHANNEL CONTRACT: ${CHANNEL_CONTRACT[input.channel]}
+TRACKED URL: ${input.trackedUrl}
+
+Read the approved article above and decide your own angle for this channel's audience -- the single most compelling entry point, not a recap of every headline. Write it as a short (3-8 word) label in "angle". Then create THREE hook candidates built on that angle that are genuinely different from each other in opening, tone or emphasis -- not the same sentence reworded. Never open with a generic AI-tell phrase ("in today's fast-moving AI landscape", "it's worth noting", "game-changer") or a leader-briefing frame ("for product and security leaders") -- open on the concrete fact or scene. Put all candidates inside the JSON "text" string and separate them with <CANDIDATE>. For Threads use <PART> inside each candidate. For Instagram use the tagged 7-slide contract inside each candidate. For X and LinkedIn return the tracked URL in "firstComment"; for other channels put it only where the contract permits. Return strict JSON only: {"angle":"","text":"candidate 1<CANDIDATE>candidate 2<CANDIDATE>candidate 3","firstComment":""}.
 ${
   input.avoidCopies?.length
-    ? `COPY ALREADY USED ON OTHER ${input.locale.toUpperCase()} CHANNELS — choose a materially different hook and structure:\n${input.avoidCopies.map(copyForAudit).join('\n---\n')}`
+    ? `\nCOPY ALREADY USED ON OTHER ${input.locale.toUpperCase()} CHANNELS — choose a materially different hook and structure:\n${input.avoidCopies.map(copyForAudit).join('\n---\n')}\n`
     : ''
-}
-
-${
-  repair
-    ? `REPAIR REQUIRED\nThe prior candidate below failed automated approval. Rewrite the substance called out by every check; do not merely paraphrase it.\nChecks:\n${repair.blockers.map((blocker) => `- ${blocker}`).join('\n')}\nRejected copy:\n${repair.copy}`
-    : ''
-}
-
-First, read the approved article below and decide your own angle for this channel's audience -- the single most compelling entry point, not a recap of every headline. Write it as a short (3-8 word) label in "angle". Then create THREE hook candidates built on that angle that are genuinely different from each other in opening, tone or emphasis -- not the same sentence reworded. Never open with a generic AI-tell phrase ("in today's fast-moving AI landscape", "it's worth noting", "game-changer") or a leader-briefing frame ("for product and security leaders") -- open on the concrete fact or scene. Put all candidates inside the JSON "text" string and separate them with <CANDIDATE>. For Threads use <PART> inside each candidate. For Instagram use the tagged 7-slide contract inside each candidate. For X and LinkedIn return the tracked URL in "firstComment"; for other channels put it only where the contract permits. Return strict JSON only: {"angle":"","text":"candidate 1<CANDIDATE>candidate 2<CANDIDATE>candidate 3","firstComment":""}.
-
-APPROVED ARTICLE
-${JSON.stringify(article)}`;
+}${
+    repair
+      ? `\nREPAIR REQUIRED\nThe prior candidate below failed automated approval. Rewrite the substance called out by every check; do not merely paraphrase it.\nChecks:\n${repair.blockers.map((blocker) => `- ${blocker}`).join('\n')}\nRejected copy:\n${repair.copy}\n`
+      : ''
+  }`;
 }
 
 export async function adaptWeeklySocialChannel(input: {
@@ -688,7 +693,12 @@ export async function adaptWeeklySocialChannel(input: {
         currentRevisionItemIds: input.currentRevisionItemIds,
       };
       const base = runQualityGate(draft);
-      const criticPrompt = `Audit this social adaptation independently. First, compare it against ONLY the approved facts and flag unsupported numbers, names, quotes, causal implications or misleading compression. Second, audit the native serialization below against the exact ${input.channel} contract: ${CHANNEL_CONTRACT[input.channel]}. Third, score how ORIGINAL and non-formulaic the copy reads. Score factual grounding, platform-native fit and originality separately from 0–100.
+      // Same caching contract as the writer prompt above: the channel name and
+      // its contract used to sit in the opening sentence, so all six channels
+      // had six different prefixes and the shared instructions plus the fact
+      // snapshot were re-billed for each. Stable text first, channel block
+      // next, the copy under audit -- which changes every round -- last.
+      const criticPrompt = `Audit this social adaptation independently. First, compare it against ONLY the approved facts and flag unsupported numbers, names, quotes, causal implications or misleading compression. Second, audit the native serialization against the exact channel contract, both given below. Third, score how ORIGINAL and non-formulaic the copy reads. Score factual grounding, platform-native fit and originality separately from 0–100.
 
 Consistency rules:
 - Empty factual flags mean factual score 100; every deduction needs a precise flag.
@@ -699,6 +709,9 @@ Consistency rules:
 
 APPROVED FACTS
 ${input.sourceFacts.map((fact) => `- ${fact}`).join('\n')}
+
+CHANNEL: ${input.channel}
+CHANNEL CONTRACT: ${CHANNEL_CONTRACT[input.channel]}
 
 NATIVE ${input.channel.toUpperCase()} COPY
 ${copyForAudit(draft)}`;

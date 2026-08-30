@@ -4,7 +4,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { recordGenerationCost } from '@/lib/generation-costs';
+import { assertDailyGenerationBudget, recordGenerationCost } from '@/lib/generation-costs';
 import { alertWeeklyDigestIssue } from './alerts';
 import { localizedWeeklyDisplayTitle } from './display-title';
 import {
@@ -2259,6 +2259,104 @@ export async function resolveSocialPostForRepair<T>(input: {
   return input.findExistingPost();
 }
 
+/**
+ * A social package or post in one of these statuses may still be rewritten.
+ * Anything else (approved, scheduled, published) is owner-blessed output that
+ * generation must never overwrite.
+ */
+const EDITABLE_SOCIAL_STATUSES = new Set(['draft', 'in_review', 'changes_requested', 'failed']);
+
+/**
+ * The package this job would write into, or null when none exists yet. Shared
+ * by the pre-flight guard and the persist phase so the two can never disagree
+ * about which package a job targets.
+ */
+async function findSocialPackageForJob(input: {
+  weeklyDigestId: string;
+  revisionId: string;
+  generationVersion: string;
+  weekEnd: string;
+  sourceBriefItemId: string | null;
+  checkpointPackageId: string | null;
+}): Promise<{ id: string; status: string } | null> {
+  const db = getSupabaseAdmin();
+  if (input.checkpointPackageId) {
+    const { data, error } = await db
+      .from('social_packages')
+      .select('id,status')
+      .eq('id', input.checkpointPackageId)
+      .eq('weekly_digest_id', input.weeklyDigestId)
+      .eq('weekly_digest_revision_id', input.revisionId)
+      .eq('generation_version', input.generationVersion)
+      .neq('status', 'cancelled')
+      .maybeSingle();
+    if (error) throw new Error(`[weekly-generation] social package checkpoint: ${error.message}`);
+    if (data) return data;
+  }
+  let query = db
+    .from('social_packages')
+    .select('id,status')
+    .eq('kind', 'weekly_digest')
+    .eq('source_date', input.weekEnd)
+    .eq('generation_version', input.generationVersion)
+    .neq('status', 'cancelled');
+  query = input.sourceBriefItemId
+    ? query.eq('source_brief_item_id', input.sourceBriefItemId)
+    : query.is('source_brief_item_id', null);
+  const { data, error } = await query.maybeSingle();
+  if (error) throw new Error(`[weekly-generation] social package lookup: ${error.message}`);
+  return data;
+}
+
+/** Package/post statuses that block a rewrite, formatted for one error line. */
+export function blockingSocialStatuses(
+  socialPackage: { id: string; status: string } | null,
+  posts: ReadonlyArray<{ id: string; channel: string; status: string }>,
+): string | null {
+  if (!socialPackage) return null;
+  if (!EDITABLE_SOCIAL_STATUSES.has(socialPackage.status)) {
+    return `${socialPackage.status} social package ${socialPackage.id}`;
+  }
+  const blocked = posts.filter((post) => !EDITABLE_SOCIAL_STATUSES.has(post.status));
+  if (blocked.length === 0) return null;
+  // Name every blocker at once -- reporting them one job at a time would make
+  // the owner rerun this whole diagnosis per channel.
+  return blocked.map((post) => `${post.status} ${post.channel} post ${post.id}`).join(', ');
+}
+
+/**
+ * Refuse a social_copy job whose output could never be persisted -- BEFORE the
+ * first model call.
+ *
+ * The same guards already existed, but only in the persist phase, i.e. after
+ * all six channels had been written and paid for. Job 52f06dfc (2026-08-28)
+ * burned 49 OpenRouter calls / $1.82 across three attempts and died every time
+ * on `refusing to replace approved telegram post` -- a condition that was
+ * already true before the job started, because two earlier runs had approved
+ * that post. Reading it up front costs two queries.
+ */
+async function assertSocialCopyCanPersist(input: {
+  weeklyDigestId: string;
+  revisionId: string;
+  weekEnd: string;
+  sourceBriefItemId: string | null;
+}): Promise<void> {
+  const socialPackage = await findSocialPackageForJob({
+    ...input,
+    generationVersion: `social-v3:${input.revisionId}`,
+    checkpointPackageId: null,
+  });
+  if (!socialPackage) return;
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('social_posts')
+    .select('id,channel,status')
+    .eq('package_id', socialPackage.id);
+  if (error) throw new Error(`[weekly-generation] social post preflight: ${error.message}`);
+  const blocker = blockingSocialStatuses(socialPackage, data ?? []);
+  if (blocker) throw new Error(`[weekly-generation] refusing to replace ${blocker}`);
+}
+
 async function generateSocialCopy(job: ClaimedGenerationJob, tracker: GenerationAttemptTracker) {
   await tracker.event({
     type: 'step_started',
@@ -2268,6 +2366,12 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
     message: 'Loading approved articles and cover for social copy',
   });
   const context = await loadGenerationContext(job);
+  await assertSocialCopyCanPersist({
+    weeklyDigestId: job.weekly_digest_id,
+    revisionId: job.revision_id,
+    weekEnd: context.digest.week_end,
+    sourceBriefItemId: context.items[0]?.brief_item_id ?? null,
+  });
   const bundle = masterBundleFromArtifacts(context);
   const locales = await localeMap();
   const sourceFactsByLocale: Record<SocialLocale, string[]> = {
@@ -2581,38 +2685,14 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
   const db = getSupabaseAdmin();
   const generationVersion = `social-v3:${job.revision_id}`;
   const sourceBriefItemId = context.items[0]?.brief_item_id ?? null;
-  let socialPackage: { id: string; status: string } | null = null;
-  if (checkpoint.socialPackageId) {
-    const { data, error } = await db
-      .from('social_packages')
-      .select('id,status')
-      .eq('id', checkpoint.socialPackageId)
-      .eq('weekly_digest_id', job.weekly_digest_id)
-      .eq('weekly_digest_revision_id', job.revision_id)
-      .eq('generation_version', generationVersion)
-      .neq('status', 'cancelled')
-      .maybeSingle();
-    if (error) throw new Error(`[weekly-generation] social package checkpoint: ${error.message}`);
-    socialPackage = data;
-  }
-  if (!socialPackage) {
-    let existingPackageQuery = db
-      .from('social_packages')
-      .select('id,status')
-      .eq('kind', 'weekly_digest')
-      .eq('source_date', context.digest.week_end)
-      .eq('generation_version', generationVersion)
-      .neq('status', 'cancelled');
-    existingPackageQuery = sourceBriefItemId
-      ? existingPackageQuery.eq('source_brief_item_id', sourceBriefItemId)
-      : existingPackageQuery.is('source_brief_item_id', null);
-    const { data: existingPackage, error: existingPackageError } =
-      await existingPackageQuery.maybeSingle();
-    if (existingPackageError) {
-      throw new Error(`[weekly-generation] social package lookup: ${existingPackageError.message}`);
-    }
-    socialPackage = existingPackage;
-  }
+  let socialPackage = await findSocialPackageForJob({
+    weeklyDigestId: job.weekly_digest_id,
+    revisionId: job.revision_id,
+    generationVersion,
+    weekEnd: context.digest.week_end,
+    sourceBriefItemId,
+    checkpointPackageId: checkpoint.socialPackageId,
+  });
   if (!socialPackage) {
     const { data, error } = await db
       .from('social_packages')
@@ -2637,8 +2717,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
     }
     socialPackage = data;
   }
-  const editablePackageStatuses = new Set(['draft', 'in_review', 'changes_requested', 'failed']);
-  if (!editablePackageStatuses.has(socialPackage.status)) {
+  if (!EDITABLE_SOCIAL_STATUSES.has(socialPackage.status)) {
     throw new Error(
       `[weekly-generation] refusing to replace ${socialPackage.status} social package ${socialPackage.id}`,
     );
@@ -2732,7 +2811,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
   };
   const postSelection =
     'id,channel,status,locale,format,post_text,content_parts,first_comment,quality_report,content_hash,content_version';
-  const editablePostStatuses = new Set(['draft', 'in_review', 'changes_requested', 'failed']);
+  const editablePostStatuses = EDITABLE_SOCIAL_STATUSES;
   const rowAtVersion = (
     row: (typeof rows)[number],
     draft: WeeklySocialAdaptation,
@@ -4311,7 +4390,25 @@ async function generateCoverDerivatives(job: ClaimedGenerationJob) {
   };
 }
 
+/**
+ * Job types that call a metered provider. `pdf`, `video_manifest` and
+ * `social_asset` only assemble artifacts that already exist, so a spend
+ * ceiling must not block them — a half-finished digest should still be able
+ * to render what it has.
+ */
+const METERED_JOB_TYPES = new Set([
+  'research_pack',
+  'editorial_master',
+  'social_copy',
+  'video_script',
+  'story_image',
+  'cover',
+]);
+
 async function runGenerationJob(job: ClaimedGenerationJob, tracker: GenerationAttemptTracker) {
+  if (METERED_JOB_TYPES.has(job.job_type)) {
+    await assertDailyGenerationBudget(job.job_type);
+  }
   if (job.job_type === 'research_pack') return generateResearchPack(job);
   if (job.job_type === 'editorial_master') return generateEditorialMaster(job, tracker);
   if (job.job_type === 'social_copy') return generateSocialCopy(job, tracker);

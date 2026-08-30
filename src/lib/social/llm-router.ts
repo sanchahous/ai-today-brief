@@ -9,12 +9,16 @@ import {
   isUnstableOpenRouterModelId,
   type OpenRouterModelRecord,
 } from '../../../pipeline/openrouter-models';
-import type { OpenRouterResponseValidator } from '../../../pipeline/openrouter-brief-json';
+import {
+  OpenRouterIncompleteJsonError,
+  type OpenRouterResponseValidator,
+} from '../../../pipeline/openrouter-brief-json';
 import {
   generateWithHttpProviderChain,
   OPENROUTER_HTTP_DEFAULTS,
   type HttpProviderConfig,
 } from '../../../pipeline/providers/http-provider';
+import type { ProviderUsage } from '../../../pipeline/providers/types';
 import { loadProviderRegistry, type ProviderRole } from '../../../pipeline/providers/registry';
 import { generateWithModelQueue, type GeminiResponseSchema } from '../../../pipeline/summarize';
 
@@ -46,6 +50,10 @@ interface ProviderOutput {
   text: string;
   model: string;
   fallbackUsed?: boolean;
+  /** Real billed usage when the provider reports it (OpenRouter does). */
+  usage?: ProviderUsage;
+  /** Billed usage from chain attempts whose answer was rejected. */
+  discarded?: ProviderUsage[];
 }
 
 interface ProviderInput<T> {
@@ -107,6 +115,57 @@ const OPENROUTER_PROVIDER_PRIORITY: Record<SocialLlmRole, readonly string[]> = {
 
 const MODEL_FRESHNESS_SECONDS = 400 * 24 * 60 * 60;
 
+/**
+ * Social calls are prompt-heavy — the whole digest plus the channel contract
+ * and the repair history go in, a few hundred tokens of JSON come out (live
+ * ledger 2026-08-28: ~50k prompt vs ~1-6k completion) — so the blended rate a
+ * model actually costs us is dominated by its input price.
+ */
+const SOCIAL_TOKEN_MIX = { prompt: 0.9, completion: 0.1 } as const;
+
+/**
+ * Blended USD/M above which a model may not enter a social queue at all.
+ *
+ * The ranking below had no price term whatsoever: `openRouterRoleScore` gave
+ * every `~*-latest` alias a flat -10 000 and then broke ties on `created`. For
+ * the anthropic lane that made `~anthropic/claude-fable-latest` ($10/M in,
+ * $50/M out — $14.00/M blended) beat `~anthropic/claude-sonnet-latest`
+ * ($2.80/M blended) by 0.0037 points of timestamp, so the single most
+ * expensive text model in the catalog became the standing writer fallback.
+ * Twelve calls on 2026-08-28 cost $4.66 — 51% of a $9.16 two-day bill — while
+ * the ledger booked one of them at $0.0149.
+ *
+ * $1.50 is an owner decision (2026-08-29), tighter than the $3.50 that merely
+ * excluded the frontier tier. It keeps the efficient writer lanes (the OpenAI
+ * mini alias at $1.13, the Anthropic small alias at $1.40, deepseek and qwen
+ * flash lanes near $0.04) and deliberately also drops the two lanes the critic
+ * used to lead with — the standard OpenAI audit lane ($3.00) and the Anthropic
+ * mid tier ($2.80). The critic therefore runs on cheaper families; that is a
+ * quality trade the owner accepted, not an oversight. See
+ * wiki/audits/2026-08-29-openrouter-spend-leak.md for the per-model table —
+ * deliberately not repeated here, because pinning model versions in production
+ * source is what the F5 grep forbids.
+ */
+export const DEFAULT_SOCIAL_MAX_PRICE_PER_MILLION = 1.5;
+
+/**
+ * Blended USD per million tokens from the live catalog, or null when the model
+ * does not publish both rates. Null is treated as ineligible, not as free: an
+ * unpriced model is exactly the case we cannot afford to guess at.
+ */
+export function socialBlendedPricePerMillion(model: OpenRouterModelRecord): number | null {
+  const prompt = Number(model.pricing?.prompt);
+  const completion = Number(model.pricing?.completion);
+  if (!Number.isFinite(prompt) || !Number.isFinite(completion)) return null;
+  if (prompt < 0 || completion < 0) return null;
+  return (prompt * SOCIAL_TOKEN_MIX.prompt + completion * SOCIAL_TOKEN_MIX.completion) * 1_000_000;
+}
+
+export function resolveSocialMaxPricePerMillion(env: SocialLlmEnv = process.env): number {
+  const parsed = Number(env.SOCIAL_LLM_MAX_PRICE_PER_MILLION);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SOCIAL_MAX_PRICE_PER_MILLION;
+}
+
 function resolveSocialOpenRouterAttemptCap(env: SocialLlmEnv): number {
   const parsed = Number.parseInt(env.SOCIAL_OPENROUTER_MODEL_ATTEMPTS ?? '2', 10);
   return Number.isFinite(parsed) ? Math.min(3, Math.max(1, parsed)) : 2;
@@ -124,6 +183,71 @@ export class SocialLlmExhaustedError extends Error {
     );
     this.name = 'SocialLlmExhaustedError';
   }
+}
+
+/**
+ * What the call really cost, preferring the provider's own reported figure.
+ *
+ * The previous version ignored `usage` entirely and rebuilt everything from
+ * `prompt.length / 4` at a hardcoded $0.3/$1 per M. Both halves were wrong:
+ * the rates belong to no model we actually route to (`~openai/gpt-mini-latest`
+ * bills $0.75/$4.50, `~anthropic/claude-fable-latest` $10/$50), and only the
+ * winning attempt was ever counted. Discarded attempts are added here because
+ * OpenRouter bills them the same — that is the difference between the $0.65
+ * the ledger showed for 2026-08-28 and the $8.74 OpenRouter charged.
+ */
+function socialUsage(
+  prompt: string,
+  output: ProviderOutput,
+  env: SocialLlmEnv,
+): SocialLlmResult<unknown>['usage'] {
+  const inputRate = Number(env.SOCIAL_LLM_INPUT_USD_PER_MILLION ?? '0.3');
+  const outputRate = Number(env.SOCIAL_LLM_OUTPUT_USD_PER_MILLION ?? '1');
+  const billed = [...(output.discarded ?? []), ...(output.usage ? [output.usage] : [])];
+
+  let promptTokens = 0;
+  let outputTokens = 0;
+  let costUsd = 0;
+  let anyReported = false;
+
+  for (const entry of billed) {
+    // A provider that reports tokens but not cost (NIM et al.) still gives us
+    // real token counts — price those at the configured estimate rather than
+    // dropping the call from the ledger.
+    const entryPrompt = entry.promptTokens ?? 0;
+    const entryOutput = entry.outputTokens ?? 0;
+    promptTokens += entryPrompt;
+    outputTokens += entryOutput;
+    if (entry.costSource === 'reported' && entry.costUsd !== null) {
+      costUsd += entry.costUsd;
+      anyReported = true;
+    } else {
+      costUsd += (entryPrompt * inputRate + entryOutput * outputRate) / 1_000_000;
+    }
+  }
+
+  if (promptTokens === 0 && outputTokens === 0) {
+    // Gemini/Ollama report no usage at all — keep the old char heuristic.
+    promptTokens = Math.max(1, Math.ceil(prompt.length / 4));
+    outputTokens = Math.max(1, Math.ceil(output.text.length / 4));
+    costUsd = (promptTokens * inputRate + outputTokens * outputRate) / 1_000_000;
+  }
+
+  if (billed.length > 1) {
+    logEvent('info', 'social-llm', 'Social call billed across multiple attempts', {
+      model: output.model,
+      billed_calls: billed.length,
+      discarded_calls: output.discarded?.length ?? 0,
+      cost_usd: Number(costUsd.toFixed(6)),
+      cost_source: anyReported ? 'reported' : 'estimated',
+    });
+  }
+
+  return {
+    promptTokens,
+    outputTokens,
+    estimatedCostUsd: Number(costUsd.toFixed(6)),
+  };
 }
 
 function commaList(value: string | undefined): string[] {
@@ -172,6 +296,10 @@ function openRouterRoleScore(model: OpenRouterModelRecord, role: SocialLlmRole):
   const id = model.id.toLowerCase();
   let score = -(model.created ?? 0) / 1_000_000;
   if (id.startsWith('~') && id.endsWith('-latest')) score -= 10_000;
+  // Price is a real tie-breaker, not decoration. Scaled so it decides between
+  // siblings inside one provider family (the case the alias bonus used to
+  // settle on a timestamp fraction) without overriding the role bands below.
+  score += (socialBlendedPricePerMillion(model) ?? 0) * 100;
 
   if (role === 'critic') {
     if (/(^|[-/])(pro|max|opus|sonnet)([-/.]|$)/.test(id)) score -= 800;
@@ -197,11 +325,16 @@ function latestStandardTerra(models: OpenRouterModelRecord[]): OpenRouterModelRe
 export function rankSocialOpenRouterModels(
   models: OpenRouterModelRecord[],
   role: SocialLlmRole,
+  maxPricePerMillion: number = DEFAULT_SOCIAL_MAX_PRICE_PER_MILLION,
 ): string[] {
   const providerPriority = OPENROUTER_PROVIDER_PRIORITY[role];
-  const eligible = models.filter(
-    (model) => isSocialTextModel(model) && providerPriority.includes(providerFromModelId(model.id)),
-  );
+  const eligible = models.filter((model) => {
+    if (!isSocialTextModel(model) || !providerPriority.includes(providerFromModelId(model.id))) {
+      return false;
+    }
+    const price = socialBlendedPricePerMillion(model);
+    return price !== null && price <= maxPricePerMillion;
+  });
   const newestCreated = Math.max(0, ...eligible.map((model) => model.created ?? 0));
   const current =
     newestCreated > 0
@@ -233,7 +366,7 @@ async function resolveSocialOpenRouterQueue(
   fetchModels: (apiKey: string) => Promise<OpenRouterModelRecord[]>,
 ): Promise<string[]> {
   const models = await fetchModels(apiKey);
-  const ranked = rankSocialOpenRouterModels(models, role);
+  const ranked = rankSocialOpenRouterModels(models, role, resolveSocialMaxPricePerMillion(env));
   const configured = commaList(
     role === 'critic' ? env.SOCIAL_CRITIC_OPENROUTER_MODELS : env.SOCIAL_WRITER_OPENROUTER_MODELS,
   );
@@ -246,17 +379,41 @@ async function resolveSocialOpenRouterQueue(
   return queue;
 }
 
-function socialOpenRouterBody(role: SocialLlmRole, env: SocialLlmEnv) {
-  const fallbackMaxTokens = role === 'critic' ? 2_048 : 4_096;
-  const parsedMaxTokens = Number.parseInt(
+/**
+ * Completion ceilings, sized against what the models actually emitted.
+ *
+ * `max_tokens` covers reasoning as well as the answer, and `exclude: true`
+ * only hides reasoning from the response -- it is still generated, billed and
+ * counted here. The old ceilings did not allow for that and cut answers off
+ * mid-JSON (2026-08-28): the critic's 2 048 was spent almost entirely on
+ * thinking (one call reported 2 048 completion tokens of which 2 048 were
+ * reasoning -- zero content), and the writer's 4 096 was too small for three
+ * candidates plus ~2 300 reasoning tokens. Seven cut-off calls cost $0.82 and,
+ * worse, each one dropped the queue onto a pricier model.
+ *
+ * Writer needs room for three full candidates; the critic's own answer is a
+ * short JSON object, so its ceiling is almost entirely reasoning headroom.
+ */
+const SOCIAL_MAX_TOKENS: Record<SocialLlmRole, number> = { writer: 8_192, critic: 6_144 };
+
+/** Widen once on a retry after a cut-off answer, capped so a runaway stays bounded. */
+const TRUNCATION_RETRY_MULTIPLIER = 2;
+
+export function socialMaxTokens(role: SocialLlmRole, env: SocialLlmEnv, attempt = 1): number {
+  const parsed = Number.parseInt(
     role === 'critic'
       ? (env.SOCIAL_CRITIC_OPENROUTER_MAX_TOKENS ?? '')
       : (env.SOCIAL_WRITER_OPENROUTER_MAX_TOKENS ?? ''),
     10,
   );
+  const base =
+    Number.isFinite(parsed) && parsed > 0 ? parsed : SOCIAL_MAX_TOKENS[role];
+  return attempt > 1 ? base * TRUNCATION_RETRY_MULTIPLIER : base;
+}
+
+function socialOpenRouterBody(role: SocialLlmRole, env: SocialLlmEnv, attempt = 1) {
   return {
-    max_tokens:
-      Number.isFinite(parsedMaxTokens) && parsedMaxTokens > 0 ? parsedMaxTokens : fallbackMaxTokens,
+    max_tokens: socialMaxTokens(role, env, attempt),
     // Social JSON is short. Low reasoning preserves the critic's independent
     // analysis without letting hidden thinking consume an editorial-master
     // token/time budget before a channel checkpoint can be saved.
@@ -340,8 +497,17 @@ async function generateOpenRouter<T>(
   fetchModels: (apiKey: string) => Promise<OpenRouterModelRecord[]>,
   db?: PipelineDb,
 ): Promise<ProviderOutput> {
-  const validateResponse: OpenRouterResponseValidator = (_modelId, text, finishReason) => {
-    if (finishReason === 'length') throw new SyntaxError('Truncated social JSON response.');
+  const validateResponse: OpenRouterResponseValidator = (modelId, text, finishReason) => {
+    // Typed, not a bare SyntaxError: the chain retries a cut-off answer on the
+    // same model with a wider ceiling, but moves on from a malformed one.
+    if (finishReason === 'length') {
+      throw new OpenRouterIncompleteJsonError(
+        modelId,
+        text.length,
+        'truncated social JSON response',
+        finishReason,
+      );
+    }
     input.parse(text);
     return text;
   };
@@ -361,13 +527,17 @@ async function generateOpenRouter<T>(
         },
         {
           validateResponse,
-          extraBodyForModel: () => socialOpenRouterBody(input.role, input.env),
+          extraBodyForModel: (_modelId, attempt) =>
+            socialOpenRouterBody(input.role, input.env, attempt),
+          retryTruncatedOnce: true,
         },
       );
       return {
         text: result.text,
         model: result.model,
         fallbackUsed: result.model !== dbHttp.modelQueue[0],
+        usage: result.usage,
+        discarded: result.discarded,
       };
     } catch (error) {
       logEvent(
@@ -391,13 +561,16 @@ async function generateOpenRouter<T>(
     { id: 'openrouter', apiKey, modelQueue, ...OPENROUTER_HTTP_DEFAULTS },
     {
       validateResponse,
-      extraBodyForModel: () => socialOpenRouterBody(input.role, input.env),
+      extraBodyForModel: (_modelId, attempt) => socialOpenRouterBody(input.role, input.env, attempt),
+      retryTruncatedOnce: true,
     },
   );
   return {
     text: result.text,
     model: result.model,
     fallbackUsed: result.model !== modelQueue[0],
+    usage: result.usage,
+    discarded: result.discarded,
   };
 }
 
@@ -531,10 +704,6 @@ export async function generateSocialJson<T>(
             ? await generateOpenRouter({ prompt, role, parse, env }, fetchModels, options.db)
             : await generateOllama({ prompt, role, parse, env }, fetchFn);
       const value = parse(output.text);
-      const promptTokens = Math.max(1, Math.ceil(prompt.length / 4));
-      const outputTokens = Math.max(1, Math.ceil(output.text.length / 4));
-      const inputRate = Number(env.SOCIAL_LLM_INPUT_USD_PER_MILLION ?? '0.3');
-      const outputRate = Number(env.SOCIAL_LLM_OUTPUT_USD_PER_MILLION ?? '1');
       attempts.push({ provider, status: 'success', model: output.model });
       return {
         value,
@@ -542,13 +711,7 @@ export async function generateSocialJson<T>(
         model: output.model,
         fallbackUsed: attempts.length > 1 || Boolean(output.fallbackUsed),
         attempts,
-        usage: {
-          promptTokens,
-          outputTokens,
-          estimatedCostUsd: Number(
-            ((promptTokens * inputRate + outputTokens * outputRate) / 1_000_000).toFixed(6),
-          ),
-        },
+        usage: socialUsage(prompt, output, env),
       };
     } catch (error) {
       const reason = reasonFromError(error);

@@ -10,12 +10,34 @@ Visuals upload body cap 2026-08-26, admin weekly workspace hang fix 2026-08-28,
 social copy channel-contract + fail-open warnings 2026-08-28, Fixes & blockers 2026-08-28,
 консолідація трьох відео-папок в один репозиторій 2026-08-28,
 revision Stage 0 (carry-forward / live preflight) 2026-08-29,
-topic-based weekly slug on publish 2026-08-29
+topic-based weekly slug + OpenRouter spend leak 2026-08-29
 Last updated: 2026-08-29
 
 ---
 
 ## Стан репозиторію
+
+- **OpenRouter spend leak виправлено (2026-08-29), гілка `claude/openrouter-activity-investigation-1d5a53`.**
+  Рахунок $9.16 за дві доби (+2137%) при власному ledger ~$1.3. Чотири дефекти:
+  social-ранжування без цінового терміна вивело `~anthropic/claude-fable-latest` ($14/M blended)
+  у чергу writer-а — 12 викликів / $4.66 / 51% рахунку; відкинуті спроби чейну оплачувались,
+  але не обліковувались (28.08: 190 викликів / $8.74 проти 35 подій / $0.65); вартість
+  рахувалась за вигаданими $0.3/$1 замість reported-цифри; кап $4 діяв на ревізію і не бачив
+  social. Тепер: `SOCIAL_LLM_MAX_PRICE_PER_MILLION=3.5`, `discardedUsage` крізь весь провайдерний
+  шлях, reported-вартість у ledger, глобальний `DAILY_GENERATION_BUDGET_USD=5` (ковзні 24 год)
+  у `runGenerationJob`. Стеля — **1.5** за рішенням власника: лінія writer-а $14.00/M → $1.40/M,
+  але критик втрачає обидві провідні лінії й переходить на haiku + deepseek-flash.
+  Форензика 190 викликів: 151 з них (95% грошей) — 12 джоб **одного** дайджесту, обсяг на джобу
+  закладений дизайном (6 каналів × 3 раунди × writer+critic × до 2 моделей).
+  **Фаза 1–2 виправлена 30.08:** гард approved-поста читається до першого виклику моделі;
+  `max_tokens` 4096→8192 (writer) і 2048→6144 (critic) плюс `retryTruncatedOnce` — обірвана
+  відповідь повторюється тією ж моделлю ширше, а не падає на дорожчу; блоки промптів переставлено
+  під кешування (волатильні в кінець, `APPROVED ARTICLE` у спільний префікс).
+  **Спростовано:** «retry переплачує за готові канали» — чекпоїнт працює коректно
+  (`Resuming 2/6`, далі `4/6`), однакові промпти були впалим каналом, а не повтором.
+  **Чекає на власника:** калібрування `DAILY_GENERATION_BUDGET_USD`; per-role стеля свідомо
+  відкладена — власник планує переписати принцип вибору моделі цілком.
+  (source: [audits/2026-08-29-openrouter-spend-leak](audits/2026-08-29-openrouter-spend-leak.md))
 
 - **Weekly digest Етап 0 ревізій (2026-08-29), гілка `feat/weekly-revision-stage-0`.**
   A1: service RPC після `editorial_master` копіюють артефакти з тим самим

@@ -160,6 +160,82 @@ export async function recordGenerationCost(input: RecordGenerationCostInput): Pr
   }
 }
 
+/**
+ * Hard ceiling on metered generation spend in a rolling 24h window.
+ *
+ * The per-revision weekly cap (`WEEKLY_MASTER_MAX_SPEND_USD`) could not see
+ * this class of failure: it counts only `weekly_digest_artifacts` metadata for
+ * one revision, so social spend is invisible to it and every retry that opens
+ * a new revision starts the count at zero. On 2026-08-28 that let 190
+ * OpenRouter calls / $8.74 through against a $4 "cap".
+ *
+ * $5 is a starting figure, not a measured one — the owner should set
+ * DAILY_GENERATION_BUDGET_USD to whatever a normal weekly-digest day actually
+ * costs once the ledger has run truthful for a full cycle.
+ */
+export const DEFAULT_DAILY_GENERATION_BUDGET_USD = 5;
+
+export function resolveDailyGenerationBudgetUsd(
+  env: Record<string, string | undefined> = process.env,
+): number {
+  const parsed = Number(env.DAILY_GENERATION_BUDGET_USD);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_DAILY_GENERATION_BUDGET_USD;
+}
+
+export class GenerationBudgetExceededError extends Error {
+  constructor(
+    readonly spentUsd: number,
+    readonly budgetUsd: number,
+    readonly jobType: string,
+  ) {
+    super(
+      `[generation-costs] Refusing ${jobType}: $${spentUsd.toFixed(2)} of metered generation spend in the last 24h is at or over the $${budgetUsd.toFixed(2)} ceiling. Raise DAILY_GENERATION_BUDGET_USD to continue.`,
+    );
+    this.name = 'GenerationBudgetExceededError';
+  }
+}
+
+/**
+ * Sum of real money spent in the window. `subscription` rows (Claude CLI and
+ * friends) are excluded on purpose: they draw down a plan allowance, not a
+ * metered balance, and counting them would starve the budget with $0 work.
+ */
+export function meteredSpendUsd(
+  events: Array<{ cost_usd: number | string; cost_source: string }>,
+): number {
+  let total = 0;
+  for (const event of events) {
+    if (event.cost_source === 'subscription') continue;
+    const cost = typeof event.cost_usd === 'string' ? Number(event.cost_usd) : event.cost_usd;
+    total = safeCost(total + safeCost(cost));
+  }
+  return total;
+}
+
+/** Metered generation spend over the trailing `windowHours`. */
+export async function recentMeteredSpendUsd(windowHours = 24, now: Date = new Date()): Promise<number> {
+  const since = new Date(now.getTime() - windowHours * 60 * 60 * 1000).toISOString();
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from('generation_cost_events')
+    .select('cost_usd,cost_source')
+    .gte('created_at', since);
+  if (error) throw new Error(`[generation-costs] spend lookup failed: ${error.message}`);
+  return meteredSpendUsd(data ?? []);
+}
+
+/**
+ * Circuit breaker for anything that spends provider money. Throws before the
+ * call is made, so a runaway costs one query rather than another $8 day.
+ */
+export async function assertDailyGenerationBudget(jobType: string): Promise<void> {
+  const budget = resolveDailyGenerationBudgetUsd();
+  const spent = await recentMeteredSpendUsd();
+  if (spent >= budget) {
+    throw new GenerationBudgetExceededError(spent, budget, jobType);
+  }
+}
+
 export function aggregateGenerationCosts(
   events: Array<{
     cost_usd: number | string;

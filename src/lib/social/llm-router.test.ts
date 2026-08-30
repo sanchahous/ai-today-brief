@@ -13,14 +13,22 @@ vi.mock('../../../pipeline/providers/registry', async (importOriginal) => {
 });
 
 import {
+  DEFAULT_SOCIAL_MAX_PRICE_PER_MILLION,
   generateSocialJson,
   rankLocalModelIds,
   rankSocialOpenRouterModels,
+  resolveSocialMaxPricePerMillion,
   resolveSocialProviderOrder,
+  socialBlendedPricePerMillion,
 } from './llm-router';
 import { generateWithOpenRouterChain } from '../../../pipeline/openrouter-summarize';
 import { loadProviderRegistry } from '../../../pipeline/providers/registry';
 import type { OpenRouterModelRecord } from '../../../pipeline/openrouter-models';
+
+/** Catalog prices are per-token strings, exactly as OpenRouter serves them. */
+function priced(promptPerM: number, completionPerM: number) {
+  return { prompt: String(promptPerM / 1_000_000), completion: String(completionPerM / 1_000_000) };
+}
 
 function model(
   id: string,
@@ -34,6 +42,9 @@ function model(
     supported_parameters: ['response_format', 'structured_outputs'],
     architecture: { modality: 'text->text' },
     expiration_date: null,
+    // A cheap default keeps every unrelated fixture inside the price ceiling;
+    // tests that care about price pass an explicit `pricing`.
+    pricing: priced(0.5, 1.5),
     ...overrides,
   };
 }
@@ -97,6 +108,68 @@ describe('rankSocialOpenRouterModels', () => {
     const ranked = rankSocialOpenRouterModels(catalog, 'writer');
     expect(ranked[0]).toBe('~openai/gpt-mini-latest');
     expect(ranked).not.toContain('openai/gpt-4o');
+  });
+
+  // Regression: the anthropic writer lane was ~anthropic/claude-fable-latest
+  // ($10/M in, $50/M out) purely because the `~*-latest` bonus tied with
+  // sonnet-latest and `created` broke the tie. Twelve of those calls were
+  // $4.66 of a $9.16 two-day OpenRouter bill (2026-08-28).
+  it('keeps the priciest frontier alias out of the queue entirely', () => {
+    const withFable = [
+      ...catalog,
+      model('~anthropic/claude-fable-latest', now - 100, { pricing: priced(10, 50) }),
+    ];
+
+    for (const role of ['writer', 'critic'] as const) {
+      const ranked = rankSocialOpenRouterModels(withFable, role);
+      expect(ranked).not.toContain('~anthropic/claude-fable-latest');
+      expect(ranked).toContain('~anthropic/claude-sonnet-latest');
+    }
+  });
+
+  it('prefers the cheaper sibling when two models tie on every other signal', () => {
+    // Same family, same `created`, same role band -- only price separates them.
+    // This is the tie the old ranker settled on a timestamp fraction.
+    const twins = [
+      model('deepseek/deepseek-v4-pro', now - 3_000, { pricing: priced(2.0, 6.0) }),
+      model('deepseek/deepseek-v4.1-pro', now - 3_000, { pricing: priced(0.2, 0.6) }),
+    ];
+    expect(rankSocialOpenRouterModels(twins, 'critic')).toEqual(['deepseek/deepseek-v4.1-pro']);
+  });
+
+  it('drops a model that publishes no price rather than assuming it is free', () => {
+    const unpriced = [model('deepseek/deepseek-v4-pro', now - 3_000, { pricing: undefined })];
+    expect(rankSocialOpenRouterModels(unpriced, 'writer')).toEqual([]);
+  });
+
+  it('honours an owner-set ceiling', () => {
+    // Every catalog fixture blends to $0.60/M, so a $0.40 ceiling clears them all.
+    const ranked = rankSocialOpenRouterModels(catalog, 'critic', 0.4);
+    expect(ranked).toEqual([]);
+    expect(resolveSocialMaxPricePerMillion({ SOCIAL_LLM_MAX_PRICE_PER_MILLION: '1.25' })).toBe(1.25);
+    expect(resolveSocialMaxPricePerMillion({})).toBe(DEFAULT_SOCIAL_MAX_PRICE_PER_MILLION);
+    expect(resolveSocialMaxPricePerMillion({ SOCIAL_LLM_MAX_PRICE_PER_MILLION: 'nonsense' })).toBe(
+      DEFAULT_SOCIAL_MAX_PRICE_PER_MILLION,
+    );
+  });
+});
+
+describe('socialBlendedPricePerMillion', () => {
+  it('weights the input rate 9:1, matching a prompt-heavy social call', () => {
+    expect(socialBlendedPricePerMillion(model('x/y', 1, { pricing: priced(10, 50) }))).toBeCloseTo(
+      14,
+      6,
+    );
+    expect(
+      socialBlendedPricePerMillion(model('x/y', 1, { pricing: priced(0.75, 4.5) })),
+    ).toBeCloseTo(1.125, 6);
+  });
+
+  it('returns null for missing or malformed pricing', () => {
+    expect(socialBlendedPricePerMillion(model('x/y', 1, { pricing: undefined }))).toBeNull();
+    expect(
+      socialBlendedPricePerMillion(model('x/y', 1, { pricing: { prompt: 'free', completion: '0' } })),
+    ).toBeNull();
   });
 });
 
@@ -226,6 +299,62 @@ describe('generateSocialJson', () => {
   });
 });
 
+describe('generateSocialJson cost accounting', () => {
+  afterEach(() => {
+    vi.mocked(generateWithOpenRouterChain).mockReset();
+  });
+
+  const catalog = [
+    model('~openai/gpt-mini-latest', 1_784_000_000, { pricing: priced(0.75, 4.5) }),
+  ];
+
+  const run = (env: Record<string, string | undefined> = {}) =>
+    generateSocialJson('writer', 'write me a post', (raw) => JSON.parse(raw) as { text: string }, {
+      env: {
+        SOCIAL_WRITER_PROVIDER_ORDER: 'openrouter',
+        OPEN_ROUTER_API_KEY: 'test-key',
+        ...env,
+      },
+      deps: { fetchOpenRouterModels: async () => catalog },
+    });
+
+  // Regression: the ledger used to rebuild cost from `prompt.length / 4` at a
+  // hardcoded $0.3/$1 per M and count only the winning attempt. Against the
+  // 2026-08-28 bill that reported $0.65 for a day OpenRouter charged $8.74.
+  it('books OpenRouter reported cost for the winner plus every discarded attempt', async () => {
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
+      text: '{"text":"ready"}',
+      provider: 'openrouter',
+      model: '~openai/gpt-mini-latest',
+      usage: { promptTokens: 52_324, completionTokens: 1_857, totalTokens: 54_181, costUsd: 0.0475 },
+      discardedUsage: [
+        { promptTokens: 29_661, completionTokens: 4_096, totalTokens: 33_757, costUsd: 0.5014 },
+      ],
+    });
+
+    const result = await run();
+
+    expect(result.usage.estimatedCostUsd).toBeCloseTo(0.5489, 6);
+    expect(result.usage.promptTokens).toBe(81_985);
+    expect(result.usage.outputTokens).toBe(5_953);
+  });
+
+  it('prices a token-reporting provider that omits cost at the configured rate', async () => {
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue({
+      text: '{"text":"ready"}',
+      provider: 'openrouter',
+      model: '~openai/gpt-mini-latest',
+      usage: null,
+      discardedUsage: [],
+    });
+
+    // No usage at all -- falls back to the char heuristic rather than booking $0.
+    const result = await run();
+    expect(result.usage.estimatedCostUsd).toBeGreaterThan(0);
+    expect(result.usage.promptTokens).toBe(Math.ceil('write me a post'.length / 4));
+  });
+});
+
 // --- Phase 5: real (non-injected) OpenRouter path, migrated onto the registry's http-provider adapter ---
 
 describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
@@ -241,6 +370,7 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
     supported_parameters: ['response_format', 'structured_outputs'],
     architecture: { modality: 'text->text' },
     expiration_date: null,
+    pricing: priced(0.5, 1.5),
   });
 
   it('routes the default (no db) writer call through the value-ranked queue, never touching the DB registry', async () => {
@@ -270,11 +400,21 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
     expect(
       vi
         .mocked(generateWithOpenRouterChain)
-        .mock.calls[0]?.[1]?.extraBodyForModel?.('deepseek/deepseek-v4-flash'),
+        .mock.calls[0]?.[1]?.extraBodyForModel?.('deepseek/deepseek-v4-flash', 1),
     ).toEqual({
-      max_tokens: 4_096,
+      max_tokens: 8_192,
       reasoning: { effort: 'low', exclude: true },
     });
+    // A cut-off answer re-queues the same model with room to finish rather
+    // than dropping to the next, pricier one.
+    expect(
+      vi.mocked(generateWithOpenRouterChain).mock.calls[0]?.[1]?.retryTruncatedOnce,
+    ).toBe(true);
+    expect(
+      vi
+        .mocked(generateWithOpenRouterChain)
+        .mock.calls[0]?.[1]?.extraBodyForModel?.('deepseek/deepseek-v4-flash', 2),
+    ).toMatchObject({ max_tokens: 16_384 });
   });
 
   it('bounds the live social model queue and allows an explicit one-model budget', async () => {
@@ -364,9 +504,9 @@ describe('generateSocialJson real OpenRouter path (Phase 5)', () => {
     expect(
       vi
         .mocked(generateWithOpenRouterChain)
-        .mock.calls[0]?.[1]?.extraBodyForModel?.('deepseek-ai/deepseek-v4-pro'),
+        .mock.calls[0]?.[1]?.extraBodyForModel?.('deepseek-ai/deepseek-v4-pro', 1),
     ).toEqual({
-      max_tokens: 2_048,
+      max_tokens: 6_144,
       reasoning: { effort: 'low', exclude: true },
     });
   });

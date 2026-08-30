@@ -4421,3 +4421,128 @@ bold+backticks; порожній рядок між блоками, додани�
 `src/lib/weekly-digest/social-adapter.test.ts`, `src/lib/social/telegram-format.test.ts`)
 
 ---
+
+## 2026-08-29 — OpenRouter spend leak: $9.16 за дві доби, ledger бачив $1.3
+
+Джерело: `raw/_local/exports/openrouter_activity_2026-08-29.csv` (експорт OpenRouter Activity,
+249 викликів) + прод-Supabase `generation_cost_events` + живий каталог `api/v1/models`.
+
+Власник повідомив про аномальні витрати. Розбір показав **чотири незалежні дефекти**, не один:
+
+1. **Ранжування social не мало цінового терміна взагалі.** `openRouterRoleScore` давав кожному
+   `~*-latest` аліасу премію −10 000 і розводив нічию за `created`. У родині `anthropic`
+   `~anthropic/claude-fable-latest` ($10/M вхід, $50/M вихід) вигравав у
+   `~anthropic/claude-haiku-latest` ($1.40/M blended) на **0.0037 бала timestamp** — і став
+   штатним fallback-ом writer-а. 12 викликів = $4.66 = 51% рахунку за дві доби.
+2. **Оплачені, але відкинуті спроби не потрапляли в ledger.** `generateWithOpenRouterChain`
+   затирав usage невдалої спроби наступною ітерацією; OpenRouter виставляє рахунок за кожну.
+   28.08: OpenRouter 190 викликів / $8.74, ledger 35 подій / $0.65.
+3. **Вартість рахувалась за вигаданими ставками.** `generateSocialJson` ігнорував reported-cost
+   і перераховував із `prompt.length / 4` за $0.3/$1 за мільйон. Реально
+   `~openai/gpt-mini-latest` — $0.75/$4.50, Fable — $10/$50. Єдиний облікований виклик Fable
+   записано як $0.0149 замість ~$0.51 (у 34 рази менше).
+4. **Кап $4 не міг спрацювати.** `assertWithinMasterBudget` рахує лише артефакти однієї ревізії,
+   не бачить social і обнуляється на кожному retry, що відкриває нову ревізію.
+
+Виправлено: цінова стеля `SOCIAL_LLM_MAX_PRICE_PER_MILLION` (default 3.5 blended, вхід 9:1;
+модель без опублікованої ціни виключається, а не вважається безкоштовною) + ціна як
+tie-breaker; `discardedUsage` крізь `openrouter-summarize` → `http-provider` → `llm-router`;
+`socialUsage()` на reported-цифрах; глобальний запобіжник `assertDailyGenerationBudget`
+(ковзні 24 год по всьому ledger, крім `subscription`) у `runGenerationJob`.
+
+Перевірено відвантаженим кодом проти живого каталогу: лінія writer-а $14.00/M → $1.40/M,
+черга критика без змін. `npm run pr:check` зелений (1898 тестів; 14 нових).
+
+Не входило у фікс: **prompt caching** — `tokens_cached=0` у всіх 249 викликах при social-промпті
+на ~50 тис. токенів. Окремий важіль. `DAILY_GENERATION_BUDGET_USD=5` — стартова цифра, потребує
+калібрування за фактом через тиждень правдивого ledger.
+(source: [audits/2026-08-29-openrouter-spend-leak](audits/2026-08-29-openrouter-spend-leak.md);
+`src/lib/social/llm-router.ts`, `pipeline/openrouter-summarize.ts`,
+`pipeline/providers/http-provider.ts`, `src/lib/generation-costs.ts`,
+`src/lib/weekly-digest/generation-worker.ts`)
+
+---
+
+## 2026-08-29 — форензика 190 викликів + стеля $1.5 (продовження розбору вище)
+
+Власник поставив стелю `SOCIAL_LLM_MAX_PRICE_PER_MILLION=1.5` (замість запропонованої 3.5) і
+спитав, звідки 190 викликів за добу і чи є в проєкті баги.
+
+**Розклад 190 викликів (28.08):** 151 виклик / $8.34 (95% грошей) — це 12 джоб **одного**
+тижневого дайджесту: 11 × `social_copy` (5 cancelled, 4 failed, 2 succeeded; 10 — linked retry)
++ 1 `editorial_master`. Решта 39 / $0.40 — звичайний daily pipeline. Таймстемпи експорту й БД
+збігаються посекундно, тож атрибуція точна.
+
+**Обсяг на джобу — дизайн, не баг:** 6 каналів × до 3 раундів × (writer + critic), і кожен
+`generateSocialJson` обходить до 2 моделей ⇒ стеля 36 логічних / 72 оплачених виклики на джобу.
+Успішні джоби вклались у 6–7.
+
+**Знайдено два нові баги (НЕ виправлені):**
+1. `refusing to replace approved {channel} post` — гард у persist-фазі
+   (`generation-worker.ts:2801`), тобто **після** генерації всіх 6 каналів. Умова відома до
+   першого виклику LLM. Джоба `52f06dfc`: 3 спроби, 49 викликів, $1.82 — приречена з першої
+   секунди.
+2. Retry переплачує за вже згенеровані канали: `provider_exhausted` позначено `retryable: true`
+   з обіцянкою «reuse every saved channel», але спроби 1–2 відправили однакові промпти
+   (`in=22288` двічі, `in=13555` двічі). Кандидати: чекпоїнт не зберігся, або
+   `findBlindCrossPosts` видаляє збережені канали на кожному resume. (needs verification)
+
+Дрібніше: 7 викликів обірвались на `finish_reason=length` = $0.82 у нікуди, і саме truncation
+є тригером падіння черги на дорогу модель.
+
+**Виправлення попереднього запису:** твердження «`tokens_cached=0` у всіх 249 викликах» було
+хибним — воно зроблене з вибірки дорогих рядків Fable. Насправді автоматичний кеш працює:
+18.2% (469 893 з 2 579 711 вхідних токенів). Але чистий ефект ≈ нуль (−$0.0116): writer
+`gpt-5.4-mini` виграє −$0.30 при 34.8% попадань, критик `gpt-5.6-terra` **втрачає** +$0.29 при
+3.1%, Anthropic-моделі не кешуються взагалі (немає `cache_control`). Корінь — порядок блоків у
+`promptFor`: волатильні `REPAIR REQUIRED` / `COPY ALREADY USED` стоять посередині й виштовхують
+найбільший стабільний блок (`APPROVED ARTICLE`) за межі кешованого префікса.
+
+**Наслідок стелі $1.5** — крім Fable вона знімає й обидві провідні лінії критика
+(OpenAI-лінія $3.00, Anthropic mid $2.80). Критик тепер на haiku ($1.40) + deepseek-flash
+($0.04). Плюс `~anthropic/claude-haiku-latest` стає другою лінією writer-а і першою лінією
+критика одночасно, а `excludeProviders` розводить ролі лише на рівні провайдера, не моделі —
+можливий самоаудит. Лікується стелею per-role. `npm run pr:check` зелений.
+(source: [audits/2026-08-29-openrouter-spend-leak §6](audits/2026-08-29-openrouter-spend-leak.md);
+прод `weekly_digest_generation_jobs` / `weekly_digest_generation_attempts` live check 2026-08-29)
+
+---
+
+## 2026-08-30 — Фаза 1–2 фіксів + спростування гіпотези про retry
+
+Власник затвердив три правки з плану; стелю per-role свідомо відкладено («будемо переписувати
+принцип вибору моделі пізніше»).
+
+**1. Гард approved-поста перенесено на початок джоби.** `assertSocialCopyCanPersist` читає пакет
+і його пости **до першого виклику моделі** й падає одразу, називаючи всі блокери разом. Пошук
+пакета винесено в спільний `findSocialPackageForJob`, яким користуються і pre-flight, і persist —
+щоб дві перевірки не розʼїхались. Статуси зведено в один `EDITABLE_SOCIAL_STATUSES`.
+
+**2. Стелі `max_tokens` підняті, обрив більше не викидає слот.** Writer 4096 → **8192**, critic
+2048 → **6144**. Корінь був не в довжині відповіді: `max_tokens` покриває і reasoning, а
+`exclude: true` лише ховає його з відповіді — генерується й тарифікується він однаково. Один
+критик-виклик 28.08 віддав 2048 completion-токенів, з яких **2048 були reasoning, контенту нуль**.
+Додатково `generateWithOpenRouterChain` отримав `retryTruncatedOnce`: обірвану відповідь тепер
+повторює **та сама модель** із подвоєною стелею (`extraBodyForModel` тепер приймає `attempt`),
+замість падіння на наступну — дорожчу — модель. Обидва валідатори (social і http-provider) кидають
+типізований `OpenRouterIncompleteJsonError`, щоб чейн відрізняв «забракло місця» від «не та форма».
+
+**3. Блоки промптів переставлено під кешування.** Writer: стабільне (роль → VOICE → what-must-give
+→ факти → **APPROVED ARTICLE**) → канальний блок → інструкція → волатильні `COPY ALREADY USED` і
+`REPAIR REQUIRED` у самому кінці. Critic: канал і його контракт прибрані з першого речення (там
+вони робили 6 різних префіксів на 6 каналів) і винесені окремим блоком після `APPROVED FACTS`.
+Три нові тести пінять цей контракт: спільний префікс між раундами ремонту >90% і містить
+`APPROVED ARTICLE`; префікс між каналами містить статтю, але не канальний контракт.
+
+**Спростовано:** гіпотеза «retry переплачує за вже згенеровані канали» **не підтвердилась**. Події
+`weekly_digest_generation_events` показують коректне відновлення (`Resuming 2/6`, потім `4/6`);
+однакові промпти — це впалий канал, перегенерований після власного падіння, а не повторна оплата
+готового. Деталі — [audits §6.3](audits/2026-08-29-openrouter-spend-leak.md).
+
+`npm run pr:check` зелений: 1905 тестів (+7), 0 помилок lint/wiki.
+(source: прод `weekly_digest_generation_events` job `52f06dfc` live check 2026-08-30;
+`src/lib/weekly-digest/generation-worker.ts`, `src/lib/weekly-digest/social-adapter.ts`,
+`src/lib/social/llm-router.ts`, `pipeline/openrouter-summarize.ts`,
+`pipeline/providers/http-provider.ts`)
+
+---

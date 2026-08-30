@@ -124,6 +124,67 @@ describe('generateWithHttpProviderChain', () => {
     expect(result.text).toBe('plain text, not JSON');
   });
 
+  // Regression: attempts the chain walked past are billed by OpenRouter just
+  // like the winner, but only the winner reached the ledger. On 2026-08-28
+  // that hid $8.09 of an $8.74 day.
+  it('surfaces billed usage from attempts whose answer was discarded', async () => {
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue(
+      mockChainResult({
+        usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30, costUsd: 0.05 },
+        discardedUsage: [
+          { promptTokens: 29_000, completionTokens: 2_100, totalTokens: 31_100, costUsd: 0.41 },
+          { promptTokens: 21_000, completionTokens: 500, totalTokens: 21_500, costUsd: 0.24 },
+        ],
+      }),
+    );
+
+    const result = await generateWithHttpProviderChain('prompt', {
+      id: 'openrouter',
+      apiKey: 'k',
+      modelQueue: ['a/b'],
+      ...OPENROUTER_HTTP_DEFAULTS,
+    });
+
+    expect(result.discarded).toEqual([
+      { promptTokens: 29_000, outputTokens: 2_100, costUsd: 0.41, costSource: 'reported' },
+      { promptTokens: 21_000, outputTokens: 500, costUsd: 0.24, costSource: 'reported' },
+    ]);
+  });
+
+  it('reports no discarded cost for a provider that does not price its calls', async () => {
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue(
+      mockChainResult({
+        discardedUsage: [
+          { promptTokens: 100, completionTokens: 5, totalTokens: 105, costUsd: 0.02 },
+        ],
+      }),
+    );
+
+    const result = await generateWithHttpProviderChain('prompt', {
+      id: 'nim',
+      apiKey: 'k',
+      modelQueue: ['a/b'],
+      ...NIM_HTTP_DEFAULTS,
+    });
+
+    expect(result.discarded).toEqual([
+      { promptTokens: 100, outputTokens: 5, costUsd: null, costSource: 'estimated' },
+    ]);
+  });
+
+  it('reports an empty discard list when the first model answers', async () => {
+    vi.mocked(generateWithOpenRouterChain).mockResolvedValue(mockChainResult());
+
+    const result = await generateWithHttpProviderChain('prompt', {
+      id: 'openrouter',
+      apiKey: 'k',
+      modelQueue: ['a/b'],
+      ...OPENROUTER_HTTP_DEFAULTS,
+    });
+
+    expect(result.discarded).toEqual([]);
+  });
+
   it('omits the usage field entirely for a provider that does not report cost -- regression test for the live NIM finding (2026-08-06)', async () => {
     // NVIDIA NIM validates request bodies strictly and returns HTTP 400
     // "Unsupported parameter(s): `usage`" for any request carrying OpenRouter's
@@ -142,7 +203,7 @@ describe('generateWithHttpProviderChain', () => {
     });
 
     const call = vi.mocked(generateWithOpenRouterChain).mock.calls[0]!;
-    const extraBody = call[1]?.extraBodyForModel?.('m');
+    const extraBody = call[1]?.extraBodyForModel?.('m', 1);
     expect(extraBody).toHaveProperty('usage', undefined);
     expect(JSON.stringify(extraBody)).not.toContain('usage');
   });
@@ -158,7 +219,7 @@ describe('generateWithHttpProviderChain', () => {
     });
 
     const call = vi.mocked(generateWithOpenRouterChain).mock.calls[0]!;
-    const extraBody = call[1]?.extraBodyForModel?.('m');
+    const extraBody = call[1]?.extraBodyForModel?.('m', 1);
     expect(extraBody).toBeUndefined();
   });
 
@@ -172,7 +233,7 @@ describe('generateWithHttpProviderChain', () => {
     );
 
     const call = vi.mocked(generateWithOpenRouterChain).mock.calls[0]!;
-    const extraBody = call[1]?.extraBodyForModel?.('m');
+    const extraBody = call[1]?.extraBodyForModel?.('m', 1);
     expect(extraBody).toMatchObject({ reasoning: { effort: 'low' } });
     expect(extraBody).toHaveProperty('usage', undefined);
   });

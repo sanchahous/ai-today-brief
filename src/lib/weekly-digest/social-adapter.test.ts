@@ -224,6 +224,82 @@ describe('adaptWeeklySocialChannel', () => {
     vi.clearAllMocks();
   });
 
+  // --- prompt caching contract -------------------------------------------
+  //
+  // Providers reuse a cached prompt only up to the first byte that differs.
+  // These tests pin the block order that makes that reuse possible: if a
+  // future edit moves a volatile block (REPAIR REQUIRED, COPY ALREADY USED,
+  // the copy under audit) back above a stable one, the shared prefix collapses
+  // and the largest stable block -- the full article JSON -- gets re-billed on
+  // every round. That regression cost real money on 2026-08-28: the writer
+  // cached 34.8% of its input and the critic only 3.1%, paying more in cache
+  // writes than it saved in reads.
+
+  const promptsFor = (role: 'writer' | 'critic') =>
+    vi
+      .mocked(generateSocialJson)
+      .mock.calls.filter(([callRole]) => callRole === role)
+      .map(([, prompt]) => prompt as string);
+
+  const sharedPrefix = (left: string, right: string) => {
+    let i = 0;
+    while (i < left.length && i < right.length && left[i] === right[i]) i += 1;
+    return left.slice(0, i);
+  };
+
+  it('keeps the article inside the prefix shared across repair rounds', async () => {
+    let criticCalls = 0;
+    vi.mocked(generateSocialJson).mockImplementation(async (role: string) => {
+      if (role === 'writer') return writerResult();
+      criticCalls += 1;
+      return criticCalls === 1
+        ? criticResult({ originalityScore: 40, originalityFlags: ['Generic opener'] })
+        : criticResult();
+    });
+
+    await adaptWeeklySocialChannel(baseInput());
+
+    const [first, second] = promptsFor('writer');
+    expect(second).toBeDefined();
+    // Round 2 differs from round 1 only by the appended REPAIR REQUIRED block.
+    expect(second).toContain('REPAIR REQUIRED');
+    expect(first).not.toContain('REPAIR REQUIRED');
+    const prefix = sharedPrefix(first!, second!);
+    expect(prefix).toContain('APPROVED ARTICLE');
+    expect(prefix).toContain('CHANNEL CONTRACT');
+    expect(prefix.length / first!.length).toBeGreaterThan(0.9);
+  });
+
+  it('keeps the article inside the prefix shared across channels', async () => {
+    vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
+      role === 'writer' ? writerResult() : criticResult(),
+    );
+
+    await adaptWeeklySocialChannel(baseInput());
+    await adaptWeeklySocialChannel({ ...baseInput(), channel: 'linkedin' as const });
+
+    const [x, linkedin] = promptsFor('writer');
+    const prefix = sharedPrefix(x!, linkedin!);
+    // The channel block is per-channel and legitimately breaks the prefix;
+    // everything digest-wide must sit above it.
+    expect(prefix).toContain('APPROVED ARTICLE');
+    expect(prefix).not.toContain('CHANNEL CONTRACT');
+  });
+
+  it('keeps the critic instructions and facts shared across channels', async () => {
+    vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
+      role === 'writer' ? writerResult() : criticResult(),
+    );
+
+    await adaptWeeklySocialChannel(baseInput());
+    await adaptWeeklySocialChannel({ ...baseInput(), channel: 'linkedin' as const });
+
+    const [x, linkedin] = promptsFor('critic');
+    const prefix = sharedPrefix(x!, linkedin!);
+    expect(prefix).toContain('APPROVED FACTS');
+    expect(prefix).not.toContain('CHANNEL CONTRACT');
+  });
+
   it('keeps writer copy when every critic provider is exhausted', async () => {
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) => {
       if (role === 'writer') return writerResult();

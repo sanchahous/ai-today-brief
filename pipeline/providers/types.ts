@@ -29,6 +29,14 @@ export interface ProviderCallResult {
   /** Concrete model id actually used. */
   model: string;
   usage: ProviderUsage;
+  /**
+   * Billed usage from earlier models in the chain whose answer was rejected.
+   * A metered provider charges for a discarded answer exactly like a kept one,
+   * so a caller that books only `usage` under-reports real spend — that is how
+   * $8.09 of an $8.74 day went unrecorded on 2026-08-28. Empty for providers
+   * that answer on the first try or don't report cost.
+   */
+  discarded?: ProviderUsage[];
 }
 
 /**

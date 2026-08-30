@@ -143,6 +143,7 @@ Last updated: 2026-08-29
 | ✅ [audits/2026-08-21-weekly-digest-release-backtest](audits/2026-08-21-weekly-digest-release-backtest.md) | Backtest `ai-weekly-2026-08-09`: 5 днів затримки через 28 Approve + hotfix-ланцюг, не через visuals; машина випуску з одним hallucination gate | прод-БД 2026-08-21 + `gh pr list` 09–21.08 |
 | ✅ [audits/2026-08-23-gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md) | Review Prompt-as-Code/weekly UI: один primary candidate, safe-frame, localized display title і hash-fenced private staging → explicit versioned visual apply без зміни published text/SEO/PDF/social | owner-скріни + код-ревʼю + локальна browser/SQL-перевірка 2026-08-23/24 |
 | ✅ [audits/2026-08-29-weekly-digest-revision-architecture-review](audits/2026-08-29-weekly-digest-revision-architecture-review.md) | Чому реліз 28-29.08 знову зламався + план Етап 0/Етап 1; **Етап 0 реалізовано** (carry-forward, split text/asset, live preflight, save_error замість #441, CI drift check) | живий реліз 28-29.08.2026 + гілка `feat/weekly-revision-stage-0` |
+| ✅ [audits/2026-08-29-openrouter-spend-leak](audits/2026-08-29-openrouter-spend-leak.md) | Рахунок OpenRouter $9.16/2 доби при ledger $1.3: social-ранжування без ціни вивело Fable ($14/M) у чергу writer-а (51% рахунку), відкинуті спроби не обліковувались, ставки вигадані, кап $4 не глобальний — усі чотири виправлені | експорт OpenRouter Activity + прод `generation_cost_events` + живий каталог 2026-08-29 |
 
 ## Decisions (ADR)
 
