@@ -6,10 +6,10 @@ describe('channelNativeCopy', () => {
     expect(
       channelNativeCopy({
         channel: 'threads',
-        text: 'ignored',
+        text: 'Merged',
         contentParts: ['One', 'Two', 'Three?'],
       }),
-    ).toBe('One\n\nTwo\n\nThree?');
+    ).toBe('One\n\n<PART>\n\nTwo\n\n<PART>\n\nThree?');
     expect(
       channelNativeCopy({
         channel: 'x',
