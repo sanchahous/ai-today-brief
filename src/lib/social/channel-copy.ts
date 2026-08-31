@@ -32,7 +32,7 @@ export function channelNativeCopy(input: {
     ].join('\n\n');
   }
   if (input.channel === 'threads') {
-    return (input.contentParts ?? []).join('\n\n');
+    return (input.contentParts ?? []).join('\n\n<PART>\n\n');
   }
   if (input.channel === 'x') {
     return `ROOT POST\n${input.text}\n\nSELF REPLY\n${input.firstComment ?? ''}`;

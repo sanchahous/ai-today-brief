@@ -63,7 +63,7 @@ function writerResult(
       text:
         overrides.text ??
         `${xCandidate('Anthropic shipped a concrete eval that changes how teams inspect agent behavior before deployment.')}<CANDIDATE>${xCandidate('The useful signal this week came from Anthropic and its newly shipped evaluation workflow.')}`,
-      firstComment: overrides.firstComment ?? null,
+      firstComment: overrides.firstComment ?? 'This is a valid first comment that contains a second fact and the URL https://aitodaybrief.com/r/s/token to satisfy the length and contract.',
     },
     provider: 'gemini' as const,
     model: 'gemini-writer',

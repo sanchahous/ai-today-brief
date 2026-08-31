@@ -605,7 +605,7 @@ CHANNEL: ${input.channel}
 CHANNEL CONTRACT: ${CHANNEL_CONTRACT[input.channel]}
 TRACKED URL: ${input.trackedUrl}
 
-Read the approved article above and decide your own angle for this channel's audience -- the single most compelling entry point, not a recap of every headline. Write it as a short (3-8 word) label in "angle". Then create THREE hook candidates built on that angle that are genuinely different from each other in opening, tone or emphasis -- not the same sentence reworded. Never open with a generic AI-tell phrase ("in today's fast-moving AI landscape", "it's worth noting", "game-changer") or a leader-briefing frame ("for product and security leaders") -- open on the concrete fact or scene. Put all candidates inside the JSON "text" string and separate them with <CANDIDATE>. For Threads use <PART> inside each candidate. For Instagram use the tagged 7-slide contract inside each candidate. For X and LinkedIn return the tracked URL in "firstComment"; for other channels put it only where the contract permits. Return strict JSON only: {"angle":"","text":"candidate 1<CANDIDATE>candidate 2<CANDIDATE>candidate 3","firstComment":""}.
+Read the approved article above and decide your own angle for this channel's audience -- the single most compelling entry point, not a recap of every headline. Write it as a short (3-8 word) label in "angle". Then create THREE hook candidates built on that angle that are genuinely different from each other in opening, tone or emphasis -- not the same sentence reworded. Never open with a generic AI-tell phrase ("in today's fast-moving AI landscape", "it's worth noting", "game-changer") or a leader-briefing frame ("for product and security leaders") -- open on the concrete fact or scene. Put all candidates inside the JSON "text" string and separate them with <CANDIDATE>. For Threads use <PART> inside each candidate. For Instagram use the tagged 7-slide contract inside each candidate. For X and LinkedIn, you MUST populate the "firstComment" field with the tracked URL and the required extra text (never just a bare URL); for other channels, leave "firstComment" as null. Return strict JSON only: {"angle":"","text":"candidate 1<CANDIDATE>candidate 2<CANDIDATE>candidate 3","firstComment":"..."}.
 ${
   input.avoidCopies?.length
     ? `\nCOPY ALREADY USED ON OTHER ${input.locale.toUpperCase()} CHANNELS — choose a materially different hook and structure:\n${input.avoidCopies.map(copyForAudit).join('\n---\n')}\n`
@@ -665,7 +665,7 @@ export async function adaptWeeklySocialChannel(input: {
     // three before asking the writer to repair multiplied slow reasoning-model
     // latency by nine in the worst case without improving the repair signal.
     for (const selected of ranked.slice(0, 1)) {
-      const firstComment = input.channel === 'x' ? input.trackedUrl : writer.value.firstComment;
+      const firstComment = writer.value.firstComment;
       const hookCandidatesTriple = [
         hookCandidates[0] ?? selected.candidate,
         hookCandidates[1] ?? selected.candidate,
