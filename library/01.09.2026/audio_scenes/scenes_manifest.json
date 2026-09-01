@@ -1,0 +1,92 @@
+[
+  {
+    "id": "scene_01_cold_open",
+    "title": "Cold Open",
+    "text": "Eighty percent of developers have already offloaded their baseline coding to AI. But does it really speed up the workflow? Today we break down the real numbers and the top 3 launches of the week."
+  },
+  {
+    "id": "scene_02_story1_intro",
+    "title": "Scene 1.1",
+    "text": "This week, the industry took a massive leap from simple chatbots to fully autonomous agents."
+  },
+  {
+    "id": "scene_03_story1_process",
+    "title": "Scene 1.2",
+    "text": "A new framework has shown the ability not just to answer questions, but to independently plan architecture and run tests."
+  },
+  {
+    "id": "scene_04_story1_details",
+    "title": "Scene 1.3",
+    "text": "Models can now hold the context of an entire repository in memory, analyzing dependencies without human intervention."
+  },
+  {
+    "id": "scene_05_story1_result",
+    "title": "Scene 1.4",
+    "text": "What does this mean in practice? The time needed to build a working prototype has been cut by two-thirds."
+  },
+  {
+    "id": "scene_06_story1_value",
+    "title": "Scene 1.5",
+    "text": "Furthermore, the likelihood of hallucinations in complex logic chains has decreased by forty percent."
+  },
+  {
+    "id": "scene_07_story2_intro",
+    "title": "Scene 2.1",
+    "text": "Model memory is growing exponentially. A new context window has been announced that can process up to two million tokens in a single prompt."
+  },
+  {
+    "id": "scene_08_story2_process",
+    "title": "Scene 2.2",
+    "text": "That’s the equivalent of fifty books, or the entire codebase of an average startup."
+  },
+  {
+    "id": "scene_09_story2_details",
+    "title": "Scene 2.3",
+    "text": "But there’s a catch: information retrieval speed at the edges of such a massive context is still unstable."
+  },
+  {
+    "id": "scene_10_story2_result",
+    "title": "Scene 2.4",
+    "text": "Because of this, developers still have to rely on RAG techniques for their mission-critical data."
+  },
+  {
+    "id": "scene_11_story2_value",
+    "title": "Scene 2.5",
+    "text": "Another challenge is cost optimization. Prompts with a massive context are tens of times more expensive to run."
+  },
+  {
+    "id": "scene_12_story3_intro",
+    "title": "Scene 3.1",
+    "text": "Meanwhile, open-source is striking back. A new open 70-billion parameter model is breaking records."
+  },
+  {
+    "id": "scene_13_story3_process",
+    "title": "Scene 3.2",
+    "text": "It has outperformed proprietary leaders in key programming and advanced mathematics benchmarks."
+  },
+  {
+    "id": "scene_14_story3_details",
+    "title": "Scene 3.3",
+    "text": "This changes the economics. Companies can now deploy these models on their own servers, maintaining total privacy."
+  },
+  {
+    "id": "scene_15_story3_result",
+    "title": "Scene 3.4",
+    "text": "You completely avoid vendor lock-in and retain full control over your product's lifecycle."
+  },
+  {
+    "id": "scene_16_story3_value",
+    "title": "Scene 3.5",
+    "text": "Thanks to optimized weights, running a model of this size is now possible even on high-end consumer hardware."
+  },
+  {
+    "id": "scene_17_radar",
+    "title": "Radar",
+    "text": "And briefly, other important news on our radar. First: The European Union has released official compliance guidelines for the new AI Act. Fines for violations can reach up to 7% of global revenue. Second: The popular LangChain framework has received a massive core update for asynchronous operations. Third: A new study shows that code completion tools save developers up to 2 hours a day, but require 15% more time on code reviews."
+  },
+  {
+    "id": "scene_18_outro",
+    "title": "Outro",
+    "text": "Evolution is accelerating. To stay ahead, focus on architecture and let algorithms handle the routine. Full texts of all the research and benchmarks are already waiting for you in our email digest. Subscribe to AI Today Brief. See you next time!"
+  }
+]

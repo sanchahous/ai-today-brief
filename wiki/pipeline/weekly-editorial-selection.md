@@ -7,8 +7,8 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 2026-08-17, pre-critic hang 2026-08-22, critic model rotation 2026-08-22,
 Visuals upload body-cap sync 2026-08-26, Fixes & blockers 2026-08-28,
 social copy fail-open 2026-08-28, revision Stage 0 2026-08-29,
-каталожний вибір OpenRouter 2026-08-30.
-Last updated: 2026-08-30
+каталожний вибір OpenRouter 2026-08-30, оновлення відео-формату 2026-09-01.
+Last updated: 2026-09-01
 
 ---
 

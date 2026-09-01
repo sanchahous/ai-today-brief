@@ -9,8 +9,8 @@ Telegram block-structure gate 2026-08-28, Fixes & blockers + warnings do not hol
 social remaining issues are warnings 2026-08-28, missing `ship_weekly_digest` migration +
 carry-forward gaps + LinkedIn first_comment form bug + cover-upload cascade + WebVTT
 fallback, live release of `ai-weekly-2026-08-16` 2026-08-28, revision Stage 0 2026-08-29,
-каталожний вибір OpenRouter 2026-08-30
-Last updated: 2026-08-30
+каталожний вибір OpenRouter 2026-08-30, оновлення відео-формату 2026-09-01
+Last updated: 2026-09-01
 
 ---
 

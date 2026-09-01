@@ -7,8 +7,8 @@ editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 working-copy UX 2026-08-22, image prompt library v6 2026-08-23, daily visual 2026-08-24…25,
 Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract + fail-open 2026-08-28,
 Fixes & blockers + warnings do not hold socials 2026-08-28, topic-based slug on publish 2026-08-29, revision Stage 0 2026-08-29,
-каталожний вибір моделей OpenRouter 2026-08-30
-Last updated: 2026-08-30
+каталожний вибір моделей OpenRouter 2026-08-30, оновлення відео-формату 2026-09-01
+Last updated: 2026-09-01
 
 ---
 
