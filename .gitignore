@@ -75,3 +75,12 @@ experiments/**/*.png
 experiments/**/*.jpg
 experiments/**/*.jpeg
 experiments/**/*.webp
+
+# library: local working materials (audio scenes, video scenes, music, background clips, brand binaries)
+library/*
+!library/tools/
+!library/tools/**
+!library/README.md
+1111/
+1Create*
+
