@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   isValidYouTubeVideo,
+  isWeeklyYouTubeDurationSeconds,
   normalizeYouTubeVideo,
   parseYouTubeVideoId,
   validateWeeklyVideoResultManifest,
+  WEEKLY_YOUTUBE_DURATION_MAX_SECONDS,
+  WEEKLY_YOUTUBE_DURATION_MIN_SECONDS,
 } from './video';
 
 const VIDEO_ID = 'dQw4w9WgXcQ';
@@ -73,5 +76,40 @@ describe('Weekly Digest YouTube validation', () => {
         expected,
       ),
     ).toThrow(/does not match/i);
+  });
+
+  it('accepts AtbEpisode length and rejects below the weekly floor', () => {
+    expect(WEEKLY_YOUTUBE_DURATION_MIN_SECONDS).toBe(120);
+    expect(WEEKLY_YOUTUBE_DURATION_MAX_SECONDS).toBe(1200);
+    expect(isWeeklyYouTubeDurationSeconds(158)).toBe(true);
+    expect(isWeeklyYouTubeDurationSeconds(119)).toBe(false);
+
+    const expected = {
+      digestId: '11111111-1111-4111-8111-111111111111',
+      revisionId: '22222222-2222-4222-8222-222222222222',
+      inputHash: 'a'.repeat(64),
+    };
+    const base = {
+      schemaVersion: 'weekly-video-result-v2' as const,
+      ...expected,
+      youtube: {
+        id: VIDEO_ID,
+        url: `https://www.youtube.com/watch?v=${VIDEO_ID}`,
+        thumbnailUrl: `https://i.ytimg.com/vi/${VIDEO_ID}/maxresdefault.jpg`,
+        durationSeconds: 158,
+        publishedAt: '2026-09-02T10:00:00.000Z',
+      },
+      captions: [
+        { locale: 'en' as const, url: 'https://cdn.example/captions-en.vtt' },
+        { locale: 'uk' as const, vtt: 'WEBVTT\n\n00:00.000 --> 00:01.000\nТекст' },
+      ],
+    };
+    expect(validateWeeklyVideoResultManifest(base, expected).youtube.durationSeconds).toBe(158);
+    expect(() =>
+      validateWeeklyVideoResultManifest(
+        { ...base, youtube: { ...base.youtube, durationSeconds: 119 } },
+        expected,
+      ),
+    ).toThrow(/120 and 1200/);
   });
 });

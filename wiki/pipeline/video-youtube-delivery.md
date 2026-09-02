@@ -5,7 +5,7 @@ Sources: [video-boundary](video-boundary.md), `src/lib/weekly-digest/video.ts`,
 `ai-today-brief-video/scripts/build-result-manifest.ts`,
 [marketing/social-launch](../marketing/social-launch.md); перенесено з
 `ai-today-brief-video/wiki` 2026-08-28
-Last updated: 2026-08-19
+Last updated: 2026-09-02
 
 ---
 
@@ -15,7 +15,7 @@ YouTube — публічний плеєр і embed на `aitodaybrief.com`. Ма
 (source: [video-boundary § Media retention](video-boundary.md#media-retention))
 
 Сайт приймає лише `weekly-video-result-v2`: 11-символьний id, HTTPS thumbnail, duration
-300–600 с, captions EN+UK (URL або inline VTT). Немає поля для MP4-файла в CMS — банер Video
+120–1200 с, captions EN+UK (URL або inline VTT). Немає поля для MP4-файла в CMS — банер Video
 таба: «YouTube is the final video storage — no MP4 upload».
 (source: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/video.ts`)
 

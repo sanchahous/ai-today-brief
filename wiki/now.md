@@ -10,12 +10,20 @@ Visuals upload body cap 2026-08-26, admin weekly workspace hang fix 2026-08-28,
 social copy channel-contract + fail-open warnings 2026-08-28, Fixes & blockers 2026-08-28,
 консолідація трьох відео-папок в один репозиторій 2026-08-28,
 revision Stage 0 (carry-forward / live preflight) 2026-08-29,
-topic-based weekly slug + OpenRouter spend leak 2026-08-29
-Last updated: 2026-08-30
+topic-based weekly slug + OpenRouter spend leak 2026-08-29,
+YouTube duration floor 120s 2026-09-02
+Last updated: 2026-09-02
 
 ---
 
 ## Стан репозиторію
+
+- **YouTube weekly duration floor 120s (2026-09-02).** Епізод 01.09
+  [`dtCMvtTIUpM`](https://youtu.be/dtCMvtTIUpM) — **158s**, чіпляється на
+  `ai-weekly-2026-08-23`. Було 200–1200s (PR #331); тепер **120–1200s**
+  (`WEEKLY_YOUTUBE_DURATION_MIN_SECONDS`). Після Save на Video-табі —
+  Approve `video_final` / captions / thumbnail.
+  (source: owner session 2026-09-02)
 
 - **Вибір моделей OpenRouter переписано (2026-08-30), гілка `feat/openrouter-catalog-selection` поверх #343.**
   Сім кроків з [research/2026-08-30-openrouter-routing-api §12](research/2026-08-30-openrouter-routing-api.md):
