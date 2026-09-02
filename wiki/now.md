@@ -12,12 +12,10 @@ Last updated: 2026-09-02
 ## Стан репозиторію
 
 - **Supabase egress (2026-09-02).** Спайк — три `next build` проти PostgREST, не
-  читачі. Орг на **Pro** з ~12:11 UTC; Data API знову **200**. PR #348: Next Data
-  Cache на anon GET, `cachePublicRead`, `E2E_MINIMAL_PRERENDER` у e2e. Після
-  деплою Vercel SSG все ще **3247** `brief_items` і **2063** `categories` — 11
-  воркерів не ділять `unstable_cache`. Follow-up: in-memory + on-disk memo лише
-  під `next build` (`.next/cache/atb-public-content`). Weekly
-  `ai-weekly-2026-08-23` далі чекає release-due + promote, не SQL-finish.
+  читачі. Орг на **Pro** з ~12:11 UTC; Data API **200**. #348 (e2e cap) + #350
+  (SSG disk-memo). Прод SSG `dd49672` 13:08 UTC: Vercel Ashburn `categories`
+  **2063→30**, `brief_items` **3247→1471**. Weekly `ai-weekly-2026-08-23` далі
+  чекає release-due + promote, не SQL-finish.
   (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
 
 - **YouTube weekly duration floor 120s (2026-09-02).** Епізод 01.09

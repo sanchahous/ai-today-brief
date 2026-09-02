@@ -6,7 +6,7 @@ Summary: Free-план org-wide вичерпав uncached egress (15 GB / 5 GB).
 Data Cache на anon GET, `cachePublicRead`, e2e prerender cap, і SSG disk-memo між
 11 воркерами (`withBuildMemo`).
 Sources: Supabase Usage Dashboard (цикл 21 Aug 2026 – 21 Sep 2026); `edge_logs` через
-MCP `query_logs` 2026-09-01T10:00Z–2026-09-02T12:23Z; `src/lib/supabase.ts`,
+MCP `query_logs` 2026-09-01T10:00Z–2026-09-02T13:10Z; `src/lib/supabase.ts`,
 `src/lib/public-content-cache.ts`, `src/lib/public-content-build-memo.ts`.
 Last updated: 2026-09-02
 
@@ -91,8 +91,23 @@ Next Data Cache їх не бачить. Три повні прод-білди в
 listing-запитів (`getCategories` ≈ один header fetch на кожну згенеровану сторінку).
 (source: Supabase `edge_logs` 2026-09-02T12:18Z–12:23Z; owner session 2026-09-02)
 
-Очікування після disk-memo на наступному production SSG: `categories` десятки, не ~2063;
-`brief_items` ближче до унікальних item (~1.4k) плюс related/adjacent, не 3247.
+## Вимірювання після PR #350 (disk-memo)
+
+Прод-деплой `dd49672` (#350, squash) завершився **2026-09-02T13:08:05Z**
+(Vercel `7gEmfbYHEad43K7JuWcxBeFbCjBH`). Вікно `13:04–13:10 UTC`, усі **200**.
+
+| Таблиця | #348 Ashburn | #350 Ashburn | Δ |
+|---|---:|---:|---|
+| `categories` | 2063 | **30** | −99% |
+| `brief_items` | 3247 | **1471** | −55% |
+| `articles` | 2012 | **1168** | −42% |
+| `briefs` | 532 | **235** | −56% |
+
+`categories` тепер десятки (shared listing). `brief_items` ≈ унікальні item (~688 × 2 мови)
+плюс `generateStaticParams` / related — не 11× повтор. `articles` лишається окремим
+per-item lookup всередині `getNewsItem`; це вже не listing-stampede.
+GitHub e2e в цьому ж вікні лише стартував (Des Moines: `brief_items` 21) — cap з #348.
+(source: Supabase `edge_logs` 2026-09-02T13:04Z–13:10Z; Vercel production deploy `dd49672`)
 
 ## Що цей фікс не робить
 
