@@ -2,6 +2,7 @@ import 'server-only';
 
 import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
+import { withBuildMemo } from '@/lib/public-content-build-memo';
 import {
   E2E_MINIMAL_PRERENDER_LIMIT,
   PUBLIC_CONTENT_REVALIDATE_SECONDS,
@@ -19,21 +20,24 @@ function skipPersistentCache(): boolean {
 }
 
 /**
- * Dedupes identical public reads inside one render (`cache`) and across the
- * static build / ISR window (`unstable_cache`). Vitest keeps the raw function
- * so mocked Supabase clients are not memoized across tests.
+ * Dedupes identical public reads inside one render (`cache`), across SSG
+ * workers (`withBuildMemo` disk file), and across the ISR window
+ * (`unstable_cache`). Vitest keeps the raw function so mocked clients
+ * are not memoized across tests.
  */
 export function cachePublicRead<Args extends unknown[], Result>(
   key: string,
   fn: (...args: Args) => Promise<Result>,
 ): (...args: Args) => Promise<Result> {
   if (skipPersistentCache()) return fn;
-  return cache(
-    unstable_cache(fn, [key], {
-      revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS,
-      tags: [PUBLIC_CONTENT_TAG],
-    }),
-  );
+  const persistent = unstable_cache(fn, [key], {
+    revalidate: PUBLIC_CONTENT_REVALIDATE_SECONDS,
+    tags: [PUBLIC_CONTENT_TAG],
+  });
+  async function load(...args: Args): Promise<Result> {
+    return withBuildMemo(key, args, () => persistent(...args));
+  }
+  return cache(load);
 }
 
 export function isMinimalPrerender(): boolean {

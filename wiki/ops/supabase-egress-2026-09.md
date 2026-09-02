@@ -1,12 +1,13 @@
 # Supabase uncached egress — інцидент 2026-09-02
 
 Summary: Free-план org-wide вичерпав uncached egress (15 GB / 5 GB). Data API і Storage
-віддають **402**. Причина — три повні `next build` проти прод PostgREST за одну годину,
-не читачі в браузері. Фікс: Next Data Cache на anon REST GET, `cachePublicRead` на
-listing/item читаннях, мінімальний prerender у e2e.
+віддавали **402**. Причина — три повні `next build` проти прод PostgREST за одну годину,
+не читачі в браузері. Орг на **Pro** з 2026-09-02 ~12:11 UTC — REST знову 200. Код: Next
+Data Cache на anon GET, `cachePublicRead`, e2e prerender cap, і SSG disk-memo між
+11 воркерами (`withBuildMemo`).
 Sources: Supabase Usage Dashboard (цикл 21 Aug 2026 – 21 Sep 2026); `edge_logs` через
-MCP `query_logs` 2026-09-01T10:00Z–2026-09-02T10:00Z; `src/lib/supabase.ts`,
-`src/lib/public-content-cache.ts`, `.github/workflows/e2e.yml`.
+MCP `query_logs` 2026-09-01T10:00Z–2026-09-02T12:23Z; `src/lib/supabase.ts`,
+`src/lib/public-content-cache.ts`, `src/lib/public-content-build-memo.ts`.
 Last updated: 2026-09-02
 
 ---
@@ -58,20 +59,47 @@ Next Data Cache їх не бачить. Три повні прод-білди в
 
 1. **Anon client** (`getSupabase`): `global.fetch` для `GET /rest/v1/` ставить
    `next.revalidate = 3600` і tag `public-content`, прибирає `cache: 'no-store'`.
-   `getSupabaseAdmin()` / service_role — без змін.
-2. **`cachePublicRead`**: React `cache` (один render) + `unstable_cache` (білд / ISR)
-   на `getNewsItem`, sitemap entries, home/news/category hub, related-by-category,
-   adjacent-by-brief. Publish і editor-take викликають `revalidateTag('public-content', 'max')`.
+   `getSupabaseAdmin()` / service_role — без змін. Next 16 **не** кладе в Data Cache
+   fetch з `Authorization` (supabase-js шле anon JWT) — тож цей шар на SSG слабкий.
+2. **`cachePublicRead`**: React `cache` (один render) + `unstable_cache` (ISR) +
+   `withBuildMemo` під час `NEXT_PHASE=phase-production-build` (in-process Promise
+   + JSON під `.next/cache/atb-public-content`, sha256 від `{key, args}`). Так 11
+   SSG-воркерів ділять `getCategories` / related / adjacent / home-news хаби.
+   Runtime ISR **не** читає цей диск — `revalidateTag('public-content', 'max')` лишається
+   чесним. Vitest обходить обгортку. `getPublishedCategoryCounts` не обгорнутий
+   (повертає `Map`, не JSON); він живе всередині `loadHomeData`, який уже JSON-safe.
 3. **E2E**: `E2E_MINIMAL_PRERENDER=1` у `.github/workflows/e2e.yml` і
    `scripts/e2e-affected.ts` лишає `generateStaticParams` на 8 шляхів. Production Vercel
    цей прапорець **не** ставить — індексовані item-сторінки далі prerender.
-   (source: `src/lib/public-content-cache.ts`, `src/lib/items.ts`)
+   (source: `src/lib/public-content-cache.ts`, `src/lib/public-content-build-memo.ts`,
+   `src/lib/items.ts`)
+
+## Вимірювання після PR #348 (без disk-memo)
+
+Прод-деплой `074121c` завершився **2026-09-02T12:21:52Z** (Vercel `8Rjx2ydjaZLhLHYREh4mr2FJiFUR`).
+Вікно `12:18–12:23 UTC`, усі відповіді **200** (402 зник після апгрейду на Pro ~12:11 UTC).
+
+| Джерело | `brief_items` | Нотатка |
+|---|---:|---|
+| Vercel Ashburn | **3247** | повний SSG, −43% vs 5723 |
+| GitHub e2e на main | **146** | `E2E_MINIMAL_PRERENDER`, ~60× вниз від 9027 |
+| Локальний білд | 0 | SSG не запускали |
+
+У тому ж Vercel SSG: `categories` **2063**, `articles` **2012**, `briefs` **532**.
+`unstable_cache` не шариться між 11 воркерами; React `cache()` — лише на один request.
+Унікальні `getNewsItem` (~688 × 2 мови) все одно б'ють PostgREST; зайве — повтор
+listing-запитів (`getCategories` ≈ один header fetch на кожну згенеровану сторінку).
+(source: Supabase `edge_logs` 2026-09-02T12:18Z–12:23Z; owner session 2026-09-02)
+
+Очікування після disk-memo на наступному production SSG: `categories` десятки, не ~2063;
+`brief_items` ближче до унікальних item (~1.4k) плюс related/adjacent, не 3247.
 
 ## Що цей фікс не робить
 
-Поточний цикл уже 300%. Код зупиняє **наступний** спайк. Data API лишається 402, поки
-не буде Pro або 21.09. Weekly `ai-weekly-2026-08-23` не можна дотиснути через
-`/api/internal/weekly/release-due`, доки REST знову 200.
+Квоту вже спаленого циклу (15.004 / 5 GB на Free) відкотити не можна — далі ліміт Pro
+(250 GB). Weekly `ai-weekly-2026-08-23` після REST 200 все одно потребує
+`/api/internal/weekly/release-due` → `promoteWeeklyDigestPublicAssets` →
+`finish_weekly_digest_release(true)`, не голий SQL-finish.
 (source: owner session 2026-09-02)
 
 ## Related pages
