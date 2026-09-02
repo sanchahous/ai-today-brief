@@ -6,6 +6,18 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-09-02
 
+## 2026-09-02 — запобіжники Free: повний SSG лише production Vercel
+
+Preview PR, локальний `pr:check` і e2e більше не рендерять увесь каталог (8 item-шляхів).
+Wiki/pipeline-only коміти Vercel пропускає (`ignoreCommand`). Pro тримати до 21 Sep.
+(source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
+
+## 2026-09-02 — прод SSG після #350: categories 2063→30
+
+#350 злито як `dd49672` (13:08 UTC). Vercel Ashburn: `categories` **30** (було 2063),
+`brief_items` **1471** (було 3247). E2e cap з #348 лишився. REST 200, 402 немає.
+(source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md); `edge_logs` 13:04–13:10Z)
+
 ## 2026-09-02 — SSG build memo між 11 воркерами `next build`
 
 PR #348 зрізав e2e (`brief_items` 9027→146), але прод SSG лишив `categories` 2063:

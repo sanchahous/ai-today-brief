@@ -15,7 +15,7 @@ From repo root:
 npm run pr:check
 ```
 
-Runs **`ci:check`** (Vitest coverage ≥70% on logic scope + `verify:logic-lcov`) + `typecheck` + `lint` + `e2e:check` + **`wiki:check`** (project↔wiki sync + lint --strict) + `build`.
+Runs **`ci:check`** (Vitest coverage ≥70% on logic scope + `verify:logic-lcov`) + `typecheck` + `lint` + `e2e:check` + **`wiki:check`** (project↔wiki sync + lint --strict) + **`build:ci`** (`E2E_MINIMAL_PRERENDER=1`, not a full prod SSG). Full catalog prerender is **Vercel production only** (`npm run build:full` locally if you need it).
 
 - `pr:check` fails → fix, re-run until green, **then** push / open the PR.
 - Can't fix within scope → report the failure and **do not** open the PR.

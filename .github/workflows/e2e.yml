@@ -51,8 +51,8 @@ jobs:
       # Playwright tests the built website, so it only needs to run on UI-affecting
       # changes: skip wiki / markdown / SQL-migration / workflow-only AND pipeline-only
       # PRs (the pipeline never renders the site). Reads the file list from the API
-      # rather than from a deep clone, so the skip path costs no checkout. Anything
-      # that is not a pull_request (main, manual dispatch) always runs.
+      # rather than from a deep clone, so the skip path costs no checkout.
+      # Keep the grep in sync with scripts/ssg-build-scope.mjs SKIP_SSG_PATH_RE.
       - name: Decide whether the site changed
         id: scope
         env:
@@ -60,19 +60,25 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "Not a pull request — running the full suite."
+            echo "Manual dispatch — running the full suite."
             exit 0
           fi
-          FILES=$(gh api --paginate \
-            "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
-            --jq '.[].filename')
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            FILES=$(gh api --paginate \
+              "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
+              --jq '.[].filename')
+          else
+            FILES=$(gh api \
+              "repos/${{ github.repository }}/commits/${GITHUB_SHA}" \
+              --jq '.files[].filename')
+          fi
           echo "Changed files:"
           echo "$FILES"
           # A path is IRRELEVANT when it sits in a docs/ops zone or is any .md file.
           # If even one changed path falls outside that set, the site may be affected.
-          if printf '%s\n' "$FILES" | grep -qvE '^(wiki/|raw/|artifacts/|supabase/migrations/|\.github/|pipeline/)|\.md$'; then
+          if printf '%s\n' "$FILES" | grep -qvE '^(wiki/|raw/|artifacts/|experiments/|library/|supabase/migrations/|\.github/|pipeline/|\.cursor/|\.agents/|\.claude/)|\.md$'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             echo "-> site-affecting change detected, running the suite."
           else

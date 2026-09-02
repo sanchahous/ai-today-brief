@@ -41,10 +41,14 @@ export function cachePublicRead<Args extends unknown[], Result>(
 }
 
 export function isMinimalPrerender(): boolean {
-  return process.env.E2E_MINIMAL_PRERENDER === '1';
+  if (process.env.E2E_MINIMAL_PRERENDER === '1') return true;
+  // Preview deploys used to full-SSG prod PostgREST on every PR push. Production
+  // (`VERCEL_ENV=production`) still prerenders every indexed item. Do not
+  // Promote a preview build to production — merge to main starts a fresh build.
+  return process.env.VERCEL_ENV === 'preview';
 }
 
-/** CI/e2e builds only — production Vercel must prerender every indexed item. */
+/** CI / Vercel preview / local pr:check — production Vercel must prerender every indexed item. */
 export function limitPrerenderPaths<T>(paths: T[]): T[] {
   if (!isMinimalPrerender()) return paths;
   return paths.slice(0, E2E_MINIMAL_PRERENDER_LIMIT);

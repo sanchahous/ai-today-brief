@@ -6,6 +6,7 @@ import { getSupabase } from '@/lib/supabase';
 import { LANGS, type Lang } from '@/lib/site';
 import { extractToolNames } from '@/lib/tools-mentioned';
 import type { IconKey } from '@/components/icons';
+import { limitPrerenderPaths } from '@/lib/public-content-cache';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -213,7 +214,7 @@ export async function getConceptPaths(): Promise<{ lang: string; slug: string }[
   if (!data) return [];
   const paths: { lang: string; slug: string }[] = [];
   for (const c of data) for (const lang of LANGS) paths.push({ lang, slug: c.slug });
-  return paths;
+  return limitPrerenderPaths(paths);
 }
 
 export interface ConceptSitemapEntry {

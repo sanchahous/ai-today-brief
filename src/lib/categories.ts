@@ -4,7 +4,7 @@ import type { HomeItem } from '@/lib/home';
 import { LANGS, type Lang } from '@/lib/site';
 import type { NewsCard } from '@/lib/news';
 import type { IconKey } from '@/components/icons';
-import { cachePublicRead } from '@/lib/public-content-cache';
+import { cachePublicRead, limitPrerenderPaths } from '@/lib/public-content-cache';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -322,5 +322,5 @@ export async function getCategoryPaths(): Promise<{ lang: string; slug: string }
   if (!data) return [];
   const paths: { lang: string; slug: string }[] = [];
   for (const c of data) for (const lang of LANGS) paths.push({ lang, slug: c.slug });
-  return paths;
+  return limitPrerenderPaths(paths);
 }

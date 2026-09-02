@@ -100,10 +100,12 @@ describe('cachePublicRead under Vitest', () => {
 describe('limitPrerenderPaths', () => {
   afterEach(() => {
     delete process.env.E2E_MINIMAL_PRERENDER;
+    delete process.env.VERCEL_ENV;
   });
 
   it('passes through in production builds', () => {
     delete process.env.E2E_MINIMAL_PRERENDER;
+    process.env.VERCEL_ENV = 'production';
     expect(isMinimalPrerender()).toBe(false);
     const paths = [1, 2, 3, 4, 5, 6, 7, 8, 9];
     expect(limitPrerenderPaths(paths)).toEqual(paths);
@@ -115,6 +117,14 @@ describe('limitPrerenderPaths', () => {
     const paths = Array.from({ length: 40 }, (_, i) => i);
     expect(limitPrerenderPaths(paths)).toEqual(
       paths.slice(0, E2E_MINIMAL_PRERENDER_LIMIT),
+    );
+  });
+
+  it('caps Vercel preview deploys so PR pushes do not full-SSG', () => {
+    process.env.VERCEL_ENV = 'preview';
+    expect(isMinimalPrerender()).toBe(true);
+    expect(limitPrerenderPaths([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])).toHaveLength(
+      E2E_MINIMAL_PRERENDER_LIMIT,
     );
   });
 });
