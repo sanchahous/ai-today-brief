@@ -4,7 +4,7 @@ import { realpathSync } from 'node:fs';
 /**
  * E2E smoke + layout regression for critical UI flows.
  * One-time setup: `npm run e2e:install`
- * Run locally: `E2E_MINIMAL_PRERENDER=1 npm run build && npm run e2e`
+ * Run locally: `npm run build:ci && npm run e2e`
  * (starts `next start` via webServer). Without the env flag a full SSG against
  * live PostgREST repeats the Sep 2026 uncached-egress incident.
  */

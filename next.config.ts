@@ -78,6 +78,15 @@ const CANONICAL_ITEM_REDIRECTS: ReadonlyArray<{ src: string; dst: string }> = [
 ];
 
 const nextConfig: NextConfig = {
+  // Inlined into the server bundle so SSG workers see the cap. Preview and
+  // local `build:ci` must not full-prerender prod PostgREST. Production leaves
+  // this empty — do not Promote a preview build to production.
+  env: {
+    E2E_MINIMAL_PRERENDER:
+      process.env.E2E_MINIMAL_PRERENDER === '1' || process.env.VERCEL_ENV === 'preview'
+        ? '1'
+        : '',
+  },
   // Baseline hardening for every response. Kept minimal on purpose: no CSP
   // yet (inline JSON-LD + GA/GTM need a nonce rollout of its own), and
   // X-Frame-Options is omitted in favour of the frame-ancestors-less default

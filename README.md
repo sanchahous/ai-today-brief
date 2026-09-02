@@ -30,7 +30,7 @@ npm run dev
 
 | Команда | Що робить |
 |---|---|
-| `npm run pr:check` | **обов'язково перед пушем**: coverage + typecheck + lint + e2e-check + build |
+| `npm run pr:check` | **обов'язково перед пушем**: coverage + typecheck + lint + e2e-check + `build:ci` (8 item-сторінок, не повний SSG) |
 | `npm test` / `npm run test:coverage` | Vitest (гейт ≥70% на logic-модулях) |
 | `npm run e2e` | Playwright (спершу одноразово `npm run e2e:install`) |
 | `npm run pipeline` / `npm run pipeline:dry` | прогін щоденного pipeline |

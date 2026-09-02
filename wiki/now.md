@@ -11,11 +11,11 @@ Last updated: 2026-09-02
 
 ## Стан репозиторію
 
-- **Supabase egress (2026-09-02).** Спайк — три `next build` проти PostgREST, не
-  читачі. Орг на **Pro** з ~12:11 UTC; Data API **200**. #348 (e2e cap) + #350
-  (SSG disk-memo). Прод SSG `dd49672` 13:08 UTC: Vercel Ashburn `categories`
-  **2063→30**, `brief_items` **3247→1471**. Weekly `ai-weekly-2026-08-23` далі
-  чекає release-due + promote, не SQL-finish.
+- **Supabase egress (2026-09-02).** Спайк — три повні `next build`, не читачі. Орг на
+  **Pro** до кінця циклу **21 Sep**; даунгрейд раніше = знову 402. #348+#350 + запобіжники:
+  повний SSG лише production Vercel; preview/`pr:check`/e2e — 8 item-шляхів; wiki-only
+  коміти Vercel пропускає. Прод SSG `dd49672`: `categories` **2063→30**, `brief_items`
+  **3247→1471**. Weekly `ai-weekly-2026-08-23` чекає release-due + promote.
   (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
 
 - **YouTube weekly duration floor 120s (2026-09-02).** Епізод 01.09

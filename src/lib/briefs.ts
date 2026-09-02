@@ -3,6 +3,7 @@ import { getCategories } from '@/lib/categories';
 import { getStrings } from '@/lib/i18n';
 import { LANGS, type Lang } from '@/lib/site';
 import { extractToolNames } from '@/lib/tools-mentioned';
+import { limitPrerenderPaths } from '@/lib/public-content-cache';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -332,7 +333,7 @@ export async function getBriefPaths(): Promise<{ lang: string; brief: string }[]
     if (!b.slug) continue;
     for (const lang of LANGS) paths.push({ lang, brief: b.slug });
   }
-  return paths;
+  return limitPrerenderPaths(paths);
 }
 
 export interface BriefSitemapEntry {
