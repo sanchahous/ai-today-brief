@@ -58,8 +58,10 @@ import {
 } from '@/lib/weekly-digest/orchestrator';
 import {
   fetchYouTubeDurationSeconds,
+  isWeeklyYouTubeDurationSeconds,
   normalizeYouTubeVideo,
   validateWeeklyVideoResultManifest,
+  weeklyYouTubeDurationRangeError,
 } from '@/lib/weekly-digest/video';
 import {
   ignorePostUploadQa,
@@ -1436,15 +1438,10 @@ async function saveWeeklyVideo(formData: FormData) {
       const resolvedDuration = durationWasEntered
         ? durationSeconds
         : await fetchYouTubeDurationSeconds(normalized.videoId);
-      if (
-        !resolvedDuration ||
-        !Number.isInteger(resolvedDuration) ||
-        resolvedDuration < 200 ||
-        resolvedDuration > 1200
-      ) {
+      if (!resolvedDuration || !isWeeklyYouTubeDurationSeconds(resolvedDuration)) {
         throw new Error(
           durationWasEntered
-            ? 'Weekly YouTube duration must be an integer between 200 and 1200 seconds.'
+            ? weeklyYouTubeDurationRangeError()
             : "Couldn't auto-detect this video's duration from YouTube — enter it manually in the Duration (seconds) field.",
         );
       }

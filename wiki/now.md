@@ -2,20 +2,20 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…26, Content Sim,
-Social/Video/Schedule 2026-08-17…21, editorial_master retry + working-copy UX 2026-08-22,
-Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
-first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
-Visuals upload body cap 2026-08-26, admin weekly workspace hang fix 2026-08-28,
-social copy channel-contract + fail-open warnings 2026-08-28, Fixes & blockers 2026-08-28,
-консолідація трьох відео-папок в один репозиторій 2026-08-28,
-revision Stage 0 (carry-forward / live preflight) 2026-08-29,
-topic-based weekly slug + OpenRouter spend leak 2026-08-29
-Last updated: 2026-08-30
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…29, catalog 2026-08-30,
+YouTube duration floor 120s 2026-09-02
+Last updated: 2026-09-02
 
 ---
 
 ## Стан репозиторію
+
+- **YouTube weekly duration floor 120s (2026-09-02).** Епізод 01.09
+  [`dtCMvtTIUpM`](https://youtu.be/dtCMvtTIUpM) — **158s**, чіпляється на
+  `ai-weekly-2026-08-23`. Було 200–1200s (PR #331); тепер **120–1200s**
+  (`WEEKLY_YOUTUBE_DURATION_MIN_SECONDS`). Після Save на Video-табі —
+  Approve `video_final` / captions / thumbnail.
+  (source: owner session 2026-09-02)
 
 - **Вибір моделей OpenRouter переписано (2026-08-30), гілка `feat/openrouter-catalog-selection` поверх #343.**
   Сім кроків з [research/2026-08-30-openrouter-routing-api §12](research/2026-08-30-openrouter-routing-api.md):

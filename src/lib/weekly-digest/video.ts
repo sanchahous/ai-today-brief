@@ -60,6 +60,22 @@ export function isValidYouTubeVideo(value: string) {
   return parseYouTubeVideoId(value) !== null;
 }
 
+/** Long-form weekly on YouTube. Floor covers ~2.5 min AtbEpisode digests (158s on 01.09). */
+export const WEEKLY_YOUTUBE_DURATION_MIN_SECONDS = 120;
+export const WEEKLY_YOUTUBE_DURATION_MAX_SECONDS = 1200;
+
+export function isWeeklyYouTubeDurationSeconds(value: number): boolean {
+  return (
+    Number.isInteger(value) &&
+    value >= WEEKLY_YOUTUBE_DURATION_MIN_SECONDS &&
+    value <= WEEKLY_YOUTUBE_DURATION_MAX_SECONDS
+  );
+}
+
+export function weeklyYouTubeDurationRangeError(): string {
+  return `Weekly YouTube duration must be an integer between ${WEEKLY_YOUTUBE_DURATION_MIN_SECONDS} and ${WEEKLY_YOUTUBE_DURATION_MAX_SECONDS} seconds.`;
+}
+
 /**
  * The admin form has no YouTube Data API key wired in, so operators had to
  * type the duration by hand — a step they routinely skipped, which surfaced
@@ -144,8 +160,10 @@ export function validateWeeklyVideoResultManifest(
   const thumbnailUrl = requiredManifestString(youtubeRow, 'thumbnailUrl');
   if (!thumbnailUrl.startsWith('https://')) throw new Error('Video thumbnail URL must use HTTPS.');
   const durationSeconds = Number(youtubeRow.durationSeconds);
-  if (!Number.isInteger(durationSeconds) || durationSeconds < 200 || durationSeconds > 1200) {
-    throw new Error('Weekly YouTube duration must be between 200 and 1200 seconds.');
+  if (!isWeeklyYouTubeDurationSeconds(durationSeconds)) {
+    throw new Error(
+      `Weekly YouTube duration must be between ${WEEKLY_YOUTUBE_DURATION_MIN_SECONDS} and ${WEEKLY_YOUTUBE_DURATION_MAX_SECONDS} seconds.`,
+    );
   }
   const publishedAt = requiredManifestString(youtubeRow, 'publishedAt');
   if (!Number.isFinite(Date.parse(publishedAt))) throw new Error('Video publishedAt is invalid.');
