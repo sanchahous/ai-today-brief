@@ -43,6 +43,10 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SCRAPPER_BASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SCRAPPER_BASE_ANON_KEY }}
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      # Full SSG of every news item against live PostgREST burned the Free-plan
+      # uncached egress (Sep 2026). E2E only needs a handful of prerendered paths;
+      # the rest ISR on demand when Playwright visits them.
+      E2E_MINIMAL_PRERENDER: '1'
     steps:
       # Playwright tests the built website, so it only needs to run on UI-affecting
       # changes: skip wiki / markdown / SQL-migration / workflow-only AND pipeline-only

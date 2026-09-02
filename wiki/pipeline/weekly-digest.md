@@ -8,7 +8,8 @@ working-copy UX 2026-08-22, image prompt library v6 2026-08-23, daily visual 202
 Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract + fail-open 2026-08-28,
 Fixes & blockers + warnings do not hold socials 2026-08-28, topic-based slug on publish 2026-08-29, revision Stage 0 2026-08-29,
 каталожний вибір моделей OpenRouter 2026-08-30,
-YouTube duration floor 120s 2026-09-02
+YouTube duration floor 120s 2026-09-02,
+public-content cache tag on release 2026-09-02
 Last updated: 2026-09-02
 
 ---
@@ -1960,3 +1961,5 @@ standfirst, 3×4200 + 4×850 body) — 7 сторінок, обидві лока
 - [image-prompt-library](image-prompt-library.md)
 - [open-questions](../open-questions.md)
 - [now](../now.md)
+- [ops/supabase-egress-2026-09](../ops/supabase-egress-2026-09.md) — release worker після finish
+  кліє `revalidateTag('public-content')`, щоб ISR не читав застарілий PostgREST Data Cache

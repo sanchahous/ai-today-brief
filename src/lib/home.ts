@@ -3,6 +3,7 @@ import type { Lang } from '@/lib/site';
 import { categoryMeta, TOP_CATEGORY_SLUGS } from '@/lib/category-meta';
 import { getCategories, getPublishedCategoryCounts } from '@/lib/categories';
 import { getConceptNameIndex } from '@/lib/concepts';
+import { cachePublicRead } from '@/lib/public-content-cache';
 import {
   blendTrend,
   entityKeyForTool,
@@ -102,7 +103,7 @@ const EMPTY: HomeData = {
  * finally `EMPTY`) when there are no briefs / no Supabase env, so a build never
  * crashes and the page never looks broken.
  */
-export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData> {
+async function loadHomeData(lang: Lang, briefWindow = 8): Promise<HomeData> {
   const supabase = getSupabase();
   if (!supabase) return EMPTY;
 
@@ -267,6 +268,8 @@ export async function getHomeData(lang: Lang, briefWindow = 8): Promise<HomeData
     categoryCount,
   };
 }
+
+export const getHomeData = cachePublicRead('home-data', loadHomeData);
 
 async function buildTrending(
   lang: Lang,
