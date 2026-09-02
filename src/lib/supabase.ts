@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
+import { fetchAnonRestCached } from '@/lib/supabase-anon-fetch';
 
 // Accept several env-var names so it works whichever you set: NEXT_PUBLIC_SUPABASE_*
 // (canonical), VITE_SCRAPPER_* (ported from the old Vite app), or SCRAPPER_BASE_*
@@ -18,9 +19,12 @@ let cached: SupabaseClient<Database> | null | undefined;
 /**
  * Anon Supabase client for public, RLS-gated reads (server components + browser).
  *
+ * GET `/rest/v1/` goes through Next Data Cache (`public-content` tag). Mutations,
+ * auth, and Storage are uncached. Never used for writes — those run server-side
+ * via Edge Functions with the service role.
+ *
  * Returns `null` when the env is absent — e.g. a local build without `.env.local`
- * — so callers fall back gracefully instead of the build crashing. Writes never
- * go through here: they run server-side via Edge Functions with the service role.
+ * — so callers fall back gracefully instead of the build crashing.
  */
 export function getSupabase(): SupabaseClient<Database> | null {
   if (cached !== undefined) return cached;
@@ -28,6 +32,7 @@ export function getSupabase(): SupabaseClient<Database> | null {
     url && anonKey
       ? createClient<Database>(url, anonKey, {
           auth: { persistSession: false, autoRefreshToken: false },
+          global: { fetch: fetchAnonRestCached },
         })
       : null;
   return cached;

@@ -9,7 +9,8 @@ Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter + живий сухий прогін черг 2026-08-30,
-YouTube duration floor 120s 2026-09-02
+YouTube duration floor 120s 2026-09-02,
+Supabase uncached egress 2026-09-02
 Last updated: 2026-09-02
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
@@ -119,6 +120,7 @@ Last updated: 2026-09-02
 |---|---|---|
 | ✅ [ops/mcp](ops/mcp.md) | MCP-сервери: chrome-devtools, apify, supabase, ahrefs, vercel | нове |
 | ✅ [ops/vercel-image-quota](ops/vercel-image-quota.md) | Інцидент 402 на `/_next/image`, власний loader; origin JPEG карток; site delivery WebP | live check 2026-08-14, `next.config.ts`, `src/lib/image-loader.ts`, `pipeline/card-image.ts` |
+| ✅ [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md) | Free uncached egress 15 GB / 5 GB: три `next build` проти PostgREST; Data Cache + e2e prerender cap | Usage Dashboard + edge_logs 2026-09-02 |
 | ✅ [ops/vercel-origin-transfer](ops/vercel-origin-transfer.md) | Fast Origin Transfer 100%: /news була динамічна через searchParams і ніколи не кешувалась; заголовок Cache-Control не рятує — хаб зроблено prerendered, пошук винесено на /news/search; три способи, що не працюють | нове 2026-08-24, live check заголовків прода |
 | ✅ [ops/owner-checklist](ops/owner-checklist.md) | Env-матриця, launch-блокери, go-live послідовність | колишній `docs/OWNER-CHECKLIST.md` |
 | ✅ [ops/social-cms-runbook](ops/social-cms-runbook.md) | Runbook соц-CMS | колишній `docs/SOCIAL-CMS-RUNBOOK.md` |

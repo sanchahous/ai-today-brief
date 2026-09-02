@@ -24,7 +24,7 @@ import { formatCustomNewsError, parseCustomCommand } from '@/lib/telegram-custom
 import { LANGS, SITE_URL } from '@/lib/site';
 import { indexNowConfigured, submitToIndexNow } from '@/lib/indexnow';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
-import { revalidateSiteSurfaces } from '@/lib/revalidate-site';
+import { revalidateSiteSurfaces, revalidatePublicContentTag } from '@/lib/revalidate-site';
 import {
   approvedBanner,
   buildRejectPrompt,
@@ -322,6 +322,7 @@ async function handleEditorTake(
     .eq('id', item.brief_id)
     .maybeSingle();
   if (brief?.status === 'published' && item.category_slug && item.slug) {
+    revalidatePublicContentTag();
     revalidatePath(`/en/news/${item.category_slug}/${item.slug}`);
     revalidatePath(`/uk/news/${item.category_slug}/${item.slug}`);
   }

@@ -8,7 +8,8 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 Visuals upload body-cap sync 2026-08-26, Fixes & blockers 2026-08-28,
 social copy fail-open 2026-08-28, revision Stage 0 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30,
-YouTube duration floor 120s 2026-09-02.
+YouTube duration floor 120s 2026-09-02,
+public-content cache tag on release 2026-09-02.
 Last updated: 2026-09-02
 
 ---
@@ -411,3 +412,5 @@ Telegram/інших каналах після bounded repair: лишок кон�
 - [image-prompt-library](image-prompt-library.md) — Prompt-as-Code v6, межа з відбором
 - [editorial-voice](editorial-voice.md) — редакційний голос після відбору
 - [video-boundary](video-boundary.md)
+- [ops/supabase-egress-2026-09](../ops/supabase-egress-2026-09.md) — не про відбір;
+  Ship дайджесту скидає той самий public-content Data Cache, що й daily publish

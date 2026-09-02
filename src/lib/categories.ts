@@ -4,6 +4,7 @@ import type { HomeItem } from '@/lib/home';
 import { LANGS, type Lang } from '@/lib/site';
 import type { NewsCard } from '@/lib/news';
 import type { IconKey } from '@/components/icons';
+import { cachePublicRead } from '@/lib/public-content-cache';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -17,7 +18,7 @@ export interface CategoryInfo {
   color: string | null;
 }
 
-export async function getCategory(slug: string, lang: Lang): Promise<CategoryInfo | null> {
+async function loadCategory(slug: string, lang: Lang): Promise<CategoryInfo | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
   const { data, error } = await supabase
@@ -34,6 +35,8 @@ export async function getCategory(slug: string, lang: Lang): Promise<CategoryInf
   };
 }
 
+export const getCategory = cachePublicRead('category', loadCategory);
+
 export interface CategoryListItem {
   slug: string;
   name: string;
@@ -42,7 +45,7 @@ export interface CategoryListItem {
 }
 
 /** All seeded categories, ordered by display position. Empty without env. */
-export async function getCategories(lang: Lang): Promise<CategoryListItem[]> {
+async function loadCategories(lang: Lang): Promise<CategoryListItem[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
   const { data } = await supabase
@@ -56,6 +59,8 @@ export async function getCategories(lang: Lang): Promise<CategoryListItem[]> {
     color: c.color,
   }));
 }
+
+export const getCategories = cachePublicRead('categories', loadCategories);
 
 function toToolNames(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -88,7 +93,7 @@ export interface CategoryHubView {
 }
 
 /** Full category hub payload for the prototype layout (glyph header + PostFeed). */
-export async function getCategoryHub(slug: string, lang: Lang, limit = 80): Promise<CategoryHubView | null> {
+async function loadCategoryHub(slug: string, lang: Lang, limit = 80): Promise<CategoryHubView | null> {
   const category = await getCategory(slug, lang);
   if (!category) return null;
   const meta = categoryMeta(slug);
@@ -222,7 +227,9 @@ export async function getCategoryHub(slug: string, lang: Lang, limit = 80): Prom
   };
 }
 
-export async function getCategoryItems(slug: string, lang: Lang, limit = 60): Promise<NewsCard[]> {
+export const getCategoryHub = cachePublicRead('category-hub', loadCategoryHub);
+
+async function loadCategoryItems(slug: string, lang: Lang, limit = 60): Promise<NewsCard[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
 
@@ -284,7 +291,7 @@ export async function getCategoryItems(slug: string, lang: Lang, limit = 60): Pr
   });
 }
 
-/** Published item counts per category — single source of truth for homepage + hubs. */
+export const getCategoryItems = cachePublicRead('category-items', loadCategoryItems);
 export async function getPublishedCategoryCounts(): Promise<Map<string, number>> {
   const supabase = getSupabase();
   if (!supabase) return new Map();

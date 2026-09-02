@@ -98,6 +98,7 @@ Loader додає `format=webp` до кожного Supabase transform. Weekly `
 
 ## Related pages
 
+- [ops/supabase-egress-2026-09](supabase-egress-2026-09.md) — наступний 402: uncached REST JSON, не картинки
 - [pipeline/weekly-digest](../pipeline/weekly-digest.md) — попереднє упирання в ліміти Hobby
 - [marketing/card-images](../marketing/card-images.md) — як генеруються самі картки
 - [audits/2026-07-01-seo-organic](../audits/2026-07-01-seo-organic.md) — чому вага сторінки має значення

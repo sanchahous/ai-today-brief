@@ -5,6 +5,7 @@ import { getCategories } from '@/lib/categories';
 import { getConceptNameIndex } from '@/lib/concepts';
 import type { HomeItem, TrendingTopic } from '@/lib/home';
 import type { IconKey } from '@/components/icons';
+import { cachePublicRead } from '@/lib/public-content-cache';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -127,7 +128,7 @@ function mapRowToItem(
 }
 
 /** Full archive for the news page: items, sidebar categories, trending. */
-export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPageData> {
+async function loadNewsPageData(lang: Lang, limit = 100): Promise<NewsPageData> {
   const supabase = getSupabase();
   if (!supabase) return EMPTY_PAGE;
 
@@ -252,6 +253,8 @@ export async function getNewsPageData(lang: Lang, limit = 100): Promise<NewsPage
     updatedAt: items[0]?.date ?? briefList[0]?.date ?? null,
   };
 }
+
+export const getNewsPageData = cachePublicRead('news-page-data', loadNewsPageData);
 
 function mapSearchRow(
   lang: Lang,

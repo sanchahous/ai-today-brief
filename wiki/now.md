@@ -3,12 +3,20 @@
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…29, catalog 2026-08-30,
-YouTube duration floor 120s 2026-09-02
+YouTube duration floor 120s 2026-09-02,
+Supabase uncached egress 2026-09-02
 Last updated: 2026-09-02
 
 ---
 
 ## Стан репозиторію
+
+- **Supabase Free egress 402 (2026-09-02).** Uncached REST JSON з трьох `next build`
+  за годину (GitHub e2e + Vercel + локальний Playwright), не читачі. Data API
+  **402** до Pro або 21.09. Код: Next Data Cache на anon GET, `cachePublicRead`,
+  `E2E_MINIMAL_PRERENDER` у e2e. Weekly `ai-weekly-2026-08-23` не дотиснути, поки
+  REST знову 200.
+  (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
 
 - **YouTube weekly duration floor 120s (2026-09-02).** Епізод 01.09
   [`dtCMvtTIUpM`](https://youtu.be/dtCMvtTIUpM) — **158s**, чіпляється на

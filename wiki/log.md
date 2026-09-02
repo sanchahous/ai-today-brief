@@ -6,6 +6,14 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-09-02
 
+## 2026-09-02 — Supabase uncached egress: Next Data Cache + e2e prerender cap
+
+Free-план вичерпав uncached egress (15.004 / 5 GB). Спайк — `GET /rest/v1/brief_items`
+з GitHub Actions + Vercel + локального `next build` за одну годину, не з браузера.
+Код: anon fetch з `next.revalidate` + tag `public-content`, `cachePublicRead` на
+listing/item, `E2E_MINIMAL_PRERENDER` у e2e, `revalidateTag` на publish.
+(source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
+
 ## 2026-09-02 — YouTube duration floor 120s + result для 01.09 на ai-weekly-2026-08-23
 
 Підлога weekly YouTube **120–1200s** (було 200–1200, PR #331), щоб живий епізод 158s
