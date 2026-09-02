@@ -6,6 +6,14 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-09-02
 
+## 2026-09-02 — SSG build memo між 11 воркерами `next build`
+
+PR #348 зрізав e2e (`brief_items` 9027→146), але прод SSG лишив `categories` 2063:
+`unstable_cache` не шариться між воркерами, Data Cache пропускає Authorization.
+`withBuildMemo` — in-process Promise + JSON під `.next/cache/atb-public-content`,
+лише `NEXT_PHASE=phase-production-build`. Орг уже на Pro, REST 200.
+(source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
+
 ## 2026-09-02 — Supabase uncached egress: Next Data Cache + e2e prerender cap
 
 Free-план вичерпав uncached egress (15.004 / 5 GB). Спайк — `GET /rest/v1/brief_items`

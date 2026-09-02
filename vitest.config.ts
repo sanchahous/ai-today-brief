@@ -24,6 +24,7 @@ const LOGIC_INCLUDE = [
   'src/lib/tools-mentioned.ts',
   'src/lib/public-content-tag.ts',
   'src/lib/public-content-cache.ts',
+  'src/lib/public-content-build-memo.ts',
   'src/lib/supabase-anon-fetch.ts',
   'src/lib/items-nav.ts',
   'src/lib/content-sim/**/*.ts',
