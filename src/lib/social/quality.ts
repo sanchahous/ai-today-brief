@@ -79,6 +79,14 @@ const CYRILLIC_RE = /[\u0400-\u04ff]/g;
 const LATIN_RE = /[a-z]/gi;
 const FORBIDDEN_CHAR_RE =
   /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/u;
+/** Self-reply must still read as a sentence after the URL is stripped. */
+const MIN_TRACKED_COMMENT_COPY = 20;
+
+export function trackedCommentHasCopy(comment: string | null | undefined): boolean {
+  URL_RE.lastIndex = 0;
+  const remainder = (comment ?? '').replace(URL_RE, '').replace(/\s+/g, ' ').trim();
+  return remainder.length >= MIN_TRACKED_COMMENT_COPY;
+}
 
 function isDailyVisualInstagramCarousel(
   value: NonNullable<SocialDraft['instagramCarousel']>,
@@ -297,6 +305,14 @@ export function runQualityGate(draft: SocialDraft, now = new Date()): QualityRep
   if (draft.channel === 'x' && !(draft.firstComment ?? '').match(URL_RE)) {
     blocking.push(
       issue('x_reply_url', 'X requires the tracked URL in the self-reply.', 'first_comment'),
+    );
+  } else if (draft.channel === 'x' && !trackedCommentHasCopy(draft.firstComment)) {
+    blocking.push(
+      issue(
+        'x_reply_bare_url',
+        'X self-reply must include a practical line, not only the tracked URL.',
+        'first_comment',
+      ),
     );
   }
   if (draft.channel === 'linkedin' && !(draft.firstComment ?? '').match(URL_RE)) {

@@ -3,6 +3,7 @@ import {
   isSocialTrackingToken,
   socialClickTokenFromSearch,
   trackingTokenFromUrl,
+  weeklyClickUrl,
   weeklyTrackedUrl,
   withSocialClickToken,
   withWeeklySlug,
@@ -37,6 +38,12 @@ describe('tracked-url', () => {
       weeklyTrackedUrl('uk', 'topic-slug-2026-08-23', TOKEN, { source: 'telegram' }),
     ).toBe(
       `https://aitodaybrief.com/uk/weekly/topic-slug-2026-08-23?utm_source=telegram&utm_medium=social&utm_campaign=weekly_digest&s=${TOKEN}`,
+    );
+  });
+
+  it('keeps the X self-reply URL to page + s= so USE copy still fits in 280', () => {
+    expect(weeklyClickUrl('en', 'topic-slug-2026-08-23', TOKEN)).toBe(
+      `https://aitodaybrief.com/en/weekly/topic-slug-2026-08-23?s=${TOKEN}`,
     );
   });
 });

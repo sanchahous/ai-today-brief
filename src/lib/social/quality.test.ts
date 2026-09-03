@@ -33,13 +33,25 @@ describe('social quality gate', () => {
 
   it('allows the X tracking URL in the structured self-reply only', () => {
     const root = 'One grounded thesis with a strong approved fact for AI builders and leaders.';
-    const reply = 'Read: https://aitodaybrief.com/en/weekly/example?s=token';
+    const reply =
+      'Skip long QAT: distill teacher logits, then verify SciCode on your stack.\nhttps://aitodaybrief.com/en/weekly/example?s=token';
     const report = runQualityGate(
       draft({ channel: 'x', text: root, firstComment: reply, contentParts: [root, reply] }),
       new Date('2026-01-01T00:00:00Z'),
     );
     expect(report.blocking.map((issue) => issue.code)).not.toContain('root_url');
     expect(report.blocking.map((issue) => issue.code)).not.toContain('x_reply_url');
+    expect(report.blocking.map((issue) => issue.code)).not.toContain('x_reply_bare_url');
+  });
+
+  it('blocks an X self-reply that is only the tracked URL', () => {
+    const root = 'One grounded thesis with a strong approved fact for AI builders and leaders.';
+    const reply = 'https://aitodaybrief.com/en/weekly/example?s=token';
+    const report = runQualityGate(
+      draft({ channel: 'x', text: root, firstComment: reply, contentParts: [root, reply] }),
+      new Date('2026-01-01T00:00:00Z'),
+    );
+    expect(report.blocking.map((issue) => issue.code)).toContain('x_reply_bare_url');
   });
 
   it('blocks artificial truncation and invalid native part counts', () => {

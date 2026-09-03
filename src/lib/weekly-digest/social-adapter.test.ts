@@ -286,6 +286,23 @@ describe('adaptWeeklySocialChannel', () => {
     expect(prefix).not.toContain('CHANNEL CONTRACT');
   });
 
+  it('pads a bare X self-reply URL with a source fact so the reply is not link-only', async () => {
+    vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
+      role === 'writer'
+        ? writerResult({ firstComment: baseInput().trackedUrl })
+        : criticResult(),
+    );
+
+    const result = await adaptWeeklySocialChannel(baseInput());
+
+    expect(result.firstComment).toContain(baseInput().trackedUrl);
+    expect(result.firstComment).not.toBe(baseInput().trackedUrl);
+    expect(result.firstComment!.length).toBeLessThanOrEqual(280);
+    expect(result.qualityReport!.blocking.map((issue) => issue.code)).not.toContain(
+      'x_reply_bare_url',
+    );
+  });
+
   it('keeps the critic instructions and facts shared across channels', async () => {
     vi.mocked(generateSocialJson).mockImplementation(async (role: string) =>
       role === 'writer' ? writerResult() : criticResult(),

@@ -658,7 +658,8 @@ worker, і на цьому проєкті **API-ключі каналів не �
 **Копіюй пости з адмінки лише коли випуск уже `published`.** До Ship (і навіть
 у момент `publishing`) Destination ще може бути `ai-weekly-YYYY-MM-DD`, а в
 тексті — hop `/r/s/{token}`. Після успішного publish RPC переписує url/utm/копію
-на живий `/{lang}/weekly/{topic-slug}?s=`. Telegram Aug 23 уже пішов зі старим
+на живий `/{lang}/weekly/{topic-slug}?s=`. Для X self-reply має бути **текст + цей URL**,
+не гола лінка. Telegram Aug 23 уже пішов зі старим
 hop — той пост у каналі не зміниться; решта каналів беріть з оновленої адмінки.
 (source: `supabase/migrations/20260903120000_rewrite_weekly_social_urls_on_publish.sql`,
 prod apply 2026-09-03, owner session 2026-09-03)

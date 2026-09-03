@@ -75,12 +75,15 @@ owner session 2026-08-29)
 (плюс наявні UTM) і прибирає hop `/r/s/{token}`. GUC
 `app.weekly_digest_social_url_rewrite` дозволяє це без скидання `scheduled`/`posted`
 у `in_review` і без «immutable» на вже відправленому Telegram. Воркер ще раз кличе
-той самий RPC (ідемпотентно) і ревалідує `/admin/weekly/{id}`. Міграція
-`20260903120000_rewrite_weekly_social_urls_on_publish.sql` — 101-й файл у
+той самий RPC (ідемпотентно) і ревалідує `/admin/weekly/{id}`. Міграції
+`20260903120000_rewrite_weekly_social_urls_on_publish.sql` та
+`20260903130000_x_self_reply_compact_url.sql` — 102 файли у
 `supabase/migrations/`. Адмінка Destination/
 Tracked читає поточний `weekly_digests.slug`. Інакше власник копіює з адмінки пости
-з `ai-weekly-YYYY-MM-DD` і 404.
+з `ai-weekly-YYYY-MM-DD` і 404. Для **X** copy rewrite іде на `page?s=` без UTM —
+інакше 280-символьний self-reply стає голим лінком; гейт `x_reply_bare_url`.
 (source: `supabase/migrations/20260903120000_rewrite_weekly_social_urls_on_publish.sql`,
+`supabase/migrations/20260903130000_x_self_reply_compact_url.sql`,
 `src/lib/weekly-digest/rewrite-social-urls.ts`, owner session 2026-09-03)
 
 ## Social copy: channel-contract format rules were critic-only, no deterministic gate (2026-08-28)

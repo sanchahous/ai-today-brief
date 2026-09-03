@@ -71,3 +71,8 @@ export function weeklyTrackedUrl(
   if (utm.content) url.searchParams.set('utm_content', utm.content.slice(0, 80));
   return withSocialClickToken(url.toString(), token);
 }
+
+/** X self-reply is 280 chars; UTM + topic slug leaves no room for the USE line. */
+export function weeklyClickUrl(locale: string, slug: string, token: string): string {
+  return withSocialClickToken(weeklyPageUrl(locale, slug), token);
+}

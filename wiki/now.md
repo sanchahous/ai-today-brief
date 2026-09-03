@@ -6,7 +6,8 @@ Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…29, catalog 2026-
 YouTube 120s + Supabase egress 2026-09-02,
 SSG skip + local `build:ci` skip + ElevenLabs TTS 2026-09-03,
 LinkedIn PDF skip on public promote 2026-09-03,
-social URLs follow the published slug 2026-09-03
+social URLs follow the published slug 2026-09-03,
+X self-reply is USE + compact `?s=` URL 2026-09-03
 Last updated: 2026-09-03
 
 ---
@@ -28,7 +29,8 @@ Last updated: 2026-09-03
   Telegram уже був `posted` зі старим hop — у каналі лінк не зміниться; копіюй
   з адмінки **після** publish. Наступні Ship роблять rewrite у
   `finish_weekly_digest_release`. Міграція вже на проді; аплікаційний код —
-  цей PR.
+  цей PR. X self-reply більше не голий URL: компактний `?s=` + практичний рядок
+  (`x_reply_bare_url`).
   (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md);
   prod `weekly_digests.status=published` 2026-09-03)
 

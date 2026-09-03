@@ -8,7 +8,8 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 Visuals upload body-cap sync 2026-08-26, Fixes & blockers 2026-08-28,
 social copy fail-open 2026-08-28, revision Stage 0 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + public-content tag 2026-09-02,
-ElevenLabs TTS 2026-09-03; social URL rewrite is a publish RPC, not a selector change.
+ElevenLabs TTS 2026-09-03; social URL rewrite is a publish RPC, not a selector change;
+X self-reply is USE + compact click URL 2026-09-03.
 Last updated: 2026-09-03
 
 ---

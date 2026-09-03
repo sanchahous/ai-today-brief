@@ -9,7 +9,7 @@ Sources: `src/lib/social/quality.ts` (`CHANNEL_RULES`), `src/lib/social/provider
 `src/app/r/s/[token]/route.ts`, `src/lib/weekly-digest/preflight.ts`
 (`WEEKLY_SOCIAL_MATRIX`), прод-розбір релізу `ai-weekly-2026-08-09` 2026-08-21,
 deterministic contract gate 2026-08-28, Telegram Топ 3/Радар/CTA gate 2026-08-28
-Last updated: 2026-08-28
+Last updated: 2026-09-03
 
 ---
 
@@ -25,7 +25,7 @@ Last updated: 2026-08-28
 | 3 | Instagram — пост «ні про що» | 7 слайдів ✅, caption 490 ✅ | Структура правильна. Дефект не технічний, а редакційний — §1 |
 | 4 | Threads — один пост без ланцюжка й лінка | **`content_parts` = 4 частини** з URL в останній | Пайплайн згенерував правильно. Це моя помилка ручного постингу 20.08 |
 | 5 | Facebook — порожня OG-картка | `assets` = 1, лінк = `/r/s/<token>` | `/r/s/` віддавав 302 з `no-store` — скрапер Facebook не резолвить OG крізь такий редирект |
-| 6 | X — «нікуди не веде» | `content_parts` = 2, `first_comment` ✅ | Root без лінка — **так і має бути**. Але в self-reply пішов голий URL без тексту |
+| 6 | X — «нікуди не веде» | `content_parts` = 2, `first_comment` ✅ | Root без лінка — **так і має бути**. Але в self-reply пішов голий URL без тексту. **2026-09-03:** гейт `x_reply_bare_url` + компактний `?s=` URL |
 
 **Побічна знахідка того самого кореня, що й №5:** у `social_click_events` **34 кліки з
 `device_class='bot'` проти 8 живих** (4 mobile + 4 desktop). Кожен прев'ю-скрапер
