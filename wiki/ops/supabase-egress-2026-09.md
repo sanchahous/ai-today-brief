@@ -77,7 +77,9 @@ Next Data Cache їх не бачить. Три повні прод-білди в
    пропускає docs-only (раніше завжди білдив). **2026-09-03:** skip також `.gitignore`,
    `LICENSE`, `scripts/`, `library/` (інструменти відео не змінюють HTML). Sonar більше
    не збирає повний каталог — `npm run build:ci`; `library/` і `scripts/` не запускають
-   скан. `pipeline/` Sonar далі сканує, але теж через `build:ci`.
+   скан. `pipeline/` Sonar далі сканує, але теж через `build:ci`. Локальний
+   `npm run build:ci` / `pr:check` використовує той самий skip: немає site-файлів
+   у diff vs `origin/main` — `next build` не стартує (`FORCE_SSG_BUILD=1` щоб зібрати).
    (source: `src/lib/public-content-cache.ts`, `src/lib/public-content-build-memo.ts`,
    `src/lib/items.ts`, `scripts/ssg-build-scope.mjs`)
 
@@ -121,7 +123,8 @@ GitHub e2e в цьому ж вікні лише стартував (Des Moines: 
 Квоту вже спаленого циклу (15.004 / 5 GB на Free) відкотити не можна — далі ліміт Pro
 (250 GB) до **21 Sep 2026**. Даунгрейд на Free **до** ресету знову дасть 402.
 Після ресету Free тримається запобіжниками: один повний SSG = лише production Vercel;
-preview / e2e / `pr:check` — 8 item-шляхів; docs-only, `.gitignore`, `library/` і
+preview / e2e / `pr:check` — 8 item-шляхів, і локальний `build:ci` взагалі skip,
+якщо сайт не змінювався; docs-only, `.gitignore`, `library/` і
 `scripts/` коміти Vercel пропускає. Sonar integrity — `build:ci`.
 Не Promote preview-білд на прод.
 Weekly `ai-weekly-2026-08-23` після REST 200 все одно потребує

@@ -6,6 +6,13 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-09-03
 
+## 2026-09-03 — локальний `build:ci` не збирає сайт, якщо HTML не змінювався
+
+`pr:check` → `build:ci` дивиться diff vs `origin/main` (і робоче дерево). Той самий
+skip-список, що Vercel: wiki, pipeline, `scripts/`, `library/`, `.gitignore`.
+Порожнє дерево — теж skip. `FORCE_SSG_BUILD=1` примусово збирає.
+(source: `scripts/run-minimal-prerender-build.mjs`, `scripts/ssg-build-scope.mjs`)
+
 ## 2026-09-03 — SSG skip: `.gitignore` / `library` / `scripts`; Sonar `build:ci`
 
 Vercel/e2e вважали `.gitignore` зміною сайту; Sonar на JS у `library/tools` ганяв

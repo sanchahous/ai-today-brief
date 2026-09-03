@@ -2,7 +2,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   isSiteAffectingPath,
+  parseGitNameOnly,
+  shouldSkipLocalSiteBuild,
   shouldSkipVercelBuild,
+  uniquePaths,
 } from './ssg-build-scope.mjs';
 
 describe('shouldSkipVercelBuild', () => {
@@ -47,5 +50,31 @@ describe('isSiteAffectingPath', () => {
     assert.equal(isSiteAffectingPath('experiments/run/report.md'), false);
     assert.equal(isSiteAffectingPath('.gitignore'), false);
     assert.equal(isSiteAffectingPath('scripts/ssg-build-scope.mjs'), false);
+  });
+});
+
+describe('shouldSkipLocalSiteBuild', () => {
+  it('skips a clean tree when git is ok', () => {
+    assert.equal(shouldSkipLocalSiteBuild([], { gitOk: true }), true);
+  });
+
+  it('skips wiki-only the same way as Vercel', () => {
+    assert.equal(shouldSkipLocalSiteBuild(['wiki/now.md'], { gitOk: true }), true);
+  });
+
+  it('builds when git is unknown or FORCE', () => {
+    assert.equal(shouldSkipLocalSiteBuild(['wiki/now.md'], { gitOk: false }), false);
+    assert.equal(shouldSkipLocalSiteBuild(['wiki/now.md'], { gitOk: true, force: true }), false);
+  });
+
+  it('builds when src changed', () => {
+    assert.equal(shouldSkipLocalSiteBuild(['src/lib/items.ts'], { gitOk: true }), false);
+  });
+});
+
+describe('parseGitNameOnly', () => {
+  it('splits and posix-normalizes', () => {
+    assert.deepEqual(parseGitNameOnly('wiki/now.md\r\nfoo\\bar.ts\n'), ['wiki/now.md', 'foo/bar.ts']);
+    assert.deepEqual(uniquePaths(['a.ts', 'a.ts', './b.ts']), ['a.ts', 'b.ts']);
   });
 });

@@ -15,7 +15,8 @@ Last updated: 2026-09-03
   **Pro** до кінця циклу **21 Sep**; даунгрейд раніше = знову 402. #348+#350 + запобіжники:
   повний SSG лише production Vercel; preview/`pr:check`/e2e — 8 item-шляхів; wiki-only
   коміти Vercel пропускає. **2026-09-03:** `.gitignore` / `library/` / `scripts/` теж
-  skip; Sonar збирає `build:ci`, не весь каталог. Прод SSG `dd49672`: `categories`
+  skip; Sonar збирає `build:ci`, не весь каталог; локальний `pr:check` не запускає
+  `next build`, якщо сайт у diff не змінювався. Прод SSG `dd49672`: `categories`
   **2063→30**, `brief_items` **3247→1471**. Weekly `ai-weekly-2026-08-23` чекає
   release-due + promote.
   (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
