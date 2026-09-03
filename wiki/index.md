@@ -8,9 +8,7 @@ GA4 + SEO 2026-08-21, latest weekly revision is the working copy 2026-08-22,
 Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
-каталожний вибір OpenRouter + живий сухий прогін черг 2026-08-30,
-YouTube duration floor 120s 2026-09-02,
-Supabase uncached egress 2026-09-02,
+каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
 ElevenLabs TTS tooling + video assembler 2026-09-03
 Last updated: 2026-09-03
 
