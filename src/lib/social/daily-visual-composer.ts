@@ -175,6 +175,18 @@ function trackedDestination(
   return withSocialClickToken(sourceUrl(input, locale, channel), token);
 }
 
+function visibleDestination(
+  input: DailyVisualSocialInput,
+  locale: SocialLocale,
+  channel: SocialChannel,
+  token: string,
+) {
+  if (channel === 'x' || channel === 'linkedin') {
+    return withSocialClickToken(new URL(`/${locale}/${input.lead.slug}`, SITE_URL).toString(), token);
+  }
+  return trackedDestination(input, locale, channel, token);
+}
+
 function withinLimit(value: string, limit: number) {
   const words = clean(value).split(' ').filter(Boolean);
   let result = '';
@@ -456,7 +468,7 @@ function newTrackingUrls(input: DailyVisualSocialInput) {
   const urls = Object.fromEntries(
     DAILY_VISUAL_CHANNEL_MATRIX.map(({ channel, locale }) => [
       channel,
-      trackedDestination(input, locale, channel, tokens[channel]),
+      visibleDestination(input, locale, channel, tokens[channel]),
     ]),
   ) as Record<SocialChannel, string>;
   return { tokens, urls };

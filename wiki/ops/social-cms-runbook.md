@@ -237,7 +237,10 @@ at least 90% of variants requiring no more than one short edit. Also confirm:
 
 - every source item remains `approved` and its brief remains `published`;
 - Instagram assets are five immutable 1080×1350 JPEG slides;
-- X root copy is link-free and the tracked URL is in the self-reply;
+- X root copy is link-free; self-reply is a practical line **plus** `/{lang}/weekly/{slug}?s=`,
+  never a bare URL (`x_reply_bare_url`).
+- LinkedIn first comment is the same compact `?s=` URL (no UTM). Comments never unfurl;
+  auto-publish attaches `content.article` on the post.
 - a save after approval moves the variant back to `in_review`;
 - two simultaneous worker calls claim a post only once.
 

@@ -208,6 +208,49 @@ describe('social provider contracts', () => {
     const headers = fetchMock.mock.calls[0][1]?.headers as Record<string, string>;
     expect(headers['LinkedIn-Version']).toBe('202607');
     expect(receipt.providerMeta).toMatchObject({ comment_id: 'urn:li:comment:9' });
+    const postBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(postBody.content.article.source).toBe(
+      'https://aitodaybrief.com/en/weekly/example?s=test',
+    );
+    expect(postBody.content.media).toBeUndefined();
+  });
+
+  it('attaches a native article card so the post, not the comment, carries the preview', async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        json(
+          { value: { uploadUrl: 'https://upload.linkedin.test', image: 'urn:li:image:cover' } },
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(new Uint8Array([1, 2, 3]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 201 }))
+      .mockResolvedValueOnce(
+        json(
+          {},
+          {
+            status: 201,
+            headers: { 'content-type': 'application/json', 'x-restli-id': 'urn:li:share:1' },
+          },
+        ),
+      )
+      .mockResolvedValueOnce(json({ id: 'urn:li:comment:9' }, { status: 201 }));
+    await getSocialPublisher('linkedin').publish(
+      post('linkedin', {
+        firstComment: `Breakdown: https://aitodaybrief.com/en/weekly/example?utm_source=linkedin&s=test`,
+        assets: [{ url: 'https://cdn.example/cover.jpg', mimeType: 'image/jpeg' }],
+      }),
+    );
+    const postCall = fetchMock.mock.calls.find((call) =>
+      String(call[0]).includes('/rest/posts'),
+    );
+    const body = JSON.parse(String(postCall?.[1]?.body));
+    expect(body.content.article).toMatchObject({
+      source: 'https://aitodaybrief.com/en/weekly/example?s=test',
+      thumbnail: 'urn:li:image:cover',
+    });
+    expect(body.content.media).toBeUndefined();
   });
 
   it('posts the tracked link as a LinkedIn first comment on the published post', async () => {
@@ -228,7 +271,9 @@ describe('social provider contracts', () => {
     expect(String(url)).toContain('/socialActions/urn%3Ali%3Ashare%3A1/comments');
     expect(JSON.parse(String(init?.body))).toMatchObject({
       object: 'urn:li:share:1',
-      message: { text: 'Read: https://aitodaybrief.com/en/weekly/example?s=test' },
+      message: {
+        text: 'Read\n\nhttps://aitodaybrief.com/en/weekly/example?s=test',
+      },
     });
   });
 
