@@ -3,7 +3,7 @@ import 'server-only';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
-import { weeklyTrackedUrl } from '@/lib/social/tracked-url';
+import { weeklyClickUrl, weeklyTrackedUrl } from '@/lib/social/tracked-url';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { assertDailyGenerationBudget, recordGenerationCost } from '@/lib/generation-costs';
 import { alertWeeklyDigestIssue } from './alerts';
@@ -2449,9 +2449,12 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       metadata: { channel, role: 'weekly.social_writer', selection: 'provider_chain' },
     });
     const providerPipelineStartedAt = Date.now();
-    const trackedUrl = weeklyTrackedUrl(locale, context.digest.slug, checkpoint.tokens[channel], {
-      source: channel,
-    });
+    const trackedUrl =
+      channel === 'x' || channel === 'linkedin'
+        ? weeklyClickUrl(locale, context.digest.slug, checkpoint.tokens[channel])
+        : weeklyTrackedUrl(locale, context.digest.slug, checkpoint.tokens[channel], {
+            source: channel,
+          });
     const instagramSources = selectInstagramCarouselSources(
       context.artifacts as SocialSelectableArtifact[],
     );

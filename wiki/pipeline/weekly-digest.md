@@ -76,13 +76,21 @@ owner session 2026-08-29)
 (плюс наявні UTM) і прибирає hop `/r/s/{token}`. GUC
 `app.weekly_digest_social_url_rewrite` дозволяє це без скидання `scheduled`/`posted`
 у `in_review` і без «immutable» на вже відправленому Telegram. Воркер ще раз кличе
-той самий RPC (ідемпотентно) і ревалідує `/admin/weekly/{id}`. Міграція
-`20260903120000_rewrite_weekly_social_urls_on_publish.sql` — 101-й файл у
+той самий RPC (ідемпотентно) і ревалідує `/admin/weekly/{id}`. Міграції
+`20260903120000_rewrite_weekly_social_urls_on_publish.sql`,
+`20260903130000_x_self_reply_compact_url.sql` та
+`20260903140000_linkedin_comment_compact_url.sql` — 103 файли у
 `supabase/migrations/`. Адмінка Destination/
 Tracked читає поточний `weekly_digests.slug`. Інакше власник копіює з адмінки пости
-з `ai-weekly-YYYY-MM-DD` і 404.
+з `ai-weekly-YYYY-MM-DD` і 404. Для **X** і **LinkedIn** copy rewrite іде на `page?s=` без UTM.
+X: інакше 280-символьний self-reply стає голим лінком; гейт `x_reply_bare_url`.
+LinkedIn: повний UTM у коментарі виглядає як сирий рядок, а коментарі **не unfurl** OG;
+автопостинг кріпить `content.article` на пост.
 (source: `supabase/migrations/20260903120000_rewrite_weekly_social_urls_on_publish.sql`,
-`src/lib/weekly-digest/rewrite-social-urls.ts`, owner session 2026-09-03)
+`supabase/migrations/20260903130000_x_self_reply_compact_url.sql`,
+`supabase/migrations/20260903140000_linkedin_comment_compact_url.sql`,
+`src/lib/weekly-digest/rewrite-social-urls.ts`, `src/lib/social/linkedin-article.ts`,
+owner session 2026-09-03)
 
 ## Social copy: channel-contract format rules were critic-only, no deterministic gate (2026-08-28)
 

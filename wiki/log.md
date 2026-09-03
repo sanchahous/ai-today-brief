@@ -15,9 +15,24 @@ TS `validateWeeklyDigestPreflight`) — сайт і всі шість соцпо
 відео до вже опублікованого випуску окремою AAL2-дією, не чіпаючи соц і статус дайджесту.
 Оновлено [weekly-digest](pipeline/weekly-digest.md) (новий розділ «Реліз у два етапи»),
 [weekly-admin-runbook](ops/weekly-admin-runbook.md) (шлях випуску, таблиця статусів),
-[now](now.md), лічильник міграцій у [index](index.md) 101 → 102.
+[now](now.md), лічильник міграцій у [index](index.md) — 104 після мержу з #357.
 (source: owner session 2026-09-03,
 `supabase/migrations/20260903150000_weekly_digest_two_phase_release.sql`)
+
+## 2026-09-03 — LinkedIn коментар без OG і з довгим UTM
+
+LinkedIn **не розгортає** превʼю в коментарях. Адмінська копія ще й клеїла повний
+UTM у first comment. Compact `weeklyClickUrl` у коментарі; Posts API
+`content.article` (source = page?s=, thumbnail = cover) на самому пості.
+(source: owner LinkedIn screenshot 2026-09-03, [omni-channel-publishing-matrix](marketing/omni-channel-publishing-matrix.md) §6.1)
+
+## 2026-09-03 — X self-reply був голий URL
+
+Контракт: root без лінка, **self-reply = USE + URL**. Writer лишав лише
+tracked URL, бо повний UTM + topic slug з’їдає 280 символів. Гейт
+`x_reply_bare_url`, компактний `weeklyClickUrl` (`?s=` без UTM) для X,
+rewrite-on-publish більше не підміняє self-reply повним UTM.
+(source: owner session 2026-09-03, [omni-channel-publishing-matrix](marketing/omni-channel-publishing-matrix.md) §4)
 
 ## 2026-09-03 — wiki-sync: weekly-digest watcher після lint-clean
 

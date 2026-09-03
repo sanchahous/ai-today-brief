@@ -9,7 +9,7 @@ import {
   readableInstagramParts,
 } from '@/lib/social/instagram-carousel';
 import { generateSocialJson } from '@/lib/social/llm-router';
-import { findBlindCrossPosts, runQualityGate } from '@/lib/social/quality';
+import { findBlindCrossPosts, runQualityGate, trackedCommentHasCopy } from '@/lib/social/quality';
 import { containsTelegramBold, containsTelegramInlineCode } from '@/lib/social/telegram-format';
 import type {
   QualityIssue,
@@ -46,7 +46,7 @@ const CHANNEL_CONTRACT: Record<SocialChannel, string> = {
     'Ukrainian sequence of 3–5 messages, each at most 500 characters. Thesis → evidence → what to try → genuine question. Separate messages with <PART>. Put the URL only in the final part. One part must be a concrete thing to try, naming the tool or setting and the step, not a restatement of the news.',
   x: 'English root post, 180–260 characters, one thesis and one strong fact, no URL. The tracked URL goes only in firstComment, and firstComment must carry a second fact or the practical step alongside the link — never a bare URL.',
   linkedin:
-    'English, 700–1200 characters. Break lines aggressively: one sentence or short block per line, blank line between blocks, never a single dense paragraph. A self-contained insight for builders/leaders: tension, evidence, judgment, what to do about it, next decision. One block must be a concrete action naming the tool, serving path, flag or setting, plus its cost or limit. At most 3 hashtags. The post body must contain no URL at all; the tracked URL goes in firstComment, which should read as a real first comment rather than a bare link. One small icon or emoji may head the practical-action block for scannability; never one per line.',
+    'English, 700–1200 characters. Break lines aggressively: one sentence or short block per line, blank line between blocks, never a single dense paragraph. A self-contained insight for builders/leaders: tension, evidence, judgment, what to do about it, next decision. One block must be a concrete action naming the tool, serving path, flag or setting, plus its cost or limit. At most 3 hashtags. The post body must contain no URL at all; the compact tracked URL (page + s=, no UTM) goes in firstComment on its own line under a short real comment. Auto-publish attaches that URL as a native article card on the post because LinkedIn comments never unfurl. One small icon or emoji may head the practical-action block for scannability; never one per line.',
   instagram:
     'English hybrid carousel of exactly 7 slides. Inside each candidate write <COVER>headline, three <STORY>headline||body, then <COMPARISON>headline||body, <CAVEAT>headline||body, <TAKEAWAY>headline||body, then <CAPTION>caption. Cover headline ≤72 characters; other headlines ≤54; bodies ≤120. Caption 180–800 characters, no URL, at most 5 hashtags. The takeaway slide must state a concrete action with a named tool, serving path or setting — not a summary of the week.',
 };
@@ -388,10 +388,14 @@ function unpackCandidate(
   channel: SocialChannel,
   candidate: string,
   firstComment: string | null,
-  instagram?: {
-    angle: string;
-    hookCandidates: [string, string, string];
-    storyRevisionItemIds: [string, string, string];
+  extras: {
+    trackedUrl: string;
+    sourceFacts: string[];
+    instagram?: {
+      angle: string;
+      hookCandidates: [string, string, string];
+      storyRevisionItemIds: [string, string, string];
+    };
   },
 ) {
   if (channel === 'threads') {
@@ -402,7 +406,7 @@ function unpackCandidate(
     return { text: parts[0] ?? '', contentParts: parts, firstComment: null };
   }
   if (channel === 'instagram') {
-    if (!instagram) {
+    if (!extras.instagram) {
       return { text: '', contentParts: [], firstComment: null };
     }
     const parsed = parseInstagramWriterCandidate(candidate);
@@ -410,10 +414,10 @@ function unpackCandidate(
       return { text: '', contentParts: [], firstComment: null };
     }
     const spec = assembleInstagramCarouselSpec({
-      angle: instagram.angle,
-      hookCandidates: instagram.hookCandidates,
+      angle: extras.instagram.angle,
+      hookCandidates: extras.instagram.hookCandidates,
       parsed,
-      storyRevisionItemIds: instagram.storyRevisionItemIds,
+      storyRevisionItemIds: extras.instagram.storyRevisionItemIds,
     });
     return {
       text: spec.caption,
@@ -423,13 +427,35 @@ function unpackCandidate(
     };
   }
   if (channel === 'x') {
+    const reply = ensureXSelfReply(firstComment, extras.trackedUrl, extras.sourceFacts);
     return {
       text: candidate,
-      contentParts: [candidate, firstComment ?? ''].filter(Boolean),
-      firstComment,
+      contentParts: [candidate, reply].filter(Boolean),
+      firstComment: reply,
     };
   }
   return { text: candidate, contentParts: [], firstComment };
+}
+
+function ensureXSelfReply(
+  firstComment: string | null,
+  trackedUrl: string,
+  sourceFacts: string[],
+) {
+  const comment = firstComment?.trim() || trackedUrl;
+  if (trackedCommentHasCopy(comment) && comment.length <= 280) return comment;
+  const fact = (sourceFacts[0] ?? 'Full weekly digest with the practical step.')
+    .replace(/https?:\/\/[^\s)\]}]+/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const budget = Math.max(24, 280 - trackedUrl.length - 1);
+  let lead = fact || 'Practical step in the full weekly.';
+  if (lead.length > budget) {
+    lead = lead.slice(0, budget);
+    const sp = lead.lastIndexOf(' ');
+    if (sp > 24) lead = lead.slice(0, sp);
+  }
+  return `${lead}\n${trackedUrl}`;
 }
 
 function scoreCandidate(channel: SocialChannel, locale: SocialLocale, candidate: string) {
@@ -672,9 +698,13 @@ export async function adaptWeeklySocialChannel(input: {
         hookCandidates[2] ?? selected.candidate,
       ] as [string, string, string];
       const unpacked = unpackCandidate(input.channel, selected.candidate, firstComment, {
-        angle: writer.value.angle,
-        hookCandidates: hookCandidatesTriple,
-        storyRevisionItemIds: input.instagramStoryIds ?? ['', '', ''],
+        trackedUrl: input.trackedUrl,
+        sourceFacts: input.sourceFacts,
+        instagram: {
+          angle: writer.value.angle,
+          hookCandidates: hookCandidatesTriple,
+          storyRevisionItemIds: input.instagramStoryIds ?? ['', '', ''],
+        },
       });
       const draft: SocialDraft = {
         channel: input.channel,

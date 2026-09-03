@@ -359,11 +359,13 @@ prompt history; Approve override використовуй лише якщо оч
 2. **Telegram рендерить розмітку.** `**жирний**` і `` `назва прапорця` `` там працюють
    (`parse_mode: HTML`). **У решті пʼяти каналів ці маркери заборонені** — гейт блокує їх
    кодом `raw_markup`, бо вони друкуються сирими.
-3. **LinkedIn: лінка в тілі більше немає.** Трекований URL іде в поле **First comment** —
-   гейт блокує URL у тілі (`root_url`) і порожній коментар (`linkedin_comment_url`).
-   Коментар постить автоматика одразу після поста; якщо він упаде, пост лишиться живим, а
-   доставка піде в `needs_reconciliation` з кодом `partial_linkedin_comment` — ретраїти не
-   можна, бо пост уже опублікований.
+3. **LinkedIn: лінка в тілі більше немає.** Трекований URL іде в поле **First comment**
+   як короткий рядок + compact `?s=` (без UTM) — гейт блокує URL у тілі (`root_url`) і
+   порожній коментар (`linkedin_comment_url`). **Коментарі LinkedIn не показують OG.**
+   Автопостинг кріпить картку `content.article` на сам пост. Якщо постиш руками — встав
+   Destination у композер поста. Коментар постить автоматика одразу після поста; якщо
+   він упаде, пост лишиться живим, а доставка піде в `needs_reconciliation` з кодом
+   `partial_linkedin_comment` — ретраїти не можна, бо пост уже опублікований.
 
 **Баг форми (знайдено й виправлено 2026-08-28):** `SOCIAL_FIELDS_BY_CHANNEL` у
 `channel-form.ts` для `linkedin` не мав `'first_comment'` у списку полів (для `x` —
@@ -672,7 +674,8 @@ worker, і на цьому проєкті **API-ключі каналів не �
 **Копіюй пости з адмінки лише коли випуск уже `published`.** До Ship (і навіть
 у момент `publishing`) Destination ще може бути `ai-weekly-YYYY-MM-DD`, а в
 тексті — hop `/r/s/{token}`. Після успішного publish RPC переписує url/utm/копію
-на живий `/{lang}/weekly/{topic-slug}?s=`. Telegram Aug 23 уже пішов зі старим
+на живий `/{lang}/weekly/{topic-slug}?s=`. Для X self-reply має бути **текст + цей URL**,
+не гола лінка. Telegram Aug 23 уже пішов зі старим
 hop — той пост у каналі не зміниться; решта каналів беріть з оновленої адмінки.
 (source: `supabase/migrations/20260903120000_rewrite_weekly_social_urls_on_publish.sql`,
 prod apply 2026-09-03, owner session 2026-09-03)

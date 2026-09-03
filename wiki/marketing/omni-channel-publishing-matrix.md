@@ -9,7 +9,7 @@ Sources: `src/lib/social/quality.ts` (`CHANNEL_RULES`), `src/lib/social/provider
 `src/app/r/s/[token]/route.ts`, `src/lib/weekly-digest/preflight.ts`
 (`WEEKLY_SOCIAL_MATRIX`), прод-розбір релізу `ai-weekly-2026-08-09` 2026-08-21,
 deterministic contract gate 2026-08-28, Telegram Топ 3/Радар/CTA gate 2026-08-28
-Last updated: 2026-08-28
+Last updated: 2026-09-03
 
 ---
 
@@ -25,7 +25,7 @@ Last updated: 2026-08-28
 | 3 | Instagram — пост «ні про що» | 7 слайдів ✅, caption 490 ✅ | Структура правильна. Дефект не технічний, а редакційний — §1 |
 | 4 | Threads — один пост без ланцюжка й лінка | **`content_parts` = 4 частини** з URL в останній | Пайплайн згенерував правильно. Це моя помилка ручного постингу 20.08 |
 | 5 | Facebook — порожня OG-картка | `assets` = 1, лінк = `/r/s/<token>` | `/r/s/` віддавав 302 з `no-store` — скрапер Facebook не резолвить OG крізь такий редирект |
-| 6 | X — «нікуди не веде» | `content_parts` = 2, `first_comment` ✅ | Root без лінка — **так і має бути**. Але в self-reply пішов голий URL без тексту |
+| 6 | X — «нікуди не веде» | `content_parts` = 2, `first_comment` ✅ | Root без лінка — **так і має бути**. Але в self-reply пішов голий URL без тексту. **2026-09-03:** гейт `x_reply_bare_url` + компактний `?s=` URL |
 
 **Побічна знахідка того самого кореня, що й №5:** у `social_click_events` **34 кліки з
 `device_class='bot'` проти 8 живих** (4 mobile + 4 desktop). Кожен прев'ю-скрапер
@@ -224,11 +224,23 @@ Full weekly breakdown in the first comment.
 #AI #LLM #DeepTech
 ```
 
-**1-й коментар:** `Full weekly digest: https://aitodaybrief.com/en/weekly/{slug}?s=<token>`
+**1-й коментар** (компактний `?s=`, без UTM; URL з нового рядка):
+
+```text
+Full weekly digest with the quantization-healing step.
+
+https://aitodaybrief.com/en/weekly/{slug}?s=<token>
+```
+
+LinkedIn **не розгортає OG в коментарях**. Автопостинг кріпить
+`content.article` (source = той самий compact URL, thumbnail = cover) на сам пост.
+Якщо постиш руками — встав Destination у композер поста і дочекайся картки; у
+коментар лишай короткий рядок + compact URL.
 
 > Шаблон 6.1 тепер відповідає коду: з 2026-08-21 `linkedin.rootUrlStrategy = 'none'`,
 > лінк у тілі **блокується**, а `firstComment` обовʼязковий і постить його автоматика.
-> Перехідний варіант 6.1a більше не потрібен.
+> **2026-09-03:** коментар більше не несе повний UTM (він ламає вигляд і все одно
+> без превʼю). OG живе на пості через Posts API `content.article`.
 
 ### 6.2 X (`en`)
 
@@ -358,7 +370,7 @@ Full weekly breakdown — link in bio.
 | `src/lib/social/telegram-format.ts` (новий) + `providers.ts` | `parse_mode: 'HTML'` для Telegram; спершу екранування `&<>`, потім промоція закритого whitelist `**bold**` → `<b>`, `` `code` `` → `<code>`, ``` ```блок``` ``` → `<pre>` | Telegram нарешті рендерить акценти й назви прапорців. MarkdownV2 відкинуто: він вимагає екранувати 15 символів, і один пропущений валить усе повідомлення |
 | `quality.ts` → `raw_markup` | розмітка заборонена **скрізь, крім Telegram** | Не дає `**` протекти в LinkedIn чи Facebook, де вона друкується сирою |
 | `quality.ts` → `linkedin.rootUrlStrategy` | `'one'` → **`'none'`** + нове блокування `linkedin_comment_url` | Тіло LinkedIn-поста більше не містить URL |
-| `providers.ts` → `LinkedInPublisher` | після публікації постить `firstComment` через `/rest/socialActions/{urn}/comments`; збій = `partial_linkedin_comment` (`ambiguous`, під реконсиляцію, без ретраю) | Автопостинг лінка 1-м коментарем — той самий контракт, що в X self-reply |
+| `providers.ts` → `LinkedInPublisher` | після публікації постить `firstComment` через `/rest/socialActions/{urn}/comments`; збій = `partial_linkedin_comment` (`ambiguous`, під реконсиляцію, без ретраю). **2026-09-03:** пост несе `content.article` (compact `?s=` + thumbnail), коментар — короткий рядок + той самий compact URL без UTM | Автопостинг лінка 1-м коментарем; OG-картка на пості, не в коментарі (LinkedIn коментарі не unfurl) |
 | `weekly-action-board.tsx` (новий) + `weekly/[slug]/page.tsx` | блок «Що взяти в роботу цього тижня» одразу під героєм; відео перенесено з кінця статті на початок колонки | Рівень випуску, якого бракувало: 3–5 дій із `practical_*`, кожна з якорем на свою історію |
 
 **Змінено 2026-08-28.** Рядок «критик тепер аудитує це під `platformFlags`» вище описував увесь
