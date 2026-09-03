@@ -27,7 +27,8 @@ Last updated: 2026-09-03
   `…/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23?s=`.
   Telegram уже був `posted` зі старим hop — у каналі лінк не зміниться; копіюй
   з адмінки **після** publish. Наступні Ship роблять rewrite у
-  `finish_weekly_digest_release`.
+  `finish_weekly_digest_release`. Міграція вже на проді; аплікаційний код —
+  цей PR.
   (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md);
   prod `weekly_digests.status=published` 2026-09-03)
 

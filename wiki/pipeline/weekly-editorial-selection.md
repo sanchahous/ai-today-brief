@@ -7,11 +7,8 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 2026-08-17, pre-critic hang 2026-08-22, critic model rotation 2026-08-22,
 Visuals upload body-cap sync 2026-08-26, Fixes & blockers 2026-08-28,
 social copy fail-open 2026-08-28, revision Stage 0 2026-08-29,
-каталожний вибір OpenRouter 2026-08-30,
-YouTube duration floor 120s 2026-09-02,
-public-content cache tag on release 2026-09-02,
-ElevenLabs TTS tooling + video assembler 2026-09-03,
-social URL rewrite on publish 2026-09-03.
+каталожний вибір OpenRouter 2026-08-30, YouTube 120s + public-content tag 2026-09-02,
+ElevenLabs TTS 2026-09-03; social URL rewrite is a publish RPC, not a selector change.
 Last updated: 2026-09-03
 
 ---

@@ -6,6 +6,14 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-09-03
 
+## 2026-09-03 — wiki-sync: weekly-digest watcher після lint-clean
+
+Після коміту `placeholder-slug` / `release-worker` сторінки watcher
+`weekly-digest` відстали на ~0h. Оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md).
+(source: `npm run wiki:sync` 2026-09-03)
+
 ## 2026-09-03 — Лічильник міграцій у wiki: 101
 
 `supabase/migrations/` тепер 101 файл: додано

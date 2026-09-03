@@ -75,7 +75,9 @@ owner session 2026-08-29)
 (плюс наявні UTM) і прибирає hop `/r/s/{token}`. GUC
 `app.weekly_digest_social_url_rewrite` дозволяє це без скидання `scheduled`/`posted`
 у `in_review` і без «immutable» на вже відправленому Telegram. Воркер ще раз кличе
-той самий RPC (ідемпотентно) і ревалідує `/admin/weekly/{id}`. Адмінка Destination/
+той самий RPC (ідемпотентно) і ревалідує `/admin/weekly/{id}`. Міграція
+`20260903120000_rewrite_weekly_social_urls_on_publish.sql` — 101-й файл у
+`supabase/migrations/`. Адмінка Destination/
 Tracked читає поточний `weekly_digests.slug`. Інакше власник копіює з адмінки пости
 з `ai-weekly-YYYY-MM-DD` і 404.
 (source: `supabase/migrations/20260903120000_rewrite_weekly_social_urls_on_publish.sql`,

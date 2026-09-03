@@ -661,7 +661,7 @@ worker, і на цьому проєкті **API-ключі каналів не �
 на живий `/{lang}/weekly/{topic-slug}?s=`. Telegram Aug 23 уже пішов зі старим
 hop — той пост у каналі не зміниться; решта каналів беріть з оновленої адмінки.
 (source: `supabase/migrations/20260903120000_rewrite_weekly_social_urls_on_publish.sql`,
-owner session 2026-09-03)
+prod apply 2026-09-03, owner session 2026-09-03)
 
 ## Типові «чому не їде»
 
