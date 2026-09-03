@@ -742,7 +742,7 @@ class LinkedInPublisher implements SocialPublisher {
           body: JSON.stringify({
             actor: owner,
             object: id,
-            message: { text: compactLinkedInComment(post.firstComment) },
+            message: { text: compactLinkedInComment(post.firstComment ?? '') },
           }),
         },
         { stage: 'publish' },
