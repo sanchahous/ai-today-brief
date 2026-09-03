@@ -34,9 +34,16 @@ Last updated: 2026-09-03
   `app.weekly_digest_video_publish` за тим самим патерном, що вже є для visual-refresh
   promotion. Соцмережі й раніше не залежали від відео в контенті (`social-adapter.ts` не
   згадує video/youtube) — розділення гейту прибирає єдиний звʼязок структурно.
-  Міграція `20260903150000_weekly_digest_two_phase_release.sql` **ще не застосована на
-  проді** — потребує окремого підтвердження власника перед деплоєм.
-  (source: owner session 2026-09-03; [weekly-digest § Реліз у два етапи](pipeline/weekly-digest.md#реліз-у-два-етапи-сайт-окремо-від-відео-2026-09-03),
+  Міграція `20260903150000_weekly_digest_two_phase_release.sql` **застосована на проді**
+  2026-09-03 (owner confirm, через Supabase MCP) — перевірено живим запитом: `weekly_digest_preflight`
+  більше не згадує `video_final`, `publish_weekly_digest_video` існує як `security invoker`,
+  constraint дозволяє `video_published`; `get_advisors` не показав нових знахідок. PR
+  [#358](https://github.com/sanchahous/ai-today-brief/pull/358) відкрито, гілка
+  `claude/weekly-digest-split-release-6fd035`, змержено з `main` (конфлікт із паралельним
+  [#357](https://github.com/sanchahous/ai-today-brief/pull/357) на compact X/LinkedIn URL —
+  лише в `wiki/index.md`/`log.md`/`now.md`, вирішено).
+  (source: owner session 2026-09-03; live check `mdiqfatpqczwqghwttpm` після apply_migration;
+  [weekly-digest § Реліз у два етапи](pipeline/weekly-digest.md#реліз-у-два-етапи-сайт-окремо-від-відео-2026-09-03),
   [weekly-admin-runbook](ops/weekly-admin-runbook.md);
   `supabase/migrations/20260903150000_weekly_digest_two_phase_release.sql`,
   `src/lib/weekly-digest/preflight.ts`, `src/lib/weekly-digest/hallucination-board.ts`,

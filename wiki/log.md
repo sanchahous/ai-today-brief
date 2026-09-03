@@ -6,6 +6,16 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-09-03
 
+## 2026-09-03 — Міграція two-phase release застосована на проді
+
+`20260903150000_weekly_digest_two_phase_release.sql` задеплоєна на `mdiqfatpqczwqghwttpm`
+(owner confirm, Supabase MCP `apply_migration`). Живий запит підтвердив: `weekly_digest_preflight`
+без згадок `video_final`, `publish_weekly_digest_video` існує (`security invoker`), constraint
+`weekly_digest_release_events_event_type_check` дозволяє `video_published`. `get_advisors`
+(security) — 0 нових знахідок, самі лише передіснуючі. PR
+[#358](https://github.com/sanchahous/ai-today-brief/pull/358) відкрито проти `main`.
+(source: owner session 2026-09-03, live check `mdiqfatpqczwqghwttpm`)
+
 ## 2026-09-03 — Weekly digest реліз розділено на дві частини (сайт+соц / відео)
 
 Ship більше не вимагає `video_script`/`video_manifest`/`video_final`/`captions`/`thumbnail`
