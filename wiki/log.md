@@ -6,6 +6,19 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-09-03
 
+## 2026-09-03 — Weekly digest реліз розділено на дві частини (сайт+соц / відео)
+
+Ship більше не вимагає `video_script`/`video_manifest`/`video_final`/`captions`/`thumbnail`
+у жодному з трьох дзеркал гейту (SQL `weekly_digest_preflight`, `buildHallucinationBoard`,
+TS `validateWeeklyDigestPreflight`) — сайт і всі шість соцпостів публікуються без відео.
+Новий RPC `publish_weekly_digest_video` + кнопка «Publish video» на Release-табі додають
+відео до вже опублікованого випуску окремою AAL2-дією, не чіпаючи соц і статус дайджесту.
+Оновлено [weekly-digest](pipeline/weekly-digest.md) (новий розділ «Реліз у два етапи»),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md) (шлях випуску, таблиця статусів),
+[now](now.md), лічильник міграцій у [index](index.md) — 104 після мержу з #357.
+(source: owner session 2026-09-03,
+`supabase/migrations/20260903150000_weekly_digest_two_phase_release.sql`)
+
 ## 2026-09-03 — LinkedIn коментар без OG і з довгим UTM
 
 LinkedIn **не розгортає** превʼю в коментарях. Адмінська копія ще й клеїла повний

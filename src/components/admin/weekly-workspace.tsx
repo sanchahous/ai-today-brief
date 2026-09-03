@@ -110,6 +110,7 @@ import {
   selectWeeklyArtifactVariantAction,
   startWeeklyContentStudioAction,
   shipWeeklyDigestAction,
+  publishWeeklyDigestVideoAction,
   toggleWeeklySocialAction,
   ignorePostUploadQaAction,
   recheckPostUploadQaAction,
@@ -1418,6 +1419,17 @@ function HallucinationBoardPanel({
   const videoFinal = workspace.artifacts.find(
     (artifact) => artifact.artifact_type === 'video_final' && artifact.is_current,
   );
+  const captionsEn = workspace.artifacts.find(
+    (artifact) =>
+      artifact.artifact_type === 'captions' && artifact.locale === 'en' && artifact.is_current,
+  );
+  const captionsUk = workspace.artifacts.find(
+    (artifact) =>
+      artifact.artifact_type === 'captions' && artifact.locale === 'uk' && artifact.is_current,
+  );
+  const thumbnail = workspace.artifacts.find(
+    (artifact) => artifact.artifact_type === 'thumbnail' && artifact.is_current,
+  );
   const qualityArtifact = workspace.artifacts.find(
     (artifact) => artifact.artifact_type === 'content_quality_report' && artifact.is_current,
   );
@@ -1429,8 +1441,18 @@ function HallucinationBoardPanel({
       title_uk: item.title_uk,
     })),
     artifacts: workspace.artifacts,
-    videoYoutubeId: videoFinal?.provider_id ?? videoFinal?.external_url ?? null,
   });
+  const readyApproved = (
+    artifact?: Pick<WeeklyArtifactAdminRow, 'generation_status' | 'review_status'>,
+  ) => artifact?.generation_status === 'ready' && artifact?.review_status === 'approved';
+  const videoSetReady =
+    readyApproved(videoFinal) &&
+    Boolean(videoFinal?.provider_id) &&
+    Boolean(videoFinal?.external_url) &&
+    readyApproved(captionsEn) &&
+    readyApproved(captionsUk) &&
+    readyApproved(thumbnail);
+  const videoPublished = Boolean(videoFinal?.published_at);
 
   return (
     <section className={PANEL} aria-labelledby="hallucination-board-heading">
@@ -1562,6 +1584,52 @@ function HallucinationBoardPanel({
               />
             </form>
           ) : null}
+        </div>
+      ) : null}
+      {canShip && workspace.digest.status === 'published' ? (
+        <div className="mt-5 grid gap-3 rounded-xl border border-white/8 bg-white/[.025] p-4">
+          <p className="text-xs font-bold tracking-wide text-cyan-200 uppercase">
+            Video release (Part 2)
+          </p>
+          {videoPublished ? (
+            <p className="text-sm text-emerald-200">
+              Video is live on the public page
+              {videoFinal?.external_url ? (
+                <>
+                  {' — '}
+                  <a
+                    href={videoFinal.external_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline"
+                  >
+                    {videoFinal.external_url}
+                  </a>
+                </>
+              ) : null}
+              .
+            </p>
+          ) : videoSetReady ? (
+            <>
+              <p className="text-sm text-slate-400">
+                Final video, EN/UK captions and thumbnail are approved. Publishing adds the video
+                to the already-live page — it does not re-ship the article, PDF or social.
+              </p>
+              <form action={publishWeeklyDigestVideoAction}>
+                <input type="hidden" name="weekly_digest_id" value={workspace.digest.id} />
+                <ActionSubmitButton
+                  idleLabel="Publish video"
+                  pendingLabel="Publishing…"
+                  className={PRIMARY}
+                />
+              </form>
+            </>
+          ) : (
+            <p className="text-sm text-amber-100">
+              Not ready yet — Open Video → finish and approve the final render, EN/UK captions and
+              thumbnail. Video is not required to Ship the site.
+            </p>
+          )}
         </div>
       ) : null}
     </section>
@@ -5896,7 +5964,10 @@ export function WeeklyWorkspace({
   const preflight = validateWeeklyDigestPreflight({ storyIds, artifacts, social, localeMap });
   const live = workspace.livePreflight;
   const displayBlockers = live.error ? preflight.blockers : live.blockers;
-  const requiredSlots = 15 + storyIds.length + Object.keys(WEEKLY_SOCIAL_MATRIX).length;
+  // Fixed non-story, non-social required slots: content_quality_report (1),
+  // article en/uk (2), cover (1), pdf en/uk (2), research_pack top-3 (3).
+  // Video is intentionally not counted — see preflight.ts.
+  const requiredSlots = 9 + storyIds.length + Object.keys(WEEKLY_SOCIAL_MATRIX).length;
   const blockedSlots = new Set(displayBlockers.map((blocker) => blocker.slot)).size;
   const progress = Math.max(
     0,

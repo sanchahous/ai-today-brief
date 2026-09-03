@@ -610,12 +610,10 @@ export function validateWeeklyDigestPreflight(input: WeeklyPreflightInput): Week
   requireArtifact('pdf', { locale: 'en', label: 'English PDF' });
   requireArtifact('pdf', { locale: 'uk', label: 'Ukrainian PDF' });
 
-  requireArtifact('video_script', { locale: 'en', label: 'Approved English video script' });
-  requireArtifact('video_manifest', { locale: 'en', label: 'Approved weekly-video-v3 manifest' });
-  requireArtifact('video_final', { locale: 'en', label: 'Final YouTube video' });
-  requireArtifact('captions', { locale: 'en', label: 'English captions' });
-  requireArtifact('captions', { locale: 'uk', label: 'Ukrainian captions' });
-  requireArtifact('thumbnail', { locale: null, label: 'Video thumbnail' });
+  // Video (script/manifest/final/captions/thumbnail) is intentionally not a
+  // required slot: it ships separately via `publish_weekly_digest_video`
+  // after Ship, so the slowest production step never delays the site or
+  // social. See wiki/pipeline/weekly-digest.md — two-phase release.
 
   return {
     ready: blockers.length === 0,

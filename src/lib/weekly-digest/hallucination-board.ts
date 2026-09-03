@@ -17,7 +17,7 @@ export interface AppliedLanguageFix {
 }
 
 export interface OwnerWaitItem {
-  kind: 'upload' | 'youtube';
+  kind: 'upload';
   label: string;
   /** Preflight slot key, so a board row and a preflight blocker are the same object. */
   slotKey?: string;
@@ -52,6 +52,10 @@ function stringArray(value: unknown): string[] {
  * Mirrors the required-slot table in `weekly_digest_preflight` (SQL). The
  * board and the preflight must agree on what "ready to ship" means — a board
  * that is greener than the RPC just moves the surprise into the Ship click.
+ *
+ * Video (video_final/captions/thumbnail) is deliberately absent: it ships
+ * separately via `publish_weekly_digest_video` after Ship, not as part of
+ * this board. See wiki/pipeline/weekly-digest.md — two-phase release.
  */
 const REQUIRED_SLOTS: Array<{
   artifactType: string;
@@ -65,26 +69,12 @@ const REQUIRED_SLOTS: Array<{
   { artifactType: 'pdf', locale: 'en', label: 'EN PDF', slotPrefix: 'pdf' },
   { artifactType: 'pdf', locale: 'uk', label: 'UK PDF', slotPrefix: 'pdf' },
   { artifactType: 'cover', locale: 'neutral', label: 'Cover image upload', slotPrefix: 'cover' },
-  {
-    artifactType: 'video_final',
-    locale: 'en',
-    label: 'Final YouTube video',
-    slotPrefix: 'video-final',
-  },
-  { artifactType: 'captions', locale: 'en', label: 'EN captions', slotPrefix: 'captions' },
-  { artifactType: 'captions', locale: 'uk', label: 'UK captions', slotPrefix: 'captions' },
-  {
-    artifactType: 'thumbnail',
-    locale: 'neutral',
-    label: 'Thumbnail upload',
-    slotPrefix: 'thumbnail',
-  },
 ];
 
 /**
  * Same contract as the SQL preflight: ready + approved for every required
- * slot; video_final additionally needs provider id AND url. Anything missing
- * lands in waitingOnOwner with the matching preflight slot key.
+ * slot. Anything missing lands in waitingOnOwner with the matching preflight
+ * slot key.
  */
 function requiredSlotGaps(
   artifacts: Array<{
@@ -108,7 +98,7 @@ function requiredSlotGaps(
     );
     if (!found) {
       gaps.push({
-        kind: slot.artifactType === 'video_final' ? 'youtube' : 'upload',
+        kind: 'upload',
         label: `${slot.label} is missing`,
         slotKey: `${slot.slotPrefix}:${slot.locale}`,
       });
@@ -116,17 +106,9 @@ function requiredSlotGaps(
     }
     if (found.generation_status !== 'ready' || found.review_status !== 'approved') {
       gaps.push({
-        kind: slot.artifactType === 'video_final' ? 'youtube' : 'upload',
+        kind: 'upload',
         label: `${slot.label} is not ready and approved`,
         slotKey: `${slot.slotPrefix}:${slot.locale}`,
-      });
-      continue;
-    }
-    if (slot.artifactType === 'video_final' && (!found.provider_id || !found.external_url)) {
-      gaps.push({
-        kind: 'youtube',
-        label: 'Paste weekly-video-result-v2 YouTube id',
-        slotKey: 'video-final:en',
       });
     }
   }
@@ -153,7 +135,6 @@ export function buildHallucinationBoard(input: {
     revision_item_id: string | null;
     provider_id?: string | null;
   }>;
-  videoYoutubeId?: string | null;
 }): HallucinationBoardModel {
   const current = input.artifacts.filter((artifact) => artifact.is_current);
   const researchPacks = current.filter((artifact) => artifact.artifact_type === 'research_pack');
@@ -223,12 +204,9 @@ export function buildHallucinationBoard(input: {
     });
   }
 
-  // Required slots + video id, evaluated with the same conditions the
-  // preflight RPC applies before it lets schedule_weekly_digest succeed.
-  for (const gap of requiredSlotGaps(current)) {
-    if (gap.kind === 'youtube' && input.videoYoutubeId) continue;
-    waitingOnOwner.push(gap);
-  }
+  // Required slots, evaluated with the same conditions the preflight RPC
+  // applies before it lets ship_weekly_digest succeed.
+  waitingOnOwner.push(...requiredSlotGaps(current));
 
   return {
     claims,

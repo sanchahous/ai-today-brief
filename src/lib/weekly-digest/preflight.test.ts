@@ -13,6 +13,9 @@ function artifact(
   return { artifactType, approved: true, ...options };
 }
 
+// No video_script/video_manifest/video_final/captions/thumbnail artifacts:
+// video is not a required slot (it ships separately post-Ship), so a
+// complete release is ready without them.
 function completeInput(): WeeklyPreflightInput {
   const social = Object.entries(WEEKLY_SOCIAL_MATRIX).map(
     ([channel, locale]) =>
@@ -42,12 +45,6 @@ function completeInput(): WeeklyPreflightInput {
       artifact('story_image', { storyId: 'story-4' }),
       artifact('story_image', { storyId: 'story-5' }),
       artifact('story_image', { storyId: 'story-6' }),
-      artifact('video_final', { locale: 'en' }),
-      artifact('video_script', { locale: 'en' }),
-      artifact('video_manifest', { locale: 'en' }),
-      artifact('captions', { locale: 'en' }),
-      artifact('captions', { locale: 'uk' }),
-      artifact('thumbnail'),
     ],
     social,
   };
@@ -127,19 +124,6 @@ describe('Weekly Digest release preflight', () => {
         }),
       ]),
     );
-  });
-
-  it('video_manifest missing guidance names Generate manifest and weekly-video-v3', () => {
-    const input = completeInput();
-    input.artifacts = input.artifacts.filter((entry) => entry.artifactType !== 'video_manifest');
-    const result = validateWeeklyDigestPreflight(input);
-    const missing = result.blockers.find(
-      (blocker) => blocker.code === 'artifact_missing' && blocker.slot === 'video_manifest:en',
-    );
-    expect(missing?.message).toMatch(/weekly-video-v3/);
-    expect(missing?.fix).toMatch(/Generate manifest/i);
-    expect(missing?.fix).toMatch(/weekly-video-v3/);
-    expect(missing?.tab).toBe('video');
   });
 
   it('artifact_missing story_image and cover guidance points to the prompt, not Regenerate', () => {
@@ -331,7 +315,7 @@ describe('Weekly Digest release preflight', () => {
       (entry) =>
         !(entry.artifactType === 'pdf' && entry.locale === 'uk') &&
         entry.artifactType !== 'content_quality_report' &&
-        entry.artifactType !== 'video_script',
+        !(entry.artifactType === 'story_image' && entry.storyId === 'story-1'),
     );
     input.social = input.social.map((post) =>
       post.channel === 'telegram' ? { ...post, approved: false } : post,
@@ -340,23 +324,23 @@ describe('Weekly Digest release preflight', () => {
     const { blockers } = validateWeeklyDigestPreflight(input);
     expect(blockers.map((blocker) => blocker.slot)).toEqual([
       'content_quality_report',
+      'story_image:story:story-1',
       'social:telegram',
       'pdf:uk',
-      'video_script:en',
     ]);
 
     const groups = groupWeeklyPreflightBlockers(blockers, input.storyIds);
     expect(groups.map((group) => group.section.tab)).toEqual([
       'research',
+      'visuals',
       'social',
       'pdf',
-      'video',
     ]);
     expect(groups[0]?.section.step).toBe(2);
     expect(groups.map((group) => group.section.blurb)).toEqual(
       expect.arrayContaining([
         expect.stringMatching(/Top 3 packs/i),
-        expect.stringMatching(/Script → manifest/i),
+        expect.stringMatching(/story images/i),
       ]),
     );
   });
