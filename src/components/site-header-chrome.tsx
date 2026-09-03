@@ -108,10 +108,16 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             aria-label="Primary"
             className="ml-auto hidden shrink-0 flex-nowrap items-center gap-2 lg:flex xl:gap-5"
           >
-            {/* Home and About yield space to search in the 1024-1279 band: the logo links
-                home, and About stays reachable via footer + mobile menu. */}
+            {/* Home, Digests and About yield space to search in the 1024-1279 band: the logo
+                links home, and all three stay reachable via footer + mobile menu. */}
             {navLink(`/${lang}`, t.navHome, pathname === `/${lang}`, 'hidden xl:inline-block')}
             {navLink(`/${lang}/news`, t.nav.news, isActive(`/${lang}/news`))}
+            {navLink(
+              `/${lang}/digests`,
+              t.nav.digests,
+              isActive(`/${lang}/digests`),
+              'hidden xl:inline-block',
+            )}
             {navLink(`/${lang}/concepts`, t.nav.concepts, isActive(`/${lang}/concepts`))}
             {navLink(`/${lang}/guides`, t.guidesTitle, isActive(`/${lang}/guides`))}
             {navLink(`/${lang}/tools`, t.nav.tools, isActive(`/${lang}/tools`))}
@@ -280,7 +286,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
               />
               <MobileNavLink
                 href={`/${lang}/digests`}
-                label={lang === 'uk' ? 'Дайджести' : 'Digests'}
+                label={t.nav.digests}
                 onNavigate={() => setMenuOpen(false)}
               />
               <MobileNavLink

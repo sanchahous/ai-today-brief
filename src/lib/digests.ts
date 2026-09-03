@@ -206,6 +206,8 @@ export interface WeeklyDigestHomeView {
   weekEnd: string;
   title: string;
   intro: string | null;
+  /** The short, editorially-crafted lead — falls back to `intro` when absent. */
+  standfirst: string | null;
   highlights: string[];
   cover: WeeklyDigestImage | null;
   hasPdf: boolean;
@@ -759,6 +761,7 @@ export async function getLatestWeeklyDigest(lang: Lang): Promise<WeeklyDigestHom
           weekEnd: digest.weekEnd,
           title: digest.title,
           intro: digest.intro,
+          standfirst: digest.standfirst,
           highlights: digest.keyTakeaways.length
             ? digest.keyTakeaways.slice(0, 5)
             : digest.items.slice(0, 5).map((item) => item.title),
@@ -787,6 +790,8 @@ export async function getLatestWeeklyDigest(lang: Lang): Promise<WeeklyDigestHom
   const itemTitles = (
     (highlights.data as Array<{ title_en: string; title_uk: string }> | null) ?? []
   ).map((item) => pick(lang, item.title_en, item.title_uk));
+  const intro = pick(lang, revision.intro_en, revision.intro_uk) || null;
+  const article = articleFrame(localeSpecificArtifact(artifacts, 'article', lang));
 
   return {
     id: row.id,
@@ -794,7 +799,8 @@ export async function getLatestWeeklyDigest(lang: Lang): Promise<WeeklyDigestHom
     weekStart: row.week_start,
     weekEnd: row.week_end ?? addDays(row.week_start, 6),
     title,
-    intro: pick(lang, revision.intro_en, revision.intro_uk) || null,
+    intro,
+    standfirst: article.standfirst ?? intro,
     highlights: (keyTakeaways.length ? keyTakeaways : itemTitles).slice(0, 5),
     cover: imageFromArtifact(db, localizedArtifact(artifacts, 'cover', lang), lang, title),
     hasPdf: Boolean(localeSpecificArtifact(artifacts, 'pdf', lang)),
