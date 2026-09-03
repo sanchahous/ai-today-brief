@@ -4379,7 +4379,9 @@ function SocialPanel({
                       data-testid="social-field-first-comment"
                     />
                     <span className="text-xs font-normal text-slate-500">
-                      Keep the tracked URL in this self-reply. The root post stays link-free.
+                      {channel === 'linkedin'
+                        ? 'Comments never unfurl a preview. Keep a short line plus the compact ?s= URL here. Auto-publish attaches the card on the post; if you post by hand, paste Destination into the LinkedIn composer.'
+                        : 'Keep the tracked URL in this self-reply. The root post stays link-free.'}
                     </span>
                   </label>
                 ) : null}

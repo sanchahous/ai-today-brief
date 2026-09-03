@@ -2450,7 +2450,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
     });
     const providerPipelineStartedAt = Date.now();
     const trackedUrl =
-      channel === 'x'
+      channel === 'x' || channel === 'linkedin'
         ? weeklyClickUrl(locale, context.digest.slug, checkpoint.tokens[channel])
         : weeklyTrackedUrl(locale, context.digest.slug, checkpoint.tokens[channel], {
             source: channel,

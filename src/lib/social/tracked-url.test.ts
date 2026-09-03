@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  asSocialClickUrl,
+  firstHttpUrl,
   isSocialTrackingToken,
   socialClickTokenFromSearch,
   trackingTokenFromUrl,
@@ -45,5 +47,14 @@ describe('tracked-url', () => {
     expect(weeklyClickUrl('en', 'topic-slug-2026-08-23', TOKEN)).toBe(
       `https://aitodaybrief.com/en/weekly/topic-slug-2026-08-23?s=${TOKEN}`,
     );
+  });
+
+  it('strips UTM from a stored weekly URL and keeps the click token', () => {
+    const utm = weeklyTrackedUrl('en', 'topic-slug-2026-08-23', TOKEN, {
+      source: 'linkedin',
+      content: 'Benchmarking AI Infrastructure',
+    });
+    expect(asSocialClickUrl(utm)).toBe(weeklyClickUrl('en', 'topic-slug-2026-08-23', TOKEN));
+    expect(firstHttpUrl(`Lead: ${utm} extra`)).toBe(utm);
   });
 });

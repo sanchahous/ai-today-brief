@@ -10,6 +10,7 @@ import type {
   SocialPostForDelivery,
   SocialPublisher,
 } from './types';
+import { compactLinkedInComment, linkedInArticleContent } from './linkedin-article';
 import { SocialPublishError } from './types';
 
 type JsonObject = Record<string, unknown>;
@@ -683,6 +684,11 @@ class LinkedInPublisher implements SocialPublisher {
       : `urn:li:organization:${ownerId}`;
     const version = process.env.LINKEDIN_VERSION?.trim() || '202607';
     const image = assetUrl(post) ? await uploadLinkedInImage(post, token, owner, version) : null;
+    const article = linkedInArticleContent({
+      text: post.text,
+      firstComment: post.firstComment,
+      thumbnail: image,
+    });
     const result = await providerJson(
       'https://api.linkedin.com/rest/posts',
       {
@@ -704,9 +710,11 @@ class LinkedInPublisher implements SocialPublisher {
           },
           lifecycleState: 'PUBLISHED',
           isReshareDisabledByAuthor: false,
-          ...(image
-            ? { content: { media: { id: image, title: post.altText || 'AI Today Brief' } } }
-            : {}),
+          ...(article
+            ? { content: article }
+            : image
+              ? { content: { media: { id: image, title: post.altText || 'AI Today Brief' } } }
+              : {}),
         }),
       },
       { stage: 'publish' },
@@ -734,7 +742,7 @@ class LinkedInPublisher implements SocialPublisher {
           body: JSON.stringify({
             actor: owner,
             object: id,
-            message: { text: post.firstComment },
+            message: { text: compactLinkedInComment(post.firstComment) },
           }),
         },
         { stage: 'publish' },

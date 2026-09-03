@@ -72,7 +72,30 @@ export function weeklyTrackedUrl(
   return withSocialClickToken(url.toString(), token);
 }
 
-/** X self-reply is 280 chars; UTM + topic slug leaves no room for the USE line. */
+/** Visible X/LinkedIn reply URL: page + s=. UTM stays on Destination / utm_url. */
 export function weeklyClickUrl(locale: string, slug: string, token: string): string {
   return withSocialClickToken(weeklyPageUrl(locale, slug), token);
+}
+
+export function firstHttpUrl(text: string): string | null {
+  const match = /https?:\/\/[^\s)\]}'"<>]+/i.exec(text);
+  if (!match) return null;
+  let url = match[0];
+  while (url.endsWith('.') || url.endsWith(',') || url.endsWith(':')) {
+    url = url.slice(0, -1);
+  }
+  return url || null;
+}
+
+/** Drop UTM clutter; keep pathname and the click token. */
+export function asSocialClickUrl(url: string): string {
+  try {
+    const parsed = new URL(url, SITE_URL);
+    const token = parsed.searchParams.get(SOCIAL_CLICK_PARAM);
+    const clean = new URL(parsed.pathname, `${parsed.protocol}//${parsed.host}`);
+    if (token) clean.searchParams.set(SOCIAL_CLICK_PARAM, token);
+    return clean.toString();
+  } catch {
+    return url;
+  }
 }

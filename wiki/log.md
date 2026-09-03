@@ -6,6 +6,13 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-09-03
 
+## 2026-09-03 — LinkedIn коментар без OG і з довгим UTM
+
+LinkedIn **не розгортає** превʼю в коментарях. Адмінська копія ще й клеїла повний
+UTM у first comment. Compact `weeklyClickUrl` у коментарі; Posts API
+`content.article` (source = page?s=, thumbnail = cover) на самому пості.
+(source: owner LinkedIn screenshot 2026-09-03, [omni-channel-publishing-matrix](marketing/omni-channel-publishing-matrix.md) §6.1)
+
 ## 2026-09-03 — X self-reply був голий URL
 
 Контракт: root без лінка, **self-reply = USE + URL**. Writer лишав лише
