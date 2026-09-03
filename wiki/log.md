@@ -6,6 +6,17 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-09-03
 
+## 2026-09-03 — Weekly release упав на LinkedIn PDF у public bucket
+
+`ai-weekly-2026-08-23` (23–29 Aug) після Ship/claim лишився `failed`:
+`linkedin-document:en promotion: mime type application/pdf is not supported`.
+Promote тепер пропускає non-image `social_asset` (`shouldPromotePublicImage`).
+3 Sep republish: slug
+`multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23`,
+`status=published` 2026-09-03T08:10:32Z.
+(source: prod `weekly_digest_release_events` 2026-09-02T12:15Z / 2026-09-03T08:10Z;
+`src/lib/weekly-digest/publication-assets.ts`)
+
 ## 2026-09-03 — локальний `build:ci` не збирає сайт, якщо HTML не змінювався
 
 `pr:check` → `build:ci` дивиться diff vs `origin/main` (і робоче дерево). Той самий
@@ -25,6 +36,7 @@ check — `npm run build:ci` (8 шляхів). Pipeline далі скануєт�
 У репозиторій зайшли `tts-generator` (console ZIP + unpacker) і 18-scene `video-assembler`.
 Робочі mp3/mp4 лишаються gitignored під `library/DD.MM.YYYY/`. Конфлікти з main були лише
 в шапках wiki; записи 2026-09-02 про SSG/egress збережено.
+(source: PR #346)
 (source: PR #346)
 
 ## 2026-09-02 — запобіжники Free: повний SSG лише production Vercel

@@ -4,9 +4,8 @@ Summary: покрокова інструкція для власника/ред�
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…30,
-revision Stage 0 2026-08-29, OpenRouter catalog 2026-08-30,
-YouTube duration 120s + public-content cache tag 2026-09-02,
-ElevenLabs TTS tooling + video assembler 2026-09-03
+revision Stage 0, OpenRouter catalog, YouTube 120s, ElevenLabs TTS,
+LinkedIn PDF skip on public promote 2026-09-03
 Last updated: 2026-09-03
 
 ---
@@ -667,6 +666,7 @@ worker, і на цьому проєкті **API-ключі каналів не �
 | `social_copy` **succeeded**, немає Instagram | Story image лишились на попередній ревізії; воркер більше не валить пакет | Social tab: 5 каналів. Instagram — після upload/копії картинок на поточну ревізію |
 | `social_copy` terminal failed після Instagram, `undefined.map` | Normalized article artifact не мав `stories` для LinkedIn document | Дочекайся деплою social recovery, потім **Create linked retry**; не генеруй шість каналів окремо |
 | `social_copy` terminal failed на `rendered 8 pages; expected 7` | Довгий editorial copy переповнив LinkedIn PDF | Після deploy 7-page bounds створи **один** linked retry; він відновить збережені канали й слайди |
+| Digest **failed**, `linkedin-document:en promotion: mime type application/pdf is not supported` | Promote копіював LinkedIn PDF у image-only `social-assets` | Після фіксу `shouldPromotePublicImage` — Approve + Ship знову. PDF лишається private. |
 | Linked `social_copy` retry знову показує `channels` від 0% | Немає валідного checkpoint для поточного approved source hash | Перевір, чи не змінилась revision/locale map; якщо ні — дивись `checkpoint_restored`/`checkpoint_saved` у Timeline |
 | Release: немає story/cover | Файл не завантажено | Visuals → скопіюй промпт → згенеруй у своєму інструменті → upload. Не тисни Regenerate |
 | Visuals upload: `permission denied for table weekly_digest_revisions` | `weekly_digest_artifact_input_hash` робив `select revision.*` під invoker після column revoke `visual_thesis_*` | Міграція `20260826120000` уже на проді (2026-08-26) — retry upload |

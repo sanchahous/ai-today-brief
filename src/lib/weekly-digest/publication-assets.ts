@@ -2,6 +2,7 @@ import 'server-only';
 
 import { basename, extname } from 'node:path';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { isSocialImageMime } from '@/lib/social/asset-ref';
 import { storageBlob } from '@/lib/storage/binary';
 
 const PUBLIC_BUCKET = 'social-assets';
@@ -14,6 +15,17 @@ function safeName(path: string, mimeType: string | null) {
   if (mimeType === 'image/png') return `${original}.png`;
   if (mimeType === 'image/webp') return `${original}.webp`;
   return `${original}.jpg`;
+}
+
+/** Public `social-assets` only accepts jpeg/png/webp. LinkedIn native docs are `social_asset` + PDF. */
+export function shouldPromotePublicImage(artifact: {
+  artifact_type: string;
+  mime_type: string | null;
+  external_url: string | null | undefined;
+}): boolean {
+  if (!PUBLIC_IMAGE_TYPES.has(artifact.artifact_type)) return false;
+  if (artifact.external_url) return false;
+  return isSocialImageMime(artifact.mime_type);
 }
 
 export async function promoteWeeklyDigestPublicAssets(weeklyDigestId: string) {
@@ -40,7 +52,15 @@ export async function promoteWeeklyDigestPublicAssets(weeklyDigestId: string) {
 
   let promoted = 0;
   for (const artifact of artifacts ?? []) {
-    if (!PUBLIC_IMAGE_TYPES.has(artifact.artifact_type) || artifact.external_url) continue;
+    if (!shouldPromotePublicImage(artifact)) {
+      if (
+        (artifact.artifact_type === 'cover' || artifact.artifact_type === 'story_image') &&
+        !artifact.external_url
+      ) {
+        throw new Error(`[weekly-release] ${artifact.slot_key} has no publishable image.`);
+      }
+      continue;
+    }
     if (!artifact.storage_bucket || !artifact.storage_path) {
       if (artifact.artifact_type === 'cover' || artifact.artifact_type === 'story_image') {
         throw new Error(`[weekly-release] ${artifact.slot_key} has no publishable image.`);
