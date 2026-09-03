@@ -2649,6 +2649,24 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: number;
       };
+      rewrite_weekly_digest_social_urls: {
+        Args: {
+          p_new_slug: string;
+          p_old_slug: string;
+          p_weekly_digest_id: string;
+        };
+        Returns: number;
+      };
+      rewrite_weekly_social_copy_urls: {
+        Args: {
+          p_new_slug: string;
+          p_old_slug: string;
+          p_text: string;
+          p_token: string;
+          p_tracked_url: string;
+        };
+        Returns: string;
+      };
       reserve_daily_visual_budget: {
         Args: {
           p_attempt_number: number;

@@ -6,6 +6,7 @@ import { alertWeeklyDigestIssue } from './alerts';
 import { isWeeklyDigestReleaseDue } from './period';
 import { promoteWeeklyDigestPublicAssets } from './publication-assets';
 import { revalidatePathsForPublish, revalidatePublicContentTag } from '@/lib/revalidate-site';
+import { syncWeeklySocialUrlsAfterPublish } from './rewrite-social-urls';
 
 export interface ClaimedWeeklyDigest {
   id: string;
@@ -28,9 +29,14 @@ export interface WeeklyReleaseDependencies {
   claimDue(limit: number): Promise<ClaimedWeeklyDigest[]>;
   preflight(weeklyDigestId: string): Promise<unknown>;
   promote(weeklyDigestId: string): Promise<unknown>;
-  finish(weeklyDigestId: string, succeeded: boolean, error?: string | null): Promise<void>;
+  finish(weeklyDigestId: string, succeeded: boolean, error?: string | null): Promise<string | null>;
   revalidate(path: string): void;
   revalidateData?(): void;
+  syncSocialUrls?(
+    weeklyDigestId: string,
+    claimedSlug: string,
+    publishedSlug: string,
+  ): Promise<void>;
   alert(input: {
     weeklyDigestId: string;
     phase: 'generation' | 'preflight' | 'release';
@@ -80,17 +86,24 @@ async function runPreflight(weeklyDigestId: string) {
   return data;
 }
 
+function slugFromFinishRpc(data: unknown): string | null {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+  const slug = (data as { slug?: unknown }).slug;
+  return typeof slug === 'string' && slug.length > 0 ? slug : null;
+}
+
 async function finishRelease(
   weeklyDigestId: string,
   succeeded: boolean,
   errorMessage?: string | null,
-) {
-  const { error } = await rpcClient().rpc('finish_weekly_digest_release', {
+): Promise<string | null> {
+  const { data, error } = await rpcClient().rpc('finish_weekly_digest_release', {
     p_weekly_digest_id: weeklyDigestId,
     p_succeeded: succeeded,
     p_error: errorMessage ?? null,
   });
   if (error) throw new Error(`[weekly-release] finish failed: ${error.message}`);
+  return slugFromFinishRpc(data);
 }
 
 export async function runDueWeeklyDigestPreflights(limit = 10) {
@@ -129,6 +142,7 @@ const DATABASE_DEPENDENCIES: WeeklyReleaseDependencies = {
   finish: finishRelease,
   revalidate: revalidatePath,
   revalidateData: revalidatePublicContentTag,
+  syncSocialUrls: syncWeeklySocialUrlsAfterPublish,
   alert: alertWeeklyDigestIssue,
 };
 
@@ -159,12 +173,16 @@ export function preflightBlockersFromRpc(value: unknown): unknown[] {
   ];
 }
 
-function publishedPaths(slug: string) {
-  const safeSlug = encodeURIComponent(slug);
-  return revalidatePathsForPublish([
-    `/en/weekly/${safeSlug}`,
-    `/uk/weekly/${safeSlug}`,
-  ]);
+function weeklyPublicPaths(...slugs: Array<string | null>) {
+  const paths: string[] = [];
+  const seen = new Set<string>();
+  for (const slug of slugs) {
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    const safeSlug = encodeURIComponent(slug);
+    paths.push(`/en/weekly/${safeSlug}`, `/uk/weekly/${safeSlug}`);
+  }
+  return revalidatePathsForPublish(paths);
 }
 
 async function finishFailure(
@@ -270,8 +288,9 @@ export async function releaseDueWeeklyDigests(
       continue;
     }
 
+    let publishedSlug: string;
     try {
-      await dependencies.finish(digest.id, true, null);
+      publishedSlug = (await dependencies.finish(digest.id, true, null)) ?? digest.slug;
     } catch (error) {
       const message = safeMessage(error);
       results.push({ id: digest.id, outcome: 'failed', error: message });
@@ -289,7 +308,7 @@ export async function releaseDueWeeklyDigests(
     } catch (error) {
       revalidationErrors.push(`public-content: ${safeMessage(error)}`);
     }
-    for (const path of publishedPaths(digest.slug)) {
+    for (const path of weeklyPublicPaths(digest.slug, publishedSlug)) {
       try {
         dependencies.revalidate(path);
       } catch (error) {
@@ -297,6 +316,12 @@ export async function releaseDueWeeklyDigests(
         // invalidation failed; still attempt every remaining public surface.
         revalidationErrors.push(`${path}: ${safeMessage(error)}`);
       }
+    }
+    try {
+      await dependencies.syncSocialUrls?.(digest.id, digest.slug, publishedSlug);
+      dependencies.revalidate(`/admin/weekly/${digest.id}`);
+    } catch (error) {
+      revalidationErrors.push(`social-urls: ${safeMessage(error)}`);
     }
     const revalidationError = revalidationErrors.length
       ? revalidationErrors.join('; ').slice(0, 1500)

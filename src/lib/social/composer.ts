@@ -3,6 +3,7 @@ import 'server-only';
 import { randomUUID } from 'node:crypto';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
+import { withSocialClickToken } from '@/lib/social/tracked-url';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import {
   startWeeklyContentStudio,
@@ -171,7 +172,7 @@ function topStorySeeds(
   item: SourceItem,
   sourceDate: string,
   now: Date,
-  trackingUrls: Record<SocialChannel, string>,
+  tokens: Record<SocialChannel, string>,
   cadence: Record<SocialChannel, ChannelCadence>,
 ): VariantSeed[] {
   const title = text(item.title_en) || text(item.summary_en);
@@ -183,34 +184,37 @@ function topStorySeeds(
 
   if (channelRunsOnDate('x', sourceDate, cadence.x)) {
     const xText = truncate(`${title}\n\n${why}`, 278);
+    const xDest = publicStoryUrl(item, 'en', 'x');
     seeds.push({
       channel: 'x',
       locale: 'en',
       format: 'link_free_hook',
       text: xText,
-      firstComment: `Read the full brief: ${trackingUrls.x}`,
-      trackingToken: trackingUrls.x.split('/').at(-1)!,
-      sourceUrl: publicStoryUrl(item, 'en', 'x'),
+      firstComment: `Read the full brief: ${withSocialClickToken(xDest, tokens.x)}`,
+      trackingToken: tokens.x,
+      sourceUrl: xDest,
       scheduledFor: nextScheduledForChannel('x', sourceDate, now, cadence.x),
     });
   }
 
   if (channelRunsOnDate('threads', sourceDate, cadence.threads)) {
+    const threadsDest = publicStoryUrl(item, 'en', 'threads');
     seeds.push({
       channel: 'threads',
       locale: 'en',
       format: 'conversation',
       text: truncate(
-        `${title}\n\n${hook}\n\nWhy it matters: ${why}\n\nWhat changes for builders in practice? ${trackingUrls.threads}`,
+        `${title}\n\n${hook}\n\nWhy it matters: ${why}\n\nWhat changes for builders in practice? ${withSocialClickToken(threadsDest, tokens.threads)}`,
         498,
       ),
-      trackingToken: trackingUrls.threads.split('/').at(-1)!,
-      sourceUrl: publicStoryUrl(item, 'en', 'threads'),
+      trackingToken: tokens.threads,
+      sourceUrl: threadsDest,
       scheduledFor: nextScheduledForChannel('threads', sourceDate, now, cadence.threads),
     });
   }
 
   if (channelRunsOnDate('linkedin', sourceDate, cadence.linkedin)) {
+    const linkedinDest = publicStoryUrl(item, 'en', 'linkedin');
     const facts = approvedFacts(item, 'en').slice(3, 6);
     const linkedin = [
       title,
@@ -224,7 +228,7 @@ function topStorySeeds(
       '',
       `Practical takeaway: teams should verify where this changes cost, reliability, or delivery speed before changing a production workflow.`,
       '',
-      `Full analysis: ${trackingUrls.linkedin}`,
+      `Full analysis: ${withSocialClickToken(linkedinDest, tokens.linkedin)}`,
       '',
       '#AI #Engineering',
     ].join('\n');
@@ -233,8 +237,8 @@ function topStorySeeds(
       locale: 'en',
       format: 'company_insight',
       text: truncate(linkedin, 1200),
-      trackingToken: trackingUrls.linkedin.split('/').at(-1)!,
-      sourceUrl: publicStoryUrl(item, 'en', 'linkedin'),
+      trackingToken: tokens.linkedin,
+      sourceUrl: linkedinDest,
       scheduledFor: nextScheduledForChannel('linkedin', sourceDate, now, cadence.linkedin),
     });
   }
@@ -248,23 +252,24 @@ function topStorySeeds(
         `${title}\n\n${text(item.summary_en)}\n\nWhy it matters: ${why}\n\nSave this for your next AI engineering review. Full brief via the link in bio.\n\n#AI #AITools #Engineering`,
         1500,
       ),
-      trackingToken: trackingUrls.instagram.split('/').at(-1)!,
+      trackingToken: tokens.instagram,
       sourceUrl: publicStoryUrl(item, 'en', 'instagram'),
       scheduledFor: nextScheduledForChannel('instagram', sourceDate, now, cadence.instagram),
     });
   }
 
   if (channelRunsOnDate('facebook', sourceDate, cadence.facebook)) {
+    const facebookDest = publicStoryUrl(item, 'uk', 'facebook');
     seeds.push({
       channel: 'facebook',
       locale: 'uk',
       format: 'top_story',
       text: truncate(
-        `${ukTitle}\n\nЩо сталося: ${text(item.summary_uk)}\n\nЧому це важливо: ${ukWhy}\n\nПовний розбір: ${trackingUrls.facebook}`,
+        `${ukTitle}\n\nЩо сталося: ${text(item.summary_uk)}\n\nЧому це важливо: ${ukWhy}\n\nПовний розбір: ${withSocialClickToken(facebookDest, tokens.facebook)}`,
         1400,
       ),
-      trackingToken: trackingUrls.facebook.split('/').at(-1)!,
-      sourceUrl: publicStoryUrl(item, 'uk', 'facebook'),
+      trackingToken: tokens.facebook,
+      sourceUrl: facebookDest,
       scheduledFor: nextScheduledForChannel('facebook', sourceDate, now, cadence.facebook),
     });
   }
@@ -277,9 +282,10 @@ function telegramSeed(
   items: SourceItem[],
   sourceDate: string,
   now: Date,
-  trackingUrl: string,
+  token: string,
   cadence: ChannelCadence,
 ): VariantSeed {
+  const dest = dailyBriefUrl(brief, 'telegram');
   const lines = ['AI Today Brief — головне за день', ''];
   for (const [index, item] of items.slice(0, 5).entries()) {
     lines.push(
@@ -288,14 +294,14 @@ function telegramSeed(
       '',
     );
   }
-  lines.push(`Повний щоденний бриф: ${trackingUrl}`);
+  lines.push(`Повний щоденний бриф: ${withSocialClickToken(dest, token)}`);
   return {
     channel: 'telegram',
     locale: 'uk',
     format: 'daily_digest',
     text: lines.join('\n'),
-    trackingToken: trackingUrl.split('/').at(-1)!,
-    sourceUrl: dailyBriefUrl(brief, 'telegram'),
+    trackingToken: token,
+    sourceUrl: dest,
     scheduledFor: nextScheduledForChannel('telegram', sourceDate, now, cadence),
   };
 }
@@ -491,7 +497,7 @@ async function saveVariants(
       scheduled_for: draft.scheduledFor,
       idempotency_key: `${packageId}:${draft.channel}:${contentHash.slice(0, 16)}`,
       tracking_token: seed.trackingToken,
-      utm_url: seed.sourceUrl,
+      utm_url: withSocialClickToken(seed.sourceUrl, seed.trackingToken),
     };
   });
 
@@ -517,15 +523,6 @@ async function saveVariants(
     },
   }));
   if (reviews.length > 0) await supabase.from('social_post_reviews').insert(reviews);
-}
-
-function trackingUrls(tokens: Record<SocialChannel, string>) {
-  return Object.fromEntries(
-    Object.entries(tokens).map(([channel, token]) => [
-      channel,
-      new URL(`/r/s/${token}`, SITE_URL).toString(),
-    ]),
-  ) as Record<SocialChannel, string>;
 }
 
 function freshTrackingTokens() {
@@ -606,7 +603,6 @@ export async function composeDailySocial(
       items.slice(0, 5).map((item) => item.id),
     );
     const tokens = freshTrackingTokens();
-    const urls = trackingUrls(tokens);
     await saveVariants(
       packageId,
       digestLeadItem,
@@ -616,7 +612,7 @@ export async function composeDailySocial(
           items.slice(0, 5),
           sourceDate,
           now,
-          urls.telegram,
+          tokens.telegram,
           cadence.telegram,
         ),
       ],
@@ -642,8 +638,7 @@ export async function composeDailySocial(
       [topItem.id],
     );
     const tokens = freshTrackingTokens();
-    const urls = trackingUrls(tokens);
-    const seeds = topStorySeeds(topItem, sourceDate, now, urls, cadence);
+    const seeds = topStorySeeds(topItem, sourceDate, now, tokens, cadence);
     if (seeds.length > 0) await saveVariants(packageId, topItem, seeds, now);
     createdPackageIds.push(packageId);
   }

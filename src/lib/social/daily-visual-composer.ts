@@ -3,6 +3,7 @@ import 'server-only';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
+import { withSocialClickToken } from '@/lib/social/tracked-url';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { socialContentHash } from './content-hash';
 import {
@@ -165,8 +166,13 @@ function sourceUrl(input: DailyVisualSocialInput, locale: SocialLocale, channel:
   return url.toString();
 }
 
-function trackedUrl(token: string) {
-  return new URL(`/r/s/${token}`, SITE_URL).toString();
+function trackedDestination(
+  input: DailyVisualSocialInput,
+  locale: SocialLocale,
+  channel: SocialChannel,
+  token: string,
+) {
+  return withSocialClickToken(sourceUrl(input, locale, channel), token);
 }
 
 function withinLimit(value: string, limit: number) {
@@ -443,12 +449,15 @@ function assertDailyVisualInput(input: DailyVisualSocialInput) {
   }
 }
 
-function newTrackingUrls() {
+function newTrackingUrls(input: DailyVisualSocialInput) {
   const tokens = Object.fromEntries(
     DAILY_VISUAL_CHANNEL_MATRIX.map(({ channel }) => [channel, randomUUID()]),
   ) as Record<SocialChannel, string>;
   const urls = Object.fromEntries(
-    Object.entries(tokens).map(([channel, token]) => [channel, trackedUrl(token)]),
+    DAILY_VISUAL_CHANNEL_MATRIX.map(({ channel, locale }) => [
+      channel,
+      trackedDestination(input, locale, channel, tokens[channel]),
+    ]),
   ) as Record<SocialChannel, string>;
   return { tokens, urls };
 }
@@ -476,7 +485,7 @@ export async function buildDailyVisualSocialDrafts(
 ): Promise<DailyVisualSocialDraft[]> {
   assertDailyVisualInput(input);
   const now = options.now ?? new Date();
-  const tracking = options.tracking ?? newTrackingUrls();
+  const tracking = options.tracking ?? newTrackingUrls(input);
   const draftSeeds = seeds(input, tracking.urls);
   const drafts = await Promise.all(
     draftSeeds.map(async (seed) => {
@@ -670,7 +679,7 @@ function asPostRows(
       scheduled_for: draft.scheduledFor,
       idempotency_key: `${packageId}:${draft.channel}:${contentHash.slice(0, 16)}`,
       tracking_token: draft.trackingToken,
-      utm_url: draft.sourceUrl,
+      utm_url: withSocialClickToken(draft.sourceUrl, draft.trackingToken),
       meta: jsonValue({
         daily_visual: {
           version: 1,

@@ -2,35 +2,67 @@ import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
 import type { Database } from '@/lib/database.types';
 import { LANG_COOKIE, LANG_COOKIE_MAX_AGE, resolvePreferredLang } from '@/lib/preferred-lang';
+import { resolveWeeklyPublicSlug } from '@/lib/weekly-digest/placeholder-slug';
 import type { Lang } from '@/lib/site';
 
-type WeeklyAvailability = 'published' | 'unpublished' | 'unavailable' | 'skip';
+type WeeklyRow = { slug?: unknown };
 
-async function publishedWeeklyAvailability(slug: string): Promise<WeeklyAvailability> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return 'skip';
+function weeklyRestHeaders(key: string) {
+  return {
+    accept: 'application/json',
+    apikey: key,
+    authorization: `Bearer ${key}`,
+  };
+}
 
+async function fetchWeeklyRows(
+  origin: string,
+  key: string,
+  params: Array<[string, string]>,
+): Promise<WeeklyRow[] | null> {
   try {
-    const endpoint = new URL('/rest/v1/weekly_digests', url);
-    endpoint.searchParams.set('select', 'id');
-    endpoint.searchParams.set('slug', `eq.${slug}`);
-    endpoint.searchParams.set('status', 'eq.published');
-    endpoint.searchParams.set('limit', '1');
+    const endpoint = new URL('/rest/v1/weekly_digests', origin);
+    for (const [name, value] of params) endpoint.searchParams.set(name, value);
     const result = await fetch(endpoint, {
-      headers: {
-        accept: 'application/json',
-        apikey: key,
-        authorization: `Bearer ${key}`,
-      },
+      headers: weeklyRestHeaders(key),
       cache: 'no-store',
     });
-    if (!result.ok) return 'unavailable';
+    if (!result.ok) return null;
     const rows: unknown = await result.json();
-    return Array.isArray(rows) && rows.length > 0 ? 'published' : 'unpublished';
+    return Array.isArray(rows) ? (rows as WeeklyRow[]) : null;
   } catch {
-    return 'unavailable';
+    return null;
   }
+}
+
+function firstSlug(rows: WeeklyRow[] | null): string | null {
+  const slug = rows?.[0]?.slug;
+  return typeof slug === 'string' && slug.length > 0 ? slug : null;
+}
+
+function weeklyLookup(origin: string, key: string) {
+  return {
+    async isPublished(slug: string): Promise<boolean | null> {
+      const rows = await fetchWeeklyRows(origin, key, [
+        ['select', 'id'],
+        ['slug', `eq.${slug}`],
+        ['status', 'eq.published'],
+        ['limit', '1'],
+      ]);
+      if (!rows) return null;
+      return rows.length > 0;
+    },
+    async publishedSlugForWeek(weekStart: string, isTest: boolean): Promise<string | null> {
+      const rows = await fetchWeeklyRows(origin, key, [
+        ['select', 'slug'],
+        ['week_start', `eq.${weekStart}`],
+        ['status', 'eq.published'],
+        ['is_test', `eq.${isTest}`],
+        ['limit', '1'],
+      ]);
+      return firstSlug(rows);
+    },
+  };
 }
 
 function weeklyStatusPage(lang: Lang, status: 404 | 503) {
@@ -96,11 +128,23 @@ export async function proxy(request: NextRequest) {
   const weeklyMatch = pathname.match(/^\/(en|uk)\/weekly\/([^/]+)\/?$/);
   if (weeklyMatch) {
     const lang = weeklyMatch[1] as Lang;
-    const availability = await publishedWeeklyAvailability(decodeURIComponent(weeklyMatch[2]));
-    if (availability === 'unpublished') return weeklyStatusPage(lang, 404);
-    // 'unavailable' (DB/network failure) must NOT hard-503: the page itself is
-    // ISR-cached and likely fine. Fall through to next() and let the cached
-    // render serve — a transient outage then never deindexes live URLs.
+    const origin = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (origin && key) {
+      const resolution = await resolveWeeklyPublicSlug(
+        decodeURIComponent(weeklyMatch[2]),
+        weeklyLookup(origin, key),
+      );
+      if (resolution.kind === 'missing') return weeklyStatusPage(lang, 404);
+      if (resolution.kind === 'redirect') {
+        const target = request.nextUrl.clone();
+        target.pathname = `/${lang}/weekly/${resolution.slug}`;
+        const redirected = NextResponse.redirect(target, 308);
+        persistLangCookie(redirected, lang);
+        return redirected;
+      }
+      // 'pass' includes lookup failure: ISR-cached HTML must still serve.
+    }
   }
   let response =
     pathname === '/'

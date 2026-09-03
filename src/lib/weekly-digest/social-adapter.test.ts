@@ -63,7 +63,7 @@ function writerResult(
       text:
         overrides.text ??
         `${xCandidate('Anthropic shipped a concrete eval that changes how teams inspect agent behavior before deployment.')}<CANDIDATE>${xCandidate('The useful signal this week came from Anthropic and its newly shipped evaluation workflow.')}`,
-      firstComment: overrides.firstComment ?? 'This is a valid first comment that contains a second fact and the URL https://aitodaybrief.com/r/s/token to satisfy the length and contract.',
+      firstComment: overrides.firstComment ?? 'This is a valid first comment that contains a second fact and the URL https://aitodaybrief.com/en/weekly/example?s=token to satisfy the length and contract.',
     },
     provider: 'gemini' as const,
     model: 'gemini-writer',
@@ -92,7 +92,7 @@ function telegramCandidate(
   const blockCount = overrides.blocks ?? 4;
   const boldSpan = bold ? '**97%**' : '97%';
   const codeSpan = code ? '`agent-eval`' : 'agent-eval';
-  const url = 'https://aitodaybrief.com/r/s/token';
+  const url = 'https://aitodaybrief.com/en/weekly/example?s=token';
   const pieces = [
     `Anthropic shipped a concrete evaluation harness for agent behavior this week, and the ${boldSpan} catch rate is the number worth remembering.`,
     `Top 3: the harness itself, a new open benchmark for tool-use safety, and a routing change that cuts inference cost for agentic workloads.`,
@@ -142,7 +142,7 @@ function gluedBlocksCandidate(channel: 'telegram' | 'facebook' | 'linkedin') {
   const third =
     channel === 'linkedin'
       ? 'Which part of that pipeline is your own team still doing by hand.'
-      : `Read more: https://aitodaybrief.com/r/s/token`;
+      : `Read more: https://aitodaybrief.com/en/weekly/example?s=token`;
   // Single \n between blocks, never a blank line -- the exact defect under test.
   return `${lead}\n${second}\n${third}`;
 }
@@ -156,7 +156,7 @@ function facebookCandidate(targetLength = 900) {
   while (text.length < targetLength) {
     text += filler;
   }
-  return `${text}\n\nRead more: https://aitodaybrief.com/r/s/token`;
+  return `${text}\n\nRead more: https://aitodaybrief.com/en/weekly/example?s=token`;
 }
 
 function linkedinCandidate(targetLength = 900) {
@@ -213,7 +213,7 @@ function baseInput() {
     channel: 'x' as const,
     locale: 'en' as const,
     bundle: bundle(),
-    trackedUrl: 'https://aitodaybrief.com/r/s/token',
+    trackedUrl: 'https://aitodaybrief.com/en/weekly/example?s=token',
     scheduledFor: '2099-08-13T09:00:00.000Z',
     sourceFacts: ['Anthropic shipped a new eval.'],
   };
@@ -562,7 +562,7 @@ describe('adaptWeeklySocialChannel', () => {
   });
 
   it('rejects Telegram copy that dumps the three lead stories into Радар even when there are four blocks', async () => {
-    const url = 'https://aitodaybrief.com/r/s/token';
+    const url = 'https://aitodaybrief.com/en/weekly/example?s=token';
     const blocks = [
       'Anthropic shipped a concrete evaluation harness for agent behavior this week, and the **97%** catch rate is the number worth remembering.',
       'Try it this week: run `agent-eval` against your own tool-calling agent before the next release and compare the catch rate against your traces, not the vendor benchmark.',

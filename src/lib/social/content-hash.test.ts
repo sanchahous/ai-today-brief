@@ -6,7 +6,7 @@ const content = {
   locale: 'en' as const,
   format: 'link_free_hook',
   text: 'An approved AI update for builders.',
-  firstComment: 'Read: https://aitodaybrief.com/r/s/token',
+  firstComment: 'Read: https://aitodaybrief.com/en/weekly/example?s=token',
   assets: [],
   scheduledFor: '2027-01-01T10:00:00.000Z',
   contentVersion: 1,

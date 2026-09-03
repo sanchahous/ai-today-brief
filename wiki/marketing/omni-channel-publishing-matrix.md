@@ -74,7 +74,7 @@ Last updated: 2026-08-28
 | `EVIDENCE` | Докази | 1–2 інші факти тижня з наслідком | Джерело + число + наслідок |
 | `READ` | Стратегічний висновок | Що змінюється в рішеннях | Без прогнозів, лише зсув критерію |
 | `DECISION` | Питання читачеві | Питання до інженерної команди | Справжнє питання, не риторика |
-| `LINK` | Трекований URL | `/r/s/<token>` | Рівно один, де дозволено |
+| `LINK` | Трекований URL | канонічна сторінка з `?s=<token>` | Рівно один, де дозволено |
 | `TAGS` | Хештеги | Пошук і дискавері | Політика §5 |
 
 **Порядок:** `HOOK → ANCHOR → WHY → USE → EVIDENCE → READ → DECISION → LINK → TAGS`.
@@ -148,7 +148,7 @@ SQL-копією тримав Approve недосяжним із 2026-07-23 по 
 
 ## 4. Політика розміщення лінка
 
-| Канал | Куди йде `/r/s/<token>` | Чому |
+| Канал | Куди йде tracked URL (`?s=`) | Чому |
 |---|---|---|
 | **LinkedIn** | 1-й коментар | Зовнішній лінк у тілі ріже охоплення сторінки |
 | **X** | self-reply **з текстом** | Root має бути link-free; голий URL у reply — змарнований слот, туди йде `USE` |
@@ -224,7 +224,7 @@ Full weekly breakdown in the first comment.
 #AI #LLM #DeepTech
 ```
 
-**1-й коментар:** `Full weekly digest: https://aitodaybrief.com/r/s/<token>`
+**1-й коментар:** `Full weekly digest: https://aitodaybrief.com/en/weekly/{slug}?s=<token>`
 
 > Шаблон 6.1 тепер відповідає коду: з 2026-08-21 `linkedin.rootUrlStrategy = 'none'`,
 > лінк у тілі **блокується**, а `firstComment` обовʼязковий і постить його автоматика.
@@ -247,7 +247,7 @@ Open weights are being priced by routing efficiency now.
 ```text
 Practical version: pull the checkpoint from HF, serve on vLLM or SGLang, set reasoning to "low" for bulk passes. Without GB300-class NVLink you will not match NVIDIA's throughput numbers.
 
-Full week: https://aitodaybrief.com/r/s/<token>
+Full week: https://aitodaybrief.com/en/weekly/{slug}?s=<token>
 ```
 
 ### 6.3 Telegram (`uk`, порожній рядок між блоками)
@@ -271,7 +271,7 @@ Full week: https://aitodaybrief.com/r/s/<token>
 
 Якщо дивитись лише на параметри, легко промахнутися повз головне. Зараз вирішує те, скільки ваг реально працює, скільки токенів з'їдає пам'ять і що дозволяє ліцензія.
 
-Повний тижневий дайджест: https://aitodaybrief.com/r/s/<token>
+Повний тижневий дайджест: https://aitodaybrief.com/en/weekly/{slug}?s=<token>
 ```
 
 ### 6.4 Threads (`uk`, 4 частини)
@@ -289,7 +289,7 @@ Qwen3.8 має 2,4 трильйона параметрів. Але на коже
 [4/4]
 Питання до інфраструктурних команд: ваш стек уміє використовувати розріджені обчислення й пермісивні ваги, чи ви платите за щільні моделі за звичкою?
 
-Повний розбір: https://aitodaybrief.com/r/s/<token>
+Повний розбір: https://aitodaybrief.com/en/weekly/{slug}?s=<token>
 ```
 
 **Topic:** `AI` — обирається в нативному UI. Маркери `[1/4]` тут лише для читабельності
@@ -310,7 +310,7 @@ wiki, у пост вони не йдуть.
 
 Якщо ви відповідаєте за інфраструктуру — ваш стек до цього готовий?
 
-Повний розбір тижня: https://aitodaybrief.com/r/s/<token>
+Повний розбір тижня: https://aitodaybrief.com/en/weekly/{slug}?s=<token>
 
 #AI #OpenSource #ШтучнийІнтелект
 ```
@@ -424,7 +424,7 @@ telegram/facebook/linkedin тепер прямо запрошує одну не�
 - [ ] Вставлено як plain text (Ctrl+Shift+V).
 
 ### D. Лінки
-- [ ] Рівно один `/r/s/<token>` там, де дозволено; нуль там, де ні.
+- [ ] Рівно один канонічний URL з `?s=<token>` там, де дозволено; нуль там, де ні.
 - [ ] X: root без URL; **self-reply містить текст, а не голий лінк**.
 - [ ] LinkedIn: лінк у 1-му коментарі, опублікований одразу після поста.
 - [ ] Threads: **усі 4 частини опубліковані ланцюжком**, URL лише в останній.

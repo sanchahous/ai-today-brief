@@ -39,7 +39,7 @@ function post(channel: RepairSocialPost['channel'], overrides: Partial<RepairSoc
     asset_urls: [{ url: PDF_URL, mimeType: 'application/pdf' }],
     content_parts: channel === 'threads' ? ['One', 'Two', 'Three?'] : [],
     post_text: `${channel} copy that is long enough for repair hashing.`,
-    first_comment: channel === 'x' ? 'Read: https://aitodaybrief.com/r/s/token' : null,
+    first_comment: channel === 'x' ? 'Read: https://aitodaybrief.com/en/weekly/example?s=token' : null,
     alt_text: 'Weekly cover',
     format: 'weekly',
     locale: 'en',

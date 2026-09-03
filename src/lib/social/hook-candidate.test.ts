@@ -45,7 +45,7 @@ describe('Threads hook apply', () => {
 
 describe('X hook apply', () => {
   it('updates the root and keeps the tracked URL in the self-reply parts', () => {
-    const reply = 'Read: https://aitodaybrief.com/r/s/token';
+    const reply = 'Read: https://aitodaybrief.com/en/weekly/example?s=token';
     const result = applyHookCandidate({
       channel: 'x',
       candidate: 'A grounded thesis about the approved eval workflow for production agents.',

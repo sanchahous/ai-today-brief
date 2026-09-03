@@ -6,6 +6,39 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-09-03
 
+## 2026-09-03 — wiki-sync: weekly-digest watcher після lint-clean
+
+Після коміту `placeholder-slug` / `release-worker` сторінки watcher
+`weekly-digest` відстали на ~0h. Оновлено [weekly-digest](pipeline/weekly-digest.md),
+[weekly-editorial-selection](pipeline/weekly-editorial-selection.md),
+[weekly-admin-runbook](ops/weekly-admin-runbook.md), [now](now.md).
+(source: `npm run wiki:sync` 2026-09-03)
+
+## 2026-09-03 — Лічильник міграцій у wiki: 101
+
+`supabase/migrations/` тепер 101 файл: додано
+`20260903120000_rewrite_weekly_social_urls_on_publish.sql`.
+(source: `wiki/index.md` architecture/data-model row, `npm run wiki:sync`)
+
+## 2026-09-03 — Адмінка після Ship показувала биті weekly URL
+
+Власник копіював Telegram/Facebook з адмінки: hop `/r/s/{token}` +
+`/uk/weekly/ai-weekly-2026-08-23` (404). Причина: copy згенерована до
+topic-slug rewrite, а прямий UPDATE `post_text` блокує
+`guard_social_content_approval` (posted = immutable, scheduled → in_review).
+Живий фікс Aug 23 (service_role, без зміни status). Далі
+`finish_weekly_digest_release` кличе `rewrite_weekly_digest_social_urls` у
+тій самій транзакції (GUC `app.weekly_digest_social_url_rewrite`).
+(source: prod `social_posts` 2026-09-03, migration
+`20260903120000_rewrite_weekly_social_urls_on_publish.sql`)
+
+## 2026-09-03 — Соцпости після Ship тримали битий weekly slug
+
+`finish_weekly_digest_release` перейменував `ai-weekly-2026-08-23` на тематичний
+slug, а `social_posts.url` / `utm_url` / текст лишились зі старим шляхом і hop
+`/r/s/{token}`. Після publish воркер синхронізує копію на канонічний URL з `?s=`.
+(source: `src/lib/weekly-digest/rewrite-social-urls.ts`, owner session 2026-09-03)
+
 ## 2026-09-03 — Weekly release упав на LinkedIn PDF у public bucket
 
 `ai-weekly-2026-08-23` (23–29 Aug) після Ship/claim лишився `failed`:

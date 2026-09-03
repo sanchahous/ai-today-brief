@@ -34,7 +34,7 @@ function post(
         : 'A useful AI engineering update for builders with practical context.',
     firstComment:
       channel === 'x' || channel === 'linkedin'
-        ? 'Read: https://aitodaybrief.com/r/s/test'
+        ? 'Read: https://aitodaybrief.com/en/weekly/example?s=test'
         : null,
     assets: [],
     altText: null,
@@ -228,7 +228,7 @@ describe('social provider contracts', () => {
     expect(String(url)).toContain('/socialActions/urn%3Ali%3Ashare%3A1/comments');
     expect(JSON.parse(String(init?.body))).toMatchObject({
       object: 'urn:li:share:1',
-      message: { text: 'Read: https://aitodaybrief.com/r/s/test' },
+      message: { text: 'Read: https://aitodaybrief.com/en/weekly/example?s=test' },
     });
   });
 

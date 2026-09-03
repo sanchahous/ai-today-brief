@@ -13,7 +13,7 @@ import { parseInstagramCarouselSpec } from '@/lib/social/instagram-carousel';
 import type { SocialChannel } from '@/lib/social/types';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
-import { SITE_URL } from '@/lib/site';
+import { previewWeeklyTrackedUrl, weeklyPageUrl } from '@/lib/weekly-digest/rewrite-social-copy';
 import {
   WEEKLY_YOUTUBE_DURATION_MAX_SECONDS,
   WEEKLY_YOUTUBE_DURATION_MIN_SECONDS,
@@ -495,20 +495,6 @@ function qualityReport(value: Json) {
     })
     .filter((item): item is NonNullable<typeof item> => Boolean(item));
   return { blocking: blocking.length, warnings: warnings.length, items };
-}
-
-function cleanWeeklyDestinationUrl(locale: string, slug: string, utmUrl: string | null): string {
-  if (utmUrl) {
-    try {
-      const parsed = new URL(utmUrl);
-      parsed.search = '';
-      parsed.hash = '';
-      return parsed.toString();
-    } catch {
-      // Fall through to slug-based weekly URL.
-    }
-  }
-  return new URL(`/${locale}/weekly/${slug}`, SITE_URL).toString();
 }
 
 function formatBytes(value: number | null) {
@@ -4204,8 +4190,14 @@ function SocialPanel({
         const threadParts = Array.isArray(post.content_parts)
           ? post.content_parts.filter((part): part is string => typeof part === 'string')
           : [];
-        const destinationUrl =
-          post.url || cleanWeeklyDestinationUrl(locale, workspace.digest.slug, post.utm_url);
+        const destinationUrl = weeklyPageUrl(locale, workspace.digest.slug);
+        const trackedUrl = previewWeeklyTrackedUrl(
+          locale,
+          workspace.digest.slug,
+          channel,
+          post.tracking_token,
+          post.utm_url,
+        );
         const hasQualityBlockers = quality.blocking > 0;
         const hookCandidates = Array.isArray(meta.hook_candidates)
           ? meta.hook_candidates.filter(
@@ -4443,7 +4435,7 @@ function SocialPanel({
                       <input
                         type="url"
                         name="utm_url"
-                        defaultValue={post.utm_url ?? ''}
+                        defaultValue={trackedUrl}
                         disabled={!canEdit}
                         className={FIELD}
                       />

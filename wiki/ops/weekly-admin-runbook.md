@@ -5,7 +5,8 @@ Summary: покрокова інструкція для власника/ред�
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…30,
 revision Stage 0, OpenRouter catalog, YouTube 120s, ElevenLabs TTS,
-LinkedIn PDF skip on public promote 2026-09-03
+LinkedIn PDF skip on public promote 2026-09-03,
+social URLs follow the published slug 2026-09-03
 Last updated: 2026-09-03
 
 ---
@@ -653,6 +654,14 @@ worker, і на цьому проєкті **API-ключі каналів не �
 розкиданий по наступному дню, не «зараз»). Ручна публікація в кожну соцмережу
 (реальний Chrome-профіль власника, per-platform) лишається окремим кроком навіть
 після Ship — саме так і задумано на цьому проєкті, не тимчасовий workaround.
+
+**Копіюй пости з адмінки лише коли випуск уже `published`.** До Ship (і навіть
+у момент `publishing`) Destination ще може бути `ai-weekly-YYYY-MM-DD`, а в
+тексті — hop `/r/s/{token}`. Після успішного publish RPC переписує url/utm/копію
+на живий `/{lang}/weekly/{topic-slug}?s=`. Telegram Aug 23 уже пішов зі старим
+hop — той пост у каналі не зміниться; решта каналів беріть з оновленої адмінки.
+(source: `supabase/migrations/20260903120000_rewrite_weekly_social_urls_on_publish.sql`,
+prod apply 2026-09-03, owner session 2026-09-03)
 
 ## Типові «чому не їде»
 
