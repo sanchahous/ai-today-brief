@@ -14,6 +14,10 @@ import type { SocialChannel } from '@/lib/social/types';
 import type { SocialAdminSession } from '@/lib/admin-auth';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
+import {
+  WEEKLY_YOUTUBE_DURATION_MAX_SECONDS,
+  WEEKLY_YOUTUBE_DURATION_MIN_SECONDS,
+} from '@/lib/weekly-digest/video';
 import { scenesFromVideoScriptContent } from '@/lib/weekly-digest/video-script-content';
 import { buildVideoShootPack } from '@/lib/weekly-digest/video-shoot-pack';
 import { buildHallucinationBoard } from '@/lib/weekly-digest/hallucination-board';
@@ -5313,8 +5317,8 @@ function VideoPanel({
               Duration (seconds, optional)
               <input
                 type="number"
-                min={200}
-                max={1200}
+                min={WEEKLY_YOUTUBE_DURATION_MIN_SECONDS}
+                max={WEEKLY_YOUTUBE_DURATION_MAX_SECONDS}
                 name="duration_seconds"
                 defaultValue={finalVideo?.duration_seconds ?? ''}
                 disabled={!canEdit}

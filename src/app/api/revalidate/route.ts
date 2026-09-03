@@ -1,5 +1,6 @@
 import { revalidatePath } from 'next/cache';
 import { NextResponse } from 'next/server';
+import { revalidatePublicContentTag } from '@/lib/revalidate-site';
 
 /**
  * On-publish ISR hook for the pipeline (or manual ops).
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
       ? (body as { paths: unknown[] }).paths.filter((p): p is string => typeof p === 'string')
       : ['/', '/en', '/uk', '/en/news', '/uk/news'];
 
+  revalidatePublicContentTag();
   for (const path of paths) {
     revalidatePath(path);
   }

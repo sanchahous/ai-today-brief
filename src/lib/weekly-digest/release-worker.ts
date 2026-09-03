@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { alertWeeklyDigestIssue } from './alerts';
 import { isWeeklyDigestReleaseDue } from './period';
 import { promoteWeeklyDigestPublicAssets } from './publication-assets';
-import { revalidatePathsForPublish } from '@/lib/revalidate-site';
+import { revalidatePathsForPublish, revalidatePublicContentTag } from '@/lib/revalidate-site';
 
 export interface ClaimedWeeklyDigest {
   id: string;
@@ -30,6 +30,7 @@ export interface WeeklyReleaseDependencies {
   promote(weeklyDigestId: string): Promise<unknown>;
   finish(weeklyDigestId: string, succeeded: boolean, error?: string | null): Promise<void>;
   revalidate(path: string): void;
+  revalidateData?(): void;
   alert(input: {
     weeklyDigestId: string;
     phase: 'generation' | 'preflight' | 'release';
@@ -127,6 +128,7 @@ const DATABASE_DEPENDENCIES: WeeklyReleaseDependencies = {
   promote: promoteWeeklyDigestPublicAssets,
   finish: finishRelease,
   revalidate: revalidatePath,
+  revalidateData: revalidatePublicContentTag,
   alert: alertWeeklyDigestIssue,
 };
 
@@ -282,6 +284,11 @@ export async function releaseDueWeeklyDigests(
     }
 
     const revalidationErrors: string[] = [];
+    try {
+      dependencies.revalidateData?.();
+    } catch (error) {
+      revalidationErrors.push(`public-content: ${safeMessage(error)}`);
+    }
     for (const path of publishedPaths(digest.slug)) {
       try {
         dependencies.revalidate(path);

@@ -2,12 +2,34 @@
 
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
-Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…29, Content Sim, Social/Video/Schedule 2026-08-17…29, catalog selection 2026-08-30, video format & audio scenes 2026-09-01
-Last updated: 2026-09-01
+Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…29, catalog 2026-08-30,
+YouTube duration floor 120s 2026-09-02,
+Supabase uncached egress 2026-09-02,
+ElevenLabs TTS tooling 2026-09-03
+Last updated: 2026-09-03
 
 ---
 
 ## Стан репозиторію
+
+- **Supabase egress (2026-09-02).** Спайк — три повні `next build`, не читачі. Орг на
+  **Pro** до кінця циклу **21 Sep**; даунгрейд раніше = знову 402. #348+#350 + запобіжники:
+  повний SSG лише production Vercel; preview/`pr:check`/e2e — 8 item-шляхів; wiki-only
+  коміти Vercel пропускає. Прод SSG `dd49672`: `categories` **2063→30**, `brief_items`
+  **3247→1471**. Weekly `ai-weekly-2026-08-23` чекає release-due + promote.
+  (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
+
+- **YouTube weekly duration floor 120s (2026-09-02).** Епізод 01.09
+  [`dtCMvtTIUpM`](https://youtu.be/dtCMvtTIUpM) — **158s**, чіпляється на
+  `ai-weekly-2026-08-23`. Було 200–1200s (PR #331); тепер **120–1200s**
+  (`WEEKLY_YOUTUBE_DURATION_MIN_SECONDS`). Після Save на Video-табі —
+  Approve `video_final` / captions / thumbnail.
+  (source: owner session 2026-09-02)
+
+- **ElevenLabs TTS tooling (2026-09-03, #346).** У репо — `library/tools/tts-generator/`
+  (console ZIP exporter + unpacker) і `library/tools/video-assembler/` на 18 сцен.
+  Робочі mp3/mp4 gitignored під `library/DD.MM.YYYY/`.
+  (source: [pipeline/video-production-workflow](pipeline/video-production-workflow.md))
 
 - **Вибір моделей OpenRouter переписано (2026-08-30), гілка `feat/openrouter-catalog-selection` поверх #343.**
   Сім кроків з [research/2026-08-30-openrouter-routing-api §12](research/2026-08-30-openrouter-routing-api.md):

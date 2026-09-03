@@ -312,7 +312,10 @@ async function serverIsUp(): Promise<boolean> {
 
 function runProductionBuild(): void {
   console.log('e2e:affected — no server on :3000; running production build first…\n');
-  const b = spawnSync('npm', ['run', 'build'], { stdio: 'inherit', shell: true });
+  const b = spawnSync('npm', ['run', 'build:ci'], {
+    stdio: 'inherit',
+    shell: true,
+  });
   if (b.status !== 0) process.exit(b.status ?? 1);
 }
 

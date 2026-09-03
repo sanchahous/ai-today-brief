@@ -3,14 +3,11 @@
 Summary: покрокова інструкція для власника/редактора: що натискати у вкладках,
 що означають статуси jobs vs Approve, і що робити коли здається що «все зависло».
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
-[weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…28,
-latest revision is the working copy 2026-08-22, critic model rotation 2026-08-22,
-Telegram block-structure gate 2026-08-28, Fixes & blockers + warnings do not hold socials 2026-08-28,
-social remaining issues are warnings 2026-08-28, missing `ship_weekly_digest` migration +
-carry-forward gaps + LinkedIn first_comment form bug + cover-upload cascade + WebVTT
-fallback, live release of `ai-weekly-2026-08-16` 2026-08-28, revision Stage 0 2026-08-29,
-каталожний вибір OpenRouter 2026-08-30, оновлення відео-формату 2026-09-01
-Last updated: 2026-09-01
+[weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…30,
+revision Stage 0 2026-08-29, OpenRouter catalog 2026-08-30,
+YouTube duration 120s + public-content cache tag 2026-09-02,
+ElevenLabs TTS tooling + video assembler 2026-09-03
+Last updated: 2026-09-03
 
 ---
 
@@ -675,7 +672,7 @@ worker, і на цьому проєкті **API-ключі каналів не �
 | Visuals upload: `permission denied for table weekly_digest_revisions` | `weekly_digest_artifact_input_hash` робив `select revision.*` під invoker після column revoke `visual_thesis_*` | Міграція `20260826120000` уже на проді (2026-08-26) — retry upload |
 | Visuals upload: `Something broke` / unexpected response | Тіло POST > ~4.5 MB (Vercel Hobby) або truncated proxy body | Форма стискає image >3.5 MB сама (#329). PDF стисни окремо |
 | Release: немає `video_manifest` job, хоча script approved | Companion-рядок ніколи не створився (падіння/retry `video_script` без post-master queue) | Video → **Generate manifest**. Не регенеруй скрипт |
-| Release blocked на video | Немає living clips / YouTube result | Video → **Shooting package** → кліпи в `ai-today-brief-video` → звести → `weekly-video-result-v2`. Не заливати L0 JPEG+TTS з `output/`. Owner override лише для trial |
+| Release blocked на video | Немає living clips / YouTube result | Video → **Shooting package** → кліпи в `ai-today-brief-video` → звести → `weekly-video-result-v2`. Duration **120–1200s** (AtbEpisode ~2.5 хв ок). Не заливати L0 JPEG+TTS з `output/`. Owner override лише для trial |
 | PDF: сторінки радар-історій (4-7) виглядають скорочено (без картинки/панелей) | Так задумано з 2026-08-07 — повний розворот тепер лише для Top 3 | Нормально, не баг; деталі — [weekly-digest](../pipeline/weekly-digest.md#pdf-page-count-contract-violation--фікс-2026-08-07) |
 
 ## Master **failed** без зрозумілої причини — що робити (з 2026-08-09)
@@ -755,3 +752,5 @@ Grid-форма й картки на будь-якій вкладці не ма�
 - [social-cms-runbook](social-cms-runbook.md) — cron / secrets для generate worker
 - [owner-checklist](owner-checklist.md) — env і launch-блокери
 - [now](../now.md) — поточний випуск
+- [ops/supabase-egress-2026-09](supabase-egress-2026-09.md) — після Ship ISR скидає
+  tag `public-content`; без цього хаби можуть лишитись на кешованому JSON годину

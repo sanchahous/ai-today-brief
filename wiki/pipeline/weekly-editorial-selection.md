@@ -7,8 +7,11 @@ Sources: `src/lib/weekly-digest/content-studio.ts`, `editorial-llm.ts`,
 2026-08-17, pre-critic hang 2026-08-22, critic model rotation 2026-08-22,
 Visuals upload body-cap sync 2026-08-26, Fixes & blockers 2026-08-28,
 social copy fail-open 2026-08-28, revision Stage 0 2026-08-29,
-каталожний вибір OpenRouter 2026-08-30, оновлення відео-формату 2026-09-01.
-Last updated: 2026-09-01
+каталожний вибір OpenRouter 2026-08-30,
+YouTube duration floor 120s 2026-09-02,
+public-content cache tag on release 2026-09-02,
+ElevenLabs TTS tooling + video assembler 2026-09-03.
+Last updated: 2026-09-03
 
 ---
 
@@ -16,6 +19,10 @@ Last updated: 2026-09-01
 sort used for weekly digests. Its purpose is to produce an explainable,
 evidence-backed shortlist for an editor, not to publish an algorithmic verdict.
 Що саме змінила v3 і чому — [нижче](#що-змінила-v3-2026-08-16).
+
+> **Scope note (2026-09-02):** YouTube weekly duration floor **120–1200s** (was 200–1200)
+> is a Video-tab save/validator bound only. It does not change this selector, weights,
+> diversity or release eligibility.
 
 > **Scope note (2026-08-30):** catalog ranker (`rankModelsForRole`, `:free` у черзі,
 > `provider.sort: price`) змінює, **яка** OpenRouter-модель пише master/social, не цей
@@ -406,3 +413,5 @@ Telegram/інших каналах після bounded repair: лишок кон�
 - [image-prompt-library](image-prompt-library.md) — Prompt-as-Code v6, межа з відбором
 - [editorial-voice](editorial-voice.md) — редакційний голос після відбору
 - [video-boundary](video-boundary.md)
+- [ops/supabase-egress-2026-09](../ops/supabase-egress-2026-09.md) — не про відбір;
+  Ship дайджесту скидає той самий public-content Data Cache, що й daily publish

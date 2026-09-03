@@ -4,7 +4,48 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-09-01
+Last updated: 2026-09-03
+
+## 2026-09-03 — merge #346: ElevenLabs TTS tooling у `library/tools/`
+
+У репозиторій зайшли `tts-generator` (console ZIP + unpacker) і 18-scene `video-assembler`.
+Робочі mp3/mp4 лишаються gitignored під `library/DD.MM.YYYY/`. Конфлікти з main були лише
+в шапках wiki; записи 2026-09-02 про SSG/egress збережено.
+(source: PR #346)
+
+## 2026-09-02 — запобіжники Free: повний SSG лише production Vercel
+
+Preview PR, локальний `pr:check` і e2e більше не рендерять увесь каталог (8 item-шляхів).
+Wiki/pipeline-only коміти Vercel пропускає (`ignoreCommand`). Pro тримати до 21 Sep.
+(source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
+
+## 2026-09-02 — прод SSG після #350: categories 2063→30
+
+#350 злито як `dd49672` (13:08 UTC). Vercel Ashburn: `categories` **30** (було 2063),
+`brief_items` **1471** (було 3247). E2e cap з #348 лишився. REST 200, 402 немає.
+(source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md); `edge_logs` 13:04–13:10Z)
+
+## 2026-09-02 — SSG build memo між 11 воркерами `next build`
+
+PR #348 зрізав e2e (`brief_items` 9027→146), але прод SSG лишив `categories` 2063:
+`unstable_cache` не шариться між воркерами, Data Cache пропускає Authorization.
+`withBuildMemo` — in-process Promise + JSON під `.next/cache/atb-public-content`,
+лише `NEXT_PHASE=phase-production-build`. Орг уже на Pro, REST 200.
+(source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
+
+## 2026-09-02 — Supabase uncached egress: Next Data Cache + e2e prerender cap
+
+Free-план вичерпав uncached egress (15.004 / 5 GB). Спайк — `GET /rest/v1/brief_items`
+з GitHub Actions + Vercel + локального `next build` за одну годину, не з браузера.
+Код: anon fetch з `next.revalidate` + tag `public-content`, `cachePublicRead` на
+listing/item, `E2E_MINIMAL_PRERENDER` у e2e, `revalidateTag` на publish.
+(source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
+
+## 2026-09-02 — YouTube duration floor 120s + result для 01.09 на ai-weekly-2026-08-23
+
+Підлога weekly YouTube **120–1200s** (було 200–1200, PR #331), щоб живий епізод 158s
+[`dtCMvtTIUpM`](https://youtu.be/dtCMvtTIUpM) зберігся на `ai-weekly-2026-08-23`.
+(source: owner session 2026-09-02; `src/lib/weekly-digest/video.ts`)
 
 ## 2026-09-01 — ElevenLabs аудіо-сцени дайджесту та tooling для експорту
 

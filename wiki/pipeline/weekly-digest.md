@@ -7,8 +7,11 @@ editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
 working-copy UX 2026-08-22, image prompt library v6 2026-08-23, daily visual 2026-08-24…25,
 Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract + fail-open 2026-08-28,
 Fixes & blockers + warnings do not hold socials 2026-08-28, topic-based slug on publish 2026-08-29, revision Stage 0 2026-08-29,
-каталожний вибір моделей OpenRouter 2026-08-30, оновлення відео-формату 2026-09-01
-Last updated: 2026-09-01
+каталожний вибір моделей OpenRouter 2026-08-30,
+YouTube duration floor 120s 2026-09-02,
+public-content cache tag on release 2026-09-02,
+ElevenLabs TTS tooling + video assembler 2026-09-03
+Last updated: 2026-09-03
 
 ---
 
@@ -204,6 +207,14 @@ measurement per tab, `Page.captureScreenshot` timeout during a real tab click, `
 `_rsc` navigation; `src/components/admin/weekly-workspace.tsx`;
 `src/components/admin/weekly-generation-jobs-live.tsx`;
 `src/app/api/admin/weekly/[id]/generation-status/route.ts`)
+
+## Video tab: duration floor 120s for AtbEpisode (2026-09-02)
+
+Live weekly `dtCMvtTIUpM` on `ai-weekly-2026-08-23` is **158s**. The 200–1200s floor from
+PR #331 rejected it. Owner allowed the bound **120–1200s** (integer) in the admin save path,
+`weekly-video-result-v2` validator, and the Duration field `min`/`max`. Constants:
+`WEEKLY_YOUTUBE_DURATION_MIN_SECONDS` / `MAX` in `src/lib/weekly-digest/video.ts`.
+(source: owner session 2026-09-02; YouTube `lengthSeconds` 158)
 
 ## Video tab: duration bound widened + auto-fetch (2026-08-28)
 
@@ -1951,3 +1962,5 @@ standfirst, 3×4200 + 4×850 body) — 7 сторінок, обидві лока
 - [image-prompt-library](image-prompt-library.md)
 - [open-questions](../open-questions.md)
 - [now](../now.md)
+- [ops/supabase-egress-2026-09](../ops/supabase-egress-2026-09.md) — release worker після finish
+  кліє `revalidateTag('public-content')`, щоб ISR не читав застарілий PostgREST Data Cache

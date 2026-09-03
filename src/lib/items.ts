@@ -5,6 +5,8 @@ import type { IconKey } from '@/components/icons';
 import { LANGS, type Lang } from '@/lib/site';
 import { isWithinNewsSitemapWindow, toNewsPublicationDate } from '@/lib/sitemap-dates';
 import { extractToolNames } from '@/lib/tools-mentioned';
+import { cachePublicRead, limitPrerenderPaths } from '@/lib/public-content-cache';
+import { excludeRelatedById, pickAdjacentStories } from '@/lib/items-nav';
 
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
@@ -159,7 +161,7 @@ function deepDiveParagraphs(text: string): string[] {
  * re-publication, so the page can redirect to the truth instead of 404ing or
  * rendering under a stale category.
  */
-export async function getNewsItem(
+async function loadNewsItem(
   categorySlug: string,
   itemSlug: string,
   lang: Lang,
@@ -275,6 +277,8 @@ export async function getNewsItem(
   };
 }
 
+export const getNewsItem = cachePublicRead('news-item', loadNewsItem);
+
 /**
  * Legacy pack-scoped path (`/:briefSlug/:itemSlug`, pre-2026-07-24) → current
  * canonical path (`/news/:categorySlug/:itemSlug`), following a cross-day
@@ -329,44 +333,48 @@ export interface AdjacentStory {
  * RLS limits anon reads to approved items of published briefs, so unapproved
  * neighbours are skipped naturally.
  */
+async function loadBriefStoryRows(briefId: string) {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data } = await supabase
+    .from('brief_items')
+    .select('slug, rank, title_en, title_uk, category_slug')
+    .eq('brief_id', briefId)
+    .is('canonical_item_id', null)
+    .order('rank', { ascending: true });
+  return data ?? [];
+}
+
+const getBriefStoryRows = cachePublicRead('brief-story-rows', loadBriefStoryRows);
+
 export async function getAdjacentStories(
   briefId: string,
   rank: number,
   lang: Lang,
 ): Promise<{ prev: AdjacentStory | null; next: AdjacentStory | null }> {
-  const supabase = getSupabase();
-  if (!supabase) return { prev: null, next: null };
-
-  const { data } = await supabase
-    .from('brief_items')
-    .select('slug, rank, title_en, title_uk, category_slug')
-    .eq('brief_id', briefId)
-    .neq('rank', rank)
-    .is('canonical_item_id', null)
-    .order('rank', { ascending: true });
-
-  let prev: AdjacentStory | null = null;
-  let next: AdjacentStory | null = null;
-  for (const row of data ?? []) {
-    if (!row.slug || !row.category_slug) continue;
-    const title = pick(lang, row.title_en, row.title_uk);
-    if (!title) continue;
-    const story = { href: `/${lang}/news/${row.category_slug}/${row.slug}`, title };
-    if (row.rank < rank) prev = story; // keep the closest one below
-    else if (!next) next = story; // first one above
-  }
-  return { prev, next };
+  const rows = await getBriefStoryRows(briefId);
+  return pickAdjacentStories(rows, rank, lang);
 }
 
-/** Recent stories in the same category, excluding the current item. */
-export async function getRelatedStories(
+type RelatedStoryRow = {
+  id: string;
+  href: string;
+  title: string;
+  date: string;
+  rank: number;
+};
+
+async function loadRelatedStoryBundle(
   lang: Lang,
   categorySlug: string,
-  excludeId: string,
-  limit = 4,
-): Promise<RelatedStory[]> {
+): Promise<{
+  categoryName: string | null;
+  categoryColor: string | null;
+  rows: RelatedStoryRow[];
+}> {
+  const empty = { categoryName: null, categoryColor: null, rows: [] as RelatedStoryRow[] };
   const supabase = getSupabase();
-  if (!supabase) return [];
+  if (!supabase) return empty;
 
   const category = await getCategory(categorySlug, lang);
 
@@ -376,21 +384,26 @@ export async function getRelatedStories(
     .eq('status', 'published')
     .order('date', { ascending: false })
     .limit(12);
-  if (!briefs || briefs.length === 0) return [];
+  if (!briefs || briefs.length === 0) {
+    return {
+      categoryName: category?.name ?? null,
+      categoryColor: category?.color ?? null,
+      rows: [],
+    };
+  }
 
   const briefById = new Map(briefs.map((b) => [b.id, b]));
   const { data: rows } = await supabase
     .from('brief_items')
     .select('id, slug, brief_id, rank, title_en, title_uk, category_slug')
     .eq('category_slug', categorySlug)
-    .neq('id', excludeId)
     .in(
       'brief_id',
       briefs.map((b) => b.id),
     )
     .is('canonical_item_id', null);
 
-  const staged: { id: string; href: string; title: string; date: string; rank: number }[] = [];
+  const staged: RelatedStoryRow[] = [];
   for (const it of rows ?? []) {
     const brief = briefById.get(it.brief_id);
     if (!brief || !it.slug) continue;
@@ -407,13 +420,32 @@ export async function getRelatedStories(
 
   staged.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.rank - b.rank));
 
-  return staged.slice(0, limit).map((r) => ({
-    id: r.id,
-    href: r.href,
-    title: r.title,
+  return {
     categoryName: category?.name ?? null,
     categoryColor: category?.color ?? null,
-  }));
+    rows: staged,
+  };
+}
+
+const getRelatedStoryBundle = cachePublicRead('related-story-bundle', loadRelatedStoryBundle);
+
+/** Recent stories in the same category, excluding the current item. */
+export async function getRelatedStories(
+  lang: Lang,
+  categorySlug: string,
+  excludeId: string,
+  limit = 4,
+): Promise<RelatedStory[]> {
+  const { categoryName, categoryColor, rows } = await getRelatedStoryBundle(lang, categorySlug);
+  return excludeRelatedById(rows, excludeId)
+    .slice(0, limit)
+    .map((r) => ({
+      id: r.id,
+      href: r.href,
+      title: r.title,
+      categoryName,
+      categoryColor,
+    }));
 }
 
 /**
@@ -445,7 +477,7 @@ export interface NewsSitemapEntry {
 }
 
 /** Published items with titles and dates for Google News sitemap. */
-export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry[]> {
+async function loadPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
 
@@ -486,6 +518,11 @@ export async function getPublishedNewsSitemapEntries(): Promise<NewsSitemapEntry
   return entries;
 }
 
+export const getPublishedNewsSitemapEntries = cachePublicRead(
+  'news-sitemap-entries',
+  loadPublishedNewsSitemapEntries,
+);
+
 export interface ItemSitemapEntry {
   lang: string;
   category: string;
@@ -495,7 +532,7 @@ export interface ItemSitemapEntry {
 }
 
 /** Published item paths + parent-brief publish dates — sitemap entries with lastmod. */
-export async function getPublishedItemSitemapEntries(): Promise<ItemSitemapEntry[]> {
+async function loadPublishedItemSitemapEntries(): Promise<ItemSitemapEntry[]> {
   const supabase = getSupabase();
   if (!supabase) return [];
 
@@ -533,6 +570,11 @@ export async function getPublishedItemSitemapEntries(): Promise<ItemSitemapEntry
   return entries;
 }
 
+export const getPublishedItemSitemapEntries = cachePublicRead(
+  'item-sitemap-entries',
+  loadPublishedItemSitemapEntries,
+);
+
 /**
  * All published (lang, category, item) slug paths — for build-time SSG.
  * Empty without env. Canonicalized re-publications are excluded: next.config
@@ -542,5 +584,7 @@ export async function getPublishedItemPaths(): Promise<
   { lang: string; category: string; item: string }[]
 > {
   const entries = await getPublishedItemSitemapEntries();
-  return entries.map(({ lang, category, item }) => ({ lang, category, item }));
+  return limitPrerenderPaths(
+    entries.map(({ lang, category, item }) => ({ lang, category, item })),
+  );
 }
