@@ -11,7 +11,7 @@ export type WeeklyPlaceholderSlug = {
 
 export function parseWeeklyPlaceholderSlug(slug: string): WeeklyPlaceholderSlug | null {
   let isTest = false;
-  let rest = slug;
+  let rest: string;
   if (slug.startsWith(TEST_PREFIX)) {
     isTest = true;
     rest = slug.slice(TEST_PREFIX.length);

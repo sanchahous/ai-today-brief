@@ -6,6 +6,12 @@ Summary: append-only журнал усіх операцій над базою з
 Sources: самозаписи агента
 Last updated: 2026-09-03
 
+## 2026-09-03 — Лічильник міграцій у wiki: 101
+
+`supabase/migrations/` тепер 101 файл: додано
+`20260903120000_rewrite_weekly_social_urls_on_publish.sql`.
+(source: `wiki/index.md` architecture/data-model row, `npm run wiki:sync`)
+
 ## 2026-09-03 — Адмінка після Ship показувала биті weekly URL
 
 Власник копіював Telegram/Facebook з адмінки: hop `/r/s/{token}` +

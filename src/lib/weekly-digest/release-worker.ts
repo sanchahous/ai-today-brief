@@ -288,7 +288,7 @@ export async function releaseDueWeeklyDigests(
       continue;
     }
 
-    let publishedSlug = digest.slug;
+    let publishedSlug: string;
     try {
       publishedSlug = (await dependencies.finish(digest.id, true, null)) ?? digest.slug;
     } catch (error) {
