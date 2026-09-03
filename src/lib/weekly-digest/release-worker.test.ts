@@ -23,6 +23,7 @@ function dependencies(
     }),
     finish: vi.fn(async (id, succeeded, error) => {
       calls.push(['finish', id, succeeded, error]);
+      return succeeded ? (claimed.find((row) => row.id === id)?.slug ?? null) : null;
     }),
     revalidate: vi.fn((path) => {
       calls.push(['revalidate', path]);
@@ -74,7 +75,48 @@ describe('Weekly Digest release worker', () => {
         '/rss-uk.xml',
         '/en/weekly/ai-weekly-2026-07-05',
         '/uk/weekly/ai-weekly-2026-07-05',
+        '/admin/weekly/digest-1',
       ].map((path) => ['revalidate', path]),
+    );
+  });
+
+  it('revalidates the topic slug when finish rewrites the placeholder', async () => {
+    const deps = dependencies([dueDigest]);
+    vi.mocked(deps.value.finish).mockResolvedValue('topic-slug-2026-07-05');
+    const result = await releaseDueWeeklyDigests(10, {
+      now: new Date('2026-07-13T13:00:00.000Z'),
+      dependencies: deps.value,
+    });
+
+    expect(result.results[0]?.outcome).toBe('published');
+    const weeklyPaths = deps.calls
+      .filter(
+        (call) =>
+          call[0] === 'revalidate' &&
+          String(call[1]).includes('/weekly/') &&
+          !String(call[1]).startsWith('/admin/'),
+      )
+      .map((call) => call[1]);
+    expect(weeklyPaths).toEqual([
+      '/en/weekly/ai-weekly-2026-07-05',
+      '/uk/weekly/ai-weekly-2026-07-05',
+      '/en/weekly/topic-slug-2026-07-05',
+      '/uk/weekly/topic-slug-2026-07-05',
+    ]);
+  });
+
+  it('rewrites social URLs after finish returns the published slug', async () => {
+    const deps = dependencies([dueDigest]);
+    deps.value.syncSocialUrls = vi.fn(async () => undefined);
+    vi.mocked(deps.value.finish).mockResolvedValue('topic-slug-2026-07-05');
+    await releaseDueWeeklyDigests(10, {
+      now: new Date('2026-07-13T13:00:00.000Z'),
+      dependencies: deps.value,
+    });
+    expect(deps.value.syncSocialUrls).toHaveBeenCalledWith(
+      dueDigest.id,
+      dueDigest.slug,
+      'topic-slug-2026-07-05',
     );
   });
 
@@ -162,7 +204,7 @@ describe('Weekly Digest release worker', () => {
       revalidatePathsForPublish([
         '/en/weekly/ai-weekly-2026-07-05',
         '/uk/weekly/ai-weekly-2026-07-05',
-      ]).length,
+      ]).length + 1,
     );
   });
 

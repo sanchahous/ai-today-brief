@@ -5,7 +5,8 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…29, catalog 2026-08-30,
 YouTube 120s + Supabase egress 2026-09-02,
 SSG skip + local `build:ci` skip + ElevenLabs TTS 2026-09-03,
-LinkedIn PDF skip on public promote 2026-09-03
+LinkedIn PDF skip on public promote 2026-09-03,
+social URLs follow the published slug 2026-09-03
 Last updated: 2026-09-03
 
 ---
@@ -21,6 +22,12 @@ Last updated: 2026-09-03
   **2063→30**, `brief_items` **3247→1471**. Weekly `ai-weekly-2026-08-23` після
   REST 200 упав на LinkedIn PDF у image-only `social-assets`; 3 Sep republish:
   `multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23`.
+  Соцпости тримали старий `ai-weekly-2026-08-23` і `/r/s/{token}`. 3 Sep
+  адмін-копію Aug 23 переписано на
+  `…/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23?s=`.
+  Telegram уже був `posted` зі старим hop — у каналі лінк не зміниться; копіюй
+  з адмінки **після** publish. Наступні Ship роблять rewrite у
+  `finish_weekly_digest_release`.
   (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md);
   prod `weekly_digests.status=published` 2026-09-03)
 

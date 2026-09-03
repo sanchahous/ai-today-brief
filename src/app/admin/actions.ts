@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import type { Json } from '@/lib/database.types';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { SITE_URL } from '@/lib/site';
+import { withSocialClickToken } from '@/lib/social/tracked-url';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { getSupabaseServer } from '@/lib/supabase/server';
 import { composeDailySocial, composeWeeklySocial } from '@/lib/social/composer';
@@ -375,7 +376,10 @@ export async function regenerateVariantAction(formData: FormData) {
       ...jsonFacts(post.locale === 'uk' ? item.facts_uk : item.facts_en),
     ])
     .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()));
-  const trackingUrl = new URL(`/r/s/${post.tracking_token}`, SITE_URL).toString();
+  const trackingUrl = withSocialClickToken(
+    post.utm_url || post.url || SITE_URL,
+    post.tracking_token,
+  );
   const channelInstruction: Record<string, string> = {
     telegram:
       'Ukrainian daily or weekly digest, 3–5 numbered stories, 80–1800 characters, exactly one tracking URL.',

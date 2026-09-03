@@ -14,7 +14,7 @@ describe('channelNativeCopy', () => {
       channelNativeCopy({
         channel: 'x',
         text: 'Root',
-        firstComment: 'Read: https://aitodaybrief.com/r/s/token',
+        firstComment: 'Read: https://aitodaybrief.com/en/weekly/example?s=token',
       }),
     ).toContain('SELF REPLY');
   });

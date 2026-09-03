@@ -1,8 +1,9 @@
 # AI Today Brief Social CMS runbook
 
 Summary: Runbook соц-CMS: хвилі підключення destination-ів.
-Sources: none (analysis), `src/app/admin/(cms)/page.tsx`, `src/app/admin/actions.ts`
-Last updated: 2026-08-21
+Sources: none (analysis), `src/app/admin/(cms)/page.tsx`, `src/app/admin/actions.ts`,
+weekly social URL rewrite on publish 2026-09-03
+Last updated: 2026-09-03
 
 
 The CMS is deliberately safe on first deploy: migration `040_social_cms.sql`
@@ -212,7 +213,10 @@ provider, model, score and flags appear in the package editor.
   image. If previews are empty, regenerate Social assets on Visuals, then social
   copy if needed.
 - **Destination URL** = clean weekly page (`/{lang}/weekly/{slug}`). **Tracked
-  URL** keeps UTM params. Generation now writes both fields.
+  URL** keeps UTM params plus `?s=<token>`. Generation writes both against the
+  placeholder slug; `finish_weekly_digest_release` rewrites them to the
+  published topic slug in the same transaction. Copy from admin only after
+  `published`.
 - Do not Approve with a past Kyiv schedule (`schedule_past` blocker). Set a
   future datetime → Save draft → Save & approve.
 - Save errors redirect to `?tab=social&save_error=…` instead of a blank server
@@ -295,8 +299,8 @@ Before production posting, run one private/test delivery per network and verify:
 - AAL1 cannot approve, schedule, publish, change accounts, or change switches;
 - editing exact copy, media, alt text, locale, format, or time revokes approval;
 - a stale `publishing` row moves to `needs_reconciliation` after 15 minutes;
-- `/r/s/<token>` records only post id, time, referrer host, and device class;
-- a newsletter signup after that redirect stores the originating
+- `?s=<token>` on the canonical page records only post id, time, referrer host, and device class;
+- a newsletter signup after that click stores the originating
   `social_post_id`;
 - the global and per-channel switches stop queue claims.
 - the mobile login/PWA shell passes `npx playwright test e2e/admin-mobile.spec.ts`;

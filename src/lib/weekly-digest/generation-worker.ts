@@ -3,6 +3,7 @@ import 'server-only';
 import { createHash, randomUUID } from 'node:crypto';
 import type { Json } from '@/lib/database.types';
 import { SITE_URL } from '@/lib/site';
+import { weeklyTrackedUrl } from '@/lib/social/tracked-url';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { assertDailyGenerationBudget, recordGenerationCost } from '@/lib/generation-costs';
 import { alertWeeklyDigestIssue } from './alerts';
@@ -2448,7 +2449,9 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       metadata: { channel, role: 'weekly.social_writer', selection: 'provider_chain' },
     });
     const providerPipelineStartedAt = Date.now();
-    const trackedUrl = new URL(`/r/s/${checkpoint.tokens[channel]}`, SITE_URL).toString();
+    const trackedUrl = weeklyTrackedUrl(locale, context.digest.slug, checkpoint.tokens[channel], {
+      source: channel,
+    });
     const instagramSources = selectInstagramCarouselSources(
       context.artifacts as SocialSelectableArtifact[],
     );
@@ -2753,11 +2756,12 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       instagramCarousel: draft.instagramCarousel,
     });
     const destinationUrl = new URL(`/${draft.locale}/weekly/${context.digest.slug}`, SITE_URL);
-    const publicUrl = new URL(destinationUrl.toString());
-    publicUrl.searchParams.set('utm_source', draft.channel);
-    publicUrl.searchParams.set('utm_medium', 'social');
-    publicUrl.searchParams.set('utm_campaign', 'weekly_digest');
-    publicUrl.searchParams.set('utm_content', draft.hookAngle.slice(0, 80));
+    const publicUrl = weeklyTrackedUrl(
+      draft.locale,
+      context.digest.slug,
+      checkpoint.tokens[draft.channel],
+      { source: draft.channel, content: draft.hookAngle },
+    );
     return {
       package_id: socialPackage.id,
       brief_item_id: context.items[0]?.brief_item_id ?? null,
@@ -2777,7 +2781,7 @@ async function generateSocialCopy(job: ClaimedGenerationJob, tracker: Generation
       idempotency_key: `${socialPackage.id}:${draft.channel}:${contentHash.slice(0, 16)}`,
       tracking_token: checkpoint.tokens[draft.channel],
       url: destinationUrl.toString(),
-      utm_url: publicUrl.toString(),
+      utm_url: publicUrl,
       meta: {
         hook_angle: draft.hookAngle,
         hook_candidates: draft.hookCandidates,

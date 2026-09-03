@@ -10,8 +10,8 @@ import {
 } from './repair-social-copy';
 
 const STORY_IDS = ['item-hf', 'item-priv', 'item-openai'] as const;
-const FACEBOOK_URL = 'https://aitodaybrief.com/r/s/facebook-token';
-const THREADS_URL = 'https://aitodaybrief.com/r/s/threads-token';
+const FACEBOOK_URL = 'https://aitodaybrief.com/en/weekly/example?s=facebook-token';
+const THREADS_URL = 'https://aitodaybrief.com/en/weekly/example?s=threads-token';
 const STORIES = [
   { revisionItemId: 'item-hf', role: 'huggingFace' as const },
   { revisionItemId: 'item-priv', role: 'privaiTe' as const },

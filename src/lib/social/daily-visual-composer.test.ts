@@ -86,7 +86,7 @@ const TRACKING = {
     string
   >,
   urls: Object.fromEntries(
-    CHANNELS.map((channel) => [channel, `https://aitodaybrief.com/r/s/token-${channel}`]),
+    CHANNELS.map((channel) => [channel, `https://aitodaybrief.com/en/ai-daily-2026-08-25?s=token-${channel}`]),
   ) as Record<SocialChannel, string>,
 };
 
@@ -144,13 +144,13 @@ describe('daily visual social composer', () => {
 
     const x = drafts.find((draft) => draft.channel === 'x');
     expect(x?.text).not.toContain('http');
-    expect(x?.firstComment).toContain('/r/s/token-x');
+    expect(x?.firstComment).toContain('s=token-x');
     expect(x?.contentParts).toHaveLength(2);
 
     const threads = drafts.find((draft) => draft.channel === 'threads');
     expect(threads?.contentParts).toHaveLength(4);
     expect(threads?.contentParts?.every((part) => part.length <= 500)).toBe(true);
-    expect(threads?.contentParts?.at(-1)).toContain('/r/s/token-threads');
+    expect(threads?.contentParts?.at(-1)).toContain('s=token-threads');
 
     const telegram = drafts.find((draft) => draft.channel === 'telegram');
     expect(telegram?.text).toContain('Головний сигнал дня');
@@ -162,7 +162,7 @@ describe('daily visual social composer', () => {
     expect(linkedIn?.text).toContain(INPUT.stories[0]!.whatChanged.en);
     expect(linkedIn?.text).not.toContain(INPUT.visualThesis.en);
     expect(linkedIn?.text).toContain('One decision-relevant example:');
-    expect(linkedIn?.firstComment).toContain('/r/s/token-linkedin');
+    expect(linkedIn?.firstComment).toContain('s=token-linkedin');
   });
 
   it('keeps a single-story daily package platform-native instead of flagging it as blind cross-posting', async () => {

@@ -33,7 +33,7 @@ describe('social quality gate', () => {
 
   it('allows the X tracking URL in the structured self-reply only', () => {
     const root = 'One grounded thesis with a strong approved fact for AI builders and leaders.';
-    const reply = 'Read: https://aitodaybrief.com/r/s/token';
+    const reply = 'Read: https://aitodaybrief.com/en/weekly/example?s=token';
     const report = runQualityGate(
       draft({ channel: 'x', text: root, firstComment: reply, contentParts: [root, reply] }),
       new Date('2026-01-01T00:00:00Z'),
@@ -146,7 +146,7 @@ describe('social quality gate', () => {
     const stalePdf = runQualityGate(
       draft({
         channel: 'linkedin',
-        text: `${'A practical LinkedIn update for builders. '.repeat(10)} https://aitodaybrief.com/r/s/token`,
+        text: `${'A practical LinkedIn update for builders. '.repeat(10)} https://aitodaybrief.com/en/weekly/example?s=token`,
         assets: [
           {
             url: 'https://example.supabase.co/storage/v1/object/sign/weekly-digest-private/doc.pdf?token=x',

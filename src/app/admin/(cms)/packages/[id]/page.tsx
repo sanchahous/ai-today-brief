@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Json } from '@/lib/database.types';
 import { requireSocialAdmin } from '@/lib/admin-auth';
 import { SITE_URL } from '@/lib/site';
+import { withSocialClickToken } from '@/lib/social/tracked-url';
 import { ActionSubmitButton } from '@/components/admin/action-submit-button';
 import { StatusPill } from '@/components/admin/status-pill';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
@@ -800,7 +801,10 @@ export default async function PackageEditorPage({ params }: { params: Promise<{ 
                   <div className="rounded-xl border border-white/10 bg-white/[.02] p-3 text-xs text-slate-400">
                     <strong className="block text-slate-300">Tracked link</strong>
                     <code className="mt-1 block break-all text-[#8af4e9]">
-                      {new URL(`/r/s/${post.tracking_token}`, SITE_URL).toString()}
+                      {withSocialClickToken(
+                        post.utm_url || post.url || SITE_URL,
+                        post.tracking_token,
+                      )}
                     </code>
                     {post.channel === 'instagram' ? (
                       <span className="mt-1 block">

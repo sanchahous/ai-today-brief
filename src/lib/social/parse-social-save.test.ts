@@ -6,7 +6,7 @@ describe('parseChannelSocialSave', () => {
     const parsed = parseChannelSocialSave({
       channel: 'x',
       postText: 'Root thesis for builders.',
-      firstComment: 'Read: https://aitodaybrief.com/r/s/token',
+      firstComment: 'Read: https://aitodaybrief.com/en/weekly/example?s=token',
       threadParts: [],
       existingCarousel: null,
     });
@@ -14,7 +14,7 @@ describe('parseChannelSocialSave', () => {
     if (!parsed.ok) return;
     expect(parsed.fields.contentParts).toEqual([
       'Root thesis for builders.',
-      'Read: https://aitodaybrief.com/r/s/token',
+      'Read: https://aitodaybrief.com/en/weekly/example?s=token',
     ]);
     expect(parsed.fields.firstComment).toContain('aitodaybrief.com');
   });

@@ -4,7 +4,8 @@ Summary: як працює weekly-дайджест у проді: оркестр
 гейти, admin UX і поточний статус розкатки.
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live checks 2026-08-04…22,
 editorial-voice, PDF/Social/Video, Prompt-as-Code v6, daily visual, topic slug, Stage 0,
-OpenRouter catalog, YouTube 120s, ElevenLabs TTS, LinkedIn PDF skip 2026-09-03
+OpenRouter catalog, YouTube 120s, ElevenLabs TTS, LinkedIn PDF skip 2026-09-03,
+social URLs follow the published slug 2026-09-03
 Last updated: 2026-09-03
 
 ---
@@ -67,6 +68,18 @@ click-tracking редирект, окрема тема) — і по дорозі
 не чіпається.
 (source: `supabase/migrations/20260829120000_weekly_digest_topic_slug_on_publish.sql`,
 owner session 2026-08-29)
+
+Після `published` **у тій самій транзакції** `finish_weekly_digest_release` викликає
+`rewrite_weekly_digest_social_urls`: оновлює `social_posts.url` / `utm_url` / текст /
+`first_comment` / `content_parts` на канонічну сторінку з `?s=<tracking_token>`
+(плюс наявні UTM) і прибирає hop `/r/s/{token}`. GUC
+`app.weekly_digest_social_url_rewrite` дозволяє це без скидання `scheduled`/`posted`
+у `in_review` і без «immutable» на вже відправленому Telegram. Воркер ще раз кличе
+той самий RPC (ідемпотентно) і ревалідує `/admin/weekly/{id}`. Адмінка Destination/
+Tracked читає поточний `weekly_digests.slug`. Інакше власник копіює з адмінки пости
+з `ai-weekly-YYYY-MM-DD` і 404.
+(source: `supabase/migrations/20260903120000_rewrite_weekly_social_urls_on_publish.sql`,
+`src/lib/weekly-digest/rewrite-social-urls.ts`, owner session 2026-09-03)
 
 ## Social copy: channel-contract format rules were critic-only, no deterministic gate (2026-08-28)
 
