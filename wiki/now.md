@@ -4,7 +4,8 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…29, catalog 2026-08-30,
 YouTube 120s + Supabase egress 2026-09-02,
-SSG skip + local `build:ci` skip + ElevenLabs TTS 2026-09-03
+SSG skip + local `build:ci` skip + ElevenLabs TTS 2026-09-03,
+LinkedIn PDF skip on public promote 2026-09-03
 Last updated: 2026-09-03
 
 ---
@@ -17,9 +18,11 @@ Last updated: 2026-09-03
   коміти Vercel пропускає. **2026-09-03:** `.gitignore` / `library/` / `scripts/` теж
   skip; Sonar збирає `build:ci`, не весь каталог; локальний `pr:check` не запускає
   `next build`, якщо сайт у diff не змінювався. Прод SSG `dd49672`: `categories`
-  **2063→30**, `brief_items` **3247→1471**. Weekly `ai-weekly-2026-08-23` чекає
-  release-due + promote.
-  (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
+  **2063→30**, `brief_items` **3247→1471**. Weekly `ai-weekly-2026-08-23` після
+  REST 200 упав на LinkedIn PDF у image-only `social-assets`; 3 Sep republish:
+  `multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23`.
+  (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md);
+  prod `weekly_digests.status=published` 2026-09-03)
 
 - **YouTube weekly duration floor 120s (2026-09-02).** Епізод 01.09
   [`dtCMvtTIUpM`](https://youtu.be/dtCMvtTIUpM) — **158s**, чіпляється на

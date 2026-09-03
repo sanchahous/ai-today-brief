@@ -3,14 +3,8 @@
 Summary: як працює weekly-дайджест у проді: оркестрація, ревізії, артефакти, вартісні
 гейти, admin UX і поточний статус розкатки.
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live checks 2026-08-04…22,
-editorial-voice, PDF/Social/Video 2026-08-18…19, autopilot 2026-08-21,
-working-copy UX 2026-08-22, image prompt library v6 2026-08-23, daily visual 2026-08-24…25,
-Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract + fail-open 2026-08-28,
-Fixes & blockers + warnings do not hold socials 2026-08-28, topic-based slug on publish 2026-08-29, revision Stage 0 2026-08-29,
-каталожний вибір моделей OpenRouter 2026-08-30,
-YouTube duration floor 120s 2026-09-02,
-public-content cache tag on release 2026-09-02,
-ElevenLabs TTS tooling + video assembler 2026-09-03
+editorial-voice, PDF/Social/Video, Prompt-as-Code v6, daily visual, topic slug, Stage 0,
+OpenRouter catalog, YouTube 120s, ElevenLabs TTS, LinkedIn PDF skip 2026-09-03
 Last updated: 2026-09-03
 
 ---
@@ -207,6 +201,18 @@ measurement per tab, `Page.captureScreenshot` timeout during a real tab click, `
 `_rsc` navigation; `src/components/admin/weekly-workspace.tsx`;
 `src/components/admin/weekly-generation-jobs-live.tsx`;
 `src/app/api/admin/weekly/[id]/generation-status/route.ts`)
+
+## Release promote skips LinkedIn native PDFs (2026-09-03)
+
+`promoteWeeklyDigestPublicAssets` copies approved cover / story / social images into
+the public `social-assets` bucket (jpeg/png/webp only). LinkedIn's native document is
+stored as `social_asset` + `application/pdf` (`linkedin-document:en`). The 02.09 release
+of `ai-weekly-2026-08-23` claimed, then failed with
+`mime type application/pdf is not supported` before story images were promoted, so the
+public URL stayed 404. The promoter now keeps PDFs on the private bucket (signed URL at
+post time) and only uploads real images. Helper: `shouldPromotePublicImage`.
+(source: prod `weekly_digest_release_events.failed` 2026-09-02T12:15Z;
+`src/lib/weekly-digest/publication-assets.ts`)
 
 ## Video tab: duration floor 120s for AtbEpisode (2026-09-02)
 

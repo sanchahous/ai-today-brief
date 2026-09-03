@@ -9,7 +9,8 @@ Prompt-as-Code v6 2026-08-23, daily visual production workflow 2026-08-24,
 first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
-SSG skip + local `build:ci` skip + ElevenLabs TTS 2026-09-03
+SSG skip + local `build:ci` skip + ElevenLabs TTS 2026-09-03,
+LinkedIn PDF skip on public promote 2026-09-03
 Last updated: 2026-09-03
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
