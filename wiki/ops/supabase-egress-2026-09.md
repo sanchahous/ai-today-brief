@@ -8,7 +8,7 @@ Data Cache на anon GET, `cachePublicRead`, e2e prerender cap, і SSG disk-memo
 Sources: Supabase Usage Dashboard (цикл 21 Aug 2026 – 21 Sep 2026); `edge_logs` через
 MCP `query_logs` 2026-09-01T10:00Z–2026-09-02T13:10Z; `src/lib/supabase.ts`,
 `src/lib/public-content-cache.ts`, `src/lib/public-content-build-memo.ts`.
-Last updated: 2026-09-02
+Last updated: 2026-09-03
 
 ---
 
@@ -74,7 +74,10 @@ Next Data Cache їх не бачить. Три повні прод-білди в
    на прод: merge в `main` стартує новий production build.
 4. **Wiki/pipeline-only деплой**: `vercel.json` `ignoreCommand` (`scripts/vercel-should-build.mjs`)
    пропускає Vercel SSG, якщо в коміті немає site-файлів. E2e на `push` у `main` так само
-   пропускає docs-only (раніше завжди білдив).
+   пропускає docs-only (раніше завжди білдив). **2026-09-03:** skip також `.gitignore`,
+   `LICENSE`, `scripts/`, `library/` (інструменти відео не змінюють HTML). Sonar більше
+   не збирає повний каталог — `npm run build:ci`; `library/` і `scripts/` не запускають
+   скан. `pipeline/` Sonar далі сканує, але теж через `build:ci`.
    (source: `src/lib/public-content-cache.ts`, `src/lib/public-content-build-memo.ts`,
    `src/lib/items.ts`, `scripts/ssg-build-scope.mjs`)
 
@@ -118,7 +121,8 @@ GitHub e2e в цьому ж вікні лише стартував (Des Moines: 
 Квоту вже спаленого циклу (15.004 / 5 GB на Free) відкотити не можна — далі ліміт Pro
 (250 GB) до **21 Sep 2026**. Даунгрейд на Free **до** ресету знову дасть 402.
 Після ресету Free тримається запобіжниками: один повний SSG = лише production Vercel;
-preview / e2e / `pr:check` — 8 item-шляхів; docs-only коміти Vercel пропускає.
+preview / e2e / `pr:check` — 8 item-шляхів; docs-only, `.gitignore`, `library/` і
+`scripts/` коміти Vercel пропускає. Sonar integrity — `build:ci`.
 Не Promote preview-білд на прод.
 Weekly `ai-weekly-2026-08-23` після REST 200 все одно потребує
 `/api/internal/weekly/release-due` → `promoteWeeklyDigestPublicAssets` →

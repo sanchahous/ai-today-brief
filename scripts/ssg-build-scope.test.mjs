@@ -22,6 +22,14 @@ describe('shouldSkipVercelBuild', () => {
     );
   });
 
+  it('skips gitignore, license, and scripts (no site HTML)', () => {
+    assert.equal(
+      shouldSkipVercelBuild(['.gitignore', 'library/tools/tts-generator/unpack_audio_scenes.js']),
+      true,
+    );
+    assert.equal(shouldSkipVercelBuild(['LICENSE', 'scripts/ssg-build-scope.mjs']), true);
+  });
+
   it('builds on an empty list (unknown diff — do not skip)', () => {
     assert.equal(shouldSkipVercelBuild([]), false);
   });
@@ -37,5 +45,7 @@ describe('isSiteAffectingPath', () => {
   it('ignores agent and experiment trees', () => {
     assert.equal(isSiteAffectingPath('.cursor/rules/00-core.mdc'), false);
     assert.equal(isSiteAffectingPath('experiments/run/report.md'), false);
+    assert.equal(isSiteAffectingPath('.gitignore'), false);
+    assert.equal(isSiteAffectingPath('scripts/ssg-build-scope.mjs'), false);
   });
 });

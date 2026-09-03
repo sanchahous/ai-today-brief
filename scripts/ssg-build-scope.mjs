@@ -1,11 +1,13 @@
 /**
- * Paths that do not change the Next.js site HTML/JS. Keep the regex in
- * `.github/workflows/e2e.yml` (`Decide whether the site changed`) in sync.
+ * Paths that do not change the Next.js site HTML/JS.
+ * Keep the grep in `.github/workflows/e2e.yml` (`Decide whether the site changed`)
+ * in sync with this regex. Sonar uses the same skip set except it still scans
+ * `pipeline/` (see `.github/workflows/sonarqube.yml`).
  *
  * Used by Vercel's ignoreCommand: exit 0 skips the deploy (no prod PostgREST SSG).
  */
 export const SKIP_SSG_PATH_RE =
-  /^(wiki\/|raw\/|artifacts\/|experiments\/|library\/|supabase\/migrations\/|\.github\/|pipeline\/|\.cursor\/|\.agents\/|\.claude\/)|\.md$/;
+  /^(wiki\/|raw\/|artifacts\/|experiments\/|library\/|scripts\/|supabase\/migrations\/|\.github\/|pipeline\/|\.cursor\/|\.agents\/|\.claude\/|\.gitignore$|\.gitattributes$|\.editorconfig$|LICENSE$)|\.md$/;
 
 export function posixPath(file) {
   let path = String(file).split('\\').join('/');

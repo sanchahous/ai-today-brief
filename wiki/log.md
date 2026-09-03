@@ -4,7 +4,14 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-09-02
+Last updated: 2026-09-03
+
+## 2026-09-03 — SSG skip: `.gitignore` / `library` / `scripts`; Sonar `build:ci`
+
+Vercel/e2e вважали `.gitignore` зміною сайту; Sonar на JS у `library/tools` ганяв
+повний `next build` проти прод PostgREST. Skip-список розширено; Sonar integrity
+check — `npm run build:ci` (8 шляхів). Pipeline далі сканується Sonar.
+(source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
 
 ## 2026-09-02 — запобіжники Free: повний SSG лише production Vercel
 
