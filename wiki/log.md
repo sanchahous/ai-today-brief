@@ -20,6 +20,13 @@ Vercel/e2e вважали `.gitignore` зміною сайту; Sonar на JS у
 check — `npm run build:ci` (8 шляхів). Pipeline далі сканується Sonar.
 (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
 
+## 2026-09-03 — merge #346: ElevenLabs TTS tooling у `library/tools/`
+
+У репозиторій зайшли `tts-generator` (console ZIP + unpacker) і 18-scene `video-assembler`.
+Робочі mp3/mp4 лишаються gitignored під `library/DD.MM.YYYY/`. Конфлікти з main були лише
+в шапках wiki; записи 2026-09-02 про SSG/egress збережено.
+(source: PR #346)
+
 ## 2026-09-02 — запобіжники Free: повний SSG лише production Vercel
 
 Preview PR, локальний `pr:check` і e2e більше не рендерять увесь каталог (8 item-шляхів).
@@ -53,6 +60,15 @@ listing/item, `E2E_MINIMAL_PRERENDER` у e2e, `revalidateTag` на publish.
 Підлога weekly YouTube **120–1200s** (було 200–1200, PR #331), щоб живий епізод 158s
 [`dtCMvtTIUpM`](https://youtu.be/dtCMvtTIUpM) зберігся на `ai-weekly-2026-08-23`.
 (source: owner session 2026-09-02; `src/lib/weekly-digest/video.ts`)
+
+## 2026-09-01 — ElevenLabs аудіо-сцени дайджесту та tooling для експорту
+
+Згенеровано та вивантажено 18 аудіо-сцен голосом Adam для випуску 01.09.2026 у `library/01.09.2026/audio_scenes/`.
+Створено універсальний інструментарій автоматизації для майбутніх генерацій у `library/tools/tts-generator/`:
+- `elevenlabs_console_zip_exporter.js`: браузерний експортер у ZIP (в обхід Chrome limits);
+- `unpack_audio_scenes.js`: Node.js утиліта автоматичного розпакування та структурування;
+- оновлено wiki-формат відео-випуску (динамічний репортаж без аватара).
+(source: `library/tools/tts-generator/`, `library/01.09.2026/audio_scenes/`)
 
 ## 2026-08-30 — migrations:check звіряє name, не apply-clock
 

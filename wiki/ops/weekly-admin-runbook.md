@@ -5,8 +5,9 @@ Summary: покрокова інструкція для власника/ред�
 Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`,
 [weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…30,
 revision Stage 0 2026-08-29, OpenRouter catalog 2026-08-30,
-YouTube duration 120s + public-content cache tag 2026-09-02
-Last updated: 2026-09-02
+YouTube duration 120s + public-content cache tag 2026-09-02,
+ElevenLabs TTS tooling + video assembler 2026-09-03
+Last updated: 2026-09-03
 
 ---
 

@@ -9,8 +9,9 @@ Visuals upload cap + jobs payload 2026-08-26…28, social copy channel-contract 
 Fixes & blockers + warnings do not hold socials 2026-08-28, topic-based slug on publish 2026-08-29, revision Stage 0 2026-08-29,
 каталожний вибір моделей OpenRouter 2026-08-30,
 YouTube duration floor 120s 2026-09-02,
-public-content cache tag on release 2026-09-02
-Last updated: 2026-09-02
+public-content cache tag on release 2026-09-02,
+ElevenLabs TTS tooling + video assembler 2026-09-03
+Last updated: 2026-09-03
 
 ---
 

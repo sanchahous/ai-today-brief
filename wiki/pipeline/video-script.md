@@ -34,13 +34,11 @@ Last updated: 2026-08-27
 | Сцена | Роль | Типовий хронометраж у скрипті |
 |---|---|---|
 | `cold_open` | хук: число / конфлікт, без «вітаємо» | 15–25 с |
-| `anchor` | місток ведучого; **HeyGen/аватар-слот** | ~20 с |
-| `broll` × 3 | по одній на кожну feature-історію; `revisionItemId` на сцені | до 180 с на сцену в схемі |
+| `broll` (x15) | 3 топ новини по 5 сцен на кожну (вступ, процес, деталі, результат, цінність). Близько 15 відео по ~10 секунд. | ~10 с на сцену |
 | radar / extra `anchor` | quick-hits | коротко |
 | `outro` | discussion / CTA | короткий |
 
-Eyebrow на рендері: `cold_open` → «Cold open»; `broll` → «Top 3 · N»; `anchor` → «In the studio»
-/ «On the radar»; `outro` → «Your turn». (source: `remotion/weekly-schema.ts`)
+Eyebrow на рендері: `cold_open` → «Cold open»; `broll` → «Top 3 · N»; `outro` → «Your turn». (source: `remotion/weekly-schema.ts`)
 
 B-roll **не** мапиться як `assets[index % assets.length]` — це показувало чужі картинки.
 `assetForScene` бере ілюстрацію за `revisionItemId` сцени. Виправлено 2026-08-18.
