@@ -2739,6 +2739,10 @@ export type Database = {
         Args: { p_weekly_digest_id: string };
         Returns: Database['public']['Tables']['weekly_digests']['Row'];
       };
+      publish_weekly_digest_video: {
+        Args: { p_weekly_digest_id: string };
+        Returns: Database['public']['Tables']['weekly_digests']['Row'];
+      };
       weekly_quality_content_has_blockers: {
         Args: { p_content: Json };
         Returns: boolean;

@@ -5,7 +5,8 @@ Summary: як працює weekly-дайджест у проді: оркестр
 Sources: `.env.example`, PR #160–#189/#209, `src/lib/weekly-digest/**`, live checks 2026-08-04…22,
 editorial-voice, PDF/Social/Video, Prompt-as-Code v6, daily visual, topic slug, Stage 0,
 OpenRouter catalog, YouTube 120s, ElevenLabs TTS, LinkedIn PDF skip 2026-09-03,
-social URLs follow the published slug 2026-09-03
+social URLs follow the published slug 2026-09-03, two-phase release (Ship / Publish video)
+2026-09-03
 Last updated: 2026-09-03
 
 ---
@@ -487,13 +488,61 @@ replay проти прод-даних 2026-08-16)
 соц-джоба падає одразу, а не планує пости на день генерації. `machine_attest_weekly_social_post`
 ідемпотентний (вже approved пост — no-op) і **не** вмикає `publish_enabled` назад. Авто-attest
 соцпоста вимагає critic ≥ 85 **і** практичний use-block: дієслово дії + конкретика (цифра або
-inline-код), голе число гейт не проходить. Єдиний human gate — Hallucination board → Ship:
+inline-код), голе число гейт не проходить. Human gate для сайту/соц — Hallucination board → Ship:
 `ship_weekly_digest` робить approve + schedule(`now()+15min`) в одній транзакції й повертає
 реальні preflight-блокери в помилці; board рахує `canShip` за тими самими required-слотами,
-що й SQL preflight.
+що й SQL preflight. З 2026-09-03 відео має власний, окремий human gate — див.
+[Реліз у два етапи](#реліз-у-два-етапи-сайт-окремо-від-відео-2026-09-03) нижче.
 (source: [2026-08-21-weekly-digest-release-backtest](../audits/2026-08-21-weekly-digest-release-backtest.md),
 `src/lib/weekly-digest/machine-attest.ts`,
 `supabase/migrations/20260821170000_weekly_release_autopilot_ship_and_attest_hardening.sql`)
+
+### Реліз у два етапи: сайт окремо від відео (2026-09-03)
+
+Раніше `weekly_digest_preflight` (SQL) і його два дзеркала — `buildHallucinationBoard`
+(`REQUIRED_SLOTS`) та `validateWeeklyDigestPreflight` (TS fallback, використовується лише коли
+live-запит SQL RPC впав) — вимагали `video_final`, `captions` (en/uk) і `thumbnail` як
+обов'язкові слоти Ship нарівні зі статтею й PDF (TS-дзеркало додатково вимагало ще й
+`video_script`/`video_manifest`, яких SQL ніколи не гейтив — застаріле розходження, усунене
+заразом). Відеовиробництво (скрипт → Remotion → YouTube) — найповільніший крок пайплайну, тож
+він тримав увесь випуск, включно з усіма шістьма соцпостами, хоча жоден із них не залежить від
+готового відео.
+
+Власник: розділити реліз на дві незалежні дії, і ніколи не привʼязувати соцмережі до відео.
+
+1. **Ship (виклик не змінився, гейт послаблений)** — стаття, visuals, PDF і шість соцпостів
+   публікуються, щойно готові. `video_script`/`video_manifest`/`video_final`/`captions`/
+   `thumbnail` більше **не** обов'язкові слоти в жодному з трьох дзеркал.
+2. **Publish video (новий RPC `publish_weekly_digest_video`)** — після того як `video_final` +
+   `captions` (en/uk) + `thumbnail` згенеровані й затверджені (той самий Video tab workflow,
+   без змін), окрема AAL2-owner дія на вкладці Release проставляє їм `published_at` на вже
+   опублікованій ревізії (`published_revision_id`) і ревалідує публічну сторінку. Ідемпотентно
+   (повторний клік — no-op) і відмовляє, якщо `active_revision_id` розійшовся з
+   `published_revision_id` (після `rebuild_weekly_digest_selection`). `weekly_digests.status`
+   лишається `published` — це не другий Ship і жодним чином не зачіпає `social_posts`.
+
+Публічна сторінка (`src/lib/digests.ts`) вже фільтрувала артефакти по
+`is_current && review_status='approved' && published_at is not null` — тож без готового відео на
+момент Ship сторінка просто рендериться без відеосекції; окремого коду для «сайту без відео» не
+знадобилось, лише послаблення гейту.
+
+`guard_weekly_digest_artifact_write()` безумовно блокував будь-яку зміну `published_at` поза
+release worker (`service_role`), з одним вузьким винятком для visual-refresh promotion
+(`v_is_visual_asset_promotion`). `publish_weekly_digest_video` — `security invoker` (виконується
+під сесією власника, не `service_role`), тож додано другий, так само вузький виняток:
+GUC `app.weekly_digest_video_publish`, дійсний лише коли артефакт — уже approved+ready
+`video_final`/`captions`/`thumbnail` саме на `published_revision_id` (defense-in-depth: RPC
+перевіряє це до `set_config`, тригер перевіряє знову перед самим UPDATE).
+
+Соцмережі й раніше не мали жодної залежності від відео в контенті (`social-adapter.ts` не
+згадує `video`/`youtube`); єдиним звʼязком був спільний Ship-транзакшн, що чекав на все відразу.
+Розділення гейту прибирає цю залежність структурно — новому коду соцмереж нізвідки було б її
+повернути.
+
+(source: owner decision 2026-09-03; `supabase/migrations/20260903150000_weekly_digest_two_phase_release.sql`,
+`src/lib/weekly-digest/preflight.ts`, `src/lib/weekly-digest/hallucination-board.ts`,
+`src/app/admin/(cms)/weekly/actions.ts` `publishWeeklyDigestVideoAction`,
+`src/components/admin/weekly-workspace.tsx` «Video release (Part 2)» card)
 
 Hard spend-cap weekly master: `WEEKLY_MASTER_MAX_SPEND_USD` (default $4,
 `generation-worker.ts`) + kill-switch режиму `off` (source: PR #163, `.env.example`).

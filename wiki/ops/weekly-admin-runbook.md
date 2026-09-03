@@ -6,7 +6,8 @@ Sources: `src/components/admin/weekly-workspace.tsx`, `src/lib/weekly-digest/**`
 [weekly-digest](../pipeline/weekly-digest.md), owner sessions 2026-08-04…30,
 revision Stage 0, OpenRouter catalog, YouTube 120s, ElevenLabs TTS,
 LinkedIn PDF skip on public promote 2026-09-03,
-social URLs follow the published slug 2026-09-03
+social URLs follow the published slug 2026-09-03, two-phase release (Ship / Publish video)
+2026-09-03
 Last updated: 2026-09-03
 
 ---
@@ -19,15 +20,25 @@ Last updated: 2026-09-03
 | Job timeline: **`attest_failed`** | Авто-attest не пройшов, артефакт застряг у `in_review` | Approve version вручну після перевірки або **Fixes & blockers** |
 | Quality **blockers > 0** (червоні картки, `blocker: true`) | Approve **заборонений** (і людині, і машині) | **Fixes & blockers** — одна кнопка. Жовті warnings сюди не належать |
 | Visuals **prompt ready** | Треба зовнішня генерація + upload | Copy prompt → gen → upload |
-| Hallucination board **can Ship** | Немає blockers і waiting-список порожній (ті самі слоти, що й preflight) | Один AAL2 **Ship** |
+| Hallucination board **can Ship** | Немає blockers і waiting-список порожній (ті самі слоти, що й preflight; **з 2026-09-03 відео сюди не входить**) | Один AAL2 **Ship** — сайт + соц публікуються без відео |
+| Video (script/manifest/final/captions/thumbnail) готове й затверджене, digest уже `published` | Слот «Video release (Part 2)» на Release-табі стає активним | Один AAL2 **Publish video** — окрема дія, не другий Ship, соц не чіпає |
 | Job **running** на ~35% (`english` / `ukrainian`) після зайвого regenerate | До фіксу reuse 2026-08-22 кнопка переписувала 14 сегментів з нуля | Не чекай годину. Зупини джобу. Після мержу reuse стрибає до critic (~70%) за хвилини |
 | Job **succeeded** + **Needs your review** | Рушій вичерпав ремонт; лишились **warnings** або scores нижче floor; **текст уже є робочою копією** | **Approve** = рішення прийнято. Social/Visuals/PDF **не чекають** жовтих карток. Ship блокують лише coded blockers |
 | Job **failed**, код **`resumable`** | Скінчився бюджет часу, не дописано сегмент або critic недоступний; усі готові сегменти збережено | **Fixes & blockers** → Resume saved master |
 | Job **failed** + збережені сегменти | Є checkpoint | **Fixes & blockers**, не generic retry на таблиці jobs |
 | Job **failed** без checkpoint | Немає жодного збереженого сегмента або інший тип збою | **Fixes & blockers** покаже Retry; doctor/sandbox лише після діагностики |
 
-**Твій шлях випуску:** (1) Hallucination board, (2) 8 uploadів, (3) shooting + YouTube,
-(4) Ship. Machine-repair — тільки вкладка **Fixes & blockers** (одна кнопка). Не клікай
+**Твій шлях випуску (з 2026-09-03, два незалежні релізи):**
+
+- **Частина 1 — сайт і соц:** (1) Hallucination board, (2) 8 uploadів (visuals), (3) Ship.
+  Відео тут **не потрібне** — Ship більше не чекає на script/manifest/final/captions/
+  thumbnail, тож стаття, PDF і всі шість соцпостів виходять одразу, як тільки готові.
+- **Частина 2 — відео, коли буде готове:** (4) shooting + YouTube на вкладці Video (той
+  самий процес, без змін), (5) **Publish video** на Release-табі — окрема AAL2-дія, що
+  додає відео на вже опубліковану сторінку. Не другий Ship, не чіпає соцмережі й статус
+  дайджесту.
+
+Machine-repair — тільки вкладка **Fixes & blockers** (одна кнопка). Не клікай
 Research/Article/PDF/Social/Script «полагодити джобу», якщо `gates_passed`.
 Кнопки Approve на доменних вкладках лишаються як рішення людини. Quality з **coded blockers**
 **не можна** апрувити. Жовті `story_length` / `trust_attribution` / трохи задовгий article
@@ -57,11 +68,14 @@ retry failed job / **Start visuals, social and PDF** якщо master уже є, 
 ## Шлях випуску (зліва направо)
 
 ```
-Stories → Research (auto) → Article (auto) → Visuals (you upload) → Social (auto) → PDF (auto) → Video (you shoot) → Release (Hallucination board → Ship)
+Stories → Research (auto) → Article (auto) → Visuals (you upload) → Social (auto) → PDF (auto) → Release (Hallucination board → Ship, no video needed)
+                                                                                                          ↓
+                                                              Video (you shoot, any time — before or after Ship) → Release → Publish video
 ```
 
 Overview показує preflight blockers і Hallucination board. Іди зверху вниз лише якщо
-машина зупинилась.
+машина зупинилась. Video-колонка з 2026-09-03 не стоїть у головному ланцюжку — вона йде
+паралельно й публікується окремою дією, коли готова, до або після Ship.
 
 ### 1. Stories
 

@@ -3343,6 +3343,30 @@ export async function shipWeeklyDigestAction(formData: FormData) {
   revalidateWeeklyAdmin(weeklyDigestId);
 }
 
+/**
+ * Part 2 of the two-phase release: attaches an already-approved video_final /
+ * captions / thumbnail set to a digest Ship already published, without
+ * re-running Ship or touching social. See `publish_weekly_digest_video` (SQL)
+ * for the actual gate; this action only calls it and revalidates the public
+ * page.
+ */
+export async function publishWeeklyDigestVideoAction(formData: FormData) {
+  await requireSocialAdmin({ aal2: true, roles: ['owner'] });
+  const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
+  const db = await getSupabaseServer();
+  const { data: digest, error: publishError } = await db.rpc('publish_weekly_digest_video', {
+    p_weekly_digest_id: weeklyDigestId,
+  });
+  if (publishError) {
+    redirectWeeklyReleaseError(weeklyDigestId, formatPreflightError(publishError.message));
+  }
+  revalidateWeeklyAdmin(weeklyDigestId);
+  if (digest?.slug) {
+    const safeSlug = encodeURIComponent(digest.slug);
+    revalidateSiteSurfaces([`/en/weekly/${safeSlug}`, `/uk/weekly/${safeSlug}`]);
+  }
+}
+
 export async function scheduleWeeklyDigestAction(formData: FormData) {
   await requireSocialAdmin({ aal2: true, roles: ['owner'] });
   const weeklyDigestId = requiredString(formData, 'weekly_digest_id');
