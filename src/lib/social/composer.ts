@@ -24,7 +24,9 @@ import { findBlindCrossPosts, runQualityGate } from './quality';
 import {
   channelRunsOnDate,
   completedWeeklyRangeForTrigger,
+  kyivDateFor,
   nextScheduledForChannel,
+  recentKyivDates,
   resolveCadenceSettings,
   type ChannelCadence,
 } from './schedule';
@@ -39,6 +41,20 @@ import type {
 } from './types';
 
 export const SOCIAL_GENERATION_VERSION = 'social-v1';
+
+// Briefs routinely land in `published` after midnight Kyiv (overnight
+// auto-publish, or a late manual review) — by then the source date's own
+// Kyiv day has already rolled over. `composeRecentDailySocial` sweeps this
+// many trailing days so that a delayed publish still gets a digest on the
+// next 30-minute cron tick, instead of being skipped forever because the
+// day of the `/api/internal/social/compose` cron call had already moved on.
+const DEFAULT_DAILY_COMPOSE_WINDOW_DAYS = 5;
+
+function dailyComposeWindowDays(): number {
+  const raw = Number(process.env.SOCIAL_DAILY_COMPOSE_WINDOW_DAYS);
+  return Number.isInteger(raw) && raw > 0 ? raw : DEFAULT_DAILY_COMPOSE_WINDOW_DAYS;
+}
+
 interface SourceBrief {
   id: string;
   date: string;
@@ -645,6 +661,32 @@ export async function composeDailySocial(
 
   await notifyPackagesReady(createdPackageIds, `Daily content · ${sourceDate}`);
   return { createdPackageIds, skipped };
+}
+
+export interface ComposeRecentDailyResult {
+  dates: string[];
+  byDate: Record<string, ComposeResult>;
+}
+
+/**
+ * Sweeps a trailing window of Kyiv dates ending at `endDate` (default:
+ * today), instead of checking only the current day. `composeDailySocial` is
+ * idempotent per (kind, source_date, generation_version) — an already-
+ * composed date comes back with `daily_digest_exists` / `top_story_exists`
+ * skips, so re-checking it on every cron tick is a cheap no-op.
+ */
+export async function composeRecentDailySocial(
+  options: { endDate?: string; now?: Date; windowDays?: number } = {},
+): Promise<ComposeRecentDailyResult> {
+  const now = options.now ?? new Date();
+  const endDate = options.endDate ?? kyivDateFor(now);
+  const windowDays = options.windowDays ?? dailyComposeWindowDays();
+  const dates = recentKyivDates(endDate, windowDays);
+  const byDate: Record<string, ComposeResult> = {};
+  for (const date of dates) {
+    byDate[date] = await composeDailySocial(date, { now });
+  }
+  return { dates, byDate };
 }
 
 /**

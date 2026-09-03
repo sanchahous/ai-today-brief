@@ -104,10 +104,33 @@ export function scheduledForChannel(
   return kyivWallClockToUtc(date, cadence.hour, cadence.minute).toISOString();
 }
 
-function addCalendarDays(date: string, days: number) {
+export function addCalendarDays(date: string, days: number) {
   const [year, month, day] = date.split('-').map(Number);
   const value = new Date(Date.UTC(year, month - 1, day + days));
   return value.toISOString().slice(0, 10);
+}
+
+/** Today's Kyiv calendar date for a given instant. */
+export function kyivDateFor(now: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: SOCIAL_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(now);
+}
+
+/**
+ * The last `windowDays` Kyiv calendar dates ending at `endDate` (inclusive),
+ * newest first. A brief routinely lands in `published` after midnight Kyiv —
+ * the overnight auto-publish sweep, or a late manual review — by which point
+ * its own source date's Kyiv day has already rolled over. Checking only
+ * "today" misses that brief forever; sweeping a trailing window catches it
+ * on the next cron tick instead.
+ */
+export function recentKyivDates(endDate: string, windowDays: number): string[] {
+  const days = Math.max(1, Math.min(Math.trunc(windowDays) || 1, 30));
+  return Array.from({ length: days }, (_, index) => addCalendarDays(endDate, -index));
 }
 
 /**
