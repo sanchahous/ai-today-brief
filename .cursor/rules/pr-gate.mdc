@@ -15,7 +15,7 @@ From repo root:
 npm run pr:check
 ```
 
-Runs **`ci:check`** (Vitest coverage ≥70% on logic scope + `verify:logic-lcov`) + `typecheck` + `lint` + `e2e:check` + **`wiki:check`** (project↔wiki sync + lint --strict) + **`build:ci`** (`E2E_MINIMAL_PRERENDER=1`, not a full prod SSG). Full catalog prerender is **Vercel production only** (`npm run build:full` locally if you need it).
+Runs **`ci:check`** (Vitest coverage ≥70% on logic scope + `verify:logic-lcov`) + `typecheck` + `lint` + `e2e:check` + **`wiki:check`** (project↔wiki sync + lint --strict) + **`build:ci`**. `build:ci` prerenders 8 paths (`E2E_MINIMAL_PRERENDER=1`) **only when git shows a site-affecting change** vs `origin/main` (plus the working tree). Wiki / pipeline / `.gitignore` / `library/` / `scripts/` — skip, no PostgREST SSG. `FORCE_SSG_BUILD=1` forces the build. Full catalog prerender is **Vercel production only** (`npm run build:full` locally if you need it).
 
 - `pr:check` fails → fix, re-run until green, **then** push / open the PR.
 - Can't fix within scope → report the failure and **do not** open the PR.
@@ -29,7 +29,7 @@ Runs **`ci:check`** (Vitest coverage ≥70% on logic scope + `verify:logic-lcov`
 
 Any change under `src/**`, `pipeline/**`, `supabase/**`, `package.json`, `next.config.*`, `.github/workflows/**`, `vitest.config.ts`, `scripts/**`, or **`wiki/**` / `wiki/_meta/project-sync.json`** that affect build, tests, or the wiki sync contract.
 
-Docs-only changes (`*.md`, `wiki/**`, `raw/**`, `artifacts/**`) may skip `build` but still run `lint`/`typecheck` if any code/config changed.
+Docs-only changes (`*.md`, `wiki/**`, `raw/**`, `artifacts/**`) skip `build:ci` automatically when that is the whole diff. Still run `lint`/`typecheck` via `pr:check` if any code/config changed.
 
 ## PR body
 

@@ -78,7 +78,7 @@ jobs:
           echo "$FILES"
           # A path is IRRELEVANT when it sits in a docs/ops zone or is any .md file.
           # If even one changed path falls outside that set, the site may be affected.
-          if printf '%s\n' "$FILES" | grep -qvE '^(wiki/|raw/|artifacts/|experiments/|library/|supabase/migrations/|\.github/|pipeline/|\.cursor/|\.agents/|\.claude/)|\.md$'; then
+          if printf '%s\n' "$FILES" | grep -qvE '^(wiki/|raw/|artifacts/|experiments/|library/|scripts/|supabase/migrations/|\.github/|pipeline/|\.cursor/|\.agents/|\.claude/|\.gitignore$|\.gitattributes$|\.editorconfig$|LICENSE$)|\.md$'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             echo "-> site-affecting change detected, running the suite."
           else

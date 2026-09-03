@@ -24,8 +24,9 @@ jobs:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     steps:
       # Sonar analyses TS/JS quality, so it only needs to run when code changes:
-      # skip wiki / markdown / SQL-migration / workflow-only PRs (nothing to scan).
+      # skip wiki / markdown / SQL-migration / workflow-only / library-tools PRs.
       # Unlike e2e this does NOT skip `pipeline/` — that is scanned code.
+      # Integrity build is `build:ci` (8 prerender paths), never a full catalog SSG.
       - name: Decide whether there is code to scan
         id: scope
         env:
@@ -43,7 +44,7 @@ jobs:
             --jq '.[].filename')
           echo "Changed files:"
           echo "$FILES"
-          if printf '%s\n' "$FILES" | grep -qvE '^(wiki/|raw/|artifacts/|supabase/migrations/|\.github/)|\.md$'; then
+          if printf '%s\n' "$FILES" | grep -qvE '^(wiki/|raw/|artifacts/|experiments/|library/|scripts/|supabase/migrations/|\.github/|\.cursor/|\.agents/|\.claude/|\.gitignore$|\.gitattributes$|\.editorconfig$|LICENSE$)|\.md$'; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             echo "-> code changed, scanning."
           else
@@ -74,7 +75,7 @@ jobs:
 
       - name: Build (integrity check)
         if: steps.scope.outputs.run == 'true'
-        run: npm run build
+        run: npm run build:ci
 
       - name: Sonar report (for agents)
         if: steps.scope.outputs.run == 'true' && env.SONAR_TOKEN != ''

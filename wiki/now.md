@@ -3,9 +3,8 @@
 Summary: над чим іде робота **прямо зараз**, що чекає на власника, що щойно відвантажено.
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…29, catalog 2026-08-30,
-YouTube duration floor 120s 2026-09-02,
-Supabase uncached egress 2026-09-02,
-ElevenLabs TTS tooling 2026-09-03
+YouTube 120s + Supabase egress 2026-09-02,
+SSG skip + local `build:ci` skip + ElevenLabs TTS 2026-09-03
 Last updated: 2026-09-03
 
 ---
@@ -15,8 +14,11 @@ Last updated: 2026-09-03
 - **Supabase egress (2026-09-02).** Спайк — три повні `next build`, не читачі. Орг на
   **Pro** до кінця циклу **21 Sep**; даунгрейд раніше = знову 402. #348+#350 + запобіжники:
   повний SSG лише production Vercel; preview/`pr:check`/e2e — 8 item-шляхів; wiki-only
-  коміти Vercel пропускає. Прод SSG `dd49672`: `categories` **2063→30**, `brief_items`
-  **3247→1471**. Weekly `ai-weekly-2026-08-23` чекає release-due + promote.
+  коміти Vercel пропускає. **2026-09-03:** `.gitignore` / `library/` / `scripts/` теж
+  skip; Sonar збирає `build:ci`, не весь каталог; локальний `pr:check` не запускає
+  `next build`, якщо сайт у diff не змінювався. Прод SSG `dd49672`: `categories`
+  **2063→30**, `brief_items` **3247→1471**. Weekly `ai-weekly-2026-08-23` чекає
+  release-due + promote.
   (source: [ops/supabase-egress-2026-09](ops/supabase-egress-2026-09.md))
 
 - **YouTube weekly duration floor 120s (2026-09-02).** Епізод 01.09
