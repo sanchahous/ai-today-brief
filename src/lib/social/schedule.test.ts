@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   channelRunsOnDate,
   completedWeeklyRangeForTrigger,
+  kyivDateFor,
   kyivWallClockToUtc,
   nextScheduledForChannel,
   nextWeeklyScheduledForChannel,
+  recentKyivDates,
   rollingWeeklyRangeForDate,
   resolveCadenceSettings,
   weeklyDigestTriggerDateForManualCreate,
@@ -84,6 +86,29 @@ describe('Kyiv social scheduling', () => {
       '2026-07-14T13:10:00.000Z',
     );
     expect(nextWeeklyScheduledForChannel('x', '2026-07-11', now)).toBe('2026-07-13T13:20:00.000Z');
+  });
+
+  it('reads the Kyiv calendar date for an instant, including the day after midnight', () => {
+    // 2026-08-31 00:27 Kyiv (EEST, UTC+3) is still 2026-08-30 21:27 UTC.
+    expect(kyivDateFor(new Date('2026-08-30T21:27:00.000Z'))).toBe('2026-08-31');
+    expect(kyivDateFor(new Date('2026-07-15T10:00:00.000Z'))).toBe('2026-07-15');
+  });
+
+  it('builds a trailing window of Kyiv dates ending at the given date, newest first', () => {
+    expect(recentKyivDates('2026-08-31', 5)).toEqual([
+      '2026-08-31',
+      '2026-08-30',
+      '2026-08-29',
+      '2026-08-28',
+      '2026-08-27',
+    ]);
+    expect(recentKyivDates('2026-09-02', 1)).toEqual(['2026-09-02']);
+  });
+
+  it('clamps the window to at least one day and at most thirty', () => {
+    expect(recentKyivDates('2026-08-31', 0)).toEqual(['2026-08-31']);
+    expect(recentKyivDates('2026-08-31', -3)).toEqual(['2026-08-31']);
+    expect(recentKyivDates('2026-08-31', 90)).toHaveLength(30);
   });
 
   it('validates persisted cadence and falls back per channel', () => {
