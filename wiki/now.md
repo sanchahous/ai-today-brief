@@ -4,8 +4,9 @@ Summary: над чим іде робота **прямо зараз**, що че�
 Живий файл — оновлювати при кожній зміні стану, не рідше раз на тиждень.
 Sources: `git log` / `gh pr list`, owner sessions 2026-08-06…29, catalog 2026-08-30,
 YouTube duration floor 120s 2026-09-02,
-Supabase uncached egress 2026-09-02
-Last updated: 2026-09-02
+Supabase uncached egress 2026-09-02,
+ElevenLabs TTS tooling 2026-09-03
+Last updated: 2026-09-03
 
 ---
 
@@ -24,6 +25,11 @@ Last updated: 2026-09-02
   (`WEEKLY_YOUTUBE_DURATION_MIN_SECONDS`). Після Save на Video-табі —
   Approve `video_final` / captions / thumbnail.
   (source: owner session 2026-09-02)
+
+- **ElevenLabs TTS tooling (2026-09-03, #346).** У репо — `library/tools/tts-generator/`
+  (console ZIP exporter + unpacker) і `library/tools/video-assembler/` на 18 сцен.
+  Робочі mp3/mp4 gitignored під `library/DD.MM.YYYY/`.
+  (source: [pipeline/video-production-workflow](pipeline/video-production-workflow.md))
 
 - **Вибір моделей OpenRouter переписано (2026-08-30), гілка `feat/openrouter-catalog-selection` поверх #343.**
   Сім кроків з [research/2026-08-30-openrouter-routing-api §12](research/2026-08-30-openrouter-routing-api.md):
