@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight } from '@/components/icons';
 import { LiteYouTube } from '@/components/weekly/lite-youtube';
 import { WEEKLY_COPY } from '@/components/weekly/copy';
+import { weeklyHeroDescriptions } from '@/components/weekly/weekly-hero';
 import type { WeeklyDigestHomeView } from '@/lib/digests';
 import type { Lang } from '@/lib/site';
 import { DigestCardClickTracker } from '@/components/analytics/home-click-trackers';
@@ -25,6 +26,7 @@ export function WeeklyDigestBlock({
   if (!digest) return null;
   const copy = WEEKLY_COPY[lang];
   const href = `/${lang}/weekly/${digest.slug}`;
+  const { standfirst, more } = weeklyHeroDescriptions(digest);
 
   return (
     <section
@@ -39,40 +41,57 @@ export function WeeklyDigestBlock({
             'radial-gradient(100% 140% at 100% 0%, rgba(240,192,64,.17), transparent 55%), var(--surface)',
         }}
       >
-        <div className="grid items-stretch gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(340px,.9fr)]">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(340px,.9fr)]">
           <div>
             <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
               {copy.eyebrow}
             </p>
             <h2
               id="weekly-digest-title"
-              className="mt-3 text-[clamp(2rem,4vw,3.3rem)] leading-tight"
+              className="mt-3 text-[clamp(1.5rem,2.4vw,2.15rem)] leading-tight"
             >
               {digest.title}
             </h2>
             <p className="text-faint mt-3 text-sm">
               {formatDate(digest.weekStart, lang)} — {formatDate(digest.weekEnd, lang)}
             </p>
-            {digest.intro ? (
-              <p className="text-muted mt-5 max-w-2xl text-base leading-7">{digest.intro}</p>
-            ) : (
-              <p className="text-muted mt-5 max-w-2xl text-base leading-7">{copy.latestSubtitle}</p>
-            )}
 
-            {digest.highlights.length ? (
-              <ul className="mt-6 grid gap-3">
-                {digest.highlights.slice(0, 5).map((highlight) => (
-                  <li
-                    key={highlight}
-                    className="text-muted grid grid-cols-[1rem_minmax(0,1fr)] gap-3 text-sm leading-6"
+            <p className="text-muted mt-5 max-w-2xl text-base leading-7">
+              {standfirst || copy.latestSubtitle}
+            </p>
+
+            {more || digest.highlights.length ? (
+              <details className="border-border group mt-5 w-full border-t pt-4">
+                <summary className="border-border bg-surface text-text hover:border-accent hover:text-accent rounded-pill inline-flex list-none items-center gap-2 border px-4 py-2.5 text-sm font-semibold transition-colors [&::-webkit-details-marker]:hidden">
+                  <span className="group-open:hidden">{copy.showMore}</span>
+                  <span className="hidden group-open:inline">{copy.showLess}</span>
+                  <span
+                    aria-hidden
+                    className="text-lg leading-none transition-transform group-open:rotate-45"
                   >
-                    <span aria-hidden className="text-accent font-bold">
-                      •
-                    </span>
-                    <span>{highlight}</span>
-                  </li>
-                ))}
-              </ul>
+                    +
+                  </span>
+                </summary>
+                {more ? (
+                  <p className="text-muted mt-4 max-w-2xl text-base leading-7">{more}</p>
+                ) : null}
+
+                {digest.highlights.length ? (
+                  <ul className="mt-6 grid gap-3">
+                    {digest.highlights.slice(0, 5).map((highlight) => (
+                      <li
+                        key={highlight}
+                        className="text-muted grid grid-cols-[1rem_minmax(0,1fr)] gap-3 text-sm leading-6"
+                      >
+                        <span aria-hidden className="text-accent font-bold">
+                          •
+                        </span>
+                        <span>{highlight}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </details>
             ) : null}
 
             <div className="mt-7 flex flex-wrap gap-3">
@@ -103,7 +122,7 @@ export function WeeklyDigestBlock({
               <Link
                 href={href}
                 aria-label={copy.readFull}
-                className="border-border bg-surface rounded-card relative block min-h-[14rem] self-stretch overflow-hidden border sm:min-h-[16rem]"
+                className="border-border bg-surface rounded-card relative block h-56 overflow-hidden border sm:h-64 lg:h-72"
               >
                 <Image
                   src={digest.cover.url}
@@ -119,7 +138,7 @@ export function WeeklyDigestBlock({
               <Link
                 href={href}
                 aria-label={copy.readFull}
-                className="border-border rounded-card block min-h-[14rem] self-stretch border sm:min-h-[16rem]"
+                className="border-border rounded-card block h-56 border sm:h-64 lg:h-72"
                 style={{
                   background:
                     'radial-gradient(90% 100% at 85% 5%, rgba(71,228,211,.18), transparent 60%), var(--surface-2)',

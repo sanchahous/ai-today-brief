@@ -12,20 +12,36 @@ function formatDate(value: string, lang: Lang) {
   }).format(new Date(`${value}T00:00:00Z`));
 }
 
+export interface WeeklyHeroDescriptions {
+  /** The short, editorially-crafted lead — always visible for SEO/AEO. */
+  standfirst: string | null;
+  /** The longer intro, shown only once the reader opens Show more. */
+  more: string | null;
+}
+
+/**
+ * The standfirst is the crafted SEO lead (see `WEEKLY_HERO_COPY_MAX_CHARS.standfirst`
+ * in editorial-llm.ts) and stays visible on first paint — hiding it behind a
+ * client-side toggle would bury the definition-block text engines and readers
+ * both expect above the fold. The full intro, when it adds anything beyond
+ * the standfirst, stays behind Show more so it doesn't compete with the
+ * visual.
+ */
 export function weeklyHeroDescriptions({
   intro,
   standfirst,
-}: Pick<WeeklyDigestView, 'intro' | 'standfirst'>): { fullDescription: string | null } {
-  const fullDescription = intro?.trim() || standfirst?.trim() || null;
-  return { fullDescription };
+}: Pick<WeeklyDigestView, 'intro' | 'standfirst'>): WeeklyHeroDescriptions {
+  const shortText = standfirst?.trim() || null;
+  const longText = intro?.trim() || null;
+  if (shortText && longText && longText !== shortText) {
+    return { standfirst: shortText, more: longText };
+  }
+  return { standfirst: shortText ?? longText, more: null };
 }
 
 export function WeeklyHero({ digest, lang }: { digest: WeeklyDigestView; lang: Lang }) {
   const copy = WEEKLY_COPY[lang];
-  // The display title supplies the first-view orientation. Both standfirst and
-  // full intro are description copy, so readers explicitly open them rather
-  // than starting every digest with a dense text wall.
-  const { fullDescription } = weeklyHeroDescriptions(digest);
+  const { standfirst, more } = weeklyHeroDescriptions(digest);
 
   return (
     <header className="border-border-soft border-b pb-10">
@@ -67,8 +83,14 @@ export function WeeklyHero({ digest, lang }: { digest: WeeklyDigestView; lang: L
           </p>
           {digest.cover ? <span className="sr-only">{digest.cover.alt}</span> : null}
 
-          {fullDescription ? (
-            <details className="border-border group mt-6 w-full border-t pt-4">
+          {standfirst ? (
+            <p className="text-muted mt-4 w-full text-base leading-7 sm:text-lg sm:leading-8">
+              {standfirst}
+            </p>
+          ) : null}
+
+          {more ? (
+            <details className="border-border group mt-4 w-full border-t pt-4">
               <summary className="border-border bg-surface text-text hover:border-accent hover:text-accent rounded-pill inline-flex list-none items-center gap-2 border px-4 py-2.5 text-sm font-semibold transition-colors [&::-webkit-details-marker]:hidden">
                 <span className="group-open:hidden">{copy.showMore}</span>
                 <span className="hidden group-open:inline">{copy.showLess}</span>
@@ -80,7 +102,7 @@ export function WeeklyHero({ digest, lang }: { digest: WeeklyDigestView; lang: L
                 </span>
               </summary>
               <p className="text-muted mt-4 w-full text-base leading-7 sm:text-lg sm:leading-8">
-                {fullDescription}
+                {more}
               </p>
             </details>
           ) : null}

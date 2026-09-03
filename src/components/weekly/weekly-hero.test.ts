@@ -2,28 +2,47 @@ import { describe, expect, it } from 'vitest';
 import { weeklyHeroDescriptions } from '@/components/weekly/weekly-hero';
 
 describe('weeklyHeroDescriptions', () => {
-  it('keeps all description copy behind Show more while the display title orients first view', () => {
+  it('keeps the standfirst visible and puts the full intro behind Show more', () => {
     expect(
       weeklyHeroDescriptions({
         standfirst: 'The short orientation.',
         intro: 'The full editorial explanation readers reach after opening Show more.',
       }),
     ).toEqual({
-      fullDescription: 'The full editorial explanation readers reach after opening Show more.',
+      standfirst: 'The short orientation.',
+      more: 'The full editorial explanation readers reach after opening Show more.',
     });
   });
 
-  it('falls back to the standfirst as expandable copy when no full intro exists', () => {
+  it('shows the intro directly, with no Show more, when no standfirst exists', () => {
+    expect(
+      weeklyHeroDescriptions({ standfirst: null, intro: 'Only available description.' }),
+    ).toEqual({
+      standfirst: 'Only available description.',
+      more: null,
+    });
+  });
+
+  it('shows the standfirst directly, with no Show more, when no intro exists', () => {
     expect(
       weeklyHeroDescriptions({ standfirst: 'Only available description.', intro: null }),
     ).toEqual({
-      fullDescription: 'Only available description.',
+      standfirst: 'Only available description.',
+      more: null,
     });
   });
 
-  it('uses an identical standfirst and intro only once', () => {
+  it('skips Show more when the standfirst and intro are the same copy', () => {
     expect(weeklyHeroDescriptions({ standfirst: 'Same copy.', intro: ' Same copy. ' })).toEqual({
-      fullDescription: 'Same copy.',
+      standfirst: 'Same copy.',
+      more: null,
+    });
+  });
+
+  it('returns nothing when neither field has copy', () => {
+    expect(weeklyHeroDescriptions({ standfirst: null, intro: '   ' })).toEqual({
+      standfirst: null,
+      more: null,
     });
   });
 });
