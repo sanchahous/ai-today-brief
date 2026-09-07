@@ -66,7 +66,7 @@
     "@supabase/supabase-js": "^2.115.0",
     "dejavu-fonts-ttf": "^2.37.3",
     "next": "^16.3.4",
-    "pdf-to-img": "^6.3.0",
+    "pdf-to-img": "^7.0.0",
     "pdfkit": "^0.17.2",
     "qrcode": "^1.5.4",
     "react": "19.2.8",
@@ -82,7 +82,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^5.0.0",
     "eslint": "^9",
     "eslint-config-next": "^16.3.4",
     "prettier": "^3.9.6",
@@ -91,7 +91,7 @@
     "tsx": "^4.23.13",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.69.0",
-    "vitest": "^4.1.7"
+    "vitest": "^5.0.0"
   },
   "overrides": {
     "brace-expansion": "1.1.16",
