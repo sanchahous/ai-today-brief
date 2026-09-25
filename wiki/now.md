@@ -10,7 +10,8 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-Last updated: 2026-09-03
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360)
+Last updated: 2026-09-25
 
 ---
 

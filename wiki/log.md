@@ -4868,3 +4868,9 @@ https://claude.ai/code/artifact/dc29256b-77f4-4941-a78d-b6a1710c4650. Код щ�
 Джерело: запит власника 2026-09-05; browser live review головної, Concepts, Guides, Toolbox, About; route-файли репозиторію.
 
 Створено [product/after-hours-redesign](product/after-hours-redesign.md): запропонований брендинг, палітра, адаптивні сторінки, UI/UX, motion, component contracts, маршрути, план реалізації й acceptance gates. Артефакти — `artifacts/after-hours/`; production-код не змінювався. Оновлено `wiki/index.md`. Нові дизайн-рішення явно відділені від фактів поточного сайту.
+
+## 2026-09-25 — Стан сайту та навігації
+
+Джерело: `origin/main` commit `3291b30` (#360), `src/components/site-header-chrome.tsx`, `src/app/[lang]/page.tsx`.
+
+Оновлено `wiki/now.md` та `wiki/index.md`: у desktop-навігації з’явилися Дайджести (на вузьких desktop-екранах посилання залишається в меню), також оновлено картку weekly на головній та видимість SEO-фрагмента перед «Показати більше».

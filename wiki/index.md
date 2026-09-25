@@ -10,7 +10,8 @@ first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
 SSG skip, ElevenLabs, LinkedIn PDF skip, social `?s=` URLs 2026-09-03
-Last updated: 2026-09-05
+desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05
+Last updated: 2026-09-25
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
