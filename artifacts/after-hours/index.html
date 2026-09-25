@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en" data-theme="night">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>After Hours — AI Today Brief design concept</title>
+    <link rel="icon" href="assets/mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="style.css" />
+    <script defer src="app.js"></script>
+    <script defer src="workspaces.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <div id="app"></div>
+    <dialog id="search-dialog" aria-labelledby="search-title">
+      <form method="dialog"><button class="close" aria-label="Close search">×</button></form>
+      <p class="eyebrow" id="search-title">Search the publication</p>
+      <label for="global-search" class="sr-only">Search</label
+      ><input
+        id="global-search"
+        type="search"
+        placeholder="Agents, MCP, caching…"
+        autocomplete="off"
+      />
+      <div id="search-results" aria-live="polite"></div>
+    </dialog>
+    <div id="toast" role="status"></div>
+  </body>
+</html>

@@ -4861,3 +4861,10 @@ https://claude.ai/code/artifact/dc29256b-77f4-4941-a78d-b6a1710c4650. Код щ�
 [research/2026-08-30-openrouter-routing-api §10a, §12](research/2026-08-30-openrouter-routing-api.md))
 
 ---
+
+
+## 2026-09-05 — After Hours: концепт редизайну
+
+Джерело: запит власника 2026-09-05; browser live review головної, Concepts, Guides, Toolbox, About; route-файли репозиторію.
+
+Створено [product/after-hours-redesign](product/after-hours-redesign.md): запропонований брендинг, палітра, адаптивні сторінки, UI/UX, motion, component contracts, маршрути, план реалізації й acceptance gates. Артефакти — `artifacts/after-hours/`; production-код не змінювався. Оновлено `wiki/index.md`. Нові дизайн-рішення явно відділені від фактів поточного сайту.

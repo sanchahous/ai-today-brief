@@ -1,0 +1,520 @@
+{
+  "date": "2026-09-05",
+  "contrasts": [
+    {
+      "theme": "night",
+      "foreground": "text",
+      "background": "bg",
+      "colors": [
+        "#f0e9dc",
+        "#171918"
+      ],
+      "ratio": 14.63,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "foreground": "muted",
+      "background": "bg",
+      "colors": [
+        "#b9b7ac",
+        "#171918"
+      ],
+      "ratio": 8.78,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "foreground": "text",
+      "background": "surface",
+      "colors": [
+        "#f0e9dc",
+        "#202421"
+      ],
+      "ratio": 13.02,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "foreground": "muted",
+      "background": "surface",
+      "colors": [
+        "#b9b7ac",
+        "#202421"
+      ],
+      "ratio": 7.81,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "foreground": "accent",
+      "background": "bg",
+      "colors": [
+        "#d4b483",
+        "#171918"
+      ],
+      "ratio": 8.96,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "foreground": "mint",
+      "background": "bg",
+      "colors": [
+        "#b5d8cc",
+        "#171918"
+      ],
+      "ratio": 11.49,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "foreground": "error",
+      "background": "bg",
+      "colors": [
+        "#efaaa0",
+        "#171918"
+      ],
+      "ratio": 9.19,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "foreground": "bg",
+      "background": "accent",
+      "colors": [
+        "#171918",
+        "#d4b483"
+      ],
+      "ratio": 8.96,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "foreground": "text",
+      "background": "bg",
+      "colors": [
+        "#232820",
+        "#f0e9dc"
+      ],
+      "ratio": 12.46,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "foreground": "muted",
+      "background": "bg",
+      "colors": [
+        "#606358",
+        "#f0e9dc"
+      ],
+      "ratio": 5.08,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "foreground": "text",
+      "background": "surface",
+      "colors": [
+        "#232820",
+        "#e7dfd0"
+      ],
+      "ratio": 11.36,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "foreground": "muted",
+      "background": "surface",
+      "colors": [
+        "#606358",
+        "#e7dfd0"
+      ],
+      "ratio": 4.63,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "foreground": "accent",
+      "background": "bg",
+      "colors": [
+        "#72562e",
+        "#f0e9dc"
+      ],
+      "ratio": 5.64,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "foreground": "mint",
+      "background": "bg",
+      "colors": [
+        "#2d6559",
+        "#f0e9dc"
+      ],
+      "ratio": 5.58,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "foreground": "error",
+      "background": "bg",
+      "colors": [
+        "#a13328",
+        "#f0e9dc"
+      ],
+      "ratio": 5.76,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "foreground": "bg",
+      "background": "accent",
+      "colors": [
+        "#f0e9dc",
+        "#72562e"
+      ],
+      "ratio": 5.64,
+      "minimum": 4.5,
+      "pass": true
+    }
+  ],
+  "hashes": {
+    "app.js": "38c4d35dabc19f30e811b9f0a969667832ea628e2ac1be2935cb0bc0d7927bc5",
+    "workspaces.js": "0c9134843f3fa8dd43a4267e57ba74218745d1e53f451bbbbf4bc01b1f7e5bcc",
+    "style.css": "d733f828ab26a88b7a23468bd8c7d0be28398f028a27862eed8249774092570b",
+    "tokens.css": "9b4a1cda59cfc9c5086c7a13a7267981e7a8d82a3cb34427f9b4b98db20e833b",
+    "tokens.json": "b9aabb255e615b59a671b92dd40524e6a9c734857b61dede6763d21852666f47",
+    "index.html": "67c3a0cb825543d588eb5a5e314c51827d4c7b6f6db95c86d1752166d9fc9ba0"
+  },
+  "media": [
+    {
+      "file": "404-desktop.png",
+      "width": 1440,
+      "height": 1000,
+      "format": "jpeg"
+    },
+    {
+      "file": "404-mobile.png",
+      "width": 375,
+      "height": 811,
+      "format": "jpeg"
+    },
+    {
+      "file": "about-desktop.png",
+      "width": 1424,
+      "height": 2021,
+      "format": "jpeg"
+    },
+    {
+      "file": "about-mobile.png",
+      "width": 375,
+      "height": 2909,
+      "format": "jpeg"
+    },
+    {
+      "file": "advertise-desktop.png",
+      "width": 1424,
+      "height": 1063,
+      "format": "jpeg"
+    },
+    {
+      "file": "advertise-mobile.png",
+      "width": 375,
+      "height": 1253,
+      "format": "jpeg"
+    },
+    {
+      "file": "article-desktop.png",
+      "width": 1424,
+      "height": 2665,
+      "format": "jpeg"
+    },
+    {
+      "file": "article-mobile.png",
+      "width": 375,
+      "height": 3284,
+      "format": "jpeg"
+    },
+    {
+      "file": "article-uk-day-viewport.jpg",
+      "width": 817,
+      "height": 3041,
+      "format": "jpeg"
+    },
+    {
+      "file": "categories-desktop.png",
+      "width": 1424,
+      "height": 1600,
+      "format": "jpeg"
+    },
+    {
+      "file": "categories-mobile.png",
+      "width": 375,
+      "height": 2363,
+      "format": "jpeg"
+    },
+    {
+      "file": "category-desktop.png",
+      "width": 1424,
+      "height": 1447,
+      "format": "jpeg"
+    },
+    {
+      "file": "category-mobile.png",
+      "width": 375,
+      "height": 2171,
+      "format": "jpeg"
+    },
+    {
+      "file": "concept-desktop.png",
+      "width": 1424,
+      "height": 2172,
+      "format": "jpeg"
+    },
+    {
+      "file": "concept-mobile.png",
+      "width": 375,
+      "height": 2616,
+      "format": "jpeg"
+    },
+    {
+      "file": "concepts-desktop.png",
+      "width": 1424,
+      "height": 1747,
+      "format": "jpeg"
+    },
+    {
+      "file": "concepts-mobile.png",
+      "width": 375,
+      "height": 2693,
+      "format": "jpeg"
+    },
+    {
+      "file": "daily-desktop.png",
+      "width": 1424,
+      "height": 2160,
+      "format": "jpeg"
+    },
+    {
+      "file": "daily-mobile.png",
+      "width": 375,
+      "height": 2959,
+      "format": "jpeg"
+    },
+    {
+      "file": "digests-desktop.png",
+      "width": 1424,
+      "height": 1896,
+      "format": "jpeg"
+    },
+    {
+      "file": "digests-mobile.png",
+      "width": 375,
+      "height": 2580,
+      "format": "jpeg"
+    },
+    {
+      "file": "guide-desktop.png",
+      "width": 1424,
+      "height": 2057,
+      "format": "jpeg"
+    },
+    {
+      "file": "guide-mobile.png",
+      "width": 375,
+      "height": 2648,
+      "format": "jpeg"
+    },
+    {
+      "file": "guides-desktop.png",
+      "width": 1424,
+      "height": 1493,
+      "format": "jpeg"
+    },
+    {
+      "file": "guides-mobile.png",
+      "width": 375,
+      "height": 1968,
+      "format": "jpeg"
+    },
+    {
+      "file": "home-desktop.png",
+      "width": 1440,
+      "height": 2757,
+      "format": "jpeg"
+    },
+    {
+      "file": "home-mobile.png",
+      "width": 375,
+      "height": 5178,
+      "format": "jpeg"
+    },
+    {
+      "file": "home-preview.jpg",
+      "width": 1425,
+      "height": 990,
+      "format": "jpeg"
+    },
+    {
+      "file": "instructions-desktop.png",
+      "width": 1424,
+      "height": 1247,
+      "format": "jpeg"
+    },
+    {
+      "file": "instructions-mobile.png",
+      "width": 375,
+      "height": 1503,
+      "format": "jpeg"
+    },
+    {
+      "file": "news-desktop.png",
+      "width": 1424,
+      "height": 1777,
+      "format": "jpeg"
+    },
+    {
+      "file": "news-mobile.png",
+      "width": 375,
+      "height": 3069,
+      "format": "jpeg"
+    },
+    {
+      "file": "policy-desktop.png",
+      "width": 1424,
+      "height": 1368,
+      "format": "jpeg"
+    },
+    {
+      "file": "policy-mobile.png",
+      "width": 375,
+      "height": 1628,
+      "format": "jpeg"
+    },
+    {
+      "file": "saved-desktop.png",
+      "width": 1440,
+      "height": 1000,
+      "format": "jpeg"
+    },
+    {
+      "file": "saved-mobile.png",
+      "width": 375,
+      "height": 1036,
+      "format": "jpeg"
+    },
+    {
+      "file": "search-desktop.png",
+      "width": 1424,
+      "height": 1821,
+      "format": "jpeg"
+    },
+    {
+      "file": "search-mobile.png",
+      "width": 375,
+      "height": 1916,
+      "format": "jpeg"
+    },
+    {
+      "file": "settings-desktop.png",
+      "width": 1424,
+      "height": 1179,
+      "format": "jpeg"
+    },
+    {
+      "file": "settings-mobile.png",
+      "width": 375,
+      "height": 1376,
+      "format": "jpeg"
+    },
+    {
+      "file": "states-desktop.png",
+      "width": 1424,
+      "height": 1576,
+      "format": "jpeg"
+    },
+    {
+      "file": "states-mobile.png",
+      "width": 375,
+      "height": 2211,
+      "format": "jpeg"
+    },
+    {
+      "file": "subscribe-desktop.png",
+      "width": 1424,
+      "height": 1251,
+      "format": "jpeg"
+    },
+    {
+      "file": "subscribe-mobile.png",
+      "width": 375,
+      "height": 1313,
+      "format": "jpeg"
+    },
+    {
+      "file": "system-desktop.png",
+      "width": 1424,
+      "height": 3162,
+      "format": "jpeg"
+    },
+    {
+      "file": "system-mobile.png",
+      "width": 375,
+      "height": 4627,
+      "format": "jpeg"
+    },
+    {
+      "file": "tool-desktop.png",
+      "width": 1424,
+      "height": 1292,
+      "format": "jpeg"
+    },
+    {
+      "file": "tool-mobile.png",
+      "width": 375,
+      "height": 1636,
+      "format": "jpeg"
+    },
+    {
+      "file": "tools-desktop.png",
+      "width": 1424,
+      "height": 1425,
+      "format": "jpeg"
+    },
+    {
+      "file": "tools-mobile.png",
+      "width": 375,
+      "height": 2136,
+      "format": "jpeg"
+    },
+    {
+      "file": "weekly-desktop.png",
+      "width": 1424,
+      "height": 2907,
+      "format": "jpeg"
+    },
+    {
+      "file": "weekly-mobile.png",
+      "width": 375,
+      "height": 3572,
+      "format": "jpeg"
+    }
+  ],
+  "scope": "Static token pairs and exported image integrity. Not a full WCAG or production performance audit."
+}

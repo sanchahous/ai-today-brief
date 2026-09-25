@@ -1,0 +1,517 @@
+{
+  "date": "2026-09-05",
+  "status": "verified-design-prototype",
+  "renderChecks": [
+    {
+      "route": "home",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "news",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "article",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "digests",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "daily",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "weekly",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "concepts",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "concept",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "guides",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "guide",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "tools",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "tool",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "categories",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "category",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "about",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "subscribe",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "search",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "saved",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "advertise",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "policy",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "404",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "system",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "states",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "settings",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "instructions",
+      "width": 1440,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "home",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "news",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "article",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "digests",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "daily",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "weekly",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "concepts",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "concept",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "guides",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "guide",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "tools",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "tool",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "categories",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "category",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "about",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "subscribe",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "search",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "saved",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "advertise",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "policy",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "404",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "system",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "states",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "settings",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    },
+    {
+      "route": "instructions",
+      "width": 390,
+      "brokenImages": 0,
+      "h1Count": 1,
+      "lang": "en",
+      "overflow": false
+    }
+  ],
+  "responsiveUK": {
+    "widths": [
+      360,
+      768,
+      1024
+    ],
+    "routes": [
+      "home",
+      "news",
+      "article",
+      "digests",
+      "daily",
+      "weekly",
+      "concepts",
+      "concept",
+      "guides",
+      "guide",
+      "tools",
+      "tool",
+      "categories",
+      "category",
+      "about",
+      "subscribe",
+      "search",
+      "saved",
+      "advertise",
+      "policy",
+      "404",
+      "system",
+      "states",
+      "settings",
+      "instructions"
+    ],
+    "checks": 75,
+    "failures": 0,
+    "theme": "day",
+    "source": "Browser DOM inspection in previous completed verification call"
+  },
+  "interactions": [
+    {
+      "test": "News category filter",
+      "pass": true
+    },
+    {
+      "test": "Weekly filter excludes daily editions",
+      "pass": true
+    },
+    {
+      "test": "Concept type filter",
+      "pass": true
+    },
+    {
+      "test": "Global search finds MCP",
+      "pass": true
+    },
+    {
+      "test": "Search empty state",
+      "pass": true
+    },
+    {
+      "test": "Save story and return",
+      "pass": true
+    },
+    {
+      "test": "Local tool transforms visible input",
+      "pass": true
+    },
+    {
+      "test": "Search closes with Escape",
+      "pass": true
+    },
+    {
+      "test": "Invalid email blocked",
+      "pass": true
+    },
+    {
+      "test": "Subscription demo confirmation",
+      "pass": true
+    },
+    {
+      "test": "Settings output generated",
+      "pass": true
+    },
+    {
+      "test": "Instructions output generated",
+      "pass": true
+    },
+    {
+      "test": "Mobile menu opens",
+      "pass": true
+    },
+    {
+      "test": "Mobile menu closes with Escape",
+      "pass": true
+    },
+    {
+      "test": "Day theme preserves page content",
+      "pass": true
+    },
+    {
+      "test": "Ukrainian localization",
+      "pass": true
+    }
+  ],
+  "scope": "Design prototype only. No production backend, SEO, full WCAG certification or measured CWV.",
+  "wikiCheck": {
+    "passed": true,
+    "errors": 0,
+    "warnings": 7,
+    "details": "QA.md"
+  }
+}

@@ -10,7 +10,7 @@ first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
 SSG skip, ElevenLabs, LinkedIn PDF skip, social `?s=` URLs 2026-09-03
-Last updated: 2026-09-03
+Last updated: 2026-09-05
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -102,6 +102,8 @@ Last updated: 2026-09-03
 | ✅ [marketing/omni-channel-publishing-matrix](marketing/omni-channel-publishing-matrix.md) | Верстка weekly digest під 6 соцканалів: блоки-примітиви з обовʼязковим `USE`, ліміти, лінки/хештеги, чек-лист; розбір релізу 20.08; Telegram Топ 3/Радар/CTA тепер детермінований гейт (2026-08-28) | `src/lib/social/quality.ts`, `social-adapter.ts`, `social-facts.ts`, `r/s/[token]/route.ts`, прод-розбір 2026-08-21 / 2026-08-28 |
 
 ## Product
+
+Концепція редизайну: [After Hours](product/after-hours-redesign.md) — брендинг, адаптивні макети, UI/UX, анімації та план реалізації. (source: запит власника 2026-09-05; `artifacts/after-hours/`)
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
