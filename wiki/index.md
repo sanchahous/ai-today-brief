@@ -10,8 +10,8 @@ first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
 SSG skip, ElevenLabs, LinkedIn PDF skip, social `?s=` URLs 2026-09-03
-desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05
-Last updated: 2026-09-25
+desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26
+Last updated: 2026-09-26
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -108,7 +108,9 @@ Last updated: 2026-09-25
 
 Motion-альтернативи: [After Hours motion](product/after-hours-motion.md) — Tension, Quiet Signal, Undertow; інтерактивна головна, фізика, hover/focus/press і критерії вибору. (source: запит власника 2026-09-25; `artifacts/after-hours-motion/`)
 
-Обраний напрям: [After Hours Tension v2](product/after-hours-tension.md) — дев’ять жестів у всіх 26 макетах, допрацьований Editorial Fold зі спільною опорою й покадровим переглядом, атлас руху й перевірки performance. (source: наступний запит власника 2026-09-25; `artifacts/after-hours/tension.js`)
+Обраний напрям: [After Hours Tension v2](product/after-hours-tension.md) — дев’ять жестів у всіх 26 макетах, допрацьований Editorial Fold зі спільною опорою й покадровим переглядом; актуальні QA та кадри — у `artifacts/after-hours-motion/QA-v2.md` і `screens/fold-refined/`. (source: запит власника 2026-09-25; `artifacts/after-hours/tension.js`; QA v2)
+
+Аудит повноти: [Design-system gap plan](audits/2026-09-26-design-system-gap-plan.md) — розриви concept↔production у filtering, sort semantics, taxonomy, pagination/URL-state, tokens, components, states і QA; пріоритетний план через News vertical slice. (source: скріншот і запит власника 2026-09-26; browser live review; code review)
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
@@ -152,6 +154,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | ✅ [audits/2026-08-23-gpt-image-prompt-plan-review](audits/2026-08-23-gpt-image-prompt-plan-review.md) | Review Prompt-as-Code/weekly UI: один primary candidate, safe-frame, localized display title і hash-fenced private staging → explicit versioned visual apply без зміни published text/SEO/PDF/social | owner-скріни + код-ревʼю + локальна browser/SQL-перевірка 2026-08-23/24 |
 | ✅ [audits/2026-08-29-weekly-digest-revision-architecture-review](audits/2026-08-29-weekly-digest-revision-architecture-review.md) | Чому реліз 28-29.08 знову зламався + план Етап 0/Етап 1; **Етап 0 реалізовано** (carry-forward, split text/asset, live preflight, save_error замість #441, CI drift check) | живий реліз 28-29.08.2026 + гілка `feat/weekly-revision-stage-0` |
 | ✅ [audits/2026-08-29-openrouter-spend-leak](audits/2026-08-29-openrouter-spend-leak.md) | Рахунок OpenRouter $9.16/2 доби при ledger $1.3: social-ранжування без ціни вивело Fable ($14/M) у чергу writer-а (51% рахунку), відкинуті спроби не обліковувались, ставки вигадані, кап $4 не глобальний — усі чотири виправлені | експорт OpenRouter Activity + прод `generation_cost_events` + живий каталог 2026-08-29 |
+| ✅ [audits/2026-09-26-design-system-gap-plan](audits/2026-09-26-design-system-gap-plan.md) | Повний аудит концепції й дизайн-системи: 20 розривів, цільовий News discovery contract, token/component architecture, milestones і acceptance tasks | owner screenshot + browser/code/concept review 2026-09-26 |
 
 ## Decisions (ADR)
 

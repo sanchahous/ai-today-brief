@@ -2,7 +2,7 @@
 
 **Поточний напрям — Tension v2, обраний власником.** Він розвинений для всіх макетів, отримав дев’ять жестів і брендовий **Editorial Fold**. [Повний прототип](http://127.0.0.1:4318/after-hours/#/home) · [атлас руху](http://127.0.0.1:4318/after-hours/#/motion) · [галерея 26 макетів](http://127.0.0.1:4318/after-hours-motion/gallery-v2.html) · [QA v2](QA-v2.md).
 
-**Editorial Fold допрацьовано:** спільна опора, впорядковане розкриття ребер, чистіша геометрія й плавна підготовка Replay. [Покадровий перегляд](http://127.0.0.1:4318/after-hours-motion/fold-review.html) · [деталі та перевірка](FOLD-REFINED.md). Попередні знімки галереї документують v2 до цього полірування; актуальні кадри — у `screens/fold-refined/`.
+**Editorial Fold допрацьовано:** спільна опора, впорядковане розкриття ребер, чистіша геометрія й плавна підготовка Replay. [Покадровий перегляд](http://127.0.0.1:4318/after-hours-motion/fold-review.html) · [QA v2](QA-v2.md) · актуальні кадри: [2200 мс](screens/fold-refined/frame-2200.jpg), [desktop](screens/fold-refined/home-desktop.jpg), [mobile](screens/fold-refined/home-mobile.jpg). Попередні знімки галереї документують v2 до цього полірування.
 
 **Article system допрацьовано 2026-09-26:** у живому прототипі доступні три повні, взаємно відмінні приклади — [редакційний аналіз](http://127.0.0.1:4318/after-hours/#/article?variant=analysis), [технічний гайд](http://127.0.0.1:4318/after-hours/#/article?variant=technical) і [evidence note](http://127.0.0.1:4318/after-hours/#/article?variant=evidence). Перемикач форматів є на початку кожної статті; URL можна передавати окремо.
 
