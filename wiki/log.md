@@ -4899,3 +4899,9 @@ https://claude.ai/code/artifact/dc29256b-77f4-4941-a78d-b6a1710c4650. Код щ�
 Джерело: уточнення власника про багатогранні production-like статті 2026-09-26; browser review production article і локального концепту; `src/components/story-body.tsx`; `artifacts/after-hours/app.js`.
 
 Коротку article-заглушку замінено трьома повними shareable станами: editorial analysis, technical field guide та evidence note. Кожен має власну інформаційну архітектуру, об’ємний двомовний приклад, TOC, схеми/таблиці або code, редакційні врізки, trust/disclosure та source ledger. Додано перемикач форматів і related-переходи, responsive-верстку та motion entrance для нових блоків. Desktop і 390 px, EN/UK, дублікати `id`, overflow та browser console перевірено; production-код не змінювався. Оновлено [product/after-hours-redesign](product/after-hours-redesign.md), README, QA v2 та `wiki/index.md`.
+
+## 2026-09-26 — Аудит повноти концепції та дизайн-системи
+
+Джерело: скріншот і запит власника 2026-09-26; browser live review `/en/news` на desktop і 390 px; `src/components/news/*`, `src/lib/news*`, `src/components/pagination.tsx`; `artifacts/after-hours/`; чинні E2E.
+
+Створено [audits/2026-09-26-design-system-gap-plan](audits/2026-09-26-design-system-gap-plan.md): зафіксовано 20 розривів concept↔production, зокрема неправдиві sort semantics, state, що не відновлюється з URL, обмежений data slice, відсутню taxonomy тегів, неповні tokens/component contracts і QA. Сформовано цільовий News discovery contract, архітектуру foundations→components→patterns, шість milestones (0–5), acceptance tasks і Definition of Done. Статус [product/after-hours-redesign](product/after-hours-redesign.md) уточнено: visual direction зберігається, але функціональна дизайн-система ще не завершена. Оновлено `wiki/index.md`; production-код і артефакт-прототип не змінювались.

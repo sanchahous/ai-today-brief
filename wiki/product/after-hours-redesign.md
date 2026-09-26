@@ -1,12 +1,14 @@
 # After Hours — концепт редизайну AI Today Brief
 
-Summary: готова до реалізації дизайн-концепція видання: брендинг, адаптивні макети, UI/UX, рух, маршрути та план впровадження. Статус: запропонований дизайн, не production-реліз.
+Summary: візуальна дизайн-концепція видання: брендинг, адаптивні макети, UI/UX, рух, маршрути та план впровадження. Статус: visual direction і page concepts готові до подальшого проєктування, але функціональна дизайн-система та discovery-contract ще не завершені.
 Sources: запит власника 2026-09-05 і уточнення про повноцінні різноманітні статті 2026-09-26; browser live review 2026-09-05 — https://aitodaybrief.com/en, /en/concepts, /en/guides, /en/tools, /en/about; browser review production article і локального прототипу 2026-09-26; `src/app/[lang]/page.tsx`, `src/app/[lang]/digests/page.tsx`, `src/app/[lang]/news/page.tsx`, `src/components/story-body.tsx`; `artifacts/after-hours/`; none (design proposals).
 Last updated: 2026-09-26
 
 ---
 
 ## 1. Рішення
+
+> **Статус 2026-09-26:** після аудиту concept↔production After Hours більше не вважається повністю готовою до реалізації дизайн-системою. Візуальний напрям зберігається; P0/P1 розриви у filtering, sort semantics, pagination/URL-state, taxonomy, tokens і component governance зафіксовані в [аудиті повноти дизайн-системи](../audits/2026-09-26-design-system-gap-plan.md). (source: owner feedback 2026-09-26; browser live review; design-system audit)
 
 **After Hours** — назва візуального напрямку. Публічна назва залишається **AI Today Brief**. Тепле темне тло, латунні акценти, кремовий текст, спокійна serif-типографіка та вузькі моноширинні метадані створюють атмосферу камерного американського джазового клубу. Відчуття майбутнього передають точна геометрія, celadon-сигнал і технічна ясність. Це пропозиція за брифом власника, не твердження про поточний бренд. (source: запит власника 2026-09-05; design proposal)
 
@@ -221,6 +223,7 @@ Last updated: 2026-09-26
 
 ## Related pages
 
+- [design-system-gap-plan](../audits/2026-09-26-design-system-gap-plan.md) — аудит розривів і порядок допрацювання
 - [overview](../overview.md)
 - [now](../now.md)
 - [card-images](../marketing/card-images.md)
