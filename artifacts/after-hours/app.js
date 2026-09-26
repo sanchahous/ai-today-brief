@@ -59,6 +59,7 @@ const labels = () => ({
   policy: t("Editorial & legal", "Політики"),
   system: t("Design system", "Дизайн-система"),
   states: t("UI states", "Стани UI"),
+  motion: t("Motion atlas", "Атлас руху"),
   404: "404",
 });
 const href = (route) => `#/${route}`;
@@ -67,8 +68,14 @@ const btn = (route, text, outline = false) =>
   link(route, `${text}<span aria-hidden="true">↗</span>`, `button${outline ? " outline" : ""}`);
 const eyebrow = (text) => `<p class="eyebrow">${text}</p>`;
 const arrow = '<span aria-hidden="true">↗</span>';
-const art = (caption = true) =>
-  `<div class="lead-art"><img src="assets/after-hours.png" alt="${t("Abstract brass sculpture with a pale green glass edge", "Абстрактна латунна скульптура зі світло-зеленим скляним краєм")}" width="1672" height="941">${caption ? `<span class="art-caption">${t("CONCEPT ART · AFTER HOURS", "КОНЦЕПТ-АРТ · AFTER HOURS")}</span>` : ""}</div>`;
+const art = (caption = true) => {
+  const comparison = document.getElementById("motion-lab");
+  const direction = new URLSearchParams(location.search).get("concept");
+  const tensionHome = !comparison || (direction !== "signal" && direction !== "tide");
+  // Render vector art immediately: do not download the old 1.8 MB hero only to replace it.
+  if (currentRoute() === "home" && tensionHome && typeof TensionMotion !== "undefined") return TensionMotion.brandMarkup(lang);
+  return `<div class="lead-art"><img src="assets/after-hours.png" alt="${t("Abstract brass sculpture with a pale green glass edge", "Абстрактна латунна скульптура зі світло-зеленим скляним краєм")}" width="1672" height="941">${caption ? `<span class="art-caption">${t("CONCEPT ART · AFTER HOURS", "КОНЦЕПТ-АРТ · AFTER HOURS")}</span>` : ""}</div>`;
+};
 const visual = (n) =>
   `<div class="card-visual" aria-hidden="true">${n % 3 === 0 ? '<div class="diagram-lines"><i></i><i></i><i></i></div>' : n % 3 === 1 ? '<div class="diagram-code">{ context }<br>→ action →</div>' : '<div class="diagram-orbit"></div>'}</div>`;
 const stories = () => [
@@ -81,7 +88,7 @@ const stories = () => [
       "Наступне важливе питання — що агент пам’ятає і хто це вирішує.",
     ),
     time: "09:40",
-    route: "article",
+    route: "article?variant=analysis",
   },
   {
     title: t("Prompt caching, beyond the price tag", "Prompt caching: більше, ніж економія"),
@@ -92,7 +99,7 @@ const stories = () => [
       "Практичний погляд на стабільний контекст, межі кешу та корисні вимірювання.",
     ),
     time: "09:15",
-    route: "article",
+    route: "article?variant=technical",
   },
   {
     title: t(
@@ -106,7 +113,7 @@ const stories = () => [
       "Спершу спроєктуйте перевірку, а потім додавайте автономність.",
     ),
     time: "08:50",
-    route: "article",
+    route: "article?variant=analysis",
   },
   {
     title: t("A benchmark is a starting point. What comes next?", "Бенчмарк — початок. Що далі?"),
@@ -117,7 +124,7 @@ const stories = () => [
       "Читайте завдання, умови та обмеження до таблиці лідерів.",
     ),
     time: "08:20",
-    route: "article",
+    route: "article?variant=evidence",
   },
   {
     title: t("Make the context window work for you", "Змусьте контекстне вікно працювати на вас"),
@@ -128,7 +135,7 @@ const stories = () => [
       "Коротка карта того, що варто включати в інструкції агента.",
     ),
     time: "07:45",
-    route: "article",
+    route: "article?variant=technical",
   },
 ];
 const categoryNames = () => [
@@ -244,8 +251,8 @@ const feedRows = (items) =>
 function news(category = false) {
   return `${intro(category ? t("TOPIC / 01", "ТЕМА / 01") : t("THE NEWSROOM", "СТРІЧКА НОВИН"), category ? "Agents <em>& MCP.</em>" : t("A clearer <em>signal.</em>", "Чіткіший <em>сигнал.</em>"), category ? t("Follow how agents connect, remember and act. Start with the concepts, then read the latest.", "Як агенти з’єднуються, пам’ятають і діють. Почніть із концептів, далі — останні матеріали.") : t("What is changing in AI, and why it matters to your work.", "Що змінюється в AI і чому це важливо для вашої роботи."))}${category ? `<div class="filters">${link("concept", "MCP ↗", "chip")}${link("concept", t("AI agents ↗", "AI-агенти ↗"), "chip")}${link("guide", t("Start with a guide ↗", "Почати з гайду ↗"), "chip")}</div>` : filterBar()}<div class="feed-layout"><div id="feed-content">${feedRows(stories().filter((s) => (category ? s.cat === "agents" : activeFilter === "all" || s.cat === activeFilter)))}<p class="meta spaced">${t("End of this demo selection.", "Кінець демонстраційної добірки.")}</p></div><aside class="sidebar">${eyebrow(t("READ IT YOUR WAY", "ЧИТАЙТЕ У СВОЄМУ ТЕМПІ"))}<h3>${t("Only have five minutes?", "Маєте лише п’ять хвилин?")}</h3><p>${t("Start with the daily brief for a focused overview.", "Почніть зі щоденного брифу для стислого огляду.")}</p>${link("daily", t("Read the daily brief ↗", "Читати щоденний бриф ↗"))}${link("saved", t("Your reading list ↗", "Ваше збережене ↗"))}<hr style="border:0;border-top:1px solid var(--line);margin:25px 0">${eyebrow(t("EXPLORE THE CONTEXT", "ДОСЛІДИТИ КОНТЕКСТ"))}${link("concept", "Model Context Protocol ↗")}${link("guide", t("Choosing a coding agent ↗", "Вибір агента для коду ↗"))}</aside></div><section class="section">${newsletter()}</section>`;
 }
-function byline() {
-  return `<div class="byline"><span class="avatar">OK</span><div>${t("Oleksandr Kuzmenko", "Олександр Кузьменко")}<br><span class="meta">${t("EDITOR · DEMONSTRATION LAYOUT", "РЕДАКТОР · ДЕМОНСТРАЦІЙНИЙ МАКЕТ")}</span></div><span class="meta">05.09.2026 · ${t("4 MIN READ", "4 ХВ ЧИТАННЯ")}</span></div>`;
+function byline(readTime = 4, format = t("DEMONSTRATION LAYOUT", "ДЕМОНСТРАЦІЙНИЙ МАКЕТ")) {
+  return `<div class="byline"><span class="avatar">OK</span><div>${t("Oleksandr Kuzmenko", "Олександр Кузьменко")}<br><span class="meta">${t("EDITOR", "РЕДАКТОР")} · ${format}</span></div><span class="meta">05.09.2026 · ${readTime} ${t("MIN READ", "ХВ ЧИТАННЯ")}</span></div>`;
 }
 function readShell(title, dek, tag, content, toc = ["overview", "context", "next", "sources"]) {
   const tocLabels = {
@@ -256,13 +263,270 @@ function readShell(title, dek, tag, content, toc = ["overview", "context", "next
   };
   return `<div class="breadcrumb">${link("home", t("Home", "Головна"))} / ${tag}</div><div class="article-top">${eyebrow(tag)}<h1>${title}</h1><p class="dek">${dek}</p>${byline()}</div><div class="article-layout"><nav class="toc" aria-label="${t("On this page", "На цій сторінці")}">${eyebrow(t("IN THIS STORY", "У МАТЕРІАЛІ"))}${toc.map((id) => `<a href="#${id}" data-anchor="${id}">${tocLabels[id]}</a>`).join("")}</nav><article class="reading">${content}</article><aside class="article-tools">${currentRoute() === "article" ? `<button class="button outline" data-save aria-pressed="${saved}">${saved ? t("Saved ✓", "Збережено ✓") : t("Save story +", "Зберегти +")}</button>` : ""}<button class="button outline" data-copy-link>${t("Copy link ↗", "Копіювати ↗")}</button></aside></div>`;
 }
+
+const articleVariantIds = ["analysis", "technical", "evidence"];
+
+function currentArticleVariant() {
+  const query = location.hash.split("?")[1] || "";
+  const value = new URLSearchParams(query).get("variant");
+  return articleVariantIds.includes(value) ? value : "analysis";
+}
+
+function articleVariantCards() {
+  return [
+    {
+      id: "analysis",
+      number: "01",
+      format: t("EDITORIAL ANALYSIS", "РЕДАКЦІЙНИЙ РОЗБІР"),
+      title: t("The agent era needs a better memory", "Епосі агентів потрібна краща пам’ять"),
+      description: t(
+        "A narrative news analysis with a thesis, architecture map, implications and uncertainty.",
+        "Наративний аналіз новини з тезою, картою архітектури, наслідками й невизначеністю.",
+      ),
+    },
+    {
+      id: "technical",
+      number: "02",
+      format: t("TECHNICAL FIELD GUIDE", "ТЕХНІЧНИЙ РОЗБІР"),
+      title: t("Prompt caching, beyond the price tag", "Prompt caching: більше, ніж економія"),
+      description: t(
+        "A practical developer story with a request anatomy, code, measurements and a rollout checklist.",
+        "Практичний матеріал для розробників: анатомія запиту, код, вимірювання й чекліст запуску.",
+      ),
+    },
+    {
+      id: "evidence",
+      number: "03",
+      format: t("EVIDENCE NOTE", "ДОКАЗОВА НОТАТКА"),
+      title: t("A benchmark is a starting point", "Бенчмарк — лише початок"),
+      description: t(
+        "An evidence-led research read with a claim ledger, confidence levels and transfer limits.",
+        "Доказовий розбір дослідження: реєстр тверджень, рівні впевненості й межі перенесення.",
+      ),
+    },
+  ];
+}
+
+function articleVariantPicker(active) {
+  const cards = articleVariantCards();
+  return `<section class="article-variant-picker" aria-labelledby="article-variant-title"><div class="article-variant-intro"><div>${eyebrow(t("ARTICLE SYSTEM / THREE FULL EXAMPLES", "СИСТЕМА СТАТЕЙ / ТРИ ПОВНІ ПРИКЛАДИ"))}<h2 id="article-variant-title">${t("One publication. Different reading jobs.", "Одне видання. Різні сценарії читання.")}</h2></div><p>${t("Switch formats to compare hierarchy, density and editorial modules. Each link opens a complete, shareable state.", "Перемикайте формати, щоб порівняти ієрархію, щільність і редакційні модулі. Кожне посилання відкриває повний стан із власною адресою.")}</p></div><div class="article-variant-grid">${cards
+    .map(
+      (card) =>
+        `<a class="article-variant-card${card.id === active ? " active" : ""}" href="#/article?variant=${card.id}"${card.id === active ? ' aria-current="page"' : ""}><span class="article-variant-number">${card.number}</span><span class="meta">${card.format}</span><strong>${card.title}</strong><span>${card.description}</span><i aria-hidden="true">↗</i></a>`,
+    )
+    .join("")}</div></section>`;
+}
+
+function articleTakeaways(items) {
+  return `<section class="article-takeaways" aria-labelledby="takeaways-title">${eyebrow(t("IN BRIEF / THREE SIGNALS", "КОРОТКО / ТРИ СИГНАЛИ"))}<h2 id="takeaways-title" class="sr-only">${t("Key takeaways", "Ключові висновки")}</h2><ol>${items
+    .map((item, index) => `<li><span>0${index + 1}</span><p>${item}</p></li>`)
+    .join("")}</ol></section>`;
+}
+
+function articleSourceLedger(items) {
+  return `<ol class="source-ledger">${items
+    .map(
+      ([label, note], index) =>
+        `<li><span>${String(index + 1).padStart(2, "0")}</span><div><strong>${label}</strong><p>${note}</p></div></li>`,
+    )
+    .join("")}</ol>`;
+}
+
+function articleShell(data) {
+  const related = articleVariantCards().filter((card) => card.id !== data.id);
+  return `<div class="breadcrumb">${link("home", t("Home", "Головна"))} / ${link("news", t("News", "Новини"))} / ${data.format}</div>${articleVariantPicker(data.id)}<div class="article-top article-top-rich">${eyebrow(data.tag)}<h1>${data.title}</h1><p class="dek">${data.dek}</p>${byline(data.readTime, data.format)}<div class="article-trust-row"><span>${t("HUMAN-EDITED", "ВІДРЕДАГОВАНО ЛЮДИНОЮ")}</span><span>${t("ILLUSTRATIVE CONCEPT COPY", "ДЕМОНСТРАЦІЙНИЙ ТЕКСТ")}</span><span>${data.sourceCount} ${t("SOURCE SLOTS", "ПОЗИЦІЇ ДЖЕРЕЛ")}</span></div></div><div class="article-layout article-layout-rich"><nav class="toc" aria-label="${t("On this page", "На цій сторінці")}">${eyebrow(t("IN THIS STORY", "У МАТЕРІАЛІ"))}${data.toc.map(([id, label]) => `<a href="#${id}" data-anchor="${id}">${label}</a>`).join("")}</nav><article class="reading reading-rich">${data.content}</article><aside class="article-tools article-tools-rich"><div class="article-format-note">${eyebrow(data.format)}<p>${data.readTime} ${t("min", "хв")} · ${data.sourceCount} ${t("source slots", "позиції джерел")}</p></div><button class="button outline" data-save aria-pressed="${saved}">${saved ? t("Saved ✓", "Збережено ✓") : t("Save story +", "Зберегти +")}</button><button class="button outline" data-copy-link>${t("Copy link ↗", "Копіювати ↗")}</button></aside></div><section class="article-related section" aria-labelledby="article-related-title">${sectionHead(t("Two other ways to tell the story.", "Ще два способи розповісти історію."))}<h2 class="sr-only" id="article-related-title">${t("Other article examples", "Інші приклади статей")}</h2><div class="grid2">${related.map((card) => `<a class="article-related-card" href="#/article?variant=${card.id}"><span class="meta">${card.number} / ${card.format}</span><strong>${card.title}</strong><span>${card.description}</span><i aria-hidden="true">↗</i></a>`).join("")}</div></section>${newsletter()}`;
+}
+
+function analysisArticle() {
+  const content = `<div class="article-disclosure">${t(
+    "This is a complete layout sample, not a published report. Named systems and evidence slots demonstrate the editorial structure without presenting demo claims as news.",
+    "Це повний приклад верстки, а не опублікований матеріал. Назви систем і місця для доказів демонструють редакційну структуру, не видаючи демо-твердження за новини.",
+  )}</div><div class="callout" id="overview">${eyebrow(t("WHY IT MATTERS", "ЧОМУ ЦЕ ВАЖЛИВО"))}<p>${t(
+    "Agent memory is becoming an architecture decision rather than a convenience feature. The useful question is not how much a system can retain, but which decisions should survive, for how long, and under whose authority.",
+    "Пам’ять агента стає архітектурним рішенням, а не зручною додатковою функцією. Важливе питання не в тому, скільки система може зберегти, а які рішення мають пережити сесію, як довго і під чиїм контролем.",
+  )}</p></div><figure class="article-hero article-hero-editorial">${art(false)}<figcaption>${t(
+    "Editorial concept image. In production, the caption identifies the image source, generation disclosure and verification status.",
+    "Редакційне концепт-зображення. У production підпис містить джерело, позначку про генерацію та статус перевірки.",
+  )}</figcaption></figure>${articleTakeaways([
+    t(
+      "Separate working context from durable memory. A transcript is not automatically a useful record.",
+      "Відокремлюйте робочий контекст від сталої пам’яті. Транскрипт не стає корисним записом автоматично.",
+    ),
+    t(
+      "Store decisions with provenance, scope and an expiry rule so future agents can challenge them.",
+      "Зберігайте рішення разом із походженням, межами дії та правилом завершення, щоб майбутній агент міг їх оскаржити.",
+    ),
+    t(
+      "Keep a human review gate wherever remembered context can change permissions, publishing or customer-facing output.",
+      "Залишайте людський review-gate там, де пам’ять може змінити дозволи, публікацію або результат для клієнта.",
+    ),
+  ])}<h2 id="signal">${t("The shift is governed memory, not endless context.", "Зміна — у керованій пам’яті, а не в безмежному контексті.")}</h2><p>${t(
+    "Early agent workflows treated every run as a clean room: instructions went in, a result came out, and the next session started again. That made failures visible, but repeated work expensive. The reaction was to retain more—longer transcripts, larger project files, automatically generated summaries and personal preferences.",
+    "Перші агентні процеси сприймали кожен запуск як чисту кімнату: інструкції входили, результат виходив, а наступна сесія починалася з нуля. Помилки були видимими, але повторення коштувало дорого. Відповіддю стало збереження більшого: довших транскриптів, більших файлів проєкту, автоматичних підсумків і персональних уподобань.",
+  )}</p><p>${t(
+    "More retained text solves repetition only until it becomes another source of ambiguity. A stale workaround can look like a current rule. An experiment can quietly become policy. A confident summary can outlive the evidence that produced it. The design problem is therefore editorial as much as technical: memory needs selection, hierarchy and correction.",
+    "Більше збереженого тексту вирішує повторення лише доти, доки саме не стає джерелом неоднозначності. Застарілий workaround може виглядати чинним правилом. Експеримент — непомітно перетворитися на політику. Впевнений підсумок — пережити докази, з яких виник. Тому це не лише технічна, а й редакційна задача: пам’яті потрібні відбір, ієрархія та виправлення.",
+  )}</p><blockquote>${t(
+    "The durable unit should be a decision with context—not a transcript without an editor.",
+    "Сталою одиницею має бути рішення з контекстом, а не транскрипт без редактора.",
+  )}</blockquote><h2 id="architecture">${t("A three-layer memory model.", "Тришарова модель пам’яті.")}</h2><p>${t(
+    "A practical system can divide remembered material by lifespan and authority. The layers below are not a vendor feature list; they are a review model that helps a team decide where information belongs.",
+    "Практична система може ділити збережену інформацію за тривалістю й рівнем повноважень. Шари нижче — не список функцій конкретного вендора, а модель перевірки, що допомагає команді визначити місце кожного факту.",
+  )}</p><div class="memory-stack"><section><span>01</span><div>${eyebrow(t("WORKING CONTEXT", "РОБОЧИЙ КОНТЕКСТ"))}<h3>${t("Useful for this run.", "Корисне для цього запуску.")}</h3><p>${t("Files, tool output and temporary hypotheses. Cheap to discard; dangerous to canonise automatically.", "Файли, відповіді інструментів і тимчасові гіпотези. Їх легко відкинути й небезпечно автоматично канонізувати.")}</p></div></section><section><span>02</span><div>${eyebrow(t("PROJECT MEMORY", "ПАМ’ЯТЬ ПРОЄКТУ"))}<h3>${t("Useful across a body of work.", "Корисне в межах спільної роботи.")}</h3><p>${t("Confirmed constraints, architecture decisions and named owners. Versioned, reviewable and close to the work they govern.", "Підтверджені обмеження, архітектурні рішення та відповідальні. Версійні, доступні для review і близькі до роботи, якою керують.")}</p></div></section><section><span>03</span><div>${eyebrow(t("ORGANISATIONAL POLICY", "ОРГАНІЗАЦІЙНА ПОЛІТИКА"))}<h3>${t("Useful only with explicit authority.", "Корисне лише з явними повноваженнями.")}</h3><p>${t("Security rules, publication gates and customer commitments. Changes need provenance, approval and an audit trail.", "Правила безпеки, publish-gates і зобов’язання перед клієнтами. Зміни потребують походження, схвалення й audit trail.")}</p></div></section></div><h2 id="decisions">${t("What changes for a product team?", "Що це змінює для продуктової команди?")}</h2><p>${t(
+    "Memory design begins before a database choice. Teams need to name the decisions an agent may make, the evidence it may retain and the point at which a person must intervene. Those boundaries should be visible in the product—not buried in a system prompt that only an engineer can inspect.",
+    "Проєктування пам’яті починається до вибору бази даних. Команда має назвати рішення, які агент може ухвалювати, докази, які може зберігати, і момент, коли має втрутитися людина. Ці межі мають бути видимими в продукті, а не захованими в system prompt, доступному лише інженеру.",
+  )}</p><div class="table-scroll"><table class="decision-table"><thead><tr><th>${t("If the agent remembers…", "Якщо агент пам’ятає…")}</th><th>${t("Require…", "Потрібно…")}</th><th>${t("Watch for…", "Стежте за…")}</th></tr></thead><tbody><tr><td>${t("A user preference", "Уподобання користувача")}</td><td>${t("Visibility and a delete control", "Видимість і можливість видалення")}</td><td>${t("Inference presented as consent", "Припущенням, виданим за згоду")}</td></tr><tr><td>${t("A project constraint", "Обмеження проєкту")}</td><td>${t("Owner, source and review date", "Власник, джерело й дата review")}</td><td>${t("A temporary workaround becoming permanent", "Перетворенням тимчасового workaround на правило")}</td></tr><tr><td>${t("A publishing decision", "Рішення про публікацію")}</td><td>${t("Human approval and an audit event", "Людське схвалення й audit event")}</td><td>${t("A summary replacing primary evidence", "Підміною першоджерела підсумком")}</td></tr></tbody></table></div><div class="editor-note">${eyebrow(t("EDITOR’S TAKE", "ПОГЛЯД РЕДАКТОРА"))}<p>${t(
+    "The strongest memory feature may be a clear way to forget. Expiry, supersession and visible correction reduce the authority of stale context without forcing every session to begin from zero.",
+    "Найсильнішою функцією пам’яті може бути зрозумілий спосіб забувати. Строк дії, заміна новішим рішенням і видиме виправлення зменшують авторитет застарілого контексту, не змушуючи кожну сесію починати з нуля.",
+  )}</p></div><h2 id="uncertainty">${t("What remains uncertain.", "Що лишається невизначеним.")}</h2><div class="uncertainty-grid"><section><strong>${t("Product evidence", "Продуктові докази")}</strong><p>${t("Teams still need longitudinal evidence that remembered context improves completed work rather than only reducing repeated prompts.", "Командам ще потрібні довгострокові докази, що збережений контекст покращує завершену роботу, а не лише скорочує повторні запити.")}</p></section><section><strong>${t("User control", "Контроль користувача")}</strong><p>${t("A technically correct memory can still surprise a person if it appears in the wrong place or cannot be inspected and corrected.", "Навіть технічно коректна пам’ять може здивувати людину, якщо з’являється не там або її неможливо переглянути й виправити.")}</p></section></div><h2 id="sources">${t("Sources & verification notes.", "Джерела й примітки перевірки.")}</h2><p>${t(
+    "A production story would link every factual claim to the primary report and mark the editor’s verification date. This concept shows the full source treatment while keeping the copy explicitly illustrative.",
+    "Production-матеріал пов’язує кожне фактичне твердження з першоджерелом і позначає дату редакторської перевірки. Концепт показує повне оформлення джерел, лишаючи текст явно демонстраційним.",
+  )}</p>${articleSourceLedger([
+    [t("Primary announcement / documentation", "Первинний анонс / документація"), t("Canonical source, publication date, version and the exact claim it supports.", "Канонічне джерело, дата публікації, версія й точне твердження, яке воно підтверджує.")],
+    [t("Independent technical analysis", "Незалежний технічний аналіз"), t("Used to test the vendor framing and identify limitations or missing context.", "Потрібен, щоб перевірити framing вендора й знайти обмеження або відсутній контекст.")],
+    [t("Editor verification log", "Журнал редакторської перевірки"), t("Names the checked facts, unresolved questions, corrections and final review date.", "Називає перевірені факти, відкриті питання, виправлення й дату фінального review.")],
+  ])}<div class="article-topic-links">${link("concept", "Model Context Protocol ↗")}${link("guide", t("Choosing an agent workflow ↗", "Вибір агентного процесу ↗"))}${link("policy", t("How we edit ↗", "Як ми редагуємо ↗"))}</div>`;
+  return {
+    id: "analysis",
+    format: t("EDITORIAL ANALYSIS", "РЕДАКЦІЙНИЙ РОЗБІР"),
+    tag: t("NEWS ANALYSIS / AGENTS & MCP", "АНАЛІЗ НОВИН / AGENTS & MCP"),
+    title: t("The agent era needs a better memory.", "Епосі агентів потрібна краща пам’ять."),
+    dek: t(
+      "The next useful question is not how much an agent remembers. It is which decisions survive, who can correct them, and when the system should forget.",
+      "Наступне важливе питання — не скільки агент пам’ятає. А які рішення зберігаються, хто може їх виправити й коли система має забути.",
+    ),
+    readTime: 8,
+    sourceCount: 3,
+    toc: [
+      ["overview", t("In brief", "Коротко")],
+      ["signal", t("The signal", "Головний сигнал")],
+      ["architecture", t("Memory model", "Модель пам’яті")],
+      ["decisions", t("Product decisions", "Продуктові рішення")],
+      ["uncertainty", t("Uncertainty", "Невизначеність")],
+      ["sources", t("Sources & notes", "Джерела й примітки")],
+    ],
+    content,
+  };
+}
+
+function technicalArticle() {
+  const content = `<div class="article-disclosure">${t(
+    "This field guide is production-shaped demonstration copy. The request structure and measurement plan are realistic; example values are labelled and are not benchmark results.",
+    "Це демонстраційний технічний матеріал із production-подібною структурою. Будова запиту й план вимірювання реалістичні; прикладні значення позначені й не є результатами бенчмарку.",
+  )}</div><div class="callout" id="overview">${eyebrow(t("THE PRACTICAL ANSWER", "ПРАКТИЧНА ВІДПОВІДЬ"))}<p>${t(
+    "Prompt caching works best when the request itself has an information architecture: stable instructions first, volatile task data last, and a clear boundary between the two. Cost is one outcome; predictable latency and easier debugging are often the more valuable ones.",
+    "Prompt caching найкраще працює, коли сам запит має інформаційну архітектуру: сталі інструкції на початку, змінні дані завдання наприкінці й чітка межа між ними. Економія — лише один наслідок; передбачувана затримка й простіше налагодження часто цінніші.",
+  )}</p></div><figure class="article-hero article-hero-system" aria-labelledby="cache-flow-caption"><div class="cache-flow" role="img" aria-label="${t("Stable project context flows into a cache boundary before task-specific input and verification", "Сталий контекст проєкту проходить через межу кешу перед даними конкретного завдання та перевіркою")}"><span><small>01</small>${t("System rules", "Системні правила")}</span><i aria-hidden="true">→</i><span><small>02</small>${t("Stable project context", "Сталий контекст проєкту")}</span><i aria-hidden="true">→</i><span class="cache-boundary"><small>03</small>${t("Cache boundary", "Межа кешу")}</span><i aria-hidden="true">→</i><span><small>04</small>${t("Task + evidence", "Завдання + докази")}</span></div><figcaption id="cache-flow-caption">${t(
+    "A cacheable prefix is a content contract, not a pile of text. Put stable material before the boundary and keep per-run evidence after it.",
+    "Кешований префікс — це контракт контенту, а не купа тексту. Розміщуйте сталі матеріали до межі, а докази конкретного запуску — після неї.",
+  )}</figcaption></figure>${articleTakeaways([
+    t("Optimise structure before token count: the same stable prefix should mean the same thing across requests.", "Оптимізуйте структуру до кількості токенів: той самий сталий префікс має означати те саме в різних запитах."),
+    t("Track cache hit rate together with first-token latency, output quality and the reason for every miss.", "Відстежуйте cache hit rate разом із first-token latency, якістю результату й причиною кожного промаху."),
+    t("Roll out by one repeated workflow. Caching a poorly scoped prompt only makes the wrong contract cheaper.", "Запускайте на одному повторюваному процесі. Кешування погано окресленого промпту лише здешевлює неправильний контракт."),
+  ])}<h2 id="anatomy">${t("The anatomy of a cacheable request.", "Анатомія запиту, який варто кешувати.")}</h2><p>${t(
+    "Start by reading the request in the order a model receives it. Global safety rules and stable role instructions usually change rarely. Project conventions change more often, but still belong to a versioned layer. The task, selected files, retrieved evidence and user correction are volatile by design.",
+    "Почніть із читання запиту в тому порядку, у якому його отримує модель. Глобальні правила безпеки й сталі інструкції ролі зазвичай змінюються рідко. Конвенції проєкту змінюються частіше, але теж належать до версійного шару. Завдання, вибрані файли, знайдені докази й уточнення користувача навмисно змінні.",
+  )}</p><p>${t(
+    "A good boundary is observable. You can name the version of the stable context, explain which change invalidated it and reproduce the uncached request. If a team cannot do those three things, the cache is hiding coupling rather than removing work.",
+    "Хороша межа спостережувана. Ви можете назвати версію сталого контексту, пояснити, яка зміна його інвалідувала, і відтворити запит без кешу. Якщо команда не може зробити ці три речі, кеш приховує зв’язність, а не прибирає роботу.",
+  )}</p><div class="request-layers"><section><span class="meta">STABLE / VERSIONED</span><h3>${t("Role and non-negotiables", "Роль і незмінні правила")}</h3><p>${t("Safety limits, output contract, durable project instructions and tool descriptions that truly belong in every run.", "Безпекові межі, контракт результату, сталі інструкції проєкту й описи інструментів, які справді потрібні в кожному запуску.")}</p></section><section><span class="meta">SEMI-STABLE / SELECTIVE</span><h3>${t("Workflow context", "Контекст процесу")}</h3><p>${t("Repository map, active decision records and the smallest reference set needed for this family of tasks.", "Карта репозиторію, активні decision records і найменший набір довідок, потрібний для цього типу завдань.")}</p></section><section><span class="meta">VOLATILE / PER RUN</span><h3>${t("Task and evidence", "Завдання й докази")}</h3><p>${t("User intent, changed files, tool output, current measurements and anything expected to differ on the next call.", "Намір користувача, змінені файли, відповіді інструментів, поточні вимірювання й усе, що має відрізнятися в наступному виклику.")}</p></section></div><h3>${t("A minimal request builder", "Мінімальний конструктор запиту")}</h3><pre class="article-code" aria-label="${t("JavaScript request builder example", "Приклад конструктора запиту JavaScript")}"><code><span class="code-comment">// stable-context@2026-09-05</span>&#10;const stablePrefix = await loadProjectContract();&#10;const taskEvidence = await collectCurrentEvidence(task);&#10;&#10;const request = {&#10;  system: stablePrefix,&#10;  input: { task, evidence: taskEvidence },&#10;  verify: ["goal", "diff", "tests", "uncertainty"],&#10;};&#10;&#10;const result = await runAgent(request);&#10;await reviewBeforePublish(result);</code></pre><p class="article-caption">${t(
+    "The example keeps the review step outside the generated result. A cache hit never grants permission to publish or apply a risky change.",
+    "Приклад залишає review-крок поза згенерованим результатом. Cache hit ніколи не дає дозволу на публікацію чи ризиковану зміну.",
+  )}</p><h2 id="measurement">${t("Measure the workflow, not the invoice alone.", "Вимірюйте процес, а не лише рахунок.")}</h2><p>${t(
+    "A lower token bill can coincide with a worse workflow if stale context increases retries or if a larger prefix delays the first useful output. Establish a small baseline before changing the request, then compare the same task family under the same review standard.",
+    "Нижчий рахунок за токени може співіснувати з гіршим процесом, якщо застарілий контекст збільшує кількість повторів або великий префікс затримує перший корисний результат. Зафіксуйте малу baseline до зміни запиту, а потім порівнюйте той самий тип завдань за однаковим стандартом review.",
+  )}</p><div class="metric-grid"><section><span>${t("HIT RATE", "ЧАСТКА HIT")}</span><strong>72%</strong><p>${t("Illustrative target for a repeated workflow, not a universal threshold.", "Демонстраційна ціль для повторюваного процесу, не універсальний поріг.")}</p></section><section><span>${t("FIRST TOKEN", "ПЕРШИЙ ТОКЕН")}</span><strong>−18%</strong><p>${t("Example comparison after keeping the stable prefix warm.", "Приклад порівняння після прогрівання сталого префікса.")}</p></section><section><span>${t("RETRY RATE", "ЧАСТКА RETRY")}</span><strong>0↔</strong><p>${t("Quality guard: savings do not count if retries increase.", "Quality guard: економія не рахується, якщо retry зростають.")}</p></section><section><span>${t("MISS REASONS", "ПРИЧИНИ MISS")}</span><strong>4</strong><p>${t("Version change, ordering, TTL and provider routing—name each one.", "Зміна версії, порядок, TTL і provider routing — назвіть кожну.")}</p></section></div><div class="table-scroll"><table><thead><tr><th>${t("Measure", "Метрика")}</th><th>${t("Why it matters", "Навіщо")}</th><th>${t("Failure signal", "Сигнал проблеми")}</th></tr></thead><tbody><tr><td>Cache hit rate</td><td>${t("Shows whether the boundary is stable in real traffic", "Показує, чи стабільна межа в реальному трафіку")}</td><td>${t("High variance between equivalent tasks", "Висока різниця між еквівалентними задачами")}</td></tr><tr><td>Time to first token</td><td>${t("Captures perceived responsiveness", "Відображає відчутну швидкість відповіді")}</td><td>${t("A larger prefix erases the benefit", "Більший префікс з’їдає виграш")}</td></tr><tr><td>Accepted-result rate</td><td>${t("Keeps quality attached to cost", "Пов’язує якість із вартістю")}</td><td>${t("More manual repair after a hit", "Більше ручного ремонту після hit")}</td></tr><tr><td>Miss reason</td><td>${t("Turns cache behaviour into a debuggable system", "Робить поведінку кешу придатною для налагодження")}</td><td>${t("Unknown misses become normal", "Невідомі промахи стають нормою")}</td></tr></tbody></table></div><h2 id="rollout">${t("A safe rollout in one afternoon.", "Безпечний запуск за один робочий цикл.")}</h2><div class="use-grid"><section class="use-card positive">${eyebrow(t("USE IT WHEN", "ВИКОРИСТОВУЙТЕ, КОЛИ"))}<ul><li>${t("The same instruction prefix serves a repeated task family.", "Той самий префікс інструкцій обслуговує повторюваний тип завдань.")}</li><li>${t("You can version the stable context independently of task data.", "Сталий контекст можна версіонувати окремо від даних завдання.")}</li><li>${t("Latency, quality and cost can be observed together.", "Затримку, якість і вартість можна спостерігати разом.")}</li></ul></section><section class="use-card caution">${eyebrow(t("WAIT WHEN", "ЗАЧЕКАЙТЕ, КОЛИ"))}<ul><li>${t("Every request assembles a different tool or evidence set.", "Кожен запит збирає інший набір інструментів або доказів.")}</li><li>${t("The prompt contract changes several times a day.", "Контракт промпту змінюється кілька разів на день.")}</li><li>${t("The team cannot explain why a miss occurred.", "Команда не може пояснити причину промаху.")}</li></ul></section></div><ol class="rollout-list"><li><span>01</span><div><strong>${t("Choose one repeated workflow.", "Оберіть один повторюваний процес.")}</strong><p>${t("Use a task with enough volume to observe, but low enough risk to review manually.", "Візьміть завдання з достатнім обсягом для спостереження, але низьким ризиком для ручного review.")}</p></div></li><li><span>02</span><div><strong>${t("Freeze and name the prefix.", "Зафіксуйте й назвіть префікс.")}</strong><p>${t("Record content hash, version, owner and the reason a future change should invalidate it.", "Запишіть content hash, версію, власника й причину, з якої майбутня зміна має його інвалідувати.")}</p></div></li><li><span>03</span><div><strong>${t("Run a paired comparison.", "Проведіть парне порівняння.")}</strong><p>${t("Compare equivalent tasks with the same model, provider route, output contract and reviewer.", "Порівнюйте еквівалентні задачі з тією самою моделлю, provider route, контрактом результату й reviewer.")}</p></div></li><li><span>04</span><div><strong>${t("Add a miss ledger before scaling.", "Додайте реєстр miss до масштабування.")}</strong><p>${t("Every miss needs a reason. Unknown is useful temporarily, not as a permanent category.", "Кожен miss потребує причини. Unknown корисний тимчасово, але не як постійна категорія.")}</p></div></li></ol><div class="editor-note">${eyebrow(t("EDITOR’S TAKE", "ПОГЛЯД РЕДАКТОРА"))}<p>${t(
+    "Prompt caching exposes whether a team actually knows what is stable in its own workflow. The cost graph is useful, but the sharper benefit is a better-separated request contract.",
+    "Prompt caching показує, чи команда справді розуміє, що є сталим у її процесі. Графік вартості корисний, але сильніший результат — краще розділений контракт запиту.",
+  )}</p></div><h2 id="sources">${t("Implementation notes & source slots.", "Примітки реалізації й позиції джерел.")}</h2>${articleSourceLedger([
+    [t("Provider caching documentation", "Документація провайдера про кешування"), t("Exact eligibility rules, TTL, billing semantics and invalidation behaviour for the selected route.", "Точні правила придатності, TTL, billing semantics і поведінка інвалідації для обраного маршруту.")],
+    [t("Application telemetry", "Телеметрія застосунку"), t("Request version, hit or miss, reason, latency and accepted-result signal—without storing private prompt text.", "Версія запиту, hit або miss, причина, затримка й accepted-result signal — без збереження приватного тексту промпту.")],
+    [t("Controlled comparison", "Контрольоване порівняння"), t("Same workflow, model route, reviewer and quality bar before and after the change.", "Той самий процес, маршрут моделі, reviewer і quality bar до та після зміни.")],
+    [t("Change log", "Журнал змін"), t("Every prefix version states what changed, who approved it and when results should be rechecked.", "Кожна версія префікса пояснює зміну, того, хто її схвалив, і момент повторної перевірки результатів.")],
+  ])}<div class="article-topic-links">${link("concept", t("Prompt caching concept ↗", "Концепт prompt caching ↗"))}${link("tool", t("Structure a prompt ↗", "Структурувати промпт ↗"))}${link("guide", t("Choose a coding workflow ↗", "Обрати процес роботи з кодом ↗"))}</div>`;
+  return {
+    id: "technical",
+    format: t("TECHNICAL FIELD GUIDE", "ТЕХНІЧНИЙ РОЗБІР"),
+    tag: t("FIELD GUIDE / COST & PERFORMANCE", "ТЕХНІЧНИЙ ГАЙД / ВАРТІСТЬ І ШВИДКІСТЬ"),
+    title: t("Prompt caching, beyond the price tag.", "Prompt caching: більше, ніж економія."),
+    dek: t("A cacheable prompt is an information architecture. Here is how to separate the stable prefix, measure the boundary and roll it out without hiding quality regressions.", "Промпт, який варто кешувати, — це інформаційна архітектура. Як відділити сталий префікс, виміряти межу й запустити її без прихованої втрати якості."),
+    readTime: 10,
+    sourceCount: 4,
+    toc: [
+      ["overview", t("Practical answer", "Практична відповідь")],
+      ["anatomy", t("Request anatomy", "Анатомія запиту")],
+      ["measurement", t("What to measure", "Що вимірювати")],
+      ["rollout", t("Safe rollout", "Безпечний запуск")],
+      ["sources", t("Notes & sources", "Примітки й джерела")],
+    ],
+    content,
+  };
+}
+function evidenceArticle() {
+  const content = `<div class="article-disclosure">${t(
+    "This research-note layout uses an illustrative benchmark scenario. The evidence hierarchy is the product: every score, setup and confidence label would link to a reproducible source in a published article.",
+    "Цей макет research note використовує демонстраційний сценарій бенчмарку. Ієрархія доказів — частина продукту: кожна оцінка, умова й рівень впевненості в опублікованій статті ведуть до відтворюваного джерела.",
+  )}</div><div class="callout" id="overview">${eyebrow(t("THE CLAIM IN ONE SENTENCE", "ТВЕРДЖЕННЯ ОДНИМ РЕЧЕННЯМ"))}<p>${t(
+    "A benchmark can show how a system behaved under one defined setup. It cannot, by itself, tell you whether the system fits your repository, review process or tolerance for failure.",
+    "Бенчмарк може показати поведінку системи в одних визначених умовах. Сам по собі він не відповідає, чи підходить система вашому репозиторію, процесу review або допустимому рівню помилок.",
+  )}</p></div><figure class="article-hero article-hero-evidence" aria-labelledby="evidence-hero-caption"><div class="evidence-frame"><section><span>01 / TASK</span><strong>${t("Repository change", "Зміна в репозиторії")}</strong><small>${t("Defined issue + hidden tests", "Визначена задача + приховані тести")}</small></section><section><span>02 / SETUP</span><strong>${t("Same tools", "Ті самі інструменти")}</strong><small>${t("Pinned model, budget and environment", "Зафіксовані модель, бюджет і середовище")}</small></section><section><span>03 / RESULT</span><strong>${t("Accepted diff", "Прийнятий diff")}</strong><small>${t("Not just a generated answer", "Не лише згенерована відповідь")}</small></section><section><span>04 / TRANSFER</span><strong>${t("Your workflow?", "Ваш процес?")}</strong><small>${t("Still needs a local check", "Ще потребує локальної перевірки")}</small></section></div><figcaption id="evidence-hero-caption">${t(
+    "Read a benchmark left to right, then test transferability right to left. The headline score is only one cell in the chain.",
+    "Читайте бенчмарк зліва направо, а перенесення перевіряйте справа наліво. Підсумкова оцінка — лише одна клітинка в ланцюгу.",
+  )}</figcaption></figure>${articleTakeaways([
+    t("Inspect the task definition and pass condition before comparing model names or aggregate scores.", "Перевірте визначення завдання й умову проходження до порівняння назв моделей або загальних балів."),
+    t("Treat tool access, retry budget and reviewer intervention as part of the result—not incidental setup details.", "Вважайте доступ до інструментів, бюджет retry і втручання reviewer частиною результату, а не другорядними деталями setup."),
+    t("Run a small local transfer test before changing a production workflow. Reproducibility is necessary; relevance is separate.", "Проведіть малий локальний transfer test до зміни production-процесу. Відтворюваність необхідна, але доречність — окреме питання."),
+  ])}<h2 id="reading">${t("Read the score backwards.", "Читайте оцінку у зворотному напрямку.")}</h2><p>${t(
+    "A leaderboard invites the eye to start with rank. A useful review begins at the other end: what counted as success, who judged it, what the system was allowed to do and which failures disappeared inside an average. Only then does the aggregate score become interpretable.",
+    "Таблиця лідерів спонукає починати з місця. Корисний review починається з іншого боку: що вважали успіхом, хто це оцінював, що система мала право робити й які провали зникли всередині середнього. Лише тоді загальний бал можна інтерпретувати.",
+  )}</p><p>${t(
+    "This is especially important for agent evaluations. A model, harness, tool policy and retry controller act together. Reporting only the model name compresses a system result into a product label. That may be convenient for a headline, but it is weak evidence for an engineering decision.",
+    "Це особливо важливо для оцінювання агентів. Модель, harness, tool policy і retry controller працюють разом. Якщо повідомляти лише назву моделі, системний результат стискається до product label. Для заголовка це зручно, але для інженерного рішення — слабкий доказ.",
+  )}</p><div class="evidence-ledger"><div class="evidence-ledger-head"><span>${t("CLAIM", "ТВЕРДЖЕННЯ")}</span><span>${t("EVIDENCE NEEDED", "ПОТРІБНИЙ ДОКАЗ")}</span><span>${t("TRANSFER RISK", "РИЗИК ПЕРЕНЕСЕННЯ")}</span></div><div><strong>${t("System A completes more tasks", "Система A завершує більше завдань")}</strong><p>${t("Per-task outcomes, pass condition and excluded runs", "Результати кожного завдання, умова проходження й виключені запуски")}</p><span class="confidence medium">${t("MEDIUM", "СЕРЕДНІЙ")}</span></div><div><strong>${t("The improvement comes from the model", "Покращення дає саме модель")}</strong><p>${t("Ablation across harness, tools, prompt and retry policy", "Ablation для harness, інструментів, промпту й retry policy")}</p><span class="confidence high">${t("HIGH", "ВИСОКИЙ")}</span></div><div><strong>${t("The result will hold in our repository", "Результат повториться в нашому репозиторії")}</strong><p>${t("Local task sample with the same review bar", "Локальна вибірка завдань із тим самим стандартом review")}</p><span class="confidence high">${t("HIGH", "ВИСОКИЙ")}</span></div><div><strong>${t("The workflow is cheaper overall", "Процес загалом дешевший")}</strong><p>${t("Total attempts, reviewer time and provider cost", "Усі спроби, час reviewer і вартість провайдера")}</p><span class="confidence medium">${t("MEDIUM", "СЕРЕДНІЙ")}</span></div></div><h2 id="evidence">${t("An evidence matrix, not a winner card.", "Матриця доказів, а не картка переможця.")}</h2><p>${t(
+    "The compact table below shows how a production article can keep numbers attached to their conditions. The values are intentionally illustrative; their job is to demonstrate hierarchy, footnotes and uncertainty without implying a real model comparison.",
+    "Компактна таблиця нижче показує, як production-стаття може тримати числа поруч з умовами. Значення навмисно демонстраційні: вони показують ієрархію, примітки й невизначеність, не імітуючи реальне порівняння моделей.",
+  )}</p><div class="table-scroll"><table class="benchmark-table"><thead><tr><th>${t("Illustrative system", "Демонстраційна система")}</th><th>${t("Accepted tasks", "Прийняті задачі")}</th><th>${t("Median attempts", "Медіана спроб")}</th><th>${t("Human repair", "Ручний ремонт")}</th><th>${t("Evidence grade", "Рівень доказу")}</th></tr></thead><tbody><tr><td>Baseline / A</td><td>18 / 30</td><td>1.8</td><td>7</td><td><span class="confidence medium">B / ${t("partial", "частково")}</span></td></tr><tr><td>Treatment / B</td><td>21 / 30</td><td>2.4</td><td>9</td><td><span class="confidence medium">B / ${t("partial", "частково")}</span></td></tr><tr><td>${t("Local transfer", "Локальне перенесення")}</td><td>4 / 8</td><td>2.0</td><td>3</td><td><span class="confidence low">C / ${t("small n", "мала n")}</span></td></tr></tbody></table></div><aside class="method-note"><strong>${t("How to read the demo", "Як читати демо")}</strong><p>${t(
+    "Treatment B has a higher accepted-task count, but also more attempts and repair. Without task-level data and a larger transfer sample, the strongest defensible conclusion is narrow: the setup deserves another controlled test.",
+    "Treatment B має більше прийнятих задач, але також більше спроб і ремонту. Без даних по кожному завданню й більшої transfer-вибірки найсильніший обґрунтований висновок вузький: setup заслуговує ще одного контрольованого тесту.",
+  )}</p></aside><h2 id="transfer">${t("Transfer is a second experiment.", "Перенесення — це другий експеримент.")}</h2><p>${t(
+    "Reproducibility asks whether another team can obtain the reported result under the documented setup. Transferability asks whether the result survives a change in repository, task mix, tool permissions, latency budget and reviewer expectations. The first protects the claim; the second protects your decision.",
+    "Відтворюваність питає, чи інша команда отримає заявлений результат у задокументованому setup. Переносимість — чи переживе результат зміну репозиторію, набору задач, дозволів інструментів, бюджету затримки й очікувань reviewer. Перше захищає твердження, друге — ваше рішення.",
+  )}</p><div class="transfer-grid"><section>${eyebrow(t("KEEP CONSTANT", "ЗАЛИШТЕ СТАЛИМ"))}<ul><li>${t("Task acceptance criteria", "Критерії прийняття задачі")}</li><li>${t("Review rubric", "Рубрику review")}</li><li>${t("Maximum attempts", "Максимальну кількість спроб")}</li><li>${t("Cost accounting", "Облік вартості")}</li></ul></section><section>${eyebrow(t("CHANGE DELIBERATELY", "ЗМІНЮЙТЕ НАВМИСНО"))}<ul><li>${t("Repository and codebase shape", "Репозиторій і форму кодової бази")}</li><li>${t("Task distribution", "Розподіл типів задач")}</li><li>${t("Tool and permission policy", "Політику інструментів і дозволів")}</li><li>${t("Reviewer familiarity", "Обізнаність reviewer")}</li></ul></section><section>${eyebrow(t("REPORT SEPARATELY", "ЗВІТУЙТЕ ОКРЕМО"))}<ul><li>${t("Correct first attempts", "Коректні перші спроби")}</li><li>${t("Recovered attempts", "Відновлені спроби")}</li><li>${t("Unsafe or unverifiable output", "Небезпечні або неперевірні результати")}</li><li>${t("Human repair time", "Час ручного ремонту")}</li></ul></section></div><h2 id="decision">${t("A decision framework for the next trial.", "Рамка рішення для наступного тесту.")}</h2><ol class="rollout-list"><li><span>01</span><div><strong>${t("Name the decision.", "Назвіть рішення.")}</strong><p>${t("Are you selecting a model, a complete agent system, a review policy or only a candidate for further testing?", "Ви обираєте модель, повну агентну систему, політику review чи лише кандидата на наступне тестування?")}</p></div></li><li><span>02</span><div><strong>${t("Set the local failure budget.", "Встановіть локальний бюджет помилки.")}</strong><p>${t("Define which failures are recoverable, which require a person and which stop the trial immediately.", "Визначте, які помилки відновлювані, які потребують людини, а які негайно зупиняють тест.")}</p></div></li><li><span>03</span><div><strong>${t("Choose representative tasks.", "Оберіть репрезентативні задачі.")}</strong><p>${t("Include ordinary work, one difficult edge case and one task the system should refuse or escalate.", "Додайте звичайну роботу, один складний edge case і одну задачу, яку система має відхилити або ескалувати.")}</p></div></li><li><span>04</span><div><strong>${t("Keep the evidence package.", "Збережіть пакет доказів.")}</strong><p>${t("Store inputs, environment, versions, outputs, review notes and the reason for every exclusion.", "Збережіть inputs, середовище, версії, outputs, review notes і причину кожного виключення.")}</p></div></li></ol><div class="voice-pair"><blockquote><p>${t("A score is useful when it narrows a decision. It is misleading when it replaces the conditions that produced it.", "Оцінка корисна, коли звужує рішення. Вона вводить в оману, коли замінює умови, що її створили.")}</p><cite>${t("Editorial interpretation", "Редакційна інтерпретація")}</cite></blockquote><blockquote><p>${t("The most honest outcome of a benchmark review can be: promising, not yet transferable.", "Найчеснішим результатом review бенчмарку може бути: перспективно, але ще не переноситься.")}</p><cite>${t("Decision note", "Примітка до рішення")}</cite></blockquote></div><h2 id="sources">${t("Evidence package & source ledger.", "Пакет доказів і реєстр джерел.")}</h2>${articleSourceLedger([
+    [t("Benchmark specification", "Специфікація бенчмарку"), t("Task set, exclusions, acceptance rules, evaluator and aggregation method.", "Набір задач, виключення, правила прийняття, evaluator і метод агрегації.")],
+    [t("Reproduction bundle", "Пакет відтворення"), t("Environment, versions, prompts, tool policy, seeds and task-level outcomes.", "Середовище, версії, промпти, tool policy, seeds і результати по кожній задачі.")],
+    [t("Independent review", "Незалежний review"), t("A second reader checks whether the written claim is narrower than—or equal to—the evidence.", "Другий читач перевіряє, що письмове твердження не ширше за докази.")],
+    [t("Local transfer run", "Локальний transfer run"), t("Representative internal tasks, the same quality bar and a separately reported small-sample limitation.", "Репрезентативні внутрішні задачі, той самий quality bar і окремо позначене обмеження малої вибірки.")],
+    [t("Correction history", "Історія виправлень"), t("Changes to data, interpretation or confidence remain visible after publication.", "Зміни даних, інтерпретації або рівня впевненості лишаються видимими після публікації.")],
+  ])}<div class="article-topic-links">${link("guide", t("Read the evaluation guide ↗", "Читати гайд з оцінювання ↗"))}${link("concept", t("Explore agent systems ↗", "Дослідити агентні системи ↗"))}${link("policy", t("Corrections policy ↗", "Політика виправлень ↗"))}</div>`;
+  return {
+    id: "evidence",
+    format: t("EVIDENCE NOTE", "ДОКАЗОВА НОТАТКА"),
+    tag: t("RESEARCH NOTE / MODELS & EVALUATION", "RESEARCH NOTE / МОДЕЛІ Й ОЦІНЮВАННЯ"),
+    title: t("A benchmark is a starting point. What comes next?", "Бенчмарк — початок. Що далі?"),
+    dek: t("A useful benchmark article keeps the task, setup, result and transfer limit together—then turns the headline score into a bounded engineering decision.", "Корисна стаття про бенчмарк тримає разом завдання, setup, результат і межу перенесення, а підсумкову оцінку перетворює на обмежене інженерне рішення."),
+    readTime: 9,
+    sourceCount: 5,
+    toc: [
+      ["overview", t("The claim", "Твердження")],
+      ["reading", t("Read the score", "Як читати оцінку")],
+      ["evidence", t("Evidence matrix", "Матриця доказів")],
+      ["transfer", t("Transfer test", "Transfer test")],
+      ["decision", t("Decision framework", "Рамка рішення")],
+      ["sources", t("Evidence ledger", "Реєстр доказів")],
+    ],
+    content,
+  };
+}
+
+function articleVariant() {
+  const variant = currentArticleVariant();
+  if (variant === "technical") return technicalArticle();
+  if (variant === "evidence") return evidenceArticle();
+  return analysisArticle();
+}
+
 function article() {
-  return readShell(
-    stories()[0].title,
-    stories()[0].summary,
-    "NEWS / AGENTS & MCP",
-    `<div class="callout" id="overview">${eyebrow(t("WHY IT MATTERS", "ЧОМУ ЦЕ ВАЖЛИВО"))}<p>${t("A useful agent workflow needs a clear boundary between temporary context and durable memory. This sample demonstrates how a short editorial takeaway can sit above the detail.", "Корисному процесу з агентами потрібна чітка межа між тимчасовим контекстом і сталою пам’яттю. Цей приклад показує розміщення короткого редакційного висновку перед деталями.")}</p></div>${art()}<p class="meta">${t("Abstract concept artwork. Illustrative editorial copy, not a published report.", "Абстрактний концепт-арт. Демонстраційний текст, не опублікована новина.")}</p><h2 id="context">${t("What should an agent remember?", "Що агент має пам’ятати?")}</h2><p>${t("Start with a practical question: when a task ends, which decisions should survive? A project constraint may belong in durable instructions. A temporary experiment may not.", "Почніть із практичного питання: коли завдання завершується, які рішення мають залишитися? Обмеження проєкту можуть належати до сталих інструкцій. Тимчасовий експеримент — не завжди.")}</p><p>${t("The reading experience separates the event, its implications and the next action. Readers can follow a concept link without losing the thread of the story.", "Досвід читання розділяє подію, її наслідки та наступну дію. Читачі можуть відкрити пояснення концепту, не втрачаючи нитку матеріалу.")} ${link("concept", t("Explore Model Context Protocol.", "Дізнатися про Model Context Protocol."))}</p><blockquote>${t("More context is only useful when it is the right context.", "Більше контексту корисно лише тоді, коли це потрібний контекст.")}</blockquote><h2 id="next">${t("A useful next step", "Корисний наступний крок")}</h2><p>${t("Review one recurring workflow. Write down its goal, the information it needs and what must be checked by a person before the result is used.", "Перегляньте один повторюваний процес. Запишіть мету, потрібну інформацію і те, що людина має перевірити перед використанням результату.")}</p>${link("guide", t("Continue: choosing your coding workflow ↗", "Далі: вибір процесу роботи з кодом ↗"))}<h2 id="sources">${t("Sources & editorial notes", "Джерела й редакційні примітки")}</h2><p>${t("This is sample copy for the redesign. In production, this section contains the primary report, its publication date, corrections and the editor’s verification date.", "Це приклад тексту для редизайну. У реалізації тут будуть першоджерело, дата публікації, виправлення й дата редакторської перевірки.")}</p>${link("policy", t("How we edit ↗", "Як ми редагуємо ↗"))}<h2>${t("Keep the thread going.", "Продовжуйте тему.")}</h2>${link("concept", "Model Context Protocol ↗")}<p>${link("daily", t("Return to the daily brief ↗", "Повернутися до брифу дня ↗"))}</p>`,
-  );
+  return articleShell(articleVariant());
 }
 function digests() {
   return `${intro(t("THE EDITIONS", "ВИПУСКИ"), t("Daily context.<br><em>Weekly perspective.</em>", "Контекст щодня.<br><em>Перспектива щотижня.</em>"), t("Choose a quick catch-up or make time for a deeper read.", "Оберіть короткий огляд або знайдіть час для глибшого читання."))}${filterBar("digests")}<div class="grid2">${activeFilter === "all" || activeFilter === "daily" ? `<article class="tool-card">${eyebrow(t("DAILY / 05 SEP 2026", "DAILY / 05 ВЕР 2026"))}<div class="tool-number">05<span style="font-size:18px"> / 09</span></div><h2>${t("Today, in five minutes.", "Сьогодні, за п’ять хвилин.")}</h2><p>${t("Memory, context and the decisions behind useful agents. A compact, finite read.", "Пам’ять, контекст і рішення за корисними агентами. Короткий завершений огляд.")}</p>${btn("daily", t("Read the daily brief", "Читати бриф дня"))}</article>` : ""}${activeFilter === "all" || activeFilter === "weekly" ? `<article class="week-cover">${eyebrow("WEEKLY / DESIGN EDITION")}<h3>${t("The shape<br>of what’s next.", "Контури<br>майбутнього.")}</h3><div class="spaced" style="position:relative;z-index:2">${btn("weekly", t("Read the weekly edition", "Читати тижневий випуск"))}</div></article>` : ""}</div><section class="section">${sectionHead(t("Previous editions", "Попередні випуски"))}${activeFilter === "weekly" ? `<p class="meta">${t("This preview contains one weekly edition.", "У цьому перегляді один тижневий випуск.")}</p>` : ""}${(activeFilter === "weekly" ? [] : ["04", "03", "02"]).map((d) => `<div class="index-row"><span class="term-letter">${d}</span><h2>${link("daily", t("The daily intelligence edit", "Щоденний редакційний бриф"))}</h2><p>${t("Illustrative archive entry · five-minute format", "Демонстраційний запис архіву · п’ятихвилинний формат")}</p><span class="meta">DAILY / SEP</span></div>`).join("")}</section>${newsletter()}`;
@@ -501,7 +765,7 @@ function system() {
     ["Celadon", "#b5d8cc"],
     ["Muted", "#b9b7ac"],
   ];
-  return `${intro("AI TODAY BRIEF / DESIGN DIRECTION 01", "After <em>Hours.</em>", t("The warmth of a jazz club. The precision of tomorrow’s publication.", "Тепло джазового клубу. Точність видання про майбутнє."))}<img class="brand-art" src="assets/after-hours.png" alt="After Hours concept artwork" width="1672" height="941"><section class="section">${sectionHead(t("The whole publication.", "Усе видання."))}<p>${t("25 linked screens. Select a page, switch EN / UK or change the reading theme in the header.", "25 пов’язаних екранів. Оберіть сторінку, перемкніть EN / UK або тему читання в шапці.")}</p><div class="screen-map">${routes.map((r, i) => link(r, `<span><small>${String(i + 1).padStart(2, "0")} / </small>${labels()[r]}</span>↗`)).join("")}</div></section><section class="section">${sectionHead(t("A palette with a point of view.", "Палітра з власним поглядом."))}<div class="brand-grid">${colors.map(([name, hex], i) => `<div class="swatch" style="background:${hex};color:${i < 2 ? "#f0e9dc" : "#171918"}">${name}<br>${hex}</div>`).join("")}</div><p class="spaced">${t("Brass guides action. Celadon marks useful signals. Color supports meaning; it never replaces labels.", "Латунь спрямовує дію. Celadon позначає корисні сигнали. Колір підтримує зміст, але не заміняє підписи.")}</p></section><section class="section"><div class="grid2"><div>${eyebrow("TYPE / EDITORIAL")}<h2 class="manifesto">${t("Tomorrow,<br><em>in context.</em>", "Майбутнє.<br><em>З контекстом.</em>")}</h2><p>Fraunces / 400 · Georgia ${t("for Ukrainian display", "для українських заголовків")}</p></div><div>${eyebrow("TYPE / FUNCTIONAL")}<p style="font-size:26px;color:var(--text);margin:22px 0">${t("Clarity is a form of care.", "Ясність — це форма турботи.")}</p><p>Inter / 400, 500, 600 · Latin + Cyrillic</p><p class="meta spaced">CONSOLAS / TIME, SOURCE, EDITION</p><div class="spaced">${btn("news", t("Primary action", "Головна дія"))} ${btn("news", t("Secondary", "Другорядна"), true)}</div></div></div></section><section class="section">${sectionHead(t("A mark with rhythm.", "Знак із ритмом."))}<div class="grid2"><div class="spec-card"><img src="assets/mark.svg" width="130" height="130" alt="After Hours ATB monogram"><h3 class="spaced">AI Today Brief</h3><p>${t("Nested A strokes evoke a groove; a celadon point places a signal just off the beat. The publication name stays unchanged.", "Вкладені лінії A нагадують доріжку; celadon-крапка зміщує сигнал із такту. Назва видання залишається незмінною.")}</p></div><div class="spec-card"><h3>${t("An editorial tempo.", "Редакційний темп.")}</h3><p>${t("140 ms for a response. 240 ms for a transition. 440 ms for a quiet entrance. No looping hero animation, autoplay audio or scroll hijacking.", "140 мс для відгуку. 240 мс для переходу. 440 мс для спокійної появи. Без циклічної анімації hero, автоматичного звуку чи перехоплення скролу.")}</p><p>${t("Hover a button or story artwork. Navigate to watch the page enter. Reduced-motion disables the movement.", "Наведіть на кнопку чи ілюстрацію. Перейдіть між сторінками, щоб побачити появу. Reduced-motion вимикає рух.")}</p></div></div></section>${newsletter()}`;
+  return `${intro("AI TODAY BRIEF / DESIGN DIRECTION 01", "After <em>Hours.</em>", t("The warmth of a jazz club. The precision of tomorrow’s publication.", "Тепло джазового клубу. Точність видання про майбутнє."))}<img class="brand-art" src="assets/after-hours.png" alt="After Hours concept artwork" width="1672" height="941"><section class="section">${sectionHead(t("The whole publication.", "Усе видання."))}<p>${t("26 linked screens. Select a page, switch EN / UK or change the reading theme in the header.", "26 пов’язаних екранів. Оберіть сторінку, перемкніть EN / UK або тему читання в шапці.")}</p><div class="screen-map">${routes.map((r, i) => link(r, `<span><small>${String(i + 1).padStart(2, "0")} / </small>${labels()[r]}</span>↗`)).join("")}</div></section><section class="section">${sectionHead(t("A palette with a point of view.", "Палітра з власним поглядом."))}<div class="brand-grid">${colors.map(([name, hex], i) => `<div class="swatch" style="background:${hex};color:${i < 2 ? "#f0e9dc" : "#171918"}">${name}<br>${hex}</div>`).join("")}</div><p class="spaced">${t("Brass guides action. Celadon marks useful signals. Color supports meaning; it never replaces labels.", "Латунь спрямовує дію. Celadon позначає корисні сигнали. Колір підтримує зміст, але не заміняє підписи.")}</p></section><section class="section"><div class="grid2"><div>${eyebrow("TYPE / EDITORIAL")}<h2 class="manifesto">${t("Tomorrow,<br><em>in context.</em>", "Майбутнє.<br><em>З контекстом.</em>")}</h2><p>Fraunces / 400 · Georgia ${t("for Ukrainian display", "для українських заголовків")}</p></div><div>${eyebrow("TYPE / FUNCTIONAL")}<p style="font-size:26px;color:var(--text);margin:22px 0">${t("Clarity is a form of care.", "Ясність — це форма турботи.")}</p><p>Inter / 400, 500, 600 · Latin + Cyrillic</p><p class="meta spaced">CONSOLAS / TIME, SOURCE, EDITION</p><div class="spaced">${btn("news", t("Primary action", "Головна дія"))} ${btn("news", t("Secondary", "Другорядна"), true)}</div></div></div></section><section class="section">${sectionHead(t("A mark with rhythm.", "Знак із ритмом."))}<div class="grid2"><div class="spec-card"><img src="assets/mark.svg" width="130" height="130" alt="After Hours ATB monogram"><h3 class="spaced">AI Today Brief</h3><p>${t("Nested A strokes evoke a groove; a celadon point places a signal just off the beat. The publication name stays unchanged.", "Вкладені лінії A нагадують доріжку; celadon-крапка зміщує сигнал із такту. Назва видання залишається незмінною.")}</p></div><div class="spec-card"><h3>${t("An editorial tempo.", "Редакційний темп.")}</h3><p>${t("140 ms for a response. 240 ms for a transition. 440 ms for a quiet entrance. No looping hero animation, autoplay audio or scroll hijacking.", "140 мс для відгуку. 240 мс для переходу. 440 мс для спокійної появи. Без циклічної анімації hero, автоматичного звуку чи перехоплення скролу.")}</p><p>${t("Hover a button or story artwork. Navigate to watch the page enter. Reduced-motion disables the movement.", "Наведіть на кнопку чи ілюстрацію. Перейдіть між сторінками, щоб побачити появу. Reduced-motion вимикає рух.")}</p></div></div></section>${newsletter()}`;
 }
 function states() {
   return `${intro("COMPONENT LIBRARY / STATES", t("Care is in<br><em>the details.</em>", "Турбота —<br><em>у деталях.</em>"), t("Explicit loading, empty, error and successful states.", "Явні стани завантаження, порожніх даних, помилки й успіху."))}<div class="grid2 section"><section class="spec-card" aria-busy="true">${eyebrow(t("LOADING", "ЗАВАНТАЖЕННЯ"))}<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><p>${t("Reserved geometry prevents the layout from jumping.", "Зарезервовані розміри не дають верстці стрибати.")}</p></section><section class="spec-card">${eyebrow(t("RECOVERABLE ERROR", "ПОМИЛКА З ВІДНОВЛЕННЯМ"))}<h3 class="mt">${t("The feed could not be refreshed.", "Не вдалося оновити стрічку.")}</h3><p>${t("Keep the last readable content and offer a retry.", "Збережіть останній доступний контент і запропонуйте повторну спробу.")}</p><button class="button outline" data-retry>${t("Try again", "Спробувати ще")}</button><p data-retry-status role="status"></p></section><section class="spec-card">${eyebrow(t("EMPTY", "ПОРОЖНІ ДАНІ"))}<h3 class="mt">${t("Nothing saved. Yet.", "Ще нічого не збережено.")}</h3><p>${t("Explain the state and give one useful next step.", "Поясніть стан і запропонуйте один корисний крок.")}</p>${btn("news", t("Browse stories", "Переглянути новини"), true)}</section><section class="spec-card">${eyebrow(t("FORM VALIDATION", "ВАЛІДАЦІЯ ФОРМИ"))}<form data-subscribe><label class="form-label" for="state-email">Email</label><input class="wide-input" id="state-email" type="email" required placeholder="you@example.com"><button class="button spaced">${t("Preview confirmation", "Переглянути підтвердження")}</button><p class="form-status" aria-live="polite"></p></form><p>${t("Submit an invalid email to see browser validation. A valid value shows the demo success state.", "Надішліть некоректний email для перевірки валідації. Коректне значення покаже демонстраційний успішний стан.")}</p></section></div><div class="filters"><button class="button" disabled>${t("Disabled action", "Недоступна дія")}</button>${btn("404", t("Preview 404", "Переглянути 404"), true)}${btn("search", t("Try empty search", "Спробувати порожній пошук"), true)}</div>`;
@@ -539,7 +803,11 @@ function render(reset = true) {
   const route = currentRoute();
   document.documentElement.lang = lang;
   document.documentElement.dataset.theme = theme;
-  document.title = `${labels()[route]} — AI Today Brief / After Hours`;
+  const routeTitle =
+    route === "article"
+      ? articleVariantCards().find((card) => card.id === currentArticleVariant())?.title
+      : labels()[route];
+  document.title = `${routeTitle || labels()[route]} — AI Today Brief / After Hours`;
   document.getElementById("app").innerHTML =
     `${header(route)}<main id="main" tabindex="-1" class="wrap page">${renderers[route]()}</main>${footer()}<div class="progress" aria-hidden="true"></div>`;
   if (reset) window.scrollTo(0, 0);

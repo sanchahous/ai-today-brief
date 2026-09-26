@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" data-theme="night" data-concept="tension">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <title>After Hours — Motion studies</title>
+    <link rel="icon" href="../after-hours/assets/mark.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../after-hours/tokens.css">
+    <link rel="stylesheet" href="../after-hours/style.css">
+    <link rel="stylesheet" href="motion.css">
+    <link rel="stylesheet" href="../after-hours/tension.css">
+    <script defer src="../after-hours/tension.js"></script>
+    <script defer src="../after-hours/app.js"></script>
+    <script defer src="../after-hours/workspaces.js"></script>
+    <script defer src="motion.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <div id="motion-lab"></div>
+    <div id="app"></div>
+    <dialog id="search-dialog" aria-labelledby="search-title">
+      <form method="dialog"><button class="close" aria-label="Close search">×</button></form>
+      <p class="eyebrow" id="search-title">Search the publication</p>
+      <label for="global-search" class="sr-only">Search</label>
+      <input id="global-search" type="search" placeholder="Agents, MCP, caching…" autocomplete="off">
+      <div id="search-results" aria-live="polite"></div>
+    </dialog>
+    <dialog id="motion-notes" aria-labelledby="motion-notes-title"></dialog>
+    <div id="toast" role="status"></div>
+  </body>
+</html>

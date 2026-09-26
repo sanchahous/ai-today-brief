@@ -1,0 +1,678 @@
+{
+  "date": "2026-09-25",
+  "desktop": {
+    "width": 1440,
+    "height": 1000
+  },
+  "mobile": {
+    "width": 390,
+    "height": 844
+  },
+  "routes": [
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "brand",
+        "reveal",
+        "settle",
+        "fold"
+      ],
+      "h1": "Tomorrow, in context.",
+      "overflow": false,
+      "peak": "28",
+      "quiet": "on",
+      "route": "home"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "index",
+        "settle"
+      ],
+      "h1": "A clearer signal.",
+      "overflow": false,
+      "peak": "8",
+      "quiet": "on",
+      "route": "news"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "reveal"
+      ],
+      "h1": "The agent era needs a better memory.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "article"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "fold",
+        "reveal",
+        "index",
+        "settle"
+      ],
+      "h1": "Daily context.Weekly perspective.",
+      "overflow": false,
+      "peak": "5",
+      "quiet": "on",
+      "route": "digests"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "index",
+        "settle"
+      ],
+      "h1": "A little clarity.Before you begin.",
+      "overflow": false,
+      "peak": "6",
+      "quiet": "on",
+      "route": "daily"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "fold",
+        "reveal",
+        "settle"
+      ],
+      "h1": "The shape ofwhat’s next.",
+      "overflow": false,
+      "peak": "5",
+      "quiet": "on",
+      "route": "weekly"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "index",
+        "reveal",
+        "settle"
+      ],
+      "h1": "Know the language.See the connections.",
+      "overflow": false,
+      "peak": "9",
+      "quiet": "on",
+      "route": "concepts"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "reveal"
+      ],
+      "h1": "Model ContextProtocol.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "concept"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "fold",
+        "reveal",
+        "index",
+        "settle"
+      ],
+      "h1": "Less guessing.Better decisions.",
+      "overflow": false,
+      "peak": "7",
+      "quiet": "on",
+      "route": "guides"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "reveal",
+        "settle"
+      ],
+      "h1": "Choose the agent.Keep your judgment.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "guide"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "fold"
+      ],
+      "h1": "Small tools.Considered craft.",
+      "overflow": false,
+      "peak": "6",
+      "quiet": "on",
+      "route": "tools"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "fold"
+      ],
+      "h1": "Give your prompta little structure.",
+      "overflow": false,
+      "peak": "5",
+      "quiet": "on",
+      "route": "tool"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "settle"
+      ],
+      "h1": "Follow yourcuriosity.",
+      "overflow": false,
+      "peak": "7",
+      "quiet": "on",
+      "route": "categories"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "index",
+        "settle"
+      ],
+      "h1": "Agents & MCP.",
+      "overflow": false,
+      "peak": "6",
+      "quiet": "on",
+      "route": "category"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "reveal",
+        "settle"
+      ],
+      "h1": "Intelligence deservesa human perspective.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "about"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [],
+      "h1": "A little perspective.In your inbox.",
+      "overflow": false,
+      "peak": "3",
+      "quiet": "on",
+      "route": "subscribe"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [],
+      "h1": "Find the thread.",
+      "overflow": false,
+      "peak": "3",
+      "quiet": "on",
+      "route": "search"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "settle"
+      ],
+      "h1": "For a quieter moment.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "saved"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "settle"
+      ],
+      "h1": "Reach peoplewho build.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "advertise"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "reveal"
+      ],
+      "h1": "The principlesbehind the brief.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "policy"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [],
+      "h1": "This trackis missing.",
+      "overflow": false,
+      "peak": "3",
+      "quiet": "on",
+      "route": "404"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "fold",
+        "reveal",
+        "settle"
+      ],
+      "h1": "After Hours.",
+      "overflow": false,
+      "peak": "6",
+      "quiet": "on",
+      "route": "system"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "settle"
+      ],
+      "h1": "Care is inthe details.",
+      "overflow": false,
+      "peak": "8",
+      "quiet": "on",
+      "route": "states"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "fold"
+      ],
+      "h1": "Make permissionsexplicit.",
+      "overflow": false,
+      "peak": "5",
+      "quiet": "on",
+      "route": "settings"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "fold"
+      ],
+      "h1": "A shared understanding.Written down.",
+      "overflow": false,
+      "peak": "5",
+      "quiet": "on",
+      "route": "instructions"
+    },
+    {
+      "viewport": "desktop",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "gestures": [
+        "brand",
+        "settle"
+      ],
+      "h1": "One material.Nine gestures.",
+      "overflow": false,
+      "peak": "24",
+      "quiet": "on",
+      "route": "motion"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Tomorrow, in context.",
+      "overflow": false,
+      "peak": "26",
+      "quiet": "on",
+      "route": "home"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "A clearer signal.",
+      "overflow": false,
+      "peak": "6",
+      "quiet": "on",
+      "route": "news"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "The agent era needs a better memory.",
+      "overflow": false,
+      "peak": "3",
+      "quiet": "on",
+      "route": "article"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Daily context.Weekly perspective.",
+      "overflow": false,
+      "peak": "5",
+      "quiet": "on",
+      "route": "digests"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "A little clarity.Before you begin.",
+      "overflow": false,
+      "peak": "5",
+      "quiet": "on",
+      "route": "daily"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "The shape ofwhat’s next.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "weekly"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Know the language.See the connections.",
+      "overflow": false,
+      "peak": "6",
+      "quiet": "on",
+      "route": "concepts"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Model ContextProtocol.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "concept"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Less guessing.Better decisions.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "guides"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Choose the agent.Keep your judgment.",
+      "overflow": false,
+      "peak": "3",
+      "quiet": "on",
+      "route": "guide"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Small tools.Considered craft.",
+      "overflow": false,
+      "peak": "5",
+      "quiet": "on",
+      "route": "tools"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Give your prompta little structure.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "tool"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Follow yourcuriosity.",
+      "overflow": false,
+      "peak": "5",
+      "quiet": "on",
+      "route": "categories"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Agents & MCP.",
+      "overflow": false,
+      "peak": "6",
+      "quiet": "on",
+      "route": "category"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Intelligence deservesa human perspective.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "about"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "A little perspective.In your inbox.",
+      "overflow": false,
+      "peak": "3",
+      "quiet": "on",
+      "route": "subscribe"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Find the thread.",
+      "overflow": false,
+      "peak": "3",
+      "quiet": "on",
+      "route": "search"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "For a quieter moment.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "saved"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Reach peoplewho build.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "advertise"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "The principlesbehind the brief.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "policy"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "This trackis missing.",
+      "overflow": false,
+      "peak": "3",
+      "quiet": "on",
+      "route": "404"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "After Hours.",
+      "overflow": false,
+      "peak": "6",
+      "quiet": "on",
+      "route": "system"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Care is inthe details.",
+      "overflow": false,
+      "peak": "6",
+      "quiet": "on",
+      "route": "states"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "Make permissionsexplicit.",
+      "overflow": false,
+      "peak": "5",
+      "quiet": "on",
+      "route": "settings"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "A shared understanding.Written down.",
+      "overflow": false,
+      "peak": "4",
+      "quiet": "on",
+      "route": "instructions"
+    },
+    {
+      "viewport": "mobile",
+      "active": "0",
+      "brokenImages": 0,
+      "engine": "v2",
+      "h1": "One material.Nine gestures.",
+      "overflow": false,
+      "peak": "24",
+      "quiet": "on",
+      "route": "motion"
+    }
+  ]
+}

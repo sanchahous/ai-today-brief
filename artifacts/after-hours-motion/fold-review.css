@@ -1,0 +1,23 @@
+body { margin: 0; }
+.fold-review { max-width: 1320px; padding: 32px 40px 60px; margin: auto; }
+.fold-review header { display: flex; justify-content: space-between; gap: 24px; padding-bottom: 32px; border-bottom: 1px solid var(--line); font: 10px/1.5 var(--mono); letter-spacing: .1em; }
+.fold-review header a { color: var(--brass); }
+.review-layout { display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 64px; margin-top: 48px; }
+.fold-review .brand-fold { min-height: 600px; }
+.review-notes h1 { font: 48px/1.1 var(--display); letter-spacing: -.045em; margin: 18px 0 24px; }
+.review-notes h1 em { color: var(--brass); font-weight: inherit; }
+.review-notes > p { color: var(--muted); margin-bottom: 18px; font-size: 15px; }
+.review-actions { display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0; }
+.review-timeline { border-top: 1px solid var(--line); padding-top: 22px; }
+.review-timeline label { display: flex; justify-content: space-between; font: 12px var(--mono); }
+.review-timeline input { width: 100%; min-height: 44px; padding: 0; accent-color: var(--brass); }
+.review-frames { display: flex; flex-wrap: wrap; gap: 8px; }
+.review-frames button { border: 1px solid var(--line); background: transparent; color: var(--muted); min-height: 44px; padding: 8px 12px; font: 10px var(--mono); cursor: pointer; }
+.review-frames button[aria-pressed="true"] { border-color: var(--brass); color: var(--paper); }
+.review-frames button:focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; }
+.review-timeline > p { margin-top: 16px; font-size: 12px; color: var(--muted); }
+.review-notes .tension-proof { margin-top: 24px; }
+.review-notes .tension-proof p { margin: 12px 0; }
+.review-notes code { overflow-wrap: anywhere; }
+@media(max-width: 900px) { .review-layout { grid-template-columns: 1fr; gap: 32px; } .fold-review .brand-fold { min-height: 500px; } }
+@media(max-width: 500px) { .fold-review { padding: 24px 20px; } .fold-review header span { max-width: 140px; text-align: right; } .review-layout { margin-top: 24px; } .fold-review .brand-fold { min-height: 420px; } .review-notes h1 { font-size: 38px; } }

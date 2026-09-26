@@ -1,0 +1,102 @@
+{
+  "date": "2026-09-25",
+  "browser": "Codex in-app Chromium",
+  "performance": {
+    "samples": 151,
+    "p95ms": 16.8,
+    "over34ms": 0,
+    "peakWAAPI": 24,
+    "activeAfter": 0,
+    "viewport": "1044×982"
+  },
+  "gestures": [
+    {
+      "gesture": "settle",
+      "active": "5"
+    },
+    {
+      "gesture": "fold",
+      "active": "6"
+    },
+    {
+      "gesture": "index",
+      "active": "3"
+    },
+    {
+      "gesture": "rule",
+      "active": "5"
+    },
+    {
+      "gesture": "press",
+      "active": "6"
+    },
+    {
+      "gesture": "focus",
+      "active": "2"
+    },
+    {
+      "gesture": "reveal",
+      "active": "2"
+    },
+    {
+      "gesture": "confirm",
+      "active": "3"
+    },
+    {
+      "gesture": "disclose",
+      "active": "2"
+    }
+  ],
+  "routeAudit": "route-audit-v2.json",
+  "actions": [
+    "news filter 2 results",
+    "save to reading list 1 result",
+    "TOC current location",
+    "search results and empty state",
+    "Escape closes search",
+    "weekly details toggle",
+    "prompt output",
+    "settings edit preview",
+    "instructions output",
+    "retry recovery",
+    "demo subscription confirmation",
+    "motion off across routes and reload"
+  ],
+  "limits": [
+    "No system media emulation",
+    "No physical touch device",
+    "No Safari or Firefox run",
+    "No CPU throttling",
+    "Frame sampling is not CWV"
+  ],
+  "payload": [
+    {
+      "name": "tension.js",
+      "bytes": 30299,
+      "gzipBytes": 9976,
+      "sha256": "757e2933dd56da0296027b11e13127f6f055027640a9888ef6ab4f08f8ba1cdc"
+    },
+    {
+      "name": "tension.css",
+      "bytes": 11946,
+      "gzipBytes": 2938,
+      "sha256": "a4e662474d41199e0d454fc908acd8a35fdce7548413d0271d7d11b37cf38609"
+    },
+    {
+      "name": "tension-init.js",
+      "bytes": 1083,
+      "gzipBytes": 560,
+      "sha256": "73733ca7d597e2a72999597fa95ae4c092ee8395ac1125ca40663ccceade5aa3"
+    }
+  ],
+  "additionalChecks": [
+    "EN/UK and Day/Night",
+    "mobile menu Escape",
+    "keyboard focus-visible",
+    "320 px without horizontal overflow",
+    "comparison Tension to Signal and back",
+    "comparison motion off persists to atlas",
+    "homepage DOM only requests mark.svg image",
+    "26 gallery cards and live links"
+  ]
+}

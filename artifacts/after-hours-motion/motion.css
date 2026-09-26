@@ -1,0 +1,108 @@
+/* Motion is an additional layer over the unchanged After Hours design. */
+:root {
+  --motion-response: 220ms;
+  --motion-settle: 680ms;
+  --motion-ease: cubic-bezier(.2,.75,.25,1);
+  --motion-distance: 4px;
+}
+html[data-concept="tension"] { --motion-response: 320ms; --motion-settle: 720ms; --motion-ease: cubic-bezier(.18,.9,.28,1.12); --motion-distance: 3px; }
+html[data-concept="tide"] { --motion-response: 460ms; --motion-settle: 1100ms; --motion-ease: cubic-bezier(.22,.61,.36,1); --motion-distance: 5px; }
+html { scroll-behavior: auto; scroll-padding-top: 100px; }
+.page { animation: none; }
+#motion-lab { display: contents; }
+.motion-bar {
+  position: sticky; top: 0; z-index: 30;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+  padding: 10px 24px; display: flex; align-items: center; gap: 22px;
+}
+.motion-brand { font: 10px/1.6 var(--mono); letter-spacing: .13em; color: var(--muted); white-space: nowrap; }
+.motion-brand strong { display: block; font-weight: 400; color: var(--accent); }
+.motion-options { display: flex; gap: 4px; }
+.motion-bar button { min-height: 44px; border: 1px solid transparent; border-radius: 3px; background: transparent; color: var(--muted); padding: 8px 13px; font-size: 12px; }
+.motion-options button[aria-pressed="true"] { border-color: var(--accent); color: var(--text); background: var(--surface); }
+.motion-bar button:hover { color: var(--text); background: var(--raised); }
+.motion-options small { color: var(--accent); margin-right: 8px; font: 10px var(--mono); }
+.motion-actions { display: flex; margin-left: auto; gap: 4px; }
+.motion-bar .motion-replay { color: var(--accent); }
+.motion-atlas-link { display: inline-flex; min-height: 44px; align-items: center; padding: 8px 12px; color: var(--accent); font-size: 12px; white-space: nowrap; }
+.motion-caption { display: flex; justify-content: space-between; gap: 20px; padding: 11px 24px; border-bottom: 1px solid var(--line); font-size: 11px; }
+.motion-caption span:first-child { color: var(--text); }
+.motion-caption span:last-child { color: var(--muted); }
+.preview { display: none; }
+.motion-notes-content { max-width: 710px; padding: 12px; }
+#motion-notes { width: min(790px, calc(100% - 32px)); max-height: 85dvh; }
+.motion-notes-content h2 { margin: 16px 0; }
+.motion-notes-content p { margin: 14px 0; }
+.motion-notes-content table { width: 100%; border-collapse: collapse; font-size: 12px; margin: 24px 0; }
+.motion-notes-content th, .motion-notes-content td { text-align: left; padding: 14px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.motion-notes-content th { color: var(--accent); font-weight: 500; }
+.motion-notes-content code { color: var(--mint); font-size: 12px; white-space: normal; }
+.motion-notes-content .motion-spec { padding: 16px; background: var(--surface); }
+.motion-status { font: 10px var(--mono); color: var(--muted); }
+.motion-line { position: absolute; top: -1px; left: 0; width: 100%; height: 1px; background: var(--accent); transform-origin: left; opacity: 0; pointer-events: none; }
+.dateline, .section-head, .mini-row, .newsletter { position: relative; }
+.section-head .motion-line { top: auto; bottom: -12px; }
+.motion-field { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; color: var(--brass); opacity: .52; }
+.motion-field path { fill: none; stroke: currentColor; stroke-width: .7; vector-effect: non-scaling-stroke; }
+.motion-field path:last-child { color: var(--mint); }
+.motion-signature { position: absolute; left: 16px; top: 16px; display: flex; align-items: center; gap: 8px; color: #f0e9dc; font: 9px var(--mono); letter-spacing: .15em; }
+.motion-signature::before { content: ""; width: 16px; height: 1px; background: var(--brass); }
+.lead:hover .lead-art img { transform: none; }
+.lead-art img { transition: none; }
+.button, .icon-btn, .card, .mini-row h3, .nav a, .signal-strip a, input {
+  transition: transform var(--motion-response) var(--motion-ease), background-color var(--motion-response) ease, border-color var(--motion-response) ease, color var(--motion-response) ease;
+}
+.button { position: relative; isolation: isolate; overflow: hidden; }
+.button span[aria-hidden] { display: inline-block; transition: transform var(--motion-response) var(--motion-ease); }
+.button::before { content: ""; position: absolute; z-index: -1; inset: 0; background: var(--text); opacity: .1; transform: translateX(-102%); transition: transform var(--motion-settle) var(--motion-ease); }
+.button:hover { background: var(--accent); border-color: var(--accent); transform: none; }
+.button.outline:hover { background: transparent; }
+.button:active, .icon-btn:active { transform: scale(.975); }
+.nav a, .signal-strip a, .section-head > a { position: relative; }
+.nav a::after, .signal-strip a::after, .section-head > a::after { content: ""; position: absolute; bottom: 9px; left: 0; right: 0; height: 1px; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform var(--motion-response) var(--motion-ease); }
+.signal-strip a::after, .section-head > a::after { bottom: -5px; }
+.nav a:is(:hover,:focus-visible)::after, .signal-strip a:is(:hover,:focus-visible)::after, .section-head > a:is(:hover,:focus-visible)::after { transform: scaleX(1); }
+.button:focus-visible span { transform: translate(3px,-3px); }
+input:focus { border-color: var(--mint); }
+.card { position: relative; }
+.card::after { content: ""; position: absolute; left: 0; top: 0; height: 1px; width: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform var(--motion-settle) var(--motion-ease); }
+.card:focus-within::after { transform: scaleX(1); }
+@media (hover: hover) and (pointer: fine) {
+  .button:hover::before { transform: translateX(0); }
+  .button:hover span[aria-hidden] { transform: translate(3px,-3px); }
+  .mini-row:hover h3 { transform: translateX(var(--motion-distance)); }
+  .card:hover::after { transform: scaleX(1); }
+  [data-concept="tension"] .button:hover { transform: translateY(-2px); }
+  [data-concept="tension"] .card:hover { transform: translateY(-3px); }
+  [data-concept="tension"] .button::before { transform: scaleX(0); transform-origin: center; }
+  [data-concept="tension"] .button:hover::before { transform: scaleX(1); }
+  [data-concept="tension"] .card::after, [data-concept="tension"] .nav a::after { transform-origin: center; }
+  [data-concept="tide"] .button::before { border-radius: 50%; inset: -180% -30%; transform: translateY(75%) scale(.6); }
+  [data-concept="tide"] .button:hover::before { transform: translateY(0) scale(1); }
+  [data-concept="tide"] .card:hover { transform: translateY(-2px); }
+  [data-concept="tide"] .nav a::after { transform-origin: center; }
+}
+html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="off"] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+html[data-motion="off"] .button, html[data-motion="off"] .card, html[data-motion="off"] .mini-row h3, html[data-motion="off"] .button span { transform: none !important; }
+html[data-motion="off"] .motion-field { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  .button, .card, .mini-row h3, .button span { transform: none !important; }
+  .motion-field { display: none; }
+}
+@media (max-width: 1050px) {
+  .motion-bar { flex-wrap: wrap; gap: 5px 14px; padding: 8px 16px; }
+  .motion-brand { display: none; }
+  .motion-bar button { padding: 8px 10px; }
+  .motion-caption { padding: 10px 20px; }
+  .motion-caption span:last-child { display: none; }
+}
+@media (max-width: 620px) {
+  .motion-options { width: 100%; justify-content: space-between; }
+  .motion-options button { flex: 1; padding: 7px; font-size: 11px; }
+  .motion-options small { margin-right: 4px; }
+  .motion-actions { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+  .motion-actions button { font-size: 11px; }
+  .motion-caption { font-size: 10px; }
+  html { scroll-padding-top: 130px; }
+}

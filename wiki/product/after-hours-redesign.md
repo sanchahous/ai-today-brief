@@ -1,8 +1,8 @@
 # After Hours — концепт редизайну AI Today Brief
 
 Summary: готова до реалізації дизайн-концепція видання: брендинг, адаптивні макети, UI/UX, рух, маршрути та план впровадження. Статус: запропонований дизайн, не production-реліз.
-Sources: запит власника 2026-09-05; browser live review 2026-09-05 — https://aitodaybrief.com/en, /en/concepts, /en/guides, /en/tools, /en/about; `src/app/[lang]/page.tsx`, `src/app/[lang]/digests/page.tsx`, `src/app/[lang]/news/page.tsx`; `artifacts/after-hours/`; none (design proposals).
-Last updated: 2026-09-05
+Sources: запит власника 2026-09-05 і уточнення про повноцінні різноманітні статті 2026-09-26; browser live review 2026-09-05 — https://aitodaybrief.com/en, /en/concepts, /en/guides, /en/tools, /en/about; browser review production article і локального прототипу 2026-09-26; `src/app/[lang]/page.tsx`, `src/app/[lang]/digests/page.tsx`, `src/app/[lang]/news/page.tsx`, `src/components/story-body.tsx`; `artifacts/after-hours/`; none (design proposals).
+Last updated: 2026-09-26
 
 ---
 
@@ -36,7 +36,7 @@ Last updated: 2026-09-05
 |---|---|---|
 | `home` | `/[lang]` | Brand promise → дата останнього випуску → lead + daily → актуальні теми → 3 новини → weekly → Concepts / Guides / Toolbox → newsletter |
 | `news` | `/[lang]/news` | Назва → тематичні фільтри → хронологічні рядки → daily sidebar → пагінація |
-| `article` | `/[lang]/news/[category]/[item]` | Breadcrumb → категорія → headline/dek → byline/date → why it matters → текст/ілюстрація → практичний наслідок → джерела/виправлення → related |
+| `article` | `/[lang]/news/[category]/[item]` | Спільна trust-оболонка + форматний body: редакційний аналіз, технічний гайд або evidence note → TOC → джерела/виправлення → related |
 | `digests` | `/[lang]/digests` | Daily / Weekly / All → актуальні випуски → хронологічний архів |
 | `daily` | `/[lang]/[brief]` | Дата й теза → короткий вступ → нумеровані матеріали → одна практична дія → архів/підписка |
 | `weekly` | `/[lang]/weekly/[slug]` | Редакційна назва/cover → зміст → спільна теза → розділи → action board → джерела → інші випуски |
@@ -59,7 +59,17 @@ Last updated: 2026-09-05
 | `404` | Наявний not-found | Коротке пояснення → головна/пошук; без тупика |
 | `system`, `states` | Тільки артефакт, не публічні routes | Палітра, бренд, типографіка, каталог екранів і крайові стани |
 
-Кожен detail-макет показує репрезентативний контент свого типу. Прототип не дублює всі наявні статті та логіку утиліт. У production картка переходить на власний slug; у макеті кілька карток можуть показувати один detail-шаблон. (source: `artifacts/after-hours/app.js`; design proposal)
+### Система повноцінних статей
+
+`#/article` має три окремі shareable стани, а не одну коротку заглушку: `?variant=analysis`, `?variant=technical`, `?variant=evidence`. Спільними лишаються breadcrumb, format switcher, headline/dek, byline, trust labels, sticky TOC, reading column, save/copy, related і newsletter. Вміст та ритм body змінюються відповідно до редакційної задачі. (source: уточнення власника 2026-09-26; `artifacts/after-hours/app.js`; design proposal)
+
+| Формат | Повноцінні модулі прикладу | Редакційна задача |
+|---|---|---|
+| Editorial analysis | why it matters, hero/caption, takeaways, довга теза, цитата, 3-шарова модель, decision table, editor’s take, uncertainty, source ledger | Пояснити значення новини, її наслідки та межі впевненості |
+| Technical field guide | practical answer, cache-flow схема, request anatomy, code sample, метрики, вимірювальна таблиця, use/wait, rollout, editor’s take, source ledger | Дати інженеру відтворюваний спосіб перевірити й упровадити підхід |
+| Evidence note | claim, evidence frame, takeaways, claim/evidence/risk ledger, benchmark table, methodology note, transfer test, decision framework, paired quotes, source ledger | Відділити результат дослідження від ширших висновків і production-рішення |
+
+Усі числа й твердження прикладів позначені як illustrative concept copy. У production вони мають походити з реального story payload і первинних джерел; URL-варіанти концепту не заміняють production slug або тип контенту. Інші detail-макети показують репрезентативний контент свого типу й можуть обслуговувати кілька карток. (source: `artifacts/after-hours/app.js`; `src/components/story-body.tsx`; design proposal)
 
 ## 4. Брендинг і візуальні правила
 
@@ -143,6 +153,8 @@ Last updated: 2026-09-05
 Усе вище — запропоновані сценарії; ефективність потребує usability-перевірки. (source: design proposal)
 
 ## 7. Анімації
+
+**Оновлено 2026-09-25:** власник обрав і розвинув [Tension v2](after-hours-tension.md). Спільний прототип тепер містить дев’ять жестів та брендовий Editorial Fold; початкова таблиця нижче збережена як історія базового концепту. Актуальні параметри — `artifacts/after-hours/tokens.json` і `tension.js`. (source: запит власника 2026-09-25)
 
 | Тригер | Що рухається | Duration / easing | Reduced motion |
 |---|---|---|---|

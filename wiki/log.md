@@ -4874,3 +4874,28 @@ https://claude.ai/code/artifact/dc29256b-77f4-4941-a78d-b6a1710c4650. Код щ�
 Джерело: `origin/main` commit `3291b30` (#360), `src/components/site-header-chrome.tsx`, `src/app/[lang]/page.tsx`.
 
 Оновлено `wiki/now.md` та `wiki/index.md`: у desktop-навігації з’явилися Дайджести (на вузьких desktop-екранах посилання залишається в меню), також оновлено картку weekly на головній та видимість SEO-фрагмента перед «Показати більше».
+
+## 2026-09-25 — After Hours: три motion-концепти
+
+Джерело: запит власника 2026-09-25; commits `6549616` / `386af7a`; `artifacts/after-hours-motion/`; browser review 2026-09-25.
+
+Створено [product/after-hours-motion](product/after-hours-motion.md): Tension, Quiet Signal, Undertow — три альтернативні мови руху на спільній головній After Hours, фізичні принципи, таймінги, hover/focus/press, reduced-motion і план перенесення. Додано локальний інтерактивний артефакт із перемикачем, Replay, статичним режимом, EN/UK і Day/Night. Оновлено `wiki/index.md`. Quiet Signal рекомендований як design proposal; остаточний концепт ще не обраний, production-код не змінений.
+
+## 2026-09-25 — Обрано Tension: масштабування v2
+
+Джерело: наступний запит власника 2026-09-25; `artifacts/after-hours/tension.js`; `artifacts/after-hours-motion/route-audit-v2.json`; browser review.
+
+Власник обрав Tension. Створено [product/after-hours-tension](product/after-hours-tension.md): спільна motion-система всіх 26 макетів, дев’ять жестів, брендовий SVG Editorial Fold, фізика, обмеження й докази. Оновлено `after-hours-redesign`, `after-hours-motion` та `wiki/index.md`; початкову рекомендацію Quiet Signal позначено історичною. Оновлено базовий прототип, токени й панель порівняння; додано motion atlas і галерею 52 рендерів. Production не змінювався.
+
+
+## 2026-09-25 — Полірування Editorial Fold
+
+Джерело: відгук власника про незграбне складання 16 ребер; `artifacts/after-hours/tension.js`, `tension.css`; `artifacts/after-hours-motion/FOLD-REFINED.md`; browser review.
+
+Перероблено хореографію головної бренд-сцени: одна основа, збереження порядку ребер, плавне розкриття, окремий ритм поперечини та celadon-крапки. Уточнено геометрію й матеріал; Replay отримав 320 мс підготовки без різкого скидання. Додано покадровий перегляд і focused QA. Оновлено [product/after-hours-tension](product/after-hours-tension.md), `wiki/index.md` та motion-токени. Production не змінювався.
+
+## 2026-09-26 — After Hours: повна система статей
+
+Джерело: уточнення власника про багатогранні production-like статті 2026-09-26; browser review production article і локального концепту; `src/components/story-body.tsx`; `artifacts/after-hours/app.js`.
+
+Коротку article-заглушку замінено трьома повними shareable станами: editorial analysis, technical field guide та evidence note. Кожен має власну інформаційну архітектуру, об’ємний двомовний приклад, TOC, схеми/таблиці або code, редакційні врізки, trust/disclosure та source ledger. Додано перемикач форматів і related-переходи, responsive-верстку та motion entrance для нових блоків. Desktop і 390 px, EN/UK, дублікати `id`, overflow та browser console перевірено; production-код не змінювався. Оновлено [product/after-hours-redesign](product/after-hours-redesign.md), README, QA v2 та `wiki/index.md`.

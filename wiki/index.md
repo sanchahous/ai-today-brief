@@ -104,7 +104,11 @@ Last updated: 2026-09-25
 
 ## Product
 
-Концепція редизайну: [After Hours](product/after-hours-redesign.md) — брендинг, адаптивні макети, UI/UX, анімації та план реалізації. (source: запит власника 2026-09-05; `artifacts/after-hours/`)
+Концепція редизайну: [After Hours](product/after-hours-redesign.md) — брендинг, адаптивні макети, UI/UX, анімації, план реалізації та три повні production-like формати статей: editorial analysis, technical field guide, evidence note. (source: запити власника 2026-09-05 / 2026-09-26; `artifacts/after-hours/`)
+
+Motion-альтернативи: [After Hours motion](product/after-hours-motion.md) — Tension, Quiet Signal, Undertow; інтерактивна головна, фізика, hover/focus/press і критерії вибору. (source: запит власника 2026-09-25; `artifacts/after-hours-motion/`)
+
+Обраний напрям: [After Hours Tension v2](product/after-hours-tension.md) — дев’ять жестів у всіх 26 макетах, допрацьований Editorial Fold зі спільною опорою й покадровим переглядом, атлас руху й перевірки performance. (source: наступний запит власника 2026-09-25; `artifacts/after-hours/tension.js`)
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
