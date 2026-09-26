@@ -108,7 +108,7 @@ Last updated: 2026-09-26
 
 Motion-альтернативи: [After Hours motion](product/after-hours-motion.md) — Tension, Quiet Signal, Undertow; інтерактивна головна, фізика, hover/focus/press і критерії вибору. (source: запит власника 2026-09-25; `artifacts/after-hours-motion/`)
 
-Обраний напрям: [After Hours Tension v2](product/after-hours-tension.md) — дев’ять жестів у всіх 26 макетах, допрацьований Editorial Fold зі спільною опорою й покадровим переглядом, атлас руху й перевірки performance. (source: наступний запит власника 2026-09-25; `artifacts/after-hours/tension.js`)
+Обраний напрям: [After Hours Tension v2](product/after-hours-tension.md) — дев’ять жестів у всіх 26 макетах, допрацьований Editorial Fold зі спільною опорою й покадровим переглядом; актуальні QA та кадри — у `artifacts/after-hours-motion/QA-v2.md` і `screens/fold-refined/`. (source: запит власника 2026-09-25; `artifacts/after-hours/tension.js`; QA v2)
 
 Аудит повноти: [Design-system gap plan](audits/2026-09-26-design-system-gap-plan.md) — розриви concept↔production у filtering, sort semantics, taxonomy, pagination/URL-state, tokens, components, states і QA; пріоритетний план через News vertical slice. (source: скріншот і запит власника 2026-09-26; browser live review; code review)
 

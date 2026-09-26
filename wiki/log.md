@@ -4905,3 +4905,9 @@ https://claude.ai/code/artifact/dc29256b-77f4-4941-a78d-b6a1710c4650. Код щ�
 Джерело: скріншот і запит власника 2026-09-26; browser live review `/en/news` на desktop і 390 px; `src/components/news/*`, `src/lib/news*`, `src/components/pagination.tsx`; `artifacts/after-hours/`; чинні E2E.
 
 Створено [audits/2026-09-26-design-system-gap-plan](audits/2026-09-26-design-system-gap-plan.md): зафіксовано 20 розривів concept↔production, зокрема неправдиві sort semantics, state, що не відновлюється з URL, обмежений data slice, відсутню taxonomy тегів, неповні tokens/component contracts і QA. Сформовано цільовий News discovery contract, архітектуру foundations→components→patterns, шість milestones (0–5), acceptance tasks і Definition of Done. Статус [product/after-hours-redesign](product/after-hours-redesign.md) уточнено: visual direction зберігається, але функціональна дизайн-система ще не завершена. Оновлено `wiki/index.md`; production-код і артефакт-прототип не змінювались.
+
+## 2026-09-26 — Виправлення посилань Editorial Fold
+
+Джерело: перевірка `npm run pr:check`; відсутній `artifacts/after-hours-motion/FOLD-REFINED.md`; наявні `QA-v2.md` і `screens/fold-refined/`.
+
+Посилання на відсутній `FOLD-REFINED.md` у wiki й README замінено на чинний QA v2 та наявні кадри Editorial Fold. Оновлено короткий опис у `wiki/index.md`.

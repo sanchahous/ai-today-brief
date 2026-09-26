@@ -32,7 +32,7 @@ Tension v2 підключено до спільного прототипу `arti
 
 Сцена стартує при першому вході у viewport. Повтор — явною кнопкою ↻; reduced-motion показує фінальний знак. Вона займає місце головного artwork, зберігаючи редакційну ієрархію. SVG формується відразу: попередня PNG-ілюстрація розміром 1 806 682 байти не вставляється в DOM головної Tension. (source: `app.js` — `art`; `tension.js` — `observeEntrances`, `syncQuiet`; `assets/after-hours.png`)
 
-Окремий [покадровий перегляд](../../artifacts/after-hours-motion/fold-review.html) зупиняє **ті самі WAAPI-треки**, що працюють на головній. Поточна перевірка й кадри: [Editorial Fold refined](../../artifacts/after-hours-motion/FOLD-REFINED.md). (source: `fold-review.js`; `tension.js` — `previewBrand`)
+Окремий [покадровий перегляд](../../artifacts/after-hours-motion/fold-review.html) зупиняє **ті самі WAAPI-треки**, що працюють на головній. Перевірка: [QA v2](../../artifacts/after-hours-motion/QA-v2.md); актуальні кадри: [2200 мс](../../artifacts/after-hours-motion/screens/fold-refined/frame-2200.jpg), [desktop](../../artifacts/after-hours-motion/screens/fold-refined/home-desktop.jpg), [mobile](../../artifacts/after-hours-motion/screens/fold-refined/home-mobile.jpg). (source: `fold-review.js`; `tension.js` — `previewBrand`; `artifacts/after-hours-motion/QA-v2.md`)
 
 ## Дев’ять жестів
 
