@@ -1,520 +1,1029 @@
 {
-  "date": "2026-09-05",
-  "contrasts": [
-    {
-      "theme": "night",
-      "foreground": "text",
-      "background": "bg",
-      "colors": [
-        "#f0e9dc",
-        "#171918"
-      ],
-      "ratio": 14.63,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "night",
-      "foreground": "muted",
-      "background": "bg",
-      "colors": [
-        "#b9b7ac",
-        "#171918"
-      ],
-      "ratio": 8.78,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "night",
-      "foreground": "text",
-      "background": "surface",
-      "colors": [
-        "#f0e9dc",
-        "#202421"
-      ],
-      "ratio": 13.02,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "night",
-      "foreground": "muted",
-      "background": "surface",
-      "colors": [
-        "#b9b7ac",
-        "#202421"
-      ],
-      "ratio": 7.81,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "night",
-      "foreground": "accent",
-      "background": "bg",
-      "colors": [
-        "#d4b483",
-        "#171918"
-      ],
-      "ratio": 8.96,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "night",
-      "foreground": "mint",
-      "background": "bg",
-      "colors": [
-        "#b5d8cc",
-        "#171918"
-      ],
-      "ratio": 11.49,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "night",
-      "foreground": "error",
-      "background": "bg",
-      "colors": [
-        "#efaaa0",
-        "#171918"
-      ],
-      "ratio": 9.19,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "night",
-      "foreground": "bg",
-      "background": "accent",
-      "colors": [
-        "#171918",
-        "#d4b483"
-      ],
-      "ratio": 8.96,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "day",
-      "foreground": "text",
-      "background": "bg",
-      "colors": [
-        "#232820",
-        "#f0e9dc"
-      ],
-      "ratio": 12.46,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "day",
-      "foreground": "muted",
-      "background": "bg",
-      "colors": [
-        "#606358",
-        "#f0e9dc"
-      ],
-      "ratio": 5.08,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "day",
-      "foreground": "text",
-      "background": "surface",
-      "colors": [
-        "#232820",
-        "#e7dfd0"
-      ],
-      "ratio": 11.36,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "day",
-      "foreground": "muted",
-      "background": "surface",
-      "colors": [
-        "#606358",
-        "#e7dfd0"
-      ],
-      "ratio": 4.63,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "day",
-      "foreground": "accent",
-      "background": "bg",
-      "colors": [
-        "#72562e",
-        "#f0e9dc"
-      ],
-      "ratio": 5.64,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "day",
-      "foreground": "mint",
-      "background": "bg",
-      "colors": [
-        "#2d6559",
-        "#f0e9dc"
-      ],
-      "ratio": 5.58,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "day",
-      "foreground": "error",
-      "background": "bg",
-      "colors": [
-        "#a13328",
-        "#f0e9dc"
-      ],
-      "ratio": 5.76,
-      "minimum": 4.5,
-      "pass": true
-    },
-    {
-      "theme": "day",
-      "foreground": "bg",
-      "background": "accent",
-      "colors": [
-        "#f0e9dc",
-        "#72562e"
-      ],
-      "ratio": 5.64,
-      "minimum": 4.5,
-      "pass": true
-    }
-  ],
-  "hashes": {
-    "app.js": "38c4d35dabc19f30e811b9f0a969667832ea628e2ac1be2935cb0bc0d7927bc5",
-    "workspaces.js": "0c9134843f3fa8dd43a4267e57ba74218745d1e53f451bbbbf4bc01b1f7e5bcc",
-    "style.css": "d733f828ab26a88b7a23468bd8c7d0be28398f028a27862eed8249774092570b",
-    "tokens.css": "9b4a1cda59cfc9c5086c7a13a7267981e7a8d82a3cb34427f9b4b98db20e833b",
-    "tokens.json": "b9aabb255e615b59a671b92dd40524e6a9c734857b61dede6763d21852666f47",
-    "index.html": "67c3a0cb825543d588eb5a5e314c51827d4c7b6f6db95c86d1752166d9fc9ba0"
+  "date": "2026-09-28",
+  "version": "2.0.0-proposal",
+  "contrast": {
+    "pairs": 160,
+    "failures": 0,
+    "report": "qa/token-contrast.json"
   },
+  "hashes": {
+    "index.html": "9e26420d878e2d3baf8dfdf0d51231eca4f6e0756688d16bead713a523421a7d",
+    "assets/mark.svg": "254a397f2eaaba123aa6b1ab8e2fd3b5f38c993ca85c00418745b3b8a7470c4e",
+    "assets/sans.woff2": "3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62",
+    "assets/display.woff2": "7f9d191d999336d3b9790afa72e1358e50a13b06d4f289341e92a311967a80f9",
+    "tokens.css": "22bb401a0d8215fbcb9d253ac53e0b1e737cf7ec24de6111c3fbfb1223892187",
+    "style.css": "3e1614cf5ce66a20f3a351aac2aebbb0844bc659d75c53ac29c007e0dbba37ae",
+    "pages.css": "cc23e853a0e6172f991a9d68fb0509d8c33d43d298b12898fb5971852a65f8b1",
+    "tension.css": "ecb8e0c239a1dd5b325afa9524455f043faaea0c225a51739338a1a3ad1a8836",
+    "tension.js": "68e75c9725f443dc009b361859319f207d53bb2221175e722a996988039cfe70",
+    "app.js": "8ff2807b1159ecbcf70b9f080ffe6ec61174e6ec16c1d6b6bb1fa178b4727951",
+    "data.js": "381b637d49c01713f7384e926f7e606264781ca1a3e719cd87539a00b0df5286",
+    "home.js": "b5bab715dbb5c85a6fcdc4f7289bf3cf4ba5234920164ed1ddfb920417409027",
+    "articles.js": "2599e91902f9af4fdc9586c4fc3be36da6f22b1b8b029be44a648ed06cb18e74",
+    "editions.js": "0c35f729fd150241e786f6b9b049f7dcaa99abba67b133b2dfc13d16535694f8",
+    "knowledge.js": "b96d054b7d723f3c7edddd8c68e38366f135330f748e234f51f4c2fbdd3f46d4",
+    "toolbox.js": "350348b3d5d6e95e0859e50276d559cbc6b71a443a1714729839d0efe080623d",
+    "pages.js": "15962812532bb6412823c86da9d767adaefde97a4e5f85f001fdc1df3275203b",
+    "seo.js": "e3dd1b2048cd6ae33132e60fffc1438e132336e6bf992d13b44b50a8cf3ceb30",
+    "boot.js": "4b141d1d420391a3aea132858c9f4e12e5c91b84151e4dbc60fecaf94aad8b70",
+    "tokens.json": "374457191329e9b9e94fb1157ce38a53873759f14b8c22ce6b1805bf5b26f0c4"
+  },
+  "missing": [],
   "media": [
     {
-      "file": "404-desktop.png",
-      "width": 1440,
-      "height": 1000,
-      "format": "jpeg"
+      "file": "assets/after-hours-1600.avif",
+      "width": 1600,
+      "height": 900,
+      "format": "heif",
+      "bytes": 32554
     },
     {
-      "file": "404-mobile.png",
+      "file": "assets/after-hours-1600.jpg",
+      "width": 1600,
+      "height": 900,
+      "format": "jpeg",
+      "bytes": 108162
+    },
+    {
+      "file": "assets/after-hours-1600.webp",
+      "width": 1600,
+      "height": 900,
+      "format": "webp",
+      "bytes": 58560
+    },
+    {
+      "file": "assets/after-hours-800.avif",
+      "width": 800,
+      "height": 450,
+      "format": "heif",
+      "bytes": 13548
+    },
+    {
+      "file": "assets/after-hours-800.webp",
+      "width": 800,
+      "height": 450,
+      "format": "webp",
+      "bytes": 23620
+    },
+    {
+      "file": "assets/after-hours.png",
+      "width": 1672,
+      "height": 941,
+      "format": "png",
+      "bytes": 1806682
+    },
+    {
+      "file": "screens/404-desktop.png",
+      "width": 1440,
+      "height": 1000,
+      "format": "jpeg",
+      "bytes": 62552
+    },
+    {
+      "file": "screens/404-mobile.png",
       "width": 375,
       "height": 811,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 30017
     },
     {
-      "file": "about-desktop.png",
+      "file": "screens/about-desktop.png",
       "width": 1424,
       "height": 2021,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 180499
     },
     {
-      "file": "about-mobile.png",
+      "file": "screens/about-mobile.png",
       "width": 375,
       "height": 2909,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 133099
     },
     {
-      "file": "advertise-desktop.png",
+      "file": "screens/advertise-desktop.png",
       "width": 1424,
       "height": 1063,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 87931
     },
     {
-      "file": "advertise-mobile.png",
+      "file": "screens/advertise-mobile.png",
       "width": 375,
       "height": 1253,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 53941
     },
     {
-      "file": "article-desktop.png",
+      "file": "screens/article-desktop.png",
       "width": 1424,
       "height": 2665,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 239121
     },
     {
-      "file": "article-mobile.png",
+      "file": "screens/article-mobile.png",
       "width": 375,
       "height": 3284,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 156358
     },
     {
-      "file": "article-uk-day-viewport.jpg",
+      "file": "screens/article-uk-day-viewport.jpg",
       "width": 817,
       "height": 3041,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 216278
     },
     {
-      "file": "categories-desktop.png",
+      "file": "screens/categories-desktop.png",
       "width": 1424,
       "height": 1600,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 137392
     },
     {
-      "file": "categories-mobile.png",
+      "file": "screens/categories-mobile.png",
       "width": 375,
       "height": 2363,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 84348
     },
     {
-      "file": "category-desktop.png",
+      "file": "screens/category-desktop.png",
       "width": 1424,
       "height": 1447,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 116153
     },
     {
-      "file": "category-mobile.png",
+      "file": "screens/category-mobile.png",
       "width": 375,
       "height": 2171,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 79675
     },
     {
-      "file": "concept-desktop.png",
+      "file": "screens/concept-desktop.png",
       "width": 1424,
       "height": 2172,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 147617
     },
     {
-      "file": "concept-mobile.png",
+      "file": "screens/concept-mobile.png",
       "width": 375,
       "height": 2616,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 99062
     },
     {
-      "file": "concepts-desktop.png",
+      "file": "screens/concepts-desktop.png",
       "width": 1424,
       "height": 1747,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 146429
     },
     {
-      "file": "concepts-mobile.png",
+      "file": "screens/concepts-mobile.png",
       "width": 375,
       "height": 2693,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 95910
     },
     {
-      "file": "daily-desktop.png",
+      "file": "screens/daily-desktop.png",
       "width": 1424,
       "height": 2160,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 176859
     },
     {
-      "file": "daily-mobile.png",
+      "file": "screens/daily-mobile.png",
       "width": 375,
       "height": 2959,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 119169
     },
     {
-      "file": "digests-desktop.png",
+      "file": "screens/digests-desktop.png",
       "width": 1424,
       "height": 1896,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 155961
     },
     {
-      "file": "digests-mobile.png",
+      "file": "screens/digests-mobile.png",
       "width": 375,
       "height": 2580,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 99408
     },
     {
-      "file": "guide-desktop.png",
+      "file": "screens/guide-desktop.png",
       "width": 1424,
       "height": 2057,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 163563
     },
     {
-      "file": "guide-mobile.png",
+      "file": "screens/guide-mobile.png",
       "width": 375,
       "height": 2648,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 104966
     },
     {
-      "file": "guides-desktop.png",
+      "file": "screens/guides-desktop.png",
       "width": 1424,
       "height": 1493,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 134908
     },
     {
-      "file": "guides-mobile.png",
+      "file": "screens/guides-mobile.png",
       "width": 375,
       "height": 1968,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 83073
     },
     {
-      "file": "home-desktop.png",
+      "file": "screens/home-desktop.png",
       "width": 1440,
       "height": 2757,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 289961
     },
     {
-      "file": "home-mobile.png",
+      "file": "screens/home-mobile.png",
       "width": 375,
       "height": 5178,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 227184
     },
     {
-      "file": "home-preview.jpg",
+      "file": "screens/home-preview.jpg",
       "width": 1425,
       "height": 990,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 115363
     },
     {
-      "file": "instructions-desktop.png",
+      "file": "screens/instructions-desktop.png",
       "width": 1424,
       "height": 1247,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 92020
     },
     {
-      "file": "instructions-mobile.png",
+      "file": "screens/instructions-mobile.png",
       "width": 375,
       "height": 1503,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 51759
     },
     {
-      "file": "news-desktop.png",
+      "file": "screens/news-desktop.png",
       "width": 1424,
       "height": 1777,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 153979
     },
     {
-      "file": "news-mobile.png",
+      "file": "screens/news-mobile.png",
       "width": 375,
       "height": 3069,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 114074
     },
     {
-      "file": "policy-desktop.png",
+      "file": "screens/policy-desktop.png",
       "width": 1424,
       "height": 1368,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 111567
     },
     {
-      "file": "policy-mobile.png",
+      "file": "screens/policy-mobile.png",
       "width": 375,
       "height": 1628,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 71259
     },
     {
-      "file": "saved-desktop.png",
+      "file": "screens/saved-desktop.png",
       "width": 1440,
       "height": 1000,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 71174
     },
     {
-      "file": "saved-mobile.png",
+      "file": "screens/saved-mobile.png",
       "width": 375,
       "height": 1036,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 38841
     },
     {
-      "file": "search-desktop.png",
+      "file": "screens/search-desktop.png",
       "width": 1424,
       "height": 1821,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 117885
     },
     {
-      "file": "search-mobile.png",
+      "file": "screens/search-mobile.png",
       "width": 375,
       "height": 1916,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 72046
     },
     {
-      "file": "settings-desktop.png",
+      "file": "screens/settings-desktop.png",
       "width": 1424,
       "height": 1179,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 85424
     },
     {
-      "file": "settings-mobile.png",
+      "file": "screens/settings-mobile.png",
       "width": 375,
       "height": 1376,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 49844
     },
     {
-      "file": "states-desktop.png",
+      "file": "screens/states-desktop.png",
       "width": 1424,
       "height": 1576,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 110481
     },
     {
-      "file": "states-mobile.png",
+      "file": "screens/states-mobile.png",
       "width": 375,
       "height": 2211,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 73880
     },
     {
-      "file": "subscribe-desktop.png",
+      "file": "screens/subscribe-desktop.png",
       "width": 1424,
       "height": 1251,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 88910
     },
     {
-      "file": "subscribe-mobile.png",
+      "file": "screens/subscribe-mobile.png",
       "width": 375,
       "height": 1313,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 45031
     },
     {
-      "file": "system-desktop.png",
+      "file": "screens/system-desktop.png",
       "width": 1424,
       "height": 3162,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 273311
     },
     {
-      "file": "system-mobile.png",
+      "file": "screens/system-mobile.png",
       "width": 375,
       "height": 4627,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 147362
     },
     {
-      "file": "tool-desktop.png",
+      "file": "screens/tool-desktop.png",
       "width": 1424,
       "height": 1292,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 92139
     },
     {
-      "file": "tool-mobile.png",
+      "file": "screens/tool-mobile.png",
       "width": 375,
       "height": 1636,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 52572
     },
     {
-      "file": "tools-desktop.png",
+      "file": "screens/tools-desktop.png",
       "width": 1424,
       "height": 1425,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 126491
     },
     {
-      "file": "tools-mobile.png",
+      "file": "screens/tools-mobile.png",
       "width": 375,
       "height": 2136,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 80498
     },
     {
-      "file": "weekly-desktop.png",
+      "file": "screens/weekly-desktop.png",
       "width": 1424,
       "height": 2907,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 277855
     },
     {
-      "file": "weekly-mobile.png",
+      "file": "screens/weekly-mobile.png",
       "width": 375,
       "height": 3572,
-      "format": "jpeg"
+      "format": "jpeg",
+      "bytes": 170557
+    },
+    {
+      "file": "screens-v3/404-desktop-day.webp",
+      "width": 1080,
+      "height": 1073,
+      "format": "webp",
+      "bytes": 24772
+    },
+    {
+      "file": "screens-v3/404-desktop-night.webp",
+      "width": 1080,
+      "height": 1073,
+      "format": "webp",
+      "bytes": 25916
+    },
+    {
+      "file": "screens-v3/404-mobile-night.webp",
+      "width": 390,
+      "height": 1809,
+      "format": "webp",
+      "bytes": 26878
+    },
+    {
+      "file": "screens-v3/about-desktop-day.webp",
+      "width": 1080,
+      "height": 2190,
+      "format": "webp",
+      "bytes": 72956
+    },
+    {
+      "file": "screens-v3/about-desktop-night.webp",
+      "width": 1080,
+      "height": 2190,
+      "format": "webp",
+      "bytes": 74766
+    },
+    {
+      "file": "screens-v3/about-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 78356
+    },
+    {
+      "file": "screens-v3/advertise-desktop-day.webp",
+      "width": 1080,
+      "height": 1298,
+      "format": "webp",
+      "bytes": 35604
+    },
+    {
+      "file": "screens-v3/advertise-desktop-night.webp",
+      "width": 1080,
+      "height": 1298,
+      "format": "webp",
+      "bytes": 37554
+    },
+    {
+      "file": "screens-v3/advertise-mobile-night.webp",
+      "width": 390,
+      "height": 2591,
+      "format": "webp",
+      "bytes": 43182
+    },
+    {
+      "file": "screens-v3/article-desktop-day.webp",
+      "width": 1080,
+      "height": 4600,
+      "format": "webp",
+      "bytes": 182344
+    },
+    {
+      "file": "screens-v3/article-desktop-night.webp",
+      "width": 1080,
+      "height": 4600,
+      "format": "webp",
+      "bytes": 189620
+    },
+    {
+      "file": "screens-v3/article-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 118574
+    },
+    {
+      "file": "screens-v3/author-desktop-day.webp",
+      "width": 1080,
+      "height": 1739,
+      "format": "webp",
+      "bytes": 57432
+    },
+    {
+      "file": "screens-v3/author-desktop-night.webp",
+      "width": 1080,
+      "height": 1739,
+      "format": "webp",
+      "bytes": 58178
+    },
+    {
+      "file": "screens-v3/author-mobile-night.webp",
+      "width": 390,
+      "height": 4131,
+      "format": "webp",
+      "bytes": 75218
+    },
+    {
+      "file": "screens-v3/categories-desktop-day.webp",
+      "width": 1080,
+      "height": 2183,
+      "format": "webp",
+      "bytes": 89756
+    },
+    {
+      "file": "screens-v3/categories-desktop-night.webp",
+      "width": 1080,
+      "height": 2183,
+      "format": "webp",
+      "bytes": 91936
+    },
+    {
+      "file": "screens-v3/categories-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 92072
+    },
+    {
+      "file": "screens-v3/category-desktop-day.webp",
+      "width": 1080,
+      "height": 1936,
+      "format": "webp",
+      "bytes": 63076
+    },
+    {
+      "file": "screens-v3/category-desktop-night.webp",
+      "width": 1080,
+      "height": 1936,
+      "format": "webp",
+      "bytes": 63578
+    },
+    {
+      "file": "screens-v3/category-mobile-night.webp",
+      "width": 390,
+      "height": 3990,
+      "format": "webp",
+      "bytes": 69328
+    },
+    {
+      "file": "screens-v3/concept-desktop-day.webp",
+      "width": 1080,
+      "height": 2744,
+      "format": "webp",
+      "bytes": 89402
+    },
+    {
+      "file": "screens-v3/concept-desktop-night.webp",
+      "width": 1080,
+      "height": 2744,
+      "format": "webp",
+      "bytes": 91388
+    },
+    {
+      "file": "screens-v3/concept-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 83520
+    },
+    {
+      "file": "screens-v3/concepts-desktop-day.webp",
+      "width": 1080,
+      "height": 4556,
+      "format": "webp",
+      "bytes": 129732
+    },
+    {
+      "file": "screens-v3/concepts-desktop-night.webp",
+      "width": 1080,
+      "height": 4556,
+      "format": "webp",
+      "bytes": 131610
+    },
+    {
+      "file": "screens-v3/concepts-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 71182
+    },
+    {
+      "file": "screens-v3/coverage-desktop-day.webp",
+      "width": 1080,
+      "height": 2236,
+      "format": "webp",
+      "bytes": 90018
+    },
+    {
+      "file": "screens-v3/coverage-desktop-night.webp",
+      "width": 1080,
+      "height": 2236,
+      "format": "webp",
+      "bytes": 97368
+    },
+    {
+      "file": "screens-v3/coverage-mobile-night.webp",
+      "width": 390,
+      "height": 3925,
+      "format": "webp",
+      "bytes": 87960
+    },
+    {
+      "file": "screens-v3/daily-desktop-day.webp",
+      "width": 1080,
+      "height": 3544,
+      "format": "webp",
+      "bytes": 150810
+    },
+    {
+      "file": "screens-v3/daily-desktop-night.webp",
+      "width": 1080,
+      "height": 3544,
+      "format": "webp",
+      "bytes": 157062
+    },
+    {
+      "file": "screens-v3/daily-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 127612
+    },
+    {
+      "file": "screens-v3/digests-desktop-day.webp",
+      "width": 1080,
+      "height": 2961,
+      "format": "webp",
+      "bytes": 98754
+    },
+    {
+      "file": "screens-v3/digests-desktop-night.webp",
+      "width": 1080,
+      "height": 2961,
+      "format": "webp",
+      "bytes": 102446
+    },
+    {
+      "file": "screens-v3/digests-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 92196
+    },
+    {
+      "file": "screens-v3/guide-desktop-day.webp",
+      "width": 1080,
+      "height": 1989,
+      "format": "webp",
+      "bytes": 60618
+    },
+    {
+      "file": "screens-v3/guide-desktop-night.webp",
+      "width": 1080,
+      "height": 1989,
+      "format": "webp",
+      "bytes": 63686
+    },
+    {
+      "file": "screens-v3/guide-mobile-night.webp",
+      "width": 390,
+      "height": 3962,
+      "format": "webp",
+      "bytes": 71184
+    },
+    {
+      "file": "screens-v3/guides-desktop-day.webp",
+      "width": 1080,
+      "height": 2976,
+      "format": "webp",
+      "bytes": 93290
+    },
+    {
+      "file": "screens-v3/guides-desktop-night.webp",
+      "width": 1080,
+      "height": 2976,
+      "format": "webp",
+      "bytes": 95106
+    },
+    {
+      "file": "screens-v3/guides-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 77914
+    },
+    {
+      "file": "screens-v3/home-desktop-day.webp",
+      "width": 1080,
+      "height": 4600,
+      "format": "webp",
+      "bytes": 161342
+    },
+    {
+      "file": "screens-v3/home-desktop-night.webp",
+      "width": 1080,
+      "height": 4600,
+      "format": "webp",
+      "bytes": 164442
+    },
+    {
+      "file": "screens-v3/home-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 98078
+    },
+    {
+      "file": "screens-v3/instructions-desktop-day.webp",
+      "width": 1080,
+      "height": 2450,
+      "format": "webp",
+      "bytes": 39972
+    },
+    {
+      "file": "screens-v3/instructions-desktop-night.webp",
+      "width": 1080,
+      "height": 2450,
+      "format": "webp",
+      "bytes": 41256
+    },
+    {
+      "file": "screens-v3/instructions-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 45582
+    },
+    {
+      "file": "screens-v3/motion-desktop-day.webp",
+      "width": 1080,
+      "height": 2551,
+      "format": "webp",
+      "bytes": 77728
+    },
+    {
+      "file": "screens-v3/motion-desktop-night.webp",
+      "width": 1080,
+      "height": 2551,
+      "format": "webp",
+      "bytes": 78686
+    },
+    {
+      "file": "screens-v3/motion-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 65164
+    },
+    {
+      "file": "screens-v3/news-desktop-day.webp",
+      "width": 1080,
+      "height": 2243,
+      "format": "webp",
+      "bytes": 84590
+    },
+    {
+      "file": "screens-v3/news-desktop-night.webp",
+      "width": 1080,
+      "height": 2243,
+      "format": "webp",
+      "bytes": 85460
+    },
+    {
+      "file": "screens-v3/news-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 87846
+    },
+    {
+      "file": "screens-v3/policy-desktop-day.webp",
+      "width": 1080,
+      "height": 1348,
+      "format": "webp",
+      "bytes": 37004
+    },
+    {
+      "file": "screens-v3/policy-desktop-night.webp",
+      "width": 1080,
+      "height": 1348,
+      "format": "webp",
+      "bytes": 39268
+    },
+    {
+      "file": "screens-v3/policy-mobile-night.webp",
+      "width": 390,
+      "height": 2612,
+      "format": "webp",
+      "bytes": 46866
+    },
+    {
+      "file": "screens-v3/saved-desktop-day.webp",
+      "width": 1080,
+      "height": 944,
+      "format": "webp",
+      "bytes": 23648
+    },
+    {
+      "file": "screens-v3/saved-desktop-night.webp",
+      "width": 1080,
+      "height": 944,
+      "format": "webp",
+      "bytes": 25120
+    },
+    {
+      "file": "screens-v3/saved-mobile-night.webp",
+      "width": 390,
+      "height": 1772,
+      "format": "webp",
+      "bytes": 25468
+    },
+    {
+      "file": "screens-v3/search-desktop-day.webp",
+      "width": 1080,
+      "height": 852,
+      "format": "webp",
+      "bytes": 20092
+    },
+    {
+      "file": "screens-v3/search-desktop-night.webp",
+      "width": 1080,
+      "height": 852,
+      "format": "webp",
+      "bytes": 21160
+    },
+    {
+      "file": "screens-v3/search-mobile-night.webp",
+      "width": 390,
+      "height": 1649,
+      "format": "webp",
+      "bytes": 23262
+    },
+    {
+      "file": "screens-v3/settings-desktop-day.webp",
+      "width": 1080,
+      "height": 3502,
+      "format": "webp",
+      "bytes": 51698
+    },
+    {
+      "file": "screens-v3/settings-desktop-night.webp",
+      "width": 1080,
+      "height": 3502,
+      "format": "webp",
+      "bytes": 52574
+    },
+    {
+      "file": "screens-v3/settings-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 40630
+    },
+    {
+      "file": "screens-v3/states-desktop-day.webp",
+      "width": 1080,
+      "height": 1624,
+      "format": "webp",
+      "bytes": 46888
+    },
+    {
+      "file": "screens-v3/states-desktop-night.webp",
+      "width": 1080,
+      "height": 1624,
+      "format": "webp",
+      "bytes": 46366
+    },
+    {
+      "file": "screens-v3/states-mobile-night.webp",
+      "width": 390,
+      "height": 4143,
+      "format": "webp",
+      "bytes": 56762
+    },
+    {
+      "file": "screens-v3/subscribe-desktop-day.webp",
+      "width": 1080,
+      "height": 1897,
+      "format": "webp",
+      "bytes": 54724
+    },
+    {
+      "file": "screens-v3/subscribe-desktop-night.webp",
+      "width": 1080,
+      "height": 1897,
+      "format": "webp",
+      "bytes": 55892
+    },
+    {
+      "file": "screens-v3/subscribe-mobile-night.webp",
+      "width": 390,
+      "height": 4141,
+      "format": "webp",
+      "bytes": 66542
+    },
+    {
+      "file": "screens-v3/system-desktop-day.webp",
+      "width": 1080,
+      "height": 4226,
+      "format": "webp",
+      "bytes": 111604
+    },
+    {
+      "file": "screens-v3/system-desktop-night.webp",
+      "width": 1080,
+      "height": 4226,
+      "format": "webp",
+      "bytes": 113512
+    },
+    {
+      "file": "screens-v3/system-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 56038
+    },
+    {
+      "file": "screens-v3/tool-desktop-day.webp",
+      "width": 1080,
+      "height": 1799,
+      "format": "webp",
+      "bytes": 46914
+    },
+    {
+      "file": "screens-v3/tool-desktop-night.webp",
+      "width": 1080,
+      "height": 1799,
+      "format": "webp",
+      "bytes": 47606
+    },
+    {
+      "file": "screens-v3/tool-mobile-night.webp",
+      "width": 390,
+      "height": 3440,
+      "format": "webp",
+      "bytes": 55142
+    },
+    {
+      "file": "screens-v3/tools-desktop-day.webp",
+      "width": 1080,
+      "height": 2525,
+      "format": "webp",
+      "bytes": 75872
+    },
+    {
+      "file": "screens-v3/tools-desktop-night.webp",
+      "width": 1080,
+      "height": 2525,
+      "format": "webp",
+      "bytes": 78110
+    },
+    {
+      "file": "screens-v3/tools-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 74504
+    },
+    {
+      "file": "screens-v3/weekly-desktop-day.webp",
+      "width": 1080,
+      "height": 4600,
+      "format": "webp",
+      "bytes": 176238
+    },
+    {
+      "file": "screens-v3/weekly-desktop-night.webp",
+      "width": 1080,
+      "height": 4600,
+      "format": "webp",
+      "bytes": 180190
+    },
+    {
+      "file": "screens-v3/weekly-mobile-night.webp",
+      "width": 390,
+      "height": 4200,
+      "format": "webp",
+      "bytes": 92208
     }
   ],
-  "scope": "Static token pairs and exported image integrity. Not a full WCAG or production performance audit."
+  "scope": "Token contrast gate, source integrity and exported image metadata. Browser QA (axe, overflow, type floor, targets) lives in qa/run-qa.mjs."
 }

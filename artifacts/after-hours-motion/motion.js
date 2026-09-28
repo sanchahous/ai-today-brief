@@ -8,13 +8,13 @@
   const concepts = {
     tension: {
       number: "01", name: "Tension", duration: 720, stagger: 55,
-      tagline: ["Tension v2 · One material. Nine gestures. Every page.", "Tension v2 · Один матеріал. Дев’ять жестів. Усі сторінки."],
-      description: ["The selected direction, developed across the whole publication. Nine distinct gestures share the same material tension. The Editorial Fold gathers brass ribs into the brand’s A on the homepage.", "Обраний напрям, розвинений для всього видання. Дев’ять різних жестів поєднані відчуттям натягу матеріалу. Editorial Fold на головній збирає латунні ребра у брендову A."],
+      tagline: ["Tension v3 · Twelve gestures. One signature. Every page.", "Tension v3 · Дванадцять жестів. Один підпис. Усі сторінки."],
+      description: ["The selected direction, developed across the whole publication. Twelve gestures build a little tension; the brand resolves it. On the homepage, The Resolve edits scattered brass signals into the brand’s A and lands the celadon point just off the beat.", "Обраний напрям, розвинений для всього видання. Дванадцять жестів створюють легку напругу, бренд її розв’язує. На головній The Resolve редагує розсіяні латунні сигнали в брендову A, а celadon-крапка приземляється трохи поза тактом."],
       formula: "m = 1 · k = 240 · c = 24 · touch 160 / shift 320 / settle 640 ms",
       rows: [
         ["Entrance", "Поява", "Weighted arrival, cover unfold, index alignment", "Поява з вагою, розкриття обкладинок, вирівнювання рядків"],
-        ["Rules & art", "Лінії й арт", "Centre-out tension; 2.2 s Editorial Fold signature", "Натяг від центру; брендовий Editorial Fold за 2,2 с"],
-        ["Hover / press", "Hover / натискання", "Sliding navigation, illustrated card responses, 97.5% press", "Рухома навігація, різні відгуки ілюстрацій, стиснення до 97,5%"],
+        ["Rules & art", "Лінії й арт", "Centre-out tension; line drawing; 3.4 s The Resolve signature", "Натяг від центру; креслення ліній; брендовий The Resolve за 3,4 с"],
+        ["Hover / press", "Hover / натискання", "Sliding navigation rail, card art response, mark strum, 97.5% press", "Рухома навігаційна лінія, відгук арту карток, акорд знака, стиснення до 97,5%"],
         ["Focus", "Фокус", "Immediate celadon outline; centred underline", "Миттєва celadon-рамка; підкреслення від центру"],
       ],
     },
@@ -130,7 +130,7 @@
         animate(path, [{ transform: "translate(-14px,12px)", opacity: 0 }, { opacity: .9, offset: .55 }, { transform: "translate(0,0)", opacity: 1 }], { duration: 1500, delay: index * 100, easing: "cubic-bezier(.22,.61,.36,1)" });
       }
     });
-    const picture = document.querySelector(".lead-art img");
+    const picture = document.querySelector(".lead-stage .brand-stage");
     const frames = concept === "tension" ? [{ transform: "scale(1.025)" }, { transform: "scale(1)" }] : concept === "signal" ? [{ transform: "translateX(-4px) scale(1.025)" }, { transform: "translateX(0) scale(1)" }] : [{ transform: "translateY(6px) scale(1.04)" }, { transform: "translateY(0) scale(1)" }];
     animate(picture, frames, { duration: concepts[concept].duration + 350, easing: "cubic-bezier(.22,.61,.36,1)" });
   }
@@ -143,7 +143,7 @@
     }
     stop();
     if (!enabled()) return;
-    const targets = document.querySelectorAll(".masthead h1, .masthead > p, .lead-copy, .lead-art, .brief-rail > .eyebrow, .brief-rail > h2, .mini-row, .brief-rail > .button, .signal-strip");
+    const targets = document.querySelectorAll(".masthead h1, .masthead .lede, .lead-copy, .lead-stage, .brief-rail > .eyebrow, .brief-rail > h2, .mini-list li, .brief-rail > .button, .signal-strip");
     targets.forEach((element, index) => enter(element, Math.min(index * concepts[concept].stagger, 420)));
     line(document.querySelector(".dateline .motion-line"));
     playField();
@@ -155,7 +155,7 @@
         observer.unobserve(entry.target);
       }
     }, { threshold: .12 });
-    document.querySelectorAll(".section-head, .card, .week-block, .newsletter").forEach((element) => observer.observe(element));
+    document.querySelectorAll(".section-head, .feature-card, .topic-tile, .path-card, .velvet-band, .newsletter").forEach((element) => observer.observe(element));
   }
 
   function drawNotes() {
@@ -186,15 +186,15 @@
     document.querySelectorAll('#app img[src^="assets/"]').forEach((img) => img.setAttribute("src", "../after-hours/" + img.getAttribute("src")));
     if (concept === "tension") {
       TensionMotion.mount({ route: currentRoute(), lang, quiet: disabled });
-      document.title = `${labels()[currentRoute()]} — Tension v2 / After Hours`;
+      document.title = `${labels()[currentRoute()]} — Tension v3 / After Hours`;
       drawBar();
       return;
     }
-    document.querySelectorAll(".dateline, .section-head, .mini-row, .newsletter").forEach((element) => element.insertAdjacentHTML("beforeend", '<i class="motion-line" aria-hidden="true"></i>'));
-    const artwork = document.querySelector(".lead-art");
+    document.querySelectorAll(".dateline, .section-head, .mini-list li, .newsletter").forEach((element) => element.insertAdjacentHTML("beforeend", '<i class="motion-line" aria-hidden="true"></i>'));
+    const artwork = document.querySelector(".lead-stage");
     artwork?.insertAdjacentHTML("beforeend", fieldMarkup());
     artwork?.addEventListener("pointerenter", () => { if (finePointer.matches) playField(); }, { signal: listeners.signal });
-    document.querySelectorAll(".mini-row, .newsletter").forEach((element) => {
+    document.querySelectorAll(".mini-list li, .newsletter").forEach((element) => {
       element.addEventListener("pointerenter", () => { if (finePointer.matches) line(element.querySelector(".motion-line")); }, { signal: listeners.signal });
       element.addEventListener("focusin", () => line(element.querySelector(".motion-line")), { signal: listeners.signal });
     });
@@ -248,5 +248,6 @@
   reduced.addEventListener("change", () => { stop(); drawBar(); if (!reduced.matches) playEntrance(); });
   document.addEventListener("visibilitychange", () => { if (document.hidden) stop(); });
   window.addEventListener("pagehide", stop);
-  decorate();
+  // The lab is its own boot (after-hours/boot.js is not loaded here): render once.
+  render(false);
 })();

@@ -45,7 +45,7 @@ Last updated: 2026-09-28
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
-| ✅ [architecture/design-system-tokens](architecture/design-system-tokens.md) | Архітектура токенів дизайн-системи After Hours v1.0.0, семантика, WCAG AA контрастність | `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts` |
+| ✅ [architecture/design-system-tokens](architecture/design-system-tokens.md) | Архітектура токенів дизайн-системи After Hours v1.0.0, семантика, WCAG AA контрастність; пропозиція 2.0.0 з прототипу v3 і знахідка щодо контрасту `faint` | `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts` |
 | 📋 `architecture/data-model.md` | Схема Supabase, RLS, 104 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
@@ -105,11 +105,11 @@ Last updated: 2026-09-28
 
 ## Product
 
-Концепція редизайну: [After Hours](product/after-hours-redesign.md) — брендинг, адаптивні макети, UI/UX, анімації, план реалізації та три повні production-like формати статей: editorial analysis, technical field guide, evidence note. (source: запити власника 2026-09-05 / 2026-09-26; `artifacts/after-hours/`)
+Концепція редизайну: [After Hours](product/after-hours-redesign.md) — брендинг, адаптивні макети, UI/UX, анімації, план реалізації, три повні формати статей і прототип v3 (2026-09-28): палітра й світла тема, шкала шрифтів з мінімумом 12 px, унікальні макети розділів, SEO/schema, QA на 560 + 336 сторінках, таблиця міграції токенів 1.0 → 2.0. (source: запити власника 2026-09-05 / 2026-09-26 / 2026-09-28; `artifacts/after-hours/`)
 
 Motion-альтернативи: [After Hours motion](product/after-hours-motion.md) — Tension, Quiet Signal, Undertow; інтерактивна головна, фізика, hover/focus/press і критерії вибору. (source: запит власника 2026-09-25; `artifacts/after-hours-motion/`)
 
-Обраний напрям: [After Hours Tension v2](product/after-hours-tension.md) — дев’ять жестів у всіх 26 макетах, допрацьований Editorial Fold зі спільною опорою й покадровим переглядом; актуальні QA та кадри — у `artifacts/after-hours-motion/QA-v2.md` і `screens/fold-refined/`. (source: запит власника 2026-09-25; `artifacts/after-hours/tension.js`; QA v2)
+Обраний напрям: [After Hours Tension v3](product/after-hours-tension.md) — дванадцять жестів у всіх 28 маршрутах, View Transitions і брендова сцена The Resolve (3,4 с) з покадровим переглядом; v2 з Editorial Fold — в історії сторінки. (source: запити власника 2026-09-25 / 2026-09-28; `artifacts/after-hours/tension.js`; `artifacts/after-hours/QA.md`)
 
 Аудит повноти: [Design-system gap plan](audits/2026-09-26-design-system-gap-plan.md) — розриви concept↔production у filtering, sort semantics, taxonomy, pagination/URL-state, tokens, components, states і QA; пріоритетний план через News vertical slice. (source: скріншот і запит власника 2026-09-26; browser live review; code review)
 

@@ -1,0 +1,1015 @@
+{
+  "date": "2026-09-28T14:23:53.107Z",
+  "pages": 112,
+  "failing": 0,
+  "results": [
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "home",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "news",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "article",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "digests",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "daily",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "weekly",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "concepts",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "concept",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "guides",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "guide",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "tools",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "tool",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "settings",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "instructions",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "categories",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "category",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "about",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "author",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "subscribe",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "search",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "saved",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "advertise",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "policy",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "404",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "system",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "states",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "coverage",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "en",
+      "route": "motion",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "home",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "news",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "article",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "digests",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "daily",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "weekly",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "concepts",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "concept",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "guides",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "guide",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "tools",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "tool",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "settings",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "instructions",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "categories",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "category",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "about",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "author",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "subscribe",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "search",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "saved",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "advertise",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "policy",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "404",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "system",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "states",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "coverage",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "text-200",
+      "lang": "uk",
+      "route": "motion",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 1280,
+      "clientWidth": 1280
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "home",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "news",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "article",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "digests",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "daily",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "weekly",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "concepts",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "concept",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "guides",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "guide",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "tools",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "tool",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "settings",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "instructions",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "categories",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "category",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "about",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "author",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "subscribe",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "search",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "saved",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "advertise",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "policy",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "404",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "system",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "states",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "coverage",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "en",
+      "route": "motion",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "home",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "news",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "article",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "digests",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "daily",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "weekly",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "concepts",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "concept",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "guides",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "guide",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "tools",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "tool",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "settings",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "instructions",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "categories",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "category",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "about",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "author",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "subscribe",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "search",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "saved",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "advertise",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "policy",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "404",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "system",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "states",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "coverage",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    },
+    {
+      "mode": "reflow-320",
+      "lang": "uk",
+      "route": "motion",
+      "overflow": [],
+      "clipped": [],
+      "scrollWidth": 320,
+      "clientWidth": 320
+    }
+  ]
+}

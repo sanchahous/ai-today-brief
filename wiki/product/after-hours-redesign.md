@@ -1,8 +1,8 @@
 # After Hours — концепт редизайну AI Today Brief
 
-Summary: візуальна дизайн-концепція видання: брендинг, адаптивні макети, UI/UX, рух, маршрути та план впровадження. Статус: visual direction і page concepts готові до подальшого проєктування, але функціональна дизайн-система та discovery-contract ще не завершені.
-Sources: запит власника 2026-09-05 і уточнення про повноцінні різноманітні статті 2026-09-26; browser live review 2026-09-05 — https://aitodaybrief.com/en, /en/concepts, /en/guides, /en/tools, /en/about; browser review production article і локального прототипу 2026-09-26; `src/app/[lang]/page.tsx`, `src/app/[lang]/digests/page.tsx`, `src/app/[lang]/news/page.tsx`, `src/components/story-body.tsx`; `artifacts/after-hours/`; none (design proposals).
-Last updated: 2026-09-26
+Summary: візуальна дизайн-концепція видання: брендинг, адаптивні макети, UI/UX, рух, маршрути та план впровадження. Статус 2026-09-28: прототип v3 пройшов браузерний QA (доступність, SEO-контракт, крос-браузерність, збільшений текст); production-впровадження дизайн-системи досі проходить gates з аудиту розривів.
+Sources: запит власника 2026-09-05, уточнення про повноцінні різноманітні статті 2026-09-26 і запит на доопрацювання прототипів 2026-09-28; browser live review 2026-09-05 — https://aitodaybrief.com/en, /en/concepts, /en/guides, /en/tools, /en/about; browser review production article і локального прототипу 2026-09-26; `src/app/[lang]/page.tsx`, `src/app/[lang]/digests/page.tsx`, `src/app/[lang]/news/page.tsx`, `src/components/story-body.tsx`, `src/lib/design-system/tokens.ts`; `artifacts/after-hours/` (зокрема `qa/*.json`); none (design proposals).
+Last updated: 2026-09-28
 
 ---
 
@@ -10,11 +10,17 @@ Last updated: 2026-09-26
 
 > **Статус 2026-09-26:** після аудиту concept↔production After Hours більше не вважається повністю готовою до реалізації дизайн-системою. Візуальний напрям зберігається; P0/P1 розриви у filtering, sort semantics, pagination/URL-state, taxonomy, tokens і component governance зафіксовані в [аудиті повноти дизайн-системи](../audits/2026-09-26-design-system-gap-plan.md). (source: owner feedback 2026-09-26; browser live review; design-system audit)
 
+> **Оновлення 2026-09-28 — прототип v3.** Власник попросив довести прототипи до production-рівня: виправити кольорові баги світлої теми, перевірити розміри шрифтів для людей з вадами зору, прибрати баги верстки, перевірити крос-браузерність, мобільні пристрої, accessibility, SEO, schema і performance, надати унікальну структуру макетам 04 Digests, 05 Daily, 06 Weekly, 07 Concepts, 09 Guides, 11 Toolbox, 13 Categories, посилити рух і брендову анімацію та перевірити покриття production-функціоналу. (source: запит власника 2026-09-28)
+>
+> Результат на рівні прототипу: токени 2.0.0-proposal у трьох шарах (наступний major після `tokens.ts` v1.0.0; міграція — §4), чесне сортування (G03), стан News у URL (G04), фасети з правилом OR/AND (G06), мобільний drawer з «Done (N)» (G08), маршрут `#/coverage` зі співставленням production-функцій і макетів. Браузерний QA: 560 сторінок Chromium і 336 сторінок Firefox/WebKit без порушень axe, переповнення, тексту менше 12 px і малих цілей; збільшений до 200% текст і reflow 320 px — 112 сторінок без втрат. Деталі — [QA](../../artifacts/after-hours/QA.md). (source: `artifacts/after-hours/qa/qa-v3-final-chromium.json`, `qa-v3-final-xbrowser.json`, `zoom-report.json`; `artifacts/after-hours/home.js`, `data.js`)
+>
+> Production-частину аудиту переносив PR #367 (токени `src/lib/design-system/tokens.ts` v1.0.0, UI-примітиви `src/components/ui/`, discovery `/news` з URL-state, E2E) — див. [now](../now.md) і [design-system-tokens](../architecture/design-system-tokens.md). Прототип v3 — наступна дизайн-ітерація поверх нього: його токени 2.0.0-proposal ще **не** перенесені в `tokens.ts` (таблиця міграції — у §4), а нові макети й рух не мають production-компонентів. Результатів usability-сесій (G19) у wiki не зафіксовано (needs verification). (source: `git show f920671 --stat`; [аудит](../audits/2026-09-26-design-system-gap-plan.md); analysis)
+
 **After Hours** — назва візуального напрямку. Публічна назва залишається **AI Today Brief**. Тепле темне тло, латунні акценти, кремовий текст, спокійна serif-типографіка та вузькі моноширинні метадані створюють атмосферу камерного американського джазового клубу. Відчуття майбутнього передають точна геометрія, celadon-сигнал і технічна ясність. Це пропозиція за брифом власника, не твердження про поточний бренд. (source: запит власника 2026-09-05; design proposal)
 
 Ключова фраза EN: **Tomorrow, in context.** UK: **Майбутнє. З контекстом.** Преміальність тут означає увагу до читача, редакційний відбір і якість виконання. Концепт не вводить paywall чи членство. Пріоритет brief-led продукту й dev-аудиторії спирається на [overview](../overview.md). (source: design proposal; [overview](../overview.md))
 
-Матеріали для перегляду: [інтерактивний прототип](../../artifacts/after-hours/index.html), [інструкція запуску](../../artifacts/after-hours/README.md), [CSS tokens](../../artifacts/after-hours/tokens.css), [машинні tokens](../../artifacts/after-hours/tokens.json), [маніфест перевірки](../../artifacts/after-hours/verification.json). Зміст макетів демонстраційний, а не нові публікації. (source: `artifacts/after-hours/`)
+Матеріали для перегляду: [інтерактивний прототип](../../artifacts/after-hours/index.html), [інструкція запуску](../../artifacts/after-hours/README.md), [галерея v3 — 28 маршрутів у двох темах](../../artifacts/after-hours/gallery-v3.html), [QA](../../artifacts/after-hours/QA.md), [CSS tokens](../../artifacts/after-hours/tokens.css), [машинні tokens](../../artifacts/after-hours/tokens.json) (генеруються з CSS), [аудит артефакту](../../artifacts/after-hours/artifact-audit.json). Архів первинного концепту: [маніфест перевірки v1](../../artifacts/after-hours/verification.json). Зміст макетів демонстраційний, а не нові публікації. (source: `artifacts/after-hours/`)
 
 ## 2. Що змінюється концептуально
 
@@ -52,14 +58,15 @@ Last updated: 2026-09-26
 | `instructions` | `/[lang]/tools/claude-md-generator` | Контекст проєкту → правила → AGENTS.md / CLAUDE.md → copy/export |
 | `categories` | Необов’язковий новий індекс; можна меню без нового URL | Повний перелік категорій із короткими описами; без вигаданих кількостей |
 | `category` | `/[lang]/category/[slug]` | Опис теми → базові концепти → останні новини → релевантний гайд |
-| `about` | `/[lang]/about`, спільний профіль для `/author` | Маніфест → редакційний процес → реальний редактор → контакти/політики |
+| `about` | `/[lang]/about` | Маніфест → редакційний процес → реальний редактор → контакти/політики |
+| `author` | `/[lang]/author` | Профіль редактора (ProfilePage): роль і профілі в соцмережах → фокус висвітлення → стандарти → останні матеріали |
 | `subscribe` | `/[lang]/subscribe` | Цінність → приклад випуску → email/мова/згода → підтвердження → керування підпискою |
 | `search` | `/[lang]/news/search?q=…` | Єдине поле → результати з типами → empty/retry; пошук Concepts — окреме розширення даних |
 | `saved` | Новий локальний drawer або `/[lang]/saved` з noindex | Порожній стан → локальний список → видалити запис; без облікових записів |
 | `advertise` | `/[lang]/advertise` | Формати розміщення → перевірені audience facts → наявний канал запиту |
 | `policy` | `/[lang]/editorial-policy`, `/ai-disclosure`, `/privacy`, `/terms` | Спільна читабельна оболонка, локалізований зміст, незмінені юридичні тексти |
 | `404` | Наявний not-found | Коротке пояснення → головна/пошук; без тупика |
-| `system`, `states` | Тільки артефакт, не публічні routes | Палітра, бренд, типографіка, каталог екранів і крайові стани |
+| `system`, `states`, `coverage`, `motion` | Тільки артефакт, не публічні routes | Палітра, бренд, типографіка, крайові стани, матриця покриття production, атлас руху |
 
 ### Система повноцінних статей
 
@@ -79,26 +86,36 @@ Last updated: 2026-09-26
 
 ### Палітра
 
-| Роль | Night | Day | Правило |
-|---|---|---|---|
-| Background | `#171918` | `#F0E9DC` | Тепла низькоконтрастна основа |
-| Surface | `#202421` | `#E7DFD0` | Робочі форми, врізки, weekly |
-| Raised | `#2B302C` | `#DDD4C4` | Локальні підняті поверхні |
-| Text | `#F0E9DC` | `#232820` | Основне читання |
-| Muted | `#B9B7AC` | `#606358` | Метадані та пояснення |
-| Action / brass | `#D4B483` | `#72562E` | Один помітний основний CTA на блок |
-| Signal / celadon | `#B5D8CC` | `#2D6559` | Focus, позитивний стан, дрібний сигнал |
-| Border | `#414640` | `#B4B0A3` | Декоративні роздільники, не єдиний індикатор поля |
-| Error | `#EFAAA0` | `#A13328` | Текст помилки + пояснення; не лише колір |
+**2.0.0-proposal (прототип v3, 2026-09-28).** Токени мають три шари: primitives (`ink-*`, `paper-*`, `brass-*`, `celadon-*`, `claret-*`, `velvet-*`) → semantic roles для Night і Day → component tokens. Компоненти споживають лише semantic-ролі; кожна роль перевизначена в Day, тож світла тема більше не «успадковує» нічні значення. (source: `artifacts/after-hours/tokens.css`; `tokens.json`)
 
-Орієнтир пропорцій: 75% базової поверхні, 18% тексту/ілюстрацій, 6% латуні, 1% celadon. Це напрям для композиції, не буквальна піксельна квота. Контраст конкретних пар зафіксувати в verification.json; декоративні лінії не використовувати як єдину межу інтерактивного поля. (source: design proposal)
+| Роль | Night 2.0 | Day 2.0 | Було в `tokens.ts` v1.0.0 (Night / Day) | Правило |
+|---|---|---|---|---|
+| bg | `#171918` | `#EFE8DA` | `#171918` / `#F0E9DC` | Тепла основа |
+| surface | `#1F2321` | `#F7F2E8` | `#202421` / `#E7DFD0` | Картки й врізки; у Day світліші за тло («папір на столі») |
+| raised | `#282D29` | `#FDFAF4` | `#2B302C` / `#DDD4C4` | Поповери, меню, підняті панелі |
+| text | `#F0E9DC` | `#1D211D` | `#F0E9DC` / `#232820` | Основне читання |
+| muted | `#B9B7AC` | `#4D5148` | `#B9B7AC` / `#606358` | Метадані, пояснення |
+| faint | `#A3A197` | `#5A5E54` | `#78766C` / `#84877B` | Третинний текст; у v1.0.0 не проходив AA (3,88:1 / 3,03:1), у 2.0 — 6,82:1 / 5,44:1 |
+| accent (brass) | `#D4B483` | `#72562E` | те саме | Один основний CTA на блок |
+| signal (celadon) | `#B5D8CC` | `#2D6559` | `mint`, те саме | Focus, позитивний стан, «живий» сигнал |
+| claret / velvet | `#E3919D` / `#431A24` | `#8E2A3F` / `#F3E1DC` | — (нове) | Третій акцент: тижневик, «бриф за 30 секунд», live-мітки |
+| line / line-strong | `#3B413C` / `#737A73` | `#D6CEBF` / `#8C8577` | `line` `#414640` / `#B4B0A3` | `line` — декоративні роздільники; `line-strong` — межі полів і контролів (≥ 3:1: 4,00 / 3,00) |
+| error | `#FF9B8A` | `#B3261E` | `#EFAAA0` / `#A13328` | Текст помилки + пояснення; не лише колір |
+
+Категорії мають окремі значення для кожної теми (Night — світлі jewel tones, Day — глибокі, ≥ 4,5:1 на surface і bg) і незмінні «арт-кольори» для банерів на темній сцені; неонові значення v1 прибрано. Контраст-гейт `qa/check-tokens.mjs` перевіряє 160 пар текст/UI в обох темах — 0 провалів (найнижчий текст категорії: Night 6,41:1, Day 5,22:1). (source: `artifacts/after-hours/tokens.css`; `qa/token-contrast.json` 2026-09-28; розрахунок контрасту v1 з `src/lib/design-system/tokens.ts`)
+
+Production `src/lib/design-system/tokens.ts` («After Hours v1.0.0») цим оновленням не змінено; міграція в `tokens.ts`, Tailwind `@theme` і `scripts/check-design-tokens.ts` — окремий крок (G10 в [аудиті](../audits/2026-09-26-design-system-gap-plan.md)), таблиця вище — його відправна точка. Застарілі назви v2 (`paper`, `ink`, `brass`, `mint`) лишаються аліасами. (source: `src/lib/design-system/tokens.ts`; `tokens.json` — `deprecated`)
+
+Орієнтир пропорцій: 75% базової поверхні, 18% тексту/ілюстрацій, 6% латуні, 1% celadon; claret — точково. Це напрям для композиції, не буквальна піксельна квота. Декоративні лінії не використовувати як єдину межу інтерактивного поля. (source: design proposal)
 
 ### Типографіка
 
-- EN display: **Fraunces 400**, окремий italic для акцентів. Великі заголовки 42–76 px, line-height 1.1, tracking −0.035em.
-- UK display: **Georgia**, локальний системний serif fallback. Fraunces у наявному пакеті не має кириличного subset; не змішувати латиницю й кирилицю різних display-шрифтів в одному українському headline. Для повністю однакових EN/UK бренд-літер окремим рішенням підібрати кириличну гарнітуру до production.
-- UI/body: **Inter 400/500/600**, self-hosted Latin + Cyrillic. Читання 17 px desktop / 16 px mobile, line-height 1.85. Meta 11–12 px, тільки другорядна інформація.
-- Mono: Consolas → Courier New. Дата, джерело, номер розділу. Не використовувати для великих абзаців.
+- **Шкала 2.0 у rem** (поважає розмір шрифту, який читач задав у браузері): 12 · 13 · 14 · 16 · 18 px для мети, підписів, контролів, UI і читання; fluid `clamp()` для заголовків 19–22 (картки), 22–28 (h3), 28–40 (h2), 36–58 (h1), 42–72 px (masthead/обкладинка). **12 px — абсолютний мінімум**: у прототипі до v3 було 4 220 випадків дрібнішого тексту на 208 перевірених сторінках, у v3 — 0 на 560. (source: `artifacts/after-hours/tokens.css`; `qa/qa-baseline.json`, `qa/qa-v3-final-chromium.json`)
+- EN display: **Fraunces 400**, окремий italic для акцентів; tracking −0.032em (h1–h2), −0.02em (h3).
+- UK display: **Georgia**, локальний системний serif fallback, спокійніший tracking (−0.012em). Fraunces у наявному пакеті не має кириличного subset; не змішувати латиницю й кирилицю різних display-шрифтів в одному українському headline. Для повністю однакових EN/UK бренд-літер окремим рішенням підібрати кириличну гарнітуру до production.
+- UI/body: **Inter 400/500/600**, self-hosted Latin + Cyrillic. Читання 18 px, line-height 1.78, міра 68ch; UI 16 px, line-height 1.65.
+- Mono: системний стек `ui-monospace` → Cascadia/Consolas. Дата, джерело, номер розділу. Короткі eyebrow — капсом з трекінгом 0.13em; довгі мітки-реєстри (як формат статті «02 / Technical field guide») — у sentence case, щоб лишатися читабельними. Код ніколи не дрібніший за 12 px.
+- Брейкпоінти в `em`, текстові міри в `rem`: коли читач збільшує шрифт браузера, макет переходить у компактну форму замість переповнення (перевірка: шрифт 32 px на 1280 px і reflow на 320 px — 112 сторінок без втрат). (source: `artifacts/after-hours/style.css`, `pages.css`; `qa/zoom-report.json`)
 - H1 один на сторінку. Довгі headline не обрізати; card summary можна обмежити, але повна назва доступна.
 
 Пакети шрифтів підтверджено `node_modules/@fontsource-variable/`; файли та ліцензії скопійовано в `artifacts/after-hours/assets/`. Решта — дизайн-рішення. (source: `node_modules/@fontsource-variable/`; design proposal)
@@ -123,6 +140,8 @@ Last updated: 2026-09-26
 | Таблиці | повна ширина body | локальний скрол за потреби | власний scroll-container, не скрол усієї сторінки |
 
 Перевірка мінімум 360, 390, 768, 1024 і 1440 px; довгі UK-назви й 200% text zoom. Автоматичне згортання sidebar не повинно ховати першоджерела. (source: design proposal)
+
+У прототипі v3 межі задані в `em` (px у таблиці — значення за стандартного шрифту 16 px), тож при збільшеному шрифті браузера сторінка переходить до вужчої колонки таблиці. Перенести цей підхід і в production-брейкпоінти Tailwind. (source: `artifacts/after-hours/style.css`, `pages.css`; `qa/zoom-report.json`)
 
 ## 6. UI-компоненти та контракт поведінки
 
@@ -156,7 +175,7 @@ Last updated: 2026-09-26
 
 ## 7. Анімації
 
-**Оновлено 2026-09-25:** власник обрав і розвинув [Tension v2](after-hours-tension.md). Спільний прототип тепер містить дев’ять жестів та брендовий Editorial Fold; початкова таблиця нижче збережена як історія базового концепту. Актуальні параметри — `artifacts/after-hours/tokens.json` і `tension.js`. (source: запит власника 2026-09-25)
+**Оновлено 2026-09-28:** актуальна мова руху — [Tension v3](after-hours-tension.md): дванадцять жестів, View Transitions між маршрутами і брендова сцена The Resolve (3,4 с) замість Editorial Fold v2. Початкова таблиця нижче збережена як історія базового концепту. Актуальні параметри — `artifacts/after-hours/tokens.json` і `tension.js`. (source: запит власника 2026-09-25 і 2026-09-28)
 
 | Тригер | Що рухається | Duration / easing | Reduced motion |
 |---|---|---|---|

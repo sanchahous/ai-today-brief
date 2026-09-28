@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 // Only these two public prototype directories are exposed, never the repository.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const allowed = ["after-hours", "after-hours-motion"];
-const types = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".json": "application/json", ".md": "text/plain; charset=utf-8" };
+const types = { ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".svg": "image/svg+xml", ".woff2": "font/woff2", ".json": "application/json", ".md": "text/plain; charset=utf-8" };
 http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, "http://localhost");

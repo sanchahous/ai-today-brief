@@ -4960,3 +4960,11 @@ https://claude.ai/code/artifact/dc29256b-77f4-4941-a78d-b6a1710c4650. Код щ�
 Джерело: перевірка `npm run pr:check`; відсутній `artifacts/after-hours-motion/FOLD-REFINED.md`; наявні `QA-v2.md` і `screens/fold-refined/`.
 
 Посилання на відсутній `FOLD-REFINED.md` у wiki й README замінено на чинний QA v2 та наявні кадри Editorial Fold. Оновлено короткий опис у `wiki/index.md`.
+
+## 2026-09-28 — After Hours v3: прототипи до production-рівня
+
+Джерело: запит власника 2026-09-28 (4 скріншоти: баги кольорів світлої теми, дрібні мітки, Editorial Fold); гілка `feat/after-hours-prototype-refine` від `main` `f920671`; `artifacts/after-hours/qa/*.json`; browser review.
+
+Прототип `artifacts/after-hours/` оновлено до v3: токени 2.0.0-proposal у трьох шарах із повним Day-перевизначенням (корінь багів світлої теми — неперевизначені `--paper`/`--ink`/`--brass` і жорсткі кольори категорій), третій акцент claret/velvet, rem-шкала з мінімумом 12 px, брейкпоінти в `em`; окрема структура для Digests, Daily, Weekly, Concepts, Guides, Toolbox, Categories; SEO/JSON-LD-контракт кожного маршруту з інспектором; AVIF/WebP концепт-арту; Tension v3 і брендова сцена The Resolve замість Editorial Fold; маршрути `#/coverage` і `#/author`; код розбито на модулі. QA: 560 сторінок Chromium + axe, 336 Firefox/WebKit і 112 з увімкненим рухом — 0 порушень; 200% тексту й reflow 320 px — 112 сторінок без втрат; 42 графи JSON-LD без пропусків; контраст-гейт 160 пар без провалів (до змін: 222 порушення axe, 4 220 випадків тексту < 12 px, 2 136 малих цілей на 208 сторінках).
+
+Оновлено [product/after-hours-redesign](product/after-hours-redesign.md) (статус v3, палітра 2.0 з таблицею міграції з `tokens.ts` v1.0.0, типографіка, маршрути `author`/`coverage`/`motion`), [product/after-hours-tension](product/after-hours-tension.md) (Tension v3, The Resolve, заміри кадрів), [architecture/design-system-tokens](architecture/design-system-tokens.md) (пропозиція 2.0.0; `faint` у `tokens.ts` v1.0.0 і в live `globals.css` dark — нижче AA: 3,88 / 3,03 / 3,54:1) та `wiki/index.md`. Production `src/` не змінювався; push і PR не виконувались.
