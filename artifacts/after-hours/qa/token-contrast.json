@@ -1,0 +1,1928 @@
+{
+  "date": "2026-09-28",
+  "version": "2.0.0-proposal",
+  "pairs": 160,
+  "failures": 0,
+  "results": [
+    {
+      "theme": "night",
+      "fg": "text",
+      "bg": "bg",
+      "colors": [
+        "#f0e9dc",
+        "#171918"
+      ],
+      "ratio": 14.63,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "text",
+      "bg": "surface",
+      "colors": [
+        "#f0e9dc",
+        "#1f2321"
+      ],
+      "ratio": 13.17,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "text",
+      "bg": "raised",
+      "colors": [
+        "#f0e9dc",
+        "#282d29"
+      ],
+      "ratio": 11.61,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "muted",
+      "bg": "bg",
+      "colors": [
+        "#b9b7ac",
+        "#171918"
+      ],
+      "ratio": 8.78,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "muted",
+      "bg": "surface",
+      "colors": [
+        "#b9b7ac",
+        "#1f2321"
+      ],
+      "ratio": 7.9,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "muted",
+      "bg": "raised",
+      "colors": [
+        "#b9b7ac",
+        "#282d29"
+      ],
+      "ratio": 6.97,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "faint",
+      "bg": "bg",
+      "colors": [
+        "#a3a197",
+        "#171918"
+      ],
+      "ratio": 6.82,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "faint",
+      "bg": "surface",
+      "colors": [
+        "#a3a197",
+        "#1f2321"
+      ],
+      "ratio": 6.14,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "faint",
+      "bg": "raised",
+      "colors": [
+        "#a3a197",
+        "#282d29"
+      ],
+      "ratio": 5.41,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "accent",
+      "bg": "bg",
+      "colors": [
+        "#d4b483",
+        "#171918"
+      ],
+      "ratio": 8.96,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "accent",
+      "bg": "surface",
+      "colors": [
+        "#d4b483",
+        "#1f2321"
+      ],
+      "ratio": 8.07,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "accent",
+      "bg": "raised",
+      "colors": [
+        "#d4b483",
+        "#282d29"
+      ],
+      "ratio": 7.12,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "signal",
+      "bg": "bg",
+      "colors": [
+        "#b5d8cc",
+        "#171918"
+      ],
+      "ratio": 11.49,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "signal",
+      "bg": "surface",
+      "colors": [
+        "#b5d8cc",
+        "#1f2321"
+      ],
+      "ratio": 10.34,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "signal",
+      "bg": "raised",
+      "colors": [
+        "#b5d8cc",
+        "#282d29"
+      ],
+      "ratio": 9.12,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "claret",
+      "bg": "bg",
+      "colors": [
+        "#e3919d",
+        "#171918"
+      ],
+      "ratio": 7.41,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "claret",
+      "bg": "surface",
+      "colors": [
+        "#e3919d",
+        "#1f2321"
+      ],
+      "ratio": 6.67,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "claret",
+      "bg": "raised",
+      "colors": [
+        "#e3919d",
+        "#282d29"
+      ],
+      "ratio": 5.88,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "error",
+      "bg": "bg",
+      "colors": [
+        "#ff9b8a",
+        "#171918"
+      ],
+      "ratio": 8.67,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "error",
+      "bg": "surface",
+      "colors": [
+        "#ff9b8a",
+        "#1f2321"
+      ],
+      "ratio": 7.8,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "error",
+      "bg": "raised",
+      "colors": [
+        "#ff9b8a",
+        "#282d29"
+      ],
+      "ratio": 6.88,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "success",
+      "bg": "bg",
+      "colors": [
+        "#b5d8cc",
+        "#171918"
+      ],
+      "ratio": 11.49,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "success",
+      "bg": "surface",
+      "colors": [
+        "#b5d8cc",
+        "#1f2321"
+      ],
+      "ratio": 10.34,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "success",
+      "bg": "raised",
+      "colors": [
+        "#b5d8cc",
+        "#282d29"
+      ],
+      "ratio": 9.12,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "warning",
+      "bg": "bg",
+      "colors": [
+        "#e8c07a",
+        "#171918"
+      ],
+      "ratio": 10.31,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "warning",
+      "bg": "surface",
+      "colors": [
+        "#e8c07a",
+        "#1f2321"
+      ],
+      "ratio": 9.28,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "warning",
+      "bg": "raised",
+      "colors": [
+        "#e8c07a",
+        "#282d29"
+      ],
+      "ratio": 8.18,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-tools",
+      "bg": "bg",
+      "colors": [
+        "#7fcfae",
+        "#171918"
+      ],
+      "ratio": 9.62,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-tools",
+      "bg": "surface",
+      "colors": [
+        "#7fcfae",
+        "#1f2321"
+      ],
+      "ratio": 8.66,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-tools",
+      "bg": "raised",
+      "colors": [
+        "#7fcfae",
+        "#282d29"
+      ],
+      "ratio": 7.64,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-tutorials",
+      "bg": "bg",
+      "colors": [
+        "#e6c071",
+        "#171918"
+      ],
+      "ratio": 10.22,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-tutorials",
+      "bg": "surface",
+      "colors": [
+        "#e6c071",
+        "#1f2321"
+      ],
+      "ratio": 9.19,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-tutorials",
+      "bg": "raised",
+      "colors": [
+        "#e6c071",
+        "#282d29"
+      ],
+      "ratio": 8.11,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-cost",
+      "bg": "bg",
+      "colors": [
+        "#6fcad6",
+        "#171918"
+      ],
+      "ratio": 9.33,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-cost",
+      "bg": "surface",
+      "colors": [
+        "#6fcad6",
+        "#1f2321"
+      ],
+      "ratio": 8.4,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-cost",
+      "bg": "raised",
+      "colors": [
+        "#6fcad6",
+        "#282d29"
+      ],
+      "ratio": 7.41,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-agents",
+      "bg": "bg",
+      "colors": [
+        "#b2a6f0",
+        "#171918"
+      ],
+      "ratio": 8.08,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-agents",
+      "bg": "surface",
+      "colors": [
+        "#b2a6f0",
+        "#1f2321"
+      ],
+      "ratio": 7.27,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-agents",
+      "bg": "raised",
+      "colors": [
+        "#b2a6f0",
+        "#282d29"
+      ],
+      "ratio": 6.41,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-vibe",
+      "bg": "bg",
+      "colors": [
+        "#e59bc9",
+        "#171918"
+      ],
+      "ratio": 8.3,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-vibe",
+      "bg": "surface",
+      "colors": [
+        "#e59bc9",
+        "#1f2321"
+      ],
+      "ratio": 7.47,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-vibe",
+      "bg": "raised",
+      "colors": [
+        "#e59bc9",
+        "#282d29"
+      ],
+      "ratio": 6.59,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-creative",
+      "bg": "bg",
+      "colors": [
+        "#f09b86",
+        "#171918"
+      ],
+      "ratio": 8.19,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-creative",
+      "bg": "surface",
+      "colors": [
+        "#f09b86",
+        "#1f2321"
+      ],
+      "ratio": 7.37,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-creative",
+      "bg": "raised",
+      "colors": [
+        "#f09b86",
+        "#282d29"
+      ],
+      "ratio": 6.5,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-local",
+      "bg": "bg",
+      "colors": [
+        "#8fb4ee",
+        "#171918"
+      ],
+      "ratio": 8.35,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-local",
+      "bg": "surface",
+      "colors": [
+        "#8fb4ee",
+        "#1f2321"
+      ],
+      "ratio": 7.52,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-local",
+      "bg": "raised",
+      "colors": [
+        "#8fb4ee",
+        "#282d29"
+      ],
+      "ratio": 6.63,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-career",
+      "bg": "bg",
+      "colors": [
+        "#c4cc7e",
+        "#171918"
+      ],
+      "ratio": 10.34,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-career",
+      "bg": "surface",
+      "colors": [
+        "#c4cc7e",
+        "#1f2321"
+      ],
+      "ratio": 9.3,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-career",
+      "bg": "raised",
+      "colors": [
+        "#c4cc7e",
+        "#282d29"
+      ],
+      "ratio": 8.2,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-models",
+      "bg": "bg",
+      "colors": [
+        "#cfa0e6",
+        "#171918"
+      ],
+      "ratio": 8.26,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-models",
+      "bg": "surface",
+      "colors": [
+        "#cfa0e6",
+        "#1f2321"
+      ],
+      "ratio": 7.44,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "cat-models",
+      "bg": "raised",
+      "colors": [
+        "#cfa0e6",
+        "#282d29"
+      ],
+      "ratio": 6.56,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "text",
+      "bg": "bg-deep",
+      "colors": [
+        "#f0e9dc",
+        "#131514"
+      ],
+      "ratio": 15.19,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "text",
+      "bg": "overlay",
+      "colors": [
+        "#f0e9dc",
+        "#323832"
+      ],
+      "ratio": 9.95,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "muted",
+      "bg": "bg-deep",
+      "colors": [
+        "#b9b7ac",
+        "#131514"
+      ],
+      "ratio": 9.11,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "muted",
+      "bg": "overlay",
+      "colors": [
+        "#b9b7ac",
+        "#323832"
+      ],
+      "ratio": 5.97,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "faint",
+      "bg": "bg-deep",
+      "colors": [
+        "#a3a197",
+        "#131514"
+      ],
+      "ratio": 7.08,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "faint",
+      "bg": "overlay",
+      "colors": [
+        "#a3a197",
+        "#323832"
+      ],
+      "ratio": 4.64,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "accent",
+      "bg": "bg-deep",
+      "colors": [
+        "#d4b483",
+        "#131514"
+      ],
+      "ratio": 9.31,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "accent",
+      "bg": "overlay",
+      "colors": [
+        "#d4b483",
+        "#323832"
+      ],
+      "ratio": 6.1,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "on-accent",
+      "bg": "accent-fill",
+      "colors": [
+        "#171918",
+        "#d4b483"
+      ],
+      "ratio": 8.96,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "on-accent",
+      "bg": "accent-fill-hover",
+      "colors": [
+        "#171918",
+        "#e8cd9e"
+      ],
+      "ratio": 11.49,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "on-velvet",
+      "bg": "velvet",
+      "colors": [
+        "#f6e6df",
+        "#431a24"
+      ],
+      "ratio": 12.26,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "on-velvet",
+      "bg": "velvet-deep",
+      "colors": [
+        "#f6e6df",
+        "#2e1118"
+      ],
+      "ratio": 14.31,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "selection-text",
+      "bg": "selection-bg",
+      "colors": [
+        "#171918",
+        "#d4b483"
+      ],
+      "ratio": 8.96,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "claret",
+      "bg": "velvet",
+      "colors": [
+        "#e3919d",
+        "#431a24"
+      ],
+      "ratio": 6.24,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "line-strong",
+      "bg": "bg",
+      "colors": [
+        "#737a73",
+        "#171918"
+      ],
+      "ratio": 4,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "focus",
+      "bg": "bg",
+      "colors": [
+        "#b5d8cc",
+        "#171918"
+      ],
+      "ratio": 11.49,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "accent-fill",
+      "bg": "bg",
+      "colors": [
+        "#d4b483",
+        "#171918"
+      ],
+      "ratio": 8.96,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "line-strong",
+      "bg": "surface",
+      "colors": [
+        "#737a73",
+        "#1f2321"
+      ],
+      "ratio": 3.6,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "focus",
+      "bg": "surface",
+      "colors": [
+        "#b5d8cc",
+        "#1f2321"
+      ],
+      "ratio": 10.34,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "accent-fill",
+      "bg": "surface",
+      "colors": [
+        "#d4b483",
+        "#1f2321"
+      ],
+      "ratio": 8.07,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "line-strong",
+      "bg": "raised",
+      "colors": [
+        "#737a73",
+        "#282d29"
+      ],
+      "ratio": 3.18,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "focus",
+      "bg": "raised",
+      "colors": [
+        "#b5d8cc",
+        "#282d29"
+      ],
+      "ratio": 9.12,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "accent-fill",
+      "bg": "raised",
+      "colors": [
+        "#d4b483",
+        "#282d29"
+      ],
+      "ratio": 7.12,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "parchment",
+      "bg": "stage",
+      "colors": [
+        "#f0e9dc",
+        "#0e100f"
+      ],
+      "ratio": 15.82,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "brass-400",
+      "bg": "stage",
+      "colors": [
+        "#d4b483",
+        "#0e100f"
+      ],
+      "ratio": 9.69,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "night",
+      "fg": "celadon-300",
+      "bg": "stage",
+      "colors": [
+        "#b5d8cc",
+        "#0e100f"
+      ],
+      "ratio": 12.42,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "text",
+      "bg": "bg",
+      "colors": [
+        "#1d211d",
+        "#efe8da"
+      ],
+      "ratio": 13.38,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "text",
+      "bg": "surface",
+      "colors": [
+        "#1d211d",
+        "#f7f2e8"
+      ],
+      "ratio": 14.62,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "text",
+      "bg": "raised",
+      "colors": [
+        "#1d211d",
+        "#fdfaf4"
+      ],
+      "ratio": 15.66,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "muted",
+      "bg": "bg",
+      "colors": [
+        "#4d5148",
+        "#efe8da"
+      ],
+      "ratio": 6.66,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "muted",
+      "bg": "surface",
+      "colors": [
+        "#4d5148",
+        "#f7f2e8"
+      ],
+      "ratio": 7.28,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "muted",
+      "bg": "raised",
+      "colors": [
+        "#4d5148",
+        "#fdfaf4"
+      ],
+      "ratio": 7.79,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "faint",
+      "bg": "bg",
+      "colors": [
+        "#5a5e54",
+        "#efe8da"
+      ],
+      "ratio": 5.44,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "faint",
+      "bg": "surface",
+      "colors": [
+        "#5a5e54",
+        "#f7f2e8"
+      ],
+      "ratio": 5.95,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "faint",
+      "bg": "raised",
+      "colors": [
+        "#5a5e54",
+        "#fdfaf4"
+      ],
+      "ratio": 6.37,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "accent",
+      "bg": "bg",
+      "colors": [
+        "#72562e",
+        "#efe8da"
+      ],
+      "ratio": 5.58,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "accent",
+      "bg": "surface",
+      "colors": [
+        "#72562e",
+        "#f7f2e8"
+      ],
+      "ratio": 6.1,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "accent",
+      "bg": "raised",
+      "colors": [
+        "#72562e",
+        "#fdfaf4"
+      ],
+      "ratio": 6.53,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "signal",
+      "bg": "bg",
+      "colors": [
+        "#2d6559",
+        "#efe8da"
+      ],
+      "ratio": 5.53,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "signal",
+      "bg": "surface",
+      "colors": [
+        "#2d6559",
+        "#f7f2e8"
+      ],
+      "ratio": 6.04,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "signal",
+      "bg": "raised",
+      "colors": [
+        "#2d6559",
+        "#fdfaf4"
+      ],
+      "ratio": 6.47,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "claret",
+      "bg": "bg",
+      "colors": [
+        "#8e2a3f",
+        "#efe8da"
+      ],
+      "ratio": 6.75,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "claret",
+      "bg": "surface",
+      "colors": [
+        "#8e2a3f",
+        "#f7f2e8"
+      ],
+      "ratio": 7.37,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "claret",
+      "bg": "raised",
+      "colors": [
+        "#8e2a3f",
+        "#fdfaf4"
+      ],
+      "ratio": 7.9,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "error",
+      "bg": "bg",
+      "colors": [
+        "#b3261e",
+        "#efe8da"
+      ],
+      "ratio": 5.36,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "error",
+      "bg": "surface",
+      "colors": [
+        "#b3261e",
+        "#f7f2e8"
+      ],
+      "ratio": 5.86,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "error",
+      "bg": "raised",
+      "colors": [
+        "#b3261e",
+        "#fdfaf4"
+      ],
+      "ratio": 6.27,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "success",
+      "bg": "bg",
+      "colors": [
+        "#2d6559",
+        "#efe8da"
+      ],
+      "ratio": 5.53,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "success",
+      "bg": "surface",
+      "colors": [
+        "#2d6559",
+        "#f7f2e8"
+      ],
+      "ratio": 6.04,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "success",
+      "bg": "raised",
+      "colors": [
+        "#2d6559",
+        "#fdfaf4"
+      ],
+      "ratio": 6.47,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "warning",
+      "bg": "bg",
+      "colors": [
+        "#7a5a10",
+        "#efe8da"
+      ],
+      "ratio": 5.22,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "warning",
+      "bg": "surface",
+      "colors": [
+        "#7a5a10",
+        "#f7f2e8"
+      ],
+      "ratio": 5.71,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "warning",
+      "bg": "raised",
+      "colors": [
+        "#7a5a10",
+        "#fdfaf4"
+      ],
+      "ratio": 6.11,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-tools",
+      "bg": "bg",
+      "colors": [
+        "#1f6b4f",
+        "#efe8da"
+      ],
+      "ratio": 5.26,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-tools",
+      "bg": "surface",
+      "colors": [
+        "#1f6b4f",
+        "#f7f2e8"
+      ],
+      "ratio": 5.75,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-tools",
+      "bg": "raised",
+      "colors": [
+        "#1f6b4f",
+        "#fdfaf4"
+      ],
+      "ratio": 6.16,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-tutorials",
+      "bg": "bg",
+      "colors": [
+        "#7a5a10",
+        "#efe8da"
+      ],
+      "ratio": 5.22,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-tutorials",
+      "bg": "surface",
+      "colors": [
+        "#7a5a10",
+        "#f7f2e8"
+      ],
+      "ratio": 5.71,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-tutorials",
+      "bg": "raised",
+      "colors": [
+        "#7a5a10",
+        "#fdfaf4"
+      ],
+      "ratio": 6.11,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-cost",
+      "bg": "bg",
+      "colors": [
+        "#16636e",
+        "#efe8da"
+      ],
+      "ratio": 5.66,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-cost",
+      "bg": "surface",
+      "colors": [
+        "#16636e",
+        "#f7f2e8"
+      ],
+      "ratio": 6.18,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-cost",
+      "bg": "raised",
+      "colors": [
+        "#16636e",
+        "#fdfaf4"
+      ],
+      "ratio": 6.62,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-agents",
+      "bg": "bg",
+      "colors": [
+        "#5645a8",
+        "#efe8da"
+      ],
+      "ratio": 6.12,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-agents",
+      "bg": "surface",
+      "colors": [
+        "#5645a8",
+        "#f7f2e8"
+      ],
+      "ratio": 6.69,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-agents",
+      "bg": "raised",
+      "colors": [
+        "#5645a8",
+        "#fdfaf4"
+      ],
+      "ratio": 7.17,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-vibe",
+      "bg": "bg",
+      "colors": [
+        "#8b2f69",
+        "#efe8da"
+      ],
+      "ratio": 6.36,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-vibe",
+      "bg": "surface",
+      "colors": [
+        "#8b2f69",
+        "#f7f2e8"
+      ],
+      "ratio": 6.95,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-vibe",
+      "bg": "raised",
+      "colors": [
+        "#8b2f69",
+        "#fdfaf4"
+      ],
+      "ratio": 7.44,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-creative",
+      "bg": "bg",
+      "colors": [
+        "#9c3b25",
+        "#efe8da"
+      ],
+      "ratio": 5.62,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-creative",
+      "bg": "surface",
+      "colors": [
+        "#9c3b25",
+        "#f7f2e8"
+      ],
+      "ratio": 6.14,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-creative",
+      "bg": "raised",
+      "colors": [
+        "#9c3b25",
+        "#fdfaf4"
+      ],
+      "ratio": 6.57,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-local",
+      "bg": "bg",
+      "colors": [
+        "#2c5a9e",
+        "#efe8da"
+      ],
+      "ratio": 5.62,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-local",
+      "bg": "surface",
+      "colors": [
+        "#2c5a9e",
+        "#f7f2e8"
+      ],
+      "ratio": 6.14,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-local",
+      "bg": "raised",
+      "colors": [
+        "#2c5a9e",
+        "#fdfaf4"
+      ],
+      "ratio": 6.58,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-career",
+      "bg": "bg",
+      "colors": [
+        "#5c6418",
+        "#efe8da"
+      ],
+      "ratio": 5.23,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-career",
+      "bg": "surface",
+      "colors": [
+        "#5c6418",
+        "#f7f2e8"
+      ],
+      "ratio": 5.72,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-career",
+      "bg": "raised",
+      "colors": [
+        "#5c6418",
+        "#fdfaf4"
+      ],
+      "ratio": 6.12,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-models",
+      "bg": "bg",
+      "colors": [
+        "#733d93",
+        "#efe8da"
+      ],
+      "ratio": 6.11,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-models",
+      "bg": "surface",
+      "colors": [
+        "#733d93",
+        "#f7f2e8"
+      ],
+      "ratio": 6.68,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "cat-models",
+      "bg": "raised",
+      "colors": [
+        "#733d93",
+        "#fdfaf4"
+      ],
+      "ratio": 7.15,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "text",
+      "bg": "bg-deep",
+      "colors": [
+        "#1d211d",
+        "#e6ddcc"
+      ],
+      "ratio": 12.1,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "text",
+      "bg": "overlay",
+      "colors": [
+        "#1d211d",
+        "#e6ddcc"
+      ],
+      "ratio": 12.1,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "muted",
+      "bg": "bg-deep",
+      "colors": [
+        "#4d5148",
+        "#e6ddcc"
+      ],
+      "ratio": 6.02,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "muted",
+      "bg": "overlay",
+      "colors": [
+        "#4d5148",
+        "#e6ddcc"
+      ],
+      "ratio": 6.02,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "faint",
+      "bg": "bg-deep",
+      "colors": [
+        "#5a5e54",
+        "#e6ddcc"
+      ],
+      "ratio": 4.92,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "faint",
+      "bg": "overlay",
+      "colors": [
+        "#5a5e54",
+        "#e6ddcc"
+      ],
+      "ratio": 4.92,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "accent",
+      "bg": "bg-deep",
+      "colors": [
+        "#72562e",
+        "#e6ddcc"
+      ],
+      "ratio": 5.05,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "accent",
+      "bg": "overlay",
+      "colors": [
+        "#72562e",
+        "#e6ddcc"
+      ],
+      "ratio": 5.05,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "on-accent",
+      "bg": "accent-fill",
+      "colors": [
+        "#fdfaf4",
+        "#72562e"
+      ],
+      "ratio": 6.53,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "on-accent",
+      "bg": "accent-fill-hover",
+      "colors": [
+        "#fdfaf4",
+        "#5a4424"
+      ],
+      "ratio": 8.81,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "on-velvet",
+      "bg": "velvet",
+      "colors": [
+        "#4a1522",
+        "#f3e1dc"
+      ],
+      "ratio": 11.69,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "on-velvet",
+      "bg": "velvet-deep",
+      "colors": [
+        "#4a1522",
+        "#ead0ca"
+      ],
+      "ratio": 10.11,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "selection-text",
+      "bg": "selection-bg",
+      "colors": [
+        "#1d211d",
+        "#e8cd9e"
+      ],
+      "ratio": 10.61,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "claret",
+      "bg": "velvet",
+      "colors": [
+        "#8e2a3f",
+        "#f3e1dc"
+      ],
+      "ratio": 6.51,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "line-strong",
+      "bg": "bg",
+      "colors": [
+        "#8c8577",
+        "#efe8da"
+      ],
+      "ratio": 3,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "focus",
+      "bg": "bg",
+      "colors": [
+        "#2d6559",
+        "#efe8da"
+      ],
+      "ratio": 5.53,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "accent-fill",
+      "bg": "bg",
+      "colors": [
+        "#72562e",
+        "#efe8da"
+      ],
+      "ratio": 5.58,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "line-strong",
+      "bg": "surface",
+      "colors": [
+        "#8c8577",
+        "#f7f2e8"
+      ],
+      "ratio": 3.28,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "focus",
+      "bg": "surface",
+      "colors": [
+        "#2d6559",
+        "#f7f2e8"
+      ],
+      "ratio": 6.04,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "accent-fill",
+      "bg": "surface",
+      "colors": [
+        "#72562e",
+        "#f7f2e8"
+      ],
+      "ratio": 6.1,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "line-strong",
+      "bg": "raised",
+      "colors": [
+        "#8c8577",
+        "#fdfaf4"
+      ],
+      "ratio": 3.51,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "focus",
+      "bg": "raised",
+      "colors": [
+        "#2d6559",
+        "#fdfaf4"
+      ],
+      "ratio": 6.47,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "accent-fill",
+      "bg": "raised",
+      "colors": [
+        "#72562e",
+        "#fdfaf4"
+      ],
+      "ratio": 6.53,
+      "minimum": 3,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "parchment",
+      "bg": "stage",
+      "colors": [
+        "#f0e9dc",
+        "#151716"
+      ],
+      "ratio": 14.92,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "brass-400",
+      "bg": "stage",
+      "colors": [
+        "#d4b483",
+        "#151716"
+      ],
+      "ratio": 9.14,
+      "minimum": 4.5,
+      "pass": true
+    },
+    {
+      "theme": "day",
+      "fg": "celadon-300",
+      "bg": "stage",
+      "colors": [
+        "#b5d8cc",
+        "#151716"
+      ],
+      "ratio": 11.71,
+      "minimum": 4.5,
+      "pass": true
+    }
+  ]
+}

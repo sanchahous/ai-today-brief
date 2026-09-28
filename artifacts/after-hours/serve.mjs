@@ -10,6 +10,8 @@ const types = {
   ".png": "image/png",
   ".jpg": "image/jpeg",
   ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".avif": "image/avif",
   ".svg": "image/svg+xml",
   ".woff2": "font/woff2",
   ".json": "application/json",

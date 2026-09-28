@@ -1,0 +1,36 @@
+{
+  "date": "2026-09-28T14:19:05.604Z",
+  "langs": [
+    "en",
+    "uk"
+  ],
+  "graphs": 42,
+  "types": [
+    "AboutPage",
+    "Answer",
+    "BreadcrumbList",
+    "CollectionPage",
+    "CreativeWork",
+    "DefinedTerm",
+    "DefinedTermSet",
+    "EntryPoint",
+    "FAQPage",
+    "ImageObject",
+    "ItemList",
+    "ListItem",
+    "MediaObject",
+    "NewsArticle",
+    "Offer",
+    "Organization",
+    "Person",
+    "ProfilePage",
+    "Question",
+    "SearchAction",
+    "TechArticle",
+    "VideoObject",
+    "WebApplication",
+    "WebPage",
+    "WebSite"
+  ],
+  "problems": []
+}

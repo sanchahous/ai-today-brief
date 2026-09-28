@@ -1,8 +1,8 @@
 # After Hours — три motion-концепти
 
-**Поточний напрям — Tension v2, обраний власником.** Він розвинений для всіх макетів, отримав дев’ять жестів і брендовий **Editorial Fold**. [Повний прототип](http://127.0.0.1:4318/after-hours/#/home) · [атлас руху](http://127.0.0.1:4318/after-hours/#/motion) · [галерея 26 макетів](http://127.0.0.1:4318/after-hours-motion/gallery-v2.html) · [QA v2](QA-v2.md).
+**Оновлення 2026-09-28 — Tension v3 і The Resolve.** Обраний напрям Tension розвинено до v3: дванадцять жестів (зокрема креслення ліній, відлік чисел, «акорд» знака, View Transitions між маршрутами) і нова брендова сцена **The Resolve** (3,4 с) замість Editorial Fold. Сцена розповідає ідею видання: розсіяні латунні сигнали новинного дня (01) редагуються в лінії знака A (02), крізь знак проходить хвиля резонансу, а celadon-крапка приземляється трохи поза тактом (03). [Покадровий перегляд The Resolve](http://127.0.0.1:4318/after-hours-motion/fold-review.html) · [атлас руху](http://127.0.0.1:4318/after-hours/#/motion) · [галерея v3](../after-hours/gallery-v3.html) · [специфікація](../../wiki/product/after-hours-tension.md). Лабораторія нижче підключає модулі прототипу v3 (усі, крім `boot.js`), тож порівняння йде на актуальних сторінках.
 
-**Editorial Fold допрацьовано:** спільна опора, впорядковане розкриття ребер, чистіша геометрія й плавна підготовка Replay. [Покадровий перегляд](http://127.0.0.1:4318/after-hours-motion/fold-review.html) · [QA v2](QA-v2.md) · актуальні кадри: [2200 мс](screens/fold-refined/frame-2200.jpg), [desktop](screens/fold-refined/home-desktop.jpg), [mobile](screens/fold-refined/home-mobile.jpg). Попередні знімки галереї документують v2 до цього полірування.
+**Історія (v2, 2026-09-25):** Tension v2 з дев’ятьма жестами й брендовим **Editorial Fold** — [галерея 26 макетів v2](http://127.0.0.1:4318/after-hours-motion/gallery-v2.html) · [QA v2](QA-v2.md). Editorial Fold тоді допрацьовано: спільна опора, впорядковане розкриття ребер, чистіша геометрія й плавна підготовка Replay. Кадри Editorial Fold: [2200 мс](screens/fold-refined/frame-2200.jpg), [desktop](screens/fold-refined/home-desktop.jpg), [mobile](screens/fold-refined/home-mobile.jpg). Попередні знімки галереї документують v2 до цього полірування.
 
 **Article system допрацьовано 2026-09-26:** у живому прототипі доступні три повні, взаємно відмінні приклади — [редакційний аналіз](http://127.0.0.1:4318/after-hours/#/article?variant=analysis), [технічний гайд](http://127.0.0.1:4318/after-hours/#/article?variant=technical) і [evidence note](http://127.0.0.1:4318/after-hours/#/article?variant=evidence). Перемикач форматів є на початку кожної статті; URL можна передавати окремо.
 
@@ -20,7 +20,7 @@ node artifacts/after-hours-motion/serve.mjs
 | 02 · **Quiet Signal** | Спрямована лінія, послідовний відгук, редакційна точність | [Відкрити](http://127.0.0.1:4318/after-hours-motion/?concept=signal#/home) |
 | 03 · **Undertow** | Хвильове розкриття, скло, повільна течія | [Відкрити](http://127.0.0.1:4318/after-hours-motion/?concept=tide#/home) |
 
-Первинна рекомендація Quiet Signal залишена в історії дослідження. Після порівняння власник обрав Tension і попросив розширити різноманітність та охоплення. Перемикач Tension тепер показує **v2**; Signal і Undertow залишені для порівняння.
+Первинна рекомендація Quiet Signal залишена в історії дослідження. Після порівняння власник обрав Tension і попросив розширити різноманітність та охоплення. Перемикач Tension тепер показує **v3**; Signal і Undertow залишені для порівняння.
 
 ## Як порівняти за три хвилини
 
@@ -40,4 +40,4 @@ node artifacts/after-hours-motion/serve.mjs
 - [Специфікація](../../wiki/product/after-hours-motion.md) — порівняння, фізика, обмеження та перенесення в production.
 - [QA](QA.md) — перевірені сценарії та межі перевірки.
 
-Використовує спільні `../after-hours/` assets, CSS, demo-навігацію та `tension.js`. Папки слід зберігати поруч. Базовий прототип також оновлений до Tension v2. Це локальні дизайн-артефакти з демонстраційним контентом; підписка нічого не надсилає. Production-інтеграція й публікація не виконувалися.
+Використовує спільні `../after-hours/` assets, CSS, demo-навігацію та `tension.js`. Папки слід зберігати поруч. Базовий прототип також оновлений до Tension v3. Це локальні дизайн-артефакти з демонстраційним контентом; підписка нічого не надсилає. Production-інтеграція й публікація не виконувалися.
