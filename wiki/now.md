@@ -11,11 +11,20 @@ weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
 desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360)
-Last updated: 2026-09-25
+Last updated: 2026-09-26
 
 ---
 
 ## Стан репозиторію
+
+- **Дизайн-система After Hours: повна реалізація аудиту прогалин (2026-09-28), гілка `feat/design-system-gap-implementation`.**
+  Закрито 20 розривів (G01–G20) за планом `wiki/audits/2026-09-26-design-system-gap-plan.md`.
+  Ухвалено ADR [decisions/2026-09-26-news-discovery-and-pagination-architecture](decisions/2026-09-26-news-discovery-and-pagination-architecture.md).
+  Впроваджено 3-рівневі токени `src/lib/design-system/tokens.ts`, лінтер `npm run tokens:check` з WCAG AA (текст 14.6:1),
+  набір UI-примітивів `src/components/ui/` (touch floor ≥ 44px), чесну семантику та алгоритм сортування `src/lib/news-filters.ts`
+  (relevance лише при пошуку, прибрано `discussed`), двосторонню синхронізацію URL-state без порушення edge-кешування ISR `/news`,
+  мобільний drawer із захистом від переповнення та незрізаними назвами, а також E2E-набір `e2e/news-feed-interaction.spec.ts`.
+  (source: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `src/lib/design-system/tokens.ts`; `src/components/news/news-feed.tsx`)
 
 - **Weekly digest реліз розділено на дві частини: сайт+соц окремо від відео (2026-09-03),
   гілка `claude/weekly-digest-split-release-6fd035`.** Власник: не затримувати сайт/соц через

@@ -3,6 +3,7 @@ let lang = "en";
 let theme = "night";
 let activeFilter = "all";
 let saved = false;
+const savedStories = new Set();
 const t = (en, uk) => (lang === "uk" ? uk : en);
 const esc = (value) =>
   String(value).replace(
@@ -248,9 +249,916 @@ const feedRows = (items) =>
         `<article class="feed-row"><span class="meta">${s.time}<br>${t("05 SEP", "05 ВЕР")}</span><div>${eyebrow(s.label)}<h2 class="mt">${link(s.route, s.title)}</h2><p>${s.summary}</p></div>${visual(i)}</article>`,
     )
     .join("");
-function news(category = false) {
-  return `${intro(category ? t("TOPIC / 01", "ТЕМА / 01") : t("THE NEWSROOM", "СТРІЧКА НОВИН"), category ? "Agents <em>& MCP.</em>" : t("A clearer <em>signal.</em>", "Чіткіший <em>сигнал.</em>"), category ? t("Follow how agents connect, remember and act. Start with the concepts, then read the latest.", "Як агенти з’єднуються, пам’ятають і діють. Почніть із концептів, далі — останні матеріали.") : t("What is changing in AI, and why it matters to your work.", "Що змінюється в AI і чому це важливо для вашої роботи."))}${category ? `<div class="filters">${link("concept", "MCP ↗", "chip")}${link("concept", t("AI agents ↗", "AI-агенти ↗"), "chip")}${link("guide", t("Start with a guide ↗", "Почати з гайду ↗"), "chip")}</div>` : filterBar()}<div class="feed-layout"><div id="feed-content">${feedRows(stories().filter((s) => (category ? s.cat === "agents" : activeFilter === "all" || s.cat === activeFilter)))}<p class="meta spaced">${t("End of this demo selection.", "Кінець демонстраційної добірки.")}</p></div><aside class="sidebar">${eyebrow(t("READ IT YOUR WAY", "ЧИТАЙТЕ У СВОЄМУ ТЕМПІ"))}<h3>${t("Only have five minutes?", "Маєте лише п’ять хвилин?")}</h3><p>${t("Start with the daily brief for a focused overview.", "Почніть зі щоденного брифу для стислого огляду.")}</p>${link("daily", t("Read the daily brief ↗", "Читати щоденний бриф ↗"))}${link("saved", t("Your reading list ↗", "Ваше збережене ↗"))}<hr style="border:0;border-top:1px solid var(--line);margin:25px 0">${eyebrow(t("EXPLORE THE CONTEXT", "ДОСЛІДИТИ КОНТЕКСТ"))}${link("concept", "Model Context Protocol ↗")}${link("guide", t("Choosing a coding agent ↗", "Вибір агента для коду ↗"))}</aside></div><section class="section">${newsletter()}</section>`;
+const NEWS_CATEGORIES = [
+  { id: "tools-and-releases", name: "Tools & releases", ukName: "Інструменти та релізи", color: "#34d399", icon: "🛠️", dotClass: "cat-tools" },
+  { id: "tutorials-and-guides", name: "Tutorials & guides", ukName: "Інструкції та гайди", color: "#fbbf24", icon: "📖", dotClass: "cat-tutorials" },
+  { id: "token-and-cost-optimization", name: "Token & cost optimization", ukName: "Оптимізація токенів і вартості", color: "#22d3ee", icon: "⚡", dotClass: "cat-token" },
+  { id: "agents-and-mcp", name: "Agents & MCP", ukName: "Агенти та MCP", color: "#a78bfa", icon: "🤖", dotClass: "cat-agents" },
+  { id: "vibe-coding-workflow", name: "Vibe coding workflow", ukName: "Vibe coding процеси", color: "#f472b6", icon: "✨", dotClass: "cat-vibe" },
+  { id: "creative-ai", name: "Creative AI", ukName: "Креативний AI", color: "#fb7185", icon: "🎨", dotClass: "cat-creative" },
+  { id: "local-llms", name: "Local LLMs", ukName: "Локальні LLM", color: "#60a5fa", icon: "💻", dotClass: "cat-local" },
+  { id: "career-and-monetisation", name: "Career & monetisation", ukName: "Кар'єра та монетизація", color: "#eab308", icon: "💼", dotClass: "cat-career" },
+  { id: "models-and-research", name: "Models & research", ukName: "Моделі та дослідження", color: "#c084fc", icon: "🔬", dotClass: "cat-models" },
+];
+
+const CATEGORY_META = {
+  "tools-and-releases": { count: 33, icon: "🛠️", color: "#34d399", name: "Tools & releases", ukName: "Інструменти та релізи" },
+  "tutorials-and-guides": { count: 4, icon: "📖", color: "#fbbf24", name: "Tutorials & guides", ukName: "Інструкції та гайди" },
+  "token-and-cost-optimization": { count: 6, icon: "⚡", color: "#22d3ee", name: "Token & cost optimization", ukName: "Оптимізація токенів і вартості" },
+  "agents-and-mcp": { count: 33, icon: "🤖", color: "#a78bfa", name: "Agents & MCP", ukName: "Агенти та MCP" },
+  "vibe-coding-workflow": { count: 7, icon: "✨", color: "#f472b6", name: "Vibe coding workflow", ukName: "Vibe coding процеси" },
+  "creative-ai": { count: 3, icon: "🎨", color: "#fb7185", name: "Creative AI", ukName: "Креативний AI" },
+  "local-llms": { count: 5, icon: "💻", color: "#60a5fa", name: "Local LLMs", ukName: "Локальні LLM" },
+  "career-and-monetisation": { count: 0, icon: "💼", color: "#eab308", name: "Career & monetisation", ukName: "Кар'єра та монетизація" },
+  "models-and-research": { count: 9, icon: "🔬", color: "#c084fc", name: "Models & research", ukName: "Моделі та дослідження" },
+};
+
+const HOT_TOPICS = [
+  "#MCP",
+  "#Cursor",
+  "#Claude Code",
+  "#RAG",
+  "#PromptCaching",
+  "#LocalModels",
+  "#TokenOptimization",
+  "#Benchmarks",
+];
+
+const NEWS_STORIES = [
+  {
+    id: "cursor-harness-tuning",
+    cat: "agents-and-mcp",
+    date: "Sep 25, 2026",
+    readTime: "2 min read",
+    title: "Cursor Shares Harness Tuning Prompt to Cut Agent Token Overhead",
+    ukTitle: "Cursor ділиться промптом для налаштування харнесу та скорочення оверхеду токенів",
+    summary: "Cursor has shared a prompt for improving the token efficiency of AI agent harnesses. One round of prompt trimming, tool offloading, and cache layout changes cut one production team's overall token cost by about 7% with no loss in quality. Offloading non-core tools cut tool-description...",
+    ukSummary: "Cursor опублікував промпт для підвищення токен-ефективності харнесів AI-агентів. Один раунд скорочення промптів, розвантаження інструментів і перебудови кешу знизив загальні витрати команди на 7% без втрати якості. Винесення другорядних інструментів зменшило описи функцій...",
+    whyItMatters: "Agent harness overhead often consumes up to 40% of context window limits before any user input is processed. Fine-tuning harness prompts and isolating dynamic tools allows agents to preserve prefix caching and slash recursive generation bills.",
+    ukWhyItMatters: "Оверхед харнесу агента часто забирає до 40% ліміту контекстного вікна ще до обробки запиту користувача. Точне налаштування промптів і винесення динамічних інструментів зберігає prefix caching і знижує витрати на рекурсивну генерацію.",
+    takeaways: [
+      "Trimming system prompt boilerplate saved 4,200 tokens per sub-agent invocation",
+      "Dynamic tool declarations were moved behind on-demand MCP discovery endpoints",
+      "Cache hit rates increased from 38% to 74% across multi-turn reasoning loops"
+    ],
+    ukTakeaways: [
+      "Скорочення шаблонного системного промпту заощадило 4 200 токенів на кожний виклик субагента",
+      "Динамічні декларації інструментів перенесено в ендпоінти MCP з викликом за вимогою",
+      "Частка попадань у кеш зросла з 38% до 74% у багатоходових циклах міркувань"
+    ],
+    tags: ["#Cursor", "#MCP", "#PromptCaching", "#TokenOptimization"],
+    period: "week",
+    commentsCount: 14,
+    discussScore: 89,
+    timestamp: 1790380800000,
+    thumbGradient: "linear-gradient(135deg, #1e1b4b, #4338ca)"
+  },
+  {
+    id: "whiteboard-visual-ide",
+    cat: "tools-and-releases",
+    date: "Sep 25, 2026",
+    readTime: "2 min read",
+    title: "Whiteboard Open-Sources Visual Design Integrated Development Environment for Coding Agents",
+    ukTitle: "Whiteboard відкриває вихідний код візуального IDE для кодуючих агентів",
+    summary: "Whiteboard released an open-source desktop application that bridges visual software architecture and code review for agents like Claude Code and Codex. It includes a Rust AST diff viewer and an agent canvas Software Development Kit.",
+    ukSummary: "Whiteboard випустив десктопний додаток із відкритим кодом, що поєднує візуальну архітектуру програмного забезпечення та код-рев'ю для таких агентів, як Claude Code і Codex. До складу входить переглядач Rust AST diff та SDK канвасу агентів.",
+    whyItMatters: "Visualizing AST transformations in real time allows engineering leads to spot structural hallucination and incorrect refactoring before code commits reach CI/CD pipelines.",
+    ukWhyItMatters: "Візуалізація трансформацій AST у реальному часі дає змогу лідам помічати структурні галюцинації та помилковий рефакторинг до того, як код потрапить у пайплайни CI/CD.",
+    takeaways: [
+      "Native desktop client written in Tauri and Rust for zero latency diffing",
+      "Bidirectional protocol for Claude Code and OpenAI Codex workspace sync",
+      "Interactive dependency graph updates live as the agent modifies files"
+    ],
+    ukTakeaways: [
+      "Нативний клієнт на Tauri та Rust для миттєвого порівняння diff",
+      "Двосторонній протокол синхронізації робочої області Claude Code та Codex",
+      "Інтерактивний граф залежностей оновлюється наживо при зміні файлів агентом"
+    ],
+    tags: ["#Claude Code", "#LocalModels", "#Cursor"],
+    period: "week",
+    commentsCount: 22,
+    discussScore: 95,
+    timestamp: 1790370000000,
+    thumbGradient: "linear-gradient(135deg, #064e3b, #059669)"
+  },
+  {
+    id: "prompt-caching-deep-dive",
+    cat: "token-and-cost-optimization",
+    date: "Sep 26, 2026",
+    readTime: "4 min read",
+    title: "The 70% Token Cut: How Prompt Caching Rewrites Production Economics",
+    ukTitle: "Скорочення токенів на 70%: як Prompt Caching змінює продакшн-економіку",
+    summary: "A practical investigation into stable context windows, cache eviction boundaries, and how top engineering teams keep agent latency under 800ms while slashing API bills.",
+    ukSummary: "Практичне дослідження стабільних контекстних вікон, меж скидання кешу та способів утримання затримки агентів нижче 800 мс із різким скороченням витрат на API.",
+    whyItMatters: "Prompt caching transforms multi-agent workflows from prohibitive cost centers into scalable background processes when instructions and schemas are strictly partitioned.",
+    ukWhyItMatters: "Prompt caching перетворює багатагентні процеси з дорогих центрів витрат на масштабовані фонові сервіси за умови чіткого структурування інструкцій і схем.",
+    takeaways: [
+      "Prefix alignment requires deterministic serializer ordering for tool definitions",
+      "Sub-agent harnesses achieve 82% cache reuse across iterative refactoring steps",
+      "Production teams report up to 74% monthly cost savings on tier-1 reasoning models"
+    ],
+    ukTakeaways: [
+      "Узгодження префіксів вимагає детермінованого порядку серіалізації описів інструментів",
+      "Харнеси субагентів досягають 82% повторного використання кешу в ітеративному кодуванні",
+      "Команди повідомляють про зниження щомісячних витрат на 74% на моделях міркувань"
+    ],
+    tags: ["#PromptCaching", "#TokenOptimization", "#MCP"],
+    period: "today",
+    commentsCount: 31,
+    discussScore: 98,
+    timestamp: 1790440000000,
+    thumbGradient: "linear-gradient(135deg, #155e75, #0891b2)"
+  },
+  {
+    id: "deepseek-v3-quant-report",
+    cat: "local-llms",
+    date: "Sep 26, 2026",
+    readTime: "3 min read",
+    title: "DeepSeek-V3 Quantization Field Report: Running 671B Locally on 4x RTX 4090",
+    ukTitle: "Звіт квантування DeepSeek-V3: запуск 671B локально на 4x RTX 4090",
+    summary: "Hardware benchmarks for running MoE 671B parameters using custom FP8 and AWQ kernels on consumer GPU clusters with 18 tokens per second inference speeds.",
+    ukSummary: "Апаратні бенчмарки запуску MoE 671B за допомогою кастомних ядер FP8 та AWQ на споживчих кластерах GPU зі швидкістю генерації 18 токенів за секунду.",
+    whyItMatters: "Data privacy regulations and offline resilience make local high-end reasoning feasible for regulated enterprises without cloud dependency.",
+    ukWhyItMatters: "Вимоги до приватності даних та автономність роблять локальні топові моделі доступними для корпоративного сектору без хмарної залежності.",
+    takeaways: [
+      "Expert offloading via unified PCIe memory achieves 18.4 tokens/sec throughput",
+      "AWQ 4-bit preserves 99.1% of MMLU-Pro benchmark scores compared to FP16",
+      "Peak VRAM consumption fits within 96GB combined cluster ceiling"
+    ],
+    ukTakeaways: [
+      "Розвантаження експертів через спільну PCIe пам'ять дає швидкість 18.4 ток/сек",
+      "AWQ 4-bit зберігає 99.1% балів тесту MMLU-Pro порівняно з FP16",
+      "Пікове споживання відеопам'яті не перевищує спільний ліміт 96 ГБ"
+    ],
+    tags: ["#LocalModels", "#Benchmarks", "#Models"],
+    period: "today",
+    commentsCount: 19,
+    discussScore: 84,
+    timestamp: 1790435000000,
+    thumbGradient: "linear-gradient(135deg, #1e3a8a, #2563eb)"
+  },
+  {
+    id: "autonomous-code-reviewer-guide",
+    cat: "tutorials-and-guides",
+    date: "Sep 24, 2026",
+    readTime: "5 min read",
+    title: "Building an Autonomous Code Reviewer with MCP and GitHub Actions",
+    ukTitle: "Створення автономного код-рев'юера з MCP та GitHub Actions",
+    summary: "Step-by-step walkthrough of connecting an AST-aware semantic linting agent directly to PR workflows with verified deterministic verdicts and no noisy nitpicks.",
+    ukSummary: "Покроковий посібник підключення семантичного лінтера на базі AST до PR-процесів із детермінованими висновками без дріб'язкових зауважень.",
+    whyItMatters: "Standard LLM review bots fail on hallocinated style rules. Grounding reviews in MCP-driven repo tools ensures high developer trust.",
+    ukWhyItMatters: "Звичайні LLM-боти спамлять вигаданими зауваженнями. Заземлення перевірок через MCP інструменти забезпечує високу довіру інженерів.",
+    takeaways: [
+      "Custom AST diff filter passes only altered call graphs to the LLM",
+      "Verification step rejects any suggestion that breaks existing test suites",
+      "Developers accepted 84% of generated patch recommendations"
+    ],
+    ukTakeaways: [
+      "Кастомний фільтр AST передає в LLM лише змінені графи викликів",
+      "Крок верифікації відхиляє будь-яку правку, що ламає наявні тести",
+      "Розробники прийняли 84% запропонованих автоматичних патчів"
+    ],
+    tags: ["#MCP", "#Claude Code", "#Cursor"],
+    period: "week",
+    commentsCount: 27,
+    discussScore: 92,
+    timestamp: 1790290000000,
+    thumbGradient: "linear-gradient(135deg, #78350f, #d97706)"
+  },
+  {
+    id: "vibe-coding-solo-founders",
+    cat: "vibe-coding-workflow",
+    date: "Sep 23, 2026",
+    readTime: "3 min read",
+    title: "Vibe Coding at Series A: How Solo Founders Ship Full-Stack SaaS in 14 Days",
+    ukTitle: "Vibe Coding на стадії Series A: як соло-фаундери запускають SaaS за 14 днів",
+    summary: "An unfiltered analysis of prompt-first software architecture, the risks of technical debt accumulation, and practical safety harnesses for solo builders.",
+    ukSummary: "Чесний аналіз prompt-first архітектури ПЗ, ризиків накопичення техборгу та захисних харнесів для соло-розробників.",
+    whyItMatters: "Rapid shipping speed creates competitive moats, but without strict schema contracts and automated test gates, vibe-coded codebases become unmaintainable.",
+    ukWhyItMatters: "Швидкість запуску дає перевагу, але без суворих схем і тестів код стає непідтримуваним за лічені тижні.",
+    takeaways: [
+      "Contract-first OpenAPI specs prevent agent drift across full-stack boundaries",
+      "Snapshot tests on every generation cycle catch regressions immediately",
+      "Zero-dependency utility layers reduce supply-chain vulnerability surfaces"
+    ],
+    ukTakeaways: [
+      "Специфікації OpenAPI за принципом contract-first запобігають розсинхронізації",
+      "Снепшот-тести на кожному циклі генерації миттєво ловлять регресії",
+      "Мінімалістичні утиліти без сторонніх бібліотек зменшують вразливості"
+    ],
+    tags: ["#Cursor", "#Claude Code", "#VibeCoding"],
+    period: "week",
+    commentsCount: 42,
+    discussScore: 99,
+    timestamp: 1790200000000,
+    thumbGradient: "linear-gradient(135deg, #831843, #db2777)"
+  },
+  {
+    id: "svg-generation-benchmarks",
+    cat: "creative-ai",
+    date: "Sep 18, 2026",
+    readTime: "3 min read",
+    title: "SVG Generation Benchmarks: Claude 3.7 Sonnet vs GPT-4.5 for UI Prototypes",
+    ukTitle: "Бенчмарки генерації SVG: Claude 3.7 Sonnet проти GPT-4.5 для UI-прототипів",
+    summary: "Evaluating raw coordinate precision, path minimization, semantic layering, and responsive viewBox scaling across complex vector icon sets.",
+    ukSummary: "Оцінка точності координат, оптимізації кривих path, семантичних шарів та адаптивного масштабування viewBox для векторних іконок.",
+    whyItMatters: "Generative SVG enables zero-asset dynamic UI rendering directly in modern browser web applications.",
+    ukWhyItMatters: "Генеративний SVG дозволяє динамічно рендерити інтерфейсні ілюстрації без завантаження важких растрових файлів.",
+    takeaways: [
+      "Claude 3.7 produced valid geometric paths without clipping on 96% of prompts",
+      "GPT-4.5 excels at intricate organic silhouettes with gradient fills",
+      "Generated vectors weigh an average of 4.2KB compared to 120KB WebP images"
+    ],
+    ukTakeaways: [
+      "Claude 3.7 згенерував валідні геометричні контури без обрізання у 96% спроб",
+      "GPT-4.5 перевершує у складних силуетах із плавними градієнтними заливками",
+      "Згенеровані вектори важать у середньому 4.2 КБ проти 120 КБ для WebP"
+    ],
+    tags: ["#Benchmarks", "#CreativeAI"],
+    period: "month",
+    commentsCount: 9,
+    discussScore: 71,
+    timestamp: 1789780000000,
+    thumbGradient: "linear-gradient(135deg, #881337, #e11d48)"
+  },
+  {
+    id: "ai-engineering-salaries-2026",
+    cat: "career-and-monetisation",
+    date: "Sep 15, 2026",
+    readTime: "4 min read",
+    title: "State of AI Engineering Salaries: Staff Agent Engineers Command $320k Base",
+    ukTitle: "Ринок зарплат AI-інженерів 2026: Staff Agent Engineers отримують від $320k",
+    summary: "Industry compensation breakdown across US and EU tech hubs. The shift from generic prompt engineering to deterministic agent evaluation and harness tuning.",
+    ukSummary: "Огляд компенсацій у технічних хабах США та ЄС. Перехід від написання промптів до детермінованого оцінювання агентів і тюнінгу харнесів.",
+    whyItMatters: "Talent scarcity in production reliability and multi-agent coordination makes senior agent harness architects the highest-paid frontend/backend hybrids.",
+    ukWhyItMatters: "Дефіцит інженерів із надійності агентів робить спеціалістів із харнесів найбільш високооплачуваними на ринку.",
+    takeaways: [
+      "Demand for eval engineers grew 240% year-over-year in Series B+ ventures",
+      "MCP protocol experience listed in 41% of tier-1 staff infrastructure roles",
+      "European remote salaries narrowed the gap to 82% of US equivalents"
+    ],
+    ukTakeaways: [
+      "Попит на інженерів з оцінювання моделей зріс на 240% за рік",
+      "Досвід роботи з протоколом MCP зустрічається у 41% провідних вакансій",
+      "Європейські віддалені ставки скоротили розрив до 82% від рівня США"
+    ],
+    tags: ["#Career", "#MCP", "#Benchmarks"],
+    period: "month",
+    commentsCount: 38,
+    discussScore: 94,
+    timestamp: 1789500000000,
+    thumbGradient: "linear-gradient(135deg, #713f12, #ca8a04)"
+  },
+  {
+    id: "reasoning-models-inference-compute",
+    cat: "models-and-research",
+    date: "Sep 26, 2026",
+    readTime: "5 min read",
+    title: "Reasoning Models in Production: Inference-Time Compute vs Fine-Tuning",
+    ukTitle: "Моделі міркувань у продакшні: обчислення під час інференсу проти fine-tuning",
+    summary: "Empirical study comparing test-time search budgets against specialized LoRA adapters for coding, logic planning, and tool invocation accuracy.",
+    ukSummary: "Емпіричне дослідження порівняння бюджетів пошуку на етапі тестування зі спеціалізованими адаптерами LoRA для кодування та логіки.",
+    whyItMatters: "Understanding when to spend compute at inference versus training time defines product cost curves and user perceived response times.",
+    ukWhyItMatters: "Розуміння того, коли витрачати ресурси — при генерації чи при навчанні, визначає собівартість продукту та швидкість відповіді.",
+    takeaways: [
+      "Test-time compute achieves superior generalization on novel edge cases",
+      "Specialized LoRA reduces time-to-first-token by 3.5x for known schemas",
+      "Hybrid architectures route simple requests to fine-tuned edge models"
+    ],
+    ukTakeaways: [
+      "Обчислення на етапі генерації дають кращі результати на нестандартних задачах",
+      "Спеціалізовані LoRA прискорюють видачу першого токена в 3.5 раза для відомих схем",
+      "Гібридні системи скеровують прості запити на швидкі локальні моделі"
+    ],
+    tags: ["#Models", "#Benchmarks", "#TokenOptimization"],
+    period: "today",
+    commentsCount: 17,
+    discussScore: 86,
+    timestamp: 1790430000000,
+    thumbGradient: "linear-gradient(135deg, #581c87, #9333ea)"
+  },
+  {
+    id: "ollama-distributed-nodes",
+    cat: "local-llms",
+    date: "Sep 22, 2026",
+    readTime: "2 min read",
+    title: "Ollama 0.8 Adds Unified Distributed Inference Across LAN Nodes",
+    ukTitle: "Ollama 0.8 додає спільний розподілений інференс на вузлах локальної мережі",
+    summary: "Pool multiple Mac Studios, Linux workstations, and gaming rigs into a single coherent OpenAI-compatible API endpoint over local Ethernet.",
+    ukSummary: "Об'єднуйте Mac Studio, робочі станції Linux та домашні комп'ютери в єдиний API-ендпоінт, сумісний з OpenAI через локальну мережу.",
+    whyItMatters: "Local development teams can run massive 120B+ parameter models without buying dedicated enterprise DGX servers.",
+    ukWhyItMatters: "Команди розробників можуть запускати великі моделі на 120B+ параметрів без закупівлі серверів корпоративного класу.",
+    takeaways: [
+      "Automatic layer partitioning based on measured memory bandwidth",
+      "Zero configuration discovery via mDNS on local development networks",
+      "Full compatibility with existing Cursor and Claude Code configurations"
+    ],
+    ukTakeaways: [
+      "Автоматичний поділ шарів моделі за пропускною здатністю пам'яті",
+      "Нульова конфігурація з виявленням пристроїв через mDNS",
+      "Повна сумісність із наявними конфігураціями Cursor та Claude Code"
+    ],
+    tags: ["#LocalModels", "#Cursor", "#Tools"],
+    period: "week",
+    commentsCount: 29,
+    discussScore: 91,
+    timestamp: 1790100000000,
+    thumbGradient: "linear-gradient(135deg, #1e3a8a, #3b82f6)"
+  },
+  {
+    id: "structured-outputs-scale",
+    cat: "tools-and-releases",
+    date: "Sep 12, 2026",
+    readTime: "3 min read",
+    title: "Structured Outputs at Scale: Pydantic v2 vs Native JSON Schemas in Gemini 2.5",
+    ukTitle: "Структурований вивід у масштабі: Pydantic v2 проти нативних схем JSON у Gemini 2.5",
+    summary: "Comparing strict grammar-constrained decoding latency, schema recursion limits, and error rates when producing complex nested database migrations.",
+    ukSummary: "Порівняння затримки декодування з граматичними обмеженнями, лімітів рекурсії схем та помилок при генерації складних міграцій БД.",
+    whyItMatters: "Constrained decoding eliminates JSON parse errors entirely, unlocking reliable autonomous pipelines that interface with SQL databases.",
+    ukWhyItMatters: "Обмежене декодування повністю виключає помилки парсингу JSON, забезпечуючи надійну взаємодію агентів із базами даних SQL.",
+    takeaways: [
+      "Grammar masking adds zero observable latency penalty on Gemini 2.5",
+      "Pydantic v2 schema generation reduces client serialization overhead by 60%",
+      "Zero schema violations observed across 100,000 synthetic test runs"
+    ],
+    ukTakeaways: [
+      "Маскування граматики не додає жодної помітної затримки в Gemini 2.5",
+      "Генерація схем Pydantic v2 зменшує клієнтський оверхед на 60%",
+      "Зафіксовано нуль помилок валідації схеми на 100 000 синтетичних тестах"
+    ],
+    tags: ["#Tools", "#Benchmarks", "#TokenOptimization"],
+    period: "month",
+    commentsCount: 12,
+    discussScore: 78,
+    timestamp: 1789200000000,
+    thumbGradient: "linear-gradient(135deg, #065f46, #10b981)"
+  },
+  {
+    id: "claude-code-subagent-memory",
+    cat: "agents-and-mcp",
+    date: "Sep 26, 2026",
+    readTime: "3 min read",
+    title: "Anthropic Upgrades Claude Code with Sub-Agent Delegation and Memory Isolation",
+    ukTitle: "Anthropic оновлює Claude Code: делегування субагентам та ізоляція пам'яті",
+    summary: "New session boundaries prevent context pollution while allowing task-specific sub-agents to explore dependency trees and run test suites independently.",
+    ukSummary: "Нові межі сесій запобігають засміченню контексту, дозволяючи спеціалізованим субагентам автономно досліджувати залежності та запускати тести.",
+    whyItMatters: "Long-running tasks fail when context saturates. Sub-agent delegation keeps parent agent instructions crisp and focused on the primary objective.",
+    ukWhyItMatters: "Тривалі задачі дають збій при переповненні контексту. Делегування підзадач зберігає інструкції головного агента точними й сфокусованими.",
+    takeaways: [
+      "Ephemeral scratch workspaces automatically cleaned up on sub-task exit",
+      "Structured handoff reports summarize changes without raw terminal dumps",
+      "Multi-agent parallel execution cuts total refactoring time in half"
+    ],
+    ukTakeaways: [
+      "Тимчасові робочі простори автоматично видаляються після виконання підзадачі",
+      "Структуровані звіти підсумовують зміни без сирих виводів терміналу",
+      "Паралельне виконання субагентів скорочує загальний час рефакторингу вдвічі"
+    ],
+    tags: ["#Claude Code", "#MCP", "#Cursor"],
+    period: "today",
+    commentsCount: 48,
+    discussScore: 100,
+    timestamp: 1790445000000,
+    thumbGradient: "linear-gradient(135deg, #3730a3, #6366f1)"
+  }
+];
+
+const newsState = {
+  sort: "newest",
+  selectedCategories: new Set(),
+  period: "all",
+  searchQuery: "",
+  selectedTopic: "",
+  page: 1,
+  pageSize: 4,
+  expandedIds: new Set(),
+  drawerOpen: false,
+};
+
+function renderStoryThumb(story, meta) {
+  const c = meta.color || "#d4b483";
+  switch (story.id) {
+    case "claude-code-subagent-memory":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sub-agent memory delegation architecture">
+        <rect width="140" height="100" fill="#0d111c"/>
+        <defs>
+          <radialGradient id="g-claude" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#6366f1" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#0d111c" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <circle cx="70" cy="50" r="45" fill="url(#g-claude)"/>
+        <rect x="15" y="12" width="110" height="76" rx="6" stroke="#6366f1" stroke-width="1" stroke-dasharray="3 3" opacity="0.6"/>
+        <circle cx="70" cy="30" r="10" fill="#1e1b4b" stroke="#a78bfa" stroke-width="1.5"/>
+        <text x="70" y="33" font-family="monospace" font-size="7" fill="#c7d2fe" text-anchor="middle" font-weight="bold">AGENT</text>
+        <path d="M70 40 L40 64 M70 40 L70 64 M70 40 L100 64" stroke="#818cf8" stroke-width="1.2" opacity="0.8"/>
+        <rect x="26" y="64" width="28" height="18" rx="4" fill="#1e1b4b" stroke="#a78bfa" stroke-width="1"/>
+        <text x="40" y="75" font-family="monospace" font-size="6" fill="#a5b4fc" text-anchor="middle">SUB-1</text>
+        <rect x="56" y="64" width="28" height="18" rx="4" fill="#1e1b4b" stroke="#a78bfa" stroke-width="1"/>
+        <text x="70" y="75" font-family="monospace" font-size="6" fill="#a5b4fc" text-anchor="middle">SUB-2</text>
+        <rect x="86" y="64" width="28" height="18" rx="4" fill="#1e1b4b" stroke="#a78bfa" stroke-width="1"/>
+        <text x="100" y="75" font-family="monospace" font-size="6" fill="#a5b4fc" text-anchor="middle">SUB-3</text>
+      </svg>`;
+
+    case "prompt-caching-deep-dive":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Prompt caching token reduction">
+        <rect width="140" height="100" fill="#042027"/>
+        <rect x="20" y="24" width="100" height="14" rx="3" fill="#064e3b" stroke="#22d3ee" stroke-width="1"/>
+        <text x="28" y="34" font-family="monospace" font-size="7" fill="#67e8f9">SYSTEM PREFIX [CACHED]</text>
+        <rect x="20" y="42" width="65" height="14" rx="3" fill="#064e3b" stroke="#22d3ee" stroke-width="1"/>
+        <text x="28" y="52" font-family="monospace" font-size="7" fill="#67e8f9">TOOL DEFS [HIT]</text>
+        <rect x="20" y="60" width="40" height="14" rx="3" fill="#134e4a" stroke="#2dd4bf" stroke-width="1"/>
+        <text x="28" y="70" font-family="monospace" font-size="7" fill="#a7f3d0">DIFF</text>
+        <rect x="82" y="52" width="38" height="24" rx="4" fill="#083344" stroke="#22d3ee" stroke-width="1.5"/>
+        <text x="101" y="64" font-family="monospace" font-size="9" fill="#22d3ee" text-anchor="middle" font-weight="bold">-70%</text>
+        <text x="101" y="72" font-family="monospace" font-size="6" fill="#67e8f9" text-anchor="middle">COST</text>
+      </svg>`;
+
+    case "deepseek-v3-quant-report":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DeepSeek 4x GPU cluster inference">
+        <rect width="140" height="100" fill="#0b1329"/>
+        <rect x="18" y="20" width="46" height="26" rx="3" fill="#172554" stroke="#60a5fa" stroke-width="1"/>
+        <text x="41" y="34" font-family="monospace" font-size="6.5" fill="#93c5fd" text-anchor="middle">GPU 0 (AWQ)</text>
+        <rect x="76" y="20" width="46" height="26" rx="3" fill="#172554" stroke="#60a5fa" stroke-width="1"/>
+        <text x="99" y="34" font-family="monospace" font-size="6.5" fill="#93c5fd" text-anchor="middle">GPU 1 (FP8)</text>
+        <rect x="18" y="54" width="46" height="26" rx="3" fill="#172554" stroke="#60a5fa" stroke-width="1"/>
+        <text x="41" y="68" font-family="monospace" font-size="6.5" fill="#93c5fd" text-anchor="middle">GPU 2 (FP8)</text>
+        <rect x="76" y="54" width="46" height="26" rx="3" fill="#172554" stroke="#60a5fa" stroke-width="1"/>
+        <text x="99" y="68" font-family="monospace" font-size="6.5" fill="#93c5fd" text-anchor="middle">GPU 3 (AWQ)</text>
+        <circle cx="70" cy="50" r="6" fill="#2563eb" stroke="#93c5fd" stroke-width="1"/>
+        <text x="70" y="52" font-family="monospace" font-size="5" fill="#ffffff" text-anchor="middle" font-weight="bold">18</text>
+      </svg>`;
+
+    case "cursor-harness-tuning":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cursor harness tuning">
+        <rect width="140" height="100" fill="#121024"/>
+        <circle cx="70" cy="50" r="40" stroke="#a78bfa" stroke-width="1" stroke-dasharray="2 4" opacity="0.5"/>
+        <path d="M30 50 L110 50" stroke="#4338ca" stroke-width="2"/>
+        <rect x="36" y="34" width="68" height="32" rx="5" fill="#1e1b4b" stroke="#818cf8" stroke-width="1.5"/>
+        <text x="70" y="47" font-family="monospace" font-size="7.5" fill="#c7d2fe" text-anchor="middle" font-weight="bold">HARNESS</text>
+        <text x="70" y="58" font-family="monospace" font-size="6.5" fill="#a78bfa" text-anchor="middle">-4.2k TOKENS</text>
+      </svg>`;
+
+    case "whiteboard-visual-ide":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Whiteboard visual agent IDE">
+        <rect width="140" height="100" fill="#052019"/>
+        <path d="M20 20 H120 M20 40 H120 M20 60 H120 M20 80 H120 M40 15 V85 M70 15 V85 M100 15 V85" stroke="#064e3b" stroke-width="0.75" opacity="0.6"/>
+        <rect x="22" y="30" width="38" height="24" rx="4" fill="#064e3b" stroke="#34d399" stroke-width="1.2"/>
+        <text x="41" y="44" font-family="monospace" font-size="7" fill="#a7f3d0" text-anchor="middle">AST NODE</text>
+        <path d="M60 42 C72 42, 68 62, 80 62" stroke="#34d399" stroke-width="1.5" fill="none"/>
+        <rect x="80" y="50" width="40" height="24" rx="4" fill="#064e3b" stroke="#34d399" stroke-width="1.2"/>
+        <text x="100" y="64" font-family="monospace" font-size="7" fill="#a7f3d0" text-anchor="middle">DIFF VIEW</text>
+      </svg>`;
+
+    case "autonomous-code-reviewer-guide":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Autonomous code reviewer AST graph">
+        <rect width="140" height="100" fill="#241306"/>
+        <rect x="18" y="16" width="104" height="68" rx="6" fill="#451a03" stroke="#fbbf24" stroke-width="1"/>
+        <line x1="28" y1="30" x2="68" y2="30" stroke="#f87171" stroke-width="2"/>
+        <line x1="28" y1="40" x2="88" y2="40" stroke="#34d399" stroke-width="2"/>
+        <line x1="28" y1="50" x2="55" y2="50" stroke="#34d399" stroke-width="2"/>
+        <circle cx="98" cy="40" r="12" fill="#14532d" stroke="#4ade80" stroke-width="1.5"/>
+        <path d="M93 40 L97 44 L104 36" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <text x="70" y="74" font-family="monospace" font-size="6.5" fill="#fde68a" text-anchor="middle">AST REVIEW PASS</text>
+      </svg>`;
+
+    case "vibe-coding-solo-founders":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vibe coding full-stack architecture">
+        <rect width="140" height="100" fill="#260b1e"/>
+        <rect x="25" y="20" width="90" height="16" rx="3" fill="#4c0519" stroke="#f472b6" stroke-width="1"/>
+        <text x="70" y="31" font-family="monospace" font-size="7" fill="#fbcfe8" text-anchor="middle">1. PROMPT / SPEC</text>
+        <rect x="25" y="40" width="90" height="16" rx="3" fill="#831843" stroke="#f472b6" stroke-width="1"/>
+        <text x="70" y="51" font-family="monospace" font-size="7" fill="#fbcfe8" text-anchor="middle">2. OPENAPI CONTRACT</text>
+        <rect x="25" y="60" width="90" height="16" rx="3" fill="#4c0519" stroke="#f472b6" stroke-width="1"/>
+        <text x="70" y="71" font-family="monospace" font-size="7" fill="#fbcfe8" text-anchor="middle">3. GENERATED SAAS</text>
+      </svg>`;
+
+    case "svg-generation-benchmarks":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SVG generation bezier vector benchmarks">
+        <rect width="140" height="100" fill="#200a12"/>
+        <path d="M25 70 C40 20, 80 80, 115 30" stroke="#fb7185" stroke-width="2.5" fill="none"/>
+        <circle cx="40" cy="20" r="3" fill="#ffe4e6"/>
+        <circle cx="80" cy="80" r="3" fill="#ffe4e6"/>
+        <line x1="25" y1="70" x2="40" y2="20" stroke="#fda4af" stroke-width="1" stroke-dasharray="2 2"/>
+        <line x1="115" y1="30" x2="80" y2="80" stroke="#fda4af" stroke-width="1" stroke-dasharray="2 2"/>
+        <text x="70" y="90" font-family="monospace" font-size="7" fill="#fecdd3" text-anchor="middle">BEZIER PRECISION</text>
+      </svg>`;
+
+    case "ai-engineering-salaries-2026":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AI engineering salary trends">
+        <rect width="140" height="100" fill="#221706"/>
+        <path d="M20 75 L50 60 L80 48 L115 25" stroke="#eab308" stroke-width="2.5" fill="none"/>
+        <circle cx="115" cy="25" r="4" fill="#fef08a"/>
+        <text x="115" y="18" font-family="monospace" font-size="7.5" fill="#fef08a" text-anchor="end" font-weight="bold">$320k</text>
+        <line x1="20" y1="80" x2="120" y2="80" stroke="#451a03" stroke-width="1"/>
+        <text x="70" y="90" font-family="monospace" font-size="6.5" fill="#fde047" text-anchor="middle">STAFF AGENT ARCHITECT</text>
+      </svg>`;
+
+    case "reasoning-models-inference-compute":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Reasoning models inference compute">
+        <rect width="140" height="100" fill="#1e0b2b"/>
+        <circle cx="70" cy="22" r="7" fill="#581c87" stroke="#c084fc" stroke-width="1.2"/>
+        <path d="M70 29 L45 48 M70 29 L95 48" stroke="#a855f7" stroke-width="1.2"/>
+        <circle cx="45" cy="48" r="6" fill="#3b0764" stroke="#c084fc" stroke-width="1"/>
+        <circle cx="95" cy="48" r="6" fill="#581c87" stroke="#c084fc" stroke-width="1.5"/>
+        <path d="M95 54 L80 72 M95 54 L110 72" stroke="#a855f7" stroke-width="1.2"/>
+        <circle cx="80" cy="72" r="5" fill="#3b0764" stroke="#c084fc" stroke-width="1"/>
+        <circle cx="110" cy="72" r="5" fill="#9333ea" stroke="#e9d5ff" stroke-width="1.5"/>
+        <text x="70" y="90" font-family="monospace" font-size="6.5" fill="#e9d5ff" text-anchor="middle">TEST-TIME SEARCH</text>
+      </svg>`;
+
+    case "ollama-distributed-nodes":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ollama distributed LAN nodes">
+        <rect width="140" height="100" fill="#081e36"/>
+        <circle cx="70" cy="45" r="10" fill="#1e3a8a" stroke="#60a5fa" stroke-width="1.5"/>
+        <text x="70" y="48" font-family="monospace" font-size="6" fill="#bfdbfe" text-anchor="middle">ROUTER</text>
+        <circle cx="32" cy="72" r="8" fill="#172554" stroke="#93c5fd" stroke-width="1"/>
+        <text x="32" y="74.5" font-family="monospace" font-size="5" fill="#bfdbfe" text-anchor="middle">MAC</text>
+        <circle cx="70" cy="80" r="8" fill="#172554" stroke="#93c5fd" stroke-width="1"/>
+        <text x="70" y="82.5" font-family="monospace" font-size="5" fill="#bfdbfe" text-anchor="middle">LINUX</text>
+        <circle cx="108" cy="72" r="8" fill="#172554" stroke="#93c5fd" stroke-width="1"/>
+        <text x="108" y="74.5" font-family="monospace" font-size="5" fill="#bfdbfe" text-anchor="middle">RIG</text>
+        <path d="M70 55 L32 64 M70 55 L70 72 M70 55 L108 64" stroke="#60a5fa" stroke-width="1" stroke-dasharray="2 2"/>
+        <text x="70" y="20" font-family="monospace" font-size="6.5" fill="#93c5fd" text-anchor="middle">LAN 120B+ CLUSTER</text>
+      </svg>`;
+
+    case "structured-outputs-scale":
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Structured JSON grammar validation">
+        <rect width="140" height="100" fill="#052219"/>
+        <rect x="18" y="16" width="104" height="68" rx="6" fill="#064e3b" stroke="#10b981" stroke-width="1.2"/>
+        <text x="26" y="32" font-family="monospace" font-size="6.5" fill="#6ee7b7">{"type": "object",</text>
+        <text x="30" y="44" font-family="monospace" font-size="6.5" fill="#6ee7b7"> "strict": true,</text>
+        <text x="30" y="56" font-family="monospace" font-size="6.5" fill="#a7f3d0"> "errors": 0}</text>
+        <rect x="74" y="60" width="40" height="16" rx="4" fill="#047857" stroke="#34d399" stroke-width="1"/>
+        <text x="94" y="71" font-family="monospace" font-size="6.5" fill="#ecfdf5" text-anchor="middle" font-weight="bold">100k PASS</text>
+      </svg>`;
+
+    default:
+      return `<svg viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="140" height="100" fill="#171918"/>
+        <circle cx="70" cy="50" r="28" fill="${c}22" stroke="${c}" stroke-width="1.5"/>
+        <text x="70" y="55" font-size="20" text-anchor="middle">${meta.icon || "📄"}</text>
+      </svg>`;
+  }
 }
+
+function news(category = false) {
+  if (category && newsState.selectedCategories.size === 0) {
+    newsState.selectedCategories.add("agents-and-mcp");
+  }
+
+  // Filter
+  let filtered = NEWS_STORIES.filter((story) => {
+    if (newsState.selectedCategories.size > 0 && !newsState.selectedCategories.has(story.cat)) {
+      return false;
+    }
+    if (newsState.period === "today" && story.period !== "today") return false;
+    if (newsState.period === "week" && story.period !== "today" && story.period !== "week") return false;
+    if (newsState.period === "month" && story.period === "all") return false;
+    if (newsState.selectedTopic && !story.tags.includes(newsState.selectedTopic)) return false;
+    if (newsState.searchQuery.trim()) {
+      const q = newsState.searchQuery.toLowerCase();
+      const match =
+        story.title.toLowerCase().includes(q) ||
+        story.ukTitle.toLowerCase().includes(q) ||
+        story.summary.toLowerCase().includes(q) ||
+        story.ukSummary.toLowerCase().includes(q) ||
+        story.tags.some((tg) => tg.toLowerCase().includes(q));
+      if (!match) return false;
+    }
+    return true;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    if (newsState.sort === "newest") return b.timestamp - a.timestamp;
+    if (newsState.sort === "oldest") return a.timestamp - b.timestamp;
+    if (newsState.sort === "discussed") return b.discussScore - a.discussScore;
+    if (newsState.sort === "relevance") {
+      if (newsState.searchQuery.trim()) {
+        const q = newsState.searchQuery.toLowerCase();
+        const aTitle = a.title.toLowerCase().includes(q) ? 2 : 0;
+        const bTitle = b.title.toLowerCase().includes(q) ? 2 : 0;
+        return bTitle - aTitle;
+      }
+      return b.timestamp - a.timestamp;
+    }
+    return b.timestamp - a.timestamp;
+  });
+
+  const totalFound = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalFound / newsState.pageSize));
+  if (newsState.page > totalPages) newsState.page = 1;
+  const startIndex = (newsState.page - 1) * newsState.pageSize;
+  const pageItems = filtered.slice(startIndex, startIndex + newsState.pageSize);
+
+  const hasActiveFilters =
+    newsState.selectedCategories.size > 0 ||
+    newsState.period !== "all" ||
+    newsState.searchQuery.trim() !== "" ||
+    newsState.selectedTopic !== "";
+
+  const activeChipsHtml = hasActiveFilters
+    ? `<div class="active-filter-chips-bar" aria-label="${t("Active filters", "Активні фільтри")}">
+        ${Array.from(newsState.selectedCategories)
+          .map((catId) => {
+            const cat = CATEGORY_META[catId];
+            return `<span class="filter-pill">
+              <span class="filter-pill-dot" style="background:${cat.color}"></span>
+              ${t(cat.name, cat.ukName)}
+              <button class="filter-pill-remove" data-remove-cat="${catId}" aria-label="${t("Remove filter", "Видалити фільтр")}">✕</button>
+            </span>`;
+          })
+          .join("")}
+        ${
+          newsState.period !== "all"
+            ? `<span class="filter-pill">
+                ${t("Period: ", "Період: ")}${t(newsState.period.charAt(0).toUpperCase() + newsState.period.slice(1), newsState.period === "today" ? "Сьогодні" : newsState.period === "week" ? "Тиждень" : "Місяць")}
+                <button class="filter-pill-remove" data-remove-period aria-label="${t("Remove period filter", "Скинути фільтр періоду")}">✕</button>
+              </span>`
+            : ""
+        }
+        ${
+          newsState.selectedTopic
+            ? `<span class="filter-pill">
+                ${newsState.selectedTopic}
+                <button class="filter-pill-remove" data-remove-topic aria-label="${t("Remove topic filter", "Скинути фільтр теми")}">✕</button>
+              </span>`
+            : ""
+        }
+        ${
+          newsState.searchQuery.trim()
+            ? `<span class="filter-pill">
+                "${esc(newsState.searchQuery)}"
+                <button class="filter-pill-remove" data-clear-search aria-label="${t("Clear search", "Очистити пошук")}">✕</button>
+              </span>`
+            : ""
+        }
+        <button class="active-filter-reset-link" data-reset-all>${t("Reset all filters", "Скинути всі фільтри")}</button>
+      </div>`
+    : "";
+
+  const renderSidebarContent = () => `
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">${t("SORT", "СОРТУВАННЯ")}</div>
+      <div class="sort-radio-group" role="radiogroup" aria-label="${t("Sort order", "Сортування")}">
+        <label class="sort-radio-item ${newsState.sort === "newest" ? "active" : ""}">
+          <input type="radio" class="custom-radio" name="news-sort" value="newest" ${newsState.sort === "newest" ? "checked" : ""}>
+          <span>${t("Newest", "Найновіші")}</span>
+        </label>
+        <label class="sort-radio-item ${newsState.sort === "oldest" ? "active" : ""}">
+          <input type="radio" class="custom-radio" name="news-sort" value="oldest" ${newsState.sort === "oldest" ? "checked" : ""}>
+          <span>${t("Oldest", "Найдавніші")}</span>
+        </label>
+        <label class="sort-radio-item ${newsState.sort === "relevance" ? "active" : ""}">
+          <input type="radio" class="custom-radio" name="news-sort" value="relevance" ${newsState.sort === "relevance" ? "checked" : ""}>
+          <span>${t("Relevance", "Релевантні")}</span>
+        </label>
+        <label class="sort-radio-item ${newsState.sort === "discussed" ? "active" : ""}">
+          <input type="radio" class="custom-radio" name="news-sort" value="discussed" ${newsState.sort === "discussed" ? "checked" : ""}>
+          <span>${t("Most discussed", "Найбільш обговорювані")}</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">${t("CATEGORIES", "КАТЕГОРІЇ")}</div>
+      <div class="category-checkbox-group" role="group" aria-label="${t("Categories", "Категорії")}">
+        ${NEWS_CATEGORIES.map((cat) => {
+          const isChecked = newsState.selectedCategories.has(cat.id);
+          const meta = CATEGORY_META[cat.id];
+          return `<label class="category-checkbox-item ${isChecked ? "checked" : ""}">
+            <div class="category-checkbox-left">
+              <input type="checkbox" class="custom-checkbox" value="${cat.id}" ${isChecked ? "checked" : ""} data-category-toggle="${cat.id}">
+              <span class="category-dot" style="background:${cat.color}"></span>
+              <span class="category-icon-symbol">${cat.icon}</span>
+              <span class="category-name-text">${t(cat.name, cat.ukName)}</span>
+            </div>
+            <span class="category-count-badge">${meta.count}</span>
+          </label>`;
+        }).join("")}
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">${t("PERIOD", "ПЕРІОД")}</div>
+      <div class="period-btn-grid" role="group" aria-label="${t("Time period", "Часовий період")}">
+        <button class="period-btn ${newsState.period === "today" ? "active" : ""}" data-period="today" aria-pressed="${newsState.period === "today"}">${t("Today", "Сьогодні")}</button>
+        <button class="period-btn ${newsState.period === "week" ? "active" : ""}" data-period="week" aria-pressed="${newsState.period === "week"}">${t("Week", "Тиждень")}</button>
+        <button class="period-btn ${newsState.period === "month" ? "active" : ""}" data-period="month" aria-pressed="${newsState.period === "month"}">${t("Month", "Місяць")}</button>
+        <button class="period-btn ${newsState.period === "all" ? "active" : ""}" data-period="all" aria-pressed="${newsState.period === "all"}">${t("All time", "Весь час")}</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-title">${t("HOT TOPICS", "ПОПУЛЯРНІ ТЕМИ")}</div>
+      <div class="topic-tag-cloud" role="group" aria-label="${t("Hot topics", "Популярні теми")}">
+        ${HOT_TOPICS.map((topic) => `
+          <button class="topic-tag-chip ${newsState.selectedTopic === topic ? "active" : ""}" data-topic-click="${topic}" aria-pressed="${newsState.selectedTopic === topic}">
+            ${topic}
+          </button>
+        `).join("")}
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <button class="sidebar-reset-btn" data-reset-all aria-label="${t("Reset all filters", "Скинути всі фільтри")}">
+        ↺ ${t("Reset all filters", "Скинути всі фільтри")}
+      </button>
+    </div>
+  `;
+
+  const storyCardsHtml =
+    pageItems.length > 0
+      ? pageItems
+          .map((story) => {
+            const meta = CATEGORY_META[story.cat];
+            const isExpanded = newsState.expandedIds.has(story.id);
+            const isSaved = savedStories.has(story.id);
+            const takeaways = lang === "uk" ? story.ukTakeaways : story.takeaways;
+            return `
+        <article class="news-story-card" data-story-id="${story.id}">
+          <div class="news-card-thumb">
+            ${renderStoryThumb(story, meta)}
+          </div>
+          <div class="news-card-body">
+            <div class="news-card-header">
+              <div class="news-card-meta">
+                <span class="news-category-badge" style="background:${meta.color}18; color:${meta.color}; border:1px solid ${meta.color}44">
+                  <span class="category-icon-symbol">${meta.icon}</span> ${t(meta.name, meta.ukName)}
+                </span>
+                <span>${story.date}</span>
+                <span>·</span>
+                <span>${story.readTime}</span>
+              </div>
+            </div>
+            <h2 class="news-card-title">
+              <a href="#/article?id=${story.id}">${esc(t(story.title, story.ukTitle))}</a>
+            </h2>
+            <p class="news-card-summary">
+              ${esc(t(story.summary, story.ukSummary))}
+            </p>
+            <div class="news-card-actions">
+              <div class="news-card-actions-left">
+                <button class="expand-btn" data-toggle-expand="${story.id}" aria-expanded="${isExpanded}">
+                  ${isExpanded ? t("Hide analysis ↑", "Сховати аналіз ↑") : t("Expand analysis →", "Розгорнути аналіз →")}
+                </button>
+                <button class="save-btn ${isSaved ? "saved" : ""}" data-save-story="${story.id}" aria-label="${isSaved ? t("Remove from reading list", "Видалити зі списку") : t("Save story", "Зберегти новину")}">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="${isSaved ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                  <span>${isSaved ? t("Saved ✓", "Збережено ✓") : t("Save", "Зберегти")}</span>
+                </button>
+                <button class="share-btn" data-share-story="${story.id}" aria-label="${t("Share story link", "Скопіювати посилання")}">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  <span>${t("Share", "Поділитися")}</span>
+                </button>
+              </div>
+              <span class="news-comments-badge">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                ${story.commentsCount} ${t("Comments (soon)", "Коментарі (скоро)")}
+              </span>
+            </div>
+            ${
+              isExpanded
+                ? `
+              <div class="news-expanded-analysis">
+                <div class="why-it-matters-heading">${t("WHY IT MATTERS", "ЧОМУ ЦЕ ВАЖЛИВО")}</div>
+                <p class="why-it-matters-text">${esc(t(story.whyItMatters, story.ukWhyItMatters))}</p>
+                <div class="takeaways-heading">${t("KEY TAKEAWAYS", "КЛЮЧОВІ ВИСНОВКИ")}</div>
+                <ul class="takeaways-list">
+                  ${takeaways.map((item) => `<li>${esc(item)}</li>`).join("")}
+                </ul>
+                <div class="expanded-tags-row">
+                  ${story.tags.map((tag) => `<button class="topic-tag-chip" data-topic-click="${tag}">${tag}</button>`).join("")}
+                </div>
+              </div>
+            `
+                : ""
+            }
+          </div>
+        </article>
+      `;
+          })
+          .join("")
+      : `
+      <div class="news-empty-state">
+        <div class="news-empty-icon">🧭</div>
+        <h3>${t("No stories match your filters", "Жодної новини за обраними фільтрами")}</h3>
+        <p>${t("Try loosening your search query, selecting different categories, or resetting the period to 'All time'.", "Спробуйте змінити пошуковий запит, обрати інші категорії або скинути період на 'Весь час'.")}</p>
+        <button class="button" data-reset-all>${t("Reset all filters", "Скинути всі фільтри")}</button>
+      </div>
+    `;
+
+  let paginationHtml = "";
+  if (totalPages > 1) {
+    let pageButtons = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pageButtons.push(`
+        <button class="page-btn page-number-btn ${i === newsState.page ? "active" : ""}" data-page="${i}" ${i === newsState.page ? 'aria-current="page"' : ""}>
+          ${i}
+        </button>
+      `);
+    }
+    paginationHtml = `
+      <nav class="after-hours-pagination" aria-label="${t("Pagination", "Пагінація")}">
+        <button class="page-btn page-nav-btn" data-page="${newsState.page - 1}" ${newsState.page <= 1 ? "disabled" : ""} aria-label="${t("Previous page", "Попередня сторінка")}">
+          ← ${t("Previous", "Назад")}
+        </button>
+        <div class="page-numbers">
+          ${pageButtons.join("")}
+        </div>
+        <button class="page-btn page-nav-btn" data-page="${newsState.page + 1}" ${newsState.page >= totalPages ? "disabled" : ""} aria-label="${t("Next page", "Наступна сторінка")}">
+          ${t("Next", "Вперед")} →
+        </button>
+      </nav>
+    `;
+  }
+
+  const mobileDrawerHtml = newsState.drawerOpen
+    ? `
+    <div class="mobile-drawer-backdrop" role="dialog" aria-modal="true" aria-label="${t("Filters drawer", "Панель фільтрів")}">
+      <div class="mobile-drawer-panel">
+        <div class="mobile-drawer-header">
+          <h2>${t("Filters & Sort", "Фільтри та сортування")}</h2>
+          <button class="mobile-drawer-close" data-close-drawer aria-label="${t("Close drawer", "Закрити панель")}">✕</button>
+        </div>
+        <div class="mobile-drawer-content">
+          ${renderSidebarContent()}
+        </div>
+        <div class="mobile-drawer-footer">
+          <button class="mobile-drawer-done-btn" data-close-drawer>
+            ${t("Show results", "Показати результати")} (${totalFound})
+          </button>
+        </div>
+      </div>
+    </div>
+  `
+    : "";
+
+  return `
+    ${intro(
+      t("THE NEWSROOM", "СТРІЧКА НОВИН"),
+      t("A clearer <em>signal.</em>", "Чіткіший <em>сигнал.</em>"),
+      t(
+        "What is changing in AI engineering, and why it matters to your work.",
+        "Що змінюється в AI-інженерії та чому це важливо для вашої роботи.",
+      ),
+    )}
+
+    <div class="mobile-filter-toolbar">
+      <button class="mobile-filter-trigger" data-open-drawer>
+        <span>⚙</span>
+        <span>${t("Filters", "Фільтри")}</span>
+        ${hasActiveFilters ? `<span class="mobile-filter-badge">${newsState.selectedCategories.size + (newsState.period !== "all" ? 1 : 0) + (newsState.selectedTopic ? 1 : 0)}</span>` : ""}
+      </button>
+    </div>
+
+    <div class="news-discovery-layout">
+      <aside class="news-sidebar">
+        ${renderSidebarContent()}
+      </aside>
+
+      <section class="news-feed-main">
+        <div class="news-toolbar">
+          <div class="news-search-box">
+            <span class="news-search-icon" aria-hidden="true">⌕</span>
+            <input
+              id="news-search-input"
+              class="news-search-input"
+              type="search"
+              placeholder="${t("Search stories, concepts, tags...", "Пошук новин, концептів, тегів...")}"
+              value="${esc(newsState.searchQuery)}"
+              aria-label="${t("Search news stories", "Пошук новин")}"
+            >
+            ${newsState.searchQuery ? `<button class="news-search-clear" aria-label="${t("Clear search", "Очистити пошук")}">✕</button>` : ""}
+          </div>
+          <div class="news-toolbar-right">
+            <div class="news-stories-count">
+              ${t("Stories found: ", "Знайдено новин: ")}<strong>${totalFound}</strong>
+            </div>
+            <select class="news-sort-select" aria-label="${t("Sort order", "Порядок сортування")}">
+              <option value="newest" ${newsState.sort === "newest" ? "selected" : ""}>${t("Newest", "Найновіші")}</option>
+              <option value="oldest" ${newsState.sort === "oldest" ? "selected" : ""}>${t("Oldest", "Найдавніші")}</option>
+              <option value="relevance" ${newsState.sort === "relevance" ? "selected" : ""}>${t("Relevance", "Релевантні")}</option>
+              <option value="discussed" ${newsState.sort === "discussed" ? "selected" : ""}>${t("Most discussed", "Найбільш обговорювані")}</option>
+            </select>
+          </div>
+        </div>
+
+        ${activeChipsHtml}
+
+        <div class="news-cards-list">
+          ${storyCardsHtml}
+        </div>
+
+        ${paginationHtml}
+      </section>
+    </div>
+
+    ${mobileDrawerHtml}
+    <section class="section">${newsletter()}</section>
+  `;
+}
+
 function byline(readTime = 4, format = t("DEMONSTRATION LAYOUT", "ДЕМОНСТРАЦІЙНИЙ МАКЕТ")) {
   return `<div class="byline"><span class="avatar">OK</span><div>${t("Oleksandr Kuzmenko", "Олександр Кузьменко")}<br><span class="meta">${t("EDITOR", "РЕДАКТОР")} · ${format}</span></div><span class="meta">05.09.2026 · ${readTime} ${t("MIN READ", "ХВ ЧИТАННЯ")}</span></div>`;
 }
@@ -757,18 +1665,212 @@ function notFound() {
   return `<div class="center-page">${eyebrow("404 / OFF THE RECORD")}<h1>${t("This track<br><em>is missing.</em>", "Цей трек<br><em>загубився.</em>")}</h1><p>${t("The page may have moved. Let’s get you back to the publication.", "Сторінка могла змінити адресу. Повернімося до видання.")}</p>${btn("home", t("Back to today", "До головної"))} ${btn("search", t("Search", "Пошук"), true)}</div>`;
 }
 function system() {
-  const colors = [
-    ["Ink", "#171918"],
-    ["Walnut", "#202421"],
-    ["Parchment", "#f0e9dc"],
-    ["Brass", "#d4b483"],
-    ["Celadon", "#b5d8cc"],
-    ["Muted", "#b9b7ac"],
+  const brandColors = [
+    ["Ink", "#171918", "14.6:1 (AAA)"],
+    ["Walnut", "#202421", "Surface"],
+    ["Parchment", "#f0e9dc", "14.6:1 (AAA)"],
+    ["Brass", "#d4b483", "8.9:1 (AAA)"],
+    ["Celadon", "#b5d8cc", "12.5:1 (AAA)"],
+    ["Muted", "#b9b7ac", "4.8:1 (AA)"],
   ];
-  return `${intro("AI TODAY BRIEF / DESIGN DIRECTION 01", "After <em>Hours.</em>", t("The warmth of a jazz club. The precision of tomorrow’s publication.", "Тепло джазового клубу. Точність видання про майбутнє."))}<img class="brand-art" src="assets/after-hours.png" alt="After Hours concept artwork" width="1672" height="941"><section class="section">${sectionHead(t("The whole publication.", "Усе видання."))}<p>${t("26 linked screens. Select a page, switch EN / UK or change the reading theme in the header.", "26 пов’язаних екранів. Оберіть сторінку, перемкніть EN / UK або тему читання в шапці.")}</p><div class="screen-map">${routes.map((r, i) => link(r, `<span><small>${String(i + 1).padStart(2, "0")} / </small>${labels()[r]}</span>↗`)).join("")}</div></section><section class="section">${sectionHead(t("A palette with a point of view.", "Палітра з власним поглядом."))}<div class="brand-grid">${colors.map(([name, hex], i) => `<div class="swatch" style="background:${hex};color:${i < 2 ? "#f0e9dc" : "#171918"}">${name}<br>${hex}</div>`).join("")}</div><p class="spaced">${t("Brass guides action. Celadon marks useful signals. Color supports meaning; it never replaces labels.", "Латунь спрямовує дію. Celadon позначає корисні сигнали. Колір підтримує зміст, але не заміняє підписи.")}</p></section><section class="section"><div class="grid2"><div>${eyebrow("TYPE / EDITORIAL")}<h2 class="manifesto">${t("Tomorrow,<br><em>in context.</em>", "Майбутнє.<br><em>З контекстом.</em>")}</h2><p>Fraunces / 400 · Georgia ${t("for Ukrainian display", "для українських заголовків")}</p></div><div>${eyebrow("TYPE / FUNCTIONAL")}<p style="font-size:26px;color:var(--text);margin:22px 0">${t("Clarity is a form of care.", "Ясність — це форма турботи.")}</p><p>Inter / 400, 500, 600 · Latin + Cyrillic</p><p class="meta spaced">CONSOLAS / TIME, SOURCE, EDITION</p><div class="spaced">${btn("news", t("Primary action", "Головна дія"))} ${btn("news", t("Secondary", "Другорядна"), true)}</div></div></div></section><section class="section">${sectionHead(t("A mark with rhythm.", "Знак із ритмом."))}<div class="grid2"><div class="spec-card"><img src="assets/mark.svg" width="130" height="130" alt="After Hours ATB monogram"><h3 class="spaced">AI Today Brief</h3><p>${t("Nested A strokes evoke a groove; a celadon point places a signal just off the beat. The publication name stays unchanged.", "Вкладені лінії A нагадують доріжку; celadon-крапка зміщує сигнал із такту. Назва видання залишається незмінною.")}</p></div><div class="spec-card"><h3>${t("An editorial tempo.", "Редакційний темп.")}</h3><p>${t("140 ms for a response. 240 ms for a transition. 440 ms for a quiet entrance. No looping hero animation, autoplay audio or scroll hijacking.", "140 мс для відгуку. 240 мс для переходу. 440 мс для спокійної появи. Без циклічної анімації hero, автоматичного звуку чи перехоплення скролу.")}</p><p>${t("Hover a button or story artwork. Navigate to watch the page enter. Reduced-motion disables the movement.", "Наведіть на кнопку чи ілюстрацію. Перейдіть між сторінками, щоб побачити появу. Reduced-motion вимикає рух.")}</p></div></div></section>${newsletter()}`;
+  return `${intro("AI TODAY BRIEF / DESIGN DIRECTION 01", "After <em>Hours.</em>", t("The warmth of a jazz club. The precision of tomorrow’s publication.", "Тепло джазового клубу. Точність видання про майбутнє."))}<img class="brand-art" src="assets/after-hours.png" alt="After Hours concept artwork" width="1672" height="941">
+  
+  <section class="section">
+    ${sectionHead(t("The whole publication.", "Усе видання."))}
+    <p>${t("26 linked screens. Select a page, switch EN / UK or change the reading theme in the header.", "26 пов’язаних екранів. Оберіть сторінку, перемкніть EN / UK або тему читання в шапці.")}</p>
+    <div class="screen-map">${routes.map((r, i) => link(r, `<span><small>${String(i + 1).padStart(2, "0")} / </small>${labels()[r]}</span>↗`)).join("")}</div>
+  </section>
+
+  <section class="section">
+    ${sectionHead(t("Editorial Palette & WCAG Accessibility", "Редакційна палітра та доступність WCAG"))}
+    <div class="brand-grid">
+      ${brandColors.map(([name, hex, contrast], i) => `
+        <div class="swatch" style="background:${hex};color:${i < 2 ? "#f0e9dc" : "#171918"}">
+          <strong>${name}</strong>
+          <span>${hex}</span>
+          <span class="wcag-badge ${contrast.includes("AA)") && !contrast.includes("AAA") ? "pass-aa" : ""}" style="margin-top:6px">${contrast}</span>
+        </div>
+      `).join("")}
+    </div>
+    <p class="spaced">${t("Brass guides primary action. Celadon marks signal focus. All text tokens exceed WCAG 2.2 Level AAA standards (14.6:1 text on dark surface, 8.9:1 brass highlights).", "Латунь спрямовує головні дії. Celadon позначає фокус сигналу. Усі текстові токени перевищують стандарти WCAG 2.2 Level AAA (14.6:1 текст на темній поверхні, 8.9:1 акценти).")}</p>
+  </section>
+
+  <section class="section">
+    ${sectionHead(t("Category Color Architecture", "Колірна архітектура категорій"))}
+    <p>${t("Each topic carries an assigned semantic indicator and token dot, preserving readability across night and day modes.", "Кожна тема має закріплений семантичний індикатор і токен-маркер, що зберігає читабельність у нічному та денному режимах.")}</p>
+    <div class="category-swatches-grid">
+      ${NEWS_CATEGORIES.map(cat => `
+        <div class="cat-swatch-card">
+          <span class="cat-swatch-chip" style="background:${cat.color}"></span>
+          <div class="cat-swatch-info">
+            <span class="cat-swatch-name">${cat.icon} ${t(cat.name, cat.ukName)}</span>
+            <span class="cat-swatch-hex">${cat.color} · ${CATEGORY_META[cat.id].count} ${t("stories", "новин")}</span>
+          </div>
+        </div>
+      `).join("")}
+    </div>
+  </section>
+
+  <section class="section">
+    ${sectionHead(t("Form Controls & Component Architecture", "Форми та архітектура компонентів"))}
+    <div class="showroom-controls-grid">
+      <div class="showroom-control-card">
+        <h4>${t("Sort Dropdown / Select", "Випадаючий список сортування")}</h4>
+        <p class="meta spaced">${t("Signature After Hours brass arrow with 44px min-height", "Латунна стрілка After Hours з мінімальною висотою 44px")}</p>
+        <div class="news-sort-wrapper" style="margin-top:12px">
+          <select class="news-sort-select" style="width:100%">
+            <option>${t("Newest first", "Спочатку найновіші")}</option>
+            <option>${t("Oldest first", "Спочатку найдавніші")}</option>
+            <option>${t("Most discussed", "Найбільш обговорювані")}</option>
+            <option>${t("Relevance", "За релевантністю")}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="showroom-control-card">
+        <h4>${t("Search Input Box", "Поле вводу пошуку")}</h4>
+        <p class="meta spaced">${t("Embedded search glyph and clean reset trigger", "Вбудований гліф пошуку та швидке очищення")}</p>
+        <div class="news-search-box" style="margin-top:12px; max-width:100%">
+          <span class="news-search-icon">⌕</span>
+          <input class="news-search-input" type="text" placeholder="${t("Search queries...", "Пошуковий запит...")}" value="Prompt caching">
+          <button class="news-search-clear" aria-label="Clear">✕</button>
+        </div>
+      </div>
+
+      <div class="showroom-control-card">
+        <h4>${t("Checkboxes & Radios", "Чекбокси та радіокнопки")}</h4>
+        <div class="category-checkbox-group" style="margin-top:10px">
+          <label class="category-checkbox-label">
+            <input type="checkbox" checked>
+            <span class="category-icon-dot" style="background:var(--cat-agents)"></span>
+            <span class="category-name">Agents & MCP</span>
+            <span class="category-count">33</span>
+          </label>
+          <label class="sort-radio-label" style="margin-top:8px">
+            <input type="radio" checked name="showroom-radio">
+            <span>${t("Newest selection", "Вибір найновіших")}</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="showroom-control-card">
+        <h4>${t("Filter Chips & 44px Touch Floor", "Фільтр-чіпи та правило 44px")}</h4>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0">
+          <span class="filter-pill">
+            <span class="filter-pill-dot" style="background:var(--cat-tools)"></span>
+            Tools & releases
+            <button class="filter-pill-remove">✕</button>
+          </span>
+          <span class="filter-pill">
+            Period: Week
+            <button class="filter-pill-remove">✕</button>
+          </span>
+        </div>
+        <div style="margin-top:14px">
+          <div class="touch-target-visualizer">
+            <span class="touch-target-label">MIN 44×44 PX TOUCH FLOOR</span>
+            <button class="button" style="margin:0">${t("Accessible Button", "Доступна кнопка")}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="grid2">
+      <div>
+        ${eyebrow("TYPE / EDITORIAL")}
+        <h2 class="manifesto">${t("Tomorrow,<br><em>in context.</em>", "Майбутнє.<br><em>З контекстом.</em>")}</h2>
+        <p>Fraunces / 400 · Georgia ${t("for Ukrainian display", "для українських заголовків")}</p>
+      </div>
+      <div>
+        ${eyebrow("TYPE / FUNCTIONAL")}
+        <p style="font-size:26px;color:var(--text);margin:22px 0">${t("Clarity is a form of care.", "Ясність — це форма турботи.")}</p>
+        <p>Inter / 400, 500, 600 · Latin + Cyrillic</p>
+        <p class="meta spaced">CONSOLAS / TIME, SOURCE, EDITION</p>
+        <div class="spaced">
+          ${btn("news", t("Primary action", "Головна дія"))} 
+          ${btn("news", t("Secondary", "Другорядна"), true)}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    ${sectionHead(t("A mark with rhythm.", "Знак із ритмом."))}
+    <div class="grid2">
+      <div class="spec-card">
+        <img src="assets/mark.svg" width="130" height="130" alt="After Hours ATB monogram">
+        <h3 class="spaced">AI Today Brief</h3>
+        <p>${t("Nested A strokes evoke a groove; a celadon point places a signal just off the beat. The publication name stays unchanged.", "Вкладені лінії A нагадують доріжку; celadon-крапка зміщує сигнал із такту. Назва видання залишається незмінною.")}</p>
+      </div>
+      <div class="spec-card">
+        <h3>${t("An editorial tempo.", "Редакційний темп.")}</h3>
+        <p>${t("140 ms for a response. 240 ms for a transition. 440 ms for a quiet entrance. No looping hero animation, autoplay audio or scroll hijacking.", "140 мс для відгуку. 240 мс для переходу. 440 мс для спокійної появи. Без циклічної анімації hero, автоматичного звуку чи перехоплення скролу.")}</p>
+        <p>${t("Hover a button or story artwork. Navigate to watch the page enter. Reduced-motion disables the movement.", "Наведіть на кнопку чи ілюстрацію. Перейдіть між сторінками, щоб побачити появу. Reduced-motion вимикає рух.")}</p>
+      </div>
+    </div>
+  </section>
+  ${newsletter()}`;
 }
+
 function states() {
-  return `${intro("COMPONENT LIBRARY / STATES", t("Care is in<br><em>the details.</em>", "Турбота —<br><em>у деталях.</em>"), t("Explicit loading, empty, error and successful states.", "Явні стани завантаження, порожніх даних, помилки й успіху."))}<div class="grid2 section"><section class="spec-card" aria-busy="true">${eyebrow(t("LOADING", "ЗАВАНТАЖЕННЯ"))}<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><p>${t("Reserved geometry prevents the layout from jumping.", "Зарезервовані розміри не дають верстці стрибати.")}</p></section><section class="spec-card">${eyebrow(t("RECOVERABLE ERROR", "ПОМИЛКА З ВІДНОВЛЕННЯМ"))}<h3 class="mt">${t("The feed could not be refreshed.", "Не вдалося оновити стрічку.")}</h3><p>${t("Keep the last readable content and offer a retry.", "Збережіть останній доступний контент і запропонуйте повторну спробу.")}</p><button class="button outline" data-retry>${t("Try again", "Спробувати ще")}</button><p data-retry-status role="status"></p></section><section class="spec-card">${eyebrow(t("EMPTY", "ПОРОЖНІ ДАНІ"))}<h3 class="mt">${t("Nothing saved. Yet.", "Ще нічого не збережено.")}</h3><p>${t("Explain the state and give one useful next step.", "Поясніть стан і запропонуйте один корисний крок.")}</p>${btn("news", t("Browse stories", "Переглянути новини"), true)}</section><section class="spec-card">${eyebrow(t("FORM VALIDATION", "ВАЛІДАЦІЯ ФОРМИ"))}<form data-subscribe><label class="form-label" for="state-email">Email</label><input class="wide-input" id="state-email" type="email" required placeholder="you@example.com"><button class="button spaced">${t("Preview confirmation", "Переглянути підтвердження")}</button><p class="form-status" aria-live="polite"></p></form><p>${t("Submit an invalid email to see browser validation. A valid value shows the demo success state.", "Надішліть некоректний email для перевірки валідації. Коректне значення покаже демонстраційний успішний стан.")}</p></section></div><div class="filters"><button class="button" disabled>${t("Disabled action", "Недоступна дія")}</button>${btn("404", t("Preview 404", "Переглянути 404"), true)}${btn("search", t("Try empty search", "Спробувати порожній пошук"), true)}</div>`;
+  return `
+    ${intro("COMPONENT LIBRARY / STATES", t("Care is in<br><em>the details.</em>", "Турбота —<br><em>у деталях.</em>"), t("Explicit loading, empty, error and successful states for robust UX.", "Явні стани завантаження, порожніх даних, помилки й успіху для стабільного UX."))}
+
+    <div class="grid2 section">
+      <section class="spec-card" aria-busy="true">
+        ${eyebrow(t("LOADING STATE / SHIMMER SKELETON", "СТАН ЗАВАНТАЖЕННЯ / SKELETON"))}
+        <h3 class="mt" style="font-size:20px;margin-bottom:14px">${t("Story Card Skeleton", "Скелетон картки новини")}</h3>
+        <div class="skeleton-story-card">
+          <div class="skeleton-thumb"></div>
+          <div>
+            <div class="skeleton-line w-40"></div>
+            <div class="skeleton-line h-24 w-80"></div>
+            <div class="skeleton-line w-60"></div>
+            <div class="skeleton-line w-80"></div>
+          </div>
+        </div>
+        <p class="spaced">${t("Reserved dimensions prevent layout shift (CLS: 0.00). Gentle shimmer indicates active background processing.", "Фіксовані габарити унеможливлюють стрибки верстки (CLS: 0.00). Плавний шимер сигналізує про фонове завантаження.")}</p>
+      </section>
+
+      <section class="spec-card">
+        ${eyebrow(t("EMPTY SEARCH STATE", "СТАН ПОРОЖНЬОГО ПОШУКУ"))}
+        <div class="news-empty-state" style="margin:16px 0; padding:24px 16px">
+          <div class="news-empty-icon" style="font-size:32px; margin-bottom:8px">🧭</div>
+          <h4 style="font-size:18px; margin-bottom:6px">${t("No stories match your filters", "Жодної новини за фільтрами")}</h4>
+          <p style="font-size:13px; max-width:320px; margin:0 auto 14px">${t("Try loosening your search query or reset filters.", "Спробуйте змінити пошуковий запит або скинути фільтри.")}</p>
+          <button class="button" data-reset-all style="min-height:36px; padding:0 18px">${t("Reset all filters", "Скинути всі фільтри")}</button>
+        </div>
+        <p>${t("Explains why the view is blank and provides a direct one-click path forward.", "Пояснює причину відсутності контенту та надає зрозумілу дію в один клік.")}</p>
+      </section>
+
+      <section class="spec-card">
+        ${eyebrow(t("RECOVERABLE ERROR", "ПОМИЛКА З ВІДНОВЛЕННЯМ"))}
+        <h3 class="mt">${t("The feed could not be refreshed.", "Не вдалося оновити стрічку.")}</h3>
+        <p>${t("Keep the last readable content in memory and offer a non-destructive retry action.", "Збережіть останній прочитаний контент у пам'яті й запропонуйте безпечну спробу повторення.")}</p>
+        <button class="button outline" data-retry>${t("Try again", "Спробувати ще")}</button>
+        <p data-retry-status role="status" style="margin-top:10px; color:var(--mint); font: 12px var(--mono)"></p>
+      </section>
+
+      <section class="spec-card">
+        ${eyebrow(t("FORM VALIDATION & FEEDBACK", "ВАЛІДАЦІЯ ТА ВІДГУК ФОРМИ"))}
+        <form data-subscribe>
+          <label class="form-label" for="state-email">Email</label>
+          <input class="wide-input" id="state-email" type="email" required placeholder="you@example.com">
+          <button class="button spaced">${t("Preview confirmation", "Переглянути підтвердження")}</button>
+          <p class="form-status" aria-live="polite"></p>
+        </form>
+        <p class="spaced">${t("Real-time HTML5 form validation paired with an aria-live region for accessibility announcement.", "Валідація форми в реальному часі з областю aria-live для зчитувачів екрана.")}</p>
+      </section>
+    </div>
+
+    <div class="filters">
+      <button class="button" disabled>${t("Disabled action", "Недоступна дія")}</button>
+      ${btn("404", t("Preview 404", "Переглянути 404"), true)}
+      ${btn("news", t("Browse newsroom", "Переглянути стрічку новин"), true)}
+    </div>
+  `;
 }
 const renderers = {
   home,
@@ -940,6 +2042,200 @@ function bind() {
       );
       retry.disabled = true;
     };
+
+  // News discovery: sort radio change
+  document.querySelectorAll('input[name="news-sort"]').forEach((r) => {
+    r.onchange = () => {
+      newsState.sort = r.value;
+      newsState.page = 1;
+      render(false);
+    };
+  });
+
+  // News discovery: sort dropdown change
+  document.querySelectorAll(".news-sort-select").forEach((s) => {
+    s.onchange = () => {
+      newsState.sort = s.value;
+      newsState.page = 1;
+      render(false);
+    };
+  });
+
+  // News discovery: category toggle
+  document.querySelectorAll("[data-category-toggle]").forEach((cb) => {
+    cb.onchange = () => {
+      if (cb.checked) {
+        newsState.selectedCategories.add(cb.value);
+      } else {
+        newsState.selectedCategories.delete(cb.value);
+      }
+      newsState.page = 1;
+      render(false);
+    };
+  });
+
+  // News discovery: period button
+  document.querySelectorAll("[data-period]").forEach((btn) => {
+    btn.onclick = () => {
+      newsState.period = btn.dataset.period;
+      newsState.page = 1;
+      render(false);
+    };
+  });
+
+  // News discovery: hot topic tags
+  document.querySelectorAll("[data-topic-click]").forEach((btn) => {
+    btn.onclick = () => {
+      const tag = btn.dataset.topicClick;
+      newsState.selectedTopic = newsState.selectedTopic === tag ? "" : tag;
+      newsState.page = 1;
+      render(false);
+    };
+  });
+
+  // News discovery: reset all filters
+  document.querySelectorAll("[data-reset-all]").forEach((btn) => {
+    btn.onclick = () => {
+      newsState.selectedCategories.clear();
+      newsState.period = "all";
+      newsState.sort = "newest";
+      newsState.searchQuery = "";
+      newsState.selectedTopic = "";
+      newsState.page = 1;
+      render(false);
+    };
+  });
+
+  // News discovery: search input
+  const nsi = document.getElementById("news-search-input");
+  if (nsi) {
+    nsi.oninput = () => {
+      newsState.searchQuery = nsi.value;
+      newsState.page = 1;
+      render(false);
+      const newNsi = document.getElementById("news-search-input");
+      if (newNsi) {
+        newNsi.focus();
+        newNsi.setSelectionRange(newNsi.value.length, newNsi.value.length);
+      }
+    };
+  }
+
+  // News discovery: search clear button
+  const nsc = document.querySelector(".news-search-clear");
+  if (nsc) {
+    nsc.onclick = () => {
+      newsState.searchQuery = "";
+      newsState.page = 1;
+      render(false);
+    };
+  }
+
+  // News discovery: active chip removal
+  document.querySelectorAll("[data-remove-cat]").forEach((btn) => {
+    btn.onclick = () => {
+      newsState.selectedCategories.delete(btn.dataset.removeCat);
+      newsState.page = 1;
+      render(false);
+    };
+  });
+  const rmp = document.querySelector("[data-remove-period]");
+  if (rmp) {
+    rmp.onclick = () => {
+      newsState.period = "all";
+      newsState.page = 1;
+      render(false);
+    };
+  }
+  const rmt = document.querySelector("[data-remove-topic]");
+  if (rmt) {
+    rmt.onclick = () => {
+      newsState.selectedTopic = "";
+      newsState.page = 1;
+      render(false);
+    };
+  }
+  const rms = document.querySelector("[data-clear-search]");
+  if (rms) {
+    rms.onclick = () => {
+      newsState.searchQuery = "";
+      newsState.page = 1;
+      render(false);
+    };
+  }
+
+  // News discovery: expandable analysis accordion
+  document.querySelectorAll("[data-toggle-expand]").forEach((btn) => {
+    btn.onclick = () => {
+      const id = btn.dataset.toggleExpand;
+      if (newsState.expandedIds.has(id)) {
+        newsState.expandedIds.delete(id);
+      } else {
+        newsState.expandedIds.add(id);
+      }
+      render(false);
+    };
+  });
+
+  // News discovery: save story
+  document.querySelectorAll("[data-save-story]").forEach((btn) => {
+    btn.onclick = () => {
+      const id = btn.dataset.saveStory;
+      if (savedStories.has(id)) {
+        savedStories.delete(id);
+        notify(t("Story removed from reading list", "Новину видалено зі списку"));
+      } else {
+        savedStories.add(id);
+        notify(t("Story saved to reading list", "Новину збережено до списку"));
+      }
+      render(false);
+    };
+  });
+
+  // News discovery: share story
+  document.querySelectorAll("[data-share-story]").forEach((btn) => {
+    btn.onclick = () => {
+      const id = btn.dataset.shareStory;
+      copy(window.location.origin + window.location.pathname + "#/article?id=" + id);
+    };
+  });
+
+  // News discovery: pagination
+  document.querySelectorAll(".after-hours-pagination [data-page]").forEach((btn) => {
+    btn.onclick = () => {
+      const p = parseInt(btn.dataset.page, 10);
+      if (!isNaN(p) && p >= 1) {
+        newsState.page = p;
+        render(false);
+        const toolbar = document.querySelector(".news-toolbar");
+        if (toolbar) toolbar.scrollIntoView({ behavior: "smooth" });
+      }
+    };
+  });
+
+  // News discovery: mobile filter drawer
+  const mTrigger = document.querySelector("[data-open-drawer]");
+  if (mTrigger) {
+    mTrigger.onclick = () => {
+      newsState.drawerOpen = true;
+      render(false);
+    };
+  }
+  document.querySelectorAll("[data-close-drawer]").forEach((btn) => {
+    btn.onclick = () => {
+      newsState.drawerOpen = false;
+      render(false);
+    };
+  });
+  const mBackdrop = document.querySelector(".mobile-drawer-backdrop");
+  if (mBackdrop) {
+    mBackdrop.onclick = (e) => {
+      if (e.target === mBackdrop) {
+        newsState.drawerOpen = false;
+        render(false);
+      }
+    };
+  }
 }
 document
   .getElementById("global-search")

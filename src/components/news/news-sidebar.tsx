@@ -7,19 +7,12 @@ import { trackEvent } from '@/lib/analytics-client';
 import type { TrendingTopic } from '@/lib/home';
 import type { NewsCategoryFilter } from '@/lib/news';
 import type { Lang } from '@/lib/site';
-import { CategoryGlyph, CloseIcon, SparkleIcon } from '@/components/icons';
+import { CategoryGlyph, CloseIcon } from '@/components/icons';
 import { OverlayDrawer } from '@/components/ui/overlay-drawer';
 import { NewsletterBand } from '@/components/home/newsletter-band';
 
-export type { SortMode, DatePreset } from '@/lib/news-filters';
-import type { SortMode, DatePreset } from '@/lib/news-filters';
-
-export interface NewsFilters {
-  q: string;
-  categories: string[];
-  date: DatePreset;
-  sort: SortMode;
-}
+export type { SortMode, DatePreset, NewsFilters } from '@/lib/news-filters';
+import type { SortMode, DatePreset, NewsFilters } from '@/lib/news-filters';
 
 interface SidebarControlsProps {
   lang: Lang;
@@ -34,6 +27,7 @@ interface SidebarControlsProps {
   hasActive: boolean;
   compact?: boolean;
   showSort?: boolean;
+  resultsCount?: number;
 }
 
 function FilterGroup({
@@ -75,13 +69,16 @@ function SidebarControls({
 }: SidebarControlsProps) {
   const t = getStrings(lang).news;
   const dates: DatePreset[] = ['today', 'week', 'month', 'all'];
-  const sorts: SortMode[] = ['newest', 'oldest', 'relevance', 'discussed'];
+
+  // Only show relevance if there is an active search query
+  const sorts: SortMode[] = filters.q.trim()
+    ? ['relevance', 'newest', 'oldest']
+    : ['newest', 'oldest'];
 
   const sortLabel = (s: SortMode) => {
     if (s === 'newest') return t.sortNewest;
     if (s === 'oldest') return t.sortOldest;
-    if (s === 'relevance') return t.sortRelevance;
-    return t.sortDiscussed;
+    return t.sortRelevance;
   };
 
   const dateLabel = (d: DatePreset) => {
@@ -92,7 +89,9 @@ function SidebarControls({
   };
 
   const rowClass = (active: boolean) =>
-    `filter-row flex cursor-pointer items-center gap-2 py-1 text-[0.86rem] ${active ? 'text-text' : 'text-muted'}`;
+    `filter-row flex cursor-pointer items-center gap-2 py-1 text-[0.86rem] select-none ${
+      active ? 'text-text font-medium' : 'text-muted'
+    }`;
 
   return (
     <div className={compact ? 'grid grid-cols-1 gap-4 min-[380px]:grid-cols-2' : undefined}>
@@ -105,12 +104,12 @@ function SidebarControls({
                 <label key={s} className={rowClass(active)}>
                   <input
                     type="radio"
-                    name="news-sort"
+                    name="news-sort-sidebar"
                     checked={active}
                     onChange={() => onSort(s)}
                     className="accent-accent size-4 shrink-0"
                   />
-                  {sortLabel(s)}
+                  <span>{sortLabel(s)}</span>
                 </label>
               );
             })}
@@ -140,7 +139,9 @@ function SidebarControls({
                   >
                     <CategoryGlyph icon={c.icon} size={16} strokeWidth={1.6} />
                   </span>
-                  <span className="min-w-0 flex-1 truncate">{c.name}</span>
+                  <span className={`min-w-0 flex-1 leading-snug ${compact ? 'break-words' : 'truncate'}`}>
+                    {c.name}
+                  </span>
                   <span className="text-faint ml-2 shrink-0 text-[0.72rem] tabular-nums">
                     {count}
                   </span>
@@ -161,9 +162,9 @@ function SidebarControls({
                 type="button"
                 onClick={() => onDate(d)}
                 aria-pressed={active}
-                className={`rounded-lg border px-2 py-2 text-[0.8rem] transition ${
+                className={`min-h-[44px] rounded-lg border px-2 py-2 text-[0.8rem] font-medium transition cursor-pointer select-none ${
                   active
-                    ? 'border-accent bg-accent text-on-accent font-semibold'
+                    ? 'border-accent bg-accent text-on-accent font-semibold shadow-sm'
                     : 'border-border text-text hover:border-accent'
                 }`}
               >
@@ -178,7 +179,7 @@ function SidebarControls({
         <button
           type="button"
           onClick={onReset}
-          className={`rounded-pill border-border text-text hover:border-accent flex w-full items-center justify-center border px-4 py-2.5 text-sm font-semibold transition ${
+          className={`rounded-pill border-border text-text hover:border-accent flex min-h-[44px] w-full items-center justify-center border px-4 py-2.5 text-sm font-semibold transition cursor-pointer ${
             compact ? 'min-[380px]:self-start' : 'mb-6'
           }`}
         >
@@ -199,7 +200,7 @@ function SidebarControls({
                       placement: 'news_sidebar',
                     })
                   }
-                  className="text-muted hover:text-accent flex items-center gap-2 text-[0.84rem] no-underline transition"
+                  className="text-muted hover:text-accent flex min-h-[36px] items-center gap-2 text-[0.84rem] no-underline transition"
                 >
                   <span className="text-faint w-4 shrink-0 text-right text-[0.7rem] tabular-nums font-medium">
                     {idx + 1}
@@ -222,13 +223,16 @@ export function NewsSidebar({
   drawerOpen,
   setDrawerOpen,
   triggerRef,
+  resultsCount,
   ...controls
 }: SidebarControlsProps & {
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
   triggerRef?: RefObject<HTMLElement | null>;
+  resultsCount?: number;
 }) {
   const t = getStrings(controls.lang).news;
+  const countLabel = typeof resultsCount === 'number' ? ` (${resultsCount})` : '';
 
   return (
     <>
@@ -260,12 +264,12 @@ export function NewsSidebar({
           panelClassName="sidebar-drawer-touch border-border p-4 sm:p-5"
         >
           <div className="mb-5 flex items-center justify-between">
-            <h2 className="m-0 text-lg">{t.filters}</h2>
+            <h2 className="m-0 text-lg font-semibold">{t.filters}</h2>
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
               aria-label="Close"
-              className="text-muted inline-flex border-0 bg-transparent p-1"
+              className="text-muted hover:text-text inline-flex min-h-[44px] min-w-[44px] items-center justify-center border-0 bg-transparent p-1 cursor-pointer"
             >
               <CloseIcon />
             </button>
@@ -274,9 +278,9 @@ export function NewsSidebar({
           <button
             type="button"
             onClick={() => setDrawerOpen(false)}
-            className="rounded-pill bg-accent text-on-accent sticky bottom-0 mt-5 flex w-full items-center justify-center px-4 py-2.5 text-sm font-semibold shadow-pop"
+            className="rounded-pill bg-accent text-on-accent sticky bottom-0 mt-5 flex min-h-[44px] w-full items-center justify-center px-4 py-2.5 text-sm font-semibold shadow-pop transition hover:brightness-105 cursor-pointer"
           >
-            {t.applyFilters}
+            {t.filtersDone}{countLabel}
           </button>
         </OverlayDrawer>
       </div>
