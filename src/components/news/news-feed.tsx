@@ -1,7 +1,14 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { HomeItem } from '@/lib/home';
 import type { NewsCategoryFilter } from '@/lib/news';
 import type { TrendingTopic } from '@/lib/home';
@@ -10,17 +17,30 @@ import type { Lang } from '@/lib/site';
 import { trackEvent } from '@/lib/analytics-client';
 import { Reveal } from '@/components/reveal';
 import { PostCard } from '@/components/post-card';
-import { Pagination } from '@/components/pagination';
 import { SponsorCard } from '@/components/home/sponsor-card';
 import { NewsletterBand } from '@/components/home/newsletter-band';
-import { CloseIcon, SlidersIcon } from '@/components/icons';
+import { SlidersIcon } from '@/components/icons';
 import {
   NewsSidebar,
   type DatePreset,
   type NewsFilters,
   type SortMode,
 } from '@/components/news/news-sidebar';
-import { matchesQuery, sortItems, withinPreset } from '@/lib/news-filters';
+import {
+  matchesQuery,
+  normalizePage,
+  parseNewsUrlParams,
+  serializeNewsUrlParams,
+  sortItems,
+  withinPreset,
+} from '@/lib/news-filters';
+import {
+  ActionButton,
+  EmptyState,
+  FilterChip,
+  AccessiblePagination,
+  Select,
+} from '@/components/ui';
 
 const PAGE_SIZE = 12;
 
@@ -55,6 +75,49 @@ export function NewsFeed({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const filtersTriggerRef = useRef<HTMLButtonElement>(null);
   const noResultsTracked = useRef('');
+  const isHydrated = useRef(false);
+
+  // Synchronize state with URL on mount (without breaking ISR SSR)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.search) {
+      const parsed = parseNewsUrlParams(window.location.search);
+      setFilters((prev) => ({
+        q: parsed.filters.q || prev.q,
+        categories:
+          parsed.filters.categories.length > 0
+            ? parsed.filters.categories
+            : prev.categories,
+        date: parsed.filters.date,
+        sort: parsed.filters.sort,
+      }));
+      setPage(parsed.page);
+    }
+    isHydrated.current = true;
+  }, []);
+
+  // Browser Back/Forward navigation listener
+  useEffect(() => {
+    const handlePopState = () => {
+      const parsed = parseNewsUrlParams(window.location.search);
+      setFilters(parsed.filters);
+      setPage(parsed.page);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // URL state synchronizer
+  const syncUrl = useCallback(
+    (nextFilters: NewsFilters, nextPage: number) => {
+      if (typeof window === 'undefined') return;
+      const qs = serializeNewsUrlParams(nextFilters, nextPage);
+      const newUrl = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+      window.history.pushState(null, '', newUrl);
+    },
+    [],
+  );
 
   const filtered = useMemo(() => {
     const rows = items.filter(
@@ -64,7 +127,7 @@ export function NewsFeed({
         withinPreset(p.date, filters.date) &&
         (serverSearchActive || matchesQuery(p, filters.q)),
     );
-    return sortItems(rows, filters.sort);
+    return sortItems(rows, filters.sort, filters.q);
   }, [items, filters, serverSearchActive]);
 
   const facets = useMemo(() => {
@@ -79,11 +142,13 @@ export function NewsFeed({
   }, [items, filters.date, filters.q, serverSearchActive]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
+  const safePage = normalizePage(page, pageCount);
   const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const hasActive =
-    filters.q.trim().length > 0 || filters.categories.length > 0 || filters.date !== 'all';
+    filters.q.trim().length > 0 ||
+    filters.categories.length > 0 ||
+    filters.date !== 'all';
 
   useEffect(() => {
     const q = filters.q.trim() || initialQuery.trim();
@@ -96,63 +161,72 @@ export function NewsFeed({
     trackEvent('search_no_results', { query: q });
   }, [filtered.length, filters.q, initialQuery]);
 
-  function pushPage(p: number) {
-    const url = new URL(window.location.href);
-    if (p === 1) {
-      url.searchParams.delete('page');
-    } else {
-      url.searchParams.set('page', String(p));
-    }
-    router.push(url.pathname + (url.searchParams.size ? '?' + url.searchParams.toString() : ''), {
-      scroll: false,
-    });
-  }
-
-  function resetPageInUrl() {
-    const url = new URL(window.location.href);
-    url.searchParams.delete('page');
-    router.push(url.pathname + (url.searchParams.size ? '?' + url.searchParams.toString() : ''), {
-      scroll: false,
-    });
-  }
-
   const toggleCategory = (slug: string) => {
     const on = !filters.categories.includes(slug);
     trackEvent('filter_category', { category: slug, enabled: on });
-    setFilters((f) => ({
-      ...f,
-      categories: on ? [...f.categories, slug] : f.categories.filter((c) => c !== slug),
-    }));
+    const nextFilters: NewsFilters = {
+      ...filters,
+      categories: on
+        ? [...filters.categories, slug]
+        : filters.categories.filter((c) => c !== slug),
+    };
+    setFilters(nextFilters);
     setPage(1);
-    resetPageInUrl();
+    syncUrl(nextFilters, 1);
   };
 
   const reset = () => {
     trackEvent('filters_reset', {});
-    setFilters({ q: '', categories: [], date: 'all', sort: 'newest' });
+    const nextFilters: NewsFilters = {
+      q: '',
+      categories: [],
+      date: 'all',
+      sort: 'newest',
+    };
+    setFilters(nextFilters);
     setPage(1);
-    if (serverSearchActive) router.push(`/${lang}/news`);
-    else resetPageInUrl();
+    if (serverSearchActive) {
+      router.push(`/${lang}/news`);
+    } else {
+      syncUrl(nextFilters, 1);
+    }
   };
 
   const setDateFilter = (d: DatePreset) => {
     trackEvent('filter_date', { range: d });
-    setFilters((f) => ({ ...f, date: d }));
+    const nextFilters: NewsFilters = { ...filters, date: d };
+    setFilters(nextFilters);
     setPage(1);
-    resetPageInUrl();
+    syncUrl(nextFilters, 1);
   };
 
   const setSortFilter = (s: SortMode) => {
     trackEvent('sort_change', { sort: s });
-    setFilters((f) => ({ ...f, sort: s }));
+    const nextFilters: NewsFilters = { ...filters, sort: s };
+    setFilters(nextFilters);
     setPage(1);
-    resetPageInUrl();
+    syncUrl(nextFilters, 1);
+  };
+
+  const removeQuery = () => {
+    const nextSort = filters.sort === 'relevance' ? 'newest' : filters.sort;
+    const nextFilters: NewsFilters = { ...filters, q: '', sort: nextSort };
+    setFilters(nextFilters);
+    setPage(1);
+    if (serverSearchActive) {
+      router.push(`/${lang}/news`);
+    } else {
+      syncUrl(nextFilters, 1);
+    }
   };
 
   const goToPage = (p: number) => {
-    setPage(p);
-    pushPage(p);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const target = normalizePage(p, pageCount);
+    setPage(target);
+    syncUrl(filters, target);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const dateChipLabel = (d: DatePreset) => {
@@ -161,6 +235,22 @@ export function NewsFeed({
     if (d === 'month') return t.dateMonth;
     return t.dateAll;
   };
+
+  const sortOptions = filters.q.trim()
+    ? [
+        { value: 'relevance', label: t.sortRelevance },
+        { value: 'newest', label: t.sortNewest },
+        { value: 'oldest', label: t.sortOldest },
+      ]
+    : [
+        { value: 'newest', label: t.sortNewest },
+        { value: 'oldest', label: t.sortOldest },
+      ];
+
+  const activeCount =
+    filters.categories.length +
+    (filters.date !== 'all' ? 1 : 0) +
+    (filters.q.trim() ? 1 : 0);
 
   return (
     <div className="news-layout">
@@ -178,109 +268,102 @@ export function NewsFeed({
         drawerOpen={drawerOpen}
         setDrawerOpen={setDrawerOpen}
         triggerRef={filtersTriggerRef}
+        resultsCount={filtered.length}
       />
 
       <section aria-label={t.title} className="min-w-0">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
           <p className="text-muted m-0 text-[0.9rem]" aria-live="polite">
-            {t.resultsCount} {filtered.length}
+            {t.resultsCount} <span className="text-text font-semibold">{filtered.length}</span>
           </p>
           <div className="flex items-center gap-2">
             <label htmlFor="news-sort-top" className="sr-only">
               {t.sortLabel}
             </label>
-            <select
-              id="news-sort-top"
-              value={filters.sort}
-              onChange={(e) => setSortFilter(e.target.value as SortMode)}
-              className="border-border bg-surface text-text rounded-lg border py-2 pl-3 pr-8 text-[0.85rem]"
-            >
-              <option value="newest">{t.sortNewest}</option>
-              <option value="oldest">{t.sortOldest}</option>
-              <option value="relevance">{t.sortRelevance}</option>
-              <option value="discussed">{t.sortDiscussed}</option>
-            </select>
+            <div className="min-w-[150px]">
+              <Select
+                id="news-sort-top"
+                value={filters.sort}
+                onChange={(e) => setSortFilter(e.target.value as SortMode)}
+                options={sortOptions}
+                aria-label={t.sortLabel}
+              />
+            </div>
             <button
               ref={filtersTriggerRef}
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="mobile-only rounded-pill border-border text-text hover:border-accent inline-flex items-center gap-1.5 border px-3 py-2 text-sm"
+              className="mobile-only rounded-pill border-border text-text hover:border-accent inline-flex min-h-[44px] items-center gap-1.5 border px-3.5 py-2 text-sm font-medium transition cursor-pointer select-none"
             >
               <SlidersIcon size={16} />
               {t.filters}
-              {hasActive
-                ? ` · ${filters.categories.length + (filters.date !== 'all' ? 1 : 0)}`
-                : ''}
+              {activeCount > 0 && (
+                <span className="bg-accent text-on-accent size-5 rounded-full text-xs flex items-center justify-center font-bold">
+                  {activeCount}
+                </span>
+              )}
             </button>
           </div>
         </div>
 
         {hasActive && (
-          <div className="mb-5 flex flex-wrap gap-2">
+          <div
+            data-testid="active-filter-chips"
+            className="mb-5 flex flex-wrap items-center gap-2"
+            role="region"
+            aria-label="Active filters"
+          >
             {filters.q.trim() && (
-              <button
-                type="button"
-                onClick={() => {
-                  setFilters((f) => ({ ...f, q: '' }));
-                  setPage(1);
-                  if (serverSearchActive) router.push(`/${lang}/news`);
-                }}
-                className="rounded-pill border-accent/45 bg-accent/15 text-accent inline-flex items-center gap-1.5 border px-2.5 py-1 text-[0.78rem]"
-              >
-                «{filters.q.trim()}» <CloseIcon size={13} />
-              </button>
+              <FilterChip
+                label={`«${filters.q.trim()}»`}
+                active
+                onRemove={removeQuery}
+                removeAriaLabel={`Remove search query ${filters.q.trim()}`}
+              />
             )}
             {filters.categories.map((slug) => {
               const c = categories.find((x) => x.slug === slug);
-              const color = c?.color ?? '#888888';
               return (
-                <button
+                <FilterChip
                   key={slug}
-                  type="button"
-                  onClick={() => toggleCategory(slug)}
-                  className="cat-chip rounded-pill inline-flex items-center gap-1.5 px-2.5 py-1 text-[0.78rem]"
-                  style={{ '--cat-color': color } as CSSProperties}
-                >
-                  {c?.name ?? slug} <CloseIcon size={13} />
-                </button>
+                  label={c?.name ?? slug}
+                  categoryColor={c?.color}
+                  active
+                  onRemove={() => toggleCategory(slug)}
+                  removeAriaLabel={`Remove category ${c?.name ?? slug}`}
+                />
               );
             })}
             {filters.date !== 'all' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setFilters((f) => ({ ...f, date: 'all' }));
-                  setPage(1);
-                }}
-                className="rounded-pill border-border bg-surface-2 text-text inline-flex items-center gap-1.5 border px-2.5 py-1 text-[0.78rem]"
-              >
-                {dateChipLabel(filters.date)} <CloseIcon size={13} />
-              </button>
+              <FilterChip
+                label={dateChipLabel(filters.date)}
+                onRemove={() => setDateFilter('all')}
+                removeAriaLabel={`Remove date filter ${dateChipLabel(filters.date)}`}
+              />
             )}
-            <button
-              type="button"
+            <ActionButton
+              variant="ghost"
+              size="sm"
               onClick={reset}
-              className="text-accent border-0 bg-transparent text-[0.78rem] underline"
+              className="text-accent hover:underline text-xs p-1 min-h-[36px]"
             >
               {t.filterReset}
-            </button>
+            </ActionButton>
           </div>
         )}
 
         {filtered.length === 0 ? (
-          <div className="rounded-card border-border border border-dashed px-4 py-14 text-center">
-            <p className="font-serif mb-2 text-xl">{t.emptyTitle}</p>
-            <p className="text-muted mb-5">{t.emptyBody}</p>
-            <button
-              type="button"
-              onClick={reset}
-              className="rounded-pill border-border text-text hover:border-accent inline-flex border px-4 py-2 text-sm font-semibold"
-            >
-              {t.filterReset}
-            </button>
-          </div>
+          <EmptyState
+            title={t.emptyTitle}
+            description={t.emptyBody}
+            action={
+              <ActionButton variant="primary" onClick={reset}>
+                {t.filterReset}
+              </ActionButton>
+            }
+          />
         ) : (
-          <div className="grid gap-4">
+          <div data-testid="news-feed-list" className="grid gap-4">
             {pageRows.map((p, i) => (
               <Fragment key={p.id}>
                 <Reveal delayMs={i * 45}>
@@ -297,11 +380,17 @@ export function NewsFeed({
         )}
 
         {filtered.length > 0 && (
-          <Pagination
-            lang={lang}
+          <AccessiblePagination
             page={safePage}
             pageCount={pageCount}
-            onChange={goToPage}
+            onPageChange={goToPage}
+            getPageHref={(p) => {
+              const qs = serializeNewsUrlParams(filters, p);
+              return qs ? `?${qs}` : '?';
+            }}
+            prevLabel={t.prev}
+            nextLabel={t.next}
+            ariaLabel={t.page}
           />
         )}
 

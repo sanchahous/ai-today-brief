@@ -84,7 +84,7 @@ test.describe('News filters drawer', () => {
     await expect(dialog).toBeHidden();
 
     await openFiltersDrawer(page);
-    await dialog.getByRole('button', { name: /apply/i }).click();
+    await dialog.getByRole('button', { name: /apply|done/i }).click();
     await expect(dialog).toBeHidden();
   });
 

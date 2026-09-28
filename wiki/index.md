@@ -11,7 +11,7 @@ first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
 SSG skip, ElevenLabs, LinkedIn PDF skip, social `?s=` URLs 2026-09-03
 desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26
-Last updated: 2026-09-26
+Last updated: 2026-09-28
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -45,6 +45,7 @@ Last updated: 2026-09-26
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
+| ✅ [architecture/design-system-tokens](architecture/design-system-tokens.md) | Архітектура токенів дизайн-системи After Hours v1.0.0, семантика, WCAG AA контрастність | `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts` |
 | 📋 `architecture/data-model.md` | Схема Supabase, RLS, 104 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
@@ -161,6 +162,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | Сторінка | Про що |
 |---|---|
 | ✅ [decisions/2026-08-02-knowledge-base-restructure](decisions/2026-08-02-knowledge-base-restructure.md) | Перехід на `raw/` · `wiki/` · `artifacts/` + покроковий план міграції (кроки 1–8 виконано) |
+| ✅ [decisions/2026-09-26-news-discovery-and-pagination-architecture](decisions/2026-09-26-news-discovery-and-pagination-architecture.md) | Архітектура News discovery, семантика сортування (Newest, Oldest, Relevance), URL-state зі збереженням ISR-кешу /news, доступна пагінація |
 
 ## Research
 

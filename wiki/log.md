@@ -4,7 +4,56 @@ Summary: append-only журнал усіх операцій над базою з
 під заголовком. Старі записи ніколи не редагуються і не видаляються — помилку виправляє новий
 запис із поміткою «коригує запис від …».
 Sources: самозаписи агента
-Last updated: 2026-09-03
+Last updated: 2026-09-28
+
+## 2026-09-28 — Виправлення візуальних артефактів контролів After Hours та підготовка PR
+
+- **Усунення спотворення радіокнопок і чекбоксів:** ізольовано селектори `input:not([type="checkbox"]):not([type="radio"])` у `artifacts/after-hours/style.css`, які раніше накладали `min-height: 46px` та `padding: 12px` на всі елементи вводу.
+- **Нормалізація геометрії та контрасту:** для `.custom-radio` та `.custom-checkbox` зафіксовано суворі розміри 16×16px (`aspect-ratio: 1/1; box-sizing: border-box; padding: 0`), відновлено круглу форму радіокнопок, чіткий квадратний контур чекбоксів та підвищено контрастність неактивних рамок.
+- **Запобігання зрізанню тексту категорій:** розширено сайдбар до 320px і оптимізовано шрифт (12.5px) та відступи рядків.
+- **Повна візуальна та технічна верифікація:** перевірено рендеринг обох локалізацій (EN / UK) через локальний системний Google Chrome (Playwright); 100% успішне проходження повного циклу `npm run pr:check`.
+(source: `artifacts/after-hours/style.css`; `wiki/now.md`)
+
+## 2026-09-26 — Повне наповнення та розширення концепту After Hours (`artifacts/after-hours/`)
+
+За запитом власника усунено функціональний розрив прототипу After Hours перед запланованим повним редизайном видання. Прототип розширено всіма ключовими функціональними та візуальними механіками з поточного продакшну та плану аудиту:
+- **Newsroom Discovery Sidebar (`#/news`):**
+  - Сортування: 4 радіоопції (Newest, Oldest, Relevance, Most discussed).
+  - 9 Категорій: стилізовані чекбокси з кольоровими токен-індикаторами, назвами та точними кількостями (Tools & releases: 33, Tutorials & guides: 4, Token & cost optimization: 6, Agents & MCP: 33, Vibe coding workflow: 7, Creative AI: 3, Local LLMs: 5, Career & monetisation: 0, Models & research: 9).
+  - Період: 4 кнопки (Today, Week, Month, All time).
+  - Популярні теми (хмаринка тегів): `#MCP`, `#Cursor`, `#Claude Code`, `#RAG`, `#PromptCaching`, `#LocalModels`, `#TokenOptimization`, `#Benchmarks`.
+  - Кнопка швидкого скидання всіх фільтрів.
+- **Тулбар та фільтр-чіпи:**
+  - Живе поле пошуку з кнопкою очищення ✕.
+  - Лічильник "Stories found: X".
+  - Кастомний стилізований `<select>` сортування у фірмовому стилі After Hours.
+  - Рядок активних фільтр-чіпів із видаленням обраних критеріїв.
+- **Картки новин та розкривний аналіз:**
+  - Градієнтні прев'ю, бейджі категорій, дата, час читання, заголовок, анотація, кнопка збереження, шеринг, лічильник коментарів.
+  - **Expand analysis →:** інтерактивний акордеон із блоками "Why it matters", списком тез "Key takeaways" та тегами.
+- **Доступна пагінація:** кнопки навігації (Previous, 1, 2, 3... Next) із робочим клієнтським розбиттям по сторінках.
+- **Мобільний Drawer (< 1024px):** адаптивний тулбар із кнопкою відкриття (≥ 44px touch target) та висувною панеллю фільтрів.
+- **Шоурум дизайн-системи (`#/system`):**
+  - Матриця токенів із показниками контрастності WCAG AAA (14.6:1, 8.9:1, 12.5:1).
+  - Картки палітри 9 категорій.
+  - Інтерактивна вітрина форм і контролів (Select, Search, Checkbox, Radio, Chips, Buttons, візуалізатор Touch Floor 44px).
+- **Шоурум станів UI (`#/states`):**
+  - Shimmer-скелетон картки.
+  - Порожній стан пошуку з CTA скидання.
+  - Стан відновлюваної помилки з кнопкою повтору.
+  - Валідація форми.
+(source: `artifacts/after-hours/app.js`; `artifacts/after-hours/style.css`; `artifacts/after-hours/README.md`)
+
+## 2026-09-26 — Реалізація аудиту прогалин дизайн-системи After Hours (M0–M5)
+
+Повний цикл усунення 20 розривів концепції та дизайн-системи After Hours за планом `wiki/audits/2026-09-26-design-system-gap-plan.md`:
+- **M0 (ADR):** ухвалено [decisions/2026-09-26-news-discovery-and-pagination-architecture](decisions/2026-09-26-news-discovery-and-pagination-architecture.md); перемарковано After Hours як візуальну концепцію + функціональний план у `artifacts/after-hours/README.md`.
+- **M1 (Токени & Governance):** створено трирівневу модель у `src/lib/design-system/tokens.ts`, автоматичний лінтер `scripts/check-design-tokens.ts` (`npm run tokens:check`), зафіксовано WCAG AA (текст 14.6:1 night, 12.5:1 day), розширено `src/app/globals.css` (`--color-signal`, `--color-error`, `--radius-sm`, `--radius-md`, `--touch-target-min: 44px`, `html[data-theme='day']`). Документовано в [architecture/design-system-tokens](architecture/design-system-tokens.md).
+- **M2 (Бібліотека UI-компонентів):** реалізовано доступні примітиви в `src/components/ui/` (`ActionButton`, `IconButton`, `TextInput`, `SearchInput`, `Select`, `Checkbox`, `Radio`, `FilterChip`, `EmptyState`, `AccessiblePagination`). Всі контролі задовольняють touch floor ≥ 44px і мають чіткі фокус-кільця.
+- **M3 (News discovery & URL-синхронізація):** чесна семантика сортування у `src/lib/news-filters.ts` (прибрано фіктивне `discussed`, relevance лише за запитом з повнотекстовим ваговим скорингом, нормалізація URL `parseNewsUrlParams`/`serializeNewsUrlParams`). Двостороння синхронізація через `history.pushState` і `popstate` без порушення ISR edge-кешу `/news`. Мобільний drawer з незрізаними категоріями та чесною кнопкою «Done / Готово».
+- **M5 (E2E & верифікація):** створено повний інтерактивний набір `e2e/news-feed-interaction.spec.ts` (URL-гідратація, фільтри, browser history, SEO-пагінація, mobile drawer touch-targets). 100% проходження тестів (222 тестові файли, 1989 unit-тестів, 0 lint помилок).
+(source: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `src/lib/design-system/tokens.ts`; `src/components/news/news-feed.tsx`; `src/components/news/news-sidebar.tsx`)
+
 
 ## 2026-09-03 — Weekly digest реліз розділено на дві частини (сайт+соц / відео)
 
