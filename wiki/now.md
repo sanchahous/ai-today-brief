@@ -17,7 +17,8 @@ Last updated: 2026-09-29
 
 ## Стан репозиторію
 
-- **AH-0.3: baseline After Hours знято з production 2026-09-29.** Скрипт
+- **AH-0.3: baseline After Hours знято з production 2026-09-29, PR
+  [#373](https://github.com/sanchahous/ai-today-brief/pull/373).** Скрипт
   `scripts/capture-route-matrix.ts` вибрав актуальні slug-и через sitemap і зняв 232 PNG:
   29 маршрутних станів у Night/Day, EN/UK, 1440×900/390×844. Manifest і PNG у
   git-ignored `artifacts/_local/before/`; SHA checkout —

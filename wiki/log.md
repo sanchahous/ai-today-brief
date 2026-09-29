@@ -5075,3 +5075,9 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 Знято **232 PNG** для **29 маршрутних станів** у 8 комбінаціях Night/Day, EN/UK, 1440×900/390×844. Шлях: `artifacts/_local/before/` (git-ignored); SHA checkout у manifest: `a3d2db56fdb0b446c87c375121a414e60c936938`; SHA-256 manifest: `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`. Знімки показують стан **після** токенів 2.0 з PR #369: AC про baseline до AH-1.1 був недосяжний, але до першого наступного візуального PR (AH-1.3…AH-1.7) baseline готовий.
 
 Оновлено статус і AC AH-0.3 в епіку, наступну задачу AH-0.4 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.3: PR відкрито
+
+Джерело: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373), `npm run pr:check` і `git push` 2026-09-29.
+
+PR відкрито після зеленого `pr:check`; посилання додано до статусу §5.3 і картки AH-0.3, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373))
