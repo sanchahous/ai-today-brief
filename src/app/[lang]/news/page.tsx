@@ -6,7 +6,6 @@ import { getNewsPageData } from '@/lib/news';
 import { socialMeta } from '@/lib/seo';
 import { Breadcrumbs, breadcrumbJsonLd } from '@/components/breadcrumbs';
 import { Byline } from '@/components/byline';
-import { Reveal } from '@/components/reveal';
 import { NewsFeed } from '@/components/news/news-feed';
 
 type Params = { lang: string };
@@ -106,28 +105,6 @@ export default async function NewsPage({ params }: { params: Promise<Params> }) 
         <p className="text-muted m-0 mb-4 text-base leading-relaxed">{t.lead}</p>
         <Byline lang={lang} updated={updated} />
       </header>
-
-      <Reveal>
-        <section
-          aria-labelledby="summary-title"
-          className="rounded-card border-border bg-surface mb-8 border border-l-[3px] border-l-accent p-5 sm:p-6"
-        >
-          <h2
-            id="summary-title"
-            className="text-accent m-0 mb-3 text-2xs font-bold tracking-[0.1em] uppercase"
-          >
-            {t.summaryTitle}
-          </h2>
-          {t.weekSummary.map((para, i) => (
-            <p
-              key={i}
-              className={`text-muted text-[0.95rem] leading-relaxed ${i === 0 ? 'mb-3' : 'm-0'}`}
-            >
-              {para}
-            </p>
-          ))}
-        </section>
-      </Reveal>
 
       <NewsFeed
         lang={lang}

@@ -344,7 +344,6 @@ export const STRINGS = {
     news: {
       title: 'All news',
       lead: 'Your AI news feed — search, filter, and explore curated stories. Each item includes a “why it matters” analysis and key takeaways.',
-      summaryTitle: 'Recent highlights',
       resultsCount: 'Stories found:',
       showingCountOf: 'Showing {count} of {total} stories',
       sortLabel: 'Sort',
@@ -385,10 +384,6 @@ export const STRINGS = {
       bylineRole: 'AI Product Engineer',
       sourcesCited: 'Sources cited on every story',
       trendingSidebar: 'Hot topics',
-      weekSummary: [
-        'This week was all about agent tooling: Claude Code shipped background agents and a native PR review flow inside the terminal, while the MCP protocol v1.2 added resource streaming and granular authorization. Together they make production agents noticeably safer and easier to run.',
-        'On the research side, the strongest signal is that structured retrieval consistently beats “long context” on real-world tasks — reinforcing the move toward economical architecture, with prompt caching cutting real API bills by 70%+. Alongside, the practical guides keep coming: from building your own code-review agent to an honest take on when fine-tuning actually pays off.',
-      ],
     },
   },
   uk: {
@@ -728,7 +723,6 @@ export const STRINGS = {
     news: {
       title: 'Усі новини',
       lead: 'Стрічка AI-новин — пошук, фільтри та огляд відібраних матеріалів. Кожен матеріал — з аналізом «чому це важливо» й ключовими висновками.',
-      summaryTitle: 'Зведення останніх подій',
       resultsCount: 'Знайдено матеріалів:',
       showingCountOf: 'Показано {count} з {total} матеріалів',
       sortLabel: 'Сортування',
@@ -769,10 +763,6 @@ export const STRINGS = {
       bylineRole: 'AI Product Engineer',
       sourcesCited: 'Джерела вказані в кожному матеріалі',
       trendingSidebar: 'Популярні теми',
-      weekSummary: [
-        'Цього тижня в центрі уваги — інструменти для агентів: Claude Code запустив фонові агенти й нативний перегляд PR прямо в терміналі, а протокол MCP у версії 1.2 додав стрімінг ресурсів і гранулярну авторизацію. Разом це робить продакшн-агентів помітно безпечнішими й зручнішими.',
-        'У дослідженнях головний сигнал — структурований пошук стабільно випереджає «довгий контекст» на реальних задачах, що підкріплює тренд на економну архітектуру: prompt caching у реальних кейсах зрізає рахунок за API на 70%+. Паралельно виходять практичні гайди — від збору власного агента для рев’ю коду до чесного розбору, коли файнтюн справді виправданий.',
-      ],
     },
   },
 } as const;
