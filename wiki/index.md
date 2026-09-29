@@ -117,9 +117,12 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 
 Епік реалізації: [After Hours redesign epic](product/after-hours-redesign-epic.md) — перенесення прототипу v3 у production: 8 фаз і 8 гейтів, 56 задач з описом і acceptance criteria, усі рішення D1–D13 ухвалені ([ADR](decisions/2026-09-29-after-hours-rollout-and-foundations.md)), вихідна точка за кодом після PR #369 (3 задачі вже виконані, 9 — частково), трасування G01–G20 і маршрутів; декомпозиція й порядок робіт після сторінки готовності. (source: `artifacts/after-hours/`; live check коду 2026-09-29; рішення власника 2026-09-29)
 
+Передача виконання: [After Hours epic handoff](product/after-hours-epic-handoff.md) — вхід для нової сесії чи іншої моделі: стан на 2026-09-29, порядок старту, черга фази 0 з нюансами задач, точки зупинки для власника, пастки й стартовий промпт. (source: сесія 2026-09-29, PR #370 і #371)
+
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 56 задач з AC, усі рішення D1–D13 ухвалені 2026-09-29 (D7 — знак міняється скрізь), ризики й оцінка ≈ 56 днів | `artifacts/after-hours/` v3 + live check коду після PR #369 + рішення власника 2026-09-29 |
+| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | Передача виконання епіку After Hours наступній сесії: стан, порядок старту, черга фази 0, точки зупинки, пастки, стартовий промпт | епік + ADR + сесія 2026-09-29 |
 | ✅ [product/useful-tools-concept](product/useful-tools-concept.md) | Концепт розділу AI Toolbox | колишній `docs/product/USEFUL-TOOLS-CONCEPT.md` |
 | ✅ [product/toolbox-wave1-spec](product/toolbox-wave1-spec.md) | Epic-спека: settings.json Builder + CLAUDE.md Generator | колишній `docs/product/TOOLBOX-WAVE1-…` |
 | ✅ [product/responsive-crossbrowser-audit](product/responsive-crossbrowser-audit.md) | Аудит адаптиву й крос-браузерності | колишній `docs/product/RESPONSIVE-…` |
