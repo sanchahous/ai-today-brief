@@ -5077,3 +5077,9 @@ Baseline має 58 EN/UK URL. Compare з тим самим production: 0 пом�
 Наявні властивості сирого HTML зафіксовано без виправлення: усі 29 UK URL мають `<html lang="en">` до клієнтського init-script; у 58 відповідях текст безпосередньо всередині сирого `<main>` має довжину 0, бо контент надходить у streaming-розмітці. Поточні JSON-LD issues є у 14 baseline URL (AboutPage:name, Organization:logo, WebApplication:offers); compare блокує лише нові дефекти. Це спостереження raw HTTP, не оцінка індексації пошуковими системами. (source: `e2e/fixtures/seo-contract.baseline.json`; live HTTP-запити 2026-09-29)
 
 Оновлено статус і AC AH-0.4 в епіку, наступну задачу AH-0.5 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-маршрути не змінювались.
+
+## 2026-09-29 — AH-0.4: PR відкрито
+
+Джерело: [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374), `npm run pr:check` і pre-push Chromium 2026-09-29.
+
+PR відкрито після зеленого `pr:check`; pre-push E2E: 130 passed, 12 skipped. Посилання додано до статусу §5.3 і картки AH-0.4, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374))

@@ -17,7 +17,8 @@ Last updated: 2026-09-29
 
 ## Стан репозиторію
 
-- **AH-0.4: SEO baseline зафіксовано з production 2026-09-29.**
+- **AH-0.4: SEO baseline зафіксовано з production 2026-09-29, PR
+  [#374](https://github.com/sanchahous/ai-today-brief/pull/374).**
   `e2e/fixtures/seo-contract.baseline.json` містить 58 URL у двох мовах; HTTP compare
   повернув 0 регресій, повторні `/en/news` і `/uk/news` — `x-vercel-cache: HIT`.
   Мутована копія baseline без canonical дала exit 1; покриття `src/lib/seo-contract.ts`
