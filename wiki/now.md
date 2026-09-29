@@ -17,9 +17,17 @@ Last updated: 2026-09-29
 
 ## Стан репозиторію
 
-- **Епік реалізації редизайну After Hours готовий до виконання (2026-09-29), гілка
-  `claude/ai-today-brief-redesign-epic-290004`.** [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md):
-  54 сабтаски у 8 фазах (контракти → foundations → бібліотека → chrome → News slice → шаблони →
+- **Рішення D1–D13 епіку редизайну ухвалені (2026-09-29), гілка `claude/after-hours-decisions-adr`.**
+  [ADR розкатки й foundations](decisions/2026-09-29-after-hours-rollout-and-foundations.md) (задача
+  AH-0.2 ✅): D2, D6, D8, D11 (сторінки), D13 — за рекомендаціями; **D7 — новий знак скрізь**: сайт,
+  OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, аватари й банери соцмереж
+  (нові задачі AH-3.7, AH-3.8; палітра OG/PDF/duotone лишається жовтою). Епік тепер має 56 задач,
+  оцінка ≈ 56 днів. **Наступне:** решта фази 0 — AH-0.1, AH-0.3–AH-0.6.
+  (source: відповіді власника в сесії 2026-09-29; [after-hours-redesign-epic](product/after-hours-redesign-epic.md) §4)
+
+- **Епік реалізації редизайну After Hours готовий до виконання (2026-09-29), PR
+  [#370](https://github.com/sanchahous/ai-today-brief/pull/370).** [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md):
+  54 сабтаски (після ADR — 56) у 8 фазах (контракти → foundations → бібліотека → chrome → News slice → шаблони →
   рух → валідація) з гейтами G0–G7 і acceptance criteria. Епік звірено з PR #369 (`main` @
   `3f47256`): AH-1.1 (токени 2.0) і AH-2.1 (каталог `/ds-catalog`) уже виконані, ще 9 задач —
   частково, їхній залишок описано в картках. Відкритими лишаються, зокрема, атрибут `data-theme`,
@@ -29,8 +37,7 @@ Last updated: 2026-09-29
   про релізи й «70%+» економії. **Рішення власника 2026-09-29:** D1 — foundations глобально, шаблони по
   одному після пілота News; D3 — `next/font/local`; D4 — Georgia для українських заголовків на
   запуск; D5 — брейкпоінти прототипу, header і фільтри перемикаються на 960 px; D12 —
-  usability-сесії пропущено (#369). **Наступний крок власника:** D2, D6, D7, D8, D11 (сторінки),
-  D13 — задача AH-0.2.
+  usability-сесії пропущено (#369). Решту рішень ухвалено того ж дня — див. пункт вище.
   (source: [after-hours-redesign-epic](product/after-hours-redesign-epic.md) §2, §4; grep `src/` 2026-09-29 після rebase на `3f47256`)
 
 - **Блокери епіку редизайну закрито в коді (2026-09-29), гілка `claude/redesign-epic-blockers-00e7df`.** Токени мігровано на After Hours 2.0.0 ([ADR](decisions/2026-09-29-design-tokens-2-0-migration.md)): `--faint` тепер ≥ 4,5:1 (було 3,54:1), floor шрифтів 12 px, гейт `tokens:check` (контраст, drift, floor). Додано Popover/DropdownMenu/Tooltip/Tabs/Accordion/Toast/Combobox + e2e на `/ds-catalog`. Usability-сесії власник пропустив свідомо (2026-09-29; [протокол](research/2026-09-29-redesign-usability-sessions-protocol.md) збережено). Бренд-колір карток/OG/PDF — лишається жовтий `#f0c040` (рішення власника). Стан — [epic readiness](product/after-hours-epic-readiness.md).

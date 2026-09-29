@@ -201,7 +201,7 @@ Last updated: 2026-09-29
 ## 9. План реалізації
 
 > **Оновлення 2026-09-29:** виконувана декомпозиція перенесення в production — епік
-> [after-hours-redesign-epic](after-hours-redesign-epic.md): 54 сабтаски у 8 фазах із гейтами,
+> [after-hours-redesign-epic](after-hours-redesign-epic.md): 56 задач у 8 фазах із гейтами,
 > acceptance criteria, рішеннями D1–D13 і вихідною точкою за станом коду 2026-09-29. Хвилі A–C
 > нижче лишаються початковою оцінкою 2026-09-05; порядок робіт тепер задає епік. (source:
 > [after-hours-redesign-epic](after-hours-redesign-epic.md))
