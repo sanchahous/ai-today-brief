@@ -10,12 +10,22 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline + triple-destination check 2026-09-29
 Last updated: 2026-09-29
 
 ---
 
 ## Стан репозиторію
+
+- **AH-0.6 частково: GA4 baseline і причину трьох property зафіксовано (2026-09-29).**
+  Один production gtag `G-5R89X6Q5D4` має три destinations; трафік є в `540206735`,
+  `540437869`, `540467725`. Для 28-денного baseline обрано `540206735`, чий measurement ID
+  підтверджений установленим тегом і історичним аудитом. У
+  [redesign baseline](analytics/2026-09-29-redesign-baseline.md) є продуктові воронки,
+  аномалія Singapore/direct і чіткі межі даних. Mobile/desktop field CWV не отримано,
+  Admin-чек-лист [open-questions #1](open-questions.md#1-конфлікт-трьох-ga4-property) відкритий;
+  **G0 не пройдено**. (source: GA4 Data API + live Google tag 2026-09-29;
+  [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR
   [#372](https://github.com/sanchahous/ai-today-brief/pull/372).** Підсумок за кодом і живою перевіркою production:
@@ -34,8 +44,8 @@ Last updated: 2026-09-29
   AH-0.2 ✅): D2, D6, D8, D11 (сторінки), D13 — за рекомендаціями; **D7 — новий знак скрізь**: сайт,
   OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, аватари й банери соцмереж
   (нові задачі AH-3.7, AH-3.8; палітра OG/PDF/duotone лишається жовтою). Епік тепер має 56 задач,
-  оцінка ≈ 56 днів. **Наступне:** решта фази 0 — AH-0.3–AH-0.6. Виконання продовжує
-  нова сесія, можливо з іншою моделлю. Вхід — [передача виконання](product/after-hours-epic-handoff.md):
+  оцінка ≈ 56 днів. Решта фази 0 — AH-0.3–AH-0.6; поточний стан цих задач наведено вище.
+  Вхід для наступної сесії — [передача виконання](product/after-hours-epic-handoff.md):
   стан, порядок старту, черга, точки зупинки й стартовий промпт.
   (source: відповіді власника в сесії 2026-09-29; [after-hours-redesign-epic](product/after-hours-redesign-epic.md) §4; `gh pr view 371`)
 

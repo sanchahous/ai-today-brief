@@ -2,7 +2,7 @@
 
 Summary: виконуваний епік переносу дизайн-системи й макетів After Hours v3 з `artifacts/after-hours/` у production-сайт: 56 задач (55 обов'язкових + 1 опційна, яку рішення D6 відклало) у порядку виконання, 8 фаз і 8 гейтів, кожна задача з описом, залежностями й acceptance criteria. Вихідна точка звірена з кодом після PR #369 (3 задачі вже виконані, 9 — частково); усі рішення D1–D13 прийняті 2026-09-29 — ADR.
 Sources: `artifacts/after-hours/` (README, QA.md, tokens.css, tokens.json, app.js, home.js, articles.js, editions.js, knowledge.js, toolbox.js, pages.js, seo.js, data.js `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/README.md`, `artifacts/brand-kit/README.md`;
-wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
+wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, analytics/2026-09-29-redesign-baseline, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
 live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0)
 Last updated: 2026-09-29
 
@@ -10,8 +10,9 @@ Last updated: 2026-09-29
 
 > **Статус 2026-09-29:** епік готовий до виконання, усі рішення D1–D13 ухвалені (AH-0.2 ✅),
 > статус G01–G20 звірено з кодом (AH-0.1 ✅).
-> Наступні кроки — решта фази 0: AH-0.3–AH-0.6 (baseline-заміри й
-> QA-інструменти). До закриття гейту G0 жоден візуальний PR у production не відкривається.
+> AH-0.3–AH-0.5 мають відкриті PR #373–#375; [AH-0.6 baseline](../analytics/2026-09-29-redesign-baseline.md)
+> частково знято, але field CWV і Admin-чек-лист GA4 лишаються відкритими.
+> До закриття гейту G0 жоден візуальний PR у production не відкривається.
 > Візуальний напрям затверджено власником у прототипі v3; цей документ — план його перенесення,
 > а не нова дизайн-пропозиція. (source: [after-hours-redesign](after-hours-redesign.md) §1)
 >
@@ -330,7 +331,7 @@ flowchart TD
 | AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
 | AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
 | AH-0.5 | ◐ QA-матриця a11y і верстки для сторінок (#369: axe-інфраструктура для каталогу) | M | агент | D10 ✅ | G14 (частк.) |
-| AH-0.6 | Продуктовий і CWV baseline | S | власник + агент | open-questions #1 | передумова оцінки |
+| AH-0.6 | ◐ [Продуктовий GA4 baseline](../analytics/2026-09-29-redesign-baseline.md); CWV і Admin-звірка відкриті | S | власник + агент | open-questions #1 | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
 | AH-1.3 | Контракт теми Night/Day без спалаху | S | агент | D2 ✅ | B12 |
@@ -532,7 +533,7 @@ D11) · **Закриває:** передумова visual review кожного 
 ### AH-0.6 · Продуктовий і CWV baseline
 
 **Тип:** аналітика · **Розмір:** S · **Виконавець:** власник + агент (оформлення) ·
-**Залежить від:** [open-questions](../open-questions.md) #1 (яка GA4-property справжня) ·
+**Залежить від:** [open-questions](../open-questions.md) #1 (Admin-звірка трьох GA4 destinations) ·
 **Закриває:** передумова «Оцінки після запуску» ([after-hours-redesign](after-hours-redesign.md) §9)
 
 **Що зробити:** до першого візуального PR зняти з історичних даних за останні 28 днів: CTR lead → article на головній
@@ -542,11 +543,17 @@ D11) · **Закриває:** передумова visual review кожного 
 Speed Insights або CrUX для home, news, article, daily, weekly. Оформити сторінку
 `wiki/analytics/<дата>-redesign-baseline.md`.
 
+**Стан 2026-09-29: ◐ частково.** [Baseline](../analytics/2026-09-29-redesign-baseline.md)
+містить GA4-числа й розбір трьох destinations. Запитані переходи без відповідних подій
+позначено невимірюваними, а не підмінено співвідношенням page views. Field CWV mobile/desktop
+не отримано; Admin-чек-лист [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property)
+відкритий. G0 лишається закритим. (source: [baseline](../analytics/2026-09-29-redesign-baseline.md))
+
 **AC:**
-- [ ] Кожна цифра має дату, період, джерело й GA4 property ID; якщо конфлікт #1 не закрито —
+- [x] Кожна цифра має дату, період, джерело й GA4 property ID; якщо конфлікт #1 не закрито —
   цифри позначені `(needs verification)`.
-- [ ] CWV зафіксовано для mobile і desktop або пояснено, чому field-даних немає.
-- [ ] Сторінка є в `wiki/index.md`, запис у `wiki/log.md`.
+- [x] CWV зафіксовано для mobile і desktop або пояснено, чому field-даних немає.
+- [x] Сторінка є в `wiki/index.md`, запис у `wiki/log.md`.
 
 **Гейт G0:** AH-0.1…0.6 закриті; D1–D13 підписані; baseline visual / SEO / продукт зняті;
 QA-матриця працює в report-режимі.

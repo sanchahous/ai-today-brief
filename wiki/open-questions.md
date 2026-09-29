@@ -3,23 +3,29 @@
 Summary: усе, що не має відповіді, суперечить саме собі або не перевірено. Кожен пункт має
 власника рішення й критерій закриття. Порожній пункт видаляти не можна — тільки закривати
 записом «закрито: …».
-Sources: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
+Sources: `wiki/analytics/ga4-gsc.md`, `wiki/analytics/2026-09-29-redesign-baseline.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
 `.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04),
 `wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`, `wiki/product/after-hours-redesign-epic.md` (live check коду 2026-09-29)
 Last updated: 2026-09-29
 
 ---
 
-## 1. ⚠️ Conflict: яка GA4-property справжня
+## 1. ⚠️ Конфлікт трьох GA4-property
 
-[ANALYTICS](analytics/ga4-gsc.md) документує property **540206735** (акаунт `396774992`),
-а аудит 2026-07-01 показує активну **540467725** (акаунт `397017915`), яка отримує реальні
-`page_view`. (source: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md` §6)
+**З'ясовано 2026-09-29:** production HTML завантажує `G-5R89X6Q5D4`, який історичний аудит
+прив'язав до **540206735**. Завантажений Google tag має ще два destinations; GA4 Data API
+підтвердив трафік того самого `aitodaybrief.com` у **540437869** і **540467725** за
+2026-09-01…28. Отже попереднє формулювання «яка property справжня» приховувало потрійну
+доставку; для baseline обрано **540206735**, а сума трьох звітів не є аудиторією сайту.
+(source: [ga4-gsc](analytics/ga4-gsc.md); [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
-**Наслідок:** жодна цифра конверсій/retention недостовірна, доки не звірено.
-**Закривається:** пройдено чек-лист §6 аудиту (measurement ID у Vercel, GSC-link, key event
-`newsletter_subscribe`, retention 14 міс, рівно один GA4-config тег у Tag Assistant) і оновлено
-`analytics/ga4-gsc.md`. **Власник рішення:** власник продукту.
+**Лишається відкритим:** зв'язок додаткових `G-0TEJ3H5V85` і `G-T7X6D6TL84` із двома потоками,
+причина втрати частини Singapore/direct подій у 540467725, поточні GSC-link,
+`newsletter_subscribe` key event, retention 14 міс і перевірка Tag Assistant.
+Доки це не звірено, GA4 baseline позначено `(needs verification)`. **Закривається:** виконано
+чек-лист у [ga4-gsc](analytics/ga4-gsc.md) і ухвалено рішення щодо зайвих destinations.
+**Власник рішення:** власник продукту після технічної перевірки. (source:
+[redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
 ## 2. Реальні місячні витрати проєкту невідомі
 

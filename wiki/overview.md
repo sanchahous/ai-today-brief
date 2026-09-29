@@ -4,9 +4,9 @@ Summary: продукт, ринок, економіка, жорсткі обме
 де живуть бізнес-факти проєкту; `CLAUDE.md` — це поведінка, ця сторінка — знання.
 Sources: `wiki/strategy/startup-plan.md`, `wiki/strategy/master-roadmap.md`, `wiki/audits/2026-07-01-seo-organic.md`,
 `wiki/audits/2026-06-12-analytics-gsc.md`, `wiki/analytics/ga4-gsc.md`, `wiki/pipeline/guide.md`,
-`wiki/ops/owner-checklist.md`, `.cursor/rules/00-core.mdc`, `.env.example`, `package.json`,
+`wiki/ops/owner-checklist.md`, `wiki/analytics/2026-09-29-redesign-baseline.md`, `.cursor/rules/00-core.mdc`, `.env.example`, `package.json`,
 live check git/PR 2026-08-04, editorial quality overhaul PR5 (гілка `feat/weekly-editorial-voice`, 2026-08-06)
-Last updated: 2026-08-30
+Last updated: 2026-09-29
 
 ---
 
@@ -168,9 +168,12 @@ Supabase (app + pipeline, один проєкт) · Beehiiv (розсилка) +
 Ollama (LLM) · Cloudflare Workers AI (картинки) · GA4 + GTM + GSC · LemonSqueezy (відкладено) ·
 IndexNow (Bing/Yandex). Повний перелік env — `.env.example`; портативність — `wiki/ops/services-portability.md`.
 
-> ⚠️ Conflict: [ANALYTICS](analytics/ga4-gsc.md) документує GA4-property **540206735**,
-> а аудит 2026-07-01 показує активну **540467725**. Не довіряти жодній цифрі GA, доки не пройдено
-> чек-лист звірки. Див. [open-questions](open-questions.md).
+> ⚠️ [Перевірка 2026-09-29](analytics/2026-09-29-redesign-baseline.md) показала три активні
+> GA4-property для `aitodaybrief.com`: **540206735**, **540437869**, **540467725**. Один production
+> Google tag має три destinations; для baseline обрано 540206735 за встановленим measurement ID.
+> Admin-чек-лист ще відкритий, тому продуктові цифри позначено `(needs verification)`.
+> Див. [open-questions #1](open-questions.md#1-конфлікт-трьох-ga4-property). (source:
+> [ga4-gsc](analytics/ga4-gsc.md); [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
 ## Related pages
 

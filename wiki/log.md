@@ -5067,3 +5067,11 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 - G11: `SearchInput` уже є в `input.tsx`, але з англомовними `aria-label` і placeholder.
 
 Виправлено: [now](now.md) (запис 2026-09-28 і новий запис зверху), [open-questions](open-questions.md) #10 (закрито), епік (§2.3, §5.3, картка AH-0.1 з AC, §14 — рядки G07, G09, G11, G15, G16, уточнення в §2.1 і картці AH-2.3), [handoff](product/after-hours-epic-handoff.md) (стан, «Наступна задача: AH-0.3», пастка про приховану панель браузера), `wiki/index.md` (два описи gap-plan). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.6: GA4 baseline і діагностика трьох property
+
+Джерело: запит власника 2026-09-29, read-only GA4 Data API через HYPD (property `540206735`, `540437869`, `540467725`; період 2026-09-01…28, `hostName = aitodaybrief.com`), live HTML `aitodaybrief.com/en` і Google tag `G-5R89X6Q5D4`, код подій `src/components/analytics/`, `src/components/home/newsletter-form.tsx`, `src/app/api/subscribe/route.ts`. Числа й запити наведені в [redesign baseline](analytics/2026-09-29-redesign-baseline.md).
+
+Виявлено: один production gtag завантажує Google tag із трьома GA4 destinations (`G-5R89X6Q5D4`, `G-0TEJ3H5V85`, `G-T7X6D6TL84`). Усі три property отримують трафік; `540206735` має підтверджений історичним аудитом measurement ID установленого тегу й обрана для baseline. `540467725` недоотримала Singapore/direct `page_view` наприкінці періоду; причина ще не доведена. Продуктові метрики зафіксовано з `(needs verification)`, бо Admin-чек-лист відкритий. CWV mobile/desktop лишились без field-чисел: PageSpeed Insights API повернув 429, Vercel Speed Insights metrics недоступні через конектор і SDK у репозиторії не виявлено. AH-0.6 часткова, G0 лишається закритим.
+
+Створено [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md); оновлено [ga4-gsc](analytics/ga4-gsc.md), [open-questions](open-questions.md) #1, [overview](overview.md), [index](index.md), епік і handoff. Production-код не змінювався. (source: [redesign baseline](analytics/2026-09-29-redesign-baseline.md))

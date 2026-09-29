@@ -1,13 +1,13 @@
 # Analytics — довідник (підтримувати актуальним!)
 
-Summary: Довідник GA4 / GSC: property, measurement ID, key events. Один тег збору — прямий gtag.
-Sources: live check aitodaybrief.com + GTM-контейнера 2026-08-22, `src/lib/analytics-config.ts`
-Last updated: 2026-08-22
+Summary: Довідник GA4 / GSC: один production gtag має три GA4 destinations; для продуктового baseline використовується property 540206735, а Admin-чек-лист залишається відкритим.
+Sources: live check `aitodaybrief.com/en` і завантаженого Google tag 2026-09-29; GA4 Data API через HYPD 2026-09-29; `src/lib/analytics-config.ts`; [redesign baseline](2026-09-29-redesign-baseline.md)
+Last updated: 2026-09-29
 
-> Оновлено: **2026-08-22**. Якщо щось із цього змінюєш (property, ID, key events,
+> Оновлено: **2026-09-29**. Якщо щось із цього змінюєш (property, ID, key events,
 > env) — онови цей файл у тому ж PR.
 
-## Куди течуть дані (архітектура, стан 2026-08-22)
+## Куди течуть дані (архітектура, перевірка 2026-09-29)
 
 ```
 aitodaybrief.com
@@ -16,11 +16,22 @@ aitodaybrief.com
       └─ всі КАСТОМНІ події коду: newsletter_subscribe, search, scroll_depth, …
          (src/lib/analytics-client.ts → trackEvent)
 
-          → потік «The daily AI news»
-           → GA4 property «aitodaybrief» (540467725, акаунт «Ai brief today» 397017915) ← активна
+          → Google tag GT-KVJZSX7K з трьома destinations:
+             G-5R89X6Q5D4 → потік 15002930155 «The daily AI news»
+                            → property 540206735, акаунт 396774992
+             G-0TEJ3H5V85 / G-T7X6D6TL84 → два інші потоки
+                            → property 540437869 і 540467725
+                            (точну пару G-* ↔ property ще звірити в Admin)
 ```
 
-**Єдиний тег збору — прямий gtag.** GTM-контейнер `GTM-5S6TXPG5` прибрано з коду
+**У коді один gtag, але дані надходять до трьох property.** Production HTML має лише
+`G-5R89X6Q5D4` і не має GTM; JS цього Google tag містить усі три destination ID.
+GA4 Data API підтвердив production-події в кожному з трьох потоків за 2026-09-01…28.
+Для baseline After Hours обрано `540206735`, бо його measurement ID підтверджено
+[аудитом 12.06](../audits/2026-06-12-analytics-gsc.md) і live HTML. Порівняння та обмеження —
+у [redesign baseline](2026-09-29-redesign-baseline.md). (source: live HTML / Google tag і GA4 Data API 2026-09-29)
+
+GTM-контейнер `GTM-5S6TXPG5` прибрано з коду
 2026-08-22 (PR #312): жива перевірка контейнера показала `"tags":[]` і жодного
 GA4-destination всередині — він не збирав нічого і лише додавав другий ID на кожну
 сторінку (джерело плутанини «два GA4 ID»). `page_view` шле сам код через SPA-роутер,
@@ -31,33 +42,36 @@ Vercel більше не читається — можна видалити з e
 - **Consent Mode v2:** analytics granted / ads denied за замовчуванням; CMP opt-out
   оновлює gtag consent (`applyConsentToGtag`).
 
-## ⚠️ Відкритe питання: яка property правильна (з 2026-07-01)
+## ⚠️ Відкрите питання: Admin-конфігурація трьох destinations
 
-Експорти власника й посилання на звіти показують **активну** property «aitodaybrief»
-`540467725` (акаунт `397017915`) — вона отримує реальні `page_view`. У старих записах
-(12.06) фігурує «Ai brief today» `540206735` / акаунт `396774992` / логін
-`hello@sashakuzmenko.com`; схоже, після реорганізації GA нова property стартувала
-«чистою». Що треба перевірити руками в UI Analytics (агенту недоступно):
+Станом на 2026-09-29 усі три property отримують production-трафік; теза, що лише
+`540467725` активна, була хибною. Дані в `540206735` ближчі до встановленого тегу і повніші
+за 28-денний період; `540467725` недоотримала частину Singapore/direct `page_view` 25–28.09.
+Причина відмінності ще не встановлена. (source: GA4 Data API, [redesign baseline](2026-09-29-redesign-baseline.md))
 
-- [ ] **Measurement ID потоку в 540467725** = `G-5R89X6Q5D4`? Якщо інший — оновити
-  `NEXT_PUBLIC_GA_MEASUREMENT_ID` у Vercel і цей файл.
-- [ ] **GSC ↔ GA4 link** на 540467725 (Admin → Product links).
-- [ ] **Key event `newsletter_subscribe`** позначено на 540467725.
-- [ ] **Data retention** = 14 місяців (не дефолтні 2).
-- [ ] Tag Assistant: рівно один GA4-config (після видалення GTM це гарантовано одним
-  тегом з нашого коду).
+- [x] **Production measurement ID:** HTML `G-5R89X6Q5D4`, історично потік `540206735`.
+  (source: live HTML 2026-09-29; [аудит 12.06](../audits/2026-06-12-analytics-gsc.md))
+- [ ] **Два додаткові measurement ID:** звірити `G-0TEJ3H5V85` і `G-T7X6D6TL84` з
+  потоками `15017434008` / `15017406308` у GA4 Admin → Data streams.
+- [ ] **GSC ↔ GA4 link** для канонічної `540206735` (Admin → Product links); історична
+  перевірка 12.06 не підтверджує стан 29.09.
+- [ ] **Key event `newsletter_subscribe`** у `540206735` і семантика підтвердження.
+- [ ] **Data retention** `540206735` = 14 місяців (історично 14; поточний стан не перевірено).
+- [ ] **Tag Assistant:** один Google tag у коді й три очікувані destinations; перевірити фактичну
+  доставку, дублікати конфігурацій і consent. Один HTML-тег сам по собі не доводить одну property.
 
 ## Пастка: схожі властивості
 
-Було три різні GA4-ID в обігу за часів проєкту: `540206735` («Ai brief today», 12.06),
-`540281034` («sashakuzmenko», портфоліо — НЕ ЧІПАТИ для брифу), `540467725`
-(«aitodaybrief», активна з ~07.2026). Двомовні сайти з однаковими шляхами `/en` `/uk`
-виглядають у звітах однаково — завжди звіряй property ID в URL адмінки.
+Для брифу є `540206735`, `540437869`, `540467725`; **усі три** мали production-події
+2026-09-01…28. Окремо `540281034` («sashakuzmenko») стосується портфоліо — не чіпати.
+Двомовні сайти з однаковими шляхами `/en` `/uk` виглядають у звітах однаково —
+звіряй property ID і stream ID, не лише назву. (source: GA4 Data API 2026-09-29;
+[аудит 12.06](../audits/2026-06-12-analytics-gsc.md))
 
 ## Що налаштовано (стан 12.06.2026, property 540206735)
 
-> Пункти нижче стосувались старої property — на 540467725 потребують повторної перевірки
-> (чек-лист вище).
+> Пункти нижче описують історичний стан `540206735` на 12.06; поточні Admin-налаштування
+> потребують повторної перевірки за чек-листом вище.
 
 - ✅ Key event: **`newsletter_subscribe`** (= конверсія підписки на розсилку)
 - ✅ Key event: `purchase` (дефолтний, незнімний)
@@ -71,7 +85,7 @@ Vercel більше не читається — можна видалити з e
 
 ## Залишилось зробити (одноразово)
 
-- [ ] **Звірити property за чек-листом вище** — головне відкрите питання.
+- [ ] **Завершити Admin-чек-лист трьох destinations вище** — головне відкрите питання.
 - [ ] **`sponsor_inquiry_click` → key event.** Подія ще жодного разу не надходила,
   тому її нема в списку. Коли хтось вперше клікне CTA на /advertise:
   Admin → Events → Recent events → зірочка біля `sponsor_inquiry_click`.

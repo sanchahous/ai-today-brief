@@ -10,7 +10,7 @@ first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
 SSG skip, ElevenLabs, LinkedIn PDF skip, social `?s=` URLs 2026-09-03
-desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29
+desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29, GA4 / After Hours baseline 2026-09-29
 Last updated: 2026-09-29
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
@@ -88,8 +88,9 @@ Last updated: 2026-09-29
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
-| ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | GA4 property, GTM, key events, retention, **пастка двох властивостей** | колишній `docs/ANALYTICS.md` |
+| ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Production gtag із трьома destinations і трьома активними GA4-property; 540206735 — робоча для baseline, Admin-чек-лист відкритий | колишній `docs/ANALYTICS.md` + live check 2026-09-29 |
 | ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
+| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: 28-денні продуктові GA4-воронки, причина трьох property, прогалина field CWV і умови G0 | GA4 Data API + production HTML / Google tag, 2026-09-29 |
 
 ## Marketing
 

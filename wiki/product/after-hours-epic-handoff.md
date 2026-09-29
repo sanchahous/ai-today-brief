@@ -1,7 +1,7 @@
 # Епік After Hours: передача виконання наступній сесії
 
 Summary: вхідна точка для агента будь-якої моделі чи інструмента, який продовжує епік редизайну After Hours у новій сесії. Сторінка описує стан на 2026-09-29, порядок старту, чергу фази 0 з нюансами кожної задачі, точки, де треба зупинитись і спитати власника, правила й пастки з попередніх сесій і готовий стартовий промпт.
-Sources: [after-hours-redesign-epic](after-hours-redesign-epic.md) §0, §2, §4–§6, §11, §17; [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md); [open-questions](../open-questions.md) #1, #10; `.cursor/rules/pr-gate.mdc`; `package.json`; `wiki/_tools/wiki-lint.mjs`; `wiki/_meta/project-sync.json`; `src/lib/site.ts`; `artifacts/after-hours/pages.js`, `editions.js`, `qa/`; `artifacts/brand-kit/README.md`; сесія 2026-09-29 (PR #370, #371)
+Sources: [after-hours-redesign-epic](after-hours-redesign-epic.md) §0, §2, §4–§6, §11, §17; [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md); [redesign baseline](../analytics/2026-09-29-redesign-baseline.md); [open-questions](../open-questions.md) #1, #10; `.cursor/rules/pr-gate.mdc`; `package.json`; `wiki/_tools/wiki-lint.mjs`; `wiki/_meta/project-sync.json`; `src/lib/site.ts`; `artifacts/after-hours/pages.js`, `editions.js`, `qa/`; `artifacts/brand-kit/README.md`; сесія 2026-09-29 (PR #370, #371)
 Last updated: 2026-09-29
 
 ---
@@ -19,13 +19,16 @@ Last updated: 2026-09-29
 - **Виконано:** AH-0.1 (PR [#372](https://github.com/sanchahous/ai-today-brief/pull/372), звірка G01–G20: 6 done, 10 partial, 2 open, 1 policy, 1 waived —
   [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)),
   AH-0.2 (ADR), AH-1.1 (токени 2.0, PR #369), AH-2.1 (`/ds-catalog`, PR #369).
-- **Частково (◐):** AH-0.5, AH-1.2, AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
+- **Частково (◐):** AH-0.5, AH-0.6, AH-1.2, AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
   Залишок описано в рядку «Стан після #369» кожної картки.
 - **Не виконується:** AH-5.16 (рішення D6).
 - **Рішення D1–D13 ухвалені.** Власника про них не перепитувати. Змінити рішення можна лише за
   новою відповіддю власника: спершу картки, потім запис у [log](../log.md).
 - **Гейт G0 не пройдено.** Поки він закритий, у production не йде жоден візуальний PR.
-- **Наступна задача: AH-0.3.** Цей рядок оновлює PR кожної закритої задачі.
+- **Поточна задача: AH-0.6.** AH-0.3–AH-0.5 мають відкриті PR #373–#375; GA4-продуктовий
+  baseline знято в [окремій сторінці](../analytics/2026-09-29-redesign-baseline.md), CWV і
+  Admin-чек-лист GA4 лишаються відкритими. G0 не пройдено. (source: PR #373–#375;
+  [redesign baseline](../analytics/2026-09-29-redesign-baseline.md))
 
 ## 2. Порядок старту сесії
 
@@ -70,7 +73,7 @@ Last updated: 2026-09-29
 | 2 | AH-0.3 · знімки до/після | агент | `scripts/capture-route-matrix.ts`; прогін `--label=before` з production; PNG лише в `artifacts/_local/` | немає |
 | 3 | AH-0.4 · SEO-контракт | агент | `src/lib/seo-contract.ts` з тестом (покриття ≥ 80%), `scripts/seo-contract.ts`, текстовий baseline з production | немає |
 | 4 | AH-0.5 · QA-матриця сторінок | агент | `e2e/a11y-layout-matrix.spec.ts`, режими report і gating, звіт по legacy-сайту з лічильниками в log | немає |
-| 5 | AH-0.6 · продуктовий і CWV baseline | власник + агент | `wiki/analytics/<дата>-redesign-baseline.md` | **так:** потрібні дані GA4 і рішення open-questions #1 |
+| 5 | ◐ AH-0.6 · продуктовий і CWV baseline | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки й три destinations | **так:** потрібні field CWV і Admin-чек-лист open-questions #1 |
 
 **Нюанси, яких немає в картках:**
 
@@ -89,9 +92,11 @@ Last updated: 2026-09-29
 - **AH-0.5.** Портувати `inspect()` з `artifacts/after-hours/qa/run-qa.mjs` і перевірку zoom з
   `check-zoom.mjs`. Рушій — `@axe-core/playwright`, він уже є в devDependencies з #369. Нова спека
   має потрапити в `scripts/e2e-affected.ts`, інакше `e2e:affected` її не вибере.
-- **AH-0.6.** Агент не має доступу до GA4. Потрібен експорт від власника або цифри з його акаунта.
-  Доки [open-questions](../open-questions.md) #1 (property 540206735 чи 540467725) не закрите, кожна
-  цифра позначається `(needs verification)`.
+- **AH-0.6.** Read-only GA4-конектор підключено 2026-09-29. Всі три property отримують
+  production-події через один Google tag із трьома destinations; робоча property baseline —
+  `540206735`. Дані й обмеження — [redesign baseline](../analytics/2026-09-29-redesign-baseline.md).
+  Поки [open-questions](../open-questions.md) #1 не закрито, усі числа `(needs verification)`;
+  mobile/desktop field CWV ще потрібно отримати. (source: GA4 Data API і live Google tag 2026-09-29)
 
 **Гейт G0** закритий, коли AH-0.1…AH-0.6 виконані, baseline visual, SEO і продукту зняті, а
 QA-матриця працює в режимі report.
@@ -117,7 +122,8 @@ QA-матриця працює в режимі report.
      (`artifacts/after-hours/editions.js`, `pages.js`); це стосується AH-5.4, AH-5.6 і AH-5.13;
    - «перевірка гайдів кожні 90 днів» (AH-5.9);
    - спонсорський слот на головній і формати розміщень (AH-5.3, п. 10; AH-5.13);
-   - справжня GA4-property ([open-questions](../open-questions.md) #1; AH-0.6).
+    - рішення щодо двох додаткових GA4 destinations після Admin-звірки
+      ([open-questions](../open-questions.md) #1; AH-0.6).
 3. **Платформи для нового аватара й банерів** (AH-3.8):
    - точно є X, Telegram, LinkedIn і YouTube (`SOCIALS` у `src/lib/site.ts`);
    - Facebook, Bluesky, Mastodon, Instagram і Threads є в таблиці `artifacts/brand-kit/README.md`,
@@ -186,16 +192,17 @@ QA-матриця працює в режимі report.
 ```text
 Продовж виконання епіку редизайну After Hours у репозиторії ai-today-brief.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
-2. Візьми наступну задачу з розділу «Черга фази 0» (станом на 2026-09-29 — AH-0.3) і виконай її за
-   карткою в wiki/product/after-hours-redesign-epic.md: окрема гілка feat/ah-<id>-<slug> від
-   origin/main, Definition of Done з §0.1, npm run pr:check, PR у main за шаблоном §0.2.
+2. Перевір стан PR #373–#375 і AH-0.6 у розділі «Черга фази 0». Доведи відкриті частини фази 0
+   до виконання за картками в wiki/product/after-hours-redesign-epic.md: окрема гілка
+   feat/ah-<id>-<slug> від origin/main, Definition of Done з §0.1, npm run pr:check,
+   PR у main за шаблоном §0.2.
 3. Після PR онови §5.3 епіку, wiki/now.md, wiki/log.md і рядок «Наступна задача» в handoff.
 4. У точках із розділу «Точки зупинки» зупинись і спитай мене. Нічого не вигадуй.
 Відповідай мені українською.
 ```
 
-Щоб пройти фазу 0 за одну сесію, у пункті 2 варто написати: «виконай по черзі AH-0.3, AH-0.4,
-AH-0.5, кожну окремим PR; на AH-0.6 зупинись і спитай мене про GA4».
+Для AH-0.6 GA4-дані вже знято через read-only конектор. Потрібно завершити Admin-чек-лист і
+отримати field CWV; див. [baseline](../analytics/2026-09-29-redesign-baseline.md).
 
 ## Related pages
 
