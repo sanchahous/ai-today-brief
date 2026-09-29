@@ -2,7 +2,7 @@
 
 Summary: After Hours є сильним візуальним напрямком і широким набором макетів, але ще не є завершеною функціональною дизайн-системою. Цей аудит фіксує розриви між концептом, production UI та продуктовою поведінкою і задає порядок допрацювання від контрактів до rollout.
 Sources: скріншот власника 2026-09-26; browser live review `https://aitodaybrief.com/en/news` 2026-09-26; `wiki/product/after-hours-redesign.md`; `wiki/product/after-hours-tension.md`; `artifacts/after-hours/app.js`; `artifacts/after-hours/style.css`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/verification.json`; `src/app/[lang]/news/page.tsx`; `src/components/news/news-feed.tsx`; `src/components/news/news-sidebar.tsx`; `src/components/pagination.tsx`; `src/lib/news.ts`; `src/lib/news-filters.ts`; `src/app/globals.css`; `e2e/news-filters-drawer.spec.ts`; `e2e/news-sidebar.spec.ts`; none (design recommendations).
-Last updated: 2026-09-26
+Last updated: 2026-09-29
 
 ---
 
@@ -281,6 +281,7 @@ Decision criteria до тесту: ≥80% task completion без moderator rescu
 
 ## Related pages
 
+- [After Hours redesign epic](../product/after-hours-redesign-epic.md) — виконувана декомпозиція milestones M0–M5 у 54 сабтаски з acceptance criteria (2026-09-29)
 - [After Hours redesign](../product/after-hours-redesign.md)
 - [After Hours Tension v2](../product/after-hours-tension.md)
 - [Prototype to production](../architecture/prototype-to-production.md)

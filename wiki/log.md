@@ -4994,3 +4994,16 @@ Gate «5 usability-сесій» (G19) знято: ризик прийнято, �
 Джерело: рішення власника в чаті 2026-09-29 після порівняння на `duotone.ts`.
 
 OG/PDF/duotone лишаються на жовтому `#f0c040`; задачу міграції на brass знято. Оновлено epic readiness, ADR §4, `now.md`.
+## 2026-09-29 — Епік реалізації редизайну After Hours
+
+Джерело: ціль власника 2026-09-29 («епік з декомпозицією редизайну, готовий до виконання»); `artifacts/after-hours/` v3 (README, QA, tokens.css/json, модулі макетів, `seo.js`, матриця `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/`, `artifacts/brand-kit/`; live check коду `main` @ `3debff1` (grep `src/`, `e2e/`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`); `node_modules/next/dist/docs` (Next 16.3.0).
+
+Створено [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md): 54 сабтаски (53 обов'язкові + 1 опційна) у 8 фазах із гейтами G0–G7 — контракти й baseline, foundations (токени 2.0, тема, категорії, типографіка ≥ 12 px, брейкпоінти, ratchet), бібліотека компонентів із внутрішнім каталогом, бренд і chrome, News vertical slice з usability-гейтом, editorial-патерни й 15 шаблонів, Tension v3, валідація й прибирання. Кожна задача має залежності, зони коду, джерела й acceptance criteria; додано Definition of Done для PR, інваріанти, рішення D1–D13 з рекомендаціями, трасування G01–G20 і маршрутів, ризики й оцінку (≈ 62 дні, assumption).
+
+Live check зафіксував: `tokens.ts` v1.0.0 не підключений до CSS (`globals.css` на legacy-палітрі), `faint` 3,54:1 у темній темі, 74 класи тексту < 12 px, 16 E2E-специфікацій, захардкожений `news.weekSummary` на `/news`, невикористаний `home/video-teaser.tsx`. Розбіжність із записом `now.md` 2026-09-28 про закриття G01–G20 винесено в [open-questions](open-questions.md) #10. Оновлено [product/after-hours-redesign](product/after-hours-redesign.md) (§9, Related), [audits/2026-09-26-design-system-gap-plan](audits/2026-09-26-design-system-gap-plan.md) (Related), [now](now.md), [open-questions](open-questions.md) і `wiki/index.md`. Production-код не змінювався.
+
+## 2026-09-29 — Рішення власника D1, D3, D4, D5 для епіку After Hours
+
+Джерело: відповідь власника в сесії 2026-09-29 на рекомендації §4 [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md).
+
+Прийнято: D1 — варіант A (foundations — токени, шрифти, бренд — глобально малими PR, шаблони по одному після пілота News slice); D3 — шрифти через `next/font/local`; D4 — Georgia для українських display-заголовків на запуск; D5 — варіант A (брейкпоінти прототипу, header і discovery перемикаються на 60rem ≈ 960 px). Позначено в епіку (статус, таблиця §4, картка AH-0.2), [now](now.md) і `wiki/index.md`. D2, D6–D13 чекають задачі AH-0.2; ADR ще не створено.

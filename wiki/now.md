@@ -10,17 +10,34 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360)
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29
 Last updated: 2026-09-29
 
 ---
 
 ## Стан репозиторію
 
+- **Епік реалізації редизайну After Hours готовий до виконання (2026-09-29), гілка
+  `claude/ai-today-brief-redesign-epic-290004`.** [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md):
+  54 сабтаски у 8 фазах (контракти → foundations → бібліотека → chrome → News slice → шаблони →
+  рух → валідація) з гейтами G0–G7 і acceptance criteria. Епік звірено з PR #369 (`main` @
+  `3f47256`): AH-1.1 (токени 2.0) і AH-2.1 (каталог `/ds-catalog`) уже виконані, ще 9 задач —
+  частково, їхній залишок описано в картках. Відкритими лишаються, зокрема, атрибут `data-theme`,
+  шрифти `next/font/local`, кольори категорій із БД (8 `.theme-light .cat-*`-хаків), брейкпоінти
+  960 px, бренд-знак і захардкожений «Recent highlights» (`news.weekSummary`) на `/news` —
+  кандидат на hotfix. **Рішення власника 2026-09-29:** D1 — foundations глобально, шаблони по
+  одному після пілота News; D3 — `next/font/local`; D4 — Georgia для українських заголовків на
+  запуск; D5 — брейкпоінти прототипу, header і фільтри перемикаються на 960 px; D12 —
+  usability-сесії пропущено (#369). **Наступний крок власника:** D2, D6, D7, D8, D11 (сторінки),
+  D13 — задача AH-0.2.
+  (source: [after-hours-redesign-epic](product/after-hours-redesign-epic.md) §2, §4; grep `src/` 2026-09-29 після rebase на `3f47256`)
+
 - **Блокери епіку редизайну закрито в коді (2026-09-29), гілка `claude/redesign-epic-blockers-00e7df`.** Токени мігровано на After Hours 2.0.0 ([ADR](decisions/2026-09-29-design-tokens-2-0-migration.md)): `--faint` тепер ≥ 4,5:1 (було 3,54:1), floor шрифтів 12 px, гейт `tokens:check` (контраст, drift, floor). Додано Popover/DropdownMenu/Tooltip/Tabs/Accordion/Toast/Combobox + e2e на `/ds-catalog`. Usability-сесії власник пропустив свідомо (2026-09-29; [протокол](research/2026-09-29-redesign-usability-sessions-protocol.md) збережено). Бренд-колір карток/OG/PDF — лишається жовтий `#f0c040` (рішення власника). Стан — [epic readiness](product/after-hours-epic-readiness.md).
   (source: `wiki/product/after-hours-epic-readiness.md`; `npm run tokens:check` 2026-09-29)
 
 - **Дизайн-система After Hours: повна реалізація аудиту прогалин (2026-09-28), гілка `feat/design-system-gap-implementation`.**
+  ⚠️ Conflict (2026-09-29): код не підтверджує закриття всіх 20 розривів — див.
+  [open-questions](open-questions.md) #10.
   Закрито 20 розривів (G01–G20) за планом `wiki/audits/2026-09-26-design-system-gap-plan.md`.
   Ухвалено ADR [decisions/2026-09-26-news-discovery-and-pagination-architecture](decisions/2026-09-26-news-discovery-and-pagination-architecture.md).
   Впроваджено 3-рівневі токени `src/lib/design-system/tokens.ts`, лінтер `npm run tokens:check` з WCAG AA (текст 14.6:1),
