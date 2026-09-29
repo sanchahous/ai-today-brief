@@ -5050,3 +5050,20 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 - стартовий промпт.
 
 В епіку в картці AH-0.3 виправлено недосяжний AC «baseline до мержу AH-1.1»: AH-1.1 злито в #369, тож baseline знімається до першого з AH-1.3…AH-1.7. У статус епіку й Related додано посилання на handoff. Оновлено [now](now.md) і `wiki/index.md` (рядок і таблиця Product). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.1: статус розривів G01–G20 звірено з кодом
+
+Джерело: задача AH-0.1 епіку [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md); grep і читання `src/`, `e2e/`, `scripts/`, `package.json`, `.github/`, `.githooks/` на `main` @ `83b4421`; `npm run tokens:check` (PASS); headless Chromium і мобільний перегляд 390×844 на production `b3f1b3a` (deployments GitHub API).
+
+У [audits/2026-09-26-design-system-gap-plan](audits/2026-09-26-design-system-gap-plan.md) додано §10 «Статус на 2026-09-29» — таблицю G01–G20 зі статусом і доказом у кожному рядку; історичні розділи 1–9 не змінювались. Підсумок: **6 done** (G01, G03, G04, G08, G10, G20), **10 partial**, **2 open** (G06, G17), G18 — policy, G19 — waived. Твердження запису [now](now.md) від 2026-09-28 «закрито 20 розривів» не підтвердилось: закрито 6.
+
+Що виявила звірка:
+
+- G04 підтверджено наживо на production: deep-link `?date=month&sort=oldest` відновлює стан, зміна в UI пише URL, після reload стан зберігається, `?page=2` відкриває сторінку 2.
+- G07 підтверджено частково: на 390×844 Sort і Filters на першому екрані; drawer із повними назвами категорій і «Done (100)»; обрізана лише trending-тема.
+- G09: тіні Day є лише в `globals.css`, а не в `tokens.ts` (поза drift-гейтом); spacing, motion і breakpoints у CSS не доходять.
+- G15: скан шрифтів < 12 px по `src/` виконує лише ручний `npm run tokens:check`; у `pr:check` через Vitest потрапляють контраст і drift.
+- G16: нові композити з #369 імпортує лише `/ds-catalog`.
+- G11: `SearchInput` уже є в `input.tsx`, але з англомовними `aria-label` і placeholder.
+
+Виправлено: [now](now.md) (запис 2026-09-28 і новий запис зверху), [open-questions](open-questions.md) #10 (закрито), епік (§2.3, §5.3, картка AH-0.1 з AC, §14 — рядки G07, G09, G11, G15, G16, уточнення в §2.1 і картці AH-2.3), [handoff](product/after-hours-epic-handoff.md) (стан, «Наступна задача: AH-0.3», пастка про приховану панель браузера), `wiki/index.md` (два описи gap-plan). Production-код не змінювався.
