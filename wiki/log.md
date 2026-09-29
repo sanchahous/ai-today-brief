@@ -4994,6 +4994,7 @@ Gate «5 usability-сесій» (G19) знято: ризик прийнято, �
 Джерело: рішення власника в чаті 2026-09-29 після порівняння на `duotone.ts`.
 
 OG/PDF/duotone лишаються на жовтому `#f0c040`; задачу міграції на brass знято. Оновлено epic readiness, ADR §4, `now.md`.
+
 ## 2026-09-29 — Епік реалізації редизайну After Hours
 
 Джерело: ціль власника 2026-09-29 («епік з декомпозицією редизайну, готовий до виконання»); `artifacts/after-hours/` v3 (README, QA, tokens.css/json, модулі макетів, `seo.js`, матриця `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/`, `artifacts/brand-kit/`; live check коду `main` @ `3debff1` (grep `src/`, `e2e/`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`); `node_modules/next/dist/docs` (Next 16.3.0).
@@ -5007,3 +5008,15 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 Джерело: відповідь власника в сесії 2026-09-29 на рекомендації §4 [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md).
 
 Прийнято: D1 — варіант A (foundations — токени, шрифти, бренд — глобально малими PR, шаблони по одному після пілота News slice); D3 — шрифти через `next/font/local`; D4 — Georgia для українських display-заголовків на запуск; D5 — варіант A (брейкпоінти прототипу, header і discovery перемикаються на 60rem ≈ 960 px). Позначено в епіку (статус, таблиця §4, картка AH-0.2), [now](now.md) і `wiki/index.md`. D2, D6–D13 чекають задачі AH-0.2; ADR ще не створено.
+
+## 2026-09-29 — Звірка епіку After Hours з PR #369
+
+Джерело: `git show 3f47256 --stat` (PR #369 змерджено в `main` під час роботи над епіком); [decisions/2026-09-29-design-tokens-2-0-migration](decisions/2026-09-29-design-tokens-2-0-migration.md); [product/after-hours-epic-readiness](product/after-hours-epic-readiness.md); повторний grep `src/` після rebase гілки на `3f47256`.
+
+Епік перебазовано на `3f47256` і звірено з кодом: AH-1.1 (токени 2.0) і AH-2.1 (каталог `/ds-catalog`) позначено ✅; AH-0.5, AH-1.2, AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6 — ◐ з описом залишку в картках. Рішення: D12 (usability-сесії пропущено) і колір OG/PDF/duotone (жовтий `#f0c040`, новий інваріант I-12) — від власника в сесії #369; D9, D10 і D11 для каталогу вирішені реалізацією #369. Гейт G4 тепер спирається на E2E acceptance tasks і підпис власника; B1–B3 закриті, B4 — 14 файлів із hex замість 18; оцінку перераховано з ≈ 62 до ≈ 55 днів. Оновлено [open-questions](open-questions.md) #10 (частину розривів закрито, конфлікт із записом `now.md` 2026-09-28 лишається), epic readiness (посилання на епік), [now](now.md) і `wiki/index.md`.
+
+## 2026-09-29 — Hotfix B8: прибрано «Recent highlights» з /news
+
+Джерело: знахідка B8 епіку [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md); `src/app/[lang]/news/page.tsx`; `src/lib/i18n.ts`; `git log -S weekSummary` (PR #17, 2026-06-04).
+
+З `/[lang]/news` прибрано статичний блок «Recent highlights» / «Зведення останніх подій» і ключі `news.summaryTitle` / `news.weekSummary` в EN і UK: текст був із порту прототипу й подавався як актуальний підсумок тижня з неперевіреними твердженнями (фонові агенти Claude Code, MCP 1.2, «70%+» економії на prompt caching). Кешування, canonical, JSON-LD і URL-state стрічки не змінювались. Підсумок тижня з реальних даних лишився в AH-4.3. Оновлено рядок B8 епіку, [now](now.md).
