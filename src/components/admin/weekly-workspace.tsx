@@ -550,7 +550,7 @@ function PreflightBlockerList({
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[11px] font-bold tracking-wide text-amber-200/70 uppercase">
+              <p className="text-2xs font-bold tracking-wide text-amber-200/70 uppercase">
                 Step {group.section.step} of 8
               </p>
               <h3
@@ -578,7 +578,7 @@ function PreflightBlockerList({
                 className="min-w-0 rounded-lg border border-amber-400/20 bg-amber-400/6 px-3 py-2.5 text-amber-100"
               >
                 <p className={`break-words ${compact ? 'text-sm font-bold' : 'text-sm'}`}>
-                  <span className="mr-2 inline-flex size-5 items-center justify-center rounded-full bg-amber-300/15 text-[11px] font-bold text-amber-100">
+                  <span className="mr-2 inline-flex size-5 items-center justify-center rounded-full bg-amber-300/15 text-2xs font-bold text-amber-100">
                     {index + 1}
                   </span>
                   <span className="font-bold">{blocker.slot}</span>
@@ -960,17 +960,17 @@ function ArtifactCard({
           {pickSource || primaryVariantScore ? (
             <div className="absolute top-2 left-2 flex flex-wrap gap-1">
               {pickSource ? (
-                <span className="rounded bg-black/70 px-2 py-0.5 text-[10px] font-bold tracking-wide text-cyan-200 uppercase">
+                <span className="rounded bg-black/70 px-2 py-0.5 text-2xs font-bold tracking-wide text-cyan-200 uppercase">
                   {pickSource === 'owner' ? 'owner-promoted' : 'auto-picked'}
                 </span>
               ) : null}
               {primaryVariantScore ? (
-                <span className="rounded bg-black/70 px-2 py-0.5 text-[10px] font-bold text-white">
+                <span className="rounded bg-black/70 px-2 py-0.5 text-2xs font-bold text-white">
                   {formatVariantScoreChip(primaryVariantScore)}
                 </span>
               ) : null}
               {primaryVariantConcept?.lens ? (
-                <span className="rounded bg-black/70 px-2 py-0.5 text-[10px] font-bold tracking-wide text-amber-200 uppercase">
+                <span className="rounded bg-black/70 px-2 py-0.5 text-2xs font-bold tracking-wide text-amber-200 uppercase">
                   {primaryVariantConcept.lens.replaceAll('_', ' ')}
                 </span>
               ) : null}
@@ -1009,10 +1009,10 @@ function ArtifactCard({
                   <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pt-4 pb-1 text-left">
                     {scoreMeta ? (
                       <>
-                        <span className="block text-[10px] font-bold text-white">
+                        <span className="block text-2xs font-bold text-white">
                           {formatVariantScoreChip(scoreMeta)}
                         </span>
-                        <span className="block truncate text-[9px] text-slate-300">
+                        <span className="block truncate text-2xs text-slate-300">
                           {conceptMeta?.title ||
                             conceptMeta?.lens?.replaceAll('_', ' ') ||
                             (scoreMeta.blockers.length
@@ -1021,7 +1021,7 @@ function ArtifactCard({
                         </span>
                       </>
                     ) : (
-                      <span className="block text-[10px] text-slate-400">alt {index + 1}</span>
+                      <span className="block text-2xs text-slate-400">alt {index + 1}</span>
                     )}
                   </span>
                   {variantSelection.canEdit ? (
@@ -1061,7 +1061,7 @@ function ArtifactCard({
                     className="object-cover"
                   />
                 </div>
-                <div className="grid gap-1 p-2 text-[11px]">
+                <div className="grid gap-1 p-2 text-2xs">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="font-bold text-slate-200">{row.label}</span>
                     {row.attempt !== null ? (
@@ -1244,7 +1244,7 @@ function ArtifactCard({
               {variantSelection.costSummary.jobCount} job
               {variantSelection.costSummary.jobCount === 1 ? '' : 's'}
             </dd>
-            <dd className="mt-1 text-[11px] text-slate-500">
+            <dd className="mt-1 text-2xs text-slate-500">
               render ${variantSelection.costSummary.renderUsd.toFixed(4)} · vision $
               {variantSelection.costSummary.visionUsd.toFixed(4)}
               {variantSelection.costSummary.legacyUsd > 0
@@ -1515,7 +1515,7 @@ function HallucinationBoardPanel({
               {board.claims.slice(0, 24).map((claim) => (
                 <tr key={claim.claimId}>
                   <td className="py-2 pr-3 text-slate-200">
-                    <span className="font-mono text-[0.7rem] text-slate-500">{claim.claimId}</span>
+                    <span className="font-mono text-2xs text-slate-500">{claim.claimId}</span>
                     <span className="mt-1 block">{claim.text}</span>
                   </td>
                   <td className="py-2 pr-3 text-slate-400">{claim.storyHeadline}</td>
@@ -2041,12 +2041,12 @@ function EditorialVersionCard({
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-sm font-bold text-white">Revision {revision.revision_number}</p>
         {role === 'active' ? (
-          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-emerald-200 uppercase">
+          <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-2xs font-bold tracking-wide text-emerald-200 uppercase">
             Working copy
           </span>
         ) : null}
         {role === 'latest-unused' ? (
-          <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-amber-200 uppercase">
+          <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-2xs font-bold tracking-wide text-amber-200 uppercase">
             Latest — not in use
           </span>
         ) : null}
@@ -4294,7 +4294,7 @@ function SocialPanel({
               <h3 id={`social-${channel}-heading`} className="mr-auto text-lg font-bold text-white">
                 {channelLabel(channel)}
               </h3>
-              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] font-bold text-slate-300 uppercase">
+              <span className="rounded-full border border-white/10 px-2.5 py-1 text-2xs font-bold text-slate-300 uppercase">
                 {locale}
               </span>
               <StatusPill value={post.status} />
@@ -4560,7 +4560,7 @@ function SocialPanel({
                               sizes="(max-width: 1280px) 90vw, 28vw"
                             />
                           </a>
-                          <figcaption className="px-2 py-1.5 text-[11px] leading-4 text-slate-500">
+                          <figcaption className="px-2 py-1.5 text-2xs leading-4 text-slate-500">
                             {[
                               asset.slotKey ?? asset.artifactType,
                               asset.mimeType,
@@ -5828,7 +5828,7 @@ function ReleasePanel({
                 {Object.keys(asRecord(event.payload)).length > 0 ? (
                   <details className="mt-1">
                     <summary className="text-xs text-slate-500">Event details</summary>
-                    <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-black/30 p-2 text-[11px] text-slate-400">
+                    <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-black/30 p-2 text-2xs text-slate-400">
                       {jsonText(event.payload, '{}')}
                     </pre>
                   </details>

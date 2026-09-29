@@ -10,7 +10,7 @@ function prettyType(type: string): string {
 }
 
 export function ConceptsGrid({ lang, concepts }: { lang: Lang; concepts: ConceptSummary[] }) {
-  const accent = '#f0c040';
+  const accent = 'var(--accent)';
 
   return (
     <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -32,7 +32,7 @@ export function ConceptsGrid({ lang, concepts }: { lang: Lang; concepts: Concept
               >
                 <CategoryGlyph icon={conceptIcon(c.slug, c.type)} size={20} strokeWidth={1.6} />
               </span>
-              <span className="text-accent text-[0.68rem] font-bold tracking-wider uppercase">
+              <span className="text-accent text-2xs font-bold tracking-wider uppercase">
                 {prettyType(c.type)}
               </span>
             </div>

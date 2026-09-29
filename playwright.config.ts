@@ -64,6 +64,8 @@ export default defineConfig({
     cwd: projectDir,
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
+    // Enables the internal /ds-catalog page used by e2e/ui-components.spec.ts (404 without it).
+    env: { DS_CATALOG: '1' },
     timeout: 120_000,
   },
 });

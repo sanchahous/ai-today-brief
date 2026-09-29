@@ -79,7 +79,7 @@ export function StoryPromptSetPanel({
         </p>
       </div>
       {policy ? (
-        <p className="text-[11px] tracking-wide text-slate-500 uppercase">
+        <p className="text-2xs tracking-wide text-slate-500 uppercase">
           {policy}
           {generatedAt ? ` · ${generatedAt}` : ''}
         </p>
@@ -264,7 +264,7 @@ function OwnerFeedbackForm({
         {OWNER_FEEDBACK_REASON_TAGS.map((tag) => (
           <label
             key={tag}
-            className="flex items-center gap-1.5 rounded-lg border border-white/8 px-2 py-1 text-[11px] text-slate-400"
+            className="flex items-center gap-1.5 rounded-lg border border-white/8 px-2 py-1 text-2xs text-slate-400"
           >
             <input
               type="checkbox"

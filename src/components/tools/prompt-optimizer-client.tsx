@@ -176,7 +176,7 @@ export function PromptOptimizerClient({ lang }: { lang: Lang }) {
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           {OFFICIAL_PROMPT_SNIPPETS.map((snippet) => (
             <article key={snippet.id} className="border-border bg-bg rounded-lg border p-4">
-              <p className="text-faint m-0 text-[0.72rem] tracking-[0.12em] uppercase">
+              <p className="text-faint m-0 text-2xs tracking-[0.12em] uppercase">
                 {t.placementLabels[snippet.placement]}
               </p>
               <h4 className="m-0 mt-1">{snippet.title[lang]}</h4>
@@ -273,7 +273,7 @@ function FindingCard({ finding, lang }: { finding: PromptFinding; lang: Lang }) 
 
   return (
     <article className="border-border bg-bg rounded-lg border p-4">
-      <p className="text-faint m-0 font-mono text-[0.72rem]">{finding.ruleId}</p>
+      <p className="text-faint m-0 font-mono text-2xs">{finding.ruleId}</p>
       <h4 className="m-0 mt-1">{rule.title[lang]}</h4>
       <p className="text-muted m-0 mt-2 text-sm leading-relaxed">{rule.recommendation[lang]}</p>
       {finding.evidence ? (

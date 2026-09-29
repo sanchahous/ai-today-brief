@@ -299,7 +299,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
                 href={adjacent.prev.href}
                 className="rounded-card border-border bg-surface hover:border-accent block border p-3.5 no-underline transition"
               >
-                <span className="text-faint mb-1 block text-[0.72rem] tracking-[0.06em] uppercase">
+                <span className="text-faint mb-1 block text-2xs tracking-[0.06em] uppercase">
                   ← {t.prevStory}
                 </span>
                 <span className="text-text text-[0.92rem] font-semibold leading-snug break-words">
@@ -314,7 +314,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
                 href={adjacent.next.href}
                 className="rounded-card border-border bg-surface hover:border-accent block border p-3.5 text-right no-underline transition"
               >
-                <span className="text-faint mb-1 block text-[0.72rem] tracking-[0.06em] uppercase">
+                <span className="text-faint mb-1 block text-2xs tracking-[0.06em] uppercase">
                   {t.nextStory} →
                 </span>
                 <span className="text-text text-[0.92rem] font-semibold leading-snug break-words">

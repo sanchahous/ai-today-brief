@@ -2,7 +2,7 @@
 
 Summary: візуальна дизайн-концепція видання: брендинг, адаптивні макети, UI/UX, рух, маршрути та план впровадження. Статус 2026-09-28: прототип v3 пройшов браузерний QA (доступність, SEO-контракт, крос-браузерність, збільшений текст); production-впровадження дизайн-системи досі проходить gates з аудиту розривів.
 Sources: запит власника 2026-09-05, уточнення про повноцінні різноманітні статті 2026-09-26 і запит на доопрацювання прототипів 2026-09-28; browser live review 2026-09-05 — https://aitodaybrief.com/en, /en/concepts, /en/guides, /en/tools, /en/about; browser review production article і локального прототипу 2026-09-26; `src/app/[lang]/page.tsx`, `src/app/[lang]/digests/page.tsx`, `src/app/[lang]/news/page.tsx`, `src/components/story-body.tsx`, `src/lib/design-system/tokens.ts`; `artifacts/after-hours/` (зокрема `qa/*.json`); none (design proposals).
-Last updated: 2026-09-28
+Last updated: 2026-09-29
 
 ---
 
@@ -14,7 +14,7 @@ Last updated: 2026-09-28
 >
 > Результат на рівні прототипу: токени 2.0.0-proposal у трьох шарах (наступний major після `tokens.ts` v1.0.0; міграція — §4), чесне сортування (G03), стан News у URL (G04), фасети з правилом OR/AND (G06), мобільний drawer з «Done (N)» (G08), маршрут `#/coverage` зі співставленням production-функцій і макетів. Браузерний QA: 560 сторінок Chromium і 336 сторінок Firefox/WebKit без порушень axe, переповнення, тексту менше 12 px і малих цілей; збільшений до 200% текст і reflow 320 px — 112 сторінок без втрат. Деталі — [QA](../../artifacts/after-hours/QA.md). (source: `artifacts/after-hours/qa/qa-v3-final-chromium.json`, `qa-v3-final-xbrowser.json`, `zoom-report.json`; `artifacts/after-hours/home.js`, `data.js`)
 >
-> Production-частину аудиту переносив PR #367 (токени `src/lib/design-system/tokens.ts` v1.0.0, UI-примітиви `src/components/ui/`, discovery `/news` з URL-state, E2E) — див. [now](../now.md) і [design-system-tokens](../architecture/design-system-tokens.md). Прототип v3 — наступна дизайн-ітерація поверх нього: його токени 2.0.0-proposal ще **не** перенесені в `tokens.ts` (таблиця міграції — у §4), а нові макети й рух не мають production-компонентів. Результатів usability-сесій (G19) у wiki не зафіксовано (needs verification). (source: `git show f920671 --stat`; [аудит](../audits/2026-09-26-design-system-gap-plan.md); analysis)
+> Production-частину аудиту переносив PR #367 (токени `src/lib/design-system/tokens.ts` v1.0.0, UI-примітиви `src/components/ui/`, discovery `/news` з URL-state, E2E) — див. [now](../now.md) і [design-system-tokens](../architecture/design-system-tokens.md). Прототип v3 — наступна дизайн-ітерація поверх нього. **Оновлення 2026-09-29:** токени 2.0.0 перенесені в `tokens.ts` і `globals.css` ([ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md)), додано Popover/DropdownMenu/Tooltip/Tabs/Accordion/Toast/Combobox; результатів usability-сесій (G19) досі немає — [протокол готовий](../research/2026-09-29-redesign-usability-sessions-protocol.md). Стан блокерів епіку — [epic readiness](after-hours-epic-readiness.md). (source: `git show f920671 --stat`; [аудит](../audits/2026-09-26-design-system-gap-plan.md); analysis)
 
 **After Hours** — назва візуального напрямку. Публічна назва залишається **AI Today Brief**. Тепле темне тло, латунні акценти, кремовий текст, спокійна serif-типографіка та вузькі моноширинні метадані створюють атмосферу камерного американського джазового клубу. Відчуття майбутнього передають точна геометрія, celadon-сигнал і технічна ясність. Це пропозиція за брифом власника, не твердження про поточний бренд. (source: запит власника 2026-09-05; design proposal)
 
@@ -104,7 +104,7 @@ Last updated: 2026-09-28
 
 Категорії мають окремі значення для кожної теми (Night — світлі jewel tones, Day — глибокі, ≥ 4,5:1 на surface і bg) і незмінні «арт-кольори» для банерів на темній сцені; неонові значення v1 прибрано. Контраст-гейт `qa/check-tokens.mjs` перевіряє 160 пар текст/UI в обох темах — 0 провалів (найнижчий текст категорії: Night 6,41:1, Day 5,22:1). (source: `artifacts/after-hours/tokens.css`; `qa/token-contrast.json` 2026-09-28; розрахунок контрасту v1 з `src/lib/design-system/tokens.ts`)
 
-Production `src/lib/design-system/tokens.ts` («After Hours v1.0.0») цим оновленням не змінено; міграція в `tokens.ts`, Tailwind `@theme` і `scripts/check-design-tokens.ts` — окремий крок (G10 в [аудиті](../audits/2026-09-26-design-system-gap-plan.md)), таблиця вище — його відправна точка. Застарілі назви v2 (`paper`, `ink`, `brass`, `mint`) лишаються аліасами. (source: `src/lib/design-system/tokens.ts`; `tokens.json` — `deprecated`)
+Міграція в `tokens.ts`, `globals.css` і `scripts/check-design-tokens.ts` виконана 2026-09-29 (G10 з [аудиту](../audits/2026-09-26-design-system-gap-plan.md); [ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md)); до неї `tokens.ts` був v1.0.0, а таблиця вище була відправною точкою. Значення production можуть відрізнятися від прототипу лише там, де це зафіксовано в ADR (`--surface-2`, `--border-soft`). Застарілі назви v2 (`paper`, `ink`, `brass`, `mint`) лишаються аліасами. (source: `src/lib/design-system/tokens.ts`; `tokens.json` — `deprecated`)
 
 Орієнтир пропорцій: 75% базової поверхні, 18% тексту/ілюстрацій, 6% латуні, 1% celadon; claret — точково. Це напрям для композиції, не буквальна піксельна квота. Декоративні лінії не використовувати як єдину межу інтерактивного поля. (source: design proposal)
 
@@ -242,6 +242,7 @@ Production `src/lib/design-system/tokens.ts` («After Hours v1.0.0») цим о�
 
 ## Related pages
 
+- [after-hours-epic-readiness](after-hours-epic-readiness.md) — статус блокерів епіку.
 - [design-system-gap-plan](../audits/2026-09-26-design-system-gap-plan.md) — аудит розривів і порядок допрацювання
 - [overview](../overview.md)
 - [now](../now.md)

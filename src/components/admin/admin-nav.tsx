@@ -56,7 +56,7 @@ export function AdminNav() {
               title={collapsed ? link.label : undefined}
               className={`rounded-xl font-semibold text-slate-300 transition hover:bg-white/8 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#47e4d3] ${
                 collapsed
-                  ? 'grid min-h-11 place-items-center px-1 text-[10px]'
+                  ? 'grid min-h-11 place-items-center px-1 text-2xs'
                   : 'px-4 py-3 text-sm'
               }`}
             >
@@ -77,7 +77,7 @@ export function AdminNav() {
           <Link
             key={link.href}
             href={link.href}
-            className="min-h-12 rounded-lg px-0.5 py-3 text-center text-[10px] font-semibold text-slate-300 hover:bg-white/8 hover:text-white focus-visible:outline-2 focus-visible:outline-[#47e4d3]"
+            className="min-h-12 rounded-lg px-0.5 py-3 text-center text-2xs font-semibold text-slate-300 hover:bg-white/8 hover:text-white focus-visible:outline-2 focus-visible:outline-[#47e4d3]"
           >
             {link.short}
           </Link>

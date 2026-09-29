@@ -97,7 +97,7 @@ export function TopOfWeek({
 
 function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
   const t = getStrings(lang).landing;
-  const color = item.categoryColor ?? '#f0c040';
+  const color = item.categoryColor ?? 'var(--accent)';
   return (
     <Link
       href={item.href}
@@ -118,7 +118,7 @@ function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
         className="cat-band flex flex-wrap items-center gap-2 px-5 py-4"
         style={{ '--cat-color': color } as CSSProperties}
       >
-        <span className="bg-accent text-on-accent rounded-pill px-2 py-0.5 text-[0.66rem] font-bold tracking-[0.08em] uppercase">
+        <span className="bg-accent text-on-accent rounded-pill px-2 py-0.5 text-2xs font-bold tracking-[0.08em] uppercase">
           {t.featured}
         </span>
         <CategoryBadge name={item.categoryName} color={item.categoryColor} />
@@ -155,7 +155,7 @@ function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
 
 function SecondaryRow({ lang, item, rank }: { lang: Lang; item: HomeItem; rank: number }) {
   const t = getStrings(lang).landing;
-  const color = item.categoryColor ?? '#f0c040';
+  const color = item.categoryColor ?? 'var(--accent)';
   return (
     <Link
       href={item.href}

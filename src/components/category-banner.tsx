@@ -88,7 +88,7 @@ export function CategoryBanner({
           <span className="font-serif text-lg font-semibold text-white drop-shadow-sm">{name}</span>
           {videoBadge && videoLabel && (
             <span
-              className="pulse inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-[0.72rem] font-semibold"
+              className="pulse inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-semibold"
               style={{ background: `${c}ee`, color: '#141414' }}
             >
               <PlayIcon size={13} /> {videoLabel}

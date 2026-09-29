@@ -4968,3 +4968,29 @@ https://claude.ai/code/artifact/dc29256b-77f4-4941-a78d-b6a1710c4650. Код щ�
 Прототип `artifacts/after-hours/` оновлено до v3: токени 2.0.0-proposal у трьох шарах із повним Day-перевизначенням (корінь багів світлої теми — неперевизначені `--paper`/`--ink`/`--brass` і жорсткі кольори категорій), третій акцент claret/velvet, rem-шкала з мінімумом 12 px, брейкпоінти в `em`; окрема структура для Digests, Daily, Weekly, Concepts, Guides, Toolbox, Categories; SEO/JSON-LD-контракт кожного маршруту з інспектором; AVIF/WebP концепт-арту; Tension v3 і брендова сцена The Resolve замість Editorial Fold; маршрути `#/coverage` і `#/author`; код розбито на модулі. QA: 560 сторінок Chromium + axe, 336 Firefox/WebKit і 112 з увімкненим рухом — 0 порушень; 200% тексту й reflow 320 px — 112 сторінок без втрат; 42 графи JSON-LD без пропусків; контраст-гейт 160 пар без провалів (до змін: 222 порушення axe, 4 220 випадків тексту < 12 px, 2 136 малих цілей на 208 сторінках).
 
 Оновлено [product/after-hours-redesign](product/after-hours-redesign.md) (статус v3, палітра 2.0 з таблицею міграції з `tokens.ts` v1.0.0, типографіка, маршрути `author`/`coverage`/`motion`), [product/after-hours-tension](product/after-hours-tension.md) (Tension v3, The Resolve, заміри кадрів), [architecture/design-system-tokens](architecture/design-system-tokens.md) (пропозиція 2.0.0; `faint` у `tokens.ts` v1.0.0 і в live `globals.css` dark — нижче AA: 3,88 / 3,03 / 3,54:1) та `wiki/index.md`. Production `src/` не змінювався; push і PR не виконувались.
+
+## 2026-09-29 — Блокери епіку редизайну: токени 2.0.0, компоненти, usability-протокол
+
+Джерело: запит власника 2026-09-29 (чотири блокери епіку «впровадити все відразу»); гілка `claude/redesign-epic-blockers-00e7df` від `main` `3debff1`; `npm run tokens:check`, vitest, Playwright chromium.
+
+Токени `src/lib/design-system/tokens.ts` → 2.0.0 і `globals.css` як його дзеркало (повний Day, ролі `raised/overlay/stage/claret/velvet/focus/warning`, шкала типографіки `rem`, `zIndex`, `controlSize`). `--faint` виправлено до ≥ 4,5:1 на всіх поверхнях (було 3,54:1 у live dark), 74 використання `text-[<12px]` → `text-2xs`, `tokens:check` розширено (90 пар, drift CSS↔tokens, floor 12 px). Додано Popover, DropdownMenu, Tooltip, Tabs, Accordion, Toast, Combobox (`src/components/ui/`, логіка в `src/lib/ui/`), внутрішній каталог `/ds-catalog` (404 без `DS_CATALOG=1`) і `e2e/ui-components.spec.ts`. Usability-сесії (G19) **не проведені** — підготовлено протокол.
+
+Нові сторінки: [decisions/2026-09-29-design-tokens-2-0-migration](decisions/2026-09-29-design-tokens-2-0-migration.md), [product/after-hours-epic-readiness](product/after-hours-epic-readiness.md), [research/2026-09-29-redesign-usability-sessions-protocol](research/2026-09-29-redesign-usability-sessions-protocol.md). Оновлено [architecture/design-system-tokens](architecture/design-system-tokens.md), [product/after-hours-redesign](product/after-hours-redesign.md), [audits/2026-09-26-design-system-gap-plan](audits/2026-09-26-design-system-gap-plan.md), `wiki/now.md`, `wiki/index.md`. Push і PR не виконувались.
+
+## 2026-09-29 (доповнення) — прогалини компонентів і a11y-база
+
+Джерело: запит власника 2026-09-29 («доробити» непокрите з epic readiness); axe-core, Playwright chromium.
+
+Додано collision-flip для Popover (`src/lib/ui/placement.ts`), `Dialog` (поверх `OverlayDrawer`), e2e: axe WCAG 2.2 AA (Night/Day, у спокої й з відкритими overlay), дерево доступності Tabs/Menu/Combobox, 4 visual-baseline знімки каталогу (win32, `VISUAL=1`). Axe знайшов і виправлено `aria-label` без ролі в Toast. Залежність: `@axe-core/playwright` (dev). Оновлено [product/after-hours-epic-readiness](product/after-hours-epic-readiness.md): п'ятого блокера немає; бренд-колір і usability-сесії — відкриті питання власнику.
+
+## 2026-09-29 (рішення) — usability-сесії пропущено
+
+Джерело: рішення власника в чаті 2026-09-29.
+
+Gate «5 usability-сесій» (G19) знято: ризик прийнято, страхує автоматика й метрики після запуску. Оновлено [product/after-hours-epic-readiness](product/after-hours-epic-readiness.md), [research/2026-09-29-redesign-usability-sessions-protocol](research/2026-09-29-redesign-usability-sessions-protocol.md), [decisions/2026-09-29-design-tokens-2-0-migration](decisions/2026-09-29-design-tokens-2-0-migration.md) §6, `wiki/now.md`, gap-plan.
+
+## 2026-09-29 (рішення) — бренд-колір карток
+
+Джерело: рішення власника в чаті 2026-09-29 після порівняння на `duotone.ts`.
+
+OG/PDF/duotone лишаються на жовтому `#f0c040`; задачу міграції на brass знято. Оновлено epic readiness, ADR §4, `now.md`.

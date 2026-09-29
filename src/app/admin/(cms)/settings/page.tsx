@@ -89,7 +89,7 @@ export default async function SettingsPage() {
                   {DAYS.map((day, index) => (
                     <label
                       key={day}
-                      className="grid min-h-11 place-items-center rounded-lg border border-white/10 px-1 text-[10px] font-bold text-slate-400 has-checked:border-[#47e4d3]/50 has-checked:bg-[#47e4d3]/10 has-checked:text-[#8af4e9]"
+                      className="grid min-h-11 place-items-center rounded-lg border border-white/10 px-1 text-2xs font-bold text-slate-400 has-checked:border-[#47e4d3]/50 has-checked:bg-[#47e4d3]/10 has-checked:text-[#8af4e9]"
                     >
                       <input
                         type="checkbox"

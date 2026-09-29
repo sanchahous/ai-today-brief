@@ -42,7 +42,7 @@ function ConsentSwitch({
       <span
         aria-hidden
         className={`absolute top-[2px] h-4 w-4 rounded-full transition-[left] ${
-          on ? 'left-[18px] bg-[#141414]' : 'left-[2px] bg-[var(--faint)]'
+          on ? 'left-[18px] bg-on-accent' : 'left-[2px] bg-[var(--faint)]'
         }`}
       />
     </button>
@@ -139,7 +139,7 @@ export function CookieConsent({ lang }: { lang: Lang }) {
       <div className="mb-2 flex items-center gap-2">
         <h2 className="text-base font-semibold">{c.cookieTitle}</h2>
         <span
-          className="text-faint border-border ml-auto rounded-full border px-2 py-0.5 text-[0.6rem] font-bold tracking-wide uppercase"
+          className="text-faint border-border ml-auto rounded-full border px-2 py-0.5 text-2xs font-bold tracking-wide uppercase"
           title={c.cookieRegionNote}
         >
           {region}

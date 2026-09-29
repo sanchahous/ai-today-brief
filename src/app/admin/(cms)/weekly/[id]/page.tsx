@@ -84,7 +84,7 @@ export default async function WeeklyDigestWorkspacePage({
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill value={workspace.digest.status} />
             {revisionNumber ? (
-              <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-slate-400 uppercase">
+              <span className="rounded-full border border-white/10 px-2.5 py-1 text-2xs font-bold tracking-wide text-slate-400 uppercase">
                 Revision {revisionNumber}
               </span>
             ) : null}
@@ -151,7 +151,7 @@ export default async function WeeklyDigestWorkspacePage({
               >
                 {tab.label}
                 {tab.id === 'fixes' && fixesNeedsAction ? (
-                  <span className="ml-2 rounded-full bg-[#08211f] px-2 py-0.5 text-[10px] font-bold tracking-wide text-[#47e4d3] uppercase">
+                  <span className="ml-2 rounded-full bg-[#08211f] px-2 py-0.5 text-2xs font-bold tracking-wide text-[#47e4d3] uppercase">
                     Action
                   </span>
                 ) : null}

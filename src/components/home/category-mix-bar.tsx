@@ -16,7 +16,7 @@ export function CategoryMixBar({ lang, categories }: { lang: Lang; categories: H
 
   return (
     <figure className="mt-10 max-w-2xl">
-      <figcaption className="text-faint mb-2.5 text-[0.72rem] font-bold tracking-[0.12em] uppercase">
+      <figcaption className="text-faint mb-2.5 text-2xs font-bold tracking-[0.12em] uppercase">
         {t.mixTitle}
       </figcaption>
       <div

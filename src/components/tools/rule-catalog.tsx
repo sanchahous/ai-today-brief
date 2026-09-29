@@ -30,7 +30,7 @@ export function RuleCatalog({ lang }: { lang: Lang }) {
                     key={rule.id}
                     className="rounded-card border-border bg-surface border p-4"
                   >
-                    <p className="text-faint m-0 font-mono text-[0.72rem]">{rule.id}</p>
+                    <p className="text-faint m-0 font-mono text-2xs">{rule.id}</p>
                     <h4 className="m-0 mt-1 text-[1.05rem]">{rule.title[lang]}</h4>
                     <p className="text-muted m-0 mt-2 text-sm leading-relaxed">
                       {rule.explainer[lang]}
@@ -60,7 +60,7 @@ export function StaticSnippetCatalog({ lang }: { lang: Lang }) {
       <div className="mt-5 grid gap-3">
         {OFFICIAL_PROMPT_SNIPPETS.map((snippet) => (
           <article key={snippet.id} className="rounded-card border-border bg-surface border p-4">
-            <p className="text-faint m-0 text-[0.72rem] tracking-[0.12em] uppercase">
+            <p className="text-faint m-0 text-2xs tracking-[0.12em] uppercase">
               {t.placementLabels[snippet.placement]}
             </p>
             <h3 className="m-0 mt-1 text-[1.05rem]">{snippet.title[lang]}</h3>

@@ -16,7 +16,7 @@ export function ConceptHeader({
   storyCount: number;
 }) {
   const t = getStrings(lang);
-  const accent = '#f0c040';
+  const accent = 'var(--accent)';
 
   return (
     <header className="mb-8 max-w-[720px]">

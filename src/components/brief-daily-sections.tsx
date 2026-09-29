@@ -28,7 +28,7 @@ export function BriefDailySections({
 
   return (
     <div className="max-w-[760px]">
-      <p className="text-faint m-0 mb-4 text-[0.72rem] font-bold tracking-[0.1em] uppercase">
+      <p className="text-faint m-0 mb-4 text-2xs font-bold tracking-[0.1em] uppercase">
         {t.briefItemsLabel} · {totalItems}
       </p>
 

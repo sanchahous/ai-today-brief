@@ -125,19 +125,19 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <CategoryBadge name={item.categoryName} color={item.categoryColor} />
             {item.sourceName && (
-              <span className="text-faint min-w-0 break-words text-[0.74rem]">
+              <span className="text-faint min-w-0 break-words text-2xs">
                 {item.sourceName} · {formatDate(item.date, lang)}
               </span>
             )}
             {!item.sourceName && (
-              <span className="text-faint text-[0.74rem]">{formatDate(item.date, lang)}</span>
+              <span className="text-faint text-2xs">{formatDate(item.date, lang)}</span>
             )}
-            <span className="text-faint inline-flex items-center gap-1 text-[0.74rem]">
+            <span className="text-faint inline-flex items-center gap-1 text-2xs">
               <ClockIcon size={13} /> {item.readMinutes} {t.readMin}
             </span>
             {item.hasVideo && (
               <span
-                className="cat-fg inline-flex items-center gap-1 text-[0.72rem] font-semibold"
+                className="cat-fg inline-flex items-center gap-1 text-2xs font-semibold"
                 style={{ '--cat-color': color } as CSSProperties}
               >
                 <PlayIcon size={14} /> {getStrings(lang).landing.watchVideo}
@@ -249,7 +249,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
             >
               <CommentIcon size={15} />
               {t.comments}
-              <span className="text-faint text-[0.66rem]">({t.soon})</span>
+              <span className="text-faint text-2xs">({t.soon})</span>
             </button>
           </div>
 
@@ -264,7 +264,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
                 className="rounded-card border-border border-t pt-4"
                 style={{ borderTopColor: `${color}44` }}
               >
-                <p className="text-accent mb-2 text-[0.72rem] font-bold tracking-[0.1em] uppercase">
+                <p className="text-accent mb-2 text-2xs font-bold tracking-[0.1em] uppercase">
                   {t.whyMatters}
                 </p>
                 <p className="text-muted mb-4 text-[0.92rem] leading-relaxed">{item.why}</p>
