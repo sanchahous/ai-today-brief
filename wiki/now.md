@@ -10,12 +10,21 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.4 SEO baseline 2026-09-29
 Last updated: 2026-09-29
 
 ---
 
 ## Стан репозиторію
+
+- **AH-0.4: SEO baseline зафіксовано з production 2026-09-29.**
+  `e2e/fixtures/seo-contract.baseline.json` містить 58 URL у двох мовах; HTTP compare
+  повернув 0 регресій, повторні `/en/news` і `/uk/news` — `x-vercel-cache: HIT`.
+  Мутована копія baseline без canonical дала exit 1; покриття `src/lib/seo-contract.ts`
+  перевищило 80%. Вихідний HTML має `lang="en"` на UK-сторінках і 0 тексту всередині
+  сирого `<main>` до обробки streaming-розмітки. AH-0.3 має відкритий [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373);
+  наступна задача — AH-0.5. (source: `scripts/seo-contract.ts`; `src/lib/seo-contract.ts`;
+  `e2e/fixtures/seo-contract.baseline.json`; production HTTP-запити 2026-09-29)
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR
   [#372](https://github.com/sanchahous/ai-today-brief/pull/372).** Підсумок за кодом і живою перевіркою production:

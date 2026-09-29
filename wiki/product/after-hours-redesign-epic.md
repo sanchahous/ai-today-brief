@@ -328,7 +328,7 @@ flowchart TD
 | AH-0.1 | ✅ Звірити статус G01–G20 і вихідну точку ([#372](https://github.com/sanchahous/ai-today-brief/pull/372), [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)) | — | — | — | G01, конфлікт §2.3 |
 | AH-0.2 | ✅ ADR: rollout і foundations, D1–D13 ([ADR](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)) | — | — | — | передумова G12 |
 | AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
-| AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
+| AH-0.4 | ✅ SEO-контракт: знімок і compare-гейт (PR pending) | — | — | — | «SEO diff» (redesign §9) |
 | AH-0.5 | ◐ QA-матриця a11y і верстки для сторінок (#369: axe-інфраструктура для каталогу) | M | агент | D10 ✅ | G14 (частк.) |
 | AH-0.6 | Продуктовий і CWV baseline | S | власник + агент | open-questions #1 | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
@@ -494,10 +494,17 @@ D11) · **Закриває:** передумова visual review кожного 
    `x-vercel-cache: HIT`.
 
 **AC:**
-- [ ] Baseline з production закомічено як текстовий JSON (без HTML).
-- [ ] `--compare` проти того самого production — 0 розбіжностей; видалення canonical у фікстурі
+- [x] Baseline з production закомічено як текстовий JSON (без HTML).
+- [x] `--compare` проти того самого production — 0 розбіжностей; видалення canonical у фікстурі
   дає exit 1 (unit-тест).
-- [ ] Покриття нового `src/lib/seo-contract.ts` ≥ 80%.
+- [x] Покриття нового `src/lib/seo-contract.ts` ≥ 80%.
+
+**Стан 2026-09-29:** baseline містить 58 EN/UK URL; compare з production дав 0 помилок і
+0 попереджень, `--headers` підтвердив HIT для повторних `/en/news` і `/uk/news`.
+Навмисно вилучений canonical у копії baseline дав exit 1. Поточний сирий HTML має
+`lang="en"` на UK-сторінках і 0 тексту безпосередньо в `<main>` до обробки streaming-розмітки;
+це зафіксовані властивості baseline, не виправлення AH-0.4. (source: `scripts/seo-contract.ts`;
+`e2e/fixtures/seo-contract.baseline.json`; production HTTP-запити 2026-09-29)
 
 ### AH-0.5 · QA-матриця доступності й верстки для Next-застосунку
 

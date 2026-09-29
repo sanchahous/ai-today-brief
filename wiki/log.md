@@ -5067,3 +5067,13 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 - G11: `SearchInput` уже є в `input.tsx`, але з англомовними `aria-label` і placeholder.
 
 Виправлено: [now](now.md) (запис 2026-09-28 і новий запис зверху), [open-questions](open-questions.md) #10 (закрито), епік (§2.3, §5.3, картка AH-0.1 з AC, §14 — рядки G07, G09, G11, G15, G16, уточнення в §2.1 і картці AH-2.3), [handoff](product/after-hours-epic-handoff.md) (стан, «Наступна задача: AH-0.3», пастка про приховану панель браузера), `wiki/index.md` (два описи gap-plan). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.4: текстовий SEO baseline і compare-гейт
+
+Джерело: задача AH-0.4 [епіку](product/after-hours-redesign-epic.md); `src/lib/seo-contract.ts`, `scripts/seo-contract.ts`, `e2e/fixtures/seo-contract.baseline.json`; live HTTP-запити до `https://aitodaybrief.com` 2026-09-29; локальний `npm run test:coverage`.
+
+Baseline має 58 EN/UK URL. Compare з тим самим production: 0 помилок, 0 попереджень; повторні `/en/news` і `/uk/news`: `x-vercel-cache: HIT`. Копія baseline без canonical дала exit 1. Покриття нового parser/compare-модуля: statements 99.12%, branches 94.35%, functions 100%, lines 100%.
+
+Наявні властивості сирого HTML зафіксовано без виправлення: усі 29 UK URL мають `<html lang="en">` до клієнтського init-script; у 58 відповідях текст безпосередньо всередині сирого `<main>` має довжину 0, бо контент надходить у streaming-розмітці. Поточні JSON-LD issues є у 14 baseline URL (AboutPage:name, Organization:logo, WebApplication:offers); compare блокує лише нові дефекти. Це спостереження raw HTTP, не оцінка індексації пошуковими системами. (source: `e2e/fixtures/seo-contract.baseline.json`; live HTTP-запити 2026-09-29)
+
+Оновлено статус і AC AH-0.4 в епіку, наступну задачу AH-0.5 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-маршрути не змінювались.
