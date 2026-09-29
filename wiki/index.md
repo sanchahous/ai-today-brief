@@ -117,7 +117,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 
 Епік реалізації: [After Hours redesign epic](product/after-hours-redesign-epic.md) — перенесення прототипу v3 у production: 8 фаз і 8 гейтів, 56 задач з описом і acceptance criteria, усі рішення D1–D13 ухвалені ([ADR](decisions/2026-09-29-after-hours-rollout-and-foundations.md)), вихідна точка за кодом після PR #369 (3 задачі вже виконані, 9 — частково), трасування G01–G20 і маршрутів; декомпозиція й порядок робіт після сторінки готовності. (source: `artifacts/after-hours/`; live check коду 2026-09-29; рішення власника 2026-09-29)
 
-Передача виконання: [After Hours epic handoff](product/after-hours-epic-handoff.md) — вхід для нової сесії чи іншої моделі: стан на 2026-09-29, порядок старту, черга фази 0 з нюансами задач, точки зупинки для власника, пастки й стартовий промпт. (source: сесія 2026-09-29, PR #370 і #371)
+Передача виконання: [After Hours epic handoff](product/after-hours-epic-handoff.md) — вхід для нової сесії чи іншої моделі: стан на 2026-09-29, порядок старту, черга фази 0 з нюансами задач, точки зупинки для власника, пастки й стартовий промпт; AH-0.3 завершено, далі AH-0.4. (source: сесія 2026-09-29, PR #370 і #371; production capture 2026-09-29)
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
