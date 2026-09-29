@@ -90,7 +90,7 @@ Last updated: 2026-09-29
 |---|---|---|
 | ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Production gtag із трьома destinations і трьома активними GA4-property; 540206735 — робоча для baseline, Admin-чек-лист відкритий | колишній `docs/ANALYTICS.md` + live check 2026-09-29 |
 | ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
-| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: 28-денні продуктові GA4-воронки, причина трьох property, прогалина field CWV і умови G0 | GA4 Data API + production HTML / Google tag, 2026-09-29 |
+| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: 28-денні продуктові GA4-воронки, причина трьох property, прогалина field CWV і умови G0 (PR #376) | GA4 Data API + production HTML / Google tag, 2026-09-29 |
 
 ## Marketing
 

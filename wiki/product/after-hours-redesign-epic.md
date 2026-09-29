@@ -331,7 +331,7 @@ flowchart TD
 | AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
 | AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
 | AH-0.5 | ◐ QA-матриця a11y і верстки для сторінок (#369: axe-інфраструктура для каталогу) | M | агент | D10 ✅ | G14 (частк.) |
-| AH-0.6 | ◐ [Продуктовий GA4 baseline](../analytics/2026-09-29-redesign-baseline.md); CWV і Admin-звірка відкриті | S | власник + агент | open-questions #1 | передумова оцінки |
+| AH-0.6 | ◐ [Продуктовий GA4 baseline](../analytics/2026-09-29-redesign-baseline.md), PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376); CWV і Admin-звірка відкриті | S | власник + агент | open-questions #1 | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
 | AH-1.3 | Контракт теми Night/Day без спалаху | S | агент | D2 ✅ | B12 |
@@ -543,7 +543,7 @@ D11) · **Закриває:** передумова visual review кожного 
 Speed Insights або CrUX для home, news, article, daily, weekly. Оформити сторінку
 `wiki/analytics/<дата>-redesign-baseline.md`.
 
-**Стан 2026-09-29: ◐ частково.** [Baseline](../analytics/2026-09-29-redesign-baseline.md)
+**Стан 2026-09-29: ◐ частково, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376).** [Baseline](../analytics/2026-09-29-redesign-baseline.md)
 містить GA4-числа й розбір трьох destinations. Запитані переходи без відповідних подій
 позначено невимірюваними, а не підмінено співвідношенням page views. Field CWV mobile/desktop
 не отримано; Admin-чек-лист [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property)

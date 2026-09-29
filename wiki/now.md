@@ -17,7 +17,8 @@ Last updated: 2026-09-29
 
 ## Стан репозиторію
 
-- **AH-0.6 частково: GA4 baseline і причину трьох property зафіксовано (2026-09-29).**
+- **AH-0.6 частково: GA4 baseline і причину трьох property зафіксовано (2026-09-29),
+  PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376).**
   Один production gtag `G-5R89X6Q5D4` має три destinations; трафік є в `540206735`,
   `540437869`, `540467725`. Для 28-денного baseline обрано `540206735`, чий measurement ID
   підтверджений установленим тегом і історичним аудитом. У

@@ -26,7 +26,8 @@ Last updated: 2026-09-29
   новою відповіддю власника: спершу картки, потім запис у [log](../log.md).
 - **Гейт G0 не пройдено.** Поки він закритий, у production не йде жоден візуальний PR.
 - **Поточна задача: AH-0.6.** AH-0.3–AH-0.5 мають відкриті PR #373–#375; GA4-продуктовий
-  baseline знято в [окремій сторінці](../analytics/2026-09-29-redesign-baseline.md), CWV і
+  baseline у PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) знято в
+  [окремій сторінці](../analytics/2026-09-29-redesign-baseline.md), CWV і
   Admin-чек-лист GA4 лишаються відкритими. G0 не пройдено. (source: PR #373–#375;
   [redesign baseline](../analytics/2026-09-29-redesign-baseline.md))
 
@@ -73,7 +74,7 @@ Last updated: 2026-09-29
 | 2 | AH-0.3 · знімки до/після | агент | `scripts/capture-route-matrix.ts`; прогін `--label=before` з production; PNG лише в `artifacts/_local/` | немає |
 | 3 | AH-0.4 · SEO-контракт | агент | `src/lib/seo-contract.ts` з тестом (покриття ≥ 80%), `scripts/seo-contract.ts`, текстовий baseline з production | немає |
 | 4 | AH-0.5 · QA-матриця сторінок | агент | `e2e/a11y-layout-matrix.spec.ts`, режими report і gating, звіт по legacy-сайту з лічильниками в log | немає |
-| 5 | ◐ AH-0.6 · продуктовий і CWV baseline | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки й три destinations | **так:** потрібні field CWV і Admin-чек-лист open-questions #1 |
+| 5 | ◐ AH-0.6 · продуктовий і CWV baseline, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки й три destinations | **так:** потрібні field CWV і Admin-чек-лист open-questions #1 |
 
 **Нюанси, яких немає в картках:**
 
