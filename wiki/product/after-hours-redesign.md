@@ -200,6 +200,12 @@ Last updated: 2026-09-29
 
 ## 9. План реалізації
 
+> **Оновлення 2026-09-29:** виконувана декомпозиція перенесення в production — епік
+> [after-hours-redesign-epic](after-hours-redesign-epic.md): 54 сабтаски у 8 фазах із гейтами,
+> acceptance criteria, рішеннями D1–D13 і вихідною точкою за станом коду 2026-09-29. Хвилі A–C
+> нижче лишаються початковою оцінкою 2026-09-05; порядок робіт тепер задає епік. (source:
+> [after-hours-redesign-epic](after-hours-redesign-epic.md))
+
 Оцінки нижче — планувальні припущення для одного розробника з готовими даними, без переписування backend: **12–18 робочих днів**. Це не підтверджений графік. Релізні хвилі дозволяють показати головне раніше. (source: design estimate 2026-09-05)
 
 ### Хвиля A — основа й читання, 5–7 днів
@@ -243,6 +249,7 @@ Last updated: 2026-09-29
 ## Related pages
 
 - [after-hours-epic-readiness](after-hours-epic-readiness.md) — статус блокерів епіку.
+- [after-hours-redesign-epic](after-hours-redesign-epic.md) — епік реалізації: фази, сабтаски, acceptance criteria
 - [design-system-gap-plan](../audits/2026-09-26-design-system-gap-plan.md) — аудит розривів і порядок допрацювання
 - [overview](../overview.md)
 - [now](../now.md)

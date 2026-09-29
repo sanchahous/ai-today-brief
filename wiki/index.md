@@ -10,8 +10,8 @@ first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
 SSG skip, ElevenLabs, LinkedIn PDF skip, social `?s=` URLs 2026-09-03
-desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26
-Last updated: 2026-09-28
+desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29
+Last updated: 2026-09-29
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -115,8 +115,11 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 
 Аудит повноти: [Design-system gap plan](audits/2026-09-26-design-system-gap-plan.md) — розриви concept↔production у filtering, sort semantics, taxonomy, pagination/URL-state, tokens, components, states і QA; пріоритетний план через News vertical slice. (source: скріншот і запит власника 2026-09-26; browser live review; code review)
 
+Епік реалізації: [After Hours redesign epic](product/after-hours-redesign-epic.md) — перенесення прототипу v3 у production: 8 фаз і 8 гейтів, 54 сабтаски з описом і acceptance criteria, рішення D1–D13, вихідна точка за кодом 2026-09-29, трасування G01–G20 і маршрутів. (source: `artifacts/after-hours/`; live check коду 2026-09-29)
+
 | Сторінка | Про що | Звідки |
 |---|---|---|
+| ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 54 сабтаски з AC, рішення D1–D13 (D1, D3–D5 прийняті 2026-09-29), ризики й оцінка | `artifacts/after-hours/` v3 + live check коду 2026-09-29 + рішення власника 2026-09-29 |
 | ✅ [product/useful-tools-concept](product/useful-tools-concept.md) | Концепт розділу AI Toolbox | колишній `docs/product/USEFUL-TOOLS-CONCEPT.md` |
 | ✅ [product/toolbox-wave1-spec](product/toolbox-wave1-spec.md) | Epic-спека: settings.json Builder + CLAUDE.md Generator | колишній `docs/product/TOOLBOX-WAVE1-…` |
 | ✅ [product/responsive-crossbrowser-audit](product/responsive-crossbrowser-audit.md) | Аудит адаптиву й крос-браузерності | колишній `docs/product/RESPONSIVE-…` |

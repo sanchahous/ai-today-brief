@@ -5,8 +5,8 @@ Summary: усе, що не має відповіді, суперечить са�
 записом «закрито: …».
 Sources: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
 `.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04),
-`wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`
-Last updated: 2026-08-30
+`wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`, `wiki/product/after-hours-redesign-epic.md` (live check коду 2026-09-29)
+Last updated: 2026-09-29
 
 ---
 
@@ -152,6 +152,22 @@ weekly mix prompt 0.2 / completion 0.8 під стелю $1.5/M. Платний 
 
 **Закривається:** власник лишає free-first **або** піднімає `WEEKLY_MASTER_OPENROUTER_CANDIDATES`
 до 2 (glm + luna) і записує рішення сюди. **Власник рішення:** власник продукту.
+
+## 10. ⚠️ Conflict: чи закриті розриви дизайн-системи G01–G20
+
+[now](now.md) (запис 2026-09-28, гілка `feat/design-system-gap-implementation`) каже «Закрито 20
+розривів (G01–G20)». Live check коду 2026-09-29 (`main` @ `3debff1`) показує інше: `tokens.ts`
+імпортує лише `scripts/check-design-tokens.ts`, а `src/app/globals.css` досі на legacy-палітрі
+`#0f0f0f` / `#f0c040` (G10); фасету Topics / Tool немає в `src/lib/news-filters.ts` (G06); legacy
+`src/components/pagination.tsx` досі використовує `post-feed.tsx` (G11); каталогу компонентів,
+state matrix, ratchet-звіту на сирі значення й usability-даних немає (G13, G15, G19, G20).
+[after-hours-redesign](product/after-hours-redesign.md) §1 теж фіксує, що токени 2.0 не перенесені
+й результатів G19 немає. Повна таблиця статусів — [after-hours-redesign-epic](product/after-hours-redesign-epic.md) §14.
+(source: grep `src/` 2026-09-29; `git show f920671 --stat`)
+
+**Наслідок:** хто читає лише `now.md`, вважатиме дизайн-систему завершеною і пропустить фази 1–2
+епіку. **Закривається:** задача AH-0.1 епіку — таблиця статусів із доказами в gap-plan і виправлене
+формулювання в `now.md`. **Власник рішення:** агент готує звірку, власник підтверджує.
 
 ## Related pages
 
