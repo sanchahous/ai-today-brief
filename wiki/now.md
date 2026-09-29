@@ -10,23 +10,34 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29
 Last updated: 2026-09-29
 
 ---
 
 ## Стан репозиторію
 
-- **Рішення D1–D13 епіку редизайну ухвалені (2026-09-29), гілка `claude/after-hours-decisions-adr`.**
+- **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), гілка
+  `feat/ah-0-1-gap-status-reconciliation`.** Підсумок за кодом і живою перевіркою production:
+  **6 done** (G01, G03, G04, G08, G10, G20), **10 partial** (G02, G05, G07, G09, G11–G16),
+  **2 open** (G06, G17), G18 — policy, G19 — знято рішенням власника. Тобто закрито не 20 розривів,
+  а 6; запис від 2026-09-28 нижче виправлено. Головний залишок — фасети Topics/Tool (G06),
+  честний обсяг видачі замість зрізу 100/80 (G05), міграція header, пошуку й share на нові
+  композити (G16), editorial-компоненти (G17). Побічна знахідка: скан шрифтів < 12 px по `src/`
+  виконується лише вручну (`npm run tokens:check`), у `pr:check` потрапляють контраст і drift.
+  Повна таблиця з доказами — [gap-plan §10](audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01). Наступна задача — AH-0.3.
+  (source: [gap-plan §10](audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01); grep `src/` і `npm run tokens:check` 2026-09-29; headless Chromium на production `b3f1b3a` 2026-09-29)
+
+- **Рішення D1–D13 епіку редизайну ухвалені (2026-09-29), змержено як
+  [#371](https://github.com/sanchahous/ai-today-brief/pull/371).**
   [ADR розкатки й foundations](decisions/2026-09-29-after-hours-rollout-and-foundations.md) (задача
   AH-0.2 ✅): D2, D6, D8, D11 (сторінки), D13 — за рекомендаціями; **D7 — новий знак скрізь**: сайт,
   OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, аватари й банери соцмереж
   (нові задачі AH-3.7, AH-3.8; палітра OG/PDF/duotone лишається жовтою). Епік тепер має 56 задач,
-  оцінка ≈ 56 днів. **Наступне:** решта фази 0 — AH-0.1, AH-0.3–AH-0.6. Виконання продовжує
+  оцінка ≈ 56 днів. **Наступне:** решта фази 0 — AH-0.3–AH-0.6. Виконання продовжує
   нова сесія, можливо з іншою моделлю. Вхід — [передача виконання](product/after-hours-epic-handoff.md):
-  стан, порядок старту, черга, точки зупинки й стартовий промпт. Перед стартом змерджити PR
-  [#371](https://github.com/sanchahous/ai-today-brief/pull/371).
-  (source: відповіді власника в сесії 2026-09-29; [after-hours-redesign-epic](product/after-hours-redesign-epic.md) §4)
+  стан, порядок старту, черга, точки зупинки й стартовий промпт.
+  (source: відповіді власника в сесії 2026-09-29; [after-hours-redesign-epic](product/after-hours-redesign-epic.md) §4; `gh pr view 371`)
 
 - **Епік реалізації редизайну After Hours готовий до виконання (2026-09-29), PR
   [#370](https://github.com/sanchahous/ai-today-brief/pull/370).** [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md):
@@ -46,15 +57,14 @@ Last updated: 2026-09-29
 - **Блокери епіку редизайну закрито в коді (2026-09-29), гілка `claude/redesign-epic-blockers-00e7df`.** Токени мігровано на After Hours 2.0.0 ([ADR](decisions/2026-09-29-design-tokens-2-0-migration.md)): `--faint` тепер ≥ 4,5:1 (було 3,54:1), floor шрифтів 12 px, гейт `tokens:check` (контраст, drift, floor). Додано Popover/DropdownMenu/Tooltip/Tabs/Accordion/Toast/Combobox + e2e на `/ds-catalog`. Usability-сесії власник пропустив свідомо (2026-09-29; [протокол](research/2026-09-29-redesign-usability-sessions-protocol.md) збережено). Бренд-колір карток/OG/PDF — лишається жовтий `#f0c040` (рішення власника). Стан — [epic readiness](product/after-hours-epic-readiness.md).
   (source: `wiki/product/after-hours-epic-readiness.md`; `npm run tokens:check` 2026-09-29)
 
-- **Дизайн-система After Hours: повна реалізація аудиту прогалин (2026-09-28), гілка `feat/design-system-gap-implementation`.**
-  ⚠️ Conflict (2026-09-29): код не підтверджує закриття всіх 20 розривів — див.
-  [open-questions](open-questions.md) #10.
-  Закрито 20 розривів (G01–G20) за планом `wiki/audits/2026-09-26-design-system-gap-plan.md`.
+- **Дизайн-система After Hours: реалізація аудиту прогалин, перший етап (2026-09-28), змержено як #367, гілка `feat/design-system-gap-implementation`.**
+  Первинний запис стверджував «закрито 20 розривів (G01–G20)»; звірка AH-0.1 2026-09-29 це спростувала — за кодом закрито 6, див. пункт вище і [open-questions](open-questions.md) #10.
+  Реально закрито за планом `wiki/audits/2026-09-26-design-system-gap-plan.md` (G03, G04, G08; решта — частково).
   Ухвалено ADR [decisions/2026-09-26-news-discovery-and-pagination-architecture](decisions/2026-09-26-news-discovery-and-pagination-architecture.md).
   Впроваджено 3-рівневі токени `src/lib/design-system/tokens.ts`, лінтер `npm run tokens:check` з WCAG AA (текст 14.6:1),
   набір UI-примітивів `src/components/ui/` (touch floor ≥ 44px), чесну семантику та алгоритм сортування `src/lib/news-filters.ts`
   (relevance лише при пошуку, прибрано `discussed`), двосторонню синхронізацію URL-state без порушення edge-кешування ISR `/news`,
-  мобільний drawer із захистом від переповнення та незрізаними назвами, а також E2E-набір `e2e/news-feed-interaction.spec.ts`.
+  мобільний drawer із повними назвами категорій (на проді 2026-09-29 обрізається лише trending-тема), а також E2E-набір `e2e/news-feed-interaction.spec.ts`.
   (source: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `src/lib/design-system/tokens.ts`; `src/components/news/news-feed.tsx`)
 
 - **Weekly digest реліз розділено на дві частини: сайт+соц окремо від відео (2026-09-03),

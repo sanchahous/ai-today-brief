@@ -1,7 +1,7 @@
 # Аудит повноти концепції та дизайн-системи
 
 Summary: After Hours є сильним візуальним напрямком і широким набором макетів, але ще не є завершеною функціональною дизайн-системою. Цей аудит фіксує розриви між концептом, production UI та продуктовою поведінкою і задає порядок допрацювання від контрактів до rollout.
-Sources: скріншот власника 2026-09-26; browser live review `https://aitodaybrief.com/en/news` 2026-09-26; `wiki/product/after-hours-redesign.md`; `wiki/product/after-hours-tension.md`; `artifacts/after-hours/app.js`; `artifacts/after-hours/style.css`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/verification.json`; `src/app/[lang]/news/page.tsx`; `src/components/news/news-feed.tsx`; `src/components/news/news-sidebar.tsx`; `src/components/pagination.tsx`; `src/lib/news.ts`; `src/lib/news-filters.ts`; `src/app/globals.css`; `e2e/news-filters-drawer.spec.ts`; `e2e/news-sidebar.spec.ts`; none (design recommendations).
+Sources: скріншот власника 2026-09-26; browser live review `https://aitodaybrief.com/en/news` 2026-09-26; `wiki/product/after-hours-redesign.md`; `wiki/product/after-hours-tension.md`; `artifacts/after-hours/app.js`; `artifacts/after-hours/style.css`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/verification.json`; `src/app/[lang]/news/page.tsx`; `src/components/news/news-feed.tsx`; `src/components/news/news-sidebar.tsx`; `src/components/pagination.tsx`; `src/lib/news.ts`; `src/lib/news-filters.ts`; `src/app/globals.css`; `e2e/news-filters-drawer.spec.ts`; `e2e/news-sidebar.spec.ts`; none (design recommendations); звірка AH-0.1 2026-09-29: `src/lib/design-system/tokens.ts`, `src/components/ui/`, `scripts/check-design-tokens.ts`, `package.json`, `e2e/`, live check production `b3f1b3a` 2026-09-29.
 Last updated: 2026-09-29
 
 ---
@@ -278,6 +278,53 @@ Decision criteria до тесту: ≥80% task completion без moderator rescu
 - Usability blockers закриті на News vertical slice до rollout інших templates.
 
 (source: design recommendation)
+
+## 10. Статус на 2026-09-29 (звірка AH-0.1)
+
+Розділи 1–9 вище описують розриви на 2026-09-26 і не переписувалися. Цей розділ — перевірений стан за **кодом**, а не за записами wiki. Точка відліку: `main` @ `83b4421` (код ідентичний production `b3f1b3a`, бо між ними лише docs-коміти). (source: `git log origin/main`; `gh api repos/sanchahous/ai-today-brief/deployments` 2026-09-29)
+
+**Метод.** Читання і grep `src/`, `e2e/`, `scripts/`, `package.json`, `.github/`, `.githooks/`; запуск `npm run tokens:check` (PASS, код виходу 0); живі перевірки production 2026-09-29: headless Chromium (URL-state) і мобільний перегляд 390×844 (toolbar і drawer).
+
+**Позначки:** `done` — вимогу закрито, є доказ; `partial` — закрито частину вимог, залишок названо; `open` — не почато; `policy` — це обмеження порядку робіт, а не задача коду; `waived` — знято рішенням власника.
+
+**Підсумок:** 6 done (G01, G03, G04, G08, G10, G20), 10 partial (G02, G05, G07, G09, G11–G16), 2 open (G06, G17), 1 policy (G18), 1 waived (G19). Твердження [now](../now.md) від 2026-09-28 «закрито 20 розривів» **не підтверджене**: закрито 6.
+
+| G | Пріоритет | Статус | Доказ | Задачі епіку |
+|---|---:|---|---|---|
+| G01 | P0 | done | [after-hours-redesign](../product/after-hours-redesign.md) §1 називає концепт «visual concept + functional gap plan» і не вживає «production-ready»; суперечливий запис у `now.md` виправлено цим PR | AH-7.5 (фінал) |
+| G02 | P0 | partial | Прийнято [ADR discovery і pagination](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md); код реалізує Category, Date, Sort, Query (`src/lib/news-filters.ts`). Topics і Tool як фасети відсутні, макет прототипу не перенесено | AH-4.1, AH-4.3 |
+| G03 | P0 | done | `SortMode` має три значення (`news-filters.ts:3`); `relevance` доступний лише при непорожньому query (`news-feed.tsx:239-248`, `news-filters.ts:129`); «discussed» у `src/` — 0 збігів | регресія в AH-4.3, AH-4.5 |
+| G04 | P0 | done | Гідратація з URL на mount, `pushState` і `popstate` (`news-feed.tsx:81-118`); межі сторінки — `normalizePage` з юніт-тестом (`news-filters.test.ts:194`); 5 E2E у `news-feed-interaction.spec.ts`. **Live 2026-09-29** (production, headless Chromium): `?date=month&sort=oldest` відновлює сортування «oldest» і натиснуту кнопку «Month»; зміна сортування в UI пише `?sort=oldest`, після reload стан збережений; `?page=2` відкриває сторінку 2; помилок сторінки 0 | регресія в AH-4.3, AH-4.5 |
+| G05 | P0 | partial | Дані досі зрізані: `loadNewsPageData(limit = 100)` (`news.ts:131`), пошук — 80 (`news.ts:303, 327`); лічильник «Stories found: N» рахує лише цей зріз (`news-feed.tsx:277`), заголовок сторінки — «All news». Прибрано лише хибний статичний підсумок (B8, hotfix 2026-09-29). Явного total, cursor-пагінації чи мітки «Latest 100» немає | AH-4.3 |
+| G06 | P0 | open | У `news-filters.ts` і `news-feed.tsx` немає параметра Topics чи Tool. Блок «trending» — це навігаційні посилання, що ведуть на інші сторінки (`news-sidebar.tsx:193-210`), а не фільтри | AH-4.1 |
+| G07 | P1 | partial | **Live 2026-09-29, 390×844, production:** Sort і Filters стоять одразу після заголовка й byline (центр кнопки Filters — y≈422 із 844), бо блоку «Recent highlights» на проді вже немає; лічильник активних фільтрів є в коді (`news-feed.tsx:300`); drawer відкривається на весь екран, 9 категорій з повними назвами, кнопка «Done (100)». Залишок: trending-тема «Model Context Protocol» обрізана класом `truncate` (`news-sidebar.tsx:208`); UK-версію не перевірено | AH-4.3 |
+| G08 | P1 | done | «Done» / «Готово» замість Apply (`i18n.ts:358, 737`; `news-sidebar.tsx:283`); слова Apply у `src/components/news/` немає; live: кнопка «Done (100)» | AH-4.3 |
+| G09 | P1 | partial | `tokens.ts` 2.0.0 має palette Night і Day, spacing, radii, shadows, typography, motion, zIndex, breakpoints, controlSize. У `globals.css` дзеркалиться лише частина: кольори (під drift-перевіркою), радіуси `sm/md/card/pill`, тіні Night і Day, розміри контролів, z-index, `--text-2xs`. Не дзеркалиться: spacing, радіуси `none/lg`, motion, breakpoints; шрифти досі через `@fontsource` (`globals.css:2-4`). Тіні Day є лише в CSS (`globals.css:123-124`), у `tokens.ts` їх немає, тож drift-гейт їх не покриває | AH-1.5, AH-1.6 |
+| G10 | P1 | done | `TOKENS_VERSION = '2.0.0'` (`tokens.ts:16`); `globals.css` — дзеркало з drift-перевіркою, що виконується у Vitest (`tokens.test.ts:66-77`), а отже у `pr:check` через `ci:check`; `LEGACY_MIGRATION_MAP` (`tokens.ts:246`) і таблиця міграції в [design-system-tokens](../architecture/design-system-tokens.md) §3. Застереження: `tokens.ts` імпортують лише скрипт-гейт і тест, рантайм застосунку його не читає, тому «одне джерело» тримається на drift-перевірці, а не на імпорті | AH-7.3 (прибирання) |
+| G11 | P1 | partial | У `src/components/ui/` 18 файлів компонентів (10 з #367 і 8 з #369). Порівняно з інвентарем §5.2: з 20 примітивів є 9 (`ActionButton`, `IconButton`, `TextInput`, `SearchInput`, `Select`, `Checkbox`, `Radio`, `FilterChip`, `Skeleton`), бракує 11 (`LinkAction`, `Switch`, `Field`, `Label`, `Hint`, `ErrorText`, `Tag`, `Badge`, `Icon`, `Divider`, `Spinner`); з 17 композитів є 11, бракує 6 (`ActiveFilterBar`, `FacetGroup`, `FilterPanel`, `SortControl`, `ErrorState`, спільний `NewsletterForm`); editorial-патернів (13) і шаблонів (5) немає. Дубль пагінації живий: `src/components/pagination.tsx` використовує `post-feed.tsx:9` | AH-2.2…2.6 |
+| G12 | P1 | partial | Є SemVer, changelog v1.0.0 і v2.0.0 та таблиця міграції ([design-system-tokens](../architecture/design-system-tokens.md) §3–§4). Немає власника системи й правил deprecation ні в wiki, ні в коді | AH-7.3 |
+| G13 | P1 | partial | Каталог `/ds-catalog` показує лише компоненти з #369 (Popover, Dropdown menu, Tooltip, Tabs, Accordion, Combobox, Toast, Dialog, Popover placement — `catalog-client.tsx`). Немає розділів для 10 компонентів з #367, а також data-станів loading, empty, error, stale | AH-2.5, картки фаз 2–5 |
+| G14 | P1 | partial | Є E2E `news-feed-interaction` (URL-sync і Back, гідратація, relevance при query, посилання пагінації, touch-target drawer), `news-filters-drawer`, `news-sidebar` і `ui-components` (axe WCAG 2.2 AA, клавіатура). Межі сторінок покриті лише юнітом, не E2E. Матриці маршрутів (a11y і верстка) немає; візуальні baseline — 4 PNG каталогу, лише win32 і `VISUAL=1`, поза гейтом | AH-0.5, AH-4.5, AH-7.1 |
+| G15 | P2 | partial | Гейт шрифту < 12 px і drift є (#369). Сирі значення: hex у 14 файлах `.tsx` / `.css` поза admin (серед них `globals.css` і два OG-рендери). Звіту-ratchet на сирі значення немає. Скан 12 px по реальному `src/` виконує лише CLI-вхід `npm run tokens:check` (`check-design-tokens.ts:138-158`); у `pr:check`, `.github/` і `.githooks/` цього виклику немає, у Vitest перевіряється лише функція на синтетичних рядках | AH-1.7, AH-7.3 |
+| G16 | P2 | partial | `Popover`, `DropdownMenu`, `Tooltip`, `Tabs`, `Accordion`, `Toast`, `Combobox`, `Dialog` імпортує поза `ui/` лише `ds-catalog/catalog-client.tsx`; `news-feed.tsx` бере з бібліотеки тільки `ActionButton`, `EmptyState`, `FilterChip`, `AccessiblePagination`, `Select`. Власна механіка `aria-expanded` / `aria-haspopup` / `role="dialog"` лишається в `site-header-chrome.tsx`, `home/hero-search.tsx`, `search/mobile-search-modal.tsx`, `post-card.tsx` | AH-2.4, AH-3.2, AH-3.3 |
+| G17 | P2 | open | Компонентів `StoryCard`, `StoryRow`, `DigestCard`, `SourceList`, `TrustLabel`, `Callout` у `src/` немає; картки й списки — локальні `post-card.tsx`, `brief-items-list.tsx`, `category-banner.tsx` | AH-4.2, AH-5.1 |
+| G18 | P2 | policy | Рух заморожено до гейту G5 (інваріант I-9 епіку); у `globals.css` лишається 11 правил `infinite` (B10) | фаза 6 |
+| G19 | P2 | waived | Сесії пропущено рішенням власника 2026-09-29, ризик прийнято ([ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md), [протокол](../research/2026-09-29-redesign-usability-sessions-protocol.md) збережено). Страхують автоматика й метрики після запуску | AH-4.5, AH-7.4 |
+| G20 | P3 | done | `/ds-catalog` віддає 404 без `DS_CATALOG=1` і має `noindex` (`ds-catalog/page.tsx:7-13`); E2E `ui-components.spec.ts` (axe, aria-снапшоти); baseline-знімки — опційні (див. G14). Каталог покриває не всі компоненти (див. G13) | AH-2.1 ✅ |
+
+### 10.1 Розбіжності зі старою таблицею епіку (§14) — пояснення
+
+Попередня таблиця [епіку](../product/after-hours-redesign-epic.md) §14 складена за кодом після #369 і збігається з цією звіркою в 15 із 20 рядків. Відмінності:
+
+- **G07** — у §14 було «partial (needs verification)»; тепер перевірено наживо, статус лишається `partial`, залишок конкретний.
+- **G09** — §14 називав «тіні за темою» відсутніми. Тіні для Night і Day є в `globals.css`; бракує їх у `tokens.ts`, тобто вони поза drift-гейтом. Крім того, в CSS не доходять spacing, радіуси `none/lg`, motion і breakpoints.
+- **G11** — §14 вважав `SearchInput` відсутнім. Він є (`input.tsx:114`, тонка обгортка над `TextInput` з іконкою й `onClear`), але його `aria-label` кнопки очищення («Clear input», `input.tsx:78`) і типовий placeholder («Search...») захардкожені англійською. Тому AH-2.3 не будує його з нуля, а локалізує й доопрацьовує.
+- **G15** — §14 і опис `tokens:check` у §2.1 епіку читаються як автоматичний гейт скану 12 px. Фактично в `pr:check` через Vitest потрапляють контраст і drift, а скан 12 px по `src/` — лише при ручному запуску.
+- **G16** — додано факт, що нові композити поза каталогом ніде не використовуються.
+
+Що це означає для наступних задач (пропозиції, не рішення): AH-1.7 логічно почати з підключення скану 12 px до `pr:check`; AH-2.3 — з локалізації наявного `SearchInput`; нові композити не матимуть споживачів у production, доки header, пошук і share не переведені на них (AH-2.4, AH-3.2, AH-3.3).
+
+(source: grep і читання коду 2026-09-29, посилання в таблиці; `npm run tokens:check` 2026-09-29; live check production 2026-09-29)
 
 ## Related pages
 

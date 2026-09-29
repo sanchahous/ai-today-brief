@@ -3,13 +3,14 @@
 Summary: виконуваний епік переносу дизайн-системи й макетів After Hours v3 з `artifacts/after-hours/` у production-сайт: 56 задач (55 обов'язкових + 1 опційна, яку рішення D6 відклало) у порядку виконання, 8 фаз і 8 гейтів, кожна задача з описом, залежностями й acceptance criteria. Вихідна точка звірена з кодом після PR #369 (3 задачі вже виконані, 9 — частково); усі рішення D1–D13 прийняті 2026-09-29 — ADR.
 Sources: `artifacts/after-hours/` (README, QA.md, tokens.css, tokens.json, app.js, home.js, articles.js, editions.js, knowledge.js, toolbox.js, pages.js, seo.js, data.js `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/README.md`, `artifacts/brand-kit/README.md`;
 wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
-live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0)
+live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0)
 Last updated: 2026-09-29
 
 ---
 
-> **Статус 2026-09-29:** епік готовий до виконання, усі рішення D1–D13 ухвалені (AH-0.2 ✅).
-> Наступні кроки — решта фази 0: AH-0.1 (звірка стану), AH-0.3–AH-0.6 (baseline-заміри й
+> **Статус 2026-09-29:** епік готовий до виконання, усі рішення D1–D13 ухвалені (AH-0.2 ✅),
+> статус G01–G20 звірено з кодом (AH-0.1 ✅).
+> Наступні кроки — решта фази 0: AH-0.3–AH-0.6 (baseline-заміри й
 > QA-інструменти). До закриття гейту G0 жоден візуальний PR у production не відкривається.
 > Візуальний напрям затверджено власником у прототипі v3; цей документ — план його перенесення,
 > а не нова дизайн-пропозиція. (source: [after-hours-redesign](after-hours-redesign.md) §1)
@@ -177,7 +178,7 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 |---|---|---|
 | News discovery | Сортування Newest / Oldest / Relevance (лише з query), двостороння синхронізація URL-state без читання `searchParams` на сервері, drawer із «Done», інтеракційний E2E | `src/lib/news-filters.ts`, `src/components/news/news-feed.tsx`, `e2e/news-feed-interaction.spec.ts`; [ADR](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md) |
 | UI-примітиви | `ActionButton`, `Input`, `Select`, `Checkbox`, `Radio`, `FilterChip`, `EmptyState`, `AccessiblePagination`, `OverlayDrawer`, `Skeleton` + з PR #369: `Popover` (flip біля краю viewport), `Dialog`, `DropdownMenu`, `Tooltip`, `Tabs`, `Accordion`, `Toast` + `useToast`, `Combobox`; чиста логіка в `src/lib/ui/` | `src/components/ui/index.ts`; [epic readiness](after-hours-epic-readiness.md) §2 |
-| Токени 2.0.0 | `tokens.ts` 2.0.0 — одне джерело; `globals.css` — його дзеркало (імена змінних збережені); `npm run tokens:check` — 90 пар контрасту, drift CSS ↔ tokens, мінімум шрифту 12 px у `src/` | `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`; [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) |
+| Токени 2.0.0 | `tokens.ts` 2.0.0 — одне джерело; `globals.css` — його дзеркало (імена змінних збережені); `npm run tokens:check` — 90 пар контрасту, drift CSS ↔ tokens, мінімум шрифту 12 px у `src/` (у `pr:check` через Vitest потрапляють контраст і drift; скан 12 px по `src/` — лише при ручному запуску, AH-0.1) | `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`; [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) |
 | Каталог компонентів | `/ds-catalog` — 404 без `DS_CATALOG=1`, `noindex`; `e2e/ui-components.spec.ts`: axe WCAG 2.2 AA (`@axe-core/playwright`), aria-снапшоти, 4 opt-in baseline-знімки (win32, `VISUAL=1`) | `src/app/ds-catalog/page.tsx`, `e2e/ui-components.spec.ts`, `package.json` |
 | Рішення власника 2026-09-29 | Usability-сесії пропущено (G19, ризик прийнято); жовтий `#f0c040` лишається для OG, PDF і duotone | [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4, §6 |
 | Кешування | `/news` — ISR 3600 без `searchParams`; `/news/search` — `force-dynamic`, `noindex,follow`, canonical на `/news`; home і digests — ISR 3600; більшість хабів і сторінок — ISR 86400; weekly-slug розв'язує `src/proxy.ts` (308) | `src/app/[lang]/**/page.tsx`, `src/proxy.ts` |
@@ -207,6 +208,11 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 
 ### 2.3 ⚠️ Conflict: статус G01–G20
 
+> **Закрито 2026-09-29 (AH-0.1):** звірка виконана, `now.md` виправлено, пункт #10 закрито; за кодом
+> закрито 6 із 20 розривів — таблиця з доказами в
+> [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01).
+> Текст нижче — історія конфлікту.
+>
 > ⚠️ Conflict: [now](../now.md) (запис 2026-09-28) каже «Закрито 20 розривів (G01–G20)», але код
 > навіть після PR #369 показує відкриті або часткові G05, G06, G11–G17 (§14); G19 знято рішенням
 > власника, а не виконано. Оновлення gap-plan від #369 (2026-09-29) визнає частину залишку (G12,
@@ -319,7 +325,7 @@ flowchart TD
 
 | ID | Задача | Розмір | Хто | Залежить від | Закриває |
 |---|---|---|---|---|---|
-| AH-0.1 | Звірити статус G01–G20 і вихідну точку | S | агент | — | G01, конфлікт §2.3 |
+| AH-0.1 | ✅ Звірити статус G01–G20 і вихідну точку ([gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)) | — | — | — | G01, конфлікт §2.3 |
 | AH-0.2 | ✅ ADR: rollout і foundations, D1–D13 ([ADR](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)) | — | — | — | передумова G12 |
 | AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
 | AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
@@ -411,11 +417,15 @@ flowchart TD
 2. Виправити формулювання в `wiki/now.md` («закрито 20 розривів») на перевірене.
 3. Закрити пункт #10 у [open-questions](../open-questions.md) записом «закрито: …».
 
+> **Виконано 2026-09-29.** Результат: 6 done, 10 partial, 2 open, 1 policy, 1 waived. Відмінності від
+> попередньої таблиці §14 — у п'яти рядках (G07, G09, G11, G15, G16), пояснення в
+> [gap-plan §10.1](../audits/2026-09-26-design-system-gap-plan.md#101-розбіжності-зі-старою-таблицею-епіку-14--пояснення).
+
 **AC:**
-- [ ] У gap-plan є таблиця G01–G20 зі статусом і доказом у кожному рядку; розбіжності з §14
+- [x] У gap-plan є таблиця G01–G20 зі статусом і доказом у кожному рядку; розбіжності з §14
   пояснені.
-- [ ] `wiki/now.md` не містить тверджень про закриті розриви без доказу.
-- [ ] Пункт #10 закрито; `npm run wiki:check` зелений.
+- [x] `wiki/now.md` не містить тверджень про закриті розриви без доказу.
+- [x] Пункт #10 закрито; `npm run wiki:check` зелений.
 
 ### AH-0.2 · ADR: rollout і foundations After Hours (D1–D13)
 
@@ -832,8 +842,12 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 **Закриває:** G11 (field family), G13 (частково)
 
 > **Стан після #369:** є `Combobox` (ARIA 1.2 list autocomplete, `aria-activedescendant`, пошук із
-> кирилицею, оголошення кількості). Лишаються `Field` (Label + Hint + ErrorText), `SearchInput`,
+> кирилицею, оголошення кількості). Лишаються `Field` (Label + Hint + ErrorText),
 > `Textarea`, `SegmentedControl`, `Switch` і рестайл наявних `Input` / `Select` / `Checkbox` / `Radio`.
+> **Уточнення AH-0.1 (2026-09-29):** `SearchInput` уже є в `input.tsx` (обгортка над `TextInput` з
+> іконкою й `onClear`). Лишається його локалізація — `aria-label` кнопки очищення «Clear input» і
+> типовий placeholder «Search...» захардкожені англійською — та, за потреби, винесення в
+> `search-input.tsx`.
 
 **Зони:** `src/components/ui/input.tsx`, `select.tsx`, `checkbox.tsx`, `radio.tsx`; нові
 `field.tsx` (Label + Hint + ErrorText), `textarea.tsx`, `segmented.tsx`, `switch.tsx`,
@@ -1873,8 +1887,10 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 
 ## 14. Трасування G01–G20 → задачі
 
-Статус — за кодом на 2026-09-29 після PR #369 (source: live check після rebase на `3f47256`;
-фінальна звірка — AH-0.1).
+Статус — за кодом на 2026-09-29 після PR #369 (source: live check після rebase на `3f47256`).
+**Звірено задачею AH-0.1 2026-09-29**; докази по кожному G — у
+[gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01).
+Рядки G07, G09, G11, G15, G16 уточнено за результатами звірки.
 
 | G | Пріоритет | Статус за кодом | Доказ | Задачі епіку |
 |---|---:|---|---|---|
@@ -1884,16 +1900,16 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 | G04 | P0 | done | URL-state + `e2e/news-feed-interaction.spec.ts` (#367) | регресія в AH-4.3, AH-4.5 |
 | G05 | P0 | partial | зріз 100 / 80 без чесної мітки обсягу; статичний `weekSummary` (B8) прибрано hotfix-ом 2026-09-29 | AH-4.3 |
 | G06 | P0 | open | немає Topics / Tool у `news-filters.ts` | AH-4.1 |
-| G07 | P1 | partial (needs verification) | drawer є; положення toolbar на 390×844 після інтро не перевірене | AH-4.3 |
+| G07 | P1 | partial (live 2026-09-29) | на production 390×844 Sort і Filters стоять на першому екрані (центр Filters — y≈422 із 844), drawer із повними назвами категорій і «Done (100)»; залишок — trending-тема обрізана `truncate`, UK не перевірено | AH-4.3 |
 | G08 | P1 | done | «Done» замість Apply ([ADR](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md) §5) | AH-4.3 («Готово · N») |
-| G09 | P1 | partial | #369: палітра Night/Day, шкала в rem, z-index, розміри контролів; бракує spacing, радіусів 2.0, тіней за темою, брейкпоінтів, motion-токенів, шрифтів | AH-1.5, AH-1.6 |
+| G09 | P1 | partial | #369: палітра Night/Day, шкала в rem, z-index, розміри контролів; тіні Night і Day є в `globals.css`, але Day-тіней немає в `tokens.ts` (поза drift-гейтом); в CSS не доходять spacing, радіуси `none/lg`, motion, breakpoints; шрифти досі `@fontsource` | AH-1.5, AH-1.6 |
 | G10 | P1 | done (#369) | `tokens.ts` 2.0.0 — одне джерело, `globals.css` — дзеркало з drift-гейтом; ім'я `--surface-2` — до 3.0.0 | AH-7.3 (прибирання) |
-| G11 | P1 | partial | 10 примітивів + 8 з #369 (Popover, Dialog, DropdownMenu, Tooltip, Tabs, Accordion, Toast, Combobox); бракує Field, SearchInput, Switch, SegmentedControl, Badge, Tag, Notice… | AH-2.2…2.6 |
+| G11 | P1 | partial | 10 примітивів + 8 з #369 (Popover, Dialog, DropdownMenu, Tooltip, Tabs, Accordion, Toast, Combobox); бракує Field, Switch, SegmentedControl, Badge, Tag, Notice… (`SearchInput` уже є в `input.tsx`, але з англомовними `aria-label` і placeholder) | AH-2.2…2.6 |
 | G12 | P1 | partial | SemVer і changelog у wiki + ADR 2026-09-29; немає процесу deprecation у коді | AH-0.2, AH-7.3 |
 | G13 | P1 | partial | каталог `/ds-catalog` показує лише компоненти #369; немає data-станів і повної state matrix | AH-2.5, картки фаз 2–5 |
 | G14 | P1 | partial | E2E для news і каталогу компонентів (#369); немає матриці сторінок | AH-0.5, AH-4.5, AH-7.1 |
-| G15 | P2 | partial | #369: гейт шрифту < 12 px і drift; hex — у 14 файлах `.tsx` / `.css` поза admin (B4) | AH-1.7, AH-7.3 |
-| G16 | P2 | partial | компоненти меню/поповерів є (#369), але header, share, search і drawer ще на власних механіках | AH-2.4, AH-3.2, AH-3.3 |
+| G15 | P2 | partial | #369: drift у `pr:check` через Vitest; скан шрифту < 12 px по `src/` — лише вручну (`npm run tokens:check`), не в `pr:check`; hex — у 14 файлах `.tsx` / `.css` поза admin (B4) | AH-1.7, AH-7.3 |
+| G16 | P2 | partial | компоненти меню/поповерів є (#369), але їх імпортує лише `/ds-catalog`; header, search і mobile-search ще на власних механіках `aria-expanded` / `role="dialog"` | AH-2.4, AH-3.2, AH-3.3 |
 | G17 | P2 | open | локальні стилі StoryCard / DigestCard / SourceList | AH-4.2, AH-5.1 |
 | G18 | P2 | policy | рух заморожено до G5 (I-9) | фаза 6 |
 | G19 | P2 | waived | сесії пропущено рішенням власника 2026-09-29; страхують автоматика й метрики після запуску | AH-4.5, AH-7.4 |
