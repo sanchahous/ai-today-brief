@@ -5077,3 +5077,9 @@ Gating внутрішнього мовонейтрального `/ds-catalog`: 
 Ручний report: **812 сценаріїв** (58 EN/UK URL × 2 теми × 7 режимів), 7,0 хв, без падіння. Лічильники повторних спостережень, **не унікальних дефектів**: 0 сценаріїв із горизонтальним overflow, 0 елементів тексту <12 px, 11 504 touch targets <44 px, 1 976 axe violation nodes, 28 console errors (403 на weekly), 23 сценарії з H1 ≠1 (усі `news/search?q=mcp`), 313 пропусків рівнів заголовків, 0 `img` без alt, 699 clipped text спостережень загалом, із них 224 у zoom-режимах. Публічні маршрути лишаються в report до їхнього редизайну; лише `/ds-catalog` зараз у gating. (source: `artifacts/_local/ah-0.5-legacy-report.json`; локальний Playwright 2026-09-29)
 
 Оновлено статус і AC AH-0.5 в епіку, наступну задачу AH-0.6 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.5: PR відкрито
+
+Джерело: [PR #375](https://github.com/sanchahous/ai-today-brief/pull/375), `npm run pr:check` і pre-push E2E 2026-09-29.
+
+PR відкрито після зеленого `pr:check`; посилання додано до статусу §5.3 і картки AH-0.5, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #375](https://github.com/sanchahous/ai-today-brief/pull/375))

@@ -17,7 +17,8 @@ Last updated: 2026-09-29
 
 ## Стан репозиторію
 
-- **AH-0.5: QA-матриця сторінок працює в report і gating (2026-09-29).** Gating для
+- **AH-0.5: QA-матриця сторінок працює в report і gating (2026-09-29), PR
+  [#375](https://github.com/sanchahous/ai-today-brief/pull/375).** Gating для
   `/ds-catalog` пройшов 14 перевірок (4,8 с), контрольний `text-[10px]` дав exit 1.
   Повний локальний report — 812 сценаріїв для 58 URL у двох темах і семи режимах;
   JSON у `artifacts/_local/ah-0.5-legacy-report.json`. Лічильники й обмеження — у

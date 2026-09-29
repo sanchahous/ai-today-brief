@@ -329,7 +329,7 @@ flowchart TD
 | AH-0.2 | ✅ ADR: rollout і foundations, D1–D13 ([ADR](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)) | — | — | — | передумова G12 |
 | AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
 | AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
-| AH-0.5 | ✅ QA-матриця a11y і верстки для сторінок (PR pending; публічні маршрути поки report) | — | — | D10 ✅ | G14 (частк.) |
+| AH-0.5 | ✅ QA-матриця a11y і верстки для сторінок ([#375](https://github.com/sanchahous/ai-today-brief/pull/375); публічні маршрути поки report) | — | — | D10 ✅ | G14 (частк.) |
 | AH-0.6 | Продуктовий і CWV baseline | S | власник + агент | open-questions #1 | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
@@ -529,7 +529,8 @@ D11) · **Закриває:** передумова visual review кожного 
 - [x] `e2e:affected` вибирає спеку при зміні `src/app/**` і `src/components/**`.
 - [x] Gating-прогін у CI ≤ 10 хв (assumption для 4-core runner); повний прогін — ручний або за label.
 
-**Стан 2026-09-29:** gating охоплює внутрішній мовонейтральний `/ds-catalog` (14 перевірок за
+**Стан 2026-09-29:** PR [#375](https://github.com/sanchahous/ai-today-brief/pull/375);
+gating охоплює внутрішній мовонейтральний `/ds-catalog` (14 перевірок за
 4,8 с локально); публічні EN/UK сторінки лишаються в report до їхніх окремих PR редизайну.
 Ручний повний report: 812 сценаріїв, 58 URL, Night/Day, п'ять ширин і два zoom-режими;
 JSON — `artifacts/_local/ah-0.5-legacy-report.json`. Мутація `text-[10px]` дала exit 1;
