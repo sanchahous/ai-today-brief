@@ -115,11 +115,11 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 
 Аудит повноти: [Design-system gap plan](audits/2026-09-26-design-system-gap-plan.md) — розриви concept↔production у filtering, sort semantics, taxonomy, pagination/URL-state, tokens, components, states і QA; пріоритетний план через News vertical slice. (source: скріншот і запит власника 2026-09-26; browser live review; code review)
 
-Епік реалізації: [After Hours redesign epic](product/after-hours-redesign-epic.md) — перенесення прототипу v3 у production: 8 фаз і 8 гейтів, 54 сабтаски з описом і acceptance criteria, рішення D1–D13, вихідна точка за кодом 2026-09-29, трасування G01–G20 і маршрутів. (source: `artifacts/after-hours/`; live check коду 2026-09-29)
+Епік реалізації: [After Hours redesign epic](product/after-hours-redesign-epic.md) — перенесення прототипу v3 у production: 8 фаз і 8 гейтів, 54 сабтаски з описом і acceptance criteria, рішення D1–D13, вихідна точка за кодом після PR #369 (2 задачі вже виконані, 9 — частково), трасування G01–G20 і маршрутів; декомпозиція й порядок робіт після сторінки готовності. (source: `artifacts/after-hours/`; live check коду 2026-09-29)
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
-| ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 54 сабтаски з AC, рішення D1–D13 (D1, D3–D5 прийняті 2026-09-29), ризики й оцінка | `artifacts/after-hours/` v3 + live check коду 2026-09-29 + рішення власника 2026-09-29 |
+| ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 54 сабтаски з AC, рішення D1–D13 (D1, D3–D5, D12 прийняті 2026-09-29; D9–D11 вирішені PR #369), ризики й оцінка ≈ 55 днів | `artifacts/after-hours/` v3 + live check коду після PR #369 + рішення власника 2026-09-29 |
 | ✅ [product/useful-tools-concept](product/useful-tools-concept.md) | Концепт розділу AI Toolbox | колишній `docs/product/USEFUL-TOOLS-CONCEPT.md` |
 | ✅ [product/toolbox-wave1-spec](product/toolbox-wave1-spec.md) | Epic-спека: settings.json Builder + CLAUDE.md Generator | колишній `docs/product/TOOLBOX-WAVE1-…` |
 | ✅ [product/responsive-crossbrowser-audit](product/responsive-crossbrowser-audit.md) | Аудит адаптиву й крос-браузерності | колишній `docs/product/RESPONSIVE-…` |

@@ -1,9 +1,9 @@
 # Епік: реалізація редизайну After Hours (AI Today Brief)
 
-Summary: виконуваний епік переносу дизайн-системи й макетів After Hours v3 з `artifacts/after-hours/` у production-сайт: 54 сабтаски (53 обов'язкові + 1 опційна) у порядку виконання, 8 фаз і 8 гейтів, кожен сабтаск з описом, залежностями й acceptance criteria. Стартує з перевіреного стану коду 2026-09-29 і з рішень D1–D13 (D1, D3, D4, D5 прийняті власником 2026-09-29).
+Summary: виконуваний епік переносу дизайн-системи й макетів After Hours v3 з `artifacts/after-hours/` у production-сайт: 54 сабтаски (53 обов'язкові + 1 опційна) у порядку виконання, 8 фаз і 8 гейтів, кожен сабтаск з описом, залежностями й acceptance criteria. Вихідна точка звірена з кодом після PR #369 (2 задачі вже виконані, 9 — частково); рішення D1, D3, D4, D5, D12 прийняті власником 2026-09-29.
 Sources: `artifacts/after-hours/` (README, QA.md, tokens.css, tokens.json, app.js, home.js, articles.js, editions.js, knowledge.js, toolbox.js, pages.js, seo.js, data.js `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/README.md`, `artifacts/brand-kit/README.md`;
-wiki: product/after-hours-redesign, product/after-hours-tension, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, architecture/design-system-tokens, analytics/event-taxonomy, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
-live check коду 2026-09-29 (`main` @ `3debff1`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0)
+wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
+live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0)
 Last updated: 2026-09-29
 
 ---
@@ -15,7 +15,17 @@ Last updated: 2026-09-29
 >
 > **Рішення власника 2026-09-29:** прийнято D1 (варіант A), D3 (`next/font/local`), D4 (Georgia для
 > українських заголовків на запуск) і D5 (варіант A: header і discovery перемикаються на 60rem ≈
-> 960 px). D2, D6–D13 чекають задачі AH-0.2. (source: відповідь власника в сесії 2026-09-29)
+> 960 px). У сесії PR #369 власник також пропустив usability-сесії (D12) і лишив жовтий `#f0c040`
+> для OG, PDF і duotone. D2, D6, D7, D8, D11 (сторінки) і D13 чекають задачі AH-0.2.
+> (source: відповідь власника в сесії 2026-09-29; [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4, §6)
+>
+> **Звірка з PR #369 (змерджено 2026-09-29, `3f47256`):** паралельна сесія перенесла токени 2.0.0 у
+> `tokens.ts` і `globals.css` (AH-1.1 ✅), зробила внутрішній каталог `/ds-catalog` (AH-2.1 ✅),
+> додала Popover, Dialog, DropdownMenu, Tooltip, Tabs, Accordion, Toast, Combobox і гейти контрасту,
+> drift і мінімуму 12 px. Ще 9 задач закриті частково — у §5.3 вони позначені ◐, а в картках є
+> рядок «Стан після #369» із залишком роботи. Готовність до епіку, яку зафіксувала та сесія, —
+> [after-hours-epic-readiness](after-hours-epic-readiness.md); декомпозицію й порядок робіт задає цей
+> епік. (source: `git show 3f47256 --stat`; grep `src/` після rebase 2026-09-29)
 
 ## 0. Як користуватися епіком
 
@@ -23,14 +33,17 @@ Last updated: 2026-09-29
   взаємної залежності можна вести паралельно — див. §5.3 і §5.4.
 - **Розмір** (assumption, один виконавець із готовими даними): **S** ≤ 0,5 дня · **M** ≈ 1 день ·
   **L** 2–3 дні. XL заборонено — ділити на кілька PR.
-- **Виконавець:** `агент` (код, тести, wiki), `власник` (рішення, візуальний підпис, usability,
-  аналітика) або `агент + власник`.
+- **Виконавець:** `агент` (код, тести, wiki), `власник` (рішення, візуальний підпис, аналітика)
+  або `агент + власник`.
 - **Гілка й PR:** одна задача = одна гілка `feat/ah-<id>-<slug>` = один PR у `main`. Ніколи не
   пушити в `main`. (source: `.cursor/rules/pr-gate.mdc`)
 - **Картка задачі:** Тип · Розмір · Виконавець · Залежить від · Закриває (G-ID аудиту / B-ID з
   §2.2) · Зони коду · Джерела · Що зробити · Acceptance criteria (AC) · Не входить.
 - Якщо рішення D* (§4) ухвалене інакше, ніж рекомендовано, спершу оновити картки, яких воно
   стосується, і додати рядок у [log](../log.md).
+- **Статус задачі** (✅ виконано / ◐ частково) у §5.3 оновлює PR цієї задачі з посиланням на себе.
+  Перед стартом задачі звірити її рядок і картку з актуальним `main`: паралельні сесії вже
+  закривали задачі епіку (PR #369), і дублювати роботу не можна.
 
 ### 0.1 Definition of Done — для кожного PR епіку
 
@@ -114,7 +127,9 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 - Пошук по Concepts / Guides / Toolbox у глобальному пошуку — «окреме розширення даних».
   (source: там само, маршрут `search`)
 - Соц-шаблони й PDF (Instagram carousel, LinkedIn document, weekly PDF), аватари й банери
-  `artifacts/brand-kit/` — follow-up після D7.
+  `artifacts/brand-kit/` — follow-up після D7. Перефарбування OG, PDF і duotone з жовтого `#f0c040`
+  на brass не виконується: власник лишив жовтий 2026-09-29.
+  (source: [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4)
 - Paywall, акаунти, членство. (source: [after-hours-redesign](after-hours-redesign.md) §1)
 - Hash-маршрути, демо-дані, атлас руху, frame probe, SEO-інспектор, `#/coverage`, `#/system`,
   `#/states` як публічні сторінки. (source: `artifacts/after-hours/README.md` «Межі прототипу»;
@@ -136,49 +151,58 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
    (source: `.cursor/rules/00-core.mdc` «Performance & bundle»)
 6. Звіт AH-7.4 порівнює 28 днів до/після за тими самими метриками й джерелами, що й baseline
    AH-0.6.
-7. Гейт G4: ≥ 80% виконання 8 задач без допомоги модератора, 0 втрат стану після
-   Back/Forward/reload. (source: [design-system-gap-plan](../audits/2026-09-26-design-system-gap-plan.md) §7)
+7. Гейт G4 пройдено на автоматиці: 8 acceptance tasks з gap-plan §7 відтворені як E2E, 0 втрат
+   стану після Back/Forward/reload, підпис власника. Usability-сесії власник пропустив 2026-09-29;
+   якщо метрики AH-7.4 просядуть — повернутись до [протоколу сесій](../research/2026-09-29-redesign-usability-sessions-protocol.md).
+   (source: [design-system-gap-plan](../audits/2026-09-26-design-system-gap-plan.md) §7;
+   [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §6)
 
-## 2. Вихідна точка (live check коду 2026-09-29, `main` @ `3debff1`)
+## 2. Вихідна точка (live check коду 2026-09-29, `main` @ `3f47256` після PR #369)
+
+Епік складено за станом `3debff1`; після мержу PR #369 гілку перебазовано на `3f47256`, а факти
+нижче перевірено повторно. (source: `git show 3f47256 --stat`; grep `src/` 2026-09-29)
 
 ### 2.1 Що вже є і що зберігаємо
 
 | Сфера | Стан у production | Джерело |
 |---|---|---|
 | News discovery | Сортування Newest / Oldest / Relevance (лише з query), двостороння синхронізація URL-state без читання `searchParams` на сервері, drawer із «Done», інтеракційний E2E | `src/lib/news-filters.ts`, `src/components/news/news-feed.tsx`, `e2e/news-feed-interaction.spec.ts`; [ADR](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md) |
-| UI-примітиви | `ActionButton`, `Input`, `Select`, `Checkbox`, `Radio`, `FilterChip`, `EmptyState`, `AccessiblePagination`, `OverlayDrawer`, `Skeleton`; використовуються news, search, header, loading | `src/components/ui/index.ts` |
-| Токени v1.0.0 | `tokens.ts` + скрипт `npm run tokens:check` (8 пар) | `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts` |
+| UI-примітиви | `ActionButton`, `Input`, `Select`, `Checkbox`, `Radio`, `FilterChip`, `EmptyState`, `AccessiblePagination`, `OverlayDrawer`, `Skeleton` + з PR #369: `Popover` (flip біля краю viewport), `Dialog`, `DropdownMenu`, `Tooltip`, `Tabs`, `Accordion`, `Toast` + `useToast`, `Combobox`; чиста логіка в `src/lib/ui/` | `src/components/ui/index.ts`; [epic readiness](after-hours-epic-readiness.md) §2 |
+| Токени 2.0.0 | `tokens.ts` 2.0.0 — одне джерело; `globals.css` — його дзеркало (імена змінних збережені); `npm run tokens:check` — 90 пар контрасту, drift CSS ↔ tokens, мінімум шрифту 12 px у `src/` | `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`; [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) |
+| Каталог компонентів | `/ds-catalog` — 404 без `DS_CATALOG=1`, `noindex`; `e2e/ui-components.spec.ts`: axe WCAG 2.2 AA (`@axe-core/playwright`), aria-снапшоти, 4 opt-in baseline-знімки (win32, `VISUAL=1`) | `src/app/ds-catalog/page.tsx`, `e2e/ui-components.spec.ts`, `package.json` |
+| Рішення власника 2026-09-29 | Usability-сесії пропущено (G19, ризик прийнято); жовтий `#f0c040` лишається для OG, PDF і duotone | [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4, §6 |
 | Кешування | `/news` — ISR 3600 без `searchParams`; `/news/search` — `force-dynamic`, `noindex,follow`, canonical на `/news`; home і digests — ISR 3600; більшість хабів і сторінок — ISR 86400; weekly-slug розв'язує `src/proxy.ts` (308) | `src/app/[lang]/**/page.tsx`, `src/proxy.ts` |
 | JSON-LD | Home: WebSite + SearchAction, Organization, ItemList, FAQPage; news, daily, category, concepts, guides, tools-хаб: CollectionPage; weekly: NewsArticle, FAQPage, VideoObject; concept і guide: TechArticle; три утиліти: WebApplication; about: AboutPage; author: ProfilePage; digests — без JSON-LD | `src/app/[lang]/**/page.tsx`, `src/components/home/faq-section.tsx` |
-| E2E-контракт | 16 специфікацій; `e2e:check` валить PR, якщо спека перевіряє `data-testid`, якого немає в `src/`; брейкпоінт-контракт header — 1023/1024 px | `e2e/`, `e2e/helpers/viewports.ts`, `scripts/e2e-affected.ts` |
+| E2E-контракт | 17 специфікацій (з них `ui-components.spec.ts` з #369); `e2e:check` валить PR, якщо спека перевіряє `data-testid`, якого немає в `src/`; брейкпоінт-контракт header — 1023/1024 px | `e2e/`, `e2e/helpers/viewports.ts`, `scripts/e2e-affected.ts` |
 | Аналітика | Каталог подій і біконів (hub_view, weekly_top_click, digest_card_click, category_hub_click, hero_cta_click, digest engagement, newsletter funnel, social_profile_click, dwell) | [event-taxonomy](../analytics/event-taxonomy.md) |
 
 ### 2.2 Розриви, які закриває епік
 
-| ID | Розрив | Факт на 2026-09-29 | Джерело |
-|---|---|---|---|
-| B1 | Токени не підключені до CSS | `tokens.ts` імпортує лише `scripts/check-design-tokens.ts`; `globals.css` досі на legacy-палітрі `#0f0f0f` / `#f0c040` | grep 2026-09-29; `src/app/globals.css` |
-| B2 | `faint` нижче AA в темній темі | live `#6a6a6a` на `#0f0f0f` — 3,54:1; 93 входження `text-faint` / `var(--faint)` | [design-system-tokens](../architecture/design-system-tokens.md) §5; grep 2026-09-29 |
-| B3 | Текст дрібніший за 12 px | 74 довільні класи: 29 `text-[9–11px]` + 45 `text-[0.6–0.74rem]` | grep `src/**/*.tsx` 2026-09-29 |
-| B4 | «Сирі» кольори в UI | hex-літерали у 18 файлах `.tsx` / `.css` поза admin (серед них `globals.css` і 2 OG-рендери, які підуть в allowlist) | grep 2026-09-29 |
-| B5 | Кольори категорій — неон з БД | `categories.color` (`#47E4D3` …) + `.theme-light` color-mix-хаки; прототип має jewel tones на тему (≥ 4,5:1) | `supabase/migrations/009_seed_categories.sql`; `src/app/globals.css`; `artifacts/after-hours/tokens.css` |
-| B6 | Дві пагінації | `src/components/pagination.tsx` (кнопки) лишився в `post-feed.tsx` поруч з `ui/pagination.tsx` | grep 2026-09-29 |
-| B7 | Немає фасету Topics / Tool | `news-filters.ts` не має topic-параметра | `src/lib/news-filters.ts` |
-| B8 | Статичний «Recent highlights» на `/news` | рендериться захардкожений `news.weekSummary` з порту прототипу (PR #17) з неперевіреними твердженнями про релізи й «70%+» економії — **кандидат на hotfix ще до старту епіку** | `src/lib/i18n.ts`, `src/app/[lang]/news/page.tsx`; `git log -S weekSummary` |
-| B9 | Хардкод-статистика на головній | «70+» і «120+» — рядки в `home-hero.tsx`, не дані (needs verification) | `src/components/home/home-hero.tsx` |
-| B10 | Нескінченні анімації | орби 13–17 с, `pulse`, сцена 404 — `infinite`; Tension v3 забороняє нескінченні цикли | `src/app/globals.css`; [after-hours-tension](after-hours-tension.md) |
-| B11 | Бренд-знак | production — «bloom» (`MARK_COLOR #47E4D3`); концепт — вкладені A-лінії + celadon-крапка | `src/lib/brand-mark.ts`; `artifacts/after-hours/assets/mark.svg` |
-| B12 | Контракт теми | production — клас `.theme-light` + `localStorage.theme`; прототип — `data-theme` (night / day) | `src/app/layout.tsx`, `src/components/theme-toggle.tsx`, `e2e/theme.spec.ts`; `artifacts/after-hours/index.html` |
-| B13 | Брейкпоінти | production: header і news-layout перемикаються на Tailwind `lg` (64rem); прототип: брейкпоінти в `em`, header і discovery перемикаються на 60em | `e2e/helpers/viewports.ts`; `artifacts/after-hours/style.css`, `pages.css`; `tokens.json` `breakpoints` |
-| B14 | Шрифти | `@fontsource-variable` Inter + Fraunces через `globals.css`; UK-заголовки — Inter 700; прототип — subset-woff2 і Georgia для UK display | `src/app/globals.css`; `artifacts/after-hours/tokens.css` |
-| B15 | Мертвий компонент | `src/components/home/video-teaser.tsx` ніде не імпортується | grep 2026-09-29 |
+| ID | Розрив | Стан після #369 | Факт на 2026-09-29 | Джерело |
+|---|---|---|---|---|
+| B1 | Токени не підключені до CSS | ✅ закрито #369 | До #369 `tokens.ts` читав лише `scripts/check-design-tokens.ts`, а `globals.css` був на legacy-палітрі `#0f0f0f` / `#f0c040`; тепер `globals.css` — дзеркало `tokens.ts` 2.0.0 з drift-гейтом | [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §3 |
+| B2 | `faint` нижче AA в темній темі | ✅ закрито #369 | Було `#6a6a6a` на `#0f0f0f` — 3,54:1; тепер Night `#a3a197`, Day `#5a5e54` (≥ 4,5:1) на 93 входженнях `text-faint` / `var(--faint)` | там само; grep 2026-09-29 |
+| B3 | Текст дрібніший за 12 px | ✅ закрито #369 | 74 довільні класи замінено на `text-2xs`; `tokens:check` валить будь-який розмір < 12 px у `src/` | там само; grep 2026-09-29 — 0 |
+| B4 | «Сирі» кольори в UI | ◐ | hex-літерали у 14 файлах `.tsx` / `.css` поза admin (було 18); серед них `globals.css` (визначення токенів) і 2 OG-рендери — кандидати в allowlist | grep 2026-09-29 |
+| B5 | Кольори категорій — неон з БД | відкрито | `categories.color` (`#47E4D3` …) + 8 правил `.theme-light .cat-*` з color-mix; прототип має jewel tones на тему (≥ 4,5:1); #369 відклав це до «Хвилі B» | `supabase/migrations/009_seed_categories.sql`; `src/app/globals.css`; `artifacts/after-hours/tokens.css` |
+| B6 | Дві пагінації | відкрито | `src/components/pagination.tsx` (кнопки) лишився в `post-feed.tsx` поруч з `ui/pagination.tsx` | grep 2026-09-29 |
+| B7 | Немає фасету Topics / Tool | відкрито | `news-filters.ts` не має topic-параметра | `src/lib/news-filters.ts` |
+| B8 | Статичний «Recent highlights» на `/news` | ✅ закрито hotfix-ом 2026-09-29 | до hotfix-у рендерився захардкожений `news.weekSummary` з порту прототипу (PR #17) з неперевіреними твердженнями про релізи й «70%+» економії; блок і ключі `news.summaryTitle` / `news.weekSummary` прибрано в EN і UK в одному PR з епіком | `src/lib/i18n.ts`, `src/app/[lang]/news/page.tsx`; `git log -S weekSummary` |
+| B9 | Хардкод-статистика на головній | відкрито | «70+» і «120+» — рядки в `home-hero.tsx`, не дані (needs verification) | `src/components/home/home-hero.tsx` |
+| B10 | Нескінченні анімації | відкрито | 11 правил `infinite` у `globals.css` (орби 13–17 с, `pulse`, сцена 404, shimmer); Tension v3 забороняє нескінченні цикли, крім loading-shimmer | `src/app/globals.css`; [after-hours-tension](after-hours-tension.md) |
+| B11 | Бренд-знак | відкрито | production — «bloom» (`MARK_COLOR #47E4D3`); концепт — вкладені A-лінії + celadon-крапка | `src/lib/brand-mark.ts`; `artifacts/after-hours/assets/mark.svg` |
+| B12 | Контракт теми | відкрито | Day-токени вже приймають `.theme-light` і `html[data-theme='day']`, але pre-paint скрипт виставляє лише клас `.theme-light` + `localStorage.theme`; атрибута `data-theme` немає | `src/app/layout.tsx`, `src/components/theme-toggle.tsx`, `e2e/theme.spec.ts`, `src/app/globals.css` |
+| B13 | Брейкпоінти | відкрито (D5 прийнято) | header і news-layout перемикаються на Tailwind `lg` (64rem); за D5 обидва мають перемикатися на 60rem ≈ 960 px | `e2e/helpers/viewports.ts`; `src/app/globals.css`; `tokens.json` `breakpoints` |
+| B14 | Шрифти | ◐ (D3, D4 прийнято) | Шкала в rem і мінімум 12 px — з #369; шрифти досі `@fontsource-variable` через `globals.css`, UK-заголовки — Inter 700; за D3/D4 — `next/font/local` і Georgia для UK display | `src/app/globals.css`; `artifacts/after-hours/tokens.css` |
+| B15 | Мертвий компонент | відкрито | `src/components/home/video-teaser.tsx` ніде не імпортується | grep 2026-09-29 |
 
 ### 2.3 ⚠️ Conflict: статус G01–G20
 
 > ⚠️ Conflict: [now](../now.md) (запис 2026-09-28) каже «Закрито 20 розривів (G01–G20)», але код
-> 2026-09-29 показує відкриті або часткові G06, G09–G11, G13, G15–G17, G19, G20 (§14), а
-> [after-hours-redesign](after-hours-redesign.md) §1 фіксує, що токени 2.0 не перенесені й
-> результатів G19 немає. Епік виходить зі стану коду; звірка — задача AH-0.1. Див.
+> навіть після PR #369 показує відкриті або часткові G05, G06, G11–G17 (§14); G19 знято рішенням
+> власника, а не виконано. Оновлення gap-plan від #369 (2026-09-29) визнає частину залишку (G12,
+> G13, G17, G19, visual regression), але не згадує G05–G07 discovery і міграцію споживачів на нові
+> компоненти (G16). Епік виходить зі стану коду; звірка — задача AH-0.1. Див.
 > [open-questions](../open-questions.md) #10.
 
 ## 3. Інваріанти (діють на кожному кроці)
@@ -196,6 +220,7 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 | I-9 | Рух — наприкінці: нові жести й сцени лише після гейту G5; до того — лише базові CSS-переходи станів ≤ 320 мс | gap-plan G18; [after-hours-tension](after-hours-tension.md) «Передача в production» |
 | I-10 | Admin не редизайниться, але поділяє `globals.css`: зміни токенів не повинні зробити `/admin` нечитабельним (`e2e/admin-mobile.spec.ts`) | `data.js` `COVERAGE` («out») |
 | I-11 | Контакти, профілі й назви — лише з `src/lib/site.ts` (`CONTACT_EMAIL`, `ADVERTISE_EMAIL`, `EDITOR_*`, `SOCIALS`); адреси з прототипу (`editor@…`, `ads@…`) не переносяться | `src/lib/site.ts`; `artifacts/after-hours/pages.js` |
+| I-12 | Жовтий `#f0c040` лишається кольором OG-зображень, PDF і duotone-карток; редизайн сайту їх не перефарбовує | [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4 (рішення власника 2026-09-29) |
 
 ## 4. Рішення, потрібні до старту (D1–D13)
 
@@ -203,8 +228,11 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 власником. (source: none (analysis) — зважування варіантів на основі джерел у кожному рядку)
 
 **Прийнято власником 2026-09-29:** D1 — варіант A; D3 — `next/font/local`; D4 — Georgia на запуск;
-D5 — варіант A (перемикання header і discovery на 60rem ≈ 960 px). Рядки позначені ✅; решта —
-рекомендації до підпису в AH-0.2. (source: відповідь власника в сесії 2026-09-29)
+D5 — варіант A (перемикання header і discovery на 60rem ≈ 960 px); D12 — сесії пропущено (у сесії
+PR #369). **Вирішено реалізацією PR #369 (змерджено):** D9 — каталог `/ds-catalog`; D10 —
+`@axe-core/playwright`; D11 — для каталогу компонентів (4 opt-in baseline-знімки). Рядки позначені
+✅; D2, D6, D7, D8, D11 (сторінки) і D13 — рекомендації до підпису в AH-0.2.
+(source: відповідь власника в сесії 2026-09-29; [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §6; `package.json`; `src/app/ds-catalog/page.tsx`)
 
 | ID | Питання | Варіанти | Рекомендація й чому | Потрібне до |
 |---|---|---|---|---|
@@ -214,12 +242,12 @@ D5 — варіант A (перемикання header і discovery на 60rem �
 | D4 | Українська display-гарнітура | Georgia (як у прототипі); Inter 700 (як зараз); окремо підібрана кирилична serif | ✅ **Прийнято 2026-09-29: Georgia на запуск** — перевірено QA прототипу; підбір кириличної serif-пари — follow-up (§18) | AH-1.5 |
 | D5 | Брейкпоінти | **A** — значення прототипу як іменовані `--breakpoint-*` (23.75 / 25 / 47.5 / 60 / 68.75 / 73.75 / 80 em-еквівалент у rem), header і discovery перемикаються разом на 60rem; **B** — лишити 64rem і адаптувати макети | ✅ **Прийнято 2026-09-29: A.** Макети перевірені на цих значеннях, включно з 200% zoom; «мертва смуга» не виникає, бо header і layout перемикаються на одному токені. Потрібно оновити контракт `e2e/helpers/viewports.ts` (959/960 замість 1023/1024) | AH-1.6, AH-3.3 |
 | D6 | Нові URL | `/[lang]/categories` і `/[lang]/saved` створювати чи ні | **Не створювати в цьому епіку.** Мапа категорій живе на головній і в меню header; Saved — наступна хвиля з `noindex`. Нові URL успадкують проблему індексації | AH-5.16 |
-| D7 | Обсяг заміни знака | лише сайт (favicon, іконки, OG, schema logo) або одразу й соцмережі, PDF, соц-шаблони | **Сайт зараз, решта — follow-up** з окремим рішенням щодо впізнаваності в соцканалах; `MARK_COLOR*` лишаються для соц/PDF-рендерів до follow-up | AH-3.1 |
+| D7 | Обсяг заміни знака | лише сайт (favicon, іконки, OG, schema logo) або одразу й соцмережі, PDF, соц-шаблони | **Сайт зараз, решта — follow-up** з окремим рішенням щодо впізнаваності в соцканалах; `MARK_COLOR*` лишаються для соц/PDF-рендерів до follow-up. Колір OG, PDF і duotone уже вирішено: жовтий `#f0c040` лишається (I-12) | AH-3.1 |
 | D8 | Джерело фасету Topics / Tool | нормалізовані `tools_mentioned` або зв'язки з концептами | **`tools_mentioned` + мапа аліасів**; значення показується, якщо має ≥ 2 матеріали в поточному зрізі (assumption); якщо якість даних недостатня — фасет не показується, G06 лишається частковим | AH-4.1 |
-| D9 | Каталог компонентів (G20) | внутрішній маршрут, що віддає 404 у production; Storybook (нові залежності); без каталогу | **Внутрішній маршрут** `/[lang]/design-system` з `noindex` і `notFound()` у production — на ньому ж Playwright перевіряє клавіатуру й a11y компонентів | AH-2.1 |
-| D10 | Рушій a11y-перевірки | явна devDependency `axe-core` (зараз транзитивна 4.12.0) з ін'єкцією як у прототипі; або `@axe-core/playwright` | **`axe-core` явно** — той самий рушій, що дав «0 порушень» у QA прототипу; без додаткової обгортки | AH-0.5 |
-| D11 | Visual regression | скриптові знімки до/після (AH-0.3) + підпис власника, PNG у `artifacts/_local/`; або `toHaveScreenshot` з baseline-PNG у git | **Скриптові знімки без комітування PNG** — сотні знімків у git важкі й нестабільні між ОС; DOM/a11y/layout-метрики автоматизує AH-0.5 | AH-0.3 |
-| D12 | Usability (G19) | 5 модерованих сесій на News slice або пропуск із прийнятим ризиком | **5 сесій** — дешево і вимагається gap-plan M5; без них гейт G4 спирається лише на автоматику | AH-4.5 |
+| D9 | Каталог компонентів (G20) | внутрішній маршрут, що віддає 404 у production; Storybook (нові залежності); без каталогу | ✅ **Вирішено в PR #369:** внутрішній маршрут `/ds-catalog` (404 без `DS_CATALOG=1`, `noindex`) замість запропонованого `/[lang]/design-system`; Playwright перевіряє на ньому клавіатуру, axe й aria-снапшоти | AH-2.1 |
+| D10 | Рушій a11y-перевірки | явна devDependency `axe-core` (зараз транзитивна 4.12.0) з ін'єкцією як у прототипі; або `@axe-core/playwright` | ✅ **Вирішено в PR #369: `@axe-core/playwright` ^4.13.0** — QA-матриця сторінок (AH-0.5) використовує той самий рушій | AH-0.5 |
+| D11 | Visual regression | скриптові знімки до/після (AH-0.3) + підпис власника, PNG у `artifacts/_local/`; або `toHaveScreenshot` з baseline-PNG у git | **Каталог — ✅ вирішено в #369:** 4 закомічені opt-in baseline (`VISUAL=1`, поки лише win32). **Сторінки — рекомендація:** скриптові знімки без комітування PNG — сотні знімків у git важкі й нестабільні між ОС; DOM/a11y/layout-метрики автоматизує AH-0.5 | AH-0.3 |
+| D12 | Usability (G19) | 5 модерованих сесій на News slice або пропуск із прийнятим ризиком | ✅ **Прийнято власником 2026-09-29: сесії пропущено.** Ризик прийнято; G4 спирається на автоматику й підпис, після запуску — метрики AH-7.4; [протокол](../research/2026-09-29-redesign-usability-sessions-protocol.md) лишається на випадок просідання | AH-4.5 |
 | D13 | Керування рухом у production | лише `prefers-reduced-motion`; або ще й власний перемикач (як `?motion=off` у прототипі) | **Лише системне налаштування** — перемикач прототипу був інструментом рев'ю | AH-6.1 |
 
 ## 5. Порядок виконання
@@ -232,7 +260,7 @@ D5 — варіант A (перемикання header і discovery на 60rem �
 | 1 | Foundations (M1) | AH-1.1…1.7 | **G1:** сайт на токенах 2.0; ≥ 160 пар контрасту без провалів; 0 тексту < 12 px; візуальний diff підписаний |
 | 2 | Бібліотека компонентів (M2) | AH-2.1…2.6 | **G2:** примітиви й композити в каталозі зі state matrix; keyboard/a11y E2E зелені в трьох браузерах |
 | 3 | Бренд і chrome | AH-3.1…3.6 | **G3:** новий header / footer / пошук / consent на всіх маршрутах; e2e header, menu, search, footer, cookie зелені |
-| 4 | News vertical slice (M3) | AH-4.1…4.5 | **G4:** acceptance tasks gap-plan §7 на реальних даних; usability; підпис власника — **відкриває фазу 5** |
+| 4 | News vertical slice (M3) | AH-4.1…4.5 | **G4:** acceptance tasks gap-plan §7 як E2E на реальних даних; підпис власника (usability-сесії пропущено за D12) — **відкриває фазу 5** |
 | 5 | Editorial-патерни й шаблони (M4) | AH-5.1…5.15 (+ 5.16 опц.) | **G5:** усі маршрути §15 у gating-режимі QA-матриці; публічні маршрути не імпортують legacy-компоненти |
 | 6 | Рух Tension v3 | AH-6.1…6.3 | **G6:** 0 нескінченних анімацій; reduced motion = статичний кінцевий стан; кадровий бюджет виконано |
 | 7 | Валідація, реліз, прибирання (M5) | AH-7.1…7.5 | **G7:** критерії §1.4 виконані; звіт після запуску |
@@ -248,12 +276,12 @@ flowchart TD
   A04[AH-0.4 SEO-контракт] --> G0
   A05[AH-0.5 QA-матриця] --> G0
   A06[AH-0.6 продукт/CWV baseline] --> G0
-  G0 --> A11[AH-1.1 токени 2.0]
-  A11 --> A12[AH-1.2 контраст-гейт]
+  G0 --> A11[AH-1.1 токени 2.0 ✅ PR 369]
   G0 --> A13[AH-1.3 тема]
   A11 --> A14[AH-1.4 категорії] & A15[AH-1.5 типографіка] & A16[AH-1.6 простір/шари/брейкпоінти] & A17[AH-1.7 ratchet]
+  A14 --> A12[AH-1.2 контраст-гейт]
   A12 & A13 & A14 & A15 & A16 & A17 --> G1{{G1 foundations}}
-  G1 --> A21[AH-2.1 каталог] --> A22[AH-2.2 дії] & A23[AH-2.3 поля] & A25[AH-2.5 feedback-стани]
+  G1 --> A21[AH-2.1 каталог ✅ PR 369] --> A22[AH-2.2 дії] & A23[AH-2.3 поля] & A25[AH-2.5 feedback-стани]
   A22 --> A24[AH-2.4 оверлеї] & A26[AH-2.6 навігація]
   A22 & A23 & A24 & A25 & A26 --> G2{{G2 бібліотека}}
   G2 --> A31[AH-3.1 знак] --> A33[AH-3.3 header]
@@ -263,7 +291,7 @@ flowchart TD
   A33 & A35 & A36 --> G3{{G3 chrome}}
   G0 --> A41[AH-4.1 Topics lib]
   G3 --> A42[AH-4.2 StoryCard] --> A43[AH-4.3 /news]
-  A41 --> A43 --> A44[AH-4.4 /news/search] --> A45[AH-4.5 гейт + usability]
+  A41 --> A43 --> A44[AH-4.4 /news/search] --> A45[AH-4.5 гейт News slice]
   A45 --> G4{{G4 News slice}}
   G4 --> A51[AH-5.1 editorial-патерни] --> T5[AH-5.2…5.15 шаблони]
   T5 --> G5{{G5 шаблони}}
@@ -276,27 +304,30 @@ flowchart TD
 
 ### 5.3 Зведена таблиця задач
 
+Позначки: ✅ — виконано (PR у дужках), ◐ — виконано частково; для ◐ розмір — це залишок роботи,
+а сам залишок описано в рядку «Стан після #369» картки.
+
 | ID | Задача | Розмір | Хто | Залежить від | Закриває |
 |---|---|---|---|---|---|
 | AH-0.1 | Звірити статус G01–G20 і вихідну точку | S | агент | — | G01, конфлікт §2.3 |
-| AH-0.2 | ADR: rollout і foundations (D1–D13) | M | агент + власник | — | передумова G12 |
+| AH-0.2 | ADR: rollout і foundations (D1–D13; D1, D3–D5, D9–D12 уже вирішені) | S | агент + власник | — | передумова G12 |
 | AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
 | AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
-| AH-0.5 | QA-матриця a11y і верстки для Next | M | агент | AH-0.2 (D10) | G14 (частк.) |
+| AH-0.5 | ◐ QA-матриця a11y і верстки для сторінок (#369: axe-інфраструктура для каталогу) | M | агент | AH-0.2 (D10 ✅) | G14 (частк.) |
 | AH-0.6 | Продуктовий і CWV baseline | S | власник + агент | open-questions #1 | передумова оцінки |
-| AH-1.1 | Токени 2.0 — одне джерело правди | L | агент + власник | AH-0.2, AH-0.3, AH-0.4 | G09, G10, B1, B2 |
-| AH-1.2 | Контраст-гейт 2.0 у `pr:check` | S | агент | AH-1.1 | G09 (UI-пари) |
+| AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
+| AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
 | AH-1.3 | Контракт теми Night/Day без спалаху | S | агент | AH-0.2 (D2) | B12 |
-| AH-1.4 | Кольори й гліфи категорій | M | агент | AH-1.1 | B5 |
-| AH-1.5 | Типографіка: шрифти, шкала, ≥ 12 px | L | агент + власник | AH-0.2 (D3, D4), AH-1.1 | B3, B14, G09 |
-| AH-1.6 | Простір, форма, глибина, шари, брейкпоінти, motion-токени | M | агент | AH-0.2 (D5), AH-1.1 | G09, B13 |
-| AH-1.7 | Ratchet-звіт «сирих» значень | S | агент | AH-1.1 | G15 (інструмент), B4 |
-| AH-2.1 | Внутрішній каталог компонентів | M | агент | AH-0.2 (D9), AH-1.1, AH-1.3 | G20, G13 |
-| AH-2.2 | Дії й вибір | M | агент | AH-2.1, AH-1.4, AH-1.6 | G11 |
-| AH-2.3 | Поля форм | M | агент | AH-2.1, AH-1.5, AH-1.6 | G11, G13 |
-| AH-2.4 | Оверлеї: Dialog, Drawer, Menu, Popover | L | агент | AH-2.2, AH-1.6 | G16 |
-| AH-2.5 | Зворотний зв'язок і data-стани | M | агент | AH-2.1, AH-1.6 | G13 |
-| AH-2.6 | Навігація: Pagination, Tabs, Breadcrumbs | M | агент | AH-2.2 | B6, G11 |
+| AH-1.4 | Кольори й гліфи категорій | M | агент | — | B5 |
+| AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
+| AH-1.6 | ◐ Простір, форма, глибина, шари, брейкпоінти, motion-токени (#369: розміри контролів, z-index) | M | агент | D5 ✅ | G09, B13 |
+| AH-1.7 | ◐ Ratchet-звіт «сирих» значень (#369: гейт мінімуму шрифту) | S | агент | — | G15 (інструмент), B4 |
+| AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
+| AH-2.2 | Дії й вибір | M | агент | AH-1.4, AH-1.6 | G11 |
+| AH-2.3 | ◐ Поля форм (#369: Combobox) | M | агент | AH-1.5, AH-1.6 | G11, G13 |
+| AH-2.4 | ◐ Оверлеї (#369: Popover, Dialog, DropdownMenu, Tooltip, Accordion) | M | агент | AH-2.2, AH-1.6 | G16 |
+| AH-2.5 | ◐ Зворотний зв'язок і data-стани (#369: Toast) | S | агент | AH-1.6 | G13 |
+| AH-2.6 | ◐ Навігація (#369: Tabs) | M | агент | AH-2.2 | B6, G11 |
 | AH-3.1 | Бренд-знак і похідні ассети | M | агент + власник | AH-0.2 (D7), AH-1.1 | B11 |
 | AH-3.2 | SearchDialog (Ctrl/Cmd+K) | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
 | AH-3.3 | EditorialHeader | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
@@ -305,9 +336,9 @@ flowchart TD
 | AH-3.6 | Consent-картка | S | агент | AH-2.2, AH-2.3 | — |
 | AH-4.1 | Taxonomy Topics / Tool | M | агент | AH-0.2 (D8) | G06, B7 |
 | AH-4.2 | StoryCard, StoryRow, CategoryBanner | M | агент | AH-2.2, AH-2.5, AH-1.4 | G17 (частк.) |
-| AH-4.3 | Сторінка `/[lang]/news` | L | агент | AH-4.1, AH-4.2, AH-2.3, AH-2.4, AH-2.6, AH-3.3, AH-3.4 | G02, G05, G07, B8 |
+| AH-4.3 | Сторінка `/[lang]/news` | L | агент | AH-4.1, AH-4.2, AH-2.3, AH-2.4, AH-2.6, AH-3.3, AH-3.4 | G02, G05, G07 |
 | AH-4.4 | Сторінка `/[lang]/news/search` | S | агент | AH-4.3, AH-3.2 | — |
-| AH-4.5 | Гейт News vertical slice + usability | M | власник + агент | AH-4.3, AH-4.4, AH-0.5, AH-0.2 (D12) | G14, G19 |
+| AH-4.5 | Гейт News vertical slice (без usability-сесій, D12) | S | власник + агент | AH-4.3, AH-4.4, AH-0.5 | G14 |
 | AH-5.1 | Родина editorial-патернів | L | агент | AH-4.5 | G17 |
 | AH-5.2 | Стаття | L | агент | AH-5.1 | route `article` |
 | AH-5.3 | Головна | L | агент + власник | AH-5.1, AH-4.2 | route `home`, B9, B10 |
@@ -341,8 +372,11 @@ flowchart TD
 - **Після G4** шаблони можна розкласти на чотири лінії: (1) 5.2 → 5.3; (2) 5.4 → 5.5 → 5.6;
   (3) 5.7 → 5.8 → 5.9; (4) 5.10 → 5.11 → 5.12 → 5.13 → 5.14 → 5.15. Weekly (5.5) мерджити поза
   днями релізу тижневика, щоб не конфліктувати з weekly-роботою в `main`.
-- **Hotfix до старту** (не блокує епік): B8 — прибрати або замінити захардкожений
-  «Recent highlights» на `/news` реальними даними; повне рішення — в AH-4.3.
+- **Hotfix B8 — ✅ виконано 2026-09-29** в одному PR із цим епіком: блок «Recent highlights» і
+  ключі `news.summaryTitle` / `news.weekSummary` прибрано з `/news` в обох мовах. Підсумок тижня з
+  реальних даних — у AH-4.3.
+- **Після #369** задачі AH-1.4 і AH-1.7 не залежать від нових foundations-PR і можуть стартувати
+  одразу після G0; AH-1.2 доповнюється, щойно AH-1.4 додасть `--cat-*`.
 
 ---
 
@@ -371,16 +405,20 @@ flowchart TD
 
 ### AH-0.2 · ADR: rollout і foundations After Hours (D1–D13)
 
-**Тип:** wiki (рішення) · **Розмір:** M · **Виконавець:** агент + власник · **Залежить від:** — ·
+**Тип:** wiki (рішення) · **Розмір:** S · **Виконавець:** агент + власник · **Залежить від:** — ·
 **Закриває:** передумова G12 (governance)
+
+> **Стан після #369:** власник прийняв D1, D3, D4, D5 і D12 (2026-09-29); D9, D10 і D11 для
+> каталогу вирішені реалізацією PR #369. Лишаються D2, D6, D7, D8, D11 (сторінки) і D13.
 
 **Зони:** `wiki/decisions/<дата>-after-hours-rollout-and-foundations.md`, `wiki/index.md`,
 `wiki/log.md`, цей епік
 
 **Що зробити:** оформити ADR у форматі [ADR news discovery](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md):
-для кожного D1–D13 — контекст, варіанти, рішення, наслідки. D1, D3, D4 і D5 власник уже прийняв
-2026-09-29 (§4) — ADR переносить їх із цим джерелом; позицію власника треба отримати для D2, D6–D13.
-Якщо рішення відрізняється від рекомендації §4 — оновити картки задач, яких воно стосується.
+для кожного D1–D13 — контекст, варіанти, рішення, наслідки. Уже ухвалені рішення (§4) ADR
+переносить із їхніми джерелами — відповіддю власника 2026-09-29 і [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md);
+позицію власника треба отримати для D2, D6, D7, D8, D11 (сторінки) і D13. Якщо рішення відрізняється
+від рекомендації §4 — оновити картки задач, яких воно стосується.
 
 **AC:**
 - [ ] ADR має статус «прийнято», дату й явну позицію власника по кожному D1–D13.
@@ -435,11 +473,15 @@ D11) · **Закриває:** передумова visual review кожного 
 
 ### AH-0.5 · QA-матриця доступності й верстки для Next-застосунку
 
-**Тип:** код (E2E) · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-0.2 (D10) ·
+**Тип:** код (E2E) · **Розмір:** M · **Виконавець:** агент · **Залежить від:** D10 ✅ ·
 **Закриває:** G14 (частково); основа для пункту 5 DoD
 
+> **Стан після #369:** `@axe-core/playwright` уже в devDependencies, а `e2e/ui-components.spec.ts`
+> перевіряє каталог компонентів (axe WCAG 2.2 AA у Night і Day, з відкритими оверлеями). Лишається
+> матриця для **сторінок** сайту з пунктів нижче — на тому самому рушії.
+
 **Зони:** `e2e/a11y-layout-matrix.spec.ts` (нове), `e2e/helpers/inspect-page.ts` (нове),
-`e2e/fixtures/a11y-gating.json` (маршрути в gating-режимі), `package.json` (`axe-core` за D10),
+`e2e/fixtures/a11y-gating.json` (маршрути в gating-режимі), `@axe-core/playwright` (уже є),
 `scripts/e2e-affected.ts` (OVERRIDES за потреби)
 
 **Що зробити:**
@@ -490,6 +532,14 @@ QA-матриця працює в report-режимі.
 **Тип:** код · **Розмір:** L · **Виконавець:** агент (+ візуальний підпис власника) ·
 **Залежить від:** AH-0.2 (D1, D2), AH-0.3, AH-0.4 · **Закриває:** G09, G10, B1, B2
 
+> **Стан після #369: ✅ виконано** в PR #369. `tokens.ts` 2.0.0 — одне джерело, `globals.css` —
+> дзеркало з drift-гейтом у `tokens:check`, `--faint` ≥ 4,5:1, золоті `rgba(240, 192, 64, …)` з
+> `globals.css` прибрано; імена змінних збережено, тож наявні компоненти не мінялися. Залишки
+> перенесено: ім'я `--surface-2` і хардкод `#141414` у `.skip-link` → AH-7.3; кольори категорій →
+> AH-1.4; повна матриця пар → AH-1.2. Baseline «до» (AH-0.3) для цієї зміни вже не зняти — зміну
+> палітри перевіряє візуальний обхід AH-7.1. Текст картки нижче лишається для звірки.
+> (source: [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §3–§5)
+
 **Зони:** `src/lib/design-system/tokens.ts`, `src/lib/design-system/tokens.test.ts`,
 `src/app/globals.css` (або згенерований CSS-файл, імпортований з нього),
 `wiki/architecture/design-system-tokens.md`
@@ -534,11 +584,15 @@ QA-матриця працює в report-режимі.
 
 ### AH-1.2 · Контраст-гейт 2.0 у `pr:check`
 
-**Тип:** код · **Розмір:** S · **Виконавець:** агент · **Залежить від:** AH-1.1 ·
+**Тип:** код · **Розмір:** S · **Виконавець:** агент · **Залежить від:** AH-1.4 ·
 **Закриває:** G09 (UI-пари), частина G13
 
-**Зони:** `src/lib/design-system/contrast.test.ts` (або переписаний `scripts/check-design-tokens.ts`
-+ крок у `pr:check`)
+> **Стан після #369:** `tokens:check` уже перевіряє 90 пар (9 текстових ролей × 5 поверхонь × 2 теми),
+> UI-пари ≥ 3:1, drift CSS ↔ tokens і мінімум шрифту 12 px і входить у `pr:check` через unit-тести.
+> Лишається додати пари прототипу, яких немає: `--cat-*` (після AH-1.4), on-accent на accent-fill і
+> hover, on-velvet, selection, claret на velvet і `stage` — до ≥ 160 пар.
+
+**Зони:** `scripts/check-design-tokens.ts`, `src/lib/design-system/tokens.test.ts`
 
 **Що зробити:** перенести матрицю пар з `artifacts/after-hours/qa/check-tokens.mjs` для обох тем:
 текстові ролі (text, muted, faint, accent, signal, claret, error, success, warning) × (bg, surface,
@@ -575,7 +629,12 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
 
 ### AH-1.4 · Кольори й гліфи категорій
 
-**Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-1.1 · **Закриває:** B5
+**Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-1.1 ✅ · **Закриває:** B5
+
+> **Стан після #369:** не розпочато. ADR токенів 2.0 відніс міграцію кольорів категорій до
+> «Хвилі B»; цей епік лишає її у foundations (D1), бо кольори категорій потрапляють на кожну
+> сторінку. У `globals.css` зараз 8 правил `.theme-light .cat-*` з color-mix.
+> (source: [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4; grep 2026-09-29)
 
 **Зони:** `src/lib/category-meta.ts` (+ тест), `src/app/globals.css`, `src/components/icons.tsx`
 (watcher `brand-chrome` → `wiki/now.md`), споживачі `--cat-color`: `category-header.tsx`,
@@ -602,11 +661,17 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
 
 ### AH-1.5 · Типографіка: шрифти, шкала, мінімум 12 px
 
-**Тип:** код · **Розмір:** L · **Виконавець:** агент (+ підпис власника щодо UK) ·
-**Залежить від:** AH-0.2 (D3, D4), AH-1.1 · **Закриває:** B3, B14; частина G09
+**Тип:** код · **Розмір:** M (залишок) · **Виконавець:** агент (+ підпис власника щодо UK) ·
+**Залежить від:** D3 ✅, D4 ✅, AH-1.1 ✅ · **Закриває:** B14; частина G09 (B3 закрито #369)
+
+> **Стан після #369:** шкала в rem (`2xs`…`5xl`) і мінімум 12 px уже в `main`: 74 класи замінено на
+> `text-2xs`, а `tokens:check` валить будь-який розмір < 12 px у `src/` — пункт 4 нижче виконано.
+> Лишаються шрифти через `next/font/local` (D3), Georgia для українських display-заголовків (D4),
+> `--leading-*`, `--tracking-*`, `--measure` і правила eyebrow. Шрифти досі підключає
+> `@fontsource-variable` у `globals.css`.
 
 **Зони:** `src/app/layout.tsx`, `src/app/fonts.ts` (нове, за D3), `src/app/globals.css`, файли
-шрифтів із `artifacts/after-hours/assets/*.woff2` + ліцензії OFL, компоненти з 74 дрібними класами
+шрифтів із `artifacts/after-hours/assets/*.woff2` + ліцензії OFL
 
 **Джерела:** `node_modules/next/dist/docs/01-app/01-getting-started/13-fonts.md` і
 `03-api-reference/02-components/font.md` (читати до коду — `AGENTS.md`);
@@ -620,7 +685,7 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
 3. Шкала 2.0 в `@theme`: 12 · 13 · 14 · 16 · 18 px (rem) + fluid-заголовки 19–22 / 22–28 / 28–40 /
    36–58 / 42–72 px; `--leading-*` (1.06 / 1.14 / 1.65 / 1.78), `--tracking-*`, `--measure: 68ch`;
    читання 18 px / 1.78, UI 16 px / 1.65.
-4. Замінити 74 довільні класи < 12 px токенами шкали.
+4. ✅ Виконано в #369: 74 довільні класи < 12 px замінено на `text-2xs`.
 5. Eyebrow-мітки: короткі — капсом з трекінгом 0.13em; довгі реєстри — sentence case.
 
 **AC:**
@@ -633,8 +698,13 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
 
 ### AH-1.6 · Простір, форма, глибина, шари, брейкпоінти й motion-токени
 
-**Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-0.2 (D5), AH-1.1 ·
+**Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** D5 ✅, AH-1.1 ✅ ·
 **Закриває:** G09 (spacing, sizing, elevation, layering, motion), B13 (токени)
+
+> **Стан після #369:** розміри контролів 36 / 44 / 52 і шкала z-index (sticky 30 … toast 100) уже є в
+> `tokens.ts` і `globals.css` (пункт 3 виконано). Лишаються spacing, `gutter`, `section-y`, радіуси 2.0
+> (зараз sm 3 / md 6 / card 14 / pill), тіні з Day-значеннями, ефекти, брейкпоінти за D5 (60rem),
+> motion-токени й offset фокуса 3 px.
 
 **Зони:** `src/app/globals.css` (`@theme`), `src/lib/design-system/tokens.ts`,
 `e2e/helpers/viewports.ts` (документування контракту D5)
@@ -661,8 +731,12 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
 
 ### AH-1.7 · Ratchet-звіт «сирих» значень
 
-**Тип:** код (скрипт) · **Розмір:** S · **Виконавець:** агент · **Залежить від:** AH-1.1 ·
+**Тип:** код (скрипт) · **Розмір:** S · **Виконавець:** агент · **Залежить від:** AH-1.1 ✅ ·
 **Закриває:** G15 (інструмент), B4
+
+> **Стан після #369:** `tokens:check` уже валить будь-який розмір шрифту < 12 px у `src/`, тож
+> частина про `text-[…]` виконана. Лишається ratchet на hex / rgb / hsl-літерали, довільні `z-[…]` і
+> тіні (hex — у 14 файлах `.tsx` / `.css` поза admin, B4).
 
 **Зони:** `scripts/report-raw-design-values.ts` (нове), `scripts/raw-design-values.baseline.json`,
 `package.json`, `pr:check`
@@ -694,8 +768,14 @@ PR шаблону.
 **Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-0.2 (D9), AH-1.1,
 AH-1.3 · **Закриває:** G20, основа G13
 
-**Зони:** `src/app/[lang]/design-system/page.tsx` (+ секції за родинами), `robots` noindex,
-`notFound()` у production
+> **Стан після #369: ✅ виконано** у формі `/ds-catalog` (`src/app/ds-catalog/`, поза `[lang]`):
+> 404 без `DS_CATALOG=1`, `noindex`, у Playwright увімкнено автоматично; `e2e/ui-components.spec.ts`
+> перевіряє axe WCAG 2.2 AA, aria-снапшоти й 4 opt-in baseline-знімки. Маршрут
+> `/[lang]/design-system` не створюється. Надалі кожна задача фаз 2–5 додає свій компонент у
+> `/ds-catalog` зі state matrix — це входить у її AC. Текст картки нижче лишається для звірки.
+
+**Зони:** `src/app/ds-catalog/` (було заплановано `src/app/[lang]/design-system/page.tsx`),
+`robots` noindex, 404 без `DS_CATALOG=1`
 
 **Що зробити:** сторінка за мотивами `#/system` і `#/states` прототипу: палітра Night/Day, шкала
 типографіки, радіуси / тіні / шари; для кожного компонента — варіанти × стани (`default → hover →
@@ -730,8 +810,12 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 
 ### AH-2.3 · Поля: Field, Input, SearchInput, Textarea, Select, Checkbox, Radio, SegmentedControl, Switch
 
-**Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-2.1, AH-1.5, AH-1.6 ·
+**Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-2.1 ✅, AH-1.5, AH-1.6 ·
 **Закриває:** G11 (field family), G13 (частково)
+
+> **Стан після #369:** є `Combobox` (ARIA 1.2 list autocomplete, `aria-activedescendant`, пошук із
+> кирилицею, оголошення кількості). Лишаються `Field` (Label + Hint + ErrorText), `SearchInput`,
+> `Textarea`, `SegmentedControl`, `Switch` і рестайл наявних `Input` / `Select` / `Checkbox` / `Radio`.
 
 **Зони:** `src/components/ui/input.tsx`, `select.tsx`, `checkbox.tsx`, `radio.tsx`; нові
 `field.tsx` (Label + Hint + ErrorText), `textarea.tsx`, `segmented.tsx`, `switch.tsx`,
@@ -750,17 +834,24 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 
 ### AH-2.4 · Оверлеї: Dialog / Sheet, Drawer, Menu, Disclosure, Popover
 
-**Тип:** код · **Розмір:** L · **Виконавець:** агент · **Залежить від:** AH-2.2, AH-1.6 ·
+**Тип:** код · **Розмір:** M (залишок) · **Виконавець:** агент · **Залежить від:** AH-2.2, AH-1.6 ·
 **Закриває:** G16; частина G13 (overlay-стани)
 
-**Зони:** `src/components/ui/overlay-drawer.tsx`, нові `dialog.tsx` (sheet left / right / full),
-`menu.tsx` (disclosure-меню), `popover.tsx`; `src/lib/body-scroll-lock.ts`
+> **Стан після #369:** є `Popover` (flip біля краю viewport), `Dialog` (модальний, побудований поверх
+> `OverlayDrawer` — одна механіка focus trap і scroll lock), `DropdownMenu` (WAI-ARIA menu button),
+> `Tooltip` (WCAG 1.4.13), `Accordion` і хук `use-dismissable`. Лишаються sheet-варіанти (left / right /
+> full) у тому самому `Dialog`, disclosure-меню навігації з посиланнями (не `role="menu"`) і перелік
+> споживачів для міграції — header, filters drawer, search, share (самі міграції — AH-3.2, AH-3.3,
+> AH-4.3).
+
+**Зони:** `src/components/ui/overlay-drawer.tsx`, `dialog.tsx` (sheet-варіанти), нове `menu.tsx`
+(disclosure-меню); `popover.tsx` і `dropdown-menu.tsx` уже є; `src/lib/body-scroll-lock.ts`
 
 **Що зробити:** один контракт для всіх оверлеїв: тригер з `aria-expanded` / `aria-controls` /
 `aria-haspopup`; закриття Escape, кліком по бекдропу й кнопкою «Закрити»; focus trap для модальних;
 повернення фокусу на тригер; scroll lock без стрибка; z-index з токенів; поява ≤ 240 мс (opacity +
-≤ 4 px), у reduced motion — миттєво. Рекомендовано нативний `<dialog>` + `showModal()` для модальних
-(як у прототипі) і disclosure-патерн для навігаційних меню з посиланнями (не `role="menu"`).
+≤ 4 px), у reduced motion — миттєво. Модальні оверлеї будуються на наявному `Dialog`; для
+навігаційних меню з посиланнями — disclosure-патерн (не `role="menu"`).
 
 **AC:**
 - [ ] E2E на каталозі в chromium, firefox і webkit: Escape / бекдроп / кнопка закривають і повертають
@@ -771,14 +862,19 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 
 ### AH-2.5 · Зворотний зв'язок: Notice, Toast, Skeleton, Spinner, EmptyState, ErrorState, StaleNotice
 
-**Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-2.1, AH-1.6 ·
+**Тип:** код · **Розмір:** S (залишок) · **Виконавець:** агент · **Залежить від:** AH-2.1 ✅, AH-1.6 ·
 **Закриває:** G13 (data-стани)
 
-**Зони:** `src/components/ui/empty-state.tsx`, `skeleton.tsx`; нові `notice.tsx`, `toast.tsx`
-(+ провайдер з live region), `spinner.tsx`, `error-state.tsx`
+> **Стан після #369:** є `Toast` + `useToast` у `src/lib/ui/toast-store.ts`: live region, помилки —
+> `role=alert` ≥ 8 с, решта — `status`, пауза на hover і focus, ≤ 3 одночасно, dedupe за ключем.
+> Лишаються `Notice`, `Spinner`, `ErrorState`, `StaleNotice`. Контракт toast нижче замінено
+> реалізованим.
 
-**Що зробити:** Notice info / warning / error / success (іконка + текст, не лише колір); Toast у
-`role="status"` (polite), 2,6–2,8 с, ніколи не єдиний носій критичної інформації; Skeleton з
+**Зони:** `src/components/ui/empty-state.tsx`, `skeleton.tsx`, `toast.tsx` (уже є); нові `notice.tsx`,
+`spinner.tsx`, `error-state.tsx`
+
+**Що зробити:** Notice info / warning / error / success (іконка + текст, не лише колір); Toast — як
+реалізовано в #369, ніколи не єдиний носій критичної інформації; Skeleton з
 резервованими розмірами, shimmer лише в loading і статичний у reduced motion; ErrorState з «Спробувати
 ще» (`aria-busy` під час повтору); StaleNotice («Оновлено N год тому», «Показано останні 100
 матеріалів» — чесний обсяг, G05).
@@ -794,10 +890,13 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 **Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-2.2 ·
 **Закриває:** B6; G11 (Pagination, Tabs)
 
+> **Стан після #369:** є `Tabs` (ARIA `tablist`, automatic activation, roving `tabindex`,
+> ← / → / Home / End, пропуск disabled). Лишаються консолідація пагінації (`src/components/pagination.tsx`
+> досі в `post-feed.tsx`), link-tabs з `aria-current` для URL-стану й рестайл `Breadcrumbs`.
+
 **Зони:** `src/components/ui/pagination.tsx`; видалити `src/components/pagination.tsx` і перевести
-`src/components/post-feed.tsx`; нове `src/components/ui/tabs.tsx` (link-tabs з `aria-current` для
-URL-стану і ARIA `tablist` зі стрілками для in-page); `src/components/breadcrumbs.tsx` (рестайл,
-`breadcrumbJsonLd` без змін)
+`src/components/post-feed.tsx`; `src/components/ui/tabs.tsx` (уже є — додати link-варіант з
+`aria-current` для URL-стану); `src/components/breadcrumbs.tsx` (рестайл, `breadcrumbJsonLd` без змін)
 
 **AC:**
 - [ ] Пагінація скрізь — `<a href>` з `aria-current="page"`, `rel="prev"` / `rel="next"`,
@@ -825,19 +924,23 @@ AH-0.2 (D7), AH-1.1 · **Закриває:** B11; [after-hours-redesign](after-h
 `src/app/[lang]/opengraph-image.tsx`, `src/app/[lang]/news/[category]/[item]/opengraph-image.tsx`;
 `src/lib/site.ts` (`MARK_COLOR*`); watcher `brand-chrome` → `wiki/now.md`
 
+> **Рішення після #369:** OG-шаблони **не перефарбовуються** — жовтий `#f0c040` лишається для OG,
+> PDF і duotone (I-12). Задача змінює знак у favicon, іконках, `logo.png`, manifest і компоненті
+> `BrandMark`; знак усередині OG — лише якщо D7 це охоплює, без зміни палітри OG.
+
 **Що зробити:** знак — пластина + вкладені A-лінії + зміщена celadon-крапка
 (`artifacts/after-hours/assets/mark.svg`, `app.js` `markSvg`); clear space ≥ ½ висоти; мінімум
 24 px; favicon без wordmark; компонент `BrandMark` для header / footer (SSR SVG, кольори з токенів,
-`aria-hidden` поруч із текстовим wordmark); OG-шаблони в стилі After Hours (ink / stage,
-parchment-текст, акценти brass / celadon) з коректною кирилицею; manifest `theme_color` /
-`background_color` — токени 2.0; `MARK_COLOR*` лишаються для соц/PDF-рендерів до follow-up D7
-(позначити коментарем).
+`aria-hidden` поруч із текстовим wordmark); палітра OG-шаблонів лишається жовтою (I-12), кирилиця
+в них має рендеритися коректно; manifest `theme_color` / `background_color` — токени 2.0;
+`MARK_COLOR*` лишаються для соц/PDF-рендерів до follow-up D7 (позначити коментарем).
 
 **AC:**
 - [ ] `npm run icons:generate` відтворює `icon.svg`, `favicon.ico`, `apple-icon.png`; знак
   читабельний на 16 / 32 / 180 / 512 px (знімки в PR).
 - [ ] `logo.png` 512×512; URL `Organization.logo` незмінний (SEO-diff 0).
-- [ ] OG 1200×630 для home та item EN/UK: заголовок не обрізається, кирилиця без «тофу».
+- [ ] OG 1200×630 для home та item EN/UK лишаються жовтими (I-12): заголовок не обрізається,
+  кирилиця без «тофу».
 - [ ] `wiki/now.md` оновлено в тому ж PR (`wiki:sync` зелений).
 
 ### AH-3.2 · SearchDialog (Ctrl/Cmd+K)
@@ -1025,9 +1128,10 @@ AH-2.4, AH-2.6, AH-3.3, AH-3.4 · **Закриває:** G02, G05, G07, B8; фі�
 **Що зробити:**
 1. Вступ: eyebrow «The newsroom» / «Стрічка новин», H1, лід, рядок «Curated by <редактор>» з
    `site.ts`.
-2. Замість захардкоженого `news.weekSummary` («Recent highlights») — «Тиждень у трьох рядках» з
-   **реальних** даних (теза / «що запам'ятати» останнього опублікованого weekly), інакше блок не
-   рендериться (I-6, B8); на mobile згорнутий за замовчуванням, щоб не відсувати discovery.
+2. Захардкожений «Recent highlights» (`news.weekSummary`) прибрано hotfix-ом B8 (2026-09-29). За
+   бажанням додати «Тиждень у трьох рядках» з **реальних** даних (теза / «що запам'ятати»
+   останнього опублікованого weekly); без даних блок не рендериться (I-6); на mobile — згорнутий за
+   замовчуванням, щоб не відсувати discovery.
 3. Discovery toolbar одразу перед стрічкою: пошук з очищенням, «Фільтри» з лічильником активних
    (нижче брейкпоінта D5), сортування (Relevance — лише з query).
 4. Рядок результатів у `role=status`: «Показано X–Y з N · останні 100 матеріалів» (чесний обсяг, G05).
@@ -1047,7 +1151,8 @@ AH-2.4, AH-2.6, AH-3.3, AH-3.4 · **Закриває:** G02, G05, G07, B8; фі�
 - [ ] Relevance недоступний без query; очищення query повертає Newest.
 - [ ] Drawer: Escape / бекдроп / «Готово» повертають фокус на «Фільтри»; назви категорій не
   обрізаються на 360 / 390.
-- [ ] `news.weekSummary` видалено з `i18n.ts`; блок підсвіток показує реальні дані або відсутній.
+- [ ] Статичного тексту-підсумку на сторінці немає (прибрано hotfix-ом B8); блок підсумку тижня,
+  якщо доданий, показує лише реальні дані або відсутній.
 - [ ] Кеш: `page.tsx` без `searchParams` (статичний тест у CI); на Preview другий запит `/en/news`
   — `x-vercel-cache: HIT` (зафіксовано в PR через `seo:contract --headers`).
 - [ ] `/en/news` і `/uk/news` у gating-режимі QA-матриці — 0 за всіма метриками; SEO-diff 0.
@@ -1072,27 +1177,31 @@ canonical на `/news`.
 
 ### AH-4.5 · Гейт News vertical slice
 
-**Тип:** QA + власник · **Розмір:** M (+ календарний час на сесії) · **Виконавець:** власник +
-агент · **Залежить від:** AH-4.3, AH-4.4, AH-0.5, AH-0.2 (D12) · **Закриває:** G14, G19;
-M3-гейт gap-plan
+**Тип:** QA + власник · **Розмір:** S · **Виконавець:** власник + агент · **Залежить від:**
+AH-4.3, AH-4.4, AH-0.5 · **Закриває:** G14; M3-гейт gap-plan (G19 знято рішенням D12)
+
+> **Рішення після #369:** власник пропустив 5 usability-сесій (D12, 2026-09-29). Гейт спирається на
+> автоматику й підпис власника; після запуску — метрики AH-7.4, а [протокол сесій](../research/2026-09-29-redesign-usability-sessions-protocol.md)
+> лишається на випадок їх просідання.
 
 **Що зробити:**
 1. QA-матриця (chromium) + firefox / webkit quick для chrome, news і search; SEO compare;
    interaction E2E доповнити комбінованими фільтрами з topics, keyboard-only сценарієм у
    мобільному drawer і межами сторінок.
-2. 5 модерованих usability-сесій на 8 задачах з gap-plan §7 (mobile + desktop); нотатки —
-   `wiki/research/<дата>-news-slice-usability.md`.
+2. Відтворити 8 acceptance tasks з gap-plan §7 як E2E-сценарії: filter і sort на першому екрані,
+   Agents & MCP за 7 днів, topic + category, скидання одного фільтра й «Скинути все», page 2 →
+   стаття → Back, reload і скопійований URL, семантика Newest / Relevance, keyboard-only у
+   мобільному drawer.
 3. Виправити блокери; повторити автоматичні гейти.
 4. Підпис власника відкриває фазу 5.
 
 **AC (гейт):**
-- [ ] ≥ 80% виконання задач без допомоги модератора; 0 учасників сприйняли Hot topics як активні
-  фільтри; 0 втрат стану після Back/Forward/reload.
+- [ ] Усі 8 E2E-сценаріїв acceptance tasks зелені; 0 втрат стану після Back/Forward/reload.
 - [ ] Автоматичні гейти зелені; Firefox і WebKit без функціональних регресій.
 - [ ] Рішення «go» з датою записане в `wiki/log.md`.
 
-**Гейт G4:** acceptance tasks gap-plan §7 виконані на реальних даних EN/UK, Day/Night, 360–1440;
-usability-результати задокументовані; підпис власника.
+**Гейт G4:** acceptance tasks gap-plan §7 відтворені як E2E на реальних даних EN/UK, Day/Night,
+360–1440; підпис власника.
 
 ---
 
@@ -1642,7 +1751,8 @@ weekly на Vercel Preview; розмір JS і CSS на маршрут прот�
 **Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-7.1 ·
 **Закриває:** G10 (фінал), G15 (фінал), B15
 
-**Що зробити:** видалити deprecated-аліаси токенів (після `grep` = 0); legacy-блоки `globals.css`
+**Що зробити:** видалити deprecated-аліаси токенів (після `grep` = 0), зокрема ім'я `--surface-2`,
+яке ADR токенів 2.0 лишив для сумісності до 3.0.0; legacy-блоки `globals.css`
 (`.cat-*` light-хаки, орби, `pulse`, `nf-*`, `.reveal`, старі `.card-hover` / `.elevation-card` /
 `.newsletter-card-bg`, хардкод `#141414` у `.skip-link`); невикористані компоненти
 (`home/video-teaser.tsx`, `post-card.tsx`, `category-thumb.tsx`, `reveal.tsx`,
@@ -1690,7 +1800,8 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 
 ## 14. Трасування G01–G20 → задачі
 
-Статус — за кодом на 2026-09-29 (source: live check; фінальна звірка — AH-0.1).
+Статус — за кодом на 2026-09-29 після PR #369 (source: live check після rebase на `3f47256`;
+фінальна звірка — AH-0.1).
 
 | G | Пріоритет | Статус за кодом | Доказ | Задачі епіку |
 |---|---:|---|---|---|
@@ -1698,22 +1809,22 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 | G02 | P0 | partial | ADR прийнято; Topics і макет прототипу не перенесені | AH-4.1, AH-4.3 |
 | G03 | P0 | done | `SortMode` у `news-filters.ts` має лише newest / oldest / relevance | регресія в AH-4.3, AH-4.5 |
 | G04 | P0 | done | URL-state + `e2e/news-feed-interaction.spec.ts` (#367) | регресія в AH-4.3, AH-4.5 |
-| G05 | P0 | partial | зріз 100 / 80 без чесної мітки обсягу; статичний `weekSummary` (B8) | AH-4.3 |
+| G05 | P0 | partial | зріз 100 / 80 без чесної мітки обсягу; статичний `weekSummary` (B8) прибрано hotfix-ом 2026-09-29 | AH-4.3 |
 | G06 | P0 | open | немає Topics / Tool у `news-filters.ts` | AH-4.1 |
 | G07 | P1 | partial (needs verification) | drawer є; положення toolbar на 390×844 після інтро не перевірене | AH-4.3 |
 | G08 | P1 | done | «Done» замість Apply ([ADR](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md) §5) | AH-4.3 («Готово · N») |
-| G09 | P1 | partial | v1 без type roles, elevation, z-index, control sizes | AH-1.1, AH-1.5, AH-1.6 |
-| G10 | P1 | open | `globals.css` на legacy-палітрі; `tokens.ts` не підключений (B1) | AH-1.1, AH-7.3 |
-| G11 | P1 | partial | 10 примітивів; бракує Field, Dialog, Menu, Tabs, Toast, Badge… | AH-2.2…2.6 |
-| G12 | P1 | partial | SemVer і changelog у wiki; немає процесу deprecation у коді | AH-0.2, AH-1.1, AH-7.3 |
-| G13 | P1 | open | немає state matrix по компонентах | AH-2.1, AH-2.5 |
-| G14 | P1 | partial | інтеракційний E2E лише для news | AH-0.5, AH-4.5, AH-7.1 |
-| G15 | P2 | open | hex у 18 файлах `.tsx` / `.css` поза admin, 74 класи < 12 px (B3, B4) | AH-1.7, AH-7.3 |
-| G16 | P2 | open | різні механіки меню, share, search, drawer | AH-2.4, AH-3.2, AH-3.3 |
+| G09 | P1 | partial | #369: палітра Night/Day, шкала в rem, z-index, розміри контролів; бракує spacing, радіусів 2.0, тіней за темою, брейкпоінтів, motion-токенів, шрифтів | AH-1.5, AH-1.6 |
+| G10 | P1 | done (#369) | `tokens.ts` 2.0.0 — одне джерело, `globals.css` — дзеркало з drift-гейтом; ім'я `--surface-2` — до 3.0.0 | AH-7.3 (прибирання) |
+| G11 | P1 | partial | 10 примітивів + 8 з #369 (Popover, Dialog, DropdownMenu, Tooltip, Tabs, Accordion, Toast, Combobox); бракує Field, SearchInput, Switch, SegmentedControl, Badge, Tag, Notice… | AH-2.2…2.6 |
+| G12 | P1 | partial | SemVer і changelog у wiki + ADR 2026-09-29; немає процесу deprecation у коді | AH-0.2, AH-7.3 |
+| G13 | P1 | partial | каталог `/ds-catalog` показує лише компоненти #369; немає data-станів і повної state matrix | AH-2.5, картки фаз 2–5 |
+| G14 | P1 | partial | E2E для news і каталогу компонентів (#369); немає матриці сторінок | AH-0.5, AH-4.5, AH-7.1 |
+| G15 | P2 | partial | #369: гейт шрифту < 12 px і drift; hex — у 14 файлах `.tsx` / `.css` поза admin (B4) | AH-1.7, AH-7.3 |
+| G16 | P2 | partial | компоненти меню/поповерів є (#369), але header, share, search і drawer ще на власних механіках | AH-2.4, AH-3.2, AH-3.3 |
 | G17 | P2 | open | локальні стилі StoryCard / DigestCard / SourceList | AH-4.2, AH-5.1 |
 | G18 | P2 | policy | рух заморожено до G5 (I-9) | фаза 6 |
-| G19 | P2 | open | даних usability-сесій немає | AH-4.5 |
-| G20 | P3 | open | немає каталогу компонентів | AH-2.1 |
+| G19 | P2 | waived | сесії пропущено рішенням власника 2026-09-29; страхують автоматика й метрики після запуску | AH-4.5, AH-7.4 |
+| G20 | P3 | done (#369) | внутрішній каталог `/ds-catalog` | AH-2.1 ✅ |
 
 ## 15. Матриця маршрутів
 
@@ -1761,49 +1872,56 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 | Продуктивність руху на слабких пристроях | середня / середній | фаза 6 після G5; ліміт 32; reduced motion; лабораторний замір | AH-6.* |
 | Конфлікти з weekly-роботою в `main` | висока / середній | малі PR; weekly-шаблон — поза днями релізу | AH-5.5 |
 | Новий знак знижує впізнаваність у соцмережах | середня / середній | D7: соц-ассети — окремим рішенням | AH-3.1 |
-| Admin стає нечитабельним після зміни токенів | низька / середній | I-10; `admin-mobile.spec.ts` + візуальна перевірка | AH-1.1 |
-| Власник недоступний для підписів і usability | середня / високий (блокує гейти) | лише 8 гейтів; асинхронні підписи на Preview | G0–G7 |
+| Admin стає нечитабельним після зміни токенів | низька / середній | I-10; `admin-mobile.spec.ts` + візуальна перевірка | AH-1.4, AH-1.6 |
+| Власник недоступний для підписів | середня / високий (блокує гейти) | лише 8 гейтів; асинхронні підписи на Preview | G0–G7 |
+| Паралельні сесії виконують ті самі задачі (як PR #369) → дубль роботи й конфлікти | висока / середній | статус у §5.3 оновлює PR задачі; перед стартом — звірка з актуальним `main` (§0) | усі задачі |
+| Без usability-сесій discovery не перевірене на людях (D12) | середня / середній | E2E acceptance tasks (AH-4.5), метрики AH-7.4, протокол сесій у запасі | AH-4.5, AH-7.4 |
 
 ## 17. Оцінка трудомісткості
 
-Оцінки — планувальні припущення для одного виконавця: S = 0,5, M = 1, L = 2,5 дня.
-Специфікація 2026-09-05 оцінювала 12–18 днів, але лише для перенесення шаблонів; цей епік додає
-foundations, бібліотеку, QA-інструменти, usability, рух і прибирання. (assumption)
+Оцінки — планувальні припущення для одного виконавця: S = 0,5, M = 1, L = 2,5 дня; для задач із
+позначкою ◐ рахується лише залишок. Специфікація 2026-09-05 оцінювала 12–18 днів, але лише для
+перенесення шаблонів; цей епік додає foundations, бібліотеку, QA-інструменти, рух і прибирання.
+До PR #369 оцінка була ≈ 62 дні; #369 і рішення D12 зняли ≈ 7,5 дня. (assumption)
 
 | Фаза | Задачі | Оцінка, днів | Календарні залежності |
 |---|---|---:|---|
-| 0 | 6 | ≈ 5 | підпис D1–D13; baseline продукту — історичні 28 днів з GA4 (без очікування) |
-| 1 | 7 | ≈ 8,5 | підпис власника на знімках |
-| 2 | 6 | ≈ 7,5 | — |
-| 3 | 6 | ≈ 6,5 | підпис на знаку й OG |
-| 4 | 5 | ≈ 6 | 5 usability-сесій (рекрутинг власника) |
+| 0 | 6 (1 ◐) | ≈ 4,5 | підпис D2, D6, D7, D8, D11 (сторінки), D13; baseline продукту — історичні 28 днів з GA4 (без очікування) |
+| 1 | 7 (1 ✅, 4 ◐) | ≈ 4,5 | підпис власника на шрифтах і UK-заголовках |
+| 2 | 6 (1 ✅, 4 ◐) | ≈ 4,5 | — |
+| 3 | 6 | ≈ 6,5 | підпис на знаку |
+| 4 | 5 | ≈ 5,5 | — (usability-сесії пропущено, D12) |
 | 5 | 15 (+1 опц.) | ≈ 23 | підтвердження фактів (статистика, розклад, політики) |
 | 6 | 3 | ≈ 2,5 | — |
 | 7 | 5 | ≈ 3,5 | 28 днів спостереження після релізу |
-| **Разом** | **53 (+1)** | **≈ 62** | з 2–3 паралельними доріжками (§5.4) календар — ≈ 6–9 тижнів + 28 днів оцінки |
+| **Разом** | **53 (+1)** | **≈ 55** | з 2–3 паралельними доріжками (§5.4) календар — ≈ 6–8 тижнів + 28 днів оцінки |
 
-Для агентного виконання календарний час визначають переважно рев'ю, підписи власника й
-usability-сесії, а не кодування.
+Для агентного виконання календарний час визначають переважно рев'ю й підписи власника, а не
+кодування.
 
 ## 18. Свідомо винесено в наступні епіки
 
 1. Форматні модулі статей (analysis / technical / evidence) — зміни payload і pipeline.
 2. Пошук по Concepts / Guides / Toolbox у SearchDialog.
 3. Saved і індекс рубрик — якщо D6 відклав їх.
-4. Бренд-кит: аватари й банери соцмереж, weekly PDF, Instagram carousel і LinkedIn document у стилі
-   After Hours.
+4. Бренд-кит: аватари й банери соцмереж, Instagram carousel і LinkedIn document у стилі After Hours —
+   з урахуванням того, що OG, PDF і duotone лишаються жовтими (I-12), доки власник не вирішить інакше.
 5. Кирилична serif-гарнітура для українського display.
 6. Shared-element View Transitions (картка → стаття).
-7. Другий раунд usability після повного rollout.
+7. Usability-сесії за [протоколом](../research/2026-09-29-redesign-usability-sessions-protocol.md) —
+   якщо метрики AH-7.4 просядуть.
 
 ## Related pages
 
 - [after-hours-redesign](after-hours-redesign.md) — концепт, палітра 2.0, route-таблиця, критерії приймання
 - [after-hours-tension](after-hours-tension.md) — мова руху й The Resolve
 - [after-hours-motion](after-hours-motion.md) — історія трьох motion-напрямів
+- [after-hours-epic-readiness](after-hours-epic-readiness.md) — готовність до епіку після PR #369
 - [design-system-gap-plan](../audits/2026-09-26-design-system-gap-plan.md) — розриви G01–G20 і milestones M0–M5
 - [ADR news discovery](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md) — контракт discovery
-- [design-system-tokens](../architecture/design-system-tokens.md) — токени v1.0.0 і пропозиція 2.0.0
+- [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) — міграція токенів, винятки (OG/PDF/duotone), пропуск usability-сесій
+- [usability-протокол](../research/2026-09-29-redesign-usability-sessions-protocol.md) — сесії на випадок просідання метрик
+- [design-system-tokens](../architecture/design-system-tokens.md) — токени 2.0.0, гейт `tokens:check`
 - [responsive-crossbrowser-audit](responsive-crossbrowser-audit.md) — правило одного брейкпоінта
 - [event-taxonomy](../analytics/event-taxonomy.md) — події, які має зберегти редизайн
 - [toolbox-wave1-spec](toolbox-wave1-spec.md) — non-goals утиліт

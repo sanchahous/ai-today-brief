@@ -6,6 +6,11 @@ Last updated: 2026-09-29
 
 ---
 
+> **Оновлення 2026-09-29:** повна декомпозиція, порядок робіт і сайзинг — у
+> [епіку реалізації](after-hours-redesign-epic.md) (54 сабтаски, 8 фаз, гейти й acceptance criteria;
+> звірено з цим PR). Розділ 3 нижче лишається первинним входом за хвилями A–C; оцінку тепер задає
+> епік — ≈ 55 днів разом із foundations, бібліотекою, QA-інструментами й рухом (assumption).
+
 ## 1. Підсумок
 
 Три блокери закриті кодом, четвертий (usability) знято рішенням власника (source: `npm run tokens:check`, vitest `src/lib/ui`, `e2e/ui-components.spec.ts` 2026-09-29); четвертий (usability-докази) має готовий протокол, але потребує людей. П'ятого блокера немає (власник підтвердив 2026-09-29: «нічого»).
@@ -68,6 +73,7 @@ Last updated: 2026-09-29
 
 ## Related pages
 
+- [after-hours-redesign-epic](after-hours-redesign-epic.md) — декомпозиція й порядок робіт
 - [after-hours-redesign](after-hours-redesign.md)
 - [design-system-tokens](../architecture/design-system-tokens.md)
 - [2026-09-29 ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md)
