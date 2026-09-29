@@ -325,7 +325,7 @@ flowchart TD
 
 | ID | Задача | Розмір | Хто | Залежить від | Закриває |
 |---|---|---|---|---|---|
-| AH-0.1 | ✅ Звірити статус G01–G20 і вихідну точку ([gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)) | — | — | — | G01, конфлікт §2.3 |
+| AH-0.1 | ✅ Звірити статус G01–G20 і вихідну точку ([#372](https://github.com/sanchahous/ai-today-brief/pull/372), [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)) | — | — | — | G01, конфлікт §2.3 |
 | AH-0.2 | ✅ ADR: rollout і foundations, D1–D13 ([ADR](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)) | — | — | — | передумова G12 |
 | AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
 | AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
@@ -417,7 +417,7 @@ flowchart TD
 2. Виправити формулювання в `wiki/now.md` («закрито 20 розривів») на перевірене.
 3. Закрити пункт #10 у [open-questions](../open-questions.md) записом «закрито: …».
 
-> **Виконано 2026-09-29.** Результат: 6 done, 10 partial, 2 open, 1 policy, 1 waived. Відмінності від
+> **Виконано 2026-09-29, PR [#372](https://github.com/sanchahous/ai-today-brief/pull/372).** Результат: 6 done, 10 partial, 2 open, 1 policy, 1 waived. Відмінності від
 > попередньої таблиці §14 — у п'яти рядках (G07, G09, G11, G15, G16), пояснення в
 > [gap-plan §10.1](../audits/2026-09-26-design-system-gap-plan.md#101-розбіжності-зі-старою-таблицею-епіку-14--пояснення).
 

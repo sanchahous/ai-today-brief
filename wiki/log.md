@@ -5053,7 +5053,7 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 
 ## 2026-09-29 — AH-0.1: статус розривів G01–G20 звірено з кодом
 
-Джерело: задача AH-0.1 епіку [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md); grep і читання `src/`, `e2e/`, `scripts/`, `package.json`, `.github/`, `.githooks/` на `main` @ `83b4421`; `npm run tokens:check` (PASS); headless Chromium і мобільний перегляд 390×844 на production `b3f1b3a` (deployments GitHub API).
+Джерело: PR [#372](https://github.com/sanchahous/ai-today-brief/pull/372), задача AH-0.1 епіку [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md); grep і читання `src/`, `e2e/`, `scripts/`, `package.json`, `.github/`, `.githooks/` на `main` @ `83b4421`; `npm run tokens:check` (PASS); headless Chromium і мобільний перегляд 390×844 на production `b3f1b3a` (deployments GitHub API).
 
 У [audits/2026-09-26-design-system-gap-plan](audits/2026-09-26-design-system-gap-plan.md) додано §10 «Статус на 2026-09-29» — таблицю G01–G20 зі статусом і доказом у кожному рядку; історичні розділи 1–9 не змінювались. Підсумок: **6 done** (G01, G03, G04, G08, G10, G20), **10 partial**, **2 open** (G06, G17), G18 — policy, G19 — waived. Твердження запису [now](now.md) від 2026-09-28 «закрито 20 розривів» не підтвердилось: закрито 6.
 

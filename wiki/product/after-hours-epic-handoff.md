@@ -16,7 +16,7 @@ Last updated: 2026-09-29
   hotfix B8 — з `/news` прибрано захардкожений «Recent highlights».
 - PR [#371](https://github.com/sanchahous/ai-today-brief/pull/371) змерджено 2026-09-29 (`main` @
   `83b4421`): ADR D1–D13, рішення D7 «знак скрізь» і ця сторінка вже в `main`.
-- **Виконано:** AH-0.1 (звірка G01–G20: 6 done, 10 partial, 2 open, 1 policy, 1 waived —
+- **Виконано:** AH-0.1 (PR [#372](https://github.com/sanchahous/ai-today-brief/pull/372), звірка G01–G20: 6 done, 10 partial, 2 open, 1 policy, 1 waived —
   [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)),
   AH-0.2 (ADR), AH-1.1 (токени 2.0, PR #369), AH-2.1 (`/ds-catalog`, PR #369).
 - **Частково (◐):** AH-0.5, AH-1.2, AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
