@@ -1,6 +1,6 @@
 # Епік: реалізація редизайну After Hours (AI Today Brief)
 
-Summary: виконуваний епік переносу дизайн-системи й макетів After Hours v3 з `artifacts/after-hours/` у production-сайт: 54 сабтаски (53 обов'язкові + 1 опційна) у порядку виконання, 8 фаз і 8 гейтів, кожен сабтаск з описом, залежностями й acceptance criteria. Вихідна точка звірена з кодом після PR #369 (2 задачі вже виконані, 9 — частково); рішення D1, D3, D4, D5, D12 прийняті власником 2026-09-29.
+Summary: виконуваний епік переносу дизайн-системи й макетів After Hours v3 з `artifacts/after-hours/` у production-сайт: 56 задач (55 обов'язкових + 1 опційна, яку рішення D6 відклало) у порядку виконання, 8 фаз і 8 гейтів, кожна задача з описом, залежностями й acceptance criteria. Вихідна точка звірена з кодом після PR #369 (3 задачі вже виконані, 9 — частково); усі рішення D1–D13 прийняті 2026-09-29 — ADR.
 Sources: `artifacts/after-hours/` (README, QA.md, tokens.css, tokens.json, app.js, home.js, articles.js, editions.js, knowledge.js, toolbox.js, pages.js, seo.js, data.js `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/README.md`, `artifacts/brand-kit/README.md`;
 wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
 live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0)
@@ -8,16 +8,20 @@ Last updated: 2026-09-29
 
 ---
 
-> **Статус 2026-09-29:** епік готовий до виконання. Перші кроки — AH-0.1 (звірка стану) і AH-0.2
-> (підпис рішень D1–D13). До закриття гейту G0 жоден візуальний PR у production не відкривається.
+> **Статус 2026-09-29:** епік готовий до виконання, усі рішення D1–D13 ухвалені (AH-0.2 ✅).
+> Наступні кроки — решта фази 0: AH-0.1 (звірка стану), AH-0.3–AH-0.6 (baseline-заміри й
+> QA-інструменти). До закриття гейту G0 жоден візуальний PR у production не відкривається.
 > Візуальний напрям затверджено власником у прототипі v3; цей документ — план його перенесення,
 > а не нова дизайн-пропозиція. (source: [after-hours-redesign](after-hours-redesign.md) §1)
 >
-> **Рішення власника 2026-09-29:** прийнято D1 (варіант A), D3 (`next/font/local`), D4 (Georgia для
-> українських заголовків на запуск) і D5 (варіант A: header і discovery перемикаються на 60rem ≈
-> 960 px). У сесії PR #369 власник також пропустив usability-сесії (D12) і лишив жовтий `#f0c040`
-> для OG, PDF і duotone. D2, D6, D7, D8, D11 (сторінки) і D13 чекають задачі AH-0.2.
-> (source: відповідь власника в сесії 2026-09-29; [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4, §6)
+> **Рішення 2026-09-29** зведені в [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md):
+> D1 — варіант A; D2 — зберегти `.theme-light` і додати `data-theme`; D3 — `next/font/local`; D4 —
+> Georgia для українських заголовків; D5 — брейкпоінти прототипу, перемикання на 60rem ≈ 960 px;
+> D6 — нових URL не створювати; **D7 — міняти знак скрізь** (сайт, OG, PDF, соц-шаблони, аватари й
+> банери; нові задачі AH-3.7 і AH-3.8); D8 — «Теми» з `tools_mentioned`; D9–D11 — як у PR #369,
+> для сторінок — скриптові знімки; D12 — usability-сесії пропущено; D13 — лише системне
+> `prefers-reduced-motion`. Жовтий `#f0c040` лишається кольором OG, PDF і duotone (I-12).
+> (source: відповіді власника в сесії 2026-09-29; [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4, §6)
 >
 > **Звірка з PR #369 (змерджено 2026-09-29, `3f47256`):** паралельна сесія перенесла токени 2.0.0 у
 > `tokens.ts` і `globals.css` (AH-1.1 ✅), зробила внутрішній каталог `/ds-catalog` (AH-2.1 ✅),
@@ -106,7 +110,9 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
   motion-токени, контраст-гейт, ratchet на «сирі» значення.
 - **Бібліотека:** `src/components/ui/` (примітиви й композити), editorial-патерни, внутрішній
   каталог компонентів.
-- **Бренд:** знак, favicon та іконки, `logo.png`, manifest, OG-шаблони.
+- **Бренд (D7 — скрізь):** знак на сайті (favicon та іконки, `logo.png`, manifest, header, footer),
+  у генераторах зображень і PDF (OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети,
+  duotone) і в brand-kit (аватари й банери соцмереж). Палітра OG, PDF і duotone лишається жовтою (I-12).
 - **Chrome:** header, пошук (Ctrl/Cmd+K), footer, consent-картка, newsletter-форми.
 - **Шаблони** з route-таблиці [after-hours-redesign](after-hours-redesign.md) §3: home, news,
   search, article, digests, daily, weekly, concepts / concept, guides / guide, tools + три
@@ -118,18 +124,18 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 
 - Адмін-CMS (`/admin/**`) — у матриці покриття прототипу позначена «Out of scope».
   (source: `artifacts/after-hours/data.js` `COVERAGE`)
-- Нові індексовані URL (`/[lang]/categories`, `/[lang]/saved`) — лише за рішенням D6; за
-  замовчуванням не створюються. (source: [overview](../overview.md) §7 #8)
+- Нові індексовані URL (`/[lang]/categories`, `/[lang]/saved`) — за рішенням D6 у цьому епіку не
+  створюються. (source: [overview](../overview.md) §7 #8; [ADR розкатки](../decisions/2026-09-29-after-hours-rollout-and-foundations.md))
 - Зміни pipeline і payload під форматні модулі статей (decision table, claim/evidence ledger,
   methodology note для analysis / technical / evidence) — окремий епік; тут стаття рендерить
   лише поля наявного payload. (source: [after-hours-redesign](after-hours-redesign.md) §3
   «Система повноцінних статей»)
 - Пошук по Concepts / Guides / Toolbox у глобальному пошуку — «окреме розширення даних».
   (source: там само, маршрут `search`)
-- Соц-шаблони й PDF (Instagram carousel, LinkedIn document, weekly PDF), аватари й банери
-  `artifacts/brand-kit/` — follow-up після D7. Перефарбування OG, PDF і duotone з жовтого `#f0c040`
-  на brass не виконується: власник лишив жовтий 2026-09-29.
-  (source: [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4)
+- Перефарбування OG, PDF і duotone з жовтого `#f0c040` на brass: власник лишив жовтий 2026-09-29.
+  Заміна знака в цих рендерах і в brand-kit — у межах епіку (D7; AH-3.7, AH-3.8).
+  (source: [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4;
+  [ADR розкатки](../decisions/2026-09-29-after-hours-rollout-and-foundations.md) §3)
 - Paywall, акаунти, членство. (source: [after-hours-redesign](after-hours-redesign.md) §1)
 - Hash-маршрути, демо-дані, атлас руху, frame probe, SEO-інспектор, `#/coverage`, `#/system`,
   `#/states` як публічні сторінки. (source: `artifacts/after-hours/README.md` «Межі прототипу»;
@@ -220,35 +226,35 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 | I-9 | Рух — наприкінці: нові жести й сцени лише після гейту G5; до того — лише базові CSS-переходи станів ≤ 320 мс | gap-plan G18; [after-hours-tension](after-hours-tension.md) «Передача в production» |
 | I-10 | Admin не редизайниться, але поділяє `globals.css`: зміни токенів не повинні зробити `/admin` нечитабельним (`e2e/admin-mobile.spec.ts`) | `data.js` `COVERAGE` («out») |
 | I-11 | Контакти, профілі й назви — лише з `src/lib/site.ts` (`CONTACT_EMAIL`, `ADVERTISE_EMAIL`, `EDITOR_*`, `SOCIALS`); адреси з прототипу (`editor@…`, `ads@…`) не переносяться | `src/lib/site.ts`; `artifacts/after-hours/pages.js` |
-| I-12 | Жовтий `#f0c040` лишається кольором OG-зображень, PDF і duotone-карток; редизайн сайту їх не перефарбовує | [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4 (рішення власника 2026-09-29) |
+| I-12 | Жовтий `#f0c040` лишається кольором OG-зображень, PDF і duotone-карток; редизайн їх не перефарбовує. Знак у них змінюється за D7 — у варіанті під жовту палітру | [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4; [ADR розкатки](../decisions/2026-09-29-after-hours-rollout-and-foundations.md) §3 (рішення власника 2026-09-29) |
 
-## 4. Рішення, потрібні до старту (D1–D13)
+## 4. Рішення до старту (D1–D13) — усі ухвалені 2026-09-29
 
-Рішення фіксує ADR у задачі AH-0.2. Рекомендація — позиція цього епіку; остаточне слово — за
-власником. (source: none (analysis) — зважування варіантів на основі джерел у кожному рядку)
+Рішення зведені в [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)
+(задача AH-0.2 ✅). Колонка «Рекомендація й чому» зберігає аргументацію епіку; фінальне рішення — в
+позначці ✅. (source: none (analysis) — зважування варіантів на основі джерел у кожному рядку)
 
-**Прийнято власником 2026-09-29:** D1 — варіант A; D3 — `next/font/local`; D4 — Georgia на запуск;
-D5 — варіант A (перемикання header і discovery на 60rem ≈ 960 px); D12 — сесії пропущено (у сесії
-PR #369). **Вирішено реалізацією PR #369 (змерджено):** D9 — каталог `/ds-catalog`; D10 —
-`@axe-core/playwright`; D11 — для каталогу компонентів (4 opt-in baseline-знімки). Рядки позначені
-✅; D2, D6, D7, D8, D11 (сторінки) і D13 — рекомендації до підпису в AH-0.2.
-(source: відповідь власника в сесії 2026-09-29; [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §6; `package.json`; `src/app/ds-catalog/page.tsx`)
+**Прийнято власником 2026-09-29:** D1, D3, D4, D5 — першою відповіддю; D2, D6, D8, D11 (сторінки),
+D13 — другою, за рекомендаціями; **D7 — у розширеному варіанті: міняти знак скрізь**; D12 — у сесії
+PR #369. **Вирішено реалізацією PR #369:** D9 — каталог `/ds-catalog`; D10 — `@axe-core/playwright`;
+D11 — для каталогу компонентів (4 opt-in baseline-знімки).
+(source: відповіді власника в сесії 2026-09-29; [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §6; `package.json`; `src/app/ds-catalog/page.tsx`)
 
 | ID | Питання | Варіанти | Рекомендація й чому | Потрібне до |
 |---|---|---|---|---|
 | D1 | Стратегія розкатки | **A** — foundations (токени, тема, шрифти, бренд, chrome) глобально в `main` малими PR, шаблони — по одному після гейту News slice; **B** — інтеграційна гілка `feat/after-hours` і один реліз у кінці; **C** — токени 2.0 у scoped-обгортці `[data-design]`, маршрути вмикаються поступово | ✅ **Прийнято 2026-09-29: A.** Одна версія токенів (вимога M1-гейту, I-4); кожен PR відкочується `git revert`; немає багатотижневих конфліктів із weekly-роботою в `main`. Заборону gap-plan §8 «не переносити одразу палітру на 26 routes» тлумачимо як заборону масового перенесення **макетів**; foundations за M1 мають бути єдиними. B — ризик великого злиття й пізнього фідбеку; C — два джерела правди й розрив header/body | AH-1.1 |
-| D2 | Контракт теми | зберегти `.theme-light` + `localStorage.theme ∈ {light, dark}` і додати атрибут `data-theme` (night / day) як аліас; або повністю перейти на `data-theme` | **Зберегти + аліас.** Не ламає `e2e/theme.spec.ts`, збережені налаштування читачів і pre-paint скрипт; `globals.css` уже приймає обидва селектори | AH-1.3 |
+| D2 | Контракт теми | зберегти `.theme-light` + `localStorage.theme ∈ {light, dark}` і додати атрибут `data-theme` (night / day) як аліас; або повністю перейти на `data-theme` | ✅ **Прийнято 2026-09-29: зберегти + аліас.** Не ламає `e2e/theme.spec.ts`, збережені налаштування читачів і pre-paint скрипт; `globals.css` уже приймає обидва селектори | AH-1.3 |
 | D3 | Доставка шрифтів | `next/font/local` з subset-файлів прототипу (display, display-italic, sans, sans-uk; OFL) або лишити `@fontsource-variable` | ✅ **Прийнято 2026-09-29: `next/font/local`** — автоматичний preload і fallback-метрики (менше CLS), без зовнішніх запитів (та сама причина, що й коментар у `globals.css` про CI без CDN). Перед кодом — `node_modules/next/dist/docs/01-app/01-getting-started/13-fonts.md` | AH-1.5 |
 | D4 | Українська display-гарнітура | Georgia (як у прототипі); Inter 700 (як зараз); окремо підібрана кирилична serif | ✅ **Прийнято 2026-09-29: Georgia на запуск** — перевірено QA прототипу; підбір кириличної serif-пари — follow-up (§18) | AH-1.5 |
 | D5 | Брейкпоінти | **A** — значення прототипу як іменовані `--breakpoint-*` (23.75 / 25 / 47.5 / 60 / 68.75 / 73.75 / 80 em-еквівалент у rem), header і discovery перемикаються разом на 60rem; **B** — лишити 64rem і адаптувати макети | ✅ **Прийнято 2026-09-29: A.** Макети перевірені на цих значеннях, включно з 200% zoom; «мертва смуга» не виникає, бо header і layout перемикаються на одному токені. Потрібно оновити контракт `e2e/helpers/viewports.ts` (959/960 замість 1023/1024) | AH-1.6, AH-3.3 |
-| D6 | Нові URL | `/[lang]/categories` і `/[lang]/saved` створювати чи ні | **Не створювати в цьому епіку.** Мапа категорій живе на головній і в меню header; Saved — наступна хвиля з `noindex`. Нові URL успадкують проблему індексації | AH-5.16 |
-| D7 | Обсяг заміни знака | лише сайт (favicon, іконки, OG, schema logo) або одразу й соцмережі, PDF, соц-шаблони | **Сайт зараз, решта — follow-up** з окремим рішенням щодо впізнаваності в соцканалах; `MARK_COLOR*` лишаються для соц/PDF-рендерів до follow-up. Колір OG, PDF і duotone уже вирішено: жовтий `#f0c040` лишається (I-12) | AH-3.1 |
-| D8 | Джерело фасету Topics / Tool | нормалізовані `tools_mentioned` або зв'язки з концептами | **`tools_mentioned` + мапа аліасів**; значення показується, якщо має ≥ 2 матеріали в поточному зрізі (assumption); якщо якість даних недостатня — фасет не показується, G06 лишається частковим | AH-4.1 |
+| D6 | Нові URL | `/[lang]/categories` і `/[lang]/saved` створювати чи ні | ✅ **Прийнято 2026-09-29: не створювати в цьому епіку.** Мапа категорій живе на головній і в меню header; Saved — наступна хвиля з `noindex`. Нові URL успадкують проблему індексації | AH-5.16 (не виконується) |
+| D7 | Обсяг заміни знака | лише сайт (favicon, іконки, OG, schema logo) або одразу й соцмережі, PDF, соц-шаблони | Рекомендація була «сайт зараз, решта — follow-up». ✅ **Прийнято 2026-09-29: міняти скрізь** — сайт, OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети й duotone, аватари й банери соцмереж. Палітра OG, PDF і duotone лишається жовтою (I-12), тож у цих рендерах знак іде у варіанті під жовту палітру; `MARK_COLOR*` виводяться з ужитку | AH-3.1, AH-3.7, AH-3.8 |
+| D8 | Джерело фасету Topics / Tool | нормалізовані `tools_mentioned` або зв'язки з концептами | ✅ **Прийнято 2026-09-29: `tools_mentioned` + мапа аліасів**; значення показується, якщо має ≥ 2 матеріали в поточному зрізі (assumption); якщо якість даних недостатня — фасет не показується, G06 лишається частковим | AH-4.1 |
 | D9 | Каталог компонентів (G20) | внутрішній маршрут, що віддає 404 у production; Storybook (нові залежності); без каталогу | ✅ **Вирішено в PR #369:** внутрішній маршрут `/ds-catalog` (404 без `DS_CATALOG=1`, `noindex`) замість запропонованого `/[lang]/design-system`; Playwright перевіряє на ньому клавіатуру, axe й aria-снапшоти | AH-2.1 |
 | D10 | Рушій a11y-перевірки | явна devDependency `axe-core` (зараз транзитивна 4.12.0) з ін'єкцією як у прототипі; або `@axe-core/playwright` | ✅ **Вирішено в PR #369: `@axe-core/playwright` ^4.13.0** — QA-матриця сторінок (AH-0.5) використовує той самий рушій | AH-0.5 |
-| D11 | Visual regression | скриптові знімки до/після (AH-0.3) + підпис власника, PNG у `artifacts/_local/`; або `toHaveScreenshot` з baseline-PNG у git | **Каталог — ✅ вирішено в #369:** 4 закомічені opt-in baseline (`VISUAL=1`, поки лише win32). **Сторінки — рекомендація:** скриптові знімки без комітування PNG — сотні знімків у git важкі й нестабільні між ОС; DOM/a11y/layout-метрики автоматизує AH-0.5 | AH-0.3 |
+| D11 | Visual regression | скриптові знімки до/після (AH-0.3) + підпис власника, PNG у `artifacts/_local/`; або `toHaveScreenshot` з baseline-PNG у git | **Каталог — ✅ вирішено в #369:** 4 закомічені opt-in baseline (`VISUAL=1`, поки лише win32). **Сторінки — ✅ прийнято 2026-09-29:** скриптові знімки без комітування PNG — сотні знімків у git важкі й нестабільні між ОС; DOM/a11y/layout-метрики автоматизує AH-0.5 | AH-0.3 |
 | D12 | Usability (G19) | 5 модерованих сесій на News slice або пропуск із прийнятим ризиком | ✅ **Прийнято власником 2026-09-29: сесії пропущено.** Ризик прийнято; G4 спирається на автоматику й підпис, після запуску — метрики AH-7.4; [протокол](../research/2026-09-29-redesign-usability-sessions-protocol.md) лишається на випадок просідання | AH-4.5 |
-| D13 | Керування рухом у production | лише `prefers-reduced-motion`; або ще й власний перемикач (як `?motion=off` у прототипі) | **Лише системне налаштування** — перемикач прототипу був інструментом рев'ю | AH-6.1 |
+| D13 | Керування рухом у production | лише `prefers-reduced-motion`; або ще й власний перемикач (як `?motion=off` у прототипі) | ✅ **Прийнято 2026-09-29: лише системне налаштування** — перемикач прототипу був інструментом рев'ю | AH-6.1 |
 
 ## 5. Порядок виконання
 
@@ -256,12 +262,12 @@ PR #369). **Вирішено реалізацією PR #369 (змерджено)
 
 | Фаза | Ціль | Задачі | Гейт на виході |
 |---|---|---|---|
-| 0 | Контракти, рішення, базові заміри (gap-plan M0) | AH-0.1…0.6 | **G0:** D1–D13 підписані; baseline visual / SEO / продукт зняті; QA-матриця працює в report mode |
+| 0 | Контракти, рішення, базові заміри (gap-plan M0) | AH-0.1…0.6 | **G0:** D1–D13 підписані ✅ ([ADR](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)); baseline visual / SEO / продукт зняті; QA-матриця працює в report mode |
 | 1 | Foundations (M1) | AH-1.1…1.7 | **G1:** сайт на токенах 2.0; ≥ 160 пар контрасту без провалів; 0 тексту < 12 px; візуальний diff підписаний |
 | 2 | Бібліотека компонентів (M2) | AH-2.1…2.6 | **G2:** примітиви й композити в каталозі зі state matrix; keyboard/a11y E2E зелені в трьох браузерах |
-| 3 | Бренд і chrome | AH-3.1…3.6 | **G3:** новий header / footer / пошук / consent на всіх маршрутах; e2e header, menu, search, footer, cookie зелені |
+| 3 | Бренд і chrome | AH-3.1…3.8 | **G3:** новий header / footer / пошук / consent на всіх маршрутах; e2e header, menu, search, footer, cookie зелені; новий знак — скрізь в один день (сайт, OG, PDF, соц-шаблони, brand-kit) |
 | 4 | News vertical slice (M3) | AH-4.1…4.5 | **G4:** acceptance tasks gap-plan §7 як E2E на реальних даних; підпис власника (usability-сесії пропущено за D12) — **відкриває фазу 5** |
-| 5 | Editorial-патерни й шаблони (M4) | AH-5.1…5.15 (+ 5.16 опц.) | **G5:** усі маршрути §15 у gating-режимі QA-матриці; публічні маршрути не імпортують legacy-компоненти |
+| 5 | Editorial-патерни й шаблони (M4) | AH-5.1…5.15 (5.16 не виконується, D6) | **G5:** усі маршрути §15 у gating-режимі QA-матриці; публічні маршрути не імпортують legacy-компоненти |
 | 6 | Рух Tension v3 | AH-6.1…6.3 | **G6:** 0 нескінченних анімацій; reduced motion = статичний кінцевий стан; кадровий бюджет виконано |
 | 7 | Валідація, реліз, прибирання (M5) | AH-7.1…7.5 | **G7:** критерії §1.4 виконані; звіт після запуску |
 
@@ -271,7 +277,7 @@ PR #369). **Вирішено реалізацією PR #369 (змерджено)
 flowchart TD
   G0{{G0 рішення + baseline}}
   A01[AH-0.1 звірка G01–G20] --> G0
-  A02[AH-0.2 ADR D1–D13] --> G0
+  A02[AH-0.2 ADR D1–D13 ✅] --> G0
   A03[AH-0.3 visual baseline] --> G0
   A04[AH-0.4 SEO-контракт] --> G0
   A05[AH-0.5 QA-матриця] --> G0
@@ -288,7 +294,8 @@ flowchart TD
   G2 --> A32[AH-3.2 search dialog] --> A33
   G2 --> A34[AH-3.4 newsletter] --> A35[AH-3.5 footer]
   G2 --> A36[AH-3.6 consent]
-  A33 & A35 & A36 --> G3{{G3 chrome}}
+  A31 --> A37[AH-3.7 знак в OG, PDF і соц-шаблонах] & A38[AH-3.8 brand-kit і платформи]
+  A33 & A35 & A36 & A37 & A38 --> G3{{G3 chrome і знак}}
   G0 --> A41[AH-4.1 Topics lib]
   G3 --> A42[AH-4.2 StoryCard] --> A43[AH-4.3 /news]
   A41 --> A43 --> A44[AH-4.4 /news/search] --> A45[AH-4.5 гейт News slice]
@@ -310,14 +317,14 @@ flowchart TD
 | ID | Задача | Розмір | Хто | Залежить від | Закриває |
 |---|---|---|---|---|---|
 | AH-0.1 | Звірити статус G01–G20 і вихідну точку | S | агент | — | G01, конфлікт §2.3 |
-| AH-0.2 | ADR: rollout і foundations (D1–D13; D1, D3–D5, D9–D12 уже вирішені) | S | агент + власник | — | передумова G12 |
+| AH-0.2 | ✅ ADR: rollout і foundations, D1–D13 ([ADR](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)) | — | — | — | передумова G12 |
 | AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
 | AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
-| AH-0.5 | ◐ QA-матриця a11y і верстки для сторінок (#369: axe-інфраструктура для каталогу) | M | агент | AH-0.2 (D10 ✅) | G14 (частк.) |
+| AH-0.5 | ◐ QA-матриця a11y і верстки для сторінок (#369: axe-інфраструктура для каталогу) | M | агент | D10 ✅ | G14 (частк.) |
 | AH-0.6 | Продуктовий і CWV baseline | S | власник + агент | open-questions #1 | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
-| AH-1.3 | Контракт теми Night/Day без спалаху | S | агент | AH-0.2 (D2) | B12 |
+| AH-1.3 | Контракт теми Night/Day без спалаху | S | агент | D2 ✅ | B12 |
 | AH-1.4 | Кольори й гліфи категорій | M | агент | — | B5 |
 | AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
 | AH-1.6 | ◐ Простір, форма, глибина, шари, брейкпоінти, motion-токени (#369: розміри контролів, z-index) | M | агент | D5 ✅ | G09, B13 |
@@ -328,13 +335,15 @@ flowchart TD
 | AH-2.4 | ◐ Оверлеї (#369: Popover, Dialog, DropdownMenu, Tooltip, Accordion) | M | агент | AH-2.2, AH-1.6 | G16 |
 | AH-2.5 | ◐ Зворотний зв'язок і data-стани (#369: Toast) | S | агент | AH-1.6 | G13 |
 | AH-2.6 | ◐ Навігація (#369: Tabs) | M | агент | AH-2.2 | B6, G11 |
-| AH-3.1 | Бренд-знак і похідні ассети | M | агент + власник | AH-0.2 (D7), AH-1.1 | B11 |
+| AH-3.1 | Бренд-знак на сайті: favicon, іконки, `logo.png`, manifest, `BrandMark` | M | агент + власник | D7 ✅, AH-1.1 ✅ | B11 (сайт) |
 | AH-3.2 | SearchDialog (Ctrl/Cmd+K) | M | агент | AH-2.3, AH-2.4, AH-2.5 | G16 (частк.) |
 | AH-3.3 | EditorialHeader | L | агент | AH-3.1, AH-3.2, AH-2.4, AH-1.6 | B13, «dead band» |
 | AH-3.4 | NewsletterForm і стани | M | агент | AH-2.3, AH-2.5 | контракт NewsletterForm |
 | AH-3.5 | Footer | S | агент | AH-3.1, AH-3.4 | — |
 | AH-3.6 | Consent-картка | S | агент | AH-2.2, AH-2.3 | — |
-| AH-4.1 | Taxonomy Topics / Tool | M | агент | AH-0.2 (D8) | G06, B7 |
+| AH-3.7 | Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
+| AH-3.8 | Brand-kit: аватар і банери соцмереж + заміна на платформах | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
+| AH-4.1 | Taxonomy Topics / Tool | M | агент | D8 ✅ | G06, B7 |
 | AH-4.2 | StoryCard, StoryRow, CategoryBanner | M | агент | AH-2.2, AH-2.5, AH-1.4 | G17 (частк.) |
 | AH-4.3 | Сторінка `/[lang]/news` | L | агент | AH-4.1, AH-4.2, AH-2.3, AH-2.4, AH-2.6, AH-3.3, AH-3.4 | G02, G05, G07 |
 | AH-4.4 | Сторінка `/[lang]/news/search` | S | агент | AH-4.3, AH-3.2 | — |
@@ -354,7 +363,7 @@ flowchart TD
 | AH-5.13 | Subscribe і Advertise | M | агент + власник | AH-5.1, AH-3.4 | routes `subscribe`, `advertise` |
 | AH-5.14 | Чотири політики | S | агент | AH-5.1 | route `policy` |
 | AH-5.15 | 404 і loading-стани | S | агент | AH-3.3, AH-2.5 | route `404`, B10 |
-| AH-5.16 | (опц., D6) Saved / індекс категорій | M | агент | D6 = так, AH-4.2 | routes `saved`, `categories` |
+| AH-5.16 | (опц.) Saved / індекс категорій — **не виконується** (D6 = ні) | — | — | — | — |
 | AH-6.1 | Motion runtime і жести | M | агент | G5 | Tension v3 |
 | AH-6.2 | The Resolve і «акорд» знака | M | агент | AH-6.1, AH-5.3, AH-3.1 | бренд-сцена |
 | AH-6.3 | View Transitions | S | агент | AH-6.1 | переходи маршрутів |
@@ -377,6 +386,8 @@ flowchart TD
   реальних даних — у AH-4.3.
 - **Після #369** задачі AH-1.4 і AH-1.7 не залежать від нових foundations-PR і можуть стартувати
   одразу після G0; AH-1.2 доповнюється, щойно AH-1.4 додасть `--cat-*`.
+- **Знак (D7):** AH-3.7 і AH-3.8 ідуть паралельно з AH-3.2–AH-3.6 одразу після AH-3.1, але мерджаться
+  разом з AH-3.1 або поспіль в один день — щоб на сайті, в OG, PDF і соцмережах не жили два знаки.
 
 ---
 
@@ -408,8 +419,10 @@ flowchart TD
 **Тип:** wiki (рішення) · **Розмір:** S · **Виконавець:** агент + власник · **Залежить від:** — ·
 **Закриває:** передумова G12 (governance)
 
-> **Стан після #369:** власник прийняв D1, D3, D4, D5 і D12 (2026-09-29); D9, D10 і D11 для
-> каталогу вирішені реалізацією PR #369. Лишаються D2, D6, D7, D8, D11 (сторінки) і D13.
+> **Стан: ✅ виконано 2026-09-29** — [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)
+> зводить усі D1–D13. Власник прийняв D2, D6, D8, D11 (сторінки) і D13 за рекомендаціями, а D7 — у
+> розширеному варіанті «міняти знак скрізь» (нові задачі AH-3.7, AH-3.8). Текст картки нижче лишається
+> для звірки.
 
 **Зони:** `wiki/decisions/<дата>-after-hours-rollout-and-foundations.md`, `wiki/index.md`,
 `wiki/log.md`, цей епік
@@ -913,34 +926,35 @@ format; `CategoryBadge` — гліф + назва (default / plain / dot); `pend
 
 ## 9. Фаза 3 — бренд і глобальна оболонка
 
-### AH-3.1 · Бренд-знак After Hours і похідні ассети
+### AH-3.1 · Бренд-знак After Hours на сайті
 
 **Тип:** код · **Розмір:** M · **Виконавець:** агент + власник (підпис) · **Залежить від:**
-AH-0.2 (D7), AH-1.1 · **Закриває:** B11; [after-hours-redesign](after-hours-redesign.md) §4
+D7 ✅, AH-1.1 ✅ · **Закриває:** B11 (сайт); [after-hours-redesign](after-hours-redesign.md) §4
 «Знак та ілюстрації»
+
+> **Рішення D7 (2026-09-29): знак міняється скрізь.** Ця задача — сайт; знак у генераторах
+> зображень і PDF — AH-3.7; аватари й банери соцмереж — AH-3.8. Усі три мерджаться разом або
+> поспіль в один день. Палітра OG, PDF і duotone лишається жовтою (I-12).
+> (source: [ADR розкатки](../decisions/2026-09-29-after-hours-rollout-and-foundations.md))
 
 **Зони:** `src/lib/brand-mark.ts`, `scripts/generate-brand-icons.ts` → `src/app/icon.svg`,
 `favicon.ico`, `apple-icon.png`; `src/app/logo.png/route.tsx`; `src/app/manifest.ts`;
-`src/app/[lang]/opengraph-image.tsx`, `src/app/[lang]/news/[category]/[item]/opengraph-image.tsx`;
-`src/lib/site.ts` (`MARK_COLOR*`); watcher `brand-chrome` → `wiki/now.md`
-
-> **Рішення після #369:** OG-шаблони **не перефарбовуються** — жовтий `#f0c040` лишається для OG,
-> PDF і duotone (I-12). Задача змінює знак у favicon, іконках, `logo.png`, manifest і компоненті
-> `BrandMark`; знак усередині OG — лише якщо D7 це охоплює, без зміни палітри OG.
+`src/components/icons.tsx` (`BrandMark` і друга версія знака); `MARK_COLOR` як фон аватара в
+`src/components/byline.tsx` і `src/app/[lang]/author/page.tsx`; `src/lib/site.ts` (`MARK_COLOR*`);
+watcher `brand-chrome` → `wiki/now.md`
 
 **Що зробити:** знак — пластина + вкладені A-лінії + зміщена celadon-крапка
 (`artifacts/after-hours/assets/mark.svg`, `app.js` `markSvg`); clear space ≥ ½ висоти; мінімум
 24 px; favicon без wordmark; компонент `BrandMark` для header / footer (SSR SVG, кольори з токенів,
-`aria-hidden` поруч із текстовим wordmark); палітра OG-шаблонів лишається жовтою (I-12), кирилиця
-в них має рендеритися коректно; manifest `theme_color` / `background_color` — токени 2.0;
-`MARK_COLOR*` лишаються для соц/PDF-рендерів до follow-up D7 (позначити коментарем).
+`aria-hidden` поруч із текстовим wordmark); аватар редактора в byline і на author — на токенах, не
+на `MARK_COLOR`; manifest `theme_color` / `background_color` — токени 2.0; `MARK_COLOR*` у
+`site.ts` лишаються лише доти, доки ними користуються рендери AH-3.7, потім видаляються.
 
 **AC:**
 - [ ] `npm run icons:generate` відтворює `icon.svg`, `favicon.ico`, `apple-icon.png`; знак
   читабельний на 16 / 32 / 180 / 512 px (знімки в PR).
 - [ ] `logo.png` 512×512; URL `Organization.logo` незмінний (SEO-diff 0).
-- [ ] OG 1200×630 для home та item EN/UK лишаються жовтими (I-12): заголовок не обрізається,
-  кирилиця без «тофу».
+- [ ] На сайті не лишилось старого знака «bloom» (grep за його геометрією й `MARK_COLOR` поза рендерами AH-3.7).
 - [ ] `wiki/now.md` оновлено в тому ж PR (`wiki:sync` зелений).
 
 ### AH-3.2 · SearchDialog (Ctrl/Cmd+K)
@@ -1062,8 +1076,59 @@ consent-картку), LinkedIn CTA, копірайт; фон `bg-deep`.
 - [ ] `cookie-overlay.spec.ts` зелений; картка не перекриває основний CTA на 360 px.
 - [ ] Фокус переходить у картку при відкритті з футера й повертається після закриття.
 
+### AH-3.7 · Знак у генераторах зображень і PDF
+
+**Тип:** код · **Розмір:** M · **Виконавець:** агент + власник (підпис на знімках) ·
+**Залежить від:** AH-3.1 · **Закриває:** B11 (рендери); D7
+
+**Зони:** `src/app/[lang]/opengraph-image.tsx`, `src/app/[lang]/news/[category]/[item]/opengraph-image.tsx`,
+`src/lib/weekly-digest/pdf.ts`, `src/lib/weekly-digest/linkedin-document.ts`,
+`src/lib/weekly-digest/instagram-carousel-render.ts`, `src/lib/social/assets.ts`,
+`src/lib/card/duotone.ts`; скрипти `weekly:pdf:sample` і `social:asset:sample` для знімків; watcher
+`weekly-digest` → `wiki/pipeline/weekly-digest.md`, `wiki/pipeline/weekly-editorial-selection.md`,
+`wiki/ops/weekly-admin-runbook.md`, `wiki/now.md`
+
+**Джерела:** [ADR розкатки](../decisions/2026-09-29-after-hours-rollout-and-foundations.md) §3;
+`artifacts/after-hours/assets/mark.svg`
+
+**Що зробити:** у кожному рендері, де є wordmark або «signal mark», поставити новий знак у варіанті
+під жовту палітру (I-12): ті самі пропорції й clear space, що й на сайті, контраст знака з тлом
+≥ 3:1. Палітру OG, PDF і duotone не змінювати. Один спільний модуль геометрії знака з
+`src/lib/brand-mark.ts` для всіх рендерів замість копій. Після задачі `MARK_COLOR*` видалити з
+`site.ts`, якщо ними більше ніхто не користується.
+
+**AC:**
+- [ ] Знімки до/після в PR: OG home і item (EN/UK), сторінки weekly PDF, LinkedIn document,
+  Instagram carousel, соц-ассет; палітра жовта, новий знак читабельний і не перекриває текст.
+- [ ] Кирилиця в OG і PDF без «тофу»; заголовки не обрізаються.
+- [ ] Наявні тести рендерів зелені; weekly-сторінки wiki з watcher-а оновлені (`wiki:sync` зелений).
+- [ ] Старого знака «bloom» немає в жодному рендері (grep).
+
+### AH-3.8 · Brand-kit: аватар і банери соцмереж
+
+**Тип:** дизайн-ассети + власник · **Розмір:** S · **Виконавець:** агент (файли) + власник
+(завантаження на платформи) · **Залежить від:** AH-3.1 · **Закриває:** B11 (соцмережі); D7
+
+**Зони:** `artifacts/brand-kit/avatar.svg`, `banner-x.svg`, `banner-linkedin.svg`,
+`banner-youtube.svg`, `banner-facebook.svg`, `launch-card-independent.html`, `README.md`
+
+**Що зробити:** перемалювати аватар і банери з новим знаком (палітра — на вибір власника на
+знімках; за замовчуванням After Hours для банерів і жовтий варіант знака там, де він стоїть поруч із
+жовтими картками); оновити README з таблицею розмірів і експорту в PNG; підготувати чекліст заміни
+для X, Telegram, LinkedIn і YouTube (акаунти з `SOCIALS` у `src/lib/site.ts`) та для інших платформ
+із таблиці README (Facebook, Bluesky, Mastodon, Instagram, Threads), якщо там є акаунт проєкту —
+список підтверджує власник. Завантаження на платформи робить власник у своїх акаунтах — агент
+налаштувань акаунтів не змінює.
+
+**AC:**
+- [ ] SVG і PNG-експорт кожного ассета відповідають розмірам із README (X 1500×500, LinkedIn
+  4200×700, YouTube 2560×1440, Facebook 851×315, аватар 1024×1024).
+- [ ] Знак читабельний на аватарі 48 px (найменший показ у стрічках).
+- [ ] Власник підтвердив заміну на платформах у день релізу знака; запис у `wiki/log.md`.
+
 **Гейт G3:** новий chrome на всіх маршрутах; e2e header / mobile-menu / mobile-search /
-footer-newsletter / cookie-overlay / theme зелені в трьох браузерах; SEO-diff 0.
+footer-newsletter / cookie-overlay / theme зелені в трьох браузерах; SEO-diff 0; новий знак — на
+сайті, в OG, PDF, соц-шаблонах і в соцмережах в один день.
 
 ---
 
@@ -1622,6 +1687,9 @@ Loading — скелетони за формою нових шаблонів (ho
 **Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** D6 = так, AH-4.2 ·
 **Закриває:** маршрути `saved`, `categories`
 
+> **Не виконується в цьому епіку:** власник 2026-09-29 обрав D6 = ні. Картка лишається як
+> заготовка для наступної хвилі. (source: [ADR розкатки](../decisions/2026-09-29-after-hours-rollout-and-foundations.md))
+
 **Що зробити:** **Saved** — локальний список (localStorage у try/catch, стан «сховище недоступне»),
 `noindex,nofollow`, без акаунта; кнопки «Зберегти» на StoryCard, статті й гайді. **Categories** —
 `/[lang]/categories` з картою покриття (частки реальні), лише якщо проблему індексації розблоковано
@@ -1847,13 +1915,13 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 | tools | `/[lang]/tools` | ISR 86400 | CollectionPage, ItemList, BreadcrumbList | як є | AH-5.10 |
 | tool / settings / instructions | `/[lang]/tools/prompt-optimizer`, `/settings-builder`, `/claude-md-generator` | як є | WebApplication, BreadcrumbList | усі три | AH-5.11 |
 | category | `/[lang]/category/[slug]` | ISR 86400 | CollectionPage, ItemList, BreadcrumbList | `agents-and-mcp` | AH-5.7 |
-| categories | — (D6) | — | CollectionPage, ItemList | — | AH-5.16 (опц.) |
+| categories | не створюється (D6 = ні) | — | CollectionPage, ItemList | — | AH-5.16 (не виконується) |
 | about | `/[lang]/about` | ISR 86400 | AboutPage, Organization, Person, BreadcrumbList | як є | AH-5.12 |
 | author | `/[lang]/author` | ISR 86400 | ProfilePage, Person, BreadcrumbList | як є | AH-5.12 |
 | subscribe | `/[lang]/subscribe` | ISR 86400 | WebPage | як є | AH-5.13 |
 | advertise | `/[lang]/advertise` | ISR 86400 | WebPage | як є | AH-5.13 |
 | policy | `/[lang]/editorial-policy`, `/ai-disclosure`, `/privacy`, `/terms` | як є | WebPage, BreadcrumbList | усі чотири | AH-5.14 |
-| saved | — (D6) | — | — (noindex) | — | AH-5.16 (опц.) |
+| saved | не створюється (D6 = ні) | — | — (noindex) | — | AH-5.16 (не виконується) |
 | 404 | not-found | — | — | `/en/zzz-missing` | AH-5.15 |
 | system, states, coverage, motion | лише артефакт | — | — | — | внутрішній каталог AH-2.1 |
 
@@ -1871,7 +1939,7 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 | Кирилиця в display-гарнітурі | середня / середній | D4; перевірка UK-маршрутів | AH-1.5 |
 | Продуктивність руху на слабких пристроях | середня / середній | фаза 6 після G5; ліміт 32; reduced motion; лабораторний замір | AH-6.* |
 | Конфлікти з weekly-роботою в `main` | висока / середній | малі PR; weekly-шаблон — поза днями релізу | AH-5.5 |
-| Новий знак знижує впізнаваність у соцмережах | середня / середній | D7: соц-ассети — окремим рішенням | AH-3.1 |
+| Новий знак знижує впізнаваність, якщо старий і новий живуть одночасно | середня / середній | D7: знак змінюється скрізь в один день — сайт, OG, PDF, соц-шаблони, аватари й банери; власник оновлює платформи в день релізу | AH-3.1, AH-3.7, AH-3.8 |
 | Admin стає нечитабельним після зміни токенів | низька / середній | I-10; `admin-mobile.spec.ts` + візуальна перевірка | AH-1.4, AH-1.6 |
 | Власник недоступний для підписів | середня / високий (блокує гейти) | лише 8 гейтів; асинхронні підписи на Preview | G0–G7 |
 | Паралельні сесії виконують ті самі задачі (як PR #369) → дубль роботи й конфлікти | висока / середній | статус у §5.3 оновлює PR задачі; перед стартом — звірка з актуальним `main` (§0) | усі задачі |
@@ -1882,19 +1950,20 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 Оцінки — планувальні припущення для одного виконавця: S = 0,5, M = 1, L = 2,5 дня; для задач із
 позначкою ◐ рахується лише залишок. Специфікація 2026-09-05 оцінювала 12–18 днів, але лише для
 перенесення шаблонів; цей епік додає foundations, бібліотеку, QA-інструменти, рух і прибирання.
-До PR #369 оцінка була ≈ 62 дні; #369 і рішення D12 зняли ≈ 7,5 дня. (assumption)
+До PR #369 оцінка була ≈ 62 дні; #369, рішення D12 і виконаний ADR (AH-0.2) зняли ≈ 8,5 дня, а D7
+«скрізь» додало задачі AH-3.7 і AH-3.8 (≈ 1,5 дня). (assumption)
 
 | Фаза | Задачі | Оцінка, днів | Календарні залежності |
 |---|---|---:|---|
-| 0 | 6 (1 ◐) | ≈ 4,5 | підпис D2, D6, D7, D8, D11 (сторінки), D13; baseline продукту — історичні 28 днів з GA4 (без очікування) |
+| 0 | 6 (1 ✅, 1 ◐) | ≈ 4 | рішення D1–D13 ухвалені; baseline продукту — історичні 28 днів з GA4 (без очікування) |
 | 1 | 7 (1 ✅, 4 ◐) | ≈ 4,5 | підпис власника на шрифтах і UK-заголовках |
 | 2 | 6 (1 ✅, 4 ◐) | ≈ 4,5 | — |
-| 3 | 6 | ≈ 6,5 | підпис на знаку |
+| 3 | 8 | ≈ 8 | підпис на знаку й знімках рендерів; власник оновлює аватари й банери на платформах |
 | 4 | 5 | ≈ 5,5 | — (usability-сесії пропущено, D12) |
 | 5 | 15 (+1 опц.) | ≈ 23 | підтвердження фактів (статистика, розклад, політики) |
 | 6 | 3 | ≈ 2,5 | — |
 | 7 | 5 | ≈ 3,5 | 28 днів спостереження після релізу |
-| **Разом** | **53 (+1)** | **≈ 55** | з 2–3 паралельними доріжками (§5.4) календар — ≈ 6–8 тижнів + 28 днів оцінки |
+| **Разом** | **55 (+1 не виконується)** | **≈ 56** | з 2–3 паралельними доріжками (§5.4) календар — ≈ 6–8 тижнів + 28 днів оцінки |
 
 Для агентного виконання календарний час визначають переважно рев'ю й підписи власника, а не
 кодування.
@@ -1903,9 +1972,9 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 
 1. Форматні модулі статей (analysis / technical / evidence) — зміни payload і pipeline.
 2. Пошук по Concepts / Guides / Toolbox у SearchDialog.
-3. Saved і індекс рубрик — якщо D6 відклав їх.
-4. Бренд-кит: аватари й банери соцмереж, Instagram carousel і LinkedIn document у стилі After Hours —
-   з урахуванням того, що OG, PDF і duotone лишаються жовтими (I-12), доки власник не вирішить інакше.
+3. Saved і індекс рубрик — відкладені рішенням D6.
+4. Перефарбування OG, PDF, duotone і соц-шаблонів у палітру After Hours — лише якщо власник змінить
+   рішення про жовтий `#f0c040` (I-12). Сам знак у них і в brand-kit змінюється в цьому епіку (AH-3.7, AH-3.8).
 5. Кирилична serif-гарнітура для українського display.
 6. Shared-element View Transitions (картка → стаття).
 7. Usability-сесії за [протоколом](../research/2026-09-29-redesign-usability-sessions-protocol.md) —
@@ -1919,6 +1988,7 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 - [after-hours-epic-readiness](after-hours-epic-readiness.md) — готовність до епіку після PR #369
 - [design-system-gap-plan](../audits/2026-09-26-design-system-gap-plan.md) — розриви G01–G20 і milestones M0–M5
 - [ADR news discovery](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md) — контракт discovery
+- [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md) — рішення D1–D13
 - [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) — міграція токенів, винятки (OG/PDF/duotone), пропуск usability-сесій
 - [usability-протокол](../research/2026-09-29-redesign-usability-sessions-protocol.md) — сесії на випадок просідання метрик
 - [design-system-tokens](../architecture/design-system-tokens.md) — токени 2.0.0, гейт `tokens:check`

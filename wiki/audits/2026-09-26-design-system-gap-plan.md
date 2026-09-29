@@ -281,7 +281,7 @@ Decision criteria до тесту: ≥80% task completion без moderator rescu
 
 ## Related pages
 
-- [After Hours redesign epic](../product/after-hours-redesign-epic.md) — виконувана декомпозиція milestones M0–M5 у 54 сабтаски з acceptance criteria (2026-09-29)
+- [After Hours redesign epic](../product/after-hours-redesign-epic.md) — виконувана декомпозиція milestones M0–M5 у 56 задач з acceptance criteria (2026-09-29)
 - [After Hours redesign](../product/after-hours-redesign.md)
 - [After Hours Tension v2](../product/after-hours-tension.md)
 - [Prototype to production](../architecture/prototype-to-production.md)

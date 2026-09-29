@@ -5020,3 +5020,19 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 Джерело: знахідка B8 епіку [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md); `src/app/[lang]/news/page.tsx`; `src/lib/i18n.ts`; `git log -S weekSummary` (PR #17, 2026-06-04).
 
 З `/[lang]/news` прибрано статичний блок «Recent highlights» / «Зведення останніх подій» і ключі `news.summaryTitle` / `news.weekSummary` в EN і UK: текст був із порту прототипу й подавався як актуальний підсумок тижня з неперевіреними твердженнями (фонові агенти Claude Code, MCP 1.2, «70%+» економії на prompt caching). Кешування, canonical, JSON-LD і URL-state стрічки не змінювались. Підсумок тижня з реальних даних лишився в AH-4.3. Оновлено рядок B8 епіку, [now](now.md).
+
+## 2026-09-29 — ADR розкатки й foundations: рішення D1–D13 ухвалені, D7 «знак скрізь»
+
+Джерело: відповідь власника в сесії 2026-09-29 («3 міняємо скрізь, усе інше погоджую») на список відкритих рішень §4 [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md); live check зон знака: `src/lib/site.ts`, `src/components/icons.tsx`, `src/app/[lang]/opengraph-image.tsx`, `src/lib/weekly-digest/pdf.ts`, `src/lib/card/duotone.ts`.
+
+Створено [decisions/2026-09-29-after-hours-rollout-and-foundations](decisions/2026-09-29-after-hours-rollout-and-foundations.md), задача AH-0.2 ✅. Таблиця D1–D13 фіксує, хто і коли ухвалив кожне рішення та які воно має наслідки.
+
+- D2, D6, D8, D11 (сторінки) і D13 прийнято за рекомендаціями.
+- **D7:** новий знак After Hours ставиться скрізь — на сайті, в OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассетах, аватарах і банерах соцмереж.
+- У епіку з'явилися задачі AH-3.7 («Знак у генераторах зображень і PDF») і AH-3.8 («Brand-kit: аватар і банери соцмереж»). AH-3.1 перейменовано на «Бренд-знак After Hours на сайті».
+- AH-5.16 не виконується (D6).
+- Інваріант I-12 уточнено: палітра OG/PDF/duotone лишається жовтою `#f0c040`, а знак у ній міняється у варіанті під жовту палітру (assumption, записано в ADR §3).
+
+Епік тепер має 56 задач, оцінка зросла з ≈ 55 до ≈ 56 днів. Аватари й банери на платформи завантажує власник.
+
+Оновлено: епік (статус, §4, картки фази 3, оцінка), [now](now.md), `wiki/index.md` (рядок епіку й новий рядок у Decisions) і лічильники задач у [product/after-hours-redesign](product/after-hours-redesign.md), [product/after-hours-epic-readiness](product/after-hours-epic-readiness.md), [audits/2026-09-26-design-system-gap-plan](audits/2026-09-26-design-system-gap-plan.md). Production-код не змінювався.
