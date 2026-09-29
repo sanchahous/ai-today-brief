@@ -48,7 +48,7 @@ export function FactsVisualBlock({ visual, color }: { visual: FactsVisual; color
           >
             {item.display}
           </span>
-          <span className="text-faint text-[0.72rem] leading-snug">{item.label}</span>
+          <span className="text-faint text-2xs leading-snug">{item.label}</span>
         </div>
       ))}
     </div>

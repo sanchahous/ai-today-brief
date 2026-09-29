@@ -23,7 +23,7 @@ const COLORS: Record<string, string> = {
 export function StatusPill({ value }: { value: string }) {
   return (
     <span
-      className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold tracking-wide uppercase ${COLORS[value] ?? COLORS.draft}`}
+      className={`inline-flex rounded-full border px-2.5 py-1 text-2xs font-bold tracking-wide uppercase ${COLORS[value] ?? COLORS.draft}`}
     >
       {value.replaceAll('_', ' ')}
     </span>

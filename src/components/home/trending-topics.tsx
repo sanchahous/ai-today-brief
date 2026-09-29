@@ -55,7 +55,7 @@ function MentionsChart({ lang, topics }: { lang: Lang; topics: TrendingTopic[] }
 
   return (
     <figure className="rounded-card border-border bg-surface border p-5">
-      <figcaption className="text-faint mb-4 text-[0.72rem] font-bold tracking-[0.12em] uppercase">
+      <figcaption className="text-faint mb-4 text-2xs font-bold tracking-[0.12em] uppercase">
         {t.trendingChartTitle}
       </figcaption>
       <ol className="grid gap-2.5">

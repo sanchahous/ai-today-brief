@@ -26,7 +26,7 @@ function paragraphs(text: string): string[] {
 function SectionLabel({ children, style }: { children: React.ReactNode; style?: CSSProperties }) {
   return (
     <p
-      className={`m-0 mt-7 mb-2.5 text-[0.74rem] font-bold tracking-[0.08em] uppercase ${style ? 'cat-fg' : 'text-accent'}`}
+      className={`m-0 mt-7 mb-2.5 text-2xs font-bold tracking-[0.08em] uppercase ${style ? 'cat-fg' : 'text-accent'}`}
       style={style}
     >
       {children}
@@ -57,7 +57,7 @@ export function StoryBody({
   return (
     <div>
       {detail.impactLevel && (
-        <p className="text-faint mb-4 text-[0.74rem] font-semibold tracking-[0.06em] uppercase">
+        <p className="text-faint mb-4 text-2xs font-semibold tracking-[0.06em] uppercase">
           {t.impactLabel}:{' '}
           <span className="text-accent">{impactLevelText(lang, detail.impactLevel)}</span>
         </p>
@@ -72,7 +72,7 @@ export function StoryBody({
             borderLeftColor: `color-mix(in srgb, ${color} 55%, var(--border))`,
           }}
         >
-          <p className="cat-fg m-0 mb-1.5 text-[0.74rem] font-bold tracking-[0.08em] uppercase" style={catStyle}>
+          <p className="cat-fg m-0 mb-1.5 text-2xs font-bold tracking-[0.08em] uppercase" style={catStyle}>
             {t.whyItMatters}
           </p>
           <p className="m-0 text-[0.92rem] leading-relaxed">{detail.why}</p>
@@ -81,7 +81,7 @@ export function StoryBody({
 
       {detail.takeaways.length > 0 && (
         <section aria-label={t.tldrLabel} className="mb-6">
-          <p className="text-accent m-0 mb-2.5 text-[0.74rem] font-bold tracking-[0.08em] uppercase">
+          <p className="text-accent m-0 mb-2.5 text-2xs font-bold tracking-[0.08em] uppercase">
             {t.tldrLabel}
           </p>
           <ul className="m-0 list-none p-0">
@@ -100,7 +100,7 @@ export function StoryBody({
       {detail.facts.length > 0 && (
         <section aria-label={t.factsTitle} className="border-border bg-surface mb-6 overflow-hidden rounded-lg border">
           <p
-            className="cat-fg m-0 border-b px-4 py-2.5 text-[0.74rem] font-bold tracking-[0.08em] uppercase"
+            className="cat-fg m-0 border-b px-4 py-2.5 text-2xs font-bold tracking-[0.08em] uppercase"
             style={{ ...catStyle, borderColor: 'var(--border)' }}
           >
             {t.factsTitle}
@@ -139,7 +139,7 @@ export function StoryBody({
           >
             <code>{detail.codeSnippet.code}</code>
           </pre>
-          <p className="text-faint m-0 text-[0.72rem]">{detail.codeSnippet.language}</p>
+          <p className="text-faint m-0 text-2xs">{detail.codeSnippet.language}</p>
         </section>
       )}
 
@@ -150,7 +150,7 @@ export function StoryBody({
               aria-label={t.whenToUseTitle}
               className="border-border bg-surface rounded-lg border p-4"
             >
-              <p className="m-0 mb-2 text-[0.74rem] font-bold tracking-[0.08em] uppercase text-[color:var(--ok,#3f9e58)]">
+              <p className="m-0 mb-2 text-2xs font-bold tracking-[0.08em] uppercase text-[color:var(--ok,#3f9e58)]">
                 ✓ {t.whenToUseTitle}
               </p>
               <ul className="m-0 list-none space-y-1.5 p-0">
@@ -167,7 +167,7 @@ export function StoryBody({
               aria-label={t.whenNotToUseTitle}
               className="border-border bg-surface rounded-lg border p-4"
             >
-              <p className="text-faint m-0 mb-2 text-[0.74rem] font-bold tracking-[0.08em] uppercase">
+              <p className="text-faint m-0 mb-2 text-2xs font-bold tracking-[0.08em] uppercase">
                 ✕ {t.whenNotToUseTitle}
               </p>
               <ul className="m-0 list-none space-y-1.5 p-0">
@@ -204,7 +204,7 @@ export function StoryBody({
           className="bg-surface-2 mt-7 rounded-r-lg py-3.5 pr-4 pl-4"
           style={{ borderLeft: '3px solid var(--accent)' }}
         >
-          <p className="text-accent m-0 mb-1.5 text-[0.74rem] font-bold tracking-[0.08em] uppercase">
+          <p className="text-accent m-0 mb-1.5 text-2xs font-bold tracking-[0.08em] uppercase">
             {t.editorTakeTitle}
           </p>
           <p className="m-0 text-[0.94rem] leading-relaxed">{detail.editorTake}</p>
@@ -244,14 +244,14 @@ export function StoryBody({
               <Link
                 key={tool.name}
                 href={tool.href}
-                className="rounded-pill border-border bg-surface-2 text-text hover:border-accent border px-2.5 py-1 text-[0.74rem] font-medium no-underline transition"
+                className="rounded-pill border-border bg-surface-2 text-text hover:border-accent border px-2.5 py-1 text-2xs font-medium no-underline transition"
               >
                 #{tool.name}
               </Link>
             ) : (
               <span
                 key={tool.name}
-                className="rounded-pill border-border bg-surface-2 text-muted border px-2.5 py-1 text-[0.74rem]"
+                className="rounded-pill border-border bg-surface-2 text-muted border px-2.5 py-1 text-2xs"
               >
                 #{tool.name}
               </span>

@@ -74,7 +74,7 @@ function PreviewRow({
         {item.categoryName ? (
           <CategoryBadge name={item.categoryName} color={item.categoryColor} />
         ) : null}
-        <span className="text-faint text-[0.72rem]">
+        <span className="text-faint text-2xs">
           {item.sourceName ?? '—'} · {formatShort(item.date, lang)}
         </span>
       </span>

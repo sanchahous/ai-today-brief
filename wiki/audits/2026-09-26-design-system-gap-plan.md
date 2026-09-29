@@ -20,6 +20,8 @@ Last updated: 2026-09-26
 
 Це не вимога відмовитись від After Hours. Потрібно змінити порядок робіт: спершу функціональний контракт і foundations, потім компоненти та один production vertical slice, і лише після цього — повний візуальний rollout. (source: design recommendation)
 
+> **Оновлення 2026-09-29:** G09/G10 (tokens, migration map) закриті міграцією на 2.0.0 ([ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md)); G11/G16 — додано Popover, DropdownMenu, Tooltip, Tabs, Accordion, Toast, Combobox; G15 — гейт на розмір шрифту < 12 px і drift CSS↔tokens; G20 — мінімальний внутрішній каталог `/ds-catalog` (без публічного маршруту). **Лишається:** G19 (сесії свідомо пропущені власником 2026-09-29, ризик прийнято; [протокол](../research/2026-09-29-redesign-usability-sessions-protocol.md)), G12 (changelog/owner — частково), G13 (state matrix), G17 (editorial components), visual-regression. Деталі — [epic readiness](../product/after-hours-epic-readiness.md).
+
 ## 2. Що вже добре і не потребує перезапуску
 
 | Сфера | Що можна зберегти | Межа |

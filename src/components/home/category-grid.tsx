@@ -72,7 +72,7 @@ function CategoryCard({
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-faint mb-2 text-[0.68rem] font-bold tracking-[0.08em] uppercase">
+        <p className="text-faint mb-2 text-2xs font-bold tracking-[0.08em] uppercase">
           {latestLabel}
         </p>
         {category.latest.length > 0 ? (

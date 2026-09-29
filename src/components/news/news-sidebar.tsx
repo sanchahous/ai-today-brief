@@ -44,7 +44,7 @@ function FilterGroup({
   return (
     <section className={compact ? 'mb-0 min-w-0' : 'mb-6'} data-testid="filter-group">
       <div data-testid={testId} className={testId ? 'contents' : undefined}>
-        <h3 className="text-accent m-0 mb-3 text-[0.72rem] font-bold tracking-[0.1em] uppercase">
+        <h3 className="text-accent m-0 mb-3 text-2xs font-bold tracking-[0.1em] uppercase">
           {label}
         </h3>
         {children}
@@ -142,7 +142,7 @@ function SidebarControls({
                   <span className={`min-w-0 flex-1 leading-snug ${compact ? 'break-words' : 'truncate'}`}>
                     {c.name}
                   </span>
-                  <span className="text-faint ml-2 shrink-0 text-[0.72rem] tabular-nums">
+                  <span className="text-faint ml-2 shrink-0 text-2xs tabular-nums">
                     {count}
                   </span>
                 </label>
@@ -202,11 +202,11 @@ function SidebarControls({
                   }
                   className="text-muted hover:text-accent flex min-h-[36px] items-center gap-2 text-[0.84rem] no-underline transition"
                 >
-                  <span className="text-faint w-4 shrink-0 text-right text-[0.7rem] tabular-nums font-medium">
+                  <span className="text-faint w-4 shrink-0 text-right text-2xs tabular-nums font-medium">
                     {idx + 1}
                   </span>
                   <span className="min-w-0 flex-1 truncate">{topic.name}</span>
-                  <span className="text-faint ml-2 shrink-0 text-[0.72rem] tabular-nums">
+                  <span className="text-faint ml-2 shrink-0 text-2xs tabular-nums">
                     {topic.mentions}
                   </span>
                 </Link>

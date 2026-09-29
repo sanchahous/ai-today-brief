@@ -15,7 +15,7 @@ export function CategoryBadge({
 }) {
   if (!name) return null;
   const c = color ?? '#888888';
-  const sizeClasses = size === 'md' ? 'px-2.5 py-1 text-xs' : 'px-2 py-0.5 text-[0.68rem]';
+  const sizeClasses = size === 'md' ? 'px-2.5 py-1 text-xs' : 'px-2 py-0.5 text-2xs';
   return (
     <span
       className={`cat-badge rounded-pill inline-flex items-center font-semibold tracking-wide whitespace-nowrap uppercase ${sizeClasses}`}

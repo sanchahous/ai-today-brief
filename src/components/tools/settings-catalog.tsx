@@ -39,7 +39,7 @@ export function SettingsCatalog({ lang }: { lang: Lang }) {
         <div className="mt-4 grid gap-4">
           {HOOK_RECIPES.map((recipe) => (
             <article key={recipe.id} className="rounded-card border-border bg-surface border p-4">
-              <p className="text-faint m-0 font-mono text-[0.72rem]">{recipe.id}</p>
+              <p className="text-faint m-0 font-mono text-2xs">{recipe.id}</p>
               <h4 className="m-0 mt-1 text-[1.05rem]">{recipe.title[lang]}</h4>
               <p className="text-muted m-0 mt-2 text-sm leading-relaxed">{recipe.useCase[lang]}</p>
               <dl className="mt-3 grid gap-2 text-sm md:grid-cols-3">
@@ -75,7 +75,7 @@ export function SettingsCatalog({ lang }: { lang: Lang }) {
         <div className="mt-4 grid gap-3">
           {SCOPE_HIERARCHY.map((row) => (
             <article key={row.scope} className="rounded-card border-border bg-surface border p-4">
-              <p className="text-faint m-0 text-[0.72rem] font-semibold tracking-[0.12em] uppercase">
+              <p className="text-faint m-0 text-2xs font-semibold tracking-[0.12em] uppercase">
                 #{row.precedence} · {row.scope}
               </p>
               <code className="mt-2 inline-block rounded bg-surface-2 px-2 py-1 text-sm">

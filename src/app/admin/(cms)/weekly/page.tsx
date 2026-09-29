@@ -127,11 +127,11 @@ export default async function WeeklyDigestListPage({
               <div className="flex flex-wrap items-center gap-2">
                 <StatusPill value={digest.status} />
                 {digest.is_test ? (
-                  <span className="rounded-full border border-amber-300/40 bg-amber-300/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-amber-100 uppercase">
+                  <span className="rounded-full border border-amber-300/40 bg-amber-300/10 px-2.5 py-1 text-2xs font-bold tracking-wide text-amber-100 uppercase">
                     Test · publication locked
                   </span>
                 ) : null}
-                <span className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-slate-400 uppercase">
+                <span className="rounded-full border border-white/10 px-2.5 py-1 text-2xs font-bold tracking-wide text-slate-400 uppercase">
                   {digest.period_model === 'legacy_mon_sun'
                     ? 'Legacy Mon–Sun'
                     : digest.period_model === 'rolling_7d'

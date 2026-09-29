@@ -16,6 +16,10 @@
   --font-sans: 'Inter Variable', system-ui, sans-serif;
   --font-serif: 'Fraunces Variable', Georgia, serif;
 
+  /* 12px floor for meta/eyebrow text — the smallest size allowed anywhere (tokens:check). */
+  --text-2xs: 0.75rem;
+  --text-2xs--line-height: 1.5;
+
   --color-bg: var(--bg);
   --color-bg-soft: var(--bg-soft);
   --color-surface: var(--surface);
@@ -28,6 +32,15 @@
   --color-accent: var(--accent);
   --color-on-accent: var(--on-accent);
   --color-signal: var(--signal);
+  --color-raised: var(--raised);
+  --color-overlay: var(--overlay);
+  --color-stage: var(--stage);
+  --color-claret: var(--claret);
+  --color-velvet: var(--velvet);
+  --color-line-strong: var(--line-strong);
+  --color-focus: var(--focus);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-error: var(--error);
 
   --radius-sm: 3px;
@@ -36,44 +49,79 @@
   --radius-pill: 999px;
 }
 
+/*
+ * Semantic palette — After Hours v2.0.0 (mirror of src/lib/design-system/tokens.ts).
+ * Do not edit values here alone: `npm run tokens:check` fails on drift, missing Day roles,
+ * contrast below WCAG AA, or any font size below the 12px floor.
+ */
 /* dark-first (brand default) */
 :root {
+  color-scheme: dark;
   --header-h: 60px;
-  --bg: #0f0f0f;
-  --bg-soft: #141414;
-  --surface: #1a1a1a;
-  --surface-2: #202020;
-  --border: #2a2a2a;
-  --border-soft: #232323;
-  --text: #e8e8e8;
-  --muted: #a3a3a3;
-  --faint: #6a6a6a;
-  --accent: #f0c040;
+  --bg: #171918;
+  --bg-soft: #131514;
+  --stage: #0e100f;
+  --surface: #1f2321;
+  --surface-2: #282d29;
+  --raised: #282d29;
+  --overlay: #323832;
+  --border: #3b413c;
+  --border-soft: #2d332f;
+  --line-strong: #737a73;
+  --text: #f0e9dc;
+  --muted: #b9b7ac;
+  --faint: #a3a197;
+  --accent: #d4b483;
+  --on-accent: #171918;
   --signal: #b5d8cc;
-  --error: #efaaa0;
+  --claret: #e3919d;
+  --velvet: #431a24;
+  --focus: #b5d8cc;
+  --error: #ff9b8a;
+  --success: #b5d8cc;
+  --warning: #e8c07a;
+  --accent-rgb: 212 180 131;
   --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.25);
   --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.45);
-  --on-accent: #141414;
   --touch-target-min: 44px;
+  --control-sm: 36px;
+  --control-md: 44px;
+  --control-lg: 52px;
+  --z-sticky: 30;
+  --z-dropdown: 60;
+  --z-overlay: 80;
+  --z-dialog: 90;
+  --z-toast: 100;
 }
 
 .theme-light,
 html[data-theme='day'] {
-  --bg: #faf9f7;
-  --bg-soft: #f4f2ee;
-  --surface: #ffffff;
-  --surface-2: #f0ede8;
-  --border: #d8d2c8;
-  --border-soft: #e8e2d8;
-  --text: #141414;
-  --muted: #454545;
-  --faint: #5c5c5c;
-  --accent: #8a6508;
+  color-scheme: light;
+  --bg: #efe8da;
+  --bg-soft: #e6ddcc;
+  --stage: #151716;
+  --surface: #f7f2e8;
+  --surface-2: #e6ddcc;
+  --raised: #fdfaf4;
+  --overlay: #e6ddcc;
+  --border: #d6cebf;
+  --border-soft: #e2dacb;
+  --line-strong: #8c8577;
+  --text: #1d211d;
+  --muted: #4d5148;
+  --faint: #5a5e54;
+  --accent: #72562e;
+  --on-accent: #fdfaf4;
   --signal: #2d6559;
-  --error: #a13328;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 16px rgba(0, 0, 0, 0.05);
-  --shadow-pop: 0 6px 24px rgba(0, 0, 0, 0.1);
-  --on-accent: #ffffff;
+  --claret: #8e2a3f;
+  --velvet: #f3e1dc;
+  --focus: #2d6559;
+  --error: #b3261e;
+  --success: #2d6559;
+  --warning: #7a5a10;
+  --accent-rgb: 114 86 46;
+  --shadow-card: 0 1px 2px rgba(74, 56, 28, 0.08), 0 4px 16px rgba(74, 56, 28, 0.07);
+  --shadow-pop: 0 6px 24px rgba(58, 44, 22, 0.14);
 }
 
 @layer base {
@@ -143,7 +191,7 @@ html[data-theme='day'] {
   }
 
   :where(a, button, input, select, [tabindex]):focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--focus);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -601,7 +649,7 @@ html[data-theme='day'] {
 }
 
 .not-found-page {
-  background: radial-gradient(80% 120% at 50% -20%, rgba(240, 192, 64, 0.08), transparent 55%);
+  background: radial-gradient(80% 120% at 50% -20%, rgb(var(--accent-rgb) / 0.08), transparent 55%);
 }
 
 .not-found-scene .nf-card {
@@ -714,9 +762,9 @@ html[data-theme='day'] {
 /* Newsletter card wash — tuned per theme so the gold accent reads on both dark and light. */
 .newsletter-card-bg {
   background:
-    radial-gradient(120% 160% at 0% 0%, rgba(240, 192, 64, 0.14), transparent 55%), var(--surface);
+    radial-gradient(120% 160% at 0% 0%, rgb(var(--accent-rgb) / 0.14), transparent 55%), var(--surface);
 }
 .theme-light .newsletter-card-bg {
   background:
-    radial-gradient(120% 160% at 0% 0%, rgba(138, 101, 8, 0.1), transparent 55%), var(--surface);
+    radial-gradient(120% 160% at 0% 0%, rgb(var(--accent-rgb) / 0.1), transparent 55%), var(--surface);
 }

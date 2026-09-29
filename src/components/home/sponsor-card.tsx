@@ -30,7 +30,7 @@ export function SponsorCard({
     >
       <div className="mb-3">
         <span
-          className="cat-badge rounded-pill px-2 py-0.5 text-[0.62rem] font-bold tracking-[0.1em] uppercase"
+          className="cat-badge rounded-pill px-2 py-0.5 text-2xs font-bold tracking-[0.1em] uppercase"
           style={style}
         >
           {t.adSlotLabel}

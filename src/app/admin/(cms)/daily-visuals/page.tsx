@@ -351,17 +351,17 @@ export default async function DailyVisualsPage() {
                               {titleCase(candidate.candidate_kind)}
                             </h3>
                             {active ? (
-                              <span className="rounded-full bg-emerald-300/15 px-2 py-0.5 text-[11px] font-bold text-emerald-100">
+                              <span className="rounded-full bg-emerald-300/15 px-2 py-0.5 text-2xs font-bold text-emerald-100">
                                 Publicly selected
                               </span>
                             ) : null}
                             {latestAi ? (
-                              <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 text-[11px] font-bold text-cyan-100">
+                              <span className="rounded-full bg-cyan-300/15 px-2 py-0.5 text-2xs font-bold text-cyan-100">
                                 Latest AI
                               </span>
                             ) : null}
                             {fallback ? (
-                              <span className="rounded-full bg-amber-300/15 px-2 py-0.5 text-[11px] font-bold text-amber-100">
+                              <span className="rounded-full bg-amber-300/15 px-2 py-0.5 text-2xs font-bold text-amber-100">
                                 Never auto-selected
                               </span>
                             ) : null}

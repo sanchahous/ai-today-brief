@@ -114,7 +114,7 @@ export default async function NewsPage({ params }: { params: Promise<Params> }) 
         >
           <h2
             id="summary-title"
-            className="text-accent m-0 mb-3 text-[0.74rem] font-bold tracking-[0.1em] uppercase"
+            className="text-accent m-0 mb-3 text-2xs font-bold tracking-[0.1em] uppercase"
           >
             {t.summaryTitle}
           </h2>

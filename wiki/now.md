@@ -11,11 +11,14 @@ weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
 desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360)
-Last updated: 2026-09-26
+Last updated: 2026-09-29
 
 ---
 
 ## Стан репозиторію
+
+- **Блокери епіку редизайну закрито в коді (2026-09-29), гілка `claude/redesign-epic-blockers-00e7df`.** Токени мігровано на After Hours 2.0.0 ([ADR](decisions/2026-09-29-design-tokens-2-0-migration.md)): `--faint` тепер ≥ 4,5:1 (було 3,54:1), floor шрифтів 12 px, гейт `tokens:check` (контраст, drift, floor). Додано Popover/DropdownMenu/Tooltip/Tabs/Accordion/Toast/Combobox + e2e на `/ds-catalog`. Usability-сесії власник пропустив свідомо (2026-09-29; [протокол](research/2026-09-29-redesign-usability-sessions-protocol.md) збережено). Бренд-колір карток/OG/PDF — лишається жовтий `#f0c040` (рішення власника). Стан — [epic readiness](product/after-hours-epic-readiness.md).
+  (source: `wiki/product/after-hours-epic-readiness.md`; `npm run tokens:check` 2026-09-29)
 
 - **Дизайн-система After Hours: повна реалізація аудиту прогалин (2026-09-28), гілка `feat/design-system-gap-implementation`.**
   Закрито 20 розривів (G01–G20) за планом `wiki/audits/2026-09-26-design-system-gap-plan.md`.

@@ -45,7 +45,7 @@ Last updated: 2026-09-28
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
-| ✅ [architecture/design-system-tokens](architecture/design-system-tokens.md) | Архітектура токенів дизайн-системи After Hours v1.0.0, семантика, WCAG AA контрастність; пропозиція 2.0.0 з прототипу v3 і знахідка щодо контрасту `faint` | `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts` |
+| ✅ [architecture/design-system-tokens](architecture/design-system-tokens.md) | Токени дизайн-системи After Hours v2.0.0: семантика Night/Day, WCAG AA (90 пар), гейт `tokens:check`, виправлення `--faint`, таблиця міграції з legacy | `src/lib/design-system/tokens.ts`; ADR 2026-09-29 |
 | 📋 `architecture/data-model.md` | Схема Supabase, RLS, 104 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`
@@ -111,6 +111,8 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 
 Обраний напрям: [After Hours Tension v3](product/after-hours-tension.md) — дванадцять жестів у всіх 28 маршрутах, View Transitions і брендова сцена The Resolve (3,4 с) з покадровим переглядом; v2 з Editorial Fold — в історії сторінки. (source: запити власника 2026-09-25 / 2026-09-28; `artifacts/after-hours/tension.js`; `artifacts/after-hours/QA.md`)
 
+Готовність до епіку: [After Hours epic readiness](product/after-hours-epic-readiness.md) — статус чотирьох блокерів (токени 2.0.0, компоненти, usability-докази, `--faint`), вхід для сайзингу, відкриті питання власнику.
+
 Аудит повноти: [Design-system gap plan](audits/2026-09-26-design-system-gap-plan.md) — розриви concept↔production у filtering, sort semantics, taxonomy, pagination/URL-state, tokens, components, states і QA; пріоритетний план через News vertical slice. (source: скріншот і запит власника 2026-09-26; browser live review; code review)
 
 | Сторінка | Про що | Звідки |
@@ -163,6 +165,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 |---|---|
 | ✅ [decisions/2026-08-02-knowledge-base-restructure](decisions/2026-08-02-knowledge-base-restructure.md) | Перехід на `raw/` · `wiki/` · `artifacts/` + покроковий план міграції (кроки 1–8 виконано) |
 | ✅ [decisions/2026-09-26-news-discovery-and-pagination-architecture](decisions/2026-09-26-news-discovery-and-pagination-architecture.md) | Архітектура News discovery, семантика сортування (Newest, Oldest, Relevance), URL-state зі збереженням ISR-кешу /news, доступна пагінація |
+| ✅ [decisions/2026-09-29-design-tokens-2-0-migration](decisions/2026-09-29-design-tokens-2-0-migration.md) | Міграція production-токенів на After Hours 2.0.0 перед епіком: що змінено, винятки (OG/PDF/duotone, категорії), наслідки |
 
 ## Research
 
@@ -170,6 +173,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 |---|---|---|
 | ✅ [research/2026-08-05-professional-ai-video-guide](research/2026-08-05-professional-ai-video-guide.md) | Гайд ціна/якість AI-відео: діагноз німого слайдшоу, драбина L0–L3, i2v/аватар сервіси | перенесено з `ai-today-brief-video/wiki` 2026-08-28 |
 | ✅ [research/2026-08-30-openrouter-routing-api](research/2026-08-30-openrouter-routing-api.md) | Перевірений живими запитами API-фактаж OpenRouter + **реалізований** план §12: каталожний ранкер, `:free` у черзі, `provider.sort: price` замість `:floor`; сухий прогін черг 2026-08-30 | живі запити до `api/v1/*` + код + catalog dry-run 2026-08-30 |
+| ✅ [research/2026-09-29-redesign-usability-sessions-protocol](research/2026-09-29-redesign-usability-sessions-protocol.md) | Протокол 5 usability-сесій (G19): задачі, пороги go/no-go, шаблон результатів; сесії ще не проведені | аудит §7 |
 
 Інше — сюди йдуть summary-сторінки, згенеровані з `raw/` за
 [ingest-workflow](architecture/agentic-workflow.md#ingest).
