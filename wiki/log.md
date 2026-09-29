@@ -5067,3 +5067,13 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 - G11: `SearchInput` уже є в `input.tsx`, але з англомовними `aria-label` і placeholder.
 
 Виправлено: [now](now.md) (запис 2026-09-28 і новий запис зверху), [open-questions](open-questions.md) #10 (закрито), епік (§2.3, §5.3, картка AH-0.1 з AC, §14 — рядки G07, G09, G11, G15, G16, уточнення в §2.1 і картці AH-2.3), [handoff](product/after-hours-epic-handoff.md) (стан, «Наступна задача: AH-0.3», пастка про приховану панель браузера), `wiki/index.md` (два описи gap-plan). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.5: report/gating QA-матриця сторінок
+
+Джерело: задача AH-0.5 [епіку](product/after-hours-redesign-epic.md); `e2e/a11y-layout-matrix.spec.ts`, `e2e/helpers/inspect-page.ts`, `e2e/fixtures/a11y-gating.json`; локальний headless Playwright 2026-09-29 на мінімальній збірці main із slug-ами production sitemap; `artifacts/_local/ah-0.5-legacy-report.json`.
+
+Gating внутрішнього мовонейтрального `/ds-catalog`: 14 перевірок у Chromium для Night/Day, 360/390/768/1024/1440, 200% тексту на 1280 і reflow 320; 14 passed за 4,8 с. Контрольна мутація з видимим `text-[10px]` дала exit 1 і повідомлення `small text: 10px`. `e2e:affected` через override вибрав матрицю для змін `src/app/[lang]/news/page.tsx` і `src/components/news/news-feed.tsx`.
+
+Ручний report: **812 сценаріїв** (58 EN/UK URL × 2 теми × 7 режимів), 7,0 хв, без падіння. Лічильники повторних спостережень, **не унікальних дефектів**: 0 сценаріїв із горизонтальним overflow, 0 елементів тексту <12 px, 11 504 touch targets <44 px, 1 976 axe violation nodes, 28 console errors (403 на weekly), 23 сценарії з H1 ≠1 (усі `news/search?q=mcp`), 313 пропусків рівнів заголовків, 0 `img` без alt, 699 clipped text спостережень загалом, із них 224 у zoom-режимах. Публічні маршрути лишаються в report до їхнього редизайну; лише `/ds-catalog` зараз у gating. (source: `artifacts/_local/ah-0.5-legacy-report.json`; локальний Playwright 2026-09-29)
+
+Оновлено статус і AC AH-0.5 в епіку, наступну задачу AH-0.6 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-код не змінювався.
