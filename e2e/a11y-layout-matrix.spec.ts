@@ -232,8 +232,12 @@ test.describe('A11y and layout matrix gating', () => {
           });
         }
         for (const zoom of ZOOM) {
-          test(`${route.id} ${lang} ${theme} ${zoom.name}`, async ({ browser }) => {
+          test(`${route.id} ${lang} ${theme} ${zoom.name}`, async ({ browser, browserName }) => {
             test.skip(REPORT_MODE, 'The full legacy report runs separately');
+            test.skip(
+              zoom.fontSize !== null && browserName !== 'chromium',
+              'CDP font emulation is Chromium-only',
+            );
             const context = await contextFor(browser, zoom.width, zoom.height, zoom.width < 800);
             const page = await context.newPage();
             try {
