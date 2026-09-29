@@ -14,6 +14,9 @@ Last updated: 2026-09-29
 > Візуальний напрям затверджено власником у прототипі v3; цей документ — план його перенесення,
 > а не нова дизайн-пропозиція. (source: [after-hours-redesign](after-hours-redesign.md) §1)
 >
+> **Нова сесія чи інша модель** стартує з [передачі виконання](after-hours-epic-handoff.md):
+> стан, порядок старту, черга фази 0, точки зупинки й готовий стартовий промпт.
+>
 > **Рішення 2026-09-29** зведені в [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md):
 > D1 — варіант A; D2 — зберегти `.theme-light` і додати `data-theme`; D3 — `next/font/local`; D4 —
 > Georgia для українських заголовків; D5 — брейкпоінти прототипу, перемикання на 60rem ≈ 960 px;
@@ -452,13 +455,15 @@ D11) · **Закриває:** передумова visual review кожного 
    390×844 × Night/Day × EN/UK і пише `manifest.json` (URL, розмір, тема, мова, дата, git SHA).
 2. Тема й мова виставляються до першого рендера (`localStorage.theme`, шлях `/en` або `/uk`);
    consent-картка не перекриває кадр (використати `e2e/consent-state.json`).
-3. Зняти `--label=before` з production до першого візуального PR (AH-1.1).
+3. Зняти `--label=before` з production до першого візуального PR. AH-1.1 уже злито в #369, тож —
+   до першого з AH-1.3…AH-1.7; у log зазначити, що baseline — стан після токенів 2.0.
 
 **AC:**
 - [ ] `node --import tsx scripts/capture-route-matrix.ts --base=https://aitodaybrief.com --label=before`
   завершується з кодом 0 і пише manifest для всіх маршрутів §15 у 8 комбінаціях.
 - [ ] PNG не потрапляють у git (`git status` чистий після запуску).
-- [ ] Baseline `before` знято до мержу AH-1.1; шлях і SHA записані в `wiki/log.md`.
+- [ ] Baseline `before` знято до мержу першого візуального PR після #369 (AH-1.3…AH-1.7); шлях і
+  SHA записані в `wiki/log.md`.
 
 ### AH-0.4 · SEO-контракт: знімок і compare-гейт
 
@@ -1989,6 +1994,7 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 - [design-system-gap-plan](../audits/2026-09-26-design-system-gap-plan.md) — розриви G01–G20 і milestones M0–M5
 - [ADR news discovery](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md) — контракт discovery
 - [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md) — рішення D1–D13
+- [after-hours-epic-handoff](after-hours-epic-handoff.md) — передача виконання наступній сесії
 - [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) — міграція токенів, винятки (OG/PDF/duotone), пропуск usability-сесій
 - [usability-протокол](../research/2026-09-29-redesign-usability-sessions-protocol.md) — сесії на випадок просідання метрик
 - [design-system-tokens](../architecture/design-system-tokens.md) — токени 2.0.0, гейт `tokens:check`

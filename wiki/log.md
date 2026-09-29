@@ -5036,3 +5036,17 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 Епік тепер має 56 задач, оцінка зросла з ≈ 55 до ≈ 56 днів. Аватари й банери на платформи завантажує власник.
 
 Оновлено: епік (статус, §4, картки фази 3, оцінка), [now](now.md), `wiki/index.md` (рядок епіку й новий рядок у Decisions) і лічильники задач у [product/after-hours-redesign](product/after-hours-redesign.md), [product/after-hours-epic-readiness](product/after-hours-epic-readiness.md), [audits/2026-09-26-design-system-gap-plan](audits/2026-09-26-design-system-gap-plan.md). Production-код не змінювався.
+
+## 2026-09-29 — Передача виконання епіку After Hours наступній сесії
+
+Джерело: запит власника в сесії 2026-09-29 («зафіксуй це все, щоб виконати іншою моделлю в наступній сесії»); епік §0, §2, §4–§6, §11, §17; `.cursor/rules/pr-gate.mdc`; `wiki/_meta/project-sync.json`; `artifacts/after-hours/qa/`, `editions.js`, `pages.js`.
+
+Створено [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) — вхід для нової сесії чи іншої моделі. Сторінка містить:
+
+- стан на 2026-09-29: PR #371 треба змерджити до старту, наступна задача — AH-0.1;
+- порядок старту сесії та чергу фази 0 з нюансами, яких немає в картках;
+- точки зупинки: гейти, неперевірені факти й розклад, платформи для brand-kit, GA4-property;
+- правила й пастки з сесії 2026-09-29: шапка wiki в перших 14 рядках, вертикальна риска в таблицях, mermaid-підписи, коди виходу, рух `main`, wiki-watchers;
+- стартовий промпт.
+
+В епіку в картці AH-0.3 виправлено недосяжний AC «baseline до мержу AH-1.1»: AH-1.1 злито в #369, тож baseline знімається до першого з AH-1.3…AH-1.7. У статус епіку й Related додано посилання на handoff. Оновлено [now](now.md) і `wiki/index.md` (рядок і таблиця Product). Production-код не змінювався.
