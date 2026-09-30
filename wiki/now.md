@@ -17,7 +17,7 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
-- **AH-4.1 (Topics / Tool у discovery) — реалізовано, PR #PRNUM (2026-09-30), паралельно з AH-1.4.**
+- **AH-4.1 (Topics / Tool у discovery) — реалізовано, PR #380 (2026-09-30), паралельно з AH-1.4.**
   `src/lib/topic-normalize.ts` зводить «Claude Code», «claude-code», «ClaudeCode» до одного slug і
   має мапу лише безсумнівних аліасів; `HomeItem.topics`; `topics=` в URL; OR усередині фасету,
   AND між фасетами; лічильники за іншими фасетами; правило D8 (≥ 2 матеріали, обрана тема завжди

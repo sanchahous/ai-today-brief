@@ -5378,3 +5378,11 @@ Live-перевірка prod-БД (read-only SQL): 905 опубліковани�
 2866 згадок, 1256 унікальних ключів після нормалізації — довгий хвіст, тому поріг D8 істотний.
 (source: `src/lib/topic-normalize.ts`; `src/lib/news-filters.ts`; SQL `brief_items` × `briefs`
 2026-09-30; [ADR §2.3](decisions/2026-09-26-news-discovery-and-pagination-architecture.md))
+
+## 2026-09-30 — AH-4.1: відкрито PR #380
+
+Відкрито [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380).
+`npm run pr:check` пройшов (2082 unit-тести, typecheck, lint, e2e:check, wiki:check,
+migrations:check, build:ci); pre-push `e2e:affected` — 60 passed / 7 skipped.
+У епіку, now і handoff додано посилання на PR. Пікер фасету лишається за AH-4.3.
+(source: `gh pr view 380`; локальні прогони 2026-09-30)

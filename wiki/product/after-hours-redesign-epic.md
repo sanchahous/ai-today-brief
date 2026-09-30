@@ -361,7 +361,7 @@ flowchart TD
 | AH-3.6 | Consent-картка | S | агент | AH-2.2, AH-2.3 | — |
 | AH-3.7 | Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
 | AH-3.8 | Brand-kit: аватар і банери соцмереж + заміна на платформах | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
-| AH-4.1 | ✅ Taxonomy Topics / Tool: lib, URL і чіп активного фільтра ([PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM)); пікер фасету — AH-4.3 | — | — | D8 ✅ | G06, B7 (lib/URL) |
+| AH-4.1 | ✅ Taxonomy Topics / Tool: lib, URL і чіп активного фільтра ([PR #380](https://github.com/sanchahous/ai-today-brief/pull/380)); пікер фасету — AH-4.3 | — | — | D8 ✅ | G06, B7 (lib/URL) |
 | AH-4.2 | StoryCard, StoryRow, CategoryBanner | M | агент | AH-2.2, AH-2.5, AH-1.4 | G17 (частк.) |
 | AH-4.3 | Сторінка `/[lang]/news` | L | агент | AH-4.1, AH-4.2, AH-2.3, AH-2.4, AH-2.6, AH-3.3, AH-3.4 | G02, G05, G07 |
 | AH-4.4 | Сторінка `/[lang]/news/search` | S | агент | AH-4.3, AH-3.2 | — |
@@ -1237,7 +1237,7 @@ footer-newsletter / cookie-overlay / theme зелені в трьох брауз
 `parseNewsUrlParams` / `serializeNewsUrlParams`; всередині фасету OR, між фасетами AND; лічильники
 враховують інші фасети; значення показується за правилом D8; назва фасету — «Topics» / «Теми».
 
-**Стан (2026-09-30, AH-4.1 виконано):** [PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM).
+**Стан (2026-09-30, AH-4.1 виконано):** [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380).
 `topic-normalize.ts` (slug = літери й цифри без розділювачів, мапа аліасів), `HomeItem.topics`,
 `topics=` у `parseNewsUrlParams` / `serializeNewsUrlParams`, `applyNewsFilters`, `countCategories`,
 `buildTopicFacet`; `news-feed` застосовує `topics` з URL і показує чіп зі зняттям. Пікер фасету в
