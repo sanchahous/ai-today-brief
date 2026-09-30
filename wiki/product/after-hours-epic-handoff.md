@@ -12,6 +12,16 @@ Last updated: 2026-09-30
 
 ## 1. Стан на 2026-09-30
 
+- **Фаза 0 інтегрована; актуальний `origin/main` — `69bcd1c`.**
+  На старті AH-1.3 робоче дерево було чистим, #376 — MERGED, #377 — OPEN.
+  AH-1.3 реалізовано на `feat/ah-1.3-night-day-theme`, очікує візуального підпису й merge.
+  [QA-докази й галерея](after-hours-ah-1-3-validation.md) містять SEO compare,
+  перевірки першого кадру/no-JS/аналітики та межі legacy QA.
+  **Наступна задача — AH-1.4**, кольори й гліфи категорій; після неї AH-1.2.
+  AH-1.7 / #377 не дублювати й не позначати завершеною до merge.
+  (source: `git fetch origin`, `git status --short`, `gh pr view 376/377` 2026-09-30;
+  [епік](after-hours-redesign-epic.md) §5.2, §5.3; [AH-1.3 validation](after-hours-ah-1-3-validation.md))
+
 - **AH-0.3, AH-0.4 і AH-0.5 завершено:** PR #373, #374 і #375 змержено
   2026-09-30; `origin/main` на момент фінальної звірки — `4409a81`.
   Visual baseline: 232 PNG, manifest SHA-256
@@ -52,9 +62,9 @@ Last updated: 2026-09-30
   Підпис і дозвіл merge отримано; фактичну інтеграцію перевіряти за станом PR.
   Вимога візуального review кожного видимого PR зберігається.
   (source: пряме повідомлення власника 2026-09-30)
-- **Наступна задача після merge #376: AH-1.3 — контракт теми Night/Day.**
+- **AH-1.3 — реалізована задача на review; наступна — AH-1.4.**
   AH-1.7 уже реалізовано у відкритому PR #377; цю роботу не дублювати.
-  (source: повідомлення власника 2026-09-30; [епік](after-hours-redesign-epic.md))
+  (source: [AH-1.3 validation](after-hours-ah-1-3-validation.md); [епік](after-hours-redesign-epic.md))
 
 ## Пакет для підпису G0
 
@@ -249,7 +259,8 @@ QA-матриця працює в режимі report.
 Продовж виконання епіку редизайну After Hours у репозиторії ai-today-brief.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
 2. Підтягни origin/main і перевір фактичний merge PR #373–#376. G0 підписано
-   власником 2026-09-30; після інтеграції фази 0 продовжуй AH-1.3 за карткою
+   власником 2026-09-30; фаза 0 інтегрована на 69bcd1c. AH-1.3 реалізовано,
+   звір її PR/підпис/merge і продовжуй AH-1.4 за карткою
    wiki/product/after-hours-redesign-epic.md. AH-1.7 уже у PR #377, не дублюй.
    Для нової задачі — окрема гілка feat/ah-<id>-<slug> від
    origin/main, Definition of Done з §0.1, npm run pr:check перед push, PR у main.

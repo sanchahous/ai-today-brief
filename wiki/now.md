@@ -17,21 +17,32 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
+- **AH-1.3 реалізовано на `feat/ah-1.3-night-day-theme`, очікує візуального підпису й PR merge.**
+  Pre-paint синхронізує `.theme-light`, `data-theme`, `color-scheme` і `theme-color`;
+  `localStorage` та GA4 лишають `light`/`dark`. Перемикач EN/UK описує наступну тему,
+  має 44×44 px і синхронізує desktop/mobile контролі. SEO compare: 58 URL,
+  0 errors / 0 warnings; галерея до/після — `artifacts/after-hours/qa/ah-1.3-review.html`.
+  Деталі перевірок і межі legacy QA — [AH-1.3 validation](product/after-hours-ah-1-3-validation.md).
+  Фаза 0 завершена: #376 змержено в `69bcd1c`; #377 / AH-1.7 лишається відкритим.
+  Наступна окрема задача — AH-1.4 (кольори й гліфи категорій), потім AH-1.2;
+  G1 чекає решти foundations і підпису власника.
+  (source: `src/app/layout.tsx`, `src/lib/theme.ts`, `src/components/theme-toggle.tsx`;
+  `artifacts/_local/ah-1.3-seo-local-fresh.log`; `git fetch origin`, `gh pr view 376/377` 2026-09-30)
+
 - **G0 підписано власником 2026-09-30; merge #373–#376 погоджено:** AH-0.6 у
   [PR #376](https://github.com/sanchahous/ai-today-brief/pull/376) має всі докази:
   GSC link, key event, retention 14 місяців і Tag Assistant підтверджено власником.
   Він погодив лабораторний CWV baseline home/news/article з недостатніми
   CrUX-даними й виключив daily/weekly із AH-0.6. Property/Admin питання #1 закрито.
-  PR #373–#375 змержено; інтеграція AH-0.6 — через PR #376.
-  На main після його merge фаза 0 завершена; наступна задача AH-1.3.
+  PR #373–#376 змержено; фаза 0 завершена на `origin/main` @ `69bcd1c`.
   Кожен видимий PR має пройти окремий візуальний review. Пакет доказів — у
   [handoff](product/after-hours-epic-handoff.md#пакет-для-підпису-g0).
   (source: погодження й скриншоти власника, `gh pr view` 2026-09-30;
   [baseline](analytics/2026-09-29-redesign-baseline.md))
 
 - **AH-1.7 реалізовано у [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377),
-  ще не змержено.** PR #373–#375 уже змержено; `origin/main` перед інтеграцією
-  #376 — `4409a81`. Дозвіл власника на merge стосується #373–#376.
+  ще не змержено.** `origin/main` після #376 — `69bcd1c`.
+  Дозвіл власника на merge #373–#376 уже виконано; #377 до нього не входить.
   (source: `git fetch origin`, `gh pr view 373`…`377` 2026-09-30)
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR

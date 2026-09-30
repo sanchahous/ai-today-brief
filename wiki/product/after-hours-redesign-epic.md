@@ -11,12 +11,14 @@ Last updated: 2026-09-30
 > **Статус 2026-09-30:** епік готовий до виконання, усі рішення D1–D13 ухвалені (AH-0.2 ✅),
 > статус G01–G20 звірено з кодом (AH-0.1 ✅).
 > AH-0.3–AH-0.5 завершено через змержені PR #373–#375; [AH-0.6 baseline](../analytics/2026-09-29-redesign-baseline.md)
-> інтегрується через PR #376 (формально завершено після його merge); активна GA4-property `540206735`, Admin-чекліст і Tag Assistant
+> завершено через змержений PR #376 (`origin/main` @ `69bcd1c`); активна GA4-property `540206735`, Admin-чекліст і Tag Assistant
 > підтверджено доказами власника. CWV baseline home/news/article прийнято з лабораторними
 > метриками й недостатніми CrUX-даними, daily/weekly виключено лише з AH-0.6.
 > **G0 підписано власником 2026-09-30:** «Погоджую G0 та merge PR #373–#376».
-> Інтеграція задач фази 0 завершується через ці PR; після merge #376 наступна задача — AH-1.3.
-> (source: повідомлення й скриншоти власника 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md))
+> Фазу 0 інтегровано. AH-1.3 реалізовано на `feat/ah-1.3-night-day-theme`,
+> очікує візуального підпису й merge; [QA-докази](after-hours-ah-1-3-validation.md).
+> Наступна окрема задача — AH-1.4; AH-1.7 лишається у відкритому PR #377.
+> (source: повідомлення й скриншоти власника 2026-09-30; `git fetch origin`, `gh pr view 376/377` 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md); [AH-1.3 validation](after-hours-ah-1-3-validation.md))
 > Підпис G0 дозволяє перейти до візуальних задач після інтеграції фази 0;
 > вимога візуального підпису кожного видимого PR із §0 зберігається.
 > Візуальний напрям затверджено власником у прототипі v3; цей документ — план його перенесення,
@@ -340,7 +342,7 @@ flowchart TD
 | AH-0.6 | ✅ На main після merge [#376](https://github.com/sanchahous/ai-today-brief/pull/376): продуктовий і CWV baseline, всі AC прийнято власником | — | — | open-questions #1 закрито | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
-| AH-1.3 | Контракт теми Night/Day без спалаху | S | агент | D2 ✅ | B12 |
+| AH-1.3 | ◐ Контракт Night/Day реалізовано; очікує візуального підпису й merge ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
 | AH-1.4 | Кольори й гліфи категорій | M | агент | — | B5 |
 | AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
 | AH-1.6 | ◐ Простір, форма, глибина, шари, брейкпоінти, motion-токени (#369: розміри контролів, z-index) | M | агент | D5 ✅ | G09, B13 |
@@ -695,10 +697,21 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
    sun/moon, ціль ≥ 44 px; `theme_toggle {to_theme}` і `setUserProperties({ theme })` без змін.
 
 **AC:**
-- [ ] `e2e/theme.spec.ts` зелений і доповнений перевіркою `data-theme`; збережена `dark` при
+- [x] `e2e/theme.spec.ts` доповнений перевіркою `data-theme`; збережена `dark` при
   системній світлій схемі дає Night на першому кадрі (без спалаху).
-- [ ] Без JS тема за замовчуванням — Night, текст читабельний.
-- [ ] Подія `theme_toggle` і user property надсилаються як раніше.
+- [x] Без JS тема за замовчуванням — Night, текст server-rendered header читабельний;
+  legacy Suspense-обмеження основного контенту зафіксоване в [QA](after-hours-ah-1-3-validation.md).
+- [x] Подія `theme_toggle` і user property надсилаються як раніше (`light` / `dark`), opt-out збережено.
+- [ ] Візуальний підпис власника й merge PR.
+
+**Стан 2026-09-30:** реалізовано на `feat/ah-1.3-night-day-theme`; метадані теми
+беруть `bg` із `SEMANTIC_TOKENS`, manifest має Night за замовчуванням.
+SEO compare 58 URL — 0 errors / 0 warnings; 16 PNG до + 16 після
+(home/news, EN/UK, Night/Day, 1440/390).
+Gating контролю охоплює ширини й zoom із DoD; публічні legacy-шаблони
+залишаються в report за AH-0.5 до їхнього редизайну. Завершення задачі на main
+не заявляється до merge. (source: `src/app/layout.tsx`, `src/app/manifest.ts`,
+`src/lib/theme.ts`, `e2e/theme.spec.ts`; [AH-1.3 validation](after-hours-ah-1-3-validation.md))
 
 ### AH-1.4 · Кольори й гліфи категорій
 

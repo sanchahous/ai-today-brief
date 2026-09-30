@@ -99,7 +99,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             <HeaderSearchField
               lang={lang}
               placeholder={t.landing.searchPlaceholder}
-              className="min-w-[10rem] max-w-[clamp(10rem,24vw,26rem)] lg:max-w-[clamp(10rem,22vw,32rem)] xl:max-w-xl"
+              className="max-w-[clamp(10rem,24vw,26rem)] min-w-[10rem] lg:max-w-[clamp(10rem,22vw,32rem)] xl:max-w-xl"
               expandOnFocus
             />
           </div>
@@ -189,11 +189,11 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
             >
               {lang === 'uk' ? 'EN' : 'UA'}
             </Link>
-            <ThemeToggle label={t.themeToggle} />
+            <ThemeToggle dayLabel={t.themeDay} nightLabel={t.themeNight} />
           </nav>
 
           <div className="ml-auto flex items-center gap-1 lg:hidden">
-            <ThemeToggle label={t.themeToggle} />
+            <ThemeToggle dayLabel={t.themeDay} nightLabel={t.themeNight} />
             <Link
               href={`/${lang}/subscribe`}
               className={`rounded-pill bg-accent text-on-accent px-3 py-1.5 text-xs font-semibold no-underline ${menuOpen ? 'hidden' : 'hidden sm:inline-flex'}`}

@@ -11,6 +11,7 @@ const LCOV_PATH = 'coverage/lcov.info';
 
 const LOGIC_FILES = [
   'src/lib/consent.ts',
+  'src/lib/theme.ts',
   'src/lib/beehiiv-config.ts',
   'src/lib/site.ts',
   'src/lib/category-meta.ts',

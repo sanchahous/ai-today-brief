@@ -3,33 +3,22 @@
 import { useEffect, useState } from 'react';
 import { MoonIcon, SunIcon } from '@/components/icons';
 import { setUserProperties, trackEvent } from '@/lib/analytics-client';
+import { applyTheme, readTheme, THEME_CHANGE_EVENT, type Theme } from '@/lib/theme';
 
-type Theme = 'dark' | 'light';
-
-function readTheme(): Theme {
-  try {
-    const stored = localStorage.getItem('theme');
-    if (stored === 'light' || stored === 'dark') return stored;
-  } catch {
-    /* localStorage blocked */
-  }
-  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-}
-
-function applyTheme(theme: Theme) {
-  document.documentElement.classList.toggle('theme-light', theme === 'light');
-}
-
-/** Toggle `.theme-light` on `<html>`; pairs with the inline init script in root layout. */
-export function ThemeToggle({ label }: { label: string }) {
+/** The accessible name describes the destination; persistence and GA4 stay light/dark. */
+export function ThemeToggle({ dayLabel, nightLabel }: { dayLabel: string; nightLabel: string }) {
   const [theme, setTheme] = useState<Theme>('dark');
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const current = readTheme();
-    setTheme(current);
-    applyTheme(current);
+    const sync = () => {
+      setTheme(document.documentElement.dataset.theme === 'day' ? 'light' : 'dark');
+    };
+    // Both desktop and mobile controls must agree after toggles and viewport changes.
+    window.addEventListener(THEME_CHANGE_EVENT, sync);
+    applyTheme(readTheme());
     setReady(true);
+    return () => window.removeEventListener(THEME_CHANGE_EVENT, sync);
   }, []);
 
   function toggle() {
@@ -41,7 +30,7 @@ export function ThemeToggle({ label }: { label: string }) {
     try {
       localStorage.setItem('theme', next);
     } catch {
-      /* ignore */
+      // Keep the current page usable when persisting the choice is blocked.
     }
   }
 
@@ -50,9 +39,9 @@ export function ThemeToggle({ label }: { label: string }) {
       type="button"
       data-testid="theme-toggle"
       onClick={toggle}
-      aria-label={label}
+      aria-label={theme === 'dark' ? dayLabel : nightLabel}
       disabled={!ready}
-      className="text-muted hover:text-text inline-flex h-10 w-10 items-center justify-center border-0 bg-transparent transition-colors duration-200 disabled:opacity-50"
+      className="text-muted hover:text-text inline-flex h-[var(--touch-target-min)] w-[var(--touch-target-min)] shrink-0 touch-manipulation items-center justify-center border-0 bg-transparent transition-colors duration-200 disabled:opacity-50"
     >
       {theme === 'dark' ? <SunIcon size={18} /> : <MoonIcon size={18} />}
     </button>

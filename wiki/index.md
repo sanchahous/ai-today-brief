@@ -123,7 +123,8 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 56 задач з AC, усі рішення D1–D13 ухвалені 2026-09-29 (D7 — знак міняється скрізь), ризики й оцінка ≈ 56 днів | `artifacts/after-hours/` v3 + live check коду після PR #369 + рішення власника 2026-09-29 |
-| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | G0 підписано 2026-09-30, #373–#375 змержено; інтеграція AH-0.6 через #376, далі AH-1.3; докази AH-0.6 й CWV виняток прийняті | епік + ADR + погодження/скриншоти власника й PR checks 2026-09-30 |
+| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | Фаза 0 інтегрована на 69bcd1c; AH-1.3 реалізована й чекає підпису/merge; AH-1.7 у відкритому #377; далі AH-1.4 | епік + live git/PR checks 2026-09-30 + AH-1.3 validation |
+| ✅ [product/after-hours-ah-1-3-validation](product/after-hours-ah-1-3-validation.md) | Контракт Night/Day, first-frame/no-JS/analytics QA, SEO compare, галерея до/після та межі legacy QA | код теми, E2E, manifests і локальні перевірки 2026-09-30 |
 | ✅ [product/useful-tools-concept](product/useful-tools-concept.md) | Концепт розділу AI Toolbox | колишній `docs/product/USEFUL-TOOLS-CONCEPT.md` |
 | ✅ [product/toolbox-wave1-spec](product/toolbox-wave1-spec.md) | Epic-спека: settings.json Builder + CLAUDE.md Generator | колишній `docs/product/TOOLBOX-WAVE1-…` |
 | ✅ [product/responsive-crossbrowser-audit](product/responsive-crossbrowser-audit.md) | Аудит адаптиву й крос-браузерності | колишній `docs/product/RESPONSIVE-…` |

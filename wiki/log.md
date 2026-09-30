@@ -5242,3 +5242,27 @@ CWV винятком AH-0.6. Повторний підпис G0 не потрі�
 до дозволу merge #373–#376. (source: повідомлення власника 2026-09-30;
 [PR #376](https://github.com/sanchahous/ai-today-brief/pull/376),
 [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377))
+
+## 2026-09-30 — AH-1.3: контракт Night/Day підготовлено для review
+
+Звірено чистий старт і `origin/main` @ `69bcd1c`: #376 змержено, фаза 0 інтегрована;
+#377 / AH-1.7 відкритий. На окремій гілці `feat/ah-1.3-night-day-theme` реалізовано
+pre-paint `.theme-light` + `data-theme` + `color-scheme`, theme-color/manifest із
+токенів 2.0, назви наступної теми EN/UK і 44×44 px. Persisted/GA4 значення
+`light`/`dark` збережені; desktop/mobile кнопки синхронні.
+(source: `git fetch origin`, `git status --short`, `gh pr view 376/377` 2026-09-30;
+`src/app/layout.tsx`, `src/app/manifest.ts`, `src/lib/theme.ts`, `src/components/theme-toggle.tsx`)
+
+SEO compare — 58 URL, 0 errors / 0 warnings; tokens:check PASS; 9 unit-тестів теми.
+Старий локальний cache із порожніми home/news збережено в
+`artifacts/_local/ah-1-3-cache-backup/` і виконано лише `build:ci` зі свіжими reads.
+PNG: 16 до + 16 після (home/news × EN/UK × Night/Day × 1440/390).
+Створено галерею `artifacts/after-hours/qa/ah-1.3-review.html` та
+[сторінку доказів](product/after-hours-ah-1-3-validation.md).
+Оновлено [епік](product/after-hours-redesign-epic.md), [now](now.md),
+[handoff](product/after-hours-epic-handoff.md) і [index](index.md).
+AH-1.3 чекає візуального підпису й merge; наступна окрема задача — AH-1.4,
+після неї AH-1.2. Full-page legacy QA і no-JS Suspense-обмеження явно відділені
+від gate нового контролю. (source: `artifacts/_local/ah-1.3-seo-local-fresh.log`;
+`artifacts/_local/ah-1.3-tokens.log`; `src/lib/theme.test.ts`; локальні manifests;
+[AH-1.3 validation](product/after-hours-ah-1-3-validation.md))
