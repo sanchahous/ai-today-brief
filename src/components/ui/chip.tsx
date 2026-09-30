@@ -94,7 +94,7 @@ export function FilterChip({
       type="button"
       onClick={onClick}
       style={styleObj}
-      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition cursor-pointer min-h-[36px] focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 ${
+      className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition cursor-pointer min-h-[36px] focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-(--focus-offset) ${
         active
           ? 'border-accent bg-accent text-on-accent font-semibold shadow-sm'
           : 'border-border bg-surface text-text hover:border-accent hover:text-accent'

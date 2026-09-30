@@ -22,17 +22,19 @@ Last updated: 2026-09-30
   E2E run [36732521337](https://github.com/sanchahous/ai-today-brief/actions/runs/36732521337)
   на head `7240652` перевірено: completed / success.
   (source: `gh pr view 377`; `gh run view 36732521337` 2026-09-30)
-- **AH-1.4 реалізовано в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382); очікує підпису й merge.**
+- **AH-1.4 змерджено в `main`: [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382), `5af8d56`, 2026-09-30.**
   Дев'ять tokenKey, тематичні `--cat-*`, незмінні `--art-*`, усі споживачі,
   search slug, дев'ять GLYPHS. Токени 2.1.0; 54 пари ≥5.2238:1, ratchet 30
   кольорових входжень / 4 довільні z-index / 0 raw shadows / 0 <12 px.
   (source: [AH-1.4 validation](after-hours-ah-1-4-validation.md);
   `src/lib/category-meta.ts`; `scripts/raw-design-values.baseline.json`)
-- **Наступна задача після інтеграції AH-1.4 — AH-1.2.** Решта foundations
-  й гейт G1 ще відкриті. Візуальний підпис #377 не поширюється на AH-1.4;
-  потрібен окремий підпис власника. Legacy QA та no-JS Suspense-борг відкриті.
+- **Наступна задача після AH-1.4 — AH-1.2.** Решта foundations
+  й гейт G1 ще відкриті. Підпис одного видимого PR не поширюється на наступний;
+  кожен видимий PR потребує окремого підпису власника. Legacy QA та no-JS Suspense-борг відкриті.
   (source: повідомлення власника 2026-09-30; [AH-1.3 validation](after-hours-ah-1-3-validation.md#межі-qa); [епік](after-hours-redesign-epic.md))
-- **Частково (◐):** AH-1.2, AH-1.4 (review), AH-1.5, AH-1.6, AH-2.3–2.6.
+- **AH-4.1 виконано й змерджено:** [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380), `3d0cb2b` (lib, URL, чіп активного фільтра); пікер фасету — AH-4.3. Не дублювати.
+- **AH-1.6 реалізовано:** [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), очікує візуального підпису власника. Реєстр токенів (`design-system-tokens` §7) — gate: кожен новий `--*` у `globals.css` треба додати туди (`--cat-*` / `--art-*` з AH-1.4 уже в §7.1.1).
+- **Частково (◐):** AH-1.2, AH-1.5, AH-2.3–2.6 (AH-1.6 — #381 на підписі).
   AH-5.16 не виконується за D6. D1–D13 ухвалені; повторно не питати.
   (source: [епік](after-hours-redesign-epic.md) §5.3)
 - **AH-4.1 виконано** (lib, URL, чіп активного фільтра; [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380), 2026-09-30) — не дублювати; AH-4.3 отримує готові `buildTopicFacet` / `applyNewsFilters` для пікера.

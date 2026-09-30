@@ -56,7 +56,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           />
           <span
             aria-hidden="true"
-            className="border-border bg-surface peer-checked:border-accent peer-checked:bg-accent peer-focus-visible:outline-accent flex size-5 items-center justify-center rounded border transition peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2"
+            className="border-border bg-surface peer-checked:border-accent peer-checked:bg-accent peer-focus-visible:outline-focus flex size-5 items-center justify-center rounded border transition peer-focus-visible:outline-2 peer-focus-visible:outline-offset-(--focus-offset)"
             style={
               tintColor && checked
                 ? ({
