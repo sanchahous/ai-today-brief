@@ -17,7 +17,8 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
-- **AH-1.3 реалізовано на `feat/ah-1.3-night-day-theme`, очікує візуального підпису й PR merge.**
+- **AH-1.3 реалізовано в draft [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378),
+  очікує візуального підпису, рішення щодо legacy QA/no-JS scope й merge.**
   Pre-paint синхронізує `.theme-light`, `data-theme`, `color-scheme` і `theme-color`;
   `localStorage` та GA4 лишають `light`/`dark`. Перемикач EN/UK описує наступну тему,
   має 44×44 px і синхронізує desktop/mobile контролі. SEO compare: 58 URL,

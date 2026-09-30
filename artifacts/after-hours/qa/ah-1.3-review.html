@@ -21,7 +21,7 @@
 </style>
 <h1>AH-1.3 — контракт Night / Day</h1>
 <p>Перемикач sun/moon має ціль 44×44 px та локалізовану назву наступної теми. Збережені light/dark працюють перед першим кадром; клас, data-theme, color-scheme і browser chrome синхронні. Ця галерея — пакет для візуального підпису перед merge.</p>
-<p>До: production на 69bcd1c. Після: локальна production-збірка AH-1.3. PNG та manifests лежать у artifacts/_local/ah-1-3-before і ah-1-3-after. Контент і зображення можуть відрізнятись через оновлення даних та завантаження зовнішніх assets; перевіряється контроль теми у header.</p>
+<p>До: production на 69bcd1c. Після: Vercel Preview PR #378, код a58f29f. PNG та manifests лежать у artifacts/_local/ah-1-3-before і ah-1-3-preview; додатковий локальний набір — ah-1-3-after. Контент і зображення можуть відрізнятись через оновлення даних та завантаження зовнішніх assets; перевіряється контроль теми у header. <a href="https://github.com/sanchahous/ai-today-brief/pull/378">PR #378</a> · <a href="https://ai-today-brief-git-feat-ah-13-night-940161-sanchahous-projects.vercel.app/uk/news">Preview</a> · <a href="ah-1.3-validation.json">QA та SHA-256 manifests</a>.</p>
 <nav aria-label="Варіанти знімків">
   <label>Сторінка<select id="route"><option value="news">News</option><option value="home">Home</option></select></label>
   <label>Мова<select id="lang"><option value="uk">Українська</option><option value="en">English</option></select></label>
@@ -38,7 +38,8 @@
     const [route, lang, theme, size] = controls.map(control => control.value);
     document.querySelector('.pair').classList.toggle('mobile', size === 'mobile');
     for (const label of ['before', 'after']) {
-      const src = `../../_local/ah-1-3-${label}/${route}-${lang}-${theme}-${size}.png`;
+      const folder = label === 'before' ? 'before' : 'preview';
+      const src = `../../_local/ah-1-3-${folder}/${route}-${lang}-${theme}-${size}.png`;
       document.getElementById(label).src = src;
       document.getElementById(`${label}-link`).href = src;
     }

@@ -14,7 +14,8 @@ Last updated: 2026-09-30
 
 - **Фаза 0 інтегрована; актуальний `origin/main` — `69bcd1c`.**
   На старті AH-1.3 робоче дерево було чистим, #376 — MERGED, #377 — OPEN.
-  AH-1.3 реалізовано на `feat/ah-1.3-night-day-theme`, очікує візуального підпису й merge.
+  AH-1.3 реалізовано в draft [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378),
+  очікує візуального підпису, рішення щодо legacy QA/no-JS scope й merge.
   [QA-докази й галерея](after-hours-ah-1-3-validation.md) містять SEO compare,
   перевірки першого кадру/no-JS/аналітики та межі legacy QA.
   **Наступна задача — AH-1.4**, кольори й гліфи категорій; після неї AH-1.2.
@@ -52,8 +53,8 @@ Last updated: 2026-09-30
 - **Виконано:** AH-0.1 (PR [#372](https://github.com/sanchahous/ai-today-brief/pull/372), звірка G01–G20: 6 done, 10 partial, 2 open, 1 policy, 1 waived —
   [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)),
   AH-0.2 (ADR), AH-0.3 (PR #373), AH-0.4 (PR #374), AH-0.5 (PR #375),
-  AH-1.1 (токени 2.0, PR #369), AH-2.1 (`/ds-catalog`, PR #369).
-- **Частково (◐):** AH-1.2, AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
+  AH-0.6 (PR #376), AH-1.1 (токени 2.0, PR #369), AH-2.1 (`/ds-catalog`, PR #369).
+- **Частково (◐):** AH-1.2, AH-1.3 (#378 на review), AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
   Залишок описано в рядку «Стан після #369» кожної картки.
 - **Не виконується:** AH-5.16 (рішення D6).
 - **Рішення D1–D13 ухвалені.** Власника про них не перепитувати. Змінити рішення можна лише за
@@ -134,7 +135,7 @@ PR #375; погодження власника 2026-09-30)
 | 2 | ✅ AH-0.3 · знімки до/після | агент | `scripts/capture-route-matrix.ts`; прогін `--label=before` з production; PNG лише в `artifacts/_local/` | немає |
 | 3 | ✅ AH-0.4 · SEO-контракт | агент | `src/lib/seo-contract.ts` з тестом (покриття ≥ 80%), `scripts/seo-contract.ts`, текстовий baseline з production | немає |
 | 4 | ✅ AH-0.5 · QA-матриця сторінок | агент | `e2e/a11y-layout-matrix.spec.ts`, режими report і gating, звіт по legacy-сайту з лічильниками в log | немає |
-| 5 | AH-0.6 · продуктовий і CWV baseline, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки; одна активна property, два акаунти в кошику | усі докази й підпис G0 отримано; інтеграція через PR #376 |
+| 5 | ✅ AH-0.6 · продуктовий і CWV baseline, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) змержено | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки; одна активна property, два акаунти в кошику | завершено, повторного підпису G0 не потрібно |
 
 **Нюанси, яких немає в картках:**
 
@@ -259,8 +260,8 @@ QA-матриця працює в режимі report.
 Продовж виконання епіку редизайну After Hours у репозиторії ai-today-brief.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
 2. Підтягни origin/main і перевір фактичний merge PR #373–#376. G0 підписано
-   власником 2026-09-30; фаза 0 інтегрована на 69bcd1c. AH-1.3 реалізовано,
-   звір її PR/підпис/merge і продовжуй AH-1.4 за карткою
+   власником 2026-09-30; фаза 0 інтегрована на 69bcd1c. AH-1.3 реалізовано в draft #378,
+   звір її підпис/QA-рішення/merge і продовжуй AH-1.4 за карткою
    wiki/product/after-hours-redesign-epic.md. AH-1.7 уже у PR #377, не дублюй.
    Для нової задачі — окрема гілка feat/ah-<id>-<slug> від
    origin/main, Definition of Done з §0.1, npm run pr:check перед push, PR у main.

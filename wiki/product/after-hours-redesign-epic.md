@@ -15,7 +15,7 @@ Last updated: 2026-09-30
 > підтверджено доказами власника. CWV baseline home/news/article прийнято з лабораторними
 > метриками й недостатніми CrUX-даними, daily/weekly виключено лише з AH-0.6.
 > **G0 підписано власником 2026-09-30:** «Погоджую G0 та merge PR #373–#376».
-> Фазу 0 інтегровано. AH-1.3 реалізовано на `feat/ah-1.3-night-day-theme`,
+> Фазу 0 інтегровано. AH-1.3 реалізовано в draft [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378),
 > очікує візуального підпису й merge; [QA-докази](after-hours-ah-1-3-validation.md).
 > Наступна окрема задача — AH-1.4; AH-1.7 лишається у відкритому PR #377.
 > (source: повідомлення й скриншоти власника 2026-09-30; `git fetch origin`, `gh pr view 376/377` 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md); [AH-1.3 validation](after-hours-ah-1-3-validation.md))
@@ -342,7 +342,7 @@ flowchart TD
 | AH-0.6 | ✅ На main після merge [#376](https://github.com/sanchahous/ai-today-brief/pull/376): продуктовий і CWV baseline, всі AC прийнято власником | — | — | open-questions #1 закрито | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
-| AH-1.3 | ◐ Контракт Night/Day реалізовано; очікує візуального підпису й merge ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
+| AH-1.3 | ◐ Контракт Night/Day реалізовано в draft [#378](https://github.com/sanchahous/ai-today-brief/pull/378); очікує підпису, рішення щодо legacy QA й merge ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
 | AH-1.4 | Кольори й гліфи категорій | M | агент | — | B5 |
 | AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
 | AH-1.6 | ◐ Простір, форма, глибина, шари, брейкпоінти, motion-токени (#369: розміри контролів, z-index) | M | агент | D5 ✅ | G09, B13 |
@@ -699,17 +699,20 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
 **AC:**
 - [x] `e2e/theme.spec.ts` доповнений перевіркою `data-theme`; збережена `dark` при
   системній світлій схемі дає Night на першому кадрі (без спалаху).
-- [x] Без JS тема за замовчуванням — Night, текст server-rendered header читабельний;
-  legacy Suspense-обмеження основного контенту зафіксоване в [QA](after-hours-ah-1-3-validation.md).
+- [ ] Без JS тема за замовчуванням — Night, текст читабельний. Night і header перевірені;
+  основний контент `/news` прихований legacy Suspense shell і на main, і в AH-1.3.
+  Повне приймання цього AC чекає рішення щодо [QA-обмеження](after-hours-ah-1-3-validation.md).
 - [x] Подія `theme_toggle` і user property надсилаються як раніше (`light` / `dark`), opt-out збережено.
 - [ ] Візуальний підпис власника й merge PR.
 
-**Стан 2026-09-30:** реалізовано на `feat/ah-1.3-night-day-theme`; метадані теми
+**Стан 2026-09-30:** реалізовано в draft [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378)
+на `feat/ah-1.3-night-day-theme`; метадані теми
 беруть `bg` із `SEMANTIC_TOKENS`, manifest має Night за замовчуванням.
-SEO compare 58 URL — 0 errors / 0 warnings; 16 PNG до + 16 після
+SEO compare local і Preview: по 58 URL — 0 errors / 0 warnings; 16 PNG до + 16 після
 (home/news, EN/UK, Night/Day, 1440/390).
 Gating контролю охоплює ширини й zoom із DoD; публічні legacy-шаблони
-залишаються в report за AH-0.5 до їхнього редизайну. Завершення задачі на main
+залишаються в report за AH-0.5 до їхнього редизайну; повний DoD §0.1(5) не
+закритий без рішення власника щодо scope. Завершення задачі на main
 не заявляється до merge. (source: `src/app/layout.tsx`, `src/app/manifest.ts`,
 `src/lib/theme.ts`, `e2e/theme.spec.ts`; [AH-1.3 validation](after-hours-ah-1-3-validation.md))
 
