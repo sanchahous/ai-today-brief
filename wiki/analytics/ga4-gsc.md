@@ -1,13 +1,32 @@
 # Analytics — довідник (підтримувати актуальним!)
 
-Summary: Довідник GA4 / GSC: property, measurement ID, key events. Один тег збору — прямий gtag.
-Sources: live check aitodaybrief.com + GTM-контейнера 2026-08-22, `src/lib/analytics-config.ts`
-Last updated: 2026-08-22
+Summary: Єдина активна property 540206735; GSC link, newsletter_subscribe як key event, retention 14 місяців і Tag Assistant підтверджено доказами власника. Google tag продовжує надсилати звернення на три destinations; доля двох залишкових призначень — окреме рішення.
+Sources: повідомлення й скриншоти власника 2026-09-30 (селектор property і деталі GSC link); HYPD `list_account_summaries` і live Google tag 2026-09-30; GA4 Data API 2026-09-29; `src/lib/analytics-config.ts`; [redesign baseline](2026-09-29-redesign-baseline.md)
+Last updated: 2026-09-30
 
-> Оновлено: **2026-08-22**. Якщо щось із цього змінюєш (property, ID, key events,
+> Оновлено: **2026-09-30**. Якщо щось із цього змінюєш (property, ID, key events,
 > env) — онови цей файл у тому ж PR.
 
-## Куди течуть дані (архітектура, стан 2026-08-22)
+## Поточний стан (перевірка 2026-09-30)
+
+Власник перемістив у кошик акаунти `396975517` («Ai today brief») і `397017915`
+(«Ai brief today»); GA підтвердив переміщення другого. Активним лишився акаунт
+`396774992` («Ai brief today») з property `540206735`, потоком «The daily AI news»
+і production measurement ID `G-5R89X6Q5D4`. HYPD `list_account_summaries` після цієї дії
+повернув лише `396774992` / `540206735`. За повідомленням власника, акаунти можна
+відновити через Admin → Кошик протягом 35 днів. (source: повідомлення власника
+2026-09-30; HYPD `list_account_summaries`, live check 2026-09-30)
+
+Завантажений Google tag досі містить `G-0TEJ3H5V85` і `G-T7X6D6TL84` поряд із
+`G-5R89X6Q5D4`. Tag Assistant власника показує відправлені звернення `page_view`,
+`newsletter_impression` і `web_vitals` до **всіх трьох destinations**. Це не доводить
+приймання чи зберігання даних у property акаунтів у кошику. Код не містить ID зайвих
+акаунтів, property чи двох додаткових measurement ID; він читає
+`NEXT_PUBLIC_GA_MEASUREMENT_ID`. (source: скриншот Tag Assistant власника 2026-09-30;
+[витяг доказів](../../artifacts/after-hours/analytics/2026-09-30-ga4-admin-verification.json);
+HTTP GET Google tag і `rg` у коді 2026-09-30)
+
+## Куди текли дані до переміщення акаунтів у кошик (перевірка 2026-09-29)
 
 ```
 aitodaybrief.com
@@ -16,11 +35,22 @@ aitodaybrief.com
       └─ всі КАСТОМНІ події коду: newsletter_subscribe, search, scroll_depth, …
          (src/lib/analytics-client.ts → trackEvent)
 
-          → потік «The daily AI news»
-           → GA4 property «aitodaybrief» (540467725, акаунт «Ai brief today» 397017915) ← активна
+          → Google tag GT-KVJZSX7K з трьома destinations:
+             G-5R89X6Q5D4 → потік 15002930155 «The daily AI news»
+                            → property 540206735, акаунт 396774992
+             G-0TEJ3H5V85 / G-T7X6D6TL84 → два інші потоки
+                            → історичні property 540437869 і 540467725
+                            (пару G-* ↔ property не було звірено)
 ```
 
-**Єдиний тег збору — прямий gtag.** GTM-контейнер `GTM-5S6TXPG5` прибрано з коду
+**За 2026-09-01…28 дані надходили до трьох property.** Production HTML має лише
+`G-5R89X6Q5D4` і не має GTM; JS цього Google tag містить усі три destination ID.
+GA4 Data API підтвердив production-події в кожному з трьох потоків за 2026-09-01…28.
+Для baseline After Hours обрано `540206735`, бо його measurement ID підтверджено
+[аудитом 12.06](../audits/2026-06-12-analytics-gsc.md) і live HTML. Порівняння та обмеження —
+у [redesign baseline](2026-09-29-redesign-baseline.md). (source: live HTML / Google tag і GA4 Data API 2026-09-29)
+
+GTM-контейнер `GTM-5S6TXPG5` прибрано з коду
 2026-08-22 (PR #312): жива перевірка контейнера показала `"tags":[]` і жодного
 GA4-destination всередині — він не збирав нічого і лише додавав другий ID на кожну
 сторінку (джерело плутанини «два GA4 ID»). `page_view` шле сам код через SPA-роутер,
@@ -31,33 +61,55 @@ Vercel більше не читається — можна видалити з e
 - **Consent Mode v2:** analytics granted / ads denied за замовчуванням; CMP opt-out
   оновлює gtag consent (`applyConsentToGtag`).
 
-## ⚠️ Відкритe питання: яка property правильна (з 2026-07-01)
+## Admin-конфігурація канонічної property — перевірено 2026-09-30
 
-Експорти власника й посилання на звіти показують **активну** property «aitodaybrief»
-`540467725` (акаунт `397017915`) — вона отримує реальні `page_view`. У старих записах
-(12.06) фігурує «Ai brief today» `540206735` / акаунт `396774992` / логін
-`hello@sashakuzmenko.com`; схоже, після реорганізації GA нова property стартувала
-«чистою». Що треба перевірити руками в UI Analytics (агенту недоступно):
+Станом на 2026-09-29 усі три property отримують production-трафік; теза, що лише
+`540467725` активна, була хибною. Дані в `540206735` ближчі до встановленого тегу і повніші
+за 28-денний період; `540467725` недоотримала частину Singapore/direct `page_view` 25–28.09.
+Причина відмінності ще не встановлена. (source: GA4 Data API, [redesign baseline](2026-09-29-redesign-baseline.md))
 
-- [ ] **Measurement ID потоку в 540467725** = `G-5R89X6Q5D4`? Якщо інший — оновити
-  `NEXT_PUBLIC_GA_MEASUREMENT_ID` у Vercel і цей файл.
-- [ ] **GSC ↔ GA4 link** на 540467725 (Admin → Product links).
-- [ ] **Key event `newsletter_subscribe`** позначено на 540467725.
-- [ ] **Data retention** = 14 місяців (не дефолтні 2).
-- [ ] Tag Assistant: рівно один GA4-config (після видалення GTM це гарантовано одним
-  тегом з нашого коду).
+- [x] **Production measurement ID:** HTML `G-5R89X6Q5D4`, історично потік `540206735`.
+  (source: live HTML 2026-09-29; [аудит 12.06](../audits/2026-06-12-analytics-gsc.md))
+- [x] **Канонічна property:** власник залишив `540206735`; два зайві акаунти переміщено
+  в кошик. Звірка двох додаткових measurement ID з потоками більше не є умовою G0.
+  (source: повідомлення власника 2026-09-30; HYPD live check 2026-09-30)
+- [x] **GSC ↔ GA4 link** для канонічної `540206735`: скриншот власника показує
+  доменний ресурс `aitodaybrief.com`, потік «The daily AI news» / `15002930155`
+  і дату зв'язування 2026-09-23; окремий скриншот підтверджує контекст акаунта
+  `396774992` / property `540206735`. (source: два скриншоти власника 2026-09-30)
+- [x] **Key event `newsletter_subscribe`**: зірочка активна. Також позначені
+  `close_convert_lead` і `qualify_lead`; `purchase` не позначена. Список повідомляє,
+  що потік даних за останні 28 днів не виявлено; це підтвердження налаштування,
+  а не успішної фактичної підписки. Подія коду означає успішну відповідь subscribe API,
+  окремої email-confirmed події немає. (source: повідомлення й скриншот власника
+  2026-09-30; `src/components/home/newsletter-form.tsx`; [event-taxonomy](event-taxonomy.md))
+- [x] **Data retention**: event data **14 місяців**, user data **14 місяців**;
+  reset після нової дії користувача увімкнено. (source: скриншот власника 2026-09-30)
+- [x] **Tag Assistant:** підключено `aitodaybrief.com`, знайдено `G-5R89X6Q5D4` /
+  `GT-KVJZSX7K`; `page_view` відправлено на канонічний ID і дві залишкові destinations.
+  На події Config `analytics_storage = granted`, `ad_storage`, `ad_user_data`,
+  `ad_personalization = denied` — і початкові, і поточні значення. Сценарій opt-out
+  у цих скриншотах не показано. (source: повідомлення й два скриншоти Tag Assistant
+  власника 2026-09-30; [витяг доказів](../../artifacts/after-hours/analytics/2026-09-30-ga4-admin-verification.json))
+
+Власник повідомив, що всі налаштування вже були такими, змін не робив.
+Admin/Tag Assistant умови AH-0.6 закриті; очищення destinations не є умовою G0.
+(source: повідомлення власника 2026-09-30)
 
 ## Пастка: схожі властивості
 
-Було три різні GA4-ID в обігу за часів проєкту: `540206735` («Ai brief today», 12.06),
-`540281034` («sashakuzmenko», портфоліо — НЕ ЧІПАТИ для брифу), `540467725`
-(«aitodaybrief», активна з ~07.2026). Двомовні сайти з однаковими шляхами `/en` `/uk`
-виглядають у звітах однаково — завжди звіряй property ID в URL адмінки.
+Для брифу активна `540206735`; `540437869` і `540467725` належали двом акаунтам,
+які власник перемістив у кошик 2026-09-30. **Історично** всі три мали production-події
+2026-09-01…28. Окремо `540281034` («sashakuzmenko») стосується портфоліо — не чіпати.
+Двомовні сайти з однаковими шляхами `/en` `/uk` виглядають у звітах однаково —
+звіряй property ID і stream ID, не лише назву. (source: повідомлення власника 2026-09-30;
+HYPD live check 2026-09-30; GA4 Data API 2026-09-29;
+[аудит 12.06](../audits/2026-06-12-analytics-gsc.md))
 
 ## Що налаштовано (стан 12.06.2026, property 540206735)
 
-> Пункти нижче стосувались старої property — на 540467725 потребують повторної перевірки
-> (чек-лист вище).
+> Пункти нижче описують історичний стан `540206735` на 12.06; поточні Admin-налаштування
+> звірено 2026-09-30 за чеклістом вище. Історична зірочка `purchase` тепер неактивна.
 
 - ✅ Key event: **`newsletter_subscribe`** (= конверсія підписки на розсилку)
 - ✅ Key event: `purchase` (дефолтний, незнімний)
@@ -71,7 +123,9 @@ Vercel більше не читається — можна видалити з e
 
 ## Залишилось зробити (одноразово)
 
-- [ ] **Звірити property за чек-листом вище** — головне відкрите питання.
+- [x] **Admin-чекліст канонічної property і Tag Assistant завершено** доказами власника 2026-09-30.
+- [ ] **Окремо після G0:** власнику вирішити, чи прибрати дві залишкові destinations із
+  Google tag; не змінювати tag без перевірки. (source: повідомлення власника 2026-09-30)
 - [ ] **`sponsor_inquiry_click` → key event.** Подія ще жодного разу не надходила,
   тому її нема в списку. Коли хтось вперше клікне CTA на /advertise:
   Admin → Events → Recent events → зірочка біля `sponsor_inquiry_click`.
