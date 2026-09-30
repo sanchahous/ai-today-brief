@@ -17,6 +17,17 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
+- **Прод віддавав знімок БД від 02.09 — виправлення в гілці `fix/build-memo-stale-across-builds`
+  (2026-09-30), PR чекає мержу.** `/en/news`, `/en`, категорії, `/rss.xml`, item-записи в
+  `sitemap.xml` і весь `news-sitemap.xml` показували дані до брифу 31.08, хоча в БД брифи є до
+  29.09. Корінь — `withBuildMemo` (#350): диск-memo без часу й без ідентичності білду Vercel
+  відновлював у кожен наступний деплой (≈23 прод-деплої). Тепер запис має `t`, TTL 30 хв, scope за
+  `VERCEL_DEPLOYMENT_ID`, а старі файли чистяться. Після мержу перевірити: `/rss.xml` newest =
+  Sep 29, `news-sitemap.xml` має свіжі матеріали. Runtime `/api/revalidate` і build-логи Vercel не
+  перевірено (Hobby, 401/403).
+  (source: [ops/supabase-egress-2026-09 § Регресія 2026-09-30](ops/supabase-egress-2026-09.md#регресія-2026-09-30-memo-пережив-білд);
+  live check production + prod Supabase 2026-09-30)
+
 - **AH-4.1 (Topics / Tool у discovery) — інтегровано через PR #380 (2026-09-30), main `3d0cb2b`.**
   `src/lib/topic-normalize.ts` зводить «Claude Code», «claude-code», «ClaudeCode» до одного slug і
   має мапу лише безсумнівних аліасів; `HomeItem.topics`; `topics=` в URL; OR усередині фасету,

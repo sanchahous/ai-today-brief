@@ -7,8 +7,9 @@ Data Cache на anon GET, `cachePublicRead`, e2e prerender cap, і SSG disk-memo
 11 воркерами (`withBuildMemo`).
 Sources: Supabase Usage Dashboard (цикл 21 Aug 2026 – 21 Sep 2026); `edge_logs` через
 MCP `query_logs` 2026-09-01T10:00Z–2026-09-02T13:10Z; `src/lib/supabase.ts`,
-`src/lib/public-content-cache.ts`, `src/lib/public-content-build-memo.ts`.
-Last updated: 2026-09-03
+`src/lib/public-content-cache.ts`, `src/lib/public-content-build-memo.ts`;
+live check production + prod Supabase 2026-09-30 (регресія memo, див. нижче).
+Last updated: 2026-09-30
 
 ---
 
@@ -65,8 +66,10 @@ Next Data Cache їх не бачить. Три повні прод-білди в
    `withBuildMemo` під час `NEXT_PHASE=phase-production-build` (in-process Promise
    + JSON під `.next/cache/atb-public-content`, sha256 від `{key, args}`). Так 11
    SSG-воркерів ділять `getCategories` / related / adjacent / home-news хаби.
-   Runtime ISR **не** читає цей диск — `revalidateTag('public-content', 'max')` лишається
-   чесним. Vitest обходить обгортку. `getPublishedCategoryCounts` не обгорнутий
+   Runtime ISR **не** читає цей диск — `revalidateTag('public-content', 'max')` для
+   runtime лишається чесним, **але** сам диск мав вмирати разом із білдом, а не переживати
+   його: див. [Регресія 2026-09-30](#регресія-2026-09-30-memo-пережив-білд). Vitest обходить
+   обгортку. `getPublishedCategoryCounts` не обгорнутий
    (повертає `Map`, не JSON); він живе всередині `loadHomeData`, який уже JSON-safe.
 3. **E2E / preview / local pr:check**: `E2E_MINIMAL_PRERENDER=1` (або `VERCEL_ENV=preview`)
    лишає `generateStaticParams` на 8 шляхів (item + brief + category + concept). Production Vercel (`VERCEL_ENV=production`)
@@ -117,6 +120,48 @@ listing-запитів (`getCategories` ≈ один header fetch на кожн�
 per-item lookup всередині `getNewsItem`; це вже не listing-stampede.
 GitHub e2e в цьому ж вікні лише стартував (Des Moines: `brief_items` 21) — cap з #348.
 (source: Supabase `edge_logs` 2026-09-02T13:04Z–13:10Z; Vercel production deploy `dd49672`)
+
+## Регресія 2026-09-30: memo пережив білд
+
+**Симптом.** `/en/news` показував «Updated August 31, 2026», `/rss.xml` — найновіший `pubDate`
+31 Aug, а `sitemap.xml` мав `lastmod` 2026‑09‑30T01:15:59Z, хоча в БД брифи опубліковано щодня
+до 29.09 (бриф 2026‑09‑29, `published_at` 30.09 01:15:59). Динамічний `/en/news/search` на
+проді віддавав свіжі матеріали (є 23 Sep), тобто prod-env бачить ті самі дані.
+(source: live check 2026-09-30 16:20–18:05 UTC; prod Supabase `mdiqfatpqczwqghwttpm`)
+
+**Причина.** `withBuildMemo` з #350 писав на диск (`.next/cache/atb-public-content`) голе
+значення без часу й без ідентичності білду, а `readOrLoad` повертав його безумовно. Vercel
+відновлює `.next/cache` у наступний деплой, тож кожен білд після першого, що записав memo
+(02.09, `dd49672`), брав знімок БД на 02.09 замість живих даних: ≈23 прод-деплої до 30.09.
+У знімку є бриф 31.08 (опубл. 01.09 01:16 UTC), але немає брифів 01.09/02.09 — їх опубліковано
+лише 03.09 00:06 через 402-інцидент.
+(source: GitHub deployments API 2026-09-30; `briefs` у prod Supabase)
+
+**Що зачепило.** Тільки поверхні, що читають через `cachePublicRead` (`getNewsPageData`,
+`getHomeData`, `getCategoryItems`/`getCategoryHub`, `getPublishedItemSitemapEntries`,
+`getPublishedNewsSitemapEntries`): `/[lang]/news`, `/[lang]`, категорії, RSS, item-записи в
+`sitemap.xml`, `news-sitemap.xml` (найновіша `publication_date` 2026‑09‑01T01:16:08Z — Google
+News не бачив жодного матеріалу після 31.08) і `generateStaticParams` item-сторінок. Item за
+31.08 віддається як `PRERENDER`, item за 29.09 — `MISS` (генерується на льоту, у sitemap
+відсутній). Поверхні з прямими запитами (`/[lang]/digests`, `lastmod` у sitemap, `/news/search`)
+були свіжі.
+(source: live check 2026-09-30; `src/lib/items.ts`, `src/lib/news.ts`, `src/lib/home.ts`)
+
+**Чому не runtime Data Cache.** У Next 16.3.6 `unstable_cache` під час ISR-регенерації
+(`isStaticGeneration`) перераховує stale-запис синхронно
+(`node_modules/next/dist/server/web/spec-extension/unstable-cache.js`, рядки 201–215), тож
+runtime сам виправляється за один цикл; кожен новий деплой скидав prerender назад до знімка.
+Ймовірно, між 13 і 28 вересня (деплоїв не було) сайт був свіжим — не перевірено.
+
+**Фікс.** Запис memo тепер `{ t, v }` (час завантаження); старіший за `MEMO_MAX_AGE_MS`
+(30 хв) або без `t` (legacy) — промах. Файли лежать у підкаталозі за `VERCEL_DEPLOYMENT_ID`
+(fallback `VERCEL_GIT_COMMIT_SHA`), а каталоги попередніх білдів і старі плоскі `*.json`
+видаляються при першому зверненні. Без ідентичності білду (локально, GitHub CI) діє лише TTL.
+
+**Не перевірено.** Build- і runtime-логи Vercel недоступні (401/403 на Hobby), тому
+відновлення `.next/cache` виведено з того, що заморозка пережила понад 20 білдів; роботу
+`/api/revalidate` у проді не перевіряли. Перевірка після деплою: newest `pubDate` у
+`/rss.xml` = Sep 29, item за 29.09 у `sitemap.xml`, `news-sitemap.xml` містить свіжі матеріали.
 
 ## Що цей фікс не робить
 
