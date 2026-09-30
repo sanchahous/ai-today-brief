@@ -10,6 +10,7 @@ const LOGIC_INCLUDE = [
   'src/lib/concept-meta.ts',
   'src/lib/news-filters.ts',
   'src/lib/sitemap-dates.ts',
+  'src/lib/seo-contract.ts',
   'src/lib/analytics-config.ts',
   'src/lib/analytics-client.ts',
   'src/lib/preferred-lang.ts',

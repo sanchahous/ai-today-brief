@@ -29,6 +29,26 @@ Last updated: 2026-09-29
   (source: `e2e/a11y-layout-matrix.spec.ts`; локальні Playwright-прогони 2026-09-29;
   PR #373, #374; [open-questions](open-questions.md) #1)
 
+- **AH-0.4: SEO baseline зафіксовано з production 2026-09-29, PR
+  [#374](https://github.com/sanchahous/ai-today-brief/pull/374).**
+  `e2e/fixtures/seo-contract.baseline.json` містить 58 URL у двох мовах; HTTP compare
+  повернув 0 регресій, повторні `/en/news` і `/uk/news` — `x-vercel-cache: HIT`.
+  Мутована копія baseline без canonical дала exit 1; покриття `src/lib/seo-contract.ts`
+  перевищило 80%. Вихідний HTML має `lang="en"` на UK-сторінках і 0 тексту всередині
+  сирого `<main>` до обробки streaming-розмітки. AH-0.3 має відкритий [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373);
+  наступна задача — AH-0.5. (source: `scripts/seo-contract.ts`; `src/lib/seo-contract.ts`;
+  `e2e/fixtures/seo-contract.baseline.json`; production HTTP-запити 2026-09-29)
+
+- **AH-0.3: baseline After Hours знято з production 2026-09-29, PR
+  [#373](https://github.com/sanchahous/ai-today-brief/pull/373).** Скрипт
+  `scripts/capture-route-matrix.ts` вибрав актуальні slug-и через sitemap і зняв 232 PNG:
+  29 маршрутних станів у Night/Day, EN/UK, 1440×900/390×844. Manifest і PNG у
+  git-ignored `artifacts/_local/before/`; SHA checkout —
+  `a3d2db56fdb0b446c87c375121a414e60c936938`. Це baseline **після** токенів 2.0 (#369),
+  до першого наступного візуального PR. Наступна задача — AH-0.4.
+  (source: `scripts/capture-route-matrix.ts`; production capture 2026-09-29;
+  `artifacts/_local/before/manifest.json`; `git status` 2026-09-29)
+
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR
   [#372](https://github.com/sanchahous/ai-today-brief/pull/372).** Підсумок за кодом і живою перевіркою production:
   **6 done** (G01, G03, G04, G08, G10, G20), **10 partial** (G02, G05, G07, G09, G11–G16),

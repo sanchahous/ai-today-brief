@@ -5068,6 +5068,40 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 
 Виправлено: [now](now.md) (запис 2026-09-28 і новий запис зверху), [open-questions](open-questions.md) #10 (закрито), епік (§2.3, §5.3, картка AH-0.1 з AC, §14 — рядки G07, G09, G11, G15, G16, уточнення в §2.1 і картці AH-2.3), [handoff](product/after-hours-epic-handoff.md) (стан, «Наступна задача: AH-0.3», пастка про приховану панель браузера), `wiki/index.md` (два описи gap-plan). Production-код не змінювався.
 
+## 2026-09-29 — AH-0.3: baseline-знімки production після токенів 2.0
+
+Джерело: задача AH-0.3 [епіку](product/after-hours-redesign-epic.md); `scripts/capture-route-matrix.ts`; live production `https://aitodaybrief.com` 2026-09-29; `artifacts/_local/before/manifest.json`; `git status` і `git check-ignore` 2026-09-29.
+
+Знято **232 PNG** для **29 маршрутних станів** у 8 комбінаціях Night/Day, EN/UK, 1440×900/390×844. Шлях: `artifacts/_local/before/` (git-ignored); SHA checkout у manifest: `a3d2db56fdb0b446c87c375121a414e60c936938`; SHA-256 manifest: `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`. Знімки показують стан **після** токенів 2.0 з PR #369: AC про baseline до AH-1.1 був недосяжний, але до першого наступного візуального PR (AH-1.3…AH-1.7) baseline готовий.
+
+Оновлено статус і AC AH-0.3 в епіку, наступну задачу AH-0.4 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.3: PR відкрито
+
+Джерело: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373), `npm run pr:check` і `git push` 2026-09-29.
+
+PR відкрито після зеленого `pr:check`; посилання додано до статусу §5.3 і картки AH-0.3, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373))
+
+## 2026-09-29 — AH-0.4: текстовий SEO baseline і compare-гейт
+
+Джерело: задача AH-0.4 [епіку](product/after-hours-redesign-epic.md); `src/lib/seo-contract.ts`, `scripts/seo-contract.ts`, `e2e/fixtures/seo-contract.baseline.json`; live HTTP-запити до `https://aitodaybrief.com` 2026-09-29; локальний `npm run test:coverage`.
+
+Baseline має 58 EN/UK URL. Compare з тим самим production: 0 помилок, 0 попереджень; повторні `/en/news` і `/uk/news`: `x-vercel-cache: HIT`. Копія baseline без canonical дала exit 1. Покриття нового parser/compare-модуля: statements 99.12%, branches 94.35%, functions 100%, lines 100%.
+
+Наявні властивості сирого HTML зафіксовано без виправлення: усі 29 UK URL мають `<html lang="en">` до клієнтського init-script; у 58 відповідях текст безпосередньо всередині сирого `<main>` має довжину 0, бо контент надходить у streaming-розмітці. Поточні JSON-LD issues є у 14 baseline URL (AboutPage:name, Organization:logo, WebApplication:offers); compare блокує лише нові дефекти. Це спостереження raw HTTP, не оцінка індексації пошуковими системами. (source: `e2e/fixtures/seo-contract.baseline.json`; live HTTP-запити 2026-09-29)
+
+Оновлено статус і AC AH-0.4 в епіку, наступну задачу AH-0.5 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-маршрути не змінювались.
+
+## 2026-09-29 — AH-0.4: PR відкрито
+
+Джерело: [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374), `npm run pr:check` і pre-push Chromium 2026-09-29.
+
+PR відкрито після зеленого `pr:check`; pre-push E2E: 130 passed, 12 skipped. Посилання додано до статусу §5.3 і картки AH-0.4, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374))
+
+## 2026-09-30 — AH-0.4: синхронізація після merge AH-0.3
+
+Об’єднано записи й статуси AH-0.3 та AH-0.4 без втрати історії; PR #373 змержено. Власник погодив G0 та merge PR #373–#376; підпис буде відображено в актуальному пакеті AH-0.6. (source: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373); повідомлення власника 2026-09-30)
+
 ## 2026-09-29 — AH-0.5: report/gating QA-матриця сторінок
 
 Джерело: задача AH-0.5 [епіку](product/after-hours-redesign-epic.md); `e2e/a11y-layout-matrix.spec.ts`, `e2e/helpers/inspect-page.ts`, `e2e/fixtures/a11y-gating.json`; локальний headless Playwright 2026-09-29 на мінімальній збірці main із slug-ами production sitemap; `artifacts/_local/ah-0.5-legacy-report.json`.
@@ -5083,3 +5117,7 @@ Gating внутрішнього мовонейтрального `/ds-catalog`: 
 Джерело: [PR #375](https://github.com/sanchahous/ai-today-brief/pull/375), `npm run pr:check` і pre-push E2E 2026-09-29.
 
 PR відкрито після зеленого `pr:check`; посилання додано до статусу §5.3 і картки AH-0.5, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #375](https://github.com/sanchahous/ai-today-brief/pull/375))
+
+## 2026-09-30 — AH-0.5: узгодження контрактів фази 0
+
+QA-гілку синхронізовано з перевіреною гілкою AH-0.4 та змерженим PR #373. У wiki збережено історію, AC і результати всіх трьох задач; merge #375 виконується після #374. G0 та merge #373–#376 погоджено власником. (source: повідомлення власника 2026-09-30; [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373), [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374), [PR #375](https://github.com/sanchahous/ai-today-brief/pull/375))
