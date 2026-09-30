@@ -1,9 +1,10 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   isProductionBuild,
+  MEMO_MAX_AGE_MS,
   publicContentMemoKey,
   resetBuildMemoForTests,
   withBuildMemo,
@@ -148,6 +149,120 @@ describe('withBuildMemo', () => {
     const second = vi.fn(async () => 'later');
     expect(await withBuildMemo('undef', [], second, { enabled: true, dir })).toBe('later');
     expect(second).toHaveBeenCalledTimes(1);
+  });
+});
+
+// Regression: Vercel restores `.next/cache` into the next build. An unbounded memo
+// pinned /en/news, RSS, both sitemaps and generateStaticParams to the DB state of
+// the first build that wrote it (2026-09-02) through every later deploy.
+describe('withBuildMemo across builds', () => {
+  let dir: string | undefined;
+
+  afterEach(() => {
+    resetBuildMemoForTests();
+    vi.unstubAllEnvs();
+    if (dir) rmSync(dir, { recursive: true, force: true });
+    dir = undefined;
+  });
+
+  it('reloads an entry older than the max age', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'atb-memo-'));
+    const opts = { enabled: true, dir, scope: '' };
+    await withBuildMemo('news-page-data', ['en'], async () => 'sep-2', { ...opts, now: () => 0 });
+    resetBuildMemoForTests();
+    const load = vi.fn(async () => 'sep-29');
+    const value = await withBuildMemo('news-page-data', ['en'], load, {
+      ...opts,
+      now: () => MEMO_MAX_AGE_MS + 1,
+    });
+    expect(value).toBe('sep-29');
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('still reuses an entry inside the max age', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'atb-memo-'));
+    const opts = { enabled: true, dir, scope: '' };
+    await withBuildMemo('k', [], async () => 'fresh', { ...opts, now: () => 0 });
+    resetBuildMemoForTests();
+    const load = vi.fn(async () => 'other');
+    const value = await withBuildMemo('k', [], load, { ...opts, now: () => MEMO_MAX_AGE_MS });
+    expect(value).toBe('fresh');
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it('ignores a timestamp from the future', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'atb-memo-'));
+    const opts = { enabled: true, dir, scope: '' };
+    await withBuildMemo('k', [], async () => 'skewed', { ...opts, now: () => 10 * 60 * 60 * 1000 });
+    resetBuildMemoForTests();
+    const load = vi.fn(async () => 'now');
+    expect(await withBuildMemo('k', [], load, { ...opts, now: () => 0 })).toBe('now');
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats a legacy file without a load time as a miss', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'atb-memo-'));
+    const id = publicContentMemoKey('news-page-data', ['en']);
+    // Exactly what the pre-fix memo wrote: the bare value, no envelope.
+    writeFileSync(join(dir, `${id}.json`), JSON.stringify({ items: ['2026-08-31'] }));
+    const load = vi.fn(async () => ({ items: ['2026-09-29'] }));
+    const value = await withBuildMemo('news-page-data', ['en'], load, {
+      enabled: true,
+      dir,
+      scope: '',
+    });
+    expect(value).toEqual({ items: ['2026-09-29'] });
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('reuses a stored null (a real loader result, not a miss)', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'atb-memo-'));
+    const opts = { enabled: true, dir, scope: '' };
+    await withBuildMemo('missing-item', ['x'], async () => null, opts);
+    resetBuildMemoForTests();
+    const load = vi.fn(async () => 'should-not-run');
+    expect(await withBuildMemo('missing-item', ['x'], load, opts)).toBeNull();
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it('does not read entries written under another build scope', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'atb-memo-'));
+    await withBuildMemo('k', [], async () => 'build-a', { enabled: true, dir, scope: 'dpl_A' });
+    resetBuildMemoForTests();
+    const load = vi.fn(async () => 'build-b');
+    const value = await withBuildMemo('k', [], load, { enabled: true, dir, scope: 'dpl_B' });
+    expect(value).toBe('build-b');
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('prunes earlier scopes and legacy flat files but keeps the current scope', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'atb-memo-'));
+    await withBuildMemo('old', [], async () => 1, { enabled: true, dir, scope: 'dpl_A' });
+    writeFileSync(join(dir, 'legacy.json'), '{"items":[]}');
+    writeFileSync(join(dir, 'legacy.123.tmp'), 'partial');
+    mkdirSync(join(dir, 'unrelated'));
+    resetBuildMemoForTests();
+
+    await withBuildMemo('first', [], async () => 2, { enabled: true, dir, scope: 'dpl_B' });
+    await withBuildMemo('second', [], async () => 3, { enabled: true, dir, scope: 'dpl_B' });
+
+    expect(readdirSync(dir)).toEqual(['dpl_B']);
+    expect(readdirSync(join(dir, 'dpl_B'))).toHaveLength(2);
+  });
+
+  it('never prunes without a build scope, only the TTL applies', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'atb-memo-'));
+    writeFileSync(join(dir, 'keep.json'), '{"t":1,"v":1}');
+    await withBuildMemo('k', [], async () => 1, { enabled: true, dir, scope: '' });
+    expect(existsSync(join(dir, 'keep.json'))).toBe(true);
+  });
+
+  it('scopes to VERCEL_DEPLOYMENT_ID when no scope is passed', async () => {
+    dir = mkdtempSync(join(tmpdir(), 'atb-memo-'));
+    vi.stubEnv('VERCEL_DEPLOYMENT_ID', 'dpl_env/1');
+    await withBuildMemo('k', [], async () => 1, { enabled: true, dir });
+    // Path separators in the id are flattened so it cannot escape the cache dir.
+    expect(readdirSync(dir)).toEqual(['dpl_env_1']);
   });
 });
 

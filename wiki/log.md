@@ -5483,3 +5483,18 @@ selection, `claret` на `velvet`, UI-пари на трьох поверхня�
 `runContrastAudit` тепер приймає набір токенів, тож тест доводить падіння: зламані `catTools` (Day, 1,51:1),
 `faint`, `artText`, `onVelvet`, `selectionText` і `focus` дають `<-- FAIL`. Старого 8-парного гейта v1 у репозиторії
 немає. (source: `npm run tokens:check`; `src/lib/design-system/tokens.test.ts`; `gh pr view 381` 2026-09-30)
+
+## 2026-09-30 — Фікс: build-memo пережив білд, прод віддавав знімок БД від 02.09
+
+Сторінки й фіди, що читають через `cachePublicRead` (`/en/news`, `/en`, категорії, `/rss.xml`,
+item-записи `sitemap.xml`, `news-sitemap.xml`, `generateStaticParams`), показували дані до брифу
+31.08, хоча в prod Supabase брифи опубліковано до 29.09. Корінь — диск-memo `withBuildMemo` (#350)
+без TTL і без ідентичності білду: Vercel відновлює `.next/cache`, тож ≈23 деплої поспіль брали
+знімок 02.09. Гіпотези «Data Cache заморожено на Vercel», «інший env/ключ» і «брифи не
+опубліковані» відхилено (динамічний `/news/search` свіжий; БД свіжа; Next 16.3.6 перераховує
+stale `unstable_cache` синхронно під час ISR). Фікс: envelope `{ t, v }` + TTL 30 хв, scope за
+`VERCEL_DEPLOYMENT_ID`, pruning старих каталогів і плоских файлів. 6 нових регресійних тестів
+червоніють на старому коді. Додано секцію в [supabase-egress-2026-09](ops/supabase-egress-2026-09.md),
+рядок у [now](now.md), оновлено [index](index.md). Build/runtime-логи Vercel недоступні (Hobby).
+(source: live check production + prod Supabase 2026-09-30; GitHub deployments API;
+`src/lib/public-content-build-memo.ts`)
