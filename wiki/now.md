@@ -10,12 +10,24 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.4 SEO baseline 2026-09-29
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.5 legacy QA report 2026-09-29
 Last updated: 2026-09-29
 
 ---
 
 ## Стан репозиторію
+
+- **AH-0.5: QA-матриця сторінок працює в report і gating (2026-09-29), PR
+  [#375](https://github.com/sanchahous/ai-today-brief/pull/375).** Gating для
+  `/ds-catalog` пройшов 14 перевірок (4,8 с), контрольний `text-[10px]` дав exit 1.
+  Повний локальний report — 812 сценаріїв для 58 URL у двох темах і семи режимах;
+  JSON у `artifacts/_local/ah-0.5-legacy-report.json`. Лічильники й обмеження — у
+  [log](log.md). Публічні EN/UK маршрути переходять у gating у PR їхнього редизайну.
+  AH-0.3 і AH-0.4 відкриті як [#373](https://github.com/sanchahous/ai-today-brief/pull/373)
+  і [#374](https://github.com/sanchahous/ai-today-brief/pull/374). Наступна задача AH-0.6
+  потребує GA4-даних і відповіді на [open-questions](open-questions.md) #1.
+  (source: `e2e/a11y-layout-matrix.spec.ts`; локальні Playwright-прогони 2026-09-29;
+  PR #373, #374; [open-questions](open-questions.md) #1)
 
 - **AH-0.4: SEO baseline зафіксовано з production 2026-09-29, PR
   [#374](https://github.com/sanchahous/ai-today-brief/pull/374).**

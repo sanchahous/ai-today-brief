@@ -329,7 +329,7 @@ flowchart TD
 | AH-0.2 | ✅ ADR: rollout і foundations, D1–D13 ([ADR](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)) | — | — | — | передумова G12 |
 | AH-0.3 | ✅ Baseline-знімки й інструмент до/після ([#373](https://github.com/sanchahous/ai-today-brief/pull/373)) | — | — | — | передумова visual review |
 | AH-0.4 | ✅ SEO-контракт: знімок і compare-гейт ([#374](https://github.com/sanchahous/ai-today-brief/pull/374)) | — | — | — | «SEO diff» (redesign §9) |
-| AH-0.5 | ◐ QA-матриця a11y і верстки для сторінок (#369: axe-інфраструктура для каталогу) | M | агент | D10 ✅ | G14 (частк.) |
+| AH-0.5 | ✅ QA-матриця a11y і верстки для сторінок ([#375](https://github.com/sanchahous/ai-today-brief/pull/375); публічні маршрути поки report) | — | — | D10 ✅ | G14 (частк.) |
 | AH-0.6 | Продуктовий і CWV baseline | S | власник + агент | open-questions #1 | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
@@ -537,11 +537,20 @@ baseline містить 58 EN/UK URL; compare з production дав 0 помил�
 4. Зняти звіт по legacy-сайту і записати лічильники з датою в `wiki/log.md`.
 
 **AC:**
-- [ ] Спека проходить у chromium на 360 / 390 / 768 / 1024 / 1440 × Night/Day × EN/UK для
+- [x] Спека проходить у chromium на 360 / 390 / 768 / 1024 / 1440 × Night/Day × EN/UK для
   gating-маршрутів і пише звіт для решти.
-- [ ] Навмисний `text-[10px]` у gating-маршруті валить спеку (продемонстровано в PR).
-- [ ] `e2e:affected` вибирає спеку при зміні `src/app/**` і `src/components/**`.
-- [ ] Gating-прогін у CI ≤ 10 хв (assumption для 4-core runner); повний прогін — ручний або за label.
+- [x] Навмисний `text-[10px]` у gating-маршруті валить спеку (продемонстровано в PR).
+- [x] `e2e:affected` вибирає спеку при зміні `src/app/**` і `src/components/**`.
+- [x] Gating-прогін у CI ≤ 10 хв (assumption для 4-core runner); повний прогін — ручний або за label.
+
+**Стан 2026-09-29:** PR [#375](https://github.com/sanchahous/ai-today-brief/pull/375);
+gating охоплює внутрішній мовонейтральний `/ds-catalog` (14 перевірок за
+4,8 с локально); публічні EN/UK сторінки лишаються в report до їхніх окремих PR редизайну.
+Ручний повний report: 812 сценаріїв, 58 URL, Night/Day, п'ять ширин і два zoom-режими;
+JSON — `artifacts/_local/ah-0.5-legacy-report.json`. Мутація `text-[10px]` дала exit 1;
+`e2e:affected` вибирає цю спеку для `src/app/**` і `src/components/**`.
+(source: `e2e/a11y-layout-matrix.spec.ts`; `e2e/fixtures/a11y-gating.json`;
+локальні Playwright-прогони 2026-09-29)
 
 ### AH-0.6 · Продуктовий і CWV baseline
 

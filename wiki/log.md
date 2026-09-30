@@ -5101,3 +5101,23 @@ PR відкрито після зеленого `pr:check`; pre-push E2E: 130 pa
 ## 2026-09-30 — AH-0.4: синхронізація після merge AH-0.3
 
 Об’єднано записи й статуси AH-0.3 та AH-0.4 без втрати історії; PR #373 змержено. Власник погодив G0 та merge PR #373–#376; підпис буде відображено в актуальному пакеті AH-0.6. (source: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373); повідомлення власника 2026-09-30)
+
+## 2026-09-29 — AH-0.5: report/gating QA-матриця сторінок
+
+Джерело: задача AH-0.5 [епіку](product/after-hours-redesign-epic.md); `e2e/a11y-layout-matrix.spec.ts`, `e2e/helpers/inspect-page.ts`, `e2e/fixtures/a11y-gating.json`; локальний headless Playwright 2026-09-29 на мінімальній збірці main із slug-ами production sitemap; `artifacts/_local/ah-0.5-legacy-report.json`.
+
+Gating внутрішнього мовонейтрального `/ds-catalog`: 14 перевірок у Chromium для Night/Day, 360/390/768/1024/1440, 200% тексту на 1280 і reflow 320; 14 passed за 4,8 с. Контрольна мутація з видимим `text-[10px]` дала exit 1 і повідомлення `small text: 10px`. `e2e:affected` через override вибрав матрицю для змін `src/app/[lang]/news/page.tsx` і `src/components/news/news-feed.tsx`.
+
+Ручний report: **812 сценаріїв** (58 EN/UK URL × 2 теми × 7 режимів), 7,0 хв, без падіння. Лічильники повторних спостережень, **не унікальних дефектів**: 0 сценаріїв із горизонтальним overflow, 0 елементів тексту <12 px, 11 504 touch targets <44 px, 1 976 axe violation nodes, 28 console errors (403 на weekly), 23 сценарії з H1 ≠1 (усі `news/search?q=mcp`), 313 пропусків рівнів заголовків, 0 `img` без alt, 699 clipped text спостережень загалом, із них 224 у zoom-режимах. Публічні маршрути лишаються в report до їхнього редизайну; лише `/ds-catalog` зараз у gating. (source: `artifacts/_local/ah-0.5-legacy-report.json`; локальний Playwright 2026-09-29)
+
+Оновлено статус і AC AH-0.5 в епіку, наступну задачу AH-0.6 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.5: PR відкрито
+
+Джерело: [PR #375](https://github.com/sanchahous/ai-today-brief/pull/375), `npm run pr:check` і pre-push E2E 2026-09-29.
+
+PR відкрито після зеленого `pr:check`; посилання додано до статусу §5.3 і картки AH-0.5, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #375](https://github.com/sanchahous/ai-today-brief/pull/375))
+
+## 2026-09-30 — AH-0.5: узгодження контрактів фази 0
+
+QA-гілку синхронізовано з перевіреною гілкою AH-0.4 та змерженим PR #373. У wiki збережено історію, AC і результати всіх трьох задач; merge #375 виконується після #374. G0 та merge #373–#376 погоджено власником. (source: повідомлення власника 2026-09-30; [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373), [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374), [PR #375](https://github.com/sanchahous/ai-today-brief/pull/375))

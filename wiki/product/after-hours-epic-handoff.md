@@ -18,18 +18,20 @@ Last updated: 2026-09-29
   `83b4421`): ADR D1–D13, рішення D7 «знак скрізь» і ця сторінка вже в `main`.
 - **Виконано:** AH-0.1 (PR [#372](https://github.com/sanchahous/ai-today-brief/pull/372), звірка G01–G20: 6 done, 10 partial, 2 open, 1 policy, 1 waived —
   [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)),
-  AH-0.2 (ADR), AH-1.1 (токени 2.0, PR #369), AH-2.1 (`/ds-catalog`, PR #369).
-- **Частково (◐):** AH-0.5, AH-1.2, AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
+  AH-0.2 (ADR), AH-0.5 (QA-матриця, PR #375), AH-1.1 (токени 2.0, PR #369),
+  AH-2.1 (`/ds-catalog`, PR #369).
+- **Частково (◐):** AH-1.2, AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
   Залишок описано в рядку «Стан після #369» кожної картки.
 - **Не виконується:** AH-5.16 (рішення D6).
 - **Рішення D1–D13 ухвалені.** Власника про них не перепитувати. Змінити рішення можна лише за
   новою відповіддю власника: спершу картки, потім запис у [log](../log.md).
 - **Гейт G0 не пройдено.** Поки він закритий, у production не йде жоден візуальний PR.
-- **Наступна задача: AH-0.5.** AH-0.3 має відкритий [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373)
-  зі знімками production; AH-0.4 ([#374](https://github.com/sanchahous/ai-today-brief/pull/374))
-  зафіксувала текстовий SEO baseline для 58 URL. Цей рядок
-  оновлює PR кожної закритої задачі. (source: PR #373; `scripts/seo-contract.ts`;
-  production HTTP-запити 2026-09-29)
+- **Наступна задача: AH-0.6.** AH-0.3, AH-0.4 і AH-0.5 мають відкриті PR
+  [#373](https://github.com/sanchahous/ai-today-brief/pull/373),
+  [#374](https://github.com/sanchahous/ai-today-brief/pull/374) і
+  [#375](https://github.com/sanchahous/ai-today-brief/pull/375); AH-0.5 реалізувала report/gating
+  QA-матрицю. Для AH-0.6 потрібні GA4-дані власника й рішення [open-questions](../open-questions.md) #1.
+  (source: PR #373, #374, #375; `e2e/a11y-layout-matrix.spec.ts`; [open-questions](../open-questions.md) #1)
 
 ## 2. Порядок старту сесії
 
@@ -73,7 +75,7 @@ Last updated: 2026-09-29
 | 1 | ✅ AH-0.1 · звірка G01–G20 | агент | розділ «Статус на дату» в gap-plan із доказом для кожного G; виправлене формулювання в `now.md`; закритий пункт #10 в open-questions | немає, PR лише з wiki |
 | 2 | AH-0.3 · знімки до/після | агент | `scripts/capture-route-matrix.ts`; прогін `--label=before` з production; PNG лише в `artifacts/_local/` | немає |
 | 3 | AH-0.4 · SEO-контракт | агент | `src/lib/seo-contract.ts` з тестом (покриття ≥ 80%), `scripts/seo-contract.ts`, текстовий baseline з production | немає |
-| 4 | AH-0.5 · QA-матриця сторінок | агент | `e2e/a11y-layout-matrix.spec.ts`, режими report і gating, звіт по legacy-сайту з лічильниками в log | немає |
+| 4 | ✅ AH-0.5 · QA-матриця сторінок ([#375](https://github.com/sanchahous/ai-today-brief/pull/375)) | агент | `e2e/a11y-layout-matrix.spec.ts`, режими report і gating, звіт по legacy-сайту з лічильниками в log | немає |
 | 5 | AH-0.6 · продуктовий і CWV baseline | власник + агент | `wiki/analytics/<дата>-redesign-baseline.md` | **так:** потрібні дані GA4 і рішення open-questions #1 |
 
 **Нюанси, яких немає в картках:**
