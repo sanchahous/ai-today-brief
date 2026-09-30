@@ -12,7 +12,8 @@ export const STRINGS = {
     skipToContent: 'Skip to content',
     menu: 'Menu',
     closeMenu: 'Close menu',
-    themeToggle: 'Toggle theme',
+    themeDay: 'Switch to day theme',
+    themeNight: 'Switch to night theme',
     langSwitch: 'Switch to Ukrainian',
     nav: {
       news: 'News',
@@ -396,7 +397,8 @@ export const STRINGS = {
     skipToContent: 'Перейти до вмісту',
     menu: 'Меню',
     closeMenu: 'Закрити меню',
-    themeToggle: 'Змінити тему',
+    themeDay: 'Увімкнути денну тему',
+    themeNight: 'Увімкнути нічну тему',
     langSwitch: 'Перемкнути на англійську',
     nav: {
       news: 'Новини',

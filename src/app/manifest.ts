@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { SITE_NAME, SITE_TAGLINE, DEFAULT_LANG } from '@/lib/site';
+import { THEME_COLORS } from '@/lib/theme';
 
 /**
  * Public web-app manifest. This file is served at /manifest.webmanifest for the
@@ -14,8 +15,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: SITE_TAGLINE[DEFAULT_LANG],
     start_url: `/${DEFAULT_LANG}`,
     display: 'standalone',
-    background_color: '#0b0f12',
-    theme_color: '#0b0f12',
+    background_color: THEME_COLORS.night,
+    theme_color: THEME_COLORS.night,
     orientation: 'portrait-primary',
     icons: [
       { src: '/logo.png', sizes: '512x512', type: 'image/png', purpose: 'any' },

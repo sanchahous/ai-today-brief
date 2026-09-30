@@ -11,12 +11,14 @@ const LCOV_PATH = 'coverage/lcov.info';
 
 const LOGIC_FILES = [
   'src/lib/consent.ts',
+  'src/lib/theme.ts',
   'src/lib/beehiiv-config.ts',
   'src/lib/site.ts',
   'src/lib/category-meta.ts',
   'src/lib/concept-meta.ts',
   'src/lib/news-filters.ts',
   'src/lib/sitemap-dates.ts',
+  'src/lib/seo-contract.ts',
   'src/lib/analytics-config.ts',
   'src/lib/analytics-client.ts',
   'src/lib/preferred-lang.ts',
@@ -50,7 +52,9 @@ function main(): void {
     process.exit(1);
   }
 
-  console.info(`[verify-logic-lcov] OK — ${LOGIC_FILES.length} logic file(s) present in ${LCOV_PATH}`);
+  console.info(
+    `[verify-logic-lcov] OK — ${LOGIC_FILES.length} logic file(s) present in ${LCOV_PATH}`,
+  );
 }
 
 main();

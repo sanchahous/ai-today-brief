@@ -42,6 +42,7 @@ const HEADER = 'e2e/header-layout.spec.ts';
 const FOOTER = 'e2e/footer-newsletter.spec.ts';
 const ADMIN_MOBILE = 'e2e/admin-mobile.spec.ts';
 const WEEKLY_SEO = 'e2e/weekly-seo.spec.ts';
+const A11Y_MATRIX = 'e2e/a11y-layout-matrix.spec.ts';
 
 /** Cheap canaries that visit many routes — the safety net for unmapped UI changes. */
 const CORE = [SMOKE, LAYOUT];
@@ -63,6 +64,7 @@ const BROAD: RegExp[] = [
 // than a data-testid, so the derived testid index can't see them. `--check` tells you when a
 // spec becomes unreachable and needs an entry here.
 const OVERRIDES: Array<{ match: RegExp; specs: string[] }> = [
+  { match: /^src\/(?:app|components)\//, specs: [A11Y_MATRIX] },
   { match: /^src\/components\/site-header(-chrome)?\.tsx$/, specs: [HEADER] },
   { match: /^src\/components\/header-search-field\.tsx$/, specs: [HEADER] },
   { match: /^src\/components\/site-footer\.tsx$/, specs: [FOOTER] },

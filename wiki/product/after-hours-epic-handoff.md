@@ -1,7 +1,7 @@
 # Епік After Hours: передача виконання наступній сесії
 
-Summary: вхідна точка для агента будь-якої моделі чи інструмента, який продовжує епік редизайну After Hours у новій сесії. Сторінка описує стан на 2026-09-29, порядок старту, чергу фази 0 з нюансами кожної задачі, точки, де треба зупинитись і спитати власника, правила й пастки з попередніх сесій і готовий стартовий промпт.
-Sources: [after-hours-redesign-epic](after-hours-redesign-epic.md) §0, §2, §4–§6, §11, §17; [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md); [open-questions](../open-questions.md) #1, #10; `.cursor/rules/pr-gate.mdc`; `package.json`; `wiki/_tools/wiki-lint.mjs`; `wiki/_meta/project-sync.json`; `src/lib/site.ts`; `artifacts/after-hours/pages.js`, `editions.js`, `qa/`; `artifacts/brand-kit/README.md`; сесія 2026-09-29 (PR #370, #371)
+Summary: вхідна точка для агента будь-якої моделі чи інструмента, який продовжує епік редизайну After Hours у новій сесії. Сторінка описує стан на 2026-09-30, порядок старту, чергу фази 0 з нюансами кожної задачі, точки, де треба зупинитись і спитати власника, правила й пастки з попередніх сесій і готовий стартовий промпт.
+Sources: [after-hours-redesign-epic](after-hours-redesign-epic.md) §0, §2, §4–§6, §11, §17; [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md); [redesign baseline](../analytics/2026-09-29-redesign-baseline.md); [open-questions](../open-questions.md) #1, #10; `.cursor/rules/pr-gate.mdc`; `package.json`; `wiki/_tools/wiki-lint.mjs`; `wiki/_meta/project-sync.json`; `src/lib/site.ts`; `artifacts/after-hours/pages.js`, `editions.js`, `qa/`; `artifacts/brand-kit/README.md`; live `git` / PR / HTTP checks 2026-09-30 (PR #373–#376)
 Last updated: 2026-09-30
 
 ---
@@ -10,7 +10,45 @@ Last updated: 2026-09-30
 > Тут лише те, що потрібно, щоб нова сесія стартувала без контексту попередньої: стан, порядок,
 > точки зупинки й пастки. Картки задач тут не дублюються.
 
-## 1. Стан на 2026-09-29
+## 1. Стан на 2026-09-30
+
+- **Фаза 0 й контракт AH-1.3 інтегровані; актуальний `origin/main` — `6b3b446`.**
+  На старті AH-1.3 робоче дерево було чистим, #376 — MERGED, #377 — OPEN.
+  [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378) змержено 2026-09-30.
+  AH-1.7 / #377 явно підписано власником із дозволом resolve і merge;
+  конфлікти wiki виправлено, merge очікує перевірок.
+  [QA-докази й галерея](after-hours-ah-1-3-validation.md) містять SEO compare,
+  перевірки першого кадру/no-JS/аналітики та межі legacy QA.
+  **Наступна задача — AH-1.4**, кольори й гліфи категорій; після неї AH-1.2.
+  AH-1.7 / #377 не дублювати й не позначати завершеною до merge.
+  (source: `git fetch origin`, `git status --short`, `gh pr view 376/377/378` 2026-09-30;
+  прямий підпис власника для #377 2026-09-30;
+  [епік](after-hours-redesign-epic.md) §5.2, §5.3; [AH-1.3 validation](after-hours-ah-1-3-validation.md))
+
+- **AH-0.3, AH-0.4 і AH-0.5 завершено:** PR #373, #374 і #375 змержено
+  2026-09-30; `origin/main` на момент фінальної звірки — `4409a81`.
+  Visual baseline: 232 PNG, manifest SHA-256
+  `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`;
+  SEO baseline: 58 URL; QA report: 812 сценаріїв. CI фінального дерева #375:
+  452 passed / 19 skipped у трьох браузерах.
+  (source: `gh pr view 373`…`375`, GitHub E2E run `36713604676`,
+  `artifacts/_local/before/manifest.json`, `artifacts/_local/ah-0.5-legacy-report.json`,
+  звірка 2026-09-30)
+- AH-0.6 має всі докази й погодження; формально завершено на main після merge PR #376. GSC link,
+  `newsletter_subscribe` key event, retention event/user data по 14 місяців,
+  канонічний тег і `page_view` у Tag Assistant підтверджено. Config consent:
+  analytics granted / ads denied. Власник прийняв лабораторний CWV baseline
+  home/news/article з недостатніми CrUX-даними й виключив daily/weekly лише
+  з AH-0.6. Нових Admin-скриншотів або цих самих PageSpeed-звітів не просити.
+  Tag Assistant показує звернення на всі три destinations; приймання ресурсами
+  акаунтів у кошику не доведено. Очищення — окреме рішення власника.
+  (source: погодження й скриншоти власника 2026-09-30;
+  [redesign baseline](../analytics/2026-09-29-redesign-baseline.md))
+- PR [#377](https://github.com/sanchahous/ai-today-brief/pull/377) реалізує AH-1.7;
+  власник явно дозволив resolve і merge 2026-09-30. Перевірки виконуються після
+  інтеграції `6b3b446`; baseline кольорів зменшено 44 → 42 після AH-1.3.
+  G0 уже підписано. (source: `gh pr view 377`; повідомлення власника;
+  `scripts/raw-design-values.baseline.json` 2026-09-30)
 
 **Оновлення 2026-09-30:** власник попросив відкласти перевірки AH-0.6 й
 продовжити епік. PR #373–#376 відкриті; не дублювати їхню роботу. AH-1.7
@@ -25,16 +63,45 @@ Last updated: 2026-09-30
   `83b4421`): ADR D1–D13, рішення D7 «знак скрізь» і ця сторінка вже в `main`.
 - **Виконано:** AH-0.1 (PR [#372](https://github.com/sanchahous/ai-today-brief/pull/372), звірка G01–G20: 6 done, 10 partial, 2 open, 1 policy, 1 waived —
   [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)),
-  AH-0.2 (ADR), AH-1.1 (токени 2.0, PR #369), AH-2.1 (`/ds-catalog`, PR #369).
-- **Частково (◐):** AH-0.5, AH-1.2, AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
+  AH-0.2 (ADR), AH-0.3 (PR #373), AH-0.4 (PR #374), AH-0.5 (PR #375),
+  AH-0.6 (PR #376), AH-1.1 (токени 2.0, PR #369), AH-2.1 (`/ds-catalog`, PR #369).
+- **Частково (◐):** AH-1.2, AH-1.3 (#378 на review), AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
   Залишок описано в рядку «Стан після #369» кожної картки.
 - **Не виконується:** AH-5.16 (рішення D6).
 - **Рішення D1–D13 ухвалені.** Власника про них не перепитувати. Змінити рішення можна лише за
   новою відповіддю власника: спершу картки, потім запис у [log](../log.md).
-- **Гейт G0 не пройдено.** Поки він закритий, у production не йде жоден візуальний PR.
-- **AH-0.3–AH-0.6 уже мають PR #373–#376.** AH-0.6 відкладено власником;
-  інструмент AH-1.7 підготовлено окремою гілкою. Наступні візуальні задачі
-  очікують G0. (source: `gh pr list`, повідомлення власника 2026-09-30)
+- **G0 підписано власником 2026-09-30:** «Погоджую G0 та merge PR #373–#376».
+  Підпис і дозвіл merge отримано; фактичну інтеграцію перевіряти за станом PR.
+  Вимога візуального review кожного видимого PR зберігається.
+  (source: пряме повідомлення власника 2026-09-30)
+- **AH-1.3 інтегровано через #378; наступна — AH-1.4.**
+  AH-1.7 уже реалізовано у відкритому PR #377; цю роботу не дублювати.
+  (source: [AH-1.3 validation](after-hours-ah-1-3-validation.md); [епік](after-hours-redesign-epic.md))
+
+## Пакет для підпису G0
+
+| Задача | Доказ / результат | Статус |
+|---|---|---|
+| AH-0.1 | G01–G20 звірено, PR #372 | завершено |
+| AH-0.2 | ADR D1–D13, PR #371 | завершено |
+| AH-0.3 | 232 PNG, manifest SHA-256, інструмент знімків; PR #373 | завершено, PR змержено |
+| AH-0.4 | production SEO baseline і compare-гейт; PR #374 | завершено, PR змержено |
+| AH-0.5 | report 812 сценаріїв, gating-інфраструктура й негативний тест; PR #375 | завершено, PR змержено |
+| AH-0.6 | GA4 baseline, підтверджені Admin/Tag Assistant, погоджений CWV виняток; PR #376 | всі AC і G0 прийнято; завершено на main після merge #376 |
+
+Джерела: `gh pr view 373`…`377` 2026-09-30, PR #371/#372,
+`artifacts/_local/before/manifest.json`, `artifacts/_local/ah-0.5-legacy-report.json`,
+[baseline](../analytics/2026-09-29-redesign-baseline.md), повідомлення власника.
+PR #373–#375 змержено після зелених перевірок; PR #376 інтегрує цей пакет.
+PR #377 відкритий. Статус AH-0.6 «завершено» застосовується після merge #376.
+AH-1.7 / #377 належить фазі 1 і не є умовою G0.
+
+**Що підписується:** baseline visual/SEO/продукту та готовність QA-матриці
+в report-режимі; дозвіл перейти до візуальних задач після завершення PR фази 0.
+Відомі legacy QA-порушення — борг міграції, report mode їх не приховує.
+Докази й рішення AH-0.6 вже прийняті; повторного погодження аналітики не потрібно.
+**Фінальний підпис G0 отримано 2026-09-30**, включно з дозволом merge #373–#376. (source: [епік](after-hours-redesign-epic.md) G0;
+PR #375; погодження власника 2026-09-30)
 
 ## 2. Порядок старту сесії
 
@@ -76,10 +143,10 @@ Last updated: 2026-09-30
 | # | Задача | Хто | Результат | Зупинка |
 |---|---|---|---|---|
 | 1 | ✅ AH-0.1 · звірка G01–G20 | агент | розділ «Статус на дату» в gap-plan із доказом для кожного G; виправлене формулювання в `now.md`; закритий пункт #10 в open-questions | немає, PR лише з wiki |
-| 2 | AH-0.3 · знімки до/після | агент | `scripts/capture-route-matrix.ts`; прогін `--label=before` з production; PNG лише в `artifacts/_local/` | немає |
-| 3 | AH-0.4 · SEO-контракт | агент | `src/lib/seo-contract.ts` з тестом (покриття ≥ 80%), `scripts/seo-contract.ts`, текстовий baseline з production | немає |
-| 4 | AH-0.5 · QA-матриця сторінок | агент | `e2e/a11y-layout-matrix.spec.ts`, режими report і gating, звіт по legacy-сайту з лічильниками в log | немає |
-| 5 | AH-0.6 · продуктовий і CWV baseline | власник + агент | `wiki/analytics/<дата>-redesign-baseline.md` | **так:** потрібні дані GA4 і рішення open-questions #1 |
+| 2 | ✅ AH-0.3 · знімки до/після | агент | `scripts/capture-route-matrix.ts`; прогін `--label=before` з production; PNG лише в `artifacts/_local/` | немає |
+| 3 | ✅ AH-0.4 · SEO-контракт | агент | `src/lib/seo-contract.ts` з тестом (покриття ≥ 80%), `scripts/seo-contract.ts`, текстовий baseline з production | немає |
+| 4 | ✅ AH-0.5 · QA-матриця сторінок | агент | `e2e/a11y-layout-matrix.spec.ts`, режими report і gating, звіт по legacy-сайту з лічильниками в log | немає |
+| 5 | ✅ AH-0.6 · продуктовий і CWV baseline, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) змержено | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки; одна активна property, два акаунти в кошику | завершено, повторного підпису G0 не потрібно |
 
 **Нюанси, яких немає в картках:**
 
@@ -98,9 +165,15 @@ Last updated: 2026-09-30
 - **AH-0.5.** Портувати `inspect()` з `artifacts/after-hours/qa/run-qa.mjs` і перевірку zoom з
   `check-zoom.mjs`. Рушій — `@axe-core/playwright`, він уже є в devDependencies з #369. Нова спека
   має потрапити в `scripts/e2e-affected.ts`, інакше `e2e:affected` її не вибере.
-- **AH-0.6.** Агент не має доступу до GA4. Потрібен експорт від власника або цифри з його акаунта.
-  Доки [open-questions](../open-questions.md) #1 (property 540206735 чи 540467725) не закрите, кожна
-  цифра позначається `(needs verification)`.
+- **AH-0.6.** Read-only GA4-конектор підключено 2026-09-29. За 01–28.09 три property
+  отримували production-події через один Google tag. 2026-09-30 власник перемістив
+  два зайві акаунти в кошик; активна property для baseline — `540206735`.
+  Tag Assistant показує відправлення на всі три destinations; приймання property
+  акаунтів у кошику не встановлено. Admin-чекліст і питання #1 закрито доказами
+  власника. CWV baseline home/news/article прийнято з лабораторними метриками
+  й недостатніми CrUX-даними; daily/weekly виключено лише з AH-0.6.
+  Дані й обмеження — [redesign baseline](../analytics/2026-09-29-redesign-baseline.md).
+  (source: погодження й скриншоти власника 2026-09-30)
 
 **Гейт G0** закритий, коли AH-0.1…AH-0.6 виконані, baseline visual, SEO і продукту зняті, а
 QA-матриця працює в режимі report.
@@ -118,7 +191,7 @@ QA-матриця працює в режимі report.
 
 ## 5. Точки зупинки: питати власника, не вгадувати
 
-1. **Гейти G0–G7** — потрібен підпис власника: візуальний diff, знімки знака, News slice.
+1. **Гейти G1–G7** — потрібен підпис власника (G0 уже підписано 2026-09-30): візуальний diff, знімки знака, News slice.
 2. **Будь-яке число, розклад, обіцянка чи формат**, яких немає в даних або коді (інваріант I-6).
    Відкриті питання на 2026-09-29:
    - «70+ матеріалів на тиждень» і «120+ джерел» у `home-hero.tsx` (AH-5.3, B9);
@@ -126,7 +199,9 @@ QA-матриця працює в режимі report.
      (`artifacts/after-hours/editions.js`, `pages.js`); це стосується AH-5.4, AH-5.6 і AH-5.13;
    - «перевірка гайдів кожні 90 днів» (AH-5.9);
    - спонсорський слот на головній і формати розміщень (AH-5.3, п. 10; AH-5.13);
-   - справжня GA4-property ([open-questions](../open-questions.md) #1; AH-0.6).
+    - очищення двох залишкових GA4 destinations у Google tag — окреме рішення
+      власника після Tag Assistant; вибір канонічної property вже вирішено
+      ([open-questions](../open-questions.md) #1; AH-0.6; source: повідомлення власника 2026-09-30).
 3. **Платформи для нового аватара й банерів** (AH-3.8):
    - точно є X, Telegram, LinkedIn і YouTube (`SOCIALS` у `src/lib/site.ts`);
    - Facebook, Bluesky, Mastodon, Instagram і Threads є в таблиці `artifacts/brand-kit/README.md`,
@@ -195,16 +270,20 @@ QA-матриця працює в режимі report.
 ```text
 Продовж виконання епіку редизайну After Hours у репозиторії ai-today-brief.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
-2. Візьми наступну задачу з розділу «Черга фази 0» (станом на 2026-09-29 — AH-0.3) і виконай її за
-   карткою в wiki/product/after-hours-redesign-epic.md: окрема гілка feat/ah-<id>-<slug> від
-   origin/main, Definition of Done з §0.1, npm run pr:check, PR у main за шаблоном §0.2.
+2. Підтягни origin/main і перевір фактичний merge PR #373–#376. G0 підписано
+   власником 2026-09-30; фаза 0 інтегрована на 69bcd1c, AH-1.3 змержено в 6b3b446.
+   Перевір фактичний merge #377 (власник уже підписав і дозволив його) і продовжуй AH-1.4 за карткою
+   wiki/product/after-hours-redesign-epic.md. AH-1.7 уже у PR #377, не дублюй.
+   Для нової задачі — окрема гілка feat/ah-<id>-<slug> від
+   origin/main, Definition of Done з §0.1, npm run pr:check перед push, PR у main.
 3. Після PR онови §5.3 епіку, wiki/now.md, wiki/log.md і рядок «Наступна задача» в handoff.
 4. У точках із розділу «Точки зупинки» зупинись і спитай мене. Нічого не вигадуй.
 Відповідай мені українською.
 ```
 
-Щоб пройти фазу 0 за одну сесію, у пункті 2 варто написати: «виконай по черзі AH-0.3, AH-0.4,
-AH-0.5, кожну окремим PR; на AH-0.6 зупинись і спитай мене про GA4».
+Для AH-0.6 GA4-дані вже знято через read-only конектор; після рішення власника 2026-09-30
+активна лише `540206735`. Її Admin-чекліст і Tag Assistant підтверджені;
+CWV baseline прийнято власником із зафіксованим винятком; див. [baseline](../analytics/2026-09-29-redesign-baseline.md).
 
 ## Related pages
 

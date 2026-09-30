@@ -58,6 +58,7 @@
     "e2e:affected": "tsx scripts/e2e-affected.ts",
     "e2e:check": "tsx scripts/e2e-affected.ts --check",
     "e2e:ui": "playwright test --ui",
+    "seo:contract": "node --import tsx scripts/seo-contract.ts",
     "e2e:install": "playwright install --with-deps",
     "prepare": "git config core.hooksPath .githooks || exit 0"
   },

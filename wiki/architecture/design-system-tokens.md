@@ -117,12 +117,13 @@ Baseline — `scripts/raw-design-values.baseline.json`: ідентичність
 скануванням і не оцінює computed styles чи значення з БД; це задача QA-матриці.
 (source: `scripts/report-raw-design-values.ts`; [епік](../product/after-hours-redesign-epic.md) AH-1.7)
 
-Знімок 2026-09-30: **44** входження кольорів у **21** файлі, **4** довільні
+Актуальний baseline після AH-1.3 і resolve #377 2026-09-30: **42** входження кольорів у **20** файлах, **4** довільні
 z-index, **0** сирих тіней, **0** розмірів шрифту < 12 px у цій області.
 Це нова область підрахунку hex/rgb/hsl з винятками, а не повтор старого
 hex-only підрахунку B4. У кінці кожної фази результат `design:raw:report`
 дописується до `wiki/log.md`; baseline зменшується в PR міграції споживачів.
-(source: `npm run design:raw:report` 2026-09-30; `scripts/raw-design-values.baseline.json`)
+(source: `npm run design:raw:prune` 2026-09-30; `scripts/raw-design-values.baseline.json`;
+`src/app/manifest.ts` після [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378))
 
 ## Related pages
 

@@ -2,16 +2,25 @@
 
 Summary: виконуваний епік переносу дизайн-системи й макетів After Hours v3 з `artifacts/after-hours/` у production-сайт: 56 задач (55 обов'язкових + 1 опційна, яку рішення D6 відклало) у порядку виконання, 8 фаз і 8 гейтів, кожна задача з описом, залежностями й acceptance criteria. Вихідна точка звірена з кодом після PR #369 (3 задачі вже виконані, 9 — частково); усі рішення D1–D13 прийняті 2026-09-29 — ADR.
 Sources: `artifacts/after-hours/` (README, QA.md, tokens.css, tokens.json, app.js, home.js, articles.js, editions.js, knowledge.js, toolbox.js, pages.js, seo.js, data.js `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/README.md`, `artifacts/brand-kit/README.md`;
-wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
-live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0)
-Last updated: 2026-09-29
+wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, analytics/2026-09-29-redesign-baseline, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
+live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0); PR / analytics access checks 2026-09-30
+Last updated: 2026-09-30
 
 ---
 
-> **Статус 2026-09-29:** епік готовий до виконання, усі рішення D1–D13 ухвалені (AH-0.2 ✅),
+> **Статус 2026-09-30:** епік готовий до виконання, усі рішення D1–D13 ухвалені (AH-0.2 ✅),
 > статус G01–G20 звірено з кодом (AH-0.1 ✅).
-> Наступні кроки — решта фази 0: AH-0.3–AH-0.6 (baseline-заміри й
-> QA-інструменти). До закриття гейту G0 жоден візуальний PR у production не відкривається.
+> AH-0.3–AH-0.5 завершено через змержені PR #373–#375; [AH-0.6 baseline](../analytics/2026-09-29-redesign-baseline.md)
+> завершено через змержений PR #376 (`origin/main` @ `69bcd1c`); активна GA4-property `540206735`, Admin-чекліст і Tag Assistant
+> підтверджено доказами власника. CWV baseline home/news/article прийнято з лабораторними
+> метриками й недостатніми CrUX-даними, daily/weekly виключено лише з AH-0.6.
+> **G0 підписано власником 2026-09-30:** «Погоджую G0 та merge PR #373–#376».
+> Фазу 0 інтегровано. AH-1.3 на main після merge [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378),
+> наявні legacy QA/no-JS межі збережено в [доказах](after-hours-ah-1-3-validation.md).
+> Наступна окрема задача — AH-1.4; resolve і merge AH-1.7 / #377 уже дозволено власником.
+> (source: повідомлення й скриншоти власника 2026-09-30; `git fetch origin`, `gh pr view 376/377/378` 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md); [AH-1.3 validation](after-hours-ah-1-3-validation.md))
+> Підпис G0 дозволяє перейти до візуальних задач після інтеграції фази 0;
+> вимога візуального підпису кожного видимого PR із §0 зберігається.
 > Візуальний напрям затверджено власником у прототипі v3; цей документ — план його перенесення,
 > а не нова дизайн-пропозиція. (source: [after-hours-redesign](after-hours-redesign.md) §1)
 >
@@ -327,13 +336,13 @@ flowchart TD
 |---|---|---|---|---|---|
 | AH-0.1 | ✅ Звірити статус G01–G20 і вихідну точку ([#372](https://github.com/sanchahous/ai-today-brief/pull/372), [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)) | — | — | — | G01, конфлікт §2.3 |
 | AH-0.2 | ✅ ADR: rollout і foundations, D1–D13 ([ADR](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)) | — | — | — | передумова G12 |
-| AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
-| AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
-| AH-0.5 | ◐ QA-матриця a11y і верстки для сторінок (#369: axe-інфраструктура для каталогу) | M | агент | D10 ✅ | G14 (частк.) |
-| AH-0.6 | Продуктовий і CWV baseline | S | власник + агент | open-questions #1 | передумова оцінки |
+| AH-0.3 | ✅ Baseline-знімки й інструмент до/після ([#373](https://github.com/sanchahous/ai-today-brief/pull/373)) | — | — | — | передумова visual review |
+| AH-0.4 | ✅ SEO-контракт: знімок і compare-гейт ([#374](https://github.com/sanchahous/ai-today-brief/pull/374)) | — | — | — | «SEO diff» (redesign §9) |
+| AH-0.5 | ✅ QA-матриця a11y і верстки для сторінок ([#375](https://github.com/sanchahous/ai-today-brief/pull/375); публічні маршрути поки report) | — | — | D10 ✅ | G14 (частк.) |
+| AH-0.6 | ✅ На main після merge [#376](https://github.com/sanchahous/ai-today-brief/pull/376): продуктовий і CWV baseline, всі AC прийнято власником | — | — | open-questions #1 закрито | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
-| AH-1.3 | Контракт теми Night/Day без спалаху | S | агент | D2 ✅ | B12 |
+| AH-1.3 | ◐ Контракт Night/Day інтегровано в main через [#378](https://github.com/sanchahous/ai-today-brief/pull/378); legacy no-JS/full-page QA AC лишаються задокументованими ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
 | AH-1.4 | Кольори й гліфи категорій | M | агент | — | B5 |
 | AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
 | AH-1.6 | ◐ Простір, форма, глибина, шари, брейкпоінти, motion-токени (#369: розміри контролів, z-index) | M | агент | D5 ✅ | G09, B13 |
@@ -469,11 +478,17 @@ D11) · **Закриває:** передумова visual review кожного 
    до першого з AH-1.3…AH-1.7; у log зазначити, що baseline — стан після токенів 2.0.
 
 **AC:**
-- [ ] `node --import tsx scripts/capture-route-matrix.ts --base=https://aitodaybrief.com --label=before`
+- [x] `node --import tsx scripts/capture-route-matrix.ts --base=https://aitodaybrief.com --label=before`
   завершується з кодом 0 і пише manifest для всіх маршрутів §15 у 8 комбінаціях.
-- [ ] PNG не потрапляють у git (`git status` чистий після запуску).
-- [ ] Baseline `before` знято до мержу першого візуального PR після #369 (AH-1.3…AH-1.7); шлях і
+- [x] PNG не потрапляють у git (`git status` чистий після запуску).
+- [x] Baseline `before` знято до мержу першого візуального PR після #369 (AH-1.3…AH-1.7); шлях і
   SHA записані в `wiki/log.md`.
+
+**Стан 2026-09-29:** PR [#373](https://github.com/sanchahous/ai-today-brief/pull/373);
+232 PNG і `manifest.json` лежать у git-ignored `artifacts/_local/before/`;
+baseline охоплює 29 станів сторінок у 8 комбінаціях. Це стан після токенів 2.0 з #369,
+до наступних візуальних PR. (source: `scripts/capture-route-matrix.ts`; production capture
+2026-09-29; `artifacts/_local/before/manifest.json`)
 
 ### AH-0.4 · SEO-контракт: знімок і compare-гейт
 
@@ -494,10 +509,18 @@ D11) · **Закриває:** передумова visual review кожного 
    `x-vercel-cache: HIT`.
 
 **AC:**
-- [ ] Baseline з production закомічено як текстовий JSON (без HTML).
-- [ ] `--compare` проти того самого production — 0 розбіжностей; видалення canonical у фікстурі
+- [x] Baseline з production закомічено як текстовий JSON (без HTML).
+- [x] `--compare` проти того самого production — 0 розбіжностей; видалення canonical у фікстурі
   дає exit 1 (unit-тест).
-- [ ] Покриття нового `src/lib/seo-contract.ts` ≥ 80%.
+- [x] Покриття нового `src/lib/seo-contract.ts` ≥ 80%.
+
+**Стан 2026-09-29:** PR [#374](https://github.com/sanchahous/ai-today-brief/pull/374);
+baseline містить 58 EN/UK URL; compare з production дав 0 помилок і
+0 попереджень, `--headers` підтвердив HIT для повторних `/en/news` і `/uk/news`.
+Навмисно вилучений canonical у копії baseline дав exit 1. Поточний сирий HTML має
+`lang="en"` на UK-сторінках і 0 тексту безпосередньо в `<main>` до обробки streaming-розмітки;
+це зафіксовані властивості baseline, не виправлення AH-0.4. (source: `scripts/seo-contract.ts`;
+`e2e/fixtures/seo-contract.baseline.json`; production HTTP-запити 2026-09-29)
 
 ### AH-0.5 · QA-матриця доступності й верстки для Next-застосунку
 
@@ -523,30 +546,54 @@ D11) · **Закриває:** передумова visual review кожного 
 4. Зняти звіт по legacy-сайту і записати лічильники з датою в `wiki/log.md`.
 
 **AC:**
-- [ ] Спека проходить у chromium на 360 / 390 / 768 / 1024 / 1440 × Night/Day × EN/UK для
+- [x] Спека проходить у chromium на 360 / 390 / 768 / 1024 / 1440 × Night/Day × EN/UK для
   gating-маршрутів і пише звіт для решти.
-- [ ] Навмисний `text-[10px]` у gating-маршруті валить спеку (продемонстровано в PR).
-- [ ] `e2e:affected` вибирає спеку при зміні `src/app/**` і `src/components/**`.
-- [ ] Gating-прогін у CI ≤ 10 хв (assumption для 4-core runner); повний прогін — ручний або за label.
+- [x] Навмисний `text-[10px]` у gating-маршруті валить спеку (продемонстровано в PR).
+- [x] `e2e:affected` вибирає спеку при зміні `src/app/**` і `src/components/**`.
+- [x] Gating-прогін у CI ≤ 10 хв (assumption для 4-core runner); повний прогін — ручний або за label.
+
+**Стан 2026-09-29:** PR [#375](https://github.com/sanchahous/ai-today-brief/pull/375);
+gating охоплює внутрішній мовонейтральний `/ds-catalog` (14 перевірок за
+4,8 с локально); публічні EN/UK сторінки лишаються в report до їхніх окремих PR редизайну.
+Ручний повний report: 812 сценаріїв, 58 URL, Night/Day, п'ять ширин і два zoom-режими;
+JSON — `artifacts/_local/ah-0.5-legacy-report.json`. Мутація `text-[10px]` дала exit 1;
+`e2e:affected` вибирає цю спеку для `src/app/**` і `src/components/**`.
+(source: `e2e/a11y-layout-matrix.spec.ts`; `e2e/fixtures/a11y-gating.json`;
+локальні Playwright-прогони 2026-09-29)
 
 ### AH-0.6 · Продуктовий і CWV baseline
 
 **Тип:** аналітика · **Розмір:** S · **Виконавець:** власник + агент (оформлення) ·
-**Залежить від:** [open-questions](../open-questions.md) #1 (яка GA4-property справжня) ·
+**Залежить від:** [open-questions](../open-questions.md) #1 (Admin-звірка канонічної GA4-property і Tag Assistant) ·
 **Закриває:** передумова «Оцінки після запуску» ([after-hours-redesign](after-hours-redesign.md) §9)
 
 **Що зробити:** до першого візуального PR зняти з історичних даних за останні 28 днів: CTR lead → article на головній
 (`weekly_top_click`, `hero_cta_click`), home → daily, weekly completion (`digest_view` →
 `scroll_50` → `story_open`), concept → guide → tool, воронку `newsletter_impression` →
 `newsletter_form_start` → submit → confirmed, 7-денне повернення; CWV (LCP / INP / CLS) з Vercel
-Speed Insights або CrUX для home, news, article, daily, weekly. Оформити сторінку
+Speed Insights або CrUX для home, news, article. За погодженням власника 2026-09-30
+достатньо лабораторних mobile/desktop метрик із зафіксованою відсутністю достатніх
+CrUX-даних; daily/weekly виключено лише з baseline AH-0.6. Оформити сторінку
 `wiki/analytics/<дата>-redesign-baseline.md`.
 
+**Усі AC прийнято власником 2026-09-30; реалізовано в PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376). Формально завершено після його merge в main.**
+[Baseline](../analytics/2026-09-29-redesign-baseline.md) містить історичні GA4-числа
+й межі вимірювання. Канонічна `540206735`, GSC link, key event, retention і
+Tag Assistant підтверджено. Власник явно прийняв лабораторний CWV baseline
+home/news/article з недостатніми CrUX-даними й виключив daily/weekly із AH-0.6.
+Відсутні події, proxy-воронки, неповні cohort-ідентифікатори та причина
+Singapore/direct не підмінені доведеними продуктовими висновками.
+G0 підписано власником 2026-09-30; merge #373–#376 погоджено. (source: пряме погодження й скриншоти власника 2026-09-30;
+[baseline](../analytics/2026-09-29-redesign-baseline.md))
+
 **AC:**
-- [ ] Кожна цифра має дату, період, джерело й GA4 property ID; якщо конфлікт #1 не закрито —
+- [x] Кожна цифра має дату, період, джерело й GA4 property ID; якщо конфлікт #1 не закрито —
   цифри позначені `(needs verification)`.
-- [ ] CWV зафіксовано для mobile і desktop або пояснено, чому field-даних немає.
-- [ ] Сторінка є в `wiki/index.md`, запис у `wiki/log.md`.
+- [x] Пояснено, чому field-даних CWV поки немає.
+- [x] За явним погодженням власника 2026-09-30 прийнято mobile/desktop лабораторні
+  метрики home/news/article й доказ недостатніх CrUX-даних; daily/weekly виключено
+  з AH-0.6. Field p75 та INP не вигадано; вимоги наступних фаз не змінені.
+- [x] Сторінка є в `wiki/index.md`, запис у `wiki/log.md`.
 
 **Гейт G0:** AH-0.1…0.6 закриті; D1–D13 підписані; baseline visual / SEO / продукт зняті;
 QA-матриця працює в report-режимі.
@@ -650,10 +697,24 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
    sun/moon, ціль ≥ 44 px; `theme_toggle {to_theme}` і `setUserProperties({ theme })` без змін.
 
 **AC:**
-- [ ] `e2e/theme.spec.ts` зелений і доповнений перевіркою `data-theme`; збережена `dark` при
+- [x] `e2e/theme.spec.ts` доповнений перевіркою `data-theme`; збережена `dark` при
   системній світлій схемі дає Night на першому кадрі (без спалаху).
-- [ ] Без JS тема за замовчуванням — Night, текст читабельний.
-- [ ] Подія `theme_toggle` і user property надсилаються як раніше.
+- [ ] Без JS тема за замовчуванням — Night, текст читабельний. Night і header перевірені;
+  основний контент `/news` прихований legacy Suspense shell і на main, і в AH-1.3.
+  Повне приймання цього AC чекає рішення щодо [QA-обмеження](after-hours-ah-1-3-validation.md).
+- [x] Подія `theme_toggle` і user property надсилаються як раніше (`light` / `dark`), opt-out збережено.
+- [ ] Візуальний підпис власника й merge PR.
+
+**Стан 2026-09-30:** інтегровано через merge [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378)
+на `feat/ah-1.3-night-day-theme`; метадані теми
+беруть `bg` із `SEMANTIC_TOKENS`, manifest має Night за замовчуванням.
+SEO compare local і Preview: по 58 URL — 0 errors / 0 warnings; 16 PNG до + 16 після
+(home/news, EN/UK, Night/Day, 1440/390).
+Gating контролю охоплює ширини й zoom із DoD; публічні legacy-шаблони
+залишаються в report за AH-0.5 до їхнього редизайну; повний DoD §0.1(5) не
+закритий без рішення власника щодо scope. Merge #378 підтверджено GitHub;
+це не твердження про виправлення всіх legacy AC. (source: `gh pr view 378` 2026-09-30; `src/app/layout.tsx`, `src/app/manifest.ts`,
+`src/lib/theme.ts`, `e2e/theme.spec.ts`; [AH-1.3 validation](after-hours-ah-1-3-validation.md))
 
 ### AH-1.4 · Кольори й гліфи категорій
 
@@ -759,13 +820,13 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
 
 ### AH-1.7 · Ratchet-звіт «сирих» значень
 
-**Стан 2026-09-30: реалізовано, очікує merge** у [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), гілка `feat/ah-1.7-raw-design-ratchet`.
-Звіт і baseline додано в `pr:check`; 44 кольорові входження, 4 довільні z-index,
+**Стан 2026-09-30: власник підписав і дозволив resolve/merge** [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), гілка `feat/ah-1.7-raw-design-ratchet`.
+Wiki-конфлікти з `origin/main` @ `6b3b446` виправлено; merge очікує перевірок.
+Звіт і baseline додано в `pr:check`; після AH-1.3 — 42 кольорові входження, 4 довільні z-index,
 0 сирих тіней і 0 розмірів шрифту < 12 px. Новий hex у тимчасовому компоненті
 зупинив `pr:check` (exit 1); `--prune` теж відмовив і не змінив baseline.
-Власник 2026-09-30 попросив відкласти AH-0.6 й рухати епік далі; ця задача
-не змінює вигляд сайту. G0 не підписано, візуальні PR залишаються за гейтом.
-(source: повідомлення власника 2026-09-30; `scripts/report-raw-design-values.ts`;
+Ця задача не змінює вигляд сайту; G0 уже підписано, фаза 0 інтегрована.
+(source: повідомлення власника 2026-09-30; `gh pr view 378`; `scripts/report-raw-design-values.ts`;
 `scripts/raw-design-values.baseline.json`; [governance](../architecture/design-system-tokens.md#6-ah-17-ratchet-сирих-значень))
 
 **Тип:** код (скрипт) · **Розмір:** S · **Виконавець:** агент · **Залежить від:** AH-1.1 ✅ ·

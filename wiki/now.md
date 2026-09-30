@@ -10,20 +10,44 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30
 Last updated: 2026-09-30
 
 ---
 
 ## Стан репозиторію
 
-- **AH-1.7 реалізовано, очікує merge (2026-09-30):** гілка
-  `feat/ah-1.7-raw-design-ratchet`, [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), додає гейт нових сирих дизайн-значень у `pr:check`.
-  Baseline: 44 кольорові входження, 4 довільні z-index, 0 сирих тіней,
-  0 розмірів шрифту < 12 px. Власник попросив відкласти перевірки AH-0.6;
-  PR #373–#376 відкриті, G0 не підписано. Візуальні задачі лишаються за G0.
-  (source: повідомлення власника, `gh pr list`, `design:raw:report` 2026-09-30;
-  [епік](product/after-hours-redesign-epic.md#ah-17-ratchet-звіт-сирих-значень))
+- **AH-1.3 інтегровано через [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378)
+  2026-09-30; актуальний `origin/main` — `6b3b446`.**
+  Pre-paint синхронізує `.theme-light`, `data-theme`, `color-scheme` і `theme-color`;
+  `localStorage` та GA4 лишають `light`/`dark`. Перемикач EN/UK описує наступну тему,
+  має 44×44 px і синхронізує desktop/mobile контролі. SEO compare: 58 URL,
+  0 errors / 0 warnings; галерея до/після — `artifacts/after-hours/qa/ah-1.3-review.html`.
+  Деталі перевірок і межі legacy QA — [AH-1.3 validation](product/after-hours-ah-1-3-validation.md).
+  Фаза 0 завершена: #376 змержено в `69bcd1c`; merge #378 підтверджено GitHub.
+  Наступна окрема задача — AH-1.4 (кольори й гліфи категорій), потім AH-1.2;
+  G1 чекає решти foundations і підпису власника.
+  (source: `src/app/layout.tsx`, `src/lib/theme.ts`, `src/components/theme-toggle.tsx`;
+  `artifacts/_local/ah-1.3-seo-local-fresh.log`; `git fetch origin`, `gh pr view 378` 2026-09-30)
+
+- **G0 підписано власником 2026-09-30; merge #373–#376 погоджено:** AH-0.6 у
+  [PR #376](https://github.com/sanchahous/ai-today-brief/pull/376) має всі докази:
+  GSC link, key event, retention 14 місяців і Tag Assistant підтверджено власником.
+  Він погодив лабораторний CWV baseline home/news/article з недостатніми
+  CrUX-даними й виключив daily/weekly із AH-0.6. Property/Admin питання #1 закрито.
+  PR #373–#376 змержено; фаза 0 завершена на `origin/main` @ `69bcd1c`.
+  Кожен видимий PR має пройти окремий візуальний review. Пакет доказів — у
+  [handoff](product/after-hours-epic-handoff.md#пакет-для-підпису-g0).
+  (source: погодження й скриншоти власника, `gh pr view` 2026-09-30;
+  [baseline](analytics/2026-09-29-redesign-baseline.md))
+
+- **AH-1.7 / [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377)
+  підписано власником; resolve і merge явно дозволено 2026-09-30.**
+  Конфлікти лише wiki: збережено актуальну фазу 0/Night-Day й обидві історії log.
+  Після AH-1.3 baseline зменшено з 44 до 42 кольорових входжень (20 файлів),
+  4 довільні z-index, 0 сирих тіней і 0 шрифту <12 px. PR чекає перевірок перед merge.
+  (source: пряме повідомлення власника 2026-09-30; `git merge origin/main`;
+  `npm run design:raw:prune`; `scripts/raw-design-values.baseline.json`)
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR
   [#372](https://github.com/sanchahous/ai-today-brief/pull/372).** Підсумок за кодом і живою перевіркою production:
@@ -42,8 +66,8 @@ Last updated: 2026-09-30
   AH-0.2 ✅): D2, D6, D8, D11 (сторінки), D13 — за рекомендаціями; **D7 — новий знак скрізь**: сайт,
   OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, аватари й банери соцмереж
   (нові задачі AH-3.7, AH-3.8; палітра OG/PDF/duotone лишається жовтою). Епік тепер має 56 задач,
-  оцінка ≈ 56 днів. **Наступне:** решта фази 0 — AH-0.3–AH-0.6. Виконання продовжує
-  нова сесія, можливо з іншою моделлю. Вхід — [передача виконання](product/after-hours-epic-handoff.md):
+  оцінка ≈ 56 днів. Решта фази 0 — AH-0.3–AH-0.6; поточний стан цих задач наведено вище.
+  Вхід для наступної сесії — [передача виконання](product/after-hours-epic-handoff.md):
   стан, порядок старту, черга, точки зупинки й стартовий промпт.
   (source: відповіді власника в сесії 2026-09-29; [after-hours-redesign-epic](product/after-hours-redesign-epic.md) §4; `gh pr view 371`)
 
@@ -539,7 +563,8 @@ Last updated: 2026-09-30
   **«Різні GA4 ID» розплутано:** GTM-5S6TXPG5 був порожнім контейнером без жодного тега —
   видалено з коду, залишено єдиний gtag `G-5R89X6Q5D4`
   ([ga4-gsc](analytics/ga4-gsc.md)). Власнику: прибрати `NEXT_PUBLIC_GTM_ID` з Vercel і
-  пройти чек-лист звірки property 540467725.
+  пройти чек-лист звірки property 540467725 (історична рекомендація; скасована
+  рішенням власника 2026-09-30 про переміщення цього акаунта в кошик).
   (source: live check контейнера 2026-08-22, код-ревʼю)
 
 - **Соц-копія тепер зобовʼязана давати дію; Telegram рендерить розмітку; LinkedIn-лінк
@@ -1611,7 +1636,7 @@ artifact write. Правило про uniform critic verdict навмисно н
 |---|---|---|
 | 1 | **5–10 якісних дофолов за місяць** + Request indexing для 10 топ-сторінок у GSC | єдиний реальний важіль проти 232 неіндексованих сторінок (source: `wiki/audits/2026-07-01-seo-organic.md` §4) |
 | 2 | **Активувати IndexNow**: ключ → `INDEXNOW_KEY` у Vercel + pipeline → Bing WMT → `npm run indexnow:backfill` | Bing → ChatGPT/Copilot AEO (там само §3) |
-| 3 | **Звірити GA4-property** (540467725 vs документована 540206735) | інакше конверсії недостовірні (там само §6) |
+| 3 | ✅ **Історичний пункт:** вибрати GA4-property (540467725 vs 540206735); вирішено на користь 540206735 2026-09-30 | актуальний Admin-чекліст — [ga4-gsc](analytics/ga4-gsc.md) (source: повідомлення власника 2026-09-30; HYPD live check) |
 | 4 | **Фікс воронки розсилки** (41 показів → 8 стартів → 1 підписка) | утримання ≈ 0 (там само §5) |
 | 5 | Апрув PDF + social variants на `ai-weekly-2026-07-27`; вирішити video override vs повний video pipeline | блокує trial release (source: preflight live check 2026-08-04) |
 | 6 | Перевести `WEEKLY_CONTENT_STUDIO_V2` у `shadow` на 3 історичних випусках і зняти витрати з `/admin/costs` | критерій `production` ще відкритий ([open-questions](open-questions.md) #4) |

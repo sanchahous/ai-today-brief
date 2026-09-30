@@ -5068,6 +5068,236 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 
 Виправлено: [now](now.md) (запис 2026-09-28 і новий запис зверху), [open-questions](open-questions.md) #10 (закрито), епік (§2.3, §5.3, картка AH-0.1 з AC, §14 — рядки G07, G09, G11, G15, G16, уточнення в §2.1 і картці AH-2.3), [handoff](product/after-hours-epic-handoff.md) (стан, «Наступна задача: AH-0.3», пастка про приховану панель браузера), `wiki/index.md` (два описи gap-plan). Production-код не змінювався.
 
+## 2026-09-29 — AH-0.3: baseline-знімки production після токенів 2.0
+
+Джерело: задача AH-0.3 [епіку](product/after-hours-redesign-epic.md); `scripts/capture-route-matrix.ts`; live production `https://aitodaybrief.com` 2026-09-29; `artifacts/_local/before/manifest.json`; `git status` і `git check-ignore` 2026-09-29.
+
+Знято **232 PNG** для **29 маршрутних станів** у 8 комбінаціях Night/Day, EN/UK, 1440×900/390×844. Шлях: `artifacts/_local/before/` (git-ignored); SHA checkout у manifest: `a3d2db56fdb0b446c87c375121a414e60c936938`; SHA-256 manifest: `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`. Знімки показують стан **після** токенів 2.0 з PR #369: AC про baseline до AH-1.1 був недосяжний, але до першого наступного візуального PR (AH-1.3…AH-1.7) baseline готовий.
+
+Оновлено статус і AC AH-0.3 в епіку, наступну задачу AH-0.4 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.3: PR відкрито
+
+Джерело: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373), `npm run pr:check` і `git push` 2026-09-29.
+
+PR відкрито після зеленого `pr:check`; посилання додано до статусу §5.3 і картки AH-0.3, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373))
+
+## 2026-09-29 — AH-0.4: текстовий SEO baseline і compare-гейт
+
+Джерело: задача AH-0.4 [епіку](product/after-hours-redesign-epic.md); `src/lib/seo-contract.ts`, `scripts/seo-contract.ts`, `e2e/fixtures/seo-contract.baseline.json`; live HTTP-запити до `https://aitodaybrief.com` 2026-09-29; локальний `npm run test:coverage`.
+
+Baseline має 58 EN/UK URL. Compare з тим самим production: 0 помилок, 0 попереджень; повторні `/en/news` і `/uk/news`: `x-vercel-cache: HIT`. Копія baseline без canonical дала exit 1. Покриття нового parser/compare-модуля: statements 99.12%, branches 94.35%, functions 100%, lines 100%.
+
+Наявні властивості сирого HTML зафіксовано без виправлення: усі 29 UK URL мають `<html lang="en">` до клієнтського init-script; у 58 відповідях текст безпосередньо всередині сирого `<main>` має довжину 0, бо контент надходить у streaming-розмітці. Поточні JSON-LD issues є у 14 baseline URL (AboutPage:name, Organization:logo, WebApplication:offers); compare блокує лише нові дефекти. Це спостереження raw HTTP, не оцінка індексації пошуковими системами. (source: `e2e/fixtures/seo-contract.baseline.json`; live HTTP-запити 2026-09-29)
+
+Оновлено статус і AC AH-0.4 в епіку, наступну задачу AH-0.5 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-маршрути не змінювались.
+
+## 2026-09-29 — AH-0.4: PR відкрито
+
+Джерело: [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374), `npm run pr:check` і pre-push Chromium 2026-09-29.
+
+PR відкрито після зеленого `pr:check`; pre-push E2E: 130 passed, 12 skipped. Посилання додано до статусу §5.3 і картки AH-0.4, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374))
+
+## 2026-09-30 — AH-0.4: синхронізація після merge AH-0.3
+
+Об’єднано записи й статуси AH-0.3 та AH-0.4 без втрати історії; PR #373 змержено. Власник погодив G0 та merge PR #373–#376; підпис буде відображено в актуальному пакеті AH-0.6. (source: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373); повідомлення власника 2026-09-30)
+
+## 2026-09-29 — AH-0.5: report/gating QA-матриця сторінок
+
+Джерело: задача AH-0.5 [епіку](product/after-hours-redesign-epic.md); `e2e/a11y-layout-matrix.spec.ts`, `e2e/helpers/inspect-page.ts`, `e2e/fixtures/a11y-gating.json`; локальний headless Playwright 2026-09-29 на мінімальній збірці main із slug-ами production sitemap; `artifacts/_local/ah-0.5-legacy-report.json`.
+
+Gating внутрішнього мовонейтрального `/ds-catalog`: 14 перевірок у Chromium для Night/Day, 360/390/768/1024/1440, 200% тексту на 1280 і reflow 320; 14 passed за 4,8 с. Контрольна мутація з видимим `text-[10px]` дала exit 1 і повідомлення `small text: 10px`. `e2e:affected` через override вибрав матрицю для змін `src/app/[lang]/news/page.tsx` і `src/components/news/news-feed.tsx`.
+
+Ручний report: **812 сценаріїв** (58 EN/UK URL × 2 теми × 7 режимів), 7,0 хв, без падіння. Лічильники повторних спостережень, **не унікальних дефектів**: 0 сценаріїв із горизонтальним overflow, 0 елементів тексту <12 px, 11 504 touch targets <44 px, 1 976 axe violation nodes, 28 console errors (403 на weekly), 23 сценарії з H1 ≠1 (усі `news/search?q=mcp`), 313 пропусків рівнів заголовків, 0 `img` без alt, 699 clipped text спостережень загалом, із них 224 у zoom-режимах. Публічні маршрути лишаються в report до їхнього редизайну; лише `/ds-catalog` зараз у gating. (source: `artifacts/_local/ah-0.5-legacy-report.json`; локальний Playwright 2026-09-29)
+
+Оновлено статус і AC AH-0.5 в епіку, наступну задачу AH-0.6 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.5: PR відкрито
+
+Джерело: [PR #375](https://github.com/sanchahous/ai-today-brief/pull/375), `npm run pr:check` і pre-push E2E 2026-09-29.
+
+PR відкрито після зеленого `pr:check`; посилання додано до статусу §5.3 і картки AH-0.5, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #375](https://github.com/sanchahous/ai-today-brief/pull/375))
+
+## 2026-09-30 — AH-0.5: узгодження контрактів фази 0
+
+QA-гілку синхронізовано з перевіреною гілкою AH-0.4 та змерженим PR #373. У wiki збережено історію, AC і результати всіх трьох задач; merge #375 виконується після #374. G0 та merge #373–#376 погоджено власником. (source: повідомлення власника 2026-09-30; [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373), [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374), [PR #375](https://github.com/sanchahous/ai-today-brief/pull/375))
+
+## 2026-09-29 — AH-0.6: GA4 baseline і діагностика трьох property
+
+Джерело: запит власника 2026-09-29, read-only GA4 Data API через HYPD (property `540206735`, `540437869`, `540467725`; період 2026-09-01…28, `hostName = aitodaybrief.com`), live HTML `aitodaybrief.com/en` і Google tag `G-5R89X6Q5D4`, код подій `src/components/analytics/`, `src/components/home/newsletter-form.tsx`, `src/app/api/subscribe/route.ts`. Числа й запити наведені в [redesign baseline](analytics/2026-09-29-redesign-baseline.md).
+
+Виявлено: один production gtag завантажує Google tag із трьома GA4 destinations (`G-5R89X6Q5D4`, `G-0TEJ3H5V85`, `G-T7X6D6TL84`). Усі три property отримують трафік; `540206735` має підтверджений історичним аудитом measurement ID установленого тегу й обрана для baseline. `540467725` недоотримала Singapore/direct `page_view` наприкінці періоду; причина ще не доведена. Продуктові метрики зафіксовано з `(needs verification)`, бо Admin-чек-лист відкритий. CWV mobile/desktop лишились без field-чисел: PageSpeed Insights API повернув 429, Vercel Speed Insights metrics недоступні через конектор і SDK у репозиторії не виявлено. AH-0.6 часткова, G0 лишається закритим.
+
+Створено [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md); оновлено [ga4-gsc](analytics/ga4-gsc.md), [open-questions](open-questions.md) #1, [overview](overview.md), [index](index.md), епік і handoff. Production-код не змінювався. PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376). (source: [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
+
+## 2026-09-30 — After Hours фаза 0: повторна звірка й залишок до G0
+
+Джерело: `git fetch origin main` (`a3d2db5`), `gh pr view 373`…`376`, локальний `artifacts/_local/before/manifest.json` (232 PNG, SHA-256 `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`) і `artifacts/_local/ah-0.5-legacy-report.json` (812 сценаріїв); HTTP GET production Google tag, PageSpeed Insights API, CrUX API; HYPD GA4 Admin metadata і browser access checks 2026-09-30.
+
+PR #373–#376 залишаються відкритими, mergeable, із зеленими CI-перевірками. Для AH-0.3–AH-0.5 є visual, SEO і QA baseline у відповідних PR та локальних артефактах, але вони ще не змержені. Google tag повторно містить три `G-*` destinations. Пару додаткових measurement ID ↔ stream, GSC link, `newsletter_subscribe` key event, retention і Tag Assistant не вдалось звірити: браузерна перевірка дозволів заблокувала GA4 Admin, а доступний конектор не повертає ці поля. Mobile/desktop field CWV не отримано: PageSpeed API відповів 429, CrUX API — 403 для доступного локального ключа. Це не є доказом відсутності CrUX-даних. Причину різниці Singapore/direct не встановлено. (source: [redesign baseline](analytics/2026-09-29-redesign-baseline.md#повторна-технічна-звірка-2026-09-30))
+
+У [redesign baseline](analytics/2026-09-29-redesign-baseline.md) додано датовану повторну перевірку, URL п'яти типів сторінок і точний перелік Admin та CWV доказів; в [епіку](product/after-hours-redesign-epic.md) field CWV лишено відкритим AC. Оновлено [now](now.md), [handoff](product/after-hours-epic-handoff.md) і [index](index.md). AH-0.6 лишається частковою; G0 не готовий до підпису власника. Production-код не змінювався.
+
+## 2026-09-30 — AH-0.6: два зайві GA4-акаунти в кошику
+
+Власник повідомив, що перемістив у кошик акаунти `396975517` («Ai today brief», property `540437869`) і `397017915` («Ai brief today», property `540467725`); GA підтвердив переміщення другого. За повідомленням власника, відновлення можливе через Admin → Кошик протягом 35 днів. Активним лишився `396774992` («Ai brief today») / `540206735` («The daily AI news») з production ID `G-5R89X6Q5D4`. Після дії власника HYPD `list_account_summaries` повернув лише цей акаунт і property. (source: повідомлення власника і HYPD live check 2026-09-30)
+
+Пошук у production-коді, тестах, scripts і public не знайшов ID зайвих акаунтів/property чи `G-0TEJ3H5V85` / `G-T7X6D6TL84`; код читає `NEXT_PUBLIC_GA_MEASUREMENT_ID`. Тому код не змінювали. HTTP GET production Google tag досі показує всі три measurement ID, але фактичну доставку до акаунтів у кошику не перевірено. Не змінювали Google tag і не відновлювали акаунти. Причина історичної різниці Singapore/direct лишається невідомою. (source: `rg` у репозиторії, `src/lib/analytics-config.ts`, HTTP GET Google tag 2026-09-30; [baseline](analytics/2026-09-29-redesign-baseline.md))
+
+Оновлено актуальний стан у [ga4-gsc](analytics/ga4-gsc.md), [redesign baseline](analytics/2026-09-29-redesign-baseline.md), [open-questions](open-questions.md) #1, [overview](overview.md), [now](now.md), [епіку](product/after-hours-redesign-epic.md), [handoff](product/after-hours-epic-handoff.md) та [index](index.md). У [липневому SEO-аудиті](audits/2026-07-01-seo-organic.md) застарілий GA4-чекліст явно позначено історичним. До G0 лишаються Admin-звірка `540206735` (GSC link, `newsletter_subscribe` key event, retention), Tag Assistant, mobile/desktop field CWV і завершення PR #373–#376; прив'язка двох ID видалених акаунтів до потоків більше не потрібна для G0. (source: повідомлення власника 2026-09-30; [епік](product/after-hours-redesign-epic.md))
+
+## 2026-09-30 — AH-0.6: GSC link підтверджено, PageSpeed-посилання отримано
+
+Скриншоти власника підтвердили зв'язок доменного ресурсу Search Console `aitodaybrief.com` з веб-потоком «The daily AI news» / `15002930155` (дата зв'язування 2026-09-23) та контекст акаунта `396774992` / property `540206735`. GSC link позначено виконаним у [ga4-gsc](analytics/ga4-gsc.md) і прибрано з актуального залишку в [open-questions](open-questions.md) #1 та [baseline](analytics/2026-09-29-redesign-baseline.md). Скриншоти головної GA4 не підтверджують key event, retention чи доставку через Tag Assistant. (source: три скриншоти власника 2026-09-30)
+
+Власник надав шість PageSpeed-посилань mobile/desktop для home, news і article; їх збережено в [baseline](analytics/2026-09-29-redesign-baseline.md#pagespeed-звіти-надані-власником). Вебінструмент не відкрив звіти, а Browser Use заблокувала перевірка збережених дозволів. Field LCP/INP/CLS, вікно даних і рівень URL/origin не прочитано, тому AC field CWV не закрито. У наданому наборі немає daily/weekly; вимога п'яти типів у картці AH-0.6 лишається чинною до явного рішення власника про звуження вибірки. (source: повідомлення й посилання власника, web / browser access checks 2026-09-30; [картка AH-0.6](product/after-hours-redesign-epic.md#ah-06-продуктовий-і-cwv-baseline))
+
+Оновлено [now](now.md), [handoff](product/after-hours-epic-handoff.md), картку AH-0.6 й [index](index.md). AH-0.6 часткова, G0 не пройдено; production-код і налаштування акаунтів не змінювалися. (source: [baseline](analytics/2026-09-29-redesign-baseline.md))
+
+## 2026-09-30 — AH-0.6: прочитано шість локальних PageSpeed-звітів
+
+Джерело: шість HTML-файлів, збережених власником у `C:\Users\Oleksandr\Downloads\temp`,
+звіти Lighthouse від 2026-09-30 12:23–12:27 GMT+3. Статичний розбір вибрав активну
+mobile/desktop панель кожного файла; значення звірено між двома копіями звіту.
+Створено [JSON-витяг](../artifacts/after-hours/analytics/2026-09-30-pagespeed-summary.json)
+з назвами файлів, SHA-256, requested/final URL, часом, пристроєм і метриками.
+
+Усі шість CrUX-секцій повідомляють про недостатні дані сторінки. Field p75 LCP/INP/CLS,
+вікна збору й origin fallback у цих звітах немає. Лабораторні числа внесено в
+[baseline](analytics/2026-09-29-redesign-baseline.md): Performance mobile/desktop
+home **95/84**, news **64/86**, article **95/92**; news mobile LCP **7,1 с**, CLS **0,224**.
+TBT не підмінює INP, лабораторні LCP/CLS не підмінюють field p75. Daily/weekly у
+наборі відсутні; AH-0.6 лишається частковою, G0 не пройдено. Прийняття baseline
+без польових чисел потребує явного рішення власника. (source: JSON-витяг;
+[картка AH-0.6](product/after-hours-redesign-epic.md#ah-06-продуктовий-і-cwv-baseline))
+
+Оновлено baseline, [now](now.md), [handoff](product/after-hours-epic-handoff.md), картку
+AH-0.6 й [index](index.md). Попередній запис про непрочитані посилання лишено як
+історію; актуальний стан — прочитані файли з лабораторними метриками та доказом
+недостатніх CrUX-даних. (source: HTML-звіти власника 2026-09-30, JSON-витяг)
+
+## 2026-09-30 — AH-0.6: Admin підтверджено, CWV baseline прийнято власником
+
+Власник явно погодив CWV baseline home/news/article з лабораторними mobile/desktop
+метриками та зафіксованою відсутністю достатніх CrUX-даних. Daily/weekly виключено
+лише з вимоги AH-0.6; бюджети та CWV-перевірки наступних фаз не змінені.
+(source: пряме погодження власника 2026-09-30)
+
+Чотири нові скриншоти підтвердили `newsletter_subscribe` як key event, retention
+для event/user data по 14 місяців, канонічний тег `G-5R89X6Q5D4` / `GT-KVJZSX7K`
+і відправлення `page_view`. На Config початковий і поточний consent:
+analytics_storage granted, ad_storage / ad_user_data / ad_personalization denied.
+Власник повідомив, що налаштування вже були такими, змін не робив. Створено
+[витяг доказів](../artifacts/after-hours/analytics/2026-09-30-ga4-admin-verification.json)
+із назвами й SHA-256 чотирьох скриншотів. (source: повідомлення й скриншоти власника 2026-09-30)
+
+Tag Assistant показує звернення `page_view`, `newsletter_impression`, `web_vitals`
+на всі три destinations. Приймання/зберігання подій property акаунтів у кошику
+не встановлено; їх очищення — окреме рішення власника. Зірочка key event не
+доводить нову успішну підписку: UI показує, що потік даних за останні 28 днів
+не виявлено. Opt-out сценарій не показано. Причина Singapore/direct залишається
+невідомою. Ці межі не перетворено на доведені висновки.
+(source: чотири скриншоти; [baseline](analytics/2026-09-29-redesign-baseline.md))
+
+Питання #1 property/Admin закрито; загальну позначку невизначеної property для
+baseline знято, методологічні обмеження воронок/cohort збережено. Оновлено
+[ga4-gsc](analytics/ga4-gsc.md), baseline, [open-questions](open-questions.md),
+[overview](overview.md), [now](now.md), картку AH-0.6, [handoff](product/after-hours-epic-handoff.md)
+і [index](index.md). AH-0.6 має всі AC, очікує merge PR #376. До формального G0
+залишаються завершення PR #373–#376 та фінальний підпис власника; поточне
+погодження CWV не є підписом усього G0. PR #377 (AH-1.7) також відкритий;
+на час повторної перевірки PR #373–#377 mergeable з успішними активними CI.
+(source: погодження власника, `git fetch origin` / `gh pr view 373`…`377` 2026-09-30)
+
+## 2026-09-30 — After Hours: власник підписав G0 і погодив merge фази 0
+
+Власник прямо повідомив: «Погоджую G0 та merge PR #373–#376». Підпис охоплює
+visual/SEO/продуктовий baseline і QA-матрицю у report mode, з уже прийнятим
+CWV винятком AH-0.6. Повторний підпис G0 не потрібен. Фактичний merge кожного PR
+перевіряється окремо; PR #377 не входить до цього дозволу merge.
+(source: пряме повідомлення власника у сесії 2026-09-30)
+
+Об’єднано wiki й код попередніх задач без втрати AC та історії. Оновлено
+[епік](product/after-hours-redesign-epic.md), [handoff](product/after-hours-epic-handoff.md),
+[now](now.md), [baseline](analytics/2026-09-29-redesign-baseline.md), [index](index.md)
+і JSON-витяг погодження. Після інтеграції #376 наступна задача — AH-1.3;
+окремі візуальні review наступних PR та CWV бюджети пізніших фаз залишаються чинними.
+(source: [епік](product/after-hours-redesign-epic.md); повідомлення власника 2026-09-30)
+
+## 2026-09-30 — After Hours: PR #373–#375 змержено, фінальна інтеграція G0
+
+Після погодження власника змержено #373 (`c55ef94`), #374 (`63ab361`) і #375
+(`4409a81`). Для синхронізованого #375 повторно пройшов `pr:check` (2023 тести),
+локальний pre-push Chromium (144 passed / 13 skipped) і GitHub CI
+(452 passed / 19 skipped у Chromium/Firefox/WebKit). Merge-оновлення #375
+не змінило дерева файлів: tree SHA `59d8d4d0b5f7661f59ef2a3b8ddf4acd4d6adb45`
+до й після синхронізації однаковий. (source: `gh pr view 373`…`375`, `git rev-parse`,
+локальні перевірки 2026-09-30; GitHub E2E run `36713604676`)
+
+Оновлено статуси в [епіку](product/after-hours-redesign-epic.md),
+[handoff](product/after-hours-epic-handoff.md), [now](now.md), [index](index.md)
+і [baseline](analytics/2026-09-29-redesign-baseline.md). PR #376 містить всі прийняті
+докази AH-0.6 і підпис G0; завершення інтеграції фази 0 настає з його merge.
+Наступна задача — AH-1.3. PR #377 / AH-1.7 лишається відкритим і не входить
+до дозволу merge #373–#376. (source: повідомлення власника 2026-09-30;
+[PR #376](https://github.com/sanchahous/ai-today-brief/pull/376),
+[PR #377](https://github.com/sanchahous/ai-today-brief/pull/377))
+
+## 2026-09-30 — AH-1.3: контракт Night/Day підготовлено для review
+
+Звірено чистий старт і `origin/main` @ `69bcd1c`: #376 змержено, фаза 0 інтегрована;
+#377 / AH-1.7 відкритий. На окремій гілці `feat/ah-1.3-night-day-theme` реалізовано
+pre-paint `.theme-light` + `data-theme` + `color-scheme`, theme-color/manifest із
+токенів 2.0, назви наступної теми EN/UK і 44×44 px. Persisted/GA4 значення
+`light`/`dark` збережені; desktop/mobile кнопки синхронні.
+(source: `git fetch origin`, `git status --short`, `gh pr view 376/377` 2026-09-30;
+`src/app/layout.tsx`, `src/app/manifest.ts`, `src/lib/theme.ts`, `src/components/theme-toggle.tsx`)
+
+SEO compare — 58 URL, 0 errors / 0 warnings; tokens:check PASS; 9 unit-тестів теми.
+Старий локальний cache із порожніми home/news збережено в
+`artifacts/_local/ah-1-3-cache-backup/` і виконано лише `build:ci` зі свіжими reads.
+PNG: 16 до + 16 після (home/news × EN/UK × Night/Day × 1440/390).
+Створено галерею `artifacts/after-hours/qa/ah-1.3-review.html` та
+[сторінку доказів](product/after-hours-ah-1-3-validation.md).
+Оновлено [епік](product/after-hours-redesign-epic.md), [now](now.md),
+[handoff](product/after-hours-epic-handoff.md) і [index](index.md).
+AH-1.3 чекає візуального підпису й merge; наступна окрема задача — AH-1.4,
+після неї AH-1.2. Full-page legacy QA і no-JS Suspense-обмеження явно відділені
+від gate нового контролю. (source: `artifacts/_local/ah-1.3-seo-local-fresh.log`;
+`artifacts/_local/ah-1.3-tokens.log`; `src/lib/theme.test.ts`; локальні manifests;
+[AH-1.3 validation](product/after-hours-ah-1-3-validation.md))
+
+## 2026-09-30 — AH-1.3: draft PR #378, Preview і фінальний QA-пакет
+
+Відкрито [draft PR #378](https://github.com/sanchahous/ai-today-brief/pull/378).
+Code head `a58f29f`: Playwright CI **558 passed / 30 skipped**, Sonar scan та
+інші активні checks успішні. Локальний `pr:check` — **2032 unit-тести**;
+повторний pre-push — **191 passed / 5 skipped**, hooks не пропущено.
+Перший push зупинився на `net::ERR_NO_BUFFER_SPACE`; targeted retry та
+повторний повний pre-push пройшли. (source: GitHub runs
+[E2E](https://github.com/sanchahous/ai-today-brief/actions/runs/36720454290),
+[Sonar](https://github.com/sanchahous/ai-today-brief/actions/runs/36720454119);
+`artifacts/_local/ah-1.3-push-retry.log`; `artifacts/_local/ah-1.3-pr-check-retry-push.log`)
+
+[Preview](https://ai-today-brief-git-feat-ah-13-night-940161-sanchahous-projects.vercel.app/uk/news)
+пройшов authenticated SEO compare: **58 URL, 0 errors, 0 warnings**, повторні
+EN/UK news — cache HIT. Додано **16 Preview PNG**, галерея тепер порівнює
+production до з Preview після; локальні 16 PNG також збережено. Підсумок,
+SHA-256 усіх manifests і первинних QA report —
+`artifacts/after-hours/qa/ah-1.3-validation.json`.
+(source: `artifacts/_local/ah-1.3-seo-preview-auth.log`;
+`artifacts/_local/ah-1.3-preview-capture-auth.log`; validation JSON)
+
+Same-data report main/AH-1.3: **812 сценаріїв**, theme-target порушення **464 → 0**;
+на 784 сценаріях без live-search H1 problems **0 → 0**, axe **2460 → 2460**,
+console **28 → 28**. Full-page legacy violations і no-JS locale Suspense
+обмеження не оголошено виправленими. AC no-JS та DoD §0.1(5) не закриті
+автоматично: потрібне явне рішення власника щодо наявного scope разом із
+візуальним підписом перед merge. Наступна незалежна задача — AH-1.4; після неї AH-1.2.
+(source: `artifacts/after-hours/qa/ah-1.3-validation.json`;
+[AH-1.3 validation](product/after-hours-ah-1-3-validation.md);
+[епік](product/after-hours-redesign-epic.md) §0.1 і §5.3)
+
 ## 2026-09-30 — AH-1.7: ratchet сирих дизайн-значень
 
 Власник попросив відкласти відкриті перевірки AH-0.6 й продовжити епік.
@@ -5109,3 +5339,24 @@ wiki sync/lint, migrations і мінімальна збірка. Перший Ch
 повторний повний hook — **130 pass / 12 skip / 0 fail** без змін UI-коду.
 Статус AH-1.7 — реалізовано, очікує merge. Додано посилання на PR в епік,
 now, handoff та index. (source: локальні прогони 2026-09-30; PR #377)
+
+## 2026-09-30 — AH-1.7: підпис власника й resolve після merge AH-1.3
+
+Власник явно підписав [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377)
+і дозволив resolve конфліктів та merge. Звірено `origin/main` @ `6b3b446`:
+[PR #378](https://github.com/sanchahous/ai-today-brief/pull/378) змержено іншою
+сесією 2026-09-30 о 14:44:12 UTC; робоче дерево перед checkout було чистим.
+Конфлікти у index, log, now і handoff виправлено: актуальні записи про фазу 0
+й тему збережено, обидві історії log лишено, помилковий поточний статус
+«G0 не підписано» прибрано. Історичні записи попередніх прогонів не переписано.
+(source: пряме повідомлення власника 2026-09-30; `git fetch origin`;
+`gh pr view 377/378`; `git merge origin/main`)
+
+`design:raw:check` після інтеграції правильно вимагав prune: AH-1.3 прибрав
+два `#0b0f12` з manifest. `design:raw:prune` зменшив baseline **44 → 42**
+кольорові входження, **21 → 20** файлів; **4** довільні z-index, **0** сирих
+тіней і **0** шрифтів <12 px. Дозволений борг не збільшено.
+Оновлено епік, governance, now, handoff і index; merge #377 виконується лише
+після локального gate і CI. Наступна задача — AH-1.4, після неї AH-1.2.
+(source: `artifacts/_local/ah-1.7-conflict-ratchet.log`;
+`scripts/raw-design-values.baseline.json`; `src/app/manifest.ts`)

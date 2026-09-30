@@ -1,0 +1,239 @@
+{
+  "summary": "Шість збережених власником PageSpeed-звітів: лабораторний baseline; CrUX field-даних у звітах немає.",
+  "source_directory": "C:\\Users\\Oleksandr\\Downloads\\temp",
+  "extracted_at": "2026-09-30",
+  "method": "Статичний розбір HTML без виконання скриптів; вибрано активний mobile/desktop tabpanel; звірено однакові метрики між двома копіями кожного звіту.",
+  "coverage": [
+    "home",
+    "news",
+    "article"
+  ],
+  "missing_page_types": [
+    "daily",
+    "weekly"
+  ],
+  "reports": [
+    {
+      "source_file": "PageSpeed Insights - art - desktop.html",
+      "source_sha256": "2224f2318bf06927805a530d11aab4dc6cd70e419ed1a75a56cbb75061a8ab2e",
+      "page_type": "article",
+      "requested_url": "https://aitodaybrief.com/en/news/agents-and-mcp/automate-agent-email-verification-with-open-source-moemail-model-context-protoco",
+      "final_url": "https://aitodaybrief.com/en/news/agents-and-mcp/automate-agent-email-verification-with-open-source-moemail-model-context-protoco",
+      "device": "desktop",
+      "captured_at": "2026-09-30T12:27:00+03:00",
+      "timestamp_precision": "minute",
+      "lighthouse_version": "13.5.0",
+      "chromium_version": "153.0.8010.36",
+      "emulation": "desktop",
+      "field": {
+        "status": "insufficient_data",
+        "evidence": "Інструменту Chrome User Experience Report бракує даних про реальну швидкість цієї сторінки. Немає даних",
+        "lcp_p75_ms": null,
+        "inp_p75_ms": null,
+        "cls_p75": null,
+        "collection_period": null,
+        "origin_fallback": "not_present_in_saved_report"
+      },
+      "lab": {
+        "scores": {
+          "performance": 92,
+          "accessibility": 95,
+          "best_practices": 96,
+          "seo": 100
+        },
+        "metrics": {
+          "fcp_seconds": 0.4,
+          "lcp_seconds": 0.6,
+          "tbt_ms": 240.0,
+          "cls": 0.001,
+          "speed_index_seconds": 0.7
+        }
+      }
+    },
+    {
+      "source_file": "PageSpeed Insights - art - mob.html",
+      "source_sha256": "bb1012e6171170db68589bf4666c5eb995427acc466fb6643dba86682cd56876",
+      "page_type": "article",
+      "requested_url": "https://aitodaybrief.com/en/news/agents-and-mcp/automate-agent-email-verification-with-open-source-moemail-model-context-protoco",
+      "final_url": "https://aitodaybrief.com/en/news/agents-and-mcp/automate-agent-email-verification-with-open-source-moemail-model-context-protoco",
+      "device": "mobile",
+      "captured_at": "2026-09-30T12:27:00+03:00",
+      "timestamp_precision": "minute",
+      "lighthouse_version": "13.5.0",
+      "chromium_version": "153.0.8010.36",
+      "emulation": "Moto G Power",
+      "field": {
+        "status": "insufficient_data",
+        "evidence": "Інструменту Chrome User Experience Report бракує даних про реальну швидкість цієї сторінки. Немає даних",
+        "lcp_p75_ms": null,
+        "inp_p75_ms": null,
+        "cls_p75": null,
+        "collection_period": null,
+        "origin_fallback": "not_present_in_saved_report"
+      },
+      "lab": {
+        "scores": {
+          "performance": 95,
+          "accessibility": 95,
+          "best_practices": 96,
+          "seo": 100
+        },
+        "metrics": {
+          "fcp_seconds": 1.7,
+          "lcp_seconds": 2.3,
+          "tbt_ms": 140.0,
+          "cls": 0.07,
+          "speed_index_seconds": 1.7
+        }
+      }
+    },
+    {
+      "source_file": "PageSpeed Insights - home - desktop.html",
+      "source_sha256": "c9ba5c3d3bb1bc2a2fe2d5a79cc0a4b2c7657254db4940c6821ea826c2646325",
+      "page_type": "home",
+      "requested_url": "https://aitodaybrief.com/",
+      "final_url": "https://aitodaybrief.com/en",
+      "device": "desktop",
+      "captured_at": "2026-09-30T12:23:00+03:00",
+      "timestamp_precision": "minute",
+      "lighthouse_version": "13.5.0",
+      "chromium_version": "153.0.8010.36",
+      "emulation": "desktop",
+      "field": {
+        "status": "insufficient_data",
+        "evidence": "Інструменту Chrome User Experience Report бракує даних про реальну швидкість цієї сторінки. Немає даних",
+        "lcp_p75_ms": null,
+        "inp_p75_ms": null,
+        "cls_p75": null,
+        "collection_period": null,
+        "origin_fallback": "not_present_in_saved_report"
+      },
+      "lab": {
+        "scores": {
+          "performance": 84,
+          "accessibility": 100,
+          "best_practices": 96,
+          "seo": 100
+        },
+        "metrics": {
+          "fcp_seconds": 0.4,
+          "lcp_seconds": 0.7,
+          "tbt_ms": 350.0,
+          "cls": 0.014,
+          "speed_index_seconds": 1.0
+        }
+      }
+    },
+    {
+      "source_file": "PageSpeed Insights - home mob.html",
+      "source_sha256": "0be601fd44a48bc85b8cd37fc6993f5fab8b5ac426da76f812197c3439d1e69c",
+      "page_type": "home",
+      "requested_url": "https://aitodaybrief.com/",
+      "final_url": "https://aitodaybrief.com/en",
+      "device": "mobile",
+      "captured_at": "2026-09-30T12:23:00+03:00",
+      "timestamp_precision": "minute",
+      "lighthouse_version": "13.5.0",
+      "chromium_version": "153.0.8010.36",
+      "emulation": "Moto G Power",
+      "field": {
+        "status": "insufficient_data",
+        "evidence": "Інструменту Chrome User Experience Report бракує даних про реальну швидкість цієї сторінки. Немає даних",
+        "lcp_p75_ms": null,
+        "inp_p75_ms": null,
+        "cls_p75": null,
+        "collection_period": null,
+        "origin_fallback": "not_present_in_saved_report"
+      },
+      "lab": {
+        "scores": {
+          "performance": 95,
+          "accessibility": 100,
+          "best_practices": 92,
+          "seo": 100
+        },
+        "metrics": {
+          "fcp_seconds": 1.2,
+          "lcp_seconds": 1.2,
+          "tbt_ms": 180.0,
+          "cls": 0.102,
+          "speed_index_seconds": 2.0
+        }
+      }
+    },
+    {
+      "source_file": "PageSpeed Insights - news - desktop.html",
+      "source_sha256": "44aa7f038b94b2693cb3e9aece2eb924a2b6ac3fd84ba1cf22b9ce0005990eb8",
+      "page_type": "news",
+      "requested_url": "https://aitodaybrief.com/en/news",
+      "final_url": "https://aitodaybrief.com/en/news",
+      "device": "desktop",
+      "captured_at": "2026-09-30T12:24:00+03:00",
+      "timestamp_precision": "minute",
+      "lighthouse_version": "13.5.0",
+      "chromium_version": "153.0.8010.36",
+      "emulation": "desktop",
+      "field": {
+        "status": "insufficient_data",
+        "evidence": "Інструменту Chrome User Experience Report бракує даних про реальну швидкість цієї сторінки. Немає даних",
+        "lcp_p75_ms": null,
+        "inp_p75_ms": null,
+        "cls_p75": null,
+        "collection_period": null,
+        "origin_fallback": "not_present_in_saved_report"
+      },
+      "lab": {
+        "scores": {
+          "performance": 86,
+          "accessibility": 95,
+          "best_practices": 96,
+          "seo": 100
+        },
+        "metrics": {
+          "fcp_seconds": 0.4,
+          "lcp_seconds": 1.8,
+          "tbt_ms": 210.0,
+          "cls": 0.001,
+          "speed_index_seconds": 1.0
+        }
+      }
+    },
+    {
+      "source_file": "PageSpeed Insights - news - mob.html",
+      "source_sha256": "223badeadc682f7e168f6eb33a0c8b33fe0a4d51183ef4a99327af7a243df58e",
+      "page_type": "news",
+      "requested_url": "https://aitodaybrief.com/en/news",
+      "final_url": "https://aitodaybrief.com/en/news",
+      "device": "mobile",
+      "captured_at": "2026-09-30T12:24:00+03:00",
+      "timestamp_precision": "minute",
+      "lighthouse_version": "13.5.0",
+      "chromium_version": "153.0.8010.36",
+      "emulation": "Moto G Power",
+      "field": {
+        "status": "insufficient_data",
+        "evidence": "Інструменту Chrome User Experience Report бракує даних про реальну швидкість цієї сторінки. Немає даних",
+        "lcp_p75_ms": null,
+        "inp_p75_ms": null,
+        "cls_p75": null,
+        "collection_period": null,
+        "origin_fallback": "not_present_in_saved_report"
+      },
+      "lab": {
+        "scores": {
+          "performance": 64,
+          "accessibility": 95,
+          "best_practices": 96,
+          "seo": 100
+        },
+        "metrics": {
+          "fcp_seconds": 1.5,
+          "lcp_seconds": 7.1,
+          "tbt_ms": 100.0,
+          "cls": 0.224,
+          "speed_index_seconds": 1.9
+        }
+      }
+    }
+  ]
+}

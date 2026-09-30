@@ -4,12 +4,14 @@ import { defineConfig } from 'vitest/config';
 /** Logic-only coverage gate (≥70%). UI routes/components and Supabase IO are out of scope. */
 const LOGIC_INCLUDE = [
   'src/lib/consent.ts',
+  'src/lib/theme.ts',
   'src/lib/beehiiv-config.ts',
   'src/lib/site.ts',
   'src/lib/category-meta.ts',
   'src/lib/concept-meta.ts',
   'src/lib/news-filters.ts',
   'src/lib/sitemap-dates.ts',
+  'src/lib/seo-contract.ts',
   'src/lib/analytics-config.ts',
   'src/lib/analytics-client.ts',
   'src/lib/preferred-lang.ts',

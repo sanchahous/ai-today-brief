@@ -3,23 +3,45 @@
 Summary: усе, що не має відповіді, суперечить саме собі або не перевірено. Кожен пункт має
 власника рішення й критерій закриття. Порожній пункт видаляти не можна — тільки закривати
 записом «закрито: …».
-Sources: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
+Sources: `wiki/analytics/ga4-gsc.md`, `wiki/analytics/2026-09-29-redesign-baseline.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
 `.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04),
 `wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`, `wiki/product/after-hours-redesign-epic.md` (live check коду 2026-09-29)
-Last updated: 2026-09-29
+Last updated: 2026-09-30
 
 ---
 
-## 1. ⚠️ Conflict: яка GA4-property справжня
+## 1. ⚠️ Конфлікт трьох GA4-property
 
-[ANALYTICS](analytics/ga4-gsc.md) документує property **540206735** (акаунт `396774992`),
-а аудит 2026-07-01 показує активну **540467725** (акаунт `397017915`), яка отримує реальні
-`page_view`. (source: `wiki/analytics/ga4-gsc.md`, `wiki/audits/2026-07-01-seo-organic.md` §6)
+**Рішення власника 2026-09-30:** канонічною лишається `540206735` в акаунті
+`396774992` («Ai brief today») з `G-5R89X6Q5D4`. Акаунти `396975517`
+(«Ai today brief», property `540437869`) і `397017915` («Ai brief today», property
+`540467725`) переміщено в кошик; GA підтвердив переміщення другого. Повторний
+HYPD `list_account_summaries` показує лише `396774992` / `540206735`. Тому
+питання вибору property і звірка measurement ID потоків видалених акаунтів для G0
+**закриті**. (source: повідомлення власника 2026-09-30; HYPD live check 2026-09-30)
 
-**Наслідок:** жодна цифра конверсій/retention недостовірна, доки не звірено.
-**Закривається:** пройдено чек-лист §6 аудиту (measurement ID у Vercel, GSC-link, key event
-`newsletter_subscribe`, retention 14 міс, рівно один GA4-config тег у Tag Assistant) і оновлено
-`analytics/ga4-gsc.md`. **Власник рішення:** власник продукту.
+**З'ясовано 2026-09-29:** production HTML завантажує `G-5R89X6Q5D4`, який історичний аудит
+прив'язав до **540206735**. Завантажений Google tag має ще два destinations; GA4 Data API
+підтвердив трафік того самого `aitodaybrief.com` у **540437869** і **540467725** за
+2026-09-01…28. Отже попереднє формулювання «яка property справжня» приховувало потрійну
+доставку; для baseline обрано **540206735**, а сума трьох звітів не є аудиторією сайту.
+(source: [ga4-gsc](analytics/ga4-gsc.md); [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
+
+**GSC link підтверджено 2026-09-30:** скриншоти власника показують зв'язок домену
+`aitodaybrief.com` з потоком `15002930155` і контекст property `540206735`.
+**Закрито 2026-09-30:** скриншоти власника підтвердили `newsletter_subscribe`
+як key event, retention event/user data по 14 місяців, канонічний тег і
+`page_view` у Tag Assistant; Config consent analytics granted / ads denied.
+Налаштування вже були такими, власник їх не змінював. Загальна невизначеність
+property/Admin для baseline усунута. (source: повідомлення й чотири скриншоти
+власника 2026-09-30; [ga4-gsc](analytics/ga4-gsc.md))
+
+Tag Assistant показує звернення й на `G-0TEJ3H5V85` / `G-T7X6D6TL84`;
+приймання подій property акаунтів у кошику не встановлено. Очищення destinations
+потребує окремого рішення власника, не є умовою G0. Причина історичної різниці
+Singapore/direct між property досі невідома; це окрема межа інтерпретації,
+а не незакритий вибір property. (source: скриншоти Tag Assistant власника
+2026-09-30; [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
 ## 2. Реальні місячні витрати проєкту невідомі
 

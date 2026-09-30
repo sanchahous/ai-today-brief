@@ -74,12 +74,6 @@
       "count": 1
     },
     {
-      "path": "src/app/manifest.ts",
-      "kind": "color",
-      "value": "#0b0f12",
-      "count": 2
-    },
-    {
       "path": "src/components/category-banner.tsx",
       "kind": "color",
       "value": "#141414",

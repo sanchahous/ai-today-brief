@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="uk">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AH-1.3 — Night / Day: візуальний підпис</title>
+<style>
+  :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #171918; color: #f0e9dc; }
+  body { margin: 0; padding: 24px; }
+  h1 { font-size: 24px; margin: 0 0 12px; }
+  p { max-width: 900px; line-height: 1.6; color: #b9b7ac; }
+  nav { display: flex; gap: 16px; flex-wrap: wrap; padding: 16px 0; }
+  label { display: grid; gap: 8px; }
+  select { min-height: 44px; padding: 8px 16px; border: 1px solid #737a73; border-radius: 6px; color: inherit; background: #1f2321; font: inherit; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  figure { margin: 0; min-width: 0; }
+  figcaption { padding: 12px 0; font-weight: 600; }
+  img { display: block; width: 100%; max-width: 1440px; border: 1px solid #737a73; }
+  .mobile img { max-width: 390px; }
+  a { color: #b5d8cc; }
+  @media(max-width: 700px) { .pair { grid-template-columns: 1fr; } body { padding: 16px; } }
+</style>
+<h1>AH-1.3 — контракт Night / Day</h1>
+<p>Перемикач sun/moon має ціль 44×44 px та локалізовану назву наступної теми. Збережені light/dark працюють перед першим кадром; клас, data-theme, color-scheme і browser chrome синхронні. Ця галерея — пакет для візуального підпису перед merge.</p>
+<p>До: production на 69bcd1c. Після: Vercel Preview PR #378, код a58f29f. PNG та manifests лежать у artifacts/_local/ah-1-3-before і ah-1-3-preview; додатковий локальний набір — ah-1-3-after. Контент і зображення можуть відрізнятись через оновлення даних та завантаження зовнішніх assets; перевіряється контроль теми у header. <a href="https://github.com/sanchahous/ai-today-brief/pull/378">PR #378</a> · <a href="https://ai-today-brief-git-feat-ah-13-night-940161-sanchahous-projects.vercel.app/uk/news">Preview</a> · <a href="ah-1.3-validation.json">QA та SHA-256 manifests</a>.</p>
+<nav aria-label="Варіанти знімків">
+  <label>Сторінка<select id="route"><option value="news">News</option><option value="home">Home</option></select></label>
+  <label>Мова<select id="lang"><option value="uk">Українська</option><option value="en">English</option></select></label>
+  <label>Тема<select id="theme"><option value="night">Night</option><option value="day">Day</option></select></label>
+  <label>Ширина<select id="size"><option value="desktop">1440 px</option><option value="mobile">390 px</option></select></label>
+</nav>
+<div class="pair">
+  <figure><figcaption>До · <a id="before-link" target="_blank">оригінал PNG</a></figcaption><img id="before" alt="До зміни AH-1.3"></figure>
+  <figure><figcaption>Після · <a id="after-link" target="_blank">оригінал PNG</a></figcaption><img id="after" alt="Після зміни AH-1.3"></figure>
+</div>
+<script>
+  const controls = ['route', 'lang', 'theme', 'size'].map(id => document.getElementById(id));
+  function show() {
+    const [route, lang, theme, size] = controls.map(control => control.value);
+    document.querySelector('.pair').classList.toggle('mobile', size === 'mobile');
+    for (const label of ['before', 'after']) {
+      const folder = label === 'before' ? 'before' : 'preview';
+      const src = `../../_local/ah-1-3-${folder}/${route}-${lang}-${theme}-${size}.png`;
+      document.getElementById(label).src = src;
+      document.getElementById(`${label}-link`).href = src;
+    }
+  }
+  controls.forEach(control => control.addEventListener('change', show));
+  show();
+</script>
+</html>

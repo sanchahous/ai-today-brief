@@ -4,9 +4,10 @@ import { GoogleAnalytics } from '@/components/google-analytics';
 import { analyticsConfigured } from '@/lib/analytics-config';
 import { CONSENT_MODE_DEFAULTS_SCRIPT } from '@/lib/consent-mode-snippet';
 import { SITE_NAME, SITE_URL, SITE_TAGLINE, DEFAULT_LANG } from '@/lib/site';
+import { THEME_COLORS } from '@/lib/theme';
 
-/** Runs before paint — theme class + document lang from URL (no flicker). */
-const CHROME_INIT_SCRIPT = `(function(){try{var t=localStorage.getItem('theme');var light=t==='light'||(!t&&window.matchMedia('(prefers-color-scheme: light)').matches);if(light)document.documentElement.classList.add('theme-light');}catch(e){}var m=location.pathname.match(/^\\/(en|uk)(\\/|$)/);if(m)document.documentElement.lang=m[1];})();`;
+/** Parser-blocking: apply the complete theme before body pixels or hydration. */
+const CHROME_INIT_SCRIPT = `(function(){var t;try{t=localStorage.getItem('theme');}catch(e){/* Use system preference when storage is blocked. */}var light=t==='light'||(t!=='dark'&&t!=='light'&&window.matchMedia('(prefers-color-scheme: light)').matches);var root=document.documentElement;var name=light?'day':'night';root.classList.toggle('theme-light',light);root.dataset.theme=name;root.style.colorScheme=light?'light':'dark';document.querySelectorAll('meta[data-theme-color]').forEach(function(meta){meta.setAttribute('media',meta.getAttribute('data-theme-color')===name?'all':'not all');});var m=location.pathname.match(/^\\/(en|uk)(\\/|$)/);if(m)root.lang=m[1];})();`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -32,8 +33,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang={DEFAULT_LANG} suppressHydrationWarning className="h-full">
+    <html lang={DEFAULT_LANG} data-theme="night" suppressHydrationWarning className="h-full">
       <head>
+        {/* Select by the actual theme, including saved preferences that override the OS. */}
+        <meta
+          name="theme-color"
+          content={THEME_COLORS.night}
+          data-theme-color="night"
+          media="all"
+          suppressHydrationWarning
+        />
+        <meta
+          name="theme-color"
+          content={THEME_COLORS.day}
+          data-theme-color="day"
+          media="not all"
+          suppressHydrationWarning
+        />
         <script dangerouslySetInnerHTML={{ __html: CHROME_INIT_SCRIPT }} />
         {analyticsConfigured ? (
           <script dangerouslySetInnerHTML={{ __html: CONSENT_MODE_DEFAULTS_SCRIPT }} />
