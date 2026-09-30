@@ -3,8 +3,8 @@
 Summary: виконуваний епік переносу дизайн-системи й макетів After Hours v3 з `artifacts/after-hours/` у production-сайт: 56 задач (55 обов'язкових + 1 опційна, яку рішення D6 відклало) у порядку виконання, 8 фаз і 8 гейтів, кожна задача з описом, залежностями й acceptance criteria. Вихідна точка звірена з кодом після PR #369 (3 задачі вже виконані, 9 — частково); усі рішення D1–D13 прийняті 2026-09-29 — ADR.
 Sources: `artifacts/after-hours/` (README, QA.md, tokens.css, tokens.json, app.js, home.js, articles.js, editions.js, knowledge.js, toolbox.js, pages.js, seo.js, data.js `COVERAGE`, `qa/*.mjs`), `artifacts/after-hours-motion/README.md`, `artifacts/brand-kit/README.md`;
 wiki: product/after-hours-redesign, product/after-hours-tension, product/after-hours-epic-readiness, audits/2026-09-26-design-system-gap-plan, decisions/2026-09-26-news-discovery-and-pagination-architecture, decisions/2026-09-29-design-tokens-2-0-migration, research/2026-09-29-redesign-usability-sessions-protocol, architecture/design-system-tokens, analytics/event-taxonomy, analytics/2026-09-29-redesign-baseline, ops/vercel-origin-transfer, ops/supabase-egress-2026-09, now;
-live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0)
-Last updated: 2026-09-29
+live check коду 2026-09-29 (`main` @ `3debff1`, повторно після PR #369 @ `3f47256`; звірка AH-0.1 на `83b4421` і production `b3f1b3a`): `src/app/globals.css`, `src/app/layout.tsx`, `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `src/lib/i18n.ts`, `src/lib/category-meta.ts`, `src/components/**`, `src/app/[lang]/**`, `src/app/ds-catalog/**`, `src/proxy.ts`, `e2e/**`, `scripts/e2e-affected.ts`, `wiki/_meta/project-sync.json`; `node_modules/next/dist/docs` (Next 16.3.0); PR / analytics access checks 2026-09-30
+Last updated: 2026-09-30
 
 ---
 
@@ -543,16 +543,20 @@ D11) · **Закриває:** передумова visual review кожного 
 Speed Insights або CrUX для home, news, article, daily, weekly. Оформити сторінку
 `wiki/analytics/<дата>-redesign-baseline.md`.
 
-**Стан 2026-09-29: ◐ частково, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376).** [Baseline](../analytics/2026-09-29-redesign-baseline.md)
+**Стан 2026-09-30: ◐ частково, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376).** [Baseline](../analytics/2026-09-29-redesign-baseline.md)
 містить GA4-числа й розбір трьох destinations. Запитані переходи без відповідних подій
 позначено невимірюваними, а не підмінено співвідношенням page views. Field CWV mobile/desktop
 не отримано; Admin-чек-лист [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property)
-відкритий. G0 лишається закритим. (source: [baseline](../analytics/2026-09-29-redesign-baseline.md))
+відкритий. Повторний запит PageSpeed API повернув 429, CrUX API — 403 для доступного ключа,
+браузерний доступ до GA4 Admin не пройшов перевірку дозволів. G0 лишається закритим.
+(source: [baseline](../analytics/2026-09-29-redesign-baseline.md#повторна-технічна-звірка-2026-09-30))
 
 **AC:**
 - [x] Кожна цифра має дату, період, джерело й GA4 property ID; якщо конфлікт #1 не закрито —
   цифри позначені `(needs verification)`.
-- [x] CWV зафіксовано для mobile і desktop або пояснено, чому field-даних немає.
+- [x] Пояснено, чому field-даних CWV поки немає.
+- [ ] Отримано mobile і desktop field LCP / INP / CLS через CrUX або Vercel Speed Insights,
+  як уточнив власник 2026-09-30; URL без достатніх даних позначені окремо.
 - [x] Сторінка є в `wiki/index.md`, запис у `wiki/log.md`.
 
 **Гейт G0:** AH-0.1…0.6 закриті; D1–D13 підписані; baseline visual / SEO / продукт зняті;

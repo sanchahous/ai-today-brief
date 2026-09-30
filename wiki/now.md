@@ -10,12 +10,24 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline + triple-destination check 2026-09-29
-Last updated: 2026-09-29
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline + triple-destination check 2026-09-29, повторна звірка PR / CWV / Admin-доступу 2026-09-30
+Last updated: 2026-09-30
 
 ---
 
 ## Стан репозиторію
+
+- **After Hours фаза 0, повторна звірка 2026-09-30:** `origin/main` — `a3d2db5`, локальна гілка
+  AH-0.6 чиста; PR [#373](https://github.com/sanchahous/ai-today-brief/pull/373)–[#376](https://github.com/sanchahous/ai-today-brief/pull/376)
+  відкриті, mergeable, з успішними CI-перевірками. AH-0.3 має локальний baseline 232 PNG;
+  AH-0.4 має production SEO baseline; AH-0.5 має report на 812 сценаріїв. Для AH-0.6
+  live tag досі містить три destinations, але GA4 Admin / Tag Assistant не вдалося відкрити
+  через перевірку дозволів браузера, а PageSpeed / CrUX API повернули 429 / 403.
+  Поле CWV і Admin-чек-лист залишаються відкритими; **G0 не готовий до підпису**.
+  Точні URL і докази, які потрібні від власника, — у
+  [redesign baseline](analytics/2026-09-29-redesign-baseline.md#дані-потрібні-для-завершення-ah-06).
+  (source: `git fetch origin main`, `gh pr view 373`…`376`, локальні manifest / report,
+  HTTP і browser access checks 2026-09-30)
 
 - **AH-0.6 частково: GA4 baseline і причину трьох property зафіксовано (2026-09-29),
   PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376).**

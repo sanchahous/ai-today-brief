@@ -10,8 +10,8 @@ first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
 SSG skip, ElevenLabs, LinkedIn PDF skip, social `?s=` URLs 2026-09-03
-desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29, GA4 / After Hours baseline 2026-09-29
-Last updated: 2026-09-29
+desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29, GA4 / After Hours baseline 2026-09-30
+Last updated: 2026-09-30
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
 🔒 лишається поза wiki (код або поведінка агента).
@@ -90,7 +90,7 @@ Last updated: 2026-09-29
 |---|---|---|
 | ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Production gtag із трьома destinations і трьома активними GA4-property; 540206735 — робоча для baseline, Admin-чек-лист відкритий | колишній `docs/ANALYTICS.md` + live check 2026-09-29 |
 | ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
-| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: 28-денні продуктові GA4-воронки, причина трьох property, прогалина field CWV і умови G0 (PR #376) | GA4 Data API + production HTML / Google tag, 2026-09-29 |
+| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: 28-денні продуктові GA4-воронки, три destinations одного tag, повторна звірка 2026-09-30, прогалина field CWV і точний перелік доказів до G0 (PR #376) | GA4 Data API + production Google tag + HTTP / browser access checks 2026-09-29…30 |
 
 ## Marketing
 
@@ -118,12 +118,12 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 
 Епік реалізації: [After Hours redesign epic](product/after-hours-redesign-epic.md) — перенесення прототипу v3 у production: 8 фаз і 8 гейтів, 56 задач з описом і acceptance criteria, усі рішення D1–D13 ухвалені ([ADR](decisions/2026-09-29-after-hours-rollout-and-foundations.md)), вихідна точка за кодом після PR #369 (3 задачі вже виконані, 9 — частково), трасування G01–G20 і маршрутів; декомпозиція й порядок робіт після сторінки готовності. (source: `artifacts/after-hours/`; live check коду 2026-09-29; рішення власника 2026-09-29)
 
-Передача виконання: [After Hours epic handoff](product/after-hours-epic-handoff.md) — вхід для нової сесії чи іншої моделі: стан на 2026-09-29, порядок старту, черга фази 0 з нюансами задач, точки зупинки для власника, пастки й стартовий промпт. (source: сесія 2026-09-29, PR #370 і #371)
+Передача виконання: [After Hours epic handoff](product/after-hours-epic-handoff.md) — вхід для нової сесії чи іншої моделі: стан фази 0 на 2026-09-30, порядок старту, черга, точки зупинки для власника, пастки й стартовий промпт. (source: сесії 2026-09-29…30, PR #370, #371, #373–#376)
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 56 задач з AC, усі рішення D1–D13 ухвалені 2026-09-29 (D7 — знак міняється скрізь), ризики й оцінка ≈ 56 днів | `artifacts/after-hours/` v3 + live check коду після PR #369 + рішення власника 2026-09-29 |
-| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | Передача виконання епіку After Hours наступній сесії: стан, порядок старту, черга фази 0, точки зупинки, пастки, стартовий промпт | епік + ADR + сесія 2026-09-29 |
+| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | Передача виконання епіку After Hours наступній сесії: стан, порядок старту, черга фази 0, точки зупинки, пастки, стартовий промпт | епік + ADR + сесії 2026-09-29…30 |
 | ✅ [product/useful-tools-concept](product/useful-tools-concept.md) | Концепт розділу AI Toolbox | колишній `docs/product/USEFUL-TOOLS-CONCEPT.md` |
 | ✅ [product/toolbox-wave1-spec](product/toolbox-wave1-spec.md) | Epic-спека: settings.json Builder + CLAUDE.md Generator | колишній `docs/product/TOOLBOX-WAVE1-…` |
 | ✅ [product/responsive-crossbrowser-audit](product/responsive-crossbrowser-audit.md) | Аудит адаптиву й крос-браузерності | колишній `docs/product/RESPONSIVE-…` |

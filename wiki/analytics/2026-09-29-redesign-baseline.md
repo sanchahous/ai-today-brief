@@ -1,8 +1,8 @@
 # After Hours — продуктовий baseline перед редизайном
 
 Summary: AH-0.6 фіксує GA4-показники за 28 повних днів, пояснює три property для одного сайту й відокремлює доступні продуктові метрики від CWV, яких поки не вдалося отримати.
-Sources: GA4 Data API через підключення HYPD (read-only запити 2026-09-29); live HTML `https://aitodaybrief.com/en` і Google tag `https://www.googletagmanager.com/gtag/js?id=G-5R89X6Q5D4` (2026-09-29); [аудит налаштування GA4](../audits/2026-06-12-analytics-gsc.md); `src/components/analytics/home-click-trackers.tsx`, `src/components/home/newsletter-form.tsx`, `src/app/api/subscribe/route.ts`, `src/lib/web-vitals.ts`.
-Last updated: 2026-09-29
+Sources: GA4 Data API через підключення HYPD (read-only запити 2026-09-29 і Admin metadata 2026-09-30); live HTML `https://aitodaybrief.com/en` і Google tag `https://www.googletagmanager.com/gtag/js?id=G-5R89X6Q5D4` (2026-09-29 і 2026-09-30); [аудит налаштування GA4](../audits/2026-06-12-analytics-gsc.md); `artifacts/_local/before/manifest.json` (AH-0.3); [CrUX API](https://developer.chrome.com/docs/crux/api); `src/components/analytics/home-click-trackers.tsx`, `src/components/home/newsletter-form.tsx`, `src/app/api/subscribe/route.ts`, `src/lib/web-vitals.ts`.
+Last updated: 2026-09-30
 
 ---
 
@@ -83,6 +83,26 @@ live Google tag, запити 2026-09-29)
 | Weekly | н/д | н/д |
 
 На 2026-09-29 перевірених **field**-значень для цих типів сторінок не отримано: офіційний PageSpeed Insights API двічі повернув HTTP 429 навіть для одного mobile URL, браузерна перевірка була зупинена перевіркою дозволів, а доступний Vercel-конектор не надає Speed Insights metrics. У репозиторії немає `@vercel/speed-insights`; події `web_vitals` у GA4 є, але в `540206735` немає зареєстрованих custom dimensions/metrics для `name` і `value`, тож із Data API не можна дістати перевірені LCP/INP/CLS. Це **відсутність доступного виміру**, а не твердження, що CrUX не має даних. [Google рекомендує CrUX API](https://developers.google.com/speed/docs/insights/v5/get-started) як джерело польових даних. (source: HTTP-запити 2026-09-29; список доступних Vercel-інструментів; `package.json`, `src/lib/web-vitals.ts`; GA4 Admin API custom definitions 2026-09-29)
+
+## Повторна технічна звірка 2026-09-30
+
+- `origin/main` оновлено до `a3d2db5`; PR #373–#376 залишаються відкритими, mergeable, з успішними CI-перевірками. Локальний manifest AH-0.3 містить 232 знімки й має SHA-256 `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`; звіт AH-0.5 містить 812 сценаріїв. Це підтверджує наявність visual і QA baseline, але відкриті PR ще не є змерженими задачами. (source: `git fetch origin main`, `gh pr view 373`…`376`, `artifacts/_local/before/manifest.json`, `artifacts/_local/ah-0.5-legacy-report.json`, live check 2026-09-30)
+- Production Google tag знову відповів HTTP 200 і містить `GT-KVJZSX7K` та всі три `G-*` ID. Це повторно підтверджує конфігурацію destinations, **але не замінює Tag Assistant** і не встановлює пару додатковий measurement ID ↔ GA4 stream. (source: HTTP GET Google tag 2026-09-30)
+- HYPD Admin metadata підтвердили доступ до `540206735`, `540437869`, `540467725`, але підключені read-only інструменти не повертають measurement ID потоків, GSC link, key events чи retention. Доступ до GA4 Admin через браузер зупинила помилка перевірки збережених дозволів, повторна спроба дала той самий результат. Пункти Admin-чек-листа нижче залишаються неперевіреними. (source: HYPD `list_account_summaries` / `get_property_details`, browser access check 2026-09-30)
+- Повторний запит до PageSpeed Insights API для `/en` mobile повернув HTTP 429. Запит до офіційного [CrUX API](https://developer.chrome.com/docs/crux/api) з доступним локальним Google API key повернув HTTP 403; цей ключ не дав доступу до CrUX. У локальному `gcloud` немає активної авторизації чи вибраного проєкту для [CrUX BigQuery](https://developer.chrome.com/docs/crux/bigquery). Через це перевірених mobile/desktop field LCP, INP і CLS досі немає. HTTP 403/429 не доводять, що в CrUX немає даних сайту. (source: HTTP-запити та `gcloud auth list` / `gcloud config get-value project` 2026-09-30)
+
+### Дані, потрібні для завершення AH-0.6
+
+1. У GA4 Admin зафіксувати measurement ID потоків `15017434008` і `15017406308`, GSC link property `540206735`, статус `newsletter_subscribe` як key event та event-data retention. Tag Assistant має показати фактичну доставку й consent на production. Після цього власник вирішує долю додаткових destinations; до рішення нічого не від'єднувати й не видаляти. (source: [ga4-gsc](ga4-gsc.md), [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property))
+2. Отримати CrUX URL-level `PHONE` і `DESKTOP` LCP/INP/CLS для репрезентативних URL нижче або еквівалентні mobile/desktop field-дані Vercel Speed Insights. Записати дату, вікно даних, URL, пристрій і p75; якщо для URL немає достатньо даних, позначити це окремо й не видавати origin-level метрику за метрику типу сторінки. (source: [CrUX API](https://developer.chrome.com/docs/crux/api); URL — AH-0.3 `artifacts/_local/before/manifest.json`)
+
+| Тип | URL для польової перевірки |
+|---|---|
+| Home | `https://aitodaybrief.com/en` |
+| News index | `https://aitodaybrief.com/en/news` |
+| News article | `https://aitodaybrief.com/en/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme` |
+| Daily brief | `https://aitodaybrief.com/en/reasoning-token-compression-and-efficient-agent-execution` |
+| Weekly | `https://aitodaybrief.com/en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23` |
 
 ## Що лишається до G0
 

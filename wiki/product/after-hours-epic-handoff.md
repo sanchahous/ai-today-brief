@@ -1,8 +1,8 @@
 # Епік After Hours: передача виконання наступній сесії
 
-Summary: вхідна точка для агента будь-якої моделі чи інструмента, який продовжує епік редизайну After Hours у новій сесії. Сторінка описує стан на 2026-09-29, порядок старту, чергу фази 0 з нюансами кожної задачі, точки, де треба зупинитись і спитати власника, правила й пастки з попередніх сесій і готовий стартовий промпт.
-Sources: [after-hours-redesign-epic](after-hours-redesign-epic.md) §0, §2, §4–§6, §11, §17; [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md); [redesign baseline](../analytics/2026-09-29-redesign-baseline.md); [open-questions](../open-questions.md) #1, #10; `.cursor/rules/pr-gate.mdc`; `package.json`; `wiki/_tools/wiki-lint.mjs`; `wiki/_meta/project-sync.json`; `src/lib/site.ts`; `artifacts/after-hours/pages.js`, `editions.js`, `qa/`; `artifacts/brand-kit/README.md`; сесія 2026-09-29 (PR #370, #371)
-Last updated: 2026-09-29
+Summary: вхідна точка для агента будь-якої моделі чи інструмента, який продовжує епік редизайну After Hours у новій сесії. Сторінка описує стан на 2026-09-30, порядок старту, чергу фази 0 з нюансами кожної задачі, точки, де треба зупинитись і спитати власника, правила й пастки з попередніх сесій і готовий стартовий промпт.
+Sources: [after-hours-redesign-epic](after-hours-redesign-epic.md) §0, §2, §4–§6, §11, §17; [ADR розкатки й foundations](../decisions/2026-09-29-after-hours-rollout-and-foundations.md); [redesign baseline](../analytics/2026-09-29-redesign-baseline.md); [open-questions](../open-questions.md) #1, #10; `.cursor/rules/pr-gate.mdc`; `package.json`; `wiki/_tools/wiki-lint.mjs`; `wiki/_meta/project-sync.json`; `src/lib/site.ts`; `artifacts/after-hours/pages.js`, `editions.js`, `qa/`; `artifacts/brand-kit/README.md`; live `git` / PR / HTTP checks 2026-09-30 (PR #373–#376)
+Last updated: 2026-09-30
 
 ---
 
@@ -10,7 +10,21 @@ Last updated: 2026-09-29
 > Тут лише те, що потрібно, щоб нова сесія стартувала без контексту попередньої: стан, порядок,
 > точки зупинки й пастки. Картки задач тут не дублюються.
 
-## 1. Стан на 2026-09-29
+## 1. Стан на 2026-09-30
+
+- `origin/main` @ `a3d2db5` після `git fetch` 2026-09-30; PR #373–#376 відкриті,
+  mergeable, усі активні CI-перевірки успішні. Локальний `before` AH-0.3 має 232 PNG
+  (manifest SHA-256 `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`),
+  SEO baseline AH-0.4 — у PR #374, report AH-0.5 — 812 сценаріїв. Ці PR ще не змержені.
+  (source: `gh pr view 373`…`376`, `artifacts/_local/before/manifest.json`,
+  `artifacts/_local/ah-0.5-legacy-report.json`, live check 2026-09-30)
+- AH-0.6 лишається частковою: live Google tag повторно показав три destinations; Admin / Tag
+  Assistant заблокувала перевірка дозволів браузера, PageSpeed API повернув 429, CrUX API —
+  403 для доступного локального ключа. Точний перелік потрібних перевірок і URL є в
+  [redesign baseline](../analytics/2026-09-29-redesign-baseline.md#дані-потрібні-для-завершення-ah-06).
+  **Наступний крок:** отримати Admin-докази й mobile/desktop field CWV; лише після цього
+  підготувати G0 для підпису власника. (source: HTTP, browser access і HYPD checks 2026-09-30;
+  [redesign baseline](../analytics/2026-09-29-redesign-baseline.md))
 
 - Production `b3f1b3a`: епік (PR [#370](https://github.com/sanchahous/ai-today-brief/pull/370)) і
   hotfix B8 — з `/news` прибрано захардкожений «Recent highlights».
