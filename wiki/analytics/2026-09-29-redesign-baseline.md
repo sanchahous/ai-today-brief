@@ -199,12 +199,14 @@ mobile/desktop; daily/weekly виключені лише з AH-0.6. (source: п�
 
 ## Що лишається до G0
 
-**Докази й AC AH-0.6 зібрано; PR #376 готовий до merge.** Для формального G0
-залишаються завершення відкритих PR фази 0 **#373–#376** та фінальний підпис
-власника. Поточне погодження стосується CWV baseline AH-0.6; воно не є
-підписом усього G0. Пакет доказів — у [handoff](../product/after-hours-epic-handoff.md#пакет-для-підпису-g0).
+**G0 підписано власником 2026-09-30:** «Погоджую G0 та merge PR #373–#376».
+Докази й AC AH-0.6 прийнято; інтеграція baseline — через
+[PR #376](https://github.com/sanchahous/ai-today-brief/pull/376), після неї можна
+продовжувати AH-1.3. Повторного погодження аналітики або підпису G0 не потрібно.
+Пакет доказів — у [handoff](../product/after-hours-epic-handoff.md#пакет-для-підпису-g0).
 Очищення destinations і причина Singapore/direct не блокують G0; вони лишаються
-окремими питаннями. (source: погодження власника й `gh pr view` 2026-09-30;
+окремими питаннями. (source: пряме погодження власника 2026-09-30;
+[витяг погодження](../../artifacts/after-hours/analytics/2026-09-30-ga4-admin-verification.json);
 [епік](../product/after-hours-redesign-epic.md), [ga4-gsc](ga4-gsc.md))
 
 ## Related pages

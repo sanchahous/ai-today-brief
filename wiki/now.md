@@ -17,13 +17,13 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
-- **Фаза 0 готова до фінального review (2026-09-30):** AH-0.6 у
+- **G0 підписано власником 2026-09-30; merge #373–#376 погоджено:** AH-0.6 у
   [PR #376](https://github.com/sanchahous/ai-today-brief/pull/376) має всі докази:
   GSC link, key event, retention 14 місяців і Tag Assistant підтверджено власником.
   Він погодив лабораторний CWV baseline home/news/article з недостатніми
   CrUX-даними й виключив daily/weekly із AH-0.6. Property/Admin питання #1 закрито.
-  PR #373–#376 ще відкриті; потрібні merge та фінальний підпис G0. Візуальні PR
-  до підпису не просувати. Пакет доказів — у
+  Інтеграція — через PR #373–#376; після merge #376 наступна задача AH-1.3.
+  Кожен видимий PR має пройти окремий візуальний review. Пакет доказів — у
   [handoff](product/after-hours-epic-handoff.md#пакет-для-підпису-g0).
   (source: погодження й скриншоти власника, `gh pr view` 2026-09-30;
   [baseline](analytics/2026-09-29-redesign-baseline.md))

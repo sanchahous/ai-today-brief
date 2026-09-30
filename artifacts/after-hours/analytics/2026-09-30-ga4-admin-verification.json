@@ -77,6 +77,19 @@
     "accepted_evidence": "Лабораторні mobile/desktop метрики Lighthouse і зафіксована відсутність достатніх CrUX-даних у шести звітах.",
     "applies_to": "AH-0.6 baseline only",
     "later_cwv_budgets_unchanged": true,
-    "g0_signed": false
+    "g0_signed": true
+  },
+  "g0_owner_approval": {
+    "date": "2026-09-30",
+    "source": "Пряме повідомлення власника у сесії After Hours 2026-09-30",
+    "statement": "Погоджую G0 та merge PR #373–#376.",
+    "approved": true,
+    "authorized_merge_pr_numbers": [
+      373,
+      374,
+      375,
+      376
+    ],
+    "integration_status_source": "Статус merge кожного PR у GitHub; погодження не підмінює merge."
   }
 }

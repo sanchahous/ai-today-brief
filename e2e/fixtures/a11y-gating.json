@@ -1,0 +1,9 @@
+{
+  "routes": [
+    {
+      "id": "ds-catalog",
+      "path": "/ds-catalog",
+      "locales": ["en"]
+    }
+  ]
+}

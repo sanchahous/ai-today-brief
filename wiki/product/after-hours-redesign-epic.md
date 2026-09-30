@@ -14,9 +14,11 @@ Last updated: 2026-09-30
 > підготовлено до merge; активна GA4-property `540206735`, Admin-чекліст і Tag Assistant
 > підтверджено доказами власника. CWV baseline home/news/article прийнято з лабораторними
 > метриками й недостатніми CrUX-даними, daily/weekly виключено лише з AH-0.6.
-> Фаза 0 готова до review; завершення PR #373–#376 та фінальний підпис G0 ще попереду.
+> **G0 підписано власником 2026-09-30:** «Погоджую G0 та merge PR #373–#376».
+> Інтеграція задач фази 0 завершується через ці PR; після merge #376 наступна задача — AH-1.3.
 > (source: повідомлення й скриншоти власника 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md))
-> До закриття гейту G0 жоден візуальний PR у production не відкривається.
+> Підпис G0 дозволяє перейти до візуальних задач після інтеграції фази 0;
+> вимога візуального підпису кожного видимого PR із §0 зберігається.
 > Візуальний напрям затверджено власником у прототипі v3; цей документ — план його перенесення,
 > а не нова дизайн-пропозиція. (source: [after-hours-redesign](after-hours-redesign.md) §1)
 >
@@ -332,9 +334,9 @@ flowchart TD
 |---|---|---|---|---|---|
 | AH-0.1 | ✅ Звірити статус G01–G20 і вихідну точку ([#372](https://github.com/sanchahous/ai-today-brief/pull/372), [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)) | — | — | — | G01, конфлікт §2.3 |
 | AH-0.2 | ✅ ADR: rollout і foundations, D1–D13 ([ADR](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)) | — | — | — | передумова G12 |
-| AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
-| AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
-| AH-0.5 | ◐ QA-матриця a11y і верстки для сторінок (#369: axe-інфраструктура для каталогу) | M | агент | D10 ✅ | G14 (частк.) |
+| AH-0.3 | ✅ Baseline-знімки й інструмент до/після ([#373](https://github.com/sanchahous/ai-today-brief/pull/373)) | — | — | — | передумова visual review |
+| AH-0.4 | ✅ SEO-контракт: знімок і compare-гейт ([#374](https://github.com/sanchahous/ai-today-brief/pull/374)) | — | — | — | «SEO diff» (redesign §9) |
+| AH-0.5 | ✅ QA-матриця a11y і верстки для сторінок ([#375](https://github.com/sanchahous/ai-today-brief/pull/375); публічні маршрути поки report) | — | — | D10 ✅ | G14 (частк.) |
 | AH-0.6 | ◐ Продуктовий і CWV baseline: всі AC, очікує merge [#376](https://github.com/sanchahous/ai-today-brief/pull/376) | S | власник + агент | open-questions #1 | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
@@ -474,11 +476,17 @@ D11) · **Закриває:** передумова visual review кожного 
    до першого з AH-1.3…AH-1.7; у log зазначити, що baseline — стан після токенів 2.0.
 
 **AC:**
-- [ ] `node --import tsx scripts/capture-route-matrix.ts --base=https://aitodaybrief.com --label=before`
+- [x] `node --import tsx scripts/capture-route-matrix.ts --base=https://aitodaybrief.com --label=before`
   завершується з кодом 0 і пише manifest для всіх маршрутів §15 у 8 комбінаціях.
-- [ ] PNG не потрапляють у git (`git status` чистий після запуску).
-- [ ] Baseline `before` знято до мержу першого візуального PR після #369 (AH-1.3…AH-1.7); шлях і
+- [x] PNG не потрапляють у git (`git status` чистий після запуску).
+- [x] Baseline `before` знято до мержу першого візуального PR після #369 (AH-1.3…AH-1.7); шлях і
   SHA записані в `wiki/log.md`.
+
+**Стан 2026-09-29:** PR [#373](https://github.com/sanchahous/ai-today-brief/pull/373);
+232 PNG і `manifest.json` лежать у git-ignored `artifacts/_local/before/`;
+baseline охоплює 29 станів сторінок у 8 комбінаціях. Це стан після токенів 2.0 з #369,
+до наступних візуальних PR. (source: `scripts/capture-route-matrix.ts`; production capture
+2026-09-29; `artifacts/_local/before/manifest.json`)
 
 ### AH-0.4 · SEO-контракт: знімок і compare-гейт
 
@@ -499,10 +507,18 @@ D11) · **Закриває:** передумова visual review кожного 
    `x-vercel-cache: HIT`.
 
 **AC:**
-- [ ] Baseline з production закомічено як текстовий JSON (без HTML).
-- [ ] `--compare` проти того самого production — 0 розбіжностей; видалення canonical у фікстурі
+- [x] Baseline з production закомічено як текстовий JSON (без HTML).
+- [x] `--compare` проти того самого production — 0 розбіжностей; видалення canonical у фікстурі
   дає exit 1 (unit-тест).
-- [ ] Покриття нового `src/lib/seo-contract.ts` ≥ 80%.
+- [x] Покриття нового `src/lib/seo-contract.ts` ≥ 80%.
+
+**Стан 2026-09-29:** PR [#374](https://github.com/sanchahous/ai-today-brief/pull/374);
+baseline містить 58 EN/UK URL; compare з production дав 0 помилок і
+0 попереджень, `--headers` підтвердив HIT для повторних `/en/news` і `/uk/news`.
+Навмисно вилучений canonical у копії baseline дав exit 1. Поточний сирий HTML має
+`lang="en"` на UK-сторінках і 0 тексту безпосередньо в `<main>` до обробки streaming-розмітки;
+це зафіксовані властивості baseline, не виправлення AH-0.4. (source: `scripts/seo-contract.ts`;
+`e2e/fixtures/seo-contract.baseline.json`; production HTTP-запити 2026-09-29)
 
 ### AH-0.5 · QA-матриця доступності й верстки для Next-застосунку
 
@@ -528,11 +544,20 @@ D11) · **Закриває:** передумова visual review кожного 
 4. Зняти звіт по legacy-сайту і записати лічильники з датою в `wiki/log.md`.
 
 **AC:**
-- [ ] Спека проходить у chromium на 360 / 390 / 768 / 1024 / 1440 × Night/Day × EN/UK для
+- [x] Спека проходить у chromium на 360 / 390 / 768 / 1024 / 1440 × Night/Day × EN/UK для
   gating-маршрутів і пише звіт для решти.
-- [ ] Навмисний `text-[10px]` у gating-маршруті валить спеку (продемонстровано в PR).
-- [ ] `e2e:affected` вибирає спеку при зміні `src/app/**` і `src/components/**`.
-- [ ] Gating-прогін у CI ≤ 10 хв (assumption для 4-core runner); повний прогін — ручний або за label.
+- [x] Навмисний `text-[10px]` у gating-маршруті валить спеку (продемонстровано в PR).
+- [x] `e2e:affected` вибирає спеку при зміні `src/app/**` і `src/components/**`.
+- [x] Gating-прогін у CI ≤ 10 хв (assumption для 4-core runner); повний прогін — ручний або за label.
+
+**Стан 2026-09-29:** PR [#375](https://github.com/sanchahous/ai-today-brief/pull/375);
+gating охоплює внутрішній мовонейтральний `/ds-catalog` (14 перевірок за
+4,8 с локально); публічні EN/UK сторінки лишаються в report до їхніх окремих PR редизайну.
+Ручний повний report: 812 сценаріїв, 58 URL, Night/Day, п'ять ширин і два zoom-режими;
+JSON — `artifacts/_local/ah-0.5-legacy-report.json`. Мутація `text-[10px]` дала exit 1;
+`e2e:affected` вибирає цю спеку для `src/app/**` і `src/components/**`.
+(source: `e2e/a11y-layout-matrix.spec.ts`; `e2e/fixtures/a11y-gating.json`;
+локальні Playwright-прогони 2026-09-29)
 
 ### AH-0.6 · Продуктовий і CWV baseline
 
