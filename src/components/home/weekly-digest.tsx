@@ -43,7 +43,7 @@ export function WeeklyDigestBlock({
       >
         <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(340px,.9fr)]">
           <div>
-            <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
+            <p className="text-accent eyebrow">
               {copy.eyebrow}
             </p>
             <h2
@@ -151,7 +151,7 @@ export function WeeklyDigestBlock({
         {digest.video ? (
           <div className="border-border-soft mt-9 border-t pt-8">
             <div className="mb-4">
-              <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">
+              <p className="text-accent eyebrow">
                 {copy.watch}
               </p>
               <h3 className="mt-2 text-xl sm:text-2xl">{copy.videoTitle}</h3>

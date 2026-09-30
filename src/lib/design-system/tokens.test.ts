@@ -179,6 +179,20 @@ describe('globals.css sync', () => {
 });
 
 describe('non-colour token sync (AH-1.6)', () => {
+  it('rejects a missing fluid size, reading rhythm, or display tracking (AH-1.5)', () => {
+    for (const [from, expected] of [
+      ['--text-xs: 0.8125rem;', '[drift:type] --text-xs'],
+      ['--leading-reading: 1.78;', '[drift:root] --leading-reading'],
+      ['--tracking-display: -0.032em;', '[drift:root] --tracking-display'],
+      ['--measure: 68ch;', '[drift:root] --measure'],
+      ['--tracking-display: -0.012em;', '[drift:type:uk] --tracking-display'],
+    ]) {
+      const result = runDriftAudit(globalsCss.replace(from, ''));
+      expect(result.pass).toBe(false);
+      expect(result.reports.join('\n')).toContain(expected);
+    }
+  });
+
   it('reports drift in a static, a themed, a radius and a breakpoint token', () => {
     const cases: Array<[string, string, string]> = [
       ['--space-4: 16px;', '--space-4: 18px;', '[drift:root] --space-4'],

@@ -3,10 +3,12 @@ import { join, relative } from 'node:path';
 import {
   CSS_THEME_BREAKPOINTS,
   CSS_THEME_RADII,
+  CSS_THEME_TYPOGRAPHY,
   CSS_VAR_BY_ROLE,
   CATEGORY_TOKEN_KEYS,
   CSS_VARS_BY_THEME,
   CSS_VARS_STATIC,
+  CSS_VARS_UK_TYPOGRAPHY,
   PRIMITIVES,
   SEMANTIC_TOKENS,
   TOKENS_VERSION,
@@ -162,6 +164,7 @@ function readTokenBlocks(css: string) {
     day: readBlock(css, /\.theme-light,\s*html\[data-theme='day'\]\s*\{/),
     themeInline: readBlock(css, /@theme inline\s*\{/),
     theme: readBlock(css, /@theme\s*\{/),
+    uk: readBlock(css, /html\[lang='uk'\],\s*\[lang='uk'\]\s*\{/),
   };
 }
 
@@ -193,6 +196,8 @@ export function runDriftAudit(css: string): { pass: boolean; reports: string[] }
   }
   for (const [cssVar, value] of Object.entries(CSS_VARS_STATIC)) compare('root', blocks.night, cssVar, value);
   for (const [cssVar, value] of Object.entries(CSS_THEME_RADII)) compare('radii', blocks.themeInline, cssVar, value);
+  for (const [cssVar, value] of Object.entries(CSS_THEME_TYPOGRAPHY)) compare('type', blocks.themeInline, cssVar, value);
+  for (const [cssVar, value] of Object.entries(CSS_VARS_UK_TYPOGRAPHY)) compare('type:uk', blocks.uk, cssVar, value);
   for (const [cssVar, value] of Object.entries(CSS_THEME_BREAKPOINTS)) {
     compare('breakpoint', blocks.theme, cssVar, value);
   }

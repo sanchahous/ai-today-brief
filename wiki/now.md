@@ -17,6 +17,8 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
+- **AH-1.5 (типографіка) — реалізовано в `feat/ah-1.5-typography`, очікує окремого підпису UK-заголовків.** Local Fraunces / Inter Latin+Cyrillic, Georgia UK, шкала й eyebrow; typography E2E 78 passed у трьох браузерах. Font-floor matrix до/після: 580 сценаріїв, 0 sub-floor fonts / overflow; legacy 404 H1 лишається. Поточний main перевірено як `2ba2b27`; RSS / News sitemap / news updated після #383 показують 29.09. Повний звіт — [AH-1.5 validation](product/after-hours-ah-1-5-validation.md). (source: `src/app/fonts.ts`; `e2e/typography.spec.ts`; локальні QA receipts; git / HTTP check 2026-09-30)
+
 - **AH-1.2 (контраст-гейт 2.0) — реалізовано, PR #384 (2026-09-30), без видимих змін.**
   222 пари замість 158, 0 провалів, найнижчі категорії Night 6,41:1 / Day 5,22:1; сім токенів прототипу
   (`--accent-hover`, `--accent-fill`, `--accent-fill-hover`, `--velvet-deep`, `--on-velvet`, `--selection-bg`,

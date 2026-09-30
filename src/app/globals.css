@@ -1,7 +1,4 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/inter/index.css';
-@import '@fontsource-variable/fraunces/wght.css';
-@import '@fontsource-variable/fraunces/wght-italic.css';
 
 /*
  * AI Today Brief — design tokens (ported from the prototype).
@@ -9,16 +6,24 @@
  * border-border, font-serif, rounded-card, …) that resolve to the CSS variables
  * below — so a light theme can swap at runtime by toggling `.theme-light`.
  *
- * Fonts ship via @fontsource (not next/font/google) so CI builds never fetch
- * fonts.gstatic.com — Sonar/GitHub Actions must not depend on outbound font CDN.
+ * Fonts ship via next/font/local from OFL subsets, with no outbound font CDN requests.
  */
 @theme inline {
-  --font-sans: 'Inter Variable', system-ui, sans-serif;
-  --font-serif: 'Fraunces Variable', Georgia, serif;
+  --font-serif: var(--font-display);
 
   /* 12px floor for meta/eyebrow text — the smallest size allowed anywhere (tokens:check). */
   --text-2xs: 0.75rem;
   --text-2xs--line-height: 1.5;
+  --text-xs: 0.8125rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-base: var(--text-md);
+  --text-lg: 1.125rem;
+  --text-xl: clamp(1.1875rem, 1.1rem + 0.35vw, 1.375rem);
+  --text-2xl: clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem);
+  --text-3xl: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem);
+  --text-4xl: clamp(2.25rem, 1.65rem + 2.6vw, 3.625rem);
+  --text-5xl: clamp(2.625rem, 1.8rem + 3.8vw, 4.5rem);
 
   --color-bg: var(--bg);
   --color-bg-soft: var(--bg-soft);
@@ -87,6 +92,20 @@
 /* dark-first (brand default) */
 :root {
   color-scheme: dark;
+  --font-display: var(--font-ah-display);
+  --font-display-italic: var(--font-ah-display-italic);
+  /* Cyrillic comes before next/font's Latin metric fallback, which also contains Cyrillic glyphs. */
+  --font-sans: var(--font-ah-cyrillic), var(--font-ah-sans), system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', 'Cascadia Mono', 'Segoe UI Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --leading-tight: 1.06;
+  --leading-heading: 1.14;
+  --leading-body: 1.65;
+  --leading-reading: 1.78;
+  --tracking-display: -0.032em;
+  --tracking-heading: -0.02em;
+  --tracking-meta: 0.08em;
+  --tracking-eyebrow: 0.13em;
+  --measure: 68ch;
   --header-h: 60px;
   --bg: #171918;
   --bg-soft: #131514;
@@ -292,23 +311,20 @@ html[data-theme='day'] {
   h1,
   h2,
   h3 {
-    font-family: var(--font-serif);
+    font-family: var(--font-display);
     font-weight: 600;
-    letter-spacing: 0;
-    line-height: 1.12;
+    letter-spacing: var(--tracking-heading);
+    line-height: var(--leading-heading);
   }
 
-  html[lang='uk'] h1,
-  html[lang='uk'] h2,
-  html[lang='uk'] h3 {
-    font-family: var(--font-sans);
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    line-height: 1.14;
+  h1 {
+    letter-spacing: var(--tracking-display);
+    line-height: var(--leading-tight);
   }
 
-  html[lang='uk'] .font-serif {
-    font-family: var(--font-sans);
+  body {
+    font-size: var(--text-md);
+    line-height: var(--leading-body);
   }
 
   :where(a[href], button:not(:disabled), [role='button'], label[for], summary) {
@@ -346,6 +362,40 @@ html[data-theme='day'] {
   :where(pre, .overflow-x-auto) {
     overflow-wrap: normal;
   }
+}
+
+/* D4 applies to the whole heading, including Latin product names and italic emphasis. */
+html[lang='uk'],
+[lang='uk'] {
+  --font-display: Georgia, 'Times New Roman', serif;
+  --font-display-italic: Georgia, 'Times New Roman', serif;
+  --tracking-display: -0.012em;
+  --tracking-heading: -0.008em;
+}
+
+:where(h1, h2, h3, .font-serif) :where(em, .italic),
+:where(h1, h2, h3, .font-serif).italic {
+  font-family: var(--font-display-italic);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  letter-spacing: var(--tracking-eyebrow);
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.eyebrow-registry {
+  letter-spacing: var(--tracking-meta);
+  text-transform: none;
+}
+
+.reading-copy {
+  max-width: var(--measure);
+  font-size: var(--text-lg);
+  line-height: var(--leading-reading);
 }
 
 .site-header-shell {

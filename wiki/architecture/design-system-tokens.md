@@ -210,14 +210,42 @@ Ratchet після AH-1.4: 30 кольорових входжень (було 42
 
 ### 7.2 Типографіка
 
-Повну шкалу, `--leading-*`, `--tracking-*` і `--measure` додає AH-1.5; до того — лише те, що вже є в CSS.
+AH-1.5 підключає локальні OFL subset-и через `next/font/local`; кирилиця Inter передує Latin fallback у стеку, щоб Arial не перехоплював українські літери. Display українською — повністю Georgia за D4, включно з Latin product names та italic. Шкала й UK-перевизначення під drift-гейтом. (source: `src/app/fonts.ts`; `src/app/globals.css`; `scripts/check-design-tokens.ts`; [ADR D3–D4](../decisions/2026-09-29-after-hours-rollout-and-foundations.md))
 
 | Токен | Роль і використання | Значення |
 |---|---|---|
-| `--font-sans` | UI і читання (Inter Variable, системний запасний) | `PRIMITIVES.typography.fonts.sans` |
-| `--font-serif` | display (Fraunces Variable, Georgia запасний) | `fonts.serif` |
+| `--font-sans` | UI і читання (Inter Cyrillic → Inter Latin → системний запасний) | `PRIMITIVES.typography.fonts.sans` |
+| `--font-serif` | сумісний Tailwind alias display | `var(--font-display)` |
+| `--font-display` | Fraunces; Georgia для UK | `fonts.serif` / `fonts.ukDisplayFallback` |
+| `--font-display-italic` | Fraunces italic без preload; Georgia для UK | `fonts.italic` / `fonts.ukDisplayFallback` |
+| `--font-mono` | системний mono для мета й eyebrow | `fonts.mono` |
+| `--font-ah-display` | family і метричний fallback, згенеровані Next | `displayFont.variable` |
+| `--font-ah-display-italic` | family і метричний fallback, згенеровані Next | `displayItalicFont.variable` |
+| `--font-ah-sans` | Inter Latin і Arial з корекцією метрик | `sansFont.variable` |
+| `--font-ah-cyrillic` | Inter Cyrillic з unicode-range | `cyrillicFont.variable` |
 | `--text-2xs` | 12 px — мінімум для мета і eyebrow; `text-2xs` | 0.75rem |
 | `--text-2xs--line-height` | інтерліньяж `text-2xs` | 1.5 |
+| `--text-xs` | 13 px — підписи | 0.8125rem |
+| `--text-sm` | 14 px — вторинний текст | 0.875rem |
+| `--text-md` | 16 px — UI | 1rem |
+| `--text-base` | сумісний alias `text-base` | `var(--text-md)` |
+| `--text-lg` | 18 px — читання | 1.125rem |
+| `--text-xl` | 19–22 px — картки | `scale.xl` |
+| `--text-2xl` | 22–28 px — H3 | `scale.2xl` |
+| `--text-3xl` | 28–40 px — H2 | `scale.3xl` |
+| `--text-4xl` | 36–58 px — H1 | `scale.4xl` |
+| `--text-5xl` | 42–72 px — masthead | `scale.5xl` |
+| `--leading-tight` | display | 1.06 |
+| `--leading-heading` | заголовки | 1.14 |
+| `--leading-body` | UI | 1.65 |
+| `--leading-reading` | `.reading-copy`, MarkdownBody | 1.78 |
+| `--tracking-display` | display / UK | −0.032em / −0.012em |
+| `--tracking-heading` | заголовки / UK | −0.02em / −0.008em |
+| `--tracking-meta` | довгий `.eyebrow-registry` у sentence case | 0.08em |
+| `--tracking-eyebrow` | короткий `.eyebrow`, uppercase | 0.13em |
+| `--measure` | максимальна міра `.reading-copy` | 68ch |
+
+Значення таблиці походять із `PRIMITIVES.typography`, `CSS_THEME_TYPOGRAPHY`, `CSS_VARS_UK_TYPOGRAPHY` та CSS; декларації Next family задає `fonts.ts`. Кирилицю й OFL перевіряє `artifacts/after-hours/qa/check-ah-1.5-fonts.mjs`. (source: `src/lib/design-system/tokens.ts`; `src/app/fonts.ts`; `src/app/globals.css`)
 
 ### 7.3 Простір і ритм
 

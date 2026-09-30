@@ -28,7 +28,7 @@ export function VideoTeaser({ lang }: { lang: Lang }) {
             <PlayIcon size={34} />
           </span>
           <div className="min-w-60 flex-1">
-            <p className="text-accent pulse text-xs font-bold tracking-[0.14em] uppercase">
+            <p className="text-accent pulse eyebrow">
               {t.videoEyebrow}
             </p>
             <h2 id="video-title" className="mt-2 text-2xl sm:text-3xl">{t.videoTitle}</h2>

@@ -12,7 +12,7 @@ export function SectionHead({
 }) {
   return (
     <div>
-      <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">{eyebrow}</p>
+      <p className="text-accent eyebrow">{eyebrow}</p>
       <h2 id={id} className="mt-2 text-2xl sm:text-3xl">
         {title}
       </h2>

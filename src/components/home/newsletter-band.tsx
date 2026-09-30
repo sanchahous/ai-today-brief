@@ -35,7 +35,7 @@ export function NewsletterBand({
         >
           {showHeader ? (
             <>
-              <p className="text-accent text-xs font-bold tracking-[0.14em] uppercase">{t.subEyebrow}</p>
+              <p className="text-accent eyebrow">{t.subEyebrow}</p>
               <h2 id="newsletter-title" className="mt-2 text-2xl sm:text-3xl">{t.subTitle}</h2>
               <p className="text-muted mt-2 max-w-xl text-sm leading-relaxed">{t.subBody}</p>
               <ul className="text-muted mt-4 mb-5 flex flex-wrap gap-x-4 gap-y-2 text-xs sm:text-sm">
