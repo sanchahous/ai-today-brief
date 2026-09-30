@@ -1,10 +1,12 @@
 import { CategoryGlyph, PlayIcon, type IconKey } from '@/components/icons';
+import { categoryArtColor } from '@/lib/category-meta';
 /**
  * 16:9 category hero banner (glyph watermark + decorative motif).
  * Ported from the prototype — pure CSS/SVG, no motion deps.
  */
 export function CategoryBanner({
   name,
+  slug,
   color,
   icon,
   variant = 'hero',
@@ -13,14 +15,15 @@ export function CategoryBanner({
   videoLabel,
 }: {
   name: string;
-  color: string;
+  slug: string | null;
+  color: string | null;
   icon: IconKey;
   variant?: 'card' | 'hero';
   motif?: number;
   videoBadge?: boolean;
   videoLabel?: string;
 }) {
-  const c = color || '#888888';
+  const c = categoryArtColor(slug, color);
   const m = (((motif % 3) + 3) % 3) as 0 | 1 | 2;
   const patternId = `banner-dots-${icon}-${m}`;
   const glyphSize = variant === 'hero' ? 88 : 60;
@@ -32,8 +35,8 @@ export function CategoryBanner({
       className={`relative w-full overflow-hidden ${variant === 'hero' ? 'rounded-card' : 'rounded-[10px]'}`}
       style={{
         aspectRatio: '16 / 9',
-        background: `linear-gradient(135deg, ${c}cc 0%, ${c}55 60%, ${c}22 100%)`,
-        border: `1px solid ${c}55`,
+        background: `linear-gradient(135deg, color-mix(in srgb, ${c} 12%, var(--art-stage)), var(--art-stage))`,
+        border: `1px solid color-mix(in srgb, ${c} 33%, var(--art-stage))`,
       }}
     >
       <svg
@@ -49,16 +52,16 @@ export function CategoryBanner({
         </defs>
         {m === 0 && (
           <>
-            <circle cx="320" cy="180" r="60" fill="none" stroke={`${c}66`} strokeWidth="1" />
-            <circle cx="320" cy="180" r="110" fill="none" stroke={`${c}55`} strokeWidth="1" />
-            <circle cx="320" cy="180" r="170" fill="none" stroke={`${c}33`} strokeWidth="1" />
+            <circle cx="320" cy="180" r="60" fill="none" stroke={c} strokeOpacity="0.4" strokeWidth="1" />
+            <circle cx="320" cy="180" r="110" fill="none" stroke={c} strokeOpacity="0.33" strokeWidth="1" />
+            <circle cx="320" cy="180" r="170" fill="none" stroke={c} strokeOpacity="0.2" strokeWidth="1" />
           </>
         )}
         {m === 1 && (
           <>
-            <line x1="0" y1="40" x2="320" y2="-20" stroke={`${c}55`} strokeWidth="1" />
-            <line x1="0" y1="90" x2="320" y2="30" stroke={`${c}44`} strokeWidth="1" />
-            <line x1="0" y1="140" x2="320" y2="80" stroke={`${c}33`} strokeWidth="1" />
+            <line x1="0" y1="40" x2="320" y2="-20" stroke={c} strokeOpacity="0.33" strokeWidth="1" />
+            <line x1="0" y1="90" x2="320" y2="30" stroke={c} strokeOpacity="0.27" strokeWidth="1" />
+            <line x1="0" y1="140" x2="320" y2="80" stroke={c} strokeOpacity="0.2" strokeWidth="1" />
           </>
         )}
         {m === 2 &&
@@ -69,7 +72,8 @@ export function CategoryBanner({
               y1={-10}
               x2={20 + i * 50}
               y2={190}
-              stroke={`${c}33`}
+              stroke={c}
+              strokeOpacity="0.2"
               strokeWidth="1"
             />
           ))}
@@ -78,18 +82,19 @@ export function CategoryBanner({
 
       <div
         aria-hidden
-        className={`absolute text-white/20 ${variant === 'hero' ? 'right-5 bottom-5' : 'right-3 bottom-3'}`}
+        style={{ color: c, opacity: 0.2 }}
+        className={`absolute ${variant === 'hero' ? 'right-5 bottom-5' : 'right-3 bottom-3'}`}
       >
         <CategoryGlyph icon={icon} size={glyphSize} strokeWidth={1.2} />
       </div>
 
       {variant === 'hero' && (
         <div className="absolute bottom-4 left-4 flex flex-wrap items-center gap-2">
-          <span className="font-serif text-lg font-semibold text-white drop-shadow-sm">{name}</span>
+          <span className="font-serif text-lg font-semibold" style={{ color: 'var(--art-text)' }}>{name}</span>
           {videoBadge && videoLabel && (
             <span
               className="pulse inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-2xs font-semibold"
-              style={{ background: `${c}ee`, color: '#141414' }}
+              style={{ background: c, color: 'var(--art-stage)' }}
             >
               <PlayIcon size={13} /> {videoLabel}
             </span>

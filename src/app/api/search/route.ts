@@ -25,6 +25,7 @@ export async function GET(request: Request) {
       href: it.href,
       title: it.title,
       date: it.date,
+      categorySlug: it.categorySlug,
       categoryName: it.categoryName,
       categoryColor: it.categoryColor,
       sourceName: it.sourceName,

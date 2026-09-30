@@ -1,3 +1,4 @@
+import { categoryColor } from '@/lib/category-meta';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
@@ -181,7 +182,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
 
   const videoId = youtubeVideoId(detail.youtubeUrl);
 
-  const color = detail.categoryColor ?? '#888888';
+  const color = categoryColor(detail.categorySlug, detail.categoryColor);
 
   return (
     <div className="mx-auto w-full max-w-[760px] flex-1 px-6 py-10">
@@ -196,7 +197,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
         <ItemEngagementTracker id={detail.id} slug={item} lang={lang} />
 
         <div className="mb-4">
-          <CategoryBadge name={detail.categoryName} color={detail.categoryColor} size="md" />
+          <CategoryBadge slug={detail.categorySlug} name={detail.categoryName} color={detail.categoryColor} size="md" />
         </div>
 
         <header className="mb-5">
@@ -250,7 +251,8 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
             ) : (
               <CategoryBanner
                 name={detail.categoryName ?? 'AI'}
-                color={color}
+                slug={detail.categorySlug}
+                color={detail.categoryColor}
                 icon={detail.categoryIcon}
                 motif={detail.rank}
                 videoBadge={detail.hasVideo}
@@ -338,7 +340,7 @@ export default async function ItemPage({ params }: { params: Promise<Params> }) 
                   href={story.href}
                   className="rounded-card border-border bg-surface hover:border-accent flex items-center gap-3 border p-3.5 no-underline transition"
                 >
-                  <CategoryBadge name={story.categoryName} color={story.categoryColor} />
+                  <CategoryBadge slug={story.categorySlug} name={story.categoryName} color={story.categoryColor} />
                   <span className="font-serif min-w-0 flex-1 text-base font-semibold text-[color:inherit]">
                     {story.title}
                   </span>

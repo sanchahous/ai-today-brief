@@ -4,7 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useCallback, useId, useState, type CSSProperties } from 'react';
 import type { HomeItem } from '@/lib/home';
-import { categoryMeta } from '@/lib/category-meta';
+import { categoryColor, categoryMeta } from '@/lib/category-meta';
 import { getStrings } from '@/lib/i18n';
 import { SITE_URL, type Lang } from '@/lib/site';
 import { CategoryBadge } from '@/components/home/category-badge';
@@ -51,7 +51,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
   });
   const bodyId = useId();
 
-  const color = item.categoryColor ?? '#888888';
+  const color = categoryColor(item.categorySlug, item.categoryColor);
   const meta = categoryMeta(item.categorySlug);
   const pageUrl = `${SITE_URL}${item.href}`;
 
@@ -113,8 +113,9 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
             </span>
           ) : (
             <CategoryThumb
+              slug={item.categorySlug}
               name={item.categoryName ?? 'AI'}
-              color={color}
+              color={item.categoryColor}
               icon={meta.icon}
               size={92}
             />
@@ -123,7 +124,7 @@ export function PostCard({ lang, item }: { lang: Lang; item: HomeItem }) {
 
         <div className="min-w-0">
           <div className="mb-2 flex flex-wrap items-center gap-2">
-            <CategoryBadge name={item.categoryName} color={item.categoryColor} />
+            <CategoryBadge slug={item.categorySlug} name={item.categoryName} color={item.categoryColor} />
             {item.sourceName && (
               <span className="text-faint min-w-0 break-words text-2xs">
                 {item.sourceName} · {formatDate(item.date, lang)}

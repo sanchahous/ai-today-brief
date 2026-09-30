@@ -72,7 +72,7 @@ function PreviewRow({
     >
       <span className="mb-1 flex flex-wrap items-center gap-2">
         {item.categoryName ? (
-          <CategoryBadge name={item.categoryName} color={item.categoryColor} />
+          <CategoryBadge slug={item.categorySlug} name={item.categoryName} color={item.categoryColor} />
         ) : null}
         <span className="text-faint text-2xs">
           {item.sourceName ?? '—'} · {formatShort(item.date, lang)}

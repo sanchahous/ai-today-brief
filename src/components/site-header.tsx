@@ -1,5 +1,5 @@
 import { getCategories } from '@/lib/categories';
-import { categoryMeta } from '@/lib/category-meta';
+import { categoryColor, categoryMeta } from '@/lib/category-meta';
 import type { Lang } from '@/lib/site';
 import { SiteHeaderChrome, type NavCategory } from '@/components/site-header-chrome';
 
@@ -8,7 +8,7 @@ async function getNavCategories(lang: Lang): Promise<NavCategory[]> {
   return rows.map((c) => ({
     slug: c.slug,
     name: c.name,
-    color: c.color,
+    color: categoryColor(c.slug, c.color),
     icon: categoryMeta(c.slug).icon,
   }));
 }

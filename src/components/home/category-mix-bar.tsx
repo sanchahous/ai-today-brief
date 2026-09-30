@@ -1,3 +1,4 @@
+import { categoryColor } from '@/lib/category-meta';
 import Link from 'next/link';
 import { getStrings } from '@/lib/i18n';
 import type { Lang } from '@/lib/site';
@@ -30,7 +31,7 @@ export function CategoryMixBar({ lang, categories }: { lang: Lang; categories: H
             className="min-w-[2px]"
             style={{
               width: `${(c.count / total) * 100}%`,
-              background: c.color ?? 'var(--color-accent)',
+              background: categoryColor(c.slug, c.color),
             }}
           />
         ))}
@@ -45,7 +46,7 @@ export function CategoryMixBar({ lang, categories }: { lang: Lang; categories: H
               <span
                 aria-hidden
                 className="inline-block h-2 w-2 rounded-full"
-                style={{ background: c.color ?? 'var(--color-accent)' }}
+                style={{ background: categoryColor(c.slug, c.color) }}
               />
               {c.name}
               <span className="text-faint font-semibold">{c.count}</span>

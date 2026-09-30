@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from '@playwright/test';
@@ -7,6 +8,21 @@ type Lang = 'en' | 'uk';
 type Theme = 'night' | 'day';
 type Route = { key: string; pathname: string };
 type SitemapEntry = { pathname: string; lastModified: string; position: number };
+
+function routesFromManifest(text: string): Route[] {
+  const manifest: unknown = JSON.parse(text);
+  if (!manifest || typeof manifest !== 'object' || !('screenshots' in manifest) || !Array.isArray(manifest.screenshots))
+    throw new Error('Route manifest must contain screenshots');
+  const routes = new Map<string, Route>();
+  for (const row of manifest.screenshots) {
+    if (!row || typeof row !== 'object' || row.lang !== 'en') continue;
+    if (typeof row.key !== 'string' || typeof row.url !== 'string') throw new Error('Invalid manifest route');
+    const url = new URL(row.url);
+    if (url.pathname !== '/en' && !url.pathname.startsWith('/en/')) throw new Error('Manifest route must use EN locale');
+    routes.set(row.key, { key: row.key, pathname: url.pathname.slice(3) + url.search });
+  }
+  return [...routes.values()];
+}
 
 const ROOT = process.cwd();
 const SIZES = [
@@ -150,7 +166,10 @@ async function main(): Promise<void> {
   const sitemapResponse = await fetch(new URL('/sitemap.xml', base));
   if (!sitemapResponse.ok) throw new Error(`Sitemap returned HTTP ${sitemapResponse.status}`);
   const sitemap = parseSitemap(await sitemapResponse.text());
-  const routes = routeMatrix(sitemap).filter((route) => !only || only.includes(route.key));
+  const routeManifest = process.argv.find((arg) => arg.startsWith('--route-manifest='))?.slice('--route-manifest='.length);
+  const manifestText = routeManifest ? await readFile(path.resolve(routeManifest), 'utf8') : undefined;
+  const selectedRoutes = manifestText ? routesFromManifest(manifestText) : routeMatrix(sitemap);
+  const routes = selectedRoutes.filter((route) => !only || only.includes(route.key));
   if (!routes.length) throw new Error('No matching routes');
 
   const consentState = JSON.parse(
@@ -173,6 +192,8 @@ async function main(): Promise<void> {
     capturedAt: timestamp,
     gitSha,
     sitemapUrl: new URL('/sitemap.xml', base).href,
+    routeManifest,
+    routeManifestSha256: manifestText ? createHash('sha256').update(manifestText).digest('hex') : undefined,
     screenshots: [] as {
       file: string;
       key: string;

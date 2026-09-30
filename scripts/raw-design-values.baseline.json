@@ -8,12 +8,6 @@
       "count": 1
     },
     {
-      "path": "src/app/[lang]/news/[category]/[item]/page.tsx",
-      "kind": "color",
-      "value": "#888888",
-      "count": 1
-    },
-    {
       "path": "src/app/globals.css",
       "kind": "color",
       "value": "#141414",
@@ -74,30 +68,6 @@
       "count": 1
     },
     {
-      "path": "src/components/category-banner.tsx",
-      "kind": "color",
-      "value": "#141414",
-      "count": 1
-    },
-    {
-      "path": "src/components/category-banner.tsx",
-      "kind": "color",
-      "value": "#888888",
-      "count": 1
-    },
-    {
-      "path": "src/components/category-header.tsx",
-      "kind": "color",
-      "value": "#888888",
-      "count": 1
-    },
-    {
-      "path": "src/components/category-thumb.tsx",
-      "kind": "color",
-      "value": "#888888",
-      "count": 1
-    },
-    {
       "path": "src/components/concept-header.tsx",
       "kind": "color",
       "value": "rgba(240,192,64,0.12)",
@@ -125,18 +95,6 @@
       "path": "src/components/cookie-consent.tsx",
       "kind": "z-index",
       "value": "z-[100]",
-      "count": 1
-    },
-    {
-      "path": "src/components/home/category-badge.tsx",
-      "kind": "color",
-      "value": "#888888",
-      "count": 1
-    },
-    {
-      "path": "src/components/home/category-grid.tsx",
-      "kind": "color",
-      "value": "#888888",
       "count": 1
     },
     {
@@ -200,12 +158,6 @@
       "count": 1
     },
     {
-      "path": "src/components/news/news-sidebar.tsx",
-      "kind": "color",
-      "value": "#888888",
-      "count": 1
-    },
-    {
       "path": "src/components/not-found-content.tsx",
       "kind": "color",
       "value": "rgba(240,192,64,0.18)",
@@ -218,22 +170,10 @@
       "count": 1
     },
     {
-      "path": "src/components/post-card.tsx",
-      "kind": "color",
-      "value": "#888888",
-      "count": 1
-    },
-    {
       "path": "src/components/search-preview-dropdown.tsx",
       "kind": "z-index",
       "value": "z-[80]",
       "count": 1
-    },
-    {
-      "path": "src/components/site-header-chrome.tsx",
-      "kind": "color",
-      "value": "#888",
-      "count": 2
     },
     {
       "path": "src/components/site-header-chrome.tsx",
@@ -245,12 +185,6 @@
       "path": "src/components/story-body.tsx",
       "kind": "color",
       "value": "#3f9e58",
-      "count": 1
-    },
-    {
-      "path": "src/components/story-body.tsx",
-      "kind": "color",
-      "value": "#888888",
       "count": 1
     },
     {

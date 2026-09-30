@@ -1,3 +1,4 @@
+import { categoryColor } from '@/lib/category-meta';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
@@ -97,7 +98,7 @@ export function TopOfWeek({
 
 function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
   const t = getStrings(lang).landing;
-  const color = item.categoryColor ?? 'var(--accent)';
+  const color = categoryColor(item.categorySlug, item.categoryColor);
   return (
     <Link
       href={item.href}
@@ -121,7 +122,7 @@ function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
         <span className="bg-accent text-on-accent rounded-pill px-2 py-0.5 text-2xs font-bold tracking-[0.08em] uppercase">
           {t.featured}
         </span>
-        <CategoryBadge name={item.categoryName} color={item.categoryColor} />
+        <CategoryBadge slug={item.categorySlug} name={item.categoryName} color={item.categoryColor} />
         {item.hasVideo && (
           <span
             className="cat-fg ml-auto inline-flex items-center gap-1 text-xs font-semibold"
@@ -155,7 +156,7 @@ function FeaturedCard({ lang, item }: { lang: Lang; item: HomeItem }) {
 
 function SecondaryRow({ lang, item, rank }: { lang: Lang; item: HomeItem; rank: number }) {
   const t = getStrings(lang).landing;
-  const color = item.categoryColor ?? 'var(--accent)';
+  const color = categoryColor(item.categorySlug, item.categoryColor);
   return (
     <Link
       href={item.href}
@@ -166,7 +167,7 @@ function SecondaryRow({ lang, item, rank }: { lang: Lang; item: HomeItem; rank: 
       </span>
       <div className="min-w-0">
         <div className="mb-1.5 flex flex-wrap items-center gap-2">
-          <CategoryBadge name={item.categoryName} color={item.categoryColor} />
+          <CategoryBadge slug={item.categorySlug} name={item.categoryName} color={item.categoryColor} />
           {item.hasVideo && (
             <span className="cat-fg inline-flex" style={{ '--cat-color': color } as CSSProperties}>
               <PlayIcon size={14} />

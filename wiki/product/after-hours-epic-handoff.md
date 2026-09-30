@@ -12,72 +12,31 @@ Last updated: 2026-09-30
 
 ## 1. Стан на 2026-09-30
 
-- **Фаза 0 й контракт AH-1.3 інтегровані; актуальний `origin/main` — `6b3b446`.**
-  На старті AH-1.3 робоче дерево було чистим, #376 — MERGED, #377 — OPEN.
-  [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378) змержено 2026-09-30.
-  AH-1.7 / #377 явно підписано власником із дозволом resolve і merge;
-  конфлікти wiki виправлено, merge очікує перевірок.
-  [QA-докази й галерея](after-hours-ah-1-3-validation.md) містять SEO compare,
-  перевірки першого кадру/no-JS/аналітики та межі legacy QA.
-  **Наступна задача — AH-1.4**, кольори й гліфи категорій; після неї AH-1.2.
-  AH-1.7 / #377 не дублювати й не позначати завершеною до merge.
-  (source: `git fetch origin`, `git status --short`, `gh pr view 376/377/378` 2026-09-30;
-  прямий підпис власника для #377 2026-09-30;
-  [епік](after-hours-redesign-epic.md) §5.2, §5.3; [AH-1.3 validation](after-hours-ah-1-3-validation.md))
-
-- **AH-0.3, AH-0.4 і AH-0.5 завершено:** PR #373, #374 і #375 змержено
-  2026-09-30; `origin/main` на момент фінальної звірки — `4409a81`.
-  Visual baseline: 232 PNG, manifest SHA-256
-  `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`;
-  SEO baseline: 58 URL; QA report: 812 сценаріїв. CI фінального дерева #375:
-  452 passed / 19 skipped у трьох браузерах.
-  (source: `gh pr view 373`…`375`, GitHub E2E run `36713604676`,
-  `artifacts/_local/before/manifest.json`, `artifacts/_local/ah-0.5-legacy-report.json`,
-  звірка 2026-09-30)
-- AH-0.6 має всі докази й погодження; формально завершено на main після merge PR #376. GSC link,
-  `newsletter_subscribe` key event, retention event/user data по 14 місяців,
-  канонічний тег і `page_view` у Tag Assistant підтверджено. Config consent:
-  analytics granted / ads denied. Власник прийняв лабораторний CWV baseline
-  home/news/article з недостатніми CrUX-даними й виключив daily/weekly лише
-  з AH-0.6. Нових Admin-скриншотів або цих самих PageSpeed-звітів не просити.
-  Tag Assistant показує звернення на всі три destinations; приймання ресурсами
-  акаунтів у кошику не доведено. Очищення — окреме рішення власника.
-  (source: погодження й скриншоти власника 2026-09-30;
-  [redesign baseline](../analytics/2026-09-29-redesign-baseline.md))
-- PR [#377](https://github.com/sanchahous/ai-today-brief/pull/377) реалізує AH-1.7;
-  власник явно дозволив resolve і merge 2026-09-30. Перевірки виконуються після
-  інтеграції `6b3b446`; baseline кольорів зменшено 44 → 42 після AH-1.3.
-  G0 уже підписано. (source: `gh pr view 377`; повідомлення власника;
-  `scripts/raw-design-values.baseline.json` 2026-09-30)
-
-**Оновлення 2026-09-30:** власник попросив відкласти перевірки AH-0.6 й
-продовжити епік. PR #373–#376 відкриті; не дублювати їхню роботу. AH-1.7
-реалізовано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), очікує merge; це інструмент
-без видимих змін. G0 не підписано, візуальні PR не просувати.
-(source: повідомлення власника, `gh pr list` 2026-09-30;
-[картка AH-1.7](after-hours-redesign-epic.md#ah-17-ratchet-звіт-сирих-значень))
-
-- Production `b3f1b3a`: епік (PR [#370](https://github.com/sanchahous/ai-today-brief/pull/370)) і
-  hotfix B8 — з `/news` прибрано захардкожений «Recent highlights».
-- PR [#371](https://github.com/sanchahous/ai-today-brief/pull/371) змерджено 2026-09-29 (`main` @
-  `83b4421`): ADR D1–D13, рішення D7 «знак скрізь» і ця сторінка вже в `main`.
-- **Виконано:** AH-0.1 (PR [#372](https://github.com/sanchahous/ai-today-brief/pull/372), звірка G01–G20: 6 done, 10 partial, 2 open, 1 policy, 1 waived —
-  [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)),
-  AH-0.2 (ADR), AH-0.3 (PR #373), AH-0.4 (PR #374), AH-0.5 (PR #375),
-  AH-0.6 (PR #376), AH-1.1 (токени 2.0, PR #369), AH-2.1 (`/ds-catalog`, PR #369).
-- **Частково (◐):** AH-1.2, AH-1.3 (#378 на review), AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
-  Залишок описано в рядку «Стан після #369» кожної картки.
+- **G0 підписано власником; фаза 0 інтегрована:** #373–#376 змержено.
+  AH-1.1 / AH-2.1 виконано через #369; AH-1.3 інтегровано через #378 (`6b3b446`).
+  GA4, Tag Assistant і прийняті PageSpeed-докази не просити повторно.
+  (source: [baseline](../analytics/2026-09-29-redesign-baseline.md);
+  [епік](after-hours-redesign-epic.md); `gh pr view 373/374/375/376/378` 2026-09-30)
+- **AH-1.7 / #377 змержено в `e47010500d75f809182305692d7916f169611157`.**
+  Власник явно погодив resolve/merge; wiki-конфлікти збережено з обома історіями.
+  E2E run [36732521337](https://github.com/sanchahous/ai-today-brief/actions/runs/36732521337)
+  на head `7240652` перевірено: completed / success.
+  (source: `gh pr view 377`; `gh run view 36732521337` 2026-09-30)
+- **AH-1.4 реалізовано в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382); очікує підпису й merge.**
+  Дев'ять tokenKey, тематичні `--cat-*`, незмінні `--art-*`, усі споживачі,
+  search slug, дев'ять GLYPHS. Токени 2.1.0; 54 пари ≥5.2238:1, ratchet 30
+  кольорових входжень / 4 довільні z-index / 0 raw shadows / 0 <12 px.
+  (source: [AH-1.4 validation](after-hours-ah-1-4-validation.md);
+  `src/lib/category-meta.ts`; `scripts/raw-design-values.baseline.json`)
+- **Наступна задача після інтеграції AH-1.4 — AH-1.2.** Решта foundations
+  й гейт G1 ще відкриті. Візуальний підпис #377 не поширюється на AH-1.4;
+  потрібен окремий підпис власника. Legacy QA та no-JS Suspense-борг відкриті.
+  (source: повідомлення власника 2026-09-30; [AH-1.3 validation](after-hours-ah-1-3-validation.md#межі-qa); [епік](after-hours-redesign-epic.md))
+- **Частково (◐):** AH-1.2, AH-1.4 (review), AH-1.5, AH-1.6, AH-2.3–2.6.
+  AH-5.16 не виконується за D6. D1–D13 ухвалені; повторно не питати.
+  (source: [епік](after-hours-redesign-epic.md) §5.3)
 - **AH-4.1 виконано** (lib, URL, чіп активного фільтра; [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380), 2026-09-30) — не дублювати; AH-4.3 отримує готові `buildTopicFacet` / `applyNewsFilters` для пікера.
-- **Не виконується:** AH-5.16 (рішення D6).
-- **Рішення D1–D13 ухвалені.** Власника про них не перепитувати. Змінити рішення можна лише за
-  новою відповіддю власника: спершу картки, потім запис у [log](../log.md).
-- **G0 підписано власником 2026-09-30:** «Погоджую G0 та merge PR #373–#376».
-  Підпис і дозвіл merge отримано; фактичну інтеграцію перевіряти за станом PR.
-  Вимога візуального review кожного видимого PR зберігається.
-  (source: пряме повідомлення власника 2026-09-30)
-- **AH-1.3 інтегровано через #378; наступна — AH-1.4.**
-  AH-1.7 уже реалізовано у відкритому PR #377; цю роботу не дублювати.
-  (source: [AH-1.3 validation](after-hours-ah-1-3-validation.md); [епік](after-hours-redesign-epic.md))
+  (source: [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380); `git fetch origin main` 2026-09-30)
 
 ## Пакет для підпису G0
 
@@ -93,8 +52,8 @@ Last updated: 2026-09-30
 Джерела: `gh pr view 373`…`377` 2026-09-30, PR #371/#372,
 `artifacts/_local/before/manifest.json`, `artifacts/_local/ah-0.5-legacy-report.json`,
 [baseline](../analytics/2026-09-29-redesign-baseline.md), повідомлення власника.
-PR #373–#375 змержено після зелених перевірок; PR #376 інтегрує цей пакет.
-PR #377 відкритий. Статус AH-0.6 «завершено» застосовується після merge #376.
+PR #373–#376 змержено; пакет інтегрований. (source: `gh pr view 373/374/375/376` 2026-09-30)
+PR #377 змержено; AH-0.6 завершено після merge #376. (source: `gh pr view 376/377` 2026-09-30)
 AH-1.7 / #377 належить фазі 1 і не є умовою G0.
 
 **Що підписується:** baseline visual/SEO/продукту та готовність QA-матриці
@@ -181,8 +140,8 @@ QA-матриця працює в режимі report.
 
 ## 4. Після G0
 
-- AH-1.3 (тема, D2), AH-1.4 (кольори категорій) і AH-1.7 (ratchet) стартують одразу. AH-1.2
-  доповнюється після AH-1.4.
+- AH-1.3 і AH-1.7 уже інтегровані. AH-1.4 очікує review; AH-1.2 доповнюється
+  після її merge. (source: [стан §1](#1-стан-на-2026-09-30))
 - AH-1.5 (`next/font/local`, Georgia для українських заголовків) і AH-1.6 (брейкпоінти 960 px)
   потребують візуального підпису власника.
 - AH-4.1 (Topics lib) ✅ виконано в [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380) паралельно з AH-1.4; пікер фасету — AH-4.3.
@@ -273,8 +232,9 @@ QA-матриця працює в режимі report.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
 2. Підтягни origin/main і перевір фактичний merge PR #373–#376. G0 підписано
    власником 2026-09-30; фаза 0 інтегрована на 69bcd1c, AH-1.3 змержено в 6b3b446.
-   Перевір фактичний merge #377 (власник уже підписав і дозволив його) і продовжуй AH-1.4 за карткою
-   wiki/product/after-hours-redesign-epic.md. AH-1.7 уже у PR #377, не дублюй.
+   AH-1.7 змержено в e470105; E2E run 36732521337 успішний. Перевір merge
+   AH-1.4 і її окремий підпис; після інтеграції продовжуй AH-1.2 за карткою
+   wiki/product/after-hours-redesign-epic.md. Роботу AH-1.4 не дублюй.
    Для нової задачі — окрема гілка feat/ah-<id>-<slug> від
    origin/main, Definition of Done з §0.1, npm run pr:check перед push, PR у main.
 3. Після PR онови §5.3 епіку, wiki/now.md, wiki/log.md і рядок «Наступна задача» в handoff.

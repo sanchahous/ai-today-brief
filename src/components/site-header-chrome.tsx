@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { categoryColor } from '@/lib/category-meta';
 import { alternateLangHref } from '@/lib/preferred-lang';
 import { SITE_NAME, type Lang } from '@/lib/site';
 import { getStrings } from '@/lib/i18n';
@@ -156,7 +157,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
                         >
                           <span
                             className="cat-fg inline-flex shrink-0"
-                            style={{ '--cat-color': c.color ?? '#888' } as React.CSSProperties}
+                            style={{ '--cat-color': categoryColor(c.slug, c.color) } as React.CSSProperties}
                           >
                             <CategoryGlyph icon={c.icon} size={16} strokeWidth={1.7} />
                           </span>
@@ -326,7 +327,7 @@ export function SiteHeaderChrome({ lang, categories }: { lang: Lang; categories:
                     >
                       <span
                         className="cat-fg inline-flex shrink-0"
-                        style={{ '--cat-color': c.color ?? '#888' } as CSSProperties}
+                        style={{ '--cat-color': categoryColor(c.slug, c.color) } as CSSProperties}
                       >
                         <CategoryGlyph icon={c.icon} size={16} strokeWidth={1.7} />
                       </span>
