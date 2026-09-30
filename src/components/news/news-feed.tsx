@@ -27,13 +27,14 @@ import {
   type SortMode,
 } from '@/components/news/news-sidebar';
 import {
-  matchesQuery,
+  applyNewsFilters,
+  countCategories,
   normalizePage,
   parseNewsUrlParams,
   serializeNewsUrlParams,
   sortItems,
-  withinPreset,
 } from '@/lib/news-filters';
+import { resolveTopicNames } from '@/lib/topic-normalize';
 import {
   ActionButton,
   EmptyState,
@@ -68,6 +69,7 @@ export function NewsFeed({
   const [filters, setFilters] = useState<NewsFilters>(() => ({
     q: initialQuery,
     categories: initialCategory ? [initialCategory] : [],
+    topics: [],
     date: 'all',
     sort: initialQuery ? 'relevance' : 'newest',
   }));
@@ -88,6 +90,7 @@ export function NewsFeed({
           parsed.filters.categories.length > 0
             ? parsed.filters.categories
             : prev.categories,
+        topics: parsed.filters.topics,
         date: parsed.filters.date,
         sort: parsed.filters.sort,
       }));
@@ -120,26 +123,18 @@ export function NewsFeed({
   );
 
   const filtered = useMemo(() => {
-    const rows = items.filter(
-      (p) =>
-        (filters.categories.length === 0 ||
-          (p.categorySlug && filters.categories.includes(p.categorySlug))) &&
-        withinPreset(p.date, filters.date) &&
-        (serverSearchActive || matchesQuery(p, filters.q)),
-    );
+    const rows = applyNewsFilters(items, filters, { serverSearch: serverSearchActive });
     return sortItems(rows, filters.sort, filters.q);
   }, [items, filters, serverSearchActive]);
 
-  const facets = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const p of items) {
-      if (!p.categorySlug) continue;
-      if (!withinPreset(p.date, filters.date)) continue;
-      if (!serverSearchActive && !matchesQuery(p, filters.q)) continue;
-      m.set(p.categorySlug, (m.get(p.categorySlug) ?? 0) + 1);
-    }
-    return m;
-  }, [items, filters.date, filters.q, serverSearchActive]);
+  const facets = useMemo(
+    () => countCategories(items, filters, { serverSearch: serverSearchActive }),
+    [items, filters, serverSearchActive],
+  );
+
+  const topicNames = useMemo(() => resolveTopicNames(items.map((p) => p.tools)), [items]);
+  // A stale link can carry topics no story has: they filter nothing, so they get no chip either.
+  const activeTopics = filters.topics.filter((slug) => topicNames.has(slug));
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = normalizePage(page, pageCount);
@@ -148,6 +143,7 @@ export function NewsFeed({
   const hasActive =
     filters.q.trim().length > 0 ||
     filters.categories.length > 0 ||
+    activeTopics.length > 0 ||
     filters.date !== 'all';
 
   useEffect(() => {
@@ -180,6 +176,7 @@ export function NewsFeed({
     const nextFilters: NewsFilters = {
       q: '',
       categories: [],
+      topics: [],
       date: 'all',
       sort: 'newest',
     };
@@ -190,6 +187,16 @@ export function NewsFeed({
     } else {
       syncUrl(nextFilters, 1);
     }
+  };
+
+  const removeTopic = (slug: string) => {
+    const nextFilters: NewsFilters = {
+      ...filters,
+      topics: filters.topics.filter((s) => s !== slug),
+    };
+    setFilters(nextFilters);
+    setPage(1);
+    syncUrl(nextFilters, 1);
   };
 
   const setDateFilter = (d: DatePreset) => {
@@ -249,6 +256,7 @@ export function NewsFeed({
 
   const activeCount =
     filters.categories.length +
+    activeTopics.length +
     (filters.date !== 'all' ? 1 : 0) +
     (filters.q.trim() ? 1 : 0);
 
@@ -332,6 +340,18 @@ export function NewsFeed({
                   active
                   onRemove={() => toggleCategory(slug)}
                   removeAriaLabel={`Remove category ${c?.name ?? slug}`}
+                />
+              );
+            })}
+            {activeTopics.map((slug) => {
+              const name = topicNames.get(slug) ?? slug;
+              return (
+                <FilterChip
+                  key={slug}
+                  label={name}
+                  active
+                  onRemove={() => removeTopic(slug)}
+                  removeAriaLabel={t.removeTopic.replace('{name}', name)}
                 />
               );
             })}

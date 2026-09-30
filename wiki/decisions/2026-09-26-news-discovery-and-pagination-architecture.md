@@ -1,8 +1,8 @@
 # ADR 2026-09-26 — архітектура News discovery, сортування та URL/пагінації
 
 Summary: архітектурне рішення щодо усунення розривів G01–G08 в News discovery: фіксація taxonomy, чесна семантика сортування (Newest, Oldest, Relevance лише при query; відмова від фіктивного Most discussed), двостороння синхронізація URL-state зі збереженням ISR-кешу /news, доступна пагінація та контракт мобільного drawer.
-Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `src/app/[lang]/news/page.tsx`; `src/components/news/news-feed.tsx`; `src/components/news/news-sidebar.tsx`; `src/lib/news-filters.ts`; `src/lib/news.ts`; `.cursor/rules/00-core.mdc`.
-Last updated: 2026-09-26
+Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `src/app/[lang]/news/page.tsx`; `src/components/news/news-feed.tsx`; `src/components/news/news-sidebar.tsx`; `src/lib/news-filters.ts`; `src/lib/news.ts`; `src/lib/topic-normalize.ts`; `src/lib/tools-mentioned.ts`; [ADR розкатки D8](2026-09-29-after-hours-rollout-and-foundations.md); live SQL-перевірка prod-БД 2026-09-30; `.cursor/rules/00-core.mdc`.
+Last updated: 2026-09-30
 
 **Статус:** прийнято. Реалізується в рамках Milestone 0–3 дизайн-системи (source: wiki/audits/2026-09-26-design-system-gap-plan.md).
 
@@ -37,7 +37,19 @@ Last updated: 2026-09-26
 | **Category** | Редакційна рубрика (Models, Agents, Dev, etc.) | Multi-select OR | Завжди видима у фільтрах, лічильник враховує активний період і запит |
 | **Period** | Часове вікно (today, week, month, all) | Single-select | За замовчуванням `all` (або `today` для daily фокусу) |
 | **Query** | Повнотекстовий пошук за заголовком, summary та why | String | Доступний з клавіатури, скидається окремою кнопкою-чіпом |
-| **Topic / Tool** | Нормалізовані сутності зі `tools_mentioned` | Multi-select OR | Інтегруються як пошукові теги |
+| **Topic / Tool** | Нормалізовані сутності зі `tools_mentioned` (назва фасету «Topics» / «Теми») | Multi-select OR | Показується за правилом D8, лічильники враховують інші фасети — див. §2.3 |
+
+### 2.3 Topics (AH-4.1, рішення D8)
+
+Джерело значень — `brief_items.tools_mentioned` (вільний текст пайплайну), нормалізований у `src/lib/topic-normalize.ts`.
+
+- **Ідентичність.** `slug` = малі літери й цифри назви без пробілів і розділових знаків (`claudecode`). Тому «Claude Code», «claude-code» і «ClaudeCode» — одне значення; slug без змін переживає URL. `+` і `#` розгортаються (`c++` ≠ `c#`).
+- **Аліаси.** Мапа `ALIAS_GROUPS` містить лише безсумнівні еквіваленти: MCP ↔ Model Context Protocol, Codex ↔ OpenAI Codex, Opus 4.8 ↔ Claude Opus 4.8, Antigravity ↔ Google Antigravity, PostgreSQL ↔ Postgres, VS Code ↔ Visual Studio Code, AWS ↔ Amazon Web Services. Неоднозначні пари свідомо **не** зливаються (Copilot / GitHub Copilot, Hermes / Hermes Agent, Fable / Claude Fable 5, Claude / Claude Code, версії моделей): помилково злити два продукти гірше, ніж показати один двічі. Нову групу додавати лише за доказом, що це одна сутність.
+- **Дані.** Live-перевірка prod-БД 2026-09-30: 905 опублікованих айтемів, 821 має `tools_mentioned`, 2866 згадок, 1256 унікальних ключів після нормалізації (1286 сирих написань). Довгий хвіст: більшість значень трапляється один раз; найчастіші — Claude Code (222), Cursor (108), Claude (93), Codex (86), Model Context Protocol (58). Саме тому діє поріг D8.
+- **Логіка.** OR усередині фасету, AND між фасетами (`applyNewsFilters`). Лічильник кожного фасету рахується за всіма іншими активними фільтрами (`omit`), тож альтернативи всередині фасету лишаються видимими.
+- **Показ (D8).** Тема з'являється, якщо має ≥ 2 матеріали в поточному зрізі; обрана тема лишається видимою завжди, щоб її можна було зняти; список обмежено 12 значеннями (обрані не відсікаються). Немає даних — порожній список, фасет не рендериться, жодних вигаданих чипів. (assumption: «поточний зріз» = завантажені матеріали після решти фільтрів; якщо AH-4.3 обере інше тлумачення — змінити `buildTopicFacet` і цей пункт.)
+- **URL.** `topics=claudecode,cursor` (кома або повторюваний параметр, до 10 значень); значення канонізуються при читанні. Тема, якої не має жоден матеріал (застаріле посилання), не впливає ні на результат, ні на чіпи.
+- **Стан.** Lib, URL і чіп у смужці активних фільтрів працюють; пікер фасету в sidebar створює AH-4.3. Ключ `news.filterTopics` («Topics» / «Теми») уже в i18n.
 
 Всі вибрані фільтри відображаються у смужці активних чіпів над стрічкою новин. Кожен чіп можна видалити окремо, а також доступна кнопка «Скинути все» (Reset all).
 

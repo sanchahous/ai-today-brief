@@ -1,4 +1,5 @@
 import type { HomeItem } from '@/lib/home';
+import { parseTopicParam, resolveTopicNames } from '@/lib/topic-normalize';
 
 export type SortMode = 'newest' | 'oldest' | 'relevance';
 export type DatePreset = 'today' | 'week' | 'month' | 'all';
@@ -6,8 +7,32 @@ export type DatePreset = 'today' | 'week' | 'month' | 'all';
 export interface NewsFilters {
   q: string;
   categories: string[];
+  /** Canonical topic slugs (see `topic-normalize`); OR within, AND with every other facet. */
+  topics: string[];
   date: DatePreset;
   sort: SortMode;
+}
+
+/** D8: a topic is offered only when it has at least this many stories in the current slice. */
+export const MIN_TOPIC_STORIES = 2;
+/** The facet is a shortlist, not the whole long tail. Selected topics are never cut. */
+export const MAX_TOPIC_OPTIONS = 12;
+
+export type NewsFacet = 'categories' | 'topics';
+
+export interface FilterScope {
+  /** Server-side search already narrowed `items`, so the text query is not re-applied. */
+  serverSearch?: boolean;
+  /** Leave one facet out — used to count that facet's alternatives. */
+  omit?: NewsFacet;
+}
+
+export interface TopicFacetOption {
+  slug: string;
+  name: string;
+  /** Stories matching every OTHER active filter. */
+  count: number;
+  selected: boolean;
 }
 
 export function daysAgo(n: number): number {
@@ -26,6 +51,90 @@ export function matchesQuery(item: HomeItem, q: string): boolean {
   if (!needle) return true;
   const hay = `${item.title} ${item.summary} ${item.why} ${item.categoryName ?? ''} ${item.sourceName ?? ''}`.toLowerCase();
   return hay.includes(needle);
+}
+
+export function matchesCategories(item: HomeItem, categories: readonly string[]): boolean {
+  if (categories.length === 0) return true;
+  return item.categorySlug !== null && categories.includes(item.categorySlug);
+}
+
+/** OR within the facet: one shared topic is enough. */
+export function matchesTopics(item: HomeItem, topics: readonly string[]): boolean {
+  if (topics.length === 0) return true;
+  return topics.some((slug) => item.topics.includes(slug));
+}
+
+export function knownTopicSlugs(items: readonly HomeItem[]): Set<string> {
+  const known = new Set<string>();
+  for (const item of items) for (const slug of item.topics) known.add(slug);
+  return known;
+}
+
+/**
+ * Every active filter applied: OR inside a facet, AND between facets. A topic
+ * that no story carries (stale link, typo) is ignored rather than emptying the
+ * feed.
+ */
+export function applyNewsFilters(
+  items: readonly HomeItem[],
+  filters: NewsFilters,
+  scope: FilterScope = {},
+): HomeItem[] {
+  const known = filters.topics.length > 0 ? knownTopicSlugs(items) : null;
+  const topics = known ? filters.topics.filter((slug) => known.has(slug)) : [];
+
+  return items.filter(
+    (item) =>
+      (scope.omit === 'categories' || matchesCategories(item, filters.categories)) &&
+      (scope.omit === 'topics' || matchesTopics(item, topics)) &&
+      withinPreset(item.date, filters.date) &&
+      (scope.serverSearch === true || matchesQuery(item, filters.q)),
+  );
+}
+
+/** Story count per category with every filter except the category facet itself applied. */
+export function countCategories(
+  items: readonly HomeItem[],
+  filters: NewsFilters,
+  scope: FilterScope = {},
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const item of applyNewsFilters(items, filters, { ...scope, omit: 'categories' })) {
+    if (!item.categorySlug) continue;
+    counts.set(item.categorySlug, (counts.get(item.categorySlug) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/**
+ * Options for the Topics facet. Empty when the data does not support one:
+ * nothing is invented, and a topic below `MIN_TOPIC_STORIES` in the current
+ * slice stays hidden unless the reader already selected it (so it can always
+ * be removed).
+ */
+export function buildTopicFacet(
+  items: readonly HomeItem[],
+  filters: NewsFilters,
+  scope: FilterScope = {},
+): TopicFacetOption[] {
+  const known = knownTopicSlugs(items);
+  const selected = new Set(filters.topics.filter((slug) => known.has(slug)));
+  const counts = new Map<string, number>();
+  for (const item of applyNewsFilters(items, filters, { ...scope, omit: 'topics' })) {
+    for (const slug of new Set(item.topics)) counts.set(slug, (counts.get(slug) ?? 0) + 1);
+  }
+
+  const names = resolveTopicNames(items.map((item) => item.tools));
+  const options: TopicFacetOption[] = [];
+  for (const slug of new Set([...counts.keys(), ...selected])) {
+    const count = counts.get(slug) ?? 0;
+    const isSelected = selected.has(slug);
+    if (count < MIN_TOPIC_STORIES && !isSelected) continue;
+    options.push({ slug, name: names.get(slug) ?? slug, count, selected: isSelected });
+  }
+
+  options.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'en'));
+  return options.filter((option, index) => index < MAX_TOPIC_OPTIONS || option.selected);
 }
 
 export function calculateRelevanceScore(item: HomeItem, query: string): number {
@@ -115,6 +224,8 @@ export function parseNewsUrlParams(
     }
   }
 
+  const topics = parseTopicParam(params.getAll('topics'));
+
   const rawDate = params.get('date');
   const date: DatePreset =
     rawDate === 'today' || rawDate === 'week' || rawDate === 'month' || rawDate === 'all'
@@ -136,6 +247,7 @@ export function parseNewsUrlParams(
     filters: {
       q,
       categories,
+      topics,
       date,
       sort,
     },
@@ -153,6 +265,10 @@ export function serializeNewsUrlParams(filters: NewsFilters, page: number): stri
 
   if (filters.categories.length > 0) {
     params.set('categories', filters.categories.join(','));
+  }
+
+  if (filters.topics.length > 0) {
+    params.set('topics', filters.topics.join(','));
   }
 
   if (filters.date !== 'all') {

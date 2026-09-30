@@ -24,6 +24,7 @@ const LOGIC_INCLUDE = [
   'src/lib/settings-builder.ts',
   'src/lib/settings-builder-rules.ts',
   'src/lib/tools-mentioned.ts',
+  'src/lib/topic-normalize.ts',
   'src/lib/public-content-tag.ts',
   'src/lib/public-content-cache.ts',
   'src/lib/public-content-build-memo.ts',

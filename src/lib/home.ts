@@ -4,6 +4,8 @@ import { categoryMeta, TOP_CATEGORY_SLUGS } from '@/lib/category-meta';
 import { getCategories, getPublishedCategoryCounts } from '@/lib/categories';
 import { getConceptNameIndex } from '@/lib/concepts';
 import { cachePublicRead } from '@/lib/public-content-cache';
+import { extractToolNames } from '@/lib/tools-mentioned';
+import { topicSlugs } from '@/lib/topic-normalize';
 import {
   blendTrend,
   entityKeyForTool,
@@ -17,21 +19,6 @@ import type { IconKey } from '@/components/icons';
 function pick(lang: Lang, en: string | null, uk: string | null): string {
   const primary = lang === 'uk' ? uk : en;
   return (primary ?? en ?? uk ?? '').trim();
-}
-
-/** `tools_mentioned` is untyped JSONB — extract clean tool names defensively. */
-function toToolNames(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const names: string[] = [];
-  for (const entry of value) {
-    if (entry && typeof entry === 'object' && 'name' in entry) {
-      const name = (entry as { name: unknown }).name;
-      if (typeof name === 'string' && name.trim()) names.push(name.trim());
-    } else if (typeof entry === 'string' && entry.trim()) {
-      names.push(entry.trim());
-    }
-  }
-  return names;
 }
 
 function wordCount(text: string): number {
@@ -52,6 +39,8 @@ export interface HomeItem {
   date: string;
   hasVideo: boolean;
   tools: string[];
+  /** Canonical topic slugs derived from `tools` (see `topic-normalize`) — the news Topics facet. */
+  topics: string[];
   sourceName: string | null;
   readMinutes: number;
   /** Source article og:image — card thumbnail; null → category placeholder. */
@@ -148,6 +137,7 @@ async function loadHomeData(lang: Lang, briefWindow = 8): Promise<HomeData> {
       const summary = pick(lang, it.summary_en, it.summary_uk);
       const why = pick(lang, it.why_matters_en, it.why_matters_uk);
       const cat = it.category_slug ? catBySlug.get(it.category_slug) : undefined;
+      const tools = extractToolNames(it.tools_mentioned);
       items.push({
         id: it.id,
         rank: it.rank,
@@ -160,7 +150,8 @@ async function loadHomeData(lang: Lang, briefWindow = 8): Promise<HomeData> {
         why: why || summary,
         date: brief.date,
         hasVideo: Boolean(it.youtube_url),
-        tools: toToolNames(it.tools_mentioned),
+        tools,
+        topics: topicSlugs(tools),
         sourceName: null,
         readMinutes: Math.max(2, Math.round((wordCount(summary) + wordCount(why)) / 45)),
         imageUrl: (it.card_image_url ?? it.image_url)?.startsWith('http')

@@ -35,6 +35,8 @@ Last updated: 2026-09-30
 - **Частково (◐):** AH-1.2, AH-1.4 (review), AH-1.5, AH-1.6, AH-2.3–2.6.
   AH-5.16 не виконується за D6. D1–D13 ухвалені; повторно не питати.
   (source: [епік](after-hours-redesign-epic.md) §5.3)
+- **AH-4.1 виконано** (lib, URL, чіп активного фільтра; [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380), 2026-09-30) — не дублювати; AH-4.3 отримує готові `buildTopicFacet` / `applyNewsFilters` для пікера.
+  (source: [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380); `git fetch origin main` 2026-09-30)
 
 ## Пакет для підпису G0
 
@@ -142,7 +144,7 @@ QA-матриця працює в режимі report.
   після її merge. (source: [стан §1](#1-стан-на-2026-09-30))
 - AH-1.5 (`next/font/local`, Georgia для українських заголовків) і AH-1.6 (брейкпоінти 960 px)
   потребують візуального підпису власника.
-- AH-4.1 (Topics lib) іде паралельно з фазами 1–3.
+- AH-4.1 (Topics lib) ✅ виконано в [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380) паралельно з AH-1.4; пікер фасету — AH-4.3.
 - Далі — порядок і паралельні доріжки з епіку (§5.2–§5.4).
 - AH-3.1, AH-3.7 і AH-3.8 (новий знак) мерджаться в один день, щоб старий і новий знаки не жили
   одночасно (ADR §4).
