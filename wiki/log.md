@@ -5518,3 +5518,13 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 ## 2026-09-30 — AH-1.5: draft PR #385
 
 Створено [PR #385](https://github.com/sanchahous/ai-today-brief/pull/385) з гілки `feat/ah-1.5-typography`; merge не виконувався. Pre-push — 339 Chromium passed / 5 skipped, EXIT=0, після revalidate власного production server :3000. Перший Vercel deployment успішний; Preview URL додано у validation. Номер PR внесено окремим docs-комітом у картку/§5.3, now, handoff, index і validation. Підпис UK, прийняття локального CLS та рішення щодо legacy QA запитані у власника й ще очікуються. (source: PR #385; `artifacts/_local/ah-1.5-push.log`; PR checks / Vercel comment; повідомлення цієї сесії 2026-09-30)
+
+## 2026-09-30 — AH-1.5: tracking D4 поверх legacy utilities
+
+Виявлено `tracking-tight` на digests H1, який перекривав base layer tracking. Мовне unlayered правило UK h1/h2/h3 забезпечує −0.012em / −0.008em; регресійний `/uk/digests` E2E додано. Typography suite тепер 81 passed у Chromium/Firefox/WebKit. У validation прямо зазначено, що full-page таблиця попередньої ревізії діагностична; now/index оновлено. Підпис власника ще очікується. (source: `src/app/globals.css`; `src/app/[lang]/digests/page.tsx`; `e2e/typography.spec.ts`; `artifacts/_local/ah-1.5-typography-final.log`)
+
+Фінальна після tracking-правила матриця: 580 сценаріїв, 0 small text / overflow, ті самі 20 H1-порушень лише на EN/UK 404; скрипт повертає EXIT=1 через відкритий H1 AC, цей результат не приховується. Галерею повторно знято; cold-font CLS максимум 0.00003085415059156378 у 8 сценаріях. (source: `artifacts/_local/ah-1.5-matrix-final-tracking.log`; `ah-1.5-type-matrix-after.json`; `ah-1.5-font-cls.json`; after manifest)
+
+## 2026-10-01 — AH-1.5: фінальний локальний gate
+
+Перед push фінального D4 tracking guard `npm run pr:check` пройшов з EXIT=0. Evidence receipt оновлено за фінальними 81 typography E2E, 580 font-floor сценаріями, CLS і після-manifest; перші два push мали по 339 passed / 5 skipped. Source dates 2026-09-30 у попередніх записах — UTC дати знімків/логів; поточне редагування wiki — 2026-10-01 Europe/Kyiv. Підпис і рішення власника не отримані. (source: `artifacts/_local/ah-1.5-pr-check-final.log`; `ah-1.5-typography-final.log`; `ah-1.5-push.log`; `ah-1.5-push-docs.log`; поточна сесія)

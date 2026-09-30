@@ -6,7 +6,7 @@
     },
     {
       "file": "artifacts/_local/ah-1-5-after/manifest.json",
-      "sha256": "098bf0215d4880208071a34502cdffe4de882ec0f183cd49731f05942bae4495"
+      "sha256": "051a72d9d8ec3de0e491a15bb38652237ed9383091ad8f3d63384cb83acd3f35"
     },
     {
       "file": "artifacts/_local/ah-1.5-type-matrix-before.json",
@@ -20,7 +20,7 @@
     },
     {
       "file": "artifacts/_local/ah-1.5-type-matrix-after.json",
-      "sha256": "ca9084e88117dae3d465033e4dff8a8d6781c6c2e55e09471f15e5fdbfe01453",
+      "sha256": "11041229931f0caf8f36aec2a668f4849db0849df1e0693696f0641d38741846",
       "summary": {
         "scenarios": 580,
         "smallText": 0,
@@ -72,19 +72,27 @@
     },
     {
       "file": "artifacts/_local/ah-1.5-font-cls.json",
-      "sha256": "27ff4dbf5d06d1b1d74d974a48b526f147a68a07d69c559f71f3e3227b152c68",
+      "sha256": "0707d9869dbdf7cd146da793b54d19bf2e3b732661011293708dbb0ac9d5dfd7",
       "summary": {
         "scenarios": 8,
-        "maxCls": 0.00002830139076431756
+        "maxCls": 0.00003085415059156378
       }
     },
     {
       "file": "artifacts/_local/ah-1.5-typography-final.log",
-      "sha256": "a13fb511f89aee4a609b4eb8a4c8a8fc5a5e69d6df9d82e3b526992a22824c3d"
+      "sha256": "e44585a5e4084eea4a4fd07203ebe4b9c669bdee02d54d532341b813231342dd"
     },
     {
       "file": "artifacts/_local/ah-1.5-pr-check.log",
       "sha256": "4a75a36ade8be0e19b14197623d01d39aee9d7e8fa120f364d9b43c15dbab8a7"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-pr-check-docs.log",
+      "sha256": "8f2042fc607484bf014740c48884f15ae842d8ca9af5691b018b2783ab81dac9"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-pr-check-final.log",
+      "sha256": "0685b42a7fd6048f70c2747f5350934cb7ec59976d6a202c7c7b6de71ec973ee"
     },
     {
       "file": "artifacts/_local/ah-1.5-push.log",

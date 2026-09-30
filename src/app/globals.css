@@ -373,6 +373,15 @@ html[lang='uk'],
   --tracking-heading: -0.008em;
 }
 
+/* D4 tracking also wins over legacy heading utilities such as tracking-tight. */
+:is(html[lang='uk'], [lang='uk']) h1 {
+  letter-spacing: var(--tracking-display);
+}
+
+:is(html[lang='uk'], [lang='uk']) :is(h2, h3) {
+  letter-spacing: var(--tracking-heading);
+}
+
 :where(h1, h2, h3, .font-serif) :where(em, .italic),
 :where(h1, h2, h3, .font-serif).italic {
   font-family: var(--font-display-italic);
