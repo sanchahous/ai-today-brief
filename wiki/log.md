@@ -5081,3 +5081,23 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 Джерело: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373), `npm run pr:check` і `git push` 2026-09-29.
 
 PR відкрито після зеленого `pr:check`; посилання додано до статусу §5.3 і картки AH-0.3, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373))
+
+## 2026-09-29 — AH-0.4: текстовий SEO baseline і compare-гейт
+
+Джерело: задача AH-0.4 [епіку](product/after-hours-redesign-epic.md); `src/lib/seo-contract.ts`, `scripts/seo-contract.ts`, `e2e/fixtures/seo-contract.baseline.json`; live HTTP-запити до `https://aitodaybrief.com` 2026-09-29; локальний `npm run test:coverage`.
+
+Baseline має 58 EN/UK URL. Compare з тим самим production: 0 помилок, 0 попереджень; повторні `/en/news` і `/uk/news`: `x-vercel-cache: HIT`. Копія baseline без canonical дала exit 1. Покриття нового parser/compare-модуля: statements 99.12%, branches 94.35%, functions 100%, lines 100%.
+
+Наявні властивості сирого HTML зафіксовано без виправлення: усі 29 UK URL мають `<html lang="en">` до клієнтського init-script; у 58 відповідях текст безпосередньо всередині сирого `<main>` має довжину 0, бо контент надходить у streaming-розмітці. Поточні JSON-LD issues є у 14 baseline URL (AboutPage:name, Organization:logo, WebApplication:offers); compare блокує лише нові дефекти. Це спостереження raw HTTP, не оцінка індексації пошуковими системами. (source: `e2e/fixtures/seo-contract.baseline.json`; live HTTP-запити 2026-09-29)
+
+Оновлено статус і AC AH-0.4 в епіку, наступну задачу AH-0.5 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-маршрути не змінювались.
+
+## 2026-09-29 — AH-0.4: PR відкрито
+
+Джерело: [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374), `npm run pr:check` і pre-push Chromium 2026-09-29.
+
+PR відкрито після зеленого `pr:check`; pre-push E2E: 130 passed, 12 skipped. Посилання додано до статусу §5.3 і картки AH-0.4, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374))
+
+## 2026-09-30 — AH-0.4: синхронізація після merge AH-0.3
+
+Об’єднано записи й статуси AH-0.3 та AH-0.4 без втрати історії; PR #373 змержено. Власник погодив G0 та merge PR #373–#376; підпис буде відображено в актуальному пакеті AH-0.6. (source: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373); повідомлення власника 2026-09-30)

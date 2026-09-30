@@ -1,0 +1,2072 @@
+{
+  "createdAt": "2026-09-29T15:58:32.678Z",
+  "base": "https://aitodaybrief.com",
+  "routes": [
+    {
+      "path": "/en",
+      "status": 200,
+      "resolvedPath": "/en",
+      "lang": "en",
+      "title": "AI Today Brief — AI news for developers in 5 minutes a day",
+      "description": "Daily AI-engineering brief for developers, founders and tech leads. We read 120+ sources and publish only what matters — tool releases, agents, research and practical guides. In English and Ukrainian.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en",
+        "uk": "https://aitodaybrief.com/uk",
+        "x-default": "https://aitodaybrief.com/en"
+      },
+      "openGraph": {
+        "og:title": "AI Today Brief — AI news for developers in 5 minutes a day",
+        "og:description": "Daily AI-engineering brief for developers, founders and tech leads. We read 120+ sources and publish only what matters — tool releases, agents, research and practical guides. In English and Ukrainian.",
+        "og:url": "https://aitodaybrief.com/en",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:image": "https://aitodaybrief.com/en/opengraph-image?8cfcfedc40047595",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "Answer",
+        "EntryPoint",
+        "FAQPage",
+        "ImageObject",
+        "ItemList",
+        "ListItem",
+        "Organization",
+        "Person",
+        "Question",
+        "SearchAction",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk",
+      "status": 200,
+      "resolvedPath": "/uk",
+      "lang": "en",
+      "title": "AI Today Brief — AI-новини для розробників за 5 хвилин на день",
+      "description": "Щоденний бриф з AI-інженерії для розробників, фаундерів і техлідів. Читаємо 120+ джерел і публікуємо лише те, що важливо — релізи інструментів, агенти, дослідження та практичні гайди. Англійською та українською.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en",
+        "uk": "https://aitodaybrief.com/uk",
+        "x-default": "https://aitodaybrief.com/en"
+      },
+      "openGraph": {
+        "og:title": "AI Today Brief — AI-новини для розробників за 5 хвилин на день",
+        "og:description": "Щоденний бриф з AI-інженерії для розробників, фаундерів і техлідів. Читаємо 120+ джерел і публікуємо лише те, що важливо — релізи інструментів, агенти, дослідження та практичні гайди. Англійською та українською.",
+        "og:url": "https://aitodaybrief.com/uk",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:image": "https://aitodaybrief.com/uk/opengraph-image?8cfcfedc40047595",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "Answer",
+        "EntryPoint",
+        "FAQPage",
+        "ImageObject",
+        "ItemList",
+        "ListItem",
+        "Organization",
+        "Person",
+        "Question",
+        "SearchAction",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/news",
+      "status": 200,
+      "resolvedPath": "/en/news",
+      "lang": "en",
+      "title": "All news · AI Today Brief",
+      "description": "Your AI news feed — search, filter, and explore curated stories. Each item includes a “why it matters” analysis and key takeaways.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/news",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/news",
+        "uk": "https://aitodaybrief.com/uk/news",
+        "x-default": "https://aitodaybrief.com/en/news"
+      },
+      "openGraph": {
+        "og:title": "All news",
+        "og:description": "Your AI news feed — search, filter, and explore curated stories. Each item includes a “why it matters” analysis and key takeaways.",
+        "og:url": "https://aitodaybrief.com/en/news",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CollectionPage",
+        "ItemList",
+        "ListItem",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/news",
+      "status": 200,
+      "resolvedPath": "/uk/news",
+      "lang": "en",
+      "title": "Усі новини · AI Today Brief",
+      "description": "Стрічка AI-новин — пошук, фільтри та огляд відібраних матеріалів. Кожен матеріал — з аналізом «чому це важливо» й ключовими висновками.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/news",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/news",
+        "uk": "https://aitodaybrief.com/uk/news",
+        "x-default": "https://aitodaybrief.com/en/news"
+      },
+      "openGraph": {
+        "og:title": "Усі новини",
+        "og:description": "Стрічка AI-новин — пошук, фільтри та огляд відібраних матеріалів. Кожен матеріал — з аналізом «чому це важливо» й ключовими висновками.",
+        "og:url": "https://aitodaybrief.com/uk/news",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CollectionPage",
+        "ItemList",
+        "ListItem",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/news?categories=agents-and-mcp&page=2",
+      "status": 200,
+      "resolvedPath": "/en/news?categories=agents-and-mcp&page=2",
+      "lang": "en",
+      "title": "All news · AI Today Brief",
+      "description": "Your AI news feed — search, filter, and explore curated stories. Each item includes a “why it matters” analysis and key takeaways.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/news",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/news",
+        "uk": "https://aitodaybrief.com/uk/news",
+        "x-default": "https://aitodaybrief.com/en/news"
+      },
+      "openGraph": {
+        "og:title": "All news",
+        "og:description": "Your AI news feed — search, filter, and explore curated stories. Each item includes a “why it matters” analysis and key takeaways.",
+        "og:url": "https://aitodaybrief.com/en/news",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CollectionPage",
+        "ItemList",
+        "ListItem",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/news?categories=agents-and-mcp&page=2",
+      "status": 200,
+      "resolvedPath": "/uk/news?categories=agents-and-mcp&page=2",
+      "lang": "en",
+      "title": "Усі новини · AI Today Brief",
+      "description": "Стрічка AI-новин — пошук, фільтри та огляд відібраних матеріалів. Кожен матеріал — з аналізом «чому це важливо» й ключовими висновками.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/news",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/news",
+        "uk": "https://aitodaybrief.com/uk/news",
+        "x-default": "https://aitodaybrief.com/en/news"
+      },
+      "openGraph": {
+        "og:title": "Усі новини",
+        "og:description": "Стрічка AI-новин — пошук, фільтри та огляд відібраних матеріалів. Кожен матеріал — з аналізом «чому це важливо» й ключовими висновками.",
+        "og:url": "https://aitodaybrief.com/uk/news",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CollectionPage",
+        "ItemList",
+        "ListItem",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/news/search?q=mcp",
+      "status": 200,
+      "resolvedPath": "/en/news/search?q=mcp",
+      "lang": "en",
+      "title": "All news — mcp · AI Today Brief",
+      "description": "Your AI news feed — search, filter, and explore curated stories. Each item includes a “why it matters” analysis and key takeaways.",
+      "robots": "noindex, follow",
+      "canonical": "https://aitodaybrief.com/en/news",
+      "hreflang": {},
+      "openGraph": {
+        "og:title": "All news — mcp · AI Today Brief",
+        "og:description": "Your AI news feed — search, filter, and explore curated stories. Each item includes a “why it matters” analysis and key takeaways.",
+        "og:url": "https://aitodaybrief.com",
+        "og:site_name": "AI Today Brief",
+        "og:image": "https://aitodaybrief.com/en/opengraph-image?8cfcfedc40047595",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/news/search?q=mcp",
+      "status": 200,
+      "resolvedPath": "/uk/news/search?q=mcp",
+      "lang": "en",
+      "title": "Усі новини — mcp · AI Today Brief",
+      "description": "Стрічка AI-новин — пошук, фільтри та огляд відібраних матеріалів. Кожен матеріал — з аналізом «чому це важливо» й ключовими висновками.",
+      "robots": "noindex, follow",
+      "canonical": "https://aitodaybrief.com/uk/news",
+      "hreflang": {},
+      "openGraph": {
+        "og:title": "Усі новини — mcp · AI Today Brief",
+        "og:description": "Стрічка AI-новин — пошук, фільтри та огляд відібраних матеріалів. Кожен матеріал — з аналізом «чому це важливо» й ключовими висновками.",
+        "og:url": "https://aitodaybrief.com",
+        "og:site_name": "AI Today Brief",
+        "og:image": "https://aitodaybrief.com/uk/opengraph-image?8cfcfedc40047595",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/news/search?q=",
+      "status": 200,
+      "resolvedPath": "/en/news/search?q=",
+      "lang": "en",
+      "title": "All news · AI Today Brief",
+      "description": "Your AI news feed — search, filter, and explore curated stories. Each item includes a “why it matters” analysis and key takeaways.",
+      "robots": "noindex, follow",
+      "canonical": "https://aitodaybrief.com/en/news",
+      "hreflang": {},
+      "openGraph": {
+        "og:title": "All news · AI Today Brief",
+        "og:description": "Your AI news feed — search, filter, and explore curated stories. Each item includes a “why it matters” analysis and key takeaways.",
+        "og:url": "https://aitodaybrief.com",
+        "og:site_name": "AI Today Brief",
+        "og:image": "https://aitodaybrief.com/en/opengraph-image?8cfcfedc40047595",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/news/search?q=",
+      "status": 200,
+      "resolvedPath": "/uk/news/search?q=",
+      "lang": "en",
+      "title": "Усі новини · AI Today Brief",
+      "description": "Стрічка AI-новин — пошук, фільтри та огляд відібраних матеріалів. Кожен матеріал — з аналізом «чому це важливо» й ключовими висновками.",
+      "robots": "noindex, follow",
+      "canonical": "https://aitodaybrief.com/uk/news",
+      "hreflang": {},
+      "openGraph": {
+        "og:title": "Усі новини · AI Today Brief",
+        "og:description": "Стрічка AI-новин — пошук, фільтри та огляд відібраних матеріалів. Кожен матеріал — з аналізом «чому це важливо» й ключовими висновками.",
+        "og:url": "https://aitodaybrief.com",
+        "og:site_name": "AI Today Brief",
+        "og:image": "https://aitodaybrief.com/uk/opengraph-image?8cfcfedc40047595",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+      "status": 200,
+      "resolvedPath": "/en/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+      "lang": "en",
+      "title": "Deep Dive Into ChatGPT Work: Persistent Filesystem, Web Browser, and Cloud Deployments · AI Today Brief",
+      "description": "ChatGPT Work offers advanced features missing from the standard chat interface. Key highlights include an internet-connected Python sandbox, a persistent cross-session filesystem, and headless Chrome browser control.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+        "uk": "https://aitodaybrief.com/uk/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+        "x-default": "https://aitodaybrief.com/en/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme"
+      },
+      "openGraph": {
+        "og:title": "Deep Dive Into ChatGPT Work: Persistent Filesystem, Web Browser, and Cloud Deployments",
+        "og:description": "ChatGPT Work offers advanced features missing from the standard chat interface. Key highlights include an internet-connected Python sandbox, a persistent cross-session filesystem, and headless Chrome browser control.",
+        "og:url": "https://aitodaybrief.com/en/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:image": "https://aitodaybrief.com/en/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme/opengraph-image?3e26261b3032f553",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CreativeWork",
+        "ImageObject",
+        "ListItem",
+        "NewsArticle",
+        "Organization",
+        "Person"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+      "status": 200,
+      "resolvedPath": "/uk/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+      "lang": "en",
+      "title": "Глибокий аналіз ChatGPT Work: стійка файлова система, веб-браузер та хмарний деплой · AI Today Brief",
+      "description": "ChatGPT Work надає розширені можливості, відсутні в стандартному чаті. Ключові фічі: пісочниця Python з виходом в інтернет, стійка файлова система між сесіями та керування headless Chrome.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+        "uk": "https://aitodaybrief.com/uk/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+        "x-default": "https://aitodaybrief.com/en/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme"
+      },
+      "openGraph": {
+        "og:title": "Глибокий аналіз ChatGPT Work: стійка файлова система, веб-браузер та хмарний деплой",
+        "og:description": "ChatGPT Work надає розширені можливості, відсутні в стандартному чаті. Ключові фічі: пісочниця Python з виходом в інтернет, стійка файлова система між сесіями та керування headless Chrome.",
+        "og:url": "https://aitodaybrief.com/uk/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:image": "https://aitodaybrief.com/uk/news/tools-and-releases/deep-dive-into-chatgpt-work-persistent-filesystem-web-browser-and-cloud-deployme/opengraph-image?3e26261b3032f553",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:locale:alternate": "en_US",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CreativeWork",
+        "ImageObject",
+        "ListItem",
+        "NewsArticle",
+        "Organization",
+        "Person"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+      "status": 200,
+      "resolvedPath": "/en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+      "lang": "en",
+      "title": "Context Window Compaction Deletes Guardrails: Lessons From OpenClaw Inbox Wiping · AI Today Brief",
+      "description": "An AI agent running OpenClaw deleted a Meta security researcher's email inbox. The failure occurred when a large volume of emails triggered context window compaction, wiping the 'confirm before acting' system prompt.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+        "uk": "https://aitodaybrief.com/uk/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+        "x-default": "https://aitodaybrief.com/en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping"
+      },
+      "openGraph": {
+        "og:title": "Context Window Compaction Deletes Guardrails: Lessons From OpenClaw Inbox Wiping",
+        "og:description": "An AI agent running OpenClaw deleted a Meta security researcher's email inbox. The failure occurred when a large volume of emails triggered context window compaction, wiping the 'confirm before acting' system prompt.",
+        "og:url": "https://aitodaybrief.com/en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:image": "https://aitodaybrief.com/en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping/opengraph-image?3e26261b3032f553",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CreativeWork",
+        "ImageObject",
+        "ListItem",
+        "NewsArticle",
+        "Organization",
+        "Person"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+      "status": 200,
+      "resolvedPath": "/uk/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+      "lang": "en",
+      "title": "Компакція контексту видаляє інструкції: уроки інциденту з очищенням пошти в OpenClaw · AI Today Brief",
+      "description": "ШІ-агент OpenClaw видалив пошту дослідниці безпеки Meta. Збій стався через те, що великий обсяг листів викликав компакцію контексту, стерши системну інструкцію «підтверджуй перед дією».",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+        "uk": "https://aitodaybrief.com/uk/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+        "x-default": "https://aitodaybrief.com/en/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping"
+      },
+      "openGraph": {
+        "og:title": "Компакція контексту видаляє інструкції: уроки інциденту з очищенням пошти в OpenClaw",
+        "og:description": "ШІ-агент OpenClaw видалив пошту дослідниці безпеки Meta. Збій стався через те, що великий обсяг листів викликав компакцію контексту, стерши системну інструкцію «підтверджуй перед дією».",
+        "og:url": "https://aitodaybrief.com/uk/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:image": "https://aitodaybrief.com/uk/news/agents-and-mcp/context-window-compaction-deletes-guardrails-lessons-from-openclaw-inbox-wiping/opengraph-image?3e26261b3032f553",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:locale:alternate": "en_US",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CreativeWork",
+        "ImageObject",
+        "ListItem",
+        "NewsArticle",
+        "Organization",
+        "Person"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+      "status": 200,
+      "resolvedPath": "/en/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+      "lang": "en",
+      "title": "Compile System Architecture Diagrams Directly in Cursor and Claude Code Chats · AI Today Brief",
+      "description": "Archify compiles system descriptions or repositories into interactive HTML/SVG architecture maps within agentic IDEs. It supports Cursor, Claude Code, and Codex, validating JSON IR before outputting verified, shareable artifacts.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+        "uk": "https://aitodaybrief.com/uk/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+        "x-default": "https://aitodaybrief.com/en/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats"
+      },
+      "openGraph": {
+        "og:title": "Compile System Architecture Diagrams Directly in Cursor and Claude Code Chats",
+        "og:description": "Archify compiles system descriptions or repositories into interactive HTML/SVG architecture maps within agentic IDEs. It supports Cursor, Claude Code, and Codex, validating JSON IR before outputting verified, shareable artifacts.",
+        "og:url": "https://aitodaybrief.com/en/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:image": "https://aitodaybrief.com/en/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats/opengraph-image?3e26261b3032f553",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CreativeWork",
+        "ImageObject",
+        "ListItem",
+        "NewsArticle",
+        "Organization",
+        "Person"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+      "status": 200,
+      "resolvedPath": "/uk/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+      "lang": "en",
+      "title": "Генерація архітектурних діаграм безпосередньо в чаті Cursor та Claude Code · AI Today Brief",
+      "description": "Archify компілює описи систем чи кодові бази в інтерактивні HTML/SVG карти архітектури прямо в IDE. Інструмент підтримує Cursor, Claude Code та Codex, валідуючи JSON IR перед виводом перевірених файлів.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+        "uk": "https://aitodaybrief.com/uk/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+        "x-default": "https://aitodaybrief.com/en/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats"
+      },
+      "openGraph": {
+        "og:title": "Генерація архітектурних діаграм безпосередньо в чаті Cursor та Claude Code",
+        "og:description": "Archify компілює описи систем чи кодові бази в інтерактивні HTML/SVG карти архітектури прямо в IDE. Інструмент підтримує Cursor, Claude Code та Codex, валідуючи JSON IR перед виводом перевірених файлів.",
+        "og:url": "https://aitodaybrief.com/uk/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:image": "https://aitodaybrief.com/uk/news/vibe-coding/compile-system-architecture-diagrams-directly-in-cursor-and-claude-code-chats/opengraph-image?3e26261b3032f553",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:locale:alternate": "en_US",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CreativeWork",
+        "ImageObject",
+        "ListItem",
+        "NewsArticle",
+        "Organization",
+        "Person"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/digests",
+      "status": 200,
+      "resolvedPath": "/en/digests",
+      "lang": "en",
+      "title": "Daily and weekly AI digest archive · AI Today Brief",
+      "description": "Approved daily briefs and persisted weekly AI engineering roundups.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/digests",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/digests",
+        "uk": "https://aitodaybrief.com/uk/digests",
+        "x-default": "https://aitodaybrief.com/en/digests"
+      },
+      "openGraph": {
+        "og:title": "Daily and weekly AI digest archive",
+        "og:description": "Approved daily briefs and persisted weekly AI engineering roundups.",
+        "og:url": "https://aitodaybrief.com/en/digests",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/digests",
+      "status": 200,
+      "resolvedPath": "/uk/digests",
+      "lang": "en",
+      "title": "Архів щоденних і тижневих дайджестів · AI Today Brief",
+      "description": "Погоджені щоденні брифи та тижневі підсумки AI Today Brief.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/digests",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/digests",
+        "uk": "https://aitodaybrief.com/uk/digests",
+        "x-default": "https://aitodaybrief.com/en/digests"
+      },
+      "openGraph": {
+        "og:title": "Архів щоденних і тижневих дайджестів",
+        "og:description": "Погоджені щоденні брифи та тижневі підсумки AI Today Brief.",
+        "og:url": "https://aitodaybrief.com/uk/digests",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/reasoning-token-compression-and-efficient-agent-execution",
+      "status": 200,
+      "resolvedPath": "/en/reasoning-token-compression-and-efficient-agent-execution",
+      "lang": "en",
+      "title": "Reasoning Token Compression and Efficient Agent Execution · AI Today Brief",
+      "description": "Fireworks AI delivers Ember-1 to reduce multi-turn agent token consumption by forty percent without sacrificing reasoning accuracy.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/reasoning-token-compression-and-efficient-agent-execution",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/reasoning-token-compression-and-efficient-agent-execution",
+        "uk": "https://aitodaybrief.com/uk/reasoning-token-compression-and-efficient-agent-execution",
+        "x-default": "https://aitodaybrief.com/en/reasoning-token-compression-and-efficient-agent-execution"
+      },
+      "openGraph": {
+        "og:title": "Reasoning Token Compression and Efficient Agent Execution",
+        "og:description": "Fireworks AI delivers Ember-1 to reduce multi-turn agent token consumption by forty percent without sacrificing reasoning accuracy.",
+        "og:url": "https://aitodaybrief.com/en/reasoning-token-compression-and-efficient-agent-execution",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:image": "https://mdiqfatpqczwqghwttpm.supabase.co/storage/v1/object/public/social-assets/daily/2026-09-28/c87f7070501b991cc59203d01aa35273a54b956b629e971c377217323850adec.webp",
+        "og:image:width": "1600",
+        "og:image:height": "900",
+        "og:image:alt": "Agentic Efficiency: Streamlining Multi-Agent Workflows. A developer is shown actively pruning overgrown branches from a complex, interconnected system, symbolizing the reduction of token consumption and the streamlining of multi-agent workf",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CollectionPage",
+        "ItemList",
+        "ListItem",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/reasoning-token-compression-and-efficient-agent-execution",
+      "status": 200,
+      "resolvedPath": "/uk/reasoning-token-compression-and-efficient-agent-execution",
+      "lang": "en",
+      "title": "Стиснення токенів міркування та ефективні агенти · AI Today Brief",
+      "description": "Fireworks AI представила Ember-1 для скорочення витрат токенів в автономних агентах на сорок відсотків без втрати якості міркувань.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/reasoning-token-compression-and-efficient-agent-execution",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/reasoning-token-compression-and-efficient-agent-execution",
+        "uk": "https://aitodaybrief.com/uk/reasoning-token-compression-and-efficient-agent-execution",
+        "x-default": "https://aitodaybrief.com/en/reasoning-token-compression-and-efficient-agent-execution"
+      },
+      "openGraph": {
+        "og:title": "Стиснення токенів міркування та ефективні агенти",
+        "og:description": "Fireworks AI представила Ember-1 для скорочення витрат токенів в автономних агентах на сорок відсотків без втрати якості міркувань.",
+        "og:url": "https://aitodaybrief.com/uk/reasoning-token-compression-and-efficient-agent-execution",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:image": "https://mdiqfatpqczwqghwttpm.supabase.co/storage/v1/object/public/social-assets/daily/2026-09-28/c87f7070501b991cc59203d01aa35273a54b956b629e971c377217323850adec.webp",
+        "og:image:width": "1600",
+        "og:image:height": "900",
+        "og:image:alt": "Ефективність агентів: оптимізація багатоагентних робочих процесів. Розробник активно обрізає розрослі гілки складної, взаємопов'язаної системи, символізуючи зменшення споживання токенів та оптимізацію багатоагентних робочих процесів.",
+        "og:locale:alternate": "en_US",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CollectionPage",
+        "ItemList",
+        "ListItem",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+      "status": 200,
+      "resolvedPath": "/en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+      "lang": "en",
+      "title": "Multiverse's 4-Bit Model, NVIDIA's Chip Benchmark, MCP Dry-Runs · AI Today Brief",
+      "description": "Multiverse says its 4-bit model beats 16-bit; NVIDIA grades new chips on agent-token benchmarks; an MCP agent adds mandatory dry-run writes.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+        "uk": "https://aitodaybrief.com/uk/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+        "x-default": "https://aitodaybrief.com/en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23"
+      },
+      "openGraph": {
+        "og:title": "Multiverse's 4-Bit Model Beats 16-Bit; NVIDIA Grades Its Own Chips",
+        "og:description": "Multiverse says its 4-bit model beats 16-bit; NVIDIA grades new chips on agent-token benchmarks; and an MCP agent ships with mandatory dry-run writes before any mutation.",
+        "og:url": "https://aitodaybrief.com/en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:image": "https://mdiqfatpqczwqghwttpm.supabase.co/storage/v1/object/public/social-assets/weekly/6c50127e-c98f-4c34-8a16-ed4d1a742c63/894194f5-3d18-4da6-a082-5021deb3cf88/a020551840e208e8064cbc6eb82128bd/binary-v2/9836a5020050de7d10e7bed2bd22260a57d3b1bb7455a7b175c2a60ff6296801.jpg",
+        "og:image:width": "1600",
+        "og:image:height": "900",
+        "og:image:alt": "Multiverse's 4-Bit Model Beats 16-Bit, NVIDIA Grades Its Own Chips, MCP Agents Get Dry-Run Rules",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "Answer",
+        "BreadcrumbList",
+        "CreativeWork",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "NewsArticle",
+        "Organization",
+        "Person",
+        "Question",
+        "VideoObject"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+      "status": 200,
+      "resolvedPath": "/uk/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+      "lang": "en",
+      "title": "4-бітна модель Multiverse, тест чипів NVIDIA, MCP dry-run · AI Today Brief",
+      "description": "Multiverse заявляє, що 4-бітна модель обходить 16-бітну; NVIDIA оцінює нові чипи за тестами токенів агентів; МСР-агент додає обов'язковий dry-run для записів.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+        "uk": "https://aitodaybrief.com/uk/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+        "x-default": "https://aitodaybrief.com/en/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23"
+      },
+      "openGraph": {
+        "og:title": "4-бітна модель Multiverse обходить 16-бітну; NVIDIA оцінює свої чипи",
+        "og:description": "Multiverse заявляє, що 4-бітна модель обходить 16-бітну; NVIDIA оцінює нові чипи за тестами токенів агентів; а МСР-агент постачається з обов'язковим dry-run перед будь-яким записом.",
+        "og:url": "https://aitodaybrief.com/uk/weekly/multiverse-s-4-bit-model-beats-16-bit-nvidia-grades-its-own-2026-08-23",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:image": "https://mdiqfatpqczwqghwttpm.supabase.co/storage/v1/object/public/social-assets/weekly/6c50127e-c98f-4c34-8a16-ed4d1a742c63/894194f5-3d18-4da6-a082-5021deb3cf88/a020551840e208e8064cbc6eb82128bd/binary-v2/9836a5020050de7d10e7bed2bd22260a57d3b1bb7455a7b175c2a60ff6296801.jpg",
+        "og:image:width": "1600",
+        "og:image:height": "900",
+        "og:image:alt": "Multiverse's 4-Bit Model Beats 16-Bit, NVIDIA Grades Its Own Chips, MCP Agents Get Dry-Run Rules",
+        "og:locale:alternate": "en_US",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "Answer",
+        "BreadcrumbList",
+        "CreativeWork",
+        "FAQPage",
+        "ImageObject",
+        "ListItem",
+        "NewsArticle",
+        "Organization",
+        "Person",
+        "Question",
+        "VideoObject"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/concepts",
+      "status": 200,
+      "resolvedPath": "/en/concepts",
+      "lang": "en",
+      "title": "Concepts · AI Today Brief",
+      "description": "Evergreen explainers for the building blocks of AI engineering.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/concepts",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/concepts",
+        "uk": "https://aitodaybrief.com/uk/concepts",
+        "x-default": "https://aitodaybrief.com/en/concepts"
+      },
+      "openGraph": {
+        "og:title": "Concepts · AI Today Brief",
+        "og:description": "Evergreen explainers for the building blocks of AI engineering.",
+        "og:url": "https://aitodaybrief.com",
+        "og:site_name": "AI Today Brief",
+        "og:image": "https://aitodaybrief.com/en/opengraph-image?8cfcfedc40047595",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CollectionPage",
+        "ListItem",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/concepts",
+      "status": 200,
+      "resolvedPath": "/uk/concepts",
+      "lang": "en",
+      "title": "Концепти · AI Today Brief",
+      "description": "Постійно актуальні пояснення про будівельні блоки AI-інженерії.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/concepts",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/concepts",
+        "uk": "https://aitodaybrief.com/uk/concepts",
+        "x-default": "https://aitodaybrief.com/en/concepts"
+      },
+      "openGraph": {
+        "og:title": "Концепти · AI Today Brief",
+        "og:description": "Постійно актуальні пояснення про будівельні блоки AI-інженерії.",
+        "og:url": "https://aitodaybrief.com",
+        "og:site_name": "AI Today Brief",
+        "og:image": "https://aitodaybrief.com/uk/opengraph-image?8cfcfedc40047595",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CollectionPage",
+        "ListItem",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/concepts/mcp",
+      "status": 200,
+      "resolvedPath": "/en/concepts/mcp",
+      "lang": "en",
+      "title": "Model Context Protocol · AI Today Brief",
+      "description": "Open protocol from Anthropic for connecting LLM clients to data sources and tools via standardised servers. Cursor, Claude Code, and Copilot all support MCP servers.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/concepts/mcp",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/concepts/mcp",
+        "uk": "https://aitodaybrief.com/uk/concepts/mcp",
+        "x-default": "https://aitodaybrief.com/en/concepts/mcp"
+      },
+      "openGraph": {
+        "og:title": "Model Context Protocol",
+        "og:description": "Open protocol from Anthropic for connecting LLM clients to data sources and tools via standardised servers. Cursor, Claude Code, and Copilot all support MCP servers.",
+        "og:url": "https://aitodaybrief.com/en/concepts/mcp",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "Answer",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ItemList",
+        "ListItem",
+        "Organization",
+        "Person",
+        "Question",
+        "TechArticle"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/concepts/mcp",
+      "status": 200,
+      "resolvedPath": "/uk/concepts/mcp",
+      "lang": "en",
+      "title": "Model Context Protocol · AI Today Brief",
+      "description": "Відкритий протокол від Anthropic для підключення LLM-клієнтів до даних і інструментів через стандартизовані сервери. Cursor, Claude Code і Copilot підтримують MCP-сервери.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/concepts/mcp",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/concepts/mcp",
+        "uk": "https://aitodaybrief.com/uk/concepts/mcp",
+        "x-default": "https://aitodaybrief.com/en/concepts/mcp"
+      },
+      "openGraph": {
+        "og:title": "Model Context Protocol",
+        "og:description": "Відкритий протокол від Anthropic для підключення LLM-клієнтів до даних і інструментів через стандартизовані сервери. Cursor, Claude Code і Copilot підтримують MCP-сервери.",
+        "og:url": "https://aitodaybrief.com/uk/concepts/mcp",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "Answer",
+        "BreadcrumbList",
+        "FAQPage",
+        "ImageObject",
+        "ItemList",
+        "ListItem",
+        "Organization",
+        "Person",
+        "Question",
+        "TechArticle"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/guides",
+      "status": 200,
+      "resolvedPath": "/en/guides",
+      "lang": "en",
+      "title": "Guides · AI Today Brief",
+      "description": "Living reference pages — comparisons and explainers we keep up to date as the tools change. Each page shows when it was last verified.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/guides",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/guides",
+        "uk": "https://aitodaybrief.com/uk/guides",
+        "x-default": "https://aitodaybrief.com/en/guides"
+      },
+      "openGraph": {
+        "og:title": "Guides",
+        "og:description": "Living reference pages — comparisons and explainers we keep up to date as the tools change. Each page shows when it was last verified.",
+        "og:url": "https://aitodaybrief.com/en/guides",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "CollectionPage",
+        "Organization"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/guides",
+      "status": 200,
+      "resolvedPath": "/uk/guides",
+      "lang": "en",
+      "title": "Гайди · AI Today Brief",
+      "description": "Живі довідкові сторінки — порівняння й пояснення, які ми оновлюємо разом зі змінами інструментів. На кожній сторінці видно дату останньої перевірки.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/guides",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/guides",
+        "uk": "https://aitodaybrief.com/uk/guides",
+        "x-default": "https://aitodaybrief.com/en/guides"
+      },
+      "openGraph": {
+        "og:title": "Гайди",
+        "og:description": "Живі довідкові сторінки — порівняння й пояснення, які ми оновлюємо разом зі змінами інструментів. На кожній сторінці видно дату останньої перевірки.",
+        "og:url": "https://aitodaybrief.com/uk/guides",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "CollectionPage",
+        "Organization"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/guides/claude-code-vs-cursor-vs-codex",
+      "status": 200,
+      "resolvedPath": "/en/guides/claude-code-vs-cursor-vs-codex",
+      "lang": "en",
+      "title": "Claude Code vs Cursor vs Codex: which AI coding agent fits your workflow · AI Today Brief",
+      "description": "A structural comparison of the three agentic coding tools — interface model, autonomy, extensibility, team fit — and an honest \"choose this if\" checklist.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/guides/claude-code-vs-cursor-vs-codex",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/guides/claude-code-vs-cursor-vs-codex",
+        "uk": "https://aitodaybrief.com/uk/guides/claude-code-vs-cursor-vs-codex",
+        "x-default": "https://aitodaybrief.com/en/guides/claude-code-vs-cursor-vs-codex"
+      },
+      "openGraph": {
+        "og:title": "Claude Code vs Cursor vs Codex: which AI coding agent fits your workflow",
+        "og:description": "A structural comparison of the three agentic coding tools — interface model, autonomy, extensibility, team fit — and an honest \"choose this if\" checklist.",
+        "og:url": "https://aitodaybrief.com/en/guides/claude-code-vs-cursor-vs-codex",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Person",
+        "TechArticle"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/guides/claude-code-vs-cursor-vs-codex",
+      "status": 200,
+      "resolvedPath": "/uk/guides/claude-code-vs-cursor-vs-codex",
+      "lang": "en",
+      "title": "Claude Code vs Cursor vs Codex: який AI-агент для коду під ваш workflow · AI Today Brief",
+      "description": "Структурне порівняння трьох агентних інструментів для коду — модель інтерфейсу, автономність, розширюваність, командний фіт — і чесний чекліст «обирай це, якщо».",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/guides/claude-code-vs-cursor-vs-codex",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/guides/claude-code-vs-cursor-vs-codex",
+        "uk": "https://aitodaybrief.com/uk/guides/claude-code-vs-cursor-vs-codex",
+        "x-default": "https://aitodaybrief.com/en/guides/claude-code-vs-cursor-vs-codex"
+      },
+      "openGraph": {
+        "og:title": "Claude Code vs Cursor vs Codex: який AI-агент для коду під ваш workflow",
+        "og:description": "Структурне порівняння трьох агентних інструментів для коду — модель інтерфейсу, автономність, розширюваність, командний фіт — і чесний чекліст «обирай це, якщо».",
+        "og:url": "https://aitodaybrief.com/uk/guides/claude-code-vs-cursor-vs-codex",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "article"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "ImageObject",
+        "ListItem",
+        "Organization",
+        "Person",
+        "TechArticle"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/tools",
+      "status": 200,
+      "resolvedPath": "/en/tools",
+      "lang": "en",
+      "title": "AI Toolbox · AI Today Brief",
+      "description": "Free, local-first utilities for people who build with AI. Each tool is bilingual, citation-backed, and designed to avoid sending private inputs to us.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/tools",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/tools",
+        "uk": "https://aitodaybrief.com/uk/tools",
+        "x-default": "https://aitodaybrief.com/en/tools"
+      },
+      "openGraph": {
+        "og:title": "AI Toolbox",
+        "og:description": "Free, local-first utilities for people who build with AI. Each tool is bilingual, citation-backed, and designed to avoid sending private inputs to us.",
+        "og:url": "https://aitodaybrief.com/en/tools",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "CollectionPage",
+        "Organization"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/tools",
+      "status": 200,
+      "resolvedPath": "/uk/tools",
+      "lang": "en",
+      "title": "AI-інструменти · AI Today Brief",
+      "description": "Безкоштовні локальні утиліти для тих, хто будує з AI. Кожен інструмент двомовний, підкріплений джерелами й не надсилає приватні inputs нам.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/tools",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/tools",
+        "uk": "https://aitodaybrief.com/uk/tools",
+        "x-default": "https://aitodaybrief.com/en/tools"
+      },
+      "openGraph": {
+        "og:title": "AI-інструменти",
+        "og:description": "Безкоштовні локальні утиліти для тих, хто будує з AI. Кожен інструмент двомовний, підкріплений джерелами й не надсилає приватні inputs нам.",
+        "og:url": "https://aitodaybrief.com/uk/tools",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "CollectionPage",
+        "Organization"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/tools/prompt-optimizer",
+      "status": 200,
+      "resolvedPath": "/en/tools/prompt-optimizer",
+      "lang": "en",
+      "title": "Free Prompt Optimizer for Claude (Fable 5) · AI Today Brief",
+      "description": "A local, citation-backed prompt linter for Claude Fable 5, Sonnet 4.6, Haiku 4.5, and Opus 4.8.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/tools/prompt-optimizer",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/tools/prompt-optimizer",
+        "uk": "https://aitodaybrief.com/uk/tools/prompt-optimizer",
+        "x-default": "https://aitodaybrief.com/en/tools/prompt-optimizer"
+      },
+      "openGraph": {
+        "og:title": "Free Prompt Optimizer for Claude (Fable 5)",
+        "og:description": "A local, citation-backed prompt linter for Claude Fable 5, Sonnet 4.6, Haiku 4.5, and Opus 4.8.",
+        "og:url": "https://aitodaybrief.com/en/tools/prompt-optimizer",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "ListItem",
+        "Organization",
+        "WebApplication"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo",
+        "WebApplication:missing:offers"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/tools/prompt-optimizer",
+      "status": 200,
+      "resolvedPath": "/uk/tools/prompt-optimizer",
+      "lang": "en",
+      "title": "Безкоштовний оптимізатор промптів для Claude (Fable 5) · AI Today Brief",
+      "description": "Локальний лінтер промптів із цитатами для Claude Fable 5, Sonnet 4.6, Haiku 4.5 та Opus 4.8.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/tools/prompt-optimizer",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/tools/prompt-optimizer",
+        "uk": "https://aitodaybrief.com/uk/tools/prompt-optimizer",
+        "x-default": "https://aitodaybrief.com/en/tools/prompt-optimizer"
+      },
+      "openGraph": {
+        "og:title": "Безкоштовний оптимізатор промптів для Claude (Fable 5)",
+        "og:description": "Локальний лінтер промптів із цитатами для Claude Fable 5, Sonnet 4.6, Haiku 4.5 та Opus 4.8.",
+        "og:url": "https://aitodaybrief.com/uk/tools/prompt-optimizer",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "ListItem",
+        "Organization",
+        "WebApplication"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo",
+        "WebApplication:missing:offers"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/tools/settings-builder",
+      "status": 200,
+      "resolvedPath": "/en/tools/settings-builder",
+      "lang": "en",
+      "title": "Free Claude Code settings.json Builder — Permissions & Hooks · AI Today Brief",
+      "description": "A local-first builder for Claude Code permissions, hooks, model, and MCP settings, backed by official Claude Code documentation.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/tools/settings-builder",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/tools/settings-builder",
+        "uk": "https://aitodaybrief.com/uk/tools/settings-builder",
+        "x-default": "https://aitodaybrief.com/en/tools/settings-builder"
+      },
+      "openGraph": {
+        "og:title": "Free Claude Code settings.json Builder — Permissions & Hooks",
+        "og:description": "A local-first builder for Claude Code permissions, hooks, model, and MCP settings, backed by official Claude Code documentation.",
+        "og:url": "https://aitodaybrief.com/en/tools/settings-builder",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "ListItem",
+        "Organization",
+        "WebApplication"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo",
+        "WebApplication:missing:offers"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/tools/settings-builder",
+      "status": 200,
+      "resolvedPath": "/uk/tools/settings-builder",
+      "lang": "en",
+      "title": "Безкоштовний білдер settings.json для Claude Code — permissions і hooks · AI Today Brief",
+      "description": "Локальний генератор налаштувань Claude Code для permissions, hooks, model і MCP, підкріплений офіційною документацією Claude Code.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/tools/settings-builder",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/tools/settings-builder",
+        "uk": "https://aitodaybrief.com/uk/tools/settings-builder",
+        "x-default": "https://aitodaybrief.com/en/tools/settings-builder"
+      },
+      "openGraph": {
+        "og:title": "Безкоштовний білдер settings.json для Claude Code — permissions і hooks",
+        "og:description": "Локальний генератор налаштувань Claude Code для permissions, hooks, model і MCP, підкріплений офіційною документацією Claude Code.",
+        "og:url": "https://aitodaybrief.com/uk/tools/settings-builder",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "ListItem",
+        "Organization",
+        "WebApplication"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo",
+        "WebApplication:missing:offers"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/tools/claude-md-generator",
+      "status": 200,
+      "resolvedPath": "/en/tools/claude-md-generator",
+      "lang": "en",
+      "title": "CLAUDE.md / AGENTS.md Generator · AI Today Brief",
+      "description": "A citation-backed project-instructions generator that keeps shared AGENTS.md guidance and Claude-specific CLAUDE.md wiring explicit.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/tools/claude-md-generator",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/tools/claude-md-generator",
+        "uk": "https://aitodaybrief.com/uk/tools/claude-md-generator",
+        "x-default": "https://aitodaybrief.com/en/tools/claude-md-generator"
+      },
+      "openGraph": {
+        "og:title": "CLAUDE.md / AGENTS.md Generator",
+        "og:description": "A citation-backed project-instructions generator that keeps shared AGENTS.md guidance and Claude-specific CLAUDE.md wiring explicit.",
+        "og:url": "https://aitodaybrief.com/en/tools/claude-md-generator",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "ListItem",
+        "Organization",
+        "WebApplication"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo",
+        "WebApplication:missing:offers"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/tools/claude-md-generator",
+      "status": 200,
+      "resolvedPath": "/uk/tools/claude-md-generator",
+      "lang": "en",
+      "title": "Генератор CLAUDE.md / AGENTS.md · AI Today Brief",
+      "description": "Генератор інструкцій для проєкту з цитатами, який явно розділяє спільні правила AGENTS.md і Claude-specific wiring у CLAUDE.md.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/tools/claude-md-generator",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/tools/claude-md-generator",
+        "uk": "https://aitodaybrief.com/uk/tools/claude-md-generator",
+        "x-default": "https://aitodaybrief.com/en/tools/claude-md-generator"
+      },
+      "openGraph": {
+        "og:title": "Генератор CLAUDE.md / AGENTS.md",
+        "og:description": "Генератор інструкцій для проєкту з цитатами, який явно розділяє спільні правила AGENTS.md і Claude-specific wiring у CLAUDE.md.",
+        "og:url": "https://aitodaybrief.com/uk/tools/claude-md-generator",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "ListItem",
+        "Organization",
+        "WebApplication"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo",
+        "WebApplication:missing:offers"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/category/agents-and-mcp",
+      "status": 200,
+      "resolvedPath": "/en/category/agents-and-mcp",
+      "lang": "en",
+      "title": "Agents & MCP · AI Today Brief",
+      "description": "Building, orchestrating and connecting agents — MCP servers, Claude Agent SDK, multi-agent systems.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/category/agents-and-mcp",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/category/agents-and-mcp",
+        "uk": "https://aitodaybrief.com/uk/category/agents-and-mcp",
+        "x-default": "https://aitodaybrief.com/en/category/agents-and-mcp"
+      },
+      "openGraph": {
+        "og:title": "Agents & MCP",
+        "og:description": "Building, orchestrating and connecting agents — MCP servers, Claude Agent SDK, multi-agent systems.",
+        "og:url": "https://aitodaybrief.com/en/category/agents-and-mcp",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CollectionPage",
+        "ItemList",
+        "ListItem",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/category/agents-and-mcp",
+      "status": 200,
+      "resolvedPath": "/uk/category/agents-and-mcp",
+      "lang": "en",
+      "title": "Агенти й MCP · AI Today Brief",
+      "description": "Побудова, оркестрація та підключення агентів — MCP-сервери, Claude Agent SDK, мульти-агентні системи.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/category/agents-and-mcp",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/category/agents-and-mcp",
+        "uk": "https://aitodaybrief.com/uk/category/agents-and-mcp",
+        "x-default": "https://aitodaybrief.com/en/category/agents-and-mcp"
+      },
+      "openGraph": {
+        "og:title": "Агенти й MCP",
+        "og:description": "Побудова, оркестрація та підключення агентів — MCP-сервери, Claude Agent SDK, мульти-агентні системи.",
+        "og:url": "https://aitodaybrief.com/uk/category/agents-and-mcp",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "CollectionPage",
+        "ItemList",
+        "ListItem",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/about",
+      "status": 200,
+      "resolvedPath": "/en/about",
+      "lang": "en",
+      "title": "About · AI Today Brief",
+      "description": "AI Today Brief is a daily, human-edited briefing for people who build with AI — engineers, founders and technical leads. One focused read a day on the models, frameworks and MLOps that actually move your work forward — in English and Ukrainian.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/about",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/about",
+        "uk": "https://aitodaybrief.com/uk/about",
+        "x-default": "https://aitodaybrief.com/en/about"
+      },
+      "openGraph": {
+        "og:title": "About",
+        "og:description": "AI Today Brief is a daily, human-edited briefing for people who build with AI — engineers, founders and technical leads. One focused read a day on the models, frameworks and MLOps that actually move your work forward — in English and Ukrainian.",
+        "og:url": "https://aitodaybrief.com/en/about",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "AboutPage",
+        "ImageObject",
+        "Organization",
+        "Person"
+      ],
+      "jsonLdIssues": [
+        "AboutPage:missing:name"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/about",
+      "status": 200,
+      "resolvedPath": "/uk/about",
+      "lang": "en",
+      "title": "Про нас · AI Today Brief",
+      "description": "AI Today Brief — щоденний бриф, який редагує людина, для тих, хто будує з AI: інженерів, фаундерів і техлідів. Один сфокусований випуск на день про моделі, фреймворки та MLOps, що справді рухають вашу роботу, — англійською та українською.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/about",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/about",
+        "uk": "https://aitodaybrief.com/uk/about",
+        "x-default": "https://aitodaybrief.com/en/about"
+      },
+      "openGraph": {
+        "og:title": "Про нас",
+        "og:description": "AI Today Brief — щоденний бриф, який редагує людина, для тих, хто будує з AI: інженерів, фаундерів і техлідів. Один сфокусований випуск на день про моделі, фреймворки та MLOps, що справді рухають вашу роботу, — англійською та українською.",
+        "og:url": "https://aitodaybrief.com/uk/about",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "AboutPage",
+        "ImageObject",
+        "Organization",
+        "Person"
+      ],
+      "jsonLdIssues": [
+        "AboutPage:missing:name"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/author",
+      "status": 200,
+      "resolvedPath": "/en/author",
+      "lang": "en",
+      "title": "Oleksandr Kuzmenko — Editor · AI Today Brief",
+      "description": "Oleksandr Kuzmenko — editor of AI Today Brief, the daily human-edited AI/engineering brief.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/author",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/author",
+        "uk": "https://aitodaybrief.com/uk/author",
+        "x-default": "https://aitodaybrief.com/en/author"
+      },
+      "openGraph": {
+        "og:title": "Oleksandr Kuzmenko — Editor",
+        "og:description": "Oleksandr Kuzmenko — editor of AI Today Brief, the daily human-edited AI/engineering brief.",
+        "og:url": "https://aitodaybrief.com/en/author",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "ImageObject",
+        "Organization",
+        "Person",
+        "ProfilePage"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/author",
+      "status": 200,
+      "resolvedPath": "/uk/author",
+      "lang": "en",
+      "title": "Oleksandr Kuzmenko — Редактор · AI Today Brief",
+      "description": "Oleksandr Kuzmenko — редактор AI Today Brief, щоденного AI/engineering брифу з людською редактурою.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/author",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/author",
+        "uk": "https://aitodaybrief.com/uk/author",
+        "x-default": "https://aitodaybrief.com/en/author"
+      },
+      "openGraph": {
+        "og:title": "Oleksandr Kuzmenko — Редактор",
+        "og:description": "Oleksandr Kuzmenko — редактор AI Today Brief, щоденного AI/engineering брифу з людською редактурою.",
+        "og:url": "https://aitodaybrief.com/uk/author",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "ImageObject",
+        "Organization",
+        "Person",
+        "ProfilePage"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/subscribe",
+      "status": 200,
+      "resolvedPath": "/en/subscribe",
+      "lang": "en",
+      "title": "The best of AI — in your inbox each morning, in 5 minutes · AI Today Brief",
+      "description": "One focused email a day: top stories with analysis. No spam, one-click unsubscribe.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/subscribe",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/subscribe",
+        "uk": "https://aitodaybrief.com/uk/subscribe",
+        "x-default": "https://aitodaybrief.com/en/subscribe"
+      },
+      "openGraph": {
+        "og:title": "The best of AI — in your inbox each morning, in 5 minutes",
+        "og:description": "One focused email a day: top stories with analysis. No spam, one-click unsubscribe.",
+        "og:url": "https://aitodaybrief.com/en/subscribe",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "Answer",
+        "BreadcrumbList",
+        "FAQPage",
+        "ListItem",
+        "Question",
+        "WebPage",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/subscribe",
+      "status": 200,
+      "resolvedPath": "/uk/subscribe",
+      "lang": "en",
+      "title": "Головне про AI — щоранку на пошту, за 5 хвилин · AI Today Brief",
+      "description": "Один сфокусований лист на день: топ новини з аналізом. Без спаму, відписка в один клік.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/subscribe",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/subscribe",
+        "uk": "https://aitodaybrief.com/uk/subscribe",
+        "x-default": "https://aitodaybrief.com/en/subscribe"
+      },
+      "openGraph": {
+        "og:title": "Головне про AI — щоранку на пошту, за 5 хвилин",
+        "og:description": "Один сфокусований лист на день: топ новини з аналізом. Без спаму, відписка в один клік.",
+        "og:url": "https://aitodaybrief.com/uk/subscribe",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "Answer",
+        "BreadcrumbList",
+        "FAQPage",
+        "ListItem",
+        "Question",
+        "WebPage",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/advertise",
+      "status": 200,
+      "resolvedPath": "/en/advertise",
+      "lang": "en",
+      "title": "Put your product in front of our audience · AI Today Brief",
+      "description": "AI Today Brief is read by developers and tech leads who build with AI. Native, clearly disclosed placements with transparent reporting.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/advertise",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/advertise",
+        "uk": "https://aitodaybrief.com/uk/advertise",
+        "x-default": "https://aitodaybrief.com/en/advertise"
+      },
+      "openGraph": {
+        "og:title": "Put your product in front of our audience",
+        "og:description": "AI Today Brief is read by developers and tech leads who build with AI. Native, clearly disclosed placements with transparent reporting.",
+        "og:url": "https://aitodaybrief.com/en/advertise",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "ListItem",
+        "WebPage",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/advertise",
+      "status": 200,
+      "resolvedPath": "/uk/advertise",
+      "lang": "en",
+      "title": "Розкажіть про свій продукт нашій аудиторії · AI Today Brief",
+      "description": "AI Today Brief читають розробники й tech-ліди, які будують з AI. Нативні, чесно позначені розміщення з прозорою звітністю.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/advertise",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/advertise",
+        "uk": "https://aitodaybrief.com/uk/advertise",
+        "x-default": "https://aitodaybrief.com/en/advertise"
+      },
+      "openGraph": {
+        "og:title": "Розкажіть про свій продукт нашій аудиторії",
+        "og:description": "AI Today Brief читають розробники й tech-ліди, які будують з AI. Нативні, чесно позначені розміщення з прозорою звітністю.",
+        "og:url": "https://aitodaybrief.com/uk/advertise",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "BreadcrumbList",
+        "ListItem",
+        "WebPage",
+        "WebSite"
+      ],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/editorial-policy",
+      "status": 200,
+      "resolvedPath": "/en/editorial-policy",
+      "lang": "en",
+      "title": "Editorial policy · AI Today Brief",
+      "description": "AI Today Brief is a human-edited news product for engineers. This page explains how we select stories, verify facts, handle corrections, and keep editorial independence.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/editorial-policy",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/editorial-policy",
+        "uk": "https://aitodaybrief.com/uk/editorial-policy",
+        "x-default": "https://aitodaybrief.com/en/editorial-policy"
+      },
+      "openGraph": {
+        "og:title": "Editorial policy",
+        "og:description": "AI Today Brief is a human-edited news product for engineers. This page explains how we select stories, verify facts, handle corrections, and keep editorial independence.",
+        "og:url": "https://aitodaybrief.com/en/editorial-policy",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "Organization",
+        "Person",
+        "WebPage"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/editorial-policy",
+      "status": 200,
+      "resolvedPath": "/uk/editorial-policy",
+      "lang": "en",
+      "title": "Редакційна політика · AI Today Brief",
+      "description": "AI Today Brief — новинний продукт для інженерів, який редагує людина. На цій сторінці — як ми відбираємо матеріали, перевіряємо факти, виправляємо помилки та зберігаємо редакційну незалежність.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/editorial-policy",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/editorial-policy",
+        "uk": "https://aitodaybrief.com/uk/editorial-policy",
+        "x-default": "https://aitodaybrief.com/en/editorial-policy"
+      },
+      "openGraph": {
+        "og:title": "Редакційна політика",
+        "og:description": "AI Today Brief — новинний продукт для інженерів, який редагує людина. На цій сторінці — як ми відбираємо матеріали, перевіряємо факти, виправляємо помилки та зберігаємо редакційну незалежність.",
+        "og:url": "https://aitodaybrief.com/uk/editorial-policy",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [
+        "Organization",
+        "Person",
+        "WebPage"
+      ],
+      "jsonLdIssues": [
+        "Organization:missing:logo"
+      ],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/ai-disclosure",
+      "status": 200,
+      "resolvedPath": "/en/ai-disclosure",
+      "lang": "en",
+      "title": "AI Disclosure · AI Today Brief",
+      "description": "We openly label AI involvement in our content — for humans and machine-readably. This aligns with the spirit of the EU AI Act (Art. 50, applicable 2026-08-02) and with our trust-first principle.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/ai-disclosure",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/ai-disclosure",
+        "uk": "https://aitodaybrief.com/uk/ai-disclosure",
+        "x-default": "https://aitodaybrief.com/en/ai-disclosure"
+      },
+      "openGraph": {
+        "og:title": "AI Disclosure",
+        "og:description": "We openly label AI involvement in our content — for humans and machine-readably. This aligns with the spirit of the EU AI Act (Art. 50, applicable 2026-08-02) and with our trust-first principle.",
+        "og:url": "https://aitodaybrief.com/en/ai-disclosure",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/ai-disclosure",
+      "status": 200,
+      "resolvedPath": "/uk/ai-disclosure",
+      "lang": "en",
+      "title": "Розкриття щодо AI · AI Today Brief",
+      "description": "Ми відкрито позначаємо участь штучного інтелекту у створенні контенту — і для людей, і машинозчитувано. Це відповідає духу EU AI Act (ст. 50, застосовується з 02.08.2026) і нашому принципу довіри.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/ai-disclosure",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/ai-disclosure",
+        "uk": "https://aitodaybrief.com/uk/ai-disclosure",
+        "x-default": "https://aitodaybrief.com/en/ai-disclosure"
+      },
+      "openGraph": {
+        "og:title": "Розкриття щодо AI",
+        "og:description": "Ми відкрито позначаємо участь штучного інтелекту у створенні контенту — і для людей, і машинозчитувано. Це відповідає духу EU AI Act (ст. 50, застосовується з 02.08.2026) і нашому принципу довіри.",
+        "og:url": "https://aitodaybrief.com/uk/ai-disclosure",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/privacy",
+      "status": 200,
+      "resolvedPath": "/en/privacy",
+      "lang": "en",
+      "title": "Privacy Policy · AI Today Brief",
+      "description": "This policy explains what personal data AI Today Brief collects, why, and how you can control it. Data controller — Oleksandr Kuzmenko (sole operator of the service). Contact: hello@sashakuzmenko.com.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/privacy",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/privacy",
+        "uk": "https://aitodaybrief.com/uk/privacy",
+        "x-default": "https://aitodaybrief.com/en/privacy"
+      },
+      "openGraph": {
+        "og:title": "Privacy Policy",
+        "og:description": "This policy explains what personal data AI Today Brief collects, why, and how you can control it. Data controller — Oleksandr Kuzmenko (sole operator of the service). Contact: hello@sashakuzmenko.com.",
+        "og:url": "https://aitodaybrief.com/en/privacy",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/privacy",
+      "status": 200,
+      "resolvedPath": "/uk/privacy",
+      "lang": "en",
+      "title": "Політика приватності · AI Today Brief",
+      "description": "Ця політика пояснює, які персональні дані збирає AI Today Brief, з якою метою та як ви можете ними керувати. Контролер даних — Oleksandr Kuzmenko (одноосібний оператор сервісу). Контакт: hello@sashakuzmenko.com.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/privacy",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/privacy",
+        "uk": "https://aitodaybrief.com/uk/privacy",
+        "x-default": "https://aitodaybrief.com/en/privacy"
+      },
+      "openGraph": {
+        "og:title": "Політика приватності",
+        "og:description": "Ця політика пояснює, які персональні дані збирає AI Today Brief, з якою метою та як ви можете ними керувати. Контролер даних — Oleksandr Kuzmenko (одноосібний оператор сервісу). Контакт: hello@sashakuzmenko.com.",
+        "og:url": "https://aitodaybrief.com/uk/privacy",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/terms",
+      "status": 200,
+      "resolvedPath": "/en/terms",
+      "lang": "en",
+      "title": "Terms of Service · AI Today Brief",
+      "description": "By using AI Today Brief you agree to these terms. The service is provided by Oleksandr Kuzmenko. If you do not agree, please do not use the site.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/en/terms",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/terms",
+        "uk": "https://aitodaybrief.com/uk/terms",
+        "x-default": "https://aitodaybrief.com/en/terms"
+      },
+      "openGraph": {
+        "og:title": "Terms of Service",
+        "og:description": "By using AI Today Brief you agree to these terms. The service is provided by Oleksandr Kuzmenko. If you do not agree, please do not use the site.",
+        "og:url": "https://aitodaybrief.com/en/terms",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "en_US",
+        "og:locale:alternate": "uk_UA",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/terms",
+      "status": 200,
+      "resolvedPath": "/uk/terms",
+      "lang": "en",
+      "title": "Умови користування · AI Today Brief",
+      "description": "Користуючись AI Today Brief, ви погоджуєтесь із цими умовами. Сервіс надає Oleksandr Kuzmenko. Якщо ви не згодні з умовами, будь ласка, не користуйтеся сайтом.",
+      "robots": "max-image-preview:large",
+      "canonical": "https://aitodaybrief.com/uk/terms",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en/terms",
+        "uk": "https://aitodaybrief.com/uk/terms",
+        "x-default": "https://aitodaybrief.com/en/terms"
+      },
+      "openGraph": {
+        "og:title": "Умови користування",
+        "og:description": "Користуючись AI Today Brief, ви погоджуєтесь із цими умовами. Сервіс надає Oleksandr Kuzmenko. Якщо ви не згодні з умовами, будь ласка, не користуйтеся сайтом.",
+        "og:url": "https://aitodaybrief.com/uk/terms",
+        "og:site_name": "AI Today Brief",
+        "og:locale": "uk_UA",
+        "og:locale:alternate": "en_US",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 1,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/en/zzz-missing",
+      "status": 200,
+      "resolvedPath": "/en/zzz-missing",
+      "lang": "en",
+      "title": "AI Today Brief — The daily AI-engineering brief — for builders. · AI Today Brief",
+      "description": "The daily AI-engineering brief — for builders.",
+      "robots": "noindex",
+      "canonical": "https://aitodaybrief.com/en",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en",
+        "uk": "https://aitodaybrief.com/uk",
+        "x-default": "https://aitodaybrief.com/en"
+      },
+      "openGraph": {
+        "og:title": "AI Today Brief — The daily AI-engineering brief — for builders. · AI Today Brief",
+        "og:description": "The daily AI-engineering brief — for builders.",
+        "og:url": "https://aitodaybrief.com",
+        "og:site_name": "AI Today Brief",
+        "og:image": "https://aitodaybrief.com/en/opengraph-image?8cfcfedc40047595",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 0,
+      "mainTextLength": 0
+    },
+    {
+      "path": "/uk/zzz-missing",
+      "status": 200,
+      "resolvedPath": "/uk/zzz-missing",
+      "lang": "en",
+      "title": "AI Today Brief — Щоденний бриф з AI-інженерії — для тих, хто будує. · AI Today Brief",
+      "description": "Щоденний бриф з AI-інженерії — для тих, хто будує.",
+      "robots": "noindex",
+      "canonical": "https://aitodaybrief.com/uk",
+      "hreflang": {
+        "en": "https://aitodaybrief.com/en",
+        "uk": "https://aitodaybrief.com/uk",
+        "x-default": "https://aitodaybrief.com/en"
+      },
+      "openGraph": {
+        "og:title": "AI Today Brief — Щоденний бриф з AI-інженерії — для тих, хто будує. · AI Today Brief",
+        "og:description": "Щоденний бриф з AI-інженерії — для тих, хто будує.",
+        "og:url": "https://aitodaybrief.com",
+        "og:site_name": "AI Today Brief",
+        "og:image": "https://aitodaybrief.com/uk/opengraph-image?8cfcfedc40047595",
+        "og:image:type": "image/png",
+        "og:image:width": "1200",
+        "og:image:height": "630",
+        "og:image:alt": "AI Today Brief",
+        "og:type": "website"
+      },
+      "twitterCard": "summary_large_image",
+      "jsonLdTypes": [],
+      "jsonLdIssues": [],
+      "h1Count": 0,
+      "mainTextLength": 0
+    }
+  ]
+}

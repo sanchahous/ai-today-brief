@@ -25,10 +25,11 @@ Last updated: 2026-09-29
 - **Рішення D1–D13 ухвалені.** Власника про них не перепитувати. Змінити рішення можна лише за
   новою відповіддю власника: спершу картки, потім запис у [log](../log.md).
 - **Гейт G0 не пройдено.** Поки він закритий, у production не йде жоден візуальний PR.
-- **Наступна задача: AH-0.4.** AH-0.3 ([#373](https://github.com/sanchahous/ai-today-brief/pull/373))
-  зняла 232 baseline PNG у `artifacts/_local/before/`
-  після токенів 2.0 (#369), до наступного візуального PR. (source: `scripts/capture-route-matrix.ts`;
-  production capture 2026-09-29; `artifacts/_local/before/manifest.json`)
+- **Наступна задача: AH-0.5.** AH-0.3 має відкритий [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373)
+  зі знімками production; AH-0.4 ([#374](https://github.com/sanchahous/ai-today-brief/pull/374))
+  зафіксувала текстовий SEO baseline для 58 URL. Цей рядок
+  оновлює PR кожної закритої задачі. (source: PR #373; `scripts/seo-contract.ts`;
+  production HTTP-запити 2026-09-29)
 
 ## 2. Порядок старту сесії
 
