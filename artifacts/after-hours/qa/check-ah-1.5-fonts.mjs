@@ -10,6 +10,9 @@ const assets = ['display', 'display-italic', 'sans', 'sans-uk'].map((name) => {
   const bytes = readFileSync(`artifacts/after-hours/assets/${name}.woff2`);
   if (!bytes.equals(readFileSync(`src/app/_fonts/${name}.woff2`))) throw new Error(`Runtime font drift: ${name}`);
   const font = fromBuffer(bytes);
+  if (font.variationAxes.wght?.min !== 100 || font.variationAxes.wght?.max !== 900) {
+    throw new Error(`Unexpected variable weight range in ${name}`);
+  }
   const missingUk = [...alphabet].filter((char) => !font.hasGlyphForCodePoint(char.codePointAt(0))).join('');
   if (name === 'sans-uk' && missingUk) throw new Error(`Missing Ukrainian glyphs: ${missingUk}`);
   const latin = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';

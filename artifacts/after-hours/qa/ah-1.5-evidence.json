@@ -87,6 +87,10 @@
       "sha256": "4a75a36ade8be0e19b14197623d01d39aee9d7e8fa120f364d9b43c15dbab8a7"
     },
     {
+      "file": "artifacts/_local/ah-1.5-push.log",
+      "sha256": "9c902daa3fba58d34379d1d6d66e17275b88a5b7fd4e66019be8f21406a8bf4b"
+    },
+    {
       "file": "artifacts/_local/ah-1.5-seo-main-compare.log",
       "sha256": "be2710872448d1baa7f8a2b4a19ef956b9f4391460eeb53ac10dc736cf9cfd09"
     },

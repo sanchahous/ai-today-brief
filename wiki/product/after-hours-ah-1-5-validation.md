@@ -6,6 +6,8 @@ Last updated: 2026-09-30
 
 ---
 
+[Draft PR #385](https://github.com/sanchahous/ai-today-brief/pull/385), [Vercel Preview](https://ai-today-brief-git-feat-ah-15-typography-sanchahous-projects.vercel.app). Перший deployment успішний; Preview потребує логіну. Pre-push hook перед створенням PR: **339 Chromium passed, 5 skipped**, EXIT=0; власний production server :3000, authenticated revalidate потрібних маршрутів. CI фінальної docs-ревізії ще очікується. (source: PR #385 checks / Vercel comment 2026-09-30; `artifacts/_local/ah-1.5-push.log`)
+
 ## Реалізація
 
 D3: `next/font/local` завантажує Fraunces regular, Fraunces italic, Inter Latin і Inter Cyrillic з наявних OFL-файлів. Preload — upright display та обидва body subset-и; italic завантажується за використанням. Latin має автоматичний Arial metric fallback, display — Times New Roman metric fallback. Cyrillic стоїть першим у body-стеку, щоб Latin fallback не перехоплював українські літери. Mono — системний стек. (source: `src/app/fonts.ts`; `src/app/globals.css`)
@@ -42,7 +44,7 @@ D4: українська display-гарнітура — Georgia для всьо�
 
 Console errors у звіті AH-1.5 — заблокований dev HMR WebSocket на `127.0.0.1`; решта метрик зберігає ненульовий legacy-борг. Clipped-приклади містять line-clamp у news/search. Через відмінності сирих лічильників цей звіт не є доказом нульових регресій full-page QA; DoD §0.1.5 та H1 AC залишаються відкритими для рішення власника й наступних міграцій. (source: ті самі JSON reports; `src/components/post-card.tsx`; [епік](after-hours-redesign-epic.md#01-definition-of-done--для-кожного-pr-епіку))
 
-`npm run pr:check` пройшов із EXIT=0 перед першим push: logic coverage, typecheck, lint, e2e:check, wiki:check, migrations і minimal production build. Pre-push E2E й CI очікують push. Хеші локальних доказів і машинні summary збережено у tracked [evidence receipt](../../artifacts/after-hours/qa/ah-1.5-evidence.json); PNG та повні traces лишаються локальними. Публічні маршрути лишаються у legacy report-режимі до міграції шаблонів; нуль порушень full-page gating не заявлено. (source: `artifacts/_local/ah-1.5-pr-check.log`; `artifacts/after-hours/qa/collect-ah-1.5-evidence.mjs`; [епік AH-0.5 та DoD](after-hours-redesign-epic.md))
+`npm run pr:check` пройшов із EXIT=0 перед першим push: logic coverage, typecheck, lint, e2e:check, wiki:check, migrations і minimal production build. Pre-push E2E зелений; CI очікує фінального прогону. Хеші локальних доказів і машинні summary збережено у tracked [evidence receipt](../../artifacts/after-hours/qa/ah-1.5-evidence.json); PNG та повні traces лишаються локальними. Публічні маршрути лишаються у legacy report-режимі до міграції шаблонів; нуль порушень full-page gating не заявлено. (source: `artifacts/_local/ah-1.5-pr-check.log`; `artifacts/after-hours/qa/collect-ah-1.5-evidence.mjs`; [епік AH-0.5 та DoD](after-hours-redesign-epic.md))
 
 ## Візуальний підпис
 

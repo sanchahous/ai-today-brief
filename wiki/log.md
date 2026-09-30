@@ -5514,3 +5514,7 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 ## 2026-09-30 — AH-1.5: pre-PR gate
 
 `npm run pr:check` завершився з EXIT=0; збережено tracked evidence receipt з SHA-256 локальних manifests, QA JSON і логів. Font-floor AC позначено виконаним за 580/812 сценаріями; решта відкритих AC не закривається автоматично. Повторний wiki:check пройшов після внесення доказів; index і validation оновлено. (source: `artifacts/_local/ah-1.5-pr-check.log`; `artifacts/after-hours/qa/ah-1.5-evidence.json`; `wiki/product/after-hours-redesign-epic.md`)
+
+## 2026-09-30 — AH-1.5: draft PR #385
+
+Створено [PR #385](https://github.com/sanchahous/ai-today-brief/pull/385) з гілки `feat/ah-1.5-typography`; merge не виконувався. Pre-push — 339 Chromium passed / 5 skipped, EXIT=0, після revalidate власного production server :3000. Перший Vercel deployment успішний; Preview URL додано у validation. Номер PR внесено окремим docs-комітом у картку/§5.3, now, handoff, index і validation. Підпис UK, прийняття локального CLS та рішення щодо legacy QA запитані у власника й ще очікуються. (source: PR #385; `artifacts/_local/ah-1.5-push.log`; PR checks / Vercel comment; повідомлення цієї сесії 2026-09-30)

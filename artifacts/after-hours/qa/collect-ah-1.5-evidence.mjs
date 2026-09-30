@@ -13,6 +13,7 @@ const files = [
   'artifacts/_local/ah-1.5-font-cls.json',
   'artifacts/_local/ah-1.5-typography-final.log',
   'artifacts/_local/ah-1.5-pr-check.log',
+  'artifacts/_local/ah-1.5-push.log',
   'artifacts/_local/ah-1.5-seo-main-compare.log',
   'artifacts/_local/ah-1.5-production-freshness.json',
 ];

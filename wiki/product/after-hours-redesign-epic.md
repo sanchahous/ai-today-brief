@@ -346,7 +346,7 @@ flowchart TD
 | AH-1.2 | ✅ Контраст-гейт 2.0: 222 пари, 0 провалів, мінімум категорій 6,41 / 5,22; реалізовано в [PR #384](https://github.com/sanchahous/ai-today-brief/pull/384), без видимих змін | — | — | AH-1.4 ✅ | G09 (UI-пари) |
 | AH-1.3 | ◐ Контракт Night/Day інтегровано в main через [#378](https://github.com/sanchahous/ai-today-brief/pull/378); legacy no-JS/full-page QA AC лишаються задокументованими ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
 | AH-1.4 | ✅ Кольори й гліфи категорій: змерджено в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382), `5af8d56` ([докази](after-hours-ah-1-4-validation.md)) | — | — | — | B5 |
-| AH-1.5 | ◐ Типографіка реалізована: local fonts, Georgia UK, шкала, eyebrow; очікує підпису ([докази](after-hours-ah-1-5-validation.md)) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
+| AH-1.5 | ◐ Типографіка — [draft PR #385](https://github.com/sanchahous/ai-today-brief/pull/385): local fonts, Georgia UK, шкала, eyebrow; очікує підпису ([докази](after-hours-ah-1-5-validation.md)) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
 | AH-1.6 | ✅ Простір, форма, глибина, шари, брейкпоінти, motion-токени, фокус: змерджено в [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381) (`55b78dc`, підпис власника отримано 2026-09-30); `--header-h` лишається 60px до AH-3.3 | — | — | D5 ✅ | G09 (простір, форма, глибина, рух), B13 (токени й контракт e2e) |
 | AH-1.7 | ✅ Ratchet-звіт «сирих» значень: інтегровано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), main `e470105` | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
@@ -766,7 +766,7 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 
 ### AH-1.5 · Типографіка: шрифти, шкала, мінімум 12 px
 
-> **Оновлення 2026-09-30:** реалізація D3/D4, leading/tracking/measure та eyebrow готова до review; підпис власника ще не отримано. Докази й межі legacy QA — [AH-1.5 validation](after-hours-ah-1-5-validation.md). (source: `src/app/fonts.ts`; `src/app/globals.css`; `e2e/typography.spec.ts`)
+> **Оновлення 2026-09-30:** [draft PR #385](https://github.com/sanchahous/ai-today-brief/pull/385), реалізація D3/D4, leading/tracking/measure та eyebrow готова до review; підпис власника ще не отримано. Докази й межі legacy QA — [AH-1.5 validation](after-hours-ah-1-5-validation.md). (source: PR #385; `src/app/fonts.ts`; `src/app/globals.css`; `e2e/typography.spec.ts`)
 
 **Тип:** код · **Розмір:** M (залишок) · **Виконавець:** агент (+ підпис власника щодо UK) ·
 **Залежить від:** D3 ✅, D4 ✅, AH-1.1 ✅ · **Закриває:** B14; частина G09 (B3 закрито #369)
