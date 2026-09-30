@@ -5361,6 +5361,22 @@ now, handoff та index. (source: локальні прогони 2026-09-30; PR
 (source: `artifacts/_local/ah-1.7-conflict-ratchet.log`;
 `scripts/raw-design-values.baseline.json`; `src/app/manifest.ts`)
 
+
+## 2026-09-30 — AH-1.4: кольори й гліфи категорій
+
+Дев'ять tokenKey, Night/Day `--cat-*`, незмінні `--art-*`, GLYPHS із aria-hidden;
+public споживачі, daily/subscribe/related і search preview мігровані. Токени 2.1.0;
+54 пари ≥5.2238:1. Day-хаки прибрано; старе tinted badge тло з 3.85:1 виправлено.
+Ratchet 42 → 30 кольорових входжень, 4 довільні z-index, 0 raw shadows і <12 px.
+SEO local: 58 URL, 0 errors / warnings. Оновлено епік, now, handoff, governance,
+index; додано validation. AH-1.7 / #377 змержено в e470105; run 36732521337 — success.
+AH-1.4 очікує окремого візуального підпису перед merge; далі AH-1.2. Legacy QA
+й no-JS борг збережено.
+(source: [AH-1.4 validation](product/after-hours-ah-1-4-validation.md);
+`src/lib/category-meta.ts`; `src/app/globals.css`; `src/components/icons.tsx`;
+`artifacts/_local/ah-1.4-seo-local.log`; `gh pr view 377`; `gh run view 36732521337`;
+повідомлення власника 2026-09-30)
+
 ## 2026-09-30 — AH-4.1: Topics / Tool у discovery (паралельно з AH-1.4)
 
 Реалізовано AH-4.1 окремою гілкою `feat/ah-4.1-topics-taxonomy`, паралельно з AH-1.4
@@ -5386,6 +5402,30 @@ Live-перевірка prod-БД (read-only SQL): 905 опубліковани�
 migrations:check, build:ci); pre-push `e2e:affected` — 60 passed / 7 skipped.
 У епіку, now і handoff додано посилання на PR. Пікер фасету лишається за AH-4.3.
 (source: `gh pr view 380`; локальні прогони 2026-09-30)
+
+## 2026-09-30 — AH-1.4: PR #382, фінальний Preview і межі QA
+
+Відкрито draft [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382).
+Інтегровано main `3d0cb2b` (#380, AH-4.1) після #379 (Next 16.3.6);
+обидві історії wiki/log збережено, статус #377 виправлено на merged / E2E success.
+`pr:check`: 2112 unit-тестів; pre-push 304 passed / 5 skipped. Category/catalog/admin
+та theme: 488 passed / 52 skipped у трьох engines. Category-тест посилено очікуванням
+карток; повтор 307 passed / 32 skipped. SEO local і фінального Preview: 58 URL,
+0 errors / warnings; Preview news повторно HIT в EN/UK. (source:
+[validation](product/after-hours-ah-1-4-validation.md); локальні логи у QA receipt;
+`git merge origin/main`; `gh pr view 382` 2026-09-30)
+
+32 фінальні PNG Preview зафіксовано на тих самих маршрутах через manifest «до».
+Галерея перевірена: 32 пари / 64 завантажених PNG; before provenance і SHA-256
+не переписано. Full legacy report 812 сценаріїв: overflow/text <12 px/alt — 0,
+axe 1400, console 28, targets 12013, clipped 1377, zoom/reflow clipped 424.
+Додаткові 8 zoom-clipped paragraphs належать hydrated EN live search; поза ним
+zoom-clipping лишається 416. Дві додаткові filtered-news clipping-знахідки проти
+AH-1.3 і no-JS Suspense-борг відкриті. Zero-violation DoD не оголошено виконаним.
+Окремий візуальний підпис і review меж приймання потрібні перед merge; далі AH-1.2.
+(source: `artifacts/_local/ah-1.4-full-qa-final.json`;
+`artifacts/after-hours/qa/ah-1.4-validation.json`; `artifacts/after-hours/qa/ah-1.4-review.html`;
+повідомлення власника 2026-09-30)
 
 ## 2026-09-30 — AH-1.6: простір, форма, глибина, шари, рух, фокус, брейкпоінти
 
@@ -5418,3 +5458,13 @@ EN/UK × Night/Day × 1440/390, фокус на посиланні, кнопці
 lastmod 30.09, а локальний dev бачить матеріали до 29.09 — причина не встановлена, окрему задачу заведено.
 Push виконано з `SKIP_E2E=1` за згодою власника: pre-push перевикористав чужий сервер на :3000.
 (source: `curl` production 2026-09-30; `gh pr view 381`)
+
+## 2026-09-30 — AH-1.6: інтеграція main після #382, реєстр токенів охоплює AH-1.4
+
+Власник змерджив [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382) (AH-1.4, `5af8d56`) у main,
+і гілку [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381) злито з ним. Конфлікти були лише в
+`check-design-tokens.ts`, `tokens.test.ts` (обидва набори імпортів збережено) і wiki (обидві історії `log.md`,
+`now`, handoff, епік, index). Реєстр токенів `design-system-tokens` §7 доповнено розділом 7.1.1 з 21 токеном
+`--cat-*` / `--art-*` з AH-1.4 — без цього docs-аудит AH-1.6 правильно падав. Версія токенів лишається 2.1.0
+(AH-1.4); зміни AH-1.6 записано як її продовження. Рядок AH-1.4 в епіку оновлено на «змерджено».
+(source: `git merge origin/main`; `gh pr view 381/382`)

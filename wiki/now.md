@@ -22,30 +22,30 @@ Last updated: 2026-09-30
   (відсутній запис валить `pr:check`). `--header-h` лишається 60px до AH-3.3. Візуально змінилося:
   радіус `md` 6→8px, тіні (`--shadow-1` / `--shadow-pop`), фокус (`--focus`, відступ 3px), кільце в
   полях розсилки й hero-search. Нові gate-и: `e2e/focus-visible.spec.ts`, docs-аудит токенів.
-  AH-1.4 (кольори категорій) веде інша сесія; її PR має додати свої `--cat-*` у реєстр §7 — інакше
-  `tokens.test.ts` покаже список відсутніх токенів. Наступна після AH-1.4 — AH-1.2.
+  AH-1.4 (кольори категорій) інтегровано через PR #382: `--cat-*` / `--art-*` внесено в реєстр §7.1.1
+  після злиття гілок. Наступна задача — AH-1.2 (контраст-гейт 2.0).
   (source: `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `e2e/focus-visible.spec.ts`;
   повний Chromium-набір 192 passed / 0 failed 2026-09-30)
 
-- **AH-4.1 (Topics / Tool у discovery) — реалізовано, PR #380 (2026-09-30), паралельно з AH-1.4.**
+- **AH-4.1 (Topics / Tool у discovery) — інтегровано через PR #380 (2026-09-30), main `3d0cb2b`.**
   `src/lib/topic-normalize.ts` зводить «Claude Code», «claude-code», «ClaudeCode» до одного slug і
   має мапу лише безсумнівних аліасів; `HomeItem.topics`; `topics=` в URL; OR усередині фасету,
   AND між фасетами; лічильники за іншими фасетами; правило D8 (≥ 2 матеріали, обрана тема завжди
   видима, без даних фасет порожній). Live-перевірка prod-БД: 905 айтемів, 2866 згадок, 1256
   унікальних ключів. У `news-feed` — лише застосування `topics` з URL і чіп зі зняттям; пікер у
-  sidebar — AH-4.3. AH-1.4 (кольори категорій) веде інша сесія — не дублювати.
+  sidebar — AH-4.3. AH-1.4 у PR #382 — не дублювати.
   (source: `src/lib/topic-normalize.ts`, `src/lib/news-filters.ts`; SQL-перевірка 2026-09-30;
-  [ADR §2.3](decisions/2026-09-26-news-discovery-and-pagination-architecture.md))
+  [ADR §2.3](decisions/2026-09-26-news-discovery-and-pagination-architecture.md); `gh pr view 380` 2026-09-30)
 
 - **AH-1.3 інтегровано через [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378)
-  2026-09-30; актуальний `origin/main` — `6b3b446`.**
+  2026-09-30; актуальний `origin/main` після #380 — `3d0cb2b`.**
   Pre-paint синхронізує `.theme-light`, `data-theme`, `color-scheme` і `theme-color`;
   `localStorage` та GA4 лишають `light`/`dark`. Перемикач EN/UK описує наступну тему,
   має 44×44 px і синхронізує desktop/mobile контролі. SEO compare: 58 URL,
   0 errors / 0 warnings; галерея до/після — `artifacts/after-hours/qa/ah-1.3-review.html`.
   Деталі перевірок і межі legacy QA — [AH-1.3 validation](product/after-hours-ah-1-3-validation.md).
   Фаза 0 завершена: #376 змержено в `69bcd1c`; merge #378 підтверджено GitHub.
-  Наступна окрема задача — AH-1.4 (кольори й гліфи категорій), потім AH-1.2;
+  AH-1.4 реалізовано в PR #382; наступна після її інтеграції — AH-1.2;
   G1 чекає решти foundations і підпису власника.
   (source: `src/app/layout.tsx`, `src/lib/theme.ts`, `src/components/theme-toggle.tsx`;
   `artifacts/_local/ah-1.3-seo-local-fresh.log`; `git fetch origin`, `gh pr view 378` 2026-09-30)
@@ -61,13 +61,21 @@ Last updated: 2026-09-30
   (source: погодження й скриншоти власника, `gh pr view` 2026-09-30;
   [baseline](analytics/2026-09-29-redesign-baseline.md))
 
+- **AH-1.4 реалізовано у [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382); очікує окремого візуального підпису.**
+  Дев'ять slug-ів мають tokenKey; Night/Day текст — `--cat-*`, темні банери —
+  незмінні `--art-*`. DB color лише fallback невідомих; GLYPHS із прототипу
+  перенесено з aria-hidden. 54 пари контрасту ≥5.2238:1; SEO local 58 URL,
+  0 errors / warnings. Ratchet після prune: 30 кольорових входжень, 4 довільні
+  z-index, 0 сирих тіней і шрифтів <12 px. Потрібен окремий візуальний підпис
+  власника перед merge; наступна задача після інтеграції — AH-1.2.
+  (source: [AH-1.4 validation](product/after-hours-ah-1-4-validation.md);
+  `src/lib/category-meta.ts`; `src/components/icons.tsx`; `src/app/globals.css`)
+
 - **AH-1.7 / [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377)
-  підписано власником; resolve і merge явно дозволено 2026-09-30.**
-  Конфлікти лише wiki: збережено актуальну фазу 0/Night-Day й обидві історії log.
-  Після AH-1.3 baseline зменшено з 44 до 42 кольорових входжень (20 файлів),
-  4 довільні z-index, 0 сирих тіней і 0 шрифту <12 px. PR чекає перевірок перед merge.
-  (source: пряме повідомлення власника 2026-09-30; `git merge origin/main`;
-  `npm run design:raw:prune`; `scripts/raw-design-values.baseline.json`)
+  змержено 2026-09-30 в `e470105`.** Власник явно погодив resolve/merge;
+  історії wiki/log збережено. E2E run `36732521337` на head `7240652` завершено
+  успішно; повторного дозволу для #377 не потрібно.
+  (source: `gh pr view 377`; `gh run view 36732521337` 2026-09-30)
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR
   [#372](https://github.com/sanchahous/ai-today-brief/pull/372).** Підсумок за кодом і живою перевіркою production:

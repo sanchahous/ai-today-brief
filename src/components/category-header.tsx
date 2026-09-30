@@ -1,3 +1,4 @@
+import { categoryColor } from '@/lib/category-meta';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { CategoryGlyph } from '@/components/icons';
@@ -7,7 +8,7 @@ import type { Lang } from '@/lib/site';
 
 export function CategoryHeader({ lang, hub }: { lang: Lang; hub: CategoryHubView }) {
   const t = getStrings(lang);
-  const color = hub.color ?? '#888888';
+  const color = categoryColor(hub.slug, hub.color);
   const catStyle = { '--cat-color': color } as CSSProperties;
   const countLabel = t.landing.categoryArticles;
 

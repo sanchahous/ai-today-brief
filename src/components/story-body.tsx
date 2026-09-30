@@ -1,3 +1,4 @@
+import { categoryColor } from '@/lib/category-meta';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { getStrings } from '@/lib/i18n';
@@ -50,7 +51,7 @@ export function StoryBody({
   toolLinks: ToolLink[];
 }) {
   const t = getStrings(lang);
-  const color = detail.categoryColor ?? '#888888';
+  const color = categoryColor(detail.categorySlug, detail.categoryColor);
   const catStyle = { '--cat-color': color } as CSSProperties;
   const factsVisual = buildFactsVisual(detail.facts);
 

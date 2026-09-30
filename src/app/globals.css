@@ -75,7 +75,7 @@
 }
 
 /*
- * Semantic palette — After Hours v2.0.0 (mirror of src/lib/design-system/tokens.ts).
+ * Semantic palette — After Hours v2.1.0 (mirror of src/lib/design-system/tokens.ts).
  * Do not edit values here alone: `npm run tokens:check` fails on drift, missing Day roles,
  * contrast below WCAG AA, or any font size below the 12px floor.
  */
@@ -105,6 +105,27 @@
   --error: #ff9b8a;
   --success: #b5d8cc;
   --warning: #e8c07a;
+  --cat-tools: #7fcfae;
+  --cat-tutorials: #e6c071;
+  --cat-cost: #6fcad6;
+  --cat-agents: #b2a6f0;
+  --cat-vibe: #e59bc9;
+  --cat-creative: #f09b86;
+  --cat-local: #8fb4ee;
+  --cat-career: #c4cc7e;
+  --cat-models: #cfa0e6;
+  --art-tools: #7fcfae;
+  --art-tutorials: #e6c071;
+  --art-cost: #6fcad6;
+  --art-agents: #b2a6f0;
+  --art-vibe: #e59bc9;
+  --art-creative: #f09b86;
+  --art-local: #8fb4ee;
+  --art-career: #c4cc7e;
+  --art-models: #cfa0e6;
+  --art-neutral: #b9b7ac;
+  --art-text: #f0e9dc;
+  --art-stage: #0e100f;
   --accent-rgb: 212 180 131;
 
   /* Elevation and surface effects — Day overrides all of them below. */
@@ -188,6 +209,27 @@ html[data-theme='day'] {
   --error: #b3261e;
   --success: #2d6559;
   --warning: #7a5a10;
+  --cat-tools: #1f6b4f;
+  --cat-tutorials: #7a5a10;
+  --cat-cost: #16636e;
+  --cat-agents: #5645a8;
+  --cat-vibe: #8b2f69;
+  --cat-creative: #9c3b25;
+  --cat-local: #2c5a9e;
+  --cat-career: #5c6418;
+  --cat-models: #733d93;
+  --art-tools: #7fcfae;
+  --art-tutorials: #e6c071;
+  --art-cost: #6fcad6;
+  --art-agents: #b2a6f0;
+  --art-vibe: #e59bc9;
+  --art-creative: #f09b86;
+  --art-local: #8fb4ee;
+  --art-career: #c4cc7e;
+  --art-models: #cfa0e6;
+  --art-neutral: #b9b7ac;
+  --art-text: #f0e9dc;
+  --art-stage: #0e100f;
   --accent-rgb: 114 86 46;
   --shadow-1: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 12px 30px -20px rgb(74 56 28 / 0.4);
   --shadow-2: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 24px 50px -26px rgb(74 56 28 / 0.5);
@@ -503,105 +545,59 @@ html[data-theme='day'] {
   box-shadow: var(--shadow-pop);
 }
 
-/* Category tints — neon DB colours are tuned for dark; mix down on light theme. */
+/* Theme category tokens; opaque surface tints keep nested backgrounds above AA. */
 .cat-fg {
   color: var(--cat-color);
-}
-.theme-light .cat-fg {
-  color: color-mix(in srgb, var(--cat-color) 52%, var(--text));
 }
 
 .cat-badge {
   color: var(--cat-color);
-  background: color-mix(in srgb, var(--cat-color) 12%, transparent);
+  background: color-mix(in srgb, var(--cat-color) 6%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--cat-color) 34%, transparent);
-}
-.theme-light .cat-badge {
-  color: color-mix(in srgb, var(--cat-color) 48%, var(--text));
-  background: color-mix(in srgb, var(--cat-color) 16%, var(--surface-2));
-  border-color: color-mix(in srgb, var(--cat-color) 38%, var(--border));
 }
 
 .cat-thumb {
   color: var(--cat-color);
   background: linear-gradient(
     140deg,
-    color-mix(in srgb, var(--cat-color) 20%, transparent),
-    color-mix(in srgb, var(--cat-color) 8%, transparent)
+    color-mix(in srgb, var(--cat-color) 6%, var(--surface)),
+    var(--surface)
   );
   border: 1px solid color-mix(in srgb, var(--cat-color) 27%, transparent);
-}
-.theme-light .cat-thumb {
-  color: color-mix(in srgb, var(--cat-color) 55%, var(--text));
-  background: linear-gradient(
-    140deg,
-    color-mix(in srgb, var(--cat-color) 16%, var(--surface)),
-    color-mix(in srgb, var(--cat-color) 8%, var(--surface-2))
-  );
-  border-color: color-mix(in srgb, var(--cat-color) 36%, var(--border));
 }
 
 .cat-chip {
   color: var(--cat-color);
-  background: color-mix(in srgb, var(--cat-color) 12%, transparent);
+  background: color-mix(in srgb, var(--cat-color) 6%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--cat-color) 33%, transparent);
-}
-.theme-light .cat-chip {
-  color: color-mix(in srgb, var(--cat-color) 46%, var(--text));
-  background: color-mix(in srgb, var(--cat-color) 14%, var(--surface-2));
-  border-color: color-mix(in srgb, var(--cat-color) 36%, var(--border));
 }
 
 .cat-band {
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--cat-color) 15%, transparent),
-    color-mix(in srgb, var(--cat-color) 4%, transparent)
+    color-mix(in srgb, var(--cat-color) 6%, var(--surface)),
+    var(--surface)
   );
-  border-bottom: 1px solid color-mix(in srgb, var(--cat-color) 20%, transparent);
-}
-.theme-light .cat-band {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--cat-color) 12%, var(--surface-2)),
-    color-mix(in srgb, var(--cat-color) 5%, var(--surface))
-  );
-  border-bottom-color: color-mix(in srgb, var(--cat-color) 28%, var(--border));
+  border-bottom: 1px solid color-mix(in srgb, var(--cat-color) 6%, var(--surface));
 }
 
 .cat-icon-box {
   color: var(--cat-color);
-  background: color-mix(in srgb, var(--cat-color) 12%, transparent);
+  background: color-mix(in srgb, var(--cat-color) 6%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--cat-color) 33%, transparent);
-}
-.theme-light .cat-icon-box {
-  color: color-mix(in srgb, var(--cat-color) 55%, var(--text));
-  background: color-mix(in srgb, var(--cat-color) 14%, var(--surface-2));
-  border-color: color-mix(in srgb, var(--cat-color) 36%, var(--border));
 }
 
 .cat-header {
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--cat-color) 12%, transparent),
-    color-mix(in srgb, var(--cat-color) 4%, transparent)
+    color-mix(in srgb, var(--cat-color) 6%, var(--surface)),
+    var(--surface)
   );
   border: 1px solid color-mix(in srgb, var(--cat-color) 27%, transparent);
-}
-.theme-light .cat-header {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--cat-color) 10%, var(--surface-2)),
-    color-mix(in srgb, var(--cat-color) 4%, var(--surface))
-  );
-  border-color: color-mix(in srgb, var(--cat-color) 32%, var(--border));
 }
 
 .cat-dot {
   background: var(--cat-color);
-}
-.theme-light .cat-dot {
-  background: color-mix(in srgb, var(--cat-color) 65%, var(--text));
 }
 
 .filter-row {

@@ -1,6 +1,6 @@
-# Дизайн-система After Hours: архітектура токенів і governance (v2.0.0)
+# Дизайн-система After Hours: архітектура токенів і governance (v2.1.0)
 
-Summary: єдина канонічна специфікація токенів дизайн-системи After Hours v2.0.0 (міграція з 1.0.0 виконана 2026-09-29): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
+Summary: єдина канонічна специфікація токенів дизайн-системи After Hours v2.1.0 (міграція з 1.0.0 виконана 2026-09-29): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
 Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/qa/token-contrast.json`; `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`; `e2e/helpers/viewports.ts`; `wiki/decisions/2026-09-29-design-tokens-2-0-migration.md`; розрахунок контрасту 2026-09-29.
 Last updated: 2026-09-30
 
@@ -47,6 +47,15 @@ Foundations (v1.0.0)
 
 (Контраст на `bg`; для решти чотирьох поверхонь — повний вивід `npm run tokens:check`.) Нові ролі 2.0: `--stage`, `--raised`, `--overlay`, `--line-strong`, `--claret`, `--velvet`, `--focus`, `--warning`, `--success`. Мінімальна зона натискання: **44×44 px**; розміри контролів 36/44/52 px.
 
+### Категорії 2.1.0 (AH-1.4)
+
+Додано дев'ять `--cat-*` із Night/Day jewel tones та незмінні `--art-*` для
+темних банерів. 54 категорійні пари на bg/surface/raised ≥5.2238:1; CSS drift
+контролює обидва сімейства. Mapping — `CategoryMeta.tokenKey`; DB color лише
+fallback невідомих. Day color-mix overrides прибрано.
+(source: `src/lib/design-system/tokens.ts`; `src/lib/category-meta.ts`;
+[AH-1.4 validation](../product/after-hours-ah-1-4-validation.md))
+
 ## 3. Таблиця міграції Legacy → After Hours
 
 | Legacy-значення у globals.css | Новий семантичний токен | Night значення | Day значення |
@@ -73,9 +82,10 @@ Foundations (v1.0.0)
    - Patch: виправлення контрастності або коригування відтінку в межах ±5% яскравості.
    - Minor: додавання нових токенів або компонентних ролей без ламання наявних інтерфейсів.
    - Major: перейменування чи видалення токенів, зміна шкали типографіки чи сітки.
-3. **Продовження v2.0.0 (2026-09-30, AH-1.6):** простір, форма, глибина, шари, рух, фокус і брейкпоінти D5 перенесені в `tokens.ts` і `globals.css` (реєстр — §7); `tokens:check` і `tokens.test.ts` тепер звіряють з `tokens.ts` усі не-кольорові токени й падають, якщо токен оголошено в `globals.css`, але не задокументовано в реєстрі. Змінилося: радіуси 3/4/8/14/pill (`--radius-sm` 3→4, `--radius-md` 6→8, `--radius-pill` 999→9999), тіні `--shadow-pop` (Night і Day), `--shadow-card` замінено на `--shadow-1`, фокус-офсет 2→3 px. Не змінилося навмисно: `--header-h` лишається 60px (змінюється разом із header у AH-3.3), стандартні `sm/md/lg/xl` Tailwind.
-4. **Changelog v2.0.0 (2026-09-29, major):** токени 2.0.0 перенесені в `tokens.ts` і `globals.css`; повне Day-перевизначення; `--faint` виправлено (AA); шкала типографіки в `rem` із floor 12 px (`text-2xs`); ролі `stage/raised/overlay/line-strong/claret/velvet/focus/warning/success`; `zIndex`, `controlSize`; гейт `tokens:check` розширено (90 пар, drift, floor). Рішення: [ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md).
-5. **Changelog v1.0.0 (2026-09-26):**
+3. **Changelog v2.1.0 (2026-09-30, minor):** category/art roles, 54 контрастні пари й drift; [докази AH-1.4](../product/after-hours-ah-1-4-validation.md).
+4. **Продовження v2.1.0 (2026-09-30, AH-1.6):** простір, форма, глибина, шари, рух, фокус і брейкпоінти D5 перенесені в `tokens.ts` і `globals.css` (реєстр — §7); `tokens:check` і `tokens.test.ts` тепер звіряють з `tokens.ts` усі не-кольорові токени й падають, якщо токен оголошено в `globals.css`, але не задокументовано в реєстрі. Змінилося: радіуси 3/4/8/14/pill (`--radius-sm` 3→4, `--radius-md` 6→8, `--radius-pill` 999→9999), тіні `--shadow-pop` (Night і Day), `--shadow-card` замінено на `--shadow-1`, фокус-офсет 2→3 px. Не змінилося навмисно: `--header-h` лишається 60px (змінюється разом із header у AH-3.3), стандартні `sm/md/lg/xl` Tailwind.
+5. **Changelog v2.0.0 (2026-09-29, major):** токени 2.0.0 перенесені в `tokens.ts` і `globals.css`; повне Day-перевизначення; `--faint` виправлено (AA); шкала типографіки в `rem` із floor 12 px (`text-2xs`); ролі `stage/raised/overlay/line-strong/claret/velvet/focus/warning/success`; `zIndex`, `controlSize`; гейт `tokens:check` розширено (90 пар, drift, floor). Рішення: [ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md).
+6. **Changelog v1.0.0 (2026-09-26):**
    - Уніфікація токенів After Hours і чинного production.
    - Додано перевірку WCAG AA (`scripts/check-design-tokens.ts`).
    - Зафіксовано обов'язковий touch-target floor 44px.
@@ -126,6 +136,8 @@ hex-only підрахунку B4. У кінці кожної фази резул
 (source: `npm run design:raw:prune` 2026-09-30; `scripts/raw-design-values.baseline.json`;
 `src/app/manifest.ts` після [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378))
 
+Ratchet після AH-1.4: 30 кольорових входжень (було 42), 4 довільні z-index, 0 сирих тіней і шрифтів <12 px. (source: `npm run design:raw:prune`, `scripts/raw-design-values.baseline.json`, 2026-09-30)
+
 ## 7. Реєстр токенів (AH-1.6, M1-гейт)
 
 Кожна змінна, оголошена в `:root`, у Day-блоці та в `@theme` блоках `src/app/globals.css`, має бути тут у зворотних лапках. Інакше `npm run tokens:check` і `tokens.test.ts` (тобто `pr:check`) падають зі списком відсутніх токенів. Значення в CSS звіряються з `src/lib/design-system/tokens.ts`. Реєстрації Tailwind виду `--color-<роль>: var(--<роль>)` покриваються цільовою змінною. Кольорові значення ролей — у §2 і в `SEMANTIC_TOKENS`; тут — назва, роль і використання.
@@ -159,6 +171,34 @@ hex-only підрахунку B4. У кінці кожної фази резул
 | `--success` | успіх | `success` |
 | `--warning` | попередження | `warning` |
 | `--accent-rgb` | канали accent для `rgb(var(--accent-rgb) / α)` у градієнтах | не з `tokens.ts` |
+
+### 7.1.1 Кольори категорій (AH-1.4)
+
+Дев'ять відомих slug-ів мають semantic `--cat-*` для Night і Day; `--art-*` — незмінні відтінки для темних банерів без зображення (не перемикаються з темою). Значення в `PRIMITIVES.categoryPalette`; колір із БД лише резерв для невідомих категорій. Контраст `--cat-*` ≥ 4.5:1 на `--bg`, `--surface`, `--raised` обох тем перевіряє `tokens:check`.
+
+| Токен | Роль і використання | Код-мапінг |
+|---|---|---|
+| `--cat-tools` | Tools & releases: текст, межі, точки | `catTools` |
+| `--cat-tutorials` | Tutorials & guides | `catTutorials` |
+| `--cat-cost` | Token & cost optimization | `catCost` |
+| `--cat-agents` | Agents & MCP | `catAgents` |
+| `--cat-vibe` | Vibe coding workflow | `catVibe` |
+| `--cat-creative` | Creative AI | `catCreative` |
+| `--cat-local` | Local LLMs | `catLocal` |
+| `--cat-career` | Career & monetisation | `catCareer` |
+| `--cat-models` | Models & research | `catModels` |
+| `--art-tools` | відтінок банера Tools на темній сцені (однаковий у Night і Day) | `artTools` |
+| `--art-tutorials` | відтінок банера Tutorials | `artTutorials` |
+| `--art-cost` | відтінок банера Cost | `artCost` |
+| `--art-agents` | відтінок банера Agents | `artAgents` |
+| `--art-vibe` | відтінок банера Vibe | `artVibe` |
+| `--art-creative` | відтінок банера Creative | `artCreative` |
+| `--art-local` | відтінок банера Local | `artLocal` |
+| `--art-career` | відтінок банера Career | `artCareer` |
+| `--art-models` | відтінок банера Models | `artModels` |
+| `--art-neutral` | нейтральний відтінок банера невідомої категорії | `artNeutral` |
+| `--art-text` | текст на темному банері | `artText` |
+| `--art-stage` | фон темної сцени банера | `artStage` |
 
 ### 7.2 Типографіка
 

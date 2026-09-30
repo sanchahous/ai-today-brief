@@ -18,6 +18,7 @@ import {
 import {
   CSS_THEME_BREAKPOINTS,
   CSS_VAR_BY_ROLE,
+  CATEGORY_TOKEN_KEYS,
   CSS_VARS_BY_THEME,
   CSS_VARS_STATIC,
   LEGACY_MIGRATION_MAP,
@@ -31,8 +32,8 @@ const globalsCss = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf
 const tokenDoc = readFileSync(join(process.cwd(), TOKEN_DOC), 'utf8');
 
 describe('Design Tokens & Accessibility Contrast', () => {
-  it('is version 2.0.0', () => {
-    expect(TOKENS_VERSION).toBe('2.0.0');
+  it('is version 2.1.0', () => {
+    expect(TOKENS_VERSION).toBe('2.1.0');
   });
 
   it('passes all WCAG AA contrast checks in runContrastAudit', () => {
@@ -77,6 +78,24 @@ describe('Design Tokens & Accessibility Contrast', () => {
 });
 
 describe('globals.css sync', () => {
+  it('covers all 54 category/surface pairs and keeps dark art immutable in Day', () => {
+    const reports = runContrastAudit().reports.filter((line) => /\] cat\w+ on/.test(line));
+    expect(reports).toHaveLength(54);
+    expect(reports.every((line) => !line.includes('FAIL'))).toBe(true);
+    for (const key of CATEGORY_TOKEN_KEYS) {
+      const cssVar = `--art-${key}`;
+      const role = Object.entries(CSS_VAR_BY_ROLE).find(([, name]) => name === cssVar)?.[0];
+      expect(role).toBeDefined();
+      // The lookup is constrained by the canonical role map above.
+      const artRole = role as keyof typeof SEMANTIC_TOKENS.night;
+      expect(SEMANTIC_TOKENS.day[artRole]).toBe(SEMANTIC_TOKENS.night[artRole]);
+    }
+  });
+
+  it('rejects category drift and a Day art override', () => {
+    expect(runDriftAudit(globalsCss.replace('--cat-tools: #1f6b4f;', '')).pass).toBe(false);
+    expect(runDriftAudit(globalsCss.replaceAll('--art-tools: #7fcfae;', '--art-tools: #1f6b4f;')).pass).toBe(false);
+  });
   it('mirrors SEMANTIC_TOKENS for both themes', () => {
     expect(runDriftAudit(globalsCss).reports).toEqual([]);
   });

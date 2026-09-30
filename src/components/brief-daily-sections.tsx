@@ -95,7 +95,7 @@ function BriefItemRow({
             </span>
             <div className="min-w-0 flex-1">
               <div className="mb-2">
-                <CategoryBadge name={item.categoryName} color={item.categoryColor} />
+                <CategoryBadge slug={item.categorySlug} name={item.categoryName} color={item.categoryColor} />
               </div>
               <h3 className="mb-2 text-[1.15rem] leading-snug text-[color:inherit]">{item.title}</h3>
               <p className="text-muted mb-2 text-[0.92rem] leading-relaxed">{item.summary}</p>

@@ -30,6 +30,9 @@ function locate(page: Page, kind: Kind): Locator {
 }
 
 async function focusRing(page: Page, target: Locator) {
+  // Links and buttons animate outline-color (`transition-colors`). Reduced-motion emulation is not
+  // honoured identically by every engine, so switch transitions off to read the final ring.
+  await page.addStyleTag({ content: '*, *::before, *::after { transition: none !important; }' });
   await target.scrollIntoViewIfNeeded();
   // A modifier keydown puts the page in keyboard modality, so focus() matches :focus-visible.
   await page.keyboard.press('Shift');

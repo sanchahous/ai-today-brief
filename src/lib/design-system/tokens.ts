@@ -1,5 +1,5 @@
 /**
- * AI Today Brief — Design System Tokens (After Hours v2.0.0)
+ * AI Today Brief — Design System Tokens (After Hours v2.1.0)
  *
  * 3-tier architecture:
  * 1. Primitives: raw immutable palettes, spacing, type scale, motion, breakpoints, z-index.
@@ -13,9 +13,36 @@
  * Decision record: wiki/decisions/2026-09-29-design-tokens-2-0-migration.md
  */
 
-export const TOKENS_VERSION = '2.0.0';
+export const TOKENS_VERSION = '2.1.0';
+
+export const CATEGORY_TOKEN_KEYS = ['tools', 'tutorials', 'cost', 'agents', 'vibe', 'creative', 'local', 'career', 'models'] as const;
+export type CategoryTokenKey = (typeof CATEGORY_TOKEN_KEYS)[number];
 
 export const PRIMITIVES = {
+  categoryPalette: {
+    night: {
+      tools: '#7fcfae',
+      tutorials: '#e6c071',
+      cost: '#6fcad6',
+      agents: '#b2a6f0',
+      vibe: '#e59bc9',
+      creative: '#f09b86',
+      local: '#8fb4ee',
+      career: '#c4cc7e',
+      models: '#cfa0e6',
+    },
+    day: {
+      tools: '#1f6b4f',
+      tutorials: '#7a5a10',
+      cost: '#16636e',
+      agents: '#5645a8',
+      vibe: '#8b2f69',
+      creative: '#9c3b25',
+      local: '#2c5a9e',
+      career: '#5c6418',
+      models: '#733d93',
+    },
+  },
   palette: {
     night: {
       ink: '#171918',
@@ -247,6 +274,27 @@ export const SEMANTIC_TOKENS = {
     error: N.error,
     success: N.success,
     warning: N.warning,
+    catTools: PRIMITIVES.categoryPalette.night.tools,
+    catTutorials: PRIMITIVES.categoryPalette.night.tutorials,
+    catCost: PRIMITIVES.categoryPalette.night.cost,
+    catAgents: PRIMITIVES.categoryPalette.night.agents,
+    catVibe: PRIMITIVES.categoryPalette.night.vibe,
+    catCreative: PRIMITIVES.categoryPalette.night.creative,
+    catLocal: PRIMITIVES.categoryPalette.night.local,
+    catCareer: PRIMITIVES.categoryPalette.night.career,
+    catModels: PRIMITIVES.categoryPalette.night.models,
+    artTools: PRIMITIVES.categoryPalette.night.tools,
+    artTutorials: PRIMITIVES.categoryPalette.night.tutorials,
+    artCost: PRIMITIVES.categoryPalette.night.cost,
+    artAgents: PRIMITIVES.categoryPalette.night.agents,
+    artVibe: PRIMITIVES.categoryPalette.night.vibe,
+    artCreative: PRIMITIVES.categoryPalette.night.creative,
+    artLocal: PRIMITIVES.categoryPalette.night.local,
+    artCareer: PRIMITIVES.categoryPalette.night.career,
+    artModels: PRIMITIVES.categoryPalette.night.models,
+    artNeutral: N.muted,
+    artText: N.paper,
+    artStage: N.stage,
   },
   day: {
     bg: D.bg,
@@ -271,6 +319,27 @@ export const SEMANTIC_TOKENS = {
     error: D.error,
     success: D.success,
     warning: D.warning,
+    catTools: PRIMITIVES.categoryPalette.day.tools,
+    catTutorials: PRIMITIVES.categoryPalette.day.tutorials,
+    catCost: PRIMITIVES.categoryPalette.day.cost,
+    catAgents: PRIMITIVES.categoryPalette.day.agents,
+    catVibe: PRIMITIVES.categoryPalette.day.vibe,
+    catCreative: PRIMITIVES.categoryPalette.day.creative,
+    catLocal: PRIMITIVES.categoryPalette.day.local,
+    catCareer: PRIMITIVES.categoryPalette.day.career,
+    catModels: PRIMITIVES.categoryPalette.day.models,
+    artTools: PRIMITIVES.categoryPalette.night.tools,
+    artTutorials: PRIMITIVES.categoryPalette.night.tutorials,
+    artCost: PRIMITIVES.categoryPalette.night.cost,
+    artAgents: PRIMITIVES.categoryPalette.night.agents,
+    artVibe: PRIMITIVES.categoryPalette.night.vibe,
+    artCreative: PRIMITIVES.categoryPalette.night.creative,
+    artLocal: PRIMITIVES.categoryPalette.night.local,
+    artCareer: PRIMITIVES.categoryPalette.night.career,
+    artModels: PRIMITIVES.categoryPalette.night.models,
+    artNeutral: N.muted,
+    artText: N.paper,
+    artStage: N.stage,
   },
 } as const;
 
@@ -302,6 +371,27 @@ export const CSS_VAR_BY_ROLE: Record<keyof typeof SEMANTIC_TOKENS.night, string>
   error: '--error',
   success: '--success',
   warning: '--warning',
+  catTools: '--cat-tools',
+  catTutorials: '--cat-tutorials',
+  catCost: '--cat-cost',
+  catAgents: '--cat-agents',
+  catVibe: '--cat-vibe',
+  catCreative: '--cat-creative',
+  catLocal: '--cat-local',
+  catCareer: '--cat-career',
+  catModels: '--cat-models',
+  artTools: '--art-tools',
+  artTutorials: '--art-tutorials',
+  artCost: '--art-cost',
+  artAgents: '--art-agents',
+  artVibe: '--art-vibe',
+  artCreative: '--art-creative',
+  artLocal: '--art-local',
+  artCareer: '--art-career',
+  artModels: '--art-models',
+  artNeutral: '--art-neutral',
+  artText: '--art-text',
+  artStage: '--art-stage',
 };
 
 /** Rendered px at the default 16px root — the unit e2e viewport contracts are written in. */
