@@ -50,6 +50,8 @@ Full-page таблицю вище зібрано до фінального D4 tr
 
 ## Візуальний підпис
 
+Третя спроба pre-push зупинилася на `theme.spec.ts`, EN / light / 1440: theme toggle залишався disabled у межах 5 s. Окремий повтор цього ж тесту пройшов без зміни коду (1 passed); це спостереження, а не доведена причина збою. Фінальна повторна перевірка хука ще очікується. (source: `artifacts/_local/ah-1.5-push-attempt3-failed.log`; `artifacts/_local/ah-1.5-theme-recheck.log`)
+
 [Галерея до/після](../../artifacts/after-hours/qa/ah-1.5-review.html): 32 PNG на кожну сторону, Home/News/Article/Weekly, EN/UK, Night/Day, 390/1440. Обидві сторони — локальний next dev з реальними `.env.local` даними, «до» на `origin/main` @ `2ba2b27`; PNG лише у git-ignored `artifacts/_local/ah-1-5-before` і `ah-1-5-after`, SHA-256 у manifests. Власник ще не підписав українські заголовки Home/Article/Weekly. (source: before/after `manifest.json`; `artifacts/after-hours/qa/capture-ah-1.5.mjs`; [картка AH-1.5](after-hours-redesign-epic.md#ah-15--типографіка-шрифти-шкала-мінімум-12-px))
 
 ## Production check після #383

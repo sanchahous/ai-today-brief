@@ -95,6 +95,18 @@
       "sha256": "0685b42a7fd6048f70c2747f5350934cb7ec59976d6a202c7c7b6de71ec973ee"
     },
     {
+      "file": "artifacts/_local/ah-1.5-pr-check-retry.log",
+      "sha256": "0e477667d46e8ce2bae0ecf616e6941c48f85813c85bf66876903fd4578b555a"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-push-attempt3-failed.log",
+      "sha256": "caccc34a4757be75919a713a9835930612e2f4b06792203d778aff6d4488b6a4"
+    },
+    {
+      "file": "artifacts/_local/ah-1.5-theme-recheck.log",
+      "sha256": "d298ee55cb5d7ccd584c5b164b95768c49357f3635090aaab5e95d4b201cd857"
+    },
+    {
       "file": "artifacts/_local/ah-1.5-push.log",
       "sha256": "9c902daa3fba58d34379d1d6d66e17275b88a5b7fd4e66019be8f21406a8bf4b"
     },

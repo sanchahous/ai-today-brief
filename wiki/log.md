@@ -5528,3 +5528,5 @@ Full-page report: main і AH-1.5 по 812 сценаріїв, по 0 overflow / 
 ## 2026-10-01 — AH-1.5: фінальний локальний gate
 
 Перед push фінального D4 tracking guard `npm run pr:check` пройшов з EXIT=0. Evidence receipt оновлено за фінальними 81 typography E2E, 580 font-floor сценаріями, CLS і після-manifest; перші два push мали по 339 passed / 5 skipped. Source dates 2026-09-30 у попередніх записах — UTC дати знімків/логів; поточне редагування wiki — 2026-10-01 Europe/Kyiv. Підпис і рішення власника не отримані. (source: `artifacts/_local/ah-1.5-pr-check-final.log`; `ah-1.5-typography-final.log`; `ah-1.5-push.log`; `ah-1.5-push-docs.log`; поточна сесія)
+
+Третя спроба push зупинена хуком на theme toggle readiness (EN light 1440, 5 s); окремий повтор — 1 passed без зміни коду. Збережено failed-attempt log, validation/index оновлено. Повтор повного gate і хука обов'язковий; обхід хука не застосовується. (source: `artifacts/_local/ah-1.5-push-attempt3-failed.log`; `ah-1.5-theme-recheck.log`)
