@@ -5386,3 +5386,24 @@ Live-перевірка prod-БД (read-only SQL): 905 опубліковани�
 migrations:check, build:ci); pre-push `e2e:affected` — 60 passed / 7 skipped.
 У епіку, now і handoff додано посилання на PR. Пікер фасету лишається за AH-4.3.
 (source: `gh pr view 380`; локальні прогони 2026-09-30)
+
+## 2026-09-30 — AH-1.6: простір, форма, глибина, шари, рух, фокус, брейкпоінти
+
+Реалізовано AH-1.6 окремою гілкою `feat/ah-1.6-space-shape-depth-motion` (паралельно з AH-1.4 іншої сесії;
+перетин лише в `globals.css`, у різних секціях). У `tokens.ts` і `globals.css` додано `--space-*`, `--gutter`,
+`--section-y`, `--max`, `--max-wide`, `--reading`, `--icon-*`, радіуси 3 / 4 / 8 / 14 / pill, тіні
+`--shadow-1` / `--shadow-2` / `--shadow-pop` з окремими Day-значеннями, ефекти (`--stage-light`, `--sheen`,
+`--grain-opacity`), `--z-base`, `--duration-*`, `--ease-*`, `--focus-width` / `--focus-offset` (3px) і
+`--breakpoint-*` за D5. `tokens:check` і `tokens.test.ts` звіряють усі не-кольорові токени з `tokens.ts`
+та вимагають, щоб кожен токен був у реєстрі `design-system-tokens` §7 (M1-гейт). Контракт D5 (959 / 960 px)
+записано в `e2e/helpers/viewports.ts` без зміни поведінки header. Примітиви `ui/` беруть колір і відступ фокуса з
+токенів; у полях розсилки й hero-search прибрано `outline-none`. Новий `e2e/focus-visible.spec.ts`: кільце
+2px `--focus` на відстані 3px на посиланні, кнопці й полі в Night і Day (Chromium, Firefox, WebKit) та видиме в
+`forced-colors` (Chromium). Свідомі відхилення від картки: `--header-h` лишається 60px до AH-3.3;
+`rounded-lg` лишається Tailwind 8px; прототипне `ease-in-out` названо `--ease-soft`.
+Перевірки: повний Chromium-набір на власній збірці 192 passed / 13 skipped / 0 failed; opt-in візуальні
+baseline-и каталогу без змін. Знахідка процесу: `playwright.config.ts` (`reuseExistingServer`) і
+`e2e:affected` підхоплюють будь-який сервер на :3000, зокрема чужий із іншої сесії, тож локальний e2e варто
+запускати на власному порту.
+(source: `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`;
+`npx playwright test` 2026-09-30; [реєстр токенів](architecture/design-system-tokens.md#7-реєстр-токенів-ah-16-m1-гейт))

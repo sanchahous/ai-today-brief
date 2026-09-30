@@ -73,18 +73,61 @@ export const PRIMITIVES = {
     '20': '80px',
     '24': '96px',
   },
+  /**
+   * Prototype scale 3 / 4 / 8 / 14 / pill. Code names differ where Tailwind already owns a name:
+   * prototype `radius` = `xs`, prototype `radius-lg` (14px) = `card`. `lg` stays Tailwind's own
+   * 0.5rem (8px) so the existing `rounded-lg` uses do not move.
+   */
   radii: {
     none: '0px',
-    sm: '3px',
-    md: '6px',
+    xs: '3px',
+    sm: '4px',
+    md: '8px',
     lg: '8px',
     card: '14px',
     pill: '9999px',
   },
+  /** Elevation per theme: Day uses warm, low-opacity shadows and a white inset highlight. */
   shadows: {
-    card: '0 8px 24px rgba(0, 0, 0, 0.25)',
-    pop: '0 16px 40px rgba(0, 0, 0, 0.45)',
-    focus: '0 0 0 2px var(--focus)',
+    night: {
+      shadow1: '0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 28px -18px rgb(0 0 0 / 0.7)',
+      shadow2: '0 1px 0 rgb(255 255 255 / 0.04) inset, 0 22px 48px -24px rgb(0 0 0 / 0.85)',
+      pop: '0 28px 70px -28px rgb(0 0 0 / 0.9), 0 0 0 1px rgb(255 255 255 / 0.04)',
+    },
+    day: {
+      shadow1: '0 1px 0 rgb(255 255 255 / 0.7) inset, 0 12px 30px -20px rgb(74 56 28 / 0.4)',
+      shadow2: '0 1px 0 rgb(255 255 255 / 0.8) inset, 0 24px 50px -26px rgb(74 56 28 / 0.5)',
+      pop: '0 28px 70px -30px rgb(58 44 22 / 0.45), 0 0 0 1px rgb(58 44 22 / 0.06)',
+    },
+  },
+  /** Surface effects (consumers arrive with the hero and editorial patterns, AH-5.x). */
+  effects: {
+    night: {
+      stageLight: 'radial-gradient(90% 60% at 78% -8%, rgb(212 180 131 / 0.11), transparent 62%)',
+      sheen: 'linear-gradient(105deg, transparent 20%, rgb(255 240 208 / 0.28) 45%, transparent 70%)',
+      grainOpacity: '0.07',
+    },
+    day: {
+      stageLight: 'radial-gradient(90% 60% at 78% -8%, rgb(212 180 131 / 0.28), transparent 62%)',
+      sheen: 'linear-gradient(105deg, transparent 20%, rgb(255 255 255 / 0.55) 45%, transparent 70%)',
+      grainOpacity: '0.05',
+    },
+  },
+  /** Fluid page rhythm and fixed measures. */
+  sizes: {
+    gutter: 'clamp(16px, 4vw, 40px)',
+    sectionY: 'clamp(48px, 7vw, 88px)',
+    iconSm: '16px',
+    iconMd: '20px',
+    max: '1280px',
+    maxWide: '1440px',
+    reading: '42.5rem',
+    /**
+     * The prototype header is 72px, but `--header-h` must equal the rendered header (sticky
+     * offsets and e2e assert it) and the header only changes in AH-3.3 — so it stays 60px until then.
+     */
+    headerH: '60px',
+    headerHPrototype: '72px',
   },
   typography: {
     fonts: {
@@ -131,7 +174,15 @@ export const PRIMITIVES = {
       standard: 320,
       entrance: 640,
     },
-    easing: 'cubic-bezier(0.18, 0.82, 0.26, 1)',
+    /**
+     * Prototype names `ease`, `ease-in-out`, `ease-release`. `ease-in-out` is renamed `soft` so the
+     * Tailwind utility of the same name keeps its own curve.
+     */
+    easing: {
+      standard: 'cubic-bezier(0.18, 0.82, 0.26, 1)',
+      soft: 'cubic-bezier(0.65, 0, 0.35, 1)',
+      release: 'cubic-bezier(0.2, 0.85, 0.25, 1.08)',
+    },
   },
   zIndex: {
     base: 1,
@@ -141,11 +192,21 @@ export const PRIMITIVES = {
     dialog: 90,
     toast: 100,
   },
+  /**
+   * D5, variant A: prototype values as named `--breakpoint-*` in rem, so layouts reflow when the
+   * reader enlarges the browser font size. Tailwind builds `min-width` variants from them
+   * (`tablet:` >= 60rem; the prototype's `max-width` queries are `max-tablet:`). The default
+   * `sm/md/lg/xl` are NOT redefined until AH-7.3. Header and discovery move to `tablet` (60rem =
+   * 960px) with AH-3.3 / AH-4.3; today they still switch at Tailwind `lg` (1024px).
+   */
   breakpoints: {
-    phone: 390,
-    mobile: 760,
-    tablet: 1024,
-    desktop: 1280,
+    compact: '23.75rem',
+    narrow: '25rem',
+    phone: '47.5rem',
+    tablet: '60rem',
+    laptop: '68.75rem',
+    navCompact: '73.75rem',
+    desktop: '80rem',
   },
   controlSize: {
     sm: 36,
@@ -155,7 +216,7 @@ export const PRIMITIVES = {
   touchTargetMin: 44, // 44x44px WCAG AA
   focus: {
     width: 2,
-    offset: 2,
+    offset: 3,
   },
 } as const;
 
@@ -242,6 +303,85 @@ export const CSS_VAR_BY_ROLE: Record<keyof typeof SEMANTIC_TOKENS.night, string>
   success: '--success',
   warning: '--warning',
 };
+
+/** Rendered px at the default 16px root — the unit e2e viewport contracts are written in. */
+export function remToPx(rem: string): number {
+  return Number.parseFloat(rem) * 16;
+}
+
+/**
+ * Theme-independent custom properties declared in the `:root` block of `globals.css`.
+ * `tokens:check` fails when the CSS drifts from these values.
+ */
+export const CSS_VARS_STATIC: Readonly<Record<string, string>> = {
+  ...Object.fromEntries(
+    Object.entries(PRIMITIVES.spacing)
+      .filter(([step]) => step !== '0')
+      .map(([step, value]) => [`--space-${step}`, value]),
+  ),
+  '--gutter': PRIMITIVES.sizes.gutter,
+  '--section-y': PRIMITIVES.sizes.sectionY,
+  '--icon-sm': PRIMITIVES.sizes.iconSm,
+  '--icon-md': PRIMITIVES.sizes.iconMd,
+  '--max': PRIMITIVES.sizes.max,
+  '--max-wide': PRIMITIVES.sizes.maxWide,
+  '--reading': PRIMITIVES.sizes.reading,
+  '--header-h': PRIMITIVES.sizes.headerH,
+  '--touch-target-min': `${PRIMITIVES.touchTargetMin}px`,
+  '--control-sm': `${PRIMITIVES.controlSize.sm}px`,
+  '--control-md': `${PRIMITIVES.controlSize.md}px`,
+  '--control-lg': `${PRIMITIVES.controlSize.lg}px`,
+  '--z-base': String(PRIMITIVES.zIndex.base),
+  '--z-sticky': String(PRIMITIVES.zIndex.sticky),
+  '--z-dropdown': String(PRIMITIVES.zIndex.dropdown),
+  '--z-overlay': String(PRIMITIVES.zIndex.overlay),
+  '--z-dialog': String(PRIMITIVES.zIndex.dialog),
+  '--z-toast': String(PRIMITIVES.zIndex.toast),
+  '--duration-fast': `${PRIMITIVES.motion.duration.fast}ms`,
+  '--duration-standard': `${PRIMITIVES.motion.duration.standard}ms`,
+  '--duration-entrance': `${PRIMITIVES.motion.duration.entrance}ms`,
+  '--ease-standard': PRIMITIVES.motion.easing.standard,
+  '--ease-soft': PRIMITIVES.motion.easing.soft,
+  '--ease-release': PRIMITIVES.motion.easing.release,
+  '--focus-width': `${PRIMITIVES.focus.width}px`,
+  '--focus-offset': `${PRIMITIVES.focus.offset}px`,
+};
+
+function themedVars(theme: 'night' | 'day'): Record<string, string> {
+  const shadows = PRIMITIVES.shadows[theme];
+  const effects = PRIMITIVES.effects[theme];
+  return {
+    '--shadow-1': shadows.shadow1,
+    '--shadow-2': shadows.shadow2,
+    '--shadow-pop': shadows.pop,
+    '--stage-light': effects.stageLight,
+    '--sheen': effects.sheen,
+    '--grain-opacity': effects.grainOpacity,
+  };
+}
+
+/** Themed non-colour custom properties (`:root` = Night, the Day block overrides them). */
+export const CSS_VARS_BY_THEME: Readonly<Record<'night' | 'day', Readonly<Record<string, string>>>> = {
+  night: themedVars('night'),
+  day: themedVars('day'),
+};
+
+/** Radii registered in the `@theme inline` block (Tailwind `rounded-*`). `lg` is Tailwind's own. */
+export const CSS_THEME_RADII: Readonly<Record<string, string>> = {
+  '--radius-xs': PRIMITIVES.radii.xs,
+  '--radius-sm': PRIMITIVES.radii.sm,
+  '--radius-md': PRIMITIVES.radii.md,
+  '--radius-card': PRIMITIVES.radii.card,
+  '--radius-pill': PRIMITIVES.radii.pill,
+};
+
+/** D5 breakpoints registered in the `@theme` block (Tailwind `min-width` and `max-*` variants). */
+export const CSS_THEME_BREAKPOINTS: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries(PRIMITIVES.breakpoints).map(([name, value]) => [
+    `--breakpoint-${name.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`,
+    value,
+  ]),
+);
 
 export const LEGACY_MIGRATION_MAP: Record<string, string> = {
   '#0f0f0f': 'var(--bg)',

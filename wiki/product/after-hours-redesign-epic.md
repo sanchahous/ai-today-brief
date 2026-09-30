@@ -211,7 +211,7 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 | B10 | Нескінченні анімації | відкрито | 11 правил `infinite` у `globals.css` (орби 13–17 с, `pulse`, сцена 404, shimmer); Tension v3 забороняє нескінченні цикли, крім loading-shimmer | `src/app/globals.css`; [after-hours-tension](after-hours-tension.md) |
 | B11 | Бренд-знак | відкрито | production — «bloom» (`MARK_COLOR #47E4D3`); концепт — вкладені A-лінії + celadon-крапка | `src/lib/brand-mark.ts`; `artifacts/after-hours/assets/mark.svg` |
 | B12 | Контракт теми | відкрито | Day-токени вже приймають `.theme-light` і `html[data-theme='day']`, але pre-paint скрипт виставляє лише клас `.theme-light` + `localStorage.theme`; атрибута `data-theme` немає | `src/app/layout.tsx`, `src/components/theme-toggle.tsx`, `e2e/theme.spec.ts`, `src/app/globals.css` |
-| B13 | Брейкпоінти | відкрито (D5 прийнято) | header і news-layout перемикаються на Tailwind `lg` (64rem); за D5 обидва мають перемикатися на 60rem ≈ 960 px | `e2e/helpers/viewports.ts`; `src/app/globals.css`; `tokens.json` `breakpoints` |
+| B13 | Брейкпоінти | частково (AH-1.6): токени `--breakpoint-*` і контракт 959 / 960 у `viewports.ts` є; перемикання header — AH-3.3, discovery — AH-4.3 | header і news-layout досі перемикаються на Tailwind `lg` (64rem); за D5 обидва мають перемикатися на 60rem ≈ 960 px | `e2e/helpers/viewports.ts`; `src/app/globals.css`; `tokens.json` `breakpoints` |
 | B14 | Шрифти | ◐ (D3, D4 прийнято) | Шкала в rem і мінімум 12 px — з #369; шрифти досі `@fontsource-variable` через `globals.css`, UK-заголовки — Inter 700; за D3/D4 — `next/font/local` і Georgia для UK display | `src/app/globals.css`; `artifacts/after-hours/tokens.css` |
 | B15 | Мертвий компонент | відкрито | `src/components/home/video-teaser.tsx` ніде не імпортується | grep 2026-09-29 |
 
@@ -345,7 +345,7 @@ flowchart TD
 | AH-1.3 | ◐ Контракт Night/Day інтегровано в main через [#378](https://github.com/sanchahous/ai-today-brief/pull/378); legacy no-JS/full-page QA AC лишаються задокументованими ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
 | AH-1.4 | Кольори й гліфи категорій | M | агент | — | B5 |
 | AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
-| AH-1.6 | ◐ Простір, форма, глибина, шари, брейкпоінти, motion-токени (#369: розміри контролів, z-index) | M | агент | D5 ✅ | G09, B13 |
+| AH-1.6 | ✅ Простір, форма, глибина, шари, брейкпоінти, motion-токени, фокус: реалізовано в [PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM), очікує візуального підпису власника; `--header-h` лишається 60px до AH-3.3 | — | — | D5 ✅ | G09 (простір, форма, глибина, рух), B13 (токени й контракт e2e) |
 | AH-1.7 | ◐ Ratchet-звіт «сирих» значень: реалізовано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), очікує merge | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
 | AH-2.2 | Дії й вибір | M | агент | AH-1.4, AH-1.6 | G11 |
@@ -795,6 +795,22 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 > (зараз sm 3 / md 6 / card 14 / pill), тіні з Day-значеннями, ефекти, брейкпоінти за D5 (60rem),
 > motion-токени й offset фокуса 3 px.
 
+**Стан (2026-09-30, AH-1.6 реалізовано): [PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM), очікує візуального підпису власника.**
+Токени простору (`--space-*`, `--gutter`, `--section-y`), розмірів (`--max`, `--max-wide`, `--reading`,
+`--icon-*`), радіусів 3 / 4 / 8 / 14 / pill, тіней `--shadow-1` / `--shadow-2` / `--shadow-pop` з Day-значеннями,
+ефектів (`--stage-light`, `--sheen`, `--grain-opacity`), шарів (`--z-base`), руху (`--duration-*`, `--ease-*`),
+фокуса (`--focus-width` 2px, `--focus-offset` 3px) і брейкпоінтів D5 (`--breakpoint-*` у rem) додано в `tokens.ts`
+і `globals.css`. `tokens:check` та `tokens.test.ts` звіряють усі не-кольорові токени і вимагають, щоб кожен
+токен був у реєстрі [design-system-tokens §7](../architecture/design-system-tokens.md#7-реєстр-токенів-ah-16-m1-гейт).
+Відхилення від картки (обґрунтовані): `--header-h` лишився **60px**, бо він дорівнює реальній висоті header
+(sticky-зсуви й `responsive-breakpoints.spec.ts`), а header змінюється лише в AH-3.3 — 72px прототипу записано як
+`PRIMITIVES.sizes.headerHPrototype`; `rounded-lg` лишається Tailwind 8px (86 використань), прототипне
+`--radius-lg` 14px у коді — `--radius-card`; прототипне `ease-in-out` названо `--ease-soft`, щоб не змінити
+Tailwind `ease-in-out`. Змінилося візуально: `--radius-md` 6→8px, `--shadow-pop` і картки (`--shadow-1` замість
+`--shadow-card`), фокус: колір `--focus` замість `accent` у примітивах `ui/`, відступ 3px замість 2px; у полях
+розсилки й hero-search прибрано `outline-none`, щоб діяло кільце.
+(source: `src/lib/design-system/tokens.ts`; `src/app/globals.css`; `e2e/focus-visible.spec.ts`)
+
 **Зони:** `src/app/globals.css` (`@theme`), `src/lib/design-system/tokens.ts`,
 `e2e/helpers/viewports.ts` (документування контракту D5)
 
@@ -813,10 +829,10 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 6. `:focus-visible`: 2 px `--focus`, offset 3 px.
 
 **AC:**
-- [ ] Кожен токен задокументований у [design-system-tokens](../architecture/design-system-tokens.md):
-  назва, роль, тема, використання, код-мапінг (M1-гейт gap-plan).
-- [ ] Фокус видимий у Night, Day і `forced-colors` на кнопці, посиланні й полі (E2E-знімок).
-- [ ] Контракт D5 записаний у `e2e/helpers/viewports.ts`; поведінка header змінюється лише в AH-3.3.
+- [x] Кожен токен задокументований у [design-system-tokens](../architecture/design-system-tokens.md):
+  назва, роль, тема, використання, код-мапінг (M1-гейт gap-plan); відсутність запису валить `tokens:check` і `pr:check`.
+- [x] Фокус видимий у Night, Day і `forced-colors` на кнопці, посиланні й полі (`e2e/focus-visible.spec.ts`, Chromium, Firefox, WebKit; forced-colors — Chromium). Візуальні знімки до/після — у галереї PR.
+- [x] Контракт D5 записаний у `e2e/helpers/viewports.ts` (`NAV_COMPACT_LAST` 959 / `NAV_WIDE_FIRST` 960); поведінка header змінюється лише в AH-3.3.
 
 ### AH-1.7 · Ratchet-звіт «сирих» значень
 
@@ -1978,7 +1994,7 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 | G06 | P0 | partial | lib і URL готові (AH-4.1); пікер фасету — AH-4.3 | AH-4.1 ✅, AH-4.3 |
 | G07 | P1 | partial (live 2026-09-29) | на production 390×844 Sort і Filters стоять на першому екрані (центр Filters — y≈422 із 844), drawer із повними назвами категорій і «Done (100)»; залишок — trending-тема обрізана `truncate`, UK не перевірено | AH-4.3 |
 | G08 | P1 | done | «Done» замість Apply ([ADR](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md) §5) | AH-4.3 («Готово · N») |
-| G09 | P1 | partial | #369: палітра Night/Day, шкала в rem, z-index, розміри контролів; тіні Night і Day є в `globals.css`, але Day-тіней немає в `tokens.ts` (поза drift-гейтом); в CSS не доходять spacing, радіуси `none/lg`, motion, breakpoints; шрифти досі `@fontsource` | AH-1.5, AH-1.6 |
+| G09 | P1 | partial | #369: палітра Night/Day, шкала в rem, z-index, розміри контролів. AH-1.6: spacing, радіуси, тіні Night/Day, ефекти, motion, брейкпоінти й фокус — у `tokens.ts` і `globals.css` під drift-гейтом і реєстром §7; лишаються шрифти (досі `@fontsource`, AH-1.5) і шкала типографіки 2.0 | AH-1.5 |
 | G10 | P1 | done (#369) | `tokens.ts` 2.0.0 — одне джерело, `globals.css` — дзеркало з drift-гейтом; ім'я `--surface-2` — до 3.0.0 | AH-7.3 (прибирання) |
 | G11 | P1 | partial | 10 примітивів + 8 з #369 (Popover, Dialog, DropdownMenu, Tooltip, Tabs, Accordion, Toast, Combobox); бракує Field, Switch, SegmentedControl, Badge, Tag, Notice… (`SearchInput` уже є в `input.tsx`, але з англомовними `aria-label` і placeholder) | AH-2.2…2.6 |
 | G12 | P1 | partial | SemVer і changelog у wiki + ADR 2026-09-29; немає процесу deprecation у коді | AH-0.2, AH-7.3 |

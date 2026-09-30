@@ -2,20 +2,33 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  collectDeclaredTokens,
   contrastRatio,
   findSubFloorFonts,
   runContrastAudit,
+  runDocsAudit,
   runDriftAudit,
+  TOKEN_DOC,
 } from '../../../scripts/check-design-tokens';
 import {
+  NAV_BREAKPOINT_REM,
+  NAV_COMPACT_LAST,
+  NAV_WIDE_FIRST,
+} from '../../../e2e/helpers/viewports';
+import {
+  CSS_THEME_BREAKPOINTS,
   CSS_VAR_BY_ROLE,
+  CSS_VARS_BY_THEME,
+  CSS_VARS_STATIC,
   LEGACY_MIGRATION_MAP,
   PRIMITIVES,
+  remToPx,
   SEMANTIC_TOKENS,
   TOKENS_VERSION,
 } from './tokens';
 
 const globalsCss = readFileSync(join(process.cwd(), 'src/app/globals.css'), 'utf8');
+const tokenDoc = readFileSync(join(process.cwd(), TOKEN_DOC), 'utf8');
 
 describe('Design Tokens & Accessibility Contrast', () => {
   it('is version 2.0.0', () => {
@@ -73,6 +86,115 @@ describe('globals.css sync', () => {
     expect(runDriftAudit(drifted).pass).toBe(false);
     const noDayFaint = globalsCss.replace('--faint: #5a5e54;', '');
     expect(runDriftAudit(noDayFaint).reports.join('\n')).toContain('[drift:day] --faint');
+  });
+});
+
+describe('non-colour token sync (AH-1.6)', () => {
+  it('reports drift in a static, a themed, a radius and a breakpoint token', () => {
+    const cases: Array<[string, string, string]> = [
+      ['--space-4: 16px;', '--space-4: 18px;', '[drift:root] --space-4'],
+      ['--focus-offset: 3px;', '--focus-offset: 2px;', '[drift:root] --focus-offset'],
+      ['--radius-md: 8px;', '--radius-md: 6px;', '[drift:radii] --radius-md'],
+      ['--breakpoint-tablet: 60rem;', '--breakpoint-tablet: 64rem;', '[drift:breakpoint] --breakpoint-tablet'],
+      ['--z-dialog: 90;', '--z-dialog: 95;', '[drift:root] --z-dialog'],
+    ];
+    for (const [from, to, expected] of cases) {
+      expect(globalsCss).toContain(from);
+      const report = runDriftAudit(globalsCss.replace(from, to));
+      expect(report.pass).toBe(false);
+      expect(report.reports.join('\n')).toContain(expected);
+    }
+  });
+
+  it('requires a Day value for every themed shadow and effect', () => {
+    const dayShadow = CSS_VARS_BY_THEME.day['--shadow-1'];
+    expect(dayShadow).not.toBe(CSS_VARS_BY_THEME.night['--shadow-1']);
+    // Remove the Day declaration only (the Night one is a different string).
+    const noDay = globalsCss.replace(/--shadow-1: 0 1px 0 rgb\(255 255 255 \/ 0\.7\) inset[^;]*;/, '');
+    const report = runDriftAudit(noDay);
+    expect(report.reports.join('\n')).toContain('[drift:day] --shadow-1: css=MISSING');
+  });
+
+  it('compares multi-line values after collapsing whitespace', () => {
+    const reflowed = globalsCss.replace(
+      '--shadow-2: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 22px 48px -24px rgb(0 0 0 / 0.85);',
+      '--shadow-2:\n    0 1px 0 rgb(255 255 255 / 0.04) inset,\n    0 22px 48px -24px rgb(0 0 0 / 0.85);',
+    );
+    expect(reflowed).not.toBe(globalsCss);
+    expect(runDriftAudit(reflowed).reports).toEqual([]);
+  });
+
+  it('keeps the scales ordered and on the agreed values', () => {
+    const { radii, zIndex, motion, focus } = PRIMITIVES;
+    expect([radii.xs, radii.sm, radii.md, radii.card, radii.pill]).toEqual(['3px', '4px', '8px', '14px', '9999px']);
+    const layers = [zIndex.base, zIndex.sticky, zIndex.dropdown, zIndex.overlay, zIndex.dialog, zIndex.toast];
+    expect([...layers].sort((a, b) => a - b)).toEqual(layers);
+    expect(new Set(layers).size).toBe(layers.length);
+    expect(motion.duration).toEqual({ fast: 160, standard: 320, entrance: 640 });
+    for (const curve of Object.values(motion.easing)) {
+      expect(curve).toMatch(/^cubic-bezier\(-?[\d.]+, -?[\d.]+, -?[\d.]+, -?[\d.]+\)$/);
+    }
+    expect(focus).toEqual({ width: 2, offset: 3 });
+  });
+
+  it('keeps the header at its rendered 60px until AH-3.3 and records the prototype value', () => {
+    expect(CSS_VARS_STATIC['--header-h']).toBe('60px');
+    expect(PRIMITIVES.sizes.headerHPrototype).toBe('72px');
+  });
+
+  it('does not touch the default Tailwind breakpoints (sm / md / lg / xl)', () => {
+    const names = Object.keys(CSS_THEME_BREAKPOINTS).map((n) => n.replace('--breakpoint-', ''));
+    for (const reserved of ['sm', 'md', 'lg', 'xl', '2xl']) expect(names).not.toContain(reserved);
+    expect(globalsCss).not.toMatch(/--breakpoint-(sm|md|lg|xl|2xl):/);
+  });
+});
+
+describe('D5 breakpoint contract', () => {
+  it('turns the nav breakpoint into 959 / 960 px viewports', () => {
+    const tablet = remToPx(PRIMITIVES.breakpoints.tablet);
+    expect(tablet).toBe(960);
+    expect(NAV_BREAKPOINT_REM * 16).toBe(tablet);
+    expect(NAV_COMPACT_LAST.width).toBe(tablet - 1);
+    expect(NAV_WIDE_FIRST.width).toBe(tablet);
+  });
+
+  it('matches the prototype values in px at the default root size', () => {
+    const px = Object.fromEntries(Object.entries(PRIMITIVES.breakpoints).map(([k, v]) => [k, remToPx(v)]));
+    expect(px).toEqual({
+      compact: 380,
+      narrow: 400,
+      phone: 760,
+      tablet: 960,
+      laptop: 1100,
+      navCompact: 1180,
+      desktop: 1280,
+    });
+  });
+});
+
+describe('token documentation gate (M1)', () => {
+  it('documents every declared token in the registry page', () => {
+    expect(runDocsAudit(globalsCss, tokenDoc).reports).toEqual([]);
+  });
+
+  it('resolves Tailwind alias registrations to their target and lists real tokens', () => {
+    const declared = collectDeclaredTokens(globalsCss);
+    expect(declared).not.toContain('--color-bg');
+    expect(declared).not.toContain('--spacing-gutter');
+    expect(declared).toEqual(expect.arrayContaining(['--bg', '--gutter', '--shadow-1', '--focus-offset', '--breakpoint-tablet']));
+  });
+
+  it('names an undocumented token instead of passing silently', () => {
+    const withNew = globalsCss.replace('--focus-offset: 3px;', '--focus-offset: 3px;\n  --brand-new-token: 1px;');
+    const report = runDocsAudit(withNew, tokenDoc);
+    expect(report.pass).toBe(false);
+    expect(report.reports.join('\n')).toContain('--brand-new-token');
+  });
+
+  it('flags a token removed from the docs', () => {
+    const report = runDocsAudit(globalsCss, tokenDoc.replace('`--ease-release`', '`--renamed`'));
+    expect(report.pass).toBe(false);
+    expect(report.reports.join('\n')).toContain('--ease-release');
   });
 });
 

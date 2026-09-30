@@ -64,7 +64,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(
             disabled={disabled}
             aria-invalid={error ? 'true' : undefined}
             aria-describedby={error ? errorId : hint ? hintId : undefined}
-            className={`bg-surface border-border text-text placeholder:text-muted/60 min-h-[44px] w-full rounded-lg border text-sm transition focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`bg-surface border-border text-text placeholder:text-muted/60 min-h-[44px] w-full rounded-lg border text-sm transition focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-(--focus-offset) disabled:cursor-not-allowed disabled:opacity-50 ${
               leftIcon ? 'pl-9' : 'pl-3.5'
             } ${showClear || rightIcon ? 'pr-9' : 'pr-3.5'} ${
               error ? 'border-error' : ''

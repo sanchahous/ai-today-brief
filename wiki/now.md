@@ -17,6 +17,16 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
+- **AH-1.6 (простір, форма, глибина, шари, рух, фокус, брейкпоінти) — реалізовано, PR #PRNUM (2026-09-30), очікує візуального підпису власника.**
+  Токени в `tokens.ts` і `globals.css` під drift-гейтом; реєстр усіх токенів — `design-system-tokens` §7
+  (відсутній запис валить `pr:check`). `--header-h` лишається 60px до AH-3.3. Візуально змінилося:
+  радіус `md` 6→8px, тіні (`--shadow-1` / `--shadow-pop`), фокус (`--focus`, відступ 3px), кільце в
+  полях розсилки й hero-search. Нові gate-и: `e2e/focus-visible.spec.ts`, docs-аудит токенів.
+  AH-1.4 (кольори категорій) веде інша сесія; її PR має додати свої `--cat-*` у реєстр §7 — інакше
+  `tokens.test.ts` покаже список відсутніх токенів. Наступна після AH-1.4 — AH-1.2.
+  (source: `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `e2e/focus-visible.spec.ts`;
+  повний Chromium-набір 192 passed / 0 failed 2026-09-30)
+
 - **AH-4.1 (Topics / Tool у discovery) — реалізовано, PR #380 (2026-09-30), паралельно з AH-1.4.**
   `src/lib/topic-normalize.ts` зводить «Claude Code», «claude-code», «ClaudeCode» до одного slug і
   має мапу лише безсумнівних аліасів; `HomeItem.topics`; `topics=` в URL; OR усередині фасету,
