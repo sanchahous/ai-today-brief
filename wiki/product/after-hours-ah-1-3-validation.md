@@ -1,10 +1,18 @@
 # AH-1.3: докази контракту Night/Day
 
-Summary: реалізація теми без спалаху в draft PR #378, перевірки й пакет для візуального підпису власника. Фінальний статус залежить від review, рішення щодо наявних QA-обмежень і merge.
+Summary: контракт теми без спалаху інтегровано через PR #378; нижче збережено докази перевірок і пакет review. Наявні legacy QA/no-JS обмеження не оголошено виправленими.
 Sources: `src/app/layout.tsx`; `src/app/manifest.ts`; `src/lib/theme.ts`; `src/components/theme-toggle.tsx`; `src/lib/i18n.ts`; `e2e/theme.spec.ts`; `e2e/a11y-layout-matrix.spec.ts`; `artifacts/_local/ah-1.3-seo-local-fresh.log`; `artifacts/_local/ah-1.3-tokens.log`; `artifacts/after-hours/qa/ah-1.3-review.html`; live git/PR checks 2026-09-30.
 Last updated: 2026-09-30
 
 ---
+
+## Інтеграція
+
+[PR #378](https://github.com/sanchahous/ai-today-brief/pull/378) змержено
+2026-09-30 о 14:44:12 UTC, `main` — `6b3b446`. Нижче — snapshot доказів
+до merge; статус draft у JSON і в описі початкових прогонів історичний.
+Merge не перетворює наявні full-page/no-JS обмеження на виправлені проблеми.
+(source: `gh pr view 378 --json state,mergedAt`; `git fetch origin` 2026-09-30)
 
 ## Контракт і реалізація
 

@@ -17,18 +17,18 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
-- **AH-1.3 реалізовано в draft [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378),
-  очікує візуального підпису, рішення щодо legacy QA/no-JS scope й merge.**
+- **AH-1.3 інтегровано через [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378)
+  2026-09-30; актуальний `origin/main` — `6b3b446`.**
   Pre-paint синхронізує `.theme-light`, `data-theme`, `color-scheme` і `theme-color`;
   `localStorage` та GA4 лишають `light`/`dark`. Перемикач EN/UK описує наступну тему,
   має 44×44 px і синхронізує desktop/mobile контролі. SEO compare: 58 URL,
   0 errors / 0 warnings; галерея до/після — `artifacts/after-hours/qa/ah-1.3-review.html`.
   Деталі перевірок і межі legacy QA — [AH-1.3 validation](product/after-hours-ah-1-3-validation.md).
-  Фаза 0 завершена: #376 змержено в `69bcd1c`; #377 / AH-1.7 лишається відкритим.
+  Фаза 0 завершена: #376 змержено в `69bcd1c`; merge #378 підтверджено GitHub.
   Наступна окрема задача — AH-1.4 (кольори й гліфи категорій), потім AH-1.2;
   G1 чекає решти foundations і підпису власника.
   (source: `src/app/layout.tsx`, `src/lib/theme.ts`, `src/components/theme-toggle.tsx`;
-  `artifacts/_local/ah-1.3-seo-local-fresh.log`; `git fetch origin`, `gh pr view 376/377` 2026-09-30)
+  `artifacts/_local/ah-1.3-seo-local-fresh.log`; `git fetch origin`, `gh pr view 378` 2026-09-30)
 
 - **G0 підписано власником 2026-09-30; merge #373–#376 погоджено:** AH-0.6 у
   [PR #376](https://github.com/sanchahous/ai-today-brief/pull/376) має всі докази:
@@ -41,10 +41,13 @@ Last updated: 2026-09-30
   (source: погодження й скриншоти власника, `gh pr view` 2026-09-30;
   [baseline](analytics/2026-09-29-redesign-baseline.md))
 
-- **AH-1.7 реалізовано у [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377),
-  ще не змержено.** `origin/main` після #376 — `69bcd1c`.
-  Дозвіл власника на merge #373–#376 уже виконано; #377 до нього не входить.
-  (source: `git fetch origin`, `gh pr view 373`…`377` 2026-09-30)
+- **AH-1.7 / [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377)
+  підписано власником; resolve і merge явно дозволено 2026-09-30.**
+  Конфлікти лише wiki: збережено актуальну фазу 0/Night-Day й обидві історії log.
+  Після AH-1.3 baseline зменшено з 44 до 42 кольорових входжень (20 файлів),
+  4 довільні z-index, 0 сирих тіней і 0 шрифту <12 px. PR чекає перевірок перед merge.
+  (source: пряме повідомлення власника 2026-09-30; `git merge origin/main`;
+  `npm run design:raw:prune`; `scripts/raw-design-values.baseline.json`)
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR
   [#372](https://github.com/sanchahous/ai-today-brief/pull/372).** Підсумок за кодом і живою перевіркою production:

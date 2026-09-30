@@ -5297,3 +5297,66 @@ console **28 → 28**. Full-page legacy violations і no-JS locale Suspense
 (source: `artifacts/after-hours/qa/ah-1.3-validation.json`;
 [AH-1.3 validation](product/after-hours-ah-1-3-validation.md);
 [епік](product/after-hours-redesign-epic.md) §0.1 і §5.3)
+
+## 2026-09-30 — AH-1.7: ratchet сирих дизайн-значень
+
+Власник попросив відкласти відкриті перевірки AH-0.6 й продовжити епік.
+За `git fetch origin` main лишається `a3d2db5`, PR #373–#376 відкриті.
+Окрема задача AH-1.7 реалізована в гілці `feat/ah-1.7-raw-design-ratchet`;
+візуальних змін немає, G0 не підписано. (source: повідомлення власника,
+`git` / `gh pr list` 2026-09-30)
+
+Додано `scripts/report-raw-design-values.ts`, baseline і шість unit-тестів.
+`design:raw:check` входить першим кроком у `pr:check` і в CI Sonar для кодових
+PR. Звіт показує файл/рядок і можливий токен. Ідентичність baseline не залежить
+від рядка, але враховує кількість входжень; `design:raw:prune` лише зменшує
+дозволений борг і відмовляє за наявності нового значення. Тимчасовий компонент
+із `#abcdef` зупинив реальний `npm run pr:check` (exit 1); `--prune` також
+повернув 1, SHA-256 baseline не змінився. Тимчасовий файл прибрано.
+(source: скрипт, `src/lib/design-system/raw-design-values.test.ts`,
+`package.json`, `.github/workflows/sonarqube.yml`, локальні прогони 2026-09-30)
+
+Лічильники B3/B4 у новій області ratchet на 2026-09-30: **B3 — 0** входжень
+шрифту < 12 px; **B4 — 44** hex/rgb/hsl-входження у **21** файлі; додатково
+**4** довільні z-index і **0** сирих тіней. Це не тотожне старому hex-only
+підрахунку B4 у 14 файлах: область і винятки описані в
+[governance](architecture/design-system-tokens.md#6-ah-17-ratchet-сирих-значень).
+Кольоровий борг не видалено; гейт запобігає його зростанню. Після кожної фази
+дописувати сюди новий звіт, а в PR міграції зменшувати baseline.
+(source: `design:raw:report`, `scripts/raw-design-values.baseline.json` 2026-09-30)
+
+Оновлено [токени](architecture/design-system-tokens.md), картку й статус AH-1.7
+в [епіку](product/after-hours-redesign-epic.md), [handoff](product/after-hours-epic-handoff.md),
+[now](now.md) та [index](index.md). AH-1.7 підготовлено до review, формальний статус
+лишено частковим до merge. (source: гілка задачі)
+
+## 2026-09-30 — AH-1.7: відкрито PR #377
+
+Відкрито [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377).
+`npm run pr:check` пройшов: 2021 unit-тест, typecheck, lint, E2E mapping,
+wiki sync/lint, migrations і мінімальна збірка. Перший Chromium hook мав
+129 pass / 12 skip / 1 drawer visibility fail; окремий прогін drawer — 6/6,
+повторний повний hook — **130 pass / 12 skip / 0 fail** без змін UI-коду.
+Статус AH-1.7 — реалізовано, очікує merge. Додано посилання на PR в епік,
+now, handoff та index. (source: локальні прогони 2026-09-30; PR #377)
+
+## 2026-09-30 — AH-1.7: підпис власника й resolve після merge AH-1.3
+
+Власник явно підписав [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377)
+і дозволив resolve конфліктів та merge. Звірено `origin/main` @ `6b3b446`:
+[PR #378](https://github.com/sanchahous/ai-today-brief/pull/378) змержено іншою
+сесією 2026-09-30 о 14:44:12 UTC; робоче дерево перед checkout було чистим.
+Конфлікти у index, log, now і handoff виправлено: актуальні записи про фазу 0
+й тему збережено, обидві історії log лишено, помилковий поточний статус
+«G0 не підписано» прибрано. Історичні записи попередніх прогонів не переписано.
+(source: пряме повідомлення власника 2026-09-30; `git fetch origin`;
+`gh pr view 377/378`; `git merge origin/main`)
+
+`design:raw:check` після інтеграції правильно вимагав prune: AH-1.3 прибрав
+два `#0b0f12` з manifest. `design:raw:prune` зменшив baseline **44 → 42**
+кольорові входження, **21 → 20** файлів; **4** довільні z-index, **0** сирих
+тіней і **0** шрифтів <12 px. Дозволений борг не збільшено.
+Оновлено епік, governance, now, handoff і index; merge #377 виконується лише
+після локального gate і CI. Наступна задача — AH-1.4, після неї AH-1.2.
+(source: `artifacts/_local/ah-1.7-conflict-ratchet.log`;
+`scripts/raw-design-values.baseline.json`; `src/app/manifest.ts`)

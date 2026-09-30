@@ -15,10 +15,10 @@ Last updated: 2026-09-30
 > підтверджено доказами власника. CWV baseline home/news/article прийнято з лабораторними
 > метриками й недостатніми CrUX-даними, daily/weekly виключено лише з AH-0.6.
 > **G0 підписано власником 2026-09-30:** «Погоджую G0 та merge PR #373–#376».
-> Фазу 0 інтегровано. AH-1.3 реалізовано в draft [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378),
-> очікує візуального підпису й merge; [QA-докази](after-hours-ah-1-3-validation.md).
-> Наступна окрема задача — AH-1.4; AH-1.7 лишається у відкритому PR #377.
-> (source: повідомлення й скриншоти власника 2026-09-30; `git fetch origin`, `gh pr view 376/377` 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md); [AH-1.3 validation](after-hours-ah-1-3-validation.md))
+> Фазу 0 інтегровано. AH-1.3 на main після merge [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378),
+> наявні legacy QA/no-JS межі збережено в [доказах](after-hours-ah-1-3-validation.md).
+> Наступна окрема задача — AH-1.4; resolve і merge AH-1.7 / #377 уже дозволено власником.
+> (source: повідомлення й скриншоти власника 2026-09-30; `git fetch origin`, `gh pr view 376/377/378` 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md); [AH-1.3 validation](after-hours-ah-1-3-validation.md))
 > Підпис G0 дозволяє перейти до візуальних задач після інтеграції фази 0;
 > вимога візуального підпису кожного видимого PR із §0 зберігається.
 > Візуальний напрям затверджено власником у прототипі v3; цей документ — план його перенесення,
@@ -342,11 +342,11 @@ flowchart TD
 | AH-0.6 | ✅ На main після merge [#376](https://github.com/sanchahous/ai-today-brief/pull/376): продуктовий і CWV baseline, всі AC прийнято власником | — | — | open-questions #1 закрито | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
-| AH-1.3 | ◐ Контракт Night/Day реалізовано в draft [#378](https://github.com/sanchahous/ai-today-brief/pull/378); очікує підпису, рішення щодо legacy QA й merge ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
+| AH-1.3 | ◐ Контракт Night/Day інтегровано в main через [#378](https://github.com/sanchahous/ai-today-brief/pull/378); legacy no-JS/full-page QA AC лишаються задокументованими ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
 | AH-1.4 | Кольори й гліфи категорій | M | агент | — | B5 |
 | AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
 | AH-1.6 | ◐ Простір, форма, глибина, шари, брейкпоінти, motion-токени (#369: розміри контролів, z-index) | M | агент | D5 ✅ | G09, B13 |
-| AH-1.7 | ◐ Ratchet-звіт «сирих» значень (#369: гейт мінімуму шрифту) | S | агент | — | G15 (інструмент), B4 |
+| AH-1.7 | ◐ Ratchet-звіт «сирих» значень: реалізовано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), очікує merge | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
 | AH-2.2 | Дії й вибір | M | агент | AH-1.4, AH-1.6 | G11 |
 | AH-2.3 | ◐ Поля форм (#369: Combobox) | M | агент | AH-1.5, AH-1.6 | G11, G13 |
@@ -705,15 +705,15 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
 - [x] Подія `theme_toggle` і user property надсилаються як раніше (`light` / `dark`), opt-out збережено.
 - [ ] Візуальний підпис власника й merge PR.
 
-**Стан 2026-09-30:** реалізовано в draft [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378)
+**Стан 2026-09-30:** інтегровано через merge [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378)
 на `feat/ah-1.3-night-day-theme`; метадані теми
 беруть `bg` із `SEMANTIC_TOKENS`, manifest має Night за замовчуванням.
 SEO compare local і Preview: по 58 URL — 0 errors / 0 warnings; 16 PNG до + 16 після
 (home/news, EN/UK, Night/Day, 1440/390).
 Gating контролю охоплює ширини й zoom із DoD; публічні legacy-шаблони
 залишаються в report за AH-0.5 до їхнього редизайну; повний DoD §0.1(5) не
-закритий без рішення власника щодо scope. Завершення задачі на main
-не заявляється до merge. (source: `src/app/layout.tsx`, `src/app/manifest.ts`,
+закритий без рішення власника щодо scope. Merge #378 підтверджено GitHub;
+це не твердження про виправлення всіх legacy AC. (source: `gh pr view 378` 2026-09-30; `src/app/layout.tsx`, `src/app/manifest.ts`,
 `src/lib/theme.ts`, `e2e/theme.spec.ts`; [AH-1.3 validation](after-hours-ah-1-3-validation.md))
 
 ### AH-1.4 · Кольори й гліфи категорій
@@ -820,6 +820,15 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 
 ### AH-1.7 · Ratchet-звіт «сирих» значень
 
+**Стан 2026-09-30: власник підписав і дозволив resolve/merge** [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), гілка `feat/ah-1.7-raw-design-ratchet`.
+Wiki-конфлікти з `origin/main` @ `6b3b446` виправлено; merge очікує перевірок.
+Звіт і baseline додано в `pr:check`; після AH-1.3 — 42 кольорові входження, 4 довільні z-index,
+0 сирих тіней і 0 розмірів шрифту < 12 px. Новий hex у тимчасовому компоненті
+зупинив `pr:check` (exit 1); `--prune` теж відмовив і не змінив baseline.
+Ця задача не змінює вигляд сайту; G0 уже підписано, фаза 0 інтегрована.
+(source: повідомлення власника 2026-09-30; `gh pr view 378`; `scripts/report-raw-design-values.ts`;
+`scripts/raw-design-values.baseline.json`; [governance](../architecture/design-system-tokens.md#6-ah-17-ratchet-сирих-значень))
+
 **Тип:** код (скрипт) · **Розмір:** S · **Виконавець:** агент · **Залежить від:** AH-1.1 ✅ ·
 **Закриває:** G15 (інструмент), B4
 
@@ -838,9 +847,9 @@ Allowlist: OG / `ImageResponse`-рендери, соц- і PDF-рендери (`
 PR шаблону.
 
 **AC:**
-- [ ] Звіт показує `файл:рядок` і пропонований токен; baseline закомічено.
-- [ ] Новий hex у компоненті валить `pr:check`; видалення зменшує baseline.
-- [ ] Лічильники B3 / B4 оновлюються в `wiki/log.md` після кожної фази.
+- [x] Звіт показує `файл:рядок` і пропонований токен; baseline додано до гілки задачі.
+- [x] Новий hex у компоненті валить `pr:check`; видалення вимагає зменшення baseline через `design:raw:prune`.
+- [x] Початкові лічильники B3 / B4 записані в `wiki/log.md`; правило оновлення після кожної фази — у governance.
 
 **Гейт G1:** сайт на токенах 2.0; контраст-гейт — 0 провалів; QA-матриця — 0 тексту < 12 px на
 всіх маршрутах; знімки до/після підписані власником в обох темах.

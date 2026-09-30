@@ -69,6 +69,10 @@ jobs:
         if: steps.scope.outputs.run == 'true'
         run: npm ci
 
+      - name: Raw design values ratchet
+        if: steps.scope.outputs.run == 'true'
+        run: npm run design:raw:check
+
       - name: Unit tests + coverage (≥70% logic scope)
         if: steps.scope.outputs.run == 'true'
         run: npm run verify:coverage
