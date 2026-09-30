@@ -88,9 +88,9 @@ Last updated: 2026-09-30
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
-| ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Єдина активна property 540206735, два зайві акаунти в кошику; GSC link підтверджено, key event / retention / Tag Assistant відкриті | повідомлення й скриншоти власника + HYPD і live tag check 2026-09-30 |
+| ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Property 540206735; GSC link, key event, retention 14 місяців і Tag Assistant підтверджено; звернення на три destinations, приймання акаунтами в кошику не доведено | повідомлення й скриншоти власника + витяг доказів / HYPD 2026-09-30 |
 | ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
-| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: GA4-воронки, підтверджений GSC link, шість прочитаних PageSpeed-звітів із лабораторними метриками й недостатніми CrUX-даними; залишок до G0 (PR #376) | GA4 Data API + повідомлення, скриншоти й HTML-звіти власника + JSON-витяг / HYPD checks 2026-09-29…30 |
+| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: всі докази й AC, очікує merge #376; GA4 Admin підтверджено, CWV home/news/article прийнято власником, daily/weekly виключено; пакет G0 | GA4 Data API + повідомлення, скриншоти й HTML-звіти власника + JSON-витяги 2026-09-29…30 |
 
 ## Marketing
 
@@ -123,7 +123,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 56 задач з AC, усі рішення D1–D13 ухвалені 2026-09-29 (D7 — знак міняється скрізь), ризики й оцінка ≈ 56 днів | `artifacts/after-hours/` v3 + live check коду після PR #369 + рішення власника 2026-09-29 |
-| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | Передача виконання епіку After Hours наступній сесії: стан, порядок старту, черга фази 0, точки зупинки, пастки, стартовий промпт | епік + ADR + сесії 2026-09-29…30 |
+| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | Пакет для фінального підпису G0: PR фази 0 відкриті, докази AH-0.6 й CWV виняток прийняті; порядок старту й пастки | епік + ADR + погодження/скриншоти власника й PR checks 2026-09-30 |
 | ✅ [product/useful-tools-concept](product/useful-tools-concept.md) | Концепт розділу AI Toolbox | колишній `docs/product/USEFUL-TOOLS-CONCEPT.md` |
 | ✅ [product/toolbox-wave1-spec](product/toolbox-wave1-spec.md) | Epic-спека: settings.json Builder + CLAUDE.md Generator | колишній `docs/product/TOOLBOX-WAVE1-…` |
 | ✅ [product/responsive-crossbrowser-audit](product/responsive-crossbrowser-audit.md) | Аудит адаптиву й крос-браузерності | колишній `docs/product/RESPONSIVE-…` |

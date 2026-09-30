@@ -1,0 +1,82 @@
+{
+  "date": "2026-09-30",
+  "source": "Повідомлення й чотири скриншоти власника; property ID зазначено власником, контекст акаунта відповідає попередньому скриншоту селектора.",
+  "account_id": "396774992",
+  "property_id": "540206735",
+  "stream_id": "15002930155",
+  "measurement_id": "G-5R89X6Q5D4",
+  "settings_changed": false,
+  "screenshots": [
+    {
+      "kind": "key_events",
+      "file": "E:/temp/codex-clipboard-6561da9e-ae17-483d-aa16-b707e383aa09.jpg",
+      "sha256": "39bc147816c988aeee8c43bb29bbe8e3bd74f2476a7b082ee21cc1635e976df5"
+    },
+    {
+      "kind": "tag_summary",
+      "file": "E:/temp/codex-clipboard-afa99736-6800-4c53-975c-73a4a387e26c.jpg",
+      "sha256": "335ba88de2f28149f69a0d1ee8e33e379eb858f812b40faf9b5d3554517dc1b0"
+    },
+    {
+      "kind": "config_consent",
+      "file": "E:/temp/codex-clipboard-ed35858b-d3f7-4a53-beaf-234f543d23e0.jpg",
+      "sha256": "ccf95336631121213d9e82e94137547d4c8e3781bc536b5ab8ce045fc3278613"
+    },
+    {
+      "kind": "retention",
+      "file": "E:/temp/codex-clipboard-7043852f-3388-4bc9-9e40-5404535ca35f.jpg",
+      "sha256": "8462c047a608e08f4bfd67f9167f9c07277a85a4de95980cb7389ebb01eab56b"
+    }
+  ],
+  "key_events": {
+    "newsletter_subscribe": true,
+    "close_convert_lead": true,
+    "qualify_lead": true,
+    "purchase": false,
+    "limitation": "Зірочка підтверджує налаштування; для подій показано, що потік даних за останні 28 днів не виявлено. Тест фактичної підписки не виконано."
+  },
+  "retention": {
+    "event_data_months": 14,
+    "user_data_months": 14,
+    "reset_on_new_activity": true
+  },
+  "tag_assistant": {
+    "connected_domain": "aitodaybrief.com",
+    "google_tag_id": "GT-KVJZSX7K",
+    "destination_ids": [
+      "G-5R89X6Q5D4",
+      "G-0TEJ3H5V85",
+      "G-T7X6D6TL84"
+    ],
+    "sent_hits": [
+      "page_view",
+      "newsletter_impression",
+      "web_vitals"
+    ],
+    "sent_to_all_three_destinations": true,
+    "limitation": "Надсилання звернень у Tag Assistant не доводить приймання/зберігання подій у ресурсах акаунтів у кошику; opt-out сценарій окремо не показано.",
+    "config_consent": {
+      "initial_and_current": {
+        "analytics_storage": "granted",
+        "ad_storage": "denied",
+        "ad_user_data": "denied",
+        "ad_personalization": "denied"
+      }
+    }
+  },
+  "cwv_owner_approval": {
+    "page_types": [
+      "home",
+      "news",
+      "article"
+    ],
+    "excluded_page_types": [
+      "daily",
+      "weekly"
+    ],
+    "accepted_evidence": "Лабораторні mobile/desktop метрики Lighthouse і зафіксована відсутність достатніх CrUX-даних у шести звітах.",
+    "applies_to": "AH-0.6 baseline only",
+    "later_cwv_budgets_unchanged": true,
+    "g0_signed": false
+  }
+}

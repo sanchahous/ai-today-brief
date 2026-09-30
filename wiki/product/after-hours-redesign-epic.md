@@ -11,8 +11,11 @@ Last updated: 2026-09-30
 > **Статус 2026-09-30:** епік готовий до виконання, усі рішення D1–D13 ухвалені (AH-0.2 ✅),
 > статус G01–G20 звірено з кодом (AH-0.1 ✅).
 > AH-0.3–AH-0.5 мають відкриті PR #373–#375; [AH-0.6 baseline](../analytics/2026-09-29-redesign-baseline.md)
-> частково знято; після рішення власника активна лише GA4-property `540206735`,
-> але field CWV, її Admin-чекліст і Tag Assistant лишаються відкритими.
+> підготовлено до merge; активна GA4-property `540206735`, Admin-чекліст і Tag Assistant
+> підтверджено доказами власника. CWV baseline home/news/article прийнято з лабораторними
+> метриками й недостатніми CrUX-даними, daily/weekly виключено лише з AH-0.6.
+> Фаза 0 готова до review; завершення PR #373–#376 та фінальний підпис G0 ще попереду.
+> (source: повідомлення й скриншоти власника 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md))
 > До закриття гейту G0 жоден візуальний PR у production не відкривається.
 > Візуальний напрям затверджено власником у прототипі v3; цей документ — план його перенесення,
 > а не нова дизайн-пропозиція. (source: [after-hours-redesign](after-hours-redesign.md) §1)
@@ -332,7 +335,7 @@ flowchart TD
 | AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
 | AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
 | AH-0.5 | ◐ QA-матриця a11y і верстки для сторінок (#369: axe-інфраструктура для каталогу) | M | агент | D10 ✅ | G14 (частк.) |
-| AH-0.6 | ◐ [Продуктовий GA4 baseline](../analytics/2026-09-29-redesign-baseline.md), PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376); CWV і Admin-звірка відкриті | S | власник + агент | open-questions #1 | передумова оцінки |
+| AH-0.6 | ◐ Продуктовий і CWV baseline: всі AC, очікує merge [#376](https://github.com/sanchahous/ai-today-brief/pull/376) | S | власник + агент | open-questions #1 | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
 | AH-1.3 | Контракт теми Night/Day без спалаху | S | агент | D2 ✅ | B12 |
@@ -541,31 +544,28 @@ D11) · **Закриває:** передумова visual review кожного 
 (`weekly_top_click`, `hero_cta_click`), home → daily, weekly completion (`digest_view` →
 `scroll_50` → `story_open`), concept → guide → tool, воронку `newsletter_impression` →
 `newsletter_form_start` → submit → confirmed, 7-денне повернення; CWV (LCP / INP / CLS) з Vercel
-Speed Insights або CrUX для home, news, article, daily, weekly. Оформити сторінку
+Speed Insights або CrUX для home, news, article. За погодженням власника 2026-09-30
+достатньо лабораторних mobile/desktop метрик із зафіксованою відсутністю достатніх
+CrUX-даних; daily/weekly виключено лише з baseline AH-0.6. Оформити сторінку
 `wiki/analytics/<дата>-redesign-baseline.md`.
 
-**Стан 2026-09-30: ◐ частково, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376).** [Baseline](../analytics/2026-09-29-redesign-baseline.md)
-містить GA4-числа й історичний розбір трьох destinations. 2026-09-30 власник перемістив
-два зайві акаунти в кошик; активною лишилась `540206735`. Запитані переходи без відповідних подій
-позначено невимірюваними, а не підмінено співвідношенням page views. Field CWV mobile/desktop
-не отримано: шість збережених HTML-звітів власника для home/news/article прочитано,
-лабораторні метрики внесено в baseline; усі шість показують недостатні CrUX-дані
-сторінки. Daily/weekly ще не покрито. GSC link
-підтверджено скриншотами; key event, retention і Tag Assistant у
-[open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property) відкриті.
-Попередній запит PageSpeed API повернув 429, CrUX API — 403 для доступного ключа,
-браузерний доступ до GA4 Admin не пройшов перевірку дозволів. G0 лишається закритим.
-(source: повідомлення, скриншоти й PageSpeed-посилання власника 2026-09-30; HYPD live check 2026-09-30;
-[baseline](../analytics/2026-09-29-redesign-baseline.md#актуальний-стан-після-рішення-власника-2026-09-30))
+**Стан 2026-09-30: ◐ всі AC виконано, очікує merge PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376).**
+[Baseline](../analytics/2026-09-29-redesign-baseline.md) містить історичні GA4-числа
+й межі вимірювання. Канонічна `540206735`, GSC link, key event, retention і
+Tag Assistant підтверджено. Власник явно прийняв лабораторний CWV baseline
+home/news/article з недостатніми CrUX-даними й виключив daily/weekly із AH-0.6.
+Відсутні події, proxy-воронки, неповні cohort-ідентифікатори та причина
+Singapore/direct не підмінені доведеними продуктовими висновками.
+G0 ще не підписано. (source: погодження й скриншоти власника 2026-09-30;
+[baseline](../analytics/2026-09-29-redesign-baseline.md))
 
 **AC:**
 - [x] Кожна цифра має дату, період, джерело й GA4 property ID; якщо конфлікт #1 не закрито —
   цифри позначені `(needs verification)`.
 - [x] Пояснено, чому field-даних CWV поки немає.
-- [ ] Отримано mobile і desktop field LCP / INP / CLS через CrUX або Vercel Speed Insights,
-  як уточнив власник 2026-09-30; URL без достатніх даних позначені окремо.
-  Home/news/article перевірено: недостатньо CrUX-даних; daily/weekly не надано.
-  Прийняття baseline без field-чисел потребує явного рішення власника.
+- [x] За явним погодженням власника 2026-09-30 прийнято mobile/desktop лабораторні
+  метрики home/news/article й доказ недостатніх CrUX-даних; daily/weekly виключено
+  з AH-0.6. Field p75 та INP не вигадано; вимоги наступних фаз не змінені.
 - [x] Сторінка є в `wiki/index.md`, запис у `wiki/log.md`.
 
 **Гейт G0:** AH-0.1…0.6 закриті; D1–D13 підписані; baseline visual / SEO / продукт зняті;

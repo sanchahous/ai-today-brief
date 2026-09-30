@@ -5121,3 +5121,36 @@ TBT не підмінює INP, лабораторні LCP/CLS не підмін�
 AH-0.6 й [index](index.md). Попередній запис про непрочитані посилання лишено як
 історію; актуальний стан — прочитані файли з лабораторними метриками та доказом
 недостатніх CrUX-даних. (source: HTML-звіти власника 2026-09-30, JSON-витяг)
+
+## 2026-09-30 — AH-0.6: Admin підтверджено, CWV baseline прийнято власником
+
+Власник явно погодив CWV baseline home/news/article з лабораторними mobile/desktop
+метриками та зафіксованою відсутністю достатніх CrUX-даних. Daily/weekly виключено
+лише з вимоги AH-0.6; бюджети та CWV-перевірки наступних фаз не змінені.
+(source: пряме погодження власника 2026-09-30)
+
+Чотири нові скриншоти підтвердили `newsletter_subscribe` як key event, retention
+для event/user data по 14 місяців, канонічний тег `G-5R89X6Q5D4` / `GT-KVJZSX7K`
+і відправлення `page_view`. На Config початковий і поточний consent:
+analytics_storage granted, ad_storage / ad_user_data / ad_personalization denied.
+Власник повідомив, що налаштування вже були такими, змін не робив. Створено
+[витяг доказів](../artifacts/after-hours/analytics/2026-09-30-ga4-admin-verification.json)
+із назвами й SHA-256 чотирьох скриншотів. (source: повідомлення й скриншоти власника 2026-09-30)
+
+Tag Assistant показує звернення `page_view`, `newsletter_impression`, `web_vitals`
+на всі три destinations. Приймання/зберігання подій property акаунтів у кошику
+не встановлено; їх очищення — окреме рішення власника. Зірочка key event не
+доводить нову успішну підписку: UI показує, що потік даних за останні 28 днів
+не виявлено. Opt-out сценарій не показано. Причина Singapore/direct залишається
+невідомою. Ці межі не перетворено на доведені висновки.
+(source: чотири скриншоти; [baseline](analytics/2026-09-29-redesign-baseline.md))
+
+Питання #1 property/Admin закрито; загальну позначку невизначеної property для
+baseline знято, методологічні обмеження воронок/cohort збережено. Оновлено
+[ga4-gsc](analytics/ga4-gsc.md), baseline, [open-questions](open-questions.md),
+[overview](overview.md), [now](now.md), картку AH-0.6, [handoff](product/after-hours-epic-handoff.md)
+і [index](index.md). AH-0.6 має всі AC, очікує merge PR #376. До формального G0
+залишаються завершення PR #373–#376 та фінальний підпис власника; поточне
+погодження CWV не є підписом усього G0. PR #377 (AH-1.7) також відкритий;
+на час повторної перевірки PR #373–#377 mergeable з успішними активними CI.
+(source: погодження власника, `git fetch origin` / `gh pr view 373`…`377` 2026-09-30)

@@ -171,9 +171,11 @@ IndexNow (Bing/Yandex). Повний перелік env — `.env.example`; по
 > ⚠️ З 2026-09-30 активна GA4-property для `aitodaybrief.com` — **540206735**
 > (акаунт `396774992`, `G-5R89X6Q5D4`). Власник перемістив зайві акаунти `396975517`
 > (property `540437869`) і `397017915` (property `540467725`) у кошик. Один production
-> Google tag досі містить три destination ID; фактичну доставку ще перевірити через
-> Tag Assistant. Admin-чекліст канонічної property відкритий, тому продуктові цифри
-> позначено `(needs verification)`.
+> Google tag надсилає звернення на три destination ID за скриншотом Tag Assistant.
+> Admin-чекліст канонічної property завершено доказами власника: GSC link,
+> newsletter_subscribe як key event, retention 14 місяців, page_view і Config consent.
+> Питання #1 закрито; історичні proxy-воронки та природа Singapore/direct лишаються
+> межами інтерпретації. Приймання подій акаунтами в кошику не встановлено.
 > Див. [open-questions #1](open-questions.md#1-конфлікт-трьох-ga4-property). (source:
 > повідомлення власника 2026-09-30; HYPD live check 2026-09-30;
 > [ga4-gsc](analytics/ga4-gsc.md); [redesign baseline](analytics/2026-09-29-redesign-baseline.md))

@@ -29,15 +29,19 @@ HYPD `list_account_summaries` показує лише `396774992` / `540206735`.
 
 **GSC link підтверджено 2026-09-30:** скриншоти власника показують зв'язок домену
 `aitodaybrief.com` з потоком `15002930155` і контекст property `540206735`.
-**Лишається відкритим для G0:** `newsletter_subscribe` key event, retention 14 міс
-у `540206735` і Tag Assistant (доставка й consent). Додаткові
-`G-0TEJ3H5V85` і `G-T7X6D6TL84` досі є в завантаженому Google tag; їх очищення
-можна вирішити окремо після перевірки. Причина історичної різниці Singapore/direct
-між property не доведена. Доки Admin і Tag Assistant не звірено, GA4 baseline має
-`(needs verification)`. **Пункт закривається**, коли виконано актуальний чекліст у
-[ga4-gsc](analytics/ga4-gsc.md); рішення про канонічний акаунт повторно не потрібне.
-(source: повідомлення й скриншоти власника 2026-09-30; HTTP GET Google tag 2026-09-30;
-[redesign baseline](analytics/2026-09-29-redesign-baseline.md))
+**Закрито 2026-09-30:** скриншоти власника підтвердили `newsletter_subscribe`
+як key event, retention event/user data по 14 місяців, канонічний тег і
+`page_view` у Tag Assistant; Config consent analytics granted / ads denied.
+Налаштування вже були такими, власник їх не змінював. Загальна невизначеність
+property/Admin для baseline усунута. (source: повідомлення й чотири скриншоти
+власника 2026-09-30; [ga4-gsc](analytics/ga4-gsc.md))
+
+Tag Assistant показує звернення й на `G-0TEJ3H5V85` / `G-T7X6D6TL84`;
+приймання подій property акаунтів у кошику не встановлено. Очищення destinations
+потребує окремого рішення власника, не є умовою G0. Причина історичної різниці
+Singapore/direct між property досі невідома; це окрема межа інтерпретації,
+а не незакритий вибір property. (source: скриншоти Tag Assistant власника
+2026-09-30; [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
 ## 2. Реальні місячні витрати проєкту невідомі
 

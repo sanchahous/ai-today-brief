@@ -18,20 +18,19 @@ Last updated: 2026-09-30
   SEO baseline AH-0.4 — у PR #374, report AH-0.5 — 812 сценаріїв. Ці PR ще не змержені.
   (source: `gh pr view 373`…`376`, `artifacts/_local/before/manifest.json`,
   `artifacts/_local/ah-0.5-legacy-report.json`, live check 2026-09-30)
-- AH-0.6 лишається частковою: власник перемістив два зайві GA4-акаунти `396975517` і
-  `397017915` у кошик; активні `396774992` / `540206735` підтверджено HYPD.
-  GSC link із потоком `15002930155` підтверджено скриншотами власника; key event,
-  retention і Tag Assistant ще відкриті. Шість збережених HTML-звітів PageSpeed для
-  home/news/article прочитано: лабораторні метрики внесено в baseline, усі звіти
-  показують недостатні CrUX-дані сторінки. Daily/weekly ще не покрито.
-  Live Google tag досі містить три destination ID; Admin / Tag Assistant заблокувала
-  перевірка дозволів браузера, PageSpeed API повернув 429, CrUX API — 403 для
-  доступного локального ключа. Точний перелік потрібних перевірок і URL є в
-  [redesign baseline](../analytics/2026-09-29-redesign-baseline.md#дані-потрібні-для-завершення-ah-06).
-  **Наступний крок:** отримати Admin-докази, завершити покриття daily/weekly й вимогу
-  field CWV (доступні числа або явне рішення власника щодо прогалини); після цього
-  підготувати G0 для підпису власника. (source: повідомлення, скриншоти й PageSpeed-посилання власника, HTTP, browser access і HYPD checks 2026-09-30;
+- AH-0.6 має всі докази й погодження, очікує merge PR #376. GSC link,
+  `newsletter_subscribe` key event, retention event/user data по 14 місяців,
+  канонічний тег і `page_view` у Tag Assistant підтверджено. Config consent:
+  analytics granted / ads denied. Власник прийняв лабораторний CWV baseline
+  home/news/article з недостатніми CrUX-даними й виключив daily/weekly лише
+  з AH-0.6. Нових Admin-скриншотів або цих самих PageSpeed-звітів не просити.
+  Tag Assistant показує звернення на всі три destinations; приймання ресурсами
+  акаунтів у кошику не доведено. Очищення — окреме рішення власника.
+  (source: погодження й скриншоти власника 2026-09-30;
   [redesign baseline](../analytics/2026-09-29-redesign-baseline.md))
+- PR [#377](https://github.com/sanchahous/ai-today-brief/pull/377) реалізує AH-1.7;
+  відкритий, активні CI успішні на час перевірки. G0 не підписано.
+  (source: `gh pr view 377` 2026-09-30)
 
 - Production `b3f1b3a`: епік (PR [#370](https://github.com/sanchahous/ai-today-brief/pull/370)) і
   hotfix B8 — з `/news` прибрано захардкожений «Recent highlights».
@@ -46,11 +45,33 @@ Last updated: 2026-09-30
 - **Рішення D1–D13 ухвалені.** Власника про них не перепитувати. Змінити рішення можна лише за
   новою відповіддю власника: спершу картки, потім запис у [log](../log.md).
 - **Гейт G0 не пройдено.** Поки він закритий, у production не йде жоден візуальний PR.
-- **Поточна задача: AH-0.6.** AH-0.3–AH-0.5 мають відкриті PR #373–#375; GA4-продуктовий
-  baseline у PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) знято в
-  [окремій сторінці](../analytics/2026-09-29-redesign-baseline.md), CWV і
-  Admin-чек-лист GA4 лишаються відкритими. G0 не пройдено. (source: PR #373–#375;
-  [redesign baseline](../analytics/2026-09-29-redesign-baseline.md))
+- **Наступний крок:** фінальний review і завершення PR #373–#376, підпис G0
+  власником. Поточне погодження CWV не є підписом усього G0.
+  (source: повідомлення власника 2026-09-30; [епік](after-hours-redesign-epic.md))
+
+## Пакет для підпису G0
+
+| Задача | Доказ / результат | Статус |
+|---|---|---|
+| AH-0.1 | G01–G20 звірено, PR #372 | завершено |
+| AH-0.2 | ADR D1–D13, PR #371 | завершено |
+| AH-0.3 | 232 PNG, manifest SHA-256, інструмент знімків; PR #373 | відкритий PR |
+| AH-0.4 | production SEO baseline і compare-гейт; PR #374 | відкритий PR |
+| AH-0.5 | report 812 сценаріїв, gating-інфраструктура й негативний тест; PR #375 | відкритий PR |
+| AH-0.6 | GA4 baseline, підтверджені Admin/Tag Assistant, погоджений CWV виняток; PR #376 | всі AC, відкритий PR |
+
+Джерела: `gh pr view 373`…`377` 2026-09-30, PR #371/#372,
+`artifacts/_local/before/manifest.json`, `artifacts/_local/ah-0.5-legacy-report.json`,
+[baseline](../analytics/2026-09-29-redesign-baseline.md), повідомлення власника.
+PR #373–#377 відкриті й mergeable, активні CI успішні на час перевірки.
+AH-1.7 / #377 належить фазі 1 і не є умовою G0.
+
+**Що підписується:** baseline visual/SEO/продукту та готовність QA-матриці
+в report-режимі; дозвіл перейти до візуальних задач після завершення PR фази 0.
+Відомі legacy QA-порушення — борг міграції, report mode їх не приховує.
+Докази й рішення AH-0.6 вже прийняті; повторного погодження аналітики не потрібно.
+Фінальний підпис G0 ще не отримано. (source: [епік](after-hours-redesign-epic.md) G0;
+PR #375; погодження власника 2026-09-30)
 
 ## 2. Порядок старту сесії
 
@@ -95,7 +116,7 @@ Last updated: 2026-09-30
 | 2 | AH-0.3 · знімки до/після | агент | `scripts/capture-route-matrix.ts`; прогін `--label=before` з production; PNG лише в `artifacts/_local/` | немає |
 | 3 | AH-0.4 · SEO-контракт | агент | `src/lib/seo-contract.ts` з тестом (покриття ≥ 80%), `scripts/seo-contract.ts`, текстовий baseline з production | немає |
 | 4 | AH-0.5 · QA-матриця сторінок | агент | `e2e/a11y-layout-matrix.spec.ts`, режими report і gating, звіт по legacy-сайту з лічильниками в log | немає |
-| 5 | ◐ AH-0.6 · продуктовий і CWV baseline, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки; одна активна property, два акаунти в кошику | **так:** потрібні field CWV, Admin-чекліст канонічної property і Tag Assistant |
+| 5 | ◐ AH-0.6 · продуктовий і CWV baseline, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки; одна активна property, два акаунти в кошику | усі докази отримано; очікує merge та фінальний G0 |
 
 **Нюанси, яких немає в картках:**
 
@@ -117,11 +138,12 @@ Last updated: 2026-09-30
 - **AH-0.6.** Read-only GA4-конектор підключено 2026-09-29. За 01–28.09 три property
   отримували production-події через один Google tag. 2026-09-30 власник перемістив
   два зайві акаунти в кошик; активна property для baseline — `540206735`.
-  Google tag досі містить три destinations, фактичну доставку не перевірено. Дані й
-  обмеження — [redesign baseline](../analytics/2026-09-29-redesign-baseline.md).
-  Поки [open-questions](../open-questions.md) #1 не закрито, усі числа `(needs verification)`;
-  mobile/desktop field CWV ще потрібно отримати. (source: GA4 Data API 2026-09-29;
-  повідомлення власника, HYPD і live Google tag 2026-09-30)
+  Tag Assistant показує відправлення на всі три destinations; приймання property
+  акаунтів у кошику не встановлено. Admin-чекліст і питання #1 закрито доказами
+  власника. CWV baseline home/news/article прийнято з лабораторними метриками
+  й недостатніми CrUX-даними; daily/weekly виключено лише з AH-0.6.
+  Дані й обмеження — [redesign baseline](../analytics/2026-09-29-redesign-baseline.md).
+  (source: погодження й скриншоти власника 2026-09-30)
 
 **Гейт G0** закритий, коли AH-0.1…AH-0.6 виконані, baseline visual, SEO і продукту зняті, а
 QA-матриця працює в режимі report.
@@ -228,8 +250,8 @@ QA-матриця працює в режимі report.
 ```
 
 Для AH-0.6 GA4-дані вже знято через read-only конектор; після рішення власника 2026-09-30
-активна лише `540206735`. Потрібно завершити її Admin-чекліст, Tag Assistant і
-отримати field CWV; див. [baseline](../analytics/2026-09-29-redesign-baseline.md).
+активна лише `540206735`. Її Admin-чекліст і Tag Assistant підтверджені;
+CWV baseline прийнято власником із зафіксованим винятком; див. [baseline](../analytics/2026-09-29-redesign-baseline.md).
 
 ## Related pages
 

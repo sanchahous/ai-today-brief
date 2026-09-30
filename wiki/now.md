@@ -17,40 +17,21 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
-- **AH-0.6, нові докази від власника 2026-09-30:** GSC link домену `aitodaybrief.com`
-  з потоком `15002930155` / property `540206735` підтверджено скриншотами.
-  Шість збережених HTML-звітів PageSpeed для home, news і article прочитано:
-  лабораторні метрики записано, CrUX у всіх показує недостатні дані сторінки.
-  До G0 лишаються key event, retention, Tag Assistant, покриття daily/weekly,
-  закриття вимоги field CWV (числа або явне рішення власника щодо прогалини)
-  і завершення PR #373–#376. (source: скриншоти й HTML-звіти власника 2026-09-30;
-  [baseline](analytics/2026-09-29-redesign-baseline.md#pagespeed-звіти-надані-власником))
+- **Фаза 0 готова до фінального review (2026-09-30):** AH-0.6 у
+  [PR #376](https://github.com/sanchahous/ai-today-brief/pull/376) має всі докази:
+  GSC link, key event, retention 14 місяців і Tag Assistant підтверджено власником.
+  Він погодив лабораторний CWV baseline home/news/article з недостатніми
+  CrUX-даними й виключив daily/weekly із AH-0.6. Property/Admin питання #1 закрито.
+  PR #373–#376 ще відкриті; потрібні merge та фінальний підпис G0. Візуальні PR
+  до підпису не просувати. Пакет доказів — у
+  [handoff](product/after-hours-epic-handoff.md#пакет-для-підпису-g0).
+  (source: погодження й скриншоти власника, `gh pr view` 2026-09-30;
+  [baseline](analytics/2026-09-29-redesign-baseline.md))
 
-- **After Hours фаза 0, повторна звірка 2026-09-30:** `origin/main` — `a3d2db5`, локальна гілка
-  AH-0.6 чиста; PR [#373](https://github.com/sanchahous/ai-today-brief/pull/373)–[#376](https://github.com/sanchahous/ai-today-brief/pull/376)
-  відкриті, mergeable, з успішними CI-перевірками. AH-0.3 має локальний baseline 232 PNG;
-  AH-0.4 має production SEO baseline; AH-0.5 має report на 812 сценаріїв. Для AH-0.6
-  власник перемістив акаунти `396975517` / `397017915` у кошик; активними лишилися
-  `396774992` / `540206735`. HYPD підтвердив єдину доступну property. Live tag досі
-  містить три destination ID; GA4 Admin / Tag Assistant не вдалося відкрити через
-  перевірку дозволів браузера, а PageSpeed / CrUX API повернули 429 / 403.
-  Поле CWV і Admin-чек-лист залишаються відкритими; **G0 не готовий до підпису**.
-  Точні URL і докази, які потрібні від власника, — у
-  [redesign baseline](analytics/2026-09-29-redesign-baseline.md#дані-потрібні-для-завершення-ah-06).
-  (source: `git fetch origin main`, `gh pr view 373`…`376`, локальні manifest / report,
-  HTTP і browser access checks 2026-09-30; повідомлення власника та HYPD live check 2026-09-30)
-
-- **AH-0.6 частково: історичний GA4 baseline трьох property зафіксовано (2026-09-29),
-  PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376).**
-  Один production gtag `G-5R89X6Q5D4` має три destinations; за 2026-09-01…28 трафік був у `540206735`,
-  `540437869`, `540467725`. Тепер активна лише `540206735`, чий measurement ID
-  підтверджений установленим тегом і історичним аудитом. У
-  [redesign baseline](analytics/2026-09-29-redesign-baseline.md) є продуктові воронки,
-  аномалія Singapore/direct і чіткі межі даних. Mobile/desktop field CWV не отримано,
-  Admin-чек-лист [open-questions #1](open-questions.md#1-конфлікт-трьох-ga4-property) відкритий;
-  **G0 не пройдено**. (source: GA4 Data API + live Google tag 2026-09-29;
-  повідомлення власника й HYPD live check 2026-09-30;
-  [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
+- **AH-1.7 реалізовано у [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377),
+  ще не змержено.** `origin/main` лишається `a3d2db5`; PR #373–#377 відкриті,
+  mergeable, з успішними активними CI на час повторної перевірки.
+  (source: `git fetch origin`, `gh pr view 373`…`377` 2026-09-30)
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR
   [#372](https://github.com/sanchahous/ai-today-brief/pull/372).** Підсумок за кодом і живою перевіркою production:

@@ -1,6 +1,6 @@
 # Analytics — довідник (підтримувати актуальним!)
 
-Summary: Довідник GA4 / GSC: єдина активна property 540206735; два зайві акаунти в кошику, а Google tag досі містить три destinations. Admin-чекліст відкритий.
+Summary: Єдина активна property 540206735; GSC link, newsletter_subscribe як key event, retention 14 місяців і Tag Assistant підтверджено доказами власника. Google tag продовжує надсилати звернення на три destinations; доля двох залишкових призначень — окреме рішення.
 Sources: повідомлення й скриншоти власника 2026-09-30 (селектор property і деталі GSC link); HYPD `list_account_summaries` і live Google tag 2026-09-30; GA4 Data API 2026-09-29; `src/lib/analytics-config.ts`; [redesign baseline](2026-09-29-redesign-baseline.md)
 Last updated: 2026-09-30
 
@@ -18,11 +18,13 @@ Last updated: 2026-09-30
 2026-09-30; HYPD `list_account_summaries`, live check 2026-09-30)
 
 Завантажений Google tag досі містить `G-0TEJ3H5V85` і `G-T7X6D6TL84` поряд із
-`G-5R89X6Q5D4`. Це **залишкова конфігурація tag**, а не доказ фактичної доставки
-до видалених акаунтів. Код не містить ID зайвих акаунтів, property чи двох додаткових
-measurement ID; він читає `NEXT_PUBLIC_GA_MEASUREMENT_ID`. Tag Assistant ще потрібен
-для перевірки доставки й consent. (source: HTTP GET Google tag 2026-09-30; `rg` у
-`src/`, `pipeline/`, `supabase/`, `e2e/`, `scripts/`, `public/` 2026-09-30)
+`G-5R89X6Q5D4`. Tag Assistant власника показує відправлені звернення `page_view`,
+`newsletter_impression` і `web_vitals` до **всіх трьох destinations**. Це не доводить
+приймання чи зберігання даних у property акаунтів у кошику. Код не містить ID зайвих
+акаунтів, property чи двох додаткових measurement ID; він читає
+`NEXT_PUBLIC_GA_MEASUREMENT_ID`. (source: скриншот Tag Assistant власника 2026-09-30;
+[витяг доказів](../../artifacts/after-hours/analytics/2026-09-30-ga4-admin-verification.json);
+HTTP GET Google tag і `rg` у коді 2026-09-30)
 
 ## Куди текли дані до переміщення акаунтів у кошик (перевірка 2026-09-29)
 
@@ -59,7 +61,7 @@ Vercel більше не читається — можна видалити з e
 - **Consent Mode v2:** analytics granted / ads denied за замовчуванням; CMP opt-out
   оновлює gtag consent (`applyConsentToGtag`).
 
-## ⚠️ Відкрите питання: Admin-конфігурація канонічної property
+## Admin-конфігурація канонічної property — перевірено 2026-09-30
 
 Станом на 2026-09-29 усі три property отримують production-трафік; теза, що лише
 `540467725` активна, була хибною. Дані в `540206735` ближчі до встановленого тегу і повніші
@@ -75,10 +77,24 @@ Vercel більше не читається — можна видалити з e
   доменний ресурс `aitodaybrief.com`, потік «The daily AI news» / `15002930155`
   і дату зв'язування 2026-09-23; окремий скриншот підтверджує контекст акаунта
   `396774992` / property `540206735`. (source: два скриншоти власника 2026-09-30)
-- [ ] **Key event `newsletter_subscribe`** у `540206735` і семантика підтвердження.
-- [ ] **Data retention** `540206735` = 14 місяців (історично 14; поточний стан не перевірено).
-- [ ] **Tag Assistant:** перевірити `G-5R89X6Q5D4`, `page_view`, фактичну доставку й consent;
-  відзначити залишкові destinations. Один HTML-тег сам по собі не доводить доставку.
+- [x] **Key event `newsletter_subscribe`**: зірочка активна. Також позначені
+  `close_convert_lead` і `qualify_lead`; `purchase` не позначена. Список повідомляє,
+  що потік даних за останні 28 днів не виявлено; це підтвердження налаштування,
+  а не успішної фактичної підписки. Подія коду означає успішну відповідь subscribe API,
+  окремої email-confirmed події немає. (source: повідомлення й скриншот власника
+  2026-09-30; `src/components/home/newsletter-form.tsx`; [event-taxonomy](event-taxonomy.md))
+- [x] **Data retention**: event data **14 місяців**, user data **14 місяців**;
+  reset після нової дії користувача увімкнено. (source: скриншот власника 2026-09-30)
+- [x] **Tag Assistant:** підключено `aitodaybrief.com`, знайдено `G-5R89X6Q5D4` /
+  `GT-KVJZSX7K`; `page_view` відправлено на канонічний ID і дві залишкові destinations.
+  На події Config `analytics_storage = granted`, `ad_storage`, `ad_user_data`,
+  `ad_personalization = denied` — і початкові, і поточні значення. Сценарій opt-out
+  у цих скриншотах не показано. (source: повідомлення й два скриншоти Tag Assistant
+  власника 2026-09-30; [витяг доказів](../../artifacts/after-hours/analytics/2026-09-30-ga4-admin-verification.json))
+
+Власник повідомив, що всі налаштування вже були такими, змін не робив.
+Admin/Tag Assistant умови AH-0.6 закриті; очищення destinations не є умовою G0.
+(source: повідомлення власника 2026-09-30)
 
 ## Пастка: схожі властивості
 
@@ -93,7 +109,7 @@ HYPD live check 2026-09-30; GA4 Data API 2026-09-29;
 ## Що налаштовано (стан 12.06.2026, property 540206735)
 
 > Пункти нижче описують історичний стан `540206735` на 12.06; поточні Admin-налаштування
-> потребують повторної перевірки за чек-листом вище.
+> звірено 2026-09-30 за чеклістом вище. Історична зірочка `purchase` тепер неактивна.
 
 - ✅ Key event: **`newsletter_subscribe`** (= конверсія підписки на розсилку)
 - ✅ Key event: `purchase` (дефолтний, незнімний)
@@ -107,7 +123,7 @@ HYPD live check 2026-09-30; GA4 Data API 2026-09-29;
 
 ## Залишилось зробити (одноразово)
 
-- [ ] **Завершити Admin-чекліст канонічної property і Tag Assistant вище**.
+- [x] **Admin-чекліст канонічної property і Tag Assistant завершено** доказами власника 2026-09-30.
 - [ ] **Окремо після G0:** власнику вирішити, чи прибрати дві залишкові destinations із
   Google tag; не змінювати tag без перевірки. (source: повідомлення власника 2026-09-30)
 - [ ] **`sponsor_inquiry_click` → key event.** Подія ще жодного разу не надходила,
