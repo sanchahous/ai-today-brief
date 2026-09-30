@@ -5242,3 +5242,58 @@ CWV винятком AH-0.6. Повторний підпис G0 не потрі�
 до дозволу merge #373–#376. (source: повідомлення власника 2026-09-30;
 [PR #376](https://github.com/sanchahous/ai-today-brief/pull/376),
 [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377))
+
+## 2026-09-30 — AH-1.3: контракт Night/Day підготовлено для review
+
+Звірено чистий старт і `origin/main` @ `69bcd1c`: #376 змержено, фаза 0 інтегрована;
+#377 / AH-1.7 відкритий. На окремій гілці `feat/ah-1.3-night-day-theme` реалізовано
+pre-paint `.theme-light` + `data-theme` + `color-scheme`, theme-color/manifest із
+токенів 2.0, назви наступної теми EN/UK і 44×44 px. Persisted/GA4 значення
+`light`/`dark` збережені; desktop/mobile кнопки синхронні.
+(source: `git fetch origin`, `git status --short`, `gh pr view 376/377` 2026-09-30;
+`src/app/layout.tsx`, `src/app/manifest.ts`, `src/lib/theme.ts`, `src/components/theme-toggle.tsx`)
+
+SEO compare — 58 URL, 0 errors / 0 warnings; tokens:check PASS; 9 unit-тестів теми.
+Старий локальний cache із порожніми home/news збережено в
+`artifacts/_local/ah-1-3-cache-backup/` і виконано лише `build:ci` зі свіжими reads.
+PNG: 16 до + 16 після (home/news × EN/UK × Night/Day × 1440/390).
+Створено галерею `artifacts/after-hours/qa/ah-1.3-review.html` та
+[сторінку доказів](product/after-hours-ah-1-3-validation.md).
+Оновлено [епік](product/after-hours-redesign-epic.md), [now](now.md),
+[handoff](product/after-hours-epic-handoff.md) і [index](index.md).
+AH-1.3 чекає візуального підпису й merge; наступна окрема задача — AH-1.4,
+після неї AH-1.2. Full-page legacy QA і no-JS Suspense-обмеження явно відділені
+від gate нового контролю. (source: `artifacts/_local/ah-1.3-seo-local-fresh.log`;
+`artifacts/_local/ah-1.3-tokens.log`; `src/lib/theme.test.ts`; локальні manifests;
+[AH-1.3 validation](product/after-hours-ah-1-3-validation.md))
+
+## 2026-09-30 — AH-1.3: draft PR #378, Preview і фінальний QA-пакет
+
+Відкрито [draft PR #378](https://github.com/sanchahous/ai-today-brief/pull/378).
+Code head `a58f29f`: Playwright CI **558 passed / 30 skipped**, Sonar scan та
+інші активні checks успішні. Локальний `pr:check` — **2032 unit-тести**;
+повторний pre-push — **191 passed / 5 skipped**, hooks не пропущено.
+Перший push зупинився на `net::ERR_NO_BUFFER_SPACE`; targeted retry та
+повторний повний pre-push пройшли. (source: GitHub runs
+[E2E](https://github.com/sanchahous/ai-today-brief/actions/runs/36720454290),
+[Sonar](https://github.com/sanchahous/ai-today-brief/actions/runs/36720454119);
+`artifacts/_local/ah-1.3-push-retry.log`; `artifacts/_local/ah-1.3-pr-check-retry-push.log`)
+
+[Preview](https://ai-today-brief-git-feat-ah-13-night-940161-sanchahous-projects.vercel.app/uk/news)
+пройшов authenticated SEO compare: **58 URL, 0 errors, 0 warnings**, повторні
+EN/UK news — cache HIT. Додано **16 Preview PNG**, галерея тепер порівнює
+production до з Preview після; локальні 16 PNG також збережено. Підсумок,
+SHA-256 усіх manifests і первинних QA report —
+`artifacts/after-hours/qa/ah-1.3-validation.json`.
+(source: `artifacts/_local/ah-1.3-seo-preview-auth.log`;
+`artifacts/_local/ah-1.3-preview-capture-auth.log`; validation JSON)
+
+Same-data report main/AH-1.3: **812 сценаріїв**, theme-target порушення **464 → 0**;
+на 784 сценаріях без live-search H1 problems **0 → 0**, axe **2460 → 2460**,
+console **28 → 28**. Full-page legacy violations і no-JS locale Suspense
+обмеження не оголошено виправленими. AC no-JS та DoD §0.1(5) не закриті
+автоматично: потрібне явне рішення власника щодо наявного scope разом із
+візуальним підписом перед merge. Наступна незалежна задача — AH-1.4; після неї AH-1.2.
+(source: `artifacts/after-hours/qa/ah-1.3-validation.json`;
+[AH-1.3 validation](product/after-hours-ah-1-3-validation.md);
+[епік](product/after-hours-redesign-epic.md) §0.1 і §5.3)

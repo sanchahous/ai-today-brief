@@ -1,0 +1,220 @@
+{
+  "task": "AH-1.3",
+  "createdAt": "2026-09-30T13:32:09.298Z",
+  "baseCommit": "69bcd1c70d4a2b8d4bbe933b84e59d9f3a516191",
+  "implementationCommit": "a58f29f01d8316507bd39982ded8075146d2fc8d",
+  "pr": "https://github.com/sanchahous/ai-today-brief/pull/378",
+  "preview": "https://ai-today-brief-git-feat-ah-13-night-940161-sanchahous-projects.vercel.app",
+  "status": "draft; owner visual signature and merge pending",
+  "seo": {
+    "local": {
+      "routes": 58,
+      "errors": 0,
+      "warnings": 0,
+      "log": "artifacts/_local/ah-1.3-seo-local-fresh.log"
+    },
+    "preview": {
+      "routes": 58,
+      "errors": 0,
+      "warnings": 0,
+      "cache": "repeat EN/UK news HIT",
+      "log": "artifacts/_local/ah-1.3-seo-preview-auth.log",
+      "access": "Vercel authentication; private share cookie only in ignored local QA files"
+    }
+  },
+  "checks": {
+    "prCheck": {
+      "unitTests": 2032,
+      "files": 225,
+      "log": "artifacts/_local/ah-1.3-pr-check-retry-push.log"
+    },
+    "themeUnitTests": 9,
+    "tokens": "PASS",
+    "crossBrowserThemeCatalogAdmin": {
+      "passed": 159,
+      "skipped": 15,
+      "log": "artifacts/_local/ah-1.3-crossbrowser.log"
+    },
+    "prePush": {
+      "passed": 191,
+      "skipped": 5,
+      "log": "artifacts/_local/ah-1.3-push-retry.log"
+    },
+    "github": {
+      "run": 36720454290,
+      "passed": 558,
+      "skipped": 30,
+      "sonarRun": 36720454119,
+      "sonar": "SUCCESS",
+      "head": "a58f29f01d8316507bd39982ded8075146d2fc8d"
+    }
+  },
+  "fullPageReport": {
+    "policy": "AH-0.5 public legacy report until template migration; not a zero-violation gate",
+    "before": {
+      "path": "artifacts/_local/ah-1.3-same-data-before-qa.json",
+      "createdAt": "2026-09-30T13:20:56.197Z",
+      "sha256": "cc1a2b06c6bbce8474dae576d64c9155a6eaa46591bf5ecada635c3fec7537f1",
+      "summary": {
+        "scenarios": 812,
+        "overflow": 0,
+        "smallText": 0,
+        "smallTargets": 13870,
+        "axe": 2496,
+        "consoleErrors": 28,
+        "h1Problems": 17,
+        "headingSkips": 319,
+        "imagesMissingAlt": 0,
+        "clipped": 1388,
+        "clippedAtZoom": 456
+      }
+    },
+    "after": {
+      "path": "artifacts/_local/ah-1.3-full-qa.json",
+      "createdAt": "2026-09-30T13:02:49.320Z",
+      "sha256": "aadfca56d72b82b6599820439080bbd9975705b6dc02440f71b7a69d1867d516",
+      "summary": {
+        "scenarios": 812,
+        "overflow": 0,
+        "smallText": 0,
+        "smallTargets": 11928,
+        "axe": 2484,
+        "consoleErrors": 28,
+        "h1Problems": 23,
+        "headingSkips": 313,
+        "imagesMissingAlt": 0,
+        "clipped": 1345,
+        "clippedAtZoom": 416
+      }
+    },
+    "sameRoutes": true,
+    "sameBuildCache": true,
+    "themeTargetViolations": {
+      "before": 464,
+      "after": 0
+    },
+    "excludingLiveSearch": {
+      "note": "Search q=mcp changes async state between load and inspection; H1/skips/axe/clipping differences are limited to those 28 scenarios, apart from one filtered-news clip.",
+      "before": {
+        "scenarios": 784,
+        "overflow": 0,
+        "smallText": 0,
+        "smallTargets": 13364,
+        "axe": 2460,
+        "consoleErrors": 28,
+        "h1Problems": 0,
+        "headingSkips": 308,
+        "imagesMissingAlt": 0,
+        "clipped": 1312
+      },
+      "after": {
+        "scenarios": 784,
+        "overflow": 0,
+        "smallText": 0,
+        "smallTargets": 11572,
+        "axe": 2460,
+        "consoleErrors": 28,
+        "h1Problems": 0,
+        "headingSkips": 308,
+        "imagesMissingAlt": 0,
+        "clipped": 1311
+      }
+    }
+  },
+  "noJs": {
+    "scope": "Night default and readable SSR header; existing locale Suspense content stays hidden before React reveal on both main and AH-1.3.",
+    "comparison": [
+      {
+        "base": "http://127.0.0.1:3001",
+        "lang": "en",
+        "h1Visible": false,
+        "h1": "All news",
+        "primaryVisible": true,
+        "style": {
+          "theme": null,
+          "scheme": "dark",
+          "bg": "rgb(23, 25, 24)",
+          "text": "rgb(240, 233, 220)"
+        }
+      },
+      {
+        "base": "http://127.0.0.1:3001",
+        "lang": "uk",
+        "h1Visible": false,
+        "h1": "Усі новини",
+        "primaryVisible": true,
+        "style": {
+          "theme": null,
+          "scheme": "dark",
+          "bg": "rgb(23, 25, 24)",
+          "text": "rgb(240, 233, 220)"
+        }
+      },
+      {
+        "base": "http://127.0.0.1:3000",
+        "lang": "en",
+        "h1Visible": false,
+        "h1": "All news",
+        "primaryVisible": true,
+        "style": {
+          "theme": "night",
+          "scheme": "dark",
+          "bg": "rgb(23, 25, 24)",
+          "text": "rgb(240, 233, 220)"
+        }
+      },
+      {
+        "base": "http://127.0.0.1:3000",
+        "lang": "uk",
+        "h1Visible": false,
+        "h1": "Усі новини",
+        "primaryVisible": true,
+        "style": {
+          "theme": "night",
+          "scheme": "dark",
+          "bg": "rgb(23, 25, 24)",
+          "text": "rgb(240, 233, 220)"
+        }
+      }
+    ]
+  },
+  "screenshotSets": [
+    {
+      "label": "before",
+      "path": "artifacts/_local/ah-1-3-before/manifest.json",
+      "count": 16,
+      "base": "https://aitodaybrief.com",
+      "capturedAt": "2026-09-30T12:41:31.291Z",
+      "manifestSha256": "f87afdd085799fff1ab5c144e74fc6f4506df0fb745c9477d6d20b073fbac366"
+    },
+    {
+      "label": "after",
+      "path": "artifacts/_local/ah-1-3-after/manifest.json",
+      "count": 16,
+      "base": "http://127.0.0.1:3000",
+      "capturedAt": "2026-09-30T12:53:40.866Z",
+      "manifestSha256": "09dcb020471bae10dac201585bb978434be4f2a1a267e639feb9b3424953a561"
+    },
+    {
+      "label": "preview",
+      "path": "artifacts/_local/ah-1-3-preview/manifest.json",
+      "count": 16,
+      "base": "https://ai-today-brief-git-feat-ah-13-night-940161-sanchahous-projects.vercel.app",
+      "capturedAt": "2026-09-30T13:29:57.364Z",
+      "manifestSha256": "ac477d8e2a546f3d38b7789fc820fbc7da623c9eeaab0c191046fa4f5d7c9548"
+    }
+  ],
+  "pending": [
+    "Owner visual signature",
+    "Owner acceptance of documented legacy QA and no-JS content limitations under DoD §0.1(3,5); no waiver inferred",
+    "Merge"
+  ],
+  "next": [
+    "AH-1.4",
+    "AH-1.2 after AH-1.4"
+  ],
+  "separateOpenPr": {
+    "task": "AH-1.7",
+    "pr": 377
+  }
+}
