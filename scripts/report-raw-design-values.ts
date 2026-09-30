@@ -81,7 +81,9 @@ function scanUtilities(line: string, add: AddFinding): void {
     add(
       kind,
       match[0],
-      kind === 'z-index' ? 'var(--z-dropdown/overlay/dialog/toast)' : 'var(--shadow-card/pop)',
+      kind === 'z-index'
+        ? 'var(--z-dropdown), var(--z-overlay), var(--z-dialog) або var(--z-toast)'
+        : 'var(--shadow-card) або var(--shadow-pop)',
     );
   }
 }
@@ -95,7 +97,7 @@ function scanShadows(line: string, add: AddFinding): void {
       !isTokenReference(value) &&
       !['none', 'inherit', 'initial', 'unset', 'revert'].includes(value)
     ) {
-      add('shadow', match[0], 'var(--shadow-card/pop)');
+      add('shadow', match[0], 'var(--shadow-card) або var(--shadow-pop)');
     }
   }
 }

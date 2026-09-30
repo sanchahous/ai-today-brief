@@ -5099,3 +5099,13 @@ PR. Звіт показує файл/рядок і можливий токен. 
 в [епіку](product/after-hours-redesign-epic.md), [handoff](product/after-hours-epic-handoff.md),
 [now](now.md) та [index](index.md). AH-1.7 підготовлено до review, формальний статус
 лишено частковим до merge. (source: гілка задачі)
+
+## 2026-09-30 — AH-1.7: відкрито PR #377
+
+Відкрито [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377).
+`npm run pr:check` пройшов: 2021 unit-тест, typecheck, lint, E2E mapping,
+wiki sync/lint, migrations і мінімальна збірка. Перший Chromium hook мав
+129 pass / 12 skip / 1 drawer visibility fail; окремий прогін drawer — 6/6,
+повторний повний hook — **130 pass / 12 skip / 0 fail** без змін UI-коду.
+Статус AH-1.7 — реалізовано, очікує merge. Додано посилання на PR в епік,
+now, handoff та index. (source: локальні прогони 2026-09-30; PR #377)
