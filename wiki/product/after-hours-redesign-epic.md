@@ -205,7 +205,7 @@ ISR-кешу, SEO/AEO, аналітики й доступності, закри�
 | B4 | «Сирі» кольори в UI | ◐ | hex-літерали у 14 файлах `.tsx` / `.css` поза admin (було 18); серед них `globals.css` (визначення токенів) і 2 OG-рендери — кандидати в allowlist | grep 2026-09-29 |
 | B5 | Кольори категорій — неон з БД | відкрито | `categories.color` (`#47E4D3` …) + 8 правил `.theme-light .cat-*` з color-mix; прототип має jewel tones на тему (≥ 4,5:1); #369 відклав це до «Хвилі B» | `supabase/migrations/009_seed_categories.sql`; `src/app/globals.css`; `artifacts/after-hours/tokens.css` |
 | B6 | Дві пагінації | відкрито | `src/components/pagination.tsx` (кнопки) лишився в `post-feed.tsx` поруч з `ui/pagination.tsx` | grep 2026-09-29 |
-| B7 | Немає фасету Topics / Tool | відкрито | `news-filters.ts` не має topic-параметра | `src/lib/news-filters.ts` |
+| B7 | Немає фасету Topics / Tool | частково (AH-4.1): lib і URL є, пікер — AH-4.3 | `news-filters.ts` має `topics`, `buildTopicFacet`; у sidebar пікера ще немає | `src/lib/news-filters.ts`, `src/lib/topic-normalize.ts` |
 | B8 | Статичний «Recent highlights» на `/news` | ✅ закрито hotfix-ом 2026-09-29 | до hotfix-у рендерився захардкожений `news.weekSummary` з порту прототипу (PR #17) з неперевіреними твердженнями про релізи й «70%+» економії; блок і ключі `news.summaryTitle` / `news.weekSummary` прибрано в EN і UK в одному PR з епіком | `src/lib/i18n.ts`, `src/app/[lang]/news/page.tsx`; `git log -S weekSummary` |
 | B9 | Хардкод-статистика на головній | відкрито | «70+» і «120+» — рядки в `home-hero.tsx`, не дані (needs verification) | `src/components/home/home-hero.tsx` |
 | B10 | Нескінченні анімації | відкрито | 11 правил `infinite` у `globals.css` (орби 13–17 с, `pulse`, сцена 404, shimmer); Tension v3 забороняє нескінченні цикли, крім loading-shimmer | `src/app/globals.css`; [after-hours-tension](after-hours-tension.md) |
@@ -361,7 +361,7 @@ flowchart TD
 | AH-3.6 | Consent-картка | S | агент | AH-2.2, AH-2.3 | — |
 | AH-3.7 | Знак у генераторах зображень і PDF: OG, weekly PDF, LinkedIn document, Instagram carousel, соц-ассети, duotone | M | агент + власник | AH-3.1 | B11 (рендери), D7 |
 | AH-3.8 | Brand-kit: аватар і банери соцмереж + заміна на платформах | S | агент + власник | AH-3.1 | B11 (соцмережі), D7 |
-| AH-4.1 | Taxonomy Topics / Tool | M | агент | D8 ✅ | G06, B7 |
+| AH-4.1 | ✅ Taxonomy Topics / Tool: lib, URL і чіп активного фільтра ([PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM)); пікер фасету — AH-4.3 | — | — | D8 ✅ | G06, B7 (lib/URL) |
 | AH-4.2 | StoryCard, StoryRow, CategoryBanner | M | агент | AH-2.2, AH-2.5, AH-1.4 | G17 (частк.) |
 | AH-4.3 | Сторінка `/[lang]/news` | L | агент | AH-4.1, AH-4.2, AH-2.3, AH-2.4, AH-2.6, AH-3.3, AH-3.4 | G02, G05, G07 |
 | AH-4.4 | Сторінка `/[lang]/news/search` | S | агент | AH-4.3, AH-3.2 | — |
@@ -1237,11 +1237,17 @@ footer-newsletter / cookie-overlay / theme зелені в трьох брауз
 `parseNewsUrlParams` / `serializeNewsUrlParams`; всередині фасету OR, між фасетами AND; лічильники
 враховують інші фасети; значення показується за правилом D8; назва фасету — «Topics» / «Теми».
 
+**Стан (2026-09-30, AH-4.1 виконано):** [PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM).
+`topic-normalize.ts` (slug = літери й цифри без розділювачів, мапа аліасів), `HomeItem.topics`,
+`topics=` у `parseNewsUrlParams` / `serializeNewsUrlParams`, `applyNewsFilters`, `countCategories`,
+`buildTopicFacet`; `news-feed` застосовує `topics` з URL і показує чіп зі зняттям. Пікер фасету в
+sidebar **не** входить: його створює AH-4.3. Реальні дані й аліаси — [ADR §2.3](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md).
+
 **AC:**
-- [ ] Vitest: round-trip URL з topics; OR / AND; лічильники; невідомі topics ігноруються; «Claude
+- [x] Vitest: round-trip URL з topics; OR / AND; лічильники; невідомі topics ігноруються; «Claude
   Code», «claude-code» і «ClaudeCode» зводяться до одного значення.
-- [ ] Без даних фасет не рендериться — 0 вигаданих чипів.
-- [ ] ADR доповнено розділом про Topics; покриття нового коду ≥ 80%.
+- [x] Без даних фасет не рендериться — 0 вигаданих чипів (`buildTopicFacet` повертає `[]`; рендер — AH-4.3).
+- [x] ADR доповнено розділом про Topics ([§2.3](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md)); покриття нового коду ≥ 80%.
 
 ### AH-4.2 · StoryCard, StoryRow, CategoryBanner
 
@@ -1969,7 +1975,7 @@ AH-0.6 (ті самі дні тижня й джерела трафіку); як�
 | G03 | P0 | done | `SortMode` у `news-filters.ts` має лише newest / oldest / relevance | регресія в AH-4.3, AH-4.5 |
 | G04 | P0 | done | URL-state + `e2e/news-feed-interaction.spec.ts` (#367) | регресія в AH-4.3, AH-4.5 |
 | G05 | P0 | partial | зріз 100 / 80 без чесної мітки обсягу; статичний `weekSummary` (B8) прибрано hotfix-ом 2026-09-29 | AH-4.3 |
-| G06 | P0 | open | немає Topics / Tool у `news-filters.ts` | AH-4.1 |
+| G06 | P0 | partial | lib і URL готові (AH-4.1); пікер фасету — AH-4.3 | AH-4.1 ✅, AH-4.3 |
 | G07 | P1 | partial (live 2026-09-29) | на production 390×844 Sort і Filters стоять на першому екрані (центр Filters — y≈422 із 844), drawer із повними назвами категорій і «Done (100)»; залишок — trending-тема обрізана `truncate`, UK не перевірено | AH-4.3 |
 | G08 | P1 | done | «Done» замість Apply ([ADR](../decisions/2026-09-26-news-discovery-and-pagination-architecture.md) §5) | AH-4.3 («Готово · N») |
 | G09 | P1 | partial | #369: палітра Night/Day, шкала в rem, z-index, розміри контролів; тіні Night і Day є в `globals.css`, але Day-тіней немає в `tokens.ts` (поза drift-гейтом); в CSS не доходять spacing, радіуси `none/lg`, motion, breakpoints; шрифти досі `@fontsource` | AH-1.5, AH-1.6 |

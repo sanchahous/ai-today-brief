@@ -17,6 +17,16 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
+- **AH-4.1 (Topics / Tool у discovery) — реалізовано, PR #PRNUM (2026-09-30), паралельно з AH-1.4.**
+  `src/lib/topic-normalize.ts` зводить «Claude Code», «claude-code», «ClaudeCode» до одного slug і
+  має мапу лише безсумнівних аліасів; `HomeItem.topics`; `topics=` в URL; OR усередині фасету,
+  AND між фасетами; лічильники за іншими фасетами; правило D8 (≥ 2 матеріали, обрана тема завжди
+  видима, без даних фасет порожній). Live-перевірка prod-БД: 905 айтемів, 2866 згадок, 1256
+  унікальних ключів. У `news-feed` — лише застосування `topics` з URL і чіп зі зняттям; пікер у
+  sidebar — AH-4.3. AH-1.4 (кольори категорій) веде інша сесія — не дублювати.
+  (source: `src/lib/topic-normalize.ts`, `src/lib/news-filters.ts`; SQL-перевірка 2026-09-30;
+  [ADR §2.3](decisions/2026-09-26-news-discovery-and-pagination-architecture.md))
+
 - **AH-1.3 інтегровано через [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378)
   2026-09-30; актуальний `origin/main` — `6b3b446`.**
   Pre-paint синхронізує `.theme-light`, `data-theme`, `color-scheme` і `theme-color`;
