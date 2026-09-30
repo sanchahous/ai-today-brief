@@ -1,0 +1,111 @@
+{
+  "task": "AH-1.4",
+  "date": "2026-09-30",
+  "baseCommit": "48be8448456182eef4a8e3ba3982f54a4fd2d204",
+  "implementationCommit": "63258e4fb07996a7c38573c67aa23844b097c4a0",
+  "status": "owner visual signature and merge pending",
+  "preview": "https://ai-today-brief-rjhirc97z-sanchahous-projects.vercel.app",
+  "tokens": {
+    "version": "2.1.0",
+    "categoryPairs": 54,
+    "minimumContrast": 5.2238,
+    "pass": true
+  },
+  "checks": {
+    "prCheck": {
+      "tests": 2068,
+      "files": 228,
+      "log": "artifacts/_local/ah-1.4-pr-check-synced.log"
+    },
+    "prePush": {
+      "passed": 304,
+      "skipped": 5,
+      "log": "artifacts/_local/ah-1.4-push.log"
+    },
+    "localCrossBrowser": {
+      "passed": 488,
+      "skipped": 52,
+      "note": "Initial 487 passed + one WebKit preview test timeout; fixed hydration-aware test and reran preview tests in all three engines: 3 passed. Full local matrix preceded Next 16.3.6 sync; subsequent pre-push ran on 16.3.6."
+    }
+  },
+  "seo": {
+    "local": {
+      "routes": 58,
+      "errors": 0,
+      "warnings": 0,
+      "log": "artifacts/_local/ah-1.4-seo-local-synced.log"
+    }
+  },
+  "ratchet": {
+    "coloursBefore": 42,
+    "coloursAfter": 30,
+    "arbitraryZIndex": 4,
+    "rawShadows": 0,
+    "sub12pxFonts": 0
+  },
+  "legacyQA": {
+    "before": {
+      "scenarios": 812,
+      "overflow": 0,
+      "smallText": 0,
+      "smallTargets": 11928,
+      "axe": 2484,
+      "consoleErrors": 28,
+      "h1Problems": 23,
+      "headingSkips": 313,
+      "imagesMissingAlt": 0,
+      "clipped": 1345,
+      "clippedAtZoom": 416
+    },
+    "after": {
+      "scenarios": 812,
+      "overflow": 0,
+      "smallText": 0,
+      "smallTargets": 11947,
+      "axe": 1400,
+      "consoleErrors": 28,
+      "h1Problems": 19,
+      "headingSkips": 317,
+      "imagesMissingAlt": 0,
+      "clipped": 1368,
+      "clippedAtZoom": 416
+    },
+    "beforeFile": "artifacts/_local/ah-1.3-full-qa.json",
+    "afterFile": "artifacts/_local/ah-1.4-full-qa.json",
+    "beforeSha256": "aadfca56d72b82b6599820439080bbd9975705b6dc02440f71b7a69d1867d516",
+    "afterSha256": "f3c11deab99f7547e03e00311db52e785218bb989f737ce68b78c2dc10f6382a",
+    "stable784": {
+      "axeBefore": 2460,
+      "axeAfter": 1400,
+      "smallTargetsBefore": 11572,
+      "smallTargetsAfter": 11571,
+      "h1Problems": 0,
+      "headingSkips": 308,
+      "clippedBefore": 1311,
+      "clippedAfter": 1313
+    },
+    "note": "28 live-search scenarios retain pre-existing skeleton race; two additional clipped detections occur only at 1440px on filtered news. Zoom/reflow clipped total is unchanged at 416. Full-page zero-violation DoD is not met; owner must review legacy scope before merge."
+  },
+  "noJS": "Existing locale Suspense skeleton/reveal limitation remains; theme/header server-render preserved; no claim of whole-content no-JS fix.",
+  "screenshots": {
+    "before": {
+      "count": 32,
+      "manifest": "artifacts/_local/ah-1-4-before/manifest.json",
+      "sha256": "7b1efacd144d5f9dc0171bc738b88356ad896b9f3b552925cd663aa01eb324e1",
+      "provenance": "production; gitSha 7240652 is capture checkout before tooling merge, not verified deploy SHA"
+    },
+    "localAfter": {
+      "count": 32,
+      "manifest": "artifacts/_local/ah-1-4-after/manifest.json",
+      "sha256": "27336588f1e4e663bbf8da3318030c990f55c04cd9328c9f0a71f5fcd73a5bc4",
+      "routes": "same paths as before via --route-manifest"
+    }
+  },
+  "ah17": {
+    "pr": 377,
+    "mergedCommit": "e47010500d75f809182305692d7916f169611157",
+    "e2eRun": 36732521337,
+    "e2eStatus": "completed",
+    "e2eConclusion": "success"
+  }
+}
