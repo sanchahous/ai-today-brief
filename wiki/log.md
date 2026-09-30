@@ -5473,7 +5473,7 @@ Push виконано з `SKIP_E2E=1` за згодою власника: pre-pu
 
 Власник підписав [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), і його змерджено (`55b78dc`,
 2026-09-30 18:14 UTC); статус AH-1.6 в епіку, now і handoff виправлено з «очікує підпису» на «змерджено».
-AH-1.2 реалізовано окремою гілкою `feat/ah-1.2-contrast-gate` (PR #PRNUM), без видимих змін.
+AH-1.2 реалізовано окремою гілкою `feat/ah-1.2-contrast-gate` (PR #384), без видимих змін.
 `scripts/check-design-tokens.ts` тепер єдиний гейт із матрицею прототипу v3: **222 пари** (було 158), 0 провалів;
 додано `overlay`, `--art-*` на `--art-stage`, `on-accent` на `accent-fill` і hover, `accent-hover`, `on-velvet`,
 selection, `claret` на `velvet`, UI-пари на трьох поверхнях і Night-бренд на `stage`. Звіт друкує найнижчі

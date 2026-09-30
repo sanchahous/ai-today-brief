@@ -343,7 +343,7 @@ flowchart TD
 | AH-0.5 | ✅ QA-матриця a11y і верстки для сторінок ([#375](https://github.com/sanchahous/ai-today-brief/pull/375); публічні маршрути поки report) | — | — | D10 ✅ | G14 (частк.) |
 | AH-0.6 | ✅ На main після merge [#376](https://github.com/sanchahous/ai-today-brief/pull/376): продуктовий і CWV baseline, всі AC прийнято власником | — | — | open-questions #1 закрито | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
-| AH-1.2 | ✅ Контраст-гейт 2.0: 222 пари, 0 провалів, мінімум категорій 6,41 / 5,22; реалізовано в [PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM), без видимих змін | — | — | AH-1.4 ✅ | G09 (UI-пари) |
+| AH-1.2 | ✅ Контраст-гейт 2.0: 222 пари, 0 провалів, мінімум категорій 6,41 / 5,22; реалізовано в [PR #384](https://github.com/sanchahous/ai-today-brief/pull/384), без видимих змін | — | — | AH-1.4 ✅ | G09 (UI-пари) |
 | AH-1.3 | ◐ Контракт Night/Day інтегровано в main через [#378](https://github.com/sanchahous/ai-today-brief/pull/378); legacy no-JS/full-page QA AC лишаються задокументованими ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
 | AH-1.4 | ✅ Кольори й гліфи категорій: змерджено в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382), `5af8d56` ([докази](after-hours-ah-1-4-validation.md)) | — | — | — | B5 |
 | AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
@@ -669,7 +669,7 @@ QA-матриця працює в report-режимі.
 > Лишається додати пари прототипу, яких немає: `--cat-*` (після AH-1.4), on-accent на accent-fill і
 > hover, on-velvet, selection, claret на velvet і `stage` — до ≥ 160 пар.
 
-**Стан (2026-09-30, AH-1.2 виконано): [PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM), без видимих змін.**
+**Стан (2026-09-30, AH-1.2 виконано): [PR #384](https://github.com/sanchahous/ai-today-brief/pull/384), без видимих змін.**
 Єдиний гейт `check-design-tokens.ts` тепер перевіряє **222 пари** (111 на тему), 0 провалів: текстові ролі × 5 поверхонь,
 `text`/`muted`/`faint`/`accent` на `overlay`, дев'ять `--cat-*` на `bg`/`surface`/`raised`, `--art-*` на `--art-stage`,
 `on-accent` на `accent`/`accent-fill`/`accent-fill-hover`, `accent-hover`, `on-velvet` на `velvet`/`velvet-deep`, selection,
