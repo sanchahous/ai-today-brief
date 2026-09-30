@@ -40,7 +40,77 @@ describe('Design Tokens & Accessibility Contrast', () => {
     const result = runContrastAudit();
     expect(result.reports.filter((r) => r.includes('FAIL'))).toEqual([]);
     expect(result.pass).toBe(true);
-    expect(result.reports.length).toBeGreaterThanOrEqual(90);
+  });
+
+  it('checks at least 160 pairs and reports each one', () => {
+    const result = runContrastAudit();
+    expect(result.pairCount).toBeGreaterThanOrEqual(160);
+    const lines = result.reports.filter((r) => /^\[(night|day)\] /.test(r));
+    expect(lines).toHaveLength(result.pairCount);
+  });
+
+  it('prints the lowest category text ratio per theme (prototype 2.0: 6.41 and 5.22)', () => {
+    const { categoryFloor, reports } = runContrastAudit();
+    expect(categoryFloor.night).toBeGreaterThanOrEqual(6.41);
+    expect(categoryFloor.day).toBeGreaterThanOrEqual(5.22);
+    expect(reports.find((r) => r.startsWith('[summary]'))).toContain('lowest category text ratio');
+  });
+
+  it('covers every pair family of the v3 matrix in both themes', () => {
+    const { reports } = runContrastAudit();
+    const has = (theme: string, pair: string) => reports.some((r) => r.startsWith(`[${theme}] ${pair}:`));
+    for (const theme of ['night', 'day']) {
+      for (const pair of [
+        'text on overlay',
+        'catModels on raised',
+        'artTools on artStage',
+        'artText on artStage',
+        'onAccent on accentFillHover',
+        'accentHover on surface',
+        'onVelvet on velvetDeep',
+        'selectionText on selectionBg',
+        'claret on velvet',
+        'accentFill on raised',
+        'focus on raised',
+        'text(night) on stage',
+        'accent(night) on stage',
+        'signal(night) on stage',
+      ]) {
+        expect(has(theme, pair), `${theme}: ${pair}`).toBe(true);
+      }
+    }
+  });
+
+  it('fails the gate when a pair drops below its minimum', () => {
+    const broken = (patch: Partial<Record<keyof typeof SEMANTIC_TOKENS.night, string>>, theme: 'night' | 'day') => ({
+      ...SEMANTIC_TOKENS,
+      [theme]: { ...SEMANTIC_TOKENS[theme], ...patch },
+    });
+    const cases: Array<[ReturnType<typeof broken>, string]> = [
+      // A neon category colour on the light Day surfaces (the v1 problem this gate exists for).
+      [broken({ catTools: '#7fcfae' }, 'day'), '[day] catTools on bg'],
+      [broken({ faint: '#6a6a6a' }, 'night'), '[night] faint on bg'],
+      [broken({ artText: '#1d211d' }, 'night'), '[night] artText on artStage'],
+      [broken({ onVelvet: '#f3e1dc' }, 'day'), '[day] onVelvet on velvet'],
+      [broken({ selectionText: '#d4b483' }, 'night'), '[night] selectionText on selectionBg'],
+      [broken({ focus: '#282d29' }, 'night'), '[night] focus on bg'],
+    ];
+    for (const [semantic, expected] of cases) {
+      const result = runContrastAudit(semantic);
+      expect(result.pass).toBe(false);
+      expect(result.reports.filter((r) => r.includes('<-- FAIL')).join('\n')).toContain(expected);
+    }
+  });
+
+  it('takes brand colours on the stage from Night even in the Day theme', () => {
+    const { reports } = runContrastAudit();
+    const day = reports.find((r) => r.startsWith('[day] text(night) on stage:'));
+    const night = reports.find((r) => r.startsWith('[night] text(night) on stage:'));
+    expect(day).toBeDefined();
+    expect(night).toBeDefined();
+    // Day `text` is near-black: using it on the dark stage would fail, the brand colour passes.
+    expect(contrastRatio(SEMANTIC_TOKENS.day.text, SEMANTIC_TOKENS.day.stage)).toBeLessThan(4.5);
+    expect(day).not.toContain('FAIL');
   });
 
   it('keeps --faint above 4.5:1 on every surface in both themes (regression: 3.5:1 in v1)', () => {

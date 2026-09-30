@@ -5468,3 +5468,18 @@ Push виконано з `SKIP_E2E=1` за згодою власника: pre-pu
 `--cat-*` / `--art-*` з AH-1.4 — без цього docs-аудит AH-1.6 правильно падав. Версія токенів лишається 2.1.0
 (AH-1.4); зміни AH-1.6 записано як її продовження. Рядок AH-1.4 в епіку оновлено на «змерджено».
 (source: `git merge origin/main`; `gh pr view 381/382`)
+
+## 2026-09-30 — AH-1.2: контраст-гейт 2.0 (222 пари), статус #381 виправлено
+
+Власник підписав [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), і його змерджено (`55b78dc`,
+2026-09-30 18:14 UTC); статус AH-1.6 в епіку, now і handoff виправлено з «очікує підпису» на «змерджено».
+AH-1.2 реалізовано окремою гілкою `feat/ah-1.2-contrast-gate` (PR #PRNUM), без видимих змін.
+`scripts/check-design-tokens.ts` тепер єдиний гейт із матрицею прототипу v3: **222 пари** (було 158), 0 провалів;
+додано `overlay`, `--art-*` на `--art-stage`, `on-accent` на `accent-fill` і hover, `accent-hover`, `on-velvet`,
+selection, `claret` на `velvet`, UI-пари на трьох поверхнях і Night-бренд на `stage`. Звіт друкує найнижчі
+категорії: Night 6,41:1, Day 5,22:1 — так само, як у прототипі. Для пар у код додано сім токенів прототипу
+(`--accent-hover`, `--accent-fill`, `--accent-fill-hover`, `--velvet-deep`, `--on-velvet`, `--selection-bg`,
+`--selection-text`) у `tokens.ts`, `globals.css`, drift-гейт і реєстр §7; споживачів у коді ще немає.
+`runContrastAudit` тепер приймає набір токенів, тож тест доводить падіння: зламані `catTools` (Day, 1,51:1),
+`faint`, `artText`, `onVelvet`, `selectionText` і `focus` дають `<-- FAIL`. Старого 8-парного гейта v1 у репозиторії
+немає. (source: `npm run tokens:check`; `src/lib/design-system/tokens.test.ts`; `gh pr view 381` 2026-09-30)

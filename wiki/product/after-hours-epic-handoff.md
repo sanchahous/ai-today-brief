@@ -33,8 +33,9 @@ Last updated: 2026-09-30
   кожен видимий PR потребує окремого підпису власника. Legacy QA та no-JS Suspense-борг відкриті.
   (source: повідомлення власника 2026-09-30; [AH-1.3 validation](after-hours-ah-1-3-validation.md#межі-qa); [епік](after-hours-redesign-epic.md))
 - **AH-4.1 виконано й змерджено:** [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380), `3d0cb2b` (lib, URL, чіп активного фільтра); пікер фасету — AH-4.3. Не дублювати.
-- **AH-1.6 реалізовано:** [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), очікує візуального підпису власника. Реєстр токенів (`design-system-tokens` §7) — gate: кожен новий `--*` у `globals.css` треба додати туди (`--cat-*` / `--art-*` з AH-1.4 уже в §7.1.1).
-- **Частково (◐):** AH-1.2, AH-1.5, AH-2.3–2.6 (AH-1.6 — #381 на підписі).
+- **AH-1.2 реалізовано:** [PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM) (контраст-гейт 2.0, 222 пари, без видимих змін).
+- **AH-1.6 змерджено:** [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), `55b78dc`; підпис власника отримано. Реєстр токенів (`design-system-tokens` §7) — gate: кожен новий `--*` у `globals.css` треба додати туди (`--cat-*` / `--art-*` з AH-1.4 уже в §7.1.1).
+- **Частково (◐):** AH-1.5, AH-2.3–2.6. Наступна з foundations — AH-1.5; далі фаза 2 і гейт G1.
   AH-5.16 не виконується за D6. D1–D13 ухвалені; повторно не питати.
   (source: [епік](after-hours-redesign-epic.md) §5.3)
 - **AH-4.1 виконано** (lib, URL, чіп активного фільтра; [PR #380](https://github.com/sanchahous/ai-today-brief/pull/380), 2026-09-30) — не дублювати; AH-4.3 отримує готові `buildTopicFacet` / `applyNewsFilters` для пікера.

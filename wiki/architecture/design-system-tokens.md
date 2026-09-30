@@ -33,7 +33,7 @@ Foundations (v1.0.0)
 
 ## 2. Семантична палітра та контрастність WCAG 2.2 AA (v2.0.0)
 
-`npm run tokens:check` (`scripts/check-design-tokens.ts`) перевіряє 90 текстових пар (9 ролей × 5 поверхонь × 2 теми, мінімум 4,5:1), UI-пари `lineStrong` / `focus` / `accent` (≥ 3:1), синхронність `globals.css` з `tokens.ts` і відсутність розмірів шрифту < 12 px у `src/`.
+`npm run tokens:check` (`scripts/check-design-tokens.ts`) — єдиний контраст-гейт (AH-1.2): 222 пари в обох темах. Текст ≥ 4,5:1: дев'ять текстових ролей × п'ять поверхонь; `text`, `muted`, `faint`, `accent` на `overlay`; дев'ять `--cat-*` на `bg`, `surface`, `raised`; `--art-*`, `--art-neutral`, `--art-text` на `--art-stage`; `on-accent` на `accent`, `accent-fill`, `accent-fill-hover`; `accent-hover` на трьох поверхнях; `on-velvet` на `velvet` і `velvet-deep`; `selection-text` на `selection-bg`; Night-`text`, `accent`, `signal` на `stage`. UI ≥ 3:1: `line-strong`, `focus`, `accent-fill` на `bg`, `surface`, `raised`; `accent` на `bg`, `surface`; `claret` на `velvet`. Звіт друкує найнижчі значення категорій (зараз Night 6,41:1, Day 5,22:1). Гейт також перевіряє синхронність `globals.css` з `tokens.ts`, реєстр токенів (§7) і відсутність розмірів шрифту < 12 px у `src/`. Будь-яка пара нижче порогу валить `tokens.test.ts`, тобто `pr:check`. Старого 8-парного гейта v1 немає.
 
 | Роль | Night (bg `#171918`) | Day (bg `#efe8da`) | Контраст Night | Контраст Day |
 |---|---|---|---|---|
@@ -83,9 +83,10 @@ fallback невідомих. Day color-mix overrides прибрано.
    - Minor: додавання нових токенів або компонентних ролей без ламання наявних інтерфейсів.
    - Major: перейменування чи видалення токенів, зміна шкали типографіки чи сітки.
 3. **Changelog v2.1.0 (2026-09-30, minor):** category/art roles, 54 контрастні пари й drift; [докази AH-1.4](../product/after-hours-ah-1-4-validation.md).
-4. **Продовження v2.1.0 (2026-09-30, AH-1.6):** простір, форма, глибина, шари, рух, фокус і брейкпоінти D5 перенесені в `tokens.ts` і `globals.css` (реєстр — §7); `tokens:check` і `tokens.test.ts` тепер звіряють з `tokens.ts` усі не-кольорові токени й падають, якщо токен оголошено в `globals.css`, але не задокументовано в реєстрі. Змінилося: радіуси 3/4/8/14/pill (`--radius-sm` 3→4, `--radius-md` 6→8, `--radius-pill` 999→9999), тіні `--shadow-pop` (Night і Day), `--shadow-card` замінено на `--shadow-1`, фокус-офсет 2→3 px. Не змінилося навмисно: `--header-h` лишається 60px (змінюється разом із header у AH-3.3), стандартні `sm/md/lg/xl` Tailwind.
-5. **Changelog v2.0.0 (2026-09-29, major):** токени 2.0.0 перенесені в `tokens.ts` і `globals.css`; повне Day-перевизначення; `--faint` виправлено (AA); шкала типографіки в `rem` із floor 12 px (`text-2xs`); ролі `stage/raised/overlay/line-strong/claret/velvet/focus/warning/success`; `zIndex`, `controlSize`; гейт `tokens:check` розширено (90 пар, drift, floor). Рішення: [ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md).
-6. **Changelog v1.0.0 (2026-09-26):**
+4. **Продовження v2.1.0 (2026-09-30, AH-1.2):** єдиний контраст-гейт 2.0 (222 пари замість 158) і сім токенів прототипу, яких бракувало в коді: `--accent-hover`, `--accent-fill`, `--accent-fill-hover`, `--velvet-deep`, `--on-velvet`, `--selection-bg`, `--selection-text` (Night і Day; споживачі з'являться з компонентами фази 2 і 3). Візуально нічого не змінюється.
+5. **Продовження v2.1.0 (2026-09-30, AH-1.6):** простір, форма, глибина, шари, рух, фокус і брейкпоінти D5 перенесені в `tokens.ts` і `globals.css` (реєстр — §7); `tokens:check` і `tokens.test.ts` тепер звіряють з `tokens.ts` усі не-кольорові токени й падають, якщо токен оголошено в `globals.css`, але не задокументовано в реєстрі. Змінилося: радіуси 3/4/8/14/pill (`--radius-sm` 3→4, `--radius-md` 6→8, `--radius-pill` 999→9999), тіні `--shadow-pop` (Night і Day), `--shadow-card` замінено на `--shadow-1`, фокус-офсет 2→3 px. Не змінилося навмисно: `--header-h` лишається 60px (змінюється разом із header у AH-3.3), стандартні `sm/md/lg/xl` Tailwind.
+6. **Changelog v2.0.0 (2026-09-29, major):** токени 2.0.0 перенесені в `tokens.ts` і `globals.css`; повне Day-перевизначення; `--faint` виправлено (AA); шкала типографіки в `rem` із floor 12 px (`text-2xs`); ролі `stage/raised/overlay/line-strong/claret/velvet/focus/warning/success`; `zIndex`, `controlSize`; гейт `tokens:check` розширено (90 пар, drift, floor). Рішення: [ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md).
+7. **Changelog v1.0.0 (2026-09-26):**
    - Уніфікація токенів After Hours і чинного production.
    - Додано перевірку WCAG AA (`scripts/check-design-tokens.ts`).
    - Зафіксовано обов'язковий touch-target floor 44px.
@@ -163,9 +164,16 @@ Ratchet після AH-1.4: 30 кольорових входжень (було 42
 | `--faint` | третинний текст (≥ 4.5:1) | `faint` |
 | `--accent` | латунний акцент, посилання | `accent` |
 | `--on-accent` | текст на заливці accent | `onAccent` |
+| `--accent-hover` | hover кольору accent: текст і посилання (Night brass-300, Day brass-800) | `accentHover` |
+| `--accent-fill` | заливка кнопки й акцентних плашок (дорівнює accent, окреме ім'я для компонентів AH-2.2) | `accentFill` |
+| `--accent-fill-hover` | hover заливки accent | `accentFillHover` |
 | `--signal` | целадон: статус, підказки | `signal` |
 | `--claret` | бордо: увага, сповіщення | `claret` |
 | `--velvet` | оксамитова заливка (тло claret-блоків) | `velvet` |
+| `--velvet-deep` | глибший відтінок velvet: нижній шар, hover | `velvetDeep` |
+| `--on-velvet` | текст на velvet і velvet-deep | `onVelvet` |
+| `--selection-bg` | тло виділеного тексту (`::selection`) | `selectionBg` |
+| `--selection-text` | текст виділення | `selectionText` |
 | `--focus` | колір кільця фокуса | `focus` |
 | `--error` | помилка | `error` |
 | `--success` | успіх | `success` |

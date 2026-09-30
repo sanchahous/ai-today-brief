@@ -343,11 +343,11 @@ flowchart TD
 | AH-0.5 | ✅ QA-матриця a11y і верстки для сторінок ([#375](https://github.com/sanchahous/ai-today-brief/pull/375); публічні маршрути поки report) | — | — | D10 ✅ | G14 (частк.) |
 | AH-0.6 | ✅ На main після merge [#376](https://github.com/sanchahous/ai-today-brief/pull/376): продуктовий і CWV baseline, всі AC прийнято власником | — | — | open-questions #1 закрито | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
-| AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
+| AH-1.2 | ✅ Контраст-гейт 2.0: 222 пари, 0 провалів, мінімум категорій 6,41 / 5,22; реалізовано в [PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM), без видимих змін | — | — | AH-1.4 ✅ | G09 (UI-пари) |
 | AH-1.3 | ◐ Контракт Night/Day інтегровано в main через [#378](https://github.com/sanchahous/ai-today-brief/pull/378); legacy no-JS/full-page QA AC лишаються задокументованими ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
 | AH-1.4 | ✅ Кольори й гліфи категорій: змерджено в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382), `5af8d56` ([докази](after-hours-ah-1-4-validation.md)) | — | — | — | B5 |
 | AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
-| AH-1.6 | ✅ Простір, форма, глибина, шари, брейкпоінти, motion-токени, фокус: реалізовано в [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), очікує візуального підпису власника; `--header-h` лишається 60px до AH-3.3 | — | — | D5 ✅ | G09 (простір, форма, глибина, рух), B13 (токени й контракт e2e) |
+| AH-1.6 | ✅ Простір, форма, глибина, шари, брейкпоінти, motion-токени, фокус: змерджено в [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381) (`55b78dc`, підпис власника отримано 2026-09-30); `--header-h` лишається 60px до AH-3.3 | — | — | D5 ✅ | G09 (простір, форма, глибина, рух), B13 (токени й контракт e2e) |
 | AH-1.7 | ✅ Ratchet-звіт «сирих» значень: інтегровано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), main `e470105` | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
 | AH-2.2 | Дії й вибір | M | агент | AH-1.4, AH-1.6 | G11 |
@@ -669,6 +669,17 @@ QA-матриця працює в report-режимі.
 > Лишається додати пари прототипу, яких немає: `--cat-*` (після AH-1.4), on-accent на accent-fill і
 > hover, on-velvet, selection, claret на velvet і `stage` — до ≥ 160 пар.
 
+**Стан (2026-09-30, AH-1.2 виконано): [PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM), без видимих змін.**
+Єдиний гейт `check-design-tokens.ts` тепер перевіряє **222 пари** (111 на тему), 0 провалів: текстові ролі × 5 поверхонь,
+`text`/`muted`/`faint`/`accent` на `overlay`, дев'ять `--cat-*` на `bg`/`surface`/`raised`, `--art-*` на `--art-stage`,
+`on-accent` на `accent`/`accent-fill`/`accent-fill-hover`, `accent-hover`, `on-velvet` на `velvet`/`velvet-deep`, selection,
+`claret` на `velvet`, UI ≥ 3:1 (`line-strong`, `focus`, `accent-fill` на трьох поверхнях), Night-бренд на `stage`. Звіт друкує
+найнижчі категорії: **Night 6,41:1, Day 5,22:1** (збігається з прототипом). У код додано сім токенів прототипу,
+яких бракувало для пар: `--accent-hover`, `--accent-fill`, `--accent-fill-hover`, `--velvet-deep`, `--on-velvet`,
+`--selection-bg`, `--selection-text` (Night і Day, у drift-гейті й реєстрі §7); споживачів вони матимуть у фазах 2–3.
+Негативний доказ: `catTools` Day замінено на Night-значення → 1,51:1, `tokens.test.ts` падає (5 тестів), `tokens:check` друкує FAIL.
+(source: `scripts/check-design-tokens.ts`; `src/lib/design-system/tokens.test.ts`; `npm run tokens:check` 2026-09-30)
+
 **Зони:** `scripts/check-design-tokens.ts`, `src/lib/design-system/tokens.test.ts`
 
 **Що зробити:** перенести матрицю пар з `artifacts/after-hours/qa/check-tokens.mjs` для обох тем:
@@ -679,9 +690,9 @@ focus, accent-fill × поверхні ≥ 3:1; claret на velvet ≥ 3:1; parc
 `stage`. Найпростіше — Vitest-тест, тоді він автоматично входить у `ci:check`.
 
 **AC:**
-- [ ] Перевіряється ≥ 160 пар, 0 провалів; звіт друкує найнижчі значення категорій (2.0: 6,41 і 5,22).
-- [ ] Будь-яка пара нижче порогу валить `npm run pr:check`.
-- [ ] Старий 8-парний гейт v1 видалено або замінено — двох гейтів немає.
+- [x] Перевіряється ≥ 160 пар (222), 0 провалів; звіт друкує найнижчі значення категорій (2.0: 6,41 і 5,22).
+- [x] Будь-яка пара нижче порогу валить `npm run pr:check` (тест на зламаний токен у `tokens.test.ts`).
+- [x] Старий 8-парний гейт v1 видалено або замінено — двох гейтів немає (`check-design-tokens.ts` — єдиний; `artifacts/after-hours/qa/check-tokens.mjs` — знімок прототипу).
 
 ### AH-1.3 · Контракт теми Night/Day без спалаху
 
@@ -800,7 +811,7 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 > (зараз sm 3 / md 6 / card 14 / pill), тіні з Day-значеннями, ефекти, брейкпоінти за D5 (60rem),
 > motion-токени й offset фокуса 3 px.
 
-**Стан (2026-09-30, AH-1.6 реалізовано): [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), очікує візуального підпису власника.**
+**Стан (2026-09-30, AH-1.6 змерджено): [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), `55b78dc`; візуальний підпис власника отримано.**
 Токени простору (`--space-*`, `--gutter`, `--section-y`), розмірів (`--max`, `--max-wide`, `--reading`,
 `--icon-*`), радіусів 3 / 4 / 8 / 14 / pill, тіней `--shadow-1` / `--shadow-2` / `--shadow-pop` з Day-значеннями,
 ефектів (`--stage-light`, `--sheen`, `--grain-opacity`), шарів (`--z-base`), руху (`--duration-*`, `--ease-*`),
