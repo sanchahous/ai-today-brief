@@ -2,7 +2,7 @@
 
 Summary: єдина канонічна специфікація токенів дизайн-системи After Hours v2.0.0 (міграція з 1.0.0 виконана 2026-09-29): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
 Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/qa/token-contrast.json`; `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `wiki/decisions/2026-09-29-design-tokens-2-0-migration.md`; розрахунок контрасту 2026-09-29.
-Last updated: 2026-09-29
+Last updated: 2026-09-30
 
 **Статус:** прийнято. Джерело істини для дизайн-токенів у кодовій базі (source: wiki/audits/2026-09-26-design-system-gap-plan.md).
 
@@ -92,6 +92,37 @@ Foundations (v1.0.0)
 | **v2.0.0 (зараз)** | `#a3a197` (Night) / `#5a5e54` (Day) на всіх 5 поверхнях | ≥ 4,5:1 | **так** |
 
 `text-faint` / `var(--faint)` трапляється в `src/` 99 разів у 47 файлах; виправлення одним значенням токена покрило всі. Регресію блокує `tokens.test.ts` («keeps --faint above 4.5:1 on every surface») і `tokens:check`. (source: `grep` по `src/` 2026-09-29; `src/lib/design-system/tokens.test.ts`)
+
+## 6. AH-1.7: ratchet сирих значень
+
+`npm run design:raw:check` входить першим кроком у `npm run pr:check`.
+Скрипт перевіряє `.ts`, `.tsx`, `.css` у `src/app/` і `src/components/`:
+hex/rgb/hsl-літерали, довільні `z-[…]`, тіні та розміри тексту < 12 px.
+Вивід містить `файл:рядок` і запропонований токен; пропозиція потребує звірки
+ролі, автоматичного виправлення немає. (source: `scripts/report-raw-design-values.ts`, `package.json`)
+
+Baseline — `scripts/raw-design-values.baseline.json`: ідентичність = файл +
+тип + нормалізоване значення, з кількістю входжень. Переміщення рядків не
+створює борг; нове значення, друга копія або перенесення в інший файл валять
+перевірку. Після видалення сирих значень треба виконати
+`npm run design:raw:prune` і закомітити зменшений baseline. `--prune` відмовляє
+за наявності нових входжень; `--init` не перезаписує існуючий baseline.
+(source: `scripts/report-raw-design-values.ts`; `src/lib/design-system/raw-design-values.test.ts`)
+
+Винятки: Admin (поза межами епіку), тести, OG/Twitter `ImageResponse` маршрути,
+`brand-mark.ts`, соціальні/PDF/card-рендери та конкретна SVG-ілюстрація
+`not-found-illustration.tsx`. Декларації custom properties у канонічному
+`src/app/globals.css` є визначеннями токенів; їхні споживачі перевіряються.
+`z-[var(--z-…)]` і `shadow-[var(--shadow-…)]` дозволені. Звіт є лексичним
+скануванням і не оцінює computed styles чи значення з БД; це задача QA-матриці.
+(source: `scripts/report-raw-design-values.ts`; [епік](../product/after-hours-redesign-epic.md) AH-1.7)
+
+Знімок 2026-09-30: **44** входження кольорів у **21** файлі, **4** довільні
+z-index, **0** сирих тіней, **0** розмірів шрифту < 12 px у цій області.
+Це нова область підрахунку hex/rgb/hsl з винятками, а не повтор старого
+hex-only підрахунку B4. У кінці кожної фази результат `design:raw:report`
+дописується до `wiki/log.md`; baseline зменшується в PR міграції споживачів.
+(source: `npm run design:raw:report` 2026-09-30; `scripts/raw-design-values.baseline.json`)
 
 ## Related pages
 

@@ -11,11 +11,19 @@ weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
 desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29
-Last updated: 2026-09-29
+Last updated: 2026-09-30
 
 ---
 
 ## Стан репозиторію
+
+- **AH-1.7 реалізовано, очікує merge (2026-09-30):** гілка
+  `feat/ah-1.7-raw-design-ratchet` додає гейт нових сирих дизайн-значень у `pr:check`.
+  Baseline: 44 кольорові входження, 4 довільні z-index, 0 сирих тіней,
+  0 розмірів шрифту < 12 px. Власник попросив відкласти перевірки AH-0.6;
+  PR #373–#376 відкриті, G0 не підписано. Візуальні задачі лишаються за G0.
+  (source: повідомлення власника, `gh pr list`, `design:raw:report` 2026-09-30;
+  [епік](product/after-hours-redesign-epic.md#ah-17-ratchet-звіт-сирих-значень))
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR
   [#372](https://github.com/sanchahous/ai-today-brief/pull/372).** Підсумок за кодом і живою перевіркою production:

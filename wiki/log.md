@@ -5067,3 +5067,35 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 - G11: `SearchInput` уже є в `input.tsx`, але з англомовними `aria-label` і placeholder.
 
 Виправлено: [now](now.md) (запис 2026-09-28 і новий запис зверху), [open-questions](open-questions.md) #10 (закрито), епік (§2.3, §5.3, картка AH-0.1 з AC, §14 — рядки G07, G09, G11, G15, G16, уточнення в §2.1 і картці AH-2.3), [handoff](product/after-hours-epic-handoff.md) (стан, «Наступна задача: AH-0.3», пастка про приховану панель браузера), `wiki/index.md` (два описи gap-plan). Production-код не змінювався.
+
+## 2026-09-30 — AH-1.7: ratchet сирих дизайн-значень
+
+Власник попросив відкласти відкриті перевірки AH-0.6 й продовжити епік.
+За `git fetch origin` main лишається `a3d2db5`, PR #373–#376 відкриті.
+Окрема задача AH-1.7 реалізована в гілці `feat/ah-1.7-raw-design-ratchet`;
+візуальних змін немає, G0 не підписано. (source: повідомлення власника,
+`git` / `gh pr list` 2026-09-30)
+
+Додано `scripts/report-raw-design-values.ts`, baseline і шість unit-тестів.
+`design:raw:check` входить першим кроком у `pr:check` і в CI Sonar для кодових
+PR. Звіт показує файл/рядок і можливий токен. Ідентичність baseline не залежить
+від рядка, але враховує кількість входжень; `design:raw:prune` лише зменшує
+дозволений борг і відмовляє за наявності нового значення. Тимчасовий компонент
+із `#abcdef` зупинив реальний `npm run pr:check` (exit 1); `--prune` також
+повернув 1, SHA-256 baseline не змінився. Тимчасовий файл прибрано.
+(source: скрипт, `src/lib/design-system/raw-design-values.test.ts`,
+`package.json`, `.github/workflows/sonarqube.yml`, локальні прогони 2026-09-30)
+
+Лічильники B3/B4 у новій області ratchet на 2026-09-30: **B3 — 0** входжень
+шрифту < 12 px; **B4 — 44** hex/rgb/hsl-входження у **21** файлі; додатково
+**4** довільні z-index і **0** сирих тіней. Це не тотожне старому hex-only
+підрахунку B4 у 14 файлах: область і винятки описані в
+[governance](architecture/design-system-tokens.md#6-ah-17-ratchet-сирих-значень).
+Кольоровий борг не видалено; гейт запобігає його зростанню. Після кожної фази
+дописувати сюди новий звіт, а в PR міграції зменшувати baseline.
+(source: `design:raw:report`, `scripts/raw-design-values.baseline.json` 2026-09-30)
+
+Оновлено [токени](architecture/design-system-tokens.md), картку й статус AH-1.7
+в [епіку](product/after-hours-redesign-epic.md), [handoff](product/after-hours-epic-handoff.md),
+[now](now.md) та [index](index.md). AH-1.7 підготовлено до review, формальний статус
+лишено частковим до merge. (source: гілка задачі)
