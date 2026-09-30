@@ -5223,3 +5223,22 @@ CWV винятком AH-0.6. Повторний підпис G0 не потрі�
 і JSON-витяг погодження. Після інтеграції #376 наступна задача — AH-1.3;
 окремі візуальні review наступних PR та CWV бюджети пізніших фаз залишаються чинними.
 (source: [епік](product/after-hours-redesign-epic.md); повідомлення власника 2026-09-30)
+
+## 2026-09-30 — After Hours: PR #373–#375 змержено, фінальна інтеграція G0
+
+Після погодження власника змержено #373 (`c55ef94`), #374 (`63ab361`) і #375
+(`4409a81`). Для синхронізованого #375 повторно пройшов `pr:check` (2023 тести),
+локальний pre-push Chromium (144 passed / 13 skipped) і GitHub CI
+(452 passed / 19 skipped у Chromium/Firefox/WebKit). Merge-оновлення #375
+не змінило дерева файлів: tree SHA `59d8d4d0b5f7661f59ef2a3b8ddf4acd4d6adb45`
+до й після синхронізації однаковий. (source: `gh pr view 373`…`375`, `git rev-parse`,
+локальні перевірки 2026-09-30; GitHub E2E run `36713604676`)
+
+Оновлено статуси в [епіку](product/after-hours-redesign-epic.md),
+[handoff](product/after-hours-epic-handoff.md), [now](now.md), [index](index.md)
+і [baseline](analytics/2026-09-29-redesign-baseline.md). PR #376 містить всі прийняті
+докази AH-0.6 і підпис G0; завершення інтеграції фази 0 настає з його merge.
+Наступна задача — AH-1.3. PR #377 / AH-1.7 лишається відкритим і не входить
+до дозволу merge #373–#376. (source: повідомлення власника 2026-09-30;
+[PR #376](https://github.com/sanchahous/ai-today-brief/pull/376),
+[PR #377](https://github.com/sanchahous/ai-today-brief/pull/377))

@@ -12,13 +12,16 @@ Last updated: 2026-09-30
 
 ## 1. Стан на 2026-09-30
 
-- `origin/main` @ `a3d2db5` після `git fetch` 2026-09-30; PR #373–#376 відкриті,
-  mergeable, усі активні CI-перевірки успішні. Локальний `before` AH-0.3 має 232 PNG
-  (manifest SHA-256 `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`),
-  SEO baseline AH-0.4 — у PR #374, report AH-0.5 — 812 сценаріїв. Ці PR ще не змержені.
-  (source: `gh pr view 373`…`376`, `artifacts/_local/before/manifest.json`,
-  `artifacts/_local/ah-0.5-legacy-report.json`, live check 2026-09-30)
-- AH-0.6 має всі докази й погодження, очікує merge PR #376. GSC link,
+- **AH-0.3, AH-0.4 і AH-0.5 завершено:** PR #373, #374 і #375 змержено
+  2026-09-30; `origin/main` на момент фінальної звірки — `4409a81`.
+  Visual baseline: 232 PNG, manifest SHA-256
+  `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`;
+  SEO baseline: 58 URL; QA report: 812 сценаріїв. CI фінального дерева #375:
+  452 passed / 19 skipped у трьох браузерах.
+  (source: `gh pr view 373`…`375`, GitHub E2E run `36713604676`,
+  `artifacts/_local/before/manifest.json`, `artifacts/_local/ah-0.5-legacy-report.json`,
+  звірка 2026-09-30)
+- AH-0.6 має всі докази й погодження; формально завершено на main після merge PR #376. GSC link,
   `newsletter_subscribe` key event, retention event/user data по 14 місяців,
   канонічний тег і `page_view` у Tag Assistant підтверджено. Config consent:
   analytics granted / ads denied. Власник прийняв лабораторний CWV baseline
@@ -38,8 +41,9 @@ Last updated: 2026-09-30
   `83b4421`): ADR D1–D13, рішення D7 «знак скрізь» і ця сторінка вже в `main`.
 - **Виконано:** AH-0.1 (PR [#372](https://github.com/sanchahous/ai-today-brief/pull/372), звірка G01–G20: 6 done, 10 partial, 2 open, 1 policy, 1 waived —
   [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)),
-  AH-0.2 (ADR), AH-1.1 (токени 2.0, PR #369), AH-2.1 (`/ds-catalog`, PR #369).
-- **Частково (◐):** AH-0.5, AH-0.6, AH-1.2, AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
+  AH-0.2 (ADR), AH-0.3 (PR #373), AH-0.4 (PR #374), AH-0.5 (PR #375),
+  AH-1.1 (токени 2.0, PR #369), AH-2.1 (`/ds-catalog`, PR #369).
+- **Частково (◐):** AH-1.2, AH-1.5, AH-1.6, AH-1.7, AH-2.3, AH-2.4, AH-2.5, AH-2.6.
   Залишок описано в рядку «Стан після #369» кожної картки.
 - **Не виконується:** AH-5.16 (рішення D6).
 - **Рішення D1–D13 ухвалені.** Власника про них не перепитувати. Змінити рішення можна лише за
@@ -58,15 +62,16 @@ Last updated: 2026-09-30
 |---|---|---|
 | AH-0.1 | G01–G20 звірено, PR #372 | завершено |
 | AH-0.2 | ADR D1–D13, PR #371 | завершено |
-| AH-0.3 | 232 PNG, manifest SHA-256, інструмент знімків; PR #373 | відкритий PR |
-| AH-0.4 | production SEO baseline і compare-гейт; PR #374 | відкритий PR |
-| AH-0.5 | report 812 сценаріїв, gating-інфраструктура й негативний тест; PR #375 | відкритий PR |
-| AH-0.6 | GA4 baseline, підтверджені Admin/Tag Assistant, погоджений CWV виняток; PR #376 | всі AC, відкритий PR |
+| AH-0.3 | 232 PNG, manifest SHA-256, інструмент знімків; PR #373 | завершено, PR змержено |
+| AH-0.4 | production SEO baseline і compare-гейт; PR #374 | завершено, PR змержено |
+| AH-0.5 | report 812 сценаріїв, gating-інфраструктура й негативний тест; PR #375 | завершено, PR змержено |
+| AH-0.6 | GA4 baseline, підтверджені Admin/Tag Assistant, погоджений CWV виняток; PR #376 | всі AC і G0 прийнято; завершено на main після merge #376 |
 
 Джерела: `gh pr view 373`…`377` 2026-09-30, PR #371/#372,
 `artifacts/_local/before/manifest.json`, `artifacts/_local/ah-0.5-legacy-report.json`,
 [baseline](../analytics/2026-09-29-redesign-baseline.md), повідомлення власника.
-PR #373–#377 відкриті й mergeable, активні CI успішні на час перевірки.
+PR #373–#375 змержено після зелених перевірок; PR #376 інтегрує цей пакет.
+PR #377 відкритий. Статус AH-0.6 «завершено» застосовується після merge #376.
 AH-1.7 / #377 належить фазі 1 і не є умовою G0.
 
 **Що підписується:** baseline visual/SEO/продукту та готовність QA-матриці
@@ -116,10 +121,10 @@ PR #375; погодження власника 2026-09-30)
 | # | Задача | Хто | Результат | Зупинка |
 |---|---|---|---|---|
 | 1 | ✅ AH-0.1 · звірка G01–G20 | агент | розділ «Статус на дату» в gap-plan із доказом для кожного G; виправлене формулювання в `now.md`; закритий пункт #10 в open-questions | немає, PR лише з wiki |
-| 2 | AH-0.3 · знімки до/після | агент | `scripts/capture-route-matrix.ts`; прогін `--label=before` з production; PNG лише в `artifacts/_local/` | немає |
-| 3 | AH-0.4 · SEO-контракт | агент | `src/lib/seo-contract.ts` з тестом (покриття ≥ 80%), `scripts/seo-contract.ts`, текстовий baseline з production | немає |
-| 4 | AH-0.5 · QA-матриця сторінок | агент | `e2e/a11y-layout-matrix.spec.ts`, режими report і gating, звіт по legacy-сайту з лічильниками в log | немає |
-| 5 | ◐ AH-0.6 · продуктовий і CWV baseline, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки; одна активна property, два акаунти в кошику | усі докази й підпис G0 отримано; інтеграція через PR #376 |
+| 2 | ✅ AH-0.3 · знімки до/після | агент | `scripts/capture-route-matrix.ts`; прогін `--label=before` з production; PNG лише в `artifacts/_local/` | немає |
+| 3 | ✅ AH-0.4 · SEO-контракт | агент | `src/lib/seo-contract.ts` з тестом (покриття ≥ 80%), `scripts/seo-contract.ts`, текстовий baseline з production | немає |
+| 4 | ✅ AH-0.5 · QA-матриця сторінок | агент | `e2e/a11y-layout-matrix.spec.ts`, режими report і gating, звіт по legacy-сайту з лічильниками в log | немає |
+| 5 | AH-0.6 · продуктовий і CWV baseline, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки; одна активна property, два акаунти в кошику | усі докази й підпис G0 отримано; інтеграція через PR #376 |
 
 **Нюанси, яких немає в картках:**
 

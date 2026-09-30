@@ -22,15 +22,16 @@ Last updated: 2026-09-30
   GSC link, key event, retention 14 місяців і Tag Assistant підтверджено власником.
   Він погодив лабораторний CWV baseline home/news/article з недостатніми
   CrUX-даними й виключив daily/weekly із AH-0.6. Property/Admin питання #1 закрито.
-  Інтеграція — через PR #373–#376; після merge #376 наступна задача AH-1.3.
+  PR #373–#375 змержено; інтеграція AH-0.6 — через PR #376.
+  На main після його merge фаза 0 завершена; наступна задача AH-1.3.
   Кожен видимий PR має пройти окремий візуальний review. Пакет доказів — у
   [handoff](product/after-hours-epic-handoff.md#пакет-для-підпису-g0).
   (source: погодження й скриншоти власника, `gh pr view` 2026-09-30;
   [baseline](analytics/2026-09-29-redesign-baseline.md))
 
 - **AH-1.7 реалізовано у [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377),
-  ще не змержено.** `origin/main` лишається `a3d2db5`; PR #373–#377 відкриті,
-  mergeable, з успішними активними CI на час повторної перевірки.
+  ще не змержено.** PR #373–#375 уже змержено; `origin/main` перед інтеграцією
+  #376 — `4409a81`. Дозвіл власника на merge стосується #373–#376.
   (source: `git fetch origin`, `gh pr view 373`…`377` 2026-09-30)
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR

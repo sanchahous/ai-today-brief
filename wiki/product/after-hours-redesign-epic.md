@@ -10,8 +10,8 @@ Last updated: 2026-09-30
 
 > **Статус 2026-09-30:** епік готовий до виконання, усі рішення D1–D13 ухвалені (AH-0.2 ✅),
 > статус G01–G20 звірено з кодом (AH-0.1 ✅).
-> AH-0.3–AH-0.5 мають відкриті PR #373–#375; [AH-0.6 baseline](../analytics/2026-09-29-redesign-baseline.md)
-> підготовлено до merge; активна GA4-property `540206735`, Admin-чекліст і Tag Assistant
+> AH-0.3–AH-0.5 завершено через змержені PR #373–#375; [AH-0.6 baseline](../analytics/2026-09-29-redesign-baseline.md)
+> інтегрується через PR #376 (формально завершено після його merge); активна GA4-property `540206735`, Admin-чекліст і Tag Assistant
 > підтверджено доказами власника. CWV baseline home/news/article прийнято з лабораторними
 > метриками й недостатніми CrUX-даними, daily/weekly виключено лише з AH-0.6.
 > **G0 підписано власником 2026-09-30:** «Погоджую G0 та merge PR #373–#376».
@@ -337,7 +337,7 @@ flowchart TD
 | AH-0.3 | ✅ Baseline-знімки й інструмент до/після ([#373](https://github.com/sanchahous/ai-today-brief/pull/373)) | — | — | — | передумова visual review |
 | AH-0.4 | ✅ SEO-контракт: знімок і compare-гейт ([#374](https://github.com/sanchahous/ai-today-brief/pull/374)) | — | — | — | «SEO diff» (redesign §9) |
 | AH-0.5 | ✅ QA-матриця a11y і верстки для сторінок ([#375](https://github.com/sanchahous/ai-today-brief/pull/375); публічні маршрути поки report) | — | — | D10 ✅ | G14 (частк.) |
-| AH-0.6 | ◐ Продуктовий і CWV baseline: всі AC, очікує merge [#376](https://github.com/sanchahous/ai-today-brief/pull/376) | S | власник + агент | open-questions #1 | передумова оцінки |
+| AH-0.6 | ✅ На main після merge [#376](https://github.com/sanchahous/ai-today-brief/pull/376): продуктовий і CWV baseline, всі AC прийнято власником | — | — | open-questions #1 закрито | передумова оцінки |
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
 | AH-1.3 | Контракт теми Night/Day без спалаху | S | агент | D2 ✅ | B12 |
@@ -574,7 +574,7 @@ Speed Insights або CrUX для home, news, article. За погодження
 CrUX-даних; daily/weekly виключено лише з baseline AH-0.6. Оформити сторінку
 `wiki/analytics/<дата>-redesign-baseline.md`.
 
-**Стан 2026-09-30: ◐ всі AC виконано, очікує merge PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376).**
+**Усі AC прийнято власником 2026-09-30; реалізовано в PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376). Формально завершено після його merge в main.**
 [Baseline](../analytics/2026-09-29-redesign-baseline.md) містить історичні GA4-числа
 й межі вимірювання. Канонічна `540206735`, GSC link, key event, retention і
 Tag Assistant підтверджено. Власник явно прийняв лабораторний CWV baseline
