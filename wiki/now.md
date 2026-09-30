@@ -10,7 +10,7 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline + triple-destination check 2026-09-29, повторна звірка PR / CWV / Admin-доступу 2026-09-30
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.6 GA4 baseline 2026-09-29, повторна звірка PR / CWV / Admin-доступу й рішення власника щодо двох зайвих GA4-акаунтів 2026-09-30
 Last updated: 2026-09-30
 
 ---
@@ -21,23 +21,26 @@ Last updated: 2026-09-30
   AH-0.6 чиста; PR [#373](https://github.com/sanchahous/ai-today-brief/pull/373)–[#376](https://github.com/sanchahous/ai-today-brief/pull/376)
   відкриті, mergeable, з успішними CI-перевірками. AH-0.3 має локальний baseline 232 PNG;
   AH-0.4 має production SEO baseline; AH-0.5 має report на 812 сценаріїв. Для AH-0.6
-  live tag досі містить три destinations, але GA4 Admin / Tag Assistant не вдалося відкрити
-  через перевірку дозволів браузера, а PageSpeed / CrUX API повернули 429 / 403.
+  власник перемістив акаунти `396975517` / `397017915` у кошик; активними лишилися
+  `396774992` / `540206735`. HYPD підтвердив єдину доступну property. Live tag досі
+  містить три destination ID; GA4 Admin / Tag Assistant не вдалося відкрити через
+  перевірку дозволів браузера, а PageSpeed / CrUX API повернули 429 / 403.
   Поле CWV і Admin-чек-лист залишаються відкритими; **G0 не готовий до підпису**.
   Точні URL і докази, які потрібні від власника, — у
   [redesign baseline](analytics/2026-09-29-redesign-baseline.md#дані-потрібні-для-завершення-ah-06).
   (source: `git fetch origin main`, `gh pr view 373`…`376`, локальні manifest / report,
-  HTTP і browser access checks 2026-09-30)
+  HTTP і browser access checks 2026-09-30; повідомлення власника та HYPD live check 2026-09-30)
 
-- **AH-0.6 частково: GA4 baseline і причину трьох property зафіксовано (2026-09-29),
+- **AH-0.6 частково: історичний GA4 baseline трьох property зафіксовано (2026-09-29),
   PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376).**
-  Один production gtag `G-5R89X6Q5D4` має три destinations; трафік є в `540206735`,
-  `540437869`, `540467725`. Для 28-денного baseline обрано `540206735`, чий measurement ID
+  Один production gtag `G-5R89X6Q5D4` має три destinations; за 2026-09-01…28 трафік був у `540206735`,
+  `540437869`, `540467725`. Тепер активна лише `540206735`, чий measurement ID
   підтверджений установленим тегом і історичним аудитом. У
   [redesign baseline](analytics/2026-09-29-redesign-baseline.md) є продуктові воронки,
   аномалія Singapore/direct і чіткі межі даних. Mobile/desktop field CWV не отримано,
   Admin-чек-лист [open-questions #1](open-questions.md#1-конфлікт-трьох-ga4-property) відкритий;
   **G0 не пройдено**. (source: GA4 Data API + live Google tag 2026-09-29;
+  повідомлення власника й HYPD live check 2026-09-30;
   [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR
@@ -554,7 +557,8 @@ Last updated: 2026-09-30
   **«Різні GA4 ID» розплутано:** GTM-5S6TXPG5 був порожнім контейнером без жодного тега —
   видалено з коду, залишено єдиний gtag `G-5R89X6Q5D4`
   ([ga4-gsc](analytics/ga4-gsc.md)). Власнику: прибрати `NEXT_PUBLIC_GTM_ID` з Vercel і
-  пройти чек-лист звірки property 540467725.
+  пройти чек-лист звірки property 540467725 (історична рекомендація; скасована
+  рішенням власника 2026-09-30 про переміщення цього акаунта в кошик).
   (source: live check контейнера 2026-08-22, код-ревʼю)
 
 - **Соц-копія тепер зобовʼязана давати дію; Telegram рендерить розмітку; LinkedIn-лінк
@@ -1626,7 +1630,7 @@ artifact write. Правило про uniform critic verdict навмисно н
 |---|---|---|
 | 1 | **5–10 якісних дофолов за місяць** + Request indexing для 10 топ-сторінок у GSC | єдиний реальний важіль проти 232 неіндексованих сторінок (source: `wiki/audits/2026-07-01-seo-organic.md` §4) |
 | 2 | **Активувати IndexNow**: ключ → `INDEXNOW_KEY` у Vercel + pipeline → Bing WMT → `npm run indexnow:backfill` | Bing → ChatGPT/Copilot AEO (там само §3) |
-| 3 | **Звірити GA4-property** (540467725 vs документована 540206735) | інакше конверсії недостовірні (там само §6) |
+| 3 | ✅ **Історичний пункт:** вибрати GA4-property (540467725 vs 540206735); вирішено на користь 540206735 2026-09-30 | актуальний Admin-чекліст — [ga4-gsc](analytics/ga4-gsc.md) (source: повідомлення власника 2026-09-30; HYPD live check) |
 | 4 | **Фікс воронки розсилки** (41 показів → 8 стартів → 1 підписка) | утримання ≈ 0 (там само §5) |
 | 5 | Апрув PDF + social variants на `ai-weekly-2026-07-27`; вирішити video override vs повний video pipeline | блокує trial release (source: preflight live check 2026-08-04) |
 | 6 | Перевести `WEEKLY_CONTENT_STUDIO_V2` у `shadow` на 3 історичних випусках і зняти витрати з `/admin/costs` | критерій `production` ще відкритий ([open-questions](open-questions.md) #4) |

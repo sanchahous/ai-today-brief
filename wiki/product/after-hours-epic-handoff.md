@@ -18,12 +18,14 @@ Last updated: 2026-09-30
   SEO baseline AH-0.4 — у PR #374, report AH-0.5 — 812 сценаріїв. Ці PR ще не змержені.
   (source: `gh pr view 373`…`376`, `artifacts/_local/before/manifest.json`,
   `artifacts/_local/ah-0.5-legacy-report.json`, live check 2026-09-30)
-- AH-0.6 лишається частковою: live Google tag повторно показав три destinations; Admin / Tag
-  Assistant заблокувала перевірка дозволів браузера, PageSpeed API повернув 429, CrUX API —
-  403 для доступного локального ключа. Точний перелік потрібних перевірок і URL є в
+- AH-0.6 лишається частковою: власник перемістив два зайві GA4-акаунти `396975517` і
+  `397017915` у кошик; активні `396774992` / `540206735` підтверджено HYPD.
+  Live Google tag досі містить три destination ID; Admin / Tag Assistant заблокувала
+  перевірка дозволів браузера, PageSpeed API повернув 429, CrUX API — 403 для
+  доступного локального ключа. Точний перелік потрібних перевірок і URL є в
   [redesign baseline](../analytics/2026-09-29-redesign-baseline.md#дані-потрібні-для-завершення-ah-06).
   **Наступний крок:** отримати Admin-докази й mobile/desktop field CWV; лише після цього
-  підготувати G0 для підпису власника. (source: HTTP, browser access і HYPD checks 2026-09-30;
+  підготувати G0 для підпису власника. (source: повідомлення власника, HTTP, browser access і HYPD checks 2026-09-30;
   [redesign baseline](../analytics/2026-09-29-redesign-baseline.md))
 
 - Production `b3f1b3a`: епік (PR [#370](https://github.com/sanchahous/ai-today-brief/pull/370)) і
@@ -88,7 +90,7 @@ Last updated: 2026-09-30
 | 2 | AH-0.3 · знімки до/після | агент | `scripts/capture-route-matrix.ts`; прогін `--label=before` з production; PNG лише в `artifacts/_local/` | немає |
 | 3 | AH-0.4 · SEO-контракт | агент | `src/lib/seo-contract.ts` з тестом (покриття ≥ 80%), `scripts/seo-contract.ts`, текстовий baseline з production | немає |
 | 4 | AH-0.5 · QA-матриця сторінок | агент | `e2e/a11y-layout-matrix.spec.ts`, режими report і gating, звіт по legacy-сайту з лічильниками в log | немає |
-| 5 | ◐ AH-0.6 · продуктовий і CWV baseline, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки й три destinations | **так:** потрібні field CWV і Admin-чек-лист open-questions #1 |
+| 5 | ◐ AH-0.6 · продуктовий і CWV baseline, PR [#376](https://github.com/sanchahous/ai-today-brief/pull/376) | власник + агент | [redesign baseline](../analytics/2026-09-29-redesign-baseline.md): GA4-воронки; одна активна property, два акаунти в кошику | **так:** потрібні field CWV, Admin-чекліст канонічної property і Tag Assistant |
 
 **Нюанси, яких немає в картках:**
 
@@ -107,11 +109,14 @@ Last updated: 2026-09-30
 - **AH-0.5.** Портувати `inspect()` з `artifacts/after-hours/qa/run-qa.mjs` і перевірку zoom з
   `check-zoom.mjs`. Рушій — `@axe-core/playwright`, він уже є в devDependencies з #369. Нова спека
   має потрапити в `scripts/e2e-affected.ts`, інакше `e2e:affected` її не вибере.
-- **AH-0.6.** Read-only GA4-конектор підключено 2026-09-29. Всі три property отримують
-  production-події через один Google tag із трьома destinations; робоча property baseline —
-  `540206735`. Дані й обмеження — [redesign baseline](../analytics/2026-09-29-redesign-baseline.md).
+- **AH-0.6.** Read-only GA4-конектор підключено 2026-09-29. За 01–28.09 три property
+  отримували production-події через один Google tag. 2026-09-30 власник перемістив
+  два зайві акаунти в кошик; активна property для baseline — `540206735`.
+  Google tag досі містить три destinations, фактичну доставку не перевірено. Дані й
+  обмеження — [redesign baseline](../analytics/2026-09-29-redesign-baseline.md).
   Поки [open-questions](../open-questions.md) #1 не закрито, усі числа `(needs verification)`;
-  mobile/desktop field CWV ще потрібно отримати. (source: GA4 Data API і live Google tag 2026-09-29)
+  mobile/desktop field CWV ще потрібно отримати. (source: GA4 Data API 2026-09-29;
+  повідомлення власника, HYPD і live Google tag 2026-09-30)
 
 **Гейт G0** закритий, коли AH-0.1…AH-0.6 виконані, baseline visual, SEO і продукту зняті, а
 QA-матриця працює в режимі report.
@@ -137,8 +142,9 @@ QA-матриця працює в режимі report.
      (`artifacts/after-hours/editions.js`, `pages.js`); це стосується AH-5.4, AH-5.6 і AH-5.13;
    - «перевірка гайдів кожні 90 днів» (AH-5.9);
    - спонсорський слот на головній і формати розміщень (AH-5.3, п. 10; AH-5.13);
-    - рішення щодо двох додаткових GA4 destinations після Admin-звірки
-      ([open-questions](../open-questions.md) #1; AH-0.6).
+    - очищення двох залишкових GA4 destinations у Google tag — окреме рішення
+      власника після Tag Assistant; вибір канонічної property вже вирішено
+      ([open-questions](../open-questions.md) #1; AH-0.6; source: повідомлення власника 2026-09-30).
 3. **Платформи для нового аватара й банерів** (AH-3.8):
    - точно є X, Telegram, LinkedIn і YouTube (`SOCIALS` у `src/lib/site.ts`);
    - Facebook, Bluesky, Mastodon, Instagram і Threads є в таблиці `artifacts/brand-kit/README.md`,
@@ -207,16 +213,17 @@ QA-матриця працює в режимі report.
 ```text
 Продовж виконання епіку редизайну After Hours у репозиторії ai-today-brief.
 1. Прочитай wiki/product/after-hours-epic-handoff.md і виконай розділ «Порядок старту сесії».
-2. Перевір стан PR #373–#375 і AH-0.6 у розділі «Черга фази 0». Доведи відкриті частини фази 0
-   до виконання за картками в wiki/product/after-hours-redesign-epic.md: окрема гілка
-   feat/ah-<id>-<slug> від origin/main, Definition of Done з §0.1, npm run pr:check,
-   PR у main за шаблоном §0.2.
+2. Перевір стан PR #373–#376 у розділі «Черга фази 0». Доведи відкриті частини фази 0
+   до виконання за картками в wiki/product/after-hours-redesign-epic.md: продовжуй
+   відповідні гілки й PR; для нової задачі — окрема гілка feat/ah-<id>-<slug> від
+   origin/main, Definition of Done з §0.1, npm run pr:check перед push, PR у main.
 3. Після PR онови §5.3 епіку, wiki/now.md, wiki/log.md і рядок «Наступна задача» в handoff.
 4. У точках із розділу «Точки зупинки» зупинись і спитай мене. Нічого не вигадуй.
 Відповідай мені українською.
 ```
 
-Для AH-0.6 GA4-дані вже знято через read-only конектор. Потрібно завершити Admin-чек-лист і
+Для AH-0.6 GA4-дані вже знято через read-only конектор; після рішення власника 2026-09-30
+активна лише `540206735`. Потрібно завершити її Admin-чекліст, Tag Assistant і
 отримати field CWV; див. [baseline](../analytics/2026-09-29-redesign-baseline.md).
 
 ## Related pages

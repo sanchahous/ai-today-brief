@@ -6,11 +6,19 @@ Summary: усе, що не має відповіді, суперечить са�
 Sources: `wiki/analytics/ga4-gsc.md`, `wiki/analytics/2026-09-29-redesign-baseline.md`, `wiki/audits/2026-07-01-seo-organic.md`, `wiki/strategy/master-roadmap.md`,
 `.env.example`, `wiki/pipeline/weekly-digest.md`, інвентаризація репозиторію (live check 2026-08-04),
 `wiki/audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md`, `wiki/product/after-hours-redesign-epic.md` (live check коду 2026-09-29)
-Last updated: 2026-09-29
+Last updated: 2026-09-30
 
 ---
 
 ## 1. ⚠️ Конфлікт трьох GA4-property
+
+**Рішення власника 2026-09-30:** канонічною лишається `540206735` в акаунті
+`396774992` («Ai brief today») з `G-5R89X6Q5D4`. Акаунти `396975517`
+(«Ai today brief», property `540437869`) і `397017915` («Ai brief today», property
+`540467725`) переміщено в кошик; GA підтвердив переміщення другого. Повторний
+HYPD `list_account_summaries` показує лише `396774992` / `540206735`. Тому
+питання вибору property і звірка measurement ID потоків видалених акаунтів для G0
+**закриті**. (source: повідомлення власника 2026-09-30; HYPD live check 2026-09-30)
 
 **З'ясовано 2026-09-29:** production HTML завантажує `G-5R89X6Q5D4`, який історичний аудит
 прив'язав до **540206735**. Завантажений Google tag має ще два destinations; GA4 Data API
@@ -19,12 +27,14 @@ Last updated: 2026-09-29
 доставку; для baseline обрано **540206735**, а сума трьох звітів не є аудиторією сайту.
 (source: [ga4-gsc](analytics/ga4-gsc.md); [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
-**Лишається відкритим:** зв'язок додаткових `G-0TEJ3H5V85` і `G-T7X6D6TL84` із двома потоками,
-причина втрати частини Singapore/direct подій у 540467725, поточні GSC-link,
-`newsletter_subscribe` key event, retention 14 міс і перевірка Tag Assistant.
-Доки це не звірено, GA4 baseline позначено `(needs verification)`. **Закривається:** виконано
-чек-лист у [ga4-gsc](analytics/ga4-gsc.md) і ухвалено рішення щодо зайвих destinations.
-**Власник рішення:** власник продукту після технічної перевірки. (source:
+**Лишається відкритим для G0:** поточні GSC link, `newsletter_subscribe` key event,
+retention 14 міс у `540206735` і Tag Assistant (доставка й consent). Додаткові
+`G-0TEJ3H5V85` і `G-T7X6D6TL84` досі є в завантаженому Google tag; їх очищення
+можна вирішити окремо після перевірки. Причина історичної різниці Singapore/direct
+між property не доведена. Доки Admin і Tag Assistant не звірено, GA4 baseline має
+`(needs verification)`. **Пункт закривається**, коли виконано актуальний чекліст у
+[ga4-gsc](analytics/ga4-gsc.md); рішення про канонічний акаунт повторно не потрібне.
+(source: повідомлення власника 2026-09-30; HTTP GET Google tag 2026-09-30;
 [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
 ## 2. Реальні місячні витрати проєкту невідомі

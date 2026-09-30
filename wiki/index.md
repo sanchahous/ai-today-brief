@@ -10,7 +10,7 @@ first nightly daily visual QA 2026-08-25, weekly Video tab #441 2026-08-25,
 консолідація відео-папок 2026-08-28, weekly topic slug + revision review 2026-08-29,
 каталожний вибір OpenRouter 2026-08-30, YouTube 120s + Supabase egress 2026-09-02,
 SSG skip, ElevenLabs, LinkedIn PDF skip, social `?s=` URLs 2026-09-03
-desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29, GA4 / After Hours baseline 2026-09-30
+desktop nav Digests + homepage weekly card 2026-09-03 (#360), After Hours redesign concept 2026-09-05, design-system audit 2026-09-26, redesign epic 2026-09-29, GA4 / After Hours baseline 2026-09-30, повідомлення власника про кошик GA4 + HYPD і live tag check 2026-09-30
 Last updated: 2026-09-30
 
 **Статуси:** ✅ сторінка існує · 📋 заплановано (джерело вказане в колонці «Звідки») ·
@@ -88,9 +88,9 @@ Last updated: 2026-09-30
 
 | Сторінка | Про що | Звідки |
 |---|---|---|
-| ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Production gtag із трьома destinations і трьома активними GA4-property; 540206735 — робоча для baseline, Admin-чек-лист відкритий | колишній `docs/ANALYTICS.md` + live check 2026-09-29 |
+| ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Єдина активна property 540206735, два зайві акаунти в кошику; tag ще містить три destinations, Admin і Tag Assistant відкриті | повідомлення власника + HYPD і live tag check 2026-09-30 |
 | ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
-| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: 28-денні продуктові GA4-воронки, три destinations одного tag, повторна звірка 2026-09-30, прогалина field CWV і точний перелік доказів до G0 (PR #376) | GA4 Data API + production Google tag + HTTP / browser access checks 2026-09-29…30 |
+| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: історичні 28-денні GA4-воронки, одна активна property після рішення власника, прогалина field CWV і докази до G0 (PR #376) | GA4 Data API + повідомлення власника + HYPD / HTTP checks 2026-09-29…30 |
 
 ## Marketing
 
@@ -156,7 +156,7 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 |---|---|---|
 | ✅ [audits/2026-06-10-portal](audits/2026-06-10-portal.md) | Повний аудит порталу | колишній `docs/audit/2026-06-10-portal-audit.md` |
 | ✅ [audits/2026-06-12-analytics-gsc](audits/2026-06-12-analytics-gsc.md) | Аудит аналітики й GSC | колишній `docs/audit/2026-06-12-analytics-gsc-audit.md` |
-| ✅ [audits/2026-07-01-seo-organic](audits/2026-07-01-seo-organic.md) | Чому немає органіки | колишній `docs/audit/2026-07-01-seo-organic-audit.md` |
+| ✅ [audits/2026-07-01-seo-organic](audits/2026-07-01-seo-organic.md) | Історичний аудит органіки; липневий GA4-чекліст позначено нечинним після рішення 2026-09-30 | колишній `docs/audit/2026-07-01-seo-organic-audit.md` + повідомлення власника 2026-09-30 |
 | ✅ [audits/2026-08-13-pr-229-visual-v10-sonnet-plan](audits/2026-08-13-pr-229-visual-v10-sonnet-plan.md) | Review PR #229 (Visual Affordance V10) + executor spec для Sonnet 5: не мерджити як є, v11 total-function + SceneSpec | PR #229, workflow `wf_40755980-8f7` |
 | ✅ [audits/2026-08-15-illustration-pr-stack-review](audits/2026-08-15-illustration-pr-stack-review.md) | Review 24 PR (#241–#264, weekly-illustration-plan): 4 блокери + 8 якість + 4 безпека + 6 операційних, усі виправлені на `feat/weekly-illustration-fixes` | PR #241–#264 дифи, живий `npm run pr:check` 2026-08-15 |
 | ✅ [audits/2026-08-16-auto-publish-silent-judge](audits/2026-08-16-auto-publish-silent-judge.md) | Вісім ночей `status='ok'` без жодної публікації: суддя відповідав правильно, парсер читав тільки `obj.results`, а ран рапортував `ok` безумовно | прод-`pipeline_runs` + пряма проба судді 2026-08-16 |

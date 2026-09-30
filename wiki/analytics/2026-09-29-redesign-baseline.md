@@ -1,20 +1,37 @@
 # After Hours — продуктовий baseline перед редизайном
 
-Summary: AH-0.6 фіксує GA4-показники за 28 повних днів, пояснює три property для одного сайту й відокремлює доступні продуктові метрики від CWV, яких поки не вдалося отримати.
-Sources: GA4 Data API через підключення HYPD (read-only запити 2026-09-29 і Admin metadata 2026-09-30); live HTML `https://aitodaybrief.com/en` і Google tag `https://www.googletagmanager.com/gtag/js?id=G-5R89X6Q5D4` (2026-09-29 і 2026-09-30); [аудит налаштування GA4](../audits/2026-06-12-analytics-gsc.md); `artifacts/_local/before/manifest.json` (AH-0.3); [CrUX API](https://developer.chrome.com/docs/crux/api); `src/components/analytics/home-click-trackers.tsx`, `src/components/home/newsletter-form.tsx`, `src/app/api/subscribe/route.ts`, `src/lib/web-vitals.ts`.
+Summary: AH-0.6 фіксує історичний GA4 baseline за 28 повних днів; зараз активна лише property 540206735, два зайві акаунти в кошику; Admin-чекліст і field CWV відкриті.
+Sources: повідомлення власника 2026-09-30; HYPD `list_account_summaries` 2026-09-30; GA4 Data API через HYPD (read-only запити 2026-09-29); live HTML `https://aitodaybrief.com/en` і Google tag `https://www.googletagmanager.com/gtag/js?id=G-5R89X6Q5D4` (2026-09-29 і 2026-09-30); [аудит налаштування GA4](../audits/2026-06-12-analytics-gsc.md); `artifacts/_local/before/manifest.json` (AH-0.3); [CrUX API](https://developer.chrome.com/docs/crux/api); `src/components/analytics/home-click-trackers.tsx`, `src/components/home/newsletter-form.tsx`, `src/app/api/subscribe/route.ts`, `src/lib/web-vitals.ts`.
 Last updated: 2026-09-30
 
 ---
+
+## Актуальний стан після рішення власника 2026-09-30
+
+Активний акаунт — `396774992` («Ai brief today»), property `540206735` з потоком
+«The daily AI news» і production ID `G-5R89X6Q5D4`. Власник перемістив у кошик
+`396975517` («Ai today brief», property `540437869`) і `397017915` («Ai brief today»,
+property `540467725`); GA підтвердив переміщення другого. Повторний HYPD
+`list_account_summaries` повернув лише активні `396774992` / `540206735`. За
+повідомленням власника, кошик дозволяє відновлення протягом 35 днів. Історичні
+цифри нижче залишаються знімком **до** переміщення акаунтів у кошик. (source:
+повідомлення власника 2026-09-30; HYPD `list_account_summaries` 2026-09-30)
+
+Код не містить ID двох зайвих акаунтів/property чи їхніх додаткових measurement ID;
+Google tag, який завантажується для `G-5R89X6Q5D4`, досі містить три destinations.
+Факт наявності ID у tag не встановлює, чи доставляються події до акаунтів у кошику.
+Tag Assistant залишається необхідним. (source: пошук `rg` у коді 2026-09-30;
+HTTP GET Google tag 2026-09-30)
 
 ## Межі вимірювання
 
 Період: **2026-09-01…2026-09-28 включно**, часовий пояс усіх трьох property — `Europe/Kiev`; дата зняття — **2026-09-29**. Для продуктових таблиць нижче застосовано `hostName = aitodaybrief.com` і property **`540206735`**, якщо явно не зазначено інше. `screenPageViews` рахує перегляди, `activeUsers` — користувачів, `sessions` — сеанси; числа з різних property не додаються. (source: GA4 Data API `properties/540206735:runReport`, dimensions `hostName`, `eventName` / `pagePath`, metrics `sessions`, `activeUsers`, `eventCount`, `screenPageViews`, дата запиту 2026-09-29)
 
-**Статус усіх GA4-чисел у цій сторінці: `(needs verification)`.** Production property визначено за встановленим тегом, але Admin-чек-лист [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property) ще не завершено: ID двох додаткових потоків, GSC link, key event, retention і Tag Assistant треба звірити. Цей baseline придатний для порівняння за тією самою property й сегментом, але не є підставою підсумовувати трафік трьох property. (source: live HTML і Google tag 2026-09-29; [ga4-gsc](ga4-gsc.md))
+**Статус усіх GA4-чисел у цій сторінці: `(needs verification)`.** Канонічну property власник визначив як `540206735`, але її GSC link, key event, retention і фактичну доставку через Tag Assistant ще треба звірити. Зв'язок двох додаткових ID із потоками більше не є умовою G0. Цей baseline придатний для порівняння за тією самою property й сегментом, але історичні звіти трьох property не слід підсумовувати. (source: повідомлення власника 2026-09-30; [ga4-gsc](ga4-gsc.md))
 
-## Чому три property отримують трафік
+## Чому три property отримували трафік у період baseline
 
-Production HTML містить один `gtag` ID — **`G-5R89X6Q5D4`** — і не містить `GTM-*`. Історичний аудит прив'язав цей measurement ID до потоку `The daily AI news` у **`540206735`**. Натомість конфігурація завантаженого Google tag `GT-KVJZSX7K` містить три `vtp_instanceDestinationId`: `G-5R89X6Q5D4`, `G-0TEJ3H5V85` і `G-T7X6D6TL84`. [Google описує](https://support.google.com/tagmanager/answer/11994839?hl=en), що один Google tag може надсилати події кільком destination. Це пояснює три звіти при одному тегу в коді. Прив'язка **двох додаткових** `G-*` до конкретних property ще потребує перевірки в Admin → Data streams; доступний конектор повертає stream ID, але не measurement ID. (source: live HTML / Google tag 2026-09-29; [аудит 12.06](../audits/2026-06-12-analytics-gsc.md) §6)
+Production HTML містить один `gtag` ID — **`G-5R89X6Q5D4`** — і не містить `GTM-*`. Історичний аудит прив'язав цей measurement ID до потоку `The daily AI news` у **`540206735`**. Натомість конфігурація завантаженого Google tag `GT-KVJZSX7K` містить три `vtp_instanceDestinationId`: `G-5R89X6Q5D4`, `G-0TEJ3H5V85` і `G-T7X6D6TL84`. [Google описує](https://support.google.com/tagmanager/answer/11994839?hl=en), що один Google tag може надсилати події кільком destination. Це пояснює три історичні звіти при одному тегу в коді. Прив'язку **двох додаткових** `G-*` до конкретних property не було перевірено; після переміщення зайвих акаунтів у кошик вона не є умовою G0. (source: live HTML / Google tag 2026-09-29; повідомлення власника 2026-09-30; [аудит 12.06](../audits/2026-06-12-analytics-gsc.md) §6)
 
 | Property / акаунт | Потік GA4 | Production sessions | Production events | Production active users |
 |---|---|---:|---:|---:|
@@ -88,12 +105,12 @@ live Google tag, запити 2026-09-29)
 
 - `origin/main` оновлено до `a3d2db5`; PR #373–#376 залишаються відкритими, mergeable, з успішними CI-перевірками. Локальний manifest AH-0.3 містить 232 знімки й має SHA-256 `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`; звіт AH-0.5 містить 812 сценаріїв. Це підтверджує наявність visual і QA baseline, але відкриті PR ще не є змерженими задачами. (source: `git fetch origin main`, `gh pr view 373`…`376`, `artifacts/_local/before/manifest.json`, `artifacts/_local/ah-0.5-legacy-report.json`, live check 2026-09-30)
 - Production Google tag знову відповів HTTP 200 і містить `GT-KVJZSX7K` та всі три `G-*` ID. Це повторно підтверджує конфігурацію destinations, **але не замінює Tag Assistant** і не встановлює пару додатковий measurement ID ↔ GA4 stream. (source: HTTP GET Google tag 2026-09-30)
-- HYPD Admin metadata підтвердили доступ до `540206735`, `540437869`, `540467725`, але підключені read-only інструменти не повертають measurement ID потоків, GSC link, key events чи retention. Доступ до GA4 Admin через браузер зупинила помилка перевірки збережених дозволів, повторна спроба дала той самий результат. Пункти Admin-чек-листа нижче залишаються неперевіреними. (source: HYPD `list_account_summaries` / `get_property_details`, browser access check 2026-09-30)
+- До рішення власника HYPD Admin metadata підтверджували доступ до `540206735`, `540437869`, `540467725`; після переміщення двох акаунтів у кошик повторний `list_account_summaries` показав лише `540206735`. Read-only інструменти не повертають GSC link, key events чи retention. Доступ до GA4 Admin через браузер зупинила помилка перевірки збережених дозволів. Пункти Admin-чекліста нижче залишаються неперевіреними. (source: HYPD `list_account_summaries` / `get_property_details`, browser access check і повідомлення власника 2026-09-30)
 - Повторний запит до PageSpeed Insights API для `/en` mobile повернув HTTP 429. Запит до офіційного [CrUX API](https://developer.chrome.com/docs/crux/api) з доступним локальним Google API key повернув HTTP 403; цей ключ не дав доступу до CrUX. У локальному `gcloud` немає активної авторизації чи вибраного проєкту для [CrUX BigQuery](https://developer.chrome.com/docs/crux/bigquery). Через це перевірених mobile/desktop field LCP, INP і CLS досі немає. HTTP 403/429 не доводять, що в CrUX немає даних сайту. (source: HTTP-запити та `gcloud auth list` / `gcloud config get-value project` 2026-09-30)
 
 ### Дані, потрібні для завершення AH-0.6
 
-1. У GA4 Admin зафіксувати measurement ID потоків `15017434008` і `15017406308`, GSC link property `540206735`, статус `newsletter_subscribe` як key event та event-data retention. Tag Assistant має показати фактичну доставку й consent на production. Після цього власник вирішує долю додаткових destinations; до рішення нічого не від'єднувати й не видаляти. (source: [ga4-gsc](ga4-gsc.md), [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property))
+1. У GA4 Admin **property `540206735`** зафіксувати GSC link, статус `newsletter_subscribe` як key event та event-data retention. У Tag Assistant для production перевірити `G-5R89X6Q5D4`, `page_view`, доставку й consent; відзначити дві залишкові destinations. Не потрібно відкривати акаунти в кошику або звіряти їхні measurement ID для G0. Долю залишкових destinations власник може вирішити окремо після перевірки; до того tag не змінювати. (source: повідомлення власника 2026-09-30; [ga4-gsc](ga4-gsc.md))
 2. Отримати CrUX URL-level `PHONE` і `DESKTOP` LCP/INP/CLS для репрезентативних URL нижче або еквівалентні mobile/desktop field-дані Vercel Speed Insights. Записати дату, вікно даних, URL, пристрій і p75; якщо для URL немає достатньо даних, позначити це окремо й не видавати origin-level метрику за метрику типу сторінки. (source: [CrUX API](https://developer.chrome.com/docs/crux/api); URL — AH-0.3 `artifacts/_local/before/manifest.json`)
 
 | Тип | URL для польової перевірки |
@@ -106,12 +123,8 @@ live Google tag, запити 2026-09-29)
 
 ## Що лишається до G0
 
-1. У GA4 Admin звірити measurement ID потоків `15017434008` і `15017406308` з двома додатковими destination `G-*`, потім вирішити, чи залишати потрійну доставку. Налаштування не змінювати за одним лише звітом. (source: live Google tag і GA4 Data API 2026-09-29)
-   **Рекомендація:** після цієї звірки залишити `540206735` канонічною, а дві інші destinations
-   від'єднати від tag, якщо вони не мають окремої погодженої мети; самі property з історією
-   не видаляти. Це прибере три паралельні звіти надалі, але не перепише минулі дані. (analysis)
-2. Пройти решту [чек-листа property](ga4-gsc.md): GSC link, `newsletter_subscribe` як key event, retention 14 місяців, Tag Assistant. До того всі GA4-метрики тут `(needs verification)`. (source: [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property))
-3. Отримати mobile/desktop field CWV з Vercel Speed Insights або CrUX і вписати їх у таблицю з датою й URL. До цього AH-0.6 часткова, **G0 закритий**. (source: [епік After Hours](../product/after-hours-redesign-epic.md))
+1. Пройти [чекліст канонічної property](ga4-gsc.md): GSC link, `newsletter_subscribe` як key event, retention 14 місяців і Tag Assistant. До цього всі GA4-метрики тут `(needs verification)`. Рішення про канонічний акаунт уже ухвалене власником; очищення залишкових destinations — окремий наступний крок після перевірки, не новий підпис для G0. (source: повідомлення власника 2026-09-30; [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property))
+2. Отримати mobile/desktop field CWV з Vercel Speed Insights або CrUX і вписати їх у таблицю з датою й URL. До цього AH-0.6 часткова, **G0 закритий**. (source: [епік After Hours](../product/after-hours-redesign-epic.md))
 
 ## Related pages
 

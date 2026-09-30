@@ -6,7 +6,7 @@ Sources: `wiki/strategy/startup-plan.md`, `wiki/strategy/master-roadmap.md`, `wi
 `wiki/audits/2026-06-12-analytics-gsc.md`, `wiki/analytics/ga4-gsc.md`, `wiki/pipeline/guide.md`,
 `wiki/ops/owner-checklist.md`, `wiki/analytics/2026-09-29-redesign-baseline.md`, `.cursor/rules/00-core.mdc`, `.env.example`, `package.json`,
 live check git/PR 2026-08-04, editorial quality overhaul PR5 (гілка `feat/weekly-editorial-voice`, 2026-08-06)
-Last updated: 2026-09-29
+Last updated: 2026-09-30
 
 ---
 
@@ -168,11 +168,14 @@ Supabase (app + pipeline, один проєкт) · Beehiiv (розсилка) +
 Ollama (LLM) · Cloudflare Workers AI (картинки) · GA4 + GTM + GSC · LemonSqueezy (відкладено) ·
 IndexNow (Bing/Yandex). Повний перелік env — `.env.example`; портативність — `wiki/ops/services-portability.md`.
 
-> ⚠️ [Перевірка 2026-09-29](analytics/2026-09-29-redesign-baseline.md) показала три активні
-> GA4-property для `aitodaybrief.com`: **540206735**, **540437869**, **540467725**. Один production
-> Google tag має три destinations; для baseline обрано 540206735 за встановленим measurement ID.
-> Admin-чек-лист ще відкритий, тому продуктові цифри позначено `(needs verification)`.
+> ⚠️ З 2026-09-30 активна GA4-property для `aitodaybrief.com` — **540206735**
+> (акаунт `396774992`, `G-5R89X6Q5D4`). Власник перемістив зайві акаунти `396975517`
+> (property `540437869`) і `397017915` (property `540467725`) у кошик. Один production
+> Google tag досі містить три destination ID; фактичну доставку ще перевірити через
+> Tag Assistant. Admin-чекліст канонічної property відкритий, тому продуктові цифри
+> позначено `(needs verification)`.
 > Див. [open-questions #1](open-questions.md#1-конфлікт-трьох-ga4-property). (source:
+> повідомлення власника 2026-09-30; HYPD live check 2026-09-30;
 > [ga4-gsc](analytics/ga4-gsc.md); [redesign baseline](analytics/2026-09-29-redesign-baseline.md))
 
 ## Related pages
