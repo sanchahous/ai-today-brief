@@ -548,8 +548,9 @@ Speed Insights або CrUX для home, news, article, daily, weekly. Оформ
 містить GA4-числа й історичний розбір трьох destinations. 2026-09-30 власник перемістив
 два зайві акаунти в кошик; активною лишилась `540206735`. Запитані переходи без відповідних подій
 позначено невимірюваними, а не підмінено співвідношенням page views. Field CWV mobile/desktop
-не підтверджено: власник надав шість PageSpeed-посилань для home/news/article,
-але вміст звітів не прочитано через перевірку дозволів браузера. GSC link
+не отримано: шість збережених HTML-звітів власника для home/news/article прочитано,
+лабораторні метрики внесено в baseline; усі шість показують недостатні CrUX-дані
+сторінки. Daily/weekly ще не покрито. GSC link
 підтверджено скриншотами; key event, retention і Tag Assistant у
 [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property) відкриті.
 Попередній запит PageSpeed API повернув 429, CrUX API — 403 для доступного ключа,
@@ -563,6 +564,8 @@ Speed Insights або CrUX для home, news, article, daily, weekly. Оформ
 - [x] Пояснено, чому field-даних CWV поки немає.
 - [ ] Отримано mobile і desktop field LCP / INP / CLS через CrUX або Vercel Speed Insights,
   як уточнив власник 2026-09-30; URL без достатніх даних позначені окремо.
+  Home/news/article перевірено: недостатньо CrUX-даних; daily/weekly не надано.
+  Прийняття baseline без field-чисел потребує явного рішення власника.
 - [x] Сторінка є в `wiki/index.md`, запис у `wiki/log.md`.
 
 **Гейт G0:** AH-0.1…0.6 закриті; D1–D13 підписані; baseline visual / SEO / продукт зняті;

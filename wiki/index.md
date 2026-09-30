@@ -90,7 +90,7 @@ Last updated: 2026-09-30
 |---|---|---|
 | ✅ [analytics/ga4-gsc](analytics/ga4-gsc.md) | Єдина активна property 540206735, два зайві акаунти в кошику; GSC link підтверджено, key event / retention / Tag Assistant відкриті | повідомлення й скриншоти власника + HYPD і live tag check 2026-09-30 |
 | ✅ [analytics/event-taxonomy](analytics/event-taxonomy.md) | Каталог усіх GA4-івентів і first-party біконів: що рахуємо, звідки, які параметри; воронка підписки | `src/lib/analytics-events.ts` + код-ревʼю 2026-08-21 |
-| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: GA4-воронки, підтверджений GSC link, шість наданих PageSpeed-посилань із неперевіреними field CWV і залишок до G0 (PR #376) | GA4 Data API + повідомлення, скриншоти й посилання власника + HYPD / browser checks 2026-09-29…30 |
+| ✅ [analytics/2026-09-29-redesign-baseline](analytics/2026-09-29-redesign-baseline.md) | AH-0.6: GA4-воронки, підтверджений GSC link, шість прочитаних PageSpeed-звітів із лабораторними метриками й недостатніми CrUX-даними; залишок до G0 (PR #376) | GA4 Data API + повідомлення, скриншоти й HTML-звіти власника + JSON-витяг / HYPD checks 2026-09-29…30 |
 
 ## Marketing
 

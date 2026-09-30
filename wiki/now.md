@@ -19,10 +19,11 @@ Last updated: 2026-09-30
 
 - **AH-0.6, нові докази від власника 2026-09-30:** GSC link домену `aitodaybrief.com`
   з потоком `15002930155` / property `540206735` підтверджено скриншотами.
-  Отримано шість PageSpeed-посилань mobile/desktop для home, news і article;
-  вміст звітів заблокувала перевірка дозволів браузера, числові field CWV не
-  підтверджено. До G0 лишаються key event, retention, Tag Assistant, field CWV
-  і завершення PR #373–#376. (source: скриншоти й посилання власника 2026-09-30;
+  Шість збережених HTML-звітів PageSpeed для home, news і article прочитано:
+  лабораторні метрики записано, CrUX у всіх показує недостатні дані сторінки.
+  До G0 лишаються key event, retention, Tag Assistant, покриття daily/weekly,
+  закриття вимоги field CWV (числа або явне рішення власника щодо прогалини)
+  і завершення PR #373–#376. (source: скриншоти й HTML-звіти власника 2026-09-30;
   [baseline](analytics/2026-09-29-redesign-baseline.md#pagespeed-звіти-надані-власником))
 
 - **After Hours фаза 0, повторна звірка 2026-09-30:** `origin/main` — `a3d2db5`, локальна гілка

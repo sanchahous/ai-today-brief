@@ -1,6 +1,6 @@
 # After Hours — продуктовий baseline перед редизайном
 
-Summary: AH-0.6 фіксує історичний GA4 baseline за 28 повних днів; активна property 540206735, GSC link підтверджено; отримано шість PageSpeed-посилань, але field CWV і решта Admin-чекліста відкриті.
+Summary: AH-0.6 фіксує історичний GA4 baseline за 28 повних днів; активна property 540206735, GSC link підтверджено. Шість збережених PageSpeed-звітів прочитано: лабораторні метрики записано, CrUX повідомляє про недостатні дані; Admin-чекліст і field CWV залишаються відкритими.
 Sources: повідомлення власника 2026-09-30; HYPD `list_account_summaries` 2026-09-30; GA4 Data API через HYPD (read-only запити 2026-09-29); live HTML `https://aitodaybrief.com/en` і Google tag `https://www.googletagmanager.com/gtag/js?id=G-5R89X6Q5D4` (2026-09-29 і 2026-09-30); [аудит налаштування GA4](../audits/2026-06-12-analytics-gsc.md); `artifacts/_local/before/manifest.json` (AH-0.3); [CrUX API](https://developer.chrome.com/docs/crux/api); `src/components/analytics/home-click-trackers.tsx`, `src/components/home/newsletter-form.tsx`, `src/app/api/subscribe/route.ts`, `src/lib/web-vitals.ts`.
 Last updated: 2026-09-30
 
@@ -99,11 +99,17 @@ live Google tag, запити 2026-09-29)
 
 | Тип | Mobile LCP / INP / CLS | Desktop LCP / INP / CLS |
 |---|---|---|
-| Home | н/д | н/д |
-| News index | н/д | н/д |
-| News article | н/д | н/д |
-| Daily brief | н/д | н/д |
-| Weekly | н/д | н/д |
+| Home (root → `/en`) | CrUX: недостатньо даних | CrUX: недостатньо даних |
+| News index | CrUX: недостатньо даних | CrUX: недостатньо даних |
+| News article (MoEmail) | CrUX: недостатньо даних | CrUX: недостатньо даних |
+| Daily brief | звіт не надано | звіт не надано |
+| Weekly | звіт не надано | звіт не надано |
+
+Стан таблиці — **2026-09-30**, за HTML-звітами власника. У шести звітах для трьох
+типів сторінок CrUX прямо повідомляє про недостатні дані сторінки; польових
+p75 LCP/INP/CLS, вікна збору й origin fallback у збережених звітах немає. Це
+не встановлює відсутності origin-level даних домену в інших джерелах.
+(source: [витяг із шести HTML-звітів](../../artifacts/after-hours/analytics/2026-09-30-pagespeed-summary.json))
 
 На 2026-09-29 перевірених **field**-значень для цих типів сторінок не отримано: офіційний PageSpeed Insights API двічі повернув HTTP 429 навіть для одного mobile URL, браузерна перевірка була зупинена перевіркою дозволів, а доступний Vercel-конектор не надає Speed Insights metrics. У репозиторії немає `@vercel/speed-insights`; події `web_vitals` у GA4 є, але в `540206735` немає зареєстрованих custom dimensions/metrics для `name` і `value`, тож із Data API не можна дістати перевірені LCP/INP/CLS. Це **відсутність доступного виміру**, а не твердження, що CrUX не має даних. [Google рекомендує CrUX API](https://developers.google.com/speed/docs/insights/v5/get-started) як джерело польових даних. (source: HTTP-запити 2026-09-29; список доступних Vercel-інструментів; `package.json`, `src/lib/web-vitals.ts`; GA4 Admin API custom definitions 2026-09-29)
 
@@ -111,14 +117,15 @@ live Google tag, запити 2026-09-29)
 
 ### PageSpeed-звіти, надані власником
 
-Власник надав mobile і desktop посилання для трьох цілей нижче. Вміст звітів
-не вдалося прочитати: вебінструмент повернув помилку доступу, а Browser Use
-зупинила перевірка збережених дозволів. Тому LCP/INP/CLS, дата заміру, вікно даних
-і рівень агрегації URL/origin **ще не перевірені**; наявність посилання не закриває
-field CWV AC. Цілі в таблиці визначено за адресами наданих звітів, фінальний URL
-після redirect ще треба звірити. Daily і weekly у цьому наборі відсутні; картка
-AH-0.6 наразі вимагає п'ять типів сторінок. (source: посилання й повідомлення
-власника 2026-09-30; web / browser access checks 2026-09-30;
+Після помилки доступу браузера власник зберіг шість HTML-звітів у
+`C:\Users\Oleksandr\Downloads\temp`. **Файли прочитано 2026-09-30** статичним
+розбором без виконання скриптів. Кожен HTML містить mobile і desktop панелі;
+для витягу вибрано активну панель, а метрики звірено між двома копіями звіту.
+Назви файлів, SHA-256, URL, пристрої й усі витягнуті метрики збережено в
+[JSON-витягу](../../artifacts/after-hours/analytics/2026-09-30-pagespeed-summary.json).
+Home перевірено як root URL із фінальним `/en`; решта URL не змінились.
+Daily і weekly у наборі відсутні; вимога п'яти типів сторінок лишається чинною.
+(source: HTML-файли власника 2026-09-30, JSON-витяг;
 [картка AH-0.6](../product/after-hours-redesign-epic.md#ah-06-продуктовий-і-cwv-baseline))
 
 | Ціль за адресою звіту | Mobile | Desktop |
@@ -126,6 +133,25 @@ AH-0.6 наразі вимагає п'ять типів сторінок. (sourc
 | Home: `https://aitodaybrief.com/` | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com/d6pdbnzd3m?form_factor=mobile) | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com/d6pdbnzd3m?form_factor=desktop) |
 | News: `/en/news` | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com-en-news/36ivm3stfy?form_factor=mobile) | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com-en-news/36ivm3stfy?form_factor=desktop) |
 | Article: `/en/news/agents-and-mcp/automate-agent-email-verification-with-open-source-moemail-model-context-protoco` | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com-en-news-agents-and-mcp-automate-agent-email-verification-with-open-source-moemail-model-context-protoco/mflb8h6fye?form_factor=mobile) | [PageSpeed](https://pagespeed.web.dev/analysis/https-aitodaybrief-com-en-news-agents-and-mcp-automate-agent-email-verification-with-open-source-moemail-model-context-protoco/mflb8h6fye?form_factor=desktop) |
+
+#### Лабораторний baseline Lighthouse — 2026-09-30
+
+| Сторінка | Пристрій | Час (GMT+3) | Performance | FCP, с | LCP, с | TBT, мс | CLS | Speed Index, с |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| Home → `/en` | Mobile | 12:23 | 95 | 1,2 | 1,2 | 180 | 0,102 | 2,0 |
+| Home → `/en` | Desktop | 12:23 | 84 | 0,4 | 0,7 | 350 | 0,014 | 1,0 |
+| `/en/news` | Mobile | 12:24 | 64 | 1,5 | 7,1 | 100 | 0,224 | 1,9 |
+| `/en/news` | Desktop | 12:24 | 86 | 0,4 | 1,8 | 210 | 0,001 | 1,0 |
+| Article (MoEmail) | Mobile | 12:27 | 95 | 1,7 | 2,3 | 140 | 0,070 | 1,7 |
+| Article (MoEmail) | Desktop | 12:27 | 92 | 0,4 | 0,6 | 240 | 0,001 | 0,7 |
+
+Джерело таблиці: [JSON-витяг](../../artifacts/after-hours/analytics/2026-09-30-pagespeed-summary.json)
+із шести збережених HTML. Lighthouse **13.5.0**, HeadlessChromium **153.0.8010.36**;
+mobile — емульований Moto G Power, desktop — емульований комп'ютер. Це одиничні
+лабораторні запуски; їхні LCP/CLS не є field p75, а TBT не є INP. Найгірший
+mobile-результат у цій вибірці — news: LCP 7,1 с, CLS 0,224. Ці числа збережено
+для порівняння наступних запусків, вони не закривають field CWV AC.
+(source: HTML-звіти власника 2026-09-30, JSON-витяг)
 
 ### Попередні технічні перевірки цього дня
 
@@ -137,7 +163,7 @@ AH-0.6 наразі вимагає п'ять типів сторінок. (sourc
 ### Дані, потрібні для завершення AH-0.6
 
 1. У GA4 Admin **property `540206735`** зафіксувати статус `newsletter_subscribe` як key event та event-data retention. GSC link уже підтверджено. У Tag Assistant для production перевірити `G-5R89X6Q5D4`, `page_view`, доставку й consent; відзначити дві залишкові destinations. Не потрібно відкривати акаунти в кошику або звіряти їхні measurement ID для G0. Долю залишкових destinations власник може вирішити окремо після перевірки; до того tag не змінювати. (source: повідомлення й скриншоти власника 2026-09-30; [ga4-gsc](ga4-gsc.md))
-2. Отримати CrUX URL-level `PHONE` і `DESKTOP` LCP/INP/CLS для репрезентативних URL нижче або еквівалентні mobile/desktop field-дані Vercel Speed Insights. Записати дату, вікно даних, URL, пристрій і p75; якщо для URL немає достатньо даних, позначити це окремо й не видавати origin-level метрику за метрику типу сторінки. (source: [CrUX API](https://developer.chrome.com/docs/crux/api); URL — AH-0.3 `artifacts/_local/before/manifest.json`)
+2. Для home/news/article відсутність достатніх CrUX-даних уже підтверджена збереженими звітами; повторно просити ці самі звіти не потрібно. Для daily/weekly ще потрібні mobile/desktop звіти, зокрема й доказ «Немає даних», якщо CrUX їх не має. Якщо доступні field p75 через Vercel Speed Insights або CrUX, записати дату, вікно збору, URL, пристрій і рівень URL/origin. Якщо польових даних не буде, власник має явно погодити завершення baseline із зафіксованою прогалиною або зміну вимоги; лабораторні числа її автоматично не закривають. (source: [JSON-витяг](../../artifacts/after-hours/analytics/2026-09-30-pagespeed-summary.json); [картка AH-0.6](../product/after-hours-redesign-epic.md#ah-06-продуктовий-і-cwv-baseline))
 
 | Тип | URL для польової перевірки |
 |---|---|
@@ -150,7 +176,7 @@ AH-0.6 наразі вимагає п'ять типів сторінок. (sourc
 ## Що лишається до G0
 
 1. Завершити [чекліст канонічної property](ga4-gsc.md): `newsletter_subscribe` як key event, retention 14 місяців і Tag Assistant; GSC link уже підтверджено. До цього всі GA4-метрики тут `(needs verification)`. Рішення про канонічний акаунт уже ухвалене власником; очищення залишкових destinations — окремий наступний крок після перевірки, не новий підпис для G0. (source: повідомлення й скриншоти власника 2026-09-30; [open-questions #1](../open-questions.md#1-конфлікт-трьох-ga4-property))
-2. Отримати mobile/desktop field CWV з Vercel Speed Insights або CrUX і вписати їх у таблицю з датою й URL. До цього AH-0.6 часткова, **G0 закритий**. (source: [епік After Hours](../product/after-hours-redesign-epic.md))
+2. Завершити покриття daily/weekly й вимогу field CWV: отримати доступні польові числа або явне рішення власника про прийняття документованої відсутності даних. Для home/news/article вже записані лабораторні метрики та підтверджене «Немає даних» CrUX. До закриття цієї вимоги AH-0.6 часткова, **G0 не пройдено**. (source: [епік After Hours](../product/after-hours-redesign-epic.md); [JSON-витяг](../../artifacts/after-hours/analytics/2026-09-30-pagespeed-summary.json))
 
 ## Related pages
 

@@ -5099,3 +5099,25 @@ PR #373–#376 залишаються відкритими, mergeable, із зе
 Власник надав шість PageSpeed-посилань mobile/desktop для home, news і article; їх збережено в [baseline](analytics/2026-09-29-redesign-baseline.md#pagespeed-звіти-надані-власником). Вебінструмент не відкрив звіти, а Browser Use заблокувала перевірка збережених дозволів. Field LCP/INP/CLS, вікно даних і рівень URL/origin не прочитано, тому AC field CWV не закрито. У наданому наборі немає daily/weekly; вимога п'яти типів у картці AH-0.6 лишається чинною до явного рішення власника про звуження вибірки. (source: повідомлення й посилання власника, web / browser access checks 2026-09-30; [картка AH-0.6](product/after-hours-redesign-epic.md#ah-06-продуктовий-і-cwv-baseline))
 
 Оновлено [now](now.md), [handoff](product/after-hours-epic-handoff.md), картку AH-0.6 й [index](index.md). AH-0.6 часткова, G0 не пройдено; production-код і налаштування акаунтів не змінювалися. (source: [baseline](analytics/2026-09-29-redesign-baseline.md))
+
+## 2026-09-30 — AH-0.6: прочитано шість локальних PageSpeed-звітів
+
+Джерело: шість HTML-файлів, збережених власником у `C:\Users\Oleksandr\Downloads\temp`,
+звіти Lighthouse від 2026-09-30 12:23–12:27 GMT+3. Статичний розбір вибрав активну
+mobile/desktop панель кожного файла; значення звірено між двома копіями звіту.
+Створено [JSON-витяг](../artifacts/after-hours/analytics/2026-09-30-pagespeed-summary.json)
+з назвами файлів, SHA-256, requested/final URL, часом, пристроєм і метриками.
+
+Усі шість CrUX-секцій повідомляють про недостатні дані сторінки. Field p75 LCP/INP/CLS,
+вікна збору й origin fallback у цих звітах немає. Лабораторні числа внесено в
+[baseline](analytics/2026-09-29-redesign-baseline.md): Performance mobile/desktop
+home **95/84**, news **64/86**, article **95/92**; news mobile LCP **7,1 с**, CLS **0,224**.
+TBT не підмінює INP, лабораторні LCP/CLS не підмінюють field p75. Daily/weekly у
+наборі відсутні; AH-0.6 лишається частковою, G0 не пройдено. Прийняття baseline
+без польових чисел потребує явного рішення власника. (source: JSON-витяг;
+[картка AH-0.6](product/after-hours-redesign-epic.md#ah-06-продуктовий-і-cwv-baseline))
+
+Оновлено baseline, [now](now.md), [handoff](product/after-hours-epic-handoff.md), картку
+AH-0.6 й [index](index.md). Попередній запис про непрочитані посилання лишено як
+історію; актуальний стан — прочитані файли з лабораторними метриками та доказом
+недостатніх CrUX-даних. (source: HTML-звіти власника 2026-09-30, JSON-витяг)

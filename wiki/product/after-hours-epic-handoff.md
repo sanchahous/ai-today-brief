@@ -21,13 +21,15 @@ Last updated: 2026-09-30
 - AH-0.6 лишається частковою: власник перемістив два зайві GA4-акаунти `396975517` і
   `397017915` у кошик; активні `396774992` / `540206735` підтверджено HYPD.
   GSC link із потоком `15002930155` підтверджено скриншотами власника; key event,
-  retention і Tag Assistant ще відкриті. Шість наданих PageSpeed-посилань для
-  home/news/article додано в baseline, але field-значення з них не прочитано.
+  retention і Tag Assistant ще відкриті. Шість збережених HTML-звітів PageSpeed для
+  home/news/article прочитано: лабораторні метрики внесено в baseline, усі звіти
+  показують недостатні CrUX-дані сторінки. Daily/weekly ще не покрито.
   Live Google tag досі містить три destination ID; Admin / Tag Assistant заблокувала
   перевірка дозволів браузера, PageSpeed API повернув 429, CrUX API — 403 для
   доступного локального ключа. Точний перелік потрібних перевірок і URL є в
   [redesign baseline](../analytics/2026-09-29-redesign-baseline.md#дані-потрібні-для-завершення-ah-06).
-  **Наступний крок:** отримати Admin-докази й mobile/desktop field CWV; лише після цього
+  **Наступний крок:** отримати Admin-докази, завершити покриття daily/weekly й вимогу
+  field CWV (доступні числа або явне рішення власника щодо прогалини); після цього
   підготувати G0 для підпису власника. (source: повідомлення, скриншоти й PageSpeed-посилання власника, HTTP, browser access і HYPD checks 2026-09-30;
   [redesign baseline](../analytics/2026-09-29-redesign-baseline.md))
 
