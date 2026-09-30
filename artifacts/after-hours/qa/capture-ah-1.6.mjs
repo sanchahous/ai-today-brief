@@ -42,6 +42,8 @@ async function open(context, lang, route, theme, size) {
   );
   await page.goto(`${base}/${lang}${ROUTES[route]}`, { waitUntil: 'load' });
   await page.getByRole('heading', { level: 1 }).first().waitFor({ timeout: 30_000 });
+  // Local `next dev` draws its own indicator; production has no such element.
+  await page.addStyleTag({ content: 'nextjs-portal { display: none !important; }' });
   await page.waitForTimeout(1200);
   return page;
 }

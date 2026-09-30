@@ -345,7 +345,7 @@ flowchart TD
 | AH-1.3 | ◐ Контракт Night/Day інтегровано в main через [#378](https://github.com/sanchahous/ai-today-brief/pull/378); legacy no-JS/full-page QA AC лишаються задокументованими ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
 | AH-1.4 | Кольори й гліфи категорій | M | агент | — | B5 |
 | AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
-| AH-1.6 | ✅ Простір, форма, глибина, шари, брейкпоінти, motion-токени, фокус: реалізовано в [PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM), очікує візуального підпису власника; `--header-h` лишається 60px до AH-3.3 | — | — | D5 ✅ | G09 (простір, форма, глибина, рух), B13 (токени й контракт e2e) |
+| AH-1.6 | ✅ Простір, форма, глибина, шари, брейкпоінти, motion-токени, фокус: реалізовано в [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), очікує візуального підпису власника; `--header-h` лишається 60px до AH-3.3 | — | — | D5 ✅ | G09 (простір, форма, глибина, рух), B13 (токени й контракт e2e) |
 | AH-1.7 | ◐ Ratchet-звіт «сирих» значень: реалізовано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), очікує merge | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
 | AH-2.2 | Дії й вибір | M | агент | AH-1.4, AH-1.6 | G11 |
@@ -795,7 +795,7 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 > (зараз sm 3 / md 6 / card 14 / pill), тіні з Day-значеннями, ефекти, брейкпоінти за D5 (60rem),
 > motion-токени й offset фокуса 3 px.
 
-**Стан (2026-09-30, AH-1.6 реалізовано): [PR #PRNUM](https://github.com/sanchahous/ai-today-brief/pull/PRNUM), очікує візуального підпису власника.**
+**Стан (2026-09-30, AH-1.6 реалізовано): [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), очікує візуального підпису власника.**
 Токени простору (`--space-*`, `--gutter`, `--section-y`), розмірів (`--max`, `--max-wide`, `--reading`,
 `--icon-*`), радіусів 3 / 4 / 8 / 14 / pill, тіней `--shadow-1` / `--shadow-2` / `--shadow-pop` з Day-значеннями,
 ефектів (`--stage-light`, `--sheen`, `--grain-opacity`), шарів (`--z-base`), руху (`--duration-*`, `--ease-*`),

@@ -5407,3 +5407,14 @@ baseline-и каталогу без змін. Знахідка процесу: `
 запускати на власному порту.
 (source: `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`;
 `npx playwright test` 2026-09-30; [реєстр токенів](architecture/design-system-tokens.md#7-реєстр-токенів-ah-16-m1-гейт))
+
+## 2026-09-30 — AH-1.6: відкрито PR #381, галерея для підпису
+
+Відкрито [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381) (видимий, чекає візуального
+підпису власника). Галерея `artifacts/after-hours/qa/ah-1.6-review.html` (22 знімки до/після: home і news
+EN/UK × Night/Day × 1440/390, фокус на посиланні, кнопці й полі); «до» — production, «після» — локальний
+`next dev` гілки з тими самими Supabase-даними (Vercel Preview за авторизацією, конектор без доступу).
+Побічна знахідка: production `/en/news`, `/en` і `rss.xml` зупиняються на 31.08.2026, тоді як sitemap має
+lastmod 30.09, а локальний dev бачить матеріали до 29.09 — причина не встановлена, окрему задачу заведено.
+Push виконано з `SKIP_E2E=1` за згодою власника: pre-push перевикористав чужий сервер на :3000.
+(source: `curl` production 2026-09-30; `gh pr view 381`)
