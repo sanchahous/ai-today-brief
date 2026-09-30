@@ -1,5 +1,7 @@
 'use client';
 
+import { categoryColor } from '@/lib/category-meta';
+
 import Link from 'next/link';
 import { type CSSProperties, type ReactNode, type RefObject } from 'react';
 import { getStrings } from '@/lib/i18n';
@@ -122,7 +124,7 @@ function SidebarControls({
           {categories.map((c) => {
             const checked = filters.categories.includes(c.slug);
             const count = facets.get(c.slug) ?? 0;
-            const color = c.color ?? '#888888';
+            const color = categoryColor(c.slug, c.color);
             return (
               <li key={c.slug}>
                 <label className={rowClass(checked)}>

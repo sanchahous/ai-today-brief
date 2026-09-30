@@ -125,6 +125,7 @@ function parseImpactLevel(value: string | null): ItemImpactLevel | null {
 }
 
 export interface RelatedStory {
+  categorySlug: string;
   id: string;
   href: string;
   title: string;
@@ -443,6 +444,7 @@ export async function getRelatedStories(
       id: r.id,
       href: r.href,
       title: r.title,
+      categorySlug,
       categoryName,
       categoryColor,
     }));

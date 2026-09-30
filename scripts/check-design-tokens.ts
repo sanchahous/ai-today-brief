@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import {
   CSS_VAR_BY_ROLE,
+  CATEGORY_TOKEN_KEYS,
   PRIMITIVES,
   SEMANTIC_TOKENS,
   TOKENS_VERSION,
@@ -43,6 +44,13 @@ interface PairRule {
 /** Every text role must reach 4.5:1 on every surface it can sit on; UI strokes need 3:1. */
 const SURFACES: Role[] = ['bg', 'bgSoft', 'surface', 'surface2', 'raised'];
 const PAIR_RULES: PairRule[] = [
+  ...CATEGORY_TOKEN_KEYS.flatMap((key) =>
+    (['bg', 'surface', 'raised'] as const).map((bg): PairRule => ({
+      // Category roles share the same closed key set as the slug mapping.
+      fg: `cat${key[0].toUpperCase()}${key.slice(1)}` as Role,
+      bg, min: 4.5, kind: 'text',
+    })),
+  ),
   ...(['text', 'muted', 'faint', 'accent', 'signal', 'claret', 'error', 'success', 'warning'] as Role[]).flatMap(
     (fg) => SURFACES.map((bg): PairRule => ({ fg, bg, min: 4.5, kind: 'text' })),
   ),

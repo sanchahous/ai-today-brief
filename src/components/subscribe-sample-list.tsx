@@ -29,7 +29,7 @@ export function SubscribeSampleList({
               className="rounded-card border-border bg-surface hover:border-accent/40 flex items-center gap-3 border px-4 py-3.5 transition-colors"
             >
               {item.categoryName ? (
-                <CategoryBadge name={item.categoryName} color={item.categoryColor} />
+                <CategoryBadge slug={item.categorySlug} name={item.categoryName} color={item.categoryColor} />
               ) : null}
               <span className="font-serif text-text min-w-0 flex-1 text-base font-semibold">
                 {item.title}

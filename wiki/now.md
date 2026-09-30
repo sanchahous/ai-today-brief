@@ -18,7 +18,7 @@ Last updated: 2026-09-30
 ## Стан репозиторію
 
 - **AH-1.3 інтегровано через [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378)
-  2026-09-30; актуальний `origin/main` — `6b3b446`.**
+  2026-09-30; актуальний `origin/main` — `e470105`.**
   Pre-paint синхронізує `.theme-light`, `data-theme`, `color-scheme` і `theme-color`;
   `localStorage` та GA4 лишають `light`/`dark`. Перемикач EN/UK описує наступну тему,
   має 44×44 px і синхронізує desktop/mobile контролі. SEO compare: 58 URL,
@@ -41,13 +41,21 @@ Last updated: 2026-09-30
   (source: погодження й скриншоти власника, `gh pr view` 2026-09-30;
   [baseline](analytics/2026-09-29-redesign-baseline.md))
 
+- **AH-1.4 реалізовано на `feat/ah-1.4-category-colours-glyphs`; очікує review.**
+  Дев'ять slug-ів мають tokenKey; Night/Day текст — `--cat-*`, темні банери —
+  незмінні `--art-*`. DB color лише fallback невідомих; GLYPHS із прототипу
+  перенесено з aria-hidden. 54 пари контрасту ≥5.2238:1; SEO local 58 URL,
+  0 errors / warnings. Ratchet після prune: 30 кольорових входжень, 4 довільні
+  z-index, 0 сирих тіней і шрифтів <12 px. Потрібен окремий візуальний підпис
+  власника перед merge; наступна задача після інтеграції — AH-1.2.
+  (source: [AH-1.4 validation](product/after-hours-ah-1-4-validation.md);
+  `src/lib/category-meta.ts`; `src/components/icons.tsx`; `src/app/globals.css`)
+
 - **AH-1.7 / [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377)
-  підписано власником; resolve і merge явно дозволено 2026-09-30.**
-  Конфлікти лише wiki: збережено актуальну фазу 0/Night-Day й обидві історії log.
-  Після AH-1.3 baseline зменшено з 44 до 42 кольорових входжень (20 файлів),
-  4 довільні z-index, 0 сирих тіней і 0 шрифту <12 px. PR чекає перевірок перед merge.
-  (source: пряме повідомлення власника 2026-09-30; `git merge origin/main`;
-  `npm run design:raw:prune`; `scripts/raw-design-values.baseline.json`)
+  змержено 2026-09-30 в `e470105`.** Власник явно погодив resolve/merge;
+  історії wiki/log збережено. E2E run `36732521337` на head `7240652` завершено
+  успішно; повторного дозволу для #377 не потрібно.
+  (source: `gh pr view 377`; `gh run view 36732521337` 2026-09-30)
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR
   [#372](https://github.com/sanchahous/ai-today-brief/pull/372).** Підсумок за кодом і живою перевіркою production:

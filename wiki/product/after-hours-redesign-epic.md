@@ -17,7 +17,9 @@ Last updated: 2026-09-30
 > **G0 підписано власником 2026-09-30:** «Погоджую G0 та merge PR #373–#376».
 > Фазу 0 інтегровано. AH-1.3 на main після merge [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378),
 > наявні legacy QA/no-JS межі збережено в [доказах](after-hours-ah-1-3-validation.md).
-> Наступна окрема задача — AH-1.4; resolve і merge AH-1.7 / #377 уже дозволено власником.
+> AH-1.7 / #377 інтегровано в `e470105`, E2E run `36732521337` успішний.
+> AH-1.4 реалізовано, очікує окремого візуального підпису; після інтеграції — AH-1.2.
+> Докази: [AH-1.4 validation](after-hours-ah-1-4-validation.md).
 > (source: повідомлення й скриншоти власника 2026-09-30; `git fetch origin`, `gh pr view 376/377/378` 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md); [AH-1.3 validation](after-hours-ah-1-3-validation.md))
 > Підпис G0 дозволяє перейти до візуальних задач після інтеграції фази 0;
 > вимога візуального підпису кожного видимого PR із §0 зберігається.
@@ -343,10 +345,10 @@ flowchart TD
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
 | AH-1.3 | ◐ Контракт Night/Day інтегровано в main через [#378](https://github.com/sanchahous/ai-today-brief/pull/378); legacy no-JS/full-page QA AC лишаються задокументованими ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
-| AH-1.4 | Кольори й гліфи категорій | M | агент | — | B5 |
+| AH-1.4 | ◐ Реалізовано; підпис і merge очікуються ([докази](after-hours-ah-1-4-validation.md)) | M | агент | — | B5 |
 | AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
 | AH-1.6 | ◐ Простір, форма, глибина, шари, брейкпоінти, motion-токени (#369: розміри контролів, z-index) | M | агент | D5 ✅ | G09, B13 |
-| AH-1.7 | ◐ Ratchet-звіт «сирих» значень: реалізовано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), очікує merge | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
+| AH-1.7 | ✅ Ratchet-звіт «сирих» значень: інтегровано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), main `e470105` | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
 | AH-2.1 | ✅ Внутрішній каталог компонентів (#369: `/ds-catalog`) | — | — | — | G20, G13 (основа) |
 | AH-2.2 | Дії й вибір | M | агент | AH-1.4, AH-1.6 | G11 |
 | AH-2.3 | ◐ Поля форм (#369: Combobox) | M | агент | AH-1.5, AH-1.6 | G11, G13 |
@@ -720,10 +722,12 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 
 **Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-1.1 ✅ · **Закриває:** B5
 
-> **Стан після #369:** не розпочато. ADR токенів 2.0 відніс міграцію кольорів категорій до
-> «Хвилі B»; цей епік лишає її у foundations (D1), бо кольори категорій потрапляють на кожну
-> сторінку. У `globals.css` зараз 8 правил `.theme-light .cat-*` з color-mix.
-> (source: [ADR токенів 2.0](../decisions/2026-09-29-design-tokens-2-0-migration.md) §4; grep 2026-09-29)
+**Стан 2026-09-30:** реалізовано на `feat/ah-1.4-category-colours-glyphs`;
+очікує окремого візуального підпису й merge. Токени 2.1.0, mapping/fallback,
+9 гліфів, public споживачі й search preview мігровані; Day-хаки прибрано.
+54 пари ≥5.2238:1 уже в contrast gate; захист DB-colour reads — AST-тест.
+(source: [AH-1.4 validation](after-hours-ah-1-4-validation.md);
+`src/lib/category-meta.ts`; `src/lib/design-system/category-colour-consumers.test.ts`)
 
 **Зони:** `src/lib/category-meta.ts` (+ тест), `src/app/globals.css`, `src/components/icons.tsx`
 (watcher `brand-chrome` → `wiki/now.md`), споживачі `--cat-color`: `category-header.tsx`,
@@ -743,10 +747,11 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 4. Гліфи 9 категорій із `artifacts/after-hours/app.js` (`GLYPHS`) — в `icons.tsx` з `aria-hidden`.
 
 **AC:**
-- [ ] Unit-тест: кожен із 9 slug-ів має `tokenKey`; невідомий slug дає нейтральний fallback.
-- [ ] Контраст-гейт AH-1.2 покриває всі `--cat-*` на bg / surface / raised в обох темах ≥ 4,5:1.
-- [ ] Жоден компонент не бере колір тексту напряму з `category.color` (тест або lint-правило).
-- [ ] `wiki/now.md` оновлено в тому ж PR (`wiki:sync` зелений).
+- [x] Unit-тест: кожен із 9 slug-ів має `tokenKey`; невідомий slug дає нейтральний fallback.
+- [x] Контраст-гейт покриває всі `--cat-*` на bg / surface / raised в обох темах ≥ 4,5:1.
+- [x] Жоден компонент не бере колір тексту напряму з `category.color` (AST-тест).
+- [x] `wiki/now.md` оновлено в тому ж PR (`wiki:sync` зелений).
+- [ ] Окремий візуальний підпис власника й merge PR (DoD §0.1).
 
 ### AH-1.5 · Типографіка: шрифти, шкала, мінімум 12 px
 
@@ -820,8 +825,10 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 
 ### AH-1.7 · Ratchet-звіт «сирих» значень
 
-**Стан 2026-09-30: власник підписав і дозволив resolve/merge** [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), гілка `feat/ah-1.7-raw-design-ratchet`.
-Wiki-конфлікти з `origin/main` @ `6b3b446` виправлено; merge очікує перевірок.
+**Стан 2026-09-30: інтегровано в `e470105` після погодженого resolve/merge** [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), гілка `feat/ah-1.7-raw-design-ratchet`.
+Wiki-конфлікти з `origin/main` @ `6b3b446` виправлено зі збереженням історій.
+E2E run `36732521337` на head `7240652` перевірено: completed / success.
+(source: `gh pr view 377`; `gh run view 36732521337` 2026-09-30)
 Звіт і baseline додано в `pr:check`; після AH-1.3 — 42 кольорові входження, 4 довільні z-index,
 0 сирих тіней і 0 розмірів шрифту < 12 px. Новий hex у тимчасовому компоненті
 зупинив `pr:check` (exit 1); `--prune` теж відмовив і не змінив baseline.

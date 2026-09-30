@@ -2,11 +2,13 @@
 
 import { type CSSProperties, type ReactNode } from 'react';
 import { CloseIcon } from '@/components/icons';
+import { categoryColor as resolveCategoryColor } from '@/lib/category-meta';
 
 export interface FilterChipProps {
   label: string;
   active?: boolean;
   categoryColor?: string | null;
+  categorySlug?: string | null;
   count?: number;
   icon?: ReactNode;
   onRemove?: () => void;
@@ -19,6 +21,7 @@ export function FilterChip({
   label,
   active = false,
   categoryColor,
+  categorySlug,
   count,
   icon,
   onRemove,
@@ -26,13 +29,14 @@ export function FilterChip({
   removeAriaLabel,
   className = '',
 }: FilterChipProps) {
+  const color = categorySlug || categoryColor ? resolveCategoryColor(categorySlug, categoryColor) : null;
   const content = (
     <>
-      {categoryColor && (
+      {color && (
         <span
           aria-hidden="true"
           className="size-2 rounded-full shrink-0"
-          style={{ backgroundColor: categoryColor }}
+          style={{ backgroundColor: color }}
         />
       )}
       {icon && <span aria-hidden="true" className="shrink-0">{icon}</span>}
@@ -45,8 +49,8 @@ export function FilterChip({
     </>
   );
 
-  const styleObj: CSSProperties = categoryColor
-    ? ({ '--cat-color': categoryColor } as CSSProperties)
+  const styleObj: CSSProperties = color
+    ? ({ '--cat-color': color } as CSSProperties)
     : {};
 
   if (onRemove) {

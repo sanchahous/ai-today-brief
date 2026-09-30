@@ -1,18 +1,21 @@
 import type { CSSProperties } from 'react';
+import { categoryColor } from '@/lib/category-meta';
 import { CategoryGlyph, type IconKey } from '@/components/icons';
 
 export function CategoryThumb({
   name,
+  slug,
   color,
   icon,
   size = 92,
 }: {
   name: string;
-  color: string;
+  slug: string | null;
+  color: string | null;
   icon: IconKey;
   size?: number;
 }) {
-  const c = color || '#888888';
+  const c = categoryColor(slug, color);
   return (
     <div
       role="img"

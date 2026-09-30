@@ -327,6 +327,7 @@ export function NewsFeed({
                 <FilterChip
                   key={slug}
                   label={c?.name ?? slug}
+                  categorySlug={slug}
                   categoryColor={c?.color}
                   active
                   onRemove={() => toggleCategory(slug)}

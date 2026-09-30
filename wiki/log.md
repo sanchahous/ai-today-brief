@@ -5360,3 +5360,19 @@ now, handoff та index. (source: локальні прогони 2026-09-30; PR
 після локального gate і CI. Наступна задача — AH-1.4, після неї AH-1.2.
 (source: `artifacts/_local/ah-1.7-conflict-ratchet.log`;
 `scripts/raw-design-values.baseline.json`; `src/app/manifest.ts`)
+
+
+## 2026-09-30 — AH-1.4: кольори й гліфи категорій
+
+Дев'ять tokenKey, Night/Day `--cat-*`, незмінні `--art-*`, GLYPHS із aria-hidden;
+public споживачі, daily/subscribe/related і search preview мігровані. Токени 2.1.0;
+54 пари ≥5.2238:1. Day-хаки прибрано; старе tinted badge тло з 3.85:1 виправлено.
+Ratchet 42 → 30 кольорових входжень, 4 довільні z-index, 0 raw shadows і <12 px.
+SEO local: 58 URL, 0 errors / warnings. Оновлено епік, now, handoff, governance,
+index; додано validation. AH-1.7 / #377 змержено в e470105; run 36732521337 — success.
+AH-1.4 очікує окремого візуального підпису перед merge; далі AH-1.2. Legacy QA
+й no-JS борг збережено.
+(source: [AH-1.4 validation](product/after-hours-ah-1-4-validation.md);
+`src/lib/category-meta.ts`; `src/app/globals.css`; `src/components/icons.tsx`;
+`artifacts/_local/ah-1.4-seo-local.log`; `gh pr view 377`; `gh run view 36732521337`;
+повідомлення власника 2026-09-30)

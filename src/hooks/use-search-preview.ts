@@ -8,6 +8,7 @@ export type SearchPreviewItem = {
   href: string;
   title: string;
   date: string;
+  categorySlug: string | null;
   categoryName: string | null;
   categoryColor: string | null;
   sourceName: string | null;

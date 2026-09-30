@@ -1,3 +1,4 @@
+import { categoryColor } from '@/lib/category-meta';
 import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { getStrings } from '@/lib/i18n';
@@ -51,7 +52,7 @@ function CategoryCard({
   ctaLabel: string;
   articlesLabel: string;
 }) {
-  const color = category.color ?? '#888888';
+  const color = categoryColor(category.slug, category.color);
   const catStyle = { '--cat-color': color } as CSSProperties;
   return (
     <article className="card-hover rounded-card border-border bg-surface flex h-full flex-col overflow-hidden border">
