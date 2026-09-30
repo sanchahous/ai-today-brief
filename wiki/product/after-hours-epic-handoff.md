@@ -22,7 +22,7 @@ Last updated: 2026-09-30
   E2E run [36732521337](https://github.com/sanchahous/ai-today-brief/actions/runs/36732521337)
   на head `7240652` перевірено: completed / success.
   (source: `gh pr view 377`; `gh run view 36732521337` 2026-09-30)
-- **AH-1.4 реалізовано на `feat/ah-1.4-category-colours-glyphs`; очікує підпису й merge.**
+- **AH-1.4 реалізовано в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382); очікує підпису й merge.**
   Дев'ять tokenKey, тематичні `--cat-*`, незмінні `--art-*`, усі споживачі,
   search slug, дев'ять GLYPHS. Токени 2.1.0; 54 пари ≥5.2238:1, ratchet 30
   кольорових входжень / 4 довільні z-index / 0 raw shadows / 0 <12 px.

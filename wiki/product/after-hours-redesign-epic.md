@@ -18,7 +18,7 @@ Last updated: 2026-09-30
 > Фазу 0 інтегровано. AH-1.3 на main після merge [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378),
 > наявні legacy QA/no-JS межі збережено в [доказах](after-hours-ah-1-3-validation.md).
 > AH-1.7 / #377 інтегровано в `e470105`, E2E run `36732521337` успішний.
-> AH-1.4 реалізовано, очікує окремого візуального підпису; після інтеграції — AH-1.2.
+> AH-1.4 реалізовано в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382), очікує окремого візуального підпису; після інтеграції — AH-1.2.
 > Докази: [AH-1.4 validation](after-hours-ah-1-4-validation.md).
 > (source: повідомлення й скриншоти власника 2026-09-30; `git fetch origin`, `gh pr view 376/377/378` 2026-09-30; [baseline](../analytics/2026-09-29-redesign-baseline.md); [AH-1.3 validation](after-hours-ah-1-3-validation.md))
 > Підпис G0 дозволяє перейти до візуальних задач після інтеграції фази 0;
@@ -345,7 +345,7 @@ flowchart TD
 | AH-1.1 | ✅ Токени 2.0 — одне джерело правди (#369) | — | — | — | G09, G10, B1, B2 |
 | AH-1.2 | ◐ Контраст-гейт 2.0 у `pr:check` (#369: 90 пар, drift, мінімум 12 px) | S | агент | AH-1.4 | G09 (UI-пари) |
 | AH-1.3 | ◐ Контракт Night/Day інтегровано в main через [#378](https://github.com/sanchahous/ai-today-brief/pull/378); legacy no-JS/full-page QA AC лишаються задокументованими ([QA](after-hours-ah-1-3-validation.md)) | S | агент | D2 ✅ | B12 |
-| AH-1.4 | ◐ Реалізовано; підпис і merge очікуються ([докази](after-hours-ah-1-4-validation.md)) | M | агент | — | B5 |
+| AH-1.4 | ◐ Реалізовано в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382); підпис і merge очікуються ([докази](after-hours-ah-1-4-validation.md)) | M | агент | — | B5 |
 | AH-1.5 | ◐ Типографіка: шрифти, шкала, ≥ 12 px (#369: шкала rem і мінімум 12 px) | M | агент + власник | D3 ✅, D4 ✅ | B14, G09 |
 | AH-1.6 | ◐ Простір, форма, глибина, шари, брейкпоінти, motion-токени (#369: розміри контролів, z-index) | M | агент | D5 ✅ | G09, B13 |
 | AH-1.7 | ✅ Ratchet-звіт «сирих» значень: інтегровано в [PR #377](https://github.com/sanchahous/ai-today-brief/pull/377), main `e470105` | S | агент | AH-1.1 ✅ | G15 (інструмент), B4 |
@@ -722,7 +722,7 @@ Gating контролю охоплює ширини й zoom із DoD; публі
 
 **Тип:** код · **Розмір:** M · **Виконавець:** агент · **Залежить від:** AH-1.1 ✅ · **Закриває:** B5
 
-**Стан 2026-09-30:** реалізовано на `feat/ah-1.4-category-colours-glyphs`;
+**Стан 2026-09-30:** реалізовано в [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382) на `feat/ah-1.4-category-colours-glyphs`;
 очікує окремого візуального підпису й merge. Токени 2.1.0, mapping/fallback,
 9 гліфів, public споживачі й search preview мігровані; Day-хаки прибрано.
 54 пари ≥5.2238:1 уже в contrast gate; захист DB-colour reads — AST-тест.

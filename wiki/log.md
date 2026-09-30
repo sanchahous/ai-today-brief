@@ -5402,3 +5402,27 @@ Live-перевірка prod-БД (read-only SQL): 905 опубліковани�
 migrations:check, build:ci); pre-push `e2e:affected` — 60 passed / 7 skipped.
 У епіку, now і handoff додано посилання на PR. Пікер фасету лишається за AH-4.3.
 (source: `gh pr view 380`; локальні прогони 2026-09-30)
+
+## 2026-09-30 — AH-1.4: PR #382, фінальний Preview і межі QA
+
+Відкрито draft [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382).
+Інтегровано main `3d0cb2b` (#380, AH-4.1) після #379 (Next 16.3.6);
+обидві історії wiki/log збережено, статус #377 виправлено на merged / E2E success.
+`pr:check`: 2112 unit-тестів; pre-push 304 passed / 5 skipped. Category/catalog/admin
+та theme: 488 passed / 52 skipped у трьох engines. Category-тест посилено очікуванням
+карток; повтор 307 passed / 32 skipped. SEO local і фінального Preview: 58 URL,
+0 errors / warnings; Preview news повторно HIT в EN/UK. (source:
+[validation](product/after-hours-ah-1-4-validation.md); локальні логи у QA receipt;
+`git merge origin/main`; `gh pr view 382` 2026-09-30)
+
+32 фінальні PNG Preview зафіксовано на тих самих маршрутах через manifest «до».
+Галерея перевірена: 32 пари / 64 завантажених PNG; before provenance і SHA-256
+не переписано. Full legacy report 812 сценаріїв: overflow/text <12 px/alt — 0,
+axe 1400, console 28, targets 12013, clipped 1377, zoom/reflow clipped 424.
+Додаткові 8 zoom-clipped paragraphs належать hydrated EN live search; поза ним
+zoom-clipping лишається 416. Дві додаткові filtered-news clipping-знахідки проти
+AH-1.3 і no-JS Suspense-борг відкриті. Zero-violation DoD не оголошено виконаним.
+Окремий візуальний підпис і review меж приймання потрібні перед merge; далі AH-1.2.
+(source: `artifacts/_local/ah-1.4-full-qa-final.json`;
+`artifacts/after-hours/qa/ah-1.4-validation.json`; `artifacts/after-hours/qa/ah-1.4-review.html`;
+повідомлення власника 2026-09-30)

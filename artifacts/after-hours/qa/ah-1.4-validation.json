@@ -1,10 +1,10 @@
 {
   "task": "AH-1.4",
   "date": "2026-09-30",
-  "baseCommit": "48be8448456182eef4a8e3ba3982f54a4fd2d204",
+  "baseCommit": "3d0cb2baedf4cd7b75f0b32e78e7ae1365b5b29a",
   "implementationCommit": "63258e4fb07996a7c38573c67aa23844b097c4a0",
   "status": "owner visual signature and merge pending",
-  "preview": "https://ai-today-brief-rjhirc97z-sanchahous-projects.vercel.app",
+  "preview": "https://ai-today-brief-hd2ce58ep-sanchahous-projects.vercel.app",
   "tokens": {
     "version": "2.1.0",
     "categoryPairs": 54,
@@ -13,19 +13,56 @@
   },
   "checks": {
     "prCheck": {
-      "tests": 2068,
-      "files": 228,
-      "log": "artifacts/_local/ah-1.4-pr-check-synced.log"
+      "tests": 2112,
+      "files": 229,
+      "log": "artifacts/_local/ah-1.4-pr-check-final.log"
     },
     "prePush": {
       "passed": 304,
       "skipped": 5,
-      "log": "artifacts/_local/ah-1.4-push.log"
+      "log": "artifacts/_local/ah-1.4-push-main-sync.log"
     },
     "localCrossBrowser": {
       "passed": 488,
       "skipped": 52,
-      "note": "Initial 487 passed + one WebKit preview test timeout; fixed hydration-aware test and reran preview tests in all three engines: 3 passed. Full local matrix preceded Next 16.3.6 sync; subsequent pre-push ran on 16.3.6."
+      "base": "main 3d0cb2b; Next 16.3.6",
+      "logs": [
+        "artifacts/_local/ah-1.4-crossbrowser-final.log",
+        "artifacts/_local/ah-1.4-theme-final.log"
+      ],
+      "note": "373 passed / 44 skipped category/catalog/admin + 115 passed / 8 skipped theme; all three engines."
+    },
+    "sonar": {
+      "scan": "success",
+      "run": 36749126263,
+      "qualityGate": "not separately verified; local SONAR_TOKEN unavailable, anonymous PR gate endpoint returns 404",
+      "note": "sonar.qualitygate.wait=false; scan success is not proof of a green dashboard gate"
+    },
+    "hydratedCategoryRerun": {
+      "passed": 307,
+      "skipped": 32,
+      "log": "artifacts/_local/ah-1.4-category-hydrated-final.log"
+    },
+    "ciCheckpoint": {
+      "head": "91b90c2cdf864afc7f7d92cb1a27e5c12a6e035d",
+      "e2e": {
+        "run": 36749126315,
+        "conclusion": "success"
+      },
+      "sonarScan": {
+        "run": 36749126263,
+        "conclusion": "success"
+      },
+      "deps": {
+        "run": 36749126296,
+        "conclusion": "success"
+      },
+      "migrationDrift": {
+        "run": 36749126322,
+        "conclusion": "success"
+      },
+      "vercel": "success",
+      "finalHead": "After the evidence/test push, consult live PR checks; this checkpoint does not attest later commits."
     }
   },
   "seo": {
@@ -33,7 +70,14 @@
       "routes": 58,
       "errors": 0,
       "warnings": 0,
-      "log": "artifacts/_local/ah-1.4-seo-local-synced.log"
+      "log": "artifacts/_local/ah-1.4-seo-local-final.log"
+    },
+    "preview": {
+      "routes": 58,
+      "errors": 0,
+      "warnings": 0,
+      "newsRepeatCache": "HIT in EN/UK",
+      "log": "artifacts/_local/ah-1.4-seo-preview-final.log"
     }
   },
   "ratchet": {
@@ -61,6 +105,35 @@
       "scenarios": 812,
       "overflow": 0,
       "smallText": 0,
+      "smallTargets": 12013,
+      "axe": 1400,
+      "consoleErrors": 28,
+      "h1Problems": 19,
+      "headingSkips": 317,
+      "imagesMissingAlt": 0,
+      "clipped": 1377,
+      "clippedAtZoom": 424
+    },
+    "beforeFile": "artifacts/_local/ah-1.3-full-qa.json",
+    "afterFile": "artifacts/_local/ah-1.4-full-qa-final.json",
+    "beforeSha256": "aadfca56d72b82b6599820439080bbd9975705b6dc02440f71b7a69d1867d516",
+    "afterSha256": "67f2e0dc9d926ed76fcf676e06140a1b33656409b0ed5b3b2c87529c98be8c56",
+    "stable784": {
+      "axeBefore": 2460,
+      "axeAfter": 1400,
+      "smallTargetsBefore": 11572,
+      "smallTargetsAfter": 11550,
+      "h1Problems": 0,
+      "headingSkips": 308,
+      "clippedBefore": 1311,
+      "clippedAfter": 1305,
+      "note": "Excludes 28 live-search cases. One additional UK /news 390 Night scenario measured loading content; these counts are not evidence of clipping/target fixes."
+    },
+    "note": "Full-page zero-violation DoD is not met. Compared with initial AH-1.4 run: total clipped 1368 to 1377, zoom/reflow clipped 416 to 424. All additional zoom clipping is in EN live-search text-200 after result hydration; outside live-search zoom clipping remains 416. A UK /news 390 Night row measured loading content. Two extra 1440 filtered-news clipping detections versus AH-1.3 remain open. Aggregate counts depend on loading/live content; owner must review acceptance limits, not infer these are fixed.",
+    "initialAfter": {
+      "scenarios": 812,
+      "overflow": 0,
+      "smallText": 0,
       "smallTargets": 11947,
       "axe": 1400,
       "consoleErrors": 28,
@@ -70,21 +143,8 @@
       "clipped": 1368,
       "clippedAtZoom": 416
     },
-    "beforeFile": "artifacts/_local/ah-1.3-full-qa.json",
-    "afterFile": "artifacts/_local/ah-1.4-full-qa.json",
-    "beforeSha256": "aadfca56d72b82b6599820439080bbd9975705b6dc02440f71b7a69d1867d516",
-    "afterSha256": "f3c11deab99f7547e03e00311db52e785218bb989f737ce68b78c2dc10f6382a",
-    "stable784": {
-      "axeBefore": 2460,
-      "axeAfter": 1400,
-      "smallTargetsBefore": 11572,
-      "smallTargetsAfter": 11571,
-      "h1Problems": 0,
-      "headingSkips": 308,
-      "clippedBefore": 1311,
-      "clippedAfter": 1313
-    },
-    "note": "28 live-search scenarios retain pre-existing skeleton race; two additional clipped detections occur only at 1440px on filtered news. Zoom/reflow clipped total is unchanged at 416. Full-page zero-violation DoD is not met; owner must review legacy scope before merge."
+    "initialAfterFile": "artifacts/_local/ah-1.4-full-qa.json",
+    "initialAfterSha256": "f3c11deab99f7547e03e00311db52e785218bb989f737ce68b78c2dc10f6382a"
   },
   "noJS": "Existing locale Suspense skeleton/reveal limitation remains; theme/header server-render preserved; no claim of whole-content no-JS fix.",
   "screenshots": {
@@ -99,6 +159,20 @@
       "manifest": "artifacts/_local/ah-1-4-after/manifest.json",
       "sha256": "27336588f1e4e663bbf8da3318030c990f55c04cd9328c9f0a71f5fcd73a5bc4",
       "routes": "same paths as before via --route-manifest"
+    },
+    "previewAfter": {
+      "count": 32,
+      "manifest": "artifacts/_local/ah-1-4-preview-final/manifest.json",
+      "sha256": "744ba59840560cb55ef398ecd764f79c55a121794e29e64c8df6cbb56188bb96",
+      "routes": "same paths as before via --route-manifest",
+      "siteCommit": "91b90c2cdf864afc7f7d92cb1a27e5c12a6e035d"
+    },
+    "gallery": {
+      "file": "artifacts/after-hours/qa/ah-1.4-review.html",
+      "pairs": 32,
+      "imagesLoaded": 64,
+      "sameRoutes": true,
+      "log": "artifacts/_local/ah-1.4-gallery-check.log"
     }
   },
   "ah17": {
@@ -107,5 +181,7 @@
     "e2eRun": 36732521337,
     "e2eStatus": "completed",
     "e2eConclusion": "success"
-  }
+  },
+  "pr": "https://github.com/sanchahous/ai-today-brief/pull/382",
+  "verifiedSiteCommit": "91b90c2cdf864afc7f7d92cb1a27e5c12a6e035d"
 }

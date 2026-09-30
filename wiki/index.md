@@ -123,8 +123,8 @@ Motion-альтернативи: [After Hours motion](product/after-hours-motion
 | Сторінка | Про що | Звідки |
 |---|---|---|
 | ✅ [product/after-hours-redesign-epic](product/after-hours-redesign-epic.md) | Епік реалізації редизайну After Hours: фази 0–7, гейти G0–G7, 56 задач з AC, усі рішення D1–D13 ухвалені 2026-09-29 (D7 — знак міняється скрізь), ризики й оцінка ≈ 56 днів | `artifacts/after-hours/` v3 + live check коду після PR #369 + рішення власника 2026-09-29 |
-| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | Main e470105: #377/#378 змержено, CI #377 успішний; AH-1.4 реалізовано, review очікується; далі AH-1.2 | епік + live git/PR checks + підпис власника 2026-09-30 |
-| ✅ [product/after-hours-ah-1-4-validation](product/after-hours-ah-1-4-validation.md) | Категорійні токени 2.1.0, mapping/fallback, GLYPHS, 54 пари, QA/SEO й візуальний підпис | код + тести + manifests + live PR/CI checks 2026-09-30 |
+| ✅ [product/after-hours-epic-handoff](product/after-hours-epic-handoff.md) | Main 3d0cb2b: #377/#378/#380 змержено, CI #377 успішний; AH-1.4 у #382, окремий підпис очікується; далі AH-1.2 | епік + live git/PR checks + підпис власника 2026-09-30 |
+| ✅ [product/after-hours-ah-1-4-validation](product/after-hours-ah-1-4-validation.md) | PR #382: токени 2.1.0, GLYPHS, 54 пари, SEO local/Preview 58 URL, 32 пари PNG і межі 812-сценарійного QA; окремий підпис очікується | код + тести + manifests + live PR/CI checks 2026-09-30 |
 | ✅ [product/after-hours-ah-1-3-validation](product/after-hours-ah-1-3-validation.md) | Draft #378: Night/Day, first-frame/no-JS/analytics QA, SEO local/Preview 58 URL, 812-сценарійний report і галерея | код теми + E2E + validation JSON/SHA-256 + GitHub CI 2026-09-30 |
 | ✅ [product/useful-tools-concept](product/useful-tools-concept.md) | Концепт розділу AI Toolbox | колишній `docs/product/USEFUL-TOOLS-CONCEPT.md` |
 | ✅ [product/toolbox-wave1-spec](product/toolbox-wave1-spec.md) | Epic-спека: settings.json Builder + CLAUDE.md Generator | колишній `docs/product/TOOLBOX-WAVE1-…` |

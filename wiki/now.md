@@ -17,25 +17,25 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
-- **AH-4.1 (Topics / Tool у discovery) — реалізовано, PR #380 (2026-09-30), паралельно з AH-1.4.**
+- **AH-4.1 (Topics / Tool у discovery) — інтегровано через PR #380 (2026-09-30), main `3d0cb2b`.**
   `src/lib/topic-normalize.ts` зводить «Claude Code», «claude-code», «ClaudeCode» до одного slug і
   має мапу лише безсумнівних аліасів; `HomeItem.topics`; `topics=` в URL; OR усередині фасету,
   AND між фасетами; лічильники за іншими фасетами; правило D8 (≥ 2 матеріали, обрана тема завжди
   видима, без даних фасет порожній). Live-перевірка prod-БД: 905 айтемів, 2866 згадок, 1256
   унікальних ключів. У `news-feed` — лише застосування `topics` з URL і чіп зі зняттям; пікер у
-  sidebar — AH-4.3. AH-1.4 (кольори категорій) веде інша сесія — не дублювати.
+  sidebar — AH-4.3. AH-1.4 у PR #382 — не дублювати.
   (source: `src/lib/topic-normalize.ts`, `src/lib/news-filters.ts`; SQL-перевірка 2026-09-30;
-  [ADR §2.3](decisions/2026-09-26-news-discovery-and-pagination-architecture.md))
+  [ADR §2.3](decisions/2026-09-26-news-discovery-and-pagination-architecture.md); `gh pr view 380` 2026-09-30)
 
 - **AH-1.3 інтегровано через [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378)
-  2026-09-30; актуальний `origin/main` — `e470105`.**
+  2026-09-30; актуальний `origin/main` після #380 — `3d0cb2b`.**
   Pre-paint синхронізує `.theme-light`, `data-theme`, `color-scheme` і `theme-color`;
   `localStorage` та GA4 лишають `light`/`dark`. Перемикач EN/UK описує наступну тему,
   має 44×44 px і синхронізує desktop/mobile контролі. SEO compare: 58 URL,
   0 errors / 0 warnings; галерея до/після — `artifacts/after-hours/qa/ah-1.3-review.html`.
   Деталі перевірок і межі legacy QA — [AH-1.3 validation](product/after-hours-ah-1-3-validation.md).
   Фаза 0 завершена: #376 змержено в `69bcd1c`; merge #378 підтверджено GitHub.
-  Наступна окрема задача — AH-1.4 (кольори й гліфи категорій), потім AH-1.2;
+  AH-1.4 реалізовано в PR #382; наступна після її інтеграції — AH-1.2;
   G1 чекає решти foundations і підпису власника.
   (source: `src/app/layout.tsx`, `src/lib/theme.ts`, `src/components/theme-toggle.tsx`;
   `artifacts/_local/ah-1.3-seo-local-fresh.log`; `git fetch origin`, `gh pr view 378` 2026-09-30)
@@ -51,7 +51,7 @@ Last updated: 2026-09-30
   (source: погодження й скриншоти власника, `gh pr view` 2026-09-30;
   [baseline](analytics/2026-09-29-redesign-baseline.md))
 
-- **AH-1.4 реалізовано на `feat/ah-1.4-category-colours-glyphs`; очікує review.**
+- **AH-1.4 реалізовано у [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382); очікує окремого візуального підпису.**
   Дев'ять slug-ів мають tokenKey; Night/Day текст — `--cat-*`, темні банери —
   незмінні `--art-*`. DB color лише fallback невідомих; GLYPHS із прототипу
   перенесено з aria-hidden. 54 пари контрасту ≥5.2238:1; SEO local 58 URL,

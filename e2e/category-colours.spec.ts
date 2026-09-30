@@ -26,6 +26,8 @@ test.describe('category colour gate', () => {
         page.on('pageerror', (error) => errors.push(error.message));
         await page.goto(route.path);
         await expect(page.locator('main h1')).toBeVisible();
+        if (route.key === '/news' || route.key.startsWith('/category/'))
+          await expect(page.getByTestId('post-card').first()).toBeVisible();
         await page.evaluate(() => document.fonts.ready);
         await expect(page.locator('main h1')).toHaveCount(1);
         const scopes = page.locator(CATEGORY_SCOPE);
