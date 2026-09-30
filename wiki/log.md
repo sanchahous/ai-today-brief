@@ -5097,3 +5097,7 @@ Baseline має 58 EN/UK URL. Compare з тим самим production: 0 пом�
 Джерело: [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374), `npm run pr:check` і pre-push Chromium 2026-09-29.
 
 PR відкрито після зеленого `pr:check`; pre-push E2E: 130 passed, 12 skipped. Посилання додано до статусу §5.3 і картки AH-0.4, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #374](https://github.com/sanchahous/ai-today-brief/pull/374))
+
+## 2026-09-30 — AH-0.4: синхронізація після merge AH-0.3
+
+Об’єднано записи й статуси AH-0.3 та AH-0.4 без втрати історії; PR #373 змержено. Власник погодив G0 та merge PR #373–#376; підпис буде відображено в актуальному пакеті AH-0.6. (source: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373); повідомлення власника 2026-09-30)
