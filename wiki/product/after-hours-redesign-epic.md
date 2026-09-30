@@ -327,7 +327,7 @@ flowchart TD
 |---|---|---|---|---|---|
 | AH-0.1 | ✅ Звірити статус G01–G20 і вихідну точку ([#372](https://github.com/sanchahous/ai-today-brief/pull/372), [gap-plan §10](../audits/2026-09-26-design-system-gap-plan.md#10-статус-на-2026-09-29-звірка-ah-01)) | — | — | — | G01, конфлікт §2.3 |
 | AH-0.2 | ✅ ADR: rollout і foundations, D1–D13 ([ADR](../decisions/2026-09-29-after-hours-rollout-and-foundations.md)) | — | — | — | передумова G12 |
-| AH-0.3 | Baseline-знімки й інструмент до/після | M | агент | — | передумова visual review |
+| AH-0.3 | ✅ Baseline-знімки й інструмент до/після ([#373](https://github.com/sanchahous/ai-today-brief/pull/373)) | — | — | — | передумова visual review |
 | AH-0.4 | SEO-контракт: знімок і compare-гейт | M | агент | — | «SEO diff» (redesign §9) |
 | AH-0.5 | ◐ QA-матриця a11y і верстки для сторінок (#369: axe-інфраструктура для каталогу) | M | агент | D10 ✅ | G14 (частк.) |
 | AH-0.6 | Продуктовий і CWV baseline | S | власник + агент | open-questions #1 | передумова оцінки |
@@ -469,11 +469,17 @@ D11) · **Закриває:** передумова visual review кожного 
    до першого з AH-1.3…AH-1.7; у log зазначити, що baseline — стан після токенів 2.0.
 
 **AC:**
-- [ ] `node --import tsx scripts/capture-route-matrix.ts --base=https://aitodaybrief.com --label=before`
+- [x] `node --import tsx scripts/capture-route-matrix.ts --base=https://aitodaybrief.com --label=before`
   завершується з кодом 0 і пише manifest для всіх маршрутів §15 у 8 комбінаціях.
-- [ ] PNG не потрапляють у git (`git status` чистий після запуску).
-- [ ] Baseline `before` знято до мержу першого візуального PR після #369 (AH-1.3…AH-1.7); шлях і
+- [x] PNG не потрапляють у git (`git status` чистий після запуску).
+- [x] Baseline `before` знято до мержу першого візуального PR після #369 (AH-1.3…AH-1.7); шлях і
   SHA записані в `wiki/log.md`.
+
+**Стан 2026-09-29:** PR [#373](https://github.com/sanchahous/ai-today-brief/pull/373);
+232 PNG і `manifest.json` лежать у git-ignored `artifacts/_local/before/`;
+baseline охоплює 29 станів сторінок у 8 комбінаціях. Це стан після токенів 2.0 з #369,
+до наступних візуальних PR. (source: `scripts/capture-route-matrix.ts`; production capture
+2026-09-29; `artifacts/_local/before/manifest.json`)
 
 ### AH-0.4 · SEO-контракт: знімок і compare-гейт
 

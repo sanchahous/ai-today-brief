@@ -10,12 +10,22 @@ social URLs follow the published slug 2026-09-03,
 weekly digest two-phase release (Ship / Publish video) 2026-09-03,
 X self-reply is USE + compact `?s=` URL 2026-09-03,
 LinkedIn comment is compact `?s=` + native article card on the post 2026-09-03
-desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29
+desktop nav surfaces Digests; homepage weekly card and SEO snippet updated 2026-09-03 (#360); redesign epic + code live check 2026-09-29; AH-0.1 G01–G20 status reconciliation + production live check 2026-09-29; AH-0.3 production screenshots 2026-09-29
 Last updated: 2026-09-29
 
 ---
 
 ## Стан репозиторію
+
+- **AH-0.3: baseline After Hours знято з production 2026-09-29, PR
+  [#373](https://github.com/sanchahous/ai-today-brief/pull/373).** Скрипт
+  `scripts/capture-route-matrix.ts` вибрав актуальні slug-и через sitemap і зняв 232 PNG:
+  29 маршрутних станів у Night/Day, EN/UK, 1440×900/390×844. Manifest і PNG у
+  git-ignored `artifacts/_local/before/`; SHA checkout —
+  `a3d2db56fdb0b446c87c375121a414e60c936938`. Це baseline **після** токенів 2.0 (#369),
+  до першого наступного візуального PR. Наступна задача — AH-0.4.
+  (source: `scripts/capture-route-matrix.ts`; production capture 2026-09-29;
+  `artifacts/_local/before/manifest.json`; `git status` 2026-09-29)
 
 - **AH-0.1 виконано: статус розривів G01–G20 звірено з кодом (2026-09-29), PR
   [#372](https://github.com/sanchahous/ai-today-brief/pull/372).** Підсумок за кодом і живою перевіркою production:

@@ -5067,3 +5067,17 @@ Live check зафіксував: `tokens.ts` v1.0.0 не підключений 
 - G11: `SearchInput` уже є в `input.tsx`, але з англомовними `aria-label` і placeholder.
 
 Виправлено: [now](now.md) (запис 2026-09-28 і новий запис зверху), [open-questions](open-questions.md) #10 (закрито), епік (§2.3, §5.3, картка AH-0.1 з AC, §14 — рядки G07, G09, G11, G15, G16, уточнення в §2.1 і картці AH-2.3), [handoff](product/after-hours-epic-handoff.md) (стан, «Наступна задача: AH-0.3», пастка про приховану панель браузера), `wiki/index.md` (два описи gap-plan). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.3: baseline-знімки production після токенів 2.0
+
+Джерело: задача AH-0.3 [епіку](product/after-hours-redesign-epic.md); `scripts/capture-route-matrix.ts`; live production `https://aitodaybrief.com` 2026-09-29; `artifacts/_local/before/manifest.json`; `git status` і `git check-ignore` 2026-09-29.
+
+Знято **232 PNG** для **29 маршрутних станів** у 8 комбінаціях Night/Day, EN/UK, 1440×900/390×844. Шлях: `artifacts/_local/before/` (git-ignored); SHA checkout у manifest: `a3d2db56fdb0b446c87c375121a414e60c936938`; SHA-256 manifest: `30ECF258C84FCE4B70622FC90F561D2C532F5290E0D18E2DA0FE41599EBF7EE2`. Знімки показують стан **після** токенів 2.0 з PR #369: AC про baseline до AH-1.1 був недосяжний, але до першого наступного візуального PR (AH-1.3…AH-1.7) baseline готовий.
+
+Оновлено статус і AC AH-0.3 в епіку, наступну задачу AH-0.4 у [handoff](product/after-hours-epic-handoff.md), [now](now.md) і [index](index.md). Production-код не змінювався.
+
+## 2026-09-29 — AH-0.3: PR відкрито
+
+Джерело: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373), `npm run pr:check` і `git push` 2026-09-29.
+
+PR відкрито після зеленого `pr:check`; посилання додано до статусу §5.3 і картки AH-0.3, [now](now.md), [handoff](product/after-hours-epic-handoff.md) й [index](index.md). (source: [PR #373](https://github.com/sanchahous/ai-today-brief/pull/373))
