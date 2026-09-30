@@ -37,16 +37,46 @@
   --color-stage: var(--stage);
   --color-claret: var(--claret);
   --color-velvet: var(--velvet);
+  --color-velvet-deep: var(--velvet-deep);
+  --color-on-velvet: var(--on-velvet);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fill: var(--accent-fill);
+  --color-accent-fill-hover: var(--accent-fill-hover);
   --color-line-strong: var(--line-strong);
   --color-focus: var(--focus);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
 
-  --radius-sm: 3px;
-  --radius-md: 6px;
+  /* Radii 3 / 4 / 8 / 14 / pill. `rounded-lg` stays Tailwind's own 0.5rem (8px). */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
   --radius-card: 14px;
-  --radius-pill: 999px;
+  --radius-pill: 9999px;
+
+  /* Page rhythm and measures → `px-gutter`, `py-section-y`, `max-w-page`, `max-w-reading`. */
+  --spacing-gutter: var(--gutter);
+  --spacing-section-y: var(--section-y);
+  --container-page: var(--max);
+  --container-page-wide: var(--max-wide);
+  --container-reading: var(--reading);
+}
+
+/*
+ * D5 breakpoints (prototype values, rem so they follow the reader's font size). Tailwind builds
+ * `min-width` variants from these names (`tablet:` = 60rem; the prototype's max-width queries are
+ * `max-tablet:`). Default sm / md / lg / xl are deliberately NOT redefined until AH-7.3; header and
+ * discovery move to `tablet` in AH-3.3 / AH-4.3.
+ */
+@theme {
+  --breakpoint-compact: 23.75rem;
+  --breakpoint-narrow: 25rem;
+  --breakpoint-phone: 47.5rem;
+  --breakpoint-tablet: 60rem;
+  --breakpoint-laptop: 68.75rem;
+  --breakpoint-nav-compact: 73.75rem;
+  --breakpoint-desktop: 80rem;
 }
 
 /*
@@ -80,6 +110,13 @@
   --error: #ff9b8a;
   --success: #b5d8cc;
   --warning: #e8c07a;
+  --accent-hover: #e8cd9e;
+  --accent-fill: #d4b483;
+  --accent-fill-hover: #e8cd9e;
+  --velvet-deep: #2e1118;
+  --on-velvet: #f6e6df;
+  --selection-bg: #d4b483;
+  --selection-text: #171918;
   --cat-tools: #7fcfae;
   --cat-tutorials: #e6c071;
   --cat-cost: #6fcad6;
@@ -102,17 +139,61 @@
   --art-text: #f0e9dc;
   --art-stage: #0e100f;
   --accent-rgb: 212 180 131;
-  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.25);
-  --shadow-pop: 0 16px 40px rgba(0, 0, 0, 0.45);
+
+  /* Elevation and surface effects — Day overrides all of them below. */
+  --shadow-1: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 28px -18px rgb(0 0 0 / 0.7);
+  --shadow-2: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 22px 48px -24px rgb(0 0 0 / 0.85);
+  --shadow-pop: 0 28px 70px -28px rgb(0 0 0 / 0.9), 0 0 0 1px rgb(255 255 255 / 0.04);
+  --stage-light: radial-gradient(90% 60% at 78% -8%, rgb(212 180 131 / 0.11), transparent 62%);
+  --sheen: linear-gradient(105deg, transparent 20%, rgb(255 240 208 / 0.28) 45%, transparent 70%);
+  --grain-opacity: 0.07;
+
+  /* Space (4/8 scale) and fluid page rhythm. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --gutter: clamp(16px, 4vw, 40px);
+  --section-y: clamp(48px, 7vw, 88px);
+
+  /* Sizes and measures. */
   --touch-target-min: 44px;
   --control-sm: 36px;
   --control-md: 44px;
   --control-lg: 52px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --max: 1280px;
+  --max-wide: 1440px;
+  --reading: 42.5rem;
+
+  /* Layers. */
+  --z-base: 1;
   --z-sticky: 30;
   --z-dropdown: 60;
   --z-overlay: 80;
   --z-dialog: 90;
   --z-toast: 100;
+
+  /* Motion (Tension v3). `--ease-soft` is the prototype's ease-in-out, renamed so Tailwind's own stays. */
+  --duration-fast: 160ms;
+  --duration-standard: 320ms;
+  --duration-entrance: 640ms;
+  --ease-standard: cubic-bezier(0.18, 0.82, 0.26, 1);
+  --ease-soft: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-release: cubic-bezier(0.2, 0.85, 0.25, 1.08);
+
+  /* Focus ring: 2px `--focus`, 3px away from the element. */
+  --focus-width: 2px;
+  --focus-offset: 3px;
 }
 
 .theme-light,
@@ -140,6 +221,13 @@ html[data-theme='day'] {
   --error: #b3261e;
   --success: #2d6559;
   --warning: #7a5a10;
+  --accent-hover: #5a4424;
+  --accent-fill: #72562e;
+  --accent-fill-hover: #5a4424;
+  --velvet-deep: #ead0ca;
+  --on-velvet: #4a1522;
+  --selection-bg: #e8cd9e;
+  --selection-text: #1d211d;
   --cat-tools: #1f6b4f;
   --cat-tutorials: #7a5a10;
   --cat-cost: #16636e;
@@ -162,8 +250,12 @@ html[data-theme='day'] {
   --art-text: #f0e9dc;
   --art-stage: #0e100f;
   --accent-rgb: 114 86 46;
-  --shadow-card: 0 1px 2px rgba(74, 56, 28, 0.08), 0 4px 16px rgba(74, 56, 28, 0.07);
-  --shadow-pop: 0 6px 24px rgba(58, 44, 22, 0.14);
+  --shadow-1: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 12px 30px -20px rgb(74 56 28 / 0.4);
+  --shadow-2: 0 1px 0 rgb(255 255 255 / 0.8) inset, 0 24px 50px -26px rgb(74 56 28 / 0.5);
+  --shadow-pop: 0 28px 70px -30px rgb(58 44 22 / 0.45), 0 0 0 1px rgb(58 44 22 / 0.06);
+  --stage-light: radial-gradient(90% 60% at 78% -8%, rgb(212 180 131 / 0.28), transparent 62%);
+  --sheen: linear-gradient(105deg, transparent 20%, rgb(255 255 255 / 0.55) 45%, transparent 70%);
+  --grain-opacity: 0.05;
 }
 
 @layer base {
@@ -232,10 +324,10 @@ html[data-theme='day'] {
     cursor: pointer;
   }
 
-  :where(a, button, input, select, [tabindex]):focus-visible {
-    outline: 2px solid var(--focus);
-    outline-offset: 2px;
-    border-radius: 4px;
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: var(--focus-width) solid var(--focus);
+    outline-offset: var(--focus-offset);
+    border-radius: var(--radius-sm);
   }
 
   /* Smooth-scroll the hero's "Top of the week" jump link. */
@@ -459,8 +551,13 @@ html[data-theme='day'] {
   }
 }
 
-.elevation-card {
-  box-shadow: var(--shadow-card);
+.elevation-card,
+.shadow-1 {
+  box-shadow: var(--shadow-1);
+}
+
+.shadow-2 {
+  box-shadow: var(--shadow-2);
 }
 
 .shadow-pop {
@@ -752,6 +849,21 @@ html[data-theme='day'] {
   }
   html {
     scroll-behavior: auto;
+  }
+}
+
+/*
+ * Forced colors (Windows High Contrast): the palette is replaced by system colours, so keep what
+ * carries meaning — a visible focus ring and edges on shadow-only surfaces. `outline-color` and
+ * border colours are forced by the browser; shadows are dropped entirely.
+ */
+@media (forced-colors: active) {
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: var(--focus-width) solid Highlight;
+    outline-offset: var(--focus-offset);
+  }
+  :where(.elevation-card, .shadow-1, .shadow-2, .shadow-pop) {
+    border: 1px solid CanvasText;
   }
 }
 

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="uk">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AH-1.6 — простір, форма, глибина, фокус: візуальний підпис</title>
+<style>
+  :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #171918; color: #f0e9dc; }
+  body { margin: 0; padding: 24px; }
+  h1 { font-size: 24px; margin: 0 0 12px; }
+  h2 { font-size: 18px; margin: 32px 0 8px; }
+  p { max-width: 900px; line-height: 1.6; color: #b9b7ac; }
+  nav { display: flex; gap: 16px; flex-wrap: wrap; padding: 12px 0; }
+  label { display: grid; gap: 8px; }
+  select { min-height: 44px; padding: 8px 16px; border: 1px solid #737a73; border-radius: 8px; color: inherit; background: #1f2321; font: inherit; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  figure { margin: 0; min-width: 0; }
+  figcaption { padding: 12px 0; font-weight: 600; }
+  img { display: block; width: 100%; max-width: 1440px; border: 1px solid #737a73; }
+  .mobile img { max-width: 390px; }
+  .close img { max-width: 520px; }
+  a { color: #b5d8cc; }
+  ul { max-width: 900px; line-height: 1.6; color: #b9b7ac; }
+  @media (max-width: 700px) { .pair { grid-template-columns: 1fr; } body { padding: 16px; } }
+</style>
+<h1>AH-1.6 — простір, форма, глибина, шари, рух, фокус, брейкпоінти</h1>
+<p>Це видимий PR, тому потрібен візуальний підпис власника перед merge. Що змінюється на екрані: радіус <code>md</code> 6 → 8 px; тіні карток і випадних панелей (<code>--shadow-1</code>, <code>--shadow-pop</code> з окремими Day-значеннями); кільце фокуса — колір <code>--focus</code> і відступ 3 px; кільце в полях розсилки та hero-search. Простір, брейкпоінти, motion і шари самі по собі нічого не малюють. <code>--header-h</code> лишається 60 px до AH-3.3.</p>
+<p>До: production (aitodaybrief.com). Після: локальний <code>next dev</code> гілки PR з тими самими Supabase-даними — Vercel Preview за авторизацією Vercel, а мій конектор не має до нього доступу; за бажанням власника той самий набір можна зняти з Preview. PNG і manifests лежать у <code>artifacts/_local/ah-1-6-before</code> і <code>ah-1-6-after</code> (SHA-256 у manifest.json). <strong>Контент відрізняється</strong>: production зараз показує новини лише до 31.08, а в БД є матеріали до 29.09 (окрема знахідка, не частина цього PR); порівнювати треба форму, тіні, кільця й відступи, а не тексти. <a href="https://github.com/sanchahous/ai-today-brief/pull/381">PR #381</a>.</p>
+
+<h2>Сторінки</h2>
+<nav aria-label="Варіанти знімків сторінок">
+  <label>Сторінка<select id="route"><option value="news">News</option><option value="home">Home</option></select></label>
+  <label>Мова<select id="lang"><option value="en">English</option><option value="uk">Українська</option></select></label>
+  <label>Тема<select id="theme"><option value="night">Night</option><option value="day">Day</option></select></label>
+  <label>Ширина<select id="size"><option value="desktop">1440 px</option><option value="mobile">390 px</option></select></label>
+</nav>
+<div class="pair" id="pages">
+  <figure><figcaption>До · <a id="p-before-link" target="_blank">оригінал PNG</a></figcaption><img id="p-before" alt="До зміни AH-1.6"></figure>
+  <figure><figcaption>Після · <a id="p-after-link" target="_blank">оригінал PNG</a></figcaption><img id="p-after" alt="Після зміни AH-1.6"></figure>
+</div>
+
+<h2>Кільце фокуса</h2>
+<p>Клавіатурний фокус: до — тонка межа кольору accent у полі й системне кільце у посилань і кнопок; після — 2 px <code>--focus</code> (целадон) на відстані 3 px.</p>
+<nav aria-label="Варіанти знімків фокуса">
+  <label>Елемент<select id="kind"><option value="link">Посилання</option><option value="button">Кнопка</option><option value="field">Поле</option></select></label>
+  <label>Тема<select id="ftheme"><option value="night">Night</option><option value="day">Day</option></select></label>
+</nav>
+<div class="pair close">
+  <figure><figcaption>До · <a id="f-before-link" target="_blank">оригінал PNG</a></figcaption><img id="f-before" alt="Фокус до зміни AH-1.6"></figure>
+  <figure><figcaption>Після · <a id="f-after-link" target="_blank">оригінал PNG</a></figcaption><img id="f-after" alt="Фокус після зміни AH-1.6"></figure>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const folder = { before: '../../_local/ah-1-6-before', after: '../../_local/ah-1-6-after' };
+  function setPair(prefix, file) {
+    for (const label of ['before', 'after']) {
+      const src = `${folder[label]}/${file}`;
+      $(`${prefix}-${label}`).src = src;
+      $(`${prefix}-${label}-link`).href = src;
+    }
+  }
+  function showPages() {
+    const [route, lang, theme, size] = ['route', 'lang', 'theme', 'size'].map((id) => $(id).value);
+    $('pages').classList.toggle('mobile', size === 'mobile');
+    setPair('p', `${route}-${lang}-${theme}-${size}.png`);
+  }
+  function showFocus() {
+    setPair('f', `focus-${$('kind').value}-${$('ftheme').value}.png`);
+  }
+  for (const id of ['route', 'lang', 'theme', 'size']) $(id).addEventListener('change', showPages);
+  for (const id of ['kind', 'ftheme']) $(id).addEventListener('change', showFocus);
+  showPages();
+  showFocus();
+</script>
+</html>

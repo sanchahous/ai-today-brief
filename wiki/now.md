@@ -17,6 +17,22 @@ Last updated: 2026-09-30
 
 ## Стан репозиторію
 
+- **AH-1.2 (контраст-гейт 2.0) — реалізовано, PR #384 (2026-09-30), без видимих змін.**
+  222 пари замість 158, 0 провалів, найнижчі категорії Night 6,41:1 / Day 5,22:1; сім токенів прототипу
+  (`--accent-hover`, `--accent-fill`, `--accent-fill-hover`, `--velvet-deep`, `--on-velvet`, `--selection-bg`,
+  `--selection-text`) додано для пар; будь-яка пара нижче порогу валить `pr:check`. Гейт G1 чекає AH-1.5.
+  (source: `scripts/check-design-tokens.ts`; `npm run tokens:check` 2026-09-30)
+
+- **AH-1.6 (простір, форма, глибина, шари, рух, фокус, брейкпоінти) — змерджено, PR #381 (`55b78dc`, 2026-09-30); візуальний підпис власника отримано.**
+  Токени в `tokens.ts` і `globals.css` під drift-гейтом; реєстр усіх токенів — `design-system-tokens` §7
+  (відсутній запис валить `pr:check`). `--header-h` лишається 60px до AH-3.3. Візуально змінилося:
+  радіус `md` 6→8px, тіні (`--shadow-1` / `--shadow-pop`), фокус (`--focus`, відступ 3px), кільце в
+  полях розсилки й hero-search. Нові gate-и: `e2e/focus-visible.spec.ts`, docs-аудит токенів.
+  AH-1.4 (кольори категорій) інтегровано через PR #382: `--cat-*` / `--art-*` внесено в реєстр §7.1.1
+  після злиття гілок. Наступна задача — AH-1.5 (типографіка, потрібен підпис власника щодо UK).
+  (source: `src/lib/design-system/tokens.ts`, `scripts/check-design-tokens.ts`, `e2e/focus-visible.spec.ts`;
+  повний Chromium-набір 192 passed / 0 failed 2026-09-30)
+
 - **Прод віддавав знімок БД від 02.09 — виправлення в гілці `fix/build-memo-stale-across-builds`
   (2026-09-30), PR чекає мержу.** `/en/news`, `/en`, категорії, `/rss.xml`, item-записи в
   `sitemap.xml` і весь `news-sitemap.xml` показували дані до брифу 31.08, хоча в БД брифи є до

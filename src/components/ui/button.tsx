@@ -31,7 +31,7 @@ export const ActionButton = forwardRef<HTMLButtonElement, ActionButtonProps>(
     const isDisabled = disabled || pending;
 
     const baseClasses =
-      'inline-flex items-center justify-center font-medium transition select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px]';
+      'inline-flex items-center justify-center font-medium transition select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-(--focus-offset) disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px]';
 
     const sizeClasses: Record<ButtonSize, string> = {
       sm: 'px-3 py-1.5 text-xs rounded-md gap-1.5',
@@ -96,7 +96,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
     const isDisabled = disabled || pending;
 
     const baseClasses =
-      'inline-flex items-center justify-center rounded-lg transition select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] min-w-[44px]';
+      'inline-flex items-center justify-center rounded-lg transition select-none cursor-pointer focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-(--focus-offset) disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px] min-w-[44px]';
 
     const sizeClasses: Record<ButtonSize, string> = {
       sm: 'size-8 p-1',

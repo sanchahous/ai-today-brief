@@ -94,7 +94,7 @@ export function HeroSearch({
             placeholder={placeholder}
             aria-label={placeholder}
             autoComplete="off"
-            className="bg-surface border-border text-text rounded-pill focus-visible:border-accent w-full border py-3 pr-4 pl-11 outline-none"
+            className="bg-surface border-border text-text rounded-pill focus-visible:border-accent w-full border py-3 pr-4 pl-11"
           />
           <SearchPreviewDropdown
             lang={lang}

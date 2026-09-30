@@ -34,7 +34,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             ref={ref}
             id={selectId}
             aria-invalid={error ? 'true' : undefined}
-            className={`bg-surface border-border text-text min-h-[44px] w-full appearance-none rounded-lg border py-2 pl-3.5 pr-9 text-sm transition cursor-pointer focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+            className={`bg-surface border-border text-text min-h-[44px] w-full appearance-none rounded-lg border py-2 pl-3.5 pr-9 text-sm transition cursor-pointer focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-focus focus-visible:outline-offset-(--focus-offset) disabled:cursor-not-allowed disabled:opacity-50 ${
               error ? 'border-error' : ''
             } ${className}`}
             {...props}

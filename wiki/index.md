@@ -45,7 +45,7 @@ Last updated: 2026-09-30
 | 📋 `architecture/stack.md` | Next.js 16 / React 19 / TS strict / Tailwind v4 / Supabase — константи й заборони | `.cursor/rules/00-core.mdc` |
 | ✅ [architecture/mvp-dev-handoff](architecture/mvp-dev-handoff.md) | MVP dev handoff — вихідна специфікація продукту | колишній `docs/07 — MVP Dev Handoff` |
 | ✅ [architecture/prototype-to-production](architecture/prototype-to-production.md) | План переходу прототип → прод | колишній `docs/08 — Prototype to Production Plan` |
-| ✅ [architecture/design-system-tokens](architecture/design-system-tokens.md) | Токени After Hours v2.1.0, WCAG AA, drift; AH-1.7 ratchet сирих кольорів, z-index, тіней і розмірів шрифту в `pr:check`, baseline та правила його зменшення | `src/lib/design-system/tokens.ts`; `scripts/report-raw-design-values.ts`; ADR 2026-09-29; звіт 2026-09-30 |
+| ✅ [architecture/design-system-tokens](architecture/design-system-tokens.md) | Токени After Hours v2.1.0, WCAG AA, drift; єдиний контраст-гейт 222 пари (AH-1.2); реєстр усіх токенів (простір, форма, глибина, шари, рух, фокус, брейкпоінти D5) як gate (AH-1.6); AH-1.7 ratchet сирих кольорів, z-index, тіней і розмірів шрифту в `pr:check`, baseline та правила його зменшення | `src/lib/design-system/tokens.ts`; `scripts/report-raw-design-values.ts`; ADR 2026-09-29; звіт 2026-09-30 |
 | 📋 `architecture/data-model.md` | Схема Supabase, RLS, 104 міграцій, `database.types.ts` | `supabase/migrations/**` + live check |
 
 ## Pipeline — `fetch → rank → summarize → publish`

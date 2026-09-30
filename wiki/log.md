@@ -5427,6 +5427,63 @@ AH-1.3 і no-JS Suspense-борг відкриті. Zero-violation DoD не ог
 `artifacts/after-hours/qa/ah-1.4-validation.json`; `artifacts/after-hours/qa/ah-1.4-review.html`;
 повідомлення власника 2026-09-30)
 
+## 2026-09-30 — AH-1.6: простір, форма, глибина, шари, рух, фокус, брейкпоінти
+
+Реалізовано AH-1.6 окремою гілкою `feat/ah-1.6-space-shape-depth-motion` (паралельно з AH-1.4 іншої сесії;
+перетин лише в `globals.css`, у різних секціях). У `tokens.ts` і `globals.css` додано `--space-*`, `--gutter`,
+`--section-y`, `--max`, `--max-wide`, `--reading`, `--icon-*`, радіуси 3 / 4 / 8 / 14 / pill, тіні
+`--shadow-1` / `--shadow-2` / `--shadow-pop` з окремими Day-значеннями, ефекти (`--stage-light`, `--sheen`,
+`--grain-opacity`), `--z-base`, `--duration-*`, `--ease-*`, `--focus-width` / `--focus-offset` (3px) і
+`--breakpoint-*` за D5. `tokens:check` і `tokens.test.ts` звіряють усі не-кольорові токени з `tokens.ts`
+та вимагають, щоб кожен токен був у реєстрі `design-system-tokens` §7 (M1-гейт). Контракт D5 (959 / 960 px)
+записано в `e2e/helpers/viewports.ts` без зміни поведінки header. Примітиви `ui/` беруть колір і відступ фокуса з
+токенів; у полях розсилки й hero-search прибрано `outline-none`. Новий `e2e/focus-visible.spec.ts`: кільце
+2px `--focus` на відстані 3px на посиланні, кнопці й полі в Night і Day (Chromium, Firefox, WebKit) та видиме в
+`forced-colors` (Chromium). Свідомі відхилення від картки: `--header-h` лишається 60px до AH-3.3;
+`rounded-lg` лишається Tailwind 8px; прототипне `ease-in-out` названо `--ease-soft`.
+Перевірки: повний Chromium-набір на власній збірці 192 passed / 13 skipped / 0 failed; opt-in візуальні
+baseline-и каталогу без змін. Знахідка процесу: `playwright.config.ts` (`reuseExistingServer`) і
+`e2e:affected` підхоплюють будь-який сервер на :3000, зокрема чужий із іншої сесії, тож локальний e2e варто
+запускати на власному порту.
+(source: `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`;
+`npx playwright test` 2026-09-30; [реєстр токенів](architecture/design-system-tokens.md#7-реєстр-токенів-ah-16-m1-гейт))
+
+## 2026-09-30 — AH-1.6: відкрито PR #381, галерея для підпису
+
+Відкрито [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381) (видимий, чекає візуального
+підпису власника). Галерея `artifacts/after-hours/qa/ah-1.6-review.html` (22 знімки до/після: home і news
+EN/UK × Night/Day × 1440/390, фокус на посиланні, кнопці й полі); «до» — production, «після» — локальний
+`next dev` гілки з тими самими Supabase-даними (Vercel Preview за авторизацією, конектор без доступу).
+Побічна знахідка: production `/en/news`, `/en` і `rss.xml` зупиняються на 31.08.2026, тоді як sitemap має
+lastmod 30.09, а локальний dev бачить матеріали до 29.09 — причина не встановлена, окрему задачу заведено.
+Push виконано з `SKIP_E2E=1` за згодою власника: pre-push перевикористав чужий сервер на :3000.
+(source: `curl` production 2026-09-30; `gh pr view 381`)
+
+## 2026-09-30 — AH-1.6: інтеграція main після #382, реєстр токенів охоплює AH-1.4
+
+Власник змерджив [PR #382](https://github.com/sanchahous/ai-today-brief/pull/382) (AH-1.4, `5af8d56`) у main,
+і гілку [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381) злито з ним. Конфлікти були лише в
+`check-design-tokens.ts`, `tokens.test.ts` (обидва набори імпортів збережено) і wiki (обидві історії `log.md`,
+`now`, handoff, епік, index). Реєстр токенів `design-system-tokens` §7 доповнено розділом 7.1.1 з 21 токеном
+`--cat-*` / `--art-*` з AH-1.4 — без цього docs-аудит AH-1.6 правильно падав. Версія токенів лишається 2.1.0
+(AH-1.4); зміни AH-1.6 записано як її продовження. Рядок AH-1.4 в епіку оновлено на «змерджено».
+(source: `git merge origin/main`; `gh pr view 381/382`)
+
+## 2026-09-30 — AH-1.2: контраст-гейт 2.0 (222 пари), статус #381 виправлено
+
+Власник підписав [PR #381](https://github.com/sanchahous/ai-today-brief/pull/381), і його змерджено (`55b78dc`,
+2026-09-30 18:14 UTC); статус AH-1.6 в епіку, now і handoff виправлено з «очікує підпису» на «змерджено».
+AH-1.2 реалізовано окремою гілкою `feat/ah-1.2-contrast-gate` (PR #384), без видимих змін.
+`scripts/check-design-tokens.ts` тепер єдиний гейт із матрицею прототипу v3: **222 пари** (було 158), 0 провалів;
+додано `overlay`, `--art-*` на `--art-stage`, `on-accent` на `accent-fill` і hover, `accent-hover`, `on-velvet`,
+selection, `claret` на `velvet`, UI-пари на трьох поверхнях і Night-бренд на `stage`. Звіт друкує найнижчі
+категорії: Night 6,41:1, Day 5,22:1 — так само, як у прототипі. Для пар у код додано сім токенів прототипу
+(`--accent-hover`, `--accent-fill`, `--accent-fill-hover`, `--velvet-deep`, `--on-velvet`, `--selection-bg`,
+`--selection-text`) у `tokens.ts`, `globals.css`, drift-гейт і реєстр §7; споживачів у коді ще немає.
+`runContrastAudit` тепер приймає набір токенів, тож тест доводить падіння: зламані `catTools` (Day, 1,51:1),
+`faint`, `artText`, `onVelvet`, `selectionText` і `focus` дають `<-- FAIL`. Старого 8-парного гейта v1 у репозиторії
+немає. (source: `npm run tokens:check`; `src/lib/design-system/tokens.test.ts`; `gh pr view 381` 2026-09-30)
+
 ## 2026-09-30 — Фікс: build-memo пережив білд, прод віддавав знімок БД від 02.09
 
 Сторінки й фіди, що читають через `cachePublicRead` (`/en/news`, `/en`, категорії, `/rss.xml`,

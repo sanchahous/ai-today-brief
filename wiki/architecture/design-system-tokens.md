@@ -1,7 +1,7 @@
 # Дизайн-система After Hours: архітектура токенів і governance (v2.1.0)
 
 Summary: єдина канонічна специфікація токенів дизайн-системи After Hours v2.1.0 (міграція з 1.0.0 виконана 2026-09-29): трирівнева модель (Primitives → Semantics → Components), звіт доступності WCAG AA, правила міграції з legacy-палітри globals.css та політика версіонування.
-Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/qa/token-contrast.json`; `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `wiki/decisions/2026-09-29-design-tokens-2-0-migration.md`; розрахунок контрасту 2026-09-29.
+Sources: `wiki/audits/2026-09-26-design-system-gap-plan.md`; `artifacts/after-hours/tokens.json`; `artifacts/after-hours/tokens.css`; `artifacts/after-hours/qa/token-contrast.json`; `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `scripts/check-design-tokens.ts`; `e2e/focus-visible.spec.ts`; `e2e/helpers/viewports.ts`; `wiki/decisions/2026-09-29-design-tokens-2-0-migration.md`; розрахунок контрасту 2026-09-29.
 Last updated: 2026-09-30
 
 **Статус:** прийнято. Джерело істини для дизайн-токенів у кодовій базі (source: wiki/audits/2026-09-26-design-system-gap-plan.md).
@@ -16,8 +16,8 @@ Last updated: 2026-09-30
 Foundations (v1.0.0)
 ├── 1. Primitives (незмінні сирі значення)
 │   ├── Colors (Night/Day scales, ink, paper, brass, mint, line, error)
-│   ├── Spacing (4/8pt scale: 0, 4, 8, 12, 16, 24, 32, 48, 64, 96px)
-│   ├── Radii (none, sm: 3px, md: 6px, card: 14px, pill: 9999px)
+│   ├── Spacing (4/8pt scale: 0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96px)
+│   ├── Radii (none, xs: 3px, sm: 4px, md: 8px, card: 14px, pill: 9999px)
 │   ├── Typography (Inter, Fraunces, Georgia, Consolas)
 │   └── Motion (fast: 160ms, standard: 320ms, entrance: 640ms)
 ├── 2. Semantic Tokens (ролі з підтримкою тем Night / Day)
@@ -26,14 +26,14 @@ Foundations (v1.0.0)
 │   ├── Actions & Signals: --accent (brass), --on-accent, --signal (celadon)
 │   └── Feedback: --error, --success, --border, --border-soft
 └── 3. Component Tokens
-    ├── Control sizes: sm (32px), md (40px), lg (48px)
+    ├── Control sizes: sm (36px), md (44px), lg (52px)
     ├── Touch target minimum: ≥ 44×44px (WCAG 2.2 AA)
-    └── Focus indicator: 2px solid var(--accent), offset 2px
+    └── Focus indicator: 2px solid var(--focus), offset 3px
 ```
 
 ## 2. Семантична палітра та контрастність WCAG 2.2 AA (v2.0.0)
 
-`npm run tokens:check` (`scripts/check-design-tokens.ts`) перевіряє 90 текстових пар (9 ролей × 5 поверхонь × 2 теми, мінімум 4,5:1), UI-пари `lineStrong` / `focus` / `accent` (≥ 3:1), синхронність `globals.css` з `tokens.ts` і відсутність розмірів шрифту < 12 px у `src/`.
+`npm run tokens:check` (`scripts/check-design-tokens.ts`) — єдиний контраст-гейт (AH-1.2): 222 пари в обох темах. Текст ≥ 4,5:1: дев'ять текстових ролей × п'ять поверхонь; `text`, `muted`, `faint`, `accent` на `overlay`; дев'ять `--cat-*` на `bg`, `surface`, `raised`; `--art-*`, `--art-neutral`, `--art-text` на `--art-stage`; `on-accent` на `accent`, `accent-fill`, `accent-fill-hover`; `accent-hover` на трьох поверхнях; `on-velvet` на `velvet` і `velvet-deep`; `selection-text` на `selection-bg`; Night-`text`, `accent`, `signal` на `stage`. UI ≥ 3:1: `line-strong`, `focus`, `accent-fill` на `bg`, `surface`, `raised`; `accent` на `bg`, `surface`; `claret` на `velvet`. Звіт друкує найнижчі значення категорій (зараз Night 6,41:1, Day 5,22:1). Гейт також перевіряє синхронність `globals.css` з `tokens.ts`, реєстр токенів (§7) і відсутність розмірів шрифту < 12 px у `src/`. Будь-яка пара нижче порогу валить `tokens.test.ts`, тобто `pr:check`. Старого 8-парного гейта v1 немає.
 
 | Роль | Night (bg `#171918`) | Day (bg `#efe8da`) | Контраст Night | Контраст Day |
 |---|---|---|---|---|
@@ -83,8 +83,10 @@ fallback невідомих. Day color-mix overrides прибрано.
    - Minor: додавання нових токенів або компонентних ролей без ламання наявних інтерфейсів.
    - Major: перейменування чи видалення токенів, зміна шкали типографіки чи сітки.
 3. **Changelog v2.1.0 (2026-09-30, minor):** category/art roles, 54 контрастні пари й drift; [докази AH-1.4](../product/after-hours-ah-1-4-validation.md).
-4. **Changelog v2.0.0 (2026-09-29, major):** токени 2.0.0 перенесені в `tokens.ts` і `globals.css`; повне Day-перевизначення; `--faint` виправлено (AA); шкала типографіки в `rem` із floor 12 px (`text-2xs`); ролі `stage/raised/overlay/line-strong/claret/velvet/focus/warning/success`; `zIndex`, `controlSize`; гейт `tokens:check` розширено (90 пар, drift, floor). Рішення: [ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md).
-5. **Changelog v1.0.0 (2026-09-26):**
+4. **Продовження v2.1.0 (2026-09-30, AH-1.2):** єдиний контраст-гейт 2.0 (222 пари замість 158) і сім токенів прототипу, яких бракувало в коді: `--accent-hover`, `--accent-fill`, `--accent-fill-hover`, `--velvet-deep`, `--on-velvet`, `--selection-bg`, `--selection-text` (Night і Day; споживачі з'являться з компонентами фази 2 і 3). Візуально нічого не змінюється.
+5. **Продовження v2.1.0 (2026-09-30, AH-1.6):** простір, форма, глибина, шари, рух, фокус і брейкпоінти D5 перенесені в `tokens.ts` і `globals.css` (реєстр — §7); `tokens:check` і `tokens.test.ts` тепер звіряють з `tokens.ts` усі не-кольорові токени й падають, якщо токен оголошено в `globals.css`, але не задокументовано в реєстрі. Змінилося: радіуси 3/4/8/14/pill (`--radius-sm` 3→4, `--radius-md` 6→8, `--radius-pill` 999→9999), тіні `--shadow-pop` (Night і Day), `--shadow-card` замінено на `--shadow-1`, фокус-офсет 2→3 px. Не змінилося навмисно: `--header-h` лишається 60px (змінюється разом із header у AH-3.3), стандартні `sm/md/lg/xl` Tailwind.
+6. **Changelog v2.0.0 (2026-09-29, major):** токени 2.0.0 перенесені в `tokens.ts` і `globals.css`; повне Day-перевизначення; `--faint` виправлено (AA); шкала типографіки в `rem` із floor 12 px (`text-2xs`); ролі `stage/raised/overlay/line-strong/claret/velvet/focus/warning/success`; `zIndex`, `controlSize`; гейт `tokens:check` розширено (90 пар, drift, floor). Рішення: [ADR](../decisions/2026-09-29-design-tokens-2-0-migration.md).
+7. **Changelog v1.0.0 (2026-09-26):**
    - Уніфікація токенів After Hours і чинного production.
    - Додано перевірку WCAG AA (`scripts/check-design-tokens.ts`).
    - Зафіксовано обов'язковий touch-target floor 44px.
@@ -136,6 +138,202 @@ hex-only підрахунку B4. У кінці кожної фази резул
 `src/app/manifest.ts` після [PR #378](https://github.com/sanchahous/ai-today-brief/pull/378))
 
 Ratchet після AH-1.4: 30 кольорових входжень (було 42), 4 довільні z-index, 0 сирих тіней і шрифтів <12 px. (source: `npm run design:raw:prune`, `scripts/raw-design-values.baseline.json`, 2026-09-30)
+
+## 7. Реєстр токенів (AH-1.6, M1-гейт)
+
+Кожна змінна, оголошена в `:root`, у Day-блоці та в `@theme` блоках `src/app/globals.css`, має бути тут у зворотних лапках. Інакше `npm run tokens:check` і `tokens.test.ts` (тобто `pr:check`) падають зі списком відсутніх токенів. Значення в CSS звіряються з `src/lib/design-system/tokens.ts`. Реєстрації Tailwind виду `--color-<роль>: var(--<роль>)` покриваються цільовою змінною. Кольорові значення ролей — у §2 і в `SEMANTIC_TOKENS`; тут — назва, роль і використання.
+
+### 7.1 Кольорові ролі
+
+Обидві теми визначені для кожної ролі; Night — `:root`, Day — `.theme-light` / `html[data-theme='day']`. Tailwind: `bg-bg`, `text-muted`, `border-border` тощо (реєстрації `--color-*`).
+
+| Токен | Роль і використання | Код-мапінг |
+|---|---|---|
+| `--bg` | фон сторінки | `SEMANTIC_TOKENS.<тема>.bg` |
+| `--bg-soft` | заглиблений фон, підвал | `bgSoft` |
+| `--stage` | завжди темна «сцена» (банери, hero) | `stage` |
+| `--surface` | картки й панелі | `surface` |
+| `--surface-2` | вторинна поверхня: чіпи, вставки | `surface2` |
+| `--raised` | піднята поверхня: popover, toast | `raised` |
+| `--overlay` | шар над raised: tooltip, меню | `overlay` |
+| `--border` | декоративна лінія | `border` |
+| `--border-soft` | м'який розділювач | `borderSoft` |
+| `--line-strong` | межа елемента керування (≥ 3:1) | `lineStrong` |
+| `--text` | основний текст | `text` |
+| `--muted` | другорядний текст | `muted` |
+| `--faint` | третинний текст (≥ 4.5:1) | `faint` |
+| `--accent` | латунний акцент, посилання | `accent` |
+| `--on-accent` | текст на заливці accent | `onAccent` |
+| `--accent-hover` | hover кольору accent: текст і посилання (Night brass-300, Day brass-800) | `accentHover` |
+| `--accent-fill` | заливка кнопки й акцентних плашок (дорівнює accent, окреме ім'я для компонентів AH-2.2) | `accentFill` |
+| `--accent-fill-hover` | hover заливки accent | `accentFillHover` |
+| `--signal` | целадон: статус, підказки | `signal` |
+| `--claret` | бордо: увага, сповіщення | `claret` |
+| `--velvet` | оксамитова заливка (тло claret-блоків) | `velvet` |
+| `--velvet-deep` | глибший відтінок velvet: нижній шар, hover | `velvetDeep` |
+| `--on-velvet` | текст на velvet і velvet-deep | `onVelvet` |
+| `--selection-bg` | тло виділеного тексту (`::selection`) | `selectionBg` |
+| `--selection-text` | текст виділення | `selectionText` |
+| `--focus` | колір кільця фокуса | `focus` |
+| `--error` | помилка | `error` |
+| `--success` | успіх | `success` |
+| `--warning` | попередження | `warning` |
+| `--accent-rgb` | канали accent для `rgb(var(--accent-rgb) / α)` у градієнтах | не з `tokens.ts` |
+
+### 7.1.1 Кольори категорій (AH-1.4)
+
+Дев'ять відомих slug-ів мають semantic `--cat-*` для Night і Day; `--art-*` — незмінні відтінки для темних банерів без зображення (не перемикаються з темою). Значення в `PRIMITIVES.categoryPalette`; колір із БД лише резерв для невідомих категорій. Контраст `--cat-*` ≥ 4.5:1 на `--bg`, `--surface`, `--raised` обох тем перевіряє `tokens:check`.
+
+| Токен | Роль і використання | Код-мапінг |
+|---|---|---|
+| `--cat-tools` | Tools & releases: текст, межі, точки | `catTools` |
+| `--cat-tutorials` | Tutorials & guides | `catTutorials` |
+| `--cat-cost` | Token & cost optimization | `catCost` |
+| `--cat-agents` | Agents & MCP | `catAgents` |
+| `--cat-vibe` | Vibe coding workflow | `catVibe` |
+| `--cat-creative` | Creative AI | `catCreative` |
+| `--cat-local` | Local LLMs | `catLocal` |
+| `--cat-career` | Career & monetisation | `catCareer` |
+| `--cat-models` | Models & research | `catModels` |
+| `--art-tools` | відтінок банера Tools на темній сцені (однаковий у Night і Day) | `artTools` |
+| `--art-tutorials` | відтінок банера Tutorials | `artTutorials` |
+| `--art-cost` | відтінок банера Cost | `artCost` |
+| `--art-agents` | відтінок банера Agents | `artAgents` |
+| `--art-vibe` | відтінок банера Vibe | `artVibe` |
+| `--art-creative` | відтінок банера Creative | `artCreative` |
+| `--art-local` | відтінок банера Local | `artLocal` |
+| `--art-career` | відтінок банера Career | `artCareer` |
+| `--art-models` | відтінок банера Models | `artModels` |
+| `--art-neutral` | нейтральний відтінок банера невідомої категорії | `artNeutral` |
+| `--art-text` | текст на темному банері | `artText` |
+| `--art-stage` | фон темної сцени банера | `artStage` |
+
+### 7.2 Типографіка
+
+Повну шкалу, `--leading-*`, `--tracking-*` і `--measure` додає AH-1.5; до того — лише те, що вже є в CSS.
+
+| Токен | Роль і використання | Значення |
+|---|---|---|
+| `--font-sans` | UI і читання (Inter Variable, системний запасний) | `PRIMITIVES.typography.fonts.sans` |
+| `--font-serif` | display (Fraunces Variable, Georgia запасний) | `fonts.serif` |
+| `--text-2xs` | 12 px — мінімум для мета і eyebrow; `text-2xs` | 0.75rem |
+| `--text-2xs--line-height` | інтерліньяж `text-2xs` | 1.5 |
+
+### 7.3 Простір і ритм
+
+Шкала 4/8. Tailwind-відступи (`p-4`, `gap-6`) лишаються з базового кроку Tailwind; `--space-*` — для власного CSS і збігу з прототипом. Реєстрації `--spacing-gutter`, `--spacing-section-y` дають `px-gutter`, `py-section-y`.
+
+| Токен | Значення | Використання |
+|---|---|---|
+| `--space-1` | 4px | дрібні проміжки, іконка + текст |
+| `--space-2` | 8px | щільні групи |
+| `--space-3` | 12px | внутрішній відступ чіпа |
+| `--space-4` | 16px | базовий відступ |
+| `--space-5` | 20px | внутрішній відступ картки |
+| `--space-6` | 24px | між блоками картки |
+| `--space-8` | 32px | між групами |
+| `--space-10` | 40px | верхня межа gutter |
+| `--space-12` | 48px | нижня межа section-y |
+| `--space-16` | 64px | великі розділи |
+| `--space-20` | 80px | розділи сторінки |
+| `--space-24` | 96px | найбільший крок |
+| `--gutter` | clamp(16px, 4vw, 40px) | бічні поля сторінки |
+| `--section-y` | clamp(48px, 7vw, 88px) | вертикальний ритм між секціями |
+
+### 7.4 Форма
+
+Радіуси 3 / 4 / 8 / 14 / pill. `rounded-lg` лишається власним 0.5rem (8px) Tailwind — 86 наявних використань не рухаються. Прототипне `--radius-lg` (14px) у коді — `--radius-card`.
+
+| Токен | Значення | Tailwind і використання |
+|---|---|---|
+| `--radius-xs` | 3px | `rounded-xs`, прототипне `--radius`: дрібні мітки |
+| `--radius-sm` | 4px | `rounded-sm`, бейджі; радіус кільця фокуса |
+| `--radius-md` | 8px | `rounded-md`, поля й кнопки (було 6px) |
+| `--radius-card` | 14px | `rounded-card`, картки |
+| `--radius-pill` | 9999px | `rounded-pill`, чіпи |
+
+### 7.5 Розміри й міри
+
+| Токен | Значення | Використання |
+|---|---|---|
+| `--touch-target-min` | 44px | мінімальна зона натискання (WCAG 2.2 AA) |
+| `--control-sm` | 36px | компактний контрол |
+| `--control-md` | 44px | типовий контрол |
+| `--control-lg` | 52px | великий контрол |
+| `--icon-sm` | 16px | дрібна іконка |
+| `--icon-md` | 20px | іконка контрола |
+| `--max` | 1280px | ширина сторінки; `max-w-page` |
+| `--max-wide` | 1440px | широка сторінка; `max-w-page-wide` |
+| `--reading` | 42.5rem | міра читання (680px за замовчуванням); `max-w-reading` |
+| `--header-h` | 60px | висота header і sticky-зсуви; **72px прототипу переходить разом із header у AH-3.3** |
+
+`--header-h` не змінено навмисно: тест `responsive-breakpoints` вимагає, щоб реальна висота header дорівнювала токену, а поведінка header за AC AH-1.6 змінюється лише в AH-3.3. Значення прототипу (72px) записано як `PRIMITIVES.sizes.headerHPrototype`.
+
+### 7.6 Глибина й ефекти
+
+Кожен токен має окреме Day-значення: тепла тінь малої непрозорості й білий inset-відблиск. Класи: `.shadow-1` (= `.elevation-card`), `.shadow-2`, `.shadow-pop`.
+
+| Токен | Роль | Night / Day |
+|---|---|---|
+| `--shadow-1` | картка у спокої (замінив `--shadow-card`) | `PRIMITIVES.shadows.<тема>.shadow1` |
+| `--shadow-2` | піднята панель | `shadow2` |
+| `--shadow-pop` | dropdown, popover, dialog | `pop` |
+| `--stage-light` | плями світла на темній сцені, градієнт | `PRIMITIVES.effects.<тема>.stageLight` |
+| `--sheen` | блиск при русі, градієнт | `sheen` |
+| `--grain-opacity` | непрозорість зерна (0.07 Night, 0.05 Day) | `grainOpacity` |
+
+Споживачі `--stage-light`, `--sheen`, `--grain-opacity` з'являться з hero й editorial-патернами (AH-5.x); до того токени лише зарезервовано.
+
+### 7.7 Шари
+
+Довільні `z-[…]` заборонені ratchet-ом (§6); використовувати `z-[var(--z-…)]`.
+
+| Токен | Значення | Використання |
+|---|---|---|
+| `--z-base` | 1 | піднятий контент у власному контексті |
+| `--z-sticky` | 30 | sticky header, панелі |
+| `--z-dropdown` | 60 | dropdown, popover, tooltip |
+| `--z-overlay` | 80 | підкладка модальних шарів |
+| `--z-dialog` | 90 | dialog, drawer |
+| `--z-toast` | 100 | toast |
+
+### 7.8 Рух (Tension v3)
+
+Правило `prefers-reduced-motion: reduce` лишається: анімації скорочуються до 0.001ms, `.reveal` показується одразу. Наявні переходи з власними таймінгами (`.reveal`, `.card-hover`) не змінено — вони переходять на ці токени з компонентами фази 2 і рухом фази 6.
+
+| Токен | Значення | Використання |
+|---|---|---|
+| `--duration-fast` | 160ms | hover, натискання |
+| `--duration-standard` | 320ms | перехід стану, розкриття |
+| `--duration-entrance` | 640ms | поява блоку |
+| `--ease-standard` | cubic-bezier(0.18, 0.82, 0.26, 1) | прототипне `ease`; `ease-standard` |
+| `--ease-soft` | cubic-bezier(0.65, 0, 0.35, 1) | прототипне `ease-in-out`; перейменовано, щоб Tailwind `ease-in-out` не змінився |
+| `--ease-release` | cubic-bezier(0.2, 0.85, 0.25, 1.08) | легкий «відскок» при відпусканні |
+
+### 7.9 Фокус і forced colors
+
+Кільце фокуса: `--focus-width` 2px кольору `--focus` на відстані `--focus-offset` 3px (було 2px). Базове правило `:focus-visible` покриває посилання, кнопки, поля, `textarea`, `summary` і `[tabindex]`; примітиви `ui/` беруть відстань із токена (`outline-offset-(--focus-offset)`). У `@media (forced-colors: active)` кільце — системний колір `Highlight`, а поверхні, які тримались лише на тіні, отримують межу `CanvasText`.
+
+| Токен | Значення | Використання |
+|---|---|---|
+| `--focus-width` | 2px | товщина кільця |
+| `--focus-offset` | 3px | відстань кільця до елемента |
+
+### 7.10 Брейкпоінти (D5, варіант A)
+
+Значення прототипу в rem, щоб розкладка реагувала на збільшення шрифту в браузері. Tailwind будує з них `min-width` варіанти (`tablet:` від 60rem); `max-width` запити прототипу — `max-tablet:` (Tailwind порівнює строго «менше», тож межа відрізняється на 1px від прототипу). Стандартні `sm/md/lg/xl` не перевизначено до AH-7.3. Header і discovery залишаються на Tailwind `lg` (1024px) до AH-3.3 / AH-4.3, коли перейдуть на `tablet`. Контракт для e2e — `e2e/helpers/viewports.ts` (959 / 960 px).
+
+| Токен | Значення | px за замовчуванням |
+|---|---|---|
+| `--breakpoint-compact` | 23.75rem | 380 |
+| `--breakpoint-narrow` | 25rem | 400 |
+| `--breakpoint-phone` | 47.5rem | 760 |
+| `--breakpoint-tablet` | 60rem | 960 — перемикач header і discovery після AH-3.3 / AH-4.3 |
+| `--breakpoint-laptop` | 68.75rem | 1100 |
+| `--breakpoint-nav-compact` | 73.75rem | 1180 |
+| `--breakpoint-desktop` | 80rem | 1280 |
+
+(source: `src/app/globals.css`; `src/lib/design-system/tokens.ts`; `artifacts/after-hours/tokens.css`, `tokens.json`; [епік](../product/after-hours-redesign-epic.md) AH-1.6; [ADR D5](../decisions/2026-09-29-after-hours-rollout-and-foundations.md))
 
 ## Related pages
 

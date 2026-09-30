@@ -112,7 +112,7 @@ export function NewsletterForm({
         onFocus={markStarted}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="bg-bg border-border text-text rounded-pill focus-visible:border-accent flex-1 basis-56 border px-4 py-3 text-sm outline-none"
+        className="bg-bg border-border text-text rounded-pill focus-visible:border-accent flex-1 basis-56 border px-4 py-3 text-sm"
       />
       <button
         type="submit"
